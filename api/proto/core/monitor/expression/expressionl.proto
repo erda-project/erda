@@ -15,7 +15,7 @@ service ExpressionService {
       check_token: true,
     }
   };
-  rpc GetAllAlertExpression (GetAllAlertExpressionRequest) returns (GetAllAlertExpressionResponse) {
+  rpc GetAllEnabledExpression (GetAllEnabledExpressionRequest) returns (GetAllEnabledExpressionResponse) {
     option (google.api.http)     = {
       get: "/api/alert/expression"
     };
@@ -25,13 +25,17 @@ service ExpressionService {
   }
 }
 
-message GetAllAlertExpressionRequest {}
+message GetAllEnabledExpressionRequest {}
 
-message GetAllAlertExpressionResponse {
-  repeated AlertExpression data = 1;
+message GetAllEnabledExpressionResponse {
+  map<string, EnabledExpression> data = 1;
 }
 
-message AlertExpression {
+message EnabledExpression {
+  repeated Expression expression = 1;
+}
+
+message Expression {
   int64                              id         = 1;
   string                             version    = 2;
   map<string, google.protobuf.Value> attributes = 3;

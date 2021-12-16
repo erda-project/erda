@@ -21,7 +21,7 @@ const _ = grpc.SupportPackageIsVersion5
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ExpressionServiceClient interface {
-	GetAllAlertExpression(ctx context.Context, in *GetAllAlertExpressionRequest, opts ...grpc.CallOption) (*GetAllAlertExpressionResponse, error)
+	GetAllEnabledExpression(ctx context.Context, in *GetAllEnabledExpressionRequest, opts ...grpc.CallOption) (*GetAllEnabledExpressionResponse, error)
 }
 
 type expressionServiceClient struct {
@@ -32,9 +32,9 @@ func NewExpressionServiceClient(cc grpc1.ClientConnInterface) ExpressionServiceC
 	return &expressionServiceClient{cc}
 }
 
-func (c *expressionServiceClient) GetAllAlertExpression(ctx context.Context, in *GetAllAlertExpressionRequest, opts ...grpc.CallOption) (*GetAllAlertExpressionResponse, error) {
-	out := new(GetAllAlertExpressionResponse)
-	err := c.cc.Invoke(ctx, "/erda.core.monitor.expression.ExpressionService/GetAllAlertExpression", in, out, opts...)
+func (c *expressionServiceClient) GetAllEnabledExpression(ctx context.Context, in *GetAllEnabledExpressionRequest, opts ...grpc.CallOption) (*GetAllEnabledExpressionResponse, error) {
+	out := new(GetAllEnabledExpressionResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.expression.ExpressionService/GetAllEnabledExpression", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -45,15 +45,15 @@ func (c *expressionServiceClient) GetAllAlertExpression(ctx context.Context, in 
 // All implementations should embed UnimplementedExpressionServiceServer
 // for forward compatibility
 type ExpressionServiceServer interface {
-	GetAllAlertExpression(context.Context, *GetAllAlertExpressionRequest) (*GetAllAlertExpressionResponse, error)
+	GetAllEnabledExpression(context.Context, *GetAllEnabledExpressionRequest) (*GetAllEnabledExpressionResponse, error)
 }
 
 // UnimplementedExpressionServiceServer should be embedded to have forward compatible implementations.
 type UnimplementedExpressionServiceServer struct {
 }
 
-func (*UnimplementedExpressionServiceServer) GetAllAlertExpression(context.Context, *GetAllAlertExpressionRequest) (*GetAllAlertExpressionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAllAlertExpression not implemented")
+func (*UnimplementedExpressionServiceServer) GetAllEnabledExpression(context.Context, *GetAllEnabledExpressionRequest) (*GetAllEnabledExpressionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllEnabledExpression not implemented")
 }
 
 func RegisterExpressionServiceServer(s grpc1.ServiceRegistrar, srv ExpressionServiceServer, opts ...grpc1.HandleOption) {
@@ -74,38 +74,38 @@ func _get_ExpressionService_serviceDesc(srv ExpressionServiceServer, opts ...grp
 		op(h)
 	}
 
-	_ExpressionService_GetAllAlertExpression_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.GetAllAlertExpression(ctx, req.(*GetAllAlertExpressionRequest))
+	_ExpressionService_GetAllEnabledExpression_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetAllEnabledExpression(ctx, req.(*GetAllEnabledExpressionRequest))
 	}
-	var _ExpressionService_GetAllAlertExpression_info transport.ServiceInfo
+	var _ExpressionService_GetAllEnabledExpression_info transport.ServiceInfo
 	if h.Interceptor != nil {
-		_ExpressionService_GetAllAlertExpression_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAllAlertExpression", srv)
-		_ExpressionService_GetAllAlertExpression_Handler = h.Interceptor(_ExpressionService_GetAllAlertExpression_Handler)
+		_ExpressionService_GetAllEnabledExpression_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAllEnabledExpression", srv)
+		_ExpressionService_GetAllEnabledExpression_Handler = h.Interceptor(_ExpressionService_GetAllEnabledExpression_Handler)
 	}
 
 	var serviceDesc = _ExpressionService_serviceDesc
 	serviceDesc.Methods = []grpc.MethodDesc{
 		{
-			MethodName: "GetAllAlertExpression",
+			MethodName: "GetAllEnabledExpression",
 			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-				in := new(GetAllAlertExpressionRequest)
+				in := new(GetAllEnabledExpressionRequest)
 				if err := dec(in); err != nil {
 					return nil, err
 				}
 				if interceptor == nil && h.Interceptor == nil {
-					return srv.(ExpressionServiceServer).GetAllAlertExpression(ctx, in)
+					return srv.(ExpressionServiceServer).GetAllEnabledExpression(ctx, in)
 				}
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ExpressionService_GetAllAlertExpression_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ExpressionService_GetAllEnabledExpression_info)
 				}
 				if interceptor == nil {
-					return _ExpressionService_GetAllAlertExpression_Handler(ctx, in)
+					return _ExpressionService_GetAllEnabledExpression_Handler(ctx, in)
 				}
 				info := &grpc.UnaryServerInfo{
 					Server:     srv,
-					FullMethod: "/erda.core.monitor.expression.ExpressionService/GetAllAlertExpression",
+					FullMethod: "/erda.core.monitor.expression.ExpressionService/GetAllEnabledExpression",
 				}
-				return interceptor(ctx, in, info, _ExpressionService_GetAllAlertExpression_Handler)
+				return interceptor(ctx, in, info, _ExpressionService_GetAllEnabledExpression_Handler)
 			},
 		},
 	}

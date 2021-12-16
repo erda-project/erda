@@ -17,7 +17,6 @@ package expression
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/expression/pb"
 )
@@ -26,22 +25,42 @@ type expressionService struct {
 	p *provider
 }
 
-func (e *expressionService) GetAllAlertExpression(ctx context.Context, request *pb.GetAllAlertExpressionRequest) (*pb.GetAllAlertExpressionResponse, error) {
-	expressions, err := e.p.alertDB.GetAllAlertExpression()
+func (e *expressionService) GetAllEnabledExpression(ctx context.Context, request *pb.GetAllEnabledExpressionRequest) (*pb.GetAllEnabledExpressionResponse, error) {
+	alertExpressions, err := e.p.alertDB.GetAllAlertExpression()
 	if err != nil {
 		return nil, err
 	}
-	result := &pb.GetAllAlertExpressionResponse{
-		Data: make([]*pb.AlertExpression, len(expressions)),
-	}
-	data, err := json.Marshal(expressions)
+	alertExpressionArr := make([]*pb.Expression, 0)
+	data, err := json.Marshal(alertExpressions)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
-	fmt.Println(string(data))
-	err = json.Unmarshal(data, &result.Data)
+	err = json.Unmarshal(data, &alertExpressionArr)
 	if err != nil {
-		return result, err
+		return nil, err
+	}
+	metricExpressions, err := e.p.metricDB.GetAllMetricExpression()
+	if err != nil {
+		return nil, err
+	}
+	metricExpressionArr := make([]*pb.Expression, 0)
+	data, err = json.Marshal(metricExpressions)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(data, &metricExpressionArr)
+	if err != nil {
+		return nil, err
+	}
+	result := &pb.GetAllEnabledExpressionResponse{
+		Data: map[string]*pb.EnabledExpression{
+			"alert": {
+				Expression: alertExpressionArr,
+			},
+			"metric": {
+				Expression: metricExpressionArr,
+			},
+		},
 	}
 	return result, nil
 }

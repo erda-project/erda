@@ -30,6 +30,7 @@ const (
 	TableAlertNotify                  = "sp_alert_notify"
 	TableAlertNotifyTemplate          = "sp_alert_notify_template"
 	TableAlertExpression              = "sp_alert_expression"
+	TableMetricExpression             = "sp_metric_expression"
 	TableAlert                        = "sp_alert"
 )
 
@@ -183,6 +184,18 @@ type AlertExpression struct {
 
 // TableName 。
 func (AlertExpression) TableName() string { return TableAlertExpression }
+
+type MetricExpression struct {
+	ID         uint64          `gorm:"column:id" json:"id"`
+	Attributes jsonmap.JSONMap `gorm:"column:attributes" json:"attributes"`
+	Expression jsonmap.JSONMap `gorm:"column:expression" json:"expression"`
+	Version    string          `gorm:"column:version" json:"version"`
+	Enable     bool            `gorm:"column:enable" json:"enable"`
+	Created    time.Time       `gorm:"column:created" json:"created"`
+	Updated    time.Time       `gorm:"column:updated" json:"updated"`
+}
+
+func (MetricExpression) TableName() string { return TableMetricExpression }
 
 // Alert .
 type Alert struct {

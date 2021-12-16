@@ -12,22 +12,28 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
-var _ urlenc.URLValuesUnmarshaler = (*GetAllAlertExpressionRequest)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*GetAllAlertExpressionResponse)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*AlertExpression)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAllEnabledExpressionRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAllEnabledExpressionResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*EnabledExpression)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*Expression)(nil)
 
-// GetAllAlertExpressionRequest implement urlenc.URLValuesUnmarshaler.
-func (m *GetAllAlertExpressionRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+// GetAllEnabledExpressionRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetAllEnabledExpressionRequest) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }
 
-// GetAllAlertExpressionResponse implement urlenc.URLValuesUnmarshaler.
-func (m *GetAllAlertExpressionResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+// GetAllEnabledExpressionResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetAllEnabledExpressionResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }
 
-// AlertExpression implement urlenc.URLValuesUnmarshaler.
-func (m *AlertExpression) UnmarshalURLValues(prefix string, values url.Values) error {
+// EnabledExpression implement urlenc.URLValuesUnmarshaler.
+func (m *EnabledExpression) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// Expression implement urlenc.URLValuesUnmarshaler.
+func (m *Expression) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {

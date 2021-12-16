@@ -37,6 +37,6 @@ type expressionServiceWrapper struct {
 	opts   []grpc1.CallOption
 }
 
-func (s *expressionServiceWrapper) GetAllAlertExpression(ctx context.Context, req *pb.GetAllAlertExpressionRequest) (*pb.GetAllAlertExpressionResponse, error) {
-	return s.client.GetAllAlertExpression(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+func (s *expressionServiceWrapper) GetAllEnabledExpression(ctx context.Context, req *pb.GetAllEnabledExpressionRequest) (*pb.GetAllEnabledExpressionResponse, error) {
+	return s.client.GetAllEnabledExpression(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

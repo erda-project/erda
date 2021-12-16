@@ -33,6 +33,7 @@ type provider struct {
 	Register          transport.Register `autowired:"service-register" optional:"true"`
 	DB                *gorm.DB           `autowired:"mysql-client"`
 	alertDB           *alertdb.AlertExpressionDB
+	metricDB          *alertdb.MetricExpressionDB
 	expressionService *expressionService
 }
 
@@ -40,6 +41,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	log := ctx.Logger()
 	p.Log = log
 	p.alertDB = &alertdb.AlertExpressionDB{
+		DB: p.DB,
+	}
+	p.metricDB = &alertdb.MetricExpressionDB{
 		DB: p.DB,
 	}
 	p.expressionService = &expressionService{

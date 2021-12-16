@@ -13,15 +13,17 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
-var _ json.Marshaler = (*GetAllAlertExpressionRequest)(nil)
-var _ json.Unmarshaler = (*GetAllAlertExpressionRequest)(nil)
-var _ json.Marshaler = (*GetAllAlertExpressionResponse)(nil)
-var _ json.Unmarshaler = (*GetAllAlertExpressionResponse)(nil)
-var _ json.Marshaler = (*AlertExpression)(nil)
-var _ json.Unmarshaler = (*AlertExpression)(nil)
+var _ json.Marshaler = (*GetAllEnabledExpressionRequest)(nil)
+var _ json.Unmarshaler = (*GetAllEnabledExpressionRequest)(nil)
+var _ json.Marshaler = (*GetAllEnabledExpressionResponse)(nil)
+var _ json.Unmarshaler = (*GetAllEnabledExpressionResponse)(nil)
+var _ json.Marshaler = (*EnabledExpression)(nil)
+var _ json.Unmarshaler = (*EnabledExpression)(nil)
+var _ json.Marshaler = (*Expression)(nil)
+var _ json.Unmarshaler = (*Expression)(nil)
 
-// GetAllAlertExpressionRequest implement json.Marshaler.
-func (m *GetAllAlertExpressionRequest) MarshalJSON() ([]byte, error) {
+// GetAllEnabledExpressionRequest implement json.Marshaler.
+func (m *GetAllEnabledExpressionRequest) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -31,15 +33,15 @@ func (m *GetAllAlertExpressionRequest) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// GetAllAlertExpressionRequest implement json.Marshaler.
-func (m *GetAllAlertExpressionRequest) UnmarshalJSON(b []byte) error {
+// GetAllEnabledExpressionRequest implement json.Marshaler.
+func (m *GetAllEnabledExpressionRequest) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
 }
 
-// GetAllAlertExpressionResponse implement json.Marshaler.
-func (m *GetAllAlertExpressionResponse) MarshalJSON() ([]byte, error) {
+// GetAllEnabledExpressionResponse implement json.Marshaler.
+func (m *GetAllEnabledExpressionResponse) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -49,15 +51,15 @@ func (m *GetAllAlertExpressionResponse) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// GetAllAlertExpressionResponse implement json.Marshaler.
-func (m *GetAllAlertExpressionResponse) UnmarshalJSON(b []byte) error {
+// GetAllEnabledExpressionResponse implement json.Marshaler.
+func (m *GetAllEnabledExpressionResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
 }
 
-// AlertExpression implement json.Marshaler.
-func (m *AlertExpression) MarshalJSON() ([]byte, error) {
+// EnabledExpression implement json.Marshaler.
+func (m *EnabledExpression) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -67,8 +69,26 @@ func (m *AlertExpression) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// AlertExpression implement json.Marshaler.
-func (m *AlertExpression) UnmarshalJSON(b []byte) error {
+// EnabledExpression implement json.Marshaler.
+func (m *EnabledExpression) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// Expression implement json.Marshaler.
+func (m *Expression) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// Expression implement json.Marshaler.
+func (m *Expression) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
