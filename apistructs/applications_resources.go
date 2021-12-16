@@ -208,13 +208,13 @@ type GetResourceApplicationTrendReq struct {
 
 func (req GetResourceApplicationTrendReq) Validate() error {
 	if _, err := req.GetOrgID(); err != nil {
-		return err
+		return errors.Wrap(err, "invalid OrgID")
 	}
 	if _, err := req.GetUserID(); err != nil {
-		return err
+		return errors.Wrap(err, "invalid UserID")
 	}
 	if _, err := req.GetProjectID(); err != nil {
-		return err
+		return errors.Wrap(err, "invalid ProjectID")
 	}
 	if req.Query == nil {
 		return errors.New("the Query is empty")
@@ -244,13 +244,13 @@ type GetResourceApplicationTrendReqQuery struct {
 
 func (rq GetResourceApplicationTrendReqQuery) Validate() error {
 	if _, err := rq.GetApplicationID(); err != nil {
-		return err
+		return errors.Wrap(err, "invalid ApplicationID")
 	}
 	if _, err := rq.GetStart(); err != nil {
-		return err
+		return errors.Wrap(err, "invalid Start")
 	}
 	if _, err := rq.GetEnd(); err != nil {
-		return err
+		return errors.Wrap(err, "invalid End")
 	}
 	return nil
 }
