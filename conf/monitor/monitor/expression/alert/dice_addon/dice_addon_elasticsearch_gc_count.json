@@ -1,0 +1,64 @@
+{
+  "name": "平台中间件Elasticsearch GC次数异常",
+  "alert_scope": "org",
+  "attributes": {
+    "level": "Warning",
+    "recover": "true",
+    "display_url_id": "org_addon",
+    "alert_group": "{{cluster_name}}-{{addon_id}}",
+    "tickets_metric_key": "{{addon_id}}"
+  },
+  "template": {
+    "metrics": ["elasticsearch_jvm"],
+    "window": 3,
+    "filters": [
+      {
+        "tag": "org_name",
+        "operator": "eq",
+        "value": "$org_name"
+      },
+      {
+        "tag": "addon_id",
+        "operator": "eq",
+        "value": "elasticsearch"
+      }
+    ],
+    "group": [
+      "cluster_name",
+      "node_id"
+    ],
+    "functions": [
+      {
+        "aggregator": "min",
+        "field": "gc_collectors_old_collection_count"
+      },
+      {
+        "aggregator": "max",
+        "field": "gc_collectors_old_collection_count"
+      },
+      {
+        "aggregator": "value",
+        "field": "gc_collectors_old_collection_count_win",
+        "field_script": "function invoke(fields,tags){return fields.gc_collectors_old_collection_count_max-fields.gc_collectors_old_collection_count_min;}",
+        "trigger": "aggregated",
+        "operator": "gte",
+        "value": 10
+      }
+    ],
+    "select": {
+      "cluster_name": "#cluster_name",
+      "addon_id": "#addon_id",
+      "addon_type": "#addon_type",
+      "node_host": "#node_host",
+      "node_id": "#node_id",
+      "node_name": "#node_name",
+      "_meta": "#_meta",
+      "_metric_scope": "#_metric_scope",
+      "_metric_scope_id": "#_metric_scope_id",
+      "org_name": "#org_name"
+    },
+    "outputs": [
+      "alert"
+    ]
+  }
+}

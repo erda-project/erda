@@ -1,0 +1,53 @@
+{
+  "name": "网盘容量使用量异常告警",
+  "alert_scope": "org",
+  "attributes": {
+    "level": "Fatal",
+    "recover": "true",
+    "alert_group": "{{cluster_name}}",
+    "tickets_metric_key": "{{cluster_name}}"
+  },
+  "template": {
+    "metric": "disk",
+    "window": 5,
+    "filters": [
+      {
+        "tag": "org_name",
+        "operator": "eq",
+        "value": "$org_name"
+      },
+      {
+        "tag": "type",
+        "operator": "eq",
+        "value": "netdata"
+      }
+    ],
+    "group": [],
+    "functions": [
+      {
+        "aggregator": "max",
+        "alias": "used",
+        "field": "used",
+        "field_script": "function invoke(field, tag){ return field.used/1024/1024/1024 }",
+        "operator": "gte",
+        "value": 300
+      },
+      {
+        "aggregator": "max",
+        "alias": "total",
+        "field_script": "function invoke(field, tag){ return field.total/1024/1024/1024 }"
+      }
+    ],
+    "select": {
+      "cluster_name": "#cluster_name",
+      "_meta": "#_meta",
+      "_metric_scope": "#_metric_scope",
+      "_metric_scope_id": "#_metric_scope_id",
+      "org_name": "#org_name",
+      "labels": "#labels"
+    },
+    "outputs": [
+      "alert"
+    ]
+  }
+}

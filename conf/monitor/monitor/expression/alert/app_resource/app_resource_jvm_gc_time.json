@@ -1,0 +1,69 @@
+{
+  "name": "应用JVM GC 耗时",
+  "alert_scope": "micro_service",
+  "attributes": {
+    "level": "Warning",
+    "recover": "true",
+    "display_url_id": "micro_jvm",
+    "alert_group": "{{terminus_key}}-{{instance_id}}",
+    "tickets_metric_key": "{{instance_id}}"
+  },
+  "template": {
+    "metric": "jvm_gc",
+    "window": 1,
+    "filters": [
+      {
+        "tag": "name",
+        "operator": "eq",
+        "value": "concurrentmarksweep"
+      },
+      {
+        "tag": "terminus_key",
+        "operator": "eq",
+        "value": "$terminus_key"
+      },
+      {
+        "tag": "org_name",
+        "operator": "eq",
+        "value": "$org_name"
+      }
+    ],
+    "group": [
+      "instance_id"
+    ],
+    "functions": [
+      {
+        "aggregator": "max",
+        "alias": "time_value",
+        "field": "time",
+        "operator": "gte",
+        "value": 400
+      },
+      {
+        "aggregator": "sum",
+        "field": "time",
+        "operator": "gte",
+        "value": 1000
+      }
+    ],
+    "condition": "or",
+    "select": {
+      "application_id": "#application_id",
+      "application_name": "#application_name",
+      "cluster_name": "#cluster_name",
+      "host_ip": "#host_ip",
+      "instance_id": "#instance_id",
+      "project_id": "#project_id",
+      "project_name": "#project_name",
+      "runtime_id": "#runtime_id",
+      "runtime_name": "#runtime_name",
+      "service_name": "#service_name",
+      "terminus_key": "#terminus_key",
+      "workspace": "#workspace",
+      "org_name": "#org_name"
+    },
+    "outputs": [
+      "alert"
+    ]
+  }
+}

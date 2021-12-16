@@ -1,0 +1,73 @@
+{
+  "name": "kubernetes组件实例内存状态",
+  "alert_scope": "org",
+  "attributes": {
+    "level": "Critical",
+    "recover": "true",
+    "alert_group": "{{cluster_name}}-{{container_id}}",
+    "tickets_metric_key": "{{container_id}}"
+  },
+  "template": {
+    "metrics": ["docker_container_summary"],
+    "window": 2,
+    "filters": [
+      {
+        "tag": "org_name",
+        "operator": "eq",
+        "value": "$org_name"
+      },
+      {
+        "tag": "pod_namespace",
+        "operator": "eq",
+        "value": "kube-system"
+      }
+    ],
+    "group": [
+      "cluster_name",
+      "container_id"
+    ],
+    "functions": [
+      {
+        "aggregator": "avg",
+        "field": "mem_usage_percent",
+        "operator": "gt",
+        "value": 70
+      },
+      {
+        "aggregator": "max",
+        "alias": "mem_usage_value",
+        "field": "mem_usage"
+      },
+      {
+        "aggregator": "max",
+        "alias": "mem_limit_value",
+        "field": "mem_limit"
+      },
+      {
+        "aggregator": "max",
+        "alias": "mem_max_usage_value",
+        "field": "mem_max_usage"
+      }, {
+        "aggregator": "max",
+        "alias": "mem_allocation_value",
+        "field": "mem_allocation"
+      }
+    ],
+    "select": {
+      "cluster_name": "#cluster_name",
+      "host_ip": "#host_ip",
+      "container_id": "#container_id",
+      "pod_name": "#pod_name",
+      "pod_namespace": "#pod_namespace",
+      "component_name": "#pod_name",
+      "_meta": "#_meta",
+      "_metric_scope": "#_metric_scope",
+      "_metric_scope_id": "#_metric_scope_id",
+      "org_name": "#org_name",
+      "pod_ip": "#pod_ip"
+    },
+    "outputs": [
+      "alert"
+    ]
+  }
+}

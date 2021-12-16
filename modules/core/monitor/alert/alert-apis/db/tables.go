@@ -171,14 +171,14 @@ func (AlertNotifyTemplate) TableName() string { return TableAlertNotifyTemplate 
 
 // AlertExpression .
 type AlertExpression struct {
-	ID         uint64          `gorm:"column:id"`
-	AlertID    uint64          `gorm:"column:alert_id"`
-	Attributes jsonmap.JSONMap `gorm:"column:attributes"`
-	Expression jsonmap.JSONMap `gorm:"column:expression"`
-	Version    string          `gorm:"column:version"`
-	Enable     bool            `gorm:"column:enable"`
-	Created    time.Time       `gorm:"column:created"`
-	Updated    time.Time       `gorm:"column:updated"`
+	ID         uint64          `gorm:"column:id" json:"id"`
+	AlertID    uint64          `gorm:"column:alert_id" json:"alert_id"`
+	Attributes jsonmap.JSONMap `gorm:"column:attributes" json:"attributes"`
+	Expression jsonmap.JSONMap `gorm:"column:expression" json:"expression"`
+	Version    string          `gorm:"column:version" json:"version"`
+	Enable     bool            `gorm:"column:enable" json:"enable"`
+	Created    time.Time       `gorm:"column:created" json:"created"`
+	Updated    time.Time       `gorm:"column:updated" json:"updated"`
 }
 
 // TableName 。

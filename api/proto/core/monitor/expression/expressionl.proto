@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package erda.core.monitor.expression;
+option go_package = "github.com/erda-project/erda-proto-go/core/monitor/expression/pb";
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "common/openapi.proto";
+
+service ExpressionService {
+  option (erda.common.openapi_service) = {
+    service: "monitor",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+  rpc GetAllAlertExpression (GetAllAlertExpressionRequest) returns (GetAllAlertExpressionResponse) {
+    option (google.api.http)     = {
+      get: "/api/alert/expression"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/alert/expression"
+    };
+  }
+}
+
+message GetAllAlertExpressionRequest {}
+
+message GetAllAlertExpressionResponse {
+  repeated AlertExpression data = 1;
+}
+
+message AlertExpression {
+  int64                              id         = 1;
+  string                             version    = 2;
+  map<string, google.protobuf.Value> attributes = 3;
+  map<string, google.protobuf.Value> expression = 4;
+  bool                               enable     = 5;
+  int64                              alertId    = 6 [json_name = "alert_id"];
+}

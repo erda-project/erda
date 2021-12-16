@@ -1,0 +1,58 @@
+{
+    "name": "MySQL SLAVE SYNC ALERT",
+    "alert_scope": "org",
+    "attributes": {
+      "level": "Warning",
+      "recover": "true",
+      "alert_group": "{{cluster_name}}-{{addon_id}}"
+    },
+    "template": {
+      "metric": "mysql",
+      "window": 1,
+      "filters": [
+        {
+          "tag": "org_name",
+          "operator": "eq",
+          "value": "$org_name"
+        },
+        {
+          "tag": "is_slave",
+          "operator": "eq",
+          "value": "true"
+        }
+      ],
+      "group": [
+        "addon_id",
+        "server"
+      ],
+      "functions": [
+        {
+          "aggregator": "max",
+          "alias": "slave_slave_sync_ok_value",
+          "field": "slave_slave_sync_ok",
+          "field_script": "function invoke(fields,tags){if (fields.slave_slave_io_running == 0 || fields.slave_slave_sql_running == 0) {return 0} return 1}",
+          "operator": "eq",
+          "value": 0
+        },
+        {
+          "aggregator": "max",
+          "alias": "slave_slave_io_running_value",
+          "field": "slave_slave_io_running"
+        },
+        {
+          "aggregator": "max",
+          "alias": "slave_slave_sql_running_value",
+          "field": "slave_slave_sql_running"
+        }
+      ],
+      "select": {
+        "cluster_name": "#cluster_name",
+        "addon_id": "#addon_id",
+        "server_id": "#server",
+        "org_name": "#org_name"
+      },
+      "outputs": [
+        "alert"
+      ]
+    }
+}

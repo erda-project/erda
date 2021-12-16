@@ -1,0 +1,69 @@
+{
+  "name": "平台中间件Cassandra GC次数异常",
+  "alert_scope": "org",
+  "attributes": {
+    "level": "Warning",
+    "recover": "true",
+    "display_url_id": "org_addon",
+    "alert_group": "{{cluster_name}}-{{addon_id}}",
+    "tickets_metric_key": "{{addon_id}}"
+  },
+  "template": {
+    "metrics": ["addon_java_GarbageCollector"],
+    "window": 3,
+    "filters": [
+      {
+        "tag": "org_name",
+        "operator": "eq",
+        "value": "$org_name"
+      },
+      {
+        "tag": "addon_id",
+        "operator": "eq",
+        "value": "cassandra"
+      },
+      {
+        "tag": "name",
+        "operator": "like",
+        "value": "Old"
+      }
+    ],
+    "group": [
+      "cluster_name",
+      "node_id"
+    ],
+    "functions": [
+      {
+        "aggregator": "min",
+        "field": "CollectionCount_min",
+        "field_script": "function invoke(fields,tags){return fields.CollectionCount;}"
+      },
+      {
+        "aggregator": "max",
+        "field": "CollectionCount_max",
+        "field_script": "function invoke(fields,tags){return fields.CollectionCount;}"
+      },
+      {
+        "aggregator": "value",
+        "field": "CollectionCount_win",
+        "field_script": "function invoke(fields,tags){return fields.CollectionCount_max-fields.CollectionCount_min;}",
+        "trigger": "aggregated",
+        "operator": "gte",
+        "value": 10
+      }
+    ],
+    "select": {
+      "cluster_name": "#cluster_name",
+      "addon_id": "#addon_id",
+      "addon_type": "#addon_type",
+      "node_host": "#jolokia_host",
+      "_meta": "#_meta",
+      "_metric_scope": "#_metric_scope",
+      "_metric_scope_id": "#_metric_scope_id",
+      "org_name": "#org_name"
+    },
+    "outputs": [
+      "alert"
+    ]
+  }
+}
