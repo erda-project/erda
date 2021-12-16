@@ -129,7 +129,8 @@ func (tr *TaskRun) waitOp(itr TaskOp, o *Elem) (result error) {
 		}
 
 		// if result only contain platform error, task will retry, so don't set status changed
-		if result != nil && !errorsx.IsContainUserError(result) {
+		isExceed, _ := tr.Task.Inspect.IsErrorsExceed()
+		if result != nil && !errorsx.IsContainUserError(result) && !isExceed {
 			tr.Task.Status = oldStatus
 		}
 

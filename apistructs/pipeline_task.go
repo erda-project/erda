@@ -23,7 +23,9 @@ import (
 
 const (
 	// TerminusDefineTag add this tag env to container for collecting logs
-	TerminusDefineTag = "TERMINUS_DEFINE_TAG"
+	TerminusDefineTag            = "TERMINUS_DEFINE_TAG"
+	PipelineTaskMaxRetryLimit    = 144
+	PipelineTaskMaxRetryDuration = 24 * time.Hour
 )
 
 type PipelineTaskDTO struct {
@@ -265,6 +267,17 @@ func (t *PipelineTaskInspect) ConvertErrors() {
 				response.Ctx.EndTime.Format("2006-01-02 15:04:05"), response.Ctx.Count)
 		}
 	}
+}
+
+func (t *PipelineTaskInspect) IsErrorsExceed() (bool, *PipelineTaskErrResponse) {
+	now := time.Now()
+	for _, g := range t.Errors {
+		if (!g.Ctx.StartTime.IsZero() && g.Ctx.StartTime.Add(PipelineTaskMaxRetryDuration).Before(now)) ||
+			g.Ctx.Count >= PipelineTaskMaxRetryLimit {
+			return true, g
+		}
+	}
+	return false, nil
 }
 
 func (l *PipelineTaskLoop) Duplicate() *PipelineTaskLoop {
