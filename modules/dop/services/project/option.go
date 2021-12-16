@@ -19,7 +19,6 @@ import (
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/erda-project/erda/modules/dop/dbclient"
 )
 
 // Option the is fun to set *Project property
