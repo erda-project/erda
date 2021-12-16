@@ -84,7 +84,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 				return err
 			}
 		} else {
-			f.State.Values.IterationID = iteration
+			f.State.Values.IterationIDs = []int64{iteration}
 		}
 	}
 
@@ -97,10 +97,10 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			Options:    iterationOptions,
 			Type:       filter.PropConditionTypeSelect,
 			HaveFilter: true,
-			Required:   true,
-			CustomProps: map[string]interface{}{
-				"mode": "single",
-			},
+			// Required:   true,
+			// CustomProps: map[string]interface{}{
+			// 	"mode": "single",
+			// },
 		},
 		{
 			EmptyText:  "全部",
