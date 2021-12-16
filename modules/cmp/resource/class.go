@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/apistructs/echarts"
+	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 )
 
 const (
@@ -429,8 +430,8 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 	case Memory, Mem:
 		td.YAxis.Name = r.I18n(langCodes, "memory") + " (GB)"
 		for _, quota := range pd {
-			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequested)))
-			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemTotal)))
+			td.Series[0].Data = append(td.Series[0].Data, calcu.ByteToGibibyte(quota.MemRequested, 3))
+			td.Series[1].Data = append(td.Series[1].Data, calcu.ByteToGibibyte(quota.MemTotal, 3))
 			switch request.Query.Interval {
 			case Month:
 				td.XAxis.Data = append(td.XAxis.Data, r.I18n(langCodes, quota.CreatedAt.Format("2006-01")))
@@ -444,8 +445,8 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 	default:
 		td.YAxis.Name = r.I18n(langCodes, "cpu") + " (" + r.I18n(langCodes, "core") + ")"
 		for _, quota := range pd {
-			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequested)))
-			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUTotal)))
+			td.Series[0].Data = append(td.Series[0].Data, calcu.MillcoreToCore(quota.CPURequested, 3))
+			td.Series[1].Data = append(td.Series[1].Data, calcu.MillcoreToCore(quota.CPUTotal, 3))
 			switch request.Query.GetInterval() {
 			case Month:
 				td.XAxis.Data = append(td.XAxis.Data, r.I18n(langCodes, quota.CreatedAt.Format("2006-01")))
@@ -482,7 +483,6 @@ func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.Tren
 	td.Series[0].Name = r.I18n(langCodes, "request")
 	td.Series[1].Name = r.I18n(langCodes, "quota")
 	var (
-		pd       []*apistructs.ProjectResourceDailyModel
 		clusters []apistructs.ClusterInfo
 	)
 	clusters, err := r.Bdl.ListClusters("", orgID)
@@ -509,104 +509,58 @@ func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.Tren
 		return td, err
 	}
 
-	tRes := make(map[int]*apistructs.ProjectResourceDailyModel)
-	switch request.Query.GetInterval() {
-	case Week:
-		for _, model := range projectDailies {
-			_, wk := model.CreatedAt.ISOWeek()
-			if v, ok := tRes[wk]; ok {
-				v.CPURequest += model.CPURequest
-				v.CPUQuota += model.CPUQuota
-				v.MemRequest += model.MemRequest
-				v.MemQuota += model.MemQuota
-				v.ID = uint64(wk)
-				tRes[wk] = v
-			} else {
-				tRes[wk] = model
-			}
+	keyF := genKeyF(request.Query.GetInterval())
+	var records = make(map[string][]apistructs.ProjectResourceDailyModel)
+	for _, record := range projectDailies {
+		key := keyF(record.CreatedAt)
+		records[key] = append(records[key], *record)
+	}
+	for key, days := range records {
+		var (
+			total     apistructs.ProjectResourceDailyModel
+			daysCount = float64(len(days))
+		)
+		for _, day := range days {
+			total.CPURequest += day.CPURequest
+			total.CPUQuota += day.CPUQuota
+			total.MemRequest += day.MemRequest
+			total.MemQuota += day.MemQuota
 		}
-	case Month:
-		for _, model := range projectDailies {
-			m := int(model.CreatedAt.Month())
-			if v, ok := tRes[m]; ok {
-				v.CPURequest += model.CPURequest
-				v.CPUQuota += model.CPUQuota
-				v.MemRequest += model.MemRequest
-				v.MemQuota += model.MemQuota
-				v.ID = uint64(model.CreatedAt.Month())
-				tRes[m] = v
-			} else {
-				tRes[m] = model
-			}
-		}
-	default:
-		// Day
-		var records = make(map[string]apistructs.ProjectResourceDailyModel)
-		for _, model := range projectDailies {
-			day := model.CreatedAt.Format("2006-01-02")
-			var record = records[day]
-			record.CreatedAt = model.CreatedAt
-			record.CPUQuota += model.CPUQuota
-			record.MemQuota += model.CPUQuota
-			record.CPURequest += model.CPURequest
-			record.MemRequest += model.MemRequest
-			records[day] = record
-		}
-		for day := startTime; day.Before(endTime) && day.Before(time.Now()); day = day.Add(time.Hour * 24) {
-			today := day.Format("2006-01-02")
-			record := records[today]
-			if record.CreatedAt.Format("2006-01-02") != today {
-				record.CreatedAt = day
-			}
-			tRes[day.YearDay()] = &record
+		td.XAxis.Data = append(td.XAxis.Data, key)
+		switch strings.ToLower(request.Query.ResourceType) {
+		case "mem", "memory":
+			td.Series[0].Data = append(td.Series[0].Data, calcu.ByteToGibibyte(total.MemRequest, 3)/daysCount)
+			td.Series[1].Data = append(td.Series[1].Data, calcu.ByteToGibibyte(total.MemQuota, 3)/daysCount)
+		default: // "cpu"
+			td.Series[0].Data = append(td.Series[0].Data, calcu.MillcoreToCore(total.CPURequest, 3)/daysCount)
+			td.Series[1].Data = append(td.Series[1].Data, calcu.MillcoreToCore(total.CPUQuota, 3)/daysCount)
 		}
 	}
-	for _, model := range tRes {
-		pd = append(pd, model)
+	for _, data := range []interface{}{td.Series[0].Data, td.Series[1].Data, td.XAxis.Data} {
+		sort.Slice(data, func(i, j int) bool {
+			return td.XAxis.Data[i] < td.XAxis.Data[j]
+		})
 	}
-	sort.Slice(pd, func(i, j int) bool {
-		return pd[i].ID < pd[j].ID
-	})
-	switch request.Query.GetResourceType() {
-	case Memory, Mem:
-		td.YAxis.Name = r.I18n(langCodes, "memory") + " (GB)"
-		for _, quota := range pd {
-			td.Series[0].Data = append(td.Series[0].Data, toGB(float64(quota.MemRequest)))
-			td.Series[1].Data = append(td.Series[1].Data, toGB(float64(quota.MemQuota)))
-			switch request.Query.GetInterval() {
-			case Month:
-				td.XAxis.Data = append(td.XAxis.Data, r.I18n(langCodes, quota.CreatedAt.Format("2006-01")))
-			case Week:
-				_, wk := quota.CreatedAt.ISOWeek()
-				td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%d", wk)+r.I18n(langCodes, "week"))
-			default:
-				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
-			}
-		}
-	default:
-		td.YAxis.Name = r.I18n(langCodes, "cpu") + " (" + r.I18n(langCodes, "core") + ")"
-		for _, quota := range pd {
-			td.Series[0].Data = append(td.Series[0].Data, toCore(float64(quota.CPURequest)))
-			td.Series[1].Data = append(td.Series[1].Data, toCore(float64(quota.CPUQuota)))
-			switch request.Query.GetInterval() {
-			case Month:
-				td.XAxis.Data = append(td.XAxis.Data, r.I18n(langCodes, quota.CreatedAt.Format("2006-01")))
-			case Week:
-				_, wk := quota.CreatedAt.ISOWeek()
-				td.XAxis.Data = append(td.XAxis.Data, fmt.Sprintf("%d", wk)+r.I18n(langCodes, "week"))
-			default:
-				td.XAxis.Data = append(td.XAxis.Data, quota.CreatedAt.Format("2006-01-02"))
-			}
-		}
-	}
+
 	return td, nil
 }
 
-func toCore(mCores float64) float64 {
-	return mCores / 1000
-}
-
-func toGB(b float64) float64 {
-	f, _ := strconv.ParseFloat(fmt.Sprintf("%.3f", b/float64(1<<30)), 64)
-	return f
+func genKeyF(interval string) func(t time.Time) string {
+	switch interval {
+	case "week":
+		return func(t time.Time) string {
+			year, week := t.ISOWeek()
+			return strconv.FormatInt(int64(year), 10) + "-" + strconv.FormatInt(int64(week), 10)
+		}
+	case "month":
+		return func(t time.Time) string {
+			year := t.Year()
+			month := t.Month()
+			return strconv.FormatInt(int64(year), 10) + "-" + strconv.FormatInt(int64(month), 10)
+		}
+	default:
+		return func(t time.Time) string {
+			return t.Format("2006-01-02")
+		}
+	}
 }

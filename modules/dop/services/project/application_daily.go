@@ -17,7 +17,9 @@ package project
 import (
 	"context"
 	"encoding/json"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -149,31 +151,76 @@ func (p *Project) GetApplicationTrend(ctx context.Context, request *apistructs.G
 		l.WithError(err).Errorln("failed to Find dailies")
 		return nil, err
 	}
-	var records = make(map[string]apistructs.ApplicationResourceDailyModel)
+
+	keyF := genKeyF(strings.ToLower(request.Query.GetInterval()))
+	var records = make(map[string][]apistructs.ApplicationResourceDailyModel)
 	for _, record := range dailies {
-		records[record.CreatedAt.Format("2006-01-02")] = *record
+		key := keyF(record.CreatedAt)
+		records[key] = append(records[key], *record)
 	}
-	for day := startTime; day.Before(endTime) && day.Before(time.Now()); day = day.Add(time.Hour * 24) {
-		today := day.Format("2006-01-02")
-		td.XAxis.Data = append(td.XAxis.Data, today)
-		record := records[today]
-		switch request.Query.ResourceType {
+	for key, days := range records {
+		var (
+			total     apistructs.ApplicationResourceDailyModel
+			daysCount = float64(len(days))
+		)
+		for _, day := range days {
+			total.ProdCPURequest += day.ProdCPURequest
+			total.ProdMemRequest += day.ProdMemRequest
+			total.ProdPodsCount += day.ProdPodsCount
+			total.StagingCPURequest += day.StagingCPURequest
+			total.StagingMemRequest += day.StagingMemRequest
+			total.StagingPodsCount += day.StagingPodsCount
+			total.TestCPURequest += day.TestCPURequest
+			total.TestMemRequest += day.TestMemRequest
+			total.TestPodsCount += day.TestPodsCount
+			total.DevCPURequest += day.DevCPURequest
+			total.DevMemRequest += day.DevMemRequest
+			total.DevPodsCount += day.DevPodsCount
+		}
+		td.XAxis.Data = append(td.XAxis.Data, key)
+		switch strings.ToLower(request.Query.ResourceType) {
 		case "cpu":
-			td.Series[0].Data = append(td.Series[0].Data, calcu.MillcoreToCore(record.ProdCPURequest, 3))
-			td.Series[1].Data = append(td.Series[1].Data, calcu.MillcoreToCore(record.StagingCPURequest, 3))
-			td.Series[2].Data = append(td.Series[2].Data, calcu.MillcoreToCore(record.TestCPURequest, 3))
-			td.Series[3].Data = append(td.Series[3].Data, calcu.MillcoreToCore(record.DevCPURequest, 3))
+			td.Series[0].Data = append(td.Series[0].Data, calcu.MillcoreToCore(total.ProdCPURequest, 3)/daysCount)
+			td.Series[1].Data = append(td.Series[1].Data, calcu.MillcoreToCore(total.StagingCPURequest, 3)/daysCount)
+			td.Series[2].Data = append(td.Series[2].Data, calcu.MillcoreToCore(total.TestCPURequest, 3)/daysCount)
+			td.Series[3].Data = append(td.Series[3].Data, calcu.MillcoreToCore(total.DevCPURequest, 3), daysCount)
 		case "mem", "memory":
-			td.Series[0].Data = append(td.Series[0].Data, calcu.ByteToGibibyte(record.ProdMemRequest, 3))
-			td.Series[1].Data = append(td.Series[1].Data, calcu.ByteToGibibyte(record.StagingMemRequest, 3))
-			td.Series[2].Data = append(td.Series[2].Data, calcu.ByteToGibibyte(record.TestMemRequest, 3))
-			td.Series[3].Data = append(td.Series[3].Data, calcu.ByteToGibibyte(record.DevMemRequest, 3))
-		default:
-			td.Series[0].Data = append(td.Series[0].Data, float64(record.ProdPodsCount))
-			td.Series[1].Data = append(td.Series[1].Data, float64(record.StagingPodsCount))
-			td.Series[2].Data = append(td.Series[2].Data, float64(record.TestPodsCount))
-			td.Series[3].Data = append(td.Series[3].Data, float64(record.DevPodsCount))
+			td.Series[0].Data = append(td.Series[0].Data, calcu.ByteToGibibyte(total.ProdMemRequest, 3)/daysCount)
+			td.Series[1].Data = append(td.Series[1].Data, calcu.ByteToGibibyte(total.StagingMemRequest, 3)/daysCount)
+			td.Series[2].Data = append(td.Series[2].Data, calcu.ByteToGibibyte(total.TestMemRequest, 3)/daysCount)
+			td.Series[3].Data = append(td.Series[3].Data, calcu.ByteToGibibyte(total.DevMemRequest, 3)/daysCount)
+		default: // pods
+			td.Series[0].Data = append(td.Series[0].Data, float64(total.ProdPodsCount)/daysCount)
+			td.Series[1].Data = append(td.Series[1].Data, float64(total.StagingPodsCount)/daysCount)
+			td.Series[2].Data = append(td.Series[2].Data, float64(total.TestPodsCount)/daysCount)
+			td.Series[3].Data = append(td.Series[3].Data, float64(total.DevPodsCount)/daysCount)
 		}
 	}
+	for _, data := range []interface{}{td.Series[0].Data, td.Series[1].Data, td.Series[2].Data, td.Series[3].Data, td.XAxis.Data} {
+		sort.Slice(data, func(i, j int) bool {
+			return td.XAxis.Data[i] < td.XAxis.Data[j]
+		})
+	}
+
 	return td, nil
+}
+
+func genKeyF(interval string) func(t time.Time) string {
+	switch interval {
+	case "week":
+		return func(t time.Time) string {
+			year, week := t.ISOWeek()
+			return strconv.FormatInt(int64(year), 10) + "-" + strconv.FormatInt(int64(week), 10)
+		}
+	case "month":
+		return func(t time.Time) string {
+			year := t.Year()
+			month := t.Month()
+			return strconv.FormatInt(int64(year), 10) + "-" + strconv.FormatInt(int64(month), 10)
+		}
+	default:
+		return func(t time.Time) string {
+			return t.Format("2006-01-02")
+		}
+	}
 }
