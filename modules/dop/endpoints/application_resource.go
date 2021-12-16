@@ -40,6 +40,7 @@ func (e *Endpoints) GetResourceApplicationTrend(ctx context.Context, r *http.Req
 	req.UserID = r.Header.Get(httputil.UserHeader)
 	req.ProjectID = vars["projectID"]
 	req.Query = new(apistructs.GetResourceApplicationTrendReqQuery)
+	req.Query.ApplicationID = q.Get("applicationID")
 	req.Query.Start = q.Get("start")
 	req.Query.End = q.Get("end")
 	req.Query.Interval = q.Get("interval")
