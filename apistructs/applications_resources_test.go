@@ -138,3 +138,54 @@ func TestApplicationsResourceQuery(t *testing.T) {
 	arq.GetPageNo()
 	arq.GetPageSize()
 }
+
+func TestGetResourceApplicationTrendReq_Validate(t *testing.T) {
+	var req apistructs.GetResourceApplicationTrendReq
+	if err := req.Validate(); err == nil {
+		t.Fatal("OrgID is invalid")
+	}
+	req.OrgID = "0"
+	if err := req.Validate(); err == nil {
+		t.Fatal("UserID is invalid")
+	}
+	req.UserID = "0"
+	if err := req.Validate(); err == nil {
+		t.Fatal("ProjectID is invalid")
+	}
+	req.ProjectID = "0"
+	if err := req.Validate(); err == nil {
+		t.Fatal("Query is invalid")
+	}
+	req.Query = new(apistructs.GetResourceApplicationTrendReqQuery)
+	if err := req.Validate(); err == nil {
+		t.Fatal("Query.ApplicationID is invalid")
+	}
+	req.Query.ApplicationID = "0"
+	if err := req.Validate(); err == nil {
+		t.Fatal("Query.Start is invalid")
+	}
+	req.Query.Start = "999999999999"
+	if err := req.Validate(); err == nil {
+		t.Fatal("Query.Start is invalid")
+	}
+	req.Query.Start = "1123123123123"
+	if err := req.Validate(); err == nil {
+		t.Fatal("Query.End is invalid")
+	}
+	req.Query.End = req.Query.Start
+	if err := req.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGetResourceApplicationTrendReqQuery_GetInterval(t *testing.T) {
+	var query = new(apistructs.GetResourceApplicationTrendReqQuery)
+	query.Interval = "WEEK"
+	if query.GetInterval() != "week" {
+		t.Fatal("error interval")
+	}
+	query.Interval = "other_interval"
+	if query.GetInterval() != "day" {
+		t.Fatal("error interval")
+	}
+}

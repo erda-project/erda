@@ -14,7 +14,11 @@
 
 package apistructs
 
-import "time"
+import (
+	"strconv"
+	"strings"
+	"time"
+)
 
 // ProjectResourceDailyModel is the model cmp_prject_resource_daily
 type ProjectResourceDailyModel struct {
@@ -41,12 +45,8 @@ func (m ProjectResourceDailyModel) TableName() string {
 	return "cmp_project_resource_daily"
 }
 
-func (m ProjectResourceDailyModel) CreatedDay() string {
-	return m.CreatedAt.Format("2006-01-02")
-}
-
-func (m ProjectResourceDailyModel) UpdatedDay() string {
-	return m.UpdatedAt.Format("2006-01-02")
+func (m ProjectResourceDailyModel) CreatedAtBy(interval string) string {
+	return getTimeKey(m.CreatedAt, interval)
 }
 
 //ClusterResourceDailyModel is the model cmp_cluster_resource_daily
@@ -104,4 +104,22 @@ type ApplicationResourceDailyModel struct {
 
 func (ApplicationResourceDailyModel) TableName() string {
 	return "cmp_application_resource_daily"
+}
+
+func (m ApplicationResourceDailyModel) CreateAtBy(interval string) string {
+	return getTimeKey(m.CreatedAt, interval)
+}
+
+func getTimeKey(t time.Time, interval string) string {
+	switch strings.ToLower(interval) {
+	case "week":
+		year, week := t.ISOWeek()
+		return strconv.FormatInt(int64(year), 10) + "-" + strconv.FormatInt(int64(week), 10)
+	case "month":
+		year := t.Year()
+		month := t.Month()
+		return strconv.FormatInt(int64(year), 10) + "-" + strconv.FormatInt(int64(month), 10)
+	default:
+		return t.Format("2006-01-02")
+	}
 }

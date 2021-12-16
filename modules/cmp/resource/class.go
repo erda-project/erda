@@ -471,6 +471,7 @@ func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.Tren
 		start, _   = request.Query.GetStart()
 		end, _     = request.Query.GetEnd()
 		scopeID, _ = request.Query.GetScopeID()
+		interval   = request.Query.GetInterval()
 	)
 	td.Name = r.I18n(langCodes, "project trend")
 	td.XAxis = echarts.XAxis{
@@ -509,10 +510,9 @@ func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.Tren
 		return td, err
 	}
 
-	keyF := genKeyF(request.Query.GetInterval())
 	var records = make(map[string][]apistructs.ProjectResourceDailyModel)
 	for _, record := range projectDailies {
-		key := keyF(record.CreatedAt)
+		key := record.CreatedAtBy(interval)
 		records[key] = append(records[key], *record)
 	}
 	for key, days := range records {
@@ -543,24 +543,4 @@ func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.Tren
 	}
 
 	return td, nil
-}
-
-func genKeyF(interval string) func(t time.Time) string {
-	switch interval {
-	case "week":
-		return func(t time.Time) string {
-			year, week := t.ISOWeek()
-			return strconv.FormatInt(int64(year), 10) + "-" + strconv.FormatInt(int64(week), 10)
-		}
-	case "month":
-		return func(t time.Time) string {
-			year := t.Year()
-			month := t.Month()
-			return strconv.FormatInt(int64(year), 10) + "-" + strconv.FormatInt(int64(month), 10)
-		}
-	default:
-		return func(t time.Time) string {
-			return t.Format("2006-01-02")
-		}
-	}
 }

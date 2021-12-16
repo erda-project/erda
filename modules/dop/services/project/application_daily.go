@@ -109,6 +109,7 @@ func (p *Project) GetApplicationTrend(ctx context.Context, request *apistructs.G
 		applicationID, _ = request.Query.GetApplicationID()
 		start, _         = request.Query.GetStart()
 		end, _           = request.Query.GetEnd()
+		interval         = request.Query.GetInterval()
 		dailies          []*apistructs.ApplicationResourceDailyModel
 	)
 	td.Name = p.trans.Text(langCodes, "applications trend")
@@ -152,10 +153,9 @@ func (p *Project) GetApplicationTrend(ctx context.Context, request *apistructs.G
 		return nil, err
 	}
 
-	keyF := genKeyF(strings.ToLower(request.Query.GetInterval()))
 	var records = make(map[string][]apistructs.ApplicationResourceDailyModel)
 	for _, record := range dailies {
-		key := keyF(record.CreatedAt)
+		key := record.CreateAtBy(interval)
 		records[key] = append(records[key], *record)
 	}
 	for key, days := range records {
@@ -203,24 +203,4 @@ func (p *Project) GetApplicationTrend(ctx context.Context, request *apistructs.G
 	}
 
 	return td, nil
-}
-
-func genKeyF(interval string) func(t time.Time) string {
-	switch interval {
-	case "week":
-		return func(t time.Time) string {
-			year, week := t.ISOWeek()
-			return strconv.FormatInt(int64(year), 10) + "-" + strconv.FormatInt(int64(week), 10)
-		}
-	case "month":
-		return func(t time.Time) string {
-			year := t.Year()
-			month := t.Month()
-			return strconv.FormatInt(int64(year), 10) + "-" + strconv.FormatInt(int64(month), 10)
-		}
-	default:
-		return func(t time.Time) string {
-			return t.Format("2006-01-02")
-		}
-	}
 }
