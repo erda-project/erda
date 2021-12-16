@@ -24,7 +24,13 @@ import (
 	perm "github.com/erda-project/erda/pkg/common/permission"
 )
 
+type View struct {
+	ViewType string   `file:"type"`
+	Charts   []string `file:"charts"`
+}
+
 type config struct {
+	View []*View
 }
 
 // +provider
@@ -35,6 +41,15 @@ type provider struct {
 	apmServiceService *apmServiceService
 	Metric            metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 	Perm              perm.Interface               `autowired:"permission"`
+}
+
+func GetView(c *config, key string) *View {
+	for _, v := range c.View {
+		if v.ViewType == key {
+			return v
+		}
+	}
+	return nil
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

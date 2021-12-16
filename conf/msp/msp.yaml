@@ -228,6 +228,18 @@ erda.msp.tenant:
 erda.msp.tenant.project:
 
 erda.msp.apm.service:
+  view:
+  - type: "service_overview"
+    charts:
+     - "rps"
+     - "avgDuration"
+     - "errorRate"
+  - type: "topology_service_node"
+    charts:
+     - "rps"
+     - "avgDuration"
+     - "httpCode"
+     - "errorRate"
 
 #resource deploy related
 erda.msp.resource:

@@ -13,6 +13,14 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
+var _ json.Marshaler = (*GetServiceOverviewTopRequest)(nil)
+var _ json.Unmarshaler = (*GetServiceOverviewTopRequest)(nil)
+var _ json.Marshaler = (*GetServiceOverviewTopResponse)(nil)
+var _ json.Unmarshaler = (*GetServiceOverviewTopResponse)(nil)
+var _ json.Marshaler = (*GetServiceCountRequest)(nil)
+var _ json.Unmarshaler = (*GetServiceCountRequest)(nil)
+var _ json.Marshaler = (*GetServiceCountResponse)(nil)
+var _ json.Unmarshaler = (*GetServiceCountResponse)(nil)
 var _ json.Marshaler = (*GetServiceAnalyzerOverviewRequest)(nil)
 var _ json.Unmarshaler = (*GetServiceAnalyzerOverviewRequest)(nil)
 var _ json.Marshaler = (*GetServiceAnalyzerOverviewResponse)(nil)
@@ -23,12 +31,90 @@ var _ json.Marshaler = (*GetServicesRequest)(nil)
 var _ json.Unmarshaler = (*GetServicesRequest)(nil)
 var _ json.Marshaler = (*GetServicesResponse)(nil)
 var _ json.Unmarshaler = (*GetServicesResponse)(nil)
+var _ json.Marshaler = (*TopTable)(nil)
+var _ json.Unmarshaler = (*TopTable)(nil)
 var _ json.Marshaler = (*Chart)(nil)
 var _ json.Unmarshaler = (*Chart)(nil)
+var _ json.Marshaler = (*ServiceTop)(nil)
+var _ json.Unmarshaler = (*ServiceTop)(nil)
 var _ json.Marshaler = (*ServiceChart)(nil)
 var _ json.Unmarshaler = (*ServiceChart)(nil)
 var _ json.Marshaler = (*Service)(nil)
 var _ json.Unmarshaler = (*Service)(nil)
+var _ json.Marshaler = (*AggregateMetric)(nil)
+var _ json.Unmarshaler = (*AggregateMetric)(nil)
+
+// GetServiceOverviewTopRequest implement json.Marshaler.
+func (m *GetServiceOverviewTopRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetServiceOverviewTopRequest implement json.Marshaler.
+func (m *GetServiceOverviewTopRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetServiceOverviewTopResponse implement json.Marshaler.
+func (m *GetServiceOverviewTopResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetServiceOverviewTopResponse implement json.Marshaler.
+func (m *GetServiceOverviewTopResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetServiceCountRequest implement json.Marshaler.
+func (m *GetServiceCountRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetServiceCountRequest implement json.Marshaler.
+func (m *GetServiceCountRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetServiceCountResponse implement json.Marshaler.
+func (m *GetServiceCountResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetServiceCountResponse implement json.Marshaler.
+func (m *GetServiceCountResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
 
 // GetServiceAnalyzerOverviewRequest implement json.Marshaler.
 func (m *GetServiceAnalyzerOverviewRequest) MarshalJSON() ([]byte, error) {
@@ -120,6 +206,24 @@ func (m *GetServicesResponse) UnmarshalJSON(b []byte) error {
 	}).Unmarshal(b, m)
 }
 
+// TopTable implement json.Marshaler.
+func (m *TopTable) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// TopTable implement json.Marshaler.
+func (m *TopTable) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
 // Chart implement json.Marshaler.
 func (m *Chart) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
@@ -133,6 +237,24 @@ func (m *Chart) MarshalJSON() ([]byte, error) {
 
 // Chart implement json.Marshaler.
 func (m *Chart) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ServiceTop implement json.Marshaler.
+func (m *ServiceTop) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ServiceTop implement json.Marshaler.
+func (m *ServiceTop) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
@@ -169,6 +291,24 @@ func (m *Service) MarshalJSON() ([]byte, error) {
 
 // Service implement json.Marshaler.
 func (m *Service) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// AggregateMetric implement json.Marshaler.
+func (m *AggregateMetric) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// AggregateMetric implement json.Marshaler.
+func (m *AggregateMetric) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
