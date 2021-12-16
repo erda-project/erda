@@ -81,6 +81,9 @@ func (e *Endpoints) processIssueEvent(req apistructs.IssueEvent) error {
 			"issue_title": req.Content.Title,
 			"content":     req.Content.Content,
 			"atUserIDs":   req.Content.AtUserIDs,
+			"orgName":     req.Content.Params["orgName"],
+			"projectName": req.Content.Params["projectName"],
+			"operator":    req.Content.Params["operator"],
 		}
 		marshal, _ := json.Marshal(params)
 		logrus.Debugf("issue params :%s", string(marshal))
@@ -134,6 +137,9 @@ func (e *Endpoints) sendIssueEventToSpecificRecipient(req apistructs.IssueEvent)
 	params["content"] = req.Content.Content
 	params["atUserIDs"] = req.Content.AtUserIDs
 	params["issue_title"] = req.Content.Title
+	params["orgName"] = req.Content.Params["orgName"]
+	params["projectName"] = req.Content.Params["projectName"]
+	params["operator"] = req.Content.Params["operator"]
 
 	var emailAddrs []string
 	var mobiles []string

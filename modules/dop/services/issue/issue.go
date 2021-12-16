@@ -221,6 +221,12 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		return nil, err
 	}
 
+	go func() {
+		if err := svc.stream.CreateIssueEvent(&streamReq); err != nil {
+			logrus.Errorf("create issue %d event err: %v", streamReq.IssueID, err)
+		}
+	}()
+
 	go monitor.MetricsIssueById(int(create.ID), svc.db, svc.uc, svc.bdl)
 
 	return &create, nil
@@ -925,6 +931,12 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 		}
 	}()
 
+	eventReq := apistructs.IssueStreamCreateRequest{
+		IssueID:      int64(updateReq.ID),
+		Operator:     updateReq.UserID,
+		StreamTypes:  make([]apistructs.IssueStreamType, 0),
+		StreamParams: apistructs.ISTParam{},
+	}
 	for field, v := range streamFields {
 		streamReq := apistructs.IssueStreamCreateRequest{
 			IssueID:  int64(updateReq.ID),
@@ -945,17 +957,26 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 			}
 
 			streamReq.StreamType = apistructs.ISTTransferState
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTTransferState)
 			streamReq.StreamParams = apistructs.ISTParam{CurrentState: CurrentState.Name, NewState: NewState.Name}
+			eventReq.StreamParams.CurrentState = CurrentState.Name
+			eventReq.StreamParams.NewState = NewState.Name
 		case "plan_started_at":
 			streamReq.StreamType = apistructs.ISTChangePlanStartedAt
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangePlanStartedAt)
 			streamReq.StreamParams = apistructs.ISTParam{
 				CurrentPlanStartedAt: formatTime(v[0]),
 				NewPlanStartedAt:     formatTime(v[1])}
+			eventReq.StreamParams.CurrentPlanStartedAt = formatTime(v[0])
+			eventReq.StreamParams.NewPlanStartedAt = formatTime(v[1])
 		case "plan_finished_at":
 			streamReq.StreamType = apistructs.ISTChangePlanFinishedAt
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangePlanFinishedAt)
 			streamReq.StreamParams = apistructs.ISTParam{
 				CurrentPlanFinishedAt: formatTime(v[0]),
 				NewPlanFinishedAt:     formatTime(v[1])}
+			eventReq.StreamParams.CurrentPlanFinishedAt = formatTime(v[0])
+			eventReq.StreamParams.NewPlanFinishedAt = formatTime(v[1])
 		case "owner":
 			userIds := make([]string, 0, len(v))
 			for _, uid := range v {
@@ -969,7 +990,10 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 				return errors.Errorf("failed to fetch userInfo when create issue stream, %v", v)
 			}
 			streamReq.StreamType = apistructs.ISTChangeOwner
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangeOwner)
 			streamReq.StreamParams = apistructs.ISTParam{CurrentOwner: users[0].Nick, NewOwner: users[1].Nick}
+			eventReq.StreamParams.CurrentOwner = users[0].Nick
+			eventReq.StreamParams.NewOwner = users[1].Nick
 		case "stage":
 			issue, err := svc.db.GetIssue(int64(updateReq.ID))
 			if err != nil {
@@ -998,25 +1022,36 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 				NewStage:     v[1].(string)}
 		case "priority":
 			streamReq.StreamType = apistructs.ISTChangePriority
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangePriority)
 			streamReq.StreamParams = apistructs.ISTParam{
 				CurrentPriority: v[0].(apistructs.IssuePriority).GetZhName(),
 				NewPriority:     v[1].(apistructs.IssuePriority).GetZhName()}
+			eventReq.StreamParams.CurrentPriority = v[0].(apistructs.IssuePriority).GetZhName()
+			eventReq.StreamParams.NewPriority = v[1].(apistructs.IssuePriority).GetZhName()
 		case "complexity":
 			streamReq.StreamType = apistructs.ISTChangeComplexity
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangeComplexity)
 			streamReq.StreamParams = apistructs.ISTParam{
 				CurrentComplexity: v[0].(apistructs.IssueComplexity).GetZhName(),
 				NewComplexity:     v[1].(apistructs.IssueComplexity).GetZhName()}
+			eventReq.StreamParams.CurrentComplexity = v[0].(apistructs.IssueComplexity).GetZhName()
+			eventReq.StreamParams.NewComplexity = v[1].(apistructs.IssueComplexity).GetZhName()
 		case "severity":
 			streamReq.StreamType = apistructs.ISTChangeSeverity
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangeSeverity)
 			streamReq.StreamParams = apistructs.ISTParam{
 				CurrentSeverity: v[0].(apistructs.IssueSeverity).GetZhName(),
 				NewSeverity:     v[1].(apistructs.IssueSeverity).GetZhName()}
+			eventReq.StreamParams.CurrentSeverity = v[0].(apistructs.IssueSeverity).GetZhName()
+			eventReq.StreamParams.NewSeverity = v[1].(apistructs.IssueSeverity).GetZhName()
 		case "content":
 			// 不显示修改详情
 			streamReq.StreamType = apistructs.ISTChangeContent
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangeContent)
 		case "label":
 			// 不显示修改详情
 			streamReq.StreamType = apistructs.ISTChangeLabel
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangeLabel)
 		case "assignee":
 			userIds := make([]string, 0, len(v))
 			for _, uid := range v {
@@ -1030,20 +1065,27 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 				return errors.Errorf("failed to fetch userInfo when create issue stream, %v", v)
 			}
 			streamReq.StreamType = apistructs.ISTChangeAssignee
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangeAssignee)
 			streamReq.StreamParams = apistructs.ISTParam{CurrentAssignee: users[0].Nick, NewAssignee: users[1].Nick}
+			eventReq.StreamParams.CurrentAssignee = users[0].Nick
+			eventReq.StreamParams.NewAssignee = users[1].Nick
 		case "iteration_id":
 			streamType, params, err := svc.handleIssueStreamChangeIteration(updateReq.Lang, v[0].(int64), v[1].(int64))
 			if err != nil {
 				return err
 			}
 			streamReq.StreamType = streamType
+			eventReq.StreamTypes = append(eventReq.StreamTypes, streamType)
 			streamReq.StreamParams = params
+			eventReq.StreamParams.CurrentIteration = params.CurrentIteration
+			eventReq.StreamParams.NewIteration = params.NewIteration
 		case "man_hour":
 			// 工时
 			var currentManHour, newManHour apistructs.IssueManHour
 			json.Unmarshal([]byte(v[0].(string)), &currentManHour)
 			json.Unmarshal([]byte(v[1].(string)), &newManHour)
 			streamReq.StreamType = apistructs.ISTChangeManHour
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangeManHour)
 			streamReq.StreamParams = apistructs.ISTParam{
 				CurrentEstimateTime:  currentManHour.GetFormartTime("EstimateTime"),
 				CurrentElapsedTime:   currentManHour.GetFormartTime("ElapsedTime"),
@@ -1056,6 +1098,16 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 				NewStartTime:         newManHour.StartTime,
 				NewWorkContent:       newManHour.WorkContent,
 			}
+			eventReq.StreamParams.CurrentEstimateTime = currentManHour.GetFormartTime("EstimateTime")
+			eventReq.StreamParams.CurrentElapsedTime = currentManHour.GetFormartTime("ElapsedTime")
+			eventReq.StreamParams.CurrentRemainingTime = currentManHour.GetFormartTime("RemainingTime")
+			eventReq.StreamParams.CurrentStartTime = currentManHour.StartTime
+			eventReq.StreamParams.CurrentWorkContent = currentManHour.WorkContent
+			eventReq.StreamParams.NewEstimateTime = newManHour.GetFormartTime("EstimateTime")
+			eventReq.StreamParams.NewElapsedTime = newManHour.GetFormartTime("ElapsedTime")
+			eventReq.StreamParams.NewRemainingTime = newManHour.GetFormartTime("RemainingTime")
+			eventReq.StreamParams.NewStartTime = newManHour.StartTime
+			eventReq.StreamParams.NewWorkContent = newManHour.WorkContent
 		default:
 			continue
 		}
@@ -1065,6 +1117,12 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 			logrus.Errorf("[alert] failed to create issueStream when update issue, req: %+v, err: %v", streamReq, err)
 		}
 	}
+	// send issue create or update event
+	go func() {
+		if err := svc.stream.CreateIssueEvent(&eventReq); err != nil {
+			logrus.Errorf("create issue %d event err: %v", eventReq.IssueID, err)
+		}
+	}()
 
 	return nil
 }
