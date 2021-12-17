@@ -373,6 +373,7 @@ func genProps(input, execute string, replaceOpts ...replaceOption) cptype.Compon
 	var propsI cptype.ComponentProps
 	if err := json.Unmarshal([]byte(propsJson), &propsI); err != nil {
 		logrus.Errorf("init props name=testplan component=formModal propsType=CreateTestPlan err: errMsg: %v", err)
+		return cptype.ComponentProps{}
 	}
 
 	return propsI
