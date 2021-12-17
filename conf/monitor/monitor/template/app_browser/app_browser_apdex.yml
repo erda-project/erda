@@ -1,0 +1,45 @@
+- name: "用户体验告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    plt: "time:s"
+  title: |
+    【({{doc_path}}) 接口用户体验告警】
+  template: |
+    【用户体验告警】
+
+    事件: 访问时间过长
+
+    时间: {{timestamp}}
+
+    域名: {{host}}
+
+    页面: {{doc_path}}
+
+    平均响应时间: {{plt_avg}} ms
+
+    tk: {{tk}}
+
+    告警级别: {{level}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+- name: "用户体验告警"
+  trigger: "alert"
+  target: "sms"
+  formats:
+    plt: "time:s"
+  title: |
+    【({{doc_path}}) 接口用户体验告警】
+  template: |
+    {{doc_path}} 因访问时间过长触发用户体验告警，tk：{{tk}}，平均响应时间: {{plt_avg}} ms，告警级别: {{level}}
+- name: "用户体验告警"
+  trigger: "alert"
+  target: "vms"
+  formats:
+    plt: "time:s"
+  title: |
+    【({{doc_path}}) 接口用户体验告警】
+  template: |
+    因访问时间过长触发用户体验告警，tk：{{tk}}，平均响应时间: {{plt_avg}} ms，告警级别: {{level}}

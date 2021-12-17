@@ -20,8 +20,8 @@ const _ = http.SupportPackageIsVersion1
 type ExpressionServiceHandler interface {
 	// GET /api/org/expression
 	GetAllEnabledExpression(context.Context, *GetAllEnabledExpressionRequest) (*GetAllEnabledExpressionResponse, error)
-	// GET /api/org/rules
-	GetAllAlertRules(context.Context, *GetAllAlertRulesRequest) (*GetAllAlertRulesResponse, error)
+	// GET /api/org/template
+	GetAllAlertTemplate(context.Context, *GetAllAlertTemplateRequest) (*GetAllAlertTemplateResponse, error)
 }
 
 // RegisterExpressionServiceHandler register ExpressionServiceHandler to http.Router.
@@ -83,13 +83,13 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 		)
 	}
 
-	add_GetAllAlertRules := func(method, path string, fn func(context.Context, *GetAllAlertRulesRequest) (*GetAllAlertRulesResponse, error)) {
+	add_GetAllAlertTemplate := func(method, path string, fn func(context.Context, *GetAllAlertTemplateRequest) (*GetAllAlertTemplateResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*GetAllAlertRulesRequest))
+			return fn(ctx, req.(*GetAllAlertTemplateRequest))
 		}
-		var GetAllAlertRules_info transport.ServiceInfo
+		var GetAllAlertTemplate_info transport.ServiceInfo
 		if h.Interceptor != nil {
-			GetAllAlertRules_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAllAlertRules", srv)
+			GetAllAlertTemplate_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAllAlertTemplate", srv)
 			handler = h.Interceptor(handler)
 		}
 		r.Add(method, path, encodeFunc(
@@ -97,10 +97,10 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 				ctx := http.WithRequest(r.Context(), r)
 				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAllAlertRules_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAllAlertTemplate_info)
 				}
 				r = r.WithContext(ctx)
-				var in GetAllAlertRulesRequest
+				var in GetAllAlertTemplateRequest
 				if err := h.Decode(r, &in); err != nil {
 					return nil, err
 				}
@@ -120,5 +120,5 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 	}
 
 	add_GetAllEnabledExpression("GET", "/api/org/expression", srv.GetAllEnabledExpression)
-	add_GetAllAlertRules("GET", "/api/org/rules", srv.GetAllAlertRules)
+	add_GetAllAlertTemplate("GET", "/api/org/template", srv.GetAllAlertTemplate)
 }

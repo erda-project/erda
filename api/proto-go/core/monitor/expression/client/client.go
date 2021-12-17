@@ -41,6 +41,6 @@ func (s *expressionServiceWrapper) GetAllEnabledExpression(ctx context.Context, 
 	return s.client.GetAllEnabledExpression(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
-func (s *expressionServiceWrapper) GetAllAlertRules(ctx context.Context, req *pb.GetAllAlertRulesRequest) (*pb.GetAllAlertRulesResponse, error) {
-	return s.client.GetAllAlertRules(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+func (s *expressionServiceWrapper) GetAllAlertTemplate(ctx context.Context, req *pb.GetAllAlertTemplateRequest) (*pb.GetAllAlertTemplateResponse, error) {
+	return s.client.GetAllAlertTemplate(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

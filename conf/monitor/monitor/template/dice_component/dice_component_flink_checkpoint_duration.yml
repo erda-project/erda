@@ -1,0 +1,68 @@
+- name: "平台组件Flink任务checkpoint延迟异常告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  title: |
+    【平台组件Flink任务checkpoint延迟异常告警】
+  template: |
+    【平台组件Flink任务checkpoint延迟异常告警】
+
+    延迟: {{lastCheckpointDuration_value}}ms
+
+    任务ID： {{job_id}}
+
+    集群: {{cluster_name}}
+
+    机器: {{host_ip}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "平台组件Flink任务checkpoint延迟异常告警"
+  trigger: "alert"
+  target: "sms"
+  title: |
+    【平台组件Flink任务checkpoint延迟异常告警】
+  template: |
+    触发平台组件Flink任务checkpoint延迟异常，延迟: {{lastCheckpointDuration_value}}ms，告警级别: {{level}}
+- name: "平台组件Flink任务checkpoint延迟异常告警"
+  trigger: "alert"
+  target: "vms"
+  title: |
+    【平台组件Flink任务checkpoint延迟异常告警】
+  template: |
+    触发平台组件Flink任务checkpoint延迟异常，延迟: {{lastCheckpointDuration_value}}ms，告警级别: {{level}}
+- name: "平台组件Flink任务checkpoint延迟异常恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  title: |
+    【平台组件Flink任务checkpoint延迟异恢复】
+  template: |
+    【平台组件Flink任务checkpoint延迟异常恢复】
+
+    任务ID： {{job_id}}
+
+    集群: {{cluster_name}}
+
+    机器: {{host_ip}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "平台组件Flink任务checkpoint延迟异常恢复"
+  trigger: "recover"
+  target: "sms"
+  title: |
+    【平台组件Flink任务checkpoint延迟异恢复】
+  template: |
+    {{job_id}}触发平台组件Flink任务checkpoint延迟异常恢复
+- name: "平台组件Flink任务checkpoint延迟异常恢复"
+  trigger: "recover"
+  target: "vms"
+  title: |
+    【平台组件Flink任务checkpoint延迟异恢复】
+  template: |
+    {{job_id}}平台组件Flink任务checkpoint延迟异常恢复

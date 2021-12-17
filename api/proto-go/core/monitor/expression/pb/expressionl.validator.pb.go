@@ -43,45 +43,20 @@ func (this *Expression) Validate() error {
 	// Validation of proto3 map<> fields is unsupported.
 	return nil
 }
-func (this *GetAllAlertRulesRequest) Validate() error {
+func (this *GetAllAlertTemplateRequest) Validate() error {
 	return nil
 }
-func (this *GetAllAlertRulesResponse) Validate() error {
-	if this.Data != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+func (this *GetAllAlertTemplateResponse) Validate() error {
+	for _, item := range this.Data {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+			}
 		}
 	}
 	return nil
 }
-func (this *AllAlertRules) Validate() error {
-	for _, item := range this.AlertRule {
-		if item != nil {
-			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("AlertRule", err)
-			}
-		}
-	}
-	for _, item := range this.Operators {
-		if item != nil {
-			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("Operators", err)
-			}
-		}
-	}
-	for _, item := range this.Aggregator {
-		if item != nil {
-			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("Aggregator", err)
-			}
-		}
-	}
-	for _, item := range this.Silence {
-		if item != nil {
-			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("Silence", err)
-			}
-		}
-	}
+func (this *AlertTemplate) Validate() error {
+	// Validation of proto3 map<> fields is unsupported.
 	return nil
 }

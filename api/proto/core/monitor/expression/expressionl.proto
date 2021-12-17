@@ -24,12 +24,12 @@ service ExpressionService {
       path: "/api/org/expression"
     };
   }
-  rpc GetAllAlertRules (GetAllAlertRulesRequest) returns (GetAllAlertRulesResponse) {
+  rpc GetAllAlertTemplate (GetAllAlertTemplateRequest) returns (GetAllAlertTemplateResponse) {
     option (google.api.http)     = {
-      get: "/api/org/rules"
+      get: "/api/org/template"
     };
     option (erda.common.openapi) = {
-      path: "/api/org/rules"
+      path: "/api/org/template"
     };
   }
 }
@@ -53,18 +53,21 @@ message Expression {
   int64                              alertId    = 6 [json_name = "alert_id"];
 }
 
-message GetAllAlertRulesRequest {
-  string scope = 1;
+message GetAllAlertTemplateRequest {}
+
+message GetAllAlertTemplateResponse {
+  repeated AlertTemplate data = 1;
 }
 
-message GetAllAlertRulesResponse {
-  AllAlertRules data = 1;
-}
-
-message AllAlertRules {
-  repeated erda.core.monitor.alert.AlertTypeRule     alertRule  = 1;
-  repeated int64                                 windows    = 2;
-  repeated erda.core.monitor.alert.Operator      operators  = 3;
-  repeated erda.core.monitor.alert.DisplayKey    aggregator = 4;
-  repeated erda.core.monitor.alert.NotifySilence silence    = 5;
+message AlertTemplate {
+  string                             name       = 1;
+  string                             alertType  = 2 [json_name = "alert_type"];
+  string                             alertIndex = 3 [json_name = "alert_index"];
+  string                             target     = 4;
+  string                             trigger    = 5;
+  string                             title      = 6;
+  string                             template   = 7;
+  map<string, google.protobuf.Value> formats    = 8;
+  string                             version    = 9;
+  bool                               enable     = 10;
 }

@@ -1,0 +1,109 @@
+- name: "ElasticSearch实例CPU使用率异常告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    cpu_usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+    container_id: "string:6"
+  title: |
+    【ElasticSearch实例CPU使用率告警】
+  template: |
+    【ElasticSearch实例CPU使用率异常告警】
+
+    组件: {{addon_type}}
+
+    实例: {{pod_namespace}} - {{pod_name}} - {{pod_ip}}
+
+    CPU平均使用率: {{cpu_usage_percent_avg}}
+
+    CPU限制: {{cpu_limit_value}}核
+
+    CPU分配: {{cpu_allocation_value}}核
+
+    集群 / 机器: {{cluster_name}} / {{host_ip}}
+
+    容器ID: {{container_id}}
+
+    机器: {{host_ip}}
+
+    组织名称: {{org_name}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+- name: "ElasticSearch实例CPU使用率异常告警"
+  trigger: "alert"
+  target: "sms"
+  formats:
+    cpu_usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+    container_id: "string:6"
+  title: |
+    【ElasticSearch实例CPU使用率告警】
+  template: |
+    {{project_name}}项目ElasticSearch实例{{pod_name}}触发CPU使用率告警，组织名称：{{org_name}}，CPU平均使用率：{{cpu_usage_percent_avg}}，告警级别：{{level}}
+- name: "ElasticSearch实例CPU使用率异常告警"
+  trigger: "alert"
+  target: "vms"
+  formats:
+    cpu_usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+    container_id: "string:6"
+  title: |
+    【ElasticSearch实例CPU使用率异常告警】
+  template: |
+    {{project_name}}项目ElasticSearch实例{{pod_name}}触发CPU使用率告警，组织名称：{{org_name}}，CPU平均使用率：{{cpu_usage_percent_avg}}，告警级别：{{level}}
+- name: "ElasticSearch实例CPU使用率异常恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    cpu_usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+    container_id: "string:6"
+  title: |
+    【ElasticSearch实例CPU使用率恢复】
+  template: |
+    【ElasticSearch实例CPU使用率恢复】
+
+    组件: {{addon_type}}
+
+    实例: {{pod_namespace}} - {{pod_name}} - {{pod_ip}}
+
+    CPU平均使用率: {{cpu_usage_percent_avg}}
+
+    集群 / 机器: {{cluster_name}} / {{host_ip}}
+
+    容器ID: {{container_id}}
+
+    机器: {{host_ip}}
+
+    组织名称: {{org_name}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "ElasticSearch实例CPU使用率异常恢复"
+  trigger: "recover"
+  target: "sms"
+  formats:
+    cpu_usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+    container_id: "string:6"
+  title: |
+    【ElasticSearch实例CPU使用率恢复】
+  template: |
+    {{project_name}}项目ElasticSearch实例{{pod_name}}CPU使用率告警恢复，组织名称：{{org_name}}，CPU平均使用率：{{cpu_usage_percent_avg}}
+- name: "ElasticSearch实例CPU使用率异常恢复"
+  trigger: "recover"
+  target: "vms"
+  formats:
+    cpu_usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+    container_id: "string:6"
+  title: |
+    【ElasticSearch实例CPU使用率恢复】
+  template: |
+    {{project_name}}项目ElasticSearch实例{{pod_name}}CPU使用率告警恢复，组织名称：{{org_name}}，CPU平均使用率：{{cpu_usage_percent_avg}}

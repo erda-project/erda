@@ -16,15 +16,14 @@ package expression
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	"github.com/jinzhu/gorm"
+	"gopkg.in/yaml.v2"
 
 	logs "github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -39,6 +38,7 @@ import (
 type config struct {
 	SystemOrgExpression   string `file:"system_org_expression"`
 	SystemMicroExpression string `file:"system_micro_expression"`
+	SystemTemplate        string `file:"system_template"`
 }
 
 type provider struct {
@@ -83,6 +83,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Register != nil {
 		pb.RegisterExpressionServiceImp(p.Register, p.expressionService, apis.Options())
 	}
+	SystemTemplate = make([]*model.Template, 0)
+	templates, err := readTemplateFile(p.Cfg.SystemTemplate)
+	if err != nil {
+		return err
+	}
+	SystemTemplate = templates
 	return nil
 }
 
@@ -108,9 +114,6 @@ func readExpressionFile(root string) ([]*model.Expression, error) {
 			f, err := ioutil.ReadFile(path)
 			var expressionModel model.Expression
 			err = json.Unmarshal(f, &expressionModel)
-			for k, v := range expressionModel.Template {
-				fmt.Println(k, "type is ", reflect.TypeOf(v))
-			}
 			if err != nil {
 				return err
 			}
@@ -125,6 +128,48 @@ func readExpressionFile(root string) ([]*model.Expression, error) {
 		}
 	}
 	return expressions, nil
+}
+
+func readTemplateFile(root string) ([]*model.Template, error) {
+	f, err := os.ReadDir(root)
+	if err != nil {
+		return nil, err
+	}
+	templates := make([]*model.Template, 0)
+	for _, pkg := range f {
+		err := filepath.Walk(filepath.Join(root, pkg.Name()), func(path string, info fs.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			if info.IsDir() {
+				dir, err := os.ReadDir(path)
+				if err != nil {
+					return err
+				}
+				f = append(f, dir...)
+				return nil
+			}
+			f, err := ioutil.ReadFile(path)
+			var templateModel []*model.Template
+			err = yaml.Unmarshal(f, &templateModel)
+			if err != nil {
+				return err
+			}
+			for _, temp := range templateModel {
+				var t *model.Template
+				t = temp
+				t.AlertIndex = strings.TrimSuffix(info.Name(), ".yml")
+				allRoute := strings.Split(path, "/")
+				t.AlertType = allRoute[len(allRoute)-2]
+				templates = append(templates, t)
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return templates, nil
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {

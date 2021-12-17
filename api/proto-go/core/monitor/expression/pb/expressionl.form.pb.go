@@ -16,9 +16,9 @@ var _ urlenc.URLValuesUnmarshaler = (*GetAllEnabledExpressionRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetAllEnabledExpressionResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*EnabledExpression)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Expression)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*GetAllAlertRulesRequest)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*GetAllAlertRulesResponse)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*AllAlertRules)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAllAlertTemplateRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAllAlertTemplateResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AlertTemplate)(nil)
 
 // GetAllEnabledExpressionRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetAllEnabledExpressionRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -66,62 +66,43 @@ func (m *Expression) UnmarshalURLValues(prefix string, values url.Values) error 
 	return nil
 }
 
-// GetAllAlertRulesRequest implement urlenc.URLValuesUnmarshaler.
-func (m *GetAllAlertRulesRequest) UnmarshalURLValues(prefix string, values url.Values) error {
-	for key, vals := range values {
-		if len(vals) > 0 {
-			switch prefix + key {
-			case "scope":
-				m.Scope = vals[0]
-			}
-		}
-	}
+// GetAllAlertTemplateRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetAllAlertTemplateRequest) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }
 
-// GetAllAlertRulesResponse implement urlenc.URLValuesUnmarshaler.
-func (m *GetAllAlertRulesResponse) UnmarshalURLValues(prefix string, values url.Values) error {
-	for key, vals := range values {
-		if len(vals) > 0 {
-			switch prefix + key {
-			case "data":
-				if m.Data == nil {
-					m.Data = &AllAlertRules{}
-				}
-			case "data.windows":
-				if m.Data == nil {
-					m.Data = &AllAlertRules{}
-				}
-				list := make([]int64, 0, len(vals))
-				for _, text := range vals {
-					val, err := strconv.ParseInt(text, 10, 64)
-					if err != nil {
-						return err
-					}
-					list = append(list, val)
-				}
-				m.Data.Windows = list
-			}
-		}
-	}
+// GetAllAlertTemplateResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetAllAlertTemplateResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }
 
-// AllAlertRules implement urlenc.URLValuesUnmarshaler.
-func (m *AllAlertRules) UnmarshalURLValues(prefix string, values url.Values) error {
+// AlertTemplate implement urlenc.URLValuesUnmarshaler.
+func (m *AlertTemplate) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "windows":
-				list := make([]int64, 0, len(vals))
-				for _, text := range vals {
-					val, err := strconv.ParseInt(text, 10, 64)
-					if err != nil {
-						return err
-					}
-					list = append(list, val)
+			case "name":
+				m.Name = vals[0]
+			case "alertType":
+				m.AlertType = vals[0]
+			case "alertIndex":
+				m.AlertIndex = vals[0]
+			case "target":
+				m.Target = vals[0]
+			case "trigger":
+				m.Trigger = vals[0]
+			case "title":
+				m.Title = vals[0]
+			case "template":
+				m.Template = vals[0]
+			case "version":
+				m.Version = vals[0]
+			case "enable":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
 				}
-				m.Windows = list
+				m.Enable = val
 			}
 		}
 	}

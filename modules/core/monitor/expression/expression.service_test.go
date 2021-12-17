@@ -23,6 +23,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/jinzhu/gorm"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/expression/pb"
 	alertdb "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/pkg/encoding/jsonmap"
@@ -103,6 +104,57 @@ func Test_expressionService_GetAllEnabledExpression(t *testing.T) {
 			_, err := e.GetAllEnabledExpression(tt.args.ctx, tt.args.request)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetAllEnabledExpression() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func Test_expressionService_GetAllAlertTemplate(t *testing.T) {
+	type fields struct {
+		p *provider
+	}
+	type args struct {
+		ctx     context.Context
+		request *pb.GetAllAlertTemplateRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *pb.GetAllAlertTemplateResponse
+		wantErr bool
+	}{
+		{
+			name: "test case",
+			fields: fields{
+				p: &provider{
+					Cfg:                  nil,
+					Log:                  nil,
+					Register:             nil,
+					t:                    &i18n.NopTranslator{},
+					DB:                   nil,
+					alertDB:              &alertdb.AlertExpressionDB{&gorm.DB{}},
+					metricDB:             &alertdb.MetricExpressionDB{&gorm.DB{}},
+					customizeAlertRuleDB: &alertdb.CustomizeAlertRuleDB{&gorm.DB{}},
+					expressionService:    nil,
+				},
+			},
+			args: args{
+				ctx:     nil,
+				request: &pb.GetAllAlertTemplateRequest{},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &expressionService{
+				p: tt.fields.p,
+			}
+			_, err := e.GetAllAlertTemplate(tt.args.ctx, tt.args.request)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetAllAlertTemplate() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})

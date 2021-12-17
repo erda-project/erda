@@ -19,10 +19,22 @@ import "github.com/erda-project/erda/pkg/encoding/jsonmap"
 var WindowKeys = []int64{1, 3, 5, 10, 15, 30}
 
 type Expression struct {
-	Name       string          `json:"name" yaml:"name"`
-	AlertScope string          `json:"alert_scope" yaml:"alert_scope"`
-	AlertType  string          `json:"alert_type" yaml:"alert_type"`
+	Name       string          `json:"name"`
+	AlertScope string          `json:"alert_scope"`
+	AlertType  string          `json:"alert_type"`
 	AlertIndex string          `json:"alert_index"`
-	Template   jsonmap.JSONMap `json:"template" yaml:"template"`
-	Attributes jsonmap.JSONMap `json:"attributes" yaml:"attributes"`
+	Template   jsonmap.JSONMap `json:"template"`
+	Attributes jsonmap.JSONMap `json:"attributes"`
+}
+
+type Template struct {
+	Name       string                 `json:"name"`
+	AlertType  string                 `json:"alert_type"`
+	AlertIndex string                 `json:"alert_index"`
+	Target     string                 `json:"target"`
+	Trigger    string                 `json:"trigger"`
+	Title      string                 `json:"title"`
+	Template   string                 `json:"template"`
+	Formats    map[string]interface{} `json:"formats"`
+	Version    string                 `json:"version"`
 }
