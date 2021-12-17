@@ -712,6 +712,10 @@ func (fsm *DeployFSMContext) requestAddons() error {
 
 	var baseAddons []apistructs.AddonCreateItem
 	for name, a := range fsm.Spec.AddOns {
+		if a == nil {
+			fsm.d.Log(fmt.Sprintf("addon information is empty, jump over, addon name: %s", name))
+			continue
+		}
 		plan := strings.SplitN(a.Plan, ":", 2)
 		if len(plan) != 2 {
 			return errors.Errorf("addon plan information is not compliant")
