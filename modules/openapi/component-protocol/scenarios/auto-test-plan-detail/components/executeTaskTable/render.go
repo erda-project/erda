@@ -57,11 +57,6 @@ type meta struct {
 	Target RowData `json:"target"`
 }
 
-const (
-	DefaultPageSize = 1000
-	DefaultPageNo   = 1
-)
-
 type Operation struct {
 	Key           string      `json:"key"`
 	Reload        bool        `json:"reload"`
@@ -180,10 +175,6 @@ func (a *ExecuteTaskTable) Render(ctx context.Context, c *apistructs.Component, 
 
 func getOperations(clickableKeys []uint64) map[string]interface{} {
 	return map[string]interface{}{
-		"changePageNo": Operation{
-			Key:    "changePageNo",
-			Reload: true,
-		},
 		"clickRow": Operation{
 			Key:           "clickRow",
 			Reload:        true,
@@ -294,24 +285,11 @@ func getStatus(req apistructs.PipelineStatus) map[string]interface{} {
 func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error {
 	lists := []map[string]interface{}{}
 	clickableKeys := []uint64{}
-	num := (a.State.PageNo - 1) * (a.State.PageSize)
-	ret := a.State.PageSize
 	a.State.Total = 0
 	stepIdx := 1
 	for _, each := range pipeline.PipelineStages {
 		a.State.Total += int64(len(each.PipelineTasks))
-		if ret == 0 {
-			continue
-		}
-		if int64(len(each.PipelineTasks)) <= num {
-			num -= int64(len(each.PipelineTasks))
-			continue
-		}
 		for _, task := range each.PipelineTasks {
-			if num > 0 {
-				num--
-				continue
-			}
 			if task.Labels == nil || len(task.Labels) == 0 {
 				list := map[string]interface{}{
 					"key":               component_key.GetKey(task.ID),
@@ -350,10 +328,6 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					"time":     a.getCostTime(task),
 				}
 				lists = append(lists, list)
-				ret--
-				if ret == 0 {
-					break
-				}
 				continue
 			}
 			switch task.Labels[apistructs.AutotestType] {
@@ -512,16 +486,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					clickableKeys = append(clickableKeys, task.ID)
 				}
 			}
-			ret--
-			if ret == 0 {
-				break
-			}
 		}
 		stepIdx++
-	}
-	if a.State.Total <= (a.State.PageNo-1)*(a.State.PageSize) && a.State.Total > 0 {
-		a.State.PageNo = DefaultPageNo
-		return a.setData(pipeline)
 	}
 	a.Data["list"] = lists
 	a.Operations = getOperations(clickableKeys)
@@ -568,9 +534,12 @@ func (a *ExecuteTaskTable) marshal(c *apistructs.Component) error {
 }
 
 func (e *ExecuteTaskTable) handlerListOperation(bdl protocol.ContextBundle, c *apistructs.Component, inParams inParams, event apistructs.ComponentEvent) error {
-
-	e.State.PageNo = DefaultPageNo
-	e.State.PageSize = DefaultPageSize
+	if e.State.PageNo == 0 {
+		e.State.PageNo = 1
+	}
+	if e.State.PageSize == 0 {
+		e.State.PageSize = 10
+	}
 
 	if e.State.PipelineDetail == nil {
 		c.Data = map[string]interface{}{}
@@ -603,6 +572,7 @@ func (e *ExecuteTaskTable) handlerClickRowOperation(bdl protocol.ContextBundle, 
 	e.State.Name = res.Meta.Target.Name
 	e.State.PipelineID = res.Meta.Target.SnippetPipelineID
 	e.State.Unfold = true
+	e.State.PageNo = 1
 	if res.Meta.Target.SnippetPipelineID == 0 {
 		return nil
 	}
