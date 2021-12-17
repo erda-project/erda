@@ -793,7 +793,7 @@ func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
 			if !strings.EqualFold(podInfo.Workspace, workspace) {
 				continue
 			}
-			if podInfo.Cluster != rc.ClusterName {
+			if podInfo.Cluster != rc.ClusterName && podInfo.Cluster != "" {
 				continue
 			}
 			rc.CPURequest += podInfo.CPURequest
