@@ -41,7 +41,7 @@ func (e *expressionService) GetAllAlertRules(ctx context.Context, request *pb.Ge
 		return nil, err
 	}
 	lang := apis.Language(ctx)
-	data, err := e.queryOrgAlertRule(lang, id, request.Scope)
+	data, err := e.queryAlertRule(lang, id, request.Scope)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (e *expressionService) GetAllAlertRules(ctx context.Context, request *pb.Ge
 	}, nil
 }
 
-func (e *expressionService) queryOrgAlertRule(lang i18n.LanguageCodes, orgID uint64, scope string) (*pb.AllAlertRules, error) {
+func (e *expressionService) queryAlertRule(lang i18n.LanguageCodes, orgID uint64, scope string) (*pb.AllAlertRules, error) {
 	rules := SystemExpressions[scope]
 	customizeRules, err := e.p.customizeAlertRuleDB.QueryEnabledByScope(scope, string(orgID))
 	if err != nil {
