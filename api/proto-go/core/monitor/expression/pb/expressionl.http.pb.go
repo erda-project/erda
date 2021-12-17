@@ -18,8 +18,10 @@ const _ = http.SupportPackageIsVersion1
 
 // ExpressionServiceHandler is the server API for ExpressionService service.
 type ExpressionServiceHandler interface {
-	// GET /api/alert/expression
+	// GET /api/org/expression
 	GetAllEnabledExpression(context.Context, *GetAllEnabledExpressionRequest) (*GetAllEnabledExpressionResponse, error)
+	// GET /api/org/rules
+	GetAllAlertRules(context.Context, *GetAllAlertRulesRequest) (*GetAllAlertRulesResponse, error)
 }
 
 // RegisterExpressionServiceHandler register ExpressionServiceHandler to http.Router.
@@ -81,5 +83,42 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 		)
 	}
 
-	add_GetAllEnabledExpression("GET", "/api/alert/expression", srv.GetAllEnabledExpression)
+	add_GetAllAlertRules := func(method, path string, fn func(context.Context, *GetAllAlertRulesRequest) (*GetAllAlertRulesResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetAllAlertRulesRequest))
+		}
+		var GetAllAlertRules_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetAllAlertRules_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAllAlertRules", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAllAlertRules_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetAllAlertRulesRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_GetAllEnabledExpression("GET", "/api/org/expression", srv.GetAllEnabledExpression)
+	add_GetAllAlertRules("GET", "/api/org/rules", srv.GetAllAlertRules)
 }

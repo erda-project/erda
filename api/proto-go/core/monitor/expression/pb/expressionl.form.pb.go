@@ -16,6 +16,9 @@ var _ urlenc.URLValuesUnmarshaler = (*GetAllEnabledExpressionRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetAllEnabledExpressionResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*EnabledExpression)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Expression)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAllAlertRulesRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAllAlertRulesResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AllAlertRules)(nil)
 
 // GetAllEnabledExpressionRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetAllEnabledExpressionRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -57,6 +60,68 @@ func (m *Expression) UnmarshalURLValues(prefix string, values url.Values) error 
 					return err
 				}
 				m.AlertId = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetAllAlertRulesRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetAllAlertRulesRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "scope":
+				m.Scope = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetAllAlertRulesResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetAllAlertRulesResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &AllAlertRules{}
+				}
+			case "data.windows":
+				if m.Data == nil {
+					m.Data = &AllAlertRules{}
+				}
+				list := make([]int64, 0, len(vals))
+				for _, text := range vals {
+					val, err := strconv.ParseInt(text, 10, 64)
+					if err != nil {
+						return err
+					}
+					list = append(list, val)
+				}
+				m.Data.Windows = list
+			}
+		}
+	}
+	return nil
+}
+
+// AllAlertRules implement urlenc.URLValuesUnmarshaler.
+func (m *AllAlertRules) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "windows":
+				list := make([]int64, 0, len(vals))
+				for _, text := range vals {
+					val, err := strconv.ParseInt(text, 10, 64)
+					if err != nil {
+						return err
+					}
+					list = append(list, val)
+				}
+				m.Windows = list
 			}
 		}
 	}

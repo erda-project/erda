@@ -40,3 +40,7 @@ type expressionServiceWrapper struct {
 func (s *expressionServiceWrapper) GetAllEnabledExpression(ctx context.Context, req *pb.GetAllEnabledExpressionRequest) (*pb.GetAllEnabledExpressionResponse, error) {
 	return s.client.GetAllEnabledExpression(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *expressionServiceWrapper) GetAllAlertRules(ctx context.Context, req *pb.GetAllAlertRulesRequest) (*pb.GetAllAlertRulesResponse, error) {
+	return s.client.GetAllAlertRules(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

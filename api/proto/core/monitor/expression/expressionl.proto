@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "common/openapi.proto";
+import "core/monitor/alert/alert.proto";
 
 service ExpressionService {
   option (erda.common.openapi_service) = {
@@ -17,10 +18,18 @@ service ExpressionService {
   };
   rpc GetAllEnabledExpression (GetAllEnabledExpressionRequest) returns (GetAllEnabledExpressionResponse) {
     option (google.api.http)     = {
-      get: "/api/alert/expression"
+      get: "/api/org/expression"
     };
     option (erda.common.openapi) = {
-      path: "/api/alert/expression"
+      path: "/api/org/expression"
+    };
+  }
+  rpc GetAllAlertRules (GetAllAlertRulesRequest) returns (GetAllAlertRulesResponse) {
+    option (google.api.http)     = {
+      get: "/api/org/rules"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/org/rules"
     };
   }
 }
@@ -42,4 +51,20 @@ message Expression {
   map<string, google.protobuf.Value> expression = 4;
   bool                               enable     = 5;
   int64                              alertId    = 6 [json_name = "alert_id"];
+}
+
+message GetAllAlertRulesRequest {
+  string scope = 1;
+}
+
+message GetAllAlertRulesResponse {
+  AllAlertRules data = 1;
+}
+
+message AllAlertRules {
+  repeated erda.core.monitor.alert.AlertTypeRule     alertRule  = 1;
+  repeated int64                                 windows    = 2;
+  repeated erda.core.monitor.alert.Operator      operators  = 3;
+  repeated erda.core.monitor.alert.DisplayKey    aggregator = 4;
+  repeated erda.core.monitor.alert.NotifySilence silence    = 5;
 }

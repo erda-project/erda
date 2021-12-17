@@ -1,0 +1,44 @@
+{
+  "name": "平台组件Flink任务checkpoint延迟异常告警",
+  "alert_scope": "org",
+  "attributes": {
+    "level": "Warning",
+    "recover": "true",
+    "alert_group": "{{cluster_name}}-{{container_id}}-{{job_id}}",
+    "tickets_metric_key": "{{container_id}}-{{job_id}}"
+  },
+  "template": {
+    "metric": "flink_jm_job",
+    "window": 1,
+    "filters": [
+      {
+        "tag": "org_name",
+        "operator": "eq",
+        "value": "$org_name"
+      }
+    ],
+    "group": [
+      "cluster_name",
+      "container_id",
+      "job_id"
+    ],
+    "functions": [
+      {
+        "aggregator": "max",
+        "alias": "lastCheckpointDuration_value",
+        "field": "lastCheckpointDuration",
+        "operator": "gte",
+        "value": 3000
+      }
+    ],
+    "select": {
+      "cluster_name": "#cluster_name",
+      "host_ip": "#host_ip",
+      "job_id": "#job_id",
+      "org_name": "#org_name"
+    },
+    "outputs": [
+      "alert"
+    ]
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "name": "机器宕机",
+  "alert_scope": "org",
+  "attributes": {
+    "level": "Fatal",
+    "recover": "true",
+    "display_url_id": "machine_crash",
+    "alert_group": "{{cluster_name}}-{{host_ip}}",
+    "tickets_metric_key": "{{host_ip}}"
+  },
+  "template": {
+    "metric": "machine_status",
+    "window": 5,
+    "filters": [
+      {
+        "tag": "org_name",
+        "operator": "eq",
+        "value": "$org_name"
+      }
+    ],
+    "group": [
+      "host_ip"
+    ],
+    "functions": [
+      {
+        "aggregator": "values",
+        "field": "status",
+        "operator": "all",
+        "value": "not_ready"
+      },
+      {
+        "aggregator": "max",
+        "alias": "last_timestamp_value",
+        "field": "last_timestamp"
+      }
+    ],
+    "select": {
+      "cluster_name": "#cluster_name",
+      "host_ip": "#host_ip",
+      "labels": "#labels",
+      "_meta": "#_meta",
+      "_metric_scope": "#_metric_scope",
+      "_metric_scope_id": "#_metric_scope_id",
+      "org_name": "#org_name"
+    },
+    "outputs": [
+      "alert"
+    ]
+  }
+}

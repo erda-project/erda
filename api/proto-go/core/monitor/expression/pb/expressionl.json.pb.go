@@ -21,6 +21,12 @@ var _ json.Marshaler = (*EnabledExpression)(nil)
 var _ json.Unmarshaler = (*EnabledExpression)(nil)
 var _ json.Marshaler = (*Expression)(nil)
 var _ json.Unmarshaler = (*Expression)(nil)
+var _ json.Marshaler = (*GetAllAlertRulesRequest)(nil)
+var _ json.Unmarshaler = (*GetAllAlertRulesRequest)(nil)
+var _ json.Marshaler = (*GetAllAlertRulesResponse)(nil)
+var _ json.Unmarshaler = (*GetAllAlertRulesResponse)(nil)
+var _ json.Marshaler = (*AllAlertRules)(nil)
+var _ json.Unmarshaler = (*AllAlertRules)(nil)
 
 // GetAllEnabledExpressionRequest implement json.Marshaler.
 func (m *GetAllEnabledExpressionRequest) MarshalJSON() ([]byte, error) {
@@ -89,6 +95,60 @@ func (m *Expression) MarshalJSON() ([]byte, error) {
 
 // Expression implement json.Marshaler.
 func (m *Expression) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetAllAlertRulesRequest implement json.Marshaler.
+func (m *GetAllAlertRulesRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetAllAlertRulesRequest implement json.Marshaler.
+func (m *GetAllAlertRulesRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetAllAlertRulesResponse implement json.Marshaler.
+func (m *GetAllAlertRulesResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetAllAlertRulesResponse implement json.Marshaler.
+func (m *GetAllAlertRulesResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// AllAlertRules implement json.Marshaler.
+func (m *AllAlertRules) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// AllAlertRules implement json.Marshaler.
+func (m *AllAlertRules) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

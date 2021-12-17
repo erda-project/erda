@@ -1,0 +1,48 @@
+{
+  "name": "用户体验",
+  "alert_scope": "micro_service",
+  "attributes": {
+    "level": "Notice",
+    "recover": "false",
+    "alert_group": "{{tk}}-{{doc_path}}-{{host}}",
+    "display_url_id": "micro_bi_position"
+  },
+  "template": {
+    "metric": "ta_timing",
+    "window": 1,
+    "filters": [
+      {
+        "tag": "tk",
+        "operator": "eq",
+        "value": "$tk"
+      },
+      {
+        "tag": "type",
+        "operator": "eq",
+        "value": "browser"
+      }
+    ],
+    "group": [
+      "tk",
+      "doc_path",
+      "host"
+    ],
+    "functions": [
+      {
+        "field": "plt",
+        "aggregator": "avg",
+        "operator": "gt",
+        "value": 3000
+      }
+    ],
+    "select": {
+      "type": "#type",
+      "tk": "#tk",
+      "doc_path": "#doc_path",
+      "host": "#host"
+    },
+    "outputs": [
+      "alert"
+    ]
+  }
+}

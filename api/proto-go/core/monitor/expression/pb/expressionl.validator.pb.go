@@ -8,6 +8,7 @@ import (
 	math "math"
 
 	_ "github.com/erda-project/erda-proto-go/common/pb"
+	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	proto "github.com/golang/protobuf/proto"
 	_ "github.com/mwitkow/go-proto-validators"
 	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
@@ -40,5 +41,47 @@ func (this *EnabledExpression) Validate() error {
 func (this *Expression) Validate() error {
 	// Validation of proto3 map<> fields is unsupported.
 	// Validation of proto3 map<> fields is unsupported.
+	return nil
+}
+func (this *GetAllAlertRulesRequest) Validate() error {
+	return nil
+}
+func (this *GetAllAlertRulesResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *AllAlertRules) Validate() error {
+	for _, item := range this.AlertRule {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("AlertRule", err)
+			}
+		}
+	}
+	for _, item := range this.Operators {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Operators", err)
+			}
+		}
+	}
+	for _, item := range this.Aggregator {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Aggregator", err)
+			}
+		}
+	}
+	for _, item := range this.Silence {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Silence", err)
+			}
+		}
+	}
 	return nil
 }
