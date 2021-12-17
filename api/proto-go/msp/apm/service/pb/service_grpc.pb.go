@@ -23,6 +23,8 @@ const _ = grpc.SupportPackageIsVersion5
 type ApmServiceServiceClient interface {
 	GetServices(ctx context.Context, in *GetServicesRequest, opts ...grpc.CallOption) (*GetServicesResponse, error)
 	GetServiceAnalyzerOverview(ctx context.Context, in *GetServiceAnalyzerOverviewRequest, opts ...grpc.CallOption) (*GetServiceAnalyzerOverviewResponse, error)
+	GetServiceCount(ctx context.Context, in *GetServiceCountRequest, opts ...grpc.CallOption) (*GetServiceCountResponse, error)
+	GetServiceOverviewTop(ctx context.Context, in *GetServiceOverviewTopRequest, opts ...grpc.CallOption) (*GetServiceOverviewTopResponse, error)
 }
 
 type apmServiceServiceClient struct {
@@ -51,12 +53,32 @@ func (c *apmServiceServiceClient) GetServiceAnalyzerOverview(ctx context.Context
 	return out, nil
 }
 
+func (c *apmServiceServiceClient) GetServiceCount(ctx context.Context, in *GetServiceCountRequest, opts ...grpc.CallOption) (*GetServiceCountResponse, error) {
+	out := new(GetServiceCountResponse)
+	err := c.cc.Invoke(ctx, "/erda.msp.apm.service.ApmServiceService/GetServiceCount", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *apmServiceServiceClient) GetServiceOverviewTop(ctx context.Context, in *GetServiceOverviewTopRequest, opts ...grpc.CallOption) (*GetServiceOverviewTopResponse, error) {
+	out := new(GetServiceOverviewTopResponse)
+	err := c.cc.Invoke(ctx, "/erda.msp.apm.service.ApmServiceService/GetServiceOverviewTop", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ApmServiceServiceServer is the server API for ApmServiceService service.
 // All implementations should embed UnimplementedApmServiceServiceServer
 // for forward compatibility
 type ApmServiceServiceServer interface {
 	GetServices(context.Context, *GetServicesRequest) (*GetServicesResponse, error)
 	GetServiceAnalyzerOverview(context.Context, *GetServiceAnalyzerOverviewRequest) (*GetServiceAnalyzerOverviewResponse, error)
+	GetServiceCount(context.Context, *GetServiceCountRequest) (*GetServiceCountResponse, error)
+	GetServiceOverviewTop(context.Context, *GetServiceOverviewTopRequest) (*GetServiceOverviewTopResponse, error)
 }
 
 // UnimplementedApmServiceServiceServer should be embedded to have forward compatible implementations.
@@ -68,6 +90,12 @@ func (*UnimplementedApmServiceServiceServer) GetServices(context.Context, *GetSe
 }
 func (*UnimplementedApmServiceServiceServer) GetServiceAnalyzerOverview(context.Context, *GetServiceAnalyzerOverviewRequest) (*GetServiceAnalyzerOverviewResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetServiceAnalyzerOverview not implemented")
+}
+func (*UnimplementedApmServiceServiceServer) GetServiceCount(context.Context, *GetServiceCountRequest) (*GetServiceCountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetServiceCount not implemented")
+}
+func (*UnimplementedApmServiceServiceServer) GetServiceOverviewTop(context.Context, *GetServiceOverviewTopRequest) (*GetServiceOverviewTopResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetServiceOverviewTop not implemented")
 }
 
 func RegisterApmServiceServiceServer(s grpc1.ServiceRegistrar, srv ApmServiceServiceServer, opts ...grpc1.HandleOption) {
@@ -104,6 +132,24 @@ func _get_ApmServiceService_serviceDesc(srv ApmServiceServiceServer, opts ...grp
 	if h.Interceptor != nil {
 		_ApmServiceService_GetServiceAnalyzerOverview_info = transport.NewServiceInfo("erda.msp.apm.service.ApmServiceService", "GetServiceAnalyzerOverview", srv)
 		_ApmServiceService_GetServiceAnalyzerOverview_Handler = h.Interceptor(_ApmServiceService_GetServiceAnalyzerOverview_Handler)
+	}
+
+	_ApmServiceService_GetServiceCount_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetServiceCount(ctx, req.(*GetServiceCountRequest))
+	}
+	var _ApmServiceService_GetServiceCount_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ApmServiceService_GetServiceCount_info = transport.NewServiceInfo("erda.msp.apm.service.ApmServiceService", "GetServiceCount", srv)
+		_ApmServiceService_GetServiceCount_Handler = h.Interceptor(_ApmServiceService_GetServiceCount_Handler)
+	}
+
+	_ApmServiceService_GetServiceOverviewTop_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetServiceOverviewTop(ctx, req.(*GetServiceOverviewTopRequest))
+	}
+	var _ApmServiceService_GetServiceOverviewTop_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ApmServiceService_GetServiceOverviewTop_info = transport.NewServiceInfo("erda.msp.apm.service.ApmServiceService", "GetServiceOverviewTop", srv)
+		_ApmServiceService_GetServiceOverviewTop_Handler = h.Interceptor(_ApmServiceService_GetServiceOverviewTop_Handler)
 	}
 
 	var serviceDesc = _ApmServiceService_serviceDesc
@@ -152,6 +198,52 @@ func _get_ApmServiceService_serviceDesc(srv ApmServiceServiceServer, opts ...grp
 					FullMethod: "/erda.msp.apm.service.ApmServiceService/GetServiceAnalyzerOverview",
 				}
 				return interceptor(ctx, in, info, _ApmServiceService_GetServiceAnalyzerOverview_Handler)
+			},
+		},
+		{
+			MethodName: "GetServiceCount",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetServiceCountRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ApmServiceServiceServer).GetServiceCount(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ApmServiceService_GetServiceCount_info)
+				}
+				if interceptor == nil {
+					return _ApmServiceService_GetServiceCount_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.msp.apm.service.ApmServiceService/GetServiceCount",
+				}
+				return interceptor(ctx, in, info, _ApmServiceService_GetServiceCount_Handler)
+			},
+		},
+		{
+			MethodName: "GetServiceOverviewTop",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetServiceOverviewTopRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ApmServiceServiceServer).GetServiceOverviewTop(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ApmServiceService_GetServiceOverviewTop_info)
+				}
+				if interceptor == nil {
+					return _ApmServiceService_GetServiceOverviewTop_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.msp.apm.service.ApmServiceService/GetServiceOverviewTop",
+				}
+				return interceptor(ctx, in, info, _ApmServiceService_GetServiceOverviewTop_Handler)
 			},
 		},
 	}

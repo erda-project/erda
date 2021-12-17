@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -27,6 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func init() {
@@ -59,13 +61,12 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 
 	issueFinishMap := make(map[time.Time][]dao.IssueItem, 0)
 	sum := 0
+	types := h.GetBurnoutChartType()
+	if len(types) == 0 {
+		types = []string{"requirement", "task"}
+	}
 	for _, issue := range h.GetIssueList() {
-		if h.GetBurnoutChartType() == "requirement" &&
-			issue.Type != apistructs.IssueTypeRequirement {
-			continue
-		}
-		if h.GetBurnoutChartType() == "task" &&
-			issue.Type != apistructs.IssueTypeTask {
+		if !strutil.InSlice(strings.ToLower(issue.Type.String()), types) {
 			continue
 		}
 		if issue.FinishTime != nil {

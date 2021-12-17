@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
+	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -513,4 +514,30 @@ func TestUpdateServiceGroupWithLoop(t *testing.T) {
 	if err := fsm.UpdateServiceGroupWithLoop(group); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func Test_requestAddons(t *testing.T) {
+	ad := &addon.Addon{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(ad), "BatchCreate", func(a *addon.Addon, req *apistructs.AddonCreateRequest) error {
+		return nil
+	})
+
+	var (
+		bdl *bundle.Bundle
+	)
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "PushLog", func(*bundle.Bundle, *apistructs.LogPushRequest) error {
+		return nil
+	})
+	defer monkey.UnpatchAll()
+
+	fsm := DeployFSMContext{
+		d:          &log.DeployLogHelper{Bdl: bdl},
+		addon:      ad,
+		App:        &apistructs.ApplicationDTO{},
+		Deployment: &dbclient.Deployment{},
+		Runtime:    &dbclient.Runtime{},
+		Spec:       &diceyml.Object{AddOns: map[string]*diceyml.AddOn{"empty-addon": nil}},
+	}
+	err := fsm.requestAddons()
+	assert.NoError(t, err)
 }

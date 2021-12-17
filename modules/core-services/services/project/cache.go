@@ -21,17 +21,17 @@ import (
 
 type Cache struct {
 	sync.Map
-	expiredDuration time.Duration
-	C               chan uint64
+	expired time.Duration
+	C       chan uint64
 }
 
 func NewCache(expiredDuration time.Duration) *Cache {
-	return &Cache{expiredDuration: expiredDuration, C: make(chan uint64, 1000)}
+	return &Cache{expired: expiredDuration, C: make(chan uint64, 1000)}
 }
 
 func (c *Cache) Store(key interface{}, value *CacheItme) {
 	c.Map.Store(key, value)
-	value.UpdateExpiredTime(c.expiredDuration)
+	value.UpdateExpiredTime(c.expired)
 }
 
 type CacheItme struct {

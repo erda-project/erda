@@ -126,18 +126,18 @@ func (h *GSHelper) GetIssueStageList() []apistructs.IssueStage {
 	return res
 }
 
-func (h *GSHelper) SetBurnoutChartType(t string) {
+func (h *GSHelper) SetBurnoutChartType(t []string) {
 	if h.gs == nil {
 		return
 	}
 	(*h.gs)["BurnoutChartType"] = t
 }
 
-func (h *GSHelper) GetBurnoutChartType() string {
+func (h *GSHelper) GetBurnoutChartType() []string {
 	if h.gs == nil {
-		return ""
+		return nil
 	}
-	var t string
+	t := make([]string, 0)
 	_ = assign((*h.gs)["BurnoutChartType"], &t)
 	return t
 }

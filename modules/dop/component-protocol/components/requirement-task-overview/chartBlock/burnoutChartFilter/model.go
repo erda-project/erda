@@ -36,8 +36,8 @@ type State struct {
 }
 
 type Values struct {
-	Type      string `json:"type"`
-	Dimension string `json:"dimension"`
+	Type      []string `json:"type"`
+	Dimension string   `json:"dimension"`
 }
 
 const OperationKeyFilter filter.OperationKey = "filter"

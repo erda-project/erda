@@ -17,6 +17,9 @@ package apistructs
 import (
 	"fmt"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPipelineTaskLoop_Duplicate(t *testing.T) {
@@ -94,4 +97,22 @@ func TestPipelineTaskLoop_IsEmpty(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIsErrorsExceed(t *testing.T) {
+	now := time.Now()
+	timeExceedInspect := &PipelineTaskInspect{}
+	timeExceedInspect.Errors = timeExceedInspect.AppendError(&PipelineTaskErrResponse{Msg: "xxx", Ctx: PipelineTaskErrCtx{StartTime: now.Add(-25 * time.Hour)}})
+	isExceed, _ := timeExceedInspect.IsErrorsExceed()
+	assert.Equal(t, true, isExceed)
+
+	countExceedInspect := &PipelineTaskInspect{}
+	for i := 0; i < 143; i++ {
+		countExceedInspect.Errors = countExceedInspect.AppendError(&PipelineTaskErrResponse{Msg: "xxx"})
+		isExceed, _ = countExceedInspect.IsErrorsExceed()
+		assert.Equal(t, false, isExceed)
+	}
+	countExceedInspect.Errors = countExceedInspect.AppendError(&PipelineTaskErrResponse{Msg: "xxx"})
+	isExceed, _ = countExceedInspect.IsErrorsExceed()
+	assert.Equal(t, true, isExceed)
 }

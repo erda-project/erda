@@ -20,6 +20,18 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *GetServiceOverviewTopRequest) Validate() error {
+	return nil
+}
+func (this *GetServiceOverviewTopResponse) Validate() error {
+	return nil
+}
+func (this *GetServiceCountRequest) Validate() error {
+	return nil
+}
+func (this *GetServiceCountResponse) Validate() error {
+	return nil
+}
 func (this *GetServiceAnalyzerOverviewRequest) Validate() error {
 	return nil
 }
@@ -56,7 +68,20 @@ func (this *GetServicesResponse) Validate() error {
 	}
 	return nil
 }
+func (this *TopTable) Validate() error {
+	return nil
+}
 func (this *Chart) Validate() error {
+	return nil
+}
+func (this *ServiceTop) Validate() error {
+	for _, item := range this.Tops {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Tops", err)
+			}
+		}
+	}
 	return nil
 }
 func (this *ServiceChart) Validate() error {
@@ -70,5 +95,8 @@ func (this *ServiceChart) Validate() error {
 	return nil
 }
 func (this *Service) Validate() error {
+	return nil
+}
+func (this *AggregateMetric) Validate() error {
 	return nil
 }

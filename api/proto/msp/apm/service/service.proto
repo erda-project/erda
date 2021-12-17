@@ -36,11 +36,61 @@ service ApmServiceService {
       }
     };
   }
+
+  rpc GetServiceCount (GetServiceCountRequest) returns (GetServiceCountResponse) {
+    option (google.api.http)     = {
+      get: "/api/msp/apm/service/count",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/msp/apm/service/count",
+      service: "msp",
+      auth: {
+        check_login: true,
+        check_token: true,
+      }
+    };
+  }
+
+  rpc GetServiceOverviewTop (GetServiceOverviewTopRequest) returns (GetServiceOverviewTopResponse) {
+    option (google.api.http)     = {
+      get: "/api/msp/apm/service/analyzer-overview-top",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/msp/apm/service/analyzer-overview-top",
+      service: "msp",
+      auth: {
+        check_login: true,
+        check_token: true,
+      }
+    };
+  }
+
+}
+
+message GetServiceOverviewTopRequest {
+  string tenantId = 1;
+}
+
+message GetServiceOverviewTopResponse {
+
+}
+
+message GetServiceCountRequest {
+  string tenantId = 1;
+}
+
+message GetServiceCountResponse {
+  int64 totalCount          = 1;
+  int64 unhealthyCount      = 2;
+  int64 withoutRequestCount = 3;
 }
 
 message GetServiceAnalyzerOverviewRequest {
   string          tenantId   = 1;
   repeated string serviceIds = 2;
+  string          view       = 3;
+  int64           startTime  = 4;
+  int64           endTime    = 5;
 }
 
 message GetServiceAnalyzerOverviewResponse {
@@ -66,12 +116,24 @@ message GetServicesResponse {
   repeated Service list     = 4;
 }
 
-message Chart{
-  int64  timestamp = 1;
-  double value     = 2;
+message TopTable {
+  string serviceId   = 1;
+  string serviceName = 2;
+  double value       = 3;
 }
 
-message ServiceChart{
+message Chart {
+  int64  timestamp = 1;
+  double value     = 2;
+  string dimension = 3;
+}
+
+message ServiceTop {
+  string            type = 1;
+  repeated TopTable tops = 2;
+}
+
+message ServiceChart {
   string         type = 1;
   repeated Chart view = 2;
 }
@@ -84,10 +146,30 @@ message Service {
   double               rps           = 5;
   double               avgDuration   = 6;
   double               errorRate     = 7;
+  //  AggregateMetric      aggregateMetric = 5;
+}
+
+message AggregateMetric {
+  double avgRps      = 1; // Average throughput
+  double maxRps      = 2; // Maximum throughput
+  double avgDuration = 3; // Average duration
+  double maxDuration = 4; // Maximum duration
+  double errorRate   = 5; // Error rate
 }
 
 enum ChartType {
   RPS         = 0;
   AvgDuration = 1;
   ErrorRate   = 3;
+  HttpCode    = 4;
+}
+
+enum ChartPosition {
+  TopologyChart    = 0;
+  ServiceListChart = 1;
+}
+
+enum ViewType {
+  SERVICE_OVERVIEW      = 0;
+  TOPOLOGY_SERVICE_NODE = 1;
 }

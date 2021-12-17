@@ -20,6 +20,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
@@ -74,6 +76,11 @@ func (e *Endpoints) CreateCommentIssueStream(ctx context.Context, r *http.Reques
 	if err != nil {
 		return apierrors.ErrCreateIssueStream.InternalError(err).ToResp(), nil
 	}
+	go func() {
+		if err := e.issueStream.CreateIssueEvent(commentReq); err != nil {
+			logrus.Errorf("create issue %d event err: %v", commentReq.IssueID, err)
+		}
+	}()
 
 	return httpserver.OkResp(commentID)
 }
