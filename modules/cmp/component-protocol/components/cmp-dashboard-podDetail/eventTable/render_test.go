@@ -16,7 +16,6 @@ package eventTable
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -143,20 +142,14 @@ func TestComponentEventTable_Transfer(t *testing.T) {
 		},
 	}
 
-	expectedData, err := json.Marshal(component)
-	if err != nil {
-		t.Error(err)
-	}
-
 	result := &cptype.Component{}
 	component.Transfer(result)
-	resultData, err := json.Marshal(result)
+	isEqual, err := cputil.IsDeepEqual(result, component)
 	if err != nil {
 		t.Error(err)
 	}
-
-	if string(expectedData) != string(resultData) {
-		t.Errorf("test failed, expected:\n%s\ngot:\n%s", expectedData, resultData)
+	if !isEqual {
+		t.Error("test failed, data is changed after transfer")
 	}
 }
 
@@ -170,7 +163,7 @@ func TestComponentEventTable_GenComponentState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ok, err := cputil.IsJsonEqual(c.State, ct.State)
+	ok, err := cputil.IsDeepEqual(c.State, ct.State)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -81,7 +81,7 @@ func TestComponentOperationButton_Transfer(t *testing.T) {
 	var c cptype.Component
 	cob.Transfer(&c)
 
-	isEqual, err := cputil.IsJsonEqual(cob, c)
+	isEqual, err := cputil.IsDeepEqual(cob, c)
 	if err != nil {
 		t.Error(err)
 	}

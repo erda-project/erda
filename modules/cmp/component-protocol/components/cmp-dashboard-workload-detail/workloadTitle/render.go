@@ -113,7 +113,7 @@ func (t *ComponentWorkloadTitle) GenComponentState(component *cptype.Component) 
 }
 
 func (t *ComponentWorkloadTitle) Transfer(c *cptype.Component) {
-	c.Props = t.Props
+	c.Props = cputil.MustConvertProps(t.Props)
 	c.State = map[string]interface{}{
 		"workloadId":  t.State.WorkloadID,
 		"podId":       t.State.PodID,

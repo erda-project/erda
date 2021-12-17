@@ -73,7 +73,7 @@ func (t *Tabs) GenComponentState(component *cptype.Component) error {
 }
 
 func (t *Tabs) Transfer(c *cptype.Component) {
-	c.Props = t.Props
+	c.Props = cputil.MustConvertProps(t.Props)
 	c.State = map[string]interface{}{
 		"value": t.State.Value,
 	}

@@ -340,7 +340,7 @@ func (b *ComponentOperationButton) DeleteWorkload() error {
 }
 
 func (b *ComponentOperationButton) Transfer(c *cptype.Component) {
-	c.Props = b.Props
+	c.Props = cputil.MustConvertProps(b.Props)
 	c.State = map[string]interface{}{
 		"clusterName": b.State.ClusterName,
 		"workloadId":  b.State.WorkloadID,

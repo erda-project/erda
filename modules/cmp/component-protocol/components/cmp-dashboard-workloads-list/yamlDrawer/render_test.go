@@ -29,7 +29,7 @@ func TestComponentYamlDrawer_GenComponentState(t *testing.T) {
 	if err := component.GenComponentState(c); err != nil {
 		t.Fatal(err)
 	}
-	ok, err := cputil.IsJsonEqual(c.State, component.State)
+	ok, err := cputil.IsDeepEqual(c.State, component.State)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestComponentYamlDrawer_Transfer(t *testing.T) {
 	}
 	c := &cptype.Component{}
 	component.Transfer(c)
-	ok, err := cputil.IsJsonEqual(c, component)
+	ok, err := cputil.IsDeepEqual(c, component)
 	if err != nil {
 		t.Fatal(err)
 	}

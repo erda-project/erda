@@ -170,7 +170,7 @@ func (f *ComponentYamlFileEditor) SetComponentValue() {
 }
 
 func (f *ComponentYamlFileEditor) Transfer(component *cptype.Component) {
-	component.Props = f.Props
+	component.Props = cputil.MustConvertProps(f.Props)
 	component.State = map[string]interface{}{
 		"clusterName": f.State.ClusterName,
 		"nodeId":      f.State.NodeID,

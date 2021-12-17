@@ -117,7 +117,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		"requestIgnore": []string{"props", "data", "operations"},
 	}
 	c.Operations = map[string]interface{}{
-		"filter": cptype.Operation{
+		"filter": cptype.LegacyOperation{
 			Key:    "filter",
 			Reload: true,
 		},

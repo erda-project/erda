@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -31,6 +32,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/bundle/apierrors"
@@ -232,6 +234,16 @@ func IsJsonEqual(objA, objB interface{}) (bool, error) {
 	fmt.Printf("objA:\n%s\n", string(dataA))
 	fmt.Printf("objB:\n%s\n", string(dataB))
 	return false, nil
+}
+
+// IsDeepEqual return true if objA and objB is deep equal.
+// Used for unit testing.
+func IsDeepEqual(objA, objB interface{}) (bool, error) {
+	mA := cptype.ExtraMap{}
+	mB := cptype.ExtraMap{}
+	cputil.MustObjJSONTransfer(objA, &mA)
+	cputil.MustObjJSONTransfer(objB, &mB)
+	return reflect.DeepEqual(mA, mB), nil
 }
 
 // GetImpersonateClient authenticate user by steve server and return an impersonate k8s client

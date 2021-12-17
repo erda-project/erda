@@ -80,5 +80,5 @@ func (b *ComponentOperationButton) SetComponentValue() {
 }
 
 func (b *ComponentOperationButton) Transfer(component *cptype.Component) {
-	component.Props = b.Props
+	component.Props = cputil.MustConvertProps(b.Props)
 }

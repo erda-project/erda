@@ -62,7 +62,7 @@ func (i *ComponentStageForm) RenderProtocol(c *cptype.Component, g *cptype.Globa
 		c.Data = d
 	}
 	if c.Operations == nil {
-		d := make(cptype.ComponentOps)
+		d := make(cptype.ComponentOperations)
 		c.Operations = d
 	}
 	if c.Props == nil {

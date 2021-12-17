@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -63,7 +64,7 @@ func (podTitle *PodTitle) GenComponentState(c *cptype.Component) error {
 }
 
 func (podTitle *PodTitle) Transfer(c *cptype.Component) {
-	c.Props = podTitle.Props
+	c.Props = cputil.MustConvertProps(podTitle.Props)
 	c.State = map[string]interface{}{
 		"podId": podTitle.State.PodID,
 	}
