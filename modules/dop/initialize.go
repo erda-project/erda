@@ -241,14 +241,18 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 			return
 		}
 		if len(resp.Kvs) == 0 {
-			logrus.Infof("start compensate issue state transition")
-			if err = compensateIssueStateCirculation(ep); err != nil {
-				logrus.Error(err)
-				return
-			}
 			_, err = p.EtcdClient.Put(context.Background(), EtcdIssueStateCompensate, "true")
 			if err != nil {
 				logrus.Error(err)
+			}
+			logrus.Infof("start compensate issue state transition")
+			if err = compensateIssueStateCirculation(ep); err != nil {
+				logrus.Error(err)
+				_, err = p.EtcdClient.Delete(context.Background(), EtcdIssueStateCompensate)
+				if err != nil {
+					logrus.Error(err)
+				}
+				return
 			}
 		}
 	}()

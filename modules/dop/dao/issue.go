@@ -1045,8 +1045,17 @@ func (client *DBClient) FindIssueChildrenTimeRange(id uint64) (*time.Time, *time
 	return res.Min, res.Max, nil
 }
 
-func (client *DBClient) ListIssueForIssueStateTransMigration() ([]Issue, error) {
-	var issues []Issue
-	err := client.Model(&Issue{}).Where("deleted = 0").Find(&issues).Error
+// IssueForIssueStateTransMigration the type of state is string
+type IssueForIssueStateTransMigration struct {
+	dbengine.BaseModel
+
+	ProjectID uint64
+	Type      apistructs.IssueType
+	Creator   string
+}
+
+func (client *DBClient) ListIssueForIssueStateTransMigration() ([]IssueForIssueStateTransMigration, error) {
+	var issues []IssueForIssueStateTransMigration
+	err := client.Table("dice_issues").Where("deleted = 0").Find(&issues).Error
 	return issues, err
 }
