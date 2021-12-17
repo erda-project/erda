@@ -238,7 +238,7 @@ erda.msp.apm.service:
     charts:
      - "rps"
      - "avgDuration"
-#      - "httpCode"
+     - "httpCode"
      - "errorRate"
 
 #resource deploy related
