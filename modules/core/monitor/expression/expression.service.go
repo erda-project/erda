@@ -52,7 +52,7 @@ func (e *expressionService) GetAllAlertRules(ctx context.Context, request *pb.Ge
 
 func (e *expressionService) queryAlertRule(lang i18n.LanguageCodes, orgID uint64, scope string) (*pb.AllAlertRules, error) {
 	rules := SystemExpressions[scope]
-	customizeRules, err := e.p.customizeAlertRuleDB.QueryEnabledByScope(scope, string(orgID))
+	customizeRules, err := e.p.customizeAlertRuleDB.QueryEnabledByScope(scope, strconv.Itoa(int(orgID)))
 	if err != nil {
 		return nil, err
 	}
