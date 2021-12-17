@@ -161,7 +161,7 @@ func TestComponentWorkloadChart_Transfer(t *testing.T) {
 	}
 	c := &cptype.Component{}
 	component.Transfer(c)
-	ok, err := cputil.IsJsonEqual(c.State, component.State)
+	ok, err := cputil.IsDeepEqual(c.State, component.State)
 	if err != nil {
 		t.Fatal(err)
 	}

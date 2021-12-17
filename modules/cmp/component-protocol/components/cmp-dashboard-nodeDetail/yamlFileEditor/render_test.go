@@ -42,7 +42,7 @@ func TestComponentYamlFileEditor_GenComponentState(t *testing.T) {
 		t.Error(err)
 	}
 
-	isEqual, err := cputil.IsJsonEqual(f.State, c.State)
+	isEqual, err := cputil.IsDeepEqual(f.State, c.State)
 	if err != nil {
 		t.Error(err)
 	}

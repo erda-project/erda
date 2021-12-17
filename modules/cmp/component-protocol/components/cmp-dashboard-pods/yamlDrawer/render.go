@@ -64,7 +64,7 @@ func (d *ComponentYamlDrawer) GenComponentState(component *cptype.Component) err
 }
 
 func (d *ComponentYamlDrawer) Transfer(c *cptype.Component) {
-	c.Props = d.Props
+	c.Props = cputil.MustConvertProps(d.Props)
 	c.State = map[string]interface{}{
 		"visible": d.State.Visible,
 	}

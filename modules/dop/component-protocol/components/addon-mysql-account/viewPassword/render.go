@@ -20,6 +20,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/accountTable/table"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
@@ -65,7 +66,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	props.Bordered = table.False()
 	props.ShowPagination = table.False()
 	props.ShowHeader = table.False()
-	c.Props = props
+	c.Props = cputil.MustConvertProps(props)
 
 	c.Data = make(map[string]interface{})
 	c.Data["list"] = getData(ac.AccountMap[pg.AccountID])

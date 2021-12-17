@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 )
 
 func getTestURLQuery() (State, string) {
@@ -300,19 +301,13 @@ func TestComponentEventTable_Transfer(t *testing.T) {
 		},
 	}
 
-	expectedData, err := json.Marshal(component)
-	if err != nil {
-		t.Error(err)
-	}
-
 	result := &cptype.Component{}
 	component.Transfer(result)
-	resultData, err := json.Marshal(result)
+	isEqual, err := cputil.IsDeepEqual(result, component)
 	if err != nil {
 		t.Error(err)
 	}
-
-	if string(expectedData) != string(resultData) {
-		t.Errorf("test failed, expected:\n%s\ngot:\n%s", expectedData, resultData)
+	if !isEqual {
+		t.Error("test failed, data is changed after transfer")
 	}
 }

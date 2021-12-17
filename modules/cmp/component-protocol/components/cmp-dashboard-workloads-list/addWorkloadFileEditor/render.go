@@ -173,7 +173,7 @@ func (e *ComponentAddWorkloadFileEditor) CreateWorkload() error {
 }
 
 func (e *ComponentAddWorkloadFileEditor) Transfer(component *cptype.Component) {
-	component.Props = e.Props
+	component.Props = cputil.MustConvertProps(e.Props)
 	component.State = map[string]interface{}{
 		"clusterName":  e.State.ClusterName,
 		"workloadKind": e.State.WorkloadKind,

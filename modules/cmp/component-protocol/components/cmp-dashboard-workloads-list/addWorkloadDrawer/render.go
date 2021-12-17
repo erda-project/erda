@@ -50,7 +50,7 @@ func (d *ComponentAddWorkloadDrawer) InitComponent(ctx context.Context) {
 }
 
 func (d *ComponentAddWorkloadDrawer) Transfer(component *cptype.Component) {
-	component.Props = d.Props
+	component.Props = cputil.MustConvertProps(d.Props)
 	component.State = map[string]interface{}{
 		"visible": d.State.Visible,
 	}
