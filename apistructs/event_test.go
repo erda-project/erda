@@ -61,4 +61,9 @@ func TestGenEventParams(t *testing.T) {
 	assert.Equal(t, params["issueMboxContent"], "LiLei 备注于 2006-01-02 15:04:05\nhello\nword\na")
 	assert.Equal(t, params["issueEmailContent"], "LiLei 备注于 2006-01-02 15:04:05</br>hello</br>word</br>a")
 	assert.Equal(t, params["mboxDeduplicateID"], "issue-1")
+
+	ticketIssueEvent := issueEventImpl
+	ticketIssueEvent.Content.IssueType = IssueTypeTicket
+	params = ticketIssueEvent.GenEventParams("zh-CN", "https://fake.xx.com")
+	assert.Equal(t, params["issueEmailLink"], "https://fake.xx.com/fakeOrg/dop/projects/1/ticket?id=1&pageNo=1")
 }
