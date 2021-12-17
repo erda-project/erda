@@ -102,20 +102,6 @@ func (e *expressionService) queryOrgAlertRule(lang i18n.LanguageCodes, orgID uin
 	}, nil
 }
 
-//func FormPBAlertRuleModel(lang i18n.LanguageCodes,t i18n.Translator,m *model.Expression) *alertpb.AlertRule {
-//	r := &alertpb.AlertRule{}
-//	r.Name = m.Name
-//	r.AlertType = m.AlertType
-//	r.AlertScope = m.AlertScope
-//	r.AlertIndex = &alertpb.DisplayKey{
-//		Key:     m.AlertIndex,
-//		Display: t.Text(lang, m.Name), // default as name
-//	}
-//	r.Template = make(map[string]*structpb.Value)
-//	r.Attributes = make(map[string]*structpb.Value)
-//	for k,v :
-//}
-
 func (e *expressionService) GetAllEnabledExpression(ctx context.Context, request *pb.GetAllEnabledExpressionRequest) (*pb.GetAllEnabledExpressionResponse, error) {
 	alertExpressions, err := e.p.alertDB.GetAllAlertExpression()
 	if err != nil {
