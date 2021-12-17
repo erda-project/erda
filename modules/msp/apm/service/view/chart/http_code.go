@@ -54,7 +54,11 @@ func (httpCode *HttpCodeChart) GetChart(ctx context.Context) (*pb.ServiceChart, 
 	}
 	httpCodeCharts := make([]*pb.Chart, 0, 10)
 	rows := response.Results[0].Series[0].Rows
-	for _, row := range rows {
+	dividingLine := map[string]int{}
+	dividingLineSort := []int{}
+	dimensionTemp := ""
+	for i, row := range rows {
+
 		httpCodeChart := new(pb.Chart)
 		date := row.Values[0].GetStringValue()
 		parse, err := time.ParseInLocation(Layout, date, time.Local)
@@ -62,10 +66,59 @@ func (httpCode *HttpCodeChart) GetChart(ctx context.Context) (*pb.ServiceChart, 
 			return nil, err
 		}
 		timestamp := parse.UnixNano() / int64(time.Millisecond)
+		value := row.Values[1].GetNumberValue()
+		dimension := row.Values[2].GetStringValue()
+
+		if i != 0 {
+			dimensionPreNode := rows[i-1].Values[2].GetStringValue()
+			if dimensionPreNode != "" {
+				dimensionTemp = dimensionPreNode
+			}
+			if dimensionPreNode == "" {
+				dimensionPreNode = dimensionTemp
+			}
+
+			datePreNode := rows[i-1].Values[0].GetStringValue()
+			parse, err := time.ParseInLocation(Layout, datePreNode, time.Local)
+			if err != nil {
+				return nil, err
+			}
+			timestampPreNode := parse.UnixNano() / int64(time.Millisecond)
+
+			if timestamp < timestampPreNode {
+				dividingLine[dimensionPreNode] = i - 1
+				dividingLineSort = append(dividingLineSort, i-1)
+			}
+			if i+1 >= len(rows) {
+				if _, ok := dividingLine[dimensionPreNode]; !ok {
+					dividingLine[dimensionPreNode] = i
+					dividingLineSort = append(dividingLineSort, i)
+				}
+			}
+		}
+
 		httpCodeChart.Timestamp = timestamp
-		httpCodeChart.Value = row.Values[1].GetNumberValue()
-		httpCodeChart.Dimension = row.Values[2].GetStringValue()
+		httpCodeChart.Value = value
+		httpCodeChart.Dimension = dimension
 		httpCodeCharts = append(httpCodeCharts, httpCodeChart)
 	}
+
+	for i, chart := range httpCodeCharts {
+		if chart.Dimension == "" {
+			chart.Dimension = getDimension(dividingLine, dividingLineSort, i)
+		}
+	}
+
 	return &pb.ServiceChart{Type: pb.ChartType_HttpCode.String(), View: httpCodeCharts}, err
+}
+
+func getDimension(dividingLine map[string]int, dividingLineSort []int, i int) string {
+	for _, s := range dividingLineSort {
+		for k := range dividingLine {
+			if dividingLine[k] == s && i <= s {
+				return k
+			}
+		}
+	}
+	return ""
 }
