@@ -21,12 +21,13 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/issuefilterbm"
 	"github.com/erda-project/erda/modules/dop/services/issuestate"
 )
 
-func (f *ComponentFilter) InitFromProtocol(ctx context.Context, c *cptype.Component) error {
+func (f *ComponentFilter) InitFromProtocol(ctx context.Context, c *cptype.Component, gs *cptype.GlobalStateData) error {
 	// component 序列化
 	b, err := json.Marshal(c)
 	if err != nil {
@@ -45,6 +46,9 @@ func (f *ComponentFilter) InitFromProtocol(ctx context.Context, c *cptype.Compon
 	if err := f.setInParams(ctx); err != nil {
 		return err
 	}
+
+	// gs
+	f.gsHelper = gshelper.NewGSHelper(gs)
 
 	return nil
 }

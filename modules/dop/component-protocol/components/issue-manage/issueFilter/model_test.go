@@ -119,10 +119,7 @@ func Test_convertAllConditions(t *testing.T) {
 
 func Test_generateFrontendConditionProps(t *testing.T) {
 	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &cptype.SDK{Tran: &MockTran{}})
-	f := ComponentFilter{State: State{
-		IssueViewGroupValue:         "kanban",
-		IssueViewGroupChildrenValue: map[string]string{"kanban": "status"},
-	}}
+	f := ComponentFilter{State: State{}}
 	props := f.generateFrontendConditionProps(ctx, "ALL", f.State)
 	assert.True(t, len(props) > 0)
 }

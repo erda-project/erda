@@ -32,7 +32,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/common"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/issueViewGroup"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/common/gshelper"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
 
@@ -219,19 +219,6 @@ var (
 )
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	// visible
-	visible := true
-	if v, ok := c.State["issueViewGroupValue"]; ok {
-		if viewType, ok := v.(string); ok {
-			if viewType != issueViewGroup.ViewTypeTable {
-				visible = false
-				c.Props = map[string]interface{}{}
-				c.Props["visible"] = visible
-				return nil
-			}
-		}
-	}
-
 	sdk := cputil.SDK(ctx)
 
 	isGuest, err := ca.CheckUserPermission(ctx)
@@ -376,15 +363,10 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 	userids := []string{}
 	cond := apistructs.IssuePagingRequest{}
-	filterCond, ok := c.State["filterConditions"]
+	gh := gshelper.NewGSHelper(gs)
+	filterCond, ok := gh.GetIssuePagingRequest()
 	if ok {
-		filterCondS, err := json.Marshal(filterCond)
-		if err != nil {
-			return err
-		}
-		if err := json.Unmarshal(filterCondS, &cond); err != nil {
-			return err
-		}
+		cond = *filterCond
 		resetPageInfo(&cond, c.State)
 	} else {
 		issuetype := sdk.InParams["fixedIssueType"].(string)
@@ -557,7 +539,6 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			"reload": true,
 		},
 	}
-	c.Props["visible"] = visible
 	(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = userids
 	if c.State == nil {
 		c.State = map[string]interface{}{}

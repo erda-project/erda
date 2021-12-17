@@ -33,9 +33,6 @@ type State struct {
 
 	// 方便后端使用的 state
 	IssuePagingRequest apistructs.IssuePagingRequest `json:"issuePagingRequest,omitempty"`
-
-	IssueViewGroupValue         string            `json:"issueViewGroupValue"`
-	IssueViewGroupChildrenValue map[string]string `json:"issueViewGroupChildrenValue"`
 }
 
 // generateUrlQueryKey 实际上组件名在一个协议里是定义好的，即 issueFilter__urlQuery
