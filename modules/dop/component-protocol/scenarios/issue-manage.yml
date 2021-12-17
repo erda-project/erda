@@ -4,11 +4,8 @@ hierarchy:
   root: issueManage
   structure:
     issueManage:
-      - topHead
       - head
       - content
-    topHead:
-      - issueAddButton
     head:
       left: issueFilter
       right: issueOperations
@@ -30,8 +27,6 @@ components:
       whiteBg: true
   content:
     type: Container
-  topHead:
-    type: RowContainer
   issueOperations:
     type: RowContainer
   issueFilter:
@@ -39,8 +34,6 @@ components:
   issueExport:
     type: Button
   issueImport:
-    type: Button
-  issueAddButton:
     type: Button
   issueTable:
     type: Table
