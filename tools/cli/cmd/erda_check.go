@@ -59,7 +59,7 @@ func ErdaCheck(ctx *command.Context, ymlPath string) error {
 	}
 	verr := dyml.Validate()
 	if len(verr) == 0 {
-		ctx.Succ("OK")
+		ctx.Succ(fmt.Sprintf("Check %s OK.", ymlPath))
 		return nil
 	}
 	fnote := footnote.New(string(yml))

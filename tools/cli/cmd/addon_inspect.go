@@ -55,6 +55,5 @@ func AddonInspect(ctx *command.Context, orgId uint64, org, addonId string) error
 	}
 	fmt.Println(string(s))
 
-	ctx.Succ("Addon deleted.")
 	return nil
 }

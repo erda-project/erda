@@ -29,79 +29,64 @@ import (
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
+	"github.com/erda-project/erda/tools/cli/dicedir"
 )
 
 var VIEW = command.Command{
-	Name:      "view",
-	ShortHelp: "View build status",
-	Example: `
-  $ erda-cli view -b develop -i <pipelineID> --host https://openapi.erda.cloud
-`,
+	Name:       "view",
+	ParentName: "PIPELINE",
+	ShortHelp:  "View pipeline status",
+	Example:    "$ erda-cli view -i <pipelineId>",
 	Flags: []command.Flag{
-		command.StringFlag{
-			Short:        "r",
-			Name:         "repo",
-			Doc:          "the repo on Erda DOP, default current repo.",
-			DefaultValue: os.Getenv("ERDA_REPO"),
-		},
 		command.StringFlag{Short: "b", Name: "branch", Doc: "specify branch to show pipeline status, default is current branch", DefaultValue: ""},
-		command.IntFlag{Short: "i", Name: "pipelineID", Doc: "specify pipeline id to show pipeline status", DefaultValue: 0},
-		command.BoolFlag{
-			Short:        "w",
-			Name:         "watch",
-			Doc:          "watch the status",
-			DefaultValue: false,
-		},
+		command.Uint64Flag{Short: "i", Name: "pipelineID", Doc: "specify pipeline id to show pipeline status", DefaultValue: 0},
+		command.BoolFlag{Short: "w", Name: "watch", Doc: "watch the status", DefaultValue: false},
 	},
-	Run: RunViewPipe,
+	Run: PipelineView,
 }
 
-// RunViewPipe displays detailed information on the build record
-func RunViewPipe(ctx *command.Context, repo, branch string, pipelineID int, watch bool) (err error) {
+func PipelineView(ctx *command.Context, branch string, pipelineID uint64, watch bool) (err error) {
+	if pipelineID <= 0 {
+		return errors.New("Invalid pipeline id.")
+	}
+
 	if watch {
-		if err = BuildCheckLoop(ctx, strconv.FormatInt(int64(pipelineID), 10)); err != nil {
+		if err = common.BuildCheckLoop(ctx, pipelineID); err != nil {
 			fmt.Println("[Warn]", err)
 		}
 	}
 
 	if _, err := os.Stat(".git"); err != nil {
-		return err
+		return errors.New("Not a valid git repository directory.")
 	}
 
 	if branch == "" {
-		b, err := common.GetWorkspaceBranch()
+		b, err := dicedir.GetWorkspaceBranch()
 		if err != nil {
 			return err
 		}
 		branch = b
 	}
 
-	// TODO gittar-adaptor 提供 API 根据 branch & git remote url 查询 pipelineID
-	// fetch appID
-	var orgName, projectName, appName string
-	if repo != "" {
-		orgName, projectName, appName, err = common.GetWorkspaceInfoFromErdaRepo(repo)
-	} else {
-		orgName, projectName, appName, err = common.GetWorkspaceInfo()
-	}
+	info, err := dicedir.GetWorkspaceInfo(command.Remote)
 	if err != nil {
-		return errors.Wrapf(err, "failed to GetWorksapceInfo, repo: %s", repo)
+		return errors.Wrap(err, "failed to get  workspace info")
 	}
 
-	org, err := common.GetOrgDetail(ctx, orgName)
+	org, err := common.GetOrgDetail(ctx, info.Org)
 	if err != nil {
 		return err
 	}
 
-	orgID := strconv.FormatUint(org.Data.ID, 10)
-	repoStats, err := common.GetRepoStats(ctx, orgID, projectName, appName)
+	repoStats, err := common.GetRepoStats(ctx, org.ID, info.Project, info.Application)
 	if err != nil {
-		return errors.Wrapf(err, "orgID: %v, projectName: %s, appName: %s", orgID, projectName, appName)
+		return errors.Wrapf(err, "orgID: %v, projectName: %s, appName: %s", org.ID, info.Project, info.Application)
 	}
+
 	// fetch ymlName path
 	var pipelineCombResp apistructs.PipelineInvokedComboResponse
 	response, err := ctx.Get().Path("/api/cicds/actions/app-invoked-combos").
-		Param("appID", strconv.FormatInt(repoStats.Data.ApplicationID, 10)).
+		Param("appID", strconv.FormatInt(repoStats.ApplicationID, 10)).
 		Do().JSON(&pipelineCombResp)
 	if err != nil {
 		return err
@@ -116,7 +101,8 @@ func RunViewPipe(ctx *command.Context, repo, branch string, pipelineID int, watc
 	for _, v := range pipelineCombResp.Data {
 		if v.Branch == branch {
 			for _, item := range v.PagingYmlNames {
-				if item != apistructs.DefaultPipelineYmlName {
+				if item != apistructs.DefaultPipelineYmlName &&
+					!strings.HasPrefix(item, dicedir.ProjectPipelineDir) {
 					ymlName = item
 				}
 			}
@@ -124,30 +110,22 @@ func RunViewPipe(ctx *command.Context, repo, branch string, pipelineID int, watc
 	}
 
 	// fetch pipeline info
-	var pipelineInfoResp apistructs.PipelineDetailResponse
-	response, err = ctx.Get().Path(fmt.Sprintf("/api/pipelines/%d", pipelineID)).
-		Do().JSON(&pipelineInfoResp)
+	pipelineInfo, err := common.GetPipeline(ctx, pipelineID)
 	if err != nil {
 		return err
-	}
-	if !response.IsOK() {
-		return errors.Errorf("status fail, status code: %d, err: %+v", response.StatusCode(), pipelineInfoResp.Error)
-	}
-	if !pipelineInfoResp.Success {
-		return errors.Errorf("status fail: %+v", pipelineInfoResp.Error)
 	}
 
 	var (
 		data              [][]string
 		currentStageIndex int
-		total             = len(pipelineInfoResp.Data.PipelineStages)
+		total             = len(pipelineInfo.PipelineStages)
 	)
-	for i, stage := range pipelineInfoResp.Data.PipelineStages {
+	for i, stage := range pipelineInfo.PipelineStages {
 		success := true
 		for _, task := range stage.PipelineTasks {
 			success = success && task.Status.IsSuccessStatus()
 			data = append(data, []string{
-				strconv.Itoa(pipelineID),
+				strconv.FormatUint(pipelineID, 10),
 				strconv.FormatUint(task.ID, 10),
 				task.Name,
 				task.Status.String(),
@@ -165,15 +143,15 @@ func RunViewPipe(ctx *command.Context, repo, branch string, pipelineID int, watc
 	}).Data(data).Flush(); err != nil {
 		return err
 	}
-	printMetadata(pipelineInfoResp.Data.PipelineStages)
-	seeMore(ctx, orgName, int(repoStats.Data.ProjectID), int(repoStats.Data.ApplicationID), branch, pipelineID, ymlName)
+	printMetadata(pipelineInfo.PipelineStages)
+	seeMore(ctx, info.Org, int(repoStats.ProjectID), int(repoStats.ApplicationID), branch, pipelineID, ymlName)
 	return nil
 }
 
-func seeMore(ctx *command.Context, orgName string, projectID, appID int, branch string, pipelineID int, pipelineName string) {
+func seeMore(ctx *command.Context, orgName string, projectID, appID int, branch string, pipelineID uint64, pipelineName string) {
 	frontUrl := ctx.Get().Path(fmt.Sprintf("/%s/dop/projects/%v/apps/%v/pipeline",
 		orgName, projectID, appID)).
-		Param("pipelineID", strconv.Itoa(pipelineID)).
+		Param("pipelineID", strconv.FormatUint(pipelineID, 10)).
 		Param("nodeId", base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{
 			strconv.FormatInt(int64(projectID), 10),
 			strconv.FormatInt(int64(appID), 10),

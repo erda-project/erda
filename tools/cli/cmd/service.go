@@ -40,22 +40,22 @@ var SERVICE = command.Command{
 	Run: ServiceList,
 }
 
-func ServiceList(ctx *command.Context, noHeaders bool, orgId, projectId uint64, org, workspace, runtime string) error {
+func ServiceList(ctx *command.Context, noHeaders bool, orgId, applicationId uint64, org, workspace, runtime string) error {
 	checkOrgParam(org, orgId)
 	orgId, err := getOrgId(ctx, org, orgId)
 	if err != nil {
 		return err
 	}
 
-	if projectId <= 0 {
-		return errors.New("invalid project id")
+	if applicationId <= 0 {
+		return errors.New("invalid application id")
 	}
 
 	if workspace == "" || runtime == "" {
 		return errors.New("invalid workspace or runtime")
 	}
 
-	list, err := common.GetSerivceList(ctx, orgId, projectId, workspace, runtime)
+	list, err := common.GetSerivceList(ctx, orgId, applicationId, workspace, runtime)
 	if err != nil {
 		return err
 	}

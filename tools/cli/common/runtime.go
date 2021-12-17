@@ -162,9 +162,9 @@ func CreateRuntime(ctx *command.Context, orgId, projectId, applicationId uint64,
 	return resp.Data, nil
 }
 
-func GetDeploymentStatus(ctx *command.Context, orgId, deploymentId uint64) (apistructs.PipelineStatus, error) {
+func GetDeploymentStatus(ctx *command.Context, deploymentId uint64) (apistructs.PipelineStatus, error) {
 
-	pipeline, err := GetPipeline(ctx, orgId, deploymentId)
+	pipeline, err := GetPipeline(ctx, deploymentId)
 	if err != nil {
 		return apistructs.PipelineEmptyStatus, err
 	}

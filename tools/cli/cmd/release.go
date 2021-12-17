@@ -66,6 +66,7 @@ func ReleaseList(ctx *command.Context, noHeaders bool, orgId, applicationId uint
 			data = append(data, []string{
 				l.ReleaseID,
 				l.ReleaseName,
+				l.Version,
 				l.UpdatedAt.String(),
 				gitBranch,
 				gitCommit,
@@ -75,7 +76,7 @@ func ReleaseList(ctx *command.Context, noHeaders bool, orgId, applicationId uint
 		t := table.NewTable()
 		if !noHeaders {
 			t.Header([]string{
-				"ReleaseID", "ReleaseName", "UpdatedAt", "GitBranch", "GitCommit",
+				"ReleaseID", "ReleaseName", "Version", "UpdatedAt", "GitBranch", "GitCommit",
 			})
 		}
 		err = t.Data(data).Flush()

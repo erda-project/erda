@@ -44,5 +44,6 @@ func OrgOpen(ctx *command.Context, orgId uint64, org string) error {
 		return err
 	}
 
+	ctx.Succ("Open organization in browser.")
 	return nil
 }

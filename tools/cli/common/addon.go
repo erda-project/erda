@@ -21,6 +21,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/erda-project/erda/pkg/http/httpclient"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/tools/cli/command"
@@ -29,19 +31,29 @@ import (
 	"github.com/erda-project/erda/tools/cli/httputils"
 )
 
-func GetAddonDetail(ctx *command.Context, orgId uint64, addonId string) (
-	apistructs.AddonFetchResponseData, error) {
-	var (
-		resp apistructs.AddonFetchResponse
-		b    bytes.Buffer
-	)
+func GetAddonResp(ctx *command.Context, orgId uint64, addonId string) (
+	*httpclient.Response, bytes.Buffer, error) {
+	var b bytes.Buffer
 
 	response, err := ctx.Get().Header("Org-ID", strconv.FormatUint(orgId, 10)).
 		Path(fmt.Sprintf("/api/addons/%s", addonId)).
 		Do().Body(&b)
 	if err != nil {
-		return apistructs.AddonFetchResponseData{}, fmt.Errorf(format.FormatErrMsg(
+		return nil, b, fmt.Errorf(format.FormatErrMsg(
 			"get addon detail", "failed to request ("+err.Error()+")", false))
+	}
+
+	return response, b, nil
+}
+
+func GetAddonDetail(ctx *command.Context, orgId uint64, addonId string) (
+	apistructs.AddonFetchResponseData, error) {
+	var resp apistructs.AddonFetchResponse
+	var b bytes.Buffer
+
+	response, b, err := GetAddonResp(ctx, orgId, addonId)
+	if err != nil {
+		return apistructs.AddonFetchResponseData{}, err
 	}
 
 	if !response.IsOK() {
@@ -51,12 +63,12 @@ func GetAddonDetail(ctx *command.Context, orgId uint64, addonId string) (
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return apistructs.AddonFetchResponseData{}, fmt.Errorf(format.FormatErrMsg("get application detail",
+		return apistructs.AddonFetchResponseData{}, fmt.Errorf(format.FormatErrMsg("get addon detail",
 			fmt.Sprintf("failed to unmarshal addon detail response ("+err.Error()+")"), false))
 	}
 
 	if !resp.Success {
-		return apistructs.AddonFetchResponseData{}, fmt.Errorf(format.FormatErrMsg("get application detail",
+		return apistructs.AddonFetchResponseData{}, fmt.Errorf(format.FormatErrMsg("get addon detail",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
 	}
@@ -156,7 +168,6 @@ func CreateErdaAddon(ctx *command.Context, orgId, projectId uint64, clusterName,
 	}
 
 	aId := response.Data
-	fmt.Println(aId)
 	err = dicedir.DoTaskWithTimeout(func() (bool, error) {
 		s, err := GetAddonDetail(ctx, orgId, aId)
 		if err == nil && s.Status == "ATTACHED" {

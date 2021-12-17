@@ -17,9 +17,12 @@ package cmd
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/types"
 	"github.com/erda-project/erda/pkg/terminal/table"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/common"
@@ -35,11 +38,12 @@ var PROJECT = command.Command{
 		command.Uint64Flag{Short: "", Name: "org-id", Doc: "the id of an organization ", DefaultValue: 0},
 		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization ", DefaultValue: ""},
 		command.IntFlag{Short: "", Name: "page-size", Doc: "the number of page size", DefaultValue: 10},
+		command.BoolFlag{Short: "", Name: "with-owner", Doc: "if true, return owners of projects", DefaultValue: false},
 	},
 	Run: GetProjects,
 }
 
-func GetProjects(ctx *command.Context, noHeaders bool, orgId uint64, org string, pageSize int) error {
+func GetProjects(ctx *command.Context, noHeaders bool, orgId uint64, org string, pageSize int, withOwner bool) error {
 	checkOrgParam(org, orgId)
 	orgId, err := getOrgId(ctx, org, orgId)
 	if err != nil {
@@ -55,20 +59,39 @@ func GetProjects(ctx *command.Context, noHeaders bool, orgId uint64, org string,
 
 		data := [][]string{}
 		for _, p := range pagingProject.List {
-			data = append(data, []string{
+			line := []string{
 				strconv.FormatUint(p.ID, 10),
 				p.Name,
 				p.DisplayName,
-				p.Desc,
-			})
-		}
+			}
 
-		headers := []string{
-			"ProjectID", "Name", "DisplayName", "Description",
+			if withOwner {
+				var ns []string
+				ms, err := common.GetMembers(ctx, apistructs.ProjectScope, p.ID, []string{types.RoleProjectOwner})
+				if err != nil {
+					return false, err
+				}
+				for _, m := range ms {
+					ns = append(ns, m.Nick)
+				}
+				line = append(line, strings.Join(ns, ","))
+			}
+
+			line = append(line, p.Desc)
+
+			data = append(data, line)
 		}
 
 		t := table.NewTable()
 		if !noHeaders {
+			headers := []string{
+				"ProjectID", "Name", "DisplayName",
+			}
+			if withOwner {
+				headers = append(headers, "Owner")
+			}
+			headers = append(headers, "Description")
+
 			t.Header(headers)
 		}
 		err = t.Data(data).Flush()

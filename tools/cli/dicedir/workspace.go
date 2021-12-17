@@ -108,11 +108,7 @@ func GetWorkspaceInfo(remoteName string) (WorkspaceInfo, error) {
 
 	re := regexp.MustCompile(`\r?\n`)
 	newStr := re.ReplaceAllString(string(out), "")
-	return GetWorkspaceInfoFromErdaRepo(newStr)
-}
-
-func GetWorkspaceInfoFromErdaRepo(erdaRepo string) (org, project, app string, err error) {
-	u, err := url.Parse(erdaRepo)
+	u, err := url.Parse(newStr)
 	if err != nil {
 		return WorkspaceInfo{}, err
 	}

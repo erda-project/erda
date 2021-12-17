@@ -16,19 +16,20 @@ package common
 
 import (
 	"fmt"
-	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/terminal/color_str"
 	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/format"
 )
 
-func GetPipeline(ctx *command.Context, orgId, pipelineId uint64) (apistructs.PipelineDetailDTO, error) {
+func GetPipeline(ctx *command.Context, pipelineId uint64) (apistructs.PipelineDetailDTO, error) {
 	// fetch pipeline info
 	var pipelineInfoResp apistructs.PipelineDetailResponse
 	response, err := ctx.Get().
-		Header("Org-ID", strconv.FormatUint(orgId, 10)).
 		Path(fmt.Sprintf("/api/pipelines/%d", pipelineId)).
 		Do().JSON(&pipelineInfoResp)
 	if err != nil {
@@ -42,4 +43,102 @@ func GetPipeline(ctx *command.Context, orgId, pipelineId uint64) (apistructs.Pip
 	}
 
 	return *pipelineInfoResp.Data, nil
+}
+
+// BuildCheckLoop checks build status in a loop while interactive is true
+func BuildCheckLoop(ctx *command.Context, pipelineId uint64) error {
+	type taskInfoHinted struct {
+		Running bool
+		Fail    bool
+		Done    bool
+	}
+
+	var (
+		stageDone        = map[uint64]struct{}{}
+		taskDone         = map[uint64]struct{}{}
+		taskInfoOutputed = map[uint64]taskInfoHinted{}
+		currentStage     uint64
+	)
+
+	for {
+		pipelineInfo, err := GetPipeline(ctx, pipelineId)
+		if err != nil {
+			return err
+		}
+
+		for i, stage := range pipelineInfo.PipelineStages {
+			if _, ok := stageDone[stage.ID]; ok {
+				continue
+			}
+
+			if stage.ID != currentStage {
+				fmt.Print(color_str.Green(fmt.Sprintf("\u2739 Stage %d\n", i)))
+				currentStage = stage.ID
+			}
+
+			currentStageDone := true
+			for _, task := range stage.PipelineTasks {
+				if _, ok := taskDone[task.ID]; ok {
+					continue
+				}
+
+				v, ok := taskInfoOutputed[task.ID]
+				if !ok {
+					taskInfoOutputed[task.ID] = taskInfoHinted{}
+					v = taskInfoHinted{}
+				}
+
+				switch task.Status {
+				case apistructs.PipelineStatusQueue, apistructs.PipelineStatusRunning:
+					currentStageDone = false
+					if !v.Running {
+						fmt.Print(color_str.Green(fmt.Sprintf("    \u2615 Run task: %s\n", task.Name)))
+						v.Running = true
+					}
+				case apistructs.PipelineStatusStopByUser, apistructs.PipelineStatusFailed, apistructs.PipelineStatusTimeout:
+					currentStageDone = false
+					if !v.Fail {
+						fmt.Print(color_str.Red(fmt.Sprintf("    \u2718 Fail task: %s\n", task.Name)))
+						v.Fail = true
+					}
+				case apistructs.PipelineStatusSuccess:
+					currentStageDone = true
+					if !v.Done {
+						fmt.Print(color_str.Green(fmt.Sprintf("    \u2714 Success task: %s\n", task.Name)))
+						taskDone[task.ID] = struct{}{}
+						v.Done = true
+					}
+				default:
+					currentStageDone = false
+				}
+				taskInfoOutputed[task.ID] = v
+			}
+
+			if !currentStageDone { // current stage is not done, don't need check next stage
+				break
+			}
+			stageDone[stage.ID] = struct{}{}
+		}
+
+		if pipelineInfo.Status == apistructs.PipelineStatusStopByUser ||
+			pipelineInfo.Status == apistructs.PipelineStatusFailed ||
+			pipelineInfo.Status == apistructs.PipelineStatusTimeout {
+			fmt.Print(color_str.Green(fmt.Sprintf("build faild, status: %s, time elapsed: %s\n",
+				pipelineInfo.Status, format.ToTimeSpanString(int(pipelineInfo.CostTimeSec)))))
+			var msg = "nil"
+			if showMessage := pipelineInfo.Extra.ShowMessage; showMessage != nil {
+				fmt.Println(showMessage.Stacks)
+				msg = showMessage.Msg
+			}
+			return fmt.Errorf(format.FormatErrMsg("pipeline info",
+				"build error: "+msg, false))
+		}
+
+		if pipelineInfo.Status == apistructs.PipelineStatusSuccess {
+			fmt.Print(color_str.Green(fmt.Sprintf("\nbuild succ, time elapsed: %s\n", format.ToTimeSpanString(int(pipelineInfo.CostTimeSec)))))
+			return nil
+		}
+
+		time.Sleep(time.Second * 2)
+	}
 }

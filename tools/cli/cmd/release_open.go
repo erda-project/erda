@@ -62,5 +62,6 @@ func ReleaseOpen(ctx *command.Context, orgId uint64, org, release string) error 
 		return err
 	}
 
+	ctx.Succ("Open release in browser.")
 	return nil
 }

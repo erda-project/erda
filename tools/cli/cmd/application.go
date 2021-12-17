@@ -40,7 +40,7 @@ var APPLICATION = command.Command{
 		command.StringFlag{Short: "", Name: "org", Doc: "the name of an organization", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "project", Doc: "the name of a project", DefaultValue: ""},
 		command.IntFlag{Short: "", Name: "page-size", Doc: "the number of page size", DefaultValue: 10},
-		command.BoolFlag{Short: "", Name: "with-owner", Doc: "if true, return owners of projects", DefaultValue: false},
+		command.BoolFlag{Short: "", Name: "with-owner", Doc: "if true, return owners of applications", DefaultValue: false},
 	},
 	Run: GetApplications,
 }
@@ -132,7 +132,7 @@ func getApplicationId(ctx *command.Context, orgId, projectId uint64, application
 		}
 		applicationId = appId
 	}
-	if applicationId < 0 {
+	if applicationId <= 0 {
 		return applicationId, errors.New("Invalid application id")
 	}
 

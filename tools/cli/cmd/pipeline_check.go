@@ -34,7 +34,7 @@ var PIPELINECHECK = command.Command{
 		command.StringFlag{
 			"f",
 			"file",
-			"specify the path of pipeline.yml file, default: .dice/pipelines/pipeline.yml",
+			"specify the path of pipeline.yml file",
 			".dice/pipelines/pipeline.yml"},
 	},
 	Run: PipelineCheck,

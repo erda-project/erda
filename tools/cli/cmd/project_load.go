@@ -134,7 +134,7 @@ func ProjectLoad(ctx *command.Context, orgId, projectId uint64, org, project, co
 	var taskRunners []dicedir.TaskRunner
 	for _, deployment := range rDeployments {
 		taskRunners = append(taskRunners, func() bool {
-			status, err := common.GetDeploymentStatus(ctx, orgId, deployment.PipelineID)
+			status, err := common.GetDeploymentStatus(ctx, deployment.PipelineID)
 			if err == nil && status == apistructs.PipelineStatusSuccess {
 				return true
 			}
@@ -146,6 +146,7 @@ func ProjectLoad(ctx *command.Context, orgId, projectId uint64, org, project, co
 		return err
 	}
 
+	ctx.Succ(fmt.Sprintf("Project %s loaded.", project))
 	return nil
 }
 

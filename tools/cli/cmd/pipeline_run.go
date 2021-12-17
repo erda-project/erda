@@ -102,7 +102,7 @@ func PipelineRun(ctx *command.Context, branch, filename string) error {
 	if !pipelineResp.Success {
 		return errors.Errorf("build fail: %+v", pipelineResp.Error)
 	}
-	ctx.Succ("run pipeline: %s for branch: %s, pipelineID: %d, you can view building status via `erda-cli pipeline status -i %d`",
+	ctx.Succ("run pipeline: %s for branch: %s, pipelineID: %d, you can view building status via `erda-cli pipeline view -i %d`",
 		filename, branch, pipelineResp.Data.ID, pipelineResp.Data.ID)
 
 	return nil

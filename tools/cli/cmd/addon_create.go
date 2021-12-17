@@ -41,14 +41,14 @@ var ADDONCREATE = command.Command{
 		command.StringFlag{Short: "", Name: "name", Doc: "the name of the addon instance", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "configs", Doc: "the configs of the addon instance in format of key/value. (e.g. --configs='key1=value1,key2=value2')"},
 		command.StringFlag{Short: "", Name: "plan", Doc: "the plan of the addon instance", DefaultValue: ""},
-		command.IntFlag{Short: "", Name: "wait-addon", Doc: "the minutes to wait erad addon create", DefaultValue: 3},
+		command.IntFlag{Short: "", Name: "wait-minutes", Doc: "the minutes to wait erad addon create", DefaultValue: 3},
 		// command.StringListFlag{Short: "", Name: "erda-yaml", Doc: "the erda.yml path to add addon", DefaultValue: nil},
 	},
 	Run: AddonCreate,
 }
 
 func AddonCreate(ctx *command.Context, orgId, projectId uint64, org, project, workspace,
-	addonType, addonName, name, configs, plan string, waitAddon int) error {
+	addonType, addonName, name, configs, plan string, waitMinutes int) error {
 	checkOrgParam(org, orgId)
 	checkProjectParam(project, projectId)
 	if !apistructs.WorkSpace(workspace).Valide() {
@@ -79,7 +79,7 @@ func AddonCreate(ctx *command.Context, orgId, projectId uint64, org, project, wo
 		if err != nil {
 			return err
 		}
-		err = common.CreateErdaAddon(ctx, orgId, projectId, p.ClusterConfig[workspace], workspace, name, plan, waitAddon)
+		err = common.CreateErdaAddon(ctx, orgId, projectId, p.ClusterConfig[workspace], workspace, name, plan, waitMinutes)
 		if err != nil {
 			return err
 		}

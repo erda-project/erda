@@ -52,5 +52,6 @@ func ProjectOpen(ctx *command.Context, orgId, projectId uint64, org, project str
 		return err
 	}
 
+	ctx.Succ("Open project in browser.")
 	return nil
 }
