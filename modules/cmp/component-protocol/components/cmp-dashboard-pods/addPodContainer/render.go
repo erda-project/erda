@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -30,6 +31,6 @@ func init() {
 
 func (p *ComponentAddPodContainer) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,
 	event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	component.Props = Props{FullHeight: true}
+	component.Props = cputil.MustConvertProps(Props{FullHeight: true})
 	return nil
 }

@@ -162,7 +162,7 @@ func (i *ComponentWorkloadInfo) SetComponentValue(ctx context.Context) error {
 }
 
 func (i *ComponentWorkloadInfo) Transfer(c *cptype.Component) {
-	c.Props = i.Props
+	c.Props = cputil.MustConvertProps(i.Props)
 	c.Data = map[string]interface{}{
 		"data": i.Data.Data,
 	}

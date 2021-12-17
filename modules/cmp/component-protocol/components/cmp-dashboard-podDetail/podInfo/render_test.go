@@ -15,7 +15,6 @@
 package PodInfo
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -79,20 +78,14 @@ func TestPodInfo_Transfer(t *testing.T) {
 		},
 	}
 
-	expectedData, err := json.Marshal(component)
-	if err != nil {
-		t.Error(err)
-	}
-
 	result := &cptype.Component{}
 	component.Transfer(result)
-	resultData, err := json.Marshal(result)
+	isEqual, err := cputil.IsDeepEqual(result, component)
 	if err != nil {
 		t.Error(err)
 	}
-
-	if string(expectedData) != string(resultData) {
-		t.Errorf("test failed, expected:\n%s\ngot:\n%s", expectedData, resultData)
+	if !isEqual {
+		t.Error("test failed, data is changed after transfer")
 	}
 }
 
@@ -106,7 +99,7 @@ func TestPodInfo_GenComponentState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ok, err := cputil.IsJsonEqual(c.State, podInfo.State)
+	ok, err := cputil.IsDeepEqual(c.State, podInfo.State)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -16,7 +16,6 @@ package ContainerTable
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -77,20 +76,14 @@ func TestComponentContainerTable_Transfer(t *testing.T) {
 		},
 	}
 
-	expectedData, err := json.Marshal(component)
-	if err != nil {
-		t.Error(err)
-	}
-
 	result := &cptype.Component{}
 	component.Transfer(result)
-	resultData, err := json.Marshal(result)
+	isEqual, err := cputil.IsDeepEqual(result, component)
 	if err != nil {
 		t.Error(err)
 	}
-
-	if string(expectedData) != string(resultData) {
-		t.Errorf("test failed, expected:\n%s\ngot:\n%s", expectedData, resultData)
+	if !isEqual {
+		t.Error("test failed, data is changed after transfer")
 	}
 }
 
@@ -103,7 +96,7 @@ func TestContainerTable_GenComponentState(t *testing.T) {
 	if err := ct.GenComponentState(c); err != nil {
 		t.Fatal(err)
 	}
-	ok, err := cputil.IsJsonEqual(ct.State, c.State)
+	ok, err := cputil.IsDeepEqual(ct.State, c.State)
 	if err != nil {
 		t.Fatal(err)
 	}

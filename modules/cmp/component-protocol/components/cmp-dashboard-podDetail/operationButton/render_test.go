@@ -38,7 +38,7 @@ func TestComponentOperationButton_GenComponentState(t *testing.T) {
 		t.Error(err)
 	}
 
-	isEqual, err := cputil.IsJsonEqual(b.State, c.State)
+	isEqual, err := cputil.IsDeepEqual(b.State, c.State)
 	if err != nil {
 		t.Error(err)
 	}
@@ -101,7 +101,7 @@ func TestComponentOperationButton_SetComponentValue(t *testing.T) {
 		},
 	}
 
-	isEqual, err := cputil.IsJsonEqual(expected, b)
+	isEqual, err := cputil.IsDeepEqual(expected, b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -174,7 +174,7 @@ func TestComponentOperationButton_Transfer(t *testing.T) {
 	var c cptype.Component
 	b.Transfer(&c)
 
-	isEqual, err := cputil.IsJsonEqual(b, c)
+	isEqual, err := cputil.IsDeepEqual(b, c)
 	if err != nil {
 		t.Error(err)
 	}

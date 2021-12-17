@@ -226,7 +226,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			if viewType != issueViewGroup.ViewTypeTable {
 				visible = false
 				c.Props = map[string]interface{}{}
-				c.Props.(map[string]interface{})["visible"] = visible
+				c.Props["visible"] = visible
 				return nil
 			}
 		}
@@ -542,7 +542,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
     "rowKey": "id",
 	"pageSizeOptions": ["10", "20", "50", "100"]
 }`
-	var propsI interface{}
+	var propsI cptype.ComponentProps
 	if err := json.Unmarshal([]byte(props), &propsI); err != nil {
 		return err
 	}
@@ -557,7 +557,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			"reload": true,
 		},
 	}
-	c.Props.(map[string]interface{})["visible"] = visible
+	c.Props["visible"] = visible
 	(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = userids
 	if c.State == nil {
 		c.State = map[string]interface{}{}

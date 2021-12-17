@@ -24,7 +24,7 @@ import (
 )
 
 func (eventTable *EventTitle) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	c.Props = Props{Title: cputil.I18n(ctx, "events")}
+	c.Props = cputil.MustConvertProps(Props{Title: cputil.I18n(ctx, "events")})
 	return nil
 }
 

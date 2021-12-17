@@ -165,7 +165,7 @@ func TestComponentFilter_Transfer(t *testing.T) {
 	}
 	c := &cptype.Component{}
 	component.Transfer(c)
-	ok, err := cputil.IsJsonEqual(c, component)
+	ok, err := cputil.IsDeepEqual(c, component)
 	if err != nil {
 		t.Fatal(err)
 	}

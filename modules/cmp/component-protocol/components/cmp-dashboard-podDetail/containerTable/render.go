@@ -220,7 +220,7 @@ func (containerTable *ContainerTable) GenComponentState(c *cptype.Component) err
 }
 
 func (containerTable *ContainerTable) Transfer(c *cptype.Component) {
-	c.Props = containerTable.Props
+	c.Props = cputil.MustConvertProps(containerTable.Props)
 	c.Data = map[string]interface{}{}
 	for k, v := range containerTable.Data {
 		c.Data[k] = v

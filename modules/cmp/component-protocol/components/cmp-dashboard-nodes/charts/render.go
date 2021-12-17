@@ -52,7 +52,7 @@ func (cht Charts) Render(ctx context.Context, c *cptype.Component, scenario cpty
 	cht.Props = Props{
 		Gutter: 8,
 	}
-	c.Props = cht.Props
+	c.Props = cputil.MustConvertProps(cht.Props)
 	cht.SDK = cputil.SDK(ctx)
 
 	clusterName := ""

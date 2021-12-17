@@ -102,7 +102,7 @@ func (b *ComponentAddWorkloadButton) InitComponent(ctx context.Context) {
 }
 
 func (b *ComponentAddWorkloadButton) Transfer(component *cptype.Component) {
-	component.Props = b.Props
+	component.Props = cputil.MustConvertProps(b.Props)
 	component.State = map[string]interface{}{
 		"workloadKind": b.State.WorkloadKind,
 	}

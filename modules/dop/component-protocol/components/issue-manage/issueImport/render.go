@@ -41,12 +41,12 @@ type ComponentAction struct{ base.DefaultProvider }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	sdk := cputil.SDK(ctx)
-	c.Props = IssueImportProps{
+	c.Props = cputil.MustConvertProps(IssueImportProps{
 		Size:       "small",
 		Tooltip:    "导入",
 		PrefixIcon: "import",
 		Visible:    sdk.InParams["fixedIssueType"].(string) != "ALL",
-	}
+	})
 
 	isGuest, err := ca.CheckUserPermission(ctx)
 	if err != nil {

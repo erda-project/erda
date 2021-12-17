@@ -372,7 +372,7 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 }
 
 func (t *ComponentEventTable) Transfer(component *cptype.Component) {
-	component.Props = t.Props
+	component.Props = cputil.MustConvertProps(t.Props)
 	component.Data = map[string]interface{}{"list": t.Data.List}
 	component.State = map[string]interface{}{
 		"clusterName":          t.State.ClusterName,

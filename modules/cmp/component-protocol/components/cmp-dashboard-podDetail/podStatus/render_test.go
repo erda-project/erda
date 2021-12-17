@@ -31,7 +31,7 @@ func TestPodStatus_GenComponentState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ok, err := cputil.IsJsonEqual(c.State, podStatus.State)
+	ok, err := cputil.IsDeepEqual(c.State, podStatus.State)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestPodStatus_Transfer(t *testing.T) {
 	c := &cptype.Component{}
 	podStatus.Transfer(c)
 
-	ok, err := cputil.IsJsonEqual(c, podStatus)
+	ok, err := cputil.IsDeepEqual(c, podStatus)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -32,7 +32,7 @@ func (nodeStatus *NodeStatus) Render(ctx context.Context, c *cptype.Component, s
 	status := node.StringSlice("metadata", "fields")[1]
 	nodeStatus.Props.Text = nodeStatus.SDK.I18n(status)
 	nodeStatus.Props.Status = common.GetStatus(status)
-	c.Props = nodeStatus.Props
+	c.Props = cputil.MustConvertProps(nodeStatus.Props)
 	delete(*gs, "node")
 	return nil
 }

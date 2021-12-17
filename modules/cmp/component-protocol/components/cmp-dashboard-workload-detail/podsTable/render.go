@@ -843,7 +843,7 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 }
 
 func (p *ComponentPodsTable) Transfer(c *cptype.Component) {
-	c.Props = p.Props
+	c.Props = cputil.MustConvertProps(p.Props)
 	c.State = map[string]interface{}{
 		"clusterName":       p.State.ClusterName,
 		"workloadId":        p.State.WorkloadID,

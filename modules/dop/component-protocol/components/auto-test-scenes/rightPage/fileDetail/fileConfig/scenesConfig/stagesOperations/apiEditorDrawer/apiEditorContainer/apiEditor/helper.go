@@ -20,6 +20,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/autotest/step"
 	"github.com/erda-project/erda/pkg/expression"
 )
@@ -356,7 +357,7 @@ var defaultReplaceOptions = []replaceOption{
 	},
 }
 
-func genProps(input, execute string, replaceOpts ...replaceOption) interface{} {
+func genProps(input, execute string, replaceOpts ...replaceOption) cptype.ComponentProps {
 	// because props are assembled by splicing json strings,
 	// dynamic setting values can only be replaced by placeholders.
 	var propsJson = props1 + input + props2 + input + props3 + execute + props4
@@ -369,9 +370,10 @@ func genProps(input, execute string, replaceOpts ...replaceOption) interface{} {
 		propsJson = strings.ReplaceAll(propsJson, opt.key.string(), opt.value)
 	}
 
-	var propsI interface{}
+	var propsI cptype.ComponentProps
 	if err := json.Unmarshal([]byte(propsJson), &propsI); err != nil {
 		logrus.Errorf("init props name=testplan component=formModal propsType=CreateTestPlan err: errMsg: %v", err)
+		return cptype.ComponentProps{}
 	}
 
 	return propsI

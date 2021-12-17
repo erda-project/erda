@@ -81,7 +81,7 @@ func (infoDetail *InfoDetail) Render(ctx context.Context, c *cptype.Component, s
 	d.Annotation = infoDetail.getAnnotations(node)
 	d.Taints = infoDetail.getTaints(node)
 	d.Survive = node.StringSlice("metadata", "fields")[3]
-	c.Props = infoDetail.Props
+	c.Props = cputil.MustConvertProps(infoDetail.Props)
 	c.Data = map[string]interface{}{"data": d}
 	return nil
 }

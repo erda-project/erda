@@ -38,8 +38,8 @@ type Props struct {
 }
 
 func (g *Group) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	c.Props = Props{
+	c.Props = cputil.MustConvertProps(Props{
 		Title: cputil.I18n(ctx, "at-case-rate-trending-chart"),
-	}
+	})
 	return nil
 }

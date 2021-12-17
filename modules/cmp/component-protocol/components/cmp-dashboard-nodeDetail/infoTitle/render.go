@@ -30,7 +30,7 @@ func (infoTitle *InfoTitle) Render(ctx context.Context, c *cptype.Component, s c
 	infoTitle.Ctx = ctx
 	infoTitle.SDK = cputil.SDK(ctx)
 	infoTitle.Props = Props{Title: infoTitle.SDK.I18n("nodeInfo"), Size: "small"}
-	c.Props = infoTitle.Props
+	c.Props = cputil.MustConvertProps(infoTitle.Props)
 	return nil
 }
 

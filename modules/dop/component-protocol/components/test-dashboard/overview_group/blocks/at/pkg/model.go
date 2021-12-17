@@ -14,6 +14,11 @@
 
 package pkg
 
+import (
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+)
+
 const (
 	ColorTextMain = "text-main"
 	ColorTextDesc = "text-desc"
@@ -47,8 +52,8 @@ type (
 	}
 )
 
-func (tv *TextValue) ConvertToProps() Props {
-	return Props{
+func (tv *TextValue) ConvertToProps() cptype.ComponentProps {
+	return cputil.MustConvertProps(Props{
 		RenderType: "linkText",
 		Value: PropsValue{
 			Direction: "col",
@@ -73,5 +78,5 @@ func (tv *TextValue) ConvertToProps() Props {
 				},
 			},
 		},
-	}
+	})
 }

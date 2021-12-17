@@ -106,8 +106,8 @@ func (t *Text) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	return nil
 }
 
-func (tv TextValue) convertToProps() Props {
-	return Props{
+func (tv TextValue) convertToProps() cptype.ComponentProps {
+	return cputil.MustConvertProps(Props{
 		RenderType: "linkText",
 		Value: PropsValue{
 			Direction: "col",
@@ -132,7 +132,7 @@ func (tv TextValue) convertToProps() Props {
 				},
 			},
 		},
-	}
+	})
 }
 
 func makeMtCaseNumTotal(ctx context.Context, mtPlans []apistructs.TestPlan) TextValue {

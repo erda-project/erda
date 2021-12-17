@@ -35,6 +35,6 @@ type Title struct {
 }
 
 func (t *Title) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	c.Props.(map[string]interface{})["value"] = cputil.I18n(ctx, "Manual Test Case")
+	c.Props["value"] = cputil.I18n(ctx, "Manual Test Case")
 	return nil
 }

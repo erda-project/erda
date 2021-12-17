@@ -54,6 +54,6 @@ func (b *ComponentAddPodButton) InitComponent(ctx context.Context) {
 }
 
 func (b *ComponentAddPodButton) Transfer(component *cptype.Component) {
-	component.Props = b.Props
+	component.Props = cputil.MustConvertProps(b.Props)
 	component.Operations = b.Operations
 }

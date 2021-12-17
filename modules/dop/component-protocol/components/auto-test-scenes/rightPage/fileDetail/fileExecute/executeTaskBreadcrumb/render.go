@@ -209,7 +209,7 @@ func (a *ComponentAction) marshal(c *cptype.Component) error {
 	if err != nil {
 		return err
 	}
-	var props interface{}
+	var props cptype.ComponentProps
 	err = json.Unmarshal(propValue, &props)
 	if err != nil {
 		return err

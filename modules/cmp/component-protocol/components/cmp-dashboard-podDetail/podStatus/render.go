@@ -107,7 +107,7 @@ func (podStatus *PodStatus) GenComponentState(c *cptype.Component) error {
 }
 
 func (podStatus *PodStatus) Transfer(c *cptype.Component) {
-	c.Props = podStatus.Props
+	c.Props = cputil.MustConvertProps(podStatus.Props)
 	c.State = map[string]interface{}{
 		"clusterName": podStatus.State.ClusterName,
 		"podId":       podStatus.State.PodID,

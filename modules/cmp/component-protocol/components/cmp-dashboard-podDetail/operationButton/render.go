@@ -149,7 +149,7 @@ func (b *ComponentOperationButton) DeletePod() error {
 }
 
 func (b *ComponentOperationButton) Transfer(component *cptype.Component) {
-	component.Props = b.Props
+	component.Props = cputil.MustConvertProps(b.Props)
 	component.State = map[string]interface{}{
 		"clusterName": b.State.ClusterName,
 		"podId":       b.State.PodID,

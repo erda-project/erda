@@ -30,7 +30,7 @@ func (statusTitle *StatusTitle) Render(ctx context.Context, c *cptype.Component,
 	statusTitle.Ctx = ctx
 	statusTitle.SDK = cputil.SDK(ctx)
 	statusTitle.Props.Title = statusTitle.SDK.I18n("nodeStatus")
-	c.Props = statusTitle.Props
+	c.Props = cputil.MustConvertProps(statusTitle.Props)
 	return nil
 }
 

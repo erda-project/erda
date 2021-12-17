@@ -840,7 +840,7 @@ func (w *ComponentWorkloadTable) SetComponentValue(ctx context.Context) {
 }
 
 func (w *ComponentWorkloadTable) Transfer(c *cptype.Component) {
-	c.Props = w.Props
+	c.Props = cputil.MustConvertProps(w.Props)
 	c.Data = map[string]interface{}{
 		"list": w.Data.List,
 	}

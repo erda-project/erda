@@ -98,7 +98,7 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		})
 	}
 
-	c.Props = tableToBarChartProps(ctx, table)
+	c.Props = cputil.MustConvertProps(tableToBarChartProps(ctx, table))
 
 	return nil
 }

@@ -449,7 +449,7 @@ func (i *ComponentIssueBoard) Render(ctx context.Context, c *cptype.Component, _
 	i.issueSvc = ctx.Value(types.IssueService).(*issue_svc.Issue)
 	i.issueStateSvc = ctx.Value(types.IssueStateService).(*issuestate.IssueState)
 
-	visable := make(map[string]bool)
+	visable := cptype.ComponentProps{}
 	visable["visible"] = false
 	if i.State.IssueViewGroupValue != "kanban" {
 		visable["visible"] = false

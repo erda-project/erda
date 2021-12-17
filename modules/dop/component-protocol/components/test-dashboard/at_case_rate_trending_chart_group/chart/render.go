@@ -192,7 +192,7 @@ func (ch *Chart) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		ch.EData = eData
 		ch.PData = pData
 		ch.XAxis = XAxis{xAxis}
-		c.Props = ch.convertToProps(ctx)
+		c.Props = cputil.MustConvertProps(ch.convertToProps(ctx))
 		c.Operations = getOperations()
 		h.SetSelectChartItemData(metaData)
 		return nil
