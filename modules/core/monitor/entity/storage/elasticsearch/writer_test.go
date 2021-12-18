@@ -16,32 +16,32 @@ package elasticsearch
 
 import (
 	"context"
+	"testing"
 
-	"github.com/ahmetb/go-linq/v3"
+	"bou.ke/monkey"
 
 	"github.com/erda-project/erda-proto-go/oap/entity/pb"
 )
 
-// Writer .
-type Writer struct {
-	p   *provider
-	ctx context.Context
-}
+func Test_WriteN_Should_Success(t *testing.T) {
+	monkey.Patch((*provider).SetEntities, func(p *provider, ctx context.Context, list []*pb.Entity) (int, error) {
+		return len(list), nil
+	})
+	defer monkey.Unpatch((*provider).SetEntities)
 
-// WriteN .
-func (w *Writer) WriteN(vals ...interface{}) (n int, err error) {
-	var entities []*pb.Entity
-	linq.From(vals).ToSlice(&entities)
-	return w.p.SetEntities(w.ctx, entities)
-}
-
-// Write .
-func (w *Writer) Write(val interface{}) error {
-	if val == nil {
-		return nil
+	w := Writer{
+		ctx: context.Background(),
+		p:   &provider{},
 	}
-	return w.p.SetEntity(w.ctx, val.(*pb.Entity))
-}
 
-// Close .
-func (w *Writer) Close() error { return nil }
+	var entities []interface{}
+	entities = append(entities, &pb.Entity{Id: "1"})
+	entities = append(entities, &pb.Entity{Id: "2"})
+	result, err := w.WriteN(entities...)
+	if err != nil {
+		t.Errorf("error assert failed, expect: nil, but got: %s", err)
+	}
+	if result != 2 {
+		t.Errorf("result assert failed, expect: %d, but got: %d", 2, result)
+	}
+}
