@@ -18,6 +18,7 @@ import (
 	"context"
 	"net/http"
 
+	i18nProviders "github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 )
 
@@ -35,8 +36,14 @@ func Wrap(h Handler, wrappers ...HandlerWrapper) Handler {
 type HandlerWrapper func(handler Handler) Handler
 
 func WithI18nCodes(h Handler) Handler {
+	var lang struct{ Lang string }
 	return func(ctx context.Context, r *http.Request, vars map[string]string) (Responser, error) {
-		ctx = context.WithValue(ctx, "Lang", i18n.Language(r))
+		ctx = context.WithValue(ctx, lang, i18n.Language(r))
 		return h(ctx, r, vars)
 	}
+}
+
+func UnwrapI18nCodes(ctx context.Context) i18nProviders.LanguageCodes {
+	var lang struct{ Lang string }
+	return ctx.Value(lang).(i18nProviders.LanguageCodes)
 }

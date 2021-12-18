@@ -15,9 +15,13 @@
 // Package asset API 资产
 package assetsvc
 
-import "github.com/erda-project/erda/modules/dop/services/branchrule"
+import (
+	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/modules/dop/services/branchrule"
+)
 
 type Service struct {
+	trans         i18n.Translator
 	branchRuleSvc *branchrule.BranchRule
 }
 
@@ -31,6 +35,14 @@ func New(options ...Option) *Service {
 	return r
 }
 
+// WithI18n sets the i18n client
+func WithI18n(trans i18n.Translator) Option {
+	return func(svc *Service) {
+		svc.trans = trans
+	}
+}
+
+// WithBranchRuleSvc sets the branch rule client
 func WithBranchRuleSvc(svc *branchrule.BranchRule) Option {
 	return func(service *Service) {
 		service.branchRuleSvc = svc

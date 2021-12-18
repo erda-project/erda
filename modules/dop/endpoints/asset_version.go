@@ -49,7 +49,7 @@ func (e *Endpoints) CreateAPIVersion(ctx context.Context, r *http.Request, vars 
 		return apierrors.CreateAPIAssetVersion.MissingParameter("specDiceFileUUID").ToResp(), nil
 	}
 
-	asset, version, spec, err := e.assetSvc.CreateAPIAssetVersion(apistructs.APIAssetVersionCreateRequest{
+	asset, version, spec, err := e.assetSvc.CreateAPIAssetVersion(ctx, apistructs.APIAssetVersionCreateRequest{
 		OrgID:            orgID,
 		APIAssetID:       vars[urlPathAssetID],
 		Major:            rb.Major,

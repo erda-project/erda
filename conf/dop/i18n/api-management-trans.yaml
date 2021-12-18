@@ -1,0 +1,99 @@
+zh:
+  SwaggerFileISInvalidOAS: swagger 文件不符合 OAS2/3 标准
+  VersionLabelNotExits: "版本标签 %s 不存在"
+  FailedToCreateInstantiation: 关联实例失败
+  InvalidParams: 无效的参数
+  InvalidClientName: 无效的客户端标识
+  InvalidClientDisplayName: 无效的客户端名称
+  ClientNameIsExists: 客户端标识已存在
+  SameNameClientIsExists: 用户名下已有同名客户端
+  FailedToFindAPIAsset: 查询 API 失败
+  ClientNotExistsOrPermissionDenied: 客户端不存在或无权限
+  FailedToFindClientSecret: 查询客户端密钥失败
+  FailedToFindAccessItem: 查询访问管理失败
+  NoSALBeChosen: 未选择任何 SLA
+  FailedToApplyToCallAPI: 申请调用失败
+
+  ActionReplyToApplyToCall: 重新发起了调用申请
+  ApplyToUseSLA: 申请了 SAL %s
+  WaitForProving: 等待审批中
+  AutoProved: 自动通过了审批
+  ApplyToCallAPI: 发起了调用申请
+  MustWithOneSLA: 必须申请一个 SLA
+
+  AccessItemAlreadyExists: "访问管理条目已存在, 文档 ID: %s, 版本名称: %s"
+  ProjectErrorPleaseRetry: 关联的项目错误, 可能实例被变更, 请刷新重试
+  WorkspaceErrorPleaseRetry: workspace 错误, 可能实例被变更, 请刷新重试
+  UnsupportedOAuth2: 暂不支持 OAuth2 认证
+  UnsupportedAuthentication: 不支持的认证方式
+
+  InvalidRequestBody: 无效的请求体
+  InvalidOrgID: 无效的 OrgID
+  InvalidApprove: 无效的授权方式
+  AtLeastOneLimitInSLA: 至少包含一个限制条件
+  FailedToFindAPI: 查询 API 失败
+  FailedToFindAccessItme: 查询访问管理失败
+  CanNotNamed: 不可命名为 %s
+  SystemReservedName: 系统保留名称
+  SLAIsAlreadyExists: 同名 SLA 已存在
+  AutoAuthIsExists: "已存在自动授权的 SLA: %s, 请修改授权方式后重试"
+  FailedToCreateSLA: 新建 SLA 失败
+  LimitTimesCanNotBe0: 次数不可为 0
+  InvalidDurationUnit: 无效的时间单位
+  FailedToCreateSLALimit: 创建限制条件失败
+
+  FailedToQueryAPIDocContent: 未查询到文档内容
+  NoValidAPIDocAddressOrContent: 没有传入有效的文档地址或内容
+  InvalidAPIDocFormat: 文档格式错误
+  InvalidJsonYaml: 不是合法的 JSON 或 YAML 格式
+  MissingOASProtoSign: 文档缺失 openapi/swagger 协议标识, 无法识别其协议
+
+en:
+  SwaggerFileISInvalidOAS: invalid OAS2/3 document
+  VersionLabelNotExits: "version %s is not exists"
+  FailedToCreateInstantiation: failed to relate the instance
+  InvalidParams: invalid parameters
+  InvalidClientName: invalid client name
+  InvalidClientDisplayName: invalid client display name
+  ClientNameIsExists: the client name is already exists
+  SameNameClientIsExists: there is a same name client under the user's account
+  FailedToFindAPIAsset: failed to find the API Asset
+  ClientNotExistsOrPermissionDenied: the client is not exists or permission denied
+  FailedToFindClientSecret: failed to find the client secret
+  FailedToFindAccessItem: failed to find the access item
+  NoSALBeChosen: no SAL is chosen
+  FailedToApplyToCallAPI: failed to apply to call the API
+
+  ActionReplyToApplyToCall: apply to call the API again
+  ApplyToUseSLA: apply to use the SLA %s
+  WaitForProving: wait for proving
+  AutoProved: approved automatically
+  ApplyToCallAPI: apply to call the API
+  MustWithOneSLA: must with an SLA
+
+  AccessItemAlreadyExists: "the access item is already exists, AssetID: %s, SwaggerVersion: %s"
+  ProjectErrorPleaseRetry: the related project error, the instance may be changed, please flush page and try again
+  WorkspaceErrorPleaseRetry: the workspace error, the instance may be changed, please flush page and try again
+  UnsupportedOAuth2: unsupported OAuth2
+  UnsupportedAuthentication: unsupported authentication
+
+  InvalidRequestBody: invalid request body
+  InvalidOrgID: invalid OrgID
+  InvalidApprove: invalid authorization
+  AtLeastOneLimitInSLA: there is atleast one limit conditioni in the SLA
+  FailedToFindAPI: failed to find the API
+  FailedToFindAccessItme: failed to find the access item
+  CanNotNamed: can not named %s
+  SystemReservedName: system reserved name
+  SLAIsAlreadyExists: there is a same name SAL
+  AutoAuthIsExists: "there is already an automatically approving authorization SLA: %s, please change your authorization parameter"
+  FailedToCreateSLA: faield to create SLA
+  LimitTimesCanNotBe0: limit times can not be 0
+  InvalidDurationUnit: invalid duration unit
+  FailedToCreateSLALimit: failed to create SLA limit
+
+  FailedToQueryAPIDocContent: faiedlt to query API document content
+  NoValidAPIDocAddressOrContent: no invalid API address or document content in the request
+  InvalidAPIDocFormat: invalid API document format
+  InvalidJsonYaml: invalid JSON or YAML
+  MissingOASProtoSign: can’t recognize the document's protocol because of missing agreement statement

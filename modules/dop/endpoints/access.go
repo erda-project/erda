@@ -49,7 +49,7 @@ func (e *Endpoints) CreateAccess(ctx context.Context, r *http.Request, vars map[
 		Body:     &body,
 	}
 
-	data, apiError := e.assetSvc.CreateAccess(&req)
+	data, apiError := e.assetSvc.CreateAccess(ctx, &req)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}

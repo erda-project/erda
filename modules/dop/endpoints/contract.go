@@ -49,7 +49,7 @@ func (e *Endpoints) CreateContract(ctx context.Context, r *http.Request, vars ma
 		Body:      &body,
 	}
 
-	client, sk, contract, apiError := e.assetSvc.CreateContract(&req)
+	client, sk, contract, apiError := e.assetSvc.CreateContract(ctx, &req)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}

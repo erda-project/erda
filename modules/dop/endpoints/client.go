@@ -49,7 +49,7 @@ func (e *Endpoints) CreateClient(ctx context.Context, r *http.Request, vars map[
 		Body:     &body,
 	}
 
-	model, apiError := e.assetSvc.CreateClient(&req)
+	model, apiError := e.assetSvc.CreateClient(ctx, &req)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}

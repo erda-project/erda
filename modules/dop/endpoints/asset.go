@@ -56,7 +56,7 @@ func (e *Endpoints) CreateAPIAsset(ctx context.Context, r *http.Request, vars ma
 	}
 	req.IdentityInfo = identityInfo
 
-	assetID, err := e.assetSvc.CreateAPIAsset(req)
+	assetID, err := e.assetSvc.CreateAPIAsset(ctx, req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}

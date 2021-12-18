@@ -91,7 +91,7 @@ func (e *Endpoints) CreateSLA(ctx context.Context, r *http.Request, vars map[str
 		return apierrors.CreateSLA.InvalidParameter("无效的请求体").ToResp(), nil
 	}
 
-	if apiError := e.assetSvc.CreateSLA(&req); apiError != nil {
+	if apiError := e.assetSvc.CreateSLA(ctx, &req); apiError != nil {
 		return apiError.ToResp(), nil
 	}
 
