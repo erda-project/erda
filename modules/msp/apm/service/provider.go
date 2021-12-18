@@ -15,13 +15,19 @@
 package service
 
 import (
+	"embed"
+
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
 	transport "github.com/erda-project/erda-infra/pkg/transport"
+	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
+	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	pb "github.com/erda-project/erda-proto-go/msp/apm/service/pb"
 	"github.com/erda-project/erda/pkg/common/apis"
-	perm "github.com/erda-project/erda/pkg/common/permission"
+	// components
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components"
 )
 
 type View struct {
@@ -33,6 +39,9 @@ type config struct {
 	View []*View
 }
 
+//go:embed scenarios
+var scenarioFS embed.FS
+
 // +provider
 type provider struct {
 	Cfg               *config
@@ -40,7 +49,9 @@ type provider struct {
 	Register          transport.Register
 	apmServiceService *apmServiceService
 	Metric            metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
-	Perm              perm.Interface               `autowired:"permission"`
+	//Perm              perm.Interface               `autowired:"permission"`
+	Protocol componentprotocol.Interface
+	CPTran   i18n.I18n `autowired:"i18n"`
 }
 
 func GetView(c *config, key string) *View {
@@ -53,6 +64,8 @@ func GetView(c *config, key string) *View {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.Protocol.SetI18nTran(p.CPTran)
+	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	p.apmServiceService = &apmServiceService{p}
 	if p.Register != nil {
 		pb.RegisterApmServiceServiceImp(p.Register, p.apmServiceService, apis.Options())
