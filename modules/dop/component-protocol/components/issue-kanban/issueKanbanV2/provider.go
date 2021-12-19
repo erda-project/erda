@@ -115,29 +115,6 @@ func (k *Kanban) BeforeHandleOp(sdk *cptype.SDK) {
 	}
 }
 
-// Visible only exhibition for status kanban, and not show for `ALL` issue type.
-// func (k *Kanban) Visible(sdk *cptype.SDK) bool {
-// 	groupType := k.StdStatePtr.String(stateKeyIssueViewGroupValue)
-// 	if groupType != "kanban" {
-// 		return false
-// 	}
-// 	childrenValue := k.StdStatePtr.Get(stateKeyIssueViewGroupChildrenValue)
-// 	if childrenValue == nil {
-// 		return false
-// 	}
-// 	v, ok := childrenValue.(map[string]interface{})
-// 	if !ok {
-// 		return false
-// 	}
-// 	if kanbanType, ok := v["kanban"]; ok && kanbanType == "status" {
-// 		if k.StdInParamsPtr.String("fixedIssueType") == "ALL" {
-// 			return false
-// 		}
-// 		return true
-// 	}
-// 	return false
-// }
-
 func (k *Kanban) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
 		k.StdDataPtr = k.doFilter()
