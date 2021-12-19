@@ -18,6 +18,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -57,6 +58,6 @@ func (h *GSHelper) GetIssuePagingRequest() (*apistructs.IssuePagingRequest, bool
 		return nil, false
 	}
 	var req apistructs.IssuePagingRequest
-	_ = assign(v, &req)
+	cputil.MustObjJSONTransfer(v, &req)
 	return &req, true
 }

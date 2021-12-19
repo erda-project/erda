@@ -41,7 +41,6 @@ components:
 rendering:
   issueFilter:
     - name: issueTable
-    - name: reset
 
   __DefaultRendering__:
     - name: issueManage
@@ -52,4 +51,3 @@ rendering:
     - name: issueImport
     - name: issueExport
     - name: issueTable
-    - name: reset
