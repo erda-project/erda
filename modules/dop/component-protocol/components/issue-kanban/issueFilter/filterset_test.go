@@ -14,7 +14,6 @@
 package issueFilter
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -24,7 +23,7 @@ func Test_filterSetValueRetriever(t *testing.T) {
 	type args struct {
 		filterEntity string
 	}
-	const f1 = "eyJpdGVyYXRpb25JRHMiOls1MDNdLCJzdGF0ZXMiOls0ODMsNDg0LDQ4NSw0ODcsNDg4LDgwNTYsNDkzLDQ5NCw0OTUsNDk2LDQ5N119"
+	const f1 = "eyJwcmlvcml0aWVzIjpbIlVSR0VOVCIsIkhJR0giLCJOT1JNQUwiXX0="
 	tests := []struct {
 		name    string
 		args    args
@@ -37,17 +36,17 @@ func Test_filterSetValueRetriever(t *testing.T) {
 				filterEntity: f1,
 			},
 			wantErr: false,
+			want: &cptype.ExtraMap{
+				"priorities": []string{"URGENT", "HIGH", "NORMAL"},
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FilterSetValueRetriever(tt.args.filterEntity)
+			_, err := FilterSetValueRetriever(tt.args.filterEntity)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("filterSetValueRetriever() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("filterSetValueRetriever() = %v, want %v", got, tt.want)
 			}
 		})
 	}
