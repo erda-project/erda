@@ -57,7 +57,7 @@ func (rps *RpsChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
 	rpsCharts := make([]*pb.Chart, 0, 10)
 
 	rows := response.Results[0].Series[0].Rows
-
+	maxValue := float64(0)
 	for _, row := range rows {
 		rpsChart := new(pb.Chart)
 		timestampNano := row.Values[2].GetNumberValue()
@@ -67,7 +67,11 @@ func (rps *RpsChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
 		rpsChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
 		rpsChart.Dimension = "RPS"
 
+		if maxValue < rpsChart.Value {
+			maxValue = rpsChart.Value
+		}
+
 		rpsCharts = append(rpsCharts, rpsChart)
 	}
-	return &pb.ServiceChart{Type: pb.ChartType_RPS.String(), View: rpsCharts}, err
+	return &pb.ServiceChart{Type: pb.ChartType_RPS.String(), MaxValue: maxValue, View: rpsCharts}, err
 }
