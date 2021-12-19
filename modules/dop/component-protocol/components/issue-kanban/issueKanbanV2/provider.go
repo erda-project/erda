@@ -57,16 +57,19 @@ type Kanban struct {
 }
 
 type IssueCardExtra struct {
-	Type       apistructs.IssueType     `json:"type,omitempty"`
-	Priority   apistructs.IssuePriority `json:"priority,omitempty"`
-	AssigneeID string                   `json:"assigneeID,omitempty"`
+	Type        apistructs.IssueType     `json:"type,omitempty"`
+	Priority    apistructs.IssuePriority `json:"priority,omitempty"`
+	AssigneeID  string                   `json:"assigneeID,omitempty"`
+	IterationID int64                    `json:"iterationID,omitempty"`
 }
 
 func (e IssueCardExtra) ToExtra() cptype.Extra {
 	extraMap := cputil.MustObjJSONTransfer(
 		&IssueCardExtra{
-			Type:     e.Type,
-			Priority: e.Priority,
+			Type:        e.Type,
+			Priority:    e.Priority,
+			AssigneeID:  e.AssigneeID,
+			IterationID: e.IterationID,
 		}, &cptype.ExtraMap{}).(*cptype.ExtraMap)
 	return cptype.Extra{Extra: *extraMap}
 }
@@ -214,7 +217,7 @@ func (k *Kanban) doFilter(specificBoardIDs ...string) *kanban.Data {
 									}).
 									Build(),
 							},
-							Extra: IssueCardExtra{Type: issue.Type, Priority: issue.Priority, AssigneeID: issue.Assignee}.ToExtra(),
+							Extra: IssueCardExtra{Type: issue.Type, Priority: issue.Priority, AssigneeID: issue.Assignee, IterationID: issue.IterationID}.ToExtra(),
 						})
 						data.UserIDs = append(data.UserIDs, issue.Assignee)
 					}
