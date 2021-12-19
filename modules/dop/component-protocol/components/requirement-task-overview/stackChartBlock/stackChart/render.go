@@ -30,7 +30,7 @@ import (
 )
 
 func init() {
-	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "stackChart", func() servicehub.Provider {
+	base.InitProviderWithCreator(common.ScenarioKey, "stackChart", func() servicehub.Provider {
 		return &StackChart{}
 	})
 }
@@ -61,16 +61,16 @@ func (f *StackChart) Render(ctx context.Context, c *cptype.Component, scenario c
 func (f *StackChart) setProps() {
 	f.Type = "Chart"
 	series := make([]Series, 0, len(f.States))
-	for _, v := range f.States {
+	for i := len(f.States) - 1; i >= 0; i-- {
 		series = append(series, Series{
 			Data: func() []int {
 				array := make([]int, 0)
 				for _, date := range f.Dates {
-					array = append(array, f.DateMap[date][v.ID])
+					array = append(array, f.DateMap[date][f.States[i].ID])
 				}
 				return array
 			}(),
-			Name:   v.Name,
+			Name:   f.States[i].Name,
 			Stack:  "总量",
 			Type:   "line",
 			Smooth: false,

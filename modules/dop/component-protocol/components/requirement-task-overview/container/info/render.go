@@ -27,7 +27,7 @@ import (
 )
 
 func init() {
-	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "info", func() servicehub.Provider {
+	base.InitProviderWithCreator(common.ScenarioKey, "info", func() servicehub.Provider {
 		return &Info{}
 	})
 }

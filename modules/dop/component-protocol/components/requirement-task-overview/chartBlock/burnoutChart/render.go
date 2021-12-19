@@ -32,7 +32,7 @@ import (
 )
 
 func init() {
-	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "burnoutChart", func() servicehub.Provider {
+	base.InitProviderWithCreator(common.ScenarioKey, "burnoutChart", func() servicehub.Provider {
 		return &BurnoutChart{}
 	})
 }
