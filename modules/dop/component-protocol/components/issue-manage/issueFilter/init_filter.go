@@ -49,6 +49,5 @@ func (f *ComponentFilter) InitFromProtocol(ctx context.Context, c *cptype.Compon
 
 	// gs
 	f.gsHelper = gshelper.NewGSHelper(gs)
-
 	return nil
 }

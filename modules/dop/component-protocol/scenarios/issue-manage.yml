@@ -4,7 +4,6 @@ hierarchy:
   root: issueManage
   structure:
     issueManage:
-      - head
       - content
     head:
       left: issueFilter
@@ -13,7 +12,8 @@ hierarchy:
       - issueExport
       - issueImport
     content:
-      - issueTable
+      slot: head
+      table: issueTable
 
 options:
   syncIntervalSecond: 0
@@ -23,10 +23,8 @@ components:
     type: Container
   head:
     type: LRContainer
-    props:
-      whiteBg: true
   content:
-    type: Container
+    type: ComposeTable
   issueOperations:
     type: RowContainer
   issueFilter:
@@ -37,7 +35,21 @@ components:
     type: Button
   issueTable:
     type: Table
+  reset:
+    type: Container
 
 rendering:
   issueFilter:
     - name: issueTable
+    - name: reset
+
+  __DefaultRendering__:
+    - name: issueManage
+    - name: head
+    - name: content
+    - name: issueFilter
+    - name: issueOperations
+    - name: issueImport
+    - name: issueExport
+    - name: issueTable
+    - name: reset
