@@ -23,4 +23,5 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/issueManage"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/issueOperations"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/issueTable"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/reset"
 )
