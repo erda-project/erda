@@ -223,12 +223,9 @@ func (k *Kanban) doFilter(specificBoardIDs ...string) *kanban.Data {
 				PageNo:   k.filterReq.PageNo,
 				PageSize: k.filterReq.PageSize,
 				Total:    resp.Data.Total,
-				//// TODO remove in issue-kanban
-				//Operations: map[cptype.OperationKey]cptype.Operation{
-				//	kanban.OpBoardLoadMore{}.OpKey(): cputil.NewOpBuilder().Build(),
-				//	kanban.OpBoardUpdate{}.OpKey():   cputil.NewOpBuilder().Build(),
-				//	kanban.OpBoardDelete{}.OpKey():   cputil.NewOpBuilder().Build(),
-				//},
+				Operations: map[cptype.OperationKey]cptype.Operation{
+					kanban.OpBoardLoadMore{}.OpKey(): cputil.NewOpBuilder().Build(),
+				},
 			}
 			lock.Lock()
 			boardsByStateID[state.ID] = board
@@ -240,10 +237,6 @@ func (k *Kanban) doFilter(specificBoardIDs ...string) *kanban.Data {
 	for _, state := range states {
 		data.Boards = append(data.Boards, boardsByStateID[state.ID])
 	}
-	//// TODO remove in issue-kanban
-	//data.Operations = map[cptype.OperationKey]cptype.Operation{
-	//	kanban.OpBoardCreate{}.OpKey(): cputil.NewOpBuilder().WithConfirmTip("创建看板").Build(),
-	//}
 
 	return &data
 }
