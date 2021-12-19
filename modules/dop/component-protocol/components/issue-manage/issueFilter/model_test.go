@@ -20,9 +20,7 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
-	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
