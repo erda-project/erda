@@ -274,6 +274,36 @@ func (f *ComponentFilter) generateFrontendConditionProps(ctx context.Context, fi
 		})
 	}
 
+	statesMap, err := f.issueStateSvc.GetIssueStatesMap(&apistructs.IssueStatesGetRequest{
+		ProjectID: f.InParams.ProjectID,
+	})
+	if err != nil {
+		return nil
+	}
+	status := filter.PropCondition{
+		Key:         PropConditionKeyStates,
+		Label:       cputil.I18n(ctx, "state"),
+		EmptyText:   cputil.I18n(ctx, "all"),
+		Fixed:       true,
+		ShowIndex:   3,
+		HaveFilter:  false,
+		Type:        filter.PropConditionTypeSelect,
+		Placeholder: "",
+		Options: func() []filter.PropConditionOption {
+			switch fixedIssueType {
+			case "ALL":
+				return convertAllConditions(ctx, statesMap)
+			case apistructs.IssueTypeRequirement.String():
+				return convertConditions(statesMap[apistructs.IssueTypeRequirement])
+			case apistructs.IssueTypeTask.String():
+				return convertConditions(statesMap[apistructs.IssueTypeTask])
+			case apistructs.IssueTypeBug.String():
+				return convertConditions(statesMap[apistructs.IssueTypeBug])
+			}
+			return nil
+		}(),
+	}
+	conditionProps = append(conditionProps[:2], append([]filter.PropCondition{status}, conditionProps[2:]...)...)
 	return conditionProps
 }
 

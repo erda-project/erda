@@ -20,9 +20,7 @@ import (
 	"testing"
 
 	"bou.ke/monkey"
-	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
@@ -115,11 +113,4 @@ func Test_convertAllConditions(t *testing.T) {
 			}
 		})
 	}
-}
-
-func Test_generateFrontendConditionProps(t *testing.T) {
-	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &cptype.SDK{Tran: &MockTran{}})
-	f := ComponentFilter{State: State{}}
-	props := f.generateFrontendConditionProps(ctx, "ALL", f.State)
-	assert.True(t, len(props) > 0)
 }
