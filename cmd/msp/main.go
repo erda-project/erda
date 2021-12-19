@@ -88,6 +88,10 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/tenant/project"
 	_ "github.com/erda-project/erda/pkg/common/permission"
 	_ "github.com/erda-project/erda/providers/audit"
+
+	_ "github.com/erda-project/erda-infra/providers/component-protocol"
+	// components
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components"
 )
 
 func main() {

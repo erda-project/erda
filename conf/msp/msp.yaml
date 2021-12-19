@@ -117,6 +117,7 @@ i18n:
     - conf/common/i18n/common.yml
     - conf/common/i18n/apis.yml
     - conf/msp/i18n/msp-i18n.yaml
+    - conf/msp/i18n/service-overview.yaml
 
 metric-report-client:
   report_config:
@@ -278,7 +279,11 @@ erda.msp.apm.log_service:
   index_field_settings:
       file: ${CONFIG_PATH}/logs/default_field_settings.yml
 
+# component-protocol framework
+component-protocol:
 
+component-protocol.components.topn.service-overview:
+component-protocol.components.topn.service-list:
 
 
 

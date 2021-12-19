@@ -70,12 +70,12 @@ func (m *GetServiceCountResponse) UnmarshalURLValues(prefix string, values url.V
 					return err
 				}
 				m.TotalCount = val
-			case "unhealthyCount":
+			case "hasErrorCount":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.UnhealthyCount = val
+				m.HasErrorCount = val
 			case "withoutRequestCount":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
@@ -156,6 +156,8 @@ func (m *GetServicesRequest) UnmarshalURLValues(prefix string, values url.Values
 				m.TenantId = vals[0]
 			case "serviceName":
 				m.ServiceName = vals[0]
+			case "serviceStatus":
+				m.ServiceStatus = vals[0]
 			}
 		}
 	}
@@ -257,6 +259,12 @@ func (m *ServiceChart) UnmarshalURLValues(prefix string, values url.Values) erro
 			switch prefix + key {
 			case "type":
 				m.Type = vals[0]
+			case "maxValue":
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.MaxValue = val
 			}
 		}
 	}
@@ -275,24 +283,37 @@ func (m *Service) UnmarshalURLValues(prefix string, values url.Values) error {
 			case "language":
 			case "lastHeartbeat":
 				m.LastHeartbeat = vals[0]
-			case "rps":
+			case "aggregateMetric":
+				if m.AggregateMetric == nil {
+					m.AggregateMetric = &AggregateMetric{}
+				}
+			case "aggregateMetric.avgRps":
+				if m.AggregateMetric == nil {
+					m.AggregateMetric = &AggregateMetric{}
+				}
 				val, err := strconv.ParseFloat(vals[0], 64)
 				if err != nil {
 					return err
 				}
-				m.Rps = val
-			case "avgDuration":
+				m.AggregateMetric.AvgRps = val
+			case "aggregateMetric.avgDuration":
+				if m.AggregateMetric == nil {
+					m.AggregateMetric = &AggregateMetric{}
+				}
 				val, err := strconv.ParseFloat(vals[0], 64)
 				if err != nil {
 					return err
 				}
-				m.AvgDuration = val
-			case "errorRate":
+				m.AggregateMetric.AvgDuration = val
+			case "aggregateMetric.errorRate":
+				if m.AggregateMetric == nil {
+					m.AggregateMetric = &AggregateMetric{}
+				}
 				val, err := strconv.ParseFloat(vals[0], 64)
 				if err != nil {
 					return err
 				}
-				m.ErrorRate = val
+				m.AggregateMetric.ErrorRate = val
 			}
 		}
 	}
@@ -310,24 +331,12 @@ func (m *AggregateMetric) UnmarshalURLValues(prefix string, values url.Values) e
 					return err
 				}
 				m.AvgRps = val
-			case "maxRps":
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.MaxRps = val
 			case "avgDuration":
 				val, err := strconv.ParseFloat(vals[0], 64)
 				if err != nil {
 					return err
 				}
 				m.AvgDuration = val
-			case "maxDuration":
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.MaxDuration = val
 			case "errorRate":
 				val, err := strconv.ParseFloat(vals[0], 64)
 				if err != nil {

@@ -1,0 +1,8 @@
+scenario: service-list
+
+hierarchy:
+  root: topN
+
+components:
+  topN:
+    type: TopN

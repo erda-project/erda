@@ -95,6 +95,11 @@ func (this *ServiceChart) Validate() error {
 	return nil
 }
 func (this *Service) Validate() error {
+	if this.AggregateMetric != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.AggregateMetric); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("AggregateMetric", err)
+		}
+	}
 	return nil
 }
 func (this *AggregateMetric) Validate() error {

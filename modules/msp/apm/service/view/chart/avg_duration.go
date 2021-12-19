@@ -57,6 +57,7 @@ func (avgDuration *AvgDurationChart) GetChart(ctx context.Context) (*pb.ServiceC
 
 	rows := response.Results[0].Series[0].Rows
 
+	maxValue := float64(0)
 	for _, row := range rows {
 		avgDurationChart := new(pb.Chart)
 		timestampNano := row.Values[2].GetNumberValue()
@@ -66,7 +67,11 @@ func (avgDuration *AvgDurationChart) GetChart(ctx context.Context) (*pb.ServiceC
 		avgDurationChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
 		avgDurationChart.Dimension = "Avg Duration"
 
+		if maxValue < avgDurationChart.Value {
+			maxValue = avgDurationChart.Value
+		}
+
 		avgDurationCharts = append(avgDurationCharts, avgDurationChart)
 	}
-	return &pb.ServiceChart{Type: pb.ChartType_AvgDuration.String(), View: avgDurationCharts}, err
+	return &pb.ServiceChart{Type: pb.ChartType_AvgDuration.String(), MaxValue: maxValue, View: avgDurationCharts}, err
 }

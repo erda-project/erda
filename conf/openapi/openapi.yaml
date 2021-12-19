@@ -93,6 +93,10 @@ openapi-v1-routes:
           - cmp-dashboard-pods
           - cmp-dashboard-podDetail
           - cmp-cluster-list
+      - addr: msp:8080
+        scenarios:
+          - service-overview
+          - service-list
 
 etcd:
   _enable: ${OPENAPI_DEV_MODE:false}
