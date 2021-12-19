@@ -212,16 +212,17 @@ func (p *provider) sqlSlowTop5(interval int64, tenantId, serviceId string, start
 }
 
 func (p *provider) pathClientRpsMaxTop5(interval int64, tenantId, serviceId string, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
-	statement := fmt.Sprintf("SELECT target_service_id::tag,http_target::tag,sum(elapsed_count::field)/%v "+
-		"FROM application_http "+
-		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
-		"AND target_service_id::tag=$service_id AND span_kind::tag='client' "+
-		"GROUP BY http_target::tag "+
-		"ORDER BY sum(elapsed_count::field) DESC "+
-		"LIMIT 5", interval)
+	statement := fmt.Sprintf("SELECT source_service_id::tag,http_url::tag,sum(elapsed_count::field) " +
+		"FROM application_http " +
+		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) " +
+		"AND source_service_id::tag=$service_id AND span_kind::tag=$kind " +
+		"GROUP BY http_url::tag " +
+		"ORDER BY sum(elapsed_count::field) DESC " +
+		"LIMIT 5")
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(tenantId),
 		"service_id":   structpb.NewStringValue(serviceId),
+		"kind":         structpb.NewStringValue("client"),
 	}
 
 	request := &metricpb.QueryWithInfluxFormatRequest{
@@ -249,7 +250,6 @@ func (p *provider) pathClientRpsMaxTop5(interval int64, tenantId, serviceId stri
 			continue
 		}
 		item.Total = total
-		item.Unit = "reqs/s"
 		items = append(items, item)
 	}
 	return items, err
