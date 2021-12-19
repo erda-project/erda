@@ -213,9 +213,12 @@ func (k *Kanban) doFilter(specificBoardIDs ...string) *kanban.Data {
 		}(state)
 	}
 	wg.Wait()
+
 	// order board by state
 	for _, state := range states {
-		data.Boards = append(data.Boards, boardsByStateID[state.ID])
+		if board, exist := boardsByStateID[state.ID]; exist {
+			data.Boards = append(data.Boards, board)
+		}
 	}
 
 	return &data
