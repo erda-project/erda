@@ -31,10 +31,11 @@ type ComponentFilter struct {
 	State State `json:"state,omitempty"`
 	base.DefaultProvider
 
-	FrontendUrlQuery string                 `json:"-"`
-	projectID        uint64                 `json:"-"`
-	Iterations       []apistructs.Iteration `json:"-"`
-	Members          []apistructs.Member    `json:"-"`
+	FrontendUrlQuery string              `json:"-"`
+	projectID        uint64              `json:"-"`
+	Members          []apistructs.Member `json:"-"`
+
+	fixedIterationID uint64 `json:"-"`
 }
 
 type State struct {
