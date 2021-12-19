@@ -75,13 +75,16 @@ func InitProviderWithCreator(scenario, compName string, creator servicehub.Creat
 	}
 	servicehub.Register(MakeComponentProviderName(scenario, compName), &servicehub.Spec{Creator: creator})
 	compCreatorMap[MakeComponentProviderName(scenario, compName)] = func() Creators {
-		switch r := creator().(type) {
+		switch creator().(type) {
 		case cptype.IComponent:
-			ref := reflect.ValueOf(r)
-			ref.Elem().FieldByName("Impl").Set(ref)
-			return Creators{ComponentCreator: func() cptype.IComponent { return r }}
+			return Creators{ComponentCreator: func() cptype.IComponent {
+				rr := creator().(cptype.IComponent)
+				ref := reflect.ValueOf(rr)
+				ref.Elem().FieldByName("Impl").Set(ref)
+				return rr
+			}}
 		case protocol.CompRender:
-			return Creators{RenderCreator: func() protocol.CompRender { return r }}
+			return Creators{RenderCreator: func() protocol.CompRender { return creator().(protocol.CompRender) }}
 		default:
 			return Creators{RenderCreator: func() protocol.CompRender { return &DefaultProvider{} }}
 		}
