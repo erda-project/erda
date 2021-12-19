@@ -39,11 +39,18 @@ var (
 )
 
 func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
-	iterationOptions, err := f.getPropIterationsOptions()
-	if err != nil {
-		return nil, err
+	needIterationCond := true
+	if f.InParams.FrontendFixedIteration != "" {
+		needIterationCond = false
 	}
-	iterations := model.NewSelectCondition(PropConditionKeyIterationIDs, cputil.I18n(f.sdk.Ctx, "sprint"), iterationOptions).WithPlaceHolder(cputil.I18n(f.sdk.Ctx, "choose-sprint"))
+	var iterations *model.SelectCondition
+	if needIterationCond {
+		iterationOptions, err := f.getPropIterationsOptions()
+		if err != nil {
+			return nil, err
+		}
+		iterations = model.NewSelectCondition(PropConditionKeyIterationIDs, cputil.I18n(f.sdk.Ctx, "sprint"), iterationOptions).WithPlaceHolder(cputil.I18n(f.sdk.Ctx, "choose-sprint"))
+	}
 
 	labelOptions, err := f.getPropLabelsOptions()
 	if err != nil {
@@ -100,13 +107,16 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 	closed := model.NewDateRangeCondition(PropConditionKeyClosed, cputil.I18n(f.sdk.Ctx, "closed-at"))
 
 	var conditions []interface{}
+	if needIterationCond {
+		conditions = []interface{}{iterations}
+	}
 	switch f.InParams.FrontendFixedIssueType {
 	case apistructs.IssueTypeRequirement.String():
-		conditions = []interface{}{iterations, labels, priority, creator, assignee, created, finished}
+		conditions = append(conditions, labels, priority, creator, assignee, created, finished)
 	case apistructs.IssueTypeTask.String():
-		conditions = []interface{}{iterations, labels, priority, creator, assignee, stage, created, finished}
+		conditions = append(conditions, labels, priority, creator, assignee, stage, created, finished)
 	case apistructs.IssueTypeBug.String():
-		conditions = []interface{}{iterations, labels, priority, severity, creator, assignee, owner, stage, created, finished, closed}
+		conditions = append(conditions, labels, priority, severity, creator, assignee, owner, stage, created, finished, closed)
 	}
 	return conditions, nil
 	// stateBelongs := map[string][]apistructs.IssueStateBelong{

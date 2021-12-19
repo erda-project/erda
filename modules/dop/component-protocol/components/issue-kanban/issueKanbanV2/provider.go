@@ -57,16 +57,19 @@ type Kanban struct {
 }
 
 type IssueCardExtra struct {
-	Type       apistructs.IssueType     `json:"type,omitempty"`
-	Priority   apistructs.IssuePriority `json:"priority,omitempty"`
-	AssigneeID string                   `json:"assigneeID,omitempty"`
+	Type        apistructs.IssueType     `json:"type,omitempty"`
+	Priority    apistructs.IssuePriority `json:"priority,omitempty"`
+	AssigneeID  string                   `json:"assigneeID,omitempty"`
+	IterationID int64                    `json:"iterationID,omitempty"`
 }
 
 func (e IssueCardExtra) ToExtra() cptype.Extra {
 	extraMap := cputil.MustObjJSONTransfer(
 		&IssueCardExtra{
-			Type:     e.Type,
-			Priority: e.Priority,
+			Type:        e.Type,
+			Priority:    e.Priority,
+			AssigneeID:  e.AssigneeID,
+			IterationID: e.IterationID,
 		}, &cptype.ExtraMap{}).(*cptype.ExtraMap)
 	return cptype.Extra{Extra: *extraMap}
 }
@@ -111,29 +114,6 @@ func (k *Kanban) BeforeHandleOp(sdk *cptype.SDK) {
 		k.filterReq.PageSize = 20
 	}
 }
-
-// Visible only exhibition for status kanban, and not show for `ALL` issue type.
-// func (k *Kanban) Visible(sdk *cptype.SDK) bool {
-// 	groupType := k.StdStatePtr.String(stateKeyIssueViewGroupValue)
-// 	if groupType != "kanban" {
-// 		return false
-// 	}
-// 	childrenValue := k.StdStatePtr.Get(stateKeyIssueViewGroupChildrenValue)
-// 	if childrenValue == nil {
-// 		return false
-// 	}
-// 	v, ok := childrenValue.(map[string]interface{})
-// 	if !ok {
-// 		return false
-// 	}
-// 	if kanbanType, ok := v["kanban"]; ok && kanbanType == "status" {
-// 		if k.StdInParamsPtr.String("fixedIssueType") == "ALL" {
-// 			return false
-// 		}
-// 		return true
-// 	}
-// 	return false
-// }
 
 func (k *Kanban) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
@@ -214,7 +194,7 @@ func (k *Kanban) doFilter(specificBoardIDs ...string) *kanban.Data {
 									}).
 									Build(),
 							},
-							Extra: IssueCardExtra{Type: issue.Type, Priority: issue.Priority, AssigneeID: issue.Assignee}.ToExtra(),
+							Extra: IssueCardExtra{Type: issue.Type, Priority: issue.Priority, AssigneeID: issue.Assignee, IterationID: issue.IterationID}.ToExtra(),
 						})
 						data.UserIDs = append(data.UserIDs, issue.Assignee)
 					}
@@ -223,12 +203,9 @@ func (k *Kanban) doFilter(specificBoardIDs ...string) *kanban.Data {
 				PageNo:   k.filterReq.PageNo,
 				PageSize: k.filterReq.PageSize,
 				Total:    resp.Data.Total,
-				//// TODO remove in issue-kanban
-				//Operations: map[cptype.OperationKey]cptype.Operation{
-				//	kanban.OpBoardLoadMore{}.OpKey(): cputil.NewOpBuilder().Build(),
-				//	kanban.OpBoardUpdate{}.OpKey():   cputil.NewOpBuilder().Build(),
-				//	kanban.OpBoardDelete{}.OpKey():   cputil.NewOpBuilder().Build(),
-				//},
+				Operations: map[cptype.OperationKey]cptype.Operation{
+					kanban.OpBoardLoadMore{}.OpKey(): cputil.NewOpBuilder().Build(),
+				},
 			}
 			lock.Lock()
 			boardsByStateID[state.ID] = board
@@ -236,14 +213,13 @@ func (k *Kanban) doFilter(specificBoardIDs ...string) *kanban.Data {
 		}(state)
 	}
 	wg.Wait()
+
 	// order board by state
 	for _, state := range states {
-		data.Boards = append(data.Boards, boardsByStateID[state.ID])
+		if board, exist := boardsByStateID[state.ID]; exist {
+			data.Boards = append(data.Boards, board)
+		}
 	}
-	//// TODO remove in issue-kanban
-	//data.Operations = map[cptype.OperationKey]cptype.Operation{
-	//	kanban.OpBoardCreate{}.OpKey(): cputil.NewOpBuilder().WithConfirmTip("创建看板").Build(),
-	//}
 
 	return &data
 }
