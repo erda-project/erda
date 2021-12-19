@@ -15,8 +15,6 @@
 package gshelper
 
 import (
-	"github.com/mitchellh/mapstructure"
-
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
@@ -39,7 +37,7 @@ func assign(src, dst interface{}) error {
 		return nil
 	}
 
-	return mapstructure.Decode(src, dst)
+	return cputil.ObjJSONTransfer(src, dst)
 }
 
 func (h *GSHelper) SetIssuePagingRequest(req apistructs.IssuePagingRequest) {
