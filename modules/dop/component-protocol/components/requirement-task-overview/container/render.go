@@ -20,5 +20,5 @@ import (
 )
 
 func init() {
-	base.InitProvider(common.ScenarioKeyTestDashboard, "container")
+	base.InitProvider(common.ScenarioKey, "container")
 }

@@ -26,7 +26,7 @@ import (
 )
 
 func init() {
-	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "stackChartFilter", func() servicehub.Provider {
+	base.InitProviderWithCreator(common.ScenarioKey, "stackChartFilter", func() servicehub.Provider {
 		return &Filter{}
 	})
 }

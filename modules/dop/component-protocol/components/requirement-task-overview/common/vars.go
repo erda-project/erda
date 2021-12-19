@@ -15,5 +15,5 @@
 package common
 
 const (
-	ScenarioKeyTestDashboard = "requirement-task-overview"
+	ScenarioKey = "requirement-task-overview"
 )
