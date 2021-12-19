@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/pkg/math"
 )
@@ -37,6 +38,7 @@ import (
 type provider struct {
 	impl.DefaultTop
 	Log    logs.Logger
+	I18n   i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
 	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
 
@@ -52,6 +54,7 @@ const (
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
 		data := topn.Data{}
+		lang := sdk.Lang
 		var records []topn.Record
 
 		d, _ := time.ParseDuration("-2h")
@@ -76,19 +79,19 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		if err != nil {
 			p.Log.Error(err)
 		}
-		rpsMaxTop5Records := topn.Record{Title: RpsMaxTop5, Span: Span}
+		rpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, RpsMaxTop5), Span: Span}
 		rpsMaxTop5Records.Items = rpsMaxTop5
 		records = append(records, rpsMaxTop5Records)
 
-		rpsMinTop5Records := topn.Record{Title: RpsMinTop5, Span: Span}
+		rpsMinTop5Records := topn.Record{Title: p.I18n.Text(lang, RpsMinTop5), Span: Span}
 		rpsMinTop5Records.Items = rpsMinTop5
 		records = append(records, rpsMinTop5Records)
 
-		avgDurationTop5Records := topn.Record{Title: AvgDurationTop5, Span: Span}
+		avgDurationTop5Records := topn.Record{Title: p.I18n.Text(lang, AvgDurationTop5), Span: Span}
 		avgDurationTop5Records.Items = avgDurationTop5
 		records = append(records, avgDurationTop5Records)
 
-		errorRateTop5Records := topn.Record{Title: ErrorRateTop5, Span: Span}
+		errorRateTop5Records := topn.Record{Title: p.I18n.Text(lang, ErrorRateTop5), Span: Span}
 		errorRateTop5Records.Items = errorRateTop5
 		records = append(records, errorRateTop5Records)
 
@@ -233,7 +236,7 @@ func (p *provider) rpsMinTop5(interval int64, tenantId interface{}, start int64,
 			continue
 		}
 		item.Total = total
-		item.Unit = "rps/s"
+		item.Unit = "reqs/s"
 		items = append(items, item)
 	}
 	return items, err
@@ -275,7 +278,7 @@ func (p *provider) rpsMaxTop5(interval int64, tenantId interface{}, start int64,
 			continue
 		}
 		item.Total = total
-		item.Unit = "rps/s"
+		item.Unit = "reqs/s"
 		items = append(items, item)
 	}
 	return items, err

@@ -17,23 +17,27 @@ package top
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"sort"
+	"strconv"
+
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/pkg/math"
-	"google.golang.org/protobuf/types/known/structpb"
-	"reflect"
-	"sort"
-	"strconv"
 )
 
 type provider struct {
 	impl.DefaultTop
 	Log    logs.Logger
+	I18n   i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
 	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
 
@@ -52,7 +56,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
 		data := topn.Data{}
 		var records []topn.Record
-
+		lang := sdk.Lang
 		startTime := int64(p.StdInParamsPtr.Get("startTime").(float64))
 		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
 		tenantId := p.StdInParamsPtr.Get("tenantId").(string)
@@ -90,27 +94,27 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			p.Log.Error(err)
 		}
 
-		pathRpsMaxTop5Records := topn.Record{Title: PathRpsMaxTop5, Span: Span}
+		pathRpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, PathRpsMaxTop5), Span: Span}
 		pathRpsMaxTop5Records.Items = pathRpsMaxTop5
 		records = append(records, pathRpsMaxTop5Records)
 
-		pathSlowTop5Records := topn.Record{Title: PathSlowTop5, Span: Span}
+		pathSlowTop5Records := topn.Record{Title: p.I18n.Text(lang, PathSlowTop5), Span: Span}
 		pathSlowTop5Records.Items = pathSlowTop5
 		records = append(records, pathSlowTop5Records)
 
-		pathErrorRateTop5Records := topn.Record{Title: PathErrorRateTop5, Span: Span}
+		pathErrorRateTop5Records := topn.Record{Title: p.I18n.Text(lang, PathErrorRateTop5), Span: Span}
 		pathErrorRateTop5Records.Items = pathErrorRateTop5
 		records = append(records, pathErrorRateTop5Records)
 
-		pathClientRpsMaxTop5Records := topn.Record{Title: PathClientRpsMaxTop5, Span: Span}
+		pathClientRpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, PathClientRpsMaxTop5), Span: Span}
 		pathClientRpsMaxTop5Records.Items = pathClientRpsMaxTop5
 		records = append(records, pathClientRpsMaxTop5Records)
 
-		sqlSlowTop5Records := topn.Record{Title: SqlSlowTop5, Span: Span}
+		sqlSlowTop5Records := topn.Record{Title: p.I18n.Text(lang, SqlSlowTop5), Span: Span}
 		sqlSlowTop5Records.Items = sqlSlowRpsMaxTop5
 		records = append(records, sqlSlowTop5Records)
 
-		exceptionCountTop5Records := topn.Record{Title: ExceptionCountTop5, Span: Span}
+		exceptionCountTop5Records := topn.Record{Title: p.I18n.Text(lang, ExceptionCountTop5), Span: Span}
 		exceptionCountTop5Records.Items = exceptionCountTop5
 		records = append(records, exceptionCountTop5Records)
 
@@ -315,7 +319,6 @@ func (p *provider) pathSlowTop5(interval int64, tenantId, serviceId string, star
 	statement := fmt.Sprintf("SELECT target_service_id::tag,http_target::tag,max(elapsed_max::field) " +
 		"FROM application_http " +
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) AND target_service_id::tag=$service_id " +
-		"AND elapsed_max::field>500000000 " +
 		"GROUP BY http_target::tag " +
 		"ORDER BY max(elapsed_max::field) DESC " +
 		"LIMIT 5")

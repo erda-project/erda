@@ -25,9 +25,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	pb "github.com/erda-project/erda-proto-go/msp/apm/service/pb"
-	"github.com/erda-project/erda/pkg/common/apis"
-	// components
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type View struct {
