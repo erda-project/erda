@@ -57,7 +57,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		lang := sdk.Lang
 		var records []topn.Record
 
-		d, _ := time.ParseDuration("-2h")
+		d, _ := time.ParseDuration("-1h")
 		start := time.Now().Add(d).UnixNano() / 1e6
 		end := time.Now().UnixNano() / 1e6
 		tenantId := p.StdInParamsPtr.Get("tenantId")
