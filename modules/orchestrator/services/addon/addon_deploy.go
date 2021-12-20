@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mcuadros/go-version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -500,8 +501,9 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 			buildErr = a.BuildMysqlOperatorServiceItem(addonIns, addonOperatorDice, &clusterInfo)
 		}
 	case apistructs.AddonES:
-		if capacity.Data.ElasticsearchOperator && addonSpec.Version == "6.8.9" {
-			buildErr = a.BuildESOperatorServiceItem(addonIns, addonDice, &clusterInfo)
+		// 6.8.9 or later version use operator.
+		if capacity.Data.ElasticsearchOperator && version.Compare(addonSpec.Version, "6.8.9", ">=") {
+			buildErr = a.BuildESOperatorServiceItem(addonIns, addonDice, addonSpec.Version)
 		} else {
 			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "1"
 			buildErr = a.BuildEsServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)

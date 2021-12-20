@@ -936,7 +936,7 @@ func (a *Addon) deepCopy(dst, src interface{}) error {
 	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
 }
 
-func (a *Addon) BuildESOperatorServiceItem(addonIns *dbclient.AddonInstance, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
+func (a *Addon) BuildESOperatorServiceItem(addonIns *dbclient.AddonInstance, addonDice *diceyml.Object, version string) error {
 	// 设置密码
 	password, err := a.savePassword(addonIns, apistructs.AddonESPasswordKey)
 	if err != nil {
@@ -944,7 +944,7 @@ func (a *Addon) BuildESOperatorServiceItem(addonIns *dbclient.AddonInstance, add
 	}
 	addonDice.Meta = map[string]string{
 		"USE_OPERATOR": "elasticsearch",
-		"VERSION":      "6.8.9",
+		"VERSION":      version,
 	}
 	//设置环境变量
 	for _, v := range addonDice.Services {
