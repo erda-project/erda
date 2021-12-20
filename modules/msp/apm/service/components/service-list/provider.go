@@ -103,7 +103,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 func (p *provider) errorRateTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(errors_sum::field)/sum(count_sum::field) " +
-		"FROM application_http_service " +
+		"FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service " +
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) " +
 		"GROUP BY target_service_id::tag ")
 	queryParams := map[string]*structpb.Value{
@@ -185,12 +185,12 @@ func (p *provider) avgDurationTop5(interval int64, tenantId interface{}, start i
 	if rows == nil || len(rows) == 0 {
 		return items, nil
 	}
-	total := math.DecimalPlacesWithDigitsNumber(rows[0].Values[2].GetNumberValue()/1e6, 2)
+	total := math.DecimalPlacesWithDigitsNumber(rows[0].Values[2].GetNumberValue(), 2)
 	for _, row := range rows {
 		var item topn.Item
 		item.ID = row.Values[0].GetStringValue()
 		item.Name = row.Values[1].GetStringValue()
-		item.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue()/1e6, 2)
+		item.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue(), 2)
 		if item.Value == 0 {
 			continue
 		}

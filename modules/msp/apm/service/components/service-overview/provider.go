@@ -21,6 +21,8 @@ import (
 	"sort"
 	"strconv"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn"
@@ -31,7 +33,6 @@ import (
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/pkg/math"
 	"github.com/erda-project/erda/pkg/time"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type provider struct {

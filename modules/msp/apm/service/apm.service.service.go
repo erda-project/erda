@@ -319,7 +319,7 @@ func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServ
 	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
 
 	// hasError count
-	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service WHERE $condition"
+	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service WHERE $condition"
 	unhealthyCondition := " target_terminus_key::tag=$target_terminus_key AND errors_sum::field>0 "
 	statement = strings.ReplaceAll(statement, "$condition", unhealthyCondition)
 
@@ -339,7 +339,7 @@ func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServ
 	hasErrorCount := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
 
 	// withoutRequest count
-	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service WHERE $condition"
+	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service WHERE $condition"
 	withoutRequestCondition := "target_terminus_key::tag=$target_terminus_key AND elapsed_sum::field<=0 "
 	statement = strings.ReplaceAll(statement, "$condition", withoutRequestCondition)
 	queryParams = map[string]*structpb.Value{
