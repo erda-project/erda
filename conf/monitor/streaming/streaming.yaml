@@ -108,6 +108,7 @@ log-persist:
     group: "${LOG_GROUP_ID:erda-logs-dev}"
     options:
       auto.offset.reset: "${LOG_PERSIST_INPUT_KAFKA_AUTO_OFFSET_RESET:earliest}"
+      queued.max.messages.kbytes: ${LOG_PERSIST_INPUT_KAFKA_QUEUE_SIZE_KB:102400}
   id_keys: "${LOG_ID_KEYS:TERMINUS_DEFINE_TAG,terminus_define_tag,MESOS_TASK_ID,mesos_task_id}"
   read_timeout: "5s"
   buffer_size: ${LOG_BATCH_SIZE:200}
