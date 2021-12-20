@@ -130,18 +130,7 @@ if ! /usr/bin/sudo -n -v 2>/dev/null; then
   trap '/usr/bin/sudo -k' EXIT
 fi
 
-# Things can fail later if `pwd` doesn't exist.
-# Also sudo prints a warning message for no good reason
-cd "/usr" || exit 1
-
 ######################################################script
-
-if ! command -v git >/dev/null; then
-    abort "$(cat <<EOABORT
-You must install Git before installing Erda.
-EOABORT
-)"
-fi
 
 if ! command -v docker >/dev/null; then
     abort "$(cat <<EOABORT
@@ -159,32 +148,9 @@ EOABORT
 )"
 fi
 
-INSTALL_LOCATION="/opt/erda-quickstart"
-ERDA_VERSION="1.2.1"
-ERDA_RELEASE="https://static.erda.cloud/quick-start/$ERDA_VERSION/release.tar.gz"
+INSTALL_LOCATION="$(pwd)"
+ohai "Start setup Erda using ${INSTALL_LOCATION}/docker-compose.yml"
 
-# shellcheck disable=SC2016
-ohai 'Checking for `sudo` access (which may request your password).'
-have_sudo_access
-
-# chown
-if ! [[ -d "${INSTALL_LOCATION}" ]]; then
-  execute_sudo "/bin/mkdir" "-p" "${INSTALL_LOCATION}"
-fi
-execute_sudo "$CHOWN" "-R" "$USER:$GROUP" "${INSTALL_LOCATION}"
-
-ohai "Start download Erda[${ERDA_VERSION}] to ${INSTALL_LOCATION}"
-(
-  cd "${INSTALL_LOCATION}" >/dev/null || return
-
-  execute "curl" "-fsSL" "-o" "release.tar.gz" "$ERDA_RELEASE"
-  execute "tar" "zxf" "release.tar.gz"
-
-) || exit 1
-
-ohai "Start setup Erda using ${INSTALL_LOCATION}/quick-start/docker-compose.yml"
-
-cd "${INSTALL_LOCATION}/quick-start" || exit 1
 execute "docker-compose" "up" "-d" "mysql"
 sleep 10
 execute "docker-compose" "up" "--abort-on-container-exit" "--exit-code-from" "mysql-healthcheck" "mysql-healthcheck"
@@ -206,10 +172,10 @@ ohai "Setup local hosts"
   fi
 ) || exit 1
 
-ohai "Erda has been started successfully using ${INSTALL_LOCATION}/quick-start/docker-compose.yml"
+ohai "Erda has been started successfully using ${INSTALL_LOCATION}/docker-compose.yml"
 
 ohai "Next steps:"
 echo "visit ${tty_underline}http://erda.local${tty_reset} to start your journey on Erda"
 echo "visit ${tty_underline}https://docs.erda.cloud/1.3/manual/install/docker-install.html${tty_reset} for FAQs if you encounter problems installing Erda"
 echo "visit ${tty_underline}https://docs.erda.cloud${tty_reset} for full introduction of Erda"
-echo "goto ${INSTALL_LOCATION}/quick-start/ dir to check and manage the docker-compose resources"
+echo "goto ${INSTALL_LOCATION}/ dir to check and manage the docker-compose resources"
