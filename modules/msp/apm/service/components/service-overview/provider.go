@@ -21,8 +21,6 @@ import (
 	"sort"
 	"strconv"
 
-	"google.golang.org/protobuf/types/known/structpb"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn"
@@ -32,6 +30,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/pkg/math"
+	"github.com/erda-project/erda/pkg/time"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type provider struct {
@@ -160,7 +160,7 @@ func (p *provider) exceptionCountTop5(interval int64, tenantId, serviceId string
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
 		items = append(items, item)
 	}
 	return items, err
@@ -194,17 +194,21 @@ func (p *provider) sqlSlowTop5(interval int64, tenantId, serviceId string, start
 	if rows == nil || len(rows) == 0 {
 		return items, nil
 	}
-	total := math.DecimalPlacesWithDigitsNumber(rows[0].Values[2].GetNumberValue()/1e6, 2)
+	total := math.DecimalPlacesWithDigitsNumber(rows[0].Values[2].GetNumberValue(), 2)
 	for _, row := range rows {
 		var item topn.Item
 		item.ID = row.Values[1].GetStringValue()
 		item.Name = row.Values[1].GetStringValue()
-		item.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue()/1e6, 2)
+		item.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue(), 2)
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
-		item.Unit = "ms"
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
+
+		v, unit := time.AutomaticConversionUnit(item.Value)
+		item.Value = v
+		item.Unit = unit
+
 		items = append(items, item)
 	}
 	return items, err
@@ -248,7 +252,8 @@ func (p *provider) pathClientRpsMaxTop5(interval int64, tenantId, serviceId stri
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
+
 		items = append(items, item)
 	}
 	return items, err
@@ -308,7 +313,7 @@ func (p *provider) pathErrorRateTop5(interval int64, tenantId, serviceId string,
 		if i == 0 {
 			total = item.Value
 		}
-		items[i].Total = total
+		items[i].Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
 	}
 
 	return items, err
@@ -341,17 +346,20 @@ func (p *provider) pathSlowTop5(interval int64, tenantId, serviceId string, star
 	if rows == nil || len(rows) == 0 {
 		return items, nil
 	}
-	total := math.DecimalPlacesWithDigitsNumber(rows[0].Values[2].GetNumberValue()/1e6, 2)
+	total := math.DecimalPlacesWithDigitsNumber(rows[0].Values[2].GetNumberValue(), 2)
 	for _, row := range rows {
 		var item topn.Item
 		item.ID = row.Values[1].GetStringValue()
 		item.Name = row.Values[1].GetStringValue()
-		item.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue()/1e6, 2)
+		item.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue(), 2)
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
-		item.Unit = "ms"
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
+
+		v, unit := time.AutomaticConversionUnit(item.Value)
+		item.Value = v
+		item.Unit = unit
 		items = append(items, item)
 	}
 	return items, err
@@ -393,7 +401,7 @@ func (p *provider) pathRpsMaxTop5(interval int64, tenantId, serviceId string, st
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
 		item.Unit = "reqs/s"
 		items = append(items, item)
 	}

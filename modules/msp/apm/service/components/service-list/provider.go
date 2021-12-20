@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/pkg/math"
+	pkgtime "github.com/erda-project/erda/pkg/time"
 )
 
 type provider struct {
@@ -153,7 +154,7 @@ func (p *provider) errorRateTop5(interval int64, tenantId interface{}, start int
 		if i == 0 {
 			total = item.Value
 		}
-		items[i].Total = total
+		items[i].Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
 	}
 
 	return items, err
@@ -193,8 +194,10 @@ func (p *provider) avgDurationTop5(interval int64, tenantId interface{}, start i
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
-		item.Unit = "ms"
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
+		v, unit := pkgtime.AutomaticConversionUnit(item.Value)
+		item.Value = v
+		item.Unit = unit
 		items = append(items, item)
 	}
 	return items, err
@@ -235,7 +238,7 @@ func (p *provider) rpsMinTop5(interval int64, tenantId interface{}, start int64,
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
 		item.Unit = "reqs/s"
 		items = append(items, item)
 	}
@@ -277,7 +280,7 @@ func (p *provider) rpsMaxTop5(interval int64, tenantId interface{}, start int64,
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
 		item.Unit = "reqs/s"
 		items = append(items, item)
 	}
