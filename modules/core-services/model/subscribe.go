@@ -12,25 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cleaner
+package model
 
 import (
-	"net/http"
-
-	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
-func (p *provider) intRoutes(routes httpserver.Router, prefix string) error {
-	routes.GET(prefix+"/cleaner/rollover-body", p.getRolloverBody)
-	routes.GET(prefix+"/cleaner/clean", p.doClean)
-	return nil
+// Subscribe manage erda item (project/application) subscribe
+type Subscribe struct {
+	dbengine.BaseModel
+
+	Type   string
+	TypeID uint64
+	Name   string
+	UserID string
 }
 
-func (p *provider) getRolloverBody(r *http.Request) interface{} {
-	return p.rolloverBodyForDiskClean
-}
-
-func (p *provider) doClean(r *http.Request) interface{} {
-	p.runCleanIndices(r.Context())
-	return "ok"
+func (Subscribe) TableName() string {
+	return "erda_subscribe_management"
 }
