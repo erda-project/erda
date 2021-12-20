@@ -162,7 +162,7 @@ func (p *provider) errorRateTop5(interval int64, tenantId interface{}, start int
 
 func (p *provider) avgDurationTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,avg(elapsed_sum::field) " +
-		"FROM application_http " +
+		"FROM application_http,application_rpc,application_db,application_cache,application_mq " +
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) " +
 		"GROUP BY target_service_id::tag " +
 		"ORDER BY avg(elapsed_sum::field) DESC " +
@@ -205,7 +205,7 @@ func (p *provider) avgDurationTop5(interval int64, tenantId interface{}, start i
 
 func (p *provider) rpsMinTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(elapsed_count::field)/%v "+
-		"FROM application_http "+
+		"FROM application_http,application_rpc,application_db,application_cache,application_mq "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"GROUP BY target_service_id::tag "+
 		"ORDER BY sum(elapsed_count::field) ASC "+
@@ -247,7 +247,7 @@ func (p *provider) rpsMinTop5(interval int64, tenantId interface{}, start int64,
 
 func (p *provider) rpsMaxTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(elapsed_count::field)/%v "+
-		"FROM application_http "+
+		"FROM application_http,application_rpc,application_db,application_cache,application_mq "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"GROUP BY target_service_id::tag "+
 		"ORDER BY sum(elapsed_count::field) DESC "+
