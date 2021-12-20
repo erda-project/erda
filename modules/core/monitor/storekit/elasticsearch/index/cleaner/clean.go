@@ -62,6 +62,7 @@ func (p *provider) CleanIndices(ctx context.Context, filter loader.Matcher) erro
 	}
 	now := time.Now()
 	removeList := p.getRemoveList(ctx, indices, filter, now)
+	p.Log.Infof("about to remove %d indices: %v", len(removeList), removeList)
 	if len(removeList) > 0 {
 		err := p.deleteIndices(removeList)
 		if err != nil {
@@ -81,7 +82,7 @@ func (p *provider) getRemoveList(ctx context.Context, indices *loader.IndexGroup
 	for _, ig := range indices.Groups {
 		list = append(list, p.getRemoveList(ctx, ig, filter, now)...)
 	}
-	return nil
+	return list
 }
 
 func (p *provider) needToDelete(entry *loader.IndexEntry, now time.Time) bool {
