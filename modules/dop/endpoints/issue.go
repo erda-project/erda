@@ -209,6 +209,10 @@ func (e *Endpoints) ExportExcelIssue(ctx context.Context, w http.ResponseWriter,
 		pageReq.OrderBy = "plan_started_at"
 	case "planFinishedAt":
 		pageReq.OrderBy = "plan_finished_at"
+	case "assignee":
+		pageReq.OrderBy = "assignee"
+	case "updatedAt", "updated_at":
+		pageReq.OrderBy = "updated_at"
 	default:
 		return apierrors.ErrExportExcelIssue.InvalidParameter("orderBy")
 	}
