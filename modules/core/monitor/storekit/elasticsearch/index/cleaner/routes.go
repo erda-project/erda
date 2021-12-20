@@ -21,10 +21,16 @@ import (
 )
 
 func (p *provider) intRoutes(routes httpserver.Router, prefix string) error {
-	routes.GET(prefix+"/cleanner/rollover-body", p.getRolloverBody)
+	routes.GET(prefix+"/cleaner/rollover-body", p.getRolloverBody)
+	routes.GET(prefix+"/cleaner/clean", p.doClean)
 	return nil
 }
 
 func (p *provider) getRolloverBody(r *http.Request) interface{} {
 	return p.rolloverBodyForDiskClean
+}
+
+func (p *provider) doClean(r *http.Request) interface{} {
+	p.runCleanIndices(r.Context())
+	return "ok"
 }
