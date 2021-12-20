@@ -129,7 +129,7 @@ log-persist-v1:
     group: "${LOG_GROUP_ID:spot-monitor-log-dev}"
     parallelism: ${LOG_CONSUMERS:3}
     options:
-      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:earliest}"
       auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
       queued.max.messages.kbytes: ${LOGS_STORE_INPUT_CONSUMER_QUEUE_SIZE_KB:102400} # 300MB = 100MB * parallelism
   output:
