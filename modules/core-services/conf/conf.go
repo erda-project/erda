@@ -59,6 +59,9 @@ type Conf struct {
 	EnableProjectNS       bool   `env:"ENABLE_PROJECT_NS" default:"true"`
 	LegacyUIDomain        string `env:"LEGACY_UI_PUBLIC_ADDR"`
 
+	// subscribe config
+	SubscribeLimitNum uint64 `env:"SUBSCRIBE_LIMIT_NUM" default:"3"`
+
 	// ory/kratos config
 	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
 	OryKratosPrivateAddr string `default:"kratos-admin" env:"ORY_KRATOS_ADMIN_ADDR"`
@@ -163,6 +166,11 @@ func getAllFiles(pathname string, perms []model.RolePermission) []model.RolePerm
 		}
 	}
 	return perms
+}
+
+// LoadForTest unit test
+func LoadForTest() {
+	envconf.MustLoad(&cfg)
 }
 
 // Load 加载配置项.
@@ -466,4 +474,8 @@ func FileTypesCanCarryActiveContent() []string {
 
 func OrgAuditMaxRetentionDays() uint64 {
 	return cfg.OrgAuditMaxRetentionDays
+}
+
+func SubscribeLimitNum() uint64 {
+	return cfg.SubscribeLimitNum
 }

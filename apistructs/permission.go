@@ -39,6 +39,7 @@ const (
 	HostResource               string = "host"
 	NotifyResource             string = "notify"
 	TicketResource             string = "ticket"
+	SubscribeResource          string = "subscribe"
 	IterationResource          string = "iteration"
 	IssueRequirementResource   string = "issue-requirement"
 	IssueTaskResource          string = "issue-task"

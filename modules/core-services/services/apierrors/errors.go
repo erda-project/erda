@@ -316,6 +316,10 @@ var (
 	ErrUpdateAccessKey = err("ErrCreateSecretKey", "更新密钥对失败")
 	ErrGetAccessKey    = err("ErrGetAccessKey", "查询密钥对失败")
 	ErrDeleteAccessKey = err("ErrDeleteAccessKey", "删除密钥对失败")
+
+	ErrCreateSubscribe = err("ErrCreateSubscribe", "创建关注失败")
+	ErrDeleteSubscribe = err("ErrDeleteSubscribe", "删除关注失败")
+	ErrGetSubscribe    = err("ErrGetSubscribe", "获取关注信心失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {
