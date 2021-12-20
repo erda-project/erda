@@ -414,7 +414,7 @@ func recordDLog() chan string {
 	var logger *log.DeployLogHelper
 	c := make(chan string, 1000)
 	monkey.PatchInstanceMethod(reflect.TypeOf(logger), "Log",
-		func(_ *log.DeployLogHelper, content string) {
+		func(_ *log.DeployLogHelper, content string, tags map[string]string) {
 			c <- content
 		},
 	)
