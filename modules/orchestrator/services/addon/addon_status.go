@@ -1282,7 +1282,7 @@ func (a *Addon) BuildCanalServiceItem(params *apistructs.AddonHandlerCreateItem,
 		if len(addroptions) == 0 {
 			return fmt.Errorf("未设置 canal 参数")
 		} else if a.Logger != nil {
-			a.Logger.Log(fmt.Sprintf("自动获取 canal 参数: %+v", addroptions))
+			a.pushLog(fmt.Sprintf("自动获取 canal 参数: %+v", addroptions), params)
 		}
 		if params.Options == nil {
 			params.Options = map[string]string{}
