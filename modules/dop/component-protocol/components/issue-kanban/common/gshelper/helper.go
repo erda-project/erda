@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	keyIssuePagingRequestKanBan = "IssuePagingRequestKanBan"
+	keyIssuePagingRequestKanban = "IssuePagingRequestKanban"
 )
 
 type GSHelper struct {
@@ -44,14 +44,14 @@ func (h *GSHelper) SetIssuePagingRequest(req apistructs.IssuePagingRequest) {
 	if h.gs == nil {
 		return
 	}
-	(*h.gs)[keyIssuePagingRequestKanBan] = req
+	(*h.gs)[keyIssuePagingRequestKanban] = req
 }
 
 func (h *GSHelper) GetIssuePagingRequest() (*apistructs.IssuePagingRequest, bool) {
 	if h.gs == nil {
 		return nil, false
 	}
-	v, ok := (*h.gs)[keyIssuePagingRequestKanBan]
+	v, ok := (*h.gs)[keyIssuePagingRequestKanban]
 	if !ok {
 		return nil, false
 	}
