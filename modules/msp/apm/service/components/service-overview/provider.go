@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/pkg/math"
+	"github.com/erda-project/erda/pkg/time"
 )
 
 type provider struct {
@@ -160,7 +161,7 @@ func (p *provider) exceptionCountTop5(interval int64, tenantId, serviceId string
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
 		items = append(items, item)
 	}
 	return items, err
@@ -171,7 +172,6 @@ func (p *provider) sqlSlowTop5(interval int64, tenantId, serviceId string, start
 		"FROM application_db " +
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) " +
 		"AND source_service_id::tag=$service_id " +
-		"AND elapsed_max::field>200000000 " +
 		"GROUP BY db_statement::tag " +
 		"ORDER BY max(elapsed_max::field) DESC " +
 		"LIMIT 5")
@@ -195,17 +195,21 @@ func (p *provider) sqlSlowTop5(interval int64, tenantId, serviceId string, start
 	if rows == nil || len(rows) == 0 {
 		return items, nil
 	}
-	total := math.DecimalPlacesWithDigitsNumber(rows[0].Values[2].GetNumberValue()/1e6, 2)
+	total := math.DecimalPlacesWithDigitsNumber(rows[0].Values[2].GetNumberValue(), 2)
 	for _, row := range rows {
 		var item topn.Item
 		item.ID = row.Values[1].GetStringValue()
 		item.Name = row.Values[1].GetStringValue()
-		item.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue()/1e6, 2)
+		item.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue(), 2)
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
-		item.Unit = "ms"
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
+
+		v, unit := time.AutomaticConversionUnit(item.Value)
+		item.Value = v
+		item.Unit = unit
+
 		items = append(items, item)
 	}
 	return items, err
@@ -249,17 +253,18 @@ func (p *provider) pathClientRpsMaxTop5(interval int64, tenantId, serviceId stri
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
+
 		items = append(items, item)
 	}
 	return items, err
 }
 
 func (p *provider) pathErrorRateTop5(interval int64, tenantId, serviceId string, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
-	statement := fmt.Sprintf("SELECT target_service_id::tag,http_target::tag,sum(if(eq(error::tag, 'true'),elapsed_count::field,0))/sum(elapsed_count::field) " +
+	statement := fmt.Sprintf("SELECT target_service_id::tag,http_path::tag,sum(if(eq(error::tag, 'true'),elapsed_count::field,0))/sum(elapsed_count::field) " +
 		"FROM application_http " +
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) AND target_service_id::tag=$service_id " +
-		"GROUP BY http_target::tag ")
+		"GROUP BY http_path::tag ")
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(tenantId),
 		"service_id":   structpb.NewStringValue(serviceId),
@@ -309,17 +314,17 @@ func (p *provider) pathErrorRateTop5(interval int64, tenantId, serviceId string,
 		if i == 0 {
 			total = item.Value
 		}
-		items[i].Total = total
+		items[i].Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
 	}
 
 	return items, err
 }
 
 func (p *provider) pathSlowTop5(interval int64, tenantId, serviceId string, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
-	statement := fmt.Sprintf("SELECT target_service_id::tag,http_target::tag,max(elapsed_max::field) " +
+	statement := fmt.Sprintf("SELECT target_service_id::tag,http_path::tag,max(elapsed_max::field) " +
 		"FROM application_http " +
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) AND target_service_id::tag=$service_id " +
-		"GROUP BY http_target::tag " +
+		"GROUP BY http_path::tag " +
 		"ORDER BY max(elapsed_max::field) DESC " +
 		"LIMIT 5")
 	queryParams := map[string]*structpb.Value{
@@ -342,27 +347,30 @@ func (p *provider) pathSlowTop5(interval int64, tenantId, serviceId string, star
 	if rows == nil || len(rows) == 0 {
 		return items, nil
 	}
-	total := math.DecimalPlacesWithDigitsNumber(rows[0].Values[2].GetNumberValue()/1e6, 2)
+	total := math.DecimalPlacesWithDigitsNumber(rows[0].Values[2].GetNumberValue(), 2)
 	for _, row := range rows {
 		var item topn.Item
 		item.ID = row.Values[1].GetStringValue()
 		item.Name = row.Values[1].GetStringValue()
-		item.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue()/1e6, 2)
+		item.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue(), 2)
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
-		item.Unit = "ms"
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
+
+		v, unit := time.AutomaticConversionUnit(item.Value)
+		item.Value = v
+		item.Unit = unit
 		items = append(items, item)
 	}
 	return items, err
 }
 
 func (p *provider) pathRpsMaxTop5(interval int64, tenantId, serviceId string, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
-	statement := fmt.Sprintf("SELECT target_service_id::tag,http_target::tag,sum(elapsed_count::field)/%v "+
+	statement := fmt.Sprintf("SELECT target_service_id::tag,http_path::tag,sum(elapsed_count::field)/%v "+
 		"FROM application_http "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) AND target_service_id::tag=$service_id "+
-		"GROUP BY http_target::tag "+
+		"GROUP BY http_path::tag "+
 		"ORDER BY sum(elapsed_count::field) DESC "+
 		"LIMIT 5", interval)
 	queryParams := map[string]*structpb.Value{
@@ -394,7 +402,7 @@ func (p *provider) pathRpsMaxTop5(interval int64, tenantId, serviceId string, st
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
 		item.Unit = "reqs/s"
 		items = append(items, item)
 	}
