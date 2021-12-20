@@ -482,7 +482,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 	severityCol, closedAtCol := "", ""
 	if len(cond.Type) == 1 && cond.Type[0] == apistructs.IssueTypeBug {
-		severityCol = `{ "title": "` + cputil.I18n(ctx, "severity") + `", "dataIndex": "severity", "hidden": true },`
+		severityCol = `{ "title": "` + cputil.I18n(ctx, "severity") + `", "dataIndex": "severity", "hidden": false },`
 		closedAtCol = `,{ "title": "` + cputil.I18n(ctx, "closed-at") + `", "dataIndex": "closedAt", "hidden": true }`
 	}
 	props := `{

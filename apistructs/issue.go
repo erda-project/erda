@@ -939,6 +939,13 @@ func (r *IssueUpdateRequest) IsEmpty() bool {
 		r.Assignee == nil && r.IterationID == nil && r.ManHour == nil
 }
 
+func getIssueRequestTime(t *time.Time) *time.Time {
+	if t.Equal(time.Unix(0, 0)) {
+		return nil
+	}
+	return t
+}
+
 // GetChangedFields 从 IssueUpdateRequest 中找出需要更新(不为空)的字段
 // 注意：map 的 value 需要与 dao.Issue 字段类型一致
 func (r *IssueUpdateRequest) GetChangedFields(manHour string) map[string]interface{} {
@@ -961,8 +968,12 @@ func (r *IssueUpdateRequest) GetChangedFields(manHour string) map[string]interfa
 	if r.Severity != nil {
 		fields["severity"] = *r.Severity
 	}
-	fields["plan_started_at"] = r.PlanStartedAt
-	fields["plan_finished_at"] = r.PlanFinishedAt
+	if r.PlanStartedAt != nil {
+		fields["plan_started_at"] = getIssueRequestTime(r.PlanStartedAt)
+	}
+	if r.PlanFinishedAt != nil {
+		fields["plan_finished_at"] = getIssueRequestTime(r.PlanFinishedAt)
+	}
 	if r.Assignee != nil {
 		fields["assignee"] = *r.Assignee
 	}

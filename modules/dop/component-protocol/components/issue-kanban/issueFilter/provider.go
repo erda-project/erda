@@ -281,7 +281,7 @@ func (f *IssueFilter) generateIssuePagingRequest() apistructs.IssuePagingRequest
 			Severity:        f.State.FrontendConditionValues.Severities,
 			RelatedIssueIDs: nil,
 			Source:          "",
-			OrderBy:         "",
+			OrderBy:         "updated_at",
 			TaskType:        nil,
 			BugStage:        f.State.FrontendConditionValues.BugStages,
 			Owner:           f.State.FrontendConditionValues.OwnerIDs,

@@ -300,7 +300,13 @@ func (k *Kanban) RegisterCardMoveToOp(opData kanban.OpCardMoveTo) (opFunc cptype
 		if err != nil {
 			panic(fmt.Errorf("invalid state id: %s, err: %v", opData.ClientData.TargetBoardID, err))
 		}
-		if err := k.bdl.UpdateIssueTicketUser(sdk.Identity.UserID, apistructs.IssueUpdateRequest{State: &targetStateID}, issueID); err != nil {
+		if err := k.issueSvc.UpdateIssue(apistructs.IssueUpdateRequest{
+			ID:    issueID,
+			State: &targetStateID,
+			IdentityInfo: apistructs.IdentityInfo{
+				UserID: sdk.Identity.UserID,
+			},
+		}); err != nil {
 			panic(fmt.Errorf("failed to update issue: %v", err))
 		}
 		k.StdDataPtr = k.doFilter()
