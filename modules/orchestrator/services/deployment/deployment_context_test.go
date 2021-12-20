@@ -478,6 +478,7 @@ func genFakeFSM(specPath ...string) *DeployFSMContext {
 			OrgID:          104,
 			WildcardDomain: "test.terminus.io",
 		},
+		d: &log.DeployLogHelper{},
 	}
 	if len(specPath) > 0 {
 		b, err := ioutil.ReadFile(specPath[0])
