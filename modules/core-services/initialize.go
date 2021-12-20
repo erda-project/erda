@@ -45,6 +45,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/org"
 	"github.com/erda-project/erda/modules/core-services/services/permission"
 	"github.com/erda-project/erda/modules/core-services/services/project"
+	"github.com/erda-project/erda/modules/core-services/services/subscribe"
 	"github.com/erda-project/erda/modules/core-services/services/user"
 	"github.com/erda-project/erda/modules/core-services/utils"
 	"github.com/erda-project/erda/pkg/discover"
@@ -54,7 +55,6 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/license"
 	"github.com/erda-project/erda/pkg/ucauth"
-	// "terminus.io/dice/telemetry/promxp"
 )
 
 // Initialize 初始化应用启动服务.
@@ -266,6 +266,10 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		user.WithUCClient(uc),
 	)
 
+	sub := subscribe.New(
+		subscribe.WithDBClient(db),
+	)
+
 	// queryStringDecoder
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
@@ -296,6 +300,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithErrorBox(errorBox),
 		endpoints.WithFileSvc(fileSvc),
 		endpoints.WithUserSvc(user),
+		endpoints.WithSubscribe(sub),
 	)
 	return ep, nil
 }
