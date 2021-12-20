@@ -51,7 +51,7 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	}
 
 	// default get time: 1 day.
-	start, end := TimeRange("-24")
+	start, end := TimeRange("-24h")
 
 	// get services list
 	statement := fmt.Sprintf("SELECT service_id::tag,service_name::tag,service_agent_platform::tag,max(timestamp) FROM application_service_node "+
@@ -84,6 +84,7 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 		service.Name = row.Values[1].GetStringValue()
 		service.Language = parseLanguage(row.Values[2].GetStringValue())
 		service.LastHeartbeat = time.Unix(0, int64(row.Values[3].GetNumberValue())).Format("2006-01-02 15:04:05")
+		service.AggregateMetric = &pb.AggregateMetric{}
 		services = append(services, service)
 	}
 
@@ -100,6 +101,8 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+
+	// service total count
 	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
 
 	if rows == nil || len(rows) == 0 {
@@ -159,7 +162,7 @@ func (s *apmServiceService) aggregateMetric(serviceStatus, tenantId string, serv
 	includeIds = includeIds[:len(includeIds)-1]
 
 	statement := fmt.Sprintf("SELECT target_service_id::tag,sum(count_sum::field)/(60*60),sum(elapsed_sum::field)/sum(count_sum::field),sum(errors_sum::field)/sum(count_sum::field)"+
-		"FROM application_http_service,application_rpc_service "+
+		"FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND include(target_service_id::tag, %s) GROUP BY target_service_id::tag", includeIds)
 	condition := " terminus_key::tag=$terminus_key "
@@ -187,7 +190,6 @@ func (s *apmServiceService) aggregateMetric(serviceStatus, tenantId string, serv
 	)
 	if response != nil {
 		rows := response.Results[0].Series[0].Rows
-
 		for _, row := range rows {
 			serviceId := row.Values[0].GetStringValue()
 			if service, ok := serviceMap[serviceId]; ok {
@@ -267,7 +269,7 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 	interval := ""
 	start := req.StartTime
 	end := req.EndTime
-	if req.StartTime == 0 && req.EndTime == 0 {
+	if req.StartTime == 0 || req.EndTime == 0 {
 		start, end = TimeRange("-1h")
 	}
 
@@ -319,7 +321,7 @@ func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServ
 	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
 
 	// hasError count
-	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service WHERE $condition"
+	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service WHERE $condition"
 	unhealthyCondition := " target_terminus_key::tag=$target_terminus_key AND errors_sum::field>0 "
 	statement = strings.ReplaceAll(statement, "$condition", unhealthyCondition)
 
@@ -339,7 +341,7 @@ func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServ
 	hasErrorCount := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
 
 	// withoutRequest count
-	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service WHERE $condition"
+	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service WHERE $condition"
 	withoutRequestCondition := "target_terminus_key::tag=$target_terminus_key AND elapsed_sum::field<=0 "
 	statement = strings.ReplaceAll(statement, "$condition", withoutRequestCondition)
 	queryParams = map[string]*structpb.Value{

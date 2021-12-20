@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/pkg/math"
+	pkgtime "github.com/erda-project/erda/pkg/time"
 )
 
 type provider struct {
@@ -102,7 +103,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 func (p *provider) errorRateTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(errors_sum::field)/sum(count_sum::field) " +
-		"FROM application_http_service " +
+		"FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service " +
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) " +
 		"GROUP BY target_service_id::tag ")
 	queryParams := map[string]*structpb.Value{
@@ -153,7 +154,7 @@ func (p *provider) errorRateTop5(interval int64, tenantId interface{}, start int
 		if i == 0 {
 			total = item.Value
 		}
-		items[i].Total = total
+		items[i].Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
 	}
 
 	return items, err
@@ -161,7 +162,7 @@ func (p *provider) errorRateTop5(interval int64, tenantId interface{}, start int
 
 func (p *provider) avgDurationTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,avg(elapsed_sum::field) " +
-		"FROM application_http " +
+		"FROM application_http,application_rpc,application_db,application_cache,application_mq " +
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) " +
 		"GROUP BY target_service_id::tag " +
 		"ORDER BY avg(elapsed_sum::field) DESC " +
@@ -184,17 +185,19 @@ func (p *provider) avgDurationTop5(interval int64, tenantId interface{}, start i
 	if rows == nil || len(rows) == 0 {
 		return items, nil
 	}
-	total := math.DecimalPlacesWithDigitsNumber(rows[0].Values[2].GetNumberValue()/1e6, 2)
+	total := math.DecimalPlacesWithDigitsNumber(rows[0].Values[2].GetNumberValue(), 2)
 	for _, row := range rows {
 		var item topn.Item
 		item.ID = row.Values[0].GetStringValue()
 		item.Name = row.Values[1].GetStringValue()
-		item.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue()/1e6, 2)
+		item.Value = math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue(), 2)
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
-		item.Unit = "ms"
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
+		v, unit := pkgtime.AutomaticConversionUnit(item.Value)
+		item.Value = v
+		item.Unit = unit
 		items = append(items, item)
 	}
 	return items, err
@@ -202,7 +205,7 @@ func (p *provider) avgDurationTop5(interval int64, tenantId interface{}, start i
 
 func (p *provider) rpsMinTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(elapsed_count::field)/%v "+
-		"FROM application_http "+
+		"FROM application_http,application_rpc,application_db,application_cache,application_mq "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"GROUP BY target_service_id::tag "+
 		"ORDER BY sum(elapsed_count::field) ASC "+
@@ -235,7 +238,7 @@ func (p *provider) rpsMinTop5(interval int64, tenantId interface{}, start int64,
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
 		item.Unit = "reqs/s"
 		items = append(items, item)
 	}
@@ -244,7 +247,7 @@ func (p *provider) rpsMinTop5(interval int64, tenantId interface{}, start int64,
 
 func (p *provider) rpsMaxTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(elapsed_count::field)/%v "+
-		"FROM application_http "+
+		"FROM application_http,application_rpc,application_db,application_cache,application_mq "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"GROUP BY target_service_id::tag "+
 		"ORDER BY sum(elapsed_count::field) DESC "+
@@ -277,7 +280,7 @@ func (p *provider) rpsMaxTop5(interval int64, tenantId interface{}, start int64,
 		if item.Value == 0 {
 			continue
 		}
-		item.Total = total
+		item.Percent = math.DecimalPlacesWithDigitsNumber(item.Value/total*1e2, 2)
 		item.Unit = "reqs/s"
 		items = append(items, item)
 	}
