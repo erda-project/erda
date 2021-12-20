@@ -38,7 +38,7 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
-	github.com/erda-project/erda-infra v0.0.0-20211219080401-fc64bcc538ea
+	github.com/erda-project/erda-infra v0.0.0-20211217092649-00fbcca89a94
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/erda-project/erda-sourcecov v0.1.0

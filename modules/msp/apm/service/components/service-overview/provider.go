@@ -171,7 +171,6 @@ func (p *provider) sqlSlowTop5(interval int64, tenantId, serviceId string, start
 		"FROM application_db " +
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) " +
 		"AND source_service_id::tag=$service_id " +
-		"AND elapsed_max::field>200000000 " +
 		"GROUP BY db_statement::tag " +
 		"ORDER BY max(elapsed_max::field) DESC " +
 		"LIMIT 5")
@@ -256,10 +255,10 @@ func (p *provider) pathClientRpsMaxTop5(interval int64, tenantId, serviceId stri
 }
 
 func (p *provider) pathErrorRateTop5(interval int64, tenantId, serviceId string, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
-	statement := fmt.Sprintf("SELECT target_service_id::tag,http_target::tag,sum(if(eq(error::tag, 'true'),elapsed_count::field,0))/sum(elapsed_count::field) " +
+	statement := fmt.Sprintf("SELECT target_service_id::tag,http_path::tag,sum(if(eq(error::tag, 'true'),elapsed_count::field,0))/sum(elapsed_count::field) " +
 		"FROM application_http " +
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) AND target_service_id::tag=$service_id " +
-		"GROUP BY http_target::tag ")
+		"GROUP BY http_path::tag ")
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(tenantId),
 		"service_id":   structpb.NewStringValue(serviceId),
@@ -316,10 +315,10 @@ func (p *provider) pathErrorRateTop5(interval int64, tenantId, serviceId string,
 }
 
 func (p *provider) pathSlowTop5(interval int64, tenantId, serviceId string, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
-	statement := fmt.Sprintf("SELECT target_service_id::tag,http_target::tag,max(elapsed_max::field) " +
+	statement := fmt.Sprintf("SELECT target_service_id::tag,http_path::tag,max(elapsed_max::field) " +
 		"FROM application_http " +
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) AND target_service_id::tag=$service_id " +
-		"GROUP BY http_target::tag " +
+		"GROUP BY http_path::tag " +
 		"ORDER BY max(elapsed_max::field) DESC " +
 		"LIMIT 5")
 	queryParams := map[string]*structpb.Value{
@@ -359,10 +358,10 @@ func (p *provider) pathSlowTop5(interval int64, tenantId, serviceId string, star
 }
 
 func (p *provider) pathRpsMaxTop5(interval int64, tenantId, serviceId string, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
-	statement := fmt.Sprintf("SELECT target_service_id::tag,http_target::tag,sum(elapsed_count::field)/%v "+
+	statement := fmt.Sprintf("SELECT target_service_id::tag,http_path::tag,sum(elapsed_count::field)/%v "+
 		"FROM application_http "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) AND target_service_id::tag=$service_id "+
-		"GROUP BY http_target::tag "+
+		"GROUP BY http_path::tag "+
 		"ORDER BY sum(elapsed_count::field) DESC "+
 		"LIMIT 5", interval)
 	queryParams := map[string]*structpb.Value{

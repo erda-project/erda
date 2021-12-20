@@ -84,6 +84,7 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 		service.Name = row.Values[1].GetStringValue()
 		service.Language = parseLanguage(row.Values[2].GetStringValue())
 		service.LastHeartbeat = time.Unix(0, int64(row.Values[3].GetNumberValue())).Format("2006-01-02 15:04:05")
+		service.AggregateMetric = &pb.AggregateMetric{}
 		services = append(services, service)
 	}
 
@@ -187,7 +188,6 @@ func (s *apmServiceService) aggregateMetric(serviceStatus, tenantId string, serv
 	)
 	if response != nil {
 		rows := response.Results[0].Series[0].Rows
-
 		for _, row := range rows {
 			serviceId := row.Values[0].GetStringValue()
 			if service, ok := serviceMap[serviceId]; ok {
@@ -267,7 +267,7 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 	interval := ""
 	start := req.StartTime
 	end := req.EndTime
-	if req.StartTime == 0 && req.EndTime == 0 {
+	if req.StartTime == 0 || req.EndTime == 0 {
 		start, end = TimeRange("-1h")
 	}
 
