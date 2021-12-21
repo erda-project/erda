@@ -47,7 +47,6 @@ func (p *provider) cleanByDiskUsage(r *http.Request, params struct {
 	if params.TargetUsagePercent > 0 {
 		config.LowDiskUsagePercent = params.TargetUsagePercent
 	}
-	config.MinIndicesStorePercent = 1
 	err := p.checkDiskUsage(r.Context(), config)
 	if err != nil {
 		return err
