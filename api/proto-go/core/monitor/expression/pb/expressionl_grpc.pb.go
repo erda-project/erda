@@ -21,7 +21,8 @@ const _ = grpc.SupportPackageIsVersion5
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ExpressionServiceClient interface {
-	GetAllEnabledExpression(ctx context.Context, in *GetAllEnabledExpressionRequest, opts ...grpc.CallOption) (*GetAllEnabledExpressionResponse, error)
+	GetAllAlertEnabledExpression(ctx context.Context, in *GetAllAlertEnabledExpressionRequest, opts ...grpc.CallOption) (*GetAllAlertEnabledExpressionResponse, error)
+	GetAllMetricEnabledExpression(ctx context.Context, in *GetAllMetricEnabledExpressionRequest, opts ...grpc.CallOption) (*GetAllMetricEnabledExpressionResponse, error)
 	GetAllAlertTemplate(ctx context.Context, in *GetAllAlertTemplateRequest, opts ...grpc.CallOption) (*GetAllAlertTemplateResponse, error)
 }
 
@@ -33,9 +34,18 @@ func NewExpressionServiceClient(cc grpc1.ClientConnInterface) ExpressionServiceC
 	return &expressionServiceClient{cc}
 }
 
-func (c *expressionServiceClient) GetAllEnabledExpression(ctx context.Context, in *GetAllEnabledExpressionRequest, opts ...grpc.CallOption) (*GetAllEnabledExpressionResponse, error) {
-	out := new(GetAllEnabledExpressionResponse)
-	err := c.cc.Invoke(ctx, "/erda.core.monitor.expression.ExpressionService/GetAllEnabledExpression", in, out, opts...)
+func (c *expressionServiceClient) GetAllAlertEnabledExpression(ctx context.Context, in *GetAllAlertEnabledExpressionRequest, opts ...grpc.CallOption) (*GetAllAlertEnabledExpressionResponse, error) {
+	out := new(GetAllAlertEnabledExpressionResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.expression.ExpressionService/GetAllAlertEnabledExpression", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *expressionServiceClient) GetAllMetricEnabledExpression(ctx context.Context, in *GetAllMetricEnabledExpressionRequest, opts ...grpc.CallOption) (*GetAllMetricEnabledExpressionResponse, error) {
+	out := new(GetAllMetricEnabledExpressionResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.expression.ExpressionService/GetAllMetricEnabledExpression", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +65,8 @@ func (c *expressionServiceClient) GetAllAlertTemplate(ctx context.Context, in *G
 // All implementations should embed UnimplementedExpressionServiceServer
 // for forward compatibility
 type ExpressionServiceServer interface {
-	GetAllEnabledExpression(context.Context, *GetAllEnabledExpressionRequest) (*GetAllEnabledExpressionResponse, error)
+	GetAllAlertEnabledExpression(context.Context, *GetAllAlertEnabledExpressionRequest) (*GetAllAlertEnabledExpressionResponse, error)
+	GetAllMetricEnabledExpression(context.Context, *GetAllMetricEnabledExpressionRequest) (*GetAllMetricEnabledExpressionResponse, error)
 	GetAllAlertTemplate(context.Context, *GetAllAlertTemplateRequest) (*GetAllAlertTemplateResponse, error)
 }
 
@@ -63,8 +74,11 @@ type ExpressionServiceServer interface {
 type UnimplementedExpressionServiceServer struct {
 }
 
-func (*UnimplementedExpressionServiceServer) GetAllEnabledExpression(context.Context, *GetAllEnabledExpressionRequest) (*GetAllEnabledExpressionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAllEnabledExpression not implemented")
+func (*UnimplementedExpressionServiceServer) GetAllAlertEnabledExpression(context.Context, *GetAllAlertEnabledExpressionRequest) (*GetAllAlertEnabledExpressionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllAlertEnabledExpression not implemented")
+}
+func (*UnimplementedExpressionServiceServer) GetAllMetricEnabledExpression(context.Context, *GetAllMetricEnabledExpressionRequest) (*GetAllMetricEnabledExpressionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllMetricEnabledExpression not implemented")
 }
 func (*UnimplementedExpressionServiceServer) GetAllAlertTemplate(context.Context, *GetAllAlertTemplateRequest) (*GetAllAlertTemplateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAllAlertTemplate not implemented")
@@ -88,13 +102,22 @@ func _get_ExpressionService_serviceDesc(srv ExpressionServiceServer, opts ...grp
 		op(h)
 	}
 
-	_ExpressionService_GetAllEnabledExpression_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.GetAllEnabledExpression(ctx, req.(*GetAllEnabledExpressionRequest))
+	_ExpressionService_GetAllAlertEnabledExpression_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetAllAlertEnabledExpression(ctx, req.(*GetAllAlertEnabledExpressionRequest))
 	}
-	var _ExpressionService_GetAllEnabledExpression_info transport.ServiceInfo
+	var _ExpressionService_GetAllAlertEnabledExpression_info transport.ServiceInfo
 	if h.Interceptor != nil {
-		_ExpressionService_GetAllEnabledExpression_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAllEnabledExpression", srv)
-		_ExpressionService_GetAllEnabledExpression_Handler = h.Interceptor(_ExpressionService_GetAllEnabledExpression_Handler)
+		_ExpressionService_GetAllAlertEnabledExpression_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAllAlertEnabledExpression", srv)
+		_ExpressionService_GetAllAlertEnabledExpression_Handler = h.Interceptor(_ExpressionService_GetAllAlertEnabledExpression_Handler)
+	}
+
+	_ExpressionService_GetAllMetricEnabledExpression_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetAllMetricEnabledExpression(ctx, req.(*GetAllMetricEnabledExpressionRequest))
+	}
+	var _ExpressionService_GetAllMetricEnabledExpression_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ExpressionService_GetAllMetricEnabledExpression_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAllMetricEnabledExpression", srv)
+		_ExpressionService_GetAllMetricEnabledExpression_Handler = h.Interceptor(_ExpressionService_GetAllMetricEnabledExpression_Handler)
 	}
 
 	_ExpressionService_GetAllAlertTemplate_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -109,26 +132,49 @@ func _get_ExpressionService_serviceDesc(srv ExpressionServiceServer, opts ...grp
 	var serviceDesc = _ExpressionService_serviceDesc
 	serviceDesc.Methods = []grpc.MethodDesc{
 		{
-			MethodName: "GetAllEnabledExpression",
+			MethodName: "GetAllAlertEnabledExpression",
 			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-				in := new(GetAllEnabledExpressionRequest)
+				in := new(GetAllAlertEnabledExpressionRequest)
 				if err := dec(in); err != nil {
 					return nil, err
 				}
 				if interceptor == nil && h.Interceptor == nil {
-					return srv.(ExpressionServiceServer).GetAllEnabledExpression(ctx, in)
+					return srv.(ExpressionServiceServer).GetAllAlertEnabledExpression(ctx, in)
 				}
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ExpressionService_GetAllEnabledExpression_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ExpressionService_GetAllAlertEnabledExpression_info)
 				}
 				if interceptor == nil {
-					return _ExpressionService_GetAllEnabledExpression_Handler(ctx, in)
+					return _ExpressionService_GetAllAlertEnabledExpression_Handler(ctx, in)
 				}
 				info := &grpc.UnaryServerInfo{
 					Server:     srv,
-					FullMethod: "/erda.core.monitor.expression.ExpressionService/GetAllEnabledExpression",
+					FullMethod: "/erda.core.monitor.expression.ExpressionService/GetAllAlertEnabledExpression",
 				}
-				return interceptor(ctx, in, info, _ExpressionService_GetAllEnabledExpression_Handler)
+				return interceptor(ctx, in, info, _ExpressionService_GetAllAlertEnabledExpression_Handler)
+			},
+		},
+		{
+			MethodName: "GetAllMetricEnabledExpression",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetAllMetricEnabledExpressionRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ExpressionServiceServer).GetAllMetricEnabledExpression(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ExpressionService_GetAllMetricEnabledExpression_info)
+				}
+				if interceptor == nil {
+					return _ExpressionService_GetAllMetricEnabledExpression_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.expression.ExpressionService/GetAllMetricEnabledExpression",
+				}
+				return interceptor(ctx, in, info, _ExpressionService_GetAllMetricEnabledExpression_Handler)
 			},
 		},
 		{

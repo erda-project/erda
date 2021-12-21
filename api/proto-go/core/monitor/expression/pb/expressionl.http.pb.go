@@ -18,8 +18,10 @@ const _ = http.SupportPackageIsVersion1
 
 // ExpressionServiceHandler is the server API for ExpressionService service.
 type ExpressionServiceHandler interface {
-	// GET /api/org/expression
-	GetAllEnabledExpression(context.Context, *GetAllEnabledExpressionRequest) (*GetAllEnabledExpressionResponse, error)
+	// GET /api/org/alert/expression
+	GetAllAlertEnabledExpression(context.Context, *GetAllAlertEnabledExpressionRequest) (*GetAllAlertEnabledExpressionResponse, error)
+	// GET /api/org/metric/expression
+	GetAllMetricEnabledExpression(context.Context, *GetAllMetricEnabledExpressionRequest) (*GetAllMetricEnabledExpressionResponse, error)
 	// GET /api/org/template
 	GetAllAlertTemplate(context.Context, *GetAllAlertTemplateRequest) (*GetAllAlertTemplateResponse, error)
 }
@@ -47,13 +49,13 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 		return handler
 	}
 
-	add_GetAllEnabledExpression := func(method, path string, fn func(context.Context, *GetAllEnabledExpressionRequest) (*GetAllEnabledExpressionResponse, error)) {
+	add_GetAllAlertEnabledExpression := func(method, path string, fn func(context.Context, *GetAllAlertEnabledExpressionRequest) (*GetAllAlertEnabledExpressionResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*GetAllEnabledExpressionRequest))
+			return fn(ctx, req.(*GetAllAlertEnabledExpressionRequest))
 		}
-		var GetAllEnabledExpression_info transport.ServiceInfo
+		var GetAllAlertEnabledExpression_info transport.ServiceInfo
 		if h.Interceptor != nil {
-			GetAllEnabledExpression_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAllEnabledExpression", srv)
+			GetAllAlertEnabledExpression_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAllAlertEnabledExpression", srv)
 			handler = h.Interceptor(handler)
 		}
 		r.Add(method, path, encodeFunc(
@@ -61,10 +63,46 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 				ctx := http.WithRequest(r.Context(), r)
 				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAllEnabledExpression_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAllAlertEnabledExpression_info)
 				}
 				r = r.WithContext(ctx)
-				var in GetAllEnabledExpressionRequest
+				var in GetAllAlertEnabledExpressionRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_GetAllMetricEnabledExpression := func(method, path string, fn func(context.Context, *GetAllMetricEnabledExpressionRequest) (*GetAllMetricEnabledExpressionResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetAllMetricEnabledExpressionRequest))
+		}
+		var GetAllMetricEnabledExpression_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetAllMetricEnabledExpression_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAllMetricEnabledExpression", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAllMetricEnabledExpression_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetAllMetricEnabledExpressionRequest
 				if err := h.Decode(r, &in); err != nil {
 					return nil, err
 				}
@@ -119,6 +157,7 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 		)
 	}
 
-	add_GetAllEnabledExpression("GET", "/api/org/expression", srv.GetAllEnabledExpression)
+	add_GetAllAlertEnabledExpression("GET", "/api/org/alert/expression", srv.GetAllAlertEnabledExpression)
+	add_GetAllMetricEnabledExpression("GET", "/api/org/metric/expression", srv.GetAllMetricEnabledExpression)
 	add_GetAllAlertTemplate("GET", "/api/org/template", srv.GetAllAlertTemplate)
 }

@@ -37,8 +37,12 @@ type expressionServiceWrapper struct {
 	opts   []grpc1.CallOption
 }
 
-func (s *expressionServiceWrapper) GetAllEnabledExpression(ctx context.Context, req *pb.GetAllEnabledExpressionRequest) (*pb.GetAllEnabledExpressionResponse, error) {
-	return s.client.GetAllEnabledExpression(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+func (s *expressionServiceWrapper) GetAllAlertEnabledExpression(ctx context.Context, req *pb.GetAllAlertEnabledExpressionRequest) (*pb.GetAllAlertEnabledExpressionResponse, error) {
+	return s.client.GetAllAlertEnabledExpression(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *expressionServiceWrapper) GetAllMetricEnabledExpression(ctx context.Context, req *pb.GetAllMetricEnabledExpressionRequest) (*pb.GetAllMetricEnabledExpressionResponse, error) {
+	return s.client.GetAllMetricEnabledExpression(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
 func (s *expressionServiceWrapper) GetAllAlertTemplate(ctx context.Context, req *pb.GetAllAlertTemplateRequest) (*pb.GetAllAlertTemplateResponse, error) {

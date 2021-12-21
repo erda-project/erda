@@ -12,26 +12,68 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
-var _ urlenc.URLValuesUnmarshaler = (*GetAllEnabledExpressionRequest)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*GetAllEnabledExpressionResponse)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*EnabledExpression)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAllAlertEnabledExpressionRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAllAlertEnabledExpressionResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAllMetricEnabledExpressionRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAllMetricEnabledExpressionResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Expression)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetAllAlertTemplateRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetAllAlertTemplateResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AlertTemplate)(nil)
 
-// GetAllEnabledExpressionRequest implement urlenc.URLValuesUnmarshaler.
-func (m *GetAllEnabledExpressionRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+// GetAllAlertEnabledExpressionRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetAllAlertEnabledExpressionRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pageSize":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageSize = val
+			case "pageNo":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageNo = val
+			}
+		}
+	}
 	return nil
 }
 
-// GetAllEnabledExpressionResponse implement urlenc.URLValuesUnmarshaler.
-func (m *GetAllEnabledExpressionResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+// GetAllAlertEnabledExpressionResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetAllAlertEnabledExpressionResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }
 
-// EnabledExpression implement urlenc.URLValuesUnmarshaler.
-func (m *EnabledExpression) UnmarshalURLValues(prefix string, values url.Values) error {
+// GetAllMetricEnabledExpressionRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetAllMetricEnabledExpressionRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pageSize":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageSize = val
+			case "pageNo":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageNo = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetAllMetricEnabledExpressionResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetAllMetricEnabledExpressionResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }
 
@@ -68,6 +110,24 @@ func (m *Expression) UnmarshalURLValues(prefix string, values url.Values) error 
 
 // GetAllAlertTemplateRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetAllAlertTemplateRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pageNo":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageNo = val
+			case "pageSize":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageSize = val
+			}
+		}
+	}
 	return nil
 }
 

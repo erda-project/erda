@@ -17,7 +17,6 @@ package expression
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/expression/pb"
 	"github.com/erda-project/erda/modules/core/monitor/expression/model"
@@ -32,22 +31,7 @@ type expressionService struct {
 	p *provider
 }
 
-func (e *expressionService) GetAllAlertTemplate(ctx context.Context, request *pb.GetAllAlertTemplateRequest) (*pb.GetAllAlertTemplateResponse, error) {
-	result := &pb.GetAllAlertTemplateResponse{
-		Data: make([]*pb.AlertTemplate, 0),
-	}
-	data, err := json.Marshal(SystemTemplate)
-	fmt.Println(string(data))
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(data, &result.Data)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-func (e *expressionService) GetAllEnabledExpression(ctx context.Context, request *pb.GetAllEnabledExpressionRequest) (*pb.GetAllEnabledExpressionResponse, error) {
+func (e *expressionService) GetAllAlertEnabledExpression(ctx context.Context, request *pb.GetAllAlertEnabledExpressionRequest) (*pb.GetAllAlertEnabledExpressionResponse, error) {
 	alertExpressions, err := e.p.alertDB.GetAllAlertExpression()
 	if err != nil {
 		return nil, err
@@ -61,12 +45,32 @@ func (e *expressionService) GetAllEnabledExpression(ctx context.Context, request
 	if err != nil {
 		return nil, err
 	}
+	result := &pb.GetAllAlertEnabledExpressionResponse{}
+	if request.PageNo <= 1 {
+		if request.PageSize > int64(len(alertExpressionArr)) {
+			request.PageSize = int64(len(alertExpressionArr))
+		}
+		result.Data = alertExpressionArr[:request.PageSize]
+	} else {
+		if (request.PageNo-1)*request.PageSize >= int64(len(alertExpressionArr)) {
+			return result, nil
+		}
+		if request.PageNo*request.PageSize > int64(len(alertExpressionArr)) {
+			result.Data = alertExpressionArr[(request.PageNo-1)*request.PageSize:]
+		} else {
+			result.Data = alertExpressionArr[(request.PageNo-1)*request.PageSize : request.PageNo*request.PageSize]
+		}
+	}
+	return result, nil
+}
+
+func (e *expressionService) GetAllMetricEnabledExpression(ctx context.Context, request *pb.GetAllMetricEnabledExpressionRequest) (*pb.GetAllMetricEnabledExpressionResponse, error) {
 	metricExpressions, err := e.p.metricDB.GetAllMetricExpression()
 	if err != nil {
 		return nil, err
 	}
 	metricExpressionArr := make([]*pb.Expression, 0)
-	data, err = json.Marshal(metricExpressions)
+	data, err := json.Marshal(metricExpressions)
 	if err != nil {
 		return nil, err
 	}
@@ -74,15 +78,52 @@ func (e *expressionService) GetAllEnabledExpression(ctx context.Context, request
 	if err != nil {
 		return nil, err
 	}
-	result := &pb.GetAllEnabledExpressionResponse{
-		Data: map[string]*pb.EnabledExpression{
-			"alert": {
-				Expression: alertExpressionArr,
-			},
-			"metric": {
-				Expression: metricExpressionArr,
-			},
-		},
+	result := &pb.GetAllMetricEnabledExpressionResponse{}
+	if request.PageNo <= 1 {
+		if request.PageSize > int64(len(metricExpressionArr)) {
+			request.PageSize = int64(len(metricExpressionArr))
+		}
+		result.Data = metricExpressionArr[:request.PageSize]
+	} else {
+		if (request.PageNo-1)*request.PageSize >= int64(len(metricExpressionArr)) {
+			return result, nil
+		}
+		if request.PageNo*request.PageSize > int64(len(metricExpressionArr)) {
+			result.Data = metricExpressionArr[(request.PageNo-1)*request.PageSize:]
+		} else {
+			result.Data = metricExpressionArr[(request.PageNo-1)*request.PageSize : request.PageNo*request.PageSize]
+		}
+	}
+	return result, nil
+}
+
+func (e *expressionService) GetAllAlertTemplate(ctx context.Context, request *pb.GetAllAlertTemplateRequest) (*pb.GetAllAlertTemplateResponse, error) {
+	result := &pb.GetAllAlertTemplateResponse{
+		Data: make([]*pb.AlertTemplate, 0),
+	}
+	var data []byte
+	var err error
+	if request.PageNo <= 1 {
+		if request.PageSize > int64(len(SystemTemplate)) {
+			request.PageSize = int64(len(SystemTemplate))
+		}
+		data, err = json.Marshal(SystemTemplate[:request.PageSize])
+	} else {
+		if (request.PageNo-1)*request.PageSize >= int64(len(SystemTemplate)) {
+			return result, nil
+		}
+		if request.PageNo*request.PageSize > int64(len(SystemTemplate)) {
+			data, err = json.Marshal(SystemTemplate[(request.PageNo-1)*request.PageSize:])
+		} else {
+			data, err = json.Marshal(SystemTemplate[(request.PageNo-1)*request.PageSize : request.PageNo*request.PageSize])
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(data, &result.Data)
+	if err != nil {
+		return nil, err
 	}
 	return result, nil
 }

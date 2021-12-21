@@ -21,18 +21,27 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-func (this *GetAllEnabledExpressionRequest) Validate() error {
+func (this *GetAllAlertEnabledExpressionRequest) Validate() error {
 	return nil
 }
-func (this *GetAllEnabledExpressionResponse) Validate() error {
-	// Validation of proto3 map<> fields is unsupported.
-	return nil
-}
-func (this *EnabledExpression) Validate() error {
-	for _, item := range this.Expression {
+func (this *GetAllAlertEnabledExpressionResponse) Validate() error {
+	for _, item := range this.Data {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("Expression", err)
+				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *GetAllMetricEnabledExpressionRequest) Validate() error {
+	return nil
+}
+func (this *GetAllMetricEnabledExpressionResponse) Validate() error {
+	for _, item := range this.Data {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
 			}
 		}
 	}

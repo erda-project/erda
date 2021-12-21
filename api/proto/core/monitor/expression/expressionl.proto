@@ -16,12 +16,20 @@ service ExpressionService {
       check_token: true,
     }
   };
-  rpc GetAllEnabledExpression (GetAllEnabledExpressionRequest) returns (GetAllEnabledExpressionResponse) {
+  rpc GetAllAlertEnabledExpression (GetAllAlertEnabledExpressionRequest) returns (GetAllAlertEnabledExpressionResponse) {
     option (google.api.http)     = {
-      get: "/api/org/expression"
+      get: "/api/org/alert/expression"
     };
     option (erda.common.openapi) = {
-      path: "/api/org/expression"
+      path: "/api/org/alert/expression"
+    };
+  }
+  rpc GetAllMetricEnabledExpression (GetAllMetricEnabledExpressionRequest) returns (GetAllMetricEnabledExpressionResponse) {
+    option (google.api.http)     = {
+      get: "/api/org/metric/expression"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/org/metric/expression"
     };
   }
   rpc GetAllAlertTemplate (GetAllAlertTemplateRequest) returns (GetAllAlertTemplateResponse) {
@@ -34,15 +42,24 @@ service ExpressionService {
   }
 }
 
-message GetAllEnabledExpressionRequest {}
-
-message GetAllEnabledExpressionResponse {
-  map<string, EnabledExpression> data = 1;
+message GetAllAlertEnabledExpressionRequest {
+  int64 pageSize = 1;
+  int64 pageNo   = 2;
 }
 
-message EnabledExpression {
-  repeated Expression expression = 1;
+message GetAllAlertEnabledExpressionResponse {
+  repeated Expression data = 1;
 }
+
+message GetAllMetricEnabledExpressionRequest {
+  int64 pageSize = 1;
+  int64 pageNo   = 2;
+}
+
+message GetAllMetricEnabledExpressionResponse {
+  repeated Expression data = 1;
+}
+
 
 message Expression {
   int64                              id         = 1;
@@ -53,7 +70,10 @@ message Expression {
   int64                              alertId    = 6 [json_name = "alert_id"];
 }
 
-message GetAllAlertTemplateRequest {}
+message GetAllAlertTemplateRequest {
+  int64 pageNo   = 1;
+  int64 pageSize = 2;
+}
 
 message GetAllAlertTemplateResponse {
   repeated AlertTemplate data = 1;
