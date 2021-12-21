@@ -250,7 +250,7 @@ func (a *ComponentFileTree) handlerAddDefault(ctxBdl protocol.ContextBundle, inP
 	}
 	inode := string(decodeInode)
 
-	if strings.Contains(inode, ".dice/pipelines/") || !strings.HasSuffix(inode, "/pipeline.yml") {
+	if strings.Contains(inode, ".dice/pipelines/") || strings.Contains(inode, ".erda/pipelines/") || !strings.HasSuffix(inode, "/pipeline.yml") {
 		return fmt.Errorf("add default key format error")
 	}
 
@@ -313,7 +313,7 @@ func (a *ComponentFileTree) handlerDelete(ctxBdl protocol.ContextBundle, inParam
 	}
 	inode := string(decodeInode)
 
-	if !strings.Contains(inode, ".dice/pipelines/") && strings.HasSuffix(inode, "/pipeline.yml") {
+	if !strings.Contains(inode, ".dice/pipelines/") && !strings.Contains(inode, ".erda/pipelines/") && strings.HasSuffix(inode, "/pipeline.yml") {
 		return fmt.Errorf("cannot delete default node")
 	}
 	var req apistructs.UnifiedFileTreeNodeDeleteRequest
@@ -361,7 +361,7 @@ func (a *ComponentFileTree) handleClickBranchExpandChildren(ctxBdl protocol.Cont
 		if branchNode.Key != operationData.Meta.ParentKey {
 			continue
 		}
-		subNodes, err := a.listBranchSubNodes(branchNode.Key, ctxBdl, inParams, project)
+		subNodes, err := a.listBranchSubNodes(branchNode.Key, branchNode.Key, ctxBdl, inParams, project)
 		if err != nil {
 			return fmt.Errorf("failed to list branch sub nodes, err: %v", err)
 		}
@@ -511,7 +511,7 @@ func (a *ComponentFileTree) getFileTreeData(ctxBdl protocol.ContextBundle, inPar
 			for i, eachone := range branchSlice {
 				if each.Inode == eachone.Inode {
 					logrus.Info("SelectedKeys: ", inParams.SelectedKeys, "   ancestors: ", each.Name, "    branchSlice: ", eachone.Name)
-					subNodes, err := a.listBranchSubNodes(each.Inode, ctxBdl, inParams, project)
+					subNodes, err := a.listBranchSubNodes(eachone.Name, each.Inode, ctxBdl, inParams, project)
 					if err != nil {
 						return nil, fmt.Errorf("failed to list branch sub nodes, err: %v", err)
 					}
@@ -524,7 +524,7 @@ func (a *ComponentFileTree) getFileTreeData(ctxBdl protocol.ContextBundle, inPar
 	}
 
 	// 展开第一个目录，查询子节点
-	subNodes, err := a.listBranchSubNodes(branchSlice[0].Inode, ctxBdl, inParams, project)
+	subNodes, err := a.listBranchSubNodes(branchSlice[0].Name, branchSlice[0].Inode, ctxBdl, inParams, project)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list branch sub nodes, err: %v", err)
 	}
@@ -533,7 +533,7 @@ func (a *ComponentFileTree) getFileTreeData(ctxBdl protocol.ContextBundle, inPar
 	return dirNodes, nil
 }
 
-func (a *ComponentFileTree) listBranchSubNodes(branchInode string, ctxBdl protocol.ContextBundle, inParams InParams, project apistructs.ProjectDTO) ([]Data, error) {
+func (a *ComponentFileTree) listBranchSubNodes(branch string, branchInode string, ctxBdl protocol.ContextBundle, inParams InParams, project apistructs.ProjectDTO) ([]Data, error) {
 	// 解析出inode
 	parsedBranchInode, err := decodeInode(branchInode)
 	if err != nil {
@@ -548,7 +548,7 @@ func (a *ComponentFileTree) listBranchSubNodes(branchInode string, ctxBdl protoc
 	}
 	subNodes = append(subNodes, childData)
 	// .dice/pipelines 下的 yml 转化为其他叶子节点
-	for _, v := range a.getOtherFolderChild(ctxBdl, inParams, project.OrgID, parsedBranchInode) {
+	for _, v := range a.getOtherFolderChild(branch, ctxBdl, inParams, project.OrgID, parsedBranchInode) {
 		if !strings.HasSuffix(v.Title, ".yml") {
 			continue
 		}
@@ -586,14 +586,18 @@ func findSelectedKeysExpandedKeys(fileTreeData []Data, selectedKeys string) ([]s
 	return []string{}, nil
 }
 
-func (a *ComponentFileTree) getOtherFolderChild(ctxBdl protocol.ContextBundle, inParams InParams, orgId uint64, parsedBranchInode string) []*Data {
+func (a *ComponentFileTree) getOtherFolderChild(branch string, ctxBdl protocol.ContextBundle, inParams InParams, orgId uint64, parsedBranchInode string) []*Data {
 	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
 	// 查询分支下的 .dice/pipelines 下的 yml 文件
 	var req apistructs.UnifiedFileTreeNodeListRequest
 	req.Scope = apistructs.FileTreeScopeProjectApp
 	req.ScopeID = inParams.ProjectId
 	req.UserID = ctxBdl.Identity.UserID
-	parsedBranchInode += "/.dice/pipelines"
+	appID, err := strconv.ParseUint(inParams.AppId, 10, 64)
+	if err != nil {
+		return []*Data{}
+	}
+	parsedBranchInode += "/" + a.CtxBdl.Bdl.GetPipelineGittarFolder(req.UserID, appID, branch)
 	req.Pinode = base64.URLEncoding.EncodeToString([]byte(parsedBranchInode))
 	ymls, _ := ctxBdl.Bdl.ListFileTreeNodes(req, orgId)
 
