@@ -202,6 +202,8 @@ func RunProcess(service string, c *webcontext.Context) {
 
 func RunArchive(c *webcontext.Context, ref string, format string) {
 	c.EchoContext.Response().Header().Add("Content-Disposition", "attachment; filename="+
+		c.Repository.ProjectName+"-"+
+		c.Repository.ApplicationName+"-"+
 		strings.Replace(ref, "/", "-", -1)+"."+format)
 
 	fullPath, _ := filepath.Abs(c.MustGet("repository").(*gitmodule.Repository).DiskPath())

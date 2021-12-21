@@ -37,14 +37,16 @@ import (
 
 // Repository represents a Git repository.
 type Repository struct {
-	ID            int64  `json:"id"`
-	ProjectId     int64  `json:"project_id"`
-	ApplicationId int64  `json:"application_id"`
-	OrgId         int64  `json:"org_id"`
-	Url           string `json:"url"`
-	Path          string `json:"path"` //相对路径
-	Bundle        *bundle.Bundle
-	branchRules   []*apistructs.BranchRule
+	ID              int64  `json:"id"`
+	ProjectId       int64  `json:"project_id"`
+	ProjectName     string `json:"project_name"`
+	ApplicationId   int64  `json:"application_id"`
+	ApplicationName string `json:"application_name"`
+	OrgId           int64  `json:"org_id"`
+	Url             string `json:"url"`
+	Path            string `json:"path"` //相对路径
+	Bundle          *bundle.Bundle
+	branchRules     []*apistructs.BranchRule
 
 	Size       int64   `json:"-"`
 	RootPath   string  `json:"-"`
