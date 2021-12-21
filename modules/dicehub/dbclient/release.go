@@ -35,8 +35,18 @@ type Release struct {
 	Dice string `json:"dice" gorm:"type:text"` // dice.yml
 	// Addon 资源类型为addonyml时，存储addon.yml内容，选填
 	Addon string `json:"addon" gorm:"type:text"`
+	// Markdown changelog，选填
+	Markdown string `json:"markdown" gorm:"type:text"`
+	// IsFormal 是否为正式版
+	IsFormal bool `json:"isFormal" gorm:"type:tinyint(1)"`
+	// IsProjectRelease 是否为项目级别制品
+	IsProjectRelease bool `json:"IsProjectRelease" gorm:"type:tinyint(1)"`
+	// ApplicationReleaseList 项目级别制品依赖哪些应用级别制品
+	ApplicationReleaseList string `json:"applicationReleaseList" gorm:"type:text"`
 	// Labels 用于release分类，描述release类别，map类型, 最大长度1000, 选填
 	Labels string `json:"labels" gorm:"type:varchar(1000)"`
+	// Tags
+	Tags string `json:"tags" gorm:"type:varchar(100)"`
 	// Version 存储release版本信息, 同一企业同一项目同一应用下唯一，最大长度100，选填
 	Version string `json:"version" gorm:"type:varchar(100)"` // 版本，打标签的Release不可删除
 	// OrgID 企业标识符，描述release所属企业，选填
@@ -97,10 +107,21 @@ func (client *DBClient) GetRelease(releaseID string) (*Release, error) {
 	return &release, nil
 }
 
+// GetReleases list releases by release ids
+func (client *DBClient) GetReleases(releaseIDs []string) ([]Release, error) {
+	var releases []Release
+	if err := client.Where("release_id in (?)", releaseIDs).Find(&releases).Error; err != nil {
+		return nil, err
+	}
+	return releases, nil
+}
+
 // GetReleasesByParams 根据参数过滤Release
 func (client *DBClient) GetReleasesByParams(
 	orgID, projectID, applicationID int64,
-	keyword, releaseName, branch,
+	keyword, releaseName, branch string,
+	isFormal, isProjectRelease bool,
+	userID, version int64, commitID, tags,
 	cluster string, crossCluster *bool, isVersion bool, crossClusterOrSpecifyCluster *string,
 	startTime, endTime time.Time, pageNum, pageSize int64) (int64, []Release, error) {
 
@@ -137,6 +158,24 @@ func (client *DBClient) GetReleasesByParams(
 	}
 	if branch != "" {
 		db = db.Where("labels LIKE ?", "%"+fmt.Sprintf("\"gitBranch\":\"%s\"", branch)+"%")
+	}
+
+	db = db.Where("is_formal = ?", isFormal).Where("is_project_release = ?", isProjectRelease)
+
+	if userID > 0 {
+		db = db.Where("user_id = ?", userID)
+	}
+
+	if version > 0 {
+		db = db.Where("version = ?", version)
+	}
+
+	if commitID != "" {
+		db = db.Where("commit_id = ?", commitID)
+	}
+
+	if tags != "" {
+		db = db.Where("tags = ?", tags)
 	}
 
 	if !startTime.IsZero() {
@@ -215,10 +254,10 @@ func (client *DBClient) GetLatestReleaseByAppAndVersion(appID int64, version str
 	return &release, nil
 }
 
-// GetUnReferedReleasesBefore 获取给定时间点前未引用的 Release
+// GetUnReferedReleasesBefore 获取给定时间点前未引用的非正式 Release
 func (client *DBClient) GetUnReferedReleasesBefore(before time.Time) ([]Release, error) {
 	var releases []Release
-	if err := client.Where("reference <= ?", 0).Where("updated_at < ?", before).
+	if err := client.Where("reference <= ?", 0).Where("is_formal = ?", false).Where("updated_at < ?", before).
 		Order("updated_at").Find(&releases).Error; err != nil {
 		return nil, err
 	}

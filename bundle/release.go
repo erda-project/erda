@@ -169,3 +169,64 @@ func (b *Bundle) CreateRelease(req apistructs.ReleaseCreateRequest, orgID uint64
 
 	return respData.Data.ReleaseID, nil
 }
+
+func (b *Bundle) DeleteReleases(orgID uint64, req apistructs.ReleasesDeleteRequest) error {
+	host, err := b.urls.DiceHub()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	var respData apistructs.ReleaseDeleteResponse
+	resp, err := hc.Delete(host).Path("/api/releases").
+		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		JSONBody(req).Do().JSON(&respData)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !respData.Success {
+		return toAPIError(resp.StatusCode(), respData.Error)
+	}
+	return nil
+}
+
+func (b *Bundle) UpdateRelease(orgID uint64, req apistructs.ReleaseUpdateRequest) error {
+	host, err := b.urls.DiceHub()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	path := fmt.Sprintf("/api/releases/%s", req.ReleaseID)
+	var respData apistructs.ReleaseUpdateResponse
+	resp, err := hc.Put(host).Path(path).
+		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		JSONBody(req).Do().JSON(&respData)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !respData.Success {
+		return toAPIError(resp.StatusCode(), respData.Error)
+	}
+	return nil
+}
+
+func (b *Bundle) ToFormalReleases(orgID uint64, req apistructs.ReleasesToFormalRequest) error {
+	host, err := b.urls.DiceHub()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	var respData apistructs.ReleasesToFormalResponse
+	resp, err := hc.Put(host).Path("/api/releases").
+		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		JSONBody(req).Do().JSON(&respData)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !respData.Success {
+		return toAPIError(resp.StatusCode(), respData.Error)
+	}
+	return nil
+}

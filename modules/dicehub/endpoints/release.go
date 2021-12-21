@@ -15,8 +15,11 @@
 package endpoints
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -203,6 +206,24 @@ func (e *Endpoints) DeleteRelease(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrDeleteRelease.InternalError(err).ToResp(), nil
 	}
 
+	return httpserver.OkResp("Delete succ")
+}
+
+// DeleteReleases DELETE /api/releases 批量删除release
+func (e *Endpoints) DeleteReleases(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	orgID, err := getPermissionHeader(r)
+	if err != nil {
+		return apierrors.ErrDeleteRelease.NotLogin().ToResp(), nil
+	}
+
+	var releasesDeleteRequest apistructs.ReleasesDeleteRequest
+	if err := json.NewDecoder(r.Body).Decode(&releasesDeleteRequest); err != nil {
+		return apierrors.ErrUpdateRelease.InvalidParameter(err).ToResp(), nil
+	}
+
+	if err := e.release.Delete(orgID, releasesDeleteRequest.ReleaseID...); err != nil {
+		return apierrors.ErrDeleteRelease.InternalError(err).ToResp(), nil
+	}
 	return httpserver.OkResp("Delete succ")
 }
 
@@ -517,20 +538,54 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 		crossClusterOrSpecifyCluster = &s
 	}
 
+	isFormal := false
+	if s := r.URL.Query().Get("isFormal"); s == "true" {
+		isFormal = true
+	}
+
+	isProjectRelease := false
+	if s := r.URL.Query().Get("isProjectRelease"); s == "true" {
+		isProjectRelease = true
+	}
+
+	var userID int64
+	if s := r.URL.Query().Get("userId"); s != "" {
+		if userID, err = strutil.Atoi64(s); err != nil {
+			return nil, err
+		}
+	}
+
+	var version int64
+	if s := r.URL.Query().Get("version"); s != "" {
+		if version, err = strutil.Atoi64(s); err != nil {
+			return nil, err
+		}
+	}
+
+	commitID := r.URL.Query().Get("commitId")
+
+	tags := r.URL.Query().Get("tags")
+
 	return &apistructs.ReleaseListRequest{
 		Query:                        keyword,
 		ReleaseName:                  releaseName,
+		Cluster:                      clusterName,
+		Branch:                       branch,
+		IsFormal:                     isFormal,
+		IsProjectRelease:             isProjectRelease,
+		UserID:                       userID,
+		Version:                      version,
+		CommitID:                     commitID,
+		Tags:                         tags,
+		IsVersion:                    isVersion,
+		CrossCluster:                 crossCluster,
+		CrossClusterOrSpecifyCluster: crossClusterOrSpecifyCluster,
 		ApplicationID:                applicationID,
 		ProjectID:                    projectID,
 		StartTime:                    startTime,
 		EndTime:                      endTime,
 		PageSize:                     size,
 		PageNum:                      num,
-		IsVersion:                    isVersion,
-		Cluster:                      clusterName,
-		Branch:                       branch,
-		CrossCluster:                 crossCluster,
-		CrossClusterOrSpecifyCluster: crossClusterOrSpecifyCluster,
 	}, nil
 }
 
@@ -540,4 +595,88 @@ func getPermissionHeader(r *http.Request) (int64, error) {
 		return 0, nil
 	}
 	return strconv.ParseInt(r.Header.Get("Org-ID"), 10, 64)
+}
+
+// ToFormalReleases PUT /api/releases 制品批量转正
+func (e *Endpoints) ToFormalReleases(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	_, err := getPermissionHeader(r)
+	if err != nil {
+		return apierrors.ErrFormalRelease.NotLogin().ToResp(), nil
+	}
+
+	var releasesToFormalRequest apistructs.ReleasesToFormalRequest
+	if err := json.NewDecoder(r.Body).Decode(&releasesToFormalRequest); err != nil {
+		return apierrors.ErrFormalRelease.InvalidParameter(err).ToResp(), nil
+	}
+
+	if err := e.release.ToFormal(releasesToFormalRequest.ReleaseID); err != nil {
+		return apierrors.ErrFormalRelease.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp("Formal release succ")
+}
+
+// ToFormalRelease PUT /api/releases/{releaseId}/actions/formal 制品转正
+func (e *Endpoints) ToFormalRelease(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	_, err := getPermissionHeader(r)
+	if err != nil {
+		return apierrors.ErrDeleteRelease.NotLogin().ToResp(), nil
+	}
+
+	releaseID := vars["releaseId"]
+	if releaseID == "" {
+		return apierrors.ErrFormalRelease.MissingParameter("releaseId").ToResp(), nil
+	}
+
+	if err := e.release.ToFormal([]string{releaseID}); err != nil {
+		return apierrors.ErrFormalRelease.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp("Formal release succ")
+}
+
+// DownloadYaml GET /api/releases/{releaseId}/actions/download-yaml 下载Yaml文件
+func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	orgID, err := getPermissionHeader(r)
+	if err != nil {
+		return apierrors.ErrDownloadRelease.NotLogin()
+	}
+
+	releaseID := vars["releaseId"]
+	if releaseID == "" {
+		return apierrors.ErrDownloadRelease.MissingParameter("releaseId")
+	}
+
+	release, err := e.release.Get(orgID, releaseID)
+	if err != nil {
+		return apierrors.ErrDownloadRelease.NotFound()
+	}
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrDownloadRelease.NotLogin()
+	}
+	if !identityInfo.IsInternalClient() {
+		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  uint64(release.ProjectID),
+			Resource: apistructs.ProjectResource,
+			Action:   apistructs.GetAction,
+		})
+		if err != nil {
+			return apierrors.ErrDownloadRelease.InternalError(err)
+		}
+		if !access.Access {
+			return apierrors.ErrDownloadRelease.AccessDenied()
+		}
+	}
+	fileName := fmt.Sprintf("%s-%s-%s.yaml", strconv.FormatInt(release.ProjectID, 10),
+		strconv.FormatInt(release.ApplicationID, 10), release.ReleaseID)
+	w.Header().Add("Content-type", "application/octet-stream")
+	w.Header().Add("Content-Disposition", "attachment;fileName="+fileName)
+
+	buf := bytes.NewBuffer([]byte(release.Diceyml))
+	if _, err := io.Copy(w, buf); err != nil {
+		return apierrors.ErrDownloadRelease.InternalError(err)
+	}
+	return nil
 }

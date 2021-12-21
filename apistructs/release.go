@@ -68,6 +68,21 @@ type ReleaseCreateRequest struct {
 	// Addon addon注册时，release包含dice.yml与addon.yml，选填
 	Addon string `json:"addon,omitempty"`
 
+	// Tags
+	Tags []string `json:"tags,omitempty"`
+
+	// IsFormal 是否为正式版
+	IsFormal bool `json:"isFormal,omitempty"`
+
+	// IsProjectRelease 是否为项目级别制品
+	IsProjectRelease bool `json:"isProjectRelease,omitempty"`
+
+	// Markdown 用于保存changelog
+	Markdown string `json:"markdown,omitempty"`
+
+	// ApplicationReleaseList 项目级制品依赖的应用级制品ID列表
+	ApplicationReleaseList []string `json:"applicationReleaseList,omitempty"`
+
 	// Labels 用于release分类，描述release类别，map类型, 最大长度1000, 选填
 	Labels map[string]string `json:"labels,omitempty"`
 
@@ -139,8 +154,11 @@ type ReleaseUpdateRequest struct {
 
 // ReleaseUpdateRequestData 更新 release 请求数据结构
 type ReleaseUpdateRequestData struct {
-	Version string `json:"version,omitempty"`
-	Desc    string `json:"desc,omitempty"`
+	Version                string   `json:"version,omitempty"`
+	Desc                   string   `json:"desc,omitempty"`
+	Markdown               string   `json:"markdown,omitempty"`
+	Dice                   string   `json:"dice,omitempty"` // 项目级别制品使用
+	ApplicationReleaseList []string `json:"applicationReleaseList,omitempty"`
 	// 以下信息主要为了version覆盖使用，找出之前的version清除
 
 	// 企业标识
@@ -189,15 +207,20 @@ type ReleaseGetResponse struct {
 
 // ReleaseGetResponseData release 详情API实际返回数据
 type ReleaseGetResponseData struct {
-	ReleaseID   string            `json:"releaseId"`
-	ReleaseName string            `json:"releaseName"`
-	Diceyml     string            `json:"diceyml"`
-	Desc        string            `json:"desc,omitempty"`
-	Addon       string            `json:"addon,omitempty"`
-	Resources   []ReleaseResource `json:"resources,omitempty"`
-	Images      []string          `json:"images,omitempty"`
-	Labels      map[string]string `json:"labels,omitempty"`
-	Version     string            `json:"version,omitempty"`
+	ReleaseID              string            `json:"releaseId"`
+	ReleaseName            string            `json:"releaseName"`
+	Diceyml                string            `json:"diceyml"`
+	Desc                   string            `json:"desc,omitempty"`
+	Addon                  string            `json:"addon,omitempty"`
+	Markdown               string            `json:"markdown,omitempty"`
+	IsFormal               bool              `json:"isFormal"`
+	IsProjectRelease       bool              `json:"isProjectRelease"`
+	ApplicationReleaseList string            `json:"applicationReleaseList,omitempty"`
+	Resources              []ReleaseResource `json:"resources,omitempty"`
+	Images                 []string          `json:"images,omitempty"`
+	Labels                 map[string]string `json:"labels,omitempty"`
+	Tags                   string            `json:"tags,omitempty"`
+	Version                string            `json:"version,omitempty"`
 
 	// CrossCluster 是否可以跨集群
 	CrossCluster bool `json:"crossCluster,omitempty"`
@@ -242,6 +265,24 @@ type ReleaseListRequest struct {
 
 	// 分支名
 	Branch string `json:"-" query:"branchName"`
+
+	// 是否为正式版本
+	IsFormal bool `json:"-" query:"isFormal"`
+
+	// 是否为项目制品
+	IsProjectRelease bool `json:"-" query:"isProjectRelease"`
+
+	// 提交用户
+	UserID int64 `json:"-" query:"userID"`
+
+	// Version
+	Version int64 `json:"version" query:"version"`
+
+	// commit ID
+	CommitID string `json:"-" query:"commitID"`
+
+	// tag
+	Tags string `json:"-" query:"tags"`
 
 	// 只列出有 version 的 release
 	IsVersion bool `json:"-" query:"isVersion"`
@@ -312,6 +353,21 @@ func (req ReleaseListRequest) ConvertToQueryParams() url.Values {
 	if req.Branch != "" {
 		values.Add("branchName", req.Branch)
 	}
+	values.Add("isFormal", strconv.FormatBool(req.IsFormal))
+	values.Add("isProjectRelease", strconv.FormatBool(req.IsProjectRelease))
+	if req.UserID > 0 {
+		values.Add("userId", strconv.FormatInt(req.UserID, 10))
+	}
+	if req.CommitID != "" {
+		values.Add("commitId", req.CommitID)
+	}
+	if req.Version > 0 {
+		values.Add("version", strconv.FormatInt(req.Version, 10))
+	}
+	if req.Tags != "" {
+		values.Add("tags", req.Tags)
+	}
+
 	return values
 }
 
@@ -352,3 +408,18 @@ type ReleaseGetDiceYmlRequest struct {
 
 // ReleaseEventData release 事件格式
 type ReleaseEventData ReleaseGetResponseData
+
+// ReleasesDeleteRequest release 批量删除请求结构
+type ReleasesDeleteRequest struct {
+	ReleaseID []string `json:"releaseID"`
+}
+
+// ReleasesToFormalRequest release 批量转正请求结构
+type ReleasesToFormalRequest struct {
+	ReleaseID []string `json:"releaseID"`
+}
+
+type ReleasesToFormalResponse struct {
+	Header
+	Data string `json:"data"`
+}
