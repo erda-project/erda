@@ -19,9 +19,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
-
 	"github.com/sirupsen/logrus"
+	"strconv"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -69,6 +68,10 @@ func GetOpsInfo(opsData interface{}) (*Meta, error) {
 }
 
 func (ae *ApiEditor) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	if c.State == nil {
+		c.State = map[string]interface{}{}
+	}
+
 	tmpStepID, ok := c.State["stepId"]
 	if !ok {
 		// not exhibition if no stepId
@@ -134,6 +137,30 @@ func (ae *ApiEditor) Render(ctx context.Context, c *cptype.Component, scenario c
 		c.State["isFirstIn"] = false
 		c.State["attemptTest"] = AttemptTestAll{}
 	}
+	c.State["apiEditorDrawerVisible"] = true
+
+	switch event.Operation.String() {
+	case "onChange":
+		// 失焦更新
+		err := ae.Save(c)
+		if err != nil {
+			return err
+		}
+		c.State["apiEditorDrawerVisible"] = false
+		return nil
+	case "execute":
+		err := ae.Save(c)
+		if err != nil {
+			return err
+		}
+		err = ae.ExecuteApi(event.OperationData)
+		if err != nil {
+			return err
+		}
+		c.State["attemptTest"] = ae.State.AttemptTest
+		return nil
+	}
+
 	// 塞props
 	// 本场景入参
 	var inputs []Input
@@ -233,29 +260,6 @@ LABEL:
 		return err
 	}
 	c.Props = genProps(string(inputBytes), executeString)
-	c.State["apiEditorDrawerVisible"] = true
-
-	switch event.Operation.String() {
-	case "onChange":
-		// 失焦更新
-		err := ae.Save(c)
-		if err != nil {
-			return err
-		}
-		c.State["apiEditorDrawerVisible"] = false
-		return nil
-	case "execute":
-		err := ae.Save(c)
-		if err != nil {
-			return err
-		}
-		err = ae.ExecuteApi(event.OperationData)
-		if err != nil {
-			return err
-		}
-		c.State["attemptTest"] = ae.State.AttemptTest
-		return nil
-	}
 
 	// marketProto 的changeAPISpec 事件
 	tmpSpecID, ok := c.State["changeApiSpecId"]
