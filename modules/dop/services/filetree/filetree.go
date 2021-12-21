@@ -173,7 +173,7 @@ func (svc *GittarFileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeL
 					if node.Type != gittarEntryTreeType && node.Name != "pipeline.yml" {
 						continue
 					}
-					if node.Type == gittarEntryTreeType && node.Name != ".dice" {
+					if node.Type == gittarEntryTreeType && node.Name != ".dice" && node.Name != ".erda" {
 						continue
 					}
 				}
@@ -490,12 +490,12 @@ func (svc *GittarFileTree) CreateFileTreeNode(req apistructs.UnifiedFileTreeNode
 	var request = apistructs.GittarCreateCommitRequest{}
 	if node.Type == apistructs.UnifiedFileTreeNodeTypeDir {
 		// .dice 只能是 pinode 为 /project/app/blob(tree)/branch
-		if length == 4+branchExcessLength && node.Name != ".dice" {
-			return nil, fmt.Errorf("error create folder： only '.dice' files can be created under the branch")
+		if length == 4+branchExcessLength && node.Name != ".dice" && node.Name != ".erda" {
+			return nil, fmt.Errorf("error create folder： only '.erda' or '.dice' files can be created under the branch")
 		}
 		// pipelines 只能是 pinode 为 /project/app/blob(tree)/branch/.dice
 		if length == 5+branchExcessLength && node.Name != "pipelines" {
-			return nil, fmt.Errorf("error create folder： only 'pipelines' files can be created under the .dice")
+			return nil, fmt.Errorf("error create folder： only 'pipelines' files can be created under the .erda or .dice")
 		}
 
 		var path = ""
@@ -969,6 +969,9 @@ func getBranchStr(name string) string {
 	blobIndex := strings.Index(name, "blob")
 	diceIndex := strings.Index(name, ".dice")
 	pipelineIndex := strings.Index(name, "pipeline.yml")
+	if diceIndex == -1 {
+		diceIndex = strings.Index(name, ".erda")
+	}
 
 	beforeIndex := treeIndex
 	if beforeIndex == -1 {

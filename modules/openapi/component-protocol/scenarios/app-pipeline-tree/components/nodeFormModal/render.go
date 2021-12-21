@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
@@ -113,12 +114,16 @@ func (a *ComponentNodeFormModal) handlerSubmitOperation(ctxBdl protocol.ContextB
 	if formData.Name == "pipeline.yml" || formData.Name == "pipeline" || formData.Name == "pipeline.yaml" {
 		return fmt.Errorf("can not add pipeline.yml yml already exists")
 	} else {
-		pinode := fmt.Sprintf("%s/%s/tree/%s/.dice/pipelines", inParams.ProjectId, inParams.AppId, formData.Branch)
+		appID, err := strconv.ParseUint(inParams.AppId, 10, 64)
+		if err != nil {
+			return err
+		}
+		pipelinePath := a.CtxBdl.Bdl.GetPipelineGittarFolder(ctxBdl.Identity.UserID, appID, formData.Branch)
+		pinode := fmt.Sprintf("%s/%s/tree/%s/%s", inParams.ProjectId, inParams.AppId, formData.Branch, pipelinePath)
 		var req apistructs.UnifiedFileTreeNodeCreateRequest
 		req.Scope = apistructs.FileTreeScopeProjectApp
 		req.ScopeID = inParams.ProjectId
 		req.Name = formData.Name
-
 		// assuming that the user did not fill in the .yml suffix, it will be filled in automatically when creating
 		req.Name = strings.TrimSuffix(req.Name, ".yaml")
 		if !strings.HasSuffix(req.Name, ".yml") {

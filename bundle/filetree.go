@@ -403,6 +403,26 @@ func (b *Bundle) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeListRequest
 	return nil, fmt.Errorf("not find this scope %s", req.Scope)
 }
 
+func (b *Bundle) GetPipelineGittarFolder(userID string, appID uint64, branch string) string {
+	gittarPrefix := "/wb"
+	defaultPath := ".erda/pipelines"
+	compatiblePath := ".dice/pipelines"
+	app, err := b.GetApp(appID)
+	if err != nil {
+		return defaultPath
+	}
+	pinode := app.ProjectName + "/" + app.Name
+	_, err = b.GetGittarTreeNode(fmt.Sprintf("%s/%s/tree/%s/%s", gittarPrefix, pinode, branch, defaultPath), strconv.FormatUint(app.OrgID, 10), true, userID)
+	if err == nil {
+		return defaultPath
+	}
+	_, err = b.GetGittarTreeNode(fmt.Sprintf("%s/%s/tree/%s/%s", gittarPrefix, pinode, branch, compatiblePath), strconv.FormatUint(app.OrgID, 10), true, userID)
+	if err == nil {
+		return compatiblePath
+	}
+	return defaultPath
+}
+
 func (b *Bundle) GetFileTreeNode(req apistructs.UnifiedFileTreeNodeGetRequest, orgID uint64) (result *apistructs.UnifiedFileTreeNode, err error) {
 	switch req.Scope {
 	case apistructs.FileTreeScopeProjectApp:

@@ -45,10 +45,6 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-const (
-	DicePipelinesGitFolder = ".dice/pipelines"
-)
-
 // Pipeline pipeline 结构体
 type Pipeline struct {
 	bdl           *bundle.Bundle
@@ -111,7 +107,7 @@ func GetPipelineYmlList(req apistructs.CICDPipelineYmlListRequest, bdl *bundle.B
 		}
 	}
 
-	pipelinePath := DicePipelinesGitFolder
+	pipelinePath := bdl.GetPipelineGittarFolder(userID, uint64(req.AppID), req.Branch)
 	files, err = bdl.SearchGittarFiles(req.AppID, req.Branch, "*.yml", pipelinePath, 3, userID)
 	if err == nil {
 		for _, file := range files {
@@ -758,7 +754,7 @@ func getBranch(ref string) string {
 }
 
 func isPipelineYmlPath(path string) bool {
-	const pipelineYmlPathPattern = `^pipeline\.yml$|^\.dice/pipelines/.+\.yml$`
+	const pipelineYmlPathPattern = `^pipeline\.yml$|^\.dice/pipelines/.+\.yml$|^\.erda/pipelines/.+\.yml$`
 	matched, err := regexp.MatchString(pipelineYmlPathPattern, path)
 	if err != nil {
 		return false
