@@ -218,6 +218,44 @@ type ServicePort struct {
 
 const (
 	ServiceDiscoveryKindProxy = "PROXY"
+
+	// CSI Vendor
+	CSIVendorAlibaba = "AliCloud"
+	CSIVendorTencent = "TecentCloud"
+	CSIVendorHuawei  = "HuaweiCloud"
+	// 对应磁盘类型为 SSD 磁盘
+	VolumeTypeSSD = "SSD"
+	// 对应磁盘类型为 NAS (NFS)磁盘
+	VolumeTypeNAS = "NAS"
+	// 对应磁盘类型为 OSS 磁盘
+	VolumeTypeOSS = "OSS"
+	// 对应磁盘类型为 DICE NAS (DICE NFS)磁盘
+	VolumeTypeDiceNAS = "DICE-NAS"
+	// 对应磁盘类型为 DICE LOCAL (DICE LOCAL)磁盘
+	VolumeTypeDiceLOCAL = "DICE-LOCAL"
+	// 阿里云 SSD 云盘 storageclass 名称
+	AlibabaSSDSC = "alicloud-disk-ssd-on-erda"
+	// 阿里云 NAS 网盘的 storageclass 名称
+	AlibabaNASSC = "alicloud-nas-subpath-on-erda"
+	// 阿里云 OSS 网盘的 storageclass 名称
+	AlibabaOSSSC = "alicloud-nas-oss-on-erda"
+	// 腾讯云 SSD 云盘 storageclass 名称
+	TencentSSDSC = "tencentcloud-disk-ssd-on-erda"
+	// 腾讯云  NAS 网盘的 storageclass 名称
+	TencentNASSC = "tencentcloud-nas-subpath-on-erda"
+	// 腾讯云  OSS 网盘的 storageclass 名称
+	TencentOSSSC = "tencentcloud-nas-oss-on-erda"
+	// 华为云 SSD 云盘 storageclass 名称
+	HuaweiSSDSC = "huaweicloud-disk-ssd-on-erda"
+	// 华为云 NAS 网盘的 storageclass 名称
+	HuaweiNASSC = "huaweicloud-nas-subpath-on-erda"
+	// 华为云 OSS 网盘的 storageclass 名称
+	HuaweiOSSSC = "huaweicloud-nas-oss-on-erda"
+
+	DiceLocalVolumeSC = "dice-local-volume"
+	DiceNFSVolumeSC   = "dice-nfs-volume"
+
+	CSISnapshotMaxHistory = "pvc.erda.io/snapshot"
 )
 
 // One single Service which is the minimum scheduling unit
@@ -326,6 +364,8 @@ type ServiceBind struct {
 	Bind
 	// TODO: refactor it, currently just copy the marathon struct
 	Persistent *PersistentVolume `json:"persistent,omitempty"`
+
+	SCVolume SCVolume `json:"scVolume,omitempty"`
 }
 
 type PersistentVolume struct {
@@ -376,6 +416,37 @@ type Volume struct {
 	// TODO: k8s.go 需要这个字段，现在对于k8s先不使用其插件中实现的volume相关实现（现在也没有用的地方）
 	// k8s plugin 重构的时候才去实现 k8s 特定的 volume 逻辑
 	Storage string `json:"-"`
+
+	SCVolume `json:"scVolume,omitempty"`
+}
+
+type SCVolume struct {
+	// Type is the type of volume, it will be supported DICE-NAS, DICE-LOCAL, SSD, NAS, OSS...
+	// only support DICE-NAS, DICE-LOCAL, SSD currently
+	Type string `yaml:"type,omitempty" json:"type,omitempty"`
+	// StorageClassName is the k8s storageclass object which this volume used to create pvc
+	StorageClassName string `yaml:"storageClassName,omitempty" json:"storageClassName,omitempty"`
+	// Capacity is the capacity of volume and the default unit is 'GB'
+	Capacity int32 `yaml:"size" json:"size,omitempty"`
+	// SourcePath is the volume source path that is used in the local PV or host path
+	// Default is empty
+	//SourcePath string `yaml:"sourcePath,omitempty" json:"sourcePath,omitempty"`
+	// TargetPath indicates will mount the file or directory in the volume to the
+	// specified location of the container. Default is '/'
+	TargetPath string `yaml:"targetPath,omitempty" json:"targetPath,omitempty"`
+	// ReadOnly set the file in the volume allow to be read-only
+	// Default is false
+	ReadOnly bool `yaml:"readOnly,omitempty" json:"readOnly,omitempty"`
+	// Snapshot indicates use can create snapshots of this volume
+	// if Snapshot field isn't null and the default time interval is 3600 second
+	// Note: Now, only for Alibaba disk ssd storageclass
+	Snapshot *VolumeSnapshot `yaml:"snapshot,omitempty" json:"snapshot,omitempty"`
+}
+
+type VolumeSnapshot struct {
+	// MaxHistory indicates the max count of the snapshot can be created
+	// if the number of snapshots is beyond the max, the earliest one will be deleted
+	MaxHistory int32 `yaml:"maxHistory,omitempty" json:"maxHistory,omitempty"`
 }
 
 type InstanceInfo struct {
