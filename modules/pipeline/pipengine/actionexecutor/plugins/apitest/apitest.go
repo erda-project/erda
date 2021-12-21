@@ -67,11 +67,12 @@ func (d *define) Create(ctx context.Context, task *spec.PipelineTask) (interface
 func (d *define) Start(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
 
 	go func(ctx context.Context, task *spec.PipelineTask) {
+		doneChanDataVersion := task.GenerateExecutorDoneChanDataVersion()
 		if _, alreadyProcessing := d.runningAPIs.LoadOrStore(d.makeRunningApiKey(task), task); alreadyProcessing {
 			logrus.Warnf("apitest: task: %d already processing", task.ID)
 			return
 		}
-		executorDoneCh, ok := ctx.Value(spec.MakeTaskExecutorCtxKey(task)).(chan interface{})
+		executorDoneCh, ok := ctx.Value(spec.MakeTaskExecutorCtxKey(task)).(chan spec.ExecutorDoneChanData)
 		if !ok {
 			logrus.Warnf("apitest: failed to get executor channel, pipelineID: %d, taskID: %d", task.PipelineID, task.ID)
 		}
@@ -83,7 +84,10 @@ func (d *define) Start(ctx context.Context, task *spec.PipelineTask) (interface{
 			}
 			// if executor chan is nil, task framework can loop query meta get status
 			if executorDoneCh != nil {
-				executorDoneCh <- apistructs.PipelineStatusDesc{Status: status}
+				executorDoneCh <- spec.ExecutorDoneChanData{
+					Data:    apistructs.PipelineStatusDesc{Status: status},
+					Version: doneChanDataVersion,
+				}
 			}
 			d.runningAPIs.Delete(d.makeRunningApiKey(task))
 		}()

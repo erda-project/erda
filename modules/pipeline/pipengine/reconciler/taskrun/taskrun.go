@@ -53,7 +53,7 @@ type TaskRun struct {
 	PExitCh        <-chan struct{}
 	PExitChCancel  context.CancelFunc
 	PExit          bool
-	ExecutorDoneCh chan interface{}
+	ExecutorDoneCh chan spec.ExecutorDoneChanData
 
 	// 轮训状态间隔期间可能任务已经是终态，FakeTimeout = true
 	FakeTimeout bool
@@ -72,7 +72,7 @@ func New(ctx context.Context, task *spec.PipelineTask,
 	extMarketSvc *extmarketsvc.ExtMarketSvc,
 ) *TaskRun {
 	// make executor has buffer, don't block task framework
-	executorCh := make(chan interface{}, 1)
+	executorCh := make(chan spec.ExecutorDoneChanData, 1)
 	return &TaskRun{
 		Ctx:       context.WithValue(ctx, spec.MakeTaskExecutorCtxKey(task), executorCh),
 		Task:      task,

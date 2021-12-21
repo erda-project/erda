@@ -92,7 +92,7 @@ func (w *Wait) Start(ctx context.Context, task *spec.PipelineTask) (interface{},
 		return nil, nil
 	}
 
-	executorDoneCh := ctx.Value(spec.MakeTaskExecutorCtxKey(task)).(chan interface{})
+	executorDoneCh := ctx.Value(spec.MakeTaskExecutorCtxKey(task)).(chan spec.ExecutorDoneChanData)
 	if executorDoneCh == nil {
 		return nil, errors.Errorf("wait: failed to get exector channel, pipelineID: %d, taskID: %d", task.PipelineID, task.ID)
 	}
@@ -104,12 +104,16 @@ func (w *Wait) Start(ctx context.Context, task *spec.PipelineTask) (interface{},
 
 	timer := time.NewTimer(time.Duration(waitSec) * time.Second)
 	go func() {
+		doneChanDataVersion := task.GenerateExecutorDoneChanDataVersion()
 		select {
 		case <-ctx.Done():
 			logrus.Warnf("wait received stop timer signal, canceled, reason: %s", ctx.Err())
 			return
 		case <-timer.C:
-			executorDoneCh <- apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusSuccess}
+			executorDoneCh <- spec.ExecutorDoneChanData{
+				Data:    apistructs.PipelineStatusDesc{Status: apistructs.PipelineStatusSuccess},
+				Version: doneChanDataVersion,
+			}
 			return
 		}
 	}()

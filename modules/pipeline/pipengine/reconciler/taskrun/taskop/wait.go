@@ -61,9 +61,14 @@ func (w *wait) Processing() (interface{}, error) {
 	defer timer.Stop()
 	for {
 		select {
-		case doneData := <-w.ExecutorDoneCh:
-			logrus.Infof("%s: accept signal from executor %s, data: %v", w.Op(), w.Executor.Name(), doneData)
-			return doneData, nil
+		case executorData := <-w.ExecutorDoneCh:
+			doneChanDataVersion := executorData.Version
+			if err := w.Task.CheckExecutorDoneChanDataVersion(doneChanDataVersion); err != nil {
+				logrus.Warnf("%s: executor chan accept invalid signal, data: %v, err: %v", w.Op(), executorData, err)
+				continue
+			}
+			logrus.Infof("%s: accept signal from executor %s, data: %v", w.Op(), w.Executor.Name(), executorData)
+			return executorData.Data, nil
 		case <-w.Ctx.Done():
 			return data, nil
 		case <-w.PExitCh:
