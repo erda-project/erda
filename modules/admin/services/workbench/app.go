@@ -23,10 +23,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 )
 
-func GetAppNum(bdl *bundle.Bundle, identity apistructs.Identity, query string) (int, error) {
+func (w *Workbench) GetAppNum(identity apistructs.Identity, query string) (int, error) {
 	orgID, err := strconv.Atoi(identity.OrgID)
 	if err != nil {
 		return 0, err
@@ -37,7 +36,7 @@ func GetAppNum(bdl *bundle.Bundle, identity apistructs.Identity, query string) (
 		Query:    query,
 		IsSimple: true,
 	}
-	appDTO, err := bdl.GetAllMyApps(identity.UserID, uint64(orgID), req)
+	appDTO, err := w.bdl.GetAllMyApps(identity.UserID, uint64(orgID), req)
 	if err != nil {
 		return 0, err
 	}
@@ -47,9 +46,9 @@ func GetAppNum(bdl *bundle.Bundle, identity apistructs.Identity, query string) (
 	return appDTO.Total, nil
 }
 
-// ListAppWorkbenchData
+// ListAppWbData
 // default set pageSize/pageNo; when need query, set query field
-func ListAppWorkbenchData(bdl *bundle.Bundle, identity apistructs.Identity, req apistructs.ApplicationListRequest, limit int) (*apistructs.AppWorkbenchResponseData, error) {
+func (w *Workbench) ListAppWbData(identity apistructs.Identity, req apistructs.ApplicationListRequest, limit int) (*apistructs.AppWorkbenchResponseData, error) {
 	var (
 		appIDs []uint64
 		data   apistructs.AppWorkbenchResponseData
@@ -62,7 +61,7 @@ func ListAppWorkbenchData(bdl *bundle.Bundle, identity apistructs.Identity, req 
 	req.IsSimple = true
 
 	// list app
-	appRes, err := bdl.GetAllMyApps(identity.UserID, uint64(orgID), req)
+	appRes, err := w.bdl.GetAllMyApps(identity.UserID, uint64(orgID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -76,14 +75,14 @@ func ListAppWorkbenchData(bdl *bundle.Bundle, identity apistructs.Identity, req 
 	}
 
 	// list app related runtime
-	runtimeRes, err := bdl.ListRuntimesGroupByApps(uint64(orgID), identity.UserID, appIDs)
+	runtimeRes, err := w.bdl.ListRuntimesGroupByApps(uint64(orgID), identity.UserID, appIDs)
 	if err != nil {
 		logrus.Errorf("list runtime group by apps failed, appIDs: %v, error: %v", appIDs, err)
 		return nil, err
 	}
 
 	// list app related open mr
-	mrResult, err := ListOpenMrWithLimitRate(bdl, identity, appIDs, limit)
+	mrResult, err := w.ListOpenMrWithLimitRate(identity, appIDs, limit)
 	if err != nil {
 		logrus.Errorf("list open mr failed, appIDs: %v, error: %v", appIDs, err)
 		return nil, err
@@ -101,8 +100,8 @@ func ListAppWorkbenchData(bdl *bundle.Bundle, identity apistructs.Identity, req 
 	return &data, nil
 }
 
-func ListSubAppWorkbenchData(bdl *bundle.Bundle, identity apistructs.Identity, limit int) (*apistructs.AppWorkbenchResponseData, error) {
-	subList, err := bdl.ListSubscribes(identity.UserID, identity.OrgID, apistructs.GetSubscribeReq{Type: apistructs.AppSubscribe})
+func (w *Workbench) ListSubAppWbData(identity apistructs.Identity, limit int) (*apistructs.AppWorkbenchResponseData, error) {
+	subList, err := w.bdl.ListSubscribes(identity.UserID, identity.OrgID, apistructs.GetSubscribeReq{Type: apistructs.AppSubscribe})
 	if err != nil {
 		return nil, err
 	}
@@ -112,17 +111,17 @@ func ListSubAppWorkbenchData(bdl *bundle.Bundle, identity apistructs.Identity, l
 	}
 
 	req := apistructs.ApplicationListRequest{
-		PageNo:         1,
-		PageSize:       len(idList),
-		ApplicationIDs: idList,
+		PageNo:        1,
+		PageSize:      len(idList),
+		ApplicationID: idList,
 	}
 
-	return ListAppWorkbenchData(bdl, identity, req, limit)
+	return w.ListAppWbData(identity, req, limit)
 }
 
 // ListOpenMrWithLimitRate
 // TODO: parallel query gittar may have performance issue, need to switch to close it wen necessary
-func ListOpenMrWithLimitRate(bdl *bundle.Bundle, identity apistructs.Identity, appIDs []uint64, limit int) (result map[uint64]int, err error) {
+func (w *Workbench) ListOpenMrWithLimitRate(identity apistructs.Identity, appIDs []uint64, limit int) (result map[uint64]int, err error) {
 	req := apistructs.GittarQueryMrRequest{
 		State: "open",
 		Page:  1,
@@ -149,7 +148,7 @@ func ListOpenMrWithLimitRate(bdl *bundle.Bundle, identity apistructs.Identity, a
 				// release
 				<-limitCh
 			}()
-			res, err := bdl.ListMergeRequest(appID, identity.UserID, req)
+			res, err := w.bdl.ListMergeRequest(appID, identity.UserID, req)
 			if err != nil {
 				logrus.Warnf("list merget request failed, appID: %v, error: %v", appID, err)
 			}

@@ -620,7 +620,7 @@ func (a *Application) GetAllApps() ([]model.Application, error) {
 func (a *Application) List(orgID, projectID int64, userID string, request *apistructs.ApplicationListRequest) (
 	int, []model.Application, error) {
 	// 获取应用列表
-	applicationIDs := request.ApplicationIDs
+	applicationIDs := request.ApplicationID
 	total, applications, err := a.db.GetApplicationsByIDs(&orgID, &projectID, applicationIDs, request)
 	if err != nil {
 		logrus.Infof("failed to get application list, (%v)", err)
@@ -674,10 +674,10 @@ func (a *Application) ListMyApplications(orgID int64, userID string, request *ap
 	}
 
 	// 如果用户有输入应用 则获取输入用户的应用
-	if len(request.ApplicationIDs) > 0 {
-		for i, v := range request.ApplicationIDs {
+	if len(request.ApplicationID) > 0 {
+		for i, v := range request.ApplicationID {
 			if applicationIDmap[int64(v)] {
-				inputAppIDs = append(inputAppIDs, request.ApplicationIDs[i])
+				inputAppIDs = append(inputAppIDs, request.ApplicationID[i])
 			}
 		}
 		applicationIDs = inputAppIDs

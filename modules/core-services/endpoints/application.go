@@ -875,7 +875,7 @@ func getListApplicationsParam(e *Endpoints, r *http.Request) (*apistructs.Applic
 		IsSimple:  isSimple,
 		OrderBy:   orderBy,
 
-		ApplicationIDs: listReq.ApplicationIDs,
+		ApplicationID: listReq.ApplicationID,
 	}
 
 	return req, nil

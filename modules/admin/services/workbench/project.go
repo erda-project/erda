@@ -15,13 +15,16 @@
 package workbench
 
 import (
+	"fmt"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
+	projpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 )
 
-func GetProjectNum(bdl *bundle.Bundle, identity apistructs.Identity, query string) (int, error) {
+func (w *Workbench) GetProjNum(identity apistructs.Identity, query string) (int, error) {
 	orgID, err := strconv.Atoi(identity.OrgID)
 	if err != nil {
 		return 0, err
@@ -32,7 +35,7 @@ func GetProjectNum(bdl *bundle.Bundle, identity apistructs.Identity, query strin
 		PageNo:   1,
 		PageSize: 1,
 	}
-	projectDTO, err := bdl.ListMyProject(identity.UserID, req)
+	projectDTO, err := w.bdl.ListMyProject(identity.UserID, req)
 	if err != nil {
 		return 0, err
 	}
@@ -42,41 +45,121 @@ func GetProjectNum(bdl *bundle.Bundle, identity apistructs.Identity, query strin
 	return projectDTO.Total, nil
 }
 
-func ListProjectWorkbenchData(bdl *bundle.Bundle, identity apistructs.Identity, page apistructs.PageRequest, projectIDs []uint64) (*apistructs.WorkbenchResponseData, error) {
+func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, projects []apistructs.ProjectDTO) ([]apistructs.WorkbenchProjOverviewItem, error) {
+
+	issueMapInfo := make(map[uint64]*apistructs.WorkbenchProjectItem)
+	staMapInfo := make(map[uint64]*projpb.Project)
+	list := make([]apistructs.WorkbenchProjOverviewItem, len(projects))
+
 	orgID, err := strconv.Atoi(identity.OrgID)
 	if err != nil {
 		return nil, err
 	}
+
+	pidList := make([]uint64, len(projects))
+	for _, p := range projects {
+		pidList = append(pidList, p.ID)
+	}
+
+	// get project issue related info
 	req := apistructs.WorkbenchRequest{
 		OrgID:      uint64(orgID),
-		PageSize:   page.PageSize,
-		PageNo:     page.PageNo,
-		ProjectIDs: projectIDs,
+		ProjectIDs: pidList,
 	}
-	res, err := bdl.GetWorkbenchData(identity.UserID, req)
+	issueInfo, err := w.bdl.GetWorkbenchData(identity.UserID, req)
 	if err != nil {
+		logrus.Errorf("get project workbench issue info failed, request: %+v, error: %v", req, err)
 		return nil, err
 	}
-	return &res.Data, nil
+	for _, v := range issueInfo.Data.List {
+		if v != nil {
+			tmp := v
+			issueMapInfo[tmp.ProjectDTO.ID] = tmp
+		}
+	}
+
+	// get project msp statistic related info
+	statisticInfo, err := w.bdl.GetMSPTenantProjects(identity.UserID, identity.OrgID, true, pidList)
+	if err != nil {
+		logrus.Errorf("get project workbench statistic info failed, request: %+v, error: %v", pidList, err)
+		return nil, err
+	}
+	for _, v := range statisticInfo {
+		if v != nil {
+			tmp := v
+			pid, err := strconv.Atoi(tmp.Id)
+			if err != nil {
+				err := fmt.Errorf("parse msp project id failed, id: %v, error: %v", tmp.Id, err)
+				return nil, err
+			}
+			staMapInfo[uint64(pid)] = tmp
+		}
+	}
+
+	// construct project workbench overview info which may contains issue/statistic info
+	for i := range projects {
+		p := projects[i]
+		item := apistructs.WorkbenchProjOverviewItem{
+			ProjectDTO: p,
+		}
+		is := issueMapInfo[p.ID]
+		if is != nil {
+			item.IssueInfo = &apistructs.ProjectIssueInfo{
+				TotalIssueNum:       is.TotalIssueNum,
+				UnSpecialIssueNum:   is.UnSpecialIssueNum,
+				ExpiredIssueNum:     is.ExpiredIssueNum,
+				ExpiredOneDayNum:    is.ExpiredOneDayNum,
+				ExpiredTomorrowNum:  is.ExpiredTomorrowNum,
+				ExpiredSevenDayNum:  is.ExpiredSevenDayNum,
+				ExpiredThirtyDayNum: is.ExpiredThirtyDayNum,
+				FeatureDayNum:       is.FeatureDayNum,
+			}
+		}
+		st := staMapInfo[p.ID]
+		if st != nil {
+			item.StatisticInfo = &apistructs.ProjectStatisticInfo{
+				ServiceCount:      st.ServiceCount,
+				Last24HAlertCount: st.Last24HAlertCount,
+			}
+		}
+
+		list = append(list, item)
+	}
+	return list, err
 }
 
-func ListSubProjWorkbenchData(bdl *bundle.Bundle, identity apistructs.Identity) (*apistructs.WorkbenchResponseData, error) {
-	subList, err := bdl.ListSubscribes(identity.UserID, identity.OrgID, apistructs.GetSubscribeReq{Type: apistructs.ProjectSubscribe})
+func (w *Workbench) ListSubProjWbData(identity apistructs.Identity) (*apistructs.WorkbenchProjOverviewRespData, error) {
+	var projects []apistructs.ProjectDTO
+	subList, err := w.bdl.ListSubscribes(identity.UserID, identity.OrgID, apistructs.GetSubscribeReq{Type: apistructs.ProjectSubscribe})
 	if err != nil {
 		return nil, err
 	}
-	pIDList := make([]uint64, len(subList.List))
+	pidList := make([]uint64, len(subList.List))
 	for _, v := range subList.List {
-		pIDList = append(pIDList, v.TypeID)
+		pidList = append(pidList, v.TypeID)
 	}
-	page := apistructs.PageRequest{
-		PageNo:   1,
-		PageSize: len(pIDList),
+	rsp, err := w.bdl.GetProjectsMap(pidList)
+	if err != nil {
+		logrus.Errorf("get projects failed, error: %v", err)
+		return nil, err
 	}
-	return ListProjectWorkbenchData(bdl, identity, page, pIDList)
+	for i := range rsp {
+		projects = append(projects, rsp[i])
+	}
+
+	list, err := w.ListProjWbOverviewData(identity, projects)
+	if err != nil {
+		logrus.Errorf("list project workbench overview data failed, error: %v", err)
+		return nil, err
+	}
+
+	return &apistructs.WorkbenchProjOverviewRespData{
+		Total: len(projects),
+		List:  list,
+	}, nil
 }
 
-func ListQueryProjWorkbenchData(bdl *bundle.Bundle, identity apistructs.Identity, page apistructs.PageRequest, query string) (*apistructs.WorkbenchResponseData, error) {
+func (w *Workbench) ListQueryProjWbData(identity apistructs.Identity, page apistructs.PageRequest, query string) (*apistructs.WorkbenchProjOverviewRespData, error) {
 	orgID, err := strconv.Atoi(identity.OrgID)
 	if err != nil {
 		return nil, err
@@ -87,16 +170,22 @@ func ListQueryProjWorkbenchData(bdl *bundle.Bundle, identity apistructs.Identity
 		PageSize: page.PageSize,
 		Query:    query,
 	}
-	projectDTO, err := bdl.ListMyProject(identity.UserID, req)
+	projectDTO, err := w.bdl.ListMyProject(identity.UserID, req)
 	if err != nil {
 		return nil, err
 	}
 	if projectDTO == nil {
 		return nil, nil
 	}
-	pIDList := make([]uint64, len(projectDTO.List))
-	for _, v := range projectDTO.List {
-		pIDList = append(pIDList, v.ID)
+
+	list, err := w.ListProjWbOverviewData(identity, projectDTO.List)
+	if err != nil {
+		logrus.Errorf("list project workbench overview data failed, error: %v", err)
+		return nil, err
 	}
-	return ListProjectWorkbenchData(bdl, identity, page, pIDList)
+
+	return &apistructs.WorkbenchProjOverviewRespData{
+		Total: projectDTO.Total,
+		List:  list,
+	}, nil
 }
