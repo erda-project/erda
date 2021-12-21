@@ -24,7 +24,8 @@ import (
 )
 
 const (
-	CtxExecutorChKeyPrefix = "executor-done-chan"
+	CtxExecutorChKeyPrefix         = "executor-done-chan"
+	CtxExecutorChDataVersionPrefix = "executor-done-chan-data-version"
 )
 
 type PipelineTask struct {
@@ -276,6 +277,26 @@ func (pt *PipelineTask) GetMetadata() apistructs.Metadata {
 		return apistructs.Metadata{}
 	}
 	return pt.Result.Metadata
+}
+
+type ExecutorDoneChanData struct {
+	Data    interface{}
+	Version string
+}
+
+func (pt *PipelineTask) GenerateExecutorDoneChanDataVersion() string {
+	if pt.Extra.LoopOptions == nil {
+		return fmt.Sprintf("%s-%d", CtxExecutorChDataVersionPrefix, pt.ID)
+	}
+	return fmt.Sprintf("%s-%d-loop-%d", CtxExecutorChDataVersionPrefix, pt.ID, pt.Extra.LoopOptions.LoopedTimes)
+}
+
+func (pt *PipelineTask) CheckExecutorDoneChanDataVersion(actualVersion string) error {
+	expectedVersion := pt.GenerateExecutorDoneChanDataVersion()
+	if expectedVersion != actualVersion {
+		return fmt.Errorf("executor data expected version: %s, actual version: %s", expectedVersion, actualVersion)
+	}
+	return nil
 }
 
 func GenDefaultTaskResource() RuntimeResource {
