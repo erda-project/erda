@@ -29,7 +29,9 @@ import (
 const (
 	RefOpOutput = "OUTPUT"
 
-	RefOpExEscape = "escape"
+	RefOpExEscape           = "escape"
+	RefOpExWrapDoubleQuotes = "wrap_single_quotes"
+	RefOpExWrapSingleQuotes = "wrap_double_quotes"
 )
 
 // RefOp split from ${alias:OPERATION:key}
@@ -392,6 +394,10 @@ func (v *RefOpVisitor) handleRefEx(output string, refOp RefOp) string {
 	switch refOp.Ex {
 	case RefOpExEscape:
 		return expression.Quote(output)
+	case RefOpExWrapDoubleQuotes:
+		return fmt.Sprintf(`"%v"`, output)
+	case RefOpExWrapSingleQuotes:
+		return fmt.Sprintf(`'%v'`, output)
 	default:
 		// do nothing
 		return output
