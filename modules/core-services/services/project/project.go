@@ -655,6 +655,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 		return nil, err
 	}
 	if addOnListResp != nil && len(addOnsFilterIn(addOnListResp.Data, func(addOn *apistructs.AddonFetchResponseData) bool {
+		// The platformServiceType is 0 means it can be deleted by the platform
 		return addOn.PlatformServiceType == 0
 	})) > 0 {
 		return nil, errors.Errorf("failed to delete project(there exists addons)")
