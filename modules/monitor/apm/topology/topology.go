@@ -178,11 +178,13 @@ type Field struct {
 type Tag struct {
 	Component             string `json:"component,omitempty"`
 	DBType                string `json:"db_type,omitempty"`
+	DBSystem              string `json:"db_system,omitempty"`
 	Host                  string `json:"host,omitempty"`
 	HttpUrl               string `json:"http_url,omitempty"`
 	PeerServiceScope      string `json:"peer_service_scope,omitempty"`
 	PeerAddress           string `json:"peer_address,omitempty"`
 	PeerService           string `json:"peer_service,omitempty"`
+	DBHost                string `json:"db_host,omitempty"`
 	SourceProjectId       string `json:"source_project_id,omitempty"`
 	SourceProjectName     string `json:"source_project_name,omitempty"`
 	SourceWorkspace       string `json:"source_workspace,omitempty"`
@@ -421,8 +423,8 @@ func init() {
 	}
 	TargetComponentNodeType = &NodeType{
 		Type:         TargetComponentNode,
-		GroupByField: &GroupByField{Name: apm.TagsPeerAddress, SubField: &GroupByField{Name: apm.TagsDBType}},
-		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsTargetAddonGroup, apm.TagsDBType, apm.TagsPeerAddress},
+		GroupByField: &GroupByField{Name: apm.TagsDBHost, SubField: &GroupByField{Name: apm.TagsDBSystem}},
+		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsTargetAddonGroup, apm.TagsDBSystem, apm.TagsDBHost},
 		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
 		Aggregation:  NodeAggregation,
 	}
@@ -1763,9 +1765,9 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		node.Id = encodeTypeToKey(node.AddonId + apm.Sep1 + node.AddonType)
 	case TargetComponentNode:
 		node.Type = tags.Component
-		node.Name = tags.PeerAddress
-		if tags.DBType != "" {
-			node.Type = tags.DBType
+		node.Name = tags.DBHost
+		if tags.DBSystem != "" {
+			node.Type = tags.DBSystem
 		}
 		node.Id = encodeTypeToKey(node.Type + apm.Sep1 + node.Name)
 	case SourceMQNode:
@@ -2183,7 +2185,7 @@ func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
 	options.Set("end", strconv.FormatInt(params.End, 10))
 	sql := fmt.Sprintf("SELECT trace_id::tag,format_time(timestamp,'2006-01-02 15:04:05'),format_duration(trace_duration::field,'',2) "+
 		"FROM trace WHERE service_ids::field=$serviceId AND service_names::field=$serviceName AND terminus_keys::field=$terminusKey "+
-		"AND (http_paths::field=$operation OR dubbo_methods::field=$operation OR db_statements::field=$operation OR topics::field=$operation) ORDER BY %s Limit %v", sortCondition, params.Limit)
+		"AND (http_paths::field=$operation OR rpc_methods::field=$operation OR db_statements::field=$operation OR topics::field=$operation) ORDER BY %s Limit %v", sortCondition, params.Limit)
 	details, err := topology.metricq.Query(metricq.InfluxQL, sql,
 		map[string]interface{}{
 			"serviceName": params.ServiceName,

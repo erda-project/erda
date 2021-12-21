@@ -36,7 +36,7 @@ import (
 )
 
 func init() {
-	base.InitProviderWithCreator(common.ScenarioKeyTestDashboard, "topFilter",
+	base.InitProviderWithCreator(common.ScenarioKey, "topFilter",
 		func() servicehub.Provider { return &ComponentFilter{} })
 }
 

@@ -16,13 +16,19 @@ package base
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 )
 
-var compCreatorMap = map[string]protocol.RenderCreator{}
+type Creators struct {
+	RenderCreator    protocol.RenderCreator
+	ComponentCreator protocol.ComponentCreator
+}
+
+var compCreatorMap = map[string]Creators{}
 
 type DefaultProvider struct{}
 
@@ -37,12 +43,22 @@ func (p *DefaultProvider) Init(ctx servicehub.Context) error {
 	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
 		Scenario: scenario,
 		CompName: compName,
-		RenderC: func() protocol.CompRender {
-			if c, ok := compCreatorMap[ctx.Key()]; ok {
-				return c()
+		RenderC: func() func() protocol.CompRender {
+			if c, ok := compCreatorMap[ctx.Key()]; ok && c.RenderCreator != nil {
+				return func() protocol.CompRender {
+					return c.RenderCreator()
+				}
 			}
-			return &DefaultProvider{}
-		},
+			return nil
+		}(),
+		Creator: func() func() cptype.IComponent {
+			if c, ok := compCreatorMap[ctx.Key()]; ok && c.ComponentCreator != nil {
+				return func() cptype.IComponent {
+					return c.ComponentCreator()
+				}
+			}
+			return nil
+		}(),
 	})
 	return nil
 }
@@ -58,10 +74,19 @@ func InitProviderWithCreator(scenario, compName string, creator servicehub.Creat
 		creator = func() servicehub.Provider { return &DefaultProvider{} }
 	}
 	servicehub.Register(MakeComponentProviderName(scenario, compName), &servicehub.Spec{Creator: creator})
-	compCreatorMap[MakeComponentProviderName(scenario, compName)] = func() protocol.CompRender {
-		if r, ok := creator().(protocol.CompRender); ok {
-			return r
+	compCreatorMap[MakeComponentProviderName(scenario, compName)] = func() Creators {
+		switch creator().(type) {
+		case cptype.IComponent:
+			return Creators{ComponentCreator: func() cptype.IComponent {
+				rr := creator().(cptype.IComponent)
+				ref := reflect.ValueOf(rr)
+				ref.Elem().FieldByName("Impl").Set(ref)
+				return rr
+			}}
+		case protocol.CompRender:
+			return Creators{RenderCreator: func() protocol.CompRender { return creator().(protocol.CompRender) }}
+		default:
+			return Creators{RenderCreator: func() protocol.CompRender { return &DefaultProvider{} }}
 		}
-		return &DefaultProvider{}
-	}
+	}()
 }

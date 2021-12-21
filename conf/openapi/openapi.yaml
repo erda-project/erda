@@ -79,6 +79,7 @@ openapi-v1-routes:
           - auto-test-scenes
           - issue-gantt
           - requirement-task-overview
+          - issue-kanban
       - addr: http://localhost:8080
         scenarios:
           - demo
@@ -93,6 +94,10 @@ openapi-v1-routes:
           - cmp-dashboard-pods
           - cmp-dashboard-podDetail
           - cmp-cluster-list
+      - addr: msp:8080
+        scenarios:
+          - service-overview
+          - service-list
 
 etcd:
   _enable: ${OPENAPI_DEV_MODE:false}

@@ -71,7 +71,7 @@ func getMeta(ori map[string]interface{}, dst interface{}) error {
 
 func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	// init filter
-	if err := f.InitFromProtocol(ctx, c); err != nil {
+	if err := f.InitFromProtocol(ctx, c, gs); err != nil {
 		return err
 	}
 
@@ -177,10 +177,11 @@ func (f *ComponentFilter) PostSetState() error {
 	// condition values
 
 	// issuePagingRequest
-	f.State.IssuePagingRequest, err = f.generateIssuePagingRequest()
+	issuePagingRequest, err := f.generateIssuePagingRequest()
 	if err != nil {
 		return err
 	}
+	f.gsHelper.SetIssuePagingRequest(issuePagingRequest)
 
 	return nil
 }

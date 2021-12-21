@@ -50,21 +50,6 @@ service ApmServiceService {
       }
     };
   }
-
-  rpc GetServiceOverviewTop (GetServiceOverviewTopRequest) returns (GetServiceOverviewTopResponse) {
-    option (google.api.http)     = {
-      get: "/api/msp/apm/service/analyzer-overview-top",
-    };
-    option (erda.common.openapi) = {
-      path: "/api/msp/apm/service/analyzer-overview-top",
-      service: "msp",
-      auth: {
-        check_login: true,
-        check_token: true,
-      }
-    };
-  }
-
 }
 
 message GetServiceOverviewTopRequest {
@@ -81,7 +66,7 @@ message GetServiceCountRequest {
 
 message GetServiceCountResponse {
   int64 totalCount          = 1;
-  int64 unhealthyCount      = 2;
+  int64 hasErrorCount       = 2;
   int64 withoutRequestCount = 3;
 }
 
@@ -103,10 +88,11 @@ message ServicesView {
 }
 
 message GetServicesRequest {
-  int64  pageNo      = 1;
-  int64  pageSize    = 2;
-  string tenantId    = 3;
-  string serviceName = 4;
+  int64  pageNo        = 1;
+  int64  pageSize      = 2;
+  string tenantId      = 3;
+  string serviceName   = 4;
+  string serviceStatus = 5;
 }
 
 message GetServicesResponse {
@@ -122,6 +108,11 @@ message TopTable {
   double value       = 3;
 }
 
+enum Status {
+  hasError       = 0;
+  withoutRequest = 1;
+}
+
 message Chart {
   int64  timestamp = 1;
   double value     = 2;
@@ -134,27 +125,23 @@ message ServiceTop {
 }
 
 message ServiceChart {
-  string         type = 1;
-  repeated Chart view = 2;
+  string         type     = 1;
+  repeated Chart view     = 2;
+  double         maxValue = 3;
 }
 
 message Service {
-  string               id            = 1;
-  string               name          = 2;
-  erda.common.Language language      = 3;
-  string               lastHeartbeat = 4;
-  double               rps           = 5;
-  double               avgDuration   = 6;
-  double               errorRate     = 7;
-  //  AggregateMetric      aggregateMetric = 5;
+  string               id              = 1;
+  string               name            = 2;
+  erda.common.Language language        = 3;
+  string               lastHeartbeat   = 4;
+  AggregateMetric      aggregateMetric = 5;
 }
 
 message AggregateMetric {
   double avgRps      = 1; // Average throughput
-  double maxRps      = 2; // Maximum throughput
-  double avgDuration = 3; // Average duration
-  double maxDuration = 4; // Maximum duration
-  double errorRate   = 5; // Error rate
+  double avgDuration = 2; // Average duration
+  double errorRate   = 3; // Error rate
 }
 
 enum ChartType {

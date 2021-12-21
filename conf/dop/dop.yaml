@@ -56,17 +56,13 @@ component-protocol:
 # components
 component-protocol.components.issue-manage.content:
 component-protocol.components.issue-manage.head:
-component-protocol.components.issue-manage.issueAddButton:
 component-protocol.components.issue-manage.issueExport:
 component-protocol.components.issue-manage.issueFilter:
-component-protocol.components.issue-manage.issueGantt:
 component-protocol.components.issue-manage.issueImport:
-component-protocol.components.issue-manage.issueKanban:
 component-protocol.components.issue-manage.issueManage:
 component-protocol.components.issue-manage.issueOperations:
 component-protocol.components.issue-manage.issueTable:
-component-protocol.components.issue-manage.issueViewGroup:
-component-protocol.components.issue-manage.topHead:
+component-protocol.components.issue-manage.reset:
 
 component-protocol.components.code-coverage.treeMapChart:
 component-protocol.components.code-coverage.codeCoverChart:
@@ -303,3 +299,15 @@ component-protocol.components.requirement-task-overview.tabs:
 component-protocol.components.requirement-task-overview.stackChart:
 component-protocol.components.requirement-task-overview.stackChartBlock:
 component-protocol.components.requirement-task-overview.stackChartFilter:
+
+## issue-kanban
+component-protocol.components.issue-kanban.toolbar:
+component-protocol.components.issue-kanban.issueExport:
+component-protocol.components.issue-kanban.issueFilter:
+component-protocol.components.issue-kanban.issueImport:
+component-protocol.components.issue-kanban.issueKanbanV2:
+component-protocol.components.issue-kanban.page:
+component-protocol.components.issue-kanban.issueOperations:
+component-protocol.components.issue-kanban.content:
+component-protocol.components.issue-kanban.inputFilter:
+

@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func init() {
@@ -46,6 +48,13 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 	f.projectID = projectID
+	if fixedIterationIDStr := strutil.String(cputil.GetInParamByKey(ctx, "fixedIteration")); fixedIterationIDStr != "" {
+		fixedIterationID, err := strconv.ParseUint(fixedIterationIDStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		f.fixedIterationID = fixedIterationID
+	}
 	if q := cputil.GetInParamByKey(ctx, "filter__urlQuery"); q != nil {
 		f.FrontendUrlQuery = q.(string)
 	}
@@ -86,10 +95,15 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		} else {
 			f.State.Values.IterationIDs = []int64{iteration}
 		}
+		if f.fixedIterationID > 0 {
+			f.State.Values.IterationIDs = []int64{iteration}
+		}
 	}
 
-	f.State.Conditions = []filter.PropCondition{
-		{
+	var propConditions []filter.PropCondition
+	// only show iteration prop when fixedIterationID not exist
+	if f.fixedIterationID == 0 {
+		propConditions = append(propConditions, filter.PropCondition{
 			EmptyText:  "全部",
 			Fixed:      true,
 			Key:        "iteration",
@@ -101,8 +115,10 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			// CustomProps: map[string]interface{}{
 			// 	"mode": "single",
 			// },
-		},
-		{
+		})
+	}
+	propConditions = append(propConditions,
+		filter.PropCondition{
 			EmptyText:  "全部",
 			Fixed:      true,
 			Key:        "member",
@@ -111,7 +127,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			Type:       filter.PropConditionTypeSelect,
 			HaveFilter: true,
 		},
-		{
+		filter.PropCondition{
 			EmptyText:  "全部",
 			Fixed:      true,
 			Key:        "label",
@@ -120,7 +136,8 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			Type:       filter.PropConditionTypeSelect,
 			HaveFilter: true,
 		},
-	}
+	)
+	f.State.Conditions = propConditions
 	urlParam, err := f.generateUrlQueryParams()
 	if err != nil {
 		return err
@@ -156,6 +173,23 @@ func (f *ComponentFilter) getPropIterationsOptions() (int64, []filter.PropCondit
 			Label: iteration.Title,
 			Value: iteration.ID,
 		})
+	}
+	// fixed iteration
+	if f.fixedIterationID > 0 {
+		found := false
+		var fixedIteration apistructs.Iteration
+		for i, itr := range iterations {
+			if itr.ID == int64(f.fixedIterationID) {
+				found = true
+				fixedIteration = iterations[i]
+				break
+			}
+		}
+		if !found {
+			return -1, nil, fmt.Errorf("fixedIteration: %d not belong to project", f.fixedIterationID)
+		}
+		options = []filter.PropConditionOption{{Label: fixedIteration.Title, Value: fixedIteration.ID}}
+		return fixedIteration.ID, options, nil
 	}
 	return defaultIterationRetriever(iterations), options, nil
 }

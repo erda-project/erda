@@ -33,8 +33,8 @@ type AvgDurationChart struct {
 }
 
 func (avgDuration *AvgDurationChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
-	statement := fmt.Sprintf("SELECT sum(elapsed_sum::field)/sum(elapsed_count::field),timestamp "+
-		"FROM application_http "+
+	statement := fmt.Sprintf("SELECT sum(elapsed_sum::field)/sum(elapsed_count::field) "+
+		"FROM application_http,application_rpc,application_db,application_cache,application_mq "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
 		"GROUP BY time(%s)", avgDuration.Interval)
@@ -57,16 +57,25 @@ func (avgDuration *AvgDurationChart) GetChart(ctx context.Context) (*pb.ServiceC
 
 	rows := response.Results[0].Series[0].Rows
 
+	maxValue := float64(0)
 	for _, row := range rows {
 		avgDurationChart := new(pb.Chart)
-		timestampNano := row.Values[2].GetNumberValue()
-		timestamp := int64(timestampNano) / int64(time.Millisecond)
+		date := row.Values[0].GetStringValue()
+		parse, err := time.ParseInLocation(Layout, date, time.Local)
+		if err != nil {
+			return nil, err
+		}
+		timestamp := parse.UnixNano() / int64(time.Millisecond)
 
 		avgDurationChart.Timestamp = timestamp
 		avgDurationChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
 		avgDurationChart.Dimension = "Avg Duration"
 
+		if maxValue < avgDurationChart.Value {
+			maxValue = avgDurationChart.Value
+		}
+
 		avgDurationCharts = append(avgDurationCharts, avgDurationChart)
 	}
-	return &pb.ServiceChart{Type: pb.ChartType_AvgDuration.String(), View: avgDurationCharts}, err
+	return &pb.ServiceChart{Type: pb.ChartType_AvgDuration.String(), MaxValue: maxValue, View: avgDurationCharts}, err
 }

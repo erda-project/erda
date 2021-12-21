@@ -22,8 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
@@ -53,7 +51,7 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	}
 
 	// default get time: 1 day.
-	start, end := timeRange("-24")
+	start, end := TimeRange("-24h")
 
 	// get services list
 	statement := fmt.Sprintf("SELECT service_id::tag,service_name::tag,service_agent_platform::tag,max(timestamp) FROM application_service_node "+
@@ -86,6 +84,7 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 		service.Name = row.Values[1].GetStringValue()
 		service.Language = parseLanguage(row.Values[2].GetStringValue())
 		service.LastHeartbeat = time.Unix(0, int64(row.Values[3].GetNumberValue())).Format("2006-01-02 15:04:05")
+		service.AggregateMetric = &pb.AggregateMetric{}
 		services = append(services, service)
 	}
 
@@ -102,13 +101,15 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+
+	// service total count
 	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
 
 	if rows == nil || len(rows) == 0 {
 		return &pb.GetServicesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Total: total, List: services}, nil
 	}
 
-	sortStrategy, err := s.aggregateMetric(req.TenantId, services, ctx)
+	sortStrategy, err := s.aggregateMetric(req.ServiceStatus, req.TenantId, &services, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -116,17 +117,17 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	sort.SliceStable(services, func(i, j int) bool {
 		switch sortStrategy {
 		case SortStrategyErrorRate:
-			if services[i].ErrorRate > services[j].ErrorRate {
+			if services[i].AggregateMetric.ErrorRate > services[j].AggregateMetric.ErrorRate {
 				return true
 			}
 			return false
 		case SortStrategyAvgDuration:
-			if services[i].AvgDuration > services[j].AvgDuration {
+			if services[i].AggregateMetric.AvgDuration > services[j].AggregateMetric.AvgDuration {
 				return true
 			}
 			return false
 		default:
-			if services[i].Rps > services[j].Rps {
+			if services[i].AggregateMetric.AvgRps > services[j].AggregateMetric.AvgRps {
 				return true
 			}
 			return false
@@ -142,26 +143,26 @@ const (
 	SortStrategyRPS         = "RpsRateStrategy"
 )
 
-func timeRange(s string) (start int64, end int64) {
+func TimeRange(s string) (start int64, end int64) {
 	d, _ := time.ParseDuration(s)
 	start = time.Now().Add(d).UnixNano() / 1e6
 	end = time.Now().UnixNano() / 1e6
 	return
 }
 
-func (s *apmServiceService) aggregateMetric(tenantId string, services []*pb.Service, ctx context.Context) (sortStrategy string, err error) {
-	start, end := timeRange("-1h")
+func (s *apmServiceService) aggregateMetric(serviceStatus, tenantId string, services *[]*pb.Service, ctx context.Context) (sortStrategy string, err error) {
+	start, end := TimeRange("-1h")
 
 	includeIds := ""
 	serviceMap := make(map[string]*pb.Service)
-	for _, service := range services {
+	for _, service := range *services {
 		includeIds += "'" + service.Id + "',"
 		serviceMap[service.Id] = service
 	}
 	includeIds = includeIds[:len(includeIds)-1]
 
 	statement := fmt.Sprintf("SELECT target_service_id::tag,sum(count_sum::field)/(60*60),sum(elapsed_sum::field)/sum(count_sum::field),sum(errors_sum::field)/sum(count_sum::field)"+
-		"FROM application_http_service,application_rpc_service "+
+		"FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND include(target_service_id::tag, %s) GROUP BY target_service_id::tag", includeIds)
 	condition := " terminus_key::tag=$terminus_key "
@@ -189,7 +190,6 @@ func (s *apmServiceService) aggregateMetric(tenantId string, services []*pb.Serv
 	)
 	if response != nil {
 		rows := response.Results[0].Series[0].Rows
-
 		for _, row := range rows {
 			serviceId := row.Values[0].GetStringValue()
 			if service, ok := serviceMap[serviceId]; ok {
@@ -197,30 +197,32 @@ func (s *apmServiceService) aggregateMetric(tenantId string, services []*pb.Serv
 				avgDuration := row.Values[2].GetNumberValue()
 				errorRate := row.Values[3].GetNumberValue() * 100 // to %
 
-				service.Rps = math.DecimalPlacesWithDigitsNumber(rps, 2)
-				service.AvgDuration = math.DecimalPlacesWithDigitsNumber(avgDuration, 2)
-				service.ErrorRate = math.DecimalPlacesWithDigitsNumber(errorRate, 2)
+				aggregateMetric := &pb.AggregateMetric{
+					AvgRps:      math.DecimalPlacesWithDigitsNumber(rps, 2),
+					AvgDuration: math.DecimalPlacesWithDigitsNumber(avgDuration, 2),
+					ErrorRate:   math.DecimalPlacesWithDigitsNumber(errorRate, 2),
+				}
+				service.AggregateMetric = aggregateMetric
 
-				avgDurationSortSign += service.AvgDuration
-				rpcSortSign += service.Rps
-				errorRateSortSign += service.ErrorRate
+				avgDurationSortSign += aggregateMetric.AvgDuration
+				rpcSortSign += aggregateMetric.AvgRps
+				errorRateSortSign += aggregateMetric.ErrorRate
 
-				// TODO service list optimize
-				//aggregateMetric := &pb.AggregateMetric{
-				//	AvgRps:      math.DecimalPlacesWithDigitsNumber(rps, 2),
-				//	MaxRps:      math.DecimalPlacesWithDigitsNumber(rps, 2),
-				//	AvgDuration: math.DecimalPlacesWithDigitsNumber(avgDuration, 2),
-				//	MaxDuration: math.DecimalPlacesWithDigitsNumber(avgDuration, 2),
-				//	ErrorRate:   math.DecimalPlacesWithDigitsNumber(errorRate, 2),
-				//}
-				//service.AggregateMetric = aggregateMetric
-				//
-				//avgDurationSortSign += aggregateMetric.AvgDuration
-				//rpcSortSign += aggregateMetric.AvgRps
-				//errorRateSortSign += aggregateMetric.ErrorRate
 			}
 		}
 	}
+	for i := 0; i < len(*services); i++ {
+		service := (*services)[i]
+		if serviceStatus == pb.Status_hasError.String() && service.AggregateMetric.ErrorRate <= 0 {
+			*services = append((*services)[:i], (*services)[i+1:]...)
+			i--
+		}
+		if serviceStatus == pb.Status_withoutRequest.String() && service.AggregateMetric.AvgDuration > 0 {
+			*services = append((*services)[:i], (*services)[i+1:]...)
+			i--
+		}
+	}
+
 	if errorRateSortSign > 0 {
 		return SortStrategyErrorRate, nil
 	} else if avgDurationSortSign > 0 {
@@ -267,8 +269,8 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 	interval := ""
 	start := req.StartTime
 	end := req.EndTime
-	if req.StartTime == 0 && req.EndTime == 0 {
-		start, end = timeRange("-1h")
+	if req.StartTime == 0 || req.EndTime == 0 {
+		start, end = TimeRange("-1h")
 	}
 
 	servicesView := make([]*pb.ServicesView, 0, 10)
@@ -297,8 +299,7 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 }
 
 func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServiceCountRequest) (*pb.GetServiceCountResponse, error) {
-	// default get time: 1 day.
-	start, end := timeRange("-24")
+	start, end := TimeRange("-24")
 
 	// calculate total count
 	condition := " terminus_key::tag=$terminus_key "
@@ -319,13 +320,13 @@ func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServ
 	}
 	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
 
-	// unhealthy count
-	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service WHERE $condition"
-	unhealthyCondition := condition + " AND errors_sum::field>0 "
+	// hasError count
+	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service WHERE $condition"
+	unhealthyCondition := " target_terminus_key::tag=$target_terminus_key AND errors_sum::field>0 "
 	statement = strings.ReplaceAll(statement, "$condition", unhealthyCondition)
 
 	queryParams = map[string]*structpb.Value{
-		"terminus_key": structpb.NewStringValue(req.TenantId),
+		"target_terminus_key": structpb.NewStringValue(req.TenantId),
 	}
 	countRequest = &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(start, 10),
@@ -337,14 +338,14 @@ func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServ
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	unhealthyCount := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
+	hasErrorCount := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
 
 	// withoutRequest count
-	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service WHERE $condition"
-	withoutRequestCondition := condition + " AND count_sum::field<=0 "
+	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service WHERE $condition"
+	withoutRequestCondition := "target_terminus_key::tag=$target_terminus_key AND elapsed_sum::field<=0 "
 	statement = strings.ReplaceAll(statement, "$condition", withoutRequestCondition)
 	queryParams = map[string]*structpb.Value{
-		"terminus_key": structpb.NewStringValue(req.TenantId),
+		"target_terminus_key": structpb.NewStringValue(req.TenantId),
 	}
 	countRequest = &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(start, 10),
@@ -360,12 +361,7 @@ func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServ
 
 	return &pb.GetServiceCountResponse{
 		TotalCount:          total,
-		UnhealthyCount:      unhealthyCount,
+		HasErrorCount:       hasErrorCount,
 		WithoutRequestCount: withoutRequestCount,
 	}, nil
-}
-
-func (s *apmServiceService) GetServiceOverviewTop(ctx context.Context, req *pb.GetServiceOverviewTopRequest) (*pb.GetServiceOverviewTopResponse, error) {
-	// TODO .
-	return nil, status.Errorf(codes.Unimplemented, "method GetServiceOverviewTop not implemented")
 }

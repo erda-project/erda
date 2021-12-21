@@ -23,6 +23,16 @@ en:
   trace_success: SUCCESS
   trace_error: ERROR
   trace_all: ALL
+  rpsMaxTop5: Top5 High Traffic Services
+  rpsMinTop5: Top5 Low Traffic Services
+  avgDurationTop5: Top5 Slow Response Services
+  errorRateTop5: Top5 unhealthy services
+  pathRpsMaxTop5: Top5 High Throughput API
+  pathClientRpsMaxTop5: Top5 external API calls
+  pathSlowTop5: Top5 Slow response API
+  sqlSlowTop5: Top5 Slow response SQL
+  exceptionCountTop5: Top5 Exception type
+  pathErrorRateTop5: Top5 Error API
 zh:
   waiting_for_tracing_data: "正在获取链路追踪数据"
   success_get_tracing_data: "获取链路追踪数据成功"
@@ -48,3 +58,13 @@ zh:
   trace_success: 成功
   trace_error: 错误
   trace_all: 所有
+  rpsMaxTop5: 高流量服务排行（Top5）
+  rpsMinTop5: 低流量服务排行（Top5）
+  avgDurationTop5: 慢响应服务排行（Top5）
+  errorRateTop5: 不健康服务排行（Top5）
+  pathRpsMaxTop5: 高吞吐量接口 Top5
+  pathClientRpsMaxTop5: 外部接口调用 Top5
+  pathSlowTop5: 慢响应接口 Top5
+  sqlSlowTop5: 慢响应SQL Top5
+  exceptionCountTop5: 异常类型 Top5
+  pathErrorRateTop5: 错误接口 Top5

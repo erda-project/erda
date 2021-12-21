@@ -17,6 +17,8 @@ package elasticsearch
 import (
 	"context"
 
+	"github.com/ahmetb/go-linq/v3"
+
 	"github.com/erda-project/erda-proto-go/oap/entity/pb"
 )
 
@@ -28,15 +30,9 @@ type Writer struct {
 
 // WriteN .
 func (w *Writer) WriteN(vals ...interface{}) (n int, err error) {
-	for _, val := range vals {
-		e := w.Write(val)
-		if e != nil {
-			err = e
-		} else {
-			n++
-		}
-	}
-	return n, err
+	var entities []*pb.Entity
+	linq.From(vals).ToSlice(&entities)
+	return w.p.SetEntities(w.ctx, entities)
 }
 
 // Write .
