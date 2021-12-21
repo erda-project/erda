@@ -168,3 +168,26 @@ func TestConvertErrors(t *testing.T) {
 	taskDto := task.Convert2DTO()
 	assert.Equal(t, fmt.Sprintf("err\nstartTime: %s\nendTime: %s\ncount: %d", start.Format("2006-01-02 15:04:05"), end.Format("2006-01-02 15:04:05"), 2), taskDto.Result.Errors[0].Msg)
 }
+
+func TestGenerateExecutorVersion(t *testing.T) {
+	normalTask := PipelineTask{ID: 1, Extra: PipelineTaskExtra{}}
+	loopTask := PipelineTask{ID: 1, Extra: PipelineTaskExtra{
+		LoopOptions: &apistructs.PipelineTaskLoopOptions{
+			LoopedTimes: 100,
+		},
+	}}
+	assert.Equal(t, normalTask.GenerateExecutorDoneChanDataVersion(), "executor-done-chan-data-version-1")
+	assert.Equal(t, loopTask.GenerateExecutorDoneChanDataVersion(), "executor-done-chan-data-version-1-loop-100")
+}
+
+func TestCheckExecutorVersion(t *testing.T) {
+	loopTask := PipelineTask{ID: 1, Extra: PipelineTaskExtra{
+		LoopOptions: &apistructs.PipelineTaskLoopOptions{
+			LoopedTimes: 100,
+		},
+	}}
+	actualVersion := "executor-done-chan-data-version-1-loop-100"
+	errVersion := "executor-done-chan-data-version-1-loop-99"
+	assert.Equal(t, loopTask.CheckExecutorDoneChanDataVersion(actualVersion), nil)
+	assert.Equal(t, loopTask.CheckExecutorDoneChanDataVersion(errVersion).Error(), "executor data expected version: executor-done-chan-data-version-1-loop-100, actual version: executor-done-chan-data-version-1-loop-99")
+}
