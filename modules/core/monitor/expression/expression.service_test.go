@@ -35,7 +35,7 @@ func Test_expressionService_GetAllEnabledExpression(t *testing.T) {
 	}
 	type args struct {
 		ctx     context.Context
-		request *pb.GetAllEnabledExpressionRequest
+		request *pb.GetAllAlertEnabledExpressionRequest
 	}
 	tests := []struct {
 		name    string
@@ -57,8 +57,11 @@ func Test_expressionService_GetAllEnabledExpression(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:     nil,
-				request: &pb.GetAllEnabledExpressionRequest{},
+				ctx: nil,
+				request: &pb.GetAllAlertEnabledExpressionRequest{
+					PageSize: 1,
+					PageNo:   1,
+				},
 			},
 			wantErr: false,
 		},
@@ -101,7 +104,7 @@ func Test_expressionService_GetAllEnabledExpression(t *testing.T) {
 			e := &expressionService{
 				p: tt.fields.p,
 			}
-			_, err := e.GetAllEnabledExpression(tt.args.ctx, tt.args.request)
+			_, err := e.GetAllAlertEnabledExpression(tt.args.ctx, tt.args.request)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetAllEnabledExpression() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -141,8 +144,11 @@ func Test_expressionService_GetAllAlertTemplate(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:     nil,
-				request: &pb.GetAllAlertTemplateRequest{},
+				ctx: nil,
+				request: &pb.GetAllAlertTemplateRequest{
+					PageSize: 1,
+					PageNo:   1,
+				},
 			},
 			wantErr: false,
 		},
@@ -155,6 +161,92 @@ func Test_expressionService_GetAllAlertTemplate(t *testing.T) {
 			_, err := e.GetAllAlertTemplate(tt.args.ctx, tt.args.request)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetAllAlertTemplate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func Test_expressionService_GetAllMetricEnabledExpression(t *testing.T) {
+	type fields struct {
+		p *provider
+	}
+	type args struct {
+		ctx     context.Context
+		request *pb.GetAllMetricEnabledExpressionRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test case",
+			fields: fields{
+				p: &provider{
+					Cfg:                  nil,
+					Log:                  nil,
+					Register:             nil,
+					t:                    &i18n.NopTranslator{},
+					DB:                   nil,
+					alertDB:              &alertdb.AlertExpressionDB{&gorm.DB{}},
+					metricDB:             &alertdb.MetricExpressionDB{&gorm.DB{}},
+					customizeAlertRuleDB: &alertdb.CustomizeAlertRuleDB{&gorm.DB{}},
+					expressionService:    nil,
+				},
+			},
+			args: args{
+				ctx: nil,
+				request: &pb.GetAllMetricEnabledExpressionRequest{
+					PageSize: 1,
+					PageNo:   1,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		var adb *alertdb.AlertExpressionDB
+		alertExpression := monkey.PatchInstanceMethod(reflect.TypeOf(adb), "GetAllAlertExpression", func(db *alertdb.AlertExpressionDB) ([]*alertdb.AlertExpression, error) {
+			return []*alertdb.AlertExpression{
+				{
+					ID:         1,
+					AlertID:    1,
+					Attributes: jsonmap.JSONMap{"org_name": "erda"},
+					Expression: jsonmap.JSONMap{"outputs": []string{"alert"}},
+					Version:    "1.0",
+					Enable:     true,
+					Created:    time.Time{},
+					Updated:    time.Time{},
+				},
+			}, nil
+		})
+		defer alertExpression.Unpatch()
+		var mdb *alertdb.MetricExpressionDB
+		metricExpression := monkey.PatchInstanceMethod(reflect.TypeOf(mdb), "GetAllMetricExpression", func(db *alertdb.MetricExpressionDB) ([]*alertdb.MetricExpression, error) {
+			return []*alertdb.MetricExpression{
+				{
+					ID:         1,
+					Attributes: nil,
+					Expression: jsonmap.JSONMap{
+						"window": 3,
+					},
+					Version: "1.0",
+					Enable:  true,
+					Created: time.Time{},
+					Updated: time.Time{},
+				},
+			}, nil
+		})
+		defer metricExpression.Unpatch()
+		t.Run(tt.name, func(t *testing.T) {
+			e := &expressionService{
+				p: tt.fields.p,
+			}
+			_, err := e.GetAllMetricEnabledExpression(tt.args.ctx, tt.args.request)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetAllMetricEnabledExpression() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})
