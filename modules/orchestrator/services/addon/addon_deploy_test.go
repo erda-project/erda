@@ -15,11 +15,16 @@
 package addon
 
 import (
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 func TestMysqlPreProcess(t *testing.T) {
@@ -37,4 +42,40 @@ func TestMysqlPreProcess(t *testing.T) {
 	mysqlPreProcess(params, addonSpec, addonDeployGroup)
 	assert.Equal(t, "1", addonDeployGroup.GroupLabels["ADDON_GROUPS"])
 	assert.Equal(t, 1, addonSpec.Plan[apistructs.AddonBasic].Nodes)
+}
+
+func TestBuildAddonRequestGroupForEsWithOperator(t *testing.T) {
+	defer monkey.UnpatchAll()
+
+	bdl := bundle.New()
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CapacityInfo", func(bundle *bundle.Bundle, clusterName string) (*apistructs.CapacityInfoResponse, error) {
+		return &apistructs.CapacityInfoResponse{
+			Data: apistructs.CapacityInfoData{
+				ElasticsearchOperator: true,
+			},
+		}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "QueryClusterInfo", func(bundle *bundle.Bundle, clusterName string) (apistructs.ClusterInfoData, error) {
+		return apistructs.ClusterInfoData{}, nil
+	})
+
+	addon := New(WithBundle(bdl))
+
+	_, err := addon.buildAddonRequestGroup(&apistructs.AddonHandlerCreateItem{
+		AddonName: apistructs.AddonES,
+	}, &dbclient.AddonInstance{
+		AddonID: "fake-addon-id",
+	}, &apistructs.AddonExtension{
+		Version: "6.8.8",
+	}, &diceyml.Object{
+		Services: diceyml.Services{
+			"fake-service1": &diceyml.Service{},
+			"fake-service2": &diceyml.Service{},
+			"fake-service3": &diceyml.Service{},
+		},
+	})
+
+	assert.NoError(t, err)
 }
