@@ -148,3 +148,28 @@ func (pc *PipelineCron) GetOrgID() uint64 {
 	orgID, _ := strconv.ParseUint(orgIDStr, 10, 64)
 	return orgID
 }
+
+func (pc *PipelineCron) GenCompensateCreatePipelineReqNormalLabels(triggerTime time.Time) map[string]string {
+	normalLabels := make(map[string]string)
+	for k, v := range pc.Extra.NormalLabels {
+		normalLabels[k] = v
+	}
+	normalLabels[apistructs.LabelPipelineTriggerMode] = apistructs.PipelineTriggerModeCron.String()
+	normalLabels[apistructs.LabelPipelineType] = apistructs.PipelineTypeNormal.String()
+	normalLabels[apistructs.LabelPipelineYmlSource] = apistructs.PipelineYmlSourceContent.String()
+	normalLabels[apistructs.LabelPipelineCronTriggerTime] = strconv.FormatInt(triggerTime.UnixNano(), 10)
+	normalLabels[apistructs.LabelPipelineCronID] = strconv.FormatUint(pc.ID, 10)
+	return normalLabels
+}
+
+func (pc *PipelineCron) GenCompensateCreatePipelineReqFilterLabels() map[string]string {
+	filterLabels := make(map[string]string)
+	for k, v := range pc.Extra.FilterLabels {
+		filterLabels[k] = v
+	}
+	if _, ok := filterLabels[apistructs.LabelPipelineTriggerMode]; ok {
+		filterLabels[apistructs.LabelPipelineTriggerMode] = apistructs.PipelineTriggerModeCron.String()
+	}
+	filterLabels[apistructs.LabelPipelineCronCompensated] = "true"
+	return filterLabels
+}
