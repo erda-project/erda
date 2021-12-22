@@ -30,12 +30,19 @@ func (b *Bundle) GetWorkbenchData(userID string, req apistructs.WorkbenchRequest
 	}
 	hc := b.hc
 	var rsp apistructs.WorkbenchResponse
+
+	pidList := make([]string, len(req.ProjectIDs))
+	for _, p := range req.ProjectIDs {
+		pidList = append(pidList, strconv.Itoa(int(p)))
+	}
+
 	httpResp, err := hc.Get(host).Path(fmt.Sprintf("/api/workbench/actions/list")).
 		Header(httputil.UserHeader, userID).
 		Param("pageNo", strconv.FormatInt(int64(req.PageNo), 10)).
 		Param("pageSize", strconv.FormatInt(int64(req.PageSize), 10)).
 		Param("issueSize", strconv.FormatInt(int64(req.IssueSize), 10)).
 		Param("orgID", strconv.FormatInt(int64(req.OrgID), 10)).
+		Params(map[string][]string{"projectIDs": pidList}).
 		Do().JSON(&rsp)
 	if err != nil {
 		return nil, apierrors.ErrGetWorkBenchData.InternalError(err)

@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/c2h5oh/datasize"
-	"gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v2"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/model"

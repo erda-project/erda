@@ -136,6 +136,8 @@ type ApplicationListRequest struct {
 	Public   string `query:"public"`
 	OrderBy  string `query:"orderBy"`
 
+	ApplicationID []uint64 `query:"applicationID"`
+
 	// 是否只返回简单信息(应用级流水线打开列表使用)
 	IsSimple bool `query:"isSimple"`
 }

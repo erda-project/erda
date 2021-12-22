@@ -447,7 +447,7 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 	}
 
 	// 获取请求参数
-	params, err := getListApplicationsParam(r)
+	params, err := getListApplicationsParam(e, r)
 	if err != nil {
 		return apierrors.ErrListApplication.InvalidParameter(err).ToResp(), nil
 	}
@@ -805,7 +805,11 @@ func checkApplicationCreateParam(applicationCreateReq apistructs.ApplicationCrea
 }
 
 // 应用列表时获取请求参数
-func getListApplicationsParam(r *http.Request) (*apistructs.ApplicationListRequest, error) {
+func getListApplicationsParam(e *Endpoints, r *http.Request) (*apistructs.ApplicationListRequest, error) {
+	var listReq apistructs.ApplicationListRequest
+	if err := e.queryStringDecoder.Decode(&listReq, r.URL.Query()); err != nil {
+		return nil, errors.Errorf("decode appplication list request failed, error: %v", err)
+	}
 	mode := r.URL.Query().Get("mode")
 	if mode != "" {
 		err := apistructs.ApplicationMode(mode).CheckAppMode()
@@ -870,6 +874,8 @@ func getListApplicationsParam(r *http.Request) (*apistructs.ApplicationListReque
 		Public:    public,
 		IsSimple:  isSimple,
 		OrderBy:   orderBy,
+
+		ApplicationID: listReq.ApplicationID,
 	}
 
 	return req, nil

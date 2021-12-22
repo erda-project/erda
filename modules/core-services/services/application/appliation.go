@@ -26,7 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v2"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -620,7 +620,7 @@ func (a *Application) GetAllApps() ([]model.Application, error) {
 func (a *Application) List(orgID, projectID int64, userID string, request *apistructs.ApplicationListRequest) (
 	int, []model.Application, error) {
 	// 获取应用列表
-	applicationIDs := make([]int64, 0)
+	applicationIDs := request.ApplicationID
 	total, applications, err := a.db.GetApplicationsByIDs(&orgID, &projectID, applicationIDs, request)
 	if err != nil {
 		logrus.Infof("failed to get application list, (%v)", err)
@@ -653,8 +653,9 @@ func (a *Application) List(orgID, projectID int64, userID string, request *apist
 func (a *Application) ListMyApplications(orgID int64, userID string, request *apistructs.ApplicationListRequest) (
 	int, []model.Application, error) {
 	var (
-		members []model.MemberExtra
-		err     error
+		inputAppIDs []uint64
+		members     []model.MemberExtra
+		err         error
 	)
 
 	// 查找有权限的列表
@@ -665,9 +666,21 @@ func (a *Application) ListMyApplications(orgID int64, userID string, request *ap
 	}
 
 	// 获取应用列表
-	applicationIDs := make([]int64, 0, len(members)*2)
+	applicationIDs := make([]uint64, 0, len(members)*2)
+	applicationIDmap := make(map[int64]bool)
 	for i := range members {
-		applicationIDs = append(applicationIDs, members[i].ScopeID)
+		applicationIDmap[members[i].ScopeID] = true
+		applicationIDs = append(applicationIDs, uint64(members[i].ScopeID))
+	}
+
+	// 如果用户有输入应用 则获取输入用户的应用
+	if len(request.ApplicationID) > 0 {
+		for i, v := range request.ApplicationID {
+			if applicationIDmap[int64(v)] {
+				inputAppIDs = append(inputAppIDs, request.ApplicationID[i])
+			}
+		}
+		applicationIDs = inputAppIDs
 	}
 
 	// 用户没加入任何项目和应用

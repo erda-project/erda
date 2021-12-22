@@ -149,27 +149,27 @@ func TestList_GetExtraInfos(t *testing.T) {
 					Icon:    "management",
 					Text:    "-",
 					Tooltip: "manage type",
-								},
+				},
 				{
 					Icon:    "machine",
 					Text:    "0",
 					Tooltip: "machine count",
-								},
+				},
 				{
 					Icon:    "version",
 					Text:    "-",
 					Tooltip: "cluster version",
-								},
+				},
 				{
 					Icon:    "time",
 					Text:    "-",
 					Tooltip: "update time",
-								},
+				},
 				{
 					Icon:    "type",
 					Text:    "-",
 					Tooltip: "cluster type",
-								},
+				},
 			},
 		},
 	}

@@ -15,10 +15,13 @@
 package endpoints
 
 import (
+	"net/http"
+	"net/url"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/gorilla/schema"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
@@ -56,4 +59,27 @@ func Test_transferAppsToApplicationDTOS(t *testing.T) {
 	apps := []model.Application{{BaseModel: model.BaseModel{ID: 1}, OrgID: 1, ProjectID: 1}}
 	_, err := ep.transferAppsToApplicationDTOS(true, apps, map[uint64]string{}, map[int64][]string{})
 	assert.NoError(t, err)
+}
+
+func TestGetAppParams(t *testing.T) {
+	// init Endpoints with queryStringDecoder
+	queryStringDecoder := schema.NewDecoder()
+	queryStringDecoder.IgnoreUnknownKeys(true)
+	ep := &Endpoints{
+		queryStringDecoder: queryStringDecoder,
+	}
+
+	req, err := http.NewRequest("GET", "https://baidu.com", nil)
+	if err != nil {
+		panic(err)
+	}
+
+	params := make(url.Values)
+	params.Add("applicationID", "1")
+	params.Add("applicationID", "2")
+	req.URL.RawQuery = params.Encode()
+
+	parsedReq, err := getListApplicationsParam(ep, req)
+	assert.NoError(t, err)
+	assert.Equal(t, parsedReq.ApplicationID, []uint64{1, 2})
 }

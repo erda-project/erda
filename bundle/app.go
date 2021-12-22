@@ -240,6 +240,12 @@ func (b *Bundle) GetAllMyApps(userid string, orgid uint64, req apistructs.Applic
 		return nil, err
 	}
 	hc := b.hc
+
+	appIDs := make([]string, len(req.ApplicationID))
+	for _, v := range req.ApplicationID {
+		appIDs = append(appIDs, strconv.Itoa(int(v)))
+	}
+
 	var listResp apistructs.ApplicationListResponse
 	resp, err := hc.Get(host).
 		Path("/api/applications/actions/list-my-applications").
@@ -254,6 +260,7 @@ func (b *Bundle) GetAllMyApps(userid string, orgid uint64, req apistructs.Applic
 		Param("projectId", strconv.FormatUint(req.ProjectID, 10)).
 		Param("isSimple", strconv.FormatBool(req.IsSimple)).
 		Param("orderBy", req.OrderBy).
+		Params(map[string][]string{"applicationID": appIDs}).
 		Do().JSON(&listResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)

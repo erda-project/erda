@@ -23,6 +23,38 @@ type WorkbenchRequest struct {
 	IssuePagingRequest
 }
 
+type WorkbenchProjOverviewResp struct {
+	Header
+	Data WorkbenchProjOverviewRespData `json:"data"`
+}
+
+type WorkbenchProjOverviewRespData struct {
+	Total int                         `json:"total"`
+	List  []WorkbenchProjOverviewItem `json:"list"`
+}
+
+type WorkbenchProjOverviewItem struct {
+	ProjectDTO    ProjectDTO            `json:"projectDTO"`
+	IssueInfo     *ProjectIssueInfo     `json:"issueInfo"`
+	StatisticInfo *ProjectStatisticInfo `json:"statisticInfo"`
+}
+
+type ProjectIssueInfo struct {
+	TotalIssueNum       int `json:"totalIssueNum"`
+	UnSpecialIssueNum   int `json:"unSpecialIssueNum"`
+	ExpiredIssueNum     int `json:"expiredIssueNum"`
+	ExpiredOneDayNum    int `json:"expiredOneDayNum"`
+	ExpiredTomorrowNum  int `json:"expiredTomorrowNum"`
+	ExpiredSevenDayNum  int `json:"expiredSevenDayNum"`
+	ExpiredThirtyDayNum int `json:"expiredThirtyDayNum"`
+	FeatureDayNum       int `json:"featureDayNum"`
+}
+
+type ProjectStatisticInfo struct {
+	ServiceCount      int64 `json:"serviceCount,omitempty"`
+	Last24HAlertCount int64 `json:"last24hAlertCount,omitempty"`
+}
+
 type WorkbenchResponse struct {
 	Header
 	Data WorkbenchResponseData `json:"data"`
@@ -45,6 +77,17 @@ type WorkbenchProjectItem struct {
 	ExpiredThirtyDayNum int        `json:"expiredThirtyDayNum"`
 	FeatureDayNum       int        `json:"featureDayNum"`
 	IssueList           []Issue    `json:"issueList"`
+}
+
+type AppWorkBenchItem struct {
+	ApplicationDTO
+	AppRuntimeNum int `json:"appRuntimeNum"`
+	AppOpenMrNum  int `json:"appMrNum"`
+}
+
+type AppWorkbenchResponseData struct {
+	TotalApps int                `json:"totalApps"`
+	List      []AppWorkBenchItem `json:"list"`
 }
 
 var StateBelongs = []IssueStateBelong{

@@ -600,6 +600,32 @@ func (b *Bundle) CloseMergeRequest(appID int64, mrID int, userID string) error {
 	return nil
 }
 
+// ListMergeRequest list mrs
+func (b *Bundle) ListMergeRequest(appID uint64, userID string, req apistructs.GittarQueryMrRequest) (*apistructs.QueryMergeRequestsData, error) {
+	var (
+		host string
+		err  error
+		rsp  apistructs.GittarQueryMrResponse
+	)
+	hc := b.hc
+	host, err = b.urls.Gittar()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := hc.Get(host).
+		Header(httputil.UserHeader, userID).
+		Path(fmt.Sprintf("/app-repo/%d/merge-request", appID)).
+		Do().JSON(&rsp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(errors.Errorf("failed to list Mr"))
+	}
+	return &rsp.Data, nil
+}
+
 // GetGittarCompare gittar compare between commits
 func (b *Bundle) GetGittarCompare(after, before string, appID int64, userID string) (*apistructs.GittarCompareData, error) {
 	var (
