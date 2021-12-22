@@ -87,13 +87,12 @@ func (impl GatewayConsumerServiceImpl) Clone(ctx context.Context) legacy_consume
 }
 
 func (impl GatewayConsumerServiceImpl) CreateDefaultConsumer(orgId, projectId, env, az string) (*orm.GatewayConsumer, *orm.ConsumerAuthConfig, StandardErrorCode, error) {
-	consumerName := impl.consumerDb.GetDefaultConsumerName(&orm.GatewayConsumer{
+	return impl.createConsumer(orgId, projectId, env, az, impl.consumerDb.GetDefaultConsumerName(&orm.GatewayConsumer{
 		OrgId:     orgId,
 		ProjectId: projectId,
 		Env:       env,
 		Az:        az,
-	})
-	return impl.createConsumer(orgId, projectId, env, az,consumerName, false)
+	}), false)
 }
 
 func (impl GatewayConsumerServiceImpl) getCredentialList(kongAdapter kong.KongAdapter, consumerId string) (map[string]kongDto.KongCredentialListDto, error) {
