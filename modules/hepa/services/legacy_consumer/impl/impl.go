@@ -87,13 +87,13 @@ func (impl GatewayConsumerServiceImpl) Clone(ctx context.Context) legacy_consume
 }
 
 func (impl GatewayConsumerServiceImpl) CreateDefaultConsumer(orgId, projectId, env, az string) (*orm.GatewayConsumer, *orm.ConsumerAuthConfig, StandardErrorCode, error) {
-	return impl.createConsumer(orgId, projectId, env, az,
-		impl.consumerDb.GetDefaultConsumerName(&orm.GatewayConsumer{
-			OrgId:     orgId,
-			ProjectId: projectId,
-			Env:       env,
-			Az:        az,
-		}))
+	consumerName := impl.consumerDb.GetDefaultConsumerName(&orm.GatewayConsumer{
+		OrgId:     orgId,
+		ProjectId: projectId,
+		Env:       env,
+		Az:        az,
+	})
+	return impl.createConsumer(orgId, projectId, env, az,consumerName, false)
 }
 
 func (impl GatewayConsumerServiceImpl) getCredentialList(kongAdapter kong.KongAdapter, consumerId string) (map[string]kongDto.KongCredentialListDto, error) {
@@ -223,7 +223,7 @@ func (impl GatewayConsumerServiceImpl) UpdateConsumerInfo(consumerId string, con
 	return res.SetSuccessAndData(dto)
 }
 
-func (impl GatewayConsumerServiceImpl) createConsumer(orgId, projectId, env, az, consumerName string) (*orm.GatewayConsumer, *orm.ConsumerAuthConfig, StandardErrorCode, error) {
+func (impl GatewayConsumerServiceImpl) createConsumer(orgId, projectId, env, az, consumerName string, withCredential bool) (*orm.GatewayConsumer, *orm.ConsumerAuthConfig, StandardErrorCode, error) {
 	ret := UNKNOW_ERROR
 	consumer, err := impl.consumerDb.GetByName(consumerName)
 	var respDto *kongDto.KongConsumerRespDto
@@ -267,36 +267,38 @@ func (impl GatewayConsumerServiceImpl) createConsumer(orgId, projectId, env, az,
 			ConsumerId:   respDto.Id,
 			ConsumerName: consumerName,
 		}
-		keyAuth, err = impl.createCredential(kongAdapter, orm.KEYAUTH, respDto.Id, nil)
-		if err != nil {
-			goto errorHappened
-		}
-		oauth2, err = impl.createCredential(kongAdapter, orm.OAUTH2, respDto.Id,
-			&kongDto.KongCredentialDto{
-				Name:        "App",
-				RedirectUrl: []string{"http://none"},
-			})
-		if err != nil {
-			goto errorHappened
-		}
-		consumerAuthConfig = &orm.ConsumerAuthConfig{
-			Auths: []orm.AuthItem{
-				{
-					AuthTips: orm.KeyAuthTips,
-					AuthType: orm.KEYAUTH,
-					AuthData: kongDto.KongCredentialListDto{
-						Total: 1,
-						Data:  []kongDto.KongCredentialDto{*keyAuth},
+		if withCredential {
+			keyAuth, err = impl.createCredential(kongAdapter, orm.KEYAUTH, respDto.Id, nil)
+			if err != nil {
+				goto errorHappened
+			}
+			oauth2, err = impl.createCredential(kongAdapter, orm.OAUTH2, respDto.Id,
+				&kongDto.KongCredentialDto{
+					Name:        "App",
+					RedirectUrl: []string{"http://none"},
+				})
+			if err != nil {
+				goto errorHappened
+			}
+			consumerAuthConfig = &orm.ConsumerAuthConfig{
+				Auths: []orm.AuthItem{
+					{
+						AuthTips: orm.KeyAuthTips,
+						AuthType: orm.KEYAUTH,
+						AuthData: kongDto.KongCredentialListDto{
+							Total: 1,
+							Data:  []kongDto.KongCredentialDto{*keyAuth},
+						},
+					},
+					{
+						AuthType: orm.OAUTH2,
+						AuthData: kongDto.KongCredentialListDto{
+							Total: 1,
+							Data:  []kongDto.KongCredentialDto{*oauth2},
+						},
 					},
 				},
-				{
-					AuthType: orm.OAUTH2,
-					AuthData: kongDto.KongCredentialListDto{
-						Total: 1,
-						Data:  []kongDto.KongCredentialDto{*oauth2},
-					},
-				},
-			},
+			}
 		}
 		err = impl.consumerDb.Insert(gatewayConsumer)
 		if err != nil {
@@ -342,7 +344,7 @@ func (impl GatewayConsumerServiceImpl) CreateConsumer(createDto *gw.ConsumerCrea
 		goto errorHappened
 	}
 	consumerName = orgId + "_" + createDto.ProjectId + "_" + createDto.Env + "_" + az + "_" + createDto.ConsumerName
-	gatewayConsumer, consumerAuthConfig, ret, err = impl.createConsumer(orgId, createDto.ProjectId, createDto.Env, az, consumerName)
+	gatewayConsumer, consumerAuthConfig, ret, err = impl.createConsumer(orgId, createDto.ProjectId, createDto.Env, az, consumerName, true)
 	if err != nil {
 		goto errorHappened
 	}
