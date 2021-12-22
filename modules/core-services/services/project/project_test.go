@@ -106,7 +106,7 @@ func TestGetModelProjectsMap(t *testing.T) {
 
 	p := &Project{}
 	projectIDs := []uint64{1, 2, 3}
-	projectMap, err := p.GetModelProjectsMap(projectIDs)
+	projectMap, err := p.GetModelProjectsMap(projectIDs, false)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(projectMap))
 }

@@ -553,7 +553,7 @@ func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []m
 		orgMap[org.ID] = org
 	}
 
-	projectMap, err := e.project.GetModelProjectsMap(projectIDs)
+	projectMap, err := e.project.GetModelProjectsMap(projectIDs, false)
 	if err != nil {
 		return nil, err
 	}

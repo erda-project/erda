@@ -1,0 +1,86 @@
+scenario: personal-workbench
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      left:
+       leftContent
+      right:
+       rightContent
+    leftContent:
+      - head
+      - workTabs
+      - workContainer
+      - messageTabs
+      - messageContainer
+    rightContent:
+      - userProfile
+    workContainer:
+      - workCards
+      - workList
+    messageContainer:
+      - messageList
+    workList:
+      filter:
+      - workListFilter
+
+components:
+  page:
+    type: LRContainer
+  leftContent:
+    type: Container
+  rightContent:
+    type: Container
+  userProfile:
+    type: Custom
+  head:
+    type: Custom
+  workTabs:
+    type: RadioTabs
+  workContainer:
+    type: Container
+  workCards:
+    type: Card
+  workList:
+    type: List
+    version: 2
+  workListFilter:
+    type: ContractiveFilter
+  messageContainer:
+    type: Container
+  messageTabs:
+    type: RadioTabs
+  messageList:
+    type: List
+    version: 2
+
+rendering:
+  __DefaultRendering__:
+    - name: page
+    - name: leftContent
+    - name: rightContent
+    - name: userProfile
+    - name: head
+    - name: workTabs
+    - name: workContainer
+    - name: workCards
+      state:
+        - name: "tabName"
+          value: "{{ workTabs.value }}"
+    - name: workListFilter
+    - name: workList
+    - name: messageContainer
+    - name: messageTabs
+    - name: messageList
+
+  workTabs:
+    - name: workCards
+      state:
+        - name: "tabs"
+          value: "{{ workTabs.state.Value }}"
+    - name: workListFilter
+    - name: workList
+
+  workListFilter:
+    - name: workList
