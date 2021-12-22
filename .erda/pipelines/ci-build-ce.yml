@@ -1,11 +1,11 @@
 version: "1.1"
 
-on:
-  push:
-    branches:
-      - release/*
-    tags:
-      - v*
+#on:
+#  push:
+#    branches:
+#      - release/*
+#    tags:
+#      - v*
 
 stages:
   - stage:
@@ -23,16 +23,6 @@ stages:
           params:
             uri: https://erda.cloud/erda/dop/erda-project/erda-addons-mirror
             branch: master
-      - git-checkout:
-          alias: erda-actions-enterprise
-          params:
-            uri: https://erda.cloud/erda/dop/erda-project/erda-actions-enterprise-mirror
-            branch: master
-      - git-checkout:
-          alias: erda-addons-enterprise
-          params:
-            uri: https://erda.cloud/erda/dop/erda-project/erda-addons-enterprise-mirror
-            branch: master
   - stage:
       - extract-repo-version:
           params:
@@ -45,8 +35,6 @@ stages:
             - mkdir -p extensions
             - cp -r ${{ dirs.erda-actions }} extensions
             - cp -r ${{ dirs.erda-addons }} extensions
-            - cp -r ${{ dirs.erda-actions-enterprise }} extensions
-            - cp -r ${{ dirs.erda-addons-enterprise }} extensions
             - export VERSION=${{ outputs.extract-repo-version.version }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare
