@@ -37,10 +37,12 @@ func (httpCode *HttpCodeChart) GetChart(ctx context.Context) (*pb.ServiceChart, 
 		"FROM application_http "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
+		"AND span_kind::tag=$kind "+
 		"GROUP BY time(%s),http_status_code::tag", httpCode.Interval)
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(httpCode.TenantId),
 		"service_id":   structpb.NewStringValue(httpCode.ServiceId),
+		"kind":         structpb.NewStringValue("server"),
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(httpCode.StartTime, 10),

@@ -159,4 +159,8 @@ enum ChartPosition {
 enum ViewType {
   SERVICE_OVERVIEW      = 0;
   TOPOLOGY_SERVICE_NODE = 1;
+  RPS_Chart             = 2;
+  Avg_Duration_Chart    = 3;
+  Error_Rate_Chart      = 4;
+  Http_Code_Chart       = 5;
 }
