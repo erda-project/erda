@@ -307,6 +307,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	// 调度相关标签
 	task.Extra.Labels["DICE_WORKSPACE"] = string(p.Extra.DiceWorkspace)
 	task.Extra.Labels["DICE_ORG_NAME"] = p.GetOrgName()
+	task.Extra.Labels["DICE_ORG_ID"] = p.GetOrgID()
 	// 若 action 未声明 dice.yml labels，则由平台根据 source 按照默认规则分配调度标签
 	if len(diceYmlJob.Labels) == 0 {
 		// 大数据任务加上 JOB_KIND = bigdata，调度到有大数据标签的机器上
