@@ -1042,6 +1042,11 @@ type Identity struct {
 	OrgID  string
 }
 
+type PageRequest struct {
+	PageSize int `json:"pageSize"`
+	PageNo   int `json:"pageNo"`
+}
+
 type CloudResourceVpcBaseInfo struct {
 	Region    string `json:"region"`
 	VpcID     string `json:"vpcID"`

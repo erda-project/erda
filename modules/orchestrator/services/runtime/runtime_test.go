@@ -230,7 +230,7 @@ func Test_setClusterName(t *testing.T) {
 	defer m1.Unpatch()
 	runtimeSvc := New(WithBundle(bdl))
 	rt := &dbclient.Runtime{
-		ClusterName:       "erda-edge",
+		ClusterName: "erda-edge",
 	}
 	runtimeSvc.setClusterName(rt)
 	assert.Equal(t, "erda-center", rt.ClusterName)
