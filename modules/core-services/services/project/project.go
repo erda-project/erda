@@ -865,10 +865,11 @@ func (p *Project) GetModelProject(projectID int64) (*model.Project, error) {
 	return &project, nil
 }
 
-func (p *Project) GetModelProjectsMap(projectIDs []uint64) (map[int64]*model.Project, error) {
+func (p *Project) GetModelProjectsMap(projectIDs []uint64, keepMsp bool) (map[int64]*model.Project, error) {
 	_, projects, err := p.db.GetProjectsByIDs(projectIDs, &apistructs.ProjectListRequest{
 		PageNo:   1,
 		PageSize: len(projectIDs),
+		KeepMsp:  keepMsp,
 	})
 	if err != nil {
 		return nil, errors.Errorf("failed to get projects, (%v)", err)

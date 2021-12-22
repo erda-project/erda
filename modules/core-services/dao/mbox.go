@@ -82,11 +82,16 @@ func (client *DBClient) GetMBox(id int64, orgID int64, userID string) (*apistruc
 
 func (client *DBClient) QueryMBox(request *apistructs.QueryMBoxRequest) (*apistructs.QueryMBoxData, error) {
 	var mboxList []model.MBox
-	query := client.Model(&model.MBox{}).Where("org_id =? and user_id= ?", request.OrgID, request.UserID)
+	query := client.Model(&model.MBox{}).Where("org_id =? and user_id= ?", request.OrgID, request.UserID).Order("created_at desc")
 	if request.Status != "" {
 		query = query.Where("status =? ", request.Status)
 	}
-	query = query.Order("created_at desc").Select("id,title,status,label,created_at,read_at,deduplicate_id,unread_count")
+	if request.Type == apistructs.MBoxTypeIssue {
+		query = query.Where("unread_count > 1 and deduplicate_id != \"\"")
+	} else {
+		query = query.Select("id,title,status,label,created_at,read_at,deduplicate_id,unread_count")
+	}
+
 	var count int
 	err := query.Count(&count).Error
 	if err != nil {

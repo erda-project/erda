@@ -26,9 +26,22 @@ type WorkbenchRequest struct {
 type WorkbenchItemType string
 
 const (
-	WorkbenchItemProj WorkbenchItemType = "project"
-	WorkbenchItemApp  WorkbenchItemType = "app"
+	WorkbenchItemProj           WorkbenchItemType = "project"
+	WorkbenchItemApp            WorkbenchItemType = "app"
+	WorkbenchItemUnreadMes      WorkbenchItemType = "unreadMessages"
+	WorkbenchItemTicket         WorkbenchItemType = "tickets"
+	WorkbenchItemApproveRequest WorkbenchItemType = "approveRequest"
+	WorkbenchItemActivities     WorkbenchItemType = "activities"
+	WorkbenchItemDefault                          = WorkbenchItemProj
 )
+
+func (w WorkbenchItemType) IsEmpty() bool {
+	return string(w) == ""
+}
+
+func (w WorkbenchItemType) String() string {
+	return string(w)
+}
 
 type WorkbenchProjAppRequest struct {
 	// e.g: project/app
@@ -130,4 +143,9 @@ var UnclosedStateBelongs = []IssueStateBelong{
 	IssueStateBelongWontfix,
 	IssueStateBelongReopen,
 	IssueStateBelongResolved,
+}
+
+type WorkbenchMsgRequest struct {
+	Type WorkbenchItemType `json:"type"`
+	PageRequest
 }
