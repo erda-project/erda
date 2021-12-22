@@ -193,6 +193,9 @@ type ProjectListRequest struct {
 	Joined   bool `query:"joined"` // TODO refactor
 	PageNo   int  `query:"pageNo"`
 	PageSize int  `query:"pageSize"`
+
+	ProjectIDs []uint64 `query:"projectIDs"`
+
 	// 是否只显示公开项目
 	IsPublic bool `query:"isPublic"`
 }

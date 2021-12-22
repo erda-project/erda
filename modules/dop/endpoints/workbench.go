@@ -35,11 +35,15 @@ func (e *Endpoints) GetWorkbenchData(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrGetWorkBenchData.NotLogin().ToResp(), nil
 	}
 
-	projectIDs, err := e.bdl.GetMyProjectIDs(workReq.OrgID, userID.String())
-	if err != nil {
-		return apierrors.ErrGetWorkBenchData.InternalError(err).ToResp(), nil
+	// if projectIDs not specified, get all my projectIDs by default
+	if len(workReq.ProjectIDs) == 0 {
+		projectIDs, err := e.bdl.GetMyProjectIDs(workReq.OrgID, userID.String())
+		if err != nil {
+			return apierrors.ErrGetWorkBenchData.InternalError(err).ToResp(), nil
+		}
+		workReq.ProjectIDs = projectIDs
 	}
-	workReq.ProjectIDs = projectIDs
+
 	res, err := e.workBench.GetUndoneProjectItems(workReq, userID.String())
 	if err != nil {
 		return apierrors.ErrGetWorkBenchData.InternalError(err).ToResp(), nil
