@@ -16,11 +16,143 @@ package pipeline
 
 import (
 	"context"
+	"fmt"
+	"sync"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 )
 
-type Pipeline interface {
-	InitComponents(receivers, processors, exporters []model.Component) error
-	StartStream(ctx context.Context)
+type Pipeline struct {
+	mReceivers  []model.Receiver
+	mProcessors []model.Processor
+	mExporters  []model.Exporter
+
+	Log logs.Logger
+}
+
+func NewPipeline(log logs.Logger) *Pipeline {
+	return &Pipeline{Log: log}
+}
+
+func (p *Pipeline) InitComponents(receivers, processors, exporters []model.Component) error {
+	rs, err := p.rsFromComponent(receivers)
+	if err != nil {
+		return err
+	}
+	prs, err := p.prsFromComponent(processors)
+	if err != nil {
+		return err
+	}
+	es, err := p.esFromComponent(exporters)
+	if err != nil {
+		return err
+	}
+
+	p.mReceivers = rs
+	p.mProcessors = prs
+	p.mExporters = es
+	return nil
+}
+
+func (p *Pipeline) rsFromComponent(coms []model.Component) ([]model.Receiver, error) {
+	res := make([]model.Receiver, 0, len(coms))
+	for _, com := range coms {
+		r, ok := com.(model.Receiver)
+		if !ok {
+			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.ComponentID(), com)
+		}
+		res = append(res, r)
+	}
+	return res, nil
+}
+func (p *Pipeline) prsFromComponent(coms []model.Component) ([]model.Processor, error) {
+	res := make([]model.Processor, 0, len(coms))
+	for _, com := range coms {
+		r, ok := com.(model.Processor)
+		if !ok {
+			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.ComponentID(), com)
+		}
+		res = append(res, r)
+	}
+	return res, nil
+}
+func (p *Pipeline) esFromComponent(coms []model.Component) ([]model.Exporter, error) {
+	res := make([]model.Exporter, 0, len(coms))
+	for _, com := range coms {
+		r, ok := com.(model.Exporter)
+		if !ok {
+			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.ComponentID(), com)
+		}
+		res = append(res, r)
+	}
+	return res, nil
+}
+
+func (p *Pipeline) StartStream(ctx context.Context) {
+	out := make(chan model.ObservableData)
+	in := make(chan model.ObservableData)
+	go p.StartExporters(ctx, out)
+
+	go p.startProcessors(ctx, in, out)
+
+	p.startReceivers(ctx, in)
+}
+
+func (p *Pipeline) StartExporters(ctx context.Context, out <-chan model.ObservableData) {
+	for {
+		select {
+		case data := <-out:
+			var wg sync.WaitGroup
+			wg.Add(len(p.mExporters))
+			for _, e := range p.mExporters {
+				go func(exp model.Exporter, od model.ObservableData) {
+					defer wg.Done()
+					err := exp.Export(od)
+					if err != nil {
+						p.Log.Errorf("Exporter<%s> export data error: %s", exp.ComponentID(), err)
+					}
+				}(e, data.Clone())
+			}
+			wg.Wait()
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (p *Pipeline) startProcessors(ctx context.Context, in <-chan model.ObservableData, out chan<- model.ObservableData) {
+	for {
+		select {
+		case data := <-in:
+			for _, pr := range p.mProcessors {
+				tmp, err := pr.Process(data)
+				if err != nil {
+					p.Log.Errorf("Processor<%s> process data error: %s", pr.ComponentID(), err)
+					continue
+				}
+				data = tmp
+			}
+			// wait forever
+			select {
+			case out <- data:
+			case <-ctx.Done():
+				return
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (p *Pipeline) startReceivers(ctx context.Context, in chan<- model.ObservableData) {
+	for _, r := range p.mReceivers {
+		consumer := func(ms model.ObservableData) {
+			select {
+			case in <- ms:
+			case <-ctx.Done():
+			}
+		}
+		r.RegisterConsumeFunc(consumer)
+	}
 }

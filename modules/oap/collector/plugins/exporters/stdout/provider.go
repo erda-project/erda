@@ -36,8 +36,8 @@ func (p *provider) Close() error {
 	return nil
 }
 
-func (p *provider) ExportMetrics(metrics model.Metrics) error {
-	buf, err := json.Marshal(&metrics)
+func (p *provider) Export(od model.ObservableData) error {
+	buf, err := json.Marshal(&od)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func init() {
 	servicehub.Register(providerName, &servicehub.Spec{
-		Services:    []string{},
+		Services: []string{
+			providerName,
+		},
 		Description: "here is description of erda.oap.collector.exporter.stdout",
 		ConfigFunc: func() interface{} {
 			return &config{}

@@ -20,36 +20,26 @@ type ExporterDescriber interface {
 	Close() error
 }
 
-type MetricExporter interface {
+type Exporter interface {
 	ExporterDescriber
-	ExportMetrics(metrics Metrics) error
+	Export(data ObservableData) error
 }
 
-type TraceExporter interface {
-	ExporterDescriber
-	ExportTraces(traces Traces) error
+type NoopExporter struct {
 }
 
-type LogExporter interface {
-	ExporterDescriber
-	ExportLogs(logs Logs) error
+func (n *NoopExporter) ComponentID() ComponentID {
+	return "NoopExporter"
 }
 
-type NoopMetricExporter struct {
-}
-
-func (n *NoopMetricExporter) ComponentID() ComponentID {
-	return "NoopMetricExporter"
-}
-
-func (n *NoopMetricExporter) Connect() error {
+func (n *NoopExporter) Connect() error {
 	return nil
 }
 
-func (n *NoopMetricExporter) Close() error {
+func (n *NoopExporter) Close() error {
 	return nil
 }
 
-func (n *NoopMetricExporter) ExportMetrics(ms Metrics) error {
+func (n *NoopExporter) Export(data ObservableData) error {
 	return nil
 }

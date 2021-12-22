@@ -28,26 +28,49 @@ const (
 	LogDataType    DataType = "log"
 )
 
-type ComponentID string
-
-type ObserveData interface {
+type ObservableData interface {
+	DataType() DataType
+	Clone() ObservableData
 }
 
-// data trunk of observability
 type Metrics struct {
-	Metrics []*mpb.Metric
+	Metrics []*mpb.Metric `json:"metrics"`
 }
 
-func (ms Metrics) Clone() Metrics {
-	data := make([]*mpb.Metric, len(ms.Metrics))
-	copy(data, ms.Metrics)
-	return Metrics{Metrics: data}
+func (m *Metrics) Clone() ObservableData {
+	data := make([]*mpb.Metric, len(m.Metrics))
+	copy(data, m.Metrics)
+	return &Metrics{Metrics: data}
+}
+
+func (m *Metrics) DataType() DataType {
+	return MetricDataType
 }
 
 type Traces struct {
-	Spans []*tpb.Span
+	Spans []*tpb.Span `json:"spans"`
+}
+
+func (t *Traces) DataType() DataType {
+	return TraceDataType
+}
+
+func (t *Traces) Clone() ObservableData {
+	data := make([]*tpb.Span, len(t.Spans))
+	copy(data, t.Spans)
+	return &Traces{Spans: data}
 }
 
 type Logs struct {
-	Logs []*lpb.Log
+	Logs []*lpb.Log `json:"logs"`
+}
+
+func (l *Logs) DataType() DataType {
+	return LogDataType
+}
+
+func (l *Logs) Clone() ObservableData {
+	data := make([]*lpb.Log, len(l.Logs))
+	copy(data, l.Logs)
+	return &Logs{Logs: data}
 }

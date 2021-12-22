@@ -12,4 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package collector
+package pipeline
+
+import (
+	"context"
+
+	"github.com/erda-project/erda/modules/oap/collector/core/model"
+)
+
+type Interface interface {
+	InitComponents(receivers, processors, exporters []model.Component) error
+	StartStream(ctx context.Context)
+}

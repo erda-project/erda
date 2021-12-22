@@ -14,28 +14,18 @@
 
 package model
 
-type MetricProcessor interface {
+type Processor interface {
 	Component
-	ProcessMetrics(metrics Metrics) (Metrics, error)
+	Process(data ObservableData) (ObservableData, error)
 }
 
-type TraceProcessor interface {
-	Component
-	ProcessTraces(spans Traces) (Traces, error)
+type NoopProcessor struct {
 }
 
-type LogProcessor interface {
-	Component
-	ProcessLogs(logs Logs) (Logs, error)
+func (n *NoopProcessor) ComponentID() ComponentID {
+	return "NoopProcessor"
 }
 
-type NoopMetricProcessor struct {
-}
-
-func (n *NoopMetricProcessor) ComponentID() ComponentID {
-	return "NoopMetricProcessor"
-}
-
-func (n *NoopMetricProcessor) ProcessMetrics(ms Metrics) (Metrics, error) {
-	return ms, nil
+func (n *NoopProcessor) Process(data ObservableData) (ObservableData, error) {
+	return data, nil
 }

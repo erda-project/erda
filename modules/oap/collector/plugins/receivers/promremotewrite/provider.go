@@ -40,14 +40,14 @@ type provider struct {
 	Router httpserver.Router `autowired:"http-router"`
 
 	label         string
-	consumerFuncs []model.MetricReceiverConsumeFunc
+	consumerFuncs []model.ObservableDataReceiverFunc
 	mu            sync.RWMutex
 }
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.label = ctx.Label()
-	p.consumerFuncs = make([]model.MetricReceiverConsumeFunc, 0)
+	p.consumerFuncs = make([]model.ObservableDataReceiverFunc, 0)
 	p.Router.POST("/api/v1/prometheus-remote-write", p.prwHandler)
 	return nil
 }
@@ -82,11 +82,11 @@ func (p *provider) prwHandler(req *http.Request, resp http.ResponseWriter) {
 	resp.WriteHeader(http.StatusNoContent)
 }
 
-func convertToMetrics(wr *prompb.WriteRequest) model.Metrics {
-	return model.Metrics{}
+func convertToMetrics(wr *prompb.WriteRequest) *model.Metrics {
+	return &model.Metrics{}
 }
 
-func (p *provider) RegisterConsumeFunc(consumer model.MetricReceiverConsumeFunc) {
+func (p *provider) RegisterConsumeFunc(consumer model.ObservableDataReceiverFunc) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.consumerFuncs = append(p.consumerFuncs, consumer)
@@ -98,7 +98,9 @@ func (p *provider) ComponentID() model.ComponentID {
 
 func init() {
 	servicehub.Register(providerName, &servicehub.Spec{
-		Services:    []string{},
+		Services: []string{
+			providerName,
+		},
 		Description: "here is description of prometheus-remote-write",
 		ConfigFunc: func() interface{} {
 			return &config{}

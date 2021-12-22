@@ -1,21 +1,27 @@
 package dummy
 
 import (
+	"context"
+	"encoding/json"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
 	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
+	tpb "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var providerName = plugins.WithPrefixReceiver("dummy")
 
 type config struct {
+	Rate         time.Duration `file:"rate" default:"10s"`
+	MetricSample string        `file:"metric_sample"`
+	TraceSample  string        `file:"trace_sample"`
+	LogSample    string        `file:"log_sample"`
 }
 
 // +provider
@@ -23,56 +29,73 @@ type provider struct {
 	Cfg *config
 	Log logs.Logger
 
-	label         string
-	consumerFuncs []model.MetricReceiverConsumeFunc
-	mu            sync.RWMutex
+	label        string
+	consumerFunc model.ObservableDataReceiverFunc
+}
+
+func (p *provider) RegisterConsumeFunc(consumer model.ObservableDataReceiverFunc) {
+	p.consumerFunc = consumer
 }
 
 func (p *provider) ComponentID() model.ComponentID {
 	return model.ComponentID(strings.Join([]string{providerName, p.label}, "@"))
 }
 
-func (p *provider) RegisterConsumeFunc(consumer model.MetricReceiverConsumeFunc) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.consumerFuncs = append(p.consumerFuncs, consumer)
-}
-
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.label = ctx.Label()
-	p.consumerFuncs = make([]model.MetricReceiverConsumeFunc, 0)
-	ticker := time.NewTicker(3 * time.Second)
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-			}
-
-			p.mu.RLock()
-			for _, fn := range p.consumerFuncs {
-				fn(model.Metrics{Metrics: []*mpb.Metric{
-					{
-						Name:         "mock-metric",
-						TimeUnixNano: uint64(time.Now().UnixNano()),
-						Attributes: map[string]string{
-							"cluster_name": "dev",
-						},
-						DataPoints: map[string]*structpb.Value{
-							"x": structpb.NewNumberValue(0.1),
-						},
-					},
-				}})
-			}
-			p.mu.RUnlock()
-		}
-	}()
+	p.Log.Infof("label: %s", ctx.Label())
 	return nil
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	if p.Cfg.MetricSample != "" {
+		chunk := make([]*mpb.Metric, 0)
+		err := json.Unmarshal([]byte(p.Cfg.MetricSample), &chunk)
+		if err != nil {
+			p.Log.Errorf("unmarshal MetricSample err: %s", err)
+		}
+		go p.dummy(ctx, &model.Metrics{Metrics: chunk})
+	}
+	if p.Cfg.TraceSample != "" {
+		chunk := make([]*tpb.Span, 0)
+		err := json.Unmarshal([]byte(p.Cfg.TraceSample), &chunk)
+		if err != nil {
+			p.Log.Errorf("unmarshal TraceSample err: %s", err)
+		}
+		go p.dummy(ctx, &model.Traces{Spans: chunk})
+	}
+	if p.Cfg.LogSample != "" {
+		chunk := make([]*lpb.Log, 0)
+		err := json.Unmarshal([]byte(p.Cfg.MetricSample), &chunk)
+		if err != nil {
+			p.Log.Errorf("unmarshal LogSample err: %s", err)
+		}
+		go p.dummy(ctx, &model.Logs{Logs: chunk})
+	}
+	return nil
+}
+
+func (p *provider) dummy(ctx context.Context, data model.ObservableData) {
+	ticker := time.NewTicker(p.Cfg.Rate)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			return
+		}
+		if p.consumerFunc != nil {
+			p.consumerFunc(data)
+		}
+	}
 }
 
 func init() {
 	servicehub.Register(providerName, &servicehub.Spec{
-		Services:    []string{},
+		Services: []string{
+			providerName,
+		},
 		Description: "dummy receiver for debug&test",
 		ConfigFunc: func() interface{} {
 			return &config{}

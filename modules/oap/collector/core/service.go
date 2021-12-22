@@ -17,26 +17,23 @@ package core
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/oap/collector/core/config"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/core/pipeline"
-	"github.com/erda-project/erda/modules/oap/collector/core/pipeline/metrics"
-	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
 
 type collector struct {
-	pipelines []pipeline.Pipeline
+	pipelines []*pipeline.Pipeline
 	Log       logs.Logger
 }
 
 func newCollector(ctx servicehub.Context, cfg *config.Config, log logs.Logger) (*collector, error) {
 	c := &collector{
 		Log:       log,
-		pipelines: make([]pipeline.Pipeline, 0),
+		pipelines: make([]*pipeline.Pipeline, 0),
 	}
 	for _, item := range cfg.Pipelines {
 		rs, err := findComponents(ctx, item.Receivers)
@@ -54,7 +51,7 @@ func newCollector(ctx servicehub.Context, cfg *config.Config, log logs.Logger) (
 
 		switch item.DataType {
 		case model.MetricDataType:
-			pipe := metrics.NewPipeline(log.Sub("MetricsPipeline"))
+			pipe := pipeline.NewPipeline(log.Sub("MetricsPipeline"))
 			err := pipe.InitComponents(rs, ps, es)
 			if err != nil {
 				return nil, fmt.Errorf("init components err: %w", err)
@@ -71,7 +68,7 @@ func newCollector(ctx servicehub.Context, cfg *config.Config, log logs.Logger) (
 
 func (c *collector) start(ctx context.Context) {
 	for _, pipe := range c.pipelines {
-		go func(pi pipeline.Pipeline) {
+		go func(pi *pipeline.Pipeline) {
 			pi.StartStream(ctx)
 		}(pipe)
 	}
@@ -80,15 +77,6 @@ func (c *collector) start(ctx context.Context) {
 func findComponents(ctx servicehub.Context, components []string) ([]model.Component, error) {
 	res := make([]model.Component, 0)
 	for _, item := range components {
-		switch {
-		case strings.HasPrefix(item, plugins.PrefixReceiver):
-			item = strings.TrimLeft(item, plugins.PrefixReceiver)
-		case strings.HasPrefix(item, plugins.PrefixProcessor):
-			item = strings.TrimLeft(item, plugins.PrefixProcessor)
-		case strings.HasPrefix(item, plugins.PrefixExporter):
-			item = strings.TrimLeft(item, plugins.PrefixExporter)
-		}
-
 		obj := ctx.Service(item)
 		if obj == nil {
 			return nil, fmt.Errorf("component %s not found", item)

@@ -18,28 +18,35 @@ type (
 	MetricReceiverConsumeFunc func(data Metrics)
 	TraceReceiverConsumeFunc  func(data Traces)
 	LogReceiverConsumeFunc    func(data Logs)
+
+	ObservableDataReceiverFunc func(data ObservableData)
 )
 
-type MetricReceiver interface {
+type Receiver interface {
 	Component
-	RegisterConsumeFunc(consumer MetricReceiverConsumeFunc)
+	RegisterConsumeFunc(consumer ObservableDataReceiverFunc)
 }
 
-type TraceReceiver interface {
-	Component
-	RegisterConsumeFunc(consumer TraceReceiverConsumeFunc)
+type NoopReceiver struct {
 }
 
-type LogReceiver interface {
-	Component
-	RegisterConsumeFunc(consumer LogReceiverConsumeFunc)
+func (n *NoopReceiver) ComponentID() ComponentID {
+	return "NoopReceiver"
 }
 
-type NoopMetricReceiver struct {
-}
+func (n *NoopReceiver) RegisterConsumeFunc(consumer ObservableDataReceiverFunc) {}
 
-func (n *NoopMetricReceiver) ComponentID() ComponentID {
-	return "NoopMetricReceiver"
-}
-
-func (n *NoopMetricReceiver) RegisterConsumeFunc(_ MetricReceiverConsumeFunc) {}
+// type MetricReceiver interface {
+// 	Component
+// 	RegisterConsumeFunc(consumer MetricReceiverConsumeFunc)
+// }
+//
+// type TraceReceiver interface {
+// 	Component
+// 	RegisterConsumeFunc(consumer TraceReceiverConsumeFunc)
+// }
+//
+// type LogReceiver interface {
+// 	Component
+// 	RegisterConsumeFunc(consumer LogReceiverConsumeFunc)
+// }

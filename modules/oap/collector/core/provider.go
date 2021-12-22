@@ -44,6 +44,12 @@ func init() {
 			return &provider{}
 		},
 		// receivers + processors + exporters
-		Dependencies: []string{},
+		Dependencies: []string{
+			// receivers
+			"erda.oap.collector.receiver.dummy",
+			// processors
+			// exporters
+			"erda.oap.collector.exporter.stdout",
+		},
 	})
 }

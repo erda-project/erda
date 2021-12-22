@@ -14,6 +14,8 @@
 
 package model
 
+type ComponentID string
+
 type Component interface {
 	ComponentID() ComponentID
 }

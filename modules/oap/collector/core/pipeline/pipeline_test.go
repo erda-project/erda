@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics
+package pipeline
 
 import (
 	"context"
@@ -31,10 +31,10 @@ func TestPipeline_StartStream(t *testing.T) {
 	pipe := NewPipeline(logrusx.New().Sub("collector"))
 
 	// invalid
-	assert.Error(t, pipe.InitComponents([]model.Component{&model.NoopMetricProcessor{}}, nil, nil))
+	assert.Error(t, pipe.InitComponents([]model.Component{&model.NoopProcessor{}}, nil, nil))
 
 	// normal
-	err := pipe.InitComponents([]model.Component{&model.NoopMetricReceiver{}}, []model.Component{&model.NoopMetricProcessor{}}, []model.Component{&model.NoopMetricExporter{}})
+	err := pipe.InitComponents([]model.Component{&model.NoopReceiver{}}, []model.Component{&model.NoopProcessor{}}, []model.Component{&model.NoopExporter{}})
 	assert.Nil(t, err)
 
 	pipe.StartStream(ctx)
