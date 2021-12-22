@@ -17,7 +17,6 @@ package pipelinesvc
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	v3 "github.com/coreos/etcd/clientv3"
@@ -435,23 +434,9 @@ func getTriggeredTime(p spec.Pipeline) time.Time {
 }
 
 func (s *PipelineSvc) createCronCompensatePipeline(pc spec.PipelineCron, triggerTime time.Time) (*spec.Pipeline, error) {
-	// cron
-	if pc.Extra.NormalLabels == nil {
-		pc.Extra.NormalLabels = make(map[string]string)
-	}
-	if pc.Extra.FilterLabels == nil {
-		pc.Extra.FilterLabels = make(map[string]string)
-	}
-	if _, ok := pc.Extra.FilterLabels[apistructs.LabelPipelineTriggerMode]; ok {
-		pc.Extra.FilterLabels[apistructs.LabelPipelineTriggerMode] = apistructs.PipelineTriggerModeCron.String()
-	}
-	pc.Extra.NormalLabels[apistructs.LabelPipelineTriggerMode] = apistructs.PipelineTriggerModeCron.String()
-	pc.Extra.NormalLabels[apistructs.LabelPipelineType] = apistructs.PipelineTypeNormal.String()
-	pc.Extra.NormalLabels[apistructs.LabelPipelineYmlSource] = apistructs.PipelineYmlSourceContent.String()
-	pc.Extra.NormalLabels[apistructs.LabelPipelineCronTriggerTime] = strconv.FormatInt(triggerTime.UnixNano(), 10)
-	pc.Extra.NormalLabels[apistructs.LabelPipelineCronID] = strconv.FormatUint(pc.ID, 10)
-
-	pc.Extra.FilterLabels[apistructs.LabelPipelineCronCompensated] = "true"
+	// generate new label map avoid concurrent map problem
+	pc.Extra.NormalLabels = pc.GenCompensateCreatePipelineReqNormalLabels(triggerTime)
+	pc.Extra.FilterLabels = pc.GenCompensateCreatePipelineReqFilterLabels()
 
 	return s.CreateV2(&apistructs.PipelineCreateRequestV2{
 		PipelineYml:            pc.Extra.PipelineYml,
