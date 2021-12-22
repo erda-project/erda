@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package top
+package service_list
 
 import (
 	"context"
@@ -20,7 +20,6 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
-	"time"
 
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -32,11 +31,13 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/math"
 	pkgtime "github.com/erda-project/erda/pkg/time"
 )
 
 type provider struct {
+	base.DefaultProvider
 	impl.DefaultTop
 	Log    logs.Logger
 	I18n   i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
@@ -48,7 +49,7 @@ const (
 	RpsMinTop5      string = "rpsMinTop5"
 	AvgDurationTop5 string = "avgDurationTop5"
 	ErrorRateTop5   string = "errorRateTop5"
-	Span            string = "6"
+	Span            string = "24"
 )
 
 // RegisterInitializeOp .
@@ -57,44 +58,47 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		data := topn.Data{}
 		lang := sdk.Lang
 		var records []topn.Record
-
-		d, _ := time.ParseDuration("-1h")
-		start := time.Now().Add(d).UnixNano() / 1e6
-		end := time.Now().UnixNano() / 1e6
 		tenantId := p.StdInParamsPtr.Get("tenantId")
+		start := int64(p.StdInParamsPtr.Get("startTime").(float64))
+		end := int64(p.StdInParamsPtr.Get("endTime").(float64))
 		ctx := context.Background()
 		interval := (end - start) / 1e3
-		rpsMaxTop5, err := p.rpsMaxTop5(interval, tenantId, start, end, ctx)
-		if err != nil {
-			p.Log.Error(err)
-		}
-		rpsMinTop5, err := p.rpsMinTop5(interval, tenantId, start, end, ctx)
-		if err != nil {
-			p.Log.Error(err)
-		}
-		avgDurationTop5, err := p.avgDurationTop5(interval, tenantId, start, end, ctx)
-		if err != nil {
-			p.Log.Error(err)
-		}
-		errorRateTop5, err := p.errorRateTop5(interval, tenantId, start, end, ctx)
-		if err != nil {
-			p.Log.Error(err)
-		}
-		rpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, RpsMaxTop5), Span: Span}
-		rpsMaxTop5Records.Items = rpsMaxTop5
-		records = append(records, rpsMaxTop5Records)
 
-		rpsMinTop5Records := topn.Record{Title: p.I18n.Text(lang, RpsMinTop5), Span: Span}
-		rpsMinTop5Records.Items = rpsMinTop5
-		records = append(records, rpsMinTop5Records)
+		switch sdk.Comp.Name {
+		case RpsMaxTop5:
+			rpsMaxTop5, err := p.rpsMaxTop5(interval, tenantId, start, end, ctx)
+			if err != nil {
+				p.Log.Error(err)
+			}
+			rpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, RpsMaxTop5), Span: Span}
+			rpsMaxTop5Records.Items = rpsMaxTop5
+			records = append(records, rpsMaxTop5Records)
+		case RpsMinTop5:
+			rpsMinTop5, err := p.rpsMinTop5(interval, tenantId, start, end, ctx)
+			if err != nil {
+				p.Log.Error(err)
+			}
+			rpsMinTop5Records := topn.Record{Title: p.I18n.Text(lang, RpsMinTop5), Span: Span}
+			rpsMinTop5Records.Items = rpsMinTop5
+			records = append(records, rpsMinTop5Records)
+		case AvgDurationTop5:
+			avgDurationTop5, err := p.avgDurationTop5(interval, tenantId, start, end, ctx)
+			if err != nil {
+				p.Log.Error(err)
+			}
+			avgDurationTop5Records := topn.Record{Title: p.I18n.Text(lang, AvgDurationTop5), Span: Span}
+			avgDurationTop5Records.Items = avgDurationTop5
+			records = append(records, avgDurationTop5Records)
+		case ErrorRateTop5:
+			errorRateTop5, err := p.errorRateTop5(interval, tenantId, start, end, ctx)
+			if err != nil {
+				p.Log.Error(err)
+			}
 
-		avgDurationTop5Records := topn.Record{Title: p.I18n.Text(lang, AvgDurationTop5), Span: Span}
-		avgDurationTop5Records.Items = avgDurationTop5
-		records = append(records, avgDurationTop5Records)
-
-		errorRateTop5Records := topn.Record{Title: p.I18n.Text(lang, ErrorRateTop5), Span: Span}
-		errorRateTop5Records.Items = errorRateTop5
-		records = append(records, errorRateTop5Records)
+			errorRateTop5Records := topn.Record{Title: p.I18n.Text(lang, ErrorRateTop5), Span: Span}
+			errorRateTop5Records.Items = errorRateTop5
+			records = append(records, errorRateTop5Records)
+		}
 
 		data.List = records
 		p.StdDataPtr = &data
@@ -103,7 +107,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 func (p *provider) errorRateTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(errors_sum::field)/sum(count_sum::field) " +
-		"FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service " +
+		"FROM application_http_service,application_rpc_service " +
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) " +
 		"GROUP BY target_service_id::tag ")
 	queryParams := map[string]*structpb.Value{
@@ -161,11 +165,11 @@ func (p *provider) errorRateTop5(interval int64, tenantId interface{}, start int
 }
 
 func (p *provider) avgDurationTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
-	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,avg(elapsed_sum::field) " +
-		"FROM application_http,application_rpc,application_db,application_cache,application_mq " +
+	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,avg(elapsed_mean::field) " +
+		"FROM application_http,application_rpc " +
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) " +
 		"GROUP BY target_service_id::tag " +
-		"ORDER BY avg(elapsed_sum::field) DESC " +
+		"ORDER BY avg(elapsed_mean::field) DESC " +
 		"LIMIT 5")
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(tenantId.(string)),
@@ -205,7 +209,7 @@ func (p *provider) avgDurationTop5(interval int64, tenantId interface{}, start i
 
 func (p *provider) rpsMinTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(elapsed_count::field)/%v "+
-		"FROM application_http,application_rpc,application_db,application_cache,application_mq "+
+		"FROM application_http,application_rpc "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"GROUP BY target_service_id::tag "+
 		"ORDER BY sum(elapsed_count::field) ASC "+
@@ -247,7 +251,7 @@ func (p *provider) rpsMinTop5(interval int64, tenantId interface{}, start int64,
 
 func (p *provider) rpsMaxTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
 	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(elapsed_count::field)/%v "+
-		"FROM application_http,application_rpc,application_db,application_cache,application_mq "+
+		"FROM application_http,application_rpc "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"GROUP BY target_service_id::tag "+
 		"ORDER BY sum(elapsed_count::field) DESC "+
@@ -292,12 +296,15 @@ func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return p.RegisterInitializeOp()
 }
 
-// Init .
+func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
+	return p
+}
+
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.DefaultTop = impl.DefaultTop{}
 	v := reflect.ValueOf(p)
 	v.Elem().FieldByName("Impl").Set(v)
-	compName := "topN"
+	compName := "service-list"
 	if ctx.Label() != "" {
 		compName = ctx.Label()
 	}
@@ -309,13 +316,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-// Provide .
-func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	return p
-}
-
 func init() {
-	servicehub.Register("component-protocol.components.topn.service-list", &servicehub.Spec{
+	servicehub.Register("component-protocol.components.service-list", &servicehub.Spec{
 		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

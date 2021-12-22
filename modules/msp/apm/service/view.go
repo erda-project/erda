@@ -41,6 +41,38 @@ func Selector(viewType string, config *config, baseChart *chart.BaseChart, ctx c
 			return nil, err
 		}
 		return serviceCharts, nil
+	case strings.ToLower(pb.ViewType_RPS_Chart.String()):
+		view := GetView(config, strings.ToLower(pb.ViewType_RPS_Chart.String()))
+		serviceCharts := make([]*pb.ServiceChart, 0, 4)
+		err := getViewData(view.Charts, baseChart, ctx, &serviceCharts)
+		if err != nil {
+			return nil, err
+		}
+		return serviceCharts, nil
+	case strings.ToLower(pb.ViewType_Avg_Duration_Chart.String()):
+		view := GetView(config, strings.ToLower(pb.ViewType_Avg_Duration_Chart.String()))
+		serviceCharts := make([]*pb.ServiceChart, 0, 4)
+		err := getViewData(view.Charts, baseChart, ctx, &serviceCharts)
+		if err != nil {
+			return nil, err
+		}
+		return serviceCharts, nil
+	case strings.ToLower(pb.ViewType_Error_Rate_Chart.String()):
+		view := GetView(config, strings.ToLower(pb.ViewType_Error_Rate_Chart.String()))
+		serviceCharts := make([]*pb.ServiceChart, 0, 4)
+		err := getViewData(view.Charts, baseChart, ctx, &serviceCharts)
+		if err != nil {
+			return nil, err
+		}
+		return serviceCharts, nil
+	case strings.ToLower(pb.ViewType_Http_Code_Chart.String()):
+		view := GetView(config, strings.ToLower(pb.ViewType_Http_Code_Chart.String()))
+		serviceCharts := make([]*pb.ServiceChart, 0, 4)
+		err := getViewData(view.Charts, baseChart, ctx, &serviceCharts)
+		if err != nil {
+			return nil, err
+		}
+		return serviceCharts, nil
 	default:
 		return nil, nil
 	}

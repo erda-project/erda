@@ -1,8 +1,47 @@
 scenario: service-overview
 
 hierarchy:
-  root: topN
-
+  root: page
+  structure:
+    grid:
+    - service-overview@pathRpsMaxTop5
+    - service-overview@pathSlowTop5
+    - service-overview@pathErrorRateTop5
+    - service-overview@pathClientRpsMaxTop5
+    - service-overview@sqlSlowTop5
+    - service-overview@exceptionCountTop5
+    page:
+    - grid
 components:
-  topN:
+  page:
+    type: CardContainer
+    option:
+      asyncAtInit: true
+  grid:
+    type: Grid
+    option:
+      asyncAtInit: true
+  service-overview@pathRpsMaxTop5:
     type: TopN
+    option:
+      asyncAtInit: true
+  service-overview@pathSlowTop5:
+    type: TopN
+    option:
+      asyncAtInit: true
+  service-overview@pathErrorRateTop5:
+    type: TopN
+    option:
+      asyncAtInit: true
+  service-overview@pathClientRpsMaxTop5:
+    type: TopN
+    option:
+      asyncAtInit: true
+  service-overview@sqlSlowTop5:
+    type: TopN
+    option:
+      asyncAtInit: true
+  service-overview@exceptionCountTop5:
+    type: TopN
+    option:
+      asyncAtInit: true

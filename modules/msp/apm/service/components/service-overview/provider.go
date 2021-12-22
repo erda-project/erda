@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package top
+package service_overview
 
 import (
 	"context"
@@ -49,7 +49,7 @@ const (
 	SqlSlowTop5          string = "sqlSlowTop5"
 	ExceptionCountTop5   string = "exceptionCountTop5"
 	PathErrorRateTop5    string = "pathErrorRateTop5"
-	Span                 string = "8"
+	Span                 string = "24"
 )
 
 // RegisterInitializeOp .
@@ -65,59 +65,56 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		ctx := context.Background()
 		interval := (endTime - startTime) / 1e3
 
-		pathRpsMaxTop5, err := p.pathRpsMaxTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
-		if err != nil {
-			p.Log.Error(err)
+		switch sdk.Comp.Name {
+		case PathRpsMaxTop5:
+			pathRpsMaxTop5, err := p.pathRpsMaxTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
+			if err != nil {
+				p.Log.Error(err)
+			}
+			pathRpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, PathRpsMaxTop5), Span: Span}
+			pathRpsMaxTop5Records.Items = pathRpsMaxTop5
+			records = append(records, pathRpsMaxTop5Records)
+		case PathSlowTop5:
+			pathSlowTop5, err := p.pathSlowTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
+			if err != nil {
+				p.Log.Error(err)
+			}
+			pathSlowTop5Records := topn.Record{Title: p.I18n.Text(lang, PathSlowTop5), Span: Span}
+			pathSlowTop5Records.Items = pathSlowTop5
+			records = append(records, pathSlowTop5Records)
+		case PathErrorRateTop5:
+			pathErrorRateTop5, err := p.pathErrorRateTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
+			if err != nil {
+				p.Log.Error(err)
+			}
+			pathErrorRateTop5Records := topn.Record{Title: p.I18n.Text(lang, PathErrorRateTop5), Span: Span}
+			pathErrorRateTop5Records.Items = pathErrorRateTop5
+			records = append(records, pathErrorRateTop5Records)
+		case PathClientRpsMaxTop5:
+			pathClientRpsMaxTop5, err := p.pathClientRpsMaxTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
+			if err != nil {
+				p.Log.Error(err)
+			}
+			pathClientRpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, PathClientRpsMaxTop5), Span: Span}
+			pathClientRpsMaxTop5Records.Items = pathClientRpsMaxTop5
+			records = append(records, pathClientRpsMaxTop5Records)
+		case SqlSlowTop5:
+			sqlSlowRpsMaxTop5, err := p.sqlSlowTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
+			if err != nil {
+				p.Log.Error(err)
+			}
+			sqlSlowTop5Records := topn.Record{Title: p.I18n.Text(lang, SqlSlowTop5), Span: Span}
+			sqlSlowTop5Records.Items = sqlSlowRpsMaxTop5
+			records = append(records, sqlSlowTop5Records)
+		case ExceptionCountTop5:
+			exceptionCountTop5, err := p.exceptionCountTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
+			if err != nil {
+				p.Log.Error(err)
+			}
+			exceptionCountTop5Records := topn.Record{Title: p.I18n.Text(lang, ExceptionCountTop5), Span: Span}
+			exceptionCountTop5Records.Items = exceptionCountTop5
+			records = append(records, exceptionCountTop5Records)
 		}
-
-		pathSlowTop5, err := p.pathSlowTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
-		if err != nil {
-			p.Log.Error(err)
-		}
-
-		pathErrorRateTop5, err := p.pathErrorRateTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
-		if err != nil {
-			p.Log.Error(err)
-		}
-
-		pathClientRpsMaxTop5, err := p.pathClientRpsMaxTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
-		if err != nil {
-			p.Log.Error(err)
-		}
-
-		sqlSlowRpsMaxTop5, err := p.sqlSlowTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
-		if err != nil {
-			p.Log.Error(err)
-		}
-
-		exceptionCountTop5, err := p.exceptionCountTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
-		if err != nil {
-			p.Log.Error(err)
-		}
-
-		pathRpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, PathRpsMaxTop5), Span: Span}
-		pathRpsMaxTop5Records.Items = pathRpsMaxTop5
-		records = append(records, pathRpsMaxTop5Records)
-
-		pathSlowTop5Records := topn.Record{Title: p.I18n.Text(lang, PathSlowTop5), Span: Span}
-		pathSlowTop5Records.Items = pathSlowTop5
-		records = append(records, pathSlowTop5Records)
-
-		pathErrorRateTop5Records := topn.Record{Title: p.I18n.Text(lang, PathErrorRateTop5), Span: Span}
-		pathErrorRateTop5Records.Items = pathErrorRateTop5
-		records = append(records, pathErrorRateTop5Records)
-
-		pathClientRpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, PathClientRpsMaxTop5), Span: Span}
-		pathClientRpsMaxTop5Records.Items = pathClientRpsMaxTop5
-		records = append(records, pathClientRpsMaxTop5Records)
-
-		sqlSlowTop5Records := topn.Record{Title: p.I18n.Text(lang, SqlSlowTop5), Span: Span}
-		sqlSlowTop5Records.Items = sqlSlowRpsMaxTop5
-		records = append(records, sqlSlowTop5Records)
-
-		exceptionCountTop5Records := topn.Record{Title: p.I18n.Text(lang, ExceptionCountTop5), Span: Span}
-		exceptionCountTop5Records.Items = exceptionCountTop5
-		records = append(records, exceptionCountTop5Records)
 
 		data.List = records
 		p.StdDataPtr = &data
@@ -419,7 +416,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.DefaultTop = impl.DefaultTop{}
 	v := reflect.ValueOf(p)
 	v.Elem().FieldByName("Impl").Set(v)
-	compName := "topN"
+	compName := "service-overview"
 	if ctx.Label() != "" {
 		compName = ctx.Label()
 	}
@@ -437,7 +434,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("component-protocol.components.topn.service-overview", &servicehub.Spec{
+	servicehub.Register("component-protocol.components.service-overview", &servicehub.Spec{
 		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }
