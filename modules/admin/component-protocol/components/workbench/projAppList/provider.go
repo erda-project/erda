@@ -58,6 +58,10 @@ func (l *ProjAppList) Finalize(sdk *cptype.SDK) {}
 func (l *ProjAppList) BeforeHandleOp(sdk *cptype.SDK) {
 	l.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	l.wbSvc = sdk.Ctx.Value(types.WorkbenchSvc).(*workbench.Workbench)
+	l.identity = apistructs.Identity{
+		UserID: sdk.Identity.UserID,
+		OrgID:  sdk.Identity.OrgID,
+	}
 }
 
 func (l *ProjAppList) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
