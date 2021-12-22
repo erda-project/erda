@@ -23,6 +23,21 @@ type WorkbenchRequest struct {
 	IssuePagingRequest
 }
 
+type WorkbenchItemType string
+
+const (
+	WorkbenchItemProj WorkbenchItemType = "project"
+	WorkbenchItemApp  WorkbenchItemType = "app"
+)
+
+type WorkbenchProjAppRequest struct {
+	// e.g: project/app
+	Type WorkbenchItemType `json:"type"`
+	// e.g query string
+	Query string `json:"query"`
+	PageRequest
+}
+
 type WorkbenchProjOverviewResp struct {
 	Header
 	Data WorkbenchProjOverviewRespData `json:"data"`
