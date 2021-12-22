@@ -17,8 +17,10 @@ package bundle
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"github.com/erda-project/erda-proto-go/msp/tenant/pb"
+	projpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/discover"
@@ -165,4 +167,42 @@ func (b *Bundle) CreateMSPTenant(projectID, workspace, tenantType, tenantGroup s
 		return tenantGroup, nil
 	}
 	return resp.Data[0].Id, nil
+}
+
+func (b *Bundle) GetMSPTenantProjects(userID, orgID string, withStats bool, projectIds []uint64) ([]*projpb.Project, error) {
+	host := discover.MSP()
+	hc := b.hc
+
+	type GetTenantProjectsResponse struct {
+		apistructs.Header
+		projpb.GetProjectsResponse
+	}
+
+	pidList := make([]string, len(projectIds))
+	for _, p := range projectIds {
+		pidList = append(pidList, strconv.Itoa(int(p)))
+	}
+
+	var resp GetTenantProjectsResponse
+	r, err := hc.Get(host).
+		Path("/api/msp/tenant/projects").
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		Header(httputil.OrgHeader, orgID).
+		Param("withStats", strconv.FormatBool(withStats)).
+		Params(map[string][]string{"projectId": pidList}).
+		Do().
+		JSON(&resp)
+
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() || !resp.Success {
+		return nil, toAPIError(r.StatusCode(), resp.Error)
+	}
+	if len(resp.Data) <= 0 {
+		// history project
+		return nil, nil
+	}
+	return resp.Data, nil
 }

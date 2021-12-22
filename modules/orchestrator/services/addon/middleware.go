@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mcuadros/go-version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -86,7 +87,7 @@ func (a *Addon) ListMiddleware(orgID uint64, params *apistructs.MiddlewareListRe
 }
 
 func isOperatorAddon(addon dbclient.AddonInstance) bool {
-	if addon.AddonName == "terminus-elasticsearch" && addon.Version == "6.8.9" {
+	if addon.AddonName == "terminus-elasticsearch" && version.Compare(addon.Version, "6.8.9", ">=") {
 		return true
 	}
 	return false
