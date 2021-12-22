@@ -1619,7 +1619,7 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 		projectIDs = append(projectIDs, i)
 	}
 
-	pMap, err := svc.bdl.GetProjectsMap(projectIDs)
+	pMap, err := svc.bdl.GetProjectsMap(apistructs.GetModelProjectsMapRequest{ProjectIDs: projectIDs})
 	if err != nil {
 		return nil, 0, err
 	}

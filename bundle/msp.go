@@ -197,7 +197,7 @@ func (b *Bundle) GetMSPTenantProjects(userID, orgID string, withStats bool, proj
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
-	if !r.IsOK() || !resp.Success {
+	if !r.IsOK() {
 		return nil, toAPIError(r.StatusCode(), resp.Error)
 	}
 	if len(resp.Data) <= 0 {

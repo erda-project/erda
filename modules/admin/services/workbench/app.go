@@ -101,11 +101,13 @@ func (w *Workbench) ListAppWbData(identity apistructs.Identity, req apistructs.A
 }
 
 func (w *Workbench) ListSubAppWbData(identity apistructs.Identity, limit int) (*apistructs.AppWorkbenchResponseData, error) {
+	var (
+		idList []uint64
+	)
 	subList, err := w.bdl.ListSubscribes(identity.UserID, identity.OrgID, apistructs.GetSubscribeReq{Type: apistructs.AppSubscribe})
 	if err != nil {
 		return nil, err
 	}
-	idList := make([]uint64, len(subList.List))
 	for _, v := range subList.List {
 		idList = append(idList, v.TypeID)
 	}

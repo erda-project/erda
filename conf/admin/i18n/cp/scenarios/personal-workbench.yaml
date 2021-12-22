@@ -1,0 +1,20 @@
+zh:
+  Count: 数
+  project: 项目
+  app: 应用
+  star application: 星标应用
+  star project: 星标项目
+  expired: 已过期
+  today expire: 今日过期
+  service count: 服务数
+  last 24 hour alarm count: 24小时告警数
+  project manage: 项目管理
+  app develop: 应用开发
+  test manage: 测试管理
+  service monitor: 服务观测
+  project setting: 项目设置
+  code repository: 代码仓库
+  pipeline: 流水线
+  api design: api设计
+  deploy center: 部署中心
+

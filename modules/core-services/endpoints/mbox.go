@@ -32,16 +32,15 @@ func (e *Endpoints) QueryMBox(ctx context.Context, r *http.Request, vars map[str
 	if err != nil {
 		return apierrors.ErrQueryMBox.MissingParameter("Org-ID header is nil").ToResp(), nil
 	}
-	pageNo := getInt(r.URL, "pageNo", 1)
-	pageSize := getInt(r.URL, "pageSize", 10)
-	queryReq := &apistructs.QueryMBoxRequest{
-		PageSize: pageSize,
-		PageNo:   pageNo,
-		Label:    r.URL.Query().Get("label"),
-		UserID:   r.Header.Get("User-ID"),
-		OrgID:    orgID,
+
+	queryReq := apistructs.QueryMBoxRequest{}
+	if err := e.queryStringDecoder.Decode(&queryReq, r.URL.Query()); err != nil {
+		return apierrors.ErrPagingIssues.InvalidParameter(err).ToResp(), nil
 	}
-	result, err := e.mbox.QueryMBox(queryReq)
+	queryReq.UserID = r.Header.Get("User-ID")
+	queryReq.OrgID = orgID
+
+	result, err := e.mbox.QueryMBox(&queryReq)
 	if err != nil {
 		return apierrors.ErrQueryMBox.InternalError(err).ToResp(), nil
 	}

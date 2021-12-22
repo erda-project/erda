@@ -24,6 +24,13 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
+type UrlParams struct {
+	Env         string `json:"env"`
+	AddonId     string `json:"addonId"`
+	TerminusKey string `json:"terminusKey"`
+	TenantGroup string `json:"tenantGroup"`
+}
+
 func (w *Workbench) GetProjNum(identity apistructs.Identity, query string) (int, error) {
 	orgID, err := strconv.Atoi(identity.OrgID)
 	if err != nil {
@@ -46,17 +53,18 @@ func (w *Workbench) GetProjNum(identity apistructs.Identity, query string) (int,
 }
 
 func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, projects []apistructs.ProjectDTO) ([]apistructs.WorkbenchProjOverviewItem, error) {
-
+	var (
+		list    []apistructs.WorkbenchProjOverviewItem
+		pidList []uint64
+	)
 	issueMapInfo := make(map[uint64]*apistructs.WorkbenchProjectItem)
 	staMapInfo := make(map[uint64]*projpb.Project)
-	list := make([]apistructs.WorkbenchProjOverviewItem, len(projects))
 
 	orgID, err := strconv.Atoi(identity.OrgID)
 	if err != nil {
 		return nil, err
 	}
 
-	pidList := make([]uint64, len(projects))
 	for _, p := range projects {
 		pidList = append(pidList, p.ID)
 	}
@@ -129,16 +137,19 @@ func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, project
 }
 
 func (w *Workbench) ListSubProjWbData(identity apistructs.Identity) (*apistructs.WorkbenchProjOverviewRespData, error) {
-	var projects []apistructs.ProjectDTO
+	var (
+		projects []apistructs.ProjectDTO
+		pidList  []uint64
+	)
+
 	subList, err := w.bdl.ListSubscribes(identity.UserID, identity.OrgID, apistructs.GetSubscribeReq{Type: apistructs.ProjectSubscribe})
 	if err != nil {
 		return nil, err
 	}
-	pidList := make([]uint64, len(subList.List))
 	for _, v := range subList.List {
 		pidList = append(pidList, v.TypeID)
 	}
-	rsp, err := w.bdl.GetProjectsMap(pidList)
+	rsp, err := w.bdl.GetProjectsMap(apistructs.GetModelProjectsMapRequest{ProjectIDs: pidList, KeepMsp: true})
 	if err != nil {
 		logrus.Errorf("get projects failed, error: %v", err)
 		return nil, err
@@ -166,8 +177,8 @@ func (w *Workbench) ListQueryProjWbData(identity apistructs.Identity, page apist
 	}
 	req := apistructs.ProjectListRequest{
 		OrgID:    uint64(orgID),
-		PageNo:   page.PageNo,
-		PageSize: page.PageSize,
+		PageNo:   int(page.PageNo),
+		PageSize: int(page.PageSize),
 		Query:    query,
 	}
 	projectDTO, err := w.bdl.ListMyProject(identity.UserID, req)
@@ -188,4 +199,38 @@ func (w *Workbench) ListQueryProjWbData(identity apistructs.Identity, page apist
 		Total: projectDTO.Total,
 		List:  list,
 	}, nil
+}
+
+// GetUrlCommonParams get url params used by icon
+func (w *Workbench) GetUrlCommonParams(userID, orgID string, projectIDs []uint64) (urlParams []UrlParams, err error) {
+	urlParams = make([]UrlParams, len(projectIDs))
+	projectDTO, err := w.bdl.GetMSPTenantProjects(userID, orgID, false, projectIDs)
+	if err != nil {
+		logrus.Errorf("failed to get msp tenant project , err: %v", err)
+		return
+	}
+	for i, project := range projectDTO {
+		var menues []*apistructs.MenuItem
+		urlParams[i].Env = project.Relationship[len(project.Relationship)-1].Workspace
+		tenantId := project.Relationship[len(project.Relationship)-1].TenantID
+		urlParams[i].TenantGroup = tenantId
+		urlParams[i].AddonId = tenantId
+		pType := project.Type
+		if pType == "DOP" {
+			continue
+		}
+		menues, err = w.bdl.ListProjectsEnvAndTenantId(userID, orgID, tenantId, pType)
+		if err != nil {
+			logrus.Errorf("failed to get env and tenant id ,err: %v", err)
+			continue
+		}
+		urlParams[i].Env = project.Relationship[len(project.Relationship)-1].Workspace
+		if tg, ok := menues[i].Params["tenantGroup"]; ok {
+			urlParams[i].TenantGroup = tg
+		}
+		if tk, ok := menues[i].Params["terminusKey"]; ok {
+			urlParams[i].TenantGroup = tk
+		}
+	}
+	return
 }
