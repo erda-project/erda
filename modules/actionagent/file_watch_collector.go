@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -42,6 +43,7 @@ func tailHandlerForPushCollectorLog(line string, stream string, existLogLines *[
 		Stream:    &stream,
 		Timestamp: time.Now().UnixNano(),
 		Content:   line,
+		Tags:      map[string]string{TagDiceOrgID: os.Getenv(EnvDiceOrgID), TagDiceOrgName: os.Getenv(EnvDiceOrgName)},
 	})
 }
 

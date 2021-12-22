@@ -220,6 +220,11 @@ const (
 	EnvEnablePushLog2Collector = "ACTIONAGENT_ENABLE_PUSH_LOG_TO_COLLECTOR"
 	EnvCollectorAddr           = "COLLECTOR_ADDR"
 	EnvTaskLogID               = "TERMINUS_DEFINE_TAG"
+	EnvDiceOrgID               = "DICE_ORG_ID"
+	EnvDiceOrgName             = "DICE_ORG_NAME"
+
+	TagDiceOrgName = "dice_org_name"
+	TagDiceOrgID   = "dice_org_id"
 )
 
 // configCollector config collector about
