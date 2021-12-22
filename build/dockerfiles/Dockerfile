@@ -5,7 +5,9 @@ FROM ${BASE_DOCKER_IMAGE} as build
 RUN mkdir -p "$GOPATH/src/github.com/erda-project/erda/"
 COPY . "$GOPATH/src/github.com/erda-project/erda/"
 WORKDIR "$GOPATH/src/github.com/erda-project/erda/"
-RUN mv extensions /tmp/dicehub-extension
+RUN mkdir /tmp/dicehub-extension
+RUN if [ -d "extensions" ] ; then mv extensions /tmp/dicehub-extension ; fi
+
 
 ARG MODULE_PATH
 
