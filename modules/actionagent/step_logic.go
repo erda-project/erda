@@ -26,10 +26,11 @@ import (
 func (agent *Agent) logic() {
 	// defer write flag end line for tail
 	defer func() {
-		if _, err := fmt.Fprintln(agent.EasyUse.RunMultiStdout, agent.EasyUse.FlagEndLineForTail); err != nil {
+		// use format: \n%s\n (first \n for force-new-line, last \n for line done)
+		if _, err := fmt.Fprintf(agent.EasyUse.RunMultiStdout, "\n%s\n", agent.EasyUse.FlagEndLineForTail); err != nil {
 			logrus.Println("stdout append flag err:", err)
 		}
-		if _, err := fmt.Fprintln(agent.EasyUse.RunMultiStderr, agent.EasyUse.FlagEndLineForTail); err != nil {
+		if _, err := fmt.Fprintf(agent.EasyUse.RunMultiStderr, "\n%s\n", agent.EasyUse.FlagEndLineForTail); err != nil {
 			logrus.Println("stderr append flag err:", err)
 		}
 	}()
