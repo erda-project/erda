@@ -139,17 +139,17 @@ func (db *NotifyChannelDB) UpdateById(notifyChannel *model.NotifyChannel) (*mode
 }
 
 func (db *NotifyChannelDB) SwitchEnable(currentNotifyChannel, switchNotifyChannel *model.NotifyChannel) error {
-	tx := db.Begin()
+	tx := db.db().Begin()
 	currentNotifyChannel.IsEnabled = true
 	currentNotifyChannel.UpdatedAt = time.Now()
 	switchNotifyChannel.IsEnabled = false
 	switchNotifyChannel.UpdatedAt = time.Now()
-	err := db.db().Model(currentNotifyChannel).Save(currentNotifyChannel).Error
+	err := tx.Model(currentNotifyChannel).Save(currentNotifyChannel).Error
 	if err != nil {
 		tx.Rollback()
 		return errors.NewDatabaseError(err)
 	}
-	err = db.db().Model(switchNotifyChannel).Save(switchNotifyChannel).Error
+	err = tx.Model(switchNotifyChannel).Save(switchNotifyChannel).Error
 	if err != nil {
 		tx.Rollback()
 		return errors.NewDatabaseError(err)
