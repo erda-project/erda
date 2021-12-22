@@ -19,6 +19,7 @@ import (
 	"math"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/core/monitor/log/storage"
@@ -192,6 +193,104 @@ func Test_getIterator(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getIterator() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_splitSelectors(t *testing.T) {
+	start := int64(0)
+	end := time.Date(2022, 1, 1, 1, 1, 1, 1, time.Local).UnixNano()
+	sel := &storage.Selector{
+		Start: start,
+		End:   end,
+	}
+
+	tests := []struct {
+		name      string
+		sel       *storage.Selector
+		interval  time.Duration
+		maxSlices int
+		want      []*storage.Selector
+		wantErr   bool
+	}{
+		{
+			sel:       sel,
+			interval:  time.Hour,
+			maxSlices: 0,
+			want: []*storage.Selector{
+				{
+					Start: 0,
+					End:   end,
+				},
+			},
+		},
+		{
+			sel:       sel,
+			interval:  time.Hour,
+			maxSlices: 1,
+			want: []*storage.Selector{
+				{
+					Start: 0,
+					End:   end,
+				},
+			},
+		},
+		{
+			sel:       sel,
+			interval:  time.Hour,
+			maxSlices: 2,
+			want: []*storage.Selector{
+				{
+					Start: 0,
+					End:   end - int64(time.Hour),
+				},
+				{
+					Start: end - int64(time.Hour),
+					End:   end,
+				},
+			},
+		},
+		{
+			sel: &storage.Selector{
+				Start: end - int64(24*time.Hour),
+				End:   end,
+			},
+			interval:  time.Hour * 24 * 365,
+			maxSlices: 10,
+			want: []*storage.Selector{
+				{
+					Start: end - int64(24*time.Hour),
+					End:   end,
+				},
+			},
+		},
+		{
+			sel: &storage.Selector{
+				Start: end - int64(24*time.Hour),
+				End:   end,
+			},
+			interval:  time.Hour * 12,
+			maxSlices: 25,
+			want: []*storage.Selector{
+				{
+					Start: end - int64(24*time.Hour),
+					End:   end - int64(12*time.Hour),
+				},
+				{
+					Start: end - int64(12*time.Hour),
+					End:   end,
+				},
+			},
+		},
+	}
+
+	s := &logQueryService{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := s.splitSelectors(tt.sel, tt.interval, tt.maxSlices)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("splitSelectors() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}

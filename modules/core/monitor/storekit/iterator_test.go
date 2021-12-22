@@ -481,6 +481,162 @@ func TestMergedHeadOverlappedIterator_Total(t *testing.T) {
 	}
 }
 
+func TestOrderedIterator_Next(t *testing.T) {
+	tests := []struct {
+		name    string
+		its     []Iterator
+		want    []Data
+		wantErr bool
+	}{
+		{
+			its:  []Iterator{},
+			want: nil,
+		},
+		{
+			its: []Iterator{
+				NewListIterator(), NewListIterator(),
+			},
+			want: nil,
+		},
+		{
+			its: []Iterator{
+				NewListIterator(),
+				NewListIterator(1, 2, 3),
+				NewListIterator(),
+				NewListIterator(7, 8, 9),
+			},
+			want: []Data{
+				1, 2, 3,
+				7, 8, 9,
+			},
+		},
+		{
+			its: []Iterator{
+				NewListIterator(1, 2, 3),
+				NewListIterator(4, 5, 6),
+				NewListIterator(7, 8, 9),
+			},
+			want: []Data{
+				1, 2, 3,
+				4, 5, 6,
+				7, 8, 9,
+			},
+		},
+		{
+			its: []Iterator{
+				NewListIterator(1, 2, 3),
+			},
+			want: []Data{1, 2, 3},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			it := OrderedIterator(tt.its...)
+			var result []Data
+			for it.Next() {
+				result = append(result, it.Value())
+			}
+			if tt.wantErr && it.Error() == nil {
+				t.Errorf("OrderedIterator().Next() want error, but it successful")
+			} else if !tt.wantErr && it.Error() != nil {
+				t.Errorf("OrderedIterator().Next() got error: %v", it.Error())
+			} else if !reflect.DeepEqual(result, tt.want) {
+				t.Errorf("OrderedIterator().Next() got %v, want %v", result, tt.want)
+			}
+		})
+	}
+}
+
+func TestOrderedIterator_Prev(t *testing.T) {
+	tests := []struct {
+		name    string
+		its     []Iterator
+		want    []Data
+		wantErr bool
+	}{
+		{
+			its:  []Iterator{},
+			want: nil,
+		},
+		{
+			its: []Iterator{
+				NewListIterator(), NewListIterator(),
+			},
+			want: nil,
+		},
+		{
+			its: []Iterator{
+				NewListIterator(6, 7, 8),
+				NewListIterator(4, 5, 6),
+				NewListIterator(1, 2, 3),
+			},
+			want: []Data{
+				3, 2, 1,
+				6, 5, 4,
+				8, 7, 6,
+			},
+		},
+		{
+			its: []Iterator{
+				NewListIterator(),
+				NewListIterator(6, 7, 8),
+				NewListIterator(),
+				NewListIterator(4, 5, 6),
+				NewListIterator(1, 2, 3),
+			},
+			want: []Data{
+				3, 2, 1,
+				6, 5, 4,
+				8, 7, 6,
+			},
+		},
+		{
+			its: []Iterator{
+				NewListIterator(6, 7, 8),
+				NewListIterator(4, 6, 6),
+				NewListIterator(2, 3),
+			},
+			want: []Data{
+				3, 2,
+				6, 6, 4,
+				8, 7, 6,
+			},
+		},
+		{
+			its: []Iterator{
+				NewListIterator(1, 2, 3),
+			},
+			want: []Data{3, 2, 1},
+		},
+		{
+			its: []Iterator{
+				NewListIterator(6, 7, 8),
+				NewListIterator(4, 6, 6),
+			},
+			want: []Data{
+				6, 6, 4,
+				8, 7, 6,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			it := OrderedIterator(tt.its...)
+			var result []Data
+			for it.Prev() {
+				result = append(result, it.Value())
+			}
+			if tt.wantErr && it.Error() == nil {
+				t.Errorf("OrderedIterator().Prev() want error, but it successful")
+			} else if !tt.wantErr && it.Error() != nil {
+				t.Errorf("OrderedIterator().Prev() got error: %v", it.Error())
+			} else if !reflect.DeepEqual(result, tt.want) {
+				t.Errorf("OrderedIterator().Prev() got %v, want %v", result, tt.want)
+			}
+		})
+	}
+}
+
 // MockIterator .
 type MockIterator struct {
 	returnError error
