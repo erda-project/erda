@@ -161,10 +161,11 @@ func (s *apmServiceService) aggregateMetric(serviceStatus, tenantId string, serv
 	}
 	includeIds = includeIds[:len(includeIds)-1]
 
-	statement := fmt.Sprintf("SELECT target_service_id::tag,sum(count_sum::field)/(60*60),sum(elapsed_sum::field)/sum(count_sum::field),sum(errors_sum::field)/sum(count_sum::field)"+
-		"FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service "+
+	statement := fmt.Sprintf("SELECT target_service_id::tag,sum(elapsed_count::field)/(60*60),avg(elapsed_mean::field),sum(if(eq(error::tag, 'true'),elapsed_count::field,0))/sum(elapsed_count::field) "+
+		"FROM application_http,application_rpc "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
-		"AND include(target_service_id::tag, %s) GROUP BY target_service_id::tag", includeIds)
+		"AND include(target_service_id::tag, %s) "+
+		"GROUP BY target_service_id::tag", includeIds)
 	condition := " terminus_key::tag=$terminus_key "
 
 	queryParams := map[string]*structpb.Value{

@@ -33,8 +33,8 @@ type AvgDurationChart struct {
 }
 
 func (avgDuration *AvgDurationChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
-	statement := fmt.Sprintf("SELECT sum(elapsed_sum::field)/sum(elapsed_count::field) "+
-		"FROM application_http,application_rpc,application_db,application_cache,application_mq "+
+	statement := fmt.Sprintf("SELECT avg(elapsed_mean::field) "+
+		"FROM application_http,application_rpc "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
 		"GROUP BY time(%s)", avgDuration.Interval)
