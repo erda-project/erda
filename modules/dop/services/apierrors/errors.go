@@ -463,6 +463,7 @@ var (
 
 	ErrCreateApplication = err("ErrCreateApplication", "创建应用失败")
 	ErrDeleteApplication = err("ErrDeleteApplication", "删除应用失败")
+	ErrInitApplication   = err("ErrInitApplication", "应用初始化失败")
 
 	ErrApprovalStatusChanged     = err("ErrApprovalStatusChanged", "审批流状态变更通知失败")
 	ErrListFileTreeNodes         = err("ErrListFileTreeNodes", "查询目录树节点列表失败")

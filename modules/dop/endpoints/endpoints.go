@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/event"
 	"github.com/erda-project/erda/modules/dop/services/apidocsvc"
 	"github.com/erda-project/erda/modules/dop/services/appcertificate"
+	"github.com/erda-project/erda/modules/dop/services/application"
 	"github.com/erda-project/erda/modules/dop/services/assetsvc"
 	"github.com/erda-project/erda/modules/dop/services/autotest"
 	atv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
@@ -625,6 +626,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// core-services application
 		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
 		{Path: "/api/applications/{applicationID}", Method: http.MethodDelete, Handler: e.DeleteApplication},
+		{Path: "/api/applications/{applicationID}/actions/init", Method: http.MethodPut, Handler: e.InitApplication},
 		// core-services member
 		{Path: "/api/members/actions/list-roles", Method: http.MethodGet, Handler: e.ListMemberRoles},
 		// approve
@@ -688,6 +690,7 @@ type Endpoints struct {
 	libReference    *libreference.LibReference
 	org             *org.Org
 	project         *project.Project
+	app             *application.Application
 	codeCoverageSvc *code_coverage.CodeCoverage
 	testReportSvc   *test_report.TestReport
 
@@ -782,6 +785,12 @@ func WithGittarFileTree(fileTree *filetree.GittarFileTree) Option {
 func WithProject(p *project.Project) Option {
 	return func(e *Endpoints) {
 		e.project = p
+	}
+}
+
+func WithApplication(app *application.Application) Option {
+	return func(e *Endpoints) {
+		e.app = app
 	}
 }
 

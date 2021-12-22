@@ -327,7 +327,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// the interface of application
 		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
-		{Path: "/api/applications/{applicationID}/actions/init", Method: http.MethodPut, Handler: e.InitApplication},
 		{Path: "/api/applications/{applicationID}", Method: http.MethodPut, Handler: e.UpdateApplication},
 		{Path: "/api/applications/{applicationID}", Method: http.MethodGet, Handler: e.GetApplication},
 		{Path: "/api/applications/{applicationID}", Method: http.MethodDelete, Handler: e.DeleteApplication},
