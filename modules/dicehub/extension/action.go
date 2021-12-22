@@ -17,7 +17,6 @@ package extension
 import (
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -48,43 +47,6 @@ type Version struct {
 	ReadmeContent []byte           // content of readme.md
 
 	SwaggerContent []byte // content of swagger.yml
-}
-
-func (s *extensionService) pushGitExtensions(gitAddr string) error {
-	dir, err := ioutil.TempDir(os.TempDir(), "*")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(dir)
-
-	// git init
-	// todo only first time clone, other times git pull
-	command := exec.Command("sh", "-c", "git clone "+gitAddr)
-	command.Dir = dir
-	output, err := command.CombinedOutput()
-	if err != nil {
-		logrus.Errorf("git clone extensions address stderr %v", string(output))
-		return err
-	}
-
-	return s.InitExtension(dir, true)
-}
-
-func (s *extensionService) TimedTaskSynchronizationExtensions() {
-	logrus.Infof("start to TimeTaskSynchronizationExtensions")
-
-	if s.p.Cfg.ExtensionSources == "" {
-		return
-	}
-
-	for _, gitAddr := range strings.Split(s.p.Cfg.ExtensionSources, ",") {
-		err := s.pushGitExtensions(gitAddr)
-		if err != nil {
-			logrus.Errorf("error to sync git address %s extension", gitAddr)
-		}
-	}
-
-	logrus.Infof("end to TimeTaskSynchronizationExtensions")
 }
 
 func (s *extensionService) InitExtension(addr string, forceUpdate bool) error {

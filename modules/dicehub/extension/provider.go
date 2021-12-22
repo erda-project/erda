@@ -16,12 +16,12 @@ package extension
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/jinzhu/gorm"
-	"github.com/robfig/cron"
-	"github.com/sirupsen/logrus"
 
 	logs "github.com/erda-project/erda-infra/base/logs"
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
@@ -71,27 +71,30 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	var once sync.Once
 	p.InitExtensionElection.OnLeader(func(ctx context.Context) {
 		once.Do(func() {
-			err := p.extensionService.InitExtension(FilePath, false)
+			err := p.InitSources()
 			if err != nil {
 				panic(err)
 			}
-			logrus.Infoln("End init extension")
 		})
 	})
 
-	go func() {
-		c := cron.New()
+	return nil
+}
 
-		err := c.AddFunc(p.Cfg.ExtensionSourcesCron, func() {
-			go p.extensionService.TimedTaskSynchronizationExtensions()
-		})
+func (p *provider) InitSources() error {
 
+	fileSources := NewFileExtensionSource(p.extensionService)
+	RegisterExtensionSource(NewGitExtensionSource(p.Cfg, fileSources))
+	RegisterExtensionSource(fileSources)
+	StartSyncExtensionSource()
+
+	sources := strings.Split(FilePath+","+p.Cfg.ExtensionSources, ",")
+	for _, source := range sources {
+		err := AddSyncExtension(source)
 		if err != nil {
-			logrus.Errorf("error to add cron task %v", err)
-		} else {
-			c.Start()
+			return fmt.Errorf("add sync source %v error %v", source, err)
 		}
-	}()
+	}
 	return nil
 }
 
