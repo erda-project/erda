@@ -25,16 +25,19 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/pprof"
 
 	// providers
-	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda/modules/core/monitor/collector"
-	_ "github.com/erda-project/erda/modules/oap/collector/authentication"
-	_ "github.com/erda-project/erda/modules/oap/collector/receivers/common"
-	_ "github.com/erda-project/erda/modules/oap/collector/receivers/jaeger"
-	_ "github.com/erda-project/erda/modules/oap/collector/receivers/opentelemetry"
+	// _ "github.com/erda-project/erda/modules/oap/collector/authentication"
+	// _ "github.com/erda-project/erda/modules/oap/collector/receivers/common"
+	// _ "github.com/erda-project/erda/modules/oap/collector/receivers/jaeger"
+	// _ "github.com/erda-project/erda/modules/oap/collector/receivers/opentelemetry"
 
 	// grpc
-	_ "github.com/erda-project/erda-infra/providers/grpcclient"
-	_ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/client"
+	// _ "github.com/erda-project/erda-infra/providers/grpcclient"
+	// _ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/client"
+
+	// pipeline collector
+	_ "github.com/erda-project/erda/modules/oap/collector/core"
+	_ "github.com/erda-project/erda/modules/oap/collector/plugins/all"
 )
 
 //go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/monitor/core/collector"
