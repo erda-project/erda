@@ -166,8 +166,8 @@ func (w *Workbench) ListQueryProjWbData(identity apistructs.Identity, page apist
 	}
 	req := apistructs.ProjectListRequest{
 		OrgID:    uint64(orgID),
-		PageNo:   page.PageNo,
-		PageSize: page.PageSize,
+		PageNo:   int(page.PageNo),
+		PageSize: int(page.PageSize),
 		Query:    query,
 	}
 	projectDTO, err := w.bdl.ListMyProject(identity.UserID, req)

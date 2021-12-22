@@ -17,6 +17,7 @@ package gshelper
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/apistructs"
 )
 
 const (
@@ -32,14 +33,14 @@ func NewGSHelper(gs *cptype.GlobalStateData) *GSHelper {
 	return &GSHelper{gs: gs}
 }
 
-func (h *GSHelper) SetWorkbenchItemType(wbType string) {
+func (h *GSHelper) SetWorkbenchItemType(wbType apistructs.WorkbenchItemType) {
 	if h.gs == nil {
 		return
 	}
 	(*h.gs)[KeyWorkbenchItemType] = wbType
 }
 
-func (h *GSHelper) GetWorkbenchItemType() (string, bool) {
+func (h *GSHelper) GetWorkbenchItemType() (apistructs.WorkbenchItemType, bool) {
 	if h.gs == nil {
 		return "", false
 	}
@@ -47,7 +48,7 @@ func (h *GSHelper) GetWorkbenchItemType() (string, bool) {
 	if !ok {
 		return "", false
 	}
-	var wbType string
+	var wbType apistructs.WorkbenchItemType
 	cputil.MustObjJSONTransfer(v, &wbType)
 	return wbType, true
 }

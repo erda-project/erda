@@ -26,9 +26,14 @@ type WorkbenchRequest struct {
 type WorkbenchItemType string
 
 const (
-	WorkbenchItemProj WorkbenchItemType = "project"
-	WorkbenchItemApp  WorkbenchItemType = "app"
+	WorkbenchItemProj    WorkbenchItemType = "project"
+	WorkbenchItemApp     WorkbenchItemType = "app"
+	WorkbenchItemDefault                   = WorkbenchItemProj
 )
+
+func (w WorkbenchItemType) IsEmpty() bool {
+	return string(w) == ""
+}
 
 type WorkbenchProjAppRequest struct {
 	// e.g: project/app

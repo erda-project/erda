@@ -20,4 +20,10 @@ const (
 	ScenarioWorkbench = "workbench"
 
 	WorkbenchSvc = "workbench"
+
+	// ProjTypeDevops project type
+	ProjTypeDevops = "DevOps"
+	ProjTypeMSP    = "MSP"
+
+	MetaKey = ""
 )
