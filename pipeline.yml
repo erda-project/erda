@@ -112,3 +112,25 @@ stages:
               uc-adaptor: ${{ outputs.build-erda.image }}
             migration_type: erda
             migration_dir: ${{ dirs.erda }}/.erda/migrations
+  - stage:
+      - custom-script:
+          alias: build-erda-dicehub-ce
+          commands:
+            - cd ${{ dirs.erda }}
+            - mkdir -p extensions
+            - cp -r ${{ dirs.erda-actions }} extensions
+            - cp -r ${{ dirs.erda-addons }} extensions
+            - export VERSION=${{ outputs.extract-repo-version.version }}
+            - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
+            - make prepare
+            - make build-push-image MODULE_PATH=dicehub
+          loop:
+            break: task_status == 'Success'
+            strategy:
+              max_times: 5
+              decline_ratio: 2
+              decline_limit_sec: 60
+              interval_sec: 5
+          resources:
+            cpu: 2
+            mem: 2048
