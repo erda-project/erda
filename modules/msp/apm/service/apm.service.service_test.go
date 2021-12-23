@@ -227,3 +227,45 @@ func Test_apmServiceService_GetServiceAnalyzerOverview(t *testing.T) {
 		})
 	}
 }
+
+func TestStatusSwitch(t *testing.T) {
+	type args struct {
+		sign *sign
+		resp *pb.GetServiceCountResponse
+	}
+	tests := []struct {
+		name string
+		args args
+		want *pb.GetServiceCountResponse
+	}{
+		{"case1", args{
+			sign: &sign{
+				statusName: pb.Status_all.String(),
+				count:      3,
+			},
+			resp: &pb.GetServiceCountResponse{},
+		}, &pb.GetServiceCountResponse{TotalCount: 3}},
+		{"case2", args{
+			sign: &sign{
+				statusName: pb.Status_hasError.String(),
+				count:      3,
+			},
+			resp: &pb.GetServiceCountResponse{},
+		}, &pb.GetServiceCountResponse{HasErrorCount: 3}},
+		{"case3", args{
+			sign: &sign{
+				statusName: pb.Status_withoutRequest.String(),
+				count:      3,
+			},
+			resp: &pb.GetServiceCountResponse{},
+		}, &pb.GetServiceCountResponse{WithoutRequestCount: 3}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			StatusSwitch(tt.args.sign, tt.args.resp)
+			if !reflect.DeepEqual(tt.want, tt.args.resp) {
+				t.Errorf("GetStatusSwitch() want = %v, curr %v", tt.want, tt.args.resp)
+			}
+		})
+	}
+}
