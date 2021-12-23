@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -207,4 +209,28 @@ func StructToMap(data interface{}, depth int, tag ...string) map[string]interfac
 		}
 	}
 	return m
+}
+
+func TestPreCheck(t *testing.T) {
+	tt := []struct {
+		Params *apistructs.AddonHandlerCreateItem
+		Want   bool
+	}{
+		{&apistructs.AddonHandlerCreateItem{
+			Plan:      "professional",
+			Workspace: "PROD",
+		}, true},
+		{&apistructs.AddonHandlerCreateItem{
+			Plan:      "basic",
+			Workspace: "DEV",
+		}, true},
+		{&apistructs.AddonHandlerCreateItem{
+			Plan:      "basic",
+			Workspace: "PROD",
+		}, false},
+	}
+	var a Addon
+	for _, v := range tt {
+		assert.Equal(t, v.Want, a.preCheck(v.Params) == nil)
+	}
 }
