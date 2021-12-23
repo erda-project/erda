@@ -21,6 +21,7 @@ import (
 )
 
 // QueryClusterInfo 查询集群信息
+// Deprecated: please do not use this bundle method to get cluster info, use *Bundle.GetCluster instead.
 func (b *Bundle) QueryClusterInfo(name string) (apistructs.ClusterInfoData, error) {
 	host, err := b.urls.Scheduler()
 	if err != nil {
