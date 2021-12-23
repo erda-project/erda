@@ -316,7 +316,7 @@ func (s *logQueryService) splitSelectors(sel *storage.Selector, interval time.Du
 	}
 
 	length := len(sels)
-	if length == 0 {
+	if length <= 1 {
 		return sels
 	}
 	reversed := make([]*storage.Selector, length)
