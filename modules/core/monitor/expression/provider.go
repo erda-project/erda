@@ -16,6 +16,7 @@ package expression
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -36,9 +37,9 @@ import (
 )
 
 type config struct {
-	SystemOrgExpression   string `file:"system_org_expression"`
-	SystemMicroExpression string `file:"system_micro_expression"`
-	SystemTemplate        string `file:"system_template"`
+	SystemExpression       string `file:"system_expression"`
+	SystemTemplate         string `file:"system_template"`
+	SystemExpressionConfig string `file:"system_expression_config"`
 }
 
 type provider struct {
@@ -69,73 +70,87 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p: p,
 	}
 	p.t = ctx.Service("i18n").(i18n.I18n).Translator("alert")
-	SystemExpressions = make(map[string][]*model.Expression)
-	orgExpressions, err := readExpressionFile(p.Cfg.SystemOrgExpression)
+	SystemExpressions = make([]*model.Expression, 0)
+	orgExpressions, err := readExpressionFile(p.Cfg.SystemExpression)
 	if err != nil {
 		return err
 	}
-	SystemExpressions["org"] = orgExpressions
-	microExpressions, err := readExpressionFile(p.Cfg.SystemMicroExpression)
+	SystemExpressions = orgExpressions
+	SystemExpressionConfig = make(map[string]*model.ExpressionConfig)
+	expressionConfig, err := redaExpressionConfig(p.Cfg.SystemExpressionConfig)
 	if err != nil {
 		return err
 	}
-	SystemExpressions["micro_service"] = microExpressions
-	if p.Register != nil {
-		pb.RegisterExpressionServiceImp(p.Register, p.expressionService, apis.Options())
-	}
-	SystemTemplate = make([]*model.Template, 0)
+	SystemExpressionConfig = expressionConfig
+	SystemTemplate = make(map[string][]*model.Template, 0)
 	templates, err := readTemplateFile(p.Cfg.SystemTemplate)
 	if err != nil {
 		return err
 	}
 	SystemTemplate = templates
+	if p.Register != nil {
+		pb.RegisterExpressionServiceImp(p.Register, p.expressionService, apis.Options())
+	}
 	return nil
 }
 
-func readExpressionFile(root string) ([]*model.Expression, error) {
-	f, err := os.ReadDir(root)
+func redaExpressionConfig(root string) (map[string]*model.ExpressionConfig, error) {
+	expressionConfig := make([]*model.ExpressionConfig, 0)
+	expressionConfigMap := make(map[string]*model.ExpressionConfig)
+	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+		f, err := ioutil.ReadFile(path)
+		fmt.Println(string(f))
+		if err != nil {
+			return err
+		}
+		err = yaml.Unmarshal(f, &expressionConfig)
+		if err != nil {
+			return err
+		}
+		for _, v := range expressionConfig {
+			expressionConfigMap[v.Id] = v
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
+	return expressionConfigMap, nil
+}
+
+func readExpressionFile(root string) ([]*model.Expression, error) {
 	expressions := make([]*model.Expression, 0)
-	for _, pkg := range f {
-		err := filepath.Walk(filepath.Join(root, pkg.Name()), func(path string, info fs.FileInfo, err error) error {
-			if err != nil {
-				return nil
-			}
-			if info.IsDir() {
-				dir, err := os.ReadDir(path)
-				if err != nil {
-					return err
-				}
-				f = append(f, dir...)
-				return nil
-			}
-			f, err := ioutil.ReadFile(path)
-			var expressionModel model.Expression
-			err = json.Unmarshal(f, &expressionModel)
-			if err != nil {
-				return err
-			}
-			expressionModel.AlertIndex = strings.TrimSuffix(info.Name(), ".json")
-			allRoute := strings.Split(path, "/")
-			expressionModel.AlertType = allRoute[len(allRoute)-2]
-			expressions = append(expressions, &expressionModel)
-			return nil
-		})
+	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
-			return nil, err
+			return nil
 		}
+		if info.IsDir() {
+			return nil
+		}
+		f, err := ioutil.ReadFile(path)
+		var expressionModel model.Expression
+		err = json.Unmarshal(f, &expressionModel)
+		if err != nil {
+			return err
+		}
+		expressions = append(expressions, &expressionModel)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return expressions, nil
 }
 
-func readTemplateFile(root string) ([]*model.Template, error) {
+func readTemplateFile(root string) (map[string][]*model.Template, error) {
 	f, err := os.ReadDir(root)
 	if err != nil {
 		return nil, err
 	}
-	templates := make([]*model.Template, 0)
+	templateMap := make(map[string][]*model.Template)
 	for _, pkg := range f {
 		err := filepath.Walk(filepath.Join(root, pkg.Name()), func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
@@ -155,13 +170,13 @@ func readTemplateFile(root string) ([]*model.Template, error) {
 			if err != nil {
 				return err
 			}
-			for _, temp := range templateModel {
-				var t *model.Template
-				t = temp
-				t.AlertIndex = strings.TrimSuffix(info.Name(), ".yml")
+			alertIndex := strings.TrimSuffix(info.Name(), ".yml")
+			templateMap[alertIndex] = templateModel
+			SystemAllTemplate = append(SystemAllTemplate, templateModel...)
+			for i, _ := range templateModel {
+				templateModel[i].AlertIndex = strings.TrimSuffix(info.Name(), ".yml")
 				allRoute := strings.Split(path, "/")
-				t.AlertType = allRoute[len(allRoute)-2]
-				templates = append(templates, t)
+				templateModel[i].AlertType = allRoute[len(allRoute)-2]
 			}
 			return nil
 		})
@@ -169,7 +184,7 @@ func readTemplateFile(root string) ([]*model.Template, error) {
 			return nil, err
 		}
 	}
-	return templates, nil
+	return templateMap, nil
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
