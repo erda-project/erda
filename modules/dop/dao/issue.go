@@ -78,6 +78,25 @@ const (
 
 var ExpireTypes = []ExpireType{ExpireTypeUndefined, ExpireTypeExpired, ExpireTypeExpireIn1Day, ExpireTypeExpireIn2Days, ExpireTypeExpireIn7Days, ExpireTypeExpireIn30Days, ExpireTypeExpireInFuture}
 
+func GetExpiryStatus(planFinishedAt *time.Time, timeBase time.Time) ExpireType {
+	if planFinishedAt == nil {
+		return ExpireTypeUndefined
+	}
+	if planFinishedAt.Before(timeBase) {
+		return ExpireTypeExpired
+	} else if planFinishedAt.Before(timeBase.Add(1 * 24 * time.Hour)) {
+		return ExpireTypeExpireIn1Day
+	} else if planFinishedAt.Before(timeBase.Add(2 * 24 * time.Hour)) {
+		return ExpireTypeExpireIn2Days
+	} else if planFinishedAt.Before(timeBase.Add(7 * 24 * time.Hour)) {
+		return ExpireTypeExpireIn7Days
+	} else if planFinishedAt.Before(timeBase.Add(30 * 24 * time.Hour)) {
+		return ExpireTypeExpireIn30Days
+	} else {
+		return ExpireTypeExpireInFuture
+	}
+}
+
 func (Issue) TableName() string {
 	return "dice_issues"
 }
