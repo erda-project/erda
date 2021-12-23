@@ -55,7 +55,12 @@ erda.dop.contribution:
 
 # component-protocol framework
 component-protocol:
+
+# default components
+component-protocol.default-components.issueFilter:
+
 # components
+## issue manage
 component-protocol.components.issue-manage.content:
 component-protocol.components.issue-manage.head:
 component-protocol.components.issue-manage.issueExport:
@@ -305,7 +310,7 @@ component-protocol.components.requirement-task-overview.stackChartFilter:
 ## issue-kanban
 component-protocol.components.issue-kanban.toolbar:
 component-protocol.components.issue-kanban.issueExport:
-component-protocol.components.issue-kanban.issueFilter:
+# component-protocol.components.issue-kanban.issueFilter:
 component-protocol.components.issue-kanban.issueImport:
 component-protocol.components.issue-kanban.issueKanbanV2:
 component-protocol.components.issue-kanban.page:

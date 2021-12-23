@@ -60,6 +60,7 @@ type FrontendConditions struct {
 	CreatedAtStartEnd  []*int64                      `json:"createdAtStartEnd,omitempty"`
 	FinishedAtStartEnd []*int64                      `json:"finishedAtStartEnd,omitempty"`
 	ClosedAtStartEnd   []*int64                      `json:"closedAtStartEnd,omitempty"`
+	Complexities       []apistructs.IssueComplexity  `json:"complexities,omitempty"`
 }
 
 func (f *ComponentFilter) generateFrontendConditionProps(ctx context.Context, fixedIssueType string, state State) FrontendConditionProps {
@@ -136,20 +137,18 @@ func (f *ComponentFilter) generateFrontendConditionProps(ctx context.Context, fi
 			},
 		},
 		{
-			Key:         PropConditionKeySeverities,
-			Label:       cputil.I18n(ctx, "severity"),
-			EmptyText:   cputil.I18n(ctx, "all"),
-			Fixed:       false,
-			ShowIndex:   0,
-			HaveFilter:  false,
-			Type:        filter.PropConditionTypeSelect,
-			Placeholder: cputil.I18n(ctx, "choose-severity"),
+			Key:        PropConditionKeyComplexity,
+			Label:      cputil.I18n(ctx, "complexity"),
+			EmptyText:  cputil.I18n(ctx, "all"),
+			Fixed:      false,
+			ShowIndex:  0,
+			HaveFilter: false,
+			Type:       filter.PropConditionTypeSelect,
+			// Placeholder: cputil.I18n(ctx, "choose-severity"),
 			Options: []filter.PropConditionOption{
-				{Label: cputil.I18n(ctx, "fatal"), Value: "FATAL", Icon: ""},
-				{Label: cputil.I18n(ctx, "serious"), Value: "SERIOUS", Icon: ""},
-				{Label: cputil.I18n(ctx, "ordinary"), Value: "NORMAL", Icon: ""},
-				{Label: cputil.I18n(ctx, "slight"), Value: "SLIGHT", Icon: ""},
-				{Label: cputil.I18n(ctx, "suggest"), Value: "SUGGEST", Icon: ""},
+				{Label: cputil.I18n(ctx, "HARD"), Value: "HARD", Icon: ""},
+				{Label: cputil.I18n(ctx, "NORMAL"), Value: "NORMAL", Icon: ""},
+				{Label: cputil.I18n(ctx, "EASY"), Value: "EASY", Icon: ""},
 			},
 		},
 		{
@@ -257,6 +256,24 @@ func (f *ComponentFilter) generateFrontendConditionProps(ctx context.Context, fi
 	}
 
 	if fixedIssueType == apistructs.IssueTypeBug.String() {
+		severity := filter.PropCondition{
+			Key:         PropConditionKeySeverities,
+			Label:       cputil.I18n(ctx, "severity"),
+			EmptyText:   cputil.I18n(ctx, "all"),
+			Fixed:       false,
+			ShowIndex:   0,
+			HaveFilter:  false,
+			Type:        filter.PropConditionTypeSelect,
+			Placeholder: cputil.I18n(ctx, "choose-severity"),
+			Options: []filter.PropConditionOption{
+				{Label: cputil.I18n(ctx, "fatal"), Value: "FATAL", Icon: ""},
+				{Label: cputil.I18n(ctx, "serious"), Value: "SERIOUS", Icon: ""},
+				{Label: cputil.I18n(ctx, "ordinary"), Value: "NORMAL", Icon: ""},
+				{Label: cputil.I18n(ctx, "slight"), Value: "SLIGHT", Icon: ""},
+				{Label: cputil.I18n(ctx, "suggest"), Value: "SUGGEST", Icon: ""},
+			},
+		}
+		conditionProps = append(conditionProps[:4], append([]filter.PropCondition{severity}, conditionProps[4:]...)...)
 		conditionProps = append(conditionProps, filter.PropCondition{
 			Key:         PropConditionKeyClosed,
 			Label:       cputil.I18n(ctx, "closed-at"),
@@ -349,6 +366,7 @@ var (
 	PropConditionKeyCreatedAtStartEnd  filter.PropConditionKey = "createdAtStartEnd"
 	PropConditionKeyFinishedAtStartEnd filter.PropConditionKey = "finishedAtStartEnd"
 	PropConditionKeyClosed             filter.PropConditionKey = "closedAtStartEnd"
+	PropConditionKeyComplexity         filter.PropConditionKey = "complexities"
 )
 
 func GetAllOperations() map[filter.OperationKey]filter.Operation {

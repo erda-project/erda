@@ -15,12 +15,15 @@
 package issueFilter
 
 import (
+	"context"
+	"strings"
+
 	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 )
 
-var (
+const (
 	PropConditionKeyFilterID           string = "filterID" // special, need emit it when hashing filter
 	PropConditionKeyIterationIDs       string = "iterationIDs"
 	PropConditionKeyTitle              string = "title"
@@ -36,7 +39,27 @@ var (
 	PropConditionKeyCreatedAtStartEnd  string = "createdAtStartEnd"
 	PropConditionKeyFinishedAtStartEnd string = "finishedAtStartEnd"
 	PropConditionKeyClosed             string = "closedAtStartEnd"
+	PropConditionKeyComplexity         string = "complexities"
 )
+
+type FrontendConditions struct {
+	FilterID           string                        `json:"filterID,omitempty"`
+	IterationIDs       []int64                       `json:"iterationIDs,omitempty"`
+	Title              string                        `json:"title,omitempty"`
+	StateBelongs       []apistructs.IssueStateBelong `json:"stateBelongs,omitempty"`
+	States             []int64                       `json:"states,omitempty"`
+	LabelIDs           []uint64                      `json:"labelIDs,omitempty"`
+	Priorities         []apistructs.IssuePriority    `json:"priorities,omitempty"`
+	Severities         []apistructs.IssueSeverity    `json:"severities,omitempty"`
+	CreatorIDs         []string                      `json:"creatorIDs,omitempty"`
+	AssigneeIDs        []string                      `json:"assigneeIDs,omitempty"`
+	OwnerIDs           []string                      `json:"ownerIDs,omitempty"`
+	BugStages          []string                      `json:"bugStages,omitempty"`
+	CreatedAtStartEnd  []*int64                      `json:"createdAtStartEnd,omitempty"`
+	FinishedAtStartEnd []*int64                      `json:"finishedAtStartEnd,omitempty"`
+	ClosedAtStartEnd   []*int64                      `json:"closedAtStartEnd,omitempty"`
+	Complexities       []apistructs.IssueComplexity  `json:"complexities,omitempty"`
+}
 
 func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 	needIterationCond := true
@@ -89,6 +112,12 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 		*model.NewSelectOption(cputil.I18n(f.sdk.Ctx, "architecture-design"), "architectureDesign"),
 		*model.NewSelectOption(cputil.I18n(f.sdk.Ctx, "code-development"), "codeDevelopment"),
 	}
+	if f.InParams.FrontendFixedIssueType == apistructs.IssueTypeTask.String() || f.InParams.FrontendFixedIssueType == apistructs.IssueTypeBug.String() {
+		stageOptions, err = f.getPropStagesOptions(f.InParams.FrontendFixedIssueType)
+		if err != nil {
+			return nil, err
+		}
+	}
 	stage := model.NewSelectCondition(PropConditionKeyBugStages, func() string {
 		switch f.InParams.FrontendFixedIssueType {
 		case "ALL":
@@ -110,35 +139,64 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 	if needIterationCond {
 		conditions = []interface{}{iterations}
 	}
+
+	complexityOptions := []model.SelectOption{
+		*model.NewSelectOption(cputil.I18n(f.sdk.Ctx, "HARD"), "HARD"),
+		*model.NewSelectOption(cputil.I18n(f.sdk.Ctx, "NORMAL"), "NORMAL"),
+		*model.NewSelectOption(cputil.I18n(f.sdk.Ctx, "EASY"), "EASY"),
+	}
+	complexity := model.NewSelectCondition(PropConditionKeyComplexity, cputil.I18n(f.sdk.Ctx, "complexity"), complexityOptions)
+
+	// statesMap, err := f.issueStateSvc.GetIssueStatesMap(&apistructs.IssueStatesGetRequest{
+	// 	ProjectID: f.InParams.ProjectID,
+	// })
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// status := func() interface{} {
+	// 	switch f.InParams.FrontendFixedIssueType {
+	// 	case "ALL":
+	// 		return model.NewSelectConditionWithChildren(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertAllConditions(f.sdk.Ctx, statesMap))
+	// 	case apistructs.IssueTypeRequirement.String():
+	// 		return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeRequirement]))
+	// 	case apistructs.IssueTypeTask.String():
+	// 		return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeTask]))
+	// 	case apistructs.IssueTypeBug.String():
+	// 		return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeBug]))
+	// 	}
+	// 	return nil
+	// }()
+
 	switch f.InParams.FrontendFixedIssueType {
 	case apistructs.IssueTypeRequirement.String():
-		conditions = append(conditions, labels, priority, creator, assignee, created, finished)
+		conditions = append(conditions, labels, priority, complexity, creator, assignee, created, finished)
 	case apistructs.IssueTypeTask.String():
-		conditions = append(conditions, labels, priority, creator, assignee, stage, created, finished)
+		conditions = append(conditions, labels, priority, complexity, creator, assignee, stage, created, finished)
 	case apistructs.IssueTypeBug.String():
-		conditions = append(conditions, labels, priority, severity, creator, assignee, owner, stage, created, finished, closed)
+		conditions = append(conditions, labels, priority, complexity, severity, creator, assignee, owner, stage, created, finished, closed)
+	case "ALL":
+		conditions = append(conditions, labels, priority, complexity, creator, assignee, owner, created, finished)
 	}
+
 	return conditions, nil
-	// stateBelongs := map[string][]apistructs.IssueStateBelong{
-	// 	"TASK":        {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
-	// 	"REQUIREMENT": {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
-	// 	"BUG":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResolved},
-	// 	"ALL":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResolved},
-	// }[f.InParams.FrontendFixedIssueType]
-	// types := []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask, apistructs.IssueTypeBug}
-	// res := make(map[string][]int64)
-	// res["ALL"] = make([]int64, 0)
-	// for _, v := range types {
-	// 	req := &apistructs.IssueStatesGetRequest{
-	// 		ProjectID:    f.InParams.ProjectID,
-	// 		StateBelongs: stateBelongs,
-	// 		IssueType:    v,
-	// 	}
-	// 	ids, err := f.issueStateSvc.GetIssueStateIDs(req)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	res[v.String()] = ids
-	// 	res["ALL"] = append(res["ALL"], ids...)
-	// }
+}
+
+func convertConditions(status []apistructs.IssueStatus) []model.SelectOption {
+	options := make([]model.SelectOption, 0, len(status))
+	for _, i := range status {
+		options = append(options, *model.NewSelectOption(i.StateName, i.StateID))
+	}
+	return options
+}
+
+func convertAllConditions(ctx context.Context, stateMap map[apistructs.IssueType][]apistructs.IssueStatus) []model.SelectOptionWithChildren {
+	options := make([]model.SelectOptionWithChildren, 0, len(stateMap))
+	for i, v := range stateMap {
+		options = append(options, model.SelectOptionWithChildren{
+			SelectOption: *model.NewSelectOption(cputil.I18n(ctx, strings.ToLower(i.String())), i.String()),
+			Children:     convertConditions(v),
+		})
+	}
+	return options
 }

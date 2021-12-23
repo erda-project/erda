@@ -108,7 +108,7 @@ func (f *ComponentFilter) generateIssuePagingRequest() (apistructs.IssuePagingRe
 			StartClosedAt:   startClosedAt,
 			EndClosedAt:     endClosedAt,
 			Priority:        f.State.FrontendConditionValues.Priorities,
-			Complexity:      nil,
+			Complexity:      f.State.FrontendConditionValues.Complexities,
 			Severity:        f.State.FrontendConditionValues.Severities,
 			RelatedIssueIDs: nil,
 			Source:          "",
