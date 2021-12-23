@@ -299,15 +299,59 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 	return &pb.GetServiceAnalyzerOverviewResponse{List: servicesView}, nil
 }
 
-func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServiceCountRequest) (*pb.GetServiceCountResponse, error) {
-	start, end := TimeRange("-24")
+type sign struct {
+	statusName string
+	count      int64
+}
 
-	// calculate total count
-	condition := " terminus_key::tag=$terminus_key "
-	statement := "SELECT DISTINCT(service_id::tag) FROM application_service_node WHERE $condition"
-	statement = strings.ReplaceAll(statement, "$condition", condition)
+func StatusSwitch(sign *sign, resp *pb.GetServiceCountResponse) {
+	switch sign.statusName {
+	case pb.Status_all.String():
+		resp.TotalCount = sign.count
+	case pb.Status_hasError.String():
+		resp.HasErrorCount = sign.count
+	case pb.Status_withoutRequest.String():
+		resp.WithoutRequestCount = sign.count
+	}
+}
+
+func (s *apmServiceService) count(ctx context.Context, tenantId, status string) *sign {
+	switch status {
+	case pb.Status_all.String():
+		start, end := TimeRange("-24h")
+		count, _ := s.GetTotalCount(ctx, tenantId, start, end)
+		return &sign{statusName: status, count: count}
+	case pb.Status_hasError.String():
+		start, end := TimeRange("-1h")
+		count, _ := s.GetHasErrorCount(ctx, tenantId, start, end)
+		return &sign{statusName: status, count: count}
+	case pb.Status_withoutRequest.String():
+		start, end := TimeRange("-1h")
+		count, _ := s.GetWithoutRequestCount(ctx, tenantId, start, end)
+		return &sign{statusName: status, count: count}
+	}
+	return nil
+}
+
+func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServiceCountRequest) (*pb.GetServiceCountResponse, error) {
+	if req.TenantId == "" {
+		return nil, errors.NewMissingParameterError("tenantId")
+	}
+	var ss = []string{pb.Status_all.String(), pb.Status_hasError.String(), pb.Status_withoutRequest.String()}
+	response := &pb.GetServiceCountResponse{}
+	for _, status := range ss {
+		StatusSwitch(s.count(ctx, req.TenantId, status), response)
+	}
+	return response, nil
+}
+
+func (s *apmServiceService) GetWithoutRequestCount(ctx context.Context, tenantId string, start int64, end int64) (int64, error) {
+	// withoutRequest count
+	statement := "SELECT target_service_id::tag,if(lte(sum(elapsed_sum::field),0),true,false) FROM application_http_service,application_rpc_service WHERE $condition GROUP BY target_service_id::tag "
+	withoutRequestCondition := "target_terminus_key::tag=$target_terminus_key "
+	statement = strings.ReplaceAll(statement, "$condition", withoutRequestCondition)
 	queryParams := map[string]*structpb.Value{
-		"terminus_key": structpb.NewStringValue(req.TenantId),
+		"target_terminus_key": structpb.NewStringValue(tenantId),
 	}
 	countRequest := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(start, 10),
@@ -317,52 +361,65 @@ func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServ
 	}
 	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return 0, errors.NewInternalServerError(err)
 	}
-	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
+	withoutRequestCount := int64(0)
+	rows := countResponse.Results[0].Series[0].Rows
+	for _, row := range rows {
+		if row.GetValues()[1].GetBoolValue() {
+			withoutRequestCount += 1
+		}
+	}
+	return withoutRequestCount, nil
+}
 
+func (s *apmServiceService) GetHasErrorCount(ctx context.Context, tenantId string, start int64, end int64) (int64, error) {
 	// hasError count
-	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service WHERE $condition"
+	statement := "SELECT target_service_id::tag,if(gte(sum(errors_sum::field),0),true,false) FROM application_http_service,application_rpc_service WHERE $condition GROUP BY target_service_id::tag "
 	unhealthyCondition := " target_terminus_key::tag=$target_terminus_key AND errors_sum::field>0 "
 	statement = strings.ReplaceAll(statement, "$condition", unhealthyCondition)
 
-	queryParams = map[string]*structpb.Value{
-		"target_terminus_key": structpb.NewStringValue(req.TenantId),
+	queryParams := map[string]*structpb.Value{
+		"target_terminus_key": structpb.NewStringValue(tenantId),
 	}
-	countRequest = &metricpb.QueryWithInfluxFormatRequest{
+	countRequest := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(start, 10),
 		End:       strconv.FormatInt(end, 10),
 		Statement: statement,
 		Params:    queryParams,
 	}
-	countResponse, err = s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
+	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return 0, errors.NewInternalServerError(err)
 	}
-	hasErrorCount := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
+	hasErrorCount := int64(0)
+	rows := countResponse.Results[0].Series[0].Rows
+	for _, row := range rows {
+		if row.GetValues()[1].GetBoolValue() {
+			hasErrorCount += 1
+		}
+	}
+	return hasErrorCount, nil
+}
 
-	// withoutRequest count
-	statement = "SELECT DISTINCT(target_service_id::tag) FROM application_http_service,application_rpc_service,application_db_service,application_cache_service,application_mq_service WHERE $condition"
-	withoutRequestCondition := "target_terminus_key::tag=$target_terminus_key AND elapsed_sum::field<=0 "
-	statement = strings.ReplaceAll(statement, "$condition", withoutRequestCondition)
-	queryParams = map[string]*structpb.Value{
-		"target_terminus_key": structpb.NewStringValue(req.TenantId),
+func (s *apmServiceService) GetTotalCount(ctx context.Context, tenantId string, start int64, end int64) (int64, error) {
+	// calculate total count
+	condition := " terminus_key::tag=$terminus_key "
+	statement := "SELECT DISTINCT(service_id::tag) FROM application_service_node WHERE $condition"
+	statement = strings.ReplaceAll(statement, "$condition", condition)
+	queryParams := map[string]*structpb.Value{
+		"terminus_key": structpb.NewStringValue(tenantId),
 	}
-	countRequest = &metricpb.QueryWithInfluxFormatRequest{
+	countRequest := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(start, 10),
 		End:       strconv.FormatInt(end, 10),
 		Statement: statement,
 		Params:    queryParams,
 	}
-	countResponse, err = s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
+	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return 0, errors.NewInternalServerError(err)
 	}
-	withoutRequestCount := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
-
-	return &pb.GetServiceCountResponse{
-		TotalCount:          total,
-		HasErrorCount:       hasErrorCount,
-		WithoutRequestCount: withoutRequestCount,
-	}, nil
+	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
+	return total, nil
 }

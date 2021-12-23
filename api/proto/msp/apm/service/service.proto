@@ -62,6 +62,7 @@ message GetServiceOverviewTopResponse {
 
 message GetServiceCountRequest {
   string tenantId = 1;
+  string status   = 2;
 }
 
 message GetServiceCountResponse {
@@ -111,6 +112,7 @@ message TopTable {
 enum Status {
   hasError       = 0;
   withoutRequest = 1;
+  all            = 2;
 }
 
 message Chart {
