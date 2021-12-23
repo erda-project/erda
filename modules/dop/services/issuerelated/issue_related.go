@@ -16,10 +16,13 @@ package issuerelated
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type IssueRelated struct {
@@ -85,6 +88,11 @@ func (ir *IssueRelated) AddRelatedIssue(req *apistructs.IssueRelationCreateReque
 		return nil, err
 	}
 
+	if req.Type == apistructs.IssueRelationInclusion {
+		if err := ir.AfterIssueInclusionRelationChange(req.IssueID); err != nil {
+			return nil, err
+		}
+	}
 	return issueRel, nil
 }
 
@@ -109,5 +117,30 @@ func (ir *IssueRelated) DeleteIssueRelation(issueID, relatedIssueID uint64, rela
 		return err
 	}
 
+	if strutil.Exist(relationTypes, apistructs.IssueRelationInclusion) {
+		return ir.AfterIssueInclusionRelationChange(issueID)
+	}
+	return nil
+}
+
+func (ir *IssueRelated) AfterIssueInclusionRelationChange(id uint64) error {
+	fields := make(map[string]interface{})
+	start, end, err := ir.db.FindIssueChildrenTimeRange(id)
+	if err != nil {
+		return err
+	}
+	if start != nil {
+		fields["plan_started_at"] = start
+	}
+	if end != nil {
+		now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
+		fields["expiry_status"] = dao.GetExpiryStatus(end, now)
+		fields["plan_finished_at"] = end
+	}
+	if len(fields) > 0 {
+		if err := ir.db.UpdateIssue(id, fields); err != nil {
+			return apierrors.ErrUpdateIssue.InternalError(err)
+		}
+	}
 	return nil
 }
