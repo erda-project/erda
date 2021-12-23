@@ -17,13 +17,15 @@ package recordDrawer
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/i18n"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type Props struct {
@@ -36,21 +38,12 @@ type State struct {
 }
 
 type RecordDrawer struct {
-	ctxBdl protocol.ContextBundle
+	sdk *cptype.SDK
+	base.DefaultProvider
 
 	Type  string `json:"type"`
 	Props Props  `json:"props"`
 	State State  `json:"state"`
-}
-
-func (r *RecordDrawer) SetCtxBundle(ctx context.Context) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	if bdl.Bdl == nil || bdl.I18nPrinter == nil {
-		return fmt.Errorf("invalid context bundle")
-	}
-	logrus.Infof("inParams:%+v, identity:%+v", bdl.InParams, bdl.Identity)
-	r.ctxBdl = bdl
-	return nil
 }
 
 func (r *RecordDrawer) GenComponentState(c *apistructs.Component) error {
@@ -72,21 +65,15 @@ func (r *RecordDrawer) GenComponentState(c *apistructs.Component) error {
 	return nil
 }
 
-func (r *RecordDrawer) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	if err := r.SetCtxBundle(ctx); err != nil {
-		return err
-	}
-	if err := r.GenComponentState(c); err != nil {
-		return err
-	}
-	i18nLocale := r.ctxBdl.Bdl.GetLocale(r.ctxBdl.Locale)
+func (r *RecordDrawer) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	r.sdk = cputil.SDK(ctx)
 	r.Type = "Drawer"
-	r.Props.Title = i18nLocale.Get(i18n.I18nKeyImportExportTable)
+	r.Props.Title = r.sdk.I18n(i18n.I18nKeyImportExportTable)
 	r.Props.Size = "xl"
-
 	return nil
 }
 
-func RenderCreator() protocol.CompRender {
-	return &RecordDrawer{}
+func init() {
+	base.InitProviderWithCreator("auto-test-space-list", "recordDrawer",
+		func() servicehub.Provider { return &RecordDrawer{} })
 }

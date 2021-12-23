@@ -20,15 +20,23 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	spec "github.com/erda-project/erda/modules/openapi/component-protocol/component_spec/form_modal"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type SpaceFormModal struct {
-	CtxBdl     protocol.ContextBundle
+	sdk *cptype.SDK
+	bdl *bundle.Bundle
+	base.DefaultProvider
+
 	Type       string                 `json:"type"`
 	Props      spec.Props             `json:"props"`
 	Operations map[string]interface{} `json:"operations"`
@@ -62,9 +70,9 @@ const (
 	regular = "^[a-z\u4e00-\u9fa5A-Z0-9_-]+( )+(.)*$"
 )
 
-func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	a.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
+func (a *SpaceFormModal) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	a.sdk = cputil.SDK(ctx)
+	a.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	a.Props.Fields = []spec.Field{
 		{
 			Key:       "name",
@@ -89,15 +97,15 @@ func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, sc
 			ComponentProps: spec.ComponentProps{
 				Options: []spec.Option{
 					{
-						Name:  i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInit),
+						Name:  a.sdk.I18n(i18n.I18nKeyAutoTestSpaceInit),
 						Value: apistructs.TestSpaceInit,
 					},
 					{
-						Name:  i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInProgress),
+						Name:  a.sdk.I18n(i18n.I18nKeyAutoTestSpaceInProgress),
 						Value: apistructs.TestSpaceInProgress,
 					},
 					{
-						Name:  i18nLocale.Get(i18n.I18nKeyAutoTestSpaceCompleted),
+						Name:  a.sdk.I18n(i18n.I18nKeyAutoTestSpaceCompleted),
 						Value: apistructs.TestSpaceCompleted,
 					},
 				},
@@ -113,18 +121,15 @@ func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, sc
 			},
 		},
 	}
+	a.Operations = make(map[string]interface{})
 	a.Operations["submit"] = operation{
 		Key:    "submit",
 		Reload: true,
 	}
 
-	if a.CtxBdl.InParams == nil {
-		return fmt.Errorf("params is empty")
-	}
-
-	inParamsBytes, err := json.Marshal(a.CtxBdl.InParams)
+	inParamsBytes, err := json.Marshal(a.sdk.InParams)
 	if err != nil {
-		return fmt.Errorf("failed to marshal inParams, inParams:%+v, err:%v", a.CtxBdl.InParams, err)
+		return fmt.Errorf("failed to marshal inParams, inParams:%+v, err:%v", a.sdk.InParams, err)
 	}
 
 	var inParams inParams
@@ -132,14 +137,14 @@ func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, sc
 		return err
 	}
 	// listen on operation
-	switch event.Operation {
+	switch apistructs.OperationKey(event.Operation) {
 	case apistructs.AutoTestSpaceSubmitOperationKey:
 		if _, ok := a.State.FormData["id"]; ok {
-			if err := a.handlerUpdateOperation(a.CtxBdl, c, inParams, event); err != nil {
+			if err := a.handlerUpdateOperation(c, inParams, event); err != nil {
 				return err
 			}
 		} else {
-			if err := a.handlerCreateOperation(a.CtxBdl, c, inParams, event); err != nil {
+			if err := a.handlerCreateOperation(c, inParams, event); err != nil {
 				return err
 			}
 		}
@@ -149,7 +154,7 @@ func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, sc
 	return nil
 }
 
-func (a *SpaceFormModal) handlerCreateOperation(bdl protocol.ContextBundle, c *apistructs.Component, inParams inParams, event apistructs.ComponentEvent) error {
+func (a *SpaceFormModal) handlerCreateOperation(c *cptype.Component, inParams inParams, event cptype.ComponentEvent) error {
 
 	cond := AutoTestSpace{}
 	filterCond, ok := c.State["formData"]
@@ -175,21 +180,20 @@ func (a *SpaceFormModal) handlerCreateOperation(bdl protocol.ContextBundle, c *a
 	if !reg.MatchString(cond.Name) {
 		return fmt.Errorf("请输入中文、英文、数字、中划线或下划线")
 	}
-	err := bdl.Bdl.CreateTestSpace(
+	err := a.bdl.CreateTestSpace(
 		&apistructs.AutoTestSpaceCreateRequest{
 			Name:          cond.Name,
 			ProjectID:     inParams.ProjectID,
 			Description:   cond.Desc,
 			ArchiveStatus: cond.ArchiveStatus,
-		}, bdl.Identity.UserID)
+		}, a.sdk.Identity.UserID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (a *SpaceFormModal) handlerUpdateOperation(bdl protocol.ContextBundle, c *apistructs.Component, inParams inParams, event apistructs.ComponentEvent) error {
-
+func (a *SpaceFormModal) handlerUpdateOperation(c *cptype.Component, inParams inParams, event cptype.ComponentEvent) error {
 	cond := AutoTestSpace{}
 	filterCond, ok := c.State["formData"]
 	if ok {
@@ -214,28 +218,22 @@ func (a *SpaceFormModal) handlerUpdateOperation(bdl protocol.ContextBundle, c *a
 	if !reg.MatchString(cond.Name) {
 		return fmt.Errorf("请输入中文、英文、数字、中划线或下划线")
 	}
-	res, err := bdl.Bdl.GetTestSpace(cond.ID)
+	res, err := a.bdl.GetTestSpace(cond.ID)
 	if err != nil {
 		return err
 	}
 	if res.Status != apistructs.TestSpaceOpen {
 		return fmt.Errorf("当前状态不允许编辑")
 	}
-	return bdl.Bdl.UpdateTestSpace(&apistructs.AutoTestSpace{
+	return a.bdl.UpdateTestSpace(&apistructs.AutoTestSpace{
 		ID:            cond.ID,
 		Name:          cond.Name,
 		Description:   cond.Desc,
 		ArchiveStatus: cond.ArchiveStatus,
-	}, bdl.Identity.UserID)
+	}, a.sdk.Identity.UserID)
 }
 
-func RenderCreator() protocol.CompRender {
-	return &SpaceFormModal{
-		CtxBdl:     protocol.ContextBundle{},
-		Type:       "",
-		Operations: map[string]interface{}{},
-		State: State{
-			Reload: false,
-		},
-	}
+func init() {
+	base.InitProviderWithCreator("auto-test-space-list", "spaceFormModal",
+		func() servicehub.Provider { return &SpaceFormModal{} })
 }
