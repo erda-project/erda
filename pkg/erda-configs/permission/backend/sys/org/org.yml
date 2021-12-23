@@ -175,7 +175,7 @@
   scope: org
   resource: member
   action: UPDATE
-- role: Manager,Dev,Support,DataEngineer,Guest,Auditor
+- role: Manager,Dev,Support,DataEngineer,Guest,Auditor,DataManager
   scope: org
   resource: member
   action: LIST
