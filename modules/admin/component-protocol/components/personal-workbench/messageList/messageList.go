@@ -130,6 +130,11 @@ func (l *MessageList) RegisterItemClickGotoOp(opData list.OpItemClickGoto) (opFu
 	return func(sdk *cptype.SDK) {
 	}
 }
+func (l *MessageList) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) {
+
+	}
+}
 
 // RegisterItemClickOp get client data, and set message read
 func (l *MessageList) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.OperationFunc) {

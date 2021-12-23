@@ -205,6 +205,11 @@ func (l *WorkList) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.O
 	}
 }
 
+func (l *WorkList) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) {
+	}
+}
+
 func (l *WorkList) doFilter() *list.Data {
 	switch l.filterReq.Type {
 	case apistructs.WorkbenchItemProj:
