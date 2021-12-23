@@ -198,13 +198,3 @@ func (extra *PipelineExtra) GetOrgName() string {
 	}
 	return ""
 }
-
-func (extra *PipelineExtra) GetOrgID() string {
-	if extra.NormalLabels != nil {
-		orgID, ok := extra.NormalLabels[apistructs.LabelOrgID]
-		if ok {
-			return orgID
-		}
-	}
-	return ""
-}

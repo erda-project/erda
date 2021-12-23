@@ -61,8 +61,8 @@ func parseConfFromTask(task *spec.PipelineTask) (EnvConfig, error) {
 func Do(ctx context.Context, task *spec.PipelineTask) {
 	logger := newLogger().
 		WithContext(context.WithValue(context.Background(), CtxKeyCollectorLogID, task.Extra.UUID)).
-		WithField(FieldOrgName, task.Extra.Labels["DICE_ORG_NAME"]).
-		WithField(FieldOrgID, task.Extra.Labels["DICE_ORG_ID"])
+		WithField(FieldOrgName, task.Extra.Labels[apistructs.EnvDiceOrgName]).
+		WithField(FieldOrgID, task.Extra.Labels[apistructs.EnvDiceOrgID])
 	ctx = context.WithValue(ctx, CtxKeyLogger, logger)
 
 	// print logo
