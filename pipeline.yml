@@ -18,21 +18,25 @@ stages:
           params:
             uri: https://erda.cloud/erda/dop/erda-project/erda-actions-mirror
             branch: master
+            depth: 1
       - git-checkout:
           alias: erda-addons
           params:
             uri: https://erda.cloud/erda/dop/erda-project/erda-addons-mirror
             branch: master
+            depth: 1
       - git-checkout:
           alias: erda-actions-enterprise
           params:
             uri: https://erda.cloud/erda/dop/erda-project/erda-actions-enterprise-mirror
             branch: master
+            depth: 1
       - git-checkout:
           alias: erda-addons-enterprise
           params:
             uri: https://erda.cloud/erda/dop/erda-project/erda-addons-enterprise-mirror
             branch: master
+            depth: 1
   - stage:
       - extract-repo-version:
           params:
