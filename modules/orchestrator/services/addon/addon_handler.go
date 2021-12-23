@@ -957,6 +957,10 @@ func (a *Addon) providerAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRo
 // basicAddonDeploy 基础addon发布
 func (a *Addon) basicAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting,
 	params *apistructs.AddonHandlerCreateItem, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) error {
+	if err := a.preCheck(params); err != nil {
+		return err
+	}
+
 	// 构建 addon 创建请求
 	addonCreateReq, err := a.buildAddonRequestGroup(params, addonIns, addonSpec, addonDice)
 	if err != nil || addonCreateReq == nil {
@@ -989,6 +993,14 @@ func (a *Addon) basicAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouti
 		return err
 	}
 
+	return nil
+}
+
+// preCheck the production environment does not allow the deployment of basic addon
+func (a *Addon) preCheck(params *apistructs.AddonHandlerCreateItem) error {
+	if params.Plan == "basic" && params.Workspace == "PROD" {
+		return fmt.Errorf("failed to create addon, the production environment does not allow the deployment of basic addon")
+	}
 	return nil
 }
 
