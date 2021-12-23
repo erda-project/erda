@@ -88,7 +88,7 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 		services = append(services, service)
 	}
 
-	// calculate total count
+	// calculate total Count
 	statement = "SELECT DISTINCT(service_id::tag) FROM application_service_node WHERE $condition"
 	statement = strings.ReplaceAll(statement, "$condition", condition)
 	countRequest := &metricpb.QueryWithInfluxFormatRequest{
@@ -102,7 +102,7 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 		return nil, errors.NewInternalServerError(err)
 	}
 
-	// service total count
+	// service total Count
 	total := int64(countResponse.Results[0].Series[0].Rows[0].GetValues()[0].GetNumberValue())
 
 	if rows == nil || len(rows) == 0 {
@@ -315,7 +315,7 @@ func StatusSwitch(sign *sign, resp *pb.GetServiceCountResponse) {
 	}
 }
 
-func (s *apmServiceService) count(ctx context.Context, tenantId, status string) *sign {
+func (s *apmServiceService) Count(ctx context.Context, tenantId, status string) *sign {
 	switch status {
 	case pb.Status_all.String():
 		start, end := TimeRange("-24h")
@@ -340,13 +340,13 @@ func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServ
 	var ss = []string{pb.Status_all.String(), pb.Status_hasError.String(), pb.Status_withoutRequest.String()}
 	response := &pb.GetServiceCountResponse{}
 	for _, status := range ss {
-		StatusSwitch(s.count(ctx, req.TenantId, status), response)
+		StatusSwitch(s.Count(ctx, req.TenantId, status), response)
 	}
 	return response, nil
 }
 
 func (s *apmServiceService) GetWithoutRequestCount(ctx context.Context, tenantId string, start int64, end int64) (int64, error) {
-	// withoutRequest count
+	// withoutRequest Count
 	statement := "SELECT target_service_id::tag,if(lte(sum(elapsed_sum::field),0),true,false) FROM application_http_service,application_rpc_service WHERE $condition GROUP BY target_service_id::tag "
 	withoutRequestCondition := "target_terminus_key::tag=$target_terminus_key "
 	statement = strings.ReplaceAll(statement, "$condition", withoutRequestCondition)
@@ -374,7 +374,7 @@ func (s *apmServiceService) GetWithoutRequestCount(ctx context.Context, tenantId
 }
 
 func (s *apmServiceService) GetHasErrorCount(ctx context.Context, tenantId string, start int64, end int64) (int64, error) {
-	// hasError count
+	// hasError Count
 	statement := "SELECT target_service_id::tag,if(gte(sum(errors_sum::field),0),true,false) FROM application_http_service,application_rpc_service WHERE $condition GROUP BY target_service_id::tag "
 	unhealthyCondition := " target_terminus_key::tag=$target_terminus_key AND errors_sum::field>0 "
 	statement = strings.ReplaceAll(statement, "$condition", unhealthyCondition)
@@ -403,7 +403,7 @@ func (s *apmServiceService) GetHasErrorCount(ctx context.Context, tenantId strin
 }
 
 func (s *apmServiceService) GetTotalCount(ctx context.Context, tenantId string, start int64, end int64) (int64, error) {
-	// calculate total count
+	// calculate total Count
 	condition := " terminus_key::tag=$terminus_key "
 	statement := "SELECT DISTINCT(service_id::tag) FROM application_service_node WHERE $condition"
 	statement = strings.ReplaceAll(statement, "$condition", condition)
