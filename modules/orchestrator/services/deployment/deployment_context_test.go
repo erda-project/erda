@@ -414,7 +414,7 @@ func recordDLog() chan string {
 	var logger *log.DeployLogHelper
 	c := make(chan string, 1000)
 	monkey.PatchInstanceMethod(reflect.TypeOf(logger), "Log",
-		func(_ *log.DeployLogHelper, content string) {
+		func(_ *log.DeployLogHelper, content string, tags map[string]string) {
 			c <- content
 		},
 	)
@@ -478,6 +478,7 @@ func genFakeFSM(specPath ...string) *DeployFSMContext {
 			OrgID:          104,
 			WildcardDomain: "test.terminus.io",
 		},
+		d: &log.DeployLogHelper{},
 	}
 	if len(specPath) > 0 {
 		b, err := ioutil.ReadFile(specPath[0])

@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/services/log"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
@@ -813,7 +814,7 @@ func (a *Addon) createAddonResource(addonIns *dbclient.AddonInstance, addonInsRo
 	switch addonSpec.Category {
 	case apistructs.AddonCustomCategory:
 		if err := a.customDeploy(addonIns, addonInsRouting, params); err != nil {
-			a.Logger.Log(fmt.Sprintf("error when addon is released, %v", err))
+			a.pushLog(fmt.Sprintf("error when addon is released, %v", err), params)
 			return err
 		}
 		return nil
@@ -829,7 +830,7 @@ func (a *Addon) createAddonResource(addonIns *dbclient.AddonInstance, addonInsRo
 		if addonSpec.SubCategory == apistructs.BasicAddon {
 			if err := a.basicAddonDeploy(addonIns, addonInsRouting, params, addonSpec, addonDice); err != nil {
 				if a.Logger != nil {
-					a.Logger.Log(fmt.Sprintf("error when addon is released, %v", err))
+					a.pushLog(fmt.Sprintf("error when addon is released, %v", err), params)
 				}
 				logrus.Errorf("error when addon is released, %v", err)
 				if err := a.FailAndDelete(addonIns); err != nil {
@@ -840,7 +841,7 @@ func (a *Addon) createAddonResource(addonIns *dbclient.AddonInstance, addonInsRo
 			if err := a.providerAddonDeploy(addonIns, addonInsRouting, params, addonSpec); err != nil {
 				a.ExportLogInfo(apistructs.ErrorLevel, apistructs.AddonError, addonIns.ID, addonIns.ID+"-callprovider", "调用 provider 创建addon(%s/%s)失败: %s",
 					params.AddonName, params.InstanceName, err)
-				a.Logger.Log(fmt.Sprintf("(%v)", err))
+				a.pushLog(fmt.Sprintf("(%v)", err), params)
 				return err
 			}
 		}
@@ -1249,4 +1250,15 @@ func (a *Addon) FindNeedCreateAddon(params *apistructs.AddonHandlerCreateItem) (
 		return nil, err
 	}
 	return addonStrategyRouting, nil
+}
+
+func (a *Addon) pushLog(content string, params *apistructs.AddonHandlerCreateItem) {
+	if a.Logger == nil {
+		return
+	}
+	tags := map[string]string{}
+	if orgName, ok := params.Options["orgName"]; ok {
+		tags[log.TAG_DICE_ORG_NAME] = orgName
+	}
+	a.Logger.Log(content, tags)
 }
