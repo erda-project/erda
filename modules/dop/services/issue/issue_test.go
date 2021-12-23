@@ -18,7 +18,6 @@ package issue
 import (
 	"reflect"
 	"testing"
-	"time"
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
@@ -29,83 +28,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/issuestream"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
-
-func Test_getExpiryStatus(t *testing.T) {
-	type args struct {
-		planFinishedAt *time.Time
-		timeBase       time.Time
-	}
-
-	timeBase := time.Date(2021, 9, 1, 0, 0, 0, 0, time.Now().Location())
-	before := time.Date(2021, 8, 30, 0, 0, 0, 0, time.Now().Location())
-	today := time.Date(2021, 9, 1, 0, 0, 0, 0, time.Now().Location())
-	tomorrow := time.Date(2021, 9, 2, 0, 0, 0, 0, time.Now().Location())
-	week := time.Date(2021, 9, 7, 0, 0, 0, 0, time.Now().Location())
-	month := time.Date(2021, 9, 8, 0, 0, 0, 0, time.Now().Location())
-	future := time.Date(2021, 10, 15, 0, 0, 0, 0, time.Now().Location())
-	tests := []struct {
-		name string
-		args args
-		want dao.ExpireType
-	}{
-		{
-			name: "N/A",
-			args: args{
-				planFinishedAt: nil,
-			},
-			want: dao.ExpireTypeUndefined,
-		},
-		{
-			name: "Expired",
-			args: args{
-				planFinishedAt: &before,
-			},
-			want: dao.ExpireTypeExpired,
-		},
-		{
-			name: "Today",
-			args: args{
-				planFinishedAt: &today,
-			},
-			want: dao.ExpireTypeExpireIn1Day,
-		},
-		{
-			name: "Tomorrow",
-			args: args{
-				planFinishedAt: &tomorrow,
-			},
-			want: dao.ExpireTypeExpireIn2Days,
-		},
-		{
-			name: "This week",
-			args: args{
-				planFinishedAt: &week,
-			},
-			want: dao.ExpireTypeExpireIn7Days,
-		},
-		{
-			name: "This mouth",
-			args: args{
-				planFinishedAt: &month,
-			},
-			want: dao.ExpireTypeExpireIn30Days,
-		},
-		{
-			name: "Future",
-			args: args{
-				planFinishedAt: &future,
-			},
-			want: dao.ExpireTypeExpireInFuture,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := getExpiryStatus(tt.args.planFinishedAt, timeBase); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getExpiryStatus() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestCreateStream(t *testing.T) {
 	streamFields := map[string][]interface{}{
