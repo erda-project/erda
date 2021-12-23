@@ -17,28 +17,17 @@ package admin
 import (
 	"context"
 	"os"
-	"time"
-
-	"embed"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
-	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
-	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/admin/dao"
 	"github.com/erda-project/erda/modules/admin/manager"
-	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
-
-//go:embed component-protocol/scenarios
-var scenarioFS embed.FS
 
 type Config struct {
 	Debug bool `default:"false" env:"DEBUG" desc:"enable debug logging"`
@@ -49,8 +38,6 @@ type provider struct {
 
 	Log      logs.Logger
 	Protocol componentprotocol.Interface
-	CPTran   i18n.I18n       `autowired:"i18n@cp"`
-	Tran     i18n.Translator `translator:"common"`
 }
 
 func init() {
@@ -65,19 +52,6 @@ func init() {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.Log.Info("init admin")
-
-	p.Log.Info("init component-protocol")
-	p.Protocol.SetI18nTran(p.CPTran)
-	p.Protocol.WithContextValue(types.GlobalCtxKeyBundle, bundle.New(
-		bundle.WithAllAvailableClients(),
-		bundle.WithHTTPClient(
-			httpclient.New(
-				httpclient.WithTimeout(time.Second*30, time.Second*90),
-				httpclient.WithEnableAutoRetry(false),
-			)),
-	))
-	protocol.MustRegisterProtocolsFromFS(scenarioFS)
-	p.Log.Info("init component-protocol done")
 
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,
