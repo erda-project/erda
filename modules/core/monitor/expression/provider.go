@@ -173,7 +173,7 @@ func readTemplateFile(root string) (map[string][]*model.Template, error) {
 			alertIndex := strings.TrimSuffix(info.Name(), ".yml")
 			templateMap[alertIndex] = templateModel
 			SystemAllTemplate = append(SystemAllTemplate, templateModel...)
-			for i, _ := range templateModel {
+			for i := range templateModel {
 				templateModel[i].AlertIndex = strings.TrimSuffix(info.Name(), ".yml")
 				allRoute := strings.Split(path, "/")
 				templateModel[i].AlertType = allRoute[len(allRoute)-2]
