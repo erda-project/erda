@@ -22,10 +22,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/persistentvolumeclaim"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/secret"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/storageclass"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -267,5 +271,329 @@ func TestDereferenceEnvs(t *testing.T) {
 	}
 	for _, env := range d.Spec.Template.Spec.Containers[0].Env {
 		t.Logf("Name: %s, Value: %s", env.Name, env.Value)
+	}
+}
+
+func Test_inheritDeploymentLabels1(t *testing.T) {
+	type args struct {
+		service    *apistructs.Service
+		deployment *appsv1.Deployment
+	}
+
+	labels := map[string]string{
+		"app_kind":             "deployment",
+		"alibabacloud.com/eci": "true",
+	}
+
+	deploymentlabels := map[string]string{
+		"app_kind":             "deployment",
+		"alibabacloud.com/eci": "true",
+		"platform":             "erda",
+	}
+
+	binds01 := []apistructs.ServiceBind{
+		{
+			Bind: apistructs.Bind{
+				HostPath:      "/mnt/test",
+				ContainerPath: "/mnt/test",
+			},
+		},
+	}
+
+	binds02 := []apistructs.ServiceBind{
+		{
+			Bind: apistructs.Bind{
+				ContainerPath: "/mnt/test",
+			},
+		},
+	}
+
+	service01 := &apistructs.Service{
+		Binds:            binds01,
+		Labels:           labels,
+		DeploymentLabels: deploymentlabels,
+		Volumes: []apistructs.Volume{
+			{
+				SCVolume: apistructs.SCVolume{
+					TargetPath: "/opt/data",
+				},
+			},
+		},
+	}
+
+	service02 := &apistructs.Service{
+		Binds:            binds02,
+		Labels:           labels,
+		DeploymentLabels: deploymentlabels,
+		Volumes: []apistructs.Volume{
+			{
+				SCVolume: apistructs.SCVolume{
+					TargetPath: "/opt/data",
+				},
+			},
+		},
+	}
+
+	dp := &appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Deployment",
+			APIVersion: "apps/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "default",
+			Labels:    make(map[string]string),
+		},
+		Spec: appsv1.DeploymentSpec{
+			RevisionHistoryLimit: func(i int32) *int32 { return &i }(int32(3)),
+			Replicas:             func(i int32) *int32 { return &i }(int32(2)),
+			Template: apiv1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   "test",
+					Labels: make(map[string]string),
+				},
+			},
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": "testdeployment"},
+			},
+		},
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "case_01",
+			args: args{
+				service:    service01,
+				deployment: dp,
+			},
+			wantErr: true,
+		},
+		{
+			name: "case_02",
+			args: args{
+				service:    service02,
+				deployment: dp,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := inheritDeploymentLabels(tt.args.service, tt.args.deployment); (err != nil) != tt.wantErr {
+				t.Errorf("inheritDeploymentLabels() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_setPodAnnotationsFromLabels(t *testing.T) {
+	type args struct {
+		service        *apistructs.Service
+		podannotations map[string]string
+	}
+
+	labels := map[string]string{
+		"app_kind":             "deployment",
+		"alibabacloud.com/eci": "true",
+	}
+
+	deploymentlabels := map[string]string{
+		"app_kind":             "deployment",
+		"alibabacloud.com/eci": "true",
+		"platform":             "erda",
+	}
+
+	service01 := &apistructs.Service{
+		Labels:           labels,
+		DeploymentLabels: deploymentlabels,
+	}
+
+	anns := map[string]string{
+		"eci_enabled": "true",
+	}
+
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "case_01",
+			args: args{
+				service:        service01,
+				podannotations: anns,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
+func TestKubernetes_setStatelessServiceVolumes(t *testing.T) {
+	service := &apistructs.Service{
+		Name:          "test-service",
+		Namespace:     "test",
+		Image:         "test",
+		ImageUsername: "",
+		ImagePassword: "",
+		Cmd:           "",
+		Ports:         nil,
+		ProxyPorts:    nil,
+		Vip:           "",
+		ShortVIP:      "",
+		ProxyIp:       "",
+		PublicIp:      "",
+		Scale:         0,
+		Resources: apistructs.Resources{
+			Cpu: 0.1,
+			Mem: 512,
+		},
+		Depends:            nil,
+		Env:                nil,
+		Labels:             nil,
+		DeploymentLabels:   nil,
+		Selectors:          nil,
+		Binds:              nil,
+		Volumes:            nil,
+		Hosts:              nil,
+		HealthCheck:        nil,
+		NewHealthCheck:     nil,
+		SideCars:           nil,
+		InitContainer:      nil,
+		InstanceInfos:      nil,
+		MeshEnable:         nil,
+		TrafficSecurity:    diceyml.TrafficSecurity{},
+		WorkLoad:           "",
+		ProjectServiceName: "",
+		K8SSnippet:         nil,
+		StatusDesc:         apistructs.StatusDesc{},
+	}
+
+	service.Volumes = make([]apistructs.Volume, 0)
+	service.Volumes = append(service.Volumes, apistructs.Volume{
+		ContainerPath: "/opt/data/xxx01",
+		SCVolume: apistructs.SCVolume{
+			//SourcePath: "",
+			Snapshot: &apistructs.VolumeSnapshot{
+				MaxHistory: int32(2),
+			},
+		},
+	})
+
+	service.Volumes = append(service.Volumes, apistructs.Volume{
+		ContainerPath: "/opt/data/xxx02",
+		SCVolume:      apistructs.SCVolume{
+			//SourcePath: "/opt/test",
+		},
+	})
+
+	service.Volumes = append(service.Volumes, apistructs.Volume{
+		ContainerPath: "/opt/data/xxx03",
+		SCVolume:      apistructs.SCVolume{
+			//SourcePath: "test/data",
+		},
+	})
+
+	podSpec := &apiv1.PodSpec{}
+	podSpec.Volumes = make([]apiv1.Volume, 0)
+	podSpec.Volumes = append(podSpec.Volumes,
+		apiv1.Volume{
+			Name: "vol1",
+			VolumeSource: apiv1.VolumeSource{
+				HostPath: &apiv1.HostPathVolumeSource{
+					Path: "/data/xxx",
+				},
+			},
+		})
+
+	podSpec.Containers = make([]apiv1.Container, 0)
+	vol01 := apiv1.VolumeMount{
+		Name:      "vol1",
+		MountPath: "/opt/xxx",
+		ReadOnly:  false,
+	}
+
+	envs := make([]apiv1.EnvVar, 0)
+	envs = append(envs, apiv1.EnvVar{
+		Name:  "DICE_RUNTIME_NAME",
+		Value: "feature/develop",
+	})
+
+	envs = append(envs, apiv1.EnvVar{
+		Name:  "DICE_WORKSPACE",
+		Value: "dev",
+	})
+
+	envs = append(envs, apiv1.EnvVar{
+		Name:  "DICE_APPLICATION_ID",
+		Value: "1",
+	})
+
+	podSpec.Containers = append(podSpec.Containers, apiv1.Container{
+		Name:         "vol1",
+		VolumeMounts: make([]apiv1.VolumeMount, 0),
+		Env:          envs,
+	})
+
+	podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, vol01)
+
+	k := &Kubernetes{
+		secret:       &secret.Secret{},
+		pvc:          &persistentvolumeclaim.PersistentVolumeClaim{},
+		storageClass: &storageclass.StorageClass{},
+	}
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(k.pvc), "CreateIfNotExists", func(pvcl *persistentvolumeclaim.PersistentVolumeClaim, pvc *apiv1.PersistentVolumeClaim) error {
+		return nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(k.storageClass), "Get", func(sc *storageclass.StorageClass, name string) (*storagev1.StorageClass, error) {
+		return &storagev1.StorageClass{}, nil
+	})
+
+	err := k.setStatelessServiceVolumes(service, podSpec)
+	assert.Equal(t, err, nil)
+}
+
+func TestGenerateECIPodSidecarContainers(t *testing.T) {
+	wantContainer := apiv1.Container{
+		Name: "fluent-bit",
+		//Image: sidecar.Image,
+		Resources: apiv1.ResourceRequirements{
+			Requests: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("0.1"),
+				apiv1.ResourceMemory: resource.MustParse("256Mi"),
+			},
+			Limits: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("1"),
+				apiv1.ResourceMemory: resource.MustParse("1Gi"),
+			},
+		},
+		Command:      []string{"./fluent-bit/bin/fluent-bit"},
+		Args:         []string{"-c", "/fluent-bit/etc/sidecar/fluent-bit.conf"},
+		VolumeMounts: []apiv1.VolumeMount{},
+	}
+	tests := []struct {
+		name    string
+		want    apiv1.Container
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name:    "Test_01",
+			want:    wantContainer,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := GenerateECIPodSidecarContainers()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GenerateECIPodSidecarContainers() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
 }

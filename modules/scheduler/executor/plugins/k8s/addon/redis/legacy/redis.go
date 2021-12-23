@@ -133,14 +133,21 @@ func (ro *RedisOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 	scheinfo.Stateful = true
 	affinity := constraintbuilders.K8S(&scheinfo, nil, nil, nil).Affinity.NodeAffinity
 
+	labels := make(map[string]string)
+	annotations := make(map[string]string)
+	addon.SetAddonLabelsAndAnnotations(svc0, labels, annotations)
+	addon.SetAddonLabelsAndAnnotations(svc1, labels, annotations)
+
 	return RedisFailover{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "storage.spotahome.com/v1alpha2",
 			Kind:       "RedisFailover",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      sg.ID,
-			Namespace: genK8SNamespace(sg.Type, sg.ID),
+			Name:        sg.ID,
+			Namespace:   genK8SNamespace(sg.Type, sg.ID),
+			Labels:      labels,
+			Annotations: annotations,
 		},
 		Spec: RedisFailoverSpec{
 			Redis:        redis,

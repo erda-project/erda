@@ -59,6 +59,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/secret"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/serviceaccount"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/statefulset"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/storageclass"
 	"github.com/erda-project/erda/modules/scheduler/executor/util"
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -186,6 +187,7 @@ type Kubernetes struct {
 	sts          *statefulset.StatefulSet
 	pod          *pod.Pod
 	secret       *secret.Secret
+	storageClass *storageclass.StorageClass
 	sa           *serviceaccount.ServiceAccount
 	nodeLabel    *nodelabel.NodeLabel
 	ClusterInfo  *clusterinfo.ClusterInfo
@@ -350,6 +352,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	sts := statefulset.New(statefulset.WithCompleteParams(addr, client))
 	k8spod := pod.New(pod.WithCompleteParams(addr, client))
 	k8ssecret := secret.New(secret.WithCompleteParams(addr, client))
+	k8sstorageclass := storageclass.New(storageclass.WithCompleteParams(addr, client))
 	sa := serviceaccount.New(serviceaccount.WithCompleteParams(addr, client))
 	nodeLabel := nodelabel.New(addr, client)
 	event := event.New(event.WithCompleteParams(addr, client))
@@ -405,6 +408,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		sts:                      sts,
 		pod:                      k8spod,
 		secret:                   k8ssecret,
+		storageClass:             k8sstorageclass,
 		sa:                       sa,
 		nodeLabel:                nodeLabel,
 		ClusterInfo:              clusterInfo,
@@ -683,7 +687,6 @@ func (k *Kubernetes) KillPod(podname string) error {
 // 1, Create
 // 2, Update
 func (k *Kubernetes) createOne(ctx context.Context, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
-
 	if service == nil {
 		return errors.Errorf("service empty")
 	}

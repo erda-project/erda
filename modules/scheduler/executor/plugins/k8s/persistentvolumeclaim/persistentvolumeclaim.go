@@ -17,6 +17,7 @@ package persistentvolumeclaim
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -87,6 +88,13 @@ func (p *PersistentVolumeClaim) CreateIfNotExists(pvc *apiv1.PersistentVolumeCla
 		return errors.Errorf("failed to get pvc, name: %s, (%v)", pvc.Name, err)
 	}
 	if resp.IsOK() {
+		existedPVC := &apiv1.PersistentVolumeClaim{}
+		if err := json.NewDecoder(&getb).Decode(existedPVC); err != nil {
+			return err
+		}
+		if *existedPVC.Spec.StorageClassName != *pvc.Spec.StorageClassName {
+			return errors.Errorf("pvc %s/%s existed, but storageclass %s is not as expected %s ", pvc.Namespace, pvc.Name, *existedPVC.Spec.StorageClassName, *pvc.Spec.StorageClassName)
+		}
 		return nil
 	}
 	if !resp.IsNotfound() {
@@ -134,4 +142,32 @@ func (p *PersistentVolumeClaim) Delete(namespace, name string) error {
 			name, resp.StatusCode(), b.String())
 	}
 	return nil
+}
+
+// Get get a k8s persistentVolumeClaim
+func (p *PersistentVolumeClaim) Get(namespace, name string) (*apiv1.PersistentVolumeClaim, error) {
+	var b bytes.Buffer
+	path := strutil.Concat("/api/v1/namespaces/", namespace, "/persistentvolumeclaims/", name)
+
+	resp, err := p.client.Get(p.addr).
+		Path(path).
+		Do().
+		Body(&b)
+
+	if err != nil {
+		return nil, errors.Errorf("failed to get pvc info, namespace: %s name: %s", namespace, name)
+	}
+
+	if !resp.IsOK() {
+		if resp.IsNotfound() {
+			return nil, k8serror.ErrNotFound
+		}
+		return nil, errors.Errorf("failed to get pvc info, namespace: %s name: %s, statuscode: %v, body: %v", namespace, name, resp.StatusCode(), b.String())
+	}
+
+	pvc := &apiv1.PersistentVolumeClaim{}
+	if err := json.NewDecoder(&b).Decode(pvc); err != nil {
+		return nil, err
+	}
+	return pvc, nil
 }

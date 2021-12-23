@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -97,6 +98,22 @@ func (s *SourcecovOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 	scheinfo.Stateful = true
 	affinity := constraintbuilders.K8S(&scheinfo, nil, nil, nil).Affinity
 
+	scname := "dice-nfs-volume"
+	capacity := "20Gi"
+
+	if len(svc.Volumes) > 0 {
+		if svc.Volumes[0].SCVolume.Capacity >= diceyml.AddonVolumeSizeMin && svc.Volumes[0].SCVolume.Capacity <= diceyml.AddonVolumeSizeMax {
+			capacity = fmt.Sprintf("%dGi", svc.Volumes[0].SCVolume.Capacity)
+		}
+
+		if svc.Volumes[0].SCVolume.Capacity > diceyml.AddonVolumeSizeMax {
+			capacity = fmt.Sprintf("%dGi", diceyml.AddonVolumeSizeMax)
+		}
+
+		if svc.Volumes[0].SCVolume.StorageClassName != "" {
+			scname = svc.Volumes[0].SCVolume.StorageClassName
+		}
+	}
 	spec := scv1.Agent{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Agent",
@@ -109,8 +126,8 @@ func (s *SourcecovOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 		Spec: scv1.AgentSpec{
 			Image:            svc.Image,
 			Env:              envs,
-			StorageClassName: "dice-nfs-volume",
-			StorageSize:      resource.MustParse("10Gi"),
+			StorageClassName: scname,
+			StorageSize:      resource.MustParse(capacity),
 			Affinity:         &affinity,
 			Resources: &v1.ResourceRequirements{
 				Requests: v1.ResourceList{
@@ -127,6 +144,32 @@ func (s *SourcecovOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 				},
 			},
 		},
+	}
+
+	// set Labels and annotations
+	spec.Labels = make(map[string]string)
+	spec.Annotations = make(map[string]string)
+	spec.Spec.Labels = make(map[string]string)
+	spec.Spec.Annotations = make(map[string]string)
+	addon.SetAddonLabelsAndAnnotations(svc, spec.Labels, spec.Annotations)
+	addon.SetAddonLabelsAndAnnotations(svc, spec.Spec.Labels, spec.Spec.Annotations)
+
+	// set pvc annotations for snapshot
+	if len(svc.Volumes) > 0 {
+		if svc.Volumes[0].SCVolume.Snapshot.MaxHistory > 0 {
+			if scname == apistructs.AlibabaSSDSC {
+				vs := diceyml.VolumeSnapshot{
+					MaxHistory: svc.Volumes[0].SCVolume.Snapshot.MaxHistory,
+				}
+				vsMap := map[string]diceyml.VolumeSnapshot{}
+				vsMap[scname] = vs
+				data, _ := json.Marshal(vsMap)
+				spec.Annotations[apistructs.CSISnapshotMaxHistory] = string(data)
+				spec.Spec.Annotations[apistructs.CSISnapshotMaxHistory] = string(data)
+			} else {
+				logrus.Warnf("Service %s pvc volume use storageclass %s, it do not support snapshot. Only volume.type SSD for Alibaba disk SSD support snapshot\n", svc.Name, scname)
+			}
+		}
 	}
 
 	return &spec
