@@ -115,19 +115,7 @@ func (l *ProjAppList) doFilterProj() *list.Data {
 	for _, p := range projs.List {
 		// TODO: construct list item
 		item := list.Item{
-			ID:               strconv.FormatUint(p.ProjectDTO.ID, 10),
-			Title:            "",
-			LogoURL:          "",
-			Star:             false,
-			Labels:           []list.ItemLabel{},
-			Description:      "",
-			BackgroundImgURL: "",
-			KvInfos:          []list.KvInfo{},
-			Operations:       map[cptype.OperationKey]cptype.Operation{},
-			MoreOperations: list.MoreOperations{
-				Operations:      map[cptype.OperationKey]cptype.Operation{},
-				OperationsOrder: []cptype.OperationKey{},
-			},
+			ID: strconv.FormatUint(p.ProjectDTO.ID, 10),
 		}
 		data.List = append(data.List, item)
 	}
