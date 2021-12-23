@@ -30,13 +30,15 @@ type DeployLogHelper struct {
 	Bdl          *bundle.Bundle
 }
 
-func (d *DeployLogHelper) Log(content string) {
+const TAG_DICE_ORG_NAME = "dice_org_name"
+
+func (d *DeployLogHelper) Log(content string, tags map[string]string) {
 	content = "(orchestrator) " + content
 	logrus.Debugf("deployment log -> %s", content)
 	timestamp := time.Now().UnixNano()
 	line := fmt.Sprintf("%s\n", content)
 	lines := []apistructs.LogPushLine{
-		{Source: "deploy", ID: strconv.FormatUint(d.DeploymentID, 10), Content: line, Timestamp: timestamp},
+		{Source: "deploy", ID: strconv.FormatUint(d.DeploymentID, 10), Content: line, Timestamp: timestamp, Tags: tags},
 	}
 	// TODO: buffer
 	if err := d.Bdl.PushLog(&apistructs.LogPushRequest{Lines: lines}); err != nil {
