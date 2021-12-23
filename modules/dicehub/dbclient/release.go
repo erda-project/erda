@@ -37,6 +37,8 @@ type Release struct {
 	Addon string `json:"addon" gorm:"type:text"`
 	// Markdown changelog，选填
 	Markdown string `json:"markdown" gorm:"type:text"`
+	// IsStable stable表示非临时制品
+	IsStable bool `json:"isStable" gorm:"type:tinyint(1)"`
 	// IsFormal 是否为正式版
 	IsFormal bool `json:"isFormal" gorm:"type:tinyint(1)"`
 	// IsProjectRelease 是否为项目级别制品
@@ -118,20 +120,21 @@ func (client *DBClient) GetReleases(releaseIDs []string) ([]Release, error) {
 
 // GetReleasesByParams 根据参数过滤Release
 func (client *DBClient) GetReleasesByParams(
-	orgID, projectID, applicationID int64,
+	orgID, projectID int64, applicationID []string,
 	keyword, releaseName, branch string,
-	isFormal, isProjectRelease bool,
-	userID, version int64, commitID, tags,
+	isStable bool, isFormal *bool, isProjectRelease bool,
+	userID []string, version string, commitID, tags,
 	cluster string, crossCluster *bool, isVersion bool, crossClusterOrSpecifyCluster *string,
-	startTime, endTime time.Time, pageNum, pageSize int64) (int64, []Release, error) {
+	startTime, endTime time.Time, pageNum, pageSize int64,
+	orderBy string, descOrder bool) (int64, []Release, error) {
 
 	var releases []Release
 	db := client.DB.Debug()
 	if orgID > 0 {
 		db = db.Where("org_id = ?", orgID)
 	}
-	if applicationID > 0 {
-		db = db.Where("application_id = ?", applicationID)
+	if len(applicationID) > 0 {
+		db = db.Where("application_id in (?)", applicationID)
 	}
 
 	if projectID > 0 {
@@ -160,18 +163,20 @@ func (client *DBClient) GetReleasesByParams(
 		db = db.Where("labels LIKE ?", "%"+fmt.Sprintf("\"gitBranch\":\"%s\"", branch)+"%")
 	}
 
-	db = db.Where("is_formal = ?", isFormal).Where("is_project_release = ?", isProjectRelease)
-
-	if userID > 0 {
-		db = db.Where("user_id = ?", userID)
+	if isFormal != nil {
+		db = db.Where("is_stable = ?", isStable).Where("is_formal = ?", *isFormal).Where("is_project_release = ?", isProjectRelease)
 	}
 
-	if version > 0 {
-		db = db.Where("version = ?", version)
+	if len(userID) > 0 {
+		db = db.Where("user_id in (?)", userID)
+	}
+
+	if version != "" {
+		db = db.Where("version LIKE ?", fmt.Sprintf("%%%s%%", version))
 	}
 
 	if commitID != "" {
-		db = db.Where("commit_id = ?", commitID)
+		db = db.Where("labels LIKE ?", fmt.Sprintf("%%\"gitCommitId\":\"%s\"%%", commitID))
 	}
 
 	if tags != "" {
@@ -182,7 +187,17 @@ func (client *DBClient) GetReleasesByParams(
 		db = db.Where("created_at > ?", startTime)
 	}
 
-	if err := db.Where("created_at <= ?", endTime).Order("created_at DESC").Offset((pageNum - 1) * pageSize).
+	db = db.Where("created_at <= ?", endTime)
+
+	if orderBy != "" {
+		order := "ASC"
+		if descOrder {
+			order = "DESC"
+		}
+		db = db.Order(orderBy + " " + order)
+	}
+
+	if err := db.Offset((pageNum - 1) * pageSize).
 		Limit(pageSize).Find(&releases).Error; err != nil {
 		return 0, nil, err
 	}
@@ -202,6 +217,18 @@ func (client *DBClient) GetReleasesByAppAndVersion(orgID, projectID, appID int64
 	if err := client.Where("org_id = ?", orgID).
 		Where("project_id = ?", projectID).
 		Where("application_id = ?", appID).
+		Where("version = ?", version).
+		Find(&releases).Error; err != nil {
+		return nil, err
+	}
+	return releases, nil
+}
+
+// GetReleasesByProjectAndVersion 根据 projectID & version获取 Release列表
+func (client *DBClient) GetReleasesByProjectAndVersion(orgID, projectID int64, version string) ([]Release, error) {
+	var releases []Release
+	if err := client.Where("org_id = ?", orgID).
+		Where("project_id = ?", projectID).
 		Where("version = ?", version).
 		Find(&releases).Error; err != nil {
 		return nil, err

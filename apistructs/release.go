@@ -71,6 +71,9 @@ type ReleaseCreateRequest struct {
 	// Tags
 	Tags []string `json:"tags,omitempty"`
 
+	// IsStable stable表示非临时制品
+	IsStable bool `json:"isStable,omitempty"`
+
 	// IsFormal 是否为正式版
 	IsFormal bool `json:"isFormal,omitempty"`
 
@@ -115,6 +118,21 @@ type ReleaseCreateRequest struct {
 
 	// CrossCluster 跨集群
 	CrossCluster bool `json:"crossCluster,omitempty"`
+}
+
+type ReleaseUploadRequest struct {
+	// DiceFileID 上传的dice.yml文件ID，必填
+	DiceFileID string `json:"diceFileID,omitempty"`
+	// ProjectID 项目ID，必填
+	ProjectID int64 `json:"projectID,omitempty"`
+	// ProjectName 项目名称，选填
+	ProjectName string `json:"projectName,omitempty"`
+	// OrgID 企业标识符，描述release所属企业，选填
+	OrgID int64 `json:"orgId,omitempty"`
+	// UserID 用户标识符, 描述release所属用户，最大长度50，选填
+	UserID string `json:"userId,omitempty"`
+	// ClusterName 集群名称，描述release所属集群，最大长度80，选填
+	ClusterName string `json:"clusterName,omitempty"`
 }
 
 // ReleaseResource release资源结构
@@ -213,6 +231,7 @@ type ReleaseGetResponseData struct {
 	Desc                   string            `json:"desc,omitempty"`
 	Addon                  string            `json:"addon,omitempty"`
 	Markdown               string            `json:"markdown,omitempty"`
+	IsStable               bool              `json:"isStable"`
 	IsFormal               bool              `json:"isFormal"`
 	IsProjectRelease       bool              `json:"isProjectRelease"`
 	ApplicationReleaseList string            `json:"applicationReleaseList,omitempty"`
@@ -266,17 +285,20 @@ type ReleaseListRequest struct {
 	// 分支名
 	Branch string `json:"-" query:"branchName"`
 
+	// stable表示非临时制品
+	IsStable bool `json:"-" query:"isStable"`
+
 	// 是否为正式版本
-	IsFormal bool `json:"-" query:"isFormal"`
+	IsFormal *bool `json:"-" query:"isFormal"`
 
 	// 是否为项目制品
 	IsProjectRelease bool `json:"-" query:"isProjectRelease"`
 
 	// 提交用户
-	UserID int64 `json:"-" query:"userID"`
+	UserID []string `json:"-" query:"userID"`
 
 	// Version
-	Version int64 `json:"version" query:"version"`
+	Version string `json:"version" query:"version"`
 
 	// commit ID
 	CommitID string `json:"-" query:"commitID"`
@@ -294,7 +316,7 @@ type ReleaseListRequest struct {
 	CrossClusterOrSpecifyCluster *string `json:"-" query:"crossClusterOrSpecifyCluster"`
 
 	// 应用Id
-	ApplicationID int64 `json:"-" query:"applicationId"`
+	ApplicationID []string `json:"-" query:"applicationId"`
 
 	// 项目ID
 	ProjectID int64 `json:"-" query:"projectId"`
@@ -310,6 +332,9 @@ type ReleaseListRequest struct {
 
 	// 当前页号，默认值1
 	PageNum int64 `json:"-" query:"pageNo"`
+
+	OrderBy   string `json:"orderBy,omitempty"`
+	DescOrder bool   `json:"descOrder,omitempty"`
 }
 
 func (req ReleaseListRequest) ConvertToQueryParams() url.Values {
@@ -329,8 +354,8 @@ func (req ReleaseListRequest) ConvertToQueryParams() url.Values {
 	if req.CrossClusterOrSpecifyCluster != nil {
 		values.Add("crossClusterOrSpecifyCluster", *req.CrossClusterOrSpecifyCluster)
 	}
-	if req.ApplicationID > 0 {
-		values.Add("applicationId", strconv.FormatInt(req.ApplicationID, 10))
+	for _, id := range req.ApplicationID {
+		values.Add("applicationId", id)
 	}
 	if req.ProjectID > 0 {
 		values.Add("projectId", strconv.FormatInt(req.ProjectID, 10))
@@ -353,19 +378,28 @@ func (req ReleaseListRequest) ConvertToQueryParams() url.Values {
 	if req.Branch != "" {
 		values.Add("branchName", req.Branch)
 	}
-	values.Add("isFormal", strconv.FormatBool(req.IsFormal))
+	values.Add("isStable", strconv.FormatBool(req.IsStable))
+	if req.IsFormal != nil {
+		values.Add("isFormal", strconv.FormatBool(*req.IsFormal))
+	}
 	values.Add("isProjectRelease", strconv.FormatBool(req.IsProjectRelease))
-	if req.UserID > 0 {
-		values.Add("userId", strconv.FormatInt(req.UserID, 10))
+	for _, id := range req.UserID {
+		values.Add("userId", id)
 	}
 	if req.CommitID != "" {
 		values.Add("commitId", req.CommitID)
 	}
-	if req.Version > 0 {
-		values.Add("version", strconv.FormatInt(req.Version, 10))
+	if req.Version != "" {
+		values.Add("version", req.Version)
 	}
 	if req.Tags != "" {
 		values.Add("tags", req.Tags)
+	}
+	if req.OrderBy != "" {
+		values.Add("orderBy", req.OrderBy)
+		if req.DescOrder {
+			values.Add("descOrder", "true")
+		}
 	}
 
 	return values
@@ -411,15 +445,32 @@ type ReleaseEventData ReleaseGetResponseData
 
 // ReleasesDeleteRequest release 批量删除请求结构
 type ReleasesDeleteRequest struct {
+	ProjectID int64    `json:"projectId"`
 	ReleaseID []string `json:"releaseID"`
 }
 
 // ReleasesToFormalRequest release 批量转正请求结构
 type ReleasesToFormalRequest struct {
+	ProjectID int64    `json:"projectId"`
 	ReleaseID []string `json:"releaseID"`
 }
 
 type ReleasesToFormalResponse struct {
 	Header
 	Data string `json:"data"`
+}
+
+type ReleaseMetadata struct {
+	Version   string                 `json:"version,omitempty"`
+	Desc      string                 `json:"desc,omitempty"`
+	ChangeLog string                 `json:"changeLog,omitempty"`
+	AppList   map[string]AppMetadata `json:"appList,omitempty"`
+}
+
+type AppMetadata struct {
+	GitBranch        string `json:"gitBranch,omitempty"`
+	GitCommitID      string `json:"gitCommitId,omitempty"`
+	GitCommitMessage string `json:"gitCommitMessage,omitempty"`
+	GitRepo          string `json:"gitRepo,omitempty"`
+	ChangeLog        string `json:"changeLog,omitempty"`
 }

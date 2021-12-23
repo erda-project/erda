@@ -180,6 +180,7 @@ func (b *Bundle) DeleteReleases(orgID uint64, req apistructs.ReleasesDeleteReque
 	var respData apistructs.ReleaseDeleteResponse
 	resp, err := hc.Delete(host).Path("/api/releases").
 		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		Header(httputil.InternalHeader, "true").
 		JSONBody(req).Do().JSON(&respData)
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
@@ -201,6 +202,7 @@ func (b *Bundle) UpdateRelease(orgID uint64, req apistructs.ReleaseUpdateRequest
 	var respData apistructs.ReleaseUpdateResponse
 	resp, err := hc.Put(host).Path(path).
 		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		Header(httputil.InternalHeader, "true").
 		JSONBody(req).Do().JSON(&respData)
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)
@@ -221,6 +223,7 @@ func (b *Bundle) ToFormalReleases(orgID uint64, req apistructs.ReleasesToFormalR
 	var respData apistructs.ReleasesToFormalResponse
 	resp, err := hc.Put(host).Path("/api/releases").
 		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		Header(httputil.InternalHeader, "true").
 		JSONBody(req).Do().JSON(&respData)
 	if err != nil {
 		return apierrors.ErrInvoke.InternalError(err)

@@ -15,8 +15,11 @@
 package release
 
 import (
+	"archive/tar"
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -189,6 +192,144 @@ func limitLabelsLength(req *apistructs.ReleaseCreateRequest) error {
 	return nil
 }
 
+func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.ReadCloser) (*dbclient.Release, []dbclient.Release, error) {
+	var metadata apistructs.ReleaseMetadata
+	dices := make(map[string]string)
+	reader := tar.NewReader(file)
+	for {
+		hdr, err := reader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, nil, err
+		}
+		buf := bytes.Buffer{}
+		if _, err = io.Copy(&buf, reader); err != nil {
+			return nil, nil, err
+		}
+
+		splits := strings.Split(hdr.Name, "/")
+		if len(splits) == 2 && splits[1] == "metadata.yml" {
+			if err := yaml.Unmarshal(buf.Bytes(), &metadata); err != nil {
+				return nil, nil, err
+			}
+		} else if len(splits) == 3 && splits[2] == "dice.yml" {
+			appName := splits[1]
+			dices[appName] = buf.String()
+		}
+	}
+	projectReleaseID := uuid.UUID()
+
+	existedApps := make(map[string]struct{})
+	apps, err := r.bdl.GetAppsByProject(uint64(req.ProjectID), uint64(req.OrgID), req.UserID)
+	if err != nil {
+		return nil, nil, errors.Errorf("failed to list apps, %v", err)
+	}
+	for i := range apps.List {
+		existedApps[apps.List[i].Name] = struct{}{}
+	}
+
+	var appReleaseList []string
+	var appReleases []dbclient.Release
+	for appName, dice := range dices {
+		if _, ok := existedApps[appName]; !ok {
+			return nil, nil, errors.Errorf("app %s not existed", appName)
+		}
+		id := uuid.UUID()
+		md := metadata.AppList[appName]
+
+		labels := map[string]string{
+			"gitBranch":        md.GitBranch,
+			"gitCommitId":      md.GitCommitID,
+			"gitCommitMessage": md.GitCommitMessage,
+			"gitRepo":          md.GitRepo,
+		}
+		data, err := json.Marshal(labels)
+		if err != nil {
+			return nil, nil, errors.Errorf("failed to marshal labels, %v", err)
+		}
+
+		appReleaseList = append(appReleaseList, id)
+		appReleases = append(appReleases, dbclient.Release{
+			ReleaseID:        id,
+			ReleaseName:      md.GitBranch,
+			Desc:             fmt.Sprintf("referenced by project release %s", projectReleaseID),
+			Dice:             dice,
+			Markdown:         md.ChangeLog,
+			IsStable:         true,
+			IsFormal:         false,
+			IsProjectRelease: false,
+			Labels:           string(data),
+			OrgID:            req.OrgID,
+			ProjectID:        req.ProjectID,
+			ProjectName:      req.ProjectName,
+			UserID:           req.UserID,
+			ClusterName:      req.ClusterName,
+			Reference:        1,
+		})
+	}
+
+	listData, err := json.Marshal(appReleaseList)
+	if err != nil {
+		return nil, nil, errors.Errorf("faield to marshal application release list, %v", err)
+	}
+	projectRelease := &dbclient.Release{
+		ReleaseID:              projectReleaseID,
+		Desc:                   metadata.Desc,
+		Markdown:               metadata.ChangeLog,
+		IsStable:               true,
+		IsFormal:               false,
+		IsProjectRelease:       true,
+		ApplicationReleaseList: string(listData),
+		Version:                metadata.Version,
+		OrgID:                  req.OrgID,
+		ProjectID:              req.ProjectID,
+		ProjectName:            req.ProjectName,
+		UserID:                 req.UserID,
+		ClusterName:            req.ClusterName,
+	}
+	return projectRelease, appReleases, nil
+}
+
+func (r *Release) createReleases(releases []dbclient.Release) (err error) {
+	tx := r.db.Begin()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	for i := range releases {
+		if err = tx.Create(releases[i]).Error; err != nil {
+			return
+		}
+	}
+	return tx.Commit().Error
+}
+
+// CreateByFile 用文件创建项目制品
+func (r *Release) CreateByFile(req apistructs.ReleaseUploadRequest, file io.ReadCloser) (string, error) {
+	projectRelease, appReleases, err := r.parseReleaseFile(req, file)
+	if err != nil {
+		return "", err
+	}
+
+	releases, err := r.db.GetReleasesByProjectAndVersion(req.OrgID, req.ProjectID, projectRelease.Version)
+	if err != nil {
+		return "", err
+	}
+	if len(releases) > 0 {
+		return "", errors.Errorf("release version: %s already exist", projectRelease.Version)
+	}
+
+	err = r.createReleases(append(appReleases, *projectRelease))
+	if err != nil {
+		return "", err
+	}
+	return projectRelease.ReleaseID, nil
+}
+
 // Update 更新 Release
 func (r *Release) Update(orgID int64, releaseID string, req *apistructs.ReleaseUpdateRequestData) error {
 	release, err := r.db.GetRelease(releaseID)
@@ -199,6 +340,9 @@ func (r *Release) Update(orgID int64, releaseID string, req *apistructs.ReleaseU
 		return errors.Errorf("release not found")
 	}
 
+	if release.IsFormal {
+		return errors.New("formal release can not be updated")
+	}
 	// 若version不为空时，确保Version在应用层面唯一
 	if req.Version != "" && req.Version != release.Version {
 		if req.ApplicationID > 0 {
@@ -227,32 +371,13 @@ func (r *Release) Update(orgID int64, releaseID string, req *apistructs.ReleaseU
 	}
 
 	if release.IsProjectRelease {
-		if release.ApplicationReleaseList == "" { // 由上传dice.yml文件方式创建的制品
-			if req.Dice == "" {
-				return errors.New("dice yml can not be empty")
-			}
-			release.Dice = req.Dice
-			if err := r.db.UpdateRelease(release); err != nil {
-				return err
-			}
-		} else if len(req.ApplicationReleaseList) == 0 { // 由选择应用制品方式创建的制品
+		if len(req.ApplicationReleaseList) == 0 {
 			return errors.New("application release list can not be null for project release")
 		}
 		newAppReleases, err := r.db.GetReleases(req.ApplicationReleaseList)
 		if err != nil {
 			return errors.Errorf("failed to get application releases: %v", err)
 		}
-
-		// update dice
-		diceMap := make(map[string]string)
-		for i := range newAppReleases {
-			diceMap[newAppReleases[i].ApplicationName] = newAppReleases[i].Dice
-		}
-		dice, err := yaml.Marshal(diceMap)
-		if err != nil {
-			return errors.Errorf("failed to marshal dice yaml, %v", err)
-		}
-		release.Dice = string(dice)
 
 		// update application_release_list
 		oldListStr := release.ApplicationReleaseList
@@ -366,6 +491,9 @@ func (r *Release) Delete(orgID int64, releaseIDs ...string) error {
 			continue
 		}
 
+		if release.IsFormal {
+			failed = append(failed, fmt.Sprintf("%s(%s)", releaseID, "formal release can not be deleted"))
+		}
 		// Release被使用时，不可删除
 		if release.Reference > 0 {
 			failed = append(failed, fmt.Sprintf("%s(%s)", releaseID, "reference > 0"))
@@ -481,11 +609,12 @@ func (r *Release) List(orgID int64, req *apistructs.ReleaseListRequest) (*apistr
 	total, releases, err := r.db.GetReleasesByParams(
 		orgID, req.ProjectID, req.ApplicationID,
 		req.Query, req.ReleaseName, req.Branch,
-		req.IsFormal, req.IsProjectRelease,
+		req.IsStable, req.IsFormal, req.IsProjectRelease,
 		req.UserID, req.Version, req.CommitID, req.Tags,
 		req.Cluster, req.CrossCluster, req.IsVersion,
 		req.CrossClusterOrSpecifyCluster,
-		startTime, endTime, req.PageNum, req.PageSize)
+		startTime, endTime, req.PageNum, req.PageSize,
+		req.OrderBy, req.DescOrder)
 	if err != nil {
 		return nil, err
 	}
@@ -675,9 +804,9 @@ func (r *Release) Convert(releaseRequest *apistructs.ReleaseCreateRequest, appRe
 		Dice:             releaseRequest.Dice,
 		Addon:            releaseRequest.Addon,
 		Markdown:         releaseRequest.Markdown,
+		IsStable:         releaseRequest.IsStable,
 		IsFormal:         releaseRequest.IsFormal,
 		IsProjectRelease: releaseRequest.IsProjectRelease,
-		Version:          releaseRequest.Version,
 		OrgID:            releaseRequest.OrgID,
 		ProjectID:        releaseRequest.ProjectID,
 		ApplicationID:    releaseRequest.ApplicationID,
@@ -714,20 +843,24 @@ func (r *Release) Convert(releaseRequest *apistructs.ReleaseCreateRequest, appRe
 		release.Resources = string(resourceBytes)
 	}
 
-	if releaseRequest.IsProjectRelease && releaseRequest.Dice == "" {
+	if releaseRequest.IsProjectRelease {
 		if len(appReleases) == 0 {
-			return nil, errors.New("application release list can not be null for project release")
+			return nil, errors.New("application release list can not be null for project release when dice yaml is empty")
 		}
 
-		diceMap := make(map[string]string)
-		for i := range appReleases {
-			diceMap[appReleases[i].ApplicationName] = appReleases[i].Dice
-		}
-		dice, err := yaml.Marshal(diceMap)
-		if err != nil {
-			return nil, errors.Errorf("failed to marshal dice yaml, %v", err)
-		}
-		release.Dice = string(dice)
+		//diceMap := make(map[string]string)
+		//for i := range appReleases {
+		//	diceMap[appReleases[i].ApplicationName] = appReleases[i].Dice
+		//}
+		//dice, err := yaml.Marshal(diceMap)
+		//if err != nil {
+		//	return nil, errors.Errorf("failed to marshal dice yaml, %v", err)
+		//}
+		//release.Dice = string(dice)
+
+		release.ApplicationID = 0
+		release.ApplicationName = ""
+		release.Dice = ""
 
 		listData, err := json.Marshal(releaseRequest.ApplicationReleaseList)
 		if err != nil {
@@ -739,7 +872,8 @@ func (r *Release) Convert(releaseRequest *apistructs.ReleaseCreateRequest, appRe
 }
 
 func (r *Release) ToFormal(releaseIDs []string) error {
-	return r.db.Model(&dbclient.Release{}).Where("release_id in (?)", releaseIDs).Update("is_formal", true).Error
+	return r.db.Model(&dbclient.Release{}).Where("is_stable", true).
+		Where("release_id in (?)", releaseIDs).Update("is_formal", true).Error
 }
 
 // release数据库结构转换为API返回所需结构
@@ -763,6 +897,7 @@ func (r *Release) convertToReleaseResponse(release *dbclient.Release) *apistruct
 		Desc:                   release.Desc,
 		Addon:                  release.Addon,
 		Markdown:               release.Markdown,
+		IsStable:               release.IsStable,
 		IsFormal:               release.IsFormal,
 		IsProjectRelease:       release.IsProjectRelease,
 		ApplicationReleaseList: release.ApplicationReleaseList,

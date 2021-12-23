@@ -15,12 +15,14 @@
 package endpoints
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -31,6 +33,8 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dicehub/dbclient"
 	"github.com/erda-project/erda/modules/dicehub/errcode"
 	"github.com/erda-project/erda/modules/dicehub/response"
 	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
@@ -55,7 +59,6 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 	if err := json.NewDecoder(r.Body).Decode(&releaseRequest); err != nil {
 		return apierrors.ErrCreateRelease.InvalidParameter(err).ToResp(), nil
 	}
-	logrus.Infof("creating release...request body: %v\n", releaseRequest)
 
 	if releaseRequest.ReleaseName == "" {
 		return apierrors.ErrCreateRelease.MissingParameter("releaseName").ToResp(), nil
@@ -68,6 +71,23 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 	// 	releaseRequest.Dice = diceStrWithInitContainer
 	// }
 
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrCreateRelease.NotLogin().ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		if !releaseRequest.IsProjectRelease {
+			return apierrors.ErrCreateRelease.InvalidParameter("can not create application release manually").ToResp(), nil
+		}
+		hasAccess, err := e.hasWriteAccess(identityInfo, releaseRequest.ProjectID)
+		if err != nil {
+			return apierrors.ErrCreateRelease.InternalError(err).ToResp(), nil
+		}
+		if !hasAccess {
+			return apierrors.ErrCreateRelease.AccessDenied().ToResp(), nil
+		}
+	}
+	logrus.Infof("creating release...request body: %v\n", releaseRequest)
 	// 创建 Release
 	releaseID, err := e.release.Create(&releaseRequest)
 	if err != nil {
@@ -79,6 +99,53 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 	}
 
 	return httpserver.OkResp(respBody)
+}
+
+func (e *Endpoints) UploadRelease(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	_, err := getPermissionHeader(r)
+	if err != nil {
+		return apierrors.ErrCreateRelease.NotLogin().ToResp(), nil
+	}
+
+	if r.Body == nil {
+		return apierrors.ErrCreateRelease.MissingParameter("body").ToResp(), nil
+	}
+	var releaseRequest apistructs.ReleaseUploadRequest
+	if err := json.NewDecoder(r.Body).Decode(&releaseRequest); err != nil {
+		return apierrors.ErrCreateRelease.InvalidParameter(err).ToResp(), nil
+	}
+
+	if releaseRequest.DiceFileID == "" {
+		return apierrors.ErrCreateRelease.MissingParameter("diceFileID").ToResp(), nil
+	}
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrCreateRelease.NotLogin().ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		hasAccess, err := e.hasWriteAccess(identityInfo, releaseRequest.ProjectID)
+		if err != nil {
+			return apierrors.ErrCreateRelease.InternalError(err).ToResp(), nil
+		}
+		if !hasAccess {
+			return apierrors.ErrCreateRelease.AccessDenied().ToResp(), nil
+		}
+	}
+
+	file, err := e.bdl.DownloadDiceFile(releaseRequest.DiceFileID)
+	if err != nil {
+		return apierrors.ErrCreateRelease.InternalError(err).ToResp(), nil
+	}
+	defer file.Close()
+
+	releaseID, err := e.release.CreateByFile(releaseRequest, file)
+	if err != nil {
+		return apierrors.ErrCreateRelease.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(&apistructs.ReleaseCreateResponseData{
+		ReleaseID: releaseID,
+	})
 }
 
 func (e *Endpoints) InjectDiceInitContainer(diceStr string) (string, error) {
@@ -150,6 +217,20 @@ func (e *Endpoints) UpdateRelease(ctx context.Context, r *http.Request, vars map
 	if err := json.NewDecoder(r.Body).Decode(&updateRequest); err != nil {
 		return apierrors.ErrUpdateRelease.InvalidParameter(err).ToResp(), nil
 	}
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrUpdateRelease.NotLogin().ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		hasAccess, err := e.hasWriteAccess(identityInfo, updateRequest.ProjectID)
+		if err != nil {
+			return apierrors.ErrUpdateRelease.InternalError(err).ToResp(), nil
+		}
+		if !hasAccess {
+			return apierrors.ErrUpdateRelease.AccessDenied().ToResp(), nil
+		}
+	}
 	logrus.Infof("update release info: %+v", updateRequest)
 
 	if err := e.release.Update(orgID, releaseID, &updateRequest); err != nil {
@@ -200,6 +281,25 @@ func (e *Endpoints) DeleteRelease(ctx context.Context, r *http.Request, vars map
 	if releaseID == "" {
 		return apierrors.ErrDeleteRelease.MissingParameter("releaseId").ToResp(), nil
 	}
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrCreateRelease.NotLogin().ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		release, err := e.db.GetRelease(releaseID)
+		if err != nil {
+			return apierrors.ErrDeleteRelease.InternalError(err).ToResp(), nil
+		}
+		hasAccess, err := e.hasWriteAccess(identityInfo, release.ProjectID)
+		if err != nil {
+			return apierrors.ErrDeleteRelease.InternalError(err).ToResp(), nil
+		}
+		if !hasAccess {
+			return apierrors.ErrDeleteRelease.AccessDenied().ToResp(), nil
+		}
+	}
+
 	logrus.Infof("deleting release...releaseId: %s\n", releaseID)
 
 	if err := e.release.Delete(orgID, releaseID); err != nil {
@@ -221,6 +321,20 @@ func (e *Endpoints) DeleteReleases(ctx context.Context, r *http.Request, vars ma
 		return apierrors.ErrUpdateRelease.InvalidParameter(err).ToResp(), nil
 	}
 
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrCreateRelease.NotLogin().ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		hasAccess, err := e.hasWriteAccess(identityInfo, releasesDeleteRequest.ProjectID)
+		if err != nil {
+			return apierrors.ErrDeleteRelease.InternalError(err).ToResp(), nil
+		}
+		if !hasAccess {
+			return apierrors.ErrDeleteRelease.AccessDenied().ToResp(), nil
+		}
+	}
+
 	if err := e.release.Delete(orgID, releasesDeleteRequest.ReleaseID...); err != nil {
 		return apierrors.ErrDeleteRelease.InternalError(err).ToResp(), nil
 	}
@@ -238,6 +352,25 @@ func (e *Endpoints) GetRelease(ctx context.Context, r *http.Request, vars map[st
 	if releaseID == "" {
 		return apierrors.ErrGetRelease.MissingParameter("releaseId").ToResp(), nil
 	}
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrGetRelease.NotLogin().ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		release, err := e.db.GetRelease(releaseID)
+		if err != nil {
+			return apierrors.ErrGetRelease.InternalError(err).ToResp(), nil
+		}
+		hasAccess, err := e.hasWriteAccess(identityInfo, release.ProjectID)
+		if err != nil {
+			return apierrors.ErrGetRelease.InternalError(err).ToResp(), nil
+		}
+		if !hasAccess {
+			return apierrors.ErrGetRelease.AccessDenied().ToResp(), nil
+		}
+	}
+
 	logrus.Infof("getting release...releaseId: %s\n", releaseID)
 
 	resp, err := e.release.Get(orgID, releaseID)
@@ -363,29 +496,11 @@ func (e *Endpoints) ListRelease(ctx context.Context, r *http.Request, vars map[s
 			return apierrors.ErrListRelease.NotLogin().ToResp(), nil
 		}
 
-		// TODO：若没有应用的 list release 权限，则判断是否有企业权限，后续 permission list 加上 scope 后，修改该鉴权方式
 		var (
 			req      apistructs.PermissionCheckRequest
 			permResp *apistructs.PermissionCheckResponseData
 			access   bool
 		)
-
-		if params.ApplicationID > 0 {
-			// 操作鉴权
-			req = apistructs.PermissionCheckRequest{
-				UserID:   userID.String(),
-				Scope:    apistructs.AppScope,
-				ScopeID:  uint64(params.ApplicationID),
-				Resource: "release",
-				Action:   apistructs.ListAction,
-			}
-
-			if permResp, err = e.bdl.CheckPermission(&req); err != nil {
-				return apierrors.ErrListRelease.AccessDenied().ToResp(), nil
-			}
-
-			access = permResp.Access
-		}
 
 		if !access {
 			req = apistructs.PermissionCheckRequest{
@@ -474,14 +589,10 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 	}
 
 	// 按应用过滤
-	var applicationID int64
-	applicationIDStr := r.URL.Query().Get("applicationId")
-	if applicationIDStr != "" {
-		i, err := strutil.Atoi64(applicationIDStr)
-		if err != nil { // 防止SQL注入
-			return nil, err
-		}
-		applicationID = i
+	var applicationID []string
+	applicationIDStr := r.URL.Query()["applicationId"]
+	for _, id := range applicationIDStr {
+		applicationID = append(applicationID, id)
 	}
 
 	// 按项目过滤
@@ -538,9 +649,18 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 		crossClusterOrSpecifyCluster = &s
 	}
 
-	isFormal := false
-	if s := r.URL.Query().Get("isFormal"); s == "true" {
-		isFormal = true
+	isStable := false
+	if s := r.URL.Query().Get("isStable"); s == "true" {
+		isStable = true
+	}
+
+	var isFormalPtr *bool
+	if s := r.URL.Query().Get("isFormal"); s != "" {
+		isFormal, err := strconv.ParseBool(s)
+		if err != nil {
+			return nil, err
+		}
+		isFormalPtr = &isFormal
 	}
 
 	isProjectRelease := false
@@ -548,19 +668,13 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 		isProjectRelease = true
 	}
 
-	var userID int64
-	if s := r.URL.Query().Get("userId"); s != "" {
-		if userID, err = strutil.Atoi64(s); err != nil {
-			return nil, err
-		}
+	userIDStr := r.URL.Query()["userId"]
+	var userID []string
+	for _, id := range userIDStr {
+		userID = append(userID, id)
 	}
 
-	var version int64
-	if s := r.URL.Query().Get("version"); s != "" {
-		if version, err = strutil.Atoi64(s); err != nil {
-			return nil, err
-		}
-	}
+	version := r.URL.Query().Get("version")
 
 	commitID := r.URL.Query().Get("commitId")
 
@@ -571,7 +685,8 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 		ReleaseName:                  releaseName,
 		Cluster:                      clusterName,
 		Branch:                       branch,
-		IsFormal:                     isFormal,
+		IsStable:                     isStable,
+		IsFormal:                     isFormalPtr,
 		IsProjectRelease:             isProjectRelease,
 		UserID:                       userID,
 		Version:                      version,
@@ -609,6 +724,19 @@ func (e *Endpoints) ToFormalReleases(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrFormalRelease.InvalidParameter(err).ToResp(), nil
 	}
 
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrFormalRelease.NotLogin().ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		hasAccess, err := e.hasWriteAccess(identityInfo, releasesToFormalRequest.ProjectID)
+		if err != nil {
+			return apierrors.ErrFormalRelease.InternalError(err).ToResp(), nil
+		}
+		if !hasAccess {
+			return apierrors.ErrFormalRelease.AccessDenied().ToResp(), nil
+		}
+	}
 	if err := e.release.ToFormal(releasesToFormalRequest.ReleaseID); err != nil {
 		return apierrors.ErrFormalRelease.InternalError(err).ToResp(), nil
 	}
@@ -627,6 +755,27 @@ func (e *Endpoints) ToFormalRelease(ctx context.Context, r *http.Request, vars m
 		return apierrors.ErrFormalRelease.MissingParameter("releaseId").ToResp(), nil
 	}
 
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrFormalRelease.NotLogin().ToResp(), nil
+	}
+
+	release, err := e.db.GetRelease(releaseID)
+	if err != nil {
+		return apierrors.ErrFormalRelease.InternalError(err).ToResp(), nil
+	}
+	if !release.IsStable {
+		return apierrors.ErrFormalRelease.InvalidParameter("temp release can not be formaled").ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		hasAccess, err := e.hasWriteAccess(identityInfo, release.ProjectID)
+		if err != nil {
+			return apierrors.ErrFormalRelease.InternalError(err).ToResp(), nil
+		}
+		if !hasAccess {
+			return apierrors.ErrFormalRelease.AccessDenied().ToResp(), nil
+		}
+	}
 	if err := e.release.ToFormal([]string{releaseID}); err != nil {
 		return apierrors.ErrFormalRelease.InternalError(err).ToResp(), nil
 	}
@@ -650,33 +799,143 @@ func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *
 		return apierrors.ErrDownloadRelease.NotFound()
 	}
 
+	if !release.IsProjectRelease {
+		return apierrors.ErrDownloadRelease.InvalidParameter("only project release can be downloaded")
+	}
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
-		return apierrors.ErrDownloadRelease.NotLogin()
+		return apierrors.ErrFormalRelease.NotLogin()
 	}
 	if !identityInfo.IsInternalClient() {
-		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-			UserID:   identityInfo.UserID,
-			Scope:    apistructs.ProjectScope,
-			ScopeID:  uint64(release.ProjectID),
-			Resource: apistructs.ProjectResource,
-			Action:   apistructs.GetAction,
-		})
+		hasAccess, err := e.hasReadAccess(identityInfo, release.ProjectID)
 		if err != nil {
-			return apierrors.ErrDownloadRelease.InternalError(err)
+			return apierrors.ErrFormalRelease.InternalError(err)
 		}
-		if !access.Access {
-			return apierrors.ErrDownloadRelease.AccessDenied()
+		if !hasAccess {
+			return apierrors.ErrFormalRelease.AccessDenied()
 		}
 	}
-	fileName := fmt.Sprintf("%s-%s-%s.yaml", strconv.FormatInt(release.ProjectID, 10),
-		strconv.FormatInt(release.ApplicationID, 10), release.ReleaseID)
-	w.Header().Add("Content-type", "application/octet-stream")
-	w.Header().Add("Content-Disposition", "attachment;fileName="+fileName)
 
-	buf := bytes.NewBuffer([]byte(release.Diceyml))
+	dir := fmt.Sprintf("%s_%s", release.ProjectName, release.Version)
+
+	buf := &bytes.Buffer{}
+	writer := tar.NewWriter(buf)
+	defer writer.Close()
+	releaseIDs, err := unmarshalApplicationReleaseList(release.ApplicationReleaseList)
+	if err != nil {
+		return apierrors.ErrDownloadRelease.InternalError(err)
+	}
+	releases, err := e.db.GetReleases(releaseIDs)
+	if err != nil {
+		return apierrors.ErrDownloadRelease.InternalError(err)
+	}
+
+	for _, r := range releases {
+		if err := writer.WriteHeader(&tar.Header{
+			Name: filepath.Join(dir, "dicefile", r.ApplicationName, "dice.yml"),
+			Size: int64(len(r.Dice)),
+			Mode: 0644,
+		}); err != nil {
+			return apierrors.ErrDownloadRelease.InternalError(err)
+		}
+		if _, err := writer.Write([]byte(r.Dice)); err != nil {
+			return apierrors.ErrDownloadRelease.InternalError(err)
+		}
+	}
+
+	metadata, err := makeMetadata(release, releases)
+	if err != nil {
+		return apierrors.ErrDownloadRelease.InternalError(err)
+	}
+
+	if err := writer.WriteHeader(&tar.Header{
+		Name: filepath.Join(dir, "metadata.yml"),
+		Size: int64(len(metadata)),
+		Mode: 0644,
+	}); err != nil {
+		return apierrors.ErrDownloadRelease.InternalError(err)
+	}
+	if _, err := writer.Write(metadata); err != nil {
+		return apierrors.ErrDownloadRelease.InternalError(err)
+	}
+
+	w.Header().Add("Content-type", "application/octet-stream")
+	w.Header().Add("Content-Disposition", "attachment;fileName="+dir+".tar")
+
 	if _, err := io.Copy(w, buf); err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
 	return nil
+}
+
+// hasReadAccess check whether user has access to get project
+func (e *Endpoints) hasReadAccess(identityInfo apistructs.IdentityInfo, projectID int64) (bool, error) {
+	access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   identityInfo.UserID,
+		Scope:    apistructs.ProjectScope,
+		ScopeID:  uint64(projectID),
+		Resource: apistructs.ProjectResource,
+		Action:   apistructs.GetAction,
+	})
+	if err != nil {
+		return false, err
+	}
+	if !access.Access {
+		return false, nil
+	}
+	return true, nil
+}
+
+// hasWriteAccess check whether user is project owner or project lead
+func (e *Endpoints) hasWriteAccess(identity apistructs.IdentityInfo, projectID int64) (bool, error) {
+	req := &apistructs.ScopeRoleAccessRequest{
+		Scope: apistructs.Scope{
+			Type: apistructs.ProjectScope,
+			ID:   strconv.FormatInt(projectID, 10),
+		},
+	}
+	rsp, err := e.bdl.ScopeRoleAccess(identity.UserID, req)
+	if err != nil {
+		return false, err
+	}
+
+	hasAccess := false
+	for _, role := range rsp.Roles {
+		if role == bundle.RoleProjectOwner || role == bundle.RoleProjectLead || role == bundle.RoleProjectPM {
+			hasAccess = true
+		}
+	}
+	return hasAccess, nil
+}
+
+func unmarshalApplicationReleaseList(str string) ([]string, error) {
+	var list []string
+	if err := json.Unmarshal([]byte(str), &list); err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+func makeMetadata(release *apistructs.ReleaseGetResponseData, appReleases []dbclient.Release) ([]byte, error) {
+	appList := make(map[string]apistructs.AppMetadata)
+	for i := range appReleases {
+		labels := make(map[string]string)
+		if err := json.Unmarshal([]byte(appReleases[i].Labels), &labels); err != nil {
+			return nil, errors.Errorf("failed to unmarshal labels for release %s", appReleases[i].ReleaseID)
+		}
+		appList[appReleases[i].ApplicationName] = apistructs.AppMetadata{
+			GitBranch:        labels["gitBranch"],
+			GitCommitID:      labels["gitCommitId"],
+			GitCommitMessage: labels["gitCommitMessage"],
+			GitRepo:          labels["gitRepo"],
+			ChangeLog:        appReleases[i].Markdown,
+		}
+	}
+	releaseMeta := apistructs.ReleaseMetadata{
+		Version:   release.Version,
+		Desc:      release.Desc,
+		ChangeLog: release.Markdown,
+		AppList:   appList,
+	}
+	return yaml.Marshal(releaseMeta)
 }
