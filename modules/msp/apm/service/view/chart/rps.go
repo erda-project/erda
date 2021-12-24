@@ -35,7 +35,7 @@ type RpsChart struct {
 func (rps *RpsChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
 
 	statement := fmt.Sprintf("SELECT rateps(elapsed_count::field) "+
-		"FROM application_http,application_rpc,application_db,application_cache,application_mq "+
+		"FROM application_http,application_rpc "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
 		"GROUP BY time(%s)", rps.Interval)

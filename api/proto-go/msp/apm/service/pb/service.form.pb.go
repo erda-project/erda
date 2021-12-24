@@ -53,6 +53,8 @@ func (m *GetServiceCountRequest) UnmarshalURLValues(prefix string, values url.Va
 			switch prefix + key {
 			case "tenantId":
 				m.TenantId = vals[0]
+			case "status":
+				m.Status = vals[0]
 			}
 		}
 	}
