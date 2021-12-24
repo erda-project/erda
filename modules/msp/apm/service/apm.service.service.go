@@ -60,8 +60,9 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(req.TenantId),
 	}
-	if req.ServiceName != "" {
-		condition += " AND service_name::tag=~/.*" + req.ServiceName + ".*/ "
+	condition, err := handleCondition(ctx, req, s, condition)
+	if err != nil {
+		return nil, err
 	}
 	statement = strings.ReplaceAll(statement, "$condition", condition)
 	request := &metricpb.QueryWithInfluxFormatRequest{
@@ -137,6 +138,47 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	return &pb.GetServicesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Total: total, List: services}, nil
 }
 
+func handleCondition(ctx context.Context, req *pb.GetServicesRequest, s *apmServiceService, condition string) (string, error) {
+	if req.ServiceName != "" {
+		condition += " AND service_name::tag=~/.*" + req.ServiceName + ".*/ "
+	}
+	if req.ServiceStatus == pb.Status_hasError.String() {
+		startTime, endTime := TimeRange("-1h")
+		_, hasErrorServiceIds, err := s.GetHasErrorService(ctx, req.TenantId, startTime, endTime)
+		if err != nil {
+			return "", err
+		}
+		includeIds := ""
+		if len(hasErrorServiceIds) > 0 {
+			for _, serviceId := range hasErrorServiceIds {
+				includeIds += "'" + serviceId + "',"
+			}
+			includeIds = includeIds[:len(includeIds)-1]
+		}
+		if len(includeIds) > 0 {
+			condition += fmt.Sprintf(" AND include(service_id::tag, %s)", includeIds)
+		}
+	}
+	if req.ServiceStatus == pb.Status_withoutRequest.String() {
+		startTime, endTime := TimeRange("-1h")
+		_, withRequestServiceIds, err := s.GetWithRequestService(ctx, req.TenantId, startTime, endTime)
+		if err != nil {
+			return "", err
+		}
+		includeIds := ""
+		if len(withRequestServiceIds) > 0 {
+			for _, serviceId := range withRequestServiceIds {
+				includeIds += "'" + serviceId + "',"
+			}
+			includeIds = includeIds[:len(includeIds)-1]
+		}
+		if len(includeIds) > 0 {
+			condition += fmt.Sprintf(" AND not_include(service_id::tag, %s)", includeIds)
+		}
+	}
+	return condition, nil
+}
+
 const (
 	SortStrategyErrorRate   = "ErrorRateStrategy"
 	SortStrategyAvgDuration = "AvgDurationStrategy"
@@ -210,17 +252,6 @@ func (s *apmServiceService) aggregateMetric(serviceStatus, tenantId string, serv
 				errorRateSortSign += aggregateMetric.ErrorRate
 
 			}
-		}
-	}
-	for i := 0; i < len(*services); i++ {
-		service := (*services)[i]
-		if serviceStatus == pb.Status_hasError.String() && service.AggregateMetric.ErrorRate <= 0 {
-			*services = append((*services)[:i], (*services)[i+1:]...)
-			i--
-		}
-		if serviceStatus == pb.Status_withoutRequest.String() && service.AggregateMetric.AvgDuration > 0 {
-			*services = append((*services)[:i], (*services)[i+1:]...)
-			i--
 		}
 	}
 
@@ -299,38 +330,21 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 	return &pb.GetServiceAnalyzerOverviewResponse{List: servicesView}, nil
 }
 
-type sign struct {
-	statusName string
-	count      int64
-}
-
-func StatusSwitch(sign *sign, resp *pb.GetServiceCountResponse) {
-	switch sign.statusName {
-	case pb.Status_all.String():
-		resp.TotalCount = sign.count
-	case pb.Status_hasError.String():
-		resp.HasErrorCount = sign.count
-	case pb.Status_withoutRequest.String():
-		resp.WithoutRequestCount = sign.count
-	}
-}
-
-func (s *apmServiceService) Count(ctx context.Context, tenantId, status string) *sign {
+func (s *apmServiceService) Count(ctx context.Context, tenantId, status string, resp *pb.GetServiceCountResponse) {
 	switch status {
 	case pb.Status_all.String():
 		start, end := TimeRange("-24h")
 		count, _ := s.GetTotalCount(ctx, tenantId, start, end)
-		return &sign{statusName: status, count: count}
+		resp.TotalCount = count
 	case pb.Status_hasError.String():
 		start, end := TimeRange("-1h")
-		count, _ := s.GetHasErrorCount(ctx, tenantId, start, end)
-		return &sign{statusName: status, count: count}
+		count, _, _ := s.GetHasErrorService(ctx, tenantId, start, end)
+		resp.HasErrorCount = count
 	case pb.Status_withoutRequest.String():
 		start, end := TimeRange("-1h")
-		count, _ := s.GetWithoutRequestCount(ctx, tenantId, start, end)
-		return &sign{statusName: status, count: count}
+		withRequestCount, _, _ := s.GetWithRequestService(ctx, tenantId, start, end)
+		resp.WithoutRequestCount = resp.TotalCount - withRequestCount
 	}
-	return nil
 }
 
 func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServiceCountRequest) (*pb.GetServiceCountResponse, error) {
@@ -340,14 +354,14 @@ func (s *apmServiceService) GetServiceCount(ctx context.Context, req *pb.GetServ
 	var ss = []string{pb.Status_all.String(), pb.Status_hasError.String(), pb.Status_withoutRequest.String()}
 	response := &pb.GetServiceCountResponse{}
 	for _, status := range ss {
-		StatusSwitch(s.Count(ctx, req.TenantId, status), response)
+		s.Count(ctx, req.TenantId, status, response)
 	}
 	return response, nil
 }
 
-func (s *apmServiceService) GetWithoutRequestCount(ctx context.Context, tenantId string, start int64, end int64) (int64, error) {
+func (s *apmServiceService) GetWithRequestService(ctx context.Context, tenantId string, start int64, end int64) (int64, []string, error) {
 	// withoutRequest Count
-	statement := "SELECT target_service_id::tag,if(lte(sum(elapsed_sum::field),0),true,false) FROM application_http_service,application_rpc_service WHERE $condition GROUP BY target_service_id::tag "
+	statement := "SELECT target_service_id::tag,if(gt(sum(elapsed_sum::field),0),true,false) FROM application_http_service,application_rpc_service WHERE $condition GROUP BY target_service_id::tag "
 	withoutRequestCondition := "target_terminus_key::tag=$target_terminus_key "
 	statement = strings.ReplaceAll(statement, "$condition", withoutRequestCondition)
 	queryParams := map[string]*structpb.Value{
@@ -361,21 +375,25 @@ func (s *apmServiceService) GetWithoutRequestCount(ctx context.Context, tenantId
 	}
 	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
 	if err != nil {
-		return 0, errors.NewInternalServerError(err)
+		return 0, nil, errors.NewInternalServerError(err)
 	}
 	withoutRequestCount := int64(0)
+	var serviceIds []string
+
 	rows := countResponse.Results[0].Series[0].Rows
 	for _, row := range rows {
 		if row.GetValues()[1].GetBoolValue() {
 			withoutRequestCount += 1
+			serviceId := row.GetValues()[0].GetStringValue()
+			serviceIds = append(serviceIds, serviceId)
 		}
 	}
-	return withoutRequestCount, nil
+	return withoutRequestCount, serviceIds, nil
 }
 
-func (s *apmServiceService) GetHasErrorCount(ctx context.Context, tenantId string, start int64, end int64) (int64, error) {
+func (s *apmServiceService) GetHasErrorService(ctx context.Context, tenantId string, start int64, end int64) (int64, []string, error) {
 	// hasError Count
-	statement := "SELECT target_service_id::tag,if(gte(sum(errors_sum::field),0),true,false) FROM application_http_service,application_rpc_service WHERE $condition GROUP BY target_service_id::tag "
+	statement := "SELECT target_service_id::tag,if(gt(sum(errors_sum::field),0),true,false) FROM application_http_service,application_rpc_service WHERE $condition GROUP BY target_service_id::tag "
 	unhealthyCondition := " target_terminus_key::tag=$target_terminus_key AND errors_sum::field>0 "
 	statement = strings.ReplaceAll(statement, "$condition", unhealthyCondition)
 
@@ -390,16 +408,19 @@ func (s *apmServiceService) GetHasErrorCount(ctx context.Context, tenantId strin
 	}
 	countResponse, err := s.p.Metric.QueryWithInfluxFormat(ctx, countRequest)
 	if err != nil {
-		return 0, errors.NewInternalServerError(err)
+		return 0, nil, errors.NewInternalServerError(err)
 	}
 	hasErrorCount := int64(0)
+	var serviceIds []string
 	rows := countResponse.Results[0].Series[0].Rows
 	for _, row := range rows {
 		if row.GetValues()[1].GetBoolValue() {
 			hasErrorCount += 1
+			serviceId := row.GetValues()[0].GetStringValue()
+			serviceIds = append(serviceIds, serviceId)
 		}
 	}
-	return hasErrorCount, nil
+	return hasErrorCount, serviceIds, nil
 }
 
 func (s *apmServiceService) GetTotalCount(ctx context.Context, tenantId string, start int64, end int64) (int64, error) {
