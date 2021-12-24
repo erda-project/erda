@@ -18,18 +18,18 @@ service ExpressionService {
   };
   rpc GetAllEnabledExpression (GetAllEnabledExpressionRequest) returns (GetAllEnabledExpressionResponse) {
     option (google.api.http)     = {
-      get: "/api/org/expressions"
+      get: "/api/expressions"
     };
     option (erda.common.openapi) = {
-      path: "/api/org/expressions"
+      path: "/api/expressions"
     };
   }
   rpc GetAllAlertTemplate (GetAllAlertTemplateRequest) returns (GetAllAlertTemplateResponse) {
     option (google.api.http)     = {
-      get: "/api/org/templates"
+      get: "/api/templates"
     };
     option (erda.common.openapi) = {
-      path: "/api/org/templates"
+      path: "/api/templates"
     };
   }
 }

@@ -18,9 +18,9 @@ const _ = http.SupportPackageIsVersion1
 
 // ExpressionServiceHandler is the server API for ExpressionService service.
 type ExpressionServiceHandler interface {
-	// GET /api/org/expressions
+	// GET /api/expressions
 	GetAllEnabledExpression(context.Context, *GetAllEnabledExpressionRequest) (*GetAllEnabledExpressionResponse, error)
-	// GET /api/org/templates
+	// GET /api/templates
 	GetAllAlertTemplate(context.Context, *GetAllAlertTemplateRequest) (*GetAllAlertTemplateResponse, error)
 }
 
@@ -119,6 +119,6 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 		)
 	}
 
-	add_GetAllEnabledExpression("GET", "/api/org/expressions", srv.GetAllEnabledExpression)
-	add_GetAllAlertTemplate("GET", "/api/org/templates", srv.GetAllAlertTemplate)
+	add_GetAllEnabledExpression("GET", "/api/expressions", srv.GetAllEnabledExpression)
+	add_GetAllAlertTemplate("GET", "/api/templates", srv.GetAllAlertTemplate)
 }
