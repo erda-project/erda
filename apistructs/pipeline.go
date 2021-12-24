@@ -37,7 +37,7 @@ const (
 	BuildkitSecretMountPath = "/.buildkit"
 	BuildkitClientSecret    = "buildkit-client-certs"
 
-	BuildkitEnable  = "BUILDKIT_ENABLE"
+	BuildkitEnable  = "BUILDKIT_ENABLE" // will force true when ECIEnable is true
 	BuildkitHitRate = "BUILDKIT_HIT_RATE"
 )
 

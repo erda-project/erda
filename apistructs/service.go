@@ -220,6 +220,7 @@ const (
 	ServiceDiscoveryKindProxy = "PROXY"
 
 	// CSI Vendor
+	CSIVendor        = "CSI_VENDOR"
 	CSIVendorAlibaba = "AliCloud"
 	CSIVendorTencent = "TecentCloud"
 	CSIVendorHuawei  = "HuaweiCloud"
@@ -256,6 +257,14 @@ const (
 	DiceNFSVolumeSC   = "dice-nfs-volume"
 
 	CSISnapshotMaxHistory = "pvc.erda.io/snapshot"
+)
+
+const (
+	ECIEnable  = "ECI_ENABLE"
+	ECIHitRate = "ECI_HIT_RATE"
+
+	ECIVendorAibaba = CSIVendorAlibaba
+	AlibabaECILabel = "alibabacloud.com/eci"
 )
 
 // One single Service which is the minimum scheduling unit

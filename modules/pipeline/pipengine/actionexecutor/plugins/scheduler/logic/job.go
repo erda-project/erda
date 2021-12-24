@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/k8s/storage"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -61,14 +63,19 @@ func ParseJobHostBindTemplate(hostPath string, clusterInfo map[string]string) (s
 }
 
 // GenerateK8SVolumes According to job configuration, production volume related configuration
-func GenerateK8SVolumes(job *apistructs.JobFromUser) ([]corev1.Volume, []corev1.VolumeMount, []*corev1.PersistentVolumeClaim) {
+func GenerateK8SVolumes(job *apistructs.JobFromUser, clusterInfo ...map[string]string) ([]corev1.Volume, []corev1.VolumeMount, []*corev1.PersistentVolumeClaim) {
+	ci := make(map[string]string, 0)
+	if len(clusterInfo) != 0 {
+		ci = clusterInfo[0]
+	}
+
 	vols := []corev1.Volume{}
 	volMounts := []corev1.VolumeMount{}
 	pvcs := []*corev1.PersistentVolumeClaim{}
 	for i, v := range job.Volumes {
 		var pvcid string
 		if v.ID == nil { // if ID == nil, we need to create a new pvc
-			sc := WhichStorageClass(v.Storage)
+			sc := WhichStorageClass(v.Storage, ci[apistructs.CSIVendor])
 			id := fmt.Sprintf("%s-%s-%d", job.Namespace, job.Name, i)
 			pvcs = append(pvcs, &corev1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
@@ -107,15 +114,27 @@ func GenerateK8SVolumes(job *apistructs.JobFromUser) ([]corev1.Volume, []corev1.
 	return vols, volMounts, pvcs
 }
 
-func WhichStorageClass(tp string) string {
+func WhichStorageClass(tp string, vendor string) string {
+	diskType := apistructs.VolumeTypeDiceLOCAL
+
 	switch tp {
 	case "local":
-		return "dice-local-volume"
+		diskType = apistructs.VolumeTypeDiceLOCAL
 	case "nfs":
-		return "dice-nfs-volume"
-	default:
-		return "dice-local-volume"
+		diskType = apistructs.VolumeTypeDiceNAS
 	}
+
+	if vendor != "" {
+		diskType = apistructs.VolumeTypeNAS
+	}
+
+	sc, err := storage.VolumeTypeToSCName(diskType, vendor)
+	if err != nil {
+		logrus.Errorf("failed to parse volume type to sc, default return %s, err: %v", diskType, err)
+		return apistructs.DiceLocalVolumeSC
+	}
+
+	return sc
 }
 
 func MakeJobName(task *spec.PipelineTask) string {

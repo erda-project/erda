@@ -52,7 +52,7 @@ func Test_isBuildkitHit(t *testing.T) {
 
 	for _, test := range tests {
 		for i := 0; i < utCount; i++ {
-			if isBuildkitHit(test.Rate) {
+			if isRateHit(test.Rate) {
 				test.Result++
 			}
 		}
@@ -80,6 +80,71 @@ func Test_generateKubeJob(t *testing.T) {
 	_, err = j.generateKubeJob(apistructs.JobFromUser{
 		Name:      "fake-job",
 		Namespace: metav1.NamespaceDefault,
-	})
+	}, nil)
 	assert.NoError(t, err)
+}
+
+func TestCheckLabels(t *testing.T) {
+	type args struct {
+		source map[string]string
+		target map[string]string
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "test01",
+			args: args{
+				source: map[string]string{
+					"alibabacloud.com/eci": "true",
+				},
+				target: map[string]string{},
+			},
+			want: false,
+		},
+		{
+			name: "test02",
+			args: args{
+				source: map[string]string{},
+				target: map[string]string{
+					"alibabacloud.com/eci": "true",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "test03",
+			args: args{
+				source: map[string]string{
+					"alibabacloud.com/eci": "true",
+				},
+				target: map[string]string{
+					"alibabacloud.com/eci": "true",
+					"erda.cloud/csi":       "true",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "test04",
+			args: args{
+				source: map[string]string{},
+				target: map[string]string{},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := checkLabels(tt.args.source, tt.args.target)
+			if got != tt.want {
+				t.Errorf("checkLabels() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+
 }
