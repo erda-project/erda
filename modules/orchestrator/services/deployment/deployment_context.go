@@ -1759,7 +1759,7 @@ func (fsm *DeployFSMContext) pushLog(content string) {
 	}
 	tags := map[string]string{}
 	if fsm.App != nil && len(fsm.App.OrgName) > 0 {
-		tags[log.TAG_DICE_ORG_NAME] = fsm.App.OrgName
+		tags[log.TAG_ORG_NAME] = fsm.App.OrgName
 	}
 	fsm.d.Log(content, tags)
 }

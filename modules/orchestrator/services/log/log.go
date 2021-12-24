@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pkg/monitor"
 )
 
 type DeployLogHelper struct {
@@ -30,7 +31,7 @@ type DeployLogHelper struct {
 	Bdl          *bundle.Bundle
 }
 
-const TAG_DICE_ORG_NAME = "dice_org_name"
+const TAG_ORG_NAME = string(monitor.TAGKEY_ORG_NAME)
 
 func (d *DeployLogHelper) Log(content string, tags map[string]string) {
 	content = "(orchestrator) " + content
