@@ -61,6 +61,10 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 		"terminus_key": structpb.NewStringValue(req.TenantId),
 	}
 	condition, err := handleCondition(ctx, req, s, condition)
+	if req.ServiceStatus == pb.Status_hasError.String() && !strings.Contains(condition, "include") {
+		return &pb.GetServicesResponse{PageNo: req.PageNo, PageSize: req.PageSize}, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}
