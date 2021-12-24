@@ -60,7 +60,11 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(req.TenantId),
 	}
-	condition, err := handleCondition(ctx, req, s, condition)
+	condition, err := HandleCondition(ctx, req, s, condition)
+	if req.ServiceStatus == pb.Status_hasError.String() && !strings.Contains(condition, "include") {
+		return &pb.GetServicesResponse{PageNo: req.PageNo, PageSize: req.PageSize}, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +142,7 @@ func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServices
 	return &pb.GetServicesResponse{PageNo: req.PageNo, PageSize: req.PageSize, Total: total, List: services}, nil
 }
 
-func handleCondition(ctx context.Context, req *pb.GetServicesRequest, s *apmServiceService, condition string) (string, error) {
+func HandleCondition(ctx context.Context, req *pb.GetServicesRequest, s *apmServiceService, condition string) (string, error) {
 	if req.ServiceName != "" {
 		condition += " AND service_name::tag=~/.*" + req.ServiceName + ".*/ "
 	}

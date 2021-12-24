@@ -72,6 +72,7 @@ func Test_apmServiceService_GetServices(t *testing.T) {
 		{"case1", args{ctx: nil, req: &pb.GetServicesRequest{}}, true},
 		{"case2", args{ctx: nil, req: &pb.GetServicesRequest{TenantId: "test-error", ServiceName: "test-service"}}, true},
 		{"case3", args{ctx: nil, req: &pb.GetServicesRequest{PageSize: 100, TenantId: "test-tenantId", ServiceName: "test-service"}}, false},
+		{"case4", args{ctx: nil, req: &pb.GetServicesRequest{PageSize: 100, TenantId: "test-tenantId", ServiceName: "test-service", ServiceStatus: pb.Status_hasError.String()}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -139,6 +140,10 @@ func Test_apmServiceService_GetServices(t *testing.T) {
 					}, nil
 				})
 			defer QueryWithInfluxFormat.Unpatch()
+
+			monkey.Patch(HandleCondition, func(ctx context.Context, req *pb.GetServicesRequest, s *apmServiceService, condition string) (string, error) {
+				return condition, nil
+			})
 
 			s := &apmServiceService{
 				p: &provider{Metric: msc},
