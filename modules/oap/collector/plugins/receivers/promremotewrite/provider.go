@@ -15,16 +15,17 @@
 package promremotewrite
 
 import (
-	"io"
+	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
+	"github.com/golang/protobuf/proto"
+	"github.com/labstack/echo"
 	"github.com/prometheus/prometheus/prompb"
 )
 
@@ -39,57 +40,44 @@ type provider struct {
 	Log    logs.Logger
 	Router httpserver.Router `autowired:"http-router"`
 
-	label         string
-	consumerFuncs []model.ObservableDataReceiverFunc
-	mu            sync.RWMutex
+	label        string
+	consumerFunc model.ObservableDataReceiverFunc
 }
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.label = ctx.Label()
-	p.consumerFuncs = make([]model.ObservableDataReceiverFunc, 0)
 	p.Router.POST("/api/v1/prometheus-remote-write", p.prwHandler)
 	return nil
 }
 
-func (p *provider) prwHandler(req *http.Request, resp http.ResponseWriter) {
-	defer func() {
-		_ = req.Body.Close()
-	}()
-
-	buf, err := io.ReadAll(req.Body)
+func (p *provider) prwHandler(ctx echo.Context) error {
+	req := ctx.Request()
+	buf, err := ReadBody(req)
 	if err != nil {
-		p.Log.Errorf("read body error: %s", err)
-		resp.WriteHeader(http.StatusInternalServerError)
-		return
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("read body err: %s", err))
 	}
 
-	wr := &prompb.WriteRequest{}
-	err = wr.Unmarshal(buf)
+	var wr prompb.WriteRequest
+	err = proto.Unmarshal(buf, &wr)
 	if err != nil {
-		p.Log.Errorf("unmarshal body error: %s", err)
-		resp.WriteHeader(http.StatusInternalServerError)
-		return
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("unmarshal body err: %s", err))
 	}
-	ms := convertToMetrics(wr)
-
-	p.mu.RLock()
-	for _, fn := range p.consumerFuncs {
-		fn(ms.Clone())
+	ms, err := convertToMetrics(wr)
+	if err != nil {
+		p.Log.Errorf("convertToMetrics err: %s", err)
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("convertToMetrics err: %s", err))
 	}
-	p.mu.RUnlock()
 
-	resp.WriteHeader(http.StatusNoContent)
-}
+	if p.consumerFunc != nil {
+		p.consumerFunc(ms)
+	}
 
-func convertToMetrics(wr *prompb.WriteRequest) *model.Metrics {
-	return &model.Metrics{}
+	return ctx.NoContent(http.StatusOK)
 }
 
 func (p *provider) RegisterConsumeFunc(consumer model.ObservableDataReceiverFunc) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.consumerFuncs = append(p.consumerFuncs, consumer)
+	p.consumerFunc = consumer
 }
 
 func (p *provider) ComponentID() model.ComponentID {

@@ -29,7 +29,6 @@ const (
 )
 
 type ObservableData interface {
-	DataType() DataType
 	Clone() ObservableData
 }
 
@@ -43,16 +42,8 @@ func (m *Metrics) Clone() ObservableData {
 	return &Metrics{Metrics: data}
 }
 
-func (m *Metrics) DataType() DataType {
-	return MetricDataType
-}
-
 type Traces struct {
 	Spans []*tpb.Span `json:"spans"`
-}
-
-func (t *Traces) DataType() DataType {
-	return TraceDataType
 }
 
 func (t *Traces) Clone() ObservableData {
@@ -63,10 +54,6 @@ func (t *Traces) Clone() ObservableData {
 
 type Logs struct {
 	Logs []*lpb.Log `json:"logs"`
-}
-
-func (l *Logs) DataType() DataType {
-	return LogDataType
 }
 
 func (l *Logs) Clone() ObservableData {

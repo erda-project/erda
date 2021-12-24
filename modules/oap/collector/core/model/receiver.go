@@ -24,6 +24,8 @@ type (
 
 type Receiver interface {
 	Component
+	// TODO
+	// PushData(data ObservableData)
 	RegisterConsumeFunc(consumer ObservableDataReceiverFunc)
 }
 

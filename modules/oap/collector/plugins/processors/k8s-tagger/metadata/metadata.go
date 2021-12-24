@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package all
+package metadata
 
-import (
-	// receivers
-	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/dummy"
-	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/promremotewrite"
-	// processors
-	_ "github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger"
-	// exporters
-	_ "github.com/erda-project/erda/modules/oap/collector/plugins/exporters/stdout"
+const (
+	Prefix               = "kubernetes_"
+	PrefixPod            = Prefix + "pod_"
+	PrefixPodLabels      = PrefixPod + "labels_"
+	PrefixPodAnnotations = PrefixPod + "annotations_"
+	// PrefixPodContainer = PrefixPod + "container_"
+	PrefixNode    = Prefix + "node_"
+	PrefixService = Prefix + "service_"
 )
