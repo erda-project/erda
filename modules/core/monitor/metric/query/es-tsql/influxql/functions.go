@@ -734,7 +734,7 @@ func init() {
 					}
 					parts = append(parts, "("+val+")"+"!=("+s+")")
 				}
-				return "(" + strings.Join(parts, " || ") + ")", nil
+				return "(" + strings.Join(parts, " && ") + ")", nil
 			},
 		},
 	}
