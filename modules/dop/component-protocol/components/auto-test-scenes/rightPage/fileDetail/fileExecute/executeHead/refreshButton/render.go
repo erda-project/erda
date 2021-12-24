@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -51,5 +52,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			},
 		}
 	}
+
+	gh := gshelper.NewGSHelper(gs)
+	gh.ClearPipelineInfo()
 	return nil
 }
