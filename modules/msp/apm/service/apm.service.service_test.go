@@ -228,48 +228,6 @@ func Test_apmServiceService_GetServiceAnalyzerOverview(t *testing.T) {
 	}
 }
 
-func TestStatusSwitch(t *testing.T) {
-	type args struct {
-		sign *sign
-		resp *pb.GetServiceCountResponse
-	}
-	tests := []struct {
-		name string
-		args args
-		want *pb.GetServiceCountResponse
-	}{
-		{"case1", args{
-			sign: &sign{
-				statusName: pb.Status_all.String(),
-				count:      3,
-			},
-			resp: &pb.GetServiceCountResponse{},
-		}, &pb.GetServiceCountResponse{TotalCount: 3}},
-		{"case2", args{
-			sign: &sign{
-				statusName: pb.Status_hasError.String(),
-				count:      3,
-			},
-			resp: &pb.GetServiceCountResponse{},
-		}, &pb.GetServiceCountResponse{HasErrorCount: 3}},
-		{"case3", args{
-			sign: &sign{
-				statusName: pb.Status_withoutRequest.String(),
-				count:      3,
-			},
-			resp: &pb.GetServiceCountResponse{},
-		}, &pb.GetServiceCountResponse{WithoutRequestCount: 3}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			StatusSwitch(tt.args.sign, tt.args.resp)
-			if !reflect.DeepEqual(tt.want, tt.args.resp) {
-				t.Errorf("GetStatusSwitch() want = %v, curr %v", tt.want, tt.args.resp)
-			}
-		})
-	}
-}
-
 func Test_apmServiceService_GetTotalCount(t *testing.T) {
 	type args struct {
 		ctx      context.Context
@@ -362,13 +320,13 @@ func Test_apmServiceService_GetHasErrorCount(t *testing.T) {
 
 			s := &apmServiceService{p: &provider{Metric: msc}}
 
-			got, err := s.GetHasErrorCount(tt.args.ctx, tt.args.tenantId, tt.args.start, tt.args.end)
+			got, _, err := s.GetHasErrorService(tt.args.ctx, tt.args.tenantId, tt.args.start, tt.args.end)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetHasErrorCount() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetHasErrorService() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("GetHasErrorCount() got = %v, want %v", got, tt.want)
+				t.Errorf("GetHasErrorService() got = %v, want %v", got, tt.want)
 				return
 			}
 		})
@@ -422,13 +380,13 @@ func Test_apmServiceService_GetWithoutRequestCount(t *testing.T) {
 
 			s := &apmServiceService{p: &provider{Metric: msc}}
 
-			got, err := s.GetWithoutRequestCount(tt.args.ctx, tt.args.tenantId, tt.args.start, tt.args.end)
+			got, _, err := s.GetWithRequestService(tt.args.ctx, tt.args.tenantId, tt.args.start, tt.args.end)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetWithoutRequestCount() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetWithRequestService() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("GetWithoutRequestCount() got = %v, want %v", got, tt.want)
+				t.Errorf("GetWithRequestService() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
