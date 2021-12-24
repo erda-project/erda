@@ -241,7 +241,7 @@ func (b *Bundle) GetAllMyApps(userid string, orgid uint64, req apistructs.Applic
 	}
 	hc := b.hc
 
-	appIDs := make([]string, len(req.ApplicationID))
+	var appIDs []string
 	for _, v := range req.ApplicationID {
 		appIDs = append(appIDs, strconv.Itoa(int(v)))
 	}

@@ -178,7 +178,7 @@ func (b *Bundle) GetMSPTenantProjects(userID, orgID string, withStats bool, proj
 		projpb.GetProjectsResponse
 	}
 
-	pidList := make([]string, len(projectIds))
+	var pidList []string
 	for _, p := range projectIds {
 		pidList = append(pidList, strconv.Itoa(int(p)))
 	}

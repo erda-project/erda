@@ -31,7 +31,7 @@ func (b *Bundle) GetWorkbenchData(userID string, req apistructs.WorkbenchRequest
 	hc := b.hc
 	var rsp apistructs.WorkbenchResponse
 
-	pidList := make([]string, len(req.ProjectIDs))
+	var pidList []string
 	for _, p := range req.ProjectIDs {
 		pidList = append(pidList, strconv.Itoa(int(p)))
 	}
