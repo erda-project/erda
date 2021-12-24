@@ -14,9 +14,9 @@
 
 package monitor
 
-type LogTag string
+type TagKey string
 
 const (
-	LOGTAG_ORG_NAME LogTag = "dice_org_name"
-	LOGTAG_ORG_ID   LogTag = "dice_org_id"
+	TAGKEY_ORG_NAME TagKey = "org_name"
+	TAGKEY_ORG_ID   TagKey = "org_id"
 )
