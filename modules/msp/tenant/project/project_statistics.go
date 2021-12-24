@@ -20,10 +20,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ahmetb/go-linq/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
+	"github.com/erda-project/erda/modules/msp/instance/db/monitor"
 )
 
 type projectStats struct {
@@ -87,16 +89,28 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 	oneDayAgoMillSeconds := endMillSeconds - int64(24*time.Hour/time.Millisecond)
 	//sevenDayAgoMillSeconds := endMillSeconds - int64(7*24*time.Hour/time.Millisecond)
 
-	projectIdList, _ := structpb.NewList(projects.
-		Select(func(item *pb.Project) interface{} { return item.Id }))
-	terminusKeyList, _ := structpb.NewList(projects.
-		SelectMany(func(item *pb.Project) []interface{} {
-			var list []interface{}
-			for _, relationship := range item.Relationship {
-				list = append(list, relationship.TenantID)
-			}
-			return list
-		}))
+	terminusKeyMap := map[string][]string{}
+	var terminusIds []interface{}
+	for _, project := range projects {
+		intPId, _ := strconv.ParseInt(project.Id, 10, 64)
+		monitors, err := s.MonitorDB.GetMonitorByProjectId(intPId)
+		var tks []string
+		if err != nil {
+			linq.From(project.Relationship).
+				Select(func(i interface{}) interface{} { return i.(*pb.TenantRelationship).TenantID }).
+				ToSlice(&tks)
+		} else {
+			linq.From(monitors).
+				Select(func(i interface{}) interface{} { return i.(*monitor.Monitor).TerminusKey }).
+				ToSlice(&tks)
+		}
+		terminusKeyMap[project.Id] = tks
+		for _, tk := range tks {
+			terminusIds = append(terminusIds, tk)
+		}
+	}
+
+	terminusKeyList, _ := structpb.NewList(terminusIds)
 	statisticMap := projectStatisticMap{}
 
 	// get services count and last active time
@@ -105,30 +119,24 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 		End:   strconv.FormatInt(endMillSeconds, 10),
 		Filters: []*metricpb.Filter{
 			{
-				Key:   "tags.project_id",
-				Op:    "or_in",
-				Value: structpb.NewListValue(projectIdList),
-			},
-			{
 				Key:   "tags.terminus_key",
-				Op:    "or_in",
+				Op:    "in",
 				Value: structpb.NewListValue(terminusKeyList),
 			},
 		},
 		Statement: `
-		SELECT project_id::tag, terminus_key::tag, distinct(service_id::tag), max(timestamp)
+		SELECT terminus_key::tag, distinct(service_id::tag), max(timestamp)
 		FROM application_service_node
 		WHERE _metric_scope::tag = 'micro_service'
-		GROUP BY project_id::tag, terminus_key::tag
+		GROUP BY terminus_key::tag
         `,
 	}
 	if err := s.doInfluxQuery(req, func(row *metricpb.Row) {
-		projectId := row.Values[0].GetStringValue()
-		terminusKey := row.Values[1].GetStringValue()
-		servicesCount := row.Values[2].GetNumberValue()
-		activeTime := row.Values[3].GetNumberValue()
+		terminusKey := row.Values[0].GetStringValue()
+		servicesCount := row.Values[1].GetNumberValue()
+		activeTime := row.Values[2].GetNumberValue()
 
-		statisticMap.initOrUpdate(projectId, terminusKey, func(stats *projectStats) {
+		statisticMap.initOrUpdate("", terminusKey, func(stats *projectStats) {
 			stats.serviceCount = int64(servicesCount)
 			stats.lastActiveTime = int64(activeTime) / int64(time.Millisecond)
 		})
@@ -142,24 +150,23 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 		End:   strconv.FormatInt(endMillSeconds, 10),
 		Filters: []*metricpb.Filter{
 			{
-				Key:   "tags.project_id",
+				Key:   "tags.terminus_key",
 				Op:    "in",
-				Value: structpb.NewListValue(projectIdList),
+				Value: structpb.NewListValue(terminusKeyList),
 			},
 		},
 		Statement: `
-		SELECT project_id::tag, terminus_key::tag, count(project_id::tag)
+		SELECT terminus_key::tag, count(project_id::tag)
 		FROM analyzer_alert
 		WHERE alert_scope::tag = 'micro_service'
-		GROUP BY project_id::tag, terminus_key::tag
+		GROUP BY terminus_key::tag
 		`,
 	}
 	if err := s.doInfluxQuery(req, func(row *metricpb.Row) {
-		projectId := row.Values[0].GetStringValue()
-		terminusKey := row.Values[1].GetStringValue()
-		alertCount := row.Values[2].GetNumberValue()
+		terminusKey := row.Values[0].GetStringValue()
+		alertCount := row.Values[1].GetNumberValue()
 
-		statisticMap.initOrUpdate(projectId, terminusKey, func(stats *projectStats) {
+		statisticMap.initOrUpdate("", terminusKey, func(stats *projectStats) {
 			stats.alertCount = int64(alertCount)
 		})
 	}); err != nil {
@@ -170,10 +177,7 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 	for _, project := range projects {
 		stats, ok := statisticMap.statForProjectId(project.Id)
 		if !ok {
-			var tks []string
-			for _, relationship := range project.Relationship {
-				tks = append(tks, relationship.TenantID)
-			}
+			tks := terminusKeyMap[project.Id]
 			stats, ok = statisticMap.statForTerminusKeys("", tks...)
 		}
 		if !ok {
