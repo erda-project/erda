@@ -1270,7 +1270,7 @@ func (a *Addon) pushLog(content string, params *apistructs.AddonHandlerCreateIte
 	}
 	tags := map[string]string{}
 	if orgName, ok := params.Options["orgName"]; ok {
-		tags[log.TAG_DICE_ORG_NAME] = orgName
+		tags[log.TAG_ORG_NAME] = orgName
 	}
 	a.Logger.Log(content, tags)
 }
