@@ -483,6 +483,15 @@ func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTe
 		return nil, err
 	}
 
+	project, err := svc.bdl.GetProject(testPlan.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	org, err := svc.bdl.GetOrg(project.OrgID)
+	if err != nil {
+		return nil, err
+	}
+
 	var reqPipeline = apistructs.PipelineCreateRequestV2{
 		PipelineYmlName: apistructs.PipelineSourceAutoTestPlan.String() + "-" + strconv.Itoa(int(req.TestPlan.ID)),
 		PipelineSource:  apistructs.PipelineSourceAutoTest,
@@ -492,6 +501,7 @@ func (svc *Service) ExecuteDiceAutotestTestPlan(req apistructs.AutotestExecuteTe
 		PipelineYml:     string(yml),
 		Labels:          req.Labels,
 		IdentityInfo:    req.IdentityInfo,
+		NormalLabels:    map[string]string{apistructs.LabelOrgName: org.Name, apistructs.LabelOrgID: strconv.FormatUint(org.ID, 10)},
 	}
 	if req.ConfigManageNamespaces != "" {
 		reqPipeline.ConfigManageNamespaces = append(reqPipeline.ConfigManageNamespaces, req.ConfigManageNamespaces)

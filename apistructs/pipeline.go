@@ -41,6 +41,11 @@ const (
 	BuildkitHitRate = "BUILDKIT_HIT_RATE"
 )
 
+const (
+	EnvDiceOrgName = "DICE_ORG_NAME"
+	EnvDiceOrgID   = "DICE_ORG_ID"
+)
+
 // pipeline create
 
 type PipelineCreateRequest struct {

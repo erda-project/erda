@@ -36,6 +36,11 @@ func init() {
 const (
 	CtxKeyCollectorLogID = "logID"
 	CtxKeyLogger         = "logger"
+
+	FieldOrgName   = "orgName"
+	FieldOrgID     = "orgID"
+	TagDiceOrgName = "dice_org_name"
+	TagDiceOrgID   = "dice_org_id"
 )
 
 // clog means collector log.
@@ -83,6 +88,10 @@ func (c *CollectorHook) Fire(entry *logrus.Entry) error {
 		Stream:    &apistructs.CollectorLogPushStreamStdout,
 		Timestamp: time.Now().UnixNano(),
 		Content:   entry.Message,
+		Tags: map[string]interface{}{
+			TagDiceOrgName: entry.Data[FieldOrgName],
+			TagDiceOrgID:   entry.Data[FieldOrgID],
+		},
 	})
 	return nil
 }

@@ -228,6 +228,23 @@ func (svc *Service) ExecuteAutotestSceneSet(req apistructs.AutotestExecuteSceneS
 		return nil, err
 	}
 
+	sceneSet, err := svc.GetSceneSet(req.AutoTestSceneSet.ID)
+	if err != nil {
+		return nil, err
+	}
+	space, err := svc.GetSpace(sceneSet.SpaceID)
+	if err != nil {
+		return nil, err
+	}
+	project, err := svc.bdl.GetProject(uint64(space.ProjectID))
+	if err != nil {
+		return nil, err
+	}
+	org, err := svc.bdl.GetOrg(project.OrgID)
+	if err != nil {
+		return nil, err
+	}
+
 	var reqPipeline = apistructs.PipelineCreateRequestV2{
 		PipelineYmlName: apistructs.PipelineSourceAutoTestSceneSet.String() + "-" + strconv.Itoa(int(req.AutoTestSceneSet.ID)),
 		PipelineSource:  apistructs.PipelineSourceAutoTest,
@@ -237,6 +254,7 @@ func (svc *Service) ExecuteAutotestSceneSet(req apistructs.AutotestExecuteSceneS
 		PipelineYml:     string(yml),
 		Labels:          req.Labels,
 		IdentityInfo:    req.IdentityInfo,
+		NormalLabels:    map[string]string{apistructs.LabelOrgName: org.Name, apistructs.LabelOrgID: strconv.FormatUint(org.ID, 10)},
 	}
 	if req.ConfigManageNamespaces != "" {
 		reqPipeline.ConfigManageNamespaces = append(reqPipeline.ConfigManageNamespaces, req.ConfigManageNamespaces)

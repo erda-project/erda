@@ -59,7 +59,10 @@ func parseConfFromTask(task *spec.PipelineTask) (EnvConfig, error) {
 //   push log to collector
 //   save metadata
 func Do(ctx context.Context, task *spec.PipelineTask) {
-	logger := newLogger().WithContext(context.WithValue(context.Background(), CtxKeyCollectorLogID, task.Extra.UUID))
+	logger := newLogger().
+		WithContext(context.WithValue(context.Background(), CtxKeyCollectorLogID, task.Extra.UUID)).
+		WithField(FieldOrgName, task.Extra.Labels[apistructs.EnvDiceOrgName]).
+		WithField(FieldOrgID, task.Extra.Labels[apistructs.EnvDiceOrgID])
 	ctx = context.WithValue(ctx, CtxKeyLogger, logger)
 
 	// print logo
