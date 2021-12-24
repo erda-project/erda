@@ -25,7 +25,7 @@
               "{{durationRight}}",
               "{{serviceName}}",
               "{{traceId}}",
-              "{{dubboMethod}}",
+              "{{rpcMethod}}",
               "{{httpPath}}",
               "{{statusSuccess}}",
               "{{statusError}}"
