@@ -23,10 +23,10 @@ import (
 )
 
 var (
-	SystemExpressions      []*model.Expression
-	SystemTemplate         map[string][]*model.Template
-	SystemAllTemplate      []*model.Template
-	SystemExpressionConfig map[string]*model.ExpressionConfig
+	Expressions      []*model.Expression
+	TemplateIndex    map[string][]*model.Template
+	Templates        []*model.Template
+	ExpressionConfig map[string]*model.ExpressionConfig
 )
 
 type expressionService struct {
@@ -87,18 +87,18 @@ func (e *expressionService) GetAllAlertTemplate(ctx context.Context, request *pb
 	var data []byte
 	var err error
 	if request.PageNo <= 1 {
-		if request.PageSize > int64(len(SystemTemplate)) {
-			request.PageSize = int64(len(SystemTemplate))
+		if request.PageSize > int64(len(Templates)) {
+			request.PageSize = int64(len(Templates))
 		}
-		data, err = json.Marshal(SystemAllTemplate[:request.PageSize])
+		data, err = json.Marshal(Templates[:request.PageSize])
 	} else {
-		if (request.PageNo-1)*request.PageSize >= int64(len(SystemTemplate)) {
+		if (request.PageNo-1)*request.PageSize >= int64(len(Templates)) {
 			return result, nil
 		}
-		if request.PageNo*request.PageSize > int64(len(SystemTemplate)) {
-			data, err = json.Marshal(SystemAllTemplate[(request.PageNo-1)*request.PageSize:])
+		if request.PageNo*request.PageSize > int64(len(Templates)) {
+			data, err = json.Marshal(Templates[(request.PageNo-1)*request.PageSize:])
 		} else {
-			data, err = json.Marshal(SystemAllTemplate[(request.PageNo-1)*request.PageSize : request.PageNo*request.PageSize])
+			data, err = json.Marshal(Templates[(request.PageNo-1)*request.PageSize : request.PageNo*request.PageSize])
 		}
 	}
 	if err != nil {

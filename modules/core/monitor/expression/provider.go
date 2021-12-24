@@ -70,24 +70,24 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p: p,
 	}
 	p.t = ctx.Service("i18n").(i18n.I18n).Translator("alert")
-	SystemExpressions = make([]*model.Expression, 0)
+	Expressions = make([]*model.Expression, 0)
 	orgExpressions, err := readExpressionFile(p.Cfg.SystemExpression)
 	if err != nil {
 		return err
 	}
-	SystemExpressions = orgExpressions
-	SystemExpressionConfig = make(map[string]*model.ExpressionConfig)
+	Expressions = orgExpressions
+	ExpressionConfig = make(map[string]*model.ExpressionConfig)
 	expressionConfig, err := redaExpressionConfig(p.Cfg.SystemExpressionConfig)
 	if err != nil {
 		return err
 	}
-	SystemExpressionConfig = expressionConfig
-	SystemTemplate = make(map[string][]*model.Template, 0)
+	ExpressionConfig = expressionConfig
+	TemplateIndex = make(map[string][]*model.Template, 0)
 	templates, err := readTemplateFile(p.Cfg.SystemTemplate)
 	if err != nil {
 		return err
 	}
-	SystemTemplate = templates
+	TemplateIndex = templates
 	if p.Register != nil {
 		pb.RegisterExpressionServiceImp(p.Register, p.expressionService, apis.Options())
 	}
@@ -172,7 +172,7 @@ func readTemplateFile(root string) (map[string][]*model.Template, error) {
 			}
 			alertIndex := strings.TrimSuffix(info.Name(), ".yml")
 			templateMap[alertIndex] = templateModel
-			SystemAllTemplate = append(SystemAllTemplate, templateModel...)
+			Templates = append(Templates, templateModel...)
 			for i := range templateModel {
 				templateModel[i].AlertIndex = strings.TrimSuffix(info.Name(), ".yml")
 				allRoute := strings.Split(path, "/")
