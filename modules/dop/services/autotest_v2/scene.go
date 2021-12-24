@@ -604,6 +604,19 @@ func (svc *Service) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteScene
 		})
 	}
 
+	space, err := svc.GetSpace(scene.SpaceID)
+	if err != nil {
+		return nil, err
+	}
+	project, err := svc.bdl.GetProject(uint64(space.ProjectID))
+	if err != nil {
+		return nil, err
+	}
+	org, err := svc.bdl.GetOrg(project.OrgID)
+	if err != nil {
+		return nil, err
+	}
+
 	var reqPipeline = apistructs.PipelineCreateRequestV2{
 		PipelineYmlName: strconv.Itoa(int(scene.ID)),
 		PipelineSource:  apistructs.PipelineSourceAutoTest,
@@ -614,6 +627,7 @@ func (svc *Service) ExecuteDiceAutotestScene(req apistructs.AutotestExecuteScene
 		Labels:          req.Labels,
 		RunParams:       params,
 		IdentityInfo:    req.IdentityInfo,
+		NormalLabels:    map[string]string{apistructs.LabelOrgName: org.Name, apistructs.LabelOrgID: strconv.FormatUint(org.ID, 10)},
 	}
 
 	if req.ConfigManageNamespaces != "" {
