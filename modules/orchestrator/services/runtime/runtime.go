@@ -41,6 +41,7 @@ import (
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
 	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -1345,6 +1346,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 		return err
 	}
 
+	isFakeRuntime := false
 	deployment, err := r.db.FindLastDeployment(runtime.ID)
 	if err != nil {
 		l.WithError(err).WithField("runtime.ID", runtime.ID).
@@ -1352,9 +1354,15 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 		return err
 	}
 	if deployment == nil {
-		logrus.WithField("runtime.ID", runtime.ID).
-			Warnln("failed to build summary item, last deployment not found")
-		return errors.New("failed to build summary item, last deployment not found")
+		isFakeRuntime = true
+		// make a fake deployment
+		deployment = &dbclient.Deployment{
+			RuntimeId: runtime.ID,
+			Status:    apistructs.DeploymentStatusInit,
+			BaseModel: dbengine.BaseModel{
+				UpdatedAt: runtime.UpdatedAt,
+			},
+		}
 	}
 
 	d.ID = runtime.ID
@@ -1394,6 +1402,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 		"applicationId": runtime.ApplicationID,
 		"workspace":     runtime.Workspace,
 		"buildId":       deployment.BuildId,
+		"fakeRuntime":   isFakeRuntime,
 	}
 	d.ProjectID = runtime.ProjectID
 	updateStatusToDisplay(&d.RuntimeInspectDTO)

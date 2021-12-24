@@ -92,14 +92,19 @@ if [ -n "${DOCKER_REGISTRY}" ]; then
     DOCKER_IMAGE=${DOCKER_REGISTRY}/${DOCKER_IMAGE}
 fi
 
+if [ -z "${DOCKER_PLATFORM}" ]; then
+    DOCKER_PLATFORM="linux/amd64"
+fi
+
 # print details
 print_details() {
-    echo "Module Path  : ${MODULE_PATH}"
-    echo "App Name     : ${APP_NAME}"
-    echo "Config Path  : ${CONFIG_PATH}"
-    echo "Dockerfile   : ${DOCKERFILE}"
-    echo "Docker Image : ${DOCKER_IMAGE}"
-    echo "Build Command: ${MAKE_BUILD_CMD}"
+    echo "Module Path    : ${MODULE_PATH}"
+    echo "App Name       : ${APP_NAME}"
+    echo "Config Path    : ${CONFIG_PATH}"
+    echo "Dockerfile     : ${DOCKERFILE}"
+    echo "Docker Image   : ${DOCKER_IMAGE}"
+    echo "Build Command  : ${MAKE_BUILD_CMD}"
+    echo "Docker Platform: ${DOCKER_PLATFORM}"
 }
 print_details
 
@@ -119,7 +124,7 @@ build_image()  {
             build/scripts/base_image.sh build
         fi
     fi
-    DOCKER_BUILDKIT=1 docker build --progress=plain -t "${DOCKER_IMAGE}" \
+    DOCKER_BUILDKIT=1 docker build --platform "${DOCKER_PLATFORM}" --progress=plain -t "${DOCKER_IMAGE}" \
         --label "branch=$(git rev-parse --abbrev-ref HEAD)" \
         --label "commit=$(git rev-parse HEAD)" \
         --label "build-time=$(date '+%Y-%m-%d %T%z')" \

@@ -241,6 +241,18 @@ erda.msp.apm.service:
      - "avgDuration"
      - "httpCode"
      - "errorRate"
+  - type: "rps_chart"
+    charts:
+     - "rps"
+  - type: "avgDuration_chart"
+    charts:
+     - "avgDuration"
+  - type: "httpCode"
+    charts:
+     - "httpCode"
+  - type: "errorRate"
+    charts:
+     - "errorRate"
 
 #resource deploy related
 erda.msp.resource:
@@ -282,9 +294,12 @@ erda.msp.apm.log_service:
 # component-protocol framework
 component-protocol:
 
-component-protocol.components.topn.service-overview:
-component-protocol.components.topn.service-list:
-
+component-protocol.components.service-list:
+component-protocol.components.service-list.page:
+component-protocol.components.service-list.grid:
+component-protocol.components.service-overview:
+component-protocol.components.service-overview.page:
+component-protocol.components.service-overview.grid:
 
 
 

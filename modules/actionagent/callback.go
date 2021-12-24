@@ -28,6 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/envconf"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/retry"
@@ -98,7 +99,9 @@ func (agent *Agent) callbackToPipelinePlatform(cb *Callback) (err error) {
 	}
 
 	cbByte, _ := json.Marshal(cb)
-	logrus.Debugf("begin callback meta: %s", string(cbByte))
+	cbTraceID := uuid.SnowFlakeID()
+	logrus.Debugf("begin callback meta [%s]: %s", cbTraceID, string(cbByte))
+	defer logrus.Debugf("end callback meta [%s]", cbTraceID)
 
 	type config struct {
 		OpenAPIToken   string `env:"DICE_OPENAPI_TOKEN" required:"true"`
