@@ -716,5 +716,26 @@ func init() {
 				return "(" + strings.Join(parts, " || ") + ")", nil
 			},
 		},
+		"not_include": {
+			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
+				err := mustCallArgsMinNum(call, 2)
+				if err != nil {
+					return "", err
+				}
+				val, err := getScriptExpression(ctx, call.Args[0], deftyp, fields)
+				if err != nil {
+					return "", err
+				}
+				var parts []string
+				for _, item := range call.Args[1:] {
+					s, err := getScriptExpression(ctx, item, deftyp, fields)
+					if err != nil {
+						return "", err
+					}
+					parts = append(parts, "("+val+")"+"!=("+s+")")
+				}
+				return "(" + strings.Join(parts, " || ") + ")", nil
+			},
+		},
 	}
 }
