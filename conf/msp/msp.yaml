@@ -244,13 +244,13 @@ erda.msp.apm.service:
   - type: "rps_chart"
     charts:
      - "rps"
-  - type: "avgDuration_chart"
+  - type: "avg_duration_chart"
     charts:
      - "avgDuration"
-  - type: "httpCode"
+  - type: "http_code_chart"
     charts:
      - "httpCode"
-  - type: "errorRate"
+  - type: "error_rate_chart"
     charts:
      - "errorRate"
 

@@ -15,33 +15,27 @@ hierarchy:
 components:
   page:
     type: CardContainer
-    option:
-      asyncAtInit: true
   grid:
     type: Grid
-    option:
-      asyncAtInit: true
   service-overview@pathRpsMaxTop5:
     type: TopN
-    option:
-      asyncAtInit: true
   service-overview@pathSlowTop5:
     type: TopN
-    option:
+    options:
       asyncAtInit: true
   service-overview@pathErrorRateTop5:
     type: TopN
-    option:
+    options:
       asyncAtInit: true
   service-overview@pathClientRpsMaxTop5:
     type: TopN
-    option:
+    options:
       asyncAtInit: true
   service-overview@sqlSlowTop5:
     type: TopN
-    option:
+    options:
       asyncAtInit: true
   service-overview@exceptionCountTop5:
     type: TopN
-    option:
+    options:
       asyncAtInit: true
