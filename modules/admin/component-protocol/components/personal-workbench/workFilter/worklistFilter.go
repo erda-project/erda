@@ -97,9 +97,9 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 
 	var phTxt string
 	if tp == apistructs.WorkbenchItemApp {
-		phTxt = i18n.I18nKeySearchByAppName
+		phTxt = f.sdk.I18n(i18n.I18nKeySearchByAppName)
 	} else {
-		phTxt = i18n.I18nKeySearchByProjectName
+		phTxt = f.sdk.I18n(i18n.I18nKeySearchByProjectName)
 	}
 
 	f.State.FrontendConditionProps = []filter.PropCondition{
