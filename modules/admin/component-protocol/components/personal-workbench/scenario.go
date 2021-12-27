@@ -15,6 +15,7 @@
 package personal_workbench
 
 import (
+	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/cleanData"
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/head"
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/leftContent"
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/messageContainer"
