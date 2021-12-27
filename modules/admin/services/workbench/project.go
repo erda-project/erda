@@ -133,18 +133,23 @@ func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, project
 
 		list = append(list, item)
 	}
-	return list, err
+	return list, nil
 }
 
-func (w *Workbench) ListSubProjWbData(identity apistructs.Identity) (*apistructs.WorkbenchProjOverviewRespData, error) {
+func (w *Workbench) ListSubProjWbData(identity apistructs.Identity) (data *apistructs.WorkbenchProjOverviewRespData, err error) {
 	var (
 		projects []apistructs.ProjectDTO
 		pidList  []uint64
 	)
+	data = &apistructs.WorkbenchProjOverviewRespData{}
 
 	subList, err := w.bdl.ListSubscribes(identity.UserID, identity.OrgID, apistructs.GetSubscribeReq{Type: apistructs.ProjectSubscribe})
 	if err != nil {
-		return nil, err
+		logrus.Errorf("list subscribes failed, error: %v", err)
+		return
+	}
+	if subList == nil || len(subList.List) == 0 {
+		return
 	}
 	for _, v := range subList.List {
 		pidList = append(pidList, v.TypeID)
@@ -164,16 +169,20 @@ func (w *Workbench) ListSubProjWbData(identity apistructs.Identity) (*apistructs
 		return nil, err
 	}
 
-	return &apistructs.WorkbenchProjOverviewRespData{
+	data = &apistructs.WorkbenchProjOverviewRespData{
 		Total: len(projects),
 		List:  list,
-	}, nil
+	}
+
+	return
 }
 
-func (w *Workbench) ListQueryProjWbData(identity apistructs.Identity, page apistructs.PageRequest, query string) (*apistructs.WorkbenchProjOverviewRespData, error) {
+func (w *Workbench) ListQueryProjWbData(identity apistructs.Identity, page apistructs.PageRequest, query string) (data *apistructs.WorkbenchProjOverviewRespData, err error) {
+
+	data = &apistructs.WorkbenchProjOverviewRespData{}
 	orgID, err := strconv.Atoi(identity.OrgID)
 	if err != nil {
-		return nil, err
+		return
 	}
 	req := apistructs.ProjectListRequest{
 		OrgID:    uint64(orgID),
@@ -183,22 +192,26 @@ func (w *Workbench) ListQueryProjWbData(identity apistructs.Identity, page apist
 	}
 	projectDTO, err := w.bdl.ListMyProject(identity.UserID, req)
 	if err != nil {
-		return nil, err
+		logrus.Errorf("list my project failed, request: %v, error: %v", req, err)
+		return
 	}
-	if projectDTO == nil {
-		return nil, nil
+	if projectDTO == nil || len(projectDTO.List) == 0 {
+		logrus.Warnf("list my project get empty response")
+		return
 	}
 
 	list, err := w.ListProjWbOverviewData(identity, projectDTO.List)
 	if err != nil {
 		logrus.Errorf("list project workbench overview data failed, error: %v", err)
-		return nil, err
+		return
 	}
 
-	return &apistructs.WorkbenchProjOverviewRespData{
+	data = &apistructs.WorkbenchProjOverviewRespData{
 		Total: projectDTO.Total,
 		List:  list,
-	}, nil
+	}
+
+	return
 }
 
 // GetUrlCommonParams get url params used by icon
