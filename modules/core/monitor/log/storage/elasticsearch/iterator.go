@@ -73,6 +73,10 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 				matcher = func(data *pb.LogItem) bool {
 					return regex.MatchString(data.Content)
 				}
+			case storage.CONTAINS:
+				matcher = func(data *pb.LogItem) bool {
+					return strings.Contains(data.Content, val)
+				}
 			}
 		}
 	}
