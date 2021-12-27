@@ -42,11 +42,13 @@ type Project struct {
 	Type           string    `gorm:"column:type"`      // project type
 
 	Quota *apistructs.ProjectQuota `json:"quota,omitempty" gorm:"-"`
+
+	SoftDeletedAt uint
 }
 
 // TableName 设置模型对应数据库表名称
 func (Project) TableName() string {
-	return "ps_group_projects"
+	return "erda_project"
 }
 
 func (p *Project) GetClusterConfig() map[string]string {
