@@ -30,6 +30,7 @@ component-protocol.components.personal-workbench.messageTabs:
 component-protocol.components.personal-workbench.messageContainer:
 component-protocol.components.personal-workbench.userProfile:
 component-protocol.components.personal-workbench.workListFilter:
+component-protocol.components.personal-workbench.cleanData:
 
 
 i18n@cp:
