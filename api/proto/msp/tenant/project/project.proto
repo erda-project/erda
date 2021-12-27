@@ -5,8 +5,17 @@ option go_package = "github.com/erda-project/erda-proto-go/msp/tenant/project/pb
 import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/descriptor.proto";
+import "common/openapi.proto";
 
 service ProjectService {
+  option (erda.common.openapi_service) = {
+    service: "msp",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
   rpc GetProjects (GetProjectsRequest) returns (GetProjectsResponse)  {
     option (google.api.http) = {
       get: "/api/msp/tenant/projects",
@@ -48,6 +57,29 @@ service ProjectService {
       get: "/api/msp/tenant/project/overview"
     };
   }
+
+  rpc GetProjectStatistics(GetProjectStatisticsRequest) returns (GetProjectStatisticsResponse) {
+    option (google.api.http) = {
+      post: "/api/msp/tenant/project/statistics"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/msp/tenant/project/statistics"
+    };
+  }
+}
+
+message GetProjectStatisticsRequest {
+  repeated string projectIds = 1;
+}
+
+message GetProjectStatisticsResponse {
+  map<string, ProjectStatistics> data = 1;
+}
+
+message ProjectStatistics {
+  int64 serviceCount      = 1;
+  int64 last24hAlertCount = 2;
+  int64 lastActiveTime    = 3;
 }
 
 message GetProjectOverviewRequest{

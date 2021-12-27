@@ -32,6 +32,8 @@ type ProjectServiceHandler interface {
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
 	// GET /api/msp/tenant/project/overview
 	GetProjectOverview(context.Context, *GetProjectOverviewRequest) (*GetProjectOverviewResponse, error)
+	// POST /api/msp/tenant/project/statistics
+	GetProjectStatistics(context.Context, *GetProjectStatisticsRequest) (*GetProjectStatisticsResponse, error)
 }
 
 // RegisterProjectServiceHandler register ProjectServiceHandler to http.Router.
@@ -313,6 +315,42 @@ func RegisterProjectServiceHandler(r http.Router, srv ProjectServiceHandler, opt
 		)
 	}
 
+	add_GetProjectStatistics := func(method, path string, fn func(context.Context, *GetProjectStatisticsRequest) (*GetProjectStatisticsResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetProjectStatisticsRequest))
+		}
+		var GetProjectStatistics_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetProjectStatistics_info = transport.NewServiceInfo("erda.msp.tenant.project.ProjectService", "GetProjectStatistics", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetProjectStatistics_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetProjectStatisticsRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_GetProjects("GET", "/api/msp/tenant/projects", srv.GetProjects)
 	add_GetProjectsTenantsIDs("GET", "/api/msp/tenant/projects/tenants/ids", srv.GetProjectsTenantsIDs)
 	add_CreateProject("POST", "/api/msp/tenant/project", srv.CreateProject)
@@ -320,4 +358,5 @@ func RegisterProjectServiceHandler(r http.Router, srv ProjectServiceHandler, opt
 	add_DeleteProject("DELETE", "/api/msp/tenant/project", srv.DeleteProject)
 	add_GetProject("GET", "/api/msp/tenant/project", srv.GetProject)
 	add_GetProjectOverview("GET", "/api/msp/tenant/project/overview", srv.GetProjectOverview)
+	add_GetProjectStatistics("POST", "/api/msp/tenant/project/statistics", srv.GetProjectStatistics)
 }

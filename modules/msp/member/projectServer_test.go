@@ -95,6 +95,21 @@ func (mr *MockProjectServiceServerMockRecorder) GetProjectOverview(arg0, arg1 in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProjectOverview", reflect.TypeOf((*MockProjectServiceServer)(nil).GetProjectOverview), arg0, arg1)
 }
 
+// GetProjectStatistics mocks base method.
+func (m *MockProjectServiceServer) GetProjectStatistics(arg0 context.Context, arg1 *pb.GetProjectStatisticsRequest) (*pb.GetProjectStatisticsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProjectStatistics", arg0, arg1)
+	ret0, _ := ret[0].(*pb.GetProjectStatisticsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProjectStatistics indicates an expected call of GetProjectStatistics.
+func (mr *MockProjectServiceServerMockRecorder) GetProjectStatistics(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProjectStatistics", reflect.TypeOf((*MockProjectServiceServer)(nil).GetProjectStatistics), arg0, arg1)
+}
+
 // GetProjects mocks base method.
 func (m *MockProjectServiceServer) GetProjects(arg0 context.Context, arg1 *pb.GetProjectsRequest) (*pb.GetProjectsResponse, error) {
 	m.ctrl.T.Helper()

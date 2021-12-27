@@ -64,3 +64,7 @@ func (s *projectServiceWrapper) GetProject(ctx context.Context, req *pb.GetProje
 func (s *projectServiceWrapper) GetProjectOverview(ctx context.Context, req *pb.GetProjectOverviewRequest) (*pb.GetProjectOverviewResponse, error) {
 	return s.client.GetProjectOverview(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *projectServiceWrapper) GetProjectStatistics(ctx context.Context, req *pb.GetProjectStatisticsRequest) (*pb.GetProjectStatisticsResponse, error) {
+	return s.client.GetProjectStatistics(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

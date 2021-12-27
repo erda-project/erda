@@ -7,6 +7,7 @@ import (
 	fmt "fmt"
 	math "math"
 
+	_ "github.com/erda-project/erda-proto-go/common/pb"
 	proto "github.com/golang/protobuf/proto"
 	_ "github.com/mwitkow/go-proto-validators"
 	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
@@ -19,6 +20,16 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *GetProjectStatisticsRequest) Validate() error {
+	return nil
+}
+func (this *GetProjectStatisticsResponse) Validate() error {
+	// Validation of proto3 map<> fields is unsupported.
+	return nil
+}
+func (this *ProjectStatistics) Validate() error {
+	return nil
+}
 func (this *GetProjectOverviewRequest) Validate() error {
 	return nil
 }

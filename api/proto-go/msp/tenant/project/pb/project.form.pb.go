@@ -12,6 +12,9 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*GetProjectStatisticsRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetProjectStatisticsResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ProjectStatistics)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetProjectOverviewRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetProjectOverviewResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ProjectOverviewList)(nil)
@@ -30,6 +33,53 @@ var _ urlenc.URLValuesUnmarshaler = (*UpdateProjectRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateProjectResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Project)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*TenantRelationship)(nil)
+
+// GetProjectStatisticsRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetProjectStatisticsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "projectIds":
+				m.ProjectIds = vals
+			}
+		}
+	}
+	return nil
+}
+
+// GetProjectStatisticsResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetProjectStatisticsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// ProjectStatistics implement urlenc.URLValuesUnmarshaler.
+func (m *ProjectStatistics) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "serviceCount":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ServiceCount = val
+			case "last24hAlertCount":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Last24HAlertCount = val
+			case "lastActiveTime":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.LastActiveTime = val
+			}
+		}
+	}
+	return nil
+}
 
 // GetProjectOverviewRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetProjectOverviewRequest) UnmarshalURLValues(prefix string, values url.Values) error {

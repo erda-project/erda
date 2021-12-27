@@ -21,6 +21,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ahmetb/go-linq/v3"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
@@ -187,9 +189,19 @@ func (s *projectService) GetProjectList(ctx context.Context, projectIDs []string
 		return projects, nil
 	}
 
-	err = s.getProjectsStatistics(projects)
+	var ids []string
+	linq.From(projects).Select(func(i interface{}) interface{} { return i.(*pb.Project).Id }).ToSlice(&ids)
+	stats, err := s.getProjectsStatistics(ids...)
 	if err != nil {
 		s.p.Log.Warnf("failed to get projects statistics: %s", err)
+		return projects, nil
+	}
+	for _, project := range projects {
+		if stat, ok := stats[project.Id]; ok {
+			project.ServiceCount = stat.serviceCount
+			project.LastActiveTime = stat.lastActiveTime
+			project.Last24HAlertCount = stat.alertCount
+		}
 	}
 	return projects, nil
 }
@@ -436,6 +448,27 @@ func (s *projectService) GetProjectsTenantsIDs(ctx context.Context, req *pb.GetP
 	}
 
 	return &pb.GetProjectsTenantsIDsResponse{Data: ids}, nil
+}
+
+func (s *projectService) GetProjectStatistics(ctx context.Context, req *pb.GetProjectStatisticsRequest) (*pb.GetProjectStatisticsResponse, error) {
+	stats, err := s.getProjectsStatistics(req.ProjectIds...)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &pb.GetProjectStatisticsResponse{
+		Data: map[string]*pb.ProjectStatistics{},
+	}
+
+	for k, v := range stats {
+		result.Data[k] = &pb.ProjectStatistics{
+			LastActiveTime:    v.lastActiveTime,
+			ServiceCount:      v.serviceCount,
+			Last24HAlertCount: v.alertCount,
+		}
+	}
+
+	return result, nil
 }
 
 func (s *projectService) convertToProject(project *db.MSPProject) *pb.Project {
