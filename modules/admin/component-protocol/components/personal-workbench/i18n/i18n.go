@@ -24,7 +24,7 @@ import (
 
 const (
 	I18nKeyIssueExpired         = "IssueExpired"
-	I18nKeyIssueExpiredToday    = "IssueExpiredToday"
+	I18nKeyIssueExpireToday     = "IssueExpireToday"
 	I18nKeyIssueUndo            = "IssueUndo"
 	I18nKeyMspServiceCount      = "ServiceCount"
 	I18nKeyMspLast24HAlertCount = "Last24HAlertCount"

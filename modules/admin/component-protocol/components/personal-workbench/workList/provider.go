@@ -107,6 +107,7 @@ func (l *WorkList) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 // RegisterChangePage when change page, filter needed
 func (l *WorkList) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
+		logrus.Infof("change page client data: %+v", opData)
 		if opData.ClientData.PageNo > 0 {
 			l.filterReq.PageNo = opData.ClientData.PageNo
 		}
