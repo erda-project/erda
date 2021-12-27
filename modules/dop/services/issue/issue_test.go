@@ -116,8 +116,8 @@ func Test_validPlanTime(t *testing.T) {
 		{
 			args: args{
 				req: apistructs.IssueUpdateRequest{
-					PlanStartedAt:  &tomorrow,
-					PlanFinishedAt: &today,
+					PlanStartedAt:  apistructs.IssueTime(tomorrow),
+					PlanFinishedAt: apistructs.IssueTime(today),
 				},
 				issue: &dao.Issue{},
 			},
@@ -126,7 +126,7 @@ func Test_validPlanTime(t *testing.T) {
 		{
 			args: args{
 				req: apistructs.IssueUpdateRequest{
-					PlanStartedAt: &nilTime,
+					PlanStartedAt: apistructs.IssueTime(nilTime),
 				},
 				issue: &dao.Issue{
 					PlanStartedAt: &timeBase,
