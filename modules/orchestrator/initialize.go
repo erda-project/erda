@@ -18,7 +18,6 @@ package orchestrator
 import (
 	"context"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -244,9 +243,18 @@ func cleanLeaderRemainingAddon(ep *endpoints.Endpoints) error {
 	if err != nil {
 		return err
 	}
-	// find the addons which project is deleted
+
+	// list all projects
 	existProjectMap := make(map[uint64]struct{})
-	notExistProjectMap := make(map[uint64]struct{})
+	projects, err := ep.Bdl().GetAllProjects()
+	if err != nil {
+		return err
+	}
+	for _, v := range projects {
+		existProjectMap[v.ID] = struct{}{}
+	}
+
+	// find the addons which project is deleted
 	newAddons := addonsFilterIn(addons, func(addon *dbclient.AddonInstance) bool {
 		if addon.ProjectID == "" {
 			return false
@@ -259,20 +267,7 @@ func cleanLeaderRemainingAddon(ep *endpoints.Endpoints) error {
 		if _, ok := existProjectMap[proID]; ok {
 			return false
 		}
-		if _, ok := notExistProjectMap[proID]; ok {
-			return true
-		}
-		_, err = ep.Bdl().GetProject(proID)
-		if err == nil {
-			existProjectMap[proID] = struct{}{}
-			return false
-		}
-		if !strings.Contains(err.Error(), "project not found") {
-			logrus.Errorf("[cleanLeaderRemainingAddon] failed to GetProject, prjectID: %s", addon.ProjectID)
-			return false
-		}
 		// the project is deleted, and should clean the addon
-		notExistProjectMap[proID] = struct{}{}
 		return true
 	})
 	logrus.Infof("[cleanLeaderRemainingAddon] begin clean %d addons", len(newAddons))
@@ -292,7 +287,7 @@ func cleanLeaderRemainingAddon(ep *endpoints.Endpoints) error {
 		}
 		// all (1000,5000) users is reserved as internal service account
 		if err = ep.Addon().Delete("2000", (*routings)[0].ID); err != nil {
-			logrus.Errorf("[cleanLeaderRemainingAddon] failed to delete addon, instanceID: %s", v.ID)
+			logrus.Errorf("[cleanLeaderRemainingAddon] failed to delete addon, instanceID: %s, err: %s", v.ID, err.Error())
 		}
 	}
 	return nil
