@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"bou.ke/monkey"
-
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
@@ -166,4 +165,57 @@ func TestCreateStream(t *testing.T) {
 	svc := &Issue{db: db, uc: uc, bdl: bdl, stream: stream}
 	err := svc.CreateStream(apistructs.IssueUpdateRequest{ID: 1, IdentityInfo: apistructs.IdentityInfo{UserID: "1"}}, streamFields)
 	assert.NoError(t, err)
+}
+
+func Test_validPlanTime(t *testing.T) {
+	type args struct {
+		req   apistructs.IssueUpdateRequest
+		issue *dao.Issue
+	}
+	timeBase := time.Date(2021, 9, 1, 0, 0, 0, 0, time.Now().Location())
+	today := time.Date(2021, 9, 1, 0, 0, 0, 0, time.Now().Location())
+	tomorrow := time.Date(2021, 9, 2, 0, 0, 0, 0, time.Now().Location())
+	nilTime := time.Unix(0, 0)
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			args: args{
+				req: apistructs.IssueUpdateRequest{},
+				issue: &dao.Issue{
+					PlanStartedAt:  &timeBase,
+					PlanFinishedAt: &timeBase,
+				},
+			},
+		},
+		{
+			args: args{
+				req: apistructs.IssueUpdateRequest{
+					PlanStartedAt:  &tomorrow,
+					PlanFinishedAt: &today,
+				},
+				issue: &dao.Issue{},
+			},
+			wantErr: true,
+		},
+		{
+			args: args{
+				req: apistructs.IssueUpdateRequest{
+					PlanStartedAt: &nilTime,
+				},
+				issue: &dao.Issue{
+					PlanStartedAt: &timeBase,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validPlanTime(tt.args.req, tt.args.issue); (err != nil) != tt.wantErr {
+				t.Errorf("validPlanTime() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }
