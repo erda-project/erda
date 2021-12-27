@@ -17,6 +17,7 @@ package executeInfo
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -105,9 +106,9 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *cptype.Component, sce
 	pipelineID := gh.GetExecuteHistoryTablePipelineID()
 
 	if pipelineID > 0 {
-		rsp, err := i.bdl.GetPipeline(pipelineID)
-		if err != nil {
-			return err
+		rsp := gh.GetPipelineInfoWithPipelineID(pipelineID, i.bdl)
+		if rsp == nil {
+			return fmt.Errorf("not find pipelineID %v info", pipelineID)
 		}
 		if rsp.TimeBegin != nil && (rsp.TimeEnd != nil || rsp.TimeUpdated != nil) && rsp.Status.IsEndStatus() {
 			var timeLayoutStr = "2006-01-02 15:04:05" //go中的时间格式化必须是这个时间

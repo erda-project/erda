@@ -209,23 +209,6 @@ func getOperations() map[string]interface{} {
 	}
 }
 
-func (ca *ComponentAction) setData() error {
-	rsp, err := ca.CtxBdl.Bdl.GetPipeline(ca.State.PipelineID)
-	if err != nil {
-		return err
-	}
-	lists := []Breadcrumb{}
-	for _, each := range rsp.PipelineStages {
-		list := Breadcrumb{
-			Key:  strconv.FormatUint(each.ID, 10),
-			Item: each.Name,
-		}
-		lists = append(lists, list)
-	}
-	ca.Data = map[string]interface{}{"list": lists}
-	return nil
-}
-
 func RenderCreator() protocol.CompRender {
 	return &ComponentAction{
 		Props:      map[string]interface{}{},

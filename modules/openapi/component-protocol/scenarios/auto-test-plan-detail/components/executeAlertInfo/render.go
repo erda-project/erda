@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/gshelper"
 )
 
 type ComponentAlertInfo struct {
@@ -109,6 +110,7 @@ func (i *ComponentAlertInfo) RenderProtocol(c *apistructs.Component, g *apistruc
 }
 
 func (i *ComponentAlertInfo) Render(ctx context.Context, c *apistructs.Component, _ apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) (err error) {
+	gh := gshelper.NewGSHelper(gs)
 	if err := i.Import(c); err != nil {
 		logrus.Errorf("import component failed, err:%v", err)
 		return err
@@ -122,14 +124,12 @@ func (i *ComponentAlertInfo) Render(ctx context.Context, c *apistructs.Component
 			err = fail
 		}
 	}()
-	fmt.Printf("state: %+v\n", c.State)
-	fmt.Println(i.State.PipelineID)
 	visible := false
 	var message []string
 	if i.State.PipelineID > 0 {
-		rsp, err := i.CtxBdl.Bdl.GetPipeline(i.State.PipelineID)
-		if err != nil {
-			return err
+		rsp := gh.GetPipelineInfoWithPipelineID(i.State.PipelineID, i.CtxBdl.Bdl)
+		if rsp == nil {
+			return fmt.Errorf("not find pipelineID %v info", i.State.PipelineID)
 		}
 		if rsp.Extra.ShowMessage != nil {
 			message = rsp.Extra.ShowMessage.Stacks
