@@ -621,6 +621,19 @@ func Test_projectService_GetProjectList_WitStatsFalse_Should_Not_Call_GetStatist
 }
 
 func Test_getProjectsStatistics(t *testing.T) {
+	monkey.Patch((*monitor.MonitorDB).GetMonitorByProjectId, func(db *monitor.MonitorDB, projectID int64) ([]*monitor.Monitor, error) {
+		return []*monitor.Monitor{
+			{
+				Id:          1,
+				TerminusKey: "tk1",
+			},
+			{
+				Id:          2,
+				TerminusKey: "tk2",
+			},
+		}, nil
+	})
+	defer monkey.Unpatch((*monitor.MonitorDB).GetMonitorByProjectId)
 
 	s := &projectService{
 		metricq: &mockInfluxQl{},
