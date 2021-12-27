@@ -33,9 +33,7 @@ func GetProjectClusterName(ctx Context, projid string, workspace string) (cluste
 	}
 
 	// get project info
-	var params = make(url.Values)
-	params.Add("withQuota", "true")
-	proj, err := ctx.Bdl.GetProjectWithSetter(projID, httpclient.SetParams(params))
+	proj, err := ctx.Bdl.GetProjectWithSetter(projID, httpclient.SetParams(url.Values{"withQuota": {"true"}}))
 	if err != nil {
 		logrus.Errorf("get project info failed, project id: %s, error:%v", projid, err)
 		return

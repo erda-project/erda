@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -249,4 +251,23 @@ func (b *Bundle) DeleteCluster(clusterName string, header ...http.Header) error 
 	}
 
 	return nil
+}
+
+// GetRegistryAddress gets the address of the cluster inner image registry from the service cluster-manager
+func (b *Bundle) GetRegistryAddress(name string) (string, error) {
+	cluster, err := b.GetCluster(name)
+	if err != nil {
+		return "", err
+	}
+	if cluster == nil {
+		return "", errors.New("failed to GetCluster: response data is nil")
+	}
+	if cluster.URLs == nil {
+		return "", errors.New("failed to GetCluster: response data.URLs is nil")
+	}
+	address, ok := cluster.URLs["registry"]
+	if !ok {
+		return "", errors.New("failed to get registry address from cluster info: registry is not in data.URLs")
+	}
+	return address, nil
 }

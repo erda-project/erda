@@ -549,6 +549,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/publishers/{publisherID}", Method: http.MethodDelete, Handler: e.DeletePublisher},
 		{Path: "/api/publishers", Method: http.MethodGet, Handler: e.ListPublishers},
 		{Path: "/api/publishers/actions/list-my-publishers", Method: http.MethodGet, Handler: e.ListMyPublishers},
+		{Path: "/api/my-publish-items", Method: http.MethodGet, Handler: e.QueryMyPublishItem},
 
 		// Certificate
 		{Path: "/api/certificates", Method: http.MethodPost, Handler: e.CreateCertificate},

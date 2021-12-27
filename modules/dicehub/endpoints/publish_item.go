@@ -61,29 +61,9 @@ func (e *Endpoints) QueryPublishItem(ctx context.Context, r *http.Request, vars 
 
 // QueryMyPublishItem 查询我的发布
 func (e *Endpoints) QueryMyPublishItem(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	queryReq := apistructs.QueryPublishItemRequest{
-		PageSize: getInt(r.URL, "pageSize", 10),
-		PageNo:   getInt(r.URL, "pageNo", 1),
-		Name:     r.URL.Query().Get("name"),
-		Q:        r.URL.Query().Get("q"),
-		Public:   r.URL.Query().Get("public"),
-		Type:     r.URL.Query().Get("type"),
-		Ids:      r.URL.Query().Get("ids"),
-	}
-	orgID := r.Header.Get("Org-ID")
-	userID := r.Header.Get("User-ID")
-	publisherDTO, err := e.bdl.GetUserRelationPublisher(userID, orgID)
-	if err != nil {
-		return apierrors.ErrQueryPublishItem.InternalError(err).ToResp(), nil
-	}
-	if publisherDTO.Total == 0 {
-		return httpserver.OkResp(apistructs.QueryPublishItemData{
-			Total: 0,
-			List:  []*apistructs.PublishItem{},
-		})
-	}
-	queryReq.PublisherId = int64(publisherDTO.List[0].ID)
-	result, err := e.publishItem.QueryPublishItems(&queryReq)
+	var req = new(apistructs.QueryPublishItemRequest)
+	req.FromValues(r.URL.Query())
+	result, err := e.publishItem.QueryPublishItems(req)
 	if err != nil {
 		return apierrors.ErrQueryPublishItem.InternalError(err).ToResp(), nil
 	}

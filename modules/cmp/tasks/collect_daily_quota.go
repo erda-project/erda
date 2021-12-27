@@ -123,9 +123,7 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 		record.ProjectID = project.ID
 		record.ProjectName = project.Name
 
-		var params = make(url.Values)
-		params.Add("withQuota", "true")
-		projectDTO, err := d.bdl.GetProjectWithSetter(project.ID, httpclient.SetParams(params))
+		projectDTO, err := d.bdl.GetProjectWithSetter(project.ID, httpclient.SetParams(url.Values{"withQuota": {"true"}}))
 		if err != nil {
 			err = errors.Wrap(err, "failed to GetProject")
 			l.WithError(err).Errorln()

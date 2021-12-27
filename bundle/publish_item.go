@@ -15,12 +15,15 @@
 package bundle
 
 import (
+	"net/url"
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
+// QueryPublishItems queries publish items from dicehub
 func (b *Bundle) QueryPublishItems(req *apistructs.QueryPublishItemRequest) (*apistructs.QueryPublishItemData, error) {
 	host, err := b.urls.DiceHub()
 	if err != nil {
@@ -46,4 +49,30 @@ func (b *Bundle) QueryPublishItems(req *apistructs.QueryPublishItemRequest) (*ap
 		return nil, toAPIError(resp.StatusCode(), getResp.Error)
 	}
 	return &getResp.Data, nil
+}
+
+// QueryMyPublishItem queries my publishing items from dicehub
+func (b *Bundle) QueryMyPublishItem(userID string, req *apistructs.QueryPublishItemRequest) (*apistructs.QueryPublishItemData, error) {
+	host, err := b.urls.DiceHub()
+	if err != nil {
+		return nil, err
+	}
+	var values = make(url.Values)
+	req.ToValues(values)
+	request := b.hc.Get(host).Path("/api/my-publish-items").
+		Header("Internal-Client", "bundle").
+		Header("User-ID", userID).
+		Header(httputil.OrgHeader, strconv.FormatInt(req.OrgID, 10))
+	for k := range values {
+		request.Param(k, values.Get(k))
+	}
+	var response apistructs.QueryPublishItemResponse
+	resp, err := request.Do().JSON(&response)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !response.Success {
+		return nil, toAPIError(resp.StatusCode(), response.Error)
+	}
+	return &response.Data, nil
 }

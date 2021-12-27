@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package dop
 
 import (
 	"github.com/erda-project/erda/apistructs"
@@ -22,11 +22,11 @@ import (
 var PUBLISH_ITEM_QUERY_MY = apis.ApiSpec{
 	Path:          "/api/my-publish-items",
 	BackendPath:   "/api/my-publish-items",
-	Host:          "dicehub.marathon.l4lb.thisdcos.directory:10000",
+	Host:          "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:        "http",
 	Method:        "GET",
 	TryCheckLogin: true,
 	RequestType:   apistructs.QueryPublishItemRequest{},
 	ResponseType:  apistructs.QueryPublishItemResponse{},
-	Doc:           "summary: 查询发布",
+	Doc:           "summary: 查询我的发布",
 }

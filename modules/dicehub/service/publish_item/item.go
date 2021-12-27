@@ -15,7 +15,6 @@
 package publish_item
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -198,13 +197,6 @@ func (i *PublishItem) DeletePublishItem(id int64) error {
 	if err != nil {
 		return err
 	}
-	referedCount, err := i.bdl.PublisherItemRefered(item.ID)
-	if err != nil {
-		return err
-	}
-	if referedCount > 0 {
-		return errors.New("item has lib-references")
-	}
 	err = i.bdl.RemoveAppPublishItemRelations(int64(item.ID))
 	if err != nil {
 		return err
@@ -233,10 +225,6 @@ func (i *PublishItem) QueryPublishItems(req *apistructs.QueryPublishItemRequest)
 			})
 			if err == nil && len(versions.List) > 0 {
 				item.LatestVersion = versions.List[0].Version
-			}
-			refCount, err := i.bdl.PublisherItemRefered(uint64(item.ID))
-			if err == nil {
-				item.RefCount = refCount
 			}
 		}
 	}

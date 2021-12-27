@@ -92,7 +92,6 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 	bundleOpts := []bundle.Option{
 		bundle.WithEventBox(),
 		bundle.WithCoreServices(),
-		bundle.WithDOP(),
 		bundle.WithCMP(),
 		bundle.WithMonitor(),
 		bundle.WithPipeline(),
