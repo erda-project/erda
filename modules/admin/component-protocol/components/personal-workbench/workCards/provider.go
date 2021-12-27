@@ -36,40 +36,40 @@ type WorkCards struct {
 	base.DefaultProvider
 	impl.DefaultCard
 	filterReq apistructs.IssuePagingRequest
-	State     State `json:"state"`
-	bdl       *bundle.Bundle
-	wb        *workbench.Workbench
+	State     State
+	Bdl       *bundle.Bundle
+	Wb        *workbench.Workbench
+}
+
+func (wc *WorkCards) BeforeHandleOp(sdk *cptype.SDK) {
+	wc.Wb = sdk.Ctx.Value(types.WorkbenchSvc).(*workbench.Workbench)
+	wc.Bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 }
 
 func (wc *WorkCards) RegisterCardListStarOp(opData cardlist.OpCardListStar) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		data := cardlist.Data{}
-		err := common.Transfer(opData.ClientData.DataRef, &data)
+		card := cardlist.Card{}
+		err := common.Transfer(opData.ClientData.DataRef, &card)
 		if err != nil {
 			return
 		}
 		tabName := wc.getTableName(sdk)
-		for _, card := range data.Cards {
-			if card.Star {
-				continue
-			}
-			id, err := strconv.ParseUint(card.ID, 10, 64)
-			if err != nil {
-				logrus.Error(err)
-				continue
-			}
-			req := apistructs.UnSubscribeReq{
-				Type:   apistructs.SubscribeType(tabName),
-				TypeID: id,
-				UserID: sdk.Identity.UserID,
-			}
-			err = wc.bdl.DeleteSubscribe(sdk.Identity.UserID, sdk.Identity.OrgID, req)
-			if err != nil {
-				logrus.Errorf("star %v %v failed, id: %v, error: %v", req.Type, req.TypeID, err)
-				return
-			}
+		id, err := strconv.ParseUint(card.ID, 10, 64)
+		if err != nil {
+			logrus.Error(err)
+			return
 		}
-
+		req := apistructs.UnSubscribeReq{
+			Type:   apistructs.SubscribeType(tabName),
+			TypeID: id,
+			UserID: sdk.Identity.UserID,
+		}
+		err = wc.Bdl.DeleteSubscribe(sdk.Identity.UserID, sdk.Identity.OrgID, req)
+		if err != nil {
+			logrus.Errorf("star %v %v failed, id: %v, error: %v", req.Type, req.TypeID, err)
+			return
+		}
+		wc.LoadList(sdk)
 	}
 }
 
@@ -79,8 +79,8 @@ type State struct {
 
 func (wc *WorkCards) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		wc.wb = sdk.Ctx.Value(types.WorkbenchSvc).(*workbench.Workbench)
-		wc.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+		wc.Wb = sdk.Ctx.Value(types.WorkbenchSvc).(*workbench.Workbench)
+		wc.Bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 		wc.LoadList(sdk)
 	}
 }
@@ -89,7 +89,7 @@ func (wc *WorkCards) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return wc.RegisterInitializeOp()
 }
 
-func getAppTextMeta(sdk *cptype.SDK, app apistructs.AppWorkBenchItem) (metas []cardlist.TextMeta) {
+func (wc *WorkCards) getAppTextMeta(sdk *cptype.SDK, app apistructs.AppWorkBenchItem) (metas []cardlist.TextMeta) {
 	mrData := make(cptype.OpServerData)
 	runtimeData := make(cptype.OpServerData)
 
@@ -140,7 +140,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 	project.ProjectDTO.Type = types.ProjTypeDevops
 	switch project.ProjectDTO.Type {
 	case types.ProjTypeDevops:
-		urls, err := wc.wb.GetIssueQueries(project.ProjectDTO.ID)
+		urls, err := wc.Wb.GetIssueQueries(project.ProjectDTO.ID)
 		if err != nil {
 			return
 		}
@@ -475,7 +475,7 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 	switch tabStr {
 	case apistructs.WorkbenchItemApp.String():
 		data.Title = sdk.I18n("star application")
-		apps, err := wc.wb.ListSubAppWbData(apiIdentity, 0)
+		apps, err := wc.Wb.ListSubAppWbData(apiIdentity, 0)
 		if err != nil {
 			return
 		}
@@ -488,13 +488,13 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 				TitleState:     getTitleState(sdk, apistructs.WorkbenchItemApp.String()),
 				Star:           true,
 				IconOperations: wc.getAppIconOps(sdk, app),
-				TextMeta:       getAppTextMeta(sdk, app),
+				TextMeta:       wc.getAppTextMeta(sdk, app),
 				Operations:     wc.getAppCardOps(app),
 			})
 		}
 	case apistructs.WorkbenchItemProj.String():
 		data.Title = sdk.I18n("star project")
-		projects, err := wc.wb.ListSubProjWbData(apiIdentity)
+		projects, err := wc.Wb.ListSubProjWbData(apiIdentity)
 		if err != nil {
 			return
 		}
@@ -503,7 +503,7 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 		for _, project := range projects.List {
 			ids = append(ids, project.ProjectDTO.ID)
 		}
-		params, err := wc.wb.GetUrlCommonParams(sdk.Identity.UserID, sdk.Identity.OrgID, ids)
+		params, err := wc.Wb.GetUrlCommonParams(sdk.Identity.UserID, sdk.Identity.OrgID, ids)
 		if err != nil {
 			logrus.Errorf("card list fail to get url params ,err :%v", err)
 		}

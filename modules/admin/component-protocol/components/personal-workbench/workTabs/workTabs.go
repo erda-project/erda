@@ -64,12 +64,6 @@ type WorkTabs struct {
 	State      State                `json:"state"`
 }
 
-func (wt *WorkTabs) GetComponentValue() {
-	wt.State = wt.GetState()
-	wt.Operations = wt.GetOperation()
-	return
-}
-
 func (wt *WorkTabs) GetState() State {
 	return State{Value: apistructs.WorkbenchItemProj.String()}
 }
@@ -82,8 +76,8 @@ func (wt *WorkTabs) SetState(state cptype.ComponentState) {
 	}
 }
 
-func (wt *WorkTabs) GetOperation() map[string]Operation {
-	return map[string]Operation{"onChange": {ClientData{Value: ""}}}
+func (wt *WorkTabs) GetOperation() {
+	wt.Operations = map[string]Operation{"onChange": {ClientData{Value: apistructs.WorkbenchItemProj.String()}}}
 }
 
 // SetComponentValue mapping properties to Component
@@ -98,13 +92,13 @@ func (wt *WorkTabs) SetComponentValue(c *cptype.Component) error {
 	//if err = common.Transfer(l.Props, &c.Props); err != nil {
 	//	return err
 	//}
-	//if err = common.Transfer(l.Operations, &c.Operations); err != nil {
-	//	return err
-	//}
+	if err = common.Transfer(wt.Operations, &c.Operations); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData) (Data, error) {
+func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData, Type string) (Data, error) {
 	var (
 		proData *apistructs.WorkbenchProjOverviewRespData
 		appData *apistructs.AppWorkbenchResponseData
@@ -120,7 +114,7 @@ func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData) (Data, error) {
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 	go func() {
-		pageReq := apistructs.PageRequest{}
+		pageReq := apistructs.PageRequest{PageNo: 1, PageSize: 100000}
 		proData, err = wt.Wb.ListQueryProjWbData(apiIdentity, pageReq, "")
 		if err != nil {
 			logrus.Errorf("tabs get project list err %v", err)
@@ -128,7 +122,8 @@ func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData) (Data, error) {
 		wg.Done()
 	}()
 	go func() {
-		appReq := apistructs.ApplicationListRequest{}
+		// todo hard code
+		appReq := apistructs.ApplicationListRequest{PageNo: 1, PageSize: 100000}
 		appData, err = wt.Wb.ListAppWbData(apiIdentity, appReq, 0)
 		if err != nil {
 			logrus.Errorf("tabs get app list err %v", err)
@@ -157,27 +152,33 @@ func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData) (Data, error) {
 
 // Render is empty implement.
 func (wt *WorkTabs) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	// init with project
-	wt.State.Value = apistructs.WorkbenchItemProj.String()
-	wt.GetComponentValue()
+	err := common.Transfer(c.State, &wt.State)
+	if err != nil {
+		return err
+	}
+	if wt.State.Value == "" {
+		// init with project
+		wt.State.Value = apistructs.WorkbenchItemProj.String()
+	}
 	wt.SDK = cputil.SDK(ctx)
 	gh := gshelper.NewGSHelper(gs)
 	wt.Wb = wt.SDK.Ctx.Value(types.Workbench).(*workbench.Workbench)
-
+	wt.GetOperation()
 	switch event.Operation {
-	case cptype.InitializeOperation:
+	case cptype.InitializeOperation, cptype.RenderingOperation:
 	case common.EventChangeEventTab:
-		err := common.Transfer(c.Operations, &wt.Operations)
+		cd := ClientData{}
+		err = common.Transfer(event.OperationData["clientData"], &cd)
 		if err != nil {
 			return err
 		}
-		wt.State.Value = wt.Operations[common.EventChangeEventTab].ClientData.Value
+		wt.State.Value = cd.Value
 	default:
 		logrus.Errorf("scenario %v component WorkTabs does not support event %v", scenario, event)
 		return nil
 	}
 	gh.SetWorkbenchItemType(wt.State.Value)
-	wtData, err := wt.GetData(gs)
+	wtData, err := wt.GetData(gs, wt.State.Value)
 	if err != nil {
 		return err
 	}
