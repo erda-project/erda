@@ -48,14 +48,15 @@ func (w *Workbench) GetAppNum(identity apistructs.Identity, query string) (int, 
 
 // ListAppWbData
 // default set pageSize/pageNo; when need query, set query field
-func (w *Workbench) ListAppWbData(identity apistructs.Identity, req apistructs.ApplicationListRequest, limit int) (*apistructs.AppWorkbenchResponseData, error) {
+func (w *Workbench) ListAppWbData(identity apistructs.Identity, req apistructs.ApplicationListRequest, limit int) (data *apistructs.AppWorkbenchResponseData, err error) {
 	var (
 		appIDs []uint64
-		data   apistructs.AppWorkbenchResponseData
+		orgID  int
 	)
-	orgID, err := strconv.Atoi(identity.OrgID)
+	data = &apistructs.AppWorkbenchResponseData{}
+	orgID, err = strconv.Atoi(identity.OrgID)
 	if err != nil {
-		return nil, err
+		return
 	}
 	req.OrderBy = "name"
 	req.IsSimple = true
@@ -63,29 +64,37 @@ func (w *Workbench) ListAppWbData(identity apistructs.Identity, req apistructs.A
 	// list app
 	appRes, err := w.bdl.GetAllMyApps(identity.UserID, uint64(orgID), req)
 	if err != nil {
-		return nil, err
+		logrus.Errorf("get my apps failed, identity: %v, request: %v, error: %v", identity, req, err)
+		return
+	}
+
+	if appRes == nil || len(appRes.List) == 0 {
+		logrus.Warnf("get my apps empty response, request: %v", req)
+		return
 	}
 
 	for i := range appRes.List {
 		appIDs = append(appIDs, appRes.List[i].ID)
 	}
 
-	if len(appIDs) == 0 {
-		return nil, nil
-	}
-
 	// list app related runtime
 	runtimeRes, err := w.bdl.ListRuntimesGroupByApps(uint64(orgID), identity.UserID, appIDs)
 	if err != nil {
 		logrus.Errorf("list runtime group by apps failed, appIDs: %v, error: %v", appIDs, err)
-		return nil, err
+		return
+	}
+
+	if runtimeRes == nil {
+		err = fmt.Errorf("list runtimes by apps failed, empty response, appIDs: %v, error: %v", appIDs, err)
+		logrus.Errorf(err.Error())
+		return
 	}
 
 	// list app related open mr
 	mrResult, err := w.ListOpenMrWithLimitRate(identity, appIDs, limit)
 	if err != nil {
 		logrus.Errorf("list open mr failed, appIDs: %v, error: %v", appIDs, err)
-		return nil, err
+		return
 	}
 
 	// construct AppWorkBenchItem
@@ -97,16 +106,21 @@ func (w *Workbench) ListAppWbData(identity apistructs.Identity, req apistructs.A
 			AppOpenMrNum:   mrResult[appRes.List[i].ID],
 		})
 	}
-	return &data, nil
+	return
 }
 
-func (w *Workbench) ListSubAppWbData(identity apistructs.Identity, limit int) (*apistructs.AppWorkbenchResponseData, error) {
+func (w *Workbench) ListSubAppWbData(identity apistructs.Identity, limit int) (data *apistructs.AppWorkbenchResponseData, err error) {
 	var (
 		idList []uint64
 	)
+	data = &apistructs.AppWorkbenchResponseData{}
 	subList, err := w.bdl.ListSubscribes(identity.UserID, identity.OrgID, apistructs.GetSubscribeReq{Type: apistructs.AppSubscribe})
 	if err != nil {
-		return nil, err
+		logrus.Errorf("list subscribes failed, error: %v", err)
+		return
+	}
+	if subList == nil || len(subList.List) == 0 {
+		return
 	}
 	for _, v := range subList.List {
 		idList = append(idList, v.TypeID)
