@@ -253,7 +253,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 
 	errorBox := errorbox.New(
 		errorbox.WithDBClient(db),
-		errorbox.WithBundle(bdl),
 	)
 
 	fileSvc := filesvc.New(

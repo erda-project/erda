@@ -24,7 +24,7 @@ import (
 var CMDB_ERRORLOG_LIST = apis.ApiSpec{
 	Path:         "/api/task-error/actions/list",
 	BackendPath:  "/api/task-error/actions/list",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       http.MethodGet,
 	IsOpenAPI:    true,

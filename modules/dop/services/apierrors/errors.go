@@ -502,6 +502,8 @@ var (
 	ErrGetTestReportRecord    = err("ErrGetTestReportRecord", "获取测试报告记录失败")
 
 	ErrApplicationsResources = err("ErrApplicationsResources", "查询应用资源列表失败")
+
+	ErrListErrorLog = err("ErrListErrorLog", "查看错误日志失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

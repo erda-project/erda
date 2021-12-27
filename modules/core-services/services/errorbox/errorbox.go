@@ -15,18 +15,14 @@
 package errorbox
 
 import (
-	"strconv"
-
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
 )
 
 // ErrorBox 错误日志操作封装
 type ErrorBox struct {
-	db  *dao.DBClient
-	bdl *bundle.Bundle
+	db *dao.DBClient
 }
 
 // Option 定义 Member 对象配置选项
@@ -45,13 +41,6 @@ func New(options ...Option) *ErrorBox {
 func WithDBClient(db *dao.DBClient) Option {
 	return func(eb *ErrorBox) {
 		eb.db = db
-	}
-}
-
-// WithBundle 配置 bdl
-func WithBundle(bdl *bundle.Bundle) Option {
-	return func(eb *ErrorBox) {
-		eb.bdl = bdl
 	}
 }
 
@@ -102,73 +91,15 @@ func (eb *ErrorBox) BatchCreateErrorLogs(reqs []apistructs.Audit) error {
 	return nil
 }
 
-// List 通过参数过滤错误日志
-func (eb *ErrorBox) List(param *apistructs.ErrorLogListRequest) ([]model.ErrorLog, error) {
-	resourceIDs, resourceTypes, err := eb.aggregateResources(param.ResourceType, param.ResourceID)
-	if err != nil {
-		return nil, err
-	}
-
+// List query error logs by params
+func (eb *ErrorBox) List(param *apistructs.TaskErrorListRequest) ([]model.ErrorLog, error) {
 	if param.StartTime != "" {
 		startTime, err := param.GetFormartStartTime()
 		if err != nil {
 			return nil, err
 		}
-		return eb.db.ListErrorLogByResourcesAndStartTime(resourceTypes, resourceIDs, *startTime)
+		return eb.db.ListErrorLogByResourcesAndStartTime(param.ResourceTypes, param.ResourceIDS, *startTime)
 	}
 
-	return eb.db.ListErrorLogByResources(resourceTypes, resourceIDs)
-}
-
-// aggregateResources 聚合目标资源下的所有子资源
-func (eb *ErrorBox) aggregateResources(resourceType apistructs.ErrorResourceType, resourceID string) ([]string,
-	[]apistructs.ErrorResourceType, error) {
-	resourceTypes, resourceIDs := []apistructs.ErrorResourceType{resourceType}, []string{resourceID}
-
-	switch resourceType {
-	case apistructs.PipelineError:
-		pipelineID, err := strconv.ParseUint(resourceID, 10, 64)
-		if err != nil {
-			return nil, nil, err
-		}
-		runtimeIDs, err := eb.FindRuntimeByPipelineID(pipelineID)
-		if err != nil {
-			return nil, nil, err
-		}
-		if len(runtimeIDs) != 0 {
-			resourceIDs = append(resourceIDs, runtimeIDs...)
-			resourceTypes = append(resourceTypes, apistructs.RuntimeError)
-		}
-
-		for _, v := range runtimeIDs {
-			runtimeID, err := strconv.ParseUint(v, 10, 64)
-			if err != nil {
-				return nil, nil, err
-			}
-			addonIDs, err := eb.FindAddonByRuntimeID(runtimeID)
-			if err != nil {
-				return nil, nil, err
-			}
-			if len(addonIDs) != 0 {
-				resourceIDs = append(resourceIDs, addonIDs...)
-				resourceTypes = append(resourceTypes, apistructs.AddonError)
-			}
-		}
-	case apistructs.RuntimeError:
-		runtimeID, err := strconv.ParseUint(resourceID, 10, 64)
-		if err != nil {
-			return nil, nil, err
-		}
-		addonIDs, err := eb.FindAddonByRuntimeID(runtimeID)
-		if err != nil {
-			return nil, nil, err
-		}
-		if len(addonIDs) != 0 {
-			resourceIDs = append(resourceIDs, addonIDs...)
-			resourceTypes = append(resourceTypes, apistructs.AddonError)
-		}
-		// case apistructs.AddonError:
-	}
-
-	return resourceIDs, resourceTypes, nil
+	return eb.db.ListErrorLogByResources(param.ResourceTypes, param.ResourceIDS)
 }

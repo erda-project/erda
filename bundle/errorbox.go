@@ -46,3 +46,24 @@ func (b *Bundle) CreateErrorLog(errorLog *apistructs.ErrorLogCreateRequest) erro
 	}
 	return nil
 }
+
+func (b *Bundle) ListErrorLog(errorLog *apistructs.TaskErrorListRequest) (*apistructs.ErrorLogListResponseData, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var errLogResponse apistructs.ErrorLogListResponse
+	resp, err := hc.Get(host).Path("/api/task-error/actions/list").
+		Header(httputil.InternalHeader, "bundle").
+		Params(errorLog.ConvertToQueryParams()).Do().JSON(&errLogResponse)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !errLogResponse.Success {
+		return nil, toAPIError(resp.StatusCode(), errLogResponse.Error)
+	}
+
+	return errLogResponse.Data, nil
+}

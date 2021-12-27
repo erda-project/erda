@@ -61,6 +61,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
+	"github.com/erda-project/erda/modules/dop/services/taskerror"
 	"github.com/erda-project/erda/modules/dop/services/test_report"
 	"github.com/erda-project/erda/modules/dop/services/testcase"
 	mttestplan "github.com/erda-project/erda/modules/dop/services/testplan"
@@ -635,6 +636,9 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// test file records
 		{Path: "/api/test-file-records/{id}", Method: http.MethodGet, Handler: e.GetFileRecord},
 		{Path: "/api/test-file-records", Method: http.MethodGet, Handler: e.GetFileRecordsByProjectId},
+
+		// task error logs
+		{Path: "/api/task-error/actions/list", Method: http.MethodGet, Handler: e.ListErrorLog},
 	}
 }
 
@@ -693,6 +697,7 @@ type Endpoints struct {
 	app             *application.Application
 	codeCoverageSvc *code_coverage.CodeCoverage
 	testReportSvc   *test_report.TestReport
+	taskErrorSvc    *taskerror.TaskError
 
 	ImportChannel chan uint64
 	ExportChannel chan uint64
@@ -1051,6 +1056,12 @@ func WithCodeCoverageExecRecord(svc *code_coverage.CodeCoverage) Option {
 func WithTestReportRecord(svc *test_report.TestReport) Option {
 	return func(e *Endpoints) {
 		e.testReportSvc = svc
+	}
+}
+
+func WithTaskError(svc *taskerror.TaskError) Option {
+	return func(e *Endpoints) {
+		e.taskErrorSvc = svc
 	}
 }
 

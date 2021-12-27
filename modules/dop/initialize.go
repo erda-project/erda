@@ -72,6 +72,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
+	"github.com/erda-project/erda/modules/dop/services/taskerror"
 	"github.com/erda-project/erda/modules/dop/services/test_report"
 	"github.com/erda-project/erda/modules/dop/services/testcase"
 	"github.com/erda-project/erda/modules/dop/services/testplan"
@@ -546,6 +547,10 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		test_report.WithBundle(bdl.Bdl),
 	)
 
+	taskErrorSvc := taskerror.New(
+		taskerror.WithBundle(bdl.Bdl),
+	)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
@@ -604,6 +609,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithOrg(o),
 		endpoints.WithCodeCoverageExecRecord(codeCvc),
 		endpoints.WithTestReportRecord(testReportSvc),
+		endpoints.WithTaskError(taskErrorSvc),
 	)
 
 	ep.ImportChannel = make(chan uint64)
