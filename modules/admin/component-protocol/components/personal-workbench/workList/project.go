@@ -73,7 +73,7 @@ func (l *WorkList) GenProjDopKvInfo(proj apistructs.WorkbenchProjOverviewItem, q
 		// issue will expire today
 		{
 			ID:    strconv.FormatUint(proj.ProjectDTO.ID, 10),
-			Key:   l.sdk.I18n(i18n.I18nKeyIssueExpiredToday),
+			Key:   l.sdk.I18n(i18n.I18nKeyIssueExpireToday),
 			Value: strconv.FormatInt(int64(proj.IssueInfo.ExpiredOneDayNum), 10),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
