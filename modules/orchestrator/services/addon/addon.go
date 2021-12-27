@@ -404,7 +404,9 @@ func (a *Addon) RuntimeAddonStatus(runtimeID string) (uint8, error) {
 			continue
 		}
 		if _, ok := insMap[prebuild.RoutingInstanceID]; !ok {
-			return 0, errors.Errorf("RuntimeAddonStatus error, routingId not found: %v", prebuild.RoutingInstanceID)
+			fmt.Printf("RuntimeAddonStatus error, routingId not found: %v\n", prebuild.RoutingInstanceID)
+			return 0, fmt.Errorf("addon: %s 部署失败，请查看日志详情获知错误原因，并尝试重新部署，若还无法解决请联系系统管理员",
+				prebuild.AddonName)
 		}
 	}
 
