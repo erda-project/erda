@@ -29,103 +29,19 @@ import (
 	"github.com/erda-project/erda/pkg/encoding/jsonmap"
 )
 
-func Test_expressionService_GetAllEnabledExpression(t *testing.T) {
+func Test_expressionService_GetTemplates(t *testing.T) {
 	type fields struct {
 		p *provider
 	}
 	type args struct {
 		ctx     context.Context
-		request *pb.GetAllEnabledExpressionRequest
+		request *pb.GetTemplatesRequest
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		wantErr bool
-	}{
-		{
-			name: "test case",
-			fields: fields{
-				p: &provider{
-					Cfg:               nil,
-					Log:               nil,
-					Register:          nil,
-					DB:                nil,
-					alertDB:           &alertdb.AlertExpressionDB{&gorm.DB{}},
-					metricDB:          &alertdb.MetricExpressionDB{&gorm.DB{}},
-					expressionService: nil,
-				},
-			},
-			args: args{
-				ctx: nil,
-				request: &pb.GetAllEnabledExpressionRequest{
-					PageSize: 1,
-					PageNo:   1,
-				},
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var adb *alertdb.AlertExpressionDB
-			alertExpression := monkey.PatchInstanceMethod(reflect.TypeOf(adb), "GetAllAlertExpression", func(db *alertdb.AlertExpressionDB) ([]*alertdb.AlertExpression, error) {
-				return []*alertdb.AlertExpression{
-					{
-						ID:         1,
-						AlertID:    1,
-						Attributes: jsonmap.JSONMap{"org_name": "erda"},
-						Expression: jsonmap.JSONMap{"outputs": []string{"alert"}},
-						Version:    "1.0",
-						Enable:     true,
-						Created:    time.Time{},
-						Updated:    time.Time{},
-					},
-				}, nil
-			})
-			defer alertExpression.Unpatch()
-			var mdb *alertdb.MetricExpressionDB
-			metricExpression := monkey.PatchInstanceMethod(reflect.TypeOf(mdb), "GetAllMetricExpression", func(db *alertdb.MetricExpressionDB) ([]*alertdb.MetricExpression, error) {
-				return []*alertdb.MetricExpression{
-					{
-						ID:         1,
-						Attributes: nil,
-						Expression: jsonmap.JSONMap{
-							"window": 3,
-						},
-						Version: "1.0",
-						Enable:  true,
-						Created: time.Time{},
-						Updated: time.Time{},
-					},
-				}, nil
-			})
-			defer metricExpression.Unpatch()
-			e := &expressionService{
-				p: tt.fields.p,
-			}
-			_, err := e.GetAllEnabledExpression(tt.args.ctx, tt.args.request)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetAllEnabledExpression() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-		})
-	}
-}
-
-func Test_expressionService_GetAllAlertTemplate(t *testing.T) {
-	type fields struct {
-		p *provider
-	}
-	type args struct {
-		ctx     context.Context
-		request *pb.GetAllAlertTemplateRequest
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *pb.GetAllAlertTemplateResponse
+		want    *pb.GetTemplatesResponse
 		wantErr bool
 	}{
 		{
@@ -145,7 +61,7 @@ func Test_expressionService_GetAllAlertTemplate(t *testing.T) {
 			},
 			args: args{
 				ctx: nil,
-				request: &pb.GetAllAlertTemplateRequest{
+				request: &pb.GetTemplatesRequest{
 					PageSize: 1,
 					PageNo:   1,
 				},
@@ -158,9 +74,205 @@ func Test_expressionService_GetAllAlertTemplate(t *testing.T) {
 			e := &expressionService{
 				p: tt.fields.p,
 			}
-			_, err := e.GetAllAlertTemplate(tt.args.ctx, tt.args.request)
+			_, err := e.GetTemplates(tt.args.ctx, tt.args.request)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetAllAlertTemplate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func Test_expressionService_GetAlertExpressions(t *testing.T) {
+	type fields struct {
+		p *provider
+	}
+	type args struct {
+		ctx     context.Context
+		request *pb.GetExpressionsRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test case",
+			fields: fields{
+				p: &provider{
+					Cfg:                  nil,
+					Log:                  nil,
+					Register:             nil,
+					t:                    nil,
+					DB:                   nil,
+					alertDB:              &alertdb.AlertExpressionDB{&gorm.DB{}},
+					metricDB:             &alertdb.MetricExpressionDB{&gorm.DB{}},
+					customizeAlertRuleDB: &alertdb.CustomizeAlertRuleDB{&gorm.DB{}},
+					alertNotifyDB:        &alertdb.AlertNotifyDB{&gorm.DB{}},
+					expressionService:    nil,
+				},
+			},
+			args: args{
+				ctx: nil,
+				request: &pb.GetExpressionsRequest{
+					PageNo:   1,
+					PageSize: 10,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var adb *alertdb.AlertExpressionDB
+			alertExpression := monkey.PatchInstanceMethod(reflect.TypeOf(adb), "GetAllAlertExpression", func(db *alertdb.AlertExpressionDB, pageNo, pageSize int64) ([]*alertdb.AlertExpression, error) {
+				return []*alertdb.AlertExpression{
+					{
+						ID:         1,
+						AlertID:    1,
+						Attributes: jsonmap.JSONMap{"org_name": "erda"},
+						Expression: jsonmap.JSONMap{"outputs": []string{"alert"}},
+						Version:    "1.0",
+						Enable:     true,
+						Created:    time.Time{},
+						Updated:    time.Time{},
+					},
+				}, nil
+			})
+			defer alertExpression.Unpatch()
+			e := &expressionService{
+				p: tt.fields.p,
+			}
+			_, err := e.GetAlertExpressions(tt.args.ctx, tt.args.request)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetAlertExpressions() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func Test_expressionService_GetMetricExpressions(t *testing.T) {
+	type fields struct {
+		p *provider
+	}
+	type args struct {
+		ctx     context.Context
+		request *pb.GetMetricExpressionsRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test case",
+			fields: fields{
+				p: &provider{
+					Cfg:                  nil,
+					Log:                  nil,
+					Register:             nil,
+					t:                    nil,
+					DB:                   nil,
+					alertDB:              &alertdb.AlertExpressionDB{&gorm.DB{}},
+					metricDB:             &alertdb.MetricExpressionDB{&gorm.DB{}},
+					customizeAlertRuleDB: &alertdb.CustomizeAlertRuleDB{&gorm.DB{}},
+					alertNotifyDB:        &alertdb.AlertNotifyDB{&gorm.DB{}},
+					expressionService:    nil,
+				},
+			},
+			args: args{
+				ctx: nil,
+				request: &pb.GetMetricExpressionsRequest{
+					PageSize: 10,
+					PageNo:   1,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &expressionService{
+				p: tt.fields.p,
+			}
+			_, err := e.GetMetricExpressions(tt.args.ctx, tt.args.request)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetMetricExpressions() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func Test_expressionService_GetAlertNotifies(t *testing.T) {
+	type fields struct {
+		p *provider
+	}
+	type args struct {
+		ctx     context.Context
+		request *pb.GetAlertNotifiesRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test case",
+			fields: fields{
+				p: &provider{
+					Cfg:                  nil,
+					Log:                  nil,
+					Register:             nil,
+					t:                    nil,
+					DB:                   nil,
+					alertDB:              &alertdb.AlertExpressionDB{&gorm.DB{}},
+					metricDB:             &alertdb.MetricExpressionDB{&gorm.DB{}},
+					customizeAlertRuleDB: &alertdb.CustomizeAlertRuleDB{&gorm.DB{}},
+					alertNotifyDB:        &alertdb.AlertNotifyDB{&gorm.DB{}},
+					expressionService:    nil,
+				},
+			},
+			args: args{
+				ctx: nil,
+				request: &pb.GetAlertNotifiesRequest{
+					PageSize: 10,
+					PageNo:   1,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var ndb *alertdb.AlertNotifyDB
+			alertNotify := monkey.PatchInstanceMethod(reflect.TypeOf(ndb), "QueryAlertNotify", func(db *alertdb.AlertNotifyDB, pageNo, pageSize int64) ([]*alertdb.AlertNotify, error) {
+				return []*alertdb.AlertNotify{
+					{
+						ID:             1,
+						AlertID:        12,
+						NotifyKey:      "233",
+						NotifyTarget:   nil,
+						NotifyTargetID: "222",
+						Silence:        4,
+						SilencePolicy:  "fixed",
+						Enable:         true,
+						Created:        time.Now(),
+						Updated:        time.Now(),
+					},
+				}, nil
+			})
+			defer alertNotify.Unpatch()
+			e := &expressionService{
+				p: tt.fields.p,
+			}
+			_, err := e.GetAlertNotifies(tt.args.ctx, tt.args.request)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetAlertNotifies() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})

@@ -21,10 +21,23 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-func (this *GetAllEnabledExpressionRequest) Validate() error {
+func (this *GetExpressionsRequest) Validate() error {
 	return nil
 }
-func (this *GetAllEnabledExpressionResponse) Validate() error {
+func (this *GetExpressionsResponse) Validate() error {
+	for _, item := range this.Data {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *GetMetricExpressionsRequest) Validate() error {
+	return nil
+}
+func (this *GetMetricExpressionsResponse) Validate() error {
 	for _, item := range this.Data {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
@@ -39,10 +52,34 @@ func (this *Expression) Validate() error {
 	// Validation of proto3 map<> fields is unsupported.
 	return nil
 }
-func (this *GetAllAlertTemplateRequest) Validate() error {
+func (this *GetAlertNotifiesRequest) Validate() error {
 	return nil
 }
-func (this *GetAllAlertTemplateResponse) Validate() error {
+func (this *GetAlertNotifiesResponse) Validate() error {
+	for _, item := range this.Data {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *AlertNotify) Validate() error {
+	if this.NotifyTarget != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.NotifyTarget); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("NotifyTarget", err)
+		}
+	}
+	return nil
+}
+func (this *NotifyTarget) Validate() error {
+	return nil
+}
+func (this *GetTemplatesRequest) Validate() error {
+	return nil
+}
+func (this *GetTemplatesResponse) Validate() error {
 	for _, item := range this.Data {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {

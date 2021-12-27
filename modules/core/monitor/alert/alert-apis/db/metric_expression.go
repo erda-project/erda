@@ -21,9 +21,11 @@ type MetricExpressionDB struct {
 	*gorm.DB
 }
 
-func (db *MetricExpressionDB) GetAllMetricExpression() ([]*MetricExpression, error) {
+func (db *MetricExpressionDB) GetAllMetricExpression(pageNo, pageSize int64) ([]*MetricExpression, error) {
 	var expressions []*MetricExpression
-	err := db.Where("enable = ?", true).Find(&expressions).Error
+	err := db.Where("enable = ?", true).
+		Offset((pageNo - 1) * pageSize).Limit(pageSize).
+		Find(&expressions).Error
 	if err != nil {
 		return nil, err
 	}

@@ -24,17 +24,27 @@ import (
 
 var (
 	Expressions      []*model.Expression
+	MetricExpression []*pb.Expression
 	TemplateIndex    map[string][]*model.Template
-	Templates        []*model.Template
+	ExpressionIndex  map[string]*model.Expression
 	ExpressionConfig map[string]*model.ExpressionConfig
+	Templates        []*model.Template
+
+	OrgAlertType          []string
+	MicroServiceAlertType []string
+)
+
+const (
+	Org          = "org"
+	MicroService = "micro_service"
 )
 
 type expressionService struct {
 	p *provider
 }
 
-func (e *expressionService) GetAllEnabledExpression(ctx context.Context, request *pb.GetAllEnabledExpressionRequest) (*pb.GetAllEnabledExpressionResponse, error) {
-	alertExpressions, err := e.p.alertDB.GetAllAlertExpression()
+func (e *expressionService) GetAlertExpressions(ctx context.Context, request *pb.GetExpressionsRequest) (*pb.GetExpressionsResponse, error) {
+	alertExpressions, err := e.p.alertDB.GetAllAlertExpression(request.PageNo, request.PageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -47,41 +57,51 @@ func (e *expressionService) GetAllEnabledExpression(ctx context.Context, request
 	if err != nil {
 		return nil, err
 	}
-	metricExpressions, err := e.p.metricDB.GetAllMetricExpression()
-	if err != nil {
-		return nil, err
-	}
-	data, err = json.Marshal(metricExpressions)
-	if err != nil {
-		return nil, err
-	}
-	metricExpressionArr := make([]*pb.Expression, 0)
-	err = json.Unmarshal(data, &metricExpressionArr)
-	if err != nil {
-		return nil, err
-	}
-	allExpressions := alertExpressionArr
-	allExpressions = append(allExpressions, metricExpressionArr...)
-	result := &pb.GetAllEnabledExpressionResponse{}
+	return &pb.GetExpressionsResponse{
+		Data: alertExpressionArr,
+	}, nil
+}
+
+func (e *expressionService) GetMetricExpressions(ctx context.Context, request *pb.GetMetricExpressionsRequest) (*pb.GetMetricExpressionsResponse, error) {
+	result := &pb.GetMetricExpressionsResponse{}
 	if request.PageNo <= 1 {
-		if request.PageSize > int64(len(allExpressions)) {
-			request.PageSize = int64(len(allExpressions))
+		if request.PageSize > int64(len(MetricExpression)) {
+			request.PageSize = int64(len(MetricExpression))
 		}
-		result.Data = allExpressions[:request.PageSize]
+		result.Data = MetricExpression[:request.PageSize]
 	} else {
-		if (request.PageNo-1)*request.PageSize >= int64(len(allExpressions)) {
+		if (request.PageNo-1)*request.PageSize >= int64(len(MetricExpression)) {
 			return result, nil
-		} else if request.PageNo*request.PageSize > int64(len(allExpressions)) {
-			result.Data = allExpressions[(request.PageNo-1)*request.PageSize:]
+		} else if request.PageNo*request.PageSize > int64(len(MetricExpression)) {
+			result.Data = MetricExpression[(request.PageNo-1)*request.PageSize:]
 		} else {
-			result.Data = allExpressions[(request.PageNo-1)*request.PageSize : request.PageNo*request.PageSize]
+			result.Data = MetricExpression[(request.PageNo-1)*request.PageSize : request.PageNo*request.PageSize]
 		}
 	}
 	return result, nil
 }
 
-func (e *expressionService) GetAllAlertTemplate(ctx context.Context, request *pb.GetAllAlertTemplateRequest) (*pb.GetAllAlertTemplateResponse, error) {
-	result := &pb.GetAllAlertTemplateResponse{
+func (e *expressionService) GetAlertNotifies(ctx context.Context, request *pb.GetAlertNotifiesRequest) (*pb.GetAlertNotifiesResponse, error) {
+	alertNotifies, err := e.p.alertNotifyDB.QueryAlertNotify(request.PageNo, request.PageNo)
+	if err != nil {
+		return nil, err
+	}
+	data, err := json.Marshal(alertNotifies)
+	if err != nil {
+		return nil, err
+	}
+	alertNotifyArr := make([]*pb.AlertNotify, 0)
+	err = json.Unmarshal(data, &alertNotifyArr)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.GetAlertNotifiesResponse{
+		Data: alertNotifyArr,
+	}, nil
+}
+
+func (e *expressionService) GetTemplates(ctx context.Context, request *pb.GetTemplatesRequest) (*pb.GetTemplatesResponse, error) {
+	result := &pb.GetTemplatesResponse{
 		Data: make([]*pb.AlertTemplate, 0),
 	}
 	var data []byte

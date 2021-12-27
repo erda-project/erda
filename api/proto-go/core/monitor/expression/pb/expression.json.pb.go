@@ -13,21 +13,33 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
-var _ json.Marshaler = (*GetAllEnabledExpressionRequest)(nil)
-var _ json.Unmarshaler = (*GetAllEnabledExpressionRequest)(nil)
-var _ json.Marshaler = (*GetAllEnabledExpressionResponse)(nil)
-var _ json.Unmarshaler = (*GetAllEnabledExpressionResponse)(nil)
+var _ json.Marshaler = (*GetExpressionsRequest)(nil)
+var _ json.Unmarshaler = (*GetExpressionsRequest)(nil)
+var _ json.Marshaler = (*GetExpressionsResponse)(nil)
+var _ json.Unmarshaler = (*GetExpressionsResponse)(nil)
+var _ json.Marshaler = (*GetMetricExpressionsRequest)(nil)
+var _ json.Unmarshaler = (*GetMetricExpressionsRequest)(nil)
+var _ json.Marshaler = (*GetMetricExpressionsResponse)(nil)
+var _ json.Unmarshaler = (*GetMetricExpressionsResponse)(nil)
 var _ json.Marshaler = (*Expression)(nil)
 var _ json.Unmarshaler = (*Expression)(nil)
-var _ json.Marshaler = (*GetAllAlertTemplateRequest)(nil)
-var _ json.Unmarshaler = (*GetAllAlertTemplateRequest)(nil)
-var _ json.Marshaler = (*GetAllAlertTemplateResponse)(nil)
-var _ json.Unmarshaler = (*GetAllAlertTemplateResponse)(nil)
+var _ json.Marshaler = (*GetAlertNotifiesRequest)(nil)
+var _ json.Unmarshaler = (*GetAlertNotifiesRequest)(nil)
+var _ json.Marshaler = (*GetAlertNotifiesResponse)(nil)
+var _ json.Unmarshaler = (*GetAlertNotifiesResponse)(nil)
+var _ json.Marshaler = (*AlertNotify)(nil)
+var _ json.Unmarshaler = (*AlertNotify)(nil)
+var _ json.Marshaler = (*NotifyTarget)(nil)
+var _ json.Unmarshaler = (*NotifyTarget)(nil)
+var _ json.Marshaler = (*GetTemplatesRequest)(nil)
+var _ json.Unmarshaler = (*GetTemplatesRequest)(nil)
+var _ json.Marshaler = (*GetTemplatesResponse)(nil)
+var _ json.Unmarshaler = (*GetTemplatesResponse)(nil)
 var _ json.Marshaler = (*AlertTemplate)(nil)
 var _ json.Unmarshaler = (*AlertTemplate)(nil)
 
-// GetAllEnabledExpressionRequest implement json.Marshaler.
-func (m *GetAllEnabledExpressionRequest) MarshalJSON() ([]byte, error) {
+// GetExpressionsRequest implement json.Marshaler.
+func (m *GetExpressionsRequest) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -37,15 +49,15 @@ func (m *GetAllEnabledExpressionRequest) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// GetAllEnabledExpressionRequest implement json.Marshaler.
-func (m *GetAllEnabledExpressionRequest) UnmarshalJSON(b []byte) error {
+// GetExpressionsRequest implement json.Marshaler.
+func (m *GetExpressionsRequest) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
 }
 
-// GetAllEnabledExpressionResponse implement json.Marshaler.
-func (m *GetAllEnabledExpressionResponse) MarshalJSON() ([]byte, error) {
+// GetExpressionsResponse implement json.Marshaler.
+func (m *GetExpressionsResponse) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -55,8 +67,44 @@ func (m *GetAllEnabledExpressionResponse) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// GetAllEnabledExpressionResponse implement json.Marshaler.
-func (m *GetAllEnabledExpressionResponse) UnmarshalJSON(b []byte) error {
+// GetExpressionsResponse implement json.Marshaler.
+func (m *GetExpressionsResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetMetricExpressionsRequest implement json.Marshaler.
+func (m *GetMetricExpressionsRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetMetricExpressionsRequest implement json.Marshaler.
+func (m *GetMetricExpressionsRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetMetricExpressionsResponse implement json.Marshaler.
+func (m *GetMetricExpressionsResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetMetricExpressionsResponse implement json.Marshaler.
+func (m *GetMetricExpressionsResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
@@ -80,8 +128,8 @@ func (m *Expression) UnmarshalJSON(b []byte) error {
 	}).Unmarshal(b, m)
 }
 
-// GetAllAlertTemplateRequest implement json.Marshaler.
-func (m *GetAllAlertTemplateRequest) MarshalJSON() ([]byte, error) {
+// GetAlertNotifiesRequest implement json.Marshaler.
+func (m *GetAlertNotifiesRequest) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -91,15 +139,15 @@ func (m *GetAllAlertTemplateRequest) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// GetAllAlertTemplateRequest implement json.Marshaler.
-func (m *GetAllAlertTemplateRequest) UnmarshalJSON(b []byte) error {
+// GetAlertNotifiesRequest implement json.Marshaler.
+func (m *GetAlertNotifiesRequest) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
 }
 
-// GetAllAlertTemplateResponse implement json.Marshaler.
-func (m *GetAllAlertTemplateResponse) MarshalJSON() ([]byte, error) {
+// GetAlertNotifiesResponse implement json.Marshaler.
+func (m *GetAlertNotifiesResponse) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -109,8 +157,80 @@ func (m *GetAllAlertTemplateResponse) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// GetAllAlertTemplateResponse implement json.Marshaler.
-func (m *GetAllAlertTemplateResponse) UnmarshalJSON(b []byte) error {
+// GetAlertNotifiesResponse implement json.Marshaler.
+func (m *GetAlertNotifiesResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// AlertNotify implement json.Marshaler.
+func (m *AlertNotify) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// AlertNotify implement json.Marshaler.
+func (m *AlertNotify) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// NotifyTarget implement json.Marshaler.
+func (m *NotifyTarget) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// NotifyTarget implement json.Marshaler.
+func (m *NotifyTarget) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetTemplatesRequest implement json.Marshaler.
+func (m *GetTemplatesRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetTemplatesRequest implement json.Marshaler.
+func (m *GetTemplatesRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetTemplatesResponse implement json.Marshaler.
+func (m *GetTemplatesResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetTemplatesResponse implement json.Marshaler.
+func (m *GetTemplatesResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

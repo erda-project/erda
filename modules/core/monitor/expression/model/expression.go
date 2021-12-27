@@ -18,10 +18,22 @@ import "github.com/erda-project/erda/pkg/encoding/jsonmap"
 
 var WindowKeys = []int64{1, 3, 5, 10, 15, 30}
 
+const (
+	ALERT_RULE          = "alert_rule.yaml"
+	ANALYZER_EXPRESSION = "analyzer_expression.json"
+	NOTIFY_TEMPLATE     = "notify_template.yaml"
+)
+
 type Expression struct {
 	Id         string          `json:"id"`
 	Expression jsonmap.JSONMap `json:"expression"`
 	Attributes jsonmap.JSONMap `json:"attributes"`
+}
+
+type AlertRule struct {
+	ExpressionConfig *ExpressionConfig
+	Expression       *Expression
+	Template         []*Template
 }
 
 type Template struct {
@@ -40,13 +52,6 @@ type ExpressionConfig struct {
 	Id         string                 `json:"id" yaml:"id"`
 	Name       string                 `json:"name" yaml:"name"`
 	AlertScope string                 `json:"alert_scope" yaml:"alert_scope"`
+	AlertType  string                 `json:"alert_type" yaml:"alert_type"`
 	Attributes map[string]interface{} `json:"attributes" yaml:"attributes"`
-}
-
-type Attribute struct {
-	Level            string `json:"level" yaml:"level"`
-	Recover          bool   `json:"recover" yaml:"recover"`
-	AlertGroup       string `json:"alert_group" yaml:"alert_group"`
-	DisplayUrlId     string `json:"display_url_id" yaml:"display_url_id"`
-	TicketsMetricKey string `json:"tickets_metric_key" yaml:"tickets_metric_key"`
 }

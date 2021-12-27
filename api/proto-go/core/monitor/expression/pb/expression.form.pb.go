@@ -12,15 +12,21 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
-var _ urlenc.URLValuesUnmarshaler = (*GetAllEnabledExpressionRequest)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*GetAllEnabledExpressionResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetExpressionsRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetExpressionsResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetMetricExpressionsRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetMetricExpressionsResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Expression)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*GetAllAlertTemplateRequest)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*GetAllAlertTemplateResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertNotifiesRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertNotifiesResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AlertNotify)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*NotifyTarget)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetTemplatesRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetTemplatesResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AlertTemplate)(nil)
 
-// GetAllEnabledExpressionRequest implement urlenc.URLValuesUnmarshaler.
-func (m *GetAllEnabledExpressionRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+// GetExpressionsRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetExpressionsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
@@ -42,8 +48,36 @@ func (m *GetAllEnabledExpressionRequest) UnmarshalURLValues(prefix string, value
 	return nil
 }
 
-// GetAllEnabledExpressionResponse implement urlenc.URLValuesUnmarshaler.
-func (m *GetAllEnabledExpressionResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+// GetExpressionsResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetExpressionsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// GetMetricExpressionsRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetMetricExpressionsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pageSize":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageSize = val
+			case "pageNo":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageNo = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetMetricExpressionsResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetMetricExpressionsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }
 
@@ -78,8 +112,110 @@ func (m *Expression) UnmarshalURLValues(prefix string, values url.Values) error 
 	return nil
 }
 
-// GetAllAlertTemplateRequest implement urlenc.URLValuesUnmarshaler.
-func (m *GetAllAlertTemplateRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+// GetAlertNotifiesRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertNotifiesRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pageSize":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageSize = val
+			case "pageNo":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageNo = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetAlertNotifiesResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertNotifiesResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// AlertNotify implement urlenc.URLValuesUnmarshaler.
+func (m *AlertNotify) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "id":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Id = val
+			case "alertId":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.AlertId = val
+			case "notifyTarget":
+				if m.NotifyTarget == nil {
+					m.NotifyTarget = &NotifyTarget{}
+				}
+			case "notifyTarget.type":
+				if m.NotifyTarget == nil {
+					m.NotifyTarget = &NotifyTarget{}
+				}
+				m.NotifyTarget.Type = vals[0]
+			case "notifyTarget.groupId":
+				if m.NotifyTarget == nil {
+					m.NotifyTarget = &NotifyTarget{}
+				}
+				m.NotifyTarget.GroupId = vals[0]
+			case "notifyTarget.groupType":
+				if m.NotifyTarget == nil {
+					m.NotifyTarget = &NotifyTarget{}
+				}
+				m.NotifyTarget.GroupType = vals[0]
+			case "notifyTarget.level":
+				if m.NotifyTarget == nil {
+					m.NotifyTarget = &NotifyTarget{}
+				}
+				m.NotifyTarget.Level = vals[0]
+			case "silence":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Silence = val
+			case "silencePolicy":
+				m.SilencePolicy = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// NotifyTarget implement urlenc.URLValuesUnmarshaler.
+func (m *NotifyTarget) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "type":
+				m.Type = vals[0]
+			case "groupId":
+				m.GroupId = vals[0]
+			case "groupType":
+				m.GroupType = vals[0]
+			case "level":
+				m.Level = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetTemplatesRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetTemplatesRequest) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
@@ -101,8 +237,8 @@ func (m *GetAllAlertTemplateRequest) UnmarshalURLValues(prefix string, values ur
 	return nil
 }
 
-// GetAllAlertTemplateResponse implement urlenc.URLValuesUnmarshaler.
-func (m *GetAllAlertTemplateResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+// GetTemplatesResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetTemplatesResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }
 

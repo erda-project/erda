@@ -18,10 +18,14 @@ const _ = http.SupportPackageIsVersion1
 
 // ExpressionServiceHandler is the server API for ExpressionService service.
 type ExpressionServiceHandler interface {
-	// GET /api/expressions
-	GetAllEnabledExpression(context.Context, *GetAllEnabledExpressionRequest) (*GetAllEnabledExpressionResponse, error)
+	// GET /api/alert/expressions
+	GetAlertExpressions(context.Context, *GetExpressionsRequest) (*GetExpressionsResponse, error)
+	// GET /api/metric/expressions
+	GetMetricExpressions(context.Context, *GetMetricExpressionsRequest) (*GetMetricExpressionsResponse, error)
+	// GET /api/alert/notifies
+	GetAlertNotifies(context.Context, *GetAlertNotifiesRequest) (*GetAlertNotifiesResponse, error)
 	// GET /api/templates
-	GetAllAlertTemplate(context.Context, *GetAllAlertTemplateRequest) (*GetAllAlertTemplateResponse, error)
+	GetTemplates(context.Context, *GetTemplatesRequest) (*GetTemplatesResponse, error)
 }
 
 // RegisterExpressionServiceHandler register ExpressionServiceHandler to http.Router.
@@ -47,13 +51,13 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 		return handler
 	}
 
-	add_GetAllEnabledExpression := func(method, path string, fn func(context.Context, *GetAllEnabledExpressionRequest) (*GetAllEnabledExpressionResponse, error)) {
+	add_GetAlertExpressions := func(method, path string, fn func(context.Context, *GetExpressionsRequest) (*GetExpressionsResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*GetAllEnabledExpressionRequest))
+			return fn(ctx, req.(*GetExpressionsRequest))
 		}
-		var GetAllEnabledExpression_info transport.ServiceInfo
+		var GetAlertExpressions_info transport.ServiceInfo
 		if h.Interceptor != nil {
-			GetAllEnabledExpression_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAllEnabledExpression", srv)
+			GetAlertExpressions_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAlertExpressions", srv)
 			handler = h.Interceptor(handler)
 		}
 		r.Add(method, path, encodeFunc(
@@ -61,10 +65,10 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 				ctx := http.WithRequest(r.Context(), r)
 				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAllEnabledExpression_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAlertExpressions_info)
 				}
 				r = r.WithContext(ctx)
-				var in GetAllEnabledExpressionRequest
+				var in GetExpressionsRequest
 				if err := h.Decode(r, &in); err != nil {
 					return nil, err
 				}
@@ -83,13 +87,13 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 		)
 	}
 
-	add_GetAllAlertTemplate := func(method, path string, fn func(context.Context, *GetAllAlertTemplateRequest) (*GetAllAlertTemplateResponse, error)) {
+	add_GetMetricExpressions := func(method, path string, fn func(context.Context, *GetMetricExpressionsRequest) (*GetMetricExpressionsResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*GetAllAlertTemplateRequest))
+			return fn(ctx, req.(*GetMetricExpressionsRequest))
 		}
-		var GetAllAlertTemplate_info transport.ServiceInfo
+		var GetMetricExpressions_info transport.ServiceInfo
 		if h.Interceptor != nil {
-			GetAllAlertTemplate_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAllAlertTemplate", srv)
+			GetMetricExpressions_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetMetricExpressions", srv)
 			handler = h.Interceptor(handler)
 		}
 		r.Add(method, path, encodeFunc(
@@ -97,10 +101,10 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 				ctx := http.WithRequest(r.Context(), r)
 				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAllAlertTemplate_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetMetricExpressions_info)
 				}
 				r = r.WithContext(ctx)
-				var in GetAllAlertTemplateRequest
+				var in GetMetricExpressionsRequest
 				if err := h.Decode(r, &in); err != nil {
 					return nil, err
 				}
@@ -119,6 +123,80 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 		)
 	}
 
-	add_GetAllEnabledExpression("GET", "/api/expressions", srv.GetAllEnabledExpression)
-	add_GetAllAlertTemplate("GET", "/api/templates", srv.GetAllAlertTemplate)
+	add_GetAlertNotifies := func(method, path string, fn func(context.Context, *GetAlertNotifiesRequest) (*GetAlertNotifiesResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetAlertNotifiesRequest))
+		}
+		var GetAlertNotifies_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetAlertNotifies_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetAlertNotifies", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAlertNotifies_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetAlertNotifiesRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_GetTemplates := func(method, path string, fn func(context.Context, *GetTemplatesRequest) (*GetTemplatesResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetTemplatesRequest))
+		}
+		var GetTemplates_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetTemplates_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetTemplates", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetTemplates_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetTemplatesRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_GetAlertExpressions("GET", "/api/alert/expressions", srv.GetAlertExpressions)
+	add_GetMetricExpressions("GET", "/api/metric/expressions", srv.GetMetricExpressions)
+	add_GetAlertNotifies("GET", "/api/alert/notifies", srv.GetAlertNotifies)
+	add_GetTemplates("GET", "/api/templates", srv.GetTemplates)
 }

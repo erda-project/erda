@@ -37,10 +37,18 @@ type expressionServiceWrapper struct {
 	opts   []grpc1.CallOption
 }
 
-func (s *expressionServiceWrapper) GetAllEnabledExpression(ctx context.Context, req *pb.GetAllEnabledExpressionRequest) (*pb.GetAllEnabledExpressionResponse, error) {
-	return s.client.GetAllEnabledExpression(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+func (s *expressionServiceWrapper) GetAlertExpressions(ctx context.Context, req *pb.GetExpressionsRequest) (*pb.GetExpressionsResponse, error) {
+	return s.client.GetAlertExpressions(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
-func (s *expressionServiceWrapper) GetAllAlertTemplate(ctx context.Context, req *pb.GetAllAlertTemplateRequest) (*pb.GetAllAlertTemplateResponse, error) {
-	return s.client.GetAllAlertTemplate(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+func (s *expressionServiceWrapper) GetMetricExpressions(ctx context.Context, req *pb.GetMetricExpressionsRequest) (*pb.GetMetricExpressionsResponse, error) {
+	return s.client.GetMetricExpressions(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *expressionServiceWrapper) GetAlertNotifies(ctx context.Context, req *pb.GetAlertNotifiesRequest) (*pb.GetAlertNotifiesResponse, error) {
+	return s.client.GetAlertNotifies(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *expressionServiceWrapper) GetTemplates(ctx context.Context, req *pb.GetTemplatesRequest) (*pb.GetTemplatesResponse, error) {
+	return s.client.GetTemplates(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

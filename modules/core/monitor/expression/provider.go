@@ -16,7 +16,6 @@ package expression
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -37,9 +36,8 @@ import (
 )
 
 type config struct {
-	SystemExpression       string `file:"system_expression"`
-	SystemTemplate         string `file:"system_template"`
-	SystemExpressionConfig string `file:"system_expression_config"`
+	AlertRules  string `file:"alert_rules"`
+	MetricRules string `file:"metric_rules"`
 }
 
 type provider struct {
@@ -51,6 +49,7 @@ type provider struct {
 	alertDB              *alertdb.AlertExpressionDB
 	metricDB             *alertdb.MetricExpressionDB
 	customizeAlertRuleDB *alertdb.CustomizeAlertRuleDB
+	alertNotifyDB        *alertdb.AlertNotifyDB
 	expressionService    *expressionService
 }
 
@@ -66,91 +65,54 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.customizeAlertRuleDB = &alertdb.CustomizeAlertRuleDB{
 		DB: p.DB,
 	}
+	p.alertNotifyDB = &alertdb.AlertNotifyDB{
+		DB: p.DB,
+	}
 	p.expressionService = &expressionService{
 		p: p,
 	}
 	p.t = ctx.Service("i18n").(i18n.I18n).Translator("alert")
-	Expressions = make([]*model.Expression, 0)
-	orgExpressions, err := readExpressionFile(p.Cfg.SystemExpression)
+	err := readAlertRule(p.Cfg.AlertRules)
 	if err != nil {
 		return err
 	}
-	Expressions = orgExpressions
-	ExpressionConfig = make(map[string]*model.ExpressionConfig)
-	expressionConfig, err := redaExpressionConfig(p.Cfg.SystemExpressionConfig)
+	err = readMetricRule(p.Cfg.MetricRules)
 	if err != nil {
 		return err
 	}
-	ExpressionConfig = expressionConfig
-	TemplateIndex = make(map[string][]*model.Template, 0)
-	templates, err := readTemplateFile(p.Cfg.SystemTemplate)
-	if err != nil {
-		return err
-	}
-	TemplateIndex = templates
+	getAlertType()
 	if p.Register != nil {
 		pb.RegisterExpressionServiceImp(p.Register, p.expressionService, apis.Options())
 	}
 	return nil
 }
 
-func redaExpressionConfig(root string) (map[string]*model.ExpressionConfig, error) {
-	expressionConfig := make([]*model.ExpressionConfig, 0)
-	expressionConfigMap := make(map[string]*model.ExpressionConfig)
-	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return nil
+func getAlertType() {
+	OrgAlertType = make([]string, 0)
+	MicroServiceAlertType = make([]string, 0)
+	OrgAlertTypeMap := make(map[string]bool)
+	MicroServiceAlertTypeMap := make(map[string]bool)
+	for _, v := range ExpressionConfig {
+		if v.AlertScope == Org {
+			OrgAlertTypeMap[v.AlertType] = true
+		} else {
+			MicroServiceAlertTypeMap[v.AlertType] = true
 		}
-		f, err := ioutil.ReadFile(path)
-		fmt.Println(string(f))
-		if err != nil {
-			return err
-		}
-		err = yaml.Unmarshal(f, &expressionConfig)
-		if err != nil {
-			return err
-		}
-		for _, v := range expressionConfig {
-			expressionConfigMap[v.Id] = v
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
-	return expressionConfigMap, nil
+	for k := range OrgAlertTypeMap {
+		OrgAlertType = append(OrgAlertType, k)
+	}
+	for k := range MicroServiceAlertTypeMap {
+		MicroServiceAlertType = append(MicroServiceAlertType, k)
+	}
 }
 
-func readExpressionFile(root string) ([]*model.Expression, error) {
-	expressions := make([]*model.Expression, 0)
-	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return nil
-		}
-		if info.IsDir() {
-			return nil
-		}
-		f, err := ioutil.ReadFile(path)
-		var expressionModel model.Expression
-		err = json.Unmarshal(f, &expressionModel)
-		if err != nil {
-			return err
-		}
-		expressions = append(expressions, &expressionModel)
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return expressions, nil
-}
-
-func readTemplateFile(root string) (map[string][]*model.Template, error) {
+func readMetricRule(root string) error {
+	MetricExpression = make([]*pb.Expression, 0)
 	f, err := os.ReadDir(root)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	templateMap := make(map[string][]*model.Template)
 	for _, pkg := range f {
 		err := filepath.Walk(filepath.Join(root, pkg.Name()), func(path string, info fs.FileInfo, err error) error {
 			if err != nil {
@@ -165,26 +127,88 @@ func readTemplateFile(root string) (map[string][]*model.Template, error) {
 				return nil
 			}
 			f, err := ioutil.ReadFile(path)
-			var templateModel []*model.Template
-			err = yaml.Unmarshal(f, &templateModel)
+			expression := &pb.Expression{}
+			err = json.Unmarshal(f, expression)
 			if err != nil {
 				return err
 			}
-			alertIndex := strings.TrimSuffix(info.Name(), ".yml")
-			templateMap[alertIndex] = templateModel
-			Templates = append(Templates, templateModel...)
-			for i := range templateModel {
-				templateModel[i].AlertIndex = strings.TrimSuffix(info.Name(), ".yml")
-				allRoute := strings.Split(path, "/")
-				templateModel[i].AlertType = allRoute[len(allRoute)-2]
+			MetricExpression = append(MetricExpression, expression)
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func readAlertRule(root string) error {
+	Expressions = make([]*model.Expression, 0)
+	TemplateIndex = make(map[string][]*model.Template)
+	ExpressionIndex = make(map[string]*model.Expression)
+	ExpressionConfig = make(map[string]*model.ExpressionConfig)
+	Templates = make([]*model.Template, 0)
+	f, err := os.ReadDir(root)
+	if err != nil {
+		return err
+	}
+	for _, pkg := range f {
+		err := filepath.Walk(filepath.Join(root, pkg.Name()), func(path string, info fs.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			if info.IsDir() {
+				dir, err := os.ReadDir(path)
+				if err != nil {
+					return err
+				}
+				f = append(f, dir...)
+				return nil
+			}
+			f, err := ioutil.ReadFile(path)
+			allRoute := strings.Split(path, "/")
+			alertIndex := allRoute[len(allRoute)-2]
+			alertType := allRoute[len(allRoute)-3]
+			if info.Name() == model.NOTIFY_TEMPLATE {
+				templates := make([]*model.Template, 0)
+				err = yaml.Unmarshal(f, &templates)
+				if err != nil {
+					return err
+				}
+				for _, v := range templates {
+					v.AlertIndex = alertIndex
+					v.AlertType = alertType
+					//(*v).AlertIndex = alertIndex
+					//(*v).AlertType = alertType
+				}
+				TemplateIndex[alertIndex] = templates
+				Templates = append(Templates, templates...)
+			}
+			if info.Name() == model.ALERT_RULE {
+				expressionConfig := &model.ExpressionConfig{}
+				err = yaml.Unmarshal(f, expressionConfig)
+				if err != nil {
+					return err
+				}
+				expressionConfig.AlertType = alertType
+				ExpressionConfig[alertIndex] = expressionConfig
+			}
+			if info.Name() == model.ANALYZER_EXPRESSION {
+				expression := &model.Expression{}
+				err = json.Unmarshal(f, expression)
+				if err != nil {
+					return err
+				}
+				Expressions = append(Expressions, expression)
+				ExpressionIndex[alertIndex] = expression
 			}
 			return nil
 		})
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-	return templateMap, nil
+	return nil
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
