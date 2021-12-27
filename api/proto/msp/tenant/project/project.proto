@@ -48,6 +48,26 @@ service ProjectService {
       get: "/api/msp/tenant/project/overview"
     };
   }
+
+  rpc GetProjectStatistics(GetProjectStatisticsRequest) returns (GetProjectStatisticsResponse) {
+    option (google.api.http) = {
+      post: "/api/msp/tenant/project/statistics"
+    };
+  }
+}
+
+message GetProjectStatisticsRequest {
+  repeated string projectIds = 1;
+}
+
+message GetProjectStatisticsResponse {
+  map<string, ProjectStatistics> data = 1;
+}
+
+message ProjectStatistics {
+  int64 serviceCount      = 1;
+  int64 last24hAlertCount = 2;
+  int64 lastActiveTime    = 3;
 }
 
 message GetProjectOverviewRequest{

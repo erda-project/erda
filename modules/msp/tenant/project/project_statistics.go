@@ -24,7 +24,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/modules/msp/instance/db/monitor"
 )
 
@@ -81,9 +80,9 @@ func (ps projectStatisticMap) statForTerminusKeys(projectId string, terminusKeys
 	return result, true
 }
 
-func (s *projectService) getProjectsStatistics(projects Projects) error {
-	if len(projects) == 0 {
-		return nil
+func (s *projectService) getProjectsStatistics(projectIds ...string) (map[string]*projectStats, error) {
+	if len(projectIds) == 0 {
+		return nil, fmt.Errorf("empty projects list")
 	}
 	endMillSeconds := time.Now().UnixNano() / int64(time.Millisecond)
 	oneDayAgoMillSeconds := endMillSeconds - int64(24*time.Hour/time.Millisecond)
@@ -91,20 +90,18 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 
 	terminusKeyMap := map[string][]string{}
 	var terminusIds []interface{}
-	for _, project := range projects {
-		intPId, _ := strconv.ParseInt(project.Id, 10, 64)
+	for _, projectId := range projectIds {
+		intPId, _ := strconv.ParseInt(projectId, 10, 64)
 		monitors, err := s.MonitorDB.GetMonitorByProjectId(intPId)
 		var tks []string
 		if err != nil {
-			linq.From(project.Relationship).
-				Select(func(i interface{}) interface{} { return i.(*pb.TenantRelationship).TenantID }).
-				ToSlice(&tks)
-		} else {
-			linq.From(monitors).
-				Select(func(i interface{}) interface{} { return i.(*monitor.Monitor).TerminusKey }).
-				ToSlice(&tks)
+			s.p.Log.Warnf("fail to get sp_monitor info, projectId: %s", projectId)
+			continue
 		}
-		terminusKeyMap[project.Id] = tks
+		linq.From(monitors).
+			Select(func(i interface{}) interface{} { return i.(*monitor.Monitor).TerminusKey }).
+			ToSlice(&tks)
+		terminusKeyMap[projectId] = tks
 		for _, tk := range tks {
 			terminusIds = append(terminusIds, tk)
 		}
@@ -141,7 +138,7 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 			stats.lastActiveTime = int64(activeTime) / int64(time.Millisecond)
 		})
 	}); err != nil {
-		return err
+		return nil, err
 	}
 
 	// get alert count
@@ -170,26 +167,26 @@ func (s *projectService) getProjectsStatistics(projects Projects) error {
 			stats.alertCount = int64(alertCount)
 		})
 	}); err != nil {
-		return err
+		return nil, err
 	}
 
 	// merge results
-	for _, project := range projects {
-		stats, ok := statisticMap.statForProjectId(project.Id)
+	result := map[string]*projectStats{}
+	for _, projectId := range projectIds {
+		stats, ok := statisticMap.statForProjectId(projectId)
 		if !ok {
-			tks := terminusKeyMap[project.Id]
+			tks := terminusKeyMap[projectId]
 			stats, ok = statisticMap.statForTerminusKeys("", tks...)
 		}
 		if !ok {
+			result[projectId] = &projectStats{}
 			continue
 		}
 
-		project.ServiceCount = stats.serviceCount
-		project.Last24HAlertCount = stats.alertCount
-		project.LastActiveTime = stats.lastActiveTime
+		result[projectId] = stats
 	}
 
-	return nil
+	return result, nil
 }
 
 func (s *projectService) doInfluxQuery(req *metricpb.QueryWithInfluxFormatRequest, rowCallback func(row *metricpb.Row)) error {
