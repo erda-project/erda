@@ -194,6 +194,7 @@ func (s *projectService) GetProjectList(ctx context.Context, projectIDs []string
 	stats, err := s.getProjectsStatistics(ids...)
 	if err != nil {
 		s.p.Log.Warnf("failed to get projects statistics: %s", err)
+		return projects, nil
 	}
 	for _, project := range projects {
 		if stat, ok := stats[project.Id]; ok {

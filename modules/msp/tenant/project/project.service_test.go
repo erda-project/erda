@@ -20,6 +20,7 @@ import (
 	testing "testing"
 
 	"bou.ke/monkey"
+	"github.com/golang/mock/gomock"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	servicehub "github.com/erda-project/erda-infra/base/servicehub"
@@ -426,6 +427,7 @@ func Test_projectService_DeleteProject(t *testing.T) {
 	}
 }
 
+// -go:generate mockgen -destination=./project_logs_test.go -package project github.com/erda-project/erda-infra/base/logs Logger
 func Test_projectService_GetProjectList(t *testing.T) {
 	type fields struct {
 		p            *provider
@@ -446,10 +448,19 @@ func Test_projectService_GetProjectList(t *testing.T) {
 	}{
 		{"case1", fields{}, args{ctx: nil, projectIDs: []string{"1", "2"}}, nil, false},
 	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	logger := NewMockLogger(ctrl)
+	logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var s = &projectService{
 				metricq: &mockInfluxQl{},
+				p: &provider{
+					Log: logger,
+				},
 			}
 			monkey.PatchInstanceMethod(reflect.TypeOf(s), "GetHistoryProjects", func(s *projectService, ctx context.Context, projectIDs []string, projects Projects) ([]apistructs.MicroServiceProjectResponseData, error) {
 				var data []apistructs.MicroServiceProjectResponseData
@@ -635,8 +646,16 @@ func Test_getProjectsStatistics(t *testing.T) {
 	})
 	defer monkey.Unpatch((*monitor.MonitorDB).GetMonitorByProjectId)
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	logger := NewMockLogger(ctrl)
+	logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
+
 	s := &projectService{
 		metricq: &mockInfluxQl{},
+		p: &provider{
+			Log: logger,
+		},
 	}
 
 	_, err := s.getProjectsStatistics([]string{}...)
