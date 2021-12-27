@@ -639,22 +639,8 @@ func Test_getProjectsStatistics(t *testing.T) {
 		metricq: &mockInfluxQl{},
 	}
 
-	projects := Projects{
-		&pb.Project{
-			Id:   "1",
-			Name: "test project 1",
-			Type: "dop",
-			Desc: "test desc 1",
-		}, &pb.Project{
-			Id:   "2",
-			Name: "test project 2",
-			Type: "dop",
-			Desc: "test desc 2",
-		},
-	}
-
-	err := s.getProjectsStatistics(Projects{})
-	err = s.getProjectsStatistics(projects)
+	_, err := s.getProjectsStatistics([]string{}...)
+	_, err = s.getProjectsStatistics("1", "2")
 	if err != nil {
 		t.Errorf("should not error")
 	}
