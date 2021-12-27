@@ -36,7 +36,7 @@ import (
 )
 
 const useScrollQuery = false
-const useInMemContentFilter = true
+const useInMemContentFilter = false
 
 func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
 	// TODO check org
@@ -168,7 +168,7 @@ func getSearchSource(start, end int64, sel *storage.Selector) *elastic.SearchSou
 			query = query.Filter(elastic.NewTermQuery(filter.Key, val))
 		case storage.REGEXP:
 			query = query.Filter(elastic.NewRegexpQuery(filter.Key, val))
-		case storage.EXPRESSION:
+		case storage.EXPRESSION, storage.CONTAINS:
 			query = query.Filter(elastic.NewQueryStringQuery(val).DefaultField("content").DefaultOperator("AND"))
 		}
 	}
