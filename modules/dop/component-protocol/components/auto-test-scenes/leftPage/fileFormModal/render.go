@@ -163,6 +163,10 @@ func (a *ComponentFileFormModal) initSceneSetFields(inParams fileTree.InParams) 
 							apistructs.TryLatestSuccessResultPolicyType.GetZhName(),
 							apistructs.TryLatestSuccessResultPolicyType,
 						},
+						PolicyOption{
+							apistructs.TryLatestResultPolicyType.GetZhName(),
+							apistructs.TryLatestResultPolicyType,
+						},
 					},
 				},
 			},
@@ -404,6 +408,10 @@ func (a *ComponentFileFormModal) GetScene(inParams fileTree.InParams) error {
 						PolicyOption{
 							apistructs.TryLatestSuccessResultPolicyType.GetZhName(),
 							apistructs.TryLatestSuccessResultPolicyType,
+						},
+						PolicyOption{
+							apistructs.TryLatestResultPolicyType.GetZhName(),
+							apistructs.TryLatestResultPolicyType,
 						},
 					},
 				},
