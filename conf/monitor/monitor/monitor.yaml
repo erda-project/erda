@@ -328,6 +328,5 @@ grpc-client@erda.core.services.notify.channel:
 erda.core.services.notify.channel-client:
 
 erda.core.monitor.expression:
-  system_expression: ${CONFIG_PATH}/expression
-  system_template: ${CONFIG_PATH}/template
-  system_expression_config: ${CONFIG_PATH}/config/expression_config.yaml
+  alert_rules: ${CONFIG_PATH}/alert/rules
+  metric_rules: ${CONFIG_PATH}/analyzer/metrics
