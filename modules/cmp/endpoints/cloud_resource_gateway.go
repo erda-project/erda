@@ -141,9 +141,7 @@ func (e *Endpoints) ListGatewayAndVpc(ctx context.Context, r *http.Request, vars
 		err = errors.WithStack(err)
 		return
 	}
-	var params = make(url.Values)
-	params.Add("withQuota", "true")
-	projectInfo, err := e.bdl.GetProjectWithSetter(pId, httpclient.SetParams(params))
+	projectInfo, err := e.bdl.GetProjectWithSetter(pId, httpclient.SetParams(url.Values{"withQuota": {"true"}}))
 	if err != nil {
 		err = errors.WithStack(err)
 		return

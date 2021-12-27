@@ -36,9 +36,7 @@ import (
 // id is the project id.
 func (p *Project) Get(ctx context.Context, id uint64) (*apistructs.ProjectDTO, *errorresp.APIError) {
 	l := logrus.WithField("func", "*Project.Get")
-	params := make(url.Values)
-	params.Add("withQuota", "true")
-	dto, err := p.bdl.GetProjectWithSetter(id, httpclient.SetParams(params))
+	dto, err := p.bdl.GetProjectWithSetter(id, httpclient.SetParams(url.Values{"withQuota": {"true"}}))
 	if err != nil {
 		l.Errorf("failed to GetProject by bdl: %v", err)
 		return nil, apierrors.ErrGetProject.InternalError(err)
