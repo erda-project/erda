@@ -489,8 +489,8 @@ func (svc *Issue) GetIssue(req apistructs.IssueGetRequest) (*apistructs.Issue, e
 }
 
 func validPlanTime(req apistructs.IssueUpdateRequest, issue *dao.Issue) error {
-	started := apistructs.GetIssueRequestTime(req.PlanStartedAt)
-	finished := apistructs.GetIssueRequestTime(req.PlanFinishedAt)
+	started := req.PlanStartedAt.Value()
+	finished := req.PlanFinishedAt.Value()
 	if started != nil && finished != nil {
 		if started.After(*finished) {
 			return fmt.Errorf("plan started is after plan finished time")
@@ -544,9 +544,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	canUpdateFields := issueModel.GetCanUpdateFields()
 	// 请求传入的需要更新的字段
 	changedFields := req.GetChangedFields(canUpdateFields["man_hour"].(string))
-	if req.PlanFinishedAt != nil {
+	if !req.PlanFinishedAt.IsEmpty() {
+		// change plan finished at, update exipry status
 		now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
-		changedFields["expiry_status"] = dao.GetExpiryStatus(req.PlanFinishedAt, now)
+		changedFields["expiry_status"] = dao.GetExpiryStatus(req.PlanFinishedAt.Time(), now)
 	}
 	// 检查修改的字段合法性
 	if err := svc.checkChangeFields(changedFields); err != nil {

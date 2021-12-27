@@ -15,6 +15,7 @@ package apistructs
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -39,4 +40,26 @@ func TestNewManhour(t *testing.T) {
 	assert.Equal(t, int64(2400), est3.EstimateTime)
 	est4, _ := NewManhour("1w")
 	assert.Equal(t, int64(2400), est4.EstimateTime)
+}
+
+func TestIssueTime_IsEmpty(t *testing.T) {
+	t1 := IssueTime(time.Unix(0, 0))
+	tests := []struct {
+		name string
+		m    *IssueTime
+		want bool
+	}{
+		{
+			m:    &t1,
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &IssueTime{}
+			if got := m.IsEmpty(); got != tt.want {
+				t.Errorf("IssueTime.IsEmpty() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

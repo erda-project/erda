@@ -900,6 +900,41 @@ type IssueGetResponse struct {
 	Data *Issue `json:"data"`
 }
 
+type IssueTime time.Time
+
+func (m *IssueTime) UnmarshalJSON(data []byte) error {
+	s := string(data)
+	if s == "null" {
+		return nil
+	}
+	if s == `""` {
+		*m = IssueTime(time.Unix(0, 0))
+		return nil
+	}
+	return json.Unmarshal(data, (*time.Time)(m))
+}
+
+func (m *IssueTime) IsEmpty() bool {
+	t := time.Time(*m)
+	return t.IsZero()
+}
+
+func (m *IssueTime) Value() *time.Time {
+	t := time.Time(*m)
+	if t.IsZero() || t.Equal(time.Unix(0, 0)) {
+		return nil
+	}
+	return &t
+}
+
+func (m *IssueTime) Time() *time.Time {
+	t := time.Time(*m)
+	if t.Equal(time.Unix(0, 0)) {
+		return nil
+	}
+	return &t
+}
+
 // IssueUpdateRequest 事件更新请求
 type IssueUpdateRequest struct {
 	Title          *string          `json:"title"`
@@ -908,8 +943,8 @@ type IssueUpdateRequest struct {
 	Priority       *IssuePriority   `json:"priority"`
 	Complexity     *IssueComplexity `json:"complexity"`
 	Severity       *IssueSeverity   `json:"severity"`
-	PlanStartedAt  *time.Time       `json:"planStartedAt"`
-	PlanFinishedAt *time.Time       `json:"planFinishedAt"`
+	PlanStartedAt  IssueTime        `json:"planStartedAt"`
+	PlanFinishedAt IssueTime        `json:"planFinishedAt"`
 	Assignee       *string          `json:"assignee"`
 	IterationID    *int64           `json:"iterationID"`
 	Source         *string          `json:"source"`        // 来源
@@ -935,18 +970,8 @@ type IssueUpdateRequest struct {
 func (r *IssueUpdateRequest) IsEmpty() bool {
 	return r.Title == nil && r.Content == nil && r.State == nil &&
 		r.Priority == nil && r.Complexity == nil && r.Severity == nil &&
-		r.PlanStartedAt == nil && r.PlanFinishedAt == nil &&
+		r.PlanStartedAt.IsEmpty() && r.PlanFinishedAt.IsEmpty() &&
 		r.Assignee == nil && r.IterationID == nil && r.ManHour == nil
-}
-
-func GetIssueRequestTime(t *time.Time) *time.Time {
-	if t == nil {
-		return nil
-	}
-	if t.Equal(time.Unix(0, 0)) {
-		return nil
-	}
-	return t
 }
 
 // GetChangedFields 从 IssueUpdateRequest 中找出需要更新(不为空)的字段
@@ -971,11 +996,11 @@ func (r *IssueUpdateRequest) GetChangedFields(manHour string) map[string]interfa
 	if r.Severity != nil {
 		fields["severity"] = *r.Severity
 	}
-	if r.PlanStartedAt != nil {
-		fields["plan_started_at"] = GetIssueRequestTime(r.PlanStartedAt)
+	if !r.PlanStartedAt.IsEmpty() {
+		fields["plan_started_at"] = r.PlanStartedAt.Time()
 	}
-	if r.PlanFinishedAt != nil {
-		fields["plan_finished_at"] = GetIssueRequestTime(r.PlanFinishedAt)
+	if !r.PlanFinishedAt.IsEmpty() {
+		fields["plan_finished_at"] = r.PlanFinishedAt.Time()
 	}
 	if r.Assignee != nil {
 		fields["assignee"] = *r.Assignee
