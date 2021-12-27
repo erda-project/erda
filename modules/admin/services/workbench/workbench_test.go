@@ -43,10 +43,10 @@ func TestListProj(t *testing.T) {
 	wb := New(WithBundle(bdl))
 	identity := apistructs.Identity{
 		UserID: "2",
-		OrgID:  "1",
+		OrgID:  "20",
 	}
 
-	data, err := wb.ListQueryProjWbData(identity, apistructs.PageRequest{PageNo: 1, PageSize: 10}, "")
+	data, err := wb.ListQueryProjWbData(identity, apistructs.PageRequest{PageNo: 1, PageSize: 2}, "")
 	if err != nil {
 		t.Logf("list query proj wb data faield, error: %v", err)
 	}
@@ -57,7 +57,8 @@ func TestListSub(t *testing.T) {
 	bdl := initBundle()
 	wb := New(WithBundle(bdl))
 	identity := apistructs.Identity{
-		UserID: "2",
+		// 12028
+		UserID: "12028",
 		OrgID:  "1",
 	}
 
@@ -72,11 +73,28 @@ func TestListApp(t *testing.T) {
 	bdl := initBundle()
 	wb := New(WithBundle(bdl))
 	identity := apistructs.Identity{
+		// 12028
 		UserID: "2",
-		OrgID:  "1",
+		OrgID:  "20",
 	}
 
 	data, err := wb.ListAppWbData(identity, apistructs.ApplicationListRequest{PageNo: 1, PageSize: 10}, 1)
+	if err != nil {
+		t.Logf("list query proj wb data faield, error: %v", err)
+	}
+	t.Logf("data: %v", data)
+}
+
+func TestListSubApp(t *testing.T) {
+	bdl := initBundle()
+	wb := New(WithBundle(bdl))
+	identity := apistructs.Identity{
+		// 12028
+		UserID: "12028",
+		OrgID:  "1",
+	}
+
+	data, err := wb.ListSubAppWbData(identity, 1)
 	if err != nil {
 		t.Logf("list query proj wb data faield, error: %v", err)
 	}
