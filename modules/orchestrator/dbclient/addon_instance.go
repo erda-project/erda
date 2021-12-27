@@ -275,7 +275,8 @@ func (db *DBClient) ListAddonInstancesByProjectIDs(projectIDs []uint64, exclude 
 func (db *DBClient) CountAddonReferenceByClusterAndOrg(clusterName, orgID string) (int, error) {
 	var total int
 
-	dbClient := db.Where("org_id = ?", orgID).Where("az = ?", clusterName)
+	dbClient := db.Where("org_id = ?", orgID).Where("az = ?", clusterName).
+		Where("is_deleted = ?", apistructs.AddonNotDeleted)
 	if err := dbClient.Model(&AddonInstance{}).Count(&total).Error; err != nil {
 		return 0, err
 	}
