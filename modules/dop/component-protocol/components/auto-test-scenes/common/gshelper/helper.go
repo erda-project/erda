@@ -15,10 +15,14 @@
 package gshelper
 
 import (
+	"encoding/json"
+
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 )
 
 const (
@@ -257,4 +261,51 @@ func (h *GSHelper) GetExecuteButtonActiveKey() apistructs.ActiveKey {
 		return v
 	}
 	return ""
+}
+
+func (h *GSHelper) SetPipelineInfo(pipeline apistructs.PipelineDetailDTO) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalPipelineInfo"] = jsonparse.JsonOneLine(pipeline)
+}
+
+func (h *GSHelper) ClearPipelineInfo() {
+	if h.gs == nil {
+		return
+	}
+	delete(*h.gs, "GlobalPipelineInfo")
+}
+
+func (h *GSHelper) GetPipelineInfo() *apistructs.PipelineDetailDTO {
+	if h.gs == nil {
+		return nil
+	}
+
+	info := (*h.gs)["GlobalPipelineInfo"]
+	if info == "" || info == nil {
+		return nil
+	}
+	var v apistructs.PipelineDetailDTO
+	err := json.Unmarshal([]byte(info.(string)), &v)
+	if err != nil {
+		return nil
+	}
+
+	return &v
+}
+
+func (h *GSHelper) GetPipelineInfoWithPipelineID(pipelineID uint64, bdl *bundle.Bundle) *apistructs.PipelineDetailDTO {
+	value := h.GetPipelineInfo()
+	if value != nil && value.ID == pipelineID {
+		return value
+	}
+
+	rsp, err := bdl.GetPipeline(pipelineID)
+	if err != nil {
+		return nil
+	}
+
+	h.SetPipelineInfo(*rsp)
+	return rsp
 }

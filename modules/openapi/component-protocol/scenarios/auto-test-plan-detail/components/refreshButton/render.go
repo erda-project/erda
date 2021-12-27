@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/gshelper"
 )
 
 type ComponentAction struct{}
@@ -44,6 +45,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			},
 		}
 	}
+	gh := gshelper.NewGSHelper(gs)
+	gh.ClearPipelineInfo()
 	return nil
 }
 
