@@ -5,6 +5,7 @@ option go_package = "github.com/erda-project/erda-proto-go/msp/tenant/project/pb
 import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/descriptor.proto";
+import "common/openapi.proto";
 
 service ProjectService {
   rpc GetProjects (GetProjectsRequest) returns (GetProjectsResponse)  {
@@ -52,6 +53,9 @@ service ProjectService {
   rpc GetProjectStatistics(GetProjectStatisticsRequest) returns (GetProjectStatisticsResponse) {
     option (google.api.http) = {
       post: "/api/msp/tenant/project/statistics"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/msp/tenant/project/statistics"
     };
   }
 }
