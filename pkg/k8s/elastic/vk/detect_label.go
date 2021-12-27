@@ -12,21 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package vk
 
 import (
+	"fmt"
+
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var PUBLISH_ITEM_QUERY_MY = apis.ApiSpec{
-	Path:          "/api/my-publish-items",
-	BackendPath:   "/api/my-publish-items",
-	Host:          "dicehub.marathon.l4lb.thisdcos.directory:10000",
-	Scheme:        "http",
-	Method:        "GET",
-	TryCheckLogin: true,
-	RequestType:   apistructs.QueryPublishItemRequest{},
-	ResponseType:  apistructs.QueryPublishItemResponse{},
-	Doc:           "summary: 查询发布",
+func GetLabelsWithVendor(vendor string) (map[string]string, error) {
+	labels := make(map[string]string, 0)
+
+	// ECI and CSI provider must be the same cloud vendor now.
+	switch vendor {
+	case apistructs.ECIVendorAibaba:
+		labels[apistructs.AlibabaECILabel] = "true"
+		return labels, nil
+	case "":
+		return labels, nil
+	default:
+		return labels, fmt.Errorf("failed to get label, vendor %s not support", vendor)
+	}
 }

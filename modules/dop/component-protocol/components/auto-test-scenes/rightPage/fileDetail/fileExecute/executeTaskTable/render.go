@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -167,11 +168,11 @@ func (a *ExecuteTaskTable) Render(ctx context.Context, c *cptype.Component, scen
 	switch event.Operation {
 	case cptype.OperationKey(apistructs.ExecuteChangePageNoOperationKey), cptype.RenderingOperation, cptype.InitializeOperation:
 		a.State.Unfold = false
-		if err := a.handlerListOperation(c, event); err != nil {
+		if err := a.handlerListOperation(c, event, gh); err != nil {
 			return err
 		}
 	case cptype.OperationKey(apistructs.ExecuteClickRowNoOperationKey):
-		if err := a.handlerClickRowOperation(c, event); err != nil {
+		if err := a.handlerClickRowOperation(c, event, gh); err != nil {
 			return err
 		}
 	}
@@ -531,7 +532,7 @@ func (a *ExecuteTaskTable) marshal(c *cptype.Component) error {
 	return nil
 }
 
-func (e *ExecuteTaskTable) handlerListOperation(c *cptype.Component, event cptype.ComponentEvent) error {
+func (e *ExecuteTaskTable) handlerListOperation(c *cptype.Component, event cptype.ComponentEvent, gh *gshelper.GSHelper) error {
 
 	if e.pipelineID == 0 {
 		c.Data = map[string]interface{}{}
@@ -543,11 +544,13 @@ func (e *ExecuteTaskTable) handlerListOperation(c *cptype.Component, event cptyp
 	if e.State.PageSize == 0 {
 		e.State.PageSize = 10
 	}
-	list, err := e.bdl.GetPipeline(e.pipelineID)
-	if err != nil {
-		return err
+
+	list := gh.GetPipelineInfoWithPipelineID(e.pipelineID, e.bdl)
+	if list == nil {
+		return fmt.Errorf("not find pipelineID %v info", e.pipelineID)
 	}
-	err = e.setData(list)
+
+	err := e.setData(list)
 	if err != nil {
 		return err
 	}
@@ -555,7 +558,7 @@ func (e *ExecuteTaskTable) handlerListOperation(c *cptype.Component, event cptyp
 	return nil
 }
 
-func (e *ExecuteTaskTable) handlerClickRowOperation(c *cptype.Component, event cptype.ComponentEvent) error {
+func (e *ExecuteTaskTable) handlerClickRowOperation(c *cptype.Component, event cptype.ComponentEvent, gh *gshelper.GSHelper) error {
 
 	res := operationData{}
 	b, err := json.Marshal(event.OperationData)
@@ -572,7 +575,7 @@ func (e *ExecuteTaskTable) handlerClickRowOperation(c *cptype.Component, event c
 	if res.Meta.Target.SnippetPipelineID == 0 {
 		return nil
 	}
-	if err := e.handlerListOperation(c, event); err != nil {
+	if err := e.handlerListOperation(c, event, gh); err != nil {
 		return err
 	}
 	return nil

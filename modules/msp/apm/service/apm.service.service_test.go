@@ -72,6 +72,7 @@ func Test_apmServiceService_GetServices(t *testing.T) {
 		{"case1", args{ctx: nil, req: &pb.GetServicesRequest{}}, true},
 		{"case2", args{ctx: nil, req: &pb.GetServicesRequest{TenantId: "test-error", ServiceName: "test-service"}}, true},
 		{"case3", args{ctx: nil, req: &pb.GetServicesRequest{PageSize: 100, TenantId: "test-tenantId", ServiceName: "test-service"}}, false},
+		{"case4", args{ctx: nil, req: &pb.GetServicesRequest{PageSize: 100, TenantId: "test-tenantId", ServiceName: "test-service", ServiceStatus: pb.Status_hasError.String()}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -139,6 +140,10 @@ func Test_apmServiceService_GetServices(t *testing.T) {
 					}, nil
 				})
 			defer QueryWithInfluxFormat.Unpatch()
+
+			monkey.Patch(HandleCondition, func(ctx context.Context, req *pb.GetServicesRequest, s *apmServiceService, condition string) (string, error) {
+				return condition, nil
+			})
 
 			s := &apmServiceService{
 				p: &provider{Metric: msc},
@@ -223,6 +228,170 @@ func Test_apmServiceService_GetServiceAnalyzerOverview(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetServiceAnalyzerOverview() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+		})
+	}
+}
+
+func Test_apmServiceService_GetTotalCount(t *testing.T) {
+	type args struct {
+		ctx      context.Context
+		tenantId string
+		start    int64
+		end      int64
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"case1", args{ctx: context.Background(), tenantId: "test"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var msc *metricpb.UnimplementedMetricServiceServer
+			QueryWithInfluxFormat := monkey.PatchInstanceMethod(reflect.TypeOf(msc), "QueryWithInfluxFormat",
+				func(un *metricpb.UnimplementedMetricServiceServer, ctx context.Context, req *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
+
+					return &metricpb.QueryWithInfluxFormatResponse{
+						Results: []*metricpb.Result{
+							{Series: []*metricpb.Serie{
+								{Rows: []*metricpb.Row{
+									{
+										Values: []*structpb.Value{
+											{Kind: &structpb.Value_NumberValue{NumberValue: 3}},
+										},
+									},
+								}},
+							}},
+						},
+					}, nil
+				})
+			defer QueryWithInfluxFormat.Unpatch()
+
+			s := &apmServiceService{p: &provider{Metric: msc}}
+			_, err := s.GetTotalCount(tt.args.ctx, tt.args.tenantId, tt.args.start, tt.args.end)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetTotalCount() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func Test_apmServiceService_GetHasErrorCount(t *testing.T) {
+	type args struct {
+		ctx      context.Context
+		tenantId string
+		start    int64
+		end      int64
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    int64
+		wantErr bool
+	}{
+		{"case1", args{ctx: context.Background()}, 1, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var msc *metricpb.UnimplementedMetricServiceServer
+			QueryWithInfluxFormat := monkey.PatchInstanceMethod(reflect.TypeOf(msc), "QueryWithInfluxFormat",
+				func(un *metricpb.UnimplementedMetricServiceServer, ctx context.Context, req *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
+
+					return &metricpb.QueryWithInfluxFormatResponse{
+						Results: []*metricpb.Result{
+							{Series: []*metricpb.Serie{
+								{Rows: []*metricpb.Row{
+									{
+										Values: []*structpb.Value{
+											{Kind: &structpb.Value_StringValue{StringValue: "test-service-id"}},
+											{Kind: &structpb.Value_BoolValue{BoolValue: true}},
+										},
+									},
+									{
+										Values: []*structpb.Value{
+											{Kind: &structpb.Value_StringValue{StringValue: "test-service-id2"}},
+											{Kind: &structpb.Value_BoolValue{BoolValue: false}},
+										},
+									},
+								}},
+							}},
+						},
+					}, nil
+				})
+			defer QueryWithInfluxFormat.Unpatch()
+
+			s := &apmServiceService{p: &provider{Metric: msc}}
+
+			got, _, err := s.GetHasErrorService(tt.args.ctx, tt.args.tenantId, tt.args.start, tt.args.end)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetHasErrorService() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("GetHasErrorService() got = %v, want %v", got, tt.want)
+				return
+			}
+		})
+	}
+}
+
+func Test_apmServiceService_GetWithoutRequestCount(t *testing.T) {
+	type args struct {
+		ctx      context.Context
+		tenantId string
+		start    int64
+		end      int64
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    int64
+		wantErr bool
+	}{
+		{"case1", args{ctx: context.Background()}, 1, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			var msc *metricpb.UnimplementedMetricServiceServer
+			QueryWithInfluxFormat := monkey.PatchInstanceMethod(reflect.TypeOf(msc), "QueryWithInfluxFormat",
+				func(un *metricpb.UnimplementedMetricServiceServer, ctx context.Context, req *metricpb.QueryWithInfluxFormatRequest) (*metricpb.QueryWithInfluxFormatResponse, error) {
+
+					return &metricpb.QueryWithInfluxFormatResponse{
+						Results: []*metricpb.Result{
+							{Series: []*metricpb.Serie{
+								{Rows: []*metricpb.Row{
+									{
+										Values: []*structpb.Value{
+											{Kind: &structpb.Value_StringValue{StringValue: "test-service-id"}},
+											{Kind: &structpb.Value_BoolValue{BoolValue: true}},
+										},
+									},
+									{
+										Values: []*structpb.Value{
+											{Kind: &structpb.Value_StringValue{StringValue: "test-service-id2"}},
+											{Kind: &structpb.Value_BoolValue{BoolValue: false}},
+										},
+									},
+								}},
+							}},
+						},
+					}, nil
+				})
+			defer QueryWithInfluxFormat.Unpatch()
+
+			s := &apmServiceService{p: &provider{Metric: msc}}
+
+			got, _, err := s.GetWithRequestService(tt.args.ctx, tt.args.tenantId, tt.args.start, tt.args.end)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetWithRequestService() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("GetWithRequestService() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

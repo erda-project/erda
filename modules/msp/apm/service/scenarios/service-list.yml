@@ -13,25 +13,19 @@ hierarchy:
 components:
   page:
     type: CardContainer
-    option:
-      asyncAtInit: true
   grid:
     type: Grid
-    option:
-      asyncAtInit: true
   service-list@rpsMaxTop5:
     type: TopN
-    option:
-      asyncAtInit: true
   service-list@rpsMinTop5:
     type: TopN
-    option:
+    options:
       asyncAtInit: true
   service-list@avgDurationTop5:
     type: TopN
-    option:
+    options:
       asyncAtInit: true
   service-list@errorRateTop5:
     type: TopN
-    option:
+    options:
       asyncAtInit: true

@@ -12,14 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bundle
+package dop
 
 import (
-	"github.com/pkg/errors"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-// PublisherItemReferred 根据发布内容 id 查看是否被库应用引用
-// Deprecated: the feature LibReference is deprecated on Erda
-func (b *Bundle) PublisherItemReferred(libID uint64) (uint64, error) {
-	return 0, errors.New("the feature LibReference is deprecated on Erda")
+var PUBLISH_ITEM_QUERY_MY = apis.ApiSpec{
+	Path:          "/api/my-publish-items",
+	BackendPath:   "/api/my-publish-items",
+	Host:          "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:        "http",
+	Method:        "GET",
+	TryCheckLogin: true,
+	RequestType:   apistructs.QueryPublishItemRequest{},
+	ResponseType:  apistructs.QueryPublishItemResponse{},
+	Doc:           "summary: 查询我的发布",
 }

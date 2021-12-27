@@ -16,6 +16,8 @@ package apistructs
 
 import (
 	"mime/multipart"
+	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -53,9 +55,10 @@ type PublishItem struct {
 	GeofenceRadius   float64   `json:"geofenceRadius"`   // 地理围栏，合理半径
 	GrayLevelPercent int       `json:"grayLevelPercent"` // 灰度百分比，0-100
 	LatestVersion    string    `json:"latestVersion"`    // 最新版本
-	RefCount         uint64    `json:"refCount"`         // 被引用数
-	PreviewImages    []string  `json:"previewImages"`    // 预览图
-	BackgroundImage  string    `json:"backgroundImage"`  // 背景图
+	// Deprecated: the feature is not available on the Erda platform
+	RefCount        uint64   `json:"refCount"`        // 被引用数
+	PreviewImages   []string `json:"previewImages"`   // 预览图
+	BackgroundImage string   `json:"backgroundImage"` // 背景图
 }
 
 type PublishItemVersion struct {
@@ -92,6 +95,33 @@ type QueryPublishItemRequest struct {
 	Q           string `query:"q"`   // 模糊查询关键字
 	Ids         string `query:"ids"` //批量id查询,用,分割
 	OrgID       int64  `json:"-"`
+}
+
+func (q *QueryPublishItemRequest) FromValues(values url.Values) {
+	var err error
+	if q.PageSize, err = strconv.ParseInt(values.Get("pageSize"), 10, 64); err != nil {
+		q.PageSize = 10
+	}
+	if q.PageNo, err = strconv.ParseInt(values.Get("pageNo"), 10, 64); err != nil {
+		q.PageNo = 1
+	}
+	q.PublisherId, _ = strconv.ParseInt(values.Get("publisherId"), 10, 64)
+	q.Name = values.Get("name")
+	q.Type = values.Get("type")
+	q.Public = values.Get("public")
+	q.Q = values.Get("q")
+	q.Ids = values.Get("ids")
+}
+
+func (q QueryPublishItemRequest) ToValues(values url.Values) {
+	values.Set("pageSize", strconv.FormatInt(q.PageSize, 10))
+	values.Set("pageNo", strconv.FormatInt(q.PageNo, 10))
+	values.Set("publisherId", strconv.FormatInt(q.PublisherId, 10))
+	values.Set("name", q.Name)
+	values.Set("type", q.Type)
+	values.Set("public", q.Public)
+	values.Set("q", q.Q)
+	values.Set("ids", q.Ids)
 }
 
 // PublishItemResponse 查询单个发布内容响应

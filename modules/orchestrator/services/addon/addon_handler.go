@@ -1215,7 +1215,9 @@ func (a *Addon) CreateAddonProvider(req *apistructs.AddonProviderRequest, addonN
 		logrus.Errorf("provider response statuscode : %v", r.StatusCode())
 		logrus.Errorf("provider response err : %+v", r)
 		logrus.Errorf("provider response : %+v", resp)
-		return 0, nil, apierrors.ErrInvoke.InternalError(errors.New("create provider addon, response fail"))
+		return 0, nil, apierrors.ErrInvoke.InternalError(
+			fmt.Errorf("create provider addon, response fail, code:%v, msg:%v",
+				resp.Error.Code, resp.Error.Msg))
 	}
 	return r.StatusCode(), &resp, nil
 }
@@ -1270,7 +1272,7 @@ func (a *Addon) pushLog(content string, params *apistructs.AddonHandlerCreateIte
 	}
 	tags := map[string]string{}
 	if orgName, ok := params.Options["orgName"]; ok {
-		tags[log.TAG_DICE_ORG_NAME] = orgName
+		tags[log.TAG_ORG_NAME] = orgName
 	}
 	a.Logger.Log(content, tags)
 }

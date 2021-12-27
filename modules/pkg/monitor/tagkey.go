@@ -12,14 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bundle
+package monitor
 
-import (
-	"github.com/pkg/errors"
+type TagKey string
+
+const (
+	TAGKEY_ORG_NAME TagKey = "org_name"
+	TAGKEY_ORG_ID   TagKey = "org_id"
 )
-
-// PublisherItemReferred 根据发布内容 id 查看是否被库应用引用
-// Deprecated: the feature LibReference is deprecated on Erda
-func (b *Bundle) PublisherItemReferred(libID uint64) (uint64, error) {
-	return 0, errors.New("the feature LibReference is deprecated on Erda")
-}
