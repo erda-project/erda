@@ -8,6 +8,14 @@ import "google/protobuf/descriptor.proto";
 import "common/openapi.proto";
 
 service ProjectService {
+  option (erda.common.openapi_service) = {
+    service: "msp",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
   rpc GetProjects (GetProjectsRequest) returns (GetProjectsResponse)  {
     option (google.api.http) = {
       get: "/api/msp/tenant/projects",
