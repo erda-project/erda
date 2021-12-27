@@ -649,7 +649,7 @@ func Test_getProjectsStatistics(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	logger := NewMockLogger(ctrl)
-	logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
+	//logger.EXPECT().Warnf(gomock.Any(), gomock.Any())
 
 	s := &projectService{
 		metricq: &mockInfluxQl{},
