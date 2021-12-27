@@ -939,7 +939,10 @@ func (r *IssueUpdateRequest) IsEmpty() bool {
 		r.Assignee == nil && r.IterationID == nil && r.ManHour == nil
 }
 
-func getIssueRequestTime(t *time.Time) *time.Time {
+func GetIssueRequestTime(t *time.Time) *time.Time {
+	if t == nil {
+		return nil
+	}
 	if t.Equal(time.Unix(0, 0)) {
 		return nil
 	}
@@ -969,10 +972,10 @@ func (r *IssueUpdateRequest) GetChangedFields(manHour string) map[string]interfa
 		fields["severity"] = *r.Severity
 	}
 	if r.PlanStartedAt != nil {
-		fields["plan_started_at"] = getIssueRequestTime(r.PlanStartedAt)
+		fields["plan_started_at"] = GetIssueRequestTime(r.PlanStartedAt)
 	}
 	if r.PlanFinishedAt != nil {
-		fields["plan_finished_at"] = getIssueRequestTime(r.PlanFinishedAt)
+		fields["plan_finished_at"] = GetIssueRequestTime(r.PlanFinishedAt)
 	}
 	if r.Assignee != nil {
 		fields["assignee"] = *r.Assignee
