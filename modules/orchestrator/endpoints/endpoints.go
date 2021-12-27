@@ -162,6 +162,18 @@ func WithMigration(migration *migration.Migration) Option {
 	}
 }
 
+func (e *Endpoints) DBClient() *dbclient.DBClient {
+	return e.db
+}
+
+func (e *Endpoints) Bdl() *bundle.Bundle {
+	return e.bdl
+}
+
+func (e *Endpoints) Addon() *addon.Addon {
+	return e.addon
+}
+
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{

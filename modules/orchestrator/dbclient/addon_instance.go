@@ -292,3 +292,15 @@ func (db *DBClient) ListNoAttachAddon() (*[]RemoveAddonID, error) {
 	}
 	return &result, nil
 }
+
+// ListAddonInstancesForClean .
+func (db *DBClient) ListAddonInstancesForClean() ([]AddonInstance, error) {
+	var instances []AddonInstance
+	if err := db.Where("is_deleted = ?", apistructs.AddonNotDeleted).
+		Where("platform_service_type = ?", 0).
+		Where("status = ?", apistructs.AddonAttached).
+		Find(&instances).Error; err != nil {
+		return nil, err
+	}
+	return instances, nil
+}
