@@ -163,8 +163,10 @@ func (client *DBClient) GetReleasesByParams(
 		db = db.Where("labels LIKE ?", "%"+fmt.Sprintf("\"gitBranch\":\"%s\"", branch)+"%")
 	}
 
+	db = db.Where("is_stable = ?", isStable).Where("is_project_release = ?", isProjectRelease)
+
 	if isFormal != nil {
-		db = db.Where("is_stable = ?", isStable).Where("is_formal = ?", *isFormal).Where("is_project_release = ?", isProjectRelease)
+		db = db.Where("is_formal = ?", *isFormal)
 	}
 
 	if len(userID) > 0 {
