@@ -59,7 +59,7 @@ func (w *Workbench) ListAppWbData(identity apistructs.Identity, req apistructs.A
 		return
 	}
 	req.OrderBy = "name"
-	req.IsSimple = true
+	req.IsSimple = false
 
 	// list app
 	appRes, err := w.bdl.GetAllMyApps(identity.UserID, uint64(orgID), req)
