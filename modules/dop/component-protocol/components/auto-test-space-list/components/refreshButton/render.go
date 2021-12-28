@@ -16,10 +16,10 @@ package refreshButton
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type Props struct {
@@ -32,40 +32,14 @@ type State struct {
 }
 
 type RefreshButton struct {
+	base.DefaultProvider
 	Type       string                 `json:"type"`
 	Props      Props                  `json:"props"`
 	Operations map[string]interface{} `json:"operations"`
 	State      State                  `json:"state"`
 }
 
-func (a *RefreshButton) marshal(c *apistructs.Component) error {
-	stateValue, err := json.Marshal(a.State)
-	if err != nil {
-		return err
-	}
-	var state map[string]interface{}
-	err = json.Unmarshal(stateValue, &state)
-	if err != nil {
-		return err
-	}
-
-	propValue, err := json.Marshal(a.Props)
-	if err != nil {
-		return err
-	}
-	var props map[string]interface{}
-	err = json.Unmarshal(propValue, &props)
-	if err != nil {
-		return err
-	}
-
-	c.State = state
-	c.Type = a.Type
-	c.Props = props
-	return nil
-}
-
-func (r *RefreshButton) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+func (r *RefreshButton) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	var autoRefresh bool
 	r.Type = "Button"
 	r.Props.Visible = false
@@ -81,13 +55,10 @@ func (r *RefreshButton) Render(ctx context.Context, c *apistructs.Component, sce
 		autoRefresh = true
 	}
 	r.State.AutoRefresh = autoRefresh
-	if err := r.marshal(c); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func RenderCreator() protocol.CompRender {
-	return &RefreshButton{}
+func init() {
+	base.InitProviderWithCreator("auto-test-space-list", "refreshButton",
+		func() servicehub.Provider { return &RefreshButton{} })
 }

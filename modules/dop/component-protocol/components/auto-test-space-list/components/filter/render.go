@@ -16,20 +16,21 @@ package filter
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/common"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/i18n"
 )
 
 type ComponentFilter struct {
-	ctxBdl protocol.ContextBundle
+	sdk *cptype.SDK
+	base.DefaultProvider
 
 	filter.CommonFilter
 	State State `json:"state,omitempty"`
@@ -40,22 +41,8 @@ type State struct {
 	Values     common.FilterConditions `json:"values,omitempty"`
 }
 
-func (i *ComponentFilter) SetCtxBundle(ctx context.Context) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	if bdl.Bdl == nil || bdl.I18nPrinter == nil {
-		return fmt.Errorf("invalid context bundle")
-	}
-	logrus.Infof("inParams:%+v, identity:%+v", bdl.InParams, bdl.Identity)
-	i.ctxBdl = bdl
-	return nil
-}
-
-func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	if err := i.SetCtxBundle(ctx); err != nil {
-		return err
-	}
-
-	i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
+func (i *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	i.sdk = cputil.SDK(ctx)
 	i.Props = filter.Props{Delay: 1000}
 	i.Operations = map[filter.OperationKey]filter.Operation{
 		"filter": {
@@ -92,15 +79,15 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s
 			Label:     "状态",
 			Options: []filter.PropConditionOption{
 				{
-					Label: i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInit),
+					Label: i.sdk.I18n(i18n.I18nKeyAutoTestSpaceInit),
 					Value: apistructs.TestSpaceInit,
 				},
 				{
-					Label: i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInProgress),
+					Label: i.sdk.I18n(i18n.I18nKeyAutoTestSpaceInProgress),
 					Value: apistructs.TestSpaceInProgress,
 				},
 				{
-					Label: i18nLocale.Get(i18n.I18nKeyAutoTestSpaceCompleted),
+					Label: i.sdk.I18n(i18n.I18nKeyAutoTestSpaceCompleted),
 					Value: apistructs.TestSpaceCompleted,
 				},
 			},
@@ -119,6 +106,7 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s
 	return nil
 }
 
-func RenderCreator() protocol.CompRender {
-	return &ComponentFilter{}
+func init() {
+	base.InitProviderWithCreator("auto-test-space-list", "filter",
+		func() servicehub.Provider { return &ComponentFilter{} })
 }

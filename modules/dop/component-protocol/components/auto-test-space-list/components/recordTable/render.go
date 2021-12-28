@@ -23,10 +23,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/conf"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/i18n"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type Column struct {
@@ -71,22 +76,14 @@ type State struct {
 }
 
 type RecordTable struct {
-	ctxBdl protocol.ContextBundle
+	sdk *cptype.SDK
+	bdl *bundle.Bundle
+	base.DefaultProvider
 
 	Type  string `json:"type"`
 	Props Props  `json:"props"`
 	Data  Data   `json:"data"`
 	State State  `json:"state"`
-}
-
-func (r *RecordTable) SetCtxBundle(ctx context.Context) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	if bdl.Bdl == nil || bdl.I18nPrinter == nil {
-		return fmt.Errorf("invalid context bundle")
-	}
-	logrus.Infof("inParams:%+v, identity:%+v", bdl.InParams, bdl.Identity)
-	r.ctxBdl = bdl
-	return nil
 }
 
 func (r *RecordTable) GenComponentState(c *apistructs.Component) error {
@@ -109,7 +106,6 @@ func (r *RecordTable) GenComponentState(c *apistructs.Component) error {
 }
 
 func (r *RecordTable) setProps() {
-	i18nLocale := r.ctxBdl.Bdl.GetLocale(r.ctxBdl.Locale)
 	r.Props.Columns = make([]Column, 0)
 	r.Props.Columns = append(r.Props.Columns, Column{
 		DataIndex: "id",
@@ -117,46 +113,50 @@ func (r *RecordTable) setProps() {
 		Width:     80,
 	}, Column{
 		DataIndex: "type",
-		Title:     i18nLocale.Get(i18n.I18nKeyTableType),
+		Title:     r.sdk.I18n(i18n.I18nKeyTableType),
 		Width:     80,
 	}, Column{
 		DataIndex: "operator",
-		Title:     i18nLocale.Get(i18n.I18nKeyTableOperator),
+		Title:     r.sdk.I18n(i18n.I18nKeyTableOperator),
 		Width:     170,
 	}, Column{
 		DataIndex: "time",
-		Title:     i18nLocale.Get(i18n.I18nKeyTableTime),
+		Title:     r.sdk.I18n(i18n.I18nKeyTableTime),
 		Width:     150,
 	}, Column{
 		DataIndex: "desc",
-		Title:     i18nLocale.Get(i18n.I18nKeyTableDesc),
+		Title:     r.sdk.I18n(i18n.I18nKeyTableDesc),
 		Width:     200,
 	}, Column{
 		DataIndex: "status",
-		Title:     i18nLocale.Get(i18n.I18nKeyTableStatus),
+		Title:     r.sdk.I18n(i18n.I18nKeyTableStatus),
 		Width:     80,
 	}, Column{
 		DataIndex: "result",
-		Title:     i18nLocale.Get(i18n.I18nKeyTableResult),
+		Title:     r.sdk.I18n(i18n.I18nKeyTableResult),
 	})
 }
 
 func (r *RecordTable) setData() error {
-	projectID, ok := r.ctxBdl.InParams["projectId"].(float64)
+	projectID, ok := r.sdk.InParams["projectId"].(float64)
 	if !ok {
-		return errors.Errorf("invalid projectID: %v", r.ctxBdl.InParams["projectId"])
+		return errors.Errorf("invalid projectID: %v", r.sdk.InParams["projectId"])
 	}
-	rsp, err := r.ctxBdl.Bdl.ListFileRecords(r.ctxBdl.Identity.UserID, apistructs.ListTestFileRecordsRequest{
+	rsp, err := r.bdl.ListFileRecords(r.sdk.Identity.UserID, apistructs.ListTestFileRecordsRequest{
 		ProjectID: uint64(projectID),
 		Types:     []apistructs.FileActionType{apistructs.FileSpaceActionTypeImport, apistructs.FileSpaceActionTypeExport},
-		Locale:    r.ctxBdl.Locale,
+		Locale: func() string {
+			if r.sdk.Lang.Len() > 0 {
+				return r.sdk.Lang[0].String()
+			}
+			return ""
+		}(),
 	})
 	if err != nil {
 		return err
 	}
 
 	r.Data.List = make([]DataItem, 0)
-	i18nLocale := r.ctxBdl.Bdl.GetLocale(r.ctxBdl.Locale)
 	for _, fileRecord := range rsp.Data.List {
 		var recordTypeKey string
 		switch fileRecord.Type {
@@ -182,19 +182,19 @@ func (r *RecordTable) setData() error {
 			recordState = "processing"
 		}
 		var operatorName string
-		operator, err := r.ctxBdl.Bdl.GetCurrentUser(fileRecord.OperatorID)
+		operator, err := r.bdl.GetCurrentUser(fileRecord.OperatorID)
 		if err == nil {
 			operatorName = operator.Nick
 		}
 		r.Data.List = append(r.Data.List, DataItem{
 			ID:       strconv.FormatInt(int64(fileRecord.ID), 10),
-			Type:     i18nLocale.Get(recordTypeKey),
+			Type:     r.sdk.I18n(recordTypeKey),
 			Operator: operatorName,
 			Time:     fileRecord.CreatedAt.Format("2006-01-02 15:04:05"),
 			Desc:     fileRecord.Description,
 			Status: Status{
 				RenderType: "textWithBadge",
-				Value:      i18nLocale.Get(statusKey),
+				Value:      r.sdk.I18n(statusKey),
 				Status:     recordState,
 			},
 			Result: Result{
@@ -206,13 +206,9 @@ func (r *RecordTable) setData() error {
 	return nil
 }
 
-func (r *RecordTable) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	if err := r.SetCtxBundle(ctx); err != nil {
-		return err
-	}
-	if err := r.GenComponentState(c); err != nil {
-		return err
-	}
+func (r *RecordTable) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	r.sdk = cputil.SDK(ctx)
+	r.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	r.setProps()
 	if r.State.Visible || r.State.AutoRefresh {
 		if err := r.setData(); err != nil {
@@ -222,6 +218,7 @@ func (r *RecordTable) Render(ctx context.Context, c *apistructs.Component, scena
 	return nil
 }
 
-func RenderCreator() protocol.CompRender {
-	return &RecordTable{}
+func init() {
+	base.InitProviderWithCreator("auto-test-space-list", "recordTable",
+		func() servicehub.Provider { return &RecordTable{} })
 }

@@ -25,6 +25,8 @@ hierarchy:
       - refreshButton
       - recordTable
 
+options:
+  syncIntervalSecond: 0
 
 components:
   # head:
