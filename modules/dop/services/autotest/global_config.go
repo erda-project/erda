@@ -101,8 +101,6 @@ func (svc *Service) UpdateGlobalConfig(req apistructs.AutoTestGlobalConfigUpdate
 }
 
 func (svc *Service) parseGlobalConfigFromCmsNs(ns string) (*apistructs.AutoTestGlobalConfig, error) {
-	// result
-	result := apistructs.AutoTestGlobalConfig{Ns: ns}
 	// 查询
 	configs, err := svc.cms.GetCmsNsConfigs(utils.WithInternalClientContext(context.Background()),
 		&cmspb.CmsNsConfigsGetRequest{
@@ -114,8 +112,17 @@ func (svc *Service) parseGlobalConfigFromCmsNs(ns string) (*apistructs.AutoTestG
 	if err != nil {
 		return nil, err
 	}
-	// 解析
-	for _, cfg := range configs.Data {
+
+	result, err := svc.parseCmsConfigsToAutoTestGlobalConfig(configs.Data, &apistructs.AutoTestGlobalConfig{Ns: ns})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (svc *Service) parseCmsConfigsToAutoTestGlobalConfig(configs []*cmspb.PipelineCmsConfig, result *apistructs.AutoTestGlobalConfig) (*apistructs.AutoTestGlobalConfig, error) {
+	for _, cfg := range configs {
 		switch cfg.Key {
 		case CmsCfgKeyScope:
 			result.Scope = cfg.Value
@@ -153,15 +160,14 @@ func (svc *Service) parseGlobalConfigFromCmsNs(ns string) (*apistructs.AutoTestG
 			result.UIConfig = &uiConfig
 		}
 	}
-	// 校验
+
 	if result.Scope == "" {
 		return nil, fmt.Errorf("invalid scope")
 	}
 	if result.ScopeID == "" {
 		return nil, fmt.Errorf("invalid scopeID")
 	}
-
-	return &result, nil
+	return result, nil
 }
 
 // createOrUpdatePipelineCmsGlobalConfigs
@@ -334,15 +340,36 @@ func (svc *Service) ListGlobalConfigs(req apistructs.AutoTestGlobalConfigListReq
 		return nil, apierrors.ErrListAutoTestGlobalConfigs.InternalError(err)
 	}
 
-	var sortResult apistructs.SortByUpdateTimeAutoTestGlobalConfigs
-
+	var batchGetRequest = cmspb.CmsNsConfigsBatchGetRequest{}
 	for _, ns := range namespaces.Data {
-		cfg, err := svc.parseGlobalConfigFromCmsNs(ns.Ns)
-		if err != nil {
-			return nil, apierrors.ErrListAutoTestGlobalConfigs.InternalError(err)
-		}
-		sortResult = append(sortResult, *cfg)
+		batchGetRequest.Namespaces = append(batchGetRequest.Namespaces, ns.Ns)
 	}
+	batchGetRequest.PipelineSource = apistructs.PipelineSourceAutoTest.String()
+	batchGetRequest.GlobalDecrypt = true
+
+	resp, err := svc.cms.BatchGetCmsNsConfigs(utils.WithInternalClientContext(context.Background()), &batchGetRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	var nsCfgMap = map[string][]*cmspb.PipelineCmsConfig{}
+	for _, cfg := range resp.Configs {
+		config := cfg
+		if config.Ns == nil {
+			continue
+		}
+		nsCfgMap[config.Ns.Ns] = append(nsCfgMap[config.Ns.Ns], config)
+	}
+
+	var sortResult apistructs.SortByUpdateTimeAutoTestGlobalConfigs
+	for ns, configs := range nsCfgMap {
+		result, err := svc.parseCmsConfigsToAutoTestGlobalConfig(configs, &apistructs.AutoTestGlobalConfig{Ns: ns})
+		if err != nil {
+			return nil, err
+		}
+		sortResult = append(sortResult, *result)
+	}
+
 	// sort by update time
 	sort.Sort(sortResult)
 

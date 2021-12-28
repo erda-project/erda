@@ -38,6 +38,12 @@ service CmsService {
       get: "/api/pipelines/cms/ns/{ns}",
     };
   }
+
+  rpc BatchGetCmsNsConfigs (CmsNsConfigsBatchGetRequest) returns (CmsNsConfigsBatchGetResponse) {
+    option (google.api.http) = {
+      get: "/api/pipelines/cms/actions/batch-get-configs",
+    };
+  }
 }
 
 message PipelineCmsNs {
@@ -100,6 +106,7 @@ message PipelineCmsConfig {
   string from = 7;
   google.protobuf.Timestamp timeCreated = 8;
   google.protobuf.Timestamp timeUpdated = 9;
+  PipelineCmsNs ns = 10;
 }
 
 message CmsCreateNsRequest {
@@ -147,6 +154,19 @@ message CmsNsConfigsGetRequest {
   repeated PipelineCmsConfigKey keys = 3; // only fetch specified keys
   bool globalDecrypt = 4; // global-level setting's priority is lower than key-level
 }
+
+message CmsNsConfigsBatchGetRequest {
+    string pipelineSource = 1 [(validator.field) = {string_not_empty: true}];
+    repeated string namespaces = 2;
+    bool globalDecrypt = 3; // global-level setting's priority is lower than key-level
+}
+
 message CmsNsConfigsGetResponse {
   repeated PipelineCmsConfig data = 1;
 }
+
+message CmsNsConfigsBatchGetResponse {
+  repeated PipelineCmsConfig configs = 1;
+}
+
+
