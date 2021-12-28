@@ -872,7 +872,7 @@ func (r *Release) Convert(releaseRequest *apistructs.ReleaseCreateRequest, appRe
 }
 
 func (r *Release) ToFormal(releaseIDs []string) error {
-	return r.db.Model(&dbclient.Release{}).Where("is_stable", true).
+	return r.db.Model(&dbclient.Release{}).Where("is_stable = ?", true).
 		Where("release_id in (?)", releaseIDs).Update("is_formal", true).Error
 }
 
