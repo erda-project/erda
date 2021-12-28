@@ -19,19 +19,26 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	spec "github.com/erda-project/erda/modules/openapi/component-protocol/component_spec/table"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/common"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/project-list-my/components/list"
 )
 
 type ComponentSpaceList struct {
-	CtxBdl protocol.ContextBundle
-	State  state                  `json:"state"`
-	Props  spec.Props             `json:"props"`
-	Data   map[string]interface{} `json:"data"`
+	sdk *cptype.SDK
+	bdl *bundle.Bundle
+	base.DefaultProvider
+	State state                  `json:"state"`
+	Props spec.Props             `json:"props"`
+	Data  map[string]interface{} `json:"data"`
 }
 
 type state struct {
@@ -99,54 +106,38 @@ type dataTask struct {
 	Operations map[string]interface{} `json:"operations"`
 }
 
-func (a *ComponentSpaceList) SetBundle(b protocol.ContextBundle) error {
-	if b.Bdl == nil {
-		err := fmt.Errorf("invalid bundle")
-		return err
-	}
-	a.CtxBdl = b
-	return nil
-}
+func (a *ComponentSpaceList) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	a.sdk = cputil.SDK(ctx)
+	a.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 
-func (a *ComponentSpaceList) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	err := a.SetBundle(bdl)
+	inParamsBytes, err := json.Marshal(a.sdk.InParams)
 	if err != nil {
-		return err
-	}
-
-	if a.CtxBdl.InParams == nil {
-		return fmt.Errorf("params is empty")
-	}
-
-	inParamsBytes, err := json.Marshal(a.CtxBdl.InParams)
-	if err != nil {
-		return fmt.Errorf("failed to marshal inParams, inParams:%+v, err:%v", a.CtxBdl.InParams, err)
+		return fmt.Errorf("failed to marshal inParams, inParams:%+v, err:%v", a.sdk.InParams, err)
 	}
 
 	var inParams inParams
 	if err := json.Unmarshal(inParamsBytes, &inParams); err != nil {
 		return err
 	}
-	switch event.Operation {
+	switch apistructs.OperationKey(event.Operation) {
 	case apistructs.AutoTestSpaceChangePageNoOperationKey, apistructs.AutoTestSpaceChangePageSizeOperationKey, apistructs.InitializeOperation, apistructs.RenderingOperation:
-		if err := a.handlerListOperation(bdl, c, inParams, event); err != nil {
+		if err := a.handlerListOperation(c, inParams, event); err != nil {
 			return err
 		}
 	case apistructs.AutoTestSpaceDeleteOperationKey:
-		if err := a.handlerDeleteOperation(bdl, c, inParams, event); err != nil {
+		if err := a.handlerDeleteOperation(c, inParams, event); err != nil {
 			return err
 		}
 	case apistructs.AutoTestSpaceCopyOperationKey:
-		if err := a.handlerCopyOperation(bdl, c, inParams, event); err != nil {
+		if err := a.handlerCopyOperation(c, inParams, event); err != nil {
 			return err
 		}
 	case apistructs.AutoTestSpaceRetryOperationKey:
-		if err := a.handlerRetryOperation(bdl, c, inParams, event); err != nil {
+		if err := a.handlerRetryOperation(c, inParams, event); err != nil {
 			return err
 		}
 	case apistructs.AutoTestSpaceExportOperationKey:
-		if err := a.handlerExportOperation(bdl, c, inParams, event); err != nil {
+		if err := a.handlerExportOperation(c, inParams, event); err != nil {
 			return err
 		}
 	}
@@ -169,8 +160,8 @@ func getStatus(req apistructs.AutoTestSpaceStatus) map[string]interface{} {
 }
 
 func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTestSpaceList, statsMap map[uint64]*apistructs.AutoTestSpaceStats) error {
-	access, err := a.CtxBdl.Bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-		UserID:   a.CtxBdl.Identity.UserID,
+	access, err := a.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   a.sdk.Identity.UserID,
 		Scope:    apistructs.ProjectScope,
 		ScopeID:  uint64(projectID),
 		Resource: apistructs.TestSpaceResource,
@@ -179,54 +170,53 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 	if err != nil {
 		return err
 	}
-	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
 	lists := []spaceItem{}
 	for _, each := range spaces.List {
 		var (
 			edit = dataOperation{
 				Key:         "edit",
 				Reload:      false,
-				Text:        i18nLocale.Get(i18n.I18nKeyEdit),
+				Text:        a.sdk.I18n(i18n.I18nKeyEdit),
 				Command:     map[string]interface{}{},
 				Disabled:    false,
 				ShowIndex:   1,
-				DisabledTip: i18nLocale.Get(i18n.I18nKeyNoPermission),
+				DisabledTip: a.sdk.I18n(i18n.I18nKeyNoPermission),
 			}
 			copyOp = dataOperation{
 				Key:         "copy",
 				Reload:      true,
-				Text:        i18nLocale.Get(i18n.I18nKeyCopy),
-				Confirm:     i18nLocale.Get(i18n.I18nKeyCopyConfirm),
+				Text:        a.sdk.I18n(i18n.I18nKeyCopy),
+				Confirm:     a.sdk.I18n(i18n.I18nKeyCopyConfirm),
 				Meta:        map[string]interface{}{},
 				Disabled:    true,
 				ShowIndex:   2,
-				DisabledTip: i18nLocale.Get(i18n.I18nKeyNoPermission),
+				DisabledTip: a.sdk.I18n(i18n.I18nKeyNoPermission),
 			}
 			export = dataOperation{
 				Key:         "export",
 				Reload:      true,
-				Text:        i18nLocale.Get(i18n.I18nKeyExport),
-				Confirm:     i18nLocale.Get(i18n.I18nKeyExportConfirm),
+				Text:        a.sdk.I18n(i18n.I18nKeyExport),
+				Confirm:     a.sdk.I18n(i18n.I18nKeyExportConfirm),
 				Meta:        map[string]interface{}{},
 				Disabled:    false,
-				SuccessMsg:  i18nLocale.Get(i18n.I18nKeyExportSuccessMsg),
+				SuccessMsg:  a.sdk.I18n(i18n.I18nKeyExportSuccessMsg),
 				ShowIndex:   3,
-				DisabledTip: i18nLocale.Get(i18n.I18nKeyNoPermission),
+				DisabledTip: a.sdk.I18n(i18n.I18nKeyNoPermission),
 			}
 			deleteOp = dataOperation{
 				Key:         "delete",
 				Reload:      true,
-				Text:        i18nLocale.Get(i18n.I18nKeyDelete),
-				Confirm:     i18nLocale.Get(i18n.I18nKeyDeleteConfirm),
+				Text:        a.sdk.I18n(i18n.I18nKeyDelete),
+				Confirm:     a.sdk.I18n(i18n.I18nKeyDeleteConfirm),
 				Meta:        map[string]interface{}{},
-				DisabledTip: i18nLocale.Get(i18n.I18nKeyDeleteDisabledTip),
+				DisabledTip: a.sdk.I18n(i18n.I18nKeyDeleteDisabledTip),
 				Disabled:    true,
 				ShowIndex:   4,
 			}
 			retry = dataOperation{
 				Key:       "retry",
 				Reload:    true,
-				Text:      i18nLocale.Get(i18n.I18nKeyRetry),
+				Text:      a.sdk.I18n(i18n.I18nKeyRetry),
 				Meta:      map[string]interface{}{},
 				Disabled:  false,
 				ShowIndex: 5,
@@ -249,7 +239,7 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			PrefixImg:   "default_test_case",
 			ArchiveStatus: ArchiveStatus{
 				Status: each.ArchiveStatus.GetFrontEndStatus(),
-				Text:   i18nLocale.Get(fmt.Sprintf("autoTestSpace%s", each.ArchiveStatus)),
+				Text:   a.sdk.I18n(fmt.Sprintf("autoTestSpace%s", each.ArchiveStatus)),
 			},
 			Operations: map[string]interface{}{},
 			ExtraInfos: []ExtraInfos{
@@ -309,6 +299,7 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 		item.Operations["click"] = click
 		lists = append(lists, item)
 	}
+	a.Data = make(map[string]interface{})
 	a.Data["list"] = lists
 
 	return nil
@@ -344,10 +335,7 @@ func getProps() spec.Props {
 	}
 }
 
-func RenderCreator() protocol.CompRender {
-	return &ComponentSpaceList{
-		CtxBdl: protocol.ContextBundle{},
-		State:  state{},
-		Data:   map[string]interface{}{},
-	}
+func init() {
+	base.InitProviderWithCreator("auto-test-space-list", "spaceList",
+		func() servicehub.Provider { return &ComponentSpaceList{} })
 }

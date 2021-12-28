@@ -311,3 +311,12 @@ component-protocol.components.issue-kanban.issueOperations:
 component-protocol.components.issue-kanban.content:
 component-protocol.components.issue-kanban.inputFilter:
 
+## auto-test-space-list
+component-protocol.components.auto-test-space-list.filter:
+component-protocol.components.auto-test-space-list.moreButton:
+component-protocol.components.auto-test-space-list.recordDrawer:
+component-protocol.components.auto-test-space-list.recordTable:
+component-protocol.components.auto-test-space-list.refreshButton:
+component-protocol.components.auto-test-space-list.spaceAddButton:
+component-protocol.components.auto-test-space-list.spaceFormModal:
+component-protocol.components.auto-test-space-list.spaceList:

@@ -19,9 +19,10 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/components/spaceFormModal"
+	"github.com/erda-project/erda/modules/dop/bdl"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/components/spaceFormModal"
 )
 
 const (
@@ -100,7 +101,7 @@ func setMeta(space spaceItem) map[string]interface{} {
 	}
 }
 
-func (a *ComponentSpaceList) handlerListOperation(bdl protocol.ContextBundle, c *apistructs.Component, inParams inParams, event apistructs.ComponentEvent) error {
+func (a *ComponentSpaceList) handlerListOperation(c *cptype.Component, inParams inParams, event cptype.ComponentEvent) error {
 	if a.State.PageSize == 0 {
 		a.State = state{
 			PageSize: DefaultPageSize,
@@ -110,11 +111,11 @@ func (a *ComponentSpaceList) handlerListOperation(bdl protocol.ContextBundle, c 
 		return fmt.Errorf("无效的pageSize")
 	}
 
-	if event.Operation == apistructs.InitializeOperation || event.Operation == apistructs.RenderingOperation {
+	if apistructs.OperationKey(event.Operation) == apistructs.InitializeOperation || apistructs.OperationKey(event.Operation) == apistructs.RenderingOperation {
 		a.State.PageNo = 1
 	}
 	// spaceList, err := bdl.Bdl.ListTestSpace(inParams.ProjectID, a.State.PageSize, a.State.PageNo, a.State.Values.Order)
-	spaceList, err := bdl.Bdl.ListTestSpace(apistructs.AutoTestSpaceListRequest{
+	spaceList, err := a.bdl.ListTestSpace(apistructs.AutoTestSpaceListRequest{
 		ProjectID:     inParams.ProjectID,
 		PageNo:        a.State.PageNo,
 		PageSize:      a.State.PageSize,
@@ -142,7 +143,7 @@ func (a *ComponentSpaceList) handlerListOperation(bdl protocol.ContextBundle, c 
 	return nil
 }
 
-func (a *ComponentSpaceList) handlerDeleteOperation(bdl protocol.ContextBundle, c *apistructs.Component, inParams inParams, event apistructs.ComponentEvent) error {
+func (a *ComponentSpaceList) handlerDeleteOperation(c *cptype.Component, inParams inParams, event cptype.ComponentEvent) error {
 	cond := operationData{}
 	b, err := json.Marshal(event.OperationData)
 	if err != nil {
@@ -162,16 +163,16 @@ func (a *ComponentSpaceList) handlerDeleteOperation(bdl protocol.ContextBundle, 
 		return fmt.Errorf("当前状态不允许删除")
 	}
 
-	if err = bdl.Bdl.DeleteTestSpace(cond.Meta.ID, bdl.Identity.UserID); err != nil {
+	if err = bdl.Bdl.DeleteTestSpace(cond.Meta.ID, a.sdk.Identity.UserID); err != nil {
 		return err
 	}
-	if err := a.handlerListOperation(bdl, c, inParams, event); err != nil {
+	if err := a.handlerListOperation(c, inParams, event); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (a *ComponentSpaceList) handlerCopyOperation(bdl protocol.ContextBundle, c *apistructs.Component, inParams inParams, event apistructs.ComponentEvent) error {
+func (a *ComponentSpaceList) handlerCopyOperation(c *cptype.Component, inParams inParams, event cptype.ComponentEvent) error {
 	cond := operationData{}
 	b, err := json.Marshal(event.OperationData)
 	if err != nil {
@@ -191,16 +192,16 @@ func (a *ComponentSpaceList) handlerCopyOperation(bdl protocol.ContextBundle, c 
 		return fmt.Errorf("当前状态不允许复制")
 	}
 
-	if err = bdl.Bdl.CopyTestSpace(cond.Meta.ID, bdl.Identity.UserID); err != nil {
+	if err = bdl.Bdl.CopyTestSpace(cond.Meta.ID, a.sdk.Identity.UserID); err != nil {
 		return err
 	}
-	if err := a.handlerListOperation(bdl, c, inParams, event); err != nil {
+	if err := a.handlerListOperation(c, inParams, event); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (a *ComponentSpaceList) handlerExportOperation(bdl protocol.ContextBundle, c *apistructs.Component, inParams inParams, event apistructs.ComponentEvent) error {
+func (a *ComponentSpaceList) handlerExportOperation(c *cptype.Component, inParams inParams, event cptype.ComponentEvent) error {
 	cond := operationData{}
 	b, err := json.Marshal(event.OperationData)
 	if err != nil {
@@ -212,17 +213,22 @@ func (a *ComponentSpaceList) handlerExportOperation(bdl protocol.ContextBundle, 
 	if cond.Meta.ID == 0 {
 		return fmt.Errorf("invalid spaceID")
 	}
-	if err = bdl.Bdl.ExportTestSpace(bdl.Identity.UserID, apistructs.AutoTestSpaceExportRequest{
+	if err = a.bdl.ExportTestSpace(a.sdk.Identity.UserID, apistructs.AutoTestSpaceExportRequest{
 		ID:       cond.Meta.ID,
 		FileType: apistructs.TestSpaceFileTypeExcel,
-		Locale:   bdl.Locale,
+		Locale: func() string {
+			if a.sdk.Lang.Len() > 0 {
+				return a.sdk.Lang[0].String()
+			}
+			return ""
+		}(),
 	}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (a *ComponentSpaceList) handlerRetryOperation(bdl protocol.ContextBundle, c *apistructs.Component, inParams inParams, event apistructs.ComponentEvent) error {
+func (a *ComponentSpaceList) handlerRetryOperation(c *cptype.Component, inParams inParams, event cptype.ComponentEvent) error {
 	cond := operationData{}
 	b, err := json.Marshal(event.OperationData)
 	if err != nil {
@@ -242,14 +248,14 @@ func (a *ComponentSpaceList) handlerRetryOperation(bdl protocol.ContextBundle, c
 		return fmt.Errorf("当前状态不允许重试")
 	}
 	// 先删除失败的空间
-	if err = bdl.Bdl.DeleteTestSpace(cond.Meta.ID, bdl.Identity.UserID); err != nil {
+	if err = bdl.Bdl.DeleteTestSpace(cond.Meta.ID, a.sdk.Identity.UserID); err != nil {
 		return err
 	}
 	// 再复制一个新空间
-	if err = bdl.Bdl.CopyTestSpace(*res.SourceSpaceID, bdl.Identity.UserID); err != nil {
+	if err = bdl.Bdl.CopyTestSpace(*res.SourceSpaceID, a.sdk.Identity.UserID); err != nil {
 		return err
 	}
-	if err := a.handlerListOperation(bdl, c, inParams, event); err != nil {
+	if err := a.handlerListOperation(c, inParams, event); err != nil {
 		return err
 	}
 	return nil

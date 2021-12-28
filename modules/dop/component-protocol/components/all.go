@@ -18,6 +18,7 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-attachment"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/code-coverage"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-gantt"

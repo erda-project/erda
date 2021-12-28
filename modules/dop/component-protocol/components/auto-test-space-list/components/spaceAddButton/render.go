@@ -19,9 +19,14 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/i18n"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type props struct {
@@ -52,35 +57,22 @@ type AddButtonCandidate struct {
 }
 
 type ComponentAction struct {
-	CtxBdl protocol.ContextBundle
+	sdk *cptype.SDK
+	bdl *bundle.Bundle
+	base.DefaultProvider
 }
 
 type inParams struct {
 	ProjectID int64 `json:"projectId"`
 }
 
-func (ca *ComponentAction) SetBundle(b protocol.ContextBundle) error {
-	if b.Bdl == nil {
-		err := fmt.Errorf("invalid bundle")
-		return err
-	}
-	ca.CtxBdl = b
-	return nil
-}
+func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	ca.sdk = cputil.SDK(ctx)
+	ca.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 
-func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	err := ca.SetBundle(bdl)
+	inParamsBytes, err := json.Marshal(ca.sdk.InParams)
 	if err != nil {
-		return err
-	}
-	if ca.CtxBdl.InParams == nil {
-		return fmt.Errorf("params is empty")
-	}
-
-	inParamsBytes, err := json.Marshal(ca.CtxBdl.InParams)
-	if err != nil {
-		return fmt.Errorf("failed to marshal inParams, inParams:%+v, err:%v", ca.CtxBdl.InParams, err)
+		return fmt.Errorf("failed to marshal inParams, inParams:%+v, err:%v", ca.sdk.InParams, err)
 	}
 
 	var inParams inParams
@@ -88,8 +80,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		return err
 	}
 
-	createAccess, err := ca.CtxBdl.Bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-		UserID:   ca.CtxBdl.Identity.UserID,
+	createAccess, err := ca.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   ca.sdk.Identity.UserID,
 		Scope:    apistructs.ProjectScope,
 		ScopeID:  uint64(inParams.ProjectID),
 		Resource: apistructs.TestSpaceResource,
@@ -101,19 +93,18 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 
 	var disabled bool
 	var disabledTip string
-	i18nLocale := ca.CtxBdl.Bdl.GetLocale(ca.CtxBdl.Locale)
 	if !createAccess.Access {
 		disabled = true
-		disabledTip = i18nLocale.Get(i18n.I18nKeyNoPermission)
+		disabledTip = ca.sdk.I18n(i18n.I18nKeyNoPermission)
 	}
 	prop := props{
-		Text: i18nLocale.Get(i18n.I18nKeyAdd),
+		Text: ca.sdk.I18n(i18n.I18nKeyAdd),
 		Type: "primary",
 		TipProps: TipProps{
 			Placement: "left",
 		},
 	}
-	c.Props = prop
+	c.Props = cputil.MustConvertProps(prop)
 	c.Operations = map[string]interface{}{
 		"click": struct {
 			Reload      bool                   `json:"reload"`
@@ -141,6 +132,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 	return nil
 }
 
-func RenderCreator() protocol.CompRender {
-	return &ComponentAction{}
+func init() {
+	base.InitProviderWithCreator("auto-test-space-list", "spaceAddButton",
+		func() servicehub.Provider { return &ComponentAction{} })
 }

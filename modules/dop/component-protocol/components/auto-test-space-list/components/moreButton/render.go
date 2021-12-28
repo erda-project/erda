@@ -16,18 +16,18 @@ package moreButton
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/sirupsen/logrus"
-
-	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/component_spec/button"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/i18n"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type MoreButton struct {
-	ctxBdl protocol.ContextBundle
+	sdk *cptype.SDK
+	base.DefaultProvider
 
 	Props button.Props `json:"props"`
 	State State        `json:"state"`
@@ -37,25 +37,11 @@ type State struct {
 	Visible bool `json:"visible"`
 }
 
-func (i *MoreButton) SetCtxBundle(ctx context.Context) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	if bdl.Bdl == nil || bdl.I18nPrinter == nil {
-		return fmt.Errorf("invalid context bundle")
-	}
-	logrus.Infof("inParams:%+v, identity:%+v", bdl.InParams, bdl.Identity)
-	i.ctxBdl = bdl
-	return nil
-}
-
-func (i *MoreButton) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	if err := i.SetCtxBundle(ctx); err != nil {
-		return err
-	}
-
+func (i *MoreButton) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	i.sdk = cputil.SDK(ctx)
 	if event.Operation == "autoRefresh" || event.Operation == "openRecord" {
 		i.State.Visible = true
 	}
-	i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
 	i.Props = button.Props{
 		Text:  "更多操作",
 		Type:  "primary",
@@ -63,7 +49,7 @@ func (i *MoreButton) Render(ctx context.Context, c *apistructs.Component, scenar
 		Menu: []button.MenuItem{
 			{
 				Key:  "import",
-				Text: i18nLocale.Get(i18n.I18nKeyImport),
+				Text: i.sdk.I18n(i18n.I18nKeyImport),
 				Operations: map[string]interface{}{
 					"click": map[string]interface{}{
 						"key":    "import",
@@ -73,7 +59,7 @@ func (i *MoreButton) Render(ctx context.Context, c *apistructs.Component, scenar
 			},
 			{
 				Key:  "record",
-				Text: i18nLocale.Get(i18n.I18nKeyImportExportRecord),
+				Text: i.sdk.I18n(i18n.I18nKeyImportExportRecord),
 				Operations: map[string]interface{}{
 					"click": map[string]interface{}{
 						"key":    "openRecord",
@@ -86,6 +72,7 @@ func (i *MoreButton) Render(ctx context.Context, c *apistructs.Component, scenar
 	return nil
 }
 
-func RenderCreator() protocol.CompRender {
-	return &MoreButton{}
+func init() {
+	base.InitProviderWithCreator("auto-test-space-list", "moreButton",
+		func() servicehub.Provider { return &MoreButton{} })
 }
