@@ -534,10 +534,12 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 
 func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []model.Application, blockStatusMap map[uint64]string, memberMap map[int64][]string) ([]apistructs.ApplicationDTO, error) {
 	projectIDs := make([]uint64, 0, len(applications))
+	appIDS := make([]int64, 0)
 	orgSet := make(map[int64]struct{})
 	for _, app := range applications {
 		projectIDs = append(projectIDs, uint64(app.ProjectID))
 		orgSet[app.OrgID] = struct{}{}
+		appIDS = append(appIDS, app.ID)
 	}
 	orgIDS := make([]int64, 0)
 	for orgID := range orgSet {
@@ -556,6 +558,15 @@ func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []m
 	projectMap, err := e.project.GetModelProjectsMap(projectIDs)
 	if err != nil {
 		return nil, err
+	}
+
+	appRuntimeCounts, err := e.db.GetRuntimeCountByAppIDS(appIDS)
+	if err != nil {
+		return nil, err
+	}
+	runtimeCounter := make(map[int64]model.ApplicationRuntimeCount)
+	for _, appRuntimeCount := range appRuntimeCounts {
+		runtimeCounter[appRuntimeCount.ApplicationID] = appRuntimeCount
 	}
 
 	pinedAppDTOs := make([]apistructs.ApplicationDTO, 0, 10)
@@ -619,8 +630,9 @@ func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []m
 
 		org := orgMap[applications[i].OrgID]
 		var runtimeCount uint
-		e.db.Table("ps_v2_project_runtimes").Where("application_id = ?", applications[i].ID).Count(&runtimeCount)
-
+		if appRuntimeCount, ok := runtimeCounter[applications[i].ID]; ok {
+			runtimeCount = uint(appRuntimeCount.RuntimeCount)
+		}
 		gitRepo := strutil.Concat(conf.GittarOutterURL(), "/", applications[i].GitRepoAbbrev)
 
 		gitRepoNew := strutil.Concat(conf.UIDomain(), "/", org.Name, "/dop/", applications[i].ProjectName, "/", applications[i].Name)
