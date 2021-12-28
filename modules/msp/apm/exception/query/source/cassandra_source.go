@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/gocql/gocql"
 	"github.com/recallsong/go-utils/conv"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -31,17 +30,17 @@ type CassandraSource struct {
 	CassandraSession *cassandra.Session
 }
 
-func (c *CassandraSource) GetExceptions(ctx context.Context, req *pb.GetExceptionsRequest) ([]*pb.Exception, error) {
-	exceptions, err := fetchErdaErrorFromCassandra(c.CassandraSession.Session(), req)
+func (source *CassandraSource) GetExceptions(ctx context.Context, req *pb.GetExceptionsRequest) ([]*pb.Exception, error) {
+	exceptions, err := source.fetchErdaErrorFromCassandra(req)
 	if err != nil {
 		return nil, err
 	}
 	return exceptions, nil
 }
 
-func (c *CassandraSource) GetExceptionEventIds(ctx context.Context, req *pb.GetExceptionEventIdsRequest) ([]string, error) {
+func (source *CassandraSource) GetExceptionEventIds(ctx context.Context, req *pb.GetExceptionEventIdsRequest) ([]string, error) {
 	// do cassandra query
-	iter := c.CassandraSession.Session().Query("SELECT event_id FROM error_event_mapping WHERE error_id= ? limit ?", req.ExceptionID, 999).Iter()
+	iter := source.CassandraSession.Session().Query("SELECT event_id FROM error_event_mapping WHERE error_id= ? limit ?", req.ExceptionID, 999).Iter()
 	var data []string
 	for {
 		row := make(map[string]interface{})
@@ -53,12 +52,12 @@ func (c *CassandraSource) GetExceptionEventIds(ctx context.Context, req *pb.GetE
 	return data, nil
 }
 
-func (c *CassandraSource) GetExceptionEvent(ctx context.Context, req *pb.GetExceptionEventRequest) (*pb.ExceptionEvent, error) {
-	return fetchErdaEventFromCassandra(c.CassandraSession.Session(), req), nil
+func (source *CassandraSource) GetExceptionEvent(ctx context.Context, req *pb.GetExceptionEventRequest) (*pb.ExceptionEvent, error) {
+	return source.fetchErdaEventFromCassandra(req), nil
 }
 
-func fetchErdaEventFromCassandra(session *gocql.Session, req *pb.GetExceptionEventRequest) *pb.ExceptionEvent {
-	iter := session.Query("SELECT * FROM error_events WHERE event_id = ?", req.ExceptionEventID).Iter()
+func (source *CassandraSource) fetchErdaEventFromCassandra(req *pb.GetExceptionEventRequest) *pb.ExceptionEvent {
+	iter := source.CassandraSession.Session().Query("SELECT * FROM error_events WHERE event_id = ?", req.ExceptionEventID).Iter()
 	event := pb.ExceptionEvent{}
 	for {
 		row := make(map[string]interface{})
@@ -92,8 +91,8 @@ func fetchErdaEventFromCassandra(session *gocql.Session, req *pb.GetExceptionEve
 	return &event
 }
 
-func fetchErdaErrorFromCassandra(session *gocql.Session, req *pb.GetExceptionsRequest) ([]*pb.Exception, error) {
-	iter := session.Query("SELECT * FROM error_description_v2 where terminus_key=? ALLOW FILTERING", req.ScopeID).Iter()
+func (source *CassandraSource) fetchErdaErrorFromCassandra(req *pb.GetExceptionsRequest) ([]*pb.Exception, error) {
+	iter := source.CassandraSession.Session().Query("SELECT * FROM error_description_v2 where terminus_key=? ALLOW FILTERING", req.ScopeID).Iter()
 
 	var exceptions []*pb.Exception
 	for {
@@ -114,7 +113,7 @@ func fetchErdaErrorFromCassandra(session *gocql.Session, req *pb.GetExceptionsRe
 		e.ApplicationID = conv.ToString(tags["application_id"])
 		e.RuntimeID = conv.ToString(tags["runtime_id"])
 
-		fetchErdaErrorEventCount(session, req, &e)
+		source.fetchErdaErrorEventCount(req, &e)
 		if e.EventCount > 0 {
 			exceptions = append(exceptions, &e)
 		}
@@ -122,12 +121,12 @@ func fetchErdaErrorFromCassandra(session *gocql.Session, req *pb.GetExceptionsRe
 	return exceptions, nil
 }
 
-func fetchErdaErrorEventCount(session *gocql.Session, req *pb.GetExceptionsRequest, exception *pb.Exception) {
+func (source *CassandraSource) fetchErdaErrorEventCount(req *pb.GetExceptionsRequest, exception *pb.Exception) {
 	layout := "2006-01-02 15:04:05"
 	count := int64(0)
 
 	stat := "SELECT timestamp,count FROM error_count WHERE error_id= ? AND timestamp >= ? AND timestamp <= ? ORDER BY timestamp ASC"
-	iterCount := session.Query(stat, exception.Id, req.StartTime*1e6, req.EndTime*1e6).Iter()
+	iterCount := source.CassandraSession.Session().Query(stat, exception.Id, req.StartTime*1e6, req.EndTime*1e6).Iter()
 	index := 0
 	for {
 		rowCount := make(map[string]interface{})

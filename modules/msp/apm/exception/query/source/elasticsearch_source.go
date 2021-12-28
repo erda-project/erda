@@ -36,7 +36,7 @@ type ElasticsearchSource struct {
 	Entity entitypb.EntityServiceServer
 }
 
-func (e *ElasticsearchSource) GetExceptions(ctx context.Context, req *pb.GetExceptionsRequest) ([]*pb.Exception, error) {
+func (source *ElasticsearchSource) GetExceptions(ctx context.Context, req *pb.GetExceptionsRequest) ([]*pb.Exception, error) {
 	// do es query
 	conditions := map[string]string{
 		"terminusKey": req.ScopeID,
@@ -47,11 +47,11 @@ func (e *ElasticsearchSource) GetExceptions(ctx context.Context, req *pb.GetExce
 		Labels: conditions,
 		Limit:  int64(1000),
 	}
-	exceptions, _ := fetchErdaErrorFromES(ctx, e.Event, e.Entity, entityReq, req.StartTime, req.EndTime)
+	exceptions, _ := source.fetchErdaErrorFromES(ctx, entityReq, req.StartTime, req.EndTime)
 	return exceptions, nil
 }
 
-func (e *ElasticsearchSource) GetExceptionEventIds(ctx context.Context, req *pb.GetExceptionEventIdsRequest) ([]string, error) {
+func (source *ElasticsearchSource) GetExceptionEventIds(ctx context.Context, req *pb.GetExceptionEventIdsRequest) ([]string, error) {
 	var data []string
 	//do es query
 	tags := map[string]string{
@@ -67,7 +67,7 @@ func (e *ElasticsearchSource) GetExceptionEventIds(ctx context.Context, req *pb.
 		End:          time.Now().UnixNano(),
 	}
 
-	items, err := fetchErdaEventFromES(ctx, e.Event, eventReq)
+	items, err := source.fetchErdaEventFromES(ctx, eventReq)
 	if err != nil {
 		return nil, err
 	}
@@ -78,22 +78,23 @@ func (e *ElasticsearchSource) GetExceptionEventIds(ctx context.Context, req *pb.
 	return data, nil
 }
 
-func (e *ElasticsearchSource) GetExceptionEvent(ctx context.Context, req *pb.GetExceptionEventRequest) (*pb.ExceptionEvent, error) {
+func (source *ElasticsearchSource) GetExceptionEvent(ctx context.Context, req *pb.GetExceptionEventRequest) (*pb.ExceptionEvent, error) {
 	event := &pb.ExceptionEvent{}
 	// do es query
 	tags := map[string]string{
 		"terminusKey": req.ScopeID,
 	}
 	eventReq := &eventpb.GetEventsRequest{
-		EventId:  req.ExceptionEventID,
-		Tags:     tags,
-		PageNo:   1,
-		PageSize: 999,
-		Start:    time.Now().Add(-time.Hour * 24 * 7).UnixNano(),
-		End:      time.Now().UnixNano(),
-		Debug:    true,
+		EventId:      req.ExceptionEventID,
+		RelationType: "exception",
+		Tags:         tags,
+		PageNo:       1,
+		PageSize:     999,
+		Start:        time.Now().Add(-time.Hour * 24 * 7).UnixNano(),
+		End:          time.Now().UnixNano(),
+		Debug:        true,
 	}
-	items, err := fetchErdaEventFromES(ctx, e.Event, eventReq)
+	items, err := source.fetchErdaEventFromES(ctx, eventReq)
 	if err != nil {
 		return nil, err
 	}
@@ -125,8 +126,8 @@ func (e *ElasticsearchSource) GetExceptionEvent(ctx context.Context, req *pb.Get
 	return event, nil
 }
 
-func fetchErdaErrorFromES(ctx context.Context, Event eventpb.EventQueryServiceServer, Entity entitypb.EntityServiceServer, req *entitypb.ListEntitiesRequest, startTime int64, endTime int64) (exceptions []*pb.Exception, err error) {
-	listEntity, err := Entity.ListEntities(ctx, req)
+func (source *ElasticsearchSource) fetchErdaErrorFromES(ctx context.Context, req *entitypb.ListEntitiesRequest, startTime int64, endTime int64) (exceptions []*pb.Exception, err error) {
+	listEntity, err := source.Entity.ListEntities(ctx, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -148,14 +149,14 @@ func fetchErdaErrorFromES(ctx context.Context, Event eventpb.EventQueryServiceSe
 
 		eventReq := &eventpb.GetEventsRequest{
 			RelationId:   value.Key,
-			RelationType: "e",
+			RelationType: "exception",
 			Start:        startTime * 1e6,
 			End:          endTime * 1e6,
 			PageNo:       1,
 			PageSize:     10000,
 			Debug:        false,
 		}
-		items, err := fetchErdaEventFromES(ctx, Event, eventReq)
+		items, err := source.fetchErdaEventFromES(ctx, eventReq)
 		if err != nil {
 			return nil, errors.NewInternalServerError(err)
 		}
@@ -178,8 +179,8 @@ func fetchErdaErrorFromES(ctx context.Context, Event eventpb.EventQueryServiceSe
 	return exceptions, nil
 }
 
-func fetchErdaEventFromES(ctx context.Context, Event eventpb.EventQueryServiceServer, req *eventpb.GetEventsRequest) (list []*model.Event, err error) {
-	eventsResp, err := Event.GetEvents(ctx, req)
+func (source *ElasticsearchSource) fetchErdaEventFromES(ctx context.Context, req *eventpb.GetEventsRequest) (list []*model.Event, err error) {
+	eventsResp, err := source.Event.GetEvents(ctx, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
