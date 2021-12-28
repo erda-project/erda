@@ -47,6 +47,7 @@ import (
 
 // CreateRelease POST /api/releases release创建处理
 func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var l = logrus.WithField("func", "*Endpoint.CreateRelease")
 	_, err := getPermissionHeader(r)
 	if err != nil {
 		return apierrors.ErrCreateRelease.NotLogin().ToResp(), nil
@@ -60,6 +61,12 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrCreateRelease.InvalidParameter(err).ToResp(), nil
 	}
 	// 如果没有传 version, 则查找规则列表, 如果当前分支能匹配上某个规则, 则将 version 生成出来
+	l.WithFields(map[string]interface{}{
+		"releaseRequest.Version":          releaseRequest.Version,
+		"releaseRequest.IsStable":         releaseRequest.IsStable,
+		"releaseRequest.IsProjectRelease": releaseRequest.IsProjectRelease,
+	}).Infoln("releaseRequest parameters")
+	l.Infof("releaseRequest.Version: %s", releaseRequest.Version)
 	if releaseRequest.Version == "" {
 		branch, ok := releaseRequest.Labels["gitBranch"]
 		if !ok {
@@ -72,6 +79,7 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 			return apiError.ToResp(), nil
 		}
 		for _, rule := range rules.List {
+			l.WithField("rule pattern", rule.Pattern).WithField("is_enabled", rule.IsEnabled).Infoln()
 			if rule.Match(branch) {
 				releaseRequest.Version = filepath.Base(branch) + "-" + time.Now().Format("2006-01-02-150405")
 				break
