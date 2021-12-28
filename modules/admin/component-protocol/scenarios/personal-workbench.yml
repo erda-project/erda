@@ -106,6 +106,9 @@ rendering:
         - name: "tabs"
           value: "{{ workTabs.value }}"
     - name: workCards
+      state:
+        - name: "tabs"
+          value: "{{ workTabs.value }}"
     - name: cleanData
 
   workListFilter:
