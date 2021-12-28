@@ -155,7 +155,9 @@ func (l *MessageList) doFilterMsg() (data *list.Data) {
 	// list unread message
 	req := apistructs.QueryMBoxRequest{PageNo: int64(l.filterReq.PageNo),
 		PageSize: int64(l.filterReq.PageSize),
-		Status:   apistructs.MBoxUnReadStatus}
+		Status:   apistructs.MBoxUnReadStatus,
+		Type:     apistructs.MBoxTypeIssue,
+	}
 	ms, err := l.bdl.ListMbox(l.identity, req)
 	if err != nil {
 		logrus.Errorf("list unread messages failed, identity: %+v,request: %+v, error:%v", l.identity, req, err)
