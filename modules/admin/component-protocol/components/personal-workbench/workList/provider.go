@@ -124,6 +124,7 @@ func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.Ope
 		var (
 			tp   apistructs.SubscribeType
 			tpID uint64
+			// star bool
 		)
 
 		if l.filterReq.Type == apistructs.WorkbenchItemProj {
@@ -140,7 +141,12 @@ func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.Ope
 		tpID = uint64(id)
 
 		// if not star, create subscribe & unstar; else delete subscribe & set state
-		if !opData.ClientData.DataRef.Star {
+		if opData.ClientData.DataRef.Star == nil {
+			logrus.Errorf("nil star value")
+			return
+		}
+
+		if !*opData.ClientData.DataRef.Star {
 			req := apistructs.CreateSubscribeReq{
 				Type:   tp,
 				TypeID: tpID,
@@ -152,7 +158,7 @@ func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.Ope
 				logrus.Errorf("star %v %v failed, id: %v, error: %v", req.Type, req.Name, req.TypeID, err)
 				return
 			}
-			opData.ClientData.DataRef.Star = true
+			// star = true
 		} else {
 			req := apistructs.UnSubscribeReq{
 				Type:   tp,
@@ -164,9 +170,10 @@ func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.Ope
 				logrus.Errorf("unstar failed, id: %v, error: %v", req.TypeID, err)
 				return
 			}
-			opData.ClientData.DataRef.Star = false
+			// star = false
 		}
-
+		// TODO: update data in place, do not need reload
+		l.StdDataPtr = l.doFilter()
 	}
 }
 
@@ -261,7 +268,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 			LogoURL:     p.ProjectDTO.Logo,
 			Title:       p.ProjectDTO.Name,
 			TitleState:  ts,
-			Star:        star,
+			Star:        &star,
 			Description: p.ProjectDTO.Desc,
 			KvInfos:     kvs,
 			ColumnsInfo: columns,
@@ -337,7 +344,7 @@ func (l *WorkList) doFilterApp() (data *list.Data) {
 			LogoURL:     p.Logo,
 			Title:       p.Name,
 			TitleState:  ts,
-			Star:        star,
+			Star:        &star,
 			Description: p.Desc,
 			KvInfos:     l.GenAppKvInfo(p),
 			ColumnsInfo: l.GenAppColumnInfo(p),
