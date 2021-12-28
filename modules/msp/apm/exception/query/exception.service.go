@@ -27,7 +27,7 @@ type exceptionService struct {
 }
 
 func (s *exceptionService) GetExceptions(ctx context.Context, req *pb.GetExceptionsRequest) (*pb.GetExceptionsResponse, error) {
-	exceptions, err := s.p.Source.GetExceptions(ctx, req)
+	exceptions, err := s.source.GetExceptions(ctx, req)
 	if err != nil {
 		return &pb.GetExceptionsResponse{}, err
 	}
