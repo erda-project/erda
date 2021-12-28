@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/dicehub/service/extension"
 	"github.com/erda-project/erda/modules/dicehub/service/publish_item"
 	"github.com/erda-project/erda/modules/dicehub/service/release"
+	"github.com/erda-project/erda/modules/dicehub/service/release_rule"
 	"github.com/erda-project/erda/modules/dicehub/service/template"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -37,6 +38,7 @@ type Endpoints struct {
 	extension          *extension.Extension
 	publishItem        *publish_item.PublishItem
 	pipelineTemplate   *template.PipelineTemplate
+	releaseRule        *release_rule.ReleaseRule
 	queryStringDecoder *schema.Decoder
 }
 
@@ -91,6 +93,12 @@ func WithPublishItem(publishItem *publish_item.PublishItem) Option {
 func WithPipelineTemplate(pipelineTemplate *template.PipelineTemplate) Option {
 	return func(e *Endpoints) {
 		e.pipelineTemplate = pipelineTemplate
+	}
+}
+
+func WithReleaseRule(rule *release_rule.ReleaseRule) Option {
+	return func(e *Endpoints) {
+		e.releaseRule = rule
 	}
 }
 
@@ -189,5 +197,11 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/publish-items/{publishItemId}/metrics/{metricName}", Method: http.MethodGet, Handler: e.MetricsRouting},
 		{Path: "/api/publish-items/{publishItemId}/err/effacts", Method: http.MethodGet, Handler: e.GetErrAffectUserRate},
 		{Path: "/api/publish-items/{publishItemId}/err/rate", Method: http.MethodGet, Handler: e.GetCrashRate},
+
+		// 分支 release 规则
+		{Path: "/api/release-rules", Method: http.MethodPost, Handler: e.CreateRule},
+		{Path: "/api/release-rules", Method: http.MethodGet, Handler: e.ListRules},
+		{Path: "/api/release-rules/{id}", Method: http.MethodPut, Handler: e.UpdateRule},
+		{Path: "/api/release-rules/{id}", Method: http.MethodDelete, Handler: e.DeleteRule},
 	}
 }

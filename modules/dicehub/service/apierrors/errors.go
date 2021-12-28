@@ -72,6 +72,11 @@ var (
 	ErrSratisticsChannelDetail = err("ErrSratisticsChannelDetail", "获取渠道详情明细数据失败")
 
 	ErrCrashRateList = err("ErrCrashRateList", "获取崩溃率失败")
+
+	ErrCreateReleaseRule = err("ErrCreateReleaseRule", "创建制品规则失败")
+	ErrListReleaseRule   = err("ErrListReleaseRule", "列举制品规则失败")
+	ErrUpdateReleaseRule = err("ErrUpdateReleaseRule", "更新制品规则失败")
+	ErrDeleteReleaseRule = err("ErrDeleteReleaseRule", "删除制品规则失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {
