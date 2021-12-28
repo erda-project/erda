@@ -17,9 +17,7 @@ package i18n
 import (
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/common"
 )
 
 const (
@@ -75,33 +73,5 @@ func GenStarTip(itemType apistructs.WorkbenchItemType, star bool) string {
 	default:
 		logrus.Warnf("unknown workbench item type, not in %v, return empty", support)
 		return ""
-	}
-}
-
-func GenProjTitleState(tp string) ([]list.StateInfo, bool) {
-	switch tp {
-	case common.MspProject:
-		return []list.StateInfo{{Text: I18nKeyMspProject, Status: common.ProjMspStatus}}, true
-	case common.DevOpsProject:
-		return []list.StateInfo{{Text: I18nKeyDevOpsProject, Status: common.ProjDevOpsStatus}}, true
-	default:
-		logrus.Warnf("wrong project type: %v", tp)
-		return []list.StateInfo{}, false
-	}
-}
-
-// LIBRARY, SERVICE, BIGDATA
-
-func GenAppTitleState(mode string) ([]list.StateInfo, bool) {
-	switch mode {
-	case "LIBRARY":
-		return []list.StateInfo{{Text: I18nKeyAppModeLIBRARY, Status: common.AppLibraryStatus}}, true
-	case "BIGDATA":
-		return []list.StateInfo{{Text: I18nKeyAppModeBIGDATA, Status: common.AppBigdataStatus}}, true
-	case "SERVICE":
-		return []list.StateInfo{{Text: I18nKeyAppModeSERVICE, Status: common.AppServiceStatus}}, true
-	default:
-		logrus.Warnf("wrong app mode: %v", mode)
-		return []list.StateInfo{}, false
 	}
 }
