@@ -24,7 +24,7 @@ type ExpressionServiceHandler interface {
 	GetMetricExpressions(context.Context, *GetMetricExpressionsRequest) (*GetMetricExpressionsResponse, error)
 	// GET /api/alert/notifies
 	GetAlertNotifies(context.Context, *GetAlertNotifiesRequest) (*GetAlertNotifiesResponse, error)
-	// GET /api/templates
+	// GET /api/alert/templates
 	GetTemplates(context.Context, *GetTemplatesRequest) (*GetTemplatesResponse, error)
 }
 
@@ -198,5 +198,5 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 	add_GetAlertExpressions("GET", "/api/alert/expressions", srv.GetAlertExpressions)
 	add_GetMetricExpressions("GET", "/api/metric/expressions", srv.GetMetricExpressions)
 	add_GetAlertNotifies("GET", "/api/alert/notifies", srv.GetAlertNotifies)
-	add_GetTemplates("GET", "/api/templates", srv.GetTemplates)
+	add_GetTemplates("GET", "/api/alert/templates", srv.GetTemplates)
 }

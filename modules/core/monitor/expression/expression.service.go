@@ -17,21 +17,16 @@ package expression
 import (
 	"context"
 	"encoding/json"
+	"gopkg.in/yaml.v2"
+	"io/fs"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/expression/pb"
+	alertdb "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/modules/core/monitor/expression/model"
-)
-
-var (
-	Expressions      []*model.Expression
-	MetricExpression []*pb.Expression
-	TemplateIndex    map[string][]*model.Template
-	ExpressionIndex  map[string]*model.Expression
-	ExpressionConfig map[string]*model.ExpressionConfig
-	Templates        []*model.Template
-
-	OrgAlertType          []string
-	MicroServiceAlertType []string
 )
 
 const (
@@ -39,12 +34,164 @@ const (
 	MicroService = "micro_service"
 )
 
+var (
+	Expressions      []*model.Expression
+	MetricExpression []*pb.Expression
+	TemplateIndex    map[string][]*model.NotifyTemplate
+	ExpressionIndex  map[string]*model.Expression
+	AlertConfig      map[string]*model.AlertConfig
+	Templates        []*model.NotifyTemplate
+
+	OrgAlertType          []string
+	MicroServiceAlertType []string
+)
+
 type expressionService struct {
-	p *provider
+	alertDB                        *alertdb.AlertExpressionDB
+	metricDB                       *alertdb.MetricExpressionDB
+	customizeAlertNotifyTemplateDB *alertdb.CustomizeAlertNotifyTemplateDB
+	alertNotifyDB                  *alertdb.AlertNotifyDB
+}
+
+func (e *expressionService) init(alertRules, metricRules string) error {
+	err := e.readAlertRule(alertRules)
+	if err != nil {
+		return err
+	}
+	err = e.readMetricRule(metricRules)
+	if err != nil {
+		return err
+	}
+	e.getAlertType()
+	return nil
+}
+
+func (e *expressionService) getAlertType() {
+	OrgAlertType = make([]string, 0)
+	MicroServiceAlertType = make([]string, 0)
+	OrgAlertTypeMap := make(map[string]bool)
+	MicroServiceAlertTypeMap := make(map[string]bool)
+	for _, v := range AlertConfig {
+		if v.AlertScope == Org {
+			OrgAlertTypeMap[v.AlertType] = true
+		} else {
+			MicroServiceAlertTypeMap[v.AlertType] = true
+		}
+	}
+	for k := range OrgAlertTypeMap {
+		OrgAlertType = append(OrgAlertType, k)
+	}
+	for k := range MicroServiceAlertTypeMap {
+		MicroServiceAlertType = append(MicroServiceAlertType, k)
+	}
+}
+
+func (e *expressionService) readMetricRule(root string) error {
+	MetricExpression = make([]*pb.Expression, 0)
+	f, err := os.ReadDir(root)
+	if err != nil {
+		return err
+	}
+	for _, pkg := range f {
+		err := filepath.Walk(filepath.Join(root, pkg.Name()), func(path string, info fs.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			if info.IsDir() {
+				dir, err := os.ReadDir(path)
+				if err != nil {
+					return err
+				}
+				f = append(f, dir...)
+				return nil
+			}
+			f, err := ioutil.ReadFile(path)
+			expression := &pb.Expression{}
+			err = json.Unmarshal(f, expression)
+			if err != nil {
+				return err
+			}
+			MetricExpression = append(MetricExpression, expression)
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (e *expressionService) readAlertRule(root string) error {
+	Expressions = make([]*model.Expression, 0)
+	TemplateIndex = make(map[string][]*model.NotifyTemplate)
+	ExpressionIndex = make(map[string]*model.Expression)
+	AlertConfig = make(map[string]*model.AlertConfig)
+	Templates = make([]*model.NotifyTemplate, 0)
+	f, err := os.ReadDir(root)
+	if err != nil {
+		return err
+	}
+	for _, pkg := range f {
+		err := filepath.Walk(filepath.Join(root, pkg.Name()), func(path string, info fs.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			if info.IsDir() {
+				dir, err := os.ReadDir(path)
+				if err != nil {
+					return err
+				}
+				f = append(f, dir...)
+				return nil
+			}
+			f, err := ioutil.ReadFile(path)
+			allRoute := strings.Split(path, "/")
+			alertIndex := allRoute[len(allRoute)-2]
+			alertType := allRoute[len(allRoute)-3]
+			if info.Name() == model.NOTIFY_TEMPLATE {
+				templates := make([]*model.NotifyTemplate, 0)
+				err = yaml.Unmarshal(f, &templates)
+				if err != nil {
+					return err
+				}
+				for _, v := range templates {
+					v.AlertIndex = alertIndex
+					v.AlertType = alertType
+					//(*v).AlertIndex = alertIndex
+					//(*v).AlertType = alertType
+				}
+				TemplateIndex[alertIndex] = templates
+				Templates = append(Templates, templates...)
+			}
+			if info.Name() == model.ALERT_RULE {
+				alertConfig := &model.AlertConfig{}
+				err = yaml.Unmarshal(f, alertConfig)
+				if err != nil {
+					return err
+				}
+				alertConfig.AlertType = alertType
+				AlertConfig[alertIndex] = alertConfig
+			}
+			if info.Name() == model.ANALYZER_EXPRESSION {
+				expression := &model.Expression{}
+				err = json.Unmarshal(f, expression)
+				if err != nil {
+					return err
+				}
+				Expressions = append(Expressions, expression)
+				ExpressionIndex[alertIndex] = expression
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (e *expressionService) GetAlertExpressions(ctx context.Context, request *pb.GetExpressionsRequest) (*pb.GetExpressionsResponse, error) {
-	alertExpressions, err := e.p.alertDB.GetAllAlertExpression(request.PageNo, request.PageSize)
+	alertExpressions, err := e.alertDB.GetAllAlertExpression(request.PageNo, request.PageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -58,31 +205,50 @@ func (e *expressionService) GetAlertExpressions(ctx context.Context, request *pb
 		return nil, err
 	}
 	return &pb.GetExpressionsResponse{
-		Data: alertExpressionArr,
+		Data: &pb.ExpressionData{
+			List:  alertExpressionArr,
+			Total: int64(len(alertExpressions)),
+		},
 	}, nil
 }
 
 func (e *expressionService) GetMetricExpressions(ctx context.Context, request *pb.GetMetricExpressionsRequest) (*pb.GetMetricExpressionsResponse, error) {
-	result := &pb.GetMetricExpressionsResponse{}
-	if request.PageNo <= 1 {
-		if request.PageSize > int64(len(MetricExpression)) {
-			request.PageSize = int64(len(MetricExpression))
-		}
-		result.Data = MetricExpression[:request.PageSize]
-	} else {
-		if (request.PageNo-1)*request.PageSize >= int64(len(MetricExpression)) {
-			return result, nil
-		} else if request.PageNo*request.PageSize > int64(len(MetricExpression)) {
-			result.Data = MetricExpression[(request.PageNo-1)*request.PageSize:]
-		} else {
-			result.Data = MetricExpression[(request.PageNo-1)*request.PageSize : request.PageNo*request.PageSize]
-		}
+	result := &pb.GetMetricExpressionsResponse{
+		Data: &pb.ExpressionData{
+			Total: int64(len(MetricExpression)),
+		},
 	}
+	metricLength := int64(len(MetricExpression))
+	from, end := e.MemoryPage(request.PageNo, request.PageSize, metricLength)
+	if from == -1 || end == -1 {
+		return result, nil
+	}
+	result.Data.List = MetricExpression[from:end]
 	return result, nil
 }
 
+func (e *expressionService) MemoryPage(pageNo, pageSize, length int64) (int64, int64) {
+	if pageNo < 1 {
+		pageNo = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 100
+	}
+	if pageSize > length {
+		pageSize = length
+	}
+	from, end := (pageNo-1)*pageSize, pageNo*pageSize
+	if from > length {
+		return -1, -1
+	}
+	if end > length {
+		end = length
+	}
+	return from, end
+}
+
 func (e *expressionService) GetAlertNotifies(ctx context.Context, request *pb.GetAlertNotifiesRequest) (*pb.GetAlertNotifiesResponse, error) {
-	alertNotifies, err := e.p.alertNotifyDB.QueryAlertNotify(request.PageNo, request.PageNo)
+	alertNotifies, count, err := e.alertNotifyDB.QueryAlertNotify(request.PageNo, request.PageNo)
 	if err != nil {
 		return nil, err
 	}
@@ -96,35 +262,43 @@ func (e *expressionService) GetAlertNotifies(ctx context.Context, request *pb.Ge
 		return nil, err
 	}
 	return &pb.GetAlertNotifiesResponse{
-		Data: alertNotifyArr,
+		Data: &pb.AlertNotifyData{
+			List:  alertNotifyArr,
+			Total: count,
+		},
 	}, nil
 }
 
 func (e *expressionService) GetTemplates(ctx context.Context, request *pb.GetTemplatesRequest) (*pb.GetTemplatesResponse, error) {
-	result := &pb.GetTemplatesResponse{
-		Data: make([]*pb.AlertTemplate, 0),
-	}
-	var data []byte
-	var err error
-	if request.PageNo <= 1 {
-		if request.PageSize > int64(len(Templates)) {
-			request.PageSize = int64(len(Templates))
-		}
-		data, err = json.Marshal(Templates[:request.PageSize])
-	} else {
-		if (request.PageNo-1)*request.PageSize >= int64(len(Templates)) {
-			return result, nil
-		}
-		if request.PageNo*request.PageSize > int64(len(Templates)) {
-			data, err = json.Marshal(Templates[(request.PageNo-1)*request.PageSize:])
-		} else {
-			data, err = json.Marshal(Templates[(request.PageNo-1)*request.PageSize : request.PageNo*request.PageSize])
-		}
-	}
+	customizeTemplate, err := e.customizeAlertNotifyTemplateDB.QueryCustomizeAlertTemplate()
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(data, &result.Data)
+	data, err := json.Marshal(customizeTemplate)
+	if err != nil {
+		return nil, err
+	}
+	customizeTemplates := make([]*model.NotifyTemplate, 0)
+	err = json.Unmarshal(data, &customizeTemplates)
+	alertAndCustomTemplate := make([]*model.NotifyTemplate, 0)
+	alertAndCustomTemplate = append(alertAndCustomTemplate, customizeTemplates...)
+	alertAndCustomTemplate = append(alertAndCustomTemplate, Templates...)
+	result := &pb.GetTemplatesResponse{
+		Data: &pb.AlertTemplateData{
+			List:  make([]*pb.AlertTemplate, 0),
+			Total: int64(len(alertAndCustomTemplate)),
+		},
+	}
+	templateLength := int64(len(alertAndCustomTemplate))
+	from, end := e.MemoryPage(request.PageNo, request.PageSize, templateLength)
+	if from == -1 || end == -1 {
+		return result, nil
+	}
+	data, err = json.Marshal(alertAndCustomTemplate[from:end])
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(data, &result.Data.List)
 	if err != nil {
 		return nil, err
 	}

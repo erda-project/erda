@@ -154,10 +154,10 @@ func (a *Adapt) QueryAlertRule(lang i18n.LanguageCodes, scope, scopeID string) (
 	//	return nil, err
 	//}
 	rules := make([]*db.AlertRule, 0)
-	for k, v := range expression.ExpressionConfig {
+	for k, v := range expression.AlertConfig {
 		if v.AlertScope == scope {
 			expressionIndex := expression.ExpressionIndex[k]
-			expressionConfig := expression.ExpressionConfig[k]
+			expressionConfig := expression.AlertConfig[k]
 			rule := &db.AlertRule{
 				Name:       expressionConfig.Name,
 				AlertScope: expressionConfig.AlertScope,
@@ -424,7 +424,7 @@ func (a *Adapt) getEnabledAlertRulesByScopeAndIndices(lang i18n.LanguageCodes, s
 	rules := make([]*db.AlertRule, 0)
 	for _, v := range indices {
 		rule := expression.ExpressionIndex[v]
-		expressionConfig := expression.ExpressionConfig[v]
+		expressionConfig := expression.AlertConfig[v]
 		alertRule := &db.AlertRule{
 			Name:       expressionConfig.Name,
 			AlertScope: expressionConfig.AlertScope,

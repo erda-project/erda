@@ -31,12 +31,12 @@ type Expression struct {
 }
 
 type AlertRule struct {
-	ExpressionConfig *ExpressionConfig
+	ExpressionConfig *AlertConfig
 	Expression       *Expression
-	Template         []*Template
+	Template         []*NotifyTemplate
 }
 
-type Template struct {
+type NotifyTemplate struct {
 	Name       string                 `json:"name"`
 	AlertType  string                 `json:"alert_type"`
 	AlertIndex string                 `json:"alert_index"`
@@ -48,7 +48,7 @@ type Template struct {
 	Version    string                 `json:"version"`
 }
 
-type ExpressionConfig struct {
+type AlertConfig struct {
 	Id         string                 `json:"id" yaml:"id"`
 	Name       string                 `json:"name" yaml:"name"`
 	AlertScope string                 `json:"alert_scope" yaml:"alert_scope"`

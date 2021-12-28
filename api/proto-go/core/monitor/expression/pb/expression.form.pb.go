@@ -16,13 +16,16 @@ var _ urlenc.URLValuesUnmarshaler = (*GetExpressionsRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetExpressionsResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetMetricExpressionsRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetMetricExpressionsResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ExpressionData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Expression)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetAlertNotifiesRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetAlertNotifiesResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AlertNotifyData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AlertNotify)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NotifyTarget)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetTemplatesRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetTemplatesResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AlertTemplateData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AlertTemplate)(nil)
 
 // GetExpressionsRequest implement urlenc.URLValuesUnmarshaler.
@@ -50,6 +53,25 @@ func (m *GetExpressionsRequest) UnmarshalURLValues(prefix string, values url.Val
 
 // GetExpressionsResponse implement urlenc.URLValuesUnmarshaler.
 func (m *GetExpressionsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &ExpressionData{}
+				}
+			case "data.total":
+				if m.Data == nil {
+					m.Data = &ExpressionData{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.Total = val
+			}
+		}
+	}
 	return nil
 }
 
@@ -78,6 +100,42 @@ func (m *GetMetricExpressionsRequest) UnmarshalURLValues(prefix string, values u
 
 // GetMetricExpressionsResponse implement urlenc.URLValuesUnmarshaler.
 func (m *GetMetricExpressionsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &ExpressionData{}
+				}
+			case "data.total":
+				if m.Data == nil {
+					m.Data = &ExpressionData{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.Total = val
+			}
+		}
+	}
+	return nil
+}
+
+// ExpressionData implement urlenc.URLValuesUnmarshaler.
+func (m *ExpressionData) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "total":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Total = val
+			}
+		}
+	}
 	return nil
 }
 
@@ -137,6 +195,42 @@ func (m *GetAlertNotifiesRequest) UnmarshalURLValues(prefix string, values url.V
 
 // GetAlertNotifiesResponse implement urlenc.URLValuesUnmarshaler.
 func (m *GetAlertNotifiesResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &AlertNotifyData{}
+				}
+			case "data.total":
+				if m.Data == nil {
+					m.Data = &AlertNotifyData{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.Total = val
+			}
+		}
+	}
+	return nil
+}
+
+// AlertNotifyData implement urlenc.URLValuesUnmarshaler.
+func (m *AlertNotifyData) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "total":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Total = val
+			}
+		}
+	}
 	return nil
 }
 
@@ -239,6 +333,42 @@ func (m *GetTemplatesRequest) UnmarshalURLValues(prefix string, values url.Value
 
 // GetTemplatesResponse implement urlenc.URLValuesUnmarshaler.
 func (m *GetTemplatesResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &AlertTemplateData{}
+				}
+			case "data.total":
+				if m.Data == nil {
+					m.Data = &AlertTemplateData{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.Total = val
+			}
+		}
+	}
+	return nil
+}
+
+// AlertTemplateData implement urlenc.URLValuesUnmarshaler.
+func (m *AlertTemplateData) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "total":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Total = val
+			}
+		}
+	}
 	return nil
 }
 

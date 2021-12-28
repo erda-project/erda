@@ -21,12 +21,16 @@ var _ json.Marshaler = (*GetMetricExpressionsRequest)(nil)
 var _ json.Unmarshaler = (*GetMetricExpressionsRequest)(nil)
 var _ json.Marshaler = (*GetMetricExpressionsResponse)(nil)
 var _ json.Unmarshaler = (*GetMetricExpressionsResponse)(nil)
+var _ json.Marshaler = (*ExpressionData)(nil)
+var _ json.Unmarshaler = (*ExpressionData)(nil)
 var _ json.Marshaler = (*Expression)(nil)
 var _ json.Unmarshaler = (*Expression)(nil)
 var _ json.Marshaler = (*GetAlertNotifiesRequest)(nil)
 var _ json.Unmarshaler = (*GetAlertNotifiesRequest)(nil)
 var _ json.Marshaler = (*GetAlertNotifiesResponse)(nil)
 var _ json.Unmarshaler = (*GetAlertNotifiesResponse)(nil)
+var _ json.Marshaler = (*AlertNotifyData)(nil)
+var _ json.Unmarshaler = (*AlertNotifyData)(nil)
 var _ json.Marshaler = (*AlertNotify)(nil)
 var _ json.Unmarshaler = (*AlertNotify)(nil)
 var _ json.Marshaler = (*NotifyTarget)(nil)
@@ -35,6 +39,8 @@ var _ json.Marshaler = (*GetTemplatesRequest)(nil)
 var _ json.Unmarshaler = (*GetTemplatesRequest)(nil)
 var _ json.Marshaler = (*GetTemplatesResponse)(nil)
 var _ json.Unmarshaler = (*GetTemplatesResponse)(nil)
+var _ json.Marshaler = (*AlertTemplateData)(nil)
+var _ json.Unmarshaler = (*AlertTemplateData)(nil)
 var _ json.Marshaler = (*AlertTemplate)(nil)
 var _ json.Unmarshaler = (*AlertTemplate)(nil)
 
@@ -110,6 +116,24 @@ func (m *GetMetricExpressionsResponse) UnmarshalJSON(b []byte) error {
 	}).Unmarshal(b, m)
 }
 
+// ExpressionData implement json.Marshaler.
+func (m *ExpressionData) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ExpressionData implement json.Marshaler.
+func (m *ExpressionData) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
 // Expression implement json.Marshaler.
 func (m *Expression) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
@@ -159,6 +183,24 @@ func (m *GetAlertNotifiesResponse) MarshalJSON() ([]byte, error) {
 
 // GetAlertNotifiesResponse implement json.Marshaler.
 func (m *GetAlertNotifiesResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// AlertNotifyData implement json.Marshaler.
+func (m *AlertNotifyData) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// AlertNotifyData implement json.Marshaler.
+func (m *AlertNotifyData) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
@@ -231,6 +273,24 @@ func (m *GetTemplatesResponse) MarshalJSON() ([]byte, error) {
 
 // GetTemplatesResponse implement json.Marshaler.
 func (m *GetTemplatesResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// AlertTemplateData implement json.Marshaler.
+func (m *AlertTemplateData) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// AlertTemplateData implement json.Marshaler.
+func (m *AlertTemplateData) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

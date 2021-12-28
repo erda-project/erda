@@ -17,35 +17,23 @@ service ExpressionService {
     }
   };
   rpc GetAlertExpressions (GetExpressionsRequest) returns (GetExpressionsResponse) {
-    option (google.api.http)     = {
+    option (google.api.http) = {
       get: "/api/alert/expressions"
-    };
-    option (erda.common.openapi) = {
-      path: "/api/alert/expressions"
     };
   }
   rpc GetMetricExpressions (GetMetricExpressionsRequest) returns (GetMetricExpressionsResponse) {
-    option (google.api.http)     = {
+    option (google.api.http) = {
       get : "/api/metric/expressions"
-    };
-    option (erda.common.openapi) = {
-      path:"/api/metric/expressions"
     };
   }
   rpc GetAlertNotifies (GetAlertNotifiesRequest) returns (GetAlertNotifiesResponse) {
-    option (google.api.http)     = {
+    option (google.api.http) = {
       get: "/api/alert/notifies"
-    };
-    option (erda.common.openapi) = {
-      path: "/api/alert/notifies"
     };
   }
   rpc GetTemplates (GetTemplatesRequest) returns (GetTemplatesResponse) {
-    option (google.api.http)     = {
-      get: "/api/templates"
-    };
-    option (erda.common.openapi) = {
-      path: "/api/templates"
+    option (google.api.http) = {
+      get: "/api/alert/templates"
     };
   }
 }
@@ -56,8 +44,9 @@ message GetExpressionsRequest {
 }
 
 message GetExpressionsResponse {
-  repeated Expression data = 1;
+  ExpressionData data = 1;
 }
+
 
 message GetMetricExpressionsRequest {
   int64 pageSize = 1;
@@ -65,7 +54,12 @@ message GetMetricExpressionsRequest {
 }
 
 message GetMetricExpressionsResponse {
-  repeated Expression data = 1;
+  ExpressionData data = 1;
+}
+
+message ExpressionData {
+  repeated Expression list  = 1;
+  int64               total = 2;
 }
 
 message Expression {
@@ -83,7 +77,12 @@ message GetAlertNotifiesRequest {
 }
 
 message GetAlertNotifiesResponse {
-  repeated AlertNotify data = 1;
+  AlertNotifyData data = 1;
+}
+
+message AlertNotifyData {
+  repeated AlertNotify list  = 1;
+  int64                total = 2;
 }
 
 message AlertNotify {
@@ -107,7 +106,12 @@ message GetTemplatesRequest {
 }
 
 message GetTemplatesResponse {
-  repeated AlertTemplate data = 1;
+  AlertTemplateData data = 1;
+}
+
+message AlertTemplateData {
+  repeated AlertTemplate list  = 1;
+  int64                  total = 2;
 }
 
 message AlertTemplate {

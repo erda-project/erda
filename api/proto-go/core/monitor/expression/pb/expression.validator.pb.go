@@ -25,11 +25,9 @@ func (this *GetExpressionsRequest) Validate() error {
 	return nil
 }
 func (this *GetExpressionsResponse) Validate() error {
-	for _, item := range this.Data {
-		if item != nil {
-			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
-			}
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
 		}
 	}
 	return nil
@@ -38,10 +36,18 @@ func (this *GetMetricExpressionsRequest) Validate() error {
 	return nil
 }
 func (this *GetMetricExpressionsResponse) Validate() error {
-	for _, item := range this.Data {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *ExpressionData) Validate() error {
+	for _, item := range this.List {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+				return github_com_mwitkow_go_proto_validators.FieldError("List", err)
 			}
 		}
 	}
@@ -56,10 +62,18 @@ func (this *GetAlertNotifiesRequest) Validate() error {
 	return nil
 }
 func (this *GetAlertNotifiesResponse) Validate() error {
-	for _, item := range this.Data {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *AlertNotifyData) Validate() error {
+	for _, item := range this.List {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+				return github_com_mwitkow_go_proto_validators.FieldError("List", err)
 			}
 		}
 	}
@@ -80,10 +94,18 @@ func (this *GetTemplatesRequest) Validate() error {
 	return nil
 }
 func (this *GetTemplatesResponse) Validate() error {
-	for _, item := range this.Data {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *AlertTemplateData) Validate() error {
+	for _, item := range this.List {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+				return github_com_mwitkow_go_proto_validators.FieldError("List", err)
 			}
 		}
 	}
