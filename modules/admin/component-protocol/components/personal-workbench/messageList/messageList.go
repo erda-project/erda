@@ -15,8 +15,10 @@
 package messageList
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -32,6 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/admin/component-protocol/types"
 	"github.com/erda-project/erda/modules/admin/services/workbench"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	rt "github.com/erda-project/erda/pkg/time/readable_time"
 )
 
 const (
@@ -192,7 +195,7 @@ func (l *MessageList) doFilterMsg() (data *list.Data) {
 				"users": []string{stream.Operator},
 				"text": []map[string]string{{
 					"tip":  stream.UpdatedAt.Format("2006-01-02"),
-					"text": "",
+					"text": l.getReadableTimeText(stream.UpdatedAt),
 				}},
 			},
 			Operations: genClickGotoServerData(p),
@@ -200,6 +203,16 @@ func (l *MessageList) doFilterMsg() (data *list.Data) {
 		data.List = append(data.List, item)
 	}
 	return
+}
+
+func (l *MessageList) getReadableTimeText(t time.Time) string {
+	r := rt.Readable(t).String()
+	s := strings.Split(r, " ")
+	if len(s) == 2 {
+		return l.sdk.I18n(r)
+	} else {
+		return fmt.Sprintf("%v %v", s[0], l.sdk.I18n(strings.Join(s[1:], " ")))
+	}
 }
 
 func getIssueID(deduplicateID string) (uint64, error) {
