@@ -4,10 +4,12 @@ tags:
         name: "Cluster Name"
     component:
         name: "Component"
-    dubbo_method:
-        name: "Dubbo Method"
-    dubbo_service:
-        name: "Dubbo Service"
+    rpc_method:
+        name: "Rpc Method"
+    rpc_service:
+        name: "Rpc Service"
+    rpc_target:
+        name: "Rpc Target"
     host:
         name: "Host"
     host_ip:
