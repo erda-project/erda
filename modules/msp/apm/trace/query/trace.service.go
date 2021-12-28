@@ -459,9 +459,9 @@ func (s *traceService) composeTraceQueryConditions(req *pb.GetTracesRequest) (ma
 		where.WriteString("service_names::field=$service_names AND ")
 	}
 
-	if req.DubboMethod != "" {
-		queryParams["dubbo_methods"] = structpb.NewStringValue(req.DubboMethod)
-		where.WriteString("dubbo_methods::field=$dubbo_methods AND ")
+	if req.RpcMethod != "" {
+		queryParams["rpc_methods"] = structpb.NewStringValue(req.RpcMethod)
+		where.WriteString("rpc_methods::field=$rpc_methods AND ")
 	}
 
 	if req.HttpPath != "" {

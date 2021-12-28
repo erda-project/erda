@@ -18,7 +18,7 @@ en:
   trace_time_asc: Trace Time ASC
   service_name: Service Name
   trace_id: Trace ID
-  dubbo_method: Dubbo Method
+  rpc_method: Rpc Method
   http_path: HTTP Path
   trace_success: SUCCESS
   trace_error: ERROR
@@ -53,7 +53,7 @@ zh:
   trace_time_asc: 追踪发生时间升序
   service_name: 服务名
   trace_id: 追踪 ID
-  dubbo_method: Dubbo Method
+  rpc_method: Rpc Method
   http_path: HTTP Path
   trace_success: 成功
   trace_error: 错误

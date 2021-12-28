@@ -125,7 +125,7 @@ enum TraceStatusCondition{
 enum OtherCondition{
   SERVICE_NAME = 0;
   TRACE_ID     = 1;
-  DUBBO_METHOD = 2;
+  RPC_METHOD = 2;
   HTTP_PATH    = 3;
 }
 
@@ -224,7 +224,7 @@ message GetTracesRequest {
   int64  durationMax = 8;
   string sort        = 9;
   string serviceName = 10;
-  string dubboMethod = 11;
+  string rpcMethod   = 11;
   string httpPath    = 12;
 }
 

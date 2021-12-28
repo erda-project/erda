@@ -783,18 +783,18 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 			HttpPath: "/api/health",
 			Sort:     "100",
 		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE trace_id::tag=$trace_id AND http_paths::field=$http_paths AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
-		{"case-dubboMethod", fields{
+		{"case-rpcMethod", fields{
 			p:                     nil,
 			i18n:                  nil,
 			traceRequestHistoryDB: nil,
 		}, args{req: &pb.GetTracesRequest{
-			TenantID:    "test-case-tenant-id",
-			Status:      "trace_all",
-			Limit:       100,
-			TraceID:     "test-case-trace-id",
-			DubboMethod: "io.terminus.xxx",
-			Sort:        "100",
-		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE trace_id::tag=$trace_id AND dubbo_methods::field=$dubbo_methods AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
+			TenantID:  "test-case-tenant-id",
+			Status:    "trace_all",
+			Limit:     100,
+			TraceID:   "test-case-trace-id",
+			RpcMethod: "io.terminus.xxx",
+			Sort:      "100",
+		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE trace_id::tag=$trace_id AND rpc_methods::field=$rpc_methods AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
 		{"case-serviceName", fields{
 			p:                     nil,
 			i18n:                  nil,

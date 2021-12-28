@@ -326,8 +326,8 @@ func (m *GetTracesRequest) UnmarshalURLValues(prefix string, values url.Values) 
 				m.Sort = vals[0]
 			case "serviceName":
 				m.ServiceName = vals[0]
-			case "dubboMethod":
-				m.DubboMethod = vals[0]
+			case "rpcMethod":
+				m.RpcMethod = vals[0]
 			case "httpPath":
 				m.HttpPath = vals[0]
 			}
