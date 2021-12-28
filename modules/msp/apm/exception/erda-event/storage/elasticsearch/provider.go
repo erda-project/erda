@@ -28,8 +28,8 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/creator"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
-	"github.com/erda-project/erda/modules/msp/apm/exception"
 	"github.com/erda-project/erda/modules/msp/apm/exception/erda-event/storage"
+	"github.com/erda-project/erda/modules/msp/apm/exception/model"
 )
 
 type (
@@ -80,7 +80,7 @@ func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) 
 	w := p.es.NewWriter(&elasticsearch.WriteOptions{
 		Timeout: p.Cfg.WriteTimeout,
 		Enc: func(val interface{}) (index, id, typ string, body interface{}, err error) {
-			data := val.(*exception.Erda_event)
+			data := val.(*model.Event)
 			var wait <-chan error
 			wait, index = p.Creator.Ensure(data.Tags["org_name"])
 			if wait != nil {

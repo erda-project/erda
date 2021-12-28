@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exception
+package model
 
-type Erda_error struct {
+type Error struct {
 	TerminusKey   string            `json:"terminus_key"`
 	ApplicationId string            `json:"application_id"`
 	ServiceName   string            `json:"service_name"`
