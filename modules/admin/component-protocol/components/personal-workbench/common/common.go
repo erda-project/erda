@@ -83,7 +83,7 @@ const (
 	IconLogAnalysis        = "rizhifenxi"
 	IconRepo               = "daimacangku"
 	IconPipeline           = "liushuixian"
-	IconAppApiDesign       = "appApiDesign"
+	IconAppApiDesign       = "Apisheji"
 	IconAppDeployCenter    = "bushuzhongxin"
 )
 
