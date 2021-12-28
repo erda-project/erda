@@ -109,25 +109,25 @@ func (l *WorkList) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 // RegisterChangePage when change page, filter needed
 func (l *WorkList) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
-		logrus.Infof("change page client data: %+v", opData)
-		if opData.ClientData.PageNo > 0 {
-			l.filterReq.PageNo = opData.ClientData.PageNo
-		}
-		if opData.ClientData.PageSize > 0 {
-			l.filterReq.PageSize = opData.ClientData.PageSize
-		}
-		l.StdDataPtr = l.doFilter()
+	logrus.Infof("change page client data: %+v", opData)
+	if opData.ClientData.PageNo > 0 {
+		l.filterReq.PageNo = opData.ClientData.PageNo
 	}
+	if opData.ClientData.PageSize > 0 {
+		l.filterReq.PageSize = opData.ClientData.PageSize
+	}
+	l.StdDataPtr = l.doFilter()
+	return nil
 }
 
 // RegisterItemStarOp when item stared, filter is unnecessary
 func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.OperationFunc) {
-	//func(sdk *cptype.SDK) {
+	// return func(sdk *cptype.SDK) {
 	var (
-		tp   apistructs.SubscribeType
-		tpID uint64
-		// star bool
+		tp      apistructs.SubscribeType
+		tpID    uint64
+		star    bool
+		updated bool
 	)
 
 	if l.filterReq.Type == apistructs.WorkbenchItemProj {
@@ -161,23 +161,37 @@ func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.Ope
 			logrus.Errorf("star %v %v failed, id: %v, error: %v", req.Type, req.Name, req.TypeID, err)
 			return
 		}
-		// star = true
+		star = true
 	} else {
 		req := apistructs.UnSubscribeReq{
 			Type:   tp,
 			TypeID: tpID,
 			UserID: l.identity.UserID,
 		}
-
 		err = l.bdl.DeleteSubscribe(l.identity.UserID, l.identity.OrgID, req)
 		if err != nil {
 			logrus.Errorf("unstar failed, id: %v, error: %v", req.TypeID, err)
 			return
 		}
-		// star = false
+		star = false
 	}
 	// TODO: update data in place, do not need reload
-	l.StdDataPtr = l.doFilter()
+	if l.StdDataPtr == nil {
+		logrus.Errorf("std data prt is nil")
+		return
+	}
+	for i := range l.StdDataPtr.List {
+		item := l.StdDataPtr.List[i]
+		if item.ID == opData.ClientData.DataRef.ID {
+			l.StdDataPtr.List[i].Star = &star
+			updated = true
+			break
+		}
+	}
+	if !updated {
+		logrus.Errorf("cannot update star info in local data")
+	}
+	// l.StdDataPtr = l.doFilter()
 	return nil
 }
 
