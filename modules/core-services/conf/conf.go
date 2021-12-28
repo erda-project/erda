@@ -60,7 +60,7 @@ type Conf struct {
 	LegacyUIDomain        string `env:"LEGACY_UI_PUBLIC_ADDR"`
 
 	// subscribe config
-	SubscribeLimitNum uint64 `env:"SUBSCRIBE_LIMIT_NUM" default:"3"`
+	SubscribeLimitNum uint64 `env:"SUBSCRIBE_LIMIT_NUM" default:"6"`
 
 	// ory/kratos config
 	OryEnabled           bool   `default:"false" env:"ORY_ENABLED"`
