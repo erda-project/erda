@@ -225,21 +225,21 @@ type ReleaseGetResponse struct {
 
 // ReleaseGetResponseData release 详情API实际返回数据
 type ReleaseGetResponseData struct {
-	ReleaseID              string            `json:"releaseId"`
-	ReleaseName            string            `json:"releaseName"`
-	Diceyml                string            `json:"diceyml"`
-	Desc                   string            `json:"desc,omitempty"`
-	Addon                  string            `json:"addon,omitempty"`
-	Markdown               string            `json:"markdown,omitempty"`
-	IsStable               bool              `json:"isStable"`
-	IsFormal               bool              `json:"isFormal"`
-	IsProjectRelease       bool              `json:"isProjectRelease"`
-	ApplicationReleaseList string            `json:"applicationReleaseList,omitempty"`
-	Resources              []ReleaseResource `json:"resources,omitempty"`
-	Images                 []string          `json:"images,omitempty"`
-	Labels                 map[string]string `json:"labels,omitempty"`
-	Tags                   string            `json:"tags,omitempty"`
-	Version                string            `json:"version,omitempty"`
+	ReleaseID              string                      `json:"releaseId"`
+	ReleaseName            string                      `json:"releaseName"`
+	Diceyml                string                      `json:"diceyml"`
+	Desc                   string                      `json:"desc,omitempty"`
+	Addon                  string                      `json:"addon,omitempty"`
+	Markdown               string                      `json:"markdown,omitempty"`
+	IsStable               bool                        `json:"isStable"`
+	IsFormal               bool                        `json:"isFormal"`
+	IsProjectRelease       bool                        `json:"isProjectRelease"`
+	ApplicationReleaseList []ApplicationReleaseSummary `json:"applicationReleaseList,omitempty"`
+	Resources              []ReleaseResource           `json:"resources,omitempty"`
+	Images                 []string                    `json:"images,omitempty"`
+	Labels                 map[string]string           `json:"labels,omitempty"`
+	Tags                   string                      `json:"tags,omitempty"`
+	Version                string                      `json:"version,omitempty"`
 
 	// CrossCluster 是否可以跨集群
 	CrossCluster bool `json:"crossCluster,omitempty"`
@@ -269,6 +269,15 @@ type ReleaseGetResponseData struct {
 	ClusterName string    `json:"clusterName"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+type ApplicationReleaseSummary struct {
+	ReleaseID       string `json:"releaseID,omitempty"`
+	ReleaseName     string `json:"releaseName,omitempty"`
+	Version         string `json:"version,omitempty"`
+	ApplicationID   int64  `json:"applicationID"`
+	ApplicationName string `json:"applicationName,omitempty"`
+	CreatedAt       string `json:"createdAt,omitempty"`
 }
 
 // ReleaseListRequest release列表 API(GET /api/releases)使用

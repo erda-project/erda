@@ -890,6 +890,27 @@ func (r *Release) convertToReleaseResponse(release *dbclient.Release) *apistruct
 		resources = make([]apistructs.ReleaseResource, 0)
 	}
 
+	var summary []apistructs.ApplicationReleaseSummary
+	if release.IsProjectRelease {
+		var appReleaseIDs []string
+		_ = json.Unmarshal([]byte(release.ApplicationReleaseList), &appReleaseIDs)
+
+		releases, err := r.db.GetReleases(appReleaseIDs)
+		if err != nil {
+			logrus.Errorf("failed to get app releases for release %s", release.ReleaseID)
+		}
+		for i := range releases {
+			summary = append(summary, apistructs.ApplicationReleaseSummary{
+				ReleaseID:       releases[i].ReleaseID,
+				ReleaseName:     releases[i].ReleaseName,
+				Version:         releases[i].Version,
+				ApplicationID:   releases[i].ApplicationID,
+				ApplicationName: releases[i].ApplicationName,
+				CreatedAt:       releases[i].CreatedAt.Format("2006/01/02 15:04:05"),
+			})
+		}
+	}
+
 	respData := &apistructs.ReleaseGetResponseData{
 		ReleaseID:              release.ReleaseID,
 		ReleaseName:            release.ReleaseName,
@@ -900,7 +921,7 @@ func (r *Release) convertToReleaseResponse(release *dbclient.Release) *apistruct
 		IsStable:               release.IsStable,
 		IsFormal:               release.IsFormal,
 		IsProjectRelease:       release.IsProjectRelease,
-		ApplicationReleaseList: release.ApplicationReleaseList,
+		ApplicationReleaseList: summary,
 		Resources:              resources,
 		Labels:                 labels,
 		Tags:                   release.Tags,

@@ -792,7 +792,7 @@ func (e *Endpoints) ToFormalRelease(ctx context.Context, r *http.Request, vars m
 
 // DownloadYaml GET /api/releases/{releaseId}/actions/download-yaml 下载Yaml文件
 func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
-	orgID, err := getPermissionHeader(r)
+	_, err := getPermissionHeader(r)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.NotLogin()
 	}
@@ -802,7 +802,7 @@ func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *
 		return apierrors.ErrDownloadRelease.MissingParameter("releaseId")
 	}
 
-	release, err := e.release.Get(orgID, releaseID)
+	release, err := e.db.GetRelease(releaseID)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.NotFound()
 	}
@@ -924,7 +924,7 @@ func unmarshalApplicationReleaseList(str string) ([]string, error) {
 	return list, nil
 }
 
-func makeMetadata(release *apistructs.ReleaseGetResponseData, appReleases []dbclient.Release) ([]byte, error) {
+func makeMetadata(release *dbclient.Release, appReleases []dbclient.Release) ([]byte, error) {
 	appList := make(map[string]apistructs.AppMetadata)
 	for i := range appReleases {
 		labels := make(map[string]string)
