@@ -271,6 +271,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 			logrus.Errorf("transfer msp params failed, msp params: %+v, error: %v", mspParams, err)
 			return
 		}
+		params["projectId"] = p.ProjectDTO.ID
 		// get click goto issue query url
 		queries, err := l.wbSvc.GetIssueQueries(p.ProjectDTO.ID)
 		if err != nil {

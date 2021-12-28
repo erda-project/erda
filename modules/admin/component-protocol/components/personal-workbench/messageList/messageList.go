@@ -114,6 +114,7 @@ func (l *MessageList) RegisterChangePage(opData list.OpChangePage) (opFunc cptyp
 	if opData.ClientData.PageSize > 0 {
 		l.filterReq.PageSize = opData.ClientData.PageSize
 	}
+	l.StdDataPtr = l.doFilter()
 	return nil
 }
 
