@@ -914,6 +914,10 @@ func (m *IssueTime) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, (*time.Time)(m))
 }
 
+func (m *IssueTime) MarshalJSON() ([]byte, error) {
+	return json.Marshal((*time.Time)(m))
+}
+
 func (m *IssueTime) IsEmpty() bool {
 	t := time.Time(*m)
 	return t.IsZero()
