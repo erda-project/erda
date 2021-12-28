@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/common"
+	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/i18n"
 	"github.com/erda-project/erda/modules/admin/component-protocol/types"
 	"github.com/erda-project/erda/modules/admin/services/workbench"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -445,13 +446,28 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 	}
 }
 
-func getTitleState(sdk *cptype.SDK, kind string) []cardlist.TitleState {
+func (wc *WorkCards) getProjectTitleState(sdk *cptype.SDK, kind string) []cardlist.TitleState {
 	switch kind {
-	case apistructs.WorkbenchItemApp.String():
-		return []cardlist.TitleState{{Text: sdk.I18n("default"), Status: "success"}}
-	case apistructs.WorkbenchItemProj.String():
-		return []cardlist.TitleState{{Text: sdk.I18n("default"), Status: "success"}}
+	case common.MspProject:
+		return []cardlist.TitleState{{Text: sdk.I18n(i18n.I18nKeyMspProject), Status: common.ProjMspStatus}}
+	case common.DevOpsProject:
+		return []cardlist.TitleState{{Text: sdk.I18n(i18n.I18nKeyDevOpsProject), Status: common.ProjDevOpsStatus}}
 	default:
+		logrus.Warnf("wrong project type: %v", kind)
+		return []cardlist.TitleState{}
+	}
+}
+
+func (wc *WorkCards) getAppTitleState(sdk *cptype.SDK, mode string) []cardlist.TitleState {
+	switch mode {
+	case "LIBRARY":
+		return []cardlist.TitleState{{Text: sdk.I18n(i18n.I18nKeyAppModeLIBRARY), Status: common.AppLibraryStatus}}
+	case "BIGDATA":
+		return []cardlist.TitleState{{Text: sdk.I18n(i18n.I18nKeyAppModeBIGDATA), Status: common.AppBigdataStatus}}
+	case "SERVICE":
+		return []cardlist.TitleState{{Text: sdk.I18n(i18n.I18nKeyAppModeSERVICE), Status: common.AppServiceStatus}}
+	default:
+		logrus.Warnf("wrong app mode: %v", mode)
 		return []cardlist.TitleState{}
 	}
 }
@@ -485,7 +501,7 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 				ID:             fmt.Sprintf("%d", app.ID),
 				ImgURL:         app.Logo,
 				Title:          app.Name,
-				TitleState:     getTitleState(sdk, apistructs.WorkbenchItemApp.String()),
+				TitleState:     wc.getAppTitleState(sdk, app.Mode),
 				Star:           true,
 				IconOperations: wc.getAppIconOps(sdk, app),
 				TextMeta:       wc.getAppTextMeta(sdk, app),
@@ -512,7 +528,7 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 				ID:             fmt.Sprintf("%d", project.ProjectDTO.ID),
 				ImgURL:         project.ProjectDTO.Logo,
 				Title:          project.ProjectDTO.DisplayName,
-				TitleState:     getTitleState(sdk, apistructs.WorkbenchItemApp.String()),
+				TitleState:     wc.getProjectTitleState(sdk, project.ProjectDTO.Type),
 				Star:           true,
 				TextMeta:       wc.getProjTextMeta(sdk, project),
 				IconOperations: wc.getProjIconOps(sdk, project, params[i]),
