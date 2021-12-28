@@ -485,6 +485,7 @@ func (wc *WorkCards) getTableName(sdk *cptype.SDK) string {
 func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 	tabStr := wc.getTableName(sdk)
 	data := cardlist.Data{}
+	data.Cards = make([]cardlist.Card, 0)
 	apiIdentity := apistructs.Identity{}
 	apiIdentity.OrgID = sdk.Identity.OrgID
 	apiIdentity.UserID = sdk.Identity.UserID
