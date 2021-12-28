@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exception
+package model
 
-type Erda_error struct {
-	TerminusKey   string            `json:"terminus_key"`
-	ApplicationId string            `json:"application_id"`
-	ServiceName   string            `json:"service_name"`
-	ErrorId       string            `json:"error_id"`
-	Timestamp     int64             `json:"timestamp"`
-	Tags          map[string]string `json:"tags"`
+type Event struct {
+	EventId        string            `json:"event_id"`
+	Timestamp      int64             `json:"timestamp"`
+	RequestId      string            `json:"request_id"`
+	ErrorId        string            `json:"error_id"`
+	Stacks         []string          `json:"stacks"`
+	Tags           map[string]string `json:"tags"`
+	MetaData       map[string]string `json:"meta_data"`
+	RequestContext map[string]string `json:"request_context"`
+	RequestHeaders map[string]string `json:"request_headers"`
 }

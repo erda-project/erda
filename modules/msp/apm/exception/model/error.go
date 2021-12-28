@@ -12,23 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package persist
+package model
 
-import (
-	"github.com/erda-project/erda/modules/msp/apm/exception/model"
-)
-
-type MetadataProcessor interface {
-	Process(data *model.Event) error
+type Error struct {
+	TerminusKey   string            `json:"terminus_key"`
+	ApplicationId string            `json:"application_id"`
+	ServiceName   string            `json:"service_name"`
+	ErrorId       string            `json:"error_id"`
+	Timestamp     int64             `json:"timestamp"`
+	Tags          map[string]string `json:"tags"`
 }
-
-func newMetadataProcessor(cfg *config) MetadataProcessor {
-	return NopMetadataProcessor
-}
-
-type nopMetadataProcessor struct{}
-
-func (*nopMetadataProcessor) Process(data *model.Event) error { return nil }
-
-// NopMetadataProcessor .
-var NopMetadataProcessor MetadataProcessor = &nopMetadataProcessor{}

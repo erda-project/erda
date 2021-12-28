@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda/modules/oap/collector/authentication"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/maps"
 )
 
 var (
@@ -156,12 +157,35 @@ func (i *interceptorImpl) SpanTagOverwrite(next interceptor.Handler) interceptor
 						delete(span.Attributes, TAG_DB_INSTANCE)
 					}
 				}
+
+				if _, ok := span.Attributes[TAG_SPAN_LAYER]; !ok {
+					span.Attributes[TAG_SPAN_LAYER] = getSpanLayer(span.Attributes)
+				}
 				delete(span.Attributes, TAG_ENV_TOKEN)
 				delete(span.Attributes, TAG_ERDA_ENV_TOKEN)
 			}
 		}
 		return next(ctx, req)
 	}
+}
+
+func getSpanLayer(attributes map[string]string) string {
+	if maps.ContainsAnyKey(attributes, TAG_HTTP_PATH, TAG_HTTP_TARGET, TAG_HTTP_URL) {
+		return TAG_SPAN_LAYER_HTTP
+	}
+	if maps.ContainsAnyKey(attributes, TAG_RPC_TARGET, TAG_RPC_SERVICE, TAG_RPC_METHOD, TAG_DUBBO_SERVICE, TAG_DUBBO_METHOD) {
+		return TAG_SPAN_LAYER_RPC
+	}
+	if maps.ContainsAnyKey(attributes, TAG_MESSAGE_BUS_DESTINATION) {
+		return TAG_SPAN_LAYER_MQ
+	}
+	if maps.ContainsAnyKey(attributes, TAG_DB_STATEMENT) {
+		if dbType, ok := maps.GetByAnyKey(attributes, TAG_DB_SYSTEM, TAG_DB_TYPE); ok && strings.ToLower(dbType) == TAG_DB_TYPE_REDIS {
+			return TAG_SPAN_LAYER_CACHE
+		}
+		return TAG_SPAN_LAYER_DB
+	}
+	return TAG_SPAN_LAYER_LOCAL
 }
 
 func (i *interceptorImpl) Authentication(next interceptor.Handler) interceptor.Handler {

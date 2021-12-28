@@ -12,23 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package persist
+package source
 
 import (
-	"github.com/erda-project/erda/modules/msp/apm/exception/model"
+	"context"
+
+	"github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
 )
 
-type MetadataProcessor interface {
-	Process(data *model.Event) error
+type ExceptionSource interface {
+	GetExceptions(ctx context.Context, req *pb.GetExceptionsRequest) ([]*pb.Exception, error)
+	GetExceptionEvent(ctx context.Context, req *pb.GetExceptionEventRequest) (*pb.ExceptionEvent, error)
+	GetExceptionEventIds(ctx context.Context, req *pb.GetExceptionEventIdsRequest) ([]string, error)
 }
-
-func newMetadataProcessor(cfg *config) MetadataProcessor {
-	return NopMetadataProcessor
-}
-
-type nopMetadataProcessor struct{}
-
-func (*nopMetadataProcessor) Process(data *model.Event) error { return nil }
-
-// NopMetadataProcessor .
-var NopMetadataProcessor MetadataProcessor = &nopMetadataProcessor{}

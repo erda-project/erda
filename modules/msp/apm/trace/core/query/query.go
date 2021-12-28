@@ -68,7 +68,7 @@ var TraceQueryConditions = pb.TraceQueryConditions{
 	Others: []*pb.OtherTraceQueryCondition{
 		{Key: strings.ToLower(pb.OtherCondition_SERVICE_NAME.String()), ParamKey: "serviceName", Type: string(INPUT)},
 		{Key: strings.ToLower(pb.OtherCondition_TRACE_ID.String()), ParamKey: "traceID", Type: string(INPUT)},
-		{Key: strings.ToLower(pb.OtherCondition_DUBBO_METHOD.String()), ParamKey: "dubboMethod", Type: string(INPUT)},
+		{Key: strings.ToLower(pb.OtherCondition_RPC_METHOD.String()), ParamKey: "rpcMethod", Type: string(INPUT)},
 		{Key: strings.ToLower(pb.OtherCondition_HTTP_PATH.String()), ParamKey: "httpPath", Type: string(INPUT)},
 	},
 }

@@ -12,16 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exception
+package maps
 
-type Erda_event struct {
-	EventId        string            `json:"event_id"`
-	Timestamp      int64             `json:"timestamp"`
-	RequestId      string            `json:"request_id"`
-	ErrorId        string            `json:"error_id"`
-	Stacks         []string          `json:"stacks"`
-	Tags           map[string]string `json:"tags"`
-	MetaData       map[string]string `json:"meta_data"`
-	RequestContext map[string]string `json:"request_context"`
-	RequestHeaders map[string]string `json:"request_headers"`
+func ContainsAnyKey(m map[string]string, keys ...string) bool {
+	for _, key := range keys {
+		if _, ok := m[key]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func GetByAnyKey(m map[string]string, keys ...string) (string, bool) {
+	for _, key := range keys {
+		if value, ok := m[key]; ok {
+			return value, true
+		}
+	}
+	return "", false
 }
