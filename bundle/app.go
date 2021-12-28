@@ -16,6 +16,7 @@ package bundle
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -134,7 +135,7 @@ func (b *Bundle) GetAppList(orgID, userID string, req apistructs.ApplicationList
 }
 
 // get applications by projectID and app name
-func (b *Bundle) GetAppsByProjectAndAppName(projectID, orgID uint64, userID string, appName string) (*apistructs.ApplicationListResponseData, error) {
+func (b *Bundle) GetAppsByProjectAndAppName(projectID, orgID uint64, userID string, appName string, header ...http.Header) (*apistructs.ApplicationListResponseData, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -142,15 +143,20 @@ func (b *Bundle) GetAppsByProjectAndAppName(projectID, orgID uint64, userID stri
 	hc := b.hc
 
 	var listResp apistructs.ApplicationListResponse
-	resp, err := hc.Get(host).
+	q := hc.Get(host).
 		Path("/api/applications").
 		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
 		Header(httputil.UserHeader, userID).
 		Param("projectId", strconv.FormatUint(projectID, 10)).
 		Param("pageSize", "1").
 		Param("pageNo", "1").
-		Param("name", appName).
-		Do().JSON(&listResp)
+		Param("name", appName)
+
+	if len(header) > 0 {
+		q.Headers(header[0])
+	}
+
+	resp, err := q.Do().JSON(&listResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
