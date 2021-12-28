@@ -34,6 +34,7 @@ type PolicyType interface {
 var policyTypeAdaptor = map[apistructs.PolicyType]PolicyType{
 	apistructs.TryLatestSuccessResultPolicyType: TryLastSuccessResult{},
 	apistructs.NewRunPolicyType:                 NewRun{},
+	apistructs.TryLatestResultPolicyType:        TryLastResult{},
 }
 
 type NewRun struct{}
@@ -45,6 +46,16 @@ func (run NewRun) ResetTask(task *spec.PipelineTask, options PolicyHandlerOption
 type TryLastSuccessResult struct{}
 
 func (t TryLastSuccessResult) ResetTask(task *spec.PipelineTask, opt PolicyHandlerOptions) (*spec.PipelineTask, error) {
+	return resetTaskByStatusArrayPipeline([]string{apistructs.PipelineStatusSuccess.String()}, task, opt)
+}
+
+type TryLastResult struct{}
+
+func (t TryLastResult) ResetTask(task *spec.PipelineTask, opt PolicyHandlerOptions) (*spec.PipelineTask, error) {
+	return resetTaskByStatusArrayPipeline([]string{apistructs.PipelineStatusSuccess.String(), apistructs.PipelineStatusFailed.String(), apistructs.PipelineStatusStopByUser.String()}, task, opt)
+}
+
+func resetTaskByStatusArrayPipeline(statusArray []string, task *spec.PipelineTask, opt PolicyHandlerOptions) (*spec.PipelineTask, error) {
 	if !task.IsSnippet {
 		return task, nil
 	}
@@ -55,10 +66,10 @@ func (t TryLastSuccessResult) ResetTask(task *spec.PipelineTask, opt PolicyHandl
 
 	ymlName, source := getPipelineSourceAndNameBySnippetConfig(task.Extra.Action.SnippetConfig)
 
-	runSuccessPipeline, _, _, _, err := opt.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
+	statusPipelines, _, _, _, err := opt.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
 		Sources:        []apistructs.PipelineSource{source},
 		YmlNames:       []string{ymlName},
-		Statuses:       []string{apistructs.PipelineStatusSuccess.String()},
+		Statuses:       statusArray,
 		PageNum:        1,
 		PageSize:       1,
 		IncludeSnippet: true,
@@ -67,10 +78,11 @@ func (t TryLastSuccessResult) ResetTask(task *spec.PipelineTask, opt PolicyHandl
 	if err != nil {
 		return task, err
 	}
-	if len(runSuccessPipeline) <= 0 {
+
+	if len(statusPipelines) <= 0 {
 		return task, nil
 	}
-	pipeline := runSuccessPipeline[0]
+	pipeline := statusPipelines[0]
 
 	beforeSuccessTask, err := opt.dbClient.GetPipelineTask(pipeline.ParentTaskID)
 	if err != nil {

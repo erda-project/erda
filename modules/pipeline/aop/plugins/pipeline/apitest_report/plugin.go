@@ -99,7 +99,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 
 		if task.Type == apistructs.ActionTypeSnippet {
 			if task.SnippetPipelineID != nil &&
-				task.Extra.CurrentPolicy.Type != apistructs.TryLatestSuccessResultPolicyType {
+				task.Extra.CurrentPolicy.Type != apistructs.TryLatestSuccessResultPolicyType && task.Extra.CurrentPolicy.Type != apistructs.TryLatestResultPolicyType {
 				snippetTaskPipelineIDs = append(snippetTaskPipelineIDs, *task.SnippetPipelineID)
 			}
 			continue

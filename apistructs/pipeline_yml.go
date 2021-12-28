@@ -124,6 +124,7 @@ type PolicyType string
 const (
 	NewRunPolicyType                 PolicyType = "new-run"
 	TryLatestSuccessResultPolicyType PolicyType = "try-latest-success-result"
+	TryLatestResultPolicyType        PolicyType = "try-latest-result"
 )
 
 func (p PolicyType) GetZhName() string {
@@ -131,6 +132,8 @@ func (p PolicyType) GetZhName() string {
 	case NewRunPolicyType:
 		return "重新执行并引用执行结果"
 	case TryLatestSuccessResultPolicyType:
+		return "最近一次执行成功的结果"
+	case TryLatestResultPolicyType:
 		return "最近一次执行的结果"
 	default:
 		return ""
@@ -142,7 +145,7 @@ func (p PolicyType) ToString() string {
 }
 
 func (p PolicyType) IsValid() bool {
-	return p == "" || p == NewRunPolicyType || p == TryLatestSuccessResultPolicyType
+	return p == "" || p == NewRunPolicyType || p == TryLatestSuccessResultPolicyType || p == TryLatestResultPolicyType
 }
 
 type Policy struct {
