@@ -41,8 +41,8 @@ type Values struct {
 	ApplicationIDs    []string `json:"applicationIDs,omitempty"`
 	BranchID          string   `json:"branchID,omitempty"`
 	CommitID          string   `json:"commitID,omitempty"`
-	UserIDs           []string `json:"userIDs,omitempty"`
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd,omitempty"`
+	UserIDs           []string `json:"userIDs,omitempty"`
 }
 
 type Data struct {

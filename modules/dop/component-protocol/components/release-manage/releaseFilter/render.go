@@ -95,9 +95,36 @@ func (f *ComponentReleaseFilter) DecodeURLQuery() error {
 	if err := json.Unmarshal(decoded, &urlQuery); err != nil {
 		return err
 	}
-	f.State.Values.ApplicationIDs, _ = urlQuery["applicationIDs"].([]string)
-	f.State.Values.UserIDs, _ = urlQuery["userIDs"].([]string)
-	f.State.Values.CreatedAtStartEnd, _ = urlQuery["createdAtStartEnd"].([]int64)
+
+	appIDData, _ := urlQuery["applicationIDs"].([]interface{})
+	var appIDs []string
+	for i := range appIDData {
+		id, _ := appIDData[i].(string)
+		if id != "" {
+			appIDs = append(appIDs, id)
+		}
+	}
+
+	userIDData, _ := urlQuery["userIDs"].([]interface{})
+	var userIDs []string
+	for i := range userIDData {
+		id, _ := userIDData[i].(string)
+		if id != "" {
+			userIDs = append(userIDs, id)
+		}
+	}
+
+	createdData, _ := urlQuery["createdAtStartEnd"].([]interface{})
+	var createdTimestamp []int64
+	for i := range createdData {
+		id, _ := createdData[i].(float64)
+		if id > 0 {
+			createdTimestamp = append(createdTimestamp, int64(id))
+		}
+	}
+	f.State.Values.ApplicationIDs = appIDs
+	f.State.Values.UserIDs = userIDs
+	f.State.Values.CreatedAtStartEnd = createdTimestamp
 	f.State.Values.CommitID = urlQuery["commitID"].(string)
 	f.State.Values.BranchID = urlQuery["branchID"].(string)
 	return nil
@@ -105,7 +132,7 @@ func (f *ComponentReleaseFilter) DecodeURLQuery() error {
 
 func (f *ComponentReleaseFilter) EncodeURLQuery() error {
 	urlQuery := make(map[string]interface{})
-	urlQuery["applications"] = f.State.Values.ApplicationIDs
+	urlQuery["applicationIDs"] = f.State.Values.ApplicationIDs
 	urlQuery["userIDs"] = f.State.Values.UserIDs
 	urlQuery["createdAtStartEnd"] = f.State.Values.CreatedAtStartEnd
 	urlQuery["commitID"] = f.State.Values.CommitID

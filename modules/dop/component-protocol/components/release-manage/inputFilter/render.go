@@ -133,9 +133,9 @@ func (c *ComponentInputFilter) SetComponentValue() {
 
 func (c *ComponentInputFilter) Transfer(component *cptype.Component) {
 	component.State = map[string]interface{}{
-		"conditions":          c.State.Conditions,
-		"values":              c.State.Values,
-		"inputFilterURLQuery": c.State.InputFilterURLQuery,
+		"conditions":            c.State.Conditions,
+		"values":                c.State.Values,
+		"inputFilter__urlQuery": c.State.InputFilterURLQuery,
 	}
 	component.Operations = c.Operations
 }
