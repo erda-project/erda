@@ -275,9 +275,9 @@ func cleanLeaderRemainingAddon(ep *endpoints.Endpoints) error {
 		notExistProjectMap[proID] = struct{}{}
 		return true
 	})
-	logrus.Infof("[cleanLeaderRemainingAddon] begin clean %d addons", len(newAddons))
+	logrus.Infof("[cleanLeaderRemainingAddon] begin cleaning %d addons", len(newAddons))
 	for _, v := range newAddons {
-		logrus.Infof("[cleanLeaderRemainingAddon] begin clean addon, instanceID: %s", v.ID)
+		logrus.Infof("[cleanLeaderRemainingAddon] begin cleaning addon, instanceID: %s", v.ID)
 		routings, err := ep.DBClient().GetInstanceRoutingByRealInstance(v.ID)
 		if err != nil {
 			logrus.Errorf("[cleanLeaderRemainingAddon] failed to GetInstanceRoutingByRealInstance, instanceID: %s", v.ID)
@@ -292,7 +292,7 @@ func cleanLeaderRemainingAddon(ep *endpoints.Endpoints) error {
 		}
 		// all (1000,5000) users is reserved as internal service account
 		if err = ep.Addon().Delete("2000", (*routings)[0].ID); err != nil {
-			logrus.Errorf("[cleanLeaderRemainingAddon] failed to delete addon, instanceID: %s", v.ID)
+			logrus.Errorf("[cleanLeaderRemainingAddon] failed to delete addon, instanceID: %s, err: %s", v.ID, err.Error())
 		}
 	}
 	return nil
