@@ -17,6 +17,13 @@ zh:
   pipeline: 流水线
   api design: api设计
   deploy center: 部署中心
+  years ago: 年前
+  months ago: 月前
+  days ago: 天前
+  hours ago: 小时前
+  minutes ago: 分钟前
+  seconds ago: 秒前
+  just now: 刚刚
   IssueExpired: "已过期"
   IssueExpireToday: "今日过期"
   IssueUndo: "未完成"
