@@ -29,7 +29,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/common"
 	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/common/gshelper"
-	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/i18n"
 	"github.com/erda-project/erda/modules/admin/component-protocol/types"
 	"github.com/erda-project/erda/modules/admin/services/workbench"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -163,20 +162,39 @@ func (l *MessageList) doFilterMsg() (data *list.Data) {
 		PageNo:   l.filterReq.PageNo,
 		PageSize: l.filterReq.PageSize,
 		Total:    uint64(ms.Total),
-		Title:    l.sdk.I18n(i18n.I18nKeyUnreadMes),
 		Operations: map[cptype.OperationKey]cptype.Operation{
 			list.OpChangePage{}.OpKey(): cputil.NewOpBuilder().Build(),
 		},
 	}
 
+	var ids []uint64
+	for _, v := range ms.List {
+		id, err := getIssueID(v.DeduplicateID)
+		if err != nil {
+			logrus.Warnf("get issue id failed, error: %v", err)
+		}
+		ids = append(ids, id)
+	}
+	streamMap, err := l.wbSvc.ListIssueStreams(ids, 0)
+	if err != nil {
+		logrus.Warnf("list issue streams failed, ids: %v, error: %v", ids, err)
+	}
+
 	for _, p := range ms.List {
+		stream := streamMap[uint64(p.ID)]
 		item := list.Item{
 			ID:           strconv.FormatInt(p.ID, 10),
 			Title:        p.Title,
 			TitleSummary: strconv.FormatInt(p.UnreadCount, 10),
 			TitleState:   []list.StateInfo{{Status: common.UnreadMsgStatus}},
-			// TODO columns info
-			// ColumnsInfo:  columns,
+			Description:  stream.Content,
+			ColumnsInfo: map[string]interface{}{
+				"users": []string{stream.Operator},
+				"text": []map[string]string{{
+					"tip":  stream.UpdatedAt.Format("2006-01-02"),
+					"text": "",
+				}},
+			},
 			Operations: genClickGotoServerData(p),
 		}
 		data.List = append(data.List, item)
@@ -184,7 +202,19 @@ func (l *MessageList) doFilterMsg() (data *list.Data) {
 	return
 }
 
-func genClickGotoServerData(i *apistructs.MBox) map[cptype.OperationKey]cptype.Operation {
+func getIssueID(deduplicateID string) (uint64, error) {
+	sli := strings.SplitN(deduplicateID, "-", 2)
+	idStr := sli[1]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		logrus.Errorf("parse deduplicateID failed, content: %v, error: %v", deduplicateID, err)
+		return 0, err
+	}
+	return uint64(id), nil
+}
+
+func genClickGotoServerData(i *apistructs.MBox) (data map[cptype.OperationKey]cptype.Operation) {
+	data = make(map[cptype.OperationKey]cptype.Operation)
 
 	sd := list.OpItemBasicServerData{}
 
@@ -196,18 +226,15 @@ func genClickGotoServerData(i *apistructs.MBox) map[cptype.OperationKey]cptype.O
 			Target: i.Content,
 		}
 	} else {
-		// TODO what to do for non url content
-		sd = list.OpItemBasicServerData{
-			JumpOut: false,
-			// non url like
-			Target: i.Content,
-		}
+		logrus.Errorf("content not prefix with http, content prefix: %v, mbox id: %v", i.Content[:30], i.ID)
+		return
+
 	}
-	ops := map[cptype.OperationKey]cptype.Operation{
+	data = map[cptype.OperationKey]cptype.Operation{
 		list.OpItemClick{}.OpKey(): cputil.NewOpBuilder().Build(),
 		list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
 			WithSkipRender(true).
 			WithServerDataPtr(sd).Build(),
 	}
-	return ops
+	return
 }

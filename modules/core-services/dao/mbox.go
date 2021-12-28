@@ -87,16 +87,20 @@ func (client *DBClient) QueryMBox(request *apistructs.QueryMBoxRequest) (*apistr
 		query = query.Where("status =? ", request.Status)
 	}
 	if request.Type == apistructs.MBoxTypeIssue {
-		query = query.Where("unread_count > 1 and deduplicate_id != \"\"")
+		query = query.Where("deduplicate_id != \"\"")
 	} else {
 		query = query.Select("id,title,status,label,created_at,read_at,deduplicate_id,unread_count")
 	}
 
-	var count int
+	var (
+		count int
+		total int
+	)
 	err := query.Count(&count).Error
 	if err != nil {
 		return nil, err
 	}
+	total = count
 
 	err = query.Offset((request.PageNo - 1) * request.PageSize).
 		Limit(request.PageSize).
@@ -120,8 +124,9 @@ func (client *DBClient) QueryMBox(request *apistructs.QueryMBoxRequest) (*apistr
 	}
 
 	result := &apistructs.QueryMBoxData{
-		Total: count,
-		List:  []*apistructs.MBox{},
+		Total:  total,
+		UnRead: count,
+		List:   []*apistructs.MBox{},
 	}
 	for _, mboxItem := range mboxList {
 		result.List = append(result.List, mboxItem.ToApiData())
