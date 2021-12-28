@@ -217,7 +217,8 @@ func (r *ComponentReleaseTable) RenderTable() error {
 			Command: Command{
 				JumpOut: false,
 				Key:     "goto",
-				Target:  release.ReleaseID,
+				Target: fmt.Sprintf("/%s/dop/projects/%d/release/updateRelease/%s",
+					org.Name, r.State.ProjectID, release.ReleaseID),
 			},
 			Key:    "gotoDetail",
 			Reload: false,
