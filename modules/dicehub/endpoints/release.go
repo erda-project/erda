@@ -74,6 +74,7 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 		for _, rule := range rules.List {
 			if rule.Match(branch) {
 				releaseRequest.Version = filepath.Base(branch) + "-" + time.Now().Format("2006-01-02-150405")
+				break
 			}
 		}
 	}
