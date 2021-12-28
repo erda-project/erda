@@ -186,7 +186,12 @@ func (r *ComponentReleaseTable) RenderTable() error {
 	}
 
 	isStable := true
-	descOrder := r.State.Sorter.Order == "descend"
+
+	order := "DESC"
+	if r.State.Sorter.Order == "ascend" {
+		order = "ASC"
+	}
+
 	releaseResp, err := r.bdl.ListReleases(apistructs.ReleaseListRequest{
 		Branch:           r.State.FilterValues.BranchID,
 		IsStable:         &isStable,
@@ -202,7 +207,7 @@ func (r *ComponentReleaseTable) RenderTable() error {
 		PageSize:         r.State.PageSize,
 		PageNum:          r.State.PageNo,
 		OrderBy:          r.State.Sorter.Field,
-		DescOrder:        descOrder,
+		Order:            order,
 	})
 	if err != nil {
 		return errors.Errorf("failed to list releases, %v", err)

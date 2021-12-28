@@ -688,6 +688,16 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 
 	tags := r.URL.Query().Get("tags")
 
+	orderBy := r.URL.Query().Get("orderBy")
+	order := strings.ToUpper(r.URL.Query().Get("order"))
+	switch order {
+	case "":
+		order = "DESC"
+	case "DESC", "ASCEND":
+	default:
+		return nil, errors.Errorf("invaild order: %s. (DESC or ASC)", order)
+	}
+
 	return &apistructs.ReleaseListRequest{
 		Query:                        keyword,
 		ReleaseName:                  releaseName,
@@ -709,6 +719,8 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 		EndTime:                      endTime,
 		PageSize:                     size,
 		PageNum:                      num,
+		OrderBy:                      orderBy,
+		Order:                        order,
 	}, nil
 }
 

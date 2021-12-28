@@ -614,7 +614,7 @@ func (r *Release) List(orgID int64, req *apistructs.ReleaseListRequest) (*apistr
 		req.Cluster, req.CrossCluster, req.IsVersion,
 		req.CrossClusterOrSpecifyCluster,
 		startTime, endTime, req.PageNum, req.PageSize,
-		req.OrderBy, req.DescOrder)
+		req.OrderBy, req.Order)
 	if err != nil {
 		return nil, err
 	}

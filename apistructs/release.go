@@ -342,8 +342,11 @@ type ReleaseListRequest struct {
 	// 当前页号，默认值1
 	PageNum int64 `json:"-" query:"pageNo"`
 
-	OrderBy   string `json:"orderBy,omitempty"`
-	DescOrder bool   `json:"descOrder,omitempty"`
+	// 排序字段
+	OrderBy string `json:"orderBy,omitempty"`
+
+	// 升序或降序
+	Order string `json:"descOrder,omitempty"`
 }
 
 func (req ReleaseListRequest) ConvertToQueryParams() url.Values {
@@ -410,9 +413,7 @@ func (req ReleaseListRequest) ConvertToQueryParams() url.Values {
 	}
 	if req.OrderBy != "" {
 		values.Add("orderBy", req.OrderBy)
-		if req.DescOrder {
-			values.Add("descOrder", "true")
-		}
+		values.Add("order", req.Order)
 	}
 
 	return values

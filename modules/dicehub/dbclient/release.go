@@ -126,7 +126,7 @@ func (client *DBClient) GetReleasesByParams(
 	userID []string, version string, commitID, tags,
 	cluster string, crossCluster *bool, isVersion bool, crossClusterOrSpecifyCluster *string,
 	startTime, endTime time.Time, pageNum, pageSize int64,
-	orderBy string, descOrder bool) (int64, []Release, error) {
+	orderBy, order string) (int64, []Release, error) {
 
 	var releases []Release
 	db := client.DB.Debug()
@@ -198,10 +198,6 @@ func (client *DBClient) GetReleasesByParams(
 	db = db.Where("created_at <= ?", endTime)
 
 	if orderBy != "" {
-		order := "ASC"
-		if descOrder {
-			order = "DESC"
-		}
 		db = db.Order(orderBy + " " + order)
 	}
 
