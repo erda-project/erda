@@ -195,7 +195,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		application.WithDBClient(db),
 		application.WithUCClient(uc),
 		application.WithBundle(bdl),
-		application.WithPipelineCms(p.Cms),
 	)
 
 	// init member service

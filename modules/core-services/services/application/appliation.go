@@ -78,12 +78,6 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
-func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
-	return func(a *Application) {
-		a.cms = cms
-	}
-}
-
 // CreateWithEvent 创建应用 & 发送事件
 func (a *Application) CreateWithEvent(userID string, createReq *apistructs.ApplicationCreateRequest) (*model.Application, error) {
 	// 创建应用

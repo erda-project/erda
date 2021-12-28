@@ -60,38 +60,3 @@ func (e *Endpoints) BatchCreateErrorLog(ctx context.Context, r *http.Request, va
 	httpserver.Responser, error) {
 	return httpserver.OkResp("add audit succ")
 }
-
-// ListErrorLog 根据resource查看错误日志
-func (e *Endpoints) ListErrorLog(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-	internalClient := r.Header.Get(httputil.InternalHeader)
-	if internalClient == "" {
-		return apierrors.ErrListErrorLog.AccessDenied().ToResp(), nil
-	}
-	var listReq apistructs.TaskErrorListRequest
-	if err := e.queryStringDecoder.Decode(&listReq, r.URL.Query()); err != nil {
-		return apierrors.ErrListErrorLog.InvalidParameter(err).ToResp(), nil
-	}
-
-	errorLogs, err := e.errorbox.List(&listReq)
-	if err != nil {
-		return apierrors.ErrListErrorLog.InternalError(err).ToResp(), nil
-	}
-
-	l := len(errorLogs)
-	errorLogList := make([]apistructs.ErrorLog, 0, l)
-	for _, item := range errorLogs {
-		errorLog := apistructs.ErrorLog{
-			ID:             item.ID,
-			Level:          item.Level,
-			ResourceType:   item.ResourceType,
-			ResourceID:     item.ResourceID,
-			OccurrenceTime: item.OccurrenceTime.Format("2006-01-02 15:04:05"),
-			HumanLog:       item.HumanLog,
-			PrimevalLog:    item.PrimevalLog,
-		}
-		errorLogList = append(errorLogList, errorLog)
-	}
-
-	return httpserver.OkResp(apistructs.ErrorLogListResponseData{List: errorLogList})
-}

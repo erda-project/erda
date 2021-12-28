@@ -393,7 +393,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// the interface of error box
 		{Path: "/api/task-error/actions/create", Method: http.MethodPost, Handler: e.CreateOrUpdateErrorLog},
-		{Path: "/api/task-error/actions/list", Method: http.MethodGet, Handler: e.ListErrorLog},
 
 		// the interface of review
 		{Path: "/api/reviews/actions/list-launched-approval", Method: http.MethodGet, Handler: e.GetReviewsBySponsorId},

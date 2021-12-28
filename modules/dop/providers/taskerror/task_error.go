@@ -15,51 +15,36 @@
 package taskerror
 
 import (
+	"context"
 	"strconv"
 
+	"github.com/erda-project/erda-proto-go/core/dop/taskerror/pb"
+	errboxpb "github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
 )
 
-type TaskError struct {
-	bdl *bundle.Bundle
-}
-
-type Option func(*TaskError)
-
-func New(options ...Option) *TaskError {
-	eb := &TaskError{}
-	for _, op := range options {
-		op(eb)
-	}
-	return eb
-}
-
-func WithBundle(bdl *bundle.Bundle) Option {
-	return func(eb *TaskError) {
-		eb.bdl = bdl
-	}
-}
-
-func (te *TaskError) List(param *apistructs.ErrorLogListRequest) ([]apistructs.ErrorLog, error) {
-	resourceIDs, resourceTypes, err := te.aggregateResources(param.ResourceType, param.ResourceID)
+func (s *TaskErrorService) List(param *apistructs.ErrorLogListRequest) ([]*pb.ErrorLog, error) {
+	resourceIDs, resourceTypes, err := s.aggregateResources(param.ResourceType, param.ResourceID)
 	if err != nil {
 		return nil, err
 	}
-	errLogsReq := apistructs.TaskErrorListRequest{
-		ResourceIDS:   resourceIDs,
-		ResourceTypes: resourceTypes,
-		StartTime:     param.StartTime,
+	rTypes := make([]string, 0)
+	for _, t := range resourceTypes {
+		rTypes = append(rTypes, string(t))
 	}
 
-	errLogs, err := te.bdl.ListErrorLog(&errLogsReq)
+	errLogs, err := s.errBoxSvc.ListErrorLog(context.Background(), &errboxpb.TaskErrorListRequest{
+		ResourceIds:   resourceIDs,
+		ResourceTypes: rTypes,
+		StartTime:     param.StartTime,
+	})
 	if err != nil {
 		return nil, err
 	}
 	return errLogs.List, nil
 }
 
-func (te *TaskError) aggregateResources(resourceType apistructs.ErrorResourceType, resourceID string) ([]string,
+func (s *TaskErrorService) aggregateResources(resourceType apistructs.ErrorResourceType, resourceID string) ([]string,
 	[]apistructs.ErrorResourceType, error) {
 	resourceTypes, resourceIDs := []apistructs.ErrorResourceType{resourceType}, []string{resourceID}
 
@@ -69,7 +54,7 @@ func (te *TaskError) aggregateResources(resourceType apistructs.ErrorResourceTyp
 		if err != nil {
 			return nil, nil, err
 		}
-		runtimeIDs, err := te.FindRuntimeByPipelineID(pipelineID)
+		runtimeIDs, err := s.FindRuntimeByPipelineID(pipelineID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -83,7 +68,7 @@ func (te *TaskError) aggregateResources(resourceType apistructs.ErrorResourceTyp
 			if err != nil {
 				return nil, nil, err
 			}
-			addonIDs, err := te.FindAddonByRuntimeID(runtimeID)
+			addonIDs, err := s.FindAddonByRuntimeID(runtimeID)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -97,7 +82,7 @@ func (te *TaskError) aggregateResources(resourceType apistructs.ErrorResourceTyp
 		if err != nil {
 			return nil, nil, err
 		}
-		addonIDs, err := te.FindAddonByRuntimeID(runtimeID)
+		addonIDs, err := s.FindAddonByRuntimeID(runtimeID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -111,9 +96,8 @@ func (te *TaskError) aggregateResources(resourceType apistructs.ErrorResourceTyp
 	return resourceIDs, resourceTypes, nil
 }
 
-// FindRuntimeByPipelineID 根据 pipeline Id获取 runtime id
-func (te *TaskError) FindRuntimeByPipelineID(pipelineID uint64) ([]string, error) {
-	pipelineDetail, err := te.bdl.GetPipeline(pipelineID)
+func (s *TaskErrorService) FindRuntimeByPipelineID(pipelineID uint64) ([]string, error) {
+	pipelineDetail, err := s.bdl.GetPipeline(pipelineID)
 	if err != nil {
 		return nil, err
 	}
@@ -133,8 +117,8 @@ func (te *TaskError) FindRuntimeByPipelineID(pipelineID uint64) ([]string, error
 }
 
 // FindAddonByRuntimeID 根据 runtime ID 获取 addon id
-func (te *TaskError) FindAddonByRuntimeID(runtimeID uint64) ([]string, error) {
-	addons, err := te.bdl.ListAddonByRuntimeID(strconv.FormatUint(runtimeID, 10))
+func (s *TaskErrorService) FindAddonByRuntimeID(runtimeID uint64) ([]string, error) {
+	addons, err := s.bdl.ListAddonByRuntimeID(strconv.FormatUint(runtimeID, 10))
 	if err != nil {
 		return nil, err
 	}

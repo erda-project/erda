@@ -90,16 +90,3 @@ func (eb *ErrorBox) CreateOrUpdate(req apistructs.ErrorLogCreateRequest) error {
 func (eb *ErrorBox) BatchCreateErrorLogs(reqs []apistructs.Audit) error {
 	return nil
 }
-
-// List query error logs by params
-func (eb *ErrorBox) List(param *apistructs.TaskErrorListRequest) ([]model.ErrorLog, error) {
-	if param.StartTime != "" {
-		startTime, err := param.GetFormartStartTime()
-		if err != nil {
-			return nil, err
-		}
-		return eb.db.ListErrorLogByResourcesAndStartTime(param.ResourceTypes, param.ResourceIDS, *startTime)
-	}
-
-	return eb.db.ListErrorLogByResources(param.ResourceTypes, param.ResourceIDS)
-}
