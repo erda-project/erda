@@ -18,11 +18,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/erda-project/erda/modules/msp/apm/exception"
+	"github.com/erda-project/erda/modules/msp/apm/exception/model"
 )
 
 func (p *provider) decodeError(key, value []byte, topic *string, timestamp time.Time) (interface{}, error) {
-	data := &exception.Erda_error{}
+	data := &model.Error{}
 	if err := json.Unmarshal(value, data); err != nil {
 		p.stats.DecodeError(value, err)
 		if p.Cfg.PrintInvalidError {

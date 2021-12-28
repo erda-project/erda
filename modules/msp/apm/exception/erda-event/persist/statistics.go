@@ -20,7 +20,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
-	"github.com/erda-project/erda/modules/msp/apm/exception"
+	"github.com/erda-project/erda/modules/msp/apm/exception/model"
 )
 
 // Statistics .
@@ -28,8 +28,8 @@ type Statistics interface {
 	storekit.ConsumeStatistics
 
 	DecodeError(value []byte, err error)
-	ValidateError(data *exception.Erda_event)
-	MetadataError(data *exception.Erda_event, err error)
+	ValidateError(data *model.Event)
+	MetadataError(data *model.Event, err error)
 }
 
 type statistics struct {
@@ -136,27 +136,27 @@ func (s *statistics) DecodeError(value []byte, err error) {
 
 func (s *statistics) WriteError(list []interface{}, err error) {
 	for _, item := range list {
-		s.writeErrors.WithLabelValues(getStatisticsLabels(item.(*exception.Erda_event))...).Inc()
+		s.writeErrors.WithLabelValues(getStatisticsLabels(item.(*model.Event))...).Inc()
 	}
 }
 
 func (s *statistics) ConfirmError(list []interface{}, err error) {
 	for _, item := range list {
-		s.confirmErrors.WithLabelValues(getStatisticsLabels(item.(*exception.Erda_event))...).Inc()
+		s.confirmErrors.WithLabelValues(getStatisticsLabels(item.(*model.Event))...).Inc()
 	}
 }
 
 func (s *statistics) Success(list []interface{}) {
 	for _, item := range list {
-		s.success.WithLabelValues(getStatisticsLabels(item.(*exception.Erda_event))...).Inc()
+		s.success.WithLabelValues(getStatisticsLabels(item.(*model.Event))...).Inc()
 	}
 }
 
-func (s *statistics) ValidateError(data *exception.Erda_event) {
+func (s *statistics) ValidateError(data *model.Event) {
 	s.validateErrors.WithLabelValues(getStatisticsLabels(data)...).Inc()
 }
 
-func (*statistics) MetadataError(data *exception.Erda_event, err error) {}
+func (*statistics) MetadataError(data *model.Event, err error) {}
 
 func (s *statistics) ObserveReadLatency(start time.Time) {
 	s.readLatency.Observe(float64(time.Since(start).Milliseconds()))
@@ -171,7 +171,7 @@ var distinguishingKeys = []string{
 	// "scope", "scope_id",
 }
 
-func getStatisticsLabels(data *exception.Erda_event) []string {
+func getStatisticsLabels(data *model.Event) []string {
 	// var scope, scopeID string
 	//
 	// if app, ok := data.Tags["application_name"]; ok {

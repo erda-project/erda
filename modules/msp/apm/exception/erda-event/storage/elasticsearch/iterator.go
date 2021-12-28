@@ -26,8 +26,8 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
-	"github.com/erda-project/erda/modules/msp/apm/exception"
 	"github.com/erda-project/erda/modules/msp/apm/exception/erda-event/storage"
+	"github.com/erda-project/erda/modules/msp/apm/exception/model"
 )
 
 func (p *provider) getSearchSource(sel *storage.Selector) *elastic.SearchSource {
@@ -83,8 +83,8 @@ type scrollIterator struct {
 	scrollIDs    map[string]struct{}
 	lastScrollID string
 	dir          iteratorDir
-	buffer       []*exception.Erda_event
-	value        *exception.Erda_event
+	buffer       []*model.Event
+	value        *model.Event
 	size         int64
 	err          error
 	closed       bool
@@ -253,7 +253,7 @@ func (it *scrollIterator) checkClosed() bool {
 	return false
 }
 
-func parseHits(hits []*elastic.SearchHit) (list []*exception.Erda_event) {
+func parseHits(hits []*elastic.SearchHit) (list []*model.Event) {
 	for _, hit := range hits {
 		if hit.Source == nil {
 			continue
@@ -267,8 +267,8 @@ func parseHits(hits []*elastic.SearchHit) (list []*exception.Erda_event) {
 	return list
 }
 
-func parseData(bytes []byte) (*exception.Erda_event, error) {
-	var data exception.Erda_event
+func parseData(bytes []byte) (*model.Event, error) {
+	var data model.Event
 	err := json.Unmarshal(bytes, &data)
 	if err != nil {
 		return nil, err

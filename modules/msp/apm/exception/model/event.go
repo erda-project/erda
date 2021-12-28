@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exception
+package model
 
-type Erda_event struct {
+type Event struct {
 	EventId        string            `json:"event_id"`
 	Timestamp      int64             `json:"timestamp"`
 	RequestId      string            `json:"request_id"`
