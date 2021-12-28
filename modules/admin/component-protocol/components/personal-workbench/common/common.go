@@ -69,14 +69,14 @@ const (
 	OpValTargetAppDeploy                = "deploy"
 	OpValTargetRepo                     = "repo"
 	OpValTargetPipelineRoot             = "pipelineRoot"
-	OpValTargetAppApiDesign             = "Apisheji"
+	OpValTargetAppApiDesign             = "appApiDesign"
 
 	// IconProjManagement icon value
 	IconProjManagement     = "xiangmuguanli"
 	IconAppDevelop         = "yingyongkaifa"
 	IconTestManagement     = "ceshiguanli"
 	IconServiceMonitor     = "fuwujiankong"
-	IconProjSetting        = "projectSetting"
+	IconProjSetting        = "xiangmushezhi"
 	IconServiceList        = "fuwuliebiao"
 	IconServiceObservation = "fuwuguance"
 	IconServiceTracing     = "lianluzhuizong"
