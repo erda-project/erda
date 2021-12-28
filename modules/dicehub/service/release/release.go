@@ -807,6 +807,7 @@ func (r *Release) Convert(releaseRequest *apistructs.ReleaseCreateRequest, appRe
 		IsStable:         releaseRequest.IsStable,
 		IsFormal:         releaseRequest.IsFormal,
 		IsProjectRelease: releaseRequest.IsProjectRelease,
+		Version:          releaseRequest.Version,
 		OrgID:            releaseRequest.OrgID,
 		ProjectID:        releaseRequest.ProjectID,
 		ApplicationID:    releaseRequest.ApplicationID,
@@ -817,6 +818,14 @@ func (r *Release) Convert(releaseRequest *apistructs.ReleaseCreateRequest, appRe
 		CrossCluster:     releaseRequest.CrossCluster,
 		CreatedAt:        time.Time{},
 		UpdatedAt:        time.Time{},
+	}
+
+	if release.ProjectName == "" {
+		project, err := r.bdl.GetProject(uint64(release.ProjectID))
+		if err != nil {
+			return nil, err
+		}
+		release.ProjectName = project.Name
 	}
 
 	if len(releaseRequest.Labels) > 0 {

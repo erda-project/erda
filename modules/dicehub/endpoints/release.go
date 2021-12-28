@@ -60,7 +60,7 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrCreateRelease.InvalidParameter(err).ToResp(), nil
 	}
 
-	if releaseRequest.ReleaseName == "" {
+	if !releaseRequest.IsProjectRelease && releaseRequest.ReleaseName == "" {
 		return apierrors.ErrCreateRelease.MissingParameter("releaseName").ToResp(), nil
 	}
 	// if releaseRequest.Dice != "" {
