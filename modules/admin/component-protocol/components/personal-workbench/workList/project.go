@@ -17,6 +17,8 @@ package workList
 import (
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
@@ -358,4 +360,16 @@ func (l *WorkList) GenProjMspColumnInfo(proj apistructs.WorkbenchProjOverviewIte
 	}
 	columns["hoverIcons"] = hovers
 	return
+}
+
+func (l *WorkList) GenProjTitleState(tp string) ([]list.StateInfo, bool) {
+	switch tp {
+	case common.MspProject:
+		return []list.StateInfo{{Text: l.sdk.I18n(i18n.I18nKeyMspProject), Status: common.ProjMspStatus}}, true
+	case common.DevOpsProject:
+		return []list.StateInfo{{Text: l.sdk.I18n(i18n.I18nKeyDevOpsProject), Status: common.ProjDevOpsStatus}}, true
+	default:
+		logrus.Warnf("wrong project type: %v", tp)
+		return []list.StateInfo{}, false
+	}
 }

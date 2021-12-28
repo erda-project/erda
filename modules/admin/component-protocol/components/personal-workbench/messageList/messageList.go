@@ -108,15 +108,13 @@ func (l *MessageList) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 // RegisterChangePage when change page, filter needed
 func (l *MessageList) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
-		if opData.ClientData.PageNo > 0 {
-			l.filterReq.PageNo = opData.ClientData.PageNo
-		}
-		if opData.ClientData.PageSize > 0 {
-			l.filterReq.PageSize = opData.ClientData.PageSize
-		}
-		l.StdDataPtr = l.doFilter()
+	if opData.ClientData.PageNo > 0 {
+		l.filterReq.PageNo = opData.ClientData.PageNo
 	}
+	if opData.ClientData.PageSize > 0 {
+		l.filterReq.PageSize = opData.ClientData.PageSize
+	}
+	return nil
 }
 
 // RegisterItemStarOp when item stared, unnecessary here
