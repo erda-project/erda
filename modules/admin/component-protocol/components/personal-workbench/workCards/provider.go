@@ -404,7 +404,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 		testManageServerData["target"] = "projectTestDashboard"
 		serviceMonitorServerData["target"] = "mspServiceList"
 		projectSettingServerData["target"] = "projectSetting"
-		return []cardlist.IconOperations{
+		ios := []cardlist.IconOperations{
 			{
 				Icon: "xiangmuguanli",
 				Tip:  sdk.I18n("project manage"),
@@ -426,13 +426,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 					"clickGoto": {ServerData: &testManageServerData},
 				},
 			},
-			{
-				Icon: "xiangmuguanli",
-				Tip:  sdk.I18n("service monitor"),
-				Operations: map[cptype.OperationKey]cptype.Operation{
-					"clickGoto": {ServerData: &serviceMonitorServerData},
-				},
-			},
+
 			{
 				Icon: "xiangmushezhi",
 				Tip:  sdk.I18n("project setting"),
@@ -441,6 +435,16 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 				},
 			},
 		}
+		if params.TerminusKey != "" {
+			ios = append(ios, cardlist.IconOperations{
+				Icon: "fuwuguance",
+				Tip:  sdk.I18n("service monitor"),
+				Operations: map[cptype.OperationKey]cptype.Operation{
+					"clickGoto": {ServerData: &serviceMonitorServerData},
+				},
+			})
+		}
+		return ios
 	default:
 		return []cardlist.IconOperations{}
 	}
