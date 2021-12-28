@@ -15,6 +15,8 @@
 package dao
 
 import (
+	"fmt"
+
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 
@@ -152,8 +154,21 @@ func (client *DBClient) MoveSceneSet(req apistructs.SceneSetRequest) error {
 		if err := tx.Save(&sceneSet).Error; err != nil {
 			return err
 		}
-		return nil
+		return checkSpaceNotSamePreID(tx, sceneSet.SpaceID)
 	})
+}
+
+func checkSpaceNotSamePreID(tx *gorm.DB, spaceID uint64) error {
+	rows, err := tx.Table(SceneSet{}.TableName()).Select("count(*) as num, pre_id").Where("space_id = ?", spaceID).Group("pre_id").Having("num > ?", 1).Rows()
+	if err != nil {
+		if !gorm.IsRecordNotFoundError(err) {
+			return err
+		}
+	}
+	if rows.Next() {
+		return fmt.Errorf("moving the scene set causes the same front node to appear. Please refresh page")
+	}
+	return nil
 }
 
 func (client *DBClient) FindByPreId(id uint64) (*SceneSet, error) {
