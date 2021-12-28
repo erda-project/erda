@@ -191,6 +191,10 @@ func (r *ComponentReleaseTable) RenderTable() error {
 	if r.State.Sorter.Order == "ascend" {
 		order = "ASC"
 	}
+	orderBy := ""
+	if r.State.Sorter.Field == "createdAt" {
+		orderBy = "created_at"
+	}
 
 	releaseResp, err := r.bdl.ListReleases(apistructs.ReleaseListRequest{
 		Branch:           r.State.FilterValues.BranchID,
@@ -206,7 +210,7 @@ func (r *ComponentReleaseTable) RenderTable() error {
 		EndTime:          endTime,
 		PageSize:         r.State.PageSize,
 		PageNum:          r.State.PageNo,
-		OrderBy:          r.State.Sorter.Field,
+		OrderBy:          orderBy,
 		Order:            order,
 	})
 	if err != nil {

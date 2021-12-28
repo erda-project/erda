@@ -693,7 +693,7 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 	switch order {
 	case "":
 		order = "DESC"
-	case "DESC", "ASCEND":
+	case "DESC", "ASC":
 	default:
 		return nil, errors.Errorf("invaild order: %s. (DESC or ASC)", order)
 	}

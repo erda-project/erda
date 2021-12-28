@@ -199,6 +199,8 @@ func (client *DBClient) GetReleasesByParams(
 
 	if orderBy != "" {
 		db = db.Order(orderBy + " " + order)
+	} else {
+		db = db.Order("created_at DESC")
 	}
 
 	if err := db.Offset((pageNum - 1) * pageSize).
