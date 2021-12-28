@@ -92,6 +92,17 @@ func (client *Client) GetCmsNs(pipelineSource apistructs.PipelineSource, ns stri
 	return cmsNs, exist, nil
 }
 
+func (client *Client) BatchGetCmsNamespaces(pipelineSource string, namespaces []string, ops ...mysqlxorm.SessionOption) ([]PipelineCmsNs, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var cmsNsArray []PipelineCmsNs
+	if err := session.Where("pipeline_source = ?", pipelineSource).In("ns", namespaces).Find(&cmsNsArray); err != nil {
+		return nil, err
+	}
+	return cmsNsArray, nil
+}
+
 func (client *Client) PrefixListNs(pipelineSource apistructs.PipelineSource, nsPrefix string, ops ...mysqlxorm.SessionOption) ([]PipelineCmsNs, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
@@ -165,6 +176,19 @@ func (client *Client) GetCmsNsConfigs(cmsNs PipelineCmsNs, keys []string, ops ..
 		session.In("key", keys)
 	}
 	err := session.Find(&configs, &PipelineCmsConfig{NsID: cmsNs.ID})
+	if err != nil {
+		return nil, err
+	}
+	return configs, nil
+}
+
+func (client *Client) BatchGetCmsNsConfigs(cmsNsIDs []uint64, ops ...mysqlxorm.SessionOption) ([]PipelineCmsConfig, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var configs []PipelineCmsConfig
+	session.In("ns_id", cmsNsIDs)
+	err := session.Find(&configs)
 	if err != nil {
 		return nil, err
 	}

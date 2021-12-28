@@ -228,33 +228,10 @@ func (c *pipelineCm) GetConfigs(ctx context.Context, ns string, globalDecrypt bo
 	}
 	result := make(map[string]*pb.PipelineCmsConfigValue, len(configs))
 	for _, config := range configs {
-		// 默认使用 全局解密设置
-		needDecrypt := globalDecrypt
-		// 配置项级别的解密设置 覆盖 全局解密设置
-		if reqConfig, ok := reqConfigKeyMap[config.Key]; ok {
-			needDecrypt = reqConfig.Decrypt
-		}
-		// 在 db 中非加密存储不需要解密
-		needDecrypt = needDecrypt && *config.Encrypt
-		vv, err := c.decryptValueIfNeeded(needDecrypt, config.Value)
+		vv, err := c.DecryptConfigValue(globalDecrypt, config, reqConfigKeyMap)
 		if err != nil {
 			return nil, err
 		}
-
-		// 加密存储且未解密的值是否展示
-		if *config.Encrypt && !needDecrypt {
-			// 默认不展示
-			needShowEncryptedValue := false
-			// 配置项级别的展示配置
-			if reqConfig, ok := reqConfigKeyMap[config.Key]; ok {
-				needShowEncryptedValue = reqConfig.ShowEncryptedValue
-			}
-			// 不需要展示，则 value 置空
-			if !needShowEncryptedValue {
-				vv = ""
-			}
-		}
-
 		// 配置项级别的展示配置
 		result[config.Key] = &pb.PipelineCmsConfigValue{
 			Value:       vv,
@@ -268,6 +245,96 @@ func (c *pipelineCm) GetConfigs(ctx context.Context, ns string, globalDecrypt bo
 		}
 	}
 	return result, nil
+}
+
+func (c *pipelineCm) DecryptConfigValue(globalDecrypt bool, config db.PipelineCmsConfig, reqConfigKeyMap map[string]*pb.PipelineCmsConfigKey) (string, error) {
+	// Global decryption settings are used by default
+	needDecrypt := globalDecrypt
+	// Configure item level decryption settings to override global decryption settings
+	if reqConfig, ok := reqConfigKeyMap[config.Key]; ok {
+		needDecrypt = reqConfig.Decrypt
+	}
+	// Non-encrypted storage in db does not need to be decrypted
+	needDecrypt = needDecrypt && *config.Encrypt
+	vv, err := c.decryptValueIfNeeded(needDecrypt, config.Value)
+	if err != nil {
+		return "", err
+	}
+
+	// Whether the encrypted storage and undecrypted value is displayed
+	if *config.Encrypt && !needDecrypt {
+		// Not shown by default
+		needShowEncryptedValue := false
+		// Configuration item level display configuration
+		if reqConfig, ok := reqConfigKeyMap[config.Key]; ok {
+			needShowEncryptedValue = reqConfig.ShowEncryptedValue
+		}
+		// No need to display, then value is left blank
+		if !needShowEncryptedValue {
+			vv = ""
+		}
+	}
+
+	return vv, nil
+}
+
+func (c *pipelineCm) BatchGetConfigs(ctx context.Context, req *pb.CmsNsConfigsBatchGetRequest) ([]*pb.PipelineCmsConfig, error) {
+
+	cmsNsList, err := c.dbClient.BatchGetCmsNamespaces(req.PipelineSource, req.Namespaces)
+	if err != nil {
+		return nil, err
+	}
+
+	var cmsNsIDList []uint64
+	var cmsNsIDMap = map[uint64]db.PipelineCmsNs{}
+	for _, ns := range cmsNsList {
+		cmsNsIDList = append(cmsNsIDList, ns.ID)
+		cmsNsIDMap[ns.ID] = ns
+	}
+
+	configs, err := c.dbClient.BatchGetCmsNsConfigs(cmsNsIDList)
+	if err != nil {
+		return nil, err
+	}
+
+	var newConfigs []*pb.PipelineCmsConfig
+	for _, config := range configs {
+
+		var newConfig = pb.PipelineCmsConfig{
+			Key:         config.Key,
+			Value:       config.Value,
+			EncryptInDB: *config.Encrypt,
+			Type:        config.Type,
+			Operations:  config.Extra.Operations,
+			Comment:     config.Extra.Comment,
+			From:        config.Extra.From,
+			TimeCreated: getPbTimestamp(config.TimeCreated),
+			TimeUpdated: getPbTimestamp(config.TimeUpdated),
+		}
+
+		var relationNs, ok = cmsNsIDMap[config.NsID]
+		if !ok {
+			logrus.Errorf("not find config %v cmsNs", config.NsID)
+			continue
+		}
+
+		newConfig.Ns = &pb.PipelineCmsNs{
+			PipelineSource: relationNs.PipelineSource.String(),
+			Ns:             relationNs.Ns,
+			TimeCreated:    getPbTimestamp(config.TimeCreated),
+			TimeUpdated:    getPbTimestamp(config.TimeUpdated),
+		}
+
+		vv, err := c.DecryptConfigValue(req.GlobalDecrypt, config, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		newConfig.Value = vv
+		newConfigs = append(newConfigs, &newConfig)
+	}
+
+	return newConfigs, nil
 }
 
 func getPbTimestamp(t *time.Time) *timestamppb.Timestamp {

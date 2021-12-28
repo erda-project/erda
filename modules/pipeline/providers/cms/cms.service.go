@@ -139,6 +139,28 @@ func (s *cmsService) GetCmsNsConfigs(ctx context.Context, req *pb.CmsNsConfigsGe
 	}
 
 	// order by timeCreated
+	sortResult(results)
+
+	return &pb.CmsNsConfigsGetResponse{Data: results}, nil
+}
+
+func (s *cmsService) BatchGetCmsNsConfigs(ctx context.Context, req *pb.CmsNsConfigsBatchGetRequest) (*pb.CmsNsConfigsBatchGetResponse, error) {
+	if !apis.IsInternalClient(ctx) {
+		return nil, apierrors.ErrGetPipelineCmsConfigs.AccessDenied()
+	}
+
+	result, err := s.cm.BatchGetConfigs(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	sortResult(result)
+
+	return &pb.CmsNsConfigsBatchGetResponse{Configs: result}, nil
+}
+
+func sortResult(results []*pb.PipelineCmsConfig) {
+	// order by timeCreated
 	sort.SliceStable(results, func(i, j int) bool {
 		if results[i].TimeCreated == nil {
 			return true
@@ -148,6 +170,4 @@ func (s *cmsService) GetCmsNsConfigs(ctx context.Context, req *pb.CmsNsConfigsGe
 		}
 		return results[i].TimeCreated.AsTime().Before(results[j].TimeCreated.AsTime())
 	})
-
-	return &pb.CmsNsConfigsGetResponse{Data: results}, nil
 }
