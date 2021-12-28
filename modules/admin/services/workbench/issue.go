@@ -17,6 +17,9 @@ package workbench
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"runtime/debug"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -142,4 +145,65 @@ func yesterdayEndTime() *int64 {
 	tm := time.Date(yes.Year(), yes.Month(), yes.Day(), 23, 59, 59, 0, now.Location())
 	msTime := tm.UnixNano() / 1e6
 	return &msTime
+}
+
+func (w *Workbench) ListIssueStreams(issueIDs []uint64, limit int) (data map[uint64]apistructs.IssueStream, err error) {
+	req := apistructs.IssueStreamPagingRequest{
+		PageNo:   1,
+		PageSize: 1,
+	}
+	if limit <= 0 {
+		limit = 5
+	}
+
+	data = make(map[uint64]apistructs.IssueStream)
+	store := new(sync.Map)
+	limitCh := make(chan struct{}, limit)
+	wg := sync.WaitGroup{}
+	defer close(limitCh)
+
+	for _, v := range issueIDs {
+		// get
+		limitCh <- struct{}{}
+		wg.Add(1)
+		go func(id uint64) {
+			defer func() {
+				if err := recover(); err != nil {
+					logrus.Errorf("")
+					logrus.Errorf("%s", debug.Stack())
+				}
+				// release
+				<-limitCh
+				wg.Done()
+			}()
+			req.IssueID = id
+			res, err := w.bdl.GetIssueStreams(req)
+			if err != nil {
+				logrus.Warnf("get issue streams failed, request: %v, error: %v", req, err)
+				return
+			}
+			if len(res.List) == 0 {
+				store.Store(id, "")
+			} else {
+				store.Store(id, res.List[0])
+			}
+			logrus.Infof("id: %v, response: %+v", id, res)
+		}(v)
+	}
+	wg.Wait()
+	store.Range(func(k interface{}, v interface{}) bool {
+		id, ok := k.(uint64)
+		if !ok {
+			err = fmt.Errorf("issueID: [uint64], assert failed")
+			return false
+		}
+		latestStream, ok := v.(apistructs.IssueStream)
+		if !ok {
+			err = fmt.Errorf("issueContent, assert failed")
+			return false
+		}
+		data[id] = latestStream
+		return true
+	})
+	return
 }

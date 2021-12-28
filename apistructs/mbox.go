@@ -72,8 +72,9 @@ type QueryMBoxRequest struct {
 
 // QueryMBoxData 站内信记录结构
 type QueryMBoxData struct {
-	List  []*MBox `json:"list"`
-	Total int     `json:"total"`
+	List   []*MBox `json:"list"`
+	Total  int     `json:"total"`
+	UnRead int     `json:"unRead"`
 }
 
 // QueryMBoxResponse 查询通知历史纪录响应

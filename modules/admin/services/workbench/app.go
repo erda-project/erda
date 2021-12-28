@@ -150,11 +150,13 @@ func (w *Workbench) ListOpenMrWithLimitRate(identity apistructs.Identity, appIDs
 	result = make(map[uint64]int)
 	store := new(sync.Map)
 	limitCh := make(chan struct{}, limit)
+	wg := sync.WaitGroup{}
 	defer close(limitCh)
 
 	for _, v := range appIDs {
 		// get
 		limitCh <- struct{}{}
+		wg.Add(1)
 		go func(appID uint64) {
 			defer func() {
 				if err := recover(); err != nil {
@@ -163,6 +165,7 @@ func (w *Workbench) ListOpenMrWithLimitRate(identity apistructs.Identity, appIDs
 				}
 				// release
 				<-limitCh
+				wg.Done()
 			}()
 			res, err := w.bdl.ListMergeRequest(appID, identity.UserID, req)
 			if err != nil {
