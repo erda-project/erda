@@ -1,0 +1,45 @@
+- name: "页面访问性能告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    plt: "time:s"
+  title: |
+    【页面 ({{doc_path}}) 访问性能告警】
+  template: |
+    【页面访问性能告警】
+
+    事件: {{doc_path}} 页面慢响应
+
+    域名: {{host}}
+
+    页面: {{doc_path}}
+
+    页面平均响应时间: {{plt_avg}} ms
+
+    时间: {{timestamp}}
+
+    tk: {{tk}}
+
+    告警级别: {{level}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+- name: "页面访问性能告警"
+  trigger: "alert"
+  target: "sms"
+  formats:
+    plt: "time:s"
+  title: |
+    【页面 ({{doc_path}}) 访问性能告警】
+  template: |
+    {{doc_path}}触发页面访问性能告警，tk: {{tk}}，页面平均响应时间: {{plt_avg}} ms，告警级别: {{level}}
+- name: "页面访问性能告警"
+  trigger: "alert"
+  target: "vms"
+  formats:
+    plt: "time:s"
+  title: |
+    【页面 ({{doc_path}}) 访问性能告警】
+  template: |
+    触发页面访问性能告警，tk: {{tk}}，页面平均响应时间: {{plt_avg}} ms，告警级别: {{level}}

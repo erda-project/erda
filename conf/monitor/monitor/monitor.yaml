@@ -326,3 +326,7 @@ monitor-monitoring:
 grpc-client@erda.core.services.notify.channel:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.services.notify.channel-client:
+
+erda.core.monitor.expression:
+  alert_rules: ${CONFIG_PATH}/alert/rules
+  metric_rules: ${CONFIG_PATH}/analyzer/metrics

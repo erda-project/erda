@@ -1,0 +1,95 @@
+- name: "机器时钟一致性异常告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    elapsed_abs_avg: "time:ms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}} 时钟一致性异常告警】
+  template: |
+    【机器时钟一致性异常告警】
+
+    时钟偏移绝对值: {{elapsed_abs_avg}}
+
+    发送时间戳(ms): {{send_timestamp}}
+
+    接收时间戳(ms): {{receive_timestamp}}
+
+    源机器: {{source_host_ip}}
+
+    目标机器: {{host_ip}}
+
+    集群: {{cluster_name}}
+
+    组织名称: {{org_name}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "机器时钟一致性异常告警"
+  trigger: "alert"
+  target: "sms"
+  formats:
+    elapsed_abs_avg: "time:ms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}} 时钟一致性异常告警】
+  template: |
+    {{cluster_name}}集群机器{{host_ip}}触发时钟一致性异常告警，组织名称: {{org_name}}，时钟偏移绝对值: {{elapsed_abs_avg}}，告警级别: {{level}}
+- name: "机器时钟一致性异常告警"
+  trigger: "alert"
+  target: "vms"
+  formats:
+    elapsed_abs_avg: "time:ms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}} 时钟一致性异常告警】
+  template: |
+    {{cluster_name}}集群机器{{host_ip}}触发时钟一致性异常告警，组织名称: {{org_name}}，时钟偏移绝对值: {{elapsed_abs_avg}}，告警级别: {{level}}
+- name: "时钟一致性异常恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    elapsed_abs_avg: "time:ms"
+    trigger_duration: "time:ms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}} 时钟一致性异常恢复】
+  template: |
+    【机器时钟一致性异常恢复】
+
+    时钟偏移绝对值: {{elapsed_abs_avg}}
+
+    源机器: {{source_host_ip}}
+
+    目标机器: {{host_ip}}
+
+    集群: {{cluster_name}}
+
+    组织名称: {{org_name}}
+
+    持续时间: {{trigger_duration}}
+
+    恢复时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "时钟一致性异常恢复"
+  trigger: "recover"
+  target: "sms"
+  formats:
+    elapsed_abs_avg: "time:ms"
+    trigger_duration: "time:ms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}} 时钟一致性异常恢复】
+  template: |
+    {{cluster_name}}集群机器{{host_ip}}触发时钟一致性异常告警恢复，组织名称: {{org_name}}，时钟偏移绝对值: {{elapsed_abs_avg}}
+- name: "时钟一致性异常恢复"
+  trigger: "recover"
+  target: "vms"
+  formats:
+    elapsed_abs_avg: "time:ms"
+    trigger_duration: "time:ms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}} 时钟一致性异常恢复】
+  template: |
+    {{cluster_name}}集群机器{{host_ip}}触发时钟一致性异常告警恢复，组织名称: {{org_name}}，时钟偏移绝对值: {{elapsed_abs_avg}}

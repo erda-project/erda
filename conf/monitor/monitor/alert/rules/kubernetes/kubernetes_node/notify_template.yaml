@@ -1,0 +1,81 @@
+- name: "kubernetes节点异常"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    allocatable_memory_bytes_value: "size:byte"
+    capacity_memory_bytes_value:  "size:byte"
+  title: |
+    【{{cluster_name}}集群kubernetes节点{{node_name}}节点异常告警】
+  template: |
+    【kubernetes节点状态异常告警】
+
+    集群: {{cluster_name}}
+
+    机器: {{node_name}}
+
+    信息: {{ready_message_value}}
+
+    组织名称: {{org_name}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+- name: "kubernetes节点异常"
+  trigger: "alert"
+  target: "sms"
+  formats:
+    allocatable_memory_bytes_value: "size:byte"
+    capacity_memory_bytes_value:  "size:byte"
+  title: |
+    【{{cluster_name}}集群kubernetes节点{{node_name}}节点异常告警】
+  template: |
+    {{cluster_name}}集群{{node_name}}节点触发kubernetes节点异常，组织名称: {{org_name}}，信息: {{ready_message_value}}，告警级别: {{level}}
+- name: "kubernetes节点异常"
+  trigger: "alert"
+  target: "vms"
+  formats:
+    allocatable_memory_bytes_value: "size:byte"
+    capacity_memory_bytes_value:  "size:byte"
+  title: |
+    【{{cluster_name}}集群kubernetes节点{{node_name}}节点异常告警】
+  template: |
+    {{cluster_name}}集群{{node_name}}节点触发kubernetes节点异常，组织名称: {{org_name}}，信息: {{ready_message_value}}，告警级别: {{level}}
+- name: "kubernetes节点异常恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    【{{cluster_name}}集群kubernetes节点{{node_name}}节点异常恢复】
+  template: |
+    【kubernetes节点状态异常恢复】
+
+    集群: {{cluster_name}}
+
+    机器: {{node_name}}
+
+    组织名称: {{org_name}}
+
+    持续时间: {{trigger_duration}}
+
+    恢复时间: {{timestamp}}
+
+- name: "kubernetes节点异常恢复"
+  trigger: "recover"
+  target: "sms"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    【{{cluster_name}}集群kubernetes节点{{node_name}}节点异常恢复】
+  template: |
+    {{cluster_name}}集群{{node_name}}节点触发kubernetes节点异常恢复，组织名称: {{org_name}}
+- name: "kubernetes节点异常恢复"
+  trigger: "recover"
+  target: "vms"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    【{{cluster_name}}集群kubernetes节点{{node_name}}节点异常恢复】
+  template: |
+    {{cluster_name}}集群{{node_name}}节点触发kubernetes节点异常恢复，组织名称: {{org_name}}

@@ -1,0 +1,43 @@
+- name: "域名访问性能告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    plt: "time:s"
+  title: |
+    【({{host}}) 域名访问性能告警】
+  template: |
+    【域名访问性能告警】
+
+    事件: ({{host}}) 域名慢响应
+
+    时间: {{timestamp}}
+
+    域名: {{host}}
+
+    平均响应时间: {{plt_avg}} ms
+
+    tk: {{tk}}
+
+    告警级别: {{level}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+- name: "域名访问性能告警"
+  trigger: "alert"
+  target: "sms"
+  formats:
+    plt: "time:s"
+  title: |
+    【({{host}}) 域名访问性能告警】
+  template: |
+    {{host}}触发域名访问性能告警，tk：{{tk}，平均响应时间: {{plt_avg}} ms，告警级别: {{level}}
+- name: "域名访问性能告警"
+  trigger: "alert"
+  target: "vms"
+  formats:
+    plt: "time:s"
+  title: |
+    【({{host}}) 域名访问性能告警】
+  template: |
+    因域名慢响应触发域名访问性能告警，tk：{{tk}，平均响应时间: {{plt_avg}} ms，告警级别: {{level}}

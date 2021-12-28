@@ -1,0 +1,43 @@
+- name: "Ajax接口访问性能告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    tt: "time:s"
+  title: |
+    【Ajax接口 ({{req_path}}) 访问性能告警】
+  template: |
+    【Ajax接口访问性能告警】
+
+    事件: {{req_path}} Ajax接口慢响应
+
+    时间: {{timestamp}}
+
+    域名: {{host}}
+
+    平均响应时间: {{tt_avg}} ms
+
+    tk: {{tk}}
+
+    告警级别: {{level}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+- name: "Ajax接口访问性能告警"
+  trigger: "alert"
+  target: "sms"
+  formats:
+    tt: "time:s"
+  title: |
+    【Ajax接口 ({{req_path}}) 访问性能告警】
+  template: |
+    {{req_path}} Ajax接口慢响应告警触发，tk：{{tk}}，平均响应时间: {{tt_avg}} ms，告警级别: {{level}}
+- name: "Ajax接口访问性能告警"
+  trigger: "alert"
+  target: "vms"
+  formats:
+    tt: "time:s"
+  title: |
+    【Ajax接口 ({{req_path}}) 访问性能告警】
+  template: |
+    Ajax接口慢响应告警触发，tk：{{tk}}，平均响应时间: {{tt_avg}} ms，告警级别: {{level}}

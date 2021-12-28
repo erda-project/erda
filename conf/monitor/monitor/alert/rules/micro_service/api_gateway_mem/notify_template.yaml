@@ -1,0 +1,111 @@
+- name: "API网关实例内存使用率异常"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    container_id: "string:6"
+  title: |
+    【API网关实例内存使用率异常告警】
+  template: |
+    【API网关实例内存使用率异常告警】
+
+    组件: {{addon_type}}
+
+    实例: {{pod_namespace}} - {{pod_name}} - {{pod_ip}}
+
+    内存使用率: {{mem_usage_percent_avg}}
+
+    内存使用: {{mem_usage_value}}
+
+    内存限制: {{mem_limit_value}}
+
+    集群: {{cluster_name}}
+
+    机器: {{host_ip}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "API网关实例内存使用率异常"
+  trigger: "alert"
+  target: "sms"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    container_id: "string:6"
+  title: |
+    【API网关实例内存使用率异常告警】
+  template: |
+    {{addon_type}}组件{{pod_namespace}} - {{pod_name}}实例触发API网关实例内存使用率异常告警，内存使用率: {{mem_usage_percent_avg}}，告警级别: {{level}}
+- name: "API网关实例内存使用率异常"
+  trigger: "alert"
+  target: "vms"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    container_id: "string:6"
+  title: |
+    【API网关实例内存使用率异常告警】
+  template: |
+    {{addon_type}}组件{{pod_namespace}} - {{pod_name}}实例触发API网关实例内存使用率异常告警，内存使用率: {{mem_usage_percent_avg}}，告警级别: {{level}}
+- name: "API网关实例内存使用率异常恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    container_id: "string:6"
+  title: |
+    【API网关实例内存使用率异常恢复】
+  template: |
+    【API网关实例内存使用率异常恢复】
+
+    组件: {{addon_type}}
+
+    实例: {{pod_namespace}} - {{pod_name}} - {{pod_ip}}
+
+    内存使用率: {{mem_usage_percent_avg}}
+
+    内存使用: {{mem_usage_value}}
+
+    集群: {{cluster_name}}
+
+    机器: {{host_ip}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "API网关实例内存使用率异常恢复"
+  trigger: "recover"
+  target: "sms"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    container_id: "string:6"
+  title: |
+    【API网关实例内存使用率异常恢复】
+  template: |
+    {{addon_type}}组件{{pod_namespace}} - {{pod_name}}实例触发API网关实例内存使用率异常告警恢复，内存使用率: {{mem_usage_percent_avg}}
+
+- name: "API网关实例内存使用率异常恢复"
+  trigger: "recover"
+  target: "vms"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    container_id: "string:6"
+  title: |
+    【API网关实例内存使用率异常恢复】
+  template: |
+    {{addon_type}}组件{{pod_namespace}} - {{pod_name}}实例触发API网关实例内存使用率异常告警恢复，内存使用率: {{mem_usage_percent_avg}}

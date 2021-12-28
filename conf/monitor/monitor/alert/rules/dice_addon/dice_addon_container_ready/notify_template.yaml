@@ -1,0 +1,82 @@
+- name: "平台中间件实例Ready状态异常"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  title: |
+    【平台中间件{{addon_id}} Ready状态异常告警】
+  template: |
+    【平台中间件Ready状态异常告警】
+
+    中间件: {{addon_id}}
+
+    不可用实例: {{not_ready_value}}
+
+    期望实例: {{total_value}}
+
+    集群: {{cluster_name}}
+
+    组织名称: {{org_name}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "平台中间件实例Ready状态异常"
+  trigger: "alert"
+  target: "sms"
+  title: |
+    【平台中间件{{addon_id}} Ready状态异常告警】
+  template: |
+    {{addon_id}}中间件触发平台中间件Ready状态异常告警，组织名称: {{org_name}}，不可用实例: {{not_ready_value}}，告警级别: {{level}}
+- name: "平台中间件实例Ready状态异常"
+  trigger: "alert"
+  target: "vms"
+  title: |
+    【平台中间件{{addon_id}} Ready状态异常告警】
+  template: |
+    {{addon_id}}中间件触发平台中间件Ready状态异常告警，组织名称: {{org_name}}，不可用实例: {{not_ready_value}}，告警级别: {{level}}
+- name: "平台中间件实例Ready状态异常恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    【平台中间件{{addon_id}} Ready状态异常恢复】
+  template: |
+    【平台中间件Ready状态异常恢复】
+
+    中间件: {{addon_id}}
+
+    可用实例: {{ready_value}}
+
+    期望实例: {{total_value}}
+
+    集群: {{cluster_name}}
+
+    组织名称: {{org_name}}
+
+    持续时间: {{trigger_duration}}
+
+    恢复时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "平台中间件实例Ready状态异常恢复"
+  trigger: "recover"
+  target: "sms"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    【平台中间件{{addon_id}} Ready状态异常恢复】
+  template: |
+    {{addon_id}}中间件触发平台中间件Ready状态异常告警恢复，组织名称: {{org_name}}，可用实例: {{ready_value}}
+- name: "平台中间件实例Ready状态异常恢复"
+  trigger: "recover"
+  target: "vms"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    【平台中间件{{addon_id}} Ready状态异常恢复】
+  template: |
+    {{addon_id}}中间件触发平台中间件Ready状态异常告警恢复，组织名称: {{org_name}}，可用实例: {{ready_value}}

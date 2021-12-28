@@ -1,0 +1,96 @@
+- name: "应用异常"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  title: |
+    【{{application_name}}应用{{service_name}}服务异常告警】
+  template: |
+    【应用异常告警】
+
+    项目: {{project_name}}
+
+    应用: {{application_name}}
+
+    服务: {{runtime_name}} - {{service_name}}
+
+    实例: {{instance_id}}
+
+    类: {{class}}
+
+    方法: {{method}}
+
+    行数: {{line}}
+
+    错误: {{type}}
+
+    事件: {{window}}分钟内出现 {{count_sum}} 次
+
+    terminus_key: {{terminus_key}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+
+- name: "应用异常"
+  trigger: "alert"
+  target: "sms"
+  title: |
+    【{{application_name}}应用{{service_name}}服务异常告警】
+  template: |
+    {{application_name}}应用{{service_name}}触发服务异常告警，terminus_key: {{terminus_key}}，{{window}}分钟内应用错误出现{{count_sum}}次，告警级别: {{level}}
+- name: "应用异常"
+  trigger: "alert"
+  target: "vms"
+  title: |
+    【{{application_name}}应用{{service_name}}服务异常告警】
+  template: |
+    {{application_name}}应用{{service_name}}触发服务异常告警，terminus_key: {{terminus_key}}，{{window}}分钟内应用错误出现{{count_sum}}次，告警级别: {{level}}
+- name: "应用异常恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  title: |
+    【{{application_name}}应用{{service_name}}服务异常恢复】
+  template: |
+    【应用异常恢复】
+
+    项目: {{project_name}}
+
+    应用: {{application_name}}
+
+    服务: {{runtime_name}} - {{service_name}}
+
+    实例: {{instance_id}}
+
+    类: {{class}}
+
+    方法: {{method}}
+
+    行数: {{line}}
+
+    错误: {{type}}
+
+    terminus_key: {{terminus_key}}
+
+    持续时间: {{trigger_duration_min}}
+
+    恢复时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "应用异常恢复"
+  trigger: "recover"
+  target: "sms"
+  title: |
+    【{{application_name}}应用{{service_name}}服务异常恢复】
+  template: |
+    {{application_name}}应用{{service_name}}触发服务异常恢复，terminus_key: {{terminus_key}}
+- name: "应用异常恢复"
+  trigger: "recover"
+  target: "vms"
+  title: |
+    【{{application_name}}应用{{service_name}}服务异常恢复】
+  template: |
+    {{application_name}}应用{{service_name}}触发服务异常恢复，terminus_key: {{terminus_key}}

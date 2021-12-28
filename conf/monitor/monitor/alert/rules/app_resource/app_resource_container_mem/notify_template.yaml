@@ -1,0 +1,118 @@
+- name: "应用实例内存使用率异常"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    container_id: "string:6"
+  title: |
+    【{{application_name}}应用{{service_name}}服务内存使用率异常告警】
+  template: |
+    【应用实例内存使用率异常告警】
+
+    项目: {{project_name}}
+
+    应用: {{application_name}}
+
+    服务实例: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
+
+    内存使用率: {{mem_usage_percent_avg}}
+
+    内存使用: {{mem_usage_value}}
+
+    内存限制: {{mem_limit_value}}
+
+    机器: {{host_ip}}
+
+    terminus_key: {{terminus_key}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+
+- name: "应用实例内存使用率异常"
+  trigger: "alert"
+  target: "sms"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    container_id: "string:6"
+  title: |
+    【{{application_name}}应用{{service_name}}服务内存使用率异常告警】
+  template: |
+    {{application_name}}应用{{service_name}}服务触发内存使用率异常告警，terminus_key: {{terminus_key}}，内存使用率: {{mem_usage_percent_avg}}，告警级别: {{level}}
+- name: "应用实例内存使用率异常"
+  trigger: "alert"
+  target: "vms"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    container_id: "string:6"
+  title: |
+    【{{application_name}}应用{{service_name}}服务内存使用率异常告警】
+  template: |
+    {{application_name}}应用{{service_name}}服务触发内存使用率异常告警，terminus_key: {{terminus_key}}，内存使用率: {{mem_usage_percent_avg}}，告警级别: {{level}}
+- name: "应用实例内存异常恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    trigger_duration: "time:ms"
+    container_id: "string:6"
+  title: |
+    【{{application_name}}应用{{service_name}}服务内存使用率异常恢复】
+  template: |
+    【应用实例内存使用率异常恢复】
+
+    项目: {{project_name}}
+
+    应用: {{application_name}}
+
+    服务实例: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
+
+    内存使用率: {{mem_usage_percent_avg}}
+
+    内存使用: {{mem_usage_value}}
+
+    内存限制: {{mem_limit_value}}
+
+    机器: {{host_ip}}
+
+    terminus_key: {{terminus_key}}
+
+    持续时间: {{trigger_duration}}
+
+    恢复时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "应用实例内存异常恢复"
+  trigger: "recover"
+  target: "sms"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    trigger_duration: "time:ms"
+    container_id: "string:6"
+  title: |
+    【{{application_name}}应用{{service_name}}服务内存使用率异常恢复】
+  template: |
+    {{application_name}}应用{{service_name}}服务触发内存使用率异常恢复，terminus_key: {{terminus_key}}，内存使用率: {{mem_usage_percent_avg}}
+
+- name: "应用实例内存异常恢复"
+  trigger: "recover"
+  target: "vms"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    trigger_duration: "time:ms"
+    container_id: "string:6"
+  title: |
+    【{{application_name}}应用{{service_name}}服务内存使用率异常恢复】
+  template: |
+    {{application_name}}应用{{service_name}}服务触发内存使用率异常恢复，terminus_key: {{terminus_key}}，内存使用率: {{mem_usage_percent_avg}}

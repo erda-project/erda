@@ -1,0 +1,81 @@
+- name: "机器负载异常告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}}负载异常告警】
+  template: |
+    【机器负载异常告警】
+
+    Load5: {{load5_avg}}
+
+    集群: {{cluster_name}}
+
+    机器: {{host_ip}}
+
+    组织名称: {{org_name}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+
+- name: "机器负载异常告警"
+  trigger: "alert"
+  target: "sms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}}负载异常告警】
+  template: |
+    {{cluster_name}}集群机器{{host_ip}}触发机器负载异常告警，组织名称: {{org_name}}，Load5: {{load5_avg}}，告警级别: {{level}}
+- name: "机器负载异常告警"
+  trigger: "alert"
+  target: "vms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}}负载异常告警】
+  template: |
+    {{cluster_name}}集群机器{{host_ip}}触发机器负载异常告警，组织名称: {{org_name}}，Load5: {{load5_avg}}，告警级别: {{level}}
+- name: "机器负载异常恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+      trigger_duration: "time:ms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}}负载异常恢复】
+  template: |
+    【机器负载异常恢复】
+
+    Load5: {{load5_avg}}
+
+    集群: {{cluster_name}}
+
+    机器: {{host_ip}}
+
+    组织名称: {{org_name}}
+
+    持续时间: {{trigger_duration}}
+
+    恢复时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "机器负载异常恢复"
+  trigger: "recover"
+  target: "sms"
+  formats:
+    trigger_duration: "time:ms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}}负载异常恢复】
+  template: |
+    {{cluster_name}}集群机器{{host_ip}}触发机器负载异常告警恢复，组织名称: {{org_name}}，Load5: {{load5_avg}}
+
+- name: "机器负载异常恢复"
+  trigger: "recover"
+  target: "vms"
+  formats:
+    trigger_duration: "time:ms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}}负载异常恢复】
+  template: |
+    {{cluster_name}}集群机器{{host_ip}}触发机器负载异常告警恢复，组织名称: {{org_name}}，Load5: {{load5_avg}}

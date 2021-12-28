@@ -1,0 +1,93 @@
+- name: "平台中间件kafka消费堆积"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  title: |
+    【平台中间件kafka消费堆积告警】
+  template: |
+    【平台中间件kafka消费堆积告警】
+
+    中间件: {{addon_id}}
+
+    消费者组: {{group}}
+
+    Topic: {{topic}}
+
+    当前消息堆积: {{lag_avg}}
+
+    消费速度: {{consume_rate_per_sec_avg}} /s
+
+    生产速度: {{produce_rate_per_sec_avg}} /s
+
+    集群: {{cluster_name}}
+
+    组织名称: {{org_name}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+
+- name: "平台中间件kafka消费堆积"
+  trigger: "alert"
+  target: "sms"
+  title: |
+    【平台中间件kafka消费堆积告警】
+  template: |
+    {{addon_id}}中间件触发平台中间件kafka消费异常堆积告警，组织名称: {{org_name}}，Topic: {{topic}}，消费速度: {{consume_rate_per_sec_avg}} /s，生产速度: {{produce_rate_per_sec_avg}} /s，告警级别: {{level}}
+- name: "平台中间件kafka消费堆积"
+  trigger: "alert"
+  target: "vms"
+  title: |
+    【平台中间件kafka消费堆积告警】
+  template: |
+    {{addon_id}}中间件触发平台中间件kafka消费异常堆积告警，组织名称: {{org_name}}，Topic: {{topic}}，消费速度: {{consume_rate_per_sec_avg}} /s，生产速度: {{produce_rate_per_sec_avg}} /s，告警级别: {{level}}
+- name: "平台中间件kafka消费堆积"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    【平台中间件kafka消费堆积恢复】
+  template: |
+    【平台中间件kafka消费堆积恢复】
+
+    中间件: {{addon_id}}
+
+    消费者组: {{group}}
+
+    Topic: {{topic}}
+
+    当前消息堆积: {{lag_avg}}
+
+    集群: {{cluster_name}}
+
+    组织名称: {{org_name}}
+
+    持续时间: {{trigger_duration}}
+
+    恢复时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "平台中间件kafka消费堆积恢复"
+  trigger: "recover"
+  target: "sms"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    【平台中间件kafka消费堆积恢复】
+  template: |
+    {{addon_id}}中间件触发平台中间件kafka消费堆积恢复，组织名称: {{org_name}}，Topic: {{topic}}，当前消息堆积: {{lag_avg}}
+
+- name: "平台中间件kafka消费堆积恢复"
+  trigger: "recover"
+  target: "vms"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    【平台中间件kafka消费堆积恢复】
+  template: |
+    {{addon_id}}中间件触发平台中间件kafka消费堆积恢复，组织名称: {{org_name}}，Topic: {{topic}}，当前消息堆积: {{lag_avg}}

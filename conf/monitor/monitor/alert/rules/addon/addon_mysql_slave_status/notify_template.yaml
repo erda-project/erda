@@ -1,0 +1,98 @@
+- name: "MySQL实例主从同步异常告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+  title: |
+    【MySQL实例主从同步异常】
+  template: |
+    【MySQL实例主从同步异常】
+
+    组件: "mysql"
+
+    实例ID: {{addon_id}}
+
+    从节点IO异常状态: {{slave_slave_io_running_value}}
+
+    从节点连接异常状态: {{slave_slave_sql_running_value}}
+
+    集群 / 机器: {{cluster_name}} / {{host_ip}}
+
+    机器: {{host_ip}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "MySQL实例主从同步异常告警"
+  trigger: "alert"
+  target: "sms"
+  formats:
+    usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+  title: |
+    【MySQL实例主从同步异常】
+  template: |
+    MySQL实例{{addon_id}}主从同步异常，从节点IO异常状态: {{slave_slave_io_running_value}}，从节点连接异常状态: {{slave_slave_sql_running_value}}，告警级别: {{level}}
+
+- name: "MySQL实例主从同步异常告警"
+  trigger: "alert"
+  target: "vms"
+  formats:
+    usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+  title: |
+    【MySQL实例主从同步异常】
+  template: |
+    MySQL实例{{addon_id}}主从同步异常，从节点IO异常状态: {{slave_slave_io_running_value}}，从节点连接异常状态: {{slave_slave_sql_running_value}}，告警级别: {{level}}
+- name: "MySQL实例主从同步异常恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+  title: |
+    【MySQL实例主从同步恢复】
+  template: |
+    【MySQL实例主从同步恢复】
+
+    组件: "mysql"
+
+    实例ID: {{addon_id}}
+
+    从节点IO异常状态: {{slave_slave_io_running_value}}
+
+    从节点连接异常状态: {{slave_slave_sql_running_value}}
+
+    集群 / 机器: {{cluster_name}} / {{host_ip}}
+
+    机器: {{host_ip}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "MySQL实例主从同步异常恢复"
+  trigger: "recover"
+  target: "sms"
+  formats:
+    usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+  title: |
+    【MySQL实例主从同步恢复】
+  template: |
+    MySQL实例{{addon_id}}主从同步恢复，从节点IO异常状态: {{slave_slave_io_running_value}}，从节点连接异常状态: {{slave_slave_sql_running_value}}
+
+- name: "MySQL实例主从同步异常恢复"
+  trigger: "recover"
+  target: "vms"
+  formats:
+    usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+  title: |
+    【MySQL实例主从同步恢复】
+  template: |
+    MySQL实例{{addon_id}}主从同步恢复，从节点IO异常状态: {{slave_slave_io_running_value}}，从节点连接异常状态: {{slave_slave_sql_running_value}}

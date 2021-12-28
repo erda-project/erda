@@ -1,0 +1,88 @@
+- name: "网盘容量异常告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    used_percent_value: "percent:2"
+    total_value: "size:byte"
+  title: |-
+    【{{cluster_name}}集群网盘使用率异常告警】
+  template: |
+    【网盘使用率异常告警】
+
+    使用率: {{used_percent_value}}
+
+    容量: {{total_value}}
+
+    集群: {{cluster_name}}
+
+    组织名称: {{org_name}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "网盘容量异常告警"
+  trigger: "alert"
+  target: "sms"
+  formats:
+    used_percent_value: "percent:2"
+    total_value: "size:byte"
+  title: |-
+    【{{cluster_name}}集群网盘使用率异常告警】
+  template: |
+    {{cluster_name}}集群触发网盘使用率异常告警，组织名称: {{org_name}}，使用率: {{used_percent_value}}，告警级别: {{level}}
+- name: "网盘容量异常告警"
+  trigger: "alert"
+  target: "vms"
+  formats:
+    used_percent_value: "percent:2"
+    total_value: "size:byte"
+  title: |-
+    【{{cluster_name}}集群网盘使用率异常告警】
+  template: |
+    {{cluster_name}}集群触发网盘使用率异常告警，组织名称: {{org_name}}，使用率: {{used_percent_value}}，告警级别: {{level}}
+- name: "网盘容量异常恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    used_percent_value: "percent:2"
+    trigger_duration: "time:ms"
+  title: |-
+    【{{cluster_name}}集群网盘使用率异常恢复】
+  template: |
+    【网盘使用率异常恢复】
+
+    使用率: {{used_percent_value}}
+
+    集群: {{cluster_name}}
+
+    组织名称: {{org_name}}
+
+    持续时间: {{trigger_duration}}
+
+    恢复时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "网盘容量异常恢复"
+  trigger: "recover"
+  target: "sms"
+  formats:
+    used_percent_value: "percent:2"
+    trigger_duration: "time:ms"
+  title: |-
+    【{{cluster_name}}集群网盘使用率异常恢复】
+  template: |
+    {{cluster_name}}集群触发网盘使用率异常告警恢复，使用率: {{used_percent_value}}
+- name: "网盘容量异常恢复"
+  trigger: "recover"
+  target: "vms"
+  formats:
+    used_percent_value: "percent:2"
+    trigger_duration: "time:ms"
+  title: |-
+    【{{cluster_name}}集群网盘使用率异常恢复】
+  template: |
+    {{cluster_name}}集群触发网盘使用率异常告警恢复，使用率: {{used_percent_value}}
