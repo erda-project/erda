@@ -426,7 +426,6 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 					"clickGoto": {ServerData: &testManageServerData},
 				},
 			},
-
 			{
 				Icon: "xiangmushezhi",
 				Tip:  sdk.I18n("project setting"),
