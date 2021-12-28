@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/pkg/maps"
 	"math"
 	"time"
 
@@ -192,13 +193,16 @@ func processApmMetricCompatible(m *metric.Metric) {
 			delete(tags, "db_type")
 		}
 	}
-	if _, ok := tags["db_host"]; !ok {
-		if peerAddress, ok := tags["peer_address"]; ok {
-			tags["db_host"] = peerAddress
-		} else if peerHostname, ok := tags["peer_hostname"]; ok {
-			tags["db_host"] = peerHostname
-		} else if host, ok := tags["host"]; ok {
-			tags["db_host"] = host
+
+	if maps.ContainsAnyKey(tags, "db_system") {
+		if _, ok := tags["db_host"]; !ok {
+			if peerAddress, ok := tags["peer_address"]; ok {
+				tags["db_host"] = peerAddress
+			} else if peerHostname, ok := tags["peer_hostname"]; ok {
+				tags["db_host"] = peerHostname
+			} else if host, ok := tags["host"]; ok {
+				tags["db_host"] = host
+			}
 		}
 	}
 }
