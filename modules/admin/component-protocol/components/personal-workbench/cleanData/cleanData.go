@@ -30,7 +30,7 @@ type Clean struct {
 
 func (c2 *Clean) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	//*gs = make(cptype.GlobalStateData)
-	delete(c.State, common.TabData)
+	delete(*gs, common.TabData)
 	return nil
 }
 

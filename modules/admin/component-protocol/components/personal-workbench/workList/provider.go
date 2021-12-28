@@ -230,7 +230,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 	subProjMap := make(map[uint64]bool)
 	if subProjs != nil {
 		for _, v := range subProjs.List {
-			id := v.ID
+			id := v.TypeID
 			subProjMap[id] = true
 		}
 	}
