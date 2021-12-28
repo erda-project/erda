@@ -17,12 +17,13 @@ package expression
 import (
 	"context"
 	"encoding/json"
-	"gopkg.in/yaml.v2"
 	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/expression/pb"
 	alertdb "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
