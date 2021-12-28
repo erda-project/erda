@@ -190,8 +190,6 @@ func FromPBAlertRuleModel(lang i18n.LanguageCodes, t i18n.Translator, m *db.Aler
 	}
 	r.Version = m.Version
 	r.Enable = m.Enable
-	r.CreateTime = m.CreateTime.UnixNano() / int64(time.Millisecond)
-	r.UpdateTime = m.UpdateTime.UnixNano() / int64(time.Millisecond)
 	window, ok := utils.GetMapValueInt64(m.Template, "window")
 	if !ok {
 		return nil

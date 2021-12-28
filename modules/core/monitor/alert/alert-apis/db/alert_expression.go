@@ -77,3 +77,15 @@ func (db *AlertExpressionDB) DeleteByAlertID(alertID uint64) error {
 func (db *AlertExpressionDB) DeleteByIDs(ids []uint64) error {
 	return db.Where("id IN (?)", ids).Delete(AlertExpression{}).Error
 }
+
+// GetAllAlertExpression
+func (db *AlertExpressionDB) GetAllAlertExpression(pageNo, pageSize int64) ([]*AlertExpression, error) {
+	var expressions []*AlertExpression
+	err := db.Where("enable = ?", true).
+		Offset((pageNo - 1) * pageSize).Limit(pageSize).
+		Find(&expressions).Error
+	if err != nil {
+		return nil, err
+	}
+	return expressions, nil
+}

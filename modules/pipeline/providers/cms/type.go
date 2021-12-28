@@ -33,6 +33,8 @@ type ConfigManager interface {
 	DeleteConfigs(ctx context.Context, ns string, keys ...string) error
 	// GetConfigs get configs: if ns is empty, return nil; if keys is not empty, return specified configs
 	GetConfigs(ctx context.Context, ns string, globalDecrypt bool, keys ...*pb.PipelineCmsConfigKey) (map[string]*pb.PipelineCmsConfigValue, error)
+	// BatchGetConfigs: get all config information under Namespaces
+	BatchGetConfigs(ctx context.Context, req *pb.CmsNsConfigsBatchGetRequest) ([]*pb.PipelineCmsConfig, error)
 }
 
 func transformKeysToStrSlice(keys ...*pb.PipelineCmsConfigKey) []string {

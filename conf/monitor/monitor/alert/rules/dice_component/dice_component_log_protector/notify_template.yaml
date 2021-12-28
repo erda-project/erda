@@ -1,0 +1,33 @@
+- name: "【事件】LOG_STORE保护器状态变化"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  title: |
+    【【事件】LOG_STORE保护器状态变化】
+  template: |
+    【【事件】LOG_STORE保护器状态变化】
+
+    集群: {{cluster_name}}
+
+    之前状态: {{pre_level}}
+
+    当前状态: {{cur_level}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+- name: "【事件】LOG_STORE保护器状态变化"
+  trigger: "alert"
+  target: "sms"
+  title: |
+    【【事件】LOG_STORE保护器状态变化】
+  template: |
+    触发【事件】LOG_STORE保护器状态变化告警，之前状态: {{pre_level}}，当前状态: {{cur_level}}，告警级别: {{level}}
+- name: "【事件】LOG_STORE保护器状态变化"
+  trigger: "alert"
+  target: "vms"
+  title: |
+    【【事件】LOG_STORE保护器状态变化】
+  template: |
+    触发【事件】LOG_STORE保护器状态变化告警，之前状态: {{pre_level}}，当前状态: {{cur_level}}，告警级别: {{level}}

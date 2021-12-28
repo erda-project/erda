@@ -137,6 +137,24 @@ func (e *Endpoints) DeleteProject(ctx context.Context, r *http.Request, vars map
 			return apierrors.ErrDeleteProject.AccessDenied().ToResp(), nil
 		}
 	}
+
+	// Check if basic addon exists
+	addOnListResp, err := e.bdl.ListAddonByProjectID(projectID, orgID)
+	if err != nil {
+		return nil, err
+	}
+	if addOnListResp != nil && len(addOnsFilterIn(addOnListResp.Data, func(addOn *apistructs.AddonFetchResponseData) bool {
+		// The platformServiceType is 0 means it can be deleted by the platform
+		return addOn.PlatformServiceType == 0
+	})) > 0 {
+		return apierrors.ErrDeleteProject.InternalError(errors.Errorf("failed to delete project(there exists basic addons)")).ToResp(), nil
+	}
+
+	// Clean up non-basic addon before deleting project. like monitor,log-analytics,api-gateway...
+	if addOnListResp != nil {
+		go e.cleanupNonBasicAddon(addOnListResp.Data, orgIDStr, identity.UserID)
+	}
+
 	// delete project
 	project, err := e.bdl.DeleteProject(uint64(projectID), uint64(orgID), identity.UserID)
 	if err != nil {
@@ -156,6 +174,30 @@ func (e *Endpoints) DeleteProject(ctx context.Context, r *http.Request, vars map
 	}
 
 	return httpserver.OkResp(project)
+}
+
+// cleanupNonBasicAddon Clean up non-basic addon
+func (e *Endpoints) cleanupNonBasicAddon(addons []apistructs.AddonFetchResponseData, orgID, userID string) {
+	nonBasicAddons := addOnsFilterIn(addons, func(addOn *apistructs.AddonFetchResponseData) bool {
+		// The platformServiceType is 1 means it is non-basic addon
+		return addOn.PlatformServiceType == 1
+	})
+	for _, v := range nonBasicAddons {
+		logrus.Infof("[cleanupNonBasicAddon] begin deleting addon, addonID: %s", v.ID)
+		_, err := e.bdl.DeleteAddon(v.ID, orgID, userID)
+		if err != nil {
+			logrus.Errorf("[cleanupNonBasicAddon] failed to DeleteAddon, addonID: %s, err: %s", v.ID, err.Error())
+		}
+	}
+}
+
+func addOnsFilterIn(addOns []apistructs.AddonFetchResponseData, fn func(addOn *apistructs.AddonFetchResponseData) bool) (newAddons []apistructs.AddonFetchResponseData) {
+	for i := range addOns {
+		if fn(&addOns[i]) {
+			newAddons = append(newAddons, addOns[i])
+		}
+	}
+	return
 }
 
 // GetProject gets the project info

@@ -1,0 +1,100 @@
+- name: "磁盘Inode异常告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    inode_used_percent_value: "percent:2"
+    inodes_total_value: "size:byte"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}}磁盘Inode异常告警】
+  template: |
+    【磁盘Inode异常告警】
+
+    使用率: {{inode_used_percent_value}}
+
+    容量: {{inodes_total_value}}
+
+    集群: {{cluster_name}}
+
+    机器: {{host_ip}}
+
+    设备: {{device}}
+
+    组织名称: {{org_name}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+
+- name: "磁盘Inode异常告警"
+  trigger: "alert"
+  target: "sms"
+  formats:
+    inode_used_percent_value: "percent:2"
+    inodes_total_value: "size:byte"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}}磁盘Inode异常告警】
+  template: |
+    {{cluster_name}}集群机器{{host_ip}}触发磁盘Inode异常告警，组织名称: {{org_name}}，使用率: {{inode_used_percent_value}}，告警级别: {{level}}
+
+- name: "磁盘Inode异常告警"
+  trigger: "alert"
+  target: "vms"
+  formats:
+    inode_used_percent_value: "percent:2"
+    inodes_total_value: "size:byte"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}}磁盘Inode异常告警】
+  template: |
+    {{cluster_name}}集群机器{{host_ip}}触发磁盘Inode异常告警，组织名称: {{org_name}}，使用率: {{inode_used_percent_value}}，告警级别: {{level}}
+
+- name: "磁盘Inode异常恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    inode_used_percent_value: "percent:2"
+    trigger_duration: "time:ms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}}磁盘Inode异常恢复】
+  template: |
+    【磁盘Inode异常恢复】
+
+    使用率: {{inode_used_percent_value}}
+
+    集群: {{cluster_name}}
+
+    机器: {{host_ip}}
+
+    设备: {{device}}
+
+    组织名称: {{org_name}}
+
+    持续时间: {{trigger_duration}}
+
+    恢复时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "磁盘Inode异常恢复"
+  trigger: "recover"
+  target: "sms"
+  formats:
+    inode_used_percent_value: "percent:2"
+    trigger_duration: "time:ms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}}磁盘Inode异常恢复】
+  template: |
+    {{cluster_name}}集群机器{{host_ip}}触发磁盘Inode异常告警恢复，组织名称: {{org_name}}，使用率: {{inode_used_percent_value}}
+- name: "磁盘Inode异常恢复"
+  trigger: "recover"
+  target: "vms"
+  formats:
+    inode_used_percent_value: "percent:2"
+    trigger_duration: "time:ms"
+  title: |-
+    【{{cluster_name}}集群机器{{host_ip}}磁盘Inode异常恢复】
+  template: |
+    {{cluster_name}}集群机器{{host_ip}}触发磁盘Inode异常告警恢复，组织名称: {{org_name}}，使用率: {{inode_used_percent_value}}

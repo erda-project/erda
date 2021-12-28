@@ -80,6 +80,7 @@ openapi-v1-routes:
           - issue-gantt
           - requirement-task-overview
           - issue-kanban
+          - auto-test-space-list
       - addr: http://localhost:8080
         scenarios:
           - demo
