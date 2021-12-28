@@ -245,6 +245,16 @@ func (r *ComponentReleaseTable) RenderTable() error {
 		}
 
 		downloadPath := fmt.Sprintf("/api/%s/releases/%s/actions/download-yaml", org.Name, release.ReleaseID)
+		downloadOperation := Operation{
+			Command: Command{
+				JumpOut: true,
+				Key:     "goto",
+				Target:  downloadPath,
+			},
+			Key:    "download",
+			Reload: false,
+			Text:   r.sdk.I18n("downloadDice"),
+		}
 
 		item := Item{
 			ID:          release.ReleaseID,
@@ -257,20 +267,12 @@ func (r *ComponentReleaseTable) RenderTable() error {
 			},
 			CreatedAt: release.CreatedAt.Format("2006/01/02 15:04:05"),
 			Operations: TableOperations{
-				Operations: map[string]interface{}{
-					"download": Operation{
-						Command: Command{
-							JumpOut: true,
-							Key:     "goto",
-							Target:  downloadPath,
-						},
-						Key:    "download",
-						Reload: false,
-						Text:   r.sdk.I18n("downloadDice"),
-					},
-				},
+				Operations: map[string]interface{}{},
 				RenderType: "tableOperation",
 			},
+		}
+		if r.State.IsProjectRelease {
+			item.Operations.Operations["download"] = downloadOperation
 		}
 		if !r.State.IsFormal {
 			item.Operations.Operations["edit"] = editOperation
@@ -296,14 +298,18 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 			Reload: true,
 		},
 		"formal": Operation{
-			Key:    "formal",
-			Reload: true,
-			Text:   r.sdk.I18n("toFormal"),
+			Key:        "formal",
+			Reload:     true,
+			Text:       r.sdk.I18n("toFormal"),
+			Confirm:    r.sdk.I18n("confirmFormal"),
+			SuccessMsg: r.sdk.I18n("formalSucceeded"),
 		},
 		"delete": Operation{
-			Key:    "delete",
-			Reload: true,
-			Text:   r.sdk.I18n("deleteRelease"),
+			Key:        "delete",
+			Reload:     true,
+			Text:       r.sdk.I18n("deleteRelease"),
+			Confirm:    r.sdk.I18n("confirmDelete"),
+			SuccessMsg: r.sdk.I18n("deleteSucceeded"),
 		},
 		"changeSort": Operation{
 			Key:    "changeSort",
