@@ -229,11 +229,9 @@ func (w *Workbench) GetUrlCommonParams(userID, orgID string, projectIDs []uint64
 		urlParams[i].TenantGroup = tenantId
 		urlParams[i].AddonId = tenantId
 		pType := project.Type
-		if pType == "DOP" {
-			continue
-		}
+
 		menues, err = w.bdl.ListProjectsEnvAndTenantId(userID, orgID, tenantId, pType)
-		if err != nil {
+		if err != nil || len(menues) == 0 {
 			logrus.Errorf("failed to get env and tenant id ,err: %v", err)
 			continue
 		}
@@ -242,7 +240,7 @@ func (w *Workbench) GetUrlCommonParams(userID, orgID string, projectIDs []uint64
 			urlParams[i].TenantGroup = tg
 		}
 		if tk, ok := menues[i].Params["terminusKey"]; ok {
-			urlParams[i].TenantGroup = tk
+			urlParams[i].TerminusKey = tk
 		}
 	}
 	return
