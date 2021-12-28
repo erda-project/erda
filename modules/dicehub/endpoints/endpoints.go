@@ -114,6 +114,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// Release相关
 		{Path: "/api/releases", Method: http.MethodPost, Handler: e.CreateRelease},
 		{Path: "/api/releases/actions/upload", Method: http.MethodPost, Handler: e.UploadRelease},
+		{Path: "/api/releases/actions/parse-version", Method: http.MethodGet, Handler: e.ParseReleaseFile},
 		{Path: "/api/releases/{releaseId}", Method: http.MethodPut, Handler: e.UpdateRelease},
 		{Path: "/api/releases/{releaseId}/reference/actions/change", Method: http.MethodPut, Handler: e.UpdateReleaseReference},
 		{Path: "/api/releases/{releaseId}/actions/formal", Method: http.MethodPut, Handler: e.ToFormalRelease},

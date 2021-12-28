@@ -148,6 +148,39 @@ func (e *Endpoints) UploadRelease(ctx context.Context, r *http.Request, vars map
 	})
 }
 
+func (e *Endpoints) ParseReleaseFile(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	_, err := getPermissionHeader(r)
+	if err != nil {
+		return apierrors.ErrParseReleaseFile.NotLogin().ToResp(), nil
+	}
+
+	if r.Body == nil {
+		return apierrors.ErrParseReleaseFile.MissingParameter("body").ToResp(), nil
+	}
+	var releaseRequest apistructs.ParseReleaseFileRequest
+	if err := json.NewDecoder(r.Body).Decode(&releaseRequest); err != nil {
+		return apierrors.ErrParseReleaseFile.InvalidParameter(err).ToResp(), nil
+	}
+
+	if releaseRequest.DiceFileID == "" {
+		return apierrors.ErrParseReleaseFile.MissingParameter("diceFileID").ToResp(), nil
+	}
+
+	file, err := e.bdl.DownloadDiceFile(releaseRequest.DiceFileID)
+	if err != nil {
+		return apierrors.ErrCreateRelease.InternalError(err).ToResp(), nil
+	}
+	defer file.Close()
+
+	metadata, err := parseMetadata(file)
+	if err != nil {
+		return apierrors.ErrParseReleaseFile.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(&apistructs.ParseReleaseFileResponseData{
+		Version: metadata.Version,
+	})
+}
+
 func (e *Endpoints) InjectDiceInitContainer(diceStr string) (string, error) {
 	var diceYml diceyml.Object
 	err := yaml.Unmarshal([]byte(diceStr), &diceYml)
@@ -958,4 +991,36 @@ func makeMetadata(release *dbclient.Release, appReleases []dbclient.Release) ([]
 		AppList:   appList,
 	}
 	return yaml.Marshal(releaseMeta)
+}
+
+func parseMetadata(file io.ReadCloser) (*apistructs.ReleaseMetadata, error) {
+	var metadata apistructs.ReleaseMetadata
+	found := false
+	reader := tar.NewReader(file)
+	for {
+		hdr, err := reader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		buf := bytes.Buffer{}
+		if _, err = io.Copy(&buf, reader); err != nil {
+			return nil, err
+		}
+
+		splits := strings.Split(hdr.Name, "/")
+		if len(splits) == 2 && splits[1] == "metadata.yml" {
+			if err := yaml.Unmarshal(buf.Bytes(), &metadata); err != nil {
+				return nil, err
+			}
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, errors.New("invalid file")
+	}
+	return &metadata, nil
 }

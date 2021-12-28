@@ -135,6 +135,19 @@ type ReleaseUploadRequest struct {
 	ClusterName string `json:"clusterName,omitempty"`
 }
 
+type ParseReleaseFileRequest struct {
+	DiceFileID string `json:"diceFileID,omitempty"`
+}
+
+type ReleaseParseVersionResponse struct {
+	Header
+	Data ParseReleaseFileResponseData `json:"data"`
+}
+
+type ParseReleaseFileResponseData struct {
+	Version string `json:"version,omitempty"`
+}
+
 // ReleaseResource release资源结构
 type ReleaseResource struct {
 	// Type 资源类型, 必填
