@@ -55,39 +55,26 @@ func (r *ComponentReleaseTable) Render(ctx context.Context, component *cptype.Co
 		}
 	case cptype.RenderingOperation, "changePageSize", "changeSort":
 		r.State.PageNo = 1
-	case "batchSubmit":
-		meta, ok := event.OperationData["meta"].(map[string]interface{})
-		if !ok {
-			return errors.Errorf("invalid meta in operationData")
-		}
-		operationType, ok := meta["type"].(string)
-		if !ok {
-			return errors.Errorf("invalid type in meta")
-		}
-		switch operationType {
-		case "formal":
-			if err := r.formalReleases(r.State.SelectedRowKeys...); err != nil {
-				return errors.Errorf("failed to formal release, %v", err)
-			}
-		case "delete":
-			if err := r.deleteReleases(r.State.SelectedRowKeys...); err != nil {
-				return errors.Errorf("failed to delete release, %v", err)
-			}
-		}
 	case "formal":
+		var selectedIDs []string
 		id, err := getReleaseID(event.OperationData)
 		if err != nil {
-			return err
+			selectedIDs = r.State.SelectedRowKeys
+		} else {
+			selectedIDs = append(selectedIDs, id)
 		}
-		if err = r.formalReleases(id); err != nil {
+		if err = r.formalReleases(selectedIDs); err != nil {
 			return errors.Errorf("failed to formal release, %v", err)
 		}
 	case "delete":
+		var selectedIDs []string
 		id, err := getReleaseID(event.OperationData)
 		if err != nil {
-			return err
+			selectedIDs = r.State.SelectedRowKeys
+		} else {
+			selectedIDs = append(selectedIDs, id)
 		}
-		if err = r.deleteReleases(id); err != nil {
+		if err = r.deleteReleases(selectedIDs); err != nil {
 			return errors.Errorf("failed to delete release, %v", err)
 		}
 	}
@@ -391,7 +378,7 @@ func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
 	component.Operations = r.Operations
 }
 
-func (r *ComponentReleaseTable) formalReleases(releaseID ...string) error {
+func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {
 	userID := r.sdk.Identity.UserID
 	orgIDStr := r.sdk.Identity.OrgID
 	projectID := r.State.ProjectID
@@ -413,7 +400,7 @@ func (r *ComponentReleaseTable) formalReleases(releaseID ...string) error {
 	})
 }
 
-func (r *ComponentReleaseTable) deleteReleases(releaseID ...string) error {
+func (r *ComponentReleaseTable) deleteReleases(releaseID []string) error {
 	userID := r.sdk.Identity.UserID
 	orgIDStr := r.sdk.Identity.OrgID
 	projectID := r.State.ProjectID
