@@ -280,7 +280,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		kvs, columns := l.GenProjKvColumnInfo(p, queries, params)
 		star := subProjMap[p.ProjectDTO.ID]
 		starTip := l.sdk.I18n(i18n.GenStarTip(apistructs.WorkbenchItemProj, star))
-		ts, _ := i18n.GenProjTitleState(p.ProjectDTO.Type)
+		ts, _ := l.GenProjTitleState(p.ProjectDTO.Type)
 		item := list.Item{
 			ID:          strconv.FormatUint(p.ProjectDTO.ID, 10),
 			LogoURL:     p.ProjectDTO.Logo,
@@ -323,7 +323,7 @@ func (l *WorkList) doFilterApp() (data *list.Data) {
 	subMap := make(map[uint64]bool)
 	if subs != nil {
 		for _, v := range subs.List {
-			id := v.ID
+			id := v.TypeID
 			subMap[id] = true
 		}
 	}
@@ -356,7 +356,7 @@ func (l *WorkList) doFilterApp() (data *list.Data) {
 	for _, p := range apps.List {
 		star := subMap[p.ID]
 		starTip := l.sdk.I18n(i18n.GenStarTip(apistructs.WorkbenchItemProj, star))
-		ts, _ := i18n.GenProjTitleState(p.Mode)
+		ts, _ := l.GenAppTitleState(p.Mode)
 		item := list.Item{
 			ID:          strconv.FormatUint(p.ID, 10),
 			LogoURL:     p.Logo,

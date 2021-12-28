@@ -17,6 +17,8 @@ package workList
 import (
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
@@ -178,4 +180,20 @@ func (l *WorkList) GenAppColumnInfo(app apistructs.AppWorkBenchItem) (columns ma
 	}
 	columns["hoverIcons"] = hovers
 	return
+}
+
+// LIBRARY, SERVICE, BIGDATA
+
+func (l *WorkList) GenAppTitleState(mode string) ([]list.StateInfo, bool) {
+	switch mode {
+	case "LIBRARY":
+		return []list.StateInfo{{Text: l.sdk.I18n(i18n.I18nKeyAppModeLIBRARY), Status: common.AppLibraryStatus}}, true
+	case "BIGDATA":
+		return []list.StateInfo{{Text: l.sdk.I18n(i18n.I18nKeyAppModeBIGDATA), Status: common.AppBigdataStatus}}, true
+	case "SERVICE":
+		return []list.StateInfo{{Text: l.sdk.I18n(i18n.I18nKeyAppModeSERVICE), Status: common.AppServiceStatus}}, true
+	default:
+		logrus.Warnf("wrong app mode: %v", mode)
+		return []list.StateInfo{}, false
+	}
 }
