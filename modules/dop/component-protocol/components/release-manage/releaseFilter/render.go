@@ -18,8 +18,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
-	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -28,7 +26,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/bundle/apierrors"
 	cmpTypes "github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -125,48 +122,48 @@ func (f *ComponentReleaseFilter) EncodeURLQuery() error {
 
 func (f *ComponentReleaseFilter) RenderFilter() error {
 	f.Data.HidenSave = true
-	userID := f.sdk.Identity.UserID
-	orgIDStr := f.sdk.Identity.OrgID
-	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
-	if err != nil {
-		return apierrors.ErrInvoke.InvalidParameter(fmt.Errorf("invalid org id %s, %v", orgIDStr, err))
-	}
+	//userID := f.sdk.Identity.UserID
+	//orgIDStr := f.sdk.Identity.OrgID
+	//orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
+	//if err != nil {
+	//	return apierrors.ErrInvoke.InvalidParameter(fmt.Errorf("invalid org id %s, %v", orgIDStr, err))
+	//}
 
-	if !f.State.IsProjectRelease {
-		appResp, err := f.bdl.GetAppsByProject(uint64(f.State.ProjectID), orgID, userID)
-		if err != nil {
-			return errors.Errorf("failed to list apps, %v", err)
-		}
-		appCondition := Condition{
-			Key:         "applicationIDs",
-			Label:       f.sdk.I18n("application"),
-			Placeholder: f.sdk.I18n("selectApplication"),
-			Type:        "select",
-		}
-		var appOptions []Option
-		for i := range appResp.List {
-			name := appResp.List[i].DisplayName
-			id := appResp.List[i].ID
-			appOptions = append(appOptions, Option{
-				Label: name,
-				Value: strconv.FormatInt(int64(id), 10),
-			})
-		}
-		appCondition.Options = appOptions
-		f.Data.Conditions = append(f.Data.Conditions, appCondition)
-		f.Data.Conditions = append(f.Data.Conditions, Condition{
-			Key:         "branchID",
-			Label:       f.sdk.I18n("branch"),
-			Placeholder: f.sdk.I18n("inputBranch"),
-			Type:        "input",
-		})
-		f.Data.Conditions = append(f.Data.Conditions, Condition{
-			Key:         "commitID",
-			Label:       "commitID",
-			Placeholder: f.sdk.I18n("inputCommitID"),
-			Type:        "input",
-		})
-	}
+	//if !f.State.IsProjectRelease {
+	//	appResp, err := f.bdl.GetAppsByProject(uint64(f.State.ProjectID), orgID, userID)
+	//	if err != nil {
+	//		return errors.Errorf("failed to list apps, %v", err)
+	//	}
+	//	appCondition := Condition{
+	//		Key:         "applicationIDs",
+	//		Label:       f.sdk.I18n("application"),
+	//		Placeholder: f.sdk.I18n("selectApplication"),
+	//		Type:        "select",
+	//	}
+	//	var appOptions []Option
+	//	for i := range appResp.List {
+	//		name := appResp.List[i].DisplayName
+	//		id := appResp.List[i].ID
+	//		appOptions = append(appOptions, Option{
+	//			Label: name,
+	//			Value: strconv.FormatInt(int64(id), 10),
+	//		})
+	//	}
+	//	appCondition.Options = appOptions
+	//	f.Data.Conditions = append(f.Data.Conditions, appCondition)
+	//	f.Data.Conditions = append(f.Data.Conditions, Condition{
+	//		Key:         "branchID",
+	//		Label:       f.sdk.I18n("branch"),
+	//		Placeholder: f.sdk.I18n("inputBranch"),
+	//		Type:        "input",
+	//	})
+	//	f.Data.Conditions = append(f.Data.Conditions, Condition{
+	//		Key:         "commitID",
+	//		Label:       "commitID",
+	//		Placeholder: f.sdk.I18n("inputCommitID"),
+	//		Type:        "input",
+	//	})
+	//}
 
 	userCondition := Condition{
 		Key:         "userIDs",

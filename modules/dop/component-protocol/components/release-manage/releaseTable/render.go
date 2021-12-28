@@ -180,16 +180,22 @@ func (r *ComponentReleaseTable) RenderTable() error {
 		endTime = r.State.FilterValues.CreatedAtStartEnd[1]
 	}
 
+	var appIDs []string
+	if r.State.ApplicationID > 0 {
+		appIDs = append(appIDs, strconv.FormatInt(r.State.ApplicationID, 10))
+	}
+
+	isStable := true
 	descOrder := r.State.Sorter.Order == "descend"
 	releaseResp, err := r.bdl.ListReleases(apistructs.ReleaseListRequest{
 		Branch:           r.State.FilterValues.BranchID,
-		IsStable:         true,
+		IsStable:         &isStable,
 		IsFormal:         &r.State.IsFormal,
-		IsProjectRelease: r.State.IsProjectRelease,
+		IsProjectRelease: &r.State.IsProjectRelease,
 		UserID:           r.State.FilterValues.UserIDs,
 		Version:          r.State.VersionValues.Version,
 		CommitID:         r.State.FilterValues.CommitID,
-		ApplicationID:    r.State.FilterValues.ApplicationIDs,
+		ApplicationID:    appIDs,
 		ProjectID:        projectID,
 		StartTime:        startTime,
 		EndTime:          endTime,
@@ -369,6 +375,7 @@ func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
 		"isProjectRelease":       r.State.IsProjectRelease,
 		"projectID":              r.State.ProjectID,
 		"isFormal":               r.State.IsFormal,
+		"applicationID":          r.State.ApplicationID,
 		"versionValues":          r.State.VersionValues,
 		"filterValues":           r.State.FilterValues,
 	}

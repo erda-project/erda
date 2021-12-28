@@ -99,6 +99,7 @@ type State struct {
 	IsFormal             bool          `json:"isFormal"`
 	VersionValues        VersionValues `json:"versionValues"`
 	FilterValues         FilterValues  `json:"filterValues"`
+	ApplicationID        int64         `json:"applicationID"`
 }
 
 type VersionValues struct {
@@ -106,7 +107,6 @@ type VersionValues struct {
 }
 
 type FilterValues struct {
-	ApplicationIDs    []string `json:"applicationIDs,omitempty"`
 	BranchID          string   `json:"branchID,omitempty"`
 	CommitID          string   `json:"commitID,omitempty"`
 	UserIDs           []string `json:"userIDs,omitempty"`
