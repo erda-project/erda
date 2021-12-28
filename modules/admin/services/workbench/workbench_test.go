@@ -150,3 +150,22 @@ func TestListIssueStreams(t *testing.T) {
 	}
 	t.Logf("result: %+v", r)
 }
+
+func TestListMsg(t *testing.T) {
+	bdl := initBundle()
+	req := apistructs.QueryMBoxRequest{PageNo: 1,
+		PageSize: 10,
+		Status:   apistructs.MBoxUnReadStatus,
+		Type:     apistructs.MBoxTypeIssue,
+	}
+	identity := apistructs.Identity{
+		UserID: "2",
+		OrgID:  "1",
+	}
+	res, err := bdl.ListMbox(identity, req)
+	if err != nil {
+		t.Errorf("get issue failed, error: %v", err)
+	}
+	t.Logf("response: %+v", res)
+
+}
