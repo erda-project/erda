@@ -77,9 +77,9 @@ func (b *Bundle) ListMbox(identity apistructs.Identity, req apistructs.QueryMBox
 		Header(httputil.UserHeader, identity.UserID).
 		Header(httputil.OrgHeader, identity.OrgID).
 		Param("pageNo", strconv.FormatInt(req.PageNo, 10)).
-		Param("pageSize", strconv.FormatInt(req.PageNo, 10)).
-		Param("label", req.Label).
+		Param("pageSize", strconv.FormatInt(req.PageSize, 10)).
 		Param("status", string(req.Status)).
+		Param("type", string(req.Type)).
 		Do().JSON(&qr)
 	if err != nil {
 		return data, apierrors.ErrInvoke.InternalError(err)
