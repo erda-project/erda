@@ -266,3 +266,26 @@ func (b *Bundle) GetAddon(addonid string, orgID string, userID string) (*apistru
 	}
 	return &resp.Data, nil
 }
+
+func (b *Bundle) DeleteAddon(addonID string, orgID string, userID string) (*apistructs.AddonFetchResponseData, error) {
+	host, err := b.urls.Orchestrator()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+	var resp apistructs.AddonFetchResponse
+	r, err := hc.Delete(host).
+		Path(fmt.Sprintf("/api/addons/%s", addonID)).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		Header(httputil.OrgHeader, orgID).
+		Do().
+		JSON(&resp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() {
+		return nil, toAPIError(r.StatusCode(), apistructs.ErrorResponse{Msg: "delete addon failed"})
+	}
+	return &resp.Data, nil
+}
