@@ -12,27 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
+package common
 
-type (
-	MetricReceiverConsumeFunc func(data Metrics)
-	TraceReceiverConsumeFunc  func(data Traces)
-	LogReceiverConsumeFunc    func(data Logs)
-
-	ObservableDataReceiverFunc func(data ObservableData)
+import (
+	"strings"
 )
 
-type Receiver interface {
-	Component
-	// TODO
-	RegisterConsumer(consumer ObservableDataReceiverFunc)
+func NormalizeKey(key string) string {
+	key = strings.ReplaceAll(key, ".", "_")
+	key = strings.ReplaceAll(key, "/", "_")
+	return key
 }
-
-type NoopReceiver struct {
-}
-
-func (n *NoopReceiver) ComponentID() ComponentID {
-	return "NoopReceiver"
-}
-
-func (n *NoopReceiver) RegisterConsumer(consumer ObservableDataReceiverFunc) {}

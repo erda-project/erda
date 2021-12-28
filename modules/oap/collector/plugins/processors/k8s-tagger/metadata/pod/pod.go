@@ -15,50 +15,83 @@
 package pod
 
 import (
+	"strings"
 	"sync"
 
+	"github.com/erda-project/erda/modules/oap/collector/plugins/common"
 	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
-type Key struct {
-	Name      string
-	Namespace string
-}
+const (
+	// "<pod_namespace>/<pod_name>"
+	IndexerPodName = "pod_name"
+	// "<pod_uid>"
+	IndexerPodUID = "pod_uid"
+)
+
+type Key string
 
 type Value map[string]string
 
 type Cache struct {
-	store map[Key]Value
-	mu    sync.RWMutex
+	podnameIndexer map[Key]Value
+	poduidInddexer map[Key]Value
+	mu             sync.RWMutex
+}
+
+func PodName(namespace, name string) Key {
+	return Key(strings.Join([]string{namespace, name}, "/"))
+}
+
+func PodUID(uid types.UID) Key {
+	return Key(uid)
 }
 
 func NewCache(podList []apiv1.Pod) *Cache {
-	store := make(map[Key]Value, len(podList))
+	c := &Cache{
+		podnameIndexer: make(map[Key]Value, len(podList)),
+		poduidInddexer: make(map[Key]Value, len(podList)),
+	}
 	for _, pod := range podList {
-		store[Key{Namespace: pod.Namespace, Name: pod.Name}] = extractPodMetadata(&pod)
+		m := extractPodMetadata(&pod)
+		c.podnameIndexer[PodName(pod.Namespace, pod.Name)] = m
+		c.poduidInddexer[PodUID(pod.UID)] = m
 	}
-	return &Cache{
-		store: store,
-	}
+	return c
 }
 
 func (c *Cache) AddOrUpdate(pod *apiv1.Pod) {
 	c.mu.Lock()
-	c.store[Key{Namespace: pod.Namespace, Name: pod.Name}] = extractPodMetadata(pod)
+	m := extractPodMetadata(pod)
+	c.podnameIndexer[PodName(pod.Namespace, pod.Name)] = m
+	c.poduidInddexer[PodUID(pod.UID)] = m
 	c.mu.Unlock()
 }
 
-func (c *Cache) Delete(name, namespace string) {
+func (c *Cache) Delete(pod *apiv1.Pod) {
 	c.mu.Lock()
-	delete(c.store, Key{Namespace: namespace, Name: name})
+	delete(c.podnameIndexer, PodName(pod.Namespace, pod.Name))
+	delete(c.poduidInddexer, PodUID(pod.UID))
 	c.mu.Unlock()
 }
 
-func (c *Cache) Get(name, namespace string) (map[string]string, bool) {
+func (c *Cache) GetByPodNameIndexer(index Key) (map[string]string, bool) {
 	c.mu.RLock()
 	c.mu.RUnlock()
-	val, ok := c.store[Key{Namespace: namespace, Name: name}]
+	val, ok := c.podnameIndexer[index]
+	if !ok {
+		return nil, false
+	}
+
+	return val, true
+}
+
+func (c *Cache) GetByPodUIDIndexer(index Key) (map[string]string, bool) {
+	c.mu.RLock()
+	c.mu.RUnlock()
+	val, ok := c.poduidInddexer[index]
 	if !ok {
 		return nil, false
 	}
@@ -71,14 +104,15 @@ func extractPodMetadata(pod *apiv1.Pod) map[string]string {
 	m[metadata.PrefixPod+"name"] = pod.Name
 	m[metadata.PrefixPod+"namespace"] = pod.Namespace
 	m[metadata.PrefixPod+"uid"] = string(pod.UID)
+	m[metadata.PrefixPod+"ip"] = pod.Status.PodIP
 
 	// labels
 	for k, v := range pod.Labels {
-		m[metadata.PrefixPodLabels+k] = v
+		m[metadata.PrefixPodLabels+common.NormalizeKey(k)] = v
 	}
 	// annotations
 	for k, v := range pod.Annotations {
-		m[metadata.PrefixPodAnnotations+k] = v
+		m[metadata.PrefixPodAnnotations+common.NormalizeKey(k)] = v
 	}
 	return m
 }

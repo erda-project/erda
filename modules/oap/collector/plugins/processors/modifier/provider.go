@@ -1,18 +1,16 @@
-package stdout
+package modifier
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
 
-var providerName = plugins.WithPrefixExporter("stdout")
+var providerName = plugins.WithPrefixProcessor("modifier")
 
 type config struct {
+	Rules []modifierCfg `file:"rules"`
 }
 
 // +provider
@@ -25,21 +23,9 @@ func (p *provider) ComponentID() model.ComponentID {
 	return model.ComponentID(providerName)
 }
 
-func (p *provider) Connect() error {
-	return nil
-}
-
-func (p *provider) Close() error {
-	return nil
-}
-
-func (p *provider) Export(od model.ObservableData) error {
-	buf, err := json.Marshal(&od)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("%s\n", string(buf))
-	return nil
+func (p *provider) Process(data model.ObservableData) (model.ObservableData, error) {
+	data.RangeTagsFunc(p.modify)
+	return data, nil
 }
 
 // Run this is optional
@@ -52,7 +38,8 @@ func init() {
 		Services: []string{
 			providerName,
 		},
-		Description: "here is description of erda.oap.collector.exporter.stdout",
+
+		Description: "here is description of erda.oap.collector.processor.modifier",
 		ConfigFunc: func() interface{} {
 			return &config{}
 		},

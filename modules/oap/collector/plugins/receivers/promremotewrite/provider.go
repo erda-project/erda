@@ -17,7 +17,6 @@ package promremotewrite
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -40,13 +39,11 @@ type provider struct {
 	Log    logs.Logger
 	Router httpserver.Router `autowired:"http-router"`
 
-	label        string
 	consumerFunc model.ObservableDataReceiverFunc
 }
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.label = ctx.Label()
 	p.Router.POST("/api/v1/prometheus-remote-write", p.prwHandler)
 	return nil
 }
@@ -76,12 +73,12 @@ func (p *provider) prwHandler(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-func (p *provider) RegisterConsumeFunc(consumer model.ObservableDataReceiverFunc) {
+func (p *provider) RegisterConsumer(consumer model.ObservableDataReceiverFunc) {
 	p.consumerFunc = consumer
 }
 
 func (p *provider) ComponentID() model.ComponentID {
-	return model.ComponentID(strings.Join([]string{providerName, p.label}, "@"))
+	return model.ComponentID(providerName)
 }
 
 func init() {

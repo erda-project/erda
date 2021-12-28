@@ -15,6 +15,8 @@
 package model
 
 import (
+	"encoding/json"
+
 	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
 	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	tpb "github.com/erda-project/erda-proto-go/oap/trace/pb"
@@ -30,10 +32,23 @@ const (
 
 type ObservableData interface {
 	Clone() ObservableData
+	RangeTagsFunc(handle func(tags map[string]string))
+	MarshalJson() ([]byte, error)
 }
 
+// Metrics
 type Metrics struct {
 	Metrics []*mpb.Metric `json:"metrics"`
+}
+
+func (m *Metrics) MarshalJson() ([]byte, error) {
+	return json.Marshal(m.Metrics)
+}
+
+func (m *Metrics) RangeTagsFunc(handle func(tags map[string]string)) {
+	for _, item := range m.Metrics {
+		handle(item.Attributes)
+	}
 }
 
 func (m *Metrics) Clone() ObservableData {
@@ -42,6 +57,7 @@ func (m *Metrics) Clone() ObservableData {
 	return &Metrics{Metrics: data}
 }
 
+// Traces
 type Traces struct {
 	Spans []*tpb.Span `json:"spans"`
 }
@@ -52,6 +68,17 @@ func (t *Traces) Clone() ObservableData {
 	return &Traces{Spans: data}
 }
 
+func (t *Traces) RangeTagsFunc(handle func(tags map[string]string)) {
+	for _, item := range t.Spans {
+		handle(item.Attributes)
+	}
+}
+
+func (t *Traces) MarshalJson() ([]byte, error) {
+	return json.Marshal(t.Spans)
+}
+
+// Logs
 type Logs struct {
 	Logs []*lpb.Log `json:"logs"`
 }
@@ -60,4 +87,14 @@ func (l *Logs) Clone() ObservableData {
 	data := make([]*lpb.Log, len(l.Logs))
 	copy(data, l.Logs)
 	return &Logs{Logs: data}
+}
+
+func (l *Logs) RangeTagsFunc(handle func(tags map[string]string)) {
+	for _, item := range l.Logs {
+		handle(item.Attributes)
+	}
+}
+
+func (l *Logs) MarshalJson() ([]byte, error) {
+	return json.Marshal(l.Logs)
 }

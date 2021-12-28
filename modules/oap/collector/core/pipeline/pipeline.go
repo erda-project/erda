@@ -153,6 +153,6 @@ func (p *Pipeline) startReceivers(ctx context.Context, in chan<- model.Observabl
 			case <-ctx.Done():
 			}
 		}
-		r.RegisterConsumeFunc(consumer)
+		r.RegisterConsumer(consumer)
 	}
 }

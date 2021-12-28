@@ -3,7 +3,6 @@ package dummy
 import (
 	"context"
 	"encoding/json"
-	"strings"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -29,54 +28,39 @@ type provider struct {
 	Cfg *config
 	Log logs.Logger
 
-	label        string
 	consumerFunc model.ObservableDataReceiverFunc
 }
 
-func (p *provider) RegisterConsumeFunc(consumer model.ObservableDataReceiverFunc) {
+func (p *provider) RegisterConsumer(consumer model.ObservableDataReceiverFunc) {
 	p.consumerFunc = consumer
 }
 
 func (p *provider) ComponentID() model.ComponentID {
-	return model.ComponentID(strings.Join([]string{providerName, p.label}, "@"))
+	return model.ComponentID(providerName)
 }
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.label = ctx.Label()
 	p.Log.Infof("label: %s", ctx.Label())
 	return nil
 }
 
 func (p *provider) Run(ctx context.Context) error {
 	if p.Cfg.MetricSample != "" {
-		chunk := make([]*mpb.Metric, 0)
-		err := json.Unmarshal([]byte(p.Cfg.MetricSample), &chunk)
-		if err != nil {
-			p.Log.Errorf("unmarshal MetricSample err: %s", err)
-		}
-		go p.dummy(ctx, &model.Metrics{Metrics: chunk})
+		go p.dummyMetrics(ctx)
 	}
+
 	if p.Cfg.TraceSample != "" {
-		chunk := make([]*tpb.Span, 0)
-		err := json.Unmarshal([]byte(p.Cfg.TraceSample), &chunk)
-		if err != nil {
-			p.Log.Errorf("unmarshal TraceSample err: %s", err)
-		}
-		go p.dummy(ctx, &model.Traces{Spans: chunk})
+		go p.dummyTraces(ctx)
 	}
+
 	if p.Cfg.LogSample != "" {
-		chunk := make([]*lpb.Log, 0)
-		err := json.Unmarshal([]byte(p.Cfg.MetricSample), &chunk)
-		if err != nil {
-			p.Log.Errorf("unmarshal LogSample err: %s", err)
-		}
-		go p.dummy(ctx, &model.Logs{Logs: chunk})
+		go p.dummyLogs(ctx)
 	}
 	return nil
 }
 
-func (p *provider) dummy(ctx context.Context, data model.ObservableData) {
+func (p *provider) dummyMetrics(ctx context.Context) {
 	ticker := time.NewTicker(p.Cfg.Rate)
 	defer ticker.Stop()
 	for {
@@ -85,8 +69,54 @@ func (p *provider) dummy(ctx context.Context, data model.ObservableData) {
 		case <-ctx.Done():
 			return
 		}
+		chunk := make([]*mpb.Metric, 0)
+		err := json.Unmarshal([]byte(p.Cfg.MetricSample), &chunk)
+		if err != nil {
+			p.Log.Errorf("unmarshal MetricSample err: %s", err)
+		}
+		data := &model.Metrics{Metrics: chunk}
 		if p.consumerFunc != nil {
 			p.consumerFunc(data)
+		}
+	}
+}
+
+func (p *provider) dummyTraces(ctx context.Context) {
+	ticker := time.NewTicker(p.Cfg.Rate)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			return
+		}
+		chunk := make([]*tpb.Span, 0)
+		err := json.Unmarshal([]byte(p.Cfg.TraceSample), &chunk)
+		if err != nil {
+			p.Log.Errorf("unmarshal TraceSample err: %s", err)
+		}
+		if p.consumerFunc != nil {
+			p.consumerFunc(&model.Traces{Spans: chunk})
+		}
+	}
+}
+
+func (p *provider) dummyLogs(ctx context.Context) {
+	ticker := time.NewTicker(p.Cfg.Rate)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			return
+		}
+		chunk := make([]*lpb.Log, 0)
+		err := json.Unmarshal([]byte(p.Cfg.MetricSample), &chunk)
+		if err != nil {
+			p.Log.Errorf("unmarshal LogSample err: %s", err)
+		}
+		if p.consumerFunc != nil {
+			p.consumerFunc(&model.Logs{Logs: chunk})
 		}
 	}
 }

@@ -15,34 +15,57 @@
 package tagger
 
 import (
+	"regexp"
+	"strings"
+
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata/pod"
 )
 
-func (p *provider) processMetrics(metrics *model.Metrics) (model.ObservableData, error) {
-	pcfg := p.Cfg.Matchers.Pod
-	if pcfg == nil {
-		return metrics, nil
-	}
-	// 1. filter
-	// 2. find
-	// 3. tagger
-	for _, item := range metrics.Metrics {
-		// filter
-		for _, f := range pcfg.Filters {
-			if item.Attributes[f.Key] != f.Value {
-				break
-			}
-		}
+var matcherPattern = regexp.MustCompile("%{([^%{}]*)}")
 
-		// find
-		meta, ok := p.podCache.Get(item.Attributes[pcfg.Finder.NameKey], item.Attributes[pcfg.Finder.NamespaceKey])
-		if !ok {
+func (p *provider) addMetadata(od model.ObservableData) {
+	od.RangeTagsFunc(func(tags map[string]string) {
+		p.addPodMetadata(tags)
+	})
+}
+
+func (p *provider) addPodMetadata(tags map[string]string) {
+	finders := p.Cfg.Pod.AddMetadata.Finders
+	for _, f := range finders {
+		switch f.Indexer {
+		case pod.IndexerPodName:
+			index := generateIndexByMatcher(f.Matcher, tags)
+			m, ok := p.podCache.GetByPodNameIndexer(index)
+			if !ok {
+				p.Log.Infof("GetByPodNameIndexer failed with key %q", index)
+				continue
+			}
+			mergeMap(tags, m)
+		case pod.IndexerPodUID:
+			index := f.Matcher
+			m, ok := p.podCache.GetByPodUIDIndexer(pod.Key(index))
+			if !ok {
+				p.Log.Infof("GetByPodUIDIndexer failed with key %q", index)
+				continue
+			}
+			mergeMap(tags, m)
+		}
+	}
+}
+
+// {namespace}/{pod}
+func generateIndexByMatcher(matcher string, tags map[string]string) pod.Key {
+	matches := matcherPattern.FindAllStringSubmatch(matcher, -1)
+	for _, item := range matches {
+		if len(item) != 2 {
 			continue
 		}
-		// tagger
-		mergeMap(item.Attributes, meta)
+		if v, ok := tags[item[1]]; ok {
+			matcher = strings.Replace(matcher, item[0], v, -1)
+		}
 	}
-	return metrics, nil
+	return pod.Key(matcher)
 }
 
 func mergeMap(dst, src map[string]string) {

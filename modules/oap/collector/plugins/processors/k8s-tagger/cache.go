@@ -26,7 +26,7 @@ import (
 )
 
 func (p *provider) initCache(ctx context.Context) error {
-	pSelector := p.Cfg.PodSelector
+	pSelector := p.Cfg.Pod.WatchSelector
 	pList, err := p.Kubernetes.Client().CoreV1().Pods(pSelector.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: pSelector.LabelSelector,
 		FieldSelector: pSelector.FieldSelector,
@@ -50,7 +50,7 @@ func (p *provider) watchPodChange(ctx context.Context, ch <-chan wpod.Event) {
 				p.podCache.AddOrUpdate(event.Pod)
 			case watcher.ActionDelete:
 				// TODO mayne need delay
-				p.podCache.Delete(event.Pod.Name, event.Pod.Namespace)
+				p.podCache.Delete(event.Pod)
 			default:
 				p.Log.Errorf("invalid action: %q", event.Action)
 			}
