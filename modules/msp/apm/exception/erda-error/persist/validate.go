@@ -18,17 +18,17 @@ import (
 	"errors"
 
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/msp/apm/exception"
+	"github.com/erda-project/erda/modules/msp/apm/exception/model"
 )
 
 // Validator .
 type Validator interface {
-	Validate(s *exception.Erda_error) error
+	Validate(s *model.Error) error
 }
 
 type nopValidator struct{}
 
-func (*nopValidator) Validate(*exception.Erda_error) error { return nil }
+func (*nopValidator) Validate(*model.Error) error { return nil }
 
 // NopValidator .
 var NopValidator Validator = &nopValidator{}
@@ -48,7 +48,7 @@ var (
 	ErrIDEmpty = errors.New("id empty")
 )
 
-func (v *validator) Validate(e *exception.Erda_error) error {
+func (v *validator) Validate(e *model.Error) error {
 	if len(e.ErrorId) <= 0 {
 		return ErrIDEmpty
 	}
