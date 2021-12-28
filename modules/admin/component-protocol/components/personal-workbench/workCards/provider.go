@@ -511,7 +511,7 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 			data.Cards = append(data.Cards, cardlist.Card{
 				ID:             fmt.Sprintf("%d", project.ProjectDTO.ID),
 				ImgURL:         project.ProjectDTO.Logo,
-				Title:          project.ProjectDTO.Name,
+				Title:          project.ProjectDTO.DisplayName,
 				TitleState:     getTitleState(sdk, apistructs.WorkbenchItemApp.String()),
 				Star:           true,
 				TextMeta:       wc.getProjTextMeta(sdk, project),

@@ -45,12 +45,16 @@ type WorkList struct {
 	base.DefaultProvider
 	impl.DefaultList
 
-	sdk   *cptype.SDK
-	bdl   *bundle.Bundle
-	wbSvc *workbench.Workbench
-
+	sdk       *cptype.SDK
+	bdl       *bundle.Bundle
+	wbSvc     *workbench.Workbench
+	State     State
 	identity  apistructs.Identity
 	filterReq apistructs.WorkbenchProjAppRequest
+}
+
+type State struct {
+	Tabs apistructs.WorkbenchItemType `json:"tabs"`
 }
 
 func init() {
@@ -79,7 +83,6 @@ func (l *WorkList) BeforeHandleOp(sdk *cptype.SDK) {
 	gh := gshelper.NewGSHelper(sdk.GlobalState)
 	tp, _ := gh.GetWorkbenchItemType()
 	query, _ := gh.GetFilterName()
-
 	// construct filter info, check & set default value
 	l.filterReq = apistructs.WorkbenchProjAppRequest{
 		Type:  tp,
@@ -120,77 +123,62 @@ func (l *WorkList) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.O
 
 // RegisterItemStarOp when item stared, filter is unnecessary
 func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
-		var (
-			tp      apistructs.SubscribeType
-			tpID    uint64
-			star    bool
-			updated bool
-		)
+	//func(sdk *cptype.SDK) {
+	var (
+		tp   apistructs.SubscribeType
+		tpID uint64
+		// star bool
+	)
 
-		if l.filterReq.Type == apistructs.WorkbenchItemProj {
-			tp = apistructs.ProjectSubscribe
-		} else {
-			tp = apistructs.AppSubscribe
-		}
-
-		id, err := strconv.Atoi(opData.ClientData.DataRef.ID)
-		if err != nil {
-			logrus.Errorf("star operation, format ClientData id failed, id: %v, error: %v", opData.ClientData.DataRef.ID, err)
-			return
-		}
-		tpID = uint64(id)
-
-		// if not star, create subscribe & unstar; else delete subscribe & set state
-		if opData.ClientData.DataRef.Star == nil {
-			logrus.Errorf("nil star value")
-			return
-		}
-
-		if !*opData.ClientData.DataRef.Star {
-			req := apistructs.CreateSubscribeReq{
-				Type:   tp,
-				TypeID: tpID,
-				Name:   opData.ClientData.DataRef.Title,
-				UserID: l.identity.UserID,
-			}
-			_, err = l.bdl.CreateSubscribe(l.identity.UserID, l.identity.OrgID, req)
-			if err != nil {
-				logrus.Errorf("star %v %v failed, id: %v, error: %v", req.Type, req.Name, req.TypeID, err)
-				return
-			}
-			star = true
-		} else {
-			req := apistructs.UnSubscribeReq{
-				Type:   tp,
-				TypeID: tpID,
-				UserID: l.identity.UserID,
-			}
-			err = l.bdl.DeleteSubscribe(l.identity.UserID, l.identity.OrgID, req)
-			if err != nil {
-				logrus.Errorf("unstar failed, id: %v, error: %v", req.TypeID, err)
-				return
-			}
-			star = false
-		}
-		// TODO: update data in place, do not need reload
-		if l.StdDataPtr == nil {
-			logrus.Errorf("std data prt is nil")
-			return
-		}
-		for i := range l.StdDataPtr.List {
-			item := l.StdDataPtr.List[i]
-			if item.ID == opData.ClientData.DataRef.ID {
-				l.StdDataPtr.List[i].Star = &star
-				updated = true
-				break
-			}
-		}
-		if !updated {
-			logrus.Errorf("cannot update star info in local data")
-		}
-		// l.StdDataPtr = l.doFilter()
+	if l.filterReq.Type == apistructs.WorkbenchItemProj {
+		tp = apistructs.ProjectSubscribe
+	} else {
+		tp = apistructs.AppSubscribe
 	}
+
+	id, err := strconv.Atoi(opData.ClientData.DataRef.ID)
+	if err != nil {
+		logrus.Errorf("star operation, format ClientData id failed, id: %v, error: %v", opData.ClientData.DataRef.ID, err)
+		return
+	}
+	tpID = uint64(id)
+
+	// if not star, create subscribe & unstar; else delete subscribe & set state
+	if opData.ClientData.DataRef.Star == nil {
+		logrus.Errorf("nil star value")
+		return
+	}
+
+	if !*opData.ClientData.DataRef.Star {
+		req := apistructs.CreateSubscribeReq{
+			Type:   tp,
+			TypeID: tpID,
+			Name:   opData.ClientData.DataRef.Title,
+			UserID: l.identity.UserID,
+		}
+		_, err = l.bdl.CreateSubscribe(l.identity.UserID, l.identity.OrgID, req)
+		if err != nil {
+			logrus.Errorf("star %v %v failed, id: %v, error: %v", req.Type, req.Name, req.TypeID, err)
+			return
+		}
+		// star = true
+	} else {
+		req := apistructs.UnSubscribeReq{
+			Type:   tp,
+			TypeID: tpID,
+			UserID: l.identity.UserID,
+		}
+
+		err = l.bdl.DeleteSubscribe(l.identity.UserID, l.identity.OrgID, req)
+		if err != nil {
+			logrus.Errorf("unstar failed, id: %v, error: %v", req.TypeID, err)
+			return
+		}
+		// star = false
+	}
+	// TODO: update data in place, do not need reload
+	l.StdDataPtr = l.doFilter()
+	return nil
 }
 
 func (l *WorkList) RegisterItemClickGotoOp(opData list.OpItemClickGoto) (opFunc cptype.OperationFunc) {
