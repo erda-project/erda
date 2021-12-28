@@ -287,7 +287,6 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 			Title:       p.ProjectDTO.Name,
 			TitleState:  ts,
 			Star:        &star,
-			Description: p.ProjectDTO.Desc,
 			KvInfos:     kvs,
 			ColumnsInfo: columns,
 			Operations: map[cptype.OperationKey]cptype.Operation{
@@ -363,7 +362,6 @@ func (l *WorkList) doFilterApp() (data *list.Data) {
 			Title:       p.Name,
 			TitleState:  ts,
 			Star:        &star,
-			Description: p.Desc,
 			KvInfos:     l.GenAppKvInfo(p),
 			ColumnsInfo: l.GenAppColumnInfo(p),
 			Operations: map[cptype.OperationKey]cptype.Operation{
