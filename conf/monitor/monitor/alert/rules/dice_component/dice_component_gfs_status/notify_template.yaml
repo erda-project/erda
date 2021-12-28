@@ -1,0 +1,68 @@
+- name: "平台组件网盘不可用告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  title: |
+    【平台组件网盘疑似不可用告警】
+  template: |
+    【平台组件网盘疑似不可用告警】
+
+    组件: {{component_name}}
+
+    集群: {{cluster_name}}
+
+    机器: {{host_ip}}
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "平台组件网盘不可用告警"
+  trigger: "alert"
+  target: "sms"
+  title: |
+    【平台组件网盘疑似不可用告警】
+  template: |
+    {{component_name}}组件触发平台组件网盘疑似不可用告警，告警级别: {{level}}
+
+- name: "平台组件网盘不可用告警"
+  trigger: "alert"
+  target: "sms"
+  title: |
+    【平台组件网盘疑似不可用告警】
+  template: |
+    {{component_name}}组件触发平台组件网盘疑似不可用告警，告警级别: {{level}}
+
+- name: "平台组件网盘不可用告警恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  title: |
+    【平台组件网盘疑似不可用告警恢复】
+  template: |
+    【平台组件网盘疑似不可用告警恢复】
+
+    组件: {{component_name}}
+
+    集群: {{cluster_name}}
+
+    机器: {{host_ip}}
+
+    时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: "平台组件网盘不可用告警恢复"
+  trigger: "recover"
+  target: "sms"
+  title: |
+    【平台组件网盘疑似不可用告警恢复】
+  template: |
+    {{component_name}}组件触发平台组件网盘疑似不可用告警恢复
+- name: "平台组件网盘不可用告警恢复"
+  trigger: "recover"
+  target: "vms"
+  title: |
+    【平台组件网盘疑似不可用告警恢复】
+  template: |
+    {{component_name}}组件触发平台组件网盘疑似不可用告警恢复

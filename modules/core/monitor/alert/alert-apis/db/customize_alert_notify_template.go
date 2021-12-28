@@ -81,3 +81,12 @@ func (db *CustomizeAlertNotifyTemplateDB) DeleteByAlertID(alertID uint64) error 
 func (db *CustomizeAlertNotifyTemplateDB) DeleteByIDs(ids []uint64) error {
 	return db.Where("id IN (?)", ids).Delete(CustomizeAlertNotifyTemplate{}).Error
 }
+
+func (db *CustomizeAlertNotifyTemplateDB) QueryCustomizeAlertTemplate() ([]*CustomizeAlertNotifyTemplate, error) {
+	var templates []*CustomizeAlertNotifyTemplate
+	err := db.Where("enable = ?", true).Order("create_time").Find(&templates).Error
+	if err != nil {
+		return nil, err
+	}
+	return templates, nil
+}

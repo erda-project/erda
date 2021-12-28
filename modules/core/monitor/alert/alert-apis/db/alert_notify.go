@@ -65,3 +65,19 @@ func (db *AlertNotifyDB) DeleteByAlertID(alertID uint64) error {
 func (db *AlertNotifyDB) DeleteByIDs(ids []uint64) error {
 	return db.Where("id IN (?)", ids).Delete(AlertNotify{}).Error
 }
+
+func (db *AlertNotifyDB) QueryAlertNotify(pageNo, pageSize int64) ([]*AlertNotify, int64, error) {
+	var alertNotifies []*AlertNotify
+	var count int64
+	query := db.Model(&AlertNotify{}).Where("enable = ?", true)
+	err := query.Count(&count).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	err = query.Offset((pageNo - 1) * pageSize).Limit(pageSize).
+		Find(&alertNotifies).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	return alertNotifies, count, nil
+}
