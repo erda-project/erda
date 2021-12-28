@@ -22,6 +22,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/msp/menu/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/discover"
@@ -222,9 +223,13 @@ func (b *Bundle) ListProjectsEnvAndTenantId(userID, orgID, tenantId, Type string
 	hc := b.hc
 
 	var rsp = apistructs.GetMenuResponse{}
+	var req = pb.GetMenuRequest{}
+	req.Type = Type
+	req.TenantId = tenantId
 	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/msp/tenant/menu")).
 		Header("User-ID", userID).
 		Header("Org-ID", orgID).
+		JSONBody(&req).
 		Do().JSON(&rsp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
