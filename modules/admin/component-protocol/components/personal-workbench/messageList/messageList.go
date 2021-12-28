@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -216,6 +217,9 @@ func (l *MessageList) getReadableTimeText(t time.Time) string {
 }
 
 func getIssueID(deduplicateID string) (uint64, error) {
+	if deduplicateID == "" {
+		return 0, errors.New("deduplicate id is nil")
+	}
 	sli := strings.SplitN(deduplicateID, "-", 2)
 	idStr := sli[1]
 	id, err := strconv.Atoi(idStr)
@@ -239,7 +243,7 @@ func genClickGotoServerData(i *apistructs.MBox) (data map[cptype.OperationKey]cp
 			Target: i.Content,
 		}
 	} else {
-		logrus.Errorf("content not prefix with http, content prefix: %v, mbox id: %v", i.Content[:30], i.ID)
+		logrus.Errorf("content not prefix with http, mbox id: %v", i.ID)
 		return
 
 	}

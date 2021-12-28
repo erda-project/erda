@@ -17,7 +17,6 @@ package workListFilter
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -42,8 +41,9 @@ type ComponentFilter struct {
 }
 
 type State struct {
-	FrontendConditionProps  []filter.PropCondition `json:"conditions,omitempty"`
-	FrontendConditionValues FrontendConditions     `json:"values,omitempty"`
+	Tabs                    apistructs.WorkbenchItemType `json:"tabs"`
+	FrontendConditionProps  []filter.PropCondition       `json:"conditions,omitempty"`
+	FrontendConditionValues FrontendConditions           `json:"values,omitempty"`
 }
 
 type FrontendConditions struct {
@@ -90,11 +90,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	f.Operations = map[filter.OperationKey]filter.Operation{
 		OperationKeyFilter: {Key: OperationKeyFilter, Reload: true},
 	}
-	tp, ok := f.gsHelper.GetWorkbenchItemType()
-	if !ok {
-		panic(fmt.Errorf("worklist filter get workbench item type failed"))
-	}
-
+	tp, _ := f.gsHelper.GetWorkbenchItemType()
 	var phTxt string
 	if tp == apistructs.WorkbenchItemApp {
 		phTxt = f.sdk.I18n(i18n.I18nKeySearchByAppName)
