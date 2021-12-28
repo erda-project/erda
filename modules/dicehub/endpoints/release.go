@@ -649,9 +649,13 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 		crossClusterOrSpecifyCluster = &s
 	}
 
-	isStable := false
-	if s := r.URL.Query().Get("isStable"); s == "true" {
-		isStable = true
+	var isStablePtr *bool
+	if s := r.URL.Query().Get("isStable"); s != "" {
+		isStable, err := strconv.ParseBool(s)
+		if err != nil {
+			return nil, err
+		}
+		isStablePtr = &isStable
 	}
 
 	var isFormalPtr *bool
@@ -663,9 +667,13 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 		isFormalPtr = &isFormal
 	}
 
-	isProjectRelease := false
-	if s := r.URL.Query().Get("isProjectRelease"); s == "true" {
-		isProjectRelease = true
+	var isProjectReleasePtr *bool
+	if s := r.URL.Query().Get("isProjectRelease"); s != "" {
+		isProjectRelease, err := strconv.ParseBool(s)
+		if err != nil {
+			return nil, err
+		}
+		isProjectReleasePtr = &isProjectRelease
 	}
 
 	userIDStr := r.URL.Query()["userId"]
@@ -685,9 +693,9 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 		ReleaseName:                  releaseName,
 		Cluster:                      clusterName,
 		Branch:                       branch,
-		IsStable:                     isStable,
+		IsStable:                     isStablePtr,
 		IsFormal:                     isFormalPtr,
-		IsProjectRelease:             isProjectRelease,
+		IsProjectRelease:             isProjectReleasePtr,
 		UserID:                       userID,
 		Version:                      version,
 		CommitID:                     commitID,

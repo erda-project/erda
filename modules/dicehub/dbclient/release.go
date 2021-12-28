@@ -122,7 +122,7 @@ func (client *DBClient) GetReleases(releaseIDs []string) ([]Release, error) {
 func (client *DBClient) GetReleasesByParams(
 	orgID, projectID int64, applicationID []string,
 	keyword, releaseName, branch string,
-	isStable bool, isFormal *bool, isProjectRelease bool,
+	isStable, isFormal, isProjectRelease *bool,
 	userID []string, version string, commitID, tags,
 	cluster string, crossCluster *bool, isVersion bool, crossClusterOrSpecifyCluster *string,
 	startTime, endTime time.Time, pageNum, pageSize int64,
@@ -163,7 +163,13 @@ func (client *DBClient) GetReleasesByParams(
 		db = db.Where("labels LIKE ?", "%"+fmt.Sprintf("\"gitBranch\":\"%s\"", branch)+"%")
 	}
 
-	db = db.Where("is_stable = ?", isStable).Where("is_project_release = ?", isProjectRelease)
+	if isStable != nil {
+		db = db.Where("is_stable = ?", isStable)
+	}
+
+	if isProjectRelease != nil {
+		db = db.Where("is_project_release = ?", isProjectRelease)
+	}
 
 	if isFormal != nil {
 		db = db.Where("is_formal = ?", *isFormal)

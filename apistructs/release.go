@@ -286,13 +286,13 @@ type ReleaseListRequest struct {
 	Branch string `json:"-" query:"branchName"`
 
 	// stable表示非临时制品
-	IsStable bool `json:"-" query:"isStable"`
+	IsStable *bool `json:"-" query:"isStable"`
 
 	// 是否为正式版本
 	IsFormal *bool `json:"-" query:"isFormal"`
 
 	// 是否为项目制品
-	IsProjectRelease bool `json:"-" query:"isProjectRelease"`
+	IsProjectRelease *bool `json:"-" query:"isProjectRelease"`
 
 	// 提交用户
 	UserID []string `json:"-" query:"userID"`
@@ -378,11 +378,15 @@ func (req ReleaseListRequest) ConvertToQueryParams() url.Values {
 	if req.Branch != "" {
 		values.Add("branchName", req.Branch)
 	}
-	values.Add("isStable", strconv.FormatBool(req.IsStable))
+	if req.IsStable != nil {
+		values.Add("isStable", strconv.FormatBool(*req.IsStable))
+	}
 	if req.IsFormal != nil {
 		values.Add("isFormal", strconv.FormatBool(*req.IsFormal))
 	}
-	values.Add("isProjectRelease", strconv.FormatBool(req.IsProjectRelease))
+	if req.IsProjectRelease != nil {
+		values.Add("isProjectRelease", strconv.FormatBool(*req.IsProjectRelease))
+	}
 	for _, id := range req.UserID {
 		values.Add("userId", id)
 	}
