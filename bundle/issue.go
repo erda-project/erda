@@ -372,3 +372,30 @@ func (b *Bundle) GetIssueStage(orgID int64, issueType apistructs.IssueType) ([]a
 
 	return isp.Data, nil
 }
+
+func (b *Bundle) GetIssueStreams(req apistructs.IssueStreamPagingRequest) (data apistructs.IssueStreamPagingResponseData, err error) {
+	data = apistructs.IssueStreamPagingResponseData{}
+	host, err := b.urls.DOP()
+	if err != nil {
+		return
+	}
+	hc := b.hc
+
+	var isp apistructs.IssueStreamPagingResponse
+	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/issues/%v/streams", req.IssueID)).
+		Header(httputil.InternalHeader, "bundle").
+		Param("pageNo", strconv.FormatUint(req.PageNo, 10)).
+		Param("pageSize", strconv.FormatUint(req.PageSize, 10)).
+		Do().JSON(&isp)
+	if err != nil {
+		err = apierrors.ErrInvoke.InternalError(err)
+		return
+	}
+	if !resp.IsOK() || !isp.Success {
+		err = toAPIError(resp.StatusCode(), isp.Error)
+		return
+	}
+
+	data = isp.Data
+	return
+}

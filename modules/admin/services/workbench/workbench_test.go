@@ -134,3 +134,19 @@ func TestGetUrlQueries(t *testing.T) {
 	}
 	t.Logf("result: %+v", r)
 }
+
+func TestListIssueStreams(t *testing.T) {
+	bdl := initBundle()
+	wb := New(WithBundle(bdl))
+	res, err := bdl.GetIssueStreams(apistructs.IssueStreamPagingRequest{PageNo: 1, PageSize: 10, IssueID: 16360})
+	if err != nil {
+		t.Errorf("get issue streams failed, error: %v", err)
+	}
+	t.Logf("response: %+v", res)
+
+	r, err := wb.ListIssueStreams([]uint64{16240, 16352, 16359, 16360, 233773}, 0)
+	if err != nil {
+		t.Errorf("error: %v", err)
+	}
+	t.Logf("result: %+v", r)
+}
