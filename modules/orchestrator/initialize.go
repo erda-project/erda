@@ -17,6 +17,8 @@ package orchestrator
 
 import (
 	"context"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -75,6 +77,11 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	// Limit only one instance of scheduler to do the cron jobs
 	p.Election.OnLeader(func(ctx context.Context) {
 		logrus.Infof("i'm the leader now")
+		go func() {
+			if err = cleanLeaderRemainingAddon(ep); err != nil {
+				logrus.Errorf("failed to cleanLeaderRemainingAddon,err: %s", err.Error())
+			}
+		}()
 		_ = initLeaderCron(ep, ctx)
 		logrus.Infof("i resign the leader now")
 	})
@@ -228,4 +235,74 @@ func initCron(ep SharedCronjobRunner, ctx context.Context) {
 	go ep.SyncProjects()
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(5*time.Minute)).Do(ep.SyncProjects)
 	<-ctx.Done()
+}
+
+// cleanLeaderRemainingAddon clean the remain addon
+func cleanLeaderRemainingAddon(ep *endpoints.Endpoints) error {
+	// find all addon
+	addons, err := ep.DBClient().ListAddonInstancesForClean()
+	if err != nil {
+		return err
+	}
+	// find the addons which project is deleted
+	existProjectMap := make(map[uint64]struct{})
+	notExistProjectMap := make(map[uint64]struct{})
+	newAddons := addonsFilterIn(addons, func(addon *dbclient.AddonInstance) bool {
+		if addon.ProjectID == "" {
+			return false
+		}
+		proID, err := strconv.ParseUint(addon.ProjectID, 10, 64)
+		if err != nil {
+			logrus.Errorf("[cleanLeaderRemainingAddon] failed to ParseUint, prjectID: %s", addon.ProjectID)
+			return false
+		}
+		if _, ok := existProjectMap[proID]; ok {
+			return false
+		}
+		if _, ok := notExistProjectMap[proID]; ok {
+			return true
+		}
+		_, err = ep.Bdl().GetProject(proID)
+		if err == nil {
+			existProjectMap[proID] = struct{}{}
+			return false
+		}
+		if !strings.Contains(err.Error(), "project not found") {
+			logrus.Errorf("[cleanLeaderRemainingAddon] failed to GetProject, prjectID: %s", addon.ProjectID)
+			return false
+		}
+		// the project is deleted, and should clean the addon
+		notExistProjectMap[proID] = struct{}{}
+		return true
+	})
+	logrus.Infof("[cleanLeaderRemainingAddon] begin clean %d addons", len(newAddons))
+	for _, v := range newAddons {
+		logrus.Infof("[cleanLeaderRemainingAddon] begin clean addon, instanceID: %s", v.ID)
+		routings, err := ep.DBClient().GetInstanceRoutingByRealInstance(v.ID)
+		if err != nil {
+			logrus.Errorf("[cleanLeaderRemainingAddon] failed to GetInstanceRoutingByRealInstance, instanceID: %s", v.ID)
+			continue
+		}
+		if routings == nil {
+			continue
+		}
+		if len(*routings) != 1 {
+			logrus.Infof("[cleanLeaderRemainingAddon] the len of routings is not 1, instanceID: %s", v.ID)
+			continue
+		}
+		// all (1000,5000) users is reserved as internal service account
+		if err = ep.Addon().Delete("2000", (*routings)[0].ID); err != nil {
+			logrus.Errorf("[cleanLeaderRemainingAddon] failed to delete addon, instanceID: %s", v.ID)
+		}
+	}
+	return nil
+}
+
+func addonsFilterIn(addons []dbclient.AddonInstance, fn func(addon *dbclient.AddonInstance) bool) (newAddons []dbclient.AddonInstance) {
+	for _, v := range addons {
+		if fn(&v) {
+			newAddons = append(newAddons, v)
+		}
+	}
+	return
 }

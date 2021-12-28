@@ -17,31 +17,29 @@ package registry
 
 import (
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/registryhelper"
 )
 
-func DeleteManifests(bdl *bundle.Bundle, clusterName string, images []string) error {
+// DeleteManifests deletes manifests from the cluster inner image registry
+func DeleteManifests(bdl *bundle.Bundle, clusterName string, images []string) (err error) {
+	var l = logrus.WithField("func", "DeleteManifests").
+		WithField("clusterName", clusterName).
+		WithField("images", images)
 	if len(images) == 0 {
 		return nil
 	}
-	removeReq := registryhelper.RemoveManifestsRequest{
+	req := registryhelper.RemoveManifestsRequest{
 		Images:     images,
 		ClusterKey: clusterName,
 	}
-	clusterInfo, err := bdl.QueryClusterInfo(clusterName)
-
-	if err != nil {
-		return err
+	if req.RegistryURL, err = bdl.GetRegistryAddress(clusterName); err != nil {
+		l.WithError(err).Errorln("failed to GetRegistryAddress")
+		return errors.Wrap(err, "failed to GetRegistryAddress")
 	}
-	registryUrl := clusterInfo.Get(apistructs.REGISTRY_ADDR)
-	if registryUrl == "" {
-		return errors.New("registryUrl is empty")
-	}
-	removeReq.RegistryURL = registryUrl
-	removeResp, err := registryhelper.RemoveManifests(removeReq)
+	removeResp, err := registryhelper.RemoveManifests(req)
 	if err != nil {
 		return err
 	}

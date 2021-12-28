@@ -488,6 +488,24 @@ func (svc *Issue) GetIssue(req apistructs.IssueGetRequest) (*apistructs.Issue, e
 	return issue, nil
 }
 
+func validPlanTime(req apistructs.IssueUpdateRequest, issue *dao.Issue) error {
+	started := req.PlanStartedAt.Value()
+	finished := req.PlanFinishedAt.Value()
+	if started != nil && finished != nil {
+		if started.After(*finished) {
+			return fmt.Errorf("plan started is after plan finished time")
+		}
+	} else {
+		if finished != nil && issue.PlanStartedAt != nil && issue.PlanStartedAt.After(*finished) {
+			return apierrors.ErrUpdateIssue.InvalidParameter("plan finished at")
+		}
+		if started != nil && issue.PlanFinishedAt != nil && started.After(*issue.PlanFinishedAt) {
+			return apierrors.ErrUpdateIssue.InvalidParameter("plan started at")
+		}
+	}
+	return nil
+}
+
 // UpdateIssue 更新事件
 func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	// 请求校验
@@ -503,17 +521,8 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		return apierrors.ErrGetIssue.InternalError(err)
 	}
 
-	if req.PlanFinishedAt != nil && req.PlanStartedAt != nil {
-		if req.PlanStartedAt.After(*req.PlanFinishedAt) {
-			return fmt.Errorf("plan started is after plan finished time")
-		}
-	} else {
-		if req.PlanFinishedAt != nil && issueModel.PlanStartedAt != nil && issueModel.PlanStartedAt.After(*req.PlanFinishedAt) {
-			return apierrors.ErrUpdateIssue.InvalidParameter("plan finished at")
-		}
-		if req.PlanStartedAt != nil && issueModel.PlanFinishedAt != nil && req.PlanStartedAt.After(*issueModel.PlanFinishedAt) {
-			return apierrors.ErrUpdateIssue.InvalidParameter("plan started at")
-		}
+	if err := validPlanTime(req, &issueModel); err != nil {
+		return err
 	}
 
 	//如果是BUG从打开或者重新打开切换状态为已解决，修改责任人为当前用户
@@ -535,9 +544,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	canUpdateFields := issueModel.GetCanUpdateFields()
 	// 请求传入的需要更新的字段
 	changedFields := req.GetChangedFields(canUpdateFields["man_hour"].(string))
-	if req.PlanFinishedAt != nil {
+	if !req.PlanFinishedAt.IsEmpty() {
+		// change plan finished at, update exipry status
 		now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
-		changedFields["expiry_status"] = dao.GetExpiryStatus(req.PlanFinishedAt, now)
+		changedFields["expiry_status"] = dao.GetExpiryStatus(req.PlanFinishedAt.Time(), now)
 	}
 	// 检查修改的字段合法性
 	if err := svc.checkChangeFields(changedFields); err != nil {
