@@ -916,17 +916,19 @@ func (r *Release) formalRelease(release *dbclient.Release) (err error) {
 		}
 	}()
 
-	var list []string
-	if err = json.Unmarshal([]byte(release.ApplicationReleaseList), &list); err != nil {
-		return err
-	}
+	if release.IsProjectRelease {
+		var list []string
+		if err = json.Unmarshal([]byte(release.ApplicationReleaseList), &list); err != nil {
+			return err
+		}
 
-	for _, id := range list {
-		if err = tx.Model(&dbclient.Release{}).Where("release_id = ?", id).Updates(map[string]interface{}{
-			"is_stable": true,
-			"is_formal": true,
-		}).Error; err != nil {
-			return
+		for _, id := range list {
+			if err = tx.Model(&dbclient.Release{}).Where("release_id = ?", id).Updates(map[string]interface{}{
+				"is_stable": true,
+				"is_formal": true,
+			}).Error; err != nil {
+				return
+			}
 		}
 	}
 
