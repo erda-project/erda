@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
@@ -176,6 +177,7 @@ func (e *Endpoints) ExportExcelAudit(ctx context.Context, w http.ResponseWriter,
 		return apierrors.ErrExportExcelAudit.InvalidParameter(err)
 	}
 
+	ctx = context.WithValue(ctx, "lang_codes", i18n.Language(r))
 	// 权限检查
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
@@ -198,7 +200,7 @@ func (e *Endpoints) ExportExcelAudit(ctx context.Context, w http.ResponseWriter,
 		return apierrors.ErrExportExcelAudit.InternalError(err)
 	}
 
-	reader, tablename, err := e.audit.ExportExcel(audits)
+	reader, tablename, err := e.audit.ExportExcel(ctx, audits)
 	if err != nil {
 		return apierrors.ErrExportExcelAudit.InternalError(err)
 	}
