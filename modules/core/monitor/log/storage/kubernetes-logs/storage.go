@@ -21,6 +21,7 @@ import (
 	"math"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
@@ -111,6 +112,13 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 					}
 					matcher = func(data *pb.LogItem, it *logsIterator) bool {
 						return regex.MatchString(data.Content)
+					}
+				}
+			case storage.CONTAINS:
+				exp, _ := filter.Value.(string)
+				if len(exp) > 0 {
+					matcher = func(data *pb.LogItem, it *logsIterator) bool {
+						return strings.Contains(data.Content, exp)
 					}
 				}
 			case storage.EQ:

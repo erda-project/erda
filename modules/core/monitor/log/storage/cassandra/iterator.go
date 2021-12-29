@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/scylladb/gocqlx/qb"
@@ -57,6 +58,13 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (_ store
 					}
 					matcher = func(data *pb.LogItem) bool {
 						return regex.MatchString(data.Content)
+					}
+				}
+			case storage.CONTAINS:
+				exp, _ := filter.Value.(string)
+				if len(exp) > 0 {
+					matcher = func(data *pb.LogItem) bool {
+						return strings.Contains(data.Content, exp)
 					}
 				}
 			case storage.EQ:
