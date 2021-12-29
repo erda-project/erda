@@ -42,6 +42,8 @@ type WorkCards struct {
 	Wb        *workbench.Workbench
 }
 
+const DefaultCardListSize int = 6
+
 func (wc *WorkCards) BeforeHandleOp(sdk *cptype.SDK) {
 	wc.Wb = sdk.Ctx.Value(types.WorkbenchSvc).(*workbench.Workbench)
 	wc.Bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
@@ -491,6 +493,7 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 	apiIdentity := apistructs.Identity{}
 	apiIdentity.OrgID = sdk.Identity.OrgID
 	apiIdentity.UserID = sdk.Identity.UserID
+	cnt := 0
 	switch tabStr {
 	case apistructs.WorkbenchItemApp.String():
 		data.Title = sdk.I18n("star application")
@@ -500,6 +503,10 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 		}
 		data.TitleSummary = fmt.Sprintf("%d", len(apps.List))
 		for _, app := range apps.List {
+			if cnt >= DefaultCardListSize {
+				break
+			}
+			cnt++
 			data.Cards = append(data.Cards, cardlist.Card{
 				ID:             fmt.Sprintf("%d", app.ID),
 				ImgURL:         app.Logo,
@@ -527,6 +534,10 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 			logrus.Errorf("card list fail to get url params ,err :%v", err)
 		}
 		for i, project := range projects.List {
+			if cnt >= DefaultCardListSize {
+				break
+			}
+			cnt++
 			data.Cards = append(data.Cards, cardlist.Card{
 				ID:             fmt.Sprintf("%d", project.ProjectDTO.ID),
 				ImgURL:         project.ProjectDTO.Logo,
