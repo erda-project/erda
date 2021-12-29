@@ -49,6 +49,10 @@ func Test_transferAppsToApplicationDTOS(t *testing.T) {
 	defer patch2.Unpatch()
 
 	var db = &dao.DBClient{}
+	patch3 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetRuntimeCountByAppIDS", func(client *dao.DBClient, appIDS []int64) ([]model.ApplicationRuntimeCount, error) {
+		return []model.ApplicationRuntimeCount{{RuntimeCount: 2, ApplicationID: 1}}, nil
+	})
+	defer patch3.Unpatch()
 
 	ep := Endpoints{
 		org:     orgSvc,

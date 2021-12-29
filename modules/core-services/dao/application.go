@@ -185,3 +185,16 @@ func (client *DBClient) GetJoinedAppNumByUserId(userID, orgID string) (int, erro
 	}
 	return total, nil
 }
+
+// GetRuntimeCountByAppIDS get every app runtime counts by id list
+func (client *DBClient) GetRuntimeCountByAppIDS(appIDS []int64) ([]model.ApplicationRuntimeCount, error) {
+	counters := make([]model.ApplicationRuntimeCount, 0)
+	if err := client.Table("ps_v2_project_runtimes").
+		Where("application_id in (?)", appIDS).
+		Group("application_id").
+		Select("count(*) as runtime_count, application_id").
+		Scan(&counters).Error; err != nil {
+		return nil, err
+	}
+	return counters, nil
+}
