@@ -34,7 +34,7 @@ func (m BranchReleaseRuleModel) Match(branch string) bool {
 	if !m.IsEnabled {
 		return false
 	}
-	pats := strings.Split(m.Pattern, ".")
+	pats := strings.Split(m.Pattern, ",")
 	for _, pat := range pats {
 		if ok, _ := filepath.Match(pat, branch); ok {
 			return true
