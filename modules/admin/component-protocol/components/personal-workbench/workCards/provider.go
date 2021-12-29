@@ -69,7 +69,7 @@ func (wc *WorkCards) RegisterCardListStarOp(opData cardlist.OpCardListStar) (opF
 		}
 		err = wc.Bdl.DeleteSubscribe(sdk.Identity.UserID, sdk.Identity.OrgID, req)
 		if err != nil {
-			logrus.Errorf("star %v %v failed, id: %v, error: %v", req.Type, req.TypeID, err)
+			logrus.Errorf("star %v failed, id: %v, error: %v", req.Type, req.TypeID, err)
 			return
 		}
 		wc.LoadList(sdk)
@@ -140,7 +140,6 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 	todayData := make(cptype.OpServerData)
 	expireData := make(cptype.OpServerData)
 	metas = make([]cardlist.TextMeta, 0)
-	project.ProjectDTO.Type = types.ProjTypeDevops
 	switch project.ProjectDTO.Type {
 	case types.ProjTypeDevops:
 		urls, err := wc.Wb.GetIssueQueries(project.ProjectDTO.ID)
@@ -179,16 +178,16 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 				MainText: float64(project.IssueInfo.ExpiredIssueNum),
 				SubText:  sdk.I18n("expired"),
 				Operations: map[cptype.OperationKey]cptype.Operation{
-					"clickGoto": cptype.Operation{
+					"clickGoto": {
 						ServerData: &expireData,
 					},
 				},
 			},
 			{
-				MainText: float64(project.IssueInfo.TotalIssueNum),
+				MainText: float64(project.IssueInfo.ExpiredOneDayNum),
 				SubText:  sdk.I18n("today expire"),
 				Operations: map[cptype.OperationKey]cptype.Operation{
-					"clickGoto": cptype.Operation{
+					"clickGoto": {
 						ServerData: &todayData,
 					},
 				},
@@ -204,7 +203,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 				MainText: float64(project.StatisticInfo.ServiceCount),
 				SubText:  sdk.I18n("service count"),
 				Operations: map[cptype.OperationKey]cptype.Operation{
-					"clickGoto": cptype.Operation{
+					"clickGoto": {
 						ServerData: &expireData,
 					},
 				},
@@ -213,7 +212,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 				MainText: float64(project.StatisticInfo.Last24HAlertCount),
 				SubText:  sdk.I18n("last 24 hour alarm count"),
 				Operations: map[cptype.OperationKey]cptype.Operation{
-					"clickGoto": cptype.Operation{
+					"clickGoto": {
 						ServerData: &todayData,
 					},
 				},
@@ -224,16 +223,18 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 		return
 	}
 }
-func (wc *WorkCards) getProjectCardOps(params workbench.UrlParams, project apistructs.WorkbenchProjOverviewItem) (ops map[cptype.OperationKey]cptype.Operation) {
+func (wc *WorkCards) getProjectCardOps(sdk *cptype.SDK, params workbench.UrlParams, project apistructs.WorkbenchProjOverviewItem) (ops map[cptype.OperationKey]cptype.Operation) {
 	ops = make(map[cptype.OperationKey]cptype.Operation)
-	ops["star"] = cptype.Operation{}
+	ops["star"] = cptype.Operation{
+		Tip: sdk.I18n("cancel star"),
+	}
 	serviceOp := common.Operation{
 		JumpOut: false,
 		Params:  map[string]interface{}{},
 	}
 	err := common.Transfer(params, &serviceOp.Params)
 	if err != nil {
-		logrus.Error("card operation error :%v", err)
+		logrus.Errorf("card operation error :%v", err)
 		return
 	}
 	target := ""
@@ -258,9 +259,11 @@ func (wc *WorkCards) getProjectCardOps(params workbench.UrlParams, project apist
 	return
 }
 
-func (wc *WorkCards) getAppCardOps(app apistructs.AppWorkBenchItem) (ops map[cptype.OperationKey]cptype.Operation) {
+func (wc *WorkCards) getAppCardOps(sdk *cptype.SDK, app apistructs.AppWorkBenchItem) (ops map[cptype.OperationKey]cptype.Operation) {
 	ops = make(map[cptype.OperationKey]cptype.Operation)
-	ops["star"] = cptype.Operation{}
+	ops["star"] = cptype.Operation{
+		Tip: sdk.I18n("cancel star"),
+	}
 	serviceOp := common.Operation{
 		JumpOut: false,
 		Target:  "mspServiceList",
@@ -515,7 +518,7 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 				Star:           true,
 				IconOperations: wc.getAppIconOps(sdk, app),
 				TextMeta:       wc.getAppTextMeta(sdk, app),
-				Operations:     wc.getAppCardOps(app),
+				Operations:     wc.getAppCardOps(sdk, app),
 			})
 		}
 	case apistructs.WorkbenchItemProj.String():
@@ -546,7 +549,7 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 				Star:           true,
 				TextMeta:       wc.getProjTextMeta(sdk, project),
 				IconOperations: wc.getProjIconOps(sdk, project, params[i]),
-				Operations:     wc.getProjectCardOps(params[i], project),
+				Operations:     wc.getProjectCardOps(sdk, params[i], project),
 			})
 		}
 	}

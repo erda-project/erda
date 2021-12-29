@@ -14,158 +14,158 @@
 
 package workbench
 
-import (
-	"os"
-	"testing"
-
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-)
-
-func initBundle() *bundle.Bundle {
-	os.Setenv("CORE_SERVICES_ADDR", "http://core-services.project-387-dev.svc.cluster.local:9526")
-	os.Setenv("MSP_ADDR", "http://msp.project-387-dev.svc.cluster.local:8080")
-	os.Setenv("DOP_ADDR", "http://dop.project-387-dev.svc.cluster.local:9527")
-	os.Setenv("ORCHESTRATOR_ADDR", "http://orchestrator.project-387-dev.svc.cluster.local:8081")
-	os.Setenv("GITTAR_ADDR", "http://gittar.project-387-dev.svc.cluster.local:5566")
-	bdl := bundle.New(
-		bundle.WithCoreServices(),
-		bundle.WithMSP(),
-		bundle.WithDOP(),
-		bundle.WithGittar(),
-		bundle.WithOrchestrator(),
-	)
-	return bdl
-}
-
-func TestListProj(t *testing.T) {
-	bdl := initBundle()
-	wb := New(WithBundle(bdl))
-	identity := apistructs.Identity{
-		UserID: "2",
-		OrgID:  "20",
-	}
-
-	data, err := wb.ListQueryProjWbData(identity, apistructs.PageRequest{PageNo: 1, PageSize: 2}, "")
-	if err != nil {
-		t.Logf("list query proj wb data faield, error: %v", err)
-	}
-	t.Logf("data: %v", data)
-}
-
-func TestListSub(t *testing.T) {
-	bdl := initBundle()
-	wb := New(WithBundle(bdl))
-	identity := apistructs.Identity{
-		// 12028
-		UserID: "12028",
-		OrgID:  "1",
-	}
-
-	data, err := wb.ListSubProjWbData(identity)
-	if err != nil {
-		t.Logf("list query proj wb data faield, error: %v", err)
-	}
-	t.Logf("data: %+v", data)
-}
-
-func TestListApp(t *testing.T) {
-	bdl := initBundle()
-	wb := New(WithBundle(bdl))
-	identity := apistructs.Identity{
-		// 12028
-		UserID: "2",
-		OrgID:  "20",
-	}
-
-	data, err := wb.ListAppWbData(identity, apistructs.ApplicationListRequest{PageNo: 1, PageSize: 10}, 1)
-	if err != nil {
-		t.Logf("list query proj wb data faield, error: %v", err)
-	}
-	t.Logf("data: %v", data)
-}
-
-func TestListSubApp(t *testing.T) {
-	bdl := initBundle()
-	wb := New(WithBundle(bdl))
-	identity := apistructs.Identity{
-		// 12028
-		UserID: "12028",
-		OrgID:  "1",
-	}
-
-	data, err := wb.ListSubAppWbData(identity, 1)
-	if err != nil {
-		t.Logf("list query proj wb data faield, error: %v", err)
-	}
-	t.Logf("data: %v", data)
-}
-
-func TestGetAppMr(t *testing.T) {
-	bdl := initBundle()
-	// wb := New(WithBundle(bdl))
-	identity := apistructs.Identity{
-		UserID: "2",
-		OrgID:  "1",
-	}
-	rsp, err := bdl.ListMergeRequest(45, identity.UserID, apistructs.GittarQueryMrRequest{})
-	if err != nil {
-		t.Errorf("error: %v", err)
-	}
-	t.Logf("response: %+v", rsp)
-}
-
-func TestStateIds(t *testing.T) {
-	bdl := initBundle()
-	wb := New(WithBundle(bdl))
-	ids, err := wb.GetAllIssueStateIDs(3)
-	if err != nil {
-		t.Errorf("error: %v", err)
-	}
-	t.Logf("ids: %v", ids)
-}
-
-func TestGetUrlQueries(t *testing.T) {
-	bdl := initBundle()
-	wb := New(WithBundle(bdl))
-	r, err := wb.GetIssueQueries(3)
-	if err != nil {
-		t.Errorf("error: %v", err)
-	}
-	t.Logf("result: %+v", r)
-}
-
-func TestListIssueStreams(t *testing.T) {
-	bdl := initBundle()
-	wb := New(WithBundle(bdl))
-	res, err := bdl.GetIssueStreams(apistructs.IssueStreamPagingRequest{PageNo: 1, PageSize: 10, IssueID: 16360})
-	if err != nil {
-		t.Errorf("get issue streams failed, error: %v", err)
-	}
-	t.Logf("response: %+v", res)
-
-	r, err := wb.ListIssueStreams([]uint64{16240, 16352, 16359, 16360, 233773}, 0)
-	if err != nil {
-		t.Errorf("error: %v", err)
-	}
-	t.Logf("result: %+v", r)
-}
-
-func TestListMsg(t *testing.T) {
-	bdl := initBundle()
-	req := apistructs.QueryMBoxRequest{PageNo: 1,
-		PageSize: 10,
-		Status:   apistructs.MBoxUnReadStatus,
-		Type:     apistructs.MBoxTypeIssue,
-	}
-	identity := apistructs.Identity{
-		UserID: "2",
-		OrgID:  "1",
-	}
-	res, err := bdl.ListMbox(identity, req)
-	if err != nil {
-		t.Errorf("get issue failed, error: %v", err)
-	}
-	t.Logf("response: %+v", res)
-
-}
+//import (
+//	"os"
+//	"testing"
+//
+//	"github.com/erda-project/erda/apistructs"
+//	"github.com/erda-project/erda/bundle"
+//)
+//
+//func initBundle() *bundle.Bundle {
+//	os.Setenv("CORE_SERVICES_ADDR", "http://core-services.project-387-dev.svc.cluster.local:9526")
+//	os.Setenv("MSP_ADDR", "http://msp.project-387-dev.svc.cluster.local:8080")
+//	os.Setenv("DOP_ADDR", "http://dop.project-387-dev.svc.cluster.local:9527")
+//	os.Setenv("ORCHESTRATOR_ADDR", "http://orchestrator.project-387-dev.svc.cluster.local:8081")
+//	os.Setenv("GITTAR_ADDR", "http://gittar.project-387-dev.svc.cluster.local:5566")
+//	bdl := bundle.New(
+//		bundle.WithCoreServices(),
+//		bundle.WithMSP(),
+//		bundle.WithDOP(),
+//		bundle.WithGittar(),
+//		bundle.WithOrchestrator(),
+//	)
+//	return bdl
+//}
+//
+//func TestListProj(t *testing.T) {
+//	bdl := initBundle()
+//	wb := New(WithBundle(bdl))
+//	identity := apistructs.Identity{
+//		UserID: "2",
+//		OrgID:  "20",
+//	}
+//
+//	data, err := wb.ListQueryProjWbData(identity, apistructs.PageRequest{PageNo: 1, PageSize: 2}, "")
+//	if err != nil {
+//		t.Logf("list query proj wb data faield, error: %v", err)
+//	}
+//	t.Logf("data: %v", data)
+//}
+//
+//func TestListSub(t *testing.T) {
+//	bdl := initBundle()
+//	wb := New(WithBundle(bdl))
+//	identity := apistructs.Identity{
+//		// 12028
+//		UserID: "12028",
+//		OrgID:  "1",
+//	}
+//
+//	data, err := wb.ListSubProjWbData(identity)
+//	if err != nil {
+//		t.Logf("list query proj wb data faield, error: %v", err)
+//	}
+//	t.Logf("data: %+v", data)
+//}
+//
+//func TestListApp(t *testing.T) {
+//	bdl := initBundle()
+//	wb := New(WithBundle(bdl))
+//	identity := apistructs.Identity{
+//		// 12028
+//		UserID: "2",
+//		OrgID:  "20",
+//	}
+//
+//	data, err := wb.ListAppWbData(identity, apistructs.ApplicationListRequest{PageNo: 1, PageSize: 10}, 1)
+//	if err != nil {
+//		t.Logf("list query proj wb data faield, error: %v", err)
+//	}
+//	t.Logf("data: %v", data)
+//}
+//
+//func TestListSubApp(t *testing.T) {
+//	bdl := initBundle()
+//	wb := New(WithBundle(bdl))
+//	identity := apistructs.Identity{
+//		// 12028
+//		UserID: "12028",
+//		OrgID:  "1",
+//	}
+//
+//	data, err := wb.ListSubAppWbData(identity, 1)
+//	if err != nil {
+//		t.Logf("list query proj wb data faield, error: %v", err)
+//	}
+//	t.Logf("data: %v", data)
+//}
+//
+//func TestGetAppMr(t *testing.T) {
+//	bdl := initBundle()
+//	// wb := New(WithBundle(bdl))
+//	identity := apistructs.Identity{
+//		UserID: "2",
+//		OrgID:  "1",
+//	}
+//	rsp, err := bdl.ListMergeRequest(45, identity.UserID, apistructs.GittarQueryMrRequest{})
+//	if err != nil {
+//		t.Errorf("error: %v", err)
+//	}
+//	t.Logf("response: %+v", rsp)
+//}
+//
+//func TestStateIds(t *testing.T) {
+//	bdl := initBundle()
+//	wb := New(WithBundle(bdl))
+//	ids, err := wb.GetAllIssueStateIDs(3)
+//	if err != nil {
+//		t.Errorf("error: %v", err)
+//	}
+//	t.Logf("ids: %v", ids)
+//}
+//
+//func TestGetUrlQueries(t *testing.T) {
+//	bdl := initBundle()
+//	wb := New(WithBundle(bdl))
+//	r, err := wb.GetIssueQueries(3)
+//	if err != nil {
+//		t.Errorf("error: %v", err)
+//	}
+//	t.Logf("result: %+v", r)
+//}
+//
+//func TestListIssueStreams(t *testing.T) {
+//	bdl := initBundle()
+//	wb := New(WithBundle(bdl))
+//	res, err := bdl.GetIssueStreams(apistructs.IssueStreamPagingRequest{PageNo: 1, PageSize: 10, IssueID: 16360})
+//	if err != nil {
+//		t.Errorf("get issue streams failed, error: %v", err)
+//	}
+//	t.Logf("response: %+v", res)
+//
+//	r, err := wb.ListIssueStreams([]uint64{16240, 16352, 16359, 16360, 233773}, 0)
+//	if err != nil {
+//		t.Errorf("error: %v", err)
+//	}
+//	t.Logf("result: %+v", r)
+//}
+//
+//func TestListMsg(t *testing.T) {
+//	bdl := initBundle()
+//	req := apistructs.QueryMBoxRequest{PageNo: 1,
+//		PageSize: 10,
+//		Status:   apistructs.MBoxUnReadStatus,
+//		Type:     apistructs.MBoxTypeIssue,
+//	}
+//	identity := apistructs.Identity{
+//		UserID: "2",
+//		OrgID:  "1",
+//	}
+//	res, err := bdl.ListMbox(identity, req)
+//	if err != nil {
+//		t.Errorf("get issue failed, error: %v", err)
+//	}
+//	t.Logf("response: %+v", res)
+//
+//}

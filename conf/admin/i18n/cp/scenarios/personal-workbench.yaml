@@ -24,6 +24,8 @@ zh:
   minutes ago: 分钟前
   seconds ago: 秒前
   just now: 刚刚
+  cancel star: 取消标星
+  star: 标星
   IssueExpired: "已过期"
   IssueExpireToday: "今日过期"
   IssueUndo: "未完成"
@@ -47,9 +49,9 @@ zh:
   ServiceObservation: "服务观测"
   ServiceTracing: "链路追踪"
   LogAnalysis: "日志分析"
-  SubscribeThisProj: "收藏此项目"
-  SubscribeThisApp: "收藏此应用"
-  UnSubscribe: "取消收藏"
+  SubscribeThisProj: "标星"
+  SubscribeThisApp: "标星"
+  UnSubscribe: "取消标星"
   GitRepo: "代码仓库"
   Pipeline: "流水线"
   AppApiDesign: "API设计"
@@ -86,8 +88,8 @@ en:
   ServiceObservation: "Service observation"
   ServiceTracing: "Service tracing"
   LogAnalysis: "Log analysis"
-  SubscribeThisProj: "Subscribe this project"
-  SubscribeThisApp: "Subscribe this app"
+  SubscribeThisProj: "Subscribe"
+  SubscribeThisApp: "Subscribe"
   UnSubscribe: "UnSubscribe"
   GitRepo: "Git repo"
   Pipeline: "Pipeline"
