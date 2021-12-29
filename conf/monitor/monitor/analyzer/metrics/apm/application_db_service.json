@@ -3,7 +3,7 @@
   "version": "3.0",
   "expression": {
     "metric": "application_db",
-    "window": 3,
+    "window": 1,
     "filter": {},
     "group": [
       "component",
@@ -12,7 +12,8 @@
       "source_application_id",
       "source_runtime_name",
       "source_service_name",
-      "source_addon_id"
+      "source_addon_id",
+      "error"
     ],
     "functions": [
       {
@@ -23,6 +24,16 @@
       {
         "field": "count",
         "aggregator": "sum",
+        "field_script": "function invoke(field, tag){ return field.elapsed_count; }"
+      },
+      {
+        "field": "errors",
+        "aggregator": "sum",
+        "field_script": "function invoke(field, tag){ return tag.error=='true'?field.elapsed_count:0; }"
+      },
+      {
+        "field": "reqs_per_second",
+        "aggregator": "rateps",
         "field_script": "function invoke(field, tag){ return field.elapsed_count; }"
       }
     ],
