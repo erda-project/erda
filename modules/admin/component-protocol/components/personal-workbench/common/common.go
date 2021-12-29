@@ -39,12 +39,14 @@ const (
 	EventChangeEventTab = "onChange"
 
 	// ProjDevOpsStatus titleState status; error(red), success(green), processing(blue), warning(yellow), default(gray)
-	ProjDevOpsStatus = "processing"
-	ProjMspStatus    = "warning"
-	AppLibraryStatus = "success"
-	AppBigdataStatus = "processing"
-	AppServiceStatus = "warning"
-	UnreadMsgStatus  = "error"
+	ProjDevOpsStatus        = "processing"
+	ProjMspStatus           = "warning"
+	AppLibraryStatus        = "success"
+	AppBigdataStatus        = "processing"
+	AppServiceStatus        = "warning"
+	AppMobileStatus         = "processing"
+	AppProjectServiceStatus = "error"
+	UnreadMsgStatus         = "error"
 
 	MspProject    = "MSP"
 	DevOpsProject = "DevOps"
@@ -83,7 +85,7 @@ const (
 	IconLogAnalysis        = "rizhifenxi"
 	IconRepo               = "daimacangku"
 	IconPipeline           = "liushuixian"
-	IconAppApiDesign       = "Apisheji"
+	IconAppApiDesign       = "apisheji"
 	IconAppDeployCenter    = "bushuzhongxin"
 )
 
