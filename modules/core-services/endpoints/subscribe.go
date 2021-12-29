@@ -43,7 +43,7 @@ func GetUserInfo(r *http.Request) (string, uint64, error) {
 
 func (e *Endpoints) Subscribe(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	// request check
-	uid, gid, err := GetUserInfo(r)
+	uid, oid, err := GetUserInfo(r)
 	if err != nil {
 		return apierrors.ErrCreateSubscribe.InvalidParameter(err).ToResp(), nil
 	}
@@ -55,6 +55,7 @@ func (e *Endpoints) Subscribe(ctx context.Context, r *http.Request, vars map[str
 		return apierrors.ErrCreateSubscribe.InvalidParameter("can't decode body").ToResp(), nil
 	}
 	req.UserID = uid
+	req.OrgID = oid
 	if err := req.Validate(); err != nil {
 		return apierrors.ErrCreateSubscribe.InvalidParameter(err.Error()).ToResp(), nil
 	}
@@ -64,7 +65,7 @@ func (e *Endpoints) Subscribe(ctx context.Context, r *http.Request, vars map[str
 	pReq := apistructs.PermissionCheckRequest{
 		UserID:   uid,
 		Scope:    apistructs.OrgScope,
-		ScopeID:  gid,
+		ScopeID:  oid,
 		Resource: apistructs.SubscribeResource,
 		Action:   apistructs.CreateAction,
 	}
@@ -97,6 +98,7 @@ func (e *Endpoints) UnSubscribe(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.ErrDeleteSubscribe.InvalidParameter("can't decode body").ToResp(), nil
 	}
 	req.UserID = uid
+	req.OrgID = gid
 	logrus.Infof("request body: %+v", req)
 
 	// permission check
@@ -127,11 +129,13 @@ func (e *Endpoints) GetSubscribes(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrGetSubscribe.InvalidParameter(err).ToResp(), nil
 	}
 
-	req, err := getListSubscribeParam(r)
-	if err != nil {
+	var req apistructs.GetSubscribeReq
+	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
 		return apierrors.ErrGetSubscribe.InvalidParameter(err).ToResp(), nil
 	}
+
 	req.UserID = uid
+	req.OrgID = gid
 	if err := req.Validate(); err != nil {
 		return apierrors.ErrCreateSubscribe.InvalidParameter(err.Error()).ToResp(), nil
 	}
@@ -150,7 +154,7 @@ func (e *Endpoints) GetSubscribes(ctx context.Context, r *http.Request, vars map
 	}
 
 	// request process
-	items, err := e.subscribe.GetSubscribes(*req)
+	items, err := e.subscribe.GetSubscribes(req)
 	if err != nil {
 		return apierrors.ErrGetSubscribe.InternalError(err).ToResp(), nil
 	}

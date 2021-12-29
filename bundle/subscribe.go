@@ -50,10 +50,10 @@ func (b *Bundle) ListSubscribes(userID, orgID string, req apistructs.GetSubscrib
 	return &rsp.Data, nil
 }
 
-func (b *Bundle) CreateSubscribe(userID, orgID string, req apistructs.CreateSubscribeReq) (uint64, error) {
+func (b *Bundle) CreateSubscribe(userID, orgID string, req apistructs.CreateSubscribeReq) (string, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	hc := b.hc
 
@@ -65,10 +65,10 @@ func (b *Bundle) CreateSubscribe(userID, orgID string, req apistructs.CreateSubs
 		JSONBody(&req).
 		Do().JSON(&rsp)
 	if err != nil {
-		return 0, apierrors.ErrInvoke.InternalError(err)
+		return "", apierrors.ErrInvoke.InternalError(err)
 	}
 	if !resp.IsOK() || !rsp.Success {
-		return 0, toAPIError(resp.StatusCode(), rsp.Error)
+		return "", toAPIError(resp.StatusCode(), rsp.Error)
 	}
 	return rsp.Data, nil
 }

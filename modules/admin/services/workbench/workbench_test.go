@@ -69,6 +69,28 @@ func TestListSub(t *testing.T) {
 	t.Logf("data: %+v", data)
 }
 
+func TestCreateSub(t *testing.T) {
+	bdl := initBundle()
+	identity := apistructs.Identity{
+		// 12028
+		UserID: "12028",
+		OrgID:  "1",
+	}
+	req := apistructs.CreateSubscribeReq{
+		Type:   "project",
+		TypeID: 3,
+		Name:   "go-demo",
+		UserID: "2",
+		OrgID:  1,
+	}
+
+	data, err := bdl.CreateSubscribe(identity.UserID, identity.OrgID, req)
+	if err != nil {
+		t.Logf("list query proj wb data faield, error: %v", err)
+	}
+	t.Logf("data: %+v", data)
+}
+
 func TestListApp(t *testing.T) {
 	bdl := initBundle()
 	wb := New(WithBundle(bdl))

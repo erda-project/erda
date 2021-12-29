@@ -15,6 +15,7 @@
 package dao
 
 import (
+	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/modules/core-services/model"
@@ -22,12 +23,22 @@ import (
 
 // CreateSubscribe Create relationship between erda item (project/application) and subscriber
 func (client *DBClient) CreateSubscribe(subscribe *model.Subscribe) error {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return err
+	}
+	subscribe.ID = id.String()
 	return client.Create(subscribe).Error
 }
 
+// DeleteSubscribeByID delete subscribe by subscribe id
+func (client *DBClient) DeleteSubscribeByID(id string) error {
+	return client.Where("id = ? ", id).Delete(&model.Subscribe{}).Error
+}
+
 // DeleteSubscribe Delete subscribe relation
-func (client *DBClient) DeleteSubscribe(tp string, tpID uint64, userID string) error {
-	return client.Where("type = ? and type_id = ? and user_id = ?", tp, tpID, userID).Delete(&model.Subscribe{}).Error
+func (client *DBClient) DeleteSubscribe(tp string, tpID uint64, userID string, orgID uint64) error {
+	return client.Where("type = ? and type_id = ? and user_id = ? and org_id = ?", tp, tpID, userID, orgID).Delete(&model.Subscribe{}).Error
 }
 
 // DeleteSubscribeByTypeID Delete subscribe by type id
@@ -35,14 +46,18 @@ func (client *DBClient) DeleteSubscribeByTypeID(tp string, tpID uint64) error {
 	return client.Where("type = ? and type_id = ?", tp, tpID).Delete(&model.Subscribe{}).Error
 }
 
-// DeleteSubscribeByUserID Delete subscribe by user id
-func (client *DBClient) DeleteSubscribeByUserID(userID string) error {
-	return client.Where("user_id = ?", userID).Delete(&model.Subscribe{}).Error
+// DeleteSubscribeByUserOrgID Delete subscribe by user id
+func (client *DBClient) DeleteSubscribeByUserOrgID(userID string, orgID uint64) error {
+	return client.Where("user_id = ? and org_id = ?", userID, orgID).Delete(&model.Subscribe{}).Error
 }
 
-func (client *DBClient) GetSubscribeCount(tp string, userID string) (int, error) {
+func (client *DBClient) DeleteBySubscribeID(id string) error {
+	return client.Where("id = ?", id).Delete(&model.Subscribe{}).Error
+}
+
+func (client *DBClient) GetSubscribeCount(tp string, userID string, orgID uint64) (int, error) {
 	var total int
-	err := client.Model(&model.Subscribe{}).Where("type = ? and user_id = ?", tp, userID).Count(&total).Error
+	err := client.Model(&model.Subscribe{}).Where("type = ? and user_id = ? and org_id = ?", tp, userID, orgID).Count(&total).Error
 	if err != nil {
 		return 0, err
 	}
@@ -50,10 +65,10 @@ func (client *DBClient) GetSubscribeCount(tp string, userID string) (int, error)
 }
 
 // GetSubscribe get subscribe
-func (client *DBClient) GetSubscribe(tp string, tpID uint64, userID string) (*model.Subscribe, error) {
+func (client *DBClient) GetSubscribe(tp string, tpID uint64, userID string, orgID uint64) (*model.Subscribe, error) {
 	var subscribe model.Subscribe
-	if err := client.Model(model.Subscribe{}).Where("type = ? and type_id = ? and user_id = ?", tp,
-		tpID, userID).First(&subscribe).Error; err != nil {
+	if err := client.Model(model.Subscribe{}).Where("type = ? and type_id = ? and user_id = ? and org_id = ?", tp,
+		tpID, userID, orgID).First(&subscribe).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
 		}
@@ -64,11 +79,10 @@ func (client *DBClient) GetSubscribe(tp string, tpID uint64, userID string) (*mo
 	return &subscribe, nil
 }
 
-// GetSubscribesByUserID get subscribes by user id
-func (client *DBClient) GetSubscribesByUserID(tp string, userID string) ([]model.Subscribe, error) {
+// GetSubscribesByUserOrgID get subscribes by user id & org id
+func (client *DBClient) GetSubscribesByUserOrgID(tp string, userID string, orgID uint64) ([]model.Subscribe, error) {
 	var subscribes []model.Subscribe
-	if err := client.Model(model.Subscribe{}).Where("type = ? and user_id = ?", tp,
-		userID).Find(&subscribes).Error; err != nil {
+	if err := client.Model(model.Subscribe{}).Where("type = ? and user_id = ?  and org_id = ?", tp, userID, orgID).Find(&subscribes).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
 		}

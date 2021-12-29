@@ -81,6 +81,7 @@ func TestSubscribe_Subscribe(t *testing.T) {
 				TypeID: 111,
 				Name:   "subscribe_app_name",
 				UserID: "2",
+				OrgID:  1,
 			}
 
 			monkey.PatchInstanceMethod(reflect.TypeOf(c), "GetSubscribeCount", func(c *dao.DBClient, tp string, userID string) (int, error) {
@@ -107,7 +108,7 @@ func TestSubscribe_Subscribe(t *testing.T) {
 				if tt.createErr {
 					return fmt.Errorf("error")
 				}
-				subscribe.ID = 666
+				subscribe.ID = "666"
 				return nil
 			})
 
@@ -118,11 +119,11 @@ func TestSubscribe_Subscribe(t *testing.T) {
 				return
 			}
 
-			if tt.wantErr && got != 0 {
+			if tt.wantErr && got != "" {
 				t.Errorf("Subscribe() want error, but return non empty id: %v", got)
 			}
 
-			if !tt.wantErr && got == 0 {
+			if !tt.wantErr && got == "" {
 				t.Errorf("Subscribe() want success, but return empty id: %v", got)
 			}
 
