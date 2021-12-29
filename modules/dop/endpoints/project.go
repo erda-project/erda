@@ -253,7 +253,7 @@ func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[st
 		return apiError.ToResp(), nil
 	}
 
-	return httpserver.OkResp(dto)
+	return httpserver.OkResp(dto, append(dto.Owners, dto.Creator))
 }
 
 // ListProject list project

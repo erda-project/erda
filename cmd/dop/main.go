@@ -30,6 +30,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/client"
 	_ "github.com/erda-project/erda/modules/dop"
 	_ "github.com/erda-project/erda/modules/dop/providers/autotest/testplan"
+	_ "github.com/erda-project/erda/modules/dop/providers/project/home"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/definition_client"
 
 	// components
