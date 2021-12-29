@@ -404,12 +404,29 @@ func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {
 	userID := r.sdk.Identity.UserID
 	orgIDStr := r.sdk.Identity.OrgID
 	projectID := r.State.ProjectID
-	hasAccess, err := access.HasWriteAccess(r.bdl, userID, uint64(projectID), true, 0)
-	if err != nil {
-		return errors.Errorf("failed to check access, %v", err)
-	}
-	if !hasAccess {
-		return errors.Errorf("Access denied")
+
+	if r.State.IsProjectRelease {
+		hasAccess, err := access.HasWriteAccess(r.bdl, userID, uint64(projectID), true, 0)
+		if err != nil {
+			return errors.Errorf("failed to check access, %v", err)
+		}
+		if !hasAccess {
+			return errors.Errorf("Access denied")
+		}
+	} else {
+		for _, id := range releaseID {
+			release, err := r.bdl.GetRelease(id)
+			if err != nil {
+				return err
+			}
+			hasAccess, err := access.HasWriteAccess(r.bdl, userID, uint64(projectID), false, release.ApplicationID)
+			if err != nil {
+				return errors.Errorf("failed to check access, %v", err)
+			}
+			if !hasAccess {
+				return errors.Errorf("Access denied")
+			}
+		}
 	}
 
 	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
