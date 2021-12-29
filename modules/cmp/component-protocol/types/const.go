@@ -16,4 +16,6 @@ package types
 
 const (
 	GlobalCtxKeyBundle = "__bundle__"
+
+	Workbench = "workbench"
 )
