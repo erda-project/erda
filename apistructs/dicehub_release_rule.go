@@ -22,12 +22,12 @@ import (
 
 type BranchReleaseRuleModel struct {
 	ID            string    `json:"id" gorm:"id"`
-	CreatedAt     time.Time `json:"created_at" gorm:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at" gorm:"updated_at"`
-	SoftDeletedAt uint64    `json:"deleted_at" gorm:"soft_deleted_at"`
-	ProjectID     uint64    `json:"project_id" gorm:"project_id"`
+	CreatedAt     time.Time `json:"createdAt" gorm:"created_at"`
+	UpdatedAt     time.Time `json:"updatedAt" gorm:"updated_at"`
+	SoftDeletedAt uint64    `json:"softDeletedAt" gorm:"soft_deleted_at"`
+	ProjectID     uint64    `json:"projectID" gorm:"project_id"`
 	Pattern       string    `json:"pattern" gorm:"pattern"`
-	IsEnabled     bool      `json:"is_enabled" gorm:"is_enabled"`
+	IsEnabled     bool      `json:"isEnabled" gorm:"is_enabled"`
 }
 
 func (m BranchReleaseRuleModel) Match(branch string) bool {
@@ -62,5 +62,5 @@ type CreateUpdateDeleteReleaseRuleRequest struct {
 
 type CreateUpdateReleaseRuleRequestBody struct {
 	Pattern   string `json:"pattern"`
-	IsEnabled bool   `json:"is_enabled"`
+	IsEnabled bool   `json:"isEnabled"`
 }
