@@ -22,8 +22,11 @@ var (
 	ErrCreateRelease                   = err("ErrCreateRelease", "创建Release失败")
 	ErrUpdateRelease                   = err("ErrUpdateRelease", "更新Release失败")
 	ErrDeleteRelease                   = err("ErrDeleteRelease", "删除Release失败")
+	ErrDownloadRelease                 = err("ErrDownloadRelease", "下载Release Yaml失败")
 	ErrGetRelease                      = err("ErrGetRelease", "获取Release失败")
 	ErrListRelease                     = err("ErrListRelease", "获取Release列表失败")
+	ErrFormalRelease                   = err("ErrFormalRelease", "转正Release失败")
+	ErrParseReleaseFile                = err("ErrParseReleaseFile", "解析Release文件失败")
 	ErrGetYAML                         = err("ErrGetYAML", "获取Dice YAML失败")
 	ErrGetIosPlist                     = err("ErrGetIosPlist", "获取Ios Plist文件失败")
 	ErrCreateImage                     = err("ErrCreateImage", "添加镜像失败")
@@ -69,6 +72,12 @@ var (
 	ErrSratisticsChannelDetail = err("ErrSratisticsChannelDetail", "获取渠道详情明细数据失败")
 
 	ErrCrashRateList = err("ErrCrashRateList", "获取崩溃率失败")
+
+	ErrCreateReleaseRule = err("ErrCreateReleaseRule", "创建制品规则失败")
+	ErrListReleaseRule   = err("ErrListReleaseRule", "列举制品规则失败")
+	ErrUpdateReleaseRule = err("ErrUpdateReleaseRule", "更新制品规则失败")
+	ErrDeleteReleaseRule = err("ErrDeleteReleaseRule", "删除制品规则失败")
+	ErrAuthReleaseRule   = err("ErrAuthReleaseRule", "制品规则鉴权失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

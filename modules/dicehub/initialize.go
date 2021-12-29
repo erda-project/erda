@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/dicehub/service/extension"
 	"github.com/erda-project/erda/modules/dicehub/service/publish_item"
 	"github.com/erda-project/erda/modules/dicehub/service/release"
+	"github.com/erda-project/erda/modules/dicehub/service/release_rule"
 	"github.com/erda-project/erda/modules/dicehub/service/template"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
@@ -121,6 +122,8 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 		template.WithDBClient(db),
 	)
 
+	releaseRule := release_rule.New(release_rule.WithDBClient(db))
+
 	// queryStringDecoder
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
@@ -133,6 +136,7 @@ func initEndpoints(p *provider) (*endpoints.Endpoints, error) {
 		endpoints.WithExtension(ext),
 		endpoints.WithPublishItem(publishItem),
 		endpoints.WithPipelineTemplate(pipelineTemplate),
+		endpoints.WithReleaseRule(releaseRule),
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
 	)
 

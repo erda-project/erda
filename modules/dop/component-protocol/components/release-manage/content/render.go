@@ -12,25 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package content
 
-import (
-	"net/http"
+import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
-)
-
-var RELEASE_RULE_CREATE = apis.ApiSpec{
-	Path:         "/api/release-rules",
-	BackendPath:  "/api/release-rules",
-	Host:         "dicehub.marathon.l4lb.thisdcos.directory:10000",
-	Scheme:       "http",
-	Method:       http.MethodPost,
-	RequestType:  apistructs.CreateUpdateDeleteReleaseRuleRequest{},
-	ResponseType: apistructs.CreateBranchRuleResponse{},
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	Doc:          `创建制品规则`,
+func init() {
+	base.InitProvider("release-manage", "content")
 }
