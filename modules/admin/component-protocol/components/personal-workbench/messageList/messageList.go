@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/modules/admin/component-protocol/types"
 	"github.com/erda-project/erda/modules/admin/services/workbench"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda/pkg/strutil"
 	rt "github.com/erda-project/erda/pkg/time/readable_time"
 )
 
@@ -65,7 +66,9 @@ func init() {
 
 func (l *MessageList) Initialize(sdk *cptype.SDK) {}
 
-func (l *MessageList) Finalize(sdk *cptype.SDK) {}
+func (l *MessageList) Finalize(sdk *cptype.SDK) {
+	sdk.SetUserIDs(l.StdDataPtr.UserIDs)
+}
 
 func (l *MessageList) BeforeHandleOp(sdk *cptype.SDK) {
 	// get svc info
@@ -131,9 +134,21 @@ func (l *MessageList) RegisterItemClickGotoOp(opData list.OpItemClickGoto) (opFu
 
 // RegisterItemClickOp get client data, and set message read
 func (l *MessageList) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
-
+	id, err := strconv.Atoi(opData.ClientData.DataRef.ID)
+	if err != nil {
+		logrus.Errorf("parse message client data failed, id: %v, error: %v", opData.ClientData.DataRef.ID, err)
+		return nil
 	}
+	req := apistructs.SetMBoxReadStatusRequest{
+		IDs: []int64{int64(id)},
+	}
+	err = l.bdl.SetMBoxReadStatus(l.identity, &req)
+	if err != nil {
+		logrus.Errorf("set mbox read status filed, id: %v, error: %v", id, err)
+		return nil
+	}
+	l.StdDataPtr = l.doFilter()
+	return nil
 }
 
 func (l *MessageList) doFilter() (data *list.Data) {
@@ -186,12 +201,19 @@ func (l *MessageList) doFilterMsg() (data *list.Data) {
 	}
 
 	for _, p := range ms.List {
-		stream := streamMap[uint64(p.ID)]
+		var stream apistructs.IssueStream
+		issueID, _ := getIssueID(p.DeduplicateID)
+		if c, ok := streamMap[issueID]; ok {
+			stream = c
+		} else {
+			continue
+		}
+
 		item := list.Item{
 			ID:           strconv.FormatInt(p.ID, 10),
 			Title:        p.Title,
 			TitleSummary: strconv.FormatInt(p.UnreadCount, 10),
-			TitleState:   []list.StateInfo{{Status: common.UnreadMsgStatus}},
+			MainState:    &list.StateInfo{Status: common.UnreadMsgStatus},
 			Description:  stream.Content,
 			ColumnsInfo: map[string]interface{}{
 				"users": []string{stream.Operator},
@@ -202,8 +224,14 @@ func (l *MessageList) doFilterMsg() (data *list.Data) {
 			},
 			Operations: genClickGotoServerData(p),
 		}
+		if stream.Operator == "" {
+			logrus.Errorf("stream operator is empty, content: %+v", stream)
+		} else {
+			data.UserIDs = append(data.UserIDs, stream.Operator)
+		}
 		data.List = append(data.List, item)
 	}
+	data.UserIDs = strutil.DedupSlice(data.UserIDs)
 	return
 }
 
