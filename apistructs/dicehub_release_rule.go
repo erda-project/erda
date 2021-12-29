@@ -21,9 +21,10 @@ import (
 )
 
 type BranchReleaseRuleModel struct {
-	ID        uint64    `json:"id" gorm:"id"`
+	ID        string    `json:"id" gorm:"id"`
 	CreatedAt time.Time `json:"created_at" gorm:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"updated_at"`
+	DeletedAt time.Time `json:"deleted_at" gorm:"soft_deleted_at"`
 	ProjectID uint64    `json:"project_id" gorm:"project_id"`
 	Pattern   string    `json:"pattern" gorm:"pattern"`
 	IsEnabled bool      `json:"is_enabled" gorm:"is_enabled"`
@@ -46,12 +47,6 @@ func (BranchReleaseRuleModel) TableName() string {
 	return "erda_branch_release_rule"
 }
 
-type ListReleaseRuleRequest struct {
-	OrgID     uint64
-	ProjectID uint64
-	UserID    uint64
-}
-
 type ListReleaseRuleResponse struct {
 	Total uint64                    `json:"total"`
 	List  []*BranchReleaseRuleModel `json:"list"`
@@ -61,7 +56,7 @@ type CreateUpdateDeleteReleaseRuleRequest struct {
 	OrgID     uint64
 	ProjectID uint64
 	UserID    uint64
-	RuleID    uint64
+	RuleID    string
 	Body      *CreateUpdateReleaseRuleRequestBody
 }
 

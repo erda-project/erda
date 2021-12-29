@@ -71,7 +71,7 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 		if !ok {
 			return apierrors.ErrCreateRelease.InvalidParameter("no gitBranch label").ToResp(), nil
 		}
-		rules, apiError := e.releaseRule.List(&apistructs.ListReleaseRuleRequest{
+		rules, apiError := e.releaseRule.List(&apistructs.CreateUpdateDeleteReleaseRuleRequest{
 			ProjectID: uint64(releaseRequest.ProjectID),
 		})
 		if apiError != nil {

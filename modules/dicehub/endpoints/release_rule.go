@@ -26,44 +26,13 @@ import (
 	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
 // CreateRule creates release rule record
 func (e *Endpoints) CreateRule(ctx context.Context, r *http.Request, _ map[string]string) (httpserver.Responser, error) {
-	var l = logrus.WithField("func", "*Endpoint.CreateRule")
-	userIDStr, err := user.GetUserID(r)
-	if err != nil {
-		l.WithError(err).Errorln("failed to GetUserID")
-		return apierrors.ErrCreateReleaseRule.NotLogin().ToResp(), nil
-	}
-	userID, err := strconv.ParseUint(userIDStr.String(), 10, 32)
-	if err != nil {
-		l.WithError(err).WithField("userID", userIDStr).Errorln("failed to ParseUint")
-		return apierrors.ErrCreateReleaseRule.InvalidParameter("invalid userID").NotLogin().ToResp(), nil
-	}
-	orgID, err := user.GetOrgID(r)
-	if err != nil {
-		l.WithError(err).Errorln("failed to GetOrgID")
-		return apierrors.ErrListReleaseRule.NotLogin().ToResp(), nil
-	}
-	projectIDStr := r.URL.Query().Get("projectID")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
-	if err != nil {
-		l.WithError(err).WithField("projectID", projectIDStr).Errorln("failed to parseUint")
-		return apierrors.ErrCreateReleaseRule.InvalidParameter("invalid query parameter projectID").ToResp(), nil
-	}
-	var request = apistructs.CreateUpdateDeleteReleaseRuleRequest{
-		OrgID:     orgID,
-		ProjectID: projectID,
-		UserID:    userID,
-		RuleID:    0,
-		Body:      new(apistructs.CreateUpdateReleaseRuleRequestBody),
-	}
-	if err = json.NewDecoder(r.Body).Decode(request.Body); err != nil {
-		l.WithError(err).Errorln("failed to Decode request.Body")
-		return apierrors.ErrCreateReleaseRule.InvalidParameter("failed to Decode request.Body").ToResp(), nil
-	}
-	data, apiError := e.releaseRule.Create(&request)
+	request := ctx.Value("CreateUpdateDeleteReleaseRuleRequest").(*apistructs.CreateUpdateDeleteReleaseRuleRequest)
+	data, apiError := e.releaseRule.Create(request)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}
@@ -72,34 +41,8 @@ func (e *Endpoints) CreateRule(ctx context.Context, r *http.Request, _ map[strin
 
 // ListRules lists release rules for the given project
 func (e *Endpoints) ListRules(ctx context.Context, r *http.Request, _ map[string]string) (httpserver.Responser, error) {
-	var l = logrus.WithField("func", "*Endpoint.CreateRule")
-	userIDStr, err := user.GetUserID(r)
-	if err != nil {
-		l.WithError(err).Errorln("failed to GetUserID")
-		return apierrors.ErrListReleaseRule.NotLogin().ToResp(), nil
-	}
-	userID, err := strconv.ParseUint(userIDStr.String(), 10, 32)
-	if err != nil {
-		l.WithError(err).WithField("userID", userIDStr).Errorln("failed to ParseUint")
-		return apierrors.ErrListReleaseRule.InvalidParameter("invalid userID").NotLogin().ToResp(), nil
-	}
-	orgID, err := user.GetOrgID(r)
-	if err != nil {
-		l.WithError(err).Errorln("failed to GetOrgID")
-		return apierrors.ErrListReleaseRule.NotLogin().ToResp(), nil
-	}
-	projectIDStr := r.URL.Query().Get("projectID")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
-	if err != nil {
-		l.WithError(err).WithField("projectID", projectIDStr).Errorln("failed to parseUint")
-		return apierrors.ErrListReleaseRule.InvalidParameter("invalid query parameter projectID").ToResp(), nil
-	}
-	var request = apistructs.ListReleaseRuleRequest{
-		OrgID:     orgID,
-		ProjectID: projectID,
-		UserID:    userID,
-	}
-	data, apiError := e.releaseRule.List(&request)
+	request := ctx.Value("CreateUpdateDeleteReleaseRuleRequest").(*apistructs.CreateUpdateDeleteReleaseRuleRequest)
+	data, apiError := e.releaseRule.List(request)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}
@@ -108,42 +51,8 @@ func (e *Endpoints) ListRules(ctx context.Context, r *http.Request, _ map[string
 
 // UpdateRule updates the given release rule
 func (e *Endpoints) UpdateRule(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	var l = logrus.WithField("func", "*Endpoint.UpdateRule")
-	userIDStr, err := user.GetUserID(r)
-	if err != nil {
-		l.WithError(err).Errorln("failed to GetUserID")
-		return apierrors.ErrUpdateReleaseRule.NotLogin().ToResp(), nil
-	}
-	userID, err := strconv.ParseUint(userIDStr.String(), 10, 32)
-	if err != nil {
-		l.WithError(err).WithField("userID", userIDStr).Errorln("failed to ParseUint")
-		return apierrors.ErrUpdateReleaseRule.InvalidParameter("invalid userID").NotLogin().ToResp(), nil
-	}
-	orgID, err := user.GetOrgID(r)
-	if err != nil {
-		l.WithError(err).Errorln("failed to GetOrgID")
-		return apierrors.ErrUpdateReleaseRule.NotLogin().ToResp(), nil
-	}
-	projectIDStr := r.URL.Query().Get("projectID")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
-	if err != nil {
-		l.WithError(err).WithField("projectID", projectIDStr).Errorln("failed to parseUint")
-		return apierrors.ErrUpdateReleaseRule.InvalidParameter("invalid query parameter projectID").ToResp(), nil
-	}
-	idStr := vars["id"]
-	ruleID, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		l.WithError(err).WithField("id", idStr).Errorln("failed to ParseUint")
-		return apierrors.ErrUpdateReleaseRule.InvalidParameter("invalid rule id").ToResp(), nil
-	}
-	var request = apistructs.CreateUpdateDeleteReleaseRuleRequest{
-		OrgID:     orgID,
-		ProjectID: projectID,
-		UserID:    userID,
-		RuleID:    ruleID,
-		Body:      new(apistructs.CreateUpdateReleaseRuleRequestBody),
-	}
-	data, apiError := e.releaseRule.Update(&request)
+	request := ctx.Value("CreateUpdateDeleteReleaseRuleRequest").(*apistructs.CreateUpdateDeleteReleaseRuleRequest)
+	data, apiError := e.releaseRule.Update(request)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}
@@ -152,44 +61,82 @@ func (e *Endpoints) UpdateRule(ctx context.Context, r *http.Request, vars map[st
 
 // DeleteRule deletes the given release rule
 func (e *Endpoints) DeleteRule(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	var l = logrus.WithField("func", "*Endpoint.DeleteRule")
+	request := ctx.Value("CreateUpdateDeleteReleaseRuleRequest").(*apistructs.CreateUpdateDeleteReleaseRuleRequest)
+	apiError := e.releaseRule.Delete(request)
+	if apiError != nil {
+		return apiError.ToResp(), nil
+	}
+	return httpserver.OkResp(nil)
+}
+
+func (e *Endpoints) ReleaseRuleAuth(handler httpserver.Handler) httpserver.Handler {
+	return func(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+		if apiError := e.releaseRuleAuth(&ctx, r, vars); apiError != nil {
+			return apiError.ToResp(), nil
+		}
+		return handler(ctx, r, vars)
+	}
+}
+
+func (e *Endpoints) releaseRuleAuth(ctx *context.Context, r *http.Request, vars map[string]string) *errorresp.APIError {
+	var l = logrus.WithField("func", "*Endpoints.ReleaseRuleAuth")
+
+	// 常规性地参数检查
 	userIDStr, err := user.GetUserID(r)
 	if err != nil {
 		l.WithError(err).Errorln("failed to GetUserID")
-		return apierrors.ErrDeleteReleaseRule.NotLogin().ToResp(), nil
+		return apierrors.ErrAuthReleaseRule.NotLogin()
+
 	}
 	userID, err := strconv.ParseUint(userIDStr.String(), 10, 32)
 	if err != nil {
 		l.WithError(err).WithField("userID", userIDStr).Errorln("failed to ParseUint")
-		return apierrors.ErrDeleteReleaseRule.InvalidParameter("invalid userID").NotLogin().ToResp(), nil
+		return apierrors.ErrAuthReleaseRule.InvalidParameter("invalid userID").NotLogin()
 	}
 	orgID, err := user.GetOrgID(r)
 	if err != nil {
 		l.WithError(err).Errorln("failed to GetOrgID")
-		return apierrors.ErrDeleteReleaseRule.NotLogin().ToResp(), nil
+		return apierrors.ErrAuthReleaseRule.NotLogin()
 	}
 	projectIDStr := r.URL.Query().Get("projectID")
 	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
 	if err != nil {
 		l.WithError(err).WithField("projectID", projectIDStr).Errorln("failed to parseUint")
-		return apierrors.ErrDeleteReleaseRule.InvalidParameter("invalid query parameter projectID").ToResp(), nil
+		return apierrors.ErrAuthReleaseRule.InvalidParameter("invalid query parameter projectID")
 	}
-	idStr := vars["id"]
-	ruleID, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		l.WithError(err).WithField("id", idStr).Errorln("failed to ParseUint")
-		return apierrors.ErrDeleteReleaseRule.InvalidParameter("invalid rule id").ToResp(), nil
+
+	// 鉴权
+	switch r.Method {
+	case http.MethodPost, http.MethodPut, http.MethodDelete:
+		identity, err := user.GetIdentityInfo(r)
+		if err != nil {
+			l.WithError(err).Errorln("failed to GetIdentityInfo")
+			return apierrors.ErrAuthReleaseRule.NotLogin()
+		}
+		access, err := e.hasWriteAccess(identity, int64(projectID))
+		if err != nil {
+			l.WithError(err).Errorln("failed to hasWriteAccess")
+			return apierrors.ErrAuthReleaseRule.InternalError(err)
+		}
+		if !access {
+			return apierrors.ErrAuthReleaseRule.AccessDenied()
+		}
 	}
+
+	// 封装参数
 	var request = apistructs.CreateUpdateDeleteReleaseRuleRequest{
 		OrgID:     orgID,
 		ProjectID: projectID,
 		UserID:    userID,
-		RuleID:    ruleID,
-		Body:      nil,
+		RuleID:    vars["id"],
+		Body:      new(apistructs.CreateUpdateReleaseRuleRequestBody),
 	}
-	apiError := e.releaseRule.Delete(&request)
-	if apiError != nil {
-		return apiError.ToResp(), nil
+	switch r.Method {
+	case http.MethodPost, http.MethodPut:
+		if err := json.NewDecoder(r.Body).Decode(request.Body); err != nil {
+			return apierrors.ErrAuthReleaseRule.InvalidParameter("can not read request body")
+		}
 	}
-	return httpserver.OkResp(nil)
+	*ctx = context.WithValue(*ctx, "CreateUpdateDeleteReleaseRuleRequest", &request)
+	return nil
 }

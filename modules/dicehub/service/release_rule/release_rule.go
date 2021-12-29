@@ -17,6 +17,7 @@ package release_rule
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
@@ -46,8 +47,12 @@ func New(options ...Option) *ReleaseRule {
 func (rule *ReleaseRule) Create(request *apistructs.CreateUpdateDeleteReleaseRuleRequest) (*apistructs.BranchReleaseRuleModel, *errorresp.APIError) {
 	var l = logrus.WithField("func", "*ReleaseRule.Create").
 		WithField("project_id", request.ProjectID)
+	// 查找已有的分支制品规则, 检查要创建的模式是否已存在了
 	var records []*apistructs.BranchReleaseRuleModel
-	err := rule.db.Find(&records, map[string]interface{}{"project_id": request.ProjectID}).Error
+	err := rule.db.Find(&records, map[string]interface{}{
+		"project_id":      request.ProjectID,
+		"soft_deleted_at": 0,
+	}).Error
 	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		l.WithError(err).Errorln("failed to Find records")
 		return nil, apierrors.ErrCreateReleaseRule.InternalError(err)
@@ -80,11 +85,14 @@ func (rule *ReleaseRule) Create(request *apistructs.CreateUpdateDeleteReleaseRul
 }
 
 // List lists the release rules
-func (rule *ReleaseRule) List(request *apistructs.ListReleaseRuleRequest) (*apistructs.ListReleaseRuleResponse, *errorresp.APIError) {
+func (rule *ReleaseRule) List(request *apistructs.CreateUpdateDeleteReleaseRuleRequest) (*apistructs.ListReleaseRuleResponse, *errorresp.APIError) {
 	var l = logrus.WithField("func", "*ReleaseRule.List").
 		WithField("project_id", request.ProjectID)
 	var records []*apistructs.BranchReleaseRuleModel
-	err := rule.db.Find(&records, map[string]interface{}{"project_id": request.ProjectID}).Error
+	err := rule.db.Find(&records, map[string]interface{}{
+		"project_id":      request.ProjectID,
+		"soft_deleted_at": 0,
+	}).Error
 	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		l.WithError(err).Errorln("failed to Find records")
 		return nil, apierrors.ErrListReleaseRule.InternalError(err)
@@ -99,7 +107,7 @@ func (rule *ReleaseRule) List(request *apistructs.ListReleaseRuleRequest) (*apis
 		OrgID:     request.OrgID,
 		ProjectID: request.ProjectID,
 		UserID:    request.UserID,
-		RuleID:    0,
+		RuleID:    "",
 		Body: &apistructs.CreateUpdateReleaseRuleRequestBody{
 			Pattern:   "release/*",
 			IsEnabled: true,
@@ -123,7 +131,11 @@ func (rule *ReleaseRule) Update(request *apistructs.CreateUpdateDeleteReleaseRul
 
 	// 检查要修改的规则是否存在
 	var record apistructs.BranchReleaseRuleModel
-	err := rule.db.First(&record, map[string]interface{}{"id": request.RuleID, "project_id": request.ProjectID}).Error
+	err := rule.db.First(&record, map[string]interface{}{
+		"id":              request.RuleID,
+		"project_id":      request.ProjectID,
+		"soft_deleted_at": 0,
+	}).Error
 	if gorm.IsRecordNotFoundError(err) {
 		l.WithError(err).Errorln("the release rule not found")
 		return nil, apierrors.ErrUpdateReleaseRule.InvalidParameter("the release rule not found")
@@ -135,7 +147,11 @@ func (rule *ReleaseRule) Update(request *apistructs.CreateUpdateDeleteReleaseRul
 
 	// 检查要修改的 pattern 是否存在于其他记录中
 	var records []*apistructs.BranchReleaseRuleModel
-	err = rule.db.Find(&records, map[string]interface{}{"project_id": request.ProjectID}).Not("id", request.RuleID).Error
+	err = rule.db.Find(&records, map[string]interface{}{
+		"project_id":      request.ProjectID,
+		"soft_deleted_at": 0,
+	}).
+		Not("id", request.RuleID).Error
 	if err == nil {
 		var updating = make(map[string]struct{})
 		pats := strings.Split(request.Body.Pattern, ",")
@@ -171,7 +187,12 @@ func (rule *ReleaseRule) Update(request *apistructs.CreateUpdateDeleteReleaseRul
 func (rule *ReleaseRule) Delete(request *apistructs.CreateUpdateDeleteReleaseRuleRequest) *errorresp.APIError {
 	var l = logrus.WithField("func", "*Release.Delete").WithField("id", request.RuleID).WithField("project_id", request.ProjectID)
 	var count uint64
-	if err := rule.db.Model(new(apistructs.BranchReleaseRuleModel)).Where("project_id", request.ProjectID).Count(&count).Error; err != nil {
+	if err := rule.db.Model(new(apistructs.BranchReleaseRuleModel)).
+		Where(map[string]interface{}{
+			"project_id":      request.ProjectID,
+			"soft_deleted_at": 0,
+		}).
+		Count(&count).Error; err != nil {
 		l.WithError(err).Errorln("failed to Count")
 		return apierrors.ErrDeleteReleaseRule.InternalError(err)
 	}
@@ -179,7 +200,9 @@ func (rule *ReleaseRule) Delete(request *apistructs.CreateUpdateDeleteReleaseRul
 		l.Errorln("there is at least one release rule")
 		return apierrors.ErrDeleteReleaseRule.InvalidState("there is at least one release rule")
 	}
-	if err := rule.db.Delete(new(apistructs.BranchReleaseRuleModel), map[string]interface{}{"id": request.RuleID}).Error; err != nil && !gorm.IsRecordNotFoundError(err) {
+	if err := rule.db.Model(new(apistructs.BranchReleaseRuleModel)).
+		Where(map[string]interface{}{"id": request.RuleID}).
+		Update("soft_deleted_at", time.Now().UnixNano()/1e6).Error; err != nil && !gorm.IsRecordNotFoundError(err) {
 		l.WithError(err).Errorln("failed to Delete")
 		return apierrors.ErrDeleteReleaseRule.InternalError(err)
 	}
