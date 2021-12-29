@@ -57,13 +57,13 @@ elasticsearch@log:
   password: "${LOG_ELASTICSEARCH_SECURITY_PASSWORD}"
 
 elasticsearch.index.initializer@log:
-  _enable: ${WRITE_LOG_TO_ES_ENABLE:false}
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
   templates:
     - name: "erda-logs"
       path: "${CONFIG_PATH}/log_index_template.json"
 
 elasticsearch.index.loader@log:
-  _enable: ${WRITE_LOG_TO_ES_ENABLE:false}
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
   load_mode: "LoadFromElasticSearchOnly"
   index_reload_interval: "1m"
   match:
@@ -73,7 +73,7 @@ elasticsearch.index.loader@log:
         - "<org>.<key>-{number}"
 
 elasticsearch.index.creator@log:
-  _enable: ${WRITE_LOG_TO_ES_ENABLE:false}
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
   patterns:
     - first_index: "erda-logs-<org>-000001"
       alias: "erda-logs-<org>-rollover"
@@ -82,7 +82,7 @@ elasticsearch.index.creator@log:
   remove_conflicting_indices: true
 
 elasticsearch.index.rollover@log:
-  _enable: ${WRITE_LOG_TO_ES_ENABLE:false}
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
   check_interval: "30s"
   body_file: "${CONFIG_PATH}/index_rollover.json"
   patterns:
@@ -97,12 +97,12 @@ storage-retention-strategy@log:
   default_ttl: "${LOG_TTL:168h}"
 
 log-storage-elasticsearch:
-  _enable: ${WRITE_LOG_TO_ES_ENABLE:false}
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
   write_timeout: "1m"
   index_type: "logs"
 
 log-persist:
-  _enable: ${WRITE_LOG_TO_ES_ENABLE:false}
+  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
   input:
     topics: "${LOG_TOPICS:spot-container-log,spot-job-log}"
     group: "${LOG_GROUP_ID:erda-logs-dev}"
@@ -116,7 +116,7 @@ log-persist:
   print_invalid_log: false
 
 cassandra:
-  _enable: ${CASSANDRA_ENABLE:true}
+  _enable: ${CASSANDRA_ENABLE:false}
   host: "${CASSANDRA_ADDR:localhost:9042}"
   security: ${CASSANDRA_SECURITY_ENABLE:false}
   username: ${CASSANDRA_SECURITY_USERNAME}
@@ -124,7 +124,7 @@ cassandra:
   timeout: "${CASSANDRA_TIMEOUT:3s}"
 
 log-persist-v1:
-  _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:true}
+  _enable: ${WRITE_LOG_TO_CASSANDRA_ENABLE:false}
   input:
     topics: "${LOG_TOPICS:spot-container-log,spot-job-log}"
     group: "${LOG_GROUP_ID:spot-monitor-log-dev}"
@@ -164,13 +164,13 @@ elasticsearch@event:
   password: "${EVENT_ELASTICSEARCH_SECURITY_PASSWORD}"
 
 elasticsearch.index.initializer@event:
-  _enable: ${WRITE_EVENT_TO_ES_ENABLE:false}
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   templates:
     - name: "erda-events"
       path: "${CONFIG_PATH}/event_index_template.json"
 
 elasticsearch.index.loader@event:
-  _enable: ${WRITE_EVENT_TO_ES_ENABLE:false}
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   load_mode: "LoadFromElasticSearchOnly"
   index_reload_interval: "1m"
   match:
@@ -180,7 +180,7 @@ elasticsearch.index.loader@event:
         - "<event>-<namespace>.<key>-{number}"
 
 elasticsearch.index.creator@event:
-  _enable: ${WRITE_EVENT_TO_ES_ENABLE:false}
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   patterns:
     - first_index: "erda-events-<event>-<namespace>-000001"
       alias: "erda-events-<event>-<namespace>-rollover"
@@ -189,7 +189,7 @@ elasticsearch.index.creator@event:
   remove_conflicting_indices: true
 
 elasticsearch.index.rollover@event:
-  _enable: ${WRITE_EVENT_TO_ES_ENABLE:false}
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   check_interval: "30s"
   body_file: "${CONFIG_PATH}/index_rollover.json"
   patterns:
@@ -199,17 +199,17 @@ elasticsearch.index.rollover@event:
       alias: "erda-events-<event>-<namespace>.<key>-rollover"
 
 storage-retention-strategy@event:
-  _enable: ${WRITE_EVENT_TO_ES_ENABLE:false}
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   load_from_database: false
   ttl_reload_interval: "3m"
 
 event-storage-elasticsearch:
-  _enable: ${WRITE_EVENT_TO_ES_ENABLE:false}
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   write_timeout: "1m"
   index_type: "events"
 
 event-persist:
-  _enable: ${WRITE_EVENT_TO_ES_ENABLE:false}
+  _enable: ${WRITE_EVENT_TO_ES_ENABLE:true}
   input:
     topics: "${EVENT_TOPICS:spot-events}"
     group: "${EVENT_GROUP_ID:spot-monitor-event-dev}"
@@ -296,13 +296,13 @@ elasticsearch@span:
   password: "${SPAN_ELASTICSEARCH_SECURITY_PASSWORD}"
 
 elasticsearch.index.initializer@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
   templates:
     - name: "erda-spans"
       path: "${CONFIG_PATH}/span_index_template.json"
 
 elasticsearch.index.loader@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
   load_mode: "LoadFromElasticSearchOnly"
   index_reload_interval: "1m"
   match:
@@ -312,7 +312,7 @@ elasticsearch.index.loader@span:
         - "<org>.<key>-{number}"
 
 elasticsearch.index.creator@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
   patterns:
     - first_index: "erda-spans-<org>-000001"
       alias: "erda-spans-<org>-rollover"
@@ -321,7 +321,7 @@ elasticsearch.index.creator@span:
   remove_conflicting_indices: true
 
 elasticsearch.index.rollover@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
   check_interval: "30s"
   body_file: "${CONFIG_PATH}/index_rollover.json"
   patterns:
@@ -331,18 +331,18 @@ elasticsearch.index.rollover@span:
       alias: "erda-spans-<org>.<key>-rollover"
 
 storage-retention-strategy@span:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
   load_from_database: true
   ttl_reload_interval: "3m"
   default_ttl: "${LOG_TTL:168h}"
 
 span-storage-elasticsearch:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
   write_timeout: "1m"
   index_type: "spans"
 
 span-persist:
-  _enable: ${WRITE_SPAN_TO_ES_ENABLE:false}
+  _enable: ${WRITE_SPAN_TO_ES_ENABLE:true}
   spot_input:
     topics: "${SPOT_TRACE_TOPICS:spot-trace}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
@@ -381,7 +381,7 @@ browser-analytics:
   ipdb: "${CONFIG_PATH}/ipdata.dat"
 
 trace-storage:
-  _enable: ${WRITE_SPAN_TO_CASSANDRA_ENABLE:true}
+  _enable: ${WRITE_SPAN_TO_CASSANDRA_ENABLE:false}
   spot_input:
     topics: "${SPOT_TRACE_TOPICS:spot-trace}"
     group: "${TRACE_GROUP_ID:spot-monitor-trace-dev}"
