@@ -3,7 +3,7 @@
   "version": "3.0",
   "expression": {
     "metric": "application_rpc",
-    "window": 3,
+    "window": 1,
     "filter": {},
     "group": [
       "component",
@@ -17,7 +17,8 @@
       "source_application_id",
       "source_runtime_name",
       "source_service_name",
-      "source_addon_id"
+      "source_addon_id",
+      "error"
     ],
     "functions": [
       {
@@ -34,6 +35,11 @@
         "field": "errors",
         "aggregator": "sum",
         "field_script": "function invoke(field, tag){ return tag.error=='true'?field.elapsed_count:0; }"
+      },
+      {
+        "field": "reqs_per_second",
+        "aggregator": "rateps",
+        "field_script": "function invoke(field, tag){ return field.elapsed_count; }"
       }
     ],
     "select": {
@@ -63,7 +69,10 @@
       "source_service_id": "#source_service_id",
       "source_addon_id": "#source_addon_id",
       "source_addon_type": "#source_addon_type",
-      "source_runtime_id": "#source_runtime_id"
+      "source_runtime_id": "#source_runtime_id",
+      "error": "#error",
+      "_metric_scope": "#_metric_scope",
+      "_metric_scope_id": "#_metric_scope_id"
     },
     "alias": "application_rpc_service",
     "outputs": [
