@@ -50,6 +50,7 @@ grpc-client@erda.orchestrator.addon.mysql:
 erda.orchestrator.addon.mysql-client:
 
 erda.core.dop.autotest.testplan:
+erda.dop.projecthome:
 
 # component-protocol framework
 component-protocol:
