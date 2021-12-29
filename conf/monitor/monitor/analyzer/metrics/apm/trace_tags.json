@@ -3,7 +3,7 @@
   "version": "3.0",
   "expression": {
     "metric": "span",
-    "window": 3,
+    "window": 1,
     "filter": {},
     "group": [
       "trace_id"
@@ -55,10 +55,16 @@
         "field_script": "function invoke(field, tag){ return tag.service_id; }"
       },
       {
-        "field": "dubbo_methods",
+        "field": "rpc_methods",
         "aggregator": "distinct",
-        "alias": "dubbo_methods",
-        "field_script": "function invoke(field, tag){ return tag.dubbo_method; }"
+        "alias": "rpc_methods",
+        "field_script": "function invoke(field, tag){ return tag.rpc_method; }"
+      },
+      {
+        "field": "rpc_targets",
+        "aggregator": "distinct",
+        "alias": "rpc_targets",
+        "field_script": "function invoke(field, tag){ return tag.rpc_target; }"
       },
       {
         "field": "http_paths",
@@ -67,10 +73,53 @@
         "field_script": "function invoke(field, tag){ return tag.http_path; }"
       },
       {
+        "field": "db_names",
+        "alias": "db_names",
+        "aggregator": "distinct",
+        "field_script": "function invoke(field, tag){ return tag.db_name; }"
+      },
+      {
+        "field": "db_systems",
+        "alias": "db_systems",
+        "aggregator": "distinct",
+        "field_script": "function invoke(field, tag){ return tag.db_system; }"
+      },
+      {
+        "field": "topics",
+        "alias": "topics",
+        "aggregator": "distinct",
+        "field_script": "function invoke(field, tag){ return tag.message_bus_destination; }"
+      },
+      {
+        "field": "env_ids",
+        "alias": "env_ids",
+        "aggregator": "distinct",
+        "field_script": "function invoke(field, tag){ return tag.env_id; }"
+      },
+      {
         "field": "terminus_keys",
         "alias": "terminus_keys",
         "aggregator": "distinct",
         "field_script": "function invoke(field, tag){ return tag.terminus_key; }"
+      },
+      {
+        "field": "trace_duration",
+        "alias": "trace_duration",
+        "trigger": "aggregated",
+        "aggregator": "value",
+        "field_script": "function invoke(field, tag){ return field.end_time - field.start_time; }"
+      },
+      {
+        "field": "span_count",
+        "alias": "span_count",
+        "aggregator": "sum",
+        "field_script": "function invoke(field, tag){ return 1; }"
+      },
+      {
+        "field": "operation_names",
+        "alias": "operation_names",
+        "aggregator": "distinct",
+        "field_script": "function invoke(field, tag){ if( tag.parent_id || tag.parent_id!='' ) return null; else return tag.operation_name; }"
       }
     ],
     "select": {
