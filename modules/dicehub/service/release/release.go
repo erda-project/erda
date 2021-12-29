@@ -889,8 +889,51 @@ func (r *Release) Convert(releaseRequest *apistructs.ReleaseCreateRequest, appRe
 }
 
 func (r *Release) ToFormal(releaseIDs []string) error {
-	return r.db.Model(&dbclient.Release{}).Where("is_stable = ?", true).
-		Where("release_id in (?)", releaseIDs).Update("is_formal", true).Error
+	releases, err := r.db.GetReleases(releaseIDs)
+	if err != nil {
+		return err
+	}
+	var failed []string
+	for i := range releases {
+		if !releases[i].IsStable {
+			failed = append(failed, fmt.Sprintf("%s(%s)", releases[i].ReleaseID, "stable release can not be formaled"))
+		}
+		if err := r.formalRelease(&releases[i]); err != nil {
+			failed = append(failed, fmt.Sprintf("%s(%s)", releases[i].ReleaseID, err.Error()))
+		}
+	}
+	if len(failed) == 0 {
+		return nil
+	}
+	return errors.Errorf("failed to formal releases: %s", strings.Join(failed, ","))
+}
+
+func (r *Release) formalRelease(release *dbclient.Release) (err error) {
+	tx := r.db.Begin()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	var list []string
+	if err = json.Unmarshal([]byte(release.ApplicationReleaseList), &list); err != nil {
+		return err
+	}
+
+	for _, id := range list {
+		if err = tx.Model(&dbclient.Release{}).Where("release_id = ?", id).Updates(map[string]interface{}{
+			"is_stable": true,
+			"is_formal": true,
+		}).Error; err != nil {
+			return
+		}
+	}
+
+	if err = tx.Model(&dbclient.Release{}).Where("release_id = ?", release.ReleaseID).Update("is_formal", true).Error; err != nil {
+		return
+	}
+	return tx.Commit().Error
 }
 
 // release数据库结构转换为API返回所需结构

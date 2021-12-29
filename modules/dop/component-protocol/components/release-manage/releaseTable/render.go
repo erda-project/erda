@@ -211,6 +211,8 @@ func (r *ComponentReleaseTable) RenderTable() error {
 		return errors.Errorf("failed to get org, %v", err)
 	}
 
+	existedUser := make(map[string]struct{})
+	var userIDs []string
 	var list []Item
 	for _, release := range releaseResp.Releases {
 		editOperation := Operation{
@@ -257,6 +259,11 @@ func (r *ComponentReleaseTable) RenderTable() error {
 			Text:   r.sdk.I18n("downloadDice"),
 		}
 
+		if _, ok := existedUser[release.UserID]; !ok && release.UserID != "" {
+			existedUser[release.UserID] = struct{}{}
+			userIDs = append(userIDs, release.UserID)
+		}
+
 		item := Item{
 			ID:          release.ReleaseID,
 			Version:     release.Version,
@@ -284,6 +291,8 @@ func (r *ComponentReleaseTable) RenderTable() error {
 		list = append(list, item)
 	}
 	r.Data.List = list
+
+	r.sdk.SetUserIDs(userIDs)
 	return nil
 }
 
@@ -335,16 +344,12 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 			DataIndex: "creator",
 			Title:     r.sdk.I18n("creator"),
 		},
+		{
+			DataIndex: "createdAt",
+			Title:     r.sdk.I18n("createdAt"),
+			Sorter:    true,
+		},
 	}
-	createAtColumn := Column{
-		DataIndex: "createdAt",
-		Title:     r.sdk.I18n("createdAt"),
-		Sorter:    true,
-	}
-	if r.State.IsFormal {
-		createAtColumn.Align = "right"
-	}
-	columns = append(columns, createAtColumn)
 
 	if !r.State.IsFormal {
 		columns = append(columns, Column{
@@ -356,6 +361,8 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	if r.State.IsProjectRelease {
 		columns = append(columns[:1], columns[2:]...)
 	}
+
+	columns[len(columns)-1].Align = "right"
 
 	r.Props = Props{
 		BatchOperations: batchOperations,
