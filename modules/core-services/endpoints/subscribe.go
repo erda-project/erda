@@ -84,7 +84,7 @@ func (e *Endpoints) Subscribe(ctx context.Context, r *http.Request, vars map[str
 
 func (e *Endpoints) UnSubscribe(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	// request check
-	uid, gid, err := GetUserInfo(r)
+	uid, oid, err := GetUserInfo(r)
 	if err != nil {
 		return apierrors.ErrDeleteSubscribe.InvalidParameter(err).ToResp(), nil
 	}
@@ -98,14 +98,14 @@ func (e *Endpoints) UnSubscribe(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.ErrDeleteSubscribe.InvalidParameter("can't decode body").ToResp(), nil
 	}
 	req.UserID = uid
-	req.OrgID = gid
+	req.OrgID = oid
 	logrus.Infof("request body: %+v", req)
 
 	// permission check
 	pReq := apistructs.PermissionCheckRequest{
 		UserID:   uid,
 		Scope:    apistructs.OrgScope,
-		ScopeID:  gid,
+		ScopeID:  oid,
 		Resource: apistructs.SubscribeResource,
 		Action:   apistructs.DeleteAction,
 	}
@@ -124,7 +124,7 @@ func (e *Endpoints) UnSubscribe(ctx context.Context, r *http.Request, vars map[s
 
 func (e *Endpoints) GetSubscribes(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	// request check
-	uid, gid, err := GetUserInfo(r)
+	uid, oid, err := GetUserInfo(r)
 	if err != nil {
 		return apierrors.ErrGetSubscribe.InvalidParameter(err).ToResp(), nil
 	}
@@ -135,7 +135,7 @@ func (e *Endpoints) GetSubscribes(ctx context.Context, r *http.Request, vars map
 	}
 
 	req.UserID = uid
-	req.OrgID = gid
+	req.OrgID = oid
 	if err := req.Validate(); err != nil {
 		return apierrors.ErrCreateSubscribe.InvalidParameter(err.Error()).ToResp(), nil
 	}
@@ -145,7 +145,7 @@ func (e *Endpoints) GetSubscribes(ctx context.Context, r *http.Request, vars map
 	pReq := apistructs.PermissionCheckRequest{
 		UserID:   uid,
 		Scope:    apistructs.OrgScope,
-		ScopeID:  gid,
+		ScopeID:  oid,
 		Resource: apistructs.SubscribeResource,
 		Action:   apistructs.GetAction,
 	}
