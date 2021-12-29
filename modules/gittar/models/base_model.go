@@ -16,7 +16,7 @@ package models
 
 import "time"
 
-// Model base model definition, including fields `ID`, `CreatedAt`, `UpdatedAt`, `DeletedAt`, which could be embedded in your models
+// Model base model definition, including fields `ID`, `CreatedAt`, `UpdatedAt`, `SoftDeletedAt`, which could be embedded in your models
 //    type User struct {
 //      gorm.Model
 //    }
