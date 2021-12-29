@@ -81,9 +81,10 @@ func TestSubscribe_Subscribe(t *testing.T) {
 				TypeID: 111,
 				Name:   "subscribe_app_name",
 				UserID: "2",
+				OrgID:  1,
 			}
 
-			monkey.PatchInstanceMethod(reflect.TypeOf(c), "GetSubscribeCount", func(c *dao.DBClient, tp string, userID string) (int, error) {
+			monkey.PatchInstanceMethod(reflect.TypeOf(c), "GetSubscribeCount", func(c *dao.DBClient, tp string, userID string, orgID uint64) (int, error) {
 				if tt.countErr {
 					return 3 + 1, nil
 				}
@@ -91,7 +92,7 @@ func TestSubscribe_Subscribe(t *testing.T) {
 			})
 			defer monkey.UnpatchAll()
 
-			monkey.PatchInstanceMethod(reflect.TypeOf(c), "GetSubscribe", func(c *dao.DBClient, tp string, tpID uint64, userID string) (*model.Subscribe, error) {
+			monkey.PatchInstanceMethod(reflect.TypeOf(c), "GetSubscribe", func(c *dao.DBClient, tp string, tpID uint64, userID string, orgID uint64) (*model.Subscribe, error) {
 				if tt.dupErr {
 					return &model.Subscribe{
 						TypeID: createReq.TypeID,
@@ -107,7 +108,7 @@ func TestSubscribe_Subscribe(t *testing.T) {
 				if tt.createErr {
 					return fmt.Errorf("error")
 				}
-				subscribe.ID = 666
+				subscribe.ID = "666"
 				return nil
 			})
 
@@ -118,11 +119,11 @@ func TestSubscribe_Subscribe(t *testing.T) {
 				return
 			}
 
-			if tt.wantErr && got != 0 {
+			if tt.wantErr && got != "" {
 				t.Errorf("Subscribe() want error, but return non empty id: %v", got)
 			}
 
-			if !tt.wantErr && got == 0 {
+			if !tt.wantErr && got == "" {
 				t.Errorf("Subscribe() want success, but return empty id: %v", got)
 			}
 
@@ -140,8 +141,8 @@ func TestSubscribe_UnSubscribe(t *testing.T) {
 		deleteSuc    bool
 		dByUserIDErr bool
 		dByUserIDSuc bool
-		dByTypeIDErr bool
-		dByTypeIDSuc bool
+		dByIDErr     bool
+		dByIDSuc     bool
 	}{
 		{
 			name:       "test1_invalid_request_error",
@@ -159,14 +160,14 @@ func TestSubscribe_UnSubscribe(t *testing.T) {
 			deleteErr: true,
 		},
 		{
-			name:         "test4_delete_by_user_id_error",
+			name:         "test4_delete_by_user_org_id_error",
 			wantErr:      true,
 			dByUserIDErr: true,
 		},
 		{
-			name:         "test5_delete_by_type_id_error",
-			wantErr:      true,
-			dByTypeIDErr: true,
+			name:     "test5_delete_by_id_error",
+			wantErr:  true,
+			dByIDErr: true,
 		},
 		{
 			name:      "test6_delete_success",
@@ -179,9 +180,9 @@ func TestSubscribe_UnSubscribe(t *testing.T) {
 			dByUserIDSuc: true,
 		},
 		{
-			name:         "test8_delete_by_type_id_success",
-			wantErr:      false,
-			dByTypeIDSuc: true,
+			name:     "test8_delete_by_id_success",
+			wantErr:  false,
+			dByIDSuc: true,
 		},
 	}
 
@@ -200,19 +201,22 @@ func TestSubscribe_UnSubscribe(t *testing.T) {
 					Type:   apistructs.AppSubscribe,
 					TypeID: 666,
 					UserID: "999",
+					OrgID:  2,
 				}
 			} else if tt.dByUserIDErr || tt.dByUserIDSuc {
 				req = apistructs.UnSubscribeReq{
 					UserID: "999",
+					OrgID:  2,
 				}
-			} else if tt.dByTypeIDErr || tt.dByTypeIDSuc {
+			} else if tt.dByIDErr || tt.dByIDSuc {
 				req = apistructs.UnSubscribeReq{
-					Type:   apistructs.AppSubscribe,
-					TypeID: 666,
+					ID:     "idxxxx",
+					UserID: "999",
+					OrgID:  2,
 				}
 			}
 
-			monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteSubscribe", func(c *dao.DBClient, tp string, tpID uint64, userID string) error {
+			monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteSubscribe", func(c *dao.DBClient, tp string, tpID uint64, userID string, orgID uint64) error {
 				if tt.deleteErr {
 					return errors.Errorf("error")
 				}
@@ -220,15 +224,15 @@ func TestSubscribe_UnSubscribe(t *testing.T) {
 			})
 			defer monkey.UnpatchAll()
 
-			monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteSubscribeByUserID", func(c *dao.DBClient, userID string) error {
+			monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteSubscribeByUserOrgID", func(c *dao.DBClient, userID string, orgID uint64) error {
 				if tt.dByUserIDErr {
 					return errors.Errorf("error")
 				}
 				return nil
 			})
 
-			monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteSubscribeByTypeID", func(c *dao.DBClient, tp string, tpID uint64) error {
-				if tt.dByTypeIDErr {
+			monkey.PatchInstanceMethod(reflect.TypeOf(c), "DeleteBySubscribeID", func(c *dao.DBClient, id string) error {
+				if tt.dByIDErr {
 					return fmt.Errorf("error")
 				}
 				return nil
