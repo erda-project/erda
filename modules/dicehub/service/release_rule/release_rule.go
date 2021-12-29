@@ -85,33 +85,33 @@ func (rule *ReleaseRule) List(request *apistructs.ListReleaseRuleRequest) (*apis
 		WithField("project_id", request.ProjectID)
 	var records []*apistructs.BranchReleaseRuleModel
 	err := rule.db.Find(&records, map[string]interface{}{"project_id": request.ProjectID}).Error
-	if gorm.IsRecordNotFoundError(err) {
-		record, apiError := rule.Create(&apistructs.CreateUpdateDeleteReleaseRuleRequest{
-			OrgID:     request.OrgID,
-			ProjectID: request.ProjectID,
-			UserID:    request.UserID,
-			RuleID:    0,
-			Body: &apistructs.CreateUpdateReleaseRuleRequestBody{
-				Pattern:   "release/*",
-				IsEnabled: true,
-			},
-		})
-		if apiError != nil {
-			l.WithError(apiError).Errorln("failed to Create default release rule")
-			return nil, apiError.InternalError(errors.New("failed to Create default release rule"))
-		}
-		return &apistructs.ListReleaseRuleResponse{
-			Total: 1,
-			List:  []*apistructs.BranchReleaseRuleModel{record},
-		}, nil
-	}
-	if err != nil {
+	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		l.WithError(err).Errorln("failed to Find records")
 		return nil, apierrors.ErrListReleaseRule.InternalError(err)
 	}
+	if len(records) > 0 {
+		return &apistructs.ListReleaseRuleResponse{
+			Total: uint64(len(records)),
+			List:  records,
+		}, nil
+	}
+	record, apiError := rule.Create(&apistructs.CreateUpdateDeleteReleaseRuleRequest{
+		OrgID:     request.OrgID,
+		ProjectID: request.ProjectID,
+		UserID:    request.UserID,
+		RuleID:    0,
+		Body: &apistructs.CreateUpdateReleaseRuleRequestBody{
+			Pattern:   "release/*",
+			IsEnabled: true,
+		},
+	})
+	if apiError != nil {
+		l.WithError(apiError).Errorln("failed to Create default release rule")
+		return nil, apiError.InternalError(errors.New("failed to Create default release rule"))
+	}
 	return &apistructs.ListReleaseRuleResponse{
-		Total: uint64(len(records)),
-		List:  records,
+		Total: 1,
+		List:  []*apistructs.BranchReleaseRuleModel{record},
 	}, nil
 }
 
