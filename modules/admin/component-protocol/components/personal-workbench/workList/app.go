@@ -69,11 +69,11 @@ func (l *WorkList) GenAppKvInfo(app apistructs.AppWorkBenchItem) (kvs []list.KvI
 					Build(),
 			},
 		},
-		// service count
+		// runtime count
 		{
 			ID:    strconv.FormatUint(app.ID, 10),
 			Key:   l.sdk.I18n(i18n.I18nKeyRuntimeCount),
-			Value: strconv.FormatInt(int64(app.AppOpenMrNum), 10),
+			Value: strconv.FormatInt(int64(app.AppRuntimeNum), 10),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
 					WithSkipRender(true).
@@ -192,6 +192,10 @@ func (l *WorkList) GenAppTitleState(mode string) ([]list.StateInfo, bool) {
 		return []list.StateInfo{{Text: l.sdk.I18n(i18n.I18nKeyAppModeBIGDATA), Status: common.AppBigdataStatus}}, true
 	case "SERVICE":
 		return []list.StateInfo{{Text: l.sdk.I18n(i18n.I18nKeyAppModeSERVICE), Status: common.AppServiceStatus}}, true
+	case "MOBILE":
+		return []list.StateInfo{{Text: l.sdk.I18n(i18n.I18nKeyAppModeMOBILE), Status: common.AppMobileStatus}}, true
+	case "PROJECT_SERVICE":
+		return []list.StateInfo{{Text: l.sdk.I18n(i18n.I18nAppModePROJECTSERVICE), Status: common.AppMobileStatus}}, true
 	default:
 		logrus.Warnf("wrong app mode: %v", mode)
 		return []list.StateInfo{}, false
