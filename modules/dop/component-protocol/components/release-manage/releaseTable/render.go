@@ -335,12 +335,16 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 			DataIndex: "creator",
 			Title:     r.sdk.I18n("creator"),
 		},
-		{
-			DataIndex: "createdAt",
-			Title:     r.sdk.I18n("createdAt"),
-			Sorter:    true,
-		},
 	}
+	createAtColumn := Column{
+		DataIndex: "createdAt",
+		Title:     r.sdk.I18n("createdAt"),
+		Sorter:    true,
+	}
+	if r.State.IsFormal {
+		createAtColumn.Align = "right"
+	}
+	columns = append(columns, createAtColumn)
 
 	if !r.State.IsFormal {
 		columns = append(columns, Column{
