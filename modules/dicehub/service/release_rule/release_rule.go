@@ -84,7 +84,7 @@ func (rule *ReleaseRule) List(request *apistructs.ListReleaseRuleRequest) (*apis
 	var l = logrus.WithField("func", "*ReleaseRule.List").
 		WithField("project_id", request.ProjectID)
 	var records []*apistructs.BranchReleaseRuleModel
-	err := rule.db.Find(&records).Error
+	err := rule.db.Find(&records, map[string]interface{}{"project_id": request.ProjectID}).Error
 	if gorm.IsRecordNotFoundError(err) {
 		record, apiError := rule.Create(&apistructs.CreateUpdateDeleteReleaseRuleRequest{
 			OrgID:     request.OrgID,

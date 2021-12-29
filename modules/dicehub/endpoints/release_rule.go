@@ -61,7 +61,7 @@ func (e *Endpoints) CreateRule(ctx context.Context, r *http.Request, _ map[strin
 	}
 	if err = json.NewDecoder(r.Body).Decode(request.Body); err != nil {
 		l.WithError(err).Errorln("failed to Decode request.Body")
-		return apierrors.ErrCreateReleaseRule.InvalidParameter("faield to Decode request.Body").ToResp(), nil
+		return apierrors.ErrCreateReleaseRule.InvalidParameter("failed to Decode request.Body").ToResp(), nil
 	}
 	data, apiError := e.releaseRule.Create(&request)
 	if apiError != nil {

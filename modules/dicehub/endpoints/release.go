@@ -66,7 +66,6 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 		"releaseRequest.IsStable":         releaseRequest.IsStable,
 		"releaseRequest.IsProjectRelease": releaseRequest.IsProjectRelease,
 	}).Infoln("releaseRequest parameters")
-	l.Infof("releaseRequest.Version: %s", releaseRequest.Version)
 	if releaseRequest.Version == "" {
 		branch, ok := releaseRequest.Labels["gitBranch"]
 		if !ok {
