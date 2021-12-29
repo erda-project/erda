@@ -16,11 +16,12 @@ package main
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
-
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda-infra/providers/component-protocol"
 	_ "github.com/erda-project/erda/modules/admin"
+	_ "github.com/erda-project/erda/modules/admin/component-protocol/components"
 	_ "github.com/erda-project/erda/modules/admin/dingtalktest"
+	"github.com/erda-project/erda/pkg/common"
 )
 
 func main() {

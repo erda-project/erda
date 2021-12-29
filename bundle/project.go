@@ -22,6 +22,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/msp/menu/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/discover"
@@ -212,6 +213,31 @@ func (b *Bundle) ListPublicProject(userID string, req apistructs.ProjectListRequ
 		return nil, nil
 	}
 	return &rsp.Data, nil
+}
+
+func (b *Bundle) ListProjectsEnvAndTenantId(userID, orgID, tenantId, Type string) ([]*apistructs.MenuItem, error) {
+	host, err := b.urls.MSP()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var rsp = apistructs.GetMenuResponse{}
+	var req = pb.GetMenuRequest{}
+	req.Type = Type
+	req.TenantId = tenantId
+	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/msp/tenant/menu")).
+		Header("User-ID", userID).
+		Header("Org-ID", orgID).
+		JSONBody(&req).
+		Do().JSON(&rsp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !rsp.Success {
+		return nil, toAPIError(resp.StatusCode(), rsp.Error)
+	}
+	return rsp.Data, err
 }
 
 // UpdateProjectActiveTime 更新项目活跃时间
@@ -463,16 +489,13 @@ func (b *Bundle) DeleteProject(id, orgID uint64, userID string) (*apistructs.Pro
 }
 
 // Get projects map
-func (b *Bundle) GetProjectsMap(projectIDs []uint64) (map[uint64]apistructs.ProjectDTO, error) {
+func (b *Bundle) GetProjectsMap(req apistructs.GetModelProjectsMapRequest) (map[uint64]apistructs.ProjectDTO, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
 	hc := b.hc
 
-	req := apistructs.GetModelProjectsMapRequest{
-		ProjectIDs: projectIDs,
-	}
 	var rsp apistructs.GetModelProjectsMapResponse
 	resp, err := hc.Get(host).Path("/api/projects/actions/get-projects-map").
 		Header(httputil.InternalHeader, "bundle").JSONBody(&req).Do().JSON(&rsp)

@@ -1043,8 +1043,8 @@ type Identity struct {
 }
 
 type PageRequest struct {
-	PageSize int `json:"pageSize"`
-	PageNo   int `json:"pageNo"`
+	PageSize uint64 `json:"pageSize"`
+	PageNo   uint64 `json:"pageNo"`
 }
 
 type CloudResourceVpcBaseInfo struct {

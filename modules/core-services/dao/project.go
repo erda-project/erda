@@ -118,7 +118,9 @@ func (client *DBClient) GetProjectsByIDs(projectIDs []uint64, params *apistructs
 	if params.Query != "" {
 		db = db.Where("(name LIKE ? OR display_name LIKE ?)", strutil.Concat("%", params.Query, "%"), strutil.Concat("%", params.Query, "%"))
 	}
-	db = db.Where("`type` != ?", pb.Type_MSP.String())
+	if !params.KeepMsp {
+		db = db.Where("`type` != ?", pb.Type_MSP.String())
+	}
 	if params.OrderBy != "" {
 		if params.Asc {
 			db = db.Order(fmt.Sprintf("%s", params.OrderBy))

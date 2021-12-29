@@ -155,7 +155,7 @@ func (b *Bundle) ListRuntimesGroupByApps(orgID uint64, userID string, applicatio
 	if err != nil {
 		return nil, err
 	}
-	l.Infof("body: %s", string(resp.Body()))
+	l.Debugf("body: %s", string(resp.Body()))
 	if !resp.IsOK() || !fetchResp.Success {
 		return nil, toAPIError(resp.StatusCode(), fetchResp.Error)
 	}
