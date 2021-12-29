@@ -356,7 +356,7 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 		},
 	}
 
-	if !r.State.IsFormal {
+	if r.State.IsProjectRelease || !r.State.IsFormal {
 		columns = append(columns, Column{
 			DataIndex: "operations",
 			Title:     r.sdk.I18n("operations"),
