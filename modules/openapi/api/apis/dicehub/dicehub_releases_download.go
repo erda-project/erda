@@ -21,8 +21,8 @@ import (
 )
 
 var DICEHUB_RELEASES_DOWNLOAD = apis.ApiSpec{
-	Path:        "/api/releases/<releaseId>/actions/download-yaml",
-	BackendPath: "/api/releases/<releaseId>/actions/download-yaml",
+	Path:        "/api/releases/<releaseId>/actions/download",
+	BackendPath: "/api/releases/<releaseId>/actions/download",
 	Host:        "dicehub.marathon.l4lb.thisdcos.directory:10000",
 	Scheme:      "http",
 	Method:      http.MethodGet,
