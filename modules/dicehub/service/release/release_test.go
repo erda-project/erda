@@ -15,6 +15,7 @@
 package release
 
 import (
+	"encoding/json"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -55,6 +56,27 @@ func TestLimitLabelsLength(t *testing.T) {
 		// end with ...
 		if len([]rune(v)) > 100+3 {
 			t.Error("fail")
+		}
+	}
+}
+
+func TestUnmarshalApplicationReleaseList(t *testing.T) {
+	list := []string{"1", "2", "3"}
+	data, err := json.Marshal(list)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := unmarshalApplicationReleaseList(string(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(list) != len(res) {
+		t.Errorf("test failed, length of res is not expected")
+	}
+	for i := range list {
+		if list[i] != res[i] {
+			t.Errorf("test failed, res is not expected")
 		}
 	}
 }
