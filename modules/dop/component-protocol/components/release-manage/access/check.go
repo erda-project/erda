@@ -17,6 +17,8 @@ package access
 import (
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 )
@@ -70,6 +72,8 @@ func HasWriteAccess(bdl *bundle.Bundle, userID string, projectID uint64, isProje
 	if err != nil {
 		return false, err
 	}
+
+	logrus.Infof("[DEBUG] appID: %d, userID: %s, role: %v", applicationID, userID, rsp.Roles)
 
 	hasAppAccess := false
 	for _, role := range rsp.Roles {
