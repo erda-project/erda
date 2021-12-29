@@ -281,8 +281,8 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		if r.State.IsProjectRelease {
 			item.Operations.Operations["download"] = downloadOperation
 		}
+		item.Operations.Operations["edit"] = editOperation
 		if !r.State.IsFormal {
-			item.Operations.Operations["edit"] = editOperation
 			item.Operations.Operations["formal"] = formalOperation
 			item.Operations.Operations["delete"] = deleteOperation
 			item.BatchOperations = []string{"formal", "delete"}
