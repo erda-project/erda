@@ -148,7 +148,7 @@ func (rule *ReleaseRule) Update(request *apistructs.CreateUpdateDeleteReleaseRul
 				if _, ok := updating[pat]; ok {
 					l.Errorln("the pattern in the updating is exists in some other record")
 					return nil, apierrors.ErrUpdateReleaseRule.InvalidParameter(fmt.Sprintf("the pattern %s in the updating is exists in some other record %s",
-						pat, record))
+						pat, record.Pattern))
 				}
 			}
 		}
