@@ -899,7 +899,7 @@ func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *
 
 	release, err := e.db.GetRelease(releaseID)
 	if err != nil {
-		return apierrors.ErrDownloadRelease.NotFound()
+		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
 
 	if !release.IsProjectRelease {
