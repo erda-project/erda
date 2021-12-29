@@ -133,6 +133,7 @@ const (
 	EQ Operator = iota
 	REGEXP
 	EXPRESSION
+	CONTAINS
 )
 
 func (id *UniqueId) Raw() []interface{} {
