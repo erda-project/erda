@@ -80,8 +80,8 @@ type ReleaseCreateRequest struct {
 	// IsProjectRelease 是否为项目级别制品
 	IsProjectRelease bool `json:"isProjectRelease,omitempty"`
 
-	// Markdown 用于保存changelog
-	Markdown string `json:"markdown,omitempty"`
+	// Changelog 用于保存changelog
+	Changelog string `json:"changelog,omitempty"`
 
 	// ApplicationReleaseList 项目级制品依赖的应用级制品ID列表
 	ApplicationReleaseList []string `json:"applicationReleaseList,omitempty"`
@@ -187,7 +187,7 @@ type ReleaseUpdateRequest struct {
 type ReleaseUpdateRequestData struct {
 	Version                string   `json:"version,omitempty"`
 	Desc                   string   `json:"desc,omitempty"`
-	Markdown               string   `json:"markdown,omitempty"`
+	Changelog              string   `json:"changelog,omitempty"`
 	Dice                   string   `json:"dice,omitempty"` // 项目级别制品使用
 	ApplicationReleaseList []string `json:"applicationReleaseList,omitempty"`
 	// 以下信息主要为了version覆盖使用，找出之前的version清除
@@ -243,7 +243,7 @@ type ReleaseGetResponseData struct {
 	Diceyml                string                      `json:"diceyml"`
 	Desc                   string                      `json:"desc,omitempty"`
 	Addon                  string                      `json:"addon,omitempty"`
-	Markdown               string                      `json:"markdown,omitempty"`
+	Changelog              string                      `json:"changelog,omitempty"`
 	IsStable               bool                        `json:"isStable"`
 	IsFormal               bool                        `json:"isFormal"`
 	IsProjectRelease       bool                        `json:"isProjectRelease"`

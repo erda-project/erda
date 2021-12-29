@@ -107,9 +107,9 @@ func TestUnmarshalApplicationReleaseList(t *testing.T) {
 
 func TestMakeMetadata(t *testing.T) {
 	projectRelease := &dbclient.Release{
-		Desc:     "testDesc",
-		Markdown: "testMarkdown",
-		Version:  "testVersion",
+		Desc:      "testDesc",
+		Changelog: "testMarkdown",
+		Version:   "testVersion",
 	}
 	labels := map[string]string{
 		"gitBranch":        "testBranch",
@@ -123,7 +123,7 @@ func TestMakeMetadata(t *testing.T) {
 	}
 	appReleases := []dbclient.Release{
 		{
-			Markdown:        "testMarkdown",
+			Changelog:       "testMarkdown",
 			Labels:          string(data),
 			ApplicationName: "testApp",
 		},
@@ -131,14 +131,14 @@ func TestMakeMetadata(t *testing.T) {
 	releaseMeta := apistructs.ReleaseMetadata{
 		Version:   projectRelease.Version,
 		Desc:      projectRelease.Desc,
-		ChangeLog: projectRelease.Markdown,
+		ChangeLog: projectRelease.Changelog,
 		AppList: map[string]apistructs.AppMetadata{
 			appReleases[0].ApplicationName: {
 				GitBranch:        labels["gitBranch"],
 				GitCommitID:      labels["gitCommitId"],
 				GitCommitMessage: labels["gitCommitMessage"],
 				GitRepo:          labels["gitRepo"],
-				ChangeLog:        appReleases[0].Markdown,
+				ChangeLog:        appReleases[0].Changelog,
 			},
 		},
 	}

@@ -35,8 +35,8 @@ type Release struct {
 	Dice string `json:"dice" gorm:"type:text"` // dice.yml
 	// Addon 资源类型为addonyml时，存储addon.yml内容，选填
 	Addon string `json:"addon" gorm:"type:text"`
-	// Markdown changelog，选填
-	Markdown string `json:"markdown" gorm:"type:text"`
+	// Changelog changelog，选填
+	Changelog string `json:"changelog" gorm:"type:text"`
 	// IsStable stable表示非临时制品
 	IsStable bool `json:"isStable" gorm:"type:tinyint(1)"`
 	// IsFormal 是否为正式版

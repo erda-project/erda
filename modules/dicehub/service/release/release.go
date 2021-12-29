@@ -259,7 +259,7 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 			ReleaseName:      md.GitBranch,
 			Desc:             fmt.Sprintf("referenced by project release %s", projectReleaseID),
 			Dice:             dice,
-			Markdown:         md.ChangeLog,
+			Changelog:        md.ChangeLog,
 			IsStable:         true,
 			IsFormal:         false,
 			IsProjectRelease: false,
@@ -280,7 +280,7 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 	projectRelease := &dbclient.Release{
 		ReleaseID:              projectReleaseID,
 		Desc:                   metadata.Desc,
-		Markdown:               metadata.ChangeLog,
+		Changelog:              metadata.ChangeLog,
 		IsStable:               true,
 		IsFormal:               false,
 		IsProjectRelease:       true,
@@ -369,8 +369,8 @@ func (r *Release) Update(orgID int64, releaseID string, req *apistructs.ReleaseU
 	}
 
 	// update changelog
-	if req.Markdown != "" {
-		release.Markdown = req.Markdown
+	if req.Changelog != "" {
+		release.Changelog = req.Changelog
 	}
 
 	if release.IsProjectRelease {
@@ -814,7 +814,7 @@ func (r *Release) Convert(releaseRequest *apistructs.ReleaseCreateRequest, appRe
 		Desc:             releaseRequest.Desc,
 		Dice:             releaseRequest.Dice,
 		Addon:            releaseRequest.Addon,
-		Markdown:         releaseRequest.Markdown,
+		Changelog:        releaseRequest.Changelog,
 		IsStable:         releaseRequest.IsStable,
 		IsFormal:         releaseRequest.IsFormal,
 		IsProjectRelease: releaseRequest.IsProjectRelease,
@@ -977,7 +977,7 @@ func (r *Release) convertToReleaseResponse(release *dbclient.Release) *apistruct
 		Diceyml:                release.Dice,
 		Desc:                   release.Desc,
 		Addon:                  release.Addon,
-		Markdown:               release.Markdown,
+		Changelog:              release.Changelog,
 		IsStable:               release.IsStable,
 		IsFormal:               release.IsFormal,
 		IsProjectRelease:       release.IsProjectRelease,

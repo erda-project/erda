@@ -1055,13 +1055,13 @@ func makeMetadata(release *dbclient.Release, appReleases []dbclient.Release) ([]
 			GitCommitID:      labels["gitCommitId"],
 			GitCommitMessage: labels["gitCommitMessage"],
 			GitRepo:          labels["gitRepo"],
-			ChangeLog:        appReleases[i].Markdown,
+			ChangeLog:        appReleases[i].Changelog,
 		}
 	}
 	releaseMeta := apistructs.ReleaseMetadata{
 		Version:   release.Version,
 		Desc:      release.Desc,
-		ChangeLog: release.Markdown,
+		ChangeLog: release.Changelog,
 		AppList:   appList,
 	}
 	return yaml.Marshal(releaseMeta)
