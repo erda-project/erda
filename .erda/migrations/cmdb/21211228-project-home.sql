@@ -6,6 +6,7 @@ CREATE TABLE `erda_project_home` (
     `readme` text NOT NULL COMMENT 'text',
     `links` text NOT NULL COMMENT 'links',
     `updater_id`    varchar(191)  NOT NULL default '' COMMENT 'updater user id',
+    `soft_deleted_at` bigint(20) NOT NULL DEFAULT 0 COMMENT 'deleted at',
     PRIMARY KEY (`id`),
     KEY `idx_project_id` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='project home content';
