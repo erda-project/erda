@@ -217,7 +217,16 @@ func (l *WorkList) doFilter() *list.Data {
 }
 
 func (l *WorkList) doFilterProj() (data *list.Data) {
-	data = &list.Data{}
+	data = &list.Data{
+		PageNo:   l.filterReq.PageNo,
+		PageSize: l.filterReq.PageSize,
+		Title:    l.sdk.I18n(i18n.I18nKeyMyProject),
+		List:     make([]list.Item, 0),
+		UserIDs:  make([]string, 0),
+		Operations: map[cptype.OperationKey]cptype.Operation{
+			list.OpChangePage{}.OpKey(): cputil.NewOpBuilder().Build(),
+		},
+	}
 
 	// TODO: optimize: store stared item global state from star cart list, get here
 	// list my subscribed projects
@@ -241,17 +250,12 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		logrus.Errorf("list query projct workbench data failed, error: %v", err)
 		return
 	}
-
-	data = &list.Data{
-		PageNo:       l.filterReq.PageNo,
-		PageSize:     l.filterReq.PageSize,
-		Total:        uint64(projs.Total),
-		Title:        l.sdk.I18n(i18n.I18nKeyMyProject),
-		TitleSummary: strconv.FormatInt(int64(projs.Total), 10),
-		Operations: map[cptype.OperationKey]cptype.Operation{
-			list.OpChangePage{}.OpKey(): cputil.NewOpBuilder().Build(),
-		},
+	if len(projs.List) == 0 {
+		return data
 	}
+
+	data.Total = uint64(projs.Total)
+	data.TitleSummary = strconv.FormatInt(int64(projs.Total), 10)
 
 	// get msp url params
 	var projIDs []uint64

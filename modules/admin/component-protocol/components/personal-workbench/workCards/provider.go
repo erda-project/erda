@@ -99,14 +99,12 @@ func (wc *WorkCards) getAppTextMeta(sdk *cptype.SDK, app apistructs.AppWorkBench
 	mrOps := common.Operation{
 		JumpOut: false,
 		Target:  "appOpenMr",
-		Query:   map[string]interface{}{"projectId": app.ProjectID, "appId": app.ID},
-		Params:  nil,
+		Params:  map[string]interface{}{"projectId": app.ProjectID, "appId": app.ID},
 	}
 	runtimeOps := common.Operation{
 		JumpOut: false,
 		Target:  "deploy",
-		Query:   map[string]interface{}{"projectId": app.ProjectID, "appId": app.ID},
-		Params:  nil,
+		Params:  map[string]interface{}{"projectId": app.ProjectID, "appId": app.ID},
 	}
 	err := common.Transfer(mrOps, &mrData)
 	if err != nil {
@@ -296,10 +294,10 @@ func (wc *WorkCards) getAppIconOps(sdk *cptype.SDK, app apistructs.AppWorkBenchI
 	common.Transfer(gotoData, &apiDesignServerData)
 	common.Transfer(gotoData, &deployData)
 	common.Transfer(gotoData, &repositoryServerData)
-	pipelineServerData["target"] = "repo"
-	apiDesignServerData["target"] = "pipelineRoot"
-	deployData["target"] = "appApiDesign"
-	repositoryServerData["target"] = "deploy"
+	pipelineServerData["target"] = "pipelineRoot"
+	apiDesignServerData["target"] = "appApiDesign"
+	deployData["target"] = "deploy"
+	repositoryServerData["target"] = "repo"
 	iops = []cardlist.IconOperations{
 		{
 			Icon: "daimacangku",
@@ -314,7 +312,7 @@ func (wc *WorkCards) getAppIconOps(sdk *cptype.SDK, app apistructs.AppWorkBenchI
 				"clickGoto": {ServerData: &pipelineServerData},
 			}},
 		{
-			Icon: "Apisheji",
+			Icon: "apisheji",
 			Tip:  sdk.I18n("api design"),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				"clickGoto": {ServerData: &apiDesignServerData},
@@ -474,10 +472,15 @@ func (wc *WorkCards) getAppTitleState(sdk *cptype.SDK, mode string) []cardlist.T
 		return []cardlist.TitleState{{Text: sdk.I18n(i18n.I18nKeyAppModeBIGDATA), Status: common.AppBigdataStatus}}
 	case "SERVICE":
 		return []cardlist.TitleState{{Text: sdk.I18n(i18n.I18nKeyAppModeSERVICE), Status: common.AppServiceStatus}}
+	case "MOBILE":
+		return []cardlist.TitleState{{Text: sdk.I18n(i18n.I18nKeyAppModeMOBILE), Status: common.AppMobileStatus}}
+	case "PROJECT_SERVICE":
+		return []cardlist.TitleState{{Text: sdk.I18n(i18n.I18nAppModePROJECTSERVICE), Status: common.AppMobileStatus}}
 	default:
 		logrus.Warnf("wrong app mode: %v", mode)
 		return []cardlist.TitleState{}
 	}
+
 }
 
 func (wc *WorkCards) getTableName(sdk *cptype.SDK) string {
