@@ -39,7 +39,7 @@ const (
 // JWTAccessClaims jwt claims
 type JWTAccessClaims struct {
 	jwt.StandardClaims
-	Payload apistructs.OpenapiOAuth2TokenPayload `json:"payload"`
+	Payload apistructs.OAuth2TokenPayload `json:"payload"`
 }
 
 // Valid claims verification
@@ -70,7 +70,7 @@ type JWTAccessGenerate struct {
 // Token based on the UUID generated token
 func (a *JWTAccessGenerate) Token(data *oauth2.GenerateBasic, isGenRefresh bool) (string, string, error) {
 	// payload from request body
-	var payload apistructs.OpenapiOAuth2TokenPayload
+	var payload apistructs.OAuth2TokenPayload
 	if err := json.NewDecoder(data.Request.Body).Decode(&payload); err != nil && err != io.EOF {
 		return "", "", fmt.Errorf("failed to json decode payload from request body, err: %v", err)
 	}
