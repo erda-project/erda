@@ -14,18 +14,19 @@
 
 package model
 
-import (
-	"github.com/erda-project/erda/pkg/database/dbengine"
-)
+import "time"
 
 // Subscribe manage erda item (project/application) subscribe
 type Subscribe struct {
-	dbengine.BaseModel
+	ID        string `gorm:"primary_key"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
 
 	Type   string
 	TypeID uint64
 	Name   string
 	UserID string
+	OrgID  uint64
 }
 
 func (Subscribe) TableName() string {
