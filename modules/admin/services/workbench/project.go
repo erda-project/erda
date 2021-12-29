@@ -235,11 +235,10 @@ func (w *Workbench) GetUrlCommonParams(userID, orgID string, projectIDs []uint64
 			logrus.Errorf("failed to get env and tenant id ,err: %v", err)
 			continue
 		}
-		urlParams[i].Env = project.Relationship[len(project.Relationship)-1].Workspace
-		if tg, ok := menues[i].Params["tenantGroup"]; ok {
+		if tg, ok := menues[len(menues)-1].Params["tenantGroup"]; ok {
 			urlParams[i].TenantGroup = tg
 		}
-		if tk, ok := menues[i].Params["terminusKey"]; ok {
+		if tk, ok := menues[len(menues)-1].Params["terminusKey"]; ok {
 			urlParams[i].TerminusKey = tk
 		}
 	}
