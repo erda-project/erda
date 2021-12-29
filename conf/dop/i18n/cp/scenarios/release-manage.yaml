@@ -7,7 +7,7 @@ zh:
   inputCommitID: 请输入commitID
   creator: 创建人
   selectCreator: 请选择创建人
-  downloadDice: 下载 Dice.yml
+  downloadDice: 下载
   editRelease: 编辑
   confirmFormal: 确认将该制品转为正式版？
   toFormal: 转为正式版
@@ -29,7 +29,7 @@ en:
   inputCommitID: Input commit ID
   creator: Creator
   selectCreator: Select creator
-  downloadDice: Download Dice.yml
+  downloadDice: Download
   editRelease: Edit
   confirmFormal: Sure to formal release ?
   toFormal: To formal

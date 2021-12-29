@@ -127,7 +127,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/releases/{releaseId}/reference/actions/change", Method: http.MethodPut, Handler: e.UpdateReleaseReference},
 		{Path: "/api/releases/{releaseId}/actions/formal", Method: http.MethodPut, Handler: e.ToFormalRelease},
 		{Path: "/api/releases/{releaseId}/actions/get-plist", Method: http.MethodGet, WriterHandler: e.GetIosPlist},
-		{Path: "/api/releases/{releaseId}/actions/download-yaml", Method: http.MethodGet, WriterHandler: e.DownloadYaml},
+		{Path: "/api/releases/{releaseId}/actions/download", Method: http.MethodGet, WriterHandler: e.DownloadYaml},
 		{Path: "/api/releases/{releaseId}", Method: http.MethodGet, Handler: e.GetRelease},
 		{Path: "/api/releases/{releaseId}", Method: http.MethodDelete, Handler: e.DeleteRelease},
 		{Path: "/api/releases", Method: http.MethodPut, Handler: e.ToFormalReleases},

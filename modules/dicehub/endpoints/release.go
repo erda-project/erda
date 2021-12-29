@@ -113,7 +113,7 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 		if !releaseRequest.IsProjectRelease {
 			return apierrors.ErrCreateRelease.InvalidParameter("can not create application release manually").ToResp(), nil
 		}
-		hasAccess, err := e.hasWriteAccess(identityInfo, releaseRequest.ProjectID)
+		hasAccess, err := e.hasWriteAccess(identityInfo, releaseRequest.ProjectID, true, 0)
 		if err != nil {
 			return apierrors.ErrCreateRelease.InternalError(err).ToResp(), nil
 		}
@@ -135,6 +135,7 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 	return httpserver.OkResp(respBody)
 }
 
+// UploadRelease POST /api/releases/actions/upload 上传文件创建项目级制品
 func (e *Endpoints) UploadRelease(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	_, err := getPermissionHeader(r)
 	if err != nil {
@@ -158,7 +159,7 @@ func (e *Endpoints) UploadRelease(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrCreateRelease.NotLogin().ToResp(), nil
 	}
 	if !identityInfo.IsInternalClient() {
-		hasAccess, err := e.hasWriteAccess(identityInfo, releaseRequest.ProjectID)
+		hasAccess, err := e.hasWriteAccess(identityInfo, releaseRequest.ProjectID, true, 0)
 		if err != nil {
 			return apierrors.ErrCreateRelease.InternalError(err).ToResp(), nil
 		}
@@ -177,6 +178,11 @@ func (e *Endpoints) UploadRelease(ctx context.Context, r *http.Request, vars map
 	if err != nil {
 		return apierrors.ErrCreateRelease.InternalError(err).ToResp(), nil
 	}
+
+	if err := e.bdl.DeleteDiceFile(releaseRequest.DiceFileID); err != nil {
+		logrus.Errorf("failed to delete diceFile %s", releaseRequest.DiceFileID)
+	}
+
 	return httpserver.OkResp(&apistructs.ReleaseCreateResponseData{
 		ReleaseID: releaseID,
 	})
@@ -290,7 +296,11 @@ func (e *Endpoints) UpdateRelease(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrUpdateRelease.NotLogin().ToResp(), nil
 	}
 	if !identityInfo.IsInternalClient() {
-		hasAccess, err := e.hasWriteAccess(identityInfo, updateRequest.ProjectID)
+		release, err := e.db.GetRelease(releaseID)
+		if err != nil {
+			return apierrors.ErrUpdateRelease.InternalError(err).ToResp(), nil
+		}
+		hasAccess, err := e.hasWriteAccess(identityInfo, updateRequest.ProjectID, release.IsProjectRelease, release.ApplicationID)
 		if err != nil {
 			return apierrors.ErrUpdateRelease.InternalError(err).ToResp(), nil
 		}
@@ -358,7 +368,7 @@ func (e *Endpoints) DeleteRelease(ctx context.Context, r *http.Request, vars map
 		if err != nil {
 			return apierrors.ErrDeleteRelease.InternalError(err).ToResp(), nil
 		}
-		hasAccess, err := e.hasWriteAccess(identityInfo, release.ProjectID)
+		hasAccess, err := e.hasWriteAccess(identityInfo, release.ProjectID, release.IsProjectRelease, release.ApplicationID)
 		if err != nil {
 			return apierrors.ErrDeleteRelease.InternalError(err).ToResp(), nil
 		}
@@ -385,20 +395,26 @@ func (e *Endpoints) DeleteReleases(ctx context.Context, r *http.Request, vars ma
 
 	var releasesDeleteRequest apistructs.ReleasesDeleteRequest
 	if err := json.NewDecoder(r.Body).Decode(&releasesDeleteRequest); err != nil {
-		return apierrors.ErrUpdateRelease.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrDeleteRelease.InvalidParameter(err).ToResp(), nil
 	}
 
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
-		return apierrors.ErrCreateRelease.NotLogin().ToResp(), nil
+		return apierrors.ErrDeleteRelease.NotLogin().ToResp(), nil
 	}
 	if !identityInfo.IsInternalClient() {
-		hasAccess, err := e.hasWriteAccess(identityInfo, releasesDeleteRequest.ProjectID)
+		releases, err := e.db.GetReleases(releasesDeleteRequest.ReleaseID)
 		if err != nil {
 			return apierrors.ErrDeleteRelease.InternalError(err).ToResp(), nil
 		}
-		if !hasAccess {
-			return apierrors.ErrDeleteRelease.AccessDenied().ToResp(), nil
+		for i := range releases {
+			hasAccess, err := e.hasWriteAccess(identityInfo, releasesDeleteRequest.ProjectID, releases[i].IsProjectRelease, releases[i].ApplicationID)
+			if err != nil {
+				return apierrors.ErrDeleteRelease.InternalError(err).ToResp(), nil
+			}
+			if !hasAccess {
+				return apierrors.ErrDeleteRelease.AccessDenied().ToResp(), nil
+			}
 		}
 	}
 
@@ -429,7 +445,7 @@ func (e *Endpoints) GetRelease(ctx context.Context, r *http.Request, vars map[st
 		if err != nil {
 			return apierrors.ErrGetRelease.InternalError(err).ToResp(), nil
 		}
-		hasAccess, err := e.hasWriteAccess(identityInfo, release.ProjectID)
+		hasAccess, err := e.hasReadAccess(identityInfo, release.ProjectID)
 		if err != nil {
 			return apierrors.ErrGetRelease.InternalError(err).ToResp(), nil
 		}
@@ -816,7 +832,7 @@ func (e *Endpoints) ToFormalReleases(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrFormalRelease.NotLogin().ToResp(), nil
 	}
 	if !identityInfo.IsInternalClient() {
-		hasAccess, err := e.hasWriteAccess(identityInfo, releasesToFormalRequest.ProjectID)
+		hasAccess, err := e.hasWriteAccess(identityInfo, releasesToFormalRequest.ProjectID, true, 0)
 		if err != nil {
 			return apierrors.ErrFormalRelease.InternalError(err).ToResp(), nil
 		}
@@ -855,7 +871,7 @@ func (e *Endpoints) ToFormalRelease(ctx context.Context, r *http.Request, vars m
 		return apierrors.ErrFormalRelease.InvalidParameter("temp release can not be formaled").ToResp(), nil
 	}
 	if !identityInfo.IsInternalClient() {
-		hasAccess, err := e.hasWriteAccess(identityInfo, release.ProjectID)
+		hasAccess, err := e.hasWriteAccess(identityInfo, release.ProjectID, true, 0)
 		if err != nil {
 			return apierrors.ErrFormalRelease.InternalError(err).ToResp(), nil
 		}
@@ -974,7 +990,7 @@ func (e *Endpoints) hasReadAccess(identityInfo apistructs.IdentityInfo, projectI
 }
 
 // hasWriteAccess check whether user is project owner or project lead
-func (e *Endpoints) hasWriteAccess(identity apistructs.IdentityInfo, projectID int64) (bool, error) {
+func (e *Endpoints) hasWriteAccess(identity apistructs.IdentityInfo, projectID int64, isProjectRelease bool, applicationID int64) (bool, error) {
 	req := &apistructs.ScopeRoleAccessRequest{
 		Scope: apistructs.Scope{
 			Type: apistructs.ProjectScope,
@@ -986,13 +1002,37 @@ func (e *Endpoints) hasWriteAccess(identity apistructs.IdentityInfo, projectID i
 		return false, err
 	}
 
-	hasAccess := false
+	hasProjectAccess := false
 	for _, role := range rsp.Roles {
 		if role == bundle.RoleProjectOwner || role == bundle.RoleProjectLead || role == bundle.RoleProjectPM {
-			hasAccess = true
+			hasProjectAccess = true
+			break
 		}
 	}
-	return hasAccess, nil
+
+	if isProjectRelease || hasProjectAccess {
+		return hasProjectAccess, nil
+	}
+
+	req = &apistructs.ScopeRoleAccessRequest{
+		Scope: apistructs.Scope{
+			Type: apistructs.AppScope,
+			ID:   strconv.FormatInt(applicationID, 10),
+		},
+	}
+	rsp, err = e.bdl.ScopeRoleAccess(identity.UserID, req)
+	if err != nil {
+		return false, err
+	}
+
+	hasAppAccess := false
+	for _, role := range rsp.Roles {
+		if role == bundle.RoleAppOwner || role == bundle.RoleAppLead {
+			hasAppAccess = true
+			break
+		}
+	}
+	return hasAppAccess, nil
 }
 
 func unmarshalApplicationReleaseList(str string) ([]string, error) {

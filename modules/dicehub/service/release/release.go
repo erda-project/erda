@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
@@ -107,7 +108,9 @@ func (r *Release) Create(req *apistructs.ReleaseCreateRequest) (string, error) {
 		err         error
 	)
 	if req.IsProjectRelease {
-		appReleases, err = r.db.GetReleases(req.ApplicationReleaseList)
+		list := strutil.DedupSlice(req.ApplicationReleaseList)
+		sort.Strings(list)
+		appReleases, err = r.db.GetReleases(list)
 		if err != nil {
 			return "", err
 		}
@@ -374,6 +377,8 @@ func (r *Release) Update(orgID int64, releaseID string, req *apistructs.ReleaseU
 		if len(req.ApplicationReleaseList) == 0 {
 			return errors.New("application release list can not be null for project release")
 		}
+		newList := strutil.DedupSlice(req.ApplicationReleaseList)
+		sort.Strings(newList)
 		newAppReleases, err := r.db.GetReleases(req.ApplicationReleaseList)
 		if err != nil {
 			return errors.Errorf("failed to get application releases: %v", err)
@@ -394,12 +399,18 @@ func (r *Release) Update(orgID int64, releaseID string, req *apistructs.ReleaseU
 			return errors.Errorf("failed to json unmarshal release list, %v", err)
 		}
 
-		oldAppReleases, err := r.db.GetReleases(oldList)
-		if err != nil {
-			return err
-		}
-		if err = r.updateProjectReleaseAndReference(release, oldAppReleases, newAppReleases); err != nil {
-			return err
+		if isSliceEqual(newList, oldList) {
+			if err := r.db.UpdateRelease(release); err != nil {
+				return err
+			}
+		} else {
+			oldAppReleases, err := r.db.GetReleases(oldList)
+			if err != nil {
+				return err
+			}
+			if err = r.updateProjectReleaseAndReference(release, oldAppReleases, newAppReleases); err != nil {
+				return err
+			}
 		}
 	} else {
 		if err := r.db.UpdateRelease(release); err != nil {
@@ -857,16 +868,13 @@ func (r *Release) Convert(releaseRequest *apistructs.ReleaseCreateRequest, appRe
 			return nil, errors.New("application release list can not be null for project release when dice yaml is empty")
 		}
 
-		//diceMap := make(map[string]string)
-		//for i := range appReleases {
-		//	diceMap[appReleases[i].ApplicationName] = appReleases[i].Dice
-		//}
-		//dice, err := yaml.Marshal(diceMap)
-		//if err != nil {
-		//	return nil, errors.Errorf("failed to marshal dice yaml, %v", err)
-		//}
-		//release.Dice = string(dice)
-
+		selectedApp := make(map[int64]struct{})
+		for i := range appReleases {
+			if _, ok := selectedApp[appReleases[i].ApplicationID]; ok {
+				return nil, errors.New("one application can only be selected once")
+			}
+			selectedApp[appReleases[i].ApplicationID] = struct{}{}
+		}
 		release.ApplicationID = 0
 		release.ApplicationName = ""
 		release.Dice = ""
@@ -1022,4 +1030,16 @@ func unmarshalApplicationReleaseList(str string) ([]string, error) {
 		return nil, err
 	}
 	return list, nil
+}
+
+func isSliceEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }

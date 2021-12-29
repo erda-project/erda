@@ -38,7 +38,7 @@ func HasReadAccess(bdl *bundle.Bundle, userID string, projectID uint64) (bool, e
 	return true, nil
 }
 
-func HasWriteAccess(bdl *bundle.Bundle, userID string, projectID uint64) (bool, error) {
+func HasWriteAccess(bdl *bundle.Bundle, userID string, projectID uint64, isProjectRelease bool, applicationID int64) (bool, error) {
 	req := &apistructs.ScopeRoleAccessRequest{
 		Scope: apistructs.Scope{
 			Type: apistructs.ProjectScope,
@@ -50,11 +50,33 @@ func HasWriteAccess(bdl *bundle.Bundle, userID string, projectID uint64) (bool, 
 		return false, err
 	}
 
-	hasAccess := false
+	hasProjectAccess := false
 	for _, role := range rsp.Roles {
 		if role == bundle.RoleProjectOwner || role == bundle.RoleProjectLead || role == bundle.RoleProjectPM {
-			hasAccess = true
+			hasProjectAccess = true
 		}
 	}
-	return hasAccess, nil
+	if isProjectRelease || hasProjectAccess {
+		return hasProjectAccess, nil
+	}
+
+	req = &apistructs.ScopeRoleAccessRequest{
+		Scope: apistructs.Scope{
+			Type: apistructs.AppScope,
+			ID:   strconv.FormatInt(applicationID, 10),
+		},
+	}
+	rsp, err = bdl.ScopeRoleAccess(userID, req)
+	if err != nil {
+		return false, err
+	}
+
+	hasAppAccess := false
+	for _, role := range rsp.Roles {
+		if role == bundle.RoleAppOwner || role == bundle.RoleAppLead {
+			hasAppAccess = true
+			break
+		}
+	}
+	return hasAppAccess, nil
 }

@@ -245,7 +245,7 @@ func (r *ComponentReleaseTable) RenderTable() error {
 			SuccessMsg: r.sdk.I18n("deleteSucceeded"),
 		}
 
-		downloadPath := fmt.Sprintf("/api/%s/releases/%s/actions/download-yaml", org.Name, release.ReleaseID)
+		downloadPath := fmt.Sprintf("/api/%s/releases/%s/actions/download", org.Name, release.ReleaseID)
 		downloadOperation := Operation{
 			Command: Command{
 				JumpOut: true,
@@ -261,7 +261,6 @@ func (r *ComponentReleaseTable) RenderTable() error {
 			ID:          release.ReleaseID,
 			Version:     release.Version,
 			Application: release.ApplicationName,
-			Desc:        release.Desc,
 			Creator: Creator{
 				RenderType: "userAvatar",
 				Value:      []string{release.UserID},
@@ -333,10 +332,6 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 			Title:     r.sdk.I18n("applicationName"),
 		},
 		{
-			DataIndex: "desc",
-			Title:     r.sdk.I18n("desc"),
-		},
-		{
 			DataIndex: "creator",
 			Title:     r.sdk.I18n("creator"),
 		},
@@ -345,10 +340,14 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 			Title:     r.sdk.I18n("createdAt"),
 			Sorter:    true,
 		},
-		{
+	}
+
+	if !r.State.IsFormal {
+		columns = append(columns, Column{
 			DataIndex: "operations",
 			Title:     r.sdk.I18n("operations"),
-		},
+			Align:     "right",
+		})
 	}
 	if r.State.IsProjectRelease {
 		columns = append(columns[:1], columns[2:]...)
@@ -356,7 +355,7 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 
 	r.Props = Props{
 		BatchOperations: batchOperations,
-		Selectable:      true,
+		Selectable:      !r.State.IsFormal,
 		Columns:         columns,
 		PageSizeOptions: []string{"10", "20", "50", "100"},
 		RowKey:          "id",
@@ -389,7 +388,7 @@ func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {
 	userID := r.sdk.Identity.UserID
 	orgIDStr := r.sdk.Identity.OrgID
 	projectID := r.State.ProjectID
-	hasAccess, err := access.HasWriteAccess(r.bdl, userID, uint64(projectID))
+	hasAccess, err := access.HasWriteAccess(r.bdl, userID, uint64(projectID), true, 0)
 	if err != nil {
 		return errors.Errorf("failed to check access, %v", err)
 	}
@@ -411,12 +410,29 @@ func (r *ComponentReleaseTable) deleteReleases(releaseID []string) error {
 	userID := r.sdk.Identity.UserID
 	orgIDStr := r.sdk.Identity.OrgID
 	projectID := r.State.ProjectID
-	hasAccess, err := access.HasWriteAccess(r.bdl, userID, uint64(projectID))
-	if err != nil {
-		return errors.Errorf("failed to check access, %v", err)
-	}
-	if !hasAccess {
-		return errors.Errorf("Access denied")
+
+	if r.State.IsProjectRelease {
+		hasAccess, err := access.HasWriteAccess(r.bdl, userID, uint64(projectID), true, 0)
+		if err != nil {
+			return errors.Errorf("failed to check access, %v", err)
+		}
+		if !hasAccess {
+			return errors.Errorf("Access denied")
+		}
+	} else {
+		for _, id := range releaseID {
+			release, err := r.bdl.GetRelease(id)
+			if err != nil {
+				return err
+			}
+			hasAccess, err := access.HasWriteAccess(r.bdl, userID, uint64(projectID), false, release.ApplicationID)
+			if err != nil {
+				return errors.Errorf("failed to check access, %v", err)
+			}
+			if !hasAccess {
+				return errors.Errorf("Access denied")
+			}
+		}
 	}
 
 	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)

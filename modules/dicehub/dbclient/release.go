@@ -287,10 +287,10 @@ func (client *DBClient) GetLatestReleaseByAppAndVersion(appID int64, version str
 	return &release, nil
 }
 
-// GetUnReferedReleasesBefore 获取给定时间点前未引用的非正式 Release
+// GetUnReferedReleasesBefore 获取给定时间点前未引用的临时 Release
 func (client *DBClient) GetUnReferedReleasesBefore(before time.Time) ([]Release, error) {
 	var releases []Release
-	if err := client.Where("reference <= ?", 0).Where("is_formal = ?", false).Where("updated_at < ?", before).
+	if err := client.Where("reference <= ?", 0).Where("is_stable = ?", false).Where("updated_at < ?", before).
 		Order("updated_at").Find(&releases).Error; err != nil {
 		return nil, err
 	}

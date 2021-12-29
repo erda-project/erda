@@ -85,6 +85,7 @@ type Column struct {
 	DataIndex string `json:"dataIndex,omitempty"`
 	Title     string `json:"title,omitempty"`
 	Sorter    bool   `json:"sorter"`
+	Align     string `json:"align,omitempty"`
 }
 
 type State struct {

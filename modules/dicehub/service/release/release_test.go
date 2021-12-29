@@ -80,3 +80,19 @@ func TestUnmarshalApplicationReleaseList(t *testing.T) {
 		}
 	}
 }
+
+func TestIsSliceEqual(t *testing.T) {
+	listA := []string{"1", "2", "3"}
+	listB := []string{"1", "2", "4"}
+	listC := []string{"1", "2"}
+
+	if !isSliceEqual(listA, listA) {
+		t.Errorf("test failed, expected equal, actual not")
+	}
+	if isSliceEqual(listA, listB) {
+		t.Errorf("test failed, expected not equal, actual equal")
+	}
+	if isSliceEqual(listA, listC) {
+		t.Errorf("test failed, expected not equal, actual equal")
+	}
+}
