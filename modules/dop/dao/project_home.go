@@ -37,7 +37,7 @@ func (ProjectHome) TableName() string {
 
 func (db *DBClient) CreateOrUpdateProjectHome(projectID string, readme string, links string, updater string) error {
 	var count uint64
-	if err := db.Table("erda_project_home").Where("project_id = ?", projectID).Count(&count).Error; err != nil {
+	if err := db.Model(&ProjectHome{}).Where("project_id = ?", projectID).Count(&count).Error; err != nil {
 		return err
 	}
 	if count == 0 {
@@ -50,9 +50,10 @@ func (db *DBClient) CreateOrUpdateProjectHome(projectID string, readme string, l
 			ProjectID: projectID,
 			Readme:    readme,
 			Links:     links,
+			UpdaterID: updater,
 		}).Error
 	}
-	return db.Table("erda_project_home").Where("project_id = ?", projectID).
+	return db.Model(&ProjectHome{}).Where("project_id = ?", projectID).
 		Updates(map[string]interface{}{"readme": readme, "links": links, "updater_id": updater}).Error
 }
 
