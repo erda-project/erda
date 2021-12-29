@@ -249,7 +249,7 @@ func (e *expressionService) MemoryPage(pageNo, pageSize, length int64) (int64, i
 }
 
 func (e *expressionService) GetAlertNotifies(ctx context.Context, request *pb.GetAlertNotifiesRequest) (*pb.GetAlertNotifiesResponse, error) {
-	alertNotifies, count, err := e.alertNotifyDB.QueryAlertNotify(request.PageNo, request.PageNo)
+	alertNotifies, count, err := e.alertNotifyDB.QueryAlertNotify(request.PageNo, request.PageSize)
 	if err != nil {
 		return nil, err
 	}

@@ -96,20 +96,20 @@ func (CustomizeAlertRule) TableName() string { return TableCustomizeAlertRule }
 
 // CustomizeAlertNotifyTemplate .
 type CustomizeAlertNotifyTemplate struct {
-	ID               uint64          `gorm:"column:id"`
-	Name             string          `gorm:"column:name"`
-	CustomizeAlertID uint64          `gorm:"column:customize_alert_id"`
-	AlertType        string          `gorm:"column:alert_type"`
-	AlertIndex       string          `gorm:"column:alert_index"`
-	Target           string          `gorm:"column:target"`
-	Trigger          string          `gorm:"column:trigger"`
-	Title            string          `gorm:"column:title"`
-	Template         string          `gorm:"column:template"`
-	Formats          jsonmap.JSONMap `gorm:"column:formats"`
-	Version          string          `gorm:"column:version"`
-	Enable           bool            `gorm:"column:Enable"`
-	CreateTime       time.Time       `gorm:"column:create_time"`
-	UpdateTime       time.Time       `gorm:"column:update_time"`
+	ID               uint64          `gorm:"column:id" json:"id"`
+	Name             string          `gorm:"column:name" json:"name"`
+	CustomizeAlertID uint64          `gorm:"column:customize_alert_id" json:"customize_alert_id"`
+	AlertType        string          `gorm:"column:alert_type" json:"alert_type"`
+	AlertIndex       string          `gorm:"column:alert_index" json:"alert_index"`
+	Target           string          `gorm:"column:target" json:"target"`
+	Trigger          string          `gorm:"column:trigger" json:"trigger"`
+	Title            string          `gorm:"column:title" json:"title"`
+	Template         string          `gorm:"column:template" json:"template"`
+	Formats          jsonmap.JSONMap `gorm:"column:formats" json:"formats"`
+	Version          string          `gorm:"column:version" json:"version"`
+	Enable           bool            `gorm:"column:Enable" json:"enable"`
+	CreateTime       time.Time       `gorm:"column:create_time" json:"create_time"`
+	UpdateTime       time.Time       `gorm:"column:update_time" json:"update_time"`
 }
 
 // TableName .
