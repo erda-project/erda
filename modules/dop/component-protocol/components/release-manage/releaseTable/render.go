@@ -78,7 +78,7 @@ func (r *ComponentReleaseTable) Render(ctx context.Context, component *cptype.Co
 			return errors.Errorf("failed to delete release, %v", err)
 		}
 	}
-	if err := r.RenderTable(); err != nil {
+	if err := r.RenderTable(gs); err != nil {
 		return err
 	}
 	if err := r.EncodeURLQuery(); err != nil {
@@ -149,7 +149,7 @@ func (r *ComponentReleaseTable) EncodeURLQuery() error {
 	return nil
 }
 
-func (r *ComponentReleaseTable) RenderTable() error {
+func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 	userID := r.sdk.Identity.UserID
 	orgID := r.sdk.Identity.OrgID
 	projectID := r.State.ProjectID
@@ -292,6 +292,11 @@ func (r *ComponentReleaseTable) RenderTable() error {
 	}
 	r.Data.List = list
 
+	if gs == nil {
+		gsd := make(cptype.GlobalStateData)
+		gs = &gsd
+	}
+	r.sdk.GlobalState = gs
 	r.sdk.SetUserIDs(userIDs)
 	return nil
 }
