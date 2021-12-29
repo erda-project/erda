@@ -18,9 +18,12 @@ import (
 	// receivers
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/dummy"
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/promremotewrite"
+
 	// processors
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger"
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/processors/modifier"
+
 	// exporters
+	_ "github.com/erda-project/erda/modules/oap/collector/plugins/exporters/collector"
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/exporters/stdout"
 )

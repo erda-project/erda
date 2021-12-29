@@ -3,6 +3,7 @@ package modifier
 import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/modules/oap/collector/common/filter"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
@@ -10,7 +11,8 @@ import (
 var providerName = plugins.WithPrefixProcessor("modifier")
 
 type config struct {
-	Rules []modifierCfg `file:"rules"`
+	Filter filter.Config `file:"filter"`
+	Rules  []modifierCfg `file:"rules"`
 }
 
 // +provider
@@ -24,7 +26,12 @@ func (p *provider) ComponentID() model.ComponentID {
 }
 
 func (p *provider) Process(data model.ObservableData) (model.ObservableData, error) {
-	data.RangeTagsFunc(p.modify)
+	data.RangeTagsFunc(func(tags map[string]string) map[string]string {
+		if filter.IsInclude(p.Cfg.Filter, tags) {
+			tags = p.modify(tags)
+		}
+		return tags
+	})
 	return data, nil
 }
 

@@ -12,14 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package auth
 
 import (
-	"strings"
+	"net/http"
 )
 
-func NormalizeKey(key string) string {
-	key = strings.ReplaceAll(key, ".", "_")
-	key = strings.ReplaceAll(key, "/", "_")
-	return key
+type AuthenticationType string
+
+const (
+	Basic AuthenticationType = "basic"
+	Token AuthenticationType = "token"
+)
+
+type Authenticator interface {
+	Secure(req *http.Request)
 }

@@ -1,0 +1,104 @@
+# edge cluster collector config
+http-server:
+  addr: ":7076"
+
+health:
+  path: "/api/health"
+
+erda.oap.collector.core:
+  pipelines:
+    #    - receivers: ["prometheus-remote-write"]
+    #      processors: ["k8s-tagger@prw", "modifier@prw"]
+    #      exporters: ["kafka@prw"]
+    #      data_type: metric
+    #    - receivers: ["erda.oap.collector.receiver.jaeger"]
+    #      exporters: ["kafka@receiver-jaeger"]
+    #      data_type: trace
+    #    - receivers: ["erda.oap.collector.receiver.opentelemetry"]
+    #      exporters: ["kafka@receiver-opentelemetry"]
+    #      data_type: trace
+
+    - receivers:
+        - "erda.oap.collector.receiver.dummy"
+        #- "erda.oap.collector.receiver.prometheus-remote-write"
+      processors:
+        - "erda.oap.collector.processor.k8s-tagger@prw"
+        - "erda.oap.collector.processor.modifier"
+      exporters:
+        - "erda.oap.collector.exporter.stdout"
+        - "erda.oap.collector.exporter.collector"
+      data_type: metric
+
+# ************* receivers *************
+erda.oap.collector.receiver.dummy:
+  rate: 3s
+  metric_sample: '[{"name":"mock-metric","attributes":{"job":"kubernetes-nodes-cadvisor","pod":"filebeat-66f58f4fb8-5pdmk","namespace":"default"},"dataPoints":{"counter":1}}]'
+
+erda.oap.collector.receiver.prometheus-remote-write:
+# ************* receivers *************
+
+# ************* processors *************
+erda.oap.collector.processor.k8s-tagger@prw:
+  filter:
+    tagpass:
+      job: ["kubernetes-nodes-cadvisorxxx"]
+  pod:
+    watch_selector:
+      namespace: ""
+      label_selector: ""
+      field_slector: ""
+    add_metadata:
+      label_include: []
+      annotation_include: ["msp.erda.cloud/*"]
+      finders:
+        - indexer: pod_name
+          matcher: "%{namespace}/%{pod}"
+
+erda.oap.collector.processor.modifier:
+  filter:
+    tagpass:
+      job: ["kubernetes-nodes-cadvisorxxx"]
+  rules:
+    - action: drop
+      key: kubernetes_pod_name
+    - action: drop
+      key: kubernetes_pod_namespace
+    - action: rename
+      key: pod
+      value: pod_name
+    - action: rename
+      key: namespace
+      value: pod_namespace
+    - action: trim_left
+      key: kubernetes_
+    - action: trim_left
+      key: annotations_msp_erda_cloud_
+    - action: add
+      key: cluster_name
+      value: ${DICE_CLUSTER_NAME}
+
+# ************* processors *************
+
+# ************* exporters *************
+erda.oap.collector.exporter.stdout:
+erda.oap.collector.exporter.collector:
+  url: http://collector.project-387-dev.svc.cluster.local:7076/collect/metrics
+  authentication:
+    type: basic
+    options:
+      username: collector
+      password: G$9767bP32drYFPWrK4XMLRMTatiM6cU
+  headers:
+    content-type: "application/json; charset=UTF-8"
+    content-encoding: "gzip"
+
+# ************* exporters *************
+
+# TODO
+kubernetes:
+  master_url: https://10.96.0.1:443
+  config_path: .kube/config
+
+pprof:
+http-server@admin:
+  addr: ":7078"

@@ -12,33 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
+package auth
 
-type ExporterDescriber interface {
-	Component
-	Connect() error
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/mitchellh/mapstructure"
+)
+
+type TokenAuth struct {
+	// token file or content
+	Token string `mapstructure:"token_file"`
 }
 
-type Exporter interface {
-	ExporterDescriber
-	Export(data ObservableData) error
+func (t *TokenAuth) Secure(req *http.Request) {
+	// TODO
 }
 
-type NoopExporter struct {
-}
-
-func (n *NoopExporter) ComponentID() ComponentID {
-	return "NoopExporter"
-}
-
-func (n *NoopExporter) Connect() error {
-	return nil
-}
-
-func (n *NoopExporter) Close() error {
-	return nil
-}
-
-func (n *NoopExporter) Export(data ObservableData) error {
-	return nil
+func NewTokenAuth(cfg map[string]interface{}) (*TokenAuth, error) {
+	ta := TokenAuth{}
+	err := mapstructure.Decode(cfg, &ta)
+	if err != nil {
+		return nil, fmt.Errorf("decode err: %w", err)
+	}
+	if ta.Token != "" {
+		return nil, fmt.Errorf("empty token: %+v", ta)
+	}
+	return &ta, nil
 }

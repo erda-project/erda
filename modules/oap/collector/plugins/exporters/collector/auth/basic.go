@@ -12,33 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
+package auth
 
-type ExporterDescriber interface {
-	Component
-	Connect() error
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/mitchellh/mapstructure"
+)
+
+type BasicAuth struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
-type Exporter interface {
-	ExporterDescriber
-	Export(data ObservableData) error
+func NewBasicAuth(cfg map[string]interface{}) (*BasicAuth, error) {
+	ba := BasicAuth{}
+	err := mapstructure.Decode(cfg, &ba)
+	if err != nil {
+		return nil, fmt.Errorf("decode err: %w", err)
+	}
+	if ba.Username == "" || ba.Password == "" {
+		return nil, fmt.Errorf("empty username or password: %+v", ba)
+	}
+	return &ba, nil
 }
 
-type NoopExporter struct {
-}
-
-func (n *NoopExporter) ComponentID() ComponentID {
-	return "NoopExporter"
-}
-
-func (n *NoopExporter) Connect() error {
-	return nil
-}
-
-func (n *NoopExporter) Close() error {
-	return nil
-}
-
-func (n *NoopExporter) Export(data ObservableData) error {
-	return nil
+func (ba *BasicAuth) Secure(req *http.Request) {
+	req.SetBasicAuth(ba.Username, ba.Password)
 }

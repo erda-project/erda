@@ -22,12 +22,13 @@ import (
 	"net/http"
 	"time"
 
-	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/golang/snappy"
 	pmodel "github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
+	"github.com/erda-project/erda/modules/oap/collector/core/model"
 )
 
 func ReadBody(req *http.Request) ([]byte, error) {

@@ -4,10 +4,12 @@ import (
 	"context"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/kubernetes"
-	"github.com/erda-project/erda-infra/providers/kubernetes/watcher"
+	"github.com/erda-project/erda/modules/oap/collector/common/filter"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata/pod"
@@ -16,7 +18,8 @@ import (
 var providerName = plugins.WithPrefixProcessor("k8s-tagger")
 
 type config struct {
-	Pod pod.Config `file:"pod"`
+	Filter filter.Config `file:"filter"`
+	Pod    pod.Config    `file:"pod"`
 }
 
 // +provider
@@ -36,13 +39,17 @@ func (p *provider) ComponentID() model.ComponentID {
 // 1. filter with config filters
 // 2. pass tags to handle
 func (p *provider) Process(data model.ObservableData) (model.ObservableData, error) {
-	p.addMetadata(data)
+	data.RangeTagsFunc(func(tags map[string]string) map[string]string {
+		if filter.IsInclude(p.Cfg.Filter, tags) {
+			tags = p.addPodMetadata(tags)
+		}
+		return tags
+	})
 	return data, nil
 }
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-
 	to, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
@@ -51,12 +58,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 // Run this is optional
 func (p *provider) Run(ctx context.Context) error {
-	podch := p.Kubernetes.WatchPod(ctx, p.Log.Sub("pod-watcher"), watcher.Selector{
-		Namespace:     p.Cfg.Pod.WatchSelector.Namespace,
+	w, err := p.Kubernetes.Client().CoreV1().Pods(p.Cfg.Pod.WatchSelector.Namespace).Watch(ctx, metav1.ListOptions{
 		LabelSelector: p.Cfg.Pod.WatchSelector.LabelSelector,
 		FieldSelector: p.Cfg.Pod.WatchSelector.FieldSelector,
 	})
-	go p.watchPodChange(ctx, podch)
+	if err != nil {
+		return err
+	}
+	go p.watchChange(ctx, w.ResultChan())
 	return nil
 }
 

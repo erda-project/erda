@@ -14,6 +14,10 @@
 
 package modifier
 
+import (
+	"strings"
+)
+
 type modifierCfg struct {
 	Key    string `file:"key"`
 	Value  string `file:"value"`
@@ -23,13 +27,14 @@ type modifierCfg struct {
 type Action string
 
 const (
-	Add    Action = "add"
-	Set    Action = "set"
-	Drop   Action = "drop"
-	Rename Action = "rename"
+	Add      Action = "add"
+	Set      Action = "set"
+	Drop     Action = "drop"
+	Rename   Action = "rename"
+	TrimLeft Action = "trim_left"
 )
 
-func (p *provider) modify(tags map[string]string) {
+func (p *provider) modify(tags map[string]string) map[string]string {
 	for _, cfg := range p.Cfg.Rules {
 		switch cfg.Action {
 		case Add:
@@ -42,11 +47,24 @@ func (p *provider) modify(tags map[string]string) {
 		case Drop:
 			delete(tags, cfg.Key)
 		case Rename:
+			// value is the new key
 			if _, ok := tags[cfg.Key]; !ok {
 				continue
 			}
 			tags[cfg.Value] = tags[cfg.Key]
 			delete(tags, cfg.Key)
+		case TrimLeft:
+			// key is the prefix
+			tmp := make(map[string]string, len(tags))
+			for k, v := range tags {
+				if strings.Index(k, cfg.Key) != -1 { // found
+					tmp[k[len(cfg.Key):]] = v
+				} else {
+					tmp[k] = v
+				}
+			}
+			tags = tmp
 		}
 	}
+	return tags
 }

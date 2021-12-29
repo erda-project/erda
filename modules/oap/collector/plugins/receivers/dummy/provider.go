@@ -74,6 +74,10 @@ func (p *provider) dummyMetrics(ctx context.Context) {
 		if err != nil {
 			p.Log.Errorf("unmarshal MetricSample err: %s", err)
 		}
+		now := time.Now()
+		for _, item := range chunk {
+			item.TimeUnixNano = uint64(now.UnixNano())
+		}
 		data := &model.Metrics{Metrics: chunk}
 		if p.consumerFunc != nil {
 			p.consumerFunc(data)
@@ -114,6 +118,10 @@ func (p *provider) dummyLogs(ctx context.Context) {
 		err := json.Unmarshal([]byte(p.Cfg.MetricSample), &chunk)
 		if err != nil {
 			p.Log.Errorf("unmarshal LogSample err: %s", err)
+		}
+		now := time.Now()
+		for _, item := range chunk {
+			item.TimeUnixNano = uint64(now.UnixNano())
 		}
 		if p.consumerFunc != nil {
 			p.consumerFunc(&model.Logs{Logs: chunk})

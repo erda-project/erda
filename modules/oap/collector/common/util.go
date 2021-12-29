@@ -12,33 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipeline
+package common
 
 import (
-	"context"
-	"testing"
-	"time"
+	"encoding/json"
+	"fmt"
+	"strings"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 )
 
-func TestPipeline_StartStream(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+func NormalizeKey(key string) string {
+	key = strings.ReplaceAll(key, ".", "_")
+	key = strings.ReplaceAll(key, "/", "_")
+	return key
+}
 
-	pipe := NewPipeline(logrusx.New().Sub("collector"))
-
-	// invalid
-	assert.Error(t, pipe.InitComponents([]model.Component{&model.NoopProcessor{}}, nil, nil))
-
-	// normal
-	err := pipe.InitComponents([]model.Component{&model.NoopReceiver{}}, []model.Component{&model.NoopProcessor{}}, []model.Component{&model.NoopExporter{}})
-	assert.Nil(t, err)
-
-	pipe.StartStream(ctx)
-
-	time.Sleep(time.Second)
+func PrintObserveData(od model.ObservableData) {
+	buf, _ := json.Marshal(od.SourceData())
+	fmt.Printf("ObservableData SourceData: %s", string(buf))
 }

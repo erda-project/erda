@@ -25,12 +25,10 @@ import (
 var matcherPattern = regexp.MustCompile("%{([^%{}]*)}")
 
 func (p *provider) addMetadata(od model.ObservableData) {
-	od.RangeTagsFunc(func(tags map[string]string) {
-		p.addPodMetadata(tags)
-	})
+
 }
 
-func (p *provider) addPodMetadata(tags map[string]string) {
+func (p *provider) addPodMetadata(tags map[string]string) map[string]string {
 	finders := p.Cfg.Pod.AddMetadata.Finders
 	for _, f := range finders {
 		switch f.Indexer {
@@ -38,7 +36,6 @@ func (p *provider) addPodMetadata(tags map[string]string) {
 			index := generateIndexByMatcher(f.Matcher, tags)
 			m, ok := p.podCache.GetByPodNameIndexer(index)
 			if !ok {
-				p.Log.Infof("GetByPodNameIndexer failed with key %q", index)
 				continue
 			}
 			mergeMap(tags, m)
@@ -46,12 +43,12 @@ func (p *provider) addPodMetadata(tags map[string]string) {
 			index := f.Matcher
 			m, ok := p.podCache.GetByPodUIDIndexer(pod.Key(index))
 			if !ok {
-				p.Log.Infof("GetByPodUIDIndexer failed with key %q", index)
 				continue
 			}
 			mergeMap(tags, m)
 		}
 	}
+	return tags
 }
 
 // {namespace}/{pod}

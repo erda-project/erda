@@ -18,14 +18,15 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/labstack/echo"
+	"github.com/prometheus/prometheus/prompb"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
-	"github.com/golang/protobuf/proto"
-	"github.com/labstack/echo"
-	"github.com/prometheus/prometheus/prompb"
 )
 
 var providerName = plugins.WithPrefixReceiver("prometheus-remote-write")
@@ -49,6 +50,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) prwHandler(ctx echo.Context) error {
+	if p.consumerFunc == nil {
+		return ctx.NoContent(http.StatusOK)
+	}
 	req := ctx.Request()
 	buf, err := ReadBody(req)
 	if err != nil {
@@ -62,13 +66,9 @@ func (p *provider) prwHandler(ctx echo.Context) error {
 	}
 	ms, err := convertToMetrics(wr)
 	if err != nil {
-		p.Log.Errorf("convertToMetrics err: %s", err)
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("convertToMetrics err: %s", err))
 	}
-
-	if p.consumerFunc != nil {
-		p.consumerFunc(ms)
-	}
+	p.consumerFunc(ms)
 
 	return ctx.NoContent(http.StatusOK)
 }

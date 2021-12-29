@@ -12,33 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
+package filter
 
-type ExporterDescriber interface {
-	Component
-	Connect() error
+type Config struct {
+	Tagpass map[string][]string `file:"tagpass"`
 }
 
-type Exporter interface {
-	ExporterDescriber
-	Export(data ObservableData) error
-}
-
-type NoopExporter struct {
-}
-
-func (n *NoopExporter) ComponentID() ComponentID {
-	return "NoopExporter"
-}
-
-func (n *NoopExporter) Connect() error {
-	return nil
-}
-
-func (n *NoopExporter) Close() error {
-	return nil
-}
-
-func (n *NoopExporter) Export(data ObservableData) error {
-	return nil
+func IsInclude(cfg Config, tags map[string]string) bool {
+	if len(cfg.Tagpass) == 0 {
+		return true
+	}
+	for k, list := range cfg.Tagpass {
+		val, ok := tags[k]
+		if ok {
+			for _, vv := range list {
+				if vv == val {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

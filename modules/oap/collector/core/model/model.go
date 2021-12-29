@@ -15,11 +15,10 @@
 package model
 
 import (
-	"encoding/json"
-
 	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
 	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	tpb "github.com/erda-project/erda-proto-go/oap/trace/pb"
+	"github.com/erda-project/erda/modules/core/monitor/metric"
 )
 
 type DataType string
@@ -32,8 +31,9 @@ const (
 
 type ObservableData interface {
 	Clone() ObservableData
-	RangeTagsFunc(handle func(tags map[string]string))
-	MarshalJson() ([]byte, error)
+	RangeTagsFunc(handle func(tags map[string]string) map[string]string)
+	SourceData() interface{}
+	CompatibilitySourceData() interface{}
 }
 
 // Metrics
@@ -41,13 +41,32 @@ type Metrics struct {
 	Metrics []*mpb.Metric `json:"metrics"`
 }
 
-func (m *Metrics) MarshalJson() ([]byte, error) {
-	return json.Marshal(m.Metrics)
+func (m *Metrics) SourceData() interface{} {
+	return m.Metrics
 }
 
-func (m *Metrics) RangeTagsFunc(handle func(tags map[string]string)) {
+func (m *Metrics) CompatibilitySourceData() interface{} {
+	res := make([]*metric.Metric, len(m.Metrics))
+	for idx, item := range m.Metrics {
+		fields := make(map[string]interface{}, len(item.DataPoints))
+		for k, v := range item.DataPoints {
+			fields[k] = v
+		}
+		res[idx] = &metric.Metric{
+			Name:      item.Name,
+			Timestamp: int64(item.TimeUnixNano),
+			Tags:      item.Attributes,
+			Fields:    fields,
+		}
+	}
+	return map[string]interface{}{
+		"metrics": res,
+	}
+}
+
+func (m *Metrics) RangeTagsFunc(handle func(tags map[string]string) map[string]string) {
 	for _, item := range m.Metrics {
-		handle(item.Attributes)
+		item.Attributes = handle(item.Attributes)
 	}
 }
 
@@ -62,25 +81,39 @@ type Traces struct {
 	Spans []*tpb.Span `json:"spans"`
 }
 
+func (t *Traces) SourceData() interface{} {
+	return t.Spans
+}
+
+func (t *Traces) CompatibilitySourceData() interface{} {
+	// todo
+	return nil
+}
+
 func (t *Traces) Clone() ObservableData {
 	data := make([]*tpb.Span, len(t.Spans))
 	copy(data, t.Spans)
 	return &Traces{Spans: data}
 }
 
-func (t *Traces) RangeTagsFunc(handle func(tags map[string]string)) {
+func (t *Traces) RangeTagsFunc(handle func(tags map[string]string) map[string]string) {
 	for _, item := range t.Spans {
-		handle(item.Attributes)
+		item.Attributes = handle(item.Attributes)
 	}
-}
-
-func (t *Traces) MarshalJson() ([]byte, error) {
-	return json.Marshal(t.Spans)
 }
 
 // Logs
 type Logs struct {
 	Logs []*lpb.Log `json:"logs"`
+}
+
+func (l *Logs) SourceData() interface{} {
+	return l.Logs
+}
+
+func (l *Logs) CompatibilitySourceData() interface{} {
+	// todo
+	return nil
 }
 
 func (l *Logs) Clone() ObservableData {
@@ -89,12 +122,8 @@ func (l *Logs) Clone() ObservableData {
 	return &Logs{Logs: data}
 }
 
-func (l *Logs) RangeTagsFunc(handle func(tags map[string]string)) {
+func (l *Logs) RangeTagsFunc(handle func(tags map[string]string) map[string]string) {
 	for _, item := range l.Logs {
-		handle(item.Attributes)
+		item.Attributes = handle(item.Attributes)
 	}
-}
-
-func (l *Logs) MarshalJson() ([]byte, error) {
-	return json.Marshal(l.Logs)
 }

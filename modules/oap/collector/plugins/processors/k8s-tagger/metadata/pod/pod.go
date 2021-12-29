@@ -15,13 +15,15 @@
 package pod
 
 import (
+	"regexp"
 	"strings"
 	"sync"
 
-	"github.com/erda-project/erda/modules/oap/collector/plugins/common"
-	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/erda-project/erda/modules/oap/collector/common"
+	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata"
 )
 
 const (
@@ -36,9 +38,11 @@ type Key string
 type Value map[string]string
 
 type Cache struct {
-	podnameIndexer map[Key]Value
-	poduidInddexer map[Key]Value
-	mu             sync.RWMutex
+	podnameIndexer    map[Key]Value
+	poduidInddexer    map[Key]Value
+	annotationInclude []*regexp.Regexp
+	labelInclude      []*regexp.Regexp
+	mu                sync.RWMutex
 }
 
 func PodName(namespace, name string) Key {
@@ -49,13 +53,23 @@ func PodUID(uid types.UID) Key {
 	return Key(uid)
 }
 
-func NewCache(podList []apiv1.Pod) *Cache {
+func NewCache(podList []apiv1.Pod, aInclude, lInclude []string) *Cache {
 	c := &Cache{
-		podnameIndexer: make(map[Key]Value, len(podList)),
-		poduidInddexer: make(map[Key]Value, len(podList)),
+		podnameIndexer:    make(map[Key]Value, len(podList)),
+		poduidInddexer:    make(map[Key]Value, len(podList)),
+		annotationInclude: make([]*regexp.Regexp, len(aInclude)),
+		labelInclude:      make([]*regexp.Regexp, len(lInclude)),
 	}
+
+	for idx, item := range aInclude {
+		c.annotationInclude[idx] = regexp.MustCompile(item)
+	}
+	for idx, item := range lInclude {
+		c.labelInclude[idx] = regexp.MustCompile(item)
+	}
+
 	for _, pod := range podList {
-		m := extractPodMetadata(&pod)
+		m := c.extractPodMetadata(&pod)
 		c.podnameIndexer[PodName(pod.Namespace, pod.Name)] = m
 		c.poduidInddexer[PodUID(pod.UID)] = m
 	}
@@ -64,7 +78,7 @@ func NewCache(podList []apiv1.Pod) *Cache {
 
 func (c *Cache) AddOrUpdate(pod *apiv1.Pod) {
 	c.mu.Lock()
-	m := extractPodMetadata(pod)
+	m := c.extractPodMetadata(pod)
 	c.podnameIndexer[PodName(pod.Namespace, pod.Name)] = m
 	c.poduidInddexer[PodUID(pod.UID)] = m
 	c.mu.Unlock()
@@ -99,7 +113,7 @@ func (c *Cache) GetByPodUIDIndexer(index Key) (map[string]string, bool) {
 	return val, true
 }
 
-func extractPodMetadata(pod *apiv1.Pod) map[string]string {
+func (c *Cache) extractPodMetadata(pod *apiv1.Pod) map[string]string {
 	m := make(map[string]string, 10)
 	m[metadata.PrefixPod+"name"] = pod.Name
 	m[metadata.PrefixPod+"namespace"] = pod.Namespace
@@ -107,12 +121,22 @@ func extractPodMetadata(pod *apiv1.Pod) map[string]string {
 	m[metadata.PrefixPod+"ip"] = pod.Status.PodIP
 
 	// labels
-	for k, v := range pod.Labels {
-		m[metadata.PrefixPodLabels+common.NormalizeKey(k)] = v
+	for _, p := range c.labelInclude {
+		for k, v := range pod.Labels {
+			if p.Match([]byte(k)) {
+				m[metadata.PrefixPodLabels+common.NormalizeKey(k)] = v
+			}
+		}
 	}
+
 	// annotations
-	for k, v := range pod.Annotations {
-		m[metadata.PrefixPodAnnotations+common.NormalizeKey(k)] = v
+	for _, p := range c.annotationInclude {
+		for k, v := range pod.Annotations {
+			if p.Match([]byte(k)) {
+				m[metadata.PrefixPodAnnotations+common.NormalizeKey(k)] = v
+			}
+		}
 	}
+
 	return m
 }
