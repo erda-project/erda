@@ -34,15 +34,20 @@ type HttpCodeChart struct {
 func (httpCode *HttpCodeChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
 
 	statement := fmt.Sprintf("SELECT sum(http_status_code_count::field),http_status_code::tag "+
-		"FROM application_http "+
+		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
 		"AND span_kind::tag=$kind "+
-		"GROUP BY time(%s),http_status_code::tag", httpCode.Interval)
+		"%s "+
+		"GROUP BY time(%s),http_status_code::tag",
+		httpCode.getDataSourceNames(),
+		httpCode.buildLayerPathFilterSql("$layer_path"),
+		httpCode.Interval)
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(httpCode.TenantId),
 		"service_id":   structpb.NewStringValue(httpCode.ServiceId),
 		"kind":         structpb.NewStringValue("server"),
+		"layer_path":   structpb.NewStringValue(httpCode.LayerPath),
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(httpCode.StartTime, 10),

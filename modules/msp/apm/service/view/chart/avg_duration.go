@@ -34,13 +34,18 @@ type AvgDurationChart struct {
 
 func (avgDuration *AvgDurationChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
 	statement := fmt.Sprintf("SELECT avg(elapsed_mean::field) "+
-		"FROM application_http,application_rpc "+
+		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
-		"GROUP BY time(%s)", avgDuration.Interval)
+		"%s "+
+		"GROUP BY time(%s)",
+		avgDuration.getDataSourceNames(),
+		avgDuration.buildLayerPathFilterSql("$layer_path"),
+		avgDuration.Interval)
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(avgDuration.TenantId),
 		"service_id":   structpb.NewStringValue(avgDuration.ServiceId),
+		"layer_path":   structpb.NewStringValue(avgDuration.LayerPath),
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(avgDuration.StartTime, 10),

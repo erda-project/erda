@@ -35,13 +35,18 @@ type RpsChart struct {
 func (rps *RpsChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
 
 	statement := fmt.Sprintf("SELECT rateps(elapsed_count::field) "+
-		"FROM application_http,application_rpc "+
+		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
-		"GROUP BY time(%s)", rps.Interval)
+		"%s "+
+		"GROUP BY time(%s)",
+		rps.getDataSourceNames(),
+		rps.buildLayerPathFilterSql("$layer_path"),
+		rps.Interval)
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(rps.TenantId),
 		"service_id":   structpb.NewStringValue(rps.ServiceId),
+		"layer_path":   structpb.NewStringValue(rps.LayerPath),
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(rps.StartTime, 10),

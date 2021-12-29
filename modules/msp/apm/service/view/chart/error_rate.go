@@ -34,13 +34,18 @@ type ErrorRateChart struct {
 
 func (errorRate *ErrorRateChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
 	statement := fmt.Sprintf("SELECT sum(if(eq(error::tag, 'true'),elapsed_count::field,0))/sum(elapsed_count::field) "+
-		"FROM application_http,application_rpc "+
+		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
-		"GROUP BY time(%s)", errorRate.Interval)
+		"%s "+
+		"GROUP BY time(%s)",
+		errorRate.getDataSourceNames(),
+		errorRate.buildLayerPathFilterSql("$layer_path"),
+		errorRate.Interval)
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(errorRate.TenantId),
 		"service_id":   structpb.NewStringValue(errorRate.ServiceId),
+		"layer_path":   structpb.NewStringValue(errorRate.LayerPath),
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(errorRate.StartTime, 10),
