@@ -69,7 +69,7 @@ func (wc *WorkCards) RegisterCardListStarOp(opData cardlist.OpCardListStar) (opF
 		}
 		err = wc.Bdl.DeleteSubscribe(sdk.Identity.UserID, sdk.Identity.OrgID, req)
 		if err != nil {
-			logrus.Errorf("star %v %v failed, id: %v, error: %v", req.Type, req.TypeID, err)
+			logrus.Errorf("star %v failed, id: %v, error: %v", req.Type, req.TypeID, err)
 			return
 		}
 		wc.LoadList(sdk)
@@ -140,7 +140,6 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 	todayData := make(cptype.OpServerData)
 	expireData := make(cptype.OpServerData)
 	metas = make([]cardlist.TextMeta, 0)
-	project.ProjectDTO.Type = types.ProjTypeDevops
 	switch project.ProjectDTO.Type {
 	case types.ProjTypeDevops:
 		urls, err := wc.Wb.GetIssueQueries(project.ProjectDTO.ID)
@@ -179,7 +178,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 				MainText: float64(project.IssueInfo.ExpiredIssueNum),
 				SubText:  sdk.I18n("expired"),
 				Operations: map[cptype.OperationKey]cptype.Operation{
-					"clickGoto": cptype.Operation{
+					"clickGoto": {
 						ServerData: &expireData,
 					},
 				},
@@ -188,7 +187,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 				MainText: float64(project.IssueInfo.TotalIssueNum),
 				SubText:  sdk.I18n("today expire"),
 				Operations: map[cptype.OperationKey]cptype.Operation{
-					"clickGoto": cptype.Operation{
+					"clickGoto": {
 						ServerData: &todayData,
 					},
 				},
@@ -204,7 +203,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 				MainText: float64(project.StatisticInfo.ServiceCount),
 				SubText:  sdk.I18n("service count"),
 				Operations: map[cptype.OperationKey]cptype.Operation{
-					"clickGoto": cptype.Operation{
+					"clickGoto": {
 						ServerData: &expireData,
 					},
 				},
@@ -213,7 +212,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 				MainText: float64(project.StatisticInfo.Last24HAlertCount),
 				SubText:  sdk.I18n("last 24 hour alarm count"),
 				Operations: map[cptype.OperationKey]cptype.Operation{
-					"clickGoto": cptype.Operation{
+					"clickGoto": {
 						ServerData: &todayData,
 					},
 				},
@@ -233,7 +232,7 @@ func (wc *WorkCards) getProjectCardOps(params workbench.UrlParams, project apist
 	}
 	err := common.Transfer(params, &serviceOp.Params)
 	if err != nil {
-		logrus.Error("card operation error :%v", err)
+		logrus.Errorf("card operation error :%v", err)
 		return
 	}
 	target := ""
