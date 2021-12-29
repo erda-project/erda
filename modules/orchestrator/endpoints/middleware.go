@@ -46,7 +46,7 @@ func (e *Endpoints) ListMiddleware(ctx context.Context, r *http.Request, vars ma
 	permissionResult, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.OrgScope,
-		ScopeID:  uint64(orgID),
+		ScopeID:  orgID,
 		Resource: "middleware",
 		Action:   apistructs.GetAction,
 	})

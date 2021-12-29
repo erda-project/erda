@@ -82,16 +82,25 @@ func (client *DBClient) GetMBox(id int64, orgID int64, userID string) (*apistruc
 
 func (client *DBClient) QueryMBox(request *apistructs.QueryMBoxRequest) (*apistructs.QueryMBoxData, error) {
 	var mboxList []model.MBox
-	query := client.Model(&model.MBox{}).Where("org_id =? and user_id= ?", request.OrgID, request.UserID)
+	query := client.Model(&model.MBox{}).Where("org_id =? and user_id= ?", request.OrgID, request.UserID).Order("created_at desc")
 	if request.Status != "" {
 		query = query.Where("status =? ", request.Status)
 	}
-	query = query.Order("created_at desc").Select("id,title,status,label,created_at,read_at,deduplicate_id,unread_count")
-	var count int
+	if request.Type == apistructs.MBoxTypeIssue {
+		query = query.Where("deduplicate_id != \"\"")
+	} else {
+		query = query.Select("id,title,status,label,created_at,read_at,deduplicate_id,unread_count")
+	}
+
+	var (
+		count int
+		total int
+	)
 	err := query.Count(&count).Error
 	if err != nil {
 		return nil, err
 	}
+	total = count
 
 	err = query.Offset((request.PageNo - 1) * request.PageSize).
 		Limit(request.PageSize).
@@ -115,8 +124,9 @@ func (client *DBClient) QueryMBox(request *apistructs.QueryMBoxRequest) (*apistr
 	}
 
 	result := &apistructs.QueryMBoxData{
-		Total: count,
-		List:  []*apistructs.MBox{},
+		Total:  total,
+		UnRead: count,
+		List:   []*apistructs.MBox{},
 	}
 	for _, mboxItem := range mboxList {
 		result.List = append(result.List, mboxItem.ToApiData())

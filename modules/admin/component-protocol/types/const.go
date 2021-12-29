@@ -17,7 +17,11 @@ package types
 const (
 	GlobalCtxKeyBundle = "__bundle__"
 
-	ScenarioWorkbench = "workbench"
-
 	WorkbenchSvc = "workbench"
+
+	// ProjTypeDevops project type
+	ProjTypeDevops = "DevOps"
+	ProjTypeMSP    = "MSP"
+
+	MetaKey = ""
 )

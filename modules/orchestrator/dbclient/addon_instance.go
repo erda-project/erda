@@ -139,66 +139,89 @@ func (db *DBClient) GetInstancesByIDs(ids []string) (*[]AddonInstance, error) {
 }
 
 // ListAddonInstancesByParams 根据参数获取 addon 列表
-func (db *DBClient) ListAddonInstancesByParams(orgID uint64, params *apistructs.MiddlewareListRequest) (int, *[]AddonInstance, error) {
+func (db *DBClient) ListAddonInstancesByParams(orgID uint64, params *apistructs.MiddlewareListRequest) (int, []AddonInstanceInfoExtra, error) {
 	var (
 		total     int
-		instances []AddonInstance
+		instances []AddonInstanceInfoExtra
 	)
-	dbClient := db.Where("org_id = ?", orgID).Where("platform_service_type = ?", 0)
+	dbClient := db.Model(&AddonInstance{}).
+		Select("tb_addon_instance.*,SUM(tb_middle_node.cpu) AS cpu,SUM(tb_middle_node.mem) AS mem,COUNT(DISTINCT tb_middle_node.id) AS node_count,"+
+			"(SELECT count(1) FROM tb_addon_attachment WHERE tb_addon_instance.id = tb_addon_attachment.instance_id AND tb_addon_attachment.is_deleted='N' )AS att_count").
+		Joins("LEFT JOIN tb_middle_node ON tb_addon_instance.id = tb_middle_node.instance_id AND tb_middle_node.is_deleted = 'N'").
+		Where("tb_addon_instance.org_id = ?", orgID).
+		Where("tb_addon_instance.platform_service_type = ?", 0)
 	if params.ProjectID != 0 {
-		dbClient = dbClient.Where("project_id = ?", params.ProjectID)
+		dbClient = dbClient.Where("tb_addon_instance.project_id = ?", params.ProjectID)
 	}
 	if params.AddonName != "" {
-		dbClient = dbClient.Where("addon_name = ?", params.AddonName)
+		dbClient = dbClient.Where("tb_addon_instance.addon_name = ?", params.AddonName)
 	}
 	if params.Workspace != "" {
-		dbClient = dbClient.Where("env = ?", params.Workspace)
+		dbClient = dbClient.Where("tb_addon_instance.env = ?", params.Workspace)
 	}
 	if params.InstanceID != "" {
-		dbClient = dbClient.Where("id = ?", params.InstanceID)
+		dbClient = dbClient.Where("tb_addon_instance.id = ?", params.InstanceID)
 	}
-	dbClient = dbClient.Where("is_deleted = ?", apistructs.AddonNotDeleted).
-		Where("category not in (?)", []string{apistructs.AddonCustomCategory, apistructs.AddonDiscovery}).
-		Where("status in (?)", []apistructs.AddonStatus{apistructs.AddonAttached})
+	dbClient = dbClient.Where("tb_addon_instance.is_deleted = ?", apistructs.AddonNotDeleted).
+		Where("tb_addon_instance.category not in (?)", []string{apistructs.AddonCustomCategory, apistructs.AddonDiscovery}).
+		Where("tb_addon_instance.status in (?)", []apistructs.AddonStatus{apistructs.AddonAttached})
 
-	if err := dbClient.Model(&AddonInstance{}).Count(&total).Error; err != nil {
+	if err := dbClient.Group("tb_addon_instance.id").Count(&total).Error; err != nil {
 		return 0, nil, err
 	}
 
-	if err := dbClient.Offset((params.PageNo - 1) * params.PageSize).Limit(params.PageSize).Find(&instances).Error; err != nil {
+	if err := dbClient.Offset((params.PageNo - 1) * params.PageSize).
+		Limit(params.PageSize).
+		Group("tb_addon_instance.id").
+		Find(&instances).Error; err != nil {
 		return 0, nil, err
 	}
 
-	return total, &instances, nil
+	return total, instances, nil
+}
+
+type AddonInstanceInfoExtra struct {
+	AddonInstance
+
+	CPU       float64
+	Mem       uint64
+	NodeCount int
+	AttCount  int
 }
 
 // ListAddonInstancesByParamsWithoutPage 根据参数获取 addon 列表
-func (db *DBClient) ListAddonInstancesByParamsWithoutPage(orgID uint64, params *apistructs.MiddlewareListRequest) (*[]AddonInstance, error) {
-	var instances []AddonInstance
+func (db *DBClient) ListAddonInstancesByParamsWithoutPage(orgID uint64, params *apistructs.MiddlewareListRequest) ([]AddonInstanceInfoExtra, error) {
+	var instances []AddonInstanceInfoExtra
 
-	dbClient := db.Where("org_id = ?", orgID).Where("platform_service_type = ?", 0).Where("category != ?", "discovery")
+	dbClient := db.Model(&AddonInstance{}).
+		Select("tb_addon_instance.*,SUM(tb_middle_node.cpu) AS cpu,SUM(tb_middle_node.mem) AS mem,COUNT(tb_middle_node.id) AS node_count").
+		Joins("LEFT JOIN tb_middle_node ON tb_addon_instance.id = tb_middle_node.instance_id AND tb_middle_node.is_deleted = 'N'").
+		Where("tb_addon_instance.org_id = ?", orgID).
+		Where("tb_addon_instance.platform_service_type = ?", 0).
+		Where("tb_addon_instance.category != ?", "discovery")
 	if params.ProjectID != 0 {
-		dbClient = dbClient.Where("project_id = ?", params.ProjectID)
+		dbClient = dbClient.Where("tb_addon_instance.project_id = ?", params.ProjectID)
 	}
 	if params.AddonName != "" {
-		dbClient = dbClient.Where("addon_name = ?", params.AddonName)
+		dbClient = dbClient.Where("tb_addon_instance.addon_name = ?", params.AddonName)
 	}
 	if params.Workspace != "" {
-		dbClient = dbClient.Where("env = ?", params.Workspace)
+		dbClient = dbClient.Where("tb_addon_instance.env = ?", params.Workspace)
 	}
 	if params.InstanceID != "" {
-		dbClient = dbClient.Where("id = ?", params.InstanceID)
+		dbClient = dbClient.Where("tb_addon_instance.id = ?", params.InstanceID)
 	}
 	if params.EndTime != nil {
-		dbClient = dbClient.Where("create_time < ?", params.EndTime)
+		dbClient = dbClient.Where("tb_addon_instance.create_time < ?", params.EndTime)
 	}
-	if err := dbClient.Where("is_deleted = ?", apistructs.AddonNotDeleted).
-		Where("status in (?)", []apistructs.AddonStatus{apistructs.AddonAttached, apistructs.AddonAttaching}).
+	if err := dbClient.Where("tb_addon_instance.is_deleted = ?", apistructs.AddonNotDeleted).
+		Where("tb_addon_instance.status in (?)", []apistructs.AddonStatus{apistructs.AddonAttached, apistructs.AddonAttaching}).
+		Group("tb_addon_instance.id").
 		Find(&instances).Error; err != nil {
 		return nil, err
 	}
 
-	return &instances, nil
+	return instances, nil
 }
 
 //ListAddonInstanceByOrg 根据 orgID 获取实例列表

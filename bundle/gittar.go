@@ -615,7 +615,7 @@ func (b *Bundle) ListMergeRequest(appID uint64, userID string, req apistructs.Gi
 
 	resp, err := hc.Get(host).
 		Header(httputil.UserHeader, userID).
-		Path(fmt.Sprintf("/app-repo/%d/merge-request", appID)).
+		Path(fmt.Sprintf("/app-repo/%d/merge-requests", appID)).
 		Do().JSON(&rsp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)

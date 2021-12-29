@@ -23,6 +23,14 @@ const (
 	MBoxUnReadStatus MBoxStatus = "unread"
 )
 
+type MBoxType string
+
+const (
+	MBoxTypeIssue     MBoxType = "issue"
+	MBoxTypeMonitor   MBoxType = "monitor"
+	MBoxTypeWorkbench MBoxType = "workbench"
+)
+
 // CreateMBoxRequest 创建通知项请求
 type CreateMBoxRequest struct {
 	Title         string   `json:"title"`
@@ -57,14 +65,16 @@ type QueryMBoxRequest struct {
 	PageSize int64      `query:"pageSize"`
 	Label    string     `query:"label"`
 	Status   MBoxStatus `query:"status"`
+	Type     MBoxType   `query:"type"`
 	OrgID    int64      `json:"-"`
 	UserID   string     `json:"-"`
 }
 
 // QueryMBoxData 站内信记录结构
 type QueryMBoxData struct {
-	List  []*MBox `json:"list"`
-	Total int     `json:"total"`
+	List   []*MBox `json:"list"`
+	Total  int     `json:"total"`
+	UnRead int     `json:"unRead"`
 }
 
 // QueryMBoxResponse 查询通知历史纪录响应

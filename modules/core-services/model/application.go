@@ -46,3 +46,8 @@ type Application struct {
 func (Application) TableName() string {
 	return "dice_app"
 }
+
+type ApplicationRuntimeCount struct {
+	RuntimeCount  int64 `json:"runtime_count"`
+	ApplicationID int64 `json:"application_id"`
+}
