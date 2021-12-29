@@ -81,10 +81,12 @@ func thrift2Proto(batch *jaeger.Batch) []*tracing.Span {
 			span.ParentSpanID = strconv.FormatInt(tSpan.ParentSpanId, 10)
 		}
 		span.Attributes = make(map[string]string)
-		span.Attributes[common.TAG_SERVICE_ID] = batch.Process.ServiceName
-		span.Attributes[common.TAG_SERVICE_NAME] = batch.Process.ServiceName
 		extractAttributes(span, batch.Process.Tags)
 		extractAttributes(span, tSpan.Tags)
+		span.Attributes[common.TAG_SERVICE_ID] = batch.Process.ServiceName
+		span.Attributes[common.TAG_SERVICE_NAME] = batch.Process.ServiceName
+		span.Attributes[common.TAG_INSTRUMENT] = common.TAG_JAEGER
+		span.Attributes[common.TAG_INSTRUMENT_VERSION] = span.Attributes[common.TAG_JAEGER_VERSION]
 		spans = append(spans, span)
 	}
 	return spans

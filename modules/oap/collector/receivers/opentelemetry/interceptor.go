@@ -86,8 +86,8 @@ func convertSpans(tracesData *otlpv1.TracesData) []*tracepb.Span {
 									attributes[attr.Key] = getStringValue(attr.Value)
 								}
 							}
-							attributes[common.TAG_INSTRUMENTATION_LIBRARY] = instrumentation.InstrumentationLibrary.Name
-							attributes[common.TAG_INSTRUMENTATION_LIBRARY_VERSION] = instrumentation.InstrumentationLibrary.Version
+							attributes[common.TAG_INSTRUMENT] = instrumentation.InstrumentationLibrary.Name
+							attributes[common.TAG_INSTRUMENT_VERSION] = instrumentation.InstrumentationLibrary.Version
 							attributes[common.TAG_SPAN_KIND] = SpanKind_Name[int32(otlpSpan.Kind)]
 							if resource.Resource != nil && resource.Resource.Attributes != nil {
 								for _, attr := range resource.Resource.Attributes {
