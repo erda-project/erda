@@ -44,12 +44,12 @@ func WithDBClient(dbClient *dao.DBClient) Option {
 	}
 }
 
-func (s *Subscribe) Subscribe(req apistructs.CreateSubscribeReq) (uint64, error) {
+func (s *Subscribe) Subscribe(req apistructs.CreateSubscribeReq) (string, error) {
 	// subscribe limit number check
-	count, err := s.db.GetSubscribeCount(req.Type.String(), req.UserID)
+	count, err := s.db.GetSubscribeCount(req.Type.String(), req.UserID, req.OrgID)
 	if err != nil {
 		logrus.Errorf("get subscribe count failed, request: %v, error: %v", req, err)
-		return 0, errors.Errorf("get subscribe count failed, error: %v", err)
+		return "", errors.Errorf("get subscribe count failed, error: %v", err)
 	}
 
 	limit := conf.SubscribeLimitNum()
@@ -57,17 +57,17 @@ func (s *Subscribe) Subscribe(req apistructs.CreateSubscribeReq) (uint64, error)
 	if uint64(count) >= limit {
 		err := errors.Errorf("reach subscribe limit: %v, count: %v", limit, count)
 		logrus.Errorf(err.Error())
-		return 0, err
+		return "", err
 	}
 
 	// subscribe duplication check
-	d, err := s.db.GetSubscribe(req.Type.String(), req.TypeID, req.UserID)
+	d, err := s.db.GetSubscribe(req.Type.String(), req.TypeID, req.UserID, req.OrgID)
 	if err != nil {
 		logrus.Errorf("get subscribe failed, request: %v, error:%v", req, err)
-		return 0, errors.Errorf("get subscribe failed, error:%v", err)
+		return "", errors.Errorf("get subscribe failed, error:%v", err)
 	}
 	if d != nil && d.TypeID == req.TypeID {
-		return 0, errors.Errorf("already subscribed, type: %v, id: %v", req.Type.String(), req.TypeID)
+		return "", errors.Errorf("already subscribed, type: %v, id: %v", req.Type.String(), req.TypeID)
 	}
 
 	// create subscribe
@@ -76,37 +76,37 @@ func (s *Subscribe) Subscribe(req apistructs.CreateSubscribeReq) (uint64, error)
 		TypeID: req.TypeID,
 		Name:   req.Name,
 		UserID: req.UserID,
+		OrgID:  req.OrgID,
 	}
 	err = s.db.CreateSubscribe(&data)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	return data.ID, nil
 }
 
 func (s *Subscribe) UnSubscribe(req apistructs.UnSubscribeReq) error {
-	if req.TypeID == 0 && req.UserID == "" && req.Type.IsEmpty() {
-		return errors.Errorf("invalid unsubscribe request, all is empty. request: %v", req)
+	if req.UserID == "" || req.OrgID == 0 {
+		return errors.Errorf("user id or org id is empty")
 	}
 
 	if (req.TypeID <= 0 && !req.Type.IsEmpty()) || (req.TypeID > 0 && req.Type.IsEmpty()) {
 		return errors.Errorf("invalid unsubscribe request, both type and typeID should be empty or non-empty. request: %v", req)
 	}
 
-	// unsubscribe by userID
+	// unsubscribe by id
+	if req.ID != "" {
+		return s.db.DeleteBySubscribeID(req.ID)
+	}
+
+	// unsubscribe by userID & orgID
 	if req.TypeID == 0 && req.Type.IsEmpty() {
 		logrus.Debugf("delete subscribes by userid, userid: %v", req.UserID)
-		return s.db.DeleteSubscribeByUserID(req.UserID)
+		return s.db.DeleteSubscribeByUserOrgID(req.UserID, req.OrgID)
 	}
 
-	// unsubscribe by type & typeID
-	if req.UserID == "" {
-		logrus.Debugf("delete subscribes by typeid, request: %v", req)
-		return s.db.DeleteSubscribeByTypeID(req.Type.String(), req.TypeID)
-	}
-
-	// unsubscribe by type & typeID & userID
-	return s.db.DeleteSubscribe(req.Type.String(), req.TypeID, req.UserID)
+	// unsubscribe by type & typeID & userID & orgID
+	return s.db.DeleteSubscribe(req.Type.String(), req.TypeID, req.UserID, req.OrgID)
 }
 
 func (s *Subscribe) GetSubscribes(req apistructs.GetSubscribeReq) ([]apistructs.Subscribe, error) {
@@ -117,12 +117,12 @@ func (s *Subscribe) GetSubscribes(req apistructs.GetSubscribeReq) ([]apistructs.
 		err  error
 	)
 	if req.TypeID == 0 {
-		raw, err = s.db.GetSubscribesByUserID(req.Type.String(), req.UserID)
+		raw, err = s.db.GetSubscribesByUserOrgID(req.Type.String(), req.UserID, req.OrgID)
 		if err != nil {
 			return nil, err
 		}
 	}
-	sub, err = s.db.GetSubscribe(req.Type.String(), req.TypeID, req.UserID)
+	sub, err = s.db.GetSubscribe(req.Type.String(), req.TypeID, req.UserID, req.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -145,6 +145,7 @@ func (s *Subscribe) Convert(subscribe model.Subscribe) apistructs.Subscribe {
 		TypeID:    subscribe.TypeID,
 		Name:      subscribe.Name,
 		UserID:    subscribe.UserID,
+		OrgID:     subscribe.OrgID,
 		CreatedAt: &subscribe.CreatedAt,
 		UpdateAt:  &subscribe.UpdatedAt,
 	}
