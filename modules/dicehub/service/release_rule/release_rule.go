@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -73,6 +74,7 @@ func (rule *ReleaseRule) Create(request *apistructs.CreateUpdateDeleteReleaseRul
 		}
 	}
 	var record = &apistructs.BranchReleaseRuleModel{
+		ID:        uuid.New().String(),
 		ProjectID: request.ProjectID,
 		Pattern:   request.Body.Pattern,
 		IsEnabled: request.Body.IsEnabled,
@@ -107,7 +109,6 @@ func (rule *ReleaseRule) List(request *apistructs.CreateUpdateDeleteReleaseRuleR
 		OrgID:     request.OrgID,
 		ProjectID: request.ProjectID,
 		UserID:    request.UserID,
-		RuleID:    "",
 		Body: &apistructs.CreateUpdateReleaseRuleRequestBody{
 			Pattern:   "release/*",
 			IsEnabled: true,

@@ -16,7 +16,7 @@
 
 CREATE TABLE `erda_branch_release_rule`
 (
-    `id`              VARCHAR(36)  NOT NULL DEFAULT (UUID()) PRIMARY KEY COMMENT 'primary',
+    `id`              VARCHAR(36)  NOT NULL DEFAULT '' PRIMARY KEY COMMENT 'primary',
     `created_at`      datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '表记录创建时间',
     `updated_at`      datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '表记录更新时间',
     `project_id`      BIGINT(20)   NOT NULL DEFAULT 0 COMMENT '项目 ID',
