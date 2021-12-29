@@ -12,25 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package release_rule_test
 
 import (
-	"net/http"
+	"testing"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda/modules/dicehub/dbclient"
+	"github.com/erda-project/erda/modules/dicehub/service/release_rule"
 )
 
-var RELEASE_RULE_CREATE = apis.ApiSpec{
-	Path:         "/api/release-rules",
-	BackendPath:  "/api/release-rules",
-	Host:         "dicehub.marathon.l4lb.thisdcos.directory:10000",
-	Scheme:       "http",
-	Method:       http.MethodPost,
-	RequestType:  apistructs.CreateUpdateDeleteReleaseRuleRequest{},
-	ResponseType: apistructs.CreateBranchRuleResponse{},
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	Doc:          `创建制品规则`,
+func TestNew(t *testing.T) {
+	var (
+		db = new(dbclient.DBClient)
+	)
+	release_rule.New(
+		release_rule.WithDBClient(db),
+	)
 }

@@ -12,25 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package util
 
 import (
-	"net/http"
+	"fmt"
+	"reflect"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 )
 
-var RELEASE_RULE_CREATE = apis.ApiSpec{
-	Path:         "/api/release-rules",
-	BackendPath:  "/api/release-rules",
-	Host:         "dicehub.marathon.l4lb.thisdcos.directory:10000",
-	Scheme:       "http",
-	Method:       http.MethodPost,
-	RequestType:  apistructs.CreateUpdateDeleteReleaseRuleRequest{},
-	ResponseType: apistructs.CreateBranchRuleResponse{},
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	Doc:          `创建制品规则`,
+// IsDeepEqual return true if objA and objB is deep equal.
+// Used for unit testing.
+func IsDeepEqual(objA, objB interface{}) (bool, error) {
+	mA := cptype.ExtraMap{}
+	mB := cptype.ExtraMap{}
+	cputil.MustObjJSONTransfer(objA, &mA)
+	cputil.MustObjJSONTransfer(objB, &mB)
+	fmt.Println(mA)
+	fmt.Println(mB)
+	return reflect.DeepEqual(mA, mB), nil
 }

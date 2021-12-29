@@ -321,3 +321,11 @@ component-protocol.components.auto-test-space-list.refreshButton:
 component-protocol.components.auto-test-space-list.spaceAddButton:
 component-protocol.components.auto-test-space-list.spaceFormModal:
 component-protocol.components.auto-test-space-list.spaceList:
+
+# release-manage
+component-protocol.components.release-manage.releaseManage:
+component-protocol.components.release-manage.content:
+component-protocol.components.release-manage.head:
+component-protocol.components.release-manage.releaseTable:
+component-protocol.components.release-manage.inputFilter:
+component-protocol.components.release-manage.releaseFilter:

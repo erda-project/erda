@@ -1,0 +1,81 @@
+scenario: release-manage
+
+hierarchy:
+  root: releaseManage
+  structure:
+    releaseManage:
+      - content
+    content:
+      slot: head
+      table: releaseTable
+    head:
+      left: inputFilter
+      right: releaseFilter
+
+
+components:
+  content:
+    type: ComposeTable
+  head:
+    type: LRContainer
+  inputFilter:
+    type: ContractiveFilter
+  releaseFilter:
+    type: ConfigurableFilter
+  releaseManage:
+    type: Container
+  releaseTable:
+    type: Table
+
+rendering:
+  __DefaultRendering__:
+    - name: releaseManage
+    - name: content
+    - name: head
+    - name: inputFilter
+    - name: releaseFilter
+      state:
+        - name: "projectID"
+          value: "{{ __InParams__.projectID }}"
+        - name: "isProjectRelease"
+          value: "{{ __InParams__.isProjectRelease }}"
+    - name: releaseTable
+      state:
+        - name: "projectID"
+          value: "{{ __InParams__.projectID }}"
+        - name: "isFormal"
+          value: "{{ __InParams__.isFormal }}"
+        - name: "isProjectRelease"
+          value: "{{ __InParams__.isProjectRelease }}"
+        - name: "applicationID"
+          value: "{{ __InParams__.applicationID }}"
+        - name: "versionValues"
+          value: "{{ inputFilter.values }}"
+        - name: "filterValues"
+          value: "{{ releaseFilter.values }}"
+  inputFilter:
+    - name: releaseTable
+      state:
+        - name: "projectID"
+          value: "{{ __InParams__.projectID }}"
+        - name: "isFormal"
+          value: "{{ __InParams__.isFormal }}"
+        - name: "isProjectRelease"
+          value: "{{ __InParams__.isProjectRelease }}"
+        - name: "applicationID"
+          value: "{{ __InParams__.applicationID }}"
+        - name: "versionValues"
+          value: "{{ inputFilter.values }}"
+  releaseFilter:
+    - name: releaseTable
+      state:
+        - name: "projectID"
+          value: "{{ __InParams__.projectID }}"
+        - name: "isFormal"
+          value: "{{ __InParams__.isFormal }}"
+        - name: "isProjectRelease"
+          value: "{{ __InParams__.isProjectRelease }}"
+        - name: "applicationID"
+          value: "{{ __InParams__.applicationID }}"
+        - name: "filterValues"
+          value: "{{ releaseFilter.values }}"

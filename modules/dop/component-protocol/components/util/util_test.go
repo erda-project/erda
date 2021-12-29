@@ -12,25 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package util
 
-import (
-	"net/http"
+import "testing"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
-)
+func TestIsDeepEqual(t *testing.T) {
+	mA := map[string]interface{}{
+		"field1": "test",
+	}
+	mB := map[string]interface{}{
+		"field1": "test",
+		"field2": "test",
+	}
+	isEqual, err := IsDeepEqual(mA, mA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !isEqual {
+		t.Error("test failed, expected equal, actual not")
+	}
 
-var RELEASE_RULE_CREATE = apis.ApiSpec{
-	Path:         "/api/release-rules",
-	BackendPath:  "/api/release-rules",
-	Host:         "dicehub.marathon.l4lb.thisdcos.directory:10000",
-	Scheme:       "http",
-	Method:       http.MethodPost,
-	RequestType:  apistructs.CreateUpdateDeleteReleaseRuleRequest{},
-	ResponseType: apistructs.CreateBranchRuleResponse{},
-	CheckLogin:   true,
-	CheckToken:   true,
-	IsOpenAPI:    true,
-	Doc:          `创建制品规则`,
+	isEqual, err = IsDeepEqual(mA, mB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if isEqual {
+		t.Error("test failed, expected not equal, actual equal")
+	}
 }
