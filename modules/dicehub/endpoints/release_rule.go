@@ -113,7 +113,7 @@ func (e *Endpoints) releaseRuleAuth(ctx *context.Context, r *http.Request, vars 
 			l.WithError(err).Errorln("failed to GetIdentityInfo")
 			return apierrors.ErrAuthReleaseRule.NotLogin()
 		}
-		access, err := e.hasWriteAccess(identity, int64(projectID))
+		access, err := e.hasWriteAccess(identity, int64(projectID), true, 0)
 		if err != nil {
 			l.WithError(err).Errorln("failed to hasWriteAccess")
 			return apierrors.ErrAuthReleaseRule.InternalError(err)
