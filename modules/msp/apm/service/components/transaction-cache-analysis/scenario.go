@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package components
+package transaction_cache_analysis
 
 import (
-	_ "github.com/erda-project/erda/modules/msp/apm/service/components/service-list"
-	_ "github.com/erda-project/erda/modules/msp/apm/service/components/service-overview"
-	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/avg_duration"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/grid"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/page"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/rps"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/table"
 )

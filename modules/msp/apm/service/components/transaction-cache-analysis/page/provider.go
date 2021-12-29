@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package components
+package page
 
 import (
-	_ "github.com/erda-project/erda/modules/msp/apm/service/components/service-list"
-	_ "github.com/erda-project/erda/modules/msp/apm/service/components/service-overview"
-	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
+
+func init() {
+	base.InitProvider("transaction-cache-analysis", "page")
+}

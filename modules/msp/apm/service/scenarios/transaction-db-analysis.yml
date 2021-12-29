@@ -1,0 +1,26 @@
+scenario: transaction-db-analysis
+
+hierarchy:
+  root: page
+  structure:
+    grid:
+    - rps
+    - avgDuration
+    page:
+    - grid
+    - table
+components:
+  page:
+    type: Container
+  grid:
+    type: Grid
+  rps:
+    type: LineGraph
+    options:
+      asyncAtInit: true
+  avgDuration:
+    type: LineGraph
+    options:
+      asyncAtInit: true
+  table:
+    type: Table
