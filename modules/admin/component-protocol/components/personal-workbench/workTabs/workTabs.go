@@ -114,7 +114,7 @@ func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData, Type string) (Data, erro
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 	go func() {
-		pageReq := apistructs.PageRequest{PageNo: 1, PageSize: 100000}
+		pageReq := apistructs.PageRequest{PageNo: 1, PageSize: 1}
 		proData, err = wt.Wb.ListQueryProjWbData(apiIdentity, pageReq, "")
 		if err != nil {
 			logrus.Errorf("tabs get project list err %v", err)
@@ -123,7 +123,7 @@ func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData, Type string) (Data, erro
 	}()
 	go func() {
 		// todo hard code
-		appReq := apistructs.ApplicationListRequest{PageNo: 1, PageSize: 100000}
+		appReq := apistructs.ApplicationListRequest{PageNo: 1, PageSize: 1}
 		appData, err = wt.Wb.ListAppWbData(apiIdentity, appReq, 0)
 		if err != nil {
 			logrus.Errorf("tabs get app list err %v", err)
