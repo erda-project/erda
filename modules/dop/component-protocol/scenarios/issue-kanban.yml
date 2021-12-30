@@ -31,9 +31,9 @@ components:
   issueOperations:
     type: RowContainer
   issueExport:
-    type: Button
+    type: Custom
   issueImport:
-    type: Button
+    type: Custom
   inputFilter:
     type: ContractiveFilter
   issueKanbanV2:

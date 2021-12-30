@@ -30,9 +30,9 @@ components:
   issueFilter:
     type: ContractiveFilter
   issueExport:
-    type: Button
+    type: Custom
   issueImport:
-    type: Button
+    type: Custom
   issueTable:
     type: Table
   reset:
