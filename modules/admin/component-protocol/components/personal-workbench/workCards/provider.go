@@ -355,7 +355,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 		return []cardlist.IconOperations{
 			{
 				Icon: "fuwuliebiao",
-				Tip:  sdk.I18n("service list"),
+				Tip:  sdk.I18n(i18n.I18nKeyServiceList),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {
 						ServerData: &serviceListServerData,
@@ -364,7 +364,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 			},
 			{
 				Icon: "fuwujiankong",
-				Tip:  sdk.I18n("service list"),
+				Tip:  sdk.I18n(i18n.I18nKeyServiceMonitor),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {
 						ServerData: &monitorServerData,
@@ -373,7 +373,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 			},
 			{
 				Icon: "lianluzhuizong",
-				Tip:  sdk.I18n("service list"),
+				Tip:  sdk.I18n(i18n.I18nKeyServiceTracing),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {
 						ServerData: &traceServerData,
@@ -382,7 +382,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 			},
 			{
 				Icon: "rizhifenxi",
-				Tip:  sdk.I18n("service list"),
+				Tip:  sdk.I18n(i18n.I18nKeyLogAnalysis),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {
 						ServerData: &logAnalysisServerData,
