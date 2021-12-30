@@ -41,6 +41,7 @@ func (w *Workbench) GetProjNum(identity apistructs.Identity, query string) (int,
 		Query:    query,
 		PageNo:   1,
 		PageSize: 1,
+		KeepMsp:  true,
 	}
 	projectDTO, err := w.bdl.ListMyProject(identity.UserID, req)
 	if err != nil {
@@ -189,6 +190,7 @@ func (w *Workbench) ListQueryProjWbData(identity apistructs.Identity, page apist
 		PageNo:   int(page.PageNo),
 		PageSize: int(page.PageSize),
 		Query:    query,
+		KeepMsp:  true,
 	}
 	projectDTO, err := w.bdl.ListMyProject(identity.UserID, req)
 	if err != nil {
