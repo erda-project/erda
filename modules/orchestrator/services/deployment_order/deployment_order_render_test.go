@@ -15,14 +15,17 @@
 package deployment_order
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	release2 "github.com/erda-project/erda/modules/dicehub/release"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/i18n"
 )
@@ -86,12 +89,12 @@ func TestPreCheck(t *testing.T) {
 func TestRenderDetail(t *testing.T) {
 	order := New()
 	bdl := bundle.New()
+	releaseSvc := &release2.ReleaseService{}
+	order.releaseSvc = releaseSvc
 
 	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetRelease", func(*bundle.Bundle, string) (*apistructs.ReleaseGetResponseData, error) {
-		return &apistructs.ReleaseGetResponseData{
-			Diceyml: string(getFakeErdaYaml()),
-		}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(releaseSvc), "GetRelease", func(*release2.ReleaseService, context.Context, *pb.ReleaseGetRequest) (*pb.ReleaseGetResponse, error) {
+		return &pb.ReleaseGetResponse{Data: &pb.ReleaseGetResponseData{Diceyml: string(getFakeErdaYaml())}}, nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CheckPermission", func(*bundle.Bundle, *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
 		return &apistructs.PermissionCheckResponseData{
@@ -115,6 +118,6 @@ func TestRenderDetail(t *testing.T) {
 		return ""
 	})
 
-	_, err := order.RenderDetail(1, "1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD")
+	_, err := order.RenderDetail(context.Background(), 1, "1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD")
 	assert.NoError(t, err)
 }

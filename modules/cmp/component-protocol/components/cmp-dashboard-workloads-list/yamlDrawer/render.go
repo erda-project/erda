@@ -47,25 +47,25 @@ func (d *ComponentYamlDrawer) InitComponent(ctx context.Context) {
 	d.sdk = sdk
 }
 
-func (d *ComponentYamlDrawer) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (d *ComponentYamlDrawer) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(component.State)
+	jsonData, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err = json.Unmarshal(jsonData, &state); err != nil {
 		return err
 	}
 	d.State = state
 	return nil
 }
 
-func (d *ComponentYamlDrawer) Transfer(component *cptype.Component) {
-	component.Props = cputil.MustConvertProps(d.Props)
-	component.State = map[string]interface{}{
+func (d *ComponentYamlDrawer) Transfer(c *cptype.Component) {
+	c.Props = cputil.MustConvertProps(d.Props)
+	c.State = map[string]interface{}{
 		"visible": d.State.Visible,
 	}
 }

@@ -15,7 +15,11 @@
 package release
 
 import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/coreos/etcd/clientv3"
@@ -30,9 +34,12 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	pb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dicehub/dbclient"
 	imagedb "github.com/erda-project/erda/modules/dicehub/image/db"
 	"github.com/erda-project/erda/modules/dicehub/release/db"
+	"github.com/erda-project/erda/modules/dicehub/service/release_rule"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -49,7 +56,7 @@ type provider struct {
 	Register              transport.Register `autowired:"service-register" required:"true"`
 	DB                    *gorm.DB           `autowired:"mysql-client"`
 	Etcd                  *clientv3.Client   `autowired:"etcd"`
-	releaseService        *releaseService
+	releaseService        *ReleaseService
 	releaseGetDiceService *releaseGetDiceService
 	bdl                   *bundle.Bundle
 }
@@ -57,7 +64,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
 
-	p.releaseService = &releaseService{
+	p.releaseService = &ReleaseService{
 		p:       p,
 		db:      &db.ReleaseConfigDB{DB: p.DB},
 		imageDB: &imagedb.ImageConfigDB{DB: p.DB},
@@ -66,6 +73,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		Config: &releaseConfig{
 			MaxTimeReserved: p.Cfg.MaxTimeReserved,
 		},
+		ReleaseRule: release_rule.New(release_rule.WithDBClient(&dbclient.DBClient{
+			DBEngine: &dbengine.DBEngine{DB: p.DB},
+		})),
 	}
 	p.releaseGetDiceService = &releaseGetDiceService{
 		p:  p,
@@ -95,7 +105,141 @@ func (p *provider) Init(ctx servicehub.Context) error {
 							}
 						}
 					}
-					return encoding.EncodeResponse(rw, r, data)
+
+					logrus.Debugf("enter encoder")
+					if resp, ok := data.(*apis.Response); ok && resp != nil {
+						logrus.Debugf("enter encoder, type of data: %v", reflect.TypeOf(resp.Data))
+						switch data := resp.Data.(type) {
+						case *pb.ReleaseGetResponseData:
+							if !data.IsProjectRelease {
+								break
+							}
+							list := make([][]*pb.ApplicationReleaseSummary, len(data.ApplicationReleaseList))
+							for i := 0; i < len(data.ApplicationReleaseList); i++ {
+								list[i] = make([]*pb.ApplicationReleaseSummary, len(data.ApplicationReleaseList[i].List))
+								list[i] = data.ApplicationReleaseList[i].List
+							}
+
+							m, err := marshal(data)
+							if err != nil {
+								logrus.Errorf("failed to marshal releaseGetResponseData, %v", err)
+								return err
+							}
+							m["applicationReleaseList"] = list
+							resp.Data = m
+						}
+					}
+					if err := encoding.EncodeResponse(rw, r, data); err != nil {
+						logrus.Errorf("failed to encodeResponse, %v", err)
+						return err
+					}
+					return nil
+				}),
+				transhttp.WithDecoder(func(r *http.Request, out interface{}) error {
+					logrus.Debugf("enter decoder, type of out: %v", reflect.TypeOf(out))
+					switch out.(type) {
+					// decode for api POST /api/releases
+					case *pb.ReleaseCreateRequest:
+						m := make(map[string]interface{})
+
+						var body []byte
+						if r.Body != nil {
+							body, _ = ioutil.ReadAll(r.Body)
+						} else {
+							return nil
+						}
+						if err := json.Unmarshal(body, &m); err != nil {
+							logrus.Errorf("failed to unmarshal ReleaseCreateRequest req body, %v", err)
+							return err
+						}
+
+						isProjectRelease, ok := m["isProjectRelease"].(bool)
+						if !ok || !isProjectRelease {
+							logrus.Debugf("Decoder of ReleaseCreateRequest: not a project release, skip")
+							r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+							break
+						}
+
+						list, ok := m["applicationReleaseList"].([]interface{})
+						if !ok {
+							logrus.Errorf("invalid type of application release list: %v", reflect.TypeOf(m["applicationReleaseList"]))
+							return errors.Errorf("application release list is invalid")
+						}
+
+						var applicationReleaseList []*pb.ReleaseList
+						for i := 0; i < len(list); i++ {
+							l, ok := list[i].([]interface{})
+							if !ok {
+								continue
+							}
+
+							var group pb.ReleaseList
+							for j := 0; j < len(l); j++ {
+								s, ok := l[j].(string)
+								if !ok {
+									continue
+								}
+								group.List = append(group.List, s)
+							}
+							applicationReleaseList = append(applicationReleaseList, &group)
+						}
+						m["applicationReleaseList"] = applicationReleaseList
+
+						if err := unmarshal(m, out); err != nil {
+							return err
+						}
+						return nil
+					case *pb.ReleaseUpdateRequest:
+						m := make(map[string]interface{})
+
+						var body []byte
+						if r.Body != nil {
+							body, _ = ioutil.ReadAll(r.Body)
+						} else {
+							return nil
+						}
+						if err := json.Unmarshal(body, &m); err != nil {
+							logrus.Errorf("failed to unmarshal ReleaseCreateRequest req body, %v", err)
+							return err
+						}
+
+						list, ok := m["applicationReleaseList"].([]interface{})
+						if !ok {
+							logrus.Debugf("Decoder of ReleaseUpdateRequest: applicationReleaseList is nil or not a slice of interface, skip")
+							r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+							break
+						}
+
+						var applicationReleaseList []*pb.ReleaseList
+						for i := 0; i < len(list); i++ {
+							l, ok := list[i].([]interface{})
+							if !ok {
+								continue
+							}
+
+							var group pb.ReleaseList
+							for j := 0; j < len(l); j++ {
+								s, ok := l[j].(string)
+								if !ok {
+									continue
+								}
+								group.List = append(group.List, s)
+							}
+							applicationReleaseList = append(applicationReleaseList, &group)
+						}
+						m["applicationReleaseList"] = applicationReleaseList
+
+						if err := unmarshal(m, out); err != nil {
+							logrus.Errorf("failed to unmarshal, %v", err)
+							return err
+						}
+						return nil
+					}
+					if err := encoding.DecodeRequest(r, out); err != nil {
+						logrus.Errorf("failed to decodeRequest, %v", err)
+						return err
+					}
+					return nil
 				}),
 			))
 
@@ -167,4 +311,26 @@ func init() {
 			return &provider{}
 		},
 	})
+}
+
+func marshal(in interface{}) (map[string]interface{}, error) {
+	data, err := json.Marshal(in)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make(map[string]interface{})
+	if err := json.Unmarshal(data, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func unmarshal(in map[string]interface{}, out interface{}) error {
+	data, err := json.Marshal(in)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(data, out)
 }
