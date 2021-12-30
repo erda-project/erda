@@ -15,9 +15,11 @@
 package actionagent
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -27,6 +29,11 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+)
+
+const (
+	cacheTempDir    = "/tmp"
+	cacheTempPrefix = "cache"
 )
 
 func (agent *Agent) restore() {
@@ -64,14 +71,15 @@ func (agent *Agent) restore() {
 				agent.AppendError(err)
 			}
 		case string(spec.StoreTypeDiceCacheNFS):
-			tarExecDir := filepath.Dir(in.Labels[pvolumes.TaskCachePath])
+			tarExecPath := in.Labels[pvolumes.TaskCachePath]
 			tarFile := in.Value + "/" + in.Labels[pvolumes.TaskCacheHashName] + pvolumes.TaskCacheCompressionSuffix
 			if filehelper.CheckExist(tarFile, false) != nil {
 				logrus.Printf("not get action cache: %s", in.Labels[pvolumes.TaskCachePath])
 				continue
 			}
-			if err := agenttool.UnTar(tarFile, tarExecDir); err != nil {
-				logrus.Printf("StoreTypeDiceCacheNFS untar error: %v", err)
+			if err := agent.restoreCache(tarFile, tarExecPath); err != nil {
+				logrus.Debugf("failed to untar cache file: %s to exec dir: %s, err: %v", tarFile, tarExecPath, err)
+				continue
 			}
 			logrus.Printf("get action cache: %s success", in.Labels[pvolumes.TaskCachePath])
 		default:
@@ -103,4 +111,26 @@ func (agent *Agent) restore() {
 			continue
 		}
 	}
+}
+
+func (agent *Agent) restoreCache(tarFile, tarExecPath string) (err error) {
+	tmpDir, err := ioutil.TempDir(cacheTempDir, cacheTempPrefix)
+	if err != nil {
+		return err
+	}
+	if err = agenttool.UnTar(tarFile, tmpDir); err != nil {
+		return err
+	}
+	// if tarExecDir exist, move tarExecDir to a temp directory
+	if err = filehelper.CheckExist(tarExecPath, true); err == nil {
+		tmpExecDir := fmt.Sprintf("%s%d", tarExecPath, time.Now().Unix())
+		if err = agenttool.Mv(tarExecPath, tmpExecDir); err != nil {
+			return err
+		}
+	}
+	tarExecDir := filepath.Dir(tarExecPath)
+	if err = agenttool.Mv(filepath.Join(tmpDir, filepath.Base(tarExecPath)), tarExecDir); err != nil {
+		return err
+	}
+	return err
 }

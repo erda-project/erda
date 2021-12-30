@@ -15,6 +15,7 @@
 package actionagent
 
 import (
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 
@@ -57,24 +58,27 @@ func (agent *Agent) store() {
 				logrus.Printf("upload action cache error: %s is not dir", out.Labels[pvolumes.TaskCachePath])
 				continue
 			}
-			if err := agenttool.WaitingPathUnlock(out.Value, agent.MaxWaitingPathUnlockSec); err != nil {
-				logrus.Errorf("failed to waiting path: %s unlock, err: %v", out.Value, err)
-				agent.AppendError(err)
+			if err := agent.storeCache(tarFile, out.Labels[pvolumes.TaskCachePath]); err != nil {
+				logrus.Debugf("failed to tar cache path: %s to file: %s, err: %v", out.Labels[pvolumes.TaskCachePath], tarFile, err)
 				continue
 			}
-			if err := agenttool.LockPath(out.Value); err != nil {
-				logrus.Errorf("failed to lock path: %s, err: %v", out.Value, err)
-				agent.AppendError(err)
-				continue
-			}
-			if err := agenttool.Tar(tarFile, out.Labels[pvolumes.TaskCachePath]); err != nil {
-				logrus.Printf("StoreTypeDiceCacheNFS tar error: %v", err)
-				continue
-			}
-			agenttool.UnLockPath(out.Value)
 			logrus.Printf("upload action cache %s success", out.Labels[pvolumes.TaskCachePath])
 		default:
 			agent.AppendError(errors.Errorf("[store] unsupported store type: %s", out.Type))
 		}
 	}
+}
+
+func (agent *Agent) storeCache(tarFile, cachePath string) (err error) {
+	tmpFile, err := ioutil.TempFile(cacheTempDir, cacheTempPrefix)
+	if err != nil {
+		return err
+	}
+	if err = agenttool.Tar(tmpFile.Name(), cachePath); err != nil {
+		return err
+	}
+	if err = agenttool.Mv(tmpFile.Name(), tarFile); err != nil {
+		return err
+	}
+	return nil
 }
