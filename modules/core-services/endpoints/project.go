@@ -577,6 +577,12 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 	if ascStr == "true" {
 		asc = true
 	}
+	var keepMsp bool
+	keepMspStr := r.URL.Query().Get("keepMsp")
+	if keepMspStr == "true" {
+		keepMsp = true
+	}
+
 	orderBy := r.URL.Query().Get("orderBy")
 	switch orderBy {
 	case "cpuQuota":
@@ -600,6 +606,7 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 		OrderBy:  orderBy,
 		Asc:      asc,
 		IsPublic: isPublic,
+		KeepMsp:  keepMsp,
 	}, nil
 }
 
