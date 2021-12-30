@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/dicehub/service/extension"
 	"github.com/erda-project/erda/modules/dicehub/service/publish_item"
 	"github.com/erda-project/erda/modules/dicehub/service/release"
+	"github.com/erda-project/erda/modules/dicehub/service/release_rule"
 	"github.com/erda-project/erda/modules/dicehub/service/template"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 )
@@ -37,6 +38,7 @@ type Endpoints struct {
 	extension          *extension.Extension
 	publishItem        *publish_item.PublishItem
 	pipelineTemplate   *template.PipelineTemplate
+	releaseRule        *release_rule.ReleaseRule
 	queryStringDecoder *schema.Decoder
 }
 
@@ -94,6 +96,12 @@ func WithPipelineTemplate(pipelineTemplate *template.PipelineTemplate) Option {
 	}
 }
 
+func WithReleaseRule(rule *release_rule.ReleaseRule) Option {
+	return func(e *Endpoints) {
+		e.releaseRule = rule
+	}
+}
+
 // WithQueryStringDecoder 配置 queryStringDecoder
 func WithQueryStringDecoder(decoder *schema.Decoder) Option {
 	return func(e *Endpoints) {
@@ -113,14 +121,21 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// Release相关
 		{Path: "/api/releases", Method: http.MethodPost, Handler: e.CreateRelease},
+		{Path: "/api/releases/actions/upload", Method: http.MethodPost, Handler: e.UploadRelease},
+		{Path: "/api/releases/actions/parse-version", Method: http.MethodGet, Handler: e.ParseReleaseFile},
 		{Path: "/api/releases/{releaseId}", Method: http.MethodPut, Handler: e.UpdateRelease},
 		{Path: "/api/releases/{releaseId}/reference/actions/change", Method: http.MethodPut, Handler: e.UpdateReleaseReference},
+		{Path: "/api/releases/{releaseId}/actions/formal", Method: http.MethodPut, Handler: e.ToFormalRelease},
 		{Path: "/api/releases/{releaseId}/actions/get-plist", Method: http.MethodGet, WriterHandler: e.GetIosPlist},
+		{Path: "/api/releases/{releaseId}/actions/download", Method: http.MethodGet, WriterHandler: e.DownloadYaml},
 		{Path: "/api/releases/{releaseId}", Method: http.MethodGet, Handler: e.GetRelease},
 		{Path: "/api/releases/{releaseId}", Method: http.MethodDelete, Handler: e.DeleteRelease},
+		{Path: "/api/releases", Method: http.MethodPut, Handler: e.ToFormalReleases},
+		{Path: "/api/releases", Method: http.MethodDelete, Handler: e.DeleteReleases},
 		{Path: "/api/releases", Method: http.MethodGet, Handler: e.ListRelease},
 		{Path: "/api/releases/actions/get-name", Method: http.MethodGet, Handler: e.ListReleaseName},
 		{Path: "/api/releases/actions/get-latest", Method: http.MethodGet, Handler: e.GetLatestReleases},
+		{Path: "/api/releases/actions/check-version", Method: http.MethodGet, Handler: e.CheckVersion},
 
 		{Path: "/gc", Method: http.MethodPost, Handler: e.ReleaseGC},
 
@@ -183,5 +198,11 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/publish-items/{publishItemId}/metrics/{metricName}", Method: http.MethodGet, Handler: e.MetricsRouting},
 		{Path: "/api/publish-items/{publishItemId}/err/effacts", Method: http.MethodGet, Handler: e.GetErrAffectUserRate},
 		{Path: "/api/publish-items/{publishItemId}/err/rate", Method: http.MethodGet, Handler: e.GetCrashRate},
+
+		// 分支 release 规则
+		{Path: "/api/release-rules", Method: http.MethodPost, Handler: httpserver.Wrap(e.CreateRule, e.ReleaseRuleAuth)},
+		{Path: "/api/release-rules", Method: http.MethodGet, Handler: httpserver.Wrap(e.ListRules, e.ReleaseRuleAuth)},
+		{Path: "/api/release-rules/{id}", Method: http.MethodPut, Handler: httpserver.Wrap(e.UpdateRule, e.ReleaseRuleAuth)},
+		{Path: "/api/release-rules/{id}", Method: http.MethodDelete, Handler: httpserver.Wrap(e.DeleteRule, e.ReleaseRuleAuth)},
 	}
 }

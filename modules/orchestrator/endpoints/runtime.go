@@ -510,7 +510,7 @@ func (e *Endpoints) GetAppWorkspaceReleases(ctx context.Context, r *http.Request
 		releases, err := e.bdl.ListReleases(apistructs.ReleaseListRequest{
 			Branch:                       branch.Name,
 			CrossClusterOrSpecifyCluster: &clusterName,
-			ApplicationID:                int64(req.AppID),
+			ApplicationID:                []string{strconv.FormatUint(req.AppID, 10)},
 			PageSize:                     5,
 			PageNum:                      1,
 		})

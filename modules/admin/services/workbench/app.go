@@ -178,6 +178,7 @@ func (w *Workbench) ListOpenMrWithLimitRate(identity apistructs.Identity, appIDs
 			}
 		}(v)
 	}
+	wg.Wait()
 	store.Range(func(k interface{}, v interface{}) bool {
 		appID, ok := k.(uint64)
 		if !ok {

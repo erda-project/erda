@@ -16,6 +16,7 @@ package issuestream
 
 import (
 	"bytes"
+	"strings"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -54,8 +55,13 @@ func getIssueStreamTemplateForMsgSending(locale string, ist apistructs.IssueStre
 }
 
 // getDefaultContent get rendered msg
-func getDefaultContent(ist apistructs.IssueStreamType, param apistructs.ISTParam) (string, error) {
-	locale := "zh"
+func getDefaultContent(ist apistructs.IssueStreamType, param apistructs.ISTParam, locale string) (string, error) {
+	if strings.Contains(locale, "zh") {
+		locale = "zh"
+	}
+	if strings.Contains(locale, "en") {
+		locale = "en"
+	}
 	ct, err := getIssueStreamTemplate(locale, ist)
 	if err != nil {
 		return "", err

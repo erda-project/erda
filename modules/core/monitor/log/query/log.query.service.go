@@ -17,7 +17,6 @@ package query
 import (
 	context "context"
 	"fmt"
-	"regexp"
 	"sort"
 	"time"
 
@@ -496,13 +495,9 @@ func toQuerySelector(req Request) (*storage.Selector, error) {
 			return nil, errors.NewMissingParameterError("id")
 		}
 		if len(byContainerIdRequest.GetPattern()) > 0 {
-			_, err := regexp.Compile(byContainerIdRequest.GetPattern())
-			if err != nil {
-				return nil, errors.NewInvalidParameterError("pattern", err.Error())
-			}
 			sel.Filters = append(sel.Filters, &storage.Filter{
 				Key:   "content",
-				Op:    storage.REGEXP,
+				Op:    storage.CONTAINS,
 				Value: byContainerIdRequest.GetPattern(),
 			})
 		}

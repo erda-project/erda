@@ -17,17 +17,20 @@ package dicehub
 import (
 	"net/http"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
 var RELEASE_RULE_CREATE = apis.ApiSpec{
-	Path:        "/api/release-rules",
-	BackendPath: "/api/release-rules",
-	Host:        "dicehub.marathon.l4lb.thisdcos.directory:10000",
-	Scheme:      "http",
-	Method:      http.MethodPost,
-	CheckLogin:  true,
-	CheckToken:  true,
-	IsOpenAPI:   true,
-	Doc:         `创建制品规则`,
+	Path:         "/api/release-rules",
+	BackendPath:  "/api/release-rules",
+	Host:         "dicehub.marathon.l4lb.thisdcos.directory:10000",
+	Scheme:       "http",
+	Method:       http.MethodPost,
+	RequestType:  apistructs.CreateUpdateDeleteReleaseRuleRequest{},
+	ResponseType: apistructs.CreateBranchRuleResponse{},
+	CheckLogin:   true,
+	CheckToken:   true,
+	IsOpenAPI:    true,
+	Doc:          `创建制品规则`,
 }

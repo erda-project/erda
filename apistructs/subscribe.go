@@ -20,11 +20,12 @@ import (
 )
 
 type Subscribe struct {
-	ID        uint64     `json:"id"`
+	ID        string     `json:"id"`
 	Type      string     `json:"type"`
 	TypeID    uint64     `json:"typeID"`
 	Name      string     `json:"name"`
 	UserID    string     `json:"userID"`
+	OrgID     uint64     `json:"orgID"`
 	CreatedAt *time.Time `json:"createdAt"`
 	UpdateAt  *time.Time `json:"updatedAt"`
 }
@@ -52,11 +53,12 @@ type CreateSubscribeReq struct {
 	TypeID uint64        `json:"typeID"`
 	Name   string        `json:"name"`
 	UserID string        `json:"userID"`
+	OrgID  uint64        `json:"orgID"`
 }
 
 type CreateSubscribeRsp struct {
 	Header
-	Data uint64 `json:"data"`
+	Data string `json:"data"`
 }
 
 func (c CreateSubscribeReq) Validate() error {
@@ -73,9 +75,11 @@ func (c CreateSubscribeReq) Validate() error {
 }
 
 type UnSubscribeReq struct {
+	ID     string        `json:"id"`
 	Type   SubscribeType `json:"type"`
 	TypeID uint64        `json:"typeID"`
 	UserID string        `json:"userID"`
+	OrgID  uint64        `json:"orgID"`
 }
 
 type GetSubscribeReq struct {
@@ -83,6 +87,7 @@ type GetSubscribeReq struct {
 	// optional
 	TypeID uint64 `json:"typeID"`
 	UserID string `json:"userID"`
+	OrgID  uint64 `json:"orgID"`
 }
 
 func (c GetSubscribeReq) Validate() error {

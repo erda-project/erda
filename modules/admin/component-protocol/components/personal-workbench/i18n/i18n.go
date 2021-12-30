@@ -54,10 +54,15 @@ const (
 	I18nKeyAppModeLIBRARY       = "AppModeLIBRARY"
 	I18nKeyAppModeBIGDATA       = "AppModeBIGDATA"
 	I18nKeyAppModeSERVICE       = "AppModeSERVICE"
+	I18nAppModePROJECTSERVICE   = "AppModePROJECTSERVICE"
+	I18nKeyAppModeMOBILE        = "AppModeMOBILE"
 	I18nKeyUnreadMes            = "UnreadMessages"
 	I18nKeyTicket               = "Tickets"
 	I18nKeyApproveRequest       = "ApproveRequest"
 	I18nKeyActivities           = "Activities"
+	I18nStarAPP                 = "star application"
+	I18nStarProject             = "star project"
+	I18nReachLimit              = "ReachLimit"
 )
 
 func GenStarTip(itemType apistructs.WorkbenchItemType, star bool) string {

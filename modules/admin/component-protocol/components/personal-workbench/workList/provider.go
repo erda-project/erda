@@ -15,6 +15,7 @@
 package workList
 
 import (
+	"os"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -191,7 +192,7 @@ func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.Ope
 	if !updated {
 		logrus.Errorf("cannot update star info in local data")
 	}
-	// l.StdDataPtr = l.doFilter()
+	l.StdDataPtr = l.doFilter()
 	return nil
 }
 
@@ -217,7 +218,16 @@ func (l *WorkList) doFilter() *list.Data {
 }
 
 func (l *WorkList) doFilterProj() (data *list.Data) {
-	data = &list.Data{}
+	data = &list.Data{
+		PageNo:   l.filterReq.PageNo,
+		PageSize: l.filterReq.PageSize,
+		Title:    l.sdk.I18n(i18n.I18nKeyMyProject),
+		List:     make([]list.Item, 0),
+		UserIDs:  make([]string, 0),
+		Operations: map[cptype.OperationKey]cptype.Operation{
+			list.OpChangePage{}.OpKey(): cputil.NewOpBuilder().Build(),
+		},
+	}
 
 	// TODO: optimize: store stared item global state from star cart list, get here
 	// list my subscribed projects
@@ -227,6 +237,16 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		logrus.Errorf("list subscribes failed, identity: %+v,request: %+v, error:%v", l.identity, req, err)
 		return
 	}
+	maxSub, err := strconv.ParseInt(os.Getenv("SUBSCRIBE_LIMIT_NUM"), 10, 64)
+	if err != nil {
+		maxSub = 6
+		logrus.Warnf("get env SUBSCRIBE_LIMIT_NUM failed ,%v set default max count is 6", err)
+	}
+	reachLimit := false
+	if int64(len(subProjs.List)) == maxSub {
+		reachLimit = true
+	}
+
 	subProjMap := make(map[uint64]bool)
 	if subProjs != nil {
 		for _, v := range subProjs.List {
@@ -241,17 +261,12 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		logrus.Errorf("list query projct workbench data failed, error: %v", err)
 		return
 	}
-
-	data = &list.Data{
-		PageNo:       l.filterReq.PageNo,
-		PageSize:     l.filterReq.PageSize,
-		Total:        uint64(projs.Total),
-		Title:        l.sdk.I18n(i18n.I18nKeyMyProject),
-		TitleSummary: strconv.FormatInt(int64(projs.Total), 10),
-		Operations: map[cptype.OperationKey]cptype.Operation{
-			list.OpChangePage{}.OpKey(): cputil.NewOpBuilder().Build(),
-		},
+	if len(projs.List) == 0 {
+		return data
 	}
+
+	data.Total = uint64(projs.Total)
+	data.TitleSummary = strconv.FormatInt(int64(projs.Total), 10)
 
 	// get msp url params
 	var projIDs []uint64
@@ -281,6 +296,13 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		kvs, columns := l.GenProjKvColumnInfo(p, queries, params)
 		star := subProjMap[p.ProjectDTO.ID]
 		starTip := l.sdk.I18n(i18n.GenStarTip(apistructs.WorkbenchItemProj, star))
+		// if starDisable and not collected, cover tip and star
+		starDisable := false
+		if reachLimit && !star {
+			starDisable = true
+			starTip = l.sdk.I18n(i18n.I18nStarProject) + l.sdk.I18n(i18n.I18nReachLimit)
+		}
+
 		ts, _ := l.GenProjTitleState(p.ProjectDTO.Type)
 		item := list.Item{
 			ID:          strconv.FormatUint(p.ProjectDTO.ID, 10),
@@ -291,7 +313,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 			KvInfos:     kvs,
 			ColumnsInfo: columns,
 			Operations: map[cptype.OperationKey]cptype.Operation{
-				list.OpItemStar{}.OpKey(): cputil.NewOpBuilder().WithTip(starTip).Build(),
+				list.OpItemStar{}.OpKey(): cputil.NewOpBuilder().WithDisable(starDisable, starTip).Build(),
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
 					WithSkipRender(true).
 					WithServerDataPtr(list.OpItemClickGotoServerData{
@@ -327,6 +349,15 @@ func (l *WorkList) doFilterApp() (data *list.Data) {
 			subMap[id] = true
 		}
 	}
+	maxSub, err := strconv.ParseInt(os.Getenv("SUBSCRIBE_LIMIT_NUM"), 10, 64)
+	if err != nil {
+		maxSub = 6
+		logrus.Warnf("get env SUBSCRIBE_LIMIT_NUM failed ,%v", err)
+	}
+	reachLimit := false
+	if int64(len(subs.List)) == maxSub {
+		reachLimit = true
+	}
 
 	// list app workbench data
 	lr := apistructs.ApplicationListRequest{
@@ -355,7 +386,13 @@ func (l *WorkList) doFilterApp() (data *list.Data) {
 
 	for _, p := range apps.List {
 		star := subMap[p.ID]
-		starTip := l.sdk.I18n(i18n.GenStarTip(apistructs.WorkbenchItemProj, star))
+		starTip := l.sdk.I18n(i18n.GenStarTip(apistructs.WorkbenchItemApp, star))
+		// if starDisable and not collected, cover tip and star
+		starDisable := false
+		if reachLimit && !star {
+			starDisable = true
+			starTip = l.sdk.I18n(i18n.I18nStarAPP) + l.sdk.I18n(i18n.I18nReachLimit)
+		}
 		ts, _ := l.GenAppTitleState(p.Mode)
 		item := list.Item{
 			ID:          strconv.FormatUint(p.ID, 10),
@@ -366,7 +403,7 @@ func (l *WorkList) doFilterApp() (data *list.Data) {
 			KvInfos:     l.GenAppKvInfo(p),
 			ColumnsInfo: l.GenAppColumnInfo(p),
 			Operations: map[cptype.OperationKey]cptype.Operation{
-				list.OpItemStar{}.OpKey(): cputil.NewOpBuilder().WithTip(starTip).Build(),
+				list.OpItemStar{}.OpKey(): cputil.NewOpBuilder().WithDisable(starDisable, starTip).Build(),
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
 					WithSkipRender(true).
 					WithServerDataPtr(list.OpItemClickGotoServerData{

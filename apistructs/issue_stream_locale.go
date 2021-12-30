@@ -60,6 +60,14 @@ var IssueTemplate = map[string]map[IssueStreamType]string{
 		ISTChangeIterationFromUnassigned: `adjust Iteration from "unassigned" to "{{.NewIteration}}"`,
 		ISTChangeIterationToUnassigned:   `adjust Iteration from "{{.CurrentIteration}}" to "unassigned"`,
 		ISTChangeManHour:                 `adjust man-hour from【EstimateTime: {{.CurrentEstimateTime}}, ElapsedTime: {{.CurrentElapsedTime}}, RemainingTime: {{.CurrentRemainingTime}}, StartTime: {{.CurrentStartTime}}, WorkContent: {{.CurrentWorkContent}}】to【EstimateTime: {{.NewEstimateTime}}, ElapsedTime: {{.NewElapsedTime}}, RemainingTime: {{.NewRemainingTime}}, StartTime: {{.NewStartTime}}, WorkContent: {{.NewWorkContent}}】`,
+		ISTChangeOwner:                   `adjust owner from "{{.CurrentOwner}}" to "{{.NewOwner}}"`,
+		ISTChangeTaskType:                `adjust task type from "{{.CurrentStage}}" to "{{.NewStage}}"`,
+		ISTChangeBugStage:                `adjust bug stage from "{{.CurrentStage}}" to "{{.NewStage}}"`,
+		ISTChangePriority:                `adjust priority from "{{.CurrentPriority}}" to "{{.NewPriority}}"`,
+		ISTChangeComplexity:              `adjust complexity from "{{.CurrentComplexity}}" to "{{.NewComplexity}}"`,
+		ISTChangeSeverity:                `adjust severity from "{{.CurrentSeverity}}" to "{{.NewSeverity}}"`,
+		ISTChangeContent:                 `content changed`,
+		ISTChangeLabel:                   `label changed`,
 	},
 }
 

@@ -162,7 +162,7 @@ func TestWorkCards_getProjTextMeta(t *testing.T) {
 			args: args{
 				sdk: defaultSDK,
 				project: apistructs.WorkbenchProjOverviewItem{
-					ProjectDTO:    apistructs.ProjectDTO{Type: "MSP"},
+					ProjectDTO:    apistructs.ProjectDTO{Type: common.MspProject},
 					IssueInfo:     nil,
 					StatisticInfo: &apistructs.ProjectStatisticInfo{},
 				},

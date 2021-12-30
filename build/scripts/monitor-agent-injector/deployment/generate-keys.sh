@@ -12,7 +12,6 @@ usage: ${0} <key directory> [OPTIONS]
 OPTIONS:
        --service          Service name of webhook.
        --namespace        Namespace where webhook service reside.
-       --secret           Secret name for CA certificate and server certificate/key pair.
 EOF
     exit 1
 }
