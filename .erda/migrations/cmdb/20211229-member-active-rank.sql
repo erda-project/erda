@@ -10,5 +10,5 @@ CREATE TABLE `erda_member_active_rank` (
     `total_score` bigint(20) NOT NULL DEFAULT '0' COMMENT 'total',
     `soft_deleted_at` bigint(20) NOT NULL DEFAULT 0 COMMENT 'deleted at',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_org_id_user_id_soft_deleted_at` (`org_id`,`user_id`,`soft_deleted_at`)
+    UNIQUE KEY `uk_soft_deleted_at_org_id_user_id` (`soft_deleted_at`,`org_id`,`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='member active rank';
