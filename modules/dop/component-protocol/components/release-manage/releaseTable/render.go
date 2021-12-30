@@ -281,8 +281,8 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		if r.State.IsProjectRelease {
 			item.Operations.Operations["download"] = downloadOperation
 		}
-		item.Operations.Operations["edit"] = editOperation
 		if !r.State.IsFormal {
+			item.Operations.Operations["edit"] = editOperation
 			item.Operations.Operations["formal"] = formalOperation
 			item.Operations.Operations["delete"] = deleteOperation
 			item.BatchOperations = []string{"formal", "delete"}
@@ -378,12 +378,12 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	}
 }
 
-func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
-	component.Props = cputil.MustConvertProps(r.Props)
-	component.Data = map[string]interface{}{
+func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
+	c.Props = cputil.MustConvertProps(r.Props)
+	c.Data = map[string]interface{}{
 		"list": r.Data.List,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"releaseTable__urlQuery": r.State.ReleaseTableURLQuery,
 		"pageNo":                 r.State.PageNo,
 		"pageSize":               r.State.PageSize,
@@ -397,7 +397,7 @@ func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
 		"versionValues":          r.State.VersionValues,
 		"filterValues":           r.State.FilterValues,
 	}
-	component.Operations = r.Operations
+	c.Operations = r.Operations
 }
 
 func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {
