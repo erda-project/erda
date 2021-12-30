@@ -226,7 +226,7 @@ type MenuItem struct {
 	EnName      string            `json:"enName,omitempty"`
 	Href        string            `json:"href,omitempty"`
 	Params      map[string]string `json:"params,omitempty"`
-	Children    []*MenuItem       `to3" json:"children,omitempty"`
+	Children    []*MenuItem       `json:"children,omitempty"`
 	// 前端用于判断菜单是否显示，默认引导页为true，功能页为false，当tenant存在时进行反转
 	Exists bool `json:"exists,omitempty"`
 	// 内部字段: 强制显示

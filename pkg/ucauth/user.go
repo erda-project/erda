@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -251,11 +252,12 @@ func (a *UCUserAuth) GetUserInfo(oauthToken OAuthToken) (UserInfo, error) {
 type CurrentUser struct {
 	Success bool `json:"success"`
 	Result  struct {
-		ID       USERID `json:"id"`
-		Email    string `json:"email"`
-		Mobile   string `json:"mobile"`
-		Username string `json:"username"`
-		Nickname string `json:"nickname"`
+		ID          USERID `json:"id"`
+		Email       string `json:"email"`
+		Mobile      string `json:"mobile"`
+		Username    string `json:"username"`
+		Nickname    string `json:"nickname"`
+		LastLoginAt uint64 `json:"lastLoginAt"`
 	} `json:"result"`
 	Error interface{} `json:"error"`
 }
@@ -284,11 +286,13 @@ func (a *UCUserAuth) GetCurrentUser(headers http.Header) (UserInfo, error) {
 	if info.Result.ID == "" {
 		return UserInfo{}, fmt.Errorf("not login")
 	}
+	t := time.Unix(int64(info.Result.LastLoginAt/1e3), 0).Format("2006-01-02 15:04:05")
 	return UserInfo{
-		ID:       info.Result.ID,
-		Email:    info.Result.Email,
-		Phone:    info.Result.Mobile,
-		UserName: info.Result.Username,
-		NickName: info.Result.Nickname,
+		ID:          info.Result.ID,
+		Email:       info.Result.Email,
+		Phone:       info.Result.Mobile,
+		UserName:    info.Result.Username,
+		NickName:    info.Result.Nickname,
+		LastLoginAt: t,
 	}, nil
 }

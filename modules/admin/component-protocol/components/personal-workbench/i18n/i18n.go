@@ -60,6 +60,8 @@ const (
 	I18nKeyTicket               = "Tickets"
 	I18nKeyApproveRequest       = "ApproveRequest"
 	I18nKeyActivities           = "Activities"
+	I18nStarAPP                 = "star application"
+	I18nStarProject             = "star project"
 	I18nReachLimit              = "ReachLimit"
 )
 

@@ -300,7 +300,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		starDisable := false
 		if reachLimit && !star {
 			starDisable = true
-			starTip = l.sdk.I18n(string(apistructs.WorkbenchItemProj)) + l.sdk.I18n(i18n.I18nReachLimit)
+			starTip = l.sdk.I18n(i18n.I18nStarProject) + l.sdk.I18n(i18n.I18nReachLimit)
 		}
 
 		ts, _ := l.GenProjTitleState(p.ProjectDTO.Type)
@@ -391,7 +391,7 @@ func (l *WorkList) doFilterApp() (data *list.Data) {
 		starDisable := false
 		if reachLimit && !star {
 			starDisable = true
-			starTip = l.sdk.I18n(string(apistructs.WorkbenchItemApp)) + l.sdk.I18n(i18n.I18nReachLimit)
+			starTip = l.sdk.I18n(i18n.I18nStarAPP) + l.sdk.I18n(i18n.I18nReachLimit)
 		}
 		ts, _ := l.GenAppTitleState(p.Mode)
 		item := list.Item{

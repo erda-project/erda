@@ -277,8 +277,8 @@ func (wc *WorkCards) getAppCardOps(sdk *cptype.SDK, app apistructs.AppWorkBenchI
 	ops["clickGoto"] = cptype.Operation{ServerData: &serverData}
 	return
 }
-func (wc *WorkCards) getAppIconOps(sdk *cptype.SDK, app apistructs.AppWorkBenchItem) (iops []cardlist.IconOperations) {
-	iops = make([]cardlist.IconOperations, 0)
+func (wc *WorkCards) getAppIconOps(sdk *cptype.SDK, app apistructs.AppWorkBenchItem) (ops []cardlist.IconOperations) {
+	ops = make([]cardlist.IconOperations, 0)
 	gotoData := cardlist.OpCardListGotoData{
 		JumpOut: false,
 		Params: cptype.ExtraMap{
@@ -298,7 +298,7 @@ func (wc *WorkCards) getAppIconOps(sdk *cptype.SDK, app apistructs.AppWorkBenchI
 	//apiDesignServerData["target"] = "appApiDesign"
 	deployData["target"] = "deploy"
 	repositoryServerData["target"] = "repo"
-	iops = []cardlist.IconOperations{
+	ops = []cardlist.IconOperations{
 		{
 			Icon: "daimacangku",
 			Tip:  sdk.I18n("code repository"),
