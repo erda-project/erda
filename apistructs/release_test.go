@@ -80,12 +80,13 @@ func assertServices(t *testing.T, services []*ServiceImagePair) {
 	if len(services) != 2 {
 		t.Fatal("services count error")
 	}
-	if services[0].ServiceName != "doc" || services[0].Image != "registry.cn-hangzhou.aliyuncs.com/dspo/docs:i20211229-0001" {
-		t.Fatalf("service name or image parse error, serviceName: %s, image: %s",
-			services[0].ServiceName, services[0].Image)
-	}
-	if services[1].ServiceName != "web" || services[1].Image != "registry.cn-hangzhou.aliyuncs.com/dspo/web:latest" {
-		t.Fatalf("service name or image parse error, serviceName: %s, image: %s",
-			services[1].ServiceName, services[1].Image)
+	for _, service := range services {
+		switch {
+		case service.ServiceName == "doc" && service.Image == "registry.cn-hangzhou.aliyuncs.com/dspo/docs:i20211229-0001":
+		case service.ServiceName == "web" && services[1].Image == "registry.cn-hangzhou.aliyuncs.com/dspo/web:latest":
+		default:
+			t.Fatalf("service name or image parse error, serviceName: %s, image: %s",
+				service.ServiceName, service.Image)
+		}
 	}
 }
