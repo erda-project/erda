@@ -133,7 +133,7 @@ func (f *MessageTabs) Render(ctx context.Context, c *cptype.Component, scenario 
 	}
 
 	switch event.Operation {
-	case cptype.InitializeOperation:
+	case cptype.InitializeOperation, cptype.RenderingOperation:
 		f.State = State{
 			Value: apistructs.WorkbenchItemUnreadMes.String(),
 		}
