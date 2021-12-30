@@ -25,3 +25,4 @@ const (
 )
 
 const LangKey = "lang"
+const DefaultPageSize = 10

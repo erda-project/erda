@@ -39,8 +39,6 @@ type provider struct {
 	DataSource datasources.ServiceDataSource `autowired:"component-protocol.components.datasources.msp-service"`
 }
 
-const DefaultPageSize = 10
-
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
@@ -60,7 +58,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			common.TransactionLayerCache,
 			layerPath,
 			1,
-			DefaultPageSize,
+			common.DefaultPageSize,
 		)
 		if err != nil {
 			p.Log.Error("failed to get table data: %s", err)
