@@ -268,8 +268,7 @@ services:
         path: "/health"
         duration: 120
     binds:
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/monitor-agent-injector.pem:/etc/server/certs/monitor-agent-injector.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/monitor-agent-injector-key.pem:/etc/server/certs/monitor-agent-injector-key.pem:ro"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/erda:/etc/server/certs:ro"
   collector:
     labels:
       cpu_bound: "true"
