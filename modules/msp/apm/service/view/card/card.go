@@ -33,7 +33,12 @@ type Card interface {
 type CardType string
 
 const (
-	CardTypeReqCount CardType = "req_count"
+	CardTypeReqCount    CardType = "req_count"
+	CardTypeAvgDuration CardType = "avg_duration"
+	CardTypeErrorCount  CardType = "error_count"
+	CardTypeErrorRate   CardType = "error_rate"
+	CardTypeRps         CardType = "rps"
+	CardTypeSlowCount   CardType = "slow_count"
 )
 
 type ServiceCard struct {
@@ -86,6 +91,16 @@ func GetCard(ctx context.Context, cardType CardType, baseCard *BaseCard) (*Servi
 	switch cardType {
 	case CardTypeReqCount:
 		builder = &ReqCountCard{BaseCard: baseCard}
+	case CardTypeAvgDuration:
+		builder = &AvgDurationCard{BaseCard: baseCard}
+	case CardTypeErrorCount:
+		builder = &ErrorCountCard{BaseCard: baseCard}
+	case CardTypeErrorRate:
+		builder = &ErrorRateCard{BaseCard: baseCard}
+	case CardTypeRps:
+		builder = &RpsCard{BaseCard: baseCard}
+	case CardTypeSlowCount:
+		builder = &SlowCountCard{BaseCard: baseCard}
 	default:
 		return nil, fmt.Errorf("not supported cardType: %v", cardType)
 	}

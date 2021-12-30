@@ -15,30 +15,55 @@
 package slow_count
 
 import (
+	"context"
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/datasources"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 )
 
 type provider struct {
 	impl.DefaultLineGraph
-	Log    logs.Logger
-	I18n   i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
-	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
+	Log        logs.Logger
+	I18n       i18n.Translator               `autowired:"i18n" translator:"msp-i18n"`
+	Metric     metricpb.MetricServiceServer  `autowired:"erda.core.monitor.metric.MetricService"`
+	DataSource datasources.ServiceDataSource `autowired:"component-protocol.components.datasources.msp-service"`
 }
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		data := linegraph.Data{}
-		p.StdDataPtr = &data
+		lang := sdk.Lang
+		startTime := int64(p.StdInParamsPtr.Get("startTime").(float64))
+		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
+		tenantId := p.StdInParamsPtr.Get("tenantId").(string)
+		serviceId := p.StdInParamsPtr.Get("serviceId").(string)
+		layerPath := p.StdInParamsPtr.Get("layerPath").(string)
+
+		chart, err := p.DataSource.GetChart(context.WithValue(context.Background(), common.LangKey, lang),
+			pb.ChartType_SlowCount,
+			startTime,
+			endTime,
+			tenantId,
+			serviceId,
+			common.TransactionLayerCache,
+			layerPath)
+
+		if err != nil {
+			p.Log.Error(err)
+			// todo how to throw error?
+			return
+		}
+
+		p.StdDataPtr = chart
 	}
 }
 

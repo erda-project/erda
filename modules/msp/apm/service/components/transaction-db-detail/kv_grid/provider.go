@@ -15,6 +15,7 @@
 package kv_grid
 
 import (
+	"context"
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -25,6 +26,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/datasources"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/card"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 )
 
 const (
@@ -38,29 +42,68 @@ const (
 
 type provider struct {
 	impl.DefaultKV
-	Log    logs.Logger
-	I18n   i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
-	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
+	Log        logs.Logger
+	I18n       i18n.Translator               `autowired:"i18n" translator:"msp-i18n"`
+	Metric     metricpb.MetricServiceServer  `autowired:"erda.core.monitor.metric.MetricService"`
+	DataSource datasources.ServiceDataSource `autowired:"component-protocol.components.datasources.msp-service"`
 }
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
+		lang := sdk.Lang
+		startTime := int64(p.StdInParamsPtr.Get("startTime").(float64))
+		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
+		tenantId := p.StdInParamsPtr.Get("tenantId").(string)
+		serviceId := p.StdInParamsPtr.Get("serviceId").(string)
+		layerPath := p.StdInParamsPtr.Get("layerPath").(string)
+		ctx := context.WithValue(context.Background(), common.LangKey, lang)
+
 		data := kv.Data{}
 		var list []*kv.KV
 		switch sdk.Comp.Name {
 		case totalCount:
-			list = append(list, &kv.KV{})
+			cell, err := p.DataSource.GetCard(ctx, card.CardTypeReqCount, startTime, endTime, tenantId, serviceId, common.TransactionLayerDb, layerPath)
+			if err != nil {
+				p.Log.Error("failed to get card: %s", err)
+				break
+			}
+			list = append(list, cell)
 		case avgRps:
-			list = append(list, &kv.KV{})
+			cell, err := p.DataSource.GetCard(ctx, card.CardTypeRps, startTime, endTime, tenantId, serviceId, common.TransactionLayerDb, layerPath)
+			if err != nil {
+				p.Log.Error("failed to get card: %s", err)
+				break
+			}
+			list = append(list, cell)
 		case avgDuration:
-			list = append(list, &kv.KV{})
+			cell, err := p.DataSource.GetCard(ctx, card.CardTypeAvgDuration, startTime, endTime, tenantId, serviceId, common.TransactionLayerDb, layerPath)
+			if err != nil {
+				p.Log.Error("failed to get card: %s", err)
+				break
+			}
+			list = append(list, cell)
 		case slowCount:
-			list = append(list, &kv.KV{})
+			cell, err := p.DataSource.GetCard(ctx, card.CardTypeSlowCount, startTime, endTime, tenantId, serviceId, common.TransactionLayerDb, layerPath)
+			if err != nil {
+				p.Log.Error("failed to get card: %s", err)
+				break
+			}
+			list = append(list, cell)
 		case errorCount:
-			list = append(list, &kv.KV{})
+			cell, err := p.DataSource.GetCard(ctx, card.CardTypeErrorCount, startTime, endTime, tenantId, serviceId, common.TransactionLayerDb, layerPath)
+			if err != nil {
+				p.Log.Error("failed to get card: %s", err)
+				break
+			}
+			list = append(list, cell)
 		case errorRate:
-			list = append(list, &kv.KV{})
+			cell, err := p.DataSource.GetCard(ctx, card.CardTypeErrorRate, startTime, endTime, tenantId, serviceId, common.TransactionLayerDb, layerPath)
+			if err != nil {
+				p.Log.Error("failed to get card: %s", err)
+				break
+			}
+			list = append(list, cell)
 		}
 		data.List = list
 		p.StdDataPtr = &data

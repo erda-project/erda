@@ -16,7 +16,13 @@ package datasources
 
 import (
 	"context"
+	"strconv"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv"
+
+	"github.com/ahmetb/go-linq/v3"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/card"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/chart"
@@ -24,7 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/service/view/table"
 )
 
-func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (interface{}, error) {
+func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*linegraph.Data, error) {
 	baseChart := &chart.BaseChart{
 		StartTime: start,
 		EndTime:   end,
@@ -40,12 +46,31 @@ func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, 
 		return nil, err
 	}
 
-	// todo convert model
+	// convert model
+	var xAxis []interface{}
+	linq.From(data.View).
+		Select(func(i interface{}) interface{} { return i.(*pb.Chart).Timestamp }).
+		ToSlice(&xAxis)
+	dimension := linq.From(data.View).
+		Select(func(i interface{}) interface{} { return i.(*pb.Chart).Timestamp }).
+		First()
+	if dimension == nil {
+		dimension = data.Type
+	}
+	var yAxis []interface{}
+	linq.From(data.View).
+		Select(func(i interface{}) interface{} { return i.(*pb.Chart).Value }).
+		ToSlice(&yAxis)
 
-	return data, nil
+	// todo i18n
+	line := linegraph.New(data.Type)
+	line.SetXAxis(xAxis...)
+	line.SetYAxis(dimension.(string), yAxis...)
+
+	return line, nil
 }
 
-func (p *provider) GetCard(ctx context.Context, cardType card.CardType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (interface{}, error) {
+func (p *provider) GetCard(ctx context.Context, cardType card.CardType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*kv.KV, error) {
 	baseCard := &card.BaseCard{
 		StartTime: start,
 		EndTime:   end,
@@ -61,9 +86,12 @@ func (p *provider) GetCard(ctx context.Context, cardType card.CardType, start, e
 		return nil, err
 	}
 
-	// todo convert model
-
-	return data, nil
+	pair := &kv.KV{
+		Key:    data.Name,
+		Value:  strconv.FormatFloat(data.Value, 'f', -1, 64),
+		SubKey: data.Unit,
+	}
+	return pair, nil
 }
 
 func (p *provider) GetTable(ctx context.Context, tableType table.TableType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string, pageNo int, pageSize int) (interface{}, error) {

@@ -23,3 +23,5 @@ const (
 	TransactionLayerDb    TransactionLayerType = "db"
 	TransactionLayerMq    TransactionLayerType = "mq"
 )
+
+const LangKey = "lang"
