@@ -1,19 +1,16 @@
-scenario: transaction-rpc-analysis
+scenario: transaction-db-detail
 
 hierarchy:
   root: page
   structure:
     page:
+    #- card
     - grid
-    - content
     grid:
     - rps
     - avgDuration
-    content:
-      slot: head
-      table: table
-    head:
-      left: tableFilter
+    - slowCount
+    - errorCount
 components:
   page:
     type: Container
@@ -27,11 +24,11 @@ components:
     type: LineGraph
     options:
       asyncAtInit: true
-  content:
-    type: ComposeTable
-  tableFilter:
-    type: ContractiveFilter
-  head:
-    type: LRContainer
-  table:
-    type: Table
+  slowCount:
+    type: LineGraph
+    options:
+      asyncAtInit: true
+  errorCount:
+    type: LineGraph
+    options:
+      asyncAtInit: true
