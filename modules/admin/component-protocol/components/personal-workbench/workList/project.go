@@ -244,23 +244,7 @@ func (l *WorkList) GenProjDopColumnInfo(proj apistructs.WorkbenchProjOverviewIte
 					Build(),
 			},
 		},
-		// 服务观测
-		{
-			ID:   strconv.FormatUint(proj.ProjectDTO.ID, 10),
-			Icon: common.IconServiceObservation,
-			Tip:  l.sdk.I18n(i18n.I18nKeyServiceObservation),
-			Operations: map[cptype.OperationKey]cptype.Operation{
-				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
-					WithSkipRender(true).
-					WithServerDataPtr(list.OpItemClickGotoServerData{
-						OpItemBasicServerData: list.OpItemBasicServerData{
-							Params: mspParams,
-							Target: common.OpValTargetMspServiceList,
-						},
-					}).
-					Build(),
-			},
-		},
+
 		// 项目设置
 		{
 			ID:   strconv.FormatUint(proj.ProjectDTO.ID, 10),
@@ -280,6 +264,24 @@ func (l *WorkList) GenProjDopColumnInfo(proj apistructs.WorkbenchProjOverviewIte
 					Build(),
 			},
 		},
+	}
+	if mspParams["terminusKey"] != "" {
+		hovers = append(hovers, list.KvInfo{
+			ID:   strconv.FormatUint(proj.ProjectDTO.ID, 10),
+			Icon: common.IconServiceObservation,
+			Tip:  l.sdk.I18n(i18n.I18nKeyServiceObservation),
+			Operations: map[cptype.OperationKey]cptype.Operation{
+				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
+					WithSkipRender(true).
+					WithServerDataPtr(list.OpItemClickGotoServerData{
+						OpItemBasicServerData: list.OpItemBasicServerData{
+							Params: mspParams,
+							Target: common.OpValTargetMspServiceList,
+						},
+					}).
+					Build(),
+			},
+		})
 	}
 	columns["hoverIcons"] = hovers
 	return
