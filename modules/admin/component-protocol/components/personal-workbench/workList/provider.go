@@ -273,7 +273,8 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 	for _, v := range projs.List {
 		projIDs = append(projIDs, v.ProjectDTO.ID)
 	}
-	mspParams, err := l.wbSvc.GetUrlCommonParams(l.identity.UserID, l.identity.OrgID, projIDs)
+
+	mspParams, err := l.wbSvc.GetMspUrlParamsMap(l.identity, projIDs, 0)
 	if err != nil {
 		logrus.Errorf("get msp common params failed, error: %v", err)
 		return
@@ -285,14 +286,17 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		return
 	}
 
-	for i, p := range projs.List {
+	for _, p := range projs.List {
+		projID := strconv.FormatUint(p.ProjectDTO.ID, 10)
+
 		params := make(map[string]interface{})
-		err = common.Transfer(mspParams[i], &params)
+		err = common.Transfer(mspParams[projID], &params)
 		if err != nil {
 			logrus.Errorf("transfer msp params failed, msp params: %+v, error: %v", mspParams, err)
 			return
 		}
 		params["projectId"] = p.ProjectDTO.ID
+
 		// get click goto issue query url
 		queries := projQueries[p.ProjectDTO.ID]
 		kvs, columns := l.GenProjKvColumnInfo(p, queries, params)

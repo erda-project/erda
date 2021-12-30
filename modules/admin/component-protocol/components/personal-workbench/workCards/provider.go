@@ -529,7 +529,8 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 		for _, project := range projects.List {
 			ids = append(ids, project.ProjectDTO.ID)
 		}
-		params, err := wc.Wb.GetUrlCommonParams(sdk.Identity.UserID, sdk.Identity.OrgID, ids)
+
+		params, err := wc.Wb.GetMspUrlParamsMap(apistructs.Identity{UserID: sdk.Identity.UserID, OrgID: sdk.Identity.OrgID}, ids, 0)
 		if err != nil {
 			logrus.Errorf("card list fail to get url params ,err :%v", err)
 		}
@@ -540,10 +541,11 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 			return
 		}
 
-		for i, project := range projects.List {
+		for _, project := range projects.List {
 			if cnt >= DefaultCardListSize {
 				break
 			}
+			projID := strconv.FormatUint(project.ProjectDTO.ID, 10)
 			cnt++
 			data.Cards = append(data.Cards, cardlist.Card{
 				ID:             fmt.Sprintf("%d", project.ProjectDTO.ID),
@@ -552,8 +554,8 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 				TitleState:     wc.getProjectTitleState(sdk, project.ProjectDTO.Type),
 				Star:           true,
 				TextMeta:       wc.getProjTextMeta(sdk, project, qMap[project.ProjectDTO.ID]),
-				IconOperations: wc.getProjIconOps(sdk, project, params[i]),
-				Operations:     wc.getProjectCardOps(sdk, params[i], project),
+				IconOperations: wc.getProjIconOps(sdk, project, params[projID]),
+				Operations:     wc.getProjectCardOps(sdk, params[projID], project),
 			})
 		}
 	}

@@ -232,7 +232,7 @@ func (w *Workbench) ListIssueStreams(issueIDs []uint64, limit int) (data map[uin
 			req.IssueID = id
 			res, err := w.bdl.GetIssueStreams(req)
 			if err != nil {
-				logrus.Warnf("get issue streams failed, request: %v, error: %v", req, err)
+				logrus.Errorf("get issue streams failed, request: %v, error: %v", req, err)
 				return
 			}
 			if len(res.List) == 0 {
