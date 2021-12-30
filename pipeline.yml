@@ -37,6 +37,12 @@ stages:
             uri: https://erda.cloud/erda/dop/erda-project/erda-addons-enterprise-mirror
             branch: master
             depth: 1
+      - git-checkout:
+          alias: erda-java-extensions
+          params:
+            uri: https://github.com/erda-project/erda-java-extensions.git
+            branch: master
+            depth: 1
   - stage:
       - extract-repo-version:
           params:
@@ -82,6 +88,17 @@ stages:
           resources:
             cpu: 2
             mem: 2048
+      - custom-script:
+          alias: build-monitor-injector
+          commands:
+            - cd ${{ dirs.erda-java-extensions }}
+            - make ci-build -e SKIP_TEST=true
+            - cd ${{ dirs.erda }}
+            - cp -r ${{ dirs.erda-java-extensions }}/dist/erda-java-agent ./build/java-agent
+            - make build-push-image MODULE_PATH=monitor/agent-injector
+          resources:
+            cpu: 1
+            mem: 1024
   - stage:
       - release:
           alias: release-erda
@@ -106,6 +123,7 @@ stages:
               gittar: ${{ outputs.build-erda.image }}
               hepa: ${{ outputs.build-erda.image }}
               log-service: ${{ outputs.build-erda.image }}
+              monitor-agent-injector: ${build-monitor-injector:OUTPUT:image}
               monitor: ${{ outputs.build-erda.image }}
               msp: ${{ outputs.build-erda.image }}
               openapi: ${{ outputs.build-erda.image }}
