@@ -239,13 +239,11 @@ func (wc *WorkCards) getProjectCardOps(sdk *cptype.SDK, params workbench.UrlPara
 	switch project.ProjectDTO.Type {
 	case common.DevOpsProject:
 		target = "project"
-		serviceOp.Params["projectId"] = project.ProjectDTO.ID
 	case common.MspProject:
 		target = "mspServiceList"
-
 	}
 	serviceOp.Target = target
-
+	serviceOp.Params["projectId"] = project.ProjectDTO.ID
 	serverData := make(cptype.OpServerData)
 
 	err = common.Transfer(serviceOp, &serverData)
@@ -355,7 +353,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 		return []cardlist.IconOperations{
 			{
 				Icon: "fuwuliebiao",
-				Tip:  sdk.I18n("service list"),
+				Tip:  sdk.I18n(i18n.I18nKeyServiceList),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {
 						ServerData: &serviceListServerData,
@@ -364,7 +362,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 			},
 			{
 				Icon: "fuwujiankong",
-				Tip:  sdk.I18n("service list"),
+				Tip:  sdk.I18n(i18n.I18nKeyServiceMonitor),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {
 						ServerData: &monitorServerData,
@@ -373,7 +371,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 			},
 			{
 				Icon: "lianluzhuizong",
-				Tip:  sdk.I18n("service list"),
+				Tip:  sdk.I18n(i18n.I18nKeyServiceTracing),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {
 						ServerData: &traceServerData,
@@ -382,7 +380,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 			},
 			{
 				Icon: "rizhifenxi",
-				Tip:  sdk.I18n("service list"),
+				Tip:  sdk.I18n(i18n.I18nKeyLogAnalysis),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {
 						ServerData: &logAnalysisServerData,
