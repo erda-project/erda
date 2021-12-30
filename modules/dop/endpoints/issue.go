@@ -676,8 +676,9 @@ func (e *Endpoints) PagingIssueStreams(ctx context.Context, r *http.Request, var
 			return apierrors.ErrPagingIssueStream.AccessDenied().ToResp(), nil
 		}
 	}
+
 	// 查询事件流列表
-	streamRespData, err := e.issueStream.Paging(&pagingReq)
+	streamRespData, err := e.issueStream.Paging(&pagingReq, e.bdl.GetLocaleByRequest(r).Name())
 	if err != nil {
 		return apierrors.ErrPagingIssueStream.InternalError(err).ToResp(), nil
 	}
