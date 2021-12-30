@@ -279,6 +279,12 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		return
 	}
 
+	projQueries, err := l.wbSvc.GetProjIssueQueries(projIDs, 0)
+	if err != nil {
+		logrus.Errorf("get projects issue queries failed, ids: %v, error: %v", projIDs, err)
+		return
+	}
+
 	for i, p := range projs.List {
 		params := make(map[string]interface{})
 		err = common.Transfer(mspParams[i], &params)
@@ -288,11 +294,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		}
 		params["projectId"] = p.ProjectDTO.ID
 		// get click goto issue query url
-		queries, err := l.wbSvc.GetIssueQueries(p.ProjectDTO.ID)
-		if err != nil {
-			logrus.Errorf("get workbench issue queries failed, proj id: %v, error: %v", p.ProjectDTO.ID, err)
-			return
-		}
+		queries := projQueries[p.ProjectDTO.ID]
 		kvs, columns := l.GenProjKvColumnInfo(p, queries, params)
 		star := subProjMap[p.ProjectDTO.ID]
 		starTip := l.sdk.I18n(i18n.GenStarTip(apistructs.WorkbenchItemProj, star))
