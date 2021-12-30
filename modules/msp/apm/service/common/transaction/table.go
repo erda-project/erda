@@ -19,10 +19,10 @@ func InitTable(lang i18n.LanguageCodes, i18n i18n.Translator) table.Table {
 			Orders: []table.ColumnKey{columnTransactionName, columnReqCount, columnErrorCount, columnSlowCount, columnAvgDuration},
 			ColumnsMap: map[table.ColumnKey]table.Column{
 				columnTransactionName: {Title: i18n.Text(lang, string(columnTransactionName))},
-				columnReqCount:        {Title: i18n.Text(lang, string(columnReqCount))},
-				columnErrorCount:      {Title: i18n.Text(lang, string(columnErrorCount))},
-				columnSlowCount:       {Title: i18n.Text(lang, string(columnSlowCount))},
-				columnAvgDuration:     {Title: i18n.Text(lang, string(columnAvgDuration))},
+				columnReqCount:        {Title: i18n.Text(lang, string(columnReqCount)), EnableSort: true},
+				columnErrorCount:      {Title: i18n.Text(lang, string(columnErrorCount)), EnableSort: true},
+				columnSlowCount:       {Title: i18n.Text(lang, string(columnSlowCount)), EnableSort: true},
+				columnAvgDuration:     {Title: i18n.Text(lang, string(columnAvgDuration)), EnableSort: true},
 			},
 		},
 	}
