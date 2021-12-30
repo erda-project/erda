@@ -24,6 +24,7 @@ import (
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/math"
 )
@@ -39,8 +40,8 @@ func (errorRate *ErrorRateChart) GetChart(ctx context.Context) (*pb.ServiceChart
 		"AND target_service_id::tag=$service_id "+
 		"%s "+
 		"GROUP BY time(%s)",
-		errorRate.getDataSourceNames(),
-		errorRate.buildLayerPathFilterSql("$layer_path"),
+		common.GetDataSourceNames(errorRate.Layers...),
+		common.BuildLayerPathFilterSql(errorRate.LayerPath, "$layer_path", errorRate.Layers...),
 		errorRate.Interval)
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(errorRate.TenantId),

@@ -16,11 +16,11 @@ package chart
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 )
 
 const Layout = "2006-01-02T15:04:05Z"
@@ -29,77 +29,15 @@ type Chart interface {
 	GetChart(ctx context.Context) (*pb.ServiceChart, error)
 }
 
-type TransactionLayerType string
-
-const (
-	TransactionLayerHttp  TransactionLayerType = "http"
-	TransactionLayerRpc   TransactionLayerType = "rpc"
-	TransactionLayerCache TransactionLayerType = "cache"
-	TransactionLayerDb    TransactionLayerType = "db"
-	TransactionLayerMq    TransactionLayerType = "mq"
-)
-
 type BaseChart struct {
 	StartTime int64
 	EndTime   int64
 	Interval  string
 	TenantId  string
 	ServiceId string
-	Layers    []TransactionLayerType
+	Layers    []common.TransactionLayerType
 	LayerPath string
 	Metric    metricpb.MetricServiceServer
-}
-
-func (b *BaseChart) getDataSourceNames() string {
-	var list []string
-	for _, layer := range b.Layers {
-		switch layer {
-		case TransactionLayerHttp:
-			list = append(list, "application_http")
-		case TransactionLayerRpc:
-			list = append(list, "application_rpc")
-		case TransactionLayerCache:
-			list = append(list, "application_cache")
-		case TransactionLayerDb:
-			list = append(list, "application_db")
-		case TransactionLayerMq:
-			list = append(list, "application_mq")
-		}
-	}
-	return strings.Join(list, ",")
-}
-
-func (b *BaseChart) getLayerPathKeys() []string {
-	var list []string
-	for _, layer := range b.Layers {
-		switch layer {
-		case TransactionLayerHttp:
-			list = append(list, "http_path::tag")
-		case TransactionLayerRpc:
-			list = append(list, "rpc_method::tag")
-		case TransactionLayerCache:
-			list = append(list, "db_statement::tag")
-		case TransactionLayerDb:
-			list = append(list, "db_statement::tag")
-		case TransactionLayerMq:
-			list = append(list, "message_bus_destination::tag")
-		}
-	}
-	return list
-}
-
-func (b *BaseChart) buildLayerPathFilterSql(paramName string) string {
-	if len(b.LayerPath) == 0 {
-		return ""
-	}
-
-	keys := b.getLayerPathKeys()
-	var tokens []string
-	for _, key := range keys {
-		tokens = append(tokens, fmt.Sprintf("%s=%s", key, paramName))
-	}
-
-	return fmt.Sprintf("AND (%s) ", strings.Join(tokens, " OR "))
 }
 
 func Selector(chartType string, baseChart *BaseChart, ctx context.Context) (*pb.ServiceChart, error) {

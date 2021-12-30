@@ -24,6 +24,7 @@ import (
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/math"
 )
@@ -39,8 +40,8 @@ func (errorCount *ErrorCountChart) GetChart(ctx context.Context) (*pb.ServiceCha
 		"AND target_service_id::tag=$service_id "+
 		"%s "+
 		"GROUP BY time(%s)",
-		errorCount.getDataSourceNames(),
-		errorCount.buildLayerPathFilterSql("$layer_path"),
+		common.GetDataSourceNames(errorCount.Layers...),
+		common.BuildLayerPathFilterSql(errorCount.LayerPath, "$layer_path", errorCount.Layers...),
 		errorCount.Interval)
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(errorCount.TenantId),
@@ -72,9 +73,9 @@ func (errorCount *ErrorCountChart) GetChart(ctx context.Context) (*pb.ServiceCha
 		timestamp := parse.UnixNano() / int64(time.Millisecond)
 
 		errorRateChart.Timestamp = timestamp
-		errorRateChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue()*1e2, 2)
-		errorRateChart.Dimension = "Error Rate"
+		errorRateChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
+		errorRateChart.Dimension = "Error Count"
 		errorRateCharts = append(errorRateCharts, errorRateChart)
 	}
-	return &pb.ServiceChart{Type: pb.ChartType_ErrorRate.String(), View: errorRateCharts}, err
+	return &pb.ServiceChart{Type: pb.ChartType_ErrorCount.String(), View: errorRateCharts}, err
 }

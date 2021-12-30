@@ -24,6 +24,7 @@ import (
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/math"
 )
@@ -33,18 +34,18 @@ type SlowCountChart struct {
 }
 
 func (slowCount *SlowCountChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
-	slowThreshold, err := slowCount.getSlowThreshold()
-	if err != nil {
-		return nil, err
+	if len(slowCount.Layers) != 1 {
+		return nil, errors.NewInvalidParameterError("Layers", "multi layers not support for slow count")
 	}
+	slowThreshold := common.GetSlowThreshold(slowCount.Layers[0])
 	statement := fmt.Sprintf("SELECT sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0)) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
 		"%s "+
 		"GROUP BY time(%s)",
-		slowCount.getDataSourceNames(),
-		slowCount.buildLayerPathFilterSql("$layer_path"),
+		common.GetDataSourceNames(slowCount.Layers...),
+		common.BuildLayerPathFilterSql(slowCount.LayerPath, "$layer_path", slowCount.Layers...),
 		slowCount.Interval)
 	queryParams := map[string]*structpb.Value{
 		"terminus_key":   structpb.NewStringValue(slowCount.TenantId),
@@ -77,29 +78,9 @@ func (slowCount *SlowCountChart) GetChart(ctx context.Context) (*pb.ServiceChart
 		timestamp := parse.UnixNano() / int64(time.Millisecond)
 
 		errorRateChart.Timestamp = timestamp
-		errorRateChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue()*1e2, 2)
-		errorRateChart.Dimension = "Error Rate"
+		errorRateChart.Value = math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
+		errorRateChart.Dimension = "Slow Count"
 		errorRateCharts = append(errorRateCharts, errorRateChart)
 	}
-	return &pb.ServiceChart{Type: pb.ChartType_ErrorRate.String(), View: errorRateCharts}, err
-}
-
-func (slowCount *SlowCountChart) getSlowThreshold() (float64, error) {
-	if len(slowCount.Layers) != 1 {
-		return 0, fmt.Errorf("do not support multi layers")
-	}
-	switch slowCount.Layers[0] {
-	case TransactionLayerHttp:
-		return 300000000, nil
-	case TransactionLayerRpc:
-		return 300000000, nil
-	case TransactionLayerCache:
-		return 50000000, nil
-	case TransactionLayerDb:
-		return 100000000, nil
-	case TransactionLayerMq:
-		return 300000000, nil
-	default:
-		return 300000000, nil
-	}
+	return &pb.ServiceChart{Type: pb.ChartType_SlowCount.String(), View: errorRateCharts}, err
 }
