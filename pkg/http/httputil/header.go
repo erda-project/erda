@@ -22,6 +22,7 @@ const (
 	InternalActionHeader       = "Internal-Action-Client" // action calls the api header
 	RequestIDHeader            = "RequestID"
 	UserInfoDesensitizedHeader = "Openapi-Userinfo-Desensitized"
+	LangHeader                 = "lang"
 
 	ClientIDHeader   = "Client-ID"
 	ClientNameHeader = "Client-Name"

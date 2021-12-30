@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/modules/admin/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (am *AdminManager) AppendAuditEndpoint() {
@@ -59,7 +60,8 @@ func (am *AdminManager) ExportExcelAudit(
 	ctx context.Context, w http.ResponseWriter,
 	req *http.Request, resources map[string]string) error {
 
-	userID := req.Header.Get("USER-ID")
+	userID := req.Header.Get(httputil.UserHeader)
+	lang := req.URL.Query().Get("lang")
 	id := USERID(userID)
 	if id.Invalid() {
 		return apierrors.ErrListApprove.InvalidParameter(fmt.Errorf("invalid user id"))
@@ -74,7 +76,7 @@ func (am *AdminManager) ExportExcelAudit(
 		orgIDStr = fmt.Sprintf("%d", id)
 	}
 
-	respBody, resp, err := am.bundle.ExportAuditExcel(orgIDStr, userID, req.URL.Query())
+	respBody, resp, err := am.bundle.ExportAuditExcel(orgIDStr, userID, lang, req.URL.Query())
 	if err != nil {
 		return fmt.Errorf("failed to get spec from file: %v", err)
 	}

@@ -107,19 +107,23 @@ func (b *Bundle) ListAuditEvent(orgID string, userID string, params url.Values) 
 	return &listAudit, nil
 }
 
-func (b *Bundle) ExportAuditExcel(orgID, userID string, params url.Values) (io.ReadCloser, *httpclient.Response, error) {
+func (b *Bundle) ExportAuditExcel(orgID, userID, lang string, params url.Values) (io.ReadCloser, *httpclient.Response, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, nil, err
 	}
 	hc := b.hc
 
+	if lang == "" {
+		lang = "zh-CN"
+	}
 	respBody, resp, err := hc.
 		Get(host).
 		Path("/api/audits/actions/export-excel").
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, orgID).
 		Header(httputil.UserHeader, userID).
+		Header(httputil.LangHeader, lang).
 		Params(params).
 		Do().StreamBody()
 	if err != nil {

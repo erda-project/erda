@@ -24,9 +24,10 @@ import (
 )
 
 type provider struct {
-	Cms    cmspb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
-	Tran   i18n.Translator        `translator:"i18n"`
-	Router httpserver.Router      `autowired:"http-router"`
+	Cms           cmspb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
+	Tran          i18n.Translator        `translator:"i18n"`
+	Router        httpserver.Router      `autowired:"http-router"`
+	ResourceTrans i18n.Translator        `translator:"resource-trans"`
 }
 
 func (p *provider) Run(ctx context.Context) error { return p.Initialize() }

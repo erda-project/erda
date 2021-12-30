@@ -248,6 +248,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	audit := audit.New(
 		audit.WithDBClient(db),
 		audit.WithUCClient(uc),
+		audit.WithTrans(p.Tran),
 	)
 
 	errorBox := errorbox.New(
