@@ -30,3 +30,62 @@ func Test_ConvertToQueryParams(t *testing.T) {
 	assert.Equal(t, m["cluster"], []string{"fake-cluster"})
 	assert.Equal(t, m["releaseName"], []string{"fake-release"})
 }
+
+const testDiceyml = `
+addons: {}
+envs: {}
+jobs: {}
+services:
+  doc:
+    deployments:
+      replicas: 1
+    expose:
+    - 80
+    health_check:
+      http:
+        duration: 300
+        path: /
+        port: 80
+    image: registry.cn-hangzhou.aliyuncs.com/dspo/docs:i20211229-0001
+    ports:
+    - 80
+    resources:
+      cpu: 0.1
+      mem: 128
+  web:
+    deployments:
+      replicas: 1
+    image: registry.cn-hangzhou.aliyuncs.com/dspo/web:latest
+    ports:
+    - 80
+version: "2.0"
+`
+
+func TestReleaseGetResponseData_ReLoadImages(t *testing.T) {
+	var data ReleaseGetResponseData
+	data.ApplicationReleaseList = []*ApplicationReleaseSummary{{DiceYml: testDiceyml}}
+	if err := data.ReLoadImages(); err != nil {
+		t.Fatal(err)
+	}
+	assertServices(t, data.ApplicationReleaseList[0].Services)
+
+	data.Diceyml = testDiceyml
+	if err := data.ReLoadImages(); err != nil {
+		t.Fatal(err)
+	}
+	assertServices(t, data.Services)
+}
+
+func assertServices(t *testing.T, services []*ServiceImagePair) {
+	if len(services) != 2 {
+		t.Fatal("services count error")
+	}
+	if services[0].ServiceName != "doc" || services[0].Image != "registry.cn-hangzhou.aliyuncs.com/dspo/docs:i20211229-0001" {
+		t.Fatalf("service name or image parse error, serviceName: %s, image: %s",
+			services[0].ServiceName, services[0].Image)
+	}
+	if services[1].ServiceName != "web" || services[1].Image != "registry.cn-hangzhou.aliyuncs.com/dspo/web:latest" {
+		t.Fatalf("service name or image parse error, serviceName: %s, image: %s",
+			services[1].ServiceName, services[1].Image)
+	}
+}

@@ -291,6 +291,12 @@ type ReleaseGetResponseData struct {
 }
 
 func (r *ReleaseGetResponseData) ReLoadImages() error {
+	for _, app := range r.ApplicationReleaseList {
+		if err := app.ReLoadImages(); err != nil {
+			return err
+		}
+	}
+
 	if r.Diceyml == "" {
 		return nil
 	}
@@ -306,12 +312,6 @@ func (r *ReleaseGetResponseData) ReLoadImages() error {
 			ServiceName: name,
 			Image:       service.Image,
 		})
-	}
-
-	for _, app := range r.ApplicationReleaseList {
-		if err := app.ReLoadImages(); err != nil {
-			return err
-		}
 	}
 
 	return nil
