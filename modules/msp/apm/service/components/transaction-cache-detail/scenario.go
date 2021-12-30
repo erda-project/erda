@@ -18,6 +18,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-detail/avg_duration"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-detail/error_count"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-detail/grid"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-detail/kv_grid"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-detail/page"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-detail/rps"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-detail/slow_count"

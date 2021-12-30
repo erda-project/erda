@@ -4,13 +4,20 @@ hierarchy:
   root: page
   structure:
     page:
-    #- card
+    - kvGrid
     - grid
     grid:
     - rps
     - avgDuration
     - slowCount
     - errorCount
+    kvGrid:
+    - kvGrid@totalCount
+    - kvGrid@avgRps
+    - kvGrid@avgDuration
+    - kvGrid@slowCount
+    - kvGrid@errorCount
+    - kvGrid@errorRate
 components:
   page:
     type: Container
@@ -32,3 +39,17 @@ components:
     type: LineGraph
     options:
       asyncAtInit: true
+  kvGrid:
+    type: Grid
+  kvGrid@totalCount:
+    type: KV
+  kvGrid@avgRps:
+    type: KV
+  kvGrid@avgDuration:
+    type: KV
+  kvGrid@slowCount:
+    type: KV
+  kvGrid@errorCount:
+    type: KV
+  kvGrid@errorRate:
+    type: KV
