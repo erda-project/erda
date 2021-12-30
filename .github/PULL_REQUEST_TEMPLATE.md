@@ -1,13 +1,3 @@
-#### What type of this PR
-
-Add one of the following kinds:
-/kind feature
-/kind bugfix
-/kind polish
-/kind refactor
-/kind document
-
-
 #### What this PR does / why we need it:
 
 
