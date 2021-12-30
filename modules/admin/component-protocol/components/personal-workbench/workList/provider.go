@@ -16,6 +16,7 @@ package workList
 
 import (
 	"os"
+	"runtime/debug"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -229,6 +230,13 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		},
 	}
 
+	defer func() {
+		if err := recover(); err != nil {
+			logrus.Errorf("do filter project recover failed, error: %v", err)
+			logrus.Errorf("%s", debug.Stack())
+		}
+	}()
+
 	// TODO: optimize: store stared item global state from star cart list, get here
 	// list my subscribed projects
 	req := apistructs.GetSubscribeReq{Type: apistructs.ProjectSubscribe}
@@ -237,6 +245,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		logrus.Errorf("list subscribes failed, identity: %+v,request: %+v, error:%v", l.identity, req, err)
 		return
 	}
+
 	maxSub, err := strconv.ParseInt(os.Getenv("SUBSCRIBE_LIMIT_NUM"), 10, 64)
 	if err != nil {
 		maxSub = 6
@@ -340,6 +349,13 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 
 func (l *WorkList) doFilterApp() (data *list.Data) {
 	data = &list.Data{}
+
+	defer func() {
+		if err := recover(); err != nil {
+			logrus.Errorf("do filter app recover failed, error: %v", err)
+			logrus.Errorf("%s", debug.Stack())
+		}
+	}()
 
 	// list my subscribed apps
 	sr := apistructs.GetSubscribeReq{Type: apistructs.AppSubscribe}

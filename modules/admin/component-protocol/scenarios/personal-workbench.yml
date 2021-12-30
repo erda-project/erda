@@ -42,9 +42,15 @@ components:
     type: Container
   workCards:
     type: Card
+    options:
+      asyncAtInit: true
+      visible: true
   workList:
     type: List
     version: 2
+    options:
+      asyncAtInit: true
+      visible: true
   workListFilter:
     type: ContractiveFilter
   messageContainer:
