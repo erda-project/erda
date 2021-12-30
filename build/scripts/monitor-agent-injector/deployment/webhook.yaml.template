@@ -1,14 +1,14 @@
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: monitor-injector
+  name: monitor-agent-injector
 webhooks:
-  - name: monitor-injector.default.svc
+  - name: monitor-agent-injector.default.svc
     sideEffects: None
     admissionReviewVersions: ["v1", "v1beta1"]
     clientConfig:
       service:
-        name: monitor-injector
+        name: monitor-agent-injector
         namespace: default
         path: "/apis/pods/mutate"
       caBundle: ${CA_PEM_B64}
