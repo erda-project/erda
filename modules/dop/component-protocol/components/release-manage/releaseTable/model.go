@@ -58,13 +58,15 @@ type TableOperations struct {
 }
 
 type Operation struct {
-	Command    Command                `json:"command"`
-	Confirm    string                 `json:"confirm,omitempty"`
-	Key        string                 `json:"key,omitempty"`
-	Reload     bool                   `json:"reload"`
-	Text       string                 `json:"text,omitempty"`
-	Meta       map[string]interface{} `json:"meta,omitempty"`
-	SuccessMsg string                 `json:"successMsg,omitempty"`
+	Command     Command                `json:"command"`
+	Confirm     string                 `json:"confirm,omitempty"`
+	Key         string                 `json:"key,omitempty"`
+	Reload      bool                   `json:"reload"`
+	Text        string                 `json:"text,omitempty"`
+	Meta        map[string]interface{} `json:"meta,omitempty"`
+	SuccessMsg  string                 `json:"successMsg,omitempty"`
+	Disabled    bool                   `json:"disabled,omitempty"`
+	DisabledTip string                 `json:"disabledTip,omitempty"`
 }
 
 type Command struct {
