@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
 )
 
 type provider struct {
@@ -37,7 +38,7 @@ type provider struct {
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		p.StdDataPtr = &table.Data{}
+		p.StdDataPtr = &table.Data{Table: transaction.InitTable(sdk.Lang, p.I18n)}
 	}
 }
 

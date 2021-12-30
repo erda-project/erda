@@ -33,6 +33,11 @@ en:
   sqlSlowTop5: Top5 Slow response SQL
   exceptionCountTop5: Top5 Exception type
   pathErrorRateTop5: Top5 Error API
+  columnTransactionName: "Transaction Name"
+  columnReqCount: "Request Count"
+  columnErrorCount: "Error Count"
+  columnSlowCount: "Slow Request Count"
+  columnAvgDuration: "Avg Duration"
 zh:
   waiting_for_tracing_data: "正在获取链路追踪数据"
   success_get_tracing_data: "获取链路追踪数据成功"
@@ -68,3 +73,8 @@ zh:
   sqlSlowTop5: 慢响应SQL Top5
   exceptionCountTop5: 异常类型 Top5
   pathErrorRateTop5: 错误接口 Top5
+  columnTransactionName: "事务名称"
+  columnReqCount: "调用次数"
+  columnErrorCount: "错误次数"
+  columnSlowCount: "慢调用次数"
+  columnAvgDuration: "平均延迟"

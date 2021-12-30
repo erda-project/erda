@@ -35,3 +35,4 @@ components:
     type: LRContainer
   table:
     type: Table
+    version: 2

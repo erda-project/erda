@@ -15,74 +15,124 @@
 package table_filter
 
 import (
-	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter"
-	"reflect"
+	"context"
+	"encoding/base64"
+	"encoding/json"
 
-	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
-	"github.com/erda-project/erda-infra/providers/i18n"
-	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/common/gshelper"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
-type provider struct {
-	impl.DefaultFilter
-	Log    logs.Logger
-	I18n   i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
-	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
-}
-
-// RegisterInitializeOp .
-func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {}
-}
-
-// RegisterRenderingOp .
-func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
-	return p.RegisterInitializeOp()
-}
-
-// Init .
-func (p *provider) Init(ctx servicehub.Context) error {
-	p.DefaultFilter = impl.DefaultFilter{}
-	v := reflect.ValueOf(p)
-	v.Elem().FieldByName("Impl").Set(v)
-	compName := "tableFilter"
-	if ctx.Label() != "" {
-		compName = ctx.Label()
-	}
-	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
-		Scenario: "transaction-cache-analysis",
-		CompName: compName,
-		Creator:  func() cptype.IComponent { return p },
-	})
-	return nil
-}
-
-// Provide .
-func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	return p
+type ComponentFilter struct {
+	sdk *cptype.SDK
+	filter.CommonFilter
+	State State `json:"state,omitempty"`
+	base.DefaultProvider
+	gsHelper *gshelper.GSHelper
 }
 
 func init() {
-	servicehub.Register("component-protocol.components.transaction-cache-analysis.tableFilter", &servicehub.Spec{
-		Creator: func() servicehub.Provider { return &provider{} },
-	})
+	base.InitProviderWithCreator("transaction-cache-analysis", "tableFilter",
+		func() servicehub.Provider { return &ComponentFilter{} },
+	)
 }
 
-func (p *provider) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
-	}
+type State struct {
+	Base64UrlQueryParams    string                 `json:"inputFilter__urlQuery,omitempty"`
+	FrontendConditionProps  []filter.PropCondition `json:"conditions,omitempty"`
+	FrontendConditionValues FrontendConditions     `json:"values,omitempty"`
 }
 
-func (p *provider) RegisterFilterItemSaveOp(opData filter.OpFilterItemSave) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
-	}
+type FrontendConditions struct {
+	Title string `json:"title,omitempty"`
 }
 
-func (p *provider) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDelete) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+func (f *ComponentFilter) InitFromProtocol(ctx context.Context, c *cptype.Component, gs *cptype.GlobalStateData) error {
+	// component 序列化
+	b, err := json.Marshal(c)
+	if err != nil {
+		return err
 	}
+	if err := json.Unmarshal(b, f); err != nil {
+		return err
+	}
+
+	// sdk
+	f.sdk = cputil.SDK(ctx)
+	f.gsHelper = gshelper.NewGSHelper(gs)
+	return nil
+}
+
+func (f *ComponentFilter) SetToProtocolComponent(c *cptype.Component) error {
+	b, err := json.Marshal(f)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, &c); err != nil {
+		return err
+	}
+	return nil
+}
+
+const OperationKeyFilter filter.OperationKey = "filter"
+
+func (f *ComponentFilter) generateUrlQueryParams() (string, error) {
+	fb, err := json.Marshal(f.State.FrontendConditionValues)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(fb), nil
+}
+
+func (f *ComponentFilter) flushOptsByFilter(filterEntity string) error {
+	b, err := base64.StdEncoding.DecodeString(filterEntity)
+	if err != nil {
+		return err
+	}
+	f.State.FrontendConditionValues = FrontendConditions{}
+	return json.Unmarshal(b, &f.State.FrontendConditionValues)
+}
+
+func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	if err := f.InitFromProtocol(ctx, c, gs); err != nil {
+		return err
+	}
+	switch event.Operation {
+	case cptype.InitializeOperation, cptype.RenderingOperation:
+		f.Operations = map[filter.OperationKey]filter.Operation{
+			OperationKeyFilter: {Key: OperationKeyFilter, Reload: true},
+		}
+		f.State.FrontendConditionProps = []filter.PropCondition{
+			{
+				EmptyText:   "all",
+				Fixed:       true,
+				Key:         "title",
+				Label:       "title",
+				Placeholder: "按事务名称搜索",
+				Type:        filter.PropConditionTypeInput,
+			},
+		}
+		if f.State.FrontendConditionValues.Title == "" {
+			if urlquery := f.sdk.InParams.String("inputFilter__urlQuery"); urlquery != "" {
+				if err := f.flushOptsByFilter(urlquery); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	if req, ok := f.gsHelper.GetIssuePagingRequest(); ok {
+		req.Title = f.State.FrontendConditionValues.Title
+		f.gsHelper.SetIssuePagingRequest(*req)
+	}
+	urlParam, err := f.generateUrlQueryParams()
+	if err != nil {
+		return err
+	}
+	f.State.Base64UrlQueryParams = urlParam
+	return f.SetToProtocolComponent(c)
 }
