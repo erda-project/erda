@@ -51,9 +51,15 @@ components:
     type: Container
   messageTabs:
     type: RadioTabs
+    options:
+      asyncAtInit: true
+      visible: true
   messageList:
     type: List
     version: 2
+    options:
+      asyncAtInit: true
+      visible: true
   cleanData:
     type: Container
 
@@ -113,4 +119,8 @@ rendering:
 
   workListFilter:
     - name: workList
+    - name: cleanData
+
+  messageList:
+    - name: messageTabs
     - name: cleanData

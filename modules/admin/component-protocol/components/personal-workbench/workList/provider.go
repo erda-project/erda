@@ -321,7 +321,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 							Params: map[string]interface{}{
 								common.OpKeyProjectID: p.ProjectDTO.ID,
 							},
-							Target: common.OpValTargetProjAllIssue,
+							Target: common.OpValTargetProject,
 						},
 					}).
 					Build(),
