@@ -3,12 +3,17 @@ scenario: transaction-cache-analysis
 hierarchy:
   root: page
   structure:
+    page:
+    - grid
+    - content
     grid:
     - rps
     - avgDuration
-    page:
-    - grid
-    - table
+    content:
+      slot: head
+      table: table
+    head:
+      left: tableFilter
 components:
   page:
     type: Container
@@ -22,5 +27,11 @@ components:
     type: LineGraph
     options:
       asyncAtInit: true
+  content:
+    type: ComposeTable
+  tableFilter:
+    type: ContractiveFilter
+  head:
+    type: LRContainer
   table:
     type: Table

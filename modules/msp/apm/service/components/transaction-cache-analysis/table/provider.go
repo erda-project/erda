@@ -15,14 +15,16 @@
 package table
 
 import (
+	"reflect"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/table"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"reflect"
 )
 
 type provider struct {
@@ -35,7 +37,40 @@ type provider struct {
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
+		p.StdDataPtr = &table.Data{}
 	}
+}
+
+func (p *provider) RegisterTablePagingOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func (p *provider) RegisterTableChangePageOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func (p *provider) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func (p *provider) RegisterBatchRowsHandleOp(opData table.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func (p *provider) RegisterRowSelectOp(opData table.OpRowSelect) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func (p *provider) RegisterRowAddOp(opData table.OpRowAdd) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func (p *provider) RegisterRowEditOp(opData table.OpRowEdit) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func (p *provider) RegisterRowDeleteOp(opData table.OpRowDelete) (opFunc cptype.OperationFunc) {
+	return nil
 }
 
 // RegisterRenderingOp .
@@ -53,7 +88,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		compName = ctx.Label()
 	}
 	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
-		Scenario: compName,
+		Scenario: "transaction-cache-analysis",
 		CompName: compName,
 		Creator:  func() cptype.IComponent { return p },
 	})

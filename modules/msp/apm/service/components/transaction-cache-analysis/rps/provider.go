@@ -15,14 +15,16 @@
 package rps
 
 import (
+	"reflect"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"reflect"
 )
 
 type provider struct {
@@ -35,6 +37,8 @@ type provider struct {
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
+		data := linegraph.Data{}
+		p.StdDataPtr = &data
 	}
 }
 
@@ -53,7 +57,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		compName = ctx.Label()
 	}
 	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
-		Scenario: compName,
+		Scenario: "transaction-cache-analysis",
 		CompName: compName,
 		Creator:  func() cptype.IComponent { return p },
 	})
