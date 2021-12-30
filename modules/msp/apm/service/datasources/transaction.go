@@ -16,14 +16,17 @@ package datasources
 
 import (
 	"context"
+	"fmt"
 	"strconv"
-
-	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv"
 
 	"github.com/ahmetb/go-linq/v3"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph"
+	stdtable "github.com/erda-project/erda-infra/providers/component-protocol/components/table"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/card"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/chart"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
@@ -94,7 +97,7 @@ func (p *provider) GetCard(ctx context.Context, cardType card.CardType, start, e
 	return pair, nil
 }
 
-func (p *provider) GetTable(ctx context.Context, tableType table.TableType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string, pageNo int, pageSize int) (interface{}, error) {
+func (p *provider) GetTable(ctx context.Context, tableType table.TableType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string, pageNo int, pageSize int, orderby ...*common.Sort) (*stdtable.Table, error) {
 	baseBuilder := &table.BaseBuilder{
 		StartTime: start,
 		EndTime:   end,
@@ -102,6 +105,7 @@ func (p *provider) GetTable(ctx context.Context, tableType table.TableType, star
 		ServiceId: serviceId,
 		Layer:     layer,
 		LayerPath: path,
+		OrderBy:   orderby,
 		Metric:    p.Metric,
 	}
 
@@ -110,7 +114,20 @@ func (p *provider) GetTable(ctx context.Context, tableType table.TableType, star
 		return nil, err
 	}
 
-	// todo convert model
+	tt := transaction.InitTable(ctx.Value(common.LangKey).(i18n.LanguageCodes), p.I18n)
+	tt.Total = uint64(data.Total)
+	tt.PageSize = uint64(pageSize)
+	tt.PageNo = uint64(pageNo)
 
-	return data, nil
+	for _, row := range data.Rows {
+		stdrow := stdtable.Row{
+			CellsMap: map[stdtable.ColumnKey]stdtable.Cell{},
+		}
+		for _, cell := range row.GetCells() {
+			stdrow.CellsMap[stdtable.ColumnKey(cell.Key)] = stdtable.NewTextCell(fmt.Sprintf("%v", cell.Value)).Build()
+		}
+		tt.Rows = append(tt.Rows)
+	}
+
+	return &tt, nil
 }

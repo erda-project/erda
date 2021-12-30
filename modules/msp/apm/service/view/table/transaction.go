@@ -22,17 +22,18 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/time"
 )
 
 var (
-	columnPath        = &Column{Key: "path", Name: "Name"}
-	columnReqCount    = &Column{Key: "reqCount", Name: "Req Count"}
-	columnErrorCount  = &Column{Key: "errorCount", Name: "Error Count"}
-	columnSlowCount   = &Column{Key: "slowCount", Name: "Slow Count"}
-	columnAvgDuration = &Column{Key: "avgDuration", Name: "Avg Duration"}
+	columnPath        = &Column{Key: string(transaction.ColumnTransactionName), Name: "Transaction Name"}
+	columnReqCount    = &Column{Key: string(transaction.ColumnReqCount), Name: "Req Count"}
+	columnErrorCount  = &Column{Key: string(transaction.ColumnErrorCount), Name: "Error Count"}
+	columnSlowCount   = &Column{Key: string(transaction.ColumnSlowCount), Name: "Slow Count"}
+	columnAvgDuration = &Column{Key: string(transaction.ColumnAvgDuration), Name: "Avg Duration"}
 )
 
 var TransactionTableSortFieldSqlMap = map[string]string{
@@ -43,16 +44,16 @@ var TransactionTableSortFieldSqlMap = map[string]string{
 }
 
 type TransactionTableRow struct {
-	Path        string
-	ReqCount    float64
-	ErrorCount  float64
-	SlowCount   float64
-	AvgDuration string
+	TransactionName string
+	ReqCount        float64
+	ErrorCount      float64
+	SlowCount       float64
+	AvgDuration     string
 }
 
 func (t *TransactionTableRow) GetCells() []*Cell {
 	return []*Cell{
-		{Key: columnPath.Key, Value: t.Path},
+		{Key: columnPath.Key, Value: t.TransactionName},
 		{Key: columnReqCount.Key, Value: t.ReqCount},
 		{Key: columnErrorCount.Key, Value: t.ErrorCount},
 		{Key: columnSlowCount.Key, Value: t.SlowCount},
@@ -99,7 +100,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 
 	// query list items
 	statement = fmt.Sprintf("SELECT "+
-		"%s as path,"+
+		"%s as transactionName,"+
 		"sum(elapsed_count::field) AS reqCount,"+
 		"count(error::tag) AS errorCount,"+
 		"sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0)) AS slowCount,"+
@@ -132,11 +133,11 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 	for _, row := range response.Results[0].Series[0].Rows {
 		duration, unit := time.AutomaticConversionUnit(row.Values[4].GetNumberValue())
 		transRow := &TransactionTableRow{
-			Path:        row.Values[0].GetStringValue(),
-			ReqCount:    row.Values[1].GetNumberValue(),
-			ErrorCount:  row.Values[2].GetNumberValue(),
-			SlowCount:   row.Values[3].GetNumberValue(),
-			AvgDuration: fmt.Sprintf("%v%s", duration, unit),
+			TransactionName: row.Values[0].GetStringValue(),
+			ReqCount:        row.Values[1].GetNumberValue(),
+			ErrorCount:      row.Values[2].GetNumberValue(),
+			SlowCount:       row.Values[3].GetNumberValue(),
+			AvgDuration:     fmt.Sprintf("%v%s", duration, unit),
 		}
 		table.Rows = append(table.Rows, transRow)
 	}

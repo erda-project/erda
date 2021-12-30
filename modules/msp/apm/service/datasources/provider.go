@@ -17,11 +17,11 @@ package datasources
 import (
 	"context"
 
-	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph"
+	stdtable "github.com/erda-project/erda-infra/providers/component-protocol/components/table"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
@@ -39,7 +39,7 @@ type provider struct {
 type ServiceDataSource interface {
 	GetChart(ctx context.Context, chartType pb.ChartType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*linegraph.Data, error)
 	GetCard(ctx context.Context, cardType card.CardType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*kv.KV, error)
-	GetTable(ctx context.Context, tableType table.TableType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string, pageNo int, pageSize int) (interface{}, error)
+	GetTable(ctx context.Context, tableType table.TableType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string, pageNo int, pageSize int, orderby ...*common.Sort) (*stdtable.Table, error)
 }
 
 func init() {
