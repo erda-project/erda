@@ -548,6 +548,12 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 	// 按项目名称搜索
 	keyword := r.URL.Query().Get("q")
 
+	var keepMsp bool
+	keepMspStr := r.URL.Query().Get("keepMsp")
+	if keepMspStr == "true" {
+		keepMsp = true
+	}
+
 	// 获取pageSize
 	pageSizeStr := r.URL.Query().Get("pageSize")
 	if pageSizeStr == "" {
@@ -577,6 +583,7 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 	if ascStr == "true" {
 		asc = true
 	}
+
 	orderBy := r.URL.Query().Get("orderBy")
 	switch orderBy {
 	case "cpuQuota":
@@ -600,6 +607,7 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 		OrderBy:  orderBy,
 		Asc:      asc,
 		IsPublic: isPublic,
+		KeepMsp:  keepMsp,
 	}, nil
 }
 
