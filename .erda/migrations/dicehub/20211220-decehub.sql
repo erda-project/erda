@@ -15,9 +15,9 @@
  */
 
 ALTER table `dice_release`
-    ADD COLUMN `changelog`                 text NOT NULL DEFAULT '' COMMENT 'Changelog',
+    ADD COLUMN `changelog`                text NOT NULL COMMENT 'Changelog',
     ADD COLUMN `is_stable`                tinyint(1) NOT NULL DEFAULT 0 COMMENT 'stable表示非临时制品',
     ADD COLUMN `is_formal`                tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否为正式制品',
     ADD COLUMN `is_project_release`       tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否为项目制品',
-    ADD COLUMN `application_release_list` text NOT NULL DEFAULT '' COMMENT '依赖的应用制品ID列表',
+    ADD COLUMN `application_release_list` text NOT NULL COMMENT '依赖的应用制品ID列表',
     ADD COLUMN `tags`                     varchar(100) DEFAULT NULL COMMENT 'Tag'
