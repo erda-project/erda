@@ -64,7 +64,7 @@ func (r *ComponentReleaseTable) Render(ctx context.Context, component *cptype.Co
 			selectedIDs = append(selectedIDs, id)
 		}
 		if err = r.formalReleases(selectedIDs); err != nil {
-			return errors.Errorf("failed to formal release, %v", err)
+			return errors.Errorf("%s, %v", r.sdk.I18n("releaseFormalFailed"), err)
 		}
 	case "delete":
 		var selectedIDs []string
@@ -75,7 +75,7 @@ func (r *ComponentReleaseTable) Render(ctx context.Context, component *cptype.Co
 			selectedIDs = append(selectedIDs, id)
 		}
 		if err = r.deleteReleases(selectedIDs); err != nil {
-			return errors.Errorf("failed to delete release, %v", err)
+			return errors.Errorf("%s, %v", r.sdk.I18n("releaseDeleteFailed"), err)
 		}
 	}
 	if err := r.RenderTable(gs); err != nil {
@@ -96,16 +96,16 @@ func (r *ComponentReleaseTable) InitComponent(ctx context.Context) {
 	r.bdl = bdl
 }
 
-func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (r *ComponentReleaseTable) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(component.State)
+	data, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &state); err != nil {
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	r.State = state
@@ -113,39 +113,39 @@ func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) e
 }
 
 func (r *ComponentReleaseTable) DecodeURLQuery() error {
-	query, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
+	queryData, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(query)
+	decode, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
-	urlQuery := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &urlQuery); err != nil {
+	query := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &query); err != nil {
 		return err
 	}
-	r.State.PageNo = int64(urlQuery["pageNo"].(float64))
-	r.State.PageSize = int64(urlQuery["pageSize"].(float64))
-	sorter := urlQuery["sorterData"].(map[string]interface{})
-	r.State.Sorter.Field, _ = sorter["field"].(string)
-	r.State.Sorter.Order, _ = sorter["order"].(string)
+	r.State.PageNo = int64(query["pageNo"].(float64))
+	r.State.PageSize = int64(query["pageSize"].(float64))
+	sorterData := query["sorterData"].(map[string]interface{})
+	r.State.Sorter.Field, _ = sorterData["field"].(string)
+	r.State.Sorter.Order, _ = sorterData["order"].(string)
 
 	return nil
 }
 
 func (r *ComponentReleaseTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = r.State.PageNo
-	urlQuery["pageSize"] = r.State.PageSize
-	urlQuery["sorterData"] = r.State.Sorter
-	jsonData, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = r.State.PageNo
+	query["pageSize"] = r.State.PageSize
+	query["sorterData"] = r.State.Sorter
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	r.State.ReleaseTableURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(data)
+	r.State.ReleaseTableURLQuery = encoded
 	return nil
 }
 
@@ -153,12 +153,12 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 	userID := r.sdk.Identity.UserID
 	orgID := r.sdk.Identity.OrgID
 	projectID := r.State.ProjectID
-	hasAccess, err := access.HasReadAccess(r.bdl, userID, uint64(projectID))
+	hasReadAccess, err := access.HasReadAccess(r.bdl, userID, uint64(projectID))
 	if err != nil {
 		return errors.Errorf("failed to check access, %v", err)
 	}
-	if !hasAccess {
-		return errors.Errorf("Access denied")
+	if !hasReadAccess {
+		return errors.Errorf(r.sdk.I18n("accessDenied"))
 	}
 
 	var startTime, endTime int64 = 0, 0
@@ -211,6 +211,14 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		return errors.Errorf("failed to get org, %v", err)
 	}
 
+	// pre check access
+	hasWriteAccess := true
+	if r.State.IsProjectRelease {
+		hasWriteAccess, err = access.HasWriteAccess(r.bdl, userID, uint64(projectID), true, 0)
+		if err != nil {
+			return errors.Errorf("failed to check access, %v", err)
+		}
+	}
 	existedUser := make(map[string]struct{})
 	var userIDs []string
 	var list []Item
@@ -222,9 +230,11 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 				Target: fmt.Sprintf("/%s/dop/projects/%d/release/updateRelease/%s",
 					org.Name, r.State.ProjectID, release.ReleaseID),
 			},
-			Key:    "gotoDetail",
-			Reload: false,
-			Text:   r.sdk.I18n("editRelease"),
+			Key:         "gotoDetail",
+			Reload:      false,
+			Text:        r.sdk.I18n("editRelease"),
+			Disabled:    !hasWriteAccess,
+			DisabledTip: r.sdk.I18n("accessDenied"),
 		}
 		formalOperation := Operation{
 			Confirm: r.sdk.I18n("confirmFormal"),
@@ -234,7 +244,9 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 			Meta: map[string]interface{}{
 				"id": release.ReleaseID,
 			},
-			SuccessMsg: r.sdk.I18n("formalSucceeded"),
+			SuccessMsg:  r.sdk.I18n("formalSucceeded"),
+			Disabled:    !hasWriteAccess,
+			DisabledTip: r.sdk.I18n("accessDenied"),
 		}
 		deleteOperation := Operation{
 			Confirm: r.sdk.I18n("confirmDelete"),
@@ -244,7 +256,9 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 			Meta: map[string]interface{}{
 				"id": release.ReleaseID,
 			},
-			SuccessMsg: r.sdk.I18n("deleteSucceeded"),
+			SuccessMsg:  r.sdk.I18n("deleteSucceeded"),
+			Disabled:    !hasWriteAccess,
+			DisabledTip: r.sdk.I18n("accessDenied"),
 		}
 
 		downloadPath := fmt.Sprintf("/api/%s/releases/%s/actions/download", org.Name, release.ReleaseID)
@@ -285,7 +299,9 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 			item.Operations.Operations["edit"] = editOperation
 			item.Operations.Operations["formal"] = formalOperation
 			item.Operations.Operations["delete"] = deleteOperation
-			item.BatchOperations = []string{"formal", "delete"}
+			if hasWriteAccess {
+				item.BatchOperations = []string{"formal", "delete"}
+			}
 		}
 
 		list = append(list, item)
@@ -378,12 +394,12 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	}
 }
 
-func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
-	c.Props = cputil.MustConvertProps(r.Props)
-	c.Data = map[string]interface{}{
+func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
+	component.Props = cputil.MustConvertProps(r.Props)
+	component.Data = map[string]interface{}{
 		"list": r.Data.List,
 	}
-	c.State = map[string]interface{}{
+	component.State = map[string]interface{}{
 		"releaseTable__urlQuery": r.State.ReleaseTableURLQuery,
 		"pageNo":                 r.State.PageNo,
 		"pageSize":               r.State.PageSize,
@@ -397,7 +413,7 @@ func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
 		"versionValues":          r.State.VersionValues,
 		"filterValues":           r.State.FilterValues,
 	}
-	c.Operations = r.Operations
+	component.Operations = r.Operations
 }
 
 func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {
@@ -411,7 +427,7 @@ func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {
 			return errors.Errorf("failed to check access, %v", err)
 		}
 		if !hasAccess {
-			return errors.Errorf("Access denied")
+			return errors.Errorf(r.sdk.I18n("accessDenied"))
 		}
 	} else {
 		for _, id := range releaseID {
@@ -424,7 +440,7 @@ func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {
 				return errors.Errorf("failed to check access, %v", err)
 			}
 			if !hasAccess {
-				return errors.Errorf("Access denied")
+				return errors.Errorf(r.sdk.I18n("accessDenied"))
 			}
 		}
 	}
@@ -450,7 +466,7 @@ func (r *ComponentReleaseTable) deleteReleases(releaseID []string) error {
 			return errors.Errorf("failed to check access, %v", err)
 		}
 		if !hasAccess {
-			return errors.Errorf("Access denied")
+			return errors.Errorf(r.sdk.I18n("accessDenied"))
 		}
 	} else {
 		for _, id := range releaseID {
@@ -463,7 +479,7 @@ func (r *ComponentReleaseTable) deleteReleases(releaseID []string) error {
 				return errors.Errorf("failed to check access, %v", err)
 			}
 			if !hasAccess {
-				return errors.Errorf("Access denied")
+				return errors.Errorf(r.sdk.I18n("accessDenied"))
 			}
 		}
 	}

@@ -507,7 +507,7 @@ func (r *Release) Delete(orgID int64, releaseIDs ...string) error {
 		}
 		// Release被使用时，不可删除
 		if release.Reference > 0 {
-			failed = append(failed, fmt.Sprintf("%s(%s)", releaseID, "reference > 0"))
+			failed = append(failed, fmt.Sprintf("%s(%s)", releaseID, "release was referenced"))
 			logrus.Errorf("failed to delete release %s, which was referenced", releaseID)
 			continue
 		}
@@ -565,7 +565,7 @@ func (r *Release) Delete(orgID int64, releaseIDs ...string) error {
 		event.SendReleaseEvent(event.ReleaseEventDelete, release)
 	}
 	if len(failed) != 0 {
-		return errors.Errorf("failed to delete release: %s", strings.Join(failed, ", "))
+		return errors.New(strings.Join(failed, ", "))
 	}
 	return nil
 }
