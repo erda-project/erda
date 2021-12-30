@@ -48,8 +48,11 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
 		tenantId := p.StdInParamsPtr.Get("tenantId").(string)
 		serviceId := p.StdInParamsPtr.Get("serviceId").(string)
-		layerPath := p.StdInParamsPtr.Get("layerPath").(string)
-
+		name := ""
+		if x, ok := (*sdk.GlobalState)["name"]; ok && x != nil {
+			name = x.(string)
+		}
+		delete(*sdk.GlobalState, "name")
 		data, err := p.DataSource.GetTable(context.WithValue(context.Background(), common.LangKey, lang),
 			viewtable.TableTypeTransaction,
 			startTime,
@@ -57,7 +60,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			tenantId,
 			serviceId,
 			common.TransactionLayerRpc,
-			layerPath,
+			name,
 			1,
 			common.DefaultPageSize,
 		)

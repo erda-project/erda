@@ -101,38 +101,15 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	if err := f.InitFromProtocol(ctx, c, gs); err != nil {
 		return err
 	}
-	switch event.Operation {
-	case cptype.InitializeOperation, cptype.RenderingOperation:
-		f.Operations = map[filter.OperationKey]filter.Operation{
-			OperationKeyFilter: {Key: OperationKeyFilter, Reload: true},
-		}
-		f.State.FrontendConditionProps = []filter.PropCondition{
-			{
-				EmptyText:   "all",
-				Fixed:       true,
-				Key:         "title",
-				Label:       "title",
-				Placeholder: "按事务名称搜索",
-				Type:        filter.PropConditionTypeInput,
-			},
-		}
-		if f.State.FrontendConditionValues.Title == "" {
-			if urlquery := f.sdk.InParams.String("inputFilter__urlQuery"); urlquery != "" {
-				if err := f.flushOptsByFilter(urlquery); err != nil {
-					return err
-				}
-			}
-		}
+	nameMap := map[string]interface{}{}
+	if x, ok := c.State["values"]; ok {
+		nameMap = x.(map[string]interface{})
 	}
 
-	if req, ok := f.gsHelper.GetIssuePagingRequest(); ok {
-		req.Title = f.State.FrontendConditionValues.Title
-		f.gsHelper.SetIssuePagingRequest(*req)
+	if nameMap == nil {
+		return nil
 	}
-	urlParam, err := f.generateUrlQueryParams()
-	if err != nil {
-		return err
-	}
-	f.State.Base64UrlQueryParams = urlParam
-	return f.SetToProtocolComponent(c)
+	name := nameMap["title"]
+	(*gs)["name"] = name
+	return nil
 }
