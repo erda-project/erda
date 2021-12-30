@@ -434,3 +434,8 @@
   resource: "UI.microService.accessConfiguration"
   action: "viewAccessKeySecret"
   role: "Owner,Lead"
+- scope: "project"
+  name: "项目 > 制品 > 创建制品"
+  resource: "UI.release"
+  action: "create"
+  role: "Owner,Lead,PM"
