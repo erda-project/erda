@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -114,6 +115,11 @@ func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData, Type string) (Data, erro
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 	go func() {
+		begin := time.Now()
+		defer func() {
+			end := time.Now()
+			logrus.Debugf("Query ListQueryProjWbData cost: %fs", end.Sub(begin).Seconds())
+		}()
 		pageReq := apistructs.PageRequest{PageNo: 1, PageSize: 100000}
 		proData, err = wt.Wb.ListQueryProjWbData(apiIdentity, pageReq, "")
 		if err != nil {
@@ -123,6 +129,11 @@ func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData, Type string) (Data, erro
 	}()
 	go func() {
 		// todo hard code
+		begin := time.Now()
+		defer func() {
+			end := time.Now()
+			logrus.Debugf("Query ListAppWbData cost: %fs", end.Sub(begin).Seconds())
+		}()
 		appReq := apistructs.ApplicationListRequest{PageNo: 1, PageSize: 100000}
 		appData, err = wt.Wb.ListAppWbData(apiIdentity, appReq, 0)
 		if err != nil {
