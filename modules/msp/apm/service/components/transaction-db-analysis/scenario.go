@@ -22,5 +22,5 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-db-analysis/page"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-db-analysis/rps"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-db-analysis/table"
-	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-db-analysis/tableFilter"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-db-analysis/table_filter"
 )

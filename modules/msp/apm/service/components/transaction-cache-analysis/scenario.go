@@ -22,5 +22,5 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/page"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/rps"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/table"
-	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/tableFilter"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/table_filter"
 )

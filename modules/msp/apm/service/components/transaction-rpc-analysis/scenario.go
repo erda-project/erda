@@ -22,5 +22,5 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-analysis/page"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-analysis/rps"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-analysis/table"
-	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-analysis/tableFilter"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-analysis/table_filter"
 )
