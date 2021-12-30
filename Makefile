@@ -126,6 +126,9 @@ run-g: build
 run-ps: build
 	./bin/${APP_NAME} --providers
 
+miglint: cli
+	./bin/erda-cli migrate lint --input=.erda/migrations --lint-config=.erda/migrations/config.yml
+
 # normalize all go files before push to git repo
 normalize:
 	@go mod tidy

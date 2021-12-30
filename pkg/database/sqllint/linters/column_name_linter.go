@@ -16,26 +16,36 @@ package linters
 
 import (
 	"bytes"
+	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/pingcap/parser/ast"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 )
 
-type ColumnNameLinter struct {
+type columnNameLinter struct {
 	baseLinter
+	meta columnNameLinterMeta
 }
 
-func NewColumnNameLinter(script script.Script) rules.Rule {
-	return &ColumnNameLinter{newBaseLinter(script)}
+func (hub) ColumnNameLinter(script script.Script, c sqllint.Config) (sqllint.Rule, error) {
+	var l = columnNameLinter{
+		baseLinter: newBaseLinter(script),
+		meta:       columnNameLinterMeta{},
+	}
+	if err := yaml.Unmarshal(c.Meta, &l.meta); err != nil {
+		return nil, errors.Wrap(err, "解析 ColumnNameLinter.meta 错误")
+	}
+	return &l, nil
 }
 
-func (l *ColumnNameLinter) Enter(in ast.Node) (ast.Node, bool) {
+func (l *columnNameLinter) Enter(in ast.Node) (ast.Node, bool) {
 	if l.text == "" || in.Text() != "" {
 		l.text = in.Text()
 	}
@@ -64,49 +74,29 @@ func (l *ColumnNameLinter) Enter(in ast.Node) (ast.Node, bool) {
 			})
 	}()
 
-	if compile := regexp.MustCompile(`^[0-9a-z_]+$`); !compile.Match([]byte(name)) {
-		l.err = linterror.LintError{
-			ScriptName: l.s.Name(),
-			Stmt:       l.text,
-			Lint:       "invalid field name: it can only contain lowercase English letters, numbers, and underscores",
-			Line:       "",
-			LintNo:     0,
-		}
-		return in, true
-	}
-
-	if w := name[0]; '0' <= w && w <= '9' {
-		l.err = linterror.LintError{
-			ScriptName: l.s.Name(),
-			Stmt:       l.text,
-			Lint:       "invalid field name: can not start with a number",
-			Line:       "",
-			LintNo:     0,
-		}
-		return in, true
-	}
-
-	words := strings.Split(name, "_")
-	for _, w := range words {
-		if _, err := strconv.ParseInt(w, 10, 64); w == "" || err == nil {
-			l.err = linterror.LintError{
-				ScriptName: l.s.Name(),
-				Stmt:       l.text,
-				Lint:       "invalid field name: there at least is one English letter between two underscores",
-				Line:       "",
-				LintNo:     0,
-			}
+	for _, pat := range l.meta.Patterns {
+		if ok, _ := regexp.Match(pat, []byte(name)); ok {
 			return in, true
 		}
 	}
-
+	l.err = linterror.LintError{
+		ScriptName: l.s.Name(),
+		Stmt:       l.text,
+		Lint:       fmt.Sprintf("不合法的列名, 列名应当符合以下模式之一:\n%s", strings.Join(l.meta.Patterns, "\n")),
+		Line:       "",
+		LintNo:     0,
+	}
 	return in, true
 }
 
-func (l *ColumnNameLinter) Leave(in ast.Node) (ast.Node, bool) {
+func (l *columnNameLinter) Leave(in ast.Node) (ast.Node, bool) {
 	return in, l.err == nil
 }
 
-func (l *ColumnNameLinter) Error() error {
+func (l *columnNameLinter) Error() error {
 	return l.err
+}
+
+type columnNameLinterMeta struct {
+	Patterns []string `json:"patterns" yaml:"patterns"`
 }

@@ -18,23 +18,48 @@ import (
 	"strings"
 
 	"github.com/pingcap/parser/ast"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 )
 
-const UTF8MB4 = "utf8mb4"
+const (
+	UTF8MB4 = "utf8mb4"
+	UTF8    = "utf8"
+)
 
-type CharsetLinter struct {
+type charsetLinter struct {
 	baseLinter
+	meta charsetLinterMeta
 }
 
-func NewCharsetLinter(script script.Script) rules.Rule {
-	return &CharsetLinter{newBaseLinter(script)}
+func (hub) CharsetLinter(script script.Script, c sqllint.Config) (sqllint.Rule, error) {
+	var meta charsetLinterMeta
+	if err := yaml.Unmarshal(c.Meta, &meta); err != nil {
+		meta.TableOptionCharset = map[string]bool{UTF8: true, UTF8MB4: true}
+		out, _ := yaml.Marshal(meta)
+		return nil, errors.Wrapf(err, "解析 CharsetLinter.meta 错误, CharsetLinter 的 meta 结构应当形如: %s",
+			string(out))
+	}
+	for k, v := range meta.TableOptionCharset {
+		meta.TableOptionCharset[strings.ToLower(k)] = v
+	}
+	var count = 0
+	for k := range meta.TableOptionCharset {
+		if meta.TableOptionCharset[k] {
+			count++
+		}
+	}
+	if count == 0 {
+		return nil, errors.Errorf("配置 CharsetLinter.meta.TableOptionCharset 错误, 至少应当包含一个允许的 charset")
+	}
+	return &charsetLinter{newBaseLinter(script), meta}, nil
 }
 
-func (l *CharsetLinter) Enter(in ast.Node) (ast.Node, bool) {
+func (l *charsetLinter) Enter(in ast.Node) (ast.Node, bool) {
 	if l.text == "" || in.Text() != "" {
 		l.text = in.Text()
 	}
@@ -45,21 +70,27 @@ func (l *CharsetLinter) Enter(in ast.Node) (ast.Node, bool) {
 	}
 
 	for _, opt := range stmt.Options {
-		if opt.Tp == ast.TableOptionCharset && strings.EqualFold(opt.StrValue, UTF8MB4) {
-			return in, true
+		if opt.Tp == ast.TableOptionCharset {
+			if ok := l.meta.TableOptionCharset[strings.ToLower(opt.StrValue)]; ok {
+				return in, true
+			}
 		}
 	}
-	l.err = linterror.New(l.s, l.text, "table charset error, it should be CHARSET = utf8mb4",
+	l.err = linterror.New(l.s, l.text, "表 charset 错误, 请参见 CharsetLinter 配置的许可的 charset",
 		func(line []byte) bool {
 			return false
 		})
 	return in, true
 }
 
-func (l *CharsetLinter) Leave(in ast.Node) (ast.Node, bool) {
+func (l *charsetLinter) Leave(in ast.Node) (ast.Node, bool) {
 	return in, l.err == nil
 }
 
-func (l *CharsetLinter) Error() error {
+func (l *charsetLinter) Error() error {
 	return l.err
+}
+
+type charsetLinterMeta struct {
+	TableOptionCharset map[string]bool `json:"tableOptionCharset" yaml:"tableOptionCharset"`
 }

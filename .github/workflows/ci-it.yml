@@ -61,10 +61,8 @@ jobs:
         run: make prepare
       - name: Check Go Imports
         run: make check-imports
-      - name: Build erda-cli
-        run: make cli
       - name: Run SQL Lint
-        run: ./bin/erda-cli migrate lint --input=.erda/migrations --lint-config=.erda/migrations/config.yml
+        run: make miglint
       - name: Run Go Lint
         uses: golangci/golangci-lint-action@v2.5.2
         with:

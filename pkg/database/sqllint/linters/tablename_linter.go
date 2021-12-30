@@ -16,28 +16,39 @@ package linters
 
 import (
 	"bytes"
+	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/pingcap/parser/ast"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
-
-	"github.com/erda-project/erda/pkg/swagger/ddlconv"
 )
 
-type TableNameLinter struct {
+type tableNameLinter struct {
 	baseLinter
+	meta tableNameLinterMeta
 }
 
-func NewTableNameLinter(script script.Script) rules.Rule {
-	return &TableNameLinter{newBaseLinter(script)}
+func (hub) TableNameLinter(script script.Script, c sqllint.Config) (sqllint.Rule, error) {
+	var l = tableNameLinter{
+		baseLinter: newBaseLinter(script),
+		meta:       tableNameLinterMeta{},
+	}
+	if err := yaml.Unmarshal(c.Meta, &l.meta); err != nil {
+		return nil, errors.Wrap(err, "解析 TableNameLinter.meta 错误")
+	}
+	if len(l.meta.Patterns) == 0 {
+		return nil, errors.New("TableNameLinter.meta 中没有配置任何表名模式")
+	}
+	return &l, nil
 }
 
-func (l *TableNameLinter) Enter(in ast.Node) (ast.Node, bool) {
+func (l *tableNameLinter) Enter(in ast.Node) (ast.Node, bool) {
 	if l.text == "" || in.Text() != "" {
 		l.text = in.Text()
 	}
@@ -47,45 +58,41 @@ func (l *TableNameLinter) Enter(in ast.Node) (ast.Node, bool) {
 		return in, true // 只有 create stmt 才验证表名
 	}
 
-	name := ddlconv.ExtractCreateName(stmt)
+	name := extractCreateName(stmt)
 	if name == "" {
 		return in, true
 	}
-
-	if compile := regexp.MustCompile(`^[0-9a-z_]{1,}$`); !compile.Match([]byte(name)) {
-		l.err = linterror.New(l.s, l.text, "invalid table name: it cant only contain lowercase English letters, numbers, underscores",
-			func(line []byte) bool {
-				return bytes.Contains(bytes.ToLower(line), bytes.ToLower([]byte(name)))
-			})
-		return in, true
-	}
-
-	if w := name[0]; '0' <= w && w <= '9' {
-		l.err = linterror.New(l.s, l.text, "invalid table name: cat not start with a number",
-			func(line []byte) bool {
-				return bytes.Contains(bytes.ToLower(line), bytes.ToLower([]byte(name)))
-			})
-		return in, true
-	}
-
-	words := strings.Split(name, "_")
-	for _, w := range words {
-		if _, err := strconv.ParseInt(w, 10, 64); w == "" || err == nil {
-			l.err = linterror.New(l.s, l.text, "invalid table name: there at least is one English letter between two underscores",
-				func(line []byte) bool {
-					return bytes.Contains(bytes.ToLower(line), bytes.ToLower([]byte(name)))
-				})
+	for _, pat := range l.meta.Patterns {
+		if ok, _ := regexp.Match(pat, []byte(name)); ok {
 			return in, true
 		}
 	}
+	l.err = linterror.New(l.s, l.text, fmt.Sprintf("不合法的表名, 表名应当符合以下模式中的一个:\n%s", strings.Join(l.meta.Patterns, "\n")),
+		func(line []byte) bool {
+			return bytes.Contains(bytes.ToLower(line), bytes.ToLower([]byte(name)))
+		})
 
 	return in, true
 }
 
-func (l *TableNameLinter) Leave(in ast.Node) (ast.Node, bool) {
+func (l *tableNameLinter) Leave(in ast.Node) (ast.Node, bool) {
 	return in, l.err == nil
 }
 
-func (l *TableNameLinter) Error() error {
+func (l *tableNameLinter) Error() error {
 	return l.err
+}
+
+type tableNameLinterMeta struct {
+	Patterns []string `json:"patterns" yaml:"patterns"`
+}
+
+func extractCreateName(stmt *ast.CreateTableStmt) string {
+	if stmt == nil {
+		return ""
+	}
+	if stmt.Table == nil {
+		return ""
+	}
+	return stmt.Table.Name.String()
 }

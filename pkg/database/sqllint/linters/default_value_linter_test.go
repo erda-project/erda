@@ -20,9 +20,10 @@ import (
 	"github.com/erda-project/erda/pkg/database/sqllint"
 )
 
-func TestNewCompleteInsertLinter(t *testing.T) {
+func TestHub_DefaultValueLinter(t *testing.T) {
 	var config = `
-- name: CompleteInsertLinter
+- name: DefaultValueLinter
+  alias: 默认值校验.created_at
   switchOn: true
   white:
     patterns:
@@ -30,32 +31,34 @@ func TestNewCompleteInsertLinter(t *testing.T) {
     modules: [ ]
     committedAt: [ ]
     filenames: [ ]
-  meta: { }`
+  meta:
+    columnName: created_at
+    defaultValue: CURRENT_TIMESTAMP`
+	var s = script{
+		Name:    "stmt-1",
+		Content: "create table t1 (created_at datetime default '1970-01-01')",
+	}
 	cfg, err := sqllint.LoadConfig([]byte(config))
 	if err != nil {
-		t.Fatal("failed to LoadConfig", err)
-	}
-
-	var s = script{
-		Name:    "insert-1",
-		Content: "insert into t1 \nvalues (1, 2, 3)",
+		t.Fatalf("faield to LoadConfig: %v", err)
 	}
 	linter := sqllint.New(cfg)
-	if err := linter.Input("", s.Name, s.GetContent()); err != nil {
-		t.Fatalf("failed to Input data to linter: %v", err)
+	if err = linter.Input("", s.Name, s.GetContent()); err != nil {
+		t.Fatalf("failed to Input: %v", err)
 	}
 	if len(linter.Errors()[s.Name].Lints) == 0 {
 		t.Fatal("there should be errors")
 	}
 	t.Log(linter.Errors()[s.Name].Lints)
 
-	s.Name = "insert-2"
-	s.Content = "insert into t2 (col1, col2, col3) \nvalues (1, 2, 3)"
+	s.Name = "stmt-2"
+	s.Content = "create table t1 (created_at datetime default CURRENT_TIMESTAMP)"
 	linter = sqllint.New(cfg)
 	if err := linter.Input("", s.Name, s.GetContent()); err != nil {
-		t.Fatalf("failed to Input data to linter: %v", err)
+		t.Fatalf("failed to Input: %v", err)
 	}
-	if len(linter.Errors()[s.Name].Lints) > 0 {
-		t.Fatal("there should be no errors")
+	if lints := linter.Errors()[s.Name].Lints; len(lints) > 0 {
+		t.Log(lints)
+		t.Fatal("there should be no error")
 	}
 }

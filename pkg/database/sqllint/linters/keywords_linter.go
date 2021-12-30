@@ -19,175 +19,35 @@ import (
 	"strings"
 
 	"github.com/pingcap/parser/ast"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 	"github.com/erda-project/erda/pkg/swagger/ddlconv"
 )
 
-var keywords = map[string]bool{
-	"ALL":   true,
-	"ALTER": true,
-	"AND":   true,
-	"ANY":   true,
-	"AS":    true,
-
-	"ENABLE":  true,
-	"DISABLE": true,
-
-	"ASC":     true,
-	"BETWEEN": true,
-	"BY":      true,
-	"CASE":    true,
-	"CAST":    true,
-
-	"CHECK":      true,
-	"CONSTRAINT": true,
-	"CREATE":     true,
-	"DATABASE":   true,
-	"DEFAULT":    true,
-	"COLUMN":     true,
-	"TABLESPACE": true,
-	"PROCEDURE":  true,
-	"FUNCTION":   true,
-
-	"DELETE":   true,
-	"DESC":     true,
-	"DISTINCT": true,
-	"DROP":     true,
-	"ELSE":     true,
-	"EXPLAIN":  true,
-	"EXCEPT":   true,
-
-	"END":     true,
-	"ESCAPE":  true,
-	"EXISTS":  true,
-	"FOR":     true,
-	"FOREIGN": true,
-
-	"FROM":   true,
-	"FULL":   true,
-	"GROUP":  true,
-	"HAVING": true,
-	"IN":     true,
-
-	"INDEX":     true,
-	"INNER":     true,
-	"INSERT":    true,
-	"INTERSECT": true,
-	"INTERVAL":  true,
-
-	"INTO": true,
-	"IS":   true,
-	"JOIN": true,
-	"KEY":  true,
-	"LEFT": true,
-
-	"LIKE":  true,
-	"LOCK":  true,
-	"MINUS": true,
-	"NOT":   true,
-
-	"NULL":  true,
-	"ON":    true,
-	"OR":    true,
-	"ORDER": true,
-	"OUTER": true,
-
-	"PRIMARY":    true,
-	"REFERENCES": true,
-	"RIGHT":      true,
-	"SCHEMA":     true,
-	"SELECT":     true,
-
-	"SET":      true,
-	"SOME":     true,
-	"TABLE":    true,
-	"THEN":     true,
-	"TRUNCATE": true,
-
-	"UNION":    true,
-	"UNIQUE":   true,
-	"UPDATE":   true,
-	"VALUES":   true,
-	"VIEW":     true,
-	"SEQUENCE": true,
-	"TRIGGER":  true,
-	"USER":     true,
-
-	"WHEN":  true,
-	"WHERE": true,
-	"XOR":   true,
-
-	"OVER": true,
-	"TO":   true,
-	"USE":  true,
-
-	"REPLACE": true,
-
-	"COMMENT": true,
-	"COMPUTE": true,
-	"WITH":    true,
-	"GRANT":   true,
-	"REVOKE":  true,
-
-	// mysql procedure
-	"WHILE":   true,
-	"DO":      true,
-	"DECLARE": true,
-	"LOOP":    true,
-	"LEAVE":   true,
-	"ITERATE": true,
-	"REPEAT":  true,
-	"UNTIL":   true,
-	"OPEN":    true,
-	"CLOSE":   true,
-	"CURSOR":  true,
-	"FETCH":   true,
-	"OUT":     true,
-	"INOUT":   true,
-
-	"LIMIT": true,
-
-	"DUAL":  true,
-	"FALSE": true,
-	"IF":    true,
-	"KILL":  true,
-
-	"TRUE":     true,
-	"BINARY":   true,
-	"SHOW":     true,
-	"CACHE":    true,
-	"ANALYZE":  true,
-	"OPTIMIZE": true,
-	"ROW":      true,
-	"BEGIN":    true,
-	"DIV":      true,
-	"MERGE":    true,
-
-	// for oceanbase & mysql 5.7
-	"PARTITION": true,
-
-	"CONTINUE":  true,
-	"UNDO":      true,
-	"SQLSTATE":  true,
-	"CONDITION": true,
-	"MOD":       true,
-	"CONTAINS":  true,
-	"RLIKE":     true,
-	"FULLTEXT":  true,
-}
-
-type KeywordsLinter struct {
+type keywordsLinter struct {
 	baseLinter
+	meta map[string]bool
 }
 
-func NewKeywordsLinter(script script.Script) rules.Rule {
-	return &KeywordsLinter{newBaseLinter(script)}
+func (hub) KeywordsLinter(script script.Script, c sqllint.Config) (sqllint.Rule, error) {
+	var l = keywordsLinter{
+		baseLinter: newBaseLinter(script),
+		meta:       make(map[string]bool),
+	}
+	if err := yaml.Unmarshal(c.Meta, &l.meta); err != nil {
+		return nil, errors.Wrap(err, "解析 KeywordsLinter.meta 错误")
+	}
+	for k, v := range l.meta {
+		l.meta[strings.ToUpper(k)] = v
+	}
+	return &l, nil
 }
 
-func (l *KeywordsLinter) Enter(in ast.Node) (ast.Node, bool) {
+func (l *keywordsLinter) Enter(in ast.Node) (ast.Node, bool) {
 	if l.text == "" || in.Text() != "" {
 		l.text = in.Text()
 	}
@@ -198,7 +58,7 @@ func (l *KeywordsLinter) Enter(in ast.Node) (ast.Node, bool) {
 		if name == "" {
 			return in, false
 		}
-		if _, ok := keywords[strings.ToUpper(name)]; ok {
+		if v, ok := l.meta[strings.ToUpper(name)]; ok && v {
 			l.err = linterror.New(l.s, l.text, "invalid table name: can not use MySQL keywords to be table name",
 				func(_ []byte) bool {
 					return false
@@ -210,7 +70,7 @@ func (l *KeywordsLinter) Enter(in ast.Node) (ast.Node, bool) {
 		if name == "" {
 			return in, false
 		}
-		if _, ok := keywords[strings.ToUpper(name)]; ok {
+		if v, ok := l.meta[strings.ToUpper(name)]; ok && v {
 			l.err = linterror.New(l.s, l.text, "invalid column name: can not use MySQL keywords to be column name",
 				func(line []byte) bool {
 					return bytes.Contains(bytes.ToLower(line), bytes.ToLower([]byte(name)))
@@ -224,10 +84,10 @@ func (l *KeywordsLinter) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-func (l *KeywordsLinter) Leave(in ast.Node) (ast.Node, bool) {
+func (l *keywordsLinter) Leave(in ast.Node) (ast.Node, bool) {
 	return in, l.err == nil
 }
 
-func (l *KeywordsLinter) Error() error {
+func (l *keywordsLinter) Error() error {
 	return l.err
 }

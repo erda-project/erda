@@ -18,8 +18,14 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
-	"github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
+
+const varcharLengthLinterConifg = `# varchar 长度校验
+- name: VarcharLengthLinter
+  switch: on
+  white:
+    patterns:
+      - ".*-base$"`
 
 const varcharLengthLinterSQL = `
 create table some_table (
@@ -28,8 +34,12 @@ create table some_table (
 `
 
 func TestNewVarcharLengthLinter(t *testing.T) {
-	linter := sqllint.New(linters.NewVarcharLengthLinter)
-	if err := linter.Input([]byte(varcharLengthLinterSQL), "varcharLengthLinterSQL"); err != nil {
+	cfg, err := sqllint.LoadConfig([]byte(varcharLengthLinterConifg))
+	if err != nil {
+		t.Fatal("failed to LoadConfig", err)
+	}
+	linter := sqllint.New(cfg)
+	if err := linter.Input("", "varcharLengthLinterSQL", []byte(varcharLengthLinterSQL)); err != nil {
 		t.Error(err)
 	}
 	errors := linter.Errors()

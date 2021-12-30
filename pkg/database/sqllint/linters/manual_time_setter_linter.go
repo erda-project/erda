@@ -16,47 +16,61 @@ package linters
 
 import (
 	"bytes"
-	"strings"
+	"fmt"
 
 	"github.com/pingcap/parser/ast"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 )
 
-// ManualTimeSetterLinter lints if the user manually set the column created_at, updated_at
-type ManualTimeSetterLinter struct {
+var (
+	createdAt = "created_at"
+	updatedAt = "updated_at"
+)
+
+// manualTimeSetterLinter lints if the user manually set the column created_at, updated_at
+type manualTimeSetterLinter struct {
 	baseLinter
+	meta manualTimeSetterLinterMeta
 }
 
-// NewManualTimeSetterLinter returns a ManualTimeSetterLinter
-// ManualTimeSetterLinter lints if the user manually set the column created_at, updated_at
-func NewManualTimeSetterLinter(script script.Script) rules.Rule {
-	return &ManualTimeSetterLinter{newBaseLinter(script)}
+// ManualTimeSetterLinter returns a manualTimeSetterLinter
+// manualTimeSetterLinter lints if the user manually set the column created_at, updated_at
+func (hub) ManualTimeSetterLinter(script script.Script, c sqllint.Config) (sqllint.Rule, error) {
+	var l = manualTimeSetterLinter{
+		baseLinter: newBaseLinter(script),
+	}
+	if err := yaml.Unmarshal(c.Meta, &l.meta); err != nil {
+		return nil, errors.Wrap(err, "解析 ManualTimeSetterLinter.meta 错误")
+	}
+	return &l, nil
 }
 
-func (l *ManualTimeSetterLinter) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+func (l *manualTimeSetterLinter) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 	if l.text == "" || in.Text() != "" {
 		l.text = in.Text()
 	}
 
 	getLint := func(line []byte) bool {
-		return bytes.Contains(line, []byte(createAt)) || bytes.Contains(line, []byte(updatedAt))
+		return bytes.Contains(line, []byte(createdAt)) || bytes.Contains(line, []byte(l.meta.ColumnName))
 	}
 
 	switch stmt := in.(type) {
 	case *ast.InsertStmt:
 		for _, col := range stmt.Columns {
-			if colName := col.Name.String(); strings.EqualFold(colName, createAt) || strings.EqualFold(colName, updatedAt) {
-				l.err = linterror.New(l.s, l.text, "can not set created_at or updated_at in INSERT statement", getLint)
+			if col.Name.String() == l.meta.ColumnName {
+				l.err = linterror.New(l.s, l.text, fmt.Sprintf("禁止手动为 %s 字段插入时间值", l.meta.ColumnName), getLint)
 				return in, true
 			}
 		}
 	case *ast.UpdateStmt:
 		for _, col := range stmt.List {
-			if colName := col.Column.String(); strings.EqualFold(colName, createAt) || strings.EqualFold(colName, updatedAt) {
-				l.err = linterror.New(l.s, l.text, "can not set created_at or updated_at in UPDATE statement", getLint)
+			if col.Column.String() == l.meta.ColumnName {
+				l.err = linterror.New(l.s, l.text, fmt.Sprintf("禁止手动为 %s 字段插入时间值", l.meta.ColumnName), getLint)
 				return in, true
 			}
 		}
@@ -67,6 +81,10 @@ func (l *ManualTimeSetterLinter) Enter(in ast.Node) (out ast.Node, skipChildren 
 	return in, true
 }
 
-func (l *ManualTimeSetterLinter) Leave(in ast.Node) (out ast.Node, ok bool) {
+func (l *manualTimeSetterLinter) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
+}
+
+type manualTimeSetterLinterMeta struct {
+	ColumnName string `json:"columnName" yaml:"columnName"`
 }
