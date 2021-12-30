@@ -243,11 +243,9 @@ services:
       - port: 8443
         protocol: "TCP"
         l4_protocol: "TCP"
-        expose: true
       - port: 8080
         protocol: "TCP"
         l4_protocol: "TCP"
-        expose: true
       - port: 7080
         protocol: "TCP"
         l4_protocol: "TCP"
@@ -270,8 +268,8 @@ services:
         path: "/health"
         duration: 120
     binds:
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/monitor-injector.pem:/etc/server/certs/monitor-injector.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/monitor-injector-key.pem:/etc/server/certs/monitor-injector-key.pem:ro"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/monitor-agent-injector.pem:/etc/server/certs/monitor-agent-injector.pem:ro"
+      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/monitor-agent-injector-key.pem:/etc/server/certs/monitor-agent-injector-key.pem:ro"
   collector:
     labels:
       cpu_bound: "true"
