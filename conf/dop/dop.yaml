@@ -51,6 +51,7 @@ erda.orchestrator.addon.mysql-client:
 
 erda.core.dop.autotest.testplan:
 erda.dop.projecthome:
+erda.dop.contribution:
 
 # component-protocol framework
 component-protocol:

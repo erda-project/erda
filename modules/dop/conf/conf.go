@@ -72,6 +72,7 @@ type Conf struct {
 
 	ProjectStatsCacheCron       string `env:"PROJECT_STATS_CACHE_CRON" default:"0 0 1 * * ?"`
 	UpdateIssueExpiryStatusCron string `env:"UPDATE_ISSUE_EXPIRY_STATUS_CRON" default:"0 0 * * *"`
+	UpdateMemberActiveRankCron  string `env:"UPDATE_MEMBER_ACTIVE_RANK_CRON" default:"0 0 * * *"`
 }
 
 var cfg Conf
@@ -249,4 +250,8 @@ func TestFileRecordPurgeCycleDay() int {
 
 func UpdateIssueExpiryStatusCron() string {
 	return cfg.UpdateIssueExpiryStatusCron
+}
+
+func UpdateMemberActiveRankCron() string {
+	return cfg.UpdateMemberActiveRankCron
 }

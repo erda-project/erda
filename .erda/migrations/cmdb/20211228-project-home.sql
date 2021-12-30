@@ -1,4 +1,4 @@
-CREATE TABLE `erda_project_home` (
+CREATE TABLE IF NOT EXISTS `erda_project_home` (
     `id` varchar(36) NOT NULL COMMENT 'primary key',
     `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
     `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',
