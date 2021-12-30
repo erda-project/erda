@@ -46,7 +46,7 @@ type Values struct {
 }
 
 type Data struct {
-	HidenSave  bool        `json:"hidenSave"`
+	HideSave   bool        `json:"hideSave"`
 	Conditions []Condition `json:"conditions,omitempty"`
 }
 
