@@ -19,6 +19,11 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
+
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 // ResourceType release可管理的资源类型
@@ -238,21 +243,22 @@ type ReleaseGetResponse struct {
 
 // ReleaseGetResponseData release 详情API实际返回数据
 type ReleaseGetResponseData struct {
-	ReleaseID              string                      `json:"releaseId"`
-	ReleaseName            string                      `json:"releaseName"`
-	Diceyml                string                      `json:"diceyml"`
-	Desc                   string                      `json:"desc,omitempty"`
-	Addon                  string                      `json:"addon,omitempty"`
-	Changelog              string                      `json:"changelog,omitempty"`
-	IsStable               bool                        `json:"isStable"`
-	IsFormal               bool                        `json:"isFormal"`
-	IsProjectRelease       bool                        `json:"isProjectRelease"`
-	ApplicationReleaseList []ApplicationReleaseSummary `json:"applicationReleaseList,omitempty"`
-	Resources              []ReleaseResource           `json:"resources,omitempty"`
-	Images                 []string                    `json:"images,omitempty"`
-	Labels                 map[string]string           `json:"labels,omitempty"`
-	Tags                   string                      `json:"tags,omitempty"`
-	Version                string                      `json:"version,omitempty"`
+	ReleaseID              string                       `json:"releaseId"`
+	ReleaseName            string                       `json:"releaseName"`
+	Diceyml                string                       `json:"diceyml"`
+	Desc                   string                       `json:"desc,omitempty"`
+	Addon                  string                       `json:"addon,omitempty"`
+	Changelog              string                       `json:"changelog,omitempty"`
+	IsStable               bool                         `json:"isStable"`
+	IsFormal               bool                         `json:"isFormal"`
+	IsProjectRelease       bool                         `json:"isProjectRelease"`
+	ApplicationReleaseList []*ApplicationReleaseSummary `json:"applicationReleaseList,omitempty"`
+	Resources              []ReleaseResource            `json:"resources,omitempty"`
+	Images                 []string                     `json:"images,omitempty"`
+	ServiceImages          []*ServiceImagePair          `json:"serviceImages"`
+	Labels                 map[string]string            `json:"labels,omitempty"`
+	Tags                   string                       `json:"tags,omitempty"`
+	Version                string                       `json:"version,omitempty"`
 
 	// CrossCluster 是否可以跨集群
 	CrossCluster bool `json:"crossCluster,omitempty"`
@@ -284,13 +290,67 @@ type ReleaseGetResponseData struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
+func (r *ReleaseGetResponseData) ReLoadImages() error {
+	for _, app := range r.ApplicationReleaseList {
+		if err := app.ReLoadImages(); err != nil {
+			return err
+		}
+	}
+
+	if r.Diceyml == "" {
+		return nil
+	}
+	var obj *diceyml.Object
+	if err := yaml.Unmarshal([]byte(r.Diceyml), &obj); err != nil {
+		return errors.Wrap(err, "invalid release file")
+	}
+	r.Images = nil
+	r.ServiceImages = nil
+	for name, service := range obj.Services {
+		r.Images = append(r.Images, service.Image)
+		r.ServiceImages = append(r.ServiceImages, &ServiceImagePair{
+			ServiceName: name,
+			Image:       service.Image,
+		})
+	}
+
+	return nil
+}
+
+type ServiceImagePair struct {
+	ServiceName string `json:"name"`
+	Image       string `json:"image"`
+}
+
 type ApplicationReleaseSummary struct {
-	ReleaseID       string `json:"releaseID,omitempty"`
-	ReleaseName     string `json:"releaseName,omitempty"`
-	Version         string `json:"version,omitempty"`
-	ApplicationID   int64  `json:"applicationID"`
-	ApplicationName string `json:"applicationName,omitempty"`
-	CreatedAt       string `json:"createdAt,omitempty"`
+	ReleaseID       string              `json:"releaseID,omitempty"`
+	ReleaseName     string              `json:"releaseName,omitempty"`
+	Version         string              `json:"version,omitempty"`
+	ApplicationID   int64               `json:"applicationID"`
+	ApplicationName string              `json:"applicationName,omitempty"`
+	Services        []*ServiceImagePair `json:"services"`
+	CreatedAt       string              `json:"createdAt,omitempty"`
+	DiceYml         string              `json:"-"`
+}
+
+func (r *ApplicationReleaseSummary) ReLoadImages() error {
+	if r.DiceYml == "" {
+		return errors.Errorf("invalid release file: it is empty, applicationID: %v, applicationName: %s",
+			r.ApplicationID, r.ApplicationName)
+	}
+	var obj *diceyml.Object
+	if err := yaml.Unmarshal([]byte(r.DiceYml), &obj); err != nil {
+		return errors.Wrapf(err, "invalid release file, applicationID: %v, applicationName: %s",
+			r.ApplicationID, r.ApplicationName)
+	}
+	r.Services = nil
+	for name, service := range obj.Services {
+		r.Services = append(r.Services, &ServiceImagePair{
+			ServiceName: name,
+			Image:       service.Image,
+		})
+	}
+	return nil
 }
 
 // ReleaseListRequest release列表 API(GET /api/releases)使用
