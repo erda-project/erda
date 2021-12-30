@@ -58,11 +58,14 @@ zh:
   AppDeployCenter: "部署中心"
   AppModeLIBRARY: "库"
   AppModeBIGDATA: "大数据"
+  AppModeMOBILE: "移动应用"
+  AppModePROJECTSERVICE: "项目应用"
   AppModeSERVICE: "业务"
   UnreadMessages: "未读消息"
   Tickets: "工单"
   ApproveRequest: "审批"
   Activities: "动态"
+  ReachLimit: "达到上限"
 
 en:
   IssueExpired: "Expired"
@@ -98,8 +101,11 @@ en:
   AppModeLIBRARY: "LIBRARY"
   AppModeBIGDATA: "BIGDATA"
   AppModeSERVICE: "SERVICE"
+  AppModeMOBILE: "MOBILE"
+  AppModePROJECTSERVICE: "PROJECT APP"
   UnreadMessages: "Unread messages"
   Tickets: "Tickets"
   ApproveRequest: "Approve request"
   Activities: "Activities"
+  ReachLimit: "Reach Limit"
 

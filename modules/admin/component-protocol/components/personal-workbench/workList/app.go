@@ -138,25 +138,25 @@ func (l *WorkList) GenAppColumnInfo(app apistructs.AppWorkBenchItem) (columns ma
 			},
 		},
 		// API设计
-		{
-			ID:   strconv.FormatUint(app.ID, 10),
-			Icon: common.IconAppApiDesign,
-			Tip:  l.sdk.I18n(i18n.I18nKeyAppApiDesign),
-			Operations: map[cptype.OperationKey]cptype.Operation{
-				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
-					WithSkipRender(true).
-					WithServerDataPtr(list.OpItemClickGotoServerData{
-						OpItemBasicServerData: list.OpItemBasicServerData{
-							Params: map[string]interface{}{
-								common.OpKeyProjectID: app.ProjectID,
-								common.OpKeyAppID:     app.ID,
-							},
-							Target: common.OpValTargetAppApiDesign,
-						},
-					}).
-					Build(),
-			},
-		},
+		//{
+		//	ID:   strconv.FormatUint(app.ID, 10),
+		//	Icon: common.IconAppApiDesign,
+		//	Tip:  l.sdk.I18n(i18n.I18nKeyAppApiDesign),
+		//	Operations: map[cptype.OperationKey]cptype.Operation{
+		//		list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
+		//			WithSkipRender(true).
+		//			WithServerDataPtr(list.OpItemClickGotoServerData{
+		//				OpItemBasicServerData: list.OpItemBasicServerData{
+		//					Params: map[string]interface{}{
+		//						common.OpKeyProjectID: app.ProjectID,
+		//						common.OpKeyAppID:     app.ID,
+		//					},
+		//					Target: common.OpValTargetAppApiDesign,
+		//				},
+		//			}).
+		//			Build(),
+		//	},
+		//},
 		// 部署中心
 		{
 			ID:   strconv.FormatUint(app.ID, 10),

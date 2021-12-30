@@ -119,14 +119,14 @@ func (wc *WorkCards) getAppTextMeta(sdk *cptype.SDK, app apistructs.AppWorkBench
 	metas = []cardlist.TextMeta{
 		{
 			MainText: float64(app.AppOpenMrNum),
-			SubText:  "MR " + sdk.I18n("Count"),
+			SubText:  "MR ",
 			Operations: map[cptype.OperationKey]cptype.Operation{"clickGoto": {
 				ServerData: &mrData,
 			}},
 		},
 		{
 			MainText: float64(app.AppRuntimeNum),
-			SubText:  "Runtime " + sdk.I18n("Count"),
+			SubText:  "Runtime ",
 			Operations: map[cptype.OperationKey]cptype.Operation{"clickGoto": {
 				ServerData: &runtimeData,
 			}},
@@ -287,15 +287,15 @@ func (wc *WorkCards) getAppIconOps(sdk *cptype.SDK, app apistructs.AppWorkBenchI
 		},
 	}
 	pipelineServerData := make(cptype.OpServerData)
-	apiDesignServerData := make(cptype.OpServerData)
+	//apiDesignServerData := make(cptype.OpServerData)
 	deployData := make(cptype.OpServerData)
 	repositoryServerData := make(cptype.OpServerData)
 	common.Transfer(gotoData, &pipelineServerData)
-	common.Transfer(gotoData, &apiDesignServerData)
+	//common.Transfer(gotoData, &apiDesignServerData)
 	common.Transfer(gotoData, &deployData)
 	common.Transfer(gotoData, &repositoryServerData)
 	pipelineServerData["target"] = "pipelineRoot"
-	apiDesignServerData["target"] = "appApiDesign"
+	//apiDesignServerData["target"] = "appApiDesign"
 	deployData["target"] = "deploy"
 	repositoryServerData["target"] = "repo"
 	iops = []cardlist.IconOperations{
@@ -311,12 +311,12 @@ func (wc *WorkCards) getAppIconOps(sdk *cptype.SDK, app apistructs.AppWorkBenchI
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				"clickGoto": {ServerData: &pipelineServerData},
 			}},
-		{
-			Icon: "apisheji",
-			Tip:  sdk.I18n("api design"),
-			Operations: map[cptype.OperationKey]cptype.Operation{
-				"clickGoto": {ServerData: &apiDesignServerData},
-			}},
+		//{
+		//	Icon: "apisheji",
+		//	Tip:  sdk.I18n("api design"),
+		//	Operations: map[cptype.OperationKey]cptype.Operation{
+		//		"clickGoto": {ServerData: &apiDesignServerData},
+		//	}},
 		{
 			Icon: "bushuzhongxin",
 			Tip:  sdk.I18n("deploy center"),
