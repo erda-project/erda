@@ -82,10 +82,11 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
-		"%s "+
+		"%s ",
 		pathField,
 		common.GetDataSourceNames(t.Layer),
-		common.BuildLayerPathFilterSql(t.LayerPath, "$layer_path", t.Layer))
+		common.BuildLayerPathFilterSql(t.LayerPath, "$layer_path", t.Layer),
+	)
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(t.StartTime, 10),
 		End:       strconv.FormatInt(t.EndTime, 10),
@@ -99,12 +100,13 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 	table.Total = response.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
 
 	// query list items
+	// todo
 	statement = fmt.Sprintf("SELECT "+
-		"%s as transactionName,"+
-		"sum(elapsed_count::field) AS reqCount,"+
-		"count(error::tag) AS errorCount,"+
-		"sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0)) AS slowCount,"+
-		"format_duration(avg(elapsed_mean::field),'',2) AS avgDuration "+
+		"%s,"+
+		"sum(elapsed_count::field),"+
+		"count(error::tag),"+
+		"sum(if(gt(elapsed_mean::field, '300000000'),elapsed_count::field,0)),"+
+		"format_duration(avg(elapsed_mean::field),'',2) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
@@ -116,7 +118,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		common.GetDataSourceNames(t.Layer),
 		common.BuildLayerPathFilterSql(t.LayerPath, "$layer_path", t.Layer),
 		pathField,
-		common.GetSortSql(TransactionTableSortFieldSqlMap, "sum(elapsed_count::field) DESC"),
+		common.GetSortSql(TransactionTableSortFieldSqlMap, "sum(elapsed_count::field) DESC", t.OrderBy...),
 		t.PageSize,
 		(t.PageNo-1)*t.PageSize,
 	)

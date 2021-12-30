@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/ahmetb/go-linq/v3"
 
@@ -44,18 +46,19 @@ func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, 
 		Metric:    p.Metric,
 	}
 
-	data, err := chart.Selector(chartType.String(), baseChart, ctx)
+	data, err := chart.Selector(strings.ToLower(chartType.String()), baseChart, ctx)
 	if err != nil {
 		return nil, err
 	}
+	layout := "2006-01-02 15:04:05"
 
 	// convert model
 	var xAxis []interface{}
 	linq.From(data.View).
-		Select(func(i interface{}) interface{} { return i.(*pb.Chart).Timestamp }).
+		Select(func(i interface{}) interface{} { return time.Unix(i.(*pb.Chart).Timestamp/1e9, 10).Format(layout) }).
 		ToSlice(&xAxis)
 	dimension := linq.From(data.View).
-		Select(func(i interface{}) interface{} { return i.(*pb.Chart).Timestamp }).
+		Select(func(i interface{}) interface{} { return i.(*pb.Chart).Dimension }).
 		First()
 	if dimension == nil {
 		dimension = data.Type
@@ -107,6 +110,8 @@ func (p *provider) GetTable(ctx context.Context, tableType table.TableType, star
 		LayerPath: path,
 		OrderBy:   orderby,
 		Metric:    p.Metric,
+		PageNo:    pageNo,
+		PageSize:  pageSize,
 	}
 
 	data, err := table.GetTable(ctx, tableType, baseBuilder)

@@ -99,7 +99,7 @@ func FormatFloatWith2Digits(value float64) float64 {
 	return math.DecimalPlacesWithDigitsNumber(value, 2)
 }
 
-func GetSortSql(fieldSqlMap map[string]string, defaultOrder string, sorts ...Sort) string {
+func GetSortSql(fieldSqlMap map[string]string, defaultOrder string, sorts ...*Sort) string {
 	var buf bytes.Buffer
 	for _, sort := range sorts {
 		if _, ok := fieldSqlMap[sort.FieldKey]; !ok {
