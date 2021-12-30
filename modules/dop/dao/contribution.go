@@ -100,7 +100,7 @@ func (db *DBClient) CreateOrUpdateMemberActiveRank(r *MemberActiveScore) error {
 		fields["quality_score"] = convertScore(int64(res.QualityScore) + r.QualityScore)
 	}
 	if r.QualityScore < 0 {
-		fields["total_score"] = convertScore(int64(res.TotalScore) + r.QualityScore)
+		fields["total_score"] = res.IssueScore + res.CommitScore + convertScore(int64(res.QualityScore)+r.QualityScore)
 	} else {
 		fields["total_score"] = res.TotalScore + r.IssueScore + r.CommitScore + uint64(r.QualityScore)
 	}
