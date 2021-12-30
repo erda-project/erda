@@ -17,6 +17,7 @@ package auth
 import (
 	"fmt"
 	"net/http"
+	"net/textproto"
 	"strconv"
 	"time"
 
@@ -116,15 +117,16 @@ func (u *User) get(req *http.Request, state GetUserState) (interface{}, AuthResu
 		if state == GotToken {
 			return nil, AuthResult{AuthSucc, ""}
 		}
-		// cookieExtract := req.Header[textproto.CanonicalMIMEHeaderKey("cookie")]
+		cookieExtract := req.Header[textproto.CanonicalMIMEHeaderKey("cookie")]
 		var info ucauth.UserInfo
 		var err error
-		// useToken, _ := strconv.ParseBool(req.Header.Get("USE-TOKEN"))
+		//useToken, _ := strconv.ParseBool(req.Header.Get("USE-TOKEN"))
 		// if len(cookieExtract) > 0 && !useToken {
-		// 	cookie := map[string][]string{"cookie": cookieExtract}
-		// 	info, err = u.ucUserAuth.GetCurrentUser(cookie)
+		cookie := map[string][]string{"cookie": cookieExtract}
+		user, err := u.ucUserAuth.GetCurrentUser(cookie)
 		// } else {
 		info, err = u.ucUserAuth.GetUserInfo(u.token)
+		info.LastLoginAt = user.LastLoginAt
 		// }
 		if err != nil {
 			return nil, AuthResult{Unauthed, err.Error()}

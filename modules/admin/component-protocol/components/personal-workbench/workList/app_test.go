@@ -45,3 +45,29 @@ func TestWorkList_GenAppKvInfo(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkList_GenAppColumnInfo(t *testing.T) {
+	type fields struct {
+	}
+	type args struct {
+		app apistructs.AppWorkBenchItem
+	}
+	tests := []struct {
+		name        string
+		fields      fields
+		args        args
+		wantColumns map[string]interface{}
+	}{
+		// TODO: Add test cases.
+		{
+			name: "case1",
+			args: args{app: apistructs.AppWorkBenchItem{}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &WorkList{sdk: defaultSDK}
+			l.GenAppColumnInfo(tt.args.app)
+		})
+	}
+}

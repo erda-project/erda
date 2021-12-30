@@ -50,15 +50,14 @@ func (p *provider) GetUserInfo(rw http.ResponseWriter, r *http.Request) {
 	}{
 		Success: true,
 		Data: map[string]interface{}{
-			"id":          info.ID,
-			"name":        info.UserName,
-			"nick":        info.NickName,
-			"avatar":      info.AvatarUrl,
-			"phone":       info.Phone,
-			"email":       info.Email,
-			"token":       info.Token,
-			"lastLoginAt": info.LastLoginAt,
-			"userType":    "new",
+			"id":       info.ID,
+			"name":     info.UserName,
+			"nick":     info.NickName,
+			"avatar":   info.AvatarUrl,
+			"phone":    info.Phone,
+			"email":    info.Email,
+			"token":    info.Token,
+			"userType": "new",
 		},
 	})
 }

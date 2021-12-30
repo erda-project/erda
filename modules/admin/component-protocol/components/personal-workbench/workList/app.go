@@ -93,13 +93,13 @@ func (l *WorkList) GenAppKvInfo(app apistructs.AppWorkBenchItem) (kvs []list.KvI
 	return
 }
 
-func (l *WorkList) GenAppColumnInfo(app apistructs.AppWorkBenchItem) (columns map[string]interface{}) {
+func (l *WorkList) GenAppColumnInfo(item apistructs.AppWorkBenchItem) (columns map[string]interface{}) {
 	var hovers []list.KvInfo
 	columns = make(map[string]interface{})
 	hovers = []list.KvInfo{
 		// 代码仓库
 		{
-			ID:   strconv.FormatUint(app.ID, 10),
+			ID:   strconv.FormatUint(item.ID, 10),
 			Icon: common.IconRepo,
 			Tip:  l.sdk.I18n(i18n.I18nKeyGitRepo),
 			Operations: map[cptype.OperationKey]cptype.Operation{
@@ -108,8 +108,8 @@ func (l *WorkList) GenAppColumnInfo(app apistructs.AppWorkBenchItem) (columns ma
 					WithServerDataPtr(list.OpItemClickGotoServerData{
 						OpItemBasicServerData: list.OpItemBasicServerData{
 							Params: map[string]interface{}{
-								common.OpKeyProjectID: app.ProjectID,
-								common.OpKeyAppID:     app.ID,
+								common.OpKeyProjectID: item.ProjectID,
+								common.OpKeyAppID:     item.ID,
 							},
 							Target: common.OpValTargetRepo,
 						},
@@ -119,7 +119,7 @@ func (l *WorkList) GenAppColumnInfo(app apistructs.AppWorkBenchItem) (columns ma
 		},
 		// 流水线
 		{
-			ID:   strconv.FormatUint(app.ID, 10),
+			ID:   strconv.FormatUint(item.ID, 10),
 			Icon: common.IconPipeline,
 			Tip:  l.sdk.I18n(i18n.I18nKeyPipeline),
 			Operations: map[cptype.OperationKey]cptype.Operation{
@@ -128,8 +128,8 @@ func (l *WorkList) GenAppColumnInfo(app apistructs.AppWorkBenchItem) (columns ma
 					WithServerDataPtr(list.OpItemClickGotoServerData{
 						OpItemBasicServerData: list.OpItemBasicServerData{
 							Params: map[string]interface{}{
-								common.OpKeyProjectID: app.ProjectID,
-								common.OpKeyAppID:     app.ID,
+								common.OpKeyProjectID: item.ProjectID,
+								common.OpKeyAppID:     item.ID,
 							},
 							Target: common.OpValTargetPipelineRoot,
 						},
@@ -138,28 +138,28 @@ func (l *WorkList) GenAppColumnInfo(app apistructs.AppWorkBenchItem) (columns ma
 			},
 		},
 		// API设计
-		{
-			ID:   strconv.FormatUint(app.ID, 10),
-			Icon: common.IconAppApiDesign,
-			Tip:  l.sdk.I18n(i18n.I18nKeyAppApiDesign),
-			Operations: map[cptype.OperationKey]cptype.Operation{
-				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
-					WithSkipRender(true).
-					WithServerDataPtr(list.OpItemClickGotoServerData{
-						OpItemBasicServerData: list.OpItemBasicServerData{
-							Params: map[string]interface{}{
-								common.OpKeyProjectID: app.ProjectID,
-								common.OpKeyAppID:     app.ID,
-							},
-							Target: common.OpValTargetAppApiDesign,
-						},
-					}).
-					Build(),
-			},
-		},
+		//{
+		//	ID:   strconv.FormatUint(app.ID, 10),
+		//	Icon: common.IconAppApiDesign,
+		//	Tip:  l.sdk.I18n(i18n.I18nKeyAppApiDesign),
+		//	Operations: map[cptype.OperationKey]cptype.Operation{
+		//		list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
+		//			WithSkipRender(true).
+		//			WithServerDataPtr(list.OpItemClickGotoServerData{
+		//				OpItemBasicServerData: list.OpItemBasicServerData{
+		//					Params: map[string]interface{}{
+		//						common.OpKeyProjectID: app.ProjectID,
+		//						common.OpKeyAppID:     app.ID,
+		//					},
+		//					Target: common.OpValTargetAppApiDesign,
+		//				},
+		//			}).
+		//			Build(),
+		//	},
+		//},
 		// 部署中心
 		{
-			ID:   strconv.FormatUint(app.ID, 10),
+			ID:   strconv.FormatUint(item.ID, 10),
 			Icon: common.IconAppDeployCenter,
 			Tip:  l.sdk.I18n(i18n.I18nKeyAppDeployCenter),
 			Operations: map[cptype.OperationKey]cptype.Operation{
@@ -168,8 +168,8 @@ func (l *WorkList) GenAppColumnInfo(app apistructs.AppWorkBenchItem) (columns ma
 					WithServerDataPtr(list.OpItemClickGotoServerData{
 						OpItemBasicServerData: list.OpItemBasicServerData{
 							Params: map[string]interface{}{
-								common.OpKeyProjectID: app.ProjectID,
-								common.OpKeyAppID:     app.ID,
+								common.OpKeyProjectID: item.ProjectID,
+								common.OpKeyAppID:     item.ID,
 							},
 							Target: common.OpValTargetAppDeploy,
 						},
