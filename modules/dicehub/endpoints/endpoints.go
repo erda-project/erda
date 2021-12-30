@@ -135,6 +135,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/releases", Method: http.MethodGet, Handler: e.ListRelease},
 		{Path: "/api/releases/actions/get-name", Method: http.MethodGet, Handler: e.ListReleaseName},
 		{Path: "/api/releases/actions/get-latest", Method: http.MethodGet, Handler: e.GetLatestReleases},
+		{Path: "/api/releases/actions/check-version", Method: http.MethodGet, Handler: e.CheckVersion},
 
 		{Path: "/gc", Method: http.MethodPost, Handler: e.ReleaseGC},
 

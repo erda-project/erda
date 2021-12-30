@@ -66,16 +66,16 @@ func (f *ComponentReleaseFilter) InitComponent(ctx context.Context) {
 	f.bdl = bdl
 }
 
-func (f *ComponentReleaseFilter) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (f *ComponentReleaseFilter) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(component.State)
+	data, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &state); err != nil {
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	f.State = state
@@ -83,38 +83,38 @@ func (f *ComponentReleaseFilter) GenComponentState(component *cptype.Component) 
 }
 
 func (f *ComponentReleaseFilter) DecodeURLQuery() error {
-	query, ok := f.sdk.InParams["releaseFilter__urlQuery"].(string)
+	queryData, ok := f.sdk.InParams["releaseFilter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(query)
+	decode, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
-	urlQuery := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &urlQuery); err != nil {
+	query := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &query); err != nil {
 		return err
 	}
 
-	appIDData, _ := urlQuery["applicationIDs"].([]interface{})
-	var appIDs []string
+	appIDData, _ := query["applicationIDs"].([]interface{})
+	var appIds []string
 	for i := range appIDData {
 		id, _ := appIDData[i].(string)
 		if id != "" {
-			appIDs = append(appIDs, id)
+			appIds = append(appIds, id)
 		}
 	}
 
-	userIDData, _ := urlQuery["userIDs"].([]interface{})
-	var userIDs []string
+	userIDData, _ := query["userIDs"].([]interface{})
+	var userIds []string
 	for i := range userIDData {
 		id, _ := userIDData[i].(string)
 		if id != "" {
-			userIDs = append(userIDs, id)
+			userIds = append(userIds, id)
 		}
 	}
 
-	createdData, _ := urlQuery["createdAtStartEnd"].([]interface{})
+	createdData, _ := query["createdAtStartEnd"].([]interface{})
 	var createdTimestamp []int64
 	for i := range createdData {
 		id, _ := createdData[i].(float64)
@@ -122,33 +122,33 @@ func (f *ComponentReleaseFilter) DecodeURLQuery() error {
 			createdTimestamp = append(createdTimestamp, int64(id))
 		}
 	}
-	f.State.Values.ApplicationIDs = appIDs
-	f.State.Values.UserIDs = userIDs
+	f.State.Values.ApplicationIDs = appIds
+	f.State.Values.UserIDs = userIds
 	f.State.Values.CreatedAtStartEnd = createdTimestamp
-	f.State.Values.CommitID = urlQuery["commitID"].(string)
-	f.State.Values.BranchID = urlQuery["branchID"].(string)
+	f.State.Values.CommitID = query["commitID"].(string)
+	f.State.Values.BranchID = query["branchID"].(string)
 	return nil
 }
 
 func (f *ComponentReleaseFilter) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["applicationIDs"] = f.State.Values.ApplicationIDs
-	urlQuery["userIDs"] = f.State.Values.UserIDs
-	urlQuery["createdAtStartEnd"] = f.State.Values.CreatedAtStartEnd
-	urlQuery["commitID"] = f.State.Values.CommitID
-	urlQuery["branchID"] = f.State.Values.BranchID
-	jsonData, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["applicationIDs"] = f.State.Values.ApplicationIDs
+	query["userIDs"] = f.State.Values.UserIDs
+	query["createdAtStartEnd"] = f.State.Values.CreatedAtStartEnd
+	query["commitID"] = f.State.Values.CommitID
+	query["branchID"] = f.State.Values.BranchID
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	f.State.ReleaseFilterURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(data)
+	f.State.ReleaseFilterURLQuery = encoded
 	return nil
 }
 
 func (f *ComponentReleaseFilter) RenderFilter() error {
-	f.Data.HidenSave = true
+	f.Data.HideSave = true
 	//userID := f.sdk.Identity.UserID
 	//orgIDStr := f.sdk.Identity.OrgID
 	//orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
@@ -220,12 +220,12 @@ func (f *ComponentReleaseFilter) RenderFilter() error {
 	return nil
 }
 
-func (f *ComponentReleaseFilter) Transfer(component *cptype.Component) {
-	component.Data = map[string]interface{}{
+func (f *ComponentReleaseFilter) Transfer(c *cptype.Component) {
+	c.Data = map[string]interface{}{
 		"conditions": f.Data.Conditions,
-		"hidenSave":  f.Data.HidenSave,
+		"hideSave":   f.Data.HideSave,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"values":                  f.State.Values,
 		"releaseFilter__urlQuery": f.State.ReleaseFilterURLQuery,
 		"isProjectRelease":        f.State.IsProjectRelease,
