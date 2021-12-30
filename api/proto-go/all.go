@@ -48,6 +48,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/services/authentication/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/notify/pb"
+	_ "github.com/erda-project/erda-proto-go/dop/contribution/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/projecthome/pb"
 	_ "github.com/erda-project/erda-proto-go/examples/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"

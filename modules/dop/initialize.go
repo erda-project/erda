@@ -272,7 +272,34 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		cron.Start()
 	}()
 
+	go func() {
+		if err := updateMemberContribution(ep.DBClient()); err != nil {
+			p.Log.Error(err)
+		}
+		cron := cron.New()
+		err := cron.AddFunc(conf.UpdateMemberActiveRankCron(), func() {
+			updateMemberContribution(ep.DBClient())
+		})
+		if err != nil {
+			p.Log.Error(err)
+		}
+		cron.Start()
+	}()
+
 	return nil
+}
+
+func updateMemberContribution(db *dao.DBClient) error {
+	if err := db.BatchClearScore(); err != nil {
+		return err
+	}
+	if err := db.IssueScore(); err != nil {
+		return err
+	}
+	if err := db.CommitScore(); err != nil {
+		return err
+	}
+	return db.QualityScore()
 }
 
 func updateIssueExpiryStatus(ep *endpoints.Endpoints) {
