@@ -15,26 +15,30 @@
 package deployment_order
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 const (
 	FirstBatch = iota + 1
 )
 
-func (d *DeploymentOrder) Create(req *apistructs.DeploymentOrderCreateRequest) (*apistructs.DeploymentOrderCreateResponse, error) {
+func (d *DeploymentOrder) Create(ctx context.Context, req *apistructs.DeploymentOrderCreateRequest) (*apistructs.DeploymentOrderCreateResponse, error) {
 	// generate order id
 	if req.Id == "" {
 		req.Id = uuid.NewString()
@@ -48,19 +52,19 @@ func (d *DeploymentOrder) Create(req *apistructs.DeploymentOrderCreateRequest) (
 	}
 
 	// get release info
-	releaseResp, err := d.bdl.GetRelease(releaseId)
+	releaseResp, err := d.releaseSvc.GetRelease(context.WithValue(ctx, httputil.InternalHeader, "true"), &pb.ReleaseGetRequest{ReleaseID: req.ReleaseId})
 	if err != nil {
 		logrus.Errorf("failed to get release %s, err: %v", releaseId, err)
 		return nil, err
 	}
 
 	// permission check
-	if err := d.batchCheckExecutePermission(req.Operator, req.Workspace, d.parseAppsInfoWithRelease(releaseResp)); err != nil {
+	if err := d.batchCheckExecutePermission(req.Operator, req.Workspace, d.parseAppsInfoWithRelease(releaseResp.Data)); err != nil {
 		return nil, apierrors.ErrCreateDeploymentOrder.InternalError(err)
 	}
 
 	// compose deployment order
-	order, err := d.composeDeploymentOrder(releaseResp, req)
+	order, err := d.composeDeploymentOrder(releaseResp.Data, req)
 	if err != nil {
 		logrus.Errorf("failed to compose deployment order, error: %v", err)
 		return nil, err
@@ -86,7 +90,7 @@ func (d *DeploymentOrder) Create(req *apistructs.DeploymentOrderCreateRequest) (
 
 	if req.AutoRun {
 		order.CurrentBatch = FirstBatch
-		executeDeployResp, err := d.executeDeploy(order, releaseResp, req.Source, parseRuntimeNameFromBranch(req))
+		executeDeployResp, err := d.executeDeploy(order, releaseResp.Data, req.Source, parseRuntimeNameFromBranch(req))
 		if err != nil {
 			logrus.Errorf("failed to executeDeploy, err: %v", err)
 			return nil, err
@@ -97,14 +101,14 @@ func (d *DeploymentOrder) Create(req *apistructs.DeploymentOrderCreateRequest) (
 	return createResp, nil
 }
 
-func (d *DeploymentOrder) Deploy(req *apistructs.DeploymentOrderDeployRequest) (*dbclient.DeploymentOrder, error) {
+func (d *DeploymentOrder) Deploy(ctx context.Context, req *apistructs.DeploymentOrderDeployRequest) (*dbclient.DeploymentOrder, error) {
 	order, err := d.db.GetDeploymentOrder(req.DeploymentOrderId)
 	if err != nil {
 		logrus.Errorf("failed to get deployment order, err: %v", err)
 		return nil, err
 	}
 
-	appsInfo, err := d.parseAppsInfoWithOrder(order)
+	appsInfo, err := d.parseAppsInfoWithOrder(ctx, order)
 	if err != nil {
 		logrus.Errorf("failed to parse application info with order, err: %v", err)
 		return nil, err
@@ -118,7 +122,7 @@ func (d *DeploymentOrder) Deploy(req *apistructs.DeploymentOrderDeployRequest) (
 
 	order.Operator = user.ID(req.Operator)
 
-	releaseResp, err := d.bdl.GetRelease(order.ReleaseId)
+	releaseResp, err := d.releaseSvc.GetRelease(context.WithValue(ctx, httputil.InternalHeader, "true"), &pb.ReleaseGetRequest{ReleaseID: order.ReleaseId})
 	if err != nil {
 		logrus.Errorf("failed to get release, err: %v", err)
 		return nil, err
@@ -130,7 +134,7 @@ func (d *DeploymentOrder) Deploy(req *apistructs.DeploymentOrderDeployRequest) (
 		order.CurrentBatch = FirstBatch
 	}
 
-	if _, err := d.executeDeploy(order, releaseResp, apistructs.SourceDeployCenter, false); err != nil {
+	if _, err := d.executeDeploy(order, releaseResp.Data, apistructs.SourceDeployCenter, false); err != nil {
 		logrus.Errorf("failed to execute deploy, order id: %s, err: %v", req.DeploymentOrderId, err)
 		return nil, err
 	}
@@ -145,13 +149,13 @@ func (d *DeploymentOrder) ContinueDeployOrder(orderId string) error {
 		logrus.Errorf("failed to get deployment order, err: %v", err)
 		return err
 	}
-	releaseResp, err := d.bdl.GetRelease(order.ReleaseId)
+	releaseResp, err := d.releaseSvc.GetRelease(context.WithValue(context.Background(), httputil.InternalHeader, "true"), &pb.ReleaseGetRequest{ReleaseID: order.ReleaseId})
 	if err != nil {
 		logrus.Errorf("failed to get release, err: %v", err)
 		return err
 	}
 
-	_, err = d.executeDeploy(order, releaseResp, apistructs.SourceDeployCenter, false)
+	_, err = d.executeDeploy(order, releaseResp.Data, apistructs.SourceDeployCenter, false)
 	if err != nil {
 		logrus.Errorf("failed to execute deploy, order id: %s, err: %v", orderId, err)
 		return err
@@ -160,7 +164,7 @@ func (d *DeploymentOrder) ContinueDeployOrder(orderId string) error {
 	return nil
 }
 
-func (d *DeploymentOrder) executeDeploy(order *dbclient.DeploymentOrder, releaseResp *apistructs.ReleaseGetResponseData,
+func (d *DeploymentOrder) executeDeploy(order *dbclient.DeploymentOrder, releaseResp *pb.ReleaseGetResponseData,
 	source string, isRuntimeNameFromBranch bool) (map[string]*apistructs.DeploymentCreateResponseDTO, error) {
 	// compose runtime create requests with order current batch
 	rtCreateReqs, err := d.composeRuntimeCreateRequests(order, releaseResp, source, isRuntimeNameFromBranch)
@@ -214,7 +218,7 @@ func (d *DeploymentOrder) executeDeploy(order *dbclient.DeploymentOrder, release
 	return deployResponse, nil
 }
 
-func (d *DeploymentOrder) composeDeploymentOrder(release *apistructs.ReleaseGetResponseData,
+func (d *DeploymentOrder) composeDeploymentOrder(release *pb.ReleaseGetResponseData,
 	req *apistructs.DeploymentOrderCreateRequest) (*dbclient.DeploymentOrder, error) {
 	var (
 		orderId   = req.Id
@@ -253,12 +257,15 @@ func (d *DeploymentOrder) composeDeploymentOrder(release *apistructs.ReleaseGetR
 	return order, nil
 }
 
-func (d *DeploymentOrder) fetchApplicationsParams(r *apistructs.ReleaseGetResponseData, workspace string) (map[string]*apistructs.DeploymentOrderParam, error) {
+func (d *DeploymentOrder) fetchApplicationsParams(r *pb.ReleaseGetResponseData, workspace string) (map[string]*apistructs.DeploymentOrderParam, error) {
 	ret := make(map[string]*apistructs.DeploymentOrderParam, 0)
 
 	if r.IsProjectRelease {
 		for i := 0; i < len(r.ApplicationReleaseList); i++ {
-			for _, ar := range r.ApplicationReleaseList[i] {
+			if r.ApplicationReleaseList[i] == nil {
+				continue
+			}
+			for _, ar := range r.ApplicationReleaseList[i].List {
 				params, err := d.fetchDeploymentParams(ar.ApplicationID, workspace)
 				if err != nil {
 					return nil, err
@@ -310,7 +317,7 @@ func (d *DeploymentOrder) fetchDeploymentParams(applicationId int64, workspace s
 	return &params, nil
 }
 
-func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.DeploymentOrder, r *apistructs.ReleaseGetResponseData,
+func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.DeploymentOrder, r *pb.ReleaseGetResponseData,
 	source string, isRuntimeNameFromBranch bool) ([]*apistructs.RuntimeCreateRequest, error) {
 	if order == nil || r == nil {
 		return nil, fmt.Errorf("deployment order or release response data is nil")
@@ -357,7 +364,10 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 	runtimeSource := apistructs.RuntimeSource(source)
 
 	if r.IsProjectRelease {
-		for _, ar := range r.ApplicationReleaseList[order.CurrentBatch-1] {
+		if r.ApplicationReleaseList[order.CurrentBatch-1] == nil {
+			return nil, errors.Errorf("current batch of release %s is nil", r.ReleaseID)
+		}
+		for _, ar := range r.ApplicationReleaseList[order.CurrentBatch-1].List {
 			rtCreateReq := &apistructs.RuntimeCreateRequest{
 				Name:              ar.ApplicationName,
 				DeploymentOrderId: deploymentOrderId,
@@ -428,16 +438,19 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 	return ret, nil
 }
 
-func (d *DeploymentOrder) parseAppsInfoWithOrder(order *dbclient.DeploymentOrder) (map[int64]string, error) {
+func (d *DeploymentOrder) parseAppsInfoWithOrder(ctx context.Context, order *dbclient.DeploymentOrder) (map[int64]string, error) {
 	ret := make(map[int64]string)
 	switch order.Type {
 	case apistructs.TypeProjectRelease:
-		releaseResp, err := d.bdl.GetRelease(order.ReleaseId)
+		releaseResp, err := d.releaseSvc.GetRelease(context.WithValue(ctx, httputil.InternalHeader, "true"), &pb.ReleaseGetRequest{ReleaseID: order.ReleaseId})
 		if err != nil {
 			return nil, err
 		}
-		for i := 0; i < len(releaseResp.ApplicationReleaseList); i++ {
-			for _, r := range releaseResp.ApplicationReleaseList[i] {
+		for i := 0; i < len(releaseResp.Data.ApplicationReleaseList); i++ {
+			if releaseResp.Data.ApplicationReleaseList[i] == nil {
+				continue
+			}
+			for _, r := range releaseResp.Data.ApplicationReleaseList[i].List {
 				ret[r.ApplicationID] = r.ApplicationName
 			}
 		}
@@ -447,11 +460,14 @@ func (d *DeploymentOrder) parseAppsInfoWithOrder(order *dbclient.DeploymentOrder
 	return ret, nil
 }
 
-func (d *DeploymentOrder) parseAppsInfoWithRelease(releaseResp *apistructs.ReleaseGetResponseData) map[int64]string {
+func (d *DeploymentOrder) parseAppsInfoWithRelease(releaseResp *pb.ReleaseGetResponseData) map[int64]string {
 	ret := make(map[int64]string)
 	if releaseResp.IsProjectRelease {
 		for i := 0; i < len(releaseResp.ApplicationReleaseList); i++ {
-			for _, r := range releaseResp.ApplicationReleaseList[i] {
+			if releaseResp.ApplicationReleaseList[i] == nil {
+				continue
+			}
+			for _, r := range releaseResp.ApplicationReleaseList[i].List {
 				ret[r.ApplicationID] = r.ApplicationName
 			}
 		}

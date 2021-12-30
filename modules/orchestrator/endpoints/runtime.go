@@ -24,11 +24,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -74,7 +76,7 @@ func (e *Endpoints) CreateRuntimeByRelease(ctx context.Context, r *http.Request,
 		return apierrors.ErrCreateRuntime.InvalidParameter("req body").ToResp(), nil
 	}
 
-	data, err := e.runtime.CreateByReleaseIDPipeline(orgid, operator, &req)
+	data, err := e.runtime.CreateByReleaseIDPipeline(ctx, orgid, operator, &req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -91,7 +93,7 @@ func (e *Endpoints) CreateRuntimeByReleaseAction(ctx context.Context, r *http.Re
 		// param problem
 		return apierrors.ErrCreateRuntime.InvalidParameter("req body").ToResp(), nil
 	}
-	data, err := e.runtime.CreateByReleaseID(operator, &req)
+	data, err := e.runtime.CreateByReleaseID(ctx, operator, &req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -192,7 +194,7 @@ func (e *Endpoints) RedeployRuntime(ctx context.Context, r *http.Request, vars m
 	if err != nil {
 		return apierrors.ErrDeployRuntime.InvalidParameter("runtimeID: " + v).ToResp(), nil
 	}
-	data, err := e.runtime.RedeployPipeline(operator, orgID, runtimeID)
+	data, err := e.runtime.RedeployPipeline(ctx, operator, orgID, runtimeID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -251,7 +253,7 @@ func (e *Endpoints) RollbackRuntime(ctx context.Context, r *http.Request, vars m
 	if err != nil {
 		return apierrors.ErrRollbackRuntime.InvalidParameter(strutil.Concat("runtimeID: ", v)).ToResp(), nil
 	}
-	data, err := e.runtime.RollbackPipeline(operator, orgID, runtimeID, req.DeploymentID)
+	data, err := e.runtime.RollbackPipeline(ctx, operator, orgID, runtimeID, req.DeploymentID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -576,9 +578,9 @@ func (e *Endpoints) GetAppWorkspaceReleases(ctx context.Context, r *http.Request
 		if !matchArtifactWorkspace {
 			continue
 		}
-		releases, err := e.bdl.ListReleases(apistructs.ReleaseListRequest{
+		releases, err := e.releaseSvc.ListRelease(context.WithValue(ctx, httputil.InternalHeader, "true"), &pb.ReleaseListRequest{
 			Branch:                       branch.Name,
-			CrossClusterOrSpecifyCluster: &clusterName,
+			CrossClusterOrSpecifyCluster: clusterName,
 			ApplicationID:                []string{strconv.FormatUint(req.AppID, 10)},
 			PageSize:                     5,
 			PageNum:                      1,
@@ -586,7 +588,7 @@ func (e *Endpoints) GetAppWorkspaceReleases(ctx context.Context, r *http.Request
 		if err != nil {
 			return apierrors.ErrGetAppWorkspaceReleases.InternalError(err).ToResp(), nil
 		}
-		result[branch.Name] = releases
+		result[branch.Name] = releases.Data
 	}
 
 	return httpserver.OkResp(result)

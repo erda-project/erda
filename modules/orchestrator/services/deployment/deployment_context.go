@@ -15,6 +15,7 @@
 package deployment
 
 import (
+	"context"
 	"crypto/md5" // #nosec G501
 	"encoding/hex"
 	"encoding/json"
@@ -30,6 +31,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/conf"
@@ -69,14 +71,15 @@ type DeployFSMContext struct {
 	evMgr *events.EventManager
 	bdl   *bundle.Bundle
 	// TODO: should we put deployment.Deployment here?
-	addon     *addon.Addon
-	migration *migration.Migration
-	resource  *resource.Resource
-	encrypt   *encryption.EnvEncrypt
+	addon      *addon.Addon
+	migration  *migration.Migration
+	resource   *resource.Resource
+	encrypt    *encryption.EnvEncrypt
+	releaseSvc pb.ReleaseServiceServer
 }
 
 // TODO: context should base on deployment service
-func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.EventManager, bdl *bundle.Bundle, a *addon.Addon, m *migration.Migration, encrypt *encryption.EnvEncrypt, resource *resource.Resource) *DeployFSMContext {
+func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.EventManager, bdl *bundle.Bundle, a *addon.Addon, m *migration.Migration, encrypt *encryption.EnvEncrypt, resource *resource.Resource, releaseSvc pb.ReleaseServiceServer) *DeployFSMContext {
 	logger := log.DeployLogHelper{DeploymentID: deploymentID, Bdl: bdl}
 	a.Logger = &logger
 	// prepare the context
@@ -90,6 +93,7 @@ func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.Eve
 		migration:    m,
 		encrypt:      encrypt,
 		resource:     resource,
+		releaseSvc:   releaseSvc,
 	}
 }
 
@@ -214,7 +218,10 @@ func (fsm *DeployFSMContext) continueWaiting() error {
 	}
 	if len(fsm.Deployment.ReleaseId) > 0 {
 		fsm.pushLog("increasing release reference...")
-		if err := fsm.bdl.IncreaseReference(fsm.Deployment.ReleaseId); err != nil {
+		if _, err := fsm.releaseSvc.UpdateReleaseReference(context.WithValue(context.Background(), httputil.InternalHeader, "true"), &pb.ReleaseReferenceUpdateRequest{
+			ReleaseID: "fsm.Deployment.ReleaseId",
+			Increase:  true,
+		}); err != nil {
 			return fsm.failDeploy(err)
 		}
 	}
@@ -442,20 +449,30 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 		}
 	} else {
 		logrus.Infof("没有找到migration相关信息, releaseId为：%s", fsm.Deployment.ReleaseId)
-		releaseResp, err := fsm.bdl.GetRelease(fsm.Deployment.ReleaseId)
+		ctx := context.Background()
+		releaseResp, err := fsm.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: fsm.Deployment.ReleaseId})
 		if err != nil {
 			logrus.Errorf("get release error: %v", err)
 			return "", err
 		}
-		if len(releaseResp.Resources) == 0 {
+		if len(releaseResp.Data.Resources) == 0 {
 			fsm.pushLog(`no migration found, keep going deployment...`)
 			return "", nil
 		}
 		// 遍历resource数组，查看是否存在migration信息需要执行
 		var resourceRelease apistructs.ReleaseResource
-		for _, v := range releaseResp.Resources {
-			if v.Type == apistructs.ResourceTypeMigration {
-				resourceRelease = v
+		for _, v := range releaseResp.Data.Resources {
+			if v.Type == string(apistructs.ResourceTypeMigration) {
+				meta := make(map[string]interface{})
+				for key, value := range v.Meta {
+					meta[key] = value.GetStringValue()
+				}
+				resourceRelease = apistructs.ReleaseResource{
+					Type: apistructs.ResourceType(v.Type),
+					Name: v.Name,
+					URL:  v.URL,
+					Meta: meta,
+				}
 			}
 		}
 		// 如果没有migration信息需要执行，则直接返回，不执行migration信息

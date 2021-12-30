@@ -102,7 +102,7 @@ func (s *resourceService) CreateResource(ctx context.Context, req *pb.CreateReso
 	// if need real deployment action, return with INIT status and deploy async
 	if needDeployInstance {
 		// use goroutine to async deploy
-		go s.coordinator.Deploy(deployReq)
+		go s.coordinator.Deploy(ctx, deployReq)
 
 		return &pb.CreateResourceResponse{
 			Data: &pb.ResourceCreateResult{
@@ -112,7 +112,7 @@ func (s *resourceService) CreateResource(ctx context.Context, req *pb.CreateReso
 		}, nil
 	}
 
-	result, err := s.coordinator.Deploy(deployReq)
+	result, err := s.coordinator.Deploy(ctx, deployReq)
 
 	if err != nil {
 		return nil, err

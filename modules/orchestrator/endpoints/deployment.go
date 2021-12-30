@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -89,7 +90,7 @@ func (e *Endpoints) ListLaunchedApprovalDeployments(ctx context.Context, r *http
 		approvalStatus = &approvalStatus_
 	}
 
-	data, err := e.deployment.ListOrg(userID, orgID, false, &needApproval, nil, []string{operateUser.String()}, nil, approvalStatus, types, ids, page)
+	data, err := e.deployment.ListOrg(context.WithValue(ctx, httputil.InternalHeader, "true"), userID, orgID, false, &needApproval, nil, []string{operateUser.String()}, nil, approvalStatus, types, ids, page)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -133,7 +134,7 @@ func (e *Endpoints) ListPendingApprovalDeployments(ctx context.Context, r *http.
 	var approvalStatus_ string = "WaitApprove"
 	approvalStatus = &approvalStatus_
 
-	data, err := e.deployment.ListOrg(userID, orgID, true, &needApproval, nil, operators, &approved, approvalStatus, types, ids, page)
+	data, err := e.deployment.ListOrg(ctx, userID, orgID, true, &needApproval, nil, operators, &approved, approvalStatus, types, ids, page)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -172,7 +173,7 @@ func (e *Endpoints) ListApprovedDeployments(ctx context.Context, r *http.Request
 		}
 		ids = append(ids, id_)
 	}
-	data, err := e.deployment.ListOrg(userID, orgID, true, &needApproval, nil, operators, &approved, nil, types, ids, page)
+	data, err := e.deployment.ListOrg(ctx, userID, orgID, true, &needApproval, nil, operators, &approved, nil, types, ids, page)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}

@@ -15,6 +15,7 @@
 package coordinator
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
@@ -24,7 +25,7 @@ import (
 
 type Interface interface {
 	CheckIfNeedRealDeploy(req handlers.ResourceDeployRequest) (bool, error)
-	Deploy(req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error)
+	Deploy(ctx context.Context, req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error)
 	UnDeploy(resourceId string) error
 }
 
@@ -61,7 +62,7 @@ func (p *provider) CheckIfNeedRealDeploy(req handlers.ResourceDeployRequest) (bo
 	return needDeployInstance && (hasServices || hasAddons), err
 }
 
-func (p *provider) Deploy(req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error) {
+func (p *provider) Deploy(ctx context.Context, req handlers.ResourceDeployRequest) (*handlers.ResourceDeployResult, error) {
 	var result handlers.ResourceDeployResult
 
 	// get resource info : tmc + extension info
@@ -120,7 +121,7 @@ func (p *provider) Deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 					continue
 				}
 				var subResult *handlers.ResourceDeployResult
-				subResult, err = p.Deploy(*subReq)
+				subResult, err = p.Deploy(ctx, *subReq)
 				if err != nil {
 					return nil, err
 				}

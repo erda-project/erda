@@ -116,12 +116,12 @@ func (p *ComponentPodsTable) InitComponent(ctx context.Context) {
 	p.server = steveServer
 }
 
-func (p *ComponentPodsTable) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (p *ComponentPodsTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var tableState State
-	data, err := json.Marshal(c.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
@@ -154,16 +154,16 @@ func (p *ComponentPodsTable) DecodeURLQuery() error {
 }
 
 func (p *ComponentPodsTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = p.State.PageNo
-	urlQuery["pageSize"] = p.State.PageSize
-	urlQuery["sorterData"] = p.State.Sorter
-	jsonData, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = p.State.PageNo
+	query["pageSize"] = p.State.PageSize
+	query["sorterData"] = p.State.Sorter
+	jsonData, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	p.State.PodsTableURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+	p.State.PodsTableURLQuery = encoded
 	return nil
 }
 

@@ -15,9 +15,13 @@
 package release
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -36,6 +40,7 @@ import (
 	"github.com/erda-project/erda/modules/dicehub/release/db"
 	"github.com/erda-project/erda/modules/dicehub/release/event"
 	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
+	"github.com/erda-project/erda/modules/dicehub/service/release_rule"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -44,18 +49,20 @@ import (
 	"github.com/erda-project/erda/pkg/template"
 )
 
-type releaseService struct {
-	p       *provider
-	db      *db.ReleaseConfigDB
-	imageDB *imagedb.ImageConfigDB
-	bdl     *bundle.Bundle
-	Etcd    *clientv3.Client
-	Config  *releaseConfig
+type ReleaseService struct {
+	p           *provider
+	db          *db.ReleaseConfigDB
+	imageDB     *imagedb.ImageConfigDB
+	bdl         *bundle.Bundle
+	Etcd        *clientv3.Client
+	Config      *releaseConfig
+	ReleaseRule *release_rule.ReleaseRule
 }
 
 // CreateRelease POST /api/releases release create release
-func (s *releaseService) CreateRelease(ctx context.Context, req *pb.ReleaseCreateRequest) (*pb.ReleaseCreateResponseData, error) {
-	_, err := getPermissionHeader(ctx)
+func (s *ReleaseService) CreateRelease(ctx context.Context, req *pb.ReleaseCreateRequest) (*pb.ReleaseCreateResponseData, error) {
+	var l = logrus.WithField("func", "*Endpoint.CreateRelease")
+	orgID, err := getPermissionHeader(ctx)
 	if err != nil {
 		return nil, apierrors.ErrCreateRelease.NotLogin()
 	}
@@ -64,16 +71,98 @@ func (s *releaseService) CreateRelease(ctx context.Context, req *pb.ReleaseCreat
 		return nil, apierrors.ErrCreateRelease.MissingParameter("body")
 	}
 
-	logrus.Infof("creating release...request body: %v\n", req)
+	// 如果没有传 version, 则查找规则列表, 如果当前分支能匹配上某个规则, 则将 version 生成出来
+	l.WithFields(map[string]interface{}{
+		"releaseRequest.Version":          req.Version,
+		"releaseRequest.IsStable":         req.IsStable,
+		"releaseRequest.IsProjectRelease": req.IsProjectRelease,
+	}).Infoln("releaseRequest parameters")
+	if req.Version == "" {
+		branch, ok := req.Labels["gitBranch"]
+		if !ok {
+			return nil, apierrors.ErrCreateRelease.InvalidParameter("no gitBranch label")
+		}
+		rules, apiError := s.ReleaseRule.List(&apistructs.CreateUpdateDeleteReleaseRuleRequest{
+			ProjectID: uint64(req.ProjectID),
+		})
+		if apiError != nil {
+			return nil, apiError
+		}
+		for _, rule := range rules.List {
+			l.WithField("rule pattern", rule.Pattern).WithField("is_enabled", rule.IsEnabled).Infoln()
+			if rule.Match(branch) {
+				req.Version = filepath.Base(branch) + "-" + time.Now().Format("2006-01-02-150405")
+				break
+			}
+		}
+	}
+	// 如果没传 IsStable 或 IsStable==false, 则 version 非空时 IsStable=true
+	if !req.IsStable {
+		req.IsStable = req.Version != ""
+	}
+	// 项目级 release 一定是 Stable
+	if req.IsProjectRelease {
+		req.IsStable = true
+	}
 
-	if req.ReleaseName == "" {
+	if req.OrgID == 0 {
+		req.OrgID = orgID
+	}
+
+	if req.ProjectID == 0 {
+		return nil, apierrors.ErrCreateRelease.MissingParameter("projectID")
+	}
+
+	if req.ProjectName == "" {
+		project, err := s.bdl.GetProject(uint64(req.ProjectID))
+		if err != nil {
+			return nil, apierrors.ErrCreateRelease.InternalError(err)
+		}
+		req.ProjectName = project.Name
+	}
+
+	if !req.IsProjectRelease && req.ReleaseName == "" {
 		return nil, apierrors.ErrCreateRelease.MissingParameter("releaseName")
 	}
 
+	identityInfo, err := getIdentityInfo(ctx)
+	if err != nil {
+		return nil, apierrors.ErrCreateRelease.NotLogin()
+	}
+	if !identityInfo.IsInternalClient() {
+		if !req.IsProjectRelease {
+			return nil, apierrors.ErrCreateRelease.InvalidParameter("can not create application release manually")
+		}
+		hasAccess, err := s.hasWriteAccess(identityInfo, req.ProjectID, true, 0)
+		if err != nil {
+			return nil, apierrors.ErrCreateRelease.InternalError(err)
+		}
+		if !hasAccess {
+			return nil, apierrors.ErrCreateRelease.AccessDenied()
+		}
+	}
+	logrus.Infof("creating release...request body: %v\n", req)
 	// create Release
 	releaseID, err := s.Create(req)
 	if err != nil {
 		return nil, apierrors.ErrCreateRelease.InternalError(err)
+	}
+
+	if !identityInfo.IsInternalClient() {
+		go func() {
+			if err := s.audit(auditParams{
+				orgID:        orgID,
+				projectID:    req.ProjectID,
+				userID:       identityInfo.UserID,
+				templateName: string(apistructs.CreateProjectTemplate),
+				ctx: map[string]interface{}{
+					"version":   req.Version,
+					"releaseId": releaseID,
+				},
+			}); err != nil {
+				logrus.Errorf("failed to create audit event for creating project release")
+			}
+		}()
 	}
 
 	respBody := &pb.ReleaseCreateResponseData{
@@ -83,7 +172,117 @@ func (s *releaseService) CreateRelease(ctx context.Context, req *pb.ReleaseCreat
 	return respBody, nil
 }
 
-func (s *releaseService) UpdateRelease(ctx context.Context, req *pb.ReleaseUpdateRequest) (*pb.ReleaseDataResponse, error) {
+func (s *ReleaseService) UploadRelease(ctx context.Context, req *pb.ReleaseUploadRequest) (*pb.ReleaseUploadResponse, error) {
+	orgID, err := getPermissionHeader(ctx)
+	if err != nil {
+		return nil, apierrors.ErrCreateRelease.NotLogin()
+	}
+
+	if req == nil {
+		return nil, apierrors.ErrCreateRelease.MissingParameter("body")
+	}
+
+	if req.OrgID == 0 {
+		req.OrgID = orgID
+	}
+
+	if req.DiceFileID == "" {
+		return nil, apierrors.ErrCreateRelease.MissingParameter("diceFileID")
+	}
+
+	if req.ProjectID == 0 {
+		return nil, apierrors.ErrCreateRelease.MissingParameter("projectID")
+	}
+
+	if req.ProjectName == "" {
+		project, err := s.bdl.GetProject(uint64(req.ProjectID))
+		if err != nil {
+			return nil, apierrors.ErrCreateRelease.InternalError(err)
+		}
+		req.ProjectName = project.Name
+	}
+
+	identityInfo, err := getIdentityInfo(ctx)
+	if err != nil {
+		return nil, apierrors.ErrCreateRelease.NotLogin()
+	}
+	if !identityInfo.IsInternalClient() {
+		hasAccess, err := s.hasWriteAccess(identityInfo, req.ProjectID, true, 0)
+		if err != nil {
+			return nil, apierrors.ErrCreateRelease.InternalError(err)
+		}
+		if !hasAccess {
+			return nil, apierrors.ErrCreateRelease.AccessDenied()
+		}
+	}
+
+	file, err := s.bdl.DownloadDiceFile(req.DiceFileID)
+	if err != nil {
+		return nil, apierrors.ErrCreateRelease.InternalError(err)
+	}
+	defer file.Close()
+
+	version, releaseID, err := s.CreateByFile(req, file)
+	if err != nil {
+		return nil, apierrors.ErrCreateRelease.InternalError(err)
+	}
+
+	if err := s.bdl.DeleteDiceFile(req.DiceFileID); err != nil {
+		logrus.Errorf("failed to delete diceFile %s", req.DiceFileID)
+	}
+
+	if !identityInfo.IsInternalClient() {
+		go func() {
+			if err := s.audit(auditParams{
+				orgID:        orgID,
+				projectID:    req.ProjectID,
+				userID:       identityInfo.UserID,
+				templateName: string(apistructs.CreateProjectTemplate),
+				ctx: map[string]interface{}{
+					"version":   version,
+					"releaseId": releaseID,
+				},
+			}); err != nil {
+				logrus.Errorf("failed to create audit event for creating project release")
+			}
+		}()
+	}
+
+	return &pb.ReleaseUploadResponse{
+		Data: &pb.ReleaseCreateResponseData{
+			ReleaseID: releaseID,
+		},
+	}, nil
+}
+
+func (s *ReleaseService) ParseReleaseFile(ctx context.Context, req *pb.ParseReleaseFileRequest) (*pb.ParseReleaseFileResponse, error) {
+	_, err := getPermissionHeader(ctx)
+	if err != nil {
+		return nil, apierrors.ErrParseReleaseFile.NotLogin()
+	}
+
+	if req.DiceFileID == "" {
+		return nil, apierrors.ErrParseReleaseFile.MissingParameter("diceFileID")
+	}
+
+	file, err := s.bdl.DownloadDiceFile(req.DiceFileID)
+	if err != nil {
+		return nil, apierrors.ErrCreateRelease.InternalError(err)
+	}
+	defer file.Close()
+
+	metadata, err := parseMetadata(file)
+	if err != nil {
+		return nil, apierrors.ErrParseReleaseFile.InternalError(err)
+	}
+	return &pb.ParseReleaseFileResponse{
+		Data: &pb.ParseReleaseFileResponseData{
+			Version: metadata.Version,
+		},
+	}, nil
+}
+
+func (s *ReleaseService) UpdateRelease(ctx context.Context, req *pb.ReleaseUpdateRequest) (*pb.ReleaseUpdateResponse, error) {
 	orgID, err := getPermissionHeader(ctx)
 	if err != nil {
 		return nil, apierrors.ErrUpdateRelease.NotLogin()
@@ -95,17 +294,58 @@ func (s *releaseService) UpdateRelease(ctx context.Context, req *pb.ReleaseUpdat
 		return nil, apierrors.ErrUpdateRelease.MissingParameter("releaseId")
 	}
 
+	identityInfo, err := getIdentityInfo(ctx)
+	if err != nil {
+		return nil, apierrors.ErrUpdateRelease.NotLogin()
+	}
+	release, err := s.db.GetRelease(releaseID)
+	if err != nil {
+		return nil, apierrors.ErrUpdateRelease.InternalError(err)
+	}
+	if !identityInfo.IsInternalClient() {
+		hasAccess, err := s.hasWriteAccess(identityInfo, req.ProjectID, release.IsProjectRelease, release.ApplicationID)
+		if err != nil {
+			return nil, apierrors.ErrUpdateRelease.InternalError(err)
+		}
+		if !hasAccess {
+			return nil, apierrors.ErrUpdateRelease.AccessDenied()
+		}
+	}
 	logrus.Infof("update release info: %+v", req)
 
 	if err := s.Update(orgID, releaseID, req); err != nil {
 		return nil, apierrors.ErrUpdateRelease.InternalError(err)
 	}
 
-	return &pb.ReleaseDataResponse{Data: "Update succ"}, nil
+	if !identityInfo.IsInternalClient() {
+		releaseType := "application"
+		templateName := apistructs.UpdateAppReleaseTemplate
+		if release.IsProjectRelease {
+			releaseType = "project"
+			templateName = apistructs.UpdateProjectReleaseTemplate
+		}
+		go func() {
+			if err := s.audit(auditParams{
+				orgID:        orgID,
+				projectID:    req.ProjectID,
+				userID:       identityInfo.UserID,
+				templateName: string(templateName),
+				ctx: map[string]interface{}{
+					"version":   release.Version,
+					"releaseId": releaseID,
+				},
+			}); err != nil {
+				logrus.Errorf("failed to create audit event for updating %s release", releaseType)
+			}
+		}()
+	}
+
+	return &pb.ReleaseUpdateResponse{
+		Data: "Update succ",
+	}, nil
 }
 
-// UpdateRelease PUT /api/releases/<releaseId> update release
-func (s *releaseService) UpdateReleaseReference(ctx context.Context, req *pb.ReleaseReferenceUpdateRequest) (*pb.ReleaseDataResponse, error) {
+func (s *ReleaseService) UpdateReleaseReference(ctx context.Context, req *pb.ReleaseReferenceUpdateRequest) (*pb.ReleaseDataResponse, error) {
 	orgID, err := getPermissionHeader(ctx)
 	if err != nil {
 		return nil, apierrors.ErrUpdateRelease.NotLogin()
@@ -122,17 +362,16 @@ func (s *releaseService) UpdateReleaseReference(ctx context.Context, req *pb.Rel
 		return nil, apierrors.ErrUpdateRelease.MissingParameter("body")
 	}
 
-	updateReferenceRequest := *req
+	updateReferenceRequest := req
 
-	if err := s.UpdateReference(orgID, releaseID, &updateReferenceRequest); err != nil {
+	if err := s.UpdateReference(orgID, releaseID, updateReferenceRequest); err != nil {
 		return nil, apierrors.ErrUpdateRelease.InternalError(err)
 	}
 
 	return &pb.ReleaseDataResponse{Data: "Update succ"}, nil
 }
 
-// GetPlist GET /api/releases/<releaseId>/actions/get-plist Get the download plist configuration in the ios release type
-func (s *releaseService) GetIosPlist(ctx context.Context, req *pb.GetIosPlistRequest) (*pb.GetIosPlistResponse, error) {
+func (s *ReleaseService) GetIosPlist(ctx context.Context, req *pb.GetIosPlistRequest) (*pb.GetIosPlistResponse, error) {
 	orgID, err := getPermissionHeader(ctx)
 	if err != nil {
 		return nil, apierrors.ErrUpdateRelease.NotLogin()
@@ -149,10 +388,11 @@ func (s *releaseService) GetIosPlist(ctx context.Context, req *pb.GetIosPlistReq
 	fmt.Println(plist)
 	return &pb.GetIosPlistResponse{Data: plist}, nil
 }
-func (s *releaseService) GetRelease(ctx context.Context, req *pb.GetIosPlistRequest) (*pb.ReleaseGetResponse, error) {
+
+func (s *ReleaseService) GetRelease(ctx context.Context, req *pb.ReleaseGetRequest) (*pb.ReleaseGetResponse, error) {
 	orgID, err := getPermissionHeader(ctx)
 	if err != nil {
-		return nil, apierrors.ErrUpdateRelease.NotLogin()
+		return nil, apierrors.ErrGetRelease.NotLogin()
 	}
 
 	releaseID := req.ReleaseID
@@ -161,6 +401,24 @@ func (s *releaseService) GetRelease(ctx context.Context, req *pb.GetIosPlistRequ
 	}
 	logrus.Infof("getting release...releaseId: %s\n", releaseID)
 
+	identityInfo, err := getIdentityInfo(ctx)
+	if err != nil {
+		return nil, apierrors.ErrGetRelease.NotLogin()
+	}
+	if !identityInfo.IsInternalClient() {
+		release, err := s.db.GetRelease(releaseID)
+		if err != nil {
+			return nil, apierrors.ErrGetRelease.InternalError(err)
+		}
+		hasAccess, err := s.hasReadAccess(identityInfo, release.ProjectID)
+		if err != nil {
+			return nil, apierrors.ErrGetRelease.InternalError(err)
+		}
+		if !hasAccess {
+			return nil, apierrors.ErrGetRelease.AccessDenied()
+		}
+	}
+
 	resp, err := s.Get(orgID, releaseID)
 	if err != nil {
 		return nil, apierrors.ErrGetRelease.InternalError(err)
@@ -168,34 +426,148 @@ func (s *releaseService) GetRelease(ctx context.Context, req *pb.GetIosPlistRequ
 	return &pb.ReleaseGetResponse{Data: resp}, nil
 }
 
-func (s *releaseService) DeleteRelease(ctx context.Context, req *pb.GetIosPlistRequest) (*pb.ReleaseDataResponse, error) {
+func (s *ReleaseService) DeleteRelease(ctx context.Context, req *pb.ReleaseDeleteRequest) (*pb.ReleaseDeleteResponse, error) {
 	orgID, err := getPermissionHeader(ctx)
 	if err != nil {
-		return nil, apierrors.ErrUpdateRelease.NotLogin()
+		return nil, apierrors.ErrDeleteRelease.NotLogin()
 	}
+
 	// Get releaseId
 	releaseID := req.ReleaseID
 	if releaseID == "" {
 		return nil, apierrors.ErrDeleteRelease.MissingParameter("releaseId")
 	}
+
+	identityInfo, err := getIdentityInfo(ctx)
+	if err != nil {
+		return nil, apierrors.ErrCreateRelease.NotLogin()
+	}
+	release, err := s.db.GetRelease(releaseID)
+	if err != nil {
+		return nil, apierrors.ErrDeleteRelease.InternalError(err)
+	}
+	if !identityInfo.IsInternalClient() {
+		hasAccess, err := s.hasWriteAccess(identityInfo, release.ProjectID, release.IsProjectRelease, release.ApplicationID)
+		if err != nil {
+			return nil, apierrors.ErrDeleteRelease.InternalError(err)
+		}
+		if !hasAccess {
+			return nil, apierrors.ErrDeleteRelease.AccessDenied()
+		}
+	}
+
 	logrus.Infof("deleting release...releaseId: %s\n", releaseID)
 
 	if err := s.Delete(orgID, releaseID); err != nil {
 		return nil, apierrors.ErrDeleteRelease.InternalError(err)
 	}
 
-	return &pb.ReleaseDataResponse{Data: "Delete succ"}, nil
+	releaseType := "application"
+	templateName := apistructs.DeleteAppReleaseTemplate
+	if release.IsProjectRelease {
+		releaseType = "project"
+		templateName = apistructs.DeleteProjectReleaseTemplate
+	}
+	go func() {
+		if err := s.audit(auditParams{
+			orgID:        orgID,
+			projectID:    release.ProjectID,
+			userID:       identityInfo.UserID,
+			templateName: string(templateName),
+			ctx: map[string]interface{}{
+				"version":   release.Version,
+				"releaseId": releaseID,
+			},
+		}); err != nil {
+			logrus.Errorf("failed to create audit event for deleting %s release, %v", releaseType, err)
+		}
+	}()
+
+	return &pb.ReleaseDeleteResponse{
+		Data: "Delete succ",
+	}, nil
 }
 
-func (s *releaseService) ListRelease(ctx context.Context, req *pb.ReleaseListRequest) (*pb.ReleaseListResponse, error) {
+func (s *ReleaseService) DeleteReleases(ctx context.Context, req *pb.ReleasesDeleteRequest) (*pb.ReleasesDeleteResponse, error) {
+	orgID, err := getPermissionHeader(ctx)
+	if err != nil {
+		return nil, apierrors.ErrDeleteRelease.NotLogin()
+	}
+
+	if len(req.ReleaseId) == 0 {
+		return nil, apierrors.ErrDeleteRelease.InvalidParameter("releaseID can not be empty")
+	}
+	identityInfo, err := getIdentityInfo(ctx)
+	if err != nil {
+		return nil, apierrors.ErrDeleteRelease.NotLogin()
+	}
+	releases, err := s.db.GetReleases(req.ReleaseId)
+	if err != nil {
+		return nil, apierrors.ErrDeleteRelease.InternalError(err)
+	}
+	if len(releases) == 0 {
+		return nil, apierrors.ErrDeleteRelease.InternalError(errors.New("release not found"))
+	}
+	if !identityInfo.IsInternalClient() {
+		for i := range releases {
+			hasAccess, err := s.hasWriteAccess(identityInfo, req.ProjectId, releases[i].IsProjectRelease, releases[i].ApplicationID)
+			if err != nil {
+				return nil, apierrors.ErrDeleteRelease.InternalError(err)
+			}
+			if !hasAccess {
+				return nil, apierrors.ErrDeleteRelease.AccessDenied()
+			}
+		}
+	}
+
+	if err := s.Delete(orgID, req.ReleaseId...); err != nil {
+		return nil, apierrors.ErrDeleteRelease.InternalError(err)
+	}
+
+	var versionList []string
+	for _, release := range releases {
+		versionList = append(versionList, release.Version)
+	}
+
+	go func() {
+		templateName := ""
+		auditCtx := map[string]interface{}{}
+		if len(req.ReleaseId) == 1 {
+			templateName = string(apistructs.DeleteAppReleaseTemplate)
+			if releases[0].IsProjectRelease {
+				templateName = string(apistructs.DeleteProjectReleaseTemplate)
+			}
+			auditCtx["version"] = releases[0].Version
+			auditCtx["releaseId"] = releases[0].ReleaseID
+		} else {
+			templateName = string(apistructs.BatchDeleteAppReleaseTemplate)
+			if req.IsProjectRelease {
+				templateName = string(apistructs.BatchDeleteProjectReleaseTemplate)
+			}
+			auditCtx["versionList"] = strings.Join(versionList, ", ")
+		}
+		if err := s.audit(auditParams{
+			orgID:        orgID,
+			projectID:    req.ProjectId,
+			userID:       identityInfo.UserID,
+			templateName: templateName,
+			ctx:          auditCtx,
+		}); err != nil {
+			logrus.Errorf("failed to create audit event for deleting release, %v", err)
+		}
+	}()
+
+	return &pb.ReleasesDeleteResponse{
+		Data: "Delete succ",
+	}, nil
+}
+
+func (s *ReleaseService) ListRelease(ctx context.Context, req *pb.ReleaseListRequest) (*pb.ReleaseListResponse, error) {
 	identityInfo, err := getIdentityInfo(ctx)
 	if err != nil {
 		return nil, apierrors.ErrListRelease.NotLogin()
 	}
 
-	if req.EndTime == 0 {
-		req.EndTime = time.Now().UnixNano() / 1000 / 1000 // milliseconds
-	}
 	if req.PageSize == 0 {
 		req.PageSize = 20
 	}
@@ -212,38 +584,15 @@ func (s *releaseService) ListRelease(ctx context.Context, req *pb.ReleaseListReq
 			return nil, apierrors.ErrListRelease.NotLogin()
 		}
 
-		// Get User
-		userID := apis.GetUserID(ctx)
-		if userID == "" {
-			return nil, errors.New("invalid user id")
-		}
-
-		// TODO：If there is no list release permission of the application, then judge whether there is enterprise permission, and after adding scope to the permission list, modify the authentication method
 		var (
 			req      apistructs.PermissionCheckRequest
 			permResp *apistructs.PermissionCheckResponseData
 			access   bool
 		)
 
-		if params.ApplicationID > 0 {
-			req = apistructs.PermissionCheckRequest{
-				UserID:   userID,
-				Scope:    apistructs.AppScope,
-				ScopeID:  uint64(params.ApplicationID),
-				Resource: "release",
-				Action:   apistructs.ListAction,
-			}
-
-			if permResp, err = s.bdl.CheckPermission(&req); err != nil {
-				return nil, apierrors.ErrListRelease.AccessDenied()
-			}
-
-			access = permResp.Access
-		}
-
 		if !access {
 			req = apistructs.PermissionCheckRequest{
-				UserID:   userID,
+				UserID:   identityInfo.UserID,
 				Scope:    apistructs.OrgScope,
 				ScopeID:  uint64(orgID),
 				Resource: "release",
@@ -260,8 +609,8 @@ func (s *releaseService) ListRelease(ctx context.Context, req *pb.ReleaseListReq
 	if err != nil {
 		return nil, apierrors.ErrListRelease.InternalError(err)
 	}
-	userIDs := make([]string, 0, len(resp.Releases))
-	for _, v := range resp.Releases {
+	userIDs := make([]string, 0, len(resp.List))
+	for _, v := range resp.List {
 		userIDs = append(userIDs, v.UserID)
 	}
 
@@ -270,7 +619,8 @@ func (s *releaseService) ListRelease(ctx context.Context, req *pb.ReleaseListReq
 		UserIDs: userIDs,
 	}, nil
 }
-func (s *releaseService) ListReleaseName(ctx context.Context, req *pb.ListReleaseNameRequest) (*pb.ListReleaseNameResponse, error) {
+
+func (s *ReleaseService) ListReleaseName(ctx context.Context, req *pb.ListReleaseNameRequest) (*pb.ListReleaseNameResponse, error) {
 	orgID, err := apis.GetIntOrgID(ctx)
 	if err != nil {
 		return nil, apierrors.ErrListRelease.NotLogin()
@@ -293,7 +643,8 @@ func (s *releaseService) ListReleaseName(ctx context.Context, req *pb.ListReleas
 
 	return &pb.ListReleaseNameResponse{Data: releaseNames}, nil
 }
-func (s *releaseService) GetLatestReleases(ctx context.Context, req *pb.GetLatestReleasesRequest) (*pb.GetLatestReleasesResponse, error) {
+
+func (s *ReleaseService) GetLatestReleases(ctx context.Context, req *pb.GetLatestReleasesRequest) (*pb.GetLatestReleasesResponse, error) {
 	// Check the legitimacy of the projectID
 	projectIDStr := GetProjectID(ctx)
 	if projectIDStr == "" {
@@ -320,7 +671,8 @@ func (s *releaseService) GetLatestReleases(ctx context.Context, req *pb.GetLates
 	}
 	return &pb.GetLatestReleasesResponse{Data: resp}, nil
 }
-func (s *releaseService) ReleaseGC(ctx context.Context, req *pb.ReleaseGCRequest) (*pb.ReleaseDataResponse, error) {
+
+func (s *ReleaseService) ReleaseGC(ctx context.Context, req *pb.ReleaseGCRequest) (*pb.ReleaseDataResponse, error) {
 	logrus.Infof("trigger release gc by api[ POST /gc ]!")
 	go func() {
 		if err := s.RemoveDeprecatedsReleases(time.Now()); err != nil {
@@ -331,221 +683,193 @@ func (s *releaseService) ReleaseGC(ctx context.Context, req *pb.ReleaseGCRequest
 	return &pb.ReleaseDataResponse{Data: "trigger release gc success"}, nil
 }
 
-// Create create Release
-func (s *releaseService) Create(req *pb.ReleaseCreateRequest) (string, error) {
-	// Ensure that the Version is unique at the application level, if it exists, update it
-	if req.Version != "" && req.ApplicationID > 0 {
-		releases, err := s.db.GetReleasesByAppAndVersion(req.OrgID, req.ProjectID, req.ApplicationID, req.Version)
+func (s *ReleaseService) ToFormalReleases(ctx context.Context, req *pb.FormalReleasesRequest) (*pb.FormalReleasesResponse, error) {
+	orgID, err := getPermissionHeader(ctx)
+	if err != nil {
+		return nil, apierrors.ErrFormalRelease.NotLogin()
+	}
+
+	identityInfo, err := getIdentityInfo(ctx)
+	if err != nil {
+		return nil, apierrors.ErrFormalRelease.NotLogin()
+	}
+	if !identityInfo.IsInternalClient() {
+		hasAccess, err := s.hasWriteAccess(identityInfo, req.ProjectId, true, 0)
 		if err != nil {
-			return "", err
+			return nil, apierrors.ErrFormalRelease.InternalError(err)
 		}
-		if len(releases) > 0 {
-			releases[0].Dice = req.Dice
-			if len(req.Labels) > 0 {
-				labelBytes, err := json.Marshal(req.Labels)
-				if err != nil {
-					return "", err
-				}
-				releases[0].Labels = string(labelBytes)
-			}
-			resourceBytes, err := json.Marshal(req.Resources)
-			if err == nil {
-				releases[0].Resources = string(resourceBytes)
-			}
-			if err := s.db.UpdateRelease(&releases[0]); err != nil {
-				return "", err
-			}
-			return releases[0].ReleaseID, nil
+		if !hasAccess {
+			return nil, apierrors.ErrFormalRelease.AccessDenied()
 		}
 	}
+	if err := s.ToFormal(req.ReleaseId); err != nil {
+		return nil, apierrors.ErrFormalRelease.InternalError(err)
+	}
 
-	// create Release
-	release, err := s.Convert(req)
+	releases, err := s.db.GetReleases(req.ReleaseId)
 	if err != nil {
-		return "", err
-	}
-	err = s.db.CreateRelease(release)
-	if err != nil {
-		return "", err
-	}
-
-	// create Image
-	images := s.GetImages(req)
-	for _, v := range images {
-		v.ReleaseID = release.ReleaseID
-		if err := s.imageDB.CreateImage(v); err != nil {
-			return "", err
-		}
-	}
-
-	// Send release create event to eventbox
-	event.SendReleaseEvent(event.ReleaseEventCreate, release)
-
-	return release.ReleaseID, nil
-}
-
-// Update update Release
-func (s *releaseService) Update(orgID int64, releaseID string, req *pb.ReleaseUpdateRequest) error {
-	release, err := s.db.GetRelease(releaseID)
-	if err != nil {
-		return err
-	}
-	if orgID != 0 && release.OrgID != orgID {
-		return errors.Errorf("release not found")
-	}
-
-	// If version is not empty, ensure that Version is unique at the application level
-	if req.Version != "" && req.Version != release.Version {
-		if req.ApplicationID > 0 {
-			releases, err := s.db.GetReleasesByAppAndVersion(req.OrgID, req.ProjectID, req.ApplicationID, req.Version)
-			if err != nil {
-				return err
-			}
-			if len(releases) > 0 {
-				return errors.Errorf("release version: %s already exist", req.Version)
-			}
-		}
-	}
-
-	if req.Desc != "" {
-		release.Desc = req.Desc
-	}
-
-	if req.Version != "" {
-		release.Version = req.Version
-	}
-
-	if err := s.db.UpdateRelease(release); err != nil {
-		return err
-	}
-
-	// Send release update event to eventbox
-	event.SendReleaseEvent(event.ReleaseEventUpdate, release)
-
-	return nil
-}
-
-// UpdateReference update Release reference
-func (s *releaseService) UpdateReference(orgID int64, releaseID string, req *pb.ReleaseReferenceUpdateRequest) error {
-	release, err := s.db.GetRelease(releaseID)
-	if err != nil {
-		return err
-	}
-	if orgID != 0 && release.OrgID != orgID {
-		return errors.Errorf("release not found")
-	}
-
-	if req.Increase {
-		release.Reference++
+		logrus.Errorf("failed to get releases %v, %v", req.ReleaseId, err)
 	} else {
-		release.Reference--
+		var versionList []string
+		for _, release := range releases {
+			versionList = append(versionList, release.Version)
+		}
+		go func() {
+			templateName := ""
+			auditCtx := map[string]interface{}{}
+			if len(req.ReleaseId) == 1 {
+				templateName = string(apistructs.FormalAppReleaseTemplate)
+				if releases[0].IsProjectRelease {
+					templateName = string(apistructs.FormalProjectReleaseTemplate)
+				}
+				auditCtx["version"] = releases[0].Version
+				auditCtx["releaseId"] = releases[0].ReleaseID
+			} else {
+				templateName = string(apistructs.BatchFormalReleaseAppTemplate)
+				if req.IsProjectRelease {
+					templateName = string(apistructs.BatchFormalReleaseProjectTemplate)
+				}
+				auditCtx["versionList"] = strings.Join(versionList, ", ")
+			}
+			if err := s.audit(auditParams{
+				orgID:        orgID,
+				projectID:    req.ProjectId,
+				userID:       identityInfo.UserID,
+				templateName: templateName,
+				ctx:          auditCtx,
+			}); err != nil {
+				logrus.Errorf("failed to create audit event for formaling release, %v", err)
+			}
+		}()
 	}
-	if err := s.db.UpdateRelease(release); err != nil {
-		return err
-	}
-
-	return nil
+	return &pb.FormalReleasesResponse{
+		Data: "Formal succ",
+	}, nil
 }
 
-// Delete delete Release
-func (s *releaseService) Delete(orgID int64, releaseID string) error {
+func (s *ReleaseService) ToFormalRelease(ctx context.Context, req *pb.FormalReleaseRequest) (*pb.FormalReleaseResponse, error) {
+	orgID, err := getPermissionHeader(ctx)
+	if err != nil {
+		return nil, apierrors.ErrFormalRelease.NotLogin()
+	}
+
+	releaseID := req.ReleaseId
+	if releaseID == "" {
+		return nil, apierrors.ErrFormalRelease.MissingParameter("releaseId")
+	}
+
+	identityInfo, err := getIdentityInfo(ctx)
+	if err != nil {
+		return nil, apierrors.ErrFormalRelease.NotLogin()
+	}
+
 	release, err := s.db.GetRelease(releaseID)
 	if err != nil {
-		return err
+		return nil, apierrors.ErrFormalRelease.InternalError(err)
 	}
-	if orgID != 0 && release.OrgID != orgID {
-		return errors.Errorf("release not found")
+	if !release.IsStable {
+		return nil, apierrors.ErrFormalRelease.InvalidParameter("temp release can not be formaled")
 	}
-
-	// If release has been used，can not delete it
-	if release.Reference > 0 {
-		return errors.Errorf("reference > 0")
-	}
-
-	images, err := s.imageDB.GetImagesByRelease(releaseID)
-	if err != nil {
-		return err
-	}
-
-	// delete manifests
-	if release.ClusterName != "" {
-		var imgs []string
-		for _, v := range images {
-			imgs = append(imgs, v.Image)
+	if !identityInfo.IsInternalClient() {
+		hasAccess, err := s.hasWriteAccess(identityInfo, release.ProjectID, true, 0)
+		if err != nil {
+			return nil, apierrors.ErrFormalRelease.InternalError(err)
 		}
-		if err := registry.DeleteManifests(s.bdl, release.ClusterName, imgs); err != nil {
-			logrus.Errorf(err.Error())
+		if !hasAccess {
+			return nil, apierrors.ErrFormalRelease.AccessDenied()
 		}
 	}
+	if err := s.ToFormal([]string{releaseID}); err != nil {
+		return nil, apierrors.ErrFormalRelease.InternalError(err)
+	}
 
-	// delete images from db
-	for _, v := range images {
-		if err := s.imageDB.DeleteImage(int64(v.ID)); err != nil {
-			logrus.Errorf("[alert] delete image: %s fail, err: %v", v.Image, err)
+	releaseType := "application"
+	templateName := apistructs.FormalAppReleaseTemplate
+	if release.IsProjectRelease {
+		releaseType = "project"
+		templateName = apistructs.FormalProjectReleaseTemplate
+	}
+	go func() {
+		if err := s.audit(auditParams{
+			orgID:        orgID,
+			projectID:    release.ProjectID,
+			userID:       identityInfo.UserID,
+			templateName: string(templateName),
+			ctx: map[string]interface{}{
+				"version":   release.Version,
+				"releaseId": releaseID,
+			},
+		}); err != nil {
+			logrus.Errorf("failed to create audit event for formaling %s release, %v", releaseType, err)
 		}
-		logrus.Infof("deleted image: %s", v.Image)
-	}
+	}()
 
-	// delete release info
-	if err := s.db.DeleteRelease(releaseID); err != nil {
-		return err
-	}
-
-	// send release delete event to eventbox
-	event.SendReleaseEvent(event.ReleaseEventDelete, release)
-
-	return nil
+	return &pb.FormalReleaseResponse{
+		Data: "Formal succ",
+	}, nil
 }
 
-// Get get Release
-func (s *releaseService) Get(orgID int64, releaseID string) (*pb.ReleaseGetResponseData, error) {
-	release, err := s.db.GetRelease(releaseID)
+func (s *ReleaseService) CheckVersion(ctx context.Context, req *pb.CheckVersionRequest) (*pb.CheckVersionResponse, error) {
+	_, err := getPermissionHeader(ctx)
 	if err != nil {
-		return nil, err
-	}
-	if orgID != 0 && release.OrgID != orgID {
-		return nil, errors.Errorf("release not found")
+		return nil, apierrors.ErrCheckReleaseVersion.NotLogin()
 	}
 
-	images, err := s.imageDB.GetImagesByRelease(releaseID)
+	var appID int64 = 0
+	if !req.IsProjectRelease {
+		appID = req.AppID
+		if appID == 0 {
+			return nil, apierrors.ErrCheckReleaseVersion.MissingParameter("appID")
+		}
+	}
+	orgID := req.OrgID
+	if orgID == 0 {
+		return nil, apierrors.ErrCheckReleaseVersion.MissingParameter("orgID")
+	}
+	projectID := req.ProjectID
+	if projectID == 0 {
+		return nil, apierrors.ErrCheckReleaseVersion.MissingParameter("projectID")
+	}
+	version := req.Version
+	if version == "" {
+		return nil, apierrors.ErrCheckReleaseVersion.MissingParameter("version")
+	}
+
+	identityInfo, err := getIdentityInfo(ctx)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrCheckReleaseVersion.NotLogin()
 	}
-	releaseInfoResponse := s.convertToReleaseResponse(release)
-	for _, v := range images {
-		releaseInfoResponse.Images = append(releaseInfoResponse.Images, v.Image)
-	}
-
-	return releaseInfoResponse, nil
-}
-
-// List Search based on search parameters
-func (s *releaseService) List(orgID int64, req *pb.ReleaseListRequest) (*pb.ReleaseListResponseData, error) {
-	startTime := time.Unix(req.StartTime/1000, 0)
-	endTime := time.Unix(req.EndTime/1000, 0)
-	total, releases, err := s.db.GetReleasesByParams(
-		orgID, req.ProjectID, req.ApplicationID,
-		req.Query, req.ReleaseName, req.Branch,
-		req.Cluster, req.CrossCluster, req.IsVersion,
-		req.CrossClusterOrSpecifyCluster,
-		startTime, endTime, req.PageNum, req.PageSize)
-	if err != nil {
-		return nil, err
+	if !identityInfo.IsInternalClient() {
+		hasAccess, err := s.hasReadAccess(identityInfo, projectID)
+		if err != nil {
+			return nil, apierrors.ErrCheckReleaseVersion.InternalError(err)
+		}
+		if !hasAccess {
+			return nil, apierrors.ErrCheckReleaseVersion.AccessDenied()
+		}
 	}
 
-	releaseList := make([]*pb.ReleaseGetResponseData, 0, len(releases))
-	for _, v := range releases {
-		releaseList = append(releaseList, s.convertToReleaseResponse(&v))
+	var releases []db.Release
+	if req.IsProjectRelease {
+		releases, err = s.db.GetReleasesByProjectAndVersion(orgID, projectID, version)
+		if err != nil {
+			return nil, apierrors.ErrCheckReleaseVersion
+		}
+	} else {
+		releases, err = s.db.GetReleasesByAppAndVersion(orgID, projectID, appID, version)
+		if err != nil {
+			return nil, apierrors.ErrCheckReleaseVersion
+		}
 	}
-
-	return &pb.ReleaseListResponseData{
-		Total:    total,
-		Releases: releaseList,
+	return &pb.CheckVersionResponse{
+		Data: &pb.CheckVersionResponseData{
+			IsUnique: len(releases) == 0,
+		},
 	}, nil
 }
 
 // GetDiceYAML get dice.yml context
-func (s *releaseService) GetDiceYAML(orgID int64, releaseID string) (string, error) {
+func (s *ReleaseService) GetDiceYAML(orgID int64, releaseID string) (string, error) {
 	release, err := s.db.GetRelease(releaseID)
 	if err != nil {
 		return "", err
@@ -558,7 +882,7 @@ func (s *releaseService) GetDiceYAML(orgID int64, releaseID string) (string, err
 }
 
 // GetIosPlist Read the download address plist in the ios type release
-func (s *releaseService) GetIosPlistService(orgID int64, releaseID string) (string, error) {
+func (s *ReleaseService) GetIosPlistService(orgID int64, releaseID string) (string, error) {
 	release, err := s.db.GetRelease(releaseID)
 	if err != nil {
 		return "", err
@@ -567,7 +891,10 @@ func (s *releaseService) GetIosPlistService(orgID int64, releaseID string) (stri
 		return "", errors.Errorf("release not found")
 	}
 
-	releaseData := s.convertToReleaseResponse(release)
+	releaseData, err := s.convertToReleaseResponse(release)
+	if err != nil {
+		return "", err
+	}
 	for _, resource := range releaseData.Resources {
 		if ResourceType(resource.Type) == ResourceTypeIOS {
 			plistTemplate := `<?xml version="1.0" encoding="UTF-8"?>
@@ -620,7 +947,7 @@ func (s *releaseService) GetIosPlistService(orgID int64, releaseID string) (stri
 }
 
 // GetReleaseNamesByApp get releaseName list by appID
-func (s *releaseService) GetReleaseNamesByApp(orgID, appID int64) ([]string, error) {
+func (s *ReleaseService) GetReleaseNamesByApp(orgID, appID int64) ([]string, error) {
 	// releaseNames := make([]string, 0)
 	// for _, item := range releases {
 	// 	releaseNames = append(releaseNames, item.ReleaseName)
@@ -629,7 +956,7 @@ func (s *releaseService) GetReleaseNamesByApp(orgID, appID int64) ([]string, err
 }
 
 // GetLatestReleasesByProjectAndVersion get latelest Release by projectID & version
-func (s *releaseService) GetLatestReleasesByProjectAndVersion(projectID int64, version string) (*[]db.Release, error) {
+func (s *ReleaseService) GetLatestReleasesByProjectAndVersion(projectID int64, version string) (*[]db.Release, error) {
 	appIDs, err := s.db.GetAppIDsByProjectAndVersion(projectID, version)
 	if err != nil {
 		return nil, err
@@ -648,7 +975,7 @@ func (s *releaseService) GetLatestReleasesByProjectAndVersion(projectID int64, v
 }
 
 // RemoveDeprecatedsReleases Recycling expired release
-func (s *releaseService) RemoveDeprecatedsReleases(now time.Time) error {
+func (s *ReleaseService) RemoveDeprecatedsReleases(now time.Time) error {
 	d, err := time.ParseDuration(strutil.Concat("-", s.Config.MaxTimeReserved, "h")) // one month before, eg: -720h
 	if err != nil {
 		return err
@@ -709,22 +1036,37 @@ func (s *releaseService) RemoveDeprecatedsReleases(now time.Time) error {
 	return nil
 }
 
-func (s *releaseService) Convert(releaseRequest *pb.ReleaseCreateRequest) (*db.Release, error) {
+// Convert 从ReleaseRequest中提取Release元信息, 若为应用级制品, appReleases填nil
+func (s *ReleaseService) Convert(releaseRequest *pb.ReleaseCreateRequest, appReleases []db.Release) (*db.Release, error) {
 	release := db.Release{
-		ReleaseID:       uuid.UUID(),
-		ReleaseName:     releaseRequest.ReleaseName,
-		Desc:            releaseRequest.Desc,
-		Dice:            releaseRequest.Dice,
-		Addon:           releaseRequest.Addon,
-		Version:         releaseRequest.Version,
-		OrgID:           releaseRequest.OrgID,
-		ProjectID:       releaseRequest.ProjectID,
-		ApplicationID:   releaseRequest.ApplicationID,
-		UserID:          releaseRequest.UserID,
-		ClusterName:     releaseRequest.ClusterName,
-		ProjectName:     releaseRequest.ProjectName,
-		ApplicationName: releaseRequest.ApplicationName,
-		CrossCluster:    releaseRequest.CrossCluster,
+		ReleaseID:        uuid.UUID(),
+		ReleaseName:      releaseRequest.ReleaseName,
+		Desc:             releaseRequest.Desc,
+		Dice:             releaseRequest.Dice,
+		Addon:            releaseRequest.Addon,
+		Changelog:        releaseRequest.Changelog,
+		IsStable:         releaseRequest.IsStable,
+		IsFormal:         releaseRequest.IsFormal,
+		IsProjectRelease: releaseRequest.IsProjectRelease,
+		Version:          releaseRequest.Version,
+		OrgID:            releaseRequest.OrgID,
+		ProjectID:        releaseRequest.ProjectID,
+		ApplicationID:    releaseRequest.ApplicationID,
+		ProjectName:      releaseRequest.ProjectName,
+		ApplicationName:  releaseRequest.ApplicationName,
+		UserID:           releaseRequest.UserID,
+		ClusterName:      releaseRequest.ClusterName,
+		CrossCluster:     releaseRequest.CrossCluster,
+		CreatedAt:        time.Time{},
+		UpdatedAt:        time.Time{},
+	}
+
+	if release.ProjectName == "" {
+		project, err := s.bdl.GetProject(uint64(release.ProjectID))
+		if err != nil {
+			return nil, err
+		}
+		release.ProjectName = project.Name
 	}
 
 	if len(releaseRequest.Labels) > 0 {
@@ -733,6 +1075,15 @@ func (s *releaseService) Convert(releaseRequest *pb.ReleaseCreateRequest) (*db.R
 			return nil, err
 		}
 		release.Labels = string(labelBytes)
+		release.GitBranch = releaseRequest.Labels["gitBranch"]
+	}
+
+	if len(releaseRequest.Tags) > 0 {
+		tagBytes, err := json.Marshal(releaseRequest.Tags)
+		if err != nil {
+			return nil, err
+		}
+		release.Tags = string(tagBytes)
 	}
 
 	if len(releaseRequest.Resources) > 0 {
@@ -743,10 +1094,39 @@ func (s *releaseService) Convert(releaseRequest *pb.ReleaseCreateRequest) (*db.R
 		release.Resources = string(resourceBytes)
 	}
 
+	if releaseRequest.IsProjectRelease {
+		if len(appReleases) == 0 {
+			return nil, errors.New("application release list can not be null for project release when dice yaml is empty")
+		}
+
+		selectedApp := make(map[int64]struct{})
+		for i := range appReleases {
+			if _, ok := selectedApp[appReleases[i].ApplicationID]; ok {
+				return nil, errors.New("one application can only be selected once")
+			}
+			selectedApp[appReleases[i].ApplicationID] = struct{}{}
+		}
+		release.ApplicationID = 0
+		release.ApplicationName = ""
+		release.Dice = ""
+
+		var list [][]string
+		for i := 0; i < len(releaseRequest.ApplicationReleaseList); i++ {
+			if releaseRequest.ApplicationReleaseList[i] == nil {
+				continue
+			}
+			list = append(list, releaseRequest.ApplicationReleaseList[i].List)
+		}
+		listData, err := json.Marshal(list)
+		if err != nil {
+			return nil, errors.Errorf("failed to marshal release list, %v", err)
+		}
+		release.ApplicationReleaseList = string(listData)
+	}
 	return &release, nil
 }
 
-func (s *releaseService) convertToReleaseResponse(release *db.Release) *pb.ReleaseGetResponseData {
+func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.ReleaseGetResponseData, error) {
 	var labels map[string]string
 	err := json.Unmarshal([]byte(release.Labels), &labels)
 	if err != nil {
@@ -759,85 +1139,198 @@ func (s *releaseService) convertToReleaseResponse(release *db.Release) *pb.Relea
 		resources = make([]*pb.ReleaseResource, 0)
 	}
 
+	var summary []*pb.ReleaseSummaryArray
+	if release.IsProjectRelease {
+		var appReleaseIDs [][]string
+		if err = json.Unmarshal([]byte(release.ApplicationReleaseList), &appReleaseIDs); err != nil {
+			return nil, errors.Errorf("failed to Unmarshal appReleaseIDs")
+		}
+
+		var list []string
+		for i := 0; i < len(appReleaseIDs); i++ {
+			list = append(list, appReleaseIDs[i]...)
+		}
+		appReleases, err := s.db.GetReleases(list)
+		if err != nil {
+			return nil, err
+		}
+
+		id2Release := make(map[string]*db.Release)
+		for i := 0; i < len(appReleases); i++ {
+			id2Release[appReleases[i].ReleaseID] = &appReleases[i]
+		}
+
+		summary = make([]*pb.ReleaseSummaryArray, len(appReleaseIDs))
+		for i := 0; i < len(appReleaseIDs); i++ {
+			summary[i] = &pb.ReleaseSummaryArray{List: make([]*pb.ApplicationReleaseSummary, len(appReleaseIDs[i]))}
+			for j := 0; j < len(appReleaseIDs[i]); j++ {
+				id := appReleaseIDs[i][j]
+				summary[i].List[j] = &pb.ApplicationReleaseSummary{
+					ReleaseID:       id2Release[id].ReleaseID,
+					ReleaseName:     id2Release[id].ReleaseName,
+					Version:         id2Release[id].Version,
+					ApplicationID:   id2Release[id].ApplicationID,
+					ApplicationName: id2Release[id].ApplicationName,
+					CreatedAt:       id2Release[id].CreatedAt.Format("2006/01/02 15:04:05"),
+					DiceYml:         id2Release[id].Dice,
+				}
+			}
+		}
+	}
+
 	respData := &pb.ReleaseGetResponseData{
-		ReleaseID:       release.ReleaseID,
-		ReleaseName:     release.ReleaseName,
-		Addon:           release.Addon,
-		Diceyml:         release.Dice,
-		Resources:       resources,
-		Desc:            release.Desc,
-		Labels:          labels,
-		Version:         release.Version,
-		Reference:       release.Reference,
-		OrgID:           release.OrgID,
-		ProjectID:       release.ProjectID,
-		ApplicationID:   release.ApplicationID,
-		ClusterName:     release.ClusterName,
-		CreatedAt:       timestamppb.New(release.CreatedAt),
-		UpdatedAt:       timestamppb.New(release.UpdatedAt),
-		ProjectName:     release.ProjectName,
-		ApplicationName: release.ApplicationName,
-		UserID:          release.UserID,
-		CrossCluster:    release.CrossCluster,
+		ReleaseID:              release.ReleaseID,
+		ReleaseName:            release.ReleaseName,
+		Diceyml:                release.Dice,
+		Desc:                   release.Desc,
+		Addon:                  release.Addon,
+		Changelog:              release.Changelog,
+		IsStable:               release.IsStable,
+		IsFormal:               release.IsFormal,
+		IsProjectRelease:       release.IsProjectRelease,
+		ApplicationReleaseList: summary,
+		Resources:              resources,
+		Labels:                 labels,
+		Tags:                   release.Tags,
+		Version:                release.Version,
+		CrossCluster:           release.CrossCluster,
+		Reference:              release.Reference,
+		OrgID:                  release.OrgID,
+		ProjectID:              release.ProjectID,
+		ApplicationID:          release.ApplicationID,
+		ProjectName:            release.ProjectName,
+		ApplicationName:        release.ApplicationName,
+		UserID:                 release.UserID,
+		ClusterName:            release.ClusterName,
+		CreatedAt:              timestamppb.New(release.CreatedAt),
+		UpdatedAt:              timestamppb.New(release.UpdatedAt),
 	}
-	return respData
+	if err = respDataReLoadImages(respData); err != nil {
+		logrus.WithError(err).Errorln("failed to ReLoadImages")
+		return nil, err
+	}
+
+	return respData, nil
 }
 
-// GetImages get image by ReleaseRequest
-func (s *releaseService) GetImages(req *pb.ReleaseCreateRequest) []*imagedb.Image {
-	var dice diceyml.Object
-	err := yaml.Unmarshal([]byte(req.Dice), &dice)
+func summaryReLoadImages(r *pb.ApplicationReleaseSummary) error {
+	if r == nil {
+		return nil
+	}
+	if r.DiceYml == "" {
+		return errors.Errorf("invalid release file: it is empty, applicationID: %v, applicationName: %s",
+			r.ApplicationID, r.ApplicationName)
+	}
+	deployable, err := diceyml.NewDeployable([]byte(r.DiceYml), diceyml.WS_PROD, false)
 	if err != nil {
-		return make([]*imagedb.Image, 0)
+		return err
 	}
-
-	// Get images from dice.yml
-	images := make([]*imagedb.Image, 0)
-	for key, service := range dice.Services {
-		// Check service if contain any image
-		if service.Image == "" {
-			logrus.Errorf("service %s doesn't contain any image", key)
-			continue
-		}
-		repoName, tag := parseImage(service.Image)
-		image := &imagedb.Image{
-			Image:     service.Image,
-			ImageName: repoName,
-			ImageTag:  tag,
-		}
-		images = append(images, image)
+	var obj = deployable.Obj()
+	r.Services = nil
+	for name, service := range obj.Services {
+		r.Services = append(r.Services, &pb.ServiceImagePair{
+			ServiceName: name,
+			Image:       service.Image,
+		})
 	}
-	for key, job := range dice.Jobs {
-		// Check service if contain any image
-		if job.Image == "" {
-			logrus.Errorf("job %s doesn't contain any image", key)
-			continue
-		}
-		repoName, tag := parseImage(job.Image)
-		image := &imagedb.Image{
-			Image:     job.Image,
-			ImageName: repoName,
-			ImageTag:  tag,
-		}
-		images = append(images, image)
-	}
-	return images
+	return nil
 }
 
-// image format: docker-registry.registry.marathon.mesos:5000/pampas-blog/blog-service:v0.2
-func parseImage(image string) (repoName, tag string) {
-	ss := strings.SplitN(image, "/", 2)
-	if len(ss) == 2 {
-		repo := strings.Split(ss[1], ":")[0]
-		var repoTag string
-		if strings.Contains(ss[1], ":") {
-			repoTag = strings.Split(ss[1], ":")[1]
-		} else {
-			repoTag = "latest"
+func respDataReLoadImages(r *pb.ReleaseGetResponseData) error {
+	for i := 0; i < len(r.ApplicationReleaseList); i++ {
+		if r.ApplicationReleaseList[i] == nil {
+			continue
 		}
-		return repo, repoTag
+		for j := 0; j < len(r.ApplicationReleaseList[i].List); j++ {
+			if err := summaryReLoadImages(r.ApplicationReleaseList[i].List[j]); err != nil {
+				return err
+			}
+		}
 	}
-	return "", ""
+
+	if r.Diceyml == "" {
+		return nil
+	}
+	deployable, err := diceyml.NewDeployable([]byte(r.Diceyml), diceyml.WS_PROD, false)
+	if err != nil {
+		return err
+	}
+	var obj = deployable.Obj()
+	r.Images = nil
+	r.ServiceImages = nil
+	for name, service := range obj.Services {
+		r.Images = append(r.Images, service.Image)
+		r.ServiceImages = append(r.ServiceImages, &pb.ServiceImagePair{
+			ServiceName: name,
+			Image:       service.Image,
+		})
+	}
+
+	return nil
+}
+
+// hasReadAccess check whether user has access to get project
+func (s *ReleaseService) hasReadAccess(identityInfo apistructs.IdentityInfo, projectID int64) (bool, error) {
+	access, err := s.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   identityInfo.UserID,
+		Scope:    apistructs.ProjectScope,
+		ScopeID:  uint64(projectID),
+		Resource: apistructs.ProjectResource,
+		Action:   apistructs.GetAction,
+	})
+	if err != nil {
+		return false, err
+	}
+	if !access.Access {
+		return false, nil
+	}
+	return true, nil
+}
+
+// hasWriteAccess check whether user is project owner or project lead
+func (s *ReleaseService) hasWriteAccess(identity apistructs.IdentityInfo, projectID int64, isProjectRelease bool, applicationID int64) (bool, error) {
+	req := &apistructs.ScopeRoleAccessRequest{
+		Scope: apistructs.Scope{
+			Type: apistructs.ProjectScope,
+			ID:   strconv.FormatInt(projectID, 10),
+		},
+	}
+	rsp, err := s.bdl.ScopeRoleAccess(identity.UserID, req)
+	if err != nil {
+		return false, err
+	}
+
+	hasProjectAccess := false
+	for _, role := range rsp.Roles {
+		if role == bundle.RoleProjectOwner || role == bundle.RoleProjectLead || role == bundle.RoleProjectPM {
+			hasProjectAccess = true
+			break
+		}
+	}
+
+	if isProjectRelease || hasProjectAccess {
+		return hasProjectAccess, nil
+	}
+
+	req = &apistructs.ScopeRoleAccessRequest{
+		Scope: apistructs.Scope{
+			Type: apistructs.AppScope,
+			ID:   strconv.FormatInt(applicationID, 10),
+		},
+	}
+	rsp, err = s.bdl.ScopeRoleAccess(identity.UserID, req)
+	if err != nil {
+		return false, err
+	}
+
+	hasAppAccess := false
+	for _, role := range rsp.Roles {
+		if role == bundle.RoleAppOwner || role == bundle.RoleAppLead {
+			hasAppAccess = true
+			break
+		}
+	}
+	return hasAppAccess, nil
 }
 
 func batchConvert(releases *[]db.Release) ([]*pb.GetLatestReleasesResponseData, error) {
@@ -891,4 +1384,64 @@ func getIdentityInfo(ctx context.Context) (apistructs.IdentityInfo, error) {
 	}
 
 	return identity, nil
+}
+
+func limitLabelsLength(req *pb.ReleaseCreateRequest) error {
+	if len(req.Labels) == 0 {
+		return nil
+	}
+	labelBytes, err := json.Marshal(req.Labels)
+	if err != nil {
+		return err
+	}
+	if len([]rune(string(labelBytes))) <= 1000 {
+		return nil
+	}
+
+	for k, v := range req.Labels {
+		runes := []rune(v)
+		if len(runes) > 100 {
+			req.Labels[k] = string(runes[:100]) + "..."
+		}
+	}
+	return nil
+}
+
+func parseMetadata(file io.ReadCloser) (*apistructs.ReleaseMetadata, error) {
+	var metadata apistructs.ReleaseMetadata
+	buf := bytes.Buffer{}
+	if _, err := io.Copy(&buf, file); err != nil {
+		return nil, err
+	}
+	found := false
+	r, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	if err != nil {
+		return nil, err
+	}
+	for _, f := range r.File {
+		rc, err := f.Open()
+		if err != nil {
+			return nil, err
+		}
+		buf := bytes.Buffer{}
+		if _, err = io.Copy(&buf, rc); err != nil {
+			return nil, err
+		}
+
+		splits := strings.Split(f.Name, "/")
+		if len(splits) == 2 && splits[1] == "metadata.yml" {
+			if err := yaml.Unmarshal(buf.Bytes(), &metadata); err != nil {
+				return nil, err
+			}
+			found = true
+			break
+		}
+		if err := rc.Close(); err != nil {
+			return nil, err
+		}
+	}
+	if !found {
+		return nil, errors.New("invalid file, metadata.yml not found")
+	}
+	return &metadata, nil
 }

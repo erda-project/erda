@@ -22,15 +22,21 @@ const _ = grpc.SupportPackageIsVersion5
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ReleaseServiceClient interface {
 	CreateRelease(ctx context.Context, in *ReleaseCreateRequest, opts ...grpc.CallOption) (*ReleaseCreateResponseData, error)
-	UpdateRelease(ctx context.Context, in *ReleaseUpdateRequest, opts ...grpc.CallOption) (*ReleaseDataResponse, error)
+	UpdateRelease(ctx context.Context, in *ReleaseUpdateRequest, opts ...grpc.CallOption) (*ReleaseUpdateResponse, error)
 	UpdateReleaseReference(ctx context.Context, in *ReleaseReferenceUpdateRequest, opts ...grpc.CallOption) (*ReleaseDataResponse, error)
 	GetIosPlist(ctx context.Context, in *GetIosPlistRequest, opts ...grpc.CallOption) (*GetIosPlistResponse, error)
-	GetRelease(ctx context.Context, in *GetIosPlistRequest, opts ...grpc.CallOption) (*ReleaseGetResponse, error)
-	DeleteRelease(ctx context.Context, in *GetIosPlistRequest, opts ...grpc.CallOption) (*ReleaseDataResponse, error)
+	GetRelease(ctx context.Context, in *ReleaseGetRequest, opts ...grpc.CallOption) (*ReleaseGetResponse, error)
+	DeleteRelease(ctx context.Context, in *ReleaseDeleteRequest, opts ...grpc.CallOption) (*ReleaseDeleteResponse, error)
 	ListRelease(ctx context.Context, in *ReleaseListRequest, opts ...grpc.CallOption) (*ReleaseListResponse, error)
 	ListReleaseName(ctx context.Context, in *ListReleaseNameRequest, opts ...grpc.CallOption) (*ListReleaseNameResponse, error)
 	GetLatestReleases(ctx context.Context, in *GetLatestReleasesRequest, opts ...grpc.CallOption) (*GetLatestReleasesResponse, error)
 	ReleaseGC(ctx context.Context, in *ReleaseGCRequest, opts ...grpc.CallOption) (*ReleaseDataResponse, error)
+	UploadRelease(ctx context.Context, in *ReleaseUploadRequest, opts ...grpc.CallOption) (*ReleaseUploadResponse, error)
+	ParseReleaseFile(ctx context.Context, in *ParseReleaseFileRequest, opts ...grpc.CallOption) (*ParseReleaseFileResponse, error)
+	ToFormalRelease(ctx context.Context, in *FormalReleaseRequest, opts ...grpc.CallOption) (*FormalReleaseResponse, error)
+	ToFormalReleases(ctx context.Context, in *FormalReleasesRequest, opts ...grpc.CallOption) (*FormalReleasesResponse, error)
+	DeleteReleases(ctx context.Context, in *ReleasesDeleteRequest, opts ...grpc.CallOption) (*ReleasesDeleteResponse, error)
+	CheckVersion(ctx context.Context, in *CheckVersionRequest, opts ...grpc.CallOption) (*CheckVersionResponse, error)
 }
 
 type releaseServiceClient struct {
@@ -50,8 +56,8 @@ func (c *releaseServiceClient) CreateRelease(ctx context.Context, in *ReleaseCre
 	return out, nil
 }
 
-func (c *releaseServiceClient) UpdateRelease(ctx context.Context, in *ReleaseUpdateRequest, opts ...grpc.CallOption) (*ReleaseDataResponse, error) {
-	out := new(ReleaseDataResponse)
+func (c *releaseServiceClient) UpdateRelease(ctx context.Context, in *ReleaseUpdateRequest, opts ...grpc.CallOption) (*ReleaseUpdateResponse, error) {
+	out := new(ReleaseUpdateResponse)
 	err := c.cc.Invoke(ctx, "/erda.core.dicehub.release.ReleaseService/UpdateRelease", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -77,7 +83,7 @@ func (c *releaseServiceClient) GetIosPlist(ctx context.Context, in *GetIosPlistR
 	return out, nil
 }
 
-func (c *releaseServiceClient) GetRelease(ctx context.Context, in *GetIosPlistRequest, opts ...grpc.CallOption) (*ReleaseGetResponse, error) {
+func (c *releaseServiceClient) GetRelease(ctx context.Context, in *ReleaseGetRequest, opts ...grpc.CallOption) (*ReleaseGetResponse, error) {
 	out := new(ReleaseGetResponse)
 	err := c.cc.Invoke(ctx, "/erda.core.dicehub.release.ReleaseService/GetRelease", in, out, opts...)
 	if err != nil {
@@ -86,8 +92,8 @@ func (c *releaseServiceClient) GetRelease(ctx context.Context, in *GetIosPlistRe
 	return out, nil
 }
 
-func (c *releaseServiceClient) DeleteRelease(ctx context.Context, in *GetIosPlistRequest, opts ...grpc.CallOption) (*ReleaseDataResponse, error) {
-	out := new(ReleaseDataResponse)
+func (c *releaseServiceClient) DeleteRelease(ctx context.Context, in *ReleaseDeleteRequest, opts ...grpc.CallOption) (*ReleaseDeleteResponse, error) {
+	out := new(ReleaseDeleteResponse)
 	err := c.cc.Invoke(ctx, "/erda.core.dicehub.release.ReleaseService/DeleteRelease", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -131,20 +137,80 @@ func (c *releaseServiceClient) ReleaseGC(ctx context.Context, in *ReleaseGCReque
 	return out, nil
 }
 
+func (c *releaseServiceClient) UploadRelease(ctx context.Context, in *ReleaseUploadRequest, opts ...grpc.CallOption) (*ReleaseUploadResponse, error) {
+	out := new(ReleaseUploadResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.dicehub.release.ReleaseService/UploadRelease", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *releaseServiceClient) ParseReleaseFile(ctx context.Context, in *ParseReleaseFileRequest, opts ...grpc.CallOption) (*ParseReleaseFileResponse, error) {
+	out := new(ParseReleaseFileResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.dicehub.release.ReleaseService/ParseReleaseFile", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *releaseServiceClient) ToFormalRelease(ctx context.Context, in *FormalReleaseRequest, opts ...grpc.CallOption) (*FormalReleaseResponse, error) {
+	out := new(FormalReleaseResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.dicehub.release.ReleaseService/ToFormalRelease", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *releaseServiceClient) ToFormalReleases(ctx context.Context, in *FormalReleasesRequest, opts ...grpc.CallOption) (*FormalReleasesResponse, error) {
+	out := new(FormalReleasesResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.dicehub.release.ReleaseService/ToFormalReleases", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *releaseServiceClient) DeleteReleases(ctx context.Context, in *ReleasesDeleteRequest, opts ...grpc.CallOption) (*ReleasesDeleteResponse, error) {
+	out := new(ReleasesDeleteResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.dicehub.release.ReleaseService/DeleteReleases", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *releaseServiceClient) CheckVersion(ctx context.Context, in *CheckVersionRequest, opts ...grpc.CallOption) (*CheckVersionResponse, error) {
+	out := new(CheckVersionResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.dicehub.release.ReleaseService/CheckVersion", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReleaseServiceServer is the server API for ReleaseService service.
 // All implementations should embed UnimplementedReleaseServiceServer
 // for forward compatibility
 type ReleaseServiceServer interface {
 	CreateRelease(context.Context, *ReleaseCreateRequest) (*ReleaseCreateResponseData, error)
-	UpdateRelease(context.Context, *ReleaseUpdateRequest) (*ReleaseDataResponse, error)
+	UpdateRelease(context.Context, *ReleaseUpdateRequest) (*ReleaseUpdateResponse, error)
 	UpdateReleaseReference(context.Context, *ReleaseReferenceUpdateRequest) (*ReleaseDataResponse, error)
 	GetIosPlist(context.Context, *GetIosPlistRequest) (*GetIosPlistResponse, error)
-	GetRelease(context.Context, *GetIosPlistRequest) (*ReleaseGetResponse, error)
-	DeleteRelease(context.Context, *GetIosPlistRequest) (*ReleaseDataResponse, error)
+	GetRelease(context.Context, *ReleaseGetRequest) (*ReleaseGetResponse, error)
+	DeleteRelease(context.Context, *ReleaseDeleteRequest) (*ReleaseDeleteResponse, error)
 	ListRelease(context.Context, *ReleaseListRequest) (*ReleaseListResponse, error)
 	ListReleaseName(context.Context, *ListReleaseNameRequest) (*ListReleaseNameResponse, error)
 	GetLatestReleases(context.Context, *GetLatestReleasesRequest) (*GetLatestReleasesResponse, error)
 	ReleaseGC(context.Context, *ReleaseGCRequest) (*ReleaseDataResponse, error)
+	UploadRelease(context.Context, *ReleaseUploadRequest) (*ReleaseUploadResponse, error)
+	ParseReleaseFile(context.Context, *ParseReleaseFileRequest) (*ParseReleaseFileResponse, error)
+	ToFormalRelease(context.Context, *FormalReleaseRequest) (*FormalReleaseResponse, error)
+	ToFormalReleases(context.Context, *FormalReleasesRequest) (*FormalReleasesResponse, error)
+	DeleteReleases(context.Context, *ReleasesDeleteRequest) (*ReleasesDeleteResponse, error)
+	CheckVersion(context.Context, *CheckVersionRequest) (*CheckVersionResponse, error)
 }
 
 // UnimplementedReleaseServiceServer should be embedded to have forward compatible implementations.
@@ -154,7 +220,7 @@ type UnimplementedReleaseServiceServer struct {
 func (*UnimplementedReleaseServiceServer) CreateRelease(context.Context, *ReleaseCreateRequest) (*ReleaseCreateResponseData, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateRelease not implemented")
 }
-func (*UnimplementedReleaseServiceServer) UpdateRelease(context.Context, *ReleaseUpdateRequest) (*ReleaseDataResponse, error) {
+func (*UnimplementedReleaseServiceServer) UpdateRelease(context.Context, *ReleaseUpdateRequest) (*ReleaseUpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateRelease not implemented")
 }
 func (*UnimplementedReleaseServiceServer) UpdateReleaseReference(context.Context, *ReleaseReferenceUpdateRequest) (*ReleaseDataResponse, error) {
@@ -163,10 +229,10 @@ func (*UnimplementedReleaseServiceServer) UpdateReleaseReference(context.Context
 func (*UnimplementedReleaseServiceServer) GetIosPlist(context.Context, *GetIosPlistRequest) (*GetIosPlistResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetIosPlist not implemented")
 }
-func (*UnimplementedReleaseServiceServer) GetRelease(context.Context, *GetIosPlistRequest) (*ReleaseGetResponse, error) {
+func (*UnimplementedReleaseServiceServer) GetRelease(context.Context, *ReleaseGetRequest) (*ReleaseGetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRelease not implemented")
 }
-func (*UnimplementedReleaseServiceServer) DeleteRelease(context.Context, *GetIosPlistRequest) (*ReleaseDataResponse, error) {
+func (*UnimplementedReleaseServiceServer) DeleteRelease(context.Context, *ReleaseDeleteRequest) (*ReleaseDeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteRelease not implemented")
 }
 func (*UnimplementedReleaseServiceServer) ListRelease(context.Context, *ReleaseListRequest) (*ReleaseListResponse, error) {
@@ -180,6 +246,24 @@ func (*UnimplementedReleaseServiceServer) GetLatestReleases(context.Context, *Ge
 }
 func (*UnimplementedReleaseServiceServer) ReleaseGC(context.Context, *ReleaseGCRequest) (*ReleaseDataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReleaseGC not implemented")
+}
+func (*UnimplementedReleaseServiceServer) UploadRelease(context.Context, *ReleaseUploadRequest) (*ReleaseUploadResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UploadRelease not implemented")
+}
+func (*UnimplementedReleaseServiceServer) ParseReleaseFile(context.Context, *ParseReleaseFileRequest) (*ParseReleaseFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ParseReleaseFile not implemented")
+}
+func (*UnimplementedReleaseServiceServer) ToFormalRelease(context.Context, *FormalReleaseRequest) (*FormalReleaseResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ToFormalRelease not implemented")
+}
+func (*UnimplementedReleaseServiceServer) ToFormalReleases(context.Context, *FormalReleasesRequest) (*FormalReleasesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ToFormalReleases not implemented")
+}
+func (*UnimplementedReleaseServiceServer) DeleteReleases(context.Context, *ReleasesDeleteRequest) (*ReleasesDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteReleases not implemented")
+}
+func (*UnimplementedReleaseServiceServer) CheckVersion(context.Context, *CheckVersionRequest) (*CheckVersionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckVersion not implemented")
 }
 
 func RegisterReleaseServiceServer(s grpc1.ServiceRegistrar, srv ReleaseServiceServer, opts ...grpc1.HandleOption) {
@@ -237,7 +321,7 @@ func _get_ReleaseService_serviceDesc(srv ReleaseServiceServer, opts ...grpc1.Han
 	}
 
 	_ReleaseService_GetRelease_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.GetRelease(ctx, req.(*GetIosPlistRequest))
+		return srv.GetRelease(ctx, req.(*ReleaseGetRequest))
 	}
 	var _ReleaseService_GetRelease_info transport.ServiceInfo
 	if h.Interceptor != nil {
@@ -246,7 +330,7 @@ func _get_ReleaseService_serviceDesc(srv ReleaseServiceServer, opts ...grpc1.Han
 	}
 
 	_ReleaseService_DeleteRelease_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.DeleteRelease(ctx, req.(*GetIosPlistRequest))
+		return srv.DeleteRelease(ctx, req.(*ReleaseDeleteRequest))
 	}
 	var _ReleaseService_DeleteRelease_info transport.ServiceInfo
 	if h.Interceptor != nil {
@@ -288,6 +372,60 @@ func _get_ReleaseService_serviceDesc(srv ReleaseServiceServer, opts ...grpc1.Han
 	if h.Interceptor != nil {
 		_ReleaseService_ReleaseGC_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "ReleaseGC", srv)
 		_ReleaseService_ReleaseGC_Handler = h.Interceptor(_ReleaseService_ReleaseGC_Handler)
+	}
+
+	_ReleaseService_UploadRelease_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.UploadRelease(ctx, req.(*ReleaseUploadRequest))
+	}
+	var _ReleaseService_UploadRelease_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ReleaseService_UploadRelease_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "UploadRelease", srv)
+		_ReleaseService_UploadRelease_Handler = h.Interceptor(_ReleaseService_UploadRelease_Handler)
+	}
+
+	_ReleaseService_ParseReleaseFile_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.ParseReleaseFile(ctx, req.(*ParseReleaseFileRequest))
+	}
+	var _ReleaseService_ParseReleaseFile_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ReleaseService_ParseReleaseFile_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "ParseReleaseFile", srv)
+		_ReleaseService_ParseReleaseFile_Handler = h.Interceptor(_ReleaseService_ParseReleaseFile_Handler)
+	}
+
+	_ReleaseService_ToFormalRelease_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.ToFormalRelease(ctx, req.(*FormalReleaseRequest))
+	}
+	var _ReleaseService_ToFormalRelease_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ReleaseService_ToFormalRelease_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "ToFormalRelease", srv)
+		_ReleaseService_ToFormalRelease_Handler = h.Interceptor(_ReleaseService_ToFormalRelease_Handler)
+	}
+
+	_ReleaseService_ToFormalReleases_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.ToFormalReleases(ctx, req.(*FormalReleasesRequest))
+	}
+	var _ReleaseService_ToFormalReleases_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ReleaseService_ToFormalReleases_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "ToFormalReleases", srv)
+		_ReleaseService_ToFormalReleases_Handler = h.Interceptor(_ReleaseService_ToFormalReleases_Handler)
+	}
+
+	_ReleaseService_DeleteReleases_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.DeleteReleases(ctx, req.(*ReleasesDeleteRequest))
+	}
+	var _ReleaseService_DeleteReleases_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ReleaseService_DeleteReleases_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "DeleteReleases", srv)
+		_ReleaseService_DeleteReleases_Handler = h.Interceptor(_ReleaseService_DeleteReleases_Handler)
+	}
+
+	_ReleaseService_CheckVersion_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.CheckVersion(ctx, req.(*CheckVersionRequest))
+	}
+	var _ReleaseService_CheckVersion_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ReleaseService_CheckVersion_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "CheckVersion", srv)
+		_ReleaseService_CheckVersion_Handler = h.Interceptor(_ReleaseService_CheckVersion_Handler)
 	}
 
 	var serviceDesc = _ReleaseService_serviceDesc
@@ -387,7 +525,7 @@ func _get_ReleaseService_serviceDesc(srv ReleaseServiceServer, opts ...grpc1.Han
 		{
 			MethodName: "GetRelease",
 			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-				in := new(GetIosPlistRequest)
+				in := new(ReleaseGetRequest)
 				if err := dec(in); err != nil {
 					return nil, err
 				}
@@ -410,7 +548,7 @@ func _get_ReleaseService_serviceDesc(srv ReleaseServiceServer, opts ...grpc1.Han
 		{
 			MethodName: "DeleteRelease",
 			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-				in := new(GetIosPlistRequest)
+				in := new(ReleaseDeleteRequest)
 				if err := dec(in); err != nil {
 					return nil, err
 				}
@@ -520,6 +658,144 @@ func _get_ReleaseService_serviceDesc(srv ReleaseServiceServer, opts ...grpc1.Han
 					FullMethod: "/erda.core.dicehub.release.ReleaseService/ReleaseGC",
 				}
 				return interceptor(ctx, in, info, _ReleaseService_ReleaseGC_Handler)
+			},
+		},
+		{
+			MethodName: "UploadRelease",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(ReleaseUploadRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ReleaseServiceServer).UploadRelease(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ReleaseService_UploadRelease_info)
+				}
+				if interceptor == nil {
+					return _ReleaseService_UploadRelease_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.dicehub.release.ReleaseService/UploadRelease",
+				}
+				return interceptor(ctx, in, info, _ReleaseService_UploadRelease_Handler)
+			},
+		},
+		{
+			MethodName: "ParseReleaseFile",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(ParseReleaseFileRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ReleaseServiceServer).ParseReleaseFile(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ReleaseService_ParseReleaseFile_info)
+				}
+				if interceptor == nil {
+					return _ReleaseService_ParseReleaseFile_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.dicehub.release.ReleaseService/ParseReleaseFile",
+				}
+				return interceptor(ctx, in, info, _ReleaseService_ParseReleaseFile_Handler)
+			},
+		},
+		{
+			MethodName: "ToFormalRelease",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(FormalReleaseRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ReleaseServiceServer).ToFormalRelease(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ReleaseService_ToFormalRelease_info)
+				}
+				if interceptor == nil {
+					return _ReleaseService_ToFormalRelease_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.dicehub.release.ReleaseService/ToFormalRelease",
+				}
+				return interceptor(ctx, in, info, _ReleaseService_ToFormalRelease_Handler)
+			},
+		},
+		{
+			MethodName: "ToFormalReleases",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(FormalReleasesRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ReleaseServiceServer).ToFormalReleases(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ReleaseService_ToFormalReleases_info)
+				}
+				if interceptor == nil {
+					return _ReleaseService_ToFormalReleases_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.dicehub.release.ReleaseService/ToFormalReleases",
+				}
+				return interceptor(ctx, in, info, _ReleaseService_ToFormalReleases_Handler)
+			},
+		},
+		{
+			MethodName: "DeleteReleases",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(ReleasesDeleteRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ReleaseServiceServer).DeleteReleases(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ReleaseService_DeleteReleases_info)
+				}
+				if interceptor == nil {
+					return _ReleaseService_DeleteReleases_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.dicehub.release.ReleaseService/DeleteReleases",
+				}
+				return interceptor(ctx, in, info, _ReleaseService_DeleteReleases_Handler)
+			},
+		},
+		{
+			MethodName: "CheckVersion",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(CheckVersionRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ReleaseServiceServer).CheckVersion(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ReleaseService_CheckVersion_info)
+				}
+				if interceptor == nil {
+					return _ReleaseService_CheckVersion_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.dicehub.release.ReleaseService/CheckVersion",
+				}
+				return interceptor(ctx, in, info, _ReleaseService_CheckVersion_Handler)
 			},
 		},
 	}

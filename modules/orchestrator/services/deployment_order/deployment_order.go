@@ -16,9 +16,9 @@ package deployment_order
 
 import (
 	"fmt"
-
 	"strings"
 
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
@@ -33,11 +33,12 @@ const (
 )
 
 type DeploymentOrder struct {
-	db     *dbclient.DBClient
-	bdl    *bundle.Bundle
-	rt     *runtime.Runtime
-	deploy *deployment.Deployment
-	queue  *queue.PusherQueue
+	db         *dbclient.DBClient
+	bdl        *bundle.Bundle
+	rt         *runtime.Runtime
+	deploy     *deployment.Deployment
+	queue      *queue.PusherQueue
+	releaseSvc pb.ReleaseServiceServer
 }
 
 type Option func(*DeploymentOrder)
@@ -82,6 +83,13 @@ func WithDeployment(deploy *deployment.Deployment) Option {
 func WithQueue(queue *queue.PusherQueue) Option {
 	return func(d *DeploymentOrder) {
 		d.queue = queue
+	}
+}
+
+// WithReleaseSvc with dicehub release service
+func WithReleaseSvc(svc pb.ReleaseServiceServer) Option {
+	return func(d *DeploymentOrder) {
+		d.releaseSvc = svc
 	}
 }
 

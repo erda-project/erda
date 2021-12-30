@@ -53,7 +53,7 @@ func (b *ComponentAddPodButton) InitComponent(ctx context.Context) {
 	b.sdk = sdk
 }
 
-func (b *ComponentAddPodButton) Transfer(component *cptype.Component) {
-	component.Props = cputil.MustConvertProps(b.Props)
-	component.Operations = b.Operations
+func (b *ComponentAddPodButton) Transfer(c *cptype.Component) {
+	c.Props = cputil.MustConvertProps(b.Props)
+	c.Operations = b.Operations
 }

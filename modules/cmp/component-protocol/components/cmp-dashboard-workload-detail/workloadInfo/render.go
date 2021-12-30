@@ -67,16 +67,16 @@ func (i *ComponentWorkloadInfo) InitComponent(ctx context.Context) {
 	i.server = steveServer
 }
 
-func (i *ComponentWorkloadInfo) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (i *ComponentWorkloadInfo) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var infoState State
-	data, err := json.Marshal(c.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &infoState); err != nil {
+	if err = json.Unmarshal(jsonData, &infoState); err != nil {
 		return err
 	}
 	i.State = infoState
@@ -161,12 +161,12 @@ func (i *ComponentWorkloadInfo) SetComponentValue(ctx context.Context) error {
 	return nil
 }
 
-func (i *ComponentWorkloadInfo) Transfer(c *cptype.Component) {
-	c.Props = cputil.MustConvertProps(i.Props)
-	c.Data = map[string]interface{}{
+func (i *ComponentWorkloadInfo) Transfer(component *cptype.Component) {
+	component.Props = cputil.MustConvertProps(i.Props)
+	component.Data = map[string]interface{}{
 		"data": i.Data.Data,
 	}
-	c.State = map[string]interface{}{
+	component.State = map[string]interface{}{
 		"clusterName": i.State.ClusterName,
 		"workloadId":  i.State.WorkloadID,
 	}
