@@ -301,6 +301,13 @@ component-protocol.components.service-overview:
 component-protocol.components.service-overview.page:
 component-protocol.components.service-overview.grid:
 
-
+# transaction-cache-analysis
+component-protocol.components.transaction-cache-analysis.content:
+component-protocol.components.transaction-cache-analysis.table:
+component-protocol.components.transaction-cache-analysis.tableFilter:
+component-protocol.components.transaction-cache-analysis.grid:
+component-protocol.components.transaction-cache-analysis.page:
+component-protocol.components.transaction-cache-analysis.rps:
+component-protocol.components.transaction-cache-analysis.avgDuration:
 
 
