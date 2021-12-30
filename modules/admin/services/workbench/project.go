@@ -57,8 +57,8 @@ func (w *Workbench) GetProjNum(identity apistructs.Identity, query string) (int,
 
 func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, projects []apistructs.ProjectDTO) (list []apistructs.WorkbenchProjOverviewItem, err error) {
 	var (
-		pidList []uint64
-	    issueInfo *apistructs.WorkbenchResponse
+		pidList       []uint64
+		issueInfo     *apistructs.WorkbenchResponse
 		statisticInfo []*projpb.Project
 	)
 	issueMapInfo := make(map[uint64]*apistructs.WorkbenchProjectItem)
@@ -108,7 +108,6 @@ func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, project
 
 	// wait complete
 	wg.Wait()
-
 
 	// post process
 	for _, v := range issueInfo.Data.List {
@@ -337,24 +336,24 @@ func (w *Workbench) GetMspUrlParamsMap(identity apistructs.Identity, projectIDs 
 
 // GetMspUrlParams get url params used by icon
 func (w *Workbench) GetMspUrlParams(userID, orgID string, project *projpb.Project) (urlParams UrlParams, err error) {
-		var menues []*apistructs.MenuItem
+	var menues []*apistructs.MenuItem
 
-		urlParams.Env = project.Relationship[len(project.Relationship)-1].Workspace
-		tenantId := project.Relationship[len(project.Relationship)-1].TenantID
-		urlParams.TenantGroup = tenantId
-		urlParams.AddonId = tenantId
-		pType := project.Type
+	urlParams.Env = project.Relationship[len(project.Relationship)-1].Workspace
+	tenantId := project.Relationship[len(project.Relationship)-1].TenantID
+	urlParams.TenantGroup = tenantId
+	urlParams.AddonId = tenantId
+	pType := project.Type
 
-		menues, err = w.bdl.ListProjectsEnvAndTenantId(userID, orgID, tenantId, pType)
-		if err != nil || len(menues) == 0 {
-			logrus.Errorf("failed to get env and tenant id ,err: %v", err)
-			return
-		}
-		if tg, ok := menues[len(menues)-1].Params["tenantGroup"]; ok {
-			urlParams.TenantGroup = tg
-		}
-		if tk, ok := menues[len(menues)-1].Params["terminusKey"]; ok {
-			urlParams.TerminusKey = tk
-		}
+	menues, err = w.bdl.ListProjectsEnvAndTenantId(userID, orgID, tenantId, pType)
+	if err != nil || len(menues) == 0 {
+		logrus.Errorf("failed to get env and tenant id ,err: %v", err)
 		return
+	}
+	if tg, ok := menues[len(menues)-1].Params["tenantGroup"]; ok {
+		urlParams.TenantGroup = tg
+	}
+	if tk, ok := menues[len(menues)-1].Params["terminusKey"]; ok {
+		urlParams.TerminusKey = tk
+	}
+	return
 }
