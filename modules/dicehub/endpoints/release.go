@@ -971,6 +971,85 @@ func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *
 	return nil
 }
 
+func (e *Endpoints) CheckVersion(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	_, err := getPermissionHeader(r)
+	if err != nil {
+		return apierrors.ErrCheckReleaseVersion.NotLogin().ToResp(), nil
+	}
+
+	if r.Body == nil {
+		return apierrors.ErrCheckReleaseVersion.MissingParameter("body").ToResp(), nil
+	}
+
+	isProjectReleaseStr := r.URL.Query().Get("isProjectRelease")
+	isProjectRelease := false
+	if isProjectReleaseStr != "" {
+		isProjectRelease, err = strconv.ParseBool(isProjectReleaseStr)
+		if err != nil {
+			return apierrors.ErrCheckReleaseVersion.InvalidParameter("isProjectRelease").ToResp(), nil
+		}
+	}
+	var appID int64 = 0
+	if !isProjectRelease {
+		appIDStr := r.URL.Query().Get("appID")
+		if appIDStr == "" {
+			return apierrors.ErrCheckReleaseVersion.MissingParameter("appID").ToResp(), nil
+		}
+		appID, err = strconv.ParseInt(appIDStr, 10, 64)
+		if err != nil {
+			return apierrors.ErrCheckReleaseVersion.InvalidParameter("appID").ToResp(), nil
+		}
+	}
+	orgIDStr := r.URL.Query().Get("orgID")
+	if orgIDStr == "" {
+		return apierrors.ErrCheckReleaseVersion.MissingParameter("orgID").ToResp(), nil
+	}
+	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrCheckReleaseVersion.InvalidParameter("orgID").ToResp(), nil
+	}
+	projectIDStr := r.URL.Query().Get("projectID")
+	if projectIDStr == "" {
+		return apierrors.ErrCheckReleaseVersion.MissingParameter("projectID").ToResp(), nil
+	}
+	projectID, err := strconv.ParseInt(projectIDStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrCheckReleaseVersion.InvalidParameter("projectID").ToResp(), nil
+	}
+	version := r.URL.Query().Get("version")
+	if version == "" {
+		return apierrors.ErrCheckReleaseVersion.MissingParameter("version").ToResp(), nil
+	}
+
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrCheckReleaseVersion.NotLogin().ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		hasAccess, err := e.hasReadAccess(identityInfo, projectID)
+		if err != nil {
+			return apierrors.ErrCheckReleaseVersion.InternalError(err).ToResp(), nil
+		}
+		if !hasAccess {
+			return apierrors.ErrCheckReleaseVersion.AccessDenied().ToResp(), nil
+		}
+	}
+
+	var releases []dbclient.Release
+	if isProjectRelease {
+		releases, err = e.db.GetReleasesByProjectAndVersion(orgID, projectID, version)
+		if err != nil {
+			return apierrors.ErrCheckReleaseVersion.ToResp(), nil
+		}
+	} else {
+		releases, err = e.db.GetReleasesByAppAndVersion(orgID, projectID, appID, version)
+		if err != nil {
+			return apierrors.ErrCheckReleaseVersion.ToResp(), nil
+		}
+	}
+	return httpserver.OkResp(apistructs.ReleaseCheckVersionResponseData{IsUnique: len(releases) == 0})
+}
+
 // hasReadAccess check whether user has access to get project
 func (e *Endpoints) hasReadAccess(identityInfo apistructs.IdentityInfo, projectID int64) (bool, error) {
 	access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{

@@ -93,13 +93,21 @@ func (r *Release) Create(req *apistructs.ReleaseCreateRequest) (string, error) {
 	}
 
 	// 确保Version在应用层面唯一
-	if req.Version != "" && req.ApplicationID > 0 {
+	if req.IsProjectRelease {
+		releases, err := r.db.GetReleasesByProjectAndVersion(req.OrgID, req.ProjectID, req.Version)
+		if err != nil {
+			return "", err
+		}
+		if len(releases) > 0 {
+			return "", errors.Errorf("release version: %s already exist in target project", req.Version)
+		}
+	} else if req.Version != "" && req.ApplicationID > 0 {
 		releases, err := r.db.GetReleasesByAppAndVersion(req.OrgID, req.ProjectID, req.ApplicationID, req.Version)
 		if err != nil {
 			return "", err
 		}
 		if len(releases) > 0 {
-			return "", errors.Errorf("release version: %s already exist", req.Version)
+			return "", errors.Errorf("release version: %s already exist in target application", req.Version)
 		}
 	}
 

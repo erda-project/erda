@@ -27,6 +27,7 @@ var (
 	ErrListRelease                     = err("ErrListRelease", "获取Release列表失败")
 	ErrFormalRelease                   = err("ErrFormalRelease", "转正Release失败")
 	ErrParseReleaseFile                = err("ErrParseReleaseFile", "解析Release文件失败")
+	ErrCheckReleaseVersion             = err("ErrCheckReleaseVersion", "校验Version失败")
 	ErrGetYAML                         = err("ErrGetYAML", "获取Dice YAML失败")
 	ErrGetIosPlist                     = err("ErrGetIosPlist", "获取Ios Plist文件失败")
 	ErrCreateImage                     = err("ErrCreateImage", "添加镜像失败")

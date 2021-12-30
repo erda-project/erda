@@ -501,3 +501,20 @@ type AppMetadata struct {
 	GitRepo          string `json:"gitRepo,omitempty"`
 	ChangeLog        string `json:"changeLog,omitempty"`
 }
+
+type ReleaseCheckVersionRequest struct {
+	OrgID            int64  `json:"orgID"`
+	IsProjectRelease bool   `json:"isProjectRelease"`
+	ProjectID        int64  `json:"projectID"`
+	AppID            int64  `json:"appID"`
+	Version          string `json:"version,omitempty"`
+}
+
+type ReleaseCheckVersionResponse struct {
+	Header
+	Data ReleaseCheckVersionResponseData `json:"data"`
+}
+
+type ReleaseCheckVersionResponseData struct {
+	IsUnique bool `json:"isUnique"`
+}

@@ -80,35 +80,35 @@ func (c *ComponentInputFilter) GenComponentState(component *cptype.Component) er
 }
 
 func (c *ComponentInputFilter) DecodeURLQuery() error {
-	urlQuery, ok := c.sdk.InParams["inputFilter__urlQuery"].(string)
+	query, ok := c.sdk.InParams["inputFilter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(urlQuery)
+	decoded, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
 
-	queryData := make(map[string]interface{})
-	if err = json.Unmarshal(decode, &queryData); err != nil {
+	urlQuery := make(map[string]interface{})
+	if err = json.Unmarshal(decoded, &urlQuery); err != nil {
 		return err
 	}
 
-	c.State.Values.Version, _ = queryData["version"].(string)
+	c.State.Values.Version, _ = urlQuery["version"].(string)
 	return nil
 }
 
 func (c *ComponentInputFilter) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["version"] = c.State.Values.Version
+	query := make(map[string]interface{})
+	query["version"] = c.State.Values.Version
 
-	jsonData, err := json.Marshal(urlQuery)
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	c.State.InputFilterURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(data)
+	c.State.InputFilterURLQuery = encoded
 	return nil
 }
 

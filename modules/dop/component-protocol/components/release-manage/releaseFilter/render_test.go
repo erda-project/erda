@@ -122,7 +122,7 @@ func TestComponentReleaseFilter_Transfer(t *testing.T) {
 			ProjectID:             1,
 		},
 		Data: Data{
-			HidenSave: true,
+			HideSave: true,
 			Conditions: []Condition{
 				{
 					Key:         "testKey",
