@@ -38,7 +38,7 @@ func (r *ErrorRateCard) GetCard(ctx context.Context) (*ServiceCard, error) {
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(r.TenantId),
 		"service_id":   structpb.NewStringValue(r.ServiceId),
-		"layer_path":   structpb.NewStringValue(r.LayerPath),
+		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + r.LayerPath + ".*"}),
 	}
 
 	return r.QueryAsServiceCard(ctx, statement, queryParams, "error_rate", "%", func(value float64) float64 {

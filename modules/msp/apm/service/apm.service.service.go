@@ -28,6 +28,7 @@ import (
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	pb "github.com/erda-project/erda-proto-go/msp/apm/service/pb"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/chart"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/math"
 )
@@ -320,6 +321,10 @@ func (s *apmServiceService) GetServiceAnalyzerOverview(ctx context.Context, req 
 			TenantId:  req.TenantId,
 			ServiceId: id,
 			Metric:    s.p.Metric,
+			Layers: []common.TransactionLayerType{
+				common.TransactionLayerHttp,
+				common.TransactionLayerRpc,
+			},
 		}
 
 		view, err := Selector(req.View, s.p.Cfg, baseChart, ctx)

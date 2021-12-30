@@ -50,7 +50,7 @@ func (slowCount *SlowCountChart) GetChart(ctx context.Context) (*pb.ServiceChart
 	queryParams := map[string]*structpb.Value{
 		"terminus_key":   structpb.NewStringValue(slowCount.TenantId),
 		"service_id":     structpb.NewStringValue(slowCount.ServiceId),
-		"layer_path":     structpb.NewStringValue(slowCount.LayerPath),
+		"layer_path":     common.NewStructValue(map[string]interface{}{"regex": ".*" + slowCount.LayerPath + ".*"}),
 		"slow_threshold": structpb.NewNumberValue(slowThreshold),
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{

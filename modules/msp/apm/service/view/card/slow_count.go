@@ -38,7 +38,7 @@ func (r *SlowCountCard) GetCard(ctx context.Context) (*ServiceCard, error) {
 	queryParams := map[string]*structpb.Value{
 		"terminus_key":   structpb.NewStringValue(r.TenantId),
 		"service_id":     structpb.NewStringValue(r.ServiceId),
-		"layer_path":     structpb.NewStringValue(r.LayerPath),
+		"layer_path":     common.NewStructValue(map[string]interface{}{"regex": ".*" + r.LayerPath + ".*"}),
 		"slow_threshold": structpb.NewNumberValue(common.GetSlowThreshold(r.Layer)),
 	}
 

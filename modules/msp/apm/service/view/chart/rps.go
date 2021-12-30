@@ -47,7 +47,7 @@ func (rps *RpsChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(rps.TenantId),
 		"service_id":   structpb.NewStringValue(rps.ServiceId),
-		"layer_path":   structpb.NewStringValue(rps.LayerPath),
+		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + rps.LayerPath + ".*"}),
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(rps.StartTime, 10),

@@ -21,6 +21,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
+	"github.com/erda-project/erda/pkg/time"
 )
 
 type AvgDurationCard struct {
@@ -35,11 +36,20 @@ func (r *AvgDurationCard) GetCard(ctx context.Context) (*ServiceCard, error) {
 		"%s ",
 		common.GetDataSourceNames(r.Layer),
 		common.BuildLayerPathFilterSql(r.LayerPath, "$layer_path", r.Layer))
+
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(r.TenantId),
 		"service_id":   structpb.NewStringValue(r.ServiceId),
-		"layer_path":   structpb.NewStringValue(r.LayerPath),
+		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + r.LayerPath + ".*"}),
 	}
 
-	return r.QueryAsServiceCard(ctx, statement, queryParams, "avg_duration", "ms", common.FormatFloatWith2Digits)
+	result, err := r.QueryAsServiceCard(ctx, statement, queryParams, "avg_duration", "ns", common.FormatFloatWith2Digits)
+	if err != nil {
+		return result, err
+	}
+
+	duration, unit := time.AutomaticConversionUnit(result.Value)
+	result.Unit = unit
+	result.Value = duration
+	return result, nil
 }

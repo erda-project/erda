@@ -19,12 +19,11 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/erda-project/erda/pkg/common/errors"
-
 	"google.golang.org/protobuf/types/known/structpb"
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
+	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 type Card interface {
@@ -46,7 +45,6 @@ type ServiceCard struct {
 type BaseCard struct {
 	StartTime int64
 	EndTime   int64
-	Interval  string
 	TenantId  string
 	ServiceId string
 	Layer     common.TransactionLayerType

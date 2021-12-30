@@ -15,6 +15,7 @@
 package common
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
@@ -47,7 +48,7 @@ func GetLayerPathKeys(layers ...TransactionLayerType) []string {
 		case TransactionLayerHttp:
 			list = append(list, "http_path::tag")
 		case TransactionLayerRpc:
-			list = append(list, "rpc_method::tag")
+			list = append(list, "rpc_target::tag")
 		case TransactionLayerCache:
 			list = append(list, "db_statement::tag")
 		case TransactionLayerDb:
@@ -88,7 +89,7 @@ func BuildLayerPathFilterSql(path string, paramName string, layers ...Transactio
 	keys := GetLayerPathKeys(layers...)
 	var tokens []string
 	for _, key := range keys {
-		tokens = append(tokens, fmt.Sprintf("%s=%s", key, param))
+		tokens = append(tokens, fmt.Sprintf("%s=~%s", key, param))
 	}
 
 	return fmt.Sprintf("AND (%s) ", strings.Join(tokens, " OR "))
@@ -96,4 +97,26 @@ func BuildLayerPathFilterSql(path string, paramName string, layers ...Transactio
 
 func FormatFloatWith2Digits(value float64) float64 {
 	return math.DecimalPlacesWithDigitsNumber(value, 2)
+}
+
+func GetSortSql(fieldSqlMap map[string]string, defaultOrder string, sorts ...Sort) string {
+	var buf bytes.Buffer
+	for _, sort := range sorts {
+		if _, ok := fieldSqlMap[sort.FieldKey]; !ok {
+			continue
+		}
+		if buf.Len() > 0 {
+			buf.WriteString(",")
+		}
+		buf.WriteString(fieldSqlMap[sort.FieldKey])
+		if sort.Ascending {
+			buf.WriteString(" ASC ")
+		} else {
+			buf.WriteString(" DESC ")
+		}
+	}
+	if buf.Len() == 0 {
+		buf.WriteString(defaultOrder)
+	}
+	return buf.String()
 }

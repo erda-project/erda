@@ -46,7 +46,7 @@ func (avgDuration *AvgDurationChart) GetChart(ctx context.Context) (*pb.ServiceC
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(avgDuration.TenantId),
 		"service_id":   structpb.NewStringValue(avgDuration.ServiceId),
-		"layer_path":   structpb.NewStringValue(avgDuration.LayerPath),
+		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + avgDuration.LayerPath + ".*"}),
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(avgDuration.StartTime, 10),

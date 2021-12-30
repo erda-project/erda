@@ -48,7 +48,7 @@ func (httpCode *HttpCodeChart) GetChart(ctx context.Context) (*pb.ServiceChart, 
 		"terminus_key": structpb.NewStringValue(httpCode.TenantId),
 		"service_id":   structpb.NewStringValue(httpCode.ServiceId),
 		"kind":         structpb.NewStringValue("server"),
-		"layer_path":   structpb.NewStringValue(httpCode.LayerPath),
+		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + httpCode.LayerPath + ".*"}),
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(httpCode.StartTime, 10),

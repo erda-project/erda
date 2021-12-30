@@ -46,7 +46,7 @@ func (errorRate *ErrorRateChart) GetChart(ctx context.Context) (*pb.ServiceChart
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(errorRate.TenantId),
 		"service_id":   structpb.NewStringValue(errorRate.ServiceId),
-		"layer_path":   structpb.NewStringValue(errorRate.LayerPath),
+		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + errorRate.LayerPath + ".*"}),
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(errorRate.StartTime, 10),
