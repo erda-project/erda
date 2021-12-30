@@ -239,13 +239,11 @@ func (wc *WorkCards) getProjectCardOps(sdk *cptype.SDK, params workbench.UrlPara
 	switch project.ProjectDTO.Type {
 	case common.DevOpsProject:
 		target = "project"
-		serviceOp.Params["projectId"] = project.ProjectDTO.ID
 	case common.MspProject:
 		target = "mspServiceList"
-
 	}
 	serviceOp.Target = target
-
+	serviceOp.Params["projectId"] = project.ProjectDTO.ID
 	serverData := make(cptype.OpServerData)
 
 	err = common.Transfer(serviceOp, &serverData)
