@@ -390,3 +390,5 @@ component-protocol.components.transaction-rpc-detail.rps:
 component-protocol.components.transaction-rpc-detail.avgDuration:
 component-protocol.components.transaction-rpc-detail.slowCount:
 component-protocol.components.transaction-rpc-detail.errorCount:
+
+component-protocol.components.datasources.msp-service:

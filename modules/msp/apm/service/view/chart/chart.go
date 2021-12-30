@@ -20,6 +20,7 @@ import (
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 )
 
 const Layout = "2006-01-02T15:04:05Z"
@@ -34,6 +35,8 @@ type BaseChart struct {
 	Interval  string
 	TenantId  string
 	ServiceId string
+	Layers    []common.TransactionLayerType
+	LayerPath string
 	Metric    metricpb.MetricServiceServer
 }
 
@@ -63,6 +66,20 @@ func Selector(chartType string, baseChart *BaseChart, ctx context.Context) (*pb.
 	case strings.ToLower(pb.ChartType_ErrorRate.String()):
 		errorChart := ErrorRateChart{BaseChart: baseChart}
 		getChart, err := errorChart.GetChart(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return getChart, err
+	case strings.ToLower(pb.ChartType_ErrorCount.String()):
+		errCountChart := ErrorCountChart{BaseChart: baseChart}
+		getChart, err := errCountChart.GetChart(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return getChart, err
+	case strings.ToLower(pb.ChartType_SlowCount.String()):
+		slowCountChart := SlowCountChart{BaseChart: baseChart}
+		getChart, err := slowCountChart.GetChart(ctx)
 		if err != nil {
 			return nil, err
 		}

@@ -15,7 +15,12 @@
 package table
 
 import (
+	"context"
 	"reflect"
+
+	"github.com/erda-project/erda/modules/msp/apm/service/datasources"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
+	viewtable "github.com/erda-project/erda/modules/msp/apm/service/view/table"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -29,15 +34,39 @@ import (
 
 type provider struct {
 	impl.DefaultTable
-	Log    logs.Logger
-	I18n   i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
-	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
+	Log        logs.Logger
+	I18n       i18n.Translator               `autowired:"i18n" translator:"msp-i18n"`
+	Metric     metricpb.MetricServiceServer  `autowired:"erda.core.monitor.metric.MetricService"`
+	DataSource datasources.ServiceDataSource `autowired:"component-protocol.components.datasources.msp-service"`
 }
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		p.StdDataPtr = &table.Data{}
+		lang := sdk.Lang
+		startTime := int64(p.StdInParamsPtr.Get("startTime").(float64))
+		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
+		tenantId := p.StdInParamsPtr.Get("tenantId").(string)
+		serviceId := p.StdInParamsPtr.Get("serviceId").(string)
+		layerPath := p.StdInParamsPtr.Get("layerPath").(string)
+
+		data, err := p.DataSource.GetTable(context.WithValue(context.Background(), common.LangKey, lang),
+			viewtable.TableTypeTransaction,
+			startTime,
+			endTime,
+			tenantId,
+			serviceId,
+			common.TransactionLayerRpc,
+			layerPath,
+			1,
+			common.DefaultPageSize,
+		)
+		if err != nil {
+			p.Log.Error("failed to get table data: %s", err)
+			return
+		}
+
+		p.StdDataPtr = &table.Data{Table: *data}
 	}
 }
 
