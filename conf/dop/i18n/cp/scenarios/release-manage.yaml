@@ -20,6 +20,9 @@ zh:
   desc: 备注信息
   createdAt: 创建日期
   operations: 操作
+  accessDenied: 权限不足
+  releaseDeleteFailed: 制品删除失败
+  releaseFormalFailed: 制品转正失败
 en:
   searchByVersion: Search by version
   application: Application
@@ -42,3 +45,6 @@ en:
   desc: Desc
   createdAt: Created at
   operations: Operations
+  accessDenied: Access Denied
+  releaseDeleteFailed: Failed to delete release
+  releaseFormalFailed: Failed to formal release
