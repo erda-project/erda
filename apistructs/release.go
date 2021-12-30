@@ -255,7 +255,7 @@ type ReleaseGetResponseData struct {
 	ApplicationReleaseList []*ApplicationReleaseSummary `json:"applicationReleaseList,omitempty"`
 	Resources              []ReleaseResource            `json:"resources,omitempty"`
 	Images                 []string                     `json:"images,omitempty"`
-	Services               []*ServiceImagePair          `json:"services"`
+	ServiceImages          []*ServiceImagePair          `json:"serviceImages"`
 	Labels                 map[string]string            `json:"labels,omitempty"`
 	Tags                   string                       `json:"tags,omitempty"`
 	Version                string                       `json:"version,omitempty"`
@@ -305,10 +305,10 @@ func (r *ReleaseGetResponseData) ReLoadImages() error {
 		return errors.Wrap(err, "invalid release file")
 	}
 	r.Images = nil
-	r.Services = nil
+	r.ServiceImages = nil
 	for name, service := range obj.Services {
 		r.Images = append(r.Images, service.Image)
-		r.Services = append(r.Services, &ServiceImagePair{
+		r.ServiceImages = append(r.ServiceImages, &ServiceImagePair{
 			ServiceName: name,
 			Image:       service.Image,
 		})

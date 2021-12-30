@@ -73,7 +73,7 @@ func TestReleaseGetResponseData_ReLoadImages(t *testing.T) {
 	if err := data.ReLoadImages(); err != nil {
 		t.Fatal(err)
 	}
-	assertServices(t, data.Services)
+	assertServices(t, data.ServiceImages)
 }
 
 func assertServices(t *testing.T, services []*ServiceImagePair) {
