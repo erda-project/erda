@@ -46,7 +46,6 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
 		tenantId := p.StdInParamsPtr.Get("tenantId").(string)
 		serviceId := p.StdInParamsPtr.Get("serviceId").(string)
-		layerPath := p.StdInParamsPtr.Get("layerPath").(string)
 
 		chart, err := p.DataSource.GetChart(context.WithValue(context.Background(), common.LangKey, lang),
 			pb.ChartType_RPS,
@@ -55,7 +54,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			tenantId,
 			serviceId,
 			common.TransactionLayerDb,
-			layerPath)
+			"")
 
 		if err != nil {
 			p.Log.Error(err)
