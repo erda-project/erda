@@ -102,6 +102,8 @@ func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData, Type string) (Data, erro
 	var (
 		proData *apistructs.WorkbenchProjOverviewRespData
 		appData *apistructs.AppWorkbenchResponseData
+		projNum int
+		appNum  int
 		err     error
 	)
 	wtData := Data{Options: []Option{
@@ -114,8 +116,9 @@ func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData, Type string) (Data, erro
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 	go func() {
-		pageReq := apistructs.PageRequest{PageNo: 1, PageSize: 1}
-		proData, err = wt.Wb.ListQueryProjWbData(apiIdentity, pageReq, "")
+		projNum, err = wt.Wb.GetProjNum(apiIdentity, "")
+		// pageReq := apistructs.PageRequest{PageNo: 1, PageSize: 1}
+		// proData, err = wt.Wb.ListQueryProjWbData(apiIdentity, pageReq, "")
 		if err != nil {
 			logrus.Errorf("tabs get project list err %v", err)
 		}
@@ -123,8 +126,9 @@ func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData, Type string) (Data, erro
 	}()
 	go func() {
 		// todo hard code
-		appReq := apistructs.ApplicationListRequest{PageNo: 1, PageSize: 1}
-		appData, err = wt.Wb.ListAppWbData(apiIdentity, appReq, 0)
+		appNum, err = wt.Wb.GetAppNum(apiIdentity, "")
+		// appReq := apistructs.ApplicationListRequest{PageNo: 1, PageSize: 1}
+		// appData, err = wt.Wb.ListAppWbData(apiIdentity, appReq, 0)
 		if err != nil {
 			logrus.Errorf("tabs get app list err %v", err)
 		}
@@ -137,16 +141,10 @@ func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData, Type string) (Data, erro
 	case apistructs.WorkbenchItemApp.String():
 		(*gs)[common.TabData] = appData
 	}
-	if proData != nil {
-		wtData.Options[0].Label += fmt.Sprintf("(%d)", proData.Total)
-	} else {
-		wtData.Options[0].Label += "(0)"
-	}
-	if appData != nil {
-		wtData.Options[1].Label += fmt.Sprintf("(%d)", appData.TotalApps)
-	} else {
-		wtData.Options[1].Label += "(0)"
-	}
+	wtData.Options[0].Label += fmt.Sprintf("(%d)", projNum)
+
+	wtData.Options[1].Label += fmt.Sprintf("(%d)", appNum)
+
 	return wtData, nil
 }
 

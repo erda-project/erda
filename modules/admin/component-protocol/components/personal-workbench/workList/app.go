@@ -28,20 +28,20 @@ import (
 )
 
 // GenAppKvInfo show: mr num, runtime num
-func (l *WorkList) GenAppKvInfo(app apistructs.AppWorkBenchItem) (kvs []list.KvInfo) {
+func (l *WorkList) GenAppKvInfo(item apistructs.AppWorkBenchItem) (kvs []list.KvInfo) {
 	kvs = []list.KvInfo{
 		// project belong
 		{
-			ID:    strconv.FormatUint(app.ID, 10),
+			ID:    strconv.FormatUint(item.ID, 10),
 			Key:   l.sdk.I18n(i18n.I18nKeyProject),
-			Value: app.ProjectName,
+			Value: item.ProjectName,
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
 					WithSkipRender(true).
 					WithServerDataPtr(list.OpItemClickGotoServerData{
 						OpItemBasicServerData: list.OpItemBasicServerData{
 							Params: map[string]interface{}{
-								common.OpKeyProjectID: app.ProjectID,
+								common.OpKeyProjectID: item.ProjectID,
 							},
 							Target: common.OpValTargetProject,
 						},
@@ -51,17 +51,17 @@ func (l *WorkList) GenAppKvInfo(app apistructs.AppWorkBenchItem) (kvs []list.KvI
 		},
 		// mr count
 		{
-			ID:    strconv.FormatUint(app.ID, 10),
+			ID:    strconv.FormatUint(item.ID, 10),
 			Key:   l.sdk.I18n(i18n.I18nKeyMrCount),
-			Value: strconv.FormatInt(int64(app.AppOpenMrNum), 10),
+			Value: strconv.FormatInt(int64(item.AppOpenMrNum), 10),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
 					WithSkipRender(true).
 					WithServerDataPtr(list.OpItemClickGotoServerData{
 						OpItemBasicServerData: list.OpItemBasicServerData{
 							Params: map[string]interface{}{
-								common.OpKeyProjectID: app.ProjectID,
-								common.OpKeyAppID:     app.ID,
+								common.OpKeyProjectID: item.ProjectID,
+								common.OpKeyAppID:     item.ID,
 							},
 							Target: common.OpValTargetAppOpenMr,
 						},
@@ -71,17 +71,17 @@ func (l *WorkList) GenAppKvInfo(app apistructs.AppWorkBenchItem) (kvs []list.KvI
 		},
 		// runtime count
 		{
-			ID:    strconv.FormatUint(app.ID, 10),
+			ID:    strconv.FormatUint(item.ID, 10),
 			Key:   l.sdk.I18n(i18n.I18nKeyRuntimeCount),
-			Value: strconv.FormatInt(int64(app.AppRuntimeNum), 10),
+			Value: strconv.FormatInt(int64(item.AppRuntimeNum), 10),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
 					WithSkipRender(true).
 					WithServerDataPtr(list.OpItemClickGotoServerData{
 						OpItemBasicServerData: list.OpItemBasicServerData{
 							Params: map[string]interface{}{
-								common.OpKeyProjectID: app.ProjectID,
-								common.OpKeyAppID:     app.ID,
+								common.OpKeyProjectID: item.ProjectID,
+								common.OpKeyAppID:     item.ID,
 							},
 							Target: common.OpValTargetAppDeploy,
 						},

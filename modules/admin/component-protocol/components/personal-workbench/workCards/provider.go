@@ -484,6 +484,9 @@ func (wc *WorkCards) getTableName(sdk *cptype.SDK) string {
 	} else {
 		tabStr = tab.(string)
 	}
+	if tabStr == "" {
+		tabStr = apistructs.WorkbenchItemProj.String()
+	}
 	return tabStr
 }
 
