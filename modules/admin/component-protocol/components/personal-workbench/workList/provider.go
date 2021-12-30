@@ -307,7 +307,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		item := list.Item{
 			ID:          strconv.FormatUint(p.ProjectDTO.ID, 10),
 			LogoURL:     p.ProjectDTO.Logo,
-			Title:       p.ProjectDTO.Name,
+			Title:       p.ProjectDTO.DisplayName,
 			TitleState:  ts,
 			Star:        &star,
 			KvInfos:     kvs,
