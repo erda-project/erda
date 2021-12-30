@@ -19,6 +19,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
@@ -229,6 +231,10 @@ func (f *StackChart) setStatesTransMap() error {
 func deepCopy(count map[uint64]int) map[uint64]int {
 	newCount := make(map[uint64]int, 0)
 	for k, v := range count {
+		if v < 0 {
+			logrus.Warnf("the count of state is less than 0")
+			v = 0
+		}
 		newCount[k] = v
 	}
 	return newCount
