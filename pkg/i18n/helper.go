@@ -17,7 +17,6 @@ package i18n
 import (
 	"context"
 	"net/http"
-	"runtime"
 
 	"github.com/erda-project/erda/pkg/goroutine_context"
 )
@@ -42,11 +41,6 @@ func GetLocaleNameByRequest(request *http.Request) string {
 }
 
 func GetGoroutineBindLang() string {
-	// mac system use goroutine_context.GetContext() will panic
-	if runtime.GOOS == "darwin" {
-		return ""
-	}
-
 	globalContext := goroutine_context.GetContext()
 	if globalContext == nil {
 		return ""
@@ -64,11 +58,6 @@ func GetGoroutineBindLang() string {
 }
 
 func SetGoroutineBindLang(localeName string) {
-	// mac system use goroutine_context.GetContext() will panic
-	if runtime.GOOS == "darwin" {
-		return
-	}
-
 	ctx := goroutine_context.GetContext()
 	if ctx == nil {
 		ctx = context.Background()

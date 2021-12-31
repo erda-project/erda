@@ -16,6 +16,7 @@ package goroutine_context
 
 import (
 	"context"
+	"runtime"
 	"sync"
 
 	"github.com/go-eden/routine"
@@ -24,6 +25,8 @@ import (
 const LocaleNameContextKey = "locale_name_context_key"
 
 const bucketsSize = 128
+
+const arm64 = "arm64"
 
 type (
 	contextBucket struct {
@@ -47,6 +50,11 @@ func init() {
 
 // GetContext .
 func GetContext() context.Context {
+	// mac system use goroutine_context.GetContext() will panic
+	if runtime.GOARCH == arm64 {
+		return context.Background()
+	}
+
 	goid := routine.Goid()
 	idx := goid % bucketsSize
 	bucket := goroutineContext.buckets[idx]
@@ -58,6 +66,11 @@ func GetContext() context.Context {
 
 // SetContext .
 func SetContext(ctx context.Context) {
+	// mac system use goroutine_context.GetContext() will panic
+	if runtime.GOARCH == arm64 {
+		return
+	}
+
 	goid := routine.Goid()
 	idx := goid % bucketsSize
 	bucket := goroutineContext.buckets[idx]
@@ -68,6 +81,11 @@ func SetContext(ctx context.Context) {
 
 // ClearContext .
 func ClearContext() {
+	// mac system use goroutine_context.GetContext() will panic
+	if runtime.GOARCH == arm64 {
+		return
+	}
+
 	goid := routine.Goid()
 	idx := goid % bucketsSize
 	bucket := goroutineContext.buckets[idx]
