@@ -72,7 +72,16 @@ func (wc *WorkCards) RegisterCardListStarOp(opData cardlist.OpCardListStar) (opF
 			logrus.Errorf("star %v failed, id: %v, error: %v", req.Type, req.TypeID, err)
 			return
 		}
-		wc.LoadList(sdk)
+
+		cards := wc.StdDataPtr.Cards
+		//wc.LoadList(sdk)
+		for i := 0; i < len(cards); i++ {
+			if card.ID == cards[i].ID {
+				cards = append(cards[:i], cards[i+1:]...)
+				break
+			}
+		}
+		wc.StdDataPtr.Cards = cards
 	}
 }
 
@@ -92,7 +101,7 @@ func (wc *WorkCards) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return wc.RegisterInitializeOp()
 }
 
-func (wc *WorkCards) getAppTextMeta(sdk *cptype.SDK, app apistructs.AppWorkBenchItem) (metas []cardlist.TextMeta) {
+func (wc *WorkCards) getAppTextMeta(app apistructs.AppWorkBenchItem) (metas []cardlist.TextMeta) {
 	mrData := make(cptype.OpServerData)
 	runtimeData := make(cptype.OpServerData)
 
@@ -247,7 +256,7 @@ func (wc *WorkCards) getProjectCardOps(sdk *cptype.SDK, params workbench.UrlPara
 		logrus.Error(err)
 		return
 	}
-	ops["clickGoto"] = cptype.Operation{ServerData: &serverData}
+	ops["clickGoto"] = cptype.Operation{ServerData: &serverData, Async: true}
 	return
 }
 
@@ -517,7 +526,7 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 				TitleState:     wc.getAppTitleState(sdk, app.Mode),
 				Star:           true,
 				IconOperations: wc.getAppIconOps(sdk, app),
-				TextMeta:       wc.getAppTextMeta(sdk, app),
+				TextMeta:       wc.getAppTextMeta(app),
 				Operations:     wc.getAppCardOps(sdk, app),
 			})
 		}
