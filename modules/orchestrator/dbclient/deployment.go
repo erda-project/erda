@@ -57,7 +57,9 @@ type Deployment struct {
 	// TODO: add a column to indicate normal deploy or rollback or redeploy ...
 	// TODO: add a column rollbackFrom
 
-	SkipPushByOrch bool
+	SkipPushByOrch    bool
+	Param             string `gorm:"type:text"`
+	DeploymentOrderId string
 }
 
 func (Deployment) TableName() string {

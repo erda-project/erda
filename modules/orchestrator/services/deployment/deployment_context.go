@@ -424,6 +424,7 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 		logrus.Infof("没有找到migration相关信息, releaseId为：%s", fsm.Deployment.ReleaseId)
 		releaseResp, err := fsm.bdl.GetRelease(fsm.Deployment.ReleaseId)
 		if err != nil {
+			logrus.Errorf("get release error: %v", err)
 			return "", err
 		}
 		if len(releaseResp.Resources) == 0 {
@@ -982,19 +983,28 @@ func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.Serv
 			break
 		}
 	}
-	if len(configNamespace) > 0 {
+	if len(configNamespace) > 0 && fsm.Deployment.Param != "" {
 		// get configs from config-center
-		envconfigs, fileconfigs, err := fsm.bdl.FetchDeploymentConfig(configNamespace)
-		if err != nil {
-			return nil, nil, err
-		}
-		// configs come from config-center do override globalEnv
-		for k, v := range envconfigs {
-			groupEnv[k] = v
+		// TODO: instead of
+		//envconfigs, fileconfigs, err := fsm.bdl.FetchDeploymentConfig(configNamespace)
+		//if err != nil {
+		//	return nil, nil, err
+		//}
+
+		// get params from params
+		var configs apistructs.DeploymentOrderParam
+
+		if err := json.Unmarshal([]byte(fsm.Deployment.Param), &configs); err != nil {
+			return nil, nil, fmt.Errorf("failed to unmarshal deployment params: %v", err)
 		}
 
-		for k, v := range fileconfigs {
-			groupFileconfigs[k] = v
+		// configs come from config-center do override globalEnv
+		for _, v := range configs.Env {
+			groupEnv[v.Key] = v.Value
+		}
+
+		for _, v := range configs.File {
+			groupFileconfigs[v.Key] = v.Value
 		}
 	}
 

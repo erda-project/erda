@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/endpoints"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
+	"github.com/erda-project/erda/modules/orchestrator/services/deployment_order"
 	"github.com/erda-project/erda/modules/orchestrator/services/domain"
 	"github.com/erda-project/erda/modules/orchestrator/services/instance"
 	"github.com/erda-project/erda/modules/orchestrator/services/migration"
@@ -180,6 +181,13 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		instance.WithBundle(bdl),
 	)
 
+	//init deployment order service
+	do := deployment_order.New(
+		deployment_order.WithDBClient(db),
+		deployment_order.WithBundle(bdl),
+		deployment_order.WithRuntime(rt),
+	)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithDBClient(db),
@@ -189,6 +197,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		endpoints.WithBundle(bdl),
 		endpoints.WithRuntime(rt),
 		endpoints.WithDeployment(d),
+		endpoints.WithDeploymentOrder(do),
 		endpoints.WithDomain(dom),
 		endpoints.WithAddon(a),
 		endpoints.WithInstance(ins),
@@ -275,9 +284,9 @@ func cleanLeaderRemainingAddon(ep *endpoints.Endpoints) error {
 		notExistProjectMap[proID] = struct{}{}
 		return true
 	})
-	logrus.Infof("[cleanLeaderRemainingAddon] begin cleaning %d addons", len(newAddons))
+	logrus.Infof("[cleanLeaderRemainingAddon] begin clean %d addons", len(newAddons))
 	for _, v := range newAddons {
-		logrus.Infof("[cleanLeaderRemainingAddon] begin cleaning addon, instanceID: %s", v.ID)
+		logrus.Infof("[cleanLeaderRemainingAddon] begin clean addon, instanceID: %s", v.ID)
 		routings, err := ep.DBClient().GetInstanceRoutingByRealInstance(v.ID)
 		if err != nil {
 			logrus.Errorf("[cleanLeaderRemainingAddon] failed to GetInstanceRoutingByRealInstance, instanceID: %s", v.ID)
@@ -292,7 +301,7 @@ func cleanLeaderRemainingAddon(ep *endpoints.Endpoints) error {
 		}
 		// all (1000,5000) users is reserved as internal service account
 		if err = ep.Addon().Delete("2000", (*routings)[0].ID); err != nil {
-			logrus.Errorf("[cleanLeaderRemainingAddon] failed to delete addon, instanceID: %s, err: %s", v.ID, err.Error())
+			logrus.Errorf("[cleanLeaderRemainingAddon] failed to delete addon, instanceID: %s", v.ID)
 		}
 	}
 	return nil
