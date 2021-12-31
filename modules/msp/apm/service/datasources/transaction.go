@@ -17,6 +17,7 @@ package datasources
 import (
 	"context"
 	"fmt"
+	"github.com/erda-project/erda/pkg/math"
 	"strconv"
 	"strings"
 	"time"
@@ -55,7 +56,9 @@ func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, 
 	// convert model
 	var xAxis []interface{}
 	linq.From(data.View).
-		Select(func(i interface{}) interface{} { return time.Unix(i.(*pb.Chart).Timestamp/1e9, 10).Format(layout) }).
+		Select(func(i interface{}) interface{} {
+			return time.Unix(0, i.(*pb.Chart).Timestamp*1e6).Format(layout)
+		}).
 		ToSlice(&xAxis)
 	dimension := linq.From(data.View).
 		Select(func(i interface{}) interface{} { return i.(*pb.Chart).Dimension }).
@@ -65,11 +68,18 @@ func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, 
 	}
 	var yAxis []interface{}
 	linq.From(data.View).
-		Select(func(i interface{}) interface{} { return i.(*pb.Chart).Value }).
+		Select(func(i interface{}) interface{} {
+			value := i.(*pb.Chart).Value
+			switch strings.ToLower(chartType.String()) {
+			case strings.ToLower(pb.ChartType_AvgDuration.String()):
+				return math.DecimalPlacesWithDigitsNumber(value/1e6, 2)
+			default:
+				return value
+			}
+		}).
 		ToSlice(&yAxis)
 
-	// todo i18n
-	line := linegraph.New(data.Type)
+	line := linegraph.New(p.I18n.Text(ctx.Value(common.LangKey).(i18n.LanguageCodes), strings.ToLower(data.Type)))
 	line.SetXAxis(xAxis...)
 	line.SetYAxis(dimension.(string), yAxis...)
 
@@ -131,7 +141,7 @@ func (p *provider) GetTable(ctx context.Context, tableType table.TableType, star
 		for _, cell := range row.GetCells() {
 			stdrow.CellsMap[stdtable.ColumnKey(cell.Key)] = stdtable.NewTextCell(fmt.Sprintf("%v", cell.Value)).Build()
 		}
-		tt.Rows = append(tt.Rows)
+		tt.Rows = append(tt.Rows, stdrow)
 	}
 
 	return &tt, nil

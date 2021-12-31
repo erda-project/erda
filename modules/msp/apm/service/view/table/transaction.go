@@ -25,7 +25,6 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 	"github.com/erda-project/erda/pkg/common/errors"
-	"github.com/erda-project/erda/pkg/time"
 )
 
 var (
@@ -105,7 +104,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		"%s,"+
 		"sum(elapsed_count::field),"+
 		"count(error::tag),"+
-		"sum(if(gt(elapsed_mean::field, '300000000'),elapsed_count::field,0)),"+
+		"sum(elapsed_count::field),"+
 		"format_duration(avg(elapsed_mean::field),'',2) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
@@ -133,13 +132,12 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		return nil, errors.NewInternalServerError(err)
 	}
 	for _, row := range response.Results[0].Series[0].Rows {
-		duration, unit := time.AutomaticConversionUnit(row.Values[4].GetNumberValue())
 		transRow := &TransactionTableRow{
 			TransactionName: row.Values[0].GetStringValue(),
 			ReqCount:        row.Values[1].GetNumberValue(),
 			ErrorCount:      row.Values[2].GetNumberValue(),
 			SlowCount:       row.Values[3].GetNumberValue(),
-			AvgDuration:     fmt.Sprintf("%v%s", duration, unit),
+			AvgDuration:     row.Values[4].GetStringValue(),
 		}
 		table.Rows = append(table.Rows, transRow)
 	}
