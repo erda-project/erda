@@ -354,7 +354,7 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	columns := []Column{
 		{
 			DataIndex: "version",
-			Title:     r.sdk.I18n("version"),
+			Title:     r.sdk.I18n("releaseName"),
 		},
 		{
 			DataIndex: "application",
