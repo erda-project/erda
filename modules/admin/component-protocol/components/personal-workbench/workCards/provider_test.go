@@ -62,6 +62,7 @@ func TestWorkCards_getTableName(t *testing.T) {
 			name:   "case1",
 			fields: fields{},
 			args:   args{sdk: defaultSDK},
+			want:   "project",
 		},
 	}
 	for _, tt := range tests {
@@ -172,7 +173,7 @@ func TestWorkCards_getProjTextMeta(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wc := &WorkCards{}
-			wc.getProjTextMeta(tt.args.sdk, tt.args.project)
+			wc.getProjTextMeta(tt.args.sdk, tt.args.project, workbench.IssueUrlQueries{})
 		})
 	}
 }

@@ -134,30 +134,26 @@ func (wc *WorkCards) getAppTextMeta(sdk *cptype.SDK, app apistructs.AppWorkBench
 	}
 	return
 }
-func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.WorkbenchProjOverviewItem) (metas []cardlist.TextMeta) {
+func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.WorkbenchProjOverviewItem, queries workbench.IssueUrlQueries) (metas []cardlist.TextMeta) {
 	todayData := make(cptype.OpServerData)
 	expireData := make(cptype.OpServerData)
 	metas = make([]cardlist.TextMeta, 0)
 	switch project.ProjectDTO.Type {
 	case types.ProjTypeDevops:
-		urls, err := wc.Wb.GetIssueQueries(project.ProjectDTO.ID)
-		if err != nil {
-			return
-		}
 		todayOp := common.Operation{
 			JumpOut: false,
 			Target:  "projectAllIssue",
-			Query:   map[string]interface{}{"issueFilter__urlQuery": urls.TodayExpireQuery},
+			Query:   map[string]interface{}{"issueFilter__urlQuery": queries.TodayExpireQuery},
 			Params:  map[string]interface{}{"projectId": project.ProjectDTO.ID},
 		}
 		expireOp := common.Operation{
 			JumpOut: false,
 			Target:  "projectAllIssue",
-			Query:   map[string]interface{}{"issueFilter__urlQuery": urls.ExpiredQuery},
+			Query:   map[string]interface{}{"issueFilter__urlQuery": queries.ExpiredQuery},
 			Params:  map[string]interface{}{"projectId": project.ProjectDTO.ID},
 		}
 
-		err = common.Transfer(expireOp, &expireData)
+		err := common.Transfer(expireOp, &expireData)
 		if err != nil {
 			logrus.Error(err)
 			return
@@ -488,6 +484,9 @@ func (wc *WorkCards) getTableName(sdk *cptype.SDK) string {
 	} else {
 		tabStr = tab.(string)
 	}
+	if tabStr == "" {
+		tabStr = apistructs.WorkbenchItemProj.String()
+	}
 	return tabStr
 }
 
@@ -533,14 +532,23 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 		for _, project := range projects.List {
 			ids = append(ids, project.ProjectDTO.ID)
 		}
-		params, err := wc.Wb.GetUrlCommonParams(sdk.Identity.UserID, sdk.Identity.OrgID, ids)
+
+		params, err := wc.Wb.GetMspUrlParamsMap(apistructs.Identity{UserID: sdk.Identity.UserID, OrgID: sdk.Identity.OrgID}, ids, 0)
 		if err != nil {
 			logrus.Errorf("card list fail to get url params ,err :%v", err)
 		}
-		for i, project := range projects.List {
+
+		qMap, err := wc.Wb.GetProjIssueQueries(ids, 0)
+		if err != nil {
+			logrus.Errorf("get project issue queries failed, project ids: %v, error:%v", ids, err)
+			return
+		}
+
+		for _, project := range projects.List {
 			if cnt >= DefaultCardListSize {
 				break
 			}
+			projID := strconv.FormatUint(project.ProjectDTO.ID, 10)
 			cnt++
 			data.Cards = append(data.Cards, cardlist.Card{
 				ID:             fmt.Sprintf("%d", project.ProjectDTO.ID),
@@ -548,9 +556,9 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 				Title:          project.ProjectDTO.DisplayName,
 				TitleState:     wc.getProjectTitleState(sdk, project.ProjectDTO.Type),
 				Star:           true,
-				TextMeta:       wc.getProjTextMeta(sdk, project),
-				IconOperations: wc.getProjIconOps(sdk, project, params[i]),
-				Operations:     wc.getProjectCardOps(sdk, params[i], project),
+				TextMeta:       wc.getProjTextMeta(sdk, project, qMap[project.ProjectDTO.ID]),
+				IconOperations: wc.getProjIconOps(sdk, project, params[projID]),
+				Operations:     wc.getProjectCardOps(sdk, params[projID], project),
 			})
 		}
 	}

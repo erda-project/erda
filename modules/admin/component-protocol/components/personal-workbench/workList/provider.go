@@ -16,6 +16,7 @@ package workList
 
 import (
 	"os"
+	"runtime/debug"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -229,6 +230,13 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		},
 	}
 
+	defer func() {
+		if err := recover(); err != nil {
+			logrus.Errorf("do filter project recover failed, error: %v", err)
+			logrus.Errorf("%s", debug.Stack())
+		}
+	}()
+
 	// TODO: optimize: store stared item global state from star cart list, get here
 	// list my subscribed projects
 	req := apistructs.GetSubscribeReq{Type: apistructs.ProjectSubscribe}
@@ -237,6 +245,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		logrus.Errorf("list subscribes failed, identity: %+v,request: %+v, error:%v", l.identity, req, err)
 		return
 	}
+
 	maxSub, err := strconv.ParseInt(os.Getenv("SUBSCRIBE_LIMIT_NUM"), 10, 64)
 	if err != nil {
 		maxSub = 6
@@ -273,26 +282,32 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 	for _, v := range projs.List {
 		projIDs = append(projIDs, v.ProjectDTO.ID)
 	}
-	mspParams, err := l.wbSvc.GetUrlCommonParams(l.identity.UserID, l.identity.OrgID, projIDs)
+
+	mspParams, err := l.wbSvc.GetMspUrlParamsMap(l.identity, projIDs, 0)
 	if err != nil {
 		logrus.Errorf("get msp common params failed, error: %v", err)
 		return
 	}
 
-	for i, p := range projs.List {
+	projQueries, err := l.wbSvc.GetProjIssueQueries(projIDs, 0)
+	if err != nil {
+		logrus.Errorf("get projects issue queries failed, ids: %v, error: %v", projIDs, err)
+		return
+	}
+
+	for _, p := range projs.List {
+		projID := strconv.FormatUint(p.ProjectDTO.ID, 10)
+
 		params := make(map[string]interface{})
-		err = common.Transfer(mspParams[i], &params)
+		err = common.Transfer(mspParams[projID], &params)
 		if err != nil {
 			logrus.Errorf("transfer msp params failed, msp params: %+v, error: %v", mspParams, err)
 			return
 		}
 		params["projectId"] = p.ProjectDTO.ID
+
 		// get click goto issue query url
-		queries, err := l.wbSvc.GetIssueQueries(p.ProjectDTO.ID)
-		if err != nil {
-			logrus.Errorf("get workbench issue queries failed, proj id: %v, error: %v", p.ProjectDTO.ID, err)
-			return
-		}
+		queries := projQueries[p.ProjectDTO.ID]
 		kvs, columns := l.GenProjKvColumnInfo(p, queries, params)
 		star := subProjMap[p.ProjectDTO.ID]
 		starTip := l.sdk.I18n(i18n.GenStarTip(apistructs.WorkbenchItemProj, star))
@@ -301,6 +316,13 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		if reachLimit && !star {
 			starDisable = true
 			starTip = l.sdk.I18n(i18n.I18nStarProject) + l.sdk.I18n(i18n.I18nReachLimit)
+		}
+		target := ""
+		switch p.ProjectDTO.Type {
+		case common.DevOpsProject:
+			target = "project"
+		case common.MspProject:
+			target = "mspServiceList"
 		}
 
 		ts, _ := l.GenProjTitleState(p.ProjectDTO.Type)
@@ -321,7 +343,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 							Params: map[string]interface{}{
 								common.OpKeyProjectID: p.ProjectDTO.ID,
 							},
-							Target: common.OpValTargetProject,
+							Target: target,
 						},
 					}).
 					Build(),
@@ -334,6 +356,13 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 
 func (l *WorkList) doFilterApp() (data *list.Data) {
 	data = &list.Data{}
+
+	defer func() {
+		if err := recover(); err != nil {
+			logrus.Errorf("do filter app recover failed, error: %v", err)
+			logrus.Errorf("%s", debug.Stack())
+		}
+	}()
 
 	// list my subscribed apps
 	sr := apistructs.GetSubscribeReq{Type: apistructs.AppSubscribe}
