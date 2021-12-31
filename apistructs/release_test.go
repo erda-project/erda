@@ -61,6 +61,139 @@ services:
 version: "2.0"
 `
 
+const testDiceyml2 = `
+environments:
+  development:
+    addons:
+      api-gateway:
+        plan: api-gateway:basic
+      elasticsearch:
+        plan: terminus-elasticsearch:basic
+      member-mysql-dev:
+        options:
+          version: 1.0.0
+        plan: alicloud-rds:basic
+      ons-dev:
+        options:
+          version: 1.0.0
+        plan: alicloud-ons:basic
+      redis-dice-dev:
+        plan: redis:basic
+      registercenter:
+        plan: registercenter:basic
+      rocketmq:
+        options:
+          version: 4.3.0
+        plan: rocketmq:basic
+    envs:
+      JAVA_OPTS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5055
+      SPRING_PROFILES_ACTIVE: dev
+  production:
+    addons:
+      api-gateway:
+        plan: api-gateway:basic
+      registercenter:
+        plan: registercenter:basic
+      yunuo-es-prod:
+        options:
+          version: 1.0.0
+        plan: custom:basic
+      yunuo-mysql-prod2:
+        options:
+          version: 1.0.0
+        plan: alicloud-rds:basic
+      yunuo-redis-prod2:
+        plan: alicloud-redis:basic
+      yunuo-rocketmq-prod2:
+        plan: custom:basic
+    envs:
+      SPRING_PROFILES_ACTIVE: prod
+  staging:
+    addons:
+      api-gateway:
+        plan: api-gateway:basic
+      es-uat:
+        plan: custom:basic
+      log-service-uat:
+        options:
+          version: 1.0.0
+        plan: log-service:basic
+      redis-uat:
+        plan: alicloud-redis:basic
+      registercenter:
+        plan: registercenter:basic
+      yunuo-mysql-uat:
+        options:
+          version: 1.0.0
+        plan: alicloud-rds:basic
+      yunuo-rocketmq-uat:
+        plan: custom:basic
+    envs:
+      JAVA_OPTS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5055
+        -Xms8192m -Xmx8192m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError
+        -XX:+PrintGCDateStamps  -XX:+PrintGCDetails -XX:NewRatio=2 -XX:+UseParallelGC
+        -XX:+UseParallelOldGC
+      SPRING_PROFILES_ACTIVE: uat
+  test:
+    addons:
+      api-gateway:
+        plan: api-gateway:basic
+      elasticsearch:
+        plan: terminus-elasticsearch:basic
+      member-mysql-test:
+        options:
+          version: 1.0.0
+        plan: alicloud-rds:basic
+      redis-test:
+        plan: alicloud-redis:basic
+      registercenter:
+        plan: registercenter:basic
+      rocketmq:
+        options:
+          version: 4.3.0
+        plan: rocketmq:basic
+    envs:
+      JAVA_OPTS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5055
+      SPRING_PROFILES_ACTIVE: test
+envs: {}
+jobs: {}
+services:
+  rm-demo-webapp:
+    cmd: java ${JAVA_OPTS} -javaagent:/spot-agent/spot-agent.jar -jar /target/rpc.jar
+    deployments:
+      replicas: ${replicas:1}
+    health_check:
+      http:
+        duration: 10
+        path: /actuator/health
+        port: 8083
+    image: addon-registry.default.svc.cluster.local:5000/yishu-ec/romens-data-process:rm-demo-webapp-1640919775372511996
+    ports:
+    - expose: true
+      port: 8083
+    resources:
+      cpu: ${webcpu:1}
+      mem: ${webmem:2048}
+values:
+  development:
+    replicas: 1
+    webcpu: 0.5
+    webmem: 1024
+  production:
+    replicas: 2
+    webcpu: 2
+    webmem: 4096
+  staging:
+    replicas: 1
+    webcpu: 4
+    webmem: 10000
+  test:
+    replicas: 1
+    webcpu: 1
+    webmem: 1024
+version: "2.0"
+`
+
 func TestReleaseGetResponseData_ReLoadImages(t *testing.T) {
 	var data ReleaseGetResponseData
 	data.ApplicationReleaseList = []*ApplicationReleaseSummary{{DiceYml: testDiceyml}}
@@ -76,6 +209,14 @@ func TestReleaseGetResponseData_ReLoadImages(t *testing.T) {
 	assertServices(t, data.ServiceImages)
 }
 
+func TestReleaseGetResponseData_ReLoadImages2(t *testing.T) {
+	var data ReleaseGetResponseData
+	data.Diceyml = testDiceyml2
+	if err := data.ReLoadImages(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func assertServices(t *testing.T, services []*ServiceImagePair) {
 	if len(services) != 2 {
 		t.Fatal("services count error")
@@ -83,7 +224,7 @@ func assertServices(t *testing.T, services []*ServiceImagePair) {
 	for _, service := range services {
 		switch {
 		case service.ServiceName == "doc" && service.Image == "registry.cn-hangzhou.aliyuncs.com/dspo/docs:i20211229-0001":
-		case service.ServiceName == "web" && services[1].Image == "registry.cn-hangzhou.aliyuncs.com/dspo/web:latest":
+		case service.ServiceName == "web" && service.Image == "registry.cn-hangzhou.aliyuncs.com/dspo/web:latest":
 		default:
 			t.Fatalf("service name or image parse error, serviceName: %s, image: %s",
 				service.ServiceName, service.Image)
