@@ -395,3 +395,19 @@ func Test_defaultResourceConfig(t *testing.T) {
 		t.Fatal("clusters names error in ResourceConfig")
 	}
 }
+
+func TestListUnblockAppCountsByProjectIDS(t *testing.T) {
+	db := &dao.DBClient{}
+	m := monkey.PatchInstanceMethod(reflect.TypeOf(db), "ListUnblockAppCountsByProjectIDS",
+		func(db *dao.DBClient, projectIDS []uint64) ([]model.ProjectUnblockAppCount, error) {
+			return []model.ProjectUnblockAppCount{{ProjectID: 1, UnblockAppCount: 1}}, nil
+		})
+	defer m.Unpatch()
+	p := Project{db: db}
+	emptyCounts, err := p.ListUnblockAppCountsByProjectIDS([]uint64{})
+	assert.NoError(t, err)
+	assert.Equal(t, []model.ProjectUnblockAppCount(nil), emptyCounts)
+	counts, err := p.ListUnblockAppCountsByProjectIDS([]uint64{1})
+	assert.NoError(t, err)
+	assert.Equal(t, counts[0].UnblockAppCount, int64(1))
+}
