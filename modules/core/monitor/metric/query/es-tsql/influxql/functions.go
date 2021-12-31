@@ -705,7 +705,7 @@ func init() {
 				if err != nil {
 					return "", err
 				}
-				right, err := getScriptExpression(ctx, call.Args[0], deftyp, fields)
+				right, err := getScriptExpression(ctx, call.Args[1], deftyp, fields)
 				if err != nil {
 					return "", err
 				}
