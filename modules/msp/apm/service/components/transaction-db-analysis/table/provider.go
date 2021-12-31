@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
@@ -63,11 +64,11 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 		var sorts []*common.Sort
 		if sortCol, ok := (*sdk.GlobalState)[transaction.StateKeyTransactionSort]; ok && sortCol != nil {
-			order := sortCol.(table.OpTableChangeSortClientData).DataRef.AscOrder
-			if order != nil {
+			col := sortCol.(table.OpTableChangeSortClientData).DataRef
+			if col != nil && col.AscOrder != nil {
 				sorts = append(sorts, &common.Sort{
-					FieldKey:  sortCol.(table.OpTableChangeSortClientData).DataRef.FieldBindToOrder,
-					Ascending: *sortCol.(table.OpTableChangeSortClientData).DataRef.AscOrder,
+					FieldKey:  col.FieldBindToOrder,
+					Ascending: *col.AscOrder,
 				})
 			}
 		}
@@ -89,7 +90,12 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			return
 		}
 
-		p.StdDataPtr = &table.Data{Table: *data}
+		p.StdDataPtr = &table.Data{
+			Table: *data,
+			Operations: map[cptype.OperationKey]cptype.Operation{
+				table.OpTableChangePage{}.OpKey(): cputil.NewOpBuilder().WithServerDataPtr(&table.OpTableChangePageServerData{}).Build(),
+				table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
+			}}
 	}
 }
 
