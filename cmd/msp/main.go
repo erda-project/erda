@@ -92,6 +92,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/component-protocol"
 	// components
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/datasources"
 )
 
 func main() {

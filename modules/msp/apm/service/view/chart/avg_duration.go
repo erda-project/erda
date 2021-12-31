@@ -24,6 +24,7 @@ import (
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/math"
 )
@@ -33,14 +34,27 @@ type AvgDurationChart struct {
 }
 
 func (avgDuration *AvgDurationChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
-	statement := fmt.Sprintf("SELECT avg(elapsed_mean::field) "+
-		"FROM application_http,application_rpc "+
+	statement := fmt.Sprintf("SELECT sum(elapsed_sum::field)/sum(elapsed_count::field) "+
+		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
-		"GROUP BY time(%s)", avgDuration.Interval)
+		"%s "+
+		"GROUP BY time(%s)",
+		common.GetDataSourceNames(avgDuration.Layers...),
+		common.BuildLayerPathFilterSql(avgDuration.LayerPath, "$layer_path", avgDuration.FuzzyPath, avgDuration.Layers...),
+		avgDuration.Interval)
+
+	var layerPathParam *structpb.Value
+	if avgDuration.FuzzyPath {
+		layerPathParam = common.NewStructValue(map[string]interface{}{"regex": ".*" + avgDuration.LayerPath + ".*"})
+	} else {
+		layerPathParam = structpb.NewStringValue(avgDuration.LayerPath)
+	}
+
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(avgDuration.TenantId),
 		"service_id":   structpb.NewStringValue(avgDuration.ServiceId),
+		"layer_path":   layerPathParam,
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(avgDuration.StartTime, 10),

@@ -526,7 +526,7 @@ func (f *unaryAggFunction) Aggregations(aggs map[string]elastic.Aggregation, fla
 	} else {
 		script, err := getScriptExpression(f.ctx, arg, influxql.AnyField, nil)
 		if err != nil {
-			return nil
+			return err
 		}
 		a, err := f.agg(f.ctx, f.id, "", elastic.NewScript(script), flags...)
 		if err != nil {
@@ -693,6 +693,23 @@ func init() {
 					return "", err
 				}
 				return "((" + left + ")==(" + right + "))", nil
+			},
+		},
+		"gt": {
+			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
+				err := mustCallArgsNum(call, 2)
+				if err != nil {
+					return "", err
+				}
+				left, err := getScriptExpression(ctx, call.Args[0], deftyp, fields)
+				if err != nil {
+					return "", err
+				}
+				right, err := getScriptExpression(ctx, call.Args[1], deftyp, fields)
+				if err != nil {
+					return "", err
+				}
+				return "((" + left + ")>(" + right + "))", nil
 			},
 		},
 		"include": {

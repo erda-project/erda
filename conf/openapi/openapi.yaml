@@ -103,6 +103,16 @@ openapi-v1-routes:
         scenarios:
           - service-overview
           - service-list
+          - transaction-cache-analysis
+          - transaction-cache-detail
+          - transaction-db-analysis
+          - transaction-db-detail
+          - transaction-http-analysis
+          - transaction-http-detail
+          - transaction-mq-analysis
+          - transaction-mq-detail
+          - transaction-rpc-analysis
+          - transaction-rpc-detail
 
 etcd:
   _enable: ${OPENAPI_DEV_MODE:false}

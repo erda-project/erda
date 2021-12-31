@@ -24,6 +24,7 @@ import (
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/math"
 )
@@ -34,13 +35,26 @@ type ErrorRateChart struct {
 
 func (errorRate *ErrorRateChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
 	statement := fmt.Sprintf("SELECT sum(if(eq(error::tag, 'true'),elapsed_count::field,0))/sum(elapsed_count::field) "+
-		"FROM application_http,application_rpc "+
+		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
-		"GROUP BY time(%s)", errorRate.Interval)
+		"%s "+
+		"GROUP BY time(%s)",
+		common.GetDataSourceNames(errorRate.Layers...),
+		common.BuildLayerPathFilterSql(errorRate.LayerPath, "$layer_path", errorRate.FuzzyPath, errorRate.Layers...),
+		errorRate.Interval)
+
+	var layerPathParam *structpb.Value
+	if errorRate.FuzzyPath {
+		layerPathParam = common.NewStructValue(map[string]interface{}{"regex": ".*" + errorRate.LayerPath + ".*"})
+	} else {
+		layerPathParam = structpb.NewStringValue(errorRate.LayerPath)
+	}
+
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(errorRate.TenantId),
 		"service_id":   structpb.NewStringValue(errorRate.ServiceId),
+		"layer_path":   layerPathParam,
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(errorRate.StartTime, 10),
