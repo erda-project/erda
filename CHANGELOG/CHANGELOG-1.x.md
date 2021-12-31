@@ -2,13 +2,17 @@
 
 <table>
 <tr>
-  <th title="Current">1.4<sup>Current</sup></th>
+  <th title="Current">1.5<sup>Current</sup></th>
+  <th title="Current">1.4</th>
   <th title="Current">1.3</th>
   <th title="Current">1.2</th>
   <th title="Current">1.1</th>
   <th title="Current">1.0</th>
 </tr>
 <tr>
+  <td valign="top">
+    <a href="#v150">1.5.0</a><br/>
+  </td>
   <td valign="top">
     <a href="#v140">1.4.0</a><br/>
   </td>
@@ -30,6 +34,38 @@
   </td>
 </tr>
 </table>
+
+## v1.5.0
+
+`2021-12-31`
+
+### New Features
+
+* support es later version.[#3420](https://github.com/erda-project/erda/pull/3420)
+* Syntax ${{ outputs.xxx.xxx.wrap_double_quotes }}, add double quotes to the replaced value of the outputs placeholder.[#3435](https://github.com/erda-project/erda/pull/3435) [@kakj-go](https://github.com/kakj-go)
+* Optimization of execution speed of automated test interface.[#3432](https://github.com/erda-project/erda/pull/3432) [@kakj-go](https://github.com/kakj-go)
+* Automatic update of dicehub extension source monitoring file changes.[#3393](https://github.com/erda-project/erda/pull/3393) [@kakj-go](https://github.com/kakj-go)
+* [workbench] project app overview.[#3391](https://github.com/erda-project/erda/pull/3391) [@WeiXuSeu](https://github.com/WeiXuSeu)
+* admin workbench component protocol init.[#3444](https://github.com/erda-project/erda/pull/3444) [@WeiXuSeu](https://github.com/WeiXuSeu)
+* pipeline support csi and eci.[#3437](https://github.com/erda-project/erda/pull/3437)
+* Repeated interface calls slow down.[#3496](https://github.com/erda-project/erda/pull/3496) [@kakj-go](https://github.com/kakj-go)
+* get all enabled alert expression.[#3388](https://github.com/erda-project/erda/pull/3388) [@Counterflowwind](https://github.com/Counterflowwind)
+* Pipeline tasks add strategies that reference the results of recent successful execution.[#3504](https://github.com/erda-project/erda/pull/3504) [@kakj-go](https://github.com/kakj-go)
+* Optimizing query speed for global configuration.[#3452](https://github.com/erda-project/erda/pull/3452) [@kakj-go](https://github.com/kakj-go)
+
+### Bug Fixes
+
+* Fix the bug that get outputs error from pre-task.[#3402](https://github.com/erda-project/erda/pull/3402) [@chengjoey](https://github.com/chengjoey)
+* Change the dockerfile and extension folder to determine whether they exist.[#3447](https://github.com/erda-project/erda/pull/3447) [@kakj-go](https://github.com/kakj-go)
+* cron compensate generate new map when create pipeline to avoid concurrent map problem.[#3446](https://github.com/erda-project/erda/pull/3446) [@chengjoey](https://github.com/chengjoey)
+* Change the dockerfile and extension folder to determine whether they exist.[#3466](https://github.com/erda-project/erda/pull/3466) [@kakj-go](https://github.com/kakj-go)
+* modify the url and fix the bug of notify-channel is block.[#3458](https://github.com/erda-project/erda/pull/3458) [@Counterflowwind](https://github.com/Counterflowwind)
+* admin component protocol  init bugfix.[#3480](https://github.com/erda-project/erda/pull/3480) [@WeiXuSeu](https://github.com/WeiXuSeu)
+* bundle bugfix, slice init size should be zero.[#3482](https://github.com/erda-project/erda/pull/3482) [@WeiXuSeu](https://github.com/WeiXuSeu)
+* modify msp filter condition.[#3499](https://github.com/erda-project/erda/pull/3499) [@Counterflowwind](https://github.com/Counterflowwind)
+* Automated test scenario set mobile verification whether the same pre_id exists.[#3517](https://github.com/erda-project/erda/pull/3517) [@kakj-go](https://github.com/kakj-go)
+
+
 
 # v1.4.0
 
