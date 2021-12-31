@@ -54,3 +54,8 @@ func (p *Project) GetClusterConfig() map[string]string {
 	_ = json.Unmarshal([]byte(p.ClusterConfig), &clusterConfig)
 	return clusterConfig
 }
+
+type ProjectUnblockAppCount struct {
+	UnblockAppCount int64 `json:"unblock_app_count"`
+	ProjectID       int64 `json:"project_id"`
+}
