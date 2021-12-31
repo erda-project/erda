@@ -15,11 +15,12 @@
 package transaction
 
 import (
+	"github.com/mitchellh/mapstructure"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
-	"github.com/mitchellh/mapstructure"
 )
 
 const (
