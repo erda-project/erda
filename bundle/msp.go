@@ -200,9 +200,6 @@ func (b *Bundle) GetMSPTenantProjects(userID, orgID string, withStats bool, proj
 	if !r.IsOK() {
 		return nil, toAPIError(r.StatusCode(), resp.Error)
 	}
-	if len(resp.Data) <= 0 {
-		// history project
-		return nil, nil
-	}
+
 	return resp.Data, nil
 }

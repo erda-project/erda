@@ -193,7 +193,6 @@ func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.Ope
 	if !updated {
 		logrus.Errorf("cannot update star info in local data")
 	}
-	l.StdDataPtr = l.doFilter()
 	return nil
 }
 
