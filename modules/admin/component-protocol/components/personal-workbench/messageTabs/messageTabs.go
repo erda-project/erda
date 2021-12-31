@@ -17,6 +17,7 @@ package messageTabs
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 
@@ -106,16 +107,22 @@ func (f *MessageTabs) InitComp() error {
 		"onChange": {},
 	}
 
-	//unreadCount, err := f.bdl.GetMboxStats(f.identity)
-	//if err != nil {
-	//	logrus.Errorf("get mbxo stats failed, identity: %v, error: %v", f.identity, err)
-	//	return err
-	//}
+	// list unread message
+	req := apistructs.QueryMBoxRequest{PageNo: 1,
+		PageSize: 0,
+		Status:   apistructs.MBoxUnReadStatus,
+		Type:     apistructs.MBoxTypeIssue,
+	}
+	res, err := f.bdl.ListMbox(f.identity, req)
+	if err != nil {
+		logrus.Errorf("get mbxo stats failed, identity: %v, error: %v", f.identity, err)
+		return err
+	}
 
 	f.Data = Data{
 		Options: []Option{
 			// unread message
-			{Value: apistructs.WorkbenchItemUnreadMes.String(), Label: f.sdk.I18n(i18n.I18nKeyUnreadMes)},
+			{Value: apistructs.WorkbenchItemUnreadMes.String(), Label: fmt.Sprintf("%s(%v)", f.sdk.I18n(i18n.I18nKeyUnreadMes), res.UnRead)},
 		},
 	}
 	return nil
