@@ -15,8 +15,12 @@
 package transaction
 
 import (
+	"github.com/mitchellh/mapstructure"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 )
 
 const (
@@ -46,4 +50,42 @@ func InitTable(lang i18n.LanguageCodes, i18n i18n.Translator) table.Table {
 			},
 		},
 	}
+}
+
+func GetPagingFromGlobalState(globalState cptype.GlobalStateData) (pageNo int, pageSize int) {
+	pageNo = 1
+	pageSize = common.DefaultPageSize
+	if paging, ok := globalState[StateKeyTransactionPaging]; ok && paging != nil {
+		var clientPaging table.OpTableChangePageClientData
+		clientPaging, ok = paging.(table.OpTableChangePageClientData)
+		if !ok {
+			ok = mapstructure.Decode(paging, &clientPaging) == nil
+		}
+		if ok {
+			pageNo = int(clientPaging.PageNo)
+			pageSize = int(clientPaging.PageSize)
+		}
+	}
+	return pageNo, pageSize
+}
+
+func GetSortsFromGlobalState(globalState cptype.GlobalStateData) []*common.Sort {
+	var sorts []*common.Sort
+	if sortCol, ok := globalState[StateKeyTransactionSort]; ok && sortCol != nil {
+		var clientSort table.OpTableChangeSortClientData
+		clientSort, ok = sortCol.(table.OpTableChangeSortClientData)
+		if !ok {
+			ok = mapstructure.Decode(sortCol, &clientSort) == nil
+		}
+		if ok {
+			col := clientSort.DataRef
+			if col != nil && col.AscOrder != nil {
+				sorts = append(sorts, &common.Sort{
+					FieldKey:  col.FieldBindToOrder,
+					Ascending: *col.AscOrder,
+				})
+			}
+		}
+	}
+	return sorts
 }

@@ -41,12 +41,20 @@ func (errorRate *ErrorRateChart) GetChart(ctx context.Context) (*pb.ServiceChart
 		"%s "+
 		"GROUP BY time(%s)",
 		common.GetDataSourceNames(errorRate.Layers...),
-		common.BuildLayerPathFilterSql(errorRate.LayerPath, "$layer_path", errorRate.Layers...),
+		common.BuildLayerPathFilterSql(errorRate.LayerPath, "$layer_path", errorRate.FuzzyPath, errorRate.Layers...),
 		errorRate.Interval)
+
+	var layerPathParam *structpb.Value
+	if errorRate.FuzzyPath {
+		layerPathParam = common.NewStructValue(map[string]interface{}{"regex": ".*" + errorRate.LayerPath + ".*"})
+	} else {
+		layerPathParam = structpb.NewStringValue(errorRate.LayerPath)
+	}
+
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(errorRate.TenantId),
 		"service_id":   structpb.NewStringValue(errorRate.ServiceId),
-		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + errorRate.LayerPath + ".*"}),
+		"layer_path":   layerPathParam,
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(errorRate.StartTime, 10),

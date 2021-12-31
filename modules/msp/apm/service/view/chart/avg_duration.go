@@ -41,12 +41,20 @@ func (avgDuration *AvgDurationChart) GetChart(ctx context.Context) (*pb.ServiceC
 		"%s "+
 		"GROUP BY time(%s)",
 		common.GetDataSourceNames(avgDuration.Layers...),
-		common.BuildLayerPathFilterSql(avgDuration.LayerPath, "$layer_path", avgDuration.Layers...),
+		common.BuildLayerPathFilterSql(avgDuration.LayerPath, "$layer_path", avgDuration.FuzzyPath, avgDuration.Layers...),
 		avgDuration.Interval)
+
+	var layerPathParam *structpb.Value
+	if avgDuration.FuzzyPath {
+		layerPathParam = common.NewStructValue(map[string]interface{}{"regex": ".*" + avgDuration.LayerPath + ".*"})
+	} else {
+		layerPathParam = structpb.NewStringValue(avgDuration.LayerPath)
+	}
+
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(avgDuration.TenantId),
 		"service_id":   structpb.NewStringValue(avgDuration.ServiceId),
-		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + avgDuration.LayerPath + ".*"}),
+		"layer_path":   layerPathParam,
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(avgDuration.StartTime, 10),

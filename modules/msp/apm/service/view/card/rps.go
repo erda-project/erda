@@ -36,11 +36,19 @@ func (r *RpsCard) GetCard(ctx context.Context) (*ServiceCard, error) {
 		"%s ",
 		interval,
 		common.GetDataSourceNames(r.Layer),
-		common.BuildLayerPathFilterSql(r.LayerPath, "$layer_path", r.Layer))
+		common.BuildLayerPathFilterSql(r.LayerPath, "$layer_path", r.FuzzyPath, r.Layer))
+
+	var layerPathParam *structpb.Value
+	if r.FuzzyPath {
+		layerPathParam = common.NewStructValue(map[string]interface{}{"regex": ".*" + r.LayerPath + ".*"})
+	} else {
+		layerPathParam = structpb.NewStringValue(r.LayerPath)
+	}
+
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(r.TenantId),
 		"service_id":   structpb.NewStringValue(r.ServiceId),
-		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + r.LayerPath + ".*"}),
+		"layer_path":   layerPathParam,
 	}
 
 	return r.QueryAsServiceCard(ctx, statement, queryParams, string(CardTypeRps), "reqs/s", common.FormatFloatWith2Digits)

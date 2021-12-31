@@ -42,12 +42,20 @@ func (rps *RpsChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
 		"%s "+
 		"GROUP BY time(%s)",
 		common.GetDataSourceNames(rps.Layers...),
-		common.BuildLayerPathFilterSql(rps.LayerPath, "$layer_path", rps.Layers...),
+		common.BuildLayerPathFilterSql(rps.LayerPath, "$layer_path", rps.FuzzyPath, rps.Layers...),
 		rps.Interval)
+
+	var layerPathParam *structpb.Value
+	if rps.FuzzyPath {
+		layerPathParam = common.NewStructValue(map[string]interface{}{"regex": ".*" + rps.LayerPath + ".*"})
+	} else {
+		layerPathParam = structpb.NewStringValue(rps.LayerPath)
+	}
+
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(rps.TenantId),
 		"service_id":   structpb.NewStringValue(rps.ServiceId),
-		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + rps.LayerPath + ".*"}),
+		"layer_path":   layerPathParam,
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(rps.StartTime, 10),

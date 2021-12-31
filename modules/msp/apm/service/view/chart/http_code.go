@@ -42,13 +42,21 @@ func (httpCode *HttpCodeChart) GetChart(ctx context.Context) (*pb.ServiceChart, 
 		"%s "+
 		"GROUP BY time(%s),http_status_code::tag",
 		common.GetDataSourceNames(httpCode.Layers...),
-		common.BuildLayerPathFilterSql(httpCode.LayerPath, "$layer_path", httpCode.Layers...),
+		common.BuildLayerPathFilterSql(httpCode.LayerPath, "$layer_path", httpCode.FuzzyPath, httpCode.Layers...),
 		httpCode.Interval)
+
+	var layerPathParam *structpb.Value
+	if httpCode.FuzzyPath {
+		layerPathParam = common.NewStructValue(map[string]interface{}{"regex": ".*" + httpCode.LayerPath + ".*"})
+	} else {
+		layerPathParam = structpb.NewStringValue(httpCode.LayerPath)
+	}
+
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(httpCode.TenantId),
 		"service_id":   structpb.NewStringValue(httpCode.ServiceId),
 		"kind":         structpb.NewStringValue("server"),
-		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + httpCode.LayerPath + ".*"}),
+		"layer_path":   layerPathParam,
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(httpCode.StartTime, 10),

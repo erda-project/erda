@@ -44,6 +44,7 @@ func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, 
 		ServiceId: serviceId,
 		Layers:    []common.TransactionLayerType{layer},
 		LayerPath: path,
+		FuzzyPath: false,
 		Metric:    p.Metric,
 	}
 
@@ -95,6 +96,7 @@ func (p *provider) GetCard(ctx context.Context, cardType card.CardType, start, e
 		ServiceId: serviceId,
 		Layer:     layer,
 		LayerPath: path,
+		FuzzyPath: false,
 		Metric:    p.Metric,
 	}
 
@@ -119,6 +121,7 @@ func (p *provider) GetTable(ctx context.Context, tableType table.TableType, star
 		ServiceId: serviceId,
 		Layer:     layer,
 		LayerPath: path,
+		FuzzyPath: true,
 		OrderBy:   orderby,
 		Metric:    p.Metric,
 		PageNo:    pageNo,

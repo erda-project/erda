@@ -55,23 +55,8 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			layerPath = x.(string)
 		}
 
-		pageNo := 1
-		pageSize := common.DefaultPageSize
-		if paging, ok := (*sdk.GlobalState)[transaction.StateKeyTransactionPaging]; ok && paging != nil {
-			pageNo = int(paging.(table.OpTableChangePageClientData).PageNo)
-			pageSize = int(paging.(table.OpTableChangePageClientData).PageSize)
-		}
-
-		var sorts []*common.Sort
-		if sortCol, ok := (*sdk.GlobalState)[transaction.StateKeyTransactionSort]; ok && sortCol != nil {
-			col := sortCol.(table.OpTableChangeSortClientData).DataRef
-			if col != nil && col.AscOrder != nil {
-				sorts = append(sorts, &common.Sort{
-					FieldKey:  col.FieldBindToOrder,
-					Ascending: *col.AscOrder,
-				})
-			}
-		}
+		pageNo, pageSize := transaction.GetPagingFromGlobalState(*sdk.GlobalState)
+		sorts := transaction.GetSortsFromGlobalState(*sdk.GlobalState)
 
 		data, err := p.DataSource.GetTable(context.WithValue(context.Background(), common.LangKey, lang),
 			viewtable.TableTypeTransaction,

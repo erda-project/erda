@@ -69,10 +69,16 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		Columns: []*Column{columnPath, columnReqCount, columnErrorCount, columnSlowCount, columnAvgDuration},
 	}
 	pathField := common.GetLayerPathKeys(t.Layer)[0]
+	var layerPathParam *structpb.Value
+	if t.FuzzyPath {
+		layerPathParam = common.NewStructValue(map[string]interface{}{"regex": ".*" + t.LayerPath + ".*"})
+	} else {
+		layerPathParam = structpb.NewStringValue(t.LayerPath)
+	}
 	queryParams := map[string]*structpb.Value{
 		"terminus_key":   structpb.NewStringValue(t.TenantId),
 		"service_id":     structpb.NewStringValue(t.ServiceId),
-		"layer_path":     common.NewStructValue(map[string]interface{}{"regex": ".*" + t.LayerPath + ".*"}),
+		"layer_path":     layerPathParam,
 		"slow_threshold": structpb.NewNumberValue(common.GetSlowThreshold(t.Layer)),
 	}
 
@@ -84,7 +90,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		"%s ",
 		pathField,
 		common.GetDataSourceNames(t.Layer),
-		common.BuildLayerPathFilterSql(t.LayerPath, "$layer_path", t.Layer),
+		common.BuildLayerPathFilterSql(t.LayerPath, "$layer_path", t.FuzzyPath, t.Layer),
 	)
 	fmt.Println("table query total:" + statement)
 	request := &metricpb.QueryWithInfluxFormatRequest{
@@ -115,7 +121,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		"LIMIT %v OFFSET %v",
 		pathField,
 		common.GetDataSourceNames(t.Layer),
-		common.BuildLayerPathFilterSql(t.LayerPath, "$layer_path", t.Layer),
+		common.BuildLayerPathFilterSql(t.LayerPath, "$layer_path", t.FuzzyPath, t.Layer),
 		pathField,
 		common.GetSortSql(TransactionTableSortFieldSqlMap, "sum(elapsed_count::field) DESC", t.OrderBy...),
 		t.PageSize,

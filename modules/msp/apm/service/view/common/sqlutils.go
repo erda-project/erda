@@ -77,7 +77,7 @@ func GetSlowThreshold(layer TransactionLayerType) float64 {
 	}
 }
 
-func BuildLayerPathFilterSql(path string, paramName string, layers ...TransactionLayerType) string {
+func BuildLayerPathFilterSql(path string, paramName string, fuzzy bool, layers ...TransactionLayerType) string {
 	if len(path) == 0 {
 		return ""
 	}
@@ -86,10 +86,14 @@ func BuildLayerPathFilterSql(path string, paramName string, layers ...Transactio
 	if len(param) == 0 {
 		param = fmt.Sprintf("'%s'", path)
 	}
+	op := "="
+	if fuzzy {
+		op = "=~"
+	}
 	keys := GetLayerPathKeys(layers...)
 	var tokens []string
 	for _, key := range keys {
-		tokens = append(tokens, fmt.Sprintf("%s=~%s", key, param))
+		tokens = append(tokens, fmt.Sprintf("%s%s%s", key, op, param))
 	}
 
 	return fmt.Sprintf("AND (%s) ", strings.Join(tokens, " OR "))

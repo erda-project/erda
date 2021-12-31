@@ -38,6 +38,7 @@ type BaseChart struct {
 	ServiceId string
 	Layers    []common.TransactionLayerType
 	LayerPath string
+	FuzzyPath bool
 	Metric    metricpb.MetricServiceServer
 }
 

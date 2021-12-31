@@ -35,12 +35,19 @@ func (r *AvgDurationCard) GetCard(ctx context.Context) (*ServiceCard, error) {
 		"AND target_service_id::tag=$service_id "+
 		"%s ",
 		common.GetDataSourceNames(r.Layer),
-		common.BuildLayerPathFilterSql(r.LayerPath, "$layer_path", r.Layer))
+		common.BuildLayerPathFilterSql(r.LayerPath, "$layer_path", r.FuzzyPath, r.Layer))
+
+	var layerPathParam *structpb.Value
+	if r.FuzzyPath {
+		layerPathParam = common.NewStructValue(map[string]interface{}{"regex": ".*" + r.LayerPath + ".*"})
+	} else {
+		layerPathParam = structpb.NewStringValue(r.LayerPath)
+	}
 
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(r.TenantId),
 		"service_id":   structpb.NewStringValue(r.ServiceId),
-		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + r.LayerPath + ".*"}),
+		"layer_path":   layerPathParam,
 	}
 
 	result, err := r.QueryAsServiceCard(ctx, statement, queryParams, string(CardTypeAvgDuration), "ns", common.FormatFloatWith2Digits)

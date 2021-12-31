@@ -57,6 +57,7 @@ type BaseBuilder struct {
 	ServiceId string
 	Layer     common.TransactionLayerType
 	LayerPath string
+	FuzzyPath bool
 	OrderBy   []*common.Sort
 	PageSize  int
 	PageNo    int
