@@ -143,15 +143,6 @@ func (s *IssueStream) CreateIssueEvent(req *apistructs.IssueStreamCreateRequest)
 	}
 	var content string
 	var err error
-	if len(req.StreamTypes) == 0 {
-		content, err = getDefaultContentForMsgSending(req.StreamType, req.StreamParams)
-	} else {
-		content, err = s.groupEventContent(req.StreamTypes, req.StreamParams)
-	}
-	if err != nil {
-		logrus.Errorf("get issue %d content error: %v, content will be empty", req.IssueID, err)
-	}
-	logrus.Debugf("old issue content is: %s", content)
 	issue, err := s.db.GetIssue(req.IssueID)
 	if err != nil {
 		return err
@@ -174,6 +165,15 @@ func (s *IssueStream) CreateIssueEvent(req *apistructs.IssueStreamCreateRequest)
 	if err != nil {
 		return err
 	}
+	if len(req.StreamTypes) == 0 {
+		content, err = getDefaultContentForMsgSending(req.StreamType, req.StreamParams, orgModel.Locale)
+	} else {
+		content, err = s.groupEventContent(req.StreamTypes, req.StreamParams, orgModel.Locale)
+	}
+	if err != nil {
+		logrus.Errorf("get issue %d content error: %v, content will be empty", req.IssueID, err)
+	}
+	logrus.Debugf("old issue content is: %s", content)
 	ev := &apistructs.EventCreateRequest{
 		EventHeader: apistructs.EventHeader{
 			Event:         bundle.IssueEvent,
@@ -215,11 +215,11 @@ func (s *IssueStream) filterReceiversByOperatorID(receivers []string, operatorID
 	return users
 }
 
-func (s *IssueStream) groupEventContent(streamTypes []apistructs.IssueStreamType, param apistructs.ISTParam) (string, error) {
+func (s *IssueStream) groupEventContent(streamTypes []apistructs.IssueStreamType, param apistructs.ISTParam, locale string) (string, error) {
 	var content string
 	interval := ";"
 	for _, streamType := range streamTypes {
-		tmp, err := getDefaultContentForMsgSending(streamType, param)
+		tmp, err := getDefaultContentForMsgSending(streamType, param, locale)
 		if err != nil {
 			return "", err
 		}

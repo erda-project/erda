@@ -30,7 +30,7 @@ func Test_filterReceiversByOperatorID(t *testing.T) {
 
 func Test_groupEventContent(t *testing.T) {
 	svc := IssueStream{}
-	content, err := svc.groupEventContent([]apistructs.IssueStreamType{apistructs.ISTChangeContent}, apistructs.ISTParam{})
+	content, err := svc.groupEventContent([]apistructs.IssueStreamType{apistructs.ISTChangeContent}, apistructs.ISTParam{}, "zh")
 	assert.NoError(t, err)
 	assert.Equal(t, "内容发生变更", content)
 }
