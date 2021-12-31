@@ -18,10 +18,6 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/erda-project/erda/modules/msp/apm/service/datasources"
-	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
-	viewtable "github.com/erda-project/erda/modules/msp/apm/service/view/table"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table"
@@ -30,6 +26,10 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
+	"github.com/erda-project/erda/modules/msp/apm/service/datasources"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
+	viewtable "github.com/erda-project/erda/modules/msp/apm/service/view/table"
 )
 
 type provider struct {
@@ -48,11 +48,30 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
 		tenantId := p.StdInParamsPtr.Get("tenantId").(string)
 		serviceId := p.StdInParamsPtr.Get("serviceId").(string)
-		name := ""
-		if x, ok := (*sdk.GlobalState)["name"]; ok && x != nil {
-			name = x.(string)
+
+		layerPath := ""
+		if x, ok := (*sdk.GlobalState)[transaction.StateKeyTransactionLayerPathFilter]; ok && x != nil {
+			layerPath = x.(string)
 		}
-		delete(*sdk.GlobalState, "name")
+
+		pageNo := 1
+		pageSize := common.DefaultPageSize
+		if paging, ok := (*sdk.GlobalState)[transaction.StateKeyTransactionPaging]; ok && paging != nil {
+			pageNo = int(paging.(table.OpTableChangePageClientData).PageNo)
+			pageSize = int(paging.(table.OpTableChangePageClientData).PageSize)
+		}
+
+		var sorts []*common.Sort
+		if sortCol, ok := (*sdk.GlobalState)[transaction.StateKeyTransactionSort]; ok && sortCol != nil {
+			order := sortCol.(table.OpTableChangeSortClientData).DataRef.AscOrder
+			if order != nil {
+				sorts = append(sorts, &common.Sort{
+					FieldKey:  sortCol.(table.OpTableChangeSortClientData).DataRef.FieldBindToOrder,
+					Ascending: *sortCol.(table.OpTableChangeSortClientData).DataRef.AscOrder,
+				})
+			}
+		}
+
 		data, err := p.DataSource.GetTable(context.WithValue(context.Background(), common.LangKey, lang),
 			viewtable.TableTypeTransaction,
 			startTime,
@@ -60,9 +79,10 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			tenantId,
 			serviceId,
 			common.TransactionLayerMq,
-			name,
-			1,
-			common.DefaultPageSize,
+			layerPath,
+			pageNo,
+			pageSize,
+			sorts...,
 		)
 		if err != nil {
 			p.Log.Error("failed to get table data: %s", err)
@@ -74,15 +94,24 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 }
 
 func (p *provider) RegisterTablePagingOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return nil
+	return func(sdk *cptype.SDK) {
+		(*sdk.GlobalState)[transaction.StateKeyTransactionPaging] = opData.ClientData
+		p.RegisterInitializeOp()(sdk)
+	}
 }
 
 func (p *provider) RegisterTableChangePageOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return nil
+	return func(sdk *cptype.SDK) {
+		(*sdk.GlobalState)[transaction.StateKeyTransactionPaging] = opData.ClientData
+		p.RegisterInitializeOp()(sdk)
+	}
 }
 
 func (p *provider) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {
-	return nil
+	return func(sdk *cptype.SDK) {
+		(*sdk.GlobalState)[transaction.StateKeyTransactionSort] = opData.ClientData
+		p.RegisterInitializeOp()(sdk)
+	}
 }
 
 func (p *provider) RegisterBatchRowsHandleOp(opData table.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {

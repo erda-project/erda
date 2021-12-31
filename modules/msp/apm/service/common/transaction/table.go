@@ -27,6 +27,12 @@ const (
 	ColumnAvgDuration     table.ColumnKey = "avgDuration"
 )
 
+const (
+	StateKeyTransactionLayerPathFilter = "transaction_layer_path"
+	StateKeyTransactionPaging          = "transaction_paging"
+	StateKeyTransactionSort            = "transaction_sort"
+)
+
 func InitTable(lang i18n.LanguageCodes, i18n i18n.Translator) table.Table {
 	return table.Table{
 		Columns: table.ColumnsInfo{
