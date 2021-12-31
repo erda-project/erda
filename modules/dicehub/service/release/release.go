@@ -320,25 +320,25 @@ func (r *Release) createReleases(releases []dbclient.Release) (err error) {
 }
 
 // CreateByFile 用文件创建项目制品
-func (r *Release) CreateByFile(req apistructs.ReleaseUploadRequest, file io.ReadCloser) (string, error) {
+func (r *Release) CreateByFile(req apistructs.ReleaseUploadRequest, file io.ReadCloser) (string, string, error) {
 	projectRelease, appReleases, err := r.parseReleaseFile(req, file)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	releases, err := r.db.GetReleasesByProjectAndVersion(req.OrgID, req.ProjectID, projectRelease.Version)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if len(releases) > 0 {
-		return "", errors.Errorf("release version: %s already exist", projectRelease.Version)
+		return "", "", errors.Errorf("release version: %s already exist", projectRelease.Version)
 	}
 
 	err = r.createReleases(append(appReleases, *projectRelease))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return projectRelease.ReleaseID, nil
+	return projectRelease.Version, projectRelease.ReleaseID, nil
 }
 
 // Update 更新 Release
@@ -609,16 +609,7 @@ func (r *Release) Get(orgID int64, releaseID string) (*apistructs.ReleaseGetResp
 		return nil, errors.Errorf("release not found")
 	}
 
-	images, err := r.imageDB.GetImagesByRelease(releaseID)
-	if err != nil {
-		return nil, err
-	}
-	releaseInfoResponse := r.convertToReleaseResponse(release)
-	for _, v := range images {
-		releaseInfoResponse.Images = append(releaseInfoResponse.Images, v.Image)
-	}
-
-	return releaseInfoResponse, nil
+	return r.convertToReleaseResponse(release)
 }
 
 // List 根据搜索条件进行搜索
@@ -640,7 +631,12 @@ func (r *Release) List(orgID int64, req *apistructs.ReleaseListRequest) (*apistr
 
 	releaseList := make([]apistructs.ReleaseGetResponseData, 0, len(releases))
 	for _, v := range releases {
-		releaseList = append(releaseList, *r.convertToReleaseResponse(&v))
+		release, err := r.convertToReleaseResponse(&v)
+		if err != nil {
+			logrus.WithField("func", "*ReleaseList").Errorln("failed to convertToReleaseResponse")
+			continue
+		}
+		releaseList = append(releaseList, *release)
 	}
 
 	return &apistructs.ReleaseListResponseData{
@@ -672,7 +668,10 @@ func (r *Release) GetIosPlist(orgID int64, releaseID string) (string, error) {
 		return "", errors.Errorf("release not found")
 	}
 
-	releaseData := r.convertToReleaseResponse(release)
+	releaseData, err := r.convertToReleaseResponse(release)
+	if err != nil {
+		return "", err
+	}
 	for _, resource := range releaseData.Resources {
 		if resource.Type == apistructs.ResourceTypeIOS {
 			plistTemplate := `<?xml version="1.0" encoding="UTF-8"?>
@@ -947,7 +946,7 @@ func (r *Release) formalRelease(release *dbclient.Release) (err error) {
 }
 
 // release数据库结构转换为API返回所需结构
-func (r *Release) convertToReleaseResponse(release *dbclient.Release) *apistructs.ReleaseGetResponseData {
+func (r *Release) convertToReleaseResponse(release *dbclient.Release) (*apistructs.ReleaseGetResponseData, error) {
 	var labels map[string]string
 	err := json.Unmarshal([]byte(release.Labels), &labels)
 	if err != nil {
@@ -960,23 +959,26 @@ func (r *Release) convertToReleaseResponse(release *dbclient.Release) *apistruct
 		resources = make([]apistructs.ReleaseResource, 0)
 	}
 
-	var summary []apistructs.ApplicationReleaseSummary
+	var summary []*apistructs.ApplicationReleaseSummary
 	if release.IsProjectRelease {
 		var appReleaseIDs []string
-		_ = json.Unmarshal([]byte(release.ApplicationReleaseList), &appReleaseIDs)
+		if err = json.Unmarshal([]byte(release.ApplicationReleaseList), &appReleaseIDs); err != nil {
+			return nil, errors.Errorf("failed to Unmarshal appReleaseIDs")
+		}
 
 		releases, err := r.db.GetReleases(appReleaseIDs)
 		if err != nil {
 			logrus.Errorf("failed to get app releases for release %s", release.ReleaseID)
 		}
 		for i := range releases {
-			summary = append(summary, apistructs.ApplicationReleaseSummary{
+			summary = append(summary, &apistructs.ApplicationReleaseSummary{
 				ReleaseID:       releases[i].ReleaseID,
 				ReleaseName:     releases[i].ReleaseName,
 				Version:         releases[i].Version,
 				ApplicationID:   releases[i].ApplicationID,
 				ApplicationName: releases[i].ApplicationName,
 				CreatedAt:       releases[i].CreatedAt.Format("2006/01/02 15:04:05"),
+				DiceYml:         releases[i].Dice,
 			})
 		}
 	}
@@ -1008,7 +1010,12 @@ func (r *Release) convertToReleaseResponse(release *dbclient.Release) *apistruct
 		CreatedAt:              release.CreatedAt,
 		UpdatedAt:              release.UpdatedAt,
 	}
-	return respData
+	if err = respData.ReLoadImages(); err != nil {
+		logrus.WithError(err).Errorln("failed to ReLoadImages")
+		return nil, err
+	}
+
+	return respData, nil
 }
 
 // GetImages 从ReleaseRequest中提取Image信息

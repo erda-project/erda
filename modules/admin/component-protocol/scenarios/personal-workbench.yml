@@ -114,3 +114,7 @@ rendering:
   workListFilter:
     - name: workList
     - name: cleanData
+
+  messageList:
+    - name: messageTabs
+    - name: cleanData

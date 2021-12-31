@@ -30,16 +30,16 @@ import (
 )
 
 // GenProjKvColumnInfo show type: DevOps, MSP, DevOps(primary)/MSP
-func (l *WorkList) GenProjKvColumnInfo(proj apistructs.WorkbenchProjOverviewItem, q wb.IssueUrlQueries, mspParams map[string]interface{}) (kvs []list.KvInfo, columns map[string]interface{}) {
-	switch proj.ProjectDTO.Type {
+func (l *WorkList) GenProjKvColumnInfo(project apistructs.WorkbenchProjOverviewItem, q wb.IssueUrlQueries, mspParams map[string]interface{}) (kvs []list.KvInfo, columns map[string]interface{}) {
+	switch project.ProjectDTO.Type {
 	case types.ProjTypeDevops:
 		// kv issue info
-		kvs = l.GenProjDopKvInfo(proj, q, mspParams)
-		columns = l.GenProjDopColumnInfo(proj, q, mspParams)
+		kvs = l.GenProjDopKvInfo(project, q, mspParams)
+		columns = l.GenProjDopColumnInfo(project, q, mspParams)
 
 	case types.ProjTypeMSP:
-		kvs = l.GenProjMspKvInfo(proj, q, mspParams)
-		columns = l.GenProjMspColumnInfo(proj, q, mspParams)
+		kvs = l.GenProjMspKvInfo(project, q, mspParams)
+		columns = l.GenProjMspColumnInfo(project, q, mspParams)
 	}
 	return
 }
@@ -244,23 +244,7 @@ func (l *WorkList) GenProjDopColumnInfo(proj apistructs.WorkbenchProjOverviewIte
 					Build(),
 			},
 		},
-		// 服务观测
-		{
-			ID:   strconv.FormatUint(proj.ProjectDTO.ID, 10),
-			Icon: common.IconServiceObservation,
-			Tip:  l.sdk.I18n(i18n.I18nKeyServiceObservation),
-			Operations: map[cptype.OperationKey]cptype.Operation{
-				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
-					WithSkipRender(true).
-					WithServerDataPtr(list.OpItemClickGotoServerData{
-						OpItemBasicServerData: list.OpItemBasicServerData{
-							Params: mspParams,
-							Target: common.OpValTargetMspServiceList,
-						},
-					}).
-					Build(),
-			},
-		},
+
 		// 项目设置
 		{
 			ID:   strconv.FormatUint(proj.ProjectDTO.ID, 10),
@@ -280,6 +264,24 @@ func (l *WorkList) GenProjDopColumnInfo(proj apistructs.WorkbenchProjOverviewIte
 					Build(),
 			},
 		},
+	}
+	if mspParams["terminusKey"] != "" {
+		hovers = append(hovers, list.KvInfo{
+			ID:   strconv.FormatUint(proj.ProjectDTO.ID, 10),
+			Icon: common.IconServiceObservation,
+			Tip:  l.sdk.I18n(i18n.I18nKeyServiceObservation),
+			Operations: map[cptype.OperationKey]cptype.Operation{
+				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
+					WithSkipRender(true).
+					WithServerDataPtr(list.OpItemClickGotoServerData{
+						OpItemBasicServerData: list.OpItemBasicServerData{
+							Params: mspParams,
+							Target: common.OpValTargetMspServiceList,
+						},
+					}).
+					Build(),
+			},
+		})
 	}
 	columns["hoverIcons"] = hovers
 	return
