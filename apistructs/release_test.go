@@ -224,7 +224,7 @@ func assertServices(t *testing.T, services []*ServiceImagePair) {
 	for _, service := range services {
 		switch {
 		case service.ServiceName == "doc" && service.Image == "registry.cn-hangzhou.aliyuncs.com/dspo/docs:i20211229-0001":
-		case service.ServiceName == "web" && services[1].Image == "registry.cn-hangzhou.aliyuncs.com/dspo/web:latest":
+		case service.ServiceName == "web" && service.Image == "registry.cn-hangzhou.aliyuncs.com/dspo/web:latest":
 		default:
 			t.Fatalf("service name or image parse error, serviceName: %s, image: %s",
 				service.ServiceName, service.Image)
