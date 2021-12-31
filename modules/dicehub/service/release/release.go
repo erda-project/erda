@@ -320,25 +320,25 @@ func (r *Release) createReleases(releases []dbclient.Release) (err error) {
 }
 
 // CreateByFile 用文件创建项目制品
-func (r *Release) CreateByFile(req apistructs.ReleaseUploadRequest, file io.ReadCloser) (string, error) {
+func (r *Release) CreateByFile(req apistructs.ReleaseUploadRequest, file io.ReadCloser) (string, string, error) {
 	projectRelease, appReleases, err := r.parseReleaseFile(req, file)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	releases, err := r.db.GetReleasesByProjectAndVersion(req.OrgID, req.ProjectID, projectRelease.Version)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if len(releases) > 0 {
-		return "", errors.Errorf("release version: %s already exist", projectRelease.Version)
+		return "", "", errors.Errorf("release version: %s already exist", projectRelease.Version)
 	}
 
 	err = r.createReleases(append(appReleases, *projectRelease))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return projectRelease.ReleaseID, nil
+	return projectRelease.Version, projectRelease.ReleaseID, nil
 }
 
 // Update 更新 Release

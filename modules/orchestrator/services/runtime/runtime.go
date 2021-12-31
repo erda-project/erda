@@ -1112,6 +1112,7 @@ func (r *Runtime) Delete(operator user.ID, orgID uint64, runtimeID uint64) (*api
 	if err := r.db.UpdateRuntime(runtime); err != nil {
 		return nil, apierrors.ErrDeleteRuntime.InternalError(err)
 	}
+
 	event := events.RuntimeEvent{
 		EventName: events.RuntimeDeleting,
 		Runtime:   dbclient.ConvertRuntimeDTO(runtime, app),
@@ -1856,7 +1857,7 @@ func (r *Runtime) ReferCluster(clusterName string) bool {
 
 // MarkOutdatedForDelete 将删除的应用实例，他们的所有部署单，标记为废弃
 func (r *Runtime) MarkOutdatedForDelete(runtimeID uint64) {
-	deployments, err := r.db.FindNotOutdatedOlderThan(runtimeID, math.MaxUint64)
+	deployments, err := r.db.FindNotOutdatedOlderThan(runtimeID, math.MaxUint32)
 	if err != nil {
 		logrus.Errorf("[alert] failed to query all not outdated deployment before delete runtime: %v, (%v)",
 			runtimeID, err)
