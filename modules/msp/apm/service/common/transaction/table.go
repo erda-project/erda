@@ -38,11 +38,11 @@ func InitTable(lang i18n.LanguageCodes, i18n i18n.Translator) table.Table {
 		Columns: table.ColumnsInfo{
 			Orders: []table.ColumnKey{ColumnTransactionName, ColumnReqCount, ColumnErrorCount, ColumnSlowCount, ColumnAvgDuration},
 			ColumnsMap: map[table.ColumnKey]table.Column{
-				ColumnTransactionName: {Title: i18n.Text(lang, string(ColumnTransactionName))},
-				ColumnReqCount:        {Title: i18n.Text(lang, string(ColumnReqCount))},
-				ColumnErrorCount:      {Title: i18n.Text(lang, string(ColumnErrorCount))},
-				ColumnSlowCount:       {Title: i18n.Text(lang, string(ColumnSlowCount))},
-				ColumnAvgDuration:     {Title: i18n.Text(lang, string(ColumnAvgDuration))},
+				ColumnTransactionName: {Title: i18n.Text(lang, string(ColumnTransactionName)), EnableSort: false},
+				ColumnReqCount:        {Title: i18n.Text(lang, string(ColumnReqCount)), EnableSort: true, FieldBindToOrder: string(ColumnReqCount)},
+				ColumnErrorCount:      {Title: i18n.Text(lang, string(ColumnErrorCount)), EnableSort: true, FieldBindToOrder: string(ColumnErrorCount)},
+				ColumnSlowCount:       {Title: i18n.Text(lang, string(ColumnSlowCount)), EnableSort: true, FieldBindToOrder: string(ColumnSlowCount)},
+				ColumnAvgDuration:     {Title: i18n.Text(lang, string(ColumnAvgDuration)), EnableSort: true, FieldBindToOrder: string(ColumnAvgDuration)},
 			},
 		},
 	}
