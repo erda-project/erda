@@ -23,11 +23,11 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func (b *Bundle) ListSubscribes(userID, orgID string, req apistructs.GetSubscribeReq) (*apistructs.SubscribeDTO, error) {
-	data := &apistructs.SubscribeDTO{}
+func (b *Bundle) ListSubscribes(userID, orgID string, req apistructs.GetSubscribeReq) (data *apistructs.SubscribeDTO, err error) {
+	data = &apistructs.SubscribeDTO{}
 	host, err := b.urls.CoreServices()
 	if err != nil {
-		return data, err
+		return
 	}
 	hc := b.hc
 
@@ -40,14 +40,14 @@ func (b *Bundle) ListSubscribes(userID, orgID string, req apistructs.GetSubscrib
 		Header(httputil.OrgHeader, orgID).
 		Do().JSON(&rsp)
 	if err != nil {
-		return data, apierrors.ErrInvoke.InternalError(err)
+		err = apierrors.ErrInvoke.InternalError(err)
+		return
 	}
 	if !resp.IsOK() || !rsp.Success {
-		return data, toAPIError(resp.StatusCode(), rsp.Error)
+		err = toAPIError(resp.StatusCode(), rsp.Error)
+		return
 	}
-	if rsp.Data.Total == 0 {
-		return data, nil
-	}
+
 	return &rsp.Data, nil
 }
 

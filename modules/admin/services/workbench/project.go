@@ -58,9 +58,10 @@ func (w *Workbench) GetProjNum(identity apistructs.Identity, query string) (int,
 func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, projects []apistructs.ProjectDTO) (list []apistructs.WorkbenchProjOverviewItem, err error) {
 	var (
 		pidList       []uint64
-		issueInfo     *apistructs.WorkbenchResponse
 		statisticInfo []*projpb.Project
 	)
+
+	issueInfo := &apistructs.WorkbenchResponse{}
 	issueMapInfo := make(map[uint64]*apistructs.WorkbenchProjectItem)
 	staMapInfo := make(map[uint64]*projpb.Project)
 
