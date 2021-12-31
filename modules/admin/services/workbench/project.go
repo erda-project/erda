@@ -58,9 +58,10 @@ func (w *Workbench) GetProjNum(identity apistructs.Identity, query string) (int,
 func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, projects []apistructs.ProjectDTO) (list []apistructs.WorkbenchProjOverviewItem, err error) {
 	var (
 		pidList       []uint64
-		issueInfo     *apistructs.WorkbenchResponse
 		statisticInfo []*projpb.Project
 	)
+
+	issueInfo := &apistructs.WorkbenchResponse{}
 	issueMapInfo := make(map[uint64]*apistructs.WorkbenchProjectItem)
 	staMapInfo := make(map[uint64]*projpb.Project)
 
@@ -79,6 +80,11 @@ func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, project
 	// get project issue related info
 	go func() {
 		defer func() {
+			if err := recover(); err != nil {
+				logrus.Errorf("")
+				logrus.Errorf("%s", debug.Stack())
+			}
+			// release
 			wg.Done()
 		}()
 
@@ -86,24 +92,31 @@ func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, project
 			OrgID:      uint64(orgID),
 			ProjectIDs: pidList,
 		}
-		issueInfo, err = w.bdl.GetWorkbenchData(identity.UserID, req)
+		res, err := w.bdl.GetWorkbenchData(identity.UserID, req)
 		if err != nil {
-			logrus.Errorf("get project workbench issue info failed, request: %+v, error: %v", req, err)
+			logrus.Warnf("get project workbench issue info failed, request: %+v, error: %v", req, err)
 			return
 		}
+		issueInfo = res
 	}()
 
 	// get project msp statistic related info
 	go func() {
 		defer func() {
+			if err := recover(); err != nil {
+				logrus.Errorf("")
+				logrus.Errorf("%s", debug.Stack())
+			}
+			// release
 			wg.Done()
 		}()
 
-		statisticInfo, err = w.bdl.GetMSPTenantProjects(identity.UserID, identity.OrgID, true, pidList)
+		res, err := w.bdl.GetMSPTenantProjects(identity.UserID, identity.OrgID, true, pidList)
 		if err != nil {
-			logrus.Errorf("get project workbench statistic info failed, request: %+v, error: %v", pidList, err)
+			logrus.Warnf("get project workbench statistic info failed, request: %+v, error: %v", pidList, err)
 			return
 		}
+		statisticInfo = res
 	}()
 
 	// wait complete
