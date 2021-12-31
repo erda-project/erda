@@ -198,3 +198,16 @@ func (client *DBClient) GetRuntimeCountByAppIDS(appIDS []int64) ([]model.Applica
 	}
 	return counters, nil
 }
+
+// ListUnblockAppCountsByProjectIDS count project's unblock app nums by unblock time
+func (client *DBClient) ListUnblockAppCountsByProjectIDS(projectIDS []uint64) ([]model.ProjectUnblockAppCount, error) {
+	counters := make([]model.ProjectUnblockAppCount, 0)
+	if err := client.Table("dice_app").
+		Where("project_id in (?) and unblock_start < now() and unblock_end > now()", projectIDS).
+		Group("project_id").
+		Select("count(*) as unblock_app_count, project_id").
+		Scan(&counters).Error; err != nil {
+		return nil, err
+	}
+	return counters, nil
+}

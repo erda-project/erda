@@ -1053,17 +1053,13 @@ func (p *Project) ListPublicProjects(userID string, params *apistructs.ProjectLi
 		return nil, err
 	}
 
-	// 获取每个项目的app信息
-	now := time.Now()
-	apps, err := p.db.GetApplicationsByProjectIDs(projectIDs)
+	unblockAppCounts, err := p.ListUnblockAppCountsByProjectIDS(projectIDs)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failed to get unblock apps, err: %v", err)
 	}
-	for _, app := range apps {
-		if app.UnblockStart != nil && app.UnblockEnd != nil &&
-			now.Before(*app.UnblockEnd) && now.After(*app.UnblockStart) {
-			projectBlockStatus[uint64(app.ProjectID)] = "unblocked"
-			break
+	for _, counter := range unblockAppCounts {
+		if counter.UnblockAppCount > 0 {
+			projectBlockStatus[uint64(counter.ProjectID)] = "unblocked"
 		}
 	}
 
@@ -1159,18 +1155,13 @@ func (p *Project) ListJoinedProjects(orgID int64, userID string, params *apistru
 	if err != nil {
 		return nil, errors.Errorf("failed to get projects, (%v)", err)
 	}
-	now := time.Now()
-	for _, proj := range projects {
-		apps, err := p.db.GetProjectApplications(proj.ID)
-		if err != nil {
-			return nil, errors.Errorf("failed to get app, proj(%d): %v", proj.ID, err)
-		}
-		for _, app := range apps {
-			if app.UnblockStart != nil && app.UnblockEnd != nil &&
-				now.Before(*app.UnblockEnd) && now.After(*app.UnblockStart) {
-				projectBlockStatus[uint64(proj.ID)] = "unblocked"
-				break
-			}
+	unblockAppCounts, err := p.ListUnblockAppCountsByProjectIDS(projectIDs)
+	if err != nil {
+		return nil, errors.Errorf("failed to get unblock apps, err: %v", err)
+	}
+	for _, counter := range unblockAppCounts {
+		if counter.UnblockAppCount > 0 {
+			projectBlockStatus[uint64(counter.ProjectID)] = "unblocked"
 		}
 	}
 
@@ -1822,4 +1813,11 @@ func (p *Project) updateMemberCache(projectID uint64) (*memberCache, bool, error
 		p.memberCache.Store(projectID, &CacheItme{Object: member})
 		return member, true, nil
 	}
+}
+
+func (p *Project) ListUnblockAppCountsByProjectIDS(projectIDS []uint64) ([]model.ProjectUnblockAppCount, error) {
+	if len(projectIDS) == 0 {
+		return nil, nil
+	}
+	return p.db.ListUnblockAppCountsByProjectIDS(projectIDS)
 }
