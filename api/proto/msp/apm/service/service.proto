@@ -151,6 +151,8 @@ enum ChartType {
   AvgDuration = 1;
   ErrorRate   = 3;
   HttpCode    = 4;
+  ErrorCount  = 5;
+  SlowCount   = 6;
 }
 
 enum ChartPosition {
