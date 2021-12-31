@@ -16,6 +16,7 @@ package chart
 
 import (
 	"context"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"strings"
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
@@ -38,6 +39,23 @@ type BaseChart struct {
 	Layers    []common.TransactionLayerType
 	LayerPath string
 	Metric    metricpb.MetricServiceServer
+}
+
+func GetChartUnitDefault(chartType pb.ChartType, lang i18n.LanguageCodes, i18n i18n.Translator) string {
+	switch strings.ToLower(chartType.String()) {
+	case strings.ToLower(pb.ChartType_RPS.String()):
+		return i18n.Text(lang, "rpsUnit")
+	case strings.ToLower(pb.ChartType_AvgDuration.String()):
+		return i18n.Text(lang, "avgDurationUnit")
+	case strings.ToLower(pb.ChartType_ErrorRate.String()):
+		return i18n.Text(lang, "rateUnit")
+	case strings.ToLower(pb.ChartType_ErrorCount.String()):
+		return i18n.Text(lang, "countUnit")
+	case strings.ToLower(pb.ChartType_SlowCount.String()):
+		return i18n.Text(lang, "countUnit")
+	default:
+		return ""
+	}
 }
 
 func Selector(chartType string, baseChart *BaseChart, ctx context.Context) (*pb.ServiceChart, error) {

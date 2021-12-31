@@ -39,7 +39,7 @@ var TransactionTableSortFieldSqlMap = map[string]string{
 	columnReqCount.Key:    "sum(elapsed_count::field)",
 	columnErrorCount.Key:  "count(error::tag)",
 	columnSlowCount.Key:   "sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0))",
-	columnAvgDuration.Key: "format_duration(avg(elapsed_mean::field),'',2)",
+	columnAvgDuration.Key: "avg(elapsed_mean::field)",
 }
 
 type TransactionTableRow struct {
@@ -100,7 +100,6 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 	table.Total = response.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
 
 	// query list items
-	// todo
 	statement = fmt.Sprintf("SELECT "+
 		"%s,"+
 		"sum(elapsed_count::field),"+

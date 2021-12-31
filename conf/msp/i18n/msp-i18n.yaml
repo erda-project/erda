@@ -44,6 +44,10 @@ en:
   slowCount: "Slow Request Count"
   errorCount: "Error Request Count"
   errorRate: "Error Rate"
+  rpsUnit: "reqs/s"
+  avgDurationUnit: "ms"
+  countUnit: "freq"
+  rateUnit: "%"
 zh:
   waiting_for_tracing_data: "正在获取链路追踪数据"
   success_get_tracing_data: "获取链路追踪数据成功"
@@ -90,3 +94,7 @@ zh:
   avgRps: "平均吞吐量"
   errorCount: "错误调用次数"
   errorRate: "错误率"
+  rpsUnit: "reqs/s"
+  avgDurationUnit: "ms"
+  countUnit: "次"
+  rateUnit: "%"

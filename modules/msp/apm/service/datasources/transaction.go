@@ -82,6 +82,7 @@ func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, 
 	line := linegraph.New(p.I18n.Text(ctx.Value(common.LangKey).(i18n.LanguageCodes), strings.ToLower(data.Type)))
 	line.SetXAxis(xAxis...)
 	line.SetYAxis(dimension.(string), yAxis...)
+	line.SubTitle = chart.GetChartUnitDefault(chartType, ctx.Value(common.LangKey).(i18n.LanguageCodes), p.I18n)
 
 	return line, nil
 }
