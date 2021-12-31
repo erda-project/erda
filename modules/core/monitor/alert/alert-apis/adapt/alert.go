@@ -423,17 +423,19 @@ func (a *Adapt) getEnabledAlertRulesByScopeAndIndices(lang i18n.LanguageCodes, s
 
 	rules := make([]*db.AlertRule, 0)
 	for _, v := range indices {
-		rule := expression.ExpressionIndex[v]
-		expressionConfig := expression.AlertConfig[v]
-		alertRule := &db.AlertRule{
-			Name:       expressionConfig.Name,
-			AlertScope: expressionConfig.AlertScope,
-			AlertIndex: expressionConfig.Id,
-			Template:   rule.Expression,
-			Attributes: expressionConfig.Attributes,
-			AlertType:  expressionConfig.AlertType,
+		rule, ok := expression.ExpressionIndex[v]
+		if ok {
+			expressionConfig := expression.AlertConfig[v]
+			alertRule := &db.AlertRule{
+				Name:       expressionConfig.Name,
+				AlertScope: expressionConfig.AlertScope,
+				AlertIndex: expressionConfig.Id,
+				Template:   rule.Expression,
+				Attributes: expressionConfig.Attributes,
+				AlertType:  expressionConfig.AlertType,
+			}
+			rules = append(rules, alertRule)
 		}
-		rules = append(rules, alertRule)
 	}
 
 	customizeRules, err := a.db.CustomizeAlertRule.QueryEnabledByScopeAndIndices(scope, scopeID, indices)
