@@ -54,6 +54,7 @@ type BaseCard struct {
 	ServiceId string
 	Layer     common.TransactionLayerType
 	LayerPath string
+	FuzzyPath bool
 	Metric    metricpb.MetricServiceServer
 }
 

@@ -41,12 +41,20 @@ func (errorCount *ErrorCountChart) GetChart(ctx context.Context) (*pb.ServiceCha
 		"%s "+
 		"GROUP BY time(%s)",
 		common.GetDataSourceNames(errorCount.Layers...),
-		common.BuildLayerPathFilterSql(errorCount.LayerPath, "$layer_path", errorCount.Layers...),
+		common.BuildLayerPathFilterSql(errorCount.LayerPath, "$layer_path", errorCount.FuzzyPath, errorCount.Layers...),
 		errorCount.Interval)
+
+	var layerPathParam *structpb.Value
+	if errorCount.FuzzyPath {
+		layerPathParam = common.NewStructValue(map[string]interface{}{"regex": ".*" + errorCount.LayerPath + ".*"})
+	} else {
+		layerPathParam = structpb.NewStringValue(errorCount.LayerPath)
+	}
+
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(errorCount.TenantId),
 		"service_id":   structpb.NewStringValue(errorCount.ServiceId),
-		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + errorCount.LayerPath + ".*"}),
+		"layer_path":   layerPathParam,
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(errorCount.StartTime, 10),

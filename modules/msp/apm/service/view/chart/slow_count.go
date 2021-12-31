@@ -45,12 +45,20 @@ func (slowCount *SlowCountChart) GetChart(ctx context.Context) (*pb.ServiceChart
 		"%s "+
 		"GROUP BY time(%s)",
 		common.GetDataSourceNames(slowCount.Layers...),
-		common.BuildLayerPathFilterSql(slowCount.LayerPath, "$layer_path", slowCount.Layers...),
+		common.BuildLayerPathFilterSql(slowCount.LayerPath, "$layer_path", slowCount.FuzzyPath, slowCount.Layers...),
 		slowCount.Interval)
+
+	var layerPathParam *structpb.Value
+	if slowCount.FuzzyPath {
+		layerPathParam = common.NewStructValue(map[string]interface{}{"regex": ".*" + slowCount.LayerPath + ".*"})
+	} else {
+		layerPathParam = structpb.NewStringValue(slowCount.LayerPath)
+	}
+
 	queryParams := map[string]*structpb.Value{
 		"terminus_key":   structpb.NewStringValue(slowCount.TenantId),
 		"service_id":     structpb.NewStringValue(slowCount.ServiceId),
-		"layer_path":     common.NewStructValue(map[string]interface{}{"regex": ".*" + slowCount.LayerPath + ".*"}),
+		"layer_path":     layerPathParam,
 		"slow_threshold": structpb.NewNumberValue(slowThreshold),
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
