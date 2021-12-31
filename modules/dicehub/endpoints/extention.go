@@ -17,20 +17,16 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dicehub/conf"
 	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpserver"
-	"github.com/erda-project/erda/pkg/i18n"
 )
 
 // CreateExtension 创建扩展
@@ -83,11 +79,26 @@ func (e *Endpoints) QueryExtensions(ctx context.Context, r *http.Request, vars m
 		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
 	}
 
+	data, err := e.extension.MenuExtWithLocale(result, e.bdl.GetLocaleByRequest(r))
+	if err != nil {
+		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
+	}
+
+	var newResult []*apistructs.Extension
+	for _, menu := range data {
+		for _, value := range menu {
+			for _, extension := range value.Items {
+				newResult = append(newResult, extension)
+			}
+		}
+	}
+
 	menuMode := r.URL.Query().Get("menu")
 	if menuMode == "true" {
-		return httpserver.OkResp(menuExt(result))
+		return httpserver.OkResp(e.extension.MenuExt(newResult))
 	}
-	return httpserver.OkResp(result)
+
+	return httpserver.OkResp(newResult)
 }
 
 // QueryExtensions 获取扩展列表
@@ -106,9 +117,12 @@ func (e *Endpoints) QueryExtensionsMenu(ctx context.Context, r *http.Request, va
 		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
 	}
 
-	locale := e.bdl.GetLocaleByRequest(r)
+	data, err := e.extension.MenuExtWithLocale(result, e.bdl.GetLocaleByRequest(r))
+	if err != nil {
+		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
+	}
 
-	return httpserver.OkResp(menuExtWithLocale(result, locale))
+	return httpserver.OkResp(data)
 }
 
 // CreateExtensionVersion 创建扩展版本
@@ -213,142 +227,4 @@ func (e *Endpoints) checkPushPermission(r *http.Request) error {
 
 type MenuItem struct {
 	Name string `json:"name"`
-}
-
-func menuExtWithLocale(extensions []*apistructs.Extension, locale *i18n.LocaleResource) map[string][]apistructs.ExtensionMenu {
-	var result = map[string][]apistructs.ExtensionMenu{}
-
-	extMap := extMap(extensions)
-	//遍历category大的类别
-	for categoryType, typeItems := range apistructs.CategoryTypes {
-		//每个类别归属于一个map
-		menuList := result[categoryType]
-		//遍历大类别中的子类别
-		for _, v := range typeItems {
-			//获取这种子类别的Extension的对象数据
-			extensionListWithKeyName, ok := extMap[v]
-			if !ok {
-				continue
-			}
-			//这个子类别是否有国际化，没有就是字类别的名称
-			var displayName string
-			if locale != nil {
-				displayNameTemplate := locale.GetTemplate(apistructs.DicehubExtensionsMenu + "." + categoryType + "." + v)
-				if displayNameTemplate != nil {
-					displayName = displayNameTemplate.Content()
-				}
-			}
-
-			if displayName == "" {
-				displayName = v
-			}
-			//将这些字类别归属于数组中
-			menuList = append(menuList, apistructs.ExtensionMenu{
-				Name:        v,
-				DisplayName: displayName,
-				Items:       extensionListWithKeyName,
-			})
-		}
-		//将数组设置回map中
-		result[categoryType] = menuList
-	}
-
-	return result
-}
-
-func menuExt(extensions []*apistructs.Extension) interface{} {
-	extMap := extMap(extensions)
-	menuMap := &MenuMap{}
-	for subMenuName, subMenuValues := range conf.ExtensionMenu() {
-		subMenu := &MenuMap{}
-		for _, v := range subMenuValues {
-			params := strings.Split(v, ":")
-			keyName := params[0]
-			displayName := params[1]
-			subMenus := getMapValue(extMap, keyName)
-			if len(subMenus) > 0 {
-				subMenu.Put(displayName, subMenus)
-			}
-		}
-		menuMap.Put(subMenuName, subMenu)
-	}
-	return menuMap
-}
-
-func getMapValue(extMap map[string][]*apistructs.Extension, key string) []*apistructs.Extension {
-	extList, _ := extMap[key]
-	return extList
-}
-
-func extMap(extensions []*apistructs.Extension) map[string][]*apistructs.Extension {
-	extMap := map[string][]*apistructs.Extension{}
-	for _, v := range extensions {
-		extList, exist := extMap[v.Category]
-		if exist {
-			extList = append(extList, v)
-		} else {
-			extList = []*apistructs.Extension{v}
-		}
-		extMap[v.Category] = extList
-	}
-	return extMap
-}
-
-type MenuMap []*SortMapNode
-
-type SortMapNode struct {
-	Key string
-	Val interface{}
-}
-
-func (m *MenuMap) Put(key string, val interface{}) {
-	index, _, ok := m.get(key)
-	if ok {
-		(*m)[index].Val = val
-	} else {
-		node := &SortMapNode{Key: key, Val: val}
-		*m = append(*m, node)
-	}
-}
-
-func (m *MenuMap) Get(key string) (interface{}, bool) {
-	_, val, ok := m.get(key)
-	return val, ok
-}
-
-func (m *MenuMap) get(key string) (int, interface{}, bool) {
-	for index, node := range *m {
-		if node.Key == key {
-			return index, node.Val, true
-		}
-	}
-	return -1, nil, false
-}
-func (m *MenuMap) MarshalJSON() ([]byte, error) {
-	mapJson := m.ToSortedMapJson(m)
-	return []byte(mapJson), nil
-}
-
-func (m *MenuMap) ToSortedMapJson(smap *MenuMap) string {
-	s := "{"
-	for _, node := range *smap {
-		v := node.Val
-		isSamp := false
-		str := ""
-		switch v.(type) {
-		case *MenuMap:
-			isSamp = true
-			str = smap.ToSortedMapJson(v.(*MenuMap))
-		}
-
-		if !isSamp {
-			b, _ := json.Marshal(node.Val)
-			str = string(b)
-		}
-
-		s = fmt.Sprintf("%s\"%s\":%s,", s, node.Key, str)
-	}
-	s = strings.TrimRight(s, ",")
-	s = fmt.Sprintf("%s}", s)
-	return s
 }

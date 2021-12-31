@@ -226,3 +226,19 @@ func (client *DBClient) GetExtensionVersionCount(name string) (int64, error) {
 		Count(&count).Error
 	return count, err
 }
+
+func (client *DBClient) ListExtensionVersions(names []string) (map[string][]ExtensionVersion, error) {
+	var result []ExtensionVersion
+	query := client.Model(&ExtensionVersion{}).Where("name in (?) and public = ?", names, true).Order("version desc")
+	err := query.Find(&result).Error
+	if err != nil {
+		return nil, err
+	}
+
+	var extensions = map[string][]ExtensionVersion{}
+	for _, extVersion := range result {
+		extensions[extVersion.Name] = append(extensions[extVersion.Name], extVersion)
+	}
+
+	return extensions, err
+}

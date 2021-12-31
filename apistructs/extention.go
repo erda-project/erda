@@ -67,6 +67,29 @@ type Spec struct {
 	SupportedVersions []string          `json:"supportedErdaVersions" yaml:"supportedErdaVersions"`
 	Public            bool              `json:"public" yaml:"public"`
 	IsDefault         bool              `json:"isDefault" yaml:"isDefault"`
+
+	DisplayNameLocale map[string]string `json:"displayNameLocale" yaml:"displayNameLocale"`
+	DescLocale        map[string]string `json:"descLocale" yaml:"descLocale"`
+}
+
+func (spec *Spec) GetLocaleDisplayName(lang string) string {
+	if spec.DisplayNameLocale == nil {
+		return spec.DisplayName
+	}
+	if spec.DisplayNameLocale[lang] == "" {
+		return spec.DisplayName
+	}
+	return spec.DisplayNameLocale[lang]
+}
+
+func (spec *Spec) GetLocaleDesc(lang string) string {
+	if spec.DescLocale == nil {
+		return spec.Desc
+	}
+	if spec.DescLocale[lang] == "" {
+		return spec.Desc
+	}
+	return spec.DescLocale[lang]
 }
 
 // CheckDiceVersion 检查版本是否支持

@@ -20,6 +20,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
+	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -86,9 +87,9 @@ func (s *PipelineSvc) loadGraphActionNameAndLogo(graph *apistructs.PipelineYml) 
 				continue
 			}
 
-			action.DisplayName = actionSpec.DisplayName
+			action.DisplayName = actionSpec.GetLocaleDisplayName(i18n.GetGoroutineBindLang())
 			action.LogoUrl = actionSpec.LogoUrl
-			action.Description = actionSpec.Desc
+			action.Description = actionSpec.GetLocaleDesc(i18n.GetGoroutineBindLang())
 		}
 	}
 }
