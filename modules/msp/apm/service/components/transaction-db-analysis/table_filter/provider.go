@@ -130,10 +130,8 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		nameMap = x.(map[string]interface{})
 	}
 
-	if nameMap == nil {
-		return nil
+	if name, ok := nameMap["title"]; ok {
+		(*gs)[transaction.StateKeyTransactionLayerPathFilter] = name
 	}
-	name := nameMap["title"]
-	(*gs)[transaction.StateKeyTransactionLayerPathFilter] = name
 	return f.SetToProtocolComponent(c)
 }
