@@ -40,6 +40,12 @@ func getIssueStreamTemplate(locale string, ist apistructs.IssueStreamType) (stri
 
 // getIssueStreamTemplateForMsgSending get issue stream template for msg sending
 func getIssueStreamTemplateForMsgSending(locale string, ist apistructs.IssueStreamType) (string, error) {
+	if locale == "" || locale == "zh-CN" {
+		locale = "zh"
+	}
+	if locale == "en-US" {
+		locale = "en"
+	}
 	templateContent, err := getIssueStreamTemplate(locale, ist)
 	if err != nil {
 		return "", err
@@ -70,8 +76,7 @@ func getDefaultContent(ist apistructs.IssueStreamType, param apistructs.ISTParam
 }
 
 // getDefaultContentForMsgSending get rendered msg for sending
-func getDefaultContentForMsgSending(ist apistructs.IssueStreamType, param apistructs.ISTParam) (string, error) {
-	locale := "zh"
+func getDefaultContentForMsgSending(ist apistructs.IssueStreamType, param apistructs.ISTParam, locale string) (string, error) {
 	ct, err := getIssueStreamTemplateForMsgSending(locale, ist)
 	if err != nil {
 		return "", err

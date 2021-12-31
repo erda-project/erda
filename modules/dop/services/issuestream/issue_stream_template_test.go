@@ -238,7 +238,7 @@ func Test_getDefaultContentForMsgSending(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getDefaultContentForMsgSending(tt.args.ist, tt.args.param)
+			got, err := getDefaultContentForMsgSending(tt.args.ist, tt.args.param, "zh")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getDefaultContentForMsgSending() error = %v, wantErr %v", err, tt.wantErr)
 				return
