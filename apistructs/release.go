@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
@@ -300,10 +299,11 @@ func (r *ReleaseGetResponseData) ReLoadImages() error {
 	if r.Diceyml == "" {
 		return nil
 	}
-	var obj *diceyml.Object
-	if err := yaml.Unmarshal([]byte(r.Diceyml), &obj); err != nil {
-		return errors.Wrap(err, "invalid release file")
+	deployable, err := diceyml.NewDeployable([]byte(r.Diceyml), diceyml.WS_PROD, false)
+	if err != nil {
+		return err
 	}
+	var obj = deployable.Obj()
 	r.Images = nil
 	r.ServiceImages = nil
 	for name, service := range obj.Services {
@@ -338,11 +338,11 @@ func (r *ApplicationReleaseSummary) ReLoadImages() error {
 		return errors.Errorf("invalid release file: it is empty, applicationID: %v, applicationName: %s",
 			r.ApplicationID, r.ApplicationName)
 	}
-	var obj *diceyml.Object
-	if err := yaml.Unmarshal([]byte(r.DiceYml), &obj); err != nil {
-		return errors.Wrapf(err, "invalid release file, applicationID: %v, applicationName: %s",
-			r.ApplicationID, r.ApplicationName)
+	deployable, err := diceyml.NewDeployable([]byte(r.DiceYml), diceyml.WS_PROD, false)
+	if err != nil {
+		return err
 	}
+	var obj = deployable.Obj()
 	r.Services = nil
 	for name, service := range obj.Services {
 		r.Services = append(r.Services, &ServiceImagePair{
