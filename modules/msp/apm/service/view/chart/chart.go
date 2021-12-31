@@ -16,9 +16,9 @@ package chart
 
 import (
 	"context"
-	"github.com/erda-project/erda-infra/providers/i18n"
 	"strings"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
