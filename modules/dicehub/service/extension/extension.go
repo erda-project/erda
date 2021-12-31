@@ -15,9 +15,12 @@
 package extension
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/Masterminds/semver"
 	"github.com/jinzhu/gorm"
@@ -27,14 +30,17 @@ import (
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dicehub/conf"
 	"github.com/erda-project/erda/modules/dicehub/dbclient"
 	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 // Extension Extension
 type Extension struct {
-	db  *dbclient.DBClient
-	bdl *bundle.Bundle
+	db                  *dbclient.DBClient
+	bdl                 *bundle.Bundle
+	cacheExtensionSpecs sync.Map
 }
 
 // Option 定义 Extension 对象的配置选项
@@ -135,12 +141,173 @@ func (i *Extension) SearchExtensions(req apistructs.ExtensionSearchRequest) (map
 	return result.mp, nil
 }
 
+func (i *Extension) MenuExtWithLocale(extensions []*apistructs.Extension, locale *i18n.LocaleResource) (map[string][]apistructs.ExtensionMenu, error) {
+	var result = map[string][]apistructs.ExtensionMenu{}
+
+	var extensionName []string
+	for _, v := range extensions {
+		extensionName = append(extensionName, v.Name)
+	}
+	extensionVersionMap, err := i.db.ListExtensionVersions(extensionName)
+	if err != nil {
+		return nil, apierrors.ErrQueryExtension.InternalError(err)
+	}
+
+	extMap := i.extMap(extensions)
+	// Traverse categories with large categories
+	for categoryType, typeItems := range apistructs.CategoryTypes {
+		// Each category belongs to a map
+		menuList := result[categoryType]
+		// Traverse subcategories in a large category
+		for _, v := range typeItems {
+			// Gets the object data of the extension of this subcategory
+			extensionListWithKeyName, ok := extMap[v]
+			if !ok {
+				continue
+			}
+
+			// extension displayName desc Internationalization settings
+			for _, extension := range extensionListWithKeyName {
+				defaultExtensionVersion := getDefaultExtensionVersion("", extensionVersionMap[extension.Name])
+				if defaultExtensionVersion.ID <= 0 {
+					logrus.Errorf("extension %v not find default extension version", extension.Name)
+					continue
+				}
+
+				// get from caches and set to caches
+				localeDisplayName, localeDesc, err := i.getLocaleDisplayNameAndDesc(defaultExtensionVersion)
+				if err != nil {
+					return nil, err
+				}
+
+				if localeDisplayName != "" {
+					extension.DisplayName = localeDisplayName
+				}
+
+				if localeDesc != "" {
+					extension.Desc = localeDesc
+				}
+			}
+
+			// Whether this subcategory is internationalized or not is the name of the word category
+			var displayName string
+			if locale != nil {
+				displayNameTemplate := locale.GetTemplate(apistructs.DicehubExtensionsMenu + "." + categoryType + "." + v)
+				if displayNameTemplate != nil {
+					displayName = displayNameTemplate.Content()
+				}
+			}
+
+			if displayName == "" {
+				displayName = v
+			}
+			// Assign these word categories to the array
+			menuList = append(menuList, apistructs.ExtensionMenu{
+				Name:        v,
+				DisplayName: displayName,
+				Items:       extensionListWithKeyName,
+			})
+		}
+		// Set the array back into the map
+		result[categoryType] = menuList
+	}
+
+	return result, nil
+}
+
+func getDefaultExtensionVersion(version string, extensionVersions []dbclient.ExtensionVersion) dbclient.ExtensionVersion {
+	var defaultVersion dbclient.ExtensionVersion
+	if version == "" {
+		for _, extensionVersion := range extensionVersions {
+			if extensionVersion.IsDefault {
+				defaultVersion = extensionVersion
+				break
+			}
+		}
+		if defaultVersion.ID <= 0 && len(extensionVersions) > 0 {
+			defaultVersion = extensionVersions[0]
+		}
+	} else {
+		for _, extensionVersion := range extensionVersions {
+			if extensionVersion.Version == version {
+				defaultVersion = extensionVersion
+				break
+			}
+		}
+	}
+	return defaultVersion
+}
+
+func (s *Extension) getLocaleDisplayNameAndDesc(extensionVersion dbclient.ExtensionVersion) (string, string, error) {
+	value, ok := s.cacheExtensionSpecs.Load(extensionVersion.Spec)
+	var specData apistructs.Spec
+	if !ok {
+		err := yaml.Unmarshal([]byte(extensionVersion.Spec), &specData)
+		if err != nil {
+			return "", "", apierrors.ErrQueryExtension.InternalError(err)
+		}
+		s.cacheExtensionSpecs.Store(extensionVersion.Spec, specData)
+		go func(spec string) {
+			// caches expiration time
+			time.AfterFunc(30*25*time.Hour, func() {
+				s.cacheExtensionSpecs.Delete(spec)
+			})
+		}(extensionVersion.Spec)
+	} else {
+		specData = value.(apistructs.Spec)
+	}
+
+	displayName := specData.GetLocaleDisplayName(i18n.GetGoroutineBindLang())
+	desc := specData.GetLocaleDesc(i18n.GetGoroutineBindLang())
+
+	return displayName, desc, nil
+}
+
+func (i *Extension) MenuExt(extensions []*apistructs.Extension) interface{} {
+	extMap := i.extMap(extensions)
+	menuMap := &MenuMap{}
+	for subMenuName, subMenuValues := range conf.ExtensionMenu() {
+		subMenu := &MenuMap{}
+		for _, v := range subMenuValues {
+			params := strings.Split(v, ":")
+			keyName := params[0]
+			displayName := params[1]
+			subMenus := i.getMapValue(extMap, keyName)
+			if len(subMenus) > 0 {
+				subMenu.Put(displayName, subMenus)
+			}
+		}
+		menuMap.Put(subMenuName, subMenu)
+	}
+	return menuMap
+}
+
+func (i *Extension) getMapValue(extMap map[string][]*apistructs.Extension, key string) []*apistructs.Extension {
+	extList, _ := extMap[key]
+	return extList
+}
+
+func (i *Extension) extMap(extensions []*apistructs.Extension) map[string][]*apistructs.Extension {
+	extMap := map[string][]*apistructs.Extension{}
+	for _, v := range extensions {
+		extList, exist := extMap[v.Category]
+		if exist {
+			extList = append(extList, v)
+		} else {
+			extList = []*apistructs.Extension{v}
+		}
+		extMap[v.Category] = extList
+	}
+	return extMap
+}
+
 // QueryExtensions 查询Extension列表
 func (i *Extension) QueryExtensions(all string, typ string, labels string) ([]*apistructs.Extension, error) {
 	extensions, err := i.db.QueryExtensions(all, typ, labels)
 	if err != nil {
 		return nil, err
 	}
+
 	result := []*apistructs.Extension{}
 	for _, v := range extensions {
 		apiData := v.ToApiData()
@@ -344,4 +511,63 @@ func (i *Extension) triggerPushEvent(specData apistructs.Spec, action string) {
 			logrus.Errorf("failed to create event :%v", err)
 		}
 	}()
+}
+
+type MenuMap []*SortMapNode
+
+type SortMapNode struct {
+	Key string
+	Val interface{}
+}
+
+func (m *MenuMap) Put(key string, val interface{}) {
+	index, _, ok := m.get(key)
+	if ok {
+		(*m)[index].Val = val
+	} else {
+		node := &SortMapNode{Key: key, Val: val}
+		*m = append(*m, node)
+	}
+}
+
+func (m *MenuMap) Get(key string) (interface{}, bool) {
+	_, val, ok := m.get(key)
+	return val, ok
+}
+
+func (m *MenuMap) get(key string) (int, interface{}, bool) {
+	for index, node := range *m {
+		if node.Key == key {
+			return index, node.Val, true
+		}
+	}
+	return -1, nil, false
+}
+func (m *MenuMap) MarshalJSON() ([]byte, error) {
+	mapJson := m.ToSortedMapJson(m)
+	return []byte(mapJson), nil
+}
+
+func (m *MenuMap) ToSortedMapJson(smap *MenuMap) string {
+	s := "{"
+	for _, node := range *smap {
+		v := node.Val
+		isSamp := false
+		str := ""
+		switch v.(type) {
+		case *MenuMap:
+			isSamp = true
+			str = smap.ToSortedMapJson(v.(*MenuMap))
+		}
+
+		if !isSamp {
+			b, _ := json.Marshal(node.Val)
+			str = string(b)
+		}
+
+		s = fmt.Sprintf("%s\"%s\":%s,", s, node.Key, str)
+	}
+	s = strings.TrimRight(s, ",")
+	s = fmt.Sprintf("%s}", s)
+	return s
 }
