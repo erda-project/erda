@@ -86,6 +86,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		common.GetDataSourceNames(t.Layer),
 		common.BuildLayerPathFilterSql(t.LayerPath, "$layer_path", t.Layer),
 	)
+	fmt.Println("table query total:" + statement)
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(t.StartTime, 10),
 		End:       strconv.FormatInt(t.EndTime, 10),
@@ -104,7 +105,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		"%s,"+
 		"sum(elapsed_count::field),"+
 		"count(error::tag),"+
-		"sum(elapsed_count::field),"+
+		"sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0)),"+
 		"format_duration(avg(elapsed_mean::field),'',2) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
@@ -121,6 +122,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		t.PageSize,
 		(t.PageNo-1)*t.PageSize,
 	)
+	fmt.Println("table query list:" + statement)
 	request = &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(t.StartTime, 10),
 		End:       strconv.FormatInt(t.EndTime, 10),
