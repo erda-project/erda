@@ -17,7 +17,6 @@ package datasources
 import (
 	"context"
 	"fmt"
-	"github.com/erda-project/erda/pkg/math"
 	"strconv"
 	"strings"
 	"time"
@@ -34,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/service/view/chart"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/table"
+	"github.com/erda-project/erda/pkg/math"
 )
 
 func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*linegraph.Data, error) {

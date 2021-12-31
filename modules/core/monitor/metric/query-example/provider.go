@@ -29,7 +29,7 @@ import (
 
 type provider struct {
 	Log    logs.Logger
-	Index  indexloader.Interface      `autowired:"erda.core.monitor.metric.index-loader"`
+	Index  indexloader.Interface      `autowired:"elasticsearch.index.loader@metric"`
 	Meta   pb.MetricMetaServiceServer `autowired:"erda.core.monitor.metric.MetricMetaService"`
 	Metric pb.MetricServiceServer     `autowired:"erda.core.monitor.metric.MetricService"`
 }
@@ -45,9 +45,12 @@ func (p *provider) queryExample(ctx context.Context) error {
 	req := &pb.QueryWithInfluxFormatRequest{
 		Start:     "before_1h", // or timestamp
 		End:       "now",       // or timestamp
-		Statement: `SELECT host_ip::tag, mem_used::field FROM host_summary WHERE cluster_name::tag=$cluster_name GROUP BY host_ip::tag`,
+		Statement: `SELECT host_ip::tag, sum(if(eq(mem_used::field, 1),mem_used::field,0)) FROM host_summary WHERE cluster_name::tag=$cluster_name GROUP BY host_ip::tag`,
 		Params: map[string]*structpb.Value{
 			"cluster_name": structpb.NewStringValue("terminus-dev"),
+		},
+		Options: map[string]string{
+			"debug": "true",
 		},
 	}
 	resp, err := p.Metric.QueryWithInfluxFormat(ctx, req)
