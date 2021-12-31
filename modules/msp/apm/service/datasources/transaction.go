@@ -103,7 +103,7 @@ func (p *provider) GetCard(ctx context.Context, cardType card.CardType, start, e
 	}
 
 	pair := &kv.KV{
-		Key:    data.Name,
+		Key:    p.I18n.Text(ctx.Value(common.LangKey).(i18n.LanguageCodes), strings.ToLower(data.Name)),
 		Value:  strconv.FormatFloat(data.Value, 'f', -1, 64),
 		SubKey: data.Unit,
 	}

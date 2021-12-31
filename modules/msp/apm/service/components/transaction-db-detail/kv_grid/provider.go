@@ -32,12 +32,12 @@ import (
 )
 
 const (
-	totalCount  string = "kvGrid@totalCount"
-	avgRps      string = "kvGrid@avgRps"
-	avgDuration string = "kvGrid@avgDuration"
-	slowCount   string = "kvGrid@slowCount"
-	errorCount  string = "kvGrid@errorCount"
-	errorRate   string = "kvGrid@errorRate"
+	totalCount  string = "totalCount"
+	avgRps      string = "avgRps"
+	avgDuration string = "avgDuration"
+	slowCount   string = "slowCount"
+	errorCount  string = "errorCount"
+	errorRate   string = "errorRate"
 )
 
 type provider struct {

@@ -43,7 +43,7 @@ func (r *AvgDurationCard) GetCard(ctx context.Context) (*ServiceCard, error) {
 		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + r.LayerPath + ".*"}),
 	}
 
-	result, err := r.QueryAsServiceCard(ctx, statement, queryParams, "avg_duration", "ns", common.FormatFloatWith2Digits)
+	result, err := r.QueryAsServiceCard(ctx, statement, queryParams, string(CardTypeAvgDuration), "ns", common.FormatFloatWith2Digits)
 	if err != nil {
 		return result, err
 	}

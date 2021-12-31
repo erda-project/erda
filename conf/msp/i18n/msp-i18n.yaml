@@ -35,7 +35,7 @@ en:
   pathErrorRateTop5: Top5 Error API
   transactionName: "Transaction Name"
   reqCount: "Request Count"
-  rps: "Request RPS"
+  rps: "Throughput"
   duration: "Duration"
   avgDuration: "Avg Duration"
   requestDistribution: "Request Distribution"
@@ -82,7 +82,7 @@ zh:
   transactionName: "事务名称"
   reqCount: "调用次数"
   slowCount: "慢调用次数"
-  rps: "吞吐量 (RPS)"
+  rps: "吞吐量"
   duration: "响应时间"
   avgDuration: "平均响应时间"
   requestDistribution: "请求分布"

@@ -28,11 +28,13 @@ type RpsCard struct {
 }
 
 func (r *RpsCard) GetCard(ctx context.Context) (*ServiceCard, error) {
-	statement := fmt.Sprintf("SELECT rateps(elapsed_count::field) "+
+	interval := (r.BaseCard.EndTime - r.BaseCard.StartTime) / 1e3
+	statement := fmt.Sprintf("SELECT sum(elapsed_count::field)/%v "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"AND target_service_id::tag=$service_id "+
 		"%s ",
+		interval,
 		common.GetDataSourceNames(r.Layer),
 		common.BuildLayerPathFilterSql(r.LayerPath, "$layer_path", r.Layer))
 	queryParams := map[string]*structpb.Value{
@@ -41,5 +43,5 @@ func (r *RpsCard) GetCard(ctx context.Context) (*ServiceCard, error) {
 		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + r.LayerPath + ".*"}),
 	}
 
-	return r.QueryAsServiceCard(ctx, statement, queryParams, "rps", "/s", common.FormatFloatWith2Digits)
+	return r.QueryAsServiceCard(ctx, statement, queryParams, string(CardTypeRps), "reqs/s", common.FormatFloatWith2Digits)
 }

@@ -41,5 +41,5 @@ func (r *ReqCountCard) GetCard(ctx context.Context) (*ServiceCard, error) {
 		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + r.LayerPath + ".*"}),
 	}
 
-	return r.QueryAsServiceCard(ctx, statement, queryParams, "req_count", "", common.FormatFloatWith2Digits)
+	return r.QueryAsServiceCard(ctx, statement, queryParams, string(CardTypeReqCount), "", common.FormatFloatWith2Digits)
 }

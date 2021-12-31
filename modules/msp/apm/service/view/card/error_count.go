@@ -41,5 +41,5 @@ func (r *ErrorCountCard) GetCard(ctx context.Context) (*ServiceCard, error) {
 		"layer_path":   common.NewStructValue(map[string]interface{}{"regex": ".*" + r.LayerPath + ".*"}),
 	}
 
-	return r.QueryAsServiceCard(ctx, statement, queryParams, "error_count", "", common.FormatFloatWith2Digits)
+	return r.QueryAsServiceCard(ctx, statement, queryParams, string(CardTypeErrorCount), "", common.FormatFloatWith2Digits)
 }

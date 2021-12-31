@@ -33,12 +33,12 @@ type Card interface {
 type CardType string
 
 const (
-	CardTypeReqCount    CardType = "req_count"
-	CardTypeAvgDuration CardType = "avg_duration"
-	CardTypeErrorCount  CardType = "error_count"
-	CardTypeErrorRate   CardType = "error_rate"
+	CardTypeReqCount    CardType = "reqCount"
+	CardTypeAvgDuration CardType = "avgDuration"
+	CardTypeErrorCount  CardType = "errorCount"
+	CardTypeErrorRate   CardType = "errorRate"
 	CardTypeRps         CardType = "rps"
-	CardTypeSlowCount   CardType = "slow_count"
+	CardTypeSlowCount   CardType = "slowCount"
 )
 
 type ServiceCard struct {

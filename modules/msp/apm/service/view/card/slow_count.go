@@ -42,5 +42,5 @@ func (r *SlowCountCard) GetCard(ctx context.Context) (*ServiceCard, error) {
 		"slow_threshold": structpb.NewNumberValue(common.GetSlowThreshold(r.Layer)),
 	}
 
-	return r.QueryAsServiceCard(ctx, statement, queryParams, "slow_count", "", common.FormatFloatWith2Digits)
+	return r.QueryAsServiceCard(ctx, statement, queryParams, string(CardTypeSlowCount), "", common.FormatFloatWith2Digits)
 }
