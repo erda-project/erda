@@ -24,9 +24,10 @@ import (
 )
 
 func (b *Bundle) ListSubscribes(userID, orgID string, req apistructs.GetSubscribeReq) (*apistructs.SubscribeDTO, error) {
+	data := &apistructs.SubscribeDTO{}
 	host, err := b.urls.CoreServices()
 	if err != nil {
-		return nil, err
+		return data, err
 	}
 	hc := b.hc
 
@@ -39,13 +40,13 @@ func (b *Bundle) ListSubscribes(userID, orgID string, req apistructs.GetSubscrib
 		Header(httputil.OrgHeader, orgID).
 		Do().JSON(&rsp)
 	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
+		return data, apierrors.ErrInvoke.InternalError(err)
 	}
 	if !resp.IsOK() || !rsp.Success {
-		return nil, toAPIError(resp.StatusCode(), rsp.Error)
+		return data, toAPIError(resp.StatusCode(), rsp.Error)
 	}
 	if rsp.Data.Total == 0 {
-		return nil, nil
+		return data, nil
 	}
 	return &rsp.Data, nil
 }

@@ -15,6 +15,8 @@
 package gshelper
 
 import (
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
@@ -42,7 +44,8 @@ func (h *GSHelper) GetWorkbenchItemType() (apistructs.WorkbenchItemType, bool) {
 	}
 	v, ok := (*h.gs)[common.WorkTabKey]
 	if !ok {
-		return "", false
+		logrus.Warnf("cat not get workTabKey, set default type [project]")
+		return apistructs.WorkbenchItemProj, false
 	}
 	var wbType apistructs.WorkbenchItemType
 	cputil.MustObjJSONTransfer(v, &wbType)

@@ -39,6 +39,59 @@ type Query struct {
 	FinishedAtStartEnd []*int64 `json:"finishedAtStartEnd"`
 }
 
+func (w *Workbench) GetProjIssueQueries(projIDs []uint64, limit int) (data map[uint64]IssueUrlQueries, err error) {
+	data = make(map[uint64]IssueUrlQueries)
+	store := new(sync.Map)
+	if limit <= 0 {
+		limit = 5
+	}
+	limitCh := make(chan struct{}, limit)
+	wg := sync.WaitGroup{}
+	defer close(limitCh)
+
+	for _, v := range projIDs {
+		// get
+		limitCh <- struct{}{}
+		wg.Add(1)
+
+		go func(id uint64) {
+			defer func() {
+				if err := recover(); err != nil {
+					logrus.Errorf("")
+					logrus.Errorf("%s", debug.Stack())
+				}
+				// release
+				<-limitCh
+				wg.Done()
+			}()
+			res, err := w.GetIssueQueries(id)
+			if err != nil {
+				logrus.Errorf("get issue queries failed, id: %v, error: %v", id, err)
+				return
+			}
+			store.Store(id, res)
+		}(v)
+	}
+	// wait all finished
+	wg.Wait()
+
+	store.Range(func(k interface{}, v interface{}) bool {
+		id, ok := k.(uint64)
+		if !ok {
+			err = fmt.Errorf("projectID: [uint64], assert failed")
+			return false
+		}
+		queries, ok := v.(IssueUrlQueries)
+		if !ok {
+			err = fmt.Errorf("IssueUrlQueries, assert failed")
+			return false
+		}
+		data[id] = queries
+		return true
+	})
+	return
+}
+
 func (w *Workbench) GetIssueQueries(projID uint64) (IssueUrlQueries, error) {
 	var data IssueUrlQueries
 	ids, err := w.GetAllIssueStateIDs(projID)
@@ -179,7 +232,7 @@ func (w *Workbench) ListIssueStreams(issueIDs []uint64, limit int) (data map[uin
 			req.IssueID = id
 			res, err := w.bdl.GetIssueStreams(req)
 			if err != nil {
-				logrus.Warnf("get issue streams failed, request: %v, error: %v", req, err)
+				logrus.Errorf("get issue streams failed, request: %v, error: %v", req, err)
 				return
 			}
 			if len(res.List) == 0 {

@@ -16,7 +16,9 @@ package workbench
 
 import (
 	"fmt"
+	"runtime/debug"
 	"strconv"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 
@@ -53,10 +55,11 @@ func (w *Workbench) GetProjNum(identity apistructs.Identity, query string) (int,
 	return projectDTO.Total, nil
 }
 
-func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, projects []apistructs.ProjectDTO) ([]apistructs.WorkbenchProjOverviewItem, error) {
+func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, projects []apistructs.ProjectDTO) (list []apistructs.WorkbenchProjOverviewItem, err error) {
 	var (
-		list    []apistructs.WorkbenchProjOverviewItem
-		pidList []uint64
+		pidList       []uint64
+		issueInfo     *apistructs.WorkbenchResponse
+		statisticInfo []*projpb.Project
 	)
 	issueMapInfo := make(map[uint64]*apistructs.WorkbenchProjectItem)
 	staMapInfo := make(map[uint64]*projpb.Project)
@@ -70,16 +73,43 @@ func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, project
 		pidList = append(pidList, p.ID)
 	}
 
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
 	// get project issue related info
-	req := apistructs.WorkbenchRequest{
-		OrgID:      uint64(orgID),
-		ProjectIDs: pidList,
-	}
-	issueInfo, err := w.bdl.GetWorkbenchData(identity.UserID, req)
-	if err != nil {
-		logrus.Errorf("get project workbench issue info failed, request: %+v, error: %v", req, err)
-		return nil, err
-	}
+	go func() {
+		defer func() {
+			wg.Done()
+		}()
+
+		req := apistructs.WorkbenchRequest{
+			OrgID:      uint64(orgID),
+			ProjectIDs: pidList,
+		}
+		issueInfo, err = w.bdl.GetWorkbenchData(identity.UserID, req)
+		if err != nil {
+			logrus.Errorf("get project workbench issue info failed, request: %+v, error: %v", req, err)
+			return
+		}
+	}()
+
+	// get project msp statistic related info
+	go func() {
+		defer func() {
+			wg.Done()
+		}()
+
+		statisticInfo, err = w.bdl.GetMSPTenantProjects(identity.UserID, identity.OrgID, true, pidList)
+		if err != nil {
+			logrus.Errorf("get project workbench statistic info failed, request: %+v, error: %v", pidList, err)
+			return
+		}
+	}()
+
+	// wait complete
+	wg.Wait()
+
+	// post process
 	for _, v := range issueInfo.Data.List {
 		if v != nil {
 			tmp := v
@@ -87,19 +117,13 @@ func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, project
 		}
 	}
 
-	// get project msp statistic related info
-	statisticInfo, err := w.bdl.GetMSPTenantProjects(identity.UserID, identity.OrgID, true, pidList)
-	if err != nil {
-		logrus.Errorf("get project workbench statistic info failed, request: %+v, error: %v", pidList, err)
-		return nil, err
-	}
 	for _, v := range statisticInfo {
 		if v != nil {
 			tmp := v
-			pid, err := strconv.Atoi(tmp.Id)
-			if err != nil {
-				err := fmt.Errorf("parse msp project id failed, id: %v, error: %v", tmp.Id, err)
-				return nil, err
+			pid, er := strconv.Atoi(tmp.Id)
+			if er != nil {
+				err = fmt.Errorf("parse msp project id failed, id: %v, error: %v", tmp.Id, err)
+				return
 			}
 			staMapInfo[uint64(pid)] = tmp
 		}
@@ -243,6 +267,93 @@ func (w *Workbench) GetUrlCommonParams(userID, orgID string, projectIDs []uint64
 		if tk, ok := menues[len(menues)-1].Params["terminusKey"]; ok {
 			urlParams[i].TerminusKey = tk
 		}
+	}
+	return
+}
+
+// GetMspUrlParamsMap get url params used by icon
+func (w *Workbench) GetMspUrlParamsMap(identity apistructs.Identity, projectIDs []uint64, limit int) (urlParams map[string]UrlParams, err error) {
+	urlParams = make(map[string]UrlParams)
+	projectDTO, err := w.bdl.GetMSPTenantProjects(identity.UserID, identity.OrgID, false, projectIDs)
+	if err != nil {
+		logrus.Errorf("failed to get msp tenant project , err: %v", err)
+		return
+	}
+
+	if limit <= 0 {
+		limit = 5
+	}
+
+	store := new(sync.Map)
+	limitCh := make(chan struct{}, limit)
+	wg := sync.WaitGroup{}
+	defer close(limitCh)
+
+	for _, project := range projectDTO {
+		// get
+		limitCh <- struct{}{}
+		wg.Add(1)
+
+		go func(project *projpb.Project) {
+			defer func() {
+				if err := recover(); err != nil {
+					logrus.Errorf("")
+					logrus.Errorf("%s", debug.Stack())
+				}
+				// release
+				<-limitCh
+				wg.Done()
+			}()
+
+			params, err := w.GetMspUrlParams(identity.UserID, identity.OrgID, project)
+			if err != nil {
+				logrus.Errorf("get msp url params failed, request: %v, error: %v", project, err)
+				return
+			}
+			store.Store(project.Id, params)
+		}(project)
+	}
+
+	// wait done
+	wg.Wait()
+	store.Range(func(k interface{}, v interface{}) bool {
+		id, ok := k.(string)
+		if !ok {
+			err = fmt.Errorf("project id: [string], assert failed")
+			return false
+		}
+		param, ok := v.(UrlParams)
+		if !ok {
+			err = fmt.Errorf("UrlParams, assert failed")
+			return false
+		}
+		urlParams[id] = param
+		return true
+	})
+
+	return
+}
+
+// GetMspUrlParams get url params used by icon
+func (w *Workbench) GetMspUrlParams(userID, orgID string, project *projpb.Project) (urlParams UrlParams, err error) {
+	var menues []*apistructs.MenuItem
+
+	urlParams.Env = project.Relationship[len(project.Relationship)-1].Workspace
+	tenantId := project.Relationship[len(project.Relationship)-1].TenantID
+	urlParams.TenantGroup = tenantId
+	urlParams.AddonId = tenantId
+	pType := project.Type
+
+	menues, err = w.bdl.ListProjectsEnvAndTenantId(userID, orgID, tenantId, pType)
+	if err != nil || len(menues) == 0 {
+		logrus.Errorf("failed to get env and tenant id ,err: %v", err)
+		return
+	}
+	if tg, ok := menues[len(menues)-1].Params["tenantGroup"]; ok {
+		urlParams.TenantGroup = tg
+	}
+	if tk, ok := menues[len(menues)-1].Params["terminusKey"]; ok {
+		urlParams.TerminusKey = tk
 	}
 	return
 }
