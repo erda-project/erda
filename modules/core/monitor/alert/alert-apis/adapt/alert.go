@@ -415,12 +415,6 @@ func (a *Adapt) getEnabledAlertRulesByScopeAndIndices(lang i18n.LanguageCodes, s
 	if len(indices) == 0 {
 		return nil, nil
 	}
-
-	//rules, err := a.db.AlertRule.QueryEnabledByScopeAndIndices(scope, indices)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	rules := make([]*db.AlertRule, 0)
 	for _, v := range indices {
 		rule, ok := expression.ExpressionIndex[v]
