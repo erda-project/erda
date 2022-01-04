@@ -148,7 +148,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 	expireData := make(cptype.OpServerData)
 	metas = make([]cardlist.TextMeta, 0)
 	switch project.ProjectDTO.Type {
-	case types.ProjTypeDevops:
+	case common.DevOpsProject, common.DefaultProject:
 		todayOp := common.Operation{
 			JumpOut: false,
 			Target:  "projectAllIssue",
@@ -197,7 +197,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 			},
 		}
 		return
-	case types.ProjTypeMSP:
+	case common.MspProject:
 		if project.IssueInfo == nil {
 			project.IssueInfo = &apistructs.ProjectIssueInfo{}
 		}
@@ -242,7 +242,7 @@ func (wc *WorkCards) getProjectCardOps(sdk *cptype.SDK, params workbench.UrlPara
 	}
 	target := ""
 	switch project.ProjectDTO.Type {
-	case common.DevOpsProject:
+	case common.DevOpsProject, common.DefaultProject:
 		target = "project"
 	case common.MspProject:
 		target = "mspServiceList"
@@ -342,7 +342,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 	}
 	gotoData.Params["projectId"] = project.ProjectDTO.ID
 	switch project.ProjectDTO.Type {
-	case types.ProjTypeMSP:
+	case common.MspProject:
 		serviceListServerData := make(cptype.OpServerData)
 		monitorServerData := make(cptype.OpServerData)
 		traceServerData := make(cptype.OpServerData)
@@ -393,7 +393,7 @@ func (wc *WorkCards) getProjIconOps(sdk *cptype.SDK, project apistructs.Workbenc
 				},
 			},
 		}
-	case types.ProjTypeDevops:
+	case common.DevOpsProject, common.DefaultProject:
 		projectManageServerData := make(cptype.OpServerData)
 		appDevelopServerData := make(cptype.OpServerData)
 		testManageServerData := make(cptype.OpServerData)
@@ -459,7 +459,7 @@ func (wc *WorkCards) getProjectTitleState(sdk *cptype.SDK, kind string) []cardli
 	switch kind {
 	case common.MspProject:
 		return []cardlist.TitleState{{Text: sdk.I18n(i18n.I18nKeyMspProject), Status: common.ProjMspStatus}}
-	case common.DevOpsProject:
+	case common.DevOpsProject, common.DefaultProject:
 		return []cardlist.TitleState{{Text: sdk.I18n(i18n.I18nKeyDevOpsProject), Status: common.ProjDevOpsStatus}}
 	default:
 		logrus.Warnf("wrong project type: %v", kind)
@@ -547,7 +547,7 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 			logrus.Errorf("card list fail to get url params ,err :%v", err)
 		}
 
-		qMap, err := wc.Wb.GetProjIssueQueries(ids, 0)
+		qMap, err := wc.Wb.GetProjIssueQueries(apiIdentity.UserID, ids, 0)
 		if err != nil {
 			logrus.Errorf("get project issue queries failed, project ids: %v, error:%v", ids, err)
 			return
