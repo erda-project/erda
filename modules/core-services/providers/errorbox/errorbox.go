@@ -12,25 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package errorbox
 
 import (
-	"net/http"
-
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda/modules/core-services/model"
 )
 
-var CMDB_ERRORLOG_LIST = apis.ApiSpec{
-	Path:         "/api/task-error/actions/list",
-	BackendPath:  "/api/task-error/actions/list",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
-	Scheme:       "http",
-	Method:       http.MethodGet,
-	IsOpenAPI:    true,
-	CheckLogin:   true,
-	CheckToken:   true,
-	RequestType:  apistructs.ErrorLogListRequest{},
-	ResponseType: apistructs.ErrorLogListResponse{},
-	Doc:          "summary: List 错误日志",
+func (s *ErrorBoxService) List(param *apistructs.TaskErrorListRequest) ([]model.ErrorLog, error) {
+	if param.StartTime != "" {
+		startTime, err := param.GetFormartStartTime()
+		if err != nil {
+			return nil, err
+		}
+		return s.db.ListErrorLogByResourcesAndStartTime(param.ResourceTypes, param.ResourceIDS, *startTime)
+	}
+
+	return s.db.ListErrorLogByResources(param.ResourceTypes, param.ResourceIDS)
 }

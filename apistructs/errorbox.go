@@ -15,6 +15,7 @@
 package apistructs
 
 import (
+	"net/url"
 	"strconv"
 	"time"
 
@@ -62,12 +63,18 @@ func (el *ErrorLogListRequest) Check() error {
 	return nil
 }
 
-// GetFormartStartTime 获取格式化的开始时间
-func (el *ErrorLogListRequest) GetFormartStartTime() (*time.Time, error) {
-	if el.StartTime == "" {
+type TaskErrorListRequest struct {
+	ResourceTypes []ErrorResourceType `schema:"resourceTypes"`
+	StartTime     string              `schema:"startTime"`
+	ResourceIDS   []string            `schema:"resourceIds"`
+}
+
+// GetFormartStartTime format start time
+func (te *TaskErrorListRequest) GetFormartStartTime() (*time.Time, error) {
+	if te.StartTime == "" {
 		return nil, errors.Errorf("OccurrenceTime is empty")
 	}
-	result, err := time.ParseInLocation("2006-01-02 15:04:05", el.StartTime, time.Local)
+	result, err := time.ParseInLocation("2006-01-02 15:04:05", te.StartTime, time.Local)
 	if err != nil {
 		return nil, err
 	}
@@ -75,11 +82,25 @@ func (el *ErrorLogListRequest) GetFormartStartTime() (*time.Time, error) {
 	return &result, nil
 }
 
+func (te *TaskErrorListRequest) ConvertToQueryParams() url.Values {
+	values := make(url.Values)
+	if te.StartTime != "" {
+		values.Add("startTime", te.StartTime)
+	}
+	for _, resourceID := range te.ResourceIDS {
+		values.Add("resourceIds", resourceID)
+	}
+	for _, resourceType := range te.ResourceTypes {
+		values.Add("resourceTypes", string(resourceType))
+	}
+	return values
+}
+
 // ErrorLogListResponse 错误日志查询具体响应
 type ErrorLogListResponse struct {
 	Header
 	UserInfoHeader
-	Data *AuditsListResponseData `json:"data"`
+	Data *ErrorLogListResponseData `json:"data"`
 }
 
 // ErrorLogListResponseData 错误日志查询具体响应

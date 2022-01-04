@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package dop
 
 import (
 	"github.com/erda-project/erda/apistructs"
@@ -22,7 +22,7 @@ import (
 var CMDB_APPLICATION_INIT = apis.ApiSpec{
 	Path:        "/api/applications/<applicationId>/actions/init",
 	BackendPath: "/api/applications/<applicationId>/actions/init",
-	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:      "http",
 	Method:      "PUT",
 	RequestType: apistructs.ApplicationInitRequest{},

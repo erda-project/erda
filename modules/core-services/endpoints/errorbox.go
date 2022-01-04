@@ -21,7 +21,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
-	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -60,58 +59,4 @@ func (e *Endpoints) CreateOrUpdateErrorLog(ctx context.Context, r *http.Request,
 func (e *Endpoints) BatchCreateErrorLog(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
 	return httpserver.OkResp("add audit succ")
-}
-
-// ListErrorLog 根据resource查看错误日志
-func (e *Endpoints) ListErrorLog(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-	var listReq apistructs.ErrorLogListRequest
-	if err := e.queryStringDecoder.Decode(&listReq, r.URL.Query()); err != nil {
-		return apierrors.ErrListErrorLog.InvalidParameter(err).ToResp(), nil
-	}
-
-	// 查询参数检查
-	if err := listReq.Check(); err != nil {
-		return apierrors.ErrListErrorLog.InvalidParameter(err).ToResp(), nil
-	}
-
-	// 权限检查
-	identityInfo, err := user.GetIdentityInfo(r)
-	if err != nil {
-		return apierrors.ErrListErrorLog.NotLogin().ToResp(), nil
-	}
-	if !identityInfo.IsInternalClient() {
-		req := apistructs.PermissionCheckRequest{
-			UserID:   identityInfo.UserID,
-			Scope:    listReq.ScopeType,
-			ScopeID:  listReq.ScopeID,
-			Resource: string(listReq.ScopeType),
-			Action:   apistructs.GetAction,
-		}
-		if access, err := e.permission.CheckPermission(&req); err != nil || !access {
-			return apierrors.ErrGetPublisher.AccessDenied().ToResp(), nil
-		}
-	}
-
-	errorLogs, err := e.errorbox.List(&listReq)
-	if err != nil {
-		return apierrors.ErrListErrorLog.InternalError(err).ToResp(), nil
-	}
-
-	l := len(errorLogs)
-	errorLogList := make([]apistructs.ErrorLog, 0, l)
-	for _, item := range errorLogs {
-		errorLog := apistructs.ErrorLog{
-			ID:             item.ID,
-			Level:          item.Level,
-			ResourceType:   item.ResourceType,
-			ResourceID:     item.ResourceID,
-			OccurrenceTime: item.OccurrenceTime.Format("2006-01-02 15:04:05"),
-			HumanLog:       item.HumanLog,
-			PrimevalLog:    item.PrimevalLog,
-		}
-		errorLogList = append(errorLogList, errorLog)
-	}
-
-	return httpserver.OkResp(apistructs.ErrorLogListResponseData{List: errorLogList})
 }
