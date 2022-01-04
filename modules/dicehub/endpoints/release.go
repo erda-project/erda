@@ -780,8 +780,6 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 			return nil, err
 		}
 		endTime = i
-	} else {
-		endTime = time.Now().UnixNano() / 1000 / 1000 // milliseconds
 	}
 
 	releaseName := r.URL.Query().Get("releaseName")
