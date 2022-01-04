@@ -68,28 +68,31 @@ type Spec struct {
 	Public            bool              `json:"public" yaml:"public"`
 	IsDefault         bool              `json:"isDefault" yaml:"isDefault"`
 
-	DisplayNameLocale map[string]string `json:"displayNameLocale" yaml:"displayNameLocale"`
-	DescLocale        map[string]string `json:"descLocale" yaml:"descLocale"`
+	Locale map[string]map[string]string `json:"locale" yaml:"locale"`
 }
 
+const specDisplayName = "displayName"
+const specDesc = "desc"
+
 func (spec *Spec) GetLocaleDisplayName(lang string) string {
-	if spec.DisplayNameLocale == nil {
+	if spec.Locale == nil || spec.Locale[lang] == nil {
 		return spec.DisplayName
 	}
-	if spec.DisplayNameLocale[lang] == "" {
+	if spec.Locale[lang][specDisplayName] == "" {
 		return spec.DisplayName
 	}
-	return spec.DisplayNameLocale[lang]
+	return spec.Locale[lang][specDisplayName]
 }
 
 func (spec *Spec) GetLocaleDesc(lang string) string {
-	if spec.DescLocale == nil {
+	if spec.Locale == nil || spec.Locale[lang] == nil {
 		return spec.Desc
 	}
-	if spec.DescLocale[lang] == "" {
+	if spec.Locale[lang][specDesc] == "" {
 		return spec.Desc
 	}
-	return spec.DescLocale[lang]
+
+	return spec.Locale[lang][specDesc]
 }
 
 // CheckDiceVersion 检查版本是否支持
