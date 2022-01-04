@@ -43,11 +43,18 @@ func NewDirector() func(*http.Request) {
 		if conf.UseK8S() {
 			r.Host = spec.K8SHost
 			r.URL.Host = spec.K8SHost
+			// set host according to erdaSystemFQDN firstly
 			erdaSystemFQDN := conf.ErdaSystemFQDN()
 			if erdaSystemFQDN != "" && erdaSystemFQDN != defautlFQDN {
 				host := replaceServiceName(erdaSystemFQDN, spec.K8SHost)
 				r.Host = host
 				r.URL.Host = host
+			}
+			// set host according to customSvcHost secondly
+			customSvcHost, _, exist := conf.GetCustomSvcHostPort(getServiceName(spec.K8SHost))
+			if exist {
+				r.Host = customSvcHost
+				r.URL.Host = customSvcHost
 			}
 		} else {
 			r.Host = spec.MarathonHost
@@ -74,8 +81,12 @@ func NewDirector() func(*http.Request) {
 	}
 }
 
+func getServiceName(K8SHost string) string {
+	svcName := strings.SplitN(K8SHost, ".", -1)[0]
+	return svcName
+}
+
 // genServiceName
 func replaceServiceName(confFQDN, K8SHost string) string {
-	svcName := strings.SplitN(K8SHost, ".", -1)[0]
-	return svcName + "." + confFQDN
+	return getServiceName(K8SHost) + "." + confFQDN
 }

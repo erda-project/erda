@@ -16,11 +16,14 @@ package conf
 
 import (
 	"errors"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/modules/openapi/i18n"
+	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/envconf"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -50,6 +53,8 @@ type Conf struct {
 	SelfPublicURL      string `env:"SELF_PUBLIC_URL"`
 	ExportUserWithRole string `default:"false" env:"EXPORT_USER_WITH_ROLE"`
 	ErdaSystemFQDN     string `env:"ERDA_SYSTEM_FQDN"`
+
+	CustomSvcHostPortMapping map[string]ServiceHostPort
 
 	// 修改该值的话，注意同步修改 dice.yml 中 '<%$.Storage.MountPoint%>/dice/openapi/oauth2/:/oauth2/:rw' 容器内挂载点的值
 	OAuth2NetdataDir string `env:"OAUTH2_NETDATA_DIR" default:"/oauth2/"`
@@ -83,6 +88,7 @@ func init() {
 func Load() {
 	envconf.MustLoad(&cfg)
 	i18n.InitI18N()
+	cfg.CustomSvcHostPortMapping = initCustomSvcHostPortMapping()
 }
 
 // ListenAddr return LISTEN_ADDR
@@ -283,4 +289,49 @@ func GetUCRedirectHost(referer string) string {
 	}
 
 	return ""
+}
+
+type ServiceHostPort struct {
+	Host string
+	Port uint16
+}
+
+// initCustomSvcHostPortMapping init mapping when openapi initialize only once, not get from env per request.
+func initCustomSvcHostPortMapping() map[string]ServiceHostPort {
+	customSvcHostPortMapping := make(map[string]ServiceHostPort)
+	for svc, envKey := range discover.ServicesEnvKeys {
+		svcAddr, ok := os.LookupEnv(envKey)
+		if !ok {
+			continue
+		}
+		svcHost, svcPort, ok := getSvcHostPortFromAddr(svcAddr)
+		if !ok {
+			continue
+		}
+		logrus.Infof("find custom service addr, svc: %s, host: %s, port: %d", svc, svcHost, svcPort)
+		customSvcHostPortMapping[svc] = ServiceHostPort{Host: svcHost, Port: svcPort}
+	}
+	return customSvcHostPortMapping
+}
+
+func getSvcHostPortFromAddr(svcAddr string) (host string, port uint16, ok bool) {
+	colonIndex := strings.Index(svcAddr, ":")
+	if colonIndex == -1 {
+		return svcAddr, 80, true
+	}
+	host = svcAddr[:colonIndex]
+	port64, err := strconv.ParseUint(svcAddr[colonIndex+1:], 10, 16)
+	if err != nil {
+		logrus.Warnf("failed to get svc host & port from addr, skip, addr: %s, err: %v", svcAddr, err)
+		return "", 0, false
+	}
+	return host, uint16(port64), true
+}
+
+func GetCustomSvcHostPort(svc string) (string, uint16, bool) {
+	if len(cfg.CustomSvcHostPortMapping) == 0 {
+		return "", 0, false
+	}
+	hostPort, ok := cfg.CustomSvcHostPortMapping[svc]
+	return hostPort.Host, hostPort.Port, ok
 }

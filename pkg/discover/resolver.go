@@ -103,7 +103,7 @@ func resolveEndpoint(serviceName string) (endpoint string, err error) {
 }
 
 func GetEndpoint(serviceName string) (endpoint string, err error) {
-	if envKey, ok := servicesEnvKeys[serviceName]; ok {
+	if envKey, ok := ServicesEnvKeys[serviceName]; ok {
 		v := os.Getenv(envKey)
 		if v != "" {
 			return v, nil

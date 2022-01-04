@@ -44,6 +44,7 @@ const (
 	EnvECP            = "ECP_ADDR"
 	EnvClusterManager = "CLUSTER_MANAGER_ADDR"
 	EnvCoreServices   = "CORE_SERVICES_ADDR"
+	EnvFDPMaster      = "FDP_MASTER_ADDR"
 )
 
 // 定义各个服务的 k8s svc 名称
@@ -74,9 +75,10 @@ const (
 	SvcECP            = "ecp"
 	SvcClusterManager = "cluster-manager"
 	SvcCoreServices   = "core-services"
+	SvcFDPMaster      = "fdp-master"
 )
 
-var servicesEnvKeys = map[string]string{
+var ServicesEnvKeys = map[string]string{
 	SvcEventBox:       EnvEventBox,
 	SvcCMDB:           EnvCMDB,
 	SvcScheduler:      EnvScheduler,
@@ -103,11 +105,12 @@ var servicesEnvKeys = map[string]string{
 	SvcECP:            EnvECP,
 	SvcClusterManager: EnvClusterManager,
 	SvcCoreServices:   EnvCoreServices,
+	SvcFDPMaster:      EnvFDPMaster,
 }
 
 func Services() []string {
-	list := make([]string, 0, len(servicesEnvKeys))
-	for key := range servicesEnvKeys {
+	list := make([]string, 0, len(ServicesEnvKeys))
+	for key := range ServicesEnvKeys {
 		list = append(list, key)
 	}
 	sort.Strings(list)

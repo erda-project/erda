@@ -26,4 +26,13 @@ func TestReplaceServiceName(t *testing.T) {
 	defer os.Unsetenv("ERDA_SYSTEM_FQDN")
 	result := replaceServiceName(os.Getenv("ERDA_SYSTEM_FQDN"), "openapi.default.svc.cluster.local")
 	assert.Equal(t, "openapi.erda-system.svc.cluster.local", result)
+
+	// only fdp custom namespace
+	result = replaceServiceName("project-865-dev.svc.cluster.local", "fdp")
+	assert.Equal(t, "fdp.project-865-dev.svc.cluster.local", result)
+}
+
+func Test_getServiceName(t *testing.T) {
+	assert.Equal(t, "fdp", getServiceName("fdp.project-865-dev.svc.cluster.local"))
+	assert.Equal(t, "fdp", getServiceName("fdp"))
 }
