@@ -180,7 +180,7 @@ func (db *DBClient) CommitScore() error {
 		if err := db.CreateOrUpdateMemberActiveRank(&MemberActiveScore{
 			OrgID:       i.OrgID,
 			UserID:      i.UserID,
-			CommitScore: i.Count,
+			CommitScore: i.Count * commitCoefficient,
 		}); err != nil {
 			return err
 		}
@@ -196,6 +196,7 @@ type conSeverityScore struct {
 }
 
 const issueCreateCoefficient = 0.8
+const commitCoefficient = 8
 
 func (db *DBClient) QualityScore() error {
 	var issueCreated []conScore
