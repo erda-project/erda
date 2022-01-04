@@ -726,15 +726,27 @@ func getLoopOptions(actionSpec apistructs.ActionSpec, taskLoop *apistructs.Pipel
 		// 默认策略
 		opt.CalculatedLoop.Strategy = &apistructs.PipelineTaskDefaultLoopStrategy
 	}
+
 	if opt.CalculatedLoop.Strategy.IntervalSec == 0 {
 		opt.CalculatedLoop.Strategy.IntervalSec = apistructs.PipelineTaskDefaultLoopStrategy.IntervalSec
 	}
+
 	if opt.CalculatedLoop.Strategy.DeclineRatio <= 0 {
-		opt.CalculatedLoop.Strategy.DeclineRatio = apistructs.PipelineTaskDefaultLoopStrategy.DeclineRatio
+		if opt.CalculatedLoop.Strategy.IntervalSec == 0 {
+			opt.CalculatedLoop.Strategy.DeclineRatio = apistructs.PipelineTaskDefaultLoopStrategy.DeclineRatio
+		} else {
+			opt.CalculatedLoop.Strategy.DeclineRatio = 1
+		}
 	}
+
 	if opt.CalculatedLoop.Strategy.DeclineLimitSec == 0 {
-		opt.CalculatedLoop.Strategy.DeclineLimitSec = apistructs.PipelineTaskDefaultLoopStrategy.DeclineLimitSec
+		if opt.CalculatedLoop.Strategy.IntervalSec == 0 {
+			opt.CalculatedLoop.Strategy.DeclineLimitSec = apistructs.PipelineTaskDefaultLoopStrategy.DeclineLimitSec
+		} else {
+			opt.CalculatedLoop.Strategy.DeclineLimitSec = int64(opt.CalculatedLoop.Strategy.IntervalSec)
+		}
 	}
+
 	return &opt
 }
 
