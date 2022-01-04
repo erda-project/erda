@@ -6,8 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pkg/user"
 )
 
 const (
@@ -83,6 +83,24 @@ func (db *DBClient) GetOrCreateDeploymentOrder(do *DeploymentOrder) error {
 
 	if err := db.Save(do).Error; err != nil {
 		return errors.Wrapf(err, "failed to create deployment order, error: %s", err)
+	}
+	return nil
+}
+
+func (db *DBClient) GetDeploymentOrder(id string) (*DeploymentOrder, error) {
+	var deploymentOrder DeploymentOrder
+	if err := db.
+		Where("id = ?", id).
+		Find(&deploymentOrder).Error; err != nil {
+		return nil, errors.Wrapf(err, "failed to get deployment order %d", id)
+	}
+	return &deploymentOrder, nil
+}
+
+func (db *DBClient) UpdateDeploymentOrder(deploymentOrder *DeploymentOrder) error {
+	if err := db.Save(deploymentOrder).Error; err != nil {
+		return errors.Wrapf(err, "failed to update deployment order, id: %v.",
+			deploymentOrder.ID)
 	}
 	return nil
 }

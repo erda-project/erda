@@ -37,26 +37,28 @@ import (
 // projectId, git branch and working dev determine a runtime
 type Runtime struct {
 	dbengine.BaseModel
-	Name              string `gorm:"not null;unique_index:idx_unique_app_id_name"`
-	ApplicationID     uint64 `gorm:"not null;unique_index:idx_unique_app_id_name"`
-	Workspace         string `gorm:"not null;unique_index:idx_unique_app_id_name"`
-	GitBranch         string // Deprecated
-	ProjectID         uint64 `gorm:"not null"` // TODO: currently equal to applicationID, fix later
-	Env               string // Deprecated
-	ClusterName       string
-	ClusterId         uint64 // Deprecated: use clusterName
-	Creator           string `gorm:"not null"`
-	ScheduleName      ScheduleName
-	Status            string `gorm:"column:runtime_status"`
-	LegacyStatus      string `gorm:"column:status"`
-	Deployed          bool
-	Deleting          bool `gorm:"-"` // TODO: after legacyStatus removed, we use deleting instead
-	Version           string
-	Source            apistructs.RuntimeSource
-	DiceVersion       string
-	CPU               float64
-	Mem               float64 // 单位: MB
-	ConfigUpdatedDate *time.Time
+	Name                string `gorm:"not null;unique_index:idx_unique_app_id_name"`
+	ApplicationID       uint64 `gorm:"not null;unique_index:idx_unique_app_id_name"`
+	Workspace           string `gorm:"not null;unique_index:idx_unique_app_id_name"`
+	GitBranch           string // Deprecated
+	ProjectID           uint64 `gorm:"not null"` // TODO: currently equal to applicationID, fix later
+	Env                 string // Deprecated
+	ClusterName         string
+	ClusterId           uint64 // Deprecated: use clusterName
+	Creator             string `gorm:"not null"`
+	ScheduleName        ScheduleName
+	Status              string `gorm:"column:runtime_status"`
+	DeploymentStatus    string
+	CurrentDeploymentID uint64
+	LegacyStatus        string `gorm:"column:status"`
+	Deployed            bool
+	Deleting            bool `gorm:"-"` // TODO: after legacyStatus removed, we use deleting instead
+	Version             string
+	Source              apistructs.RuntimeSource
+	DiceVersion         string
+	CPU                 float64
+	Mem                 float64 // 单位: MB
+	ConfigUpdatedDate   *time.Time
 	// Deprecated
 	ReadableUniqueId string
 	// Deprecated

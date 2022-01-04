@@ -41,3 +41,12 @@ type DeploymentOrderParamItem struct {
 	Value     string `json:"value"`
 	IsEncrypt bool   `json:"isEncrypt"`
 }
+
+type DeploymentOrderStatusMap map[string]DeploymentOrderStatusItem
+
+type DeploymentOrderStatusItem struct {
+	AppID            uint64           `json:"appId"`
+	DeploymentID     uint64           `json:"deploymentId"`
+	DeploymentStatus DeploymentStatus `json:"deploymentStatus"`
+	RuntimeID        uint64           `json:"runtimeId"`
+}

@@ -274,7 +274,6 @@ func (db *DBClient) FindNotOutdatedOlderThan(runtimeId uint64, maxId uint64) ([]
 	}
 	return deployments, nil
 }
-
 func (db *DBClient) FindPreDeployment(uniqueId spec.RuntimeUniqueId) (*PreDeployment, error) {
 	var preBuild PreDeployment
 	if err := db.Table("ps_v2_pre_builds").

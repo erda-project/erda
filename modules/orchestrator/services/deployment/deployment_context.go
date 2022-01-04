@@ -104,6 +104,12 @@ func (fsm *DeployFSMContext) Load() error {
 	if err != nil {
 		return err
 	}
+	runtime.CurrentDeploymentID = fsm.deploymentID
+	if err := fsm.db.UpdateRuntime(runtime); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment status for runtime: %v", err)
+		logrus.Errorf("%s", errMsg)
+		return errors.Errorf("%s", errMsg)
+	}
 	if len(runtime.ClusterName) == 0 {
 		return errors.Errorf("cluster_name null, runtimeID: %v", runtime.ID)
 	}
@@ -197,6 +203,12 @@ func (fsm *DeployFSMContext) continueWaiting() error {
 	if err := fsm.db.UpdateDeployment(fsm.Deployment); err != nil {
 		return err
 	}
+	if err := fsm.updateDeploymentStatusToRuntimeAndOrder(); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment status for runtime: %v", err)
+		logrus.Errorf("%s", errMsg)
+		fsm.pushLog(errMsg)
+		return err
+	}
 	if len(fsm.Deployment.ReleaseId) > 0 {
 		fsm.pushLog("increasing release reference...")
 		if err := fsm.bdl.IncreaseReference(fsm.Deployment.ReleaseId); err != nil {
@@ -281,6 +293,11 @@ func (fsm *DeployFSMContext) pushOnCanceled() error {
 	fsm.Deployment.FinishedAt = &now
 	if err := fsm.db.UpdateDeployment(fsm.Deployment); err != nil {
 		return err
+	}
+	if err := fsm.updateDeploymentStatusToRuntimeAndOrder(); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment status for runtime: %v", err)
+		logrus.Errorf("%s", errMsg)
+		fsm.pushLog(errMsg)
 	}
 	// emit runtime deploy status changed event
 	event := events.RuntimeEvent{
@@ -648,6 +665,11 @@ func (fsm *DeployFSMContext) continuePhaseCompleted() error {
 		// db update fail mess up everything!
 		return err
 	}
+	if err := fsm.updateDeploymentStatusToRuntimeAndOrder(); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment status for runtime: %v", err)
+		logrus.Errorf("%s", errMsg)
+		fsm.pushLog(errMsg)
+	}
 	// emit runtime deploy ok event
 	event := events.RuntimeEvent{
 		EventName:  events.RuntimeDeployOk,
@@ -656,6 +678,56 @@ func (fsm *DeployFSMContext) continuePhaseCompleted() error {
 		Deployment: fsm.Deployment.Convert(),
 	}
 	fsm.evMgr.EmitEvent(&event)
+	return nil
+}
+
+func (fsm *DeployFSMContext) updateDeploymentStatusToRuntimeAndOrder() error {
+	var deploymentOrder *dbclient.DeploymentOrder
+	var err error
+	var app *apistructs.ApplicationDTO
+	deploymentOrderStatusMap := make(apistructs.DeploymentOrderStatusMap)
+	var deploymentOrderStatus []byte
+
+	fsm.Runtime.DeploymentStatus = string(fsm.Deployment.Status)
+	if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
+		return err
+	}
+
+	DeploymentOrderID := fsm.Deployment.DeploymentOrderId
+	//TODO: 兼容没有DeploymentOrderID的场景
+	if deploymentOrder, err = fsm.db.GetDeploymentOrder(DeploymentOrderID); err != nil {
+		errMsg := fmt.Sprintf("failed to get deployment order of deployment[%s]: %v", DeploymentOrderID, err)
+		logrus.Errorf("%s", errMsg)
+		return nil
+	}
+	if app, err = fsm.bdl.GetApp(fsm.Runtime.ApplicationID); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v", DeploymentOrderID, err)
+		logrus.Errorf("%s", errMsg)
+		return nil
+	}
+	if deploymentOrder.Status != "" {
+		if err := json.Unmarshal([]byte(deploymentOrder.Status), &deploymentOrderStatusMap); err != nil {
+			logrus.Warnf("failed to unmarshal, (%v)", err)
+			return nil
+		}
+	}
+	deploymentOrderStatusMap[app.Name] = apistructs.DeploymentOrderStatusItem{
+		AppID:            app.ID,
+		DeploymentID:     fsm.deploymentID,
+		DeploymentStatus: fsm.Deployment.Status,
+		RuntimeID:        fsm.Runtime.ID,
+	}
+	if deploymentOrderStatus, err = json.Marshal(deploymentOrderStatusMap); err != nil {
+		logrus.Warnf("failed to marshal, (%v)", err)
+		return nil
+	}
+
+	deploymentOrder.Status = string(deploymentOrderStatus)
+	if err := fsm.db.UpdateDeploymentOrder(deploymentOrder); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v", DeploymentOrderID, err)
+		logrus.Errorf("%s", errMsg)
+		return nil
+	}
 	return nil
 }
 
@@ -693,6 +765,11 @@ func (fsm *DeployFSMContext) failDeploy(oriErr error) error {
 		// db update fail mess up everything!
 		fsm.pushLog(fmt.Sprintf("failed to update deployment, (%v)", err))
 		return err
+	}
+	if err := fsm.updateDeploymentStatusToRuntimeAndOrder(); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment status for runtime: %v", err)
+		logrus.Errorf("%s", errMsg)
+		fsm.pushLog(errMsg)
 	}
 	// emit runtime deploy fail event
 	event := events.RuntimeEvent{
@@ -1445,12 +1522,20 @@ func (fsm *DeployFSMContext) doCancelDeploy(operator string, force bool) error {
 			// db update fail mess up everything!
 			return errors.Wrapf(err, "failed to doCancel deploy, operator: %v", operator)
 		}
+		if err := fsm.updateDeploymentStatusToRuntimeAndOrder(); err != nil {
+			logrus.Errorf("failed to update deployment status for runtime: %v", err)
+			return err
+		}
 	case apistructs.DeploymentStatusInit, apistructs.DeploymentStatusWaiting, apistructs.DeploymentStatusDeploying:
 		// normal cancel
 		fsm.Deployment.Status = apistructs.DeploymentStatusCanceling
 		if err := fsm.db.UpdateDeployment(fsm.Deployment); err != nil {
 			// db update fail mess up everything!
 			return errors.Wrapf(err, "failed to doCancel deploy, operator: %v", operator)
+		}
+		if err := fsm.updateDeploymentStatusToRuntimeAndOrder(); err != nil {
+			logrus.Errorf("failed to update deployment status for runtime: %v", err)
+			return err
 		}
 		// emit runtime deploy fail event
 		event := events.RuntimeEvent{
