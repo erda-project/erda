@@ -46,9 +46,8 @@ type IssueFilter struct {
 
 	filterReq apistructs.IssuePagingRequest `json:"-"`
 	State     State                         `json:"_"`
-	// FrontendConditionValues FrontendConditions            `json:"-"`
-	InParams InParams                   `json:"-"`
-	Bms      []issuefilterbm.MyFilterBm `json:"-"`
+	InParams  InParams                      `json:"-"`
+	Bms       []issuefilterbm.MyFilterBm    `json:"-"`
 }
 
 type State struct {
@@ -57,26 +56,16 @@ type State struct {
 	SelectedFilterSet       string             `json:"selectedFilterSet,omitempty"`
 }
 
-type FrontendConditions struct {
-	FilterID           string                        `json:"filterID,omitempty"`
-	IterationIDs       []int64                       `json:"iterationIDs,omitempty"`
-	Title              string                        `json:"title,omitempty"`
-	StateBelongs       []apistructs.IssueStateBelong `json:"stateBelongs,omitempty"`
-	States             []int64                       `json:"states,omitempty"`
-	LabelIDs           []uint64                      `json:"labelIDs,omitempty"`
-	Priorities         []apistructs.IssuePriority    `json:"priorities,omitempty"`
-	Severities         []apistructs.IssueSeverity    `json:"severities,omitempty"`
-	CreatorIDs         []string                      `json:"creatorIDs,omitempty"`
-	AssigneeIDs        []string                      `json:"assigneeIDs,omitempty"`
-	OwnerIDs           []string                      `json:"ownerIDs,omitempty"`
-	BugStages          []string                      `json:"bugStages,omitempty"`
-	CreatedAtStartEnd  []*int64                      `json:"createdAtStartEnd,omitempty"`
-	FinishedAtStartEnd []*int64                      `json:"finishedAtStartEnd,omitempty"`
-	ClosedAtStartEnd   []*int64                      `json:"closedAtStartEnd,omitempty"`
+func (p *IssueFilter) Init(ctx servicehub.Context) error {
+	return p.DefaultProvider.Init(ctx)
+}
+
+func (p *IssueFilter) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
+	return p
 }
 
 func init() {
-	base.InitProviderWithCreator("issue-kanban", "issueFilter", func() servicehub.Provider {
+	base.InitProviderToDefaultNamespace("issueFilter", func() servicehub.Provider {
 		return &IssueFilter{}
 	})
 }
@@ -112,6 +101,16 @@ func (f *IssueFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err := f.flushOptsByFilter(f.InParams.FrontendUrlQuery); err != nil {
 				panic(err)
 			}
+		}
+		// if f.State.FrontendConditionValues.States == nil {
+		// 	if err := f.setDefaultState(); err != nil {
+		// 		panic(err)
+		// 	}
+		// }
+		f.StdDataPtr.Operations = map[cptype.OperationKey]cptype.Operation{
+			filter.OpFilter{}.OpKey():           cputil.NewOpBuilder().Build(),
+			filter.OpFilterItemSave{}.OpKey():   cputil.NewOpBuilder().Build(),
+			filter.OpFilterItemDelete{}.OpKey(): cputil.NewOpBuilder().Build(),
 		}
 	}
 }
@@ -242,17 +241,6 @@ func (f *IssueFilter) generateIssuePagingRequest() apistructs.IssuePagingRequest
 		}
 	}
 
-	// var iterations []int64
-	// for _, i := range f.State.FrontendConditionValues.IterationIDs {
-	// 	// item, _ := strconv.Atoi(i)
-	// 	iterations = append(iterations, i)
-	// }
-	// var labels []uint64
-	// for _, i := range f.State.FrontendConditionValues.LabelIDs {
-	// 	// item, _ := strconv.Atoi(i)
-	// 	labels = append(labels, i)
-	// }
-
 	req := apistructs.IssuePagingRequest{
 		PageNo:   1, // 每次走 filter，都需要重新查询，调整 pageNo 为 1
 		PageSize: 0,
@@ -277,7 +265,7 @@ func (f *IssueFilter) generateIssuePagingRequest() apistructs.IssuePagingRequest
 			StartClosedAt:   startClosedAt,
 			EndClosedAt:     endClosedAt,
 			Priority:        f.State.FrontendConditionValues.Priorities,
-			Complexity:      nil,
+			Complexity:      f.State.FrontendConditionValues.Complexities,
 			Severity:        f.State.FrontendConditionValues.Severities,
 			RelatedIssueIDs: nil,
 			Source:          "",
@@ -294,4 +282,31 @@ func (f *IssueFilter) generateIssuePagingRequest() apistructs.IssuePagingRequest
 		},
 	}
 	return req
+}
+
+func (f *IssueFilter) setDefaultState() error {
+	stateBelongs := map[string][]apistructs.IssueStateBelong{
+		"TASK":        {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
+		"REQUIREMENT": {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
+		"BUG":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResolved},
+		"ALL":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResolved},
+	}[f.InParams.FrontendFixedIssueType]
+	types := []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask, apistructs.IssueTypeBug}
+	res := make(map[string][]int64)
+	res["ALL"] = make([]int64, 0)
+	for _, v := range types {
+		req := &apistructs.IssueStatesGetRequest{
+			ProjectID:    f.InParams.ProjectID,
+			StateBelongs: stateBelongs,
+			IssueType:    v,
+		}
+		ids, err := f.issueStateSvc.GetIssueStateIDs(req)
+		if err != nil {
+			return err
+		}
+		res[v.String()] = ids
+		res["ALL"] = append(res["ALL"], ids...)
+	}
+	f.State.FrontendConditionValues.States = res[f.InParams.FrontendFixedIssueType]
+	return nil
 }
