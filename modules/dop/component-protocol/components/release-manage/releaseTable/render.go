@@ -22,6 +22,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -78,12 +79,16 @@ func (r *ComponentReleaseTable) Render(ctx context.Context, component *cptype.Co
 			return errors.Errorf("%s, %v", r.sdk.I18n("releaseDeleteFailed"), err)
 		}
 	}
+	logrus.Debugf("[DEBUG] start render table")
 	if err := r.RenderTable(gs); err != nil {
 		return err
 	}
+	logrus.Debugf("[DEBUG] end render table")
+	logrus.Debugf("[DEBUG] start encode url query")
 	if err := r.EncodeURLQuery(); err != nil {
 		return errors.Errorf("failed to encode url query for release table component, %v", err)
 	}
+	logrus.Debugf("[DEBUG] end encode url query")
 	r.SetComponentValue()
 	r.Transfer(component)
 	return nil
@@ -134,17 +139,17 @@ func (r *ComponentReleaseTable) DecodeURLQuery() error {
 }
 
 func (r *ComponentReleaseTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = r.State.PageNo
-	urlQuery["pageSize"] = r.State.PageSize
-	urlQuery["sorterData"] = r.State.Sorter
-	jsonData, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = r.State.PageNo
+	query["pageSize"] = r.State.PageSize
+	query["sorterData"] = r.State.Sorter
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	r.State.ReleaseTableURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(data)
+	r.State.ReleaseTableURLQuery = encoded
 	return nil
 }
 
@@ -152,7 +157,9 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 	userID := r.sdk.Identity.UserID
 	orgID := r.sdk.Identity.OrgID
 	projectID := r.State.ProjectID
+	logrus.Debugf("[DEBUG] start check read access")
 	hasReadAccess, err := access.HasReadAccess(r.bdl, userID, uint64(projectID))
+	logrus.Debugf("[DEBUG] end check read access")
 	if err != nil {
 		return errors.Errorf("failed to check access, %v", err)
 	}
@@ -182,6 +189,7 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		orderBy = "created_at"
 	}
 
+	logrus.Debugf("[DEBUG] start list releases")
 	releaseResp, err := r.bdl.ListReleases(apistructs.ReleaseListRequest{
 		Branch:           r.State.FilterValues.BranchID,
 		IsStable:         &isStable,
@@ -199,13 +207,16 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		OrderBy:          orderBy,
 		Order:            order,
 	})
+	logrus.Debugf("[DEBUG] end list releases")
 	if err != nil {
 		return errors.Errorf("failed to list releases, %v", err)
 	}
 
 	r.State.Total = releaseResp.Total
 
+	logrus.Debugf("[DEBUG] start get org")
 	org, err := r.bdl.GetOrg(orgID)
+	logrus.Debugf("[DEBUG] end get org")
 	if err != nil {
 		return errors.Errorf("failed to get org, %v", err)
 	}
@@ -213,7 +224,9 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 	// pre check access
 	hasWriteAccess := true
 	if r.State.IsProjectRelease {
+		logrus.Debugf("[DEBUG] start check write access")
 		hasWriteAccess, err = access.HasWriteAccess(r.bdl, userID, uint64(projectID), true, 0)
+		logrus.Debugf("[DEBUG] end check write access")
 		if err != nil {
 			return errors.Errorf("failed to check access, %v", err)
 		}
@@ -221,6 +234,7 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 	existedUser := make(map[string]struct{})
 	var userIDs []string
 	var list []Item
+	logrus.Debugf("[DEBUG] start release loop")
 	for _, release := range releaseResp.Releases {
 		editOperation := Operation{
 			Command: Command{
@@ -305,6 +319,8 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 
 		list = append(list, item)
 	}
+	logrus.Debugf("[DEBUG] end release loop")
+
 	r.Data.List = list
 
 	if gs == nil {
@@ -312,7 +328,9 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		gs = &gsd
 	}
 	r.sdk.GlobalState = gs
+	logrus.Debugf("[DEBUG] start set userIDs")
 	r.sdk.SetUserIDs(userIDs)
+	logrus.Debugf("[DEBUG] end set userIDs")
 	return nil
 }
 
@@ -385,6 +403,7 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	columns[len(columns)-1].Align = "right"
 
 	r.Props = Props{
+		RequestIgnore:   []string{"data"},
 		BatchOperations: batchOperations,
 		Selectable:      !r.State.IsFormal,
 		Columns:         columns,
