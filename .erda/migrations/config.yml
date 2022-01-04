@@ -5,7 +5,7 @@ allowed_ddl:
     create_table_stmt: true
     drop_table_stmt: false
     drop_sequence_stmt: false
-    rename_table_stmt: false
+    rename_table_stmt: true
     create_view_stmt: false
     create_sequence_stmt: false
     create_index_stmt: true
@@ -26,8 +26,8 @@ allowed_ddl:
     alter_table_drop_foreign_key: false
     alter_table_modify_column: true
     alter_table_change_column: true
-    alter_table_rename_column: false
-    alter_table_rename_table: false
+    alter_table_rename_column: true
+    alter_table_rename_table: true
     alter_table_alter_column: true
     alter_table_lock: false
     alter_table_algorithm: false
