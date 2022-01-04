@@ -76,6 +76,7 @@ type Command struct {
 }
 
 type Props struct {
+	RequestIgnore   []string `json:"RequestIgnore"`
 	BatchOperations []string `json:"batchOperations,omitempty"`
 	Selectable      bool     `json:"selectable"`
 	Columns         []Column `json:"columns,omitempty"`
