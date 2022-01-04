@@ -25,19 +25,18 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/common"
 	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/i18n"
-	"github.com/erda-project/erda/modules/admin/component-protocol/types"
 	wb "github.com/erda-project/erda/modules/admin/services/workbench"
 )
 
 // GenProjKvColumnInfo show type: DevOps, MSP, DevOps(primary)/MSP
 func (l *WorkList) GenProjKvColumnInfo(project apistructs.WorkbenchProjOverviewItem, q wb.IssueUrlQueries, mspParams map[string]interface{}) (kvs []list.KvInfo, columns map[string]interface{}) {
 	switch project.ProjectDTO.Type {
-	case types.ProjTypeDevops:
+	case common.DevOpsProject, common.DefaultProject:
 		// kv issue info
 		kvs = l.GenProjDopKvInfo(project, q, mspParams)
 		columns = l.GenProjDopColumnInfo(project, q, mspParams)
 
-	case types.ProjTypeMSP:
+	case common.MspProject:
 		kvs = l.GenProjMspKvInfo(project, q, mspParams)
 		columns = l.GenProjMspColumnInfo(project, q, mspParams)
 	}
@@ -368,7 +367,7 @@ func (l *WorkList) GenProjTitleState(tp string) ([]list.StateInfo, bool) {
 	switch tp {
 	case common.MspProject:
 		return []list.StateInfo{{Text: l.sdk.I18n(i18n.I18nKeyMspProject), Status: common.ProjMspStatus}}, true
-	case common.DevOpsProject:
+	case common.DevOpsProject, common.DefaultProject:
 		return []list.StateInfo{{Text: l.sdk.I18n(i18n.I18nKeyDevOpsProject), Status: common.ProjDevOpsStatus}}, true
 	default:
 		logrus.Warnf("wrong project type: %v", tp)

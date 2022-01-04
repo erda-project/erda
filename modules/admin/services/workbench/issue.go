@@ -35,11 +35,12 @@ type IssueUrlQueries struct {
 }
 
 type Query struct {
+	AssigneeIDs        []string `json:"assigneeIDs,omitempty"`
 	StateIDs           []int64  `json:"states,omitempty"`
 	FinishedAtStartEnd []*int64 `json:"finishedAtStartEnd"`
 }
 
-func (w *Workbench) GetProjIssueQueries(projIDs []uint64, limit int) (data map[uint64]IssueUrlQueries, err error) {
+func (w *Workbench) GetProjIssueQueries(userID string, projIDs []uint64, limit int) (data map[uint64]IssueUrlQueries, err error) {
 	data = make(map[uint64]IssueUrlQueries)
 	store := new(sync.Map)
 	if limit <= 0 {
@@ -64,7 +65,7 @@ func (w *Workbench) GetProjIssueQueries(projIDs []uint64, limit int) (data map[u
 				<-limitCh
 				wg.Done()
 			}()
-			res, err := w.GetIssueQueries(id)
+			res, err := w.GetIssueQueries(userID, id)
 			if err != nil {
 				logrus.Errorf("get issue queries failed, id: %v, error: %v", id, err)
 				return
@@ -92,7 +93,7 @@ func (w *Workbench) GetProjIssueQueries(projIDs []uint64, limit int) (data map[u
 	return
 }
 
-func (w *Workbench) GetIssueQueries(projID uint64) (IssueUrlQueries, error) {
+func (w *Workbench) GetIssueQueries(userID string, projID uint64) (IssueUrlQueries, error) {
 	var data IssueUrlQueries
 	ids, err := w.GetAllIssueStateIDs(projID)
 	if err != nil {
@@ -102,15 +103,18 @@ func (w *Workbench) GetIssueQueries(projID uint64) (IssueUrlQueries, error) {
 	expiredStartEndTime := genExpiredStartEndTime()
 	todayExpireStartEndTime := genTodayExpireStartEndTime()
 	expiredIssueQuery := Query{
+		AssigneeIDs:        []string{userID},
 		StateIDs:           ids,
 		FinishedAtStartEnd: expiredStartEndTime,
 	}
 	todayExpireIssueQuery := Query{
+		AssigneeIDs:        []string{userID},
 		StateIDs:           ids,
 		FinishedAtStartEnd: todayExpireStartEndTime,
 	}
 	undoIssueQuery := Query{
-		StateIDs: ids,
+		AssigneeIDs: []string{userID},
+		StateIDs:    ids,
 	}
 	expiredIssueQueryStr, _ := encodeQuery(expiredIssueQuery)
 	todayExpireIssueQueryStr, _ := encodeQuery(todayExpireIssueQuery)
