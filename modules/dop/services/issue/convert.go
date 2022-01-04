@@ -524,8 +524,14 @@ func (svc *Issue) decodeFromExcelFile(req apistructs.IssueImportExcelRequest, r 
 			for indexx, line := range row[20:] {
 				index := indexx + 20
 				// 获取字段名对应的字段
+				propertyIndex, ok := propertyNameMap[rows[0][index]]
+				if !ok {
+					falseExcel = append(falseExcel, i+1)
+					falseReason = append(falseReason, fmt.Sprintf("custom property %s is not defined in org", row[index]))
+					continue
+				}
 				instance := apistructs.IssuePropertyInstance{
-					IssuePropertyIndex: propertyNameMap[rows[0][index]],
+					IssuePropertyIndex: propertyIndex,
 				}
 				if !instance.PropertyType.IsOptions() {
 					instance.ArbitraryValue = line
