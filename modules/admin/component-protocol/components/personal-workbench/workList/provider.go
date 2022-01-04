@@ -318,7 +318,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		}
 		target := ""
 		switch p.ProjectDTO.Type {
-		case common.DevOpsProject:
+		case common.DevOpsProject, common.DefaultProject:
 			target = "project"
 		case common.MspProject:
 			target = "mspServiceList"
