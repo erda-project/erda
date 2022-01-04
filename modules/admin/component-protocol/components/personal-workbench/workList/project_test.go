@@ -40,7 +40,11 @@ func TestWorkList_GenProjKvColumnInfo(t *testing.T) {
 		{
 			name: "case1",
 			args: args{
-				proj:      apistructs.WorkbenchProjOverviewItem{},
+				proj: apistructs.WorkbenchProjOverviewItem{
+					ProjectDTO: apistructs.ProjectDTO{
+						Type: "fake",
+					},
+				},
 				q:         workbench.IssueUrlQueries{},
 				mspParams: nil,
 			},
