@@ -70,11 +70,15 @@ func InitProvider(scenario, compName string) {
 
 // InitProviderWithCreator register component as provider with custom providerCreator.
 func InitProviderWithCreator(scenario, compName string, creator servicehub.Creator) {
+	initProviderWithCustomName(MakeComponentProviderName(scenario, compName), creator)
+}
+
+func initProviderWithCustomName(providerName string, creator servicehub.Creator) {
 	if creator == nil {
 		creator = func() servicehub.Provider { return &DefaultProvider{} }
 	}
-	servicehub.Register(MakeComponentProviderName(scenario, compName), &servicehub.Spec{Creator: creator})
-	compCreatorMap[MakeComponentProviderName(scenario, compName)] = func() Creators {
+	servicehub.Register(providerName, &servicehub.Spec{Creator: creator})
+	compCreatorMap[providerName] = func() Creators {
 		switch creator().(type) {
 		case cptype.IComponent:
 			return Creators{ComponentCreator: func() cptype.IComponent {
@@ -89,4 +93,8 @@ func InitProviderWithCreator(scenario, compName string, creator servicehub.Creat
 			return Creators{RenderCreator: func() protocol.CompRender { return &DefaultProvider{} }}
 		}
 	}()
+}
+
+func InitProviderToDefaultNamespace(compName string, creator servicehub.Creator) {
+	initProviderWithCustomName(defaultComponentProviderNamePrefix+compName, creator)
 }

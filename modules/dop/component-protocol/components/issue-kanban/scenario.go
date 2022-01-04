@@ -18,7 +18,6 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/content"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/inputFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/issueExport"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/issueFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/issueImport"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/issueKanbanV2"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/issueOperations"

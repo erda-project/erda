@@ -50,7 +50,6 @@ func (f *IssueFilter) FilterSet() ([]filter.SetItem, error) {
 		if err != nil {
 			return nil, err
 		}
-		// for
 		options = append(options, filter.SetItem{
 			ID:     i.ID,
 			Label:  i.Name,

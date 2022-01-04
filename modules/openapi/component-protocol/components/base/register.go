@@ -20,7 +20,8 @@ import (
 )
 
 const (
-	componentProviderNamePrefix = "component-protocol.components."
+	componentProviderNamePrefix        = "component-protocol.components."
+	defaultComponentProviderNamePrefix = "component-protocol.default-components."
 )
 
 func MustGetScenarioAndCompNameFromProviderKey(providerKey string) (scenario, compName, instanceName string) {
@@ -33,6 +34,10 @@ func MustGetScenarioAndCompNameFromProviderKey(providerKey string) (scenario, co
 }
 
 func GetScenarioAndCompNameFromProviderKey(providerKey string) (scenario, compName, instanceName string, err error) {
+	if strings.HasPrefix(providerKey, defaultComponentProviderNamePrefix) {
+		ss := strings.SplitN(providerKey, ".", 3)
+		return "", ss[2], ss[2], nil
+	}
 	if !strings.HasPrefix(providerKey, componentProviderNamePrefix) {
 		return "", "", "", fmt.Errorf("invalid prefix")
 	}

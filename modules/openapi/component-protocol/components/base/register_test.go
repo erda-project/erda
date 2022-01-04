@@ -70,6 +70,16 @@ func TestGetScenarioAndCompNameFromProviderKey(t *testing.T) {
 			wantInstanceName: "",
 			haveErr:          true,
 		},
+		{
+			name: "valid default namespace key",
+			args: args{
+				providerKey: "component-protocol.default-components.filter",
+			},
+			wantScenario:     "",
+			wantCompName:     "filter",
+			wantInstanceName: "filter",
+			haveErr:          false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

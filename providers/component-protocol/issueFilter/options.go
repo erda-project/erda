@@ -16,6 +16,7 @@ package issueFilter
 
 import (
 	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -70,5 +71,19 @@ func (f *IssueFilter) getProjectMemberOptions() ([]model.SelectOption, error) {
 			member.UserID,
 		))
 	}
+	selectMe := model.NewSelectOption(cputil.I18n(f.sdk.Ctx, "choose-yourself"), f.sdk.Identity.UserID).WithFix(true)
+	results = append(results, *selectMe)
 	return results, nil
+}
+
+func (f *IssueFilter) getPropStagesOptions(tp string) ([]model.SelectOption, error) {
+	stages, err := f.bdl.GetIssueStage(int64(f.InParams.OrgID), apistructs.IssueType(tp))
+	if err != nil {
+		return nil, err
+	}
+	var options []model.SelectOption
+	for _, stage := range stages {
+		options = append(options, *model.NewSelectOption(stage.Name, stage.Value))
+	}
+	return options, nil
 }
