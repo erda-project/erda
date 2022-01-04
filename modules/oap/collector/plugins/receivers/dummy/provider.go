@@ -17,10 +17,11 @@ import (
 var providerName = plugins.WithPrefixReceiver("dummy")
 
 type config struct {
-	Rate         time.Duration `file:"rate" default:"10s"`
+	// you can use the sample in testdata/
 	MetricSample string        `file:"metric_sample"`
 	TraceSample  string        `file:"trace_sample"`
 	LogSample    string        `file:"log_sample"`
+	Rate         time.Duration `file:"rate" default:"10s"`
 }
 
 // +provider
@@ -41,7 +42,6 @@ func (p *provider) ComponentID() model.ComponentID {
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.Log.Infof("label: %s", ctx.Label())
 	return nil
 }
 

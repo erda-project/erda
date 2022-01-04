@@ -53,7 +53,7 @@ func (p *provider) watchChange(ctx context.Context, ch <-chan watch.Event) {
 					p.podCache.AddOrUpdate(event.Object.(*apiv1.Pod))
 				}
 			case watch.Deleted:
-				// TODO mayne need delay
+				// TODO may need delay
 				switch event.Object.(type) {
 				case *apiv1.Pod:
 					p.podCache.Delete(event.Object.(*apiv1.Pod))

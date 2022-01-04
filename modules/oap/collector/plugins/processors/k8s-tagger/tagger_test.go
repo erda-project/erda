@@ -40,6 +40,28 @@ func Test_generateIndexByMatcher(t *testing.T) {
 			},
 			want: "default/aaa",
 		},
+		{
+			name: "single match",
+			args: args{
+				matcher: "%{namespace}/%{pod}",
+				tags: map[string]string{
+					"pod":        "aaa",
+					"namespacex": "default",
+				},
+			},
+			want: "%{namespace}/aaa",
+		},
+		{
+			name: "not match",
+			args: args{
+				matcher: "%{namespace}/%{pod}",
+				tags: map[string]string{
+					"podx":       "aaa",
+					"namespacex": "default",
+				},
+			},
+			want: "%{namespace}/%{pod}",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

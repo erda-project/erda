@@ -32,6 +32,7 @@ const (
 type ObservableData interface {
 	Clone() ObservableData
 	RangeTagsFunc(handle func(tags map[string]string) map[string]string)
+	RangeNameFunc(handle func(name string) string)
 	SourceData() interface{}
 	CompatibilitySourceData() interface{}
 }
@@ -39,6 +40,12 @@ type ObservableData interface {
 // Metrics
 type Metrics struct {
 	Metrics []*mpb.Metric `json:"metrics"`
+}
+
+func (m *Metrics) RangeNameFunc(handle func(name string) string) {
+	for _, item := range m.Metrics {
+		item.Name = handle(item.Name)
+	}
 }
 
 func (m *Metrics) SourceData() interface{} {
@@ -81,6 +88,12 @@ type Traces struct {
 	Spans []*tpb.Span `json:"spans"`
 }
 
+func (t *Traces) RangeNameFunc(handle func(name string) string) {
+	for _, item := range t.Spans {
+		item.Name = handle(item.Name)
+	}
+}
+
 func (t *Traces) SourceData() interface{} {
 	return t.Spans
 }
@@ -105,6 +118,12 @@ func (t *Traces) RangeTagsFunc(handle func(tags map[string]string) map[string]st
 // Logs
 type Logs struct {
 	Logs []*lpb.Log `json:"logs"`
+}
+
+func (l *Logs) RangeNameFunc(handle func(name string) string) {
+	for _, item := range l.Logs {
+		item.Name = handle(item.Name)
+	}
 }
 
 func (l *Logs) SourceData() interface{} {

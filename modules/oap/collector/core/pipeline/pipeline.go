@@ -24,9 +24,9 @@ import (
 )
 
 type Pipeline struct {
-	mReceivers  []model.Receiver
-	mProcessors []model.Processor
-	mExporters  []model.Exporter
+	receivers  []model.Receiver
+	processors []model.Processor
+	exporters  []model.Exporter
 
 	Log logs.Logger
 }
@@ -49,9 +49,9 @@ func (p *Pipeline) InitComponents(receivers, processors, exporters []model.Compo
 		return err
 	}
 
-	p.mReceivers = rs
-	p.mProcessors = prs
-	p.mExporters = es
+	p.receivers = rs
+	p.processors = prs
+	p.exporters = es
 	return nil
 }
 
@@ -104,8 +104,8 @@ func (p *Pipeline) StartExporters(ctx context.Context, out <-chan model.Observab
 		select {
 		case data := <-out:
 			var wg sync.WaitGroup
-			wg.Add(len(p.mExporters))
-			for _, e := range p.mExporters {
+			wg.Add(len(p.exporters))
+			for _, e := range p.exporters {
 				go func(exp model.Exporter, od model.ObservableData) {
 					defer wg.Done()
 					err := exp.Export(od)
@@ -125,7 +125,7 @@ func (p *Pipeline) startProcessors(ctx context.Context, in <-chan model.Observab
 	for {
 		select {
 		case data := <-in:
-			for _, pr := range p.mProcessors {
+			for _, pr := range p.processors {
 				tmp, err := pr.Process(data)
 				if err != nil {
 					p.Log.Errorf("Processor<%s> process data error: %s", pr.ComponentID(), err)
@@ -146,7 +146,7 @@ func (p *Pipeline) startProcessors(ctx context.Context, in <-chan model.Observab
 }
 
 func (p *Pipeline) startReceivers(ctx context.Context, in chan<- model.ObservableData) {
-	for _, r := range p.mReceivers {
+	for _, r := range p.receivers {
 		consumer := func(ms model.ObservableData) {
 			select {
 			case in <- ms:

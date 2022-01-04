@@ -11,8 +11,9 @@ import (
 var providerName = plugins.WithPrefixProcessor("modifier")
 
 type config struct {
-	Filter filter.Config `file:"filter"`
-	Rules  []modifierCfg `file:"rules"`
+	NameOverride string        `file:"name_override"`
+	Filter       filter.Config `file:"filter"`
+	Rules        []modifierCfg `file:"rules"`
 }
 
 // +provider
@@ -32,6 +33,11 @@ func (p *provider) Process(data model.ObservableData) (model.ObservableData, err
 		}
 		return tags
 	})
+	if p.Cfg.NameOverride != "" {
+		data.RangeNameFunc(func(name string) string {
+			return p.Cfg.NameOverride
+		})
+	}
 	return data, nil
 }
 

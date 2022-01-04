@@ -31,6 +31,7 @@ const (
 	Set      Action = "set"
 	Drop     Action = "drop"
 	Rename   Action = "rename"
+	Copy     Action = "copy"
 	TrimLeft Action = "trim_left"
 )
 
@@ -53,6 +54,11 @@ func (p *provider) modify(tags map[string]string) map[string]string {
 			}
 			tags[cfg.Value] = tags[cfg.Key]
 			delete(tags, cfg.Key)
+		case Copy:
+			if _, ok := tags[cfg.Key]; !ok {
+				continue
+			}
+			tags[cfg.Value] = tags[cfg.Key]
 		case TrimLeft:
 			// key is the prefix
 			tmp := make(map[string]string, len(tags))

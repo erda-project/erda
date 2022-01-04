@@ -18,15 +18,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata/pod"
 )
 
 var matcherPattern = regexp.MustCompile("%{([^%{}]*)}")
-
-func (p *provider) addMetadata(od model.ObservableData) {
-
-}
 
 func (p *provider) addPodMetadata(tags map[string]string) map[string]string {
 	finders := p.Cfg.Pod.AddMetadata.Finders
