@@ -225,7 +225,7 @@ func (b *Bundle) GetAppPublishItemRelationsGroupByENV(appID uint64) (*apistructs
 
 // QueryAppPublishItemRelations 查询应用关联的发布内容
 func (b *Bundle) QueryAppPublishItemRelations(req *apistructs.QueryAppPublishItemRelationRequest) (*apistructs.QueryAppPublishItemRelationResponse, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func (b *Bundle) QueryAppPublishItemRelations(req *apistructs.QueryAppPublishIte
 }
 
 func (b *Bundle) RemoveAppPublishItemRelations(publishItemID int64) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}

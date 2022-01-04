@@ -22,7 +22,7 @@ import (
 var APP_PUBLISH_ITEM_RELATION_UPDATE = apis.ApiSpec{
 	Path:         "/api/applications/<application>/actions/update-publish-item-relations",
 	BackendPath:  "/api/applications/<application>/actions/update-publish-item-relations",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,

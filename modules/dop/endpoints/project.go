@@ -298,6 +298,10 @@ func (e *Endpoints) ListProject(ctx context.Context, r *http.Request, vars map[s
 		return httpserver.OkResp(&apistructs.PagingProjectDTO{})
 	}
 
+	if err := e.setProjectResource(pagingProjects.List); err != nil {
+		return apierrors.ErrListProject.InternalError(err).ToResp(), nil
+	}
+
 	// rich statistical data
 	if params.PageSize <= 15 {
 		Once.Do(func() {
@@ -440,6 +444,12 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 	// 按项目名称搜索
 	keyword := r.URL.Query().Get("q")
 
+	var keepMsp bool
+	keepMspStr := r.URL.Query().Get("keepMsp")
+	if keepMspStr == "true" {
+		keepMsp = true
+	}
+
 	// 获取pageSize
 	pageSizeStr := r.URL.Query().Get("pageSize")
 	if pageSizeStr == "" {
@@ -470,6 +480,18 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 		asc = true
 	}
 	orderBy := r.URL.Query().Get("orderBy")
+	switch orderBy {
+	case "cpuQuota":
+		orderBy = "cpu_quota"
+	case "memQuota":
+		orderBy = "mem_quota"
+	case "activeTime":
+		orderBy = "active_time"
+	case "name":
+		orderBy = "name"
+	default:
+		orderBy = ""
+	}
 
 	return &apistructs.ProjectListRequest{
 		OrgID:    uint64(orgID),
@@ -480,6 +502,7 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 		OrderBy:  orderBy,
 		Asc:      asc,
 		IsPublic: isPublic,
+		KeepMsp:  keepMsp,
 	}, nil
 }
 
@@ -495,4 +518,24 @@ func SetProjectStatsCache() {
 	}
 
 	c.Start()
+}
+
+func (e *Endpoints) setProjectResource(projectDTOs []apistructs.ProjectDTO) error {
+	projectIDs := make([]uint64, 0, len(projectDTOs))
+	for i := range projectDTOs {
+		projectIDs = append(projectIDs, uint64(projectDTOs[i].ID))
+	}
+	resp, err := e.bdl.ProjectResource(projectIDs)
+	if err != nil {
+		return err
+	}
+	for i := range projectDTOs {
+		if v, ok := resp.Data[projectDTOs[i].ID]; ok {
+			projectDTOs[i].CpuServiceUsed = v.CpuServiceUsed
+			projectDTOs[i].MemServiceUsed = v.MemServiceUsed
+			projectDTOs[i].CpuAddonUsed = v.CpuAddonUsed
+			projectDTOs[i].MemAddonUsed = v.MemAddonUsed
+		}
+	}
+	return nil
 }
