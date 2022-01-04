@@ -547,7 +547,7 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 			logrus.Errorf("card list fail to get url params ,err :%v", err)
 		}
 
-		qMap, err := wc.Wb.GetProjIssueQueries(ids, 0)
+		qMap, err := wc.Wb.GetProjIssueQueries(apiIdentity.UserID, ids, 0)
 		if err != nil {
 			logrus.Errorf("get project issue queries failed, project ids: %v, error:%v", ids, err)
 			return
