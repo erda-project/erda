@@ -24,6 +24,21 @@ hierarchy:
     workList:
       filter:
       - workListFilter
+  parallel:
+    page:
+      - leftContent
+      - rightContent
+    leftContent:
+      - head
+      - workTabs
+      - workContainer
+      - messageTabs
+      - messageContainer
+    workContainer:
+      - workCards
+      - workList
+    messageContainer:
+      - messageList
 
 components:
   page:
@@ -67,9 +82,6 @@ rendering:
     - name: workTabs
     - name: workContainer
     - name: workCards
-      state:
-        - name: "tabName"
-          value: "{{ workTabs.value }}"
     - name: workListFilter
     - name: workList
     - name: messageContainer
