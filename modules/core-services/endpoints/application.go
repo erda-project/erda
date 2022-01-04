@@ -32,7 +32,6 @@ import (
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/http/httpserver"
-	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -102,52 +101,6 @@ func (e *Endpoints) CreateApplication(ctx context.Context, r *http.Request, vars
 	applicationDTO := e.convertToApplicationDTO(ctx, *app, false, identify.UserID, nil)
 
 	return httpserver.OkResp(applicationDTO)
-}
-
-// InitApplication 应用初始化
-func (e *Endpoints) InitApplication(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-	// 获取当前用户
-	identityInfo, err := user.GetIdentityInfo(r)
-	if err != nil {
-		return apierrors.ErrInitApplication.NotLogin().ToResp(), nil
-	}
-
-	// 检查applicationID合法性
-	applicationID, err := strconv.ParseUint(vars["applicationID"], 10, 64)
-	if err != nil {
-		return apierrors.ErrInitApplication.InvalidParameter(err).ToResp(), nil
-	}
-
-	// 检查请求body
-	var appInitReq apistructs.ApplicationInitRequest
-	if err := json.NewDecoder(r.Body).Decode(&appInitReq); err != nil {
-		return apierrors.ErrInitApplication.InvalidParameter(err).ToResp(), nil
-	}
-	appInitReq.ApplicationID = applicationID
-	appInitReq.IdentityInfo = identityInfo
-
-	if !identityInfo.IsInternalClient() {
-		// 操作鉴权
-		req := apistructs.PermissionCheckRequest{
-			UserID:   identityInfo.UserID,
-			Scope:    apistructs.AppScope,
-			ScopeID:  applicationID,
-			Resource: apistructs.AppResource,
-			Action:   apistructs.CreateAction,
-		}
-		if access, err := e.permission.CheckPermission(&req); err != nil || !access {
-			return apierrors.ErrInitApplication.AccessDenied().ToResp(), nil
-		}
-	}
-
-	// 更新应用信息至DB
-	pipelineID, err := e.app.Init(&appInitReq)
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-
-	return httpserver.OkResp(pipelineID)
 }
 
 // UpdateApplication 更新应用

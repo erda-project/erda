@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/types"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -246,4 +247,47 @@ func (e *Endpoints) deleteExtraInfo(extra string, identityInfo apistructs.Identi
 			logrus.Warnf(err.Error())
 		}
 	}
+}
+
+// InitApplication init mobile application
+func (e *Endpoints) InitApplication(ctx context.Context, r *http.Request, vars map[string]string) (
+	httpserver.Responser, error) {
+	// get current user
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrInitApplication.NotLogin().ToResp(), nil
+	}
+
+	applicationID, err := strconv.ParseUint(vars["applicationID"], 10, 64)
+	if err != nil {
+		return apierrors.ErrInitApplication.InvalidParameter(err).ToResp(), nil
+	}
+
+	var appInitReq apistructs.ApplicationInitRequest
+	if err := json.NewDecoder(r.Body).Decode(&appInitReq); err != nil {
+		return apierrors.ErrInitApplication.InvalidParameter(err).ToResp(), nil
+	}
+	appInitReq.ApplicationID = applicationID
+	appInitReq.IdentityInfo = identityInfo
+
+	if !identityInfo.IsInternalClient() {
+		// check permission
+		req := apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.AppScope,
+			ScopeID:  applicationID,
+			Resource: apistructs.AppResource,
+			Action:   apistructs.CreateAction,
+		}
+		if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
+			return apierrors.ErrInitApplication.AccessDenied().ToResp(), nil
+		}
+	}
+
+	pipelineID, err := e.app.Init(&appInitReq)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+
+	return httpserver.OkResp(pipelineID)
 }

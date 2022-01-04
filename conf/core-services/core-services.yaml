@@ -1,10 +1,5 @@
 core-services:
 
-# pipeline cms
-grpc-client@erda.core.pipeline.cms:
-  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
-erda.core.pipeline.cms-client:
-
 # new api with proto style
 http-server:
   addr: ":9526"
@@ -27,6 +22,7 @@ mysql:
 
 erda.core.services.authentication.credentials.accesskey:
 erda.core.services.notify.channel:
+erda.core.services.errorbox:
 
 http-server@admin:
   addr: ":7098"

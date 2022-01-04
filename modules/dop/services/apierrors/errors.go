@@ -463,6 +463,7 @@ var (
 
 	ErrCreateApplication = err("ErrCreateApplication", "创建应用失败")
 	ErrDeleteApplication = err("ErrDeleteApplication", "删除应用失败")
+	ErrInitApplication   = err("ErrInitApplication", "应用初始化失败")
 
 	ErrApprovalStatusChanged     = err("ErrApprovalStatusChanged", "审批流状态变更通知失败")
 	ErrListFileTreeNodes         = err("ErrListFileTreeNodes", "查询目录树节点列表失败")
@@ -501,6 +502,8 @@ var (
 	ErrGetTestReportRecord    = err("ErrGetTestReportRecord", "获取测试报告记录失败")
 
 	ErrApplicationsResources = err("ErrApplicationsResources", "查询应用资源列表失败")
+
+	ErrListErrorLog = err("ErrListErrorLog", "查看错误日志失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

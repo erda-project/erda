@@ -39,6 +39,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/apidocsvc"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/appcertificate"
+	"github.com/erda-project/erda/modules/dop/services/application"
 	"github.com/erda-project/erda/modules/dop/services/assetsvc"
 	"github.com/erda-project/erda/modules/dop/services/autotest"
 	atv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
@@ -382,6 +383,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	autotestV2.CreateFileRecord = testCaseSvc.CreateFileRecord
 
 	p.TestPlanSvc.WithAutoTestSvc(autotestV2)
+	p.TaskErrorSvc.WithErrorBoxSvc(p.ErrorBoxSvc)
 
 	sceneset.GetScenes = autotestV2.ListAutotestScene
 	sceneset.CopyScene = autotestV2.CopyAutotestScene
@@ -556,6 +558,11 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		project.WithCMP(p.Cmp),
 	)
 
+	app := application.New(
+		application.WithBundle(bdl.Bdl),
+		application.WithDBClient(db),
+	)
+
 	codeCvc := code_coverage.New(
 		code_coverage.WithDBClient(db),
 		code_coverage.WithBundle(bdl.Bdl),
@@ -589,6 +596,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithAssetSvc(assetsvc.New(assetsvc.WithBranchRuleSvc(branchRule))),
 		endpoints.WithFileTreeSvc(filetreeSvc),
 		endpoints.WithProject(proj),
+		endpoints.WithApplication(app),
 
 		endpoints.WithDB(db),
 		endpoints.WithTestcase(testCaseSvc),
