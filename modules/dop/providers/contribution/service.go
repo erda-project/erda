@@ -49,6 +49,10 @@ func (s *contributionService) GetPersonalContribution(ctx context.Context, req *
 		},
 	}
 	pivot := findMaxSlice([]uint64{rank.IssueScore, rank.CommitScore, rank.QualityScore})
+	// default max value
+	if pivot == 0 {
+		pivot = 1
+	}
 	indicator := &pb.Indicator{
 		Data: []*pb.IndicatorData{
 			{Data: []uint64{data.Data.Events, data.Data.Commits, data.Data.Cases}},
