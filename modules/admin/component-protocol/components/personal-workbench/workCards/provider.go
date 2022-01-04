@@ -143,12 +143,13 @@ func (wc *WorkCards) getAppTextMeta(app apistructs.AppWorkBenchItem) (metas []ca
 	}
 	return
 }
-func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.WorkbenchProjOverviewItem, queries workbench.IssueUrlQueries) (metas []cardlist.TextMeta) {
-	todayData := make(cptype.OpServerData)
-	expireData := make(cptype.OpServerData)
+func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.WorkbenchProjOverviewItem, queries workbench.IssueUrlQueries, urlParam workbench.UrlParams) (metas []cardlist.TextMeta) {
+
 	metas = make([]cardlist.TextMeta, 0)
 	switch project.ProjectDTO.Type {
 	case common.DevOpsProject, common.DefaultProject:
+		todayData := make(cptype.OpServerData)
+		expireData := make(cptype.OpServerData)
 		todayOp := common.Operation{
 			JumpOut: false,
 			Target:  "projectAllIssue",
@@ -201,13 +202,47 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 		if project.IssueInfo == nil {
 			project.IssueInfo = &apistructs.ProjectIssueInfo{}
 		}
+		serviceCnt := make(cptype.OpServerData)
+		lastDayWarning := make(cptype.OpServerData)
+		err := common.Transfer(urlParam, &serviceCnt)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		err = common.Transfer(urlParam, &lastDayWarning)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		serviceCnt["projectId"] = project.ProjectDTO.ID
+		lastDayWarning["projectId"] = project.ProjectDTO.ID
+
+		serviceOp := common.Operation{
+			Target: "mspServiceList",
+			Params: serviceCnt,
+		}
+		lastDayOp := common.Operation{
+			Target: "microServiceAlarmRecord",
+			Params: lastDayWarning,
+		}
+
+		err = common.Transfer(serviceOp, &serviceCnt)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		err = common.Transfer(lastDayOp, &lastDayWarning)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
 		metas = []cardlist.TextMeta{
 			{
 				MainText: float64(project.StatisticInfo.ServiceCount),
 				SubText:  sdk.I18n("service count"),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {
-						ServerData: &expireData,
+						ServerData: &serviceCnt,
 					},
 				},
 			},
@@ -216,7 +251,7 @@ func (wc *WorkCards) getProjTextMeta(sdk *cptype.SDK, project apistructs.Workben
 				SubText:  sdk.I18n("last 24 hour alarm count"),
 				Operations: map[cptype.OperationKey]cptype.Operation{
 					"clickGoto": {
-						ServerData: &todayData,
+						ServerData: &lastDayWarning,
 					},
 				},
 			},
@@ -565,7 +600,7 @@ func (wc *WorkCards) LoadList(sdk *cptype.SDK) {
 				Title:          project.ProjectDTO.DisplayName,
 				TitleState:     wc.getProjectTitleState(sdk, project.ProjectDTO.Type),
 				Star:           true,
-				TextMeta:       wc.getProjTextMeta(sdk, project, qMap[project.ProjectDTO.ID]),
+				TextMeta:       wc.getProjTextMeta(sdk, project, qMap[project.ProjectDTO.ID], params[projID]),
 				IconOperations: wc.getProjIconOps(sdk, project, params[projID]),
 				Operations:     wc.getProjectCardOps(sdk, params[projID], project),
 			})

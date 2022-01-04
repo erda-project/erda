@@ -339,9 +339,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 					WithSkipRender(true).
 					WithServerDataPtr(list.OpItemClickGotoServerData{
 						OpItemBasicServerData: list.OpItemBasicServerData{
-							Params: map[string]interface{}{
-								common.OpKeyProjectID: p.ProjectDTO.ID,
-							},
+							Params: params,
 							Target: target,
 						},
 					}).
