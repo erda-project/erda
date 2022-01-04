@@ -60,9 +60,24 @@ func (db *DBClient) GetMemberActiveRank(orgID, userID string) (*MemberActiveRank
 	return &res, nil
 }
 
-func (db *DBClient) GetMemberActiveRankList(orgID string) ([]MemberActiveRank, error) {
+func (db *DBClient) FindMemberRank(orgID, userID string) (*MemberActiveRank, uint64, error) {
+	var res MemberActiveRank
+	if err := db.Model(&MemberActiveRank{}).Scopes(NotDeleted).Where("org_id = ? and user_id = ?", orgID, userID).First(&res).Error; err != nil {
+		if err != gorm.ErrRecordNotFound {
+			return nil, 0, err
+		}
+		res.TotalScore = 0
+	}
+	var count uint64
+	if err := db.Model(&MemberActiveRank{}).Scopes(NotDeleted).Where("org_id = ? and total_score > ?", orgID, res.TotalScore).Count(&count).Error; err != nil {
+		return nil, 0, err
+	}
+	return &res, count + 1, nil
+}
+
+func (db *DBClient) GetMemberActiveRankList(orgID string, limit int) ([]MemberActiveRank, error) {
 	var res []MemberActiveRank
-	if err := db.Scopes(NotDeleted).Where("org_id = ?", orgID).Order("total_score desc").Find(&res).Error; err != nil {
+	if err := db.Model(&MemberActiveRank{}).Scopes(NotDeleted).Where("org_id = ?", orgID).Order("total_score desc").Limit(limit).Find(&res).Error; err != nil {
 		return nil, err
 	}
 	return res, nil
@@ -124,12 +139,19 @@ type conScore struct {
 	Count  uint64
 }
 
+type conIssueScore struct {
+	OrgID  string
+	UserID string
+	Count  uint64
+	Type   apistructs.IssueType
+}
+
 func (db *DBClient) IssueScore() error {
-	var res []conScore
-	sql := db.Table("dice_issues a").Joins(conState).Joins(conProject).Select("a.assignee as user_id,c.org_id, count(a.id) as count")
+	var res []conIssueScore
+	sql := db.Table("dice_issues a").Joins(conState).Joins(conProject).Select("a.assignee as user_id, a.type, c.org_id, count(a.id) as count")
 	sql = sql.Where("b.belong = ? and DATE(a.finish_time) >= DATE_SUB(CURDATE(),INTERVAL 30 DAY)", apistructs.IssueStateBelongDone)
 	sql = sql.Where("a.deleted = 0 and a.assignee != '' and c.org_id != ''")
-	if err := sql.Group("c.org_id, a.assignee").Find(&res).Error; err != nil {
+	if err := sql.Group("c.org_id, a.assignee, a.type").Find(&res).Error; err != nil {
 		return err
 	}
 
@@ -137,7 +159,7 @@ func (db *DBClient) IssueScore() error {
 		if err := db.CreateOrUpdateMemberActiveRank(&MemberActiveScore{
 			OrgID:      i.OrgID,
 			UserID:     i.UserID,
-			IssueScore: i.Count,
+			IssueScore: i.Count * issueScoreCoefficient(i),
 		}); err != nil {
 			return err
 		}
@@ -158,7 +180,7 @@ func (db *DBClient) CommitScore() error {
 		if err := db.CreateOrUpdateMemberActiveRank(&MemberActiveScore{
 			OrgID:       i.OrgID,
 			UserID:      i.UserID,
-			CommitScore: i.Count,
+			CommitScore: i.Count * commitCoefficient,
 		}); err != nil {
 			return err
 		}
@@ -173,6 +195,9 @@ type conSeverityScore struct {
 	Severity apistructs.IssueSeverity
 }
 
+const issueCreateCoefficient = 0.8
+const commitCoefficient = 8
+
 func (db *DBClient) QualityScore() error {
 	var issueCreated []conScore
 	sql := db.Table("dice_issues a").Joins(conState).Joins(conProject).Select("a.creator as user_id, c.org_id, count(a.id) as count")
@@ -186,7 +211,7 @@ func (db *DBClient) QualityScore() error {
 		if err := db.CreateOrUpdateMemberActiveRank(&MemberActiveScore{
 			OrgID:        i.OrgID,
 			UserID:       i.UserID,
-			QualityScore: int64(i.Count),
+			QualityScore: int64(float64(i.Count) * issueCreateCoefficient),
 		}); err != nil {
 			return err
 		}
@@ -238,6 +263,17 @@ func qualityScoreCoefficient(s conSeverityScore) int64 {
 		return -5
 	case apistructs.IssueSeverityNormal:
 		return -1
+	default:
+		return 1
+	}
+}
+
+func issueScoreCoefficient(s conIssueScore) uint64 {
+	switch s.Type {
+	case apistructs.IssueTypeRequirement:
+		return 5
+	case apistructs.IssueTypeTask:
+		return 2
 	default:
 		return 1
 	}
