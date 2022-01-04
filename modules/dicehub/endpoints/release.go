@@ -217,19 +217,12 @@ func (e *Endpoints) ParseReleaseFile(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrParseReleaseFile.NotLogin().ToResp(), nil
 	}
 
-	if r.Body == nil {
-		return apierrors.ErrParseReleaseFile.MissingParameter("body").ToResp(), nil
-	}
-	var releaseRequest apistructs.ParseReleaseFileRequest
-	if err := json.NewDecoder(r.Body).Decode(&releaseRequest); err != nil {
-		return apierrors.ErrParseReleaseFile.InvalidParameter(err).ToResp(), nil
-	}
-
-	if releaseRequest.DiceFileID == "" {
+	diceFileID := r.URL.Query().Get("diceFileID")
+	if diceFileID == "" {
 		return apierrors.ErrParseReleaseFile.MissingParameter("diceFileID").ToResp(), nil
 	}
 
-	file, err := e.bdl.DownloadDiceFile(releaseRequest.DiceFileID)
+	file, err := e.bdl.DownloadDiceFile(diceFileID)
 	if err != nil {
 		return apierrors.ErrCreateRelease.InternalError(err).ToResp(), nil
 	}
