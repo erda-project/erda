@@ -178,6 +178,7 @@ func (e *Endpoints) UploadRelease(ctx context.Context, r *http.Request, vars map
 		if !hasAccess {
 			return apierrors.ErrCreateRelease.AccessDenied().ToResp(), nil
 		}
+		releaseRequest.UserID = identityInfo.UserID
 	}
 
 	file, err := e.bdl.DownloadDiceFile(releaseRequest.DiceFileID)
