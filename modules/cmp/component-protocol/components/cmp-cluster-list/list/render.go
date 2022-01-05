@@ -364,7 +364,7 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 			description = c.Description
 		}
 		displayName := c.DisplayName
-		if c.DisplayName != "" {
+		if displayName == "" {
 			displayName = c.Name
 		}
 		i := DataItem{
