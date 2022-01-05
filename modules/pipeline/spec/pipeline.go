@@ -259,3 +259,11 @@ func (p *Pipeline) GetPipelineQueueID() (uint64, bool) {
 func (p *Pipeline) GetPipelineAppliedResources() apistructs.PipelineAppliedResources {
 	return p.Snapshot.AppliedResources
 }
+
+// CanSkipRunningCheck if pipeline bind queue and EnqueueCondition is skip running, pipeline can skip limit running
+func (p *Pipeline) CanSkipRunningCheck() bool {
+	if p.Extra.QueueInfo != nil && p.Extra.QueueInfo.EnqueueCondition.IsSkipAlreadyRunningLimit() {
+		return true
+	}
+	return false
+}

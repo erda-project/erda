@@ -17,6 +17,8 @@ package spec
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -46,4 +48,45 @@ func TestPipeline_EnsureGC(t *testing.T) {
 		},
 	}
 	p.EnsureGC()
+}
+
+func TestCanSkipRunningCheck(t *testing.T) {
+	tests := []struct {
+		p    *Pipeline
+		want bool
+	}{
+		{
+			p: &Pipeline{PipelineExtra: PipelineExtra{
+				Extra: PipelineExtraInfo{
+					QueueInfo: nil,
+				},
+			}},
+			want: false,
+		},
+		{
+			p: &Pipeline{PipelineExtra: PipelineExtra{
+				Extra: PipelineExtraInfo{
+					QueueInfo: &QueueInfo{
+						QueueID:          1,
+						EnqueueCondition: apistructs.EnqueueConditionSkipAlreadyRunningLimit,
+					},
+				},
+			}},
+			want: true,
+		},
+		{
+			p: &Pipeline{PipelineExtra: PipelineExtra{
+				Extra: PipelineExtraInfo{
+					QueueInfo: &QueueInfo{
+						QueueID:          1,
+						EnqueueCondition: "skip",
+					},
+				},
+			}},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.want, tt.p.CanSkipRunningCheck())
+	}
 }

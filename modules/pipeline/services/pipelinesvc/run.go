@@ -207,6 +207,11 @@ func (s *PipelineSvc) stopRunningPipelines(p *spec.Pipeline, identityInfo apistr
 // limitParallelRunningPipelines 判断在 pipelineSource + pipelineYmlName 下只能有一个在运行
 // 被嵌套的流水线跳过校验
 func (s *PipelineSvc) limitParallelRunningPipelines(p *spec.Pipeline) error {
+	if p.CanSkipRunningCheck() {
+		logrus.Infof("pipeline: %d skiped limit parallel running, enqueue condition: %s",
+			p.ID, p.GetLabel(apistructs.LabelBindPipelineQueueEnqueueCondition))
+		return nil
+	}
 	// 流水线自身是嵌套流水线时，不做校验
 	if p.IsSnippet {
 		return nil

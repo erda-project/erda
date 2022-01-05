@@ -310,8 +310,9 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 			}
 		}
 		p.Extra.QueueInfo = &spec.QueueInfo{
-			QueueID:        req.BindQueue.ID,
-			CustomPriority: customPriority,
+			QueueID:          req.BindQueue.ID,
+			CustomPriority:   customPriority,
+			EnqueueCondition: apistructs.EnqueueConditionType(p.MergeLabels()[apistructs.LabelBindPipelineQueueEnqueueCondition]),
 		}
 	}
 
