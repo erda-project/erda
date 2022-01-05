@@ -264,7 +264,11 @@ func (m *AlertNotify) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.NotifyTarget == nil {
 					m.NotifyTarget = &NotifyTarget{}
 				}
-				m.NotifyTarget.GroupId = vals[0]
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.NotifyTarget.GroupId = val
 			case "notifyTarget.groupType":
 				if m.NotifyTarget == nil {
 					m.NotifyTarget = &NotifyTarget{}
@@ -297,7 +301,11 @@ func (m *NotifyTarget) UnmarshalURLValues(prefix string, values url.Values) erro
 			case "type":
 				m.Type = vals[0]
 			case "groupId":
-				m.GroupId = vals[0]
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.GroupId = val
 			case "groupType":
 				m.GroupType = vals[0]
 			case "level":

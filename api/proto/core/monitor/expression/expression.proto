@@ -95,7 +95,7 @@ message AlertNotify {
 
 message NotifyTarget {
   string type      = 1;
-  string groupId   = 2 [json_name = "group_id"];
+  int64  groupId   = 2 [json_name = "group_id"];
   string groupType = 3 [json_name = "group_type"];
   string level     = 4;
 }
