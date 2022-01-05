@@ -169,7 +169,7 @@ func (r *Release) createProjectReleaseAndUpdateReference(release *dbclient.Relea
 		}
 	}()
 
-	if err = tx.Save(release).Error; err != nil {
+	if err = tx.Create(release).Error; err != nil {
 		return
 	}
 
@@ -614,8 +614,6 @@ func (r *Release) Get(orgID int64, releaseID string) (*apistructs.ReleaseGetResp
 
 // List 根据搜索条件进行搜索
 func (r *Release) List(orgID int64, req *apistructs.ReleaseListRequest) (*apistructs.ReleaseListResponseData, error) {
-	startTime := time.Unix(req.StartTime/1000, 0)
-	endTime := time.Unix(req.EndTime/1000, 0)
 	total, releases, err := r.db.GetReleasesByParams(
 		orgID, req.ProjectID, req.ApplicationID,
 		req.Query, req.ReleaseName, req.Branch,
@@ -623,7 +621,7 @@ func (r *Release) List(orgID int64, req *apistructs.ReleaseListRequest) (*apistr
 		req.UserID, req.Version, req.CommitID, req.Tags,
 		req.Cluster, req.CrossCluster, req.IsVersion,
 		req.CrossClusterOrSpecifyCluster,
-		startTime, endTime, req.PageNum, req.PageSize,
+		req.StartTime, req.EndTime, req.PageNum, req.PageSize,
 		req.OrderBy, req.Order)
 	if err != nil {
 		return nil, err
