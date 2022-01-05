@@ -241,6 +241,8 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 		existedApps[apps.List[i].Name] = struct{}{}
 	}
 
+	now := time.Now()
+
 	var appReleaseList []string
 	var appReleases []dbclient.Release
 	for appName, dice := range dices {
@@ -272,14 +274,15 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 			IsFormal:         false,
 			IsProjectRelease: false,
 			Labels:           string(data),
+			Version:          md.Version,
 			OrgID:            req.OrgID,
 			ProjectID:        req.ProjectID,
 			ProjectName:      req.ProjectName,
 			UserID:           req.UserID,
 			ClusterName:      req.ClusterName,
 			Reference:        1,
-			CreatedAt:        time.Time{},
-			UpdatedAt:        time.Time{},
+			CreatedAt:        now,
+			UpdatedAt:        now,
 		})
 	}
 
@@ -301,8 +304,8 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 		ProjectName:            req.ProjectName,
 		UserID:                 req.UserID,
 		ClusterName:            req.ClusterName,
-		CreatedAt:              time.Time{},
-		UpdatedAt:              time.Time{},
+		CreatedAt:              now,
+		UpdatedAt:              now,
 	}
 	return projectRelease, appReleases, nil
 }

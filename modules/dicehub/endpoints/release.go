@@ -1232,6 +1232,7 @@ func makeMetadata(release *dbclient.Release, appReleases []dbclient.Release) ([]
 			GitCommitMessage: labels["gitCommitMessage"],
 			GitRepo:          labels["gitRepo"],
 			ChangeLog:        appReleases[i].Changelog,
+			Version:          appReleases[i].Version,
 		}
 	}
 	releaseMeta := apistructs.ReleaseMetadata{
