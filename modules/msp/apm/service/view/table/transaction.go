@@ -86,10 +86,11 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 	statement := fmt.Sprintf("SELECT DISTINCT(%s) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
-		"AND target_service_id::tag=$service_id "+
+		"%s "+
 		"%s ",
 		pathField,
 		common.GetDataSourceNames(t.Layer),
+		common.BuildServerSideServiceIdFilterSql("$service_id", t.Layer),
 		common.BuildLayerPathFilterSql(t.LayerPath, "$layer_path", t.FuzzyPath, t.Layer),
 	)
 	fmt.Println("table query total:" + statement)
@@ -114,13 +115,14 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		"format_duration(avg(elapsed_mean::field),'',2) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
-		"AND target_service_id::tag=$service_id "+
+		"%s "+
 		"%s "+
 		"GROUP BY %s "+
 		"ORDER BY %s "+
 		"LIMIT %v OFFSET %v",
 		pathField,
 		common.GetDataSourceNames(t.Layer),
+		common.BuildServerSideServiceIdFilterSql("$service_id", t.Layer),
 		common.BuildLayerPathFilterSql(t.LayerPath, "$layer_path", t.FuzzyPath, t.Layer),
 		pathField,
 		common.GetSortSql(TransactionTableSortFieldSqlMap, "sum(elapsed_count::field) DESC", t.OrderBy...),
