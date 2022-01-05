@@ -99,6 +99,28 @@ func BuildLayerPathFilterSql(path string, paramName string, fuzzy bool, layers .
 	return fmt.Sprintf("AND (%s) ", strings.Join(tokens, " OR "))
 }
 
+func GetServerSideServiceIdKeys(layers ...TransactionLayerType) []string {
+	var list []string
+	for _, layer := range layers {
+		switch layer {
+		case TransactionLayerHttp, TransactionLayerRpc:
+			list = append(list, "target_service_id::tag")
+		case TransactionLayerMq, TransactionLayerCache, TransactionLayerDb:
+			list = append(list, "source_service_id::tag")
+		}
+	}
+	return list
+}
+
+func BuildServerSideServiceIdFilterSql(paramName string, layers ...TransactionLayerType) string {
+	var tokens []string
+	keys := GetServerSideServiceIdKeys(layers...)
+	for _, key := range keys {
+		tokens = append(tokens, fmt.Sprintf("%s=%s", key, paramName))
+	}
+	return fmt.Sprintf("AND (%s)", strings.Join(tokens, " OR "))
+}
+
 func FormatFloatWith2Digits(value float64) float64 {
 	return math.DecimalPlacesWithDigitsNumber(value, 2)
 }
