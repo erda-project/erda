@@ -31,9 +31,10 @@ func (r *SlowCountCard) GetCard(ctx context.Context) (*ServiceCard, error) {
 	statement := fmt.Sprintf("SELECT sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0)) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
-		"AND target_service_id::tag=$service_id "+
+		"%s "+
 		"%s ",
 		common.GetDataSourceNames(r.Layer),
+		common.BuildServerSideServiceIdFilterSql("$service_id", r.Layer),
 		common.BuildLayerPathFilterSql(r.LayerPath, "$layer_path", r.FuzzyPath, r.Layer))
 
 	var layerPathParam *structpb.Value

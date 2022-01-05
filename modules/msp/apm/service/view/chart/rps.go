@@ -38,10 +38,11 @@ func (rps *RpsChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
 	statement := fmt.Sprintf("SELECT rateps(elapsed_count::field) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
-		"AND target_service_id::tag=$service_id "+
+		"%s "+
 		"%s "+
 		"GROUP BY time(%s)",
 		common.GetDataSourceNames(rps.Layers...),
+		common.BuildServerSideServiceIdFilterSql("$service_id", rps.Layers...),
 		common.BuildLayerPathFilterSql(rps.LayerPath, "$layer_path", rps.FuzzyPath, rps.Layers...),
 		rps.Interval)
 

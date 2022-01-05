@@ -32,10 +32,11 @@ func (r *RpsCard) GetCard(ctx context.Context) (*ServiceCard, error) {
 	statement := fmt.Sprintf("SELECT sum(elapsed_count::field)/%v "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
-		"AND target_service_id::tag=$service_id "+
+		"%s "+
 		"%s ",
 		interval,
 		common.GetDataSourceNames(r.Layer),
+		common.BuildServerSideServiceIdFilterSql("$service_id", r.Layer),
 		common.BuildLayerPathFilterSql(r.LayerPath, "$layer_path", r.FuzzyPath, r.Layer))
 
 	var layerPathParam *structpb.Value

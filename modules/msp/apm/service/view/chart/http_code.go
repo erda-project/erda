@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ahmetb/go-linq/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
@@ -33,15 +34,22 @@ type HttpCodeChart struct {
 }
 
 func (httpCode *HttpCodeChart) GetChart(ctx context.Context) (*pb.ServiceChart, error) {
+	if linq.From(httpCode.Layers).AnyWith(func(i interface{}) bool {
+		return i.(common.TransactionLayerType) != common.TransactionLayerHttp &&
+			i.(common.TransactionLayerType) != common.TransactionLayerRpc
+	}) {
+		return nil, fmt.Errorf("not supported transaction type")
+	}
 
 	statement := fmt.Sprintf("SELECT sum(http_status_code_count::field),http_status_code::tag "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
-		"AND target_service_id::tag=$service_id "+
+		"%s "+
 		"AND span_kind::tag=$kind "+
 		"%s "+
 		"GROUP BY time(%s),http_status_code::tag",
 		common.GetDataSourceNames(httpCode.Layers...),
+		common.BuildServerSideServiceIdFilterSql("$service_id", httpCode.Layers...),
 		common.BuildLayerPathFilterSql(httpCode.LayerPath, "$layer_path", httpCode.FuzzyPath, httpCode.Layers...),
 		httpCode.Interval)
 
