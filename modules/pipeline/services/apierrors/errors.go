@@ -110,6 +110,18 @@ var (
 	ErrPagingPipelineReports  = err("ErrPagingPipelineReports", "分页查询流水线报告集失败")
 
 	ErrUpgradePipelinePriority = err("ErrUpgradePipelinePriority", "提升流水线优先级失败")
+
+	ErrCreatePipelineDefinition = err("ErrCreatePipelineDefinition", "创建流水线定义失败")
+	ErrUpdatePipelineDefinition = err("ErrUpdatePipelineDefinition", "更新流水线定义失败")
+	ErrDeletePipelineDefinition = err("ErrDeletePipelineDefinition", "删除流水线定义失败")
+	ErrGetPipelineDefinition = err("ErrGetPipelineDefinition", "获取流水线定义失败")
+	ErrListPipelineDefinition = err("ErrListPipelineDefinition", "列出流水线定义失败")
+
+	ErrCreatePipelineSource = err("ErrCreatePipelineSource", "创建流水线来源失败")
+	ErrUpdatePipelineSource = err("ErrUpdatePipelineSource", "更新流水线来源失败")
+	ErrDeletePipelineSource = err("ErrDeletePipelineSource", "删除流水线来源失败")
+	ErrGetPipelineSource = err("ErrGetPipelineSource", "获取流水线来源失败")
+	ErrListPipelineSource = err("ErrListPipelineSource", "列出流水线来源失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

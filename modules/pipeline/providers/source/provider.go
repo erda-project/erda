@@ -17,38 +17,37 @@ package definition_client
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
-	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
-	"github.com/erda-project/erda/modules/pipeline/providers/definition/db"
+	"github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	"github.com/erda-project/erda/modules/pipeline/providers/source/db"
 )
 
 type config struct {
 }
 
 // +provider
-type provider struct {
-	Cfg      *config
+type Provider struct {
+	Cfg                     *config
 	MySQL    mysqlxorm.Interface `autowired:"mysql-xorm"`
-	// implements
-	pipelineDefinition *pipelineDefinition
+	pipelineSource *pipelineSource
 }
 
-func (p *provider) Init(ctx servicehub.Context) error {
-	p.pipelineDefinition = &pipelineDefinition{
+func (p *Provider) Init(ctx servicehub.Context) error {
+	p.pipelineSource = &pipelineSource{
 		dbClient: &db.Client{Interface: p.MySQL},
 	}
 	return nil
 }
 
-func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
+func (p *Provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.core.pipeline.definition" || ctx.Type() == pb.DefinitionServiceServerType() || ctx.Type() == pb.DefinitionServiceHandlerType():
-		return p.pipelineDefinition
+	case ctx.Service() == "erda.core.pipeline.source" || ctx.Type() == pb.SourceServiceServerType() || ctx.Type() == pb.SourceServiceHandlerType():
+		return p.pipelineSource
 	}
 	return p
 }
 
 func init() {
-	servicehub.Register("erda.core.pipeline.definition", &servicehub.Spec{
+	servicehub.Register("erda.core.pipeline.source", &servicehub.Spec{
 		Services:             pb.ServiceNames(),
 		Types:                pb.Types(),
 		Dependencies:         []string{"mysql-xorm-client", "service-register"},
@@ -58,7 +57,7 @@ func init() {
 			return &config{}
 		},
 		Creator: func() servicehub.Provider {
-			return &provider{}
+			return &Provider{}
 		},
 	})
 }
