@@ -22,7 +22,7 @@ import (
 )
 
 type PipelineDefinitionExtra struct {
-	ID          uint64     `json:"id" xorm:"pk autoincr"`
+	ID          string     `json:"id" xorm:"pk autoincr"`
 	Extra       Extra      `json:"extra" xorm:"json"`
 	TimeCreated *time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
 	TimeUpdated *time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
@@ -45,7 +45,7 @@ func (client *Client) CreatePipelineDefinitionExtra(pipelineDefinitionExtra *Pip
 	return err
 }
 
-func (client *Client) UpdatePipelineDefinitionExtra(id uint64, pipelineDefinitionExtra *PipelineDefinitionExtra, ops ...mysqlxorm.SessionOption) error {
+func (client *Client) UpdatePipelineDefinitionExtra(id string, pipelineDefinitionExtra *PipelineDefinitionExtra, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -53,7 +53,7 @@ func (client *Client) UpdatePipelineDefinitionExtra(id uint64, pipelineDefinitio
 	return err
 }
 
-func (client *Client) DeletePipelineDefinitionExtraExtra(id uint64, ops ...mysqlxorm.SessionOption) error {
+func (client *Client) DeletePipelineDefinitionExtraExtra(id string, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -61,7 +61,7 @@ func (client *Client) DeletePipelineDefinitionExtraExtra(id uint64, ops ...mysql
 	return err
 }
 
-func (client *Client) GetPipelineDefinitionExtra(id uint64, ops ...mysqlxorm.SessionOption) (*PipelineDefinitionExtra, error) {
+func (client *Client) GetPipelineDefinitionExtra(id string, ops ...mysqlxorm.SessionOption) (*PipelineDefinitionExtra, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 

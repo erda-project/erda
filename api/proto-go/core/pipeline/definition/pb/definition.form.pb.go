@@ -684,11 +684,7 @@ func (m *PipelineDefinitionUpdateRequest) UnmarshalURLValues(prefix string, valu
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "pipelineDefinitionID":
-				val, err := strconv.ParseUint(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.PipelineDefinitionID = val
+				m.PipelineDefinitionID = vals[0]
 			case "name":
 				m.Name = vals[0]
 			case "costTime":
@@ -1120,11 +1116,7 @@ func (m *PipelineDefinitionDeleteRequest) UnmarshalURLValues(prefix string, valu
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "pipelineDefinitionID":
-				val, err := strconv.ParseUint(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.PipelineDefinitionID = val
+				m.PipelineDefinitionID = vals[0]
 			}
 		}
 	}
@@ -1142,11 +1134,7 @@ func (m *PipelineDefinitionGetRequest) UnmarshalURLValues(prefix string, values 
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "pipelineDefinitionID":
-				val, err := strconv.ParseUint(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.PipelineDefinitionID = val
+				m.PipelineDefinitionID = vals[0]
 			}
 		}
 	}
