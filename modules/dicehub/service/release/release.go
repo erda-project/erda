@@ -278,6 +278,8 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 			UserID:           req.UserID,
 			ClusterName:      req.ClusterName,
 			Reference:        1,
+			CreatedAt:        time.Time{},
+			UpdatedAt:        time.Time{},
 		})
 	}
 
@@ -299,6 +301,8 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 		ProjectName:            req.ProjectName,
 		UserID:                 req.UserID,
 		ClusterName:            req.ClusterName,
+		CreatedAt:              time.Time{},
+		UpdatedAt:              time.Time{},
 	}
 	return projectRelease, appReleases, nil
 }
