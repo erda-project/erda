@@ -22,6 +22,16 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+type EnqueueConditionType string
+
+const (
+	EnqueueConditionSkipAlreadyRunningLimit EnqueueConditionType = "skip_already_running_limit"
+)
+
+func (e EnqueueConditionType) IsSkipAlreadyRunningLimit() bool {
+	return e == EnqueueConditionSkipAlreadyRunningLimit
+}
+
 const PipelinePreCheckResultContextKey = "precheck_result"
 
 type PipelineQueueMode string
