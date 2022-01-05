@@ -20,6 +20,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-analysis/grid"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-analysis/head"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-analysis/page"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-analysis/req_distribution"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-analysis/rps"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-analysis/table"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-analysis/table_filter"

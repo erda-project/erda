@@ -20,6 +20,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-analysis/grid"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-analysis/head"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-analysis/page"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-analysis/req_distribution"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-analysis/rps"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-analysis/table"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-analysis/table_filter"
