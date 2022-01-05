@@ -501,8 +501,57 @@ type ReleaseListResponse struct {
 // ReleaseListResponseData release 列表API实际响应数据
 type ReleaseListResponseData struct {
 	// release总数，用于分页
-	Total    int64                    `json:"total"`
-	Releases []ReleaseGetResponseData `json:"list"`
+	Total    int64         `json:"total"`
+	Releases []ReleaseData `json:"list"`
+}
+
+// ReleaseData release 列表API实际返回数据
+type ReleaseData struct {
+	ReleaseID              string              `json:"releaseId"`
+	ReleaseName            string              `json:"releaseName"`
+	Diceyml                string              `json:"diceyml"`
+	Desc                   string              `json:"desc,omitempty"`
+	Addon                  string              `json:"addon,omitempty"`
+	Changelog              string              `json:"changelog,omitempty"`
+	IsStable               bool                `json:"isStable"`
+	IsFormal               bool                `json:"isFormal"`
+	IsProjectRelease       bool                `json:"isProjectRelease"`
+	ApplicationReleaseList string              `json:"applicationReleaseList,omitempty"`
+	Resources              []ReleaseResource   `json:"resources,omitempty"`
+	Images                 []string            `json:"images,omitempty"`
+	ServiceImages          []*ServiceImagePair `json:"serviceImages"`
+	Labels                 map[string]string   `json:"labels,omitempty"`
+	Tags                   string              `json:"tags,omitempty"`
+	Version                string              `json:"version,omitempty"`
+
+	// CrossCluster 是否可以跨集群
+	CrossCluster bool `json:"crossCluster,omitempty"`
+
+	// 当前被部署次数
+	Reference int64 `json:"reference"`
+
+	// 企业标识
+	OrgID int64 `json:"orgId"`
+
+	// 项目Id
+	ProjectID int64 `json:"projectId"`
+
+	// 应用Id
+	ApplicationID int64 `json:"applicationId"`
+
+	// 项目Name
+	ProjectName string `json:"projectName"`
+
+	// 应用Name
+	ApplicationName string `json:"applicationName"`
+
+	// 操作用户Id
+	UserID string `json:"userId,omitempty"`
+
+	// 集群名称
+	ClusterName string    `json:"clusterName"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 // ReleaseNameListRequest releaseName列表请求

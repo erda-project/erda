@@ -609,7 +609,7 @@ func (r *Release) Get(orgID int64, releaseID string) (*apistructs.ReleaseGetResp
 		return nil, errors.Errorf("release not found")
 	}
 
-	return r.convertToReleaseResponse(release)
+	return r.convertToGetReleaseResponse(release)
 }
 
 // List 根据搜索条件进行搜索
@@ -629,11 +629,11 @@ func (r *Release) List(orgID int64, req *apistructs.ReleaseListRequest) (*apistr
 		return nil, err
 	}
 
-	releaseList := make([]apistructs.ReleaseGetResponseData, 0, len(releases))
+	releaseList := make([]apistructs.ReleaseData, 0, len(releases))
 	for _, v := range releases {
-		release, err := r.convertToReleaseResponse(&v)
+		release, err := r.convertToListReleaseResponse(&v)
 		if err != nil {
-			logrus.WithField("func", "*ReleaseList").Errorln("failed to convertToReleaseResponse")
+			logrus.WithField("func", "*ReleaseList").Errorln("failed to convertToListReleaseResponse")
 			continue
 		}
 		releaseList = append(releaseList, *release)
@@ -668,7 +668,7 @@ func (r *Release) GetIosPlist(orgID int64, releaseID string) (string, error) {
 		return "", errors.Errorf("release not found")
 	}
 
-	releaseData, err := r.convertToReleaseResponse(release)
+	releaseData, err := r.convertToListReleaseResponse(release)
 	if err != nil {
 		return "", err
 	}
@@ -946,7 +946,7 @@ func (r *Release) formalRelease(release *dbclient.Release) (err error) {
 }
 
 // release数据库结构转换为API返回所需结构
-func (r *Release) convertToReleaseResponse(release *dbclient.Release) (*apistructs.ReleaseGetResponseData, error) {
+func (r *Release) convertToGetReleaseResponse(release *dbclient.Release) (*apistructs.ReleaseGetResponseData, error) {
 	var labels map[string]string
 	err := json.Unmarshal([]byte(release.Labels), &labels)
 	if err != nil {
@@ -1015,6 +1015,50 @@ func (r *Release) convertToReleaseResponse(release *dbclient.Release) (*apistruc
 		return nil, err
 	}
 
+	return respData, nil
+}
+
+// release数据库结构转换为API返回列表所需结构
+func (r *Release) convertToListReleaseResponse(release *dbclient.Release) (*apistructs.ReleaseData, error) {
+	var labels map[string]string
+	err := json.Unmarshal([]byte(release.Labels), &labels)
+	if err != nil {
+		labels = make(map[string]string)
+	}
+
+	var resources []apistructs.ReleaseResource
+	err = json.Unmarshal([]byte(release.Resources), &resources)
+	if err != nil {
+		resources = make([]apistructs.ReleaseResource, 0)
+	}
+
+	respData := &apistructs.ReleaseData{
+		ReleaseID:              release.ReleaseID,
+		ReleaseName:            release.ReleaseName,
+		Diceyml:                release.Dice,
+		Desc:                   release.Desc,
+		Addon:                  release.Addon,
+		Changelog:              release.Changelog,
+		IsStable:               release.IsStable,
+		IsFormal:               release.IsFormal,
+		IsProjectRelease:       release.IsProjectRelease,
+		ApplicationReleaseList: release.ApplicationReleaseList,
+		Resources:              resources,
+		Labels:                 labels,
+		Tags:                   release.Tags,
+		Version:                release.Version,
+		CrossCluster:           release.CrossCluster,
+		Reference:              release.Reference,
+		OrgID:                  release.OrgID,
+		ProjectID:              release.ProjectID,
+		ApplicationID:          release.ApplicationID,
+		ProjectName:            release.ProjectName,
+		ApplicationName:        release.ApplicationName,
+		UserID:                 release.UserID,
+		ClusterName:            release.ClusterName,
+		CreatedAt:              release.CreatedAt,
+		UpdatedAt:              release.UpdatedAt,
+	}
 	return respData, nil
 }
 
