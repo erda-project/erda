@@ -125,7 +125,7 @@ func (client *DBClient) GetReleasesByParams(
 	isStable, isFormal, isProjectRelease *bool,
 	userID []string, version string, commitID, tags,
 	cluster string, crossCluster *bool, isVersion bool, crossClusterOrSpecifyCluster *string,
-	startTime, endTime time.Time, pageNum, pageSize int64,
+	startTime, endTime, pageNum, pageSize int64,
 	orderBy, order string) (int64, []Release, error) {
 
 	var releases []Release
@@ -191,11 +191,13 @@ func (client *DBClient) GetReleasesByParams(
 		db = db.Where("tags = ?", tags)
 	}
 
-	if !startTime.IsZero() {
-		db = db.Where("created_at > ?", startTime)
+	if startTime > 0 {
+		db = db.Where("created_at > ?", startTime/1000)
 	}
 
-	db = db.Where("created_at <= ?", endTime)
+	if endTime > 0 {
+		db = db.Where("created_at <= ?", endTime/1000)
+	}
 
 	if orderBy != "" {
 		db = db.Order(orderBy + " " + order)
@@ -210,7 +212,7 @@ func (client *DBClient) GetReleasesByParams(
 
 	// 获取匹配搜索结果总量
 	var total int64
-	if err := db.Where("created_at <= ?", endTime).Model(&Release{}).Count(&total).Error; err != nil {
+	if err := db.Model(&Release{}).Count(&total).Error; err != nil {
 		return 0, nil, err
 	}
 

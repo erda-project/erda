@@ -139,10 +139,6 @@ type ReleaseUploadRequest struct {
 	ClusterName string `json:"clusterName,omitempty"`
 }
 
-type ParseReleaseFileRequest struct {
-	DiceFileID string `json:"diceFileID,omitempty"`
-}
-
 type ReleaseParseVersionResponse struct {
 	Header
 	Data ParseReleaseFileResponseData `json:"data"`
