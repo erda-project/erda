@@ -106,6 +106,8 @@ const (
 	// K8SLabelPrefix K8S label prefix
 	// Both node and pod labels use this prefix
 	K8SLabelPrefix = "dice/"
+
+	BIGDATA_AFFINITY_LABELS = "__bigdata_affinity_labels"
 )
 
 // LabelPipelineFunc Types of all filter functions in labelpipeline

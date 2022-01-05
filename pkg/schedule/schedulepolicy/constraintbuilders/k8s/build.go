@@ -27,7 +27,8 @@ import (
 
 const (
 	// e.g. dice/org=1
-	labelPrefix = labelconfig.K8SLabelPrefix
+	labelPrefix     = labelconfig.K8SLabelPrefix
+	labelBigdataJob = "bigdata-job"
 )
 
 // Constraints k8s constraints
@@ -264,7 +265,7 @@ func buildBigdataJobAffinity(s *apistructs.ScheduleInfo2, cons *Constraints, ser
 			requiredTerms.MatchExpressions = append(requiredTerms.MatchExpressions, locationTerm)
 			requiredTerms.MatchExpressions = append(requiredTerms.MatchExpressions, orgTerm...)
 			requiredTerms.MatchExpressions = append(requiredTerms.MatchExpressions, workspaceTerm)
-			requiredTerms.MatchExpressions = append(requiredTerms.MatchExpressions, bigdataJobTerm)
+			requiredTerms.MatchExpressions = append(requiredTerms.MatchExpressions, bigdataJobTerm...)
 			*terms = append(*terms, requiredTerms)
 		}
 		if !s.HasWorkSpace {
@@ -272,7 +273,7 @@ func buildBigdataJobAffinity(s *apistructs.ScheduleInfo2, cons *Constraints, ser
 			requiredTerms.MatchExpressions = append(requiredTerms.MatchExpressions, isUnlockTerm)
 			requiredTerms.MatchExpressions = append(requiredTerms.MatchExpressions, locationTerm)
 			requiredTerms.MatchExpressions = append(requiredTerms.MatchExpressions, orgTerm...)
-			requiredTerms.MatchExpressions = append(requiredTerms.MatchExpressions, bigdataJobTerm)
+			requiredTerms.MatchExpressions = append(requiredTerms.MatchExpressions, bigdataJobTerm...)
 			*terms = append(*terms, requiredTerms)
 		}
 	}
@@ -329,8 +330,15 @@ func buildJob(s *apistructs.ScheduleInfo2) k8s.NodeSelectorRequirement {
 	return buildAux("job", s.Job)
 }
 
-func buildBigdataJob(s *apistructs.ScheduleInfo2) k8s.NodeSelectorRequirement {
-	return buildAux("bigdata-job", s.BigData)
+func buildBigdataJob(s *apistructs.ScheduleInfo2) []k8s.NodeSelectorRequirement {
+	if len(s.BigDataLabels) == 0 {
+		return []k8s.NodeSelectorRequirement{buildAux(labelBigdataJob, s.BigData)}
+	}
+	selectors := make([]k8s.NodeSelectorRequirement, 0)
+	for _, label := range s.BigDataLabels {
+		selectors = append(selectors, buildAux(label, s.BigData))
+	}
+	return selectors
 }
 
 func buildPackJob(s *apistructs.ScheduleInfo2) k8s.NodeSelectorRequirement {

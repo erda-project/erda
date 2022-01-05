@@ -128,6 +128,9 @@ type ScheduleInfo2 struct {
 	PreferStateless bool
 
 	BigData bool
+	// default bigdata affinity is dice/bigdata-job, if user define custom BigDataLabels
+	// pipeline will use BigDataLabels as affinity exists
+	BigDataLabels []string
 
 	// Project label
 	// =DEPRECATED= k8s 中忽略该字段
