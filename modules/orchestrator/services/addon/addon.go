@@ -38,6 +38,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/sexp"
@@ -2186,14 +2187,19 @@ func (a *Addon) ListExtension(extensionType string) (*[]map[string]interface{}, 
 
 // ListCustomAddon 包装api/extensions接口，返回第三方addon
 func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
+	locale := a.bdl.GetLocale(i18n.GetGoroutineBindLang())
+	basic := locale.Get("basicPlan")
+	professional := locale.Get("professionalPlan")
+
 	createableAddons := []string{"api-gateway", "mysql", "canal", "monitor"}
 	createableAddonVersion := map[string]string{"api-gateway": "3.0.0", "mysql": "5.7.29", "canal": "1.1.0", "monitor": "3.6"}
 	createableAddonPlan := map[string][]map[string]string{
-		"api-gateway": {{"label": "基础版", "value": "api-gateway:basic"}},
-		"mysql":       {{"label": "基础版", "value": "mysql:basic"}},
-		"canal":       {{"label": "基础版", "value": "canal:basic"}},
-		"monitor":     {{"label": "专业版", "value": "monitor:professional"}},
+		"api-gateway": {{"label": basic, "value": "api-gateway:basic"}},
+		"mysql":       {{"label": basic, "value": "mysql:basic"}},
+		"canal":       {{"label": basic, "value": "canal:basic"}},
+		"monitor":     {{"label": professional, "value": "monitor:professional"}},
 	}
+
 	// 构建请求参数，请求extension
 	req := apistructs.ExtensionQueryRequest{
 		All:  "true",
