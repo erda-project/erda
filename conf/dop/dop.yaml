@@ -39,7 +39,6 @@ erda.core.pipeline.cms-client:
 grpc-client@erda.core.pipeline.definition:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
 erda.core.pipeline.definition-client:
-erda.core.pipeline.definition-process-client:
 
 grpc-client@erda.cmp.dashboard.resource:
   addr: "${CMP_GRPC_ADDR:cmp:9029}"

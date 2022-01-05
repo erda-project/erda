@@ -34,7 +34,6 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/providers/contribution"
 	_ "github.com/erda-project/erda/modules/dop/providers/project/home"
 	_ "github.com/erda-project/erda/modules/dop/providers/taskerror"
-	_ "github.com/erda-project/erda/modules/pipeline/providers/definition_client"
 
 	// components
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components"

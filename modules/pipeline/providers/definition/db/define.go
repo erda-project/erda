@@ -17,26 +17,67 @@ package db
 import (
 	"time"
 
-	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 )
 
 type PipelineDefinition struct {
-	ID              uint64                    `json:"id" xorm:"pk autoincr"`
-	PipelineSource  apistructs.PipelineSource `json:"pipelineSource"`
-	PipelineYmlName string                    `json:"pipelineYmlName"`
-	PipelineYml     string                    `json:"pipelineYml"`
-	Extra           PipelineDefinitionExtra   `json:"extra" xorm:"json"`
-	VersionLock     uint64                    `json:"versionLock" xorm:"version_lock version"`
-
-	TimeCreated *time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
-	TimeUpdated *time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
-}
-
-type PipelineDefinitionExtra struct {
-	SnippetConfig *apistructs.SnippetConfigOrder      `json:"snippetConfig" xorm:"json:"`
-	CreateRequest *apistructs.PipelineCreateRequestV2 `json:"createRequest" xorm:"json:"`
+	ID                        uint64     `json:"id" xorm:"pk autoincr"`
+	Name                      string     `json:"name"`
+	CostTime                  uint64     `json:"costTime"`
+	Creator                   string     `json:"creator"`
+	Executor                  string     `json:"executor"`
+	SoftDeletedAt             uint64     `json:"softDeletedAt"`
+	PipelineSourceId          string     `json:"pipelineSourceId"`
+	PipelineDefinitionExtraId string     `json:"pipelineDefinitionExtraId"`
+	Category                  string     `json:"category"`
+	StartedAt                 *time.Time `json:"startedAt,omitempty" xorm:"started_at"`
+	EndedAt                   *time.Time `json:"endedAt,omitempty" xorm:"ended_at"`
+	TimeCreated               *time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
+	TimeUpdated               *time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
 }
 
 func (PipelineDefinition) TableName() string {
 	return "pipeline_definitions"
+}
+
+func (client *Client) CreatePipelineDefinition(pipelineDefinition *PipelineDefinition, ops ...mysqlxorm.SessionOption) (err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err = session.InsertOne(pipelineDefinition)
+	return err
+}
+
+func (client *Client) UpdatePipelineDefinition(id uint64, pipelineDefinition *PipelineDefinition, ops ...mysqlxorm.SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.ID(id).AllCols().Update(pipelineDefinition)
+	return err
+}
+
+func (client *Client) DeletePipelineDefinition(id uint64, ops ...mysqlxorm.SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	_, err := session.ID(id).Delete(new(PipelineDefinition))
+	return err
+}
+
+func (client *Client) GetPipelineDefinition(id uint64, ops ...mysqlxorm.SessionOption) (*PipelineDefinition, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var pipelineDefinition PipelineDefinition
+	var has bool
+	var err error
+	if has, _, err = session.Where("id = ?", id).GetFirst(&pipelineDefinition).GetResult(); err != nil {
+		return nil, err
+	}
+
+	if !has {
+		return nil, nil
+	}
+
+	return &pipelineDefinition, nil
 }

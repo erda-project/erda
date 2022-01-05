@@ -3,58 +3,121 @@ syntax = "proto3";
 package erda.core.pipeline.definition;
 
 import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "common/identity.proto";
+import "common/commit.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb";
 
 service DefinitionService {
-  rpc Process (PipelineDefinitionProcessRequest) returns (PipelineDefinitionProcessResponse) {
+  rpc Create (PipelineDefinitionCreateRequest) returns (PipelineDefinitionCreateResponse) {
     option (google.api.http) = {
-      post: "/api/pipeline-definitions/actions/process",
+      post: "/api/pipeline-definitions",
     };
   }
-
-  rpc Version (PipelineDefinitionProcessVersionRequest) returns (PipelineDefinitionProcessVersionResponse) {
+  rpc Update (PipelineDefinitionUpdateRequest) returns (PipelineDefinitionUpdateResponse) {
     option (google.api.http) = {
-      get: "/api/pipeline-definitions/actions/version",
+      put: "/api/pipeline-definitions/{pipelineDefinitionID}",
+    };
+  }
+  rpc Delete (PipelineDefinitionDeleteRequest) returns (PipelineDefinitionDeleteResponse) {
+    option (google.api.http) = {
+      delete: "/api/pipeline-definitions/{pipelineDefinitionID}",
+    };
+  }
+  rpc Get (PipelineDefinitionGetRequest) returns (PipelineDefinitionGetResponse) {
+    option (google.api.http) = {
+      get: "/api/pipeline-definitions/{pipelineDefinitionID}",
+    };
+  }
+  rpc List (PipelineDefinitionListRequest) returns (PipelineDefinitionListResponse) {
+    option (google.api.http) = {
+      get: "/api/pipeline-definitions",
     };
   }
 }
 
-message PipelineDefinitionProcessRequest {
-    // pipeline yml source
-    string pipelineSource = 1;
-    // pipeline yml name
-    string pipelineYmlName = 2;
-    // pipeline yml content
-    string pipelineYml = 3;
-    // snippetConfig means definition can be quoted by snippet
-    google.protobuf.Value snippetConfig = 4;
-    // versionLock means db optimistic lock
-    uint64 versionLock = 5;
-    // isDelete
-    // - if = true send With pipelineSource and pipelineYmlName to request
-    bool isDelete = 6;
-    // pipelineCreateRequest means definition can autoRun
-    google.protobuf.Value pipelineCreateRequest = 7;
+message PipelineDefinition {
+  string ID = 1 [json_name = "id"];
+  string name = 2;
+  string creator = 3;
+  string category = 4;
+  uint64 costTime = 5;
+  string executor = 6;
+  PipelineDefinitionExtra extra = 7;
+  google.protobuf.Timestamp startedAt = 8;
+  google.protobuf.Timestamp endedAt = 9;
+  google.protobuf.Timestamp timeCreated = 10;
+  google.protobuf.Timestamp timeUpdated = 11;
+  int64 softDeletedAt = 12;
 }
 
-message PipelineDefinitionProcessResponse {
-    uint64 id = 1;
-    string pipelineSource = 2;
-    string pipelineYmlName = 3;
-    string pipelineYml = 4;
-    uint64 versionLock = 5;
+message PipelineDefinitionExtra {
+  string ID = 1 [json_name = "id"];
+  string extra = 2;
+  google.protobuf.Timestamp timeCreated = 3;
+  google.protobuf.Timestamp timeUpdated = 4;
 }
 
-message PipelineDefinitionProcessVersionRequest {
-    // pipeline yml source
-    string pipelineSource = 1;
-    // pipeline yml name
-    string pipelineYmlName = 2;
+
+// create
+message PipelineDefinitionCreateRequest {
+  string ID = 1 [json_name = "id"];
+  string name = 2;
+  string creator = 3;
+  string pipelineSourceId = 4;
+  string category = 5;
+  PipelineDefinitionExtra extra = 6;
 }
 
-message PipelineDefinitionProcessVersionResponse {
-    uint64 versionLock = 1;
+message PipelineDefinitionCreateResponse {
+  PipelineDefinition pipelineDefinition = 1;
 }
+
+// update
+message PipelineDefinitionUpdateRequest {
+  uint64 pipelineDefinitionID = 9;
+  string name = 1;
+  uint64 costTime = 2;
+  string executor = 3;
+  string pipelineSourceId = 4;
+  string category = 5;
+  PipelineDefinitionExtra extra = 6;
+  google.protobuf.Timestamp startedAt = 7;
+  google.protobuf.Timestamp endedAt = 8;
+}
+
+message PipelineDefinitionUpdateResponse {
+  PipelineDefinition pipelineDefinition = 1;
+}
+
+// delete
+message PipelineDefinitionDeleteRequest {
+  uint64 pipelineDefinitionID = 1;
+}
+
+message PipelineDefinitionDeleteResponse {}
+
+// get
+message PipelineDefinitionGetRequest {
+  uint64 pipelineDefinitionID = 1;
+}
+
+message PipelineDefinitionGetResponse {
+  PipelineDefinition pipelineDefinition = 1;
+}
+
+// list
+message PipelineDefinitionListRequest {
+  int64 pageSize = 1;
+  int64 pageNo = 2;
+}
+
+message PipelineDefinitionListResponse {
+  int64 total = 1;
+  repeated PipelineDefinition data = 2;
+}
+
 
