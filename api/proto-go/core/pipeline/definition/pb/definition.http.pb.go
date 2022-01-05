@@ -20,7 +20,6 @@ package pb
 import (
 	context "context"
 	http1 "net/http"
-	strconv "strconv"
 	strings "strings"
 
 	transport "github.com/erda-project/erda-infra/pkg/transport"
@@ -153,10 +152,6 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 					for k, val := range vars {
 						switch k {
 						case "pipelineDefinitionID":
-							val, err := strconv.ParseUint(val, 10, 64)
-							if err != nil {
-								return nil, err
-							}
 							in.PipelineDefinitionID = val
 						}
 					}
@@ -216,10 +211,6 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 					for k, val := range vars {
 						switch k {
 						case "pipelineDefinitionID":
-							val, err := strconv.ParseUint(val, 10, 64)
-							if err != nil {
-								return nil, err
-							}
 							in.PipelineDefinitionID = val
 						}
 					}
@@ -279,10 +270,6 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 					for k, val := range vars {
 						switch k {
 						case "pipelineDefinitionID":
-							val, err := strconv.ParseUint(val, 10, 64)
-							if err != nil {
-								return nil, err
-							}
 							in.PipelineDefinitionID = val
 						}
 					}

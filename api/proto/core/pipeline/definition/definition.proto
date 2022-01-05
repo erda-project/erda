@@ -78,7 +78,7 @@ message PipelineDefinitionCreateResponse {
 
 // update
 message PipelineDefinitionUpdateRequest {
-  uint64 pipelineDefinitionID = 9;
+  string pipelineDefinitionID = 9;
   string name = 1;
   uint64 costTime = 2;
   string executor = 3;
@@ -95,14 +95,14 @@ message PipelineDefinitionUpdateResponse {
 
 // delete
 message PipelineDefinitionDeleteRequest {
-  uint64 pipelineDefinitionID = 1;
+  string pipelineDefinitionID = 1;
 }
 
 message PipelineDefinitionDeleteResponse {}
 
 // get
 message PipelineDefinitionGetRequest {
-  uint64 pipelineDefinitionID = 1;
+  string pipelineDefinitionID = 1;
 }
 
 message PipelineDefinitionGetResponse {

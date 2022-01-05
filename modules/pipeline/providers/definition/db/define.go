@@ -21,7 +21,7 @@ import (
 )
 
 type PipelineDefinition struct {
-	ID                        uint64     `json:"id" xorm:"pk autoincr"`
+	ID                        string     `json:"id" xorm:"pk autoincr"`
 	Name                      string     `json:"name"`
 	CostTime                  uint64     `json:"costTime"`
 	Creator                   string     `json:"creator"`
@@ -48,7 +48,7 @@ func (client *Client) CreatePipelineDefinition(pipelineDefinition *PipelineDefin
 	return err
 }
 
-func (client *Client) UpdatePipelineDefinition(id uint64, pipelineDefinition *PipelineDefinition, ops ...mysqlxorm.SessionOption) error {
+func (client *Client) UpdatePipelineDefinition(id string, pipelineDefinition *PipelineDefinition, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -56,22 +56,22 @@ func (client *Client) UpdatePipelineDefinition(id uint64, pipelineDefinition *Pi
 	return err
 }
 
-func (client *Client) DeletePipelineDefinition(id uint64, ops ...mysqlxorm.SessionOption) error {
+func (client *Client) DeletePipelineDefinition(id string, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	_, err := session.ID(id).Delete(new(PipelineDefinition))
+	_, err := session.Table(new(PipelineDefinition)).ID(id).Update(map[string]interface{}{"soft_deleted_at": time.Now().UnixNano() / 1e6})
 	return err
 }
 
-func (client *Client) GetPipelineDefinition(id uint64, ops ...mysqlxorm.SessionOption) (*PipelineDefinition, error) {
+func (client *Client) GetPipelineDefinition(id string, ops ...mysqlxorm.SessionOption) (*PipelineDefinition, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
 	var pipelineDefinition PipelineDefinition
 	var has bool
 	var err error
-	if has, _, err = session.Where("id = ?", id).GetFirst(&pipelineDefinition).GetResult(); err != nil {
+	if has, _, err = session.Where("id = ? and soft_deleted_at = 0", id).GetFirst(&pipelineDefinition).GetResult(); err != nil {
 		return nil, err
 	}
 
