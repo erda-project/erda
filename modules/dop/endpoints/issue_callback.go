@@ -66,6 +66,7 @@ func (e *Endpoints) processIssueEvent(req apistructs.IssueEvent) error {
 	if err != nil {
 		return err
 	}
+	linkParams := req.GenEventParams(req.Env, conf.UIPublicURL())
 
 	// send to specific recipient
 	if err := e.sendIssueEventToSpecificRecipient(req); err != nil {
@@ -78,12 +79,13 @@ func (e *Endpoints) processIssueEvent(req apistructs.IssueEvent) error {
 		}
 		notifyItem := notifyDetail.NotifyItems[0]
 		params := map[string]string{
-			"issue_title": req.Content.Title,
-			"content":     req.Content.Content,
-			"atUserIDs":   req.Content.AtUserIDs,
-			"orgName":     req.Content.Params["orgName"],
-			"projectName": req.Content.Params["projectName"],
-			"operator":    req.Content.Params["operator"],
+			"issue_title":    req.Content.Title,
+			"content":        req.Content.Content,
+			"atUserIDs":      req.Content.AtUserIDs,
+			"orgName":        req.Content.Params["orgName"],
+			"projectName":    req.Content.Params["projectName"],
+			"operator":       req.Content.Params["operator"],
+			"issueEmailLink": linkParams["issueEmailLink"],
 		}
 		marshal, _ := json.Marshal(params)
 		logrus.Debugf("issue params :%s", string(marshal))
