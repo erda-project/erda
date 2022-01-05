@@ -22,6 +22,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -78,12 +79,16 @@ func (r *ComponentReleaseTable) Render(ctx context.Context, component *cptype.Co
 			return errors.Errorf("%s, %v", r.sdk.I18n("releaseDeleteFailed"), err)
 		}
 	}
+	logrus.Debugf("[DEBUG] start render table")
 	if err := r.RenderTable(gs); err != nil {
 		return err
 	}
+	logrus.Debugf("[DEBUG] end render table")
+	logrus.Debugf("[DEBUG] start encode url query")
 	if err := r.EncodeURLQuery(); err != nil {
 		return errors.Errorf("failed to encode url query for release table component, %v", err)
 	}
+	logrus.Debugf("[DEBUG] end encode url query")
 	r.SetComponentValue()
 	r.Transfer(component)
 	return nil
@@ -96,16 +101,16 @@ func (r *ComponentReleaseTable) InitComponent(ctx context.Context) {
 	r.bdl = bdl
 }
 
-func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (r *ComponentReleaseTable) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(component.State)
+	data, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &state); err != nil {
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	r.State = state
@@ -113,23 +118,23 @@ func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) e
 }
 
 func (r *ComponentReleaseTable) DecodeURLQuery() error {
-	urlQuery, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
+	query, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
+	decode, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
-	queryData := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &queryData); err != nil {
+	urlQuery := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &urlQuery); err != nil {
 		return err
 	}
-	r.State.PageNo = int64(queryData["pageNo"].(float64))
-	r.State.PageSize = int64(queryData["pageSize"].(float64))
-	sorter := queryData["sorterData"].(map[string]interface{})
-	r.State.Sorter.Field, _ = sorter["field"].(string)
-	r.State.Sorter.Order, _ = sorter["order"].(string)
+	r.State.PageNo = int64(urlQuery["pageNo"].(float64))
+	r.State.PageSize = int64(urlQuery["pageSize"].(float64))
+	sorterData := urlQuery["sorterData"].(map[string]interface{})
+	r.State.Sorter.Field, _ = sorterData["field"].(string)
+	r.State.Sorter.Order, _ = sorterData["order"].(string)
 	return nil
 }
 
@@ -152,7 +157,9 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 	userID := r.sdk.Identity.UserID
 	orgID := r.sdk.Identity.OrgID
 	projectID := r.State.ProjectID
+	logrus.Debugf("[DEBUG] start check read access")
 	hasReadAccess, err := access.HasReadAccess(r.bdl, userID, uint64(projectID))
+	logrus.Debugf("[DEBUG] end check read access")
 	if err != nil {
 		return errors.Errorf("failed to check access, %v", err)
 	}
@@ -182,6 +189,7 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		orderBy = "created_at"
 	}
 
+	logrus.Debugf("[DEBUG] start list releases")
 	releaseResp, err := r.bdl.ListReleases(apistructs.ReleaseListRequest{
 		Branch:           r.State.FilterValues.BranchID,
 		IsStable:         &isStable,
@@ -199,13 +207,16 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		OrderBy:          orderBy,
 		Order:            order,
 	})
+	logrus.Debugf("[DEBUG] end list releases")
 	if err != nil {
 		return errors.Errorf("failed to list releases, %v", err)
 	}
 
 	r.State.Total = releaseResp.Total
 
+	logrus.Debugf("[DEBUG] start get org")
 	org, err := r.bdl.GetOrg(orgID)
+	logrus.Debugf("[DEBUG] end get org")
 	if err != nil {
 		return errors.Errorf("failed to get org, %v", err)
 	}
@@ -213,7 +224,9 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 	// pre check access
 	hasWriteAccess := true
 	if r.State.IsProjectRelease {
+		logrus.Debugf("[DEBUG] start check write access")
 		hasWriteAccess, err = access.HasWriteAccess(r.bdl, userID, uint64(projectID), true, 0)
+		logrus.Debugf("[DEBUG] end check write access")
 		if err != nil {
 			return errors.Errorf("failed to check access, %v", err)
 		}
@@ -221,6 +234,7 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 	existedUser := make(map[string]struct{})
 	var userIDs []string
 	var list []Item
+	logrus.Debugf("[DEBUG] start release loop")
 	for _, release := range releaseResp.Releases {
 		editOperation := Operation{
 			Command: Command{
@@ -305,6 +319,8 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 
 		list = append(list, item)
 	}
+	logrus.Debugf("[DEBUG] end release loop")
+
 	r.Data.List = list
 
 	if gs == nil {
@@ -312,7 +328,9 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		gs = &gsd
 	}
 	r.sdk.GlobalState = gs
+	logrus.Debugf("[DEBUG] start set userIDs")
 	r.sdk.SetUserIDs(userIDs)
+	logrus.Debugf("[DEBUG] end set userIDs")
 	return nil
 }
 
@@ -385,6 +403,7 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	columns[len(columns)-1].Align = "right"
 
 	r.Props = Props{
+		RequestIgnore:   []string{"data"},
 		BatchOperations: batchOperations,
 		Selectable:      !r.State.IsFormal,
 		Columns:         columns,
@@ -393,12 +412,12 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	}
 }
 
-func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
-	c.Props = cputil.MustConvertProps(r.Props)
-	c.Data = map[string]interface{}{
+func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
+	component.Props = cputil.MustConvertProps(r.Props)
+	component.Data = map[string]interface{}{
 		"list": r.Data.List,
 	}
-	c.State = map[string]interface{}{
+	component.State = map[string]interface{}{
 		"releaseTable__urlQuery": r.State.ReleaseTableURLQuery,
 		"pageNo":                 r.State.PageNo,
 		"pageSize":               r.State.PageSize,
@@ -412,7 +431,7 @@ func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
 		"versionValues":          r.State.VersionValues,
 		"filterValues":           r.State.FilterValues,
 	}
-	c.Operations = r.Operations
+	component.Operations = r.Operations
 }
 
 func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {

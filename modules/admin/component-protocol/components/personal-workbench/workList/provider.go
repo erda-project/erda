@@ -288,7 +288,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		return
 	}
 
-	projQueries, err := l.wbSvc.GetProjIssueQueries(projIDs, 0)
+	projQueries, err := l.wbSvc.GetProjIssueQueries(l.identity.UserID, projIDs, 0)
 	if err != nil {
 		logrus.Errorf("get projects issue queries failed, ids: %v, error: %v", projIDs, err)
 		return
@@ -318,7 +318,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		}
 		target := ""
 		switch p.ProjectDTO.Type {
-		case common.DevOpsProject:
+		case common.DevOpsProject, common.DefaultProject:
 			target = "project"
 		case common.MspProject:
 			target = "mspServiceList"
@@ -339,9 +339,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 					WithSkipRender(true).
 					WithServerDataPtr(list.OpItemClickGotoServerData{
 						OpItemBasicServerData: list.OpItemBasicServerData{
-							Params: map[string]interface{}{
-								common.OpKeyProjectID: p.ProjectDTO.ID,
-							},
+							Params: params,
 							Target: target,
 						},
 					}).

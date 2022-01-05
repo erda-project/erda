@@ -1,0 +1,48 @@
+version: 1.0
+scenario: deploy-center
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - list
+    list:
+      filter:
+        filterContainer
+    filterContainer:
+      left:
+        inputFilter
+      right:
+        advanceFilter
+
+components:
+  page:
+    type: Container
+  topHead:
+    type: Container
+    props:
+      isTopHead: true
+  head:
+    type: LRContainer
+  filter:
+    type: ContractiveFilter
+  createReportButton:
+    type: Button
+  table:
+    type: Table
+
+rendering:
+  filter:
+    - name: table
+      state:
+        - name: "values"
+          value: "{{ filter.values }}"
+
+  __DefaultRendering__:
+    - name: createReportButton
+    - name: filter
+    - name: table
+      state:
+        - name: "values"
+          value: "{{ filter.values }}"
+

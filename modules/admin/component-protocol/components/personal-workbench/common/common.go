@@ -48,8 +48,9 @@ const (
 	AppProjectServiceStatus = "error"
 	UnreadMsgStatus         = "error"
 
-	MspProject    = "MSP"
-	DevOpsProject = "DevOps"
+	DefaultProject = ""
+	MspProject     = "MSP"
+	DevOpsProject  = "DevOps"
 
 	// OpKeyProjectID  operation related keys
 	OpKeyProjectID           = "projectId"

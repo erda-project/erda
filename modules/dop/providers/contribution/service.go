@@ -49,6 +49,10 @@ func (s *contributionService) GetPersonalContribution(ctx context.Context, req *
 		},
 	}
 	pivot := findMaxSlice([]uint64{rank.IssueScore, rank.CommitScore, rank.QualityScore})
+	// default max value
+	if pivot == 0 {
+		pivot = 1
+	}
 	indicator := &pb.Indicator{
 		Data: []*pb.IndicatorData{
 			{Data: []uint64{data.Data.Events, data.Data.Commits, data.Data.Cases}},
@@ -79,12 +83,13 @@ func (s *contributionService) GetActiveRank(ctx context.Context, req *pb.GetActi
 		return nil, fmt.Errorf("not login")
 	}
 
-	list, err := s.db.GetMemberActiveRankList(req.OrgID)
+	list, err := s.db.GetMemberActiveRankList(req.OrgID, 10)
 	if err != nil {
 		return nil, err
 	}
 	var res []*pb.UserRank
 	var userIDs []string
+	var meExist bool
 	for i, v := range list {
 		res = append(res, &pb.UserRank{
 			Id:    v.UserID,
@@ -92,6 +97,23 @@ func (s *contributionService) GetActiveRank(ctx context.Context, req *pb.GetActi
 			Value: v.TotalScore,
 		})
 		userIDs = append(userIDs, v.UserID)
+		if !meExist && v.UserID == userID {
+			meExist = true
+		}
 	}
+
+	if len(list) > 0 && !meExist {
+		rankInfo, rank, err := s.db.FindMemberRank(req.OrgID, userID)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, &pb.UserRank{
+			Id:    userID,
+			Rank:  rank,
+			Value: rankInfo.TotalScore,
+		})
+		userIDs = append(userIDs, userID)
+	}
+
 	return &pb.GetActiveRankRequestResponse{Data: res, UserIDs: userIDs}, nil
 }
