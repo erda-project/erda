@@ -53,6 +53,7 @@ type TestFileExtra struct {
 	ManualTestFileExtraInfo       *ManualTestFileExtraInfo       `json:"manualTestExtraFileInfo,omitempty"`
 	AutotestSpaceFileExtraInfo    *AutoTestSpaceFileExtraInfo    `json:"autotestSpaceFileExtraInfo,omitempty"`
 	AutotestSceneSetFileExtraInfo *AutoTestSceneSetFileExtraInfo `json:"autotestSceneSetFileExtraInfo,omitempty"`
+	ProjectTemplateFileExtraInfo  *ProjectTemplateFileExtraInfo  `json:"projectTemplateFileExtraInfo,omitempty"`
 }
 
 const TestFileRecordErrorMaxLength = 2048
@@ -74,6 +75,11 @@ type AutoTestSceneSetFileExtraInfo struct {
 	ImportRequest *AutoTestSceneSetImportRequest `json:"importRequest"`
 }
 
+type ProjectTemplateFileExtraInfo struct {
+	ExportRequest *ExportProjectTemplateRequest `json:"exportRequest,omitempty"`
+	ImportRequest *ImportProjectTemplateRequest `json:"importRequest,omitempty"`
+}
+
 type FileRecordState string
 
 type FileActionType string
@@ -90,6 +96,8 @@ const (
 	FileSpaceActionTypeImport    FileActionType  = "spaceImport"
 	FileSceneSetActionTypeExport FileActionType  = "sceneSetExport"
 	FileSceneSetActionTypeImport FileActionType  = "sceneSetImport"
+	FileProjectTemplateExport    FileActionType  = "projectTemplateExport"
+	FileProjectTemplateImport    FileActionType  = "projectTemplateImport"
 )
 
 type ListTestFileRecordsRequest struct {

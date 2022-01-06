@@ -26,6 +26,14 @@
   scope: org
   resource: project
   action: CREATE
+- role: Manager,Support
+  scope: org
+  resource: project-template
+  action: GET
+- role: Manager
+  scope: org
+  resource: project-template
+  action: CREATE
 - role: Manager
   scope: org
   resource: project

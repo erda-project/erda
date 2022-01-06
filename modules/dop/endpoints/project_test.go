@@ -15,9 +15,22 @@
 package endpoints
 
 import (
+	"context"
+	"net/http"
+	"net/url"
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
+	"github.com/gorilla/schema"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/modules/dop/bdl"
+	"github.com/erda-project/erda/modules/dop/services/project"
+
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pkg/user"
 
 	"github.com/erda-project/erda/apistructs"
 )
@@ -41,4 +54,52 @@ func TestAddOnsFilterIn(t *testing.T) {
 		return addOn.PlatformServiceType == 0
 	})
 	assert.Equal(t, 1, len(newAddOns))
+}
+
+func TestExportProjectTemplate(t *testing.T) {
+	pm1 := monkey.Patch(user.GetIdentityInfo, func(r *http.Request) (apistructs.IdentityInfo, error) {
+		return apistructs.IdentityInfo{UserID: "1"}, nil
+	})
+	defer pm1.Unpatch()
+
+	proSvc := &project.Project{}
+	queryStringDecoder := schema.NewDecoder()
+	queryStringDecoder.IgnoreUnknownKeys(true)
+	ep := Endpoints{
+		bdl:                bdl.Bdl,
+		project:            proSvc,
+		queryStringDecoder: queryStringDecoder,
+	}
+	pm3 := monkey.PatchInstanceMethod(reflect.TypeOf(ep.bdl), "CheckPermission", func(b *bundle.Bundle, req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+		return nil, errors.Errorf("invalid permission")
+	})
+	defer pm3.Unpatch()
+
+	r := http.Request{URL: &url.URL{}}
+	_, err := ep.ExportProjectTemplate(context.Background(), &r, map[string]string{})
+	assert.NoError(t, err)
+}
+
+func TestImportProjectTemplate(t *testing.T) {
+	pm1 := monkey.Patch(user.GetIdentityInfo, func(r *http.Request) (apistructs.IdentityInfo, error) {
+		return apistructs.IdentityInfo{UserID: "1"}, nil
+	})
+	defer pm1.Unpatch()
+
+	proSvc := &project.Project{}
+	queryStringDecoder := schema.NewDecoder()
+	queryStringDecoder.IgnoreUnknownKeys(true)
+	ep := Endpoints{
+		bdl:                bdl.Bdl,
+		project:            proSvc,
+		queryStringDecoder: queryStringDecoder,
+	}
+	pm3 := monkey.PatchInstanceMethod(reflect.TypeOf(ep.bdl), "CheckPermission", func(b *bundle.Bundle, req *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+		return nil, errors.Errorf("invalid permission")
+	})
+	defer pm3.Unpatch()
+
+	r := http.Request{URL: &url.URL{}}
+	_, err := ep.ImportProjectTemplate(context.Background(), &r, map[string]string{})
+	assert.NoError(t, err)
 }

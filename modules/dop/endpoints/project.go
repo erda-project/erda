@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -538,4 +539,130 @@ func (e *Endpoints) setProjectResource(projectDTOs []apistructs.ProjectDTO) erro
 		}
 	}
 	return nil
+}
+
+func (e *Endpoints) ExportProjectTemplate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var exportReq apistructs.ExportProjectTemplateRequest
+	if err := e.queryStringDecoder.Decode(&exportReq, r.URL.Query()); err != nil {
+		return apierrors.ErrExportProjectTemplate.InvalidParameter(err).ToResp(), nil
+	}
+	// check permission
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrExportProjectTemplate.NotLogin().ToResp(), nil
+	}
+	exportReq.IdentityInfo = identityInfo
+	if exportReq.OrgID == 0 || exportReq.ProjectID == 0 {
+		return apierrors.ErrExportProjectTemplate.InvalidParameter(fmt.Errorf("orgID and projectID can't be empty")).ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.OrgScope,
+			ScopeID:  uint64(exportReq.OrgID),
+			Resource: apistructs.ProjectTemplateResource,
+			Action:   apistructs.GetAction,
+		})
+		if err != nil {
+			return apierrors.ErrExportProjectTemplate.InternalError(err).ToResp(), nil
+		}
+		if !access.Access {
+			return apierrors.ErrExportProjectTemplate.AccessDenied().ToResp(), nil
+		}
+	}
+	project, err := e.bdl.GetProject(exportReq.ProjectID)
+	if err != nil {
+		return apierrors.ErrExportProjectTemplate.InternalError(err).ToResp(), nil
+	}
+	if project.OrgID != uint64(exportReq.OrgID) {
+		return apierrors.ErrImportProjectTemplate.InvalidParameter("projectID").ToResp(), nil
+	}
+	exportReq.ProjectName = project.Name
+
+	fileID, err := e.project.ExportTemplate(exportReq)
+	if err != nil {
+		return apierrors.ErrExportProjectTemplate.InternalError(err).ToResp(), nil
+	}
+
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileSpaceActionTypeExport)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if ok {
+		e.ExportChannel <- fileID
+	}
+
+	return httpserver.HTTPResponse{
+		Status:  http.StatusAccepted,
+		Content: fileID,
+	}, nil
+}
+
+func (e *Endpoints) ImportProjectTemplate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrImportExcelIssue.NotLogin().ToResp(), nil
+	}
+	var req apistructs.ImportProjectTemplateRequest
+	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
+		return apierrors.ErrImportExcelIssue.InvalidParameter(err).ToResp(), nil
+	}
+	req.IdentityInfo = identityInfo
+	if req.ProjectID == 0 {
+		return apierrors.ErrExportProjectTemplate.InvalidParameter("projectID").ToResp(), nil
+	}
+	if req.OrgID == 0 {
+		return apierrors.ErrImportProjectTemplate.InvalidParameter("orgID").ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.OrgScope,
+			ScopeID:  uint64(req.OrgID),
+			Resource: apistructs.ProjectTemplateResource,
+			Action:   apistructs.CreateAction,
+		})
+		if err != nil {
+			return apierrors.ErrImportProjectTemplate.InternalError(err).ToResp(), nil
+		}
+		if !access.Access {
+			return apierrors.ErrImportProjectTemplate.AccessDenied().ToResp(), nil
+		}
+	}
+	project, err := e.bdl.GetProject(req.ProjectID)
+	if err != nil {
+		return apierrors.ErrExportProjectTemplate.InternalError(err).ToResp(), nil
+	}
+	if project.OrgID != uint64(req.OrgID) {
+		return apierrors.ErrImportProjectTemplate.InvalidParameter("projectID").ToResp(), nil
+	}
+	req.ProjectName = project.Name
+	recordID, err := e.project.ImportTemplate(req, r)
+	if err != nil {
+		return apierrors.ErrImportProjectTemplate.InternalError(err).ToResp(), nil
+	}
+
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileSpaceActionTypeImport)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if ok {
+		e.ImportChannel <- recordID
+	}
+	return httpserver.HTTPResponse{
+		Status:  http.StatusAccepted,
+		Content: recordID,
+	}, nil
+}
+
+func (e *Endpoints) ParseProjectTemplate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		return apierrors.ErrParseProjectTemplate.InvalidParameter("file").ToResp(), nil
+	}
+	templateData, err := e.project.ParseTemplatePackage(file)
+	if err != nil {
+		return apierrors.ErrParseProjectTemplate.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(templateData)
 }
