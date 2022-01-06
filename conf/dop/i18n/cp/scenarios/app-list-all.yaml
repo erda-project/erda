@@ -32,9 +32,9 @@ en:
   appModeMOBILE: Mobile application
   appModePROJECTSERVICE: Project application
   appModeSERVICE: Business application
-  yearAgo: years ago
-  monthAgo: months ago
-  dayAgo: days ago
-  hourAgo: hours ago
-  minuteAgo: minutes ago
-  secondAgo: seconds ago
+  yearAgo: year(s) ago
+  monthAgo: month(s) ago
+  dayAgo: day(s) ago
+  hourAgo: hour(s) ago
+  minuteAgo: minute(s) ago
+  secondAgo: second(s) ago
