@@ -25,6 +25,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/modules/dop/services/issueproperty"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -45,6 +47,10 @@ type Issue struct {
 	uc           *ucauth.UCClient
 	tran         i18n.Translator
 	issueRelated *issuerelated.IssueRelated
+	Ip           *issueproperty.IssueProperty
+
+	CreateFileRecord func(req apistructs.TestFileRecordRequest) (uint64, error)
+	UpdateFileRecord func(req apistructs.TestFileRecordRequest) error
 }
 
 // Option 定义 Issue 配置选项
