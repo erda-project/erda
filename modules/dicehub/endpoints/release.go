@@ -80,8 +80,8 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 		}
 		for _, rule := range rules.List {
 			l.WithField("rule pattern", rule.Pattern).WithField("is_enabled", rule.IsEnabled).Infoln()
-			if rule.Match(branch) {
-				releaseRequest.Version = filepath.Base(branch) + "-" + time.Now().Format("2006-01-02-150405")
+			if rule.Match(branch) && strutil.PrefixWithSemVer(filepath.Base(branch)) {
+				releaseRequest.Version = filepath.Base(branch) + "+" + time.Now().Format("20060102150405")
 				break
 			}
 		}
