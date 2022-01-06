@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -42,6 +44,20 @@ func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) 
 			Icon:  "list-numbers",
 			Tip:   l.sdk.I18n("runtime"),
 			Value: strconv.Itoa(int(item.Stats.CountRuntimes)),
+			Operations: map[cptype.OperationKey]cptype.Operation{
+				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
+					WithSkipRender(true).
+					WithServerDataPtr(list.OpItemClickGotoServerData{
+						OpItemBasicServerData: list.OpItemBasicServerData{
+							Params: map[string]interface{}{
+								"projectId": item.ProjectID,
+								"appId":     item.ID,
+							},
+							Target: "deploy",
+						},
+					}).
+					Build(),
+			},
 		},
 		{
 			Icon:  "time",
