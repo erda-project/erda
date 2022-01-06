@@ -31,7 +31,7 @@ cd $(git rev-parse --show-toplevel)
 
 # image version and url
 VERSION="$(build/scripts/make-version.sh)"
-IMAGE_TAG="$(build/scripts/make-version.sh tag)"
+IMAGE_TAG="${IMAGE_TAG:-$(build/scripts/make-version.sh tag)}"
 DOCKERFILE_DEFAULT="build/dockerfiles/Dockerfile"
 BASE_DOCKER_IMAGE="$(build/scripts/base_image.sh image)"
 DOCKERFILE=${DOCKERFILE_DEFAULT}

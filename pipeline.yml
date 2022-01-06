@@ -55,7 +55,6 @@ stages:
             - mkdir -p extensions
             - cp -r ${{ dirs.erda-actions }} extensions
             - cp -r ${{ dirs.erda-addons }} extensions
-            - export VERSION=${{ outputs.extract-repo-version.version }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare
             - make build-push-all
@@ -78,7 +77,6 @@ stages:
             - cp -r ${{ dirs.erda-addons }} extensions
             - cp -r ${{ dirs.erda-actions-enterprise }} extensions
             - cp -r ${{ dirs.erda-addons-enterprise }} extensions
-            - export VERSION=${{ outputs.extract-repo-version.version }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare
             - make build-push-image MODULE_PATH=dicehub
@@ -96,7 +94,6 @@ stages:
           alias: build-agent
           commands:
             - cd ${{ dirs.erda }}
-            - export VERSION=${{ outputs.extract-repo-version.version }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - MODULE_PATH=cluster-agent make build-push-image
           loop:
