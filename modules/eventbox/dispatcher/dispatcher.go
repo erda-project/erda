@@ -27,7 +27,6 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
 	"github.com/erda-project/erda/modules/eventbox/conf"
 	"github.com/erda-project/erda/modules/eventbox/input"
-	etcdinput "github.com/erda-project/erda/modules/eventbox/input/etcd"
 	httpinput "github.com/erda-project/erda/modules/eventbox/input/http"
 	"github.com/erda-project/erda/modules/eventbox/monitor"
 	"github.com/erda-project/erda/modules/eventbox/register"
@@ -48,7 +47,6 @@ import (
 	"github.com/erda-project/erda/modules/eventbox/websocket"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/goroutinepool"
-	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
 type Dispatcher interface {
@@ -59,7 +57,6 @@ type Dispatcher interface {
 }
 
 type DispatcherImpl struct {
-	js              jsonstore.JSONStoreWithWatch
 	subscribers     map[string]subscriber.Subscriber
 	subscriberspool map[string]*goroutinepool.GoroutinePool
 	router          *Router
@@ -71,20 +68,11 @@ type DispatcherImpl struct {
 }
 
 func New(dingtalk interfaces.DingTalkApiClientFactory) (Dispatcher, error) {
-	js, err := jsonstore.New()
-	if err != nil {
-		return nil, err
-	}
 	dispatcher := DispatcherImpl{
-		js:              js.(jsonstore.JSONStoreWithWatch),
 		subscribers:     make(map[string]subscriber.Subscriber),
 		subscriberspool: make(map[string]*goroutinepool.GoroutinePool),
 	}
 
-	etcdi, err := etcdinput.New()
-	if err != nil {
-		return nil, err
-	}
 	httpi, err := httpinput.New()
 	if err != nil {
 		return nil, err
@@ -126,7 +114,6 @@ func New(dingtalk interfaces.DingTalkApiClientFactory) (Dispatcher, error) {
 		return nil, err
 	}
 
-	dispatcher.RegisterInput(etcdi)
 	dispatcher.RegisterInput(httpi)
 	dispatcher.RegisterInput(wsi)
 
