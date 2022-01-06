@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
@@ -57,9 +58,9 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	pie.Tooltip.Show = true
 	pie.Tooltip.Trigger = "item"
 	pie.Colors = colors
-	pie.AddSeries("复杂度", seriesData, common.GetPieSeriesOpt())
+	pie.AddSeries(cputil.I18n(ctx, "complexity"), seriesData, common.GetPieSeriesOpt())
 	props := make(map[string]interface{})
-	props["title"] = "缺陷 - 按复杂度分布"
+	props["title"] = cputil.I18n(ctx, "complexityPieChartTitle")
 	props["chartType"] = "pie"
 	props["option"] = pie.JSON()
 

@@ -113,7 +113,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 				Fixed:       true,
 				Key:         "title",
 				Label:       "title",
-				Placeholder: "按名称搜索",
+				Placeholder: cputil.I18n(ctx, "searchByName"),
 				Type:        filter.PropConditionTypeInput,
 			},
 		}

@@ -86,12 +86,8 @@ func TestScatterData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := ScatterData(tt.args.issues)
-			if len(got.Option.Series) == 0 {
-				return
-			}
-			expect := got.Option.Series[0].Data
-			if !reflect.DeepEqual(expect, tt.want) {
-				t.Errorf("ScatterData() = %v, want %v", expect, tt.want)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ScatterData() = %v, want %v", got, tt.want)
 			}
 		})
 	}

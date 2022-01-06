@@ -67,7 +67,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 					},
 				},
 				{
-					Text: "已到期",
+					Text: cputil.I18n(ctx, "expired"),
 					StyleConfig: common.StyleConfig{
 						Color: "text-desc",
 					},

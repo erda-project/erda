@@ -76,7 +76,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	helper := gshelper.NewGSHelper(gs)
 	f.IssueList = helper.GetIssueList()
 	// iterations := helper.GetIterations()
-	f.ChartDataRetriever(f.State.Values.Time)
+	f.ChartDataRetriever(ctx, f.State.Values.Time)
 	return f.SetToProtocolComponent(c)
 }
 
@@ -110,7 +110,7 @@ func maxUInt(nums ...int) int {
 	return max
 }
 
-func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
+func (f *ComponentAction) ChartDataRetriever(ctx context.Context, timeRange []int64) {
 	if len(timeRange) < 2 {
 		return
 	}
@@ -200,7 +200,7 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 	}
 	f.Chart = common.Chart{
 		Props: common.Props{
-			Title:     "缺陷 - 新增、关闭、未关闭数趋势",
+			Title:     cputil.I18n(ctx, "trendChartTitle"),
 			ChartType: "line",
 			Option: common.Option{
 				XAxis: common.XAxis{
@@ -221,7 +221,7 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 				Color: []string{"blue", "green", "red"},
 				Series: []common.Item{
 					{
-						Name: "新增",
+						Name: cputil.I18n(ctx, "trendNew"),
 						Data: newIssue,
 						AreaStyle: common.AreaStyle{
 							Opacity: 0.1,
@@ -229,7 +229,7 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 						Label: label,
 					},
 					{
-						Name: "关闭",
+						Name: cputil.I18n(ctx, "trendClose"),
 						Data: closedIssue,
 						AreaStyle: common.AreaStyle{
 							Opacity: 0.1,
@@ -237,7 +237,7 @@ func (f *ComponentAction) ChartDataRetriever(timeRange []int64) {
 						Label: label,
 					},
 					{
-						Name: "未关闭",
+						Name: cputil.I18n(ctx, "trendOpen"),
 						Data: unClosedIssue,
 						AreaStyle: common.AreaStyle{
 							Opacity: 0.1,

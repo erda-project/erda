@@ -71,7 +71,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	).GetRetriever(f.State.Values.Type)
 
 	if c.Name == "reopenByOwner" {
-		handler = stackhandlers.NewStackRetriever().GetRetriever("重新打开次数")
+		handler = stackhandlers.NewStackRetriever().GetRetriever(cputil.I18n(ctx, "numReopen"))
 	}
 
 	builder := &chartbuilders.BarBuilder{
@@ -126,9 +126,9 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	props := make(map[string]interface{})
 	switch c.Name {
 	case "owner":
-		props["title"] = "缺陷 - 按责任者分布（Top 500）"
+		props["title"] = cputil.I18n(ctx, "ownerBarChartTitle")
 	case "reopenByOwner":
-		props["title"] = "缺陷 - 重新打开次数最多的责任者（Top 500）"
+		props["title"] = cputil.I18n(ctx, "ownerReopenBarChartTitle")
 	}
 	props["chartType"] = "bar"
 	props["option"] = builder.Result.Bb

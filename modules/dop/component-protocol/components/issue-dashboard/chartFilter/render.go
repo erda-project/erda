@@ -64,14 +64,14 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	if err := f.InitDefaultOperation(c, gs); err != nil {
+	if err := f.InitDefaultOperation(ctx, c, gs); err != nil {
 		return err
 	}
 
 	return f.SetToProtocolComponent(c)
 }
 
-func (f *ComponentFilter) InitDefaultOperation(c *cptype.Component, gs *cptype.GlobalStateData) error {
+func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, c *cptype.Component, gs *cptype.GlobalStateData) error {
 	if f.State.Values.Type == "" {
 		f.State.Values.Type = stackhandlers.Priority
 	}
@@ -86,41 +86,41 @@ func (f *ComponentFilter) InitDefaultOperation(c *cptype.Component, gs *cptype.G
 
 	options := []filter.PropConditionOption{
 		{
-			Label: "优先级",
+			Label: cputil.I18n(ctx, "priority"),
 			Value: stackhandlers.Priority,
 		},
 		{
-			Label: "复杂度",
+			Label: cputil.I18n(ctx, "complexity"),
 			Value: stackhandlers.Complexity,
 		},
 		{
-			Label: "严重程度",
+			Label: cputil.I18n(ctx, "severity"),
 			Value: stackhandlers.Severity,
 		},
 	}
 	if c.Name == "stateVerticalBar" || c.Name == "scatter" {
 		options = append(options, filter.PropConditionOption{
-			Label: "引入源",
+			Label: cputil.I18n(ctx, "import-source"),
 			Value: stackhandlers.Stage,
 		})
 	} else {
 		options = append(options, []filter.PropConditionOption{
 			{
-				Label: "状态",
+				Label: cputil.I18n(ctx, "state"),
 				Value: stackhandlers.State,
 			},
 			{
-				Label: "引入源",
+				Label: cputil.I18n(ctx, "import-source"),
 				Value: stackhandlers.Stage,
 			},
 		}...)
 	}
 	f.State.Conditions = []filter.PropCondition{
 		{
-			EmptyText: "全部",
+			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Key:       "type",
-			Label:     "类型",
+			Label:     cputil.I18n(ctx, "type"),
 			Options:   options,
 			Required:  true,
 			Type:      filter.PropConditionTypeSelect,
@@ -129,10 +129,10 @@ func (f *ComponentFilter) InitDefaultOperation(c *cptype.Component, gs *cptype.G
 			},
 		},
 		{
-			EmptyText: "全部",
+			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Key:       "value",
-			Label:     "具体值",
+			Label:     cputil.I18n(ctx, "value"),
 			Options:   handler.GetFilterOptions(),
 			Type:      filter.PropConditionTypeSelect,
 		},

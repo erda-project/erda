@@ -476,7 +476,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	if len(cond.Type) == 1 && cond.Type[0] == apistructs.IssueTypeRequirement {
 		progressCol = `{
             "dataIndex": "progress",
-            "title": "进度"
+            "title": "` + cputil.I18n(ctx, "progress") + `"
         },`
 	}
 

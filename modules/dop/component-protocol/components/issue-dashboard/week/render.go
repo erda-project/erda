@@ -67,12 +67,12 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 					},
 				},
 				{
-					Text: "本周截止",
+					Text: cputil.I18n(ctx, "dueThisWeek"),
 					StyleConfig: common.StyleConfig{
 						Color: "text-desc",
 					},
 					Icon:    "help",
-					IconTip: "不包含本日和明日截止数据",
+					IconTip: cputil.I18n(ctx, "notIncludeDueTodayTomorrow"),
 				},
 			},
 		},

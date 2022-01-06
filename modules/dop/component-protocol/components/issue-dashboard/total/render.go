@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
@@ -71,11 +72,11 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		return err
 	}
 
-	f.DataRetriever(gs)
+	f.DataRetriever(ctx, gs)
 	return f.SetToProtocolComponent(c)
 }
 
-func (f *ComponentAction) DataRetriever(gs *cptype.GlobalStateData) {
+func (f *ComponentAction) DataRetriever(ctx context.Context, gs *cptype.GlobalStateData) {
 	helper := gshelper.NewGSHelper(gs)
 	issueList := helper.GetIssueList()
 	total := len(issueList)
@@ -93,7 +94,7 @@ func (f *ComponentAction) DataRetriever(gs *cptype.GlobalStateData) {
 					},
 				},
 				{
-					Text: "缺陷总数",
+					Text: cputil.I18n(ctx, "totalBug"),
 					StyleConfig: common.StyleConfig{
 						Color: "text-desc",
 					},

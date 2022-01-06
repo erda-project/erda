@@ -20,11 +20,11 @@
     "project.list.all.joined": "Joined",
     "project.list.all.unblocking": "Unblocking, please wait",
     "project.list.all.unblocked": "Unblocked",
-    "project.list.all.year.ago": "years ago",
-    "project.list.all.month.ago": "months ago",
-    "project.list.all.day.ago": "days ago",
-    "project.list.all.hour.ago": "hours ago",
-    "project.list.all.minute.ago": "minutes ago",
-    "project.list.all.second.ago": "seconds ago"
+    "project.list.all.year.ago": "year(s) ago",
+    "project.list.all.month.ago": "month(s) ago",
+    "project.list.all.day.ago": "day(s) ago",
+    "project.list.all.hour.ago": "hour(s) ago",
+    "project.list.all.minute.ago": "minute(s) ago",
+    "project.list.all.second.ago": "second(s) ago"
   }
 }
