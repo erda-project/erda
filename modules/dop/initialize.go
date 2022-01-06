@@ -465,6 +465,9 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		issue.WithTranslator(p.IssueTan),
 		issue.WithIssueRelated(issueRelated),
 	)
+	issue.CreateFileRecord = testCaseSvc.CreateFileRecord
+	issue.UpdateFileRecord = testCaseSvc.UpdateFileRecord
+	issue.Ip = issueproperty
 
 	issueState := issuestate.New(
 		issuestate.WithDBClient(db),
@@ -749,7 +752,8 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport,
 		apistructs.FileSpaceActionTypeImport,
 		apistructs.FileSceneSetActionTypeImport,
-		apistructs.FileProjectTemplateImport)
+		apistructs.FileProjectTemplateImport,
+		apistructs.FileIssueActionTypeImport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -769,6 +773,9 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 	case apistructs.FileProjectTemplateImport:
 		pro := ep.ProjectService()
 		pro.ImportTemplatePackage(record)
+	case apistructs.FileIssueActionTypeImport:
+		issueSvc := ep.IssueService()
+		issueSvc.ImportExcel(record)
 	default:
 
 	}

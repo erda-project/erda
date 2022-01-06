@@ -304,22 +304,21 @@ func (e *Endpoints) ImportExcelIssue(ctx context.Context, r *http.Request, vars 
 		// 外部创建的事件
 	}
 
-	properties, err := e.issueProperty.GetProperties(apistructs.IssuePropertiesGetRequest{OrgID: req.OrgID, PropertyIssueType: req.Type})
-	memberQuery := apistructs.MemberListRequest{
-		ScopeType: apistructs.ProjectScope,
-		ScopeID:   int64(req.ProjectID),
-		PageNo:    1,
-		PageSize:  99999,
-	}
-	members, err := e.bdl.ListMembers(memberQuery)
+	recordID, err := e.issue.Import(req, r)
 	if err != nil {
 		return apierrors.ErrImportExcelIssue.InternalError(err).ToResp(), nil
 	}
-	res, err := e.issue.ImportExcel(req, r, properties, e.issueProperty, members)
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileIssueActionTypeImport)
 	if err != nil {
-		return apierrors.ErrImportExcelIssue.InternalError(err).ToResp(), nil
+		return errorresp.ErrResp(err)
 	}
-	return httpserver.OkResp(res)
+	if ok {
+		e.ImportChannel <- recordID
+	}
+	return httpserver.HTTPResponse{
+		Status:  http.StatusAccepted,
+		Content: recordID,
+	}, nil
 }
 
 // UpdateIssue 更新事件

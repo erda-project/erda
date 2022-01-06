@@ -18,6 +18,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -25,21 +28,125 @@ import (
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
-func (svc *Issue) ImportExcel(req apistructs.IssueImportExcelRequest, r *http.Request, properties []apistructs.IssuePropertyIndex, ip *issueproperty.IssueProperty, member []apistructs.Member) (*apistructs.IssueImportExcelResponse, error) {
-	// 获取测试用例数据
-	f, _, err := r.FormFile("file")
+const (
+	fileUploadFrom     = "autotest-space"
+	fileValidityPeriod = 7 * time.Hour * 24
+	issueService       = "issue-service"
+)
+
+func (svc *Issue) Import(req apistructs.IssueImportExcelRequest, r *http.Request) (uint64, error) {
+	f, fileHeader, err := r.FormFile("file")
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	defer f.Close()
-	issues, instances, falseExcel, excelIndex, falseReason, allNumber, err := svc.decodeFromExcelFile(req, f, properties)
-	ff, _, err := r.FormFile("file")
+
+	expiredAt := time.Now().Add(fileValidityPeriod)
+	uploadReq := apistructs.FileUploadRequest{
+		FileNameWithExt: fileHeader.Filename,
+		FileReader:      f,
+		From:            fileUploadFrom,
+		IsPublic:        true,
+		ExpiredAt:       &expiredAt,
+	}
+	file, err := svc.bdl.UploadFile(uploadReq)
 	if err != nil {
-		return nil, err
+		return 0, err
+	}
+
+	fileReq := apistructs.TestFileRecordRequest{
+		FileName:     fileHeader.Filename,
+		ProjectID:    req.ProjectID,
+		Type:         apistructs.FileIssueActionTypeImport,
+		ApiFileUUID:  file.UUID,
+		State:        apistructs.FileRecordStatePending,
+		IdentityInfo: req.IdentityInfo,
+		Extra: apistructs.TestFileExtra{
+			IssueFileExtraInfo: &apistructs.IssueFileExtraInfo{
+				ImportRequest: &req,
+			},
+		},
+	}
+	id, err := svc.CreateFileRecord(fileReq)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func (svc *Issue) ImportExcel(record *dao.TestFileRecord) {
+	extra := record.Extra.IssueFileExtraInfo
+	if extra == nil || extra.ImportRequest == nil {
+		return
+	}
+
+	req := extra.ImportRequest
+	id := record.ID
+	if err := svc.updateIssueFileRecord(id, apistructs.FileRecordStateProcessing); err != nil {
+		return
+	}
+
+	f, err := svc.bdl.DownloadDiceFile(record.ApiFileUUID)
+	if err != nil {
+		logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
+		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
+	}
+	defer f.Close()
+
+	properties, err := svc.Ip.GetProperties(apistructs.IssuePropertiesGetRequest{OrgID: req.OrgID, PropertyIssueType: req.Type})
+	if err != nil {
+		logrus.Errorf("%s failed to get issue properties, err: %v", issueService, err)
+		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
+	}
+	memberQuery := apistructs.MemberListRequest{
+		ScopeType: apistructs.ProjectScope,
+		ScopeID:   int64(req.ProjectID),
+		PageNo:    1,
+		PageSize:  99999,
+	}
+	members, err := svc.bdl.ListMembers(memberQuery)
+	if err != nil {
+		logrus.Errorf("%s failed to get members, err: %v", issueService, err)
+		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
+	}
+
+	issues, instances, falseExcel, excelIndex, falseReason, allNumber, err := svc.decodeFromExcelFile(*req, f, properties)
+	if err != nil {
+		logrus.Errorf("%s failed to decode excel file, err: %v", issueService, err)
+		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
+	}
+	falseExcel, falseReason = svc.storeExcel2DB(*req, issues, instances, excelIndex, svc.Ip, falseExcel, falseReason, members)
+	if len(falseExcel) <= 1 {
+		svc.updateIssueFileRecord(id, apistructs.FileRecordStateSuccess)
+		return
+	}
+	ff, err := svc.bdl.DownloadDiceFile(record.ApiFileUUID)
+	if err != nil {
+		logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
+		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
 	}
 	defer ff.Close()
-	falseExcel, falseReason = svc.storeExcel2DB(req, issues, instances, excelIndex, ip, falseExcel, falseReason, member)
-	return svc.ExportFalseExcel(ff, falseExcel, falseReason, allNumber)
+	res, err := svc.ExportFalseExcel(ff, falseExcel, falseReason, allNumber)
+	if err != nil {
+		logrus.Errorf("%s failed to export false excel, err: %v", issueService, err)
+		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
+	}
+	desc := fmt.Sprintf("事项总数: %d, 成功: %d, 失败: %d", res.SuccessNumber+res.FalseNumber, res.SuccessNumber, res.FalseNumber)
+	svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, Description: desc, ApiFileUUID: res.UUID, State: apistructs.FileRecordStateFail})
+}
+
+func (svc *Issue) updateIssueFileRecord(id uint64, state apistructs.FileRecordState) error {
+	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: state}); err != nil {
+		logrus.Errorf("%s failed to update file record, err: %v", issueService, err)
+		return err
+	}
+	return nil
 }
 
 func (svc *Issue) storeExcel2DB(request apistructs.IssueImportExcelRequest, issues []apistructs.Issue, instances []apistructs.IssuePropertyRelationCreateRequest, excelIndex []int,
