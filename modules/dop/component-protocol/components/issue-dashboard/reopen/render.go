@@ -67,7 +67,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 					},
 				},
 				{
-					Text: "重新打开",
+					Text: cputil.I18n(ctx, "reopen"),
 					StyleConfig: common.StyleConfig{
 						Color: "text-desc",
 					},

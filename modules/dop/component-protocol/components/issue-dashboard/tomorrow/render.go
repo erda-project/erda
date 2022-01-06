@@ -67,7 +67,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 					},
 				},
 				{
-					Text: "明日截止",
+					Text: cputil.I18n(ctx, "dueTomorrow"),
 					StyleConfig: common.StyleConfig{
 						Color: "text-desc",
 					},
