@@ -117,7 +117,7 @@ func TestGSHelper_GetMsgTabName(t *testing.T) {
 		{
 			name:   "case1",
 			fields: fields{gs: &cptype.GlobalStateData{}},
-			want:   "",
+			want:   apistructs.WorkbenchItemUnreadMes,
 			want1:  false,
 		},
 	}
