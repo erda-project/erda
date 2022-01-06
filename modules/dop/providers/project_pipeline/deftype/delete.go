@@ -14,7 +14,23 @@
 
 package deftype
 
+import (
+	"fmt"
+
+	"github.com/erda-project/erda/apistructs"
+)
+
 type ProjectPipelineDelete struct {
+	IdentityInfo apistructs.IdentityInfo
+
+	ID string `json:"id"`
+}
+
+func (p *ProjectPipelineDelete) Validate() error {
+	if p.ID == "" {
+		return fmt.Errorf("the id is empty")
+	}
+	return nil
 }
 
 type ProjectPipelineDeleteResult struct {

@@ -59,7 +59,7 @@ func (p *ProjectPipelineCreate) Validate() error {
 		return fmt.Errorf("the name is empty")
 	}
 	if p.AppID == 0 {
-		return fmt.Errorf("the name is 0")
+		return fmt.Errorf("the appID is 0")
 	}
 	if !p.SourceType.isEffectProjectPipelineType() {
 		return fmt.Errorf("the type is err")
