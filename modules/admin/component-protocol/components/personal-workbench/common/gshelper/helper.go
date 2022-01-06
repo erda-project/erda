@@ -85,7 +85,8 @@ func (h *GSHelper) GetMsgTabName() (apistructs.WorkbenchItemType, bool) {
 	}
 	v, ok := (*h.gs)[common.MsgTabKey]
 	if !ok {
-		return "", false
+		logrus.Warnf("cat not get messageTabKey, set default type [unreadMessages]")
+		return apistructs.WorkbenchItemUnreadMes, false
 	}
 	var name apistructs.WorkbenchItemType
 	cputil.MustObjJSONTransfer(v, &name)
