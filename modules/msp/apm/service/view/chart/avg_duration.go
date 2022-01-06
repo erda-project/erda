@@ -37,10 +37,11 @@ func (avgDuration *AvgDurationChart) GetChart(ctx context.Context) (*pb.ServiceC
 	statement := fmt.Sprintf("SELECT sum(elapsed_sum::field)/sum(elapsed_count::field) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
-		"AND target_service_id::tag=$service_id "+
+		"%s "+
 		"%s "+
 		"GROUP BY time(%s)",
 		common.GetDataSourceNames(avgDuration.Layers...),
+		common.BuildServerSideServiceIdFilterSql("$service_id", avgDuration.Layers...),
 		common.BuildLayerPathFilterSql(avgDuration.LayerPath, "$layer_path", avgDuration.FuzzyPath, avgDuration.Layers...),
 		avgDuration.Interval)
 
