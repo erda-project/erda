@@ -15,19 +15,24 @@
 package project_pipeline
 
 import (
+	"reflect"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/bundle"
-	"reflect"
 )
 
 type config struct {
 }
 
 type provider struct {
-	Cfg    *config
-	Log    logs.Logger
-	bundle *bundle.Bundle
+	Cfg                *config
+	Log                logs.Logger
+	bundle             *bundle.Bundle
+	PipelineSource     sourcepb.SourceServiceServer         `autowired:"erda.core.pipeline.source" optional:"true"`
+	PipelineDefinition definitionpb.DefinitionServiceServer `autowired:"erda.core.pipeline.definition" optional:"true"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
