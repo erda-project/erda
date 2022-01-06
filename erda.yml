@@ -250,6 +250,7 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     envs:
+      GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
       COLLECTOR_BROWSER_SAMPLING_RATE: "100"
       COLLECTOR_ENABLE: "true"
     resources:

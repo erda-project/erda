@@ -15,6 +15,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/common"
 
@@ -41,9 +43,16 @@ import (
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/all"
 )
 
+func getConfigFile() string {
+	if v := os.Getenv("DICE_IS_EDGE"); v == "true" {
+		return "conf/monitor/collector/edge/collector.yaml"
+	}
+	return "conf/monitor/collector/collector.yaml"
+}
+
 //go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/monitor/core/collector"
 func main() {
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/monitor/collector/collector.yaml",
+		ConfigFile: getConfigFile(),
 	})
 }
