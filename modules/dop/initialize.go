@@ -574,17 +574,20 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		test_report.WithBundle(bdl.Bdl),
 	)
 
+	pipelineSvc := pipeline.New(
+		pipeline.WithBundle(bdl.Bdl),
+		pipeline.WithBranchRuleSvc(branchRule),
+		pipeline.WithPublisherSvc(pub),
+		pipeline.WithPipelineCms(p.PipelineCms),
+		pipeline.WithPipelineSource(p.PipelineSource),
+		pipeline.WithPipelineDefinition(p.PipelineDefinition),
+	)
+	p.ProjectPipelineSvc.WithPipelineSvc(pipelineSvc)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
-		endpoints.WithPipeline(pipeline.New(
-			pipeline.WithBundle(bdl.Bdl),
-			pipeline.WithBranchRuleSvc(branchRule),
-			pipeline.WithPublisherSvc(pub),
-			pipeline.WithPipelineCms(p.PipelineCms),
-			pipeline.WithPipelineSource(p.PipelineSource),
-			pipeline.WithPipelineDefinition(p.PipelineDefinition),
-		)),
+		endpoints.WithPipeline(pipelineSvc),
 		endpoints.WithPipelineCms(p.PipelineCms),
 		endpoints.WithEvent(e),
 		endpoints.WithCDP(c),
