@@ -47,7 +47,6 @@ import (
 	"github.com/erda-project/erda/modules/eventbox/websocket"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/goroutinepool"
-	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
 type Dispatcher interface {
@@ -58,7 +57,6 @@ type Dispatcher interface {
 }
 
 type DispatcherImpl struct {
-	js              jsonstore.JSONStoreWithWatch
 	subscribers     map[string]subscriber.Subscriber
 	subscriberspool map[string]*goroutinepool.GoroutinePool
 	router          *Router
