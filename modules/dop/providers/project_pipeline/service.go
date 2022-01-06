@@ -22,9 +22,9 @@ import (
 
 type ProjectPipelineService interface {
 	Create(ctx context.Context, params deftype.ProjectPipelineCreate) (*deftype.ProjectPipelineCreateResult, error)
-	List(ctx context.Context, params deftype.ProjectPipelineList) (deftype.ProjectPipelineListResult, error)
-	Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (deftype.ProjectPipelineDeleteResult, error)
-	Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (deftype.ProjectPipelineUpdateResult, error)
+	List(ctx context.Context, params deftype.ProjectPipelineList) (*deftype.ProjectPipelineListResult, error)
+	Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error)
+	Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error)
 	Star(ctx context.Context, params deftype.ProjectPipelineStar) (deftype.ProjectPipelineStarResult, error)
 	UnStar(ctx context.Context, params deftype.ProjectPipelineUnStar) (deftype.ProjectPipelineUnStarResult, error)
 	Run(ctx context.Context, params deftype.ProjectPipelineRun) (deftype.ProjectPipelineRunResult, error)

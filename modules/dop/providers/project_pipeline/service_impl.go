@@ -31,24 +31,19 @@ func (p *ProjectPipelineSvc) Create(ctx context.Context, params deftype.ProjectP
 	if err := params.Validate(); err != nil {
 		return nil, err
 	}
+	// TODO check permission
 
 	app, err := p.bundle.GetApp(params.AppID)
 	if err != nil {
 		return nil, err
 	}
 
-	commit, err := p.bundle.GetGittarCommit(app.GitRepoAbbrev, params.Ref, params.IdentityInfo.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	yml, err := p.bundle.GetGittarFile(app.GitRepo, commit.ID, stringsutil.Concat(params.Path, "/", params.FileName), "", "", params.IdentityInfo.UserID)
+	yml, err := p.getYmlFromGittar(app, params.Ref, stringsutil.Concat(params.Path, "/", params.FileName), params.IdentityInfo.UserID)
 	if err != nil {
 		return nil, err
 	}
 
 	sourceRsp, err := p.PipelineSource.Create(ctx, &spb.PipelineSourceCreateRequest{
-		ID:          "",
 		SourceType:  params.SourceType.String(),
 		Remote:      makeRemote(app),
 		Ref:         params.Ref,
@@ -94,16 +89,68 @@ func makeRemote(app *apistructs.ApplicationDTO) string {
 	return fmt.Sprintf("%d/%d/%d", app.OrgID, app.ProjectID, app.ID)
 }
 
-func (p *ProjectPipelineSvc) List(ctx context.Context, params deftype.ProjectPipelineList) (deftype.ProjectPipelineListResult, error) {
+func (p *ProjectPipelineSvc) getYmlFromGittar(app *apistructs.ApplicationDTO, ref, filePath, userID string) (string, error) {
+	commit, err := p.bundle.GetGittarCommit(app.GitRepoAbbrev, ref, userID)
+	if err != nil {
+		return "", err
+	}
+
+	yml, err := p.bundle.GetGittarFile(app.GitRepo, commit.ID, filePath, "", "", userID)
+	return yml, err
+}
+
+func (p *ProjectPipelineSvc) List(ctx context.Context, params deftype.ProjectPipelineList) (*deftype.ProjectPipelineListResult, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
+	// TODO check permission
 	panic("implement me")
 }
 
-func (p *ProjectPipelineSvc) Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (deftype.ProjectPipelineDeleteResult, error) {
-	panic("implement me")
+func (p *ProjectPipelineSvc) Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
+	// TODO check permission
+
+	_, err := p.PipelineDefinition.Delete(ctx, &pb.PipelineDefinitionDeleteRequest{PipelineDefinitionID: params.ID})
+	return nil, err
 }
 
-func (p *ProjectPipelineSvc) Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (deftype.ProjectPipelineUpdateResult, error) {
-	panic("implement me")
+func (p *ProjectPipelineSvc) Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
+
+	// TODO check permission
+
+	app, err := p.bundle.GetApp(params.AppID)
+	if err != nil {
+		return nil, err
+	}
+
+	yml, err := p.getYmlFromGittar(app, params.Ref, stringsutil.Concat(params.Path, "/", params.FileName), params.IdentityInfo.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	sourceRsp, err := p.PipelineSource.Create(ctx, &spb.PipelineSourceCreateRequest{
+		SourceType:  params.SourceType.String(),
+		Remote:      makeRemote(app),
+		Ref:         params.Ref,
+		Path:        params.Path,
+		Name:        params.FileName,
+		PipelineYml: yml,
+	})
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.PipelineDefinition.Update(ctx, &pb.PipelineDefinitionUpdateRequest{
+		PipelineDefinitionID: params.ID,
+		PipelineSourceId:     sourceRsp.PipelineSource.ID,
+	})
+
+	return nil, err
 }
 
 func (p *ProjectPipelineSvc) Star(ctx context.Context, params deftype.ProjectPipelineStar) (deftype.ProjectPipelineStarResult, error) {
