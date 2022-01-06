@@ -14,11 +14,7 @@
 
 package podsTableTitle
 
-import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-
 type ComponentPodsTableTitle struct {
-	base.DefaultProvider
-
 	Type  string `json:"type,omitempty"`
 	Props Props  `json:"props,omitempty"`
 }

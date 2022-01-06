@@ -24,12 +24,12 @@ import (
 	"github.com/rancher/wrangler/pkg/data"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodeDetail/common"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 var steveServer cmp.SteveServer
@@ -40,7 +40,7 @@ func (infoDetail *InfoDetail) Init(ctx servicehub.Context) error {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
 	steveServer = server
-	return infoDetail.DefaultProvider.Init(ctx)
+	return nil
 }
 
 func (infoDetail *InfoDetail) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
