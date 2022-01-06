@@ -291,6 +291,8 @@ erda.msp.apm.log_service:
   index_field_settings:
       file: ${CONFIG_PATH}/logs/default_field_settings.yml
 
+component-protocol.components.datasources.msp-service:
+
 # component-protocol framework
 component-protocol:
 
@@ -309,6 +311,7 @@ component-protocol.components.transaction-cache-analysis.grid:
 component-protocol.components.transaction-cache-analysis.page:
 component-protocol.components.transaction-cache-analysis.rps:
 component-protocol.components.transaction-cache-analysis.avgDuration:
+component-protocol.components.transaction-cache-analysis.reqDistribution:
 
 # transaction-cache-detail
 component-protocol.components.transaction-cache-detail.grid:
@@ -327,6 +330,7 @@ component-protocol.components.transaction-db-analysis.grid:
 component-protocol.components.transaction-db-analysis.page:
 component-protocol.components.transaction-db-analysis.rps:
 component-protocol.components.transaction-db-analysis.avgDuration:
+component-protocol.components.transaction-db-analysis.reqDistribution:
 
 # transaction-db-detail
 component-protocol.components.transaction-db-detail.grid:
@@ -345,6 +349,7 @@ component-protocol.components.transaction-http-analysis.grid:
 component-protocol.components.transaction-http-analysis.page:
 component-protocol.components.transaction-http-analysis.rps:
 component-protocol.components.transaction-http-analysis.avgDuration:
+component-protocol.components.transaction-http-analysis.reqDistribution:
 
 # transaction-http-detail
 component-protocol.components.transaction-http-detail.grid:
@@ -363,6 +368,7 @@ component-protocol.components.transaction-mq-analysis.grid:
 component-protocol.components.transaction-mq-analysis.page:
 component-protocol.components.transaction-mq-analysis.rps:
 component-protocol.components.transaction-mq-analysis.avgDuration:
+component-protocol.components.transaction-mq-analysis.reqDistribution:
 
 # transaction-mq-detail
 component-protocol.components.transaction-mq-detail.grid:
@@ -381,6 +387,7 @@ component-protocol.components.transaction-rpc-analysis.grid:
 component-protocol.components.transaction-rpc-analysis.page:
 component-protocol.components.transaction-rpc-analysis.rps:
 component-protocol.components.transaction-rpc-analysis.avgDuration:
+component-protocol.components.transaction-rpc-analysis.reqDistribution:
 
 # transaction-rpc-detail
 component-protocol.components.transaction-rpc-detail.grid:
@@ -390,5 +397,3 @@ component-protocol.components.transaction-rpc-detail.rps:
 component-protocol.components.transaction-rpc-detail.avgDuration:
 component-protocol.components.transaction-rpc-detail.slowCount:
 component-protocol.components.transaction-rpc-detail.errorCount:
-
-component-protocol.components.datasources.msp-service:
