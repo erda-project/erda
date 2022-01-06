@@ -25,7 +25,7 @@ import (
 )
 
 type PipelineSource struct {
-	ID          string `json:"id" xorm:"pk autoincr"`
+	ID          string `json:"id"`
 	SourceType  string `json:"sourceType"`
 	Remote      string `json:"remote"`
 	Ref         string `json:"ref"`
