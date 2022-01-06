@@ -231,6 +231,8 @@ func (m *PipelineDefinition) UnmarshalURLValues(prefix string, values url.Values
 					return err
 				}
 				m.SoftDeletedAt = val
+			case "pipelineSourceId":
+				m.PipelineSourceId = vals[0]
 			}
 		}
 	}
@@ -672,6 +674,11 @@ func (m *PipelineDefinitionCreateResponse) UnmarshalURLValues(prefix string, val
 					return err
 				}
 				m.PipelineDefinition.SoftDeletedAt = val
+			case "pipelineDefinition.pipelineSourceId":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.PipelineSourceId = vals[0]
 			}
 		}
 	}
@@ -1104,6 +1111,11 @@ func (m *PipelineDefinitionUpdateResponse) UnmarshalURLValues(prefix string, val
 					return err
 				}
 				m.PipelineDefinition.SoftDeletedAt = val
+			case "pipelineDefinition.pipelineSourceId":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.PipelineSourceId = vals[0]
 			}
 		}
 	}
@@ -1420,6 +1432,11 @@ func (m *PipelineDefinitionGetResponse) UnmarshalURLValues(prefix string, values
 					return err
 				}
 				m.PipelineDefinition.SoftDeletedAt = val
+			case "pipelineDefinition.pipelineSourceId":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.PipelineSourceId = vals[0]
 			}
 		}
 	}

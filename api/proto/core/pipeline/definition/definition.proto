@@ -52,6 +52,7 @@ message PipelineDefinition {
   google.protobuf.Timestamp timeCreated = 10;
   google.protobuf.Timestamp timeUpdated = 11;
   int64 softDeletedAt = 12;
+  string pipelineSourceId = 13;
 }
 
 message PipelineDefinitionExtra {

@@ -92,7 +92,7 @@ func createPreCheck(request *pb.PipelineDefinitionCreateRequest) error {
 
 func (p pipelineDefinition) Update(ctx context.Context, request *pb.PipelineDefinitionUpdateRequest) (*pb.PipelineDefinitionUpdateResponse, error) {
 	if request.PipelineDefinitionID == "" {
-		return nil, apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("pipelineDefinitionID: %s", request.PipelineDefinitionID))
+		return nil, apierrors.ErrUpdatePipelineDefinition.InvalidParameter(errors.Errorf("pipelineDefinitionID: %s", request.PipelineDefinitionID))
 	}
 	pipelineDefinition, err := p.dbClient.GetPipelineDefinition(request.PipelineDefinitionID)
 	if err != nil {
@@ -188,12 +188,13 @@ func (p pipelineDefinition) List(ctx context.Context, request *pb.PipelineDefini
 
 func PipelineDefinitionToPb(pipelineDefinition *db.PipelineDefinition) *pb.PipelineDefinition {
 	de := &pb.PipelineDefinition{
-		ID:       pipelineDefinition.ID,
-		Name:     pipelineDefinition.Name,
-		Creator:  pipelineDefinition.Creator,
-		Executor: pipelineDefinition.Executor,
-		CostTime: pipelineDefinition.CostTime,
-		Category: pipelineDefinition.Category,
+		ID:               pipelineDefinition.ID,
+		Name:             pipelineDefinition.Name,
+		Creator:          pipelineDefinition.Creator,
+		Executor:         pipelineDefinition.Executor,
+		CostTime:         pipelineDefinition.CostTime,
+		Category:         pipelineDefinition.Category,
+		PipelineSourceId: pipelineDefinition.PipelineSourceId,
 	}
 	if pipelineDefinition.TimeCreated != nil {
 		de.TimeCreated = timestamppb.New(*pipelineDefinition.TimeCreated)
