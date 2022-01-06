@@ -41,10 +41,11 @@ func (slowCount *SlowCountChart) GetChart(ctx context.Context) (*pb.ServiceChart
 	statement := fmt.Sprintf("SELECT sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0)) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
-		"AND target_service_id::tag=$service_id "+
+		"%s "+
 		"%s "+
 		"GROUP BY time(%s)",
 		common.GetDataSourceNames(slowCount.Layers...),
+		common.BuildServerSideServiceIdFilterSql("$service_id", slowCount.Layers...),
 		common.BuildLayerPathFilterSql(slowCount.LayerPath, "$layer_path", slowCount.FuzzyPath, slowCount.Layers...),
 		slowCount.Interval)
 
