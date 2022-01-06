@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/cloud-on-k8s/pkg/utils/stringsutil"
+
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -35,25 +37,36 @@ func (p *ProjectPipelineSvc) Create(ctx context.Context, params deftype.ProjectP
 		return nil, err
 	}
 
-	source, err := p.PipelineSource.Create(ctx, &spb.PipelineSourceCreateRequest{
-		SourceType: params.SourceType.String(),
-		Remote:     makeRemote(app),
-		Ref:        params.Ref,
-		Path:       params.Path,
-		Name:       params.FileName,
+	commit, err := p.bundle.GetGittarCommit(app.GitRepoAbbrev, params.Ref, params.IdentityInfo.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	yml, err := p.bundle.GetGittarFile(app.GitRepo, commit.ID, stringsutil.Concat(params.Path, "/", params.FileName), "", "", params.IdentityInfo.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	sourceRsp, err := p.PipelineSource.Create(ctx, &spb.PipelineSourceCreateRequest{
+		ID:          "",
+		SourceType:  params.SourceType.String(),
+		Remote:      makeRemote(app),
+		Ref:         params.Ref,
+		Path:        params.Path,
+		Name:        params.FileName,
+		PipelineYml: yml,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	var createReqV1 = apistructs.PipelineCreateRequest{
+	createReqV2, err := p.pipelineSvc.ConvertPipelineToV2(&apistructs.PipelineCreateRequest{
 		PipelineYmlName:    params.FileName,
 		AppID:              params.AppID,
 		Branch:             params.Ref,
 		PipelineYmlContent: "version: \"1.1\"\nstages: []",
 		UserID:             params.IdentityInfo.UserID,
-	}
-	createReqV2, err := p.pipelineSvc.ConvertPipelineToV2(&createReqV1)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -62,10 +75,10 @@ func (p *ProjectPipelineSvc) Create(ctx context.Context, params deftype.ProjectP
 		return nil, err
 	}
 
-	_, err = p.PipelineDefinition.Create(ctx, &pb.PipelineDefinitionCreateRequest{
+	definitionRsp, err := p.PipelineDefinition.Create(ctx, &pb.PipelineDefinitionCreateRequest{
 		Name:             params.Name,
 		Creator:          params.IdentityInfo.UserID,
-		PipelineSourceId: source.PipelineSource.ID,
+		PipelineSourceId: sourceRsp.PipelineSource.ID,
 		Category:         "",
 		Extra: &pb.PipelineDefinitionExtra{
 			Extra: string(b),
@@ -74,7 +87,7 @@ func (p *ProjectPipelineSvc) Create(ctx context.Context, params deftype.ProjectP
 	if err != nil {
 		return nil, err
 	}
-	return nil, nil
+	return &deftype.ProjectPipelineCreateResult{ID: definitionRsp.PipelineDefinition.ID}, nil
 }
 
 func makeRemote(app *apistructs.ApplicationDTO) string {

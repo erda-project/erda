@@ -77,4 +77,5 @@ func (p *ProjectPipelineCreate) Validate() error {
 }
 
 type ProjectPipelineCreateResult struct {
+	ID string `json:"id"`
 }
