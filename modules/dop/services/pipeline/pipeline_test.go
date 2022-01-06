@@ -15,7 +15,6 @@
 package pipeline
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -25,7 +24,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/providers/cms"
-	"github.com/erda-project/erda/modules/pipeline/providers/definition_client/deftype"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
 )
 
@@ -62,16 +60,6 @@ func TestIsPipelineYmlPath(t *testing.T) {
 
 type process struct{}
 
-func (process) ProcessPipelineDefinition(ctx context.Context, req deftype.ClientDefinitionProcessRequest) (*deftype.ClientDefinitionProcessResponse, error) {
-	return &deftype.ClientDefinitionProcessResponse{
-		ID:              1,
-		PipelineSource:  req.PipelineSource,
-		PipelineYmlName: req.PipelineYmlName,
-		PipelineYml:     req.PipelineYml,
-		VersionLock:     req.VersionLock,
-	}, nil
-}
-
 func TestPipeline_deletePipelineDefinition(t *testing.T) {
 	type args struct {
 		name   string
@@ -97,9 +85,7 @@ func TestPipeline_deletePipelineDefinition(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &Pipeline{
-				ds: process{},
-			}
+			p := &Pipeline{}
 			patch := monkey.PatchInstanceMethod(reflect.TypeOf(p), "ConvertPipelineToV2", func(p *Pipeline, pv1 *apistructs.PipelineCreateRequest) (*apistructs.PipelineCreateRequestV2, error) {
 				return &apistructs.PipelineCreateRequestV2{
 					PipelineYmlName: pv1.PipelineYmlName,
@@ -147,9 +133,7 @@ func TestPipeline_reportPipelineDefinition(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &Pipeline{
-				ds: process{},
-			}
+			p := &Pipeline{}
 			patch := monkey.PatchInstanceMethod(reflect.TypeOf(p), "ConvertPipelineToV2", func(p *Pipeline, pv1 *apistructs.PipelineCreateRequest) (*apistructs.PipelineCreateRequestV2, error) {
 				return &apistructs.PipelineCreateRequestV2{
 					PipelineYmlName: pv1.PipelineYmlName,
