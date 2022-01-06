@@ -22,12 +22,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 const (
@@ -43,7 +43,6 @@ const (
 )
 
 type ComponentAction struct {
-	base.DefaultProvider
 	sdk *cptype.SDK
 	bdl *bundle.Bundle
 }

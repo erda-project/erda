@@ -16,6 +16,7 @@ package main
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers
@@ -41,6 +42,7 @@ import (
 )
 
 func main() {
+	common.RegisterHubListener(cpregister.NewHubListener())
 	common.Run(&servicehub.RunOptions{
 		ConfigFile: "conf/dop/dop.yaml",
 	})

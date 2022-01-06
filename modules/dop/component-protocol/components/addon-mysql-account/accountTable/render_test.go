@@ -24,15 +24,14 @@ import (
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/accountTable/table"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func Test_comp_getDatum(t *testing.T) {
 	type fields struct {
-		DefaultProvider base.DefaultProvider
-		ac              *common.AccountData
-		pg              *common.PageDataAccount
-		userIDs         []string
+		DefaultProvider
+		ac      *common.AccountData
+		pg      *common.PageDataAccount
+		userIDs []string
 	}
 	now := time.Now()
 	type args struct {

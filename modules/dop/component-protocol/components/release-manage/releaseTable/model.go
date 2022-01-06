@@ -17,11 +17,9 @@ package releaseTable
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentReleaseTable struct {
-	base.DefaultProvider
 	sdk *cptype.SDK
 	bdl *bundle.Bundle
 

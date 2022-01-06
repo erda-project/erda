@@ -27,13 +27,13 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/bdl"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/common/gshelper"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
 
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
@@ -191,7 +191,6 @@ type AssigneeOperationData struct {
 }
 
 type ComponentAction struct {
-	base.DefaultProvider
 	labels  []apistructs.ProjectLabel
 	isGuest bool
 	userMap map[string]apistructs.UserInfo
