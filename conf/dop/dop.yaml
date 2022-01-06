@@ -341,3 +341,8 @@ component-protocol.components.release-manage.head:
 component-protocol.components.release-manage.releaseTable:
 component-protocol.components.release-manage.inputFilter:
 component-protocol.components.release-manage.releaseFilter:
+
+## app-list-all
+component-protocol.components.app-list-all.list:
+component-protocol.components.app-list-all.filter:
+component-protocol.components.app-list-all.tabs:
