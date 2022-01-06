@@ -14,7 +14,66 @@
 
 package deftype
 
+import (
+	"fmt"
+
+	"github.com/erda-project/erda/apistructs"
+)
+
+type ProjectPipelineType string
+
+const (
+	ErdaProjectPipelineType   ProjectPipelineType = "erda"
+	GithubProjectPipelineType ProjectPipelineType = "github"
+)
+
+var EffectProjectPipelineType = []ProjectPipelineType{ErdaProjectPipelineType, GithubProjectPipelineType}
+
+func (p ProjectPipelineType) isEffectProjectPipelineType() bool {
+	for _, v := range EffectProjectPipelineType {
+		if p == v {
+			return true
+		}
+	}
+	return false
+}
+
+func (p ProjectPipelineType) String() string {
+	return string(p)
+
+}
+
 type ProjectPipelineCreate struct {
+	IdentityInfo apistructs.IdentityInfo
+
+	Name       string              `json:"name"`
+	AppID      uint64              `json:"appID"`
+	SourceType ProjectPipelineType `json:"sourceType"`
+	Ref        string              `json:"ref"`
+	Path       string              `json:"path"`
+	FileName   string              `json:"fileName"`
+}
+
+func (p *ProjectPipelineCreate) Validate() error {
+	if p.Name == "" {
+		return fmt.Errorf("the name is empty")
+	}
+	if p.AppID == 0 {
+		return fmt.Errorf("the name is 0")
+	}
+	if !p.SourceType.isEffectProjectPipelineType() {
+		return fmt.Errorf("the type is err")
+	}
+	if p.Ref == "" {
+		return fmt.Errorf("the ref is empty")
+	}
+	if p.Path == "" {
+		return fmt.Errorf("the path is empty")
+	}
+	if p.FileName == "" {
+		return fmt.Errorf("the fileName is empty")
+	}
+	return nil
 }
 
 type ProjectPipelineCreateResult struct {

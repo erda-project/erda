@@ -17,30 +17,40 @@ package project_pipeline
 import (
 	"reflect"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/services/pipeline"
 )
 
 type config struct {
 }
 
-type provider struct {
-	Cfg                *config
-	Log                logs.Logger
-	bundle             *bundle.Bundle
+type ProjectPipelineSvc struct {
+	Cfg    *config
+	Log    logs.Logger
+	bundle *bundle.Bundle
+	DB     *gorm.DB `autowired:"mysql-client"`
+
+	pipelineSvc        *pipeline.Pipeline
 	PipelineSource     sourcepb.SourceServiceServer         `autowired:"erda.core.pipeline.source" optional:"true"`
 	PipelineDefinition definitionpb.DefinitionServiceServer `autowired:"erda.core.pipeline.definition" optional:"true"`
 }
 
-func (p *provider) Init(ctx servicehub.Context) error {
+func (p *ProjectPipelineSvc) WithPipelineSvc(svc *pipeline.Pipeline) {
+	p.pipelineSvc = svc
+}
+
+func (p *ProjectPipelineSvc) Init(ctx servicehub.Context) error {
 	p.bundle = bundle.New(bundle.WithCoreServices())
 	return nil
 }
 
-func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
+func (p *ProjectPipelineSvc) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	return p
 }
 
@@ -54,7 +64,7 @@ func init() {
 			return &config{}
 		},
 		Creator: func() servicehub.Provider {
-			return &provider{}
+			return &ProjectPipelineSvc{}
 		},
 	})
 }
