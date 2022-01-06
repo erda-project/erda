@@ -696,3 +696,7 @@ type PipelineCronGetResponse struct {
 	Header
 	Data *PipelineCronDTO `json:"data"`
 }
+
+type PipelineDefinitionExtraValue struct {
+	CreateRequest *PipelineCreateRequestV2 `json:"createRequest"`
+}

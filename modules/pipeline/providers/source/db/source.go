@@ -85,7 +85,7 @@ func (client *Client) GetPipelineSource(id string, ops ...mysqlxorm.SessionOptio
 	var pipelineSource PipelineSource
 	var has bool
 	var err error
-	if has, _, err = session.Where("id = ?", id).GetFirst(&pipelineSource).GetResult(); err != nil {
+	if has, _, err = session.Where("id = ? and soft_deleted_at = 0", id).GetFirst(&pipelineSource).GetResult(); err != nil {
 		return nil, err
 	}
 
