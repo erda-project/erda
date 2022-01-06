@@ -82,6 +82,7 @@ openapi-v1-routes:
           - issue-kanban
           - auto-test-space-list
           - release-manage
+          - app-list-all
       - addr: http://localhost:8080
         scenarios:
           - demo

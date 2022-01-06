@@ -95,6 +95,44 @@ func (b *Bundle) GetAppsByProject(projectID, orgID uint64, userID string) (*apis
 	return &listResp.Data, nil
 }
 
+func (b *Bundle) GetAppList(orgID, userID string, req apistructs.ApplicationListRequest) (*apistructs.ApplicationListResponseData, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var appIDs []string
+	for _, v := range req.ApplicationID {
+		appIDs = append(appIDs, strconv.Itoa(int(v)))
+	}
+
+	var listResp apistructs.ApplicationListResponse
+	resp, err := hc.Get(host).
+		Path(fmt.Sprintf("/api/applications")).
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
+		Param("pageSize", strconv.Itoa(req.PageSize)).
+		Param("pageNo", strconv.Itoa(req.PageNo)).
+		Param("name", req.Name).
+		Param("mode", req.Mode).
+		Param("q", req.Query).
+		Param("public", req.Public).
+		Param("projectId", strconv.FormatUint(req.ProjectID, 10)).
+		Param("isSimple", strconv.FormatBool(req.IsSimple)).
+		Param("orderBy", req.OrderBy).
+		Params(map[string][]string{"applicationID": appIDs}).
+		Do().JSON(&listResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !listResp.Success {
+		return nil, toAPIError(resp.StatusCode(), listResp.Error)
+	}
+
+	return &listResp.Data, nil
+}
+
 // get applications by projectID and app name
 func (b *Bundle) GetAppsByProjectAndAppName(projectID, orgID uint64, userID string, appName string) (*apistructs.ApplicationListResponseData, error) {
 	host, err := b.urls.CoreServices()
