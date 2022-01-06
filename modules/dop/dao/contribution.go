@@ -196,7 +196,7 @@ type conSeverityScore struct {
 }
 
 const issueCreateCoefficient = 0.8
-const commitCoefficient = 8
+const commitCoefficient = 2
 
 func (db *DBClient) QualityScore() error {
 	var issueCreated []conScore
