@@ -61,7 +61,7 @@ func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) 
 		},
 		{
 			Icon:  "time",
-			Tip:   l.sdk.I18n("updatedAt") + ": " + item.UpdatedAt.String(),
+			Tip:   l.sdk.I18n("updatedAt") + ": " + item.UpdatedAt.Format("2006-01-02 15:04:05"),
 			Value: updated,
 		},
 		{
