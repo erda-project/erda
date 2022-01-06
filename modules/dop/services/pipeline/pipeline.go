@@ -16,7 +16,6 @@
 package pipeline
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -28,6 +27,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
@@ -35,12 +36,9 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/modules/pipeline/providers/cms"
-	"github.com/erda-project/erda/modules/pipeline/providers/definition_client"
-	"github.com/erda-project/erda/modules/pipeline/providers/definition_client/deftype"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
-	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -51,7 +49,8 @@ type Pipeline struct {
 	branchRuleSvc *branchrule.BranchRule
 	publisherSvc  *publisher.Publisher
 	cms           cmspb.CmsServiceServer
-	ds            definition_client.Processor
+	pipelineSource  sourcepb.SourceServiceServer
+	pipelineDefinition  definitionpb.DefinitionServiceServer
 }
 
 // Option Pipeline 配置选项
@@ -73,12 +72,6 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
-func WithPipelineDefinitionServices(ds definition_client.Processor) Option {
-	return func(svc *Pipeline) {
-		svc.ds = ds
-	}
-}
-
 func WithBranchRuleSvc(svc *branchrule.BranchRule) Option {
 	return func(f *Pipeline) {
 		f.branchRuleSvc = svc
@@ -94,6 +87,18 @@ func WithPublisherSvc(svc *publisher.Publisher) Option {
 func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
 	return func(f *Pipeline) {
 		f.cms = cms
+	}
+}
+
+func WithPipelineSource(source sourcepb.SourceServiceServer) Option {
+	return func(f *Pipeline) {
+		f.pipelineSource = source
+	}
+}
+
+func WithPipelineDefinition(pipelineDefinition definitionpb.DefinitionServiceServer) Option {
+	return func(f *Pipeline) {
+		f.pipelineDefinition = pipelineDefinition
 	}
 }
 
@@ -664,69 +669,69 @@ func (p *Pipeline) PipelineDefinitionUpdate(req apistructs.GittarPushPayloadEven
 
 func (p *Pipeline) reportPipelineDefinition(appDto *apistructs.ApplicationDTO, userID string, branch string, name string, pipelineYml string) error {
 	// to save pipeline definition
-	var createReqV1 = apistructs.PipelineCreateRequest{
-		PipelineYmlName:    name,
-		AppID:              appDto.ID,
-		Branch:             branch,
-		PipelineYmlContent: pipelineYml,
-		UserID:             userID,
-	}
-	createReqV2, err := p.ConvertPipelineToV2(&createReqV1)
-	if err != nil {
-		logrus.Errorf("v1 request %v fail to ConvertPipelineToV2 ,err: %s", createReqV1, err)
-		return err
-	}
-
-	var req = deftype.ClientDefinitionProcessRequest{
-		PipelineSource:        createReqV2.PipelineSource,
-		PipelineYmlName:       createReqV2.PipelineYmlName,
-		PipelineYml:           pipelineYml,
-		PipelineCreateRequest: createReqV2,
-		SnippetConfig: &apistructs.SnippetConfig{
-			Name:   "/" + name,
-			Source: apistructs.SnippetSourceLocal,
-			Labels: map[string]string{
-				apistructs.LabelGittarYmlPath: GetGittarYmlNamesLabels(appDto.Name, createReqV2.Labels[apistructs.LabelDiceWorkspace], branch, name),
-				apistructs.LabelSnippetScope:  apistructs.FileTreeScopeProjectApp,
-				apistructs.LabelProjectID:     strconv.FormatInt(int64(appDto.ProjectID), 10),
-				apistructs.LabelOrgID:         strconv.FormatInt(int64(appDto.OrgID), 10),
-			},
-		},
-	}
-
-	_, err = p.ds.ProcessPipelineDefinition(apis.WithInternalClientContext(context.Background(), "dop"), req)
-	if err != nil {
-		logrus.Errorf("fail to reportPipelineDefinition req %v ,err: %s", req, err)
-		return err
-	}
+	//var createReqV1 = apistructs.PipelineCreateRequest{
+	//	PipelineYmlName:    name,
+	//	AppID:              appDto.ID,
+	//	Branch:             branch,
+	//	PipelineYmlContent: pipelineYml,
+	//	UserID:             userID,
+	//}
+	//createReqV2, err := p.ConvertPipelineToV2(&createReqV1)
+	//if err != nil {
+	//	logrus.Errorf("v1 request %v fail to ConvertPipelineToV2 ,err: %s", createReqV1, err)
+	//	return err
+	//}
+	//
+	//var req = deftype.ClientDefinitionProcessRequest{
+	//	PipelineSource:        createReqV2.PipelineSource,
+	//	PipelineYmlName:       createReqV2.PipelineYmlName,
+	//	PipelineYml:           pipelineYml,
+	//	PipelineCreateRequest: createReqV2,
+	//	SnippetConfig: &apistructs.SnippetConfig{
+	//		Name:   "/" + name,
+	//		Source: apistructs.SnippetSourceLocal,
+	//		Labels: map[string]string{
+	//			apistructs.LabelGittarYmlPath: GetGittarYmlNamesLabels(appDto.Name, createReqV2.Labels[apistructs.LabelDiceWorkspace], branch, name),
+	//			apistructs.LabelSnippetScope:  apistructs.FileTreeScopeProjectApp,
+	//			apistructs.LabelProjectID:     strconv.FormatInt(int64(appDto.ProjectID), 10),
+	//			apistructs.LabelOrgID:         strconv.FormatInt(int64(appDto.OrgID), 10),
+	//		},
+	//	},
+	//}
+	//
+	//_, err = p.ds.ProcessPipelineDefinition(apis.WithInternalClientContext(context.Background(), "dop"), req)
+	//if err != nil {
+	//	logrus.Errorf("fail to reportPipelineDefinition req %v ,err: %s", req, err)
+	//	return err
+	//}
 	return nil
 }
 
 func (p *Pipeline) deletePipelineDefinition(name string, appID uint64, branch string, userID string) error {
 	// to delete old pipelineDefinition
-	var createReqV1 = apistructs.PipelineCreateRequest{
-		PipelineYmlName:    name,
-		AppID:              appID,
-		Branch:             branch,
-		PipelineYmlContent: "version: \"1.1\"\nstages: []",
-		UserID:             userID,
-	}
-	createReqV2, err := p.ConvertPipelineToV2(&createReqV1)
-	if err != nil {
-		logrus.Errorf("v1 request %v fail to ConvertPipelineToV2 ,err: %s", createReqV1, err)
-		return err
-	}
+	//var createReqV1 = apistructs.PipelineCreateRequest{
+	//	PipelineYmlName:    name,
+	//	AppID:              appID,
+	//	Branch:             branch,
+	//	PipelineYmlContent: "version: \"1.1\"\nstages: []",
+	//	UserID:             userID,
+	//}
+	//createReqV2, err := p.ConvertPipelineToV2(&createReqV1)
+	//if err != nil {
+	//	logrus.Errorf("v1 request %v fail to ConvertPipelineToV2 ,err: %s", createReqV1, err)
+	//	return err
+	//}
 
-	var req = deftype.ClientDefinitionProcessRequest{
-		PipelineSource:  createReqV2.PipelineSource,
-		PipelineYmlName: createReqV2.PipelineYmlName,
-		IsDelete:        true,
-	}
-	_, err = p.ds.ProcessPipelineDefinition(apis.WithInternalClientContext(context.Background(), "dop"), req)
-	if err != nil {
-		logrus.Errorf("fail to deletePipelineDefinition req: %v, err: %s", req, err)
-		return err
-	}
+	//var req = deftype.ClientDefinitionProcessRequest{
+	//	PipelineSource:  createReqV2.PipelineSource,
+	//	PipelineYmlName: createReqV2.PipelineYmlName,
+	//	IsDelete:        true,
+	//}
+	//_, err = p.ds.ProcessPipelineDefinition(apis.WithInternalClientContext(context.Background(), "dop"), req)
+	//if err != nil {
+	//	logrus.Errorf("fail to deletePipelineDefinition req: %v, err: %s", req, err)
+	//	return err
+	//}
 	return nil
 }
 
