@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package definition_client
+package definition
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -26,8 +26,8 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg      *config
-	MySQL    mysqlxorm.Interface `autowired:"mysql-xorm"`
+	Cfg   *config
+	MySQL mysqlxorm.Interface `autowired:"mysql-xorm"`
 	// implements
 	pipelineDefinition *pipelineDefinition
 }

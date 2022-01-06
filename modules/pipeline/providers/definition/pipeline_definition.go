@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package definition_client
+package definition
 
 import (
 	"context"
@@ -187,9 +187,9 @@ func (p pipelineDefinition) List(ctx context.Context, request *pb.PipelineDefini
 
 func PipelineDefinitionToPb(pipelineDefinition *db.PipelineDefinition) *pb.PipelineDefinition {
 	de := &pb.PipelineDefinition{
-		ID: pipelineDefinition.ID,
-		Name: pipelineDefinition.Name,
-		Creator: pipelineDefinition.Creator,
+		ID:       pipelineDefinition.ID,
+		Name:     pipelineDefinition.Name,
+		Creator:  pipelineDefinition.Creator,
 		Executor: pipelineDefinition.Executor,
 		CostTime: pipelineDefinition.CostTime,
 		Category: pipelineDefinition.Category,
@@ -211,7 +211,7 @@ func PipelineDefinitionToPb(pipelineDefinition *db.PipelineDefinition) *pb.Pipel
 
 func PipelineDefinitionExtraToPb(pipelineDefinitionExtra *db.PipelineDefinitionExtra) *pb.PipelineDefinitionExtra {
 	de := &pb.PipelineDefinitionExtra{
-		ID: pipelineDefinitionExtra.ID,
+		ID:    pipelineDefinitionExtra.ID,
 		Extra: jsonparse.JsonOneLine(pipelineDefinitionExtra.Extra),
 	}
 	if pipelineDefinitionExtra.TimeCreated != nil {
@@ -222,4 +222,3 @@ func PipelineDefinitionExtraToPb(pipelineDefinitionExtra *db.PipelineDefinitionE
 	}
 	return de
 }
-
