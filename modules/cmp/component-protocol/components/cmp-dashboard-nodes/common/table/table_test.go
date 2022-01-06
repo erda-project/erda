@@ -436,14 +436,13 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 func TestTable_GetDistributionValue(t1 *testing.T) {
 	type fields struct {
 		TableComponent GetRowItem
-		DefaultProvider
-		SDK        *cptype.SDK
-		Ctx        context.Context
-		Server     cmp.SteveServer
-		Type       string
-		Props      map[string]interface{}
-		Operations map[string]interface{}
-		State      State
+		SDK            *cptype.SDK
+		Ctx            context.Context
+		Server         cmp.SteveServer
+		Type           string
+		Props          map[string]interface{}
+		Operations     map[string]interface{}
+		State          State
 	}
 	type args struct {
 		a, b         float64
@@ -481,14 +480,13 @@ func TestTable_GetDistributionValue(t1 *testing.T) {
 func TestTable_GetUsageValue(t1 *testing.T) {
 	type fields struct {
 		TableComponent GetRowItem
-		DefaultProvider
-		SDK        *cptype.SDK
-		Ctx        context.Context
-		Server     cmp.SteveServer
-		Type       string
-		Props      map[string]interface{}
-		Operations map[string]interface{}
-		State      State
+		SDK            *cptype.SDK
+		Ctx            context.Context
+		Server         cmp.SteveServer
+		Type           string
+		Props          map[string]interface{}
+		Operations     map[string]interface{}
+		State          State
 	}
 	type args struct {
 		a, b         float64

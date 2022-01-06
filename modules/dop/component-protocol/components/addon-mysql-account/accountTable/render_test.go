@@ -28,7 +28,6 @@ import (
 
 func Test_comp_getDatum(t *testing.T) {
 	type fields struct {
-		DefaultProvider
 		ac      *common.AccountData
 		pg      *common.PageDataAccount
 		userIDs []string
@@ -129,10 +128,9 @@ func Test_comp_getDatum(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &comp{
-				DefaultProvider: tt.fields.DefaultProvider,
-				ac:              tt.fields.ac,
-				pg:              tt.fields.pg,
-				userIDs:         tt.fields.userIDs,
+				ac:      tt.fields.ac,
+				pg:      tt.fields.pg,
+				userIDs: tt.fields.userIDs,
 			}
 			if got := f.getDatum(tt.args.item); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getDatum() = %+v, want %+v", got, tt.want)
