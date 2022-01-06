@@ -333,7 +333,7 @@ func (mig *Migrator) migrateSandbox(ctx context.Context) (err error) {
 
 		logrus.WithField("module", moduleName).WithField("script", script.GetName()).
 			WithField("installing", !script.Pending).
-			Infoln("[sandbox]")
+			Infoln("[Sandbox]")
 		if !script.Pending {
 			continue
 		}
@@ -401,7 +401,7 @@ func (mig *Migrator) migrate(ctx context.Context) error {
 			script     = scr.Script
 		)
 		logrus.WithField("module", moduleName).WithField("scriptName", script.GetName()).
-			Infoln("install on MySQL Server")
+			Infoln("[MySQL Server]")
 
 		if !script.Pending {
 			continue

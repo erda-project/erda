@@ -39,10 +39,10 @@ func TestSortedScripts(t *testing.T) {
 		"module-1": {
 			Name: "module-1",
 			Scripts: []*Script{{
+				Name: "20210102-module-1-feature-1.sql",
+			}, {
 				Name:   "20210102-module-1-base.sql",
 				isBase: true,
-			}, {
-				Name: "20210102-module-1-feature-1.sql",
 			}},
 		},
 		"module-2": {
