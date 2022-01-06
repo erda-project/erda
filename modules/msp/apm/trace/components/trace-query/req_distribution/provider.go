@@ -15,6 +15,8 @@
 package req_distribution
 
 import (
+	"reflect"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph"
@@ -24,7 +26,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/trace/components/commom/custom"
-	"reflect"
 )
 
 type provider struct {
