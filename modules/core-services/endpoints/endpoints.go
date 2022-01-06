@@ -38,6 +38,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/org"
 	"github.com/erda-project/erda/modules/core-services/services/permission"
 	"github.com/erda-project/erda/modules/core-services/services/project"
+	"github.com/erda-project/erda/modules/core-services/services/subscribe"
 	"github.com/erda-project/erda/modules/core-services/services/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/i18n"
@@ -73,6 +74,7 @@ type Endpoints struct {
 	errorbox           *errorbox.ErrorBox
 	fileSvc            *filesvc.FileService
 	user               *user.User
+	subscribe          *subscribe.Subscribe
 }
 
 type Option func(*Endpoints)
@@ -252,6 +254,12 @@ func WithUserSvc(svc *user.User) Option {
 	}
 }
 
+func WithSubscribe(sub *subscribe.Subscribe) Option {
+	return func(e *Endpoints) {
+		e.subscribe = sub
+	}
+}
+
 // DBClient 获取db client
 func (e *Endpoints) DBClient() *dao.DBClient {
 	return e.db
@@ -283,7 +291,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/orgs/actions/get-by-domain", Method: http.MethodGet, Handler: e.GetOrgByDomain},
 		{Path: "/api/orgs/actions/switch", Method: http.MethodPost, Handler: e.ChangeCurrentOrg},
 		{Path: "/api/orgs/actions/relate-cluster", Method: http.MethodPost, Handler: e.CreateOrgClusterRelation},
-		{Path: "/api/orgs/clusters/relations", Method: http.MethodGet, Handler: e.ListAllOrgClusterRelation},
+		{Path: "/api/orgs/clusters/relations", Method: http.MethodGet, Handler: e.ListOrgClusterRelation},
 		{Path: "/api/orgs/{orgID}/actions/set-release-cross-cluster", Method: http.MethodPost, Handler: e.SetReleaseCrossCluster},
 		{Path: "/api/orgs/actions/gen-verify-code", Method: http.MethodPost, Handler: e.GenVerifiCode},
 		{Path: "/api/orgs/{orgID}/actions/set-notify-config", Method: http.MethodPost, Handler: e.SetNotifyConfig},
@@ -319,7 +327,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// the interface of application
 		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
-		{Path: "/api/applications/{applicationID}/actions/init", Method: http.MethodPut, Handler: e.InitApplication},
 		{Path: "/api/applications/{applicationID}", Method: http.MethodPut, Handler: e.UpdateApplication},
 		{Path: "/api/applications/{applicationID}", Method: http.MethodGet, Handler: e.GetApplication},
 		{Path: "/api/applications/{applicationID}", Method: http.MethodDelete, Handler: e.DeleteApplication},
@@ -386,7 +393,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// the interface of error box
 		{Path: "/api/task-error/actions/create", Method: http.MethodPost, Handler: e.CreateOrUpdateErrorLog},
-		{Path: "/api/task-error/actions/list", Method: http.MethodGet, Handler: e.ListErrorLog},
 
 		// the interface of review
 		{Path: "/api/reviews/actions/list-launched-approval", Method: http.MethodGet, Handler: e.GetReviewsBySponsorId},
@@ -450,5 +456,10 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/users/current", Method: http.MethodGet, Handler: e.GetCurrentUser},
 		{Path: "/api/users/actions/search", Method: http.MethodGet, Handler: e.SearchUser},
 		{Path: "/api/users/actions/get-uc-user-id", Method: http.MethodGet, Handler: e.GetUcUserID},
+
+		// the interface of subscribe
+		{Path: "/api/subscribe", Method: http.MethodPost, Handler: e.Subscribe},
+		{Path: "/api/subscribe", Method: http.MethodDelete, Handler: e.UnSubscribe},
+		{Path: "/api/subscribe", Method: http.MethodGet, Handler: e.GetSubscribes},
 	}
 }

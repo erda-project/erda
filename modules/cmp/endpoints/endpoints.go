@@ -127,6 +127,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/cluster/actions/init-retry", Method: http.MethodPost, Handler: auth(i18nPrinter(e.InitClusterRetry))},
 		{Path: "/api/cluster/actions/upgrade", Method: http.MethodPost, Handler: auth(i18nPrinter(e.UpgradeEdgeCluster))},
 		{Path: "/api/cluster/actions/batch-upgrade", Method: http.MethodPost, Handler: auth(i18nPrinter(e.BatchUpgradeEdgeCluster))},
+		{Path: "/api/cluster/actions/batch-offline", Method: http.MethodDelete, Handler: auth(i18nPrinter(e.BatchOfflineEdgeCluster))},
 		{Path: "/api/cluster", Method: http.MethodDelete, Handler: auth(i18nPrinter(e.OfflineEdgeCluster))},
 		{Path: "/api/cluster", Method: http.MethodGet, Handler: auth(i18nPrinter(e.ClusterInfo))},
 		{Path: "/api/cluster/init-command", Method: http.MethodGet, WriterHandler: e.InitCluster},
@@ -244,7 +245,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/resource-overview/gauge", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceGauge)},
 		{Path: "/api/resource-overview/class", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceClass)},
 		{Path: "/api/resource-overview/cluster-trend", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceClusterTrend)},
-		{Path: "/api/resource-overview/project-trend", Method: http.MethodGet, Handler: i18nPrinter(e.GetResourceProjectTrend)},
+		{Path: "/api/resource-overview/project-trend", Method: http.MethodGet, Handler: httpserver.Wrap(e.GetResourceProjectTrend, httpserver.WithI18nCodes)},
 		{Path: "/api/resource-overview/report-table", Method: http.MethodGet, Handler: i18nPrinter(e.ResourceOverviewReport)},
 
 		// k8s clusters

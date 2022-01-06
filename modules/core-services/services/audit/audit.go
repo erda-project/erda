@@ -16,6 +16,7 @@ package audit
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"strings"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
@@ -35,9 +37,10 @@ import (
 
 // Audit 成员操作封装
 type Audit struct {
-	db   *dao.DBClient
-	uc   *ucauth.UCClient
-	cron *cron.Cron
+	db    *dao.DBClient
+	uc    *ucauth.UCClient
+	cron  *cron.Cron
+	trans i18n.Translator
 }
 
 // Option 定义 Member 对象配置选项
@@ -67,6 +70,13 @@ func WithDBClient(db *dao.DBClient) Option {
 func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(a *Audit) {
 		a.uc = uc
+	}
+}
+
+// WithTrans sets the i18n.Translator
+func WithTrans(trans i18n.Translator) Option {
+	return func(a *Audit) {
+		a.trans = trans
 	}
 }
 
@@ -112,8 +122,8 @@ func (a *Audit) UpdateAuditCleanCron(orgID, interval int64) error {
 }
 
 // ExportExcel 导出审计到excel
-func (a *Audit) ExportExcel(audits []model.Audit) (io.Reader, string, error) {
-	table, err := a.convertAuditsToExcelList(audits)
+func (a *Audit) ExportExcel(ctx context.Context, audits []model.Audit) (io.Reader, string, error) {
+	table, err := a.convertAuditsToExcelList(ctx, audits)
 	if err != nil {
 		return nil, "", err
 	}
@@ -125,13 +135,13 @@ func (a *Audit) ExportExcel(audits []model.Audit) (io.Reader, string, error) {
 	return buf, tableName, nil
 }
 
-func (a *Audit) convertAuditsToExcelList(audits []model.Audit) ([][]string, error) {
+func (a *Audit) convertAuditsToExcelList(ctx context.Context, audits []model.Audit) ([][]string, error) {
 	r := [][]string{{"操作时间", "操作者", "操作", "客户端ip"}}
 	userIDNameMap := make(map[string]string)
 	for _, audit := range audits {
 		userIDNameMap[audit.UserID] = ""
 		r = append(r, append(append([]string{audit.StartTime.Format("2006-01-02 15:04:05"), audit.UserID,
-			getContent(audit, "zh"), audit.ClientIP})))
+			a.getContent(ctx, audit), audit.ClientIP})))
 	}
 
 	var userIDs []string
@@ -160,8 +170,20 @@ func (a *Audit) convertAuditsToExcelList(audits []model.Audit) ([][]string, erro
 	return r, nil
 }
 
-func getContent(audit model.Audit, local string) string {
-	ct := conf.AuditTemplate()[audit.TemplateName].Success[local]
+func (a *Audit) getContent(ctx context.Context, audit model.Audit) string {
+	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	var locale string
+	if len(langCodes) != 0 {
+		locale = langCodes[0].Code
+	}
+	if strings.Contains(locale, "zh") {
+		locale = "zh"
+	}
+	if strings.Contains(locale, "en") {
+		locale = "en"
+	}
+
+	ct := conf.AuditTemplate()[audit.TemplateName].Success[locale]
 	logrus.Debugf("audit template is: %s", ct)
 	tpl, err := template.New("c").Parse(ct)
 	if err != nil {
@@ -170,8 +192,30 @@ func getContent(audit model.Audit, local string) string {
 
 	// 处理下context里的内容：1.审计外部结构的value放入context里 2.context里的结构体处理下 3.做一些翻译
 	context := make(map[string]interface{})
-	json.Unmarshal([]byte(audit.Context), &context)
-	context["scopeType"] = audit.ScopeType
+	if err = json.Unmarshal([]byte(audit.Context), &context); err != nil {
+		return ""
+	}
+
+	context["scopeType"] = func() interface{} {
+		switch audit.ScopeType {
+		case apistructs.ProjectScope:
+			s := a.trans.Text(langCodes, "PROJECT")
+			if _, ok := context["projectName"]; ok {
+				s += " " + context["projectName"].(string)
+			}
+			return s
+		case apistructs.AppScope:
+			s := a.trans.Text(langCodes, "APPLICATION")
+			if _, ok := context["projectName"]; ok {
+				s += " " + context["projectName"].(string)
+			}
+			if _, ok := context["appName"]; ok {
+				s += " / " + context["appName"].(string)
+			}
+			return s
+		}
+		return audit.ScopeType
+	}()
 	if issueType, ok := context["issueType"]; ok {
 		context["issueType"] = apistructs.IssueType(issueType.(string)).GetZhName()
 	}

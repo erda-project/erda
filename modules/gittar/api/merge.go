@@ -327,7 +327,9 @@ func CloseMR(ctx *webcontext.Context) {
 		if err == nil {
 			result.Link = getLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId, repo.OrgId, int64(result.RepoMergeId))
 		}
-		result.AuthorUser.NickName = ctx.User.NickName
+		if result.AuthorUser != nil {
+			result.AuthorUser.NickName = ctx.User.NickName
+		}
 		result.MergeUserId = ctx.User.Id
 		result.EventName = apistructs.GitCloseMREvent
 		ctx.Service.TriggerEvent(ctx.Repository, apistructs.GitCloseMREvent, result)

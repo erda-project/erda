@@ -31,6 +31,8 @@ type CmsServiceHandler interface {
 	DeleteCmsNsConfigs(context.Context, *CmsNsConfigsDeleteRequest) (*CmsNsConfigsDeleteResponse, error)
 	// GET /api/pipelines/cms/ns/{ns}
 	GetCmsNsConfigs(context.Context, *CmsNsConfigsGetRequest) (*CmsNsConfigsGetResponse, error)
+	// GET /api/pipelines/cms/actions/batch-get-configs
+	BatchGetCmsNsConfigs(context.Context, *CmsNsConfigsBatchGetRequest) (*CmsNsConfigsBatchGetResponse, error)
 }
 
 // RegisterCmsServiceHandler register CmsServiceHandler to http.Router.
@@ -305,9 +307,46 @@ func RegisterCmsServiceHandler(r http.Router, srv CmsServiceHandler, opts ...htt
 		)
 	}
 
+	add_BatchGetCmsNsConfigs := func(method, path string, fn func(context.Context, *CmsNsConfigsBatchGetRequest) (*CmsNsConfigsBatchGetResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*CmsNsConfigsBatchGetRequest))
+		}
+		var BatchGetCmsNsConfigs_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			BatchGetCmsNsConfigs_info = transport.NewServiceInfo("erda.core.pipeline.cms.CmsService", "BatchGetCmsNsConfigs", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, BatchGetCmsNsConfigs_info)
+				}
+				r = r.WithContext(ctx)
+				var in CmsNsConfigsBatchGetRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_CreateNs("POST", "/api/pipelines/cms/ns", srv.CreateNs)
 	add_ListCmsNs("GET", "/api/pipelines/cms/ns", srv.ListCmsNs)
 	add_UpdateCmsNsConfigs("POST", "/api/pipelines/cms/ns/{ns}", srv.UpdateCmsNsConfigs)
 	add_DeleteCmsNsConfigs("DELETE", "/api/pipelines/cms/ns/{ns}", srv.DeleteCmsNsConfigs)
 	add_GetCmsNsConfigs("GET", "/api/pipelines/cms/ns/{ns}", srv.GetCmsNsConfigs)
+	add_BatchGetCmsNsConfigs("GET", "/api/pipelines/cms/actions/batch-get-configs", srv.BatchGetCmsNsConfigs)
 }

@@ -32,6 +32,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/scheduler/conf"
 	eventboxapi "github.com/erda-project/erda/modules/scheduler/events"
 	"github.com/erda-project/erda/modules/scheduler/events/eventtypes"
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
@@ -66,6 +67,8 @@ import (
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/istioctl/engines"
 	"github.com/erda-project/erda/pkg/k8sclient"
+	k8sclientconfig "github.com/erda-project/erda/pkg/k8sclient/config"
+	"github.com/erda-project/erda/pkg/k8sclient/scheme"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/cpupolicy"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -82,6 +85,9 @@ const (
 	CPU_CFS_PERIOD_US int = 100000
 	// MIN_CPU_SIZE Minimum application cpu value
 	MIN_CPU_SIZE = 0.1
+
+	// MIN_MEM_SIZE Minimum application mem value
+	MIN_MEM_SIZE = 10
 
 	// ProjectNamespace Env
 	LabelServiceGroupID = "servicegroup-id"
@@ -213,6 +219,10 @@ type Kubernetes struct {
 	istioEngine istioctl.IstioEngine
 }
 
+func (k *Kubernetes) SetCpuQuota(quota float64) {
+	k.cpuNumQuota = quota
+}
+
 func (k *Kubernetes) GetK8SAddr() string {
 	return k.addr
 }
@@ -273,11 +283,26 @@ func getIstioEngine(clusterName string, info apistructs.ClusterInfoData) (istioc
 // New new kubernetes executor struct
 func New(name executortypes.Name, clusterName string, options map[string]string) (*Kubernetes, error) {
 	// get cluster from cluster manager
-	b := bundle.New(bundle.WithClusterManager())
-	cluster, err := b.GetCluster(clusterName)
+	bdl := bundle.New(
+		bundle.WithClusterManager(),
+		bundle.WithCoreServices(),
+	)
+	cluster, err := bdl.GetCluster(clusterName)
 	if err != nil {
 		logrus.Errorf("get cluster error: %v", cluster)
 		return nil, err
+	}
+
+	rc, err := k8sclientconfig.ParseManageConfig(clusterName, cluster.ManageConfig)
+	if err != nil {
+		return nil, errors.Errorf("parse rest.config error: %v", err)
+	}
+
+	rc.Timeout = conf.ExecutorClientTimeout()
+
+	k8sClient, err := k8sclient.NewForRestConfig(rc, scheme.LocalSchemeBuilder...)
+	if err != nil {
+		return nil, errors.Errorf("failed to get k8s client for cluster %s, %v", clusterName, err)
 	}
 
 	addr, client, err := util.GetClient(clusterName, cluster.ManageConfig)
@@ -337,9 +362,6 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	}
 	resourceInfo := resourceinfo.New(addr, client)
 
-	// Synchronize cluster info to ETCD (every 10m)
-	go clusterInfo.LoopLoadAndSync(context.Background(), true)
-
 	var istioEngine istioctl.IstioEngine
 
 	rawData, err := clusterInfo.Get()
@@ -360,11 +382,8 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 
 	evCh := make(chan *eventtypes.StatusEvent, 10)
 
-	bdl := bundle.New(bundle.WithCoreServices())
-	k8sClient, err := k8sclient.New(clusterName)
-	if err != nil {
-		return nil, errors.Errorf("failed to get k8s client for cluster %s, %v", clusterName, err)
-	}
+	// Synchronize cluster info to ETCD (every 10m)
+	go clusterInfo.LoopLoadAndSync(context.Background(), true)
 
 	k := &Kubernetes{
 		name:                     name,
@@ -1031,10 +1050,28 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 }
 
 func (k *Kubernetes) SetOverCommitMem(container *apiv1.Container, memSubscribeRatio float64) error {
-	format := container.Resources.Requests.Memory().Format
-	origin := container.Resources.Requests.Memory().Value()
-	r := resource.NewQuantity(int64(float64(origin)/memSubscribeRatio), format)
-	container.Resources.Requests[apiv1.ResourceMemory] = *r
+	requestMem := float64(container.Resources.Requests.Memory().Value() / 1024 / 1024)
+	maxMem := float64(container.Resources.Limits.Memory().Value() / 1024 / 1024)
+
+	if requestMem < MIN_MEM_SIZE {
+		return errors.Errorf("invalid request mem, value: %v, (which is lower than min mem(%vMi))",
+			requestMem, MIN_MEM_SIZE)
+	}
+
+	// max_mem set but smaller than request mem
+	if maxMem != 0 && maxMem < requestMem {
+		return errors.Errorf("invalid max mem, value: %v, (which is lower than request mem(%v))", maxMem, requestMem)
+	}
+
+	// if max_mem not set, use [mem/ratio, mem]; else use [mem, max_mem]
+	if maxMem == 0 {
+		maxMem = requestMem
+		requestMem = requestMem / memSubscribeRatio
+	}
+
+	container.Resources.Requests[apiv1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dMi", int(requestMem)))
+	container.Resources.Limits[apiv1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%dMi", int(maxMem)))
+
 	return nil
 }
 
@@ -1042,16 +1079,29 @@ func (k *Kubernetes) SetOverCommitMem(container *apiv1.Container, memSubscribeRa
 func (k *Kubernetes) SetFineGrainedCPU(container *apiv1.Container, extra map[string]string, cpuSubscribeRatio float64) error {
 	// 1, Processing request cpu value
 	requestCPU := float64(container.Resources.Requests.Cpu().MilliValue()) / 1000
+	maxCPU := float64(container.Resources.Limits.Cpu().MilliValue()) / 1000
+	actualCPU := requestCPU
 
 	if requestCPU < MIN_CPU_SIZE {
 		return errors.Errorf("invalid request cpu, value: %v, (which is lower than min cpu(%v))",
 			requestCPU, MIN_CPU_SIZE)
 	}
 
+	// max_cpu set but smaller than request cpu
+	if maxCPU != 0 && maxCPU < requestCPU {
+		return errors.Errorf("invalid max cpu, value: %v, (which is lower than request cpu(%v))", maxCPU, requestCPU)
+	}
+
 	// 2, Dealing with cpu oversold
 	ratio := cpupolicy.CalcCPUSubscribeRatio(cpuSubscribeRatio, extra)
-	actualCPU := requestCPU / ratio
-	container.Resources.Requests[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%v", actualCPU))
+
+	// if max_cpu not set, use [cpu/ratio, cpu]; else use [cpu, max_cpu]
+	if maxCPU == 0 {
+		maxCPU = requestCPU
+		actualCPU = requestCPU / ratio
+	}
+
+	container.Resources.Requests[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", int(actualCPU*1000)))
 
 	// 3, Processing the maximum cpu, that is, the corresponding cpu quota, the default is not limited cpu quota, that is, the value corresponding to cpu.cfs_quota_us under the cgroup is -1
 	quota := k.cpuNumQuota
@@ -1062,14 +1112,11 @@ func (k *Kubernetes) SetFineGrainedCPU(container *apiv1.Container, extra map[str
 	}
 
 	if quota >= requestCPU {
-		container.Resources.Limits = apiv1.ResourceList{
-			apiv1.ResourceCPU:    resource.MustParse(fmt.Sprintf("%v", requestCPU)),
-			apiv1.ResourceMemory: container.Resources.Requests[apiv1.ResourceMemory],
-		}
+		container.Resources.Limits[apiv1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%dm", int(maxCPU*1000)))
 	}
 
-	logrus.Debugf("set container cpu: name: %s, request cpu: %v, actual cpu: %v, subscribe ratio: %v, cpu quota: %v",
-		container.Name, requestCPU, actualCPU, ratio, quota)
+	logrus.Infof("set container cpu: name: %s, request cpu: %v, actual cpu: %vm, max cpu: %vm, subscribe ratio: %v, cpu quota: %v",
+		container.Name, requestCPU, container.Resources.Requests.Cpu().MilliValue(), container.Resources.Limits.Cpu().MilliValue(), ratio, quota)
 	return nil
 }
 

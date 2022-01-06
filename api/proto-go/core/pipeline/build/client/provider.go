@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.pipeline.build-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.pipeline.build.BuildService",
+			"erda.core.pipeline.build.BuildService.client",
 			"erda.core.pipeline.build-client",
 		},
 		Types: []reflect.Type{

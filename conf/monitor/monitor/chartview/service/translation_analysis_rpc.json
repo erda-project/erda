@@ -153,7 +153,7 @@
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
             "filter_target_service_id": "{{serviceId}}",
-            "include_dubbo_method": "{{subSearch}}",
+            "include_rpc_target": "{{subSearch}}",
             "format": "chartv2",
             "ql": "influxql:ast",
             "start": "{{startTime}}",
@@ -258,7 +258,7 @@
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
             "filter_target_service_id": "{{serviceId}}",
-            "include_dubbo_method": "{{subSearch}}",
+            "include_rpc_target": "{{subSearch}}",
             "format": "chartv2",
             "ql": "influxql:ast",
             "start": "{{startTime}}",
@@ -347,9 +347,9 @@
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
             "filter_target_service_id": "{{serviceId}}",
-            "include_dubbo_method": "{{subSearch}}",
+            "include_rpc_target": "{{subSearch}}",
             "format": "chartv2",
-            "q": "SELECT dubbo_service::tag as Service,dubbo_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时 FROM application_rpc_slow GROUP BY dubbo_method::tag ORDER BY avg(elapsed_mean::field) DESC LIMIT 50 ",
+            "q": "SELECT rpc_service::tag as Service,rpc_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时 FROM application_rpc_slow GROUP BY rpc_method::tag ORDER BY avg(elapsed_mean::field) DESC LIMIT 50 ",
             "ql": "influxql",
             "start": "{{startTime}}",
             "type": "_"
@@ -365,10 +365,10 @@
               "fromSource": [
                 "application_rpc_slow"
               ],
-              "groupBy": "dubbo_method::tag",
+              "groupBy": "rpc_method::tag",
               "limit": 50,
               "orderBy": "",
-              "select": "dubbo_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时"
+              "select": "rpc_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间,format_duration(elapsed_max::field,'',2) as 最大耗时,format_duration(elapsed_min::field,'',2) as 最小耗时"
             }
           },
           "optionProps": {
@@ -410,9 +410,9 @@
             "filter__metric_scope": "micro_service",
             "filter__metric_scope_id": "{{terminusKey}}",
             "filter_target_service_id": "{{serviceId}}",
-            "include_dubbo_method": "{{subSearch}}",
+            "include_rpc_target": "{{subSearch}}",
             "format": "chartv2",
-            "q": "SELECT dubbo_service::tag as Service,dubbo_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间 FROM application_rpc_error GROUP BY dubbo_method::tag ORDER BY max(timestamp) DESC  LIMIT 50 ",
+            "q": "SELECT rpc_service::tag as Service,rpc_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间 FROM application_rpc_error GROUP BY rpc_method::tag ORDER BY max(timestamp) DESC  LIMIT 50 ",
             "ql": "influxql",
             "start": "{{startTime}}",
             "type": "_"
@@ -428,9 +428,9 @@
               "fromSource": [
                 "application_rpc_error"
               ],
-              "groupBy": "dubbo_method::tag",
+              "groupBy": "rpc_method::tag",
               "limit": 50,
-              "select": "dubbo_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间"
+              "select": "rpc_method::tag as Method,format_time(timestamp,'2006-01-02 15:04:05') as 时间"
             }
           },
           "optionProps": {

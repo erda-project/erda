@@ -46,8 +46,8 @@ const (
 	routeFormatBI           = "/microService/%s/%s/%s/monitor/%s/bi/%s"
 	routeFormatSI           = "/microService/%s/%s/%s/topology/%s/%s/%s/%s/si/%s"
 
-	routeFormatProcess     = "/microService/%s/%s/%s/synopsis/%s/service-list/%s/%s/%s/process"
-	routeFormatTransaction = "/microService/%s/%s/%s/synopsis/%s/service-list/%s/%s/%s/transaction?type=%s"
+	routeFormatProcess     = "/microService/%s/%s/%s/monitor/%s/service-analysis/%s/%s/%s/process"
+	routeFormatTransaction = "/microService/%s/%s/%s/monitor/%s/service-analysis/%s/%s/%s/transaction?type=%s"
 
 	routeFormatOrgAddon = "/dataCenter/alarm/middleware-chart?addon_id=%s&cluster_name=%s&timestamp=%s"
 	routeFormatOrgPod   = "/dataCenter/alarm/pod?pod_name=%s&cluster_name=%s&timestamp=%s"

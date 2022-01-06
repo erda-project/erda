@@ -19,6 +19,10 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/pkg/errors"
+
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 // ResourceType release可管理的资源类型
@@ -68,6 +72,24 @@ type ReleaseCreateRequest struct {
 	// Addon addon注册时，release包含dice.yml与addon.yml，选填
 	Addon string `json:"addon,omitempty"`
 
+	// Tags
+	Tags []string `json:"tags,omitempty"`
+
+	// IsStable stable表示非临时制品
+	IsStable bool `json:"isStable,omitempty"`
+
+	// IsFormal 是否为正式版
+	IsFormal bool `json:"isFormal,omitempty"`
+
+	// IsProjectRelease 是否为项目级别制品
+	IsProjectRelease bool `json:"isProjectRelease,omitempty"`
+
+	// Changelog 用于保存changelog
+	Changelog string `json:"changelog,omitempty"`
+
+	// ApplicationReleaseList 项目级制品依赖的应用级制品ID列表
+	ApplicationReleaseList []string `json:"applicationReleaseList,omitempty"`
+
 	// Labels 用于release分类，描述release类别，map类型, 最大长度1000, 选填
 	Labels map[string]string `json:"labels,omitempty"`
 
@@ -100,6 +122,30 @@ type ReleaseCreateRequest struct {
 
 	// CrossCluster 跨集群
 	CrossCluster bool `json:"crossCluster,omitempty"`
+}
+
+type ReleaseUploadRequest struct {
+	// DiceFileID 上传的dice.yml文件ID，必填
+	DiceFileID string `json:"diceFileID,omitempty"`
+	// ProjectID 项目ID，必填
+	ProjectID int64 `json:"projectID,omitempty"`
+	// ProjectName 项目名称，选填
+	ProjectName string `json:"projectName,omitempty"`
+	// OrgID 企业标识符，描述release所属企业，选填
+	OrgID int64 `json:"orgId,omitempty"`
+	// UserID 用户标识符, 描述release所属用户，最大长度50，选填
+	UserID string `json:"userId,omitempty"`
+	// ClusterName 集群名称，描述release所属集群，最大长度80，选填
+	ClusterName string `json:"clusterName,omitempty"`
+}
+
+type ReleaseParseVersionResponse struct {
+	Header
+	Data ParseReleaseFileResponseData `json:"data"`
+}
+
+type ParseReleaseFileResponseData struct {
+	Version string `json:"version,omitempty"`
 }
 
 // ReleaseResource release资源结构
@@ -139,8 +185,11 @@ type ReleaseUpdateRequest struct {
 
 // ReleaseUpdateRequestData 更新 release 请求数据结构
 type ReleaseUpdateRequestData struct {
-	Version string `json:"version,omitempty"`
-	Desc    string `json:"desc,omitempty"`
+	Version                string   `json:"version,omitempty"`
+	Desc                   string   `json:"desc,omitempty"`
+	Changelog              string   `json:"changelog,omitempty"`
+	Dice                   string   `json:"dice,omitempty"` // 项目级别制品使用
+	ApplicationReleaseList []string `json:"applicationReleaseList,omitempty"`
 	// 以下信息主要为了version覆盖使用，找出之前的version清除
 
 	// 企业标识
@@ -189,15 +238,22 @@ type ReleaseGetResponse struct {
 
 // ReleaseGetResponseData release 详情API实际返回数据
 type ReleaseGetResponseData struct {
-	ReleaseID   string            `json:"releaseId"`
-	ReleaseName string            `json:"releaseName"`
-	Diceyml     string            `json:"diceyml"`
-	Desc        string            `json:"desc,omitempty"`
-	Addon       string            `json:"addon,omitempty"`
-	Resources   []ReleaseResource `json:"resources,omitempty"`
-	Images      []string          `json:"images,omitempty"`
-	Labels      map[string]string `json:"labels,omitempty"`
-	Version     string            `json:"version,omitempty"`
+	ReleaseID              string                       `json:"releaseId"`
+	ReleaseName            string                       `json:"releaseName"`
+	Diceyml                string                       `json:"diceyml"`
+	Desc                   string                       `json:"desc,omitempty"`
+	Addon                  string                       `json:"addon,omitempty"`
+	Changelog              string                       `json:"changelog,omitempty"`
+	IsStable               bool                         `json:"isStable"`
+	IsFormal               bool                         `json:"isFormal"`
+	IsProjectRelease       bool                         `json:"isProjectRelease"`
+	ApplicationReleaseList []*ApplicationReleaseSummary `json:"applicationReleaseList,omitempty"`
+	Resources              []ReleaseResource            `json:"resources,omitempty"`
+	Images                 []string                     `json:"images,omitempty"`
+	ServiceImages          []*ServiceImagePair          `json:"serviceImages"`
+	Labels                 map[string]string            `json:"labels,omitempty"`
+	Tags                   string                       `json:"tags,omitempty"`
+	Version                string                       `json:"version,omitempty"`
 
 	// CrossCluster 是否可以跨集群
 	CrossCluster bool `json:"crossCluster,omitempty"`
@@ -229,6 +285,70 @@ type ReleaseGetResponseData struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
+func (r *ReleaseGetResponseData) ReLoadImages() error {
+	for _, app := range r.ApplicationReleaseList {
+		if err := app.ReLoadImages(); err != nil {
+			return err
+		}
+	}
+
+	if r.Diceyml == "" {
+		return nil
+	}
+	deployable, err := diceyml.NewDeployable([]byte(r.Diceyml), diceyml.WS_PROD, false)
+	if err != nil {
+		return err
+	}
+	var obj = deployable.Obj()
+	r.Images = nil
+	r.ServiceImages = nil
+	for name, service := range obj.Services {
+		r.Images = append(r.Images, service.Image)
+		r.ServiceImages = append(r.ServiceImages, &ServiceImagePair{
+			ServiceName: name,
+			Image:       service.Image,
+		})
+	}
+
+	return nil
+}
+
+type ServiceImagePair struct {
+	ServiceName string `json:"name"`
+	Image       string `json:"image"`
+}
+
+type ApplicationReleaseSummary struct {
+	ReleaseID       string              `json:"releaseID,omitempty"`
+	ReleaseName     string              `json:"releaseName,omitempty"`
+	Version         string              `json:"version,omitempty"`
+	ApplicationID   int64               `json:"applicationID"`
+	ApplicationName string              `json:"applicationName,omitempty"`
+	Services        []*ServiceImagePair `json:"services"`
+	CreatedAt       string              `json:"createdAt,omitempty"`
+	DiceYml         string              `json:"-"`
+}
+
+func (r *ApplicationReleaseSummary) ReLoadImages() error {
+	if r.DiceYml == "" {
+		return errors.Errorf("invalid release file: it is empty, applicationID: %v, applicationName: %s",
+			r.ApplicationID, r.ApplicationName)
+	}
+	deployable, err := diceyml.NewDeployable([]byte(r.DiceYml), diceyml.WS_PROD, false)
+	if err != nil {
+		return err
+	}
+	var obj = deployable.Obj()
+	r.Services = nil
+	for name, service := range obj.Services {
+		r.Services = append(r.Services, &ServiceImagePair{
+			ServiceName: name,
+			Image:       service.Image,
+		})
+	}
+	return nil
+}
+
 // ReleaseListRequest release列表 API(GET /api/releases)使用
 type ReleaseListRequest struct {
 	// 查询参数，releaseId/releaseName/version
@@ -243,6 +363,27 @@ type ReleaseListRequest struct {
 	// 分支名
 	Branch string `json:"-" query:"branchName"`
 
+	// stable表示非临时制品
+	IsStable *bool `json:"-" query:"isStable"`
+
+	// 是否为正式版本
+	IsFormal *bool `json:"-" query:"isFormal"`
+
+	// 是否为项目制品
+	IsProjectRelease *bool `json:"-" query:"isProjectRelease"`
+
+	// 提交用户
+	UserID []string `json:"-" query:"userID"`
+
+	// Version
+	Version string `json:"version" query:"version"`
+
+	// commit ID
+	CommitID string `json:"-" query:"commitID"`
+
+	// tag
+	Tags string `json:"-" query:"tags"`
+
 	// 只列出有 version 的 release
 	IsVersion bool `json:"-" query:"isVersion"`
 
@@ -253,7 +394,7 @@ type ReleaseListRequest struct {
 	CrossClusterOrSpecifyCluster *string `json:"-" query:"crossClusterOrSpecifyCluster"`
 
 	// 应用Id
-	ApplicationID int64 `json:"-" query:"applicationId"`
+	ApplicationID []string `json:"-" query:"applicationId"`
 
 	// 项目ID
 	ProjectID int64 `json:"-" query:"projectId"`
@@ -269,6 +410,12 @@ type ReleaseListRequest struct {
 
 	// 当前页号，默认值1
 	PageNum int64 `json:"-" query:"pageNo"`
+
+	// 排序字段
+	OrderBy string `json:"orderBy,omitempty"`
+
+	// 升序或降序
+	Order string `json:"descOrder,omitempty"`
 }
 
 func (req ReleaseListRequest) ConvertToQueryParams() url.Values {
@@ -288,8 +435,8 @@ func (req ReleaseListRequest) ConvertToQueryParams() url.Values {
 	if req.CrossClusterOrSpecifyCluster != nil {
 		values.Add("crossClusterOrSpecifyCluster", *req.CrossClusterOrSpecifyCluster)
 	}
-	if req.ApplicationID > 0 {
-		values.Add("applicationId", strconv.FormatInt(req.ApplicationID, 10))
+	for _, id := range req.ApplicationID {
+		values.Add("applicationId", id)
 	}
 	if req.ProjectID > 0 {
 		values.Add("projectId", strconv.FormatInt(req.ProjectID, 10))
@@ -312,6 +459,32 @@ func (req ReleaseListRequest) ConvertToQueryParams() url.Values {
 	if req.Branch != "" {
 		values.Add("branchName", req.Branch)
 	}
+	if req.IsStable != nil {
+		values.Add("isStable", strconv.FormatBool(*req.IsStable))
+	}
+	if req.IsFormal != nil {
+		values.Add("isFormal", strconv.FormatBool(*req.IsFormal))
+	}
+	if req.IsProjectRelease != nil {
+		values.Add("isProjectRelease", strconv.FormatBool(*req.IsProjectRelease))
+	}
+	for _, id := range req.UserID {
+		values.Add("userId", id)
+	}
+	if req.CommitID != "" {
+		values.Add("commitId", req.CommitID)
+	}
+	if req.Version != "" {
+		values.Add("version", req.Version)
+	}
+	if req.Tags != "" {
+		values.Add("tags", req.Tags)
+	}
+	if req.OrderBy != "" {
+		values.Add("orderBy", req.OrderBy)
+		values.Add("order", req.Order)
+	}
+
 	return values
 }
 
@@ -324,8 +497,57 @@ type ReleaseListResponse struct {
 // ReleaseListResponseData release 列表API实际响应数据
 type ReleaseListResponseData struct {
 	// release总数，用于分页
-	Total    int64                    `json:"total"`
-	Releases []ReleaseGetResponseData `json:"list"`
+	Total    int64         `json:"total"`
+	Releases []ReleaseData `json:"list"`
+}
+
+// ReleaseData release 列表API实际返回数据
+type ReleaseData struct {
+	ReleaseID              string              `json:"releaseId"`
+	ReleaseName            string              `json:"releaseName"`
+	Diceyml                string              `json:"diceyml"`
+	Desc                   string              `json:"desc,omitempty"`
+	Addon                  string              `json:"addon,omitempty"`
+	Changelog              string              `json:"changelog,omitempty"`
+	IsStable               bool                `json:"isStable"`
+	IsFormal               bool                `json:"isFormal"`
+	IsProjectRelease       bool                `json:"isProjectRelease"`
+	ApplicationReleaseList string              `json:"applicationReleaseList,omitempty"`
+	Resources              []ReleaseResource   `json:"resources,omitempty"`
+	Images                 []string            `json:"images,omitempty"`
+	ServiceImages          []*ServiceImagePair `json:"serviceImages"`
+	Labels                 map[string]string   `json:"labels,omitempty"`
+	Tags                   string              `json:"tags,omitempty"`
+	Version                string              `json:"version,omitempty"`
+
+	// CrossCluster 是否可以跨集群
+	CrossCluster bool `json:"crossCluster,omitempty"`
+
+	// 当前被部署次数
+	Reference int64 `json:"reference"`
+
+	// 企业标识
+	OrgID int64 `json:"orgId"`
+
+	// 项目Id
+	ProjectID int64 `json:"projectId"`
+
+	// 应用Id
+	ApplicationID int64 `json:"applicationId"`
+
+	// 项目Name
+	ProjectName string `json:"projectName"`
+
+	// 应用Name
+	ApplicationName string `json:"applicationName"`
+
+	// 操作用户Id
+	UserID string `json:"userId,omitempty"`
+
+	// 集群名称
+	ClusterName string    `json:"clusterName"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 // ReleaseNameListRequest releaseName列表请求
@@ -352,3 +574,52 @@ type ReleaseGetDiceYmlRequest struct {
 
 // ReleaseEventData release 事件格式
 type ReleaseEventData ReleaseGetResponseData
+
+// ReleasesDeleteRequest release 批量删除请求结构
+type ReleasesDeleteRequest struct {
+	ProjectID int64    `json:"projectId"`
+	ReleaseID []string `json:"releaseID"`
+}
+
+// ReleasesToFormalRequest release 批量转正请求结构
+type ReleasesToFormalRequest struct {
+	ProjectID int64    `json:"projectId"`
+	ReleaseID []string `json:"releaseID"`
+}
+
+type ReleasesToFormalResponse struct {
+	Header
+	Data string `json:"data"`
+}
+
+type ReleaseMetadata struct {
+	Version   string                 `json:"version,omitempty"`
+	Desc      string                 `json:"desc,omitempty"`
+	ChangeLog string                 `json:"changeLog,omitempty"`
+	AppList   map[string]AppMetadata `json:"appList,omitempty"`
+}
+
+type AppMetadata struct {
+	GitBranch        string `json:"gitBranch,omitempty"`
+	GitCommitID      string `json:"gitCommitId,omitempty"`
+	GitCommitMessage string `json:"gitCommitMessage,omitempty"`
+	GitRepo          string `json:"gitRepo,omitempty"`
+	ChangeLog        string `json:"changeLog,omitempty"`
+}
+
+type ReleaseCheckVersionRequest struct {
+	OrgID            int64  `json:"orgID"`
+	IsProjectRelease bool   `json:"isProjectRelease"`
+	ProjectID        int64  `json:"projectID"`
+	AppID            int64  `json:"appID"`
+	Version          string `json:"version,omitempty"`
+}
+
+type ReleaseCheckVersionResponse struct {
+	Header
+	Data ReleaseCheckVersionResponseData `json:"data"`
+}
+
+type ReleaseCheckVersionResponseData struct {
+	IsUnique bool `json:"isUnique"`
+}

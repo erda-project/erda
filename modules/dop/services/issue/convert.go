@@ -143,8 +143,9 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 		}
 	}
 	var labelNames []string
+	var labels []apistructs.ProjectLabel
 	if needQueryLabels {
-		labels, _ := svc.bdl.ListLabelByIDs(labelIDs)
+		labels, _ = svc.bdl.ListLabelByIDs(labelIDs)
 		labelNames = make([]string, 0, len(labels))
 		for _, v := range labels {
 			labelNames = append(labelNames, v.Name)
@@ -154,6 +155,7 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 			label, ok := projectLabels[labelID]
 			if ok {
 				labelNames = append(labelNames, label.Name)
+				labels = append(labels, label)
 			}
 		}
 	}
@@ -187,6 +189,7 @@ func (svc *Issue) ConvertWithoutButton(model dao.Issue,
 		Creator:        model.Creator,
 		Assignee:       model.Assignee,
 		Labels:         labelNames,
+		LabelDetails:   labels,
 		ManHour:        manHour.Clean(),
 		Source:         model.Source,
 		Owner:          model.Owner,
@@ -264,6 +267,10 @@ func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []
 		if i.PlanFinishedAt != nil {
 			planFinishedAt = i.PlanFinishedAt.Format("2006-01-02 15:04:05")
 		}
+		planStartedAt := ""
+		if i.PlanStartedAt != nil {
+			planStartedAt = i.PlanStartedAt.Format("2006-01-02 15:04:05")
+		}
 		iterationName := iterationMap[i.IterationID]
 		stage := issueStage{
 			Type:  i.Type,
@@ -323,6 +330,7 @@ func (svc *Issue) convertIssueToExcelList(issues []apistructs.Issue, property []
 			strings.Join(relatedIssueIDStrs, ","),
 			i.ManHour.GetFormartTime("EstimateTime"),
 			finishTime,
+			planStartedAt,
 		}))
 		relations := propertyMap[i.ID]
 		// 获取每个自定义字段的值
@@ -488,7 +496,7 @@ func (svc *Issue) decodeFromExcelFile(req apistructs.IssueImportExcelRequest, r 
 			manHour, err := apistructs.NewManhour(row[17])
 			if err != nil {
 				falseExcel = append(falseExcel, i+1)
-				falseReason = append(falseReason, fmt.Sprintf("failed to counvert estimate time: %s, err: %v", row[17], err))
+				falseReason = append(falseReason, fmt.Sprintf("failed to convert estimate time: %s, err: %v", row[17], err))
 				continue
 			}
 			issue.ManHour = manHour
@@ -496,17 +504,34 @@ func (svc *Issue) decodeFromExcelFile(req apistructs.IssueImportExcelRequest, r 
 
 		// row[18] finish time, jump over
 
+		// row[19] plan start time
+		if len(row) >= 20 && row[19] != "" {
+			planStartAt, err := time.Parse("2006-01-02 15:04:05", row[19])
+			if err != nil {
+				falseExcel = append(falseExcel, i+1)
+				falseReason = append(falseReason, fmt.Sprintf("failed to convert plan start time: %s, err: %v", row[19], err))
+				continue
+			}
+			issue.PlanStartedAt = &planStartAt
+		}
+
 		// 获取自定义字段
 		relation := apistructs.IssuePropertyRelationCreateRequest{
 			OrgID:     req.OrgID,
 			ProjectID: int64(req.ProjectID),
 		}
-		if len(row) >= 20 {
-			for indexx, line := range row[19:] {
-				index := indexx + 19
+		if len(row) >= 21 {
+			for indexx, line := range row[20:] {
+				index := indexx + 20
 				// 获取字段名对应的字段
+				propertyIndex, ok := propertyNameMap[rows[0][index]]
+				if !ok {
+					falseExcel = append(falseExcel, i+1)
+					falseReason = append(falseReason, fmt.Sprintf("custom property %s is not defined in org", row[index]))
+					continue
+				}
 				instance := apistructs.IssuePropertyInstance{
-					IssuePropertyIndex: propertyNameMap[rows[0][index]],
+					IssuePropertyIndex: propertyIndex,
 				}
 				if !instance.PropertyType.IsOptions() {
 					instance.ArbitraryValue = line

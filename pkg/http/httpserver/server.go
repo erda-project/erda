@@ -32,6 +32,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
+	"github.com/erda-project/erda/pkg/goroutine_context"
 	"github.com/erda-project/erda/pkg/http/httpserver/ierror"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -59,10 +60,14 @@ type Server struct {
 type Endpoint struct {
 	Path           string
 	Method         string
-	Handler        func(context.Context, *http.Request, map[string]string) (Responser, error)
-	WriterHandler  func(context.Context, http.ResponseWriter, *http.Request, map[string]string) error
-	ReverseHandler func(context.Context, *http.Request, map[string]string) error
+	Handler        Handler
+	WriterHandler  WriterHandler
+	ReverseHandler ReverseHandler
 }
+
+type Handler func(context.Context, *http.Request, map[string]string) (Responser, error)
+type WriterHandler func(context.Context, http.ResponseWriter, *http.Request, map[string]string) error
+type ReverseHandler func(context.Context, *http.Request, map[string]string) error
 
 // New create an http server.
 func New(addr string) *Server {
@@ -143,6 +148,11 @@ func (s *Server) internal(handler func(context.Context, *http.Request, map[strin
 		if s.localeLoader != nil {
 			locale = s.localeLoader.Locale(localeName)
 		}
+
+		// set global context bind goroutine id
+		i18n.SetGoroutineBindLang(localeName)
+		// clear all global context
+		defer goroutine_context.ClearContext()
 
 		// Manual decoding url var
 		muxVars := mux.Vars(r)

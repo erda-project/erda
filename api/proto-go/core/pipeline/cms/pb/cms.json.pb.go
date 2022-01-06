@@ -43,8 +43,12 @@ var _ json.Marshaler = (*CmsNsConfigsDeleteResponse)(nil)
 var _ json.Unmarshaler = (*CmsNsConfigsDeleteResponse)(nil)
 var _ json.Marshaler = (*CmsNsConfigsGetRequest)(nil)
 var _ json.Unmarshaler = (*CmsNsConfigsGetRequest)(nil)
+var _ json.Marshaler = (*CmsNsConfigsBatchGetRequest)(nil)
+var _ json.Unmarshaler = (*CmsNsConfigsBatchGetRequest)(nil)
 var _ json.Marshaler = (*CmsNsConfigsGetResponse)(nil)
 var _ json.Unmarshaler = (*CmsNsConfigsGetResponse)(nil)
+var _ json.Marshaler = (*CmsNsConfigsBatchGetResponse)(nil)
+var _ json.Unmarshaler = (*CmsNsConfigsBatchGetResponse)(nil)
 
 // PipelineCmsNs implement json.Marshaler.
 func (m *PipelineCmsNs) MarshalJSON() ([]byte, error) {
@@ -316,6 +320,24 @@ func (m *CmsNsConfigsGetRequest) UnmarshalJSON(b []byte) error {
 	}).Unmarshal(b, m)
 }
 
+// CmsNsConfigsBatchGetRequest implement json.Marshaler.
+func (m *CmsNsConfigsBatchGetRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CmsNsConfigsBatchGetRequest implement json.Marshaler.
+func (m *CmsNsConfigsBatchGetRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
 // CmsNsConfigsGetResponse implement json.Marshaler.
 func (m *CmsNsConfigsGetResponse) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
@@ -329,6 +351,24 @@ func (m *CmsNsConfigsGetResponse) MarshalJSON() ([]byte, error) {
 
 // CmsNsConfigsGetResponse implement json.Marshaler.
 func (m *CmsNsConfigsGetResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CmsNsConfigsBatchGetResponse implement json.Marshaler.
+func (m *CmsNsConfigsBatchGetResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CmsNsConfigsBatchGetResponse implement json.Marshaler.
+func (m *CmsNsConfigsBatchGetResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

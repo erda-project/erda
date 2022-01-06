@@ -145,6 +145,8 @@ func (e *Endpoints) PagingIssues(ctx context.Context, r *http.Request, vars map[
 		pageReq.OrderBy = "plan_finished_at"
 	case "assignee":
 		pageReq.OrderBy = "assignee"
+	case "updatedAt", "updated_at":
+		pageReq.OrderBy = "updated_at"
 	default:
 		return apierrors.ErrPagingIssues.InvalidParameter("orderBy").ToResp(), nil
 	}
@@ -207,6 +209,10 @@ func (e *Endpoints) ExportExcelIssue(ctx context.Context, w http.ResponseWriter,
 		pageReq.OrderBy = "plan_started_at"
 	case "planFinishedAt":
 		pageReq.OrderBy = "plan_finished_at"
+	case "assignee":
+		pageReq.OrderBy = "assignee"
+	case "updatedAt", "updated_at":
+		pageReq.OrderBy = "updated_at"
 	default:
 		return apierrors.ErrExportExcelIssue.InvalidParameter("orderBy")
 	}
@@ -670,8 +676,9 @@ func (e *Endpoints) PagingIssueStreams(ctx context.Context, r *http.Request, var
 			return apierrors.ErrPagingIssueStream.AccessDenied().ToResp(), nil
 		}
 	}
+
 	// 查询事件流列表
-	streamRespData, err := e.issueStream.Paging(&pagingReq)
+	streamRespData, err := e.issueStream.Paging(&pagingReq, e.bdl.GetLocaleByRequest(r).Name())
 	if err != nil {
 		return apierrors.ErrPagingIssueStream.InternalError(err).ToResp(), nil
 	}

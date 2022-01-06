@@ -143,7 +143,11 @@ func (rs *routeSource) RegisterTo(router transhttp.Router) error {
 			return err
 		}
 		if rs.auth != nil && api.Auth != nil {
-			handler = rs.auth.Interceptor(handler, proto.GetAuthOption(api.Auth))
+			handler = rs.auth.Interceptor(handler, proto.GetAuthOption(api.Auth, func(opts map[string]interface{}) map[string]interface{} {
+				opts["path"] = api.Path
+				opts["method"] = api.Method
+				return opts
+			}))
 		}
 		router.Add(api.Method, api.Path, transhttp.HandlerFunc(handler))
 	}

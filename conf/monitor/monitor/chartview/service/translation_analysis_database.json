@@ -55,7 +55,7 @@
                     "zh": "数据库类型"
                   }
                 },
-                "key": "db_type",
+                "key": "db_system",
                 "resultType": "string",
                 "type": "field"
               },
@@ -67,7 +67,7 @@
                     "zh": "数据库实例"
                   }
                 },
-                "key": "db_instance",
+                "key": "db_name",
                 "resultType": "string",
                 "type": "field"
               },

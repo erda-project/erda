@@ -67,12 +67,12 @@ func (w *ComponentWorkloadChart) GenComponentState(c *cptype.Component) error {
 func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	w.Data.Option.Tooltip.Show = false
 	w.Data.Option.Color = []string{
-		"primary7", "warning7", "primary6", "primary4", "warning6",
+		"primary7", "warning7", "primary6", "primary5", "primary4", "warning6",
 	}
 	w.Data.Option.Legend.Data = []string{
 		cputil.I18n(ctx, "Active"), cputil.I18n(ctx, "Abnormal"),
-		cputil.I18n(ctx, "Updating"), cputil.I18n(ctx, "Succeeded"),
-		cputil.I18n(ctx, "Failed"),
+		cputil.I18n(ctx, "Updating"), cputil.I18n(ctx, "Stopped"),
+		cputil.I18n(ctx, "Succeeded"), cputil.I18n(ctx, "Failed"),
 	}
 	w.Data.Option.YAxis.Type = "value"
 	w.Data.Option.XAxis.Type = "category"
@@ -84,14 +84,19 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	activeDeploy := w.State.Values.DeploymentsCount.Active
 	abnormalDeploy := w.State.Values.DeploymentsCount.Abnormal
 	updatingDeploy := w.State.Values.DeploymentsCount.Updating
+	stoppedDeploy := w.State.Values.DeploymentsCount.Stopped
 
 	// daemonSet
 	activeDs := w.State.Values.DaemonSetCount.Active
 	abnormalDs := w.State.Values.DaemonSetCount.Abnormal
+	updatingDs := w.State.Values.DaemonSetCount.Updating
+	stoppedDs := w.State.Values.DaemonSetCount.Stopped
 
 	// statefulSet
 	activeSs := w.State.Values.StatefulSetCount.Active
 	abnormalSs := w.State.Values.StatefulSetCount.Abnormal
+	updatingSs := w.State.Values.StatefulSetCount.Updating
+	stoppedSs := w.State.Values.StatefulSetCount.Stopped
 
 	// job
 	activeJob := w.State.Values.JobCount.Active
@@ -147,11 +152,21 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 		BarWidth: 10,
 		BarGap:   "40%",
 		Data: []*int{
-			&updatingDeploy, nil, nil, nil, nil,
+			&updatingDeploy, &updatingSs, &updatingDs, nil, nil,
+		},
+	}
+
+	stoppedSeries := Series{
+		Name:     cputil.I18n(ctx, "Stopped"),
+		Type:     "bar",
+		BarWidth: 10,
+		BarGap:   "40%",
+		Data: []*int{
+			&stoppedDeploy, &stoppedSs, &stoppedDs, nil, nil,
 		},
 	}
 	w.Data.Option.Series = []Series{
-		activeSeries, abnormalSeries, updatingSeries, succeededSeries, failedSeries,
+		activeSeries, abnormalSeries, updatingSeries, stoppedSeries, succeededSeries, failedSeries,
 	}
 	return nil
 }

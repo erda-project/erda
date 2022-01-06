@@ -50,6 +50,8 @@ const (
 	TagsHttpUrl               = Tags + Sep4 + "http_url"
 	TagsPeerServiceScope      = Tags + Sep4 + "peer_service_scope"
 	TagsPeerAddress           = Tags + Sep4 + "peer_address"
+	TagsDBSystem              = Tags + Sep4 + "db_system"
+	TagsDBHost                = Tags + Sep4 + "db_host"
 	TagsPeerService           = Tags + Sep4 + "peer_service"
 	TagsApplicationId         = Tags + Sep4 + "application_id"
 	TagsApplicationName       = Tags + Sep4 + "application_name"

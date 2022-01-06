@@ -19,6 +19,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 )
 
 func TestGenEmptyAPISpecStr(t *testing.T) {
@@ -51,7 +53,7 @@ func Test_genProps(t *testing.T) {
 					},
 				},
 			},
-			want: nil,
+			want: cptype.ComponentProps{},
 		},
 	}
 	for _, tt := range tests {

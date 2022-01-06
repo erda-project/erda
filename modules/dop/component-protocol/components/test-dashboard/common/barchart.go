@@ -14,6 +14,11 @@
 
 package common
 
+import (
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+)
+
 type BarProps struct {
 	ChartType string `json:"chartType"`
 	Option    Option `json:"option"`
@@ -78,7 +83,7 @@ type YAxis struct {
 	AxisLabel map[string]interface{} `json:"axisLabel"`
 }
 
-func NewBarProps(values []int64, categories []string, title, xFormatter string) BarProps {
+func NewBarProps(values []int64, categories []string, title, xFormatter string) cptype.ComponentProps {
 	zooms := make([]DataZoom, 0)
 	if len(categories) < 10 {
 		for i := 10 - len(categories); i > 0; i-- {
@@ -117,7 +122,7 @@ func NewBarProps(values []int64, categories []string, title, xFormatter string) 
 			Value:      v,
 		})
 	}
-	return BarProps{
+	return cputil.MustConvertProps(BarProps{
 		ChartType: "bar",
 		Option: Option{
 			Animation: false,
@@ -147,5 +152,5 @@ func NewBarProps(values []int64, categories []string, title, xFormatter string) 
 			},
 		},
 		Title: title,
-	}
+	})
 }

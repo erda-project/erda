@@ -146,7 +146,7 @@ func (e *ComponentAddPodFileEditor) CreatePod() error {
 }
 
 func (e *ComponentAddPodFileEditor) Transfer(c *cptype.Component) {
-	c.Props = e.Props
+	c.Props = cputil.MustConvertProps(e.Props)
 	c.State = map[string]interface{}{
 		"clusterName": e.State.ClusterName,
 		"values":      e.State.Values,

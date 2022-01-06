@@ -8,6 +8,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
+	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/repr v0.0.0-20210301060118-828286944d6a // indirect
@@ -37,7 +38,7 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
-	github.com/erda-project/erda-infra v0.0.0-20211230094138-18efc0ca9a0d
+	github.com/erda-project/erda-infra v0.0.0-20211231081905-1caf77f9f97d
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/erda-project/erda-sourcecov v0.1.0
@@ -51,6 +52,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/gin-gonic/gin v1.7.0
 	github.com/go-echarts/go-echarts/v2 v2.2.4
+	github.com/go-eden/routine v0.0.2
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.8
 	github.com/go-openapi/strfmt v0.19.5
@@ -96,7 +98,7 @@ require (
 	github.com/minio/md5-simd v1.1.2
 	github.com/minio/minio-go v0.0.0-20190308013636-b32976861da0
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/mitchellh/mapstructure v1.4.1
+	github.com/mitchellh/mapstructure v1.4.3
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/mwitkow/go-proto-validators v0.3.2
 	github.com/nwaples/rardecode v1.1.0 // indirect
@@ -152,10 +154,9 @@ require (
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 // indirect
 	golang.org/x/text v0.3.7
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6
-	google.golang.org/genproto v0.0.0-20210916144049-3192f974c780
+	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
 	google.golang.org/grpc v1.42.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/Knetic/govaluate.v3 v3.0.0

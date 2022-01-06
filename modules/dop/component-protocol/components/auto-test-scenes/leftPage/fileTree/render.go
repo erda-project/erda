@@ -109,7 +109,7 @@ func (i *ComponentFileTree) RenderProtocol(c *cptype.Component, g *cptype.Global
 		c.Data = d
 	}
 	if c.Operations == nil {
-		d := make(cptype.ComponentOps)
+		d := make(cptype.ComponentOperations)
 		c.Operations = d
 	}
 	c.Props = i.Props

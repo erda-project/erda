@@ -15,18 +15,28 @@
 package k8s
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"bou.ke/monkey"
 	"github.com/pkg/errors"
 	"gotest.tools/assert"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/rest"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/clusterinfo"
+	"github.com/erda-project/erda/modules/scheduler/executor/util"
+	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/istioctl/engines"
 	"github.com/erda-project/erda/pkg/istioctl/executors"
+	k8sclientconfig "github.com/erda-project/erda/pkg/k8sclient/config"
 )
 
 func TestComposeDeploymentNodeAffinityPreferredWithServiceWorkspace(t *testing.T) {
@@ -200,6 +210,112 @@ func Test_getIstioEngine(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getIstioEngine() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNew(t *testing.T) {
+	var (
+		bdl         = bundle.New()
+		mockCluster = "mock-cluster"
+	)
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetCluster", func(_ *bundle.Bundle, _ string) (*apistructs.ClusterInfo, error) {
+		return &apistructs.ClusterInfo{}, nil
+	})
+
+	monkey.Patch(k8sclientconfig.ParseManageConfig, func(_ string, _ *apistructs.ManageConfig) (*rest.Config, error) {
+		return &rest.Config{}, nil
+	})
+
+	monkey.Patch(util.GetClient, func(_ string, _ *apistructs.ManageConfig) (string, *httpclient.HTTPClient, error) {
+		return "localhost", httpclient.New(), nil
+	})
+
+	monkey.Patch(dbengine.Open, func(_ ...*dbengine.Conf) (*dbengine.DBEngine, error) {
+		return &dbengine.DBEngine{}, nil
+	})
+
+	monkey.Patch(clusterinfo.New, func(_ string, _ ...clusterinfo.Option) (*clusterinfo.ClusterInfo, error) {
+		return &clusterinfo.ClusterInfo{}, nil
+	})
+
+	defer monkey.UnpatchAll()
+
+	_, err := New("MARATHONFORMOCKCLUSTER", mockCluster, map[string]string{})
+	//assert.NilError(t, err)
+	fmt.Println(err)
+}
+
+func TestSetFineGrainedCPU(t *testing.T) {
+	tests := []struct {
+		name           string
+		requestCpu     float64
+		maxCpu         float64
+		ratio          int
+		wantErr        bool
+		wantRequestCPU string
+		wantMaxCPU     string
+	}{
+		{
+			name:    "test1_request_cpu_not_set",
+			wantErr: true,
+		},
+		{
+			name:       "test2_invalid_max_cpu",
+			requestCpu: 0.5,
+			maxCpu:     0.25,
+			wantErr:    true,
+		},
+		{
+			name:           "test3_ratio_with_max_cpu_not_set",
+			ratio:          2,
+			requestCpu:     0.5,
+			wantErr:        false,
+			wantMaxCPU:     "500m",
+			wantRequestCPU: "250m",
+		},
+		{
+			name:           "test3_ratio_with_max_cpu_set",
+			ratio:          2,
+			requestCpu:     0.5,
+			maxCpu:         1,
+			wantErr:        false,
+			wantMaxCPU:     "1000m",
+			wantRequestCPU: "500m",
+		},
+	}
+
+	k := &Kubernetes{}
+	k.SetCpuQuota(100)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			subRatio := float64(tt.ratio)
+
+			cpu := fmt.Sprintf("%.fm", tt.requestCpu*1000)
+			maxCpu := fmt.Sprintf("%.fm", tt.maxCpu*1000)
+			c := &apiv1.Container{
+				Name: "test-container",
+				Resources: apiv1.ResourceRequirements{
+					Requests: apiv1.ResourceList{
+						apiv1.ResourceCPU: resource.MustParse(cpu),
+					},
+					Limits: apiv1.ResourceList{
+						apiv1.ResourceCPU: resource.MustParse(maxCpu),
+					},
+				},
+			}
+
+			err := k.SetFineGrainedCPU(c, map[string]string{}, subRatio)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("failed, error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err == nil {
+				assert.Equal(t, tt.wantRequestCPU, fmt.Sprintf("%vm", c.Resources.Requests.Cpu().MilliValue()))
+				assert.Equal(t, tt.wantMaxCPU, fmt.Sprintf("%vm", c.Resources.Limits.Cpu().MilliValue()))
 			}
 		})
 	}

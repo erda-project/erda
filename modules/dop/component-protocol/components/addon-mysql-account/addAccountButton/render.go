@@ -56,7 +56,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	}
 	c.Props = props
 	c.Operations = map[string]interface{}{
-		"click": cptype.Operation{
+		"click": cptype.LegacyOperation{
 			Key:    "addAccount",
 			Reload: true,
 		},

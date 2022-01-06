@@ -189,12 +189,10 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 		{
 			DataIndex: "restartCount",
 			Title:     cputil.I18n(ctx, "restartCount"),
-			Align:     "right",
 		},
 		{
 			DataIndex: "operate",
 			Title:     cputil.I18n(ctx, "operate"),
-			Fixed:     "right",
 		},
 	}
 	containerTable.Transfer(c)
@@ -222,7 +220,7 @@ func (containerTable *ContainerTable) GenComponentState(c *cptype.Component) err
 }
 
 func (containerTable *ContainerTable) Transfer(c *cptype.Component) {
-	c.Props = containerTable.Props
+	c.Props = cputil.MustConvertProps(containerTable.Props)
 	c.Data = map[string]interface{}{}
 	for k, v := range containerTable.Data {
 		c.Data[k] = v

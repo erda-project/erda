@@ -168,7 +168,7 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		External:       req.External,
 		Stage:          req.GetStage(),
 		Owner:          req.Owner,
-		ExpiryStatus:   getExpiryStatus(req.PlanFinishedAt, now),
+		ExpiryStatus:   dao.GetExpiryStatus(req.PlanFinishedAt, now),
 	}
 	if err := svc.db.CreateIssue(&create); err != nil {
 		return nil, apierrors.ErrCreateIssue.InternalError(err)
@@ -210,28 +210,26 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		return nil, err
 	}
 
+	// create issue state transition
+	if err = svc.db.CreateIssueStateTransition(&dao.IssueStateTransition{
+		ProjectID: create.ProjectID,
+		IssueID:   create.ID,
+		StateFrom: 0,
+		StateTo:   uint64(create.State),
+		Creator:   create.Creator,
+	}); err != nil {
+		return nil, err
+	}
+
+	go func() {
+		if err := svc.stream.CreateIssueEvent(&streamReq); err != nil {
+			logrus.Errorf("create issue %d event err: %v", streamReq.IssueID, err)
+		}
+	}()
+
 	go monitor.MetricsIssueById(int(create.ID), svc.db, svc.uc, svc.bdl)
 
 	return &create, nil
-}
-
-func getExpiryStatus(planFinishedAt *time.Time, timeBase time.Time) dao.ExpireType {
-	if planFinishedAt == nil {
-		return dao.ExpireTypeUndefined
-	}
-	if planFinishedAt.Before(timeBase) {
-		return dao.ExpireTypeExpired
-	} else if planFinishedAt.Before(timeBase.Add(1 * 24 * time.Hour)) {
-		return dao.ExpireTypeExpireIn1Day
-	} else if planFinishedAt.Before(timeBase.Add(2 * 24 * time.Hour)) {
-		return dao.ExpireTypeExpireIn2Days
-	} else if planFinishedAt.Before(timeBase.Add(7 * 24 * time.Hour)) {
-		return dao.ExpireTypeExpireIn7Days
-	} else if planFinishedAt.Before(timeBase.Add(30 * 24 * time.Hour)) {
-		return dao.ExpireTypeExpireIn30Days
-	} else {
-		return dao.ExpireTypeExpireInFuture
-	}
 }
 
 // Paging 分页查询事件
@@ -274,7 +272,7 @@ func (svc *Issue) Paging(req apistructs.IssuePagingRequest) ([]apistructs.Issue,
 	if len(req.RelatedIssueIDs) > 0 {
 		isIssue = true
 		// 获取事件关联关系
-		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs)
+		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs, []string{apistructs.IssueRelationConnection})
 		if err != nil {
 			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
 		}
@@ -352,9 +350,12 @@ func (svc *Issue) Paging(req apistructs.IssuePagingRequest) ([]apistructs.Issue,
 						requirementIDs = append(requirementIDs, id)
 					}
 				}
-
+				relationTypes := []string{apistructs.IssueRelationConnection}
+				if t == apistructs.IssueTypeRequirement {
+					relationTypes = []string{apistructs.IssueRelationInclusion}
+				}
 				// 获取需求id对应的关联事件ids
-				relations, err := svc.db.GetIssueRelationsByIDs(requirementIDs)
+				relations, err := svc.db.GetIssueRelationsByIDs(requirementIDs, relationTypes)
 				if err != nil {
 					return nil, 0, err
 				}
@@ -427,7 +428,7 @@ func (svc *Issue) PagingForWorkbench(req apistructs.IssuePagingRequest) ([]apist
 	}
 	if len(req.RelatedIssueIDs) > 0 {
 		isIssue = true
-		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs)
+		irs, err := svc.db.GetIssueRelationsByIDs(req.RelatedIssueIDs, []string{apistructs.IssueRelationConnection})
 		if err != nil {
 			return nil, 0, apierrors.ErrPagingIssues.InternalError(err)
 		}
@@ -487,6 +488,24 @@ func (svc *Issue) GetIssue(req apistructs.IssueGetRequest) (*apistructs.Issue, e
 	return issue, nil
 }
 
+func validPlanTime(req apistructs.IssueUpdateRequest, issue *dao.Issue) error {
+	started := req.PlanStartedAt.Value()
+	finished := req.PlanFinishedAt.Value()
+	if started != nil && finished != nil {
+		if started.After(*finished) {
+			return fmt.Errorf("plan started is after plan finished time")
+		}
+	} else {
+		if finished != nil && issue.PlanStartedAt != nil && issue.PlanStartedAt.After(*finished) {
+			return apierrors.ErrUpdateIssue.InvalidParameter("plan finished at")
+		}
+		if started != nil && issue.PlanFinishedAt != nil && started.After(*issue.PlanFinishedAt) {
+			return apierrors.ErrUpdateIssue.InvalidParameter("plan started at")
+		}
+	}
+	return nil
+}
+
 // UpdateIssue 更新事件
 func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	// 请求校验
@@ -502,17 +521,8 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		return apierrors.ErrGetIssue.InternalError(err)
 	}
 
-	if req.PlanFinishedAt != nil && req.PlanStartedAt != nil {
-		if req.PlanStartedAt.After(*req.PlanFinishedAt) {
-			return fmt.Errorf("plan started is after plan finished time")
-		}
-	} else {
-		if req.PlanFinishedAt != nil && issueModel.PlanStartedAt != nil && issueModel.PlanStartedAt.After(*req.PlanFinishedAt) {
-			return apierrors.ErrUpdateIssue.InvalidParameter("plan finished at")
-		}
-		if req.PlanStartedAt != nil && issueModel.PlanFinishedAt != nil && req.PlanStartedAt.After(*issueModel.PlanFinishedAt) {
-			return apierrors.ErrUpdateIssue.InvalidParameter("plan started at")
-		}
+	if err := validPlanTime(req, &issueModel); err != nil {
+		return err
 	}
 
 	//如果是BUG从打开或者重新打开切换状态为已解决，修改责任人为当前用户
@@ -526,7 +536,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 			if err != nil {
 				return apierrors.ErrGetIssue.InternalError(err)
 			}
-			if (currentState.Belong == apistructs.IssueStateBelongOpen || currentState.Belong == apistructs.IssueStateBelongReopen) && newState.Belong == apistructs.IssueStateBelongResloved {
+			if (currentState.Belong == apistructs.IssueStateBelongOpen || currentState.Belong == apistructs.IssueStateBelongReopen) && newState.Belong == apistructs.IssueStateBelongResolved {
 				req.Owner = &req.IdentityInfo.UserID
 			}
 		}
@@ -534,9 +544,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	canUpdateFields := issueModel.GetCanUpdateFields()
 	// 请求传入的需要更新的字段
 	changedFields := req.GetChangedFields(canUpdateFields["man_hour"].(string))
-	if req.PlanFinishedAt != nil {
+	if !req.PlanFinishedAt.IsEmpty() {
+		// change plan finished at, update exipry status
 		now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
-		changedFields["expiry_status"] = getExpiryStatus(req.PlanFinishedAt, now)
+		changedFields["expiry_status"] = dao.GetExpiryStatus(req.PlanFinishedAt.Time(), now)
 	}
 	// 检查修改的字段合法性
 	if err := svc.checkChangeFields(changedFields); err != nil {
@@ -628,6 +639,19 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		logrus.Errorf("create issue %d stream err: %v", req.ID, err)
 	}
 
+	// create issue state transition
+	if req.State != nil && issueModel.State != *req.State {
+		if err = svc.db.CreateIssueStateTransition(&dao.IssueStateTransition{
+			ProjectID: issueModel.ProjectID,
+			IssueID:   issueModel.ID,
+			StateFrom: uint64(issueModel.State),
+			StateTo:   uint64(*req.State),
+			Creator:   req.UserID,
+		}); err != nil {
+			return err
+		}
+	}
+
 	go monitor.MetricsIssueById(int(req.ID), svc.db, svc.uc, svc.bdl)
 	return nil
 }
@@ -639,23 +663,7 @@ func (svc *Issue) AfterIssueChildrenUpdate(id uint64) error {
 	}
 
 	if len(parents) == 1 {
-		item := parents[0]
-		fields := make(map[string]interface{})
-		start, end, err := svc.db.FindIssueChildrenTimeRange(item.ID)
-		if err != nil {
-			return err
-		}
-		if start != nil {
-			fields["plan_started_at"] = start
-		}
-		if end != nil {
-			fields["plan_finished_at"] = end
-		}
-		if len(fields) > 0 {
-			if err := svc.db.UpdateIssue(item.ID, fields); err != nil {
-				return apierrors.ErrUpdateIssue.InternalError(err)
-			}
-		}
+		return svc.issueRelated.AfterIssueInclusionRelationChange(parents[0].ID)
 	}
 	return nil
 }
@@ -822,6 +830,10 @@ func (svc *Issue) Delete(issueID uint64, identityInfo apistructs.IdentityInfo) e
 			return apierrors.ErrDeleteIssue.InternalError(err)
 		}
 	}
+	// delete issue state transition
+	if err = svc.db.DeleteIssuesStateTransition(issueID); err != nil {
+		return apierrors.ErrDeleteIssue.InternalError(err)
+	}
 
 	err = svc.db.DeleteIssue(issueID)
 	if err == nil {
@@ -892,6 +904,12 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 		}
 	}()
 
+	eventReq := apistructs.IssueStreamCreateRequest{
+		IssueID:      int64(updateReq.ID),
+		Operator:     updateReq.UserID,
+		StreamTypes:  make([]apistructs.IssueStreamType, 0),
+		StreamParams: apistructs.ISTParam{},
+	}
 	for field, v := range streamFields {
 		streamReq := apistructs.IssueStreamCreateRequest{
 			IssueID:  int64(updateReq.ID),
@@ -912,17 +930,26 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 			}
 
 			streamReq.StreamType = apistructs.ISTTransferState
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTTransferState)
 			streamReq.StreamParams = apistructs.ISTParam{CurrentState: CurrentState.Name, NewState: NewState.Name}
+			eventReq.StreamParams.CurrentState = CurrentState.Name
+			eventReq.StreamParams.NewState = NewState.Name
 		case "plan_started_at":
 			streamReq.StreamType = apistructs.ISTChangePlanStartedAt
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangePlanStartedAt)
 			streamReq.StreamParams = apistructs.ISTParam{
 				CurrentPlanStartedAt: formatTime(v[0]),
 				NewPlanStartedAt:     formatTime(v[1])}
+			eventReq.StreamParams.CurrentPlanStartedAt = formatTime(v[0])
+			eventReq.StreamParams.NewPlanStartedAt = formatTime(v[1])
 		case "plan_finished_at":
 			streamReq.StreamType = apistructs.ISTChangePlanFinishedAt
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangePlanFinishedAt)
 			streamReq.StreamParams = apistructs.ISTParam{
 				CurrentPlanFinishedAt: formatTime(v[0]),
 				NewPlanFinishedAt:     formatTime(v[1])}
+			eventReq.StreamParams.CurrentPlanFinishedAt = formatTime(v[0])
+			eventReq.StreamParams.NewPlanFinishedAt = formatTime(v[1])
 		case "owner":
 			userIds := make([]string, 0, len(v))
 			for _, uid := range v {
@@ -936,7 +963,10 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 				return errors.Errorf("failed to fetch userInfo when create issue stream, %v", v)
 			}
 			streamReq.StreamType = apistructs.ISTChangeOwner
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangeOwner)
 			streamReq.StreamParams = apistructs.ISTParam{CurrentOwner: users[0].Nick, NewOwner: users[1].Nick}
+			eventReq.StreamParams.CurrentOwner = users[0].Nick
+			eventReq.StreamParams.NewOwner = users[1].Nick
 		case "stage":
 			issue, err := svc.db.GetIssue(int64(updateReq.ID))
 			if err != nil {
@@ -965,25 +995,36 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 				NewStage:     v[1].(string)}
 		case "priority":
 			streamReq.StreamType = apistructs.ISTChangePriority
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangePriority)
 			streamReq.StreamParams = apistructs.ISTParam{
 				CurrentPriority: v[0].(apistructs.IssuePriority).GetZhName(),
 				NewPriority:     v[1].(apistructs.IssuePriority).GetZhName()}
+			eventReq.StreamParams.CurrentPriority = v[0].(apistructs.IssuePriority).GetZhName()
+			eventReq.StreamParams.NewPriority = v[1].(apistructs.IssuePriority).GetZhName()
 		case "complexity":
 			streamReq.StreamType = apistructs.ISTChangeComplexity
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangeComplexity)
 			streamReq.StreamParams = apistructs.ISTParam{
 				CurrentComplexity: v[0].(apistructs.IssueComplexity).GetZhName(),
 				NewComplexity:     v[1].(apistructs.IssueComplexity).GetZhName()}
+			eventReq.StreamParams.CurrentComplexity = v[0].(apistructs.IssueComplexity).GetZhName()
+			eventReq.StreamParams.NewComplexity = v[1].(apistructs.IssueComplexity).GetZhName()
 		case "severity":
 			streamReq.StreamType = apistructs.ISTChangeSeverity
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangeSeverity)
 			streamReq.StreamParams = apistructs.ISTParam{
 				CurrentSeverity: v[0].(apistructs.IssueSeverity).GetZhName(),
 				NewSeverity:     v[1].(apistructs.IssueSeverity).GetZhName()}
+			eventReq.StreamParams.CurrentSeverity = v[0].(apistructs.IssueSeverity).GetZhName()
+			eventReq.StreamParams.NewSeverity = v[1].(apistructs.IssueSeverity).GetZhName()
 		case "content":
 			// 不显示修改详情
 			streamReq.StreamType = apistructs.ISTChangeContent
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangeContent)
 		case "label":
 			// 不显示修改详情
 			streamReq.StreamType = apistructs.ISTChangeLabel
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangeLabel)
 		case "assignee":
 			userIds := make([]string, 0, len(v))
 			for _, uid := range v {
@@ -997,20 +1038,27 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 				return errors.Errorf("failed to fetch userInfo when create issue stream, %v", v)
 			}
 			streamReq.StreamType = apistructs.ISTChangeAssignee
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangeAssignee)
 			streamReq.StreamParams = apistructs.ISTParam{CurrentAssignee: users[0].Nick, NewAssignee: users[1].Nick}
+			eventReq.StreamParams.CurrentAssignee = users[0].Nick
+			eventReq.StreamParams.NewAssignee = users[1].Nick
 		case "iteration_id":
 			streamType, params, err := svc.handleIssueStreamChangeIteration(updateReq.Lang, v[0].(int64), v[1].(int64))
 			if err != nil {
 				return err
 			}
 			streamReq.StreamType = streamType
+			eventReq.StreamTypes = append(eventReq.StreamTypes, streamType)
 			streamReq.StreamParams = params
+			eventReq.StreamParams.CurrentIteration = params.CurrentIteration
+			eventReq.StreamParams.NewIteration = params.NewIteration
 		case "man_hour":
 			// 工时
 			var currentManHour, newManHour apistructs.IssueManHour
 			json.Unmarshal([]byte(v[0].(string)), &currentManHour)
 			json.Unmarshal([]byte(v[1].(string)), &newManHour)
 			streamReq.StreamType = apistructs.ISTChangeManHour
+			eventReq.StreamTypes = append(eventReq.StreamTypes, apistructs.ISTChangeManHour)
 			streamReq.StreamParams = apistructs.ISTParam{
 				CurrentEstimateTime:  currentManHour.GetFormartTime("EstimateTime"),
 				CurrentElapsedTime:   currentManHour.GetFormartTime("ElapsedTime"),
@@ -1023,6 +1071,16 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 				NewStartTime:         newManHour.StartTime,
 				NewWorkContent:       newManHour.WorkContent,
 			}
+			eventReq.StreamParams.CurrentEstimateTime = currentManHour.GetFormartTime("EstimateTime")
+			eventReq.StreamParams.CurrentElapsedTime = currentManHour.GetFormartTime("ElapsedTime")
+			eventReq.StreamParams.CurrentRemainingTime = currentManHour.GetFormartTime("RemainingTime")
+			eventReq.StreamParams.CurrentStartTime = currentManHour.StartTime
+			eventReq.StreamParams.CurrentWorkContent = currentManHour.WorkContent
+			eventReq.StreamParams.NewEstimateTime = newManHour.GetFormartTime("EstimateTime")
+			eventReq.StreamParams.NewElapsedTime = newManHour.GetFormartTime("ElapsedTime")
+			eventReq.StreamParams.NewRemainingTime = newManHour.GetFormartTime("RemainingTime")
+			eventReq.StreamParams.NewStartTime = newManHour.StartTime
+			eventReq.StreamParams.NewWorkContent = newManHour.WorkContent
 		default:
 			continue
 		}
@@ -1032,6 +1090,12 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 			logrus.Errorf("[alert] failed to create issueStream when update issue, req: %+v, err: %v", streamReq, err)
 		}
 	}
+	// send issue create or update event
+	go func() {
+		if err := svc.stream.CreateIssueEvent(&eventReq); err != nil {
+			logrus.Errorf("create issue %d event err: %v", eventReq.IssueID, err)
+		}
+	}()
 
 	return nil
 }
@@ -1073,8 +1137,15 @@ func (svc *Issue) GetIssuesByIssueIDs(issueIDs []uint64, identityInfo apistructs
 	if err != nil {
 		return nil, err
 	}
-
-	issues, err := svc.BatchConvert(issueModels, apistructs.IssueTypes, identityInfo)
+	issueMap := make(map[uint64]*dao.Issue)
+	for i := range issueModels {
+		issueMap[issueModels[i].ID] = &issueModels[i]
+	}
+	results := make([]dao.Issue, 0, len(issueIDs))
+	for _, i := range issueIDs {
+		results = append(results, *issueMap[i])
+	}
+	issues, err := svc.BatchConvert(results, apistructs.IssueTypes, identityInfo)
 	if err != nil {
 		return nil, apierrors.ErrPagingIssues.InternalError(err)
 	}
@@ -1513,10 +1584,10 @@ func (svc *Issue) BatchUpdateIssuesSubscriber(req apistructs.IssueSubscriberBatc
 	return nil
 }
 
-func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64]*apistructs.WorkbenchProjectItem, error) {
-	stats, err := svc.db.GetIssueExpiryStatusByProjects(req)
+func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64]*apistructs.WorkbenchProjectItem, int, error) {
+	stats, total, err := svc.db.GetIssueExpiryStatusByProjects(req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	projectMap := make(map[uint64]*apistructs.WorkbenchProjectItem)
@@ -1548,9 +1619,9 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 		projectIDs = append(projectIDs, i)
 	}
 
-	pMap, err := svc.bdl.GetProjectsMap(projectIDs)
+	pMap, err := svc.bdl.GetProjectsMap(apistructs.GetModelProjectsMapRequest{ProjectIDs: projectIDs})
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	for i := range projectMap {
@@ -1559,7 +1630,7 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 			req.ProjectID = dto.ID
 			issues, total, err := svc.db.GetIssuesByProject(req.IssuePagingRequest)
 			if err != nil {
-				return nil, err
+				return nil, 0, err
 			}
 			issueList := make([]apistructs.Issue, 0, len(issues))
 			for _, v := range issues {
@@ -1575,15 +1646,11 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 		}
 	}
 
-	return projectMap, nil
+	return projectMap, total, nil
 }
 
 func (svc *Issue) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]dao.IssueItem, error) {
 	return svc.db.GetAllIssuesByProject(req)
-	// if err != nil {
-	// 	return data, nil
-	// }
-	// return data
 }
 
 func (svc *Issue) GetIssuesStatesByProjectID(projectID uint64, issueType apistructs.IssueType) ([]dao.IssueState, error) {
@@ -1606,15 +1673,66 @@ func (svc *Issue) GetIssueChildren(id uint64, req apistructs.IssuePagingRequest)
 		if err != nil {
 			return nil, 0, err
 		}
+		if err := svc.SetIssueChildrenCount(requirements); err != nil {
+			return nil, 0, err
+		}
 		return append(requirements, tasks...), total, nil
 	}
 	return svc.db.FindIssueChildren(id, req)
 }
 
-func (svc *Issue) GetIssueItem(id uint64) (dao.IssueItem, error) {
-	return svc.db.GetIssueItem(id)
+func (svc *Issue) GetIssueItem(id uint64) (*dao.IssueItem, error) {
+	issue, err := svc.db.GetIssueItem(id)
+	if err != nil {
+		return nil, err
+	}
+	if err := svc.IssueChildrenCount(&issue); err != nil {
+		return nil, err
+	}
+	return &issue, nil
+}
+
+func (svc *Issue) IssueChildrenCount(issue *dao.IssueItem) error {
+	countList, err := svc.db.IssueChildrenCount([]uint64{issue.ID}, []string{apistructs.IssueRelationInclusion})
+	if err != nil {
+		return err
+	}
+	if len(countList) > 0 {
+		issue.ChildrenLength = countList[0].Count
+	}
+	return nil
+}
+
+func (svc *Issue) SetIssueChildrenCount(issues []dao.IssueItem) error {
+	issueIDs := make([]uint64, 0, len(issues))
+	issueMap := make(map[uint64]*dao.IssueItem)
+	for i := range issues {
+		issueIDs = append(issueIDs, issues[i].ID)
+		issueMap[issues[i].ID] = &issues[i]
+	}
+	countList, err := svc.db.IssueChildrenCount(issueIDs, []string{apistructs.IssueRelationInclusion})
+	if err != nil {
+		return err
+	}
+	for _, i := range countList {
+		if v, ok := issueMap[i.IssueID]; ok {
+			v.ChildrenLength = i.Count
+		}
+	}
+	return nil
 }
 
 func (svc *Issue) GetIssueParents(issueID uint64, relationType []string) ([]dao.IssueItem, error) {
-	return svc.db.GetIssueParents(issueID, relationType)
+	issues, err := svc.db.GetIssueParents(issueID, relationType)
+	if err != nil {
+		return nil, err
+	}
+	if err := svc.SetIssueChildrenCount(issues); err != nil {
+		return nil, err
+	}
+	return issues, nil
+}
+
+func (svc *Issue) ListStatesTransByProjectID(projectID uint64) ([]dao.IssueStateTransition, error) {
+	return svc.db.ListStatesTransByProjectID(projectID)
 }

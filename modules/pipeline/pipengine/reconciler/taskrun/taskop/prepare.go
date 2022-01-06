@@ -45,6 +45,7 @@ import (
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 )
 
 type prepare taskrun.TaskRun
@@ -307,12 +308,18 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	// 调度相关标签
 	task.Extra.Labels["DICE_WORKSPACE"] = string(p.Extra.DiceWorkspace)
 	task.Extra.Labels["DICE_ORG_NAME"] = p.GetOrgName()
+	task.Extra.Labels["DICE_ORG_ID"] = p.MergeLabels()[apistructs.LabelOrgID]
 	// 若 action 未声明 dice.yml labels，则由平台根据 source 按照默认规则分配调度标签
 	if len(diceYmlJob.Labels) == 0 {
 		// 大数据任务加上 JOB_KIND = bigdata，调度到有大数据标签的机器上
 		// 非大数据任务带上 PACK = true 的标
 		if p.PipelineSource.IsBigData() {
 			task.Extra.Labels[apistructs.LabelJobKind] = apistructs.TagBigdata
+			for key, label := range p.MergeLabels() {
+				if key == labelconfig.BIGDATA_AFFINITY_LABELS {
+					task.Extra.Labels[key] = label
+				}
+			}
 		} else {
 			task.Extra.Labels[apistructs.LabelPack] = "true"
 		}
@@ -725,15 +732,27 @@ func getLoopOptions(actionSpec apistructs.ActionSpec, taskLoop *apistructs.Pipel
 		// 默认策略
 		opt.CalculatedLoop.Strategy = &apistructs.PipelineTaskDefaultLoopStrategy
 	}
+
 	if opt.CalculatedLoop.Strategy.IntervalSec == 0 {
 		opt.CalculatedLoop.Strategy.IntervalSec = apistructs.PipelineTaskDefaultLoopStrategy.IntervalSec
 	}
+
 	if opt.CalculatedLoop.Strategy.DeclineRatio <= 0 {
-		opt.CalculatedLoop.Strategy.DeclineRatio = apistructs.PipelineTaskDefaultLoopStrategy.DeclineRatio
+		if opt.CalculatedLoop.Strategy.IntervalSec == 0 {
+			opt.CalculatedLoop.Strategy.DeclineRatio = apistructs.PipelineTaskDefaultLoopStrategy.DeclineRatio
+		} else {
+			opt.CalculatedLoop.Strategy.DeclineRatio = 1
+		}
 	}
+
 	if opt.CalculatedLoop.Strategy.DeclineLimitSec == 0 {
-		opt.CalculatedLoop.Strategy.DeclineLimitSec = apistructs.PipelineTaskDefaultLoopStrategy.DeclineLimitSec
+		if opt.CalculatedLoop.Strategy.IntervalSec == 0 {
+			opt.CalculatedLoop.Strategy.DeclineLimitSec = apistructs.PipelineTaskDefaultLoopStrategy.DeclineLimitSec
+		} else {
+			opt.CalculatedLoop.Strategy.DeclineLimitSec = int64(opt.CalculatedLoop.Strategy.IntervalSec)
+		}
 	}
+
 	return &opt
 }
 

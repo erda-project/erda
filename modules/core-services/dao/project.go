@@ -16,6 +16,7 @@ package dao
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
@@ -26,6 +27,10 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
+func NotDeleted(db *gorm.DB) *gorm.DB {
+	return db.Where("soft_deleted_at = 0")
+}
+
 // CreateProject 创建项目
 func (client *DBClient) CreateProject(project *model.Project) error {
 	return client.Create(project).Error
@@ -33,12 +38,12 @@ func (client *DBClient) CreateProject(project *model.Project) error {
 
 // UpdateProject 更新项目
 func (client *DBClient) UpdateProject(project *model.Project) error {
-	return client.Save(project).Error
+	return client.Scopes(NotDeleted).Save(project).Error
 }
 
 // DeleteProject 删除项目
 func (client *DBClient) DeleteProject(projectID int64) error {
-	return client.Where("id = ?", projectID).Delete(&model.Project{}).Error
+	return client.Debug().Model(&model.Project{}).Scopes(NotDeleted).Where("id = ?", projectID).Update("soft_deleted_at", time.Now().UnixNano()/1e6).Error
 }
 
 func (client *DBClient) DeleteProjectQutoa(projectID int64) error {
@@ -48,7 +53,7 @@ func (client *DBClient) DeleteProjectQutoa(projectID int64) error {
 // GetProjectByID 根据projectID获取项目信息
 func (client *DBClient) GetProjectByID(projectID int64) (model.Project, error) {
 	var project model.Project
-	if err := client.Where("id = ?", projectID).Find(&project).Error; err != nil {
+	if err := client.Scopes(NotDeleted).Where("id = ?", projectID).Find(&project).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return project, ErrNotFoundProject
 		}
@@ -76,7 +81,7 @@ func (client *DBClient) GetProjectsByOrgIDAndName(orgID int64, params *apistruct
 		projects []model.Project
 		total    int
 	)
-	db := client.Where("org_id = ?", orgID)
+	db := client.Scopes(NotDeleted).Where("org_id = ?", orgID)
 	if params.IsPublic {
 		db = db.Where("is_public = ?", params.IsPublic)
 	}
@@ -111,14 +116,16 @@ func (client *DBClient) GetProjectsByIDs(projectIDs []uint64, params *apistructs
 		total    int
 		projects []model.Project
 	)
-	db := client.Where("id in (?)", projectIDs)
+	db := client.Scopes(NotDeleted).Where("id in (?)", projectIDs)
 	if params.Name != "" {
 		db = db.Where("name = ?", params.Name)
 	}
 	if params.Query != "" {
 		db = db.Where("(name LIKE ? OR display_name LIKE ?)", strutil.Concat("%", params.Query, "%"), strutil.Concat("%", params.Query, "%"))
 	}
-	db = db.Where("`type` != ?", pb.Type_MSP.String())
+	if !params.KeepMsp {
+		db = db.Where("`type` != ?", pb.Type_MSP.String())
+	}
 	if params.OrderBy != "" {
 		if params.Asc {
 			db = db.Order(fmt.Sprintf("%s", params.OrderBy))
@@ -139,7 +146,7 @@ func (client *DBClient) GetProjectsByIDs(projectIDs []uint64, params *apistructs
 // GetProjectByOrgAndName 根据orgID & 项目名称 获取项目
 func (client *DBClient) GetProjectByOrgAndName(orgID int64, name string) (*model.Project, error) {
 	var project model.Project
-	if err := client.Where("org_id = ?", orgID).
+	if err := client.Scopes(NotDeleted).Where("org_id = ?", orgID).
 		Where("name = ?", name).Find(&project).Error; err != nil {
 		return nil, err
 	}
@@ -149,7 +156,7 @@ func (client *DBClient) GetProjectByOrgAndName(orgID int64, name string) (*model
 // GetAllProjects get all projects
 func (client *DBClient) GetAllProjects() ([]model.Project, error) {
 	var projects []model.Project
-	if err := client.Model(model.Project{}).Find(&projects).Error; err != nil {
+	if err := client.Model(model.Project{}).Scopes(NotDeleted).Find(&projects).Error; err != nil {
 		return nil, err
 	}
 	return projects, nil
@@ -158,7 +165,7 @@ func (client *DBClient) GetAllProjects() ([]model.Project, error) {
 // ListProjectByOrgID 根据 orgID 获取项目列表
 func (client *DBClient) ListProjectByOrgID(orgID uint64) ([]model.Project, error) {
 	var projects []model.Project
-	if err := client.Where("org_id = ?", orgID).Find(&projects).Error; err != nil {
+	if err := client.Scopes(NotDeleted).Where("org_id = ?", orgID).Find(&projects).Error; err != nil {
 		return nil, err
 	}
 	return projects, nil
@@ -167,7 +174,7 @@ func (client *DBClient) ListProjectByOrgID(orgID uint64) ([]model.Project, error
 // ListProjectByCluster 根据clusterName 获取项目列表
 func (client *DBClient) ListProjectByCluster(clusterName string) ([]model.Project, error) {
 	var projects []model.Project
-	if err := client.Where("cluster_config LIKE ?", "%"+clusterName+"%").Find(&projects).Error; err != nil {
+	if err := client.Scopes(NotDeleted).Where("cluster_config LIKE ?", "%"+clusterName+"%").Find(&projects).Error; err != nil {
 		return nil, err
 	}
 	return projects, nil
@@ -175,7 +182,7 @@ func (client *DBClient) ListProjectByCluster(clusterName string) ([]model.Projec
 
 // UpdateProjectQuota 更新项目配额
 func (client *DBClient) UpdateProjectQuota(clusterName string, cpuOverSellChangeRatio float64) error {
-	return client.Debug().Model(model.Project{}).
+	return client.Scopes(NotDeleted).Model(model.Project{}).
 		Where("cluster_config LIKE ?", "%"+clusterName+"%").
 		Update("cpu_quota", gorm.Expr("cpu_quota * ?", cpuOverSellChangeRatio)).Error
 }
@@ -206,7 +213,7 @@ func (client *DBClient) GetProjectIDListByStates(req apistructs.IssuePagingReque
 		total int
 		res   []model.Project
 	)
-	sql := client.Table("ps_group_projects").Where("id in (select distinct project_id from dice_issues where deleted = 0 and project_id in (?) and assignee IN (?) and state IN (?) and type IN(?) )", projectIDList, req.Assignees, req.State, req.Type).
+	sql := client.Model(&model.Project{}).Scopes(NotDeleted).Where("id in (select distinct project_id from dice_issues where deleted = 0 and project_id in (?) and assignee IN (?) and state IN (?) and type IN(?) )", projectIDList, req.Assignees, req.State, req.Type).
 		Order("name")
 	offset := (req.PageNo - 1) * req.PageSize
 	if err := sql.Offset(offset).Limit(req.PageSize).Find(&res).Error; err != nil {
@@ -262,5 +269,5 @@ func (client *DBClient) GetProjectClustersNamespacesByProjectID(result map[strin
 }
 
 func (client *DBClient) ProjectIsExists(projectID uint64) bool {
-	return client.First(new(model.Project), map[string]interface{}{"id": projectID}).Error == nil
+	return client.Scopes(NotDeleted).First(new(model.Project), map[string]interface{}{"id": projectID}).Error == nil
 }

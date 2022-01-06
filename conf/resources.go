@@ -40,6 +40,10 @@ var (
 	//go:embed monitor/extensions/report-engine.yaml
 	MonitorReportEngineDefaultConfig string
 	MonitorReportEngineFilePath      string = "conf/monitor/extensions/report-engine.yaml"
+
+	//go:embed monitor/agent-injector/agent-injector.yaml
+	MonitorAgentInjectorDefaultConfig string
+	MonitorAgentInjectorFilePath      string = "conf/monitor/agent-injector.yaml"
 )
 
 // msp

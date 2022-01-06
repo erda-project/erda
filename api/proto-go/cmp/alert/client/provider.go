@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.cmp.alert-client", &servicehub.Spec{
 		Services: []string{
 			"erda.cmp.alert.AlertService",
+			"erda.cmp.alert.AlertService.client",
 			"erda.cmp.alert-client",
 		},
 		Types: []reflect.Type{

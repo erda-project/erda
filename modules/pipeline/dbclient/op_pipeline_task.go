@@ -262,3 +262,14 @@ func (client *Client) DeletePipelineTasksByPipelineID(pipelineID uint64, ops ...
 		return err
 	}, 3, time.Second)
 }
+
+func (client *Client) CleanPipelineTaskResult(id uint64, ops ...SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	if _, err := session.Table("pipeline_tasks").
+		Where("id = ?", id).Cols("result").Update(&spec.PipelineTask{Result: nil}); err != nil {
+		return err
+	}
+	return nil
+}

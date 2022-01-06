@@ -136,12 +136,12 @@ func (t *ComponentEventTable) DecodeURLQuery() error {
 }
 
 func (t *ComponentEventTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = int(t.State.PageNo)
-	urlQuery["pageSize"] = int(t.State.PageSize)
-	urlQuery["sorterData"] = t.State.Sorter
+	query := make(map[string]interface{})
+	query["pageNo"] = int(t.State.PageNo)
+	query["pageSize"] = int(t.State.PageSize)
+	query["sorterData"] = t.State.Sorter
 
-	data, err := json.Marshal(urlQuery)
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
@@ -317,7 +317,6 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 				DataIndex: "lastSeen",
 				Title:     cputil.I18n(ctx, "lastSeen"),
 				Sorter:    true,
-				Align:     "right",
 			},
 			{
 				DataIndex: "type",
@@ -338,6 +337,7 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 				DataIndex: "source",
 				Title:     cputil.I18n(ctx, "source"),
 				Sorter:    true,
+				Hidden:    true,
 			},
 			{
 				DataIndex: "message",
@@ -348,12 +348,13 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 				DataIndex: "count",
 				Title:     cputil.I18n(ctx, "count"),
 				Sorter:    true,
-				Align:     "right",
+				Hidden:    true,
 			},
 			{
 				DataIndex: "name",
 				Title:     cputil.I18n(ctx, "name"),
 				Sorter:    true,
+				Hidden:    true,
 			},
 			{
 				DataIndex: "namespace",
@@ -371,7 +372,7 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 }
 
 func (t *ComponentEventTable) Transfer(component *cptype.Component) {
-	component.Props = t.Props
+	component.Props = cputil.MustConvertProps(t.Props)
 	component.Data = map[string]interface{}{"list": t.Data.List}
 	component.State = map[string]interface{}{
 		"clusterName":          t.State.ClusterName,

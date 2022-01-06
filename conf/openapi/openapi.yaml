@@ -78,6 +78,11 @@ openapi-v1-routes:
           - addon-mysql-consumer
           - auto-test-scenes
           - issue-gantt
+          - requirement-task-overview
+          - issue-kanban
+          - auto-test-space-list
+          - release-manage
+          - app-list-all
       - addr: http://localhost:8080
         scenarios:
           - demo
@@ -92,6 +97,23 @@ openapi-v1-routes:
           - cmp-dashboard-pods
           - cmp-dashboard-podDetail
           - cmp-cluster-list
+      - addr: admin:9096
+        scenarios:
+          - personal-workbench
+      - addr: msp:8080
+        scenarios:
+          - service-overview
+          - service-list
+          - transaction-cache-analysis
+          - transaction-cache-detail
+          - transaction-db-analysis
+          - transaction-db-detail
+          - transaction-http-analysis
+          - transaction-http-detail
+          - transaction-mq-analysis
+          - transaction-mq-detail
+          - transaction-rpc-analysis
+          - transaction-rpc-detail
 
 etcd:
   _enable: ${OPENAPI_DEV_MODE:false}

@@ -245,7 +245,7 @@ func (e *Endpoints) DeleteProject(ctx context.Context, r *http.Request, vars map
 	orgIDStr := r.Header.Get(httputil.OrgHeader)
 	orgID, err := strutil.Atoi64(orgIDStr)
 	if err != nil {
-		return apierrors.ErrUpdateProject.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrDeleteProject.InvalidParameter(err).ToResp(), nil
 	}
 
 	// 获取当前用户
@@ -548,6 +548,12 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 	// 按项目名称搜索
 	keyword := r.URL.Query().Get("q")
 
+	var keepMsp bool
+	keepMspStr := r.URL.Query().Get("keepMsp")
+	if keepMspStr == "true" {
+		keepMsp = true
+	}
+
 	// 获取pageSize
 	pageSizeStr := r.URL.Query().Get("pageSize")
 	if pageSizeStr == "" {
@@ -577,6 +583,7 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 	if ascStr == "true" {
 		asc = true
 	}
+
 	orderBy := r.URL.Query().Get("orderBy")
 	switch orderBy {
 	case "cpuQuota":
@@ -600,6 +607,7 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 		OrderBy:  orderBy,
 		Asc:      asc,
 		IsPublic: isPublic,
+		KeepMsp:  keepMsp,
 	}, nil
 }
 
@@ -758,7 +766,7 @@ func (e *Endpoints) GetModelProjectsMap(ctx context.Context, r *http.Request, va
 		return apierrors.ErrListAllProject.InvalidParameter(err).ToResp(), nil
 	}
 
-	res, err := e.project.GetModelProjectsMap(req.ProjectIDs)
+	res, err := e.project.GetModelProjectsMap(req.ProjectIDs, req.KeepMsp)
 	if err != nil {
 		return apierrors.ErrListProject.InternalError(err).ToResp(), nil
 	}
@@ -768,6 +776,7 @@ func (e *Endpoints) GetModelProjectsMap(ctx context.Context, r *http.Request, va
 			ID:          uint64(v.ID),
 			DisplayName: v.DisplayName,
 			Logo:        v.Logo,
+			Type:        v.Type,
 		}
 	}
 

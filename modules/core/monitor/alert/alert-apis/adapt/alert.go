@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
+	"github.com/erda-project/erda/modules/core/monitor/expression"
 	"github.com/erda-project/erda/modules/monitor/utils"
 )
 
@@ -148,10 +149,27 @@ const (
 
 // QueryAlertRule .
 func (a *Adapt) QueryAlertRule(lang i18n.LanguageCodes, scope, scopeID string) (*pb.AlertTypeRuleResp, error) {
-	rules, err := a.db.AlertRule.QueryEnabledByScope(scope)
-	if err != nil {
-		return nil, err
+	//rules, err := a.db.AlertRule.QueryEnabledByScope(scope)
+	//if err != nil {
+	//	return nil, err
+	//}
+	rules := make([]*db.AlertRule, 0)
+	for k, v := range expression.AlertConfig {
+		if v.AlertScope == scope {
+			expressionIndex := expression.ExpressionIndex[k]
+			expressionConfig := expression.AlertConfig[k]
+			rule := &db.AlertRule{
+				Name:       expressionConfig.Name,
+				AlertScope: expressionConfig.AlertScope,
+				AlertType:  expressionConfig.AlertType,
+				AlertIndex: expressionConfig.Id,
+				Template:   expressionIndex.Expression,
+				Attributes: expressionConfig.Attributes,
+			}
+			rules = append(rules, rule)
+		}
 	}
+
 	customizeRules, err := a.db.CustomizeAlertRule.QueryEnabledByScope(scope, scopeID)
 	if err != nil {
 		return nil, err
@@ -397,10 +415,23 @@ func (a *Adapt) getEnabledAlertRulesByScopeAndIndices(lang i18n.LanguageCodes, s
 	if len(indices) == 0 {
 		return nil, nil
 	}
-	rules, err := a.db.AlertRule.QueryEnabledByScopeAndIndices(scope, indices)
-	if err != nil {
-		return nil, err
+	rules := make([]*db.AlertRule, 0)
+	for _, v := range indices {
+		rule, ok := expression.ExpressionIndex[v]
+		if ok {
+			expressionConfig := expression.AlertConfig[v]
+			alertRule := &db.AlertRule{
+				Name:       expressionConfig.Name,
+				AlertScope: expressionConfig.AlertScope,
+				AlertIndex: expressionConfig.Id,
+				Template:   rule.Expression,
+				Attributes: expressionConfig.Attributes,
+				AlertType:  expressionConfig.AlertType,
+			}
+			rules = append(rules, alertRule)
+		}
 	}
+
 	customizeRules, err := a.db.CustomizeAlertRule.QueryEnabledByScopeAndIndices(scope, scopeID, indices)
 	if err != nil {
 		return nil, err

@@ -177,6 +177,7 @@ type IssueEventData struct {
 	AtUserIDs    string            `json:"atUserIds"`
 	Receivers    []string          `json:"receivers"`
 	IssueType    IssueType         `json:"issueType"`
+	StreamTypes  []IssueStreamType `json:"streamTypes"`
 	StreamType   IssueStreamType   `json:"streamType"`
 	StreamParams ISTParam          `json:"streamParams"`
 	Params       map[string]string `json:"params"`
@@ -206,6 +207,11 @@ func (ie *IssueEvent) GenEventParams(locale, uiPublicURL string) map[string]stri
 
 	params["issueEmailLink"] = fmt.Sprintf("%s?id=%s&type=%s", params["projectEmailLink"],
 		params["issueID"], params["issueType"])
+
+	if ie.Content.IssueType == IssueTypeTicket {
+		params["issueEmailLink"] = fmt.Sprintf("%s/%s/dop/projects/%s/ticket?id=%s&pageNo=1",
+			uiPublicURL, params["orgName"], ie.EventHeader.ProjectID, params["issueID"])
+	}
 
 	params["mboxDeduplicateID"] = fmt.Sprintf("issue-%s", params["issueID"])
 

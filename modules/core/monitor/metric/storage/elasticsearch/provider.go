@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/creator"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
+	"github.com/erda-project/erda/pkg/maps"
 )
 
 type (
@@ -75,6 +76,7 @@ func (p *provider) encodeToDocument(ctx context.Context) func(val interface{}) (
 	return func(val interface{}) (index, id, typ string, body interface{}, err error) {
 		m := val.(*metric.Metric)
 		processInvalidFields(m)
+		processApmMetricCompatible(m)
 
 		// TODO: configurable "full_cluster"
 		namespace, key := "full_cluster", p.Retention.GetConfigKey(m.Name, m.Tags)
@@ -155,6 +157,54 @@ func toNumber(f float64) json.Number {
 		s = fmt.Sprint(f)
 	}
 	return json.Number(s)
+}
+func processApmMetricCompatible(m *metric.Metric) {
+	// TODO Will be removed in version 1.6
+	tags := m.Tags
+
+	if _, ok := tags["env_id"]; !ok {
+		if tk, ok := tags["terminus_key"]; ok {
+			tags["env_id"] = tk
+		}
+	}
+
+	if _, ok := tags["http_target"]; !ok {
+		if httpPath, ok := tags["http_path"]; ok {
+			tags["http_target"] = httpPath
+		}
+	}
+
+	if _, ok := tags["rpc_service"]; !ok {
+		if dubboService, ok := tags["dubbo_service"]; ok {
+			tags["rpc_service"] = dubboService
+			if dubboMethod, ok := tags["dubbo_method"]; ok {
+				tags["rpc_method"] = dubboMethod
+				tags["rpc_target"] = dubboService + "." + dubboMethod
+				delete(tags, "dubbo_method")
+			}
+			tags["rpc_system"] = "dubbo"
+			delete(tags, "dubbo_service")
+		}
+	}
+
+	if _, ok := tags["db_system"]; !ok {
+		if dbType, ok := tags["db_type"]; ok {
+			tags["db_system"] = dbType
+			delete(tags, "db_type")
+		}
+	}
+
+	if maps.ContainsAnyKey(tags, "db_system") {
+		if _, ok := tags["db_host"]; !ok {
+			if peerAddress, ok := tags["peer_address"]; ok {
+				tags["db_host"] = peerAddress
+			} else if peerHostname, ok := tags["peer_hostname"]; ok {
+				tags["db_host"] = peerHostname
+			} else if host, ok := tags["host"]; ok {
+				tags["db_host"] = host
+			}
+		}
+	}
 }
 
 // https://www.elastic.co/guide/en/elasticsearch/reference/6.8/dynamic-templates.html#match-mapping-type

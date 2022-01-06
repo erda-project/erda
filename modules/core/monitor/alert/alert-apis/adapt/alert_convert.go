@@ -190,8 +190,6 @@ func FromPBAlertRuleModel(lang i18n.LanguageCodes, t i18n.Translator, m *db.Aler
 	}
 	r.Version = m.Version
 	r.Enable = m.Enable
-	r.CreateTime = m.CreateTime.UnixNano() / int64(time.Millisecond)
-	r.UpdateTime = m.UpdateTime.UnixNano() / int64(time.Millisecond)
 	window, ok := utils.GetMapValueInt64(m.Template, "window")
 	if !ok {
 		return nil
@@ -478,6 +476,9 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		if (tag == applicationIdTag && value == applicationIdValue) || (tag == clusterNameTag && value == clusterNameValue) {
 			filters = append(filters[0:index], filters[index+1:]...)
 			continue
+		}
+		if tag == targetTerminusKey {
+			tag = terminusKey
 		}
 		if attr, ok := attributes[tag]; ok {
 			val, err := formatOperatorValue(opType, utils.StringType, attr)

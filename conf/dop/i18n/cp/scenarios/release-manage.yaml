@@ -1,0 +1,52 @@
+zh:
+  searchByVersion: 按版本搜索
+  application: 应用
+  selectApplication: 请选择应用
+  branch: 分支
+  inputBranch: 请输入分支
+  inputCommitID: 请输入commitID
+  creator: 创建人
+  selectCreator: 请选择创建人
+  downloadDice: 下载
+  editRelease: 编辑
+  confirmFormal: 确认将该制品转为正式版？
+  toFormal: 转为正式版
+  formalSucceeded: 制品转正成功
+  confirmDelete: 确认删除？
+  deleteRelease: 删除
+  deleteSucceeded: 制品删除成功
+  version: 版本名称
+  applicationName: 应用名称
+  desc: 备注信息
+  createdAt: 创建日期
+  operations: 操作
+  accessDenied: 权限不足
+  releaseDeleteFailed: 制品删除失败
+  releaseFormalFailed: 制品转正失败
+  releaseName: 制品名称
+en:
+  searchByVersion: Search by version
+  application: Application
+  selectApplication: Select application
+  branch: Branch
+  inputBranch: Input branch
+  inputCommitID: Input commit ID
+  creator: Creator
+  selectCreator: Select creator
+  downloadDice: Download
+  editRelease: Edit
+  confirmFormal: Sure to formal release ?
+  toFormal: To formal
+  formalSucceeded: Formal successeed
+  confirmDelete: Sure to delete ?
+  deleteRelease: Delete
+  deleteSucceeded: Delete release succeeded
+  version: Version
+  applicationName: Application
+  desc: Desc
+  createdAt: Created at
+  operations: Operations
+  accessDenied: Access Denied
+  releaseDeleteFailed: Failed to delete release
+  releaseFormalFailed: Failed to formal release
+  releaseName: Release Name

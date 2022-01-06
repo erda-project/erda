@@ -72,6 +72,11 @@ func (this *PipelineCmsConfig) Validate() error {
 			return github_com_mwitkow_go_proto_validators.FieldError("TimeUpdated", err)
 		}
 	}
+	if this.Ns != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Ns); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Ns", err)
+		}
+	}
 	return nil
 }
 func (this *CmsCreateNsRequest) Validate() error {
@@ -138,11 +143,27 @@ func (this *CmsNsConfigsGetRequest) Validate() error {
 	}
 	return nil
 }
+func (this *CmsNsConfigsBatchGetRequest) Validate() error {
+	if this.PipelineSource == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("PipelineSource", fmt.Errorf(`value '%v' must not be an empty string`, this.PipelineSource))
+	}
+	return nil
+}
 func (this *CmsNsConfigsGetResponse) Validate() error {
 	for _, item := range this.Data {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
 				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *CmsNsConfigsBatchGetResponse) Validate() error {
+	for _, item := range this.Configs {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Configs", err)
 			}
 		}
 	}

@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core/monitor/event/storage"
+	"github.com/erda-project/erda/modules/core/monitor/expression"
 )
 
 type (
@@ -93,9 +94,15 @@ func (a *Adapt) GetOrgAlertRecordAttr(code i18n.LanguageCodes) (*pb.AlertRecordA
 // GetAlertRecordAttr Get the attributes of the alarm record
 func (a *Adapt) GetAlertRecordAttr(code i18n.LanguageCodes, scope string) (*pb.AlertRecordAttr, error) {
 	// Query alarm type
-	alertTypes, err := a.db.AlertRule.DistinctAlertTypeByScope(scope)
-	if err != nil {
-		return nil, err
+	//alertTypes, err := a.db.AlertRule.DistinctAlertTypeByScope(scope)
+	//if err != nil {
+	//	return nil, err
+	//}
+	alertTypes := make([]string, 0)
+	if scope == orgScope {
+		alertTypes = expression.OrgAlertType
+	} else {
+		alertTypes = expression.MicroServiceAlertType
 	}
 	attr := new(pb.AlertRecordAttr)
 	for _, state := range alertStates {

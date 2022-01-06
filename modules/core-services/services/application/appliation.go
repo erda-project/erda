@@ -19,22 +19,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
-	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
@@ -80,12 +75,6 @@ func WithUCClient(uc *ucauth.UCClient) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(a *Application) {
 		a.bdl = bdl
-	}
-}
-
-func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
-	return func(a *Application) {
-		a.cms = cms
 	}
 }
 
@@ -302,121 +291,6 @@ func (a *Application) UpdateWithEvent(appID int64, updateReq *apistructs.Applica
 	return app, nil
 }
 
-// Init 应用初始化
-func (a *Application) Init(initReq *apistructs.ApplicationInitRequest) (uint64, error) {
-	// 1. 参数校验
-	// 2. 生成 pipeline.yml
-	// 3. 调用 pipeline API 创建 pipeline
-	if initReq.MobileAppName == "" {
-		return 0, apierrors.ErrInitApplication.MissingParameter("mobileAppName")
-	}
-	if initReq.BundleID == "" {
-		return 0, apierrors.ErrInitApplication.MissingParameter("bundleID")
-	}
-	if initReq.PackageName == "" {
-		return 0, apierrors.ErrInitApplication.MissingParameter("packageName")
-	}
-	if initReq.MobileDisplayName == "" {
-		initReq.MobileDisplayName = initReq.MobileAppName
-	}
-
-	app, err := a.db.GetApplicationByID(int64(initReq.ApplicationID))
-	if err != nil {
-		return 0, err
-	}
-	if app.Mode != string(apistructs.ApplicationModeMobile) {
-		return 0, errors.Errorf("only support mobile app template init")
-	}
-
-	actionProjectName := strings.Replace(initReq.MobileAppName, "-", "", -1)
-	// generate mobile template action
-	mobileTemplateStage := &apistructs.PipelineYmlAction{
-		Type: "mobile-template",
-		Params: map[string]interface{}{
-			"project_name": actionProjectName,
-			"display_name": initReq.MobileDisplayName,
-			"bundle_id":    initReq.BundleID,
-			"package_name": initReq.PackageName,
-		},
-	}
-
-	// generate remote url
-	var token string
-	if members, err := a.db.GetMemberByScopeAndUserID(initReq.UserID, apistructs.OrgScope, app.OrgID); err == nil && members != nil {
-		// TODO: kanbudong
-		token = members[0].Token
-	}
-	if token == "" {
-		return 0, errors.Errorf("not found user token")
-	}
-	org, err := a.db.GetOrg(app.OrgID)
-	if err != nil {
-		return 0, err
-	}
-	u, _ := url.Parse(conf.UIPublicURL())
-	remoteUrl := fmt.Sprintf("%s://git:%s@%s/%s/dop/%s/%s", u.Scheme, token, conf.UIDomain(), org.Name, app.ProjectName, app.Name)
-
-	// generate git push action
-	gitPushStage := &apistructs.PipelineYmlAction{
-		Type: "git-push",
-		Params: map[string]interface{}{
-			"workdir":    "${mobile-template}/" + actionProjectName,
-			"remote_url": remoteUrl,
-		},
-	}
-
-	// generate pipeline.yml
-	pys := apistructs.PipelineYml{
-		Version: "1.1",
-		Stages: [][]*apistructs.PipelineYmlAction{
-			{
-				mobileTemplateStage,
-			},
-			{
-				gitPushStage,
-			},
-		},
-	}
-
-	// fetch cluster name
-	project, err := a.db.GetProjectByID(app.ProjectID)
-	if err != nil {
-		return 0, err
-	}
-	clusterConfig := map[string]string{}
-	json.Unmarshal([]byte(project.ClusterConfig), &clusterConfig)
-	clusterName, ok := clusterConfig[string(apistructs.DevWorkspace)]
-	if !ok {
-		return 0, errors.Errorf("not found cluster")
-	}
-
-	ymlContent, err := yaml.Marshal(&pys)
-	if err != nil {
-		return 0, err
-	}
-	req := &apistructs.PipelineCreateRequestV2{
-		PipelineYml:     string(ymlContent),
-		PipelineYmlName: fmt.Sprintf("%s_%s_pipeline.yml", project.Name, app.Name),
-		PipelineSource:  apistructs.PipelineSourceDice,
-		ClusterName:     clusterName,
-		Labels: map[string]string{
-			apistructs.LabelBranch:        "master",
-			apistructs.LabelOrgID:         strconv.FormatInt(app.OrgID, 10),
-			apistructs.LabelProjectID:     strconv.FormatInt(app.ProjectID, 10),
-			apistructs.LabelAppID:         strconv.FormatInt(app.ID, 10),
-			apistructs.LabelDiceWorkspace: string(apistructs.ProdWorkspace),
-		},
-		AutoRunAtOnce: true,
-	}
-	// create pipeline info
-	pipelineInfo, err := a.bdl.CreatePipeline(req)
-	if err != nil {
-		return 0, err
-	}
-
-	return pipelineInfo.ID, nil
-}
-
 // Update 更新应用
 func (a *Application) Update(appID int64, updateReq *apistructs.ApplicationUpdateRequestBody) (
 	*model.Application, error) {
@@ -620,7 +494,7 @@ func (a *Application) GetAllApps() ([]model.Application, error) {
 func (a *Application) List(orgID, projectID int64, userID string, request *apistructs.ApplicationListRequest) (
 	int, []model.Application, error) {
 	// 获取应用列表
-	applicationIDs := make([]int64, 0)
+	applicationIDs := request.ApplicationID
 	total, applications, err := a.db.GetApplicationsByIDs(&orgID, &projectID, applicationIDs, request)
 	if err != nil {
 		logrus.Infof("failed to get application list, (%v)", err)
@@ -653,8 +527,9 @@ func (a *Application) List(orgID, projectID int64, userID string, request *apist
 func (a *Application) ListMyApplications(orgID int64, userID string, request *apistructs.ApplicationListRequest) (
 	int, []model.Application, error) {
 	var (
-		members []model.MemberExtra
-		err     error
+		inputAppIDs []uint64
+		members     []model.MemberExtra
+		err         error
 	)
 
 	// 查找有权限的列表
@@ -665,9 +540,21 @@ func (a *Application) ListMyApplications(orgID int64, userID string, request *ap
 	}
 
 	// 获取应用列表
-	applicationIDs := make([]int64, 0, len(members)*2)
+	applicationIDs := make([]uint64, 0, len(members)*2)
+	applicationIDmap := make(map[int64]bool)
 	for i := range members {
-		applicationIDs = append(applicationIDs, members[i].ScopeID)
+		applicationIDmap[members[i].ScopeID] = true
+		applicationIDs = append(applicationIDs, uint64(members[i].ScopeID))
+	}
+
+	// 如果用户有输入应用 则获取输入用户的应用
+	if len(request.ApplicationID) > 0 {
+		for i, v := range request.ApplicationID {
+			if applicationIDmap[int64(v)] {
+				inputAppIDs = append(inputAppIDs, request.ApplicationID[i])
+			}
+		}
+		applicationIDs = inputAppIDs
 	}
 
 	// 用户没加入任何项目和应用

@@ -1,0 +1,460 @@
+scenario: requirement-task-overview
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - tabs
+      - pageContent
+    pageContent:
+      - topFilter
+      - container
+      - chartBlock
+      - stackChartBlock
+    distributePage:
+      - topFilter
+    container:
+      left: simpleChart
+      right: info
+    chartBlock:
+      filter: burnoutChartFilter
+      children:
+        - burnoutChart
+    stackChartBlock:
+      filter: stackChartFilter
+      children:
+        - stackChart
+components:
+  container:
+    type: LRContainer
+  topFilter:
+    type: ContractiveFilter
+    props:
+      delay: 300
+    state:
+      conditions:
+        - emptyText: 全部
+          fixed: true
+          key: iteration
+          label: 迭代
+          options:
+            - label: '1.6'
+              value: '1.6'
+            - label: '1.5'
+              value: '1.5'
+          placeholder: 选择优先级
+          type: select
+        - emptyText: 全部
+          haveFilter: true
+          fixed: true
+          key: members
+          label: 成员
+          options:
+            - label: 陈泳伸
+              value: '1000014'
+            - label: 徐伟
+              value: '1000045'
+          quickSelect:
+            label: 选择自己
+            operationKey: ownerSelectMe
+          type: select
+      values:
+        priorities:
+          - HIGH
+    operations:
+      filter:
+        key: filter
+        reload: true
+      ownerSelectMe:
+        key: ownerSelectMe
+        reload: true
+  chartBlock:
+    type: ChartBlock
+    data:
+      title: 燃尽图
+  burnoutChart:
+    type: Chart
+    props:
+      chartType: line
+      title: 燃尽图
+      option:
+        xAxis:
+          type: category
+          data:
+            - 09-01
+            - 09-02
+            - 09-03
+            - 09-04
+            - 09-05
+            - 09-06
+            - 09-07
+            - 09-08
+            - 09-09
+            - 09-10
+            - 09-11
+            - 09-12
+            - 09-13
+            - 09-14
+            - 09-15
+            - 09-16
+            - 09-17
+            - 09-18
+            - 09-19
+            - 09-20
+            - 09-21
+            - 09-22
+            - 09-23
+            - 09-24
+            - 09-25
+            - 09-26
+            - 09-27
+            - 09-28
+        yAxis:
+          type: value
+          axisLine:
+            lineStyle:
+              color: 'rgba(48,38,71,0.20)'
+          axisLabel:
+            formatter: '{value} 个'
+        legend:
+          show: true
+          bottom: true
+          data:
+            - 实际燃尽
+        tooltip:
+          trigger: axis
+        series:
+          - data:
+              - 150
+              - 160
+              - 138
+              - 96
+            name: 实际燃尽
+            type: line
+            smooth: false
+            itemStyle:
+              color: '#D84B65'
+            markLine:
+              label:
+                position: middle
+              lineStyle:
+                type: solid
+                width: 2
+                color: 'rgba(48,38,71,0.20)'
+              data:
+                - - name: 预设燃尽
+                    coord:
+                      - 09-01
+                      - '150'
+                  - coord:
+                      - 09-07
+                      - '0'
+                    symbol: none
+      pureChart: true
+  burnoutChartFilter:
+    type: ContractiveFilter
+    props:
+      delay: 500
+    state:
+      conditions:
+        - emptyText: 全部
+          key: type
+          fixed: true
+          label: 类型
+          options:
+            - label: 需求
+              value: requirement
+            - label: 任务
+              value: task
+          placeholder: 选择优先级
+          type: select
+        - emptyText: 全部
+          key: dimension
+          fixed: true
+          label: 维度
+          options:
+            - label: 按事项个数
+              value: total
+            - label: 按事项状态
+              value: state
+          placeholder: 选择优先级
+          type: select
+      values:
+        type:
+          - requirement
+          - task
+        dimension: total
+    operations:
+      filter:
+        key: filter
+        reload: true
+      ownerSelectMe:
+        key: ownerSelectMe
+        reload: true
+  simpleChart:
+    type: SimpleChart
+    data:
+      main: '2321'
+      sub: 总数
+      compareText: 较昨日
+      compareValue: '+4'
+      chart:
+        xAxis:
+          - '2021-01-20'
+          - '2021-01-21'
+          - '2021-01-22'
+          - '2021-01-23'
+          - '2021-01-24'
+          - '2021-01-25'
+          - '2021-01-26'
+        series:
+          - name: 需求&任务总数
+            data:
+              - 820
+              - 932
+              - 901
+              - 934
+              - 10
+              - 0
+              - 0
+  info:
+    type: TextBlockGroup
+    data:
+      data:
+        - - main: '233'
+            sub: 未完成
+          - main: '233'
+            sub: 已到期
+          - main: '233'
+            sub: 本日截止
+          - main: '233'
+            sub: 本周截止
+        - - main: '23'
+            sub: 本月截止
+          - main: '5'
+            sub: 未指定截止日期
+  tabs:
+    type: Radio
+    name: tabs
+    props:
+      visible: false
+      buttonStyle: solid
+      options:
+        - key: summary
+          text: 概览
+          operations:
+            click:
+              reload: false
+              key: summary
+              command:
+                key: changeScenario
+                scenarioType: issue-summary-dashboard
+                scenarioKey: issue-summary-dashboard
+        - key: distribute
+          text: 分布
+          operations:
+            click:
+              reload: false
+              key: distribute
+              command:
+                key: changeScenario
+                scenarioType: issue-summary-distribute
+                scenarioKey: issue-summary-distribute
+      radioType: button
+    state:
+      value: summary
+    data: { }
+  page:
+    type: Container
+  pageContent:
+    type: Container
+  stackChartBlock:
+    type: ChartBlock
+    data:
+      title: 累积流图
+  stackChartFilter:
+    type: ContractiveFilter
+    props:
+      delay: 500
+    state:
+      conditions:
+        - emptyText: 全部
+          key: type
+          fixed: true
+          label: 类型
+          options:
+            - label: 需求
+              value: requirement
+            - label: 任务
+              value: task
+          placeholder: 选择优先级
+          type: select
+          customProps:
+            mode: single
+      values:
+        type: requirement
+        dimension:
+          - total
+    operations:
+      filter:
+        key: filter
+        reload: true
+      ownerSelectMe:
+        key: ownerSelectMe
+        reload: true
+  stackChart:
+    type: Chart
+    props:
+      chartType: line
+      title: 累积流图
+      option:
+        grid:
+          bottom: 60
+        xAxis:
+          type: category
+          data:
+            - 09-01
+            - 09-02
+            - 09-03
+            - 09-04
+            - 09-05
+            - 09-06
+            - 09-07
+            - 09-08
+            - 09-09
+            - 09-10
+            - 09-11
+            - 09-12
+            - 09-13
+            - 09-14
+            - 09-15
+            - 09-16
+            - 09-17
+            - 09-18
+            - 09-19
+            - 09-20
+            - 09-21
+            - 09-22
+            - 09-23
+            - 09-24
+            - 09-25
+            - 09-26
+            - 09-27
+            - 09-28
+        yAxis:
+          type: value
+          axisLine:
+            lineStyle:
+              color: 'rgba(48,38,71,0.20)'
+          axisLabel:
+            formatter: '{value} 个'
+        legend:
+          show: true
+          bottom: true
+          data:
+            - 已完成
+            - 测试中
+            - 开发中
+            - 设计中
+            - 待处理
+        dataZoom:
+          - type: slider
+            start: 0
+            end: 60
+            height: 24
+            bottom: 30
+        tooltip:
+          trigger: axis
+        color:
+          - primary3
+          - primary4
+          - primary5
+          - primary6
+          - primary7
+        series:
+          - data:
+              - 120
+              - 132
+              - 101
+              - 134
+              - 90
+              - 230
+              - 210
+            name: 已完成
+            stack: 总量
+            type: line
+            symbol: none
+            areaStyle:
+              opacity: 1
+            lineStyle:
+              width: 0
+            smooth: false
+          - data:
+              - 220
+              - 182
+              - 191
+              - 234
+              - 290
+              - 330
+              - 310
+            name: 测试中
+            stack: 总量
+            type: line
+            symbol: none
+            areaStyle:
+              opacity: 1
+            lineStyle:
+              width: 0
+            smooth: false
+          - data:
+              - 150
+              - 232
+              - 201
+              - 154
+              - 190
+              - 330
+              - 410
+            name: 开发中
+            stack: 总量
+            type: line
+            symbol: none
+            areaStyle:
+              opacity: 1
+            lineStyle:
+              width: 0
+            smooth: false
+          - data:
+              - 320
+              - 332
+              - 301
+              - 334
+              - 390
+              - 330
+              - 320
+            name: 设计中
+            stack: 总量
+            type: line
+            symbol: none
+            areaStyle:
+              opacity: 1
+            lineStyle:
+              width: 0
+            smooth: false
+          - data:
+              - 820
+              - 932
+              - 901
+              - 934
+              - 1290
+              - 1330
+              - 1320
+            name: 待处理
+            stack: 总量
+            type: line
+            symbol: none
+            areaStyle:
+              opacity: 1
+            lineStyle:
+              width: 0
+            smooth: false
+      pureChart: true

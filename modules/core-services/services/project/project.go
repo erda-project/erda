@@ -37,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/filehelper"
+	local "github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/numeral"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 	"github.com/erda-project/erda/pkg/ucauth"
@@ -69,16 +70,16 @@ func New(opts ...Option) *Project {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(dbClient *dao.DBClient) Option {
+func WithDBClient(db *dao.DBClient) Option {
 	return func(project *Project) {
-		project.db = dbClient
+		project.db = db
 	}
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(ucClient *ucauth.UCClient) Option {
+func WithUCClient(uc *ucauth.UCClient) Option {
 	return func(project *Project) {
-		project.uc = ucClient
+		project.uc = uc
 	}
 }
 
@@ -345,6 +346,8 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to GetProjectByID")
 	}
+	var oldClusterConfig = make(map[string]string)
+	_ = json.Unmarshal([]byte(project.ClusterConfig), &oldClusterConfig)
 	oldQuota, err := p.db.GetQuotaByProjectID(projectID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to GetQuotaByProjectID")
@@ -372,7 +375,7 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 		return &project, nil
 	}
 
-	// check new quota is less than reqeust
+	// check new quota is less than request
 	var dto = new(apistructs.ProjectDTO)
 	dto.ID = uint64(project.ID)
 	setProjectDtoQuotaFromModel(dto, project.Quota)
@@ -380,6 +383,10 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 	changedRecord := make(map[string]bool)
 	if oldQuota == nil {
 		oldQuota = new(apistructs.ProjectQuota)
+		oldQuota.ProdClusterName = oldClusterConfig["PROD"]
+		oldQuota.StagingClusterName = oldClusterConfig["STAGING"]
+		oldQuota.TestClusterName = oldClusterConfig["TEST"]
+		oldQuota.DevClusterName = oldClusterConfig["DEV"]
 	}
 	isQuotaChangedOnTheWorkspace(changedRecord, *oldQuota, *project.Quota)
 	if msg, ok := p.checkNewQuotaIsLessThanRequest(ctx, dto, changedRecord); !ok {
@@ -631,28 +638,19 @@ func (p *Project) DeleteWithEvent(projectID int64) error {
 
 // Delete 删除项目
 func (p *Project) Delete(projectID int64) (*model.Project, error) {
+	langCodes, _ := i18n.ParseLanguageCode(local.GetGoroutineBindLang())
 	// check if application exists
 	if count, err := p.db.GetApplicationCountByProjectID(projectID); err != nil || count > 0 {
-		return nil, errors.Errorf("failed to delete project(there exists applications)")
+		return nil, errors.Errorf(p.trans.Text(langCodes, "DeleteProjectErrorApplicationExist"))
 	}
 
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
-		return nil, errors.Errorf("failed to get project, (%v)", err)
+		return nil, errors.Errorf(p.trans.Text(langCodes, "FailedGetProject")+"(%v)", err)
 	}
 
-	// TODO We need to turn this check on after adding the delete portal to the UI
-	// check if addon exists
-	// addOnListResp, err := p.bdl.ListAddonByProjectID(projectID, project.OrgID)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// if addOnListResp != nil && len(addOnListResp.Data) > 0 {
-	// 	return nil, errors.Errorf("failed to delete project(there exists addons)")
-	// }
-
 	if err = p.db.DeleteProject(projectID); err != nil {
-		return nil, errors.Errorf("failed to delete project, (%v)", err)
+		return nil, errors.Errorf(p.trans.Text(langCodes, "FailedDeleteProject")+"(%v)", err)
 	}
 	_ = p.db.DeleteProjectQutoa(projectID)
 	logrus.Infof("deleted project %d", projectID)
@@ -785,7 +783,7 @@ func (p *Project) fetchPodInfo(dto *apistructs.ProjectDTO) {
 			if !strings.EqualFold(podInfo.Workspace, workspace) {
 				continue
 			}
-			if podInfo.Cluster != rc.ClusterName {
+			if podInfo.Cluster != rc.ClusterName && podInfo.Cluster != "" {
 				continue
 			}
 			rc.CPURequest += podInfo.CPURequest
@@ -846,10 +844,11 @@ func (p *Project) GetModelProject(projectID int64) (*model.Project, error) {
 	return &project, nil
 }
 
-func (p *Project) GetModelProjectsMap(projectIDs []uint64) (map[int64]*model.Project, error) {
+func (p *Project) GetModelProjectsMap(projectIDs []uint64, keepMsp bool) (map[int64]*model.Project, error) {
 	_, projects, err := p.db.GetProjectsByIDs(projectIDs, &apistructs.ProjectListRequest{
 		PageNo:   1,
 		PageSize: len(projectIDs),
+		KeepMsp:  keepMsp,
 	})
 	if err != nil {
 		return nil, errors.Errorf("failed to get projects, (%v)", err)
@@ -1054,17 +1053,13 @@ func (p *Project) ListPublicProjects(userID string, params *apistructs.ProjectLi
 		return nil, err
 	}
 
-	// 获取每个项目的app信息
-	now := time.Now()
-	apps, err := p.db.GetApplicationsByProjectIDs(projectIDs)
+	unblockAppCounts, err := p.ListUnblockAppCountsByProjectIDS(projectIDs)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failed to get unblock apps, err: %v", err)
 	}
-	for _, app := range apps {
-		if app.UnblockStart != nil && app.UnblockEnd != nil &&
-			now.Before(*app.UnblockEnd) && now.After(*app.UnblockStart) {
-			projectBlockStatus[uint64(app.ProjectID)] = "unblocked"
-			break
+	for _, counter := range unblockAppCounts {
+		if counter.UnblockAppCount > 0 {
+			projectBlockStatus[uint64(counter.ProjectID)] = "unblocked"
 		}
 	}
 
@@ -1160,18 +1155,13 @@ func (p *Project) ListJoinedProjects(orgID int64, userID string, params *apistru
 	if err != nil {
 		return nil, errors.Errorf("failed to get projects, (%v)", err)
 	}
-	now := time.Now()
-	for _, proj := range projects {
-		apps, err := p.db.GetProjectApplications(proj.ID)
-		if err != nil {
-			return nil, errors.Errorf("failed to get app, proj(%d): %v", proj.ID, err)
-		}
-		for _, app := range apps {
-			if app.UnblockStart != nil && app.UnblockEnd != nil &&
-				now.Before(*app.UnblockEnd) && now.After(*app.UnblockStart) {
-				projectBlockStatus[uint64(proj.ID)] = "unblocked"
-				break
-			}
+	unblockAppCounts, err := p.ListUnblockAppCountsByProjectIDS(projectIDs)
+	if err != nil {
+		return nil, errors.Errorf("failed to get unblock apps, err: %v", err)
+	}
+	for _, counter := range unblockAppCounts {
+		if counter.UnblockAppCount > 0 {
+			projectBlockStatus[uint64(counter.ProjectID)] = "unblocked"
 		}
 	}
 
@@ -1823,4 +1813,11 @@ func (p *Project) updateMemberCache(projectID uint64) (*memberCache, bool, error
 		p.memberCache.Store(projectID, &CacheItme{Object: member})
 		return member, true, nil
 	}
+}
+
+func (p *Project) ListUnblockAppCountsByProjectIDS(projectIDS []uint64) ([]model.ProjectUnblockAppCount, error) {
+	if len(projectIDS) == 0 {
+		return nil, nil
+	}
+	return p.db.ListUnblockAppCountsByProjectIDS(projectIDS)
 }

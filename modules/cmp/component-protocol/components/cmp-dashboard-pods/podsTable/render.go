@@ -91,6 +91,21 @@ func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Compo
 		} else {
 			p.State.PageNo = 1
 		}
+	case "delete":
+		podID, err := getPodID(event.OperationData)
+		if err != nil {
+			return err
+		}
+		if err = p.DeletePod(podID); err != nil {
+			return err
+		}
+	case "checkYaml":
+		podID, err := getPodID(event.OperationData)
+		if err != nil {
+			return err
+		}
+		(*gs)["podID"] = podID
+		return nil
 	}
 	if err := p.RenderTable(); err != nil {
 		return fmt.Errorf("failed to render podsTable component, %v", err)
@@ -163,6 +178,25 @@ func (p *ComponentPodsTable) EncodeURLQuery() error {
 	encode := base64.StdEncoding.EncodeToString(jsonData)
 	p.State.PodsTableURLQuery = encode
 	return nil
+}
+
+func (p *ComponentPodsTable) DeletePod(podID string) error {
+	splits := strings.Split(podID, "_")
+	if len(splits) != 2 {
+		return errors.Errorf("invalid pod id, %s", podID)
+	}
+	namespace, name := splits[0], splits[1]
+
+	req := &apistructs.SteveRequest{
+		UserID:      p.sdk.Identity.UserID,
+		OrgID:       p.sdk.Identity.OrgID,
+		Type:        apistructs.K8SPod,
+		ClusterName: p.State.ClusterName,
+		Name:        name,
+		Namespace:   namespace,
+	}
+
+	return p.server.DeleteSteveResource(p.ctx, req)
 }
 
 func (p *ComponentPodsTable) RenderTable() error {
@@ -306,7 +340,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 						},
 					},
 					[]interface{}{
-						Link{
+						Operate{
 							RenderType: "linkText",
 							Value:      name,
 							Operations: map[string]interface{}{
@@ -420,8 +454,30 @@ func (p *ComponentPodsTable) RenderTable() error {
 			},
 			MemoryLimitsNum: memLimits.Value(),
 			Ready:           fields[1],
-			Node:            fields[6],
-			GotoWorkload: Link{
+			Node: Operate{
+				RenderType: "linkText",
+				Value:      fields[6],
+				Operations: map[string]interface{}{
+					"click": LinkOperation{
+						Key:    "gotoNodeDetail",
+						Reload: false,
+						Command: &Command{
+							Key:    "goto",
+							Target: "cmpClustersNodeDetail",
+							State: CommandState{
+								Params: map[string]string{
+									"nodeId": fields[6],
+								},
+								Query: map[string]string{
+									"nodeIP": obj.String("status", "hostIP"),
+								},
+							},
+							JumpOut: true,
+						},
+					},
+				},
+			},
+			Operations: Operate{
 				RenderType: "tableOperation",
 				Operations: map[string]interface{}{
 					"click": LinkOperation{
@@ -441,6 +497,24 @@ func (p *ComponentPodsTable) RenderTable() error {
 						Reload: false,
 						Key:    "gotoWorkload",
 						Text:   p.sdk.I18n("gotoWorkload"),
+					},
+					"checkYaml": LinkOperation{
+						Reload: true,
+						Key:    "checkYaml",
+						Text:   p.sdk.I18n("viewOrEditYaml"),
+						Meta: map[string]interface{}{
+							"podID": id,
+						},
+					},
+					"delete": LinkOperation{
+						Reload: true,
+						Key:    "delete",
+						Text:   p.sdk.I18n("delete"),
+						Meta: map[string]interface{}{
+							"podID": id,
+						},
+						Confirm:    p.sdk.I18n("confirmDelete"),
+						SuccessMsg: p.sdk.I18n("deletedPodSuccessfully"),
 					},
 				},
 			},
@@ -551,7 +625,7 @@ func (p *ComponentPodsTable) RenderTable() error {
 				}
 			case "node":
 				return func(i int, j int) bool {
-					less := items[i].Node < items[j].Node
+					less := items[i].Node.Value < items[j].Node.Value
 					if ascend {
 						return less
 					}
@@ -588,7 +662,7 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 		}
 		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes, format),
 			cmpcputil.ResourceToString(p.sdk, float64(totQty.MilliValue()), format))
-		value = fmt.Sprintf("%.2f", usedPercent)
+		value = fmt.Sprintf("%.1f", usedPercent)
 	} else {
 		totRes = totQty.Value()
 		usedRes = float64(totRes) * usedPercent / 100
@@ -601,7 +675,7 @@ func (p *ComponentPodsTable) parseResPercent(usedPercent float64, totQty *resour
 		}
 		tip = fmt.Sprintf("%s/%s", cmpcputil.ResourceToString(p.sdk, usedRes, format),
 			cmpcputil.ResourceToString(p.sdk, float64(totQty.Value()), format))
-		value = fmt.Sprintf("%.2f", usedPercent)
+		value = fmt.Sprintf("%.1f", usedPercent)
 	}
 	return status, value, tip
 }
@@ -613,6 +687,7 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 	p.Props.PageSizeOptions = []string{
 		"10", "20", "50", "100",
 	}
+
 	p.Props.Columns = []Column{
 		{
 			DataIndex: "name",
@@ -633,18 +708,12 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 			DataIndex: "ready",
 			Title:     cputil.I18n(ctx, "ready"),
 			Sorter:    true,
-			Align:     "right",
 		},
 		{
 			DataIndex: "node",
 			Title:     cputil.I18n(ctx, "node"),
 			Sorter:    true,
-		},
-		{
-			DataIndex: "age",
-			Title:     cputil.I18n(ctx, "age"),
-			Sorter:    true,
-			Align:     "right",
+			Hidden:    true,
 		},
 	}
 
@@ -654,19 +723,16 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 				DataIndex: "cpuRequests",
 				Title:     cputil.I18n(ctx, "cpuRequests"),
 				Sorter:    true,
-				Align:     "right",
 			},
 			{
 				DataIndex: "cpuLimits",
 				Title:     cputil.I18n(ctx, "cpuLimits"),
 				Sorter:    true,
-				Align:     "right",
 			},
 			{
 				DataIndex: "cpuPercent",
 				Title:     cputil.I18n(ctx, "cpuPercent"),
 				Sorter:    true,
-				Align:     "right",
 			},
 		}...)
 	} else {
@@ -675,28 +741,30 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 				DataIndex: "memoryRequests",
 				Title:     cputil.I18n(ctx, "memoryRequests"),
 				Sorter:    true,
-				Align:     "right",
 			},
 			{
 				DataIndex: "memoryLimits",
 				Title:     cputil.I18n(ctx, "memoryLimits"),
 				Sorter:    true,
-				Align:     "right",
 			},
 			{
 				DataIndex: "memoryPercent",
 				Title:     cputil.I18n(ctx, "memoryPercent"),
 				Sorter:    true,
-				Align:     "right",
 			},
 		}...)
 	}
-	p.Props.Columns = append(p.Props.Columns, Column{
-		DataIndex: "gotoWorkload",
-		Title:     cputil.I18n(ctx, "operate"),
-		Sorter:    false,
-		Fixed:     "right",
-	})
+	p.Props.Columns = append(p.Props.Columns, []Column{
+		{
+			DataIndex: "age",
+			Title:     cputil.I18n(ctx, "age"),
+			Sorter:    true,
+		},
+		{
+			DataIndex: "operations",
+			Title:     cputil.I18n(ctx, "operate"),
+			Sorter:    false,
+		}}...)
 	p.Operations = map[string]interface{}{
 		"changeSort": Operation{
 			Key:    "changeSort",
@@ -706,7 +774,7 @@ func (p *ComponentPodsTable) SetComponentValue(ctx context.Context) {
 }
 
 func (p *ComponentPodsTable) Transfer(c *cptype.Component) {
-	c.Props = p.Props
+	c.Props = cputil.MustConvertProps(p.Props)
 	c.Data = map[string]interface{}{"list": p.Data.List}
 	c.State = map[string]interface{}{
 		"clusterName":         p.State.ClusterName,
@@ -754,4 +822,16 @@ func parseResource(str string, format resource.Format) *resource.Quantity {
 	}
 	res, _ := resource.ParseQuantity(str)
 	return &res
+}
+
+func getPodID(operationData map[string]interface{}) (string, error) {
+	meta, ok := operationData["meta"].(map[string]interface{})
+	if !ok {
+		return "", errors.New("invalid type of meta")
+	}
+	podID, ok := meta["podID"].(string)
+	if !ok {
+		return "", errors.New("invalid type of podID")
+	}
+	return podID, nil
 }

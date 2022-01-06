@@ -412,6 +412,32 @@ var AggFunctions = map[string]*AggFuncDefine{
 			},
 		),
 	},
+	"rateps": {
+		Flag: FuncFlagSelect,
+		New: newUnaryAggFunction(
+			"rateps",
+			func(ctx *Context, id, field string, script *elastic.Script, flags ...FuncFlag) (elastic.Aggregation, error) {
+				if script != nil {
+					return elastic.NewSumAggregation().Script(script), nil
+				}
+				return elastic.NewSumAggregation().Field(field), nil
+			},
+			func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
+				sum, _ := aggs.Sum(id)
+				if sum == nil {
+					return nil, false
+				}
+				if sum.Value == nil {
+					return 0, true
+				}
+				if ctx.targetTimeUnit == tsql.UnsetTimeUnit {
+					ctx.targetTimeUnit = tsql.Nanosecond
+				}
+				seconds := float64(ctx.interval*int64(ctx.targetTimeUnit)) / float64(tsql.Second)
+				return *sum.Value / seconds, true
+			},
+		),
+	},
 	"first": newSourceFieldAggFunction("first", tsql.TimestampKey, true),
 	"last":  newSourceFieldAggFunction("last", tsql.TimestampKey, false),
 	"value": newSourceFieldAggFunction("value", tsql.TimestampKey, false),
@@ -500,7 +526,7 @@ func (f *unaryAggFunction) Aggregations(aggs map[string]elastic.Aggregation, fla
 	} else {
 		script, err := getScriptExpression(f.ctx, arg, influxql.AnyField, nil)
 		if err != nil {
-			return nil
+			return err
 		}
 		a, err := f.agg(f.ctx, f.id, "", elastic.NewScript(script), flags...)
 		if err != nil {
@@ -669,6 +695,23 @@ func init() {
 				return "((" + left + ")==(" + right + "))", nil
 			},
 		},
+		"gt": {
+			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
+				err := mustCallArgsNum(call, 2)
+				if err != nil {
+					return "", err
+				}
+				left, err := getScriptExpression(ctx, call.Args[0], deftyp, fields)
+				if err != nil {
+					return "", err
+				}
+				right, err := getScriptExpression(ctx, call.Args[1], deftyp, fields)
+				if err != nil {
+					return "", err
+				}
+				return "((" + left + ")>(" + right + "))", nil
+			},
+		},
 		"include": {
 			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
 				err := mustCallArgsMinNum(call, 2)
@@ -688,6 +731,27 @@ func init() {
 					parts = append(parts, "("+val+")"+"==("+s+")")
 				}
 				return "(" + strings.Join(parts, " || ") + ")", nil
+			},
+		},
+		"not_include": {
+			Convert: func(ctx *Context, call *influxql.Call, deftyp influxql.DataType, fields map[string]bool) (string, error) {
+				err := mustCallArgsMinNum(call, 2)
+				if err != nil {
+					return "", err
+				}
+				val, err := getScriptExpression(ctx, call.Args[0], deftyp, fields)
+				if err != nil {
+					return "", err
+				}
+				var parts []string
+				for _, item := range call.Args[1:] {
+					s, err := getScriptExpression(ctx, item, deftyp, fields)
+					if err != nil {
+						return "", err
+					}
+					parts = append(parts, "("+val+")"+"!=("+s+")")
+				}
+				return "(" + strings.Join(parts, " && ") + ")", nil
 			},
 		},
 	}

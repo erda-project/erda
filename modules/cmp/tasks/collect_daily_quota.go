@@ -123,9 +123,7 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 		record.ProjectID = project.ID
 		record.ProjectName = project.Name
 
-		var params = make(url.Values)
-		params.Add("withQuota", "true")
-		projectDTO, err := d.bdl.GetProjectWithSetter(project.ID, httpclient.SetParams(params))
+		projectDTO, err := d.bdl.GetProjectWithSetter(project.ID, httpclient.SetParams(url.Values{"withQuota": {"true"}}))
 		if err != nil {
 			err = errors.Wrap(err, "failed to GetProject")
 			l.WithError(err).Errorln()
@@ -163,6 +161,9 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 		}
 
 		for clusterName := range clustersM {
+			if clusterName == "" {
+				continue
+			}
 			record.ClusterName = clusterName
 			record.CPUQuota = cpuQuotaM[clusterName]
 			record.MemQuota = memQuotaM[clusterName]
@@ -171,7 +172,7 @@ func (d *DailyQuotaCollector) collectProjectDaily(namespacesM map[string][]strin
 
 			// insert record
 			var existsRecord apistructs.ProjectResourceDailyModel
-			err := d.db.Where("updated_at > ? and updated_at < ?",
+			err := d.db.Where("created_at >= ? and created_at < ?",
 				time.Now().Format("2006-01-02 00:00:00"),
 				time.Now().Add(time.Hour*24).Format("2006-01-02 00:00:00")).
 				First(&existsRecord, map[string]interface{}{"project_id": record.ProjectID, "cluster_name": record.ClusterName}).

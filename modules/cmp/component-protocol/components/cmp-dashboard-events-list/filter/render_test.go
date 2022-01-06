@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 )
 
 func TestComponentFilter_GenComponentState(t *testing.T) {
@@ -171,19 +172,13 @@ func TestComponentFilter_Transfer(t *testing.T) {
 		},
 	}
 
-	expectedData, err := json.Marshal(component)
-	if err != nil {
-		t.Error(err)
-	}
-
 	result := &cptype.Component{}
 	component.Transfer(result)
-	resultData, err := json.Marshal(result)
+	isEqual, err := cputil.IsDeepEqual(result, component)
 	if err != nil {
 		t.Error(err)
 	}
-
-	if string(expectedData) != string(resultData) {
-		t.Errorf("test failed, expected:\n%s\ngot:\n%s", expectedData, resultData)
+	if !isEqual {
+		t.Error("test failed, data is changed after transfer")
 	}
 }

@@ -187,13 +187,13 @@ func Test_getDefaultContent(t *testing.T) {
 					NewContent:     "new",
 				},
 			},
-			want:    `该事件内容发生变更`,
+			want:    `内容发生变更`,
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getDefaultContent(tt.args.ist, tt.args.param)
+			got, err := getDefaultContent(tt.args.ist, tt.args.param, "zh")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getDefaultContent() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -238,7 +238,7 @@ func Test_getDefaultContentForMsgSending(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getDefaultContentForMsgSending(tt.args.ist, tt.args.param)
+			got, err := getDefaultContentForMsgSending(tt.args.ist, tt.args.param, "zh")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getDefaultContentForMsgSending() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -269,7 +269,7 @@ func Test_renderTemplate(t *testing.T) {
 				templateContent: apistructs.IssueTemplate["zh"][apistructs.ISTChangeIteration],
 				param:           apistructs.ISTParam{CurrentIteration: "1.2", NewIteration: "1.3"},
 			},
-			want:    `该事件迭代由 "1.2" 变更为 "1.3"`,
+			want:    `迭代由 "1.2" 变更为 "1.3"`,
 			wantErr: false,
 		},
 	}

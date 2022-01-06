@@ -1,0 +1,80 @@
+- name: " 页面内容改变"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  title: |
+    【{{project_name}}项目{{status_metric_name}}页面内容改变告警】
+  template: |
+    【页面内容改变告警】
+
+    项目: {{project_name}}
+
+    环境: {{workspace}}
+
+    terminus_key: {{terminus_key}}
+
+    事件：[{{status_metric_name}}]({{url}})页面内容和基准点对比不一致
+
+    告警级别: {{level}}
+
+    时间: {{timestamp}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+
+- name: " 页面内容改变"
+  trigger: "alert"
+  target: "sms"
+  title: |
+    【{{project_name}}项目{{status_metric_name}}页面内容改变告警】
+  template: |
+    [{{project_name}}]页面内容和基准点对比不一致，触发页面内容改变告警，terminus_key: {{terminus_key}}，告警级别: {{level}}
+- name: " 页面内容改变"
+  trigger: "alert"
+  target: "vms"
+  title: |
+    【{{project_name}}项目{{status_metric_name}}页面内容改变告警】
+  template: |
+    {{project_name}}项目页面内容和基准点对比不一致，触发页面内容改变告警，terminus_key: {{terminus_key}}，告警级别: {{level}}
+- name: " 页面内容改变告警恢复"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    【{{project_name}}项目{{status_metric_name}}页面内容改变恢复】
+  template: |
+    【页面内容改变恢复】
+
+    {{status_metric_name}}]({{url}})触发页面内容改变告警恢复
+
+    项目: {{project_name}}
+
+    环境: {{workspace}}
+
+    terminus_key: {{terminus_key}}
+
+    持续时间: {{trigger_duration}}
+
+    恢复时间: {{timestamp}}
+
+    [查看记录]({{record_url}})
+
+- name: " 业务请求状态异常告警恢复"
+  trigger: "recover"
+  target: "sms"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    【{{project_name}}项目{{status_metric_name}}页面内容改变恢复】
+  template: |
+    {{project_name}}项目触发页面内容改变告警恢复，terminus_key: {{terminus_key}}
+- name: " 业务请求状态异常告警恢复"
+  trigger: "recover"
+  target: "vms"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    【{{project_name}}项目{{status_metric_name}}页面内容改变恢复】
+  template: |
+    {{project_name}}项目触发页面内容改变告警恢复，terminus_key: {{terminus_key}}

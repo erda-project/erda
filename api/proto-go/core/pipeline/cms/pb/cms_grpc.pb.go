@@ -26,6 +26,7 @@ type CmsServiceClient interface {
 	UpdateCmsNsConfigs(ctx context.Context, in *CmsNsConfigsUpdateRequest, opts ...grpc.CallOption) (*CmsNsConfigsUpdateResponse, error)
 	DeleteCmsNsConfigs(ctx context.Context, in *CmsNsConfigsDeleteRequest, opts ...grpc.CallOption) (*CmsNsConfigsDeleteResponse, error)
 	GetCmsNsConfigs(ctx context.Context, in *CmsNsConfigsGetRequest, opts ...grpc.CallOption) (*CmsNsConfigsGetResponse, error)
+	BatchGetCmsNsConfigs(ctx context.Context, in *CmsNsConfigsBatchGetRequest, opts ...grpc.CallOption) (*CmsNsConfigsBatchGetResponse, error)
 }
 
 type cmsServiceClient struct {
@@ -81,6 +82,15 @@ func (c *cmsServiceClient) GetCmsNsConfigs(ctx context.Context, in *CmsNsConfigs
 	return out, nil
 }
 
+func (c *cmsServiceClient) BatchGetCmsNsConfigs(ctx context.Context, in *CmsNsConfigsBatchGetRequest, opts ...grpc.CallOption) (*CmsNsConfigsBatchGetResponse, error) {
+	out := new(CmsNsConfigsBatchGetResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.pipeline.cms.CmsService/BatchGetCmsNsConfigs", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CmsServiceServer is the server API for CmsService service.
 // All implementations should embed UnimplementedCmsServiceServer
 // for forward compatibility
@@ -90,6 +100,7 @@ type CmsServiceServer interface {
 	UpdateCmsNsConfigs(context.Context, *CmsNsConfigsUpdateRequest) (*CmsNsConfigsUpdateResponse, error)
 	DeleteCmsNsConfigs(context.Context, *CmsNsConfigsDeleteRequest) (*CmsNsConfigsDeleteResponse, error)
 	GetCmsNsConfigs(context.Context, *CmsNsConfigsGetRequest) (*CmsNsConfigsGetResponse, error)
+	BatchGetCmsNsConfigs(context.Context, *CmsNsConfigsBatchGetRequest) (*CmsNsConfigsBatchGetResponse, error)
 }
 
 // UnimplementedCmsServiceServer should be embedded to have forward compatible implementations.
@@ -110,6 +121,9 @@ func (*UnimplementedCmsServiceServer) DeleteCmsNsConfigs(context.Context, *CmsNs
 }
 func (*UnimplementedCmsServiceServer) GetCmsNsConfigs(context.Context, *CmsNsConfigsGetRequest) (*CmsNsConfigsGetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCmsNsConfigs not implemented")
+}
+func (*UnimplementedCmsServiceServer) BatchGetCmsNsConfigs(context.Context, *CmsNsConfigsBatchGetRequest) (*CmsNsConfigsBatchGetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchGetCmsNsConfigs not implemented")
 }
 
 func RegisterCmsServiceServer(s grpc1.ServiceRegistrar, srv CmsServiceServer, opts ...grpc1.HandleOption) {
@@ -173,6 +187,15 @@ func _get_CmsService_serviceDesc(srv CmsServiceServer, opts ...grpc1.HandleOptio
 	if h.Interceptor != nil {
 		_CmsService_GetCmsNsConfigs_info = transport.NewServiceInfo("erda.core.pipeline.cms.CmsService", "GetCmsNsConfigs", srv)
 		_CmsService_GetCmsNsConfigs_Handler = h.Interceptor(_CmsService_GetCmsNsConfigs_Handler)
+	}
+
+	_CmsService_BatchGetCmsNsConfigs_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.BatchGetCmsNsConfigs(ctx, req.(*CmsNsConfigsBatchGetRequest))
+	}
+	var _CmsService_BatchGetCmsNsConfigs_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_CmsService_BatchGetCmsNsConfigs_info = transport.NewServiceInfo("erda.core.pipeline.cms.CmsService", "BatchGetCmsNsConfigs", srv)
+		_CmsService_BatchGetCmsNsConfigs_Handler = h.Interceptor(_CmsService_BatchGetCmsNsConfigs_Handler)
 	}
 
 	var serviceDesc = _CmsService_serviceDesc
@@ -290,6 +313,29 @@ func _get_CmsService_serviceDesc(srv CmsServiceServer, opts ...grpc1.HandleOptio
 					FullMethod: "/erda.core.pipeline.cms.CmsService/GetCmsNsConfigs",
 				}
 				return interceptor(ctx, in, info, _CmsService_GetCmsNsConfigs_Handler)
+			},
+		},
+		{
+			MethodName: "BatchGetCmsNsConfigs",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(CmsNsConfigsBatchGetRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(CmsServiceServer).BatchGetCmsNsConfigs(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _CmsService_BatchGetCmsNsConfigs_info)
+				}
+				if interceptor == nil {
+					return _CmsService_BatchGetCmsNsConfigs_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.pipeline.cms.CmsService/BatchGetCmsNsConfigs",
+				}
+				return interceptor(ctx, in, info, _CmsService_BatchGetCmsNsConfigs_Handler)
 			},
 		},
 	}

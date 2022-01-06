@@ -175,7 +175,7 @@
   scope: org
   resource: member
   action: UPDATE
-- role: Manager,Dev,Support,DataEngineer,Guest,Auditor
+- role: Manager,Dev,Support,DataEngineer,Guest,Auditor,DataManager
   scope: org
   resource: member
   action: LIST
@@ -365,3 +365,26 @@
   resource: notify-config
   action: UPDATE
 ## 企业通知配置 end
+
+## subscribe start ##
+- scope: org
+  resource: subscribe
+  action: CREATE
+  role: Manager,Owner,Lead,PM,PD,Dev,QA
+- scope: org
+  resource: subscribe
+  action: UPDATE
+  role: Manager,Owner,Lead,PM,PD,Dev,QA
+- scope: org
+  resource: subscribe
+  action: LIST
+  role: Manager,Owner,Lead,PM,PD,Dev,QA,Support,Reporter,Guest
+- scope: org
+  resource: subscribe
+  action: GET
+  role: Manager,Owner,Lead,PM,PD,Dev,QA,Ops,Support,Reporter,Guest
+- scope: org
+  resource: subscribe
+  action: DELETE
+  role: Manager,Owner,Lead,PM,PD,Dev,QA
+## subscribe end ##

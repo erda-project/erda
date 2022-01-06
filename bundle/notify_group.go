@@ -76,6 +76,8 @@ func (b *Bundle) QueryNotifyGroup(orgID string, request *apistructs.QueryNotifyG
 		Param("scopeType", request.ScopeType).
 		Param("scopeId", request.ScopeID).
 		Param("label", request.Label).
+		Param("pageNo", strconv.Itoa(int(request.PageNo))).
+		Param("pageSize", strconv.Itoa(int(request.PageSize))).
 		Header("Org-ID", orgID).Do().JSON(&getResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)

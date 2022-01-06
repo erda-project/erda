@@ -56,3 +56,7 @@ func (s *cmsServiceWrapper) DeleteCmsNsConfigs(ctx context.Context, req *pb.CmsN
 func (s *cmsServiceWrapper) GetCmsNsConfigs(ctx context.Context, req *pb.CmsNsConfigsGetRequest) (*pb.CmsNsConfigsGetResponse, error) {
 	return s.client.GetCmsNsConfigs(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *cmsServiceWrapper) BatchGetCmsNsConfigs(ctx context.Context, req *pb.CmsNsConfigsBatchGetRequest) (*pb.CmsNsConfigsBatchGetResponse, error) {
+	return s.client.BatchGetCmsNsConfigs(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

@@ -190,7 +190,7 @@ func (fsm *DeployFSMContext) continueWaiting() error {
 	if fsm.Deployment.Status != apistructs.DeploymentStatusWaiting {
 		return nil
 	}
-	fsm.d.Log(`start deploying...`)
+	fsm.pushLog(`start deploying...`)
 	fsm.Deployment.Status = apistructs.DeploymentStatusDeploying
 	fsm.Deployment.Phase = apistructs.DeploymentPhaseInit
 	fsm.Deployment.FailCause = "" // clear fail (for test)
@@ -198,7 +198,7 @@ func (fsm *DeployFSMContext) continueWaiting() error {
 		return err
 	}
 	if len(fsm.Deployment.ReleaseId) > 0 {
-		fsm.d.Log("increasing release reference...")
+		fsm.pushLog("increasing release reference...")
 		if err := fsm.bdl.IncreaseReference(fsm.Deployment.ReleaseId); err != nil {
 			return fsm.failDeploy(err)
 		}
@@ -258,7 +258,7 @@ func (fsm *DeployFSMContext) continueCanceling() error {
 		}
 		return nil
 	}
-	fsm.d.Log(`deployment canceling...`)
+	fsm.pushLog(`deployment canceling...`)
 	if p, err := fsm.checkCancelOk(); err != nil {
 		return fsm.failDeploy(err)
 	} else {
@@ -270,7 +270,7 @@ func (fsm *DeployFSMContext) continueCanceling() error {
 }
 
 func (fsm *DeployFSMContext) pushOnCanceled() error {
-	fsm.d.Log("deployment canceled")
+	fsm.pushLog("deployment canceled")
 	fsm.Deployment.Status = apistructs.DeploymentStatusCanceled
 	now := time.Now()
 	if fsm.Deployment.Extra.CancelStartAt == nil {
@@ -304,11 +304,11 @@ func (fsm *DeployFSMContext) continuePhasePreAddon() error {
 		fsm.Deployment.Phase != apistructs.DeploymentPhaseInit {
 		return nil
 	}
-	fsm.d.Log(`request addon resources...`)
+	fsm.pushLog(`request addon resources...`)
 	if err := fsm.requestAddons(); err != nil {
 		return fsm.failDeploy(err)
 	}
-	fsm.d.Log(`accepted addon resources requesting, now waiting for addon ready...`)
+	fsm.pushLog(`accepted addon resources requesting, now waiting for addon ready...`)
 	if err := fsm.pushOnPhase(apistructs.DeploymentPhaseAddon); err != nil {
 		return err
 	}
@@ -320,7 +320,7 @@ func (fsm *DeployFSMContext) continuePhaseAddon() error {
 		fsm.Deployment.Phase != apistructs.DeploymentPhaseAddon {
 		return nil
 	}
-	fsm.d.Log(` * checking addon...`)
+	fsm.pushLog(` * checking addon...`)
 
 	logrus.Info("start waiting for addon deploying")
 	status, err := fsm.addon.RuntimeAddonStatus(strconv.FormatUint(fsm.Deployment.RuntimeId, 10))
@@ -330,7 +330,7 @@ func (fsm *DeployFSMContext) continuePhaseAddon() error {
 		return fsm.failDeploy(errors.Errorf("received addon request failed, status is 0(fail), errMsg: %v", err))
 	case 1:
 		// success
-		fsm.d.Log(`addon is ready, now waiting for data migration...`)
+		fsm.pushLog(`addon is ready, now waiting for data migration...`)
 		if err := fsm.pushOnPhase(apistructs.DeploymentPhaseScript); err != nil {
 			return err
 		}
@@ -355,7 +355,7 @@ func (fsm *DeployFSMContext) continuePhasePreService() error {
 	if migrationStatus == apistructs.MigrationStatusRunning || migrationStatus == apistructs.MigrationStatusInit {
 		return nil
 	}
-	fsm.d.Log(`prepare default domain...`)
+	fsm.pushLog(`prepare default domain...`)
 	// TODO: create default domain should be one phase
 	var expose bool
 	for name, serv := range fsm.Spec.Services {
@@ -381,7 +381,7 @@ func (fsm *DeployFSMContext) continuePhasePreService() error {
 	}
 
 	// do start deploying
-	fsm.d.Log(`service deploying...`)
+	fsm.pushLog(`service deploying...`)
 	if err := fsm.deployService(); err != nil {
 		return fsm.failDeploy(err)
 	}
@@ -395,7 +395,7 @@ func (fsm *DeployFSMContext) continuePhasePreService() error {
 
 // continueMigration migration信息处理
 func (fsm *DeployFSMContext) continueMigration() (string, error) {
-	fsm.d.Log(`start migration...`)
+	fsm.pushLog(`start migration...`)
 
 	mig, err := fsm.db.GetMigrationLogByDeploymentID(fsm.Deployment.ID)
 	if err != nil {
@@ -403,12 +403,12 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 	}
 	// 该deployment已经存在对应的migrationLog信息，则判断该migration job的状态
 	if mig != nil {
-		fsm.d.Log(`migration job already existed`)
+		fsm.pushLog(`migration job already existed`)
 		if mig.Status == apistructs.MigrationStatusFail {
 			return "", errors.Errorf("migration job failed, please rebuild the service")
 		}
 		if mig.Status == apistructs.MigrationStatusFinish {
-			fsm.d.Log(`migration job already finish, keep going deployment...`)
+			fsm.pushLog(`migration job already finish, keep going deployment...`)
 			return apistructs.MigrationStatusFinish, nil
 		}
 		if mig.Status == apistructs.MigrationStatusInit || mig.Status == apistructs.MigrationStatusRunning {
@@ -417,7 +417,7 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 				return "", err
 			}
 			migrationId := strconv.FormatUint(mig.ID, 10)
-			fsm.d.Log("migration logs right here...##to_link:migrationId:" + migrationId)
+			fsm.pushLog("migration logs right here...##to_link:migrationId:" + migrationId)
 			return apistructs.MigrationStatusRunning, nil
 		}
 	} else {
@@ -427,7 +427,7 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 			return "", err
 		}
 		if len(releaseResp.Resources) == 0 {
-			fsm.d.Log(`no migration found, keep going deployment...`)
+			fsm.pushLog(`no migration found, keep going deployment...`)
 			return "", nil
 		}
 		// 遍历resource数组，查看是否存在migration信息需要执行
@@ -439,17 +439,17 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 		}
 		// 如果没有migration信息需要执行，则直接返回，不执行migration信息
 		if resourceRelease.Name == "" {
-			fsm.d.Log(`no migration found, keep going deployment...`)
+			fsm.pushLog(`no migration found, keep going deployment...`)
 			return "", nil
 		}
 
 		runtimeAddonPrebuilds, err := fsm.db.GetPreBuildsByRuntimeID(fsm.Runtime.ID)
 		if err != nil {
-			fsm.d.Log(`get runtime addon relation error...`)
+			fsm.pushLog(`get runtime addon relation error...`)
 			return "", err
 		}
 		if len(*runtimeAddonPrebuilds) == 0 {
-			fsm.d.Log(`migration found, but not found mysql addon...`)
+			fsm.pushLog(`migration found, but not found mysql addon...`)
 			return "", nil
 		}
 		var mysqlInstance dbclient.AddonInstance
@@ -458,7 +458,7 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 				if v.InstanceID != "" {
 					mysqlInstanceResult, err := fsm.decryptConfig(v.InstanceID)
 					if err != nil {
-						fsm.d.Log(`get mysql addon relation error...`)
+						fsm.pushLog(`get mysql addon relation error...`)
 						return "", err
 					}
 					mysqlInstance = *mysqlInstanceResult
@@ -466,7 +466,7 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 			}
 		}
 		if mysqlInstance.ID == "" {
-			fsm.d.Log(`migration found, but not found mysql addon...`)
+			fsm.pushLog(`migration found, but not found mysql addon...`)
 			return "", nil
 		}
 		// 保存migration执行记录
@@ -482,12 +482,12 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 			AddonInstanceConfig: mysqlInstance.Config,
 		}
 		if err := fsm.db.CreateMigrationLog(&baseMigrationLog); err != nil {
-			fsm.d.Log(`create migration log error...`)
+			fsm.pushLog(`create migration log error...`)
 			return "", err
 		}
 		migrationDiceyml, err := fsm.bdl.GetDiceYAML(resourceRelease.URL)
 		if err != nil {
-			fsm.d.Log(`get migration diceyml error...`)
+			fsm.pushLog(`get migration diceyml error...`)
 			return "", err
 		}
 		migrationDiceyml_aux := migrationDiceyml.Obj()
@@ -509,11 +509,11 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 		ymlValue, err := migrationDiceyml.YAML()
 		logrus.Infof("migration release way diceyml: %s", ymlValue)
 		if err := fsm.migration.Start(&baseMigrationLog, migrationDiceyml, fsm.Runtime, fsm.App); err != nil {
-			fsm.d.Log(`migration job start error...`)
+			fsm.pushLog(`migration job start error...`)
 			return "", err
 		}
 		baseMigrationId := strconv.FormatUint(baseMigrationLog.ID, 10)
-		fsm.d.Log("migration logs right here...##to_link:migrationId:" + baseMigrationId)
+		fsm.pushLog("migration logs right here...##to_link:migrationId:" + baseMigrationId)
 		return apistructs.MigrationStatusInit, nil
 	}
 
@@ -524,7 +524,7 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 func (fsm *DeployFSMContext) decryptConfig(instanceID string) (*dbclient.AddonInstance, error) {
 	mysqlInstanceResult, err := fsm.db.GetAddonInstance(instanceID)
 	if err != nil {
-		fsm.d.Log(`get mysql addon relation error...`)
+		fsm.pushLog(`get mysql addon relation error...`)
 		return nil, err
 	}
 	var configMap map[string]interface{}
@@ -560,29 +560,29 @@ func (fsm *DeployFSMContext) decryptConfig(instanceID string) (*dbclient.AddonIn
 }
 
 func (fsm *DeployFSMContext) handleMigrationStatus(mig *dbclient.MigrationLog) error {
-	fsm.d.Log(`migration job running now, please wait job finish...`)
+	fsm.pushLog(`migration job running now, please wait job finish...`)
 	migStatus, err := fsm.migration.Status(mig)
 	if err != nil {
 		return err
 	}
-	fsm.d.Log(fmt.Sprintf("migration job status: %s, describe: %s", migStatus.Status, migStatus.Desc))
+	fsm.pushLog(fmt.Sprintf("migration job status: %s, describe: %s", migStatus.Status, migStatus.Desc))
 	switch migStatus.Status {
 	case apistructs.StatusCreated, apistructs.StatusUnschedulable:
-		fsm.d.Log(`migration job is created, please wait for the run to complete...`)
+		fsm.pushLog(`migration job is created, please wait for the run to complete...`)
 	case apistructs.StatusRunning:
-		fsm.d.Log(`migration job is running, please wait for completion...`)
+		fsm.pushLog(`migration job is running, please wait for completion...`)
 		mig.Status = apistructs.MigrationStatusRunning
 		if err := fsm.db.UpdateMigrationLog(mig); err != nil {
 			logrus.Errorf("migration job update status error, %v", err)
 		}
 	case apistructs.StatusStoppedOnOK, apistructs.StatusFinished:
-		fsm.d.Log(`migration job finish, keep service deploying...`)
+		fsm.pushLog(`migration job finish, keep service deploying...`)
 		mig.Status = apistructs.MigrationStatusFinish
 		if err := fsm.db.UpdateMigrationLog(mig); err != nil {
 			logrus.Errorf("migration job update status error, %v", err)
 		}
 	case apistructs.StatusStoppedOnFailed, apistructs.StatusFailed, apistructs.StatusUnknown, apistructs.StatusError, apistructs.StatusStoppedByKilled, apistructs.StatusNotFoundInCluster:
-		fsm.d.Log(`migration job fail, details are as follows: ` + migStatus.Desc)
+		fsm.pushLog(`migration job fail, details are as follows: ` + migStatus.Desc)
 		mig.Status = apistructs.MigrationStatusFail
 		if err := fsm.db.UpdateMigrationLog(mig); err != nil {
 			logrus.Errorf("migration job update status error, %v", err)
@@ -597,12 +597,12 @@ func (fsm *DeployFSMContext) continuePhaseService() error {
 		fsm.Deployment.Phase != apistructs.DeploymentPhaseService {
 		return nil
 	}
-	fsm.d.Log(" * checking service...")
+	fsm.pushLog(" * checking service...")
 	if p, err := fsm.checkServiceReady(); err != nil {
 		return fsm.failDeploy(err)
 	} else {
 		if p {
-			fsm.d.Log("service is ready")
+			fsm.pushLog("service is ready")
 			if err := fsm.pushOnPhase(apistructs.DeploymentPhaseRegister); err != nil {
 				return err
 			}
@@ -631,15 +631,15 @@ func (fsm *DeployFSMContext) continuePhaseCompleted() error {
 
 	// 部署runtime之后，orchestrator需要将服务域名信息通过此接口提交给hepa
 	if err := fsm.PutHepaService(); err != nil {
-		fsm.d.Log(fmt.Sprintf("hepa request error (%v)", err))
+		fsm.pushLog(fmt.Sprintf("hepa request error (%v)", err))
 		return err
 	}
 
 	if err := fsm.clearPreviousMySQLAccountState(); err != nil {
-		fsm.d.Log(fmt.Sprintf("clear previous MySQL Account fialed, error (%v)", err))
+		fsm.pushLog(fmt.Sprintf("clear previous MySQL Account fialed, error (%v)", err))
 	}
 
-	fsm.d.Log(`Deployment Is READY`)
+	fsm.pushLog(`Deployment Is READY`)
 	fsm.Deployment.Status = apistructs.DeploymentStatusOK
 	now := time.Now()
 	fsm.Deployment.FinishedAt = &now
@@ -682,8 +682,7 @@ func (fsm *DeployFSMContext) failDeploy(oriErr error) error {
 	deployment := fsm.Deployment
 	runtime := fsm.Runtime
 	app := fsm.App
-	d := fsm.d
-	d.Log(fmt.Sprintf("deployment is fail, status: %v, phrase: %v, (%v)",
+	fsm.pushLog(fmt.Sprintf("deployment is fail, status: %v, phrase: %v, (%v)",
 		deployment.Status, deployment.Phase, oriErr))
 	deployment.FailCause = oriErr.Error()
 	deployment.Status = apistructs.DeploymentStatusFailed
@@ -691,7 +690,7 @@ func (fsm *DeployFSMContext) failDeploy(oriErr error) error {
 	deployment.FinishedAt = &now
 	if err := fsm.db.UpdateDeployment(deployment); err != nil {
 		// db update fail mess up everything!
-		d.Log(fmt.Sprintf("failed to update deployment, (%v)", err))
+		fsm.pushLog(fmt.Sprintf("failed to update deployment, (%v)", err))
 		return err
 	}
 	// emit runtime deploy fail event
@@ -712,6 +711,10 @@ func (fsm *DeployFSMContext) requestAddons() error {
 
 	var baseAddons []apistructs.AddonCreateItem
 	for name, a := range fsm.Spec.AddOns {
+		if a == nil {
+			fsm.pushLog(fmt.Sprintf("addon information is empty, jump over, addon name: %s", name))
+			continue
+		}
 		plan := strings.SplitN(a.Plan, ":", 2)
 		if len(plan) != 2 {
 			return errors.Errorf("addon plan information is not compliant")
@@ -778,7 +781,7 @@ func (fsm *DeployFSMContext) deployService() error {
 	// 计算项目预留资源，是否满足发布徐局
 	deployNeedCpu, deployNeedMem, err := fsm.PrepareCheckProjectResource(fsm.App, fsm.App.ProjectID, fsm.Spec, fsm.Runtime)
 	if err != nil {
-		fsm.d.Log(err.Error())
+		fsm.pushLog(err.Error())
 		return apierrors.ErrCreateRuntime.InternalError(err)
 	}
 	if fsm.Runtime.CPU > 0.0 {
@@ -815,7 +818,7 @@ func (fsm *DeployFSMContext) deployService() error {
 	// precheck，检查标签匹配，如果没有机器能匹配上，走下去也是pending的
 	precheckResp, err := fsm.bdl.PrecheckServiceGroup(apistructs.ServiceGroupPrecheckRequest(group))
 	if err != nil {
-		fsm.d.Log(fmt.Sprintf("precheck service error, %s", err.Error()))
+		fsm.pushLog(fmt.Sprintf("precheck service error, %s", err.Error()))
 		return err
 	}
 	// 如果返回不ok，直接返回error
@@ -831,7 +834,7 @@ func (fsm *DeployFSMContext) deployService() error {
 				DedupID:        fmt.Sprintf("orch-%d", fsm.Runtime.ID),
 			},
 		})
-		fsm.d.Log(fmt.Sprintf("No node resource information matches, %s", precheckResp.Info))
+		fsm.pushLog(fmt.Sprintf("No node resource information matches, %s", precheckResp.Info))
 		return errors.Errorf("No node resource information matches, %s", precheckResp.Info)
 	}
 
@@ -1030,7 +1033,7 @@ func (fsm *DeployFSMContext) checkCancelOk() (bool, error) {
 	if fsm.Deployment.Extra.CancelStartAt != nil {
 		startCheckPoint := fsm.Deployment.Extra.CancelStartAt.Add(30 * time.Second)
 		if time.Now().Before(startCheckPoint) {
-			fsm.d.Log(fmt.Sprintf("checking too early, delay to: %s", startCheckPoint.String()))
+			fsm.pushLog(fmt.Sprintf("checking too early, delay to: %s", startCheckPoint.String()))
 			// too early to check
 			return false, nil
 		}
@@ -1044,12 +1047,11 @@ func (fsm *DeployFSMContext) checkCancelOk() (bool, error) {
 // true means service is ready (Healthy), and if error occur, we fail the deployment
 func (fsm *DeployFSMContext) checkServiceReady() (bool, error) {
 	runtime := fsm.Runtime
-	d := fsm.d
 	// do not check if nil for compatibility
 	if fsm.Deployment.Extra.ServicePhaseStartAt != nil {
 		startCheckPoint := fsm.Deployment.Extra.ServicePhaseStartAt.Add(30 * time.Second)
 		if time.Now().Before(startCheckPoint) {
-			d.Log(fmt.Sprintf("checking too early, delay to: %s", startCheckPoint.String()))
+			fsm.pushLog(fmt.Sprintf("checking too early, delay to: %s", startCheckPoint.String()))
 			// too early to check
 			return false, nil
 		}
@@ -1062,7 +1064,7 @@ func (fsm *DeployFSMContext) checkServiceReady() (bool, error) {
 		}
 	}
 	if isReplicasZero {
-		d.Log("checking status by inspect")
+		fsm.pushLog("checking status by inspect")
 		// we do double check to prevent `fake Healthy`
 		// runtime.ScheduleName must have
 		sg, err := fsm.getServiceGroup()
@@ -1075,10 +1077,10 @@ func (fsm *DeployFSMContext) checkServiceReady() (bool, error) {
 	// 获取addon状态
 	serviceGroup, err := fsm.getServiceGroup()
 	if err != nil {
-		d.Log(fmt.Sprintf("获取service状态失败，%s", err.Error()))
+		fsm.pushLog(fmt.Sprintf("获取service状态失败，%s", err.Error()))
 		return false, nil
 	}
-	d.Log(fmt.Sprintf("checking status: %s, servicegroup: %v", serviceGroup.Status, runtime.ScheduleName))
+	fsm.pushLog(fmt.Sprintf("checking status: %s, servicegroup: %v", serviceGroup.Status, runtime.ScheduleName))
 	// 如果状态是ready或者healthy，说明服务已经发起来了
 	runtimeStatus := apistructs.RuntimeStatusUnHealthy
 	if serviceGroup.Status == apistructs.StatusReady || serviceGroup.Status == apistructs.StatusHealthy {
@@ -1103,7 +1105,6 @@ func (fsm *DeployFSMContext) checkServiceReady() (bool, error) {
 func (fsm *DeployFSMContext) increaseFakeHealthyCount() error {
 	deployment := fsm.Deployment
 	runtime := fsm.Runtime
-	d := fsm.d
 	if deployment == nil || runtime == nil {
 		return nil
 	}
@@ -1117,7 +1118,7 @@ func (fsm *DeployFSMContext) increaseFakeHealthyCount() error {
 		return nil
 	}
 	liarCount := deployment.Extra.FakeHealthyCount - 3
-	d.Log(fmt.Sprintf("健康误报 %d 次", liarCount))
+	fsm.pushLog(fmt.Sprintf("健康误报 %d 次", liarCount))
 	// TODO: checking service need a standalone goroutine and standalone cron (about 10s one time)
 	if runtime.Status == apistructs.RuntimeStatusHealthy && liarCount >= 2 {
 		// TODO: do we really need reset the status?
@@ -1126,12 +1127,12 @@ func (fsm *DeployFSMContext) increaseFakeHealthyCount() error {
 		if err := fsm.db.UpdateRuntime(runtime); err != nil {
 			return errors.Wrapf(err, "failed to increase FakeHealthyCount, deploymentId: %d", deployment.ID)
 		}
-		d.Log("强制设置状态, 修正误报")
+		fsm.pushLog("强制设置状态, 修正误报")
 	}
 	if liarCount >= 6 {
 		logContent := fmt.Sprintf("遭遇过多健康误报 (超过 %d 次), 采取不信任策略并关闭部署单, deploymentId: %d",
 			liarCount, deployment.ID)
-		d.Log(logContent)
+		fsm.pushLog(logContent)
 		return errors.New(logContent)
 	}
 	return nil
@@ -1235,7 +1236,7 @@ func (fsm *DeployFSMContext) logAddonVars(addonvars map[string]string) {
 		s = append(s, k)
 	}
 	ss := strutil.Join(s, ", ", true)
-	fsm.d.Log("Available addon vars: " + ss)
+	fsm.pushLog("Available addon vars: " + ss)
 }
 
 func (fsm *DeployFSMContext) evalTemplate(projectAddons []dbclient.AddonInstanceRouting,
@@ -1746,8 +1747,19 @@ func (fsm *DeployFSMContext) clearPreviousMySQLAccountState() error {
 	}
 	if len(failedAccounts) > 0 {
 		errText := fmt.Sprintf("clear attach previous account failed: %v", failedAccounts)
-		fsm.d.Log(errText)
+		fsm.pushLog(errText)
 		return errors.New(errText)
 	}
 	return nil
+}
+
+func (fsm *DeployFSMContext) pushLog(content string) {
+	if fsm.d == nil {
+		return
+	}
+	tags := map[string]string{}
+	if fsm.App != nil && len(fsm.App.OrgName) > 0 {
+		tags[log.TAG_ORG_NAME] = fsm.App.OrgName
+	}
+	fsm.d.Log(content, tags)
 }

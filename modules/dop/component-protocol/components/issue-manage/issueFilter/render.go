@@ -71,7 +71,7 @@ func getMeta(ori map[string]interface{}, dst interface{}) error {
 
 func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	// init filter
-	if err := f.InitFromProtocol(ctx, c); err != nil {
+	if err := f.InitFromProtocol(ctx, c, gs); err != nil {
 		return err
 	}
 
@@ -177,10 +177,11 @@ func (f *ComponentFilter) PostSetState() error {
 	// condition values
 
 	// issuePagingRequest
-	f.State.IssuePagingRequest, err = f.generateIssuePagingRequest()
+	issuePagingRequest, err := f.generateIssuePagingRequest()
 	if err != nil {
 		return err
 	}
+	f.gsHelper.SetIssuePagingRequest(issuePagingRequest)
 
 	return nil
 }
@@ -219,8 +220,8 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 	stateBelongs := map[string][]apistructs.IssueStateBelong{
 		"TASK":        {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
 		"REQUIREMENT": {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking},
-		"BUG":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResloved},
-		"ALL":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResloved},
+		"BUG":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResolved},
+		"ALL":         {apistructs.IssueStateBelongOpen, apistructs.IssueStateBelongWorking, apistructs.IssueStateBelongWontfix, apistructs.IssueStateBelongReopen, apistructs.IssueStateBelongResolved},
 	}[f.InParams.FrontendFixedIssueType]
 	types := []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask, apistructs.IssueTypeBug}
 	res := make(map[string][]int64)

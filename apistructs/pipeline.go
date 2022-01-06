@@ -32,6 +32,20 @@ const (
 	PipelinePageListRequestIdColumn = "id"
 )
 
+const (
+	BuildkitSecretMountName = "cert"
+	BuildkitSecretMountPath = "/.buildkit"
+	BuildkitClientSecret    = "buildkit-client-certs"
+
+	BuildkitEnable  = "BUILDKIT_ENABLE" // will force true when ECIEnable is true
+	BuildkitHitRate = "BUILDKIT_HIT_RATE"
+)
+
+const (
+	EnvDiceOrgName = "DICE_ORG_NAME"
+	EnvDiceOrgID   = "DICE_ORG_ID"
+)
+
 // pipeline create
 
 type PipelineCreateRequest struct {

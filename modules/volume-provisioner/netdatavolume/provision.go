@@ -17,7 +17,7 @@ package netdatavolume
 import (
 	"context"
 	"fmt"
-	"os"
+	"os/exec"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -54,7 +54,8 @@ func (p *netDataVolumeProvisioner) Provision(ctx context.Context, options contro
 	if err != nil {
 		return nil, controller.ProvisioningFinished, err
 	}
-	if err := os.MkdirAll(volPath, 0666); err != nil {
+	mkdirCommand := exec.Command("/bin/sh", "-c", fmt.Sprintf("mkdir -p %s", volPath))
+	if _, err := mkdirCommand.Output(); err != nil {
 		return nil, controller.ProvisioningFinished, fmt.Errorf("Failed to mkdir: %v, err: %v", volPath, err)
 	}
 	return &v1.PersistentVolume{

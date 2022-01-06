@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mcuadros/go-version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -60,7 +61,7 @@ func (a *Addon) ListMiddleware(orgID uint64, params *apistructs.MiddlewareListRe
 	if err != nil {
 		return nil, err
 	}
-	if len(*addons) == 0 {
+	if len(addons) == 0 {
 		idQueryParams := apistructs.MiddlewareListRequest{
 			InstanceID: params.AddonName,
 		}
@@ -79,14 +80,14 @@ func (a *Addon) ListMiddleware(orgID uint64, params *apistructs.MiddlewareListRe
 				List: []apistructs.MiddlewareListItem{},
 			}, nil
 		}
-		return a.MiddlewareListItem(1, orgID, &idQueryParams, &([]dbclient.AddonInstance{*ins}), limited_addonids)
+		return a.MiddlewareListItem(1, orgID, &idQueryParams, []dbclient.AddonInstanceInfoExtra{{AddonInstance: *ins}}, limited_addonids)
 	} else {
 		return a.MiddlewareListItem(total, orgID, params, addons, limited_addonids)
 	}
 }
 
 func isOperatorAddon(addon dbclient.AddonInstance) bool {
-	if addon.AddonName == "terminus-elasticsearch" && addon.Version == "6.8.9" {
+	if addon.AddonName == "terminus-elasticsearch" && version.Compare(addon.Version, "6.8.9", ">=") {
 		return true
 	}
 	return false
@@ -94,31 +95,14 @@ func isOperatorAddon(addon dbclient.AddonInstance) bool {
 
 // MiddlewareListItem item抽取代码，通用
 func (a *Addon) MiddlewareListItem(total int, orgID uint64,
-	params *apistructs.MiddlewareListRequest, addons *[]dbclient.AddonInstance,
+	params *apistructs.MiddlewareListRequest, addons []dbclient.AddonInstanceInfoExtra,
 	limited_addonids []string) (*apistructs.MiddlewareListResponseData, error) {
-	middlewares := make([]apistructs.MiddlewareListItem, 0, len(*addons))
-	for _, v := range *addons {
+	middlewares := make([]apistructs.MiddlewareListItem, 0, len(addons))
+	for _, v := range addons {
 		if limited_addonids != nil && !strutil.Exist(limited_addonids, v.ID) {
 			continue
 		}
-		// 从 node 表获取 cpu & mem
-		nodes, err := a.db.GetAddonNodesByInstanceID(v.ID)
-		if err != nil {
-			return nil, err
-		}
-		var (
-			cpu float64
-			mem uint64
-		)
-		for _, node := range *nodes {
-			cpu += node.CPU
-			mem += node.Mem
-		}
-		cpuParse, err := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cpu)), 64) // 转换为G
-		if err != nil {
-			return nil, err
-		}
-		attachCount, err := a.db.GetAttachmentCountByInstanceID(v.ID)
+		cpuParse, err := strconv.ParseFloat(fmt.Sprintf("%.2f", v.CPU), 64) // 转换为G
 		if err != nil {
 			return nil, err
 		}
@@ -135,13 +119,13 @@ func (a *Addon) MiddlewareListItem(total int, orgID uint64,
 			Env:         v.Workspace,
 			Name:        v.AddonName + "-" + v.ID,
 			CPU:         cpuParse,
-			Mem:         mem,
+			Mem:         v.Mem,
 			ClusterName: v.Cluster,
 			ProjectID:   v.ProjectID,
 			ProjectName: projectInfos.Name,
-			Nodes:       len(*nodes),
-			AttachCount: attachCount,
-			IsOperator:  isOperatorAddon(v),
+			Nodes:       v.NodeCount,
+			AttachCount: int64(v.AttCount),
+			IsOperator:  isOperatorAddon(v.AddonInstance),
 		}
 		middlewares = append(middlewares, item)
 	}
@@ -151,17 +135,10 @@ func (a *Addon) MiddlewareListItem(total int, orgID uint64,
 	if err != nil {
 		return nil, err
 	}
-	for _, v := range *allInstances {
-		// 从 node 表获取 cpu & mem
-		nodes, err := a.db.GetAddonNodesByInstanceID(v.ID)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range *nodes {
-			overview.CPU += node.CPU
-			overview.Mem += float64(node.Mem)
-			overview.Nodes += 1
-		}
+	for _, v := range allInstances {
+		overview.CPU += v.CPU
+		overview.Mem += float64(v.Mem)
+		overview.Nodes += v.NodeCount
 	}
 	// 转换精度，只取2位小数
 	overMem, err := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(overview.Mem)/float64(1024)), 64) // 转换为G
@@ -246,7 +223,7 @@ func (a *Addon) GetMiddlewareAddonClassification(orgID uint64, params *apistruct
 	if err != nil {
 		return nil, err
 	}
-	if len(*addons) == 0 {
+	if len(addons) == 0 {
 		if params.AddonName == "" {
 			return &result, nil
 		}
@@ -257,23 +234,22 @@ func (a *Addon) GetMiddlewareAddonClassification(orgID uint64, params *apistruct
 			return nil, err
 		}
 	}
-	if len(*addons) == 0 {
+	if len(addons) == 0 {
 		return &result, nil
 	}
 	instanceIDs := []string{}
 	addonInstanceMap := map[string]string{}
-	for _, v := range *addons {
+	for _, v := range addons {
 		if v.Category != "custom" {
 			instanceIDs = append(instanceIDs, v.ID)
 			addonInstanceMap[v.ID] = v.AddonName
 		}
 	}
-	instanceNodes, err := a.db.GetAddonNodesByInstanceIDs(instanceIDs)
-	for _, v := range *instanceNodes {
-		if _, ok := addonInstanceMap[v.InstanceID]; !ok {
+	for _, v := range addons {
+		if _, ok := addonInstanceMap[v.ID]; !ok {
 			continue
 		}
-		addonName := addonInstanceMap[v.InstanceID]
+		addonName := addonInstanceMap[v.ID]
 		if _, ok := result[addonName]; !ok {
 			result[addonName] = apistructs.MiddlewareResourceItem{
 				CPU: v.CPU,
@@ -429,7 +405,7 @@ func (a *Addon) GetTotalResourceWithTime(orgID uint64, params *apistructs.Middle
 	if err != nil {
 		return nil, err
 	}
-	if len(*allInstances) == 0 {
+	if len(allInstances) == 0 {
 		if params.AddonName == "" {
 			return &apistructs.MiddlewareResourceItem{}, nil
 		}
@@ -440,21 +416,14 @@ func (a *Addon) GetTotalResourceWithTime(orgID uint64, params *apistructs.Middle
 		if err != nil {
 			return nil, err
 		}
-		if len(*allInstances) == 0 {
+		if len(allInstances) == 0 {
 			return &apistructs.MiddlewareResourceItem{}, nil
 		}
 	}
 	item := apistructs.MiddlewareResourceItem{}
-	for _, v := range *allInstances {
-		// 从 node 表获取 cpu & mem
-		nodes, err := a.db.GetAddonNodesByInstanceID(v.ID)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range *nodes {
-			item.CPU += node.CPU
-			item.Mem += float64(node.Mem)
-		}
+	for _, v := range allInstances {
+		item.CPU += v.CPU
+		item.Mem += float64(v.Mem)
 	}
 	item.CPU, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", item.CPU), 64)
 	item.Mem, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", item.Mem/1024), 64)

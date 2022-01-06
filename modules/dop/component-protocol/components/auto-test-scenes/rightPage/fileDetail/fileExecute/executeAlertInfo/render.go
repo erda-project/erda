@@ -17,6 +17,7 @@ package executeAlertInfo
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 
@@ -91,9 +92,9 @@ func (i *ComponentAlertInfo) Render(ctx context.Context, c *cptype.Component, sc
 	visible := false
 	var message []string
 	if i.pipelineID > 0 {
-		rsp, err := i.bdl.GetPipeline(i.pipelineID)
-		if err != nil {
-			return err
+		rsp := gh.GetPipelineInfoWithPipelineID(i.pipelineID, i.bdl)
+		if rsp == nil {
+			return fmt.Errorf("not find pipelineID %v info", i.pipelineID)
 		}
 		if rsp.Extra.ShowMessage != nil {
 			message = rsp.Extra.ShowMessage.Stacks
@@ -116,7 +117,7 @@ func (a *ComponentAlertInfo) marshal(c *cptype.Component) error {
 	if err != nil {
 		return err
 	}
-	var props interface{}
+	var props cptype.ComponentProps
 	err = json.Unmarshal(propValue, &props)
 	if err != nil {
 		return err

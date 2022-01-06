@@ -193,6 +193,10 @@ type ProjectListRequest struct {
 	Joined   bool `query:"joined"` // TODO refactor
 	PageNo   int  `query:"pageNo"`
 	PageSize int  `query:"pageSize"`
+
+	ProjectIDs []uint64 `query:"projectIDs"`
+	KeepMsp    bool     `query:"keepMsp"`
+
 	// 是否只显示公开项目
 	IsPublic bool `query:"isPublic"`
 }
@@ -207,6 +211,30 @@ type ProjectListResponse struct {
 type PagingProjectDTO struct {
 	Total int          `json:"total"`
 	List  []ProjectDTO `json:"list"`
+}
+
+type GetMenuResponse struct {
+	Header
+	Data []*MenuItem `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+}
+
+type MenuItem struct {
+	ClusterName string            `json:"clusterName,omitempty"`
+	ClusterType string            `json:"clusterType,omitempty"`
+	Key         string            `json:"key,omitempty"`
+	CnName      string            `json:"cnName,omitempty"`
+	EnName      string            `json:"enName,omitempty"`
+	Href        string            `json:"href,omitempty"`
+	Params      map[string]string `json:"params,omitempty"`
+	Children    []*MenuItem       `json:"children,omitempty"`
+	// 前端用于判断菜单是否显示，默认引导页为true，功能页为false，当tenant存在时进行反转
+	Exists bool `json:"exists,omitempty"`
+	// 内部字段: 强制显示
+	MustExists bool `json:"mustExists,omitempty"`
+	// 内部字段: 只在K8S集群显示
+	OnlyK8S bool ` json:"onlyK8S,omitempty"`
+	// 内部字段: 只在非K8S集群显示
+	OnlyNotK8S bool `protobuf:"varint,12,opt,name=onlyNotK8S,proto3" json:"onlyNotK8S,omitempty"`
 }
 
 // ProjectDTO 项目结构
@@ -439,6 +467,8 @@ type GetAllProjectsResponse struct {
 
 type GetModelProjectsMapRequest struct {
 	ProjectIDs []uint64 `json:"projectIDs"`
+
+	KeepMsp bool `json:"keepMsp"`
 }
 
 type GetModelProjectsMapResponse struct {

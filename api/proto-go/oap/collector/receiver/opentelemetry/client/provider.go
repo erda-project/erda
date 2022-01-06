@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.oap.collector.receiver.opentelemetry-client", &servicehub.Spec{
 		Services: []string{
 			"erda.oap.collector.receiver.opentelemetry.OpenTelemetryService",
+			"erda.oap.collector.receiver.opentelemetry.OpenTelemetryService.client",
 			"erda.oap.collector.receiver.opentelemetry-client",
 		},
 		Types: []reflect.Type{

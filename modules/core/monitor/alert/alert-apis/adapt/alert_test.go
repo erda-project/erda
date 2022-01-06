@@ -31,6 +31,11 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/cql"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
+	block "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
+	"github.com/erda-project/erda/modules/core/monitor/event/storage"
+	"github.com/erda-project/erda/modules/core/monitor/expression"
+	"github.com/erda-project/erda/modules/core/monitor/expression/model"
+	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/pkg/encoding/jsonmap"
@@ -629,5 +634,186 @@ func TestAdapt_GetOrgAlertDetail2(t *testing.T) {
 	_, err := a.GetOrgAlertDetail(i18n.LanguageCodes{}, 1)
 	if err != nil {
 		fmt.Println("should not err,err is ", err)
+	}
+}
+
+func TestAdapt_getEnabledAlertRulesByScopeAndIndices(t *testing.T) {
+	type fields struct {
+		l                           logs.Logger
+		metricq                     metricq.Queryer
+		eventStorage                storage.Storage
+		t                           i18n.Translator
+		db                          *db.DB
+		cql                         *cql.Cql
+		bdl                         *bundle.Bundle
+		cmdb                        *cmdb.Cmdb
+		dashboardAPI                block.DashboardAPI
+		orgFilterTags               map[string]bool
+		microServiceFilterTags      map[string]bool
+		microServiceOtherFilterTags map[string]bool
+		silencePolicies             map[string]bool
+	}
+	type args struct {
+		lang    i18n.LanguageCodes
+		scope   string
+		scopeID string
+		indices []string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test case",
+			fields: fields{
+				l:            nil,
+				metricq:      nil,
+				eventStorage: nil,
+				t:            nil,
+				db: &db.DB{
+					DB: &gorm.DB{},
+					CustomizeAlert: db.CustomizeAlertDB{
+						&gorm.DB{},
+					},
+					CustomizeAlertRule: db.CustomizeAlertRuleDB{
+						&gorm.DB{},
+					},
+					CustomizeAlertNotifyTemplate: db.CustomizeAlertNotifyTemplateDB{
+						&gorm.DB{},
+					},
+					Alert: db.AlertDB{
+						&gorm.DB{},
+					},
+					AlertExpression: db.AlertExpressionDB{
+						&gorm.DB{},
+					},
+					AlertNotify: db.AlertNotifyDB{
+						&gorm.DB{},
+					},
+					AlertNotifyTemplate: db.AlertNotifyTemplateDB{
+						&gorm.DB{},
+					},
+					AlertRule: db.AlertRuleDB{
+						&gorm.DB{},
+					},
+					AlertRecord: db.AlertRecordDB{
+						&gorm.DB{},
+					},
+				},
+				cql:                         nil,
+				bdl:                         nil,
+				cmdb:                        nil,
+				dashboardAPI:                nil,
+				orgFilterTags:               nil,
+				microServiceFilterTags:      nil,
+				microServiceOtherFilterTags: nil,
+				silencePolicies:             nil,
+			},
+			args: args{
+				lang:    nil,
+				scope:   "org",
+				scopeID: "1",
+				indices: []string{"app_status_code"},
+			},
+			wantErr: false,
+		},
+	}
+	expression.ExpressionIndex = make(map[string]*model.Expression)
+	expression.AlertConfig = make(map[string]*model.AlertConfig)
+	for _, tt := range tests {
+		expression.ExpressionIndex["app_status_code"] = &model.Expression{
+			Id:         "app_status_code",
+			Expression: jsonmap.JSONMap{},
+			Attributes: jsonmap.JSONMap{},
+		}
+		expression.AlertConfig["app_status_code"] = &model.AlertConfig{
+			Id:         "app_status_code",
+			Name:       "主动监控HTTP状态异常",
+			AlertScope: "org",
+			AlertType:  "app_status",
+			Attributes: map[string]interface{}{},
+		}
+		var adb *db.CustomizeAlertRuleDB
+		ruleIndices := monkey.PatchInstanceMethod(reflect.TypeOf(adb), "QueryEnabledByScopeAndIndices", func(sdb *db.CustomizeAlertRuleDB, scope, scopeID string, indices []string) ([]*db.CustomizeAlertRule, error) {
+			return []*db.CustomizeAlertRule{
+				{
+					ID:               1,
+					Name:             "test",
+					CustomizeAlertID: 12,
+					AlertType:        "org",
+					AlertIndex:       "a9aa0846-f631-4796-9009-17e90f4055e5",
+					AlertScope:       "org_customize",
+					AlertScopeID:     "1",
+					Template:         nil,
+					Attributes:       nil,
+					Enable:           false,
+					CreateTime:       time.Now(),
+					UpdateTime:       time.Now(),
+				},
+			}, nil
+		})
+		defer ruleIndices.Unpatch()
+		ruleModel := monkey.Patch(FromPBAlertRuleModel, func(lang i18n.LanguageCodes, t i18n.Translator, m *db.AlertRule) *pb.AlertRule {
+			return &pb.AlertRule{
+				Id:         12,
+				Name:       "test",
+				AlertScope: "org",
+				AlertType:  "app_status",
+				AlertIndex: nil,
+				Template:   nil,
+				Window:     0,
+				Functions:  nil,
+				IsRecover:  false,
+				Attributes: nil,
+				Version:    "2.0",
+				Enable:     false,
+				CreateTime: 0,
+				UpdateTime: 0,
+			}
+		})
+		defer ruleModel.Unpatch()
+		customizeRule := monkey.Patch(FromCustomizeAlertRule, func(lang i18n.LanguageCodes, t i18n.Translator, cr *db.CustomizeAlertRule) (*pb.AlertRule, error) {
+			return &pb.AlertRule{
+				Id:         11,
+				Name:       "test",
+				AlertScope: "customize",
+				AlertType:  "customize",
+				AlertIndex: nil,
+				Template:   nil,
+				Window:     0,
+				Functions:  nil,
+				IsRecover:  false,
+				Attributes: nil,
+				Version:    "",
+				Enable:     false,
+				CreateTime: 0,
+				UpdateTime: 0,
+			}, nil
+		})
+		defer customizeRule.Unpatch()
+		t.Run(tt.name, func(t *testing.T) {
+			a := &Adapt{
+				l:                           tt.fields.l,
+				metricq:                     tt.fields.metricq,
+				eventStorage:                tt.fields.eventStorage,
+				t:                           tt.fields.t,
+				db:                          tt.fields.db,
+				cql:                         tt.fields.cql,
+				bdl:                         tt.fields.bdl,
+				cmdb:                        tt.fields.cmdb,
+				dashboardAPI:                tt.fields.dashboardAPI,
+				orgFilterTags:               tt.fields.orgFilterTags,
+				microServiceFilterTags:      tt.fields.microServiceFilterTags,
+				microServiceOtherFilterTags: tt.fields.microServiceOtherFilterTags,
+				silencePolicies:             tt.fields.silencePolicies,
+			}
+			_, err := a.getEnabledAlertRulesByScopeAndIndices(tt.args.lang, tt.args.scope, tt.args.scopeID, tt.args.indices)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getEnabledAlertRulesByScopeAndIndices() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
 	}
 }

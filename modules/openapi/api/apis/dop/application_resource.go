@@ -21,8 +21,8 @@ import (
 )
 
 var APPLICATIONS_RESOURCES_LIST = apis.ApiSpec{
-	Path:        "/api/projects/{projectID}/applications-resources",
-	BackendPath: "/api/projects/{projectID}/applications-resources",
+	Path:        "/api/projects/<projectID>/applications-resources",
+	BackendPath: "/api/projects/<projectID>/applications-resources",
 	Method:      http.MethodGet,
 	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:      "http",

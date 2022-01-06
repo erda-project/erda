@@ -14,10 +14,17 @@
 
 package i18n
 
-import "net/http"
+import (
+	"context"
+	"net/http"
+
+	"github.com/erda-project/erda/pkg/goroutine_context"
+)
 
 const ZH = "zh-CN"
 const EN = "en-US"
+
+const LangHeader = "Lang"
 
 // GetLocaleNameByRequest 从request获取语言名称
 func GetLocaleNameByRequest(request *http.Request) string {
@@ -26,9 +33,35 @@ func GetLocaleNameByRequest(request *http.Request) string {
 	if lang != "" {
 		return lang
 	}
-	lang = request.Header.Get("Lang")
+	lang = request.Header.Get(LangHeader)
 	if lang != "" {
 		return lang
 	}
 	return ""
+}
+
+func GetGoroutineBindLang() string {
+	globalContext := goroutine_context.GetContext()
+	if globalContext == nil {
+		return ""
+	}
+	key := globalContext.Value(goroutine_context.LocaleNameContextKey)
+	if key == nil {
+		return ""
+	}
+	localeName, ok := key.(string)
+	if !ok {
+		return ""
+	}
+
+	return localeName
+}
+
+func SetGoroutineBindLang(localeName string) {
+	ctx := goroutine_context.GetContext()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	goroutine_context.SetContext(context.WithValue(ctx, goroutine_context.LocaleNameContextKey, localeName))
 }

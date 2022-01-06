@@ -62,11 +62,11 @@ func (i *ComponentOutPutForm) RenderProtocol(c *cptype.Component, g *cptype.Glob
 		c.Data = d
 	}
 	if c.State == nil {
-		d := make(cptype.ComponentData)
+		d := make(cptype.ComponentState)
 		c.State = d
 	}
 	if c.Operations == nil {
-		c.Operations = make(cptype.ComponentOps)
+		c.Operations = make(cptype.ComponentOperations)
 	}
 	c.State["list"] = i.Data.List
 	c.Props = i.Props

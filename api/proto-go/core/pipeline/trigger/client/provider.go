@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.pipeline.trigger-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.pipeline.trigger.TriggerService",
+			"erda.core.pipeline.trigger.TriggerService.client",
 			"erda.core.pipeline.trigger-client",
 		},
 		Types: []reflect.Type{

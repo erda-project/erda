@@ -73,11 +73,11 @@ func Test_netportal(t *testing.T) {
 	hc := &http.Client{}
 	req, _ := http.NewRequest("GET", "http://"+dialerListenAddr2+"/hello2", nil)
 	req.Header = http.Header{
-		portalSchemeHeader:  {"http"},
 		portalHostHeader:    {"test"},
 		portalDestHeader:    {helloListenAddr2},
 		portalTimeoutHeader: {"10"},
 	}
+	req.URL.RawQuery = "query=ut"
 	resp, err := hc.Do(req)
 	if err != nil {
 		t.Errorf("request failed, err:%+v", err)

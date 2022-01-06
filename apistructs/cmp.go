@@ -157,6 +157,11 @@ type OfflineEdgeClusterRequest struct {
 	Force       bool   `json:"force"`
 }
 
+type BatchOfflineEdgeClusterRequest struct {
+	Clusters []string `json:"clusters"`
+	Force    bool     `json:"force"`
+}
+
 type OfflineEdgeClusterResponse struct {
 	Header
 	Data OfflineEdgeClusterData `json:"data"`
@@ -1035,6 +1040,11 @@ type CloudResourceOssDetailInfoData struct {
 type Identity struct {
 	UserID string
 	OrgID  string
+}
+
+type PageRequest struct {
+	PageSize uint64 `json:"pageSize"`
+	PageNo   uint64 `json:"pageNo"`
 }
 
 type CloudResourceVpcBaseInfo struct {

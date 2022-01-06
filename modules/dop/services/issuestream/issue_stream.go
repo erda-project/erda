@@ -16,6 +16,7 @@ package issuestream
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -85,18 +86,11 @@ func (s *IssueStream) Create(req *apistructs.IssueStreamCreateRequest) (int64, e
 		}
 	}
 
-	// send issue create or update event when creat issue stream
-	go func() {
-		if err := s.CreateIssueEvent(req.IssueID, req.StreamType, req.StreamParams); err != nil {
-			logrus.Errorf("create issue %d event err: %v", req.IssueID, err)
-		}
-	}()
-
 	return int64(is.ID), nil
 }
 
 // Paging 事件流记录分页查询
-func (s *IssueStream) Paging(req *apistructs.IssueStreamPagingRequest) (*apistructs.IssueStreamPagingResponseData, error) {
+func (s *IssueStream) Paging(req *apistructs.IssueStreamPagingRequest, locale string) (*apistructs.IssueStreamPagingResponseData, error) {
 	// 请求校验
 	if req.IssueID == 0 {
 		return nil, apierrors.ErrPagingIssueStream.MissingParameter("missing issueID")
@@ -125,7 +119,7 @@ func (s *IssueStream) Paging(req *apistructs.IssueStreamPagingRequest) (*apistru
 		if v.StreamType == apistructs.ISTRelateMR {
 			is.MRInfo = v.StreamParams.MRInfo
 		} else {
-			content, err := getDefaultContent(v.StreamType, v.StreamParams)
+			content, err := getDefaultContent(v.StreamType, v.StreamParams, locale)
 			if err != nil {
 				return nil, err
 			}
@@ -143,22 +137,22 @@ func (s *IssueStream) Paging(req *apistructs.IssueStreamPagingRequest) (*apistru
 }
 
 // CreateIssueEvent create issue event
-func (s *IssueStream) CreateIssueEvent(issueID int64, streamType apistructs.IssueStreamType,
-	streamParams apistructs.ISTParam) error {
-	content, err := getDefaultContentForMsgSending(streamType, streamParams)
-	if err != nil {
-		logrus.Errorf("get issue %d content error: %v, content will be empty", issueID, err)
+func (s *IssueStream) CreateIssueEvent(req *apistructs.IssueStreamCreateRequest) error {
+	if req.StreamType == "" && len(req.StreamTypes) == 0 {
+		return nil
 	}
-	logrus.Debugf("old issue content is: %s", content)
-	issue, err := s.db.GetIssue(issueID)
+	var content string
+	var err error
+	issue, err := s.db.GetIssue(req.IssueID)
 	if err != nil {
 		return err
 	}
-	receivers, err := s.db.GetReceiversByIssueID(issueID)
+	receivers, err := s.db.GetReceiversByIssueID(req.IssueID)
 	if err != nil {
-		logrus.Errorf("get issue %d  recevier error: %v, recevicer will be empty", issueID, err)
+		logrus.Errorf("get issue %d  recevier error: %v, recevicer will be empty", req.IssueID, err)
 		receivers = []string{}
 	}
+	receivers = s.filterReceiversByOperatorID(receivers, req.Operator)
 	projectModel, err := s.bdl.GetProject(issue.ProjectID)
 	if err != nil {
 		return err
@@ -167,10 +161,23 @@ func (s *IssueStream) CreateIssueEvent(issueID int64, streamType apistructs.Issu
 	if err != nil {
 		return err
 	}
+	operator, err := s.bdl.GetCurrentUser(req.Operator)
+	if err != nil {
+		return err
+	}
+	if len(req.StreamTypes) == 0 {
+		content, err = getDefaultContentForMsgSending(req.StreamType, req.StreamParams, orgModel.Locale)
+	} else {
+		content, err = s.groupEventContent(req.StreamTypes, req.StreamParams, orgModel.Locale)
+	}
+	if err != nil {
+		logrus.Errorf("get issue %d content error: %v, content will be empty", req.IssueID, err)
+	}
+	logrus.Debugf("old issue content is: %s", content)
 	ev := &apistructs.EventCreateRequest{
 		EventHeader: apistructs.EventHeader{
 			Event:         bundle.IssueEvent,
-			Action:        streamType.GetEventAction(),
+			Action:        req.StreamType.GetEventAction(),
 			OrgID:         strconv.FormatInt(int64(projectModel.OrgID), 10),
 			ProjectID:     strconv.FormatUint(issue.ProjectID, 10),
 			ApplicationID: "-1",
@@ -182,16 +189,41 @@ func (s *IssueStream) CreateIssueEvent(issueID int64, streamType apistructs.Issu
 			Content:      content,
 			AtUserIDs:    issue.Assignee,
 			IssueType:    issue.Type,
-			StreamType:   streamType,
-			StreamParams: streamParams,
+			StreamType:   req.StreamType,
+			StreamTypes:  req.StreamTypes,
+			StreamParams: req.StreamParams,
 			Receivers:    receivers,
 			Params: map[string]string{
 				"orgName":     orgModel.Name,
 				"projectName": projectModel.Name,
-				"issueID":     strconv.FormatInt(issueID, 10),
+				"issueID":     strconv.FormatInt(req.IssueID, 10),
+				"operator":    operator.Nick,
 			},
 		},
 	}
 
 	return s.bdl.CreateEvent(ev)
+}
+
+func (s *IssueStream) filterReceiversByOperatorID(receivers []string, operatorID string) []string {
+	users := make([]string, 0)
+	for _, userID := range receivers {
+		if userID != operatorID {
+			users = append(users, userID)
+		}
+	}
+	return users
+}
+
+func (s *IssueStream) groupEventContent(streamTypes []apistructs.IssueStreamType, param apistructs.ISTParam, locale string) (string, error) {
+	var content string
+	interval := ";"
+	for _, streamType := range streamTypes {
+		tmp, err := getDefaultContentForMsgSending(streamType, param, locale)
+		if err != nil {
+			return "", err
+		}
+		content += interval + tmp
+	}
+	return strings.TrimLeft(content, interval), nil
 }

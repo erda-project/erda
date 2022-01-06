@@ -15,11 +15,11 @@
 package persist
 
 import (
-	"github.com/erda-project/erda/modules/msp/apm/exception"
+	"github.com/erda-project/erda/modules/msp/apm/exception/model"
 )
 
 type MetadataProcessor interface {
-	Process(data *exception.Erda_error) error
+	Process(data *model.Error) error
 }
 
 func newMetadataProcessor(cfg *config) MetadataProcessor {
@@ -28,7 +28,7 @@ func newMetadataProcessor(cfg *config) MetadataProcessor {
 
 type nopMetadataProcessor struct{}
 
-func (*nopMetadataProcessor) Process(data *exception.Erda_error) error { return nil }
+func (*nopMetadataProcessor) Process(data *model.Error) error { return nil }
 
 // NopMetadataProcessor .
 var NopMetadataProcessor MetadataProcessor = &nopMetadataProcessor{}

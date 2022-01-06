@@ -1,0 +1,44 @@
+- name: "脚本错误告警"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  formats:
+    count: "string"
+  title: |-
+    【页面 ({{doc_path}}) 脚本错误告警】
+  template: |
+    【脚本错误告警】
+
+    事件: {{window}} 分钟内，脚本错误次数: {{count_sum}}
+
+    访问域名：{{host}}
+
+    访问页面：{{doc_path}}
+
+    时间: {{timestamp}}
+
+    tk: {{tk}}
+
+    告警级别: {{level}}
+
+    [查看详情]({{display_url}})
+
+    [查看记录]({{record_url}})
+
+- name: "脚本错误告警"
+  trigger: "alert"
+  target: "sms"
+  formats:
+    count: "string"
+  title: |-
+    【页面 ({{doc_path}}) 脚本错误告警】
+  template: |
+    {{window}} 分钟内触发脚本错误告警，tk: {{tk}}，脚本错误次数: {{count_sum}}，告警级别: {{level}}
+- name: "脚本错误告警"
+  trigger: "alert"
+  target: "vms"
+  formats:
+    count: "string"
+  title: |-
+    【页面 ({{doc_path}}) 脚本错误告警】
+  template: |
+    {{window}} 分钟内触发脚本错误告警，tk: {{tk}}，脚本错误次数: {{count_sum}}，告警级别: {{level}}

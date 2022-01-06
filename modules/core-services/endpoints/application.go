@@ -32,7 +32,6 @@ import (
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/filehelper"
 	"github.com/erda-project/erda/pkg/http/httpserver"
-	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -102,52 +101,6 @@ func (e *Endpoints) CreateApplication(ctx context.Context, r *http.Request, vars
 	applicationDTO := e.convertToApplicationDTO(ctx, *app, false, identify.UserID, nil)
 
 	return httpserver.OkResp(applicationDTO)
-}
-
-// InitApplication 应用初始化
-func (e *Endpoints) InitApplication(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-	// 获取当前用户
-	identityInfo, err := user.GetIdentityInfo(r)
-	if err != nil {
-		return apierrors.ErrInitApplication.NotLogin().ToResp(), nil
-	}
-
-	// 检查applicationID合法性
-	applicationID, err := strconv.ParseUint(vars["applicationID"], 10, 64)
-	if err != nil {
-		return apierrors.ErrInitApplication.InvalidParameter(err).ToResp(), nil
-	}
-
-	// 检查请求body
-	var appInitReq apistructs.ApplicationInitRequest
-	if err := json.NewDecoder(r.Body).Decode(&appInitReq); err != nil {
-		return apierrors.ErrInitApplication.InvalidParameter(err).ToResp(), nil
-	}
-	appInitReq.ApplicationID = applicationID
-	appInitReq.IdentityInfo = identityInfo
-
-	if !identityInfo.IsInternalClient() {
-		// 操作鉴权
-		req := apistructs.PermissionCheckRequest{
-			UserID:   identityInfo.UserID,
-			Scope:    apistructs.AppScope,
-			ScopeID:  applicationID,
-			Resource: apistructs.AppResource,
-			Action:   apistructs.CreateAction,
-		}
-		if access, err := e.permission.CheckPermission(&req); err != nil || !access {
-			return apierrors.ErrInitApplication.AccessDenied().ToResp(), nil
-		}
-	}
-
-	// 更新应用信息至DB
-	pipelineID, err := e.app.Init(&appInitReq)
-	if err != nil {
-		return errorresp.ErrResp(err)
-	}
-
-	return httpserver.OkResp(pipelineID)
 }
 
 // UpdateApplication 更新应用
@@ -447,7 +400,7 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 	}
 
 	// 获取请求参数
-	params, err := getListApplicationsParam(r)
+	params, err := getListApplicationsParam(e, r)
 	if err != nil {
 		return apierrors.ErrListApplication.InvalidParameter(err).ToResp(), nil
 	}
@@ -524,42 +477,78 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 	}
 
 	// 转换成所需格式
-	pinedAppDTOs := make([]apistructs.ApplicationDTO, 0, 10)
-	unpinedAppDTOs := make([]apistructs.ApplicationDTO, 0, len(applications))
+	applicationDTOs, err := e.transferAppsToApplicationDTOS(params.IsSimple, applications, blockStatusMap, memberMap)
+	if err != nil {
+		return apierrors.ErrInitApplication.InternalError(err).ToResp(), nil
+	}
 
+	return httpserver.OkResp(apistructs.ApplicationListResponseData{Total: total, List: applicationDTOs})
+}
+
+func (e Endpoints) transferAppsToApplicationDTOS(isSimple bool, applications []model.Application, blockStatusMap map[uint64]string, memberMap map[int64][]string) ([]apistructs.ApplicationDTO, error) {
 	projectIDs := make([]uint64, 0, len(applications))
+	appIDS := make([]int64, 0)
+	orgSet := make(map[int64]struct{})
 	for _, app := range applications {
 		projectIDs = append(projectIDs, uint64(app.ProjectID))
+		orgSet[app.OrgID] = struct{}{}
+		appIDS = append(appIDS, app.ID)
+	}
+	orgIDS := make([]int64, 0)
+	for orgID := range orgSet {
+		orgIDS = append(orgIDS, orgID)
 	}
 
-	projectMap, err := e.project.GetModelProjectsMap(projectIDs)
+	_, orgs, err := e.org.ListOrgs(orgIDS, &apistructs.OrgSearchRequest{PageSize: 999, PageNo: 1}, false)
 	if err != nil {
-		return apierrors.ErrListApplication.InternalError(err).ToResp(), nil
+		return nil, err
+	}
+	orgMap := make(map[int64]model.Org, len(orgs))
+	for _, org := range orgs {
+		orgMap[org.ID] = org
 	}
 
+	projectMap, err := e.project.GetModelProjectsMap(projectIDs, false)
+	if err != nil {
+		return nil, err
+	}
+
+	appRuntimeCounts, err := e.db.GetRuntimeCountByAppIDS(appIDS)
+	if err != nil {
+		return nil, err
+	}
+	runtimeCounter := make(map[int64]model.ApplicationRuntimeCount)
+	for _, appRuntimeCount := range appRuntimeCounts {
+		runtimeCounter[appRuntimeCount.ApplicationID] = appRuntimeCount
+	}
+
+	pinedAppDTOs := make([]apistructs.ApplicationDTO, 0, 10)
+	unpinedAppDTOs := make([]apistructs.ApplicationDTO, 0, len(applications))
 	for i := range applications {
 		var projectName string
 		var projectDisplayName string
-		if project, ok := projectMap[applications[i].ProjectID]; ok {
-			projectName = project.Name
-			projectDisplayName = project.DisplayName
+		var project *model.Project
+		if v, ok := projectMap[applications[i].ProjectID]; ok {
+			projectName = v.Name
+			projectDisplayName = v.DisplayName
+			project = v
 		}
 
-		if params.IsSimple {
-			appDTO := apistructs.ApplicationDTO{
-				Pined:              applications[i].Pined,
-				Name:               applications[i].Name,
-				Desc:               applications[i].Desc,
-				Creator:            applications[i].UserID,
-				CreatedAt:          applications[i].CreatedAt,
-				UpdatedAt:          applications[i].UpdatedAt,
-				ID:                 uint64(applications[i].ID),
-				DisplayName:        applications[i].DisplayName,
-				IsPublic:           applications[i].IsPublic,
-				ProjectID:          uint64(applications[i].ProjectID),
-				ProjectName:        projectName,
-				ProjectDisplayName: projectDisplayName,
-			}
+		appDTO := apistructs.ApplicationDTO{
+			Pined:              applications[i].Pined,
+			Name:               applications[i].Name,
+			Desc:               applications[i].Desc,
+			Creator:            applications[i].UserID,
+			CreatedAt:          applications[i].CreatedAt,
+			UpdatedAt:          applications[i].UpdatedAt,
+			ID:                 uint64(applications[i].ID),
+			DisplayName:        applications[i].DisplayName,
+			IsPublic:           applications[i].IsPublic,
+			ProjectID:          uint64(applications[i].ProjectID),
+			ProjectName:        projectName,
+			ProjectDisplayName: projectDisplayName,
+		}
+		if isSimple {
 			if appDTO.Pined {
 				pinedAppDTOs = append(pinedAppDTOs, appDTO)
 			} else {
@@ -567,7 +556,106 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 			}
 			continue
 		}
-		appDTO := e.convertToApplicationDTO(ctx, applications[i], false, userID.String(), blockStatusMap)
+		var config map[string]interface{}
+		if err := json.Unmarshal([]byte(applications[i].Config), &config); err != nil {
+			config = make(map[string]interface{})
+		}
+
+		var extra map[string]string
+		if err := json.Unmarshal([]byte(applications[i].Extra), &extra); err != nil {
+			extra = make(map[string]string)
+		}
+
+		workspaces := make([]apistructs.ApplicationWorkspace, 0, len(extra))
+		for k, v := range extra {
+			if strings.Contains(k, ".") {
+				env := strings.Split(k, ".")[0]
+				workspace := apistructs.ApplicationWorkspace{
+					Workspace:       env,
+					ConfigNamespace: v,
+				}
+				if project != nil {
+					workspace.ClusterName = project.GetClusterConfig()[env]
+				}
+				workspaces = append(workspaces, workspace)
+			}
+		}
+
+		org := orgMap[applications[i].OrgID]
+		var runtimeCount uint
+		if appRuntimeCount, ok := runtimeCounter[applications[i].ID]; ok {
+			runtimeCount = uint(appRuntimeCount.RuntimeCount)
+		}
+		gitRepo := strutil.Concat(conf.GittarOutterURL(), "/", applications[i].GitRepoAbbrev)
+
+		gitRepoNew := strutil.Concat(conf.UIDomain(), "/", org.Name, "/dop/", applications[i].ProjectName, "/", applications[i].Name)
+
+		var repoConfig apistructs.GitRepoConfig
+		if applications[i].IsExternalRepo {
+			json.Unmarshal([]byte(applications[i].RepoConfig), &repoConfig)
+			repoConfig.Password = ""
+			repoConfig.Username = ""
+		}
+
+		isOrgBlocked := false
+		blockStatus := ""
+		if org.BlockoutConfig.BlockDEV ||
+			org.BlockoutConfig.BlockTEST ||
+			org.BlockoutConfig.BlockStage ||
+			org.BlockoutConfig.BlockProd {
+			isOrgBlocked = true
+			blockStatus = "blocked"
+		}
+
+		now := time.Now()
+		if applications[i].UnblockStart != nil && applications[i].UnblockEnd != nil &&
+			now.Before(*applications[i].UnblockEnd) && now.After(*applications[i].UnblockStart) {
+			blockStatus = "unblocked"
+		} else if len(blockStatusMap) > 0 && blockStatusMap[uint64(applications[i].ID)] != "" {
+			blockStatus = blockStatusMap[uint64(applications[i].ID)]
+		}
+		var unblockStart *time.Time
+		var unblockEnd *time.Time
+
+		if applications[i].UnblockStart != nil && applications[i].UnblockEnd != nil &&
+			now.Before(*applications[i].UnblockEnd) {
+			// 过期之后的情况不返回时间
+			unblockStart = applications[i].UnblockStart
+			unblockEnd = applications[i].UnblockEnd
+		}
+
+		appDTO = apistructs.ApplicationDTO{
+			ID:             uint64(applications[i].ID),
+			Name:           applications[i].Name,
+			DisplayName:    applications[i].DisplayName,
+			Desc:           applications[i].Desc,
+			Logo:           filehelper.APIFileUrlRetriever(applications[i].Logo),
+			Config:         config,
+			UnBlockStart:   map[bool]*time.Time{true: unblockStart, false: nil}[isOrgBlocked],
+			UnBlockEnd:     map[bool]*time.Time{true: unblockEnd, false: nil}[isOrgBlocked],
+			BlockStatus:    map[bool]string{true: blockStatus, false: ""}[isOrgBlocked],
+			ProjectID:      uint64(applications[i].ProjectID),
+			ProjectName:    applications[i].ProjectName,
+			OrgID:          uint64(applications[i].OrgID),
+			OrgName:        org.Name,
+			OrgDisplayName: org.DisplayName,
+			Mode:           applications[i].Mode,
+			Pined:          applications[i].Pined,
+			IsPublic:       applications[i].IsPublic,
+			Creator:        applications[i].UserID,
+			GitRepo:        gitRepo,
+			GitRepoAbbrev:  applications[i].GitRepoAbbrev,
+			GitRepoNew:     gitRepoNew,
+			Workspaces:     workspaces,
+			Stats: apistructs.ApplicationStats{
+				CountRuntimes: runtimeCount,
+			},
+			IsExternalRepo: applications[i].IsExternalRepo,
+			RepoConfig:     &repoConfig,
+			CreatedAt:      applications[i].CreatedAt,
+			UpdatedAt:      applications[i].UpdatedAt,
+			Extra:          applications[i].Extra,
+		}
 		// 填充成员角色
 		if roles, ok := memberMap[int64(appDTO.ID)]; ok {
 			appDTO.MemberRoles = roles
@@ -583,8 +671,7 @@ func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMin
 	}
 	applicationDTOs := make([]apistructs.ApplicationDTO, 0, len(applications))
 	applicationDTOs = append(pinedAppDTOs, unpinedAppDTOs...)
-
-	return httpserver.OkResp(apistructs.ApplicationListResponseData{Total: total, List: applicationDTOs})
+	return applicationDTOs, nil
 }
 
 // PinApplication  pin应用
@@ -683,7 +770,11 @@ func checkApplicationCreateParam(applicationCreateReq apistructs.ApplicationCrea
 }
 
 // 应用列表时获取请求参数
-func getListApplicationsParam(r *http.Request) (*apistructs.ApplicationListRequest, error) {
+func getListApplicationsParam(e *Endpoints, r *http.Request) (*apistructs.ApplicationListRequest, error) {
+	var listReq apistructs.ApplicationListRequest
+	if err := e.queryStringDecoder.Decode(&listReq, r.URL.Query()); err != nil {
+		return nil, errors.Errorf("decode appplication list request failed, error: %v", err)
+	}
 	mode := r.URL.Query().Get("mode")
 	if mode != "" {
 		err := apistructs.ApplicationMode(mode).CheckAppMode()
@@ -748,6 +839,8 @@ func getListApplicationsParam(r *http.Request) (*apistructs.ApplicationListReque
 		Public:    public,
 		IsSimple:  isSimple,
 		OrderBy:   orderBy,
+
+		ApplicationID: listReq.ApplicationID,
 	}
 
 	return req, nil

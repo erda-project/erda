@@ -41,6 +41,7 @@ import (
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
 	"github.com/erda-project/erda/modules/pkg/user"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -442,6 +443,9 @@ func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uin
 		logrus.Errorf(errstr)
 		return nil, err
 	}
+	if err := r.setClusterName(runtime); err != nil {
+		logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", runtime.ClusterName, err)
+	}
 	dto, err := r.bdl.CreatePipeline(&apistructs.PipelineCreateRequestV2{
 		IdentityInfo: apistructs.IdentityInfo{UserID: operator.String()},
 		PipelineYml:  string(b),
@@ -465,6 +469,19 @@ func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uin
 	}
 
 	return convertRuntimeDeployDto(app, releaseResp, dto)
+}
+
+func (r *Runtime) setClusterName(rt *dbclient.Runtime) error {
+	clusterInfo, err := r.bdl.QueryClusterInfo(rt.ClusterName)
+	if err != nil {
+		logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", rt.ClusterName, err)
+		return err
+	}
+	jobCluster := clusterInfo.Get(apistructs.JOB_CLUSTER)
+	if jobCluster != "" {
+		rt.ClusterName = jobCluster
+	}
+	return nil
 }
 
 // Redeploy 重新部署
@@ -1095,6 +1112,7 @@ func (r *Runtime) Delete(operator user.ID, orgID uint64, runtimeID uint64) (*api
 	if err := r.db.UpdateRuntime(runtime); err != nil {
 		return nil, apierrors.ErrDeleteRuntime.InternalError(err)
 	}
+
 	event := events.RuntimeEvent{
 		EventName: events.RuntimeDeleting,
 		Runtime:   dbclient.ConvertRuntimeDTO(runtime, app),
@@ -1210,6 +1228,7 @@ func (r *Runtime) syncRuntimeServices(runtimeID uint64, dice *diceyml.DiceYaml) 
 
 // List 查询应用实例列表
 func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, name string) ([]apistructs.RuntimeSummaryDTO, error) {
+	var l = logrus.WithField("func", "*Runtime.List")
 	var runtimes []dbclient.Runtime
 	if len(workspace) > 0 && len(name) > 0 {
 		r, err := r.db.FindRuntime(spec.RuntimeUniqueId{ApplicationId: appID, Workspace: workspace, Name: name})
@@ -1269,61 +1288,12 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 		// record all runtime's branchs in each environment
 		rtEnvPermBranchMark[env] = append(rtEnvPermBranchMark[env], runtime.GitBranch)
 
-		deployment, err := r.db.FindLastDeployment(runtime.ID)
-		if err != nil {
-			logrus.Errorf("[alert] failed to build summary item, runtime %v get last deployment failed, err: %v",
-				runtime.ID, err.Error())
-			continue
-		}
-		if deployment == nil {
-			logrus.Errorf("[alert] failed to build summary item, runtime %v not found last deployment",
-				runtime.ID)
-			continue
-		}
 		var d apistructs.RuntimeSummaryDTO
-		d.ID = runtime.ID
-		d.Name = runtime.Name
-		d.Source = runtime.Source
-		d.Status = apistructs.RuntimeStatusUnHealthy
-		if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
-			sg, err := r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
-			if err != nil {
-				logrus.Errorf("failed to inspect servicegroup: %s/%s",
-					runtime.ScheduleName.Namespace, runtime.ScheduleName.Name)
-			} else if sg.Status == "Ready" || sg.Status == "Healthy" {
-				d.Status = apistructs.RuntimeStatusHealthy
-			}
+		if err := r.convertRuntimeSummaryDTOFromRuntimeModel(&d, runtime); err != nil {
+			l.WithError(err).WithField("runtime.ID", runtime.ID).
+				Warnln("failed to convertRuntimeSummaryDTOFromRuntimeModel")
+			continue
 		}
-		d.DeployStatus = deployment.Status
-		// 如果还 deployment 的状态不是终态, runtime 的状态返回为 init(前端显示为部署中效果),
-		// 不然开始部署直接变为不健康不合理
-		if deployment.Status == apistructs.DeploymentStatusDeploying ||
-			deployment.Status == apistructs.DeploymentStatusWaiting ||
-			deployment.Status == apistructs.DeploymentStatusInit ||
-			deployment.Status == apistructs.DeploymentStatusWaitApprove {
-			d.Status = apistructs.RuntimeStatusInit
-		}
-		if runtime.LegacyStatus == dbclient.LegacyStatusDeleting {
-			d.DeleteStatus = dbclient.LegacyStatusDeleting
-		}
-		d.ReleaseID = deployment.ReleaseId
-		d.ClusterID = runtime.ClusterId
-		d.ClusterName = runtime.ClusterName
-		d.CreatedAt = runtime.CreatedAt
-		d.UpdatedAt = runtime.UpdatedAt
-		d.TimeCreated = runtime.CreatedAt
-		d.Extra = map[string]interface{}{
-			"applicationId": runtime.ApplicationID,
-			"workspace":     runtime.Workspace,
-			"buildId":       deployment.BuildId,
-		}
-		d.ProjectID = app.ProjectID
-		updateStatusToDisplay(&d.RuntimeInspectDTO)
-		if deployment.Status == apistructs.DeploymentStatusDeploying {
-			updateStatusWhenDeploying(&d.RuntimeInspectDTO)
-		}
-		d.LastOperator = deployment.Operator
-		d.LastOperateTime = deployment.UpdatedAt // TODO: use a standalone OperateTime
 		data = append(data, d)
 	}
 
@@ -1338,6 +1308,112 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 	}
 
 	return data, nil
+}
+
+// ListGroupByApps lists all runtimes for given apps.
+// The key in the returned result map is appID.
+func (r *Runtime) ListGroupByApps(appIDs []uint64) (map[uint64][]*apistructs.RuntimeInspectDTO, error) {
+	var l = logrus.WithField("func", "*Runtime.ListGroupByApps")
+	runtimes, err := r.db.FindRuntimesInApps(appIDs)
+	if err != nil {
+		l.WithError(err).Errorln("failed to FindRuntimesInApps")
+		return nil, err
+	}
+
+	// note: internal API, do not check the permission
+
+	var result = make(map[uint64][]*apistructs.RuntimeInspectDTO)
+	for appID, runtimeList := range runtimes {
+		for _, runtime := range runtimeList {
+			var d apistructs.RuntimeSummaryDTO
+			if err := r.convertRuntimeSummaryDTOFromRuntimeModel(&d, *runtime); err != nil {
+				l.WithError(err).WithField("runtime.ID", runtime.ID).
+					Warnln("failed to convertRuntimeSummaryDTOFromRuntimeModel")
+				continue
+			}
+			result[appID] = append(result[appID], &d.RuntimeInspectDTO)
+		}
+	}
+
+	return result, nil
+}
+
+func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.RuntimeSummaryDTO, runtime dbclient.Runtime) error {
+	var l = logrus.WithField("func", "Runtime.convertRuntimeInspectDTOFromRuntimeModel")
+
+	if d == nil {
+		err := errors.New("the DTO is nil")
+		l.WithError(err).Warnln()
+		return err
+	}
+
+	isFakeRuntime := false
+	deployment, err := r.db.FindLastDeployment(runtime.ID)
+	if err != nil {
+		l.WithError(err).WithField("runtime.ID", runtime.ID).
+			Warnln("failed to build summary item, failed to get last deployment")
+		return err
+	}
+	if deployment == nil {
+		isFakeRuntime = true
+		// make a fake deployment
+		deployment = &dbclient.Deployment{
+			RuntimeId: runtime.ID,
+			Status:    apistructs.DeploymentStatusInit,
+			BaseModel: dbengine.BaseModel{
+				UpdatedAt: runtime.UpdatedAt,
+			},
+		}
+	}
+
+	d.ID = runtime.ID
+	d.Name = runtime.Name
+	d.ServiceGroupNamespace = runtime.ScheduleName.Namespace
+	d.ServiceGroupName = runtime.ScheduleName.Name
+	d.Source = runtime.Source
+	d.Status = apistructs.RuntimeStatusUnHealthy
+	if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
+		sg, err := r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
+		if err != nil {
+			l.WithError(err).Warnf("failed to inspect servicegroup: %s/%s",
+				runtime.ScheduleName.Namespace, runtime.ScheduleName.Name)
+		} else if sg.Status == "Ready" || sg.Status == "Healthy" {
+			d.Status = apistructs.RuntimeStatusHealthy
+		}
+	}
+	d.DeployStatus = deployment.Status
+	// 如果还 deployment 的状态不是终态, runtime 的状态返回为 init(前端显示为部署中效果),
+	// 不然开始部署直接变为不健康不合理
+	if deployment.Status == apistructs.DeploymentStatusDeploying ||
+		deployment.Status == apistructs.DeploymentStatusWaiting ||
+		deployment.Status == apistructs.DeploymentStatusInit ||
+		deployment.Status == apistructs.DeploymentStatusWaitApprove {
+		d.Status = apistructs.RuntimeStatusInit
+	}
+	if runtime.LegacyStatus == dbclient.LegacyStatusDeleting {
+		d.DeleteStatus = dbclient.LegacyStatusDeleting
+	}
+	d.ReleaseID = deployment.ReleaseId
+	d.ClusterID = runtime.ClusterId
+	d.ClusterName = runtime.ClusterName
+	d.CreatedAt = runtime.CreatedAt
+	d.UpdatedAt = runtime.UpdatedAt
+	d.TimeCreated = runtime.CreatedAt
+	d.Extra = map[string]interface{}{
+		"applicationId": runtime.ApplicationID,
+		"workspace":     runtime.Workspace,
+		"buildId":       deployment.BuildId,
+		"fakeRuntime":   isFakeRuntime,
+	}
+	d.ProjectID = runtime.ProjectID
+	updateStatusToDisplay(&d.RuntimeInspectDTO)
+	if deployment.Status == apistructs.DeploymentStatusDeploying {
+		updateStatusWhenDeploying(&d.RuntimeInspectDTO)
+	}
+	d.LastOperator = deployment.Operator
+	d.LastOperateTime = deployment.UpdatedAt // TODO: use a standalone OperateTime
+
+	return nil
 }
 
 // Get 查询应用实例
@@ -1781,7 +1857,7 @@ func (r *Runtime) ReferCluster(clusterName string) bool {
 
 // MarkOutdatedForDelete 将删除的应用实例，他们的所有部署单，标记为废弃
 func (r *Runtime) MarkOutdatedForDelete(runtimeID uint64) {
-	deployments, err := r.db.FindNotOutdatedOlderThan(runtimeID, math.MaxUint64)
+	deployments, err := r.db.FindNotOutdatedOlderThan(runtimeID, math.MaxUint32)
 	if err != nil {
 		logrus.Errorf("[alert] failed to query all not outdated deployment before delete runtime: %v, (%v)",
 			runtimeID, err)

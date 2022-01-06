@@ -86,12 +86,12 @@ zh-CN:
   notify.pipeline.pipeline_failed.markdown_template: |-
     ### {{projectName}}/{{appName}} 流水线 {{pipelineID}} 运行失败 {{uiPublicURL}}/{{orgName}}/dop/projects/{{projectID}}/apps/{{appID}}/pipeline?pipelineID={{pipelineID}}
     {{failedDetail}}
-  notify.issue.issue_create: 创建项目协同事件
-  notify.issue.issue_create.markdown_template: "事件【{{issue_title}}】{{content}}"
-  notify.issue.issue_create.ding_talk.markdown_template: "事件【{{issue_title}}】{{content}} [链接]({{issueEmailLink}})"
-  notify.issue.issue_update: 更新项目协同事件
-  notify.issue.issue_update.markdown_template: "你关注的事件【{{issue_title}}】 {{content}}"
-  notify.issue.issue_update.ding_talk.markdown_template: "你关注的事件【{{issue_title}}】 {{content}} [链接]({{issueEmailLink}})"
+  notify.issue.issue_create: 创建项目协同事项
+  notify.issue.issue_create.markdown_template: '【ErdaCloud】在{{orgName}}/{{projectName}}中，{{operator}}创建了事项 "{{issue_title}}" [点击查看详情]({{issueEmailLink}})'
+  notify.issue.issue_create.ding_talk.markdown_template: '【ErdaCloud】在{{orgName}}/{{projectName}}中，{{operator}}创建了事项 "{{issue_title}}" [点击查看详情]({{issueEmailLink}})'
+  notify.issue.issue_update: 更新项目协同事项
+  notify.issue.issue_update.markdown_template: '【ErdaCloud】在{{orgName}}/{{projectName}}中，{{operator}}修改了事项 "{{issue_title}}"， {{content}} [点击查看详情]({{issueEmailLink}})'
+  notify.issue.issue_update.ding_talk.markdown_template: '【ErdaCloud】在{{orgName}}/{{projectName}}中，{{operator}}修改了事项 "{{issue_title}}"， {{content}} [点击查看详情]({{issueEmailLink}})'
   notify.autotest.autotest-plan-execute: 执行自动化测试计划
   notify.autotest.autotest-plan-execute.markdown_template: |-
     {{org_name}}/{{project_name}} {{plan_name}} 测试计划执行完成，接口通过率: {{pass_rate}}%，接口总数: {{api_total_num}}，时长: {{execute_duration}}
@@ -218,11 +218,11 @@ en-US:
     ### {{projectName}}/{{appName}} Pipeline:{{pipelineID}} Failed
     {{failedDetail}}
   notify.issue.issue_create: Create Issue
-  notify.issue.issue_create.markdown_template: "Event【{{issue_title}}】 {{content}}"
-  notify.issue.issue_create.ding_talk.markdown_template: "Event【{{issue_title}}】{{content}} [Link]({{issueEmailLink}})"
+  notify.issue.issue_create.markdown_template: '【ErdaCloud】in the project {{orgName}}/{{projectName}}, {{operator}} create event "{{issue_title}}" [Link]({{issueEmailLink}})'
+  notify.issue.issue_create.ding_talk.markdown_template: '【ErdaCloud】in the project {{orgName}}/{{projectName}}, {{operator}} create event "{{issue_title}}" [Link]({{issueEmailLink}})'
   notify.issue.issue_update: Update Issue
-  notify.issue.issue_update.markdown_template: "Event【{{issue_title}}】 {{content}}"
-  notify.issue.issue_update.ding_talk.markdown_template: "Event【{{issue_title}}】 {{content}} [Link]({{issueEmailLink}})"
+  notify.issue.issue_update.markdown_template: '【ErdaCloud】in the project {{orgName}}/{{projectName}}, {{operator}} update event "{{issue_title}}", {{content}} [Link]({{issueEmailLink}})'
+  notify.issue.issue_update.ding_talk.markdown_template: '【ErdaCloud】in the project {{orgName}}/{{projectName}}, {{operator}} update event "{{issue_title}}", {{content}} [Link]({{issueEmailLink}})'
   notify.autotest.autotest-plan-execute: Execute Autotest TestPlan
   notify.autotest.autotest-plan-execute.markdown_template: |-
     {{org_name}}/{{project_name}} {{plan_name}} Test plan execution completed, API pass rate: {{pass_rate}}%, API total number: {{api_total_num}}, Time duration: {{execute_duration}}

@@ -31,8 +31,15 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
+	"github.com/erda-project/erda/modules/pipeline/pkg/containers"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/strutil"
+)
+
+const (
+	sparkDriverType   = "driver"
+	sparkExecutorType = "executor"
+	K8SSparkLogPrefix = "[k8sspark]"
 )
 
 func init() {
@@ -184,6 +191,45 @@ func (k *K8sSpark) Remove(ctx context.Context, task *spec.PipelineTask) (interfa
 			return nil, nil
 		}
 		return nil, errors.Errorf("failed to remove spark application, namespace: %s, name: %s, err: %v", task.Extra.Namespace, task.Extra.UUID, err)
+	}
+
+	sparkApps := sparkv1beta2.SparkApplicationList{}
+	namespace := task.Extra.Namespace
+	if !task.Extra.NotPipelineControlledNs {
+		err = k.client.CRClient.List(ctx, &sparkApps, &client.ListOptions{Namespace: namespace})
+		if err != nil {
+			return nil, fmt.Errorf("%s list k8sspark apps error: %+v, namespace: %s", K8SSparkLogPrefix, err, namespace)
+		}
+		remainCount := 0
+		if len(sparkApps.Items) != 0 {
+			for _, app := range sparkApps.Items {
+				if app.DeletionTimestamp == nil {
+					remainCount++
+				}
+			}
+		}
+		if remainCount < 1 {
+			ns, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+			if err != nil {
+				if k8serrors.IsNotFound(err) {
+					return nil, nil
+				}
+				return nil, fmt.Errorf("%s get the namespace: %s,  error: %+v", K8SSparkLogPrefix, namespace, err)
+			}
+
+			if ns.DeletionTimestamp == nil {
+				logrus.Debugf(" %s start to delete the namespace %s", K8SSparkLogPrefix, namespace)
+				err = k.client.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+				if err != nil {
+					if !k8serrors.IsNotFound(err) {
+						errMsg := fmt.Errorf("%s delete the namespace: %s, error: %+v", K8SSparkLogPrefix, namespace, err)
+						return nil, errMsg
+					}
+					logrus.Warningf("%s not found the namespace %s", K8SSparkLogPrefix, namespace)
+				}
+				logrus.Debugf("%s clean namespace %s successfully", K8SSparkLogPrefix, namespace)
+			}
+		}
 	}
 	return nil, nil
 }
@@ -434,10 +480,10 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 	}
 	sparkApp.Spec.Volumes = vols
 
-	sparkApp.Spec.Driver.SparkPodSpec = k.composePodSpec(conf, "driver", volMounts)
+	sparkApp.Spec.Driver.SparkPodSpec = k.composePodSpec(conf, sparkDriverType, volMounts)
 	sparkApp.Spec.Driver.ServiceAccount = stringptr(sparkServiceAccountName)
 
-	sparkApp.Spec.Executor.SparkPodSpec = k.composePodSpec(conf, "executor", volMounts)
+	sparkApp.Spec.Executor.SparkPodSpec = k.composePodSpec(conf, sparkExecutorType, volMounts)
 	sparkApp.Spec.Executor.Instances = int32ptr(conf.Spec.SparkConf.ExecutorResource.Replica)
 
 	return sparkApp, nil
@@ -449,16 +495,16 @@ func (k *K8sSpark) composePodSpec(conf *apistructs.BigdataConf, podType string, 
 	resource := apistructs.BigdataResource{}
 
 	switch podType {
-	case "driver":
+	case sparkDriverType:
 		resource = conf.Spec.SparkConf.DriverResource
-	case "executor":
+	case sparkExecutorType:
 		resource = conf.Spec.SparkConf.ExecutorResource
 	}
 
 	k.appendResource(&podSpec, &resource)
 	podSpec.Env = conf.Spec.Envs
-	k.appendEnvs(&podSpec, &resource)
-	podSpec.Labels = addLabels()
+	k.appendEnvs(&podSpec, &resource, conf.Name, podType)
+	podSpec.Labels = addLabels(conf)
 	podSpec.VolumeMounts = mount
 	return podSpec
 }
@@ -482,7 +528,7 @@ func (k *K8sSpark) appendResource(podSpec *sparkv1beta2.SparkPodSpec, resource *
 	podSpec.Memory = stringptr(memory)
 }
 
-func (k *K8sSpark) appendEnvs(podSpec *sparkv1beta2.SparkPodSpec, resource *apistructs.BigdataResource) {
+func (k *K8sSpark) appendEnvs(podSpec *sparkv1beta2.SparkPodSpec, resource *apistructs.BigdataResource, podName, podType string) {
 	cpu, err := strconv.ParseFloat(resource.CPU, 32)
 	if err != nil {
 		cpu = 1.0
@@ -500,6 +546,13 @@ func (k *K8sSpark) appendEnvs(podSpec *sparkv1beta2.SparkPodSpec, resource *apis
 		"DICE_CPU_LIMIT":   fmt.Sprintf("%f", cpu),
 		"DICE_MEM_LIMIT":   resource.Memory,
 		"IS_K8S":           "true",
+	}
+
+	switch podType {
+	case sparkDriverType:
+		envMap[apistructs.TerminusDefineTag] = containers.MakeSparkTaskDriverID(podName)
+	case sparkExecutorType:
+		envMap[apistructs.TerminusDefineTag] = containers.MakeSparkTaskExecutorID(podName)
 	}
 
 	for k, v := range envMap {
@@ -521,5 +574,10 @@ func (k *K8sSpark) appendEnvs(podSpec *sparkv1beta2.SparkPodSpec, resource *apis
 				Value: v,
 			})
 		}
+	}
+
+	podSpec.EnvVars = map[string]string{}
+	for _, v := range podSpec.Env {
+		podSpec.EnvVars[v.Name] = v.Value
 	}
 }

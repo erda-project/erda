@@ -163,6 +163,10 @@ func (a *ComponentFileFormModal) initSceneSetFields(inParams fileTree.InParams) 
 							apistructs.TryLatestSuccessResultPolicyType.GetZhName(),
 							apistructs.TryLatestSuccessResultPolicyType,
 						},
+						PolicyOption{
+							apistructs.TryLatestResultPolicyType.GetZhName(),
+							apistructs.TryLatestResultPolicyType,
+						},
 					},
 				},
 			},
@@ -405,6 +409,10 @@ func (a *ComponentFileFormModal) GetScene(inParams fileTree.InParams) error {
 							apistructs.TryLatestSuccessResultPolicyType.GetZhName(),
 							apistructs.TryLatestSuccessResultPolicyType,
 						},
+						PolicyOption{
+							apistructs.TryLatestResultPolicyType.GetZhName(),
+							apistructs.TryLatestResultPolicyType,
+						},
 					},
 				},
 			},
@@ -534,7 +542,7 @@ func (a *ComponentFileFormModal) marshal(c *cptype.Component) error {
 	if err != nil {
 		return err
 	}
-	var props interface{}
+	var props cptype.ComponentProps
 	err = json.Unmarshal(propValue, &props)
 	if err != nil {
 		return err

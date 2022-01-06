@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -43,6 +42,7 @@ import (
 	"github.com/erda-project/erda/modules/monitor/common/db"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
+	pkgmath "github.com/erda-project/erda/pkg/math"
 )
 
 type Vo struct {
@@ -70,6 +70,7 @@ type Node struct {
 	Id              string  `json:"id,omitempty"`
 	Name            string  `json:"name,omitempty"`
 	Type            string  `json:"type,omitempty"`
+	TypeDisplay     string  `json:"typeDisplay,omitempty"`
 	AddonId         string  `json:"addonId,omitempty"`
 	AddonType       string  `json:"addonType,omitempty"`
 	ApplicationId   string  `json:"applicationId,omitempty"`
@@ -177,11 +178,13 @@ type Field struct {
 type Tag struct {
 	Component             string `json:"component,omitempty"`
 	DBType                string `json:"db_type,omitempty"`
+	DBSystem              string `json:"db_system,omitempty"`
 	Host                  string `json:"host,omitempty"`
 	HttpUrl               string `json:"http_url,omitempty"`
 	PeerServiceScope      string `json:"peer_service_scope,omitempty"`
 	PeerAddress           string `json:"peer_address,omitempty"`
 	PeerService           string `json:"peer_service,omitempty"`
+	DBHost                string `json:"db_host,omitempty"`
 	SourceProjectId       string `json:"source_project_id,omitempty"`
 	SourceProjectName     string `json:"source_project_name,omitempty"`
 	SourceWorkspace       string `json:"source_workspace,omitempty"`
@@ -239,6 +242,8 @@ type Metric struct {
 	Replicas  float64 `json:"replicas,omitempty"`
 	Running   float64 `json:"running"`
 	Stopped   float64 `json:"stopped"`
+	RPS       float64 `json:"rps"`
+	Duration  float64 `json:"duration"`
 }
 
 const (
@@ -418,8 +423,8 @@ func init() {
 	}
 	TargetComponentNodeType = &NodeType{
 		Type:         TargetComponentNode,
-		GroupByField: &GroupByField{Name: apm.TagsPeerAddress, SubField: &GroupByField{Name: apm.TagsDBType}},
-		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsTargetAddonGroup, apm.TagsDBType, apm.TagsPeerAddress},
+		GroupByField: &GroupByField{Name: apm.TagsDBHost, SubField: &GroupByField{Name: apm.TagsDBSystem}},
+		SourceFields: []string{apm.TagsComponent, apm.TagsHost, apm.TagsTargetAddonGroup, apm.TagsDBSystem, apm.TagsDBHost},
 		Filter:       elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery(apm.TagsTargetAddonType)),
 		Aggregation:  NodeAggregation,
 	}
@@ -1366,7 +1371,9 @@ func searchApplicationTag(topology *provider, scopeId string, startTime, endTime
 }
 
 func (topology *provider) ComposeTopologyNode(r *http.Request, params Vo) ([]*Node, error) {
-	nodes := topology.GetTopology(params)
+	lang := api.Language(r)
+
+	nodes := topology.GetTopology(lang, params)
 
 	// instance count info
 	instances, err := topology.GetInstances(api.Language(r), params)
@@ -1477,9 +1484,10 @@ func (topology *provider) GetSearchTagv(r *http.Request, tag, scopeId string, st
 	}
 }
 
-func (topology *provider) GetTopology(param Vo) []*Node {
+func (topology *provider) GetTopology(lang i18n.LanguageCodes, param Vo) []*Node {
 
 	indices := createTypologyIndices(param.StartTime, param.EndTime)
+	timeRange := (param.EndTime - param.StartTime) / 1e3 // second
 	ctx := context.Background()
 
 	nodes := make([]*Node, 0)
@@ -1514,7 +1522,7 @@ func (topology *provider) GetTopology(param Vo) []*Node {
 			fmt.Println()
 		}
 
-		parseToTypologyNode(searchResult, relations, &nodes)
+		topology.parseToTypologyNode(lang, timeRange, searchResult, relations, &nodes)
 	}
 	//debug
 	//nodesData, _ := json.Marshal(nodes)
@@ -1530,7 +1538,7 @@ func selectRelation(indexType string) (*AggregationCondition, []*NodeRelation) {
 	return aggregationConditions, relations
 }
 
-func parseToTypologyNode(searchResult *elastic.SearchResult, relations []*NodeRelation, topologyNodes *[]*Node) {
+func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange int64, searchResult *elastic.SearchResult, relations []*NodeRelation, topologyNodes *[]*Node) {
 	for _, nodeRelation := range relations {
 		targetNodeType := nodeRelation.Target
 		sourceNodeTypes := nodeRelation.Source
@@ -1562,6 +1570,7 @@ func parseToTypologyNode(searchResult *elastic.SearchResult, relations []*NodeRe
 					}
 
 					node := columnsParser(targetNodeType.Type, targetNode)
+					node.TypeDisplay = topology.t.Text(lang, strings.ToLower(node.Type))
 					if targetNodeType.Type == TargetOtherNode && node.Type == TypeInternal {
 						continue
 					}
@@ -1577,7 +1586,7 @@ func parseToTypologyNode(searchResult *elastic.SearchResult, relations []*NodeRe
 						if n.Id == node.Id {
 							n.Metric.Count += node.Metric.Count
 							n.Metric.HttpError += node.Metric.HttpError
-							n.Metric.ErrorRate += node.Metric.ErrorRate
+							n.Metric.Duration += node.Metric.Duration
 							n.Metric.RT += node.Metric.RT
 							if n.RuntimeId == "" {
 								n.RuntimeId = node.RuntimeId
@@ -1591,9 +1600,6 @@ func parseToTypologyNode(searchResult *elastic.SearchResult, relations []*NodeRe
 						*topologyNodes = append(*topologyNodes, node)
 						node.Parents = []*Node{}
 					}
-
-					//tNode, _ := json.Marshal(node)
-					//fmt.Println("target:", string(tNode))
 
 					// sourceNodeTypes
 					for _, nodeType := range sourceNodeTypes {
@@ -1630,16 +1636,20 @@ func parseToTypologyNode(searchResult *elastic.SearchResult, relations []*NodeRe
 
 							sourceNode.Metric = sourceMetric
 							sourceNode.Parents = []*Node{}
-
-							//sNode, _ := json.Marshal(sourceNode)
-							//fmt.Println("source:", string(sNode))
-
 							node.Parents = append(node.Parents, sourceNode)
 						}
 					}
 				}
 			}
 		}
+	}
+
+	for _, node := range *topologyNodes {
+		if node.Metric.Count != 0 { // by zero
+			node.Metric.RT = pkgmath.DecimalPlacesWithDigitsNumber(node.Metric.Duration/float64(node.Metric.Count)/1e6, 2)
+			node.Metric.ErrorRate = pkgmath.DecimalPlacesWithDigitsNumber(float64(node.Metric.HttpError)/float64(node.Metric.Count)*100, 2)
+		}
+		node.Metric.RPS = pkgmath.DecimalPlacesWithDigitsNumber(float64(node.Metric.Count)/float64(timeRange), 2)
 	}
 }
 
@@ -1671,10 +1681,7 @@ func metricParser(targetNodeType *NodeType, target elastic.Aggregations) *Metric
 	countSum := field.CountSum
 	metric.Count = int64(countSum)
 	metric.HttpError = int64(field.ErrorsSum)
-	if countSum != 0 { // by zero
-		metric.RT = toTwoDecimalPlaces(field.ELapsedSum / countSum / 1e6)
-		metric.ErrorRate = math.Round(float64(metric.HttpError)/countSum*1e4) / 1e2
-	}
+	metric.Duration = field.ELapsedSum
 
 	return &metric
 }
@@ -1758,9 +1765,9 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		node.Id = encodeTypeToKey(node.AddonId + apm.Sep1 + node.AddonType)
 	case TargetComponentNode:
 		node.Type = tags.Component
-		node.Name = tags.PeerAddress
-		if tags.DBType != "" {
-			node.Type = tags.DBType
+		node.Name = tags.DBHost
+		if tags.DBSystem != "" {
+			node.Type = tags.DBSystem
 		}
 		node.Id = encodeTypeToKey(node.Type + apm.Sep1 + node.Name)
 	case SourceMQNode:
@@ -1807,6 +1814,7 @@ func columnsParser(nodeType string, nodeRelation *TopologyNodeRelation) *Node {
 		node.Id = encodeTypeToKey(node.ServiceId + apm.Sep1 + node.ServiceName)
 	}
 	node.DashboardId = getDashboardId(node.Type)
+
 	return &node
 }
 
@@ -1919,12 +1927,12 @@ func handlerTranslationConditions(params translation, param map[string]interface
 			where.WriteString(" AND http_path::tag=~$field")
 		}
 	case "rpc":
-		field = "peer_service::tag"
+		field = "rpc_target::tag"
 		if params.Search != "" {
 			param["field"] = map[string]interface{}{
 				"regex": ".*" + params.Search + ".*",
 			}
-			where.WriteString(" AND peer_service::tag=~$field")
+			where.WriteString(" AND rpc_target::tag=~$field")
 		}
 	default:
 		return "", "", errors.New("not support layer name")
@@ -1990,7 +1998,7 @@ func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params t
 		orderby = " ORDER BY sum(elapsed_count::field) DESC"
 	}
 
-	sql := fmt.Sprintf("SELECT db_statement::tag,db_type::tag,db_instance::tag,host::tag,sum(elapsed_count::field),"+
+	sql := fmt.Sprintf("SELECT db_statement::tag,db_system::tag,db_name::tag,db_host::tag,sum(elapsed_count::field),"+
 		"format_duration(avg(elapsed_mean::field),'',2) FROM application_%s WHERE source_service_id::tag=$serviceId AND "+
 		"source_terminus_key::tag=$terminusKey %s GROUP BY db_statement::tag %s",
 		params.Layer, where.String(), orderby)
@@ -2006,9 +2014,9 @@ func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params t
 	result := make(map[string]interface{}, 0)
 	cols := []map[string]interface{}{
 		{"_key": "tags.db_statement", "flag": "tag|groupby", "key": "operation"},
-		{"_key": "tags.db_type", "flag": "tag", "key": "db_type"},
-		{"_key": "tags.db_instance", "flag": "tag", "key": "instance_type"},
-		{"_key": "tags.host", "flag": "tag", "key": "db_host"},
+		{"_key": "tags.db_system", "flag": "tag", "key": "db_system"},
+		{"_key": "tags.db_name", "flag": "tag", "key": "db_name"},
+		{"_key": "tags.db_host", "flag": "tag", "key": "db_host"},
 		{"_key": "", "flag": "field|func|agg", "key": "call_count"},
 		{"_key": "", "flag": "field|func|agg", "key": "avg_elapsed"},
 		{"_key": "", "flag": "field|func|agg", "key": "slow_elapsed_count"},
@@ -2018,8 +2026,8 @@ func (topology *provider) dbOrCacheTranslation(lang i18n.LanguageCodes, params t
 	for _, r := range source.ResultSet.Rows {
 		itemResult := make(map[string]interface{})
 		itemResult["operation"] = r[0]
-		itemResult["db_type"] = r[1]
-		itemResult["db_instance"] = r[2]
+		itemResult["db_system"] = r[1]
+		itemResult["db_name"] = r[2]
 		itemResult["db_host"] = r[3]
 		itemResult["call_count"] = r[4]
 		itemResult["avg_elapsed"] = r[5]
@@ -2177,7 +2185,7 @@ func (topology *provider) slowTranslationTrace(r *http.Request, params struct {
 	options.Set("end", strconv.FormatInt(params.End, 10))
 	sql := fmt.Sprintf("SELECT trace_id::tag,format_time(timestamp,'2006-01-02 15:04:05'),format_duration(trace_duration::field,'',2) "+
 		"FROM trace WHERE service_ids::field=$serviceId AND service_names::field=$serviceName AND terminus_keys::field=$terminusKey "+
-		"AND (http_paths::field=$operation OR dubbo_methods::field=$operation OR db_statements::field=$operation OR topics::field=$operation) ORDER BY %s Limit %v", sortCondition, params.Limit)
+		"AND (http_paths::field=$operation OR rpc_methods::field=$operation OR db_statements::field=$operation OR topics::field=$operation) ORDER BY %s Limit %v", sortCondition, params.Limit)
 	details, err := topology.metricq.Query(metricq.InfluxQL, sql,
 		map[string]interface{}{
 			"serviceName": params.ServiceName,

@@ -20,16 +20,9 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dop/bdl"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
-// {
-//         "size": "small",
-//         "tooltip": "导入",
-//         "prefixIcon": "import"
-//     }
 type IssueImportProps struct {
 	Size       string `json:"size"`
 	Tooltip    string `json:"tooltip"`
@@ -41,47 +34,10 @@ type ComponentAction struct{ base.DefaultProvider }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	sdk := cputil.SDK(ctx)
-	c.Props = IssueImportProps{
-		Size:       "small",
-		Tooltip:    "导入",
-		PrefixIcon: "import",
-		Visible:    sdk.InParams["fixedIssueType"].(string) != "ALL",
-	}
-
-	isGuest, err := ca.CheckUserPermission(ctx)
-	if err != nil {
-		return err
-	}
-
-	c.Operations = map[string]interface{}{
-		"click": struct {
-			Reload   bool `json:"reload"`
-			Disabled bool `json:"disabled"`
-		}{Reload: false, Disabled: isGuest},
-	}
-	return nil
-}
-
-// GetUserPermission  check Guest permission
-func (ca *ComponentAction) CheckUserPermission(ctx context.Context) (bool, error) {
-	sdk := cputil.SDK(ctx)
-	isGuest := false
-	projectID := sdk.InParams["projectId"].(string)
-	scopeRole, err := bdl.Bdl.ScopeRoleAccess(sdk.Identity.UserID, &apistructs.ScopeRoleAccessRequest{
-		Scope: apistructs.Scope{
-			Type: apistructs.ProjectScope,
-			ID:   projectID,
-		},
+	c.Props = cputil.MustConvertProps(IssueImportProps{
+		Visible: sdk.InParams["fixedIssueType"].(string) != "ALL",
 	})
-	if err != nil {
-		return false, err
-	}
-	for _, role := range scopeRole.Roles {
-		if role == "Guest" {
-			isGuest = true
-		}
-	}
-	return isGuest, nil
+	return nil
 }
 
 func init() {

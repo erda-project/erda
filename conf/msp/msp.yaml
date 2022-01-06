@@ -24,6 +24,17 @@ elasticsearch:
   username: "${ES_SECURITY_USERNAME}"
   password: "${ES_SECURITY_PASSWORD}"
 
+elasticsearch@logs:
+  urls: "${LOGS_ES_URL:http://localhost:9200}"
+  security: ${LOGS_ES_SECURITY_ENABLE:false}
+  username: "${LOGS_ES_SECURITY_USERNAME}"
+  password: "${LOGS_ES_SECURITY_PASSWORD}"
+
+logs-index-query:
+  query_back_es: ${LOGS_QUERY_BACK_ES:false}
+  index_field_settings:
+    file: ${CONFIG_PATH}/logs/default_field_settings.yml
+
 etcd:
   endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
   tls:
@@ -42,7 +53,7 @@ redis:
   sentinels_addr: "${REDIS_SENTINELS_ADDR}"
 
 cassandra:
-  _enable: ${CASSANDRA_ENABLE:true}
+  _enable: ${CASSANDRA_ENABLE:false}
   host: "${CASSANDRA_ADDR:localhost:9042}"
   security: ${CASSANDRA_SECURITY_ENABLE:false}
   username: ${CASSANDRA_SECURITY_USERNAME}
@@ -58,7 +69,7 @@ elasticsearch@span:
   password: "${SPAN_ELASTICSEARCH_SECURITY_PASSWORD}"
 
 elasticsearch.index.loader@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
   load_mode: "LoadWithCache"
   index_reload_interval: "1m"
   query_index_time_range: true
@@ -71,16 +82,16 @@ elasticsearch.index.loader@span:
         - "<org>-{number}"
         - "<org>.<key>-{number}"
 storage-retention-strategy@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
   default_ttl: "${SPAN_TTL:168h}"
   load_from_database: false
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
   key_patterns:
     - "erda-spans-<org>.<key>-{number}"
 elasticsearch.index.cleaner@span:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
   check_interval: "30m"
   disk_clean:
     enable: ${SPAN_DISK_CLEAN_ENABLE:true}
@@ -96,7 +107,7 @@ elasticsearch.index.cleaner@span:
       - index: "erda-spans-<org>.<key>-{number}"
         alias: "erda-spans-<org>.<key>-rollover"
 span-storage-elasticsearch:
-  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_SPAN_FROM_ES_ENABLE:true}
   query_timeout: "1m"
   read_page_size: 200
 
@@ -106,6 +117,7 @@ i18n:
     - conf/common/i18n/common.yml
     - conf/common/i18n/apis.yml
     - conf/msp/i18n/msp-i18n.yaml
+    - conf/msp/i18n/service-overview.yaml
 
 metric-report-client:
   report_config:
@@ -126,6 +138,11 @@ grpc-client@erda.core.monitor.event:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
 #  addr: "${MONITOR_GRPC_ADDR_LOCAL:localhost:7080}"
 erda.core.monitor.event-client:
+
+grpc-client@erda.core.monitor.log.query:
+  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+#  addr: "${MONITOR_GRPC_ADDR_LOCAL:localhost:7080}"
+erda.core.monitor.log.query-client:
 
 grpc-client@erda.oap.entity:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
@@ -187,14 +204,18 @@ erda.msp.apm.checker.task:
   default_periodic_worker_interval: "30s"
 
 erda.msp.apm.trace.query:
-  query_source: "${TRACE_QUERY_SOURCE:cassandra}"
+  query_source:
+    elasticsearch: "${QUERY_SPAN_FROM_ES_ENABLE:true}"
+    cassandra: "${QUERY_SPAN_FROM_CASSANDRA_ENABLE:false}"
   cassandra:
     keyspace:
       name: "spot_prod"
       auto: false # auto generate keyspace
 
 erda.msp.apm.exception.query:
-  query_source: "${EXCEPTION_QUERY_SOURCE:cassandra}"
+  query_source:
+    elasticsearch: "${QUERY_EVENT_FROM_ES_ENABLE:true}"
+    cassandra: "${QUERY_EVENT_FROM_CASSANDRA_ENABLE:false}"
   cassandra:
     keyspace:
       name: "spot_prod"
@@ -206,6 +227,32 @@ erda.msp.apm.metric:
 
 erda.msp.tenant:
 erda.msp.tenant.project:
+
+erda.msp.apm.service:
+  view:
+  - type: "service_overview"
+    charts:
+     - "rps"
+     - "avgDuration"
+     - "errorRate"
+  - type: "topology_service_node"
+    charts:
+     - "rps"
+     - "avgDuration"
+     - "httpCode"
+     - "errorRate"
+  - type: "rps_chart"
+    charts:
+     - "rps"
+  - type: "avg_duration_chart"
+    charts:
+     - "avgDuration"
+  - type: "http_code_chart"
+    charts:
+     - "httpCode"
+  - type: "error_rate_chart"
+    charts:
+     - "errorRate"
 
 #resource deploy related
 erda.msp.resource:
@@ -239,7 +286,109 @@ erda.msp.resource.deploy.handlers.servicemesh:
 erda.msp.resource.deploy.handlers.zkproxy:
 erda.msp.resource.deploy.handlers.zookeeper:
 
+erda.msp.apm.log_service:
+  query_log_elasticsearch_enabled: ${QUERY_LOG_FROM_ES_ENABLE:true}
+  index_field_settings:
+      file: ${CONFIG_PATH}/logs/default_field_settings.yml
 
+# component-protocol framework
+component-protocol:
 
+component-protocol.components.service-list:
+component-protocol.components.service-list.page:
+component-protocol.components.service-list.grid:
+component-protocol.components.service-overview:
+component-protocol.components.service-overview.page:
+component-protocol.components.service-overview.grid:
 
+# transaction-cache-analysis
+component-protocol.components.transaction-cache-analysis.content:
+component-protocol.components.transaction-cache-analysis.table:
+component-protocol.components.transaction-cache-analysis.tableFilter:
+component-protocol.components.transaction-cache-analysis.grid:
+component-protocol.components.transaction-cache-analysis.page:
+component-protocol.components.transaction-cache-analysis.rps:
+component-protocol.components.transaction-cache-analysis.avgDuration:
 
+# transaction-cache-detail
+component-protocol.components.transaction-cache-detail.grid:
+component-protocol.components.transaction-cache-detail.kvGrid:
+component-protocol.components.transaction-cache-detail.page:
+component-protocol.components.transaction-cache-detail.rps:
+component-protocol.components.transaction-cache-detail.avgDuration:
+component-protocol.components.transaction-cache-detail.slowCount:
+component-protocol.components.transaction-cache-detail.errorCount:
+
+# transaction-db-analysis
+component-protocol.components.transaction-db-analysis.content:
+component-protocol.components.transaction-db-analysis.table:
+component-protocol.components.transaction-db-analysis.tableFilter:
+component-protocol.components.transaction-db-analysis.grid:
+component-protocol.components.transaction-db-analysis.page:
+component-protocol.components.transaction-db-analysis.rps:
+component-protocol.components.transaction-db-analysis.avgDuration:
+
+# transaction-db-detail
+component-protocol.components.transaction-db-detail.grid:
+component-protocol.components.transaction-db-detail.kvGrid:
+component-protocol.components.transaction-db-detail.page:
+component-protocol.components.transaction-db-detail.rps:
+component-protocol.components.transaction-db-detail.avgDuration:
+component-protocol.components.transaction-db-detail.slowCount:
+component-protocol.components.transaction-db-detail.errorCount:
+
+# transaction-http-analysis
+component-protocol.components.transaction-http-analysis.content:
+component-protocol.components.transaction-http-analysis.table:
+component-protocol.components.transaction-http-analysis.tableFilter:
+component-protocol.components.transaction-http-analysis.grid:
+component-protocol.components.transaction-http-analysis.page:
+component-protocol.components.transaction-http-analysis.rps:
+component-protocol.components.transaction-http-analysis.avgDuration:
+
+# transaction-http-detail
+component-protocol.components.transaction-http-detail.grid:
+component-protocol.components.transaction-http-detail.kvGrid:
+component-protocol.components.transaction-http-detail.page:
+component-protocol.components.transaction-http-detail.rps:
+component-protocol.components.transaction-http-detail.avgDuration:
+component-protocol.components.transaction-http-detail.slowCount:
+component-protocol.components.transaction-http-detail.errorCount:
+
+# transaction-mq-analysis
+component-protocol.components.transaction-mq-analysis.content:
+component-protocol.components.transaction-mq-analysis.table:
+component-protocol.components.transaction-mq-analysis.tableFilter:
+component-protocol.components.transaction-mq-analysis.grid:
+component-protocol.components.transaction-mq-analysis.page:
+component-protocol.components.transaction-mq-analysis.rps:
+component-protocol.components.transaction-mq-analysis.avgDuration:
+
+# transaction-mq-detail
+component-protocol.components.transaction-mq-detail.grid:
+component-protocol.components.transaction-mq-detail.kvGrid:
+component-protocol.components.transaction-mq-detail.page:
+component-protocol.components.transaction-mq-detail.rps:
+component-protocol.components.transaction-mq-detail.avgDuration:
+component-protocol.components.transaction-mq-detail.slowCount:
+component-protocol.components.transaction-mq-detail.errorCount:
+
+# transaction-rpc-analysis
+component-protocol.components.transaction-rpc-analysis.content:
+component-protocol.components.transaction-rpc-analysis.table:
+component-protocol.components.transaction-rpc-analysis.tableFilter:
+component-protocol.components.transaction-rpc-analysis.grid:
+component-protocol.components.transaction-rpc-analysis.page:
+component-protocol.components.transaction-rpc-analysis.rps:
+component-protocol.components.transaction-rpc-analysis.avgDuration:
+
+# transaction-rpc-detail
+component-protocol.components.transaction-rpc-detail.grid:
+component-protocol.components.transaction-rpc-detail.kvGrid:
+component-protocol.components.transaction-rpc-detail.page:
+component-protocol.components.transaction-rpc-detail.rps:
+component-protocol.components.transaction-rpc-detail.avgDuration:
+component-protocol.components.transaction-rpc-detail.slowCount:
+component-protocol.components.transaction-rpc-detail.errorCount:
+
+component-protocol.components.datasources.msp-service:

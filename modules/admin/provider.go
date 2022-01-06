@@ -17,15 +17,30 @@ package admin
 import (
 	"context"
 	"os"
+	"time"
+
+	"embed"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
+	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
+	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/admin/dao"
 	"github.com/erda-project/erda/modules/admin/manager"
+	"github.com/erda-project/erda/modules/admin/services/workbench"
+	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
+	"github.com/erda-project/erda/modules/dop/conf"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
+
+//go:embed component-protocol/scenarios
+var scenarioFS embed.FS
 
 type Config struct {
 	Debug bool `default:"false" env:"DEBUG" desc:"enable debug logging"`
@@ -33,6 +48,11 @@ type Config struct {
 
 type provider struct {
 	Config Config
+
+	Log      logs.Logger
+	Protocol componentprotocol.Interface
+	CPTran   i18n.I18n       `autowired:"i18n@cp"`
+	Tran     i18n.Translator `translator:"common"`
 }
 
 func init() {
@@ -46,6 +66,37 @@ func init() {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.Log.Info("init admin")
+
+	p.Log.Info("init component-protocol")
+	bdl := bundle.New(
+		bundle.WithHepa(),
+		bundle.WithOrchestrator(),
+		bundle.WithEventBox(),
+		bundle.WithGittar(),
+		bundle.WithDOP(),
+		bundle.WithMSP(),
+		bundle.WithPipeline(),
+		bundle.WithMonitor(),
+		bundle.WithCollector(),
+		bundle.WithHTTPClient(httpclient.New(
+			httpclient.WithTimeout(time.Second*15, time.Duration(conf.BundleTimeoutSecond())*time.Second), // bundle 默认 (time.Second, time.Second*3)
+		)),
+		bundle.WithKMS(),
+		bundle.WithCoreServices(),
+		bundle.WithHTTPClient(
+			httpclient.New(
+				httpclient.WithTimeout(time.Second, time.Second*90),
+				httpclient.WithEnableAutoRetry(false),
+			)),
+	)
+
+	p.Protocol.SetI18nTran(p.CPTran)
+	wb := workbench.New(workbench.WithBundle(bdl))
+	p.Protocol.WithContextValue(types.Workbench, wb)
+	p.Protocol.WithContextValue(types.GlobalCtxKeyBundle, bdl)
+	protocol.MustRegisterProtocolsFromFS(scenarioFS)
+	p.Log.Info("init component-protocol done")
 
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,

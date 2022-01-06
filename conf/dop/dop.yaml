@@ -29,6 +29,8 @@ etcd:
     cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
     ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
 
+erda.core.dop.taskerror:
+
 # pipeline cms
 grpc-client@erda.core.pipeline.cms:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
@@ -49,24 +51,31 @@ grpc-client@erda.orchestrator.addon.mysql:
   addr: "${ORCHESTRATOR_GRPC_ADDR:orchestrator:7080}"
 erda.orchestrator.addon.mysql-client:
 
+grpc-client@erda.core.services.errorbox:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.services.errorbox-client:
+
 erda.core.dop.autotest.testplan:
+erda.dop.projecthome:
+erda.dop.contribution:
 
 # component-protocol framework
 component-protocol:
+
+# default components
+component-protocol.default-components.issueFilter:
+
 # components
+## issue manage
 component-protocol.components.issue-manage.content:
 component-protocol.components.issue-manage.head:
-component-protocol.components.issue-manage.issueAddButton:
 component-protocol.components.issue-manage.issueExport:
 component-protocol.components.issue-manage.issueFilter:
-component-protocol.components.issue-manage.issueGantt:
 component-protocol.components.issue-manage.issueImport:
-component-protocol.components.issue-manage.issueKanban:
 component-protocol.components.issue-manage.issueManage:
 component-protocol.components.issue-manage.issueOperations:
 component-protocol.components.issue-manage.issueTable:
-component-protocol.components.issue-manage.issueViewGroup:
-component-protocol.components.issue-manage.topHead:
+component-protocol.components.issue-manage.reset:
 
 component-protocol.components.code-coverage.treeMapChart:
 component-protocol.components.code-coverage.codeCoverChart:
@@ -287,3 +296,53 @@ component-protocol.components.issue-gantt.gantt:
 component-protocol.components.issue-gantt.ganttContainer:
 component-protocol.components.issue-gantt.topHead:
 component-protocol.components.issue-gantt.issueAddButton:
+
+# requirement-task-overview
+component-protocol.components.requirement-task-overview.page:
+component-protocol.components.requirement-task-overview.distributePage:
+component-protocol.components.requirement-task-overview.topFilter:
+component-protocol.components.requirement-task-overview.container:
+component-protocol.components.requirement-task-overview.chartBlock:
+component-protocol.components.requirement-task-overview.simpleChart:
+component-protocol.components.requirement-task-overview.info:
+component-protocol.components.requirement-task-overview.burnoutChartFilter:
+component-protocol.components.requirement-task-overview.burnoutChart:
+component-protocol.components.requirement-task-overview.pageContent:
+component-protocol.components.requirement-task-overview.tabs:
+component-protocol.components.requirement-task-overview.stackChart:
+component-protocol.components.requirement-task-overview.stackChartBlock:
+component-protocol.components.requirement-task-overview.stackChartFilter:
+
+## issue-kanban
+component-protocol.components.issue-kanban.toolbar:
+component-protocol.components.issue-kanban.issueExport:
+# component-protocol.components.issue-kanban.issueFilter:
+component-protocol.components.issue-kanban.issueImport:
+component-protocol.components.issue-kanban.issueKanbanV2:
+component-protocol.components.issue-kanban.page:
+component-protocol.components.issue-kanban.issueOperations:
+component-protocol.components.issue-kanban.content:
+component-protocol.components.issue-kanban.inputFilter:
+
+## auto-test-space-list
+component-protocol.components.auto-test-space-list.filter:
+component-protocol.components.auto-test-space-list.moreButton:
+component-protocol.components.auto-test-space-list.recordDrawer:
+component-protocol.components.auto-test-space-list.recordTable:
+component-protocol.components.auto-test-space-list.refreshButton:
+component-protocol.components.auto-test-space-list.spaceAddButton:
+component-protocol.components.auto-test-space-list.spaceFormModal:
+component-protocol.components.auto-test-space-list.spaceList:
+
+# release-manage
+component-protocol.components.release-manage.releaseManage:
+component-protocol.components.release-manage.content:
+component-protocol.components.release-manage.head:
+component-protocol.components.release-manage.releaseTable:
+component-protocol.components.release-manage.inputFilter:
+component-protocol.components.release-manage.releaseFilter:
+
+## app-list-all
+component-protocol.components.app-list-all.list:
+component-protocol.components.app-list-all.filter:
+component-protocol.components.app-list-all.tabs:

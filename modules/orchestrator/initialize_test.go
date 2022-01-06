@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+
+	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 )
 
 func Test_initCron(t *testing.T) {
@@ -35,4 +37,27 @@ func Test_initCron(t *testing.T) {
 	runner.EXPECT().SyncProjects().Times(2)
 
 	initCron(runner, ctx)
+}
+
+func TestAddonsFilterIn(t *testing.T) {
+	addons := []dbclient.AddonInstance{
+		{
+			ID:        "1",
+			ProjectID: "1",
+		},
+		{
+			ID:        "2",
+			ProjectID: "1",
+		},
+		{
+			ID:        "3",
+			ProjectID: "",
+		},
+	}
+	newAddons := addonsFilterIn(addons, func(addon *dbclient.AddonInstance) bool {
+		return addon.ProjectID != ""
+	})
+	if len(newAddons) != 2 {
+		t.Error("fail")
+	}
 }

@@ -276,6 +276,10 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 				Label: cputil.I18n(ctx, "Updating"),
 				Value: WorkloadUpdating,
 			},
+			{
+				Label: cputil.I18n(ctx, "Stopped"),
+				Value: WorkloadStopped,
+			},
 		},
 	})
 
@@ -357,9 +361,7 @@ func (f *ComponentFilter) getDisplayName(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var params = make(url.Values)
-	params.Add("withQuota", "true")
-	project, err := f.bdl.GetProjectWithSetter(uint64(num), httpclient.SetParams(params))
+	project, err := f.bdl.GetProjectWithSetter(uint64(num), httpclient.SetParams(url.Values{"withQuota": {"true"}}))
 	if err != nil {
 		return "", err
 	}

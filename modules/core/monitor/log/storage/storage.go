@@ -32,6 +32,27 @@ type (
 		Value interface{}
 	}
 
+	IterateStyle int32
+
+	QueryMeta struct {
+		OrgNames              []string
+		MspEnvIds             []string
+		Highlight             bool
+		PreferredBufferSize   int
+		PreferredIterateStyle IterateStyle
+	}
+
+	UniqueId struct {
+		Timestamp int64
+		Id        string
+		Offset    int64
+	}
+
+	ResultSkip struct {
+		AfterId    *UniqueId
+		FromOffset int
+	}
+
 	// Selector .
 	Selector struct {
 		Start   int64
@@ -39,6 +60,8 @@ type (
 		Scheme  string
 		Filters []*Filter
 		Debug   bool
+		Meta    QueryMeta
+		Skip    ResultSkip
 		Options map[string]interface{}
 	}
 
@@ -49,11 +72,80 @@ type (
 	}
 )
 
+type (
+	AggregationType string
+
+	Aggregation struct {
+		*Selector
+		Aggs []*AggregationDescriptor
+	}
+
+	HistogramAggOptions struct {
+		PreferredPoints int64
+		MinimumInterval int64
+		FixedInterval   int64
+	}
+
+	TermsAggOptions struct {
+		Size    int64
+		Missing interface{}
+	}
+
+	AggregationDescriptor struct {
+		Name    string
+		Field   string
+		Typ     AggregationType
+		Options interface{}
+	}
+
+	AggregationBucket struct {
+		Key   interface{}
+		Count int64
+	}
+
+	AggregationResult struct {
+		Buckets []*AggregationBucket
+	}
+
+	AggregationResponse struct {
+		Total        int64
+		Aggregations map[string]*AggregationResult
+	}
+
+	Aggregator interface {
+		Aggregate(ctx context.Context, req *Aggregation) (*AggregationResponse, error)
+	}
+)
+
+const (
+	Default     = IterateStyle(0)
+	SearchAfter = IterateStyle(1)
+	Scroll      = IterateStyle(2)
+)
+
+const (
+	AggregationHistogram = AggregationType("histogram")
+	AggregationTerms     = AggregationType("terms")
+)
+
 const (
 	// EQ equal
 	EQ Operator = iota
 	REGEXP
+	EXPRESSION
+	CONTAINS
 )
+
+func (id *UniqueId) Raw() []interface{} {
+	if id == nil {
+		return nil
+	}
+	raw := make([]interface{}, 3)
+	raw[0] = id.Timestamp
+	raw[1] = id.Id
+	raw[2] = id.Offset
+	return raw
+}
 
 // Comparer .
 type Comparer struct{}

@@ -23,6 +23,66 @@ type WorkbenchRequest struct {
 	IssuePagingRequest
 }
 
+type WorkbenchItemType string
+
+const (
+	WorkbenchItemProj           WorkbenchItemType = "project"
+	WorkbenchItemApp            WorkbenchItemType = "app"
+	WorkbenchItemUnreadMes      WorkbenchItemType = "unreadMessages"
+	WorkbenchItemTicket         WorkbenchItemType = "tickets"
+	WorkbenchItemApproveRequest WorkbenchItemType = "approveRequest"
+	WorkbenchItemActivities     WorkbenchItemType = "activities"
+	WorkbenchItemDefault                          = WorkbenchItemProj
+)
+
+func (w WorkbenchItemType) IsEmpty() bool {
+	return string(w) == ""
+}
+
+func (w WorkbenchItemType) String() string {
+	return string(w)
+}
+
+type WorkbenchProjAppRequest struct {
+	// e.g: project/app
+	Type WorkbenchItemType `json:"type"`
+	// e.g query string
+	Query string `json:"query"`
+	PageRequest
+}
+
+type WorkbenchProjOverviewResp struct {
+	Header
+	Data WorkbenchProjOverviewRespData `json:"data"`
+}
+
+type WorkbenchProjOverviewRespData struct {
+	Total int                         `json:"total"`
+	List  []WorkbenchProjOverviewItem `json:"list"`
+}
+
+type WorkbenchProjOverviewItem struct {
+	ProjectDTO    ProjectDTO            `json:"projectDTO"`
+	IssueInfo     *ProjectIssueInfo     `json:"issueInfo"`
+	StatisticInfo *ProjectStatisticInfo `json:"statisticInfo"`
+}
+
+type ProjectIssueInfo struct {
+	TotalIssueNum       int `json:"totalIssueNum"`
+	UnSpecialIssueNum   int `json:"unSpecialIssueNum"`
+	ExpiredIssueNum     int `json:"expiredIssueNum"`
+	ExpiredOneDayNum    int `json:"expiredOneDayNum"`
+	ExpiredTomorrowNum  int `json:"expiredTomorrowNum"`
+	ExpiredSevenDayNum  int `json:"expiredSevenDayNum"`
+	ExpiredThirtyDayNum int `json:"expiredThirtyDayNum"`
+	FeatureDayNum       int `json:"featureDayNum"`
+}
+
+type ProjectStatisticInfo struct {
+	ServiceCount      int64 `json:"serviceCount,omitempty"`
+	Last24HAlertCount int64 `json:"last24hAlertCount,omitempty"`
+}
+
 type WorkbenchResponse struct {
 	Header
 	Data WorkbenchResponseData `json:"data"`
@@ -47,13 +107,24 @@ type WorkbenchProjectItem struct {
 	IssueList           []Issue    `json:"issueList"`
 }
 
+type AppWorkBenchItem struct {
+	ApplicationDTO
+	AppRuntimeNum int `json:"appRuntimeNum"`
+	AppOpenMrNum  int `json:"appMrNum"`
+}
+
+type AppWorkbenchResponseData struct {
+	TotalApps int                `json:"totalApps"`
+	List      []AppWorkBenchItem `json:"list"`
+}
+
 var StateBelongs = []IssueStateBelong{
 	IssueStateBelongOpen,
 	IssueStateBelongWorking,
 	IssueStateBelongDone,
 	IssueStateBelongWontfix,
 	IssueStateBelongReopen,
-	IssueStateBelongResloved,
+	IssueStateBelongResolved,
 	IssueStateBelongClosed,
 }
 
@@ -62,7 +133,7 @@ var UnfinishedStateBelongs = []IssueStateBelong{
 	IssueStateBelongWorking,
 	IssueStateBelongWontfix,
 	IssueStateBelongReopen,
-	IssueStateBelongResloved,
+	IssueStateBelongResolved,
 }
 
 var UnclosedStateBelongs = []IssueStateBelong{
@@ -71,5 +142,10 @@ var UnclosedStateBelongs = []IssueStateBelong{
 	IssueStateBelongDone,
 	IssueStateBelongWontfix,
 	IssueStateBelongReopen,
-	IssueStateBelongResloved,
+	IssueStateBelongResolved,
+}
+
+type WorkbenchMsgRequest struct {
+	Type WorkbenchItemType `json:"type"`
+	PageRequest
 }

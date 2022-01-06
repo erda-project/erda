@@ -209,7 +209,7 @@ func (a *ComponentAction) marshal(c *cptype.Component) error {
 	if err != nil {
 		return err
 	}
-	var props interface{}
+	var props cptype.ComponentProps
 	err = json.Unmarshal(propValue, &props)
 	if err != nil {
 		return err
@@ -230,21 +230,4 @@ func getOperations() map[string]interface{} {
 			"meta":     map[string]interface{}{"key": ""},
 		},
 	}
-}
-
-func (ca *ComponentAction) setData() error {
-	rsp, err := ca.bdl.GetPipeline(ca.pipelineIDFromExecuteTaskBreadcrumb)
-	if err != nil {
-		return err
-	}
-	lists := []Breadcrumb{}
-	for _, each := range rsp.PipelineStages {
-		list := Breadcrumb{
-			Key:  strconv.FormatUint(each.ID, 10),
-			Item: each.Name,
-		}
-		lists = append(lists, list)
-	}
-	ca.Data = map[string]interface{}{"list": lists}
-	return nil
 }

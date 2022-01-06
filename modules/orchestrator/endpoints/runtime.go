@@ -290,6 +290,26 @@ func (e *Endpoints) ListRuntimes(ctx context.Context, r *http.Request, vars map[
 	return httpserver.OkResp(data, userIDs)
 }
 
+// ListRuntimesGroupByApps responses the runtimes for the given apps.
+func (e *Endpoints) ListRuntimesGroupByApps(ctx context.Context, r *http.Request, _ map[string]string) (httpserver.Responser, error) {
+	var l = logrus.WithField("func", "*Endpoints.ListRuntimesGroupByApps")
+
+	var appIDs []uint64
+	for _, appID := range r.URL.Query()["applicationID"] {
+		id, err := strconv.ParseUint(appID, 10, 64)
+		if err != nil {
+			l.WithError(err).Warnf("failed to parse applicationID: failed to ParseUint: %s", appID)
+		}
+		appIDs = append(appIDs, id)
+	}
+
+	runtimes, err := e.runtime.ListGroupByApps(appIDs)
+	if err != nil {
+		return apierrors.ErrListRuntime.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(runtimes)
+}
+
 // GetRuntime 查询应用实例
 func (e *Endpoints) GetRuntime(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	orgID, err := getOrgID(r)
@@ -490,7 +510,7 @@ func (e *Endpoints) GetAppWorkspaceReleases(ctx context.Context, r *http.Request
 		releases, err := e.bdl.ListReleases(apistructs.ReleaseListRequest{
 			Branch:                       branch.Name,
 			CrossClusterOrSpecifyCluster: &clusterName,
-			ApplicationID:                int64(req.AppID),
+			ApplicationID:                []string{strconv.FormatUint(req.AppID, 10)},
 			PageSize:                     5,
 			PageNum:                      1,
 		})

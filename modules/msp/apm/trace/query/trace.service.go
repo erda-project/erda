@@ -85,14 +85,14 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 	spanTree := make(query.SpanTree)
 	var spans []*pb.Span
 
-	if strings.Contains(s.p.Cfg.QuerySource, "cassandra") {
+	if s.p.Cfg.QuerySource.Cassandra && s.p.cassandraSession != nil {
 		// do cassandra query
 		cassandraSpans := s.fetchSpanFromCassandra(s.p.cassandraSession.Session(), req.TraceID, req.Limit)
 		for _, span := range cassandraSpans {
 			spans = append(spans, span)
 		}
 	}
-	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") {
+	if s.p.Cfg.QuerySource.ElasticSearch && s.StorageReader != nil {
 		org := req.OrgName
 		if len(org) <= 0 {
 			org = apis.GetHeader(ctx, "org")
@@ -365,12 +365,12 @@ func calculateDepth(depth int64, span *pb.Span, spanTree query.SpanTree) int64 {
 func (s *traceService) GetSpanCount(ctx context.Context, traceID string) (int64, error) {
 	var cassandraCount, elasticsearchCount int64
 
-	if strings.Contains(s.p.Cfg.QuerySource, "cassandra") {
+	if s.p.Cfg.QuerySource.Cassandra && s.p.cassandraSession != nil {
 		// do cassandra query
 		s.p.cassandraSession.Session().Query("SELECT COUNT(trace_id) FROM spans WHERE trace_id = ?", traceID).Iter().Scan(&cassandraCount)
 	}
 
-	if strings.Contains(s.p.Cfg.QuerySource, "elasticsearch") {
+	if s.p.Cfg.QuerySource.ElasticSearch && s.StorageReader != nil {
 		// do cassandra query
 		elasticsearchCount = s.StorageReader.Count(ctx, traceID)
 	}
@@ -459,9 +459,9 @@ func (s *traceService) composeTraceQueryConditions(req *pb.GetTracesRequest) (ma
 		where.WriteString("service_names::field=$service_names AND ")
 	}
 
-	if req.DubboMethod != "" {
-		queryParams["dubbo_methods"] = structpb.NewStringValue(req.DubboMethod)
-		where.WriteString("dubbo_methods::field=$dubbo_methods AND ")
+	if req.RpcMethod != "" {
+		queryParams["rpc_methods"] = structpb.NewStringValue(req.RpcMethod)
+		where.WriteString("rpc_methods::field=$rpc_methods AND ")
 	}
 
 	if req.HttpPath != "" {

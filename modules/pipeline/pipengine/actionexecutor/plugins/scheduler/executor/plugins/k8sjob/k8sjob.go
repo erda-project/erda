@@ -17,9 +17,11 @@ package k8sjob
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -35,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/k8s/elastic/vk"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
@@ -147,16 +150,60 @@ func (k *K8sJob) Create(ctx context.Context, action *spec.PipelineTask) (data in
 	if err != nil {
 		return nil, err
 	}
-	if err = k.createNamespace(ctx, job.Namespace); err != nil {
+
+	// get cluster info
+	clusterInfo, err := logic.GetCLusterInfo(k.clusterName)
+	if err != nil {
+		return nil, errors.Errorf("failed to get cluster info, clusterName: %s, (%v)", k.clusterName, err)
+	}
+
+	var eciEnable bool
+
+	if clusterInfo[apistructs.ECIEnable] != "" {
+		eciEnable, err = strconv.ParseBool(clusterInfo[apistructs.ECIEnable])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse eci enable, err: %v", err)
+		}
+	}
+
+	if eciEnable {
+		hitRate := 100
+		if clusterInfo[apistructs.ECIHitRate] != "" {
+			hitRate, err = strconv.Atoi(clusterInfo[apistructs.ECIHitRate])
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse eci hit rate, err: %v", err)
+			}
+		}
+		if !isRateHit(hitRate) {
+			eciEnable = false
+		}
+	}
+
+	isECIContinue, err := k.dealWithNamespace(ctx, job.Namespace, clusterInfo[apistructs.CSIVendor], eciEnable)
+	if err != nil {
+		logrus.Errorf("failed to get or create ns with eci, err: %v", err)
 		return nil, err
 	}
 
-	if err := k.createImageSecretIfNotExist(job.Namespace); err != nil {
+	if isECIContinue {
+		clusterInfo[apistructs.BuildkitEnable] = "true"
+		clusterInfo[apistructs.BuildkitHitRate] = "100"
+		// enabled report log by action agent.
+		job.Env["ACTIONAGENT_ENABLE_PUSH_LOG_TO_COLLECTOR"] = "true"
+		// eci environment doesn't support mount host path.
+		job.Binds = make([]apistructs.Bind, 0)
+	} else {
+		// normal environment
+		// CSI_VENDOR will detect SC results are affected
+		delete(clusterInfo, apistructs.CSIVendor)
+	}
+
+	if err := k.createInnerSecretIfNotExist(job.Namespace, apistructs.AliyunRegistry); err != nil {
 		return nil, err
 	}
 
 	if len(job.Volumes) != 0 {
-		_, _, pvcs := logic.GenerateK8SVolumes(&job)
+		_, _, pvcs := logic.GenerateK8SVolumes(&job, clusterInfo)
 		for _, pvc := range pvcs {
 			if pvc == nil {
 				continue
@@ -175,7 +222,7 @@ func (k *K8sJob) Create(ctx context.Context, action *spec.PipelineTask) (data in
 		}
 	}
 
-	kubeJob, err := k.generateKubeJob(job)
+	kubeJob, err := k.generateKubeJob(job, clusterInfo)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create k8s job")
 	}
@@ -331,7 +378,7 @@ func (k *K8sJob) JobVolumeCreate(ctx context.Context, jobVolume apistructs.JobVo
 		return "", err
 	}
 
-	sc := logic.WhichStorageClass(jobVolume.Type)
+	sc := logic.WhichStorageClass(jobVolume.Type, "")
 	id := fmt.Sprintf("%s-%s", jobVolume.Namespace, jobVolume.Name)
 	pvc := corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -371,6 +418,45 @@ func (k *K8sJob) CreatePVCIfNotExists(ctx context.Context, pvc *corev1.Persisten
 	return nil
 }
 
+// dealWithNamespace deal with namespace, such as labels
+func (k *K8sJob) dealWithNamespace(ctx context.Context, name, vendor string, eciEnable bool) (bool, error) {
+	// get labels with cloud vendor
+	labels, err := vk.GetLabelsWithVendor(vendor)
+	if err != nil {
+		return false, err
+	}
+
+	// check namespace and get current namespace's label.
+	curNs, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if !k8serrors.IsNotFound(err) {
+			return false, fmt.Errorf("failed to get k8s namespace %s: %v", name, err)
+		}
+
+		ns := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{Name: name},
+		}
+
+		if eciEnable {
+			ns.Labels = labels
+		}
+
+		if _, err := k.client.ClientSet.CoreV1().Namespaces().
+			Create(ctx, ns, metav1.CreateOptions{}); err != nil && !k8serrors.IsAlreadyExists(err) {
+			return false, fmt.Errorf("failed to create namespace: %v", err)
+		}
+
+		return eciEnable, nil
+	}
+
+	// if labels already exit, ensure that the current namespace pipeline remains as it is.
+	if checkLabels(labels, curNs.Labels) {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 func (k *K8sJob) createNamespace(ctx context.Context, name string) error {
 	_, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
@@ -396,7 +482,7 @@ func (k *K8sJob) createNamespace(ctx context.Context, name string) error {
 	return nil
 }
 
-func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
+func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo map[string]string) (*batchv1.Job, error) {
 	job, ok := specObj.(apistructs.JobFromUser)
 	if !ok {
 		return nil, errors.New("invalid job spec")
@@ -493,10 +579,52 @@ func (k *K8sJob) generateKubeJob(specObj interface{}) (*batchv1.Job, error) {
 		container.Command = append(container.Command, []string{"sh", "-c", job.Cmd}...)
 	}
 
-	// get cluster info
-	clusterInfo, err := logic.GetCLusterInfo(k.clusterName)
-	if err != nil {
-		return nil, errors.Errorf("failed to get cluster info, clusterName: %s, (%v)", k.clusterName, err)
+	var buildkitEnable bool
+
+	if clusterInfo[apistructs.BuildkitEnable] != "" {
+		buildkitEnable, err = strconv.ParseBool(clusterInfo[apistructs.BuildkitEnable])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse buildkit enbable, err: %v", err)
+		}
+	}
+
+	if buildkitEnable {
+		delete(clusterInfo, apistructs.BuildkitEnable)
+
+		hitRate := 100
+
+		if clusterInfo[apistructs.BuildkitHitRate] != "" {
+			hitRate, err = strconv.Atoi(clusterInfo[apistructs.BuildkitHitRate])
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse buildkit hit rate, err: %v", err)
+			}
+		}
+
+		if isRateHit(hitRate) {
+			//create buildkit client secret
+			if err := k.createInnerSecretIfNotExist(job.Namespace, apistructs.BuildkitClientSecret); err != nil {
+				return nil, err
+			}
+			//Inject buildkit switch variables
+			container.Env = append(container.Env, corev1.EnvVar{
+				Name:  apistructs.BuildkitEnable,
+				Value: "true",
+			})
+
+			container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+				Name:      apistructs.BuildkitSecretMountName,
+				MountPath: apistructs.BuildkitSecretMountPath,
+			})
+
+			kubeJob.Spec.Template.Spec.Volumes = append(kubeJob.Spec.Template.Spec.Volumes, corev1.Volume{
+				Name: apistructs.BuildkitSecretMountName,
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: apistructs.BuildkitClientSecret,
+					},
+				},
+			})
+		}
 	}
 
 	// envs
@@ -776,10 +904,10 @@ func parseFailedReason(message string) (string, error) {
 	}
 }
 
-func (k *K8sJob) createImageSecretIfNotExist(namespace string) error {
+func (k *K8sJob) createInnerSecretIfNotExist(namespace, secretName string) error {
 	var err error
 
-	if _, err = k.client.ClientSet.CoreV1().Secrets(namespace).Get(context.Background(), apistructs.AliyunRegistry, metav1.GetOptions{}); err == nil {
+	if _, err = k.client.ClientSet.CoreV1().Secrets(namespace).Get(context.Background(), secretName, metav1.GetOptions{}); err == nil {
 		return nil
 	}
 
@@ -788,7 +916,7 @@ func (k *K8sJob) createImageSecretIfNotExist(namespace string) error {
 	}
 
 	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
-	s, err := k.client.ClientSet.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), apistructs.AliyunRegistry, metav1.GetOptions{})
+	s, err := k.client.ClientSet.CoreV1().Secrets(metav1.NamespaceDefault).Get(context.Background(), secretName, metav1.GetOptions{})
 	if err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return nil
@@ -889,4 +1017,24 @@ func generateKubeJobStatus(job *batchv1.Job, jobpods *corev1.PodList, lastMsg st
 
 func makeJobName(namespace string, taskUUID string) string {
 	return strutil.Concat(namespace, ".", taskUUID)
+}
+
+func isRateHit(hitRate int) bool {
+	rand.Seed(time.Now().UnixNano())
+	if rand.Intn(100) < hitRate {
+		return true
+	}
+	return false
+}
+
+func checkLabels(source, target map[string]string) bool {
+	if len(source) == 0 {
+		return false
+	}
+	for k := range source {
+		if _, ok := target[k]; !ok {
+			return false
+		}
+	}
+	return true
 }

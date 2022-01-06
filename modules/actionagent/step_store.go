@@ -15,6 +15,7 @@
 package actionagent
 
 import (
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 
@@ -57,12 +58,27 @@ func (agent *Agent) store() {
 				logrus.Printf("upload action cache error: %s is not dir", out.Labels[pvolumes.TaskCachePath])
 				continue
 			}
-			if err := agenttool.Tar(tarFile, out.Labels[pvolumes.TaskCachePath]); err != nil {
-				logrus.Printf("StoreTypeDiceCacheNFS tar error: %v", err)
+			if err := agent.storeCache(tarFile, out.Labels[pvolumes.TaskCachePath]); err != nil {
+				logrus.Debugf("failed to tar cache path: %s to file: %s, err: %v", out.Labels[pvolumes.TaskCachePath], tarFile, err)
+				continue
 			}
 			logrus.Printf("upload action cache %s success", out.Labels[pvolumes.TaskCachePath])
 		default:
 			agent.AppendError(errors.Errorf("[store] unsupported store type: %s", out.Type))
 		}
 	}
+}
+
+func (agent *Agent) storeCache(tarFile, cachePath string) (err error) {
+	tmpFile, err := ioutil.TempFile(cacheTempDir, cacheTempPrefix)
+	if err != nil {
+		return err
+	}
+	if err = agenttool.Tar(tmpFile.Name(), cachePath); err != nil {
+		return err
+	}
+	if err = agenttool.Mv(tmpFile.Name(), tarFile); err != nil {
+		return err
+	}
+	return nil
 }

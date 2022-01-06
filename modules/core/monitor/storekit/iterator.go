@@ -15,6 +15,7 @@
 package storekit
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/recallsong/go-utils/conv"
@@ -43,6 +44,9 @@ func (it EmptyIterator) Error() error { return nil }
 
 // Close .
 func (it EmptyIterator) Close() error { return nil }
+
+// Total .
+func (it EmptyIterator) Total() (int64, error) { return 0, nil }
 
 // Int64Comparer .
 type Int64Comparer struct{}
@@ -126,6 +130,11 @@ func (it *ListIterator) Error() error { return nil }
 
 // Close .
 func (it *ListIterator) Close() error { return nil }
+
+// Total .
+func (it *ListIterator) Total() (int64, error) {
+	return int64(len(it.list)), nil
+}
 
 // MergedHeadOverlappedIterator .
 func MergedHeadOverlappedIterator(cmp Comparer, its ...Iterator) Iterator {
@@ -290,6 +299,160 @@ loop:
 func (it *headOverlappedIterator) Value() Data  { return it.data }
 func (it *headOverlappedIterator) Error() error { return it.err }
 func (it *headOverlappedIterator) Close() error {
+	var err error
+	for _, iter := range it.its {
+		if e := iter.Close(); e != nil {
+			err = e
+		}
+	}
+	return err
+}
+
+func (it *headOverlappedIterator) Total() (int64, error) {
+	var total int64
+	for _, item := range it.its {
+		counter, ok := item.Iterator.(Counter)
+		if !ok {
+			return total, fmt.Errorf("%T not implement %T", item, counter)
+		}
+		count, err := counter.Total()
+		if err != nil {
+			return total, err
+		}
+		total += count
+	}
+	return total, nil
+}
+
+type orderedIterator struct {
+	its  []*iteratorItem
+	cur  *iteratorItem
+	idx  int
+	data Data
+
+	err  error
+	next bool
+	prev bool
+}
+
+// OrderedIterator .
+func OrderedIterator(its ...Iterator) Iterator {
+	if len(its) <= 0 {
+		return EmptyIterator{}
+	}
+	items := make([]*iteratorItem, len(its), len(its))
+	for i, it := range its {
+		items[i] = &iteratorItem{
+			Iterator: it,
+		}
+	}
+	return &orderedIterator{
+		its: items,
+	}
+}
+
+func (it *orderedIterator) First() bool {
+	if it.err != nil {
+		return false
+	}
+	// TODO: implement
+	it.err = ErrOpNotSupported
+	return false
+}
+
+func (it *orderedIterator) Last() bool {
+	if it.err != nil {
+		return false
+	}
+	// TODO: implement
+	it.err = ErrOpNotSupported
+	return false
+}
+
+// Next Iterate from the first iterator to last iterator
+func (it *orderedIterator) Next() bool {
+	if it.err != nil {
+		return false
+	}
+	if it.prev {
+		it.err = ErrOpNotSupported
+		return false
+	}
+	it.next = true
+
+	if len(it.its) == 0 {
+		return false
+	} else if it.cur == nil {
+		it.idx = 0
+		it.cur = it.its[it.idx]
+	} else if it.idx >= len(it.its) {
+		return false
+	}
+	for {
+		if !it.cur.Next() {
+			if it.cur.Error() != nil {
+				it.err = it.cur.Error()
+				break
+			}
+			it.idx++
+			if it.idx < len(it.its) {
+				it.cur = it.its[it.idx]
+				continue
+			}
+			break
+		}
+		it.data = it.cur.Value()
+		return true
+	}
+	it.data = nil
+	return false
+}
+
+// Prev Iterate from the last iterator to first iterator
+func (it *orderedIterator) Prev() bool {
+	if it.next {
+		it.err = ErrOpNotSupported
+		return false
+	}
+	it.prev = true
+
+	if len(it.its) == 0 {
+		return false
+	} else if it.cur == nil {
+		it.idx = len(it.its) - 1
+		it.cur = it.its[it.idx]
+	} else if it.idx < 0 {
+		return false
+	}
+	for {
+		if !it.cur.Prev() {
+			if it.cur.Error() != nil {
+				it.err = it.cur.Error()
+				break
+			}
+			it.idx--
+			if it.idx >= 0 {
+				it.cur = it.its[it.idx]
+				continue
+			}
+			break
+		}
+		it.data = it.cur.Value()
+		return true
+	}
+	it.data = nil
+	return false
+}
+
+func (it *orderedIterator) Value() Data {
+	return it.data
+}
+
+func (it *orderedIterator) Error() error {
+	return it.err
+}
+
+func (it *orderedIterator) Close() error {
 	var err error
 	for _, iter := range it.its {
 		if e := iter.Close(); e != nil {

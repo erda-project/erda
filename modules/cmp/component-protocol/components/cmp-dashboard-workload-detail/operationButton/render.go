@@ -18,17 +18,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/modules/cmp"
+	cputil2 "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
+	cmpTypes "github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/steve"
+	"github.com/erda-project/erda/modules/cmp/steve/middleware"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -59,6 +68,10 @@ func (b *ComponentOperationButton) Render(ctx context.Context, component *cptype
 	switch event.Operation {
 	case "checkYaml":
 		(*gs)["drawerOpen"] = true
+	case "restart":
+		if err := b.RestartWorkload(); err != nil {
+			return errors.Errorf("failed to restart workload, %v", err)
+		}
 	case "delete":
 		if err := b.DeleteWorkload(); err != nil {
 			return errors.Errorf("failed to delete workload, %v", err)
@@ -72,6 +85,8 @@ func (b *ComponentOperationButton) Render(ctx context.Context, component *cptype
 
 func (b *ComponentOperationButton) InitComponent(ctx context.Context) {
 	b.ctx = ctx
+	bdl := ctx.Value(cmpTypes.GlobalCtxKeyBundle).(*bundle.Bundle)
+	b.bdl = bdl
 	sdk := cputil.SDK(ctx)
 	b.sdk = sdk
 	b.server = steveServer
@@ -94,6 +109,13 @@ func (b *ComponentOperationButton) GenComponentState(component *cptype.Component
 }
 
 func (b *ComponentOperationButton) SetComponentValue() {
+	splits := strings.Split(b.State.WorkloadID, "_")
+	if len(splits) != 3 {
+		logrus.Errorf("invalid workload id, %s", b.State.WorkloadID)
+		return
+	}
+	kind, namespace, name := splits[0], splits[1], splits[2]
+
 	b.Props.Text = b.sdk.I18n("moreOperations")
 	b.Props.Type = "primary"
 	b.Props.Menu = []Menu{
@@ -108,7 +130,26 @@ func (b *ComponentOperationButton) SetComponentValue() {
 			},
 		},
 	}
-	clickOperation := Operation{
+
+	restartOperation := Operation{
+		Key:        "restart",
+		Reload:     true,
+		SuccessMsg: b.sdk.I18n("restartWorkloadSuccessfully"),
+		Confirm:    b.sdk.I18n("confirmRestart"),
+	}
+	restartMenu := Menu{
+		Key:        "restart",
+		Text:       b.sdk.I18n("restart"),
+		Operations: map[string]interface{}{},
+	}
+	if kind == string(apistructs.K8SJob) || kind == string(apistructs.K8SCronJob) {
+		restartOperation.Disabled = true
+		restartOperation.DisabledTip = b.sdk.I18n("cannotRestart")
+	}
+	restartMenu.Operations["click"] = restartOperation
+	b.Props.Menu = append(b.Props.Menu, restartMenu)
+
+	deleteOperation := Operation{
 		Key:        "delete",
 		Reload:     true,
 		SuccessMsg: b.sdk.I18n("deletedWorkloadSuccessfully"),
@@ -129,18 +170,11 @@ func (b *ComponentOperationButton) SetComponentValue() {
 		Operations: map[string]interface{}{},
 	}
 
-	splits := strings.Split(b.State.WorkloadID, "_")
-	if len(splits) != 3 {
-		logrus.Errorf("invalid workload id, %s", b.State.WorkloadID)
-		return
-	}
-	kind, namespace, name := splits[0], splits[1], splits[2]
-
 	if namespace == "kube-system" || namespace == "erda-system" || b.isSystemWorkload(kind, namespace, name) {
-		clickOperation.Disabled = true
-		clickOperation.DisabledTip = b.sdk.I18n("canNotDeleteSystemWorkload")
+		deleteOperation.Disabled = true
+		deleteOperation.DisabledTip = b.sdk.I18n("canNotDeleteSystemWorkload")
 	}
-	deleteMenu.Operations["click"] = clickOperation
+	deleteMenu.Operations["click"] = deleteOperation
 	b.Props.Menu = append(b.Props.Menu, deleteMenu)
 }
 
@@ -188,6 +222,100 @@ func (b *ComponentOperationButton) isSystemWorkload(kind, namespace, name string
 	return false
 }
 
+func (b *ComponentOperationButton) RestartWorkload() error {
+	splits := strings.Split(b.State.WorkloadID, "_")
+	if len(splits) != 3 {
+		return errors.Errorf("invalid workload id, %s", b.State.WorkloadID)
+	}
+
+	kind, namespace, name := splits[0], splits[1], splits[2]
+	if kind != string(apistructs.K8SDeployment) && kind != string(apistructs.K8SStatefulSet) &&
+		kind != string(apistructs.K8SDaemonSet) {
+		return errors.Errorf("invalid workload kind %s (only deployment, statefulSet and daemonSet can be restarted)", kind)
+	}
+
+	userID := b.sdk.Identity.UserID
+	orgID := b.sdk.Identity.OrgID
+	clusterName := b.State.ClusterName
+	scopeID, err := strconv.ParseUint(orgID, 10, 64)
+	if err != nil {
+		return apierrors.ErrInvoke.InvalidParameter(fmt.Errorf("invalid org id %s, %v", orgID, err))
+	}
+
+	if err := b.restartWorkload(userID, orgID, clusterName, kind, namespace, name); err != nil {
+		return err
+	}
+
+	steve.RemoveCache(clusterName, namespace, string(apistructs.K8SPod))
+
+	auditCtx := map[string]interface{}{
+		middleware.AuditClusterName:  clusterName,
+		middleware.AuditResourceName: name,
+		middleware.AuditNamespace:    namespace,
+		middleware.AuditResourceType: kind,
+	}
+
+	now := strconv.FormatInt(time.Now().Unix(), 10)
+	if err := b.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{
+		Audit: apistructs.Audit{
+			UserID:       userID,
+			ScopeType:    apistructs.OrgScope,
+			ScopeID:      scopeID,
+			OrgID:        scopeID,
+			Context:      auditCtx,
+			TemplateName: middleware.AuditRestartWorkload,
+			Result:       "success",
+			StartTime:    now,
+			EndTime:      now,
+		},
+	}); err != nil {
+		logrus.Errorf("failed to audit for restarting workload, %v", err)
+	}
+	return nil
+}
+
+func (b *ComponentOperationButton) restartWorkload(userID, orgID, clusterName, kind, namespace, name string) error {
+	client, err := cputil2.GetImpersonateClient(b.server, userID, orgID, clusterName)
+	if err != nil {
+		return errors.Errorf("failed to get k8s client, %v", err)
+	}
+
+	patchBody := map[string]interface{}{
+		"spec": map[string]interface{}{
+			"template": map[string]interface{}{
+				"metadata": map[string]interface{}{
+					"annotations": map[string]interface{}{
+						"kubectl.kubernetes.io/restartedAt": time.Now().Format("2006-01-02T15:04:05+07:00"),
+					},
+				},
+			},
+		},
+	}
+
+	data, err := json.Marshal(patchBody)
+	if err != nil {
+		return errors.Errorf("failed to marshal body, %v", err)
+	}
+
+	switch kind {
+	case string(apistructs.K8SDeployment):
+		_, err = client.ClientSet.AppsV1().Deployments(namespace).Patch(b.ctx, name, types.StrategicMergePatchType, data, v1.PatchOptions{})
+	case string(apistructs.K8SStatefulSet):
+		_, err = client.ClientSet.AppsV1().StatefulSets(namespace).Patch(b.ctx, name, types.StrategicMergePatchType, data, v1.PatchOptions{})
+	case string(apistructs.K8SDaemonSet):
+		_, err = client.ClientSet.AppsV1().DaemonSets(namespace).Patch(b.ctx, name, types.StrategicMergePatchType, data, v1.PatchOptions{})
+	default:
+		return errors.Errorf("invalid workload kind %s (only deployment, statefulSet and daemonSet can be restarted)", kind)
+	}
+	if err != nil {
+		return err
+	}
+
+	steve.RemoveCache(b.State.ClusterName, "", kind)
+	steve.RemoveCache(b.State.ClusterName, namespace, kind)
+	return nil
+}
+
 func (b *ComponentOperationButton) DeleteWorkload() error {
 	splits := strings.Split(b.State.WorkloadID, "_")
 	if len(splits) != 3 {
@@ -212,7 +340,7 @@ func (b *ComponentOperationButton) DeleteWorkload() error {
 }
 
 func (b *ComponentOperationButton) Transfer(c *cptype.Component) {
-	c.Props = b.Props
+	c.Props = cputil.MustConvertProps(b.Props)
 	c.State = map[string]interface{}{
 		"clusterName": b.State.ClusterName,
 		"workloadId":  b.State.WorkloadID,

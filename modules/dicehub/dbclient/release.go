@@ -35,8 +35,20 @@ type Release struct {
 	Dice string `json:"dice" gorm:"type:text"` // dice.yml
 	// Addon 资源类型为addonyml时，存储addon.yml内容，选填
 	Addon string `json:"addon" gorm:"type:text"`
+	// Changelog changelog，选填
+	Changelog string `json:"changelog" gorm:"type:text"`
+	// IsStable stable表示非临时制品
+	IsStable bool `json:"isStable" gorm:"type:tinyint(1)"`
+	// IsFormal 是否为正式版
+	IsFormal bool `json:"isFormal" gorm:"type:tinyint(1)"`
+	// IsProjectRelease 是否为项目级别制品
+	IsProjectRelease bool `json:"IsProjectRelease" gorm:"type:tinyint(1)"`
+	// ApplicationReleaseList 项目级别制品依赖哪些应用级别制品
+	ApplicationReleaseList string `json:"applicationReleaseList" gorm:"type:text"`
 	// Labels 用于release分类，描述release类别，map类型, 最大长度1000, 选填
 	Labels string `json:"labels" gorm:"type:varchar(1000)"`
+	// Tags
+	Tags string `json:"tags" gorm:"type:varchar(100)"`
 	// Version 存储release版本信息, 同一企业同一项目同一应用下唯一，最大长度100，选填
 	Version string `json:"version" gorm:"type:varchar(100)"` // 版本，打标签的Release不可删除
 	// OrgID 企业标识符，描述release所属企业，选填
@@ -97,20 +109,32 @@ func (client *DBClient) GetRelease(releaseID string) (*Release, error) {
 	return &release, nil
 }
 
+// GetReleases list releases by release ids
+func (client *DBClient) GetReleases(releaseIDs []string) ([]Release, error) {
+	var releases []Release
+	if err := client.Where("release_id in (?)", releaseIDs).Find(&releases).Error; err != nil {
+		return nil, err
+	}
+	return releases, nil
+}
+
 // GetReleasesByParams 根据参数过滤Release
 func (client *DBClient) GetReleasesByParams(
-	orgID, projectID, applicationID int64,
-	keyword, releaseName, branch,
+	orgID, projectID int64, applicationID []string,
+	keyword, releaseName, branch string,
+	isStable, isFormal, isProjectRelease *bool,
+	userID []string, version string, commitID, tags,
 	cluster string, crossCluster *bool, isVersion bool, crossClusterOrSpecifyCluster *string,
-	startTime, endTime time.Time, pageNum, pageSize int64) (int64, []Release, error) {
+	startTime, endTime, pageNum, pageSize int64,
+	orderBy, order string) (int64, []Release, error) {
 
 	var releases []Release
 	db := client.DB.Debug()
 	if orgID > 0 {
 		db = db.Where("org_id = ?", orgID)
 	}
-	if applicationID > 0 {
-		db = db.Where("application_id = ?", applicationID)
+	if len(applicationID) > 0 {
+		db = db.Where("application_id in (?)", applicationID)
 	}
 
 	if projectID > 0 {
@@ -139,18 +163,56 @@ func (client *DBClient) GetReleasesByParams(
 		db = db.Where("labels LIKE ?", "%"+fmt.Sprintf("\"gitBranch\":\"%s\"", branch)+"%")
 	}
 
-	if !startTime.IsZero() {
-		db = db.Where("created_at > ?", startTime)
+	if isStable != nil {
+		db = db.Where("is_stable = ?", isStable)
 	}
 
-	if err := db.Where("created_at <= ?", endTime).Order("created_at DESC").Offset((pageNum - 1) * pageSize).
+	if isProjectRelease != nil {
+		db = db.Where("is_project_release = ?", isProjectRelease)
+	}
+
+	if isFormal != nil {
+		db = db.Where("is_formal = ?", *isFormal)
+	}
+
+	if len(userID) > 0 {
+		db = db.Where("user_id in (?)", userID)
+	}
+
+	if version != "" {
+		db = db.Where("version LIKE ?", fmt.Sprintf("%%%s%%", version))
+	}
+
+	if commitID != "" {
+		db = db.Where("labels LIKE ?", fmt.Sprintf("%%\"gitCommitId\":\"%s\"%%", commitID))
+	}
+
+	if tags != "" {
+		db = db.Where("tags = ?", tags)
+	}
+
+	if startTime > 0 {
+		db = db.Where("created_at > ?", startTime/1000)
+	}
+
+	if endTime > 0 {
+		db = db.Where("created_at <= ?", endTime/1000)
+	}
+
+	if orderBy != "" {
+		db = db.Order(orderBy + " " + order)
+	} else {
+		db = db.Order("created_at DESC")
+	}
+
+	if err := db.Offset((pageNum - 1) * pageSize).
 		Limit(pageSize).Find(&releases).Error; err != nil {
 		return 0, nil, err
 	}
 
 	// 获取匹配搜索结果总量
 	var total int64
-	if err := db.Where("created_at <= ?", endTime).Model(&Release{}).Count(&total).Error; err != nil {
+	if err := db.Model(&Release{}).Count(&total).Error; err != nil {
 		return 0, nil, err
 	}
 
@@ -163,6 +225,18 @@ func (client *DBClient) GetReleasesByAppAndVersion(orgID, projectID, appID int64
 	if err := client.Where("org_id = ?", orgID).
 		Where("project_id = ?", projectID).
 		Where("application_id = ?", appID).
+		Where("version = ?", version).
+		Find(&releases).Error; err != nil {
+		return nil, err
+	}
+	return releases, nil
+}
+
+// GetReleasesByProjectAndVersion 根据 projectID & version获取 Release列表
+func (client *DBClient) GetReleasesByProjectAndVersion(orgID, projectID int64, version string) ([]Release, error) {
+	var releases []Release
+	if err := client.Where("org_id = ?", orgID).
+		Where("project_id = ?", projectID).
 		Where("version = ?", version).
 		Find(&releases).Error; err != nil {
 		return nil, err
@@ -215,10 +289,10 @@ func (client *DBClient) GetLatestReleaseByAppAndVersion(appID int64, version str
 	return &release, nil
 }
 
-// GetUnReferedReleasesBefore 获取给定时间点前未引用的 Release
+// GetUnReferedReleasesBefore 获取给定时间点前未引用的临时 Release
 func (client *DBClient) GetUnReferedReleasesBefore(before time.Time) ([]Release, error) {
 	var releases []Release
-	if err := client.Where("reference <= ?", 0).Where("updated_at < ?", before).
+	if err := client.Where("reference <= ?", 0).Where("is_stable = ?", false).Where("updated_at < ?", before).
 		Order("updated_at").Find(&releases).Error; err != nil {
 		return nil, err
 	}

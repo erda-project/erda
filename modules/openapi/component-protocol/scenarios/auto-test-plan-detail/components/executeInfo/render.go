@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/autotest"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/gshelper"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/types"
 )
 
@@ -90,6 +91,7 @@ func (i *ComponentFileInfo) RenderProtocol(c *apistructs.Component, g *apistruct
 }
 
 func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component, _ apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) (err error) {
+	gh := gshelper.NewGSHelper(gs)
 	if err := i.Import(c); err != nil {
 		logrus.Errorf("import component failed, err:%v", err)
 		return err
@@ -105,9 +107,9 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 	}()
 	env := apistructs.PipelineReport{}
 	if i.State.PipelineID > 0 {
-		rsp, err := i.CtxBdl.Bdl.GetPipeline(i.State.PipelineID)
-		if err != nil {
-			return err
+		rsp := gh.GetPipelineInfoWithPipelineID(i.State.PipelineID, i.CtxBdl.Bdl)
+		if rsp == nil {
+			return fmt.Errorf("not find pipelineID %v info", i.State.PipelineID)
 		}
 		i.State.PipelineDetail = rsp
 		if rsp.TimeBegin != nil && (rsp.TimeEnd != nil || rsp.TimeUpdated != nil) && rsp.Status.IsEndStatus() {
@@ -146,7 +148,6 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 		if rsp.Status == apistructs.PipelineStatusNoNeedBySystem {
 			i.Data["status"] = "无需执行"
 		}
-
 		reports, err := i.CtxBdl.Bdl.GetPipelineReportSet(i.State.PipelineID, []string{
 			string(apistructs.PipelineReportTypeAPITest),
 			string(apistructs.PipelineReportTypeAutotestPlan),
@@ -168,7 +169,6 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 				i.State.EnvName = getApiConfigName(env)
 			}
 		}
-
 		execHistory, err := i.CtxBdl.Bdl.GetAutoTestExecHistory(i.State.PipelineID)
 		if err != nil {
 			i.Data["autoTestExecPercent"] = "-"

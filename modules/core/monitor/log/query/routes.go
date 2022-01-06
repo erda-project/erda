@@ -114,6 +114,7 @@ func (p *provider) downloadLog(w http.ResponseWriter, r *http.Request, req *LogR
 					Value: req.ApplicationID,
 				})
 			}
+			p.logQueryService.tryFillQueryMeta(r.Context(), sel, r.Header.Get("org"))
 			return sel, nil
 		},
 		func(item *pb.LogItem) error {
@@ -154,7 +155,7 @@ func (p *provider) downloadOrgLog(w http.ResponseWriter, r *http.Request, req *L
 	return p.downloadLog(w, r, req)
 }
 
-func getFilename(req Request) string {
+func getFilename(req ByContainerIdRequest) string {
 	if len(req.GetRequestId()) > 0 {
 		return fmt.Sprintf("%s-%d-%d.log", req.GetRequestId(), req.GetStart(), req.GetEnd())
 	}

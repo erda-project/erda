@@ -29,6 +29,7 @@ elasticsearch@logs:
     password: "${LOGS_ES_SECURITY_USERNAME}"
 
 logs-exporter-elasticsearch:
+    disabled: ${WRITE_LOG_TO_ES_ENABLE:true}
     index:
         prefix: "${INDEX_PREFIX:rlogs-}"
     writer_config:

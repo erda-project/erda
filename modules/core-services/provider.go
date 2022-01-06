@@ -20,13 +20,14 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	"github.com/erda-project/erda/modules/core-services/providers/errorbox"
 )
 
 type provider struct {
-	Cms    cmspb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
-	Tran   i18n.Translator        `translator:"i18n"`
-	Router httpserver.Router      `autowired:"http-router"`
+	Tran          i18n.Translator           `translator:"i18n"`
+	Router        httpserver.Router         `autowired:"http-router"`
+	ErrorBoxSvc   *errorbox.ErrorBoxService `autowired:"erda.core.services.errorbox.ErrorBoxService"`
+	ResourceTrans i18n.Translator           `translator:"resource-trans"`
 }
 
 func (p *provider) Run(ctx context.Context) error { return p.Initialize() }

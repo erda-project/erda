@@ -106,7 +106,7 @@ func TestGetModelProjectsMap(t *testing.T) {
 
 	p := &Project{}
 	projectIDs := []uint64{1, 2, 3}
-	projectMap, err := p.GetModelProjectsMap(projectIDs)
+	projectMap, err := p.GetModelProjectsMap(projectIDs, false)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(projectMap))
 }
@@ -396,38 +396,18 @@ func Test_defaultResourceConfig(t *testing.T) {
 	}
 }
 
-// TODO We need to turn this ut on after adding the delete portal to the UI
-// func TestDeleteProjectWhenAddonExists(t *testing.T) {
-// 	db := &dao.DBClient{}
-// 	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetApplicationCountByProjectID",
-// 		func(*dao.DBClient, int64) (int64, error) {
-// 			return 0, nil
-// 		})
-// 	defer monkey.UnpatchAll()
-
-// 	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetProjectByID",
-// 		func(*dao.DBClient, int64) (model.Project, error) {
-// 			return model.Project{}, nil
-// 		})
-
-// 	bdl := &bundle.Bundle{}
-// 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListAddonByProjectID",
-// 		func(*bundle.Bundle, int64, int64) (*apistructs.AddonListResponse, error) {
-// 			return &apistructs.AddonListResponse{
-// 				Header: apistructs.Header{},
-// 				Data: []apistructs.AddonFetchResponseData{
-// 					{
-// 						ID: "1",
-// 					},
-// 				},
-// 			}, nil
-// 		})
-// 	p := &Project{}
-// 	_, err := p.Delete(1)
-// 	if err == nil {
-// 		assert.Fail(t, "fail")
-// 		return
-// 	}
-// 	assert.Equal(t, "failed to delete project(there exists addons)", err.Error())
-
-// }
+func TestListUnblockAppCountsByProjectIDS(t *testing.T) {
+	db := &dao.DBClient{}
+	m := monkey.PatchInstanceMethod(reflect.TypeOf(db), "ListUnblockAppCountsByProjectIDS",
+		func(db *dao.DBClient, projectIDS []uint64) ([]model.ProjectUnblockAppCount, error) {
+			return []model.ProjectUnblockAppCount{{ProjectID: 1, UnblockAppCount: 1}}, nil
+		})
+	defer m.Unpatch()
+	p := Project{db: db}
+	emptyCounts, err := p.ListUnblockAppCountsByProjectIDS([]uint64{})
+	assert.NoError(t, err)
+	assert.Equal(t, []model.ProjectUnblockAppCount(nil), emptyCounts)
+	counts, err := p.ListUnblockAppCountsByProjectIDS([]uint64{1})
+	assert.NoError(t, err)
+	assert.Equal(t, counts[0].UnblockAppCount, int64(1))
+}

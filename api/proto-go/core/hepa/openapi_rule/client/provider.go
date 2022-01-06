@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.hepa.openapi_rule-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.hepa.openapi_rule.OpenapiRuleService",
+			"erda.core.hepa.openapi_rule.OpenapiRuleService.client",
 			"erda.core.hepa.openapi_rule-client",
 		},
 		Types: []reflect.Type{

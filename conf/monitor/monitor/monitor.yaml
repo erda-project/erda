@@ -14,14 +14,14 @@ elasticsearch:
   username: "${ES_SECURITY_USERNAME}"
   password: "${ES_SECURITY_PASSWORD}"
 
-elasticsearch@logs:
-  urls: "${LOGS_ES_URL:http://localhost:9200}"
-  security: ${LOGS_ES_SECURITY_ENABLE:false}
-  username: "${LOGS_ES_SECURITY_USERNAME}"
-  password: "${LOGS_ES_SECURITY_PASSWORD}"
+#elasticsearch@logs:
+#  urls: "${LOGS_ES_URL:http://localhost:9200}"
+#  security: ${LOGS_ES_SECURITY_ENABLE:false}
+#  username: "${LOGS_ES_SECURITY_USERNAME}"
+#  password: "${LOGS_ES_SECURITY_PASSWORD}"
 
 cassandra:
-  _enable: ${CASSANDRA_ENABLE:true}
+  _enable: ${CASSANDRA_ENABLE:false}
   host: "${CASSANDRA_ADDR:localhost:9042}"
   security: ${CASSANDRA_SECURITY_ENABLE:false}
   username: ${CASSANDRA_SECURITY_USERNAME}
@@ -62,7 +62,7 @@ elasticsearch@log:
   username: "${LOG_ELASTICSEARCH_SECURITY_USERNAME}"
   password: "${LOG_ELASTICSEARCH_SECURITY_PASSWORD}"
 elasticsearch.index.loader@log:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
   load_mode: "LoadWithCache"
   index_reload_interval: "1m"
   query_index_time_range: true
@@ -74,16 +74,16 @@ elasticsearch.index.loader@log:
         - "<org>-{number}"
         - "<org>.<key>-{number}"
 storage-retention-strategy@log:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
   default_ttl: "${LOG_TTL:168h}"
   load_from_database: true
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@log:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
   key_patterns:
     - "erda-logs-<org>.<key>-{number}"
 elasticsearch.index.cleaner@log:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
   check_interval: "30m"
   disk_clean:
     enable: ${LOG_DISK_CLEAN_ENABLE:true}
@@ -99,7 +99,7 @@ elasticsearch.index.cleaner@log:
       - index: "erda-logs-<org>.<key>-{number}"
         alias: "erda-logs-<org>.<key>-rollover"
 log-storage-elasticsearch:
-  _enable: ${QUERY_LOG_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_LOG_FROM_ES_ENABLE:true}
   query_timeout: "1m"
   read_page_size: 200
 kubernetes-logs-storage:
@@ -110,7 +110,7 @@ kubernetes-logs-storage:
   pod_info_cache_expiration: "3h"
   buffer_lines: 200
 log-storage-cassandra:
-  _enable: ${QUERY_LOG_FROM_CASSANDRA_ENABLE:true}
+  _enable: ${QUERY_LOG_FROM_CASSANDRA_ENABLE:false}
   read_page_size: 201
   cassandra:
     keyspace:
@@ -125,7 +125,7 @@ elasticsearch@event:
   username: "${EVENT_ELASTICSEARCH_SECURITY_USERNAME}"
   password: "${EVENT_ELASTICSEARCH_SECURITY_PASSWORD}"
 elasticsearch.index.loader@event:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
   load_mode: "LoadWithCache"
   index_reload_interval: "1m"
   query_index_time_range: true
@@ -136,16 +136,16 @@ elasticsearch.index.loader@event:
         - "<event>-<namespace>-{number}"
         - "<event>-<namespace>.<key>-{number}"
 storage-retention-strategy@event:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
   default_ttl: "${EVENT_TTL:168h}"
   load_from_database: false
   ttl_reload_interval: "3m"
 elasticsearch.index.retention-strategy@event:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
   key_patterns:
     - "erda-events-<event>-<namespace>.<key>-{number}"
 elasticsearch.index.cleaner@event:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
   check_interval: "30m"
   disk_clean:
     enable: ${EVENT_DISK_CLEAN_ENABLE:true}
@@ -161,7 +161,7 @@ elasticsearch.index.cleaner@event:
       - index: "erda-events-<event>-<namespace>.<key>-{number}"
         alias: "erda-events-<event>-<namespace>.<key>-rollover"
 event-storage-elasticsearch:
-  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:false}
+  _enable: ${QUERY_EVENT_FROM_ES_ENABLE:true}
   query_timeout: "1m"
   read_page_size: 50
 erda.core.monitor.event.query:
@@ -244,10 +244,10 @@ erda.oap.entity:
 
 erda.core.monitor.alertdetail:
 
-logs-index-query:
-  query_back_es: ${LOGS_QUERY_BACK_ES:false}
-  index_field_settings:
-    file: ${CONFIG_PATH}/logs/default_field_settings.yml
+#logs-index-query:
+#  query_back_es: ${LOGS_QUERY_BACK_ES:false}
+#  index_field_settings:
+#    file: ${CONFIG_PATH}/logs/default_field_settings.yml
 log-metric-rules:
 node-topo:
 #apm providers
@@ -264,6 +264,7 @@ erda.core.monitor.alert:
   silence_policy: "${SILENCE_POLICY:fixed,doubled}"
   alert_conditions: "${CONFIG_PATH}/alert/trigger_conditions.yaml"
   cassandra:
+    enabled: ${QUERY_EVENT_FROM_CASSANDRA_ENABLE:false}
     session:
       keyspace:
         name: "spot_prod"
@@ -325,3 +326,7 @@ monitor-monitoring:
 grpc-client@erda.core.services.notify.channel:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.services.notify.channel-client:
+
+erda.core.monitor.expression:
+  alert_rules: ${CONFIG_PATH}/alert/rules
+  metric_rules: ${CONFIG_PATH}/analyzer/metrics

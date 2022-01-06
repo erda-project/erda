@@ -32,22 +32,9 @@ const (
 	IssueStateBelongDone     IssueStateBelong = "DONE"     // 已完成
 	IssueStateBelongWontfix  IssueStateBelong = "WONTFIX"  // 无需修复
 	IssueStateBelongReopen   IssueStateBelong = "REOPEN"   // 重新打开
-	IssueStateBelongResloved IssueStateBelong = "RESOLVED" // 已解决
+	IssueStateBelongResolved IssueStateBelong = "RESOLVED" // 已解决
 	IssueStateBelongClosed   IssueStateBelong = "CLOSED"   // 已关闭
 )
-
-func (s IssueStateBelong) GetFrontEndStatus() string {
-	switch s {
-	case IssueStateBelongOpen:
-		return "warning"
-	case IssueStateBelongWorking:
-		return "processing"
-	case IssueStateBelongDone:
-		return "success"
-	default:
-		return ""
-	}
-}
 
 type IssueStateRelation struct {
 	IssueStatus

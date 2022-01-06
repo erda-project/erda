@@ -76,6 +76,7 @@ func init() {
 	servicehub.Register("erda.core.services.authentication.credentials.accesskey-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.services.authentication.credentials.accesskey.AccessKeyService",
+			"erda.core.services.authentication.credentials.accesskey.AccessKeyService.client",
 			"erda.core.services.authentication.credentials.accesskey-client",
 		},
 		Types: []reflect.Type{

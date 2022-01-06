@@ -25,12 +25,18 @@ import (
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
 	entitypb "github.com/erda-project/erda-proto-go/oap/entity/pb"
+	"github.com/erda-project/erda/modules/msp/apm/exception/query/source"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type config struct {
 	Cassandra   cassandra.SessionConfig `file:"cassandra"`
-	QuerySource string                  `file:"query_source"`
+	QuerySource querySource             `file:"query_source"`
+}
+
+type querySource struct {
+	ElasticSearch bool `file:"elasticsearch"`
+	Cassandra     bool `file:"cassandra"`
 }
 
 // +provider
@@ -38,25 +44,36 @@ type provider struct {
 	Cfg              *config
 	Log              logs.Logger
 	Register         transport.Register
-	Cassandra        cassandra.Interface `autowired:"cassandra"`
+	Source           source.ExceptionSource
 	exceptionService *exceptionService
-	cassandraSession *cassandra.Session
+	Cassandra        cassandra.Interface             `autowired:"cassandra" optional:"true"`
 	Metric           metricpb.MetricServiceServer    `autowired:"erda.core.monitor.metric.MetricService"`
 	Entity           entitypb.EntityServiceServer    `autowired:"erda.oap.entity.EntityService"`
 	Event            eventpb.EventQueryServiceServer `autowired:"erda.core.monitor.event.EventQueryService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	session, err := p.Cassandra.NewSession(&p.Cfg.Cassandra)
-	if err != nil {
-		return fmt.Errorf("fail to create cassandra session: %s", err)
+
+	if p.Cfg.QuerySource.Cassandra {
+		if p.Cassandra == nil {
+			panic("cassandra provider autowired failed.")
+		}
+
+		if p.Cassandra != nil {
+			session, err := p.Cassandra.NewSession(&p.Cfg.Cassandra)
+			if err != nil {
+				return fmt.Errorf("fail to create cassandra session: %s", err)
+			}
+			p.Source = &source.CassandraSource{CassandraSession: session}
+		}
 	}
-	p.cassandraSession = session
+	if p.Cfg.QuerySource.ElasticSearch {
+		p.Source = &source.ElasticsearchSource{Metric: p.Metric, Event: p.Event, Entity: p.Entity}
+	}
+
 	p.exceptionService = &exceptionService{
 		p:      p,
-		Metric: p.Metric,
-		Entity: p.Entity,
-		Event:  p.Event,
+		source: p.Source,
 	}
 	if p.Register != nil {
 		pb.RegisterExceptionServiceImp(p.Register, p.exceptionService, apis.Options())

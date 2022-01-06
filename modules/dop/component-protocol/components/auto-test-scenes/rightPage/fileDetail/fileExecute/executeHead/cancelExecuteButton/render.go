@@ -16,6 +16,7 @@ package cancelExecuteButton
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -70,9 +71,9 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		visible := gh.GetExecuteTaskBreadcrumbVisible()
 		if ca.pipelineId > 0 && visible {
 			if ca.pipelineId > 0 {
-				rsp, err := ca.bdl.GetPipeline(ca.pipelineId)
-				if err != nil {
-					return err
+				rsp := gh.GetPipelineInfoWithPipelineID(ca.pipelineId, ca.bdl)
+				if rsp == nil {
+					return fmt.Errorf("not find pipelineID %v info", ca.pipelineId)
 				}
 				if !rsp.Status.IsReconcilerRunningStatus() {
 					visible = false

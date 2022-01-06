@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -297,8 +298,8 @@ func (s *PipelineSvc) setPipelineTaskActionDetail(detail *apistructs.PipelineDet
 
 		actionDetails[task.Type] = apistructs.PipelineTaskActionDetail{
 			LogoUrl:     actionSpec.LogoUrl,
-			DisplayName: actionSpec.DisplayName,
-			Description: actionSpec.Desc,
+			DisplayName: actionSpec.GetLocaleDisplayName(i18n.GetGoroutineBindLang()),
+			Description: actionSpec.GetLocaleDesc(i18n.GetGoroutineBindLang()),
 		}
 	})
 	detail.PipelineTaskActionDetails = actionDetails

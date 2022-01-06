@@ -29,6 +29,13 @@ import (
 	logs "github.com/erda-project/erda/modules/core/monitor/log"
 )
 
+type LoghubService interface {
+	SearchLogs(req *LogSearchRequest) (*LogQueryResponse, error)
+	DownloadLogs(req *LogDownloadRequest, callback func(batchLogs []*Log) error) error
+	StatisticLogs(req *LogStatisticRequest) (*LogStatisticResponse, error)
+	AggregateLogFields(req *LogFieldsAggregationRequest) (*LogFieldsAggregationResponse, error)
+}
+
 // Tag .
 type Tag struct {
 	Key   string `json:"key"`
@@ -413,7 +420,7 @@ func (p *provider) DownloadLogs(req *LogDownloadRequest, callback func(batchLogs
 }
 
 // SearchLogs .
-func (p *provider) SearchLogs(req *LogSearchRequest) (interface{}, error) {
+func (p *provider) SearchLogs(req *LogSearchRequest) (*LogQueryResponse, error) {
 	clients := p.getESClients(req.OrgID, &req.LogRequest)
 	var results []*LogQueryResponse
 	for _, client := range clients {
@@ -470,7 +477,7 @@ func mergeLogSearch(limit int, results []*LogQueryResponse) *LogQueryResponse {
 }
 
 // StatisticLogs .
-func (p *provider) StatisticLogs(req *LogStatisticRequest) (interface{}, error) {
+func (p *provider) StatisticLogs(req *LogStatisticRequest) (*LogStatisticResponse, error) {
 	clients := p.getESClients(req.OrgID, &req.LogRequest)
 	var results []*LogStatisticResponse
 	name := p.t.Text(req.Lang, "Count")
@@ -520,7 +527,7 @@ func mergeStatisticResponse(results []*LogStatisticResponse) *LogStatisticRespon
 	return first
 }
 
-func (p *provider) AggregateLogFields(req *LogFieldsAggregationRequest) (interface{}, error) {
+func (p *provider) AggregateLogFields(req *LogFieldsAggregationRequest) (*LogFieldsAggregationResponse, error) {
 	clients := p.getESClients(req.OrgID, &req.LogRequest)
 	if len(clients) == 0 {
 		return nil, fmt.Errorf("failed do aggregations: no backend server")

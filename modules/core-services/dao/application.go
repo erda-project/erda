@@ -99,7 +99,7 @@ func (client *DBClient) GetApplicationCountByProjectID(projectID int64) (int64, 
 }
 
 // GetApplicationsByIDs 根据applicationIDs & 名称模糊匹配获取应用列表
-func (client *DBClient) GetApplicationsByIDs(orgID *int64, projectID *int64, applicationIDs []int64, request *apistructs.ApplicationListRequest) (
+func (client *DBClient) GetApplicationsByIDs(orgID *int64, projectID *int64, applicationIDs []uint64, request *apistructs.ApplicationListRequest) (
 	int, []model.Application, error) {
 	var (
 		total        int
@@ -184,4 +184,30 @@ func (client *DBClient) GetJoinedAppNumByUserId(userID, orgID string) (int, erro
 		return total, err
 	}
 	return total, nil
+}
+
+// GetRuntimeCountByAppIDS get every app runtime counts by id list
+func (client *DBClient) GetRuntimeCountByAppIDS(appIDS []int64) ([]model.ApplicationRuntimeCount, error) {
+	counters := make([]model.ApplicationRuntimeCount, 0)
+	if err := client.Table("ps_v2_project_runtimes").
+		Where("application_id in (?)", appIDS).
+		Group("application_id").
+		Select("count(*) as runtime_count, application_id").
+		Scan(&counters).Error; err != nil {
+		return nil, err
+	}
+	return counters, nil
+}
+
+// ListUnblockAppCountsByProjectIDS count project's unblock app nums by unblock time
+func (client *DBClient) ListUnblockAppCountsByProjectIDS(projectIDS []uint64) ([]model.ProjectUnblockAppCount, error) {
+	counters := make([]model.ProjectUnblockAppCount, 0)
+	if err := client.Table("dice_app").
+		Where("project_id in (?) and unblock_start < now() and unblock_end > now()", projectIDS).
+		Group("project_id").
+		Select("count(*) as unblock_app_count, project_id").
+		Scan(&counters).Error; err != nil {
+		return nil, err
+	}
+	return counters, nil
 }

@@ -86,7 +86,9 @@ func init() {
 	servicehub.Register("erda.core.monitor.metric-client", &servicehub.Spec{
 		Services: []string{
 			"erda.core.monitor.metric.MetricMetaService",
+			"erda.core.monitor.metric.MetricMetaService.client",
 			"erda.core.monitor.metric.MetricService",
+			"erda.core.monitor.metric.MetricService.client",
 			"erda.core.monitor.metric-client",
 		},
 		Types: []reflect.Type{

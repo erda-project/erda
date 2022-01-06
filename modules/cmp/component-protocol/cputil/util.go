@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -31,6 +32,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/bundle/apierrors"
@@ -47,6 +49,10 @@ func ParseWorkloadStatus(obj data.Object) (string, string, bool, error) {
 
 	switch kind {
 	case "Deployment":
+		replicas := obj.String("status", "replicas")
+		if replicas == "0" || replicas == "" {
+			return "Stopped", "default", false, nil
+		}
 		conditions := obj.Slice("status", "conditions")
 		available, progressing, failure := false, false, false
 		for _, cond := range conditions {
@@ -74,23 +80,33 @@ func ParseWorkloadStatus(obj data.Object) (string, string, bool, error) {
 		if len(fields) != 11 {
 			return "", "", false, fmt.Errorf("daemonset %s has invalid fields length", obj.String("metadata", "name"))
 		}
-		// desired and ready
-		if fields[1] == fields[3] {
-			return "Active", "success", true, nil
-		} else {
-			return "Abnormal", "error", false, nil
+		desired := fields[1]
+		if desired == "0" || desired == "" {
+			return "Stopped", "default", false, nil
 		}
+		readyReplicas := fields[3]
+		updatedReplicas := fields[4]
+		if desired == readyReplicas && desired == updatedReplicas {
+			return "Active", "success", true, nil
+		}
+		if desired != updatedReplicas {
+			return "Updating", "processing", true, nil
+		}
+		return "Abnormal", "error", false, nil
 	case "StatefulSet":
-		if len(fields) != 5 {
-			return "", "", false, fmt.Errorf("statefulSet %s has invalid fields length", obj.String("metadata", "name"))
+		replicas := obj.String("status", "replicas")
+		if replicas == "0" || replicas == "" {
+			return "Stopped", "default", false, nil
 		}
-		//
-		readyPods := strings.Split(fields[1], "/")
-		if readyPods[0] == readyPods[1] {
+		readyReplicas := obj.String("status", "readyReplicas")
+		updatedReplicas := obj.String("status", "updatedReplicas")
+		if replicas == readyReplicas && replicas == updatedReplicas {
 			return "Active", "success", true, nil
-		} else {
-			return "Abnormal", "error", false, nil
 		}
+		if replicas != updatedReplicas {
+			return "Updating", "processing", true, nil
+		}
+		return "Abnormal", "error", false, nil
 	case "Job":
 		if len(fields) != 7 {
 			return "", "", false, fmt.Errorf("job %s has invalid fields length", obj.String("metadata", "name"))
@@ -218,6 +234,16 @@ func IsJsonEqual(objA, objB interface{}) (bool, error) {
 	fmt.Printf("objA:\n%s\n", string(dataA))
 	fmt.Printf("objB:\n%s\n", string(dataB))
 	return false, nil
+}
+
+// IsDeepEqual return true if objA and objB is deep equal.
+// Used for unit testing.
+func IsDeepEqual(objA, objB interface{}) (bool, error) {
+	mA := cptype.ExtraMap{}
+	mB := cptype.ExtraMap{}
+	cputil.MustObjJSONTransfer(objA, &mA)
+	cputil.MustObjJSONTransfer(objB, &mB)
+	return reflect.DeepEqual(mA, mB), nil
 }
 
 // GetImpersonateClient authenticate user by steve server and return an impersonate k8s client

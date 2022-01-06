@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/services/issuefilterbm"
 	"github.com/erda-project/erda/modules/dop/services/issuestate"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
@@ -39,6 +40,7 @@ type ComponentFilter struct {
 	base.DefaultProvider
 	Bms             []issuefilterbm.MyFilterBm `json:"-"` // bookmarks
 	FlushOptsFromBm string                     `json:"-"` // bm ID
+	gsHelper        *gshelper.GSHelper
 }
 
 // FrontendConditions 前端支持的过滤参数
@@ -58,6 +60,7 @@ type FrontendConditions struct {
 	CreatedAtStartEnd  []*int64                      `json:"createdAtStartEnd,omitempty"`
 	FinishedAtStartEnd []*int64                      `json:"finishedAtStartEnd,omitempty"`
 	ClosedAtStartEnd   []*int64                      `json:"closedAtStartEnd,omitempty"`
+	Complexities       []apistructs.IssueComplexity  `json:"complexities,omitempty"`
 }
 
 func (f *ComponentFilter) generateFrontendConditionProps(ctx context.Context, fixedIssueType string, state State) FrontendConditionProps {
@@ -134,20 +137,18 @@ func (f *ComponentFilter) generateFrontendConditionProps(ctx context.Context, fi
 			},
 		},
 		{
-			Key:         PropConditionKeySeverities,
-			Label:       cputil.I18n(ctx, "severity"),
-			EmptyText:   cputil.I18n(ctx, "all"),
-			Fixed:       false,
-			ShowIndex:   0,
-			HaveFilter:  false,
-			Type:        filter.PropConditionTypeSelect,
-			Placeholder: cputil.I18n(ctx, "choose-severity"),
+			Key:        PropConditionKeyComplexity,
+			Label:      cputil.I18n(ctx, "complexity"),
+			EmptyText:  cputil.I18n(ctx, "all"),
+			Fixed:      false,
+			ShowIndex:  0,
+			HaveFilter: false,
+			Type:       filter.PropConditionTypeSelect,
+			// Placeholder: cputil.I18n(ctx, "choose-severity"),
 			Options: []filter.PropConditionOption{
-				{Label: cputil.I18n(ctx, "fatal"), Value: "FATAL", Icon: ""},
-				{Label: cputil.I18n(ctx, "serious"), Value: "SERIOUS", Icon: ""},
-				{Label: cputil.I18n(ctx, "ordinary"), Value: "NORMAL", Icon: ""},
-				{Label: cputil.I18n(ctx, "slight"), Value: "SLIGHT", Icon: ""},
-				{Label: cputil.I18n(ctx, "suggest"), Value: "SUGGEST", Icon: ""},
+				{Label: cputil.I18n(ctx, "HARD"), Value: "HARD", Icon: ""},
+				{Label: cputil.I18n(ctx, "NORMAL"), Value: "NORMAL", Icon: ""},
+				{Label: cputil.I18n(ctx, "EASY"), Value: "EASY", Icon: ""},
 			},
 		},
 		{
@@ -255,6 +256,24 @@ func (f *ComponentFilter) generateFrontendConditionProps(ctx context.Context, fi
 	}
 
 	if fixedIssueType == apistructs.IssueTypeBug.String() {
+		severity := filter.PropCondition{
+			Key:         PropConditionKeySeverities,
+			Label:       cputil.I18n(ctx, "severity"),
+			EmptyText:   cputil.I18n(ctx, "all"),
+			Fixed:       false,
+			ShowIndex:   0,
+			HaveFilter:  false,
+			Type:        filter.PropConditionTypeSelect,
+			Placeholder: cputil.I18n(ctx, "choose-severity"),
+			Options: []filter.PropConditionOption{
+				{Label: cputil.I18n(ctx, "fatal"), Value: "FATAL", Icon: ""},
+				{Label: cputil.I18n(ctx, "serious"), Value: "SERIOUS", Icon: ""},
+				{Label: cputil.I18n(ctx, "ordinary"), Value: "NORMAL", Icon: ""},
+				{Label: cputil.I18n(ctx, "slight"), Value: "SLIGHT", Icon: ""},
+				{Label: cputil.I18n(ctx, "suggest"), Value: "SUGGEST", Icon: ""},
+			},
+		}
+		conditionProps = append(conditionProps[:4], append([]filter.PropCondition{severity}, conditionProps[4:]...)...)
 		conditionProps = append(conditionProps, filter.PropCondition{
 			Key:         PropConditionKeyClosed,
 			Label:       cputil.I18n(ctx, "closed-at"),
@@ -272,48 +291,36 @@ func (f *ComponentFilter) generateFrontendConditionProps(ctx context.Context, fi
 		})
 	}
 
-	v, ok := state.IssueViewGroupChildrenValue["kanban"]
-	if state.IssueViewGroupValue != "kanban" || !ok || v != "status" {
-		statesMap, err := f.issueStateSvc.GetIssueStatesMap(&apistructs.IssueStatesGetRequest{
-			ProjectID: f.InParams.ProjectID,
-		})
-		if err != nil {
-			return nil
-		}
-
-		status := filter.PropCondition{
-			Key:         PropConditionKeyStates,
-			Label:       cputil.I18n(ctx, "state"),
-			EmptyText:   cputil.I18n(ctx, "all"),
-			Fixed:       true,
-			ShowIndex:   3,
-			HaveFilter:  false,
-			Type:        filter.PropConditionTypeSelect,
-			Placeholder: "",
-			Options: func() []filter.PropConditionOption {
-				// open := filter.PropConditionOption{Label: cputil.I18n(ctx, "open"), Value: apistructs.IssueStateBelongOpen, Icon: ""}
-				// reopen := filter.PropConditionOption{Label: cputil.I18n(ctx, "reopen"), Value: apistructs.IssueStateBelongReopen, Icon: ""}
-				// resolved := filter.PropConditionOption{Label: cputil.I18n(ctx, "resolved"), Value: apistructs.IssueStateBelongResloved, Icon: ""}
-				// wontfix := filter.PropConditionOption{Label: cputil.I18n(ctx, "wontfix"), Value: apistructs.IssueStateBelongWontfix, Icon: ""}
-				// closed := filter.PropConditionOption{Label: cputil.I18n(ctx, "closed"), Value: apistructs.IssueStateBelongClosed, Icon: ""}
-				// working := filter.PropConditionOption{Label: cputil.I18n(ctx, "working"), Value: apistructs.IssueStateBelongWorking, Icon: ""}
-				// done := filter.PropConditionOption{Label: cputil.I18n(ctx, "done"), Value: apistructs.IssueStateBelongDone, Icon: ""}
-				switch fixedIssueType {
-				case "ALL":
-					return convertAllConditions(ctx, statesMap)
-				case apistructs.IssueTypeRequirement.String():
-					return convertConditions(statesMap[apistructs.IssueTypeRequirement])
-				case apistructs.IssueTypeTask.String():
-					return convertConditions(statesMap[apistructs.IssueTypeTask])
-				case apistructs.IssueTypeBug.String():
-					return convertConditions(statesMap[apistructs.IssueTypeBug])
-				}
-				return nil
-			}(),
-		}
-		conditionProps = append(conditionProps[:2], append([]filter.PropCondition{status}, conditionProps[2:]...)...)
+	statesMap, err := f.issueStateSvc.GetIssueStatesMap(&apistructs.IssueStatesGetRequest{
+		ProjectID: f.InParams.ProjectID,
+	})
+	if err != nil {
+		return nil
 	}
-
+	status := filter.PropCondition{
+		Key:         PropConditionKeyStates,
+		Label:       cputil.I18n(ctx, "state"),
+		EmptyText:   cputil.I18n(ctx, "all"),
+		Fixed:       true,
+		ShowIndex:   3,
+		HaveFilter:  false,
+		Type:        filter.PropConditionTypeSelect,
+		Placeholder: "",
+		Options: func() []filter.PropConditionOption {
+			switch fixedIssueType {
+			case "ALL":
+				return convertAllConditions(ctx, statesMap)
+			case apistructs.IssueTypeRequirement.String():
+				return convertConditions(statesMap[apistructs.IssueTypeRequirement])
+			case apistructs.IssueTypeTask.String():
+				return convertConditions(statesMap[apistructs.IssueTypeTask])
+			case apistructs.IssueTypeBug.String():
+				return convertConditions(statesMap[apistructs.IssueTypeBug])
+			}
+			return nil
+		}(),
+	}
+	conditionProps = append(conditionProps[:2], append([]filter.PropCondition{status}, conditionProps[2:]...)...)
 	return conditionProps
 }
 
@@ -359,6 +366,7 @@ var (
 	PropConditionKeyCreatedAtStartEnd  filter.PropConditionKey = "createdAtStartEnd"
 	PropConditionKeyFinishedAtStartEnd filter.PropConditionKey = "finishedAtStartEnd"
 	PropConditionKeyClosed             filter.PropConditionKey = "closedAtStartEnd"
+	PropConditionKeyComplexity         filter.PropConditionKey = "complexities"
 )
 
 func GetAllOperations() map[filter.OperationKey]filter.Operation {

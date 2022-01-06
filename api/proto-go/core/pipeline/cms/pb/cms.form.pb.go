@@ -28,7 +28,9 @@ var _ urlenc.URLValuesUnmarshaler = (*CmsNsConfigsUpdateResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CmsNsConfigsDeleteRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CmsNsConfigsDeleteResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CmsNsConfigsGetRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CmsNsConfigsBatchGetRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CmsNsConfigsGetResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CmsNsConfigsBatchGetResponse)(nil)
 
 // PipelineCmsNs implement urlenc.URLValuesUnmarshaler.
 func (m *PipelineCmsNs) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -339,6 +341,82 @@ func (m *PipelineCmsConfig) UnmarshalURLValues(prefix string, values url.Values)
 					return err
 				}
 				m.TimeUpdated.Nanos = int32(val)
+			case "ns":
+				if m.Ns == nil {
+					m.Ns = &PipelineCmsNs{}
+				}
+			case "ns.pipeline_source":
+				if m.Ns == nil {
+					m.Ns = &PipelineCmsNs{}
+				}
+				m.Ns.PipelineSource = vals[0]
+			case "ns.ns":
+				if m.Ns == nil {
+					m.Ns = &PipelineCmsNs{}
+				}
+				m.Ns.Ns = vals[0]
+			case "ns.timeCreated":
+				if m.Ns == nil {
+					m.Ns = &PipelineCmsNs{}
+				}
+				if m.Ns.TimeCreated == nil {
+					m.Ns.TimeCreated = &timestamppb.Timestamp{}
+				}
+			case "ns.timeCreated.seconds":
+				if m.Ns == nil {
+					m.Ns = &PipelineCmsNs{}
+				}
+				if m.Ns.TimeCreated == nil {
+					m.Ns.TimeCreated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Ns.TimeCreated.Seconds = val
+			case "ns.timeCreated.nanos":
+				if m.Ns == nil {
+					m.Ns = &PipelineCmsNs{}
+				}
+				if m.Ns.TimeCreated == nil {
+					m.Ns.TimeCreated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.Ns.TimeCreated.Nanos = int32(val)
+			case "ns.timeUpdated":
+				if m.Ns == nil {
+					m.Ns = &PipelineCmsNs{}
+				}
+				if m.Ns.TimeUpdated == nil {
+					m.Ns.TimeUpdated = &timestamppb.Timestamp{}
+				}
+			case "ns.timeUpdated.seconds":
+				if m.Ns == nil {
+					m.Ns = &PipelineCmsNs{}
+				}
+				if m.Ns.TimeUpdated == nil {
+					m.Ns.TimeUpdated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Ns.TimeUpdated.Seconds = val
+			case "ns.timeUpdated.nanos":
+				if m.Ns == nil {
+					m.Ns = &PipelineCmsNs{}
+				}
+				if m.Ns.TimeUpdated == nil {
+					m.Ns.TimeUpdated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.Ns.TimeUpdated.Nanos = int32(val)
 			}
 		}
 	}
@@ -473,7 +551,33 @@ func (m *CmsNsConfigsGetRequest) UnmarshalURLValues(prefix string, values url.Va
 	return nil
 }
 
+// CmsNsConfigsBatchGetRequest implement urlenc.URLValuesUnmarshaler.
+func (m *CmsNsConfigsBatchGetRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pipelineSource":
+				m.PipelineSource = vals[0]
+			case "namespaces":
+				m.Namespaces = vals
+			case "globalDecrypt":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.GlobalDecrypt = val
+			}
+		}
+	}
+	return nil
+}
+
 // CmsNsConfigsGetResponse implement urlenc.URLValuesUnmarshaler.
 func (m *CmsNsConfigsGetResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// CmsNsConfigsBatchGetResponse implement urlenc.URLValuesUnmarshaler.
+func (m *CmsNsConfigsBatchGetResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }

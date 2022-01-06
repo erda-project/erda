@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
-	"github.com/erda-project/erda/modules/msp/apm/exception"
 	"github.com/erda-project/erda/modules/msp/apm/exception/erda-error/storage"
+	"github.com/erda-project/erda/modules/msp/apm/exception/model"
 )
 
 // Error .
@@ -94,7 +94,7 @@ func (it *ErrorListIterator) Error() error { return nil }
 func (it *ErrorListIterator) Close() error { return nil }
 
 type errorListStorage struct {
-	exception *exception.Erda_error
+	exception *model.Error
 }
 
 func (s *errorListStorage) NewWriter(ctx context.Context) (storekit.BatchWriter, error) {

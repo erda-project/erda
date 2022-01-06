@@ -78,6 +78,25 @@ const (
 
 var ExpireTypes = []ExpireType{ExpireTypeUndefined, ExpireTypeExpired, ExpireTypeExpireIn1Day, ExpireTypeExpireIn2Days, ExpireTypeExpireIn7Days, ExpireTypeExpireIn30Days, ExpireTypeExpireInFuture}
 
+func GetExpiryStatus(planFinishedAt *time.Time, timeBase time.Time) ExpireType {
+	if planFinishedAt == nil {
+		return ExpireTypeUndefined
+	}
+	if planFinishedAt.Before(timeBase) {
+		return ExpireTypeExpired
+	} else if planFinishedAt.Before(timeBase.Add(1 * 24 * time.Hour)) {
+		return ExpireTypeExpireIn1Day
+	} else if planFinishedAt.Before(timeBase.Add(2 * 24 * time.Hour)) {
+		return ExpireTypeExpireIn2Days
+	} else if planFinishedAt.Before(timeBase.Add(7 * 24 * time.Hour)) {
+		return ExpireTypeExpireIn7Days
+	} else if planFinishedAt.Before(timeBase.Add(30 * 24 * time.Hour)) {
+		return ExpireTypeExpireIn30Days
+	} else {
+		return ExpireTypeExpireInFuture
+	}
+}
+
 func (Issue) TableName() string {
 	return "dice_issues"
 }
@@ -227,11 +246,14 @@ func (client *DBClient) PagingIssues(req apistructs.IssuePagingRequest, queryIDs
 	if req.RequirementID != nil && *req.RequirementID > 0 {
 		cond.RequirementID = req.RequirementID
 	}
-
 	sql := client.Debug()
 	if req.CustomPanelID != 0 {
 		joinSQL := "LEFT OUTER JOIN dice_issue_panel on dice_issues.id=dice_issue_panel.issue_id"
 		sql = sql.Joins(joinSQL).Where("relation = ?", req.CustomPanelID)
+	}
+	if req.NotIncluded {
+		sql = sql.Joins("LEFT JOIN dice_issue_relation b ON dice_issues.id = b.related_issue and b.type = ?", apistructs.IssueRelationInclusion).
+			Where("b.id IS NULL")
 	}
 	sql = sql.Where(cond).Where("deleted = ?", 0)
 	if len(req.IDs) > 0 {
@@ -243,7 +265,7 @@ func (client *DBClient) PagingIssues(req apistructs.IssuePagingRequest, queryIDs
 		sql = sql.Where("iteration_id in (?)", req.IterationIDs)
 	}
 	if len(req.Type) > 0 {
-		sql = sql.Where("type IN (?)", req.Type)
+		sql = sql.Where("dice_issues.type IN (?)", req.Type)
 	}
 	if len(req.Creators) > 0 {
 		sql = sql.Where("creator IN (?)", req.Creators)
@@ -275,7 +297,7 @@ func (client *DBClient) PagingIssues(req apistructs.IssuePagingRequest, queryIDs
 		sql = sql.Where("stage IN (?)", req.TaskType)
 	}
 	if len(req.ExceptIDs) > 0 {
-		sql = sql.Not("id", req.ExceptIDs)
+		sql = sql.Where("dice_issues.id NOT IN (?)", req.ExceptIDs)
 	}
 	if req.StartCreatedAt > 0 {
 		startCreatedAt := time.Unix(req.StartCreatedAt/1000, 0)
@@ -677,21 +699,44 @@ type IssueExpiryStatus struct {
 	ExpiryStatus ExpireType
 }
 
-func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchRequest) ([]IssueExpiryStatus, error) {
-	sql := client.Table("dice_issues").Joins(joinState).Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status")
-	sql = sql.Where("deleted = 0").Where("assignee = ? AND dice_issue_state.belong IN (?)", req.Assignees, req.StateBelongs)
-	if len(req.ProjectIDs) > 0 {
-		sql = sql.Where("dice_issues.project_id IN (?)", req.ProjectIDs)
+func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchRequest) ([]IssueExpiryStatus, int, error) {
+	sql := client.issueExpiryStatusQuery(req)
+	offset := (req.PageNo - 1) * req.PageSize
+	var res []IssueExpiryStatus
+	var total int
+	// paged projects with unfinished issues
+	if err := sql.Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status").
+		Offset(offset).Limit(req.PageSize).Group("dice_issues.project_id").Find(&res).Error; err != nil {
+		return nil, 0, err
 	}
+	// total of matched projects
+	if err := sql.Select("count(distinct(dice_issues.project_id))").Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	projectIDs := make([]uint64, 0, len(res))
+	for _, i := range res {
+		projectIDs = append(projectIDs, i.ProjectID)
+	}
+	req.ProjectIDs = projectIDs
+	sql = client.issueExpiryStatusQuery(req)
+	// query with matched projects
+	if err := sql.Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status").
+		Group("dice_issues.project_id, dice_issues.expiry_status").Find(&res).Error; err != nil {
+		return nil, 0, err
+	}
+	return res, total, nil
+}
+
+func (client *DBClient) issueExpiryStatusQuery(req apistructs.WorkbenchRequest) *gorm.DB {
+	sql := client.Debug().Table("dice_issues").Joins(joinState)
+	sql = sql.Where("deleted = 0").Where("assignee IN (?) AND dice_issue_state.belong IN (?)", req.Assignees, req.StateBelongs)
 	if len(req.Type) > 0 {
 		sql = sql.Where("type IN (?)", req.Type)
 	}
-	offset := (req.PageNo - 1) * req.PageSize
-	var res []IssueExpiryStatus
-	if err := sql.Offset(offset).Limit(req.PageSize).Group("dice_issues.project_id, dice_issues.expiry_status").Find(&res).Error; err != nil {
-		return nil, err
+	if len(req.ProjectIDs) > 0 {
+		sql = sql.Where("dice_issues.project_id IN (?)", req.ProjectIDs)
 	}
-	return res, nil
+	return sql
 }
 
 func (client *DBClient) GetIssuesByProject(req apistructs.IssuePagingRequest) ([]Issue, uint64, error) {
@@ -722,13 +767,13 @@ var expireTypes = []ExpireType{
 }
 
 var conditions = map[ExpireType]string{
-	ExpireTypeUndefined:      "a.plan_finished_at IS NULL",
-	ExpireTypeExpired:        "a.plan_finished_at < CURDATE()",
-	ExpireTypeExpireIn1Day:   "a.plan_finished_at = CURDATE()",
-	ExpireTypeExpireIn2Days:  "a.plan_finished_at = DATE_ADD(CURDATE(),INTERVAL 1 DAY)",
-	ExpireTypeExpireIn7Days:  "a.plan_finished_at > DATE_ADD(CURDATE(),INTERVAL 1 DAY) AND a.plan_finished_at < DATE_ADD(CURDATE(),INTERVAL 7 DAY)",
-	ExpireTypeExpireIn30Days: "a.plan_finished_at >= DATE_ADD(CURDATE(),INTERVAL 7 DAY) AND a.plan_finished_at < DATE_ADD(CURDATE(),INTERVAL 30 DAY)",
-	ExpireTypeExpireInFuture: "a.plan_finished_at >= DATE_ADD(CURDATE(),INTERVAL 30 DAY)",
+	ExpireTypeUndefined:      "DATE(a.plan_finished_at) IS NULL",
+	ExpireTypeExpired:        "DATE(a.plan_finished_at) < CURDATE()",
+	ExpireTypeExpireIn1Day:   "DATE(a.plan_finished_at) = CURDATE()",
+	ExpireTypeExpireIn2Days:  "DATE(a.plan_finished_at) = DATE_ADD(CURDATE(),INTERVAL 1 DAY)",
+	ExpireTypeExpireIn7Days:  "DATE(a.plan_finished_at) > DATE_ADD(CURDATE(),INTERVAL 1 DAY) AND DATE(a.plan_finished_at) < DATE_ADD(CURDATE(),INTERVAL 7 DAY)",
+	ExpireTypeExpireIn30Days: "DATE(a.plan_finished_at) >= DATE_ADD(CURDATE(),INTERVAL 7 DAY) AND DATE(a.plan_finished_at) < DATE_ADD(CURDATE(),INTERVAL 30 DAY)",
+	ExpireTypeExpireInFuture: "DATE(a.plan_finished_at) >= DATE_ADD(CURDATE(),INTERVAL 30 DAY)",
 }
 
 func (client *DBClient) BatchUpdateIssueExpiryStatus(states []apistructs.IssueStateBelong) error {
@@ -774,8 +819,9 @@ type IssueItem struct {
 	ReopenCount  int
 	StartTime    *time.Time
 
-	Name   string
-	Belong string
+	Name           string
+	Belong         string
+	ChildrenLength int
 }
 
 func (i *IssueItem) FilterPropertyRetriever(condition string) string {
@@ -892,29 +938,32 @@ func (client *DBClient) BugReopenCount(projectID uint64, iterationIDs []uint64) 
 }
 
 const (
-	joinRelation      = "LEFT JOIN dice_issue_relation b ON a.id = b.related_issue and b.type = ?"
-	joinStateNew      = "LEFT JOIN dice_issue_state ON a.state = dice_issue_state.id"
-	joinIssueChildren = "LEFT JOIN dice_issues a ON a.id = b.related_issue"
-	joinIssueParent   = "LEFT JOIN dice_issues a ON a.id = b.issue_id"
-	joinLabelRelation = "LEFT JOIN dice_label_relations c ON a.id = c.ref_id"
+	joinRelation       = "LEFT JOIN dice_issue_relation b ON a.id = b.related_issue and b.type = ?"
+	joinRelationParent = "left join dice_issue_relation d on a.id = d.issue_id and d.type = ?"
+	joinStateNew       = "LEFT JOIN dice_issue_state ON a.state = dice_issue_state.id"
+	joinIssueChildren  = "LEFT JOIN dice_issues a ON a.id = b.related_issue"
+	joinIssueParent    = "LEFT JOIN dice_issues a ON a.id = b.issue_id"
+	joinLabelRelation  = "LEFT JOIN dice_label_relations c ON a.id = c.ref_id"
+	ganttOrder         = "FIELD(a.type,'REQUIREMENT','TASK','BUG')"
 )
 
 func (client *DBClient) FindIssueChildren(id uint64, req apistructs.IssuePagingRequest) ([]IssueItem, uint64, error) {
 	sql := client.Debug().Table("dice_issue_relation b").Joins(joinIssueChildren).Joins(joinStateNew).
 		Where("b.issue_id = ? AND b.type = ?", id, apistructs.IssueRelationInclusion)
-	sql = sql.Where("a.deleted = 0").Where("a.project_id = ?", req.ProjectID)
+	// if id == 0 {
+	// 	sql = client.Debug().Table("dice_issues as a").Joins(joinRelation, apistructs.IssueRelationInclusion).Joins(joinStateNew).
+	// 		Where("b.id IS NULL")
+	// }
 	if len(req.Type) > 0 {
 		sql = sql.Where("a.type IN (?)", req.Type)
 	}
 	if len(req.Assignees) > 0 {
 		sql = sql.Where("a.assignee in (?)", req.Assignees)
 	}
-	if len(req.IterationIDs) > 0 {
-		sql = sql.Where("a.iteration_id in (?)", req.IterationIDs)
+	if len(req.StateBelongs) > 0 {
+		sql = sql.Where("dice_issue_state.belong IN (?)", req.StateBelongs)
 	}
-	if len(req.Label) > 0 {
-		sql = sql.Joins(joinLabelRelation).Where("c.label_id IN (?)", req.Label)
-	}
+	sql = applyCondition(sql, req)
 	offset := (req.PageNo - 1) * req.PageSize
 	var total uint64
 	var res []IssueItem
@@ -926,33 +975,57 @@ func (client *DBClient) FindIssueChildren(id uint64, req apistructs.IssuePagingR
 }
 
 func (client *DBClient) FindIssueRoot(req apistructs.IssuePagingRequest) ([]IssueItem, []IssueItem, uint64, error) {
-	sql := client.Debug().Table("dice_issues as a").Joins(joinRelation, apistructs.IssueRelationInclusion).Joins(joinStateNew).Where("b.id IS NULL")
+	// issues without children
+	sql := client.Debug().Table("dice_issues as a").Joins(joinRelation, apistructs.IssueRelationInclusion).Joins(joinStateNew).
+		Joins(joinRelationParent, apistructs.IssueRelationInclusion).Where("b.id IS NULL and d.id is NULL")
+	offset := (req.PageNo - 1) * req.PageSize
+	if len(req.Type) > 0 {
+		sql = sql.Where("a.type IN (?)", req.Type)
+	}
+	sql = applyCondition(sql, req)
+	if len(req.StateBelongs) > 0 {
+		sql = sql.Where("dice_issue_state.belong IN (?)", req.StateBelongs)
+	}
+	if len(req.Assignees) > 0 {
+		sql = sql.Where("a.assignee in (?)", req.Assignees)
+	}
+	var items []IssueItem
+	var totalTask uint64
+	if err := sql.Select("DISTINCT a.*, dice_issue_state.name, dice_issue_state.belong").Order(ganttOrder).Offset(offset).Limit(req.PageSize).Find(&items).
+		Offset(0).Limit(-1).Count(&totalTask).Error; err != nil {
+		return nil, nil, 0, err
+	}
+
+	// requirements with children
+	sql = client.Debug().Table("dice_issue_relation b").Joins(joinIssueParent).Joins("LEFT JOIN dice_issues d ON d.id = b.related_issue").
+		Joins("LEFT JOIN dice_issue_state e ON a.state = e.id").Joins("LEFT JOIN dice_issue_state f ON d.state = f.id")
+	sql = sql.Where("a.type = ?", apistructs.IssueTypeRequirement).Where("b.type = ?", apistructs.IssueRelationInclusion)
+	sql = sql.Where("d.deleted = 0").Where("d.project_id = ?", req.ProjectID)
+	sql = applyCondition(sql, req)
+	if len(req.Assignees) > 0 {
+		sql = sql.Where("a.assignee in (?) or d.assignee in (?)", req.Assignees, req.Assignees)
+	}
+	if len(req.StateBelongs) > 0 {
+		sql = sql.Where("e.belong IN (?)", req.StateBelongs).Where("f.belong IN (?)", req.StateBelongs)
+	}
+	var res []IssueItem
+	var totalReq uint64
+	if err := sql.Select("DISTINCT a.*, e.name, e.belong").Offset(offset).Limit(req.PageSize).Find(&res).
+		Offset(0).Limit(-1).Count(&totalReq).Error; err != nil {
+		return nil, nil, 0, err
+	}
+	return res, items, totalReq + totalTask, nil
+}
+
+func applyCondition(sql *gorm.DB, req apistructs.IssuePagingRequest) *gorm.DB {
 	sql = sql.Where("a.deleted = 0").Where("a.project_id = ?", req.ProjectID)
 	if len(req.IterationIDs) > 0 {
 		sql = sql.Where("a.iteration_id in (?)", req.IterationIDs)
 	}
-	ts := sql.Where("a.Type = ?", apistructs.IssueTypeRequirement)
-	var res []IssueItem
-	var totalReq uint64
-	offset := (req.PageNo - 1) * req.PageSize
-	if err := ts.Select("DISTINCT a.*, dice_issue_state.name, dice_issue_state.belong").Offset(offset).Limit(req.PageSize).Find(&res).
-		Offset(0).Limit(-1).Count(&totalReq).Error; err != nil {
-		return nil, nil, 0, err
-	}
-	sql = sql.Where("a.Type = ?", apistructs.IssueTypeTask)
-	if len(req.Assignees) > 0 {
-		sql = sql.Where("a.assignee in (?)", req.Assignees)
-	}
 	if len(req.Label) > 0 {
 		sql = sql.Joins(joinLabelRelation).Where("c.label_id IN (?)", req.Label)
 	}
-	var items []IssueItem
-	var totalTask uint64
-	if err := sql.Select("DISTINCT a.*, dice_issue_state.name, dice_issue_state.belong").Offset(offset).Limit(req.PageSize).Find(&items).
-		Offset(0).Limit(-1).Count(&totalTask).Error; err != nil {
-		return nil, nil, 0, err
-	}
-	return res, items, totalReq + totalTask, nil
+	return sql
 }
 
 func (client *DBClient) GetIssueItem(id uint64) (IssueItem, error) {
@@ -989,4 +1062,19 @@ func (client *DBClient) FindIssueChildrenTimeRange(id uint64) (*time.Time, *time
 		return nil, nil, err
 	}
 	return res.Min, res.Max, nil
+}
+
+// IssueForIssueStateTransMigration the type of state is string
+type IssueForIssueStateTransMigration struct {
+	dbengine.BaseModel
+
+	ProjectID uint64
+	Type      apistructs.IssueType
+	Creator   string
+}
+
+func (client *DBClient) ListIssueForIssueStateTransMigration() ([]IssueForIssueStateTransMigration, error) {
+	var issues []IssueForIssueStateTransMigration
+	err := client.Table("dice_issues").Where("deleted = 0").Find(&issues).Error
+	return issues, err
 }

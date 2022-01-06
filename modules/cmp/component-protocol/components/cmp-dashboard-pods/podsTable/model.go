@@ -85,8 +85,8 @@ type Item struct {
 	MemoryLimits      Multiple `json:"memoryLimits"`
 	MemoryLimitsNum   int64    `json:"MemoryLimitsNum,omitempty"`
 	Ready             string   `json:"ready,omitempty"`
-	Node              string   `json:"node,omitempty"`
-	GotoWorkload      Link     `json:"gotoWorkload"`
+	Node              Operate  `json:"node,omitempty"`
+	Operations        Operate  `json:"operations"`
 }
 
 type Status struct {
@@ -109,17 +109,20 @@ type TextWithIcon struct {
 	Size       string `json:"size,omitempty"`
 }
 
-type Link struct {
+type Operate struct {
 	RenderType string                 `json:"renderType,omitempty"`
 	Value      string                 `json:"value,omitempty"`
 	Operations map[string]interface{} `json:"operations,omitempty"`
 }
 
 type LinkOperation struct {
-	Command *Command `json:"command,omitempty"`
-	Reload  bool     `json:"reload"`
-	Key     string   `json:"key,omitempty"`
-	Text    string   `json:"text,omitempty"`
+	Command    *Command               `json:"command,omitempty"`
+	Reload     bool                   `json:"reload"`
+	Key        string                 `json:"key,omitempty"`
+	Text       string                 `json:"text,omitempty"`
+	Meta       map[string]interface{} `json:"meta,omitempty"`
+	Confirm    string                 `json:"confirm,omitempty"`
+	SuccessMsg string                 `json:"successMsg,omitempty"`
 }
 
 type Command struct {
@@ -156,6 +159,7 @@ type Column struct {
 	Sorter    bool   `json:"sorter"`
 	Fixed     string `json:"fixed,omitempty"`
 	Align     string `json:"align,omitempty"`
+	Hidden    bool   `json:"hidden"`
 }
 
 type Operation struct {

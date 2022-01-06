@@ -25,6 +25,7 @@ import (
 
 	"github.com/olivere/elastic"
 	"github.com/recallsong/go-utils/encoding/jsonx"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/core/monitor/log"
@@ -35,13 +36,22 @@ import (
 )
 
 const useScrollQuery = false
-const useInMemContentFilter = true
+const useInMemContentFilter = false
 
 func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
 	// TODO check org
-	indices := p.Loader.Indices(ctx, sel.Start, sel.End, loader.KeyPath{
-		Recursive: true,
-	})
+	var keyPaths []loader.KeyPath
+	for _, orgName := range sel.Meta.OrgNames {
+		keyPaths = append(keyPaths, loader.KeyPath{
+			Keys:      []string{orgName},
+			Recursive: true,
+		})
+	}
+	indices := p.Loader.Indices(ctx, sel.Start, sel.End, keyPaths...)
+	pageSize := p.Cfg.ReadPageSize
+	if sel.Meta.PreferredBufferSize > 0 {
+		pageSize = sel.Meta.PreferredBufferSize
+	}
 	var matcher func(data *pb.LogItem) bool
 	if useInMemContentFilter {
 		for _, filter := range sel.Filters {
@@ -63,21 +73,30 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 				matcher = func(data *pb.LogItem) bool {
 					return regex.MatchString(data.Content)
 				}
+			case storage.CONTAINS:
+				matcher = func(data *pb.LogItem) bool {
+					return strings.Contains(data.Content, val)
+				}
 			}
 		}
 	}
 
-	if useScrollQuery {
+	if useScrollQuery || sel.Meta.PreferredIterateStyle == storage.Scroll {
 		searchSource := getSearchSource(sel.Start, sel.End, sel)
+		searchSource.From(sel.Skip.FromOffset).SearchAfter(sel.Skip.AfterId.Raw()...)
 		if sel.Debug {
 			source, _ := searchSource.Source()
 			fmt.Printf("indices: %v\nsearchSource: %s\n", strings.Join(indices, ","), jsonx.MarshalAndIndent(source))
 		}
 		return elasticsearch.NewScrollIterator(
 			ctx, p.client, p.Cfg.QueryTimeout,
-			p.Cfg.ReadPageSize, indices, []*elasticsearch.SortItem{
+			pageSize, indices, []*elasticsearch.SortItem{
 				{
 					Key:       "timestamp",
+					Ascending: true,
+				},
+				{
+					Key:       "id",
 					Ascending: true,
 				},
 				{
@@ -96,9 +115,14 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 	}
 	return elasticsearch.NewSearchIterator(
 		ctx, p.client, p.Cfg.QueryTimeout,
-		p.Cfg.ReadPageSize, indices, []*elasticsearch.SortItem{
+		sel.Skip.FromOffset, pageSize,
+		indices, []*elasticsearch.SortItem{
 			{
 				Key:       "timestamp",
+				Ascending: true,
+			},
+			{
+				Key:       "id",
 				Ascending: true,
 			},
 			{
@@ -106,6 +130,7 @@ func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 				Ascending: true,
 			},
 		},
+		sel.Skip.AfterId.Raw(),
 		func() (*elastic.SearchSource, error) {
 			return getSearchSource(sel.Start, sel.End, sel), nil
 		},
@@ -147,17 +172,28 @@ func getSearchSource(start, end int64, sel *storage.Selector) *elastic.SearchSou
 			query = query.Filter(elastic.NewTermQuery(filter.Key, val))
 		case storage.REGEXP:
 			query = query.Filter(elastic.NewRegexpQuery(filter.Key, val))
+		case storage.EXPRESSION, storage.CONTAINS:
+			query = query.Filter(elastic.NewQueryStringQuery(val).DefaultField("content").DefaultOperator("AND"))
 		}
+	}
+	if sel.Meta.Highlight {
+		searchSource.Highlight(elastic.NewHighlight().
+			PreTags("").
+			PostTags("").
+			FragmentSize(1).
+			RequireFieldMatch(true).
+			BoundaryScannerType("word").
+			Field("*"))
 	}
 	return searchSource.Query(query)
 }
 
 var skip = errors.New("skip")
 
-func decodeFunc(start, end int64, matcher func(data *pb.LogItem) bool) func(body []byte) (interface{}, error) {
-	return func(body []byte) (interface{}, error) {
+func decodeFunc(start, end int64, matcher func(data *pb.LogItem) bool) func(body *elastic.SearchHit) (interface{}, error) {
+	return func(hit *elastic.SearchHit) (interface{}, error) {
 		var data log.Log
-		err := json.Unmarshal(body, &data)
+		err := json.Unmarshal(*hit.Source, &data)
 		if err != nil {
 			return nil, err
 		}
@@ -174,6 +210,23 @@ func decodeFunc(start, end int64, matcher func(data *pb.LogItem) bool) func(body
 			Content:   data.Content,
 			Level:     data.Tags["level"],
 			RequestId: data.Tags["request_id"],
+			Tags:      data.Tags,
+			UniqId:    hit.Id,
+		}
+		if len(hit.Highlight) > 0 {
+			highlight := map[string]*structpb.ListValue{}
+			for k, v := range hit.Highlight {
+				var items []interface{}
+				for _, token := range v {
+					items = append(items, token)
+				}
+				list, err := structpb.NewList(items)
+				if err != nil {
+					continue
+				}
+				highlight[k] = list
+			}
+			item.Highlight = highlight
 		}
 		if matcher != nil && !matcher(item) {
 			return nil, skip

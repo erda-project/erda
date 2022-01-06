@@ -83,10 +83,11 @@ func (sam *SourcecovAddonManagement) BuildSourceCovServiceItem(
 		service.Envs["CENTER_HOST"] = os.Getenv("OPENAPI_PUBLIC_URL")
 		service.Envs["CENTER_TOKEN"] = token
 		service.Resources = diceyml.Resources{
-			CPU:    addonDeployPlan.CPU,
-			Mem:    addonDeployPlan.Mem,
-			MaxCPU: addonDeployPlan.CPU,
-			MaxMem: addonDeployPlan.Mem,
+			CPU: addonDeployPlan.CPU,
+			Mem: addonDeployPlan.Mem,
+
+			MaxCPU: addonDeployPlan.MaxCPU,
+			MaxMem: addonDeployPlan.MaxMem,
 		}
 	}
 

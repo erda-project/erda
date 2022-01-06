@@ -864,7 +864,7 @@ CREATE TABLE `sp_alert_expression`
 (
     `id`         int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
     `alert_id`   int(11) NOT NULL COMMENT '告警外键ID',
-    `attributes` varchar(2048) NOT NULL DEFAULT '' COMMENT '告警规则扩展信息',
+    `attributes` varchar(4096) NOT NULL DEFAULT '' COMMENT '告警规则扩展信息',
     `expression` varchar(4096) NOT NULL DEFAULT '' COMMENT '告警规则表达式',
     `version`    varchar(64)   NOT NULL DEFAULT '1.0' COMMENT '告警规则版本',
     `enable`     int(1) NOT NULL DEFAULT '1' COMMENT '告警规则开关',

@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
+	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -413,7 +414,7 @@ func recordDLog() chan string {
 	var logger *log.DeployLogHelper
 	c := make(chan string, 1000)
 	monkey.PatchInstanceMethod(reflect.TypeOf(logger), "Log",
-		func(_ *log.DeployLogHelper, content string) {
+		func(_ *log.DeployLogHelper, content string, tags map[string]string) {
 			c <- content
 		},
 	)
@@ -477,6 +478,7 @@ func genFakeFSM(specPath ...string) *DeployFSMContext {
 			OrgID:          104,
 			WildcardDomain: "test.terminus.io",
 		},
+		d: &log.DeployLogHelper{},
 	}
 	if len(specPath) > 0 {
 		b, err := ioutil.ReadFile(specPath[0])
@@ -513,4 +515,30 @@ func TestUpdateServiceGroupWithLoop(t *testing.T) {
 	if err := fsm.UpdateServiceGroupWithLoop(group); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func Test_requestAddons(t *testing.T) {
+	ad := &addon.Addon{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(ad), "BatchCreate", func(a *addon.Addon, req *apistructs.AddonCreateRequest) error {
+		return nil
+	})
+
+	var (
+		bdl *bundle.Bundle
+	)
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "PushLog", func(*bundle.Bundle, *apistructs.LogPushRequest) error {
+		return nil
+	})
+	defer monkey.UnpatchAll()
+
+	fsm := DeployFSMContext{
+		d:          &log.DeployLogHelper{Bdl: bdl},
+		addon:      ad,
+		App:        &apistructs.ApplicationDTO{},
+		Deployment: &dbclient.Deployment{},
+		Runtime:    &dbclient.Runtime{},
+		Spec:       &diceyml.Object{AddOns: map[string]*diceyml.AddOn{"empty-addon": nil}},
+	}
+	err := fsm.requestAddons()
+	assert.NoError(t, err)
 }
