@@ -20,6 +20,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -49,27 +50,27 @@ func (i *Info) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 			},
 			{
 				Main: strconv.Itoa(stats.Expire),
-				Sub:  "已到期",
+				Sub:  cputil.I18n(ctx, "expired"),
 			},
 			{
 				Main: strconv.Itoa(stats.Today),
-				Sub:  "本日截止",
+				Sub:  cputil.I18n(ctx, "dueToday"),
 			},
 			{
 				Main: strconv.Itoa(stats.Week),
-				Sub:  "本周截止",
-				Tip:  "不包含本日截止数据",
+				Sub:  cputil.I18n(ctx, "dueThisWeek"),
+				Tip:  cputil.I18n(ctx, "notIncludeDueToday"),
 			},
 		},
 		{
 			{
 				Main: strconv.Itoa(stats.Month),
-				Sub:  "本月截止",
+				Sub:  cputil.I18n(ctx, "dueThisMonth"),
 				Tip:  "不包含本日、本周截止数据",
 			},
 			{
 				Main: strconv.Itoa(stats.Undefined),
-				Sub:  "未指定截止日期",
+				Sub:  cputil.I18n(ctx, "noDeadlineSpecified"),
 			},
 		},
 	}

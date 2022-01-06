@@ -20,11 +20,13 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
+	text "github.com/erda-project/erda/modules/dop/component-protocol/components/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	spec "github.com/erda-project/erda/modules/openapi/component-protocol/component_spec/table"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/common"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/i18n"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/project-list-my/components/list"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentSpaceList struct {
@@ -241,7 +243,7 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			}
 		)
 		updatedAt := each.UpdatedAt.Format("2006-01-02 15:04:05")
-		text, _ := list.CountActiveTime(updatedAt)
+		text := text.UpdatedTime(a.sdk.Ctx, each.UpdatedAt)
 		item := spaceItem{
 			ID:          each.ID,
 			Title:       each.Name,

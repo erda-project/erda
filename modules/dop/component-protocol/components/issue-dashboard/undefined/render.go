@@ -67,7 +67,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 					},
 				},
 				{
-					Text: "未指定截止日期",
+					Text: cputil.I18n(ctx, "noDeadlineSpecified"),
 					StyleConfig: common.StyleConfig{
 						Color: "text-desc",
 					},
