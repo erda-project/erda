@@ -15,8 +15,13 @@
 package db
 
 import (
-	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"time"
+
+	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/erda-project/erda-infra/providers/mysqlxorm"
+	"github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 )
 
 type PipelineSource struct {
@@ -34,6 +39,14 @@ type PipelineSource struct {
 	TimeUpdated   *time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
 }
 
+type PipelineSourceUnique struct {
+	SourceType string `json:"sourceType"`
+	Remote     string `json:"remote"`
+	Ref        string `json:"ref"`
+	Path       string `json:"path"`
+	Name       string `json:"name"`
+}
+
 func (PipelineSource) TableName() string {
 	return "pipeline_sources"
 }
@@ -42,11 +55,12 @@ func (client *Client) CreatePipelineSource(pipelineSource *PipelineSource, ops .
 	session := client.NewSession(ops...)
 	defer session.Close()
 
+	pipelineSource.ID = uuid.New().String()
 	_, err = session.InsertOne(pipelineSource)
 	return err
 }
 
-func (client *Client) UpdatePipelineSource(id uint64, pipelineSource *PipelineSource, ops ...mysqlxorm.SessionOption) error {
+func (client *Client) UpdatePipelineSource(id string, pipelineSource *PipelineSource, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -54,15 +68,17 @@ func (client *Client) UpdatePipelineSource(id uint64, pipelineSource *PipelineSo
 	return err
 }
 
-func (client *Client) DeletePipelineSourceExtra(id uint64, ops ...mysqlxorm.SessionOption) error {
+func (client *Client) DeletePipelineSource(id string, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	_, err := session.ID(id).Delete(new(PipelineSource))
+	source := new(PipelineSource)
+	source.SoftDeletedAt = uint64(time.Now().UnixNano() / 1e6)
+	_, err := session.ID(id).Cols("soft_deleted_at").Delete(source)
 	return err
 }
 
-func (client *Client) GetPipelineSource(id uint64, ops ...mysqlxorm.SessionOption) (*PipelineSource, error) {
+func (client *Client) GetPipelineSource(id string, ops ...mysqlxorm.SessionOption) (*PipelineSource, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -80,3 +96,38 @@ func (client *Client) GetPipelineSource(id uint64, ops ...mysqlxorm.SessionOptio
 	return &pipelineSource, nil
 }
 
+func (client *Client) GetPipelineSourceByUnique(unique *PipelineSourceUnique, ops ...mysqlxorm.SessionOption) ([]PipelineSource, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var (
+		pipelineSources []PipelineSource
+		err             error
+	)
+	if err = session.
+		Where("source_type = ?", unique.SourceType).
+		Where("remote = ?", unique.Remote).
+		Where("ref = ?", unique.Ref).
+		Where("path = ?", unique.Path).
+		Where("name = ?", unique.Name).
+		Where("soft_deleted_at = 0").
+		Find(&pipelineSources); err != nil {
+		return nil, err
+	}
+	return pipelineSources, nil
+}
+
+func (p *PipelineSource) Convert() *pb.PipelineSource {
+	return &pb.PipelineSource{
+		ID:          p.ID,
+		SourceType:  p.SourceType,
+		Remote:      p.Remote,
+		Ref:         p.Ref,
+		Path:        p.Path,
+		Name:        p.Name,
+		PipelineYml: p.PipelineYml,
+		VersionLock: p.VersionLock,
+		TimeCreated: timestamppb.New(*p.TimeCreated),
+		TimeUpdated: timestamppb.New(*p.TimeUpdated),
+	}
+}

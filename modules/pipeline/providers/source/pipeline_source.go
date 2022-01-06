@@ -16,6 +16,7 @@ package definition_client
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/modules/pipeline/providers/source/db"
@@ -26,7 +27,44 @@ type pipelineSource struct {
 }
 
 func (p pipelineSource) Create(ctx context.Context, request *pb.PipelineSourceCreateRequest) (*pb.PipelineSourceCreateResponse, error) {
-	panic("implement me")
+	unique := &db.PipelineSourceUnique{
+		SourceType: request.SourceType,
+		Remote:     request.Remote,
+		Ref:        request.Ref,
+		Path:       request.Path,
+		Name:       request.Name,
+	}
+
+	var (
+		source *db.PipelineSource
+		err    error
+	)
+
+	sources, err := p.dbClient.GetPipelineSourceByUnique(unique)
+	if err != nil {
+		return nil, err
+	}
+	if len(sources) > 1 {
+		return nil, fmt.Errorf("the pipeline source is not unique")
+	}
+
+	if len(sources) == 1 {
+		return &pb.PipelineSourceCreateResponse{PipelineSource: sources[0].Convert()}, nil
+	}
+
+	source = &db.PipelineSource{
+		SourceType:  request.SourceType,
+		Remote:      request.Remote,
+		Ref:         request.Ref,
+		Path:        request.Path,
+		Name:        request.Name,
+		PipelineYml: request.PipelineYml,
+		VersionLock: request.VersionLock,
+	}
+	if err = p.dbClient.CreatePipelineSource(source); err != nil {
+		return nil, err
+	}
+	return &pb.PipelineSourceCreateResponse{PipelineSource: source.Convert()}, nil
 }
 
 func (p pipelineSource) Update(ctx context.Context, request *pb.PipelineSourceUpdateRequest) (*pb.PipelineSourceUpdateResponse, error) {
@@ -34,14 +72,34 @@ func (p pipelineSource) Update(ctx context.Context, request *pb.PipelineSourceUp
 }
 
 func (p pipelineSource) Delete(ctx context.Context, request *pb.PipelineSourceDeleteRequest) (*pb.PipelineSourceDeleteResponse, error) {
-	panic("implement me")
+	return &pb.PipelineSourceDeleteResponse{}, p.dbClient.DeletePipelineSource(request.PipelineSourceID)
 }
 
 func (p pipelineSource) Get(ctx context.Context, request *pb.PipelineSourceGetRequest) (*pb.PipelineSourceGetResponse, error) {
-	panic("implement me")
+	source, err := p.dbClient.GetPipelineSource(request.GetPipelineSourceID())
+	if err != nil {
+		return nil, err
+	}
+	return &pb.PipelineSourceGetResponse{PipelineSource: source.Convert()}, nil
 }
 
 func (p pipelineSource) List(ctx context.Context, request *pb.PipelineSourceListRequest) (*pb.PipelineSourceListResponse, error) {
-	panic("implement me")
-}
+	unique := &db.PipelineSourceUnique{
+		SourceType: request.SourceType,
+		Remote:     request.Remote,
+		Ref:        request.Ref,
+		Path:       request.Path,
+		Name:       request.Name,
+	}
+	sources, err := p.dbClient.GetPipelineSourceByUnique(unique)
+	if err != nil {
+		return nil, err
+	}
 
+	data := make([]*pb.PipelineSource, 0, len(sources))
+	for _, v := range sources {
+		data = append(data, v.Convert())
+	}
+
+	return &pb.PipelineSourceListResponse{Data: data}, nil
+}
