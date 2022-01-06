@@ -23,6 +23,7 @@ import (
 
 	"github.com/ahmetb/go-linq/v3"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph"
 	stdtable "github.com/erda-project/erda-infra/providers/component-protocol/components/table"
@@ -86,6 +87,63 @@ func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, 
 	line.SubTitle = chart.GetChartUnitDefault(chartType, ctx.Value(common.LangKey).(i18n.LanguageCodes), p.I18n)
 
 	return line, nil
+}
+
+func (p *provider) GetBubbleChart(ctx context.Context, bubbleType BubbleChartType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*bubblegraph.Data, error) {
+	var chartType pb.ChartType
+	switch bubbleType {
+	case BubbleChartReqDistribution:
+		chartType = pb.ChartType_AvgDurationDistribution
+	default:
+		return nil, fmt.Errorf("not supported bubbleChartType: %s", bubbleType)
+	}
+
+	baseChart := &chart.BaseChart{
+		StartTime: start,
+		EndTime:   end,
+		TenantId:  tenantId,
+		ServiceId: serviceId,
+		Layers:    []common.TransactionLayerType{layer},
+		LayerPath: path,
+		FuzzyPath: false,
+		Metric:    p.Metric,
+	}
+
+	data, err := chart.Selector(strings.ToLower(chartType.String()), baseChart, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// convert model
+	layout := "2006-01-02 15:04:05"
+	yAxisFormatter := func(value float64) interface{} {
+		switch strings.ToLower(chartType.String()) {
+		case strings.ToLower(pb.ChartType_AvgDurationDistribution.String()):
+			return math.DecimalPlacesWithDigitsNumber(value/1e6, 2)
+		default:
+			return value
+		}
+	}
+
+	dimension := linq.From(data.View).
+		Select(func(i interface{}) interface{} { return i.(*pb.Chart).Dimension }).
+		First()
+	if dimension == nil {
+		dimension = data.Type
+	}
+
+	builder := bubblegraph.NewDataBuilder().WithTitle(p.I18n.Text(ctx.Value(common.LangKey).(i18n.LanguageCodes), strings.ToLower(string(bubbleType))))
+	for _, item := range data.View {
+		builder.WithBubble(bubblegraph.NewBubbleBuilder().
+			WithDimension(dimension.(string)).
+			WithValueX(time.Unix(0, item.Timestamp*1e6).Format(layout)).
+			WithValueY(yAxisFormatter(item.Value)).
+			WithValueSize(item.ExtraValues[0]).
+			Build())
+	}
+	bubble := builder.Build()
+
+	return bubble, nil
 }
 
 func (p *provider) GetCard(ctx context.Context, cardType card.CardType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*kv.KV, error) {

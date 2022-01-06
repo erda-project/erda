@@ -235,6 +235,16 @@ func (m *Chart) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.Value = val
 			case "dimension":
 				m.Dimension = vals[0]
+			case "extraValues":
+				list := make([]float64, 0, len(vals))
+				for _, text := range vals {
+					val, err := strconv.ParseFloat(text, 64)
+					if err != nil {
+						return err
+					}
+					list = append(list, val)
+				}
+				m.ExtraValues = list
 			}
 		}
 	}

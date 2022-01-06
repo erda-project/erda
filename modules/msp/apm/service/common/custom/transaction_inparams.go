@@ -6,10 +6,10 @@ import (
 )
 
 type Model struct {
-	StartTime float64 `json:"startTime"`
-	EndTime   float64 `json:"endTime"`
-	TenantId  string  `json:"tenantId"`
-	ServiceId string  `json:"serviceId"`
+	StartTime int64  `json:"startTime"`
+	EndTime   int64  `json:"endTime"`
+	TenantId  string `json:"tenantId"`
+	ServiceId string `json:"serviceId"`
 }
 
 type TransactionInParams struct {
