@@ -106,12 +106,12 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 					Value: "all",
 				},
 				{
-					Label: cputil.I18n(ctx, "publicApp"),
-					Value: "public",
-				},
-				{
 					Label: cputil.I18n(ctx, "privateApp"),
 					Value: "private",
+				},
+				{
+					Label: cputil.I18n(ctx, "publicApp"),
+					Value: "public",
 				},
 			},
 		}
