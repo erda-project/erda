@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
@@ -34,7 +35,6 @@ import (
 	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/common/gshelper"
 	"github.com/erda-project/erda/modules/admin/component-protocol/types"
 	"github.com/erda-project/erda/modules/admin/services/workbench"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
 	rt "github.com/erda-project/erda/pkg/time/readable_time"
 )
@@ -47,7 +47,6 @@ const (
 )
 
 type MessageList struct {
-	base.DefaultProvider
 	impl.DefaultList
 
 	sdk   *cptype.SDK
