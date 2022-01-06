@@ -1,0 +1,39 @@
+package custom
+
+import (
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+)
+
+type Model struct {
+	DurationMin int64  `json:"durationMin"`
+	DurationMax int64  `json:"durationMax"`
+	ServiceName string `json:"serviceName"`
+	TenantId    string `json:"tenantId"`
+	TraceId     string `json:"traceId"`
+	StartTime   int64  `json:"startTime"`
+	EndTime     int64  `json:"endTime"`
+	RpcMethod   string `json:"rpcMethod"`
+	HttpMethod  string `json:"httpMethod"`
+	Status      string `json:"status"`
+	Limit       int64  `json:"limit"`
+}
+
+type TraceInParams struct {
+	InParamsPtr *Model
+}
+
+func (b *TraceInParams) CustomInParamsPtr() interface{} {
+	if b.InParamsPtr == nil {
+		b.InParamsPtr = &Model{}
+	}
+	return b.InParamsPtr
+}
+
+func (b *TraceInParams) EncodeFromCustomInParams(customInParamsPtr interface{}, stdInParamsPtr *cptype.ExtraMap) {
+	cputil.MustObjJSONTransfer(customInParamsPtr, stdInParamsPtr)
+}
+
+func (b *TraceInParams) DecodeToCustomInParams(stdInParamsPtr *cptype.ExtraMap, customInParamsPtr interface{}) {
+	cputil.MustObjJSONTransfer(stdInParamsPtr, customInParamsPtr)
+}

@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/modules/msp/apm/trace/components/commom/custom"
 	"io"
 	"io/ioutil"
 	"math"
@@ -550,6 +551,68 @@ func (s *traceService) GetTraceDebugHistories(ctx context.Context, req *pb.GetTr
 	}
 	td.Total = count
 	return &pb.GetTraceDebugHistoriesResponse{Data: &td}, nil
+}
+
+func (s *traceService) GetTraceReqDistribution(ctx context.Context, model custom.Model) {
+	//metricsParams := url.Values{}
+	//metricsParams.Set("start", strconv.FormatInt(model.StartTime, 10))
+	//metricsParams.Set("end", strconv.FormatInt(model.EndTime, 10))
+	//
+	//queryParams := make(map[string]*structpb.Value)
+	//queryParams["terminus_keys"] = structpb.NewStringValue(model.TenantId)
+	//
+	//var where bytes.Buffer
+	//// trace id condition
+	//if req.TraceID != "" {
+	//	queryParams["trace_id"] = structpb.NewStringValue(req.TraceID)
+	//	where.WriteString("trace_id::tag=$trace_id AND ")
+	//}
+	//
+	//if req.ServiceName != "" {
+	//	queryParams["service_names"] = structpb.NewStringValue(req.ServiceName)
+	//	where.WriteString("service_names::field=$service_names AND ")
+	//}
+	//
+	//if req.RpcMethod != "" {
+	//	queryParams["rpc_methods"] = structpb.NewStringValue(req.RpcMethod)
+	//	where.WriteString("rpc_methods::field=$rpc_methods AND ")
+	//}
+	//
+	//if req.HttpPath != "" {
+	//	queryParams["http_paths"] = structpb.NewStringValue(req.HttpPath)
+	//	where.WriteString("http_paths::field=$http_paths AND ")
+	//}
+	//
+	//if req.DurationMin > 0 && req.DurationMax > 0 && req.DurationMin < req.DurationMax {
+	//	queryParams["duration_min"] = structpb.NewNumberValue(float64(req.DurationMin))
+	//	queryParams["duration_max"] = structpb.NewNumberValue(float64(req.DurationMax))
+	//	where.WriteString("trace_duration::field>$duration_min AND trace_duration::field<$duration_max AND ")
+	//}
+	//
+	//// trace status condition
+	//where.WriteString(s.traceStatusConditionStrategy(req.Status))
+	//// sort condition
+	//sort := s.sortConditionStrategy(req.Sort)
+	//
+	//statement := fmt.Sprintf("SELECT start_time::field,end_time::field,service_names::field,"+
+	//	"trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE %s terminus_keys::field=$terminus_keys "+
+	//	"%s LIMIT %s", where.String(), sort, strconv.FormatInt(req.Limit, 10))
+	//
+	//
+	//statement := "SELECT avg(trace_duration::field),count(trace_id::tag) FROM trace "
+	//queryParams := map[string]*structpb.Value{
+	//	"span_id": structpb.NewStringValue(req.SpanID),
+	//}
+	//queryRequest := &metricpb.QueryWithTableFormatRequest{
+	//	Start:     strconv.FormatInt(model.StartTime, 10),
+	//	End:       strconv.FormatInt(model.EndTime, 10),
+	//	Statement: statement,
+	//	Params:    queryParams,
+	//}
+	//response, err := p.Metric.QueryWithTableFormat(context.Background(), queryRequest)
+	//if err != nil {
+	//}
+
 }
 
 func (s *traceService) GetTraceQueryConditions(ctx context.Context, req *pb.GetTraceQueryConditionsRequest) (*pb.GetTraceQueryConditionsResponse, error) {
