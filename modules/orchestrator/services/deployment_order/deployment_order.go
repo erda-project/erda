@@ -15,30 +15,30 @@
 package deployment_order
 
 import (
-	"github.com/erda-project/erda/modules/orchestrator/services/runtime"
-	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
+	"github.com/erda-project/erda/modules/orchestrator/services/runtime"
 )
 
 const (
-	appOrderPrefix     = "a_"
-	projectOrderPrefix = "p_"
-	orderNameTmpl      = "%s_%d"
-	release            = "RELEASE"
-	gitBranchLabel     = "gitBranch"
+	appOrderPrefix        = "a_"
+	projectOrderPrefix    = "p_"
+	orderNameTmpl         = "%s_%d"
+	release               = "RELEASE"
+	gitBranchLabel        = "gitBranch"
+	orderStatusWaitDeploy = "WAITDEPLOY"
 )
 
-// DeploymentOrder 应用实例对象封装
 type DeploymentOrder struct {
-	db  *dbclient.DBClient
-	bdl *bundle.Bundle
-	rt  *runtime.Runtime
+	db     *dbclient.DBClient
+	bdl    *bundle.Bundle
+	rt     *runtime.Runtime
+	deploy *deployment.Deployment
 }
 
-// Option 应用实例对象配置选项
 type Option func(*DeploymentOrder)
 
-// New 新建应用实例 service
 func New(options ...Option) *DeploymentOrder {
 	r := &DeploymentOrder{}
 	for _, op := range options {
@@ -47,21 +47,30 @@ func New(options ...Option) *DeploymentOrder {
 	return r
 }
 
-// WithDBClient 配置 db client
+// WithDBClient with database client
 func WithDBClient(db *dbclient.DBClient) Option {
 	return func(r *DeploymentOrder) {
 		r.db = db
 	}
 }
 
+// WithBundle with bundle
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(d *DeploymentOrder) {
 		d.bdl = bdl
 	}
 }
 
+// WithRuntime with runtime service
 func WithRuntime(rt *runtime.Runtime) Option {
 	return func(d *DeploymentOrder) {
 		d.rt = rt
+	}
+}
+
+// WithDeployment with deployment service
+func WithDeployment(deploy *deployment.Deployment) Option {
+	return func(d *DeploymentOrder) {
+		d.deploy = deploy
 	}
 }

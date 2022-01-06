@@ -186,6 +186,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		deployment_order.WithDBClient(db),
 		deployment_order.WithBundle(bdl),
 		deployment_order.WithRuntime(rt),
+		deployment_order.WithDeployment(d),
 	)
 
 	// compose endpoints

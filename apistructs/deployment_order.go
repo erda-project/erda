@@ -1,5 +1,7 @@
 package apistructs
 
+import "time"
+
 const (
 	TypePipeline           = "PIPELINE"
 	TypeApplicationRelease = "APPLICATION_RELEASE"
@@ -14,6 +16,41 @@ type DeploymentOrderCreateRequest struct {
 	ReleaseId string `json:"releaseId"`
 	Workspace string `json:"workspace,omitempty"`
 	Operator  string `json:"operator"`
+	AutoRun   bool   `json:"autoRun"`
+}
+
+type DeploymentOrderCreateResponse struct {
+	Id              string                `json:"id"`
+	Name            string                `json:"name"`
+	Type            string                `json:"type"`
+	ReleaseId       string                `json:"releaseId"`
+	ProjectId       uint64                `json:"projectId"`
+	ProjectName     string                `json:"projectName"`
+	ApplicationId   int64                 `json:"applicationId"`
+	ApplicationName string                `json:"applicationName"`
+	Status          DeploymentOrderStatus `json:"status"`
+}
+
+type DeploymentOrderDeployRequest struct {
+	DeploymentOrderId string
+	Workspace         string `json:"workspace,omitempty"`
+	Operator          string `json:"operator"`
+}
+
+type DeploymentOrderDetail struct {
+	DeploymentOrderItem
+	ReleaseVersion   string              `json:"releaseVersion"`
+	ApplicationsInfo []*ApplicationsInfo `json:"applicationsInfo"`
+}
+
+type ApplicationsInfo struct {
+	Name           string           `json:"name"`
+	Param          string           `json:"param"`
+	ReleaseVersion string           `json:"releaseVersion"`
+	Branch         string           `json:"branch"`
+	CommitId       string           `json:"commitId"`
+	DiceYaml       string           `json:"diceYaml"`
+	Status         DeploymentStatus `json:"status"`
 }
 
 type DeploymentOrderListData struct {
@@ -22,13 +59,17 @@ type DeploymentOrderListData struct {
 }
 
 type DeploymentOrderItem struct {
-	ID        string                `json:"id"`
-	Name      string                `json:"name"`
-	ReleaseID string                `json:"releaseId"`
-	Params    string                `json:"params"`
-	Type      string                `json:"type"`
-	Status    DeploymentOrderStatus `json:"status"`
-	Operator  string                `json:"operator"`
+	ID                string                `json:"id"`
+	Name              string                `json:"name"`
+	ReleaseID         string                `json:"releaseId"`
+	ReleaseVersion    string                `json:"releaseVersion"`
+	Params            string                `json:"params,omitempty"`
+	Type              string                `json:"type"`
+	ApplicationStatus string                `json:"applicationStatus"`
+	Status            DeploymentOrderStatus `json:"status"`
+	Operator          string                `json:"operator"`
+	CreatedAt         time.Time             `json:"createdAt"`
+	UpdatedAt         time.Time             `json:"updatedAt"`
 }
 
 type DeploymentOrderParam struct {
@@ -42,6 +83,12 @@ type DeploymentOrderParamItem struct {
 	IsEncrypt bool   `json:"isEncrypt"`
 }
 
+type DeploymentOrderParamData struct {
+	Key        string `json:"key"`
+	Value      string `json:"value"`
+	ConfigType string `json:"configType"`
+}
+
 type DeploymentOrderStatusMap map[string]DeploymentOrderStatusItem
 
 type DeploymentOrderStatusItem struct {
@@ -49,4 +96,10 @@ type DeploymentOrderStatusItem struct {
 	DeploymentID     uint64           `json:"deploymentId"`
 	DeploymentStatus DeploymentStatus `json:"deploymentStatus"`
 	RuntimeID        uint64           `json:"runtimeId"`
+}
+
+type DeploymentOrderCancelRequest struct {
+	DeploymentOrderId string
+	Operator          string `json:"operator"`
+	Force             bool   `json:"force"`
 }

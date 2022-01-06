@@ -50,6 +50,8 @@ type Runtime struct {
 	Status              string `gorm:"column:runtime_status"`
 	DeploymentStatus    string
 	CurrentDeploymentID uint64
+	DeploymentOrderName string
+	ReleaseVersion      string
 	LegacyStatus        string `gorm:"column:status"`
 	Deployed            bool
 	Deleting            bool `gorm:"-"` // TODO: after legacyStatus removed, we use deleting instead
@@ -275,42 +277,56 @@ func (db *DBClient) FindRuntimesInApps(appIDs []uint64) (map[uint64][]*Runtime, 
 }
 
 func (db *DBClient) FindRuntimeOrCreate(uniqueId spec.RuntimeUniqueId, operator string, source apistructs.RuntimeSource,
-	clusterName string, clusterId uint64, gitRepoAbbrev string, projectID, orgID uint64) (*Runtime, bool, error) {
+	clusterName string, clusterId uint64, gitRepoAbbrev string, projectID, orgID uint64, deploymentOrderName,
+	releaseVersion string) (*Runtime, bool, error) {
+
 	runtime, err := db.FindRuntime(uniqueId)
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to find runtime or create by uniqueId: %v, operator: %v",
 			uniqueId, operator)
 	}
+
 	created := false
 	if runtime == nil {
 		created = true
 		runtime = &Runtime{
-			ApplicationID:    uniqueId.ApplicationId,
-			ProjectID:        projectID, // TODO: currently equal to applicationID, fix later
-			Creator:          operator,
-			Workspace:        uniqueId.Workspace,
-			Env:              uniqueId.Workspace,
-			Name:             uniqueId.Name,
-			GitBranch:        uniqueId.Name,
-			Status:           "Init",
-			LegacyStatus:     "INIT",
-			Source:           source,
-			Deleting:         false,
-			Deployed:         false,
-			Version:          "1",
-			DiceVersion:      "2",
-			ClusterName:      clusterName,
-			ClusterId:        clusterId,
-			ReadableUniqueId: "dice-orchestrator",
-			GitRepoAbbrev:    gitRepoAbbrev,
-			Mem:              0.0,
-			CPU:              0.0,
-			OrgID:            orgID,
+			ApplicationID:       uniqueId.ApplicationId,
+			ProjectID:           projectID, // TODO: currently equal to applicationID, fix later
+			Creator:             operator,
+			Workspace:           uniqueId.Workspace,
+			Env:                 uniqueId.Workspace,
+			Name:                uniqueId.Name,
+			GitBranch:           uniqueId.Name,
+			Status:              "Init",
+			LegacyStatus:        "INIT",
+			Source:              source,
+			Deleting:            false,
+			Deployed:            false,
+			Version:             "1",
+			DiceVersion:         "2",
+			ClusterName:         clusterName,
+			ClusterId:           clusterId,
+			ReadableUniqueId:    "dice-orchestrator",
+			GitRepoAbbrev:       gitRepoAbbrev,
+			Mem:                 0.0,
+			CPU:                 0.0,
+			OrgID:               orgID,
+			DeploymentOrderName: deploymentOrderName,
+			ReleaseVersion:      releaseVersion,
 		}
 		err = db.CreateRuntime(runtime)
 		if err != nil {
 			return nil, created, errors.Wrapf(err, "failed to find runtime or create by uniqueId: %v, operator: %v",
 				uniqueId, operator)
+		}
+	} else {
+		// update deployment order name
+		if runtime.DeploymentOrderName != deploymentOrderName || runtime.ReleaseVersion != releaseVersion {
+			runtime.DeploymentOrderName = deploymentOrderName
+			runtime.ReleaseVersion = releaseVersion
+			if err := db.UpdateRuntime(runtime); err != nil {
+				return nil, false, errors.Wrapf(err, "failed to update runtime deployment order or release info, err: %v", err)
+			}
 		}
 	}
 	return runtime, created, nil
@@ -431,6 +447,15 @@ func (db *DBClient) FindRuntimeServices(runtimeId uint64) ([]RuntimeService, err
 func (db *DBClient) GetRuntimeByProjectIDs(projectIDs []uint64) (*[]Runtime, error) {
 	var runtimes []Runtime
 	if err := db.Where("project_id in (?)", projectIDs).Find(&runtimes).Error; err != nil {
+		return nil, err
+	}
+	return &runtimes, nil
+}
+
+func (db *DBClient) GetRuntimeByDeployOrderName(projectId uint64, orderName string) (*[]Runtime, error) {
+	var runtimes []Runtime
+	if err := db.Where("project_id = ? and deployment_order_name = ?", projectId, orderName).
+		Find(&runtimes).Error; err != nil {
 		return nil, err
 	}
 	return &runtimes, nil

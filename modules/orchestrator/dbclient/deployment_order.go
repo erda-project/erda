@@ -1,3 +1,17 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package dbclient
 
 import (
@@ -17,9 +31,8 @@ const (
 type DeploymentOrder struct {
 	ID              string `gorm:"size:36"`
 	Name            string
-	Source          string // TODO: deprecated
 	Type            string
-	Desc            string
+	Description     string
 	ReleaseId       string
 	Operator        user.ID `gorm:"not null;"`
 	ProjectId       uint64
@@ -28,7 +41,7 @@ type DeploymentOrder struct {
 	ApplicationName string
 	Status          string
 	Params          string
-	Outdated        uint16
+	IsOutdated      uint16
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -67,32 +80,12 @@ func (db *DBClient) GetOrderCountByProject(projectId uint64, tp string) (int64, 
 	return count, nil
 }
 
-func (db *DBClient) GetOrCreateDeploymentOrder(do *DeploymentOrder) error {
-	// TODO
-	//db.Find(&DeploymentOrderItem{
-	//	Name:            do.Name,
-	//	ProjectId:       do.ProjectId,
-	//	ApplicationId:   do.ApplicationId,
-	//	ApplicationName: "",
-	//	Status:          "",
-	//	Params:          "",
-	//	Outdated:        0,
-	//	CreatedAt:       time.Time{},
-	//	UpdatedAt:       time.Time{},
-	//})
-
-	if err := db.Save(do).Error; err != nil {
-		return errors.Wrapf(err, "failed to create deployment order, error: %s", err)
-	}
-	return nil
-}
-
 func (db *DBClient) GetDeploymentOrder(id string) (*DeploymentOrder, error) {
 	var deploymentOrder DeploymentOrder
 	if err := db.
 		Where("id = ?", id).
 		Find(&deploymentOrder).Error; err != nil {
-		return nil, errors.Wrapf(err, "failed to get deployment order %d", id)
+		return nil, errors.Wrapf(err, "failed to get deployment order %s", id)
 	}
 	return &deploymentOrder, nil
 }

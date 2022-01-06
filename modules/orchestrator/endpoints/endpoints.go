@@ -213,8 +213,12 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/runtimes/actions/get-app-workspace-releases", Method: http.MethodGet, Handler: e.GetAppWorkspaceReleases},
 		{Path: "/api/runtimes/actions/group-by-apps", Method: http.MethodGet, Handler: e.ListRuntimesGroupByApps},
 
+		{Path: "/api/deployment-orders/{deploymentOrderID}", Method: http.MethodGet, Handler: e.GetDeploymentOrder},
 		{Path: "/api/deployment-orders", Method: http.MethodGet, Handler: e.ListDeploymentOrder},
 		{Path: "/api/deployment-orders", Method: http.MethodPost, Handler: e.CreateDeploymentOrder},
+		{Path: "/api/deployment-orders/{deploymentOrderID}/actions/deploy", Method: http.MethodPost, Handler: e.DeployDeploymentOrder},
+		{Path: "/api/deployment-orders/{deploymentOrderID}/actions/cancel", Method: http.MethodPost, Handler: e.CancelDeploymentOrder},
+		{Path: "/api/deployment-orders/actions/render-name", Method: http.MethodGet, Handler: e.RenderDeploymentName},
 
 		// kill pod (only k8s)
 		{Path: "/api/runtimes/actions/killpod", Method: http.MethodPost, Handler: e.KillPod},
