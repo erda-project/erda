@@ -18,9 +18,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata"
 )
 
 func TestCache_extractPodMetadata(t *testing.T) {
