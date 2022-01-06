@@ -62,10 +62,9 @@ type process struct{}
 
 func TestPipeline_deletePipelineDefinition(t *testing.T) {
 	type args struct {
+		appDto *apistructs.ApplicationDTO
 		name   string
-		appID  uint64
 		branch string
-		userID string
 	}
 	tests := []struct {
 		name    string
@@ -75,10 +74,14 @@ func TestPipeline_deletePipelineDefinition(t *testing.T) {
 		{
 			name: "test",
 			args: args{
+				appDto: &apistructs.ApplicationDTO{
+					Name:        "test",
+					ProjectID:   1,
+					ProjectName: "test",
+					OrgID:       1,
+				},
 				name:   "test",
-				appID:  1,
 				branch: "test",
-				userID: "1",
 			},
 			wantErr: false,
 		},
@@ -93,7 +96,7 @@ func TestPipeline_deletePipelineDefinition(t *testing.T) {
 					PipelineYml:     pv1.PipelineYmlContent,
 				}, nil
 			})
-			if err := p.deletePipelineDefinition(tt.args.name, tt.args.appID, tt.args.branch, tt.args.userID); (err != nil) != tt.wantErr {
+			if err := p.deletePipelineDefinition(tt.args.appDto, tt.args.branch, tt.args.name); (err != nil) != tt.wantErr {
 				t.Errorf("deletePipelineDefinition() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			patch.Unpatch()
@@ -142,7 +145,7 @@ func TestPipeline_reportPipelineDefinition(t *testing.T) {
 				}, nil
 			})
 
-			if err := p.reportPipelineDefinition(tt.args.appDto, tt.args.userID, tt.args.branch, tt.args.name, tt.args.pipelineYml); (err != nil) != tt.wantErr {
+			if err := p.reportPipelineDefinition(tt.args.appDto, tt.args.branch, tt.args.name, tt.args.pipelineYml); (err != nil) != tt.wantErr {
 				t.Errorf("reportPipelineDefinition() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			patch.Unpatch()

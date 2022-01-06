@@ -23,6 +23,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/providers/definition/db"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
@@ -39,7 +40,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 
 	var pipelineDefinitionExtra db.PipelineDefinitionExtra
 	pipelineDefinitionExtra.ID = uuid.New().String()
-	var extra db.Extra
+	var extra apistructs.PipelineDefinitionExtraValue
 	err := json.Unmarshal([]byte(request.Extra.Extra), &extra)
 	if err != nil {
 		return nil, err
@@ -133,7 +134,7 @@ func (p pipelineDefinition) Update(ctx context.Context, request *pb.PipelineDefi
 			return nil, err
 		}
 
-		var extra db.Extra
+		var extra apistructs.PipelineDefinitionExtraValue
 		err = json.Unmarshal([]byte(request.Extra.Extra), &extra)
 		if err != nil {
 			return nil, err

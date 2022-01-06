@@ -68,7 +68,21 @@ func (p pipelineSource) Create(ctx context.Context, request *pb.PipelineSourceCr
 }
 
 func (p pipelineSource) Update(ctx context.Context, request *pb.PipelineSourceUpdateRequest) (*pb.PipelineSourceUpdateResponse, error) {
-	panic("implement me")
+	source, err := p.dbClient.GetPipelineSource(request.PipelineSourceID)
+	if err != nil {
+		return nil, err
+	}
+
+	source.PipelineYml = request.PipelineYml
+	source.VersionLock = request.VersionLock
+	source.ID = request.PipelineSourceID
+	err = p.dbClient.UpdatePipelineSource(request.PipelineSourceID, source)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.PipelineSourceUpdateResponse{
+		PipelineSource: source.Convert(),
+	}, nil
 }
 
 func (p pipelineSource) Delete(ctx context.Context, request *pb.PipelineSourceDeleteRequest) (*pb.PipelineSourceDeleteResponse, error) {

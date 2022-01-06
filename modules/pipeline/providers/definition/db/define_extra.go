@@ -22,15 +22,10 @@ import (
 )
 
 type PipelineDefinitionExtra struct {
-	ID          string     `json:"id" xorm:"pk autoincr"`
-	Extra       Extra      `json:"extra" xorm:"json"`
-	TimeCreated *time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
-	TimeUpdated *time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
-}
-
-type Extra struct {
-	SnippetConfig *apistructs.SnippetConfigOrder      `json:"snippetConfig" xorm:"json:"`
-	CreateRequest *apistructs.PipelineCreateRequestV2 `json:"createRequest" xorm:"json:"`
+	ID          string                                  `json:"id" xorm:"pk autoincr"`
+	Extra       apistructs.PipelineDefinitionExtraValue `json:"extra" xorm:"json"`
+	TimeCreated *time.Time                              `json:"timeCreated,omitempty" xorm:"created_at created"`
+	TimeUpdated *time.Time                              `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
 }
 
 func (PipelineDefinitionExtra) TableName() string {

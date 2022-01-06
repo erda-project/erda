@@ -16,8 +16,10 @@
 package pipeline
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -45,12 +47,12 @@ import (
 
 // Pipeline pipeline 结构体
 type Pipeline struct {
-	bdl           *bundle.Bundle
-	branchRuleSvc *branchrule.BranchRule
-	publisherSvc  *publisher.Publisher
-	cms           cmspb.CmsServiceServer
-	pipelineSource  sourcepb.SourceServiceServer
-	pipelineDefinition  definitionpb.DefinitionServiceServer
+	bdl                *bundle.Bundle
+	branchRuleSvc      *branchrule.BranchRule
+	publisherSvc       *publisher.Publisher
+	cms                cmspb.CmsServiceServer
+	pipelineSource     sourcepb.SourceServiceServer
+	pipelineDefinition definitionpb.DefinitionServiceServer
 }
 
 // Option Pipeline 配置选项
@@ -628,8 +630,9 @@ func (p *Pipeline) PipelineDefinitionUpdate(req apistructs.GittarPushPayloadEven
 	for _, v := range compare.Diff.Files {
 		if isPipelineYmlPath(v.OldName) && v.OldName != v.Name {
 			// to delete old pipelineDefinition
-			err := p.deletePipelineDefinition(v.OldName, uint64(appID), branch, req.Content.Pusher.Id)
+			err := p.deletePipelineDefinition(appDto, branch, v.Name)
 			if err != nil {
+				logrus.Errorf("deletePipelineDefinition error %v", err)
 				continue
 			}
 		}
@@ -641,8 +644,9 @@ func (p *Pipeline) PipelineDefinitionUpdate(req apistructs.GittarPushPayloadEven
 			}
 
 			if v.Type == "delete" {
-				err := p.deletePipelineDefinition(v.Name, uint64(appID), branch, req.Content.Pusher.Id)
+				err := p.deletePipelineDefinition(appDto, branch, v.Name)
 				if err != nil {
+					logrus.Errorf("deletePipelineDefinition error %v", err)
 					continue
 				}
 			}
@@ -657,8 +661,9 @@ func (p *Pipeline) PipelineDefinitionUpdate(req apistructs.GittarPushPayloadEven
 					return err
 				}
 
-				err = p.reportPipelineDefinition(appDto, req.Content.Pusher.Id, branch, v.Name, pipelineYml)
+				err = p.reportPipelineDefinition(appDto, branch, v.Name, pipelineYml)
 				if err != nil {
+					logrus.Errorf("reportPipelineDefinition error %v", err)
 					continue
 				}
 			}
@@ -667,71 +672,66 @@ func (p *Pipeline) PipelineDefinitionUpdate(req apistructs.GittarPushPayloadEven
 	return nil
 }
 
-func (p *Pipeline) reportPipelineDefinition(appDto *apistructs.ApplicationDTO, userID string, branch string, name string, pipelineYml string) error {
-	// to save pipeline definition
-	//var createReqV1 = apistructs.PipelineCreateRequest{
-	//	PipelineYmlName:    name,
-	//	AppID:              appDto.ID,
-	//	Branch:             branch,
-	//	PipelineYmlContent: pipelineYml,
-	//	UserID:             userID,
-	//}
-	//createReqV2, err := p.ConvertPipelineToV2(&createReqV1)
-	//if err != nil {
-	//	logrus.Errorf("v1 request %v fail to ConvertPipelineToV2 ,err: %s", createReqV1, err)
-	//	return err
-	//}
-	//
-	//var req = deftype.ClientDefinitionProcessRequest{
-	//	PipelineSource:        createReqV2.PipelineSource,
-	//	PipelineYmlName:       createReqV2.PipelineYmlName,
-	//	PipelineYml:           pipelineYml,
-	//	PipelineCreateRequest: createReqV2,
-	//	SnippetConfig: &apistructs.SnippetConfig{
-	//		Name:   "/" + name,
-	//		Source: apistructs.SnippetSourceLocal,
-	//		Labels: map[string]string{
-	//			apistructs.LabelGittarYmlPath: GetGittarYmlNamesLabels(appDto.Name, createReqV2.Labels[apistructs.LabelDiceWorkspace], branch, name),
-	//			apistructs.LabelSnippetScope:  apistructs.FileTreeScopeProjectApp,
-	//			apistructs.LabelProjectID:     strconv.FormatInt(int64(appDto.ProjectID), 10),
-	//			apistructs.LabelOrgID:         strconv.FormatInt(int64(appDto.OrgID), 10),
-	//		},
-	//	},
-	//}
-	//
-	//_, err = p.ds.ProcessPipelineDefinition(apis.WithInternalClientContext(context.Background(), "dop"), req)
-	//if err != nil {
-	//	logrus.Errorf("fail to reportPipelineDefinition req %v ,err: %s", req, err)
-	//	return err
-	//}
+func (p *Pipeline) reportPipelineDefinition(appDto *apistructs.ApplicationDTO, branch string, name string, pipelineYml string) error {
+	var req = &sourcepb.PipelineSourceListRequest{}
+	req.SourceType = apistructs.PipelineSourceDice.String()
+	req.Remote = filepath.Join(appDto.OrgName, appDto.ProjectName, appDto.Name)
+	req.Ref = branch
+	req.Path = filepath.Dir(name)
+	req.Name = strings.Replace(name, req.Path, "", 1)
+	result, err := p.pipelineSource.List(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	if len(result.Data) > 0 {
+		pipelineSource := result.Data[0]
+		var updateReq = sourcepb.PipelineSourceUpdateRequest{}
+		updateReq.PipelineYml = pipelineYml
+		updateReq.VersionLock = pipelineSource.VersionLock
+		updateReq.PipelineSourceID = pipelineSource.ID
+		_, err := p.pipelineSource.Update(context.Background(), &updateReq)
+		if err != nil {
+			return err
+		}
+	} else {
+		var createReq = sourcepb.PipelineSourceCreateRequest{}
+		createReq.SourceType = req.SourceType
+		createReq.Remote = req.Remote
+		createReq.Path = req.Path
+		createReq.Name = req.Name
+		createReq.Ref = req.Ref
+		createReq.PipelineYml = pipelineYml
+		_, err := p.pipelineSource.Create(context.Background(), &createReq)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-func (p *Pipeline) deletePipelineDefinition(name string, appID uint64, branch string, userID string) error {
-	// to delete old pipelineDefinition
-	//var createReqV1 = apistructs.PipelineCreateRequest{
-	//	PipelineYmlName:    name,
-	//	AppID:              appID,
-	//	Branch:             branch,
-	//	PipelineYmlContent: "version: \"1.1\"\nstages: []",
-	//	UserID:             userID,
-	//}
-	//createReqV2, err := p.ConvertPipelineToV2(&createReqV1)
-	//if err != nil {
-	//	logrus.Errorf("v1 request %v fail to ConvertPipelineToV2 ,err: %s", createReqV1, err)
-	//	return err
-	//}
+func (p *Pipeline) deletePipelineDefinition(appDto *apistructs.ApplicationDTO, branch string, name string) error {
+	var req = &sourcepb.PipelineSourceListRequest{}
+	req.SourceType = apistructs.PipelineSourceDice.String()
+	req.Remote = filepath.Join(appDto.OrgName, appDto.ProjectName, appDto.Name)
+	req.Ref = branch
+	req.Path = filepath.Dir(name)
+	req.Name = strings.Replace(name, req.Path, "", 1)
+	result, err := p.pipelineSource.List(context.Background(), req)
+	if err != nil {
+		return err
+	}
 
-	//var req = deftype.ClientDefinitionProcessRequest{
-	//	PipelineSource:  createReqV2.PipelineSource,
-	//	PipelineYmlName: createReqV2.PipelineYmlName,
-	//	IsDelete:        true,
-	//}
-	//_, err = p.ds.ProcessPipelineDefinition(apis.WithInternalClientContext(context.Background(), "dop"), req)
-	//if err != nil {
-	//	logrus.Errorf("fail to deletePipelineDefinition req: %v, err: %s", req, err)
-	//	return err
-	//}
+	if len(result.Data) == 0 {
+		return nil
+	}
+
+	var deleteReq = &sourcepb.PipelineSourceDeleteRequest{}
+	deleteReq.PipelineSourceID = result.Data[0].ID
+	_, err = p.pipelineSource.Delete(context.Background(), deleteReq)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
