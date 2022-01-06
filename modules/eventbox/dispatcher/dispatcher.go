@@ -75,10 +75,6 @@ func New(dingtalk interfaces.DingTalkApiClientFactory) (Dispatcher, error) {
 		subscriberspool: make(map[string]*goroutinepool.GoroutinePool),
 	}
 
-	//etcdi, err := etcdinput.New()
-	//if err != nil {
-	//	return nil, err
-	//}
 	httpi, err := httpinput.New()
 	if err != nil {
 		return nil, err
@@ -120,7 +116,6 @@ func New(dingtalk interfaces.DingTalkApiClientFactory) (Dispatcher, error) {
 		return nil, err
 	}
 
-	//dispatcher.RegisterInput(etcdi)
 	dispatcher.RegisterInput(httpi)
 	dispatcher.RegisterInput(wsi)
 
