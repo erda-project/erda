@@ -29,7 +29,6 @@ import (
 	stdtable "github.com/erda-project/erda-infra/providers/component-protocol/components/table"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/msp/apm/service/pb"
-	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/card"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/chart"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
@@ -94,6 +93,8 @@ func (p *provider) GetBubbleChart(ctx context.Context, bubbleType BubbleChartTyp
 	switch bubbleType {
 	case BubbleChartReqDistribution:
 		chartType = pb.ChartType_AvgDurationDistribution
+	case BubbleChartSlowReqDistribution:
+		chartType = pb.ChartType_SlowDurationDistribution
 	default:
 		return nil, fmt.Errorf("not supported bubbleChartType: %s", bubbleType)
 	}
@@ -118,7 +119,7 @@ func (p *provider) GetBubbleChart(ctx context.Context, bubbleType BubbleChartTyp
 	layout := "2006-01-02 15:04:05"
 	yAxisFormatter := func(value float64) interface{} {
 		switch strings.ToLower(chartType.String()) {
-		case strings.ToLower(pb.ChartType_AvgDurationDistribution.String()):
+		case strings.ToLower(pb.ChartType_AvgDurationDistribution.String()), strings.ToLower(pb.ChartType_SlowDurationDistribution.String()):
 			return math.DecimalPlacesWithDigitsNumber(value/1e6, 2)
 		default:
 			return value
@@ -171,31 +172,27 @@ func (p *provider) GetCard(ctx context.Context, cardType card.CardType, start, e
 	return pair, nil
 }
 
-func (p *provider) GetTable(ctx context.Context, tableType table.TableType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string, pageNo int, pageSize int, orderby ...*common.Sort) (*stdtable.Table, error) {
-	baseBuilder := &table.BaseBuilder{
-		StartTime: start,
-		EndTime:   end,
-		TenantId:  tenantId,
-		ServiceId: serviceId,
-		Layer:     layer,
-		LayerPath: path,
-		FuzzyPath: true,
-		OrderBy:   orderby,
-		Metric:    p.Metric,
-		PageNo:    pageNo,
-		PageSize:  pageSize,
-	}
-
-	data, err := table.GetTable(ctx, tableType, baseBuilder)
+func (p *provider) GetTable(ctx context.Context, builder table.Builder) (*stdtable.Table, error) {
+	data, err := builder.GetTable(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	tt := transaction.InitTable(ctx.Value(common.LangKey).(i18n.LanguageCodes), p.I18n)
-	tt.Total = uint64(data.Total)
-	tt.PageSize = uint64(pageSize)
-	tt.PageNo = uint64(pageNo)
+	lang := ctx.Value(common.LangKey).(i18n.LanguageCodes)
 
+	tt := stdtable.Table{
+		Columns: stdtable.ColumnsInfo{
+			ColumnsMap: map[stdtable.ColumnKey]stdtable.Column{},
+		},
+		Total:    uint64(data.Total),
+		PageSize: uint64(builder.GetBaseBuildParams().PageSize),
+		PageNo:   uint64(builder.GetBaseBuildParams().PageNo),
+	}
+
+	for _, column := range data.Columns {
+		tt.Columns.Orders = append(tt.Columns.Orders, stdtable.ColumnKey(column.Key))
+		tt.Columns.ColumnsMap[stdtable.ColumnKey(column.Key)] = stdtable.Column{Title: p.I18n.Text(lang, column.Key), FieldBindToOrder: column.Key, EnableSort: column.Sortable}
+	}
 	for _, row := range data.Rows {
 		stdrow := stdtable.Row{
 			CellsMap: map[stdtable.ColumnKey]stdtable.Cell{},

@@ -39,13 +39,16 @@ type provider struct {
 
 type BubbleChartType string
 
-const BubbleChartReqDistribution BubbleChartType = "requestDistribution"
+const (
+	BubbleChartReqDistribution     BubbleChartType = "requestDistribution"
+	BubbleChartSlowReqDistribution BubbleChartType = "slowRequestDistribution"
+)
 
 type ServiceDataSource interface {
 	GetChart(ctx context.Context, chartType pb.ChartType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*linegraph.Data, error)
 	GetBubbleChart(ctx context.Context, bubbleType BubbleChartType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*bubblegraph.Data, error)
 	GetCard(ctx context.Context, cardType card.CardType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*kv.KV, error)
-	GetTable(ctx context.Context, tableType table.TableType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string, pageNo int, pageSize int, orderby ...*common.Sort) (*stdtable.Table, error)
+	GetTable(ctx context.Context, builder table.Builder) (*stdtable.Table, error)
 }
 
 func init() {

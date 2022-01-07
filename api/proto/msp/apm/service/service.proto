@@ -171,13 +171,14 @@ message AggregateMetric {
 }
 
 enum ChartType {
-  RPS                     = 0;
-  AvgDuration             = 1;
-  AvgDurationDistribution = 2;
-  ErrorRate               = 3;
-  HttpCode                = 4;
-  ErrorCount              = 5;
-  SlowCount               = 6;
+  RPS                      = 0;
+  AvgDuration              = 1;
+  AvgDurationDistribution  = 2;
+  ErrorRate                = 3;
+  HttpCode                 = 4;
+  ErrorCount               = 5;
+  SlowCount                = 6;
+  SlowDurationDistribution = 7;
 }
 
 enum ChartPosition {
