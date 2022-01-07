@@ -14,7 +14,9 @@
 
 package strutil
 
-import "regexp"
+import (
+	"regexp"
+)
 
 func ReplaceAllStringSubmatchFunc(re *regexp.Regexp, s string, repl func([]string) string) string {
 	result := ""
@@ -50,4 +52,34 @@ func InSlice(item string, dst []string) bool {
 		}
 	}
 	return false
+}
+
+// PrefixWithSemVer 判断字符串是否以语义化版本号开头
+func PrefixWithSemVer(s string) bool {
+	return prefixWith3LevelSemver(s) || prefixWith2LevelSemver(s) || match3LevelSemver(s) || match2LevelSemver(s)
+}
+
+func prefixWith3LevelSemver(s string) bool {
+	ok, _ := regexp.MatchString(`^(0|[v1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?-`, s)
+	return ok
+}
+
+func prefixWith2LevelSemver(s string) bool {
+	ok, _ := regexp.MatchString(`^(0|[v1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?-`, s)
+	return ok
+}
+
+// MatchSemVer 判断字符串是否完全匹配
+func MatchSemVer(s string) bool {
+	return match3LevelSemver(s) || match2LevelSemver(s)
+}
+
+func match3LevelSemver(s string) bool {
+	ok, _ := regexp.MatchString(`^(0|[v1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`, s)
+	return ok
+}
+
+func match2LevelSemver(s string) bool {
+	ok, _ := regexp.MatchString(`^(0|[v1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`, s)
+	return ok
 }

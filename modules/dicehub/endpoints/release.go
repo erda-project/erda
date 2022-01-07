@@ -61,12 +61,24 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 	if err := json.NewDecoder(r.Body).Decode(&releaseRequest); err != nil {
 		return apierrors.ErrCreateRelease.InvalidParameter(err).ToResp(), nil
 	}
-	// 如果没有传 version, 则查找规则列表, 如果当前分支能匹配上某个规则, 则将 version 生成出来
+
 	l.WithFields(map[string]interface{}{
 		"releaseRequest.Version":          releaseRequest.Version,
 		"releaseRequest.IsStable":         releaseRequest.IsStable,
 		"releaseRequest.IsProjectRelease": releaseRequest.IsProjectRelease,
-	}).Infoln("releaseRequest parameters")
+	}).Debugln("releaseRequest parameters")
+
+	// 如果没传 IsStable 或 IsStable==false, 则 version 符合语义化版本号时 IsStable=true
+	if !releaseRequest.IsStable {
+		releaseRequest.IsStable = strutil.MatchSemVer(releaseRequest.Version)
+	}
+
+	// 项目级 release 一定是 Stable
+	if releaseRequest.IsProjectRelease {
+		releaseRequest.IsStable = true
+	}
+
+	// 如果没有传 version, 则查找规则列表, 如果当前分支能匹配上某个规则且分支 base 部分符合语义化版本号, 则将 version 生成出来, 并且令 IsStable=true
 	if releaseRequest.Version == "" {
 		branch, ok := releaseRequest.Labels["gitBranch"]
 		if !ok {
@@ -79,20 +91,13 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 			return apiError.ToResp(), nil
 		}
 		for _, rule := range rules.List {
-			l.WithField("rule pattern", rule.Pattern).WithField("is_enabled", rule.IsEnabled).Infoln()
-			if rule.Match(branch) {
-				releaseRequest.Version = filepath.Base(branch) + "-" + time.Now().Format("2006-01-02-150405")
+			l.WithField("rule pattern", rule.Pattern).WithField("is_enabled", rule.IsEnabled).Debugln()
+			if rule.Match(branch) && strutil.PrefixWithSemVer(filepath.Base(branch)) {
+				releaseRequest.Version = filepath.Base(branch) + "+" + time.Now().Format("20060102150405")
+				releaseRequest.IsStable = true
 				break
 			}
 		}
-	}
-	// 如果没传 IsStable 或 IsStable==false, 则 version 非空时 IsStable=true
-	if !releaseRequest.IsStable {
-		releaseRequest.IsStable = releaseRequest.Version != ""
-	}
-	// 项目级 release 一定是 Stable
-	if releaseRequest.IsProjectRelease {
-		releaseRequest.IsStable = true
 	}
 
 	if !releaseRequest.IsProjectRelease && releaseRequest.ReleaseName == "" {
