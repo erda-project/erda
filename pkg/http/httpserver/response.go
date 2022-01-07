@@ -108,6 +108,23 @@ func OkResp(data interface{}, userIDs ...[]string) (Responser, error) {
 	}, nil
 }
 
+// NotOkResp 采用httpserver框架时异常返回结果封装
+//
+// 在 `userIDs` 中设置需要由 openapi 注入的用户信息的 ID 列表
+func NotOkResp(data interface{}, status int, userIDs ...[]string) (Responser, error) {
+	content := Resp{
+		Success: false,
+		Data:    data,
+	}
+	if len(userIDs) > 0 {
+		content.UserIDs = strutil.DedupSlice(userIDs[0], true)
+	}
+	return HTTPResponse{
+		Status:  status,
+		Content: content,
+	}, nil
+}
+
 // WriteYAML 响应yaml结构
 func WriteYAML(w http.ResponseWriter, v string) {
 	w.Header().Set("Content-Type", "application/x-yaml; charset=utf-8")
