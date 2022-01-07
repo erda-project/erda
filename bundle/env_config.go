@@ -110,9 +110,7 @@ func (b *Bundle) DeleteNamespaceRelation(defaultNamespace string) error {
 	return nil
 }
 
-// FetchDeploymentConfig 通过 namespace 查询部署配置
-// return (ENV, FILE, error)
-func (b *Bundle) FetchDeploymentConfig(namespace string) (map[string]string, map[string]string, error) {
+func (b *Bundle) FetchDeploymentConfigDetail(namespace string) ([]apistructs.EnvConfig, []apistructs.EnvConfig, error) {
 	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, nil, err
@@ -128,16 +126,38 @@ func (b *Bundle) FetchDeploymentConfig(namespace string) (map[string]string, map
 	if !resp.IsOK() || !fetchResp.Success {
 		return nil, nil, toAPIError(resp.StatusCode(), fetchResp.Error)
 	}
-	envs := make(map[string]string)
-	files := make(map[string]string)
+	envs := make([]apistructs.EnvConfig, 0)
+	files := make([]apistructs.EnvConfig, 0)
 	for _, c := range fetchResp.Data {
 		if c.ConfigType == "FILE" {
-			files[c.Key] = c.Value
+			files = append(files, c)
 		} else {
-			envs[c.Key] = c.Value
+			envs = append(envs, c)
 		}
-
 	}
+
+	return envs, files, nil
+}
+
+// FetchDeploymentConfig 通过 namespace 查询部署配置
+// return (ENV, FILE, error)
+func (b *Bundle) FetchDeploymentConfig(namespace string) (map[string]string, map[string]string, error) {
+	envDetail, fileDetail, err := b.FetchDeploymentConfigDetail(namespace)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	envs := make(map[string]string, 0)
+	files := make(map[string]string, 0)
+
+	for _, c := range envDetail {
+		envs[c.Key] = c.Value
+	}
+
+	for _, c := range fileDetail {
+		files[c.Key] = c.Value
+	}
+
 	return envs, files, nil
 }
 

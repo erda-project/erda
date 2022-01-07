@@ -40,6 +40,7 @@ var (
 var (
 	ErrCancelDeployment     = err("ErrCancelDeployment", "取消部署失败")
 	ErrListDeployment       = err("ErrListDeployment", "查询部署列表失败")
+	ErrListDeploymentOrder  = err("ErrListDeploymentOrder", "查询部署单失败")
 	ErrGetDeployment        = err("ErrGetDeployment", "查询部署失败")
 	ErrApproveDeployment    = err("ErrApproveDeployment", "审批部署失败")
 	ErrDeployStagesAddons   = err("ErrDeployStagesAddons", "部署addon失败")
