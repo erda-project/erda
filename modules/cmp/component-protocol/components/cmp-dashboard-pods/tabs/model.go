@@ -14,10 +14,7 @@
 
 package tabs
 
-import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-
 type Tabs struct {
-	base.DefaultProvider
 	Type       string                 `json:"type,omitempty"`
 	Props      Props                  `json:"props"`
 	State      State                  `json:"state"`

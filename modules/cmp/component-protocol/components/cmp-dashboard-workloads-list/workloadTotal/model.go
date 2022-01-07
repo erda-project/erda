@@ -14,13 +14,7 @@
 
 package workloadTotal
 
-import (
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-)
-
 type ComponentWorkloadTotal struct {
-	base.DefaultProvider
-
 	Type  string `json:"type,omitempty"`
 	Data  Data   `json:"data"`
 	State State  `json:"state,omitempty"`

@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type Props struct {
@@ -32,7 +32,6 @@ type State struct {
 }
 
 type RefreshButton struct {
-	base.DefaultProvider
 	Type       string                 `json:"type"`
 	Props      Props                  `json:"props"`
 	Operations map[string]interface{} `json:"operations"`

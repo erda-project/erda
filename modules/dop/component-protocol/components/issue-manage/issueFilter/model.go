@@ -25,7 +25,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/services/issuefilterbm"
 	"github.com/erda-project/erda/modules/dop/services/issuestate"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
@@ -37,7 +36,7 @@ type ComponentFilter struct {
 	filter.CommonFilter
 	State    State    `json:"state,omitempty"`
 	InParams InParams `json:"-"`
-	base.DefaultProvider
+
 	Bms             []issuefilterbm.MyFilterBm `json:"-"` // bookmarks
 	FlushOptsFromBm string                     `json:"-"` // bm ID
 	gsHelper        *gshelper.GSHelper

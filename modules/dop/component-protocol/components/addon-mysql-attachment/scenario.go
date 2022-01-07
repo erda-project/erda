@@ -16,7 +16,6 @@ package addon_account_manage
 
 import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-attachment/attachmentTable"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-attachment/config/configContent"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-attachment/config/configCopyParams"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-attachment/config/configDrawer"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-attachment/config/configPanel"

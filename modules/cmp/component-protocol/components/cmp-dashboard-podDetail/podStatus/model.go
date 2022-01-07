@@ -14,13 +14,7 @@
 
 package PodStatus
 
-import (
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-)
-
 type PodStatus struct {
-	base.DefaultProvider
-
 	Type  string `json:"type,omitempty"`
 	Props Props  `json:"props"`
 	State State  `json:"state,omitempty"`
