@@ -504,6 +504,11 @@ var (
 	ErrApplicationsResources = err("ErrApplicationsResources", "查询应用资源列表失败")
 
 	ErrListErrorLog = err("ErrListErrorLog", "查看错误日志失败")
+
+	ErrCreateProjectPipeline = err("ErrCreateProjectPipeline", "创建项目级流水线失败")
+	ErrListProjectPipeline   = err("ErrListProjectPipeline", "获取项目级流水线列表失败")
+	ErrUpdateProjectPipeline = err("ErrUpdateProjectPipeline", "修改项目级流水线失败")
+	ErrDeleteProjectPipeline = err("ErrDeleteProjectPipeline", "删除项目级流水线失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

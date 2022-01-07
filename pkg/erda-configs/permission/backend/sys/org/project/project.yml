@@ -840,3 +840,24 @@
   action: UPDATE
 
 ## test report end ##
+
+## project pipeline ##
+- role: Owner,Lead,PM,PD,Dev,QA,Ops,Support,Reporter,Guest
+  scope: project
+  resource: projectPipeline
+  action: GET
+
+- role: Owner,Lead,PM,PD,Dev,QA,Ops
+  scope: project
+  resource: projectPipeline
+  action: CREATE
+
+- role: Owner,Lead,PM,PD,Dev,QA,Ops
+  scope: project
+  resource: projectPipeline
+  action: UPDATE
+
+- role: Owner,Lead,PM,PD,Dev,QA,Ops
+  scope: project
+  resource: projectPipeline
+  action: DELETE

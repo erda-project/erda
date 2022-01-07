@@ -13,3 +13,86 @@
 // limitations under the License.
 
 package project_pipeline
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"path/filepath"
+
+	"github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/providers/project_pipeline/deftype"
+)
+
+type ProjectSourceType interface {
+	GenerateReq(ctx context.Context, p *ProjectPipelineSvc, params deftype.ProjectPipelineCreate) (*pb.PipelineSourceCreateRequest, error)
+	GetPipelineCreateRequestV2() string
+}
+
+type ErdaProjectSourceType struct {
+	PipelineCreateRequestV2 string `json:"pipelineCreateRequestV2"`
+}
+
+type GithubProjectSourceType struct {
+	PipelineCreateRequestV2 string `json:"pipelineCreateRequestV2"`
+}
+
+func NewProjectSourceType(t string) ProjectSourceType {
+	if t == deftype.ErdaProjectPipelineType.String() {
+		return new(ErdaProjectSourceType)
+	}
+
+	if t == deftype.GithubProjectPipelineType.String() {
+		return new(GithubProjectSourceType)
+	}
+
+	return nil
+}
+
+func (s *ErdaProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipelineSvc, params deftype.ProjectPipelineCreate) (*pb.PipelineSourceCreateRequest, error) {
+	app, err := p.bundle.GetApp(params.AppID)
+	if err != nil {
+		return nil, err
+	}
+	createReqV2, err := p.pipelineSvc.ConvertPipelineToV2(&apistructs.PipelineCreateRequest{
+		PipelineYmlName:    filepath.Join(params.Path, params.FileName),
+		AppID:              params.AppID,
+		Branch:             params.Ref,
+		PipelineYmlContent: "",
+		UserID:             params.IdentityInfo.UserID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	b, err := json.Marshal(createReqV2)
+	if err != nil {
+		return nil, err
+	}
+	s.PipelineCreateRequestV2 = string(b)
+	return &pb.PipelineSourceCreateRequest{
+		SourceType:  params.SourceType.String(),
+		Remote:      makeRemote(app),
+		Ref:         params.Ref,
+		Path:        params.Path,
+		Name:        params.FileName,
+		PipelineYml: createReqV2.PipelineYml,
+	}, nil
+}
+
+func (s *ErdaProjectSourceType) GetPipelineCreateRequestV2() string {
+	return s.PipelineCreateRequestV2
+}
+
+func makeRemote(app *apistructs.ApplicationDTO) string {
+	return fmt.Sprintf("%s/%s/%s", app.OrgName, app.ProjectName, app.Name)
+}
+
+func (s *GithubProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipelineSvc, params deftype.ProjectPipelineCreate) (*pb.PipelineSourceCreateRequest, error) {
+
+	return nil, nil
+}
+
+func (s *GithubProjectSourceType) GetPipelineCreateRequestV2() string {
+	return s.PipelineCreateRequestV2
+}

@@ -17,12 +17,13 @@ package project_pipeline
 import (
 	"context"
 
+	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	"github.com/erda-project/erda/modules/dop/providers/project_pipeline/deftype"
 )
 
 type ProjectPipelineService interface {
 	Create(ctx context.Context, params deftype.ProjectPipelineCreate) (*deftype.ProjectPipelineCreateResult, error)
-	List(ctx context.Context, params deftype.ProjectPipelineList) (*deftype.ProjectPipelineListResult, error)
+	List(ctx context.Context, params deftype.ProjectPipelineList) ([]*pb.PipelineDefinition, error)
 	Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error)
 	Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error)
 	Star(ctx context.Context, params deftype.ProjectPipelineStar) (deftype.ProjectPipelineStarResult, error)

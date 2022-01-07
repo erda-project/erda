@@ -23,7 +23,8 @@ import (
 type ProjectPipelineDelete struct {
 	IdentityInfo apistructs.IdentityInfo
 
-	ID string `json:"id"`
+	ID        string `json:"id"`
+	ProjectID uint64 `json:"projectID"`
 }
 
 func (p *ProjectPipelineDelete) Validate() error {

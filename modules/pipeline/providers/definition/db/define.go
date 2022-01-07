@@ -17,7 +17,10 @@ package db
 import (
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
+	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 )
 
 type PipelineDefinition struct {
@@ -80,4 +83,93 @@ func (client *Client) GetPipelineDefinition(id string, ops ...mysqlxorm.SessionO
 	}
 
 	return &pipelineDefinition, nil
+}
+
+type PipelineDefinitionSource struct {
+	PipelineDefinition `xorm:"extends"`
+
+	SourceType string `json:"sourceType"`
+	Remote     string `json:"remote"`
+	Ref        string `json:"ref"`
+	Path       string `json:"path"`
+	FileName   string `json:"fileName"`
+}
+
+func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListRequest, ops ...mysqlxorm.SessionOption) ([]PipelineDefinitionSource, int64, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var (
+		pipelineDefinitionSources []PipelineDefinitionSource
+		total                     int64
+		err                       error
+	)
+	engine := session.Table("pipeline_definitions").Alias("d").
+		Cols("d.*,s.source_type,s.remote,s.ref,s.path,s.name AS fileName").
+		Join("LEFT", map[string]string{"pipeline_sources": "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
+		Where("d.soft_deleted_at = 0").
+		In("s.remote", req.Remote)
+	if req.Name != "" {
+		engine = engine.Where("d.name LIKE ?", "%"+req.Name+"%")
+	}
+	if len(req.Creator) != 0 {
+		engine = engine.In("d.creator", req.Creator)
+	}
+	if len(req.Executor) != 0 {
+		engine = engine.In("d.executor", req.Executor)
+	}
+	if len(req.Category) != 0 {
+		engine = engine.In("d.category", req.Category)
+	}
+	if len(req.Ref) != 0 {
+		engine = engine.In("s.ref", req.Ref)
+	}
+	if len(req.Status) != 0 {
+		engine = engine.In("d.status", req.Status)
+	}
+	if len(req.TimeCreated) == 2 {
+		if req.TimeCreated[0] != "" {
+			engine = engine.Where("d.created_at >= ?", req.TimeCreated[0])
+		}
+		if req.TimeCreated[1] != "" {
+			engine = engine.Where("d.created_at <= ?", req.TimeCreated[1])
+		}
+	}
+	if len(req.TimeStarted) == 2 {
+		if req.TimeStarted[0] != "" {
+			engine = engine.Where("d.started_at >= ?", req.TimeStarted[0])
+		}
+		if req.TimeStarted[1] != "" {
+			engine = engine.Where("d.started_at <= ?", req.TimeStarted[1])
+		}
+	}
+	if err = engine.Limit(int(req.PageSize), int((req.PageNo-1)*req.PageSize)).
+		Find(&pipelineDefinitionSources); err != nil {
+		return nil, 0, err
+	}
+	total, err = engine.Count(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+	return pipelineDefinitionSources, total, nil
+}
+
+func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
+	return &pb.PipelineDefinition{
+		ID:          p.ID,
+		Name:        p.Name,
+		Creator:     p.Creator,
+		Category:    p.Category,
+		CostTime:    p.CostTime,
+		Executor:    p.Executor,
+		StartedAt:   timestamppb.New(*p.StartedAt),
+		EndedAt:     timestamppb.New(*p.EndedAt),
+		TimeCreated: timestamppb.New(*p.TimeCreated),
+		TimeUpdated: timestamppb.New(*p.TimeUpdated),
+		SourceType:  p.SourceType,
+		Remote:      p.Remote,
+		Ref:         p.Ref,
+		Path:        p.Path,
+		FileName:    p.FileName,
+	}
 }
