@@ -126,10 +126,11 @@ func (l *List) doFilterApp() (data *list.Data) {
 
 	for _, p := range apps.List {
 		item := list.Item{
-			ID:      strconv.FormatUint(p.ID, 10),
-			LogoURL: p.Logo,
-			Title:   p.Name,
-			KvInfos: l.GenAppKvInfo(p),
+			ID:          strconv.FormatUint(p.ID, 10),
+			LogoURL:     p.Logo,
+			Title:       p.Name,
+			KvInfos:     l.GenAppKvInfo(p),
+			Description: l.appDescription(p.Desc),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
 					WithSkipRender(true).
@@ -148,4 +149,11 @@ func (l *List) doFilterApp() (data *list.Data) {
 		data.List = append(data.List, item)
 	}
 	return
+}
+
+func (l *List) appDescription(desc string) string {
+	if len(desc) == 0 {
+		return l.sdk.I18n("defaultAppDescription")
+	}
+	return desc
 }
