@@ -7,8 +7,8 @@ import (
 	fmt "fmt"
 	math "math"
 	proto "github.com/golang/protobuf/proto"
-	_ "github.com/erda-project/erda-proto-go/oap/common/pb"
 	_ "google.golang.org/protobuf/types/known/structpb"
+	_ "github.com/erda-project/erda-proto-go/oap/common/pb"
 	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
 )
 

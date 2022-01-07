@@ -25,7 +25,7 @@ import (
 )
 
 type PipelineSource struct {
-	ID          string `json:"id"`
+	ID          string `json:"id" xorm:"pk"`
 	SourceType  string `json:"sourceType"`
 	Remote      string `json:"remote"`
 	Ref         string `json:"ref"`
@@ -33,10 +33,10 @@ type PipelineSource struct {
 	Name        string `json:"name"`
 	PipelineYml string `json:"pipelineYml"`
 
-	VersionLock   uint64     `json:"versionLock" xorm:"version_lock version"`
-	SoftDeletedAt uint64     `json:"softDeletedAt"`
-	TimeCreated   *time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
-	TimeUpdated   *time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
+	VersionLock   uint64    `json:"versionLock" xorm:"version_lock version"`
+	SoftDeletedAt uint64    `json:"softDeletedAt"`
+	CreatedAt     time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
+	UpdatedAt     time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
 }
 
 type PipelineSourceUnique struct {
@@ -72,9 +72,12 @@ func (client *Client) DeletePipelineSource(id string, ops ...mysqlxorm.SessionOp
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	source := new(PipelineSource)
+	source, err := client.GetPipelineSource(id)
+	if err != nil {
+		return err
+	}
 	source.SoftDeletedAt = uint64(time.Now().UnixNano() / 1e6)
-	_, err := session.ID(id).Cols("soft_deleted_at").Delete(source)
+	_, err = session.ID(id).Cols("soft_deleted_at").Update(source)
 	return err
 }
 
@@ -85,7 +88,8 @@ func (client *Client) GetPipelineSource(id string, ops ...mysqlxorm.SessionOptio
 	var pipelineSource PipelineSource
 	var has bool
 	var err error
-	if has, _, err = session.Where("id = ? and soft_deleted_at = 0", id).GetFirst(&pipelineSource).GetResult(); err != nil {
+	if has, _, err = session.Where("id = ? and soft_deleted_at = 0", id).
+		GetFirst(&pipelineSource).GetResult(); err != nil {
 		return nil, err
 	}
 
@@ -127,7 +131,7 @@ func (p *PipelineSource) Convert() *pb.PipelineSource {
 		Name:        p.Name,
 		PipelineYml: p.PipelineYml,
 		VersionLock: p.VersionLock,
-		TimeCreated: timestamppb.New(*p.TimeCreated),
-		TimeUpdated: timestamppb.New(*p.TimeUpdated),
+		TimeCreated: timestamppb.New(p.CreatedAt),
+		TimeUpdated: timestamppb.New(p.UpdatedAt),
 	}
 }
