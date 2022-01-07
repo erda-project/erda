@@ -6,11 +6,10 @@ package pb
 import (
 	base64 "encoding/base64"
 	json "encoding/json"
-	url "net/url"
-	strings "strings"
-
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
 	structpb "google.golang.org/protobuf/types/known/structpb"
+	url "net/url"
+	strings "strings"
 )
 
 // This is a compile-time assertion to ensure that this generated file

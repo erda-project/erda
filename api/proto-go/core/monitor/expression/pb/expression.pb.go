@@ -7,9 +7,6 @@
 package pb
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/erda-project/erda-proto-go/common/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	_ "github.com/mwitkow/go-proto-validators"
@@ -17,6 +14,8 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	structpb "google.golang.org/protobuf/types/known/structpb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (

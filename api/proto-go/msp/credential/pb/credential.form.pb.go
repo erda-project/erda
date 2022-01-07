@@ -5,12 +5,11 @@ package pb
 
 import (
 	base64 "encoding/base64"
-	url "net/url"
-	strconv "strconv"
-
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
 	pb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	url "net/url"
+	strconv "strconv"
 )
 
 // This is a compile-time assertion to ensure that this generated file
