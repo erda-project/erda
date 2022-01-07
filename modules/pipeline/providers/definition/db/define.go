@@ -24,7 +24,7 @@ import (
 )
 
 type PipelineDefinition struct {
-	ID                        string     `json:"id"`
+	ID                        string     `json:"id" xorm:"pk"`
 	Name                      string     `json:"name"`
 	CostTime                  uint64     `json:"costTime"`
 	Creator                   string     `json:"creator"`
