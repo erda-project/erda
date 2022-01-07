@@ -25,9 +25,8 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-// applyOpenAPIToken 从 openapi 动态获取 oauth2 token
-func (b *Bundle) GetOpenapiOAuth2Token(req apistructs.OpenapiOAuth2TokenGetRequest) (*apistructs.OpenapiOAuth2Token, error) {
-	host, err := b.urls.Openapi()
+func (b *Bundle) GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error) {
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +46,7 @@ func (b *Bundle) GetOpenapiOAuth2Token(req apistructs.OpenapiOAuth2TokenGetReque
 	if !httpResp.IsOK() {
 		return nil, apierrors.ErrInvoke.InternalError(errors.New(body.String()))
 	}
-	var token apistructs.OpenapiOAuth2Token
+	var token apistructs.OAuth2Token
 	err = json.NewDecoder(&body).Decode(&token)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
@@ -55,8 +54,8 @@ func (b *Bundle) GetOpenapiOAuth2Token(req apistructs.OpenapiOAuth2TokenGetReque
 	return &token, nil
 }
 
-func (b *Bundle) InvalidateOpenapiOAuth2Token(req apistructs.OpenapiOAuth2TokenInvalidateRequest) (*apistructs.OpenapiOAuth2Token, error) {
-	host, err := b.urls.Openapi()
+func (b *Bundle) InvalidateOAuth2Token(req apistructs.OAuth2TokenInvalidateRequest) (*apistructs.OAuth2Token, error) {
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +72,7 @@ func (b *Bundle) InvalidateOpenapiOAuth2Token(req apistructs.OpenapiOAuth2TokenI
 	if !httpResp.IsOK() {
 		return nil, apierrors.ErrInvoke.InternalError(errors.New(body.String()))
 	}
-	var token apistructs.OpenapiOAuth2Token
+	var token apistructs.OAuth2Token
 	err = json.NewDecoder(&body).Decode(&token)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
