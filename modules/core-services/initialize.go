@@ -54,6 +54,7 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 	"github.com/erda-project/erda/pkg/license"
+	"github.com/erda-project/erda/pkg/oauth2"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
@@ -76,10 +77,14 @@ func (p *provider) Initialize() error {
 	)
 
 	go ep.UserSvc().UcUserMigration()
-
 	server := httpserver.New(conf.ListenAddr())
 	server.RegisterEndpoint(ep.Routes())
 	server.WithLocaleLoader(bdl.GetLocaleLoader())
+
+	p.oauth2server = oauth2.NewOAuth2Server()
+	server.Router().Path("/oauth2/token").HandlerFunc(p.oauth2server.Token)
+	server.Router().Path("/oauth2/invalidate_token").HandlerFunc(p.oauth2server.InvalidateToken)
+	server.Router().Path("/oauth2/validate_token").HandlerFunc(p.oauth2server.ValidateToken)
 	// Add auth middleware
 	// server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("cmdb"))
 	server.Router().Path("/api/images/{imageName}").Methods(http.MethodGet).HandlerFunc(endpoints.GetImage)

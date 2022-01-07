@@ -33,12 +33,6 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
-	p.oauth2server = oauth2.NewOAuth2Server()
-
-	router := p.Router
-	router.Any("/oauth2/token", p.oauth2server.Token)
-	router.Any("/oauth2/invalidate_token", p.oauth2server.InvalidateToken)
-	router.Any("/oauth2/validate_token", p.oauth2server.ValidateToken)
 	return nil
 }
 
