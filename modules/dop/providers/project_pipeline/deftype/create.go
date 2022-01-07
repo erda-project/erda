@@ -46,6 +46,7 @@ func (p ProjectPipelineType) String() string {
 type ProjectPipelineCreate struct {
 	IdentityInfo apistructs.IdentityInfo
 
+	ProjectID  uint64              `json:"projectID"`
 	Name       string              `json:"name"`
 	AppID      uint64              `json:"appID"`
 	SourceType ProjectPipelineType `json:"sourceType"`
@@ -58,7 +59,7 @@ func (p *ProjectPipelineCreate) Validate() error {
 	if p.Name == "" {
 		return fmt.Errorf("the name is empty")
 	}
-	if p.AppID == 0 {
+	if p.SourceType == ErdaProjectPipelineType && p.AppID == 0 {
 		return fmt.Errorf("the appID is 0")
 	}
 	if !p.SourceType.isEffectProjectPipelineType() {

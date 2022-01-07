@@ -14,23 +14,38 @@
 
 package deftype
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/erda-project/erda/apistructs"
+)
 
 type ProjectPipelineList struct {
-	ProjectID uint64 `json:"projectID"`
-	Page      uint64 `json:"page"`
-	PageNum   uint64 `json:"pageNum"`
+	ProjectID   uint64   `json:"projectID"`
+	AppID       uint64   `json:"appID"`
+	Ref         []string   `json:"ref"`
+	Creator     []string   `json:"creator"`
+	Executor    []string   `json:"executor"`
+	Category    []string   `json:"category"`
+	PageNo      uint64   `json:"pageNo"`
+	PageSize    uint64   `json:"pageSize"`
+	Name        string   `json:"name"`
+	TimeCreated []string `json:"timeCreated"`
+	TimeStarted []string `json:"timeStarted"`
+	Status      []string   `json:"status"`
+
+	IdentityInfo apistructs.IdentityInfo
 }
 
 func (p *ProjectPipelineList) Validate() error {
 	if p.ProjectID == 0 {
 		return fmt.Errorf("the projectID is 0")
 	}
-	if p.Page == 0 {
-		p.Page = 1
+	if p.PageNo == 0 {
+		p.PageNo = 1
 	}
-	if p.PageNum == 0 {
-		p.PageNum = 20
+	if p.PageSize == 0 {
+		p.PageSize = 20
 	}
 	return nil
 }
