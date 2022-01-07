@@ -1,0 +1,8 @@
+{
+  "zh-CN": {
+    "ErrRunProjectPipeline": "执行流水线失败"
+  },
+  "en-US": {
+    "MemberLabelPartner": "Execution pipeline failed"
+  }
+}

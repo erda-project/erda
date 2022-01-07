@@ -14,8 +14,12 @@
 
 package deftype
 
+import "github.com/erda-project/erda/apistructs"
+
 type ProjectPipelineRun struct {
+	PipelineDefinitionID string
 }
 
 type ProjectPipelineRunResult struct {
+	Pipeline *apistructs.PipelineDTO
 }
