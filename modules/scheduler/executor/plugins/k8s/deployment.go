@@ -189,6 +189,105 @@ func (k *Kubernetes) deleteDeployment(namespace, name string) error {
 	return k.deploy.Delete(namespace, name)
 }
 
+// SetPodAnnotationsBaseContainerEnvs Add container environment variables
+func SetPodAnnotationsBaseContainerEnvs(container apiv1.Container, podAnnotations map[string]string) {
+	if podAnnotations == nil {
+		podAnnotations = make(map[string]string)
+	}
+
+	for _, env := range container.Env {
+		if env.Name == "DICE_ORG_NAME" || strings.HasSuffix(env.Name, "_DICE_ORG_NAME") {
+			podAnnotations["msp.erda.cloud/org_name"] = env.Value
+			continue
+		}
+
+		if env.Name == "DICE_CLUSTER_NAME" || strings.HasSuffix(env.Name, "_DICE_CLUSTER_NAME") {
+			podAnnotations["msp.erda.cloud/cluster_name"] = env.Value
+			continue
+		}
+
+		if env.Name == "DICE_PROJECT_NAME" || strings.HasSuffix(env.Name, "_DICE_PROJECT_NAME") {
+			podAnnotations["msp.erda.cloud/project_name"] = env.Value
+			continue
+		}
+
+		if env.Name == "DICE_SERVICE_NAME" || strings.HasSuffix(env.Name, "_DICE_SERVICE_NAME") {
+			podAnnotations["msp.erda.cloud/service_name"] = env.Value
+			continue
+		}
+
+		if env.Name == "DICE_APPLICATION_NAME" || strings.HasSuffix(env.Name, "_DICE_APPLICATION_NAME") {
+			podAnnotations["msp.erda.cloud/application_name"] = env.Value
+			continue
+		}
+
+		if env.Name == "DICE_WORKSPACE" || strings.HasSuffix(env.Name, "_DICE_WORKSPACE") {
+			podAnnotations["msp.erda.cloud/workspace"] = env.Value
+			continue
+		}
+
+		if env.Name == "DICE_RUNTIME_NAME" || strings.HasSuffix(env.Name, "_DICE_RUNTIME_NAME") {
+			podAnnotations["msp.erda.cloud/runtime_name"] = env.Value
+			continue
+		}
+
+		if env.Name == "DICE_RUNTIME_ID" || strings.HasSuffix(env.Name, "_DICE_RUNTIME_ID") {
+			podAnnotations["msp.erda.cloud/runtime_id"] = env.Value
+			continue
+		}
+
+		if env.Name == "DICE_APPLICATION_ID" || strings.HasSuffix(env.Name, "_DICE_APPLICATION_ID") {
+			podAnnotations["msp.erda.cloud/application_id"] = env.Value
+			continue
+		}
+
+		if env.Name == "DICE_ORG_ID" || strings.HasSuffix(env.Name, "_DICE_ORG_ID") {
+			podAnnotations["msp.erda.cloud/org_id"] = env.Value
+			continue
+		}
+
+		if env.Name == "DICE_PROJECT_ID" || strings.HasSuffix(env.Name, "_DICE_PROJECT_ID") {
+			podAnnotations["msp.erda.cloud/project_id"] = env.Value
+			continue
+		}
+
+		if env.Name == "DICE_DEPLOYMENT_ID" || strings.HasSuffix(env.Name, "_DICE_DEPLOYMENT_ID") {
+			podAnnotations["msp.erda.cloud/deployment_id"] = env.Value
+			continue
+		}
+
+		if env.Name == "TERMINUS_LOG_KEY" || strings.HasSuffix(env.Name, "_TERMINUS_LOG_KEY") {
+			podAnnotations["msp.erda.cloud/terminus_log_key"] = env.Value
+			continue
+		}
+
+		if env.Name == "MONITOR_LOG_KEY" || strings.HasSuffix(env.Name, "_MONITOR_LOG_KEY") {
+			podAnnotations["msp.erda.cloud/monitor_log_key"] = env.Value
+			continue
+		}
+
+		if env.Name == "MSP_ENV_ID" || strings.HasSuffix(env.Name, "_MSP_ENV_ID") {
+			podAnnotations["msp.erda.cloud/msp_env_id"] = env.Value
+			continue
+		}
+
+		if env.Name == "MSP_LOG_ATTACH" || strings.HasSuffix(env.Name, "_MSP_LOG_ATTACH") {
+			podAnnotations["msp.erda.cloud/msp_log_attach"] = env.Value
+			continue
+		}
+
+		if env.Name == "MONITOR_LOG_COLLECTOR" || strings.HasSuffix(env.Name, "_MONITOR_LOG_COLLECTOR") {
+			podAnnotations["msp.erda.cloud/monitor_log_collector"] = env.Value
+			continue
+		}
+
+		if env.Name == "TERMINUS_KEY" || strings.HasSuffix(env.Name, "_TERMINUS_KEY") {
+			podAnnotations["msp.erda.cloud/terminus_key"] = env.Value
+			continue
+		}
+	}
+}
+
 // AddContainersEnv Add container environment variables
 func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
 	var envs []apiv1.EnvVar
@@ -462,9 +561,10 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 			APIVersion: "apps/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      deploymentName,
-			Namespace: service.Namespace,
-			Labels:    make(map[string]string),
+			Name:        deploymentName,
+			Namespace:   service.Namespace,
+			Labels:      make(map[string]string),
+			Annotations: make(map[string]string),
 		},
 		Spec: appsv1.DeploymentSpec{
 			RevisionHistoryLimit: func(i int32) *int32 { return &i }(int32(3)),
@@ -572,6 +672,8 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	if err := k.AddContainersEnv(containers, service, serviceGroup); err != nil {
 		return nil, err
 	}
+
+	SetPodAnnotationsBaseContainerEnvs(deployment.Spec.Template.Spec.Containers[0], deployment.Spec.Template.Annotations)
 
 	// TODO: Delete this logic
 	//Mobil temporary demand:
@@ -866,18 +968,18 @@ func ConvertToHostAlias(hosts []string) []apiv1.HostAlias {
 	return r
 }
 
-func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.ServiceGroup) error {
+func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.ServiceGroup, serviceIndex int) error {
 	// only support scale the first one service
 	ns := sg.ProjectNamespace
 	if ns == "" {
 		ns = MakeNamespace(sg)
 	}
 
-	scalingService := sg.Services[0]
+	scalingService := sg.Services[serviceIndex]
 	deploymentName := getDeployName(&scalingService)
 	deploy, err := k.getDeployment(ns, deploymentName)
 	if err != nil {
-		getErr := fmt.Errorf("failed to get the deployment, err is: %s", err.Error())
+		getErr := fmt.Errorf("failed to get the deployment %s in namespace %s, err is: %s", deploymentName, ns, err.Error())
 		return getErr
 	}
 
@@ -889,18 +991,20 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 
 	deploy.Spec.Replicas = func(i int32) *int32 { return &i }(int32(scalingService.Scale))
 
-	// only support one container on Erda currently
-	container := deploy.Spec.Template.Spec.Containers[0]
+	for index := range deploy.Spec.Template.Spec.Containers {
+		// only support one container on Erda currently
+		container := deploy.Spec.Template.Spec.Containers[index]
 
-	err = k.setContainerResources(scalingService, &container)
-	if err != nil {
-		setContainerErr := fmt.Errorf("failed to set container resource, err is: %s", err.Error())
-		return setContainerErr
+		err = k.setContainerResources(scalingService, &container)
+		if err != nil {
+			setContainerErr := fmt.Errorf("failed to set container resource, err is: %s", err.Error())
+			return setContainerErr
+		}
+
+		k.UpdateContainerResourceEnv(scalingService.Resources, &container)
+
+		deploy.Spec.Template.Spec.Containers[index] = container
 	}
-
-	k.UpdateContainerResourceEnv(scalingService.Resources, &container)
-
-	deploy.Spec.Template.Spec.Containers[0] = container
 
 	newCPU, newMem := getRequestsResources(deploy.Spec.Template.Spec.Containers)
 	newCPU *= int64(*deploy.Spec.Replicas)

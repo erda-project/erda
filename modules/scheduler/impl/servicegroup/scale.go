@@ -25,41 +25,68 @@ import (
 )
 
 func (s *ServiceGroupImpl) Scale(sg *apistructs.ServiceGroup) (apistructs.ServiceGroup, error) {
-	logrus.Infof("start to scale service %v", sg.Services)
 	oldSg := apistructs.ServiceGroup{}
 	if err := s.js.Get(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
 		return apistructs.ServiceGroup{}, fmt.Errorf("Cannot get servicegroup(%s/%s) from etcd, err: %v", sg.Type, sg.ID, err)
 	}
 
-	if len(sg.Services) != 1 {
-		return apistructs.ServiceGroup{}, fmt.Errorf("services count more than 1")
-	}
-
+	/*
+		if len(sg.Services) != 1 {
+			return apistructs.ServiceGroup{}, fmt.Errorf("services count more than 1")
+		}
+	*/
 	// get sg info from etcd storage, and set the project namespace to the scale sg
 	// when the project namespace is not empty
 	if oldSg.ProjectNamespace != "" {
 		sg.ProjectNamespace = oldSg.ProjectNamespace
 	}
 
-	newService := sg.Services[0]
+	//newService := sg.Services[0]
+	oldServiceReplicas := make(map[string]int)
 	for index, svc := range oldSg.Services {
-		if svc.Name == newService.Name {
-			if svc.Scale != newService.Scale {
-				svc.Scale = newService.Scale
+		for newIndex, newSvc := range sg.Services {
+			if svc.Name == newSvc.Name {
+				if svc.Scale != newSvc.Scale {
+					if newSvc.Scale == 0 {
+						oldServiceReplicas[svc.Name] = svc.Scale
+					}
+					svc.Scale = newSvc.Scale
+				}
+				if svc.Resources.Cpu != newSvc.Resources.Cpu || svc.Resources.Mem != newSvc.Resources.Mem {
+					svc.Resources = newSvc.Resources
+				}
+				oldSg.Services[index] = svc
+				sg.Services[newIndex] = oldSg.Services[index]
+				break
 			}
-			if svc.Resources.Cpu != newService.Resources.Cpu || svc.Resources.Mem != newService.Resources.Mem {
-				svc.Resources = newService.Resources
-			}
-			oldSg.Services[index] = svc
-			sg.Services[0] = oldSg.Services[index]
-			break
 		}
+		/*
+			if svc.Name == newService.Name {
+				if svc.Scale != newService.Scale {
+					svc.Scale = newService.Scale
+				}
+				if svc.Resources.Cpu != newService.Resources.Cpu || svc.Resources.Mem != newService.Resources.Mem {
+					svc.Resources = newService.Resources
+				}
+				oldSg.Services[index] = svc
+				sg.Services[0] = oldSg.Services[index]
+				break
+			}
+		*/
 	}
 	_, err := s.handleServiceGroup(context.Background(), sg, task.TaskScale)
 	if err != nil {
 		logrus.Errorf("scale service %s err: %v", sg.ID, err)
 		return *sg, err
 	}
+
+	// 如果目前操作是停止(副本数为0)，为了后续恢复，需要保留停止操作前的副本数
+	for index, oldSvc := range oldSg.Services {
+		if replicas, ok := oldServiceReplicas[oldSvc.Name]; ok {
+			oldSg.Services[index].Scale = replicas
+		}
+	}
+
 	if err := s.js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
 		return apistructs.ServiceGroup{}, err
 	}

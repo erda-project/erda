@@ -260,6 +260,17 @@ const (
 	DiceNFSVolumeSC   = "dice-nfs-volume"
 
 	CSISnapshotMaxHistory = "pvc.erda.io/snapshot"
+
+	// scale action parameter
+	ScaleAction = "scale_action"
+	// scale action Up, replicas 0 ----> N
+	ScaleActionUp = "scaleUp"
+	// scale action Down, replicas N ----> 0
+	ScaleActionDown = "scaleDown"
+	// scale action Delete, delete runtimes
+	ScaleActionDelete = "delete"
+	// scale action ReDeploy, re-deploy runtimes
+	ScaleActionReDeploy = "reDeploy"
 )
 
 const (
@@ -635,10 +646,12 @@ type ServiceGroupConfigUpdateResponse struct {
 
 // UpdateServiceGroupScaleRequst request body for update servicegroup
 type UpdateServiceGroupScaleRequst struct {
-	Namespace   string    `json:"namespace"`
-	Name        string    `json:"name"`
-	ClusterName string    `json:"clusterName"`
-	Services    []Service `json:"services"`
+	Namespace   string                      `json:"namespace"`
+	Name        string                      `json:"name"`
+	ClusterName string                      `json:"clusterName"`
+	Services    []Service                   `json:"services"`
+	Labels      map[string]string           `json:"labels"`
+	Addon       ServiceGroupCreateV2Request `json:"addons"`
 }
 
 // UpdateServiceGroupScaleResponse response for update servicegroup

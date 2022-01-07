@@ -207,6 +207,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/runtimes/{runtimeID}/actions/rollback-action", Method: http.MethodPost, Handler: e.RollbackRuntimeAction},
 		{Path: "/api/runtimes/actions/bulk-get-status", Method: http.MethodGet, Handler: e.epBulkGetRuntimeStatusDetail},
 		{Path: "/api/runtimes/actions/update-pre-overlay", Method: http.MethodPut, Handler: e.epUpdateOverlay},
+		{Path: "/api/runtimes/actions/batch-update-pre-overlay", Method: http.MethodPut, Handler: e.BatchUpdateOverlay},
 		{Path: "/api/runtimes/actions/full-gc", Method: http.MethodPost, Handler: e.FullGC},
 		{Path: "/api/runtimes/actions/refer-cluster", Method: http.MethodGet, Handler: e.ReferCluster},
 		{Path: "/api/runtimes/deploy/logs", Method: http.MethodGet, Handler: e.RuntimeLogs},
