@@ -37,3 +37,27 @@ func TestReplaceAllStringSubmatchFunc(t *testing.T) {
 	})
 	assert.Equal(t, "openjdk:8 herd:1.3", replaced)
 }
+
+func TestPrefixWithSemVer(t *testing.T) {
+	var versions = map[string]bool{
+		`v1.0.0`:                true,
+		`v1.0.0-20210101000000`: true,
+		`1.0.0`:                 true,
+		`0.1.2`:                 true,
+		`1.2.3-alpha.10.beta.0+build.unicorn.rainbow`: true,
+		`1.0`:       true,
+		`1.0-alpha`: true,
+		`1.2-alpha.10.beta.0+build.unicorn.rainbow`: true,
+		`1.0.0.alpha`:  false,
+		`01.02.03`:     false,
+		`1.0.b`:        false,
+		`a1.0.0`:       false,
+		`some-feature`: false,
+		`1.0.alpha`:    false,
+	}
+	for version, expected := range versions {
+		if ok := PrefixWithSemVer(version); ok != expected {
+			t.Fatalf("assert error, version: %s, expected: %v, actual: %v", version, expected, ok)
+		}
+	}
+}
