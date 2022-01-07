@@ -14,7 +14,25 @@
 
 package deftype
 
+import "fmt"
+
 type ProjectPipelineList struct {
+	ProjectID uint64 `json:"projectID"`
+	Page      uint64 `json:"page"`
+	PageNum   uint64 `json:"pageNum"`
+}
+
+func (p *ProjectPipelineList) Validate() error {
+	if p.ProjectID == 0 {
+		return fmt.Errorf("the projectID is 0")
+	}
+	if p.Page == 0 {
+		p.Page = 1
+	}
+	if p.PageNum == 0 {
+		p.PageNum = 20
+	}
+	return nil
 }
 
 type ProjectPipelineListResult struct {

@@ -19,34 +19,148 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/cloud-on-k8s/pkg/utils/stringsutil"
+
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/modules/dop/providers/project_pipeline/deftype"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 )
 
-func (p *provider) Create(ctx context.Context, params deftype.ProjectPipelineCreate) (deftype.ProjectPipelineCreateResult, error) {
+func (p *ProjectPipelineSvc) Create(ctx context.Context, params deftype.ProjectPipelineCreate) (*deftype.ProjectPipelineCreateResult, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
+	// TODO check permission
+
+	app, err := p.bundle.GetApp(params.AppID)
+	if err != nil {
+		return nil, err
+	}
+
+	yml, err := p.getYmlFromGittar(app, params.Ref, stringsutil.Concat(params.Path, "/", params.FileName), params.IdentityInfo.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	sourceRsp, err := p.PipelineSource.Create(ctx, &spb.PipelineSourceCreateRequest{
+		SourceType:  params.SourceType.String(),
+		Remote:      makeRemote(app),
+		Ref:         params.Ref,
+		Path:        params.Path,
+		Name:        params.FileName,
+		PipelineYml: yml,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	createReqV2, err := p.pipelineSvc.ConvertPipelineToV2(&apistructs.PipelineCreateRequest{
+		PipelineYmlName:    params.FileName,
+		AppID:              params.AppID,
+		Branch:             params.Ref,
+		PipelineYmlContent: "version: \"1.1\"\nstages: []",
+		UserID:             params.IdentityInfo.UserID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	b, err := json.Marshal(createReqV2)
+	if err != nil {
+		return nil, err
+	}
+
+	definitionRsp, err := p.PipelineDefinition.Create(ctx, &pb.PipelineDefinitionCreateRequest{
+		Name:             params.Name,
+		Creator:          params.IdentityInfo.UserID,
+		PipelineSourceId: sourceRsp.PipelineSource.ID,
+		Category:         "",
+		Extra: &pb.PipelineDefinitionExtra{
+			Extra: string(b),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &deftype.ProjectPipelineCreateResult{ID: definitionRsp.PipelineDefinition.ID}, nil
+}
+
+func makeRemote(app *apistructs.ApplicationDTO) string {
+	return fmt.Sprintf("%d/%d/%d", app.OrgID, app.ProjectID, app.ID)
+}
+
+func (p *ProjectPipelineSvc) getYmlFromGittar(app *apistructs.ApplicationDTO, ref, filePath, userID string) (string, error) {
+	commit, err := p.bundle.GetGittarCommit(app.GitRepoAbbrev, ref, userID)
+	if err != nil {
+		return "", err
+	}
+
+	yml, err := p.bundle.GetGittarFile(app.GitRepo, commit.ID, filePath, "", "", userID)
+	return yml, err
+}
+
+func (p *ProjectPipelineSvc) List(ctx context.Context, params deftype.ProjectPipelineList) (*deftype.ProjectPipelineListResult, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
+	// TODO check permission
 	panic("implement me")
 }
 
-func (p *provider) List(ctx context.Context, params deftype.ProjectPipelineList) (deftype.ProjectPipelineListResult, error) {
+func (p *ProjectPipelineSvc) Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
+	// TODO check permission
+
+	_, err := p.PipelineDefinition.Delete(ctx, &pb.PipelineDefinitionDeleteRequest{PipelineDefinitionID: params.ID})
+	return nil, err
+}
+
+func (p *ProjectPipelineSvc) Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error) {
+	if err := params.Validate(); err != nil {
+		return nil, err
+	}
+
+	// TODO check permission
+
+	app, err := p.bundle.GetApp(params.AppID)
+	if err != nil {
+		return nil, err
+	}
+
+	yml, err := p.getYmlFromGittar(app, params.Ref, stringsutil.Concat(params.Path, "/", params.FileName), params.IdentityInfo.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	sourceRsp, err := p.PipelineSource.Create(ctx, &spb.PipelineSourceCreateRequest{
+		SourceType:  params.SourceType.String(),
+		Remote:      makeRemote(app),
+		Ref:         params.Ref,
+		Path:        params.Path,
+		Name:        params.FileName,
+		PipelineYml: yml,
+	})
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.PipelineDefinition.Update(ctx, &pb.PipelineDefinitionUpdateRequest{
+		PipelineDefinitionID: params.ID,
+		PipelineSourceId:     sourceRsp.PipelineSource.ID,
+	})
+
+	return nil, err
+}
+
+func (p *ProjectPipelineSvc) Star(ctx context.Context, params deftype.ProjectPipelineStar) (deftype.ProjectPipelineStarResult, error) {
 	panic("implement me")
 }
 
-func (p *provider) Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (deftype.ProjectPipelineDeleteResult, error) {
-	panic("implement me")
-}
-
-func (p *provider) Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (deftype.ProjectPipelineUpdateResult, error) {
-	panic("implement me")
-}
-
-func (p *provider) Star(ctx context.Context, params deftype.ProjectPipelineStar) (deftype.ProjectPipelineStarResult, error) {
-	panic("implement me")
-}
-
-func (p *provider) UnStar(ctx context.Context, params deftype.ProjectPipelineUnStar) (deftype.ProjectPipelineUnStarResult, error) {
+func (p *ProjectPipelineSvc) UnStar(ctx context.Context, params deftype.ProjectPipelineUnStar) (deftype.ProjectPipelineUnStarResult, error) {
 	panic("implement me")
 }
 
@@ -94,18 +208,18 @@ func (p *provider) Run(ctx context.Context, params deftype.ProjectPipelineRun) (
 	}, nil
 }
 
-func (p *provider) FailRerun(ctx context.Context, params deftype.ProjectPipelineFailRerun) (deftype.ProjectPipelineFailRerunResult, error) {
-	return deftype.ProjectPipelineFailRerunResult{}, nil
+func (p *ProjectPipelineSvc) FailRerun(ctx context.Context, params deftype.ProjectPipelineFailRerun) (deftype.ProjectPipelineFailRerunResult, error) {
+	panic("implement me")
 }
 
-func (p *provider) StartCron(ctx context.Context, params deftype.ProjectPipelineStartCron) (deftype.ProjectPipelineStartCronResult, error) {
-	return deftype.ProjectPipelineStartCronResult{}, nil
+func (p *ProjectPipelineSvc) StartCron(ctx context.Context, params deftype.ProjectPipelineStartCron) (deftype.ProjectPipelineStartCronResult, error) {
+	panic("implement me")
 }
 
-func (p *provider) EndCron(ctx context.Context, params deftype.ProjectPipelineEndCron) (deftype.ProjectPipelineEndCronResult, error) {
-	return deftype.ProjectPipelineEndCronResult{}, nil
+func (p *ProjectPipelineSvc) EndCron(ctx context.Context, params deftype.ProjectPipelineEndCron) (deftype.ProjectPipelineEndCronResult, error) {
+	panic("implement me")
 }
 
-func (p *provider) ListExecHistory(ctx context.Context, params deftype.ProjectPipelineListExecHistory) (deftype.ProjectPipelineListExecHistoryResult, error) {
-	return deftype.ProjectPipelineListExecHistoryResult{}, nil
+func (p *ProjectPipelineSvc) ListExecHistory(ctx context.Context, params deftype.ProjectPipelineListExecHistory) (deftype.ProjectPipelineListExecHistoryResult, error) {
+	panic("implement me")
 }

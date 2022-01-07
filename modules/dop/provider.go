@@ -41,6 +41,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/providers/autotest/testplan"
+	"github.com/erda-project/erda/modules/dop/providers/project_pipeline"
 	"github.com/erda-project/erda/modules/dop/providers/taskerror"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
@@ -53,13 +54,14 @@ var scenarioFS embed.FS
 type provider struct {
 	Log logs.Logger
 
-	PipelineCms  cmspb.CmsServiceServer            `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
-	PipelineSource   sourcepb.SourceServiceServer       `autowired:"erda.core.pipeline.source" optional:"true"`
-	PipelineDefinition   definitionpb.DefinitionServiceServer       `autowired:"erda.core.pipeline.definition" optional:"true"`
-	TestPlanSvc  *testplan.TestPlanService         `autowired:"erda.core.dop.autotest.testplan.TestPlanService"`
-	Cmp          dashboardPb.ClusterResourceServer `autowired:"erda.cmp.dashboard.resource.ClusterResource"`
-	TaskErrorSvc *taskerror.TaskErrorService       `autowired:"erda.core.dop.taskerror.TaskErrorService"`
-	ErrorBoxSvc  errboxpb.ErrorBoxServiceServer    `autowired:"erda.core.services.errorbox.ErrorBoxService" optional:"true"`
+	PipelineCms        cmspb.CmsServiceServer               `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
+	PipelineSource     sourcepb.SourceServiceServer         `autowired:"erda.core.pipeline.source" optional:"true"`
+	PipelineDefinition definitionpb.DefinitionServiceServer `autowired:"erda.core.pipeline.definition" optional:"true"`
+	TestPlanSvc        *testplan.TestPlanService            `autowired:"erda.core.dop.autotest.testplan.TestPlanService"`
+	Cmp                dashboardPb.ClusterResourceServer    `autowired:"erda.cmp.dashboard.resource.ClusterResource"`
+	TaskErrorSvc       *taskerror.TaskErrorService          `autowired:"erda.core.dop.taskerror.TaskErrorService"`
+	ErrorBoxSvc        errboxpb.ErrorBoxServiceServer       `autowired:"erda.core.services.errorbox.ErrorBoxService" optional:"true"`
+	ProjectPipelineSvc *project_pipeline.ProjectPipelineSvc `autowired:"erda.core.dop.autotest.project_pipeline.ProjectPipelineSvc"`
 
 	AddonMySQLSvc addonmysqlpb.AddonMySQLServiceServer `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
 
