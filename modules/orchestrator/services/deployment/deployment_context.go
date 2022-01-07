@@ -1484,10 +1484,10 @@ func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml
 		service.ImageUsername = nexususer.Name
 	}
 	if len(groupFileconfigs) > 0 {
-		tokeninfo, err := fsm.bdl.GetOpenapiOAuth2Token(apistructs.OpenapiOAuth2TokenGetRequest{
+		tokeninfo, err := fsm.bdl.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{
 			ClientID:     conf.TokenClientID(),
 			ClientSecret: conf.TokenClientSecret(),
-			Payload: apistructs.OpenapiOAuth2TokenPayload{
+			Payload: apistructs.OAuth2TokenPayload{
 				AccessTokenExpiredIn: "1h",
 				AccessibleAPIs: []apistructs.AccessibleAPI{{
 					Path:   "/api/files",

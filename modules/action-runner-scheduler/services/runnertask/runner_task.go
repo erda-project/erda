@@ -89,10 +89,10 @@ func (f *RunnerTask) FetchRunnerTask() ([]*apistructs.RunnerTask, error) {
 		return []*apistructs.RunnerTask{}, nil
 	}
 
-	token, err := f.bundle.GetOpenapiOAuth2Token(apistructs.OpenapiOAuth2TokenGetRequest{
+	token, err := f.bundle.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{
 		ClientID:     conf.ClientID(),
 		ClientSecret: conf.ClientSecret(),
-		Payload: apistructs.OpenapiOAuth2TokenPayload{
+		Payload: apistructs.OAuth2TokenPayload{
 			AccessTokenExpiredIn: "3630s",
 			AccessibleAPIs: []apistructs.AccessibleAPI{
 				{Path: "/api/files", Method: "POST", Schema: "http"},

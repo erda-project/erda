@@ -39,7 +39,7 @@ func (tr *TaskRun) Teardown() {
 		tr.Task.Extra.PrivateEnvs[apistructs.EnvOpenapiToken],
 	}, true)
 	for _, token := range tokens {
-		_, err := tr.Bdl.InvalidateOpenapiOAuth2Token(apistructs.OpenapiOAuth2TokenInvalidateRequest{AccessToken: token})
+		_, err := tr.Bdl.InvalidateOAuth2Token(apistructs.OAuth2TokenInvalidateRequest{AccessToken: token})
 		if err != nil {
 			logrus.Errorf("[alert] reconciler: pipelineID: %d, taskID: %d, task %q failed to invalidate openapi oauth2 token, token: %s, err: %v",
 				tr.P.ID, tr.Task.ID, tr.Task.Name, token, err)

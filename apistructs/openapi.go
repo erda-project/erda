@@ -14,14 +14,14 @@
 
 package apistructs
 
-type OpenapiOAuth2Token struct {
+type OAuth2Token struct {
 	AccessToken string `json:"access_token"`
 	ExpiresIn   int64  `json:"expires_in"`
 	Scope       string `json:"scope"`
 	TokenType   string `json:"token_type"`
 }
 
-type OpenapiOAuth2TokenPayload struct {
+type OAuth2TokenPayload struct {
 	AccessTokenExpiredIn string            `json:"accessTokenExpiredIn"` // such as "300ms", "-1.5h" or "2h45m". "0" means it doesn't expire. Empty string is not allowed.
 	AllowAccessAllAPIs   bool              `json:"allowAccessAllApIs,omitempty"`
 	AccessibleAPIs       []AccessibleAPI   `json:"accessibleAPIs,omitempty"`
@@ -34,16 +34,12 @@ type AccessibleAPI struct {
 	Schema string `json:"schema"`
 }
 
-type OpenapiOAuth2TokenGetRequest struct {
+type OAuth2TokenGetRequest struct {
 	ClientID     string
 	ClientSecret string
-	Payload      OpenapiOAuth2TokenPayload `json:"payload"`
+	Payload      OAuth2TokenPayload `json:"payload"`
 }
 
-type OpenapiOAuth2TokenGetResponse OpenapiOAuth2Token
-
-type OpenapiOAuth2TokenInvalidateRequest struct {
+type OAuth2TokenInvalidateRequest struct {
 	AccessToken string `json:"access_token"`
 }
-
-type OpenapiOauth2TokenInvalidateResponse OpenapiOAuth2Token

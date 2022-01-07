@@ -32,7 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/modules/openapi/hooks"
 	"github.com/erda-project/erda/modules/openapi/hooks/prehandle"
-	"github.com/erda-project/erda/modules/openapi/oauth2"
+	"github.com/erda-project/erda/pkg/oauth2"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )

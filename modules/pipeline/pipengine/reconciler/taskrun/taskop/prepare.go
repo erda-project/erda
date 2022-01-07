@@ -409,7 +409,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		return false, apierrors.ErrRunPipeline.InvalidState(
 			fmt.Sprintf("not found action spec, actionType: %q, version: %q", action.Type, action.Version))
 	}
-	task.Extra.OpenapiOAuth2TokenPayload = apistructs.OpenapiOAuth2TokenPayload{
+	task.Extra.OpenapiOAuth2TokenPayload = apistructs.OAuth2TokenPayload{
 		AccessTokenExpiredIn: handleAccessTokenExpiredIn(task),
 		AccessibleAPIs: append(specYmlJob.AccessibleAPIs,
 			// PIPELINE_PLATFORM_CALLBACK
@@ -662,10 +662,10 @@ func (pre *prepare) generateOpenapiTokenForPullBootstrapInfo(task *spec.Pipeline
 	}
 
 	// 申请到的 token 只能请求 get-bootstrap-info api，并且保证 pipelineID 和 taskID 必须匹配
-	tokenInfo, err := pre.Bdl.GetOpenapiOAuth2Token(apistructs.OpenapiOAuth2TokenGetRequest{
+	tokenInfo, err := pre.Bdl.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{
 		ClientID:     "pipeline",
 		ClientSecret: "devops/pipeline",
-		Payload: apistructs.OpenapiOAuth2TokenPayload{
+		Payload: apistructs.OAuth2TokenPayload{
 			AccessTokenExpiredIn: "0", // 该 token 申请后至 agent 运行这段时间目前无超时时间，所以设置 0 表示不过期
 			AllowAccessAllAPIs:   false,
 			AccessibleAPIs: []apistructs.AccessibleAPI{
