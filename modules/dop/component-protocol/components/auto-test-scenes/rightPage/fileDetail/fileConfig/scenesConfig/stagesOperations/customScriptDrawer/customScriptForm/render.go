@@ -167,14 +167,14 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		c.Props = map[string]interface{}{
 			"fields": []map[string]interface{}{
 				{
-					"label":          "名称",
+					"label":          ca.sdk.I18n("name"),
 					"component":      "input",
 					"required":       true,
 					"key":            "name",
-					"componentProps": map[string]interface{}{"placeholder": "请输入名称"},
+					"componentProps": map[string]interface{}{"placeholder": ca.sdk.I18n("enterName")},
 				},
 				{
-					"label":     "脚本语言",
+					"label":     ca.sdk.I18n("scriptLang"),
 					"component": "radio",
 					"required":  true,
 					"key":       "language",
@@ -194,7 +194,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 					"defaultValue": languagePython,
 				},
 				{
-					"label":     "镜像",
+					"label":     ca.sdk.I18n("image"),
 					"component": "input",
 					"required":  true,
 					"key":       pythonImageKey,
@@ -210,7 +210,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 					"defaultValue": defaultPythonImage,
 				},
 				{
-					"label":     "镜像",
+					"label":     ca.sdk.I18n("image"),
 					"component": "input",
 					"required":  true,
 					"key":       customImageKey,
@@ -226,11 +226,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 					"defaultValue": defaultCustomScriptImage,
 				},
 				{
-					"label":     "命令",
+					"label":     ca.sdk.I18n("command"),
 					"component": "textarea",
 					"key":       "command",
 					"componentProps": map[string]interface{}{
-						"placeholder": "请输入命令",
+						"placeholder": ca.sdk.I18n("enterCommand"),
 						"autoSize": map[string]interface{}{
 							"minRows": 3,
 							"maxRows": 6,
@@ -247,7 +247,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 					},
 				},
 				{
-					"label":     "命令",
+					"label":     ca.sdk.I18n("command"),
 					"component": "inputArray",
 					"key":       "commands",
 					"removeWhen": []interface{}{
