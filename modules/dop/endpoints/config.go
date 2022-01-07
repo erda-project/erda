@@ -74,6 +74,7 @@ func (e *Endpoints) AddConfigs(ctx context.Context, r *http.Request, vars map[st
 // UpdateConfigs 更新配置信息
 func (e *Endpoints) UpdateConfigs(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
+	var err error
 	// 获取当前用户
 	userInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
@@ -105,8 +106,11 @@ func (e *Endpoints) UpdateConfigs(ctx context.Context, r *http.Request, vars map
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return apierrors.ErrUpdateEnvConfig.InvalidParameter(err).ToResp(), nil
 	}
-
-	err = e.envConfig.Update(e.permission, &req, namespace, userID, encrypt)
+	if req.Batch {
+		err = e.envConfig.BatchUpdate(e.permission, &req, namespace, userID, encrypt)
+	} else {
+		err = e.envConfig.Update(e.permission, &req, namespace, userID, encrypt)
+	}
 	if err != nil {
 		if err == apierrors.ErrUpdateEnvConfig.AccessDenied() {
 			return apierrors.ErrUpdateEnvConfig.AccessDenied().ToResp(), nil

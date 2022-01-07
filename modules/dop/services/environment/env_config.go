@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/model"
 	"github.com/erda-project/erda/modules/dop/services/permission"
+	"github.com/erda-project/erda/pkg/arrays"
 )
 
 // EnvConfig 命名空间参数
@@ -150,6 +151,68 @@ func (e *EnvConfig) Update(permission *permission.Permission, createReq *apistru
 		}
 	}
 
+	return nil
+}
+
+// BatchUpdate 批量更新 env config
+func (e *EnvConfig) BatchUpdate(permission *permission.Permission, createReq *apistructs.EnvConfigAddOrUpdateRequest, namespace, userID string, encrypt bool) error {
+	// check params
+	var oldConfigs []model.ConfigItem
+	var newConfigKeys []string
+	err := verifyEnvConfigs(createReq.Configs)
+	if err != nil {
+		return err
+	}
+	// check namespace if exist
+	ns, err := e.db.GetNamespaceByName(namespace)
+	if err != nil {
+		return err
+	}
+	if ns == nil {
+		return errors.Errorf("not exist namespace, namespace: %s", namespace)
+	}
+	configItems := encryptAndParse2Entity(createReq.Configs, ns, encrypt)
+	oldConfigs, err = e.db.GetEnvConfigsByNamespaceID(ns.ID)
+	if err != nil {
+		return errors.Errorf("failed to get old configs for namespace [%s]: %v", namespace, err)
+	}
+	for _, config := range configItems {
+		if config.ItemType == "FILE" {
+			continue
+		}
+		if config.Encrypt && config.ItemValue == "" {
+			continue
+		}
+		configItem, err := e.db.GetEnvConfigByKey(ns.ID, config.ItemKey)
+		if err != nil {
+			return errors.Errorf("failed to get config by namespace id and key, namespaceID: %s, key: %s",
+				namespace, config.ItemKey)
+		}
+
+		if configItem != nil {
+			config.ID = configItem.ID
+			config.CreatedAt = configItem.CreatedAt
+		}
+
+		err = e.db.UpdateOrAddEnvConfig(&config)
+		if err != nil {
+			return err
+		}
+		newConfigKeys = append(newConfigKeys, config.ItemKey)
+	}
+
+	for _, config := range oldConfigs {
+		if config.ItemType == "FILE" {
+			continue
+		}
+		if arrays.IsContain(newConfigKeys, config.ItemKey) {
+			continue
+		}
+		err = e.db.SoftDeleteEnvConfig(&config)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -439,9 +502,6 @@ func verifyEnvConfigs(configs []apistructs.EnvConfig) error {
 		if env.Key == "" {
 			return errors.Errorf("environment config key error, env: %+v", env)
 		}
-		if env.Value == "" {
-			return errors.Errorf("environment config key error, env: %+v", env)
-		}
 		if env.ConfigType != "FILE" && env.ConfigType != "ENV" {
 			configs[i].ConfigType = "ENV"
 		}
@@ -460,6 +520,7 @@ func encryptAndParse2Entity(configs []apistructs.EnvConfig, namespace *model.Con
 		configItem.ItemKey = config.Key
 		configItem.ItemValue = config.Value
 		configItem.ItemType = config.ConfigType
+		configItem.Encrypt = config.Encrypt
 		if encrypt {
 			configItem.Encrypt = true
 		}

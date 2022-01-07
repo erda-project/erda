@@ -14,30 +14,14 @@
 
 package arrays
 
-func Distinct(array []string) []string {
-	data := make(map[string]interface{})
-	for _, v := range array {
-		data[v] = nil
-	}
-	var result []string
-	for k := range data {
-		result = append(result, k)
-	}
-	return result
-}
+import (
+	"testing"
 
-func Concat(array []string, arrays ...[]string) []string {
-	for _, arr := range arrays {
-		array = append(array, arr...)
-	}
-	return array
-}
+	"github.com/stretchr/testify/assert"
+)
 
-func IsContain(items []string, item string) bool {
-	for _, eachItem := range items {
-		if eachItem == item {
-			return true
-		}
-	}
-	return false
+func TestIsContain(t *testing.T) {
+	is := IsContain([]string{"a", "b", "c"}, "a")
+	assert.Equal(t, is, true)
+
 }

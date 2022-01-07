@@ -48,6 +48,7 @@ type EnvConfig struct {
 // EnvConfigAddOrUpdateRequest 配置新增/更新请求 POST /api/config
 type EnvConfigAddOrUpdateRequest struct {
 	Configs []EnvConfig `json:"configs"`
+	Batch   bool        `json:"batch"`
 }
 
 // EnvConfigFetchRequest namespace 配置获取请求
