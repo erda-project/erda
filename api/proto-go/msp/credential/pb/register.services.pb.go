@@ -4,9 +4,8 @@
 package pb
 
 import (
-	reflect "reflect"
-
 	transport "github.com/erda-project/erda-infra/pkg/transport"
+	reflect "reflect"
 )
 
 // RegisterAccessKeyServiceImp credential.proto

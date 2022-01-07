@@ -5,13 +5,12 @@ package pb
 
 import (
 	json "encoding/json"
-	url "net/url"
-	strconv "strconv"
-	strings "strings"
-
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	url "net/url"
+	strconv "strconv"
+	strings "strings"
 )
 
 // This is a compile-time assertion to ensure that this generated file

@@ -7,9 +7,6 @@
 package pb
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/erda-project/erda-proto-go/common/pb"
 	_ "github.com/mwitkow/go-proto-validators"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
@@ -17,6 +14,8 @@ import (
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	_ "google.golang.org/protobuf/types/descriptorpb"
 	structpb "google.golang.org/protobuf/types/known/structpb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (

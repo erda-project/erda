@@ -7,9 +7,6 @@
 package pb
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/erda-project/erda-proto-go/common/pb"
 	pb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
@@ -17,6 +14,8 @@ import (
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	_ "google.golang.org/protobuf/types/descriptorpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
