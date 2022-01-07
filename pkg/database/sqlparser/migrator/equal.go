@@ -39,35 +39,35 @@ func FieldTypeEqual(l, r *types.FieldType) *Equal {
 	if l.Tp != r.Tp {
 		return &Equal{
 			equal:  false,
-			reason: fmt.Sprintf("字段类型不一致(FieldType.Tp), 期望值: %s, 实际值: %s; ", l.String(), r.String()),
+			reason: fmt.Sprintf("FieldType.Tp is not equal, expected: %s, actual: %s; ", l.String(), r.String()),
 		}
 	}
 
 	if !(l.Flen == -1 || r.Flen == -1) && (l.Flen != r.Flen) && !mysql.IsIntegerType(l.Tp) {
 		return &Equal{
 			equal:  false,
-			reason: fmt.Sprintf("字段长度不一致(FieldType.Flen), 期望值: %v, 实际值: %v; ", l.Flen, r.Flen),
+			reason: fmt.Sprintf("FieldType.Flen is not equal, expected: %v, actual: %v; ", l.Flen, r.Flen),
 		}
 	}
 
 	if !(l.Decimal == -1 || r.Decimal == -1) && l.Decimal != r.Decimal {
 		return &Equal{
 			equal:  false,
-			reason: fmt.Sprintf("字段 Decimal 值不一致(FieldType.Decimal), 期望值: %v, 实际值: %v; ", l.Decimal, r.Decimal),
+			reason: fmt.Sprintf("FieldType.Decimal is not equal, expected: %v, actual: %v; ", l.Decimal, r.Decimal),
 		}
 	}
 
 	if l.Collate != r.Collate {
 		return &Equal{
 			equal:  false,
-			reason: fmt.Sprintf("字段 FieldType.Collate 不一致, 期望值: %s, 实际值: %s; ", l.Collate, r.Collate),
+			reason: fmt.Sprintf("FieldType.Collate is not equal, expected: %s, actual: %s; ", l.Collate, r.Collate),
 		}
 	}
 
 	if mysql.HasUnsignedFlag(l.Flag) != mysql.HasUnsignedFlag(r.Flag) {
 		return &Equal{
 			equal: false,
-			reason: fmt.Sprintf("字段 Unsigned 符号不一致, 期望值: %v, 实际值: %v; ",
+			reason: fmt.Sprintf("FieldType's HasUnsignedFlag is not equal, expected unsigned flag: %v, actual unsigned flag: %v; ",
 				mysql.HasUnsignedFlag(l.Flag), mysql.HasUnsignedFlag(r.Flag)),
 		}
 	}
@@ -75,7 +75,7 @@ func FieldTypeEqual(l, r *types.FieldType) *Equal {
 	if len(l.Elems) != len(r.Elems) {
 		return &Equal{
 			equal:  false,
-			reason: fmt.Sprintf("字段枚举值数量不一致, 期望值: %v, 实际值: %v; ", l.Elems, r.Elems),
+			reason: fmt.Sprintf("FieldType.Elems length is not equal, expected: %v, actual: %v; ", l.Elems, r.Elems),
 		}
 	}
 
@@ -85,7 +85,7 @@ func FieldTypeEqual(l, r *types.FieldType) *Equal {
 		if l.Elems[i] != r.Elems[i] {
 			return &Equal{
 				equal:  false,
-				reason: fmt.Sprintf("字段枚举值[%v] 不一致, 期望值: %s, 实际值: %s; ", i, l.Elems[i], r.Elems[i]),
+				reason: fmt.Sprintf("FieldType.Elems[%v] is not equal, expected: %s, actual: %s; ", i, l.Elems[i], r.Elems[i]),
 			}
 		}
 	}
