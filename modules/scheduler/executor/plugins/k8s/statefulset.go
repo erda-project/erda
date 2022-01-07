@@ -191,6 +191,9 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 	if !ok {
 		return errors.New(reason)
 	}
+
+	SetPodAnnotationsBaseContainerEnvs(set.Spec.Template.Spec.Containers[0], set.Spec.Template.Annotations)
+
 	return k.sts.Create(set)
 }
 
@@ -493,4 +496,78 @@ func ParseJobHostBindTemplate(hostPath string, clusterInfo map[string]string) (s
 	}
 
 	return b.String(), nil
+}
+
+// scaleStatefulSet scale statefulset application
+func (k *Kubernetes) scaleStatefulSet(ctx context.Context, sg *apistructs.ServiceGroup) error {
+	// only support scale the first one service
+	ns := sg.Services[0].Namespace
+	if ns == "" {
+		ns = MakeNamespace(sg)
+	}
+
+	scalingService := sg.Services[0]
+	//statefulSetName := statefulsetName(sg)
+
+	statefulSetName, ok := getGroupID(&sg.Services[0])
+	if !ok {
+		statefulSetName = sg.ID
+	}
+
+	logrus.Infof("scaleStatefulSet for name %s in namespace: %s sg.ID: %s sg %#v", statefulSetName, ns, sg.ID, *sg)
+	sts, err := k.sts.Get(ns, statefulSetName)
+	if err != nil {
+		getErr := fmt.Errorf("failed to get the statefulset %s in namespace %s, err is: %s", statefulSetName, ns, err.Error())
+		return getErr
+	}
+
+	oldCPU, oldMem := getRequestsResources(sts.Spec.Template.Spec.Containers)
+	if sts.Spec.Replicas != nil {
+		oldCPU *= int64(*sts.Spec.Replicas)
+		oldMem *= int64(*sts.Spec.Replicas)
+	}
+
+	if scalingService.Scale == 0 {
+		// 表示停止 statefulset
+		sts.Spec.Replicas = func(i int32) *int32 { return &i }(int32(scalingService.Scale))
+	} else {
+		// 表示恢复 statefulset
+		sts.Spec.Replicas = func(i int32) *int32 { return &i }(int32(len(sg.Services)))
+	}
+
+	// only support one container on Erda currently
+	for index := range sts.Spec.Template.Spec.Containers {
+		container := sts.Spec.Template.Spec.Containers[index]
+
+		err = k.setContainerResources(scalingService, &container)
+		if err != nil {
+			setContainerErr := fmt.Errorf("failed to set container resource, err is: %s", err.Error())
+			return setContainerErr
+		}
+
+		k.UpdateContainerResourceEnv(scalingService.Resources, &container)
+
+		sts.Spec.Template.Spec.Containers[index] = container
+	}
+	sts.ResourceVersion = ""
+
+	newCPU, newMem := getRequestsResources(sts.Spec.Template.Spec.Containers)
+	newCPU *= int64(*sts.Spec.Replicas)
+	newMem *= int64(*sts.Spec.Replicas)
+
+	_, projectID, workspace, runtimeID := extractContainerEnvs(sts.Spec.Template.Spec.Containers)
+	ok, reason, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, newCPU-oldCPU, newMem-oldMem, "scale", scalingService.Name)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New(reason)
+	}
+
+	err = k.sts.Put(sts)
+	if err != nil {
+		updateErr := fmt.Errorf("failed to update the statefulset %s in namespace %s, err is: %s", sts.Name, sts.Namespace, err.Error())
+		return updateErr
+	}
+	return nil
 }

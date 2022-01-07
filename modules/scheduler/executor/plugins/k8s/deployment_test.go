@@ -153,3 +153,102 @@ func TestUpdateContainerResourceEnv(t *testing.T) {
 	assert.Equal(t, container.Env[0].Value, "0.100000")
 	assert.Equal(t, container.Env[5].Value, "1024")
 }
+
+func TestSetPodAnnotationsBaseContainerEnvs(t *testing.T) {
+	type args struct {
+		container      apiv1.Container
+		podAnnotations map[string]string
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+		{
+			name: "test_01",
+			args: args{
+				container: apiv1.Container{
+					Env: []apiv1.EnvVar{
+						{
+							Name:  "DICE_ORG_NAME",
+							Value: "xxx",
+						},
+						{
+							Name:  "DICE_CLUSTER_NAME",
+							Value: "xxx",
+						},
+						{
+							Name:  "DICE_PROJECT_NAME",
+							Value: "xxx",
+						},
+						{
+							Name:  "DICE_SERVICE_NAME",
+							Value: "xxx",
+						},
+						{
+							Name:  "DICE_APPLICATION_NAME",
+							Value: "xxx",
+						},
+						{
+							Name:  "DICE_WORKSPACE",
+							Value: "xxx",
+						},
+						{
+							Name:  "DICE_RUNTIME_NAME",
+							Value: "xxx",
+						},
+						{
+							Name:  "DICE_RUNTIME_ID",
+							Value: "xxx",
+						},
+						{
+							Name:  "DICE_APPLICATION_ID",
+							Value: "xxx",
+						},
+						{
+							Name:  "DICE_ORG_ID",
+							Value: "xxx",
+						},
+						{
+							Name:  "DICE_PROJECT_ID",
+							Value: "xxx",
+						},
+						{
+							Name:  "DICE_DEPLOYMENT_ID",
+							Value: "xxx",
+						},
+						{
+							Name:  "TERMINUS_LOG_KEY",
+							Value: "xxx",
+						},
+						{
+							Name:  "MONITOR_LOG_KEY",
+							Value: "xxx",
+						},
+						{
+							Name:  "MSP_ENV_ID",
+							Value: "xxx",
+						},
+						{
+							Name:  "MSP_LOG_ATTACH",
+							Value: "xxx",
+						},
+						{
+							Name:  "MONITOR_LOG_COLLECTOR",
+							Value: "xxx",
+						},
+						{
+							Name:  "TERMINUS_KEY",
+							Value: "xxx",
+						},
+					},
+				},
+				podAnnotations: make(map[string]string),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}

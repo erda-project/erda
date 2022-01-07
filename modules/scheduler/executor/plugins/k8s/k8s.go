@@ -1188,12 +1188,53 @@ func (k *Kubernetes) Scale(ctx context.Context, spec interface{}) (interface{}, 
 
 	// only support scale one service resources
 	if len(sg.Services) != 1 {
-		return nil, fmt.Errorf("the scaling service count is not equal 1")
+		logrus.Infof("the scaling service count is not equal 1 for sg.Services: %#v", sg.Services)
+		//	return nil, fmt.Errorf("the scaling service count is not equal 1")
 	}
 
-	if err = k.scaleDeployment(ctx, sg); err != nil {
-		logrus.Error(err)
-		return nil, err
+	// scale operator use addon update
+	operator, ok := sg.Labels["USE_OPERATOR"]
+	if ok {
+		op, err := k.whichOperator(operator)
+		if err != nil {
+			return nil, fmt.Errorf("not found addonoperator: %v", operator)
+		}
+		return sg, addon.Update(op, sg)
+	}
+
+	if IsGroupStateful(sg) {
+		// statefulset application
+		// Judge the group from the label, each group is a statefulset
+		groups, err := groupStatefulset(sg)
+		if err != nil {
+			logrus.Infof(err.Error())
+			return sg, err
+		}
+
+		for _, groupedSG := range groups {
+			// 每个  groupedSG 对应一个 statefulSet，其中 Services 数量表示副本数
+			if err = k.scaleStatefulSet(ctx, groupedSG); err != nil {
+				logrus.Error(err)
+				return sg, err
+			}
+		}
+	} else {
+		// stateless application
+		for index, svc := range sg.Services {
+			switch svc.WorkLoad {
+			case ServicePerNode:
+				logrus.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
+				errs := fmt.Errorf("svc %s in sg %+v is daemonset, can not scale", svc.Name, sg)
+				logrus.Error(errs)
+				return sg, errs
+			default:
+				// Scale deployment
+				if err = k.scaleDeployment(ctx, sg, index); err != nil {
+					logrus.Error(err)
+					return sg, err
+				}
+			}
+		}
 	}
 
 	return sg, nil

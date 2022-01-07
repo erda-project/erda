@@ -1213,6 +1213,8 @@ func (h *HTTPEndpoints) ServiceScaling(ctx context.Context, r *http.Request, var
 				}},
 		})
 	}
+	sgb, _ := json.Marshal(&sg)
+	logrus.Infof("scale service group body is %s", string(sgb))
 	if _, err = h.serviceGroupImpl.Scale(&sg); err != nil {
 		return mkResponse(apistructs.ScheduleLabelSetResponse{
 			Header: apistructs.Header{

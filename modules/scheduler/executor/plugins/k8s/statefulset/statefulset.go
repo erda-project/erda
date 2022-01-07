@@ -154,6 +154,26 @@ func (sts *StatefulSet) List(namespace string) (appsv1.StatefulSetList, error) {
 	return stslist, nil
 }
 
+// Put updates a k8s statefulset
+func (sts *StatefulSet) Put(statefulset *appsv1.StatefulSet) error {
+	var b bytes.Buffer
+	resp, err := sts.client.Put(sts.addr).
+		Path("/apis/apps/v1/namespaces/" + statefulset.Namespace + "/statefulsets/" + statefulset.Name).
+		JSONBody(statefulset).
+		Do().
+		Body(&b)
+
+	if err != nil {
+		return errors.Errorf("failed to put statefuleset name: %s namespace: %s, (%v)", statefulset.Name, statefulset.Namespace, err)
+	}
+
+	if !resp.IsOK() {
+		return errors.Errorf("failed to put statefuleset name: %s  namespace: %s, statuscode: %v, body: %v",
+			statefulset.Name, statefulset.Namespace, resp.StatusCode(), b.String())
+	}
+	return nil
+}
+
 type rawevent struct {
 	Type   string          `json:"type"`
 	Object json.RawMessage `json:"object"`

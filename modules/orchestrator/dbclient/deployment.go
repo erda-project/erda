@@ -170,6 +170,19 @@ func (db *DBClient) FindDeployments(runtimeId uint64, filter DeploymentFilter, o
 	return deployments, total, nil
 }
 
+func (db *DBClient) FindAllDeployments(runtimeId uint64, filter DeploymentFilter) ([]Deployment, error) {
+	r := db.Where("runtime_id = ?", runtimeId)
+	if len(filter.StatusIn) > 0 {
+		r = r.Where("status in (?)", filter.StatusIn)
+	}
+	var deployments []Deployment
+	r = r.Order("id desc").Find(&deployments)
+	if err := r.Error; err != nil {
+		return nil, errors.Wrap(err, "failed to find deployments")
+	}
+	return deployments, nil
+}
+
 func (db *DBClient) FindMultiRuntimesDeployments(runtimeids []uint64, filter DeploymentFilter, offset int, limit int) ([]Deployment, int, error) {
 	r := db.Where("runtime_id in (?)", runtimeids)
 	if len(filter.StatusIn) > 0 {
