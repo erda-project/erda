@@ -79,3 +79,36 @@ func (b *Bundle) CreateRuntime(req apistructs.RuntimeCreateRequest, orgID uint64
 
 	return &rsp.Data, nil
 }
+
+// action 表示 scale 的操作，可以是如下 5 个取值
+// 空值
+// scaleUp    表示恢复之前已经停止的 runtimes
+// scaleDown  表示停止之前已经在运行的 runtimes
+// delete     表示删除 runtimes
+// reDeploy   表示重新部署 runtimes
+func (b *Bundle) BatchUpdateOverlay(req apistructs.RuntimeScaleRecords, orgID uint64, userID, action string) (interface{}, error) {
+	host, err := b.urls.Orchestrator()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var rsp struct {
+		apistructs.Header
+		Data interface{}
+	}
+
+	resp, err := hc.Put(host).Path(fmt.Sprintf("/api/runtimes/actions/batch-update-pre-overlay?scale_action=%s", action)).
+		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		Header(httputil.UserHeader, userID).
+		JSONBody(req).Do().JSON(&rsp)
+
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !rsp.Success {
+		return nil, toAPIError(resp.StatusCode(), rsp.Error)
+	}
+
+	return &rsp.Data, nil
+}

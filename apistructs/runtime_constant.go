@@ -29,6 +29,7 @@ const (
 	RuntimeStatusProgressing = "Progressing"
 	RuntimeStatusInit        = "Init"
 	RuntimeStatusUnknown     = "Unknown" // It should be not exist
+	RuntimeStatusStopped     = "Stopped" // 已停止未删除副本数全为0
 
 	ServiceStatusHealthy   = "Healthy"   // 运行中，预期实例数与实际实例数相等，且都通过健康检查
 	ServiceStatusUnHealthy = "UnHealthy" // 预期实例数与实际实例数不相等，或者至少一个副本的健康检查未收到或未通过
