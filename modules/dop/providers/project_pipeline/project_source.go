@@ -20,13 +20,15 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/providers/project_pipeline/deftype"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type ProjectSourceType interface {
-	GenerateReq(ctx context.Context, p *ProjectPipelineSvc, params deftype.ProjectPipelineCreate) (*pb.PipelineSourceCreateRequest, error)
+	GenerateReq(ctx context.Context, p *ProjectPipelineSvc, params pb.CreateProjectPipelineRequest) (*spb.PipelineSourceCreateRequest, error)
 	GetPipelineCreateRequestV2() string
 }
 
@@ -50,7 +52,7 @@ func NewProjectSourceType(t string) ProjectSourceType {
 	return nil
 }
 
-func (s *ErdaProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipelineSvc, params deftype.ProjectPipelineCreate) (*pb.PipelineSourceCreateRequest, error) {
+func (s *ErdaProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipelineSvc, params pb.CreateProjectPipelineRequest) (*spb.PipelineSourceCreateRequest, error) {
 	app, err := p.bundle.GetApp(params.AppID)
 	if err != nil {
 		return nil, err
@@ -60,7 +62,7 @@ func (s *ErdaProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipel
 		AppID:              params.AppID,
 		Branch:             params.Ref,
 		PipelineYmlContent: "",
-		UserID:             params.IdentityInfo.UserID,
+		UserID:             apis.GetUserID(ctx),
 	})
 	if err != nil {
 		return nil, err
@@ -70,8 +72,8 @@ func (s *ErdaProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipel
 		return nil, err
 	}
 	s.PipelineCreateRequestV2 = string(b)
-	return &pb.PipelineSourceCreateRequest{
-		SourceType:  params.SourceType.String(),
+	return &spb.PipelineSourceCreateRequest{
+		SourceType:  params.SourceType,
 		Remote:      makeRemote(app),
 		Ref:         params.Ref,
 		Path:        params.Path,
@@ -88,7 +90,7 @@ func makeRemote(app *apistructs.ApplicationDTO) string {
 	return fmt.Sprintf("%s/%s/%s", app.OrgName, app.ProjectName, app.Name)
 }
 
-func (s *GithubProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipelineSvc, params deftype.ProjectPipelineCreate) (*pb.PipelineSourceCreateRequest, error) {
+func (s *GithubProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipelineSvc, params pb.CreateProjectPipelineRequest) (*spb.PipelineSourceCreateRequest, error) {
 
 	return nil, nil
 }
