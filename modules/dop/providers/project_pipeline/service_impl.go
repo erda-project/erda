@@ -18,15 +18,16 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/providers/project_pipeline/deftype"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-func (p *ProjectPipelineSvc) Create(ctx context.Context, params deftype.ProjectPipelineCreate) (*deftype.ProjectPipelineCreateResult, error) {
+func (p *ProjectPipelineSvc) Create(ctx context.Context, params pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error) {
 	if err := params.Validate(); err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InvalidParameter(err)
 	}
@@ -34,7 +35,7 @@ func (p *ProjectPipelineSvc) Create(ctx context.Context, params deftype.ProjectP
 		return nil, apierrors.ErrCreateProjectPipeline.AccessDenied()
 	}
 
-	p.pipelineSourceType = NewProjectSourceType(params.SourceType.String())
+	p.pipelineSourceType = NewProjectSourceType(params.SourceType)
 	sourceReq, err := p.pipelineSourceType.GenerateReq(ctx, p, params)
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
@@ -45,24 +46,24 @@ func (p *ProjectPipelineSvc) Create(ctx context.Context, params deftype.ProjectP
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
 
-	definitionRsp, err := p.PipelineDefinition.Create(ctx, &pb.PipelineDefinitionCreateRequest{
+	definitionRsp, err := p.PipelineDefinition.Create(ctx, &dpb.PipelineDefinitionCreateRequest{
 		Name:             params.Name,
 		Creator:          apis.GetUserID(ctx),
 		PipelineSourceId: sourceRsp.PipelineSource.ID,
 		Category:         "",
-		Extra: &pb.PipelineDefinitionExtra{
+		Extra: &dpb.PipelineDefinitionExtra{
 			Extra: p.pipelineSourceType.GetPipelineCreateRequestV2(),
 		},
 	})
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
-	return &deftype.ProjectPipelineCreateResult{ID: definitionRsp.PipelineDefinition.ID}, nil
+	return &pb.CreateProjectPipelineResponse{ID: definitionRsp.PipelineDefinition.ID}, nil
 }
 
-func (p *ProjectPipelineSvc) checkCreatePermission(ctx context.Context, params deftype.ProjectPipelineCreate) error {
+func (p *ProjectPipelineSvc) checkCreatePermission(ctx context.Context, params pb.CreateProjectPipelineRequest) error {
 	if !apis.IsInternalClient(ctx) {
-		if params.SourceType == deftype.ErdaProjectPipelineType {
+		if params.SourceType == deftype.ErdaProjectPipelineType.String() {
 			app, err := p.bundle.GetApp(params.AppID)
 			if err != nil {
 				return err
@@ -103,7 +104,7 @@ func (p *ProjectPipelineSvc) getYmlFromGittar(app *apistructs.ApplicationDTO, re
 	return yml, err
 }
 
-func (p *ProjectPipelineSvc) List(ctx context.Context, params deftype.ProjectPipelineList) ([]*pb.PipelineDefinition, error) {
+func (p *ProjectPipelineSvc) List(ctx context.Context, params deftype.ProjectPipelineList) ([]*dpb.PipelineDefinition, error) {
 	if err := params.Validate(); err != nil {
 		return nil, apierrors.ErrListProjectPipeline.InvalidParameter(err)
 	}
@@ -121,7 +122,7 @@ func (p *ProjectPipelineSvc) List(ctx context.Context, params deftype.ProjectPip
 		return nil, apierrors.ErrListProjectPipeline.InternalError(err)
 	}
 
-	list, err := p.PipelineDefinition.List(ctx, &pb.PipelineDefinitionListRequest{
+	list, err := p.PipelineDefinition.List(ctx, &dpb.PipelineDefinitionListRequest{
 		PageSize: int64(params.PageSize),
 		PageNo:   int64(params.PageNo),
 		Creator:  params.Creator,
@@ -169,7 +170,7 @@ func (p *ProjectPipelineSvc) Delete(ctx context.Context, params deftype.ProjectP
 	}
 	// TODO check permission
 
-	_, err := p.PipelineDefinition.Delete(ctx, &pb.PipelineDefinitionDeleteRequest{PipelineDefinitionID: params.ID})
+	_, err := p.PipelineDefinition.Delete(ctx, &dpb.PipelineDefinitionDeleteRequest{PipelineDefinitionID: params.ID})
 	return nil, err
 }
 
@@ -201,7 +202,7 @@ func (p *ProjectPipelineSvc) Update(ctx context.Context, params deftype.ProjectP
 	if err != nil {
 		return nil, err
 	}
-	_, err = p.PipelineDefinition.Update(ctx, &pb.PipelineDefinitionUpdateRequest{
+	_, err = p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
 		PipelineDefinitionID: params.ID,
 		PipelineSourceId:     sourceRsp.PipelineSource.ID,
 	})
