@@ -21,19 +21,17 @@ import (
 	"strconv"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/code_coverage"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type ComponentAction struct {
-	base.DefaultProvider
-
 	CodeCoverageSvc *code_coverage.CodeCoverage `json:"-"`
 	Type            string                      `json:"type"`
 	Data            Data                        `json:"data"`

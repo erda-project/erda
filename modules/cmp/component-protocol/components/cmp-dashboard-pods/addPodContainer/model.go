@@ -14,11 +14,7 @@
 
 package addPodContainer
 
-import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-
 type ComponentAddPodContainer struct {
-	base.DefaultProvider
-
 	Props Props `json:"props"`
 }
 

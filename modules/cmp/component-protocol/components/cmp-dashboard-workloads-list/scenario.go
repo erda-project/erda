@@ -20,7 +20,6 @@ import (
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/addWorkloadDrawer"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/addWorkloadFileEditor"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/addWorkloadFilter"
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/chartContainer"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/charts"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/filter"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-workloads-list/page"

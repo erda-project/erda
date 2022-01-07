@@ -20,12 +20,9 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type BurnoutChart struct {
-	base.DefaultProvider
-
 	Type   string          `json:"type"`
 	Props  Props           `json:"props"`
 	Issues []dao.IssueItem `json:"-"`

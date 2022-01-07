@@ -14,7 +14,7 @@
 
 package apiEditorDrawer
 
-import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+import "github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 
 func init() {
 	base.InitProvider("auto-test-scenes", "apiEditorDrawer")

@@ -16,16 +16,9 @@ package personal_workbench
 
 import (
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/cleanData"
-	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/head"
-	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/leftContent"
-	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/messageContainer"
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/messageList"
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/messageTabs"
-	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/page"
-	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/rightContent"
-	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/userProfile"
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/workCards"
-	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/workContainer"
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/workFilter"
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/workList"
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/workTabs"

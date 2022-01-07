@@ -21,14 +21,12 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type LeftHeadAddSceneSet struct {
-	base.DefaultProvider
-
 	Name       string                 `json:"name"`
 	Type       string                 `json:"type"`
 	State      State                  `json:"state"`

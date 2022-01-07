@@ -20,11 +20,9 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type SimpleChart struct {
-	base.DefaultProvider
 	Issues []dao.IssueItem `json:"-"`
 	Type   string          `json:"type"`
 	Data   Data            `json:"data"`

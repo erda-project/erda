@@ -18,13 +18,12 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type InfoMapTable struct {
 	*cptype.SDK
 	Ctx context.Context
-	base.DefaultProvider
+
 	Type  string            `json:"type"`
 	Props Props             `json:"props"`
 	Data  map[string][]Pair `json:"data"`

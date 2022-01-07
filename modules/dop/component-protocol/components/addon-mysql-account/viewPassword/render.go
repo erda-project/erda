@@ -19,17 +19,15 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/accountTable/table"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type comp struct {
-	base.DefaultProvider
-
 	ac *common.AccountData
 }
 

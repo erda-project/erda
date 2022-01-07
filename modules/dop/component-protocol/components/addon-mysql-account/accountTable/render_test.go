@@ -24,15 +24,13 @@ import (
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/accountTable/table"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func Test_comp_getDatum(t *testing.T) {
 	type fields struct {
-		DefaultProvider base.DefaultProvider
-		ac              *common.AccountData
-		pg              *common.PageDataAccount
-		userIDs         []string
+		ac      *common.AccountData
+		pg      *common.PageDataAccount
+		userIDs []string
 	}
 	now := time.Now()
 	type args struct {
@@ -130,10 +128,9 @@ func Test_comp_getDatum(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &comp{
-				DefaultProvider: tt.fields.DefaultProvider,
-				ac:              tt.fields.ac,
-				pg:              tt.fields.pg,
-				userIDs:         tt.fields.userIDs,
+				ac:      tt.fields.ac,
+				pg:      tt.fields.pg,
+				userIDs: tt.fields.userIDs,
 			}
 			if got := f.getDatum(tt.args.item); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getDatum() = %+v, want %+v", got, tt.want)

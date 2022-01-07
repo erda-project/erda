@@ -18,13 +18,12 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type AddLabelModal struct {
 	*cptype.SDK
 	Ctx context.Context
-	base.DefaultProvider
+
 	Type       string                `json:"type,omitempty"`
 	Props      Props                 `json:"props,omitempty"`
 	State      State                 `json:"state,omitempty"`

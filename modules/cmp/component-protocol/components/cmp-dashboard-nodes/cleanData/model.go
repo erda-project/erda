@@ -14,9 +14,6 @@
 
 package cleanData
 
-import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-
 type Clean struct {
 	State map[string]interface{} `json:"state"`
-	base.DefaultProvider
 }

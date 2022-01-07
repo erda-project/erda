@@ -21,7 +21,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/issue"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
@@ -32,7 +31,6 @@ type ComponentFilter struct {
 	filter.CommonFilter
 	State    State    `json:"state,omitempty"`
 	InParams InParams `json:"-"`
-	base.DefaultProvider
 
 	// local vars
 	Iterations     []apistructs.Iteration  `json:"-"`

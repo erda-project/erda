@@ -33,6 +33,7 @@ import (
 	types2 "k8s.io/apimachinery/pkg/types"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
@@ -44,7 +45,6 @@ import (
 	cmpTypes "github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/steve"
 	"github.com/erda-project/erda/modules/cmp/steve/middleware"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
@@ -61,7 +61,7 @@ func (w *ComponentWorkloadTable) Init(ctx servicehub.Context) error {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
 	steveServer = server
-	return w.DefaultProvider.Init(ctx)
+	return nil
 }
 
 func (w *ComponentWorkloadTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,

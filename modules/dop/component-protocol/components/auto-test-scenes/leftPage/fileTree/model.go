@@ -18,11 +18,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentFileTree struct {
-	base.DefaultProvider
 	sdk        *cptype.SDK
 	bdl        *bundle.Bundle
 	CompName   string                 `json:"name"`

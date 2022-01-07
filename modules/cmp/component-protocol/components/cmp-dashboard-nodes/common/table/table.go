@@ -39,14 +39,13 @@ import (
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/nodeFilter"
 	"github.com/erda-project/erda/modules/cmp/metrics"
 	"github.com/erda-project/erda/modules/cmp/steve"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type Table struct {
 	CpuTable GetTable
 	MemTable GetTable
 	PodTable GetTable
-	base.DefaultProvider
+
 	SDK        *cptype.SDK
 	Ctx        context.Context
 	Metrics    metrics.Interface

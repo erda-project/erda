@@ -16,14 +16,12 @@ package charts
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type Charts struct {
 	Type  string `json:"type"`
 	Props Props  `json:"props"`
 	*cptype.SDK
-	base.DefaultProvider
 }
 
 type Props struct {

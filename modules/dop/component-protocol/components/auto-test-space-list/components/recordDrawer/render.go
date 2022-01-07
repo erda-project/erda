@@ -21,11 +21,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type Props struct {
@@ -39,7 +39,6 @@ type State struct {
 
 type RecordDrawer struct {
 	sdk *cptype.SDK
-	base.DefaultProvider
 
 	Type  string `json:"type"`
 	Props Props  `json:"props"`

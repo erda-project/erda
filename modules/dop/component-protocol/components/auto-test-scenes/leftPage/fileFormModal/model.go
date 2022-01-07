@@ -20,11 +20,9 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentFileFormModal struct {
-	base.DefaultProvider
 	bdl        *bundle.Bundle
 	sdk        *cptype.SDK
 	atTestPlan *autotestv2.Service

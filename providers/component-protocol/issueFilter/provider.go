@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
@@ -30,13 +31,11 @@ import (
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/issuefilterbm"
 	"github.com/erda-project/erda/modules/dop/services/issuestate"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type IssueFilter struct {
 	impl.DefaultFilter
-	base.DefaultProvider
 
 	bdl              *bundle.Bundle
 	issueStateSvc    *issuestate.IssueState
@@ -54,14 +53,6 @@ type State struct {
 	Base64UrlQueryParams    string             `json:"issueFilter__urlQuery,omitempty"`
 	FrontendConditionValues FrontendConditions `json:"values,omitempty"`
 	SelectedFilterSet       string             `json:"selectedFilterSet,omitempty"`
-}
-
-func (p *IssueFilter) Init(ctx servicehub.Context) error {
-	return p.DefaultProvider.Init(ctx)
-}
-
-func (p *IssueFilter) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	return p
 }
 
 func init() {

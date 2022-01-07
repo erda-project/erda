@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
@@ -29,13 +30,12 @@ import (
 	text "github.com/erda-project/erda/modules/dop/component-protocol/components/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	spec "github.com/erda-project/erda/modules/openapi/component-protocol/component_spec/table"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentSpaceList struct {
 	sdk *cptype.SDK
 	bdl *bundle.Bundle
-	base.DefaultProvider
+
 	State state                  `json:"state"`
 	Props spec.Props             `json:"props"`
 	Data  map[string]interface{} `json:"data"`

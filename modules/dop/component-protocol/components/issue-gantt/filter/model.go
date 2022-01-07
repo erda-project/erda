@@ -19,7 +19,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/issue"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
@@ -29,7 +28,6 @@ type ComponentFilter struct {
 	issueSvc *issue.Issue
 	filter.CommonFilter
 	State State `json:"state,omitempty"`
-	base.DefaultProvider
 
 	FrontendUrlQuery string              `json:"-"`
 	projectID        uint64              `json:"-"`

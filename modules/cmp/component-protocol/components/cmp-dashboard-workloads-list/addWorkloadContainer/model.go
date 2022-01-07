@@ -14,11 +14,7 @@
 
 package addWorkloadContainer
 
-import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-
 type ComponentAddWorkloadContainer struct {
-	base.DefaultProvider
-
 	Props Props `json:"props"`
 }
 

@@ -14,10 +14,7 @@
 
 package workloadHead
 
-import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-
 type ComponentWorkloadHead struct {
-	base.DefaultProvider
 	Props Props `json:"props"`
 }
 

@@ -14,11 +14,7 @@
 
 package topHead
 
-import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-
 type ComponentTopHead struct {
-	base.DefaultProvider
-
 	Type  string `json:"type,omitempty"`
 	Props Props  `json:"props"`
 }

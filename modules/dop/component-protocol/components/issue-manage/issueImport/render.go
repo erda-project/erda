@@ -18,9 +18,9 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type IssueImportProps struct {
@@ -30,7 +30,7 @@ type IssueImportProps struct {
 	Visible    bool   `json:"visible"`
 }
 
-type ComponentAction struct{ base.DefaultProvider }
+type ComponentAction struct{}
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	sdk := cputil.SDK(ctx)

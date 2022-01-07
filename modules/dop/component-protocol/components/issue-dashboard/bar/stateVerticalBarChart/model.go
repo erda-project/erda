@@ -16,12 +16,10 @@ package stateVerticalBarChart
 
 import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
 	State State `json:"state,omitempty"`
-	base.DefaultProvider
 }
 
 type State struct {

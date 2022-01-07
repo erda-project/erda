@@ -23,7 +23,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/cmp"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type NopTranslator struct{}
@@ -436,15 +435,14 @@ func TestTable_GetUnusedRate(t1 *testing.T) {
 
 func TestTable_GetDistributionValue(t1 *testing.T) {
 	type fields struct {
-		TableComponent  GetRowItem
-		DefaultProvider base.DefaultProvider
-		SDK             *cptype.SDK
-		Ctx             context.Context
-		Server          cmp.SteveServer
-		Type            string
-		Props           map[string]interface{}
-		Operations      map[string]interface{}
-		State           State
+		TableComponent GetRowItem
+		SDK            *cptype.SDK
+		Ctx            context.Context
+		Server         cmp.SteveServer
+		Type           string
+		Props          map[string]interface{}
+		Operations     map[string]interface{}
+		State          State
 	}
 	type args struct {
 		a, b         float64
@@ -481,15 +479,14 @@ func TestTable_GetDistributionValue(t1 *testing.T) {
 
 func TestTable_GetUsageValue(t1 *testing.T) {
 	type fields struct {
-		TableComponent  GetRowItem
-		DefaultProvider base.DefaultProvider
-		SDK             *cptype.SDK
-		Ctx             context.Context
-		Server          cmp.SteveServer
-		Type            string
-		Props           map[string]interface{}
-		Operations      map[string]interface{}
-		State           State
+		TableComponent GetRowItem
+		SDK            *cptype.SDK
+		Ctx            context.Context
+		Server         cmp.SteveServer
+		Type           string
+		Props          map[string]interface{}
+		Operations     map[string]interface{}
+		State          State
 	}
 	type args struct {
 		a, b         float64

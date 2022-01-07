@@ -14,10 +14,7 @@
 
 package chartsContainer
 
-import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-
 type ChartsContainer struct {
-	base.DefaultProvider
 	Type  string
 	Name  string
 	Props Props `json:"props"`

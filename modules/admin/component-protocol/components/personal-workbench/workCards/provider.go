@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/cardlist"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/cardlist/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -30,11 +31,9 @@ import (
 	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/i18n"
 	"github.com/erda-project/erda/modules/admin/component-protocol/types"
 	"github.com/erda-project/erda/modules/admin/services/workbench"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type WorkCards struct {
-	base.DefaultProvider
 	impl.DefaultCard
 	filterReq apistructs.IssuePagingRequest
 	State     State

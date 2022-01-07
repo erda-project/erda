@@ -20,7 +20,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/issuestate"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
@@ -30,7 +29,6 @@ type ComponentAction struct {
 	State         State `json:"state,omitempty"`
 	// InParams      InParams `json:"-"`
 	common.Chart
-	base.DefaultProvider
 
 	// local vars
 	IssueList []dao.IssueItem `json:"-"`

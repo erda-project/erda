@@ -19,13 +19,11 @@ import (
 	"encoding/json"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
 type Filter struct {
 	filter.CommonFilter
-	base.DefaultProvider
 
 	State State `json:"state,omitempty"`
 }
