@@ -86,6 +86,8 @@ func TestConvertGroupLabels(t *testing.T) {
 func TestFSMTimeout(t *testing.T) {
 	f := genFakeFSM()
 
+	defer monkey.UnpatchAll()
+	patchUpdateDeploymentStatusToRuntimeAndOrder(f)
 	_ = recordUpdateDeployment()
 	_ = recordEvent()
 	_ = recordDLog()
@@ -111,6 +113,8 @@ func TestFSMFailDeploy(t *testing.T) {
 	updateC := recordUpdateDeployment()
 	eventC := recordEvent()
 	loggingC := recordDLog()
+
+	patchUpdateDeploymentStatusToRuntimeAndOrder(f)
 
 	// do invoke
 	err := f.failDeploy(errors.Errorf("fake error"))
@@ -318,6 +322,8 @@ func TestFSMContinueCanceling(t *testing.T) {
 	f.Deployment.Status = apistructs.DeploymentStatusCanceling
 	f.Runtime.Status = apistructs.RuntimeStatusHealthy
 
+	patchUpdateDeploymentStatusToRuntimeAndOrder(f)
+
 	updateC := recordUpdateDeployment()
 	emitC := recordEvent()
 	loggingC := recordDLog()
@@ -496,6 +502,12 @@ func genFakeFSM(specPath ...string) *DeployFSMContext {
 		fsm.Spec = y.Obj()
 	}
 	return &fsm
+}
+
+func patchUpdateDeploymentStatusToRuntimeAndOrder(f *DeployFSMContext) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(f), "UpdateDeploymentStatusToRuntimeAndOrder", func(*DeployFSMContext) error {
+		return nil
+	})
 }
 
 func TestUpdateServiceGroupWithLoop(t *testing.T) {
