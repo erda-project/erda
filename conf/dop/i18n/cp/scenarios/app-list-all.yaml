@@ -10,7 +10,7 @@ zh:
   appModeLIBRARY: "库应用"
   appModeBIGDATA: "大数据应用"
   appModeMOBILE: "移动应用"
-  appModePROJECT_SERVICE: "项目应用"
+  appModePROJECT_SERVICE: "项目级应用"
   appModeSERVICE: "业务应用"
   yearAgo: "年前"
   monthAgo: "月前"
@@ -18,6 +18,7 @@ zh:
   hourAgo: "小时前"
   minuteAgo: "分钟前"
   secondAgo: "几秒前"
+  defaultAppDescription: 可在应用设置修改相关应用描述
 en:
   searchByName: Search by name
   publicApp: Public application
@@ -38,3 +39,4 @@ en:
   hourAgo: hour(s) ago
   minuteAgo: minute(s) ago
   secondAgo: second(s) ago
+  defaultAppDescription: Edit description in application setting

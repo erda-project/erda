@@ -59,7 +59,7 @@ zh:
   AppModeLIBRARY: "库"
   AppModeBIGDATA: "大数据"
   AppModeMOBILE: "移动应用"
-  AppModePROJECTSERVICE: "项目应用"
+  AppModePROJECTSERVICE: "项目级应用"
   AppModeSERVICE: "业务"
   UnreadMessages: "未读消息"
   Tickets: "工单"
