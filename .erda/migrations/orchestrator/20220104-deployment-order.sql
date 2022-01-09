@@ -10,6 +10,7 @@ CREATE TABLE `erda_deployment_order`
     `project_name`     varchar(80)  NOT NULL DEFAULT '' COMMENT 'project name',
     `application_id`   bigint(20) NOT NULL COMMENT 'application id',
     `application_name` varchar(80)  NOT NULL DEFAULT '' COMMENT 'application name',
+    `workspace`        varchar(16)  NOT NULL COMMENT 'workspace',
     `status`           text         NOT NULL COMMENT 'application status',
     `params`           text         NOT NULL COMMENT 'application deploy params',
     `is_outdated`      tinyint(1) NOT NULL DEFAULT 0 COMMENT 'outdated',

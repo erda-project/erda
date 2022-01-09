@@ -77,6 +77,8 @@ type GetApplicationRuntimesDataEle struct {
 	CreatedAt             time.Time                           `json:"createdAt"`
 	DeleteStatus          string                              `json:"deleteStatus"`
 	DeployStatus          string                              `json:"deployStatus"`
+	DeploymentOrderName   string                              `json:"deploymentOrderName"`
+	ReleaseVersion        string                              `json:"releaseVersion"`
 	Errors                interface{}                         `json:"errors"`
 	Extra                 *GetApplicationRuntimesDataEleExtra `json:"extra"`
 	LastMessage           interface{}                         `json:"lastMessage"`

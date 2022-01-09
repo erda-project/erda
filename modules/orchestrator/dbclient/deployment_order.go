@@ -39,6 +39,7 @@ type DeploymentOrder struct {
 	ProjectName     string
 	ApplicationId   int64
 	ApplicationName string
+	Workspace       string
 	Status          string
 	Params          string
 	IsOutdated      uint16
@@ -50,8 +51,8 @@ func (DeploymentOrder) TableName() string {
 	return orderTableName
 }
 
-func (db *DBClient) ListDeploymentOrder(projectId uint64, pageInfo *apistructs.PageInfo) (int, []DeploymentOrder, error) {
-	cursor := db.Where("project_id = ?", projectId)
+func (db *DBClient) ListDeploymentOrder(conditions *apistructs.DeploymentOrderListConditions, pageInfo *apistructs.PageInfo) (int, []DeploymentOrder, error) {
+	cursor := db.Where("project_id = ? and workspace = ?", conditions.ProjectId, conditions.Workspace)
 
 	var (
 		total  int
