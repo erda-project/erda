@@ -41,63 +41,34 @@ func (d *DeploymentOrder) Get(orderId string) (*apistructs.DeploymentOrderDetail
 	}
 
 	// parse status
-	var appsStatus apistructs.DeploymentOrderStatusMap
-
+	appsStatus := make(map[string]apistructs.DeploymentOrderStatusItem, 0)
 	if order.Status != "" {
 		if err := json.Unmarshal([]byte(order.Status), &appsStatus); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal applications status, err: %v", err)
 		}
 	}
 
-	// parse application release list
-	ai := make([]*apistructs.ApplicationsInfo, 0)
+	releases := make([]*apistructs.ReleaseGetResponseData, 0)
 
-	for _, r := range releaseResp.ApplicationReleaseList {
-		subRelease, err := d.bdl.GetRelease(r.ReleaseID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get release %s error: %v", r.ReleaseID, err)
+	switch order.Type {
+	case apistructs.TypePipeline, apistructs.TypeApplicationRelease:
+		releases = append(releases, releaseResp)
+	case apistructs.TypeProjectRelease:
+		for _, r := range releaseResp.ApplicationReleaseList {
+			ret, err := d.bdl.GetRelease(r.ReleaseID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get release repsonse, err: %v", err)
+			}
+			releases = append(releases, ret)
 		}
+	default:
+		return nil, fmt.Errorf("deployment order type %s is illegal", order.Type)
+	}
 
-		// parse deployment order
-		orderParamsData := make([]*apistructs.DeploymentOrderParamData, 0)
-
-		param := params[r.ApplicationName]
-
-		for _, env := range param.Env {
-			orderParamsData = append(orderParamsData, &apistructs.DeploymentOrderParamData{
-				Key:        env.Key,
-				Value:      env.Value,
-				ConfigType: "ENV",
-			})
-		}
-
-		for _, env := range param.File {
-			orderParamsData = append(orderParamsData, &apistructs.DeploymentOrderParamData{
-				Key:        env.Key,
-				Value:      env.Value,
-				ConfigType: "FILE",
-			})
-		}
-
-		paramJson, err := json.Marshal(orderParamsData)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal order param, err: %v", err)
-		}
-
-		var status apistructs.DeploymentStatus
-		if app, ok := appsStatus[r.ApplicationName]; ok {
-			status = app.DeploymentStatus
-		}
-
-		ai = append(ai, &apistructs.ApplicationsInfo{
-			Name:           r.ApplicationName,
-			Param:          string(paramJson),
-			ReleaseVersion: r.Version,
-			Branch:         subRelease.Labels["gitBranch"],
-			CommitId:       subRelease.Labels["gitCommitId"],
-			DiceYaml:       subRelease.Diceyml,
-			Status:         status,
-		})
+	// compose applications info
+	asi, err := composeApplicationsInfo(releases, params, appsStatus)
+	if err != nil {
+		return nil, err
 	}
 
 	return &apistructs.DeploymentOrderDetail{
@@ -106,12 +77,77 @@ func (d *DeploymentOrder) Get(orderId string) (*apistructs.DeploymentOrderDetail
 			Name:      order.Name,
 			ReleaseID: order.ReleaseId,
 			Type:      order.Type,
+			Workspace: order.Workspace,
 			Status:    parseDeploymentOrderStatus(appsStatus),
 			Operator:  order.Operator.String(),
+			CreatedAt: order.CreatedAt,
+			UpdatedAt: order.UpdatedAt,
 		},
-		ApplicationsInfo: ai,
+		ApplicationsInfo: asi,
 		ReleaseVersion:   releaseResp.Version,
 	}, nil
+}
+
+func composeApplicationsInfo(releases []*apistructs.ReleaseGetResponseData, params map[string]apistructs.DeploymentOrderParam,
+	appsStatus apistructs.DeploymentOrderStatusMap) ([]*apistructs.ApplicationInfo, error) {
+
+	asi := make([]*apistructs.ApplicationInfo, 0)
+
+	for _, subRelease := range releases {
+		applicationName := subRelease.ApplicationName
+
+		// parse deployment order
+		orderParamsData := make([]*apistructs.DeploymentOrderParamData, 0)
+
+		param, ok := params[applicationName]
+		if ok {
+			for _, env := range param.Env {
+				if env.IsEncrypt {
+					env.Value = ""
+				}
+				orderParamsData = append(orderParamsData, &apistructs.DeploymentOrderParamData{
+					Key:        env.Key,
+					Value:      env.Value,
+					ConfigType: "ENV",
+				})
+			}
+
+			for _, env := range param.File {
+				if env.IsEncrypt {
+					env.Value = ""
+				}
+				orderParamsData = append(orderParamsData, &apistructs.DeploymentOrderParamData{
+					Key:        env.Key,
+					Value:      env.Value,
+					ConfigType: "FILE",
+				})
+			}
+		}
+
+		paramJson, err := json.Marshal(orderParamsData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal order param, err: %v", err)
+		}
+
+		var status apistructs.DeploymentStatus
+		app, ok := appsStatus[subRelease.ApplicationName]
+		if ok {
+			status = app.DeploymentStatus
+		}
+
+		asi = append(asi, &apistructs.ApplicationInfo{
+			Name:           applicationName,
+			DeploymentId:   app.DeploymentID,
+			Param:          string(paramJson),
+			ReleaseVersion: subRelease.Version,
+			Branch:         subRelease.Labels["gitBranch"],
+			CommitId:       subRelease.Labels["gitCommitId"],
+			DiceYaml:       subRelease.Diceyml,
+			Status:         status,
+		})
+	}
+
+	return asi, nil
 }
 
 func parseDeploymentOrderStatus(appStatus apistructs.DeploymentOrderStatusMap) apistructs.DeploymentOrderStatus {

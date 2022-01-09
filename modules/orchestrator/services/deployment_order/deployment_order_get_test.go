@@ -17,6 +17,8 @@ package deployment_order
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -98,6 +100,77 @@ func TestParseDeploymentOrderStatus(t *testing.T) {
 			if tt.want != got {
 				t.Errorf("parseDeploymentOrderStatus got = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestComposeApplicationsInfo(t *testing.T) {
+	type args struct {
+		Releases   []*apistructs.ReleaseGetResponseData
+		Params     map[string]apistructs.DeploymentOrderParam
+		AppsStatus apistructs.DeploymentOrderStatusMap
+	}
+
+	appStatus := apistructs.DeploymentOrderStatusMap{
+		"app1": {
+			DeploymentID:     10,
+			DeploymentStatus: apistructs.DeploymentStatusDeploying,
+		},
+	}
+
+	params := map[string]apistructs.DeploymentOrderParam{
+		"app1": {
+			Env: []apistructs.DeploymentOrderParamItem{
+				{Key: "key1", Value: "value1"},
+			},
+			File: []apistructs.DeploymentOrderParamItem{
+				{Key: "key2", Value: "value2"},
+			},
+		},
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want []*apistructs.ApplicationInfo
+	}{
+		{
+			name: "pipeline",
+			args: args{
+				Releases: []*apistructs.ReleaseGetResponseData{
+					{
+						ReleaseID: "8d2385a088df415decdf6357147ed4a2",
+						Diceyml:   "fake-diceyaml",
+						Labels: map[string]string{
+							"gitCommitId": "27504bb7cb788bee08a50612b97faea201c0efed",
+							"gitBranch":   "master",
+						},
+						ApplicationName: "app1",
+					},
+				},
+				Params:     params,
+				AppsStatus: appStatus,
+			},
+			want: []*apistructs.ApplicationInfo{
+				{
+					Name:         "app1",
+					DeploymentId: 10,
+					Param: "[{\"key\":\"key1\",\"value\":\"value1\",\"configType\":\"ENV\"},{\"key\":\"key2\",\"" +
+						"value\":\"value2\",\"configType\":\"FILE\"}]",
+					Branch:   "master",
+					CommitId: "27504bb7cb788bee08a50612b97faea201c0efed",
+					DiceYaml: "fake-diceyaml",
+					Status:   apistructs.DeploymentStatusDeploying,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := composeApplicationsInfo(tt.args.Releases, tt.args.Params, tt.args.AppsStatus)
+			assert.NoError(t, err)
+			assert.Equal(t, got, tt.want)
 		})
 	}
 }

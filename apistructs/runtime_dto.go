@@ -24,17 +24,19 @@ type RuntimeInspectDTO struct {
 	ServiceGroupNamespace string        `json:"serviceGroupNamespace"`
 	Source                RuntimeSource `json:"source"`
 	// 状态
-	Status       string                               `json:"status"`
-	DeployStatus DeploymentStatus                     `json:"deployStatus"`
-	DeleteStatus string                               `json:"deleteStatus"`
-	ReleaseID    string                               `json:"releaseId"`
-	ClusterID    uint64                               `json:"clusterId"`
-	ClusterName  string                               `json:"clusterName"`
-	ClusterType  string                               `json:"clusterType"`
-	Resources    RuntimeServiceResourceDTO            `json:"resources"`
-	Extra        map[string]interface{}               `json:"extra"` // TODO: move fields out of extra
-	ProjectID    uint64                               `json:"projectID"`
-	Services     map[string]*RuntimeInspectServiceDTO `json:"services"`
+	Status              string                               `json:"status"`
+	DeployStatus        DeploymentStatus                     `json:"deployStatus"`
+	DeleteStatus        string                               `json:"deleteStatus"`
+	ReleaseID           string                               `json:"releaseId"`
+	DeploymentOrderName string                               `json:"deploymentOrderName"`
+	ReleaseVersion      string                               `json:"releaseVersion"`
+	ClusterID           uint64                               `json:"clusterId"`
+	ClusterName         string                               `json:"clusterName"`
+	ClusterType         string                               `json:"clusterType"`
+	Resources           RuntimeServiceResourceDTO            `json:"resources"`
+	Extra               map[string]interface{}               `json:"extra"` // TODO: move fields out of extra
+	ProjectID           uint64                               `json:"projectID"`
+	Services            map[string]*RuntimeInspectServiceDTO `json:"services"`
 	// 模块发布错误信息
 	ModuleErrMsg map[string]map[string]string `json:"lastMessage"`
 	TimeCreated  time.Time                    `json:"timeCreated"` // Deprecated: use CreatedAt instead

@@ -1354,6 +1354,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	}
 
 	isFakeRuntime := false
+	// TODO: Deprecated, instead from runtime deployment_status filed
 	deployment, err := r.db.FindLastDeployment(runtime.ID)
 	if err != nil {
 		l.WithError(err).WithField("runtime.ID", runtime.ID).
@@ -1399,6 +1400,8 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	if runtime.LegacyStatus == dbclient.LegacyStatusDeleting {
 		d.DeleteStatus = dbclient.LegacyStatusDeleting
 	}
+	d.DeploymentOrderName = runtime.DeploymentOrderName
+	d.ReleaseVersion = runtime.ReleaseVersion
 	d.ReleaseID = deployment.ReleaseId
 	d.ClusterID = runtime.ClusterId
 	d.ClusterName = runtime.ClusterName
