@@ -81,7 +81,7 @@ func (t *SlowTransactionTableBuilder) GetTable(ctx context.Context) (*Table, err
 
 	// calculate total count
 	statement := fmt.Sprintf("SELECT count(%s) "+
-		"FROM %s "+
+		"FROM %s_slow "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
 		"%s "+
@@ -97,6 +97,9 @@ func (t *SlowTransactionTableBuilder) GetTable(ctx context.Context) (*Table, err
 		End:       strconv.FormatInt(t.EndTime, 10),
 		Statement: statement,
 		Params:    queryParams,
+		Options: map[string]string{
+			"debug": "true",
+		},
 	}
 	response, err := t.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {
@@ -109,7 +112,7 @@ func (t *SlowTransactionTableBuilder) GetTable(ctx context.Context) (*Table, err
 		"timestamp, "+
 		"elapsed_mean::field, "+
 		"trace_id::tag "+
-		"FROM %s "+
+		"FROM %s_slow "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
 		"%s "+
