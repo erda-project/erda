@@ -18,6 +18,8 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
+	definitiondb "github.com/erda-project/erda/modules/pipeline/providers/definition/db"
+	sourcedb "github.com/erda-project/erda/modules/pipeline/providers/source/db"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
@@ -32,6 +34,24 @@ func (client *Client) ListPipelineBasesByIDs(pipelineIDs []uint64, ops ...Sessio
 	basesMap := make(map[uint64]spec.PipelineBase, len(bases))
 	for _, base := range bases {
 		basesMap[base.ID] = base
+	}
+	return basesMap, nil
+}
+
+func (client *Client) ListPipelineBaseWithDefinitionByIDs(pipelineIDs []uint64, ops ...SessionOption) (map[uint64]spec.PipelineBaseWithDefinition, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var bases []spec.PipelineBaseWithDefinition
+	if err := session.In("id", pipelineIDs).
+		Join("INNER", definitiondb.PipelineDefinition{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_definition_id", definitiondb.PipelineDefinition{}.TableName(), (&spec.PipelineBase{}).TableName())).
+		Join("INNER", sourcedb.PipelineSource{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_source_id", sourcedb.PipelineSource{}.TableName(), definitiondb.PipelineDefinition{}.TableName())).
+		Find(&bases); err != nil {
+		return nil, err
+	}
+	basesMap := make(map[uint64]spec.PipelineBaseWithDefinition, len(bases))
+	for _, base := range bases {
+		basesMap[base.PipelineBase.ID] = base
 	}
 	return basesMap, nil
 }

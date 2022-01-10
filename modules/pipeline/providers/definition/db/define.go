@@ -112,6 +112,9 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 	if req.Name != "" {
 		engine = engine.Where("d.name LIKE ?", "%"+req.Name+"%")
 	}
+	if len(req.IdList) != 0 {
+		engine = engine.In("d.id", req.IdList)
+	}
 	if len(req.Creator) != 0 {
 		engine = engine.In("d.creator", req.Creator)
 	}

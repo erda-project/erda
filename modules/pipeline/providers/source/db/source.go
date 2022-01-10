@@ -40,11 +40,12 @@ type PipelineSource struct {
 }
 
 type PipelineSourceUnique struct {
-	SourceType string `json:"sourceType"`
-	Remote     string `json:"remote"`
-	Ref        string `json:"ref"`
-	Path       string `json:"path"`
-	Name       string `json:"name"`
+	SourceType string   `json:"sourceType"`
+	Remote     string   `json:"remote"`
+	Ref        string   `json:"ref"`
+	Path       string   `json:"path"`
+	Name       string   `json:"name"`
+	IDList     []string `json:"idList"`
 }
 
 func (PipelineSource) TableName() string {

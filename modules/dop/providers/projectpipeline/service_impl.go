@@ -18,8 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"path/filepath"
+	"sync"
 
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
@@ -28,6 +28,8 @@ import (
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/limit_sync_group"
 )
 
 func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error) {
@@ -236,20 +238,11 @@ func (p *ProjectPipelineService) Run(ctx context.Context, params deftype.Project
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
 
-	var extraValue = apistructs.PipelineDefinitionExtraValue{}
-	err = json.Unmarshal([]byte(definition.Extra.Extra), &extraValue)
+	value, err := p.autoRunPipeline(definition, source)
 	if err != nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
+		return nil, err
 	}
-	createV2 := extraValue.CreateRequest
-	createV2.PipelineYml = source.PipelineYml
-	createV2.AutoRunAtOnce = true
-	createV2.DefinitionID = definition.ID
 
-	value, err := p.bundle.CreatePipeline(createV2)
-	if err != nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
-	}
 	return &deftype.ProjectPipelineRunResult{
 		Pipeline: value,
 	}, nil
@@ -278,19 +271,33 @@ func (p *ProjectPipelineService) EndCron(ctx context.Context, params deftype.Pro
 }
 
 func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params deftype.ProjectPipelineListExecHistory) (*deftype.ProjectPipelineListExecHistoryResult, error) {
-	var pipelineDefinition = apistructs.PipelineDefinitionRequest{
-		Name:    params.Name,
-		Creator: params.Executor,
-	}
-	if params.AppID != 0 {
-		appDto, err := p.bundle.GetApp(params.AppID)
+	var pipelineDefinition = apistructs.PipelineDefinitionRequest{}
+	pipelineDefinition.Name = params.Name
+	pipelineDefinition.Creators = params.Executors
+
+	if len(params.AppIDList) > 0 {
+		if params.ProjectID == 0 {
+			return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(fmt.Errorf("projectID can not empty"))
+		}
+		project, err := p.bundle.GetProject(params.ProjectID)
 		if err != nil {
 			return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
 		}
-		pipelineDefinition.PipelineSourceRequest = apistructs.PipelineSourceRequest{
-			Remote: filepath.Join(appDto.OrgName, appDto.ProjectName, appDto.Name),
+
+		appData, err := p.bundle.GetAppList(params.IdentityInfo.UserID, params.IdentityInfo.UserID, apistructs.ApplicationListRequest{
+			PageSize:      1000,
+			PageNo:        1,
+			ProjectID:     project.ID,
+			ApplicationID: params.AppIDList,
+		})
+		if err != nil {
+			return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
+		}
+		for _, app := range appData.List {
+			pipelineDefinition.SourceRemotes = append(pipelineDefinition.SourceRemotes, filepath.Join(app.OrgName, app.ProjectName, app.Name))
 		}
 	}
+
 	jsonValue, err := json.Marshal(pipelineDefinition)
 	if err != nil {
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
@@ -299,11 +306,11 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 	var pipelinePageListRequest = apistructs.PipelinePageListRequest{
 		PageNum:                       int(params.PageNo),
 		PageSize:                      int(params.PageSize),
+		Statuses:                      params.Statuses,
 		AllSources:                    true,
+		StartTimeBegin:                params.StartTimeBegin,
+		EndTimeBegin:                  params.StartTimeEnd,
 		PipelineDefinitionRequestJSON: string(jsonValue),
-	}
-	if params.Status != "" {
-		pipelinePageListRequest.Statuses = []string{params.Status}
 	}
 
 	data, err := p.bundle.PageListPipeline(pipelinePageListRequest)
@@ -316,7 +323,51 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 }
 
 func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.ProjectPipelineBatchRun) (*deftype.ProjectPipelineBatchRunResult, error) {
-	panic("implement me")
+	definitionMap, err := p.batchGetPipelineDefinition(params.PipelineDefinitionIDS)
+	if err != nil {
+		return nil, apierrors.ErrBatchRunProjectPipeline.InternalError(err)
+	}
+
+	var pipelineSourceIDArray []string
+	for _, v := range definitionMap {
+		if v.PipelineSourceId == "" {
+			return nil, apierrors.ErrBatchRunProjectPipeline.InternalError(fmt.Errorf("definition %v pipeline source was empty", v.ID))
+		}
+		pipelineSourceIDArray = append(pipelineSourceIDArray, v.PipelineSourceId)
+	}
+
+	sourceMap, err := p.batchGetPipelineSources(pipelineSourceIDArray)
+	if err != nil {
+		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
+	}
+
+	var wait = limit_sync_group.NewSemaphore(5)
+	var errInfo error
+	var lock sync.Mutex
+	var result = map[string]*apistructs.PipelineDTO{}
+
+	for _, v := range definitionMap {
+		wait.Add(1)
+		go func(definitionID string, sourceID string) {
+			defer wait.Done()
+			value, err := p.autoRunPipeline(definitionMap[definitionID], sourceMap[sourceID])
+
+			lock.Lock()
+			if err != nil {
+				errInfo = err
+				lock.Unlock()
+				return
+			}
+			result[definitionID] = value
+			lock.Unlock()
+
+		}(v.ID, v.PipelineSourceId)
+	}
+	wait.Wait()
+
+	return &deftype.ProjectPipelineBatchRunResult{
+		PipelineMap: result,
+	}, nil
 }
 
 func (p *ProjectPipelineService) Cancel(ctx context.Context, params deftype.ProjectPipelineCancel) (*deftype.ProjectPipelineCancelResult, error) {
@@ -556,4 +607,50 @@ func (p *ProjectPipelineService) getPipelineSource(sourceID string) (pipelineSou
 		return nil, fmt.Errorf("source %v pipeline yml was empty", sourceID)
 	}
 	return source.PipelineSource, nil
+}
+
+func (p *ProjectPipelineService) batchGetPipelineDefinition(pipelineDefinitionIDArray []string) (map[string]*dpb.PipelineDefinition, error) {
+	var pipelineDefinitionListRequest dpb.PipelineDefinitionListRequest
+	pipelineDefinitionListRequest.IdList = pipelineDefinitionIDArray
+	resp, err := p.PipelineDefinition.List(context.Background(), &pipelineDefinitionListRequest)
+	if err != nil {
+		return nil, err
+	}
+	var pipelineDefinitionMap = map[string]*dpb.PipelineDefinition{}
+	for _, v := range resp.Data {
+		pipelineDefinitionMap[v.ID] = v
+	}
+	return pipelineDefinitionMap, nil
+}
+
+func (p *ProjectPipelineService) batchGetPipelineSources(pipelineSourceIDArray []string) (map[string]*spb.PipelineSource, error) {
+	var pipelineSourceListRequest spb.PipelineSourceListRequest
+	pipelineSourceListRequest.IdList = pipelineSourceIDArray
+	resp, err := p.PipelineSource.List(context.Background(), &pipelineSourceListRequest)
+	if err != nil {
+		return nil, err
+	}
+	var pipelineSourceMap = map[string]*spb.PipelineSource{}
+	for _, v := range resp.Data {
+		pipelineSourceMap[v.ID] = v
+	}
+	return pipelineSourceMap, nil
+}
+
+func (p *ProjectPipelineService) autoRunPipeline(definition *dpb.PipelineDefinition, source *spb.PipelineSource) (*apistructs.PipelineDTO, error) {
+	var extraValue = apistructs.PipelineDefinitionExtraValue{}
+	err := json.Unmarshal([]byte(definition.Extra.Extra), &extraValue)
+	if err != nil {
+		return nil, apierrors.ErrRunProjectPipeline.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
+	}
+	createV2 := extraValue.CreateRequest
+	createV2.PipelineYml = source.PipelineYml
+	createV2.AutoRunAtOnce = true
+	createV2.DefinitionID = definition.ID
+
+	value, err := p.bundle.CreatePipeline(createV2)
+	if err != nil {
+		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
+	}
+	return value, nil
 }

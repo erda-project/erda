@@ -511,6 +511,7 @@ var (
 	ErrDeleteProjectPipeline = err("ErrDeleteProjectPipeline", "删除项目级流水线失败")
 
 	ErrRunProjectPipeline             = err("ErrRunProjectPipeline", "执行流水线失败")
+	ErrBatchRunProjectPipeline        = err("ErrBatchRunProjectPipeline", "批量执行流水线失败")
 	ErrFailRerunProjectPipeline       = err("ErrFailRerunProjectPipeline", "重试失败节点失败")
 	ErrRerunProjectPipeline           = err("ErrRerunProjectPipeline", "重试全流程失败")
 	ErrCancelProjectPipeline          = err("ErrCancelProjectPipeline", "取消流水线失败")

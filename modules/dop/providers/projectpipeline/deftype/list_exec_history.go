@@ -14,15 +14,24 @@
 
 package deftype
 
-import "github.com/erda-project/erda/apistructs"
+import (
+	"github.com/erda-project/erda/apistructs"
+	"time"
+)
 
 type ProjectPipelineListExecHistory struct {
-	Name     string
-	Executor string
-	AppID    uint64
-	Status   string
-	PageNo   uint64
-	PageSize uint64
+	Name      string
+	Executors []string
+	AppIDList []uint64
+	Statuses  []string
+
+	PageNo         uint64
+	PageSize       uint64
+	StartTimeBegin time.Time
+	StartTimeEnd   time.Time
+
+	ProjectID uint64
+	apistructs.IdentityInfo
 }
 
 type ProjectPipelineListExecHistoryResult struct {

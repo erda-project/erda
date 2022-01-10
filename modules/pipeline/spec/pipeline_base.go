@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
+	definitiondb "github.com/erda-project/erda/modules/pipeline/providers/definition/db"
+	sourcedb "github.com/erda-project/erda/modules/pipeline/providers/source/db"
 )
 
 // PipelineBase represents `pipeline_bases` table.
@@ -52,6 +54,14 @@ type PipelineBase struct {
 
 	TimeCreated *time.Time `json:"timeCreated,omitempty" xorm:"created"`
 	TimeUpdated *time.Time `json:"timeUpdated,omitempty" xorm:"updated"`
+
+	PipelineDefinitionId string `json:"pipelineDefinitionId"`
+}
+
+type PipelineBaseWithDefinition struct {
+	PipelineBase                    `xorm:"extends"`
+	definitiondb.PipelineDefinition `xorm:"extends"`
+	sourcedb.PipelineSource         `xorm:"extends"`
 }
 
 func (*PipelineBase) TableName() string {
