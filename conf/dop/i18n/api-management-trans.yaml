@@ -141,4 +141,43 @@ en:
   MissingOASProtoSign: can’t recognize the document's protocol because of missing agreement statement
 
   APIAssetIsInManagement: cant not delete the API Asset because it is in management
-  CanNotDelete.AtLeastOneVersion: "不可删除: 至少保留一个版本"
+  CanNotDelete.AtLeastOneVersion: "can not delete: there is at least one version"
+  CanNotDelete.AtLeastOneVersionInManagement: "can not delete: the version %s is in management"
+  CanNotDelete.AtLeastOnePatchVersionInManagement: "can not delete: the version %s %v.%v.* is in management"
+  CanNotDelete.AuthorizedCcallRequestExists: "can not delete: %s %s is in consumer's using"
+
+  FailedToFindSLA: failed to find the SLA
+  FailedToFindRelatedContract: failed to find affected contract
+  FailedToDeleteSLA.UsedInSLA: the SLA is referenced by some client, please delete or change it before
+
+  UnlimitedSLAName: Unlimited SLA
+  UnlimitedSLADesc: Unlimited SLA
+
+  FailedToFindSLALimit: failed to find SAL limits
+  FailedToListSLA: failed to list SLAs
+  FailedToFindContract: failed to find contracts
+
+  Empty: empty
+  SLAChangedToBe: "SLA is changed to be %s"
+  RevokeContract: revoked contract
+  Refused: refused
+  Approving: approving
+  Approved: approved
+  FailedToApprove: refused
+  SLAUpdated: "the manager udpated the SLA *%s*, please check it in time"
+  ApplyToSLA: "apply to use the SLA %s"
+  ApplyToAPI: "apply to use the API %s %s"
+  PleaseProcessIt: please process it in time
+  NoNeedToProcessIt: it is already passed automatically and need not to process it
+
+  CanNotUpdateInstance: the instance is in management and can not update it
+  ClientNotFound: client not found
+  FailedToApplySLA: failed to apply the SLA
+  FailedToProcessContract: failed to process the contract
+  FailedToUpdateSLA: failed to udpate the SLA
+
+  SystemReserved: system reserved
+  SameNameSLA: there is already a same name SLA, please use other name
+  AutoSLA: "there is already an SLA with automatically authentication: %s"
+
+  FailedToFindVersion: failed to find the version
