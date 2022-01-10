@@ -7,9 +7,6 @@
 package pb
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	pb1 "github.com/erda-project/erda-proto-go/common/pb"
 	_ "github.com/erda-project/erda-proto-go/oap/common/pb"
 	pb "github.com/erda-project/erda-proto-go/oap/trace/pb"
@@ -18,6 +15,8 @@ import (
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (

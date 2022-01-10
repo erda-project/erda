@@ -52,7 +52,11 @@ message PipelineDefinition {
   google.protobuf.Timestamp timeCreated = 10;
   google.protobuf.Timestamp timeUpdated = 11;
   int64 softDeletedAt = 12;
-  string pipelineSourceId = 13;
+  string sourceType = 13;
+  string remote = 14;
+  string ref = 15;
+  string path = 16;
+  string fileName = 17;
 }
 
 message PipelineDefinitionExtra {
@@ -114,6 +118,15 @@ message PipelineDefinitionGetResponse {
 message PipelineDefinitionListRequest {
   int64 pageSize = 1;
   int64 pageNo = 2;
+  repeated string creator = 3;
+  repeated  string executor = 4;
+  repeated string category = 5;
+  repeated string ref = 6;
+  string name = 7;
+  repeated string remote = 8;
+  repeated string timeCreated = 9;
+  repeated string timeStarted = 10;
+  repeated string  status = 12;
 }
 
 message PipelineDefinitionListResponse {

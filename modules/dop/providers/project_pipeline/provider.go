@@ -31,10 +31,11 @@ type config struct {
 }
 
 type ProjectPipelineSvc struct {
-	Cfg    *config
-	Log    logs.Logger
-	bundle *bundle.Bundle
-	DB     *gorm.DB `autowired:"mysql-client"`
+	Cfg                *config
+	Log                logs.Logger
+	bundle             *bundle.Bundle
+	DB                 *gorm.DB `autowired:"mysql-client"`
+	pipelineSourceType ProjectSourceType
 
 	pipelineSvc        *pipeline.Pipeline
 	PipelineSource     sourcepb.SourceServiceServer         `autowired:"erda.core.pipeline.source" optional:"true"`

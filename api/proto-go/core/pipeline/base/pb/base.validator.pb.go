@@ -6,16 +6,15 @@ package pb
 import (
 	fmt "fmt"
 	math "math"
-
-	_ "github.com/erda-project/erda-proto-go/common/pb"
-	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
-	_ "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	proto "github.com/golang/protobuf/proto"
-	_ "github.com/mwitkow/go-proto-validators"
-	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
-	_ "google.golang.org/genproto/googleapis/api/annotations"
-	_ "google.golang.org/protobuf/types/known/structpb"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
+	_ "google.golang.org/protobuf/types/known/structpb"
+	_ "github.com/mwitkow/go-proto-validators"
+	_ "github.com/erda-project/erda-proto-go/common/pb"
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	_ "google.golang.org/genproto/googleapis/api/annotations"
+	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package erda.dop.contribution;
+option go_package = "github.com/erda-project/erda-proto-go/dop/projectpipeline/pb";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "google/api/annotations.proto";
+import "common/openapi.proto";
+
+service ProjectPipelineService {
+  option(erda.common.openapi_service) = {
+    service : "dop",
+    auth : {
+      check_login : true,
+      check_token : true,
+    }
+  };
+
+  rpc CreateProjectPipeline(CreateProjectPipelineRequest)
+      returns(CreateProjectPipelineResponse) {
+    option(google.api.http) = {
+      post : "/api/project-pipeline/actions/create",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/actions/create",
+    };
+  }
+}
+
+message CreateProjectPipelineRequest {
+  uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
+  string name = 2 [(validator.field) = {string_not_empty: true}];
+  uint64 appID = 3;
+  string sourceType = 4 [(validator.field) = {string_not_empty: true}];
+  string ref = 5 [(validator.field) = {string_not_empty: true}];
+  string path = 6 [(validator.field) = {string_not_empty: true}];
+  string fileName = 7 [(validator.field) = {string_not_empty: true}];
+}
+
+message CreateProjectPipelineResponse {
+  string ID = 1;
+}

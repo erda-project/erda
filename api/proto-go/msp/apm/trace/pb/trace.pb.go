@@ -7,15 +7,14 @@
 package pb
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/erda-project/erda-proto-go/common/pb"
 	_ "github.com/mwitkow/go-proto-validators"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	_ "google.golang.org/protobuf/types/descriptorpb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (

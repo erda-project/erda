@@ -7,13 +7,12 @@
 package pb
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	pb "github.com/erda-project/erda-proto-go/oap/common/pb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	_ "google.golang.org/protobuf/types/known/structpb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (

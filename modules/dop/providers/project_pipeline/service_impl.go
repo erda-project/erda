@@ -16,80 +16,82 @@ package project_pipeline
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"path/filepath"
 
-	"github.com/elastic/cloud-on-k8s/pkg/utils/stringsutil"
-
-	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
-	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/providers/project_pipeline/deftype"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-func (p *ProjectPipelineSvc) Create(ctx context.Context, params deftype.ProjectPipelineCreate) (*deftype.ProjectPipelineCreateResult, error) {
+func (p *ProjectPipelineSvc) Create(ctx context.Context, params pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error) {
 	if err := params.Validate(); err != nil {
-		return nil, err
+		return nil, apierrors.ErrCreateProjectPipeline.InvalidParameter(err)
 	}
-	// TODO check permission
-
-	app, err := p.bundle.GetApp(params.AppID)
-	if err != nil {
-		return nil, err
+	if err := p.checkCreatePermission(ctx, params); err != nil {
+		return nil, apierrors.ErrCreateProjectPipeline.AccessDenied()
 	}
 
-	yml, err := p.getYmlFromGittar(app, params.Ref, stringsutil.Concat(params.Path, "/", params.FileName), params.IdentityInfo.UserID)
+	p.pipelineSourceType = NewProjectSourceType(params.SourceType)
+	sourceReq, err := p.pipelineSourceType.GenerateReq(ctx, p, params)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
 
-	sourceRsp, err := p.PipelineSource.Create(ctx, &spb.PipelineSourceCreateRequest{
-		SourceType:  params.SourceType.String(),
-		Remote:      makeRemote(app),
-		Ref:         params.Ref,
-		Path:        params.Path,
-		Name:        params.FileName,
-		PipelineYml: yml,
-	})
+	sourceRsp, err := p.PipelineSource.Create(ctx, sourceReq)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
 
-	createReqV2, err := p.pipelineSvc.ConvertPipelineToV2(&apistructs.PipelineCreateRequest{
-		PipelineYmlName:    params.FileName,
-		AppID:              params.AppID,
-		Branch:             params.Ref,
-		PipelineYmlContent: "version: \"1.1\"\nstages: []",
-		UserID:             params.IdentityInfo.UserID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	b, err := json.Marshal(createReqV2)
-	if err != nil {
-		return nil, err
-	}
-
-	definitionRsp, err := p.PipelineDefinition.Create(ctx, &pb.PipelineDefinitionCreateRequest{
+	definitionRsp, err := p.PipelineDefinition.Create(ctx, &dpb.PipelineDefinitionCreateRequest{
 		Name:             params.Name,
-		Creator:          params.IdentityInfo.UserID,
+		Creator:          apis.GetUserID(ctx),
 		PipelineSourceId: sourceRsp.PipelineSource.ID,
 		Category:         "",
-		Extra: &pb.PipelineDefinitionExtra{
-			Extra: string(b),
+		Extra: &dpb.PipelineDefinitionExtra{
+			Extra: p.pipelineSourceType.GetPipelineCreateRequestV2(),
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
-	return &deftype.ProjectPipelineCreateResult{ID: definitionRsp.PipelineDefinition.ID}, nil
+	return &pb.CreateProjectPipelineResponse{ID: definitionRsp.PipelineDefinition.ID}, nil
 }
 
-func makeRemote(app *apistructs.ApplicationDTO) string {
-	return fmt.Sprintf("%d/%d/%d", app.OrgID, app.ProjectID, app.ID)
+func (p *ProjectPipelineSvc) checkCreatePermission(ctx context.Context, params pb.CreateProjectPipelineRequest) error {
+	if !apis.IsInternalClient(ctx) {
+		if params.SourceType == deftype.ErdaProjectPipelineType.String() {
+			app, err := p.bundle.GetApp(params.AppID)
+			if err != nil {
+				return err
+			}
+			req := apistructs.PermissionCheckRequest{
+				UserID:   apis.GetUserID(ctx),
+				Scope:    apistructs.AppScope,
+				ScopeID:  app.ID,
+				Resource: apistructs.AppResource,
+				Action:   apistructs.GetAction,
+			}
+			if access, err := p.bundle.CheckPermission(&req); err != nil || !access.Access {
+				return err
+			}
+		}
+
+		req := apistructs.PermissionCheckRequest{
+			UserID:   apis.GetUserID(ctx),
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  params.ProjectID,
+			Resource: apistructs.ProjectPipelineResource,
+			Action:   apistructs.CreateAction,
+		}
+		if access, err := p.bundle.CheckPermission(&req); err != nil || !access.Access {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *ProjectPipelineSvc) getYmlFromGittar(app *apistructs.ApplicationDTO, ref, filePath, userID string) (string, error) {
@@ -102,21 +104,73 @@ func (p *ProjectPipelineSvc) getYmlFromGittar(app *apistructs.ApplicationDTO, re
 	return yml, err
 }
 
-func (p *ProjectPipelineSvc) List(ctx context.Context, params deftype.ProjectPipelineList) (*deftype.ProjectPipelineListResult, error) {
+func (p *ProjectPipelineSvc) List(ctx context.Context, params deftype.ProjectPipelineList) ([]*dpb.PipelineDefinition, error) {
 	if err := params.Validate(); err != nil {
-		return nil, err
+		return nil, apierrors.ErrListProjectPipeline.InvalidParameter(err)
 	}
-	// TODO check permission
-	panic("implement me")
+	if err := p.checkListPermission(ctx, params); err != nil {
+		return nil, apierrors.ErrListProjectPipeline.AccessDenied()
+	}
+
+	project, err := p.bundle.GetProject(params.ProjectID)
+	if err != nil {
+		return nil, apierrors.ErrListProjectPipeline.InternalError(err)
+	}
+
+	apps, err := p.bundle.GetAppsByProject(params.ProjectID, project.OrgID, params.IdentityInfo.UserID)
+	if err != nil {
+		return nil, apierrors.ErrListProjectPipeline.InternalError(err)
+	}
+
+	list, err := p.PipelineDefinition.List(ctx, &dpb.PipelineDefinitionListRequest{
+		PageSize: int64(params.PageSize),
+		PageNo:   int64(params.PageNo),
+		Creator:  params.Creator,
+		Executor: params.Executor,
+		Category: params.Category,
+		Ref:      params.Ref,
+		Name:     params.Name,
+		Remote: func() []string {
+			remotes := make([]string, 0, len(apps.List))
+			for _, v := range apps.List {
+				remotes = append(remotes, makeRemote(&v))
+			}
+			return remotes
+		}(),
+		TimeCreated: params.TimeCreated,
+		TimeStarted: params.TimeStarted,
+		Status:      params.Status,
+	})
+	if err != nil {
+		return nil, apierrors.ErrListProjectPipeline.InternalError(err)
+	}
+
+	return list.Data, nil
+}
+
+func (p *ProjectPipelineSvc) checkListPermission(ctx context.Context, params deftype.ProjectPipelineList) error {
+	if !apis.IsInternalClient(ctx) {
+		req := apistructs.PermissionCheckRequest{
+			UserID:   params.IdentityInfo.UserID,
+			Scope:    apistructs.ProjectScope,
+			ScopeID:  params.ProjectID,
+			Resource: apistructs.ProjectPipelineResource,
+			Action:   apistructs.GetAction,
+		}
+		if access, err := p.bundle.CheckPermission(&req); err != nil || !access.Access {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *ProjectPipelineSvc) Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error) {
 	if err := params.Validate(); err != nil {
-		return nil, err
+		return nil, apierrors.ErrDeleteProjectPipeline.InvalidParameter(err)
 	}
 	// TODO check permission
 
-	_, err := p.PipelineDefinition.Delete(ctx, &pb.PipelineDefinitionDeleteRequest{PipelineDefinitionID: params.ID})
+	_, err := p.PipelineDefinition.Delete(ctx, &dpb.PipelineDefinitionDeleteRequest{PipelineDefinitionID: params.ID})
 	return nil, err
 }
 
@@ -132,7 +186,7 @@ func (p *ProjectPipelineSvc) Update(ctx context.Context, params deftype.ProjectP
 		return nil, err
 	}
 
-	yml, err := p.getYmlFromGittar(app, params.Ref, stringsutil.Concat(params.Path, "/", params.FileName), params.IdentityInfo.UserID)
+	yml, err := p.getYmlFromGittar(app, params.Ref, filepath.Join(params.Path, params.FileName), params.IdentityInfo.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +202,7 @@ func (p *ProjectPipelineSvc) Update(ctx context.Context, params deftype.ProjectP
 	if err != nil {
 		return nil, err
 	}
-	_, err = p.PipelineDefinition.Update(ctx, &pb.PipelineDefinitionUpdateRequest{
+	_, err = p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
 		PipelineDefinitionID: params.ID,
 		PipelineSourceId:     sourceRsp.PipelineSource.ID,
 	})
@@ -164,48 +218,8 @@ func (p *ProjectPipelineSvc) UnStar(ctx context.Context, params deftype.ProjectP
 	panic("implement me")
 }
 
-func (p *provider) Run(ctx context.Context, params deftype.ProjectPipelineRun) (*deftype.ProjectPipelineRunResult, error) {
-	if params.PipelineDefinitionID == "" {
-		return nil, apierrors.ErrRunProjectPipeline.InvalidParameter(fmt.Errorf("pipelineDefinitionID：%s", params.PipelineDefinitionID))
-	}
-	var getReq definitionpb.PipelineDefinitionGetRequest
-	getReq.PipelineDefinitionID = params.PipelineDefinitionID
-
-	resp, err := p.PipelineDefinition.Get(context.Background(), &getReq)
-	if err != nil {
-		return nil, err
-	}
-	if resp == nil || resp.PipelineDefinition == nil || resp.PipelineDefinition.Extra == nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(fmt.Errorf("not find pipeline"))
-	}
-	var extraValue = apistructs.PipelineDefinitionExtraValue{}
-	err = json.Unmarshal([]byte(resp.PipelineDefinition.Extra.Extra), &extraValue)
-	if err != nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
-	}
-
-	var sourceGetReq = sourcepb.PipelineSourceGetRequest{}
-	sourceGetReq.PipelineSourceID = resp.PipelineDefinition.PipelineSourceId
-	source, err := p.PipelineSource.Get(context.Background(), &sourceGetReq)
-	if err != nil {
-		return nil, err
-	}
-
-	if source == nil || source.PipelineSource == nil || source.PipelineSource.PipelineYml == "" {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(fmt.Errorf("failed to run pipeline, yml was empty"))
-	}
-
-	createV2 := extraValue.CreateRequest
-	createV2.PipelineYml = source.PipelineSource.PipelineYml
-	createV2.AutoRunAtOnce = true
-
-	value, err := p.bundle.CreatePipeline(createV2)
-	if err != nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
-	}
-	return &deftype.ProjectPipelineRunResult{
-		Pipeline: value,
-	}, nil
+func (p *ProjectPipelineSvc) Run(ctx context.Context, params deftype.ProjectPipelineRun) (deftype.ProjectPipelineRunResult, error) {
+	panic("implement me")
 }
 
 func (p *ProjectPipelineSvc) FailRerun(ctx context.Context, params deftype.ProjectPipelineFailRerun) (deftype.ProjectPipelineFailRerunResult, error) {

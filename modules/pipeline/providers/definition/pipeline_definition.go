@@ -183,7 +183,20 @@ func (p pipelineDefinition) Get(ctx context.Context, request *pb.PipelineDefinit
 }
 
 func (p pipelineDefinition) List(ctx context.Context, request *pb.PipelineDefinitionListRequest) (*pb.PipelineDefinitionListResponse, error) {
-	return nil, nil
+	definitions, total, err := p.dbClient.ListPipelineDefinition(request)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]*pb.PipelineDefinition, 0, len(definitions))
+	for _, v := range definitions {
+		data = append(data, v.Convert())
+	}
+
+	return &pb.PipelineDefinitionListResponse{
+		Total: total,
+		Data:  data,
+	}, nil
 }
 
 func PipelineDefinitionToPb(pipelineDefinition *db.PipelineDefinition) *pb.PipelineDefinition {

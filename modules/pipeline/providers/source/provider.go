@@ -16,9 +16,11 @@ package source
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/modules/pipeline/providers/source/db"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type config struct {
@@ -28,12 +30,16 @@ type config struct {
 type Provider struct {
 	Cfg            *config
 	MySQL          mysqlxorm.Interface `autowired:"mysql-xorm"`
+	Register       transport.Register  `autowired:"service-register" required:"true"`
 	pipelineSource *pipelineSource
 }
 
 func (p *Provider) Init(ctx servicehub.Context) error {
 	p.pipelineSource = &pipelineSource{
 		dbClient: &db.Client{Interface: p.MySQL},
+	}
+	if p.Register != nil {
+		pb.RegisterSourceServiceImp(p.Register, p.pipelineSource, apis.Options())
 	}
 	return nil
 }
