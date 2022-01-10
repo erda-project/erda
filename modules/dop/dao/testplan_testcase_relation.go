@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // TestPlanCaseRel
@@ -495,5 +496,17 @@ func setDefaultForTestPlanCaseRelPagingRequest(req *apistructs.TestPlanCaseRelPa
 	}
 	if req.PageSize == 0 {
 		req.PageSize = 20
+	}
+
+	// set unassigned ids
+	for i, executorID := range req.ExecutorIDs {
+		if ucauth.USERID(executorID).IsUnassigned() {
+			req.ExecutorIDs[i] = ""
+		}
+	}
+	for i, updaterID := range req.UpdaterIDs {
+		if ucauth.USERID(updaterID).IsUnassigned() {
+			req.UpdaterIDs[i] = ""
+		}
 	}
 }
