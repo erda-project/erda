@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package project_pipeline
+package projectpipeline
 
 import (
 	"context"
@@ -22,12 +22,12 @@ import (
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dop/providers/project_pipeline/deftype"
+	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-func (p *ProjectPipelineSvc) Create(ctx context.Context, params pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error) {
+func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error) {
 	if err := params.Validate(); err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InvalidParameter(err)
 	}
@@ -61,7 +61,7 @@ func (p *ProjectPipelineSvc) Create(ctx context.Context, params pb.CreateProject
 	return &pb.CreateProjectPipelineResponse{ID: definitionRsp.PipelineDefinition.ID}, nil
 }
 
-func (p *ProjectPipelineSvc) checkCreatePermission(ctx context.Context, params pb.CreateProjectPipelineRequest) error {
+func (p *ProjectPipelineService) checkCreatePermission(ctx context.Context, params *pb.CreateProjectPipelineRequest) error {
 	if !apis.IsInternalClient(ctx) {
 		if params.SourceType == deftype.ErdaProjectPipelineType.String() {
 			app, err := p.bundle.GetApp(params.AppID)
@@ -94,7 +94,7 @@ func (p *ProjectPipelineSvc) checkCreatePermission(ctx context.Context, params p
 	return nil
 }
 
-func (p *ProjectPipelineSvc) getYmlFromGittar(app *apistructs.ApplicationDTO, ref, filePath, userID string) (string, error) {
+func (p *ProjectPipelineService) getYmlFromGittar(app *apistructs.ApplicationDTO, ref, filePath, userID string) (string, error) {
 	commit, err := p.bundle.GetGittarCommit(app.GitRepoAbbrev, ref, userID)
 	if err != nil {
 		return "", err
@@ -104,7 +104,7 @@ func (p *ProjectPipelineSvc) getYmlFromGittar(app *apistructs.ApplicationDTO, re
 	return yml, err
 }
 
-func (p *ProjectPipelineSvc) List(ctx context.Context, params deftype.ProjectPipelineList) ([]*dpb.PipelineDefinition, error) {
+func (p *ProjectPipelineService) List(ctx context.Context, params deftype.ProjectPipelineList) ([]*dpb.PipelineDefinition, error) {
 	if err := params.Validate(); err != nil {
 		return nil, apierrors.ErrListProjectPipeline.InvalidParameter(err)
 	}
@@ -148,7 +148,7 @@ func (p *ProjectPipelineSvc) List(ctx context.Context, params deftype.ProjectPip
 	return list.Data, nil
 }
 
-func (p *ProjectPipelineSvc) checkListPermission(ctx context.Context, params deftype.ProjectPipelineList) error {
+func (p *ProjectPipelineService) checkListPermission(ctx context.Context, params deftype.ProjectPipelineList) error {
 	if !apis.IsInternalClient(ctx) {
 		req := apistructs.PermissionCheckRequest{
 			UserID:   params.IdentityInfo.UserID,
@@ -164,7 +164,7 @@ func (p *ProjectPipelineSvc) checkListPermission(ctx context.Context, params def
 	return nil
 }
 
-func (p *ProjectPipelineSvc) Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error) {
+func (p *ProjectPipelineService) Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error) {
 	if err := params.Validate(); err != nil {
 		return nil, apierrors.ErrDeleteProjectPipeline.InvalidParameter(err)
 	}
@@ -174,7 +174,7 @@ func (p *ProjectPipelineSvc) Delete(ctx context.Context, params deftype.ProjectP
 	return nil, err
 }
 
-func (p *ProjectPipelineSvc) Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error) {
+func (p *ProjectPipelineService) Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error) {
 	if err := params.Validate(); err != nil {
 		return nil, err
 	}
@@ -210,30 +210,30 @@ func (p *ProjectPipelineSvc) Update(ctx context.Context, params deftype.ProjectP
 	return nil, err
 }
 
-func (p *ProjectPipelineSvc) Star(ctx context.Context, params deftype.ProjectPipelineStar) (deftype.ProjectPipelineStarResult, error) {
+func (p *ProjectPipelineService) Star(ctx context.Context, params deftype.ProjectPipelineStar) (deftype.ProjectPipelineStarResult, error) {
 	panic("implement me")
 }
 
-func (p *ProjectPipelineSvc) UnStar(ctx context.Context, params deftype.ProjectPipelineUnStar) (deftype.ProjectPipelineUnStarResult, error) {
+func (p *ProjectPipelineService) UnStar(ctx context.Context, params deftype.ProjectPipelineUnStar) (deftype.ProjectPipelineUnStarResult, error) {
 	panic("implement me")
 }
 
-func (p *ProjectPipelineSvc) Run(ctx context.Context, params deftype.ProjectPipelineRun) (deftype.ProjectPipelineRunResult, error) {
+func (p *ProjectPipelineService) Run(ctx context.Context, params deftype.ProjectPipelineRun) (deftype.ProjectPipelineRunResult, error) {
 	panic("implement me")
 }
 
-func (p *ProjectPipelineSvc) FailRerun(ctx context.Context, params deftype.ProjectPipelineFailRerun) (deftype.ProjectPipelineFailRerunResult, error) {
+func (p *ProjectPipelineService) FailRerun(ctx context.Context, params deftype.ProjectPipelineFailRerun) (deftype.ProjectPipelineFailRerunResult, error) {
 	panic("implement me")
 }
 
-func (p *ProjectPipelineSvc) StartCron(ctx context.Context, params deftype.ProjectPipelineStartCron) (deftype.ProjectPipelineStartCronResult, error) {
+func (p *ProjectPipelineService) StartCron(ctx context.Context, params deftype.ProjectPipelineStartCron) (deftype.ProjectPipelineStartCronResult, error) {
 	panic("implement me")
 }
 
-func (p *ProjectPipelineSvc) EndCron(ctx context.Context, params deftype.ProjectPipelineEndCron) (deftype.ProjectPipelineEndCronResult, error) {
+func (p *ProjectPipelineService) EndCron(ctx context.Context, params deftype.ProjectPipelineEndCron) (deftype.ProjectPipelineEndCronResult, error) {
 	panic("implement me")
 }
 
-func (p *ProjectPipelineSvc) ListExecHistory(ctx context.Context, params deftype.ProjectPipelineListExecHistory) (deftype.ProjectPipelineListExecHistoryResult, error) {
+func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params deftype.ProjectPipelineListExecHistory) (deftype.ProjectPipelineListExecHistoryResult, error) {
 	panic("implement me")
 }

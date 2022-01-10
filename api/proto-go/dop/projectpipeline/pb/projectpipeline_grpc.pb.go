@@ -20,7 +20,7 @@ const _ = grpc.SupportPackageIsVersion5
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProjectPipelineServiceClient interface {
-	CreateProjectPipeline(ctx context.Context, in *CreateProjectPipelineRequest, opts ...grpc.CallOption) (*CreateProjectPipelineResponse, error)
+	Create(ctx context.Context, in *CreateProjectPipelineRequest, opts ...grpc.CallOption) (*CreateProjectPipelineResponse, error)
 }
 
 type projectPipelineServiceClient struct {
@@ -31,9 +31,9 @@ func NewProjectPipelineServiceClient(cc grpc1.ClientConnInterface) ProjectPipeli
 	return &projectPipelineServiceClient{cc}
 }
 
-func (c *projectPipelineServiceClient) CreateProjectPipeline(ctx context.Context, in *CreateProjectPipelineRequest, opts ...grpc.CallOption) (*CreateProjectPipelineResponse, error) {
+func (c *projectPipelineServiceClient) Create(ctx context.Context, in *CreateProjectPipelineRequest, opts ...grpc.CallOption) (*CreateProjectPipelineResponse, error) {
 	out := new(CreateProjectPipelineResponse)
-	err := c.cc.Invoke(ctx, "/erda.dop.contribution.ProjectPipelineService/CreateProjectPipeline", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/erda.dop.projectpipeline.ProjectPipelineService/Create", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -44,15 +44,15 @@ func (c *projectPipelineServiceClient) CreateProjectPipeline(ctx context.Context
 // All implementations should embed UnimplementedProjectPipelineServiceServer
 // for forward compatibility
 type ProjectPipelineServiceServer interface {
-	CreateProjectPipeline(context.Context, *CreateProjectPipelineRequest) (*CreateProjectPipelineResponse, error)
+	Create(context.Context, *CreateProjectPipelineRequest) (*CreateProjectPipelineResponse, error)
 }
 
 // UnimplementedProjectPipelineServiceServer should be embedded to have forward compatible implementations.
 type UnimplementedProjectPipelineServiceServer struct {
 }
 
-func (*UnimplementedProjectPipelineServiceServer) CreateProjectPipeline(context.Context, *CreateProjectPipelineRequest) (*CreateProjectPipelineResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateProjectPipeline not implemented")
+func (*UnimplementedProjectPipelineServiceServer) Create(context.Context, *CreateProjectPipelineRequest) (*CreateProjectPipelineResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
 }
 
 func RegisterProjectPipelineServiceServer(s grpc1.ServiceRegistrar, srv ProjectPipelineServiceServer, opts ...grpc1.HandleOption) {
@@ -60,7 +60,7 @@ func RegisterProjectPipelineServiceServer(s grpc1.ServiceRegistrar, srv ProjectP
 }
 
 var _ProjectPipelineService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "erda.dop.contribution.ProjectPipelineService",
+	ServiceName: "erda.dop.projectpipeline.ProjectPipelineService",
 	HandlerType: (*ProjectPipelineServiceServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams:     []grpc.StreamDesc{},
@@ -73,38 +73,38 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 		op(h)
 	}
 
-	_ProjectPipelineService_CreateProjectPipeline_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.CreateProjectPipeline(ctx, req.(*CreateProjectPipelineRequest))
+	_ProjectPipelineService_Create_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.Create(ctx, req.(*CreateProjectPipelineRequest))
 	}
-	var _ProjectPipelineService_CreateProjectPipeline_info transport.ServiceInfo
+	var _ProjectPipelineService_Create_info transport.ServiceInfo
 	if h.Interceptor != nil {
-		_ProjectPipelineService_CreateProjectPipeline_info = transport.NewServiceInfo("erda.dop.contribution.ProjectPipelineService", "CreateProjectPipeline", srv)
-		_ProjectPipelineService_CreateProjectPipeline_Handler = h.Interceptor(_ProjectPipelineService_CreateProjectPipeline_Handler)
+		_ProjectPipelineService_Create_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "Create", srv)
+		_ProjectPipelineService_Create_Handler = h.Interceptor(_ProjectPipelineService_Create_Handler)
 	}
 
 	var serviceDesc = _ProjectPipelineService_serviceDesc
 	serviceDesc.Methods = []grpc.MethodDesc{
 		{
-			MethodName: "CreateProjectPipeline",
+			MethodName: "Create",
 			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 				in := new(CreateProjectPipelineRequest)
 				if err := dec(in); err != nil {
 					return nil, err
 				}
 				if interceptor == nil && h.Interceptor == nil {
-					return srv.(ProjectPipelineServiceServer).CreateProjectPipeline(ctx, in)
+					return srv.(ProjectPipelineServiceServer).Create(ctx, in)
 				}
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ProjectPipelineService_CreateProjectPipeline_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ProjectPipelineService_Create_info)
 				}
 				if interceptor == nil {
-					return _ProjectPipelineService_CreateProjectPipeline_Handler(ctx, in)
+					return _ProjectPipelineService_Create_Handler(ctx, in)
 				}
 				info := &grpc.UnaryServerInfo{
 					Server:     srv,
-					FullMethod: "/erda.dop.contribution.ProjectPipelineService/CreateProjectPipeline",
+					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/Create",
 				}
-				return interceptor(ctx, in, info, _ProjectPipelineService_CreateProjectPipeline_Handler)
+				return interceptor(ctx, in, info, _ProjectPipelineService_Create_Handler)
 			},
 		},
 	}

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package project_pipeline
+package projectpipeline
 
 import (
 	"context"
@@ -23,12 +23,12 @@ import (
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dop/providers/project_pipeline/deftype"
+	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type ProjectSourceType interface {
-	GenerateReq(ctx context.Context, p *ProjectPipelineSvc, params pb.CreateProjectPipelineRequest) (*spb.PipelineSourceCreateRequest, error)
+	GenerateReq(ctx context.Context, p *ProjectPipelineService, params *pb.CreateProjectPipelineRequest) (*spb.PipelineSourceCreateRequest, error)
 	GetPipelineCreateRequestV2() string
 }
 
@@ -52,7 +52,7 @@ func NewProjectSourceType(t string) ProjectSourceType {
 	return nil
 }
 
-func (s *ErdaProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipelineSvc, params pb.CreateProjectPipelineRequest) (*spb.PipelineSourceCreateRequest, error) {
+func (s *ErdaProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipelineService, params *pb.CreateProjectPipelineRequest) (*spb.PipelineSourceCreateRequest, error) {
 	app, err := p.bundle.GetApp(params.AppID)
 	if err != nil {
 		return nil, err
@@ -90,8 +90,7 @@ func makeRemote(app *apistructs.ApplicationDTO) string {
 	return fmt.Sprintf("%s/%s/%s", app.OrgName, app.ProjectName, app.Name)
 }
 
-func (s *GithubProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipelineSvc, params pb.CreateProjectPipelineRequest) (*spb.PipelineSourceCreateRequest, error) {
-
+func (s *GithubProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipelineService, params *pb.CreateProjectPipelineRequest) (*spb.PipelineSourceCreateRequest, error) {
 	return nil, nil
 }
 

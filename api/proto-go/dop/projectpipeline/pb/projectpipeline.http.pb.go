@@ -17,8 +17,8 @@ const _ = http.SupportPackageIsVersion1
 
 // ProjectPipelineServiceHandler is the server API for ProjectPipelineService service.
 type ProjectPipelineServiceHandler interface {
-	// POST /api/project-pipeline/actions/create
-	CreateProjectPipeline(context.Context, *CreateProjectPipelineRequest) (*CreateProjectPipelineResponse, error)
+	// POST /api/project-pipeline
+	Create(context.Context, *CreateProjectPipelineRequest) (*CreateProjectPipelineResponse, error)
 }
 
 // RegisterProjectPipelineServiceHandler register ProjectPipelineServiceHandler to http.Router.
@@ -44,13 +44,13 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 		return handler
 	}
 
-	add_CreateProjectPipeline := func(method, path string, fn func(context.Context, *CreateProjectPipelineRequest) (*CreateProjectPipelineResponse, error)) {
+	add_Create := func(method, path string, fn func(context.Context, *CreateProjectPipelineRequest) (*CreateProjectPipelineResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 			return fn(ctx, req.(*CreateProjectPipelineRequest))
 		}
-		var CreateProjectPipeline_info transport.ServiceInfo
+		var Create_info transport.ServiceInfo
 		if h.Interceptor != nil {
-			CreateProjectPipeline_info = transport.NewServiceInfo("erda.dop.contribution.ProjectPipelineService", "CreateProjectPipeline", srv)
+			Create_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "Create", srv)
 			handler = h.Interceptor(handler)
 		}
 		r.Add(method, path, encodeFunc(
@@ -58,7 +58,7 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 				ctx := http.WithRequest(r.Context(), r)
 				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, CreateProjectPipeline_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, Create_info)
 				}
 				r = r.WithContext(ctx)
 				var in CreateProjectPipelineRequest
@@ -80,5 +80,5 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 		)
 	}
 
-	add_CreateProjectPipeline("POST", "/api/project-pipeline/actions/create", srv.CreateProjectPipeline)
+	add_Create("POST", "/api/project-pipeline", srv.Create)
 }

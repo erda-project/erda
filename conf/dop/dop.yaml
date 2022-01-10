@@ -61,6 +61,7 @@ erda.core.services.errorbox-client:
 erda.core.dop.autotest.testplan:
 erda.dop.projecthome:
 erda.dop.contribution:
+erda.dop.projectpipeline:
 
 # component-protocol framework
 component-protocol:
