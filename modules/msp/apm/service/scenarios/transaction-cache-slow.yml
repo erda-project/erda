@@ -1,0 +1,33 @@
+scenario: transaction-cache-slow
+
+hierarchy:
+  root: page
+  structure:
+    page:
+    - grid
+    - metricTable
+    grid:
+    - slowReqDistribution
+    content:
+      slot: head
+      table: metricTable
+    head:
+      right: metricTableFilter
+components:
+  page:
+    type: Container
+  grid:
+    type: Grid
+  slowReqDistribution:
+    type: BubbleGraph
+    options:
+      asyncAtInit: true
+  content:
+    type: ComposeTable
+  metricTableFilter:
+    type: ConfigurableFilter
+  head:
+    type: LRContainer
+  metricTable:
+    type: Table
+    version: 2

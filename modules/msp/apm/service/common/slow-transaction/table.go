@@ -15,7 +15,11 @@
 package slow_transaction
 
 import (
+	"github.com/mitchellh/mapstructure"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 )
 
 const (
@@ -23,3 +27,69 @@ const (
 	ColumnDuration  table.ColumnKey = "duration"
 	ColumnTraceId   table.ColumnKey = "traceId"
 )
+
+const (
+	StateKeyTransactionDurationFilter = "slow_transaction_filter_duration"
+	StateKeyTransactionPaging         = "slow_transaction_paging"
+	StateKeyTransactionSort           = "slow_transaction_sort"
+)
+
+type SlowTransactionFilter struct {
+	MinDuration int64 `json:"minDuration"`
+	MaxDuration int64 `json:"maxDuration"`
+}
+
+func SetFilterToGlobalState(globalState cptype.GlobalStateData, opData SlowTransactionFilter) {
+	globalState[StateKeyTransactionDurationFilter] = opData
+}
+
+func GetFilterFromGlobalState(globalState cptype.GlobalStateData) *SlowTransactionFilter {
+	// todo@ggp
+	panic("implement me")
+}
+
+func SetPagingToGlobalState(globalState cptype.GlobalStateData, opData table.OpTableChangePageClientData) {
+	globalState[StateKeyTransactionPaging] = opData
+}
+
+func GetPagingFromGlobalState(globalState cptype.GlobalStateData) (pageNo int, pageSize int) {
+	pageNo = 1
+	pageSize = common.DefaultPageSize
+	if paging, ok := globalState[StateKeyTransactionPaging]; ok && paging != nil {
+		var clientPaging table.OpTableChangePageClientData
+		clientPaging, ok = paging.(table.OpTableChangePageClientData)
+		if !ok {
+			ok = mapstructure.Decode(paging, &clientPaging) == nil
+		}
+		if ok {
+			pageNo = int(clientPaging.PageNo)
+			pageSize = int(clientPaging.PageSize)
+		}
+	}
+	return pageNo, pageSize
+}
+
+func SetSortsToGlobalState(globalState cptype.GlobalStateData, opData table.OpTableChangeSortClientData) {
+	globalState[StateKeyTransactionSort] = opData
+}
+
+func GetSortsFromGlobalState(globalState cptype.GlobalStateData) []*common.Sort {
+	var sorts []*common.Sort
+	if sortCol, ok := globalState[StateKeyTransactionSort]; ok && sortCol != nil {
+		var clientSort table.OpTableChangeSortClientData
+		clientSort, ok = sortCol.(table.OpTableChangeSortClientData)
+		if !ok {
+			ok = mapstructure.Decode(sortCol, &clientSort) == nil
+		}
+		if ok {
+			col := clientSort.DataRef
+			if col != nil && col.AscOrder != nil {
+				sorts = append(sorts, &common.Sort{
+					FieldKey:  col.FieldBindToOrder,
+					Ascending: *col.AscOrder,
+				})
+			}
+		}
+	}
+	return sorts
+}
