@@ -109,7 +109,8 @@ func (l *List) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.Opera
 
 func (l *List) doFilterApp() (data *list.Data) {
 	data = &list.Data{}
-	apps, err := l.bdl.GetAppList(l.identity.OrgID, l.identity.UserID, *l.filterReq)
+	gh := gshelper.NewGSHelper(l.sdk.GlobalState)
+	apps, err := l.appListRetriever(gh.GetOption())
 	if err != nil {
 		logrus.Errorf("list query app workbench data failed, error: %v", err)
 		panic(err)
@@ -156,4 +157,15 @@ func (l *List) appDescription(desc string) string {
 		return l.sdk.I18n("defaultAppDescription")
 	}
 	return desc
+}
+
+func (l *List) appListRetriever(option string) (*apistructs.ApplicationListResponseData, error) {
+	if option == "my" {
+		orgID, err := strconv.Atoi(l.identity.OrgID)
+		if err != nil {
+			return nil, err
+		}
+		return l.bdl.GetAllMyApps(l.identity.UserID, uint64(orgID), *l.filterReq)
+	}
+	return l.bdl.GetAppList(l.identity.OrgID, l.identity.UserID, *l.filterReq)
 }
