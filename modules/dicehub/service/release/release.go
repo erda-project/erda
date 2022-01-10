@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -207,6 +208,7 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 	var metadata apistructs.ReleaseMetadata
 	dices := make(map[string]string)
 	reader := tar.NewReader(file)
+	hasMetadata := false
 	for {
 		hdr, err := reader.Next()
 		if err == io.EOF {
@@ -221,7 +223,11 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 		}
 
 		splits := strings.Split(hdr.Name, "/")
+		if !strings.HasSuffix(splits[0], ".tar") {
+			return nil, nil, errors.New("only support .tar file")
+		}
 		if len(splits) == 2 && splits[1] == "metadata.yml" {
+			hasMetadata = true
 			if err := yaml.Unmarshal(buf.Bytes(), &metadata); err != nil {
 				return nil, nil, err
 			}
@@ -231,8 +237,11 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 		}
 	}
 
+	if !hasMetadata {
+		return nil, nil, errors.New("invalid file, metadata.yml not found")
+	}
 	if len(dices) == 0 {
-		return nil, nil, errors.Errorf("invalid file")
+		return nil, nil, errors.Errorf("invalid file, dice.yml not found")
 	}
 
 	projectReleaseID := uuid.UUID()
@@ -261,7 +270,15 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 			return nil, nil, errors.Errorf("failed to get releases by app and version, %v", err)
 		}
 		if len(existedReleases) > 0 {
-			if existedReleases[0].Dice != dice {
+			oldDice, err := diceyml.New([]byte(existedReleases[0].Dice), true)
+			if err != nil {
+				return nil, nil, errors.Errorf("dice yml for release %s is invalid, %v", existedReleases[0].ReleaseID, err)
+			}
+			newDice, err := diceyml.New([]byte(dice), true)
+			if err != nil {
+				return nil, nil, errors.Errorf("dice yml for app %s release is invalid, %v", appName, err)
+			}
+			if !reflect.DeepEqual(oldDice.Obj(), newDice.Obj()) {
 				return nil, nil, errors.Errorf("app release %s was already existed but has different dice yml", md.Version)
 			}
 			appReleaseList = append(appReleaseList, existedReleases[0].ReleaseID)

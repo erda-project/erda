@@ -467,7 +467,7 @@ func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {
 	if err != nil {
 		return errors.New("invalid org id")
 	}
-	return r.bdl.ToFormalReleases(orgID, apistructs.ReleasesToFormalRequest{
+	return r.bdl.ToFormalReleases(orgID, userID, apistructs.ReleasesToFormalRequest{
 		ProjectID: projectID,
 		ReleaseID: releaseID,
 	})
@@ -506,7 +506,7 @@ func (r *ComponentReleaseTable) deleteReleases(releaseID []string) error {
 	if err != nil {
 		return errors.New("invalid org id")
 	}
-	return r.bdl.DeleteReleases(orgID, apistructs.ReleasesDeleteRequest{
+	return r.bdl.DeleteReleases(orgID, userID, apistructs.ReleasesDeleteRequest{
 		ProjectID: projectID,
 		ReleaseID: releaseID,
 	})

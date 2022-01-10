@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-func (e *Endpoints) audit(req *http.Request, orgID, projectID int64, userID, releaseType, releaseID string, templateName string, ctx map[string]interface{}) error {
+func (e *Endpoints) audit(req *http.Request, orgID, projectID int64, userID, templateName string, ctx map[string]interface{}) error {
 	org, err := e.bdl.GetOrg(orgID)
 	if err != nil {
 		return err
@@ -44,8 +44,6 @@ func (e *Endpoints) audit(req *http.Request, orgID, projectID int64, userID, rel
 			ScopeID:      uint64(projectID),
 			OrgID:        uint64(orgID),
 			ProjectID:    uint64(projectID),
-			ReleaseType:  releaseType,
-			ReleaseID:    releaseID,
 			Context:      ctx,
 			TemplateName: apistructs.TemplateName(templateName),
 			Result:       "success",

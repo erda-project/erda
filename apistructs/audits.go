@@ -402,10 +402,6 @@ type Audit struct {
 	ProjectID uint64 `json:"projectId"`
 	// +optional 应用id
 	AppID uint64 `json:"appId"`
-	// +optional 制品类型(application or project)
-	ReleaseType string `json:"releaseType,omitempty"`
-	// +optional 制品id
-	ReleaseID string `json:"releaseId,omitempty"`
 	// +optional 事件上下文，前端用来渲染的键值对，如appName，projectName
 	Context map[string]interface{} `json:"context"`
 	// +required 前端模版名，告诉前端应该用哪个模版来渲染
