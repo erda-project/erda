@@ -324,7 +324,7 @@ func (client *DBClient) PagingTestPlanCaseRelations(req apistructs.TestPlanCaseR
 	}
 	// updater
 	if len(req.UpdaterIDs) > 0 {
-		baseSQL = baseSQL.Where("`tc`.`updater_id` IN (?)", req.UpdaterIDs)
+		baseSQL = baseSQL.Where("`rel`.`updater_id` IN (?)", req.UpdaterIDs)
 	}
 	// updatedAtBegin (Left closed Section)
 	if req.TimestampSecUpdatedAtBegin != nil {
