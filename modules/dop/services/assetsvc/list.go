@@ -15,6 +15,7 @@
 package assetsvc
 
 import (
+	"context"
 	"sort"
 	"strconv"
 
@@ -44,7 +45,7 @@ const (
 )
 
 // PagingAPIAssetVersions 获取 API 资料版本列表
-func (svc *Service) PagingAPIAssetVersions(req *apistructs.PagingAPIAssetVersionsReq) (responseData *apistructs.PagingAPIAssetVersionResponse, userIDs []string, err error) {
+func (svc *Service) PagingAPIAssetVersions(ctx context.Context, req *apistructs.PagingAPIAssetVersionsReq) (responseData *apistructs.PagingAPIAssetVersionResponse, userIDs []string, err error) {
 	// 参数校验
 	if req.QueryParams == nil {
 		return nil, nil, errors.New("missing query parameters")
@@ -81,7 +82,7 @@ func (svc *Service) PagingAPIAssetVersions(req *apistructs.PagingAPIAssetVersion
 		"asset_id": req.URIParams.AssetID,
 	}); err != nil {
 		logrus.Errorf("failed to FirstRecord asset, err: %v", err)
-		return nil, nil, apierrors.PagingAPIAssetVersions.InternalError(errors.New("没有API集市"))
+		return nil, nil, apierrors.PagingAPIAssetVersions.InternalError(errors.New(svc.text(ctx, "FailedToFindAPIAsset")))
 	}
 
 	// 查询 versions
@@ -762,12 +763,12 @@ func (svc *Service) GetRuntimeServices(runtimeID uint64, orgID uint64, userID st
 }
 
 // 查询 SLA 列表
-func (svc *Service) ListSLAs(req *apistructs.ListSLAsReq) (*apistructs.ListSLAsRsp, *errorresp.APIError) {
+func (svc *Service) ListSLAs(ctx context.Context, req *apistructs.ListSLAsReq) (*apistructs.ListSLAsRsp, *errorresp.APIError) {
 	if req == nil || req.URIParams == nil {
-		return nil, apierrors.ListSLAs.InvalidParameter("参数错误")
+		return nil, apierrors.ListSLAs.InvalidParameter(svc.text(ctx, "InvalidParams"))
 	}
 	if req.OrgID == 0 {
-		return nil, apierrors.ListSLAs.InvalidParameter("orgID 错误")
+		return nil, apierrors.ListSLAs.InvalidParameter(svc.text(ctx, "InvalidParams") + ": OrgID")
 	}
 
 	// 查询 access
@@ -778,7 +779,7 @@ func (svc *Service) ListSLAs(req *apistructs.ListSLAsReq) (*apistructs.ListSLAsR
 		"swagger_version": req.URIParams.SwaggerVersion,
 	}); err != nil {
 		logrus.Errorf("failed to FirstRecord access, err: %v", err)
-		return nil, apierrors.ListSLAs.InternalError(errors.New("没有此访问管理"))
+		return nil, apierrors.ListSLAs.InternalError(errors.New(svc.text(ctx, "FailedToFindAccessItem")))
 	}
 
 	// 查询 SLAs 列表
@@ -793,7 +794,7 @@ func (svc *Service) ListSLAs(req *apistructs.ListSLAsReq) (*apistructs.ListSLAsR
 				List:  nil,
 			}, nil
 		}
-		return nil, apierrors.ListSLAs.InternalError(errors.New("查询 SLA 列表失败"))
+		return nil, apierrors.ListSLAs.InternalError(errors.New(svc.text(ctx, "FailedToListSLA")))
 	}
 
 	// 如果要求标识 SLA 与 contract 的关系, 则查询 contract
@@ -809,7 +810,7 @@ func (svc *Service) ListSLAs(req *apistructs.ListSLAsReq) (*apistructs.ListSLAsR
 			"swagger_version": req.URIParams.SwaggerVersion,
 		}); err != nil {
 			logrus.Errorf("failed to FirstRecord contract, err: %v", err)
-			return nil, apierrors.ListSLAs.InternalError(errors.New("查询调用申请失败"))
+			return nil, apierrors.ListSLAs.InternalError(errors.New(svc.text(ctx, "FailedToFindContract")))
 		}
 	}
 
@@ -883,7 +884,7 @@ func (svc *Service) ListSLAs(req *apistructs.ListSLAsReq) (*apistructs.ListSLAsR
 		return rsp.List[i].UpdatedAt.After(rsp.List[j].UpdatedAt)
 	})
 
-	unlimiSLA := unlimitedSLA(&access)
+	unlimiSLA := svc.unlimitedSLA(ctx, &access)
 	var cnt uint64
 	dbclient.Sq().Model(new(apistructs.ContractModel)).
 		Where(map[string]interface{}{"asset_id": access.AssetID, "swagger_version": access.SwaggerVersion, "cur_sla_id": 0}).

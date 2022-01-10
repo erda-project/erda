@@ -21,10 +21,6 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-const (
-	UnlimitedSLAName = "无限制 SLA"
-)
-
 type WorkSpace string
 
 const (

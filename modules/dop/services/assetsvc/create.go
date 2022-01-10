@@ -597,7 +597,8 @@ func (svc *Service) CreateClient(ctx context.Context, req *apistructs.CreateClie
 }
 
 // CreateContract 创建一个合约. 注意创建合约时, 需要查询客户端详情, 查询客户端详情时传入的 ClientID 是 dice_api_clients 的主键
-func (svc *Service) CreateContract(ctx context.Context, req *apistructs.CreateContractReq) (*apistructs.ClientModel, *apistructs.SK, *apistructs.ContractModel, *errorresp.APIError) {
+func (svc *Service) CreateContract(ctx context.Context, req *apistructs.CreateContractReq) (*apistructs.ClientModel, *apistructs.SK,
+	*apistructs.ContractModel, *errorresp.APIError) {
 	// 参数校验
 	if req.URIParams == nil {
 		return nil, nil, nil, apierrors.CreateContract.InvalidParameter("no URI parameter")
@@ -696,7 +697,7 @@ func (svc *Service) CreateContract(ctx context.Context, req *apistructs.CreateCo
 		return nil, nil, nil, apierrors.CreateContract.InvalidState(fmt.Sprintf("repeated request: %v", err))
 	}
 	// case 3: the record is already exists
-	contract, err := svc.createContractIfExists(tx, req, &asset, &access, client, &exContract)
+	contract, err := svc.createContractIfExists(ctx, tx, req, &asset, &access, client, &exContract)
 	if err != nil {
 		logrus.Errorf("failed to createContractIfExists, err: %v", err)
 		return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New(svc.text(ctx, "FailedToApplyToCallAPI")))
@@ -705,7 +706,8 @@ func (svc *Service) CreateContract(ctx context.Context, req *apistructs.CreateCo
 }
 
 // 创建合约时, 如果合约已存在, 进入此分支
-func (svc *Service) createContractIfExists(tx *dbclient.TX, req *apistructs.CreateContractReq, asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel,
+func (svc *Service) createContractIfExists(ctx context.Context, tx *dbclient.TX, req *apistructs.CreateContractReq, asset *apistructs.APIAssetsModel,
+	access *apistructs.APIAccessesModel,
 	client *apistructs.ClientModel, exContract *apistructs.ContractModel) (*apistructs.ContractModel, error) {
 	var (
 		err      error
@@ -722,6 +724,11 @@ func (svc *Service) createContractIfExists(tx *dbclient.TX, req *apistructs.Crea
 		}
 		sla apistructs.SLAModel
 	)
+
+	org, err := svc.bdl.GetOrg(req.OrgID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to GetOrg")
+	}
 
 	// 如果合约处于 "等待授权" 和 "已授权" 以外的情形, 则修改为 "等待授权"
 	if exContract.Status.ToLower() != apistructs.ContractApproving &&
@@ -755,7 +762,9 @@ func (svc *Service) createContractIfExists(tx *dbclient.TX, req *apistructs.Crea
 
 			// 如果申请了新的 SLA 且处于待审批的状态, 则记录操作, 并通知管理员
 			if reqSLAID, ok := updates["request_sla_id"]; ok && reqSLAID != nil {
-				go svc.contractMsgToManager(req.OrgID, req.Identity.UserID, asset, access, RequestItemSLA(sla.Name), false)
+				go svc.contractMsgToManager(ctx, req.OrgID, req.Identity.UserID, asset, access,
+					svc.RequestItemSLA(ctx, sla.Name, org.Locale),
+					false)
 				record.SLAName = sla.Name
 				record.Action = "ApplyToUseSLA"
 				break
@@ -763,20 +772,22 @@ func (svc *Service) createContractIfExists(tx *dbclient.TX, req *apistructs.Crea
 
 			// 如果通过了申请的 SLA, 则记录操作, 通知用户
 			if _, ok := updates["cur_sla_id"]; ok {
-				result := ApprovalResultSLAUpdated(sla.Name)
+				result := svc.ApprovalResultSLAUpdated(ctx, sla.Name, org.Locale)
 				go svc.contractMsgToUser(req.OrgID, req.Identity.UserID, asset.AssetName, client, result)
 				record.Action = string(result)
 			}
 
 		case updatingStatus == apistructs.ContractApproving:
 			// 如果是更新后的状态是"等待授权", 向管理员发送通知
-			go svc.contractMsgToManager(req.OrgID, req.Identity.UserID, asset, access,
-				RequestItemAPI(access.AssetName, access.SwaggerVersion), false)
+			go svc.contractMsgToManager(ctx, req.OrgID, req.Identity.UserID, asset, access,
+				svc.RequestItemAPI(ctx, access.AssetName, access.SwaggerVersion, org.Locale),
+				false)
 			record.Action += "," + "WaitForProving"
 
 		case updatingStatus == apistructs.ContractApproved:
 			// 如果更新后的状态是"已授权", 向用户发送通知; 调用网关测的授权
-			go svc.contractMsgToUser(req.OrgID, req.Identity.UserID, access.AssetName, client, ManagerProvedContract)
+			go svc.contractMsgToUser(req.OrgID, req.Identity.UserID, access.AssetName, client,
+				svc.ManagerProvedContract(ctx, org.Locale))
 			record.Action += "," + "AutoProved"
 			if err = bdl.Bdl.GrantEndpointToClient(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
 				client.ClientID, access.EndpointID); err != nil {
@@ -832,7 +843,8 @@ func (svc *Service) createContractIfExists(tx *dbclient.TX, req *apistructs.Crea
 }
 
 // 创建合约时, 如果合约不存在, 进入此分支
-func (svc *Service) createContractFirstTime(ctx context.Context, tx *dbclient.TX, req *apistructs.CreateContractReq, asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel,
+func (svc *Service) createContractFirstTime(ctx context.Context, tx *dbclient.TX, req *apistructs.CreateContractReq,
+	asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel,
 	client *apistructs.ClientModel) (*apistructs.ContractModel, error) {
 	var (
 		timeNow  = time.Now()
@@ -855,6 +867,11 @@ func (svc *Service) createContractFirstTime(ctx context.Context, tx *dbclient.TX
 			SLACommittedAt: nil,
 		}
 	)
+
+	org, err := svc.bdl.GetOrg(req.OrgID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to GetOrg")
+	}
 
 	// 如果 access 下有 sla, 但没有申请 SLA, 则不允许申请
 	var count uint64
@@ -879,7 +896,7 @@ func (svc *Service) createContractFirstTime(ctx context.Context, tx *dbclient.TX
 		req.Body.SLAID = &id
 	}
 
-	sla, err := svc.querySLAByID(*req.Body.SLAID, access)
+	sla, err := svc.querySLAByID(ctx, *req.Body.SLAID, access)
 	switch {
 	case err != nil:
 		// 查询不到申请的 SLA
@@ -922,7 +939,9 @@ func (svc *Service) createContractFirstTime(ctx context.Context, tx *dbclient.TX
 	case apistructs.ContractApproving:
 		// 等待审批, 通知管理人员进行审批
 
-		go svc.contractMsgToManager(req.OrgID, req.Identity.UserID, asset, access, RequestItemAPI(access.AssetName, access.SwaggerVersion), false)
+		go svc.contractMsgToManager(ctx, req.OrgID, req.Identity.UserID, asset, access,
+			svc.RequestItemAPI(ctx, access.AssetName, access.SwaggerVersion, org.Locale),
+			false)
 
 		record.Action += "," + "WaitForProving"
 		if err := tx.Create(&record).Error; err != nil {
@@ -933,7 +952,8 @@ func (svc *Service) createContractFirstTime(ctx context.Context, tx *dbclient.TX
 	case apistructs.ContractApproved:
 		// 如果合约已授权, 调用网关侧的授权; 通知用户已通过
 
-		go svc.contractMsgToUser(req.OrgID, req.Identity.UserID, access.AssetName, client, ManagerProvedContract)
+		go svc.contractMsgToUser(req.OrgID, req.Identity.UserID, access.AssetName, client,
+			svc.ManagerProvedContract(ctx, org.Locale))
 
 		record.Action += "," + "AutoProved"
 		if err := tx.Create(&record).Error; err != nil {
@@ -1169,7 +1189,7 @@ func (svc *Service) CreateSLA(ctx context.Context, req *apistructs.CreateSLAReq)
 	}
 
 	// 检查重名
-	if strings.Replace(req.Body.Name, " ", "", -1) == strings.Replace(apistructs.UnlimitedSLAName, " ", "", -1) {
+	if trimSpace := strings.Replace(req.Body.Name, " ", "", -1); trimSpace == "UnlimitedSLA" || trimSpace == "无限制SLA" {
 		text := svc.text(ctx, "CanNotNamed") + ": " + svc.text(ctx, "SystemReservedName")
 		return apierrors.CreateSLA.InternalError(errors.Errorf(text, req.Body.Name))
 	}
@@ -1179,7 +1199,7 @@ func (svc *Service) CreateSLA(ctx context.Context, req *apistructs.CreateSLAReq)
 		"name":      req.Body.Name,
 	}); err == nil {
 		logrus.Errorf("记录已存在: %+v", exSLA)
-		return apierrors.CreateSLA.InternalError(errors.New(svc.text(ctx, "SLAIsAlreadyExists"+": "+req.Body.Name)))
+		return apierrors.CreateSLA.InternalError(errors.New(svc.text(ctx, "SLAIsAlreadyExists") + ": " + req.Body.Name))
 	}
 
 	// 参数初始化

@@ -17,12 +17,14 @@ package assetsvc
 
 import (
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/branchrule"
 )
 
 type Service struct {
 	trans         i18n.Translator
 	branchRuleSvc *branchrule.BranchRule
+	bdl           *bundle.Bundle
 }
 
 type Option func(*Service)
@@ -46,5 +48,11 @@ func WithI18n(trans i18n.Translator) Option {
 func WithBranchRuleSvc(svc *branchrule.BranchRule) Option {
 	return func(service *Service) {
 		service.branchRuleSvc = svc
+	}
+}
+
+func WithBundle(bdl *bundle.Bundle) Option {
+	return func(svc *Service) {
+		svc.bdl = bdl
 	}
 }

@@ -172,7 +172,7 @@ func (e *Endpoints) DeleteAPIAsset(ctx context.Context, r *http.Request, vars ma
 		IdentityInfo: identityInfo,
 	}
 
-	if err = e.assetSvc.DeleteAssetByAssetID(req); err != nil {
+	if err = e.assetSvc.DeleteAssetByAssetID(ctx, req); err != nil {
 		return errorresp.ErrResp(err)
 	}
 

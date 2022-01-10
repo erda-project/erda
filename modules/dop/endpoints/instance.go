@@ -204,7 +204,7 @@ func (e *Endpoints) UpdateInstantiation(ctx context.Context, r *http.Request, va
 		Body: &body,
 	}
 
-	instantiation, apiErr := e.assetSvc.UpdateInstantiation(&req)
+	instantiation, apiErr := e.assetSvc.UpdateInstantiation(ctx, &req)
 	if apiErr != nil {
 		return apiErr.ToResp(), nil
 	}

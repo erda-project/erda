@@ -57,7 +57,7 @@ func (e *Endpoints) ListSLAs(ctx context.Context, r *http.Request, vars map[stri
 		}
 	}
 
-	data, apiError := e.assetSvc.ListSLAs(&req)
+	data, apiError := e.assetSvc.ListSLAs(ctx, &req)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}
@@ -123,7 +123,7 @@ func (e *Endpoints) GetSLA(ctx context.Context, r *http.Request, vars map[string
 		},
 	}
 
-	data, apiError := e.assetSvc.GetSLA(&req)
+	data, apiError := e.assetSvc.GetSLA(ctx, &req)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}
@@ -155,7 +155,7 @@ func (e *Endpoints) DeleteSLA(ctx context.Context, r *http.Request, vars map[str
 		},
 	}
 
-	if apiError := e.assetSvc.DeleteSLA(&req); apiError != nil {
+	if apiError := e.assetSvc.DeleteSLA(ctx, &req); apiError != nil {
 		return apiError.ToResp(), nil
 	}
 	return httpserver.OkResp(nil)
@@ -192,7 +192,7 @@ func (e *Endpoints) UpdateSLA(ctx context.Context, r *http.Request, vars map[str
 		return apierrors.UpdateSLA.InternalError(errors.New("无效的请求体")).ToResp(), nil
 	}
 
-	if apiError := e.assetSvc.UpdateSLA(&req); apiError != nil {
+	if apiError := e.assetSvc.UpdateSLA(ctx, &req); apiError != nil {
 		return apiError.ToResp(), nil
 	}
 	return httpserver.OkResp(nil)

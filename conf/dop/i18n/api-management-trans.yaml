@@ -15,7 +15,7 @@ zh:
   FailedToApplyToCallAPI: 申请调用失败
 
   ActionReplyToApplyToCall: 重新发起了调用申请
-  ApplyToUseSLA: 申请了 SAL %s
+  ApplyToUseSLA: "申请了 SAL %s"
   WaitForProving: 等待审批中
   AutoProved: 自动通过了审批
   ApplyToCallAPI: 发起了调用申请
@@ -33,7 +33,7 @@ zh:
   AtLeastOneLimitInSLA: 至少包含一个限制条件
   FailedToFindAPI: 查询 API 失败
   FailedToFindAccessItme: 查询访问管理失败
-  CanNotNamed: 不可命名为 %s
+  CanNotNamed: "不可命名为 %s"
   SystemReservedName: 系统保留名称
   SLAIsAlreadyExists: 同名 SLA 已存在
   AutoAuthIsExists: "已存在自动授权的 SLA: %s, 请修改授权方式后重试"
@@ -47,6 +47,48 @@ zh:
   InvalidAPIDocFormat: 文档格式错误
   InvalidJsonYaml: 不是合法的 JSON 或 YAML 格式
   MissingOASProtoSign: 文档缺失 openapi/swagger 协议标识, 无法识别其协议
+
+  APIAssetIsInManagement: API 集处于访问管理中, 不可删除
+  CanNotDelete.AtLeastOneVersion: "不可删除: 至少保留一个版本"
+  CanNotDelete.AtLeastOneVersionInManagement: "不可删除: %s 处于访问管理中, 至少保留一个版本. 如要删除请先修改对此版本的访问管理"
+  CanNotDelete.AtLeastOnePatchVersionInManagement: "不可删除: %s %v.%v.* 处于访问管理中, 至少保留一个修订版本. 如要删除请先修改对此版本的访问管理"
+  CanNotDelete.AuthorizedCcallRequestExists: "不可删除: %s %s 存在已授权调用申请"
+
+  FailedToFindSLA: "查询 SLA 失败"
+  FailedToFindRelatedContract: 查询受影响的合约失败
+  FailedToDeleteSLA.UsedInSLA: 存在正在使用该 SLA 的客户端, 请先删除或更换其 SLA
+
+  UnlimitedSLAName: 无限制 SLA
+  UnlimitedSLADesc: 不限制流量 SLA
+
+  FailedToFindSLALimit: 查询 SLA 限制条件失败
+  FailedToListSLA: 查询 SLA 列表失败
+  FailedToFindContract: 查询调用申请失败
+
+  Empty: 空
+  SLAChangedToBe: "SLA 更变为 %s"
+  RevokeContract: 撤销调用权限
+  Refused: 拒绝调用
+  Approving: 正在审批
+  Approved: 同意调用
+  FailedToApprove: 拒绝调用
+  SLAUpdated: "管理员更新了 SLA *%s*, 请及时查看"
+  ApplyToSLA: "申请使用名称为 %s 的 SLA"
+  ApplyToAPI: "申请调用 API %s %s"
+  PleaseProcessIt: 请及时处理
+  NoNeedToProcessIt: 已自动通过, 无须处理
+
+  CanNotUpdateInstance: 实例处于访问管理中, 不可修改
+  ClientNotFound: 无此客户端
+  FailedToApplySLA: 申请 SLA 失败
+  FailedToProcessContract: 审批调用申请状态失败
+  FailedToUpdateSLA: 变更 SLA 失败
+
+  SystemReserved: 系统保留
+  SameNameSLA: 已存在同名 SLA, 请修改后重试
+  AutoSLA: "已存在自动授权的 SLA: %s, 请修改后重试"
+
+  FailedToFindVersion: 查询版本失败
 
 en:
   SwaggerFileISInvalidOAS: invalid OAS2/3 document
@@ -97,3 +139,6 @@ en:
   InvalidAPIDocFormat: invalid API document format
   InvalidJsonYaml: invalid JSON or YAML
   MissingOASProtoSign: can’t recognize the document's protocol because of missing agreement statement
+
+  APIAssetIsInManagement: cant not delete the API Asset because it is in management
+  CanNotDelete.AtLeastOneVersion: "不可删除: 至少保留一个版本"
