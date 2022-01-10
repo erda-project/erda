@@ -357,7 +357,7 @@ type PipelineDefinitionRequest struct {
 	ID                    string                `json:"id"`
 	Name                  string                `json:"name"`
 	Category              string                `json:"category"`
-	Creator 			  string                `json:"creator"`
+	Creator               string                `json:"creator"`
 	PipelineSourceRequest PipelineSourceRequest `json:"pipelineSource"`
 }
 
