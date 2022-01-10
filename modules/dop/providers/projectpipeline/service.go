@@ -34,8 +34,8 @@ type ProjectPipelineService struct {
 	pipelineSourceType ProjectSourceType
 
 	pipelineSvc        *pipeline.Pipeline
-	PipelineSource     sourcepb.SourceServiceServer `autowired:"erda.core.pipeline.source" optional:"true"`
-	PipelineDefinition dpb.DefinitionServiceServer  `autowired:"erda.core.pipeline.definition" optional:"true"`
+	PipelineSource     sourcepb.SourceServiceServer
+	PipelineDefinition dpb.DefinitionServiceServer
 }
 
 func (p *ProjectPipelineService) WithPipelineSvc(svc *pipeline.Pipeline) {
@@ -47,8 +47,8 @@ type Service interface {
 	List(ctx context.Context, params deftype.ProjectPipelineList) ([]*dpb.PipelineDefinition, error)
 	Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error)
 	Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error)
-	Star(ctx context.Context, params deftype.ProjectPipelineStar) (deftype.ProjectPipelineStarResult, error)
-	UnStar(ctx context.Context, params deftype.ProjectPipelineUnStar) (deftype.ProjectPipelineUnStarResult, error)
+	Star(ctx context.Context, params deftype.ProjectPipelineStar) (*dpb.PipelineDefinitionUpdateResponse, error)
+	UnStar(ctx context.Context, params deftype.ProjectPipelineUnStar) (*dpb.PipelineDefinitionUpdateResponse, error)
 
 	Run(ctx context.Context, params deftype.ProjectPipelineRun) (*deftype.ProjectPipelineRunResult, error)
 	BatchRun(ctx context.Context, params deftype.ProjectPipelineBatchRun) (*deftype.ProjectPipelineBatchRunResult, error)

@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/definition/db"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
+	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
 
 type pipelineDefinition struct {
@@ -57,6 +58,8 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	pipelineDefinition.Creator = request.Creator
 	pipelineDefinition.Name = request.Name
 	pipelineDefinition.ID = uuid.New().String()
+	pipelineDefinition.StartedAt = *mysql_time.GetMysqlDefaultTime()
+	pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.PipelineDefinitionExtraId = pipelineDefinitionExtra.ID
 	err = p.dbClient.CreatePipelineDefinition(&pipelineDefinition)
 	if err != nil {
@@ -76,16 +79,16 @@ func createPreCheck(request *pb.PipelineDefinitionCreateRequest) error {
 		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("name: %s", request.Name))
 	}
 	if request.Creator == "" {
-		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("creator: %s", request.Name))
+		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("creator: %s", request.Creator))
 	}
 	if request.Category == "" {
-		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("category: %s", request.Name))
+		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("category: %s", request.Category))
 	}
 	if request.PipelineSourceId == "" {
-		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("pipelineSourceId: %s", request.Name))
+		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("pipelineSourceId: %s", request.PipelineSourceId))
 	}
 	if request.Extra == nil || request.Extra.Extra == "" {
-		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("extra: %s", request.Name))
+		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("extra: %s", request.Extra))
 	}
 	return nil
 }
@@ -112,11 +115,11 @@ func (p pipelineDefinition) Update(ctx context.Context, request *pb.PipelineDefi
 	}
 	if request.StartedAt != nil {
 		var startAt = request.StartedAt.AsTime()
-		pipelineDefinition.StartedAt = &startAt
+		pipelineDefinition.StartedAt = startAt
 	}
 	if request.EndedAt != nil {
 		var endAt = request.EndedAt.AsTime()
-		pipelineDefinition.EndedAt = &endAt
+		pipelineDefinition.EndedAt = endAt
 	}
 	if request.Executor != "" {
 		pipelineDefinition.Executor = request.Executor
@@ -208,18 +211,10 @@ func PipelineDefinitionToPb(pipelineDefinition *db.PipelineDefinition) *pb.Pipel
 		CostTime:         pipelineDefinition.CostTime,
 		Category:         pipelineDefinition.Category,
 		PipelineSourceId: pipelineDefinition.PipelineSourceId,
-	}
-	if pipelineDefinition.TimeCreated != nil {
-		de.TimeCreated = timestamppb.New(*pipelineDefinition.TimeCreated)
-	}
-	if pipelineDefinition.TimeUpdated != nil {
-		de.TimeUpdated = timestamppb.New(*pipelineDefinition.TimeUpdated)
-	}
-	if pipelineDefinition.StartedAt != nil {
-		de.StartedAt = timestamppb.New(*pipelineDefinition.StartedAt)
-	}
-	if pipelineDefinition.EndedAt != nil {
-		de.EndedAt = timestamppb.New(*pipelineDefinition.EndedAt)
+		TimeCreated:      timestamppb.New(pipelineDefinition.TimeCreated),
+		TimeUpdated:      timestamppb.New(pipelineDefinition.TimeUpdated),
+		StartedAt:        timestamppb.New(pipelineDefinition.StartedAt),
+		EndedAt:          timestamppb.New(pipelineDefinition.EndedAt),
 	}
 	return de
 }

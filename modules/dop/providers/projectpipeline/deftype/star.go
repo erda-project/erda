@@ -14,7 +14,17 @@
 
 package deftype
 
+import "fmt"
+
 type ProjectPipelineStar struct {
+	PipelineDefinitionID string `json:"pipelineDefinitionID"`
+}
+
+func (p *ProjectPipelineStar) Validate() error {
+	if p.PipelineDefinitionID == "" {
+		return fmt.Errorf("the pipelineDefinitionID is empty")
+	}
+	return nil
 }
 
 type ProjectPipelineStarResult struct {

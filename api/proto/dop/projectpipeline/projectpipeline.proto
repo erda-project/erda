@@ -5,6 +5,8 @@ option go_package = "github.com/erda-project/erda-proto-go/dop/projectpipeline/p
 import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "google/api/annotations.proto";
 import "common/openapi.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
 
 service ProjectPipelineService {
   option(erda.common.openapi_service) = {
@@ -37,5 +39,21 @@ message CreateProjectPipelineRequest {
 }
 
 message CreateProjectPipelineResponse {
+  ProjectPipeline ProjectPipeline = 1;
+
+}
+
+message ProjectPipeline {
   string ID = 1;
+  string name = 2;
+  string creator = 3;
+  string category = 4;
+  google.protobuf.Timestamp timeCreated = 5;
+  google.protobuf.Timestamp timeUpdated = 6;
+  string sourceType = 7;
+  string remote = 8;
+  string ref = 9;
+  string path = 10;
+  string fileName = 11;
+  string pipelineSourceId = 12;
 }

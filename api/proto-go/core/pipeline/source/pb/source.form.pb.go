@@ -288,14 +288,14 @@ func (m *PipelineSourceUpdateRequest) UnmarshalURLValues(prefix string, values u
 			switch prefix + key {
 			case "pipelineYml":
 				m.PipelineYml = vals[0]
+			case "pipelineSourceID":
+				m.PipelineSourceID = vals[0]
 			case "versionLock":
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
 				m.VersionLock = val
-			case "pipelineSourceID":
-				m.PipelineSourceID = vals[0]
 			}
 		}
 	}

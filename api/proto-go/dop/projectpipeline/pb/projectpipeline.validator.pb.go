@@ -12,6 +12,8 @@ import (
 	_ "github.com/mwitkow/go-proto-validators"
 	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
+	_ "google.golang.org/protobuf/types/known/structpb"
+	_ "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -41,5 +43,23 @@ func (this *CreateProjectPipelineRequest) Validate() error {
 	return nil
 }
 func (this *CreateProjectPipelineResponse) Validate() error {
+	if this.ProjectPipeline != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.ProjectPipeline); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("ProjectPipeline", err)
+		}
+	}
+	return nil
+}
+func (this *ProjectPipeline) Validate() error {
+	if this.TimeCreated != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.TimeCreated); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("TimeCreated", err)
+		}
+	}
+	if this.TimeUpdated != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.TimeUpdated); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("TimeUpdated", err)
+		}
+	}
 	return nil
 }
