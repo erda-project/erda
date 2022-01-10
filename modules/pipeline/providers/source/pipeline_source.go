@@ -74,9 +74,9 @@ func (p pipelineSource) Update(ctx context.Context, request *pb.PipelineSourceUp
 		return nil, err
 	}
 
-	source.PipelineYml = request.PipelineYml
-	source.VersionLock = request.VersionLock
-	source.ID = request.PipelineSourceID
+	if request.PipelineYml != "" {
+		source.PipelineYml = request.PipelineYml
+	}
 	err = p.dbClient.UpdatePipelineSource(request.PipelineSourceID, source)
 	if err != nil {
 		return nil, err

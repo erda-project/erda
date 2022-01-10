@@ -8,12 +8,14 @@ import (
 	strconv "strconv"
 
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ProjectPipeline)(nil)
 
 // CreateProjectPipelineRequest implement urlenc.URLValuesUnmarshaler.
 func (m *CreateProjectPipelineRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -53,8 +55,197 @@ func (m *CreateProjectPipelineResponse) UnmarshalURLValues(prefix string, values
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
+			case "ProjectPipeline":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+			case "ProjectPipeline.ID":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.ID = vals[0]
+			case "ProjectPipeline.name":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.Name = vals[0]
+			case "ProjectPipeline.creator":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.Creator = vals[0]
+			case "ProjectPipeline.category":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.Category = vals[0]
+			case "ProjectPipeline.timeCreated":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				if m.ProjectPipeline.TimeCreated == nil {
+					m.ProjectPipeline.TimeCreated = &timestamppb.Timestamp{}
+				}
+			case "ProjectPipeline.timeCreated.seconds":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				if m.ProjectPipeline.TimeCreated == nil {
+					m.ProjectPipeline.TimeCreated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectPipeline.TimeCreated.Seconds = val
+			case "ProjectPipeline.timeCreated.nanos":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				if m.ProjectPipeline.TimeCreated == nil {
+					m.ProjectPipeline.TimeCreated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.ProjectPipeline.TimeCreated.Nanos = int32(val)
+			case "ProjectPipeline.timeUpdated":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				if m.ProjectPipeline.TimeUpdated == nil {
+					m.ProjectPipeline.TimeUpdated = &timestamppb.Timestamp{}
+				}
+			case "ProjectPipeline.timeUpdated.seconds":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				if m.ProjectPipeline.TimeUpdated == nil {
+					m.ProjectPipeline.TimeUpdated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectPipeline.TimeUpdated.Seconds = val
+			case "ProjectPipeline.timeUpdated.nanos":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				if m.ProjectPipeline.TimeUpdated == nil {
+					m.ProjectPipeline.TimeUpdated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.ProjectPipeline.TimeUpdated.Nanos = int32(val)
+			case "ProjectPipeline.sourceType":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.SourceType = vals[0]
+			case "ProjectPipeline.remote":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.Remote = vals[0]
+			case "ProjectPipeline.ref":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.Ref = vals[0]
+			case "ProjectPipeline.path":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.Path = vals[0]
+			case "ProjectPipeline.fileName":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.FileName = vals[0]
+			case "ProjectPipeline.pipelineSourceId":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.PipelineSourceId = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ProjectPipeline implement urlenc.URLValuesUnmarshaler.
+func (m *ProjectPipeline) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
 			case "ID":
 				m.ID = vals[0]
+			case "name":
+				m.Name = vals[0]
+			case "creator":
+				m.Creator = vals[0]
+			case "category":
+				m.Category = vals[0]
+			case "timeCreated":
+				if m.TimeCreated == nil {
+					m.TimeCreated = &timestamppb.Timestamp{}
+				}
+			case "timeCreated.seconds":
+				if m.TimeCreated == nil {
+					m.TimeCreated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.TimeCreated.Seconds = val
+			case "timeCreated.nanos":
+				if m.TimeCreated == nil {
+					m.TimeCreated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.TimeCreated.Nanos = int32(val)
+			case "timeUpdated":
+				if m.TimeUpdated == nil {
+					m.TimeUpdated = &timestamppb.Timestamp{}
+				}
+			case "timeUpdated.seconds":
+				if m.TimeUpdated == nil {
+					m.TimeUpdated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.TimeUpdated.Seconds = val
+			case "timeUpdated.nanos":
+				if m.TimeUpdated == nil {
+					m.TimeUpdated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.TimeUpdated.Nanos = int32(val)
+			case "sourceType":
+				m.SourceType = vals[0]
+			case "remote":
+				m.Remote = vals[0]
+			case "ref":
+				m.Ref = vals[0]
+			case "path":
+				m.Path = vals[0]
+			case "fileName":
+				m.FileName = vals[0]
+			case "pipelineSourceId":
+				m.PipelineSourceId = vals[0]
 			}
 		}
 	}

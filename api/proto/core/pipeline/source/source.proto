@@ -73,8 +73,8 @@ message PipelineSourceCreateResponse {
 // update
 message PipelineSourceUpdateRequest {
   string pipelineYml = 1;
-  uint64 versionLock = 2;
-  string pipelineSourceID = 3;
+  string pipelineSourceID = 2;
+  uint64 versionLock = 3;
 }
 
 message PipelineSourceUpdateResponse {

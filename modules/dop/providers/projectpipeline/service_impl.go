@@ -18,8 +18,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"path/filepath"
+
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
@@ -30,13 +31,22 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
+type CategoryType string
+
+const (
+	DefaultCategory CategoryType = "default"
+	StarCategory    CategoryType = "star"
+)
+
+func (c CategoryType) String() string {
+	return string(c)
+}
+
 func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error) {
 	if err := params.Validate(); err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InvalidParameter(err)
 	}
-	if err := p.checkCreatePermission(ctx, params); err != nil {
-		return nil, apierrors.ErrCreateProjectPipeline.AccessDenied()
-	}
+	// TODO check permission
 
 	p.pipelineSourceType = NewProjectSourceType(params.SourceType)
 	sourceReq, err := p.pipelineSourceType.GenerateReq(ctx, p, params)
@@ -53,7 +63,7 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		Name:             params.Name,
 		Creator:          apis.GetUserID(ctx),
 		PipelineSourceId: sourceRsp.PipelineSource.ID,
-		Category:         "",
+		Category:         DefaultCategory.String(),
 		Extra: &dpb.PipelineDefinitionExtra{
 			Extra: p.pipelineSourceType.GetPipelineCreateRequestV2(),
 		},
@@ -61,7 +71,20 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
-	return &pb.CreateProjectPipelineResponse{ID: definitionRsp.PipelineDefinition.ID}, nil
+	return &pb.CreateProjectPipelineResponse{ProjectPipeline: &pb.ProjectPipeline{
+		ID:               definitionRsp.PipelineDefinition.ID,
+		Name:             definitionRsp.PipelineDefinition.Name,
+		Creator:          definitionRsp.PipelineDefinition.Creator,
+		Category:         definitionRsp.PipelineDefinition.Category,
+		TimeCreated:      definitionRsp.PipelineDefinition.TimeCreated,
+		TimeUpdated:      definitionRsp.PipelineDefinition.TimeUpdated,
+		SourceType:       sourceRsp.PipelineSource.SourceType,
+		Remote:           sourceRsp.PipelineSource.Remote,
+		Ref:              sourceRsp.PipelineSource.Ref,
+		Path:             sourceRsp.PipelineSource.Path,
+		FileName:         sourceRsp.PipelineSource.Name,
+		PipelineSourceId: sourceRsp.PipelineSource.ID,
+	}}, nil
 }
 
 func (p *ProjectPipelineService) checkCreatePermission(ctx context.Context, params *pb.CreateProjectPipelineRequest) error {
@@ -213,12 +236,38 @@ func (p *ProjectPipelineService) Update(ctx context.Context, params deftype.Proj
 	return nil, err
 }
 
-func (p *ProjectPipelineService) Star(ctx context.Context, params deftype.ProjectPipelineStar) (deftype.ProjectPipelineStarResult, error) {
-	panic("implement me")
+func (p *ProjectPipelineService) Star(ctx context.Context, params deftype.ProjectPipelineStar) (*dpb.PipelineDefinitionUpdateResponse, error) {
+	if err := params.Validate(); err != nil {
+		return nil, apierrors.ErrStarProjectPipeline.InvalidParameter(err)
+	}
+
+	// TODO check permission
+	definition, err := p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
+		PipelineDefinitionID: params.PipelineDefinitionID,
+		Category:             StarCategory.String(),
+	})
+	if err != nil {
+		return nil, apierrors.ErrStarProjectPipeline.InternalError(err)
+	}
+
+	return definition, nil
 }
 
-func (p *ProjectPipelineService) UnStar(ctx context.Context, params deftype.ProjectPipelineUnStar) (deftype.ProjectPipelineUnStarResult, error) {
-	panic("implement me")
+func (p *ProjectPipelineService) UnStar(ctx context.Context, params deftype.ProjectPipelineUnStar) (*dpb.PipelineDefinitionUpdateResponse, error) {
+	if err := params.Validate(); err != nil {
+		return nil, apierrors.ErrStarProjectPipeline.InvalidParameter(err)
+	}
+
+	// TODO check permission
+	definition, err := p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
+		PipelineDefinitionID: params.PipelineDefinitionID,
+		Category:             DefaultCategory.String(),
+	})
+	if err != nil {
+		return nil, apierrors.ErrStarProjectPipeline.InternalError(err)
+	}
+
+	return definition, nil
 }
 
 func (p *ProjectPipelineService) Run(ctx context.Context, params deftype.ProjectPipelineRun) (*deftype.ProjectPipelineRunResult, error) {

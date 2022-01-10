@@ -20,6 +20,8 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -38,18 +40,22 @@ type provider struct {
 	Register transport.Register `autowired:"service-register" required:"true"`
 
 	projectPipelineSvc *ProjectPipelineService
+	PipelineSource     sourcepb.SourceServiceServer `autowired:"erda.core.pipeline.source.SourceService"`
+	PipelineDefinition dpb.DefinitionServiceServer  `autowired:"erda.core.pipeline.definition.DefinitionService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bundle = bundle.New(bundle.WithCoreServices())
 	p.projectPipelineSvc = &ProjectPipelineService{
 		logger: p.Log,
-		bundle: p.bundle,
 		db: &dao.DBClient{
 			DBEngine: &dbengine.DBEngine{
 				DB: p.DB,
 			},
 		},
+		bundle:             p.bundle,
+		PipelineSource:     p.PipelineSource,
+		PipelineDefinition: p.PipelineDefinition,
 	}
 	if p.Register != nil {
 		pb.RegisterProjectPipelineServiceImp(p.Register, p.projectPipelineSvc, apis.Options())
