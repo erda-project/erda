@@ -30,7 +30,7 @@ func (u USERID) IsUnassigned() bool {
 func PolishUnassignedAsEmptyStr(userIDs []string) (result []string) {
 	for _, userID := range userIDs {
 		polishedUserID := userID
-		if strings.EqualFold(userID, UnassignedUserID.String()) {
+		if USERID(userID).IsUnassigned() {
 			polishedUserID = emptyUserID.String()
 		}
 		result = append(result, polishedUserID)
