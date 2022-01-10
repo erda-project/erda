@@ -57,6 +57,7 @@ message PipelineDefinition {
   string ref = 15;
   string path = 16;
   string fileName = 17;
+  string pipelineSourceId = 18;
 }
 
 message PipelineDefinitionExtra {
