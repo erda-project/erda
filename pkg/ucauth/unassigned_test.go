@@ -43,6 +43,13 @@ func TestPolishUnassignedAsEmptyStr(t *testing.T) {
 			},
 			wantResult: []string{"1", emptyUserID.String(), "2"},
 		},
+		{
+			name: "non users",
+			args: args{
+				userIDs: []string{},
+			},
+			wantResult: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
