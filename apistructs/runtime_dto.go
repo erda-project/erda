@@ -46,6 +46,8 @@ type RuntimeInspectDTO struct {
 	ApplicationID       uint64                       `json:"applicationId"`
 	DeploymentOrderName string                       `json:"deploymentOrderName"`
 	ReleaseVersion      string                       `json:"releaseVersion"`
+	RawStatus           string                       `json:"rawStatus"`
+	RawDeploymentStatus string                       `json:"rawDeploymentStatus"`
 }
 
 type RuntimeInspectServiceDTO struct {

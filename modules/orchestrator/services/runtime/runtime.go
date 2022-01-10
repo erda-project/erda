@@ -1318,7 +1318,7 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 
 // ListGroupByApps lists all runtimes for given apps.
 // The key in the returned result map is appID.
-func (r *Runtime) ListGroupByApps(appIDs []uint64) (map[uint64][]*apistructs.RuntimeInspectDTO, error) {
+func (r *Runtime) ListGroupByApps(appIDs []uint64) (map[uint64][]*apistructs.RuntimeSummaryDTO, error) {
 	var l = logrus.WithField("func", "*Runtime.ListGroupByApps")
 	runtimes, err := r.db.FindRuntimesInApps(appIDs)
 	if err != nil {
@@ -1328,7 +1328,7 @@ func (r *Runtime) ListGroupByApps(appIDs []uint64) (map[uint64][]*apistructs.Run
 
 	// note: internal API, do not check the permission
 
-	var result = make(map[uint64][]*apistructs.RuntimeInspectDTO)
+	var result = make(map[uint64][]*apistructs.RuntimeSummaryDTO)
 	for appID, runtimeList := range runtimes {
 		for _, runtime := range runtimeList {
 			var d apistructs.RuntimeSummaryDTO
@@ -1337,7 +1337,7 @@ func (r *Runtime) ListGroupByApps(appIDs []uint64) (map[uint64][]*apistructs.Run
 					Warnln("failed to convertRuntimeSummaryDTOFromRuntimeModel")
 				continue
 			}
-			result[appID] = append(result[appID], &d.RuntimeInspectDTO)
+			result[appID] = append(result[appID], &d)
 		}
 	}
 
@@ -1378,7 +1378,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	d.ServiceGroupNamespace = runtime.ScheduleName.Namespace
 	d.ServiceGroupName = runtime.ScheduleName.Name
 	d.Source = runtime.Source
-	d.Status = apistructs.RuntimeStatusUnHealthy
+	d.Status = runtime.Status
 	if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
 		sg, err := r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
 		if err != nil {
@@ -1409,9 +1409,10 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	d.ReleaseVersion = runtime.ReleaseVersion
 	d.Creator = runtime.Creator
 	d.ApplicationID = runtime.ApplicationID
-	d.DeployAt = runtime.DeployAt
 	d.CreatedAt = runtime.CreatedAt
 	d.UpdatedAt = runtime.UpdatedAt
+	d.RawStatus = runtime.Status
+	d.RawDeploymentStatus = string(deployment.Status)
 	d.TimeCreated = runtime.CreatedAt
 	d.Extra = map[string]interface{}{
 		"applicationId": runtime.ApplicationID,

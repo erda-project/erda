@@ -60,9 +60,7 @@ type Runtime struct {
 	DiceVersion         string
 	CPU                 float64
 	Mem                 float64 // 单位: MB
-
-	DeployAt          time.Time
-	ConfigUpdatedDate *time.Time
+	ConfigUpdatedDate   *time.Time
 	// Deprecated
 	ReadableUniqueId string
 	// Deprecated

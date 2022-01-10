@@ -96,9 +96,10 @@ type GetApplicationRuntimesDataEle struct {
 	UpdatedAt             time.Time                           `json:"updatedAt"`
 	Creator               string                              `json:"creator"`
 	ApplicationID         uint64                              `json:"applicationId"`
-	DeployAt              time.Time                           `json:"deployAt"`
 	DeploymentOrderName   string                              `json:"deploymentOrderName"`
 	ReleaseVersion        string                              `json:"releaseVersion"`
+	RawStatus             string                              `json:"rawStatus"`
+	RawDeploymentStatus   string                              `json:"rawDeploymentStatus"`
 	// 忽略其他字段
 }
 
