@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -80,13 +82,75 @@ func (b *Bundle) CreateRuntime(req apistructs.RuntimeCreateRequest, orgID uint64
 	return &rsp.Data, nil
 }
 
+// BatchUpdateScale 表示批量处理 runtimes 的 scale 操作
+// action 表示 scale 的操作，可以是如下 3 个取值
+// 空值
+// scaleUp    表示恢复之前已经停止的 runtimes
+// scaleDown  表示停止之前已经在运行的 runtimes
+func (b *Bundle) BatchUpdateScale(req apistructs.RuntimeScaleRecords, orgID uint64, userID, action string) (apistructs.BatchRuntimeScaleResults, error) {
+	if action != apistructs.ScaleActionDown && action != apistructs.ScaleActionUp && action != "" {
+		return apistructs.BatchRuntimeScaleResults{}, errors.Errorf("value of %s is invalid scale action, valid value for BatchUpdate_Scale is '%s' or '%s' or ''", apistructs.ScaleAction, apistructs.ScaleActionUp, apistructs.ScaleActionDown)
+	}
+
+	data, err := b.batchProcessRuntimes(req, orgID, userID, action)
+	if err != nil {
+		return apistructs.BatchRuntimeScaleResults{}, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	batchScales, ok := data.(apistructs.BatchRuntimeScaleResults)
+	if !ok {
+		return apistructs.BatchRuntimeScaleResults{}, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	return batchScales, nil
+}
+
+// BatchUpdateReDeploy 表示批量处理 runtimes 的 redeploy 操作
+// action 表示 scale 的操作，仅支持取值 reDeploy
+func (b *Bundle) BatchUpdateReDeploy(req apistructs.RuntimeScaleRecords, orgID uint64, userID, action string) (apistructs.BatchRuntimeReDeployResults, error) {
+	if action != apistructs.ScaleActionReDeploy {
+		return apistructs.BatchRuntimeReDeployResults{}, errors.Errorf("value of %s is invalid scale action, valid value for BatchUpdate_ReDeploy is '%s' ", apistructs.ScaleAction, apistructs.ScaleActionReDeploy)
+	}
+	data, err := b.batchProcessRuntimes(req, orgID, userID, action)
+	if err != nil {
+		return apistructs.BatchRuntimeReDeployResults{}, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	batchRedeploys, ok := data.(apistructs.BatchRuntimeReDeployResults)
+	if !ok {
+		return apistructs.BatchRuntimeReDeployResults{}, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	return batchRedeploys, nil
+}
+
+// BatchUpdateDelete 表示批量处理 runtimes 的 delete 操作
+// action 表示 scale 的操作，仅支持取值 delete
+func (b *Bundle) BatchUpdateDelete(req apistructs.RuntimeScaleRecords, orgID uint64, userID, action string) (apistructs.BatchRuntimeDeleteResults, error) {
+	if action != apistructs.ScaleActionDelete {
+		return apistructs.BatchRuntimeDeleteResults{}, errors.Errorf("value of %s is invalid scale action, valid value for BatchUpdate_ReDeploy is '%s' ", apistructs.ScaleAction, apistructs.ScaleActionReDeploy)
+	}
+	data, err := b.batchProcessRuntimes(req, orgID, userID, action)
+	if err != nil {
+		return apistructs.BatchRuntimeDeleteResults{}, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	batchRedeploys, ok := data.(apistructs.BatchRuntimeDeleteResults)
+	if !ok {
+		return apistructs.BatchRuntimeDeleteResults{}, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	return batchRedeploys, nil
+}
+
+// batchProcessRuntimes 批量处理 runtimes 的 scale、redeploy、delete 操作
 // action 表示 scale 的操作，可以是如下 5 个取值
 // 空值
 // scaleUp    表示恢复之前已经停止的 runtimes
 // scaleDown  表示停止之前已经在运行的 runtimes
 // delete     表示删除 runtimes
 // reDeploy   表示重新部署 runtimes
-func (b *Bundle) BatchUpdateOverlay(req apistructs.RuntimeScaleRecords, orgID uint64, userID, action string) (interface{}, error) {
+func (b *Bundle) batchProcessRuntimes(req apistructs.RuntimeScaleRecords, orgID uint64, userID, action string) (interface{}, error) {
 	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return nil, err
