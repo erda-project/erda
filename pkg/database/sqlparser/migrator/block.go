@@ -28,12 +28,12 @@ type Block struct {
 	nodes []ast.Node
 }
 
-func (block Block) Type() StmtType {
-	return block.typ
+func (b Block) Type() StmtType {
+	return b.typ
 }
 
-func (block Block) Nodes() []ast.Node {
-	return block.nodes
+func (b Block) Nodes() []ast.Node {
+	return b.nodes
 }
 
 func AppendBlock(blocks []Block, node ast.Node, typ StmtType) []Block {
