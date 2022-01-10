@@ -499,14 +499,6 @@ func setDefaultForTestPlanCaseRelPagingRequest(req *apistructs.TestPlanCaseRelPa
 	}
 
 	// set unassigned ids
-	for i, executorID := range req.ExecutorIDs {
-		if ucauth.USERID(executorID).IsUnassigned() {
-			req.ExecutorIDs[i] = ""
-		}
-	}
-	for i, updaterID := range req.UpdaterIDs {
-		if ucauth.USERID(updaterID).IsUnassigned() {
-			req.UpdaterIDs[i] = ""
-		}
-	}
+	req.ExecutorIDs = ucauth.PolishUnassignedAsEmptyStr(req.ExecutorIDs)
+	req.UpdaterIDs = ucauth.PolishUnassignedAsEmptyStr(req.UpdaterIDs)
 }
