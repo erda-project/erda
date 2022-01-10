@@ -15,6 +15,7 @@
 package dbclient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -28,6 +29,7 @@ import (
 	definitiondb "github.com/erda-project/erda/modules/pipeline/providers/definition/db"
 	sourcedb "github.com/erda-project/erda/modules/pipeline/providers/source/db"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -75,19 +77,45 @@ func (client *Client) GetPipeline(id interface{}, ops ...SessionOption) (spec.Pi
 	if !found {
 		return spec.Pipeline{}, NotFoundBaseError
 	}
-	// extra
-	extra, found, err := client.GetPipelineExtraByPipelineID(base.ID, ops...)
+
+	var extra spec.PipelineExtra
+	var labels []spec.PipelineLabel
+
+	worker := limit_sync_group.NewWorker(2)
+	worker.AddFunc(func(locker *limit_sync_group.Locker, ctx context.Context, i ...interface{}) error {
+		// extra
+		result, found, err := client.GetPipelineExtraByPipelineID(base.ID, ops...)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return errors.New("not found extra")
+		}
+
+		locker.Lock()
+		extra = result
+		locker.Unlock()
+
+		return nil
+	}, context.Background())
+	worker.AddFunc(func(locker *limit_sync_group.Locker, ctx context.Context, i ...interface{}) error {
+		// labels
+		result, err := client.ListLabelsByPipelineID(base.ID, ops...)
+		if err != nil {
+			return err
+		}
+
+		locker.Lock()
+		labels = result
+		locker.Unlock()
+
+		return nil
+	}, context.Background())
+	err = worker.Do().Error()
 	if err != nil {
 		return spec.Pipeline{}, err
 	}
-	if !found {
-		return spec.Pipeline{}, errors.New("not found extra")
-	}
-	// labels
-	labels, err := client.ListLabelsByPipelineID(base.ID, ops...)
-	if err != nil {
-		return spec.Pipeline{}, err
-	}
+
 	// combine pipeline
 	var p spec.Pipeline
 	p.PipelineBase = base
@@ -364,7 +392,7 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 
 		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " is not null ")
 
-		if definitionReq.IsEmptyValue() {
+		if !definitionReq.IsEmptyValue() {
 			baseSQL.Join("INNER", definitiondb.PipelineDefinition{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_definition_id", definitiondb.PipelineDefinition{}.TableName(), (&spec.PipelineBase{}).TableName()))
 			baseSQL.Join("INNER", sourcedb.PipelineSource{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_source_id", sourcedb.PipelineSource{}.TableName(), definitiondb.PipelineDefinition{}.TableName()))
 			if len(definitionReq.Name) > 0 {
@@ -705,8 +733,8 @@ func (client *Client) ListPipelinesByIDs(pipelineIDs []uint64, needQueryDefiniti
 				continue
 			} else {
 				pipeline.PipelineBase = baseWithDefinition.PipelineBase
-				pipeline.Definition = baseWithDefinition.PipelineDefinition
-				pipeline.Source = baseWithDefinition.PipelineSource
+				pipeline.Definition = &baseWithDefinition.PipelineDefinition
+				pipeline.Source = &baseWithDefinition.PipelineSource
 			}
 		} else {
 			if base, ok := basesMap[pipelineID]; !ok {

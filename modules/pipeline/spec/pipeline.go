@@ -30,8 +30,8 @@ import (
 type Pipeline struct {
 	PipelineBase
 	PipelineExtra
-	Definition definitiondb.PipelineDefinition
-	Source     sourcedb.PipelineSource
+	Definition *definitiondb.PipelineDefinition
+	Source     *sourcedb.PipelineSource
 	Labels     map[string]string
 }
 
