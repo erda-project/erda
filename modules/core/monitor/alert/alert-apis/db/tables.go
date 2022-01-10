@@ -68,6 +68,7 @@ type CustomizeAlert struct {
 	AlertScopeID string          `gorm:"column:alert_scope_id"`
 	Attributes   jsonmap.JSONMap `gorm:"column:attributes"`
 	Enable       bool            `gorm:"column:enable"`
+	CreatorID    string          `gorm:"column:creator_id"`
 	CreateTime   time.Time       `gorm:"column:create_time"`
 	UpdateTime   time.Time       `gorm:"column:update_time"`
 }

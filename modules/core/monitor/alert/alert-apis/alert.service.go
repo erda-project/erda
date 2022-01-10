@@ -216,12 +216,13 @@ func (m *alertService) QueryCustomizeAlert(ctx context.Context, request *pb.Quer
 		},
 	}
 	lang := apis.Language(ctx)
-	alert, total, err := m.p.a.CustomizeAlerts(lang, request.Scope, request.ScopeId, int(request.PageNo), int(request.PageSize))
+	alert, userIDs, total, err := m.p.a.CustomizeAlerts(lang, request.Scope, request.ScopeId, int(request.PageNo), int(request.PageSize))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	result.Data.List = alert
 	result.Data.Total = int64(total)
+	result.UserIDs = userIDs
 	return result, nil
 }
 
@@ -249,6 +250,7 @@ func (m alertService) GetCustomizeAlertDetail(ctx context.Context, request *pb.G
 }
 
 func (m *alertService) CreateCustomizeAlert(ctx context.Context, request *pb.CreateCustomizeAlertRequest) (*pb.CreateCustomizeAlertResponse, error) {
+	userId := apis.GetUserID(ctx)
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -265,7 +267,7 @@ func (m *alertService) CreateCustomizeAlert(ctx context.Context, request *pb.Cre
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	id, err := m.p.a.CreateCustomizeAlert(alert)
+	id, err := m.p.a.CreateCustomizeAlert(alert, userId)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -404,7 +406,7 @@ func (m *alertService) QueryOrgCustomizeMetric(ctx context.Context, request *pb.
 func (m *alertService) QueryOrgCustomizeAlerts(ctx context.Context, request *pb.QueryOrgCustomizeAlertsRequest) (*pb.QueryOrgCustomizeAlertsResponse, error) {
 	orgID := apis.GetOrgID(ctx)
 	language := apis.Language(ctx)
-	alert, total, err := m.p.a.CustomizeAlerts(language, "org", orgID, int(request.PageNo), int(request.PageSize))
+	alert, userIDs, total, err := m.p.a.CustomizeAlerts(language, "org", orgID, int(request.PageNo), int(request.PageSize))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -415,6 +417,7 @@ func (m *alertService) QueryOrgCustomizeAlerts(ctx context.Context, request *pb.
 	}
 	data.Data.Total = int64(total)
 	data.Data.List = alert
+	data.UserIDs = userIDs
 	return data, nil
 }
 
@@ -439,6 +442,7 @@ func (m *alertService) GetOrgCustomizeAlertDetail(ctx context.Context, request *
 
 func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.CreateOrgCustomizeAlertRequest) (*pb.CreateOrgCustomizeAlertResponse, error) {
 	orgID := apis.GetOrgID(ctx)
+	userID := apis.GetUserID(ctx)
 	if request.AlertType == "" {
 		request.AlertType = "org_customize"
 	}
@@ -493,7 +497,7 @@ func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.
 	if err := m.checkCustomizeAlert(alertDetail); err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	id, err := m.p.a.CreateCustomizeAlert(alertDetail)
+	id, err := m.p.a.CreateCustomizeAlert(alertDetail, userID)
 	if err != nil {
 		if adapt.IsAlreadyExistsError(err) {
 			return nil, errors.NewAlreadyExistsError("alert")

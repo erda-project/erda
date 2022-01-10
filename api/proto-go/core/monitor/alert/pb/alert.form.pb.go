@@ -408,6 +408,8 @@ func (m *QueryCustomizeAlertResponse) UnmarshalURLValues(prefix string, values u
 					return err
 				}
 				m.Data.Total = val
+			case "userIDs":
+				m.UserIDs = vals
 			}
 		}
 	}
@@ -1117,6 +1119,8 @@ func (m *QueryOrgCustomizeAlertsResponse) UnmarshalURLValues(prefix string, valu
 					return err
 				}
 				m.Data.Total = val
+			case "userIDs":
+				m.UserIDs = vals
 			}
 		}
 	}

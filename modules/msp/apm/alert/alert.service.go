@@ -462,7 +462,8 @@ func (a *alertService) QueryCustomizeAlerts(ctx context.Context, request *alert.
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &alert.QueryCustomizeAlertsResponse{
-		Data: resp.Data,
+		Data:    resp.Data,
+		UserIDs: resp.UserIDs,
 	}
 	return result, nil
 }

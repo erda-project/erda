@@ -639,6 +639,8 @@ func (m *QueryCustomizeAlertsResponse) UnmarshalURLValues(prefix string, values 
 					return err
 				}
 				m.Data.Total = val
+			case "userIDs":
+				m.UserIDs = vals
 			}
 		}
 	}

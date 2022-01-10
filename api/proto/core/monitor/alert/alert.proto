@@ -319,7 +319,8 @@ message QueryCustomizeAlertRequest {
 }
 
 message QueryCustomizeAlertResponse {
-  QueryCustomizeAlertData data = 1;
+  QueryCustomizeAlertData data    = 1;
+  repeated string         userIDs = 2;
 }
 
 message QueryCustomizeAlertData {
@@ -482,7 +483,9 @@ message QueryOrgCustomizeAlertsRequest {
 }
 
 message QueryOrgCustomizeAlertsResponse {
-  QueryOrgCustomizeAlertsData data = 1;
+  QueryOrgCustomizeAlertsData data    = 1;
+  repeated string             userIDs = 2;
+
 }
 
 message QueryOrgCustomizeAlertsData {
