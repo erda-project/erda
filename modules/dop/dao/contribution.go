@@ -129,7 +129,7 @@ func (db *DBClient) BatchClearScore() error {
 
 const (
 	conState   = "left join dice_issue_state b ON a.state = b.id"
-	conProject = "left join ps_group_projects c on c.id = a.project_id"
+	conProject = "left join erda_project c on c.id = a.project_id"
 	conRepo    = "left join dice_repos b on b.id = a.repo_id"
 )
 
