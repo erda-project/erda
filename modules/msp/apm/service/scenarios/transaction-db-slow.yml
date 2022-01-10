@@ -1,11 +1,11 @@
-scenario: transaction-cache-slow
+scenario: transaction-db-slow
 
 hierarchy:
   root: page
   structure:
     page:
-      - slowReqDistribution
-      - content
+    - slowReqDistribution
+    - content
     content:
       slot: head
       table: metricTable
