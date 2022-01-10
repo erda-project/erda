@@ -605,6 +605,7 @@ type AppMetadata struct {
 	GitCommitMessage string `json:"gitCommitMessage,omitempty"`
 	GitRepo          string `json:"gitRepo,omitempty"`
 	ChangeLog        string `json:"changeLog,omitempty"`
+	Version          string `json:"version,omitempty"`
 }
 
 type ReleaseCheckVersionRequest struct {

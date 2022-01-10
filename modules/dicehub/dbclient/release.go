@@ -237,6 +237,7 @@ func (client *DBClient) GetReleasesByProjectAndVersion(orgID, projectID int64, v
 	var releases []Release
 	if err := client.Where("org_id = ?", orgID).
 		Where("project_id = ?", projectID).
+		Where("is_project_release = ?", true).
 		Where("version = ?", version).
 		Find(&releases).Error; err != nil {
 		return nil, err
