@@ -39,7 +39,7 @@ func TestPolishUnassignedAsEmptyStr(t *testing.T) {
 		{
 			name: "have unassigned",
 			args: args{
-				userIDs: []string{"1", UnassignedMemberID.String(), "2"},
+				userIDs: []string{"1", UnassignedUserID.String(), "2"},
 			},
 			wantResult: []string{"1", emptyUserID.String(), "2"},
 		},

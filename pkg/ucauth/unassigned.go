@@ -19,18 +19,18 @@ import (
 )
 
 const (
-	UnassignedMemberID USERID = "unassigned"
-	emptyUserID        USERID = ""
+	UnassignedUserID USERID = "unassigned"
+	emptyUserID      USERID = ""
 )
 
 func (u USERID) IsUnassigned() bool {
-	return strings.EqualFold(u.String(), UnassignedMemberID.String())
+	return strings.EqualFold(u.String(), UnassignedUserID.String())
 }
 
 func PolishUnassignedAsEmptyStr(userIDs []string) (result []string) {
 	for _, userID := range userIDs {
 		polishedUserID := userID
-		if strings.EqualFold(userID, UnassignedMemberID.String()) {
+		if strings.EqualFold(userID, UnassignedUserID.String()) {
 			polishedUserID = emptyUserID.String()
 		}
 		result = append(result, polishedUserID)
