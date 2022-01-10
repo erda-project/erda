@@ -64,9 +64,8 @@ func (t *SlowTransactionTableBuilder) GetBaseBuildParams() *BaseBuildParams {
 
 func (t *SlowTransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) {
 	table := &Table{
-		Columns: []*Column{columnPath, columnReqCount, columnErrorCount, columnSlowCount, columnAvgDuration},
+		Columns: []*Column{slowTransTableColumnOccurTime, slowTransTableColumnDuration, slowTransTableColumnTraceId},
 	}
-	pathField := common.GetLayerPathKeys(t.Layer)[0]
 	var layerPathParam *structpb.Value
 	if t.FuzzyPath {
 		layerPathParam = common.NewStructValue(map[string]interface{}{"regex": ".*" + t.LayerPath + ".*"})
@@ -80,13 +79,12 @@ func (t *SlowTransactionTableBuilder) GetTable(ctx context.Context) (*Table, err
 	}
 
 	// calculate total count
-	statement := fmt.Sprintf("SELECT count(%s) "+
+	statement := fmt.Sprintf("SELECT count(timestamp) "+
 		"FROM %s_slow "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
 		"%s "+
 		"%s ",
-		pathField,
 		common.GetDataSourceNames(t.Layer),
 		common.BuildDurationFilterSql("elapsed_mean::field", t.MinDuration, t.MaxDuration),
 		common.BuildServerSideServiceIdFilterSql("$service_id", t.Layer),
@@ -97,9 +95,6 @@ func (t *SlowTransactionTableBuilder) GetTable(ctx context.Context) (*Table, err
 		End:       strconv.FormatInt(t.EndTime, 10),
 		Statement: statement,
 		Params:    queryParams,
-		Options: map[string]string{
-			"debug": "true",
-		},
 	}
 	response, err := t.Metric.QueryWithInfluxFormat(ctx, request)
 	if err != nil {

@@ -15,6 +15,8 @@
 package slow_transaction
 
 import (
+	"strconv"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 )
@@ -43,5 +45,14 @@ func (b *SlowTransactionInParams) EncodeFromCustomInParams(customInParamsPtr int
 }
 
 func (b *SlowTransactionInParams) DecodeToCustomInParams(stdInParamsPtr *cptype.ExtraMap, customInParamsPtr interface{}) {
+	// for debug
+	if startTime, ok := (*stdInParamsPtr)["startTime"].(string); ok {
+		t, _ := strconv.ParseInt(startTime, 10, 64)
+		(*stdInParamsPtr)["startTime"] = t
+	}
+	if endTime, ok := (*stdInParamsPtr)["endTime"].(string); ok {
+		t, _ := strconv.ParseInt(endTime, 10, 64)
+		(*stdInParamsPtr)["endTime"] = t
+	}
 	cputil.MustObjJSONTransfer(stdInParamsPtr, customInParamsPtr)
 }
