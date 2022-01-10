@@ -106,9 +106,9 @@ func (t *SlowTransactionTableBuilder) GetTable(ctx context.Context) (*Table, err
 
 	// query list items
 	statement = fmt.Sprintf("SELECT "+
-		"timestamp,"+
-		"elapsed_mean::field,"+
-		"trace_id::tag"+
+		"timestamp, "+
+		"elapsed_mean::field, "+
+		"trace_id::tag "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
