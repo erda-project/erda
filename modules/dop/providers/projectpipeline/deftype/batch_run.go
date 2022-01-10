@@ -23,4 +23,3 @@ type ProjectPipelineBatchRun struct {
 type ProjectPipelineBatchRunResult struct {
 	PipelineList []*apistructs.PipelineDTO
 }
-

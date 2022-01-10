@@ -256,7 +256,7 @@ func (p *ProjectPipelineService) Run(ctx context.Context, params deftype.Project
 }
 
 func (p *ProjectPipelineService) StartCron(ctx context.Context, params deftype.ProjectPipelineStartCron) (*deftype.ProjectPipelineStartCronResult, error) {
-	dto ,err := p.startOrEndCron(params.PipelineDefinitionID, true, apierrors.ErrStartCronProjectPipeline)
+	dto, err := p.startOrEndCron(params.PipelineDefinitionID, true, apierrors.ErrStartCronProjectPipeline)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +268,7 @@ func (p *ProjectPipelineService) StartCron(ctx context.Context, params deftype.P
 
 func (p *ProjectPipelineService) EndCron(ctx context.Context, params deftype.ProjectPipelineEndCron) (*deftype.ProjectPipelineEndCronResult, error) {
 
-	dto ,err := p.startOrEndCron(params.PipelineDefinitionID, false, apierrors.ErrEndCronProjectPipeline)
+	dto, err := p.startOrEndCron(params.PipelineDefinitionID, false, apierrors.ErrEndCronProjectPipeline)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +279,7 @@ func (p *ProjectPipelineService) EndCron(ctx context.Context, params deftype.Pro
 
 func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params deftype.ProjectPipelineListExecHistory) (*deftype.ProjectPipelineListExecHistoryResult, error) {
 	var pipelineDefinition = apistructs.PipelineDefinitionRequest{
-		Name: params.Name,
+		Name:    params.Name,
 		Creator: params.Executor,
 	}
 	if params.AppID != 0 {
@@ -297,9 +297,9 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 	}
 
 	var pipelinePageListRequest = apistructs.PipelinePageListRequest{
-		PageNum:  int(params.PageNo),
-		PageSize: int(params.PageSize),
-		AllSources: true,
+		PageNum:                       int(params.PageNo),
+		PageSize:                      int(params.PageSize),
+		AllSources:                    true,
 		PipelineDefinitionRequestJSON: string(jsonValue),
 	}
 	if params.Status != "" {
@@ -336,7 +336,7 @@ func (p *ProjectPipelineService) Cancel(ctx context.Context, params deftype.Proj
 	}
 
 	runningPipelineID, err := p.getRunningPipeline(extraValue.CreateRequest.PipelineSource.String(), extraValue.CreateRequest.PipelineYmlName)
-	if err != nil{
+	if err != nil {
 		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
 	}
 	if runningPipelineID == 0 {
@@ -416,7 +416,7 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 			return nil, apiError.InternalError(err)
 		}
 		return dto, nil
-	}else{
+	} else {
 		var req apistructs.PipelineRerunFailedRequest
 		req.PipelineID = pipeline.ID
 		req.AutoRunAtOnce = true
@@ -465,7 +465,7 @@ func (p *ProjectPipelineService) startOrEndCron(pipelineDefinitionID string, ena
 		if err != nil {
 			return nil, apiError.InternalError(err)
 		}
-	}else{
+	} else {
 		dto, err = p.bundle.StopPipelineCron(cron.Data[0].ID)
 		if err != nil {
 			return nil, apiError.InternalError(err)

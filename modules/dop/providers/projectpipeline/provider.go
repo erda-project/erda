@@ -31,11 +31,11 @@ type config struct {
 }
 
 type provider struct {
-	Cfg                *config
-	Log                logs.Logger
-	bundle             *bundle.Bundle
-	DB                 *gorm.DB           `autowired:"mysql-client"`
-	Register           transport.Register `autowired:"service-register" required:"true"`
+	Cfg      *config
+	Log      logs.Logger
+	bundle   *bundle.Bundle
+	DB       *gorm.DB           `autowired:"mysql-client"`
+	Register transport.Register `autowired:"service-register" required:"true"`
 
 	projectPipelineSvc *ProjectPipelineService
 }

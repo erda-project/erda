@@ -23,16 +23,16 @@ import (
 type ProjectPipelineList struct {
 	ProjectID   uint64   `json:"projectID"`
 	AppID       uint64   `json:"appID"`
-	Ref         []string   `json:"ref"`
-	Creator     []string   `json:"creator"`
-	Executor    []string   `json:"executor"`
-	Category    []string   `json:"category"`
+	Ref         []string `json:"ref"`
+	Creator     []string `json:"creator"`
+	Executor    []string `json:"executor"`
+	Category    []string `json:"category"`
 	PageNo      uint64   `json:"pageNo"`
 	PageSize    uint64   `json:"pageSize"`
 	Name        string   `json:"name"`
 	TimeCreated []string `json:"timeCreated"`
 	TimeStarted []string `json:"timeStarted"`
-	Status      []string   `json:"status"`
+	Status      []string `json:"status"`
 
 	IdentityInfo apistructs.IdentityInfo
 }

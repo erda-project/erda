@@ -23,4 +23,3 @@ type ProjectPipelineCancel struct {
 
 type ProjectPipelineCancelResult struct {
 }
-
