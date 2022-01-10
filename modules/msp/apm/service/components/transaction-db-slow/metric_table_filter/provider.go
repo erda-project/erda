@@ -120,8 +120,8 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 				EmptyText:   "all",
 				Fixed:       true,
 				Key:         "duration",
-				Label:       f.I18n.Text(f.sdk.Lang, "duration"),
-				Placeholder: f.I18n.Text(f.sdk.Lang, "duration"),
+				Label:       cputil.I18n(ctx, "duration"),
+				Placeholder: cputil.I18n(ctx, "duration"),
 				Type:        filter.PropConditionTypeTimespanRange,
 			},
 		}
