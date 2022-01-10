@@ -212,32 +212,6 @@ func (e *Endpoints) PagingTestCases(ctx context.Context, r *http.Request, vars m
 		return apierrors.ErrPagingTestCases.InvalidParameter(err).ToResp(), nil
 	}
 
-	// TODO: 操作鉴权
-
-	//判断UpdaterIDs在项目内是否有权限
-	if len(req.UpdaterIDs) > 0 {
-		members, _ := e.bdl.ListMembers(apistructs.MemberListRequest{
-			ScopeType: apistructs.ProjectScope,
-			ScopeID:   int64(req.ProjectID),
-			PageNo:    1,
-			PageSize:  300,
-		})
-		mapOfupdaterIDs := make(map[string]bool)
-		for _, updater := range req.UpdaterIDs {
-			mapOfupdaterIDs[updater] = false
-		}
-		for _, member := range members {
-			if _, ok := mapOfupdaterIDs[member.UserID]; ok {
-				mapOfupdaterIDs[member.UserID] = true
-			}
-		}
-		for _, value := range mapOfupdaterIDs {
-			if !value {
-				return nil, apierrors.ErrPagingTestCases.AccessDenied()
-			}
-		}
-	}
-
 	pagingResult, err := e.testcase.PagingTestCases(req)
 	if err != nil {
 		return errorresp.ErrResp(err)

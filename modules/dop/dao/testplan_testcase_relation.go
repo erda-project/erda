@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 // TestPlanCaseRel
@@ -323,7 +324,7 @@ func (client *DBClient) PagingTestPlanCaseRelations(req apistructs.TestPlanCaseR
 	}
 	// updater
 	if len(req.UpdaterIDs) > 0 {
-		baseSQL = baseSQL.Where("`tc`.`updater_id` IN (?)", req.UpdaterIDs)
+		baseSQL = baseSQL.Where("`rel`.`updater_id` IN (?)", req.UpdaterIDs)
 	}
 	// updatedAtBegin (Left closed Section)
 	if req.TimestampSecUpdatedAtBegin != nil {
@@ -496,4 +497,8 @@ func setDefaultForTestPlanCaseRelPagingRequest(req *apistructs.TestPlanCaseRelPa
 	if req.PageSize == 0 {
 		req.PageSize = 20
 	}
+
+	// set unassigned ids
+	req.ExecutorIDs = ucauth.PolishUnassignedAsEmptyStr(req.ExecutorIDs)
+	req.UpdaterIDs = ucauth.PolishUnassignedAsEmptyStr(req.UpdaterIDs)
 }

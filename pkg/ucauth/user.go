@@ -33,6 +33,8 @@ import (
 
 type USERID string
 
+func (u USERID) String() string { return string(u) }
+
 // maybe int or string, unmarshal them to string(USERID)
 func (u *USERID) UnmarshalJSON(b []byte) error {
 	var intid int
