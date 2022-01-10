@@ -1,7 +1,7 @@
 zh:
   searchByName: 根据名称搜索
-  publicApp: 公开应用
-  privateApp: 私有应用
+  publicApp: 公开
+  privateApp: 私有
   projectInfo: 所属项目
   runtime: 应用实例数
   updatedAt: 更新时间
@@ -19,6 +19,7 @@ zh:
   minuteAgo: "分钟前"
   secondAgo: "几秒前"
   defaultAppDescription: 可在应用设置修改相关应用描述
+  myApp: 我参与的
 en:
   searchByName: Search by name
   publicApp: Public application
@@ -40,3 +41,4 @@ en:
   minuteAgo: minute(s) ago
   secondAgo: second(s) ago
   defaultAppDescription: Edit description in application setting
+  myApp: My application

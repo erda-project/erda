@@ -101,6 +101,10 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		f.Data = Data{
 			Options: []Option{
 				{
+					Label: cputil.I18n(ctx, "myApp"),
+					Value: "my",
+				},
+				{
 					Label: cputil.I18n(ctx, "all"),
 					Value: "all",
 				},
@@ -121,11 +125,12 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		f.State.Value = op.ClientData.Value
 	}
 	public := f.State.Value
-	if f.State.Value == "all" {
+	if f.State.Value == "all" || f.State.Value == "my" {
 		public = ""
 	}
 	f.gsHelper.SetAppPagingRequest(apistructs.ApplicationListRequest{
 		Public: public,
 	})
+	f.gsHelper.SetOption(f.State.Value)
 	return f.SetToProtocolComponent(c)
 }

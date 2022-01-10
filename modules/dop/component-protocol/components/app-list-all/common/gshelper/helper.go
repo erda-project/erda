@@ -22,6 +22,7 @@ import (
 
 const (
 	keyAppPagingRequest = "AppPagingRequest"
+	keyOption           = "Option"
 )
 
 type GSHelper struct {
@@ -58,4 +59,21 @@ func (h *GSHelper) GetAppPagingRequest() (*apistructs.ApplicationListRequest, bo
 	var req apistructs.ApplicationListRequest
 	cputil.MustObjJSONTransfer(v, &req)
 	return &req, true
+}
+
+func (h *GSHelper) SetOption(key string) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)[keyOption] = key
+}
+
+func (h *GSHelper) GetOption() string {
+	if h.gs == nil {
+		return ""
+	}
+	if v, ok := (*h.gs)[keyOption].(string); ok {
+		return v
+	}
+	return ""
 }
