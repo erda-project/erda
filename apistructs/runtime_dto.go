@@ -24,17 +24,19 @@ type RuntimeInspectDTO struct {
 	ServiceGroupNamespace string        `json:"serviceGroupNamespace"`
 	Source                RuntimeSource `json:"source"`
 	// 状态
-	Status       string                               `json:"status"`
-	DeployStatus DeploymentStatus                     `json:"deployStatus"`
-	DeleteStatus string                               `json:"deleteStatus"`
-	ReleaseID    string                               `json:"releaseId"`
-	ClusterID    uint64                               `json:"clusterId"`
-	ClusterName  string                               `json:"clusterName"`
-	ClusterType  string                               `json:"clusterType"`
-	Resources    RuntimeServiceResourceDTO            `json:"resources"`
-	Extra        map[string]interface{}               `json:"extra"` // TODO: move fields out of extra
-	ProjectID    uint64                               `json:"projectID"`
-	Services     map[string]*RuntimeInspectServiceDTO `json:"services"`
+	Status              string                               `json:"status"`
+	DeployStatus        DeploymentStatus                     `json:"deployStatus"`
+	DeleteStatus        string                               `json:"deleteStatus"`
+	ReleaseID           string                               `json:"releaseId"`
+	DeploymentOrderName string                               `json:"deploymentOrderName"`
+	ReleaseVersion      string                               `json:"releaseVersion"`
+	ClusterID           uint64                               `json:"clusterId"`
+	ClusterName         string                               `json:"clusterName"`
+	ClusterType         string                               `json:"clusterType"`
+	Resources           RuntimeServiceResourceDTO            `json:"resources"`
+	Extra               map[string]interface{}               `json:"extra"` // TODO: move fields out of extra
+	ProjectID           uint64                               `json:"projectID"`
+	Services            map[string]*RuntimeInspectServiceDTO `json:"services"`
 	// 模块发布错误信息
 	ModuleErrMsg map[string]map[string]string `json:"lastMessage"`
 	TimeCreated  time.Time                    `json:"timeCreated"` // Deprecated: use CreatedAt instead
@@ -154,4 +156,52 @@ type RuntimeDeployDTO struct {
 	OrgID           uint64   `json:"orgId"`
 	OrgName         string   `json:"orgName"`
 	ServicesNames   []string `json:"servicesNames"`
+}
+
+type RuntimeScaleRecords struct {
+	// Runtimes 不为空则无需设置 IDs, 二者必选其一
+	Runtimes []RuntimeScaleRecord `json:"runtimeRecords,omitempty"`
+	// IDs 不为空则无需设置 Runtimes, 二者必选其一
+	IDs []uint64 `json:"ids,omitempty"`
+}
+
+type RuntimeScaleRecord struct {
+	ApplicationId uint64     `json:"applicationId"`
+	Workspace     string     `json:"workspace"`
+	Name          string     `json:"name"`
+	RuntimeID     uint64     `json:"runtimeId,omitempty"`
+	PayLoad       PreDiceDTO `json:"payLoad,omitempty"`
+	ErrMsg        string     `json:"errorMsg,omitempty"`
+}
+
+type BatchRuntimeScaleResults struct {
+	Total           int                  `json:"total"`
+	Successed       int                  `json:"successed"`
+	Faild           int                  `json:"failed"`
+	SuccessedScales []PreDiceDTO         `json:"successedRuntimeScales,omitempty"`
+	SuccessedIds    []uint64             `json:"successedIds,omitempty"`
+	FailedScales    []RuntimeScaleRecord `json:"FailedRuntimeScales,omitempty"`
+	FailedIds       []uint64             `json:"FailedIds,omitempty"`
+}
+
+type BatchRuntimeDeleteResults struct {
+	Total        int          `json:"total"`
+	Success      int          `json:"success"`
+	Failed       int          `json:"failed"`
+	Deleted      []RuntimeDTO `json:"deleted,omitempty"`
+	DeletedIds   []uint64     `json:"deletedIds,omitempty"`
+	UnDeleted    []RuntimeDTO `json:"deletedFailed,omitempty"`
+	UnDeletedIds []uint64     `json:"deletedFailedIds,omitempty"`
+	ErrMsg       []string     `json:"errorMsgs,omitempty,omitempty"`
+}
+
+type BatchRuntimeReDeployResults struct {
+	Total           int                `json:"total"`
+	Success         int                `json:"success"`
+	Failed          int                `json:"failed"`
+	ReDeployed      []RuntimeDeployDTO `json:"reDeployed,omitempty"`
+	ReDeployedIds   []uint64           `json:"reDeployedIds,omitempty"`
+	UnReDeployed    []RuntimeDTO       `json:"reDeployedFailed,omitempty"`
+	UnReDeployedIds []uint64           `json:"reDeployedFailedIds,omitempty"`
+	ErrMsg          []string           `json:"errorMsgs,omitempty"`
 }

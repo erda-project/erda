@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package erda.dop.contribution;
+package erda.dop.projectpipeline;
 option go_package = "github.com/erda-project/erda-proto-go/dop/projectpipeline/pb";
 import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "google/api/annotations.proto";
@@ -15,13 +15,13 @@ service ProjectPipelineService {
     }
   };
 
-  rpc CreateProjectPipeline(CreateProjectPipelineRequest)
+  rpc Create(CreateProjectPipelineRequest)
       returns(CreateProjectPipelineResponse) {
     option(google.api.http) = {
-      post : "/api/project-pipeline/actions/create",
+      post : "/api/project-pipeline",
     };
     option(erda.common.openapi) = {
-      path : "/api/project-pipeline/actions/create",
+      path : "/api/project-pipeline",
     };
   }
 }

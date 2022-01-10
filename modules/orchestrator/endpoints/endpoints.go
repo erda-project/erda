@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/queue"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
+	"github.com/erda-project/erda/modules/orchestrator/services/deployment_order"
 	"github.com/erda-project/erda/modules/orchestrator/services/domain"
 	"github.com/erda-project/erda/modules/orchestrator/services/instance"
 	"github.com/erda-project/erda/modules/orchestrator/services/migration"
@@ -42,19 +43,20 @@ import (
 
 // Endpoints 定义 endpoint 方法
 type Endpoints struct {
-	db         *dbclient.DBClient // TODO: Endpoints should not take db
-	queue      *queue.PusherQueue
-	bdl        *bundle.Bundle
-	pool       *goroutinepool.GoroutinePool
-	evMgr      *events.EventManager
-	runtime    *runtime.Runtime
-	deployment *deployment.Deployment
-	domain     *domain.Domain
-	addon      *addon.Addon
-	resource   *resource.Resource
-	encrypt    *encryption.EnvEncrypt
-	instance   *instance.Instance
-	migration  *migration.Migration
+	db              *dbclient.DBClient // TODO: Endpoints should not take db
+	queue           *queue.PusherQueue
+	bdl             *bundle.Bundle
+	pool            *goroutinepool.GoroutinePool
+	evMgr           *events.EventManager
+	runtime         *runtime.Runtime
+	deployment      *deployment.Deployment
+	deploymentOrder *deployment_order.DeploymentOrder
+	domain          *domain.Domain
+	addon           *addon.Addon
+	resource        *resource.Resource
+	encrypt         *encryption.EnvEncrypt
+	instance        *instance.Instance
+	migration       *migration.Migration
 }
 
 // Option Endpoints 配置选项
@@ -117,6 +119,13 @@ func WithRuntime(runtime *runtime.Runtime) Option {
 func WithDeployment(deployment *deployment.Deployment) Option {
 	return func(e *Endpoints) {
 		e.deployment = deployment
+	}
+}
+
+// WithDeploymentOrder 设置 deploymentOrder 对象.
+func WithDeploymentOrder(deploymentOrder *deployment_order.DeploymentOrder) Option {
+	return func(e *Endpoints) {
+		e.deploymentOrder = deploymentOrder
 	}
 }
 
@@ -198,11 +207,20 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/runtimes/{runtimeID}/actions/rollback-action", Method: http.MethodPost, Handler: e.RollbackRuntimeAction},
 		{Path: "/api/runtimes/actions/bulk-get-status", Method: http.MethodGet, Handler: e.epBulkGetRuntimeStatusDetail},
 		{Path: "/api/runtimes/actions/update-pre-overlay", Method: http.MethodPut, Handler: e.epUpdateOverlay},
+		{Path: "/api/runtimes/actions/batch-update-pre-overlay", Method: http.MethodPut, Handler: e.BatchUpdateOverlay},
 		{Path: "/api/runtimes/actions/full-gc", Method: http.MethodPost, Handler: e.FullGC},
 		{Path: "/api/runtimes/actions/refer-cluster", Method: http.MethodGet, Handler: e.ReferCluster},
 		{Path: "/api/runtimes/deploy/logs", Method: http.MethodGet, Handler: e.RuntimeLogs},
 		{Path: "/api/runtimes/actions/get-app-workspace-releases", Method: http.MethodGet, Handler: e.GetAppWorkspaceReleases},
 		{Path: "/api/runtimes/actions/group-by-apps", Method: http.MethodGet, Handler: e.ListRuntimesGroupByApps},
+
+		{Path: "/api/deployment-orders/{deploymentOrderID}", Method: http.MethodGet, Handler: e.GetDeploymentOrder},
+		{Path: "/api/deployment-orders", Method: http.MethodGet, Handler: e.ListDeploymentOrder},
+		{Path: "/api/deployment-orders", Method: http.MethodPost, Handler: e.CreateDeploymentOrder},
+		{Path: "/api/deployment-orders/{deploymentOrderID}/actions/deploy", Method: http.MethodPost, Handler: e.DeployDeploymentOrder},
+		{Path: "/api/deployment-orders/{deploymentOrderID}/actions/cancel", Method: http.MethodPost, Handler: e.CancelDeploymentOrder},
+		{Path: "/api/deployment-orders/actions/render-name", Method: http.MethodGet, Handler: e.RenderDeploymentName},
+
 		// kill pod (only k8s)
 		{Path: "/api/runtimes/actions/killpod", Method: http.MethodPost, Handler: e.KillPod},
 

@@ -33,3 +33,27 @@ func TestMigrator_needCompare(t *testing.T) {
 		t.Fatal(firstTimeUpdate, "need to compare")
 	}
 }
+
+func TestSortedScripts(t *testing.T) {
+	var services = map[string]*Module{
+		"module-1": {
+			Name: "module-1",
+			Scripts: []*Script{{
+				Name: "20210102-module-1-feature-1.sql",
+			}, {
+				Name:   "20210102-module-1-base.sql",
+				isBase: true,
+			}},
+		},
+		"module-2": {
+			Name: "module-2",
+			Scripts: []*Script{{
+				Name: "20210101-module-2-feature-1.sql",
+			}},
+		},
+	}
+	scripts := SortedScripts(services)
+	for _, scr := range scripts {
+		t.Logf("moduleName: %s, scriptName: %s", scr.ModuleName, scr.Script.GetName())
+	}
+}

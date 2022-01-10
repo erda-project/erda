@@ -21,7 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/core/openapi-ng"
 	openapiauth "github.com/erda-project/erda/modules/core/openapi-ng/auth"
-	"github.com/erda-project/erda/modules/openapi/oauth2"
+	"github.com/erda-project/erda/pkg/oauth2"
 )
 
 type config struct {
@@ -41,9 +41,9 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.oauth2server = oauth2.NewOAuth2Server()
 
 	router := p.Router
-	router.Add("", "/oauth2/token", p.oauth2server.Token)
-	router.Add("", "/oauth2/invalidate_token", p.oauth2server.InvalidateToken)
-	router.Add("", "/oauth2/validate_token", p.oauth2server.ValidateToken)
+	router.Add("", "/oauth2/token", ForwardAuthToken)
+	router.Add("", "/oauth2/invalidate_token", ForwardInvalidateToken)
+	router.Add("", "/oauth2/validate_token", ForwardValidateToken)
 	return nil
 }
 

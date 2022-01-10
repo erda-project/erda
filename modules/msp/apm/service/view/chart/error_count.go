@@ -37,10 +37,11 @@ func (errorCount *ErrorCountChart) GetChart(ctx context.Context) (*pb.ServiceCha
 	statement := fmt.Sprintf("SELECT sum(if(eq(error::tag, 'true'),elapsed_count::field,0)) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
-		"AND target_service_id::tag=$service_id "+
+		"%s "+
 		"%s "+
 		"GROUP BY time(%s)",
 		common.GetDataSourceNames(errorCount.Layers...),
+		common.BuildServerSideServiceIdFilterSql("$service_id", errorCount.Layers...),
 		common.BuildLayerPathFilterSql(errorCount.LayerPath, "$layer_path", errorCount.FuzzyPath, errorCount.Layers...),
 		errorCount.Interval)
 

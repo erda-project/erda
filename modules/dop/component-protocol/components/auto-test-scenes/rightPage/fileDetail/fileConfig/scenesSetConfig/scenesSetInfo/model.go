@@ -25,11 +25,9 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ScenesSetInfo struct {
-	base.DefaultProvider
 	CommonFileInfo
 
 	sdk        *cptype.SDK

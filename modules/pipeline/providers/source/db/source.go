@@ -68,16 +68,10 @@ func (client *Client) UpdatePipelineSource(id string, pipelineSource *PipelineSo
 	return err
 }
 
-func (client *Client) DeletePipelineSource(id string, ops ...mysqlxorm.SessionOption) error {
+func (client *Client) DeletePipelineSource(id string, pipelineSource *PipelineSource, ops ...mysqlxorm.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
-
-	source, err := client.GetPipelineSource(id)
-	if err != nil {
-		return err
-	}
-	source.SoftDeletedAt = uint64(time.Now().UnixNano() / 1e6)
-	_, err = session.ID(id).Cols("soft_deleted_at").Update(source)
+	_, err := session.ID(id).Cols("soft_deleted_at").Update(pipelineSource)
 	return err
 }
 

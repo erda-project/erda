@@ -19,13 +19,13 @@ import (
 	"encoding/json"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/common"
 	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/common/gshelper"
 	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/i18n"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
@@ -33,7 +33,6 @@ const OperationKeyFilter filter.OperationKey = "filter"
 
 type ComponentFilter struct {
 	sdk *cptype.SDK
-	base.DefaultProvider
 
 	filter.CommonFilter
 	State    State `json:"state,omitempty"`

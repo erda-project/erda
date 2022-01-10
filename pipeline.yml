@@ -55,9 +55,6 @@ stages:
             - mkdir -p extensions
             - cp -r ${{ dirs.erda-actions }} extensions
             - cp -r ${{ dirs.erda-addons }} extensions
-            - cp -r ${{ dirs.erda-actions-enterprise }} extensions
-            - cp -r ${{ dirs.erda-addons-enterprise }} extensions
-            - export VERSION=${{ outputs.extract-repo-version.version }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare
             - make build-push-all
@@ -72,10 +69,31 @@ stages:
             cpu: 2
             mem: 2048
       - custom-script:
+          alias: build-erda-dicehub-ee
+          commands:
+            - cd ${{ dirs.erda }}
+            - mkdir -p extensions
+            - cp -r ${{ dirs.erda-actions }} extensions
+            - cp -r ${{ dirs.erda-addons }} extensions
+            - cp -r ${{ dirs.erda-actions-enterprise }} extensions
+            - cp -r ${{ dirs.erda-addons-enterprise }} extensions
+            - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
+            - make prepare
+            - make build-push-image MODULE_PATH=dicehub
+          loop:
+            break: task_status == 'Success'
+            strategy:
+              max_times: 5
+              decline_ratio: 2
+              decline_limit_sec: 60
+              interval_sec: 5
+          resources:
+            cpu: 2
+            mem: 2048
+      - custom-script:
           alias: build-agent
           commands:
             - cd ${{ dirs.erda }}
-            - export VERSION=${{ outputs.extract-repo-version.version }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - MODULE_PATH=cluster-agent make build-push-image
           loop:
@@ -103,7 +121,6 @@ stages:
       - release:
           alias: release-erda
           params:
-            tag_version: ${{ outputs.extract-repo-version.version }}
             check_diceyml: false
             cross_cluster: "true"
             dice_yml: ${{ dirs.erda }}/erda.yml
@@ -116,7 +133,7 @@ stages:
               cmp: ${{ outputs.build-erda.image }}
               collector: ${{ outputs.build-erda.image }}
               core-services: ${{ outputs.build-erda.image }}
-              dicehub: ${{ outputs.build-erda.image }}
+              dicehub: ${{ outputs.build-erda-dicehub-ee.image }}
               dop: ${{ outputs.build-erda.image }}
               ecp: ${{ outputs.build-erda.image }}
               eventbox: ${{ outputs.build-erda.image }}
@@ -134,25 +151,3 @@ stages:
               uc-adaptor: ${{ outputs.build-erda.image }}
             migration_type: erda
             migration_dir: ${{ dirs.erda }}/.erda/migrations
-  - stage:
-      - custom-script:
-          alias: build-erda-dicehub-ce
-          commands:
-            - cd ${{ dirs.erda }}
-            - mkdir -p extensions
-            - cp -r ${{ dirs.erda-actions }} extensions
-            - cp -r ${{ dirs.erda-addons }} extensions
-            - export VERSION=${{ outputs.extract-repo-version.version }}
-            - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
-            - make prepare
-            - make build-push-image MODULE_PATH=dicehub
-          loop:
-            break: task_status == 'Success'
-            strategy:
-              max_times: 5
-              decline_ratio: 2
-              decline_limit_sec: 60
-              interval_sec: 5
-          resources:
-            cpu: 2
-            mem: 2048

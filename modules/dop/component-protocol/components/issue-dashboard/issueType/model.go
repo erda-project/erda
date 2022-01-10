@@ -16,7 +16,6 @@ package issueType
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
@@ -24,7 +23,6 @@ type ComponentAction struct {
 	State      State                  `json:"state,omitempty"`
 	Props      Props                  `json:"props,omitempty"`
 	Operations map[string]interface{} `json:"operations,omitempty"`
-	base.DefaultProvider
 }
 
 type Props struct {

@@ -19,7 +19,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/services/issue"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
@@ -28,7 +27,6 @@ type ComponentAction struct {
 	issueSvc *issue.Issue
 	State    State    `json:"state,omitempty"`
 	InParams InParams `json:"-"`
-	base.DefaultProvider
 }
 
 type State struct {

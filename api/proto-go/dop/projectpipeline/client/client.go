@@ -36,6 +36,6 @@ type projectPipelineServiceWrapper struct {
 	opts   []grpc1.CallOption
 }
 
-func (s *projectPipelineServiceWrapper) CreateProjectPipeline(ctx context.Context, req *pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error) {
-	return s.client.CreateProjectPipeline(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+func (s *projectPipelineServiceWrapper) Create(ctx context.Context, req *pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error) {
+	return s.client.Create(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

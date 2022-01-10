@@ -22,12 +22,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	cmpTypes "github.com/erda-project/erda/modules/cmp/component-protocol/types"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
@@ -66,16 +66,16 @@ func (f *ComponentReleaseFilter) InitComponent(ctx context.Context) {
 	f.bdl = bdl
 }
 
-func (f *ComponentReleaseFilter) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (f *ComponentReleaseFilter) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(component.State)
+	data, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &state); err != nil {
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	f.State = state
@@ -83,67 +83,67 @@ func (f *ComponentReleaseFilter) GenComponentState(component *cptype.Component) 
 }
 
 func (f *ComponentReleaseFilter) DecodeURLQuery() error {
-	urlQuery, ok := f.sdk.InParams["releaseFilter__urlQuery"].(string)
+	query, ok := f.sdk.InParams["releaseFilter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
+	decode, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
-	queryData := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &queryData); err != nil {
+	urlQuery := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &urlQuery); err != nil {
 		return err
 	}
 
-	appIDData, _ := queryData["applicationIDs"].([]interface{})
-	var appIDs []string
+	appIDData, _ := urlQuery["applicationIDs"].([]interface{})
+	var appIds []string
 	for i := range appIDData {
 		id, _ := appIDData[i].(string)
 		if id != "" {
-			appIDs = append(appIDs, id)
+			appIds = append(appIds, id)
 		}
 	}
 
-	userIDData, _ := queryData["userIDs"].([]interface{})
-	var userIDs []string
+	userIDData, _ := urlQuery["userIDs"].([]interface{})
+	var userIds []string
 	for i := range userIDData {
 		id, _ := userIDData[i].(string)
 		if id != "" {
-			userIDs = append(userIDs, id)
+			userIds = append(userIds, id)
 		}
 	}
 
-	createdData, _ := queryData["createdAtStartEnd"].([]interface{})
-	var timestamps []int64
+	createdData, _ := urlQuery["createdAtStartEnd"].([]interface{})
+	var timestamp []int64
 	for i := range createdData {
 		id, _ := createdData[i].(float64)
 		if id > 0 {
-			timestamps = append(timestamps, int64(id))
+			timestamp = append(timestamp, int64(id))
 		}
 	}
-	f.State.Values.ApplicationIDs = appIDs
-	f.State.Values.UserIDs = userIDs
-	f.State.Values.CreatedAtStartEnd = timestamps
-	f.State.Values.CommitID = queryData["commitID"].(string)
-	f.State.Values.BranchID = queryData["branchID"].(string)
+	f.State.Values.ApplicationIDs = appIds
+	f.State.Values.UserIDs = userIds
+	f.State.Values.CreatedAtStartEnd = timestamp
+	f.State.Values.CommitID = urlQuery["commitID"].(string)
+	f.State.Values.BranchID = urlQuery["branchID"].(string)
 	return nil
 }
 
 func (f *ComponentReleaseFilter) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["applicationIDs"] = f.State.Values.ApplicationIDs
-	urlQuery["userIDs"] = f.State.Values.UserIDs
-	urlQuery["createdAtStartEnd"] = f.State.Values.CreatedAtStartEnd
-	urlQuery["commitID"] = f.State.Values.CommitID
-	urlQuery["branchID"] = f.State.Values.BranchID
-	jsonData, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["applicationIDs"] = f.State.Values.ApplicationIDs
+	query["userIDs"] = f.State.Values.UserIDs
+	query["createdAtStartEnd"] = f.State.Values.CreatedAtStartEnd
+	query["commitID"] = f.State.Values.CommitID
+	query["branchID"] = f.State.Values.BranchID
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	f.State.ReleaseFilterURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(data)
+	f.State.ReleaseFilterURLQuery = encoded
 	return nil
 }
 

@@ -17,6 +17,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/modules/pipeline/providers/source/db"
@@ -86,7 +87,13 @@ func (p pipelineSource) Update(ctx context.Context, request *pb.PipelineSourceUp
 }
 
 func (p pipelineSource) Delete(ctx context.Context, request *pb.PipelineSourceDeleteRequest) (*pb.PipelineSourceDeleteResponse, error) {
-	return &pb.PipelineSourceDeleteResponse{}, p.dbClient.DeletePipelineSource(request.PipelineSourceID)
+	source, err := p.dbClient.GetPipelineSource(request.PipelineSourceID)
+	if err != nil {
+		return nil, err
+	}
+	source.SoftDeletedAt = uint64(time.Now().UnixNano() / 1e6)
+
+	return &pb.PipelineSourceDeleteResponse{}, p.dbClient.DeletePipelineSource(request.PipelineSourceID, source)
 }
 
 func (p pipelineSource) Get(ctx context.Context, request *pb.PipelineSourceGetRequest) (*pb.PipelineSourceGetResponse, error) {

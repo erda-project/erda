@@ -26,11 +26,9 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/rightPage/fileDetail/fileConfig/scenesConfig/stages"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type SceneStage struct {
-	base.DefaultProvider
 	CommonStageForm
 
 	sdk        *cptype.SDK

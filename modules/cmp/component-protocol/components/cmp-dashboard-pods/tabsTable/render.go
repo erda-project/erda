@@ -15,7 +15,7 @@
 package tabsTable
 
 import (
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 )
 
 func init() {

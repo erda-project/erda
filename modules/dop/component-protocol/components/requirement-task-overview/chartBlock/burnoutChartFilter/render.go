@@ -18,11 +18,12 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common/gshelper"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
@@ -57,7 +58,7 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 			{
 				Key:       "type",
 				Label:     "类型",
-				EmptyText: "全部",
+				EmptyText: cputil.I18n(ctx, "all"),
 				Fixed:     true,
 				Type:      filter.PropConditionTypeSelect,
 				Options: []filter.PropConditionOption{
@@ -77,7 +78,7 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 				},
 				Key:       "dimension",
 				Label:     "维度",
-				EmptyText: "全部",
+				EmptyText: cputil.I18n(ctx, "all"),
 				Fixed:     true,
 				Type:      filter.PropConditionTypeSelect,
 				Options: []filter.PropConditionOption{

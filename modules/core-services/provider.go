@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/core-services/providers/errorbox"
+	"github.com/erda-project/erda/pkg/oauth2"
 )
 
 type provider struct {
@@ -28,6 +29,17 @@ type provider struct {
 	Router        httpserver.Router         `autowired:"http-router"`
 	ErrorBoxSvc   *errorbox.ErrorBoxService `autowired:"erda.core.services.errorbox.ErrorBoxService"`
 	ResourceTrans i18n.Translator           `translator:"resource-trans"`
+	oauth2server  *oauth2.OAuth2Server
+}
+
+func (p *provider) Init(ctx servicehub.Context) (err error) {
+	p.oauth2server = oauth2.NewOAuth2Server()
+
+	router := p.Router
+	router.Any("/oauth2/token", p.oauth2server.Token)
+	router.Any("/oauth2/invalidate_token", p.oauth2server.InvalidateToken)
+	router.Any("/oauth2/validate_token", p.oauth2server.ValidateToken)
+	return nil
 }
 
 func (p *provider) Run(ctx context.Context) error { return p.Initialize() }

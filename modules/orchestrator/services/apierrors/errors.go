@@ -47,6 +47,14 @@ var (
 	ErrDeployStagesDomains  = err("ErrDeployStagesDomains", "部署domain失败")
 )
 
+// deployment order errors
+var (
+	ErrCreateDeploymentOrder = err("ErrCreateDeploymentOrder", "创建部署单失败")
+	ErrListDeploymentOrder   = err("ErrListDeploymentOrder", "查询部署单失败")
+	ErrCancelDeploymentOrder = err("ErrCancelDeploymentOrder", "取消部署单失败")
+	ErrDeployDeploymentOrder = err("ErrDeployDeploymentOrder", "执行部署单失败")
+)
+
 // domain errors
 var (
 	ErrListDomain   = err("ErrListDomain", "查询域名列表失败")

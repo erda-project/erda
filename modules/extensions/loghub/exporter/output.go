@@ -86,6 +86,12 @@ func (c *consumer) Invoke(key []byte, value []byte, topic *string, timestamp tim
 		}
 	}
 
+	if reqId, ok := data.Tags["trace_id"]; ok {
+		data.Tags["request-id"] = reqId
+	} else if reqId, ok = data.Tags["request-id"]; ok {
+		data.Tags["trace_id"] = data.Tags["request-id"]
+	}
+
 	delete(data.Labels, "monitor_log_output")
 	delete(data.Labels, "monitor_log_output_config")
 	value, err = json.Marshal(&data)
