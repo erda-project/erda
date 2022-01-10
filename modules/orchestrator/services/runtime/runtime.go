@@ -1405,6 +1405,11 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	d.ReleaseID = deployment.ReleaseId
 	d.ClusterID = runtime.ClusterId
 	d.ClusterName = runtime.ClusterName
+	d.DeploymentOrderName = runtime.DeploymentOrderName
+	d.ReleaseVersion = runtime.ReleaseVersion
+	d.Creator = runtime.Creator
+	d.ApplicationID = runtime.ApplicationID
+	d.DeployAt = runtime.DeployAt
 	d.CreatedAt = runtime.CreatedAt
 	d.UpdatedAt = runtime.UpdatedAt
 	d.TimeCreated = runtime.CreatedAt
@@ -1421,7 +1426,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	}
 	d.LastOperator = deployment.Operator
 	d.LastOperateTime = deployment.UpdatedAt // TODO: use a standalone OperateTime
-
+	d.LastOperatorId = deployment.ID
 	return nil
 }
 
@@ -1520,6 +1525,7 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 	}
 	data.ProjectID = app.ProjectID
 	data.CreatedAt = runtime.CreatedAt
+	data.Creator = runtime.Creator
 	data.UpdatedAt = runtime.UpdatedAt
 	data.TimeCreated = runtime.CreatedAt
 	data.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
