@@ -16,6 +16,9 @@ package projectpipeline
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"path/filepath"
 
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
@@ -218,22 +221,339 @@ func (p *ProjectPipelineService) UnStar(ctx context.Context, params deftype.Proj
 	panic("implement me")
 }
 
-func (p *ProjectPipelineService) Run(ctx context.Context, params deftype.ProjectPipelineRun) (deftype.ProjectPipelineRunResult, error) {
+func (p *ProjectPipelineService) Run(ctx context.Context, params deftype.ProjectPipelineRun) (*deftype.ProjectPipelineRunResult, error) {
+	if params.PipelineDefinitionID == "" {
+		return nil, apierrors.ErrRunProjectPipeline.InvalidParameter(fmt.Errorf("pipelineDefinitionID：%s", params.PipelineDefinitionID))
+	}
+
+	definition, err := p.getPipelineDefinition(params.PipelineDefinitionID)
+	if err != nil {
+		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
+	}
+
+	source, err := p.getPipelineSource(definition.PipelineSourceId)
+	if err != nil {
+		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
+	}
+
+	var extraValue = apistructs.PipelineDefinitionExtraValue{}
+	err = json.Unmarshal([]byte(definition.Extra.Extra), &extraValue)
+	if err != nil {
+		return nil, apierrors.ErrRunProjectPipeline.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
+	}
+	createV2 := extraValue.CreateRequest
+	createV2.PipelineYml = source.PipelineYml
+	createV2.AutoRunAtOnce = true
+	createV2.DefinitionID = definition.ID
+
+	value, err := p.bundle.CreatePipeline(createV2)
+	if err != nil {
+		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
+	}
+	return &deftype.ProjectPipelineRunResult{
+		Pipeline: value,
+	}, nil
+}
+
+func (p *ProjectPipelineService) StartCron(ctx context.Context, params deftype.ProjectPipelineStartCron) (*deftype.ProjectPipelineStartCronResult, error) {
+	dto ,err := p.startOrEndCron(params.PipelineDefinitionID, true, apierrors.ErrStartCronProjectPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	return &deftype.ProjectPipelineStartCronResult{
+		Cron: dto,
+	}, nil
+}
+
+func (p *ProjectPipelineService) EndCron(ctx context.Context, params deftype.ProjectPipelineEndCron) (*deftype.ProjectPipelineEndCronResult, error) {
+
+	dto ,err := p.startOrEndCron(params.PipelineDefinitionID, false, apierrors.ErrEndCronProjectPipeline)
+	if err != nil {
+		return nil, err
+	}
+	return &deftype.ProjectPipelineEndCronResult{
+		Cron: dto,
+	}, nil
+}
+
+func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params deftype.ProjectPipelineListExecHistory) (*deftype.ProjectPipelineListExecHistoryResult, error) {
+	var pipelineDefinition = apistructs.PipelineDefinitionRequest{
+		Name: params.Name,
+		Creator: params.Executor,
+	}
+	if params.AppID != 0 {
+		appDto, err := p.bundle.GetApp(params.AppID)
+		if err != nil {
+			return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
+		}
+		pipelineDefinition.PipelineSourceRequest = apistructs.PipelineSourceRequest{
+			Remote: filepath.Join(appDto.OrgName, appDto.ProjectName, appDto.Name),
+		}
+	}
+	jsonValue, err := json.Marshal(pipelineDefinition)
+	if err != nil {
+		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
+	}
+
+	var pipelinePageListRequest = apistructs.PipelinePageListRequest{
+		PageNum:  int(params.PageNo),
+		PageSize: int(params.PageSize),
+		AllSources: true,
+		PipelineDefinitionRequestJSON: string(jsonValue),
+	}
+	if params.Status != "" {
+		pipelinePageListRequest.Statuses = []string{params.Status}
+	}
+
+	data, err := p.bundle.PageListPipeline(pipelinePageListRequest)
+	if err != nil {
+		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
+	}
+	return &deftype.ProjectPipelineListExecHistoryResult{
+		Data: data,
+	}, nil
+}
+
+func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.ProjectPipelineBatchRun) (*deftype.ProjectPipelineBatchRunResult, error) {
 	panic("implement me")
 }
 
-func (p *ProjectPipelineService) FailRerun(ctx context.Context, params deftype.ProjectPipelineFailRerun) (deftype.ProjectPipelineFailRerunResult, error) {
-	panic("implement me")
+func (p *ProjectPipelineService) Cancel(ctx context.Context, params deftype.ProjectPipelineCancel) (*deftype.ProjectPipelineCancelResult, error) {
+	if params.PipelineDefinitionID == "" {
+		return nil, apierrors.ErrCancelProjectPipeline.InvalidParameter(fmt.Errorf("pipelineDefinitionID：%s", params.PipelineDefinitionID))
+	}
+
+	definition, err := p.getPipelineDefinition(params.PipelineDefinitionID)
+	if err != nil {
+		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
+	}
+
+	var extraValue = apistructs.PipelineDefinitionExtraValue{}
+	err = json.Unmarshal([]byte(definition.Extra.Extra), &extraValue)
+	if err != nil {
+		return nil, apierrors.ErrCancelProjectPipeline.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
+	}
+
+	runningPipelineID, err := p.getRunningPipeline(extraValue.CreateRequest.PipelineSource.String(), extraValue.CreateRequest.PipelineYmlName)
+	if err != nil{
+		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
+	}
+	if runningPipelineID == 0 {
+		return nil, apierrors.ErrCancelProjectPipeline.InternalError(fmt.Errorf("not find running pipeline, can not cancel"))
+	}
+
+	var req apistructs.PipelineCancelRequest
+	req.PipelineID = runningPipelineID
+	req.IdentityInfo = params.IdentityInfo
+	err = p.bundle.CancelPipeline(req)
+	if err != nil {
+		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
+	}
+
+	return &deftype.ProjectPipelineCancelResult{}, nil
 }
 
-func (p *ProjectPipelineService) StartCron(ctx context.Context, params deftype.ProjectPipelineStartCron) (deftype.ProjectPipelineStartCronResult, error) {
-	panic("implement me")
+func (p *ProjectPipelineService) Rerun(ctx context.Context, params deftype.ProjectPipelineRerun) (*deftype.ProjectPipelineRerunResult, error) {
+	dto, err := p.failRerunOrRerunPipeline(true, params.PipelineDefinitionID, params.IdentityInfo, apierrors.ErrRerunProjectPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	return &deftype.ProjectPipelineRerunResult{
+		Pipeline: dto,
+	}, nil
 }
 
-func (p *ProjectPipelineService) EndCron(ctx context.Context, params deftype.ProjectPipelineEndCron) (deftype.ProjectPipelineEndCronResult, error) {
-	panic("implement me")
+func (p *ProjectPipelineService) FailRerun(ctx context.Context, params deftype.ProjectPipelineFailRerun) (*deftype.ProjectPipelineFailRerunResult, error) {
+	dto, err := p.failRerunOrRerunPipeline(false, params.PipelineDefinitionID, params.IdentityInfo, apierrors.ErrFailRerunProjectPipeline)
+	if err != nil {
+		return nil, err
+	}
+	return &deftype.ProjectPipelineFailRerunResult{
+		Pipeline: dto,
+	}, nil
 }
 
-func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params deftype.ProjectPipelineListExecHistory) (deftype.ProjectPipelineListExecHistoryResult, error) {
-	panic("implement me")
+func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDefinitionID string, identityInfo apistructs.IdentityInfo, apiError *errorresp.APIError) (*apistructs.PipelineDTO, error) {
+	if pipelineDefinitionID == "" {
+		return nil, apiError.InvalidParameter(fmt.Errorf("pipelineDefinitionID：%s", pipelineDefinitionID))
+	}
+
+	definition, err := p.getPipelineDefinition(pipelineDefinitionID)
+	if err != nil {
+		return nil, apiError.InternalError(err)
+	}
+
+	var extraValue = apistructs.PipelineDefinitionExtraValue{}
+	err = json.Unmarshal([]byte(definition.Extra.Extra), &extraValue)
+	if err != nil {
+		return nil, apiError.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
+	}
+
+	runningPipelineID, err := p.getRunningPipeline(extraValue.CreateRequest.PipelineSource.String(), extraValue.CreateRequest.PipelineYmlName)
+	if err != nil {
+		return nil, apiError.InternalError(err)
+	}
+	if runningPipelineID > 0 {
+		return nil, apiError.InternalError(fmt.Errorf("operation failed, pipeline %v was running status", runningPipelineID))
+	}
+	pipeline, err := p.getLatestPipeline(extraValue.CreateRequest.PipelineSource.String(), extraValue.CreateRequest.PipelineYmlName)
+	if err != nil {
+		return nil, apiError.InternalError(err)
+	}
+	if !pipeline.Status.IsFailedStatus() {
+		return nil, apiError.InternalError(fmt.Errorf("operation failed, the latest pipeline is not in an error state"))
+	}
+
+	if rerun {
+		var req apistructs.PipelineRerunRequest
+		req.PipelineID = pipeline.ID
+		req.AutoRunAtOnce = true
+		req.IdentityInfo = identityInfo
+		dto, err := p.bundle.RerunPipeline(req)
+		if err != nil {
+			return nil, apiError.InternalError(err)
+		}
+		return dto, nil
+	}else{
+		var req apistructs.PipelineRerunFailedRequest
+		req.PipelineID = pipeline.ID
+		req.AutoRunAtOnce = true
+		req.IdentityInfo = identityInfo
+		dto, err := p.bundle.RerunFailedPipeline(req)
+		if err != nil {
+			return nil, apiError.InternalError(err)
+		}
+
+		return dto, nil
+	}
+}
+
+func (p *ProjectPipelineService) startOrEndCron(pipelineDefinitionID string, enable bool, apiError *errorresp.APIError) (*apistructs.PipelineCronDTO, error) {
+	if pipelineDefinitionID == "" {
+		return nil, apiError.InvalidParameter(fmt.Errorf("pipelineDefinitionID：%s", pipelineDefinitionID))
+	}
+
+	definition, err := p.getPipelineDefinition(pipelineDefinitionID)
+	if err != nil {
+		return nil, apiError.InternalError(err)
+	}
+
+	var extraValue = apistructs.PipelineDefinitionExtraValue{}
+	err = json.Unmarshal([]byte(definition.Extra.Extra), &extraValue)
+	if err != nil {
+		return nil, apiError.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
+	}
+
+	var req apistructs.PipelineCronPagingRequest
+	req.PageNo = 1
+	req.PageSize = 1
+	req.Sources = []apistructs.PipelineSource{extraValue.CreateRequest.PipelineSource}
+	req.YmlNames = []string{extraValue.CreateRequest.PipelineYmlName}
+	cron, err := p.bundle.PageListPipelineCrons(req)
+	if err != nil {
+		return nil, apiError.InternalError(err)
+	}
+	if len(cron.Data) == 0 {
+		return nil, apiError.InternalError(fmt.Errorf("not find cron"))
+	}
+
+	var dto *apistructs.PipelineCronDTO
+	if enable {
+		dto, err = p.bundle.StartPipelineCron(cron.Data[0].ID)
+		if err != nil {
+			return nil, apiError.InternalError(err)
+		}
+	}else{
+		dto, err = p.bundle.StopPipelineCron(cron.Data[0].ID)
+		if err != nil {
+			return nil, apiError.InternalError(err)
+		}
+	}
+	return dto, nil
+}
+
+func getRunningStatus() []string {
+	var runningStatus []string
+	for _, status := range apistructs.ReconcilerRunningStatuses() {
+		runningStatus = append(runningStatus, status.String())
+	}
+	return runningStatus
+}
+
+func (p *ProjectPipelineService) getRunningPipeline(pipelineSource string, pipelineYmlName string) (pipelineID uint64, err error) {
+	var pipelinePageListRequest = apistructs.PipelinePageListRequest{
+		PageNum:  1,
+		PageSize: 1,
+		Sources: []apistructs.PipelineSource{
+			apistructs.PipelineSource(pipelineSource),
+		},
+		YmlNames: []string{
+			pipelineYmlName,
+		},
+		Statuses: getRunningStatus(),
+		DescCols: []string{
+			"id",
+		},
+	}
+	data, err := p.bundle.PageListPipeline(pipelinePageListRequest)
+	if err != nil {
+		return 0, apierrors.ErrCancelProjectPipeline.InternalError(err)
+	}
+	if len(data.Pipelines) == 0 {
+		return 0, nil
+	}
+	return data.Pipelines[0].ID, nil
+}
+
+func (p *ProjectPipelineService) getLatestPipeline(pipelineSource string, pipelineYmlName string) (pipeline *apistructs.PagePipeline, err error) {
+	var pipelinePageListRequest = apistructs.PipelinePageListRequest{
+		PageNum:  1,
+		PageSize: 1,
+		Sources: []apistructs.PipelineSource{
+			apistructs.PipelineSource(pipelineSource),
+		},
+		YmlNames: []string{
+			pipelineYmlName,
+		},
+		NotStatuses: getRunningStatus(),
+		DescCols: []string{
+			"id",
+		},
+	}
+	data, err := p.bundle.PageListPipeline(pipelinePageListRequest)
+	if err != nil {
+		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
+	}
+	if len(data.Pipelines) == 0 {
+		return nil, nil
+	}
+	return &data.Pipelines[0], nil
+}
+
+func (p *ProjectPipelineService) getPipelineDefinition(pipelineDefinitionID string) (PipelineDefinition *dpb.PipelineDefinition, err error) {
+	var getReq dpb.PipelineDefinitionGetRequest
+	getReq.PipelineDefinitionID = pipelineDefinitionID
+	resp, err := p.PipelineDefinition.Get(context.Background(), &getReq)
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil || resp.PipelineDefinition == nil || resp.PipelineDefinition.Extra == nil {
+		return nil, fmt.Errorf("not find pipeline definition")
+	}
+	return resp.PipelineDefinition, nil
+}
+
+func (p *ProjectPipelineService) getPipelineSource(sourceID string) (pipelineSource *spb.PipelineSource, err error) {
+	var sourceGetReq = spb.PipelineSourceGetRequest{}
+	sourceGetReq.PipelineSourceID = sourceID
+	source, err := p.PipelineSource.Get(context.Background(), &sourceGetReq)
+	if err != nil {
+		return nil, err
+	}
+	if source == nil || source.PipelineSource == nil || source.PipelineSource.PipelineYml == "" {
+		return nil, fmt.Errorf("source %v pipeline yml was empty", sourceID)
+	}
+	return source.PipelineSource, nil
 }

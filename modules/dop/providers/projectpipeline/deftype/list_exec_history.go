@@ -14,8 +14,17 @@
 
 package deftype
 
+import "github.com/erda-project/erda/apistructs"
+
 type ProjectPipelineListExecHistory struct {
+	Name     string
+	Executor string
+	AppID    uint64
+	Status   string
+	PageNo   uint64
+	PageSize uint64
 }
 
 type ProjectPipelineListExecHistoryResult struct {
+	Data *apistructs.PipelinePageListData
 }

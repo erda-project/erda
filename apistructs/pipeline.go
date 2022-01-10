@@ -167,6 +167,10 @@ type PipelineCreateRequestV2 struct {
 	// BindQueue represents the queue pipeline binds, internal use only, parsed from Labels: LabelBindPipelineQueueID
 	BindQueue *PipelineQueue `json:"-"`
 
+	// DefinitionID pipeline definition id
+	// +optional
+	DefinitionID string `json:"definitionId"`
+
 	IdentityInfo
 }
 
@@ -344,6 +348,59 @@ type PipelinePageListRequest struct {
 	SelectCols []string `schema:"-" ` // 需要赋值的字段列表，若不声明，则全赋值
 	AscCols    []string `schema:"-"`
 	DescCols   []string `schema:"-"`
+
+	// pipeline definition search
+	PipelineDefinitionRequestJSON string `schema:"pipelineDefinition"`
+}
+
+type PipelineDefinitionRequest struct {
+	ID                    string                `json:"id"`
+	Name                  string                `json:"name"`
+	Category              string                `json:"category"`
+	Creator 			  string                `json:"creator"`
+	PipelineSourceRequest PipelineSourceRequest `json:"pipelineSource"`
+}
+
+func (definition *PipelineDefinitionRequest) IsEmptyValue() bool {
+	if definition == nil {
+		return true
+	}
+	if definition.Name != "" {
+		return false
+	}
+	if definition.Creator != "" {
+		return false
+	}
+	if definition.ID != "" {
+		return false
+	}
+	if definition.Category != "" {
+		return false
+	}
+	if definition.PipelineSourceRequest.Name != "" {
+		return false
+	}
+	if definition.PipelineSourceRequest.Remote != "" {
+		return false
+	}
+	if definition.PipelineSourceRequest.Ref != "" {
+		return false
+	}
+	if definition.PipelineSourceRequest.Path != "" {
+		return false
+	}
+	if definition.PipelineSourceRequest.SourceType != "" {
+		return false
+	}
+	return true
+}
+
+type PipelineSourceRequest struct {
+	Remote     string `json:"remote"`
+	Ref        string `json:"ref"`
+	Path       string `json:"path"`
+	Name       string `json:"name"`
+	SourceType string `json:"sourceType"`
 }
 
 func (req *PipelinePageListRequest) PostHandleQueryString() error {

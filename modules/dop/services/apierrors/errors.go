@@ -509,6 +509,14 @@ var (
 	ErrListProjectPipeline   = err("ErrListProjectPipeline", "获取项目级流水线列表失败")
 	ErrUpdateProjectPipeline = err("ErrUpdateProjectPipeline", "修改项目级流水线失败")
 	ErrDeleteProjectPipeline = err("ErrDeleteProjectPipeline", "删除项目级流水线失败")
+
+	ErrRunProjectPipeline = err("ErrRunProjectPipeline", "执行流水线失败")
+	ErrFailRerunProjectPipeline = err("ErrFailRerunProjectPipeline", "重试失败节点失败")
+	ErrRerunProjectPipeline = err("ErrRerunProjectPipeline", "重试全流程失败")
+	ErrCancelProjectPipeline = err("ErrCancelProjectPipeline", "取消流水线失败")
+	ErrStartCronProjectPipeline = err("ErrStartCronProjectPipeline", "开启流水线定时失败")
+	ErrEndCronProjectPipeline = err("ErrEndCronProjectPipeline", "关闭流水线定时失败")
+	ErrListExecHistoryProjectPipeline = err("ErrListExecHistoryProjectPipeline", "列出流水线执行明细失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

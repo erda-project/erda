@@ -16,11 +16,11 @@ package deftype
 
 import "github.com/erda-project/erda/apistructs"
 
-type ProjectPipelineFailRerun struct {
-	PipelineDefinitionID string
-	apistructs.IdentityInfo
+type ProjectPipelineBatchRun struct {
+	PipelineDefinitionIDS []string
 }
 
-type ProjectPipelineFailRerunResult struct {
-	Pipeline *apistructs.PipelineDTO
+type ProjectPipelineBatchRunResult struct {
+	PipelineList []*apistructs.PipelineDTO
 }
+

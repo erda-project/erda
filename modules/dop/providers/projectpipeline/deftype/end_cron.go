@@ -14,8 +14,13 @@
 
 package deftype
 
+import "github.com/erda-project/erda/apistructs"
+
 type ProjectPipelineEndCron struct {
+	PipelineDefinitionID string
+	apistructs.IdentityInfo
 }
 
 type ProjectPipelineEndCronResult struct {
+	Cron *apistructs.PipelineCronDTO
 }
