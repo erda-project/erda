@@ -338,6 +338,7 @@ message CustomizeAlertOverview {
   bool            enable        = 7;
   int64           createTime    = 8;
   int64           updateTime    = 9;
+  string          creator       = 10;
 }
 
 message GetCustomizeAlertRequest {

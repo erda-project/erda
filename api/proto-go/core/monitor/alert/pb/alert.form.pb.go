@@ -476,6 +476,8 @@ func (m *CustomizeAlertOverview) UnmarshalURLValues(prefix string, values url.Va
 					return err
 				}
 				m.UpdateTime = val
+			case "creator":
+				m.Creator = vals[0]
 			}
 		}
 	}
