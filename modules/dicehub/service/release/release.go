@@ -92,7 +92,7 @@ func (r *Release) Create(req *apistructs.ReleaseCreateRequest) (string, error) {
 		return "", err
 	}
 
-	// 确保Version在应用层面唯一
+	// 确保Version唯一
 	if req.IsProjectRelease {
 		releases, err := r.db.GetReleasesByProjectAndVersion(req.OrgID, req.ProjectID, req.Version)
 		if err != nil {
@@ -225,30 +225,48 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 			if err := yaml.Unmarshal(buf.Bytes(), &metadata); err != nil {
 				return nil, nil, err
 			}
-		} else if len(splits) == 3 && splits[2] == "dice.yml" {
-			appName := splits[1]
+		} else if len(splits) == 4 && splits[3] == "dice.yml" {
+			appName := splits[2]
 			dices[appName] = buf.String()
 		}
 	}
+
+	if len(dices) == 0 {
+		return nil, nil, errors.Errorf("invalid file")
+	}
+
 	projectReleaseID := uuid.UUID()
 
-	existedApps := make(map[string]struct{})
+	appName2ID := make(map[string]uint64)
 	apps, err := r.bdl.GetAppsByProject(uint64(req.ProjectID), uint64(req.OrgID), req.UserID)
 	if err != nil {
 		return nil, nil, errors.Errorf("failed to list apps, %v", err)
 	}
 	for i := range apps.List {
-		existedApps[apps.List[i].Name] = struct{}{}
+		appName2ID[apps.List[i].Name] = apps.List[i].ID
 	}
+
+	now := time.Now()
 
 	var appReleaseList []string
 	var appReleases []dbclient.Release
 	for appName, dice := range dices {
-		if _, ok := existedApps[appName]; !ok {
+		if _, ok := appName2ID[appName]; !ok {
 			return nil, nil, errors.Errorf("app %s not existed", appName)
 		}
 		id := uuid.UUID()
 		md := metadata.AppList[appName]
+		existedReleases, err := r.db.GetReleasesByAppAndVersion(req.OrgID, req.ProjectID, int64(appName2ID[appName]), md.Version)
+		if err != nil {
+			return nil, nil, errors.Errorf("failed to get releases by app and version, %v", err)
+		}
+		if len(existedReleases) > 0 {
+			if existedReleases[0].Dice != dice {
+				return nil, nil, errors.Errorf("app release %s was already existed but has different dice yml", md.Version)
+			}
+			appReleaseList = append(appReleaseList, existedReleases[0].ReleaseID)
+			continue
+		}
 
 		labels := map[string]string{
 			"gitBranch":        md.GitBranch,
@@ -272,12 +290,15 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 			IsFormal:         false,
 			IsProjectRelease: false,
 			Labels:           string(data),
+			Version:          md.Version,
 			OrgID:            req.OrgID,
 			ProjectID:        req.ProjectID,
 			ProjectName:      req.ProjectName,
 			UserID:           req.UserID,
 			ClusterName:      req.ClusterName,
 			Reference:        1,
+			CreatedAt:        now,
+			UpdatedAt:        now,
 		})
 	}
 
@@ -299,6 +320,8 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 		ProjectName:            req.ProjectName,
 		UserID:                 req.UserID,
 		ClusterName:            req.ClusterName,
+		CreatedAt:              now,
+		UpdatedAt:              now,
 	}
 	return projectRelease, appReleases, nil
 }
