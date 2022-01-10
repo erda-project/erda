@@ -112,7 +112,7 @@ openapi-v1-routes:
           - transaction-db-slow
           - transaction-http-analysis
           - transaction-http-detail
-          - transaction-htto-slow
+          - transaction-http-slow
           - transaction-mq-analysis
           - transaction-mq-detail
           - transaction-mq-slow
