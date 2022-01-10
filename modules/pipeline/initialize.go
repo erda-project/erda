@@ -143,7 +143,7 @@ func (p *provider) do() error {
 		permissionSvc, queueManage, dbClient, bdl, publisher, engine, js, etcdctl)
 	pipelineSvc.WithCmsService(p.CmsService)
 
-	//p.TriggerService.SetPipelineSvc(pipelineSvc)
+	p.TriggerService.SetPipelineSvc(pipelineSvc)
 
 	// todo resolve cycle import here through better module architecture
 	pipelineFun := &reconciler.PipelineSvcFunc{
@@ -209,14 +209,14 @@ func (p *provider) do() error {
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)
 
-	//p.ReconcilerElection.OnLeader(func(ctx context.Context) {
-	//	engine.StartReconciler(ctx)
-	//	pipelineSvc.DoCrondAbout(ctx)
-	//})
-	//
-	//p.GcElection.OnLeader(func(ctx context.Context) {
-	//	engine.StartGC(ctx)
-	//})
+	p.ReconcilerElection.OnLeader(func(ctx context.Context) {
+		engine.StartReconciler(ctx)
+		pipelineSvc.DoCrondAbout(ctx)
+	})
+
+	p.GcElection.OnLeader(func(ctx context.Context) {
+		engine.StartGC(ctx)
+	})
 
 	// register cluster hook after pipeline service start
 	if err := clusterinfo.RegisterClusterHook(); err != nil {

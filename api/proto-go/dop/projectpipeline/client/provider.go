@@ -14,7 +14,7 @@ import (
 )
 
 var dependencies = []string{
-	"grpc-client@erda.dop.contribution",
+	"grpc-client@erda.dop.projectpipeline",
 	"grpc-client",
 }
 
@@ -53,11 +53,11 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 		}
 	}
 	switch ctx.Service() {
-	case "erda.dop.contribution-client":
+	case "erda.dop.projectpipeline-client":
 		return p.client
-	case "erda.dop.contribution.ProjectPipelineService":
+	case "erda.dop.projectpipeline.ProjectPipelineService":
 		return &projectPipelineServiceWrapper{client: p.client.ProjectPipelineService(), opts: opts}
-	case "erda.dop.contribution.ProjectPipelineService.client":
+	case "erda.dop.projectpipeline.ProjectPipelineService.client":
 		return p.client.ProjectPipelineService()
 	}
 	switch ctx.Type() {
@@ -72,11 +72,11 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("erda.dop.contribution-client", &servicehub.Spec{
+	servicehub.Register("erda.dop.projectpipeline-client", &servicehub.Spec{
 		Services: []string{
-			"erda.dop.contribution.ProjectPipelineService",
-			"erda.dop.contribution.ProjectPipelineService.client",
-			"erda.dop.contribution-client",
+			"erda.dop.projectpipeline.ProjectPipelineService",
+			"erda.dop.projectpipeline.ProjectPipelineService.client",
+			"erda.dop.projectpipeline-client",
 		},
 		Types: []reflect.Type{
 			clientsType,

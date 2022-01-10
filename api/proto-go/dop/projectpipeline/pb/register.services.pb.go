@@ -21,7 +21,7 @@ func RegisterProjectPipelineServiceImp(regester transport.Register, srv ProjectP
 // ServiceNames return all service names
 func ServiceNames(svr ...string) []string {
 	return append(svr,
-		"erda.dop.contribution.ProjectPipelineService",
+		"erda.dop.projectpipeline.ProjectPipelineService",
 	)
 }
 

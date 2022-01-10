@@ -7,8 +7,8 @@ import (
 	fmt "fmt"
 	math "math"
 	proto "github.com/golang/protobuf/proto"
-	_ "github.com/erda-project/erda-proto-go/common/pb"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
+	_ "github.com/erda-project/erda-proto-go/common/pb"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

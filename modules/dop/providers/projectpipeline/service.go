@@ -12,18 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package project_pipeline
+package projectpipeline
 
 import (
 	"context"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
-	"github.com/erda-project/erda/modules/dop/providers/project_pipeline/deftype"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
+	"github.com/erda-project/erda/modules/dop/services/pipeline"
 )
 
-type ProjectPipelineService interface {
-	Create(ctx context.Context, params pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error)
+type ProjectPipelineService struct {
+	logger             logs.Logger
+	db                 *dao.DBClient
+	bundle             *bundle.Bundle
+	pipelineSourceType ProjectSourceType
+
+	pipelineSvc        *pipeline.Pipeline
+	PipelineSource     sourcepb.SourceServiceServer `autowired:"erda.core.pipeline.source" optional:"true"`
+	PipelineDefinition dpb.DefinitionServiceServer  `autowired:"erda.core.pipeline.definition" optional:"true"`
+}
+
+func (p *ProjectPipelineService) WithPipelineSvc(svc *pipeline.Pipeline) {
+	p.pipelineSvc = svc
+}
+
+type Service interface {
+	Create(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error)
 	List(ctx context.Context, params deftype.ProjectPipelineList) ([]*dpb.PipelineDefinition, error)
 	Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error)
 	Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error)
