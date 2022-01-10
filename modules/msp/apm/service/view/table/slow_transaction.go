@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -25,6 +26,8 @@ import (
 	slow_transaction "github.com/erda-project/erda/modules/msp/apm/service/common/slow-transaction"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/strutil"
+	pkgtime "github.com/erda-project/erda/pkg/time"
 )
 
 var (
@@ -39,8 +42,8 @@ var slowTransactionTableSortFieldSqlMap = map[string]string{
 }
 
 type SlowTransactionTableRow struct {
-	OccurTime float64
-	Duration  float64
+	OccurTime string
+	Duration  string
 	TraceId   string
 }
 
@@ -133,10 +136,11 @@ func (t *SlowTransactionTableBuilder) GetTable(ctx context.Context) (*Table, err
 		return nil, errors.NewInternalServerError(err)
 	}
 	for _, row := range response.Results[0].Series[0].Rows {
+		d, u := pkgtime.AutomaticConversionUnit(row.Values[1].GetNumberValue())
 		transRow := &SlowTransactionTableRow{
-			OccurTime: row.Values[0].GetNumberValue(),
-			Duration:  row.Values[1].GetNumberValue(),
-			TraceId:   row.Values[2].GetStringValue(),
+			OccurTime: time.Unix(0, int64(row.Values[0].GetNumberValue())).Format("2006-01-02 15:04:05"),
+			Duration:  fmt.Sprintf("%s%s", strutil.String(d), u),
+			TraceId:   strutil.FirstNoneEmpty(row.Values[2].GetStringValue(), "-"),
 		}
 		table.Rows = append(table.Rows, transRow)
 	}
