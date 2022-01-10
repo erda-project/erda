@@ -43,9 +43,17 @@ func SetFilterToGlobalState(globalState cptype.GlobalStateData, opData SlowTrans
 	globalState[StateKeyTransactionDurationFilter] = opData
 }
 
-func GetFilterFromGlobalState(globalState cptype.GlobalStateData) *SlowTransactionFilter {
-	// todo@ggp
-	panic("implement me")
+func GetFilterFromGlobalState(globalState cptype.GlobalStateData) SlowTransactionFilter {
+	filter, ok := globalState[StateKeyTransactionDurationFilter]
+	if !ok {
+		return SlowTransactionFilter{}
+	}
+	typed, ok := filter.(SlowTransactionFilter)
+	if ok {
+		return typed
+	}
+	_ = mapstructure.Decode(filter, &typed)
+	return typed
 }
 
 func SetPagingToGlobalState(globalState cptype.GlobalStateData, opData table.OpTableChangePageClientData) {

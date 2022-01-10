@@ -15,70 +15,121 @@
 package metric_table_filter
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
-
-	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/recallsong/go-utils/logs"
-
-	slow_transaction "github.com/erda-project/erda/modules/msp/apm/service/common/slow-transaction"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
-
-	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
-
-	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter"
-	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/common/gshelper"
+	slow_transaction "github.com/erda-project/erda/modules/msp/apm/service/common/slow-transaction"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
-type provider struct {
-	impl.DefaultFilter
-	Log  logs.Logger
+type ComponentFilter struct {
+	sdk *cptype.SDK
+	filter.CommonFilter
+	State    State `json:"state,omitempty"`
+	gsHelper *gshelper.GSHelper
+
 	I18n i18n.Translator `autowired:"i18n" translator:"msp-i18n"`
-}
-
-func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
-		p.StdDataPtr = &filter.Data{
-			Conditions: []interface{}{
-				model.NewDateRangeCondition(slow_transaction.StateKeyTransactionDurationFilter, p.I18n.Text(sdk.Lang, "Duration")),
-			},
-			Operations: map[cptype.OperationKey]cptype.Operation{
-				filter.OpFilter{}.OpKey(): cputil.NewOpBuilder().Build(),
-			},
-		}
-	}
-}
-
-func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
-	return p.RegisterInitializeOp()
-}
-
-func (p *provider) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
-		fmt.Println("state values", p.StdStatePtr)
-		fmt.Println("op come", opData.ClientData)
-		// todo@ggp get filter data and transfer to global state
-	}
-}
-
-func (p *provider) RegisterFilterItemSaveOp(opData filter.OpFilterItemSave) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
-	}
-}
-
-func (p *provider) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDelete) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
-	}
 }
 
 func init() {
 	name := "component-protocol.components.transaction-cache-slow.metricTableFilter"
 	cpregister.AllExplicitProviderCreatorMap[name] = nil
 	base.InitProviderWithCreator("transaction-cache-slow", "metricTableFilter",
-		func() servicehub.Provider { return &provider{} },
+		func() servicehub.Provider { return &ComponentFilter{} },
 	)
+}
+
+type State struct {
+	Base64UrlQueryParams    string                 `json:"inputFilter__urlQuery,omitempty"`
+	FrontendConditionProps  []filter.PropCondition `json:"conditions,omitempty"`
+	FrontendConditionValues FrontendConditions     `json:"values,omitempty"`
+}
+
+type FrontendConditions struct {
+	Duration []struct {
+		Timer int64  `json:"timer,omitempty"`
+		Unit  string `json:"unit,omitempty"`
+	} `json:"duration,omitempty"`
+}
+
+func (f *FrontendConditions) convertToTransactionFilter() slow_transaction.SlowTransactionFilter {
+	slowTransactionFilter := slow_transaction.SlowTransactionFilter{}
+	if len(f.Duration) != 2 {
+		return slowTransactionFilter
+	}
+	d, err := time.ParseDuration(fmt.Sprintf("%d%s", f.Duration[0].Timer, f.Duration[0].Unit))
+	if err != nil {
+		slowTransactionFilter.MinDuration = int64(d)
+	}
+	d, err = time.ParseDuration(fmt.Sprintf("%d%s", f.Duration[1].Timer, f.Duration[1].Unit))
+	if err != nil {
+		slowTransactionFilter.MaxDuration = int64(d)
+	}
+	return slowTransactionFilter
+}
+
+func (f *ComponentFilter) InitFromProtocol(ctx context.Context, c *cptype.Component, gs *cptype.GlobalStateData) error {
+	// component 序列化
+	b, err := json.Marshal(c)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, f); err != nil {
+		return err
+	}
+
+	// sdk
+	f.sdk = cputil.SDK(ctx)
+	f.gsHelper = gshelper.NewGSHelper(gs)
+	return nil
+}
+
+func (f *ComponentFilter) SetToProtocolComponent(c *cptype.Component) error {
+	b, err := json.Marshal(f)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, &c); err != nil {
+		return err
+	}
+	return nil
+}
+
+const OperationKeyFilter filter.OperationKey = "filter"
+
+func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	if err := f.InitFromProtocol(ctx, c, gs); err != nil {
+		return err
+	}
+	switch event.Operation {
+	case cptype.InitializeOperation, cptype.RenderingOperation:
+		f.Operations = map[filter.OperationKey]filter.Operation{
+			OperationKeyFilter: {Key: OperationKeyFilter, Reload: true},
+		}
+		f.State.FrontendConditionProps = []filter.PropCondition{
+			{
+				EmptyText:   "all",
+				Fixed:       true,
+				Key:         "duration",
+				Label:       f.I18n.Text(f.sdk.Lang, "duration"),
+				Placeholder: f.I18n.Text(f.sdk.Lang, "duration"),
+				Type:        filter.PropConditionTypeTimespanRange,
+			},
+		}
+	}
+
+	var state State
+	cputil.MustObjJSONTransfer(c.State, &state)
+	slow_transaction.SetFilterToGlobalState(*gs, state.FrontendConditionValues.convertToTransactionFilter())
+
+	return f.SetToProtocolComponent(c)
 }
