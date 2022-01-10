@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -31,7 +32,16 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
+const (
+	UnassignedMemberID USERID = "unassigned"
+)
+
 type USERID string
+
+func (u USERID) String() string { return string(u) }
+func (u USERID) IsUnassigned() bool {
+	return strings.EqualFold(u.String(), UnassignedMemberID.String())
+}
 
 // maybe int or string, unmarshal them to string(USERID)
 func (u *USERID) UnmarshalJSON(b []byte) error {
