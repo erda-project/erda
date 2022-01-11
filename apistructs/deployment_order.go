@@ -15,8 +15,8 @@ type DeploymentOrderCreateRequest struct {
 	Type      string `json:"type,omitempty"`
 	ReleaseId string `json:"releaseId"`
 	Workspace string `json:"workspace,omitempty"`
-	Operator  string
-	AutoRun   bool `json:"autoRun"`
+	Operator  string `json:"operator"`
+	AutoRun   bool   `json:"autoRun"`
 }
 
 type DeploymentOrderCreateResponse struct {
@@ -52,13 +52,14 @@ type DeploymentOrderDetail struct {
 type ApplicationInfo struct {
 	Id             uint64                `json:"id"`
 	Name           string                `json:"name"`
-	DeploymentId   uint64                `json:"deploymentId"`
+	DeploymentId   uint64                `json:"deploymentId,omitempty"`
 	Params         *DeploymentOrderParam `json:"params"`
-	ReleaseVersion string                `json:"releaseVersion"`
-	Branch         string                `json:"branch"`
-	CommitId       string                `json:"commitId"`
-	DiceYaml       string                `json:"diceYaml"`
-	Status         DeploymentStatus      `json:"status"`
+	ReleaseId      string                `json:"releaseId,omitempty"`
+	ReleaseVersion string                `json:"releaseVersion,omitempty"`
+	Branch         string                `json:"branch,omitempty"`
+	CommitId       string                `json:"commitId,omitempty"`
+	DiceYaml       string                `json:"diceYaml,omitempty"`
+	Status         DeploymentStatus      `json:"status,omitempty"`
 }
 
 type DeploymentOrderListData struct {

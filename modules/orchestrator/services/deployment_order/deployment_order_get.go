@@ -138,6 +138,7 @@ func composeApplicationsInfo(releases []*apistructs.ReleaseGetResponseData, para
 			Name:           applicationName,
 			DeploymentId:   app.DeploymentID,
 			Params:         &orderParamsData,
+			ReleaseId:      subRelease.ReleaseID,
 			ReleaseVersion: subRelease.Version,
 			Branch:         subRelease.Labels["gitBranch"],
 			CommitId:       subRelease.Labels["gitCommitId"],

@@ -74,7 +74,7 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 
 		ret = append(ret, &apistructs.DeploymentOrderItem{
 			ID:                order.ID,
-			Name:              order.Name,
+			Name:              parseDeploymentOrderShowName(order.Name),
 			ReleaseID:         order.ReleaseId,
 			ReleaseVersion:    releaseResp.Version,
 			Type:              order.Type,

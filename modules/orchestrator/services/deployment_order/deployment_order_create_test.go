@@ -57,9 +57,10 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 	}
 
 	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
-		Type:   apistructs.TypePipeline,
-		Params: string(paramsJson),
-	}, releaseResp, "PROD")
+		Type:      apistructs.TypePipeline,
+		Params:    string(paramsJson),
+		Workspace: apistructs.WORKSPACE_PROD,
+	}, releaseResp)
 	assert.NoError(t, err)
 
 	releaseResp.ApplicationReleaseList = []*apistructs.ApplicationReleaseSummary{
@@ -67,9 +68,10 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 	}
 
 	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
-		Type:   apistructs.TypeProjectRelease,
-		Params: string(paramsJson),
-	}, releaseResp, "PROD")
+		Type:      apistructs.TypeProjectRelease,
+		Params:    string(paramsJson),
+		Workspace: apistructs.WORKSPACE_PROD,
+	}, releaseResp)
 	assert.NoError(t, err)
 }
 

@@ -71,7 +71,7 @@ func (d *DeploymentOrder) Create(req *apistructs.DeploymentOrderCreateRequest) (
 	}
 
 	if req.AutoRun {
-		executeDeployResp, err := d.executeDeploy(order, releaseResp, req.Workspace, req.Operator)
+		executeDeployResp, err := d.executeDeploy(order, releaseResp)
 		if err != nil {
 			logrus.Errorf("failed to executeDeploy, err: %v", err)
 			return nil, err
@@ -96,12 +96,6 @@ func (d *DeploymentOrder) Deploy(req *apistructs.DeploymentOrderDeployRequest) (
 	}
 
 	order.Operator = user.ID(req.Operator)
-	order.StartedAt = time.Now()
-	if err := d.db.UpdateDeploymentOrder(order); err != nil {
-		fmtErr := fmt.Errorf("failed to update order operator, err: %v", err)
-		logrus.Error(fmtErr)
-		return nil, fmtErr
-	}
 
 	releaseResp, err := d.bdl.GetRelease(order.ReleaseId)
 	if err != nil {
@@ -109,7 +103,7 @@ func (d *DeploymentOrder) Deploy(req *apistructs.DeploymentOrderDeployRequest) (
 		return nil, err
 	}
 
-	if _, err := d.executeDeploy(order, releaseResp, order.Workspace, req.Operator); err != nil {
+	if _, err := d.executeDeploy(order, releaseResp); err != nil {
 		logrus.Errorf("failed to execute deploy, order id: %s, err: %v", req.DeploymentOrderId, err)
 		return nil, err
 	}
@@ -176,30 +170,43 @@ func (d *DeploymentOrder) RenderDetail(userId, releaseId, workspace string) (*ap
 	}, nil
 }
 
-func (d *DeploymentOrder) executeDeploy(order *dbclient.DeploymentOrder, releaseResp *apistructs.ReleaseGetResponseData,
-	workspace, operator string) (map[uint64]*apistructs.DeploymentCreateResponseDTO, error) {
-	// update started time
-	order.StartedAt = time.Now()
-	if err := d.db.UpdateDeploymentOrder(order); err != nil {
-		return nil, err
-	}
-
+func (d *DeploymentOrder) executeDeploy(order *dbclient.DeploymentOrder, releaseResp *apistructs.ReleaseGetResponseData) (map[uint64]*apistructs.DeploymentCreateResponseDTO, error) {
 	// compose runtime create requests
-	rtCreateReqs, err := d.composeRuntimeCreateRequests(order, releaseResp, workspace)
+	rtCreateReqs, err := d.composeRuntimeCreateRequests(order, releaseResp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compose runtime create requests, err: %v", err)
 	}
 
 	deployResponse := make(map[uint64]*apistructs.DeploymentCreateResponseDTO)
+	applicationsStatus := make(apistructs.DeploymentOrderStatusMap)
 
 	// create runtimes
 	for _, rtCreateReq := range rtCreateReqs {
-		runtimeCreateResp, err := d.rt.Create(user.ID(operator), rtCreateReq)
+		runtimeCreateResp, err := d.rt.Create(order.Operator, rtCreateReq)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create runtime %s, cluster: %s, release id: %s, err: %v",
 				rtCreateReq.Name, rtCreateReq.ClusterName, rtCreateReq.ReleaseID, err)
 		}
 		deployResponse[runtimeCreateResp.ApplicationID] = runtimeCreateResp
+		applicationsStatus[rtCreateReq.Extra.ApplicationName] = apistructs.DeploymentOrderStatusItem{
+			DeploymentID:     runtimeCreateResp.DeploymentID,
+			AppID:            runtimeCreateResp.ApplicationID,
+			DeploymentStatus: apistructs.DeploymentStatusInit,
+			RuntimeID:        runtimeCreateResp.RuntimeID,
+		}
+	}
+
+	// marshal applications status
+	jsonAppStatus, err := json.Marshal(applicationsStatus)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal applications status, err: %v", err)
+	}
+
+	// update deployment order status
+	order.StartedAt = time.Now()
+	order.Status = string(jsonAppStatus)
+	if err := d.db.UpdateDeploymentOrder(order); err != nil {
+		return nil, err
 	}
 
 	return deployResponse, nil
@@ -328,13 +335,17 @@ func (d *DeploymentOrder) fetchDeploymentParams(applicationId int64, workspace s
 	return &params, nil
 }
 
-func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.DeploymentOrder, r *apistructs.ReleaseGetResponseData,
-	workspace string) ([]*apistructs.RuntimeCreateRequest, error) {
+func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.DeploymentOrder, r *apistructs.ReleaseGetResponseData) ([]*apistructs.RuntimeCreateRequest, error) {
+	if order == nil || r == nil {
+		return nil, fmt.Errorf("deployment order or release response data is nil")
+	}
 
-	ret := make([]*apistructs.RuntimeCreateRequest, 0)
-
-	projectId := uint64(r.ProjectID)
-	orgId := uint64(r.OrgID)
+	var (
+		ret       = make([]*apistructs.RuntimeCreateRequest, 0)
+		projectId = uint64(r.ProjectID)
+		orgId     = uint64(r.OrgID)
+		workspace = order.Workspace
+	)
 
 	projectInfo, err := d.bdl.GetProject(projectId)
 	if err != nil {
