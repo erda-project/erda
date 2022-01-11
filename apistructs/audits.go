@@ -16,6 +16,8 @@ package apistructs
 
 import (
 	"regexp"
+	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -180,6 +182,12 @@ const (
 	RedeployRuntimeTemplate TemplateName = "redeployRuntime"
 	RollbackRuntimeTemplate TemplateName = "rollbackRuntime"
 	DeployRuntimeTemplate   TemplateName = "deployRuntime"
+
+	// =====================NotifyGroup============================
+	UpdateNotifyGroup    TemplateName = "updateNotifyGroup"
+	DeleteNotifyGroup    TemplateName = "deleteNotifyGroup"
+	UpdateOrgNotifyGroup TemplateName = "updateOrgNotifyGroup"
+	DeleteOrgNotifyGroup TemplateName = "deleteOrgNotifyGroup"
 
 	// =====================Notify============================
 	CreateProjectNotifyTemplate  TemplateName = "createProjectNotify"
@@ -424,6 +432,20 @@ type Audit struct {
 	ClientIP string `json:"clientIp"`
 	// +optional 客户端类型
 	UserAgent string `json:"userAgent"`
+}
+
+func ToAudit(scopeType ScopeType, userId string, templateName TemplateName, auditScopeId uint64, context map[string]interface{}) Audit {
+	audit := Audit{
+		UserID:       userId,
+		ScopeType:    scopeType,
+		ScopeID:      auditScopeId,
+		TemplateName: templateName,
+		Result:       "success",
+		StartTime:    strconv.Itoa(int(time.Now().UnixNano())),
+		EndTime:      strconv.Itoa(int(time.Now().UnixNano())),
+		Context:      context,
+	}
+	return audit
 }
 
 // AuditCreateRequest 审计事件创建接口

@@ -89,3 +89,14 @@ func (db *MSPTenantDB) DeleteTenantByTenantID(tenantId string) (*MSPTenant, erro
 	}
 	return tenant, err
 }
+
+func (db *MSPTenantDB) GetTenantWorkspaceByTenantID(tenantId string) (string, error) {
+	tenant, err := db.QueryTenant(tenantId)
+	if err != nil {
+		return "", err
+	}
+	if tenant != nil {
+		return tenant.RelatedWorkspace, nil
+	}
+	return "", nil
+}

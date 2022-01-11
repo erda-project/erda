@@ -98,6 +98,58 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 	return result, nil
 }
 
+func (n *notifyGroupService) auditContextInfo(groupId int64, orgId string) (string, string, string, uint64, error) {
+	notifyGroup, err := n.p.bdl.GetNotifyGroup(groupId, orgId)
+	if err != nil {
+		return "", "", "", 0, err
+	}
+	workspace, err := n.getWorkSpace(notifyGroup.Data.ScopeID)
+	if err != nil {
+		return "", "", "", 0, err
+	}
+	projectName, auditProjectId, err := n.getProjectInfo(notifyGroup.Data.ScopeID)
+	if err != nil {
+		return "", "", "", 0, err
+	}
+	return projectName, workspace, notifyGroup.Data.Name, auditProjectId, nil
+}
+
+func (n *notifyGroupService) getProjectInfo(scopeId string) (string, uint64, error) {
+	projectIdStr, err := n.GetProjectIdByScopeId(scopeId)
+	if err != nil {
+		return "", 0, errors.NewInternalServerError(err)
+	}
+	if projectIdStr == "" {
+		return "", 0, errors.NewInternalServerError(fmt.Errorf("Query project record by scopeid is empty scopeId is %v", scopeId))
+	}
+	projectId, err := strconv.Atoi(projectIdStr)
+	if err != nil {
+		return "", 0, errors.NewInternalServerError(err)
+	}
+	auditProjectId := uint64(projectId)
+	project, err := n.p.bdl.GetProject(auditProjectId)
+	if err != nil {
+		{
+			return "", 0, errors.NewInternalServerError(err)
+		}
+	}
+	return project.Name, auditProjectId, nil
+}
+
+func (n *notifyGroupService) getWorkSpace(scopeId string) (string, error) {
+	workspace, err := n.p.mspTenantDB.GetTenantWorkspaceByTenantID(scopeId)
+	if err != nil {
+		return "", errors.NewInternalServerError(err)
+	}
+	if workspace == "" {
+		workspace, err = n.p.monitorDB.GetWorkspaceByTK(scopeId)
+		if err != nil {
+			return "", errors.NewInternalServerError(err)
+		}
+	}
+	return workspace, nil
+}
+
 func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.QueryNotifyGroupRequest) (*pb.QueryNotifyGroupResponse, error) {
 	orgId := apis.GetOrgID(ctx)
 	queryReq := &apistructs.QueryNotifyGroupRequest{
@@ -182,6 +234,25 @@ func (n *notifyGroupService) UpdateNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	projectName, workspace, notifyGroupName, auditProjectId, err := n.auditContextInfo(request.GroupID, orgID)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	userId := apis.GetUserID(ctx)
+	user, err := n.p.bdl.GetCurrentUser(userId)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	auditContext := map[string]interface{}{
+		"projectName":     projectName,
+		"workspace":       workspace,
+		"notifyGroupName": notifyGroupName,
+		"userName":        user.Name,
+	}
+	audit := apistructs.ToAudit(apistructs.ProjectScope, userId, apistructs.UpdateNotifyGroup, auditProjectId, auditContext)
+	if err := n.p.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	return result, nil
 }
 
@@ -225,6 +296,25 @@ func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.
 	}
 	err = json.Unmarshal(data, result.Data)
 	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	projectName, workspace, notifyGroupName, auditProjectId, err := n.auditContextInfo(request.GroupID, orgID)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	userId := apis.GetUserID(ctx)
+	user, err := n.p.bdl.GetCurrentUser(userId)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	auditContext := map[string]interface{}{
+		"projectName":     projectName,
+		"workspace":       workspace,
+		"notifyGroupName": notifyGroupName,
+		"userName":        user.Name,
+	}
+	audit := apistructs.ToAudit(apistructs.ProjectScope, userId, apistructs.DeleteNotifyGroup, auditProjectId, auditContext)
+	if err := n.p.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	return result, nil

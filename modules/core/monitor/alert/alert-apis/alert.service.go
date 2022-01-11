@@ -737,6 +737,19 @@ func (m *alertService) UpdateOrgCustomizeAlert(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	userId := apis.GetUserID(ctx)
+	user, err := m.p.bdl.GetCurrentUser(userId)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	auditContext := map[string]interface{}{
+		"userName":      user.Name,
+		"alertRuleName": request.Name,
+	}
+	audit := apistructs.ToAudit(apistructs.OrgScope, userId, apistructs.UpdateOrgCustomAlert, org.ID, auditContext)
+	if err := m.p.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	result := &pb.UpdateOrgCustomizeAlertResponse{
 		Data: true,
 	}
@@ -769,6 +782,24 @@ func (m *alertService) DeleteOrgCustomizeAlert(ctx context.Context, request *pb.
 		return result, nil
 	}
 	result.Data = structpb.NewBoolValue(true)
+	userId := apis.GetUserID(ctx)
+	user, err := m.p.bdl.GetCurrentUser(userId)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	orgIdStr := apis.GetOrgID(ctx)
+	orgId, err := strconv.Atoi(orgIdStr)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	auditContext := map[string]interface{}{
+		"userName":      user.Name,
+		"alertRuleName": data.Name,
+	}
+	audit := apistructs.ToAudit(apistructs.OrgScope, userId, apistructs.DeleteOrgCustomAlert, uint64(orgId), auditContext)
+	if err := m.p.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	return result, nil
 }
 
