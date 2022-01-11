@@ -101,7 +101,7 @@ type (
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.bdl = bundle.New(bundle.WithCoreServices())
-	p.cache = gcache.New(p.Cfg.CacheSize).LRU().LoaderFunc(func(key interface{}) (interface{}, error) {
+	p.cache = gcache.New(p.Cfg.CacheSize).LRU().Expiration(p.Cfg.CacheTTL).LoaderFunc(func(key interface{}) (interface{}, error) {
 		if k, ok := key.(cacheKey); ok {
 			switch k.scope {
 			case OrgScope:
