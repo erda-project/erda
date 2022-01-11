@@ -114,6 +114,11 @@ openapi-v1-routes:
           - transaction-mq-detail
           - transaction-rpc-analysis
           - transaction-rpc-detail
+          - trace-query
+          - resources-container-monitor
+          - resources-node-monitor
+          - resources-runtime-monitor-java
+          - resources-runtime-monitor-nodejs
 
 etcd:
   _enable: ${OPENAPI_DEV_MODE:false}

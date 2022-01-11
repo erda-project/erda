@@ -1,0 +1,33 @@
+scenario: resources-node-monitor
+
+hierarchy:
+  root: page
+  structure:
+    page:
+    - node
+    node:
+    - node@cpu
+    - node@memory
+    - node@load
+    - node@disk
+components:
+  page:
+    type: Container
+  node:
+    type: Grid
+  node@cpu:
+    type: LineGraph
+    options:
+      asyncAtInit: true
+  node@memory:
+    type: LineGraph
+    options:
+      asyncAtInit: true
+  node@load:
+    type: LineGraph
+    options:
+      asyncAtInit: true
+  node@disk:
+    type: LineGraph
+    options:
+      asyncAtInit: true

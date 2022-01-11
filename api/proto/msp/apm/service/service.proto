@@ -50,6 +50,29 @@ service ApmServiceService {
       }
     };
   }
+
+  rpc GetServiceLanguage (GetServiceLanguageRequest) returns (GetServiceLanguageResponse) {
+    option (google.api.http)     = {
+      get: "/api/msp/apm/service/language",
+    };
+    option (erda.common.openapi) = {
+      path: "/api/msp/apm/service/language",
+      service: "msp",
+      auth: {
+        check_login: true,
+        check_token: true,
+      }
+    };
+  }
+}
+
+message GetServiceLanguageResponse {
+  string language = 1;
+}
+
+message GetServiceLanguageRequest {
+  string tenantId  = 1;
+  string serviceId = 2;
 }
 
 message GetServiceOverviewTopRequest {
@@ -116,9 +139,10 @@ enum Status {
 }
 
 message Chart {
-  int64  timestamp = 1;
-  double value     = 2;
-  string dimension = 3;
+  int64           timestamp   = 1;
+  double          value       = 2;
+  string          dimension   = 3;
+  repeated double extraValues = 4;
 }
 
 message ServiceTop {
@@ -147,12 +171,13 @@ message AggregateMetric {
 }
 
 enum ChartType {
-  RPS         = 0;
-  AvgDuration = 1;
-  ErrorRate   = 3;
-  HttpCode    = 4;
-  ErrorCount  = 5;
-  SlowCount   = 6;
+  RPS                     = 0;
+  AvgDuration             = 1;
+  AvgDurationDistribution = 2;
+  ErrorRate               = 3;
+  HttpCode                = 4;
+  ErrorCount              = 5;
+  SlowCount               = 6;
 }
 
 enum ChartPosition {
