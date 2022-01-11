@@ -16,12 +16,13 @@ package orchestrator
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var ORCHESTRATOR_DEPLOYMENT_ORDER_RENDER_NAME = apis.ApiSpec{
-	Path:        "/api/deployment-orders/actions/render-name",
-	BackendPath: "/api/deployment-orders/actions/render-name",
+var ORCHESTRATOR_DEPLOYMENT_ORDER_RENDER_DETAIL = apis.ApiSpec{
+	Path:        "/api/deployment-orders/actions/render-detail",
+	BackendPath: "/api/deployment-orders/actions/render-detail",
 	Host:        "orchestrator.marathon.l4lb.thisdcos.directory:8081",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckToken:  true,
 	CheckLogin:  true,
+	IsOpenAPI:   true,
 }
