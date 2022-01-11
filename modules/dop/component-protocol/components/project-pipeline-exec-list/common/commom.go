@@ -12,32 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package deftype
+package common
 
-import (
-	"time"
+const DefaultPageSize = 10
 
-	"github.com/erda-project/erda/apistructs"
-)
-
-type ProjectPipelineListExecHistory struct {
-	Name      string
-	Executors []string
-	AppIDList []uint64
-	Statuses  []string
-
-	PageNo         uint64
-	PageSize       uint64
-	StartTimeBegin time.Time
-	StartTimeEnd   time.Time
-
-	DescCols []string
-	AscCols  []string
-
-	ProjectID uint64
-	apistructs.IdentityInfo
-}
-
-type ProjectPipelineListExecHistoryResult struct {
-	Data *apistructs.PipelinePageListData
+type Sort struct {
+	FieldKey  string
+	Ascending bool
 }

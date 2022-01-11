@@ -21,8 +21,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
-
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
@@ -361,6 +359,8 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 		StartTimeBegin:                params.StartTimeBegin,
 		EndTimeBegin:                  params.StartTimeEnd,
 		PipelineDefinitionRequestJSON: string(jsonValue),
+		DescCols:                      params.DescCols,
+		AscCols:                       params.AscCols,
 	}
 
 	data, err := p.bundle.PageListPipeline(pipelinePageListRequest)
