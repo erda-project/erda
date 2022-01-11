@@ -18,33 +18,39 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 )
 
-func (d *DeploymentOrder) Cancel(req *apistructs.DeploymentOrderCancelRequest) error {
+func (d *DeploymentOrder) Cancel(req *apistructs.DeploymentOrderCancelRequest) (*dbclient.DeploymentOrder, error) {
 	order, err := d.db.GetDeploymentOrder(req.DeploymentOrderId)
 	if err != nil {
 		logrus.Errorf("failed to get order, id: %s, err: %v", req.DeploymentOrderId, err)
-		return err
+		return nil, err
+	}
+
+	if err := d.checkExecutePermission(req.Operator, order.Workspace, nil, order.ReleaseId); err != nil {
+		return nil, apierrors.ErrCreateDeploymentOrder.InternalError(err)
 	}
 
 	runtimes, err := d.db.GetRuntimeByDeployOrderName(order.ProjectId, order.Name)
 	if err != nil {
 		logrus.Errorf("failed to get runtime by deployment order name: %s, project: %s, err: %v", order.Name,
 			order.ProjectName, err)
-		return err
+		return nil, err
 	}
 
 	if len(*runtimes) == 0 {
 		logrus.Warnf("none runtimes need cancel deploying")
-		return nil
+		return nil, nil
 	}
 
 	for _, runtime := range *runtimes {
 		if err := d.deploy.CancelLastDeploy(runtime.ID, req.Operator, req.Force); err != nil {
 			logrus.Errorf("failed to cancel deploy, runtime: %d, err: %v", runtime.ID, err)
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return order, nil
 }
