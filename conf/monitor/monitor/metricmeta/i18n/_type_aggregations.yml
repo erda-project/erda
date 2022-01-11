@@ -12,6 +12,7 @@ zh:
     "Count Per Second": "每秒次数值"
     "Distinct": "去重数量"
     "All Values": "所有值"
+    "Distinct Count": "去重计数"
     "Regular Expression": "正则表达式"
     "99 Percentile": "99百分位"
     "95 Percentile": "95百分位"
