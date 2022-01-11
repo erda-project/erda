@@ -101,16 +101,16 @@ func (r *ComponentReleaseTable) InitComponent(ctx context.Context) {
 	r.bdl = bdl
 }
 
-func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (r *ComponentReleaseTable) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(component.State)
+	data, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &state); err != nil {
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	r.State = state
@@ -118,38 +118,38 @@ func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) e
 }
 
 func (r *ComponentReleaseTable) DecodeURLQuery() error {
-	queryData, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
+	urlQuery, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(queryData)
+	decode, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
-	query := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &query); err != nil {
+	queryData := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &queryData); err != nil {
 		return err
 	}
-	r.State.PageNo = int64(query["pageNo"].(float64))
-	r.State.PageSize = int64(query["pageSize"].(float64))
-	sorter := query["sorterData"].(map[string]interface{})
-	r.State.Sorter.Field, _ = sorter["field"].(string)
-	r.State.Sorter.Order, _ = sorter["order"].(string)
+	r.State.PageNo = int64(queryData["pageNo"].(float64))
+	r.State.PageSize = int64(queryData["pageSize"].(float64))
+	sorterData := queryData["sorterData"].(map[string]interface{})
+	r.State.Sorter.Field, _ = sorterData["field"].(string)
+	r.State.Sorter.Order, _ = sorterData["order"].(string)
 	return nil
 }
 
 func (r *ComponentReleaseTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = r.State.PageNo
-	query["pageSize"] = r.State.PageSize
-	query["sorterData"] = r.State.Sorter
-	data, err := json.Marshal(query)
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = r.State.PageNo
+	urlQuery["pageSize"] = r.State.PageSize
+	urlQuery["sorterData"] = r.State.Sorter
+	jsonData, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(data)
-	r.State.ReleaseTableURLQuery = encoded
+	encode := base64.StdEncoding.EncodeToString(jsonData)
+	r.State.ReleaseTableURLQuery = encode
 	return nil
 }
 
@@ -412,12 +412,12 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	}
 }
 
-func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
-	c.Props = cputil.MustConvertProps(r.Props)
-	c.Data = map[string]interface{}{
+func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
+	component.Props = cputil.MustConvertProps(r.Props)
+	component.Data = map[string]interface{}{
 		"list": r.Data.List,
 	}
-	c.State = map[string]interface{}{
+	component.State = map[string]interface{}{
 		"releaseTable__urlQuery": r.State.ReleaseTableURLQuery,
 		"pageNo":                 r.State.PageNo,
 		"pageSize":               r.State.PageSize,
@@ -431,7 +431,7 @@ func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
 		"versionValues":          r.State.VersionValues,
 		"filterValues":           r.State.FilterValues,
 	}
-	c.Operations = r.Operations
+	component.Operations = r.Operations
 }
 
 func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {
@@ -467,7 +467,7 @@ func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {
 	if err != nil {
 		return errors.New("invalid org id")
 	}
-	return r.bdl.ToFormalReleases(orgID, apistructs.ReleasesToFormalRequest{
+	return r.bdl.ToFormalReleases(orgID, userID, apistructs.ReleasesToFormalRequest{
 		ProjectID: projectID,
 		ReleaseID: releaseID,
 	})
@@ -506,7 +506,7 @@ func (r *ComponentReleaseTable) deleteReleases(releaseID []string) error {
 	if err != nil {
 		return errors.New("invalid org id")
 	}
-	return r.bdl.DeleteReleases(orgID, apistructs.ReleasesDeleteRequest{
+	return r.bdl.DeleteReleases(orgID, userID, apistructs.ReleasesDeleteRequest{
 		ProjectID: projectID,
 		ReleaseID: releaseID,
 	})

@@ -170,7 +170,7 @@ func (b *Bundle) CreateRelease(req apistructs.ReleaseCreateRequest, orgID uint64
 	return respData.Data.ReleaseID, nil
 }
 
-func (b *Bundle) DeleteReleases(orgID uint64, req apistructs.ReleasesDeleteRequest) error {
+func (b *Bundle) DeleteReleases(orgID uint64, userID string, req apistructs.ReleasesDeleteRequest) error {
 	host, err := b.urls.DiceHub()
 	if err != nil {
 		return err
@@ -180,6 +180,7 @@ func (b *Bundle) DeleteReleases(orgID uint64, req apistructs.ReleasesDeleteReque
 	var respData apistructs.ReleaseDeleteResponse
 	resp, err := hc.Delete(host).Path("/api/releases").
 		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		Header(httputil.UserHeader, userID).
 		Header(httputil.InternalHeader, "true").
 		JSONBody(req).Do().JSON(&respData)
 	if err != nil {
@@ -191,7 +192,7 @@ func (b *Bundle) DeleteReleases(orgID uint64, req apistructs.ReleasesDeleteReque
 	return nil
 }
 
-func (b *Bundle) UpdateRelease(orgID uint64, req apistructs.ReleaseUpdateRequest) error {
+func (b *Bundle) UpdateRelease(orgID uint64, userID string, req apistructs.ReleaseUpdateRequest) error {
 	host, err := b.urls.DiceHub()
 	if err != nil {
 		return err
@@ -202,6 +203,7 @@ func (b *Bundle) UpdateRelease(orgID uint64, req apistructs.ReleaseUpdateRequest
 	var respData apistructs.ReleaseUpdateResponse
 	resp, err := hc.Put(host).Path(path).
 		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		Header(httputil.UserHeader, userID).
 		Header(httputil.InternalHeader, "true").
 		JSONBody(req).Do().JSON(&respData)
 	if err != nil {
@@ -213,7 +215,7 @@ func (b *Bundle) UpdateRelease(orgID uint64, req apistructs.ReleaseUpdateRequest
 	return nil
 }
 
-func (b *Bundle) ToFormalReleases(orgID uint64, req apistructs.ReleasesToFormalRequest) error {
+func (b *Bundle) ToFormalReleases(orgID uint64, userID string, req apistructs.ReleasesToFormalRequest) error {
 	host, err := b.urls.DiceHub()
 	if err != nil {
 		return err
@@ -223,6 +225,7 @@ func (b *Bundle) ToFormalReleases(orgID uint64, req apistructs.ReleasesToFormalR
 	var respData apistructs.ReleasesToFormalResponse
 	resp, err := hc.Put(host).Path("/api/releases").
 		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		Header(httputil.UserHeader, userID).
 		Header(httputil.InternalHeader, "true").
 		JSONBody(req).Do().JSON(&respData)
 	if err != nil {

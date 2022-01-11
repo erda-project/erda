@@ -129,6 +129,9 @@ func TestMakeMetadata(t *testing.T) {
 		},
 	}
 	releaseMeta := apistructs.ReleaseMetadata{
+		Org:       "testOrg",
+		Source:    "erda",
+		Author:    "testUser",
 		Version:   projectRelease.Version,
 		Desc:      projectRelease.Desc,
 		ChangeLog: projectRelease.Changelog,
@@ -147,7 +150,7 @@ func TestMakeMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := makeMetadata(projectRelease, appReleases)
+	res, err := makeMetadata("testOrg", "testUser", projectRelease, appReleases)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,12 +170,13 @@ func TestParseMetadata(t *testing.T) {
 				GitCommitID:      "12345678",
 				GitCommitMessage: "testMsg",
 				GitRepo:          "http://test.com/testApp",
-				ChangeLog:        "testChangeLog",
+				ChangeLog:        "testChangelog",
+				Version:          "testVersion",
 			},
 		},
 	}
 
-	file, err := os.Open("./release_test_data.tar")
+	file, err := os.Open("./release_test_data.zip")
 	if err != nil {
 		t.Fatal(err)
 	}

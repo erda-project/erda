@@ -593,6 +593,10 @@ type ReleasesToFormalResponse struct {
 }
 
 type ReleaseMetadata struct {
+	Org    string `json:"org,omitempty"`
+	Source string `json:"source,omitempty"`
+	Author string `json:"author,omitempty"`
+
 	Version   string                 `json:"version,omitempty"`
 	Desc      string                 `json:"desc,omitempty"`
 	ChangeLog string                 `json:"changeLog,omitempty"`
