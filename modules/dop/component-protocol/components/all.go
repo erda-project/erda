@@ -32,4 +32,5 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/test-report"
 	_ "github.com/erda-project/erda/providers/component-protocol/issueFilter"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list"
 )

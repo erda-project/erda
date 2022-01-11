@@ -383,11 +383,12 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	if len(forceIndexes) > 0 {
 		baseSQL.Alias(fmt.Sprintf("`%s` USE INDEX (%s)", (&spec.PipelineBase{}).TableName(), strings.Join(forceIndexes, ",")))
 	}
+
 	if req.PipelineDefinitionRequestJSON != "" {
 		var definitionReq apistructs.PipelineDefinitionRequest
 		err := json.Unmarshal([]byte(req.PipelineDefinitionRequestJSON), &definitionReq)
 		if err != nil {
-			return nil, nil, -1, -1, errors.New("missing pipeline sources")
+			return nil, nil, -1, -1, err
 		}
 
 		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " is not null ")
@@ -399,7 +400,7 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 				baseSQL.Where(fmt.Sprintf("%v.name like ?", definitiondb.PipelineDefinition{}.TableName()), definitionReq.Name+"%")
 			}
 			if len(definitionReq.SourceRemotes) > 0 {
-				baseSQL.In(tableFieldName(sourcedb.PipelineSource{}.TableName(), "remote"), definitionReq.Creators)
+				baseSQL.In(tableFieldName(sourcedb.PipelineSource{}.TableName(), "remote"), definitionReq.SourceRemotes)
 			}
 			if len(definitionReq.Creators) > 0 {
 				baseSQL.In(tableFieldName(definitiondb.PipelineDefinition{}.TableName(), "creator"), definitionReq.Creators)

@@ -12,32 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package deftype
+package issue_manage
 
 import (
-	"time"
-
-	"github.com/erda-project/erda/apistructs"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/myPage/tabsTable"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/myPage/tabsTable/filterContainer/customFilter"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/myPage/tabsTable/filterContainer/inputFilter"
 )
-
-type ProjectPipelineListExecHistory struct {
-	Name      string
-	Executors []string
-	AppIDList []uint64
-	Statuses  []string
-
-	PageNo         uint64
-	PageSize       uint64
-	StartTimeBegin time.Time
-	StartTimeEnd   time.Time
-
-	DescCols []string
-	AscCols  []string
-
-	ProjectID uint64
-	apistructs.IdentityInfo
-}
-
-type ProjectPipelineListExecHistoryResult struct {
-	Data *apistructs.PipelinePageListData
-}

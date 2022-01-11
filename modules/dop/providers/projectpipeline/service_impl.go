@@ -359,6 +359,8 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 		StartTimeBegin:                params.StartTimeBegin,
 		EndTimeBegin:                  params.StartTimeEnd,
 		PipelineDefinitionRequestJSON: string(jsonValue),
+		DescCols:                      params.DescCols,
+		AscCols:                       params.AscCols,
 	}
 
 	data, err := p.bundle.PageListPipeline(pipelinePageListRequest)
