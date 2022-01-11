@@ -48,7 +48,7 @@ type State struct {
 type FrontendConditions struct {
 	Status            []string `json:"status"`
 	Creator           []string `json:"creator"`
-	App               []uint64 `json:"app"`
+	App               []string `json:"app"`
 	Executor          []string `json:"executor"`
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd"`
 	StartedAtStartEnd []int64  `json:"startedAtStartEnd"`
@@ -90,7 +90,7 @@ func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.O
 		p.gsHelper.SetGlobalTableFilter(gshelper.TableFilter{
 			Status:            values.Status,
 			Creator:           values.Creator,
-			AppIDs:            values.App,
+			App:               values.App,
 			Executor:          values.Executor,
 			CreatedAtStartEnd: values.CreatedAtStartEnd,
 			StartedAtStartEnd: values.StartedAtStartEnd,

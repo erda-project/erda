@@ -221,13 +221,44 @@ zh:
   allPipeline: 全部流水线
   createPipeline: 创建流水线
   searchByPipelineName: 搜索流水线名称
-  executor: 执行人
   application: 应用
   started-at: 开始日期
   please-choose-status: 请选择状态
   please-choose-executor: 请选择执行人
   please-choose-creator: 请选择创建人
   please-choose-application: 请选择应用
+  pipelineName: 流水线名称
+  pipelineStatus: 状态
+  costTime: 耗时
+  applicationName: 应用
+  branch: 分支
+  executor: 执行者
+  startTime: 开始时间
+  pipelineStatusAnalyzed: 初始化成功
+  pipelineStatusBorn: 初始化成功
+  pipelineStatusCreated: 创建成功
+  pipelineStatusMark: 排队中
+  pipelineStatusQueue: 排队中
+  pipelineStatusRunning: 正在执行
+  pipelineStatusSuccess: 执行成功
+  pipelineStatusFailed: 执行失败
+  pipelineStatusAnalyzeFailed: 初始化失败
+  pipelineStatusPaused: 暂停
+  pipelineStatusCreateError: 创建失败
+  pipelineStatusStartError: 启动失败
+  pipelineStatusTimeout: 超时
+  pipelineStatusStopByUser: 取消
+  pipelineStatusNoNeedBySystem: 取消
+  pipelineStatusCancelByRemote: 取消
+  pipelineStatusInitializing: 正在初始化
+  pipelineStatusError: 异常
+  pipelineStatusUnknown: 异常
+  pipelineStatusDBError: 异常
+  pipelineStatusLostConn: 异常
+  pipelineStatusDisabled: 禁用
+  pipelineStatusWaitApprove: 等待审核
+  pipelineStatusAccept: 人工审核通过
+  pipelineStatusReject: 人工审核拒绝
 en:
   issue-manage: issue manage
   issue: issue
@@ -455,3 +486,34 @@ en:
   please-choose-executor: Please choose executor
   please-choose-creator: Please choose creator
   please-choose-application: Please choose application
+  pipelineName: Pipeline name
+  pipelineStatus: Status
+  costTime: Cost time
+  applicationName: Application name
+  branch: Branch
+  startTime: Begin time
+  pipelineStatusAnalyzed: Analyzed
+  pipelineStatusBorn: Analyzed
+  pipelineStatusCreated: Created
+  pipelineStatusMark: Queue
+  pipelineStatusQueue: Queue
+  pipelineStatusRunning: Running
+  pipelineStatusSuccess: Success
+  pipelineStatusFailed: Failed
+  pipelineStatusAnalyzeFailed: AnalyzeFailed
+  pipelineStatusPaused: Paused
+  pipelineStatusCreateError: CreateError
+  pipelineStatusStartError: StartError
+  pipelineStatusTimeout: Timeout
+  pipelineStatusStopByUser: StopByUser
+  pipelineStatusNoNeedBySystem: NoNeedBySystem
+  pipelineStatusCancelByRemote: CancelByRemote
+  pipelineStatusInitializing: Initializing
+  pipelineStatusError: Error
+  pipelineStatusUnknown: Unknown
+  pipelineStatusDBError: DBError
+  pipelineStatusLostConn: LostConn
+  pipelineStatusDisabled: Disabled
+  pipelineStatusWaitApproval: WaitApproval
+  pipelineStatusApprovalSuccess: ApprovalSuccess
+  pipelineStatusApprovalFail: ApprovalFail

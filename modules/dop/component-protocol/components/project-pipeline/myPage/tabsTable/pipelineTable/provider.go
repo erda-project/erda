@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -28,7 +29,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
@@ -36,6 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
+	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
 )
 
 type PipelineTable struct {
@@ -104,58 +105,52 @@ func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 	return table.ColumnsInfo{
-		//Orders: []table.ColumnKey{ColumnCostTime, ColumnStartTime},
+		Orders: []table.ColumnKey{ColumnPipelineName, ColumnPipelineStatus, ColumnCostTime, ColumnApplicationName, ColumnBranch, ColumnExecutor, ColumnStartTime},
 		ColumnsMap: map[table.ColumnKey]table.Column{
 			ColumnPipelineName:    {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineName))},
 			ColumnPipelineStatus:  {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus))},
-			ColumnCostTime:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCostTime))},
+			ColumnCostTime:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCostTime)), EnableSort: true},
 			ColumnApplicationName: {Title: cputil.I18n(p.sdk.Ctx, string(ColumnApplicationName))},
 			ColumnBranch:          {Title: cputil.I18n(p.sdk.Ctx, string(ColumnBranch))},
 			ColumnExecutor:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnExecutor))},
-			ColumnStartTime:       {Title: cputil.I18n(p.sdk.Ctx, string(ColumnStartTime))},
+			ColumnStartTime:       {Title: cputil.I18n(p.sdk.Ctx, string(ColumnStartTime)), EnableSort: true},
 		},
 	}
 }
 
 func (p *PipelineTable) SetTableRows() []table.Row {
+	filter := p.gsHelper.GetGlobalTableFilter()
 	list, err := p.ProjectPipelineSvc.List(p.sdk.Ctx, deftype.ProjectPipelineList{
-		ProjectID:    p.InParams.ProjectID,
-		AppID:        0,
-		Ref:          nil,
-		Creator:      nil,
-		Executor:     nil,
-		Category:     nil,
-		PageNo:       0,
-		PageSize:     0,
-		Name:         "",
-		TimeCreated:  nil,
-		TimeStarted:  nil,
-		Status:       nil,
-		IdentityInfo: apistructs.IdentityInfo{},
+		ProjectID: p.InParams.ProjectID,
+		AppName:   filter.App,
+		Creator:   filter.Creator,
+		Executor:  filter.Executor,
+		PageNo:    1,
+		PageSize:  10,
+		Name:      p.gsHelper.GetGlobalNameInputFilter(),
+		TimeCreated: func() []string {
+			timeCreated := make([]string, 0, 2)
+			if len(filter.CreatedAtStartEnd) == 2 {
+				timeCreated = append(timeCreated, time.Unix(filter.CreatedAtStartEnd[0]/1000, 0).String())
+				timeCreated = append(timeCreated, time.Unix(filter.CreatedAtStartEnd[1]/1000, 0).String())
+			}
+			return timeCreated
+		}(),
+		TimeStarted: func() []string {
+			timeStarted := make([]string, 0, 2)
+			if len(filter.StartedAtStartEnd) == 2 {
+				timeStarted = append(timeStarted, time.Unix(filter.StartedAtStartEnd[0]/1000, 0).String())
+				timeStarted = append(timeStarted, time.Unix(filter.StartedAtStartEnd[1]/1000, 0).String())
+			}
+			return timeStarted
+		}(),
+		Status:       filter.Status,
+		IdentityInfo: apistructs.IdentityInfo{UserID: p.sdk.Identity.UserID},
 	})
 	if err != nil {
-		logrus.Errorf("failed to list project pipeline,err: %s", err.Error())
+		logrus.Errorf("failed to list project pipeline, err: %s", err.Error())
 		//return nil
 	}
-	list = append(list, &pb.PipelineDefinition{
-		ID:               "1",
-		Name:             "1",
-		Creator:          "1",
-		Category:         "1",
-		CostTime:         0,
-		Executor:         "1",
-		Extra:            nil,
-		StartedAt:        nil,
-		EndedAt:          nil,
-		TimeCreated:      nil,
-		TimeUpdated:      nil,
-		SourceType:       "1",
-		Remote:           "1",
-		Ref:              "1",
-		Path:             "1",
-		FileName:         "1",
-		PipelineSourceId: "1",
-	})
 
 	rows := make([]table.Row, 0, len(list))
 	for _, v := range list {
@@ -204,7 +199,10 @@ func (p *PipelineTable) RegisterTableChangePageOp(opData table.OpTableChangePage
 }
 
 func (p *PipelineTable) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {
-	return nil
+	return func(sdk *cptype.SDK) {
+		(*sdk.GlobalState)[transaction.StateKeyTransactionSort] = opData.ClientData
+		p.RegisterInitializeOp()(sdk)
+	}
 }
 
 func (p *PipelineTable) RegisterBatchRowsHandleOp(opData table.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {

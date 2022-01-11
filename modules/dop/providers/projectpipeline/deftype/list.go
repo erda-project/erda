@@ -22,7 +22,7 @@ import (
 
 type ProjectPipelineList struct {
 	ProjectID   uint64   `json:"projectID"`
-	AppID       uint64   `json:"appID"`
+	AppName     []string `json:"appName"`
 	Ref         []string `json:"ref"`
 	Creator     []string `json:"creator"`
 	Executor    []string `json:"executor"`
