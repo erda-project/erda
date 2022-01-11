@@ -15,7 +15,7 @@
 package release
 
 import (
-	"archive/tar"
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -207,25 +207,26 @@ func limitLabelsLength(req *apistructs.ReleaseCreateRequest) error {
 func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.ReadCloser) (*dbclient.Release, []dbclient.Release, error) {
 	var metadata apistructs.ReleaseMetadata
 	dices := make(map[string]string)
-	reader := tar.NewReader(file)
+	buf := bytes.Buffer{}
+	if _, err := io.Copy(&buf, file); err != nil {
+		return nil, nil, err
+	}
+	zr, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	if err != nil {
+		return nil, nil, err
+	}
 	hasMetadata := false
-	for {
-		hdr, err := reader.Next()
-		if err == io.EOF {
-			break
-		}
+	for _, f := range zr.File {
+		rc, err := f.Open()
 		if err != nil {
 			return nil, nil, err
 		}
 		buf := bytes.Buffer{}
-		if _, err = io.Copy(&buf, reader); err != nil {
+		if _, err = io.Copy(&buf, rc); err != nil {
 			return nil, nil, err
 		}
 
-		splits := strings.Split(hdr.Name, "/")
-		if !strings.HasSuffix(splits[0], ".tar") {
-			return nil, nil, errors.New("only support .tar file")
-		}
+		splits := strings.Split(f.Name, "/")
 		if len(splits) == 2 && splits[1] == "metadata.yml" {
 			hasMetadata = true
 			if err := yaml.Unmarshal(buf.Bytes(), &metadata); err != nil {
@@ -234,6 +235,10 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 		} else if len(splits) == 4 && splits[3] == "dice.yml" {
 			appName := splits[2]
 			dices[appName] = buf.String()
+		}
+
+		if err := rc.Close(); err != nil {
+			return nil, nil, err
 		}
 	}
 

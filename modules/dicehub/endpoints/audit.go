@@ -22,30 +22,38 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-func (e *Endpoints) audit(req *http.Request, orgID, projectID int64, userID, templateName string, ctx map[string]interface{}) error {
-	org, err := e.bdl.GetOrg(orgID)
+type auditParams struct {
+	orgID        int64
+	projectID    int64
+	userID       string
+	templateName string
+	ctx          map[string]interface{}
+}
+
+func (e *Endpoints) audit(req *http.Request, params auditParams) error {
+	org, err := e.bdl.GetOrg(params.orgID)
 	if err != nil {
 		return err
 	}
 
-	project, err := e.bdl.GetProject(uint64(projectID))
+	project, err := e.bdl.GetProject(uint64(params.projectID))
 	if err != nil {
 		return err
 	}
 
-	ctx["orgName"] = org.Name
-	ctx["projectName"] = project.Name
+	params.ctx["orgName"] = org.Name
+	params.ctx["projectName"] = project.Name
 
 	now := strconv.FormatInt(time.Now().Unix(), 10)
 	return e.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{
 		Audit: apistructs.Audit{
-			UserID:       userID,
+			UserID:       params.userID,
 			ScopeType:    apistructs.ProjectScope,
-			ScopeID:      uint64(projectID),
-			OrgID:        uint64(orgID),
-			ProjectID:    uint64(projectID),
-			Context:      ctx,
-			TemplateName: apistructs.TemplateName(templateName),
+			ScopeID:      uint64(params.projectID),
+			OrgID:        uint64(params.orgID),
+			ProjectID:    uint64(params.projectID),
+			Context:      params.ctx,
+			TemplateName: apistructs.TemplateName(params.templateName),
 			Result:       "success",
 			StartTime:    now,
 			EndTime:      now,
