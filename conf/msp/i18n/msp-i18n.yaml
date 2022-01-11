@@ -49,6 +49,8 @@ en:
   countUnit: "freq"
   pcsUnit: "pcs"
   rateUnit: "%"
+  slowRequestDistribution: "Slow Request Distribution"
+  occurTime: "Occur Time"
   traceId: Trace ID
   traceDuration: Duration
   traceStartTime: Start Time
@@ -123,6 +125,8 @@ zh:
   countUnit: "次"
   pcsUnit: "个"
   rateUnit: "%"
+  slowRequestDistribution: "慢调用耗时分布"
+  occurTime: "发生时间"
   traceId: 追踪 ID
   traceDuration: 持续时间
   traceStartTime: 起始时间

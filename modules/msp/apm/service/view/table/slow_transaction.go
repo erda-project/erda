@@ -18,61 +18,57 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"google.golang.org/protobuf/types/known/structpb"
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
+	slow_transaction "github.com/erda-project/erda/modules/msp/apm/service/common/slow-transaction"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/strutil"
+	pkgtime "github.com/erda-project/erda/pkg/time"
 )
 
 var (
-	columnPath        = &Column{Key: string(transaction.ColumnTransactionName), Name: "Transaction Name"}
-	columnReqCount    = &Column{Key: string(transaction.ColumnReqCount), Name: "Req Count", Sortable: true}
-	columnErrorCount  = &Column{Key: string(transaction.ColumnErrorCount), Name: "Error Count", Sortable: true}
-	columnSlowCount   = &Column{Key: string(transaction.ColumnSlowCount), Name: "Slow Count", Sortable: true}
-	columnAvgDuration = &Column{Key: string(transaction.ColumnAvgDuration), Name: "Avg Duration", Sortable: true}
+	slowTransTableColumnOccurTime = &Column{Key: string(slow_transaction.ColumnOccurTime), Name: "Occur Time", Sortable: true}
+	slowTransTableColumnDuration  = &Column{Key: string(slow_transaction.ColumnDuration), Name: "Duration", Sortable: true}
+	slowTransTableColumnTraceId   = &Column{Key: string(slow_transaction.ColumnTraceId), Name: "Trace Id"}
 )
 
-var TransactionTableSortFieldSqlMap = map[string]string{
-	columnReqCount.Key:    "sum(elapsed_count::field)",
-	columnErrorCount.Key:  "count(error::tag)",
-	columnSlowCount.Key:   "sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0))",
-	columnAvgDuration.Key: "avg(elapsed_mean::field)",
+var slowTransactionTableSortFieldSqlMap = map[string]string{
+	slowTransTableColumnOccurTime.Key: "timestamp",
+	slowTransTableColumnDuration.Key:  "elapsed_mean::field",
 }
 
-type TransactionTableRow struct {
-	TransactionName string
-	ReqCount        float64
-	ErrorCount      float64
-	SlowCount       float64
-	AvgDuration     string
+type SlowTransactionTableRow struct {
+	OccurTime string
+	Duration  string
+	TraceId   string
 }
 
-func (t *TransactionTableRow) GetCells() []*Cell {
+func (t *SlowTransactionTableRow) GetCells() []*Cell {
 	return []*Cell{
-		{Key: columnPath.Key, Value: t.TransactionName},
-		{Key: columnReqCount.Key, Value: t.ReqCount},
-		{Key: columnErrorCount.Key, Value: t.ErrorCount},
-		{Key: columnSlowCount.Key, Value: t.SlowCount},
-		{Key: columnAvgDuration.Key, Value: t.AvgDuration},
+		{Key: slowTransTableColumnOccurTime.Key, Value: t.OccurTime},
+		{Key: slowTransTableColumnDuration.Key, Value: t.Duration},
+		{Key: slowTransTableColumnTraceId.Key, Value: t.TraceId},
 	}
 }
 
-type TransactionTableBuilder struct {
+type SlowTransactionTableBuilder struct {
 	*BaseBuildParams
+	MinDuration int64
+	MaxDuration int64
 }
 
-func (t *TransactionTableBuilder) GetBaseBuildParams() *BaseBuildParams {
+func (t *SlowTransactionTableBuilder) GetBaseBuildParams() *BaseBuildParams {
 	return t.BaseBuildParams
 }
 
-func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) {
+func (t *SlowTransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) {
 	table := &Table{
-		Columns: []*Column{columnPath, columnReqCount, columnErrorCount, columnSlowCount, columnAvgDuration},
+		Columns: []*Column{slowTransTableColumnOccurTime, slowTransTableColumnDuration, slowTransTableColumnTraceId},
 	}
-	pathField := common.GetLayerPathKeys(t.Layer)[0]
 	var layerPathParam *structpb.Value
 	if t.FuzzyPath {
 		layerPathParam = common.NewStructValue(map[string]interface{}{"regex": ".*" + t.LayerPath + ".*"})
@@ -80,20 +76,20 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		layerPathParam = structpb.NewStringValue(t.LayerPath)
 	}
 	queryParams := map[string]*structpb.Value{
-		"terminus_key":   structpb.NewStringValue(t.TenantId),
-		"service_id":     structpb.NewStringValue(t.ServiceId),
-		"layer_path":     layerPathParam,
-		"slow_threshold": structpb.NewNumberValue(common.GetSlowThreshold(t.Layer)),
+		"terminus_key": structpb.NewStringValue(t.TenantId),
+		"service_id":   structpb.NewStringValue(t.ServiceId),
+		"layer_path":   layerPathParam,
 	}
 
 	// calculate total count
-	statement := fmt.Sprintf("SELECT DISTINCT(%s) "+
-		"FROM %s "+
+	statement := fmt.Sprintf("SELECT count(timestamp) "+
+		"FROM %s_slow "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
+		"%s "+
 		"%s ",
-		pathField,
 		common.GetDataSourceNames(t.Layer),
+		common.BuildDurationFilterSql("elapsed_mean::field", t.MinDuration, t.MaxDuration),
 		common.BuildServerSideServiceIdFilterSql("$service_id", t.Layer),
 		common.BuildLayerPathFilterSql(t.LayerPath, "$layer_path", t.FuzzyPath, t.Layer),
 	)
@@ -111,24 +107,21 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 
 	// query list items
 	statement = fmt.Sprintf("SELECT "+
-		"%s,"+
-		"sum(elapsed_count::field),"+
-		"count(error::tag),"+
-		"sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0)),"+
-		"format_duration(avg(elapsed_mean::field),'',2) "+
-		"FROM %s "+
+		"timestamp, "+
+		"elapsed_mean::field, "+
+		"trace_id::tag "+
+		"FROM %s_slow "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
 		"%s "+
-		"GROUP BY %s "+
+		"%s "+
 		"ORDER BY %s "+
 		"LIMIT %v OFFSET %v",
-		pathField,
 		common.GetDataSourceNames(t.Layer),
+		common.BuildDurationFilterSql("elapsed_mean::field", t.MinDuration, t.MaxDuration),
 		common.BuildServerSideServiceIdFilterSql("$service_id", t.Layer),
 		common.BuildLayerPathFilterSql(t.LayerPath, "$layer_path", t.FuzzyPath, t.Layer),
-		pathField,
-		common.GetSortSql(TransactionTableSortFieldSqlMap, "sum(elapsed_count::field) DESC", t.OrderBy...),
+		common.GetSortSql(slowTransactionTableSortFieldSqlMap, "elapsed_mean::field DESC", t.OrderBy...),
 		t.PageSize,
 		(t.PageNo-1)*t.PageSize,
 	)
@@ -143,12 +136,11 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		return nil, errors.NewInternalServerError(err)
 	}
 	for _, row := range response.Results[0].Series[0].Rows {
-		transRow := &TransactionTableRow{
-			TransactionName: row.Values[0].GetStringValue(),
-			ReqCount:        row.Values[1].GetNumberValue(),
-			ErrorCount:      row.Values[2].GetNumberValue(),
-			SlowCount:       row.Values[3].GetNumberValue(),
-			AvgDuration:     row.Values[4].GetStringValue(),
+		d, u := pkgtime.AutomaticConversionUnit(row.Values[1].GetNumberValue())
+		transRow := &SlowTransactionTableRow{
+			OccurTime: time.Unix(0, int64(row.Values[0].GetNumberValue())).Format("2006-01-02 15:04:05"),
+			Duration:  fmt.Sprintf("%s%s", strutil.String(d), u),
+			TraceId:   strutil.FirstNoneEmpty(row.Values[2].GetStringValue(), "-"),
 		}
 		table.Rows = append(table.Rows, transRow)
 	}

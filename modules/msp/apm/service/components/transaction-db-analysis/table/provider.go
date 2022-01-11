@@ -60,17 +60,21 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		sorts := transaction.GetSortsFromGlobalState(*sdk.GlobalState)
 
 		data, err := p.DataSource.GetTable(context.WithValue(context.Background(), common.LangKey, lang),
-			viewtable.TableTypeTransaction,
-			startTime,
-			endTime,
-			tenantId,
-			serviceId,
-			common.TransactionLayerDb,
-			layerPath,
-			pageNo,
-			pageSize,
-			sorts...,
-		)
+			&viewtable.TransactionTableBuilder{
+				BaseBuildParams: &viewtable.BaseBuildParams{
+					StartTime: startTime,
+					EndTime:   endTime,
+					TenantId:  tenantId,
+					ServiceId: serviceId,
+					Layer:     common.TransactionLayerDb,
+					LayerPath: layerPath,
+					FuzzyPath: true,
+					OrderBy:   sorts,
+					PageNo:    pageNo,
+					PageSize:  pageSize,
+					Metric:    p.Metric,
+				},
+			})
 		if err != nil {
 			p.Log.Error("failed to get table data: %s", err)
 			return

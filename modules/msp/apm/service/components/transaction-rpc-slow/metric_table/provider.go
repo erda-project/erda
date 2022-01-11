@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package table
+package metric_table
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
+	slow_transaction "github.com/erda-project/erda/modules/msp/apm/service/common/slow-transaction"
 	"github.com/erda-project/erda/modules/msp/apm/service/datasources"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 	viewtable "github.com/erda-project/erda/modules/msp/apm/service/view/table"
@@ -36,47 +36,40 @@ import (
 
 type provider struct {
 	impl.DefaultTable
+	slow_transaction.SlowTransactionInParams
 	Log        logs.Logger
 	I18n       i18n.Translator               `autowired:"i18n" translator:"msp-i18n"`
 	Metric     metricpb.MetricServiceServer  `autowired:"erda.core.monitor.metric.MetricService"`
 	DataSource datasources.ServiceDataSource `autowired:"component-protocol.components.datasources.msp-service"`
 }
 
-// RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		lang := sdk.Lang
-		startTime := int64(p.StdInParamsPtr.Get("startTime").(float64))
-		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
-		tenantId := p.StdInParamsPtr.Get("tenantId").(string)
-		serviceId := p.StdInParamsPtr.Get("serviceId").(string)
+		filter := slow_transaction.GetFilterFromGlobalState(*sdk.GlobalState)
+		pageNo, pagSize := slow_transaction.GetPagingFromGlobalState(*sdk.GlobalState)
+		sorts := slow_transaction.GetSortsFromGlobalState(*sdk.GlobalState)
 
-		layerPath := ""
-		if x, ok := (*sdk.GlobalState)[transaction.StateKeyTransactionLayerPathFilter]; ok && x != nil {
-			layerPath = x.(string)
-		}
-
-		pageNo, pageSize := transaction.GetPagingFromGlobalState(*sdk.GlobalState)
-		sorts := transaction.GetSortsFromGlobalState(*sdk.GlobalState)
-
-		data, err := p.DataSource.GetTable(context.WithValue(context.Background(), common.LangKey, lang),
-			&viewtable.TransactionTableBuilder{
+		data, err := p.DataSource.GetTable(context.WithValue(context.Background(), common.LangKey, sdk.Lang),
+			&viewtable.SlowTransactionTableBuilder{
 				BaseBuildParams: &viewtable.BaseBuildParams{
-					StartTime: startTime,
-					EndTime:   endTime,
-					TenantId:  tenantId,
-					ServiceId: serviceId,
+					TenantId:  p.InParamsPtr.TenantId,
+					ServiceId: p.InParamsPtr.ServiceId,
+					StartTime: p.InParamsPtr.StartTime,
+					EndTime:   p.InParamsPtr.EndTime,
 					Layer:     common.TransactionLayerRpc,
-					LayerPath: layerPath,
-					FuzzyPath: true,
+					LayerPath: p.InParamsPtr.LayerPath,
+					FuzzyPath: false,
 					OrderBy:   sorts,
 					PageNo:    pageNo,
-					PageSize:  pageSize,
+					PageSize:  pagSize,
 					Metric:    p.Metric,
 				},
+				MinDuration: filter.MinDuration,
+				MaxDuration: filter.MaxDuration,
 			})
 		if err != nil {
-			p.Log.Error("failed to get table data: %s", err)
+			p.Log.Error(err)
+			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
 			return
 		}
 
@@ -85,28 +78,33 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				table.OpTableChangePage{}.OpKey(): cputil.NewOpBuilder().WithServerDataPtr(&table.OpTableChangePageServerData{}).Build(),
 				table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
-			}}
+			},
+		}
 	}
+}
+
+func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
+	return p.RegisterInitializeOp()
 }
 
 func (p *provider) RegisterTablePagingOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		(*sdk.GlobalState)[transaction.StateKeyTransactionPaging] = opData.ClientData
+		slow_transaction.SetPagingToGlobalState(*sdk.GlobalState, opData.ClientData)
 		p.RegisterInitializeOp()(sdk)
 	}
 }
 
 func (p *provider) RegisterTableChangePageOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		(*sdk.GlobalState)[transaction.StateKeyTransactionPaging] = opData.ClientData
+		slow_transaction.SetPagingToGlobalState(*sdk.GlobalState, opData.ClientData)
 		p.RegisterInitializeOp()(sdk)
 	}
 }
 
 func (p *provider) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		(*sdk.GlobalState)[transaction.StateKeyTransactionSort] = opData.ClientData
-		p.RegisterInitializeOp()(sdk)
+		slow_transaction.SetSortsToGlobalState(*sdk.GlobalState, opData.ClientData)
+		p.RegisterRenderingOp()(sdk)
 	}
 }
 
@@ -130,22 +128,17 @@ func (p *provider) RegisterRowDeleteOp(opData table.OpRowDelete) (opFunc cptype.
 	return nil
 }
 
-// RegisterRenderingOp .
-func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
-	return p.RegisterInitializeOp()
-}
-
 // Init .
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.DefaultTable = impl.DefaultTable{}
 	v := reflect.ValueOf(p)
 	v.Elem().FieldByName("Impl").Set(v)
-	compName := "table"
+	compName := "metricTable"
 	if ctx.Label() != "" {
 		compName = ctx.Label()
 	}
 	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
-		Scenario: "transaction-rpc-analysis",
+		Scenario: "transaction-rpc-slow",
 		CompName: compName,
 		Creator:  func() cptype.IComponent { return p },
 	})
@@ -158,7 +151,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	name := "component-protocol.components.transaction-rpc-analysis.table"
+	name := "component-protocol.components.transaction-rpc-slow.metricTable"
 	cpregister.AllExplicitProviderCreatorMap[name] = nil
 	servicehub.Register(name, &servicehub.Spec{
 		Creator: func() servicehub.Provider { return &provider{} },
