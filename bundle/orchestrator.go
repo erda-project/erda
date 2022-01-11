@@ -89,12 +89,15 @@ func (b *Bundle) CreateRuntime(req apistructs.RuntimeCreateRequest, orgID uint64
 // scaleDown  表示停止之前已经在运行的 runtimes
 func (b *Bundle) BatchUpdateScale(req apistructs.RuntimeScaleRecords, orgID uint64, userID, action string) (apistructs.BatchRuntimeScaleResults, error) {
 	if action != apistructs.ScaleActionDown && action != apistructs.ScaleActionUp && action != "" {
-		return apistructs.BatchRuntimeScaleResults{}, errors.Errorf("value of %s is invalid scale action, valid value for BatchUpdate_Scale is '%s' or '%s' or ''", apistructs.ScaleAction, apistructs.ScaleActionUp, apistructs.ScaleActionDown)
+		return apistructs.BatchRuntimeScaleResults{}, errors.Errorf("value of %s is invalid scale action, valid value for BatchUpdateScale is '%s' or '%s' or ''", apistructs.ScaleAction, apistructs.ScaleActionUp, apistructs.ScaleActionDown)
 	}
 
 	data, err := b.batchProcessRuntimes(req, orgID, userID, action)
 	if err != nil {
 		return apistructs.BatchRuntimeScaleResults{}, apierrors.ErrInvoke.InternalError(err)
+	}
+	if data == nil {
+		return apistructs.BatchRuntimeScaleResults{}, errors.Errorf("return of scale action %s is nil", action)
 	}
 
 	batchScales, ok := data.(apistructs.BatchRuntimeScaleResults)
@@ -109,11 +112,15 @@ func (b *Bundle) BatchUpdateScale(req apistructs.RuntimeScaleRecords, orgID uint
 // action 表示 scale 的操作，仅支持取值 reDeploy
 func (b *Bundle) BatchUpdateReDeploy(req apistructs.RuntimeScaleRecords, orgID uint64, userID, action string) (apistructs.BatchRuntimeReDeployResults, error) {
 	if action != apistructs.ScaleActionReDeploy {
-		return apistructs.BatchRuntimeReDeployResults{}, errors.Errorf("value of %s is invalid scale action, valid value for BatchUpdate_ReDeploy is '%s' ", apistructs.ScaleAction, apistructs.ScaleActionReDeploy)
+		return apistructs.BatchRuntimeReDeployResults{}, errors.Errorf("value of %s is invalid scale action, valid value for BatchUpdateReDeploy is '%s' ", apistructs.ScaleAction, apistructs.ScaleActionReDeploy)
 	}
 	data, err := b.batchProcessRuntimes(req, orgID, userID, action)
 	if err != nil {
 		return apistructs.BatchRuntimeReDeployResults{}, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if data == nil {
+		return apistructs.BatchRuntimeReDeployResults{}, errors.Errorf("return of scale action %s is nil", action)
 	}
 
 	batchRedeploys, ok := data.(apistructs.BatchRuntimeReDeployResults)
@@ -128,11 +135,15 @@ func (b *Bundle) BatchUpdateReDeploy(req apistructs.RuntimeScaleRecords, orgID u
 // action 表示 scale 的操作，仅支持取值 delete
 func (b *Bundle) BatchUpdateDelete(req apistructs.RuntimeScaleRecords, orgID uint64, userID, action string) (apistructs.BatchRuntimeDeleteResults, error) {
 	if action != apistructs.ScaleActionDelete {
-		return apistructs.BatchRuntimeDeleteResults{}, errors.Errorf("value of %s is invalid scale action, valid value for BatchUpdate_ReDeploy is '%s' ", apistructs.ScaleAction, apistructs.ScaleActionReDeploy)
+		return apistructs.BatchRuntimeDeleteResults{}, errors.Errorf("value of %s is invalid scale action, valid value for BatchUpdateDelete is '%s' ", apistructs.ScaleAction, apistructs.ScaleActionDelete)
 	}
 	data, err := b.batchProcessRuntimes(req, orgID, userID, action)
 	if err != nil {
 		return apistructs.BatchRuntimeDeleteResults{}, apierrors.ErrInvoke.InternalError(err)
+	}
+
+	if data == nil {
+		return apistructs.BatchRuntimeDeleteResults{}, errors.Errorf("return of scale action %s is nil", action)
 	}
 
 	batchRedeploys, ok := data.(apistructs.BatchRuntimeDeleteResults)
