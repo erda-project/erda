@@ -17,6 +17,8 @@ package gshelper
 import (
 	"time"
 
+	"github.com/mitchellh/mapstructure"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 )
 
@@ -26,6 +28,14 @@ type GSHelper struct {
 
 func NewGSHelper(gs *cptype.GlobalStateData) *GSHelper {
 	return &GSHelper{gs: gs}
+}
+
+func assign(src, dst interface{}) error {
+	if src == nil || dst == nil {
+		return nil
+	}
+
+	return mapstructure.Decode(src, dst)
 }
 
 func (h *GSHelper) SetStatuesFilter(statues []string) {
@@ -39,14 +49,9 @@ func (h *GSHelper) GetStatuesFilter() []string {
 	if h.gs == nil {
 		return nil
 	}
-	v, ok := (*h.gs)["GlobalStatuesFilter"]
-	if !ok {
-		return nil
-	}
-	if _, ok = v.([]string); ok {
-		return v.([]string)
-	}
-	return nil
+	var t []string
+	_ = assign((*h.gs)["GlobalStatuesFilter"], &t)
+	return t
 }
 
 func (h *GSHelper) SetAppsFilter(apps []uint64) {
@@ -60,14 +65,9 @@ func (h *GSHelper) GetAppsFilter() []uint64 {
 	if h.gs == nil {
 		return nil
 	}
-	v, ok := (*h.gs)["GlobalAppsFilter"]
-	if !ok {
-		return nil
-	}
-	if _, ok = v.([]uint64); ok {
-		return v.([]uint64)
-	}
-	return nil
+	var t []uint64
+	_ = assign((*h.gs)["GlobalAppsFilter"], &t)
+	return t
 }
 
 func (h *GSHelper) SetExecutorsFilter(executors []string) {
@@ -81,14 +81,9 @@ func (h *GSHelper) GetExecutorsFilter() []string {
 	if h.gs == nil {
 		return nil
 	}
-	v, ok := (*h.gs)["GlobalExecutorsFilter"]
-	if !ok {
-		return nil
-	}
-	if _, ok = v.([]string); ok {
-		return v.([]string)
-	}
-	return nil
+	var t []string
+	_ = assign((*h.gs)["GlobalExecutorsFilter"], &t)
+	return t
 }
 
 func (h *GSHelper) SetPipelineNameFilter(name string) {
@@ -102,54 +97,41 @@ func (h *GSHelper) GetPipelineNameFilter() string {
 	if h.gs == nil {
 		return ""
 	}
-	v, ok := (*h.gs)["GlobalPipelineNameFilter"]
-	if !ok {
-		return ""
-	}
-	if _, ok = v.(string); ok {
-		return v.(string)
-	}
-	return ""
+	var t string
+	_ = assign((*h.gs)["GlobalPipelineNameFilter"], &t)
+	return t
 }
 
-func (h *GSHelper) SetBeginTimeStartFilter(time *time.Time) {
+func (h *GSHelper) SetBeginTimeStartFilter(unix int64) {
 	if h.gs == nil {
 		return
 	}
-	(*h.gs)["GlobalBeginTimeStartFilter"] = time
+	(*h.gs)["GlobalBeginTimeStartFilter"] = unix
 }
 
 func (h *GSHelper) GetBeginTimeStartFilter() *time.Time {
 	if h.gs == nil {
 		return nil
 	}
-	v, ok := (*h.gs)["GlobalBeginTimeStartFilter"]
-	if !ok {
-		return nil
-	}
-	if _, ok = v.(*time.Time); ok {
-		return v.(*time.Time)
-	}
-	return nil
+	var t int64
+	_ = assign((*h.gs)["GlobalBeginTimeStartFilter"], &t)
+	var startTime = time.Unix(t/1000, 0)
+	return &startTime
 }
 
-func (h *GSHelper) SetBeginTimeEndFilter(time *time.Time) {
+func (h *GSHelper) SetBeginTimeEndFilter(unix int64) {
 	if h.gs == nil {
 		return
 	}
-	(*h.gs)["GlobalBeginTimeEndFilter"] = time
+	(*h.gs)["GlobalBeginTimeEndFilter"] = unix
 }
 
 func (h *GSHelper) GetBeginTimeEndFilter() *time.Time {
 	if h.gs == nil {
 		return nil
 	}
-	v, ok := (*h.gs)["GlobalBeginTimeEndFilter"]
-	if !ok {
-		return nil
-	}
-	if _, ok = v.(*time.Time); ok {
-		return v.(*time.Time)
-	}
-	return nil
+	var t int64
+	_ = assign((*h.gs)["GlobalBeginTimeEndFilter"], &t)
+	var endTime = time.Unix(t/1000, 0)
+	return &endTime
 }

@@ -16,7 +16,6 @@ package dbclient
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -384,14 +383,11 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 		baseSQL.Alias(fmt.Sprintf("`%s` USE INDEX (%s)", (&spec.PipelineBase{}).TableName(), strings.Join(forceIndexes, ",")))
 	}
 
-	if req.PipelineDefinitionRequestJSON != "" {
-		var definitionReq apistructs.PipelineDefinitionRequest
-		err := json.Unmarshal([]byte(req.PipelineDefinitionRequestJSON), &definitionReq)
-		if err != nil {
-			return nil, nil, -1, -1, err
-		}
+	if req.PipelineDefinitionRequest != nil {
+		var definitionReq = req.PipelineDefinitionRequest
 
 		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " is not null ")
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " != '' ")
 
 		if !definitionReq.IsEmptyValue() {
 			baseSQL.Join("INNER", definitiondb.PipelineDefinition{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_definition_id", definitiondb.PipelineDefinition{}.TableName(), (&spec.PipelineBase{}).TableName()))

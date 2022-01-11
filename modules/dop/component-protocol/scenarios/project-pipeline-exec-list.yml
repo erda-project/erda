@@ -28,6 +28,7 @@ components:
   pipelineTable:
     type: Table
     name: pipelineTable
+    version: 2
   inputFilter:
     name: inputFilter
     type: ContractiveFilter
