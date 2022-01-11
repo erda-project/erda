@@ -62,7 +62,8 @@ func (a *auditor) Audit(auditors ...*MethodAuditor) transport.ServiceOption {
 				return h(ctx, req)
 			}
 			rec := a.Begin()
-			ctx = withOptionDataContext(ctx)
+			ctxData := &optionContextData{}
+			ctx = withOptionDataContext(ctx, ctxData)
 			resp, err := h(ctx, req)
 			if err == nil || ma.recordError {
 				var (
@@ -77,7 +78,7 @@ func (a *auditor) Audit(auditors ...*MethodAuditor) transport.ServiceOption {
 						scopeID, entries, loadError = ma.getter(ctx, req, resp, err)
 					}
 				}
-				ctxOpts := getOptionFromContext(ctx)
+				ctxOpts := ctxData.opts
 				opts := make([]Option, 1+len(ma.options)+len(ctxOpts))
 				opts[0] = Entries(func(ctx context.Context) (map[string]interface{}, error) {
 					loadScopeIDAndEntries()

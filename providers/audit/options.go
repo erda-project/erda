@@ -116,16 +116,8 @@ type optionContextData struct {
 	opts []Option
 }
 
-func withOptionDataContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, optionContextKey, &optionContextData{})
-}
-
-func getOptionFromContext(ctx context.Context) []Option {
-	data, ok := ctx.Value(optionContextKey).(*optionContextData)
-	if ok {
-		return data.opts
-	}
-	return nil
+func withOptionDataContext(ctx context.Context, opts *optionContextData) context.Context {
+	return context.WithValue(ctx, optionContextKey, opts)
 }
 
 // ContextOptions .
