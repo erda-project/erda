@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
@@ -152,7 +153,9 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("component-protocol.components.transaction-http-analysis.table", &servicehub.Spec{
+	name := "component-protocol.components.transaction-http-analysis.table"
+	cpregister.AllExplicitProviderCreatorMap[name] = nil
+	servicehub.Register(name, &servicehub.Spec{
 		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

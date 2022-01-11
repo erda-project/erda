@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
@@ -37,6 +38,8 @@ type ComponentFilter struct {
 }
 
 func init() {
+	name := "component-protocol.components.transaction-db-analysis.tableFilter"
+	cpregister.AllExplicitProviderCreatorMap[name] = nil
 	base.InitProviderWithCreator("transaction-db-analysis", "tableFilter",
 		func() servicehub.Provider { return &ComponentFilter{} },
 	)

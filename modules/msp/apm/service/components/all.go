@@ -15,6 +15,10 @@
 package components
 
 import (
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/resources-container-monitor"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/resources-node-monitor"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/resources-runtime-monitor-java"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/resources-runtime-monitor-nodejs"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/service-list"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/service-overview"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis"

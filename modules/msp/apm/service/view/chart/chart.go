@@ -46,7 +46,7 @@ func GetChartUnitDefault(chartType pb.ChartType, lang i18n.LanguageCodes, i18n i
 	switch strings.ToLower(chartType.String()) {
 	case strings.ToLower(pb.ChartType_RPS.String()):
 		return i18n.Text(lang, "rpsUnit")
-	case strings.ToLower(pb.ChartType_AvgDuration.String()):
+	case strings.ToLower(pb.ChartType_AvgDuration.String()), strings.ToLower(pb.ChartType_AvgDurationDistribution.String()):
 		return i18n.Text(lang, "avgDurationUnit")
 	case strings.ToLower(pb.ChartType_ErrorRate.String()):
 		return i18n.Text(lang, "rateUnit")
@@ -99,6 +99,13 @@ func Selector(chartType string, baseChart *BaseChart, ctx context.Context) (*pb.
 	case strings.ToLower(pb.ChartType_SlowCount.String()):
 		slowCountChart := SlowCountChart{BaseChart: baseChart}
 		getChart, err := slowCountChart.GetChart(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return getChart, err
+	case strings.ToLower(pb.ChartType_AvgDurationDistribution.String()):
+		addChart := AvgDurationDistributionChart{BaseChart: baseChart}
+		getChart, err := addChart.GetChart(ctx)
 		if err != nil {
 			return nil, err
 		}

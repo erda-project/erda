@@ -16,6 +16,7 @@ package table
 
 import (
 	"context"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -153,7 +154,9 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("component-protocol.components.transaction-rpc-analysis.table", &servicehub.Spec{
+	name := "component-protocol.components.transaction-rpc-analysis.table"
+	cpregister.AllExplicitProviderCreatorMap[name] = nil
+	servicehub.Register(name, &servicehub.Spec{
 		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

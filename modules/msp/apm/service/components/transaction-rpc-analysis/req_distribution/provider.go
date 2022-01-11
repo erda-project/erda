@@ -15,24 +15,25 @@
 package req_distribution
 
 import (
-	"fmt"
+	"context"
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/service/common/custom"
 	"github.com/erda-project/erda/modules/msp/apm/service/datasources"
+	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 )
 
 type provider struct {
 	impl.DefaultBubbleGraph
-	custom.TransactionInParams
+	custom.ServiceInParams
 	Log        logs.Logger
 	I18n       i18n.Translator               `autowired:"i18n" translator:"msp-i18n"`
 	Metric     metricpb.MetricServiceServer  `autowired:"erda.core.monitor.metric.MetricService"`
@@ -42,14 +43,28 @@ type provider struct {
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		//lang := sdk.Lang
-		//
+		lang := sdk.Lang
 		startTime := p.InParamsPtr.StartTime
-		fmt.Println(startTime)
-		//endTime := p.InParamsPtr.EndTime
-		//tenantId := p.InParamsPtr.TenantId
-		//serviceId := p.InParamsPtr.ServiceId
-		p.StdDataPtr = bubblegraph.NewDataBuilder().WithTitle("test").Build()
+		endTime := p.InParamsPtr.EndTime
+		tenantId := p.InParamsPtr.TenantId
+		serviceId := p.InParamsPtr.ServiceId
+
+		bubble, err := p.DataSource.GetBubbleChart(context.WithValue(context.Background(), common.LangKey, lang),
+			datasources.BubbleChartReqDistribution,
+			startTime,
+			endTime,
+			tenantId,
+			serviceId,
+			common.TransactionLayerRpc,
+			"")
+
+		if err != nil {
+			p.Log.Error(err)
+			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
+			return
+		}
+
+		p.StdDataPtr = bubble
 	}
 }
 
@@ -81,7 +96,9 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("component-protocol.components.transaction-rpc-analysis.reqDistribution", &servicehub.Spec{
+	name := "component-protocol.components.transaction-rpc-analysis.reqDistribution"
+	cpregister.AllExplicitProviderCreatorMap[name] = nil
+	servicehub.Register(name, &servicehub.Spec{
 		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

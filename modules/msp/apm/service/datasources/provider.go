@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph"
 	stdtable "github.com/erda-project/erda-infra/providers/component-protocol/components/table"
@@ -36,8 +37,13 @@ type provider struct {
 	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
 
+type BubbleChartType string
+
+const BubbleChartReqDistribution BubbleChartType = "requestDistribution"
+
 type ServiceDataSource interface {
 	GetChart(ctx context.Context, chartType pb.ChartType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*linegraph.Data, error)
+	GetBubbleChart(ctx context.Context, bubbleType BubbleChartType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*bubblegraph.Data, error)
 	GetCard(ctx context.Context, cardType card.CardType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*kv.KV, error)
 	GetTable(ctx context.Context, tableType table.TableType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string, pageNo int, pageSize int, orderby ...*common.Sort) (*stdtable.Table, error)
 }

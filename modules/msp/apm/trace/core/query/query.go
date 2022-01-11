@@ -48,13 +48,6 @@ var sortConditions = []*pb.TraceQueryCondition{
 	{Key: strings.ToLower(pb.SortCondition_TRACE_DURATION_ASC.String()), Value: strings.ToLower(pb.SortCondition_TRACE_DURATION_ASC.String())},
 }
 
-var limitConditions = []*pb.TraceQueryCondition{
-	{Key: strings.ToLower(pb.LimitCondition_NUMBER_100.String()), Value: "100", DisplayName: "100"},
-	{Key: strings.ToLower(pb.LimitCondition_NUMBER_200.String()), Value: "200", DisplayName: "200"},
-	{Key: strings.ToLower(pb.LimitCondition_NUMBER_500.String()), Value: "500", DisplayName: "500"},
-	{Key: strings.ToLower(pb.LimitCondition_NUMBER_1000.String()), Value: "1000", DisplayName: "1000"},
-}
-
 var TraceStatusConditions = []*pb.TraceQueryCondition{
 	{Key: strings.ToLower(pb.TraceStatusCondition_TRACE_ALL.String()), Value: strings.ToLower(pb.TraceStatusCondition_TRACE_ALL.String())},
 	{Key: strings.ToLower(pb.TraceStatusCondition_TRACE_SUCCESS.String()), Value: strings.ToLower(pb.TraceStatusCondition_TRACE_SUCCESS.String())},
@@ -63,7 +56,6 @@ var TraceStatusConditions = []*pb.TraceQueryCondition{
 
 var TraceQueryConditions = pb.TraceQueryConditions{
 	Sort:        sortConditions,
-	Limit:       limitConditions,
 	TraceStatus: TraceStatusConditions,
 	Others: []*pb.OtherTraceQueryCondition{
 		{Key: strings.ToLower(pb.OtherCondition_SERVICE_NAME.String()), ParamKey: "serviceName", Type: string(INPUT)},
