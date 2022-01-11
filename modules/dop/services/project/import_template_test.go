@@ -18,6 +18,8 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 func TestSetMeta(t *testing.T) {
@@ -38,4 +40,25 @@ func TestGetPackageName(t *testing.T) {
 	}
 	packageName := temp.GetPackageName()
 	assert.Equal(t, "project-template", packageName)
+}
+
+func TestGetProjectID(t *testing.T) {
+	temp := &TemplateZip{
+		packageName: packageResource,
+		ProjectID:   1,
+		ProjectName: "erda",
+	}
+	projectID := temp.GetProjectID()
+	assert.Equal(t, uint64(1), projectID)
+}
+
+func TestGetIdentityInfo(t *testing.T) {
+	temp := &TemplateZip{
+		packageName:  packageResource,
+		ProjectID:    1,
+		ProjectName:  "erda",
+		IdentityInfo: apistructs.IdentityInfo{UserID: "1"},
+	}
+	identityInfo := temp.GetIdentityInfo()
+	assert.Equal(t, "1", identityInfo.UserID)
 }

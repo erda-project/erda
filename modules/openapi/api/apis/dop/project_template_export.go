@@ -20,8 +20,8 @@ import (
 )
 
 var ProjectTemplateExport = apis.ApiSpec{
-	Path:          "/api/projects/<projectID>/template/actions/export",
-	BackendPath:   "/api/projects/<projectID>/template/actions/export",
+	Path:          "/api/orgs/<orgID>/projects/<projectID>/template/actions/export",
+	BackendPath:   "/api/orgs/<orgID>/projects/<projectID>/template/actions/export",
 	Host:          "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:        "http",
 	Method:        "GET",

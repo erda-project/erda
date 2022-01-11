@@ -20,8 +20,8 @@ import (
 )
 
 var ProjectTemplateImport = apis.ApiSpec{
-	Path:          "/api/projects/<projectID>/template/actions/import",
-	BackendPath:   "/api/projects/<projectID>/template/actions/import",
+	Path:          "/api/orgs/<orgID>/projects/<projectID>/template/actions/import",
+	BackendPath:   "/api/orgs/<orgID>/projects/<projectID>/template/actions/import",
 	Host:          "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:        "http",
 	Method:        "POST",

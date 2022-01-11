@@ -28,6 +28,7 @@ import (
 func (svc *Service) CreateFileRecord(req apistructs.TestFileRecordRequest) (uint64, error) {
 	record := &dao.TestFileRecord{
 		FileName:    req.FileName,
+		OrgID:       req.OrgID,
 		Description: req.Description,
 		ProjectID:   req.ProjectID,
 		SpaceID:     req.SpaceID,
@@ -76,6 +77,9 @@ func (svc *Service) UpdateFileRecord(req apistructs.TestFileRecordRequest) error
 	if req.State != "" {
 		r.State = req.State
 	}
+	if req.Description != "" {
+		r.Description = req.Description
+	}
 	if req.ErrorInfo != nil {
 		errorInfo := fmt.Sprint(req.ErrorInfo)
 		if err := strutil.Validate(errorInfo, strutil.MaxRuneCountValidator(apistructs.TestFileRecordErrorMaxLength)); err != nil {
@@ -87,14 +91,26 @@ func (svc *Service) UpdateFileRecord(req apistructs.TestFileRecordRequest) error
 	return svc.db.UpdateRecord(r)
 }
 
-func (svc *Service) ListFileRecordsByProject(req apistructs.ListTestFileRecordsRequest) ([]apistructs.TestFileRecord, []string, map[string]int, error) {
-	if req.ProjectID == 0 {
-		return nil, nil, nil, apierrors.ErrListFileRecord.MissingParameter("projectID")
+func (svc *Service) ListFileRecords(req apistructs.ListTestFileRecordsRequest) ([]apistructs.TestFileRecord, []string, map[string]int, int, error) {
+	if req.PageSize < 1 {
+		req.PageSize = 10
 	}
-
-	recordDtos, count, err := svc.db.ListRecordsByProject(req)
+	if req.PageNo < 1 {
+		req.PageNo = 1
+	}
+	if req.ProjectName != "" {
+		pros, err := svc.bdl.ListProject(req.UserID, apistructs.ProjectListRequest{Query: req.ProjectName, OrgID: req.OrgID, PageSize: 99, PageNo: 1})
+		if err != nil {
+			return nil, nil, nil, 0, apierrors.ErrListFileRecord.InternalError(err)
+		}
+		req.ProjectIDs = make([]uint64, 0, len(pros.List))
+		for _, pro := range pros.List {
+			req.ProjectIDs = append(req.ProjectIDs, pro.ID)
+		}
+	}
+	recordDtos, count, total, err := svc.db.ListRecordsByProject(req)
 	if err != nil {
-		return nil, nil, nil, apierrors.ErrListFileRecord.InternalError(err)
+		return nil, nil, nil, 0, apierrors.ErrListFileRecord.InternalError(err)
 	}
 
 	records := make([]apistructs.TestFileRecord, 0)
@@ -108,7 +124,7 @@ func (svc *Service) ListFileRecordsByProject(req apistructs.ListTestFileRecordsR
 		records = append(records, *mapping(&i, project, testSet))
 		operators = append(operators, i.OperatorID)
 	}
-	return records, operators, count, nil
+	return records, operators, count, total, nil
 }
 
 func (svc *Service) GetFirstFileReady(actionType ...apistructs.FileActionType) (bool, *dao.TestFileRecord, error) {
@@ -143,6 +159,7 @@ func mapping(s *dao.TestFileRecord, project, testSet string) *apistructs.TestFil
 	record := &apistructs.TestFileRecord{
 		ID:          s.ID,
 		FileName:    s.FileName,
+		OrgID:       s.OrgID,
 		ProjectID:   s.ProjectID,
 		ApiFileUUID: s.ApiFileUUID,
 		TestSetID: func() uint64 {
@@ -158,14 +175,26 @@ func mapping(s *dao.TestFileRecord, project, testSet string) *apistructs.TestFil
 		CreatedAt:   s.CreatedAt,
 		UpdatedAt:   s.UpdatedAt,
 		OperatorID:  s.OperatorID,
+		ErrorInfo:   s.ErrorInfo,
 	}
 
 	if record.Type == apistructs.FileActionTypeImport || record.Type == apistructs.FileActionTypeExport {
 		record.Description = fmt.Sprintf("%v ID: %v, %v ID: %v", project, record.ProjectID, testSet, record.TestSetID)
 	}
 
-	if record.State == apistructs.FileRecordStateFail {
+	if record.State == apistructs.FileRecordStateFail && (record.Type == apistructs.FileActionTypeImport || record.Type == apistructs.FileActionTypeExport) {
 		record.Description = s.ErrorInfo
+	}
+	extra := s.Extra
+	if record.Type == apistructs.FileProjectTemplateExport {
+		if extra.ProjectTemplateFileExtraInfo != nil && extra.ProjectTemplateFileExtraInfo.ExportRequest != nil {
+			record.ProjectName = extra.ProjectTemplateFileExtraInfo.ExportRequest.ProjectName
+		}
+	}
+	if record.Type == apistructs.FileProjectTemplateImport {
+		if extra.ProjectTemplateFileExtraInfo != nil && extra.ProjectTemplateFileExtraInfo.ImportRequest != nil {
+			record.ProjectName = extra.ProjectTemplateFileExtraInfo.ImportRequest.ProjectName
+		}
 	}
 	return record
 }

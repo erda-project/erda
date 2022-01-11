@@ -39,6 +39,7 @@ import (
 const (
 	tempPrefix            = "export.*"
 	projectYmlName        = "project.yml"
+	metadataYmlName       = "metadata.yml"
 	packageResource       = "project-template"
 	packageSuffix         = ".zip"
 	packageValidityPeriod = 7 * time.Hour * 24
@@ -56,22 +57,44 @@ type TemplateDataCreator interface {
 }
 
 type TemplateDataDirector struct {
-	Creator TemplateDataCreator
-	bdl     *bundle.Bundle
+	Creator       TemplateDataCreator
+	succeedAppNum int
+	failedAppNum  int
+	bdl           *bundle.Bundle
+	errs          []error
 }
 
 func (t *TemplateDataDirector) New(creator TemplateDataCreator, bdl *bundle.Bundle) {
 	t.Creator = creator
 	t.bdl = bdl
+	t.errs = make([]error, 0)
 }
 
 func (t *TemplateDataDirector) Construct() error {
 	t.Creator.InitData()
 	if err := t.Creator.SetApplications(); err != nil {
+		t.errs = append(t.errs, err)
 		return err
 	}
 	if err := t.Creator.SetMeta(); err != nil {
+		t.errs = append(t.errs, err)
 		return err
+	}
+	return nil
+}
+
+func (t *TemplateDataDirector) CheckTemplatePackage() error {
+	tempData := t.Creator.GetProjectTemplate()
+	appSet := make(map[string]struct{})
+	duplicatedApp := make([]string, 0)
+	for _, app := range tempData.Applications {
+		if _, ok := appSet[app.Name]; ok {
+			duplicatedApp = append(duplicatedApp, app.Name)
+		}
+		appSet[app.Name] = struct{}{}
+	}
+	if len(duplicatedApp) > 0 {
+		return fmt.Errorf("template package contain duplicated application: %s", strings.Join(duplicatedApp, ","))
 	}
 	return nil
 }
@@ -79,10 +102,12 @@ func (t *TemplateDataDirector) Construct() error {
 func (t *TemplateDataDirector) GenAndUploadZipPackage() (string, error) {
 	ymlBytes, err := yaml.Marshal(t.Creator.GetProjectTemplate())
 	if err != nil {
+		t.errs = append(t.errs, err)
 		return "", err
 	}
 	zipTmpFile, err := ioutil.TempFile("", tempPrefix)
 	if err != nil {
+		t.errs = append(t.errs, err)
 		return "", err
 	}
 	defer func() {
@@ -95,9 +120,18 @@ func (t *TemplateDataDirector) GenAndUploadZipPackage() (string, error) {
 	tmpDir := os.TempDir()
 	projectYmlPath := filepath.Join(tmpDir, projectYmlName)
 	if err := filehelper.CreateFile(projectYmlPath, string(ymlBytes), 0644); err != nil {
+		t.errs = append(t.errs, err)
 		return "", err
 	}
-	if err := archiver.Zip.Write(zipTmpFile, []string{projectYmlPath}); err != nil {
+	// write metadata
+	metadataYmlPath := filepath.Join(tmpDir, metadataYmlName)
+	metaBytes, _ := yaml.Marshal(t.Creator.GetProjectTemplate().Meta)
+	if err := filehelper.CreateFile(metadataYmlPath, string(metaBytes), 0644); err != nil {
+		t.errs = append(t.errs, err)
+		return "", err
+	}
+	if err := archiver.Zip.Write(zipTmpFile, []string{projectYmlPath, metadataYmlPath}); err != nil {
+		t.errs = append(t.errs, err)
 		return "", err
 	}
 	zipTmpFile.Seek(0, 0)
@@ -111,6 +145,7 @@ func (t *TemplateDataDirector) GenAndUploadZipPackage() (string, error) {
 	}
 	file, err := t.bdl.UploadFile(uploadReq)
 	if err != nil {
+		t.errs = append(t.errs, err)
 		return "", err
 	}
 	return file.UUID, nil
@@ -133,10 +168,29 @@ func (t *TemplateDataDirector) TryCreateAppsByTemplate() error {
 			RepoConfig:     tempApp.RepoConfig,
 		}
 		if _, err := t.bdl.CreateApp(appReq, identityInfo.UserID); err != nil {
+			t.failedAppNum++
+			t.errs = append(t.errs, fmt.Errorf("create application %s failed: %v", tempApp.Name, err))
 			logrus.Errorf("%s failed to create app: %s, err: %v", packageResource, tempApp.Name, err)
+			continue
 		}
+		t.succeedAppNum++
 	}
 	return nil
+}
+
+func (t *TemplateDataDirector) GenErrInfo() error {
+	if len(t.errs) > 0 {
+		errInfos := make([]string, 0, len(t.errs))
+		for _, err := range t.errs {
+			errInfos = append(errInfos, fmt.Sprintf("%v", err))
+		}
+		return fmt.Errorf("%s", strings.Join(errInfos, "\n"))
+	}
+	return nil
+}
+
+func (t *TemplateDataDirector) GenDesc() string {
+	return fmt.Sprintf("Imported apps succeed: %d, failed: %d", t.succeedAppNum, t.failedAppNum)
 }
 
 func (p *Project) ParseTemplatePackage(r io.ReadCloser) (*apistructs.ProjectTemplateData, error) {
@@ -156,6 +210,9 @@ func (p *Project) ParseTemplatePackage(r io.ReadCloser) (*apistructs.ProjectTemp
 	if err := tempDirector.Construct(); err != nil {
 		return nil, err
 	}
+	if err := tempDirector.CheckTemplatePackage(); err != nil {
+		return nil, err
+	}
 	return tempDirector.Creator.GetProjectTemplate(), nil
 }
 
@@ -164,6 +221,7 @@ func (p *Project) ExportTemplate(req apistructs.ExportProjectTemplateRequest) (u
 	fileReq := apistructs.TestFileRecordRequest{
 		FileName:     packageName,
 		Description:  fmt.Sprintf("export project: %s template", req.ProjectName),
+		OrgID:        uint64(req.OrgID),
 		Type:         apistructs.FileProjectTemplateExport,
 		State:        apistructs.FileRecordStatePending,
 		ProjectID:    req.ProjectID,
@@ -208,6 +266,7 @@ func (p *Project) ImportTemplate(req apistructs.ImportProjectTemplateRequest, r 
 	fileReq := apistructs.TestFileRecordRequest{
 		FileName:     fileHeader.Filename,
 		Description:  fmt.Sprintf("import project: %s template", req.ProjectName),
+		OrgID:        uint64(req.OrgID),
 		ProjectID:    req.ProjectID,
 		Type:         apistructs.FileProjectTemplateImport,
 		State:        apistructs.FileRecordStatePending,
@@ -230,8 +289,8 @@ func (p *Project) MakeTemplatePackageName(origin string) string {
 	return fmt.Sprintf("%s_%s", origin, time.Now().Format("20060102150405"))
 }
 
-func (p *Project) updateTemplateFileRecord(id uint64, state apistructs.FileRecordState) error {
-	if err := p.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: state}); err != nil {
+func (p *Project) updateTemplateFileRecord(id uint64, state apistructs.FileRecordState, desc string, err error) error {
+	if err := p.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: state, Description: desc, ErrorInfo: err}); err != nil {
 		logrus.Errorf("%s failed to update file record, err: %v", packageResource, err)
 		return err
 	}

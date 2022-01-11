@@ -103,3 +103,23 @@ func TestImportProjectTemplate(t *testing.T) {
 	_, err := ep.ImportProjectTemplate(context.Background(), &r, map[string]string{})
 	assert.NoError(t, err)
 }
+
+func Test_getProjectID(t *testing.T) {
+	vars := map[string]string{
+		"projectID": "1",
+	}
+	ep := &Endpoints{}
+	projectID, err := ep.getProjectID(vars)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(1), projectID)
+}
+
+func Test_getOrgID(t *testing.T) {
+	vars := map[string]string{
+		"orgID": "1",
+	}
+	ep := &Endpoints{}
+	orgID, err := ep.getOrgID(vars)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), orgID)
+}

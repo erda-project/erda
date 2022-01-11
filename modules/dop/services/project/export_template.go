@@ -98,7 +98,7 @@ func (p *Project) ExportTemplatePackage(record *dao.TestFileRecord) {
 	tempDirector.New(&tempDB, p.bdl)
 	if err := tempDirector.Construct(); err != nil {
 		logrus.Error(apierrors.ErrExportProjectTemplate.InternalError(err))
-		if err := p.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+		if err := p.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail, ErrorInfo: tempDirector.GenErrInfo()}); err != nil {
 			logrus.Error(apierrors.ErrExportProjectTemplate.InternalError(err))
 		}
 		return
@@ -107,7 +107,7 @@ func (p *Project) ExportTemplatePackage(record *dao.TestFileRecord) {
 	uuid, err := tempDirector.GenAndUploadZipPackage()
 	if err != nil {
 		logrus.Error(apierrors.ErrExportProjectTemplate.InternalError(err))
-		if err := p.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail}); err != nil {
+		if err := p.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail, ErrorInfo: tempDirector.GenErrInfo()}); err != nil {
 			logrus.Error(apierrors.ErrExportProjectTemplate.InternalError(err))
 		}
 		return

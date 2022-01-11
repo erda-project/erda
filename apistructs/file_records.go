@@ -24,12 +24,15 @@ type TestFileRecord struct {
 	ID          uint64          `json:"id"`
 	FileName    string          `json:"name"`
 	Description string          `json:"description"`
+	ProjectName string          `json:"projectName"`
+	OrgID       uint64          `json:"orgID"`
 	ProjectID   uint64          `json:"projectID"`
 	TestSetID   uint64          `json:"testSetID"`
 	ApiFileUUID string          `json:"apiFileUUID"`
 	SpaceID     uint64          `json:"spaceID"`
 	Type        FileActionType  `json:"type"`
 	State       FileRecordState `json:"state"`
+	ErrorInfo   string          `json:"errorInfo"`
 	CreatedAt   time.Time       `json:"createdAt"`
 	UpdatedAt   time.Time       `json:"updatedAt"`
 	OperatorID  string          `json:"operatorID"`
@@ -38,6 +41,7 @@ type TestFileRecord struct {
 type TestFileRecordRequest struct {
 	ID          uint64          `json:"id"`
 	FileName    string          `json:"name"`
+	OrgID       uint64          `json:"orgID"`
 	ProjectID   uint64          `json:"projectID"`
 	SpaceID     uint64          `json:"spaceID"`
 	Description string          `json:"description"`
@@ -101,10 +105,18 @@ const (
 )
 
 type ListTestFileRecordsRequest struct {
-	ProjectID uint64           `json:"projectID"`
-	SpaceID   uint64           `json:"spaceID"`
-	Types     []FileActionType `json:"types"`
-	Locale    string           `json:"locale"`
+	ProjectID   uint64           `json:"projectID"`
+	ProjectIDs  []uint64         `json:"-"`
+	ProjectName string           `json:"projectName"`
+	OrgID       uint64           `json:"orgID"`
+	SpaceID     uint64           `json:"spaceID"`
+	Types       []FileActionType `json:"types"`
+	Locale      string           `json:"locale"`
+	PageNo      int              `json:"pageNo"`
+	PageSize    int              `json:"pageSize"`
+	Asc         bool             `json:"asc"`
+
+	IdentityInfo
 }
 
 func (r ListTestFileRecordsRequest) ConvertToQueryParams() url.Values {
@@ -134,4 +146,5 @@ type ListTestFileRecordsResponse struct {
 type ListTestFileRecordsResponseData struct {
 	Counter map[string]int   `json:"counter"`
 	List    []TestFileRecord `json:"list"`
+	Total   int              `json:"total"`
 }

@@ -605,8 +605,8 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/projects/{projectID}/test-reports/{id}", Method: http.MethodGet, Handler: e.GetTestReportRecord},
 
 		// project template
-		{Path: "/api/projects/{projectID}/template/actions/export", Method: http.MethodGet, Handler: e.ExportProjectTemplate},
-		{Path: "/api/projects/{projectID}/template/actions/import", Method: http.MethodPost, Handler: e.ImportProjectTemplate},
+		{Path: "/api/orgs/{orgID}/projects/{projectID}/template/actions/export", Method: http.MethodGet, Handler: e.ExportProjectTemplate},
+		{Path: "/api/orgs/{orgID}/projects/{projectID}/template/actions/import", Method: http.MethodPost, Handler: e.ImportProjectTemplate},
 		{Path: "/api/projects/template/actions/parse", Method: http.MethodPost, Handler: e.ParseProjectTemplate},
 
 		// core-services org
@@ -645,7 +645,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// test file records
 		{Path: "/api/test-file-records/{id}", Method: http.MethodGet, Handler: e.GetFileRecord},
-		{Path: "/api/test-file-records", Method: http.MethodGet, Handler: e.GetFileRecordsByProjectId},
+		{Path: "/api/test-file-records", Method: http.MethodGet, Handler: e.GetFileRecords},
 	}
 }
 

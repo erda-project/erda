@@ -507,6 +507,30 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 	}, nil
 }
 
+func (e *Endpoints) getProjectID(vars map[string]string) (uint64, error) {
+	projectIDStr := vars["projectID"]
+	if projectIDStr == "" {
+		return 0, fmt.Errorf("empty project id")
+	}
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return projectID, nil
+}
+
+func (e *Endpoints) getOrgID(vars map[string]string) (int64, error) {
+	orgIDStr := vars["orgID"]
+	if orgIDStr == "" {
+		return 0, fmt.Errorf("empty org id")
+	}
+	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return orgID, nil
+}
+
 // SetProjectStatsCache 设置项目状态缓存
 func SetProjectStatsCache() {
 	c := cron.New()
@@ -543,9 +567,16 @@ func (e *Endpoints) setProjectResource(projectDTOs []apistructs.ProjectDTO) erro
 
 func (e *Endpoints) ExportProjectTemplate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var exportReq apistructs.ExportProjectTemplateRequest
-	if err := e.queryStringDecoder.Decode(&exportReq, r.URL.Query()); err != nil {
-		return apierrors.ErrExportProjectTemplate.InvalidParameter(err).ToResp(), nil
+	projectID, err := e.getProjectID(vars)
+	if err != nil {
+		return apierrors.ErrExportProjectTemplate.InvalidParameter("projectID").ToResp(), nil
 	}
+	exportReq.ProjectID = projectID
+	orgID, err := e.getOrgID(vars)
+	if err != nil {
+		return apierrors.ErrExportProjectTemplate.InvalidParameter("orgID").ToResp(), nil
+	}
+	exportReq.OrgID = orgID
 	// check permission
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
@@ -592,10 +623,7 @@ func (e *Endpoints) ExportProjectTemplate(ctx context.Context, r *http.Request, 
 		e.ExportChannel <- fileID
 	}
 
-	return httpserver.HTTPResponse{
-		Status:  http.StatusAccepted,
-		Content: fileID,
-	}, nil
+	return httpserver.OkResp(fileID)
 }
 
 func (e *Endpoints) ImportProjectTemplate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
@@ -604,9 +632,16 @@ func (e *Endpoints) ImportProjectTemplate(ctx context.Context, r *http.Request, 
 		return apierrors.ErrImportExcelIssue.NotLogin().ToResp(), nil
 	}
 	var req apistructs.ImportProjectTemplateRequest
-	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
-		return apierrors.ErrImportExcelIssue.InvalidParameter(err).ToResp(), nil
+	projectID, err := e.getProjectID(vars)
+	if err != nil {
+		return apierrors.ErrImportProjectTemplate.InvalidParameter("projectID").ToResp(), nil
 	}
+	req.ProjectID = projectID
+	orgID, err := e.getOrgID(vars)
+	if err != nil {
+		return apierrors.ErrImportProjectTemplate.InvalidParameter("orgID").ToResp(), nil
+	}
+	req.OrgID = orgID
 	req.IdentityInfo = identityInfo
 	if req.ProjectID == 0 {
 		return apierrors.ErrExportProjectTemplate.InvalidParameter("projectID").ToResp(), nil
@@ -649,10 +684,7 @@ func (e *Endpoints) ImportProjectTemplate(ctx context.Context, r *http.Request, 
 	if ok {
 		e.ImportChannel <- recordID
 	}
-	return httpserver.HTTPResponse{
-		Status:  http.StatusAccepted,
-		Content: recordID,
-	}, nil
+	return httpserver.OkResp(recordID)
 }
 
 func (e *Endpoints) ParseProjectTemplate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {

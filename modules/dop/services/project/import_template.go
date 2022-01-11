@@ -51,7 +51,7 @@ func (t *TemplateZip) SetApplications() error {
 
 	ymlBytes, err := io.ReadAll(projectYml)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if err := yaml.Unmarshal(ymlBytes, t.Data); err != nil {
 		return err
@@ -89,14 +89,14 @@ func (p *Project) ImportTemplatePackage(record *dao.TestFileRecord) {
 	req := extra.ImportRequest
 	id := record.ID
 	// change record state to processing
-	if err := p.updateTemplateFileRecord(id, apistructs.FileRecordStateProcessing); err != nil {
+	if err := p.updateTemplateFileRecord(id, apistructs.FileRecordStateProcessing, "", nil); err != nil {
 		return
 	}
 
 	// download zip package
 	f, err := p.bdl.DownloadDiceFile(record.ApiFileUUID)
 	if err != nil {
-		p.updateTemplateFileRecord(id, apistructs.FileRecordStateFail)
+		p.updateTemplateFileRecord(id, apistructs.FileRecordStateFail, "", err)
 		return
 	}
 	defer f.Close()
@@ -105,13 +105,15 @@ func (p *Project) ImportTemplatePackage(record *dao.TestFileRecord) {
 	size, err := io.Copy(buff, f)
 	if err != nil {
 		logrus.Errorf("%s failed to read package, err: %v", packageResource, err)
-		p.updateTemplateFileRecord(id, apistructs.FileRecordStateFail)
+		p.updateTemplateFileRecord(id, apistructs.FileRecordStateFail, "", err)
 		return
 	}
 	reader := bytes.NewReader(buff.Bytes())
 	zipReader, err := zip.NewReader(reader, size)
 	if err != nil {
 		logrus.Errorf("%s failed to make zip reader, err: %v", packageResource, err)
+		p.updateTemplateFileRecord(id, apistructs.FileRecordStateFail, "", err)
+		return
 	}
 
 	tempZip := TemplateZip{
@@ -127,15 +129,20 @@ func (p *Project) ImportTemplatePackage(record *dao.TestFileRecord) {
 	tempDirector.New(&tempZip, p.bdl)
 	if err := tempDirector.Construct(); err != nil {
 		logrus.Errorf("%s failed to construct template data, err: %v", packageResource, err)
-		p.updateTemplateFileRecord(id, apistructs.FileRecordStateFail)
+		p.updateTemplateFileRecord(id, apistructs.FileRecordStateFail, "", tempDirector.GenErrInfo())
 		return
 	}
 
 	if err := tempDirector.TryCreateAppsByTemplate(); err != nil {
 		logrus.Errorf("%s failed to create apps by template, err: %v", packageResource, err)
-		p.updateTemplateFileRecord(id, apistructs.FileRecordStateFail)
+		p.updateTemplateFileRecord(id, apistructs.FileRecordStateFail, "", tempDirector.GenErrInfo())
 		return
 	}
 
-	p.updateTemplateFileRecord(id, apistructs.FileRecordStateSuccess)
+	if errInfo := tempDirector.GenErrInfo(); errInfo != nil {
+		p.updateTemplateFileRecord(id, apistructs.FileRecordStateFail, tempDirector.GenDesc(), errInfo)
+		return
+	}
+
+	p.updateTemplateFileRecord(id, apistructs.FileRecordStateSuccess, "", tempDirector.GenErrInfo())
 }
