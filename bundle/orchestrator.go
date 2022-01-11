@@ -15,6 +15,7 @@
 package bundle
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -96,12 +97,10 @@ func (b *Bundle) BatchUpdateScale(req apistructs.RuntimeScaleRecords, orgID uint
 	if err != nil {
 		return apistructs.BatchRuntimeScaleResults{}, apierrors.ErrInvoke.InternalError(err)
 	}
-	if data == nil {
-		return apistructs.BatchRuntimeScaleResults{}, errors.Errorf("return of scale action %s is nil", action)
-	}
 
-	batchScales, ok := data.(apistructs.BatchRuntimeScaleResults)
-	if !ok {
+	var batchScales apistructs.BatchRuntimeScaleResults
+	err = json.Unmarshal(data, &batchScales)
+	if err != nil {
 		return apistructs.BatchRuntimeScaleResults{}, apierrors.ErrInvoke.InternalError(err)
 	}
 
@@ -119,12 +118,9 @@ func (b *Bundle) BatchUpdateReDeploy(req apistructs.RuntimeScaleRecords, orgID u
 		return apistructs.BatchRuntimeReDeployResults{}, apierrors.ErrInvoke.InternalError(err)
 	}
 
-	if data == nil {
-		return apistructs.BatchRuntimeReDeployResults{}, errors.Errorf("return of scale action %s is nil", action)
-	}
-
-	batchRedeploys, ok := data.(apistructs.BatchRuntimeReDeployResults)
-	if !ok {
+	var batchRedeploys apistructs.BatchRuntimeReDeployResults
+	err = json.Unmarshal(data, &batchRedeploys)
+	if err != nil {
 		return apistructs.BatchRuntimeReDeployResults{}, apierrors.ErrInvoke.InternalError(err)
 	}
 
@@ -146,12 +142,13 @@ func (b *Bundle) BatchUpdateDelete(req apistructs.RuntimeScaleRecords, orgID uin
 		return apistructs.BatchRuntimeDeleteResults{}, errors.Errorf("return of scale action %s is nil", action)
 	}
 
-	batchRedeploys, ok := data.(apistructs.BatchRuntimeDeleteResults)
-	if !ok {
+	var batchDelete apistructs.BatchRuntimeDeleteResults
+	err = json.Unmarshal(data, &batchDelete)
+	if err != nil {
 		return apistructs.BatchRuntimeDeleteResults{}, apierrors.ErrInvoke.InternalError(err)
 	}
 
-	return batchRedeploys, nil
+	return batchDelete, nil
 }
 
 // batchProcessRuntimes 批量处理 runtimes 的 scale、redeploy、delete 操作
@@ -161,7 +158,7 @@ func (b *Bundle) BatchUpdateDelete(req apistructs.RuntimeScaleRecords, orgID uin
 // scaleDown  表示停止之前已经在运行的 runtimes
 // delete     表示删除 runtimes
 // reDeploy   表示重新部署 runtimes
-func (b *Bundle) batchProcessRuntimes(req apistructs.RuntimeScaleRecords, orgID uint64, userID, action string) (interface{}, error) {
+func (b *Bundle) batchProcessRuntimes(req apistructs.RuntimeScaleRecords, orgID uint64, userID, action string) ([]byte, error) {
 	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return nil, err
@@ -179,11 +176,20 @@ func (b *Bundle) batchProcessRuntimes(req apistructs.RuntimeScaleRecords, orgID 
 		JSONBody(req).Do().JSON(&rsp)
 
 	if err != nil {
-		return nil, apierrors.ErrInvoke.InternalError(err)
+		return []byte{}, apierrors.ErrInvoke.InternalError(err)
 	}
 	if !resp.IsOK() || !rsp.Success {
-		return nil, toAPIError(resp.StatusCode(), rsp.Error)
+		return []byte{}, toAPIError(resp.StatusCode(), rsp.Error)
 	}
 
-	return &rsp.Data, nil
+	if rsp.Data == nil {
+		return []byte{}, errors.Errorf("return of scale action %s is nil", action)
+	}
+
+	dataBytes, err := json.Marshal(rsp.Data)
+	if err != nil {
+		return []byte{}, errors.Errorf("Marshall return of scale action %s result failed. error: %v", action, err)
+	}
+
+	return dataBytes, nil
 }
