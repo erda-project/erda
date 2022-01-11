@@ -67,11 +67,11 @@ func (f *FrontendConditions) convertToTransactionFilter() slow_transaction.SlowT
 		return slowTransactionFilter
 	}
 	d, err := time.ParseDuration(fmt.Sprintf("%d%s", f.Duration[0].Timer, f.Duration[0].Unit))
-	if err != nil {
+	if err == nil {
 		slowTransactionFilter.MinDuration = int64(d)
 	}
 	d, err = time.ParseDuration(fmt.Sprintf("%d%s", f.Duration[1].Timer, f.Duration[1].Unit))
-	if err != nil {
+	if err == nil {
 		slowTransactionFilter.MaxDuration = int64(d)
 	}
 	return slowTransactionFilter
