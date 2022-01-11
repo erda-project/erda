@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package dop
 
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var APP_PUBLISH_ITEM_RELATION_GET = apis.ApiSpec{
-	Path:         "/api/applications/<application>/actions/get-publish-item-relations",
-	BackendPath:  "/api/applications/<application>/actions/get-publish-item-relations",
+var APP_PUBLISH_ITEM_RELATION_UPDATE = apis.ApiSpec{
+	Path:         "/api/applications/<application>/actions/update-publish-item-relations",
+	BackendPath:  "/api/applications/<application>/actions/update-publish-item-relations",
 	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
-	Method:       "GET",
+	Method:       "POST",
 	CheckLogin:   true,
 	CheckToken:   true,
-	ResponseType: apistructs.QueryAppPublishItemRelationResponse{},
-	Doc:          "summary: 查询应用发布关联",
+	RequestType:  apistructs.UpdateAppPublishItemRelationRequest{},
+	ResponseType: apistructs.UpdateAppPublishItemRelationResponse{},
+	Doc:          "summary: 更新应用发布关联",
 }
