@@ -83,6 +83,9 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			PageNo:    uint64(pageNo),
 			PageSize:  uint64(pageSize),
 			ProjectID: projectID,
+			IdentityInfo: apistructs.IdentityInfo{
+				UserID: sdk.Identity.UserID,
+			},
 		}
 		helper := gshelper.NewGSHelper(sdk.GlobalState)
 		if helper.GetAppsFilter() != nil {
