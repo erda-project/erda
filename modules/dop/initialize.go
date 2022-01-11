@@ -141,6 +141,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.ManualTestPlanService, ep.ManualTestPlanService())
 	p.Protocol.WithContextValue(types.AutoTestPlanService, ep.AutoTestPlanService())
 	p.Protocol.WithContextValue(types.DBClient, ep.DBClient())
+	p.Protocol.WithContextValue(types.ProjectPipelineService, p.ProjectPipelineSvc)
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
 	server := httpserver.New(":0")

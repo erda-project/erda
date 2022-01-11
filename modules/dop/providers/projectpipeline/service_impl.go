@@ -135,9 +135,9 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 	if err := params.Validate(); err != nil {
 		return nil, apierrors.ErrListProjectPipeline.InvalidParameter(err)
 	}
-	if err := p.checkListPermission(ctx, params); err != nil {
-		return nil, apierrors.ErrListProjectPipeline.AccessDenied()
-	}
+	//if err := p.checkListPermission(ctx, params); err != nil {
+	//	return nil, apierrors.ErrListProjectPipeline.AccessDenied()
+	//}
 
 	project, err := p.bundle.GetProject(params.ProjectID)
 	if err != nil {

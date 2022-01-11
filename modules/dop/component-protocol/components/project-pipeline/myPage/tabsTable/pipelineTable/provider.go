@@ -1,0 +1,234 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package pipelineTable
+
+import (
+	"fmt"
+	"path/filepath"
+	"strings"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/commodel"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/table"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/table/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
+	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
+)
+
+type PipelineTable struct {
+	impl.DefaultTable
+
+	bdl      *bundle.Bundle
+	gsHelper *gshelper.GSHelper
+	sdk      *cptype.SDK
+	InParams InParams `json:"-"`
+
+	ProjectPipelineSvc *projectpipeline.ProjectPipelineService
+}
+
+const (
+	ColumnPipelineName    table.ColumnKey = "pipelineName"
+	ColumnPipelineStatus  table.ColumnKey = "pipelineStatus"
+	ColumnCostTime        table.ColumnKey = "costTime"
+	ColumnApplicationName table.ColumnKey = "applicationName"
+	ColumnBranch          table.ColumnKey = "branch"
+	ColumnExecutor        table.ColumnKey = "executor"
+	ColumnStartTime       table.ColumnKey = "startTime"
+)
+
+func (p *PipelineTable) BeforeHandleOp(sdk *cptype.SDK) {
+	p.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	p.gsHelper = gshelper.NewGSHelper(sdk.GlobalState)
+	p.sdk = sdk
+	if err := p.setInParams(); err != nil {
+		panic(err)
+	}
+	p.ProjectPipelineSvc = sdk.Ctx.Value(types.ProjectPipelineService).(*projectpipeline.ProjectPipelineService)
+	//cputil.MustObjJSONTransfer(&p.StdStatePtr, &p.State)
+}
+
+func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) {
+		p.StdDataPtr = &table.Data{
+			Table: table.Table{
+				Columns:  p.SetTableColumns(),
+				Rows:     p.SetTableRows(),
+				PageNo:   1,
+				PageSize: 10,
+				Total:    1,
+			},
+			Operations: map[cptype.OperationKey]cptype.Operation{
+				table.OpTableChangePage{}.OpKey(): cputil.NewOpBuilder().WithServerDataPtr(&table.OpTableChangePageServerData{}).Build(),
+				table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
+				table.OpBatchRowsHandle{}.OpKey(): cputil.NewOpBuilder().WithText("批量操作").WithServerDataPtr(&table.OpBatchRowsHandleServerData{
+					Options: []table.OpBatchRowsHandleOption{
+						{
+							ID:            "delete",
+							Text:          "删除",
+							AllowedRowIDs: []string{"row1", "row2"},
+						},
+						{
+							ID:              "start",
+							Text:            "启动",
+							ForbiddenRowIDs: []string{"row2"},
+						},
+					},
+				}).Build(),
+			},
+		}
+	}
+}
+
+func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
+	return table.ColumnsInfo{
+		//Orders: []table.ColumnKey{ColumnCostTime, ColumnStartTime},
+		ColumnsMap: map[table.ColumnKey]table.Column{
+			ColumnPipelineName:    {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineName))},
+			ColumnPipelineStatus:  {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus))},
+			ColumnCostTime:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCostTime))},
+			ColumnApplicationName: {Title: cputil.I18n(p.sdk.Ctx, string(ColumnApplicationName))},
+			ColumnBranch:          {Title: cputil.I18n(p.sdk.Ctx, string(ColumnBranch))},
+			ColumnExecutor:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnExecutor))},
+			ColumnStartTime:       {Title: cputil.I18n(p.sdk.Ctx, string(ColumnStartTime))},
+		},
+	}
+}
+
+func (p *PipelineTable) SetTableRows() []table.Row {
+	list, err := p.ProjectPipelineSvc.List(p.sdk.Ctx, deftype.ProjectPipelineList{
+		ProjectID:    p.InParams.ProjectID,
+		AppID:        0,
+		Ref:          nil,
+		Creator:      nil,
+		Executor:     nil,
+		Category:     nil,
+		PageNo:       0,
+		PageSize:     0,
+		Name:         "",
+		TimeCreated:  nil,
+		TimeStarted:  nil,
+		Status:       nil,
+		IdentityInfo: apistructs.IdentityInfo{},
+	})
+	if err != nil {
+		logrus.Errorf("failed to list project pipeline,err: %s", err.Error())
+		//return nil
+	}
+	list = append(list, &pb.PipelineDefinition{
+		ID:               "1",
+		Name:             "1",
+		Creator:          "1",
+		Category:         "1",
+		CostTime:         0,
+		Executor:         "1",
+		Extra:            nil,
+		StartedAt:        nil,
+		EndedAt:          nil,
+		TimeCreated:      nil,
+		TimeUpdated:      nil,
+		SourceType:       "1",
+		Remote:           "1",
+		Ref:              "1",
+		Path:             "1",
+		FileName:         "1",
+		PipelineSourceId: "1",
+	})
+
+	rows := make([]table.Row, 0, len(list))
+	for _, v := range list {
+		rows = append(rows, table.Row{
+			ID:         table.RowID(v.ID),
+			Selectable: true,
+			Selected:   false,
+			CellsMap: map[table.ColumnKey]table.Cell{
+				ColumnPipelineName:    table.NewTextCell(v.Name).Build(),
+				ColumnPipelineStatus:  table.NewTextCell(cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)) + "success").Build(),
+				ColumnCostTime:        table.NewTextCell(fmt.Sprintf("%v s", v.CostTime)).Build(),
+				ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(v.Remote)).Build(),
+				ColumnBranch:          table.NewTextCell(v.Ref).Build(),
+				ColumnExecutor:        table.NewUserCell(commodel.User{ID: v.Creator}).Build(),
+				ColumnStartTime:       table.NewTextCell(v.StartedAt.AsTime().Format("2006-01-02 15:04:05")).Build(),
+			},
+			Operations: map[cptype.OperationKey]cptype.Operation{
+				table.OpRowSelect{}.OpKey(): cputil.NewOpBuilder().Build(),
+				table.OpRowAdd{}.OpKey():    cputil.NewOpBuilder().Build(),
+				table.OpRowEdit{}.OpKey():   cputil.NewOpBuilder().Build(),
+				table.OpRowDelete{}.OpKey(): cputil.NewOpBuilder().Build(),
+			},
+		})
+	}
+	return rows
+}
+
+func getApplicationNameFromDefinitionRemote(remote string) string {
+	values := strings.Split(remote, string(filepath.Separator))
+	if len(values) != 3 {
+		return remote
+	}
+	return values[2]
+}
+
+func (p *PipelineTable) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
+	return p.RegisterInitializeOp()
+}
+
+func (p *PipelineTable) RegisterTablePagingOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func (p *PipelineTable) RegisterTableChangePageOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func (p *PipelineTable) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func (p *PipelineTable) RegisterBatchRowsHandleOp(opData table.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func (p *PipelineTable) RegisterRowSelectOp(opData table.OpRowSelect) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func (p *PipelineTable) RegisterRowAddOp(opData table.OpRowAdd) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func (p *PipelineTable) RegisterRowEditOp(opData table.OpRowEdit) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func (p *PipelineTable) RegisterRowDeleteOp(opData table.OpRowDelete) (opFunc cptype.OperationFunc) {
+	return nil
+}
+
+func init() {
+	base.InitProviderWithCreator(common.ScenarioKey, "pipelineTable", func() servicehub.Provider {
+		return &PipelineTable{}
+	})
+}
