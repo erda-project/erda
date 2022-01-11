@@ -18,6 +18,7 @@ import (
 	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/common"
 )
 
 func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
@@ -37,23 +38,16 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 	conditions = append(conditions, executorCondition)
 
 	conditions = append(conditions, model.NewDateRangeCondition("startedAtStartEnd", cputil.I18n(p.sdk.Ctx, "started-at")))
-
-	creatorCondition, err := p.MemberCondition("creator")
-	if err != nil {
-		return nil, err
-	}
-	creatorCondition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-creator")
-	conditions = append(conditions, creatorCondition)
-
-	conditions = append(conditions, model.NewDateRangeCondition("createdAtStartEnd", cputil.I18n(p.sdk.Ctx, "created-at")))
 	return conditions, nil
 }
 
 func (p *CustomFilter) StatusCondition() *model.SelectCondition {
-	condition := model.NewSelectCondition("status", cputil.I18n(p.sdk.Ctx, "status"), []model.SelectOption{
-		*model.NewSelectOption(cputil.I18n(p.sdk.Ctx, "status-success"), "success"),
-		*model.NewSelectOption(cputil.I18n(p.sdk.Ctx, "status-failed"), "failed"),
-	})
+	statuses := apistructs.PipelineAllStatuses
+	var opts []model.SelectOption
+	for _, status := range statuses {
+		opts = append(opts, *model.NewSelectOption(cputil.I18n(p.sdk.Ctx, common.ColumnPipelineStatus+status.String()), status.String()))
+	}
+	condition := model.NewSelectCondition("status", cputil.I18n(p.sdk.Ctx, "status"), opts)
 	condition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-status")
 	return condition
 }

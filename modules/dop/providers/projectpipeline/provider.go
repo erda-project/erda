@@ -16,6 +16,7 @@ package projectpipeline
 
 import (
 	"github.com/jinzhu/gorm"
+	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -40,8 +41,8 @@ type provider struct {
 	Register transport.Register `autowired:"service-register" required:"true"`
 
 	projectPipelineSvc *ProjectPipelineService
-	PipelineSource     sourcepb.SourceServiceServer `autowired:"erda.core.pipeline.source.SourceService"`
-	PipelineDefinition dpb.DefinitionServiceServer  `autowired:"erda.core.pipeline.definition.DefinitionService"`
+	PipelineSource     sourcepb.SourceServiceServer `autowired:"erda.core.pipeline.source.SourceService" required:"true"`
+	PipelineDefinition dpb.DefinitionServiceServer  `autowired:"erda.core.pipeline.definition.DefinitionService" required:"true"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -65,6 +66,8 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
+	case ctx.Service() == "erda.dop.projectpipeline.ProjectPipelineServiceMethod" || ctx.Type() == reflect.TypeOf(reflect.TypeOf((*Service)(nil)).Elem()):
+		return p.projectPipelineSvc
 	case ctx.Service() == "erda.dop.projectpipeline.ProjectPipelineService" || ctx.Type() == pb.ProjectPipelineServiceServerType() || ctx.Type() == pb.ProjectPipelineServiceHandlerType():
 		return p.projectPipelineSvc
 	}
@@ -73,8 +76,8 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 
 func init() {
 	servicehub.Register("erda.dop.projectpipeline", &servicehub.Spec{
-		Services:             pb.ServiceNames(),
-		Types:                pb.Types(),
+		Services:             append(pb.ServiceNames(), "erda.dop.projectpipeline.ProjectPipelineServiceMethod"),
+		Types:                append(pb.Types(), reflect.TypeOf(reflect.TypeOf((*Service)(nil)).Elem())),
 		OptionalDependencies: []string{"service-register"},
 		Description:          "",
 		ConfigFunc: func() interface{} {

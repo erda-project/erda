@@ -1,36 +1,36 @@
 scenario: "project-pipeline-exec-list"
-protocol:
-  hierarchy:
-    root: myPage
-    structure:
-      myPage:
-        - pageHeader
-        - tabsTable
-      tabsTable:
-        slot: filterContainer
-        table: pipelineTable
-      filterContainer:
-        left: inputFilter
-        right: customFilter
-  components:
+
+hierarchy:
+  root: myPage
+  structure:
     myPage:
-      type: Container
-      name: myPage
-    pageHeader:
-      type: LRContainer
-      name: rightPageHeader
+      - tabsTable
     tabsTable:
-      name: tabsTable
-      type: ComposeTable
+      slot: filterContainer
+      table: pipelineTable
     filterContainer:
-      type: LRContainer
-      name: filterContainer
-    pipelineTable:
-      type: Table
-      name: pipelineTable
-    inputFilter:
-      name: inputFilter
-      type: ContractiveFilter
-    customFilter:
-      name: releaseFilter
-      type: ConfigurableFilter
+      left: inputFilter
+      right: customFilter
+
+components:
+  myPage:
+    type: Container
+    name: myPage
+  pageHeader:
+    type: LRContainer
+    name: rightPageHeader
+  tabsTable:
+    name: tabsTable
+    type: ComposeTable
+  filterContainer:
+    type: LRContainer
+    name: filterContainer
+  pipelineTable:
+    type: Table
+    name: pipelineTable
+  inputFilter:
+    name: inputFilter
+    type: ContractiveFilter
+  customFilter:
+    name: releaseFilter
+    type: ConfigurableFilter

@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package table
+package pipelineTable
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -28,6 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/commodel"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
@@ -41,15 +44,16 @@ import (
 
 type provider struct {
 	impl.DefaultTable
-	ServiceInParams
+	sdk             *cptype.SDK
 	Log             logs.Logger
 	I18n            i18n.Translator         `autowired:"i18n" translator:"msp-i18n"`
-	ProjectPipeline projectpipeline.Service `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
+	ProjectPipeline projectpipeline.Service `autowired:"erda.dop.projectpipeline.ProjectPipelineServiceMethod" required:"true"`
+	InParams        InParams                `json:"-"`
 }
 
 const (
 	ColumnPipelineName    table.ColumnKey = "pipelineName"
-	ColumnPipelineStatus  table.ColumnKey = "pipelineStatus"
+	ColumnPipelineStatus  table.ColumnKey = common.ColumnPipelineStatus
 	ColumnCostTime        table.ColumnKey = "costTime"
 	ColumnApplicationName table.ColumnKey = "applicationName"
 	ColumnBranch          table.ColumnKey = "branch"
@@ -62,8 +66,9 @@ const (
 
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
+		p.sdk = sdk
 		lang := sdk.Lang
-		projectID := p.ServiceInParams.InParamsPtr.ProjectId
+		projectID := p.InParams.ProjectID
 		pageNo, pageSize := GetPagingFromGlobalState(*sdk.GlobalState)
 		sorts := GetSortsFromGlobalState(*sdk.GlobalState)
 
@@ -259,12 +264,17 @@ func (p *provider) RegisterRowDeleteOp(opData table.OpRowDelete) (opFunc cptype.
 	return nil
 }
 
+// Provide .
+func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
+	return p
+}
+
 // Init .
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.DefaultTable = impl.DefaultTable{}
 	v := reflect.ValueOf(p)
 	v.Elem().FieldByName("Impl").Set(v)
-	compName := "tabsTable"
+	compName := "pipelineTable"
 	if ctx.Label() != "" {
 		compName = ctx.Label()
 	}
@@ -276,36 +286,34 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-// Provide .
-func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	return p
-}
-
 func init() {
-	servicehub.Register("component-protocol.components.project-pipeline-exec-list.tabsTable", &servicehub.Spec{
+	name := "component-protocol.components.project-pipeline-exec-list.pipelineTable"
+	cpregister.AllExplicitProviderCreatorMap[name] = nil
+	servicehub.Register(name, &servicehub.Spec{
 		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }
 
-type Model struct {
-	ProjectId uint64 `json:"projectId"`
+type InParams struct {
+	OrgID     uint64 `json:"orgID,omitempty"`
+	ProjectID uint64 `json:"projectId,omitempty"`
 }
 
-type ServiceInParams struct {
-	InParamsPtr *Model
-}
-
-func (b *ServiceInParams) CustomInParamsPtr() interface{} {
-	if b.InParamsPtr == nil {
-		b.InParamsPtr = &Model{}
+func (p *provider) setInParams() error {
+	b, err := json.Marshal(p.InParamsPtr())
+	if err != nil {
+		return err
 	}
-	return b.InParamsPtr
+	if err := json.Unmarshal(b, &p.InParams); err != nil {
+		return err
+	}
+
+	p.InParams.OrgID, err = strconv.ParseUint(p.sdk.Identity.OrgID, 10, 64)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (b *ServiceInParams) EncodeFromCustomInParams(customInParamsPtr interface{}, stdInParamsPtr *cptype.ExtraMap) {
-	cputil.MustObjJSONTransfer(customInParamsPtr, stdInParamsPtr)
-}
-
-func (b *ServiceInParams) DecodeToCustomInParams(stdInParamsPtr *cptype.ExtraMap, customInParamsPtr interface{}) {
-	cputil.MustObjJSONTransfer(stdInParamsPtr, customInParamsPtr)
-}
+// InParamsPtr .
+func (s *provider) InParamsPtr() interface{} { return s.StdInParamsPtr }

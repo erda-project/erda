@@ -28,9 +28,9 @@ zh:
   pipelineStatusDBError: 异常
   pipelineStatusLostConn: 异常
   pipelineStatusDisabled: 禁用
-  pipelineStatusWaitApproval: 等待审核
-  pipelineStatusApprovalSuccess: 人工审核通过
-  pipelineStatusApprovalFail: 人工审核拒绝
+  pipelineStatusWaitApprove: 等待审核
+  pipelineStatusAccept: 人工审核通过
+  pipelineStatusReject: 人工审核拒绝
 en:
   pipelineName: pipeline name
   pipelineStatus: status

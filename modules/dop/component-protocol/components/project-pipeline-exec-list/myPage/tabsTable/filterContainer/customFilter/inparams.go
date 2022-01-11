@@ -20,15 +20,8 @@ import (
 )
 
 type InParams struct {
-	OrgID uint64 `json:"orgID,omitempty"`
-
-	FrontendProjectID      string `json:"projectId,omitempty"`
-	FrontendFixedIssueType string `json:"fixedIssueType,omitempty"`
-	FrontendFixedIteration string `json:"fixedIteration,omitempty"`
-	FrontendUrlQuery       string `json:"issueFilter__urlQuery,omitempty"`
-
-	ProjectID uint64 `json:"-"`
-	AppID     uint64 `json:"-"`
+	OrgID     uint64 `json:"orgID,omitempty"`
+	ProjectID uint64 `json:"projectId,omitempty"`
 }
 
 func (p *CustomFilter) setInParams() error {
@@ -43,14 +36,6 @@ func (p *CustomFilter) setInParams() error {
 	p.InParams.OrgID, err = strconv.ParseUint(p.sdk.Identity.OrgID, 10, 64)
 	if err != nil {
 		return err
-	}
-
-	// change type
-	if p.InParams.FrontendProjectID != "" {
-		p.InParams.ProjectID, err = strconv.ParseUint(p.InParams.FrontendProjectID, 10, 64)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }

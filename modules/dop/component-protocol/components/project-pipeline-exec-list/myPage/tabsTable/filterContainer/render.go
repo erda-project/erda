@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package filterContainer
 
-const DefaultPageSize = 10
-const ColumnPipelineStatus = "pipelineStatus"
+import (
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
+)
 
-type Sort struct {
-	FieldKey  string
-	Ascending bool
+func init() {
+	base.InitProvider("project-pipeline-exec-list", "filterContainer")
 }
