@@ -121,7 +121,7 @@ var (
 		"like":     OperatorTypeOne,
 		"neq":      OperatorTypeOne,
 	}
-	aggregators, aggregatorSet     = getListAndSet("sum", "avg", "max", "min", "distinct", "count", "value", "values", "p99", "p95", "p90", "p75", "p50")
+	aggregators, aggregatorSet     = getListAndSet("sum", "avg", "max", "min", "distinct", "count", "value", "values", "distinct_count", "p99", "p95", "p90", "p75", "p50")
 	notifyTargets, notifyTargetSet = getListAndSet("dingding", "webhook", "email", "mbox", "ticket", "vms", "sms")
 	notifySilences                 = []*struct {
 		Value int64  `json:"value"`
