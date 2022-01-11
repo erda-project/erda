@@ -17,9 +17,7 @@ package transaction_mq_detail
 import (
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-detail/avg_duration"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-detail/error_count"
-	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-detail/grid"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-detail/kv_grid"
-	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-detail/page"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-detail/rps"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-detail/slow_count"
 )

@@ -19,7 +19,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
@@ -27,7 +26,6 @@ type ComponentAction struct {
 	bdl   *bundle.Bundle
 	State State `json:"state,omitempty"`
 	Props `json:"Props,omitempty"`
-	base.DefaultProvider
 
 	IssueList []dao.IssueItem `json:"-"`
 }

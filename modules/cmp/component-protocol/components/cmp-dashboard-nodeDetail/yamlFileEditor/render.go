@@ -24,11 +24,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
@@ -46,7 +46,7 @@ func (f *ComponentYamlFileEditor) Init(ctx servicehub.Context) error {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
 	steveServer = server
-	return f.DefaultProvider.Init(ctx)
+	return nil
 }
 
 func (f *ComponentYamlFileEditor) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,

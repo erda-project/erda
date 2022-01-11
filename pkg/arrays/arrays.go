@@ -32,3 +32,12 @@ func Concat(array []string, arrays ...[]string) []string {
 	}
 	return array
 }
+
+func IsContain(items []string, item string) bool {
+	for _, eachItem := range items {
+		if eachItem == item {
+			return true
+		}
+	}
+	return false
+}

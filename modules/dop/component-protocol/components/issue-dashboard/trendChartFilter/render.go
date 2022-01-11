@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
@@ -95,21 +95,21 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 	handler := stackhandlers.NewStackRetriever().GetRetriever(f.State.Values.Type)
 	f.State.Conditions = []filter.PropCondition{
 		{
-			EmptyText: "全部",
+			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Key:       "type",
-			Label:     "类型",
+			Label:     cputil.I18n(ctx, "type"),
 			Options: []filter.PropConditionOption{
 				{
-					Label: "优先级",
+					Label: cputil.I18n(ctx, "priority"),
 					Value: stackhandlers.Priority,
 				},
 				{
-					Label: "复杂度",
+					Label: cputil.I18n(ctx, "complexity"),
 					Value: stackhandlers.Complexity,
 				},
 				{
-					Label: "严重程度",
+					Label: cputil.I18n(ctx, "severity"),
 					Value: stackhandlers.Severity,
 				},
 			},
@@ -120,15 +120,15 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 			},
 		},
 		{
-			EmptyText: "全部",
+			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Key:       "value",
-			Label:     "具体值",
+			Label:     cputil.I18n(ctx, "value"),
 			Options:   handler.GetFilterOptions(),
 			Type:      filter.PropConditionTypeSelect,
 		},
 		{
-			EmptyText: "全部",
+			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Key:       "time",
 			Label:     "时间",

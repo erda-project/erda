@@ -22,7 +22,6 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 var (
@@ -38,7 +37,6 @@ var (
 )
 
 type Chart struct {
-	base.DefaultProvider
 	SDK    *cptype.SDK
 	Ctx    context.Context
 	CtxBdl *bundle.Bundle

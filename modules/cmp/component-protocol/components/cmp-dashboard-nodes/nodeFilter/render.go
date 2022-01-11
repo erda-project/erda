@@ -26,6 +26,7 @@ import (
 	"gopkg.in/square/go-jose.v2/json"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
@@ -34,7 +35,6 @@ import (
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/filter"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 var steveServer cmp.SteveServer
@@ -45,7 +45,7 @@ func (nf *NodeFilter) Init(ctx servicehub.Context) error {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
 	steveServer = server
-	return nf.DefaultProvider.Init(ctx)
+	return nil
 }
 
 func (nf *NodeFilter) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {

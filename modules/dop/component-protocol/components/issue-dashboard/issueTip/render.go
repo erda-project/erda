@@ -20,13 +20,12 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
-	base.DefaultProvider
 	Props Props `json:"props,omitempty"`
 }
 
@@ -40,7 +39,7 @@ func init() {
 }
 
 func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	f.Props.Value = fmt.Sprintf("提示：以下数据统计于 %s", time.Now().Format("2006-01-02 15:04:05"))
+	f.Props.Value = fmt.Sprintf("%s %s", cputil.I18n(ctx, "dataUpdatedTip"), time.Now().Format("2006-01-02 15:04:05"))
 	c.Props = cputil.MustConvertProps(f.Props)
 	return nil
 }

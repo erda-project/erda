@@ -306,7 +306,7 @@ func (r *Runtime) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 	// prepare runtime
 	// TODO: we do not need RepoAbbrev
 	runtime, created, err := r.db.FindRuntimeOrCreate(uniqueID, req.Operator, req.Source, req.ClusterName,
-		uint64(cluster.ID), app.GitRepoAbbrev, req.Extra.ProjectID, app.OrgID)
+		uint64(cluster.ID), app.GitRepoAbbrev, req.Extra.ProjectID, app.OrgID, req.DeploymentOrderName, req.ReleaseVersion)
 	if err != nil {
 		return nil, apierrors.ErrCreateRuntime.InternalError(err)
 	}
@@ -337,16 +337,18 @@ func (r *Runtime) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 		deploytype = "RELEASE"
 	}
 	deployContext := DeployContext{
-		Runtime:        runtime,
-		App:            app,
-		LastDeployment: last,
-		ReleaseID:      req.ReleaseID,
-		Operator:       req.Operator,
-		BuildID:        req.Extra.BuildID,
-		DeployType:     deploytype,
-		AddonActions:   req.Extra.AddonActions,
-		InstanceID:     req.Extra.InstanceID.String(),
-		SkipPushByOrch: req.SkipPushByOrch,
+		Runtime:           runtime,
+		App:               app,
+		LastDeployment:    last,
+		ReleaseID:         req.ReleaseID,
+		Operator:          req.Operator,
+		BuildID:           req.Extra.BuildID,
+		DeployType:        deploytype,
+		AddonActions:      req.Extra.AddonActions,
+		InstanceID:        req.Extra.InstanceID.String(),
+		SkipPushByOrch:    req.SkipPushByOrch,
+		Param:             req.Param,
+		DeploymentOrderId: req.DeploymentOrderId,
 	}
 
 	return r.doDeployRuntime(&deployContext)
@@ -647,6 +649,8 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 		NeedApproval:      needApproval,
 		ApprovalStatus:    map[bool]string{true: "WaitApprove", false: ""}[needApproval],
 		SkipPushByOrch:    ctx.SkipPushByOrch,
+		Param:             ctx.Param,
+		DeploymentOrderId: ctx.DeploymentOrderId,
 	}
 	if err := r.db.CreateDeployment(&deployment); err != nil {
 		return nil, apierrors.ErrDeployRuntime.InternalError(err)
@@ -977,6 +981,8 @@ func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, dep
 		NeedApproval:      needApproval,
 		ApprovalStatus:    map[bool]string{true: "WaitApprove", false: ""}[needApproval],
 		SkipPushByOrch:    true,
+		Param:             rollbackTo.Param,
+		DeploymentOrderId: rollbackTo.DeploymentOrderId,
 	}
 	if err := r.db.CreateDeployment(&deployment); err != nil {
 		return nil, apierrors.ErrRollbackRuntime.InternalError(err)
@@ -1348,6 +1354,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	}
 
 	isFakeRuntime := false
+	// TODO: Deprecated, instead from runtime deployment_status filed
 	deployment, err := r.db.FindLastDeployment(runtime.ID)
 	if err != nil {
 		l.WithError(err).WithField("runtime.ID", runtime.ID).
@@ -1393,6 +1400,8 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	if runtime.LegacyStatus == dbclient.LegacyStatusDeleting {
 		d.DeleteStatus = dbclient.LegacyStatusDeleting
 	}
+	d.DeploymentOrderName = runtime.DeploymentOrderName
+	d.ReleaseVersion = runtime.ReleaseVersion
 	d.ReleaseID = deployment.ReleaseId
 	d.ClusterID = runtime.ClusterId
 	d.ClusterName = runtime.ClusterName

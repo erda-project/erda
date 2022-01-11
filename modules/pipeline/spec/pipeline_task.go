@@ -100,7 +100,7 @@ type PipelineTaskExtra struct {
 
 	Action pipelineyml.Action `json:"action,omitempty"`
 
-	OpenapiOAuth2TokenPayload apistructs.OpenapiOAuth2TokenPayload `json:"openapiOAuth2TokenPayload"`
+	OpenapiOAuth2TokenPayload apistructs.OAuth2TokenPayload `json:"openapiOAuth2TokenPayload"`
 
 	LoopOptions *apistructs.PipelineTaskLoopOptions `json:"loopOptions,omitempty"` // 开始执行后保证不为空
 

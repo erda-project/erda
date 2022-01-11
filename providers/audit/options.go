@@ -107,3 +107,28 @@ func UserID(id interface{}) Option {
 		}
 	}
 }
+
+type optionContextKey_ uint8
+
+const optionContextKey optionContextKey_ = 0
+
+type optionContextData struct {
+	opts []Option
+}
+
+func withOptionDataContext(ctx context.Context, opts *optionContextData) context.Context {
+	return context.WithValue(ctx, optionContextKey, opts)
+}
+
+// ContextOptions .
+func ContextOptions(ctx context.Context, opts ...Option) {
+	data, ok := ctx.Value(optionContextKey).(*optionContextData)
+	if ok {
+		data.opts = append(data.opts, opts...)
+	}
+}
+
+// ContextEntry .
+func ContextEntry(ctx context.Context, key string, val interface{}) {
+	ContextOptions(ctx, Entry(key, val))
+}
