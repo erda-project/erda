@@ -1069,12 +1069,13 @@ func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.Serv
 			}
 
 			// configs come from config-center do override globalEnv
-			for _, v := range configs.Env {
-				groupEnv[v.Key] = v.Value
-			}
-
-			for _, v := range configs.File {
-				groupFileconfigs[v.Key] = v.Value
+			for _, config := range configs {
+				switch config.Type {
+				case "ENV":
+					groupEnv[config.Key] = config.Value
+				case "FILE":
+					groupFileconfigs[config.Key] = config.Value
+				}
 			}
 		} else {
 			// TODO: deprecated
