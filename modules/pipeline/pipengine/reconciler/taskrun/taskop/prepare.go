@@ -45,6 +45,7 @@ import (
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/labelconfig"
 )
 
 type prepare taskrun.TaskRun
@@ -313,6 +314,11 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 		// 非大数据任务带上 PACK = true 的标
 		if p.PipelineSource.IsBigData() {
 			task.Extra.Labels[apistructs.LabelJobKind] = apistructs.TagBigdata
+			for key, label := range p.MergeLabels() {
+				if key == labelconfig.BIGDATA_AFFINITY_LABELS {
+					task.Extra.Labels[key] = label
+				}
+			}
 		} else {
 			task.Extra.Labels[apistructs.LabelPack] = "true"
 		}

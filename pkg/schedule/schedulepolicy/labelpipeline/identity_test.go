@@ -341,3 +341,42 @@ func TestBigdataAndAny(t *testing.T) {
 
 	assert.Equal(t, ",bigdata", y)
 }
+
+func TestIdentityLabelFilterBigdataLabel(t *testing.T) {
+	var jsonBlob = []byte(`{
+    "clusterName": "terminus-dev",
+    "kind": "K8SJOB",
+    "name": "K8SJOBFORTERMINUSDEV",
+    "options": {
+        "ADDR": "http://master.mesos/service/marathon",
+        "CPU_SUBSCRIBE_RATIO": "10",
+        "ENABLETAG": "true"
+    }
+}`)
+
+	var eConfig executorconfig.ExecutorConfig
+	err := json.Unmarshal(jsonBlob, &eConfig)
+	assert.Nil(t, err)
+	assert.Nil(t, eConfig.OptionsPlus)
+
+	var result labelconfig.RawLabelRuleResult
+	var result2 labelconfig.RawLabelRuleResult2
+	li := &labelconfig.LabelInfo{
+		Label: map[string]string{
+			"DICE_ORG_NAME":             "1",
+			"DICE_WORKSPACE":            "dev",
+			"SERVICE_TYPE":              "STATELESS",
+			"__bigdata_affinity_labels": "bigdata-job,bigdata-job2",
+			"JOB_KIND":                  "bigdata",
+		},
+		ExecutorName:   eConfig.Name,
+		ExecutorKind:   eConfig.Kind,
+		ExecutorConfig: &executorconfig.ExecutorWholeConfigs{BasicConfig: eConfig.Options, PlusConfigs: eConfig.OptionsPlus},
+		OptionsPlus:    eConfig.OptionsPlus,
+		ObjName:        "test-1234",
+	}
+
+	IdentityFilter(&result, &result2, li)
+	assert.Equal(t, true, result2.BigData)
+	assert.Equal(t, []string{"bigdata-job", "bigdata-job2"}, result2.BigDataLabels)
+}
