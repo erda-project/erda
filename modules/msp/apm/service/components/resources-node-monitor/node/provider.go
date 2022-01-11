@@ -36,12 +36,12 @@ import (
 )
 
 const (
-	cpu     string = "cpu"
-	memory  string = "memory"
-	load    string = "load"
-	process string = "process"
-	disk    string = "disk"
-	network string = "network"
+	cpu      string = "cpu"
+	memory   string = "memory"
+	load     string = "load"
+	podCount string = "podCount"
+	disk     string = "disk"
+	network  string = "network"
 )
 
 type provider struct {
@@ -176,8 +176,8 @@ func (p *provider) getLoadLineGraph(ctx context.Context, startTime, endTime int6
 	return metadata, nil
 }
 
-func (p *provider) getDiskIoLineGraph(ctx context.Context, startTime, endTime int64, hostIp string) ([]*model.LineGraphMetaData, error) {
-	statement := fmt.Sprintf("SELECT round_float(diffps(disk_usage::field), 2) " +
+func (p *provider) getPodCountLineGraph(ctx context.Context, startTime, endTime int64, hostIp string) ([]*model.LineGraphMetaData, error) {
+	statement := fmt.Sprintf("SELECT max(task_containers::field) " +
 		"FROM host_summary " +
 		"WHERE host_ip::tag=$host_ip " +
 		"GROUP BY time()")
@@ -197,12 +197,90 @@ func (p *provider) getDiskIoLineGraph(ctx context.Context, startTime, endTime in
 	var metadata []*model.LineGraphMetaData
 	for _, row := range rows {
 		timeFormat := row.Values[0].GetStringValue()
-		usedValue := row.Values[1].GetNumberValue()
-		usedDimension := "used"
+		value := math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
+		dimension := "pod count"
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     usedValue,
-			Dimension: usedDimension,
+			Value:     value,
+			Dimension: dimension,
+		})
+	}
+	return metadata, nil
+}
+
+func (p *provider) getDiskIoLineGraph(ctx context.Context, startTime, endTime int64, hostIp string) ([]*model.LineGraphMetaData, error) {
+	statement := fmt.Sprintf("SELECT round_float(write_rate::field, 2),round_float(read_rate::field, 2) " +
+		"FROM diskio " +
+		"WHERE host_ip::tag=$host_ip " +
+		"GROUP BY time()")
+	queryParams := map[string]*structpb.Value{"host_ip": structpb.NewStringValue(hostIp)}
+
+	request := &metricpb.QueryWithInfluxFormatRequest{
+		Start:     strconv.FormatInt(startTime, 10),
+		End:       strconv.FormatInt(endTime, 10),
+		Statement: statement,
+		Params:    queryParams,
+	}
+	resp, err := p.Metric.QueryWithInfluxFormat(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	rows := resp.Results[0].Series[0].Rows
+	var metadata []*model.LineGraphMetaData
+	for _, row := range rows {
+		timeFormat := row.Values[0].GetStringValue()
+		writeValue := row.Values[1].GetNumberValue()
+		readValue := row.Values[2].GetNumberValue()
+		writeDimension := "write"
+		readDimension := "read"
+		metadata = append(metadata, &model.LineGraphMetaData{
+			Time:      timeFormat,
+			Value:     writeValue,
+			Dimension: writeDimension,
+		})
+		metadata = append(metadata, &model.LineGraphMetaData{
+			Time:      timeFormat,
+			Value:     readValue,
+			Dimension: readDimension,
+		})
+	}
+	return metadata, nil
+}
+
+func (p *provider) getNetworkLineGraph(ctx context.Context, startTime, endTime int64, hostIp string) ([]*model.LineGraphMetaData, error) {
+	statement := fmt.Sprintf("SELECT round_float(send_rate::field, 2),round_float(recv_rate::field, 2) " +
+		"FROM net " +
+		"WHERE host_ip::tag=$host_ip " +
+		"GROUP BY time()")
+	queryParams := map[string]*structpb.Value{"host_ip": structpb.NewStringValue(hostIp)}
+
+	request := &metricpb.QueryWithInfluxFormatRequest{
+		Start:     strconv.FormatInt(startTime, 10),
+		End:       strconv.FormatInt(endTime, 10),
+		Statement: statement,
+		Params:    queryParams,
+	}
+	resp, err := p.Metric.QueryWithInfluxFormat(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	rows := resp.Results[0].Series[0].Rows
+	var metadata []*model.LineGraphMetaData
+	for _, row := range rows {
+		timeFormat := row.Values[0].GetStringValue()
+		sendValue := row.Values[1].GetNumberValue()
+		recvValue := row.Values[2].GetNumberValue()
+		sendDimension := "send"
+		recvDimension := "recv"
+		metadata = append(metadata, &model.LineGraphMetaData{
+			Time:      timeFormat,
+			Value:     sendValue,
+			Dimension: sendDimension,
+		})
+		metadata = append(metadata, &model.LineGraphMetaData{
+			Time:      timeFormat,
+			Value:     recvValue,
+			Dimension: recvDimension,
 		})
 	}
 	return metadata, nil
@@ -239,12 +317,28 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, load, "rateUnit", graph)
 			p.StdDataPtr = line
 			return
+		case podCount:
+			graph, err := p.getPodCountLineGraph(sdk.Ctx, startTime, endTime, hostIp)
+			if err != nil {
+				return
+			}
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, podCount, "rateUnit", graph)
+			p.StdDataPtr = line
+			return
 		case disk:
 			graph, err := p.getDiskIoLineGraph(sdk.Ctx, startTime, endTime, hostIp)
 			if err != nil {
 				return
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, disk, "rateUnit", graph)
+			p.StdDataPtr = line
+			return
+		case network:
+			graph, err := p.getNetworkLineGraph(sdk.Ctx, startTime, endTime, hostIp)
+			if err != nil {
+				return
+			}
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, network, "rateUnit", graph)
 			p.StdDataPtr = line
 			return
 		}

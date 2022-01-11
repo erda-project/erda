@@ -747,7 +747,7 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 			Status:   "trace_all",
 			Limit:    100,
 			Sort:     "100",
-		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
+		}}, "SELECT trace_id::tag,trace_duration::field,start_time::field,span_count::field,service_names::field FROM trace WHERE errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 0 OFFSET 0"},
 		{"case-duration", fields{
 			p:                     nil,
 			i18n:                  nil,
@@ -759,7 +759,7 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 			DurationMin: 1000000,
 			DurationMax: 3000000,
 			Sort:        "100",
-		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE trace_duration::field>$duration_min AND trace_duration::field<$duration_max AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
+		}}, "SELECT trace_id::tag,trace_duration::field,start_time::field,span_count::field,service_names::field FROM trace WHERE trace_duration::field>$duration_min AND trace_duration::field<$duration_max AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 0 OFFSET 0"},
 		{"case-traceId", fields{
 			p:                     nil,
 			i18n:                  nil,
@@ -770,7 +770,7 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 			Limit:    100,
 			TraceID:  "test-case-trace-id",
 			Sort:     "100",
-		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE trace_id::tag=$trace_id AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
+		}}, "SELECT trace_id::tag,trace_duration::field,start_time::field,span_count::field,service_names::field FROM trace WHERE trace_id::tag=$trace_id AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 0 OFFSET 0"},
 		{"case-httpPath", fields{
 			p:                     nil,
 			i18n:                  nil,
@@ -782,7 +782,7 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 			TraceID:  "test-case-trace-id",
 			HttpPath: "/api/health",
 			Sort:     "100",
-		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE trace_id::tag=$trace_id AND http_paths::field=$http_paths AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
+		}}, "SELECT trace_id::tag,trace_duration::field,start_time::field,span_count::field,service_names::field FROM trace WHERE trace_id::tag=$trace_id AND http_paths::field=$http_paths AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 0 OFFSET 0"},
 		{"case-rpcMethod", fields{
 			p:                     nil,
 			i18n:                  nil,
@@ -794,7 +794,7 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 			TraceID:   "test-case-trace-id",
 			RpcMethod: "io.terminus.xxx",
 			Sort:      "100",
-		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE trace_id::tag=$trace_id AND rpc_methods::field=$rpc_methods AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
+		}}, "SELECT trace_id::tag,trace_duration::field,start_time::field,span_count::field,service_names::field FROM trace WHERE trace_id::tag=$trace_id AND rpc_methods::field=$rpc_methods AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 0 OFFSET 0"},
 		{"case-serviceName", fields{
 			p:                     nil,
 			i18n:                  nil,
@@ -806,7 +806,7 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 			TraceID:     "test-case-trace-id",
 			ServiceName: "apm-demo-api",
 			Sort:        "100",
-		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE trace_id::tag=$trace_id AND service_names::field=$service_names AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
+		}}, "SELECT trace_id::tag,trace_duration::field,start_time::field,span_count::field,service_names::field FROM trace WHERE trace_id::tag=$trace_id AND service_names::field=$service_names AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 0 OFFSET 0"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

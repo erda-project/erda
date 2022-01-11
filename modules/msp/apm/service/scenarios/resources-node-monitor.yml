@@ -9,7 +9,9 @@ hierarchy:
     - node@cpu
     - node@memory
     - node@load
+    - node@podCount
     - node@disk
+    - node@network
 components:
   page:
     type: Container
@@ -27,7 +29,15 @@ components:
     type: LineGraph
     options:
       asyncAtInit: true
+  node@podCount:
+    type: LineGraph
+    options:
+      asyncAtInit: true
   node@disk:
+    type: LineGraph
+    options:
+      asyncAtInit: true
+  node@network:
     type: LineGraph
     options:
       asyncAtInit: true
