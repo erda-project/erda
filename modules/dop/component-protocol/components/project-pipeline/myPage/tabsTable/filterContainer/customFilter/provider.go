@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 )
 
 type CustomFilter struct {
@@ -34,6 +35,8 @@ type CustomFilter struct {
 	sdk      *cptype.SDK
 	State    State    `json:"-"`
 	InParams InParams `json:"-"`
+
+	projectPipelineSvc projectpipeline.Service `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
 }
 
 type State struct {
@@ -45,10 +48,10 @@ type State struct {
 type FrontendConditions struct {
 	Status            []string `json:"status"`
 	Creator           []string `json:"creator"`
-	AppIDs            []uint64 `json:"appIDs"`
+	App               []uint64 `json:"app"`
 	Executor          []string `json:"executor"`
-	CreatedAtStartEnd []string `json:"createdAtStartEnd"`
-	StartedAtStartEnd []string `json:"startedAtStartEnd"`
+	CreatedAtStartEnd []int64  `json:"createdAtStartEnd"`
+	StartedAtStartEnd []int64  `json:"startedAtStartEnd"`
 }
 
 func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
@@ -83,8 +86,15 @@ func (p *CustomFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		fmt.Println("state values", p.StdStatePtr)
-		fmt.Println("op come", opData.ClientData)
+		values := p.State.FrontendConditionValues
+		p.gsHelper.SetGlobalTableFilter(gshelper.TableFilter{
+			Status:            values.Status,
+			Creator:           values.Creator,
+			AppIDs:            values.App,
+			Executor:          values.Executor,
+			CreatedAtStartEnd: values.CreatedAtStartEnd,
+			StartedAtStartEnd: values.StartedAtStartEnd,
+		})
 	}
 }
 
