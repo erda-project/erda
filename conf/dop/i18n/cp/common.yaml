@@ -216,6 +216,18 @@ zh:
   notIncludeDueTodayTomorrowMonth: 不包含本日、明日、本周截止数据
   noDeadlineSpecified: 未指定截止日期
   total: 总数
+  minePipeline: 我的流水线
+  primaryPipeline: 重要流水线
+  allPipeline: 全部流水线
+  createPipeline: 创建流水线
+  searchByPipelineName: 搜索流水线名称
+  executor: 执行人
+  application: 应用
+  started-at: 开始日期
+  please-choose-status: 请选择状态
+  please-choose-executor: 请选择执行人
+  please-choose-creator: 请选择创建人
+  please-choose-application: 请选择应用
 en:
   issue-manage: issue manage
   issue: issue
@@ -431,3 +443,15 @@ en:
   notIncludeDueTodayTomorrowMonth: Not include data of due today, tomorrow, and this week
   noDeadlineSpecified: No deadline specified
   total: Total
+  minePipeline: Mine pipeline
+  primaryPipeline: Primary pipeline
+  allPipeline: All pipeline
+  createPipeline: Create pipeline
+  searchByPipelineName: Search by pipeline name
+  executor: Executor
+  application: Application
+  started-at: Started at
+  please-choose-status: Please choose status
+  please-choose-executor: Please choose executor
+  please-choose-creator: Please choose creator
+  please-choose-application: Please choose application
