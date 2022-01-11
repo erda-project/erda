@@ -17,6 +17,7 @@ package dbclient
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -24,6 +25,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/expression"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 type Extension struct {
@@ -75,13 +78,14 @@ func (ExtensionVersion) TableName() string {
 }
 
 func (ext *ExtensionVersion) ToApiData(typ string, yamlFormat bool) *apistructs.ExtensionVersion {
+	spec := ext.SpecI18nReplace()
 	if yamlFormat {
 		return &apistructs.ExtensionVersion{
 			Name:      ext.Name,
 			Type:      typ,
 			Version:   ext.Version,
 			Dice:      ext.Dice,
-			Spec:      ext.Spec,
+			Spec:      spec,
 			Swagger:   ext.Swagger,
 			Readme:    ext.Readme,
 			CreatedAt: ext.CreatedAt,
@@ -91,7 +95,7 @@ func (ext *ExtensionVersion) ToApiData(typ string, yamlFormat bool) *apistructs.
 		}
 	} else {
 		diceData, _ := yaml.YAMLToJSON([]byte(ext.Dice))
-		specData, _ := yaml.YAMLToJSON([]byte(ext.Spec))
+		specData, _ := yaml.YAMLToJSON([]byte(spec))
 		swaggerData, _ := yaml.YAMLToJSON([]byte(ext.Swagger))
 		var diceJson interface{}
 		var specJson interface{}
@@ -113,6 +117,26 @@ func (ext *ExtensionVersion) ToApiData(typ string, yamlFormat bool) *apistructs.
 			Public:    ext.Public,
 		}
 	}
+}
+
+func (ext *ExtensionVersion) SpecI18nReplace() (specStr string) {
+	locale := i18n.GetGoroutineBindLang()
+	specStr = ext.Spec
+	if locale == "" {
+		locale = i18n.ZH
+	}
+	var specData apistructs.Spec
+	if err := yaml.Unmarshal([]byte(ext.Spec), &specData); err != nil {
+		return
+	}
+	values, ok := specData.Locale[locale]
+	if !ok {
+		return
+	}
+	for i, v := range values {
+		specStr = strings.ReplaceAll(specStr, fmt.Sprintf("%s %s.%s %s", expression.LeftPlaceholder, expression.I18n, i, expression.RightPlaceholder), v)
+	}
+	return
 }
 
 func (client *DBClient) CreateExtension(extension *Extension) error {
