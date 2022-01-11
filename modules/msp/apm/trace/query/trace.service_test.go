@@ -815,7 +815,7 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 				i18n:                  tt.fields.i18n,
 				traceRequestHistoryDB: tt.fields.traceRequestHistoryDB,
 			}
-			_, want := s.composeTraceQueryConditions(tt.args.req)
+			_, want, _ := s.composeTraceQueryConditions(tt.args.req)
 			if want != tt.want {
 				t.Errorf("composeTraceQueryConditions() got1 = %v, want %v", want, tt.want)
 			}
