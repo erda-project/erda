@@ -1,6 +1,4 @@
-scenario:
-  scenarioType: project-pipeline-exec-list
-  scenarioKey: project-pipeline-exec-list
+scenario: "project-pipeline-exec-list"
 protocol:
   hierarchy:
     root: myPage
