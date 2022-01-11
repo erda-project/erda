@@ -84,7 +84,7 @@ func (e *Endpoints) ListContract(ctx context.Context, r *http.Request, vars map[
 		QueryParams: &queryParams,
 	}
 
-	data, apiError := e.assetSvc.ListContracts(&req)
+	data, apiError := e.assetSvc.ListContracts(ctx, &req)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}

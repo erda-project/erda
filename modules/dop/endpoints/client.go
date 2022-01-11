@@ -138,7 +138,7 @@ func (e *Endpoints) ListSwaggerClient(ctx context.Context, r *http.Request, vars
 		QueryParams: &queryParams,
 	}
 
-	data, apiError := e.assetSvc.ListSwaggerVersionClients(&req)
+	data, apiError := e.assetSvc.ListSwaggerVersionClients(ctx, &req)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}

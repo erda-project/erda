@@ -468,7 +468,7 @@ func (svc *Service) ListMyClients(req *apistructs.ListMyClientsReq) (*apistructs
 	}, nil
 }
 
-func (svc *Service) ListContracts(req *apistructs.ListContractsReq) (*apistructs.ListContractsRsp, *errorresp.APIError) {
+func (svc *Service) ListContracts(ctx context.Context, req *apistructs.ListContractsReq) (*apistructs.ListContractsRsp, *errorresp.APIError) {
 	// 参数校验
 	if req == nil || req.QueryParams == nil || req.URIParams == nil {
 		return nil, apierrors.ListContracts.InvalidParameter("missing parameters")
@@ -495,7 +495,7 @@ func (svc *Service) ListContracts(req *apistructs.ListContractsReq) (*apistructs
 		}
 	}
 
-	total, list, err := dbclient.ListContracts(req)
+	total, list, err := dbclient.ListContracts(ctx, svc.trans, req)
 	if err != nil {
 		return nil, apierrors.ListContracts.InternalError(err)
 	}
@@ -616,7 +616,7 @@ func (svc *Service) ListAccess(req *apistructs.ListAccessReq) (*apistructs.ListA
 	}, nil
 }
 
-func (svc *Service) ListSwaggerVersionClients(req *apistructs.ListSwaggerVersionClientsReq) (*apistructs.ListSwaggerVersionClientRsp, *errorresp.APIError) {
+func (svc *Service) ListSwaggerVersionClients(ctx context.Context, req *apistructs.ListSwaggerVersionClientsReq) (*apistructs.ListSwaggerVersionClientRsp, *errorresp.APIError) {
 	// 参数校验
 	if req == nil || req.URIParams == nil || req.QueryParams == nil {
 		return nil, apierrors.ListAccess.InvalidParameter("invalid parameters")
@@ -625,7 +625,7 @@ func (svc *Service) ListSwaggerVersionClients(req *apistructs.ListSwaggerVersion
 		return nil, apierrors.ListAccess.InvalidParameter("invalid orgID")
 	}
 
-	data, err := dbclient.ListSwaggerVersionClients(req)
+	data, err := dbclient.ListSwaggerVersionClients(ctx, svc.trans, req)
 	if err != nil {
 		return nil, apierrors.ListAccess.InternalError(err)
 	}
