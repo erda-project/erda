@@ -111,24 +111,6 @@ func (e *Endpoints) UpdateNotifyGroup(ctx context.Context, r *http.Request, vars
 	if err != nil {
 		return apierrors.ErrUpdateNotifyGroup.InternalError(err).ToResp(), nil
 	}
-	userID, err := strconv.ParseInt(r.Header.Get("User-ID"), 10, 64)
-	if err != nil {
-		return apierrors.ErrUpdateNotify.MissingParameter("User-ID header is nil").ToResp(), nil
-	}
-	user, err := e.bdl.GetCurrentUser(strconv.Itoa(int(userID)))
-	if err != nil {
-		return apierrors.ErrUpdateNotifyGroup.InternalError(err).ToResp(), nil
-	}
-	if gronotifyGroup.ScopeType != "msp_env" {
-		ctx := map[string]interface{}{
-			"userName":        user.Name,
-			"notifyGroupName": gronotifyGroup.Name,
-		}
-		audit := apistructs.ToAudit(apistructs.OrgScope, strconv.Itoa(int(userID)), apistructs.UpdateOrgNotifyGroup, uint64(orgID), ctx)
-		if err := e.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
-			return apierrors.ErrUpdateNotifyGroup.InternalError(err).ToResp(), nil
-		}
-	}
 	return httpserver.OkResp(gronotifyGroup)
 }
 
@@ -291,27 +273,6 @@ func (e *Endpoints) DeleteNotifyGroup(ctx context.Context, r *http.Request, vars
 
 	if err = e.notifyGroup.Delete(notifyGroupId, orgID); err != nil {
 		return apierrors.ErrDeleteNotifyGroup.InternalError(err).ToResp(), nil
-	}
-	userID, err := strconv.ParseInt(r.Header.Get("User-ID"), 10, 64)
-	if err != nil {
-		return apierrors.ErrUpdateNotify.MissingParameter("User-ID header is nil").ToResp(), nil
-	}
-	user, err := e.bdl.GetCurrentUser(strconv.Itoa(int(userID)))
-	if err != nil {
-		return apierrors.ErrUpdateNotifyGroup.InternalError(err).ToResp(), nil
-	}
-	if notifyGroup.ScopeType != "msp_env" {
-		ctx := map[string]interface{}{
-			"userName":        user.Name,
-			"notifyGroupName": notifyGroup.Name,
-		}
-		audit := apistructs.ToAudit(apistructs.OrgScope, strconv.Itoa(int(userID)), apistructs.DeleteOrgNotifyGroup, uint64(orgID), ctx)
-		if err := e.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
-			return apierrors.ErrUpdateNotifyGroup.InternalError(err).ToResp(), nil
-		}
-		if err := e.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
-			return apierrors.ErrUpdateNotifyGroup.InternalError(err).ToResp(), nil
-		}
 	}
 	return httpserver.OkResp(notifyGroup)
 }

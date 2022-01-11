@@ -15,6 +15,7 @@
 package notifygroup
 
 import (
+	"context"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -25,6 +26,7 @@ import (
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type config struct {
@@ -39,9 +41,11 @@ type provider struct {
 	instanceDB         *instancedb.InstanceTenantDB
 	mspTenantDB        *db.MSPTenantDB
 	monitorDB          *db2.MonitorDb
+	audit              audit.Auditor
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.audit = audit.GetAuditor(ctx)
 	p.notifyGroupService = &notifyGroupService{p}
 	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
 	p.instanceDB = &instancedb.InstanceTenantDB{DB: p.DB}
@@ -49,6 +53,21 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.monitorDB = &db2.MonitorDb{DB: p.DB}
 	if p.Register != nil {
 		pb.RegisterNotifyGroupServiceImp(p.Register, p.notifyGroupService, apis.Options())
+		type NotifyService = pb.NotifyGroupServiceServer
+		p.audit.Audit(
+			audit.Method(NotifyService.UpdateNotifyGroup, audit.ProjectScope, "createServiceNotifyGroup",
+				func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+					r := resp.(*pb.UpdateNotifyGroupResponse)
+					return r.Data.ProjectId, map[string]interface{}{}, nil
+				},
+			),
+			audit.Method(NotifyService.DeleteNotifyGroup, audit.ProjectScope, "deleteServiceNotifyGroup",
+				func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+					r := resp.(*pb.UpdateNotifyGroupResponse)
+					return r.Data.ProjectId, map[string]interface{}{}, nil
+				},
+			),
+		)
 	}
 	return nil
 }

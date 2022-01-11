@@ -99,6 +99,7 @@ message NotifyGroup {
   google.protobuf.Timestamp createdAt = 6;
   string                    creator   = 7;
   string                    label     = 8;
+  uint64                    projectId = 9;
 }
 
 message QueryNotifyGroupRequest {

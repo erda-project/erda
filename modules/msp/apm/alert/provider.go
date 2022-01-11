@@ -15,6 +15,7 @@
 package alert
 
 import (
+	"context"
 	"strings"
 
 	"github.com/jinzhu/gorm"
@@ -24,12 +25,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql"
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	alert "github.com/erda-project/erda-proto-go/msp/apm/alert/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/monitor/common/db"
 	mperm "github.com/erda-project/erda/modules/msp/instance/permission"
 	db2 "github.com/erda-project/erda/modules/msp/tenant/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type provider struct {
@@ -43,6 +46,7 @@ type provider struct {
 	authDb       *db.DB
 	mspDb        *db2.DB
 	bdl          *bundle.Bundle
+	audit        audit.Auditor
 
 	microServiceFilterTags map[string]bool
 }
@@ -52,6 +56,7 @@ type config struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.audit = audit.GetAuditor(ctx)
 	p.microServiceFilterTags = make(map[string]bool)
 	for _, k := range strings.Split(p.C.MicroServiceFilterTags, ",") {
 		k = strings.TrimSpace(k)
@@ -95,7 +100,46 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(AlertService.DashboardPreview, perm.ScopeProject, perm.MonitorProjectAlert, perm.ActionUpdate, p.MPerm.TenantToProjectID("TenantGroup", "TenantID")),
 			perm.NoPermMethod(AlertService.GetAlertConditions),
 			perm.NoPermMethod(AlertService.GetAlertConditionsValue),
-		))
+		),
+			p.audit.Audit(
+				audit.Method(AlertService.UpdateCustomizeAlert, audit.ProjectScope, string(apistructs.UpdateMicroserviceCustomAlert),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*alert.UpdateCustomizeAlertResponse)
+						return r.Data, map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(AlertService.DeleteCustomizeAlert, audit.ProjectScope, string(apistructs.DeleteMicroserviceCustomAlert),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*alert.DeleteCustomizeAlertResponse)
+						return r.Data.ProjectId, map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(AlertService.CreateCustomizeAlert, audit.ProjectScope, string(apistructs.CreateMicroserviceCustomAlert),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*alert.CreateCustomizeAlertResponse)
+						return r.Data.ProjectId, map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(AlertService.CreateAlert, audit.ProjectScope, string(apistructs.CreateMicroserviceAlert),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*alert.CreateAlertResponse)
+						return r.Data.ProjectId, map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(AlertService.CreateAlert, audit.ProjectScope, string(apistructs.UpdateMicroserviceAlert),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*alert.UpdateAlertResponse)
+						return r.Data, map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(AlertService.DeleteAlert, audit.ProjectScope, string(apistructs.DeleteMicroserviceAlert),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*alert.DeleteAlertResponse)
+						return r.Data.ProjectId, map[string]interface{}{}, nil
+					},
+				),
+			),
+		)
 	}
 	return nil
 }

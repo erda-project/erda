@@ -378,6 +378,15 @@ func (m *CreateAlertResponse) UnmarshalURLValues(prefix string, values url.Value
 					return err
 				}
 				m.Data.Id = val
+			case "data.projectId":
+				if m.Data == nil {
+					m.Data = &CreateAlertData{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ProjectId = val
 			}
 		}
 	}
@@ -395,6 +404,12 @@ func (m *CreateAlertData) UnmarshalURLValues(prefix string, values url.Values) e
 					return err
 				}
 				m.Id = val
+			case "projectId":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectId = val
 			}
 		}
 	}
@@ -450,6 +465,18 @@ func (m *UpdateAlertRequest) UnmarshalURLValues(prefix string, values url.Values
 
 // UpdateAlertResponse implement urlenc.URLValuesUnmarshaler.
 func (m *UpdateAlertResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data = val
+			}
+		}
+	}
 	return nil
 }
 
@@ -516,6 +543,15 @@ func (m *DeleteAlertResponse) UnmarshalURLValues(prefix string, values url.Value
 					m.Data = &DeleteAlertData{}
 				}
 				m.Data.Name = vals[0]
+			case "data.projectId":
+				if m.Data == nil {
+					m.Data = &DeleteAlertData{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ProjectId = val
 			}
 		}
 	}
@@ -529,6 +565,12 @@ func (m *DeleteAlertData) UnmarshalURLValues(prefix string, values url.Values) e
 			switch prefix + key {
 			case "Name":
 				m.Name = vals[0]
+			case "projectId":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectId = val
 			}
 		}
 	}
@@ -805,6 +847,15 @@ func (m *CreateCustomizeAlertResponse) UnmarshalURLValues(prefix string, values 
 					return err
 				}
 				m.Data.Id = val
+			case "data.projectId":
+				if m.Data == nil {
+					m.Data = &CreateCustomizeAlertData{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ProjectId = val
 			}
 		}
 	}
@@ -822,6 +873,12 @@ func (m *CreateCustomizeAlertData) UnmarshalURLValues(prefix string, values url.
 					return err
 				}
 				m.Id = val
+			case "projectId":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectId = val
 			}
 		}
 	}
@@ -877,6 +934,18 @@ func (m *UpdateCustomizeAlertRequest) UnmarshalURLValues(prefix string, values u
 
 // UpdateCustomizeAlertResponse implement urlenc.URLValuesUnmarshaler.
 func (m *UpdateCustomizeAlertResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data = val
+			}
+		}
+	}
 	return nil
 }
 
@@ -943,6 +1012,15 @@ func (m *DeleteCustomizeAlertResponse) UnmarshalURLValues(prefix string, values 
 					m.Data = &DeleteCustomizeAlertData{}
 				}
 				m.Data.Name = vals[0]
+			case "data.projectId":
+				if m.Data == nil {
+					m.Data = &DeleteCustomizeAlertData{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ProjectId = val
 			}
 		}
 	}
@@ -956,6 +1034,12 @@ func (m *DeleteCustomizeAlertData) UnmarshalURLValues(prefix string, values url.
 			switch prefix + key {
 			case "name":
 				m.Name = vals[0]
+			case "projectId":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectId = val
 			}
 		}
 	}

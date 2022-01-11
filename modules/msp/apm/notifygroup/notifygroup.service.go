@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/erda-project/erda/providers/audit"
 	"strconv"
 
 	"github.com/jinzhu/gorm"
@@ -238,21 +239,13 @@ func (n *notifyGroupService) UpdateNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	userId := apis.GetUserID(ctx)
-	user, err := n.p.bdl.GetCurrentUser(userId)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
+	result.Data.ProjectId = auditProjectId
 	auditContext := map[string]interface{}{
 		"projectName":     projectName,
 		"workspace":       workspace,
 		"notifyGroupName": notifyGroupName,
-		"userName":        user.Name,
 	}
-	audit := apistructs.ToAudit(apistructs.ProjectScope, userId, apistructs.UpdateNotifyGroup, auditProjectId, auditContext)
-	if err := n.p.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
+	audit.ContextEntryMap(&ctx, auditContext)
 	return result, nil
 }
 
@@ -302,20 +295,12 @@ func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	userId := apis.GetUserID(ctx)
-	user, err := n.p.bdl.GetCurrentUser(userId)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
+	result.Data.ProjectId = auditProjectId
 	auditContext := map[string]interface{}{
 		"projectName":     projectName,
 		"workspace":       workspace,
 		"notifyGroupName": notifyGroupName,
-		"userName":        user.Name,
 	}
-	audit := apistructs.ToAudit(apistructs.ProjectScope, userId, apistructs.DeleteNotifyGroup, auditProjectId, auditContext)
-	if err := n.p.bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
+	audit.ContextEntryMap(&ctx, auditContext)
 	return result, nil
 }

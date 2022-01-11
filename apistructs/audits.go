@@ -16,10 +16,9 @@ package apistructs
 
 import (
 	"regexp"
-	"strconv"
-	"time"
 
 	"github.com/pkg/errors"
+	//"github.com/erda-project/erda/providers/audit"
 )
 
 // TemplateName 前端模版名称
@@ -188,6 +187,10 @@ const (
 	DeleteNotifyGroup    TemplateName = "deleteNotifyGroup"
 	UpdateOrgNotifyGroup TemplateName = "updateOrgNotifyGroup"
 	DeleteOrgNotifyGroup TemplateName = "deleteOrgNotifyGroup"
+	// ========================DeploymentOrder================================
+	CreateDeploymentOrderTemplate  TemplateName = "createDeploymentOrder"
+	ExecuteDeploymentOrderTemplate TemplateName = "executeDeploymentOrder"
+	CancelDeploymentOrderTemplate  TemplateName = "cancelDeploymentOrder"
 
 	// =====================Notify============================
 	CreateProjectNotifyTemplate  TemplateName = "createProjectNotify"
@@ -432,20 +435,6 @@ type Audit struct {
 	ClientIP string `json:"clientIp"`
 	// +optional 客户端类型
 	UserAgent string `json:"userAgent"`
-}
-
-func ToAudit(scopeType ScopeType, userId string, templateName TemplateName, auditScopeId uint64, context map[string]interface{}) Audit {
-	audit := Audit{
-		UserID:       userId,
-		ScopeType:    scopeType,
-		ScopeID:      auditScopeId,
-		TemplateName: templateName,
-		Result:       "success",
-		StartTime:    strconv.Itoa(int(time.Now().UnixNano())),
-		EndTime:      strconv.Itoa(int(time.Now().UnixNano())),
-		Context:      context,
-	}
-	return audit
 }
 
 // AuditCreateRequest 审计事件创建接口
