@@ -20,8 +20,10 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
 )
 
 func init() {
@@ -31,18 +33,11 @@ func init() {
 }
 
 func (t *Tab) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	if err := t.InitFromProtocol(ctx, c); err != nil {
+	if err := t.InitFromProtocol(ctx, c, gs); err != nil {
 		return err
 	}
-	h := gshelper.NewGSHelper(gs)
 
 	t.SetType()
-	t.SetData(ctx, Num{
-		MinePipelineNum:    0,
-		PrimaryPipelineNum: 0,
-		AllPipelineNum:     0,
-	})
-
 	t.SetState(func() string {
 		if event.Operation == cptype.InitializeOperation ||
 			event.Operation == cptype.RenderingOperation ||
@@ -51,6 +46,38 @@ func (t *Tab) Render(ctx context.Context, c *cptype.Component, scenario cptype.S
 		}
 		return t.State.Value
 	}())
-	h.SetGlobalPipelineTab(t.State.Value)
+	t.SetOperations(t.State.Value)
+
+	list, total, err := t.ProjectPipelineSvc.List(ctx, deftype.ProjectPipelineList{
+		ProjectID:    t.InParams.ProjectID,
+		IdentityInfo: apistructs.IdentityInfo{UserID: t.sdk.Identity.UserID},
+	})
+	if err != nil {
+		return err
+	}
+	t.SetData(ctx, Num{
+		MinePipelineNum: func() uint64 {
+			return uint64(len(pipelineFilterIn(list, func(pipeline *dpb.PipelineDefinition) bool {
+				return pipeline.Creator == t.sdk.Identity.UserID
+			})))
+		}(),
+		PrimaryPipelineNum: func() uint64 {
+			return uint64(len(pipelineFilterIn(list, func(pipeline *dpb.PipelineDefinition) bool {
+				return pipeline.Category == "primary"
+			})))
+		}(),
+		AllPipelineNum: uint64(total),
+	})
+	t.gsHelper.SetGlobalPipelineTab(t.State.Value)
 	return t.SetToProtocolComponent(c)
+}
+
+func pipelineFilterIn(pipelines []*dpb.PipelineDefinition, fn func(pipeline *dpb.PipelineDefinition) bool) []*dpb.PipelineDefinition {
+	newPipelines := make([]*dpb.PipelineDefinition, 0)
+	for _, v := range pipelines {
+		if fn(v) {
+			newPipelines = append(newPipelines, v)
+		}
+	}
+	return newPipelines
 }

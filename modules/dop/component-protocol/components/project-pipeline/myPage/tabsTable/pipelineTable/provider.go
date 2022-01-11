@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -45,7 +46,11 @@ type PipelineTable struct {
 	bdl      *bundle.Bundle
 	gsHelper *gshelper.GSHelper
 	sdk      *cptype.SDK
-	InParams InParams `json:"-"`
+	InParams InParams       `json:"-"`
+	PageNo   uint64         `json:"-"`
+	PageSize uint64         `json:"-"`
+	Total    uint64         `json:"-"`
+	Sorts    []*common.Sort `json:"-"`
 
 	ProjectPipelineSvc *projectpipeline.ProjectPipelineService
 }
@@ -58,6 +63,9 @@ const (
 	ColumnBranch          table.ColumnKey = "branch"
 	ColumnExecutor        table.ColumnKey = "executor"
 	ColumnStartTime       table.ColumnKey = "startTime"
+
+	StateKeyTransactionPaging = "paging"
+	StateKeyTransactionSort   = "sort"
 )
 
 func (p *PipelineTable) BeforeHandleOp(sdk *cptype.SDK) {
@@ -73,13 +81,15 @@ func (p *PipelineTable) BeforeHandleOp(sdk *cptype.SDK) {
 
 func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
+		p.SetPagingFromGlobalState()
+		p.SetSortsFromGlobalState()
 		p.StdDataPtr = &table.Data{
 			Table: table.Table{
 				Columns:  p.SetTableColumns(),
 				Rows:     p.SetTableRows(),
-				PageNo:   1,
-				PageSize: 10,
-				Total:    1,
+				PageNo:   p.PageNo,
+				PageSize: p.PageSize,
+				Total:    p.Total,
 			},
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				table.OpTableChangePage{}.OpKey(): cputil.NewOpBuilder().WithServerDataPtr(&table.OpTableChangePageServerData{}).Build(),
@@ -119,17 +129,40 @@ func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 }
 
 func (p *PipelineTable) SetTableRows() []table.Row {
+	var descCols, ascCols []string
+	for _, v := range p.Sorts {
+		if v.Ascending {
+			ascCols = append(ascCols, v.FieldKey)
+		} else {
+			descCols = append(descCols, v.FieldKey)
+		}
+	}
+	if len(ascCols) == 0 && len(descCols) == 0 {
+		descCols = append(descCols, string(ColumnStartTime))
+	}
+
 	filter := p.gsHelper.GetGlobalTableFilter()
-	list, err := p.ProjectPipelineSvc.List(p.sdk.Ctx, deftype.ProjectPipelineList{
+	list, total, err := p.ProjectPipelineSvc.List(p.sdk.Ctx, deftype.ProjectPipelineList{
 		ProjectID: p.InParams.ProjectID,
 		AppName:   filter.App,
-		Creator:   filter.Creator,
-		Executor:  filter.Executor,
-		PageNo:    1,
-		PageSize:  10,
-		Name:      p.gsHelper.GetGlobalNameInputFilter(),
+		Creator: func() []string {
+			if p.gsHelper.GetGlobalPipelineTab() == "mine" {
+				return []string{p.sdk.Identity.UserID}
+			}
+			return filter.Creator
+		}(),
+		Executor: filter.Executor,
+		PageNo:   p.PageNo,
+		PageSize: p.PageSize,
+		Category: func() []string {
+			if p.gsHelper.GetGlobalPipelineTab() == "primary" {
+				return []string{"primary"}
+			}
+			return nil
+		}(),
+		Name: p.gsHelper.GetGlobalNameInputFilter(),
 		TimeCreated: func() []string {
-			timeCreated := make([]string, 0, 2)
+			timeCreated := make([]string, 0)
 			if len(filter.CreatedAtStartEnd) == 2 {
 				timeCreated = append(timeCreated, time.Unix(filter.CreatedAtStartEnd[0]/1000, 0).String())
 				timeCreated = append(timeCreated, time.Unix(filter.CreatedAtStartEnd[1]/1000, 0).String())
@@ -137,7 +170,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			return timeCreated
 		}(),
 		TimeStarted: func() []string {
-			timeStarted := make([]string, 0, 2)
+			timeStarted := make([]string, 0)
 			if len(filter.StartedAtStartEnd) == 2 {
 				timeStarted = append(timeStarted, time.Unix(filter.StartedAtStartEnd[0]/1000, 0).String())
 				timeStarted = append(timeStarted, time.Unix(filter.StartedAtStartEnd[1]/1000, 0).String())
@@ -145,6 +178,8 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			return timeStarted
 		}(),
 		Status:       filter.Status,
+		DescCols:     descCols,
+		AscCols:      ascCols,
 		IdentityInfo: apistructs.IdentityInfo{UserID: p.sdk.Identity.UserID},
 	})
 	if err != nil {
@@ -152,6 +187,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 		//return nil
 	}
 
+	p.Total = uint64(total)
 	rows := make([]table.Row, 0, len(list))
 	for _, v := range list {
 		rows = append(rows, table.Row{
@@ -186,16 +222,62 @@ func getApplicationNameFromDefinitionRemote(remote string) string {
 	return values[2]
 }
 
+func (p *PipelineTable) SetSortsFromGlobalState() {
+	globalState := *p.sdk.GlobalState
+	var sorts []*common.Sort
+	if sortCol, ok := globalState[StateKeyTransactionSort]; ok && sortCol != nil {
+		var clientSort table.OpTableChangeSortClientData
+		clientSort, ok = sortCol.(table.OpTableChangeSortClientData)
+		if !ok {
+			ok = mapstructure.Decode(sortCol, &clientSort) == nil
+		}
+		if ok {
+			col := clientSort.DataRef
+			if col != nil && col.AscOrder != nil {
+				sorts = append(sorts, &common.Sort{
+					FieldKey:  col.FieldBindToOrder,
+					Ascending: *col.AscOrder,
+				})
+			}
+		}
+	}
+	p.Sorts = sorts
+}
+
+func (p *PipelineTable) SetPagingFromGlobalState() {
+	globalState := *p.sdk.GlobalState
+	pageNo, pageSize := 1, common.DefaultPageSize
+	if paging, ok := globalState[StateKeyTransactionPaging]; ok && paging != nil {
+		var clientPaging table.OpTableChangePageClientData
+		clientPaging, ok = paging.(table.OpTableChangePageClientData)
+		if !ok {
+			ok = mapstructure.Decode(paging, &clientPaging) == nil
+		}
+		if ok {
+			pageNo = int(clientPaging.PageNo)
+			pageSize = int(clientPaging.PageSize)
+		}
+	}
+	p.PageNo = uint64(pageNo)
+	p.PageSize = uint64(pageSize)
+}
+
 func (p *PipelineTable) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return p.RegisterInitializeOp()
 }
 
 func (p *PipelineTable) RegisterTablePagingOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return nil
+	return func(sdk *cptype.SDK) {
+		(*sdk.GlobalState)[transaction.StateKeyTransactionPaging] = opData.ClientData
+		p.RegisterInitializeOp()(sdk)
+	}
 }
 
 func (p *PipelineTable) RegisterTableChangePageOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return nil
+	return func(sdk *cptype.SDK) {
+		(*sdk.GlobalState)[transaction.StateKeyTransactionPaging] = opData.ClientData
+		p.RegisterInitializeOp()(sdk)
+	}
 }
 
 func (p *PipelineTable) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {

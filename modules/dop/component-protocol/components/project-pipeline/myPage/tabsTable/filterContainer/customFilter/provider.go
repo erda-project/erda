@@ -15,6 +15,8 @@
 package customFilter
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter"
@@ -108,4 +110,13 @@ func (p *CustomFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDele
 	return func(sdk *cptype.SDK) {
 		fmt.Println("op come", opData.ClientData.DataRef)
 	}
+}
+
+func (p *CustomFilter) flushOptsByFilter(filterEntity string) error {
+	b, err := base64.StdEncoding.DecodeString(filterEntity)
+	if err != nil {
+		return err
+	}
+	p.State.FrontendConditionValues = FrontendConditions{}
+	return json.Unmarshal(b, &p.State.FrontendConditionValues)
 }

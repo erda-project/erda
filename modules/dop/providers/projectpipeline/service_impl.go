@@ -131,9 +131,9 @@ func (p *ProjectPipelineService) getYmlFromGittar(app *apistructs.ApplicationDTO
 	return yml, err
 }
 
-func (p *ProjectPipelineService) List(ctx context.Context, params deftype.ProjectPipelineList) ([]*dpb.PipelineDefinition, error) {
+func (p *ProjectPipelineService) List(ctx context.Context, params deftype.ProjectPipelineList) ([]*dpb.PipelineDefinition, int64, error) {
 	if err := params.Validate(); err != nil {
-		return nil, apierrors.ErrListProjectPipeline.InvalidParameter(err)
+		return nil, 0, apierrors.ErrListProjectPipeline.InvalidParameter(err)
 	}
 	//if err := p.checkListPermission(ctx, params); err != nil {
 	//	return nil, apierrors.ErrListProjectPipeline.AccessDenied()
@@ -141,12 +141,24 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 
 	project, err := p.bundle.GetProject(params.ProjectID)
 	if err != nil {
-		return nil, apierrors.ErrListProjectPipeline.InternalError(err)
+		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
 	}
 
-	apps, err := p.bundle.GetAppsByProject(params.ProjectID, project.OrgID, params.IdentityInfo.UserID)
+	org, err := p.bundle.GetOrg(project.OrgID)
 	if err != nil {
-		return nil, apierrors.ErrListProjectPipeline.InternalError(err)
+		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
+	}
+
+	var apps []apistructs.ApplicationDTO
+	if len(params.AppName) == 0 {
+		appResp, err := p.bundle.GetMyApps(params.IdentityInfo.UserID, project.OrgID, project.ID)
+		if err != nil {
+			return nil, 0, err
+		}
+		apps = appResp.List
+	}
+	for _, v := range apps {
+		params.AppName = append(params.AppName, v.Name)
 	}
 
 	list, err := p.PipelineDefinition.List(ctx, &dpb.PipelineDefinitionListRequest{
@@ -158,21 +170,23 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 		Ref:      params.Ref,
 		Name:     params.Name,
 		Remote: func() []string {
-			remotes := make([]string, 0, len(apps.List))
-			for _, v := range apps.List {
-				remotes = append(remotes, makeRemote(&v))
+			remotes := make([]string, 0, len(params.AppName))
+			for _, v := range params.AppName {
+				remotes = append(remotes, fmt.Sprintf("%s/%s/%s", org.Name, project.Name, v))
 			}
 			return remotes
 		}(),
 		TimeCreated: params.TimeCreated,
 		TimeStarted: params.TimeStarted,
 		Status:      params.Status,
+		AscCols:     params.AscCols,
+		DescCols:    params.DescCols,
 	})
 	if err != nil {
-		return nil, apierrors.ErrListProjectPipeline.InternalError(err)
+		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
 	}
 
-	return list.Data, nil
+	return list.Data, list.Total, nil
 }
 
 func (p *ProjectPipelineService) checkListPermission(ctx context.Context, params deftype.ProjectPipelineList) error {

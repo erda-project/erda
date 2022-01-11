@@ -15,5 +15,11 @@
 package common
 
 const (
-	ScenarioKey = "project-pipeline"
+	ScenarioKey     = "project-pipeline"
+	DefaultPageSize = 10
 )
+
+type Sort struct {
+	FieldKey  string
+	Ascending bool
+}

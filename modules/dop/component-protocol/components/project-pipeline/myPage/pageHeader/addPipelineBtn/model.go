@@ -47,15 +47,6 @@ func (a *AddPipelineBtn) SetProps(ctx context.Context) {
 	}
 }
 
-func (a *AddPipelineBtn) SetOperations() {
-	a.Operations = map[string]interface{}{
-		"click": map[string]interface{}{
-			"key":    "addPipeline",
-			"reload": true,
-		},
-	}
-}
-
 func (a *AddPipelineBtn) SetToProtocolComponent(c *cptype.Component) error {
 	b, err := json.Marshal(a)
 	if err != nil {

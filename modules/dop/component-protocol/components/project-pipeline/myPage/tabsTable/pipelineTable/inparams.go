@@ -23,8 +23,6 @@ type InParams struct {
 	OrgID uint64 `json:"orgID,omitempty"`
 
 	FrontendProjectID      string `json:"projectId,omitempty"`
-	FrontendFixedIssueType string `json:"fixedIssueType,omitempty"`
-	FrontendFixedIteration string `json:"fixedIteration,omitempty"`
 	FrontendUrlQuery       string `json:"issueFilter__urlQuery,omitempty"`
 
 	ProjectID uint64 `json:"-"`

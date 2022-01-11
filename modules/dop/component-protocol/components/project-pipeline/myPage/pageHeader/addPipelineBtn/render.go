@@ -36,6 +36,5 @@ func (a *AddPipelineBtn) Render(ctx context.Context, c *cptype.Component, scenar
 	a.SetType()
 	a.SetName()
 	a.SetProps(ctx)
-	a.SetOperations()
 	return a.SetToProtocolComponent(c)
 }
