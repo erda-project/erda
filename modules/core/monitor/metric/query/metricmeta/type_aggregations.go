@@ -223,6 +223,11 @@ func (m *Manager) getTypeAggDefine(langCodes i18n.LanguageCodes, mode string) (*
 							ResultType:  NumberType,
 						},
 						{
+							Aggregation: "distinct_count",
+							Name:        t.Text(langCodes, "Distinct Count"),
+							ResultType:  NumberType,
+						},
+						{
 							Aggregation: "p99",
 							Name:        t.Text(langCodes, "99 Percentile"),
 							ResultType:  NumberType,
