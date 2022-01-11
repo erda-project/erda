@@ -24,6 +24,15 @@ type GSHelper struct {
 	gs *cptype.GlobalStateData
 }
 
+type TableFilter struct {
+	Status            []string `json:"status"`
+	Creator           []string `json:"creator"`
+	AppIDs            []uint64 `json:"appIDs"`
+	Executor          []string `json:"executor"`
+	CreatedAtStartEnd []int64  `json:"createdAtStartEnd"`
+	StartedAtStartEnd []int64  `json:"startedAtStartEnd"`
+}
+
 func NewGSHelper(gs *cptype.GlobalStateData) *GSHelper {
 	return &GSHelper{gs: gs}
 }
@@ -66,4 +75,20 @@ func (h *GSHelper) GetGlobalNameInputFilter() string {
 	var t string
 	_ = assign((*h.gs)["GlobalNameInputFilter"], &t)
 	return t
+}
+
+func (h *GSHelper) SetGlobalTableFilter(t TableFilter) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalTableFilter"] = t
+}
+
+func (h *GSHelper) GetGlobalTableFilter() *TableFilter {
+	if h.gs == nil {
+		return nil
+	}
+	var t TableFilter
+	_ = assign((*h.gs)["GlobalTableFilter"], &t)
+	return &t
 }
