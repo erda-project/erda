@@ -106,6 +106,7 @@ message PipelineSourceListRequest {
   string path = 3;
   string name = 4;
   string sourceType = 5;
+  repeated string idList = 6;
 }
 
 message PipelineSourceListResponse {

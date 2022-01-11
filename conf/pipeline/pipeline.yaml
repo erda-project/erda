@@ -56,6 +56,7 @@ erda.core.pipeline.aop:
         - "apitest-report"
         - "scene-after"
         - "testplan-after"
+        - "definition-report"
     task:
       task_before_exec:
       task_after_exec:

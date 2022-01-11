@@ -354,42 +354,22 @@ type PipelinePageListRequest struct {
 }
 
 type PipelineDefinitionRequest struct {
-	ID                    string                `json:"id"`
-	Name                  string                `json:"name"`
-	Category              string                `json:"category"`
-	Creator               string                `json:"creator"`
-	PipelineSourceRequest PipelineSourceRequest `json:"pipelineSource"`
+	Name          string   `json:"name"`
+	Creators      []string `json:"creators"`
+	SourceRemotes []string `json:"sourceRemotes"`
 }
 
 func (definition *PipelineDefinitionRequest) IsEmptyValue() bool {
 	if definition == nil {
 		return true
 	}
-	if definition.Name != "" {
+	if len(definition.Name) > 0 {
 		return false
 	}
-	if definition.Creator != "" {
+	if len(definition.Creators) > 0 {
 		return false
 	}
-	if definition.ID != "" {
-		return false
-	}
-	if definition.Category != "" {
-		return false
-	}
-	if definition.PipelineSourceRequest.Name != "" {
-		return false
-	}
-	if definition.PipelineSourceRequest.Remote != "" {
-		return false
-	}
-	if definition.PipelineSourceRequest.Ref != "" {
-		return false
-	}
-	if definition.PipelineSourceRequest.Path != "" {
-		return false
-	}
-	if definition.PipelineSourceRequest.SourceType != "" {
+	if len(definition.SourceRemotes) > 0 {
 		return false
 	}
 	return true

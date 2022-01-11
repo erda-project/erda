@@ -111,6 +111,7 @@ func (p pipelineSource) List(ctx context.Context, request *pb.PipelineSourceList
 		Ref:        request.Ref,
 		Path:       request.Path,
 		Name:       request.Name,
+		IDList:     request.IdList,
 	}
 	sources, err := p.dbClient.GetPipelineSourceByUnique(unique)
 	if err != nil {

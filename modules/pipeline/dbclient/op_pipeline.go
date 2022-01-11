@@ -15,6 +15,8 @@
 package dbclient
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -24,7 +26,10 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
+	definitiondb "github.com/erda-project/erda/modules/pipeline/providers/definition/db"
+	sourcedb "github.com/erda-project/erda/modules/pipeline/providers/source/db"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -72,19 +77,45 @@ func (client *Client) GetPipeline(id interface{}, ops ...SessionOption) (spec.Pi
 	if !found {
 		return spec.Pipeline{}, NotFoundBaseError
 	}
-	// extra
-	extra, found, err := client.GetPipelineExtraByPipelineID(base.ID, ops...)
+
+	var extra spec.PipelineExtra
+	var labels []spec.PipelineLabel
+
+	worker := limit_sync_group.NewWorker(2)
+	worker.AddFunc(func(locker *limit_sync_group.Locker, ctx context.Context, i ...interface{}) error {
+		// extra
+		result, found, err := client.GetPipelineExtraByPipelineID(base.ID, ops...)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return errors.New("not found extra")
+		}
+
+		locker.Lock()
+		extra = result
+		locker.Unlock()
+
+		return nil
+	}, context.Background())
+	worker.AddFunc(func(locker *limit_sync_group.Locker, ctx context.Context, i ...interface{}) error {
+		// labels
+		result, err := client.ListLabelsByPipelineID(base.ID, ops...)
+		if err != nil {
+			return err
+		}
+
+		locker.Lock()
+		labels = result
+		locker.Unlock()
+
+		return nil
+	}, context.Background())
+	err = worker.Do().Error()
 	if err != nil {
 		return spec.Pipeline{}, err
 	}
-	if !found {
-		return spec.Pipeline{}, errors.New("not found extra")
-	}
-	// labels
-	labels, err := client.ListLabelsByPipelineID(base.ID, ops...)
-	if err != nil {
-		return spec.Pipeline{}, err
-	}
+
 	// combine pipeline
 	var p spec.Pipeline
 	p.PipelineBase = base
@@ -275,9 +306,10 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	defer session.Close()
 
 	var (
-		total           int64
-		currentPageSize int64
-		err             error
+		total               int64
+		currentPageSize     int64
+		err                 error
+		needQueryDefinition bool
 	)
 
 	// default pageNum = 1
@@ -351,46 +383,77 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	if len(forceIndexes) > 0 {
 		baseSQL.Alias(fmt.Sprintf("`%s` USE INDEX (%s)", (&spec.PipelineBase{}).TableName(), strings.Join(forceIndexes, ",")))
 	}
+	if req.PipelineDefinitionRequestJSON != "" {
+		var definitionReq apistructs.PipelineDefinitionRequest
+		err := json.Unmarshal([]byte(req.PipelineDefinitionRequestJSON), &definitionReq)
+		if err != nil {
+			return nil, nil, -1, -1, errors.New("missing pipeline sources")
+		}
+
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " is not null ")
+
+		if !definitionReq.IsEmptyValue() {
+			baseSQL.Join("INNER", definitiondb.PipelineDefinition{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_definition_id", definitiondb.PipelineDefinition{}.TableName(), (&spec.PipelineBase{}).TableName()))
+			baseSQL.Join("INNER", sourcedb.PipelineSource{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_source_id", sourcedb.PipelineSource{}.TableName(), definitiondb.PipelineDefinition{}.TableName()))
+			if len(definitionReq.Name) > 0 {
+				baseSQL.Where(fmt.Sprintf("%v.name like ?", definitiondb.PipelineDefinition{}.TableName()), definitionReq.Name+"%")
+			}
+			if len(definitionReq.SourceRemotes) > 0 {
+				baseSQL.In(tableFieldName(sourcedb.PipelineSource{}.TableName(), "remote"), definitionReq.Creators)
+			}
+			if len(definitionReq.Creators) > 0 {
+				baseSQL.In(tableFieldName(definitiondb.PipelineDefinition{}.TableName(), "creator"), definitionReq.Creators)
+			}
+		}
+	}
 
 	if !req.AllSources && len(req.Sources) > 0 {
-		baseSQL.In("pipeline_source", req.Sources)
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_source"), req.Sources)
 	}
 	if len(req.YmlNames) > 0 {
-		baseSQL.In("pipeline_yml_name", req.YmlNames)
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_yml_name"), req.YmlNames)
 	}
 	if len(req.Statuses) > 0 {
-		baseSQL.In("status", req.Statuses)
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "status"), req.Statuses)
 	}
 	if len(req.NotStatuses) > 0 {
-		baseSQL.NotIn("status", req.NotStatuses)
+		baseSQL.NotIn(tableFieldName((&spec.PipelineBase{}).TableName(), "status"), req.NotStatuses)
 	}
 	if len(req.TriggerModes) > 0 {
-		baseSQL.In("trigger_mode", req.TriggerModes)
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "trigger_mode"), req.TriggerModes)
 	}
 	if len(req.ClusterNames) > 0 {
-		baseSQL.In("cluster_name", req.ClusterNames)
+		baseSQL.In(tableFieldName((&spec.PipelineBase{}).TableName(), "cluster_name"), req.ClusterNames)
 	}
-	baseSQL.Where("is_snippet = ?", req.IncludeSnippet)
+	baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "is_snippet")+" = ?", req.IncludeSnippet)
 	if !req.StartTimeBegin.IsZero() {
-		baseSQL.Where("time_begin >= ?", req.StartTimeBegin)
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_begin")+" >= ? ", req.StartTimeBegin)
 	}
 	if !req.EndTimeBegin.IsZero() {
-		baseSQL.Where("time_begin <= ?", req.EndTimeBegin)
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_begin")+" <= ?", req.EndTimeBegin)
 	}
 	if !req.StartTimeCreated.IsZero() {
-		baseSQL.Where("time_created >= ?", req.StartTimeCreated)
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_created")+" >= ?", req.StartTimeCreated)
 	}
 	if !req.EndTimeCreated.IsZero() {
-		baseSQL.Where("time_created <= ?", req.EndTimeCreated)
+		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "time_created")+" <= ?", req.EndTimeCreated)
 	}
 	if len(req.AscCols) == 0 && len(req.DescCols) == 0 {
-		baseSQL.Desc("id")
+		baseSQL.Desc(tableFieldName((&spec.PipelineBase{}).TableName(), "id"))
 	}
 	if len(req.AscCols) > 0 {
-		baseSQL.Asc(req.AscCols...)
+		var newAsc []string
+		for _, v := range req.AscCols {
+			newAsc = append(newAsc, tableFieldName((&spec.PipelineBase{}).TableName(), v))
+		}
+		baseSQL.Asc(newAsc...)
 	}
 	if len(req.DescCols) > 0 {
-		baseSQL.Desc(req.DescCols...)
+		var newDesc []string
+		for _, v := range req.DescCols {
+			newDesc = append(newDesc, tableFieldName((&spec.PipelineBase{}).TableName(), v))
+		}
+		baseSQL.Desc(newDesc...)
 	}
 
 	var basePipelineIDs []uint64
@@ -430,12 +493,16 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	if len(req.SelectCols) > 0 {
 		session.Cols(req.SelectCols...)
 	}
-	pipelines, err := client.ListPipelinesByIDs(pagingPipelineIDs, ops...)
+	pipelines, err := client.ListPipelinesByIDs(pagingPipelineIDs, needQueryDefinition, ops...)
 	if err != nil {
 		return nil, pagingPipelineIDs, -1, -1, err
 	}
 
 	return pipelines, pagingPipelineIDs, total, currentPageSize, nil
+}
+
+func tableFieldName(tableName string, field string) string {
+	return fmt.Sprintf("%v.%v", tableName, field)
 }
 
 // ListPipelineIDsByStatuses
@@ -590,7 +657,7 @@ func (client *Client) GetPipelineOutputs(pipelineID uint64) (map[string]map[stri
 	return outputs, nil
 }
 
-func (client *Client) ListPipelinesByIDs(pipelineIDs []uint64, ops ...SessionOption) ([]spec.Pipeline, error) {
+func (client *Client) ListPipelinesByIDs(pipelineIDs []uint64, needQueryDefinition bool, ops ...SessionOption) ([]spec.Pipeline, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -600,6 +667,7 @@ func (client *Client) ListPipelinesByIDs(pipelineIDs []uint64, ops ...SessionOpt
 	var errs []string
 
 	basesMap := make(map[uint64]spec.PipelineBase, len(pipelineIDs))
+	baseWithDefinitionMap := make(map[uint64]spec.PipelineBaseWithDefinition, len(pipelineIDs))
 	extrasMap := make(map[uint64]spec.PipelineExtra, len(pipelineIDs))
 	labelsMap := make(map[uint64][]spec.PipelineLabel, len(pipelineIDs))
 
@@ -607,13 +675,21 @@ func (client *Client) ListPipelinesByIDs(pipelineIDs []uint64, ops ...SessionOpt
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-
-		innerBasesMap, err := client.ListPipelineBasesByIDs(pipelineIDs, ops...)
-		if err != nil {
-			errs = append(errs, err.Error())
-			return
+		if needQueryDefinition {
+			innerBasesMap, err := client.ListPipelineBasesByIDs(pipelineIDs, ops...)
+			if err != nil {
+				errs = append(errs, err.Error())
+				return
+			}
+			basesMap = innerBasesMap
+		} else {
+			innerBaseWithDefinitionMap, err := client.ListPipelineBaseWithDefinitionByIDs(pipelineIDs, ops...)
+			if err != nil {
+				errs = append(errs, err.Error())
+				return
+			}
+			baseWithDefinitionMap = innerBaseWithDefinitionMap
 		}
-		basesMap = innerBasesMap
 	}()
 
 	// pipeline_extra
@@ -652,16 +728,28 @@ func (client *Client) ListPipelinesByIDs(pipelineIDs []uint64, ops ...SessionOpt
 	var pipelines []spec.Pipeline
 	for _, pipelineID := range pipelineIDs {
 		var pipeline spec.Pipeline
-		if base, ok := basesMap[pipelineID]; !ok {
-			continue
+		if needQueryDefinition {
+			if baseWithDefinition, ok := baseWithDefinitionMap[pipelineID]; !ok {
+				continue
+			} else {
+				pipeline.PipelineBase = baseWithDefinition.PipelineBase
+				pipeline.Definition = &baseWithDefinition.PipelineDefinition
+				pipeline.Source = &baseWithDefinition.PipelineSource
+			}
 		} else {
-			pipeline.PipelineBase = base
+			if base, ok := basesMap[pipelineID]; !ok {
+				continue
+			} else {
+				pipeline.PipelineBase = base
+			}
 		}
+
 		if extra, ok := extrasMap[pipelineID]; !ok {
 			continue
 		} else {
 			pipeline.PipelineExtra = extra
 		}
+
 		pipeline.Labels = make(map[string]string, len(labelsMap[pipelineID]))
 		for _, label := range labelsMap[pipelineID] {
 			pipeline.Labels[label.Key] = label.Value
