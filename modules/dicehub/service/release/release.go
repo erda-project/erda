@@ -15,11 +15,12 @@
 package release
 
 import (
-	"archive/tar"
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -206,22 +207,28 @@ func limitLabelsLength(req *apistructs.ReleaseCreateRequest) error {
 func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.ReadCloser) (*dbclient.Release, []dbclient.Release, error) {
 	var metadata apistructs.ReleaseMetadata
 	dices := make(map[string]string)
-	reader := tar.NewReader(file)
-	for {
-		hdr, err := reader.Next()
-		if err == io.EOF {
-			break
-		}
+	buf := bytes.Buffer{}
+	if _, err := io.Copy(&buf, file); err != nil {
+		return nil, nil, err
+	}
+	zr, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	if err != nil {
+		return nil, nil, err
+	}
+	hasMetadata := false
+	for _, f := range zr.File {
+		rc, err := f.Open()
 		if err != nil {
 			return nil, nil, err
 		}
 		buf := bytes.Buffer{}
-		if _, err = io.Copy(&buf, reader); err != nil {
+		if _, err = io.Copy(&buf, rc); err != nil {
 			return nil, nil, err
 		}
 
-		splits := strings.Split(hdr.Name, "/")
+		splits := strings.Split(f.Name, "/")
 		if len(splits) == 2 && splits[1] == "metadata.yml" {
+			hasMetadata = true
 			if err := yaml.Unmarshal(buf.Bytes(), &metadata); err != nil {
 				return nil, nil, err
 			}
@@ -229,10 +236,17 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 			appName := splits[2]
 			dices[appName] = buf.String()
 		}
+
+		if err := rc.Close(); err != nil {
+			return nil, nil, err
+		}
 	}
 
+	if !hasMetadata {
+		return nil, nil, errors.New("invalid file, metadata.yml not found")
+	}
 	if len(dices) == 0 {
-		return nil, nil, errors.Errorf("invalid file")
+		return nil, nil, errors.Errorf("invalid file, dice.yml not found")
 	}
 
 	projectReleaseID := uuid.UUID()
@@ -261,7 +275,15 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 			return nil, nil, errors.Errorf("failed to get releases by app and version, %v", err)
 		}
 		if len(existedReleases) > 0 {
-			if existedReleases[0].Dice != dice {
+			oldDice, err := diceyml.New([]byte(existedReleases[0].Dice), true)
+			if err != nil {
+				return nil, nil, errors.Errorf("dice yml for release %s is invalid, %v", existedReleases[0].ReleaseID, err)
+			}
+			newDice, err := diceyml.New([]byte(dice), true)
+			if err != nil {
+				return nil, nil, errors.Errorf("dice yml for app %s release is invalid, %v", appName, err)
+			}
+			if !reflect.DeepEqual(oldDice.Obj(), newDice.Obj()) {
 				return nil, nil, errors.Errorf("app release %s was already existed but has different dice yml", md.Version)
 			}
 			appReleaseList = append(appReleaseList, existedReleases[0].ReleaseID)
