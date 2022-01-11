@@ -159,7 +159,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	purgeCycle := conf.TestFileRecordPurgeCycleDay()
 	if err := ep.TestCaseService().BatchClearProcessingRecords(); err != nil {
 		logrus.Error(err)
-		return err
+		//return err
 	}
 	// Scheduled polling export task
 	go func() {
