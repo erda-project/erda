@@ -49,10 +49,11 @@ var (
 
 // deployment order errors
 var (
-	ErrCreateDeploymentOrder = err("ErrCreateDeploymentOrder", "创建部署单失败")
-	ErrListDeploymentOrder   = err("ErrListDeploymentOrder", "查询部署单失败")
-	ErrCancelDeploymentOrder = err("ErrCancelDeploymentOrder", "取消部署单失败")
-	ErrDeployDeploymentOrder = err("ErrDeployDeploymentOrder", "执行部署单失败")
+	ErrCreateDeploymentOrder       = err("ErrCreateDeploymentOrder", "创建部署单失败")
+	ErrListDeploymentOrder         = err("ErrListDeploymentOrder", "查询部署单失败")
+	ErrCancelDeploymentOrder       = err("ErrCancelDeploymentOrder", "取消部署单失败")
+	ErrDeployDeploymentOrder       = err("ErrDeployDeploymentOrder", "执行部署单失败")
+	ErrRenderDeploymentOrderDetail = err("ErrRenderDeploymentOrderDetail", "渲染部署单详情失败")
 )
 
 // domain errors

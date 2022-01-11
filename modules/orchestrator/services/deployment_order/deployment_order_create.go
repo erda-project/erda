@@ -17,12 +17,15 @@ package deployment_order
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 )
 
@@ -32,6 +35,11 @@ func (d *DeploymentOrder) Create(req *apistructs.DeploymentOrderCreateRequest) (
 	if err != nil {
 		logrus.Errorf("failed to get release %s, err: %v", req.ReleaseId, err)
 		return nil, err
+	}
+
+	// permission check
+	if err := d.checkExecutePermission(req.Operator, req.Workspace, releaseResp); err != nil {
+		return nil, apierrors.ErrCreateDeploymentOrder.InternalError(err)
 	}
 
 	// parse the type of deployment order
@@ -74,61 +82,107 @@ func (d *DeploymentOrder) Create(req *apistructs.DeploymentOrderCreateRequest) (
 	return createResp, nil
 }
 
-func (d *DeploymentOrder) Deploy(req *apistructs.DeploymentOrderDeployRequest) error {
+func (d *DeploymentOrder) Deploy(req *apistructs.DeploymentOrderDeployRequest) (*dbclient.DeploymentOrder, error) {
 	order, err := d.db.GetDeploymentOrder(req.DeploymentOrderId)
 	if err != nil {
 		logrus.Errorf("failed to get deployment order, err: %v", err)
-		return err
+		return nil, err
 	}
 
-	if order.Operator.String() != req.Operator {
-		order.Operator = user.ID(req.Operator)
-		if err := d.db.UpdateDeploymentOrder(order); err != nil {
-			fmtErr := fmt.Errorf("failed to update order operator, err: %v", err)
-			logrus.Error(fmtErr)
-			return fmtErr
-		}
+	// permission check
+	if err := d.checkExecutePermission(req.Operator, order.Workspace, nil, order.ReleaseId); err != nil {
+		logrus.Errorf("failed to check execute permission, err: %v", err)
+		return nil, apierrors.ErrCreateDeploymentOrder.InternalError(err)
+	}
+
+	order.Operator = user.ID(req.Operator)
+	order.StartedAt = time.Now()
+	if err := d.db.UpdateDeploymentOrder(order); err != nil {
+		fmtErr := fmt.Errorf("failed to update order operator, err: %v", err)
+		logrus.Error(fmtErr)
+		return nil, fmtErr
 	}
 
 	releaseResp, err := d.bdl.GetRelease(order.ReleaseId)
 	if err != nil {
 		logrus.Errorf("failed to get release, err: %v", err)
-		return err
+		return nil, err
 	}
 
-	if _, err := d.executeDeploy(order, releaseResp, req.Workspace, req.Operator); err != nil {
+	if _, err := d.executeDeploy(order, releaseResp, order.Workspace, req.Operator); err != nil {
 		logrus.Errorf("failed to execute deploy, order id: %s, err: %v", req.DeploymentOrderId, err)
-		return err
+		return nil, err
 	}
 
-	return nil
+	return order, nil
 }
 
-func (d *DeploymentOrder) RenderName(releaseId string) (string, error) {
-	orderType := apistructs.TypeApplicationRelease
-
+func (d *DeploymentOrder) RenderDetail(userId, releaseId, workspace string) (*apistructs.DeploymentOrderDetail, error) {
 	releaseResp, err := d.bdl.GetRelease(releaseId)
 	if err != nil {
-		return "", fmt.Errorf("failed to get release %s, err: %v", releaseId, err)
+		return nil, fmt.Errorf("failed to get release %s, err: %v", releaseId, err)
 	}
 
-	isProjectRange := releaseResp.IsProjectRelease
-
-	if isProjectRange {
-		orderType = apistructs.TypeProjectRelease
+	if access, err := d.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userId,
+		Scope:    apistructs.ProjectScope,
+		ScopeID:  uint64(releaseResp.ProjectID),
+		Resource: apistructs.ProjectResource,
+		Action:   apistructs.GetAction,
+	}); err != nil || !access.Access {
+		return nil, apierrors.ErrListDeploymentOrder.AccessDenied()
 	}
 
-	orderName, err := d.renderDeploymentOrderName(uint64(releaseResp.ProjectID), orderType, releaseId, isProjectRange)
+	orderName, err := d.renderDeploymentOrderName(uint64(releaseResp.ProjectID), releaseId, releaseResp.IsProjectRelease)
 	if err != nil {
-		return orderName, fmt.Errorf("failed to render deployment order name, project: %d, release: %s, err: %v",
+		return nil, fmt.Errorf("failed to render deployment order name, project: %d, release: %s, err: %v",
 			releaseResp.ProjectID, releaseId, err)
 	}
 
-	return orderName, nil
+	asi := make([]*apistructs.ApplicationInfo, 0)
+
+	if releaseResp.IsProjectRelease {
+		params, err := d.fetchApplicationsParams(apistructs.TypeProjectRelease, releaseResp, workspace)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch deployment params, err: %v", err)
+		}
+
+		for _, r := range releaseResp.ApplicationReleaseList {
+			asi = append(asi, &apistructs.ApplicationInfo{
+				Id:     uint64(r.ApplicationID),
+				Name:   r.ApplicationName,
+				Params: params[r.ApplicationName],
+			})
+		}
+
+	} else {
+		params, err := d.fetchDeploymentParams(releaseResp.ApplicationID, workspace)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch deployment params, err: %v", err)
+		}
+
+		asi = append(asi, &apistructs.ApplicationInfo{
+			Id:     uint64(releaseResp.ApplicationID),
+			Name:   releaseResp.ApplicationName,
+			Params: params,
+		})
+	}
+
+	return &apistructs.DeploymentOrderDetail{
+		DeploymentOrderItem: apistructs.DeploymentOrderItem{
+			Name: orderName,
+		},
+		ApplicationsInfo: asi,
+	}, nil
 }
 
 func (d *DeploymentOrder) executeDeploy(order *dbclient.DeploymentOrder, releaseResp *apistructs.ReleaseGetResponseData,
 	workspace, operator string) (map[uint64]*apistructs.DeploymentCreateResponseDTO, error) {
+	// update started time
+	order.StartedAt = time.Now()
+	if err := d.db.UpdateDeploymentOrder(order); err != nil {
+		return nil, err
+	}
 
 	// compose runtime create requests
 	rtCreateReqs, err := d.composeRuntimeCreateRequests(order, releaseResp, workspace)
@@ -162,7 +216,7 @@ func (d *DeploymentOrder) composeDeploymentOrder(t string, r *apistructs.Release
 		Operator:    operator,
 	}
 
-	params, err := d.fetchDeploymentParams(t, r, workspace)
+	params, err := d.fetchApplicationsParams(t, r, workspace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch deployment params, err: %v", err)
 	}
@@ -188,7 +242,7 @@ func (d *DeploymentOrder) composeDeploymentOrder(t string, r *apistructs.Release
 		order.ApplicationId, order.ApplicationName = r.ApplicationID, r.ApplicationName
 	}
 
-	orderName, err := d.renderDeploymentOrderName(uint64(r.ProjectID), order.Type, r.ReleaseID, r.IsProjectRelease)
+	orderName, err := d.renderDeploymentOrderName(uint64(r.ProjectID), r.ReleaseID, r.IsProjectRelease)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render deployment order name, err: %v", err)
 	}
@@ -198,37 +252,39 @@ func (d *DeploymentOrder) composeDeploymentOrder(t string, r *apistructs.Release
 	return order, nil
 }
 
-func (d *DeploymentOrder) renderDeploymentOrderName(projectId uint64, orderType string, releaseId string, isProjectRange bool) (string, error) {
+func (d *DeploymentOrder) renderDeploymentOrderName(projectId uint64, releaseId string, isProjectRange bool) (string, error) {
 	var (
 		orderName  string
 		namePrefix = appOrderPrefix
+		orderType  = apistructs.TypeApplicationRelease
 	)
+
+	if isProjectRange {
+		namePrefix = projectOrderPrefix
+		orderType = apistructs.TypeProjectRelease
+	}
 
 	c, err := d.db.GetOrderCountByProject(projectId, orderType)
 	if err != nil {
 		return orderName, fmt.Errorf("count order in project %d error: %v", projectId, err)
 	}
 
-	if isProjectRange {
-		namePrefix = projectOrderPrefix
-	}
-
 	return namePrefix + fmt.Sprintf(orderNameTmpl, releaseId, c), nil
 }
 
-func (d *DeploymentOrder) fetchDeploymentParams(t string, r *apistructs.ReleaseGetResponseData, workspace string) (map[string]*apistructs.DeploymentOrderParam, error) {
+func (d *DeploymentOrder) fetchApplicationsParams(t string, r *apistructs.ReleaseGetResponseData, workspace string) (map[string]*apistructs.DeploymentOrderParam, error) {
 	ret := make(map[string]*apistructs.DeploymentOrderParam, 0)
 
 	switch t {
 	case apistructs.TypePipeline, apistructs.TypeApplicationRelease:
-		params, err := d.fetchDeploymentOrderParam(r.ApplicationID, workspace)
+		params, err := d.fetchDeploymentParams(r.ApplicationID, workspace)
 		if err != nil {
 			return nil, err
 		}
 		ret[r.ApplicationName] = params
 	case apistructs.TypeProjectRelease:
 		for _, ar := range r.ApplicationReleaseList {
-			params, err := d.fetchDeploymentOrderParam(ar.ApplicationID, workspace)
+			params, err := d.fetchDeploymentParams(ar.ApplicationID, workspace)
 			if err != nil {
 				return nil, err
 			}
@@ -239,36 +295,37 @@ func (d *DeploymentOrder) fetchDeploymentParams(t string, r *apistructs.ReleaseG
 	return ret, nil
 }
 
-func (d *DeploymentOrder) fetchDeploymentOrderParam(applicationId int64, workspace string) (*apistructs.DeploymentOrderParam, error) {
+func (d *DeploymentOrder) fetchDeploymentParams(applicationId int64, workspace string) (*apistructs.DeploymentOrderParam, error) {
 	configNsTmpl := "app-%d-%s"
 
-	deployConfig, fileConfig, err := d.bdl.FetchDeploymentConfigDetail(fmt.Sprintf(configNsTmpl, applicationId, workspace))
+	deployConfig, fileConfig, err := d.bdl.FetchDeploymentConfigDetail(fmt.Sprintf(configNsTmpl, applicationId, strings.ToUpper(workspace)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch deployment config, err: %v", err)
 	}
-	envParams := make([]apistructs.DeploymentOrderParamItem, 0)
-	fileParams := make([]apistructs.DeploymentOrderParamItem, 0)
+
+	params := make(apistructs.DeploymentOrderParam, 0)
 
 	for _, c := range deployConfig {
-		envParams = append(envParams, apistructs.DeploymentOrderParamItem{
-			Key:       c.Key,
-			Value:     c.Value,
-			IsEncrypt: c.Encrypt,
+		params = append(params, &apistructs.DeploymentOrderParamData{
+			Key:     c.Key,
+			Value:   c.Value,
+			Type:    "ENV",
+			Encrypt: c.Encrypt,
+			Comment: c.Comment,
 		})
 	}
 
 	for _, c := range fileConfig {
-		fileParams = append(fileParams, apistructs.DeploymentOrderParamItem{
-			Key:       c.Key,
-			Value:     c.Value,
-			IsEncrypt: c.Encrypt,
+		params = append(params, &apistructs.DeploymentOrderParamData{
+			Key:     c.Key,
+			Value:   c.Value,
+			Type:    "FILE",
+			Encrypt: c.Encrypt,
+			Comment: c.Comment,
 		})
 	}
 
-	return &apistructs.DeploymentOrderParam{
-		Env:  envParams,
-		File: fileParams,
-	}, nil
+	return &params, nil
 }
 
 func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.DeploymentOrder, r *apistructs.ReleaseGetResponseData,
@@ -314,7 +371,7 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 		rtCreateReq := &apistructs.RuntimeCreateRequest{
 			Name:                branch,
 			DeploymentOrderId:   deploymentOrderId,
-			DeploymentOrderName: order.Name,
+			DeploymentOrderName: parseDeploymentOrderShowName(order.Name),
 			ReleaseVersion:      r.Version,
 			ReleaseID:           r.ReleaseID,
 			Source:              apistructs.TypePipeline,
@@ -350,7 +407,7 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 			rtCreateReq := &apistructs.RuntimeCreateRequest{
 				Name:                ar.ApplicationName,
 				DeploymentOrderId:   deploymentOrderId,
-				DeploymentOrderName: order.Name,
+				DeploymentOrderName: parseDeploymentOrderShowName(order.Name),
 				ReleaseVersion:      r.Version,
 				ReleaseID:           ar.ReleaseID,
 				Source:              release,
@@ -392,4 +449,20 @@ func parseOrderType(t string, isProjectRelease bool) string {
 	}
 
 	return orderType
+}
+
+func parseDeploymentOrderShowName(orderName string) string {
+	if strings.HasPrefix(orderName, appOrderPrefix) || strings.HasPrefix(orderName, projectOrderPrefix) {
+		nameSlice := strings.Split(orderName, "_")
+		if len(nameSlice) != 3 {
+			return orderName
+		}
+		if len(nameSlice[1]) < 6 {
+			return orderName
+		}
+		nameSlice[1] = nameSlice[1][:6]
+		return strings.Join(nameSlice, "_")
+	} else {
+		return orderName
+	}
 }

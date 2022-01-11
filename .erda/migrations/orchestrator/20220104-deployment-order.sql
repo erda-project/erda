@@ -16,6 +16,7 @@ CREATE TABLE `erda_deployment_order`
     `is_outdated`      tinyint(1) NOT NULL DEFAULT 0 COMMENT 'outdated',
     `created_at`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
     `updated_at`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',
+    `started_at`       datetime     NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT 'started time',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='erda deployment order';
 

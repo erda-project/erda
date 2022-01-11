@@ -1801,6 +1801,27 @@
       "en": ""
     }
   },
+  "createDeploymentOrder": {
+    "desc": "创建部署请求",
+    "success": {
+        "zh": "在项目 [@projectName](project) 中, 创建了部署请求 [@deploymentOrderName]",
+        "en": "Create deployment requests [@deploymentOrderName] in project [@projectName]"
+    }
+  },
+  "executeDeploymentOrder": {
+    "desc": "执行部署请求",
+    "success": {
+      "zh": "在项目 [@projectName](project) 中, 执行了部署请求 [@deploymentOrderName]",
+      "en": "Execute deployment requests [@deploymentOrderName] in project [@projectName]"
+    }
+  },
+  "cancelDeploymentOrder": {
+    "desc": "取消部署请求",
+    "success": {
+      "zh": "在项目 [@projectName](project) 中, 取消了部署请求 [@deploymentOrderName]",
+      "en": "Cancel deployment requests [@deploymentOrderName] in project [@projectName]"
+    }
+  },
   "restartWorkload": {
     "desc": "重新调度工作负载",
     "success": {

@@ -15,6 +15,11 @@
 package deployment_order
 
 import (
+	"fmt"
+
+	"strings"
+
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
@@ -73,4 +78,55 @@ func WithDeployment(deploy *deployment.Deployment) Option {
 	return func(d *DeploymentOrder) {
 		d.deploy = deploy
 	}
+}
+
+// checkExecutePermission
+func (d *DeploymentOrder) checkExecutePermission(userId, workspace string, releaseResp *apistructs.ReleaseGetResponseData,
+	releaseIds ...string) error {
+
+	if len(releaseIds) != 0 {
+		var err error
+		releaseResp, err = d.bdl.GetRelease(releaseIds[0])
+		if err != nil {
+			return fmt.Errorf("failed to get release, err: %v", err)
+		}
+	}
+
+	releases := make([]*apistructs.ReleaseGetResponseData, 0)
+
+	if releaseResp.IsProjectRelease {
+		for _, r := range releaseResp.ApplicationReleaseList {
+			resp, err := d.bdl.GetRelease(r.ReleaseID)
+			if err != nil {
+				return fmt.Errorf("faield to get release, err: %v", err)
+			}
+			releases = append(releases, resp)
+		}
+	} else {
+		releases = append(releases, releaseResp)
+	}
+
+	deniedApps := make([]string, 0)
+	for _, r := range releases {
+		access, err := d.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   userId,
+			Scope:    apistructs.AppScope,
+			ScopeID:  uint64(r.ApplicationID),
+			Resource: fmt.Sprintf("runtime-%s", strings.ToLower(workspace)),
+			Action:   apistructs.CreateAction,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to check permission, err: %v", err)
+		}
+
+		if !access.Access {
+			deniedApps = append(deniedApps, r.ApplicationName)
+		}
+	}
+
+	if len(deniedApps) != 0 {
+		return fmt.Errorf("can't execute at application %s, permission denied", strings.Join(deniedApps, ","))
+	}
+
+	return nil
 }

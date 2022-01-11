@@ -181,6 +181,11 @@ const (
 	RollbackRuntimeTemplate TemplateName = "rollbackRuntime"
 	DeployRuntimeTemplate   TemplateName = "deployRuntime"
 
+	// ========================DeploymentOrder================================
+	CreateDeploymentOrderTemplate  TemplateName = "createDeploymentOrder"
+	ExecuteDeploymentOrderTemplate TemplateName = "executeDeploymentOrder"
+	CancelDeploymentOrderTemplate  TemplateName = "cancelDeploymentOrder"
+
 	// =====================Notify============================
 	CreateProjectNotifyTemplate  TemplateName = "createProjectNotify"
 	CreateAppNotifyTemplate      TemplateName = "createAppNotify"
