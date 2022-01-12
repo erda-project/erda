@@ -112,7 +112,8 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 	if req.Type == "" {
 		return nil, apierrors.ErrCreateIssue.MissingParameter("type")
 	}
-	if req.PlanFinishedAt != nil && req.PlanStartedAt != nil && req.PlanStartedAt.After(*req.PlanFinishedAt) {
+	planStartedAt, planFinishedAt := req.PlanStartedAt.Value(), req.PlanFinishedAt.Value()
+	if planStartedAt != nil && planFinishedAt != nil && planStartedAt.After(*planFinishedAt) {
 		return nil, fmt.Errorf("plan started is after plan finished time")
 	}
 	// 不归属任何迭代时，IterationID=-1
@@ -149,8 +150,8 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 	now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
 	// 创建 issue
 	create := dao.Issue{
-		PlanStartedAt:  req.PlanStartedAt,
-		PlanFinishedAt: req.PlanFinishedAt,
+		PlanStartedAt:  planStartedAt,
+		PlanFinishedAt: planFinishedAt,
 		ProjectID:      req.ProjectID,
 		IterationID:    req.IterationID,
 		AppID:          req.AppID,
@@ -168,7 +169,7 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		External:       req.External,
 		Stage:          req.GetStage(),
 		Owner:          req.Owner,
-		ExpiryStatus:   dao.GetExpiryStatus(req.PlanFinishedAt, now),
+		ExpiryStatus:   dao.GetExpiryStatus(planFinishedAt, now),
 	}
 	if err := svc.db.CreateIssue(&create); err != nil {
 		return nil, apierrors.ErrCreateIssue.InternalError(err)
