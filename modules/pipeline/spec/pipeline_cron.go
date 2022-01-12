@@ -94,6 +94,7 @@ func (pc *PipelineCron) Convert2DTO() *apistructs.PipelineCronDTO {
 		UserID:                 pc.GetUserID(),
 		OrgID:                  pc.GetOrgID(),
 		PipelineDefinitionID:   pc.PipelineDefinitionID,
+		PipelineSource:         pc.PipelineSource,
 	}
 }
 
