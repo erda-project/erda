@@ -758,6 +758,50 @@ func (e Endpoints) ListAppTemplates(ctx context.Context, r *http.Request, vars m
 	return httpserver.OkResp(templates)
 }
 
+// GetAppIDByNames 根据应用名称批量获取应用ID
+func (e Endpoints) GetAppIDByNames(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	userID, err := user.GetUserID(r)
+	if err != nil {
+		return apierrors.ErrGetAppIDByNames.NotLogin().ToResp(), nil
+	}
+
+	projectIDStr := r.URL.Query().Get("projectID")
+	if projectIDStr == "" {
+		return apierrors.ErrGetAppIDByNames.MissingParameter("projectID").ToResp(), nil
+	}
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrGetAppIDByNames.InvalidParameter("projectID").ToResp(), nil
+	}
+
+	req := apistructs.PermissionCheckRequest{
+		UserID:   userID.String(),
+		Scope:    apistructs.ProjectScope,
+		ScopeID:  projectID,
+		Resource: apistructs.ProjectResource,
+		Action:   apistructs.GetAction,
+	}
+	if access, err := e.permission.CheckPermission(&req); err != nil || !access {
+		return apierrors.ErrGetAppIDByNames.AccessDenied().ToResp(), nil
+	}
+
+	names := r.URL.Query()["name"]
+	if len(names) == 0 {
+		return apierrors.ErrGetAppIDByNames.MissingParameter("name").ToResp(), nil
+	}
+	apps, err := e.app.GetApplicationsByNames(names)
+	if err != nil {
+		return apierrors.ErrGetAppIDByNames.InternalError(err).ToResp(), nil
+	}
+
+	resp := apistructs.GetAppIDByNamesResponseData{AppNameToID: map[string]int64{}}
+	for i := 0; i < len(apps); i++ {
+		resp.AppNameToID[apps[i].Name] = apps[i].ID
+	}
+
+	return httpserver.OkResp(resp)
+}
+
 func checkApplicationCreateParam(applicationCreateReq apistructs.ApplicationCreateRequest) error {
 	if applicationCreateReq.Name == "" {
 		return errors.Errorf("invalid request, name is empty")

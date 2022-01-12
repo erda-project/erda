@@ -251,14 +251,15 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 
 	projectReleaseID := uuid.UUID()
 
-	appName2ID := make(map[string]uint64)
-	apps, err := r.bdl.GetAppsByProject(uint64(req.ProjectID), uint64(req.OrgID), req.UserID)
+	var names []string
+	for appName := range dices {
+		names = append(names, appName)
+	}
+	resp, err := r.bdl.GetAppIDByNames(uint64(req.ProjectID), req.UserID, names)
 	if err != nil {
-		return nil, nil, errors.Errorf("failed to list apps, %v", err)
+		return nil, nil, err
 	}
-	for i := range apps.List {
-		appName2ID[apps.List[i].Name] = apps.List[i].ID
-	}
+	appName2ID := resp.AppNameToID
 
 	now := time.Now()
 
