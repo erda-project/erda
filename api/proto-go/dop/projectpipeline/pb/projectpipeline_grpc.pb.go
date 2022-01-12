@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion5
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProjectPipelineServiceClient interface {
 	Create(ctx context.Context, in *CreateProjectPipelineRequest, opts ...grpc.CallOption) (*CreateProjectPipelineResponse, error)
+	ListApp(ctx context.Context, in *ListAppRequest, opts ...grpc.CallOption) (*ListAppResponse, error)
 }
 
 type projectPipelineServiceClient struct {
@@ -41,11 +42,21 @@ func (c *projectPipelineServiceClient) Create(ctx context.Context, in *CreatePro
 	return out, nil
 }
 
+func (c *projectPipelineServiceClient) ListApp(ctx context.Context, in *ListAppRequest, opts ...grpc.CallOption) (*ListAppResponse, error) {
+	out := new(ListAppResponse)
+	err := c.cc.Invoke(ctx, "/erda.dop.projectpipeline.ProjectPipelineService/ListApp", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectPipelineServiceServer is the server API for ProjectPipelineService service.
 // All implementations should embed UnimplementedProjectPipelineServiceServer
 // for forward compatibility
 type ProjectPipelineServiceServer interface {
 	Create(context.Context, *CreateProjectPipelineRequest) (*CreateProjectPipelineResponse, error)
+	ListApp(context.Context, *ListAppRequest) (*ListAppResponse, error)
 }
 
 // UnimplementedProjectPipelineServiceServer should be embedded to have forward compatible implementations.
@@ -54,6 +65,9 @@ type UnimplementedProjectPipelineServiceServer struct {
 
 func (*UnimplementedProjectPipelineServiceServer) Create(context.Context, *CreateProjectPipelineRequest) (*CreateProjectPipelineResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (*UnimplementedProjectPipelineServiceServer) ListApp(context.Context, *ListAppRequest) (*ListAppResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListApp not implemented")
 }
 
 func RegisterProjectPipelineServiceServer(s grpc1.ServiceRegistrar, srv ProjectPipelineServiceServer, opts ...grpc1.HandleOption) {
@@ -83,6 +97,15 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 		_ProjectPipelineService_Create_Handler = h.Interceptor(_ProjectPipelineService_Create_Handler)
 	}
 
+	_ProjectPipelineService_ListApp_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.ListApp(ctx, req.(*ListAppRequest))
+	}
+	var _ProjectPipelineService_ListApp_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ProjectPipelineService_ListApp_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "ListApp", srv)
+		_ProjectPipelineService_ListApp_Handler = h.Interceptor(_ProjectPipelineService_ListApp_Handler)
+	}
+
 	var serviceDesc = _ProjectPipelineService_serviceDesc
 	serviceDesc.Methods = []grpc.MethodDesc{
 		{
@@ -106,6 +129,29 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/Create",
 				}
 				return interceptor(ctx, in, info, _ProjectPipelineService_Create_Handler)
+			},
+		},
+		{
+			MethodName: "ListApp",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(ListAppRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ProjectPipelineServiceServer).ListApp(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ProjectPipelineService_ListApp_info)
+				}
+				if interceptor == nil {
+					return _ProjectPipelineService_ListApp_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/ListApp",
+				}
+				return interceptor(ctx, in, info, _ProjectPipelineService_ListApp_Handler)
 			},
 		},
 	}

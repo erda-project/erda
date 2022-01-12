@@ -505,11 +505,12 @@ var (
 
 	ErrListErrorLog = err("ErrListErrorLog", "查看错误日志失败")
 
-	ErrCreateProjectPipeline = err("ErrCreateProjectPipeline", "创建项目级流水线失败")
-	ErrListProjectPipeline   = err("ErrListProjectPipeline", "获取项目级流水线列表失败")
-	ErrUpdateProjectPipeline = err("ErrUpdateProjectPipeline", "修改项目级流水线失败")
-	ErrDeleteProjectPipeline = err("ErrDeleteProjectPipeline", "删除项目级流水线失败")
-	ErrStarProjectPipeline   = err("ErrStarProjectPipeline", "项目级流水线标星失败")
+	ErrCreateProjectPipeline  = err("ErrCreateProjectPipeline", "创建项目级流水线失败")
+	ErrListProjectPipeline    = err("ErrListProjectPipeline", "获取项目级流水线列表失败")
+	ErrUpdateProjectPipeline  = err("ErrUpdateProjectPipeline", "修改项目级流水线失败")
+	ErrDeleteProjectPipeline  = err("ErrDeleteProjectPipeline", "删除项目级流水线失败")
+	ErrStarProjectPipeline    = err("ErrStarProjectPipeline", "项目级流水线标星失败")
+	ErrListAppProjectPipeline = err("ErrListAppProjectPipeline", "项目级流水线获取应用失败")
 
 	ErrRunProjectPipeline             = err("ErrRunProjectPipeline", "执行流水线失败")
 	ErrBatchRunProjectPipeline        = err("ErrBatchRunProjectPipeline", "批量执行流水线失败")

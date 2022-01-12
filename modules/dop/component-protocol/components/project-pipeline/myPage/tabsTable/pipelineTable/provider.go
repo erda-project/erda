@@ -208,7 +208,13 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 				ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(v.Remote)).Build(),
 				ColumnBranch:          table.NewTextCell(v.Ref).Build(),
 				ColumnExecutor:        table.NewUserCell(commodel.User{ID: v.Creator}).Build(),
-				ColumnStartTime:       table.NewTextCell(v.StartedAt.AsTime().Format("2006-01-02 15:04:05")).Build(),
+				ColumnStartTime: table.NewTextCell(func() string {
+					v.StartedAt.AsTime().Format("2006-01-02 15:04:05")
+					if v.StartedAt.AsTime().Year() <= 2000 {
+						return ""
+					}
+					return v.StartedAt.AsTime().Format("2006-01-02 15:04:05")
+				}()).Build(),
 			},
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				table.OpRowSelect{}.OpKey(): cputil.NewOpBuilder().Build(),

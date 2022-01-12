@@ -13,9 +13,149 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*ListAppRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ListAppResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*Application)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ProjectPipeline)(nil)
+
+// ListAppRequest implement urlenc.URLValuesUnmarshaler.
+func (m *ListAppRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "projectID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			}
+		}
+	}
+	return nil
+}
+
+// ListAppResponse implement urlenc.URLValuesUnmarshaler.
+func (m *ListAppResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// Application implement urlenc.URLValuesUnmarshaler.
+func (m *Application) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "ID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ID = val
+			case "name":
+				m.Name = vals[0]
+			case "displayName":
+				m.DisplayName = vals[0]
+			case "mode":
+				m.Mode = vals[0]
+			case "desc":
+				m.Desc = vals[0]
+			case "logo":
+				m.Logo = vals[0]
+			case "isPublic":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsPublic = val
+			case "creator":
+				m.Creator = vals[0]
+			case "gitRepo":
+				m.GitRepo = vals[0]
+			case "orgID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.OrgID = val
+			case "orgDisplayName":
+				m.OrgDisplayName = vals[0]
+			case "projectId":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectId = val
+			case "projectName":
+				m.ProjectName = vals[0]
+			case "isExternalRepo":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsExternalRepo = val
+			case "createdAt":
+				if m.CreatedAt == nil {
+					m.CreatedAt = &timestamppb.Timestamp{}
+				}
+			case "createdAt.seconds":
+				if m.CreatedAt == nil {
+					m.CreatedAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.CreatedAt.Seconds = val
+			case "createdAt.nanos":
+				if m.CreatedAt == nil {
+					m.CreatedAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.CreatedAt.Nanos = int32(val)
+			case "updatedAt":
+				if m.UpdatedAt == nil {
+					m.UpdatedAt = &timestamppb.Timestamp{}
+				}
+			case "updatedAt.seconds":
+				if m.UpdatedAt == nil {
+					m.UpdatedAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.UpdatedAt.Seconds = val
+			case "updatedAt.nanos":
+				if m.UpdatedAt == nil {
+					m.UpdatedAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.UpdatedAt.Nanos = int32(val)
+			case "runningNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.RunningNum = val
+			case "failedNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.FailedNum = val
+			}
+		}
+	}
+	return nil
+}
 
 // CreateProjectPipelineRequest implement urlenc.URLValuesUnmarshaler.
 func (m *CreateProjectPipelineRequest) UnmarshalURLValues(prefix string, values url.Values) error {

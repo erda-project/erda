@@ -49,6 +49,7 @@ type Service interface {
 	Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error)
 	Star(ctx context.Context, params deftype.ProjectPipelineStar) (*dpb.PipelineDefinitionUpdateResponse, error)
 	UnStar(ctx context.Context, params deftype.ProjectPipelineUnStar) (*dpb.PipelineDefinitionUpdateResponse, error)
+	ListApp(ctx context.Context, params *pb.ListAppRequest) (*pb.ListAppResponse, error)
 
 	Run(ctx context.Context, params deftype.ProjectPipelineRun) (*deftype.ProjectPipelineRunResult, error)
 	BatchRun(ctx context.Context, params deftype.ProjectPipelineBatchRun) (*deftype.ProjectPipelineBatchRunResult, error)

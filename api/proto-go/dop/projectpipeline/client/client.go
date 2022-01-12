@@ -40,3 +40,7 @@ type projectPipelineServiceWrapper struct {
 func (s *projectPipelineServiceWrapper) Create(ctx context.Context, req *pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error) {
 	return s.client.Create(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *projectPipelineServiceWrapper) ListApp(ctx context.Context, req *pb.ListAppRequest) (*pb.ListAppResponse, error) {
+	return s.client.ListApp(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

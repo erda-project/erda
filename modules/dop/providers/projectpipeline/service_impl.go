@@ -20,7 +20,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
+	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
@@ -722,4 +726,118 @@ func (p *ProjectPipelineService) autoRunPipeline(definition *dpb.PipelineDefinit
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
 	return value, nil
+}
+
+func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListAppRequest) (*pb.ListAppResponse, error) {
+	if err := params.Validate(); err != nil {
+		return nil, apierrors.ErrListAppProjectPipeline.InvalidParameter(err)
+	}
+
+	project, err := p.bundle.GetProject(params.ProjectID)
+	if err != nil {
+		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
+	}
+
+	org, err := p.bundle.GetOrg(project.OrgID)
+	if err != nil {
+		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
+	}
+
+	appResp, err := p.bundle.GetMyApps(apis.GetUserID(ctx), project.OrgID, project.ID)
+	if err != nil {
+		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
+	}
+
+	appNames := make([]string, 0, len(appResp.List))
+	for _, v := range appResp.List {
+		appNames = append(appNames, v.Name)
+	}
+
+	list, err := p.PipelineDefinition.List(ctx, &dpb.PipelineDefinitionListRequest{
+		PageSize: 9999,
+		PageNo:   1,
+
+		Remote: func() []string {
+			remotes := make([]string, 0, len(appNames))
+			for _, v := range appNames {
+				remotes = append(remotes, fmt.Sprintf("%s/%s/%s", org.Name, project.Name, v))
+			}
+			return remotes
+		}(),
+	})
+	if err != nil {
+		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
+	}
+
+	pipelineWithAppNames := make([]pipelineWithAppName, 0, len(list.Data))
+	for _, v := range list.Data {
+		split := strings.Split(v.Remote, "/")
+		pipelineWithAppNames = append(pipelineWithAppNames, pipelineWithAppName{
+			AppName: func() string {
+				if len(split) > 0 {
+					return split[len(split)-1]
+				}
+				return ""
+			}(),
+			PipelineDefinition: dpb.PipelineDefinition{},
+		})
+	}
+
+	appNamePipelineNumMap := make(map[string]*pipelineNum)
+	for _, v := range appNames {
+		appNamePipelineNumMap[v] = &pipelineNum{
+			RunningNum: 0,
+			FailedNum:  0,
+		}
+	}
+	timeEnd := time.Now()
+	timeStart := timeEnd.Add(-1 * 24 * time.Hour)
+	for _, v := range pipelineWithAppNames {
+		if v.Status == string(apistructs.StatusRunning) {
+			appNamePipelineNumMap[v.AppName].RunningNum++
+			continue
+		}
+		if v.StartedAt.AsTime().After(timeStart) &&
+			v.StartedAt.AsTime().Before(timeEnd) &&
+			v.Status == string(apistructs.StatusFailed) {
+			appNamePipelineNumMap[v.AppName].FailedNum++
+		}
+	}
+
+	apps := make([]*pb.Application, 0, len(appResp.List))
+	for _, v := range appResp.List {
+		apps = append(apps, &pb.Application{
+			ID:             v.ID,
+			Name:           v.Name,
+			DisplayName:    v.DisplayName,
+			Mode:           v.Mode,
+			Desc:           v.Desc,
+			Logo:           v.Logo,
+			IsPublic:       v.IsPublic,
+			Creator:        v.Creator,
+			GitRepo:        v.GitRepo,
+			OrgID:          v.OrgID,
+			OrgDisplayName: v.OrgDisplayName,
+			ProjectId:      v.ProjectID,
+			ProjectName:    v.ProjectName,
+			IsExternalRepo: v.IsExternalRepo,
+			CreatedAt:      timestamppb.New(v.CreatedAt),
+			UpdatedAt:      timestamppb.New(v.UpdatedAt),
+			RunningNum:     uint64(appNamePipelineNumMap[v.Name].RunningNum),
+			FailedNum:      uint64(appNamePipelineNumMap[v.Name].FailedNum),
+		})
+	}
+	return &pb.ListAppResponse{
+		Data: apps,
+	}, nil
+}
+
+type pipelineNum struct {
+	RunningNum int `json:"runningNum"`
+	FailedNum  int `json:"failedNum"`
+}
+
+type pipelineWithAppName struct {
+	AppName string `json:"appName"`
+	dpb.PipelineDefinition
 }
