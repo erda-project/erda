@@ -128,37 +128,26 @@ func (a *Addons) ProjectQuotaCheck(identity apistructs.Identity, req apistructs.
 
 	// get raw project info
 	pid, err := strconv.Atoi(req.ProjectID)
+	projectID := uint64(pid)
 	if err != nil {
 		return nil, err
 	}
-	p, err := a.bdl.GetProjectWithSetter(uint64(pid), httpclient.SetParams(url.Values{"withQuota": {"true"}}))
+	p, err := a.bdl.GetProjectWithSetter(projectID, httpclient.SetParams(url.Values{"withQuota": {"true"}}))
 	if err != nil {
 		logrus.Errorf("get project failed, pid:%d, error:%v", pid, err)
 		return nil, err
 	}
 
-	// build project list request, get project resource
-	preq := apistructs.ProjectListRequest{
-		PageNo:   1,
-		PageSize: 10,
-	}
-	oid, _ := strconv.Atoi(identity.OrgID)
-	preq.OrgID = uint64(oid)
-	preq.Name = p.Name
-
-	rsp, err := a.bdl.ListProject(identity.UserID, preq)
+	resp, err := a.bdl.ProjectResource([]uint64{projectID})
 	if err != nil {
-		logrus.Errorf("list project failed, user id:%s, request:%+v, error:%v", identity.UserID, preq, err)
 		return nil, err
 	}
-	if rsp == nil {
-		err := fmt.Errorf("get empty project info")
-		logrus.Errorf("%s, request:%+v", err.Error(), preq)
-		return nil, err
+	v, ok := resp.Data[projectID]
+	if !ok {
+		return nil, fmt.Errorf("project id %v resource is not available", projectID)
 	}
-	pj := rsp.List[0]
-	remainedCPU := pj.CpuQuota - pj.CpuAddonUsed - pj.CpuServiceUsed
-	remainedMem := pj.MemQuota - pj.MemAddonUsed - pj.MemServiceUsed
+	remainedCPU := p.CpuQuota - v.CpuAddonUsed - v.CpuServiceUsed
+	remainedMem := p.MemQuota - v.MemAddonUsed - v.MemServiceUsed
 
 	pqc := apistructs.ProjectQuotaCheckResponse{
 		Need: apistructs.BaseResource{

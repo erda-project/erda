@@ -15,6 +15,7 @@
 package application
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -23,16 +24,19 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type Application struct {
 	db  *dao.DBClient
 	bdl *bundle.Bundle
+	cms cmspb.CmsServiceServer
 }
 
 type Option func(*Application)
@@ -54,6 +58,12 @@ func WithDBClient(db *dao.DBClient) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(a *Application) {
 		a.bdl = bdl
+	}
+}
+
+func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
+	return func(a *Application) {
+		a.cms = cms
 	}
 }
 
@@ -163,4 +173,99 @@ func (a *Application) Init(initReq *apistructs.ApplicationInitRequest) (uint64, 
 	}
 
 	return pipelineInfo.ID, nil
+}
+
+// QueryPublishItemRelations 查询应用发布内容关联关系
+func (a *Application) QueryPublishItemRelations(req apistructs.QueryAppPublishItemRelationRequest) ([]apistructs.AppPublishItemRelation, error) {
+	return a.db.QueryAppPublishItemRelations(req)
+}
+
+func (a *Application) GetPublishItemRelationsMap(req apistructs.QueryAppPublishItemRelationRequest) (map[string]apistructs.AppPublishItemRelation, error) {
+	relations, err := a.db.QueryAppPublishItemRelations(req)
+	if err != nil {
+		return nil, err
+	}
+	result := map[string]apistructs.AppPublishItemRelation{}
+	for _, relation := range relations {
+		var itemNs []string
+		itemNs = append(itemNs, a.BuildItemMonitorPipelineCmsNs(relation.AppID, relation.Env))
+		relation.PublishItemNs = itemNs
+		result[relation.Env] = relation
+	}
+	return result, nil
+}
+
+// UpdatePublishItemRelations 增量更新或创建publishItemRelations
+func (a *Application) UpdatePublishItemRelations(request *apistructs.UpdateAppPublishItemRelationRequest) error {
+	relations, err := a.db.QueryAppPublishItemRelations(apistructs.QueryAppPublishItemRelationRequest{AppID: request.AppID})
+	if err != nil {
+		return err
+	}
+	result := map[string]apistructs.AppPublishItemRelation{}
+	for _, relation := range relations {
+		var itemNs []string
+		itemNs = append(itemNs, a.BuildItemMonitorPipelineCmsNs(relation.AppID, relation.Env))
+		relation.PublishItemNs = itemNs
+		result[relation.Env] = relation
+	}
+
+	app, err := a.db.GetApplicationByID(request.AppID)
+	if err != nil {
+		return err
+	}
+
+	for _, workspace := range apistructs.DiceWorkspaceSlice {
+		// 获取AK(TK)
+		monitorAddon, err := a.bdl.ListByAddonName("monitor", strconv.FormatInt(app.ProjectID, 10), workspace.String())
+		if err != nil {
+			return err
+		}
+		if len(monitorAddon.Data) == 0 {
+			return errors.Errorf("the monitor addon doesn't exist ENV: %s, projectID: %d", workspace.String(), app.ProjectID)
+		}
+		AK, ok := monitorAddon.Data[0].Config["TERMINUS_KEY"]
+		if !ok {
+			return errors.Errorf("the monitor addon doesn't have TERMINUS_KEY")
+		}
+		request.AKAIMap[workspace] = apistructs.MonitorKeys{AK: AK.(string), AI: app.Name}
+		// 更新app relation
+		relation, ok := result[workspace.String()]
+		if ok && request.GetPublishItemIDByWorkspace(workspace) == relation.PublishItemID &&
+			request.AppID == relation.AppID && relation.AK == AK.(string) && relation.AI == app.Name {
+			// 数据库已经存在记录，且不需要更新
+			request.SetPublishItemIDTo0ByWorkspace(workspace)
+		}
+	}
+
+	if err := a.db.UpdateAppPublishItemRelations(request); err != nil {
+		return err
+	}
+
+	return a.PipelineCmsConfigRequest(request)
+}
+
+// PipelineCmsConfigRequest 请求pipeline cms，将publisherKey和publishItemKey设置进配置管理
+func (a *Application) PipelineCmsConfigRequest(request *apistructs.UpdateAppPublishItemRelationRequest) error {
+	for workspace, mk := range request.AKAIMap {
+		// bundle req
+		if _, err := a.cms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "dop"),
+			&cmspb.CmsNsConfigsUpdateRequest{
+				Ns:             a.BuildItemMonitorPipelineCmsNs(request.AppID, workspace.String()),
+				PipelineSource: apistructs.PipelineSourceDice.String(),
+				KVs:            map[string]*cmspb.PipelineCmsConfigValue{"AI": {Value: mk.AI}, "AK": {Value: mk.AK}},
+			}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (a *Application) RemovePublishItemRelations(request *apistructs.RemoveAppPublishItemRelationsRequest) error {
+	return a.db.RemovePublishItemRelations(request)
+}
+
+// BuildItemMonitorPipelineCmsNs 生成namespace
+func (a *Application) BuildItemMonitorPipelineCmsNs(appID int64, workspace string) string {
+	return fmt.Sprintf("publish-item-monitor-%s-%d", workspace, appID)
 }

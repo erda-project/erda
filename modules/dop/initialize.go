@@ -561,6 +561,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	app := application.New(
 		application.WithBundle(bdl.Bdl),
 		application.WithDBClient(db),
+		application.WithPipelineCms(p.PipelineCms),
 	)
 
 	codeCvc := code_coverage.New(
@@ -583,6 +584,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 			pipeline.WithPublisherSvc(pub),
 			pipeline.WithPipelineCms(p.PipelineCms),
 			pipeline.WithPipelineDefinitionServices(p.PipelineDs),
+			pipeline.WithAppSvc(app),
 		)),
 		endpoints.WithPipelineCms(p.PipelineCms),
 		endpoints.WithEvent(e),
