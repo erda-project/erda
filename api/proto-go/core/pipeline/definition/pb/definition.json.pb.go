@@ -13,33 +13,17 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
-var _ json.Marshaler = (*PipelineDefinition)(nil)
-var _ json.Unmarshaler = (*PipelineDefinition)(nil)
-var _ json.Marshaler = (*PipelineDefinitionExtra)(nil)
-var _ json.Unmarshaler = (*PipelineDefinitionExtra)(nil)
-var _ json.Marshaler = (*PipelineDefinitionCreateRequest)(nil)
-var _ json.Unmarshaler = (*PipelineDefinitionCreateRequest)(nil)
-var _ json.Marshaler = (*PipelineDefinitionCreateResponse)(nil)
-var _ json.Unmarshaler = (*PipelineDefinitionCreateResponse)(nil)
-var _ json.Marshaler = (*PipelineDefinitionUpdateRequest)(nil)
-var _ json.Unmarshaler = (*PipelineDefinitionUpdateRequest)(nil)
-var _ json.Marshaler = (*PipelineDefinitionUpdateResponse)(nil)
-var _ json.Unmarshaler = (*PipelineDefinitionUpdateResponse)(nil)
-var _ json.Marshaler = (*PipelineDefinitionDeleteRequest)(nil)
-var _ json.Unmarshaler = (*PipelineDefinitionDeleteRequest)(nil)
-var _ json.Marshaler = (*PipelineDefinitionDeleteResponse)(nil)
-var _ json.Unmarshaler = (*PipelineDefinitionDeleteResponse)(nil)
-var _ json.Marshaler = (*PipelineDefinitionGetRequest)(nil)
-var _ json.Unmarshaler = (*PipelineDefinitionGetRequest)(nil)
-var _ json.Marshaler = (*PipelineDefinitionGetResponse)(nil)
-var _ json.Unmarshaler = (*PipelineDefinitionGetResponse)(nil)
-var _ json.Marshaler = (*PipelineDefinitionListRequest)(nil)
-var _ json.Unmarshaler = (*PipelineDefinitionListRequest)(nil)
-var _ json.Marshaler = (*PipelineDefinitionListResponse)(nil)
-var _ json.Unmarshaler = (*PipelineDefinitionListResponse)(nil)
+var _ json.Marshaler = (*PipelineDefinitionProcessRequest)(nil)
+var _ json.Unmarshaler = (*PipelineDefinitionProcessRequest)(nil)
+var _ json.Marshaler = (*PipelineDefinitionProcessResponse)(nil)
+var _ json.Unmarshaler = (*PipelineDefinitionProcessResponse)(nil)
+var _ json.Marshaler = (*PipelineDefinitionProcessVersionRequest)(nil)
+var _ json.Unmarshaler = (*PipelineDefinitionProcessVersionRequest)(nil)
+var _ json.Marshaler = (*PipelineDefinitionProcessVersionResponse)(nil)
+var _ json.Unmarshaler = (*PipelineDefinitionProcessVersionResponse)(nil)
 
-// PipelineDefinition implement json.Marshaler.
-func (m *PipelineDefinition) MarshalJSON() ([]byte, error) {
+// PipelineDefinitionProcessRequest implement json.Marshaler.
+func (m *PipelineDefinitionProcessRequest) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -49,15 +33,15 @@ func (m *PipelineDefinition) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// PipelineDefinition implement json.Marshaler.
-func (m *PipelineDefinition) UnmarshalJSON(b []byte) error {
+// PipelineDefinitionProcessRequest implement json.Marshaler.
+func (m *PipelineDefinitionProcessRequest) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
 }
 
-// PipelineDefinitionExtra implement json.Marshaler.
-func (m *PipelineDefinitionExtra) MarshalJSON() ([]byte, error) {
+// PipelineDefinitionProcessResponse implement json.Marshaler.
+func (m *PipelineDefinitionProcessResponse) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -67,15 +51,15 @@ func (m *PipelineDefinitionExtra) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// PipelineDefinitionExtra implement json.Marshaler.
-func (m *PipelineDefinitionExtra) UnmarshalJSON(b []byte) error {
+// PipelineDefinitionProcessResponse implement json.Marshaler.
+func (m *PipelineDefinitionProcessResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
 }
 
-// PipelineDefinitionCreateRequest implement json.Marshaler.
-func (m *PipelineDefinitionCreateRequest) MarshalJSON() ([]byte, error) {
+// PipelineDefinitionProcessVersionRequest implement json.Marshaler.
+func (m *PipelineDefinitionProcessVersionRequest) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -85,15 +69,15 @@ func (m *PipelineDefinitionCreateRequest) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// PipelineDefinitionCreateRequest implement json.Marshaler.
-func (m *PipelineDefinitionCreateRequest) UnmarshalJSON(b []byte) error {
+// PipelineDefinitionProcessVersionRequest implement json.Marshaler.
+func (m *PipelineDefinitionProcessVersionRequest) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
 }
 
-// PipelineDefinitionCreateResponse implement json.Marshaler.
-func (m *PipelineDefinitionCreateResponse) MarshalJSON() ([]byte, error) {
+// PipelineDefinitionProcessVersionResponse implement json.Marshaler.
+func (m *PipelineDefinitionProcessVersionResponse) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -103,152 +87,8 @@ func (m *PipelineDefinitionCreateResponse) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// PipelineDefinitionCreateResponse implement json.Marshaler.
-func (m *PipelineDefinitionCreateResponse) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// PipelineDefinitionUpdateRequest implement json.Marshaler.
-func (m *PipelineDefinitionUpdateRequest) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// PipelineDefinitionUpdateRequest implement json.Marshaler.
-func (m *PipelineDefinitionUpdateRequest) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// PipelineDefinitionUpdateResponse implement json.Marshaler.
-func (m *PipelineDefinitionUpdateResponse) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// PipelineDefinitionUpdateResponse implement json.Marshaler.
-func (m *PipelineDefinitionUpdateResponse) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// PipelineDefinitionDeleteRequest implement json.Marshaler.
-func (m *PipelineDefinitionDeleteRequest) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// PipelineDefinitionDeleteRequest implement json.Marshaler.
-func (m *PipelineDefinitionDeleteRequest) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// PipelineDefinitionDeleteResponse implement json.Marshaler.
-func (m *PipelineDefinitionDeleteResponse) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// PipelineDefinitionDeleteResponse implement json.Marshaler.
-func (m *PipelineDefinitionDeleteResponse) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// PipelineDefinitionGetRequest implement json.Marshaler.
-func (m *PipelineDefinitionGetRequest) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// PipelineDefinitionGetRequest implement json.Marshaler.
-func (m *PipelineDefinitionGetRequest) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// PipelineDefinitionGetResponse implement json.Marshaler.
-func (m *PipelineDefinitionGetResponse) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// PipelineDefinitionGetResponse implement json.Marshaler.
-func (m *PipelineDefinitionGetResponse) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// PipelineDefinitionListRequest implement json.Marshaler.
-func (m *PipelineDefinitionListRequest) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// PipelineDefinitionListRequest implement json.Marshaler.
-func (m *PipelineDefinitionListRequest) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// PipelineDefinitionListResponse implement json.Marshaler.
-func (m *PipelineDefinitionListResponse) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// PipelineDefinitionListResponse implement json.Marshaler.
-func (m *PipelineDefinitionListResponse) UnmarshalJSON(b []byte) error {
+// PipelineDefinitionProcessVersionResponse implement json.Marshaler.
+func (m *PipelineDefinitionProcessVersionResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

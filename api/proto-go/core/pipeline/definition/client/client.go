@@ -37,22 +37,10 @@ type definitionServiceWrapper struct {
 	opts   []grpc1.CallOption
 }
 
-func (s *definitionServiceWrapper) Create(ctx context.Context, req *pb.PipelineDefinitionCreateRequest) (*pb.PipelineDefinitionCreateResponse, error) {
-	return s.client.Create(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+func (s *definitionServiceWrapper) Process(ctx context.Context, req *pb.PipelineDefinitionProcessRequest) (*pb.PipelineDefinitionProcessResponse, error) {
+	return s.client.Process(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
-func (s *definitionServiceWrapper) Update(ctx context.Context, req *pb.PipelineDefinitionUpdateRequest) (*pb.PipelineDefinitionUpdateResponse, error) {
-	return s.client.Update(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
-}
-
-func (s *definitionServiceWrapper) Delete(ctx context.Context, req *pb.PipelineDefinitionDeleteRequest) (*pb.PipelineDefinitionDeleteResponse, error) {
-	return s.client.Delete(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
-}
-
-func (s *definitionServiceWrapper) Get(ctx context.Context, req *pb.PipelineDefinitionGetRequest) (*pb.PipelineDefinitionGetResponse, error) {
-	return s.client.Get(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
-}
-
-func (s *definitionServiceWrapper) List(ctx context.Context, req *pb.PipelineDefinitionListRequest) (*pb.PipelineDefinitionListResponse, error) {
-	return s.client.List(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+func (s *definitionServiceWrapper) Version(ctx context.Context, req *pb.PipelineDefinitionProcessVersionRequest) (*pb.PipelineDefinitionProcessVersionResponse, error) {
+	return s.client.Version(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

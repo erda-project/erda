@@ -7,13 +7,10 @@ import (
 	fmt "fmt"
 	math "math"
 
-	_ "github.com/erda-project/erda-proto-go/common/pb"
 	proto "github.com/golang/protobuf/proto"
-	_ "github.com/mwitkow/go-proto-validators"
 	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	_ "google.golang.org/protobuf/types/known/structpb"
-	_ "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -21,116 +18,25 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-func (this *PipelineDefinition) Validate() error {
-	if this.Extra != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Extra); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("Extra", err)
+func (this *PipelineDefinitionProcessRequest) Validate() error {
+	if this.SnippetConfig != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.SnippetConfig); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("SnippetConfig", err)
 		}
 	}
-	if this.StartedAt != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.StartedAt); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("StartedAt", err)
-		}
-	}
-	if this.EndedAt != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.EndedAt); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("EndedAt", err)
-		}
-	}
-	if this.TimeCreated != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.TimeCreated); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("TimeCreated", err)
-		}
-	}
-	if this.TimeUpdated != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.TimeUpdated); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("TimeUpdated", err)
+	if this.PipelineCreateRequest != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.PipelineCreateRequest); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("PipelineCreateRequest", err)
 		}
 	}
 	return nil
 }
-func (this *PipelineDefinitionExtra) Validate() error {
-	if this.TimeCreated != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.TimeCreated); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("TimeCreated", err)
-		}
-	}
-	if this.TimeUpdated != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.TimeUpdated); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("TimeUpdated", err)
-		}
-	}
+func (this *PipelineDefinitionProcessResponse) Validate() error {
 	return nil
 }
-func (this *PipelineDefinitionCreateRequest) Validate() error {
-	if this.Extra != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Extra); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("Extra", err)
-		}
-	}
+func (this *PipelineDefinitionProcessVersionRequest) Validate() error {
 	return nil
 }
-func (this *PipelineDefinitionCreateResponse) Validate() error {
-	if this.PipelineDefinition != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.PipelineDefinition); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("PipelineDefinition", err)
-		}
-	}
-	return nil
-}
-func (this *PipelineDefinitionUpdateRequest) Validate() error {
-	if this.Extra != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Extra); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("Extra", err)
-		}
-	}
-	if this.StartedAt != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.StartedAt); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("StartedAt", err)
-		}
-	}
-	if this.EndedAt != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.EndedAt); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("EndedAt", err)
-		}
-	}
-	return nil
-}
-func (this *PipelineDefinitionUpdateResponse) Validate() error {
-	if this.PipelineDefinition != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.PipelineDefinition); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("PipelineDefinition", err)
-		}
-	}
-	return nil
-}
-func (this *PipelineDefinitionDeleteRequest) Validate() error {
-	return nil
-}
-func (this *PipelineDefinitionDeleteResponse) Validate() error {
-	return nil
-}
-func (this *PipelineDefinitionGetRequest) Validate() error {
-	return nil
-}
-func (this *PipelineDefinitionGetResponse) Validate() error {
-	if this.PipelineDefinition != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.PipelineDefinition); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("PipelineDefinition", err)
-		}
-	}
-	return nil
-}
-func (this *PipelineDefinitionListRequest) Validate() error {
-	return nil
-}
-func (this *PipelineDefinitionListResponse) Validate() error {
-	for _, item := range this.Data {
-		if item != nil {
-			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
-			}
-		}
-	}
+func (this *PipelineDefinitionProcessVersionResponse) Validate() error {
 	return nil
 }

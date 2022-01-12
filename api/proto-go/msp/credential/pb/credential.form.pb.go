@@ -180,6 +180,11 @@ func (m *GetAccessKeyResponse) UnmarshalURLValues(prefix string, values url.Valu
 					m.Data = &pb.AccessKeysItem{}
 				}
 				m.Data.Token = vals[0]
+			case "data.creatorId":
+				if m.Data == nil {
+					m.Data = &pb.AccessKeysItem{}
+				}
+				m.Data.CreatorId = vals[0]
 			}
 		}
 	}
@@ -267,6 +272,8 @@ func (m *QueryAccessKeysResponse) UnmarshalURLValues(prefix string, values url.V
 					return err
 				}
 				m.Data.Total = val
+			case "userIDs":
+				m.UserIDs = vals
 			}
 		}
 	}
@@ -321,6 +328,8 @@ func (m *QueryAccessKeys) UnmarshalURLValues(prefix string, values url.Values) e
 					return err
 				}
 				m.CreatedAt.Nanos = int32(val)
+			case "creator":
+				m.Creator = vals[0]
 			}
 		}
 	}

@@ -21,11 +21,8 @@ const _ = grpc.SupportPackageIsVersion5
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DefinitionServiceClient interface {
-	Create(ctx context.Context, in *PipelineDefinitionCreateRequest, opts ...grpc.CallOption) (*PipelineDefinitionCreateResponse, error)
-	Update(ctx context.Context, in *PipelineDefinitionUpdateRequest, opts ...grpc.CallOption) (*PipelineDefinitionUpdateResponse, error)
-	Delete(ctx context.Context, in *PipelineDefinitionDeleteRequest, opts ...grpc.CallOption) (*PipelineDefinitionDeleteResponse, error)
-	Get(ctx context.Context, in *PipelineDefinitionGetRequest, opts ...grpc.CallOption) (*PipelineDefinitionGetResponse, error)
-	List(ctx context.Context, in *PipelineDefinitionListRequest, opts ...grpc.CallOption) (*PipelineDefinitionListResponse, error)
+	Process(ctx context.Context, in *PipelineDefinitionProcessRequest, opts ...grpc.CallOption) (*PipelineDefinitionProcessResponse, error)
+	Version(ctx context.Context, in *PipelineDefinitionProcessVersionRequest, opts ...grpc.CallOption) (*PipelineDefinitionProcessVersionResponse, error)
 }
 
 type definitionServiceClient struct {
@@ -36,45 +33,18 @@ func NewDefinitionServiceClient(cc grpc1.ClientConnInterface) DefinitionServiceC
 	return &definitionServiceClient{cc}
 }
 
-func (c *definitionServiceClient) Create(ctx context.Context, in *PipelineDefinitionCreateRequest, opts ...grpc.CallOption) (*PipelineDefinitionCreateResponse, error) {
-	out := new(PipelineDefinitionCreateResponse)
-	err := c.cc.Invoke(ctx, "/erda.core.pipeline.definition.DefinitionService/Create", in, out, opts...)
+func (c *definitionServiceClient) Process(ctx context.Context, in *PipelineDefinitionProcessRequest, opts ...grpc.CallOption) (*PipelineDefinitionProcessResponse, error) {
+	out := new(PipelineDefinitionProcessResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.pipeline.definition.DefinitionService/Process", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *definitionServiceClient) Update(ctx context.Context, in *PipelineDefinitionUpdateRequest, opts ...grpc.CallOption) (*PipelineDefinitionUpdateResponse, error) {
-	out := new(PipelineDefinitionUpdateResponse)
-	err := c.cc.Invoke(ctx, "/erda.core.pipeline.definition.DefinitionService/Update", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *definitionServiceClient) Delete(ctx context.Context, in *PipelineDefinitionDeleteRequest, opts ...grpc.CallOption) (*PipelineDefinitionDeleteResponse, error) {
-	out := new(PipelineDefinitionDeleteResponse)
-	err := c.cc.Invoke(ctx, "/erda.core.pipeline.definition.DefinitionService/Delete", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *definitionServiceClient) Get(ctx context.Context, in *PipelineDefinitionGetRequest, opts ...grpc.CallOption) (*PipelineDefinitionGetResponse, error) {
-	out := new(PipelineDefinitionGetResponse)
-	err := c.cc.Invoke(ctx, "/erda.core.pipeline.definition.DefinitionService/Get", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *definitionServiceClient) List(ctx context.Context, in *PipelineDefinitionListRequest, opts ...grpc.CallOption) (*PipelineDefinitionListResponse, error) {
-	out := new(PipelineDefinitionListResponse)
-	err := c.cc.Invoke(ctx, "/erda.core.pipeline.definition.DefinitionService/List", in, out, opts...)
+func (c *definitionServiceClient) Version(ctx context.Context, in *PipelineDefinitionProcessVersionRequest, opts ...grpc.CallOption) (*PipelineDefinitionProcessVersionResponse, error) {
+	out := new(PipelineDefinitionProcessVersionResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.pipeline.definition.DefinitionService/Version", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -85,31 +55,19 @@ func (c *definitionServiceClient) List(ctx context.Context, in *PipelineDefiniti
 // All implementations should embed UnimplementedDefinitionServiceServer
 // for forward compatibility
 type DefinitionServiceServer interface {
-	Create(context.Context, *PipelineDefinitionCreateRequest) (*PipelineDefinitionCreateResponse, error)
-	Update(context.Context, *PipelineDefinitionUpdateRequest) (*PipelineDefinitionUpdateResponse, error)
-	Delete(context.Context, *PipelineDefinitionDeleteRequest) (*PipelineDefinitionDeleteResponse, error)
-	Get(context.Context, *PipelineDefinitionGetRequest) (*PipelineDefinitionGetResponse, error)
-	List(context.Context, *PipelineDefinitionListRequest) (*PipelineDefinitionListResponse, error)
+	Process(context.Context, *PipelineDefinitionProcessRequest) (*PipelineDefinitionProcessResponse, error)
+	Version(context.Context, *PipelineDefinitionProcessVersionRequest) (*PipelineDefinitionProcessVersionResponse, error)
 }
 
 // UnimplementedDefinitionServiceServer should be embedded to have forward compatible implementations.
 type UnimplementedDefinitionServiceServer struct {
 }
 
-func (*UnimplementedDefinitionServiceServer) Create(context.Context, *PipelineDefinitionCreateRequest) (*PipelineDefinitionCreateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+func (*UnimplementedDefinitionServiceServer) Process(context.Context, *PipelineDefinitionProcessRequest) (*PipelineDefinitionProcessResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Process not implemented")
 }
-func (*UnimplementedDefinitionServiceServer) Update(context.Context, *PipelineDefinitionUpdateRequest) (*PipelineDefinitionUpdateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
-}
-func (*UnimplementedDefinitionServiceServer) Delete(context.Context, *PipelineDefinitionDeleteRequest) (*PipelineDefinitionDeleteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
-}
-func (*UnimplementedDefinitionServiceServer) Get(context.Context, *PipelineDefinitionGetRequest) (*PipelineDefinitionGetResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
-}
-func (*UnimplementedDefinitionServiceServer) List(context.Context, *PipelineDefinitionListRequest) (*PipelineDefinitionListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+func (*UnimplementedDefinitionServiceServer) Version(context.Context, *PipelineDefinitionProcessVersionRequest) (*PipelineDefinitionProcessVersionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Version not implemented")
 }
 
 func RegisterDefinitionServiceServer(s grpc1.ServiceRegistrar, srv DefinitionServiceServer, opts ...grpc1.HandleOption) {
@@ -130,166 +88,70 @@ func _get_DefinitionService_serviceDesc(srv DefinitionServiceServer, opts ...grp
 		op(h)
 	}
 
-	_DefinitionService_Create_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.Create(ctx, req.(*PipelineDefinitionCreateRequest))
+	_DefinitionService_Process_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.Process(ctx, req.(*PipelineDefinitionProcessRequest))
 	}
-	var _DefinitionService_Create_info transport.ServiceInfo
+	var _DefinitionService_Process_info transport.ServiceInfo
 	if h.Interceptor != nil {
-		_DefinitionService_Create_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "Create", srv)
-		_DefinitionService_Create_Handler = h.Interceptor(_DefinitionService_Create_Handler)
+		_DefinitionService_Process_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "Process", srv)
+		_DefinitionService_Process_Handler = h.Interceptor(_DefinitionService_Process_Handler)
 	}
 
-	_DefinitionService_Update_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.Update(ctx, req.(*PipelineDefinitionUpdateRequest))
+	_DefinitionService_Version_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.Version(ctx, req.(*PipelineDefinitionProcessVersionRequest))
 	}
-	var _DefinitionService_Update_info transport.ServiceInfo
+	var _DefinitionService_Version_info transport.ServiceInfo
 	if h.Interceptor != nil {
-		_DefinitionService_Update_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "Update", srv)
-		_DefinitionService_Update_Handler = h.Interceptor(_DefinitionService_Update_Handler)
-	}
-
-	_DefinitionService_Delete_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.Delete(ctx, req.(*PipelineDefinitionDeleteRequest))
-	}
-	var _DefinitionService_Delete_info transport.ServiceInfo
-	if h.Interceptor != nil {
-		_DefinitionService_Delete_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "Delete", srv)
-		_DefinitionService_Delete_Handler = h.Interceptor(_DefinitionService_Delete_Handler)
-	}
-
-	_DefinitionService_Get_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.Get(ctx, req.(*PipelineDefinitionGetRequest))
-	}
-	var _DefinitionService_Get_info transport.ServiceInfo
-	if h.Interceptor != nil {
-		_DefinitionService_Get_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "Get", srv)
-		_DefinitionService_Get_Handler = h.Interceptor(_DefinitionService_Get_Handler)
-	}
-
-	_DefinitionService_List_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.List(ctx, req.(*PipelineDefinitionListRequest))
-	}
-	var _DefinitionService_List_info transport.ServiceInfo
-	if h.Interceptor != nil {
-		_DefinitionService_List_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "List", srv)
-		_DefinitionService_List_Handler = h.Interceptor(_DefinitionService_List_Handler)
+		_DefinitionService_Version_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "Version", srv)
+		_DefinitionService_Version_Handler = h.Interceptor(_DefinitionService_Version_Handler)
 	}
 
 	var serviceDesc = _DefinitionService_serviceDesc
 	serviceDesc.Methods = []grpc.MethodDesc{
 		{
-			MethodName: "Create",
+			MethodName: "Process",
 			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-				in := new(PipelineDefinitionCreateRequest)
+				in := new(PipelineDefinitionProcessRequest)
 				if err := dec(in); err != nil {
 					return nil, err
 				}
 				if interceptor == nil && h.Interceptor == nil {
-					return srv.(DefinitionServiceServer).Create(ctx, in)
+					return srv.(DefinitionServiceServer).Process(ctx, in)
 				}
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _DefinitionService_Create_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _DefinitionService_Process_info)
 				}
 				if interceptor == nil {
-					return _DefinitionService_Create_Handler(ctx, in)
+					return _DefinitionService_Process_Handler(ctx, in)
 				}
 				info := &grpc.UnaryServerInfo{
 					Server:     srv,
-					FullMethod: "/erda.core.pipeline.definition.DefinitionService/Create",
+					FullMethod: "/erda.core.pipeline.definition.DefinitionService/Process",
 				}
-				return interceptor(ctx, in, info, _DefinitionService_Create_Handler)
+				return interceptor(ctx, in, info, _DefinitionService_Process_Handler)
 			},
 		},
 		{
-			MethodName: "Update",
+			MethodName: "Version",
 			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-				in := new(PipelineDefinitionUpdateRequest)
+				in := new(PipelineDefinitionProcessVersionRequest)
 				if err := dec(in); err != nil {
 					return nil, err
 				}
 				if interceptor == nil && h.Interceptor == nil {
-					return srv.(DefinitionServiceServer).Update(ctx, in)
+					return srv.(DefinitionServiceServer).Version(ctx, in)
 				}
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _DefinitionService_Update_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _DefinitionService_Version_info)
 				}
 				if interceptor == nil {
-					return _DefinitionService_Update_Handler(ctx, in)
+					return _DefinitionService_Version_Handler(ctx, in)
 				}
 				info := &grpc.UnaryServerInfo{
 					Server:     srv,
-					FullMethod: "/erda.core.pipeline.definition.DefinitionService/Update",
+					FullMethod: "/erda.core.pipeline.definition.DefinitionService/Version",
 				}
-				return interceptor(ctx, in, info, _DefinitionService_Update_Handler)
-			},
-		},
-		{
-			MethodName: "Delete",
-			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-				in := new(PipelineDefinitionDeleteRequest)
-				if err := dec(in); err != nil {
-					return nil, err
-				}
-				if interceptor == nil && h.Interceptor == nil {
-					return srv.(DefinitionServiceServer).Delete(ctx, in)
-				}
-				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _DefinitionService_Delete_info)
-				}
-				if interceptor == nil {
-					return _DefinitionService_Delete_Handler(ctx, in)
-				}
-				info := &grpc.UnaryServerInfo{
-					Server:     srv,
-					FullMethod: "/erda.core.pipeline.definition.DefinitionService/Delete",
-				}
-				return interceptor(ctx, in, info, _DefinitionService_Delete_Handler)
-			},
-		},
-		{
-			MethodName: "Get",
-			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-				in := new(PipelineDefinitionGetRequest)
-				if err := dec(in); err != nil {
-					return nil, err
-				}
-				if interceptor == nil && h.Interceptor == nil {
-					return srv.(DefinitionServiceServer).Get(ctx, in)
-				}
-				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _DefinitionService_Get_info)
-				}
-				if interceptor == nil {
-					return _DefinitionService_Get_Handler(ctx, in)
-				}
-				info := &grpc.UnaryServerInfo{
-					Server:     srv,
-					FullMethod: "/erda.core.pipeline.definition.DefinitionService/Get",
-				}
-				return interceptor(ctx, in, info, _DefinitionService_Get_Handler)
-			},
-		},
-		{
-			MethodName: "List",
-			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-				in := new(PipelineDefinitionListRequest)
-				if err := dec(in); err != nil {
-					return nil, err
-				}
-				if interceptor == nil && h.Interceptor == nil {
-					return srv.(DefinitionServiceServer).List(ctx, in)
-				}
-				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _DefinitionService_List_info)
-				}
-				if interceptor == nil {
-					return _DefinitionService_List_Handler(ctx, in)
-				}
-				info := &grpc.UnaryServerInfo{
-					Server:     srv,
-					FullMethod: "/erda.core.pipeline.definition.DefinitionService/List",
-				}
-				return interceptor(ctx, in, info, _DefinitionService_List_Handler)
+				return interceptor(ctx, in, info, _DefinitionService_Version_Handler)
 			},
 		},
 	}

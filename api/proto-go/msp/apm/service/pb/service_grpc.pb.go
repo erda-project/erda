@@ -24,6 +24,7 @@ type ApmServiceServiceClient interface {
 	GetServices(ctx context.Context, in *GetServicesRequest, opts ...grpc.CallOption) (*GetServicesResponse, error)
 	GetServiceAnalyzerOverview(ctx context.Context, in *GetServiceAnalyzerOverviewRequest, opts ...grpc.CallOption) (*GetServiceAnalyzerOverviewResponse, error)
 	GetServiceCount(ctx context.Context, in *GetServiceCountRequest, opts ...grpc.CallOption) (*GetServiceCountResponse, error)
+	GetServiceLanguage(ctx context.Context, in *GetServiceLanguageRequest, opts ...grpc.CallOption) (*GetServiceLanguageResponse, error)
 }
 
 type apmServiceServiceClient struct {
@@ -61,6 +62,15 @@ func (c *apmServiceServiceClient) GetServiceCount(ctx context.Context, in *GetSe
 	return out, nil
 }
 
+func (c *apmServiceServiceClient) GetServiceLanguage(ctx context.Context, in *GetServiceLanguageRequest, opts ...grpc.CallOption) (*GetServiceLanguageResponse, error) {
+	out := new(GetServiceLanguageResponse)
+	err := c.cc.Invoke(ctx, "/erda.msp.apm.service.ApmServiceService/GetServiceLanguage", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ApmServiceServiceServer is the server API for ApmServiceService service.
 // All implementations should embed UnimplementedApmServiceServiceServer
 // for forward compatibility
@@ -68,6 +78,7 @@ type ApmServiceServiceServer interface {
 	GetServices(context.Context, *GetServicesRequest) (*GetServicesResponse, error)
 	GetServiceAnalyzerOverview(context.Context, *GetServiceAnalyzerOverviewRequest) (*GetServiceAnalyzerOverviewResponse, error)
 	GetServiceCount(context.Context, *GetServiceCountRequest) (*GetServiceCountResponse, error)
+	GetServiceLanguage(context.Context, *GetServiceLanguageRequest) (*GetServiceLanguageResponse, error)
 }
 
 // UnimplementedApmServiceServiceServer should be embedded to have forward compatible implementations.
@@ -82,6 +93,9 @@ func (*UnimplementedApmServiceServiceServer) GetServiceAnalyzerOverview(context.
 }
 func (*UnimplementedApmServiceServiceServer) GetServiceCount(context.Context, *GetServiceCountRequest) (*GetServiceCountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetServiceCount not implemented")
+}
+func (*UnimplementedApmServiceServiceServer) GetServiceLanguage(context.Context, *GetServiceLanguageRequest) (*GetServiceLanguageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetServiceLanguage not implemented")
 }
 
 func RegisterApmServiceServiceServer(s grpc1.ServiceRegistrar, srv ApmServiceServiceServer, opts ...grpc1.HandleOption) {
@@ -127,6 +141,15 @@ func _get_ApmServiceService_serviceDesc(srv ApmServiceServiceServer, opts ...grp
 	if h.Interceptor != nil {
 		_ApmServiceService_GetServiceCount_info = transport.NewServiceInfo("erda.msp.apm.service.ApmServiceService", "GetServiceCount", srv)
 		_ApmServiceService_GetServiceCount_Handler = h.Interceptor(_ApmServiceService_GetServiceCount_Handler)
+	}
+
+	_ApmServiceService_GetServiceLanguage_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetServiceLanguage(ctx, req.(*GetServiceLanguageRequest))
+	}
+	var _ApmServiceService_GetServiceLanguage_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ApmServiceService_GetServiceLanguage_info = transport.NewServiceInfo("erda.msp.apm.service.ApmServiceService", "GetServiceLanguage", srv)
+		_ApmServiceService_GetServiceLanguage_Handler = h.Interceptor(_ApmServiceService_GetServiceLanguage_Handler)
 	}
 
 	var serviceDesc = _ApmServiceService_serviceDesc
@@ -198,6 +221,29 @@ func _get_ApmServiceService_serviceDesc(srv ApmServiceServiceServer, opts ...grp
 					FullMethod: "/erda.msp.apm.service.ApmServiceService/GetServiceCount",
 				}
 				return interceptor(ctx, in, info, _ApmServiceService_GetServiceCount_Handler)
+			},
+		},
+		{
+			MethodName: "GetServiceLanguage",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetServiceLanguageRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ApmServiceServiceServer).GetServiceLanguage(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ApmServiceService_GetServiceLanguage_info)
+				}
+				if interceptor == nil {
+					return _ApmServiceService_GetServiceLanguage_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.msp.apm.service.ApmServiceService/GetServiceLanguage",
+				}
+				return interceptor(ctx, in, info, _ApmServiceService_GetServiceLanguage_Handler)
 			},
 		},
 	}

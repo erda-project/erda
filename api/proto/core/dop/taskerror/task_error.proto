@@ -7,7 +7,7 @@ import "common/openapi.proto";
 
 service TaskErrorService {
   option (erda.common.openapi_service) = {
-    service: "msp",
+    service: "dop",
     auth: {
       check_login: true,
       check_token: true,
