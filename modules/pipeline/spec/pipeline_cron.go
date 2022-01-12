@@ -47,6 +47,8 @@ type PipelineCron struct {
 	Branch string `json:"branch"`
 	// Deprecated
 	BasePipelineID uint64 `json:"basePipelineID"` // 用于记录最开始创建出这条 cron 记录的 pipeline id
+	// definition id
+	PipelineDefinitionID string `json:"pipeline_definition_id"`
 }
 
 // PipelineCronExtra cron 扩展信息, 不参与过滤
@@ -91,6 +93,7 @@ func (pc *PipelineCron) Convert2DTO() *apistructs.PipelineCronDTO {
 		ConfigManageNamespaces: pc.Extra.ConfigManageNamespaces,
 		UserID:                 pc.GetUserID(),
 		OrgID:                  pc.GetOrgID(),
+		PipelineDefinitionID:   pc.PipelineDefinitionID,
 	}
 }
 

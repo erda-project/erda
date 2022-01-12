@@ -618,6 +618,19 @@ func (p *ProjectPipelineService) startOrEndCron(identityInfo apistructs.Identity
 		return nil, apiError.InternalError(fmt.Errorf("not find cron"))
 	}
 
+	if cron.Data[0].PipelineDefinitionID == "" {
+		err := p.bundle.UpdatePipelineCron(apistructs.PipelineCronUpdateRequest{
+			ID:                     cron.Data[0].ID,
+			PipelineYml:            cron.Data[0].PipelineYml,
+			PipelineDefinitionID:   pipelineDefinitionID,
+			CronExpr:               cron.Data[0].CronExpr,
+			ConfigManageNamespaces: cron.Data[0].ConfigManageNamespaces,
+		})
+		if err != nil {
+			return nil, apiError.InternalError(err)
+		}
+	}
+
 	var dto *apistructs.PipelineCronDTO
 	if enable {
 		dto, err = p.bundle.StartPipelineCron(cron.Data[0].ID)
