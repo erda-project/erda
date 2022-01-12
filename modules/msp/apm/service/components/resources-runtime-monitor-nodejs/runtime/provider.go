@@ -78,17 +78,17 @@ func (p *provider) getMemoryHeapLineGraph(ctx context.Context, startTime, endTim
 		maxDimension := "max"
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(totalValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(totalValue/1024/1024, 0),
 			Dimension: totalDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024/1024, 0),
 			Dimension: usedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024/1024, 0),
 			Dimension: maxDimension,
 		})
 	}
@@ -122,7 +122,7 @@ func (p *provider) getMemoryNonHeapLineGraph(ctx context.Context, startTime, end
 		externalDimension := "external"
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(externalValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(externalValue/1024/1024, 0),
 			Dimension: externalDimension,
 		})
 	}

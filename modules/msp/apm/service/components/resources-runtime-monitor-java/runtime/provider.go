@@ -93,22 +93,22 @@ func (p *provider) getMemoryHeapLineGraph(ctx context.Context, startTime, endTim
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -150,17 +150,17 @@ func (p *provider) getMemoryNonHeapLineGraph(ctx context.Context, startTime, end
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -203,22 +203,22 @@ func (p *provider) getMemoryEdenSpaceLineGraph(ctx context.Context, startTime, e
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -261,22 +261,22 @@ func (p *provider) getMemorySurvivorSpaceLineGraph(ctx context.Context, startTim
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -319,22 +319,22 @@ func (p *provider) getMemoryOldGenLineGraph(ctx context.Context, startTime, endT
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024/1024, 0),
 			Dimension: usedDimension,
 		})
 	}

@@ -118,12 +118,12 @@ func (p *provider) getMemoryLineGraph(ctx context.Context, startTime, endTime in
 		usedDimension := "used"
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
