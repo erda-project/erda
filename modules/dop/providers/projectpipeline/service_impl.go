@@ -371,13 +371,12 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 		PageSize:                      int(params.PageSize),
 		Statuses:                      params.Statuses,
 		AllSources:                    true,
-		StartTimeBegin:                params.StartTimeBegin,
-		EndTimeBegin:                  params.StartTimeEnd,
+		StartTimeBeginTimestamp:       params.StartTimeBegin.Unix(),
+		EndTimeBeginTimestamp:         params.StartTimeEnd.Unix(),
 		PipelineDefinitionRequestJSON: base64.StdEncoding.EncodeToString(jsonValue),
 		DescCols:                      params.DescCols,
 		AscCols:                       params.AscCols,
 	}
-
 	data, err := p.bundle.PageListPipeline(pipelinePageListRequest)
 	if err != nil {
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)

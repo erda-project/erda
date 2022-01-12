@@ -58,12 +58,16 @@ type PipelineBase struct {
 	PipelineDefinitionId string `json:"pipelineDefinitionId"`
 }
 
+func (*PipelineBase) TableName() string {
+	return "pipeline_bases"
+}
+
 type PipelineBaseWithDefinition struct {
 	PipelineBase                    `xorm:"extends"`
 	definitiondb.PipelineDefinition `xorm:"extends"`
 	sourcedb.PipelineSource         `xorm:"extends"`
 }
 
-func (*PipelineBase) TableName() string {
+func (*PipelineBaseWithDefinition) TableName() string {
 	return "pipeline_bases"
 }

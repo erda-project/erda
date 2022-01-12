@@ -60,8 +60,8 @@ const (
 	ColumnExecutor        table.ColumnKey = "executor"
 	ColumnStartTime       table.ColumnKey = "startTime"
 
-	ColumnCostTimeOrder  = "cost_time"
-	ColumnStartTimeOrder = "start_time"
+	ColumnCostTimeOrder  = "cost_time_sec"
+	ColumnStartTimeOrder = "time_begin"
 
 	StateKeyTransactionPaging = "paging"
 	StateKeyTransactionSort   = "sort"
@@ -88,7 +88,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		var descCols []string
 		var ascCols []string
 		for _, v := range sorts {
-			if v.FieldKey != string(ColumnCostTime) && v.FieldKey != string(ColumnStartTime) {
+			if v.FieldKey != ColumnCostTimeOrder && v.FieldKey != ColumnStartTimeOrder {
 				continue
 			}
 			if v.Ascending {
