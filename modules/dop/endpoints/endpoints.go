@@ -1100,3 +1100,7 @@ func (e *Endpoints) ManualTestPlanService() *mttestplan.TestPlan {
 func (e *Endpoints) AutoTestPlanService() *atv2.Service {
 	return e.autotestV2
 }
+
+func (e *Endpoints) PermissionService() *permission.Permission {
+	return e.permission
+}

@@ -15,7 +15,6 @@
 package db
 
 import (
-	"fmt"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -102,7 +101,7 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 
 	var (
 		pipelineDefinitionSources []PipelineDefinitionSource
-		err error
+		err                       error
 	)
 	engine := session.Table("pipeline_definitions").Alias("d").
 		Select("d.*,s.source_type,s.remote,s.ref,s.path,s.name AS file_name").
@@ -221,8 +220,6 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 }
 
 func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
-	timestamp := timestamppb.New(p.StartedAt.In(time.Local))
-	fmt.Println(timestamp.AsTime())
 	return &pb.PipelineDefinition{
 		ID:          p.ID,
 		Name:        p.Name,
@@ -236,8 +233,11 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 		TimeUpdated: timestamppb.New(p.TimeUpdated),
 		SourceType:  p.SourceType,
 		Remote:      p.Remote,
-		Ref:         p.Ref,
-		Path:        p.Path,
-		FileName:    p.FileName,
+		Extra: &pb.PipelineDefinitionExtra{
+			ID: p.PipelineDefinitionExtraId,
+		},
+		Ref:      p.Ref,
+		Path:     p.Path,
+		FileName: p.FileName,
 	}
 }

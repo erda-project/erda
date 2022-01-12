@@ -73,3 +73,16 @@ func (client *Client) GetPipelineDefinitionExtra(id string, ops ...mysqlxorm.Ses
 
 	return &pipelineDefinitionExtra, nil
 }
+
+func (client *Client) ListPipelineDefinitionExtra(idList []string, ops ...mysqlxorm.SessionOption) ([]PipelineDefinitionExtra, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var pipelineDefinitionExtras []PipelineDefinitionExtra
+	var err error
+	if err = session.Table(PipelineDefinitionExtra{}).In("id", idList).Find(&pipelineDefinitionExtras); err != nil {
+		return nil, err
+	}
+
+	return pipelineDefinitionExtras, nil
+}

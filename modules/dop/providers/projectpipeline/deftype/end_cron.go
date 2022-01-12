@@ -18,6 +18,7 @@ import "github.com/erda-project/erda/apistructs"
 
 type ProjectPipelineEndCron struct {
 	PipelineDefinitionID string
+	ProjectID            uint64 `json:"projectId"`
 	apistructs.IdentityInfo
 }
 

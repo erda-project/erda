@@ -584,6 +584,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		pipeline.WithPipelineDefinition(p.PipelineDefinition),
 	)
 	p.ProjectPipelineSvc.WithPipelineSvc(pipelineSvc)
+	p.ProjectPipelineSvc.WithPermissionSvc(perm)
 
 	// compose endpoints
 	ep := endpoints.New(

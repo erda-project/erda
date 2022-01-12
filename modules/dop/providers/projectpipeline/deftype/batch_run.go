@@ -18,6 +18,8 @@ import "github.com/erda-project/erda/apistructs"
 
 type ProjectPipelineBatchRun struct {
 	PipelineDefinitionIDS []string
+	ProjectID             uint64
+	apistructs.IdentityInfo
 }
 
 type ProjectPipelineBatchRunResult struct {

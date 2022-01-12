@@ -18,6 +18,7 @@ import "github.com/erda-project/erda/apistructs"
 
 type ProjectPipelineFailRerun struct {
 	PipelineDefinitionID string
+	ProjectID            uint64
 	apistructs.IdentityInfo
 }
 
