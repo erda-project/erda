@@ -16,7 +16,6 @@ package customFilter
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
@@ -88,13 +87,11 @@ func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.O
 		p.gsHelper.SetAppsFilter(state.AppList)
 		p.gsHelper.SetExecutorsFilter(state.Executor)
 
-		if len(state.StartedAtStartEnd) == 1 {
-			startTime := time.Unix(state.StartedAtStartEnd[0]/1000, 0)
-			p.gsHelper.SetBeginTimeStartFilter(&startTime)
+		if len(state.StartedAtStartEnd) > 0 {
+			p.gsHelper.SetBeginTimeStartFilter(state.StartedAtStartEnd[0])
 		}
 		if len(state.StartedAtStartEnd) == 2 {
-			endTime := time.Unix(state.StartedAtStartEnd[1]/1000, 0)
-			p.gsHelper.SetBeginTimeEndFilter(&endTime)
+			p.gsHelper.SetBeginTimeEndFilter(state.StartedAtStartEnd[1])
 		}
 	}
 }

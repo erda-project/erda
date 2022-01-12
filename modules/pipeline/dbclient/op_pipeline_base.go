@@ -43,7 +43,7 @@ func (client *Client) ListPipelineBaseWithDefinitionByIDs(pipelineIDs []uint64, 
 	defer session.Close()
 
 	var bases []spec.PipelineBaseWithDefinition
-	if err := session.In("id", pipelineIDs).
+	if err := session.Table(&spec.PipelineBase{}).In(tableFieldName((&spec.PipelineBase{}).TableName(), "id"), pipelineIDs).
 		Join("INNER", definitiondb.PipelineDefinition{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_definition_id", definitiondb.PipelineDefinition{}.TableName(), (&spec.PipelineBase{}).TableName())).
 		Join("INNER", sourcedb.PipelineSource{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_source_id", sourcedb.PipelineSource{}.TableName(), definitiondb.PipelineDefinition{}.TableName())).
 		Find(&bases); err != nil {

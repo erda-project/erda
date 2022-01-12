@@ -16,6 +16,7 @@ package projectpipeline
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -372,7 +373,7 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 		AllSources:                    true,
 		StartTimeBegin:                params.StartTimeBegin,
 		EndTimeBegin:                  params.StartTimeEnd,
-		PipelineDefinitionRequestJSON: string(jsonValue),
+		PipelineDefinitionRequestJSON: base64.StdEncoding.EncodeToString(jsonValue),
 		DescCols:                      params.DescCols,
 		AscCols:                       params.AscCols,
 	}

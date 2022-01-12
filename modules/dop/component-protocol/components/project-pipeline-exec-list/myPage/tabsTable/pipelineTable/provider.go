@@ -19,36 +19,36 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/commodel"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table/impl"
-	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
 )
 
 type provider struct {
 	impl.DefaultTable
-	sdk             *cptype.SDK
-	Log             logs.Logger
-	I18n            i18n.Translator         `autowired:"i18n" translator:"msp-i18n"`
+	sdk      *cptype.SDK
+	bdl      *bundle.Bundle
+	gsHelper *gshelper.GSHelper
+	InParams InParams `json:"-"`
+
 	ProjectPipeline projectpipeline.Service `autowired:"erda.dop.projectpipeline.ProjectPipelineServiceMethod" required:"true"`
-	InParams        InParams                `json:"-"`
 }
 
 const (
@@ -60,14 +60,27 @@ const (
 	ColumnExecutor        table.ColumnKey = "executor"
 	ColumnStartTime       table.ColumnKey = "startTime"
 
+	ColumnCostTimeOrder  = "cost_time"
+	ColumnStartTimeOrder = "start_time"
+
 	StateKeyTransactionPaging = "paging"
 	StateKeyTransactionSort   = "sort"
 )
 
+func (p *provider) BeforeHandleOp(sdk *cptype.SDK) {
+	p.sdk = sdk
+	if err := p.setInParams(); err != nil {
+		panic(err)
+	}
+	p.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	p.gsHelper = gshelper.NewGSHelper(sdk.GlobalState)
+	p.ProjectPipeline = sdk.Ctx.Value(types.ProjectPipelineService).(*projectpipeline.ProjectPipelineService)
+	//cputil.MustObjJSONTransfer(&p.StdStatePtr, &p.State)
+}
+
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
 		p.sdk = sdk
-		lang := sdk.Lang
 		projectID := p.InParams.ProjectID
 		pageNo, pageSize := GetPagingFromGlobalState(*sdk.GlobalState)
 		sorts := GetSortsFromGlobalState(*sdk.GlobalState)
@@ -75,10 +88,13 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		var descCols []string
 		var ascCols []string
 		for _, v := range sorts {
+			if v.FieldKey != string(ColumnCostTime) && v.FieldKey != string(ColumnStartTime) {
+				continue
+			}
 			if v.Ascending {
-				descCols = append(descCols, v.FieldKey)
-			} else {
 				ascCols = append(ascCols, v.FieldKey)
+			} else {
+				descCols = append(descCols, v.FieldKey)
 			}
 		}
 
@@ -112,22 +128,28 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			req.StartTimeEnd = *helper.GetBeginTimeEndFilter()
 		}
 
-		result, err := p.ProjectPipeline.ListExecHistory(context.Background(), req)
-		if err != nil {
-			p.Log.Error("failed to get table data: %s", err)
-			return
-		}
-
-		tableValue := InitTable(lang, p.I18n)
-		tableValue.Total = uint64(result.Data.Total)
+		tableValue := p.InitTable()
 		tableValue.PageSize = uint64(pageSize)
 		tableValue.PageNo = uint64(pageNo)
 
+		result, err := p.ProjectPipeline.ListExecHistory(context.Background(), req)
+		if err != nil {
+			logrus.Error("failed to get table data: %s", err)
+			p.StdDataPtr = &table.Data{
+				Table: tableValue,
+				Operations: map[cptype.OperationKey]cptype.Operation{
+					table.OpTableChangePage{}.OpKey(): cputil.NewOpBuilder().WithServerDataPtr(&table.OpTableChangePageServerData{}).Build(),
+					table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
+				}}
+			return
+		}
+
+		tableValue.Total = uint64(result.Data.Total)
 		for _, pipeline := range result.Data.Pipelines {
 			if pipeline.DefinitionPageInfo == nil {
 				continue
 			}
-			tableValue.Rows = append(tableValue.Rows, pipelineToRow(pipeline, lang, p.I18n))
+			tableValue.Rows = append(tableValue.Rows, p.pipelineToRow(pipeline))
 		}
 
 		p.StdDataPtr = &table.Data{
@@ -177,19 +199,19 @@ func GetPagingFromGlobalState(globalState cptype.GlobalStateData) (pageNo int, p
 	return pageNo, pageSize
 }
 
-func pipelineToRow(pipeline apistructs.PagePipeline, lang i18n.LanguageCodes, i18n i18n.Translator) table.Row {
+func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 	return table.Row{
 		ID:         table.RowID(fmt.Sprintf("pipeline-id-%v", pipeline.ID)),
 		Selectable: true,
 		Selected:   false,
 		CellsMap: map[table.ColumnKey]table.Cell{
 			ColumnPipelineName:    table.NewTextCell(pipeline.DefinitionPageInfo.Name).Build(),
-			ColumnPipelineStatus:  table.NewTextCell(i18n.Text(lang, string(ColumnPipelineStatus)+pipeline.Status.String())).Build(),
-			ColumnCostTime:        table.NewTextCell(fmt.Sprintf("%v s", pipeline.CostTimeSec)).Build(),
+			ColumnPipelineStatus:  table.NewTextCell(cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)+pipeline.Status.String())).Build(),
+			ColumnCostTimeOrder:   table.NewTextCell(fmt.Sprintf("%v s", pipeline.CostTimeSec)).Build(),
 			ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote)).Build(),
 			ColumnBranch:          table.NewTextCell(pipeline.DefinitionPageInfo.SourceRef).Build(),
 			ColumnExecutor:        table.NewUserCell(commodel.User{ID: pipeline.DefinitionPageInfo.Creator}).Build(),
-			ColumnStartTime:       table.NewTextCell(pipeline.TimeBegin.Format("2006-01-02 15:04:05")).Build(),
+			ColumnStartTimeOrder:  table.NewTextCell(pipeline.TimeBegin.Format("2006-01-02 15:04:05")).Build(),
 		},
 		Operations: map[cptype.OperationKey]cptype.Operation{
 			table.OpRowSelect{}.OpKey(): cputil.NewOpBuilder().Build(),
@@ -205,18 +227,18 @@ func getApplicationNameFromDefinitionRemote(remote string) string {
 	return values[2]
 }
 
-func InitTable(lang i18n.LanguageCodes, i18n i18n.Translator) table.Table {
+func (p *provider) InitTable() table.Table {
 	return table.Table{
 		Columns: table.ColumnsInfo{
-			Orders: []table.ColumnKey{ColumnCostTime, ColumnStartTime},
+			Orders: []table.ColumnKey{ColumnPipelineName, ColumnPipelineStatus, ColumnCostTimeOrder, ColumnApplicationName, ColumnBranch, ColumnExecutor, ColumnStartTimeOrder},
 			ColumnsMap: map[table.ColumnKey]table.Column{
-				ColumnPipelineName:    {Title: i18n.Text(lang, string(ColumnPipelineName)), EnableSort: false},
-				ColumnPipelineStatus:  {Title: i18n.Text(lang, string(ColumnPipelineStatus)), EnableSort: false},
-				ColumnCostTime:        {Title: i18n.Text(lang, string(ColumnCostTime)), EnableSort: true, FieldBindToOrder: string(ColumnCostTime)},
-				ColumnApplicationName: {Title: i18n.Text(lang, string(ColumnApplicationName)), EnableSort: false},
-				ColumnBranch:          {Title: i18n.Text(lang, string(ColumnBranch)), EnableSort: false},
-				ColumnExecutor:        {Title: i18n.Text(lang, string(ColumnExecutor)), EnableSort: false},
-				ColumnStartTime:       {Title: i18n.Text(lang, string(ColumnStartTime)), EnableSort: true, FieldBindToOrder: string(ColumnCostTime)},
+				ColumnPipelineName:    {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineName)), EnableSort: false},
+				ColumnPipelineStatus:  {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)), EnableSort: false},
+				ColumnCostTimeOrder:   {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCostTime)), EnableSort: true, FieldBindToOrder: ColumnCostTimeOrder},
+				ColumnApplicationName: {Title: cputil.I18n(p.sdk.Ctx, string(ColumnApplicationName)), EnableSort: false},
+				ColumnBranch:          {Title: cputil.I18n(p.sdk.Ctx, string(ColumnBranch)), EnableSort: false},
+				ColumnExecutor:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnExecutor)), EnableSort: false},
+				ColumnStartTimeOrder:  {Title: cputil.I18n(p.sdk.Ctx, string(ColumnStartTime)), EnableSort: true, FieldBindToOrder: ColumnStartTimeOrder},
 			},
 		},
 	}
@@ -264,36 +286,6 @@ func (p *provider) RegisterRowDeleteOp(opData table.OpRowDelete) (opFunc cptype.
 	return nil
 }
 
-// Provide .
-func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	return p
-}
-
-// Init .
-func (p *provider) Init(ctx servicehub.Context) error {
-	p.DefaultTable = impl.DefaultTable{}
-	v := reflect.ValueOf(p)
-	v.Elem().FieldByName("Impl").Set(v)
-	compName := "pipelineTable"
-	if ctx.Label() != "" {
-		compName = ctx.Label()
-	}
-	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
-		Scenario: "project-pipeline-exec-list",
-		CompName: compName,
-		Creator:  func() cptype.IComponent { return p },
-	})
-	return nil
-}
-
-func init() {
-	name := "component-protocol.components.project-pipeline-exec-list.pipelineTable"
-	cpregister.AllExplicitProviderCreatorMap[name] = nil
-	servicehub.Register(name, &servicehub.Spec{
-		Creator: func() servicehub.Provider { return &provider{} },
-	})
-}
-
 type InParams struct {
 	OrgID     uint64 `json:"orgID,omitempty"`
 	ProjectID uint64 `json:"projectId,omitempty"`
@@ -317,3 +309,9 @@ func (p *provider) setInParams() error {
 
 // InParamsPtr .
 func (s *provider) InParamsPtr() interface{} { return s.StdInParamsPtr }
+
+func init() {
+	base.InitProviderWithCreator("project-pipeline-exec-list", "pipelineTable", func() servicehub.Provider {
+		return &provider{}
+	})
+}

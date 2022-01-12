@@ -15,6 +15,7 @@
 package apistructs
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"strconv"
 	"strings"
@@ -350,6 +351,7 @@ type PipelinePageListRequest struct {
 	DescCols   []string `schema:"-"`
 
 	// pipeline definition search
+	PipelineDefinitionRequest     *PipelineDefinitionRequest
 	PipelineDefinitionRequestJSON string `schema:"pipelineDefinition"`
 }
 
@@ -461,6 +463,18 @@ func (req *PipelinePageListRequest) PostHandleQueryString() error {
 	if req.EndTimeCreatedTimestamp > 0 {
 		req.EndTimeCreated = time.Unix(req.EndTimeCreatedTimestamp, 0)
 	}
+	if req.PipelineDefinitionRequestJSON != "" {
+		var pipelineDefinitionRequest = PipelineDefinitionRequest{}
+		value, err := base64.StdEncoding.DecodeString(req.PipelineDefinitionRequestJSON)
+		if err != nil {
+			return errors.Errorf("invalid pipelineDefinitionRequestJSON: %s", req.PipelineDefinitionRequestJSON)
+		}
+		err = json.Unmarshal(value, &pipelineDefinitionRequest)
+		if err != nil {
+			return errors.Errorf("invalid pipelineDefinitionRequestJSON: %s", req.PipelineDefinitionRequestJSON)
+		}
+		req.PipelineDefinitionRequest = &pipelineDefinitionRequest
+	}
 
 	return nil
 }
@@ -503,7 +517,9 @@ func (req *PipelinePageListRequest) UrlQueryString() map[string][]string {
 	query["pageSize"] = []string{strconv.FormatInt(int64(req.PageSize), 10)}
 	query["largePageSize"] = []string{strconv.FormatBool(req.LargePageSize)}
 	query["countOnly"] = []string{strconv.FormatBool(req.CountOnly)}
-
+	if req.PipelineDefinitionRequestJSON != "" {
+		query["pipelineDefinition"] = []string{req.PipelineDefinitionRequestJSON}
+	}
 	return query
 }
 
