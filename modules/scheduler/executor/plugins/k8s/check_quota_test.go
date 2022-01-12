@@ -63,7 +63,7 @@ func TestGetLogContent(t *testing.T) {
 	leftCPU := 500
 	leftMem := 1 << 9
 
-	humanLog, primevalLog := getLogContent(int64(requestsCPU), int64(requestsMem), int64(leftCPU), int64(leftMem), "addon", "test")
+	humanLog, primevalLog := getLogContent("zh-CN", int64(requestsCPU), int64(requestsMem), int64(leftCPU), int64(leftMem), "addon", "test")
 	expectedHumanLog := "当前环境资源配额不足，请求 CPU 新增 1.000 核，大于当前剩余 CPU 0.500 核，请求内存新增 1.000KB，大于当前环境剩余内存 512.000B"
 	expectedPrimevalLog := "Resource quota is not enough in current workspace. Requests CPU added 1.000 core(s), which is greater than the current remaining CPU 0.500 core(s). Requests memory added 1.000KB, which is greater than the current remaining 512.000B"
 	if humanLog != expectedHumanLog {

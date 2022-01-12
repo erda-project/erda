@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/config"
 	gw "github.com/erda-project/erda/modules/hepa/gateway/dto"
+	"github.com/erda-project/erda/modules/hepa/i18n"
 	"github.com/erda-project/erda/modules/hepa/k8s"
 	"github.com/erda-project/erda/modules/hepa/kong"
 	kongDto "github.com/erda-project/erda/modules/hepa/kong/dto"
@@ -2598,6 +2599,16 @@ type endpointInfo struct {
 }
 
 func (impl GatewayOpenapiServiceImpl) SetRuntimeEndpoint(info runtime_service.RuntimeEndpointInfo) error {
+	// get org locale
+	var locale string
+	if projectID, err := strconv.ParseUint(info.RuntimeService.ProjectId, 10, 32); err == nil {
+		if project, err := bundle.Bundle.GetProject(projectID); err == nil && project != nil {
+			if org, err := bundle.Bundle.GetOrg(project.OrgID); err == nil && org != nil {
+				locale = org.Locale
+			}
+		}
+	}
+
 	var endpoints []endpointInfo
 	for _, endpoint := range info.Endpoints {
 		err := impl.endpointPadding(&endpoint, info.RuntimeService)
@@ -2611,7 +2622,7 @@ func (impl GatewayOpenapiServiceImpl) SetRuntimeEndpoint(info runtime_service.Ru
 		if !allowCreate && packageId == "" {
 			rawLog := fmt.Sprintf("app:%s service:%s endpoint create failed,  domain:%s already used by other one",
 				info.RuntimeService.AppName, info.RuntimeService.ServiceName, endpoint.Domain)
-			humanLog := fmt.Sprintf("服务: %s 的域名: %s 绑定失败, 已经被占用", info.RuntimeService.ServiceName, endpoint.Domain)
+			humanLog := i18n.Sprintf(locale, "FailedToBindServiceDomain.Occupied", info.RuntimeService.ServiceName, endpoint.Domain)
 			log.Error(rawLog)
 			go common.AsyncRuntimeError(info.RuntimeService.RuntimeId, humanLog, rawLog)
 			continue
@@ -2640,7 +2651,7 @@ func (impl GatewayOpenapiServiceImpl) SetRuntimeEndpoint(info runtime_service.Ru
 			if !allowChange {
 				rawLog := fmt.Sprintf("app:%s service:%s endpoint route create failed,  domain:%s path:%s already used by other one",
 					info.RuntimeService.AppName, info.RuntimeService.ServiceName, endpoint.Domain, endpoint.Path)
-				humanLog := fmt.Sprintf("服务: %s 的域名路由: %s%s 绑定失败，已经被占用", info.RuntimeService.ServiceName,
+				humanLog := i18n.Sprintf(locale, "FailedToBindServiceDomainRoute.Occupied", info.RuntimeService.ServiceName,
 					endpoint.Domain, endpoint.Path)
 				go common.AsyncRuntimeError(info.RuntimeService.RuntimeId, humanLog, rawLog)
 				continue

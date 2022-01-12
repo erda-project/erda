@@ -12,24 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package scheduler
+package org
 
 import (
-	"context"
+	"time"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/cache"
 )
 
-type provider struct {
-	LogTrans i18n.Translator `translator:"log-trans"`
-}
-
-func (p *provider) Run(ctx context.Context) error { return p.Initialize() }
+var orgs *cache.Cache
 
 func init() {
-	servicehub.Register("scheduler", &servicehub.Spec{
-		Services: []string{"scheduler"},
-		Creator:  func() servicehub.Provider { return &provider{} },
+	bdl := bundle.New(bundle.WithCoreServices())
+	orgs = cache.New("scheduler-orgs", time.Minute, func(i interface{}) (*cache.Item, bool) {
+		orgDTO, err := bdl.GetOrg(i.(string))
+		if err != nil {
+			return nil, false
+		}
+		return &cache.Item{
+			Object: orgDTO,
+		}, true
 	})
+}
+
+func Get(orgID string) (*apistructs.OrgDTO, bool) {
+	item, ok := orgs.LoadWithUpdate(orgID)
+	if !ok {
+		return nil, false
+	}
+	return item.Object.(*apistructs.OrgDTO), true
 }
