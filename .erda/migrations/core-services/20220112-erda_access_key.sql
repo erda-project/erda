@@ -1,1 +1,1 @@
-ALTER TABLE sp_alert ADD creator_id varchar(128) null COMMENT '创建人';
+ALTER TABLE erda_access_key ADD creator_id varchar(128) null COMMENT '创建人';
