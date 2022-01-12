@@ -577,14 +577,18 @@ type ReleaseEventData ReleaseGetResponseData
 
 // ReleasesDeleteRequest release 批量删除请求结构
 type ReleasesDeleteRequest struct {
-	ProjectID int64    `json:"projectId"`
-	ReleaseID []string `json:"releaseID"`
+	// Use to audit
+	IsProjectRelease bool     `json:"isProjectRelease"`
+	ProjectID        int64    `json:"projectId"`
+	ReleaseID        []string `json:"releaseID"`
 }
 
 // ReleasesToFormalRequest release 批量转正请求结构
 type ReleasesToFormalRequest struct {
-	ProjectID int64    `json:"projectId"`
-	ReleaseID []string `json:"releaseID"`
+	// Use to audit
+	IsProjectRelease bool     `json:"isProjectRelease"`
+	ProjectID        int64    `json:"projectId"`
+	ReleaseID        []string `json:"releaseID"`
 }
 
 type ReleasesToFormalResponse struct {
