@@ -20,7 +20,7 @@ import (
 )
 
 type InParams struct {
-	OrgID uint64 `json:"orgID,omitempty"`
+	OrgID uint64 `json:"orgId,omitempty"`
 
 	FrontendProjectID string `json:"projectId,omitempty"`
 	FrontendUrlQuery  string `json:"issueFilter__urlQuery,omitempty"`

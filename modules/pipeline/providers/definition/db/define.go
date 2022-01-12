@@ -15,6 +15,7 @@
 package db
 
 import (
+	"fmt"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -81,7 +82,7 @@ func (client *Client) GetPipelineDefinition(id string, ops ...mysqlxorm.SessionO
 	}
 
 	if !has {
-		return nil, nil
+		return nil, fmt.Errorf("the record not fount")
 	}
 
 	return &pipelineDefinition, nil

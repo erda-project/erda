@@ -15,6 +15,7 @@
 package db
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -89,7 +90,7 @@ func (client *Client) GetPipelineSource(id string, ops ...mysqlxorm.SessionOptio
 	}
 
 	if !has {
-		return nil, nil
+		return nil, fmt.Errorf("the record not fount")
 	}
 
 	return &pipelineSource, nil
