@@ -259,6 +259,15 @@ zh:
   pipelineStatusWaitApprove: 等待审核
   pipelineStatusAccept: 人工审核通过
   pipelineStatusReject: 人工审核拒绝
+  setPrimary: 设为重要
+  cancelPrimary: 取消重要
+  run: 执行
+  cancelRun: 取消执行
+  rerunFromFail: 从失败处执行
+  rerun: 重试全流程
+  cron: 开始定时
+  cancelCron: 取消定时
+  delete: 删除
 en:
   issue-manage: issue manage
   issue: issue
@@ -517,3 +526,12 @@ en:
   pipelineStatusWaitApproval: WaitApproval
   pipelineStatusApprovalSuccess: ApprovalSuccess
   pipelineStatusApprovalFail: ApprovalFail
+  setPrimary: Set primary
+  cancelPrimary: Cancel primary
+  run: Run
+  cancelRun: Rancel run
+  rerunFromFail: Rerun from fail
+  rerun: Rerun
+  cron: Start cron
+  cancelCron: Cancel cron
+  delete: Delete
