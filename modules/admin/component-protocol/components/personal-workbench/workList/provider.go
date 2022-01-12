@@ -110,89 +110,90 @@ func (l *WorkList) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 // RegisterChangePage when change page, filter needed
 func (l *WorkList) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.OperationFunc) {
-	logrus.Infof("change page client data: %+v", opData)
-	if opData.ClientData.PageNo > 0 {
-		l.filterReq.PageNo = opData.ClientData.PageNo
+	return func(sdk *cptype.SDK) {
+		logrus.Infof("change page client data: %+v", opData)
+		if opData.ClientData.PageNo > 0 {
+			l.filterReq.PageNo = opData.ClientData.PageNo
+		}
+		if opData.ClientData.PageSize > 0 {
+			l.filterReq.PageSize = opData.ClientData.PageSize
+		}
+		l.StdDataPtr = l.doFilter()
 	}
-	if opData.ClientData.PageSize > 0 {
-		l.filterReq.PageSize = opData.ClientData.PageSize
-	}
-	l.StdDataPtr = l.doFilter()
-	return nil
 }
 
 // RegisterItemStarOp when item stared, filter is unnecessary
 func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.OperationFunc) {
-	// return func(sdk *cptype.SDK) {
-	var (
-		tp      apistructs.SubscribeType
-		tpID    uint64
-		star    bool
-		updated bool
-	)
+	return func(sdk *cptype.SDK) {
+		var (
+			tp      apistructs.SubscribeType
+			tpID    uint64
+			star    bool
+			updated bool
+		)
 
-	if l.filterReq.Type == apistructs.WorkbenchItemProj {
-		tp = apistructs.ProjectSubscribe
-	} else {
-		tp = apistructs.AppSubscribe
-	}
-
-	id, err := strconv.Atoi(opData.ClientData.DataRef.ID)
-	if err != nil {
-		logrus.Errorf("star operation, format ClientData id failed, id: %v, error: %v", opData.ClientData.DataRef.ID, err)
-		return
-	}
-	tpID = uint64(id)
-
-	// if not star, create subscribe & unstar; else delete subscribe & set state
-	if opData.ClientData.DataRef.Star == nil {
-		logrus.Errorf("nil star value")
-		return
-	}
-
-	if !*opData.ClientData.DataRef.Star {
-		req := apistructs.CreateSubscribeReq{
-			Type:   tp,
-			TypeID: tpID,
-			Name:   opData.ClientData.DataRef.Title,
-			UserID: l.identity.UserID,
+		if l.filterReq.Type == apistructs.WorkbenchItemProj {
+			tp = apistructs.ProjectSubscribe
+		} else {
+			tp = apistructs.AppSubscribe
 		}
-		_, err = l.bdl.CreateSubscribe(l.identity.UserID, l.identity.OrgID, req)
+
+		id, err := strconv.Atoi(opData.ClientData.DataRef.ID)
 		if err != nil {
-			logrus.Errorf("star %v %v failed, id: %v, error: %v", req.Type, req.Name, req.TypeID, err)
+			logrus.Errorf("star operation, format ClientData id failed, id: %v, error: %v", opData.ClientData.DataRef.ID, err)
 			return
 		}
-		star = true
-	} else {
-		req := apistructs.UnSubscribeReq{
-			Type:   tp,
-			TypeID: tpID,
-			UserID: l.identity.UserID,
-		}
-		err = l.bdl.DeleteSubscribe(l.identity.UserID, l.identity.OrgID, req)
-		if err != nil {
-			logrus.Errorf("unstar failed, id: %v, error: %v", req.TypeID, err)
+		tpID = uint64(id)
+
+		// if not star, create subscribe & unstar; else delete subscribe & set state
+		if opData.ClientData.DataRef.Star == nil {
+			logrus.Errorf("nil star value")
 			return
 		}
-		star = false
-	}
-	// TODO: update data in place, do not need reload
-	if l.StdDataPtr == nil {
-		logrus.Errorf("std data prt is nil")
-		return
-	}
-	for i := range l.StdDataPtr.List {
-		item := l.StdDataPtr.List[i]
-		if item.ID == opData.ClientData.DataRef.ID {
-			l.StdDataPtr.List[i].Star = &star
-			updated = true
-			break
+
+		if !*opData.ClientData.DataRef.Star {
+			req := apistructs.CreateSubscribeReq{
+				Type:   tp,
+				TypeID: tpID,
+				Name:   opData.ClientData.DataRef.Title,
+				UserID: l.identity.UserID,
+			}
+			_, err = l.bdl.CreateSubscribe(l.identity.UserID, l.identity.OrgID, req)
+			if err != nil {
+				logrus.Errorf("star %v %v failed, id: %v, error: %v", req.Type, req.Name, req.TypeID, err)
+				return
+			}
+			star = true
+		} else {
+			req := apistructs.UnSubscribeReq{
+				Type:   tp,
+				TypeID: tpID,
+				UserID: l.identity.UserID,
+			}
+			err = l.bdl.DeleteSubscribe(l.identity.UserID, l.identity.OrgID, req)
+			if err != nil {
+				logrus.Errorf("unstar failed, id: %v, error: %v", req.TypeID, err)
+				return
+			}
+			star = false
+		}
+		// TODO: update data in place, do not need reload
+		if l.StdDataPtr == nil {
+			logrus.Errorf("std data prt is nil")
+			return
+		}
+		for i := range l.StdDataPtr.List {
+			item := l.StdDataPtr.List[i]
+			if item.ID == opData.ClientData.DataRef.ID {
+				l.StdDataPtr.List[i].Star = &star
+				updated = true
+				break
+			}
+		}
+		if !updated {
+			logrus.Errorf("cannot update star info in local data")
 		}
 	}
-	if !updated {
-		logrus.Errorf("cannot update star info in local data")
-	}
-	return nil
 }
 
 func (l *WorkList) RegisterItemClickGotoOp(opData list.OpItemClickGoto) (opFunc cptype.OperationFunc) {
@@ -201,6 +202,11 @@ func (l *WorkList) RegisterItemClickGotoOp(opData list.OpItemClickGoto) (opFunc 
 }
 
 func (l *WorkList) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) {
+	}
+}
+
+func (l *WorkList) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
 	}
 }
