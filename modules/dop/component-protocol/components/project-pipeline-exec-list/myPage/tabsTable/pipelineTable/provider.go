@@ -209,7 +209,7 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 			ColumnPipelineStatus: table.NewTextCell(cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)+pipeline.Status.String())).Build(),
 			ColumnCostTimeOrder: table.NewTextCell(func() string {
 				if pipeline.CostTimeSec <= 0 {
-					return fmt.Sprintf("%v s", 0)
+					return "-"
 				} else {
 					return fmt.Sprintf("%v s", pipeline.CostTimeSec)
 				}
@@ -217,7 +217,12 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 			ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote)).Build(),
 			ColumnBranch:          table.NewTextCell(pipeline.DefinitionPageInfo.SourceRef).Build(),
 			ColumnExecutor:        table.NewUserCell(commodel.User{ID: pipeline.DefinitionPageInfo.Creator}).Build(),
-			ColumnStartTimeOrder:  table.NewTextCell(pipeline.TimeBegin.Format("2006-01-02 15:04:05")).Build(),
+			ColumnStartTimeOrder: table.NewTextCell(func() string {
+				if pipeline.TimeBegin.Year() < 2000 {
+					return "-"
+				}
+				return pipeline.TimeBegin.Format("2006-01-02 15:04:05")
+			}()).Build(),
 		},
 		Operations: map[cptype.OperationKey]cptype.Operation{
 			table.OpRowSelect{}.OpKey(): cputil.NewOpBuilder().Build(),
