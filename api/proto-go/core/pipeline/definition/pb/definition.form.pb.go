@@ -229,6 +229,8 @@ func (m *PipelineDefinition) UnmarshalURLValues(prefix string, values url.Values
 				m.FileName = vals[0]
 			case "pipelineSourceId":
 				m.PipelineSourceId = vals[0]
+			case "status":
+				m.Status = vals[0]
 			}
 		}
 	}
@@ -700,6 +702,11 @@ func (m *PipelineDefinitionCreateResponse) UnmarshalURLValues(prefix string, val
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
 				m.PipelineDefinition.PipelineSourceId = vals[0]
+			case "pipelineDefinition.status":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.Status = vals[0]
 			}
 		}
 	}
@@ -711,8 +718,6 @@ func (m *PipelineDefinitionUpdateRequest) UnmarshalURLValues(prefix string, valu
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "pipelineDefinitionID":
-				m.PipelineDefinitionID = vals[0]
 			case "name":
 				m.Name = vals[0]
 			case "costTime":
@@ -847,6 +852,10 @@ func (m *PipelineDefinitionUpdateRequest) UnmarshalURLValues(prefix string, valu
 					return err
 				}
 				m.EndedAt.Nanos = int32(val)
+			case "pipelineDefinitionID":
+				m.PipelineDefinitionID = vals[0]
+			case "status":
+				m.Status = vals[0]
 			}
 		}
 	}
@@ -1162,6 +1171,11 @@ func (m *PipelineDefinitionUpdateResponse) UnmarshalURLValues(prefix string, val
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
 				m.PipelineDefinition.PipelineSourceId = vals[0]
+			case "pipelineDefinition.status":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.Status = vals[0]
 			}
 		}
 	}
@@ -1508,6 +1522,11 @@ func (m *PipelineDefinitionGetResponse) UnmarshalURLValues(prefix string, values
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
 				m.PipelineDefinition.PipelineSourceId = vals[0]
+			case "pipelineDefinition.status":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.Status = vals[0]
 			}
 		}
 	}
