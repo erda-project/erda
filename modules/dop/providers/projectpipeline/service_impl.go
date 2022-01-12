@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -425,29 +424,26 @@ func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.Pr
 		}
 	}
 
-	var wait = limit_sync_group.NewSemaphore(5)
-	var errInfo error
-	var lock sync.Mutex
+	work := limit_sync_group.NewWorker(5)
 	var result = map[string]*apistructs.PipelineDTO{}
 
 	for _, v := range definitionMap {
-		wait.Add(1)
-		go func(definitionID string, sourceID string) {
-			defer wait.Done()
+		work.AddFunc(func(locker *limit_sync_group.Locker, ctx context.Context, i ...interface{}) error {
+			var definitionID = i[0].(string)
+			var sourceID = i[1].(string)
 			value, err := p.autoRunPipeline(params.IdentityInfo, definitionMap[definitionID], sourceMap[sourceID])
-
-			lock.Lock()
 			if err != nil {
-				errInfo = err
-				lock.Unlock()
-				return
+				return err
 			}
+			locker.Lock()
 			result[definitionID] = value
-			lock.Unlock()
-
-		}(v.ID, v.PipelineSourceId)
+			locker.Unlock()
+			return nil
+		}, context.Background(), v.ID, v.PipelineSourceId)
 	}
-	wait.Wait()
+	if work.Do().Error() != nil {
+		return nil, err
+	}
 
 	return &deftype.ProjectPipelineBatchRunResult{
 		PipelineMap: result,
