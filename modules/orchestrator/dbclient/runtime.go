@@ -259,6 +259,19 @@ func (db *DBClient) FindRuntimesByAppId(appId uint64) ([]Runtime, error) {
 	return runtimes, nil
 }
 
+func (db *DBClient) FindRuntimesByAppIdAndWorkspace(appId uint64, workspace string) ([]Runtime, error) {
+	var runtimes []Runtime
+	if appId <= 0 {
+		return runtimes, nil
+	}
+	if err := db.
+		Where("application_id = ?  AND workspace = ?", appId, workspace).
+		Find(&runtimes).Error; err != nil {
+		return nil, errors.Wrapf(err, "failed to find runtimes by appId: %v", appId)
+	}
+	return runtimes, nil
+}
+
 // FindRuntimesInApps finds all runtimes for the given appIDs.
 // The key in the returned map is appID.
 func (db *DBClient) FindRuntimesInApps(appIDs []uint64) (map[uint64][]*Runtime, error) {
