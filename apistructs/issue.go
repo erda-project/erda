@@ -584,9 +584,9 @@ func formartTime(minutes int64, result *bytes.Buffer) {
 // IssueCreateRequest 事件创建请求
 type IssueCreateRequest struct {
 	// +optional 计划开始时间
-	PlanStartedAt *time.Time `json:"planStartedAt"`
+	PlanStartedAt IssueTime `json:"planStartedAt"`
 	// +optional 计划结束时间
-	PlanFinishedAt *time.Time `json:"planFinishedAt"`
+	PlanFinishedAt IssueTime `json:"planFinishedAt"`
 	// +required 所属项目 ID
 	ProjectID uint64 `json:"projectID"`
 	// +required 所属迭代 ID
