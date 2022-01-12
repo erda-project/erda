@@ -408,6 +408,8 @@ func (m *QueryCustomizeAlertResponse) UnmarshalURLValues(prefix string, values u
 					return err
 				}
 				m.Data.Total = val
+			case "userIDs":
+				m.UserIDs = vals
 			}
 		}
 	}
@@ -474,6 +476,8 @@ func (m *CustomizeAlertOverview) UnmarshalURLValues(prefix string, values url.Va
 					return err
 				}
 				m.UpdateTime = val
+			case "creator":
+				m.Creator = vals[0]
 			}
 		}
 	}
@@ -1117,6 +1121,8 @@ func (m *QueryOrgCustomizeAlertsResponse) UnmarshalURLValues(prefix string, valu
 					return err
 				}
 				m.Data.Total = val
+			case "userIDs":
+				m.UserIDs = vals
 			}
 		}
 	}
@@ -4081,6 +4087,8 @@ func (m *QueryAlertsResponse) UnmarshalURLValues(prefix string, values url.Value
 					return err
 				}
 				m.Data.Total = val
+			case "userIDs":
+				m.UserIDs = vals
 			}
 		}
 	}
@@ -4143,6 +4151,8 @@ func (m *Alert) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.UpdateTime = val
+			case "creator":
+				m.Creator = vals[0]
 			}
 		}
 	}
@@ -4554,6 +4564,11 @@ func (m *GetAlertResponse) UnmarshalURLValues(prefix string, values url.Values) 
 					return err
 				}
 				m.Data.UpdateTime = val
+			case "data.creator":
+				if m.Data == nil {
+					m.Data = &Alert{}
+				}
+				m.Data.Creator = vals[0]
 			}
 		}
 	}
@@ -4647,6 +4662,11 @@ func (m *GetAlertDetailResponse) UnmarshalURLValues(prefix string, values url.Va
 					return err
 				}
 				m.Data.UpdateTime = val
+			case "data.creator":
+				if m.Data == nil {
+					m.Data = &Alert{}
+				}
+				m.Data.Creator = vals[0]
 			}
 		}
 	}
@@ -4889,6 +4909,8 @@ func (m *QueryOrgAlertResponse) UnmarshalURLValues(prefix string, values url.Val
 					return err
 				}
 				m.Data.Total = val
+			case "userIDs":
+				m.UserIDs = vals
 			}
 		}
 	}
@@ -4999,6 +5021,11 @@ func (m *GetOrgAlertDetailResponse) UnmarshalURLValues(prefix string, values url
 					return err
 				}
 				m.Data.UpdateTime = val
+			case "data.creator":
+				if m.Data == nil {
+					m.Data = &Alert{}
+				}
+				m.Data.Creator = vals[0]
 			}
 		}
 	}

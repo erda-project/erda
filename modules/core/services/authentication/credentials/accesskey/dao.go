@@ -132,5 +132,6 @@ func toModel(req *pb.CreateAccessKeyRequest) AccessKey {
 		Description: req.Description,
 		Scope:       req.Scope,
 		ScopeId:     req.ScopeId,
+		CreatorID:   req.CreatorId,
 	}
 }

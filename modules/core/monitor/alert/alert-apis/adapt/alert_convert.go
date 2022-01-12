@@ -687,6 +687,7 @@ func FromDBAlertModel(m *db.Alert) *pb.Alert {
 	a.CreateTime = m.Created.UnixNano() / int64(time.Millisecond)
 	a.UpdateTime = m.Updated.UnixNano() / int64(time.Millisecond)
 	a.Attributes = make(map[string]*structpb.Value)
+	a.Creator = m.CreatorID
 	for k, v := range m.Attributes {
 		data, err := structpb.NewValue(v)
 		if err != nil {
@@ -717,6 +718,7 @@ func ToDBAlertModel(a *pb.Alert) *db.Alert {
 		AlertScopeID: a.AlertScopeId,
 		Enable:       a.Enable,
 		Attributes:   make(jsonmap.JSONMap),
+		CreatorID:    a.Attributes["creator_id"].GetStringValue(),
 	}
 	for k, v := range a.Attributes {
 		dbAlert.Attributes[k] = v.AsInterface()
