@@ -88,3 +88,73 @@ func Test_getRangeCondition(t *testing.T) {
 		})
 	}
 }
+
+func TestAdvanceFilter_generateUrlQueryParams(t *testing.T) {
+	type args struct {
+		Values cptype.ExtraMap
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "1",
+			args: args{Values: map[string]interface{}{}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			af := &AdvanceFilter{}
+			af.generateUrlQueryParams(tt.args.Values)
+		})
+	}
+}
+
+func TestAdvanceFilter_flushOptsByFilter(t *testing.T) {
+	type args struct {
+		filterEntity string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{filterEntity: "×"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			af := &AdvanceFilter{}
+			af.flushOptsByFilter(tt.args.filterEntity)
+		})
+	}
+}
+
+func TestAdvanceFilter_generateUrlQueryParams1(t *testing.T) {
+	type fields struct{}
+	type args struct {
+		Values cptype.ExtraMap
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{map[string]interface{}{"1": 1}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			af := &AdvanceFilter{}
+			af.generateUrlQueryParams(tt.args.Values)
+		})
+	}
+}
