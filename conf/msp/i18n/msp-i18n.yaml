@@ -74,6 +74,12 @@ en:
   jvm_gc_time: GC Average Duration
   jvm_class_loader: Class Count
   jvm_thread: JVM Thread
+  cpu: CPU
+  memory: Memory
+  load: System Load
+  podCount: Pod Count
+  disk: Disk IO Rate
+  network: Network Rate
 zh:
   waiting_for_tracing_data: "正在获取链路追踪数据"
   success_get_tracing_data: "获取链路追踪数据成功"
@@ -150,3 +156,9 @@ zh:
   jvm_gc_time: GC 平均时间
   jvm_class_loader: Class 数量
   jvm_thread: JVM 线程
+  cpu: CPU
+  memory: 内存
+  load: 系统负载
+  podCount: Pod 数量
+  disk: 磁盘 IO 速率
+  network: 网络速率
