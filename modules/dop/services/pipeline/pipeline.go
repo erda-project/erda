@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/application"
 	"github.com/erda-project/erda/modules/dop/services/branchrule"
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/utils"
@@ -52,6 +53,7 @@ type Pipeline struct {
 	publisherSvc  *publisher.Publisher
 	cms           cmspb.CmsServiceServer
 	ds            definition_client.Processor
+	appSvc        *application.Application
 }
 
 // Option Pipeline 配置选项
@@ -94,6 +96,12 @@ func WithPublisherSvc(svc *publisher.Publisher) Option {
 func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
 	return func(f *Pipeline) {
 		f.cms = cms
+	}
+}
+
+func WithAppSvc(svc *application.Application) Option {
+	return func(f *Pipeline) {
+		f.appSvc = svc
 	}
 }
 
@@ -332,11 +340,12 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 	workspace := validBranch.Workspace
 
 	// 塞入 publisher namespace, publisher 级别配置优先级低于用户指定
-	relationResp, err := p.bdl.GetAppPublishItemRelationsGroupByENV(pv1.AppID)
-	if err == nil && relationResp != nil {
+	// relationResp, err := p.bdl.GetAppPublishItemRelationsGroupByENV(pv1.AppID)
+	relationMap, err := p.appSvc.GetPublishItemRelationsMap(apistructs.QueryAppPublishItemRelationRequest{AppID: int64(pv1.AppID)})
+	if err == nil && relationMap != nil {
 		// 四个环境 publisherID 相同
 
-		if publishItem, ok := relationResp.Data[strings.ToUpper(workspace)]; ok {
+		if publishItem, ok := relationMap[strings.ToUpper(workspace)]; ok {
 			pv2.ConfigManageNamespaces = append(pv2.ConfigManageNamespaces, publishItem.PublishItemNs...)
 			// 根据 publishierID 获取 namespaces
 			publisher, err := p.publisherSvc.Get(publishItem.PublisherID)
