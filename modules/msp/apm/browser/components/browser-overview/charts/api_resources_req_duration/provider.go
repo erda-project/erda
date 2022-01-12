@@ -20,6 +20,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
+
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -119,7 +121,9 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("component-protocol.components.browser-overview.apiAndResourcesReqDurationLine", &servicehub.Spec{
+	name := "component-protocol.components.browser-overview.apiAndResourcesReqDurationLine"
+	cpregister.AllExplicitProviderCreatorMap[name] = nil
+	servicehub.Register(name, &servicehub.Spec{
 		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

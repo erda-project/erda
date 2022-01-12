@@ -64,20 +64,20 @@ components:
     type: Grid
   pvUvCountLine:
     type: LineGraph
-      options:
-        asyncAtInit: true
+    options:
+      asyncAtInit: true
   pageReqDurationDistributionBubble:
     type: LineGraph
-      options:
-        asyncAtInit: true
+    options:
+      asyncAtInit: true
   apiAndResourcesReqCountLine:
     type: LineGraph
-      options:
-        asyncAtInit: true
+    options:
+      asyncAtInit: true
   apiAndResourcesReqDurationLine:
     type: LineGraph
-      options:
-        asyncAtInit: true
+    options:
+      asyncAtInit: true
 
 
 
