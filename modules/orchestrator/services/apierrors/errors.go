@@ -40,12 +40,20 @@ var (
 var (
 	ErrCancelDeployment     = err("ErrCancelDeployment", "取消部署失败")
 	ErrListDeployment       = err("ErrListDeployment", "查询部署列表失败")
-	ErrListDeploymentOrder  = err("ErrListDeploymentOrder", "查询部署单失败")
 	ErrGetDeployment        = err("ErrGetDeployment", "查询部署失败")
 	ErrApproveDeployment    = err("ErrApproveDeployment", "审批部署失败")
 	ErrDeployStagesAddons   = err("ErrDeployStagesAddons", "部署addon失败")
 	ErrDeployStagesServices = err("ErrDeployStagesServices", "部署service失败")
 	ErrDeployStagesDomains  = err("ErrDeployStagesDomains", "部署domain失败")
+)
+
+// deployment order errors
+var (
+	ErrCreateDeploymentOrder       = err("ErrCreateDeploymentOrder", "创建部署单失败")
+	ErrListDeploymentOrder         = err("ErrListDeploymentOrder", "查询部署单失败")
+	ErrCancelDeploymentOrder       = err("ErrCancelDeploymentOrder", "取消部署单失败")
+	ErrDeployDeploymentOrder       = err("ErrDeployDeploymentOrder", "执行部署单失败")
+	ErrRenderDeploymentOrderDetail = err("ErrRenderDeploymentOrderDetail", "渲染部署单详情失败")
 )
 
 // domain errors

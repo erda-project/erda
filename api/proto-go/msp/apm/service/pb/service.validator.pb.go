@@ -20,6 +20,12 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *GetServiceLanguageResponse) Validate() error {
+	return nil
+}
+func (this *GetServiceLanguageRequest) Validate() error {
+	return nil
+}
 func (this *GetServiceOverviewTopRequest) Validate() error {
 	return nil
 }

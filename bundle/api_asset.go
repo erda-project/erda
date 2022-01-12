@@ -84,6 +84,7 @@ type GetApplicationRuntimesDataEle struct {
 	LastOperator          string                              `json:"lastOperator"`
 	LastOperatorAvatar    string                              `json:"lastOperatorAvatar"`
 	LastOperatorName      string                              `json:"lastOperatorName"`
+	LastOperatorId        uint64                              `json:"lastOperatorId"`
 	ProjectID             uint64                              `json:"projectId"`
 	ReleaseID             string                              `json:"releaseId"`
 	ServiceGroupName      string                              `json:"serviceGroupName"`
@@ -93,6 +94,12 @@ type GetApplicationRuntimesDataEle struct {
 	Status                string                              `json:"status"`
 	TimeCreated           time.Time                           `json:"timeCreated"`
 	UpdatedAt             time.Time                           `json:"updatedAt"`
+	Creator               string                              `json:"creator"`
+	ApplicationID         uint64                              `json:"applicationId"`
+	DeploymentOrderName   string                              `json:"deploymentOrderName"`
+	ReleaseVersion        string                              `json:"releaseVersion"`
+	RawStatus             string                              `json:"rawStatus"`
+	RawDeploymentStatus   string                              `json:"rawDeploymentStatus"`
 	// 忽略其他字段
 }
 
@@ -194,6 +201,7 @@ type GetRuntimeServicesResponseDataExtra struct {
 }
 
 type GetRuntimeServicesResponseDataService struct {
+	Status string   `json:"status"`
 	Addrs  []string `json:"addrs"`
 	Expose []string `json:"expose"`
 	// 其他字段略

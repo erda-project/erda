@@ -15,11 +15,12 @@
 package release
 
 import (
-	"archive/tar"
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -92,7 +93,7 @@ func (r *Release) Create(req *apistructs.ReleaseCreateRequest) (string, error) {
 		return "", err
 	}
 
-	// 确保Version在应用层面唯一
+	// 确保Version唯一
 	if req.IsProjectRelease {
 		releases, err := r.db.GetReleasesByProjectAndVersion(req.OrgID, req.ProjectID, req.Version)
 		if err != nil {
@@ -206,49 +207,89 @@ func limitLabelsLength(req *apistructs.ReleaseCreateRequest) error {
 func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.ReadCloser) (*dbclient.Release, []dbclient.Release, error) {
 	var metadata apistructs.ReleaseMetadata
 	dices := make(map[string]string)
-	reader := tar.NewReader(file)
-	for {
-		hdr, err := reader.Next()
-		if err == io.EOF {
-			break
-		}
+	buf := bytes.Buffer{}
+	if _, err := io.Copy(&buf, file); err != nil {
+		return nil, nil, err
+	}
+	zr, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	if err != nil {
+		return nil, nil, err
+	}
+	hasMetadata := false
+	for _, f := range zr.File {
+		rc, err := f.Open()
 		if err != nil {
 			return nil, nil, err
 		}
 		buf := bytes.Buffer{}
-		if _, err = io.Copy(&buf, reader); err != nil {
+		if _, err = io.Copy(&buf, rc); err != nil {
 			return nil, nil, err
 		}
 
-		splits := strings.Split(hdr.Name, "/")
+		splits := strings.Split(f.Name, "/")
 		if len(splits) == 2 && splits[1] == "metadata.yml" {
+			hasMetadata = true
 			if err := yaml.Unmarshal(buf.Bytes(), &metadata); err != nil {
 				return nil, nil, err
 			}
-		} else if len(splits) == 3 && splits[2] == "dice.yml" {
-			appName := splits[1]
+		} else if len(splits) == 4 && splits[3] == "dice.yml" {
+			appName := splits[2]
 			dices[appName] = buf.String()
 		}
+
+		if err := rc.Close(); err != nil {
+			return nil, nil, err
+		}
 	}
+
+	if !hasMetadata {
+		return nil, nil, errors.New("invalid file, metadata.yml not found")
+	}
+	if len(dices) == 0 {
+		return nil, nil, errors.Errorf("invalid file, dice.yml not found")
+	}
+
 	projectReleaseID := uuid.UUID()
 
-	existedApps := make(map[string]struct{})
-	apps, err := r.bdl.GetAppsByProject(uint64(req.ProjectID), uint64(req.OrgID), req.UserID)
+	var names []string
+	for appName := range dices {
+		names = append(names, appName)
+	}
+	resp, err := r.bdl.GetAppIDByNames(uint64(req.ProjectID), req.UserID, names)
 	if err != nil {
-		return nil, nil, errors.Errorf("failed to list apps, %v", err)
+		return nil, nil, err
 	}
-	for i := range apps.List {
-		existedApps[apps.List[i].Name] = struct{}{}
-	}
+	appName2ID := resp.AppNameToID
+
+	now := time.Now()
 
 	var appReleaseList []string
 	var appReleases []dbclient.Release
 	for appName, dice := range dices {
-		if _, ok := existedApps[appName]; !ok {
+		if _, ok := appName2ID[appName]; !ok {
 			return nil, nil, errors.Errorf("app %s not existed", appName)
 		}
 		id := uuid.UUID()
 		md := metadata.AppList[appName]
+		existedReleases, err := r.db.GetReleasesByAppAndVersion(req.OrgID, req.ProjectID, int64(appName2ID[appName]), md.Version)
+		if err != nil {
+			return nil, nil, errors.Errorf("failed to get releases by app and version, %v", err)
+		}
+		if len(existedReleases) > 0 {
+			oldDice, err := diceyml.New([]byte(existedReleases[0].Dice), true)
+			if err != nil {
+				return nil, nil, errors.Errorf("dice yml for release %s is invalid, %v", existedReleases[0].ReleaseID, err)
+			}
+			newDice, err := diceyml.New([]byte(dice), true)
+			if err != nil {
+				return nil, nil, errors.Errorf("dice yml for app %s release is invalid, %v", appName, err)
+			}
+			if !reflect.DeepEqual(oldDice.Obj(), newDice.Obj()) {
+				return nil, nil, errors.Errorf("app release %s was already existed but has different dice yml", md.Version)
+			}
+			appReleaseList = append(appReleaseList, existedReleases[0].ReleaseID)
+			continue
+		}
 
 		labels := map[string]string{
 			"gitBranch":        md.GitBranch,
@@ -272,12 +313,15 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 			IsFormal:         false,
 			IsProjectRelease: false,
 			Labels:           string(data),
+			Version:          md.Version,
 			OrgID:            req.OrgID,
 			ProjectID:        req.ProjectID,
 			ProjectName:      req.ProjectName,
 			UserID:           req.UserID,
 			ClusterName:      req.ClusterName,
 			Reference:        1,
+			CreatedAt:        now,
+			UpdatedAt:        now,
 		})
 	}
 
@@ -299,6 +343,8 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 		ProjectName:            req.ProjectName,
 		UserID:                 req.UserID,
 		ClusterName:            req.ClusterName,
+		CreatedAt:              now,
+		UpdatedAt:              now,
 	}
 	return projectRelease, appReleases, nil
 }

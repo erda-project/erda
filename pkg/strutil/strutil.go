@@ -614,3 +614,12 @@ func FlatErrors(errs []error, sep string) error {
 func ContainsOrEmpty(source, target string) bool {
 	return target == "" || strings.Contains(source, target)
 }
+
+func FirstNoneEmpty(strs ...string) string {
+	for _, str := range strs {
+		if len(str) > 0 {
+			return str
+		}
+	}
+	return ""
+}

@@ -249,6 +249,8 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		return nil, err
 	}
 
+	SetPodAnnotationsBaseContainerEnvs(daemonset.Spec.Template.Spec.Containers[0], daemonset.Spec.Template.Annotations)
+
 	secrets, err := k.CopyErdaSecrets("secret", service.Namespace)
 	if err != nil {
 		logrus.Errorf("failed to copy secret: %v", err)

@@ -15,7 +15,7 @@
 package endpoints
 
 import (
-	"archive/tar"
+	"archive/zip"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -136,11 +136,17 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 
 	if !identityInfo.IsInternalClient() {
 		go func() {
-			if err := e.audit(r, orgID, releaseRequest.ProjectID, identityInfo.UserID, "project", releaseID,
-				string(apistructs.CreateProjectReleaseTemplate), map[string]interface{}{
-					"version": releaseRequest.Version,
-				}); err != nil {
-				logrus.Errorf("failed to create audit event for creating project release")
+			if err := e.audit(r, auditParams{
+				orgID:        orgID,
+				projectID:    releaseRequest.ProjectID,
+				userID:       identityInfo.UserID,
+				templateName: string(apistructs.CreateProjectReleaseTemplate),
+				ctx: map[string]interface{}{
+					"version":   releaseRequest.Version,
+					"releaseId": releaseID,
+				},
+			}); err != nil {
+				logrus.Errorf("failed to create audit event for creating project release, %v", err)
 			}
 		}()
 	}
@@ -183,6 +189,7 @@ func (e *Endpoints) UploadRelease(ctx context.Context, r *http.Request, vars map
 		if !hasAccess {
 			return apierrors.ErrCreateRelease.AccessDenied().ToResp(), nil
 		}
+		releaseRequest.UserID = identityInfo.UserID
 	}
 
 	file, err := e.bdl.DownloadDiceFile(releaseRequest.DiceFileID)
@@ -202,12 +209,19 @@ func (e *Endpoints) UploadRelease(ctx context.Context, r *http.Request, vars map
 
 	if !identityInfo.IsInternalClient() {
 		go func() {
-			if err := e.audit(r, orgID, releaseRequest.ProjectID, identityInfo.UserID, "project", releaseID,
-				string(apistructs.CreateProjectReleaseTemplate), map[string]interface{}{
-					"version": version,
-				}); err != nil {
-				logrus.Errorf("failed to create audit event for creating project release")
+			if err := e.audit(r, auditParams{
+				orgID:        orgID,
+				projectID:    releaseRequest.ProjectID,
+				userID:       identityInfo.UserID,
+				templateName: string(apistructs.CreateProjectReleaseTemplate),
+				ctx: map[string]interface{}{
+					"version":   version,
+					"releaseId": releaseID,
+				},
+			}); err != nil {
+				logrus.Errorf("failed to create audit event for creating project release, %v", err)
 			}
+
 		}()
 	}
 
@@ -343,11 +357,17 @@ func (e *Endpoints) UpdateRelease(ctx context.Context, r *http.Request, vars map
 			templateName = apistructs.UpdateProjectReleaseTemplate
 		}
 		go func() {
-			if err := e.audit(r, orgID, updateRequest.ProjectID, identityInfo.UserID, releaseType, releaseID,
-				string(templateName), map[string]interface{}{
-					"version": release.Version,
-				}); err != nil {
-				logrus.Errorf("failed to create audit event for updating %s release", releaseType)
+			if err := e.audit(r, auditParams{
+				orgID:        orgID,
+				projectID:    updateRequest.ProjectID,
+				userID:       identityInfo.UserID,
+				templateName: string(templateName),
+				ctx: map[string]interface{}{
+					"version":   release.Version,
+					"releaseId": releaseID,
+				},
+			}); err != nil {
+				logrus.Errorf("failed to create audit event for updating %s release, %v", releaseType, err)
 			}
 		}()
 	}
@@ -428,11 +448,17 @@ func (e *Endpoints) DeleteRelease(ctx context.Context, r *http.Request, vars map
 		templateName = apistructs.DeleteProjectReleaseTemplate
 	}
 	go func() {
-		if err := e.audit(r, orgID, release.ProjectID, identityInfo.UserID, releaseType, releaseID,
-			string(templateName), map[string]interface{}{
-				"version": release.Version,
-			}); err != nil {
-			logrus.Errorf("failed to create audit event for deleting %s release", releaseType)
+		if err := e.audit(r, auditParams{
+			orgID:        orgID,
+			projectID:    release.ProjectID,
+			userID:       identityInfo.UserID,
+			templateName: string(templateName),
+			ctx: map[string]interface{}{
+				"version":   release.Version,
+				"releaseId": releaseID,
+			},
+		}); err != nil {
+			logrus.Errorf("failed to create audit event for deleting %s release, %v", releaseType, err)
 		}
 	}()
 
@@ -451,6 +477,9 @@ func (e *Endpoints) DeleteReleases(ctx context.Context, r *http.Request, vars ma
 		return apierrors.ErrDeleteRelease.InvalidParameter(err).ToResp(), nil
 	}
 
+	if len(releasesDeleteRequest.ReleaseID) == 0 {
+		return apierrors.ErrDeleteRelease.InvalidParameter("releaseID can not be empty").ToResp(), nil
+	}
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrDeleteRelease.NotLogin().ToResp(), nil
@@ -458,6 +487,9 @@ func (e *Endpoints) DeleteReleases(ctx context.Context, r *http.Request, vars ma
 	releases, err := e.db.GetReleases(releasesDeleteRequest.ReleaseID)
 	if err != nil {
 		return apierrors.ErrDeleteRelease.InternalError(err).ToResp(), nil
+	}
+	if len(releases) == 0 {
+		return apierrors.ErrDeleteRelease.InternalError(errors.New("release not found")).ToResp(), nil
 	}
 	if !identityInfo.IsInternalClient() {
 		for i := range releases {
@@ -479,12 +511,32 @@ func (e *Endpoints) DeleteReleases(ctx context.Context, r *http.Request, vars ma
 	for _, release := range releases {
 		versionList = append(versionList, release.Version)
 	}
+
 	go func() {
-		if err := e.audit(r, orgID, releasesDeleteRequest.ProjectID, identityInfo.UserID, "", "",
-			string(apistructs.BatchDeleteReleaseTemplate), map[string]interface{}{
-				"versionList": versionList,
-			}); err != nil {
-			logrus.Errorf("failed to create audit event for deleting release")
+		templateName := ""
+		auditCtx := map[string]interface{}{}
+		if len(releasesDeleteRequest.ReleaseID) == 1 {
+			templateName = string(apistructs.DeleteAppReleaseTemplate)
+			if releases[0].IsProjectRelease {
+				templateName = string(apistructs.DeleteProjectReleaseTemplate)
+			}
+			auditCtx["version"] = releases[0].Version
+			auditCtx["releaseId"] = releases[0].ReleaseID
+		} else {
+			templateName = string(apistructs.BatchDeleteAppReleaseTemplate)
+			if releasesDeleteRequest.IsProjectRelease {
+				templateName = string(apistructs.BatchDeleteProjectReleaseTemplate)
+			}
+			auditCtx["versionList"] = strings.Join(versionList, ", ")
+		}
+		if err := e.audit(r, auditParams{
+			orgID:        orgID,
+			projectID:    releasesDeleteRequest.ProjectID,
+			userID:       identityInfo.UserID,
+			templateName: templateName,
+			ctx:          auditCtx,
+		}); err != nil {
+			logrus.Errorf("failed to create audit event for deleting release, %v", err)
 		}
 	}()
 
@@ -918,11 +970,30 @@ func (e *Endpoints) ToFormalReleases(ctx context.Context, r *http.Request, vars 
 			versionList = append(versionList, release.Version)
 		}
 		go func() {
-			if err := e.audit(r, orgID, releasesToFormalRequest.ProjectID, identityInfo.UserID, "", "",
-				string(apistructs.BatchFormalReleaseTemplate), map[string]interface{}{
-					"versionList": versionList,
-				}); err != nil {
-				logrus.Errorf("failed to create audit event for formaling release")
+			templateName := ""
+			auditCtx := map[string]interface{}{}
+			if len(releasesToFormalRequest.ReleaseID) == 1 {
+				templateName = string(apistructs.FormalAppReleaseTemplate)
+				if releases[0].IsProjectRelease {
+					templateName = string(apistructs.FormalProjectReleaseTemplate)
+				}
+				auditCtx["version"] = releases[0].Version
+				auditCtx["releaseId"] = releases[0].ReleaseID
+			} else {
+				templateName = string(apistructs.BatchFormalReleaseAppTemplate)
+				if releasesToFormalRequest.IsProjectRelease {
+					templateName = string(apistructs.BatchFormalReleaseProjectTemplate)
+				}
+				auditCtx["versionList"] = strings.Join(versionList, ", ")
+			}
+			if err := e.audit(r, auditParams{
+				orgID:        orgID,
+				projectID:    releasesToFormalRequest.ProjectID,
+				userID:       identityInfo.UserID,
+				templateName: templateName,
+				ctx:          auditCtx,
+			}); err != nil {
+				logrus.Errorf("failed to create audit event for formaling release, %v", err)
 			}
 		}()
 	}
@@ -966,29 +1037,33 @@ func (e *Endpoints) ToFormalRelease(ctx context.Context, r *http.Request, vars m
 		return apierrors.ErrFormalRelease.InternalError(err).ToResp(), nil
 	}
 
-	if !identityInfo.IsInternalClient() {
-		releaseType := "application"
-		templateName := apistructs.FormalAppReleaseTemplate
-		if release.IsProjectRelease {
-			releaseType = "project"
-			templateName = apistructs.FormalProjectReleaseTemplate
-		}
-		go func() {
-			if err := e.audit(r, orgID, release.ProjectID, identityInfo.UserID, releaseType, releaseID,
-				string(templateName), map[string]interface{}{
-					"version": release.Version,
-				}); err != nil {
-				logrus.Errorf("failed to create audit event for formaling %s release", releaseType)
-			}
-		}()
+	releaseType := "application"
+	templateName := apistructs.FormalAppReleaseTemplate
+	if release.IsProjectRelease {
+		releaseType = "project"
+		templateName = apistructs.FormalProjectReleaseTemplate
 	}
+	go func() {
+		if err := e.audit(r, auditParams{
+			orgID:        orgID,
+			projectID:    release.ProjectID,
+			userID:       identityInfo.UserID,
+			templateName: string(templateName),
+			ctx: map[string]interface{}{
+				"version":   release.Version,
+				"releaseId": releaseID,
+			},
+		}); err != nil {
+			logrus.Errorf("failed to create audit event for formaling %s release, %v", releaseType, err)
+		}
+	}()
 
 	return httpserver.OkResp("Formal release succ")
 }
 
 // DownloadYaml GET /api/releases/{releaseId}/actions/download-yaml 下载Yaml文件
 func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
-	_, err := getPermissionHeader(r)
+	orgID, err := getPermissionHeader(r)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.NotLogin()
 	}
@@ -1022,9 +1097,8 @@ func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *
 
 	dir := fmt.Sprintf("%s_%s", release.ProjectName, release.Version)
 
-	buf := &bytes.Buffer{}
-	writer := tar.NewWriter(buf)
-	defer writer.Close()
+	buf := new(bytes.Buffer)
+	zw := zip.NewWriter(buf)
 	releaseIDs, err := unmarshalApplicationReleaseList(release.ApplicationReleaseList)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
@@ -1035,36 +1109,42 @@ func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *
 	}
 
 	for _, r := range releases {
-		if err := writer.WriteHeader(&tar.Header{
-			Name: filepath.Join(dir, "dicefile", r.ApplicationName, "dice.yml"),
-			Size: int64(len(r.Dice)),
-			Mode: 0644,
-		}); err != nil {
+		f, err := zw.Create(filepath.Join(dir, "dicefile", r.ApplicationName, "dice.yml"))
+		if err != nil {
 			return apierrors.ErrDownloadRelease.InternalError(err)
 		}
-		if _, err := writer.Write([]byte(r.Dice)); err != nil {
+		if _, err := f.Write([]byte(r.Dice)); err != nil {
 			return apierrors.ErrDownloadRelease.InternalError(err)
 		}
 	}
 
-	metadata, err := makeMetadata(release, releases)
+	u, err := e.bdl.GetCurrentUser(identityInfo.UserID)
+	if err != nil {
+		return apierrors.ErrDownloadRelease.InternalError(err)
+	}
+	org, err := e.bdl.GetOrg(orgID)
+	if err != nil {
+		return apierrors.ErrDownloadRelease.InternalError(err)
+	}
+	metadata, err := makeMetadata(org.DisplayName, u.Nick, release, releases)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
 
-	if err := writer.WriteHeader(&tar.Header{
-		Name: filepath.Join(dir, "metadata.yml"),
-		Size: int64(len(metadata)),
-		Mode: 0644,
-	}); err != nil {
+	f, err := zw.Create(filepath.Join(dir, "metadata.yml"))
+	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
-	if _, err := writer.Write(metadata); err != nil {
+	if _, err := f.Write(metadata); err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
 
-	w.Header().Add("Content-type", "application/octet-stream")
-	w.Header().Add("Content-Disposition", "attachment;fileName="+dir+".tar")
+	if err := zw.Close(); err != nil {
+		return apierrors.ErrDownloadRelease.InternalError(err)
+	}
+
+	w.Header().Add("Content-type", "application/zip")
+	w.Header().Add("Content-Disposition", "attachment;fileName="+dir+".zip")
 
 	if _, err := io.Copy(w, buf); err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
@@ -1223,7 +1303,7 @@ func unmarshalApplicationReleaseList(str string) ([]string, error) {
 	return list, nil
 }
 
-func makeMetadata(release *dbclient.Release, appReleases []dbclient.Release) ([]byte, error) {
+func makeMetadata(orgName, userName string, release *dbclient.Release, appReleases []dbclient.Release) ([]byte, error) {
 	appList := make(map[string]apistructs.AppMetadata)
 	for i := range appReleases {
 		labels := make(map[string]string)
@@ -1236,9 +1316,13 @@ func makeMetadata(release *dbclient.Release, appReleases []dbclient.Release) ([]
 			GitCommitMessage: labels["gitCommitMessage"],
 			GitRepo:          labels["gitRepo"],
 			ChangeLog:        appReleases[i].Changelog,
+			Version:          appReleases[i].Version,
 		}
 	}
 	releaseMeta := apistructs.ReleaseMetadata{
+		Org:       orgName,
+		Source:    "erda",
+		Author:    userName,
 		Version:   release.Version,
 		Desc:      release.Desc,
 		ChangeLog: release.Changelog,
@@ -1249,22 +1333,26 @@ func makeMetadata(release *dbclient.Release, appReleases []dbclient.Release) ([]
 
 func parseMetadata(file io.ReadCloser) (*apistructs.ReleaseMetadata, error) {
 	var metadata apistructs.ReleaseMetadata
+	buf := bytes.Buffer{}
+	if _, err := io.Copy(&buf, file); err != nil {
+		return nil, err
+	}
 	found := false
-	reader := tar.NewReader(file)
-	for {
-		hdr, err := reader.Next()
-		if err == io.EOF {
-			break
-		}
+	r, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	if err != nil {
+		return nil, err
+	}
+	for _, f := range r.File {
+		rc, err := f.Open()
 		if err != nil {
 			return nil, err
 		}
 		buf := bytes.Buffer{}
-		if _, err = io.Copy(&buf, reader); err != nil {
+		if _, err = io.Copy(&buf, rc); err != nil {
 			return nil, err
 		}
 
-		splits := strings.Split(hdr.Name, "/")
+		splits := strings.Split(f.Name, "/")
 		if len(splits) == 2 && splits[1] == "metadata.yml" {
 			if err := yaml.Unmarshal(buf.Bytes(), &metadata); err != nil {
 				return nil, err
@@ -1272,9 +1360,12 @@ func parseMetadata(file io.ReadCloser) (*apistructs.ReleaseMetadata, error) {
 			found = true
 			break
 		}
+		if err := rc.Close(); err != nil {
+			return nil, err
+		}
 	}
 	if !found {
-		return nil, errors.New("invalid file")
+		return nil, errors.New("invalid file, metadata.yml not found")
 	}
 	return &metadata, nil
 }

@@ -74,11 +74,11 @@ type Command struct {
 }
 
 type Props struct {
-	RequestIgnore   []string `json:"RequestIgnore"`
+	RequestIgnore   []string `json:"requestIgnore"`
 	BatchOperations []string `json:"batchOperations,omitempty"`
 	Selectable      bool     `json:"selectable"`
 	Columns         []Column `json:"columns,omitempty"`
-	PageSizeOptions []string `json:"PageSizeOptions,omitempty"`
+	PageSizeOptions []string `json:"pageSizeOptions,omitempty"`
 	RowKey          string   `json:"rowKey,omitempty"`
 }
 

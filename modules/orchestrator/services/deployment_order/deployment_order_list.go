@@ -26,8 +26,8 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 )
 
-func (d *DeploymentOrder) List(projectId uint64, pageInfo *apistructs.PageInfo) (*apistructs.DeploymentOrderListData, error) {
-	total, data, err := d.db.ListDeploymentOrder(projectId, pageInfo)
+func (d *DeploymentOrder) List(conditions *apistructs.DeploymentOrderListConditions, pageInfo *apistructs.PageInfo) (*apistructs.DeploymentOrderListData, error) {
+	total, data, err := d.db.ListDeploymentOrder(conditions, pageInfo)
 	if err != nil {
 		logrus.Errorf("failed to list deployment order, err: %v", err)
 		return nil, err
@@ -74,11 +74,12 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 
 		ret = append(ret, &apistructs.DeploymentOrderItem{
 			ID:                order.ID,
-			Name:              order.Name,
+			Name:              parseDeploymentOrderShowName(order.Name),
 			ReleaseID:         order.ReleaseId,
 			ReleaseVersion:    releaseResp.Version,
 			Type:              order.Type,
 			ApplicationStatus: applicationStatus,
+			Workspace:         order.Workspace,
 			Status:            parseDeploymentOrderStatus(appsStatus),
 			Operator:          string(order.Operator),
 			CreatedAt:         order.CreatedAt,

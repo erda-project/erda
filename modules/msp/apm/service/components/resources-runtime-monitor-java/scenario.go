@@ -12,17 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package monitor
+package resources_runtime_monitor_java
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
-
-var MONITOR_APM_TOPOLOGY_PROCESS_DASHBOARDID_GET = apis.ApiSpec{
-	Path:        "/api/apm/topology/process/dashboardId",
-	BackendPath: "/api/apm/topology/process/dashboardId",
-	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
-	Scheme:      "http",
-	Method:      "GET",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "获取进程分析大盘id",
-}
+import (
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/resources-runtime-monitor-java/runtime"
+)

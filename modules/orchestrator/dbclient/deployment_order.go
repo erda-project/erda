@@ -16,6 +16,7 @@ package dbclient
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -34,24 +35,65 @@ type DeploymentOrder struct {
 	Type            string
 	Description     string
 	ReleaseId       string
-	Operator        user.ID `gorm:"not null;"`
+	Operator        user.ID
 	ProjectId       uint64
 	ProjectName     string
 	ApplicationId   int64
 	ApplicationName string
+	Workspace       string
 	Status          string
 	Params          string
 	IsOutdated      uint16
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+	StartedAt       time.Time `gorm:"default:'1970-01-01 00:00:00'"`
 }
 
 func (DeploymentOrder) TableName() string {
 	return orderTableName
 }
 
-func (db *DBClient) ListDeploymentOrder(projectId uint64, pageInfo *apistructs.PageInfo) (int, []DeploymentOrder, error) {
-	cursor := db.Where("project_id = ?", projectId)
+func (db *DBClient) ListDeploymentOrder(conditions *apistructs.DeploymentOrderListConditions, pageInfo *apistructs.PageInfo) (int, []DeploymentOrder, error) {
+	cursor := db.Where("project_id = ? and workspace = ?", conditions.ProjectId, conditions.Workspace)
+
+	// parse query
+	if conditions.Query != "" {
+		qv := "%" + conditions.Query + "%"
+
+		// parse user range
+		type UserIndex struct {
+			Id int
+		}
+		var UserRange []UserIndex
+		if err := db.Table("uc_user").Where("username like ? or nickname like ?", qv, qv).
+			Select("id").Scan(&UserRange).Error; err != nil {
+			return 0, nil, fmt.Errorf("failed to query release info, err: %v", err)
+		}
+
+		// parse release range
+		type ReleaseIndex struct {
+			ReleaseId string
+		}
+		var ReleaseRange []ReleaseIndex
+		if err := db.Table("dice_release").Where("project_id = ? and (release_id like ? or version like ?)", conditions.ProjectId, qv, qv).
+			Select("release_id").Scan(&ReleaseRange).Error; err != nil {
+			return 0, nil, fmt.Errorf("failed to query user info, err: %v", err)
+		}
+
+		// add query condition
+		var (
+			uRet = make([]string, 0)
+			rRet = make([]string, 0)
+		)
+		for _, i := range UserRange {
+			uRet = append(uRet, strconv.Itoa(i.Id))
+		}
+		for _, i := range ReleaseRange {
+			rRet = append(rRet, i.ReleaseId)
+		}
+
+		cursor = cursor.Where("release_id in (?) or operator in (?)", rRet, uRet)
+	}
 
 	var (
 		total  int

@@ -12,21 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package dicehub
 
 import (
+	"net/http"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var APP_PUBLISH_ITEM_RELATION_GET = apis.ApiSpec{
-	Path:         "/api/applications/<application>/actions/get-publish-item-relations",
-	BackendPath:  "/api/applications/<application>/actions/get-publish-item-relations",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+var DICEHUB_RELEASES_VERSION_VERSION = apis.ApiSpec{
+	Path:         "/api/releases/actions/parse-version",
+	BackendPath:  "/api/releases/actions/parse-version",
+	Host:         "dicehub.marathon.l4lb.thisdcos.directory:10000",
 	Scheme:       "http",
-	Method:       "GET",
+	Method:       http.MethodGet,
+	ResponseType: apistructs.ReleaseCheckVersionResponse{},
+	IsOpenAPI:    true,
 	CheckLogin:   true,
 	CheckToken:   true,
-	ResponseType: apistructs.QueryAppPublishItemRelationResponse{},
-	Doc:          "summary: 查询应用发布关联",
+	Doc:          `解析下载的release文件的版本号`,
 }
