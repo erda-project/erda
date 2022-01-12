@@ -58,7 +58,6 @@ func (p *List) RegisterItemClickGotoOp(opData list.OpItemClickGoto) (opFunc cpty
 func (p *List) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
 		// rerender list after any operation
-		defer p.RegisterRenderingOp()
 		req := apistructs.RuntimeScaleRecords{}
 		idStr := opData.ClientData.DataRef.ID
 		id, err := strconv.ParseUint(idStr, 10, 64)
@@ -91,6 +90,7 @@ func (p *List) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.Opera
 				logrus.Errorf("failed to %s runtimes ,ids :%v", opData.ClientData.OperationRef.ID, resp.UnReDeployedIds)
 			}
 		}
+		p.StdDataPtr = p.getData()
 	}
 }
 
@@ -101,7 +101,6 @@ type ClickClientData struct {
 
 func (p *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		defer p.RegisterRenderingOp()
 		req := apistructs.RuntimeScaleRecords{}
 		for _, idStr := range opData.ClientData.SelectedRowIDs {
 			id, err := strconv.ParseUint(idStr, 10, 64)
@@ -135,7 +134,7 @@ func (p *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.Ope
 				logrus.Errorf("failed to %s runtimes ,ids :%v", opData.ClientData.SelectedOptionsID, resp.UnReDeployedIds)
 			}
 		}
-
+		p.StdDataPtr = p.getData()
 	}
 }
 
@@ -559,7 +558,7 @@ func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVe
 	days := time.Now().Sub(runtime.CreatedAt).Hours() / float64(24)
 	kvs := []list.KvInfo{
 		{
-			Key:   sdk.I18n("appName"),
+			Key:   sdk.I18n("app"),
 			Value: appName,
 		},
 	}
