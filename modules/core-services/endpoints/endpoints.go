@@ -340,6 +340,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/applications/{applicationID}/actions/unpin", Method: http.MethodPut, Handler: e.UnPinApplication},
 		{Path: "/api/applications/actions/list-templates", Method: http.MethodGet, Handler: e.ListAppTemplates},
 		{Path: "/api/applications/actions/count", Method: http.MethodGet, Handler: e.CountAppByProID},
+		{Path: "/api/applications/actions/get-id-by-names", Method: http.MethodGet, Handler: e.GetAppIDByNames},
 
 		// the interface of notice
 		{Path: "/api/notices", Method: http.MethodPost, Handler: e.CreateNotice},

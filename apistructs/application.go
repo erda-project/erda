@@ -205,6 +205,15 @@ type ApplicationDTO struct {
 	Extra string `json:"-"`
 }
 
+type GetAppIDByNamesResponse struct {
+	Header
+	Data GetAppIDByNamesResponseData `json:"data"`
+}
+
+type GetAppIDByNamesResponseData struct {
+	AppNameToID map[string]int64 `json:"appNameToID"`
+}
+
 // ApplicationWorkspace 应用工作空间
 type ApplicationWorkspace struct {
 	ClusterName string `json:"clusterName"` // TODO deprecated

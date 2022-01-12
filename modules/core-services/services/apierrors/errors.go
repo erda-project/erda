@@ -51,6 +51,7 @@ var (
 	ErrCreateApplication                    = err("ErrCreateApplication", "创建应用失败")
 	ErrInitApplication                      = err("ErrInitApplication", "应用初始化失败")
 	ErrListAppTemplates                     = err("ErrListAppTemplates", "获取应用模板列表失败")
+	ErrGetAppIDByNames                      = err("ErrGetAppIDByNames", "批量获取应用ID失败")
 	ErrUpdateApplication                    = err("ErrUpdateApplication", "更新应用失败")
 	ErrPinApplication                       = err("ErrPinApplication", "pin应用失败")
 	ErrUnPinApplication                     = err("ErrUnPinApplication", "unpin应用失败")
