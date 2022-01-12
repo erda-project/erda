@@ -102,7 +102,7 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 
 	var (
 		pipelineDefinitionSources []PipelineDefinitionSource
-		err error
+		err                       error
 	)
 	engine := session.Table("pipeline_definitions").Alias("d").
 		Select("d.*,s.source_type,s.remote,s.ref,s.path,s.name AS file_name").
@@ -146,11 +146,11 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 			engine = engine.Where("d.started_at <= ?", req.TimeStarted[1])
 		}
 	}
-	if len(req.AscCols) != 0 {
-		engine = engine.Asc(req.AscCols...)
+	for _, v := range req.AscCols {
+		engine = engine.Asc("d." + v)
 	}
-	if len(req.DescCols) != 0 {
-		engine = engine.Desc(req.DescCols...)
+	for _, v := range req.DescCols {
+		engine = engine.Desc("d." + v)
 	}
 
 	if err = engine.Limit(int(req.PageSize), int((req.PageNo-1)*req.PageSize)).

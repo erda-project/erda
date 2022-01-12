@@ -34,9 +34,6 @@ func (this *CreateProjectPipelineRequest) Validate() error {
 	if this.Ref == "" {
 		return github_com_mwitkow_go_proto_validators.FieldError("Ref", fmt.Errorf(`value '%v' must not be an empty string`, this.Ref))
 	}
-	if this.Path == "" {
-		return github_com_mwitkow_go_proto_validators.FieldError("Path", fmt.Errorf(`value '%v' must not be an empty string`, this.Path))
-	}
 	if this.FileName == "" {
 		return github_com_mwitkow_go_proto_validators.FieldError("FileName", fmt.Errorf(`value '%v' must not be an empty string`, this.FileName))
 	}

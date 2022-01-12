@@ -34,7 +34,7 @@ message CreateProjectPipelineRequest {
   uint64 appID = 3;
   string sourceType = 4 [(validator.field) = {string_not_empty: true}];
   string ref = 5 [(validator.field) = {string_not_empty: true}];
-  string path = 6 [(validator.field) = {string_not_empty: true}];
+  string path = 6;
   string fileName = 7 [(validator.field) = {string_not_empty: true}];
 }
 

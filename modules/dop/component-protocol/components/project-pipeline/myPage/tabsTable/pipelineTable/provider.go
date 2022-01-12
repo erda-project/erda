@@ -97,14 +97,9 @@ func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				table.OpBatchRowsHandle{}.OpKey(): cputil.NewOpBuilder().WithText("批量操作").WithServerDataPtr(&table.OpBatchRowsHandleServerData{
 					Options: []table.OpBatchRowsHandleOption{
 						{
-							ID:            "delete",
-							Text:          "删除",
-							AllowedRowIDs: []string{"row1", "row2"},
-						},
-						{
-							ID:              "start",
-							Text:            "启动",
-							ForbiddenRowIDs: []string{"row2"},
+							ID:   "run",
+							Text: "执行",
+							//AllowedRowIDs: []string{"row1", "row2"},
 						},
 					},
 				}).Build(),
@@ -131,14 +126,26 @@ func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 func (p *PipelineTable) SetTableRows() []table.Row {
 	var descCols, ascCols []string
 	for _, v := range p.Sorts {
+		field := func() string {
+			if v.FieldKey == string(ColumnCostTime) {
+				return "cost_time"
+			}
+			if v.FieldKey == string(ColumnStartTime) {
+				return "started_at"
+			}
+			return ""
+		}()
+		if field == "" {
+			continue
+		}
 		if v.Ascending {
-			ascCols = append(ascCols, v.FieldKey)
+			ascCols = append(ascCols, field)
 		} else {
-			descCols = append(descCols, v.FieldKey)
+			descCols = append(descCols, field)
 		}
 	}
 	if len(ascCols) == 0 && len(descCols) == 0 {
-		descCols = append(descCols, string(ColumnStartTime))
+		descCols = append(descCols, "started_at")
 	}
 
 	filter := p.gsHelper.GetGlobalTableFilter()
