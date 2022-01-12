@@ -69,7 +69,7 @@ const (
 	ColumnBranch          table.ColumnKey = "branch"
 	ColumnExecutor        table.ColumnKey = "executor"
 	ColumnStartTime       table.ColumnKey = "startTime"
-	ColumnMoreOperations  table.ColumnKey = "columnMoreOperations"
+	ColumnMoreOperations  table.ColumnKey = "moreOperations"
 
 	StateKeyTransactionPaging = "paging"
 	StateKeyTransactionSort   = "sort"
@@ -104,8 +104,9 @@ func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				table.OpBatchRowsHandle{}.OpKey(): cputil.NewOpBuilder().WithText("批量操作").WithServerDataPtr(&table.OpBatchRowsHandleServerData{
 					Options: []table.OpBatchRowsHandleOption{
 						{
-							ID:   "batchRun",
-							Text: "执行",
+							ID:              "batchRun",
+							Text:            "执行",
+							ForbiddenRowIDs: []string{},
 						},
 					},
 				}).Build(),
@@ -468,87 +469,100 @@ func init() {
 	})
 }
 
-func (p *PipelineTable) RegisterMoreOperationOp(opData commodel.OpMoreOperationsItemClick) {
-	switch opData.ClientData.DataRef.ID {
-	case "setPrimary":
-		_, err := p.ProjectPipelineSvc.SetPrimary(p.sdk.Ctx, deftype.ProjectPipelineCategory{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.(table.Row).ID),
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
-		})
-		if err != nil {
-			panic(err)
+func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick) (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) {
+		switch opData.ClientData.DataRef.ID {
+		case "setPrimary":
+			_, err := p.ProjectPipelineSvc.SetPrimary(p.sdk.Ctx, deftype.ProjectPipelineCategory{
+				PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+				ProjectID:            p.InParams.ProjectID,
+				IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
+			})
+			if err != nil {
+				panic(err)
+			}
+		case "unsetPrimary":
+			_, err := p.ProjectPipelineSvc.UnSetPrimary(p.sdk.Ctx, deftype.ProjectPipelineCategory{
+				PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+				ProjectID:            p.InParams.ProjectID,
+				IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
+			})
+			if err != nil {
+				panic(err)
+			}
+		case "run":
+			_, err := p.ProjectPipelineSvc.Run(p.sdk.Ctx, deftype.ProjectPipelineRun{
+				PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+				ProjectID:            p.InParams.ProjectID,
+				IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
+			})
+			if err != nil {
+				panic(err)
+			}
+		case "rerun":
+			_, err := p.ProjectPipelineSvc.Rerun(p.sdk.Ctx, deftype.ProjectPipelineRerun{
+				PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+				ProjectID:            p.InParams.ProjectID,
+				IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
+			})
+			if err != nil {
+				panic(err)
+			}
+		case "rerunFromFail":
+			_, err := p.ProjectPipelineSvc.FailRerun(p.sdk.Ctx, deftype.ProjectPipelineFailRerun{
+				PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+				ProjectID:            p.InParams.ProjectID,
+				IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
+			})
+			if err != nil {
+				panic(err)
+			}
+		case "corn":
+			_, err := p.ProjectPipelineSvc.StartCron(p.sdk.Ctx, deftype.ProjectPipelineStartCron{
+				PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+				ProjectID:            p.InParams.ProjectID,
+				IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
+			})
+			if err != nil {
+				panic(err)
+			}
+		case "cancelCron":
+			_, err := p.ProjectPipelineSvc.EndCron(p.sdk.Ctx, deftype.ProjectPipelineEndCron{
+				PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+				ProjectID:            p.InParams.ProjectID,
+				IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
+			})
+			if err != nil {
+				panic(err)
+			}
+		case "delete":
+			_, err := p.ProjectPipelineSvc.Delete(p.sdk.Ctx, deftype.ProjectPipelineDelete{
+				ID:           string(opData.ClientData.ParentDataRef.ID),
+				ProjectID:    p.InParams.ProjectID,
+				IdentityInfo: apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
+			})
+			if err != nil {
+				panic(err)
+			}
 		}
-	case "unsetPrimary":
-		_, err := p.ProjectPipelineSvc.UnSetPrimary(p.sdk.Ctx, deftype.ProjectPipelineCategory{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.(table.Row).ID),
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
-		})
-		if err != nil {
-			panic(err)
-		}
-	case "run":
-		_, err := p.ProjectPipelineSvc.Run(p.sdk.Ctx, deftype.ProjectPipelineRun{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.(table.Row).ID),
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
-		})
-		if err != nil {
-			panic(err)
-		}
-	case "rerun":
-		_, err := p.ProjectPipelineSvc.Rerun(p.sdk.Ctx, deftype.ProjectPipelineRerun{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.(table.Row).ID),
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
-		})
-		if err != nil {
-			panic(err)
-		}
-	case "rerunFromFail":
-		_, err := p.ProjectPipelineSvc.FailRerun(p.sdk.Ctx, deftype.ProjectPipelineFailRerun{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.(table.Row).ID),
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
-		})
-		if err != nil {
-			panic(err)
-		}
-	case "corn":
-		_, err := p.ProjectPipelineSvc.StartCron(p.sdk.Ctx, deftype.ProjectPipelineStartCron{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.(table.Row).ID),
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
-		})
-		if err != nil {
-			panic(err)
-		}
-	case "cancelCron":
-		_, err := p.ProjectPipelineSvc.EndCron(p.sdk.Ctx, deftype.ProjectPipelineEndCron{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.(table.Row).ID),
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
-		})
-		if err != nil {
-			panic(err)
-		}
-	case "delete":
-		_, err := p.ProjectPipelineSvc.Delete(p.sdk.Ctx, deftype.ProjectPipelineDelete{
-			ID:           string(opData.ClientData.ParentDataRef.(table.Row).ID),
-			ProjectID:    p.InParams.ProjectID,
-			IdentityInfo: apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
-		})
-		if err != nil {
-			panic(err)
-		}
+		p.RegisterInitializeOp()(sdk)
 	}
 }
 
 func (p *PipelineTable) RegisterCompNonStdOps() (opFuncs map[cptype.OperationKey]cptype.OperationFunc) {
 	return map[cptype.OperationKey]cptype.OperationFunc{
 		commodel.OpMoreOperationsItemClick{}.OpKey(): func(sdk *cptype.SDK) {
-			p.RegisterMoreOperationOp(*cputil.MustObjJSONTransfer(&sdk.Event.OperationData, commodel.OpMoreOperationsItemClick{}).(*commodel.OpMoreOperationsItemClick))
+			p.RegisterMoreOperationOp(*cputil.MustObjJSONTransfer(&sdk.Event.OperationData, &OpMoreOperationsItemClick{}).(*OpMoreOperationsItemClick))
 		},
 	}
+}
+
+type OpMoreOperationsItemClick struct {
+	commodel.OpMoreOperationsItemClick
+	ClientData OpMoreOperationsItemClickClientData `json:"clientData"`
+}
+
+type OpMoreOperationsItemClickClientData struct {
+	DataRef       *commodel.MoreOpItem `json:"dataRef,omitempty"`
+	ParentDataRef table.Row            `json:"parentDataRef,omitempty"`
 }

@@ -134,7 +134,7 @@ func (p pipelineDefinition) Update(ctx context.Context, request *pb.PipelineDefi
 
 	pbPipelineDefinition := PipelineDefinitionToPb(pipelineDefinition)
 
-	if request.Extra != nil || request.Extra.Extra != "" {
+	if request.Extra != nil && request.Extra.Extra != "" {
 		pipelineDefinitionExtra, err := p.dbClient.GetPipelineDefinitionExtra(pipelineDefinition.PipelineDefinitionExtraId)
 		if err != nil {
 			return nil, err
@@ -175,6 +175,7 @@ func (p pipelineDefinition) Get(ctx context.Context, request *pb.PipelineDefinit
 	if err != nil {
 		return nil, err
 	}
+
 	pipelineDefinitionExtra, err := p.dbClient.GetPipelineDefinitionExtra(pipelineDefinition.PipelineDefinitionExtraId)
 	if err != nil {
 		return nil, err
