@@ -786,7 +786,7 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
-	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{Status: string(apistructs.StatusRunning)})
+	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{Status: string(apistructs.StatusRunning), PipelineId: int64(value.ID)})
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}

@@ -38,6 +38,7 @@ type PipelineDefinition struct {
 	EndedAt                   time.Time `json:"endedAt,omitempty" xorm:"ended_at"`
 	TimeCreated               time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
 	TimeUpdated               time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
+	PipelineID                uint64    `json:"pipelineId"`
 }
 
 func (PipelineDefinition) TableName() string {
@@ -241,5 +242,6 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 		Extra: &pb.PipelineDefinitionExtra{
 			ID: p.PipelineDefinitionExtraId,
 		},
+		PipelineId: int64(p.PipelineID),
 	}
 }

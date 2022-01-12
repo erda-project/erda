@@ -48,6 +48,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	definition.CostTime = uint64(pipeline.CostTimeSec)
 	definition.StartedAt = *pipeline.TimeBegin
 	definition.EndedAt = *pipeline.TimeEnd
+	definition.PipelineID = pipeline.ID
 
 	err = p.client.UpdatePipelineDefinition(definition.ID, definition)
 	if err != nil {
