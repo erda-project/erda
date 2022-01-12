@@ -235,12 +235,12 @@ func (p *provider) getDiskIoLineGraph(ctx context.Context, startTime, endTime in
 		readDimension := "read"
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     writeValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(writeValue/1024, 2),
 			Dimension: writeDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     readValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(readValue/1024, 2),
 			Dimension: readDimension,
 		})
 	}
@@ -274,12 +274,12 @@ func (p *provider) getNetworkLineGraph(ctx context.Context, startTime, endTime i
 		recvDimension := "recv"
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     sendValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(sendValue/1024, 2),
 			Dimension: sendDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     recvValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(recvValue/1024, 2),
 			Dimension: recvDimension,
 		})
 	}
