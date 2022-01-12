@@ -555,8 +555,8 @@ func (s *Endpoints) batchRuntimeReDeploy(userID user.ID, runtimes []dbclient.Run
 		for _, runtime := range runtimes {
 			redep, err := s.runtime.RedeployPipeline(userID, runtime.OrgID, runtime.ID)
 			if err != nil {
-				logrus.Errorf("[batch redeploy] redeploy failed for runtime %s for runtime instance: %#v", runtime.Name, runtime)
-				errMsg := fmt.Sprintf("redeploy redeploy failed for runtime %s for runtime instance: %#v", runtime.Name, runtime)
+				logrus.Errorf("[batch redeploy] redeploy failed for runtime %s for runtime instance: %#v, error: %v", runtime.Name, runtime, err)
+				errMsg := fmt.Sprintf("redeploy redeploy failed for runtime %s for runtime instance: %#v, error: %v", runtime.Name, runtime, err)
 				batchRuntimeReDeployResult.ErrMsg = append(batchRuntimeReDeployResult.ErrMsg, errMsg)
 				batchRuntimeReDeployResult.Failed++
 				batchRuntimeReDeployResult.UnReDeployedIds = append(batchRuntimeReDeployResult.UnReDeployedIds, runtime.ID)
@@ -758,8 +758,8 @@ func (s *Endpoints) batchRuntimeDelete(userID user.ID, runtimes []dbclient.Runti
 			logrus.Debugf("[batch delete] deleting runtime %d, operator %s", runtime.ID, userID)
 			runtimedto, err := s.runtime.Delete(userID, runtime.OrgID, runtime.ID)
 			if err != nil {
-				logrus.Errorf("[batch delete] runtime %s is delete failed %#v", uniqueId.Name, uniqueId)
-				errMsg := fmt.Sprintf("runtime %s is delete failed %#v", uniqueId.Name, uniqueId)
+				logrus.Errorf("[batch delete] runtime %s is delete failed %#v, error: %v", uniqueId.Name, uniqueId, err)
+				errMsg := fmt.Sprintf("runtime %s is delete failed %#v, error: %v", uniqueId.Name, uniqueId, err)
 				batchRuntimeDeleteResult.Failed++
 				batchRuntimeDeleteResult.ErrMsg = append(batchRuntimeDeleteResult.ErrMsg, errMsg)
 				batchRuntimeDeleteResult.UnDeletedIds = append(batchRuntimeDeleteResult.UnDeletedIds, runtime.ID)
@@ -793,7 +793,7 @@ func (s *Endpoints) batchRuntimeScaleAddRuntimeIDs(runtimeScaleRecords *apistruc
 			}
 
 			runtime, err := s.db.FindRuntime(uniqueId)
-			logrus.Errorf("[batch redeploy] find runtime record in ps_v2_project_runtimes for runtime %#v, runtime %#v", uniqueId, runtime)
+			logrus.Errorf("[batch redeploy] find runtime record in ps_v2_project_runtimes for runtime %#v, runtime %#v, error: %v", uniqueId, runtime, err)
 			if err != nil {
 				logrus.Errorf("[batch redeploy] find runtime record in ps_v2_project_runtimes for runtime %#v failed, err: %v", uniqueId, err)
 				continue
