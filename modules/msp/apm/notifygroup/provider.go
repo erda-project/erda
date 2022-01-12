@@ -21,6 +21,8 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	db2 "github.com/erda-project/erda/modules/monitor/common/db"
 	instancedb "github.com/erda-project/erda/modules/msp/instance/db"
@@ -42,6 +44,7 @@ type provider struct {
 	mspTenantDB        *db.MSPTenantDB
 	monitorDB          *db2.MonitorDb
 	audit              audit.Auditor
+	Tenant             tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -52,20 +55,27 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.mspTenantDB = &db.MSPTenantDB{DB: p.DB}
 	p.monitorDB = &db2.MonitorDb{DB: p.DB}
 	if p.Register != nil {
-		pb.RegisterNotifyGroupServiceImp(p.Register, p.notifyGroupService, apis.Options())
 		type NotifyService = pb.NotifyGroupServiceServer
-		p.audit.Audit(
-			audit.Method(NotifyService.UpdateNotifyGroup, audit.ProjectScope, "createServiceNotifyGroup",
-				func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
-					r := resp.(*pb.UpdateNotifyGroupResponse)
-					return r.Data.ProjectId, map[string]interface{}{}, nil
-				},
-			),
-			audit.Method(NotifyService.DeleteNotifyGroup, audit.ProjectScope, "deleteServiceNotifyGroup",
-				func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
-					r := resp.(*pb.UpdateNotifyGroupResponse)
-					return r.Data.ProjectId, map[string]interface{}{}, nil
-				},
+		pb.RegisterNotifyGroupServiceImp(p.Register, p.notifyGroupService, apis.Options(),
+			p.audit.Audit(
+				audit.Method(NotifyService.CreateNotifyGroup, audit.ProjectScope, string(apistructs.CreateServiceNotifyGroup),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.CreateNotifyGroupResponse)
+						return r.Data.ProjectId, map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(NotifyService.UpdateNotifyGroup, audit.ProjectScope, string(apistructs.CreateServiceNotifyGroup),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.UpdateNotifyGroupResponse)
+						return r.Data.ProjectId, map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(NotifyService.DeleteNotifyGroup, audit.ProjectScope, string(apistructs.DeleteServiceNotifyGroup),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.UpdateNotifyGroupResponse)
+						return r.Data.ProjectId, map[string]interface{}{}, nil
+					},
+				),
 			),
 		)
 	}

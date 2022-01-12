@@ -86,3 +86,9 @@ func (this *DeleteTenantResponse) Validate() error {
 func (this *Tenant) Validate() error {
 	return nil
 }
+func (this *GetTenantWorkspaceRequest) Validate() error {
+	return nil
+}
+func (this *GetTenantWorkspaceResponse) Validate() error {
+	return nil
+}

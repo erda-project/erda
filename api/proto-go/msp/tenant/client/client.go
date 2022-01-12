@@ -48,3 +48,7 @@ func (s *tenantServiceWrapper) GetTenant(ctx context.Context, req *pb.GetTenantR
 func (s *tenantServiceWrapper) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
 	return s.client.DeleteTenant(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *tenantServiceWrapper) GetTenantWorkspace(ctx context.Context, req *pb.GetTenantWorkspaceRequest) (*pb.GetTenantWorkspaceResponse, error) {
+	return s.client.GetTenantWorkspace(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

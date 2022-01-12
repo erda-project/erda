@@ -15,6 +15,7 @@
 package credential
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -23,7 +24,10 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type config struct {
@@ -34,13 +38,19 @@ type provider struct {
 	Register             transport.Register `autowired:"service-register"`
 	credentialKeyService *accessKeyService
 	AccessKeyService     akpb.AccessKeyServiceServer `autowired:erda.core.services.authentication.credentials.accesskey.AccessKeyService"`
+	//notifyService        notifypb.NotifyGroupServiceServer `autowired:erda.msp.apm.notifygroup`
+	bdl   *bundle.Bundle
+	audit audit.Auditor
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.audit = audit.GetAuditor(ctx)
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
 	p.credentialKeyService = &accessKeyService{
 		p: p,
 	}
 	if p.Register != nil {
+		type AccessKeyService = pb.AccessKeyServiceServer
 		pb.RegisterAccessKeyServiceImp(p.Register, p.credentialKeyService, apis.Options(),
 			transport.WithHTTPOptions(
 				transhttp.WithEncoder(func(rw http.ResponseWriter, r *http.Request, data interface{}) error {
@@ -59,7 +69,22 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						}
 					}
 					return encoding.EncodeResponse(rw, r, data)
-				})))
+				})),
+			p.audit.Audit(
+				audit.Method(AccessKeyService.CreateAccessKey, audit.ProjectScope, string(apistructs.CreateServiceToken),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.CreateAccessKeyResponse)
+						return r.ProjectId, map[string]interface{}{}, nil
+					}),
+			),
+			p.audit.Audit(
+				audit.Method(AccessKeyService.DeleteAccessKey, audit.ProjectScope, string(apistructs.DeleteServiceToken),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.DeleteAccessKeyResponse)
+						return r.Data, map[string]interface{}{}, nil
+					}),
+			),
+		)
 	}
 	return nil
 }

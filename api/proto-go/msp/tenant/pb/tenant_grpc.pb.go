@@ -24,6 +24,7 @@ type TenantServiceClient interface {
 	CreateTenant(ctx context.Context, in *CreateTenantRequest, opts ...grpc.CallOption) (*CreateTenantResponse, error)
 	GetTenant(ctx context.Context, in *GetTenantRequest, opts ...grpc.CallOption) (*GetTenantResponse, error)
 	DeleteTenant(ctx context.Context, in *DeleteTenantRequest, opts ...grpc.CallOption) (*DeleteTenantResponse, error)
+	GetTenantWorkspace(ctx context.Context, in *GetTenantWorkspaceRequest, opts ...grpc.CallOption) (*GetTenantWorkspaceResponse, error)
 }
 
 type tenantServiceClient struct {
@@ -61,6 +62,15 @@ func (c *tenantServiceClient) DeleteTenant(ctx context.Context, in *DeleteTenant
 	return out, nil
 }
 
+func (c *tenantServiceClient) GetTenantWorkspace(ctx context.Context, in *GetTenantWorkspaceRequest, opts ...grpc.CallOption) (*GetTenantWorkspaceResponse, error) {
+	out := new(GetTenantWorkspaceResponse)
+	err := c.cc.Invoke(ctx, "/erda.msp.tenant.TenantService/GetTenantWorkspace", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TenantServiceServer is the server API for TenantService service.
 // All implementations should embed UnimplementedTenantServiceServer
 // for forward compatibility
@@ -68,6 +78,7 @@ type TenantServiceServer interface {
 	CreateTenant(context.Context, *CreateTenantRequest) (*CreateTenantResponse, error)
 	GetTenant(context.Context, *GetTenantRequest) (*GetTenantResponse, error)
 	DeleteTenant(context.Context, *DeleteTenantRequest) (*DeleteTenantResponse, error)
+	GetTenantWorkspace(context.Context, *GetTenantWorkspaceRequest) (*GetTenantWorkspaceResponse, error)
 }
 
 // UnimplementedTenantServiceServer should be embedded to have forward compatible implementations.
@@ -82,6 +93,9 @@ func (*UnimplementedTenantServiceServer) GetTenant(context.Context, *GetTenantRe
 }
 func (*UnimplementedTenantServiceServer) DeleteTenant(context.Context, *DeleteTenantRequest) (*DeleteTenantResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteTenant not implemented")
+}
+func (*UnimplementedTenantServiceServer) GetTenantWorkspace(context.Context, *GetTenantWorkspaceRequest) (*GetTenantWorkspaceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTenantWorkspace not implemented")
 }
 
 func RegisterTenantServiceServer(s grpc1.ServiceRegistrar, srv TenantServiceServer, opts ...grpc1.HandleOption) {
@@ -127,6 +141,15 @@ func _get_TenantService_serviceDesc(srv TenantServiceServer, opts ...grpc1.Handl
 	if h.Interceptor != nil {
 		_TenantService_DeleteTenant_info = transport.NewServiceInfo("erda.msp.tenant.TenantService", "DeleteTenant", srv)
 		_TenantService_DeleteTenant_Handler = h.Interceptor(_TenantService_DeleteTenant_Handler)
+	}
+
+	_TenantService_GetTenantWorkspace_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetTenantWorkspace(ctx, req.(*GetTenantWorkspaceRequest))
+	}
+	var _TenantService_GetTenantWorkspace_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_TenantService_GetTenantWorkspace_info = transport.NewServiceInfo("erda.msp.tenant.TenantService", "GetTenantWorkspace", srv)
+		_TenantService_GetTenantWorkspace_Handler = h.Interceptor(_TenantService_GetTenantWorkspace_Handler)
 	}
 
 	var serviceDesc = _TenantService_serviceDesc
@@ -198,6 +221,29 @@ func _get_TenantService_serviceDesc(srv TenantServiceServer, opts ...grpc1.Handl
 					FullMethod: "/erda.msp.tenant.TenantService/DeleteTenant",
 				}
 				return interceptor(ctx, in, info, _TenantService_DeleteTenant_Handler)
+			},
+		},
+		{
+			MethodName: "GetTenantWorkspace",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetTenantWorkspaceRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(TenantServiceServer).GetTenantWorkspace(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _TenantService_GetTenantWorkspace_info)
+				}
+				if interceptor == nil {
+					return _TenantService_GetTenantWorkspace_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.msp.tenant.TenantService/GetTenantWorkspace",
+				}
+				return interceptor(ctx, in, info, _TenantService_GetTenantWorkspace_Handler)
 			},
 		},
 	}

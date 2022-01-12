@@ -55,6 +55,12 @@ func (m *CreateAccessKeyResponse) UnmarshalURLValues(prefix string, values url.V
 			switch prefix + key {
 			case "data":
 				m.Data = vals[0]
+			case "projectId":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectId = val
 			}
 		}
 	}
@@ -76,6 +82,18 @@ func (m *DeleteAccessKeyRequest) UnmarshalURLValues(prefix string, values url.Va
 
 // DeleteAccessKeyResponse implement urlenc.URLValuesUnmarshaler.
 func (m *DeleteAccessKeyResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data = val
+			}
+		}
+	}
 	return nil
 }
 

@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type dataViewService struct {
@@ -207,6 +208,10 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
+	err = s.auditContextMap(ctx, req.Name)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	return &pb.CreateCustomViewResponse{Data: s.parseViewBlocks(&pb.View{
 		Id:        model.ID,
 		Name:      model.Name,
@@ -219,20 +224,56 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 	}, model.ViewConfig, model.DataConfig)}, nil
 }
 
+func (s *dataViewService) getOrgName(ctx *context.Context) (string, error) {
+	orgId := apis.GetOrgID(*ctx)
+	org, err := s.p.bdl.GetOrg(orgId)
+	if err != nil {
+		return "", err
+	}
+	return org.Name, nil
+}
+
 func (s *dataViewService) UpdateCustomView(ctx context.Context, req *pb.UpdateCustomViewRequest) (*pb.UpdateCustomViewResponse, error) {
 	err := s.custom.UpdateView(req.Id, fieldsForUpdate(req))
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
+	err = s.auditContextMap(ctx, req.Name)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	return &pb.UpdateCustomViewResponse{Data: true}, nil
 }
 
 func (s *dataViewService) DeleteCustomView(ctx context.Context, req *pb.DeleteCustomViewRequest) (*pb.DeleteCustomViewResponse, error) {
-	err := s.custom.DB.Where("id=?", req.Id).Delete(&db.CustomView{}).Error
+	data, err := s.custom.GetByFields(map[string]interface{}{
+		"ID": req.Id,
+	})
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
+	err = s.custom.DB.Where("id=?", req.Id).Delete(&db.CustomView{}).Error
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	err = s.auditContextMap(ctx, data.Name)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	return &pb.DeleteCustomViewResponse{Data: true}, nil
+}
+
+func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName string) error {
+	orgName, err := s.getOrgName(&ctx)
+	if err != nil {
+		return err
+	}
+	auditContext := map[string]interface{}{
+		"orgName":       orgName,
+		"dashboardName": dashboardName,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
+	return nil
 }
 
 func fieldsForUpdate(req *pb.UpdateCustomViewRequest) map[string]interface{} {

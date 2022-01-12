@@ -14,7 +14,12 @@
 
 package monitor
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda/modules/openapi/api/spec"
+	"strconv"
+)
 
 var MONITOR_ADDON_LOGS_RULES_CREATE = apis.ApiSpec{
 	Path:        "/api/micro-service/logs/rules",
@@ -25,4 +30,51 @@ var MONITOR_ADDON_LOGS_RULES_CREATE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 创建日志规则",
+	Audit:       auditOperatorBlock(apistructs.CreateAnalyzerRule),
+}
+
+func auditOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditContext) error {
+	return func(ctx *spec.AuditContext) error {
+		var requestBody struct {
+			Name string `json:"name"`
+		}
+		var respBody struct {
+			Data string `json:"data"`
+		}
+		if err := ctx.BindRequestData(&requestBody); err != nil {
+			return err
+		}
+		if err := ctx.BindResponseData(&respBody); err != nil {
+			return err
+		}
+		info, err := ctx.Bundle.GetTenantGroupDetails(ctx.UrlParams["tenantGroup"])
+		if err != nil {
+			return err
+		}
+		if len(info.ProjectID) <= 0 {
+			return nil
+		}
+		projectID, err := strconv.ParseUint(info.ProjectID, 10, 64)
+		if err != nil {
+			return err
+		}
+		project, err := ctx.Bundle.GetProject(projectID)
+		if err != nil {
+			return err
+		}
+		if project == nil {
+			return nil
+		}
+		return ctx.CreateAudit(&apistructs.Audit{
+			ScopeType:    apistructs.ProjectScope,
+			ScopeID:      projectID,
+			ProjectID:    projectID,
+			TemplateName: tmp,
+			Context: map[string]interface{}{
+				"projectName": project.Name,
+				"analyzeRule": requestBody.Name,
+				"workspace":   respBody.Data,
+			},
+		})
+	}
 }

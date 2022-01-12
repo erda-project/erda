@@ -72,6 +72,8 @@ const (
 	// =====================Member===============================
 	AddMemberTemplate    TemplateName = "addMember"
 	DeleteMemberTemplate TemplateName = "deleteMember"
+	AddServiceMember     TemplateName = "addServiceMember"
+	DeleteServiceMember  TemplateName = "deleteServiceMember"
 	// =====================UC===================================
 	LoginTemplate                       TemplateName = "login"
 	LogoutTemplate                      TemplateName = "logout"
@@ -183,10 +185,12 @@ const (
 	DeployRuntimeTemplate   TemplateName = "deployRuntime"
 
 	// =====================NotifyGroup============================
-	UpdateNotifyGroup    TemplateName = "updateNotifyGroup"
-	DeleteNotifyGroup    TemplateName = "deleteNotifyGroup"
-	UpdateOrgNotifyGroup TemplateName = "updateOrgNotifyGroup"
-	DeleteOrgNotifyGroup TemplateName = "deleteOrgNotifyGroup"
+	UpdateNotifyGroup        TemplateName = "updateNotifyGroup"
+	DeleteNotifyGroup        TemplateName = "deleteNotifyGroup"
+	UpdateOrgNotifyGroup     TemplateName = "updateOrgNotifyGroup"
+	DeleteOrgNotifyGroup     TemplateName = "deleteOrgNotifyGroup"
+	CreateServiceNotifyGroup TemplateName = "createServiceNotifyGroup"
+	DeleteServiceNotifyGroup TemplateName = "deleteServiceNotifyGroup"
 	// ========================DeploymentOrder================================
 	CreateDeploymentOrderTemplate  TemplateName = "createDeploymentOrder"
 	ExecuteDeploymentOrderTemplate TemplateName = "executeDeploymentOrder"
@@ -252,6 +256,17 @@ const (
 	FormalAppReleaseTemplate     TemplateName = "formalAppRelease"
 	BatchDeleteReleaseTemplate   TemplateName = "batchDeleteRelease"
 	BatchFormalReleaseTemplate   TemplateName = "batchFormalRelease"
+
+	AddDashboard           TemplateName = "addDashboard"
+	DeleteDashboard        TemplateName = "deleteDashboard"
+	AddServiceDashboard    TemplateName = "addServiceDashboard"
+	DeleteServiceDashboard TemplateName = "deleteServiceDashboard"
+
+	CreateServiceToken TemplateName = "createServiceToken"
+	DeleteServiceToken TemplateName = "deleteServiceToken"
+
+	CreateAnalyzerRule TemplateName = "createAnalyzerRule"
+	DeleteAnalyzerRule TemplateName = "deleteAnalyzerRule"
 )
 
 // AuditTemplateMap 解析前端审计模版全家桶

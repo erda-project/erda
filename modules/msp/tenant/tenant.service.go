@@ -218,3 +218,17 @@ func (s *tenantService) covertToTenant(tenant *db.MSPTenant) *pb.Tenant {
 		IsDeleted:  tenant.IsDeleted,
 	}
 }
+
+func (s *tenantService) GetTenantWorkspace(ctx context.Context, req *pb.GetTenantWorkspaceRequest) (*pb.GetTenantWorkspaceResponse, error) {
+	workspace, err := s.MSPTenantDB.GetTenantWorkspaceByTenantID(req.ScopeId)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if workspace == "" {
+		workspace, err = s.MonitorDB.GetWorkspaceByTK(req.ScopeId)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+	}
+	return &pb.GetTenantWorkspaceResponse{Data: workspace}, nil
+}

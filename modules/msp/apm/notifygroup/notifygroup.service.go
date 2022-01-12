@@ -18,15 +18,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/providers/audit"
 	"strconv"
 
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type notifyGroupService struct {
@@ -96,6 +97,16 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	projectName, auditProjectId, err := n.GetProjectInfo(request.ScopeId)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	workResp, err := n.p.Tenant.GetTenantWorkspace(context.Background(), &tenantpb.GetTenantWorkspaceRequest{
+		ScopeId: request.ScopeId,
+	})
+	result.Data.ProjectId = auditProjectId
+	auditContext := auditContextMap(projectName, workResp.Data, request.Name)
+	audit.ContextEntryMap(ctx, auditContext)
 	return result, nil
 }
 
@@ -104,18 +115,21 @@ func (n *notifyGroupService) auditContextInfo(groupId int64, orgId string) (stri
 	if err != nil {
 		return "", "", "", 0, err
 	}
-	workspace, err := n.getWorkSpace(notifyGroup.Data.ScopeID)
+	//workspace, err := n.getWorkSpace(notifyGroup.Data.ScopeID)
+	resp, err := n.p.Tenant.GetTenantWorkspace(context.Background(), &tenantpb.GetTenantWorkspaceRequest{
+		ScopeId: notifyGroup.Data.ScopeID,
+	})
 	if err != nil {
 		return "", "", "", 0, err
 	}
-	projectName, auditProjectId, err := n.getProjectInfo(notifyGroup.Data.ScopeID)
+	projectName, auditProjectId, err := n.GetProjectInfo(notifyGroup.Data.ScopeID)
 	if err != nil {
 		return "", "", "", 0, err
 	}
-	return projectName, workspace, notifyGroup.Data.Name, auditProjectId, nil
+	return projectName, resp.Data, notifyGroup.Data.Name, auditProjectId, nil
 }
 
-func (n *notifyGroupService) getProjectInfo(scopeId string) (string, uint64, error) {
+func (n *notifyGroupService) GetProjectInfo(scopeId string) (string, uint64, error) {
 	projectIdStr, err := n.GetProjectIdByScopeId(scopeId)
 	if err != nil {
 		return "", 0, errors.NewInternalServerError(err)
@@ -137,19 +151,19 @@ func (n *notifyGroupService) getProjectInfo(scopeId string) (string, uint64, err
 	return project.Name, auditProjectId, nil
 }
 
-func (n *notifyGroupService) getWorkSpace(scopeId string) (string, error) {
-	workspace, err := n.p.mspTenantDB.GetTenantWorkspaceByTenantID(scopeId)
-	if err != nil {
-		return "", errors.NewInternalServerError(err)
-	}
-	if workspace == "" {
-		workspace, err = n.p.monitorDB.GetWorkspaceByTK(scopeId)
-		if err != nil {
-			return "", errors.NewInternalServerError(err)
-		}
-	}
-	return workspace, nil
-}
+//func (n *notifyGroupService) getWorkSpace(scopeId string) (string, error) {
+//	workspace, err := n.p.mspTenantDB.GetTenantWorkspaceByTenantID(scopeId)
+//	if err != nil {
+//		return "", errors.NewInternalServerError(err)
+//	}
+//	if workspace == "" {
+//		workspace, err = n.p.monitorDB.GetWorkspaceByTK(scopeId)
+//		if err != nil {
+//			return "", errors.NewInternalServerError(err)
+//		}
+//	}
+//	return workspace, nil
+//}
 
 func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.QueryNotifyGroupRequest) (*pb.QueryNotifyGroupResponse, error) {
 	orgId := apis.GetOrgID(ctx)
@@ -240,12 +254,8 @@ func (n *notifyGroupService) UpdateNotifyGroup(ctx context.Context, request *pb.
 		return nil, errors.NewInternalServerError(err)
 	}
 	result.Data.ProjectId = auditProjectId
-	auditContext := map[string]interface{}{
-		"projectName":     projectName,
-		"workspace":       workspace,
-		"notifyGroupName": notifyGroupName,
-	}
-	audit.ContextEntryMap(&ctx, auditContext)
+	auditContext := auditContextMap(projectName, workspace, notifyGroupName)
+	audit.ContextEntryMap(ctx, auditContext)
 	return result, nil
 }
 
@@ -296,11 +306,15 @@ func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.
 		return nil, errors.NewInternalServerError(err)
 	}
 	result.Data.ProjectId = auditProjectId
-	auditContext := map[string]interface{}{
+	auditContext := auditContextMap(projectName, workspace, notifyGroupName)
+	audit.ContextEntryMap(ctx, auditContext)
+	return result, nil
+}
+
+func auditContextMap(projectName, workspace, notifyGroupName string) map[string]interface{} {
+	return map[string]interface{}{
 		"projectName":     projectName,
 		"workspace":       workspace,
 		"notifyGroupName": notifyGroupName,
 	}
-	audit.ContextEntryMap(&ctx, auditContext)
-	return result, nil
 }

@@ -15,6 +15,7 @@
 package dataview
 
 import (
+	"context"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -22,8 +23,11 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type config struct {
@@ -41,9 +45,13 @@ type provider struct {
 	DB              *gorm.DB           `autowired:"mysql-client"`
 	dataViewService *dataViewService
 	Tran            i18n.Translator `translator:"charts"`
+	bdl             *bundle.Bundle
+	audit           audit.Auditor
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.audit = audit.GetAuditor(ctx)
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
 	if len(p.Cfg.Tables.SystemBlock) > 0 {
 		db.TableSystemView = p.Cfg.Tables.SystemBlock
 	}
@@ -56,7 +64,26 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		custom: &db.CustomViewDB{DB: p.DB},
 	}
 	if p.Register != nil {
-		pb.RegisterDataViewServiceImp(p.Register, p.dataViewService, apis.Options())
+		type DataViewService = pb.DataViewServiceServer
+		pb.RegisterDataViewServiceImp(p.Register, p.dataViewService, apis.Options(),
+			p.audit.Audit(
+				audit.Method(DataViewService.CreateCustomView, audit.OrgScope, string(apistructs.AddDashboard),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(DataViewService.UpdateCustomView, audit.OrgScope, string(apistructs.AddDashboard),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(DataViewService.DeleteCustomView, audit.OrgScope, string(apistructs.DeleteDashboard),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
+					},
+				),
+			),
+		)
 	}
 	return nil
 }

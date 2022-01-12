@@ -27,6 +27,10 @@ var _ json.Marshaler = (*DeleteTenantResponse)(nil)
 var _ json.Unmarshaler = (*DeleteTenantResponse)(nil)
 var _ json.Marshaler = (*Tenant)(nil)
 var _ json.Unmarshaler = (*Tenant)(nil)
+var _ json.Marshaler = (*GetTenantWorkspaceRequest)(nil)
+var _ json.Unmarshaler = (*GetTenantWorkspaceRequest)(nil)
+var _ json.Marshaler = (*GetTenantWorkspaceResponse)(nil)
+var _ json.Unmarshaler = (*GetTenantWorkspaceResponse)(nil)
 
 // CreateTenantRequest implement json.Marshaler.
 func (m *CreateTenantRequest) MarshalJSON() ([]byte, error) {
@@ -149,6 +153,42 @@ func (m *Tenant) MarshalJSON() ([]byte, error) {
 
 // Tenant implement json.Marshaler.
 func (m *Tenant) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetTenantWorkspaceRequest implement json.Marshaler.
+func (m *GetTenantWorkspaceRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetTenantWorkspaceRequest implement json.Marshaler.
+func (m *GetTenantWorkspaceRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetTenantWorkspaceResponse implement json.Marshaler.
+func (m *GetTenantWorkspaceResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetTenantWorkspaceResponse implement json.Marshaler.
+func (m *GetTenantWorkspaceResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

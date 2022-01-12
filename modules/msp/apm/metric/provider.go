@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	monitordb "github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	mperm "github.com/erda-project/erda/modules/msp/instance/permission"
 )
@@ -30,11 +31,13 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg           *config
-	Log           logs.Logger
-	DB            *gorm.DB          `autowired:"mysql-client"`
-	Router        httpserver.Router `autowired:"http-router"`
-	MPerm         mperm.Interface   `autowired:"msp.permission"`
+	Cfg    *config
+	Log    logs.Logger
+	DB     *gorm.DB                     `autowired:"mysql-client"`
+	Router httpserver.Router            `autowired:"http-router"`
+	MPerm  mperm.Interface              `autowired:"msp.permission"`
+	Tenant tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
+
 	db            *monitordb.MonitorDB
 	compatibleTKs map[string][]string
 }

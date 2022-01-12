@@ -168,7 +168,7 @@ func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrg
 		"alertName": request.Name,
 		"orgName":   org.Name,
 	}
-	audit.ContextEntryMap(&ctx, auditContext)
+	audit.ContextEntryMap(ctx, auditContext)
 	return &pb.CreateOrgAlertResponse{
 		Id: aid,
 	}, nil
@@ -513,7 +513,7 @@ func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.
 		"alertRuleName": request.Name,
 		"orgName":       org.Name,
 	}
-	audit.ContextEntryMap(&ctx, auditContext)
+	audit.ContextEntryMap(ctx, auditContext)
 	return result, nil
 }
 
@@ -752,7 +752,7 @@ func (m *alertService) UpdateOrgCustomizeAlert(ctx context.Context, request *pb.
 		"alertRuleName": request.Name,
 		"orgName":       org.Name,
 	}
-	audit.ContextEntryMap(&ctx, auditContext)
+	audit.ContextEntryMap(ctx, auditContext)
 	result := &pb.UpdateOrgCustomizeAlertResponse{
 		Data: true,
 	}
@@ -801,7 +801,7 @@ func (m *alertService) DeleteOrgCustomizeAlert(ctx context.Context, request *pb.
 		"alertName": data.Name,
 		"orgName":   org.Name,
 	}
-	audit.ContextEntryMap(&ctx, auditContext)
+	audit.ContextEntryMap(ctx, auditContext)
 	return result, nil
 }
 
@@ -1060,7 +1060,7 @@ func (m *alertService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateOrg
 		"alertName": request.Name,
 		"orgName":   org.Name,
 	}
-	audit.ContextEntryMap(&ctx, auditContext)
+	audit.ContextEntryMap(ctx, auditContext)
 	return &pb.UpdateOrgAlertResponse{}, nil
 }
 
@@ -1102,7 +1102,7 @@ func (m *alertService) DeleteOrgAlert(ctx context.Context, request *pb.DeleteOrg
 		"alertName": data.Name,
 		"orgName":   org.Name,
 	}
-	audit.ContextEntryMap(&ctx, auditContext)
+	audit.ContextEntryMap(ctx, auditContext)
 	return &pb.DeleteOrgAlertResponse{}, nil
 }
 

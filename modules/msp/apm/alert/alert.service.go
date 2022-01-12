@@ -247,7 +247,7 @@ func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAle
 		"alertName":   request.Name,
 		"workspace":   workspace,
 	}
-	audit.ContextEntryMap(&ctx, auditContext)
+	audit.ContextEntryMap(ctx, auditContext)
 	return &alert.CreateAlertResponse{
 		Data: &alert.CreateAlertData{
 			Id:        resp.Data,
@@ -346,7 +346,7 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 		"alertName":   request.Name,
 		"workspace":   workspace,
 	}
-	audit.ContextEntryMap(&ctx, auditContext)
+	audit.ContextEntryMap(ctx, auditContext)
 	return &alert.UpdateAlertResponse{
 		Data: auditProjectId,
 	}, nil
@@ -407,7 +407,7 @@ func (a *alertService) DeleteAlert(ctx context.Context, request *alert.DeleteAle
 			"alertName":   resp.Data.Name,
 			"workspace":   workspace,
 		}
-		audit.ContextEntryMap(&ctx, auditContext)
+		audit.ContextEntryMap(ctx, auditContext)
 		return &alert.DeleteAlertResponse{
 			Data: &alert.DeleteAlertData{
 				Name:      deleteResp.Data["name"].String(),
@@ -595,7 +595,7 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 		"alertName":   request.Name,
 		"workspace":   workspace,
 	}
-	audit.ContextEntryMap(&ctx, auditContext)
+	audit.ContextEntryMap(ctx, auditContext)
 	return &alert.CreateCustomizeAlertResponse{
 		Data: &alert.CreateCustomizeAlertData{
 			Id:        resp.Data,
@@ -836,7 +836,7 @@ func (a *alertService) UpdateCustomizeAlert(ctx context.Context, request *alert.
 		"alertName":   request.Name,
 		"workspace":   workspace,
 	}
-	audit.ContextEntryMap(&ctx, auditContext)
+	audit.ContextEntryMap(ctx, auditContext)
 	return &alert.UpdateCustomizeAlertResponse{
 		Data: auditProjectId,
 	}, nil
@@ -922,7 +922,7 @@ func (a *alertService) DeleteCustomizeAlert(ctx context.Context, request *alert.
 		"alertName":   alertDetailResp.Data.Name,
 		"workspace":   workspace,
 	}
-	audit.ContextEntryMap(&ctx, auditContext)
+	audit.ContextEntryMap(ctx, auditContext)
 	result.Data.ProjectId = auditProjectId
 	return result, nil
 }

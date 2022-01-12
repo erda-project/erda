@@ -14,7 +14,13 @@
 
 package block
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"strconv"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda/modules/openapi/api/spec"
+)
 
 var CREATE_BLOCK = apis.ApiSpec{
 	Path:        "/api/tmc/dashboard/blocks",
@@ -25,4 +31,51 @@ var CREATE_BLOCK = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 创建自定义大盘",
+	Audit:       auditOperatorBlock(apistructs.AddServiceDashboard),
+}
+
+func auditOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditContext) error {
+	return func(ctx *spec.AuditContext) error {
+		var requestBody struct {
+			Name string `json:"name"`
+		}
+		var respBody struct {
+			Data string `json:"data"`
+		}
+		if err := ctx.BindRequestData(&requestBody); err != nil {
+			return err
+		}
+		if err := ctx.BindRequestData(&respBody); err != nil {
+			return err
+		}
+		info, err := ctx.Bundle.GetTenantGroupDetails(ctx.UrlParams["tenantGroup"])
+		if err != nil {
+			return err
+		}
+		if len(info.ProjectID) <= 0 {
+			return nil
+		}
+		projectID, err := strconv.ParseUint(info.ProjectID, 10, 64)
+		if err != nil {
+			return err
+		}
+		project, err := ctx.Bundle.GetProject(projectID)
+		if err != nil {
+			return err
+		}
+		if project == nil {
+			return nil
+		}
+		return ctx.CreateAudit(&apistructs.Audit{
+			ScopeType:    apistructs.ProjectScope,
+			ScopeID:      projectID,
+			ProjectID:    projectID,
+			TemplateName: tmp,
+			Context: map[string]interface{}{
+				"projectName":   project.Name,
+				"dashboardName": requestBody.Name,
+				"workspace":     respBody.Data,
+			},
+		})
+	}
 }

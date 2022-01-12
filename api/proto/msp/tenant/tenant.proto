@@ -24,6 +24,12 @@ service TenantService {
       delete: "/api/msp/tenant?projectId={projectID}"
     };
   }
+
+  rpc GetTenantWorkspace(GetTenantWorkspaceRequest) returns (GetTenantWorkspaceResponse) {
+    option (google.api.http) = {
+      get: "/api/msp/tenant/workspace"
+    };
+  }
 }
 
 message CreateTenantRequest {
@@ -85,4 +91,12 @@ message Tenant {
   int64  updateTime = 6;
   // Delete or not
   bool   isDeleted  = 7;
+}
+
+message GetTenantWorkspaceRequest {
+  string scopeId = 1;
+}
+
+message GetTenantWorkspaceResponse {
+  string data = 1;
 }

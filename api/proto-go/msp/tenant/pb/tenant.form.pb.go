@@ -19,6 +19,8 @@ var _ urlenc.URLValuesUnmarshaler = (*GetTenantResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DeleteTenantRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DeleteTenantResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Tenant)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetTenantWorkspaceRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetTenantWorkspaceResponse)(nil)
 
 // CreateTenantRequest implement urlenc.URLValuesUnmarshaler.
 func (m *CreateTenantRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -231,6 +233,32 @@ func (m *Tenant) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.IsDeleted = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetTenantWorkspaceRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetTenantWorkspaceRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "scopeId":
+				m.ScopeId = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetTenantWorkspaceResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetTenantWorkspaceResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				m.Data = vals[0]
 			}
 		}
 	}

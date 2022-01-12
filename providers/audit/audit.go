@@ -84,6 +84,12 @@ func (a *auditor) Begin() Recorder {
 }
 
 func (a *auditor) record(ctx context.Context, scope ScopeType, scopeID interface{}, template string, options []Option, result string) {
+	defer func() {
+		err := recover()
+		if err != nil {
+			a.p.Log.Error(err)
+		}
+	}()
 	opts := newOptions()
 	for _, op := range options {
 		op(opts)
@@ -106,6 +112,7 @@ func (a *auditor) record(ctx context.Context, scope ScopeType, scopeID interface
 			return
 		}
 		data[entry.key] = val
+		entry = entry.prev
 	}
 
 	userID := opts.getUserID(ctx)

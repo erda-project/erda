@@ -16,6 +16,7 @@ package metric
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -25,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	permission "github.com/erda-project/erda/modules/monitor/common/permission"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
@@ -219,7 +221,18 @@ func (p *provider) proxyBlocks(rw http.ResponseWriter, r *http.Request, params s
 }) interface{} {
 	param := url.Values{}
 	param.Set("scopeId", params.ScopeID)
-	return p.proxyMonitor("/api/dashboard/blocks", param, rw, r)
+	//return p.proxyMonitor("/api/dashboard/blocks", param, rw, r)
+	err := p.proxyMonitor("/api/dashboard/blocks", param, rw, r)
+	if err != nil {
+		return err
+	}
+	resp, err := p.Tenant.GetTenantWorkspace(context.Background(), &tenantpb.GetTenantWorkspaceRequest{
+		ScopeId: params.ScopeID,
+	})
+	if err != nil {
+		return err
+	}
+	return resp.Data
 }
 
 func (p *provider) proxyBlock(rw http.ResponseWriter, r *http.Request, params struct {
@@ -228,5 +241,16 @@ func (p *provider) proxyBlock(rw http.ResponseWriter, r *http.Request, params st
 }) interface{} {
 	param := url.Values{}
 	param.Set("scopeId", params.ScopeID)
-	return p.proxyMonitor("/api/dashboard/blocks/"+url.PathEscape(params.ID), param, rw, r)
+	//return p.proxyMonitor("/api/dashboard/blocks/"+url.PathEscape(params.ID), param, rw, r)
+	err := p.proxyMonitor("/api/dashboard/blocks/"+url.PathEscape(params.ID), param, rw, r)
+	if err != nil {
+		return err
+	}
+	resp, err := p.Tenant.GetTenantWorkspace(context.Background(), &tenantpb.GetTenantWorkspaceRequest{
+		ScopeId: params.ScopeID,
+	})
+	if err != nil {
+		return err
+	}
+	return resp.Data
 }
