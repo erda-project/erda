@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
@@ -63,6 +64,7 @@ const (
 	ColumnBranch          table.ColumnKey = "branch"
 	ColumnExecutor        table.ColumnKey = "executor"
 	ColumnStartTime       table.ColumnKey = "startTime"
+	ColumnMoreOperations  table.ColumnKey = "columnMoreOperations"
 
 	StateKeyTransactionPaging = "paging"
 	StateKeyTransactionSort   = "sort"
@@ -215,6 +217,9 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 					}
 					return v.StartedAt.AsTime().Format("2006-01-02 15:04:05")
 				}()).Build(),
+				ColumnMoreOperations: table.NewMoreOperationsCell(commodel.MoreOperations{
+					Ops: p.SetTableMoreOpItem(v),
+				}).Build(),
 			},
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				table.OpRowSelect{}.OpKey(): cputil.NewOpBuilder().Build(),
@@ -225,6 +230,70 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 		})
 	}
 	return rows
+}
+
+func (p *PipelineTable) SetTableMoreOpItem(v *pb.PipelineDefinition) []commodel.MoreOpItem {
+	items := make([]commodel.MoreOpItem, 0)
+	items = append(items, commodel.MoreOpItem{
+		ID: func() string {
+			if v.Category == "primary" {
+				return "cancelPrimary"
+			}
+			return "setPrimary"
+		}(),
+		Text: cputil.I18n(p.sdk.Ctx, func() string {
+			if v.Category == "primary" {
+				return "cancelPrimary"
+			}
+			return "setPrimary"
+		}()),
+		Operations: map[cptype.OperationKey]cptype.Operation{
+			commodel.OpMoreOperationsItemClick{}.OpKey(): cputil.NewOpBuilder().Build(),
+		},
+	})
+	items = append(items, commodel.MoreOpItem{
+		ID: func() string {
+			if apistructs.PipelineStatus(v.Status).IsRunningStatus() {
+				return "cancelRun"
+			}
+			return "run"
+		}(),
+		Text: cputil.I18n(p.sdk.Ctx, func() string {
+			if apistructs.PipelineStatus(v.Status).IsRunningStatus() {
+				return "cancelRun"
+			}
+			return "run"
+		}()),
+		Operations: map[cptype.OperationKey]cptype.Operation{
+			commodel.OpMoreOperationsItemClick{}.OpKey(): cputil.NewOpBuilder().Build(),
+		},
+	})
+	if apistructs.PipelineStatus(v.Status).IsFailedStatus() {
+		items = append(items, commodel.MoreOpItem{
+			ID:   "rerunFromFail",
+			Text: cputil.I18n(p.sdk.Ctx, "rerunFromFail"),
+			Operations: map[cptype.OperationKey]cptype.Operation{
+				commodel.OpMoreOperationsItemClick{}.OpKey(): cputil.NewOpBuilder().Build(),
+			},
+		})
+	}
+	if apistructs.PipelineStatus(v.Status).IsEndStatus() {
+		items = append(items, commodel.MoreOpItem{
+			ID:   "rerun",
+			Text: cputil.I18n(p.sdk.Ctx, "rerun"),
+			Operations: map[cptype.OperationKey]cptype.Operation{
+				commodel.OpMoreOperationsItemClick{}.OpKey(): cputil.NewOpBuilder().Build(),
+			},
+		})
+	}
+	items = append(items, commodel.MoreOpItem{
+		ID:   "delete",
+		Text: cputil.I18n(p.sdk.Ctx, "delete"),
+		Operations: map[cptype.OperationKey]cptype.Operation{
+			commodel.OpMoreOperationsItemClick{}.OpKey(): cputil.NewOpBuilder().Build(),
+		},
+	})
+	return items
 }
 
 func getApplicationNameFromDefinitionRemote(remote string) string {
@@ -324,4 +393,17 @@ func init() {
 	base.InitProviderWithCreator(common.ScenarioKey, "pipelineTable", func() servicehub.Provider {
 		return &PipelineTable{}
 	})
+}
+
+func (p *PipelineTable) RegisterMoreOperationOp(opData commodel.OpMoreOperationsItemClick) (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) {
+
+	}
+}
+
+func (p *PipelineTable) RegisterCompNonStdOps() (opFuncs map[cptype.OperationKey]cptype.OperationFunc) {
+	return map[cptype.OperationKey]cptype.OperationFunc{
+		commodel.OpMoreOperationsItemClick{}.OpKey(): p.RegisterMoreOperationOp(*cputil.MustObjJSONTransfer(&p.sdk.Event.OperationData, commodel.OpMoreOperationsItemClick{}).(*commodel.OpMoreOperationsItemClick)),
+	}
+
 }
