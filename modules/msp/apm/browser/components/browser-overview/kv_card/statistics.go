@@ -134,7 +134,7 @@ func (p *provider) getAvgPageLoadDuration(sdk *cptype.SDK) (*kv.KV, error) {
 }
 
 func (p *provider) getApiSuccessRate(sdk *cptype.SDK) (*kv.KV, error) {
-	statement := fmt.Sprintf("SELECT sum(if(errors::field=='false',1,0)),count(errors::field) " +
+	statement := fmt.Sprintf("SELECT sum(if(eq(errors::field,'false'),1,0)),count(errors::field) " +
 		"FROM ta_req " +
 		"WHERE tk::tag=$terminus_key")
 
