@@ -22,8 +22,9 @@ import (
 type InParams struct {
 	OrgID uint64 `json:"orgID,omitempty"`
 
-	FrontendProjectID      string `json:"projectId,omitempty"`
-	FrontendUrlQuery       string `json:"issueFilter__urlQuery,omitempty"`
+	FrontendProjectID string `json:"projectId,omitempty"`
+	FrontendUrlQuery  string `json:"issueFilter__urlQuery,omitempty"`
+	FrontendAppID     string `json:"appId,omitempty"`
 
 	ProjectID uint64 `json:"-"`
 	AppID     uint64 `json:"-"`
@@ -43,7 +44,6 @@ func (p *PipelineTable) setInParams() error {
 		return err
 	}
 
-	// change type
 	if p.InParams.FrontendProjectID != "" {
 		p.InParams.ProjectID, err = strconv.ParseUint(p.InParams.FrontendProjectID, 10, 64)
 		if err != nil {
