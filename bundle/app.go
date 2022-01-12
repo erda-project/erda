@@ -16,6 +16,7 @@ package bundle
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -399,4 +400,27 @@ func (b *Bundle) CountAppByProID(proID uint64) (int64, error) {
 	}
 
 	return fetchResp.Data, nil
+}
+
+func (b *Bundle) GetAppIDByNames(projectID uint64, userID string, names []string) (*apistructs.GetAppIDByNamesResponseData, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var getAppIDByNamesResp apistructs.GetAppIDByNamesResponse
+	resp, err := hc.Get(host).Path("/api/applications/actions/get-id-by-names").
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		Param("projectID", strconv.FormatUint(projectID, 10)).
+		Params(url.Values{"name": names}).
+		Do().JSON(&getAppIDByNamesResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, toAPIError(resp.StatusCode(), getAppIDByNamesResp.Error)
+	}
+	return &getAppIDByNamesResp.Data, nil
 }
