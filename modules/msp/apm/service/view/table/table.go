@@ -16,15 +16,15 @@ package table
 
 import (
 	"context"
-	"fmt"
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 )
 
 type Column struct {
-	Key  string
-	Name string
+	Key      string
+	Name     string
+	Sortable bool
 }
 
 type Cell struct {
@@ -42,15 +42,12 @@ type Table struct {
 	Rows    []Row
 }
 
-type TableType string
-
-const TableTypeTransaction = "transaction"
-
 type Builder interface {
 	GetTable(ctx context.Context) (*Table, error)
+	GetBaseBuildParams() *BaseBuildParams
 }
 
-type BaseBuilder struct {
+type BaseBuildParams struct {
 	StartTime int64
 	EndTime   int64
 	TenantId  string
@@ -62,16 +59,4 @@ type BaseBuilder struct {
 	PageSize  int
 	PageNo    int
 	Metric    metricpb.MetricServiceServer
-}
-
-func GetTable(ctx context.Context, tableType TableType, baseBuilder *BaseBuilder) (*Table, error) {
-	var builder Builder
-	switch tableType {
-	case TableTypeTransaction:
-		builder = &TransactionTableBuilder{BaseBuilder: baseBuilder}
-	default:
-		return nil, fmt.Errorf("not supported talbeType: %v", tableType)
-	}
-
-	return builder.GetTable(ctx)
 }

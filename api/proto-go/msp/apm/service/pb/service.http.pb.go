@@ -24,6 +24,8 @@ type ApmServiceServiceHandler interface {
 	GetServiceAnalyzerOverview(context.Context, *GetServiceAnalyzerOverviewRequest) (*GetServiceAnalyzerOverviewResponse, error)
 	// GET /api/msp/apm/service/count
 	GetServiceCount(context.Context, *GetServiceCountRequest) (*GetServiceCountResponse, error)
+	// GET /api/msp/apm/service/language
+	GetServiceLanguage(context.Context, *GetServiceLanguageRequest) (*GetServiceLanguageResponse, error)
 }
 
 // RegisterApmServiceServiceHandler register ApmServiceServiceHandler to http.Router.
@@ -157,7 +159,44 @@ func RegisterApmServiceServiceHandler(r http.Router, srv ApmServiceServiceHandle
 		)
 	}
 
+	add_GetServiceLanguage := func(method, path string, fn func(context.Context, *GetServiceLanguageRequest) (*GetServiceLanguageResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetServiceLanguageRequest))
+		}
+		var GetServiceLanguage_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetServiceLanguage_info = transport.NewServiceInfo("erda.msp.apm.service.ApmServiceService", "GetServiceLanguage", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetServiceLanguage_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetServiceLanguageRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_GetServices("GET", "/api/msp/apm/services", srv.GetServices)
 	add_GetServiceAnalyzerOverview("GET", "/api/msp/apm/service/analyzer-overview", srv.GetServiceAnalyzerOverview)
 	add_GetServiceCount("GET", "/api/msp/apm/service/count", srv.GetServiceCount)
+	add_GetServiceLanguage("GET", "/api/msp/apm/service/language", srv.GetServiceLanguage)
 }

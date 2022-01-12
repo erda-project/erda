@@ -1,0 +1,26 @@
+scenario: trace-query
+
+hierarchy:
+  root: page
+  structure:
+    page:
+    - grid
+    - content
+    grid:
+    - reqDistribution
+    content:
+      table: table
+components:
+  page:
+    type: Container
+  grid:
+    type: Grid
+  reqDistribution:
+    type: BubbleGraph
+    options:
+      asyncAtInit: true
+  content:
+    type: ComposeTable
+  table:
+    type: Table
+    version: 2

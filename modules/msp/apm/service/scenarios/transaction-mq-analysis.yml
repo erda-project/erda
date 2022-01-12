@@ -9,6 +9,7 @@ hierarchy:
     grid:
     - rps
     - avgDuration
+    - reqDistribution
     content:
       slot: head
       table: table
@@ -25,6 +26,10 @@ components:
       asyncAtInit: true
   avgDuration:
     type: LineGraph
+    options:
+      asyncAtInit: true
+  reqDistribution:
+    type: BubbleGraph
     options:
       asyncAtInit: true
   content:

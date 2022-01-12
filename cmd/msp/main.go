@@ -94,6 +94,7 @@ import (
 	// components
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/datasources"
+	_ "github.com/erda-project/erda/modules/msp/apm/trace/query/components"
 )
 
 func main() {

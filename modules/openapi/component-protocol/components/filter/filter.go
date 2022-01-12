@@ -73,10 +73,11 @@ type PropConditionOption struct {
 type PropConditionType string
 
 var (
-	PropConditionTypeSelect      PropConditionType = "select"
-	PropConditionTypeInput       PropConditionType = "input"
-	PropConditionTypeDateRange   PropConditionType = "dateRange"
-	PropConditionTypeRangePicker PropConditionType = "rangePicker"
+	PropConditionTypeSelect        PropConditionType = "select"
+	PropConditionTypeInput         PropConditionType = "input"
+	PropConditionTypeDateRange     PropConditionType = "dateRange"
+	PropConditionTypeRangePicker   PropConditionType = "rangePicker"
+	PropConditionTypeTimespanRange PropConditionType = "timespanRange"
 )
 
 type StateKey string

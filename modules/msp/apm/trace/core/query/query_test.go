@@ -39,14 +39,12 @@ func TestDepthCopyQueryConditions(t *testing.T) {
 			// got point
 			gotPoint := getMemoryPoint(got)
 			gotPointOthers := getMemoryPoint(got.Others)
-			gotPointLimit := getMemoryPoint(got.Limit)
 			gotPointSort := getMemoryPoint(got.Sort)
 			gotPointTraceStatus := getMemoryPoint(got.TraceStatus)
 
 			// TraceQueryConditions point
 			wantPoint := getMemoryPoint(tt.want)
 			wantPointOthers := getMemoryPoint(tt.want.Others)
-			wantPointLimit := getMemoryPoint(tt.want.Limit)
 			wantPointSort := getMemoryPoint(tt.want.Sort)
 			wantPointTraceStatus := getMemoryPoint(tt.want.TraceStatus)
 
@@ -55,9 +53,6 @@ func TestDepthCopyQueryConditions(t *testing.T) {
 			}
 			if gotPointOthers == wantPointOthers {
 				t.Errorf("gotPointOthers = %v, wantPointOthers %v", gotPointOthers, wantPointOthers)
-			}
-			if gotPointLimit == wantPointLimit {
-				t.Errorf("gotPointServiceName = %v, wantPointServiceName %v", gotPointLimit, wantPointLimit)
 			}
 			if gotPointSort == wantPointSort {
 				t.Errorf("gotPointServiceName = %v, wantPointServiceName %v", gotPointSort, wantPointSort)

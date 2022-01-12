@@ -47,7 +47,39 @@ en:
   rpsUnit: "reqs/s"
   avgDurationUnit: "ms"
   countUnit: "freq"
+  pcsUnit: "pcs"
   rateUnit: "%"
+  slowRequestDistribution: "Slow Request Distribution"
+  occurTime: "Occur Time"
+  traceId: Trace ID
+  traceDuration: Duration
+  traceStartTime: Start Time
+  traceSpanCount: Span Count
+  traceServices: Services
+  traceDistribution: Trace Duration Distribution
+  cpuUsage: Container CPU
+  memoryUsage: Container 内存
+  diskioUsage: Disk IO
+  networkUsage: Container Network
+  nodejs_memory_heap: Heap Memory
+  nodejs_memory_non_heap: Heap Non Memory
+  nodejs_cluster: Cluster Count
+  nodejs_async_resource: Async Resources
+  jvm_memory_heap: Heap Memory
+  jvm_memory_non_heap: Heap Non Memory
+  jvm_memory_eden_space: Eden Space
+  jvm_memory_survivor_space: Survivor Space
+  jvm_memory_old_gen: Old Gen
+  jvm_gc_count: GC Count
+  jvm_gc_time: GC Average Duration
+  jvm_class_loader: Class Count
+  jvm_thread: JVM Thread
+  cpu: CPU
+  memory: Memory
+  load: System Load
+  podCount: Pod Count
+  disk: Disk IO Rate
+  network: Network Rate
 zh:
   waiting_for_tracing_data: "正在获取链路追踪数据"
   success_get_tracing_data: "获取链路追踪数据成功"
@@ -97,4 +129,36 @@ zh:
   rpsUnit: "reqs/s"
   avgDurationUnit: "ms"
   countUnit: "次"
+  pcsUnit: "个"
   rateUnit: "%"
+  slowRequestDistribution: "慢调用耗时分布"
+  occurTime: "发生时间"
+  traceId: 追踪 ID
+  traceDuration: 持续时间
+  traceStartTime: 起始时间
+  traceSpanCount: Span 数量
+  traceServices: 服务
+  traceDistribution: 链路耗时分布
+  cpuUsage: 容器 CPU
+  memoryUsage: 容器 内存
+  diskioUsage: 磁盘 IO
+  networkUsage: 容器网络
+  nodejs_memory_heap: 堆内存
+  nodejs_memory_non_heap: 非堆内存
+  nodejs_cluster: Cluster Count
+  nodejs_async_resource: Async Resources
+  jvm_memory_heap: 堆内存
+  jvm_memory_non_heap: 非堆内存
+  jvm_memory_eden_space: Eden Space
+  jvm_memory_survivor_space: Survivor Space
+  jvm_memory_old_gen: Old Gen
+  jvm_gc_count: GC 次数
+  jvm_gc_time: GC 平均时间
+  jvm_class_loader: Class 数量
+  jvm_thread: JVM 线程
+  cpu: CPU
+  memory: 内存
+  load: 系统负载
+  podCount: Pod 数量
+  disk: 磁盘 IO 速率
+  network: 网络速率

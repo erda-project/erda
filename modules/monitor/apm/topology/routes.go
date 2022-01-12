@@ -33,7 +33,6 @@ func (topology *provider) initRoutes(routes httpserver.Router) error {
 	routes.GET("/api/apm/topology/service/requests", topology.serviceRequest)
 	routes.GET("/api/apm/topology/service/instances", topology.serviceInstances)
 	routes.GET("/api/apm/topology/service/instance/ids", topology.serviceInstanceIds)
-	routes.GET("/api/apm/topology/process/dashboardId", topology.processDashboardId)
 	routes.GET("/api/apm/topology/process/diskio", topology.processDiskIo)
 	routes.GET("/api/apm/topology/process/netio", topology.processNetIo)
 	routes.GET("/api/apm/topology/exception/message", topology.exceptionMessage)
@@ -131,16 +130,6 @@ func (topology *provider) exceptionMessage(r *http.Request, params ServiceParams
 
 	return api.Success(map[string]interface{}{
 		"data": exceptionMessages,
-	})
-}
-
-func (topology *provider) processDashboardId(r *http.Request, params ProcessParams) interface{} {
-	dashboardId, err := topology.GetDashBoardByServiceType(params)
-	if err != nil {
-		return api.Errors.Internal(err)
-	}
-	return api.Success(map[string]interface{}{
-		"dashboardId": dashboardId,
 	})
 }
 

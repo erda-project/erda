@@ -228,6 +228,7 @@ erda.msp.apm.metric:
 erda.msp.tenant:
 erda.msp.tenant.project:
 
+component-protocol.components.datasources.msp-service:
 erda.msp.apm.service:
   view:
   - type: "service_overview"
@@ -297,69 +298,3 @@ component-protocol:
 component-protocol.components.service-list:
 component-protocol.components.service-overview:
 
-# transaction-cache-analysis
-component-protocol.components.transaction-cache-analysis.table:
-component-protocol.components.transaction-cache-analysis.tableFilter:
-component-protocol.components.transaction-cache-analysis.rps:
-component-protocol.components.transaction-cache-analysis.avgDuration:
-
-# transaction-cache-detail
-component-protocol.components.transaction-cache-detail.kvGrid:
-component-protocol.components.transaction-cache-detail.rps:
-component-protocol.components.transaction-cache-detail.avgDuration:
-component-protocol.components.transaction-cache-detail.slowCount:
-component-protocol.components.transaction-cache-detail.errorCount:
-
-# transaction-db-analysis
-component-protocol.components.transaction-db-analysis.table:
-component-protocol.components.transaction-db-analysis.tableFilter:
-component-protocol.components.transaction-db-analysis.rps:
-component-protocol.components.transaction-db-analysis.avgDuration:
-
-# transaction-db-detail
-component-protocol.components.transaction-db-detail.kvGrid:
-component-protocol.components.transaction-db-detail.rps:
-component-protocol.components.transaction-db-detail.avgDuration:
-component-protocol.components.transaction-db-detail.slowCount:
-component-protocol.components.transaction-db-detail.errorCount:
-
-# transaction-http-analysis
-component-protocol.components.transaction-http-analysis.table:
-component-protocol.components.transaction-http-analysis.tableFilter:
-component-protocol.components.transaction-http-analysis.rps:
-component-protocol.components.transaction-http-analysis.avgDuration:
-
-# transaction-http-detail
-component-protocol.components.transaction-http-detail.kvGrid:
-component-protocol.components.transaction-http-detail.rps:
-component-protocol.components.transaction-http-detail.avgDuration:
-component-protocol.components.transaction-http-detail.slowCount:
-component-protocol.components.transaction-http-detail.errorCount:
-
-# transaction-mq-analysis
-component-protocol.components.transaction-mq-analysis.table:
-component-protocol.components.transaction-mq-analysis.tableFilter:
-component-protocol.components.transaction-mq-analysis.rps:
-component-protocol.components.transaction-mq-analysis.avgDuration:
-
-# transaction-mq-detail
-component-protocol.components.transaction-mq-detail.kvGrid:
-component-protocol.components.transaction-mq-detail.rps:
-component-protocol.components.transaction-mq-detail.avgDuration:
-component-protocol.components.transaction-mq-detail.slowCount:
-component-protocol.components.transaction-mq-detail.errorCount:
-
-# transaction-rpc-analysis
-component-protocol.components.transaction-rpc-analysis.table:
-component-protocol.components.transaction-rpc-analysis.tableFilter:
-component-protocol.components.transaction-rpc-analysis.rps:
-component-protocol.components.transaction-rpc-analysis.avgDuration:
-
-# transaction-rpc-detail
-component-protocol.components.transaction-rpc-detail.kvGrid:
-component-protocol.components.transaction-rpc-detail.rps:
-component-protocol.components.transaction-rpc-detail.avgDuration:
-component-protocol.components.transaction-rpc-detail.slowCount:
-component-protocol.components.transaction-rpc-detail.errorCount:
-
-component-protocol.components.datasources.msp-service:

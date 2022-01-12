@@ -330,6 +330,18 @@ func (m *GetTracesRequest) UnmarshalURLValues(prefix string, values url.Values) 
 				m.RpcMethod = vals[0]
 			case "httpPath":
 				m.HttpPath = vals[0]
+			case "pageNo":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageNo = val
+			case "pageSize":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageSize = val
 			}
 		}
 	}
@@ -427,6 +439,30 @@ func (m *GetSpanDashboardsResponse) UnmarshalURLValues(prefix string, values url
 
 // GetTracesResponse implement urlenc.URLValuesUnmarshaler.
 func (m *GetTracesResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pageNo":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageNo = val
+			case "pageSize":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageSize = val
+			case "total":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Total = val
+			}
+		}
+	}
 	return nil
 }
 
@@ -803,6 +839,12 @@ func (m *Trace) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.StartTime = val
+			case "spanCount":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.SpanCount = val
 			}
 		}
 	}
