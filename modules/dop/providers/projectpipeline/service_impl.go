@@ -141,6 +141,10 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 	for _, v := range apps {
 		params.AppName = append(params.AppName, v.Name)
 	}
+	// No application returned directly
+	if len(params.AppName) == 0 {
+		return []*dpb.PipelineDefinition{}, 0, nil
+	}
 
 	list, err := p.PipelineDefinition.List(ctx, &dpb.PipelineDefinitionListRequest{
 		PageSize: int64(params.PageSize),
@@ -351,6 +355,15 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 			}
 			pipelineDefinition.SourceRemotes = append(pipelineDefinition.SourceRemotes, makeRemote(&app))
 		}
+	}
+	// No application returned directly
+	if len(pipelineDefinition.SourceRemotes) == 0 {
+		return &deftype.ProjectPipelineListExecHistoryResult{
+			Data: &apistructs.PipelinePageListData{
+				Total:           0,
+				CurrentPageSize: int64(params.PageSize),
+			},
+		}, nil
 	}
 
 	jsonValue, err := json.Marshal(pipelineDefinition)
