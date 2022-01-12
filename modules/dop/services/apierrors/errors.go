@@ -461,6 +461,10 @@ var (
 	ErrDeleteProject = err("ErrDeleteProject", "删除项目失败")
 	ErrListProject   = err("ErrListProject", "获取项目列表失败")
 
+	ErrExportProjectTemplate = err("ErrExportProjectTemplate", "导出项目模版失败")
+	ErrImportProjectTemplate = err("ErrImportProjectTemplate", "导入项目模版失败")
+	ErrParseProjectTemplate  = err("ErrParseProjectTemplate", "解析项目模版失败")
+
 	ErrCreateApplication = err("ErrCreateApplication", "创建应用失败")
 	ErrDeleteApplication = err("ErrDeleteApplication", "删除应用失败")
 	ErrInitApplication   = err("ErrInitApplication", "应用初始化失败")

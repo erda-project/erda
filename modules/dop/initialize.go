@@ -557,6 +557,8 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		project.WithTrans(p.ResourceTrans),
 		project.WithCMP(p.Cmp),
 	)
+	proj.UpdateFileRecord = testCaseSvc.UpdateFileRecord
+	proj.CreateFileRecord = testCaseSvc.CreateFileRecord
 
 	app := application.New(
 		application.WithBundle(bdl.Bdl),
@@ -703,7 +705,10 @@ func registerWebHook(bdl *bundle.Bundle) {
 
 func exportTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
-	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport, apistructs.FileSpaceActionTypeExport, apistructs.FileSceneSetActionTypeExport)
+	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport,
+		apistructs.FileSpaceActionTypeExport,
+		apistructs.FileSceneSetActionTypeExport,
+		apistructs.FileProjectTemplateExport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -720,6 +725,9 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 	case apistructs.FileSceneSetActionTypeExport:
 		at2Svc := ep.AutotestV2Service()
 		at2Svc.ExportSceneSetFile(record)
+	case apistructs.FileProjectTemplateExport:
+		pro := ep.ProjectService()
+		pro.ExportTemplatePackage(record)
 	default:
 
 	}
@@ -727,7 +735,10 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 
 func importTestFileTask(ep *endpoints.Endpoints) {
 	svc := ep.TestCaseService()
-	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport, apistructs.FileSpaceActionTypeImport, apistructs.FileSceneSetActionTypeImport)
+	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport,
+		apistructs.FileSpaceActionTypeImport,
+		apistructs.FileSceneSetActionTypeImport,
+		apistructs.FileProjectTemplateImport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -744,6 +755,9 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 	case apistructs.FileSceneSetActionTypeImport:
 		at2Svc := ep.AutotestV2Service()
 		at2Svc.ImportSceneSetFile(record)
+	case apistructs.FileProjectTemplateImport:
+		pro := ep.ProjectService()
+		pro.ImportTemplatePackage(record)
 	default:
 
 	}

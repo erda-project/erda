@@ -47,8 +47,8 @@ func (e *Endpoints) GetFileRecord(ctx context.Context, r *http.Request, vars map
 }
 
 // Get File Records
-func (e *Endpoints) GetFileRecordsByProjectId(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	_, err := user.GetIdentityInfo(r)
+func (e *Endpoints) GetFileRecords(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrListFileRecord.NotLogin().ToResp(), nil
 	}
@@ -59,7 +59,8 @@ func (e *Endpoints) GetFileRecordsByProjectId(ctx context.Context, r *http.Reque
 	}
 
 	req.Locale = e.bdl.GetLocaleByRequest(r).Name()
-	list, operators, count, err := e.testcase.ListFileRecordsByProject(req)
+	req.IdentityInfo = identityInfo
+	list, operators, count, total, err := e.testcase.ListFileRecords(req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -67,5 +68,6 @@ func (e *Endpoints) GetFileRecordsByProjectId(ctx context.Context, r *http.Reque
 	return httpserver.OkResp(&apistructs.ListTestFileRecordsResponseData{
 		List:    list,
 		Counter: count,
+		Total:   total,
 	}, operators)
 }

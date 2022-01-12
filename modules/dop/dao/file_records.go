@@ -33,12 +33,15 @@ type TestFileRecord struct {
 	Description string
 	ApiFileUUID string
 	ProjectID   uint64
+	OrgID       uint64
 	SpaceID     uint64
 	Type        apistructs.FileActionType
 	State       apistructs.FileRecordState
 	OperatorID  string
 	Extra       TestFileExtra
 	ErrorInfo   string
+
+	SoftDeletedAt uint
 }
 
 type TestFileExtra apistructs.TestFileExtra
@@ -70,7 +73,7 @@ func (ex *TestFileExtra) Scan(value interface{}) error {
 
 // Test TableName
 func (TestFileRecord) TableName() string {
-	return "dice_test_file_records"
+	return "erda_file_record"
 }
 
 // Create Record
@@ -81,7 +84,7 @@ func (client *DBClient) CreateRecord(record *TestFileRecord) error {
 // Get Record by id
 func (client *DBClient) GetRecord(id uint64) (*TestFileRecord, error) {
 	var res TestFileRecord
-	if err := client.First(&res, id).Error; err != nil {
+	if err := client.Scopes(NotDeleted).First(&res, id).Error; err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -93,23 +96,43 @@ type stateCounter struct {
 }
 
 // Get Records by projectId, spaceId, types
-func (client *DBClient) ListRecordsByProject(req apistructs.ListTestFileRecordsRequest) ([]TestFileRecord, map[string]int, error) {
+func (client *DBClient) ListRecordsByProject(req apistructs.ListTestFileRecordsRequest) ([]TestFileRecord, map[string]int, int, error) {
 	var res []TestFileRecord
-	sql := client.Table("dice_test_file_records").Where("`project_id` = ?", req.ProjectID)
+	sql := client.Scopes(NotDeleted).Table("erda_file_record")
 	if req.SpaceID > 0 {
 		sql = sql.Where("`space_id` = ?", req.SpaceID)
+	}
+	if req.ProjectID > 0 {
+		sql = sql.Where("`project_id` = ?", req.ProjectID)
+	}
+	if len(req.ProjectIDs) > 0 {
+		sql = sql.Where("`project_id` in (?)", req.ProjectIDs)
+	}
+	if req.OrgID > 0 {
+		sql = sql.Where("`org_id` = ?", req.OrgID)
 	}
 	if len(req.Types) > 0 {
 		sql = sql.Where("`type` IN (?)", req.Types)
 	}
+	if req.Asc {
+		sql = sql.Order("created_at")
+	} else {
+		sql = sql.Order("created_at desc")
+	}
+	if err := sql.Offset((req.PageNo - 1) * req.PageSize).Limit(req.PageSize).Find(&res).Error; err != nil {
+		return nil, nil, 0, err
+	}
 
-	if err := sql.Order("created_at desc").Find(&res).Error; err != nil {
-		return nil, nil, err
+	var total int
+	if err := sql.Count(&total).Error; err != nil {
+		return nil, nil, 0, err
 	}
 
 	var counterList []stateCounter
-	if err := client.Table("dice_test_file_records").Select("type, count(*) as count").Where("`type` IN (?) AND `state` = ?", req.Types, apistructs.FileRecordStatePending).Group("type").Find(&counterList).Error; err != nil {
-		return nil, nil, err
+	if err := client.Scopes(NotDeleted).Table("erda_file_record").Select("type, count(*) as count").
+		Where("`type` IN (?) AND `state` = ?", req.Types, apistructs.FileRecordStatePending).
+		Group("type").Find(&counterList).Error; err != nil {
+		return nil, nil, 0, err
 	}
 
 	counter := make(map[string]int)
@@ -117,12 +140,12 @@ func (client *DBClient) ListRecordsByProject(req apistructs.ListTestFileRecordsR
 		counter[s.Type] = s.Count
 	}
 
-	return res, counter, nil
+	return res, counter, total, nil
 }
 
 // Update Record
 func (client *DBClient) UpdateRecord(record *TestFileRecord) error {
-	return client.Save(record).Error
+	return client.Scopes(NotDeleted).Save(record).Error
 }
 
 func (client *DBClient) FirstFileReady(actionType ...apistructs.FileActionType) (bool, *TestFileRecord, error) {
@@ -131,7 +154,7 @@ func (client *DBClient) FirstFileReady(actionType ...apistructs.FileActionType) 
 	}
 	var process int64
 
-	if err := client.Model(&TestFileRecord{}).Where("`state` = ? AND `type` in (?)", apistructs.FileRecordStateProcessing, actionType).Count(&process).Error; err != nil {
+	if err := client.Scopes(NotDeleted).Model(&TestFileRecord{}).Where("`state` = ? AND `type` in (?)", apistructs.FileRecordStateProcessing, actionType).Count(&process).Error; err != nil {
 		return false, nil, err
 	}
 	if process > 0 {
@@ -139,7 +162,7 @@ func (client *DBClient) FirstFileReady(actionType ...apistructs.FileActionType) 
 	}
 
 	var record TestFileRecord
-	if err := client.Model(&TestFileRecord{}).Where("`state` = ? AND `type` in (?)", apistructs.FileRecordStatePending, actionType).Order("created_at").First(&record).Error; err != nil {
+	if err := client.Scopes(NotDeleted).Model(&TestFileRecord{}).Where("`state` = ? AND `type` in (?)", apistructs.FileRecordStatePending, actionType).Order("created_at").First(&record).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return false, nil, nil
 		}
@@ -150,7 +173,7 @@ func (client *DBClient) FirstFileReady(actionType ...apistructs.FileActionType) 
 }
 
 func (client *DBClient) BatchUpdateRecords() error {
-	return client.Model(&TestFileRecord{}).Where("`state` = ?", apistructs.FileRecordStateProcessing).Updates(TestFileRecord{State: apistructs.FileRecordStateFail}).Error
+	return client.Scopes(NotDeleted).Model(&TestFileRecord{}).Where("`state` = ?", apistructs.FileRecordStateProcessing).Updates(TestFileRecord{State: apistructs.FileRecordStateFail}).Error
 }
 
 type FileUUIDStr struct {
@@ -159,11 +182,11 @@ type FileUUIDStr struct {
 
 func (client *DBClient) DeleteFileRecordByTime(t time.Time) ([]FileUUIDStr, error) {
 	var res []FileUUIDStr
-	if err := client.Table("dice_test_file_records").Where("`created_at` < ?", t).Select("api_file_uuid").Find(&res).Error; err != nil {
+	if err := client.Scopes(NotDeleted).Table("erda_file_record").Where("`created_at` < ?", t).Select("api_file_uuid").Find(&res).Error; err != nil {
 		return nil, err
 	}
 
-	if err := client.Where("`created_at` < ?", t).Delete(TestFileRecord{}).Error; err != nil {
+	if err := client.Scopes(NotDeleted).Where("`created_at` < ?", t).Update("soft_deleted_at", time.Now().UnixNano()/1e6).Error; err != nil {
 		return nil, err
 	}
 

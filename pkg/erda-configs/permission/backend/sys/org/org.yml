@@ -28,6 +28,14 @@
   action: CREATE
 - role: Manager
   scope: org
+  resource: project-template
+  action: GET
+- role: Manager
+  scope: org
+  resource: project-template
+  action: CREATE
+- role: Manager
+  scope: org
   resource: project
   action: UPDATE
 - role: Manager,Dev,Support,DataEngineer,Guest

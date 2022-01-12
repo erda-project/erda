@@ -28,6 +28,7 @@ const (
 	ResourceInfoResource       string = "resourceInfo"
 	ProjectResource            string = "project"
 	ProjectPublicResource      string = "project-public"
+	ProjectTemplateResource    string = "project-template"
 	AppResource                string = "app"
 	AppPublicResource          string = "app-public"
 	MemberResource             string = "member"
