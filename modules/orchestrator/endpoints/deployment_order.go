@@ -45,12 +45,12 @@ func (e *Endpoints) CreateDeploymentOrder(ctx context.Context, r *http.Request, 
 
 	userID, err := user.GetUserID(r)
 	if err != nil {
-		return apierrors.ErrListDeployment.NotLogin().ToResp(), nil
+		return apierrors.ErrCreateDeploymentOrder.NotLogin().ToResp(), nil
 	}
 
 	orgID, err := getOrgID(r)
 	if err != nil {
-		return apierrors.ErrListDeploymentOrder.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrCreateDeploymentOrder.InvalidParameter(err).ToResp(), nil
 	}
 
 	// verify params
