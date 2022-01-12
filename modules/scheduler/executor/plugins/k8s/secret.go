@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,9 +34,9 @@ import (
 // 2, put this secret into serviceaccount of the namespace
 func (k *Kubernetes) NewImageSecret(namespace string) error {
 	// When the cluster is initialized, a secret to pull the mirror will be created in the default namespace
-	s, err := k.secret.Get("default", AliyunRegistry)
+	s, err := k.secret.Get(metav1.NamespaceDefault, AliyunRegistry)
 	if err != nil {
-		return err
+		return errors.Errorf("failed to get default image secret, err: %v", err)
 	}
 
 	mysecret := &apiv1.Secret{
@@ -71,7 +72,7 @@ func (k *Kubernetes) NewRuntimeImageSecret(namespace string, sg *apistructs.Serv
 	}
 
 	var dockerConfigJson apistructs.RegistryAuthJson
-	if err := json.Unmarshal(s.Data[".dockerconfigjson"], &dockerConfigJson); err != nil {
+	if err := json.Unmarshal(s.Data[apiv1.DockerConfigJsonKey], &dockerConfigJson); err != nil {
 		return err
 	}
 
@@ -98,7 +99,7 @@ func (k *Kubernetes) NewRuntimeImageSecret(namespace string, sg *apistructs.Serv
 			Name:      s.Name,
 			Namespace: namespace,
 		},
-		Data: map[string][]byte{".dockerconfigjson": sData},
+		Data: map[string][]byte{apiv1.DockerConfigJsonKey: sData},
 		Type: s.Type,
 	}
 
@@ -112,29 +113,28 @@ func (k *Kubernetes) NewRuntimeImageSecret(namespace string, sg *apistructs.Serv
 func (k *Kubernetes) UpdateImageSecret(namespace string, infos []apistructs.RegistryInfo) error {
 	logrus.Infof("start to update secret %s on namespace %s", AliyunRegistry, namespace)
 	aliYunSecret, err := k.secret.Get(namespace, AliyunRegistry)
-	if err != nil {
-		return err
-	}
-	var dockerConfigJson apistructs.RegistryAuthJson
-	if err := json.Unmarshal(aliYunSecret.Data[".dockerconfigjson"], &dockerConfigJson); err != nil {
-		return err
-	}
-	for _, info := range infos {
-		authString := base64.StdEncoding.EncodeToString([]byte(info.UserName + ":" + info.Password))
-		dockerConfigJson.Auths[info.Host] = apistructs.RegistryUserInfo{Auth: authString}
-		logrus.Infof("docker config json is %v", dockerConfigJson)
+	// TODO: user k8serrors.IsNotFound() instead after rewrite with client-go.
+	if err != nil && err.Error() != "not found" {
+		return errors.Errorf("get image secret when update, err: %v", err)
 	}
 
-	var sData []byte
-	if sData, err = json.Marshal(dockerConfigJson); err != nil {
-		logrus.Infof("marshal docker config json err: %v", dockerConfigJson)
-		return err
+	nSecret, err := parseImageSecret(namespace, infos, aliYunSecret)
+	if err != nil {
+		return errors.Errorf("parse image secret, err: %v", err)
 	}
-	aliYunSecret.Data[".dockerconfigjson"] = sData
-	if err := k.secret.Update(aliYunSecret); err != nil {
-		logrus.Errorf("update secrets is err: %v", err)
-		return err
+
+	// secret doesn't exist in project namespace
+	if aliYunSecret == nil {
+		if err := k.secret.Create(nSecret); err != nil {
+			logrus.Errorf("create secret %s, err: %v", AliyunRegistry, err)
+		}
+	} else {
+		if err := k.secret.Update(nSecret); err != nil {
+			logrus.Errorf("update secrets is err: %v", err)
+			return err
+		}
 	}
+
 	return nil
 }
 
@@ -186,4 +186,40 @@ func (k *Kubernetes) SecretVolume(secret *apiv1.Secret) (apiv1.Volume, apiv1.Vol
 			MountPath: fmt.Sprintf("/%s", secret.Name),
 			ReadOnly:  true,
 		}
+}
+
+func parseImageSecret(namespace string, infos []apistructs.RegistryInfo, curSecret *apiv1.Secret) (*apiv1.Secret, error) {
+	var dockerConfigJson apistructs.RegistryAuthJson
+
+	if curSecret == nil {
+		curSecret = &apiv1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      AliyunRegistry,
+				Namespace: namespace,
+			},
+			Data: map[string][]byte{},
+			Type: apiv1.SecretTypeDockerConfigJson,
+		}
+		dockerConfigJson.Auths = make(map[string]apistructs.RegistryUserInfo, 0)
+	} else {
+		if err := json.Unmarshal(curSecret.Data[apiv1.DockerConfigJsonKey], &dockerConfigJson); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, info := range infos {
+		authString := base64.StdEncoding.EncodeToString([]byte(info.UserName + ":" + info.Password))
+		dockerConfigJson.Auths[info.Host] = apistructs.RegistryUserInfo{Auth: authString}
+		logrus.Infof("docker config json is %v", dockerConfigJson)
+	}
+
+	sData, err := json.Marshal(dockerConfigJson)
+	if err != nil {
+		logrus.Infof("marshal docker config json err: %v", dockerConfigJson)
+		return nil, err
+	}
+
+	curSecret.Data[apiv1.DockerConfigJsonKey] = sData
+
+	return curSecret, nil
 }

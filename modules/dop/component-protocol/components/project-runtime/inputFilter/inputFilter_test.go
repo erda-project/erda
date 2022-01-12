@@ -80,7 +80,53 @@ func TestInputFilter_getState(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &InputFilter{}
-			p.getState(tt.args.sdk)
+			p.getState(tt.args.sdk, &cptype.Component{})
+		})
+	}
+}
+
+func TestInputFilter_flushOptsByFilter(t *testing.T) {
+	type args struct {
+		filterEntity string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{filterEntity: "×"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			af := &InputFilter{}
+			af.flushOptsByFilter(tt.args.filterEntity)
+		})
+	}
+}
+
+func TestInputFilter_generateUrlQueryParams(t *testing.T) {
+	type args struct {
+		Values cptype.ExtraMap
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "1",
+			args: args{Values: map[string]interface{}{}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			af := &InputFilter{}
+			af.generateUrlQueryParams()
 		})
 	}
 }

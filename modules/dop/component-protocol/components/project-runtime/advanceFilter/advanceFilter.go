@@ -15,6 +15,8 @@
 package page
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -45,9 +47,6 @@ type AdvanceFilter struct {
 	Values cptype.ExtraMap
 }
 
-type State struct {
-	Values cptype.ExtraMap
-}
 type Option struct {
 	Label string `json:"label"`
 	Value string `json:"value"`
@@ -68,8 +67,21 @@ func (af *AdvanceFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype
 			return
 		}
 		(*sdk.GlobalState)["advanceFilter"] = af.Values
+		urlParam, err := af.generateUrlQueryParams(af.Values)
+		if err != nil {
+			return
+		}
+		(*af.StdStatePtr)["inputFilter__urlQuery"] = urlParam
 		af.StdDataPtr = af.getData(sdk)
 	}
+}
+
+func (af *AdvanceFilter) generateUrlQueryParams(Values cptype.ExtraMap) (string, error) {
+	fb, err := json.Marshal(Values)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(fb), nil
 }
 
 func (af *AdvanceFilter) RegisterFilterItemSaveOp(opData filter.OpFilterItemSave) (opFunc cptype.OperationFunc) {
@@ -89,8 +101,33 @@ func (af *AdvanceFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 func (af *AdvanceFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
+		err := common.Transfer(sdk.Comp.State, af.StdStatePtr)
+		if err != nil {
+			return
+		}
+		if urlquery := sdk.InParams.String("inputFilter__urlQuery"); urlquery != "" {
+			if err = af.flushOptsByFilter(urlquery); err != nil {
+				logrus.Errorf("failed to transfer values in component advance filter")
+				return
+			}
+		}
+		(*sdk.GlobalState)["advanceFilter"] = af.Values
 		af.StdDataPtr = af.getData(sdk)
 	}
+}
+
+func (af *AdvanceFilter) flushOptsByFilter(filterEntity string) error {
+	b, err := base64.StdEncoding.DecodeString(filterEntity)
+	if err != nil {
+		return err
+	}
+	v := cptype.ExtraMap{}
+	err = json.Unmarshal(b, &v)
+	if err != nil {
+		return err
+	}
+	af.Values = v
+	return nil
 }
 func (af *AdvanceFilter) BeforeHandleOp(sdk *cptype.SDK) {
 	af.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
