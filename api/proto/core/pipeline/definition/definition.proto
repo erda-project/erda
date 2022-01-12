@@ -59,6 +59,7 @@ message PipelineDefinition {
   string fileName = 17;
   string pipelineSourceId = 18;
   string status = 19;
+  int64 pipelineId = 20;
 }
 
 message PipelineDefinitionExtra {
@@ -95,6 +96,7 @@ message PipelineDefinitionUpdateRequest {
   google.protobuf.Timestamp endedAt = 8;
   string pipelineDefinitionID = 9;
   string status = 10;
+  int64 pipelineId = 11;
 }
 
 message PipelineDefinitionUpdateResponse {
