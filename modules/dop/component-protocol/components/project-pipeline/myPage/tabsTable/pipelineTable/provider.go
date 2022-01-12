@@ -18,7 +18,9 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -28,7 +30,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
@@ -36,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
+	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
 )
 
 type PipelineTable struct {
@@ -44,7 +46,11 @@ type PipelineTable struct {
 	bdl      *bundle.Bundle
 	gsHelper *gshelper.GSHelper
 	sdk      *cptype.SDK
-	InParams InParams `json:"-"`
+	InParams InParams       `json:"-"`
+	PageNo   uint64         `json:"-"`
+	PageSize uint64         `json:"-"`
+	Total    uint64         `json:"-"`
+	Sorts    []*common.Sort `json:"-"`
 
 	ProjectPipelineSvc *projectpipeline.ProjectPipelineService
 }
@@ -57,6 +63,9 @@ const (
 	ColumnBranch          table.ColumnKey = "branch"
 	ColumnExecutor        table.ColumnKey = "executor"
 	ColumnStartTime       table.ColumnKey = "startTime"
+
+	StateKeyTransactionPaging = "paging"
+	StateKeyTransactionSort   = "sort"
 )
 
 func (p *PipelineTable) BeforeHandleOp(sdk *cptype.SDK) {
@@ -72,13 +81,15 @@ func (p *PipelineTable) BeforeHandleOp(sdk *cptype.SDK) {
 
 func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
+		p.SetPagingFromGlobalState()
+		p.SetSortsFromGlobalState()
 		p.StdDataPtr = &table.Data{
 			Table: table.Table{
 				Columns:  p.SetTableColumns(),
 				Rows:     p.SetTableRows(),
-				PageNo:   1,
-				PageSize: 10,
-				Total:    1,
+				PageNo:   p.PageNo,
+				PageSize: p.PageSize,
+				Total:    p.Total,
 			},
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				table.OpTableChangePage{}.OpKey(): cputil.NewOpBuilder().WithServerDataPtr(&table.OpTableChangePageServerData{}).Build(),
@@ -104,59 +115,79 @@ func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 	return table.ColumnsInfo{
-		//Orders: []table.ColumnKey{ColumnCostTime, ColumnStartTime},
+		Orders: []table.ColumnKey{ColumnPipelineName, ColumnPipelineStatus, ColumnCostTime, ColumnApplicationName, ColumnBranch, ColumnExecutor, ColumnStartTime},
 		ColumnsMap: map[table.ColumnKey]table.Column{
 			ColumnPipelineName:    {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineName))},
 			ColumnPipelineStatus:  {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus))},
-			ColumnCostTime:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCostTime))},
+			ColumnCostTime:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCostTime)), EnableSort: true},
 			ColumnApplicationName: {Title: cputil.I18n(p.sdk.Ctx, string(ColumnApplicationName))},
 			ColumnBranch:          {Title: cputil.I18n(p.sdk.Ctx, string(ColumnBranch))},
 			ColumnExecutor:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnExecutor))},
-			ColumnStartTime:       {Title: cputil.I18n(p.sdk.Ctx, string(ColumnStartTime))},
+			ColumnStartTime:       {Title: cputil.I18n(p.sdk.Ctx, string(ColumnStartTime)), EnableSort: true},
 		},
 	}
 }
 
 func (p *PipelineTable) SetTableRows() []table.Row {
-	list, err := p.ProjectPipelineSvc.List(p.sdk.Ctx, deftype.ProjectPipelineList{
-		ProjectID:    p.InParams.ProjectID,
-		AppID:        0,
-		Ref:          nil,
-		Creator:      nil,
-		Executor:     nil,
-		Category:     nil,
-		PageNo:       0,
-		PageSize:     0,
-		Name:         "",
-		TimeCreated:  nil,
-		TimeStarted:  nil,
-		Status:       nil,
-		IdentityInfo: apistructs.IdentityInfo{},
+	var descCols, ascCols []string
+	for _, v := range p.Sorts {
+		if v.Ascending {
+			ascCols = append(ascCols, v.FieldKey)
+		} else {
+			descCols = append(descCols, v.FieldKey)
+		}
+	}
+	if len(ascCols) == 0 && len(descCols) == 0 {
+		descCols = append(descCols, string(ColumnStartTime))
+	}
+
+	filter := p.gsHelper.GetGlobalTableFilter()
+	list, total, err := p.ProjectPipelineSvc.List(p.sdk.Ctx, deftype.ProjectPipelineList{
+		ProjectID: p.InParams.ProjectID,
+		AppName:   filter.App,
+		Creator: func() []string {
+			if p.gsHelper.GetGlobalPipelineTab() == "mine" {
+				return []string{p.sdk.Identity.UserID}
+			}
+			return filter.Creator
+		}(),
+		Executor: filter.Executor,
+		PageNo:   p.PageNo,
+		PageSize: p.PageSize,
+		Category: func() []string {
+			if p.gsHelper.GetGlobalPipelineTab() == "primary" {
+				return []string{"primary"}
+			}
+			return nil
+		}(),
+		Name: p.gsHelper.GetGlobalNameInputFilter(),
+		TimeCreated: func() []string {
+			timeCreated := make([]string, 0)
+			if len(filter.CreatedAtStartEnd) == 2 {
+				timeCreated = append(timeCreated, time.Unix(filter.CreatedAtStartEnd[0]/1000, 0).String())
+				timeCreated = append(timeCreated, time.Unix(filter.CreatedAtStartEnd[1]/1000, 0).String())
+			}
+			return timeCreated
+		}(),
+		TimeStarted: func() []string {
+			timeStarted := make([]string, 0)
+			if len(filter.StartedAtStartEnd) == 2 {
+				timeStarted = append(timeStarted, time.Unix(filter.StartedAtStartEnd[0]/1000, 0).String())
+				timeStarted = append(timeStarted, time.Unix(filter.StartedAtStartEnd[1]/1000, 0).String())
+			}
+			return timeStarted
+		}(),
+		Status:       filter.Status,
+		DescCols:     descCols,
+		AscCols:      ascCols,
+		IdentityInfo: apistructs.IdentityInfo{UserID: p.sdk.Identity.UserID},
 	})
 	if err != nil {
-		logrus.Errorf("failed to list project pipeline,err: %s", err.Error())
+		logrus.Errorf("failed to list project pipeline, err: %s", err.Error())
 		//return nil
 	}
-	list = append(list, &pb.PipelineDefinition{
-		ID:               "1",
-		Name:             "1",
-		Creator:          "1",
-		Category:         "1",
-		CostTime:         0,
-		Executor:         "1",
-		Extra:            nil,
-		StartedAt:        nil,
-		EndedAt:          nil,
-		TimeCreated:      nil,
-		TimeUpdated:      nil,
-		SourceType:       "1",
-		Remote:           "1",
-		Ref:              "1",
-		Path:             "1",
-		FileName:         "1",
-		PipelineSourceId: "1",
-	})
 
+	p.Total = uint64(total)
 	rows := make([]table.Row, 0, len(list))
 	for _, v := range list {
 		rows = append(rows, table.Row{
@@ -191,20 +222,69 @@ func getApplicationNameFromDefinitionRemote(remote string) string {
 	return values[2]
 }
 
+func (p *PipelineTable) SetSortsFromGlobalState() {
+	globalState := *p.sdk.GlobalState
+	var sorts []*common.Sort
+	if sortCol, ok := globalState[StateKeyTransactionSort]; ok && sortCol != nil {
+		var clientSort table.OpTableChangeSortClientData
+		clientSort, ok = sortCol.(table.OpTableChangeSortClientData)
+		if !ok {
+			ok = mapstructure.Decode(sortCol, &clientSort) == nil
+		}
+		if ok {
+			col := clientSort.DataRef
+			if col != nil && col.AscOrder != nil {
+				sorts = append(sorts, &common.Sort{
+					FieldKey:  col.FieldBindToOrder,
+					Ascending: *col.AscOrder,
+				})
+			}
+		}
+	}
+	p.Sorts = sorts
+}
+
+func (p *PipelineTable) SetPagingFromGlobalState() {
+	globalState := *p.sdk.GlobalState
+	pageNo, pageSize := 1, common.DefaultPageSize
+	if paging, ok := globalState[StateKeyTransactionPaging]; ok && paging != nil {
+		var clientPaging table.OpTableChangePageClientData
+		clientPaging, ok = paging.(table.OpTableChangePageClientData)
+		if !ok {
+			ok = mapstructure.Decode(paging, &clientPaging) == nil
+		}
+		if ok {
+			pageNo = int(clientPaging.PageNo)
+			pageSize = int(clientPaging.PageSize)
+		}
+	}
+	p.PageNo = uint64(pageNo)
+	p.PageSize = uint64(pageSize)
+}
+
 func (p *PipelineTable) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return p.RegisterInitializeOp()
 }
 
 func (p *PipelineTable) RegisterTablePagingOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return nil
+	return func(sdk *cptype.SDK) {
+		(*sdk.GlobalState)[transaction.StateKeyTransactionPaging] = opData.ClientData
+		p.RegisterInitializeOp()(sdk)
+	}
 }
 
 func (p *PipelineTable) RegisterTableChangePageOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return nil
+	return func(sdk *cptype.SDK) {
+		(*sdk.GlobalState)[transaction.StateKeyTransactionPaging] = opData.ClientData
+		p.RegisterInitializeOp()(sdk)
+	}
 }
 
 func (p *PipelineTable) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {
-	return nil
+	return func(sdk *cptype.SDK) {
+		(*sdk.GlobalState)[transaction.StateKeyTransactionSort] = opData.ClientData
+		p.RegisterInitializeOp()(sdk)
+	}
 }
 
 func (p *PipelineTable) RegisterBatchRowsHandleOp(opData table.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {

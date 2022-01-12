@@ -129,6 +129,8 @@ message PipelineDefinitionListRequest {
   repeated string timeStarted = 10;
   repeated string  status = 12;
   repeated string idList = 13;
+  repeated string ascCols = 14;
+  repeated string descCols = 15;
 }
 
 message PipelineDefinitionListResponse {

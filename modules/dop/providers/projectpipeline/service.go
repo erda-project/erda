@@ -44,7 +44,7 @@ func (p *ProjectPipelineService) WithPipelineSvc(svc *pipeline.Pipeline) {
 
 type Service interface {
 	Create(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error)
-	List(ctx context.Context, params deftype.ProjectPipelineList) ([]*dpb.PipelineDefinition, error)
+	List(ctx context.Context, params deftype.ProjectPipelineList) ([]*dpb.PipelineDefinition, int64, error)
 	Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error)
 	Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error)
 	Star(ctx context.Context, params deftype.ProjectPipelineStar) (*dpb.PipelineDefinitionUpdateResponse, error)

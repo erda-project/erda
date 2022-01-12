@@ -18,9 +18,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 )
 
 type stateValue string
@@ -39,9 +43,14 @@ func (s stateValue) String() string {
 
 type (
 	Tab struct {
-		Type  string `json:"type"`
-		Data  Data   `json:"data"`
-		State State  `json:"state"`
+		Type               string                 `json:"type"`
+		Data               Data                   `json:"data"`
+		State              State                  `json:"state"`
+		Operations         map[string]interface{} `json:"operations"`
+		InParams           InParams               `json:"-"`
+		sdk                *cptype.SDK
+		gsHelper           *gshelper.GSHelper
+		ProjectPipelineSvc *projectpipeline.ProjectPipelineService
 	}
 	Data struct {
 		Options []Option `json:"options"`
@@ -53,7 +62,27 @@ type (
 	State struct {
 		Value string
 	}
+	InParams struct {
+		FrontendProjectID string `json:"projectId,omitempty"`
+		FrontendUrlQuery  string `json:"issueFilter__urlQuery,omitempty"`
+
+		ProjectID uint64 `json:"-"`
+		AppID     uint64 `json:"-"`
+	}
 )
+
+func (t *Tab) setInParams(ctx context.Context) error {
+	b, err := json.Marshal(cputil.SDK(ctx).InParams)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, &t.InParams); err != nil {
+		return err
+	}
+
+	t.InParams.ProjectID, err = strconv.ParseUint(t.InParams.FrontendProjectID, 10, 64)
+	return err
+}
 
 type Num struct {
 	MinePipelineNum    uint64 `json:"minePipelineNum"`
@@ -63,6 +92,19 @@ type Num struct {
 
 func (t *Tab) SetType() {
 	t.Type = "RadioTabs"
+}
+
+func (t *Tab) SetOperations(activeKey string) {
+	t.Operations = map[string]interface{}{
+		"onChange": map[string]interface{}{
+			"fillMeta": "",
+			"key":      "ChangeViewType",
+			"meta": map[string]interface{}{
+				"activeKey": activeKey,
+			},
+			"reload": true,
+		},
+	}
 }
 
 func (t *Tab) SetData(ctx context.Context, num Num) {
@@ -94,10 +136,20 @@ func (t *Tab) SetToProtocolComponent(c *cptype.Component) error {
 	return json.Unmarshal(b, &c)
 }
 
-func (t *Tab) InitFromProtocol(ctx context.Context, c *cptype.Component) error {
+func (t *Tab) InitFromProtocol(ctx context.Context, c *cptype.Component, gs *cptype.GlobalStateData) error {
 	b, err := json.Marshal(c)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(b, t)
+	if err = json.Unmarshal(b, t); err != nil {
+		return err
+	}
+	if err = t.setInParams(ctx); err != nil {
+		return err
+	}
+
+	t.gsHelper = gshelper.NewGSHelper(gs)
+	t.sdk = cputil.SDK(ctx)
+	t.ProjectPipelineSvc = ctx.Value(types.ProjectPipelineService).(*projectpipeline.ProjectPipelineService)
+	return nil
 }

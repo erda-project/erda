@@ -50,11 +50,11 @@ type (
 )
 
 func (i *InputFilter) SetType() {
-	i.Type = "inputFilter"
+	i.Type = "ContractiveFilter"
 }
 
 func (i *InputFilter) SetName() {
-	i.Name = "ContractiveFilter"
+	i.Name = "inputFilter"
 }
 
 func (i *InputFilter) SetProps() {

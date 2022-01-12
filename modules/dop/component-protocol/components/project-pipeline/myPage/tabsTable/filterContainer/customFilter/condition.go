@@ -101,7 +101,7 @@ func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
 			selectOptions = append(selectOptions, *model.NewSelectOption(func() string {
 				return v.Name
 			}(),
-				v.ID,
+				v.Name,
 			))
 		}
 		return selectOptions

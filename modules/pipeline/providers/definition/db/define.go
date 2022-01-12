@@ -102,7 +102,6 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 
 	var (
 		pipelineDefinitionSources []PipelineDefinitionSource
-		//	allPipelineDefinitionSources []PipelineDefinitionSource
 		err error
 	)
 	engine := session.Table("pipeline_definitions").Alias("d").
@@ -146,6 +145,12 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 		if req.TimeStarted[1] != "" {
 			engine = engine.Where("d.started_at <= ?", req.TimeStarted[1])
 		}
+	}
+	if len(req.AscCols) != 0 {
+		engine = engine.Asc(req.AscCols...)
+	}
+	if len(req.DescCols) != 0 {
+		engine = engine.Desc(req.DescCols...)
 	}
 
 	if err = engine.Limit(int(req.PageSize), int((req.PageNo-1)*req.PageSize)).

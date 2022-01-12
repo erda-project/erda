@@ -27,7 +27,7 @@ type GSHelper struct {
 type TableFilter struct {
 	Status            []string `json:"status"`
 	Creator           []string `json:"creator"`
-	AppIDs            []uint64 `json:"appIDs"`
+	App               []string `json:"app"`
 	Executor          []string `json:"executor"`
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd"`
 	StartedAtStartEnd []int64  `json:"startedAtStartEnd"`

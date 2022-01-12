@@ -15,6 +15,8 @@
 package customFilter
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter"
@@ -48,7 +50,7 @@ type State struct {
 type FrontendConditions struct {
 	Status            []string `json:"status"`
 	Creator           []string `json:"creator"`
-	App               []uint64 `json:"app"`
+	App               []string `json:"app"`
 	Executor          []string `json:"executor"`
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd"`
 	StartedAtStartEnd []int64  `json:"startedAtStartEnd"`
@@ -90,7 +92,7 @@ func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.O
 		p.gsHelper.SetGlobalTableFilter(gshelper.TableFilter{
 			Status:            values.Status,
 			Creator:           values.Creator,
-			AppIDs:            values.App,
+			App:               values.App,
 			Executor:          values.Executor,
 			CreatedAtStartEnd: values.CreatedAtStartEnd,
 			StartedAtStartEnd: values.StartedAtStartEnd,
@@ -108,4 +110,13 @@ func (p *CustomFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDele
 	return func(sdk *cptype.SDK) {
 		fmt.Println("op come", opData.ClientData.DataRef)
 	}
+}
+
+func (p *CustomFilter) flushOptsByFilter(filterEntity string) error {
+	b, err := base64.StdEncoding.DecodeString(filterEntity)
+	if err != nil {
+		return err
+	}
+	p.State.FrontendConditionValues = FrontendConditions{}
+	return json.Unmarshal(b, &p.State.FrontendConditionValues)
 }
