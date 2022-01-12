@@ -16,6 +16,7 @@ package endpoints
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -333,6 +334,35 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 		OrgID:            1,
 	}
 
+	runtime3 := dbclient.Runtime{
+		BaseModel: dbengine.BaseModel{
+			ID: 130,
+		},
+		Name:          "feature/develop",
+		ApplicationID: 22,
+		Workspace:     "DEV",
+		GitBranch:     "feature/develop",
+		ProjectID:     1,
+		Env:           "DEV",
+		ClusterName:   "test",
+		ClusterId:     1,
+		Creator:       "2",
+		ScheduleName: dbclient.ScheduleName{
+			Namespace: "services",
+			Name:      "302615dbf1",
+		},
+		Status:           "Healthy",
+		LegacyStatus:     "INIT",
+		Deployed:         true,
+		Version:          "1",
+		Source:           "IPELINE",
+		DiceVersion:      "2",
+		CPU:              0.10,
+		Mem:              128.00,
+		ReadableUniqueId: "dice-orchestrator",
+		GitRepoAbbrev:    "xxx-test/test03",
+		OrgID:            1,
+	}
 	runtimes := []dbclient.Runtime{runtime1, runtime2}
 	runtimeScaleRecords1 := apistructs.RuntimeScaleRecords{
 		IDs: []uint64{128, 129},
@@ -374,8 +404,31 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 		},
 	}
 
+	rsr3 := apistructs.RuntimeScaleRecord{
+		ApplicationId: 22,
+		Workspace:     "DEV",
+		Name:          "feature/develop",
+		PayLoad: apistructs.PreDiceDTO{
+			Services: make(map[string]*apistructs.RuntimeInspectServiceDTO),
+		},
+	}
+	rsr3.PayLoad.Services["xxxyyyy"] = &apistructs.RuntimeInspectServiceDTO{
+		Deployments: apistructs.RuntimeServiceDeploymentsDTO{
+			Replicas: 1,
+		},
+		Resources: apistructs.RuntimeServiceResourceDTO{
+			CPU: 0.1,
+			Mem: 128,
+		},
+	}
+
 	runtimeScaleRecords2 := apistructs.RuntimeScaleRecords{
 		Runtimes: []apistructs.RuntimeScaleRecord{rsr1, rsr2},
+	}
+
+	runtimeScaleRecords3 := apistructs.RuntimeScaleRecords{
+		Runtimes: []apistructs.RuntimeScaleRecord{rsr3},
+		IDs:      []uint64{130},
 	}
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(s.db), "FindRuntime", func(db *dbclient.DBClient, uniqueId spec.RuntimeUniqueId) (*dbclient.Runtime, error) {
@@ -411,7 +464,8 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 				OrgID:            1,
 			}
 			return runtime, nil
-		} else {
+		}
+		if uniqeKey == "1-feature/develop-DEV" {
 			runtime := &dbclient.Runtime{
 				BaseModel: dbengine.BaseModel{
 					ID: 128,
@@ -442,6 +496,37 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 				OrgID:            1,
 			}
 			return runtime, nil
+		} else {
+			runtime := &dbclient.Runtime{
+				BaseModel: dbengine.BaseModel{
+					ID: 130,
+				},
+				Name:          "feature/develop",
+				ApplicationID: 22,
+				Workspace:     "DEV",
+				GitBranch:     "feature/develop",
+				ProjectID:     1,
+				Env:           "DEV",
+				ClusterName:   "test",
+				ClusterId:     1,
+				Creator:       "2",
+				ScheduleName: dbclient.ScheduleName{
+					Namespace: "services",
+					Name:      "302615dbf1",
+				},
+				Status:           "Healthy",
+				LegacyStatus:     "INIT",
+				Deployed:         true,
+				Version:          "1",
+				Source:           "IPELINE",
+				DiceVersion:      "2",
+				CPU:              0.10,
+				Mem:              128.00,
+				ReadableUniqueId: "dice-orchestrator",
+				GitRepoAbbrev:    "xxx-test/test03",
+				OrgID:            1,
+			}
+			return runtime, nil
 		}
 	})
 
@@ -458,7 +543,8 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 				ServicesNames:   []string{"go-demo"},
 			}
 			return ret, nil
-		} else {
+		}
+		if runtimeID == 129 {
 			ret := &apistructs.RuntimeDeployDTO{
 				PipelineID:      10000259,
 				ApplicationID:   21,
@@ -470,6 +556,17 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 				ServicesNames:   []string{"xxx"},
 			}
 			return ret, nil
+		} else {
+			ret := &apistructs.RuntimeDeployDTO{
+				ApplicationID:   22,
+				ApplicationName: "test03",
+				ProjectID:       1,
+				ProjectName:     "test",
+				OrgID:           1,
+				OrgName:         "xxx",
+				ServicesNames:   []string{"xxxyyy"},
+			}
+			return ret, errors.New("failed")
 		}
 	})
 
@@ -506,6 +603,32 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 	}
 	want2 := want1
 	want2.Total = 2
+
+	want3 := apistructs.BatchRuntimeReDeployResults{
+		Total:         0,
+		Success:       0,
+		Failed:        1,
+		ReDeployed:    []apistructs.RuntimeDeployDTO{},
+		ReDeployedIds: []uint64{},
+		UnReDeployed: []apistructs.RuntimeDTO{
+			{
+				ID:              130,
+				Name:            "xxxyyy",
+				GitBranch:       "feature/develop",
+				Workspace:       "DEV",
+				ClusterName:     "test",
+				ClusterId:       1,
+				Status:          "",
+				ApplicationID:   22,
+				ApplicationName: "xxxyyy",
+				ProjectID:       1,
+				ProjectName:     "test",
+				OrgID:           1,
+			},
+		},
+		UnReDeployedIds: []uint64{130},
+		ErrMsg:          []string{"failed"},
+	}
 	got := s.batchRuntimeReDeploy(userID, runtimes, runtimeScaleRecords1)
 	if len(got.ReDeployedIds) != len(want1.ReDeployedIds) {
 		t.Errorf("batchRuntimeReDeploy() = %v, want %v", got, want1)
@@ -533,6 +656,22 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 	for _, id := range want2.ReDeployedIds {
 		if _, ok := gotMap1[id]; !ok {
 			t.Errorf("batchRuntimeReDeploy() = %v, want %v", got, want2)
+		}
+	}
+
+	runtimes3 := []dbclient.Runtime{runtime3}
+	got = s.batchRuntimeReDeploy(userID, runtimes3, runtimeScaleRecords3)
+	if len(got.UnReDeployedIds) != len(want3.UnReDeployedIds) {
+		t.Errorf("batchRuntimeReDeploy() = %v, want %v", got, want3)
+	}
+
+	gotMap = make(map[uint64]bool)
+	for _, id := range got.UnReDeployedIds {
+		gotMap[id] = true
+	}
+	for _, id := range want3.UnReDeployedIds {
+		if _, ok := gotMap[id]; !ok {
+			t.Errorf("batchRuntimeReDeploy() = %v, want %v", got, want3)
 		}
 	}
 
