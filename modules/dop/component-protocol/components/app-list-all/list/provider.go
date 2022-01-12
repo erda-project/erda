@@ -107,6 +107,11 @@ func (l *List) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.Opera
 	}
 }
 
+func (l *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) {
+	}
+}
+
 func (l *List) doFilterApp() (data *list.Data) {
 	data = &list.Data{}
 	gh := gshelper.NewGSHelper(l.sdk.GlobalState)
