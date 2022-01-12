@@ -25,7 +25,6 @@ import (
 )
 
 func (p *provider) getScopeByHTTPRequest(ctx httpserver.Context) (string, error) {
-	fmt.Println("scope", ctx.Request().URL.Query().Get("scope"))
 	switch ctx.Request().URL.Query().Get("scope") {
 	case "org":
 		return permission.ScopeOrg, nil
