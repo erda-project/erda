@@ -30,7 +30,7 @@ func (d *DeploymentOrder) Cancel(req *apistructs.DeploymentOrderCancelRequest) (
 	}
 
 	if err := d.checkExecutePermission(req.Operator, order.Workspace, nil, order.ReleaseId); err != nil {
-		return nil, apierrors.ErrCreateDeploymentOrder.InternalError(err)
+		return nil, apierrors.ErrCancelDeploymentOrder.InternalError(err)
 	}
 
 	runtimes, err := d.db.GetRuntimeByDeployOrderName(order.ProjectId, order.Name)

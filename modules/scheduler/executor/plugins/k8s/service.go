@@ -54,7 +54,8 @@ func (k *Kubernetes) CreateOrPutService(service *apistructs.Service, selectors m
 	}
 
 	if curSvc != nil {
-		return k.service.Put(svc)
+		curSvc.Spec = svc.Spec
+		return k.service.Put(curSvc)
 	}
 	return k.service.Create(svc)
 }
