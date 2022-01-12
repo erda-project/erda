@@ -306,7 +306,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, memory, "mb", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, memory, "MB", graph)
 			p.StdDataPtr = line
 			return
 		case load:
