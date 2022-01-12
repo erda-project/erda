@@ -69,7 +69,7 @@ const (
 	ColumnBranch          table.ColumnKey = "branch"
 	ColumnExecutor        table.ColumnKey = "executor"
 	ColumnStartTime       table.ColumnKey = "startTime"
-	ColumnMoreOperations  table.ColumnKey = "columnMoreOperations"
+	ColumnMoreOperations  table.ColumnKey = "moreOperations"
 
 	StateKeyTransactionPaging = "paging"
 	StateKeyTransactionSort   = "sort"

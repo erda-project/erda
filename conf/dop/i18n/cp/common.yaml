@@ -269,6 +269,7 @@ zh:
   cron: 开始定时
   cancelCron: 取消定时
   delete: 删除
+  moreOperations: 操作
 en:
   issue-manage: issue manage
   issue: issue
@@ -537,3 +538,4 @@ en:
   cron: Start cron
   cancelCron: Cancel cron
   delete: Delete
+  moreOperations: Operation
