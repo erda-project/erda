@@ -17,6 +17,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"github.com/erda-project/erda/pkg/math"
 	"reflect"
 	"strconv"
 
@@ -77,17 +78,17 @@ func (p *provider) getMemoryHeapLineGraph(ctx context.Context, startTime, endTim
 		maxDimension := "max"
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     totalValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(totalValue/1024, 0),
 			Dimension: totalDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     usedValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
 			Dimension: usedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     maxValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
 			Dimension: maxDimension,
 		})
 	}
@@ -121,7 +122,7 @@ func (p *provider) getMemoryNonHeapLineGraph(ctx context.Context, startTime, end
 		externalDimension := "external"
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     externalValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(externalValue/1024, 0),
 			Dimension: externalDimension,
 		})
 	}
@@ -211,7 +212,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsMemoryHeap, "rateUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsMemoryHeap, "mb", graph)
 			p.StdDataPtr = line
 			return
 		case nodejsMemoryNonHeap:
@@ -219,7 +220,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsMemoryNonHeap, "rateUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsMemoryNonHeap, "mb", graph)
 			p.StdDataPtr = line
 			return
 		case nodejsCluster:

@@ -39,13 +39,6 @@ func (this *TraceQueryConditions) Validate() error {
 			}
 		}
 	}
-	for _, item := range this.Limit {
-		if item != nil {
-			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("Limit", err)
-			}
-		}
-	}
 	for _, item := range this.TraceStatus {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {

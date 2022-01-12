@@ -95,9 +95,8 @@ message GetTraceQueryConditionsResponse{
 
 message TraceQueryConditions{
   repeated TraceQueryCondition      sort        = 1;
-  repeated TraceQueryCondition      limit       = 2;
-  repeated TraceQueryCondition      traceStatus = 3;
-  repeated OtherTraceQueryCondition others      = 4;
+  repeated TraceQueryCondition      traceStatus = 2;
+  repeated OtherTraceQueryCondition others      = 3;
 }
 
 enum SortCondition{

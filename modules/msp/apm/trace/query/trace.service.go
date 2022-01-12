@@ -627,11 +627,7 @@ func (s *TraceService) GetTraceReqDistribution(ctx context.Context, model custom
 		End:       strconv.FormatInt(model.EndTime, 10),
 		Statement: statement,
 		Params:    queryParams,
-		//Options: map[string]string{
-		//	"debug": "true",
-		//},
 	}
-	//	     p.Metric.QueryWithInfluxFormat(ctx, request)
 	return s.p.Metric.QueryWithInfluxFormat(ctx, queryRequest)
 }
 

@@ -47,32 +47,13 @@ type provider struct {
 	Metric       metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
 
-//func (s *TraceService) sortConditionStrategy(sort string) string {
-//	switch sort {
-//	case strings.ToLower(pb.SortCondition_TRACE_TIME_DESC.String()):
-//		return "ORDER BY start_time::field DESC"
-//	case strings.ToLower(pb.SortCondition_TRACE_TIME_ASC.String()):
-//		return "ORDER BY start_time::field ASC"
-//	case strings.ToLower(pb.SortCondition_TRACE_DURATION_DESC.String()):
-//		return "ORDER BY trace_duration::field DESC"
-//	case strings.ToLower(pb.SortCondition_TRACE_DURATION_ASC.String()):
-//		return "ORDER BY trace_duration::field ASC"
-//	case strings.ToLower(pb.SortCondition_SPAN_COUNT_DESC.String()):
-//		return "ORDER BY span_count::field DESC"
-//	case strings.ToLower(pb.SortCondition_SPAN_COUNT_ASC.String()):
-//		return "ORDER BY span_count::field ASC"
-//	default:
-//		return "ORDER BY start_time::field DESC"
-//	}
-//}
-
 func (p *provider) getSort(sort common.Sort) string {
 	switch sort.FieldKey {
 	case string(trace.ColumnDuration):
 		if sort.Ascending {
-			return pb.SortCondition_TRACE_TIME_ASC.String()
+			return pb.SortCondition_TRACE_DURATION_ASC.String()
 		}
-		return pb.SortCondition_TRACE_TIME_DESC.String()
+		return pb.SortCondition_TRACE_DURATION_DESC.String()
 	case string(trace.ColumnStartTime):
 		if sort.Ascending {
 			return pb.SortCondition_TRACE_TIME_ASC.String()

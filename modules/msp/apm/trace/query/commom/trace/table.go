@@ -68,12 +68,6 @@ func GetPagingFromGlobalState(globalState cptype.GlobalStateData) (pageNo int, p
 	return pageNo, pageSize
 }
 
-// 		"SPAN_COUNT_DESC":     0,
-//		"SPAN_COUNT_ASC":      1,
-//		"TRACE_DURATION_DESC": 2,
-//		"TRACE_DURATION_ASC":  3,
-//		"TRACE_TIME_DESC":     4,
-//		"TRACE_TIME_ASC":      5,
 func GetSortsFromGlobalState(globalState cptype.GlobalStateData) common.Sort {
 	var sort common.Sort
 	if sortCol, ok := globalState[StateKeyTraceSort]; ok && sortCol != nil {

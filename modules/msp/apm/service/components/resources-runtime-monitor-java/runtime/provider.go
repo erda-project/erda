@@ -17,6 +17,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"github.com/erda-project/erda/pkg/math"
 	"reflect"
 	"strconv"
 
@@ -92,22 +93,22 @@ func (p *provider) getMemoryHeapLineGraph(ctx context.Context, startTime, endTim
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     committedValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     initValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     maxValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     usedValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -149,17 +150,17 @@ func (p *provider) getMemoryNonHeapLineGraph(ctx context.Context, startTime, end
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     committedValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     initValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     usedValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -172,7 +173,7 @@ func (p *provider) getMemoryEdenSpaceLineGraph(ctx context.Context, startTime, e
 		"WHERE terminus_key::tag=$terminus_key " +
 		"AND service_id::tag=$service_id " +
 		"AND service_instance_id::tag=$instance_id " +
-		"AND service_name::tag=~/.*_eden_space/ " +
+		"AND name::tag=~/.*_eden_space/ " +
 		"GROUP BY time()")
 	queryParams := model.ToQueryParams(tenantId, serviceId, instanceId)
 
@@ -202,22 +203,22 @@ func (p *provider) getMemoryEdenSpaceLineGraph(ctx context.Context, startTime, e
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     committedValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     initValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     maxValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     usedValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -230,7 +231,7 @@ func (p *provider) getMemorySurvivorSpaceLineGraph(ctx context.Context, startTim
 		"WHERE terminus_key::tag=$terminus_key " +
 		"AND service_id::tag=$service_id " +
 		"AND service_instance_id::tag=$instance_id " +
-		"AND service_name::tag=~/.*_survivor_space/ " +
+		"AND name::tag=~/.*_survivor_space/ " +
 		"GROUP BY time()")
 	queryParams := model.ToQueryParams(tenantId, serviceId, instanceId)
 
@@ -260,22 +261,22 @@ func (p *provider) getMemorySurvivorSpaceLineGraph(ctx context.Context, startTim
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     committedValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     initValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     maxValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     usedValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -288,7 +289,7 @@ func (p *provider) getMemoryOldGenLineGraph(ctx context.Context, startTime, endT
 		"WHERE terminus_key::tag=$terminus_key " +
 		"AND service_id::tag=$service_id " +
 		"AND service_instance_id::tag=$instance_id " +
-		"AND service_name::tag=~/.*_old_gen/ " +
+		"AND name::tag=~/.*_old_gen/ " +
 		"GROUP BY time()")
 	queryParams := model.ToQueryParams(tenantId, serviceId, instanceId)
 
@@ -318,22 +319,22 @@ func (p *provider) getMemoryOldGenLineGraph(ctx context.Context, startTime, endT
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     committedValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     initValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     maxValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     usedValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -501,7 +502,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryHeap, "rateUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryHeap, "mb", graph)
 			p.StdDataPtr = line
 			return
 		case jvmMemoryNonHeap:
@@ -509,7 +510,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryNonHeap, "rateUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryNonHeap, "mb", graph)
 			p.StdDataPtr = line
 			return
 		case jvmMemoryEdenSpace:
@@ -517,7 +518,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryEdenSpace, "rateUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryEdenSpace, "mb", graph)
 			p.StdDataPtr = line
 			return
 		case jvmMemorySurvivorSpace:
@@ -525,7 +526,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemorySurvivorSpace, "rateUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemorySurvivorSpace, "mb", graph)
 			p.StdDataPtr = line
 			return
 		case jvmMemoryOldGen:
@@ -533,7 +534,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryOldGen, "rateUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryOldGen, "mb", graph)
 			p.StdDataPtr = line
 			return
 		case jvmGcCount:
@@ -549,7 +550,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmGcTime, "rateUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmGcTime, "ns", graph)
 			p.StdDataPtr = line
 			return
 		case jvmClassLoader:

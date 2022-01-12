@@ -17,6 +17,7 @@ package container
 import (
 	"context"
 	"fmt"
+	"github.com/erda-project/erda/pkg/math"
 	"reflect"
 	"strconv"
 	"time"
@@ -111,12 +112,12 @@ func (p *provider) getMemoryLineGraph(ctx context.Context, startTime, endTime in
 		usedDimension := "used"
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     maxValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     usedValue,
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -239,7 +240,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, memory, "rateUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, memory, "mb", graph)
 			p.StdDataPtr = line
 			return
 		case diskIO:
@@ -247,7 +248,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, diskIO, "rateUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, diskIO, "kb/s", graph)
 			p.StdDataPtr = line
 			return
 		case network:
@@ -255,7 +256,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, network, "rateUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, network, "kb/s", graph)
 			p.StdDataPtr = line
 			return
 		}
