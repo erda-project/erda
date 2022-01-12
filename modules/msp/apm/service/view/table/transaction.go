@@ -29,10 +29,10 @@ import (
 
 var (
 	columnPath        = &Column{Key: string(transaction.ColumnTransactionName), Name: "Transaction Name"}
-	columnReqCount    = &Column{Key: string(transaction.ColumnReqCount), Name: "Req Count"}
-	columnErrorCount  = &Column{Key: string(transaction.ColumnErrorCount), Name: "Error Count"}
-	columnSlowCount   = &Column{Key: string(transaction.ColumnSlowCount), Name: "Slow Count"}
-	columnAvgDuration = &Column{Key: string(transaction.ColumnAvgDuration), Name: "Avg Duration"}
+	columnReqCount    = &Column{Key: string(transaction.ColumnReqCount), Name: "Req Count", Sortable: true}
+	columnErrorCount  = &Column{Key: string(transaction.ColumnErrorCount), Name: "Error Count", Sortable: true}
+	columnSlowCount   = &Column{Key: string(transaction.ColumnSlowCount), Name: "Slow Count", Sortable: true}
+	columnAvgDuration = &Column{Key: string(transaction.ColumnAvgDuration), Name: "Avg Duration", Sortable: true}
 )
 
 var TransactionTableSortFieldSqlMap = map[string]string{
@@ -61,7 +61,11 @@ func (t *TransactionTableRow) GetCells() []*Cell {
 }
 
 type TransactionTableBuilder struct {
-	*BaseBuilder
+	*BaseBuildParams
+}
+
+func (t *TransactionTableBuilder) GetBaseBuildParams() *BaseBuildParams {
+	return t.BaseBuildParams
 }
 
 func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) {
@@ -93,7 +97,6 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		common.BuildServerSideServiceIdFilterSql("$service_id", t.Layer),
 		common.BuildLayerPathFilterSql(t.LayerPath, "$layer_path", t.FuzzyPath, t.Layer),
 	)
-	fmt.Println("table query total:" + statement)
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(t.StartTime, 10),
 		End:       strconv.FormatInt(t.EndTime, 10),
@@ -129,7 +132,6 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		t.PageSize,
 		(t.PageNo-1)*t.PageSize,
 	)
-	fmt.Println("table query list:" + statement)
 	request = &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(t.StartTime, 10),
 		End:       strconv.FormatInt(t.EndTime, 10),

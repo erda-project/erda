@@ -106,14 +106,24 @@ openapi-v1-routes:
           - service-list
           - transaction-cache-analysis
           - transaction-cache-detail
+          - transaction-cache-slow
           - transaction-db-analysis
           - transaction-db-detail
+          - transaction-db-slow
           - transaction-http-analysis
           - transaction-http-detail
+          - transaction-http-slow
           - transaction-mq-analysis
           - transaction-mq-detail
+          - transaction-mq-slow
           - transaction-rpc-analysis
           - transaction-rpc-detail
+          - transaction-rpc-slow
+          - trace-query
+          - resources-container-monitor
+          - resources-node-monitor
+          - resources-runtime-monitor-java
+          - resources-runtime-monitor-nodejs
 
 etcd:
   _enable: ${OPENAPI_DEV_MODE:false}

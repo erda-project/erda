@@ -27,6 +27,7 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/release-manage"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/scenes-import-record"

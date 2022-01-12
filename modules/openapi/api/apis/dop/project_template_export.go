@@ -12,22 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package dop
 
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var APP_PUBLISH_ITEM_RELATION_UPDATE = apis.ApiSpec{
-	Path:         "/api/applications/<application>/actions/update-publish-item-relations",
-	BackendPath:  "/api/applications/<application>/actions/update-publish-item-relations",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
-	Scheme:       "http",
-	Method:       "POST",
-	CheckLogin:   true,
-	CheckToken:   true,
-	RequestType:  apistructs.UpdateAppPublishItemRelationRequest{},
-	ResponseType: apistructs.UpdateAppPublishItemRelationResponse{},
-	Doc:          "summary: 更新应用发布关联",
+var ProjectTemplateExport = apis.ApiSpec{
+	Path:          "/api/orgs/<orgID>/projects/<projectID>/template/actions/export",
+	BackendPath:   "/api/orgs/<orgID>/projects/<projectID>/template/actions/export",
+	Host:          "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:        "http",
+	Method:        "GET",
+	TryCheckLogin: true,
+	RequestType:   apistructs.ExportProjectTemplateRequest{},
+	Doc:           "summary: 导出项目模版",
 }

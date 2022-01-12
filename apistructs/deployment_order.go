@@ -34,8 +34,7 @@ type DeploymentOrderCreateResponse struct {
 
 type DeploymentOrderDeployRequest struct {
 	DeploymentOrderId string
-	Workspace         string `json:"workspace,omitempty"`
-	Operator          string `json:"operator"`
+	Operator          string
 }
 
 type DeploymentOrderListConditions struct {
@@ -51,14 +50,16 @@ type DeploymentOrderDetail struct {
 }
 
 type ApplicationInfo struct {
-	Name           string           `json:"name"`
-	DeploymentId   uint64           `json:"deploymentId"`
-	Param          string           `json:"param"`
-	ReleaseVersion string           `json:"releaseVersion"`
-	Branch         string           `json:"branch"`
-	CommitId       string           `json:"commitId"`
-	DiceYaml       string           `json:"diceYaml"`
-	Status         DeploymentStatus `json:"status"`
+	Id             uint64                `json:"id"`
+	Name           string                `json:"name"`
+	DeploymentId   uint64                `json:"deploymentId,omitempty"`
+	Params         *DeploymentOrderParam `json:"params"`
+	ReleaseId      string                `json:"releaseId,omitempty"`
+	ReleaseVersion string                `json:"releaseVersion,omitempty"`
+	Branch         string                `json:"branch,omitempty"`
+	CommitId       string                `json:"commitId,omitempty"`
+	DiceYaml       string                `json:"diceYaml,omitempty"`
+	Status         DeploymentStatus      `json:"status,omitempty"`
 }
 
 type DeploymentOrderListData struct {
@@ -71,7 +72,6 @@ type DeploymentOrderItem struct {
 	Name              string                `json:"name"`
 	ReleaseID         string                `json:"releaseId"`
 	ReleaseVersion    string                `json:"releaseVersion,omitempty"`
-	Params            string                `json:"params,omitempty"`
 	Type              string                `json:"type"`
 	ApplicationStatus string                `json:"applicationStatus,omitempty"`
 	Workspace         string                `json:"workspace"`
@@ -79,23 +79,17 @@ type DeploymentOrderItem struct {
 	Operator          string                `json:"operator"`
 	CreatedAt         time.Time             `json:"createdAt"`
 	UpdatedAt         time.Time             `json:"updatedAt"`
+	StartedAt         time.Time             `json:"startedAt"`
 }
 
-type DeploymentOrderParam struct {
-	Env  []DeploymentOrderParamItem `json:"env"`
-	File []DeploymentOrderParamItem `json:"file"`
-}
-
-type DeploymentOrderParamItem struct {
-	Key       string `json:"key"`
-	Value     string `json:"value"`
-	IsEncrypt bool   `json:"isEncrypt"`
-}
+type DeploymentOrderParam []*DeploymentOrderParamData
 
 type DeploymentOrderParamData struct {
-	Key        string `json:"key"`
-	Value      string `json:"value"`
-	ConfigType string `json:"configType"`
+	Key     string `json:"key"`
+	Value   string `json:"value"`
+	Encrypt bool   `json:"encrypt"`
+	Type    string `json:"type,omitempty"`
+	Comment string `json:"comment"`
 }
 
 type DeploymentOrderStatusMap map[string]DeploymentOrderStatusItem
@@ -109,6 +103,6 @@ type DeploymentOrderStatusItem struct {
 
 type DeploymentOrderCancelRequest struct {
 	DeploymentOrderId string
-	Operator          string `json:"operator"`
-	Force             bool   `json:"force"`
+	Operator          string
+	Force             bool `json:"force"`
 }

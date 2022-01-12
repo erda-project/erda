@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -46,6 +47,7 @@ import (
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/sexp"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/template"
 )
 
 type DeployFSMContext struct {
@@ -887,7 +889,6 @@ func (fsm *DeployFSMContext) deployService() error {
 
 	// generate request
 	group := apistructs.ServiceGroupCreateV2Request{}
-
 	usedAddonInsMap, usedAddonTenantMap, err := fsm.generateDeployServiceRequest(&group, *projectAddons, projectAddonTenants)
 	if err != nil {
 		return err
@@ -1069,12 +1070,13 @@ func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.Serv
 			}
 
 			// configs come from config-center do override globalEnv
-			for _, v := range configs.Env {
-				groupEnv[v.Key] = v.Value
-			}
-
-			for _, v := range configs.File {
-				groupFileconfigs[v.Key] = v.Value
+			for _, config := range configs {
+				switch config.Type {
+				case "ENV":
+					groupEnv[config.Key] = config.Value
+				case "FILE":
+					groupFileconfigs[config.Key] = config.Value
+				}
 			}
 		} else {
 			// TODO: deprecated
@@ -1122,8 +1124,99 @@ func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.Serv
 		}
 
 	}
+	//handle env template
+	err = fsm.convertEnvForTemplate(obj, group.ProjectNamespace, runtime.OrgID, runtime.ProjectID, runtime.Workspace)
+	if err != nil {
+		return nil, nil, err
+	}
 	group.DiceYml = *obj
 	return usedAddonInsMap, usedAddonTenantMap, nil
+}
+
+func Render(template string) string {
+	subMatchs := regexp.MustCompile(`^{{\s*(.+)\s*}}`).FindStringSubmatch(template)
+	if len(subMatchs) > 0 {
+		return subMatchs[1]
+	}
+	return ""
+}
+
+func (fsm *DeployFSMContext) convertEnvForTemplate(obj *diceyml.Object, projectNs string, orgID uint64, projectID uint64, workspace string) error {
+	var err error
+	for k, v := range obj.Envs {
+		tv := template.GetTemplateValue(v)
+		if tv == "" || !strings.HasPrefix(tv, "erdaService") {
+			continue
+		}
+		obj.Envs[k], err = fsm.convertErdaServiceTemplate(v, projectNs, orgID, projectID, workspace)
+		if err != nil {
+			return err
+		}
+	}
+
+	for k, v := range obj.Services {
+		for k1, v1 := range v.Envs {
+			tv := template.GetTemplateValue(v1)
+			if tv == "" || !strings.HasPrefix(tv, "erdaService") {
+				continue
+			}
+			obj.Services[k].Envs[k1], err = fsm.convertErdaServiceTemplate(v1, projectNs, orgID, projectID, workspace)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (fsm *DeployFSMContext) convertErdaServiceTemplate(v string, projectNs string, orgID uint64, projectID uint64, workspace string) (string, error) {
+	svcSuffix := "svc.cluster.local"
+	var (
+		result          string
+		applicationResp *apistructs.ApplicationListResponseData
+		err             error
+		runtimes        []dbclient.Runtime
+	)
+	nodes := strings.Split(v, ".")
+	if len(nodes) != 3 {
+		return "", errors.New("erdaService env template must be erdaService.<appName>.<serviceName>")
+	}
+	applicationName := nodes[1]
+	serviceName := nodes[2]
+
+	//edas集群的svc都是在defalut空间下
+	if fsm.Cluster.Type == apistructs.EDAS {
+		result = fmt.Sprintf("%s.%s.%s", serviceName, "default", svcSuffix)
+		return result, nil
+	}
+
+	if applicationResp, err = fsm.bdl.GetAppsByProjectAndAppName(projectID, orgID, fsm.Deployment.Operator, applicationName, map[string][]string{httputil.InternalHeader: {"orchestrator"}}); err != nil {
+		return "", err
+	}
+	if applicationResp.Total != 1 {
+		errMsg := fmt.Sprintf("convert erdaService Tempalte env error: %s application not found", applicationName)
+		return "", errors.New(errMsg)
+	}
+	//根据应用ID以及环境获取应用对应的runtime
+	applicationID := applicationResp.List[0].ID
+	if runtimes, err = fsm.db.FindRuntimesByAppIdAndWorkspace(applicationID, workspace); err != nil {
+		return "", err
+	}
+	//没有runtime统一按照项目级namespace来处理
+	if len(runtimes) < 1 {
+		result = fmt.Sprintf("%s.%s.%s", serviceName, projectNs, svcSuffix)
+		return result, nil
+	}
+
+	//scheduler的Name长度为10或者为空，则认为是项目级namespace
+	if len(runtimes[0].ScheduleName.Name) == 10 || runtimes[0].ScheduleName.Name == "" {
+		result = fmt.Sprintf("%s.%s.%s", serviceName, projectNs, svcSuffix)
+		return result, nil
+	}
+	//其余当做非项目级namespace来对待
+	ns := fmt.Sprintf("%s--%s", runtimes[0].ScheduleName.Namespace, runtimes[0].ScheduleName.Name)
+	result = fmt.Sprintf("%s.%s.%s", serviceName, ns, svcSuffix)
+	return result, nil
 }
 
 func (fsm *DeployFSMContext) checkCancelOk() (bool, error) {

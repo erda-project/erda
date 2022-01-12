@@ -15,11 +15,16 @@
 package deployment_order
 
 import (
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 )
 
 func TestParseDeploymentOrderStatus(t *testing.T) {
@@ -119,13 +124,9 @@ func TestComposeApplicationsInfo(t *testing.T) {
 	}
 
 	params := map[string]apistructs.DeploymentOrderParam{
-		"app1": {
-			Env: []apistructs.DeploymentOrderParamItem{
-				{Key: "key1", Value: "value1"},
-			},
-			File: []apistructs.DeploymentOrderParamItem{
-				{Key: "key2", Value: "value2"},
-			},
+		"app1": []*apistructs.DeploymentOrderParamData{
+			{Key: "key1", Value: "value1", Type: "ENV", Encrypt: true, Comment: "test1"},
+			{Key: "key2", Value: "value2", Type: "FILE", Comment: "test2"},
 		},
 	}
 
@@ -155,8 +156,22 @@ func TestComposeApplicationsInfo(t *testing.T) {
 				{
 					Name:         "app1",
 					DeploymentId: 10,
-					Param: "[{\"key\":\"key1\",\"value\":\"value1\",\"configType\":\"ENV\"},{\"key\":\"key2\",\"" +
-						"value\":\"value2\",\"configType\":\"FILE\"}]",
+					ReleaseId:    "8d2385a088df415decdf6357147ed4a2",
+					Params: &apistructs.DeploymentOrderParam{
+						{
+							Key:     "key1",
+							Value:   "",
+							Encrypt: true,
+							Type:    "kv",
+							Comment: "test1",
+						},
+						{
+							Key:     "key2",
+							Value:   "value2",
+							Type:    "dice-file",
+							Comment: "test2",
+						},
+					},
 					Branch:   "master",
 					CommitId: "27504bb7cb788bee08a50612b97faea201c0efed",
 					DiceYaml: "fake-diceyaml",
@@ -173,4 +188,21 @@ func TestComposeApplicationsInfo(t *testing.T) {
 			assert.Equal(t, got, tt.want)
 		})
 	}
+}
+
+func TestGetDeploymentOrderAccessDenied(t *testing.T) {
+	order := New()
+
+	defer monkey.UnpatchAll()
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetDeploymentOrder", func(*dbclient.DBClient, string) (*dbclient.DeploymentOrder, error) {
+		return &dbclient.DeploymentOrder{}, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.bdl), "CheckPermission", func(*bundle.Bundle, *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
+		return &apistructs.PermissionCheckResponseData{
+			Access: false,
+		}, nil
+	})
+
+	_, err := order.Get("100000", "789418c6-0bd4-4186-bd41-45372984621f")
+	assert.Equal(t, err, apierrors.ErrListDeploymentOrder.AccessDenied())
 }

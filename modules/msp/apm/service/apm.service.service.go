@@ -27,6 +27,7 @@ import (
 	commonpb "github.com/erda-project/erda-proto-go/common/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	pb "github.com/erda-project/erda-proto-go/msp/apm/service/pb"
+	servicecommon "github.com/erda-project/erda/modules/msp/apm/service/common"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/chart"
 	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -35,6 +36,42 @@ import (
 
 type apmServiceService struct {
 	p *provider
+}
+
+func (s *apmServiceService) GetServiceLanguage(ctx context.Context, req *pb.GetServiceLanguageRequest) (*pb.GetServiceLanguageResponse, error) {
+	if req.TenantId == "" {
+		return nil, errors.NewMissingParameterError("tenantId")
+	}
+	if req.ServiceId == "" {
+		return nil, errors.NewMissingParameterError("serviceId")
+	}
+	startTime, endTime := TimeRange("-1h")
+	queryParams := map[string]*structpb.Value{
+		"terminus_key": structpb.NewStringValue(req.TenantId),
+		"service_id":   structpb.NewStringValue(req.ServiceId),
+	}
+	sql := "SELECT distinct(service_id::tag) FROM %s WHERE terminus_key=$terminus_key AND service_id=$service_id LIMIT 1"
+	for key, language := range servicecommon.ProcessTypes {
+		statement := fmt.Sprintf(sql, key)
+		request := &metricpb.QueryWithInfluxFormatRequest{
+			Start:     strconv.FormatInt(startTime, 10),
+			End:       strconv.FormatInt(endTime, 10),
+			Statement: statement,
+			Params:    queryParams,
+		}
+		response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		if err != nil {
+			return nil, err
+		}
+		count := response.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
+		if count == 1 {
+			return &pb.GetServiceLanguageResponse{Language: language}, err
+		}
+	}
+	return nil, nil
 }
 
 func (s *apmServiceService) GetServices(ctx context.Context, req *pb.GetServicesRequest) (*pb.GetServicesResponse, error) {

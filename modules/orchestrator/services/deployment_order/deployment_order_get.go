@@ -19,12 +19,23 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 )
 
-func (d *DeploymentOrder) Get(orderId string) (*apistructs.DeploymentOrderDetail, error) {
+func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.DeploymentOrderDetail, error) {
 	order, err := d.db.GetDeploymentOrder(orderId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get deployment order, err: %v", err)
+	}
+
+	if access, err := d.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userId,
+		Scope:    apistructs.ProjectScope,
+		ScopeID:  order.ProjectId,
+		Resource: apistructs.ProjectResource,
+		Action:   apistructs.GetAction,
+	}); err != nil || !access.Access {
+		return nil, apierrors.ErrListDeploymentOrder.AccessDenied()
 	}
 
 	// get release info
@@ -82,6 +93,7 @@ func (d *DeploymentOrder) Get(orderId string) (*apistructs.DeploymentOrderDetail
 			Operator:  order.Operator.String(),
 			CreatedAt: order.CreatedAt,
 			UpdatedAt: order.UpdatedAt,
+			StartedAt: order.StartedAt,
 		},
 		ApplicationsInfo: asi,
 		ReleaseVersion:   releaseResp.Version,
@@ -97,36 +109,22 @@ func composeApplicationsInfo(releases []*apistructs.ReleaseGetResponseData, para
 		applicationName := subRelease.ApplicationName
 
 		// parse deployment order
-		orderParamsData := make([]*apistructs.DeploymentOrderParamData, 0)
+		orderParamsData := make(apistructs.DeploymentOrderParam, 0)
 
 		param, ok := params[applicationName]
 		if ok {
-			for _, env := range param.Env {
-				if env.IsEncrypt {
-					env.Value = ""
+			for _, data := range param {
+				if data.Encrypt {
+					data.Value = ""
 				}
 				orderParamsData = append(orderParamsData, &apistructs.DeploymentOrderParamData{
-					Key:        env.Key,
-					Value:      env.Value,
-					ConfigType: "ENV",
+					Key:     data.Key,
+					Value:   data.Value,
+					Encrypt: data.Encrypt,
+					Type:    convertConfigType(data.Type),
+					Comment: data.Comment,
 				})
 			}
-
-			for _, env := range param.File {
-				if env.IsEncrypt {
-					env.Value = ""
-				}
-				orderParamsData = append(orderParamsData, &apistructs.DeploymentOrderParamData{
-					Key:        env.Key,
-					Value:      env.Value,
-					ConfigType: "FILE",
-				})
-			}
-		}
-
-		paramJson, err := json.Marshal(orderParamsData)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal order param, err: %v", err)
 		}
 
 		var status apistructs.DeploymentStatus
@@ -136,9 +134,11 @@ func composeApplicationsInfo(releases []*apistructs.ReleaseGetResponseData, para
 		}
 
 		asi = append(asi, &apistructs.ApplicationInfo{
+			Id:             app.AppID,
 			Name:           applicationName,
 			DeploymentId:   app.DeploymentID,
-			Param:          string(paramJson),
+			Params:         &orderParamsData,
+			ReleaseId:      subRelease.ReleaseID,
 			ReleaseVersion: subRelease.Version,
 			Branch:         subRelease.Labels["gitBranch"],
 			CommitId:       subRelease.Labels["gitCommitId"],
@@ -183,4 +183,14 @@ func parseDeploymentOrderStatus(appStatus apistructs.DeploymentOrderStatusMap) a
 	}
 
 	return apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusOK)
+}
+
+func convertConfigType(configType string) string {
+	if configType == "dice-file" || configType == "kv" {
+		return configType
+	}
+	if configType == "FILE" {
+		return "dice-file"
+	}
+	return "kv"
 }

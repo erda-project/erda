@@ -191,7 +191,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// runtime endpoints
 		{Path: "/api/runtimes", Method: http.MethodPost, Handler: e.CreateRuntime},
-		{Path: "/api/runtimes/actions/deploy-release", Method: http.MethodPost, Handler: e.CreateRuntimeByRelease},
+		{Path: "/api/runtimes/actions/deploy-release", Method: http.MethodPost, Handler: e.CreateRuntimeByReleaseAction},
 		{Path: "/api/runtimes/actions/deploy-release-action", Method: http.MethodPost, Handler: e.CreateRuntimeByReleaseAction},
 		{Path: "/api/runtimes", Method: http.MethodGet, Handler: e.ListRuntimes},
 		{Path: "/api/runtimes/{idOrName}", Method: http.MethodGet, Handler: e.GetRuntime},
@@ -201,9 +201,9 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/runtimes/{runtimeID}/actions/stop", Method: http.MethodPost, Handler: e.StopRuntime},
 		{Path: "/api/runtimes/{runtimeID}/actions/start", Method: http.MethodPost, Handler: e.StartRuntime},
 		{Path: "/api/runtimes/{runtimeID}/actions/restart", Method: http.MethodPost, Handler: e.RestartRuntime},
-		{Path: "/api/runtimes/{runtimeID}/actions/redeploy", Method: http.MethodPost, Handler: e.RedeployRuntime},
+		{Path: "/api/runtimes/{runtimeID}/actions/redeploy", Method: http.MethodPost, Handler: e.RedeployRuntimeAction},
 		{Path: "/api/runtimes/{runtimeID}/actions/redeploy-action", Method: http.MethodPost, Handler: e.RedeployRuntimeAction},
-		{Path: "/api/runtimes/{runtimeID}/actions/rollback", Method: http.MethodPost, Handler: e.RollbackRuntime},
+		{Path: "/api/runtimes/{runtimeID}/actions/rollback", Method: http.MethodPost, Handler: e.RollbackRuntimeAction},
 		{Path: "/api/runtimes/{runtimeID}/actions/rollback-action", Method: http.MethodPost, Handler: e.RollbackRuntimeAction},
 		{Path: "/api/runtimes/actions/bulk-get-status", Method: http.MethodGet, Handler: e.epBulkGetRuntimeStatusDetail},
 		{Path: "/api/runtimes/actions/update-pre-overlay", Method: http.MethodPut, Handler: e.epUpdateOverlay},
@@ -219,7 +219,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/deployment-orders", Method: http.MethodPost, Handler: e.CreateDeploymentOrder},
 		{Path: "/api/deployment-orders/{deploymentOrderID}/actions/deploy", Method: http.MethodPost, Handler: e.DeployDeploymentOrder},
 		{Path: "/api/deployment-orders/{deploymentOrderID}/actions/cancel", Method: http.MethodPost, Handler: e.CancelDeploymentOrder},
-		{Path: "/api/deployment-orders/actions/render-name", Method: http.MethodGet, Handler: e.RenderDeploymentName},
+		{Path: "/api/deployment-orders/actions/render-detail", Method: http.MethodGet, Handler: e.RenderDeploymentOrderDetail},
 
 		// kill pod (only k8s)
 		{Path: "/api/runtimes/actions/killpod", Method: http.MethodPost, Handler: e.KillPod},

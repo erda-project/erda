@@ -16,6 +16,7 @@ package deployment_order
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -57,9 +58,10 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 	}
 
 	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
-		Type:   apistructs.TypePipeline,
-		Params: string(paramsJson),
-	}, releaseResp, "PROD")
+		Type:      apistructs.TypePipeline,
+		Params:    string(paramsJson),
+		Workspace: apistructs.WORKSPACE_PROD,
+	}, releaseResp)
 	assert.NoError(t, err)
 
 	releaseResp.ApplicationReleaseList = []*apistructs.ApplicationReleaseSummary{
@@ -67,9 +69,10 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 	}
 
 	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
-		Type:   apistructs.TypeProjectRelease,
-		Params: string(paramsJson),
-	}, releaseResp, "PROD")
+		Type:      apistructs.TypeProjectRelease,
+		Params:    string(paramsJson),
+		Workspace: apistructs.WORKSPACE_PROD,
+	}, releaseResp)
 	assert.NoError(t, err)
 }
 
@@ -80,13 +83,92 @@ func TestFetchDeploymentOrderParam(t *testing.T) {
 	defer monkey.UnpatchAll()
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "FetchDeploymentConfigDetail",
 		func(*bundle.Bundle, string) ([]apistructs.EnvConfig, []apistructs.EnvConfig, error) {
-			return []apistructs.EnvConfig{{Key: "key1", Value: "value1", ConfigType: "ENV"}},
+			return []apistructs.EnvConfig{{Key: "key1", Value: "value1", ConfigType: "ENV", Comment: "test1"}},
 				[]apistructs.EnvConfig{{Key: "key2", Value: "value2", ConfigType: "FILE", Encrypt: true}}, nil
 		},
 	)
 
-	got, err := order.fetchDeploymentOrderParam(1, "STAGING")
+	got, err := order.fetchDeploymentParams(1, "STAGING")
 	assert.NoError(t, err)
-	assert.Equal(t, got.Env[0].Key, "key1")
-	assert.Equal(t, got.File[0].IsEncrypt, true)
+	assert.Equal(t, got, &apistructs.DeploymentOrderParam{
+		{Key: "key1", Value: "value1", Type: "ENV", Comment: "test1"},
+		{Key: "key2", Value: "value2", Type: "FILE", Encrypt: true},
+	})
+}
+
+func TestParseDeploymentOrderShowName(t *testing.T) {
+	type args struct {
+		orderName string
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "pipeline",
+			args: args{
+				orderName: "master",
+			},
+			want: "master",
+		},
+		{
+			name: "project-error",
+			args: args{
+				orderName: "p_test2_0",
+			},
+			want: "p_test2_0",
+		},
+		{
+			name: "project",
+			args: args{
+				orderName: "p_015a3fbd6ae04f9ab6132d9cee5b99d5_0",
+			},
+			want: "p_015a3f_0",
+		},
+		{
+			name: "application",
+			args: args{
+				orderName: "a_015a3fbd6ae04f9ab6132d9cee5b99d5_0",
+			},
+			want: "a_015a3f_0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseDeploymentOrderShowName(tt.args.orderName)
+			assert.Equal(t, got, tt.want)
+		})
+	}
+}
+
+func TestRenderDeploymentOrderName(t *testing.T) {
+	order := New()
+
+	defer monkey.UnpatchAll()
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetOrderCountByProject", func(*dbclient.DBClient, uint64, string) (int64, error) {
+		return 10, nil
+	})
+
+	ret, err := order.renderDeploymentOrderName(1, "015a3fbd6ae04f9ab6132d9cee5b99d5", true)
+	assert.NoError(t, err)
+	assert.Equal(t, ret, "p_015a3fbd6ae04f9ab6132d9cee5b99d5_10")
+	ret2, err := order.renderDeploymentOrderName(1, "015a3fbd6ae04f9ab6132d9cee5b99d5", false)
+	assert.NoError(t, err)
+	assert.Equal(t, ret2, "a_015a3fbd6ae04f9ab6132d9cee5b99d5_10")
+}
+
+func TestParseShowParams(t *testing.T) {
+	data := apistructs.DeploymentOrderParam{
+		{Key: "key1", Value: "value1", Type: "FILE"},
+		{Key: "key2", Value: "value2", Type: "ENV"},
+	}
+	got := covertParamsType(&data)
+	for _, p := range *got {
+		if !(p.Type == "dice-file" || p.Type == "kv") {
+			panic(fmt.Errorf("params type error: %v", p.Type))
+		}
+	}
 }
