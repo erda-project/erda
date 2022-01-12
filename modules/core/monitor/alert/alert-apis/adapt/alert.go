@@ -218,18 +218,25 @@ func (a *Adapt) QueryOrgAlertRule(lang i18n.LanguageCodes, orgID uint64) (*pb.Al
 }
 
 // QueryAlert .
-func (a *Adapt) QueryAlert(code i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize uint64) ([]*pb.Alert, error) {
+func (a *Adapt) QueryAlert(code i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize uint64) ([]*pb.Alert, []string, error) {
 	alerts, err := a.db.Alert.QueryByScopeAndScopeID(scope, scopeID, pageNo, pageSize)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var alertIDs []uint64
+	var userIDs []string
+	userIDMap := make(map[string]bool)
 	for _, alert := range alerts {
 		alertIDs = append(alertIDs, alert.ID)
+		userId := alert.CreatorID
+		if userId != "" && !userIDMap[userId] {
+			userIDs = append(userIDs, userId)
+			userIDMap[userId] = true
+		}
 	}
 	notifyMap, err := a.getAlertNotifysByAlertIDs(alertIDs)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var list []*pb.Alert
 	for _, item := range alerts {
@@ -237,7 +244,7 @@ func (a *Adapt) QueryAlert(code i18n.LanguageCodes, scope, scopeID string, pageN
 		alert.Notifies = notifyMap[alert.Id]
 		list = append(list, alert)
 	}
-	return list, nil
+	return list, userIDs, nil
 }
 
 // according to alertID get alert
@@ -297,11 +304,11 @@ func (a *Adapt) getNotifyGroupRelByIDs(groupIDs []string) map[int64]*pb.NotifyGr
 }
 
 // QueryOrgAlert .
-func (a *Adapt) QueryOrgAlert(lang i18n.LanguageCodes, orgID uint64, pageNo, pageSize uint64) ([]*pb.Alert, error) {
+func (a *Adapt) QueryOrgAlert(lang i18n.LanguageCodes, orgID uint64, pageNo, pageSize uint64) ([]*pb.Alert, []string, error) {
 	scopeID := strconv.FormatUint(orgID, 10)
-	alerts, err := a.QueryAlert(lang, "org", scopeID, pageNo, pageSize)
+	alerts, userIds, err := a.QueryAlert(lang, "org", scopeID, pageNo, pageSize)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for _, alert := range alerts {
 		output := a.ValueMapToInterfaceMap(alert.Attributes)
@@ -316,7 +323,7 @@ func (a *Adapt) QueryOrgAlert(lang i18n.LanguageCodes, orgID uint64, pageNo, pag
 		}
 		alert.Attributes = nil
 	}
-	return alerts, nil
+	return alerts, userIds, nil
 }
 
 // CountAlert .

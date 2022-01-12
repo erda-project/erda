@@ -319,7 +319,8 @@ message QueryCustomizeAlertRequest {
 }
 
 message QueryCustomizeAlertResponse {
-  QueryCustomizeAlertData data = 1;
+  QueryCustomizeAlertData data    = 1;
+  repeated string         userIDs = 2;
 }
 
 message QueryCustomizeAlertData {
@@ -337,6 +338,7 @@ message CustomizeAlertOverview {
   bool            enable        = 7;
   int64           createTime    = 8;
   int64           updateTime    = 9;
+  string          creator       = 10;
 }
 
 message GetCustomizeAlertRequest {
@@ -482,7 +484,9 @@ message QueryOrgCustomizeAlertsRequest {
 }
 
 message QueryOrgCustomizeAlertsResponse {
-  QueryOrgCustomizeAlertsData data = 1;
+  QueryOrgCustomizeAlertsData data    = 1;
+  repeated string             userIDs = 2;
+
 }
 
 message QueryOrgCustomizeAlertsData {
@@ -677,7 +681,8 @@ message QueryAlertRequest {
 }
 
 message QueryAlertsResponse {
-  QueryAlertsData data = 1;
+  QueryAlertsData data    = 1;
+  repeated string userIDs = 2;
 }
 
 message QueryAlertsData {
@@ -700,6 +705,7 @@ message Alert {
   int64                              createTime       = 12;
   int64                              updateTime       = 13;
   repeated TriggerCondition          triggerCondition = 14;
+  string                             creator          = 15;
 }
 
 message AlertExpression {
@@ -846,7 +852,8 @@ message QueryOrgAlertRequest {
 }
 
 message QueryOrgAlertResponse {
-  QueryOrgAlertData data = 1;
+  QueryOrgAlertData data    = 1;
+  repeated string   userIDs = 2;
 }
 
 message QueryOrgAlertData {

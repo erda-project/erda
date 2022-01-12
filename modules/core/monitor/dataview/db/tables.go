@@ -56,6 +56,7 @@ type CustomView struct {
 	ScopeID    string    `gorm:"column:scope_id" json:"scopeId"`
 	ViewConfig string    `gorm:"column:view_config" json:"viewConfig"`
 	DataConfig string    `gorm:"column:data_config" json:"dataConfig"`
+	CreatorID  string    `gorm:"column:creator_id" json:"creator_id"`
 	CreatedAt  time.Time `gorm:"column:created_at" json:"createdAt"`
 	UpdatedAt  time.Time `gorm:"column:updated_at" json:"updatedAt"`
 }

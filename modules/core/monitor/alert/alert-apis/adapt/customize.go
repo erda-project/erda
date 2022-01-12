@@ -293,24 +293,32 @@ const (
 )
 
 // CustomizeAlerts .
-func (a *Adapt) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize int) ([]*pb.CustomizeAlertOverview, int, error) {
+func (a *Adapt) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize int) ([]*pb.CustomizeAlertOverview, []string, int, error) {
 	alerts, err := a.db.CustomizeAlert.QueryByScopeAndScopeID(scope, scopeID, pageNo, pageSize)
 	if err != nil {
-		return nil, 0, err
+		return nil, nil, 0, err
 	}
 	var alertIDs []uint64
+	var userIDs []string
+	userIDMap := make(map[string]bool)
+
 	for _, alert := range alerts {
 		alertIDs = append(alertIDs, alert.ID)
+		userId := alert.CreatorID
+		if userId != "" && !userIDMap[userId] {
+			userIDs = append(userIDs, userId)
+			userIDMap[userId] = true
+		}
 	}
 	// get alert rule
 	rulesMap, err := a.getCustomizeAlertRulesByAlertIDs(alertIDs)
 	if err != nil {
-		return nil, 0, err
+		return nil, nil, 0, err
 	}
 	// get alert notify template
 	notifyTemplatesMap, err := a.getCustomizeAlertNotifyTemplatesByAlertIDs(alertIDs)
 	if err != nil {
-		return nil, 0, err
+		return nil, nil, 0, err
 	}
 	var list []*pb.CustomizeAlertOverview
 	for _, item := range alerts {
@@ -322,9 +330,9 @@ func (a *Adapt) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, 
 	}
 	total, err := a.db.CustomizeAlert.CountByScopeAndScopeID(scope, scopeID)
 	if err != nil {
-		return nil, 0, err
+		return nil, nil, 0, err
 	}
-	return list, total, nil
+	return list, userIDs, total, nil
 }
 
 // return alertID to rules Map
@@ -544,7 +552,7 @@ func (a *Adapt) CustomizeAlertDetail(id uint64) (*pb.CustomizeAlertDetail, error
 }
 
 // CreateCustomizeAlert .
-func (a *Adapt) CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (alertID uint64, err error) {
+func (a *Adapt) CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail, userID string) (alertID uint64, err error) {
 	tx := a.db.Begin()
 	defer func() {
 		if err != nil {
@@ -581,6 +589,7 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (aler
 	alertDetail.Attributes["alert_index"] = alertIndex
 	//alertDetail.Attributes["alert_dashboard_id"] = alertDashboardID
 	alert := a.CustomizeAlertToModel(alertDetail)
+	alert.CreatorID = userID
 	if err := tx.CustomizeAlert.Insert(alert); err != nil {
 		return 0, err
 	}

@@ -21,6 +21,7 @@ import (
 
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
@@ -45,19 +46,28 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	var userIDs []string
+	userIDMap := make(map[string]bool)
 	akList := make([]*pb.QueryAccessKeys, 0)
 	for _, v := range accessKeyList.Data {
 		ak := &pb.QueryAccessKeys{
 			Id:        v.Id,
 			Token:     v.AccessKey,
 			CreatedAt: v.CreatedAt,
+			Creator:   v.CreatorId,
 		}
 		akList = append(akList, ak)
+		userId := v.CreatorId
+		if userId != "" && !userIDMap[userId] {
+			userIDs = append(userIDs, userId)
+			userIDMap[userId] = true
+		}
 	}
 	result := &pb.QueryAccessKeysResponse{
 		Data: &pb.QueryAccessKeysData{
 			List: akList,
 		},
+		UserIDs: userIDs,
 	}
 	result.Data.Total = accessKeyList.Total
 	return result, nil
@@ -88,12 +98,14 @@ func (a *accessKeyService) DownloadAccessKeyFile(ctx context.Context, request *p
 }
 
 func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.CreateAccessKeyRequest) (*pb.CreateAccessKeyResponse, error) {
+	userId := apis.GetUserID(ctx)
 	req := &akpb.CreateAccessKeyRequest{
 		SubjectType: request.SubjectType,
 		Subject:     request.Subject,
 		Description: request.Description,
 		Scope:       MSP_SCOPE,
 		ScopeId:     request.ScopeId,
+		CreatorId:   userId,
 	}
 	accessKey, err := a.p.AccessKeyService.CreateAccessKey(ctx, req)
 	if err != nil {

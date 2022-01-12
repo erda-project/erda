@@ -35,6 +35,7 @@ type LogMetricConfig struct {
 	Filters    []*Tag             `json:"filters"`
 	Processors []*ProcessorConfig `json:"processors"`
 	Enable     bool               `json:"enable"`
+	CreatorID  string             `json:"creator_id"`
 	CreateTime int64              `json:"create_time"`
 	UpdateTime int64              `json:"update_time"`
 }
@@ -93,6 +94,7 @@ func (c *LogMetricConfig) ToModel() *db.LogMetricConfig {
 		Filters:    string(filters),
 		Processors: string(processors),
 		Enable:     c.Enable,
+		CreatorID:  c.CreatorID,
 		CreateTime: time.Unix(c.CreateTime/1000, (c.CreateTime%1000)*int64(time.Millisecond)),
 		UpdateTime: time.Unix(c.UpdateTime/1000, (c.UpdateTime%1000)*int64(time.Millisecond)),
 	}
@@ -108,6 +110,7 @@ type LogMetricConfigSimple struct {
 	Types      string `json:"types"`
 	Metric     string `json:"metric"`
 	Enable     bool   `json:"enable"`
+	Creator    string `json:"creator"`
 	CreateTime int64  `json:"create_time"`
 	UpdateTime int64  `json:"update_time"`
 }
@@ -123,6 +126,7 @@ func (c *LogMetricConfigSimple) FromModel(m *db.LogMetricConfig) *LogMetricConfi
 	c.Enable = m.Enable
 	c.CreateTime = m.CreateTime.UnixNano() / int64(time.Millisecond)
 	c.UpdateTime = m.UpdateTime.UnixNano() / int64(time.Millisecond)
+	c.Creator = m.CreatorID
 	// ProcessorConfig .
 	type ProcessorConfig struct {
 		Type string `json:"type"`

@@ -180,6 +180,11 @@ func (m *GetAccessKeyResponse) UnmarshalURLValues(prefix string, values url.Valu
 					m.Data = &AccessKeysItem{}
 				}
 				m.Data.Token = vals[0]
+			case "data.creatorId":
+				if m.Data == nil {
+					m.Data = &AccessKeysItem{}
+				}
+				m.Data.CreatorId = vals[0]
 			}
 		}
 	}
@@ -200,6 +205,8 @@ func (m *CreateAccessKeyRequest) UnmarshalURLValues(prefix string, values url.Va
 				m.Scope = vals[0]
 			case "scopeId":
 				m.ScopeId = vals[0]
+			case "creatorId":
+				m.CreatorId = vals[0]
 			}
 		}
 	}
@@ -294,6 +301,11 @@ func (m *CreateAccessKeyResponse) UnmarshalURLValues(prefix string, values url.V
 					m.Data = &AccessKeysItem{}
 				}
 				m.Data.Token = vals[0]
+			case "data.creatorId":
+				if m.Data == nil {
+					m.Data = &AccessKeysItem{}
+				}
+				m.Data.CreatorId = vals[0]
 			}
 		}
 	}
@@ -384,6 +396,8 @@ func (m *AccessKeysItem) UnmarshalURLValues(prefix string, values url.Values) er
 				m.ScopeId = vals[0]
 			case "token":
 				m.Token = vals[0]
+			case "creatorId":
+				m.CreatorId = vals[0]
 			}
 		}
 	}

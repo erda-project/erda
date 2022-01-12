@@ -18,7 +18,7 @@ service DataViewService {
   };
 
   rpc ListSystemViews (ListSystemViewsRequest) returns (ListSystemViewsResponse)  {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       get: "/api/dashboard/system/blocks?scopeId={scopeID}"
     };
     option (erda.common.openapi) = {
@@ -26,7 +26,7 @@ service DataViewService {
     };
   }
   rpc GetSystemView (GetSystemViewRequest) returns (GetSystemViewResponse)  {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       get: "/api/dashboard/system/blocks/{id}"
     };
     option (erda.common.openapi) = {
@@ -35,7 +35,7 @@ service DataViewService {
   }
 
   rpc ListCustomViews (ListCustomViewsRequest) returns (ListCustomViewsResponse) {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       get: "/api/dashboard/blocks?scopeId={scopeID}"
     };
     option (erda.common.openapi) = {
@@ -43,7 +43,7 @@ service DataViewService {
     };
   }
   rpc GetCustomView (GetCustomViewRequest) returns (GetCustomViewResponse) {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       get: "/api/dashboard/blocks/{id}"
     };
     option (erda.common.openapi) = {
@@ -51,7 +51,7 @@ service DataViewService {
     };
   }
   rpc CreateCustomView (CreateCustomViewRequest) returns (CreateCustomViewResponse) {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       post: "/api/dashboard/blocks",
     };
     option (erda.common.openapi) = {
@@ -59,7 +59,7 @@ service DataViewService {
     };
   }
   rpc UpdateCustomView (UpdateCustomViewRequest) returns (UpdateCustomViewResponse) {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       put: "/api/dashboard/blocks/{id}",
     };
     option (erda.common.openapi) = {
@@ -67,7 +67,7 @@ service DataViewService {
     };
   }
   rpc DeleteCustomView (DeleteCustomViewRequest) returns (DeleteCustomViewResponse) {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       delete: "/api/dashboard/blocks/{id}"
     };
     option (erda.common.openapi) = {
@@ -103,7 +103,8 @@ message ListCustomViewsRequest {
 }
 
 message ListCustomViewsResponse {
-  ViewList data = 1;
+  ViewList        data    = 1;
+  repeated string userIDs = 2;
 }
 
 // GetCustomView
@@ -167,6 +168,7 @@ message View {
   string         name      = 5;
   string         desc      = 6;
   repeated Block blocks    = 7 [json_name = "viewConfig"];
+  string         creator   = 8;
   int64          createdAt = 9;
   int64          updatedAt = 10;
 }

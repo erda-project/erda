@@ -34,6 +34,7 @@ type LogMetricConfig struct {
 	Filters    string    `gorm:"column:filters" json:"filters"`
 	Processors string    `gorm:"column:processors" json:"processors"`
 	Enable     bool      `gorm:"column:enable" json:"enable"`
+	CreatorID  string    `gorm:"column:creator_id" json:"creator_id"`
 	CreateTime time.Time `gorm:"column:create_time" json:"create_time"`
 	UpdateTime time.Time `gorm:"column:update_time" json:"update_time"`
 }

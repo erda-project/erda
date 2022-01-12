@@ -34,6 +34,7 @@ type AccessKey struct {
 	SubjectType pb.SubjectTypeEnum_SubjectType `json:"subjectType" gorm:"comment:'authentication subject type. eg: organization, micro_service, system'"`
 	Subject     string                         `json:"subject" gorm:"comment:'authentication subject identifier. eg: id, name or something'"`
 	Description string                         `json:"description" gorm:"comment:'description'"`
+	CreatorID   string                         `gorm:"column:creator_id" json:"creator_id"`
 	CreatedAt   time.Time                      `json:"createdAt" gorm:"comment:'created time'"`
 	UpdatedAt   time.Time                      `json:"updatedAt"`
 }
