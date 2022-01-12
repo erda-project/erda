@@ -916,32 +916,6 @@ func (topology *provider) GetExceptionDescription(language i18n.LanguageCodes, p
 	return exceptionDescriptions, nil
 }
 
-func (topology *provider) GetDashBoardByServiceType(params ProcessParams) (string, error) {
-
-	for _, processType := range ProcessTypes {
-		metricsParams := url.Values{}
-		statement := fmt.Sprintf("SELECT terminus_key::tag FROM %s WHERE terminus_key=$terminus_key "+
-			"AND service_name=$service_name LIMIT 1", processType)
-		queryParams := map[string]interface{}{
-			"terminus_key": params.TerminusKey,
-			"service_name": params.ServiceName,
-		}
-		response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
-		if err != nil {
-			return "", err
-		}
-		rows := response.ResultSet.Rows
-		if len(rows) == 1 {
-			return getDashboardId(processType), nil
-		}
-	}
-	return "", nil
-}
-
-func (topology *provider) GetProcessType(language string, params ServiceParams) (interface{}, error) {
-	return nil, nil
-}
-
 type InstanceInfo struct {
 	Id     string `json:"instanceId"`
 	Ip     string `json:"ip"`
