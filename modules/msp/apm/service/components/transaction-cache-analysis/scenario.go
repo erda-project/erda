@@ -16,6 +16,7 @@ package transaction_cache_analysis
 
 import (
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/avg_duration"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/req_distribution"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/rps"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/table"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis/table_filter"

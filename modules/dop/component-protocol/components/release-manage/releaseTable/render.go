@@ -118,21 +118,21 @@ func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) e
 }
 
 func (r *ComponentReleaseTable) DecodeURLQuery() error {
-	queryData, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
+	query, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(queryData)
+	decode, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
-	query := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &query); err != nil {
+	urlQuery := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &urlQuery); err != nil {
 		return err
 	}
-	r.State.PageNo = int64(query["pageNo"].(float64))
-	r.State.PageSize = int64(query["pageSize"].(float64))
-	sorter := query["sorterData"].(map[string]interface{})
+	r.State.PageNo = int64(urlQuery["pageNo"].(float64))
+	r.State.PageSize = int64(urlQuery["pageSize"].(float64))
+	sorter := urlQuery["sorterData"].(map[string]interface{})
 	r.State.Sorter.Field, _ = sorter["field"].(string)
 	r.State.Sorter.Order, _ = sorter["order"].(string)
 	return nil
@@ -467,7 +467,7 @@ func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {
 	if err != nil {
 		return errors.New("invalid org id")
 	}
-	return r.bdl.ToFormalReleases(orgID, apistructs.ReleasesToFormalRequest{
+	return r.bdl.ToFormalReleases(orgID, userID, apistructs.ReleasesToFormalRequest{
 		ProjectID: projectID,
 		ReleaseID: releaseID,
 	})
@@ -506,7 +506,7 @@ func (r *ComponentReleaseTable) deleteReleases(releaseID []string) error {
 	if err != nil {
 		return errors.New("invalid org id")
 	}
-	return r.bdl.DeleteReleases(orgID, apistructs.ReleasesDeleteRequest{
+	return r.bdl.DeleteReleases(orgID, userID, apistructs.ReleasesDeleteRequest{
 		ProjectID: projectID,
 		ReleaseID: releaseID,
 	})

@@ -15,6 +15,7 @@
 package query
 
 import (
+	"embed"
 	"fmt"
 
 	"github.com/jinzhu/gorm"
@@ -23,6 +24,8 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/cassandra"
+	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
+	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
@@ -41,11 +44,14 @@ type querySource struct {
 	Cassandra     bool `file:"cassandra"`
 }
 
+//go:embed scenarios
+var scenarioFS embed.FS
+
 // +provider
 type provider struct {
 	Cfg              *config
 	Log              logs.Logger
-	traceService     *traceService
+	traceService     *TraceService
 	I18n             i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
 	Register         transport.Register           `autowired:"service-register"`
 	Metric           metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
@@ -53,9 +59,13 @@ type provider struct {
 	Cassandra        cassandra.Interface          `autowired:"cassandra" optional:"true"`
 	StorageReader    storage.Storage              `autowired:"span-storage-elasticsearch-reader" optional:"true"`
 	cassandraSession *cassandra.Session
+	Protocol         componentprotocol.Interface
+	CPTran           i18n.I18n `autowired:"i18n"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.Protocol.SetI18nTran(p.CPTran)
+	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	// translator
 	if p.Cassandra != nil {
 		session, err := p.Cassandra.NewSession(&p.Cfg.Cassandra)
@@ -65,7 +75,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.cassandraSession = session
 	}
 
-	p.traceService = &traceService{
+	p.traceService = &TraceService{
 		p:                     p,
 		i18n:                  p.I18n,
 		traceRequestHistoryDB: &db.TraceRequestHistoryDB{DB: p.DB},

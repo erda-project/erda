@@ -89,11 +89,11 @@ func Test_traceService_GetSpans(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.TraceServiceServer)
 			got, err := srv.GetSpans(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("traceService.GetSpans() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("TraceService.GetSpans() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("traceService.GetSpans() = %v, want %v", got, tt.wantResp)
+				t.Errorf("TraceService.GetSpans() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -190,11 +190,11 @@ func Test_traceService_GetTraces(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.TraceServiceServer)
 			got, err := srv.GetTraces(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("traceService.GetTraces() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("TraceService.GetTraces() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("traceService.GetTraces() = %v, want %v", got, tt.wantResp)
+				t.Errorf("TraceService.GetTraces() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -247,11 +247,11 @@ func Test_traceService_GetTraceQueryConditions(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.TraceServiceServer)
 			got, err := srv.GetTraceQueryConditions(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("traceService.GetTraceQueryConditions() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("TraceService.GetTraceQueryConditions() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("traceService.GetTraceQueryConditions() = %v, want %v", got, tt.wantResp)
+				t.Errorf("TraceService.GetTraceQueryConditions() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -304,11 +304,11 @@ func Test_traceService_GetTraceDebugHistories(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.TraceServiceServer)
 			got, err := srv.GetTraceDebugHistories(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("traceService.GetTraceDebugHistories() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("TraceService.GetTraceDebugHistories() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("traceService.GetTraceDebugHistories() = %v, want %v", got, tt.wantResp)
+				t.Errorf("TraceService.GetTraceDebugHistories() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -361,11 +361,11 @@ func Test_traceService_GetTraceDebugByRequestID(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.TraceServiceServer)
 			got, err := srv.GetTraceDebugByRequestID(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("traceService.GetTraceDebugByRequestID() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("TraceService.GetTraceDebugByRequestID() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("traceService.GetTraceDebugByRequestID() = %v, want %v", got, tt.wantResp)
+				t.Errorf("TraceService.GetTraceDebugByRequestID() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -418,11 +418,11 @@ func Test_traceService_StopTraceDebug(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.TraceServiceServer)
 			got, err := srv.StopTraceDebug(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("traceService.StopTraceDebug() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("TraceService.StopTraceDebug() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("traceService.StopTraceDebug() = %v, want %v", got, tt.wantResp)
+				t.Errorf("TraceService.StopTraceDebug() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -475,11 +475,11 @@ func Test_traceService_GetTraceDebugHistoryStatusByRequestID(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.TraceServiceServer)
 			got, err := srv.GetTraceDebugHistoryStatusByRequestID(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("traceService.GetTraceDebugHistoryStatusByRequestID() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("TraceService.GetTraceDebugHistoryStatusByRequestID() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("traceService.GetTraceDebugHistoryStatusByRequestID() = %v, want %v", got, tt.wantResp)
+				t.Errorf("TraceService.GetTraceDebugHistoryStatusByRequestID() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -711,7 +711,7 @@ func Test_traceService_getDebugStatus(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &traceService{
+			s := &TraceService{
 				p:                     tt.fields.p,
 				i18n:                  tt.fields.i18n,
 				traceRequestHistoryDB: tt.fields.traceRequestHistoryDB,
@@ -747,7 +747,7 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 			Status:   "trace_all",
 			Limit:    100,
 			Sort:     "100",
-		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
+		}}, "SELECT trace_id::tag,trace_duration::field,start_time::field,span_count::field,service_names::field FROM trace WHERE errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 0 OFFSET 0"},
 		{"case-duration", fields{
 			p:                     nil,
 			i18n:                  nil,
@@ -759,7 +759,7 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 			DurationMin: 1000000,
 			DurationMax: 3000000,
 			Sort:        "100",
-		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE trace_duration::field>$duration_min AND trace_duration::field<$duration_max AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
+		}}, "SELECT trace_id::tag,trace_duration::field,start_time::field,span_count::field,service_names::field FROM trace WHERE trace_duration::field>$duration_min AND trace_duration::field<$duration_max AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 0 OFFSET 0"},
 		{"case-traceId", fields{
 			p:                     nil,
 			i18n:                  nil,
@@ -770,7 +770,7 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 			Limit:    100,
 			TraceID:  "test-case-trace-id",
 			Sort:     "100",
-		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE trace_id::tag=$trace_id AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
+		}}, "SELECT trace_id::tag,trace_duration::field,start_time::field,span_count::field,service_names::field FROM trace WHERE trace_id::tag=$trace_id AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 0 OFFSET 0"},
 		{"case-httpPath", fields{
 			p:                     nil,
 			i18n:                  nil,
@@ -782,7 +782,7 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 			TraceID:  "test-case-trace-id",
 			HttpPath: "/api/health",
 			Sort:     "100",
-		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE trace_id::tag=$trace_id AND http_paths::field=$http_paths AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
+		}}, "SELECT trace_id::tag,trace_duration::field,start_time::field,span_count::field,service_names::field FROM trace WHERE trace_id::tag=$trace_id AND http_paths::field=$http_paths AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 0 OFFSET 0"},
 		{"case-rpcMethod", fields{
 			p:                     nil,
 			i18n:                  nil,
@@ -794,7 +794,7 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 			TraceID:   "test-case-trace-id",
 			RpcMethod: "io.terminus.xxx",
 			Sort:      "100",
-		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE trace_id::tag=$trace_id AND rpc_methods::field=$rpc_methods AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
+		}}, "SELECT trace_id::tag,trace_duration::field,start_time::field,span_count::field,service_names::field FROM trace WHERE trace_id::tag=$trace_id AND rpc_methods::field=$rpc_methods AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 0 OFFSET 0"},
 		{"case-serviceName", fields{
 			p:                     nil,
 			i18n:                  nil,
@@ -806,16 +806,16 @@ func Test_traceService_composeTraceQueryConditions(t *testing.T) {
 			TraceID:     "test-case-trace-id",
 			ServiceName: "apm-demo-api",
 			Sort:        "100",
-		}}, "SELECT start_time::field,end_time::field,service_names::field,trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE trace_id::tag=$trace_id AND service_names::field=$service_names AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 100"},
+		}}, "SELECT trace_id::tag,trace_duration::field,start_time::field,span_count::field,service_names::field FROM trace WHERE trace_id::tag=$trace_id AND service_names::field=$service_names AND errors_sum::field>=0 AND terminus_keys::field=$terminus_keys ORDER BY start_time::field DESC LIMIT 0 OFFSET 0"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &traceService{
+			s := &TraceService{
 				p:                     tt.fields.p,
 				i18n:                  tt.fields.i18n,
 				traceRequestHistoryDB: tt.fields.traceRequestHistoryDB,
 			}
-			_, want := s.composeTraceQueryConditions(tt.args.req)
+			_, want, _ := s.composeTraceQueryConditions(tt.args.req)
 			if want != tt.want {
 				t.Errorf("composeTraceQueryConditions() got1 = %v, want %v", want, tt.want)
 			}
@@ -872,7 +872,7 @@ func Test_traceService_getSpanCallAnalysis(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &traceService{
+			s := &TraceService{
 				p:                     tt.fields.p,
 				i18n:                  tt.fields.i18n,
 				traceRequestHistoryDB: tt.fields.traceRequestHistoryDB,
@@ -992,7 +992,7 @@ func Test_traceService_handleSpanResponse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &traceService{
+			s := &TraceService{
 				p:                     tt.fields.p,
 				i18n:                  tt.fields.i18n,
 				traceRequestHistoryDB: tt.fields.traceRequestHistoryDB,
@@ -1067,18 +1067,18 @@ func Test_traceService_GetSpanEvents(t *testing.T) {
 					},
 				}, nil
 			})
-			s := &traceService{
+			s := &TraceService{
 				p:                     &provider{Metric: metricq},
 				i18n:                  nil,
 				traceRequestHistoryDB: nil,
 			}
 			got, err := s.GetSpanEvents(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("traceService.GetSpanEvents() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("TraceService.GetSpanEvents() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("traceService.GetSpanEvents() = %v, want %v", got, tt.wantResp)
+				t.Errorf("TraceService.GetSpanEvents() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -1142,7 +1142,7 @@ func Test_traceService_getSpanEventQueryTime(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &traceService{
+			s := &TraceService{
 				p:                     nil,
 				i18n:                  nil,
 				traceRequestHistoryDB: nil,
@@ -1196,7 +1196,7 @@ func Test_traceService_handleSpanEventResponse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &traceService{
+			s := &TraceService{
 				p:                     nil,
 				i18n:                  nil,
 				traceRequestHistoryDB: nil,
@@ -1226,7 +1226,7 @@ func Test_traceService_CreateTraceDebug(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &traceService{}
+			s := &TraceService{}
 			_, err := s.CreateTraceDebug(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateTraceDebug() error = %v, wantErr %v", err, tt.wantErr)
@@ -1311,7 +1311,7 @@ func Test_GetSpanCount_WithCassandraEnabled_Should_Not_Error(t *testing.T) {
 	defer ctrl.Finish()
 	storage.EXPECT().Count(gomock.Any(), gomock.Any()).Return(int64(1))
 
-	s := &traceService{
+	s := &TraceService{
 		p: &provider{
 			Cfg: &config{
 				QuerySource: querySource{
@@ -1364,7 +1364,7 @@ func Test_GetSpanCount_WithCassandraDisabled_Should_Not_CallCassandra(t *testing
 	defer ctrl.Finish()
 	storage.EXPECT().Count(gomock.Any(), gomock.Any()).Return(int64(1))
 
-	s := &traceService{
+	s := &TraceService{
 		p: &provider{
 			Cfg: &config{
 				QuerySource: querySource{

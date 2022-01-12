@@ -12,6 +12,8 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*GetServiceLanguageResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetServiceLanguageRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetServiceOverviewTopRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetServiceOverviewTopResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetServiceCountRequest)(nil)
@@ -27,6 +29,34 @@ var _ urlenc.URLValuesUnmarshaler = (*ServiceTop)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ServiceChart)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Service)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AggregateMetric)(nil)
+
+// GetServiceLanguageResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetServiceLanguageResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "language":
+				m.Language = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetServiceLanguageRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetServiceLanguageRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "tenantId":
+				m.TenantId = vals[0]
+			case "serviceId":
+				m.ServiceId = vals[0]
+			}
+		}
+	}
+	return nil
+}
 
 // GetServiceOverviewTopRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetServiceOverviewTopRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -235,6 +265,16 @@ func (m *Chart) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.Value = val
 			case "dimension":
 				m.Dimension = vals[0]
+			case "extraValues":
+				list := make([]float64, 0, len(vals))
+				for _, text := range vals {
+					val, err := strconv.ParseFloat(text, 64)
+					if err != nil {
+						return err
+					}
+					list = append(list, val)
+				}
+				m.ExtraValues = list
 			}
 		}
 	}

@@ -12,16 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package orchestrator
+package resources_runtime_monitor_java
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
-
-var ORCHESTRATOR_DEPLOYMENT_ORDER_RENDER_NAME = apis.ApiSpec{
-	Path:        "/api/deployment-orders/actions/render-name",
-	BackendPath: "/api/deployment-orders/actions/render-name",
-	Host:        "orchestrator.marathon.l4lb.thisdcos.directory:8081",
-	Scheme:      "http",
-	Method:      "GET",
-	CheckToken:  true,
-	CheckLogin:  true,
-}
+import (
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/resources-runtime-monitor-java/runtime"
+)
