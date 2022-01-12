@@ -186,6 +186,9 @@ func parseDeploymentOrderStatus(appStatus apistructs.DeploymentOrderStatusMap) a
 }
 
 func convertConfigType(configType string) string {
+	if configType == "dice-file" || configType == "kv" {
+		return configType
+	}
 	if configType == "FILE" {
 		return "dice-file"
 	}

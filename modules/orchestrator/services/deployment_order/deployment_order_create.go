@@ -145,7 +145,7 @@ func (d *DeploymentOrder) RenderDetail(userId, releaseId, workspace string) (*ap
 			asi = append(asi, &apistructs.ApplicationInfo{
 				Id:     uint64(r.ApplicationID),
 				Name:   r.ApplicationName,
-				Params: params[r.ApplicationName],
+				Params: covertParamsType(params[r.ApplicationName]),
 			})
 		}
 
@@ -158,7 +158,7 @@ func (d *DeploymentOrder) RenderDetail(userId, releaseId, workspace string) (*ap
 		asi = append(asi, &apistructs.ApplicationInfo{
 			Id:     uint64(releaseResp.ApplicationID),
 			Name:   releaseResp.ApplicationName,
-			Params: params,
+			Params: covertParamsType(params),
 		})
 	}
 
@@ -473,4 +473,14 @@ func parseDeploymentOrderShowName(orderName string) string {
 	} else {
 		return orderName
 	}
+}
+
+func covertParamsType(param *apistructs.DeploymentOrderParam) *apistructs.DeploymentOrderParam {
+	if param == nil {
+		return param
+	}
+	for _, data := range *param {
+		data.Type = convertConfigType(data.Type)
+	}
+	return param
 }
