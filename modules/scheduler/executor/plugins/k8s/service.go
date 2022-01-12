@@ -44,6 +44,21 @@ func (k *Kubernetes) PutService(svc *apiv1.Service) error {
 	return k.service.Put(svc)
 }
 
+// CreateOrPutService if service doesn't exist, create, else update.
+func (k *Kubernetes) CreateOrPutService(service *apistructs.Service, selectors map[string]string) error {
+	svc := newService(service, selectors)
+
+	curSvc, err := k.service.Get(svc.Namespace, svc.Name)
+	if err != nil && err != k8serror.ErrNotFound {
+		return err
+	}
+
+	if curSvc != nil {
+		return k.service.Put(svc)
+	}
+	return k.service.Create(svc)
+}
+
 // GetService get k8s service
 func (k *Kubernetes) GetService(namespace, name string) (*apiv1.Service, error) {
 	return k.service.Get(namespace, name)
@@ -242,9 +257,9 @@ func (k *Kubernetes) createProjectService(service *apistructs.Service, sgID stri
 				"app":               service.Name,
 			}
 			projectService.Name = service.ProjectServiceName
-			projectServiceErr := k.CreateService(projectService, selectors)
+			projectServiceErr := k.CreateOrPutService(projectService, selectors)
 			if projectServiceErr != nil {
-				errMsg := fmt.Sprintf("Create project service %s err %v", projectService.Name, projectServiceErr)
+				errMsg := fmt.Sprintf("detail project service %s err %v", projectService.Name, projectServiceErr)
 				logrus.Errorf(errMsg)
 				return fmt.Errorf(errMsg)
 			}

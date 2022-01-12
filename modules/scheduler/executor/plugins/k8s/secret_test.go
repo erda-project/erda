@@ -15,12 +15,15 @@
 package k8s
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/secret"
@@ -92,4 +95,85 @@ func TestUpdateImageSecret(t *testing.T) {
 	_ = k8s.UpdateImageSecret("test", registryInfos)
 	assert.Equal(t, nil, nil)
 
+}
+
+func TestParseImageSecret(t *testing.T) {
+	infos := []apistructs.RegistryInfo{
+		{
+			Host:     "fake-registry.erda.cloud",
+			UserName: "fake",
+			Password: "fake",
+		},
+	}
+
+	dockerConfigJson := &apistructs.RegistryAuthJson{
+		Auths: map[string]apistructs.RegistryUserInfo{},
+	}
+
+	authString := base64.StdEncoding.EncodeToString([]byte(infos[0].UserName + ":" + infos[0].Password))
+	dockerConfigJson.Auths[infos[0].Host] = apistructs.RegistryUserInfo{Auth: authString}
+
+	ret, err := json.Marshal(dockerConfigJson)
+	assert.NoError(t, err)
+
+	type args struct {
+		s *apiv1.Secret
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *apiv1.Secret
+		wantErr bool
+	}{
+		{
+			name: "standard",
+			args: args{
+				s: &apiv1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      AliyunRegistry,
+						Namespace: "erda-system",
+					},
+					Data: map[string][]byte{
+						apiv1.DockerConfigJsonKey: []byte("{\"auths\":{}}"),
+					}},
+			},
+			want: &apiv1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      AliyunRegistry,
+					Namespace: "erda-system",
+				},
+				Data: map[string][]byte{
+					apiv1.DockerConfigJsonKey: ret,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "nil",
+			args: args{
+				s: nil,
+			},
+			want: &apiv1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      AliyunRegistry,
+					Namespace: apiv1.NamespaceDefault,
+				},
+				Data: map[string][]byte{
+					apiv1.DockerConfigJsonKey: ret,
+				},
+				Type: apiv1.SecretTypeDockerConfigJson,
+			},
+			wantErr: false,
+		}}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseImageSecret(metav1.NamespaceDefault, infos, tt.args.s)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseImageSecret error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.Equal(t, got, tt.want)
+		})
+	}
 }
