@@ -201,7 +201,7 @@ func GetPagingFromGlobalState(globalState cptype.GlobalStateData) (pageNo int, p
 
 func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 	return table.Row{
-		ID:         table.RowID(fmt.Sprintf("pipeline-id-%v", pipeline.ID)),
+		ID:         table.RowID(fmt.Sprintf("%v", pipeline.ID)),
 		Selectable: true,
 		Selected:   false,
 		CellsMap: map[table.ColumnKey]table.Cell{
