@@ -86,9 +86,18 @@ func (p *provider) listRules(r *http.Request, params struct {
 		}
 		params.ScopeID = name
 	}
+	var userIDs []string
+	userIDMap := make(map[string]bool)
 	list, err := p.ListLogMetricConfig(params.Scope, params.ScopeID)
 	if err != nil {
 		return api.Errors.Internal(err)
+	}
+	for _, v := range list {
+		userId := v.Creator
+		if userId != "" && !userIDMap[userId] {
+			userIDs = append(userIDs, userId)
+			userIDMap[userId] = true
+		}
 	}
 	return api.Success(list)
 }
@@ -117,11 +126,13 @@ func (p *provider) createRule(r *http.Request, c LogMetricConfig, params struct 
 	ScopeID string `query:"scopeID"`
 }) interface{} {
 	orgID := api.OrgID(r)
+	userID := api.UserID(r)
 	orgid, err := strconv.ParseInt(orgID, 10, 64)
 	if err != nil {
 		return api.Errors.InvalidParameter("invalid Org-ID")
 	}
 	c.OrgID = orgid
+	c.CreatorID = userID
 	c.Scope = params.Scope
 	if len(params.ScopeID) > 0 {
 		c.ScopeID = params.ScopeID

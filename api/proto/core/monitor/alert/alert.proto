@@ -681,7 +681,8 @@ message QueryAlertRequest {
 }
 
 message QueryAlertsResponse {
-  QueryAlertsData data = 1;
+  QueryAlertsData data    = 1;
+  repeated string userIDs = 2;
 }
 
 message QueryAlertsData {
@@ -704,6 +705,7 @@ message Alert {
   int64                              createTime       = 12;
   int64                              updateTime       = 13;
   repeated TriggerCondition          triggerCondition = 14;
+  string                             creator          = 15;
 }
 
 message AlertExpression {
@@ -850,7 +852,8 @@ message QueryOrgAlertRequest {
 }
 
 message QueryOrgAlertResponse {
-  QueryOrgAlertData data = 1;
+  QueryOrgAlertData data    = 1;
+  repeated string   userIDs = 2;
 }
 
 message QueryOrgAlertData {

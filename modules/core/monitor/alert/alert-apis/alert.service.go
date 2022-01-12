@@ -106,7 +106,9 @@ func (m *alertService) CreateAlert(ctx context.Context, request *pb.CreateAlertR
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	userID := apis.GetUserID(ctx)
 	alert.Attributes["org_name"] = structpb.NewStringValue(org.Name)
+	alert.Attributes["creator_id"] = structpb.NewStringValue(userID)
 	id, err := m.p.a.CreateAlert(alert)
 	if err != nil {
 		return &pb.CreateAlertResponse{}, err
@@ -119,6 +121,7 @@ func (m *alertService) CreateAlert(ctx context.Context, request *pb.CreateAlertR
 
 func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrgAlertRequest) (*pb.CreateOrgAlertResponse, error) {
 	orgID := apis.GetOrgID(ctx)
+	userID := apis.GetUserID(ctx)
 	org, err := m.p.bdl.GetOrg(orgID)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
@@ -134,6 +137,7 @@ func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrg
 	}
 	alert.Attributes = make(map[string]*structpb.Value)
 	alert.Attributes["org_name"] = structpb.NewStringValue(org.Name)
+	alert.Attributes["creator_id"] = structpb.NewStringValue(userID)
 	data, err = json.Marshal(request.TriggerCondition)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -816,7 +820,7 @@ func (m *alertService) QueryAlertRule(ctx context.Context, request *pb.QueryAler
 }
 
 func (m *alertService) QueryAlert(ctx context.Context, request *pb.QueryAlertRequest) (*pb.QueryAlertsResponse, error) {
-	data, err := m.p.a.QueryAlert(apis.Language(ctx), request.Scope, request.ScopeId, uint64(request.PageNo), uint64(request.PageSize))
+	data, userIds, err := m.p.a.QueryAlert(apis.Language(ctx), request.Scope, request.ScopeId, uint64(request.PageNo), uint64(request.PageSize))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -832,6 +836,7 @@ func (m *alertService) QueryAlert(ctx context.Context, request *pb.QueryAlertReq
 			List:  data,
 			Total: int64(total),
 		},
+		UserIDs: userIds,
 	}
 	return result, nil
 }
@@ -942,7 +947,7 @@ func (m *alertService) QueryOrgAlert(ctx context.Context, request *pb.QueryOrgAl
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
 	lang := apis.Language(ctx)
-	data, err := m.p.a.QueryOrgAlert(lang, id, uint64(request.PageNo), uint64(request.PageSize))
+	data, userIds, err := m.p.a.QueryOrgAlert(lang, id, uint64(request.PageNo), uint64(request.PageSize))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -955,6 +960,7 @@ func (m *alertService) QueryOrgAlert(ctx context.Context, request *pb.QueryOrgAl
 			Total: int64(total),
 			List:  data,
 		},
+		UserIDs: userIds,
 	}, nil
 }
 
