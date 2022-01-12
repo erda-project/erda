@@ -237,15 +237,17 @@ const (
 	DeleteTagTemplate    TemplateName = "deleteTag"
 	DeleteBranchTemplate TemplateName = "deleteBranch"
 	// =========================release=====================================
-	CreateProjectReleaseTemplate TemplateName = "createProjectRelease"
-	UpdateProjectReleaseTemplate TemplateName = "updateProjectRelease"
-	UpdateAppReleaseTemplate     TemplateName = "updateAppRelease"
-	DeleteProjectReleaseTemplate TemplateName = "deleteProjectRelease"
-	DeleteAppReleaseTemplate     TemplateName = "deleteAppRelease"
-	FormalProjectReleaseTemplate TemplateName = "formalProjectRelease"
-	FormalAppReleaseTemplate     TemplateName = "formalAppRelease"
-	BatchDeleteReleaseTemplate   TemplateName = "batchDeleteRelease"
-	BatchFormalReleaseTemplate   TemplateName = "batchFormalRelease"
+	CreateProjectReleaseTemplate      TemplateName = "createProjectRelease"
+	UpdateProjectReleaseTemplate      TemplateName = "updateProjectRelease"
+	UpdateAppReleaseTemplate          TemplateName = "updateAppRelease"
+	DeleteProjectReleaseTemplate      TemplateName = "deleteProjectRelease"
+	DeleteAppReleaseTemplate          TemplateName = "deleteAppRelease"
+	FormalProjectReleaseTemplate      TemplateName = "formalProjectRelease"
+	FormalAppReleaseTemplate          TemplateName = "formalAppRelease"
+	BatchDeleteProjectReleaseTemplate TemplateName = "batchDeleteProjectRelease"
+	BatchDeleteAppReleaseTemplate     TemplateName = "batchDeleteAppRelease"
+	BatchFormalReleaseProjectTemplate TemplateName = "batchFormalProjectRelease"
+	BatchFormalReleaseAppTemplate     TemplateName = "batchFormalAppRelease"
 )
 
 // AuditTemplateMap 解析前端审计模版全家桶

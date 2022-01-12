@@ -523,7 +523,10 @@ func (e *Endpoints) DeleteReleases(ctx context.Context, r *http.Request, vars ma
 			auditCtx["version"] = releases[0].Version
 			auditCtx["releaseId"] = releases[0].ReleaseID
 		} else {
-			templateName = string(apistructs.BatchDeleteReleaseTemplate)
+			templateName = string(apistructs.BatchDeleteAppReleaseTemplate)
+			if releasesDeleteRequest.IsProjectRelease {
+				templateName = string(apistructs.BatchDeleteProjectReleaseTemplate)
+			}
 			auditCtx["versionList"] = strings.Join(versionList, ", ")
 		}
 		if err := e.audit(r, auditParams{
@@ -977,7 +980,10 @@ func (e *Endpoints) ToFormalReleases(ctx context.Context, r *http.Request, vars 
 				auditCtx["version"] = releases[0].Version
 				auditCtx["releaseId"] = releases[0].ReleaseID
 			} else {
-				templateName = string(apistructs.BatchFormalReleaseTemplate)
+				templateName = string(apistructs.BatchFormalReleaseAppTemplate)
+				if releasesToFormalRequest.IsProjectRelease {
+					templateName = string(apistructs.BatchFormalReleaseProjectTemplate)
+				}
 				auditCtx["versionList"] = strings.Join(versionList, ", ")
 			}
 			if err := e.audit(r, auditParams{
