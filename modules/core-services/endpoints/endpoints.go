@@ -332,14 +332,11 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/applications/{applicationID}", Method: http.MethodDelete, Handler: e.DeleteApplication},
 		{Path: "/api/applications", Method: http.MethodGet, Handler: e.ListApplication},
 		{Path: "/api/applications/actions/list-my-applications", Method: http.MethodGet, Handler: e.ListMyApplication},
-		{Path: "/api/applications/actions/remove-publish-item-relations", Method: http.MethodPost, Handler: e.RemoveApplicationPublishItemRelations},
-		{Path: "/api/applications/{applicationID}/actions/get-publish-item-relations", Method: http.MethodGet, Handler: e.GetApplicationPublishItemRelationsGroupByENV},
-		{Path: "/api/applications/actions/query-publish-item-relations", Method: http.MethodGet, Handler: e.QueryApplicationPublishItemRelations},
-		{Path: "/api/applications/{applicationID}/actions/update-publish-item-relations", Method: http.MethodPost, Handler: e.UpdateApplicationPublishItemRelations},
 		{Path: "/api/applications/{applicationID}/actions/pin", Method: http.MethodPut, Handler: e.PinApplication},
 		{Path: "/api/applications/{applicationID}/actions/unpin", Method: http.MethodPut, Handler: e.UnPinApplication},
 		{Path: "/api/applications/actions/list-templates", Method: http.MethodGet, Handler: e.ListAppTemplates},
 		{Path: "/api/applications/actions/count", Method: http.MethodGet, Handler: e.CountAppByProID},
+		{Path: "/api/applications/actions/get-id-by-names", Method: http.MethodGet, Handler: e.GetAppIDByNames},
 
 		// the interface of notice
 		{Path: "/api/notices", Method: http.MethodPost, Handler: e.CreateNotice},

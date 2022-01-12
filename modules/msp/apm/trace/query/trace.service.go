@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math"
 	"net/http"
 	"net/url"
 	"sort"
@@ -43,12 +42,13 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/query"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
+	"github.com/erda-project/erda/modules/msp/apm/trace/query/commom/custom"
 	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
-type traceService struct {
+type TraceService struct {
 	p                     *provider
 	i18n                  i18n.Translator
 	traceRequestHistoryDB *db.TraceRequestHistoryDB
@@ -57,7 +57,7 @@ type traceService struct {
 
 var EventFieldSet = set.NewSet("error", "stack", "event", "message", "error_kind", "error_object")
 
-func (s *traceService) getDebugStatus(lang i18n.LanguageCodes, statusCode debug.Status) string {
+func (s *TraceService) getDebugStatus(lang i18n.LanguageCodes, statusCode debug.Status) string {
 	if lang == nil {
 		return ""
 	}
@@ -75,7 +75,7 @@ func (s *traceService) getDebugStatus(lang i18n.LanguageCodes, statusCode debug.
 	}
 }
 
-func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*pb.GetSpansResponse, error) {
+func (s *TraceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*pb.GetSpansResponse, error) {
 	if req.TraceID == "" || req.ScopeID == "" {
 		return nil, errors.NewMissingParameterError("traceId or scopeId")
 	}
@@ -132,7 +132,7 @@ func (s *traceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 	}
 	return response, nil
 }
-func (s *traceService) fetchSpanFromCassandra(session *gocql.Session, traceId string, limit int64) []*pb.Span {
+func (s *TraceService) fetchSpanFromCassandra(session *gocql.Session, traceId string, limit int64) []*pb.Span {
 	iter := session.Query("SELECT * FROM spans WHERE trace_id = ? limit ?", traceId, limit).Iter()
 	var items []*pb.Span
 	for {
@@ -209,7 +209,7 @@ func getSpanProcessAnalysisDashboard(metricType string) string {
 	}
 }
 
-func (s *traceService) getServiceInstanceType(startTime, endTime int64, tenantId, serviceInstanceId string) (string, error) {
+func (s *TraceService) getServiceInstanceType(startTime, endTime int64, tenantId, serviceInstanceId string) (string, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -242,7 +242,7 @@ func (s *traceService) getServiceInstanceType(startTime, endTime int64, tenantId
 	return "", nil
 }
 
-func (s *traceService) getSpanServiceAnalysis(ctx context.Context, req *pb.GetSpanDashboardsRequest) (*pb.SpanAnalysis, error) {
+func (s *TraceService) getSpanServiceAnalysis(ctx context.Context, req *pb.GetSpanDashboardsRequest) (*pb.SpanAnalysis, error) {
 	instanceType, err := s.getServiceInstanceType(req.StartTime, req.EndTime, req.TenantID, req.ServiceInstanceID)
 	if err != nil {
 		return nil, err
@@ -255,7 +255,7 @@ func (s *traceService) getSpanServiceAnalysis(ctx context.Context, req *pb.GetSp
 	}, nil
 }
 
-func (s *traceService) getSpanCallAnalysis(ctx context.Context, req *pb.GetSpanDashboardsRequest) (*pb.SpanAnalysis, error) {
+func (s *TraceService) getSpanCallAnalysis(ctx context.Context, req *pb.GetSpanDashboardsRequest) (*pb.SpanAnalysis, error) {
 	switch req.Type {
 	case strings.ToLower(pb.SpanType_HTTP_CLIENT.String()):
 		return &pb.SpanAnalysis{DashboardID: common.CallAnalysisHttpClient, Conditions: []string{"http_path", "http_method", "source_service_id"}}, nil
@@ -278,7 +278,7 @@ func (s *traceService) getSpanCallAnalysis(ctx context.Context, req *pb.GetSpanD
 	}
 }
 
-func (s *traceService) GetSpanDashboards(ctx context.Context, req *pb.GetSpanDashboardsRequest) (*pb.GetSpanDashboardsResponse, error) {
+func (s *TraceService) GetSpanDashboards(ctx context.Context, req *pb.GetSpanDashboardsRequest) (*pb.GetSpanDashboardsResponse, error) {
 	// call details analysis
 	callAnalysis, err := s.getSpanCallAnalysis(ctx, req)
 	if err != nil {
@@ -295,7 +295,7 @@ func (s *traceService) GetSpanDashboards(ctx context.Context, req *pb.GetSpanDas
 	}, nil
 }
 
-func (s *traceService) handleSpanResponse(spanTree query.SpanTree) (*pb.GetSpansResponse, error) {
+func (s *TraceService) handleSpanResponse(spanTree query.SpanTree) (*pb.GetSpansResponse, error) {
 	var (
 		spans          []*pb.Span
 		traceStartTime int64 = 0
@@ -362,7 +362,7 @@ func calculateDepth(depth int64, span *pb.Span, spanTree query.SpanTree) int64 {
 	return depth
 }
 
-func (s *traceService) GetSpanCount(ctx context.Context, traceID string) (int64, error) {
+func (s *TraceService) GetSpanCount(ctx context.Context, traceID string) (int64, error) {
 	var cassandraCount, elasticsearchCount int64
 
 	if s.p.Cfg.QuerySource.Cassandra && s.p.cassandraSession != nil {
@@ -378,15 +378,34 @@ func (s *traceService) GetSpanCount(ctx context.Context, traceID string) (int64,
 	return cassandraCount + elasticsearchCount, nil
 }
 
-func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) (*pb.GetTracesResponse, error) {
+func (s *TraceService) GetTracesCount(ctx context.Context, startTime, endTime int64, params map[string]*structpb.Value, statement string) (int64, error) {
+	request := &metricpb.QueryWithInfluxFormatRequest{
+		Start:     strconv.FormatInt(startTime, 10),
+		End:       strconv.FormatInt(endTime, 10),
+		Statement: statement,
+		Params:    params,
+	}
+
+	response, err := s.p.Metric.QueryWithInfluxFormat(ctx, request)
+	if err != nil {
+		return 0, err
+	}
+	count := response.Results[0].Series[0].Rows[0].Values[0].GetNumberValue()
+	return int64(count), nil
+}
+
+func (s *TraceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) (*pb.GetTracesResponse, error) {
 	if req.TenantID == "" {
 		return nil, errors.NewMissingParameterError("tenantId")
 	}
-	if req.Limit <= 0 {
-		req.Limit = 100
+	if req.PageNo <= 1 {
+		req.PageNo = 1
 	}
-	if req.Limit > 1000 {
-		req.Limit = 1000
+	if req.PageSize <= 0 {
+		req.PageSize = 10
+	}
+	if req.PageSize > 100 {
+		req.PageSize = 100
 	}
 	if (req.DurationMin != 0 && req.DurationMax == 0) || (req.DurationMax != 0 && req.DurationMin == 0) {
 		return nil, errors.NewInvalidParameterError("duration", "missing min or max duration")
@@ -400,7 +419,7 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 		req.StartTime = time.Now().Add(h).UnixNano() / 1e6
 	}
 
-	queryParams, statement := s.composeTraceQueryConditions(req)
+	queryParams, statement, statementCount := s.composeTraceQueryConditions(req)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -417,29 +436,34 @@ func (s *traceService) GetTraces(ctx context.Context, req *pb.GetTracesRequest) 
 		return nil, errors.NewInternalServerError(err)
 	}
 
+	total, err := s.GetTracesCount(ctx, req.StartTime, req.EndTime, queryParams, statementCount)
+	if err != nil {
+		return nil, err
+	}
+
 	rows := response.Results[0].Series[0].Rows
 	traces := s.handleTracesResponse(rows)
-
-	return &pb.GetTracesResponse{Data: traces}, nil
+	return &pb.GetTracesResponse{Data: traces, PageNo: req.PageNo, PageSize: req.PageSize, Total: total}, nil
 }
 
-func (s *traceService) handleTracesResponse(rows []*metricpb.Row) []*pb.Trace {
+func (s *TraceService) handleTracesResponse(rows []*metricpb.Row) []*pb.Trace {
 	traces := make([]*pb.Trace, 0, len(rows))
 	for _, row := range rows {
-		var trace pb.Trace
+		var t pb.Trace
 		values := row.Values
-		trace.StartTime = int64(values[0].GetNumberValue() / 1e6)
-		trace.Duration = math.Abs(values[1].GetNumberValue() - values[0].GetNumberValue())
-		for _, serviceName := range values[2].GetListValue().Values {
-			trace.Services = append(trace.Services, serviceName.GetStringValue())
+		t.Id = values[0].GetStringValue()
+		t.Duration = values[1].GetNumberValue()
+		t.StartTime = int64(values[2].GetNumberValue())
+		t.SpanCount = int64(values[3].GetNumberValue())
+		for _, serviceName := range values[4].GetListValue().Values {
+			t.Services = append(t.Services, serviceName.GetStringValue())
 		}
-		trace.Id = values[3].GetStringValue()
-		traces = append(traces, &trace)
+		traces = append(traces, &t)
 	}
 	return traces
 }
 
-func (s *traceService) composeTraceQueryConditions(req *pb.GetTracesRequest) (map[string]*structpb.Value, string) {
+func (s *TraceService) composeTraceQueryConditions(req *pb.GetTracesRequest) (map[string]*structpb.Value, string, string) {
 	metricsParams := url.Values{}
 	metricsParams.Set("start", strconv.FormatInt(req.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(req.EndTime, 10))
@@ -479,14 +503,19 @@ func (s *traceService) composeTraceQueryConditions(req *pb.GetTracesRequest) (ma
 	where.WriteString(s.traceStatusConditionStrategy(req.Status))
 	// sort condition
 	sort := s.sortConditionStrategy(req.Sort)
+	statement := fmt.Sprintf("SELECT trace_id::tag,trace_duration::field,start_time::field,span_count::field,service_names::field "+
+		"FROM trace "+
+		"WHERE %s terminus_keys::field=$terminus_keys "+
+		"%s "+
+		"LIMIT %v OFFSET %v", where.String(), sort, req.PageSize, (req.PageNo-1)*req.PageSize)
 
-	statement := fmt.Sprintf("SELECT start_time::field,end_time::field,service_names::field,"+
-		"trace_id::tag,if(gt(errors_sum::field,0),'error','success') FROM trace WHERE %s terminus_keys::field=$terminus_keys "+
-		"%s LIMIT %s", where.String(), sort, strconv.FormatInt(req.Limit, 10))
-	return queryParams, statement
+	statementCount := fmt.Sprintf("SELECT count(trace_id::tag) "+
+		"FROM trace "+
+		"WHERE %s terminus_keys::field=$terminus_keys ", where.String())
+	return queryParams, statement, statementCount
 }
 
-func (s *traceService) traceStatusConditionStrategy(traceStatus string) string {
+func (s *TraceService) traceStatusConditionStrategy(traceStatus string) string {
 	switch traceStatus {
 	case strings.ToLower(pb.TraceStatusCondition_TRACE_SUCCESS.String()):
 		return "errors_sum::field=0 AND"
@@ -499,8 +528,8 @@ func (s *traceService) traceStatusConditionStrategy(traceStatus string) string {
 	}
 }
 
-func (s *traceService) sortConditionStrategy(sort string) string {
-	switch sort {
+func (s *TraceService) sortConditionStrategy(sort string) string {
+	switch strings.ToLower(sort) {
 	case strings.ToLower(pb.SortCondition_TRACE_TIME_DESC.String()):
 		return "ORDER BY start_time::field DESC"
 	case strings.ToLower(pb.SortCondition_TRACE_TIME_ASC.String()):
@@ -518,7 +547,7 @@ func (s *traceService) sortConditionStrategy(sort string) string {
 	}
 }
 
-func (s *traceService) GetTraceDebugHistories(ctx context.Context, req *pb.GetTraceDebugHistoriesRequest) (*pb.GetTraceDebugHistoriesResponse, error) {
+func (s *TraceService) GetTraceDebugHistories(ctx context.Context, req *pb.GetTraceDebugHistoriesRequest) (*pb.GetTraceDebugHistoriesResponse, error) {
 	if req.Limit <= 0 {
 		req.Limit = 20
 	}
@@ -552,11 +581,61 @@ func (s *traceService) GetTraceDebugHistories(ctx context.Context, req *pb.GetTr
 	return &pb.GetTraceDebugHistoriesResponse{Data: &td}, nil
 }
 
-func (s *traceService) GetTraceQueryConditions(ctx context.Context, req *pb.GetTraceQueryConditionsRequest) (*pb.GetTraceQueryConditionsResponse, error) {
+func (s *TraceService) GetTraceReqDistribution(ctx context.Context, model custom.Model) (*metricpb.QueryWithInfluxFormatResponse, error) {
+	metricsParams := url.Values{}
+	metricsParams.Set("start", strconv.FormatInt(model.StartTime, 10))
+	metricsParams.Set("end", strconv.FormatInt(model.EndTime, 10))
+
+	queryParams := make(map[string]*structpb.Value)
+	queryParams["terminus_keys"] = structpb.NewStringValue(model.TenantId)
+
+	var where bytes.Buffer
+	// trace id condition
+	if model.TraceId != "" {
+		queryParams["trace_id"] = structpb.NewStringValue(model.TraceId)
+		where.WriteString("trace_id::tag=$trace_id AND ")
+	}
+
+	if model.ServiceName != "" {
+		queryParams["service_names"] = structpb.NewStringValue(model.ServiceName)
+		where.WriteString("service_names::field=$service_names AND ")
+	}
+
+	if model.RpcMethod != "" {
+		queryParams["rpc_methods"] = structpb.NewStringValue(model.RpcMethod)
+		where.WriteString("rpc_methods::field=$rpc_methods AND ")
+	}
+
+	if model.HttpPath != "" {
+		queryParams["http_paths"] = structpb.NewStringValue(model.HttpPath)
+		where.WriteString("http_paths::field=$http_paths AND ")
+	}
+
+	if model.DurationMin > 0 && model.DurationMax > 0 && model.DurationMin < model.DurationMax {
+		queryParams["duration_min"] = structpb.NewNumberValue(float64(model.DurationMin))
+		queryParams["duration_max"] = structpb.NewNumberValue(float64(model.DurationMax))
+		where.WriteString("trace_duration::field>$duration_min AND trace_duration::field<$duration_max AND ")
+	}
+
+	// trace status condition
+	where.WriteString(s.traceStatusConditionStrategy(model.Status))
+
+	statement := fmt.Sprintf("SELECT avg(trace_duration::field),count(trace_id::tag) FROM trace WHERE %s terminus_keys::field=$terminus_keys GROUP BY time()", where.String())
+
+	queryRequest := &metricpb.QueryWithInfluxFormatRequest{
+		Start:     strconv.FormatInt(model.StartTime, 10),
+		End:       strconv.FormatInt(model.EndTime, 10),
+		Statement: statement,
+		Params:    queryParams,
+	}
+	return s.p.Metric.QueryWithInfluxFormat(ctx, queryRequest)
+}
+
+func (s *TraceService) GetTraceQueryConditions(ctx context.Context, req *pb.GetTraceQueryConditionsRequest) (*pb.GetTraceQueryConditionsResponse, error) {
 	return &pb.GetTraceQueryConditionsResponse{Data: s.translateConditions(apis.Language(ctx))}, nil
 }
 
-func (s *traceService) translateConditions(lang i18n.LanguageCodes) *pb.TraceQueryConditions {
+func (s *TraceService) translateConditions(lang i18n.LanguageCodes) *pb.TraceQueryConditions {
 	conditions := query.DepthCopyQueryConditions()
 
 	for _, condition := range conditions.Sort {
@@ -573,7 +652,7 @@ func (s *traceService) translateConditions(lang i18n.LanguageCodes) *pb.TraceQue
 	return conditions
 }
 
-func (s *traceService) GetTraceDebugByRequestID(ctx context.Context, req *pb.GetTraceDebugRequest) (*pb.GetTraceDebugResponse, error) {
+func (s *TraceService) GetTraceDebugByRequestID(ctx context.Context, req *pb.GetTraceDebugRequest) (*pb.GetTraceDebugResponse, error) {
 	dbHistory, err := s.traceRequestHistoryDB.QueryHistoryByRequestID(req.ScopeID, req.RequestID)
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
@@ -582,7 +661,7 @@ func (s *traceService) GetTraceDebugByRequestID(ctx context.Context, req *pb.Get
 	return &pb.GetTraceDebugResponse{Data: debugHistory}, nil
 }
 
-func (s *traceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTraceDebugRequest) (*pb.CreateTraceDebugResponse, error) {
+func (s *TraceService) CreateTraceDebug(ctx context.Context, req *pb.CreateTraceDebugRequest) (*pb.CreateTraceDebugResponse, error) {
 	if req.Url == "" {
 		return nil, errors.NewMissingParameterError("Url")
 	}
@@ -689,7 +768,7 @@ func composeTraceRequestHistory(req *pb.CreateTraceDebugRequest) (*db.TraceReque
 	return history, nil
 }
 
-func (s *traceService) sendHTTPRequest(err error, req *pb.CreateTraceDebugRequest) (*http.Response, error) {
+func (s *TraceService) sendHTTPRequest(err error, req *pb.CreateTraceDebugRequest) (*http.Response, error) {
 	client := &http.Client{}
 	params := ioutil.NopCloser(strings.NewReader(req.Body))
 	request, err := http.NewRequest(req.Method, req.Url, params)
@@ -707,12 +786,12 @@ func (s *traceService) sendHTTPRequest(err error, req *pb.CreateTraceDebugReques
 	return response, nil
 }
 
-func (s *traceService) tracing(request *http.Request, req *pb.CreateTraceDebugRequest) {
+func (s *TraceService) tracing(request *http.Request, req *pb.CreateTraceDebugRequest) {
 	request.Header.Set("terminus-request-id", req.RequestID)
 	request.Header.Set("terminus-request-sampled", "true")
 }
 
-func (s *traceService) StopTraceDebug(ctx context.Context, req *pb.StopTraceDebugRequest) (*pb.StopTraceDebugResponse, error) {
+func (s *TraceService) StopTraceDebug(ctx context.Context, req *pb.StopTraceDebugRequest) (*pb.StopTraceDebugResponse, error) {
 	_, err := s.traceRequestHistoryDB.UpdateDebugStatusByRequestID(req.ScopeID, req.RequestID, int(debug.Fail))
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
@@ -720,7 +799,7 @@ func (s *traceService) StopTraceDebug(ctx context.Context, req *pb.StopTraceDebu
 	return nil, nil
 }
 
-func (s *traceService) isExistSpan(ctx context.Context, requestID string) (bool, error) {
+func (s *TraceService) isExistSpan(ctx context.Context, requestID string) (bool, error) {
 	count, err := s.GetSpanCount(ctx, requestID)
 	if err != nil {
 		return false, errors.NewInternalServerError(err)
@@ -734,7 +813,7 @@ func (s *traceService) isExistSpan(ctx context.Context, requestID string) (bool,
 	return true, nil
 }
 
-func (s *traceService) GetTraceDebugHistoryStatusByRequestID(ctx context.Context, req *pb.GetTraceDebugStatusByRequestIDRequest) (*pb.GetTraceDebugStatusByRequestIDResponse, error) {
+func (s *TraceService) GetTraceDebugHistoryStatusByRequestID(ctx context.Context, req *pb.GetTraceDebugStatusByRequestIDRequest) (*pb.GetTraceDebugStatusByRequestIDResponse, error) {
 	dbHistory, err := s.traceRequestHistoryDB.QueryHistoryByRequestID(req.ScopeID, req.RequestID)
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
@@ -778,7 +857,7 @@ func (s *traceService) GetTraceDebugHistoryStatusByRequestID(ctx context.Context
 	return &pb.GetTraceDebugStatusByRequestIDResponse{Data: &statusInfo}, nil
 }
 
-func (s *traceService) convertToTraceDebugHistory(ctx context.Context, dbHistory *db.TraceRequestHistory) (*pb.TraceDebugHistory, error) {
+func (s *TraceService) convertToTraceDebugHistory(ctx context.Context, dbHistory *db.TraceRequestHistory) (*pb.TraceDebugHistory, error) {
 	language := apis.Language(ctx)
 
 	query := make(map[string]string)
@@ -812,7 +891,7 @@ func (s *traceService) convertToTraceDebugHistory(ctx context.Context, dbHistory
 	}, nil
 }
 
-func (s *traceService) GetSpanEvents(ctx context.Context, req *pb.SpanEventRequest) (*pb.SpanEventResponse, error) {
+func (s *TraceService) GetSpanEvents(ctx context.Context, req *pb.SpanEventRequest) (*pb.SpanEventResponse, error) {
 	startTime, endTime := s.getSpanEventQueryTime(req)
 	req.StartTime = req.StartTime - int64((time.Minute*15)/time.Millisecond)
 	statement := "select * from apm_span_event where span_id = $span_id order by timestamp asc limit 1000"
@@ -836,14 +915,14 @@ func (s *traceService) GetSpanEvents(ctx context.Context, req *pb.SpanEventReque
 	return &pb.SpanEventResponse{SpanEvents: events}, nil
 }
 
-func (s *traceService) getSpanEventQueryTime(req *pb.SpanEventRequest) (int64, int64) {
+func (s *TraceService) getSpanEventQueryTime(req *pb.SpanEventRequest) (int64, int64) {
 	if req.StartTime <= 0 {
 		req.StartTime = time.Now().Add(-time.Minute*15).UnixNano() / 1e6
 	}
 	return req.StartTime - int64((time.Minute*15)/time.Millisecond), req.StartTime + int64((time.Minute*15)/time.Millisecond)
 }
 
-func (s *traceService) handleSpanEventResponse(table *metricpb.TableResult) []*pb.SpanEvent {
+func (s *TraceService) handleSpanEventResponse(table *metricpb.TableResult) []*pb.SpanEvent {
 	spanEvents := make([]*pb.SpanEvent, 0)
 	eventNames := make(map[string]string)
 	for _, col := range table.Cols {

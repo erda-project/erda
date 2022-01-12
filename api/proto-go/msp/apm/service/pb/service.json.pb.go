@@ -13,6 +13,10 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
+var _ json.Marshaler = (*GetServiceLanguageResponse)(nil)
+var _ json.Unmarshaler = (*GetServiceLanguageResponse)(nil)
+var _ json.Marshaler = (*GetServiceLanguageRequest)(nil)
+var _ json.Unmarshaler = (*GetServiceLanguageRequest)(nil)
 var _ json.Marshaler = (*GetServiceOverviewTopRequest)(nil)
 var _ json.Unmarshaler = (*GetServiceOverviewTopRequest)(nil)
 var _ json.Marshaler = (*GetServiceOverviewTopResponse)(nil)
@@ -43,6 +47,42 @@ var _ json.Marshaler = (*Service)(nil)
 var _ json.Unmarshaler = (*Service)(nil)
 var _ json.Marshaler = (*AggregateMetric)(nil)
 var _ json.Unmarshaler = (*AggregateMetric)(nil)
+
+// GetServiceLanguageResponse implement json.Marshaler.
+func (m *GetServiceLanguageResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetServiceLanguageResponse implement json.Marshaler.
+func (m *GetServiceLanguageResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetServiceLanguageRequest implement json.Marshaler.
+func (m *GetServiceLanguageRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetServiceLanguageRequest implement json.Marshaler.
+func (m *GetServiceLanguageRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
 
 // GetServiceOverviewTopRequest implement json.Marshaler.
 func (m *GetServiceOverviewTopRequest) MarshalJSON() ([]byte, error) {

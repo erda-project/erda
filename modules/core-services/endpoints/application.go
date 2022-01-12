@@ -297,87 +297,6 @@ func (e *Endpoints) ListMyApplication(ctx context.Context, r *http.Request, vars
 	return e.listApplications(ctx, r, true)
 }
 
-// GetApplicationPublishItemRelationsGroupByENV 根据环境分组应用和发布内容关联
-func (e *Endpoints) GetApplicationPublishItemRelationsGroupByENV(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-	applicationID, err := strutil.Atoi64(vars["applicationID"])
-	if err != nil {
-		return apierrors.ErrGetApplicationPublishItemRelation.InvalidParameter(err).ToResp(), nil
-	}
-
-	relations, err := e.app.QueryPublishItemRelations(apistructs.QueryAppPublishItemRelationRequest{AppID: applicationID})
-	if err != nil {
-		return apierrors.ErrGetApplicationPublishItemRelation.InternalError(err).ToResp(), nil
-	}
-
-	result := map[string]apistructs.AppPublishItemRelation{}
-	for _, relation := range relations {
-		var itemNs []string
-		itemNs = append(itemNs, e.app.BuildItemMonitorPipelineCmsNs(relation.AppID, relation.Env))
-		relation.PublishItemNs = itemNs
-		result[relation.Env] = relation
-	}
-
-	return httpserver.OkResp(result)
-}
-
-// QueryApplicationPublishItemRelations 查询应用和发布内容关联
-func (e *Endpoints) QueryApplicationPublishItemRelations(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-	var req apistructs.QueryAppPublishItemRelationRequest
-	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
-		return apierrors.ErrPagingIssues.InvalidParameter(err).ToResp(), nil
-	}
-
-	relations, err := e.app.QueryPublishItemRelations(req)
-	if err != nil {
-		return apierrors.ErrGetApplicationPublishItemRelation.InternalError(err).ToResp(), nil
-	}
-
-	return httpserver.OkResp(relations)
-}
-
-// UpdateApplicationPublishItemRelations 更新应用发布内容关联
-func (e *Endpoints) UpdateApplicationPublishItemRelations(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-	applicationID, err := strutil.Atoi64(vars["applicationID"])
-	if err != nil {
-		return apierrors.ErrUpdateApplicationPublishItemRelation.InvalidParameter(err).ToResp(), nil
-	}
-
-	userID, err := user.GetUserID(r)
-	if err != nil {
-		return apierrors.ErrUpdateApplicationPublishItemRelation.InvalidParameter(err).ToResp(), nil
-	}
-
-	var request apistructs.UpdateAppPublishItemRelationRequest
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		return apierrors.ErrUpdateApplicationPublishItemRelation.InvalidParameter("can't decode body").ToResp(), nil
-	}
-	request.AppID = applicationID
-	request.UserID = userID.String()
-	request.AKAIMap = make(map[apistructs.DiceWorkspace]apistructs.MonitorKeys, 0)
-	err = e.app.UpdatePublishItemRelations(&request)
-	if err != nil {
-		return apierrors.ErrUpdateApplicationPublishItemRelation.InternalError(err).ToResp(), nil
-	}
-	return httpserver.OkResp("")
-}
-
-// RemoveApplicationPublishItemRelations 删除应用发布内容关联
-func (e *Endpoints) RemoveApplicationPublishItemRelations(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-	var request apistructs.RemoveAppPublishItemRelationsRequest
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		return apierrors.ErrRemoveApplicationPublishItemRelation.InvalidParameter("can't decode body").ToResp(), nil
-	}
-	err := e.app.RemovePublishItemRelations(&request)
-	if err != nil {
-		return apierrors.ErrRemoveApplicationPublishItemRelation.InternalError(err).ToResp(), nil
-	}
-	return httpserver.OkResp("")
-}
-
 func (e *Endpoints) listApplications(ctx context.Context, r *http.Request, isMine bool) (httpserver.Responser, error) {
 	// 获取当前用户
 	var (
@@ -756,6 +675,50 @@ func (e Endpoints) ListAppTemplates(ctx context.Context, r *http.Request, vars m
 	}
 
 	return httpserver.OkResp(templates)
+}
+
+// GetAppIDByNames 根据应用名称批量获取应用ID
+func (e Endpoints) GetAppIDByNames(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	userID, err := user.GetUserID(r)
+	if err != nil {
+		return apierrors.ErrGetAppIDByNames.NotLogin().ToResp(), nil
+	}
+
+	projectIDStr := r.URL.Query().Get("projectID")
+	if projectIDStr == "" {
+		return apierrors.ErrGetAppIDByNames.MissingParameter("projectID").ToResp(), nil
+	}
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrGetAppIDByNames.InvalidParameter("projectID").ToResp(), nil
+	}
+
+	req := apistructs.PermissionCheckRequest{
+		UserID:   userID.String(),
+		Scope:    apistructs.ProjectScope,
+		ScopeID:  projectID,
+		Resource: apistructs.ProjectResource,
+		Action:   apistructs.GetAction,
+	}
+	if access, err := e.permission.CheckPermission(&req); err != nil || !access {
+		return apierrors.ErrGetAppIDByNames.AccessDenied().ToResp(), nil
+	}
+
+	names := r.URL.Query()["name"]
+	if len(names) == 0 {
+		return apierrors.ErrGetAppIDByNames.MissingParameter("name").ToResp(), nil
+	}
+	apps, err := e.app.GetApplicationsByNames(names)
+	if err != nil {
+		return apierrors.ErrGetAppIDByNames.InternalError(err).ToResp(), nil
+	}
+
+	resp := apistructs.GetAppIDByNamesResponseData{AppNameToID: map[string]int64{}}
+	for i := 0; i < len(apps); i++ {
+		resp.AppNameToID[apps[i].Name] = apps[i].ID
+	}
+
+	return httpserver.OkResp(resp)
 }
 
 func checkApplicationCreateParam(applicationCreateReq apistructs.ApplicationCreateRequest) error {

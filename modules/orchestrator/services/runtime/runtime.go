@@ -234,7 +234,7 @@ func (r *Runtime) CreateByReleaseID(operator user.ID, releaseReq *apistructs.Run
 	req.Operator = operator.String()
 	req.Source = "RELEASE"
 	req.ReleaseID = releaseReq.ReleaseID
-	req.SkipPushByOrch = true
+	req.SkipPushByOrch = false
 
 	var extra apistructs.RuntimeCreateRequestExtra
 	extra.OrgID = uint64(releaseResp.OrgID)
@@ -533,7 +533,7 @@ func (r *Runtime) Redeploy(operator user.ID, orgID uint64, runtimeID uint64) (*a
 		DeployType:     "REDEPLOY",
 		ReleaseID:      deployment.ReleaseId,
 		Operator:       operator.String(),
-		SkipPushByOrch: true,
+		SkipPushByOrch: false,
 	}
 	return r.doDeployRuntime(&deployContext)
 }
@@ -980,7 +980,7 @@ func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, dep
 		BuiltDockerImages: rollbackTo.BuiltDockerImages,
 		NeedApproval:      needApproval,
 		ApprovalStatus:    map[bool]string{true: "WaitApprove", false: ""}[needApproval],
-		SkipPushByOrch:    true,
+		SkipPushByOrch:    false,
 		Param:             rollbackTo.Param,
 		DeploymentOrderId: rollbackTo.DeploymentOrderId,
 	}
