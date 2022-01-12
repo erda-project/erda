@@ -771,7 +771,6 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	return value, nil
 }
 
-
 func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListAppRequest) (*pb.ListAppResponse, error) {
 	if err := params.Validate(); err != nil {
 		return nil, apierrors.ErrListAppProjectPipeline.InvalidParameter(err)
@@ -813,10 +812,10 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
 	}
 
-	pipelineWithAppNames := make([]pipelineWithAppName, 0, len(list.Data))
+	pipelineWithAppNames := make([]*pipelineWithAppName, 0, len(list.Data))
 	for _, v := range list.Data {
 		split := strings.Split(v.Remote, "/")
-		pipelineWithAppNames = append(pipelineWithAppNames, pipelineWithAppName{
+		pipelineWithAppNames = append(pipelineWithAppNames, &pipelineWithAppName{
 			AppName: func() string {
 				if len(split) > 0 {
 					return split[len(split)-1]
@@ -885,7 +884,6 @@ type pipelineWithAppName struct {
 	AppName string `json:"appName"`
 	dpb.PipelineDefinition
 }
-
 
 func (p *ProjectPipelineService) checkRolePermission(identityInfo apistructs.IdentityInfo, createRequest *apistructs.PipelineCreateRequestV2, apiError *errorresp.APIError) error {
 	appIDString := createRequest.Labels[apistructs.LabelAppID]
