@@ -88,7 +88,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			uvYAxis = append(uvYAxis, row.Values[2].GetNumberValue())
 		}
 		chart.SetYAxis(sdk.I18n("PV"), pvYAxis...)
-		chart.SetYAxis(sdk.I18n("UV", uvYAxis...))
+		chart.SetYAxis(sdk.I18n("UV"), uvYAxis...)
 
 		p.StdDataPtr = chart
 	}
