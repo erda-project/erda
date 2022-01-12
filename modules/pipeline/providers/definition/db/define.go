@@ -108,8 +108,10 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 	engine := session.Table("pipeline_definitions").Alias("d").
 		Select("d.*,s.source_type,s.remote,s.ref,s.path,s.name AS file_name").
 		Join("LEFT", []string{"pipeline_sources", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
-		Where("d.soft_deleted_at = 0").
-		In("s.remote", req.Remote)
+		Where("d.soft_deleted_at = 0")
+	if req.Remote != nil {
+		engine = engine.In("s.remote", req.Remote)
+	}
 	if req.Name != "" {
 		engine = engine.Where("d.name LIKE ?", "%"+req.Name+"%")
 	}
@@ -223,22 +225,23 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 
 func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 	return &pb.PipelineDefinition{
-		ID:          p.ID,
-		Name:        p.Name,
-		Creator:     p.Creator,
-		Category:    p.Category,
-		CostTime:    p.CostTime,
-		Executor:    p.Executor,
-		StartedAt:   timestamppb.New(p.StartedAt),
-		EndedAt:     timestamppb.New(p.EndedAt),
-		TimeCreated: timestamppb.New(p.TimeCreated),
-		TimeUpdated: timestamppb.New(p.TimeUpdated),
-		SourceType:  p.SourceType,
-		Remote:      p.Remote,
-		Ref:         p.Ref,
-		Path:        p.Path,
-		FileName:    p.FileName,
-		Status:      p.Status,
+		ID:               p.ID,
+		Name:             p.Name,
+		Creator:          p.Creator,
+		Category:         p.Category,
+		CostTime:         p.CostTime,
+		Executor:         p.Executor,
+		StartedAt:        timestamppb.New(p.StartedAt),
+		EndedAt:          timestamppb.New(p.EndedAt),
+		TimeCreated:      timestamppb.New(p.TimeCreated),
+		TimeUpdated:      timestamppb.New(p.TimeUpdated),
+		SourceType:       p.SourceType,
+		PipelineSourceId: p.PipelineSourceId,
+		Remote:           p.Remote,
+		Ref:              p.Ref,
+		Path:             p.Path,
+		FileName:         p.FileName,
+		Status:           p.Status,
 		Extra: &pb.PipelineDefinitionExtra{
 			ID: p.PipelineDefinitionExtraId,
 		},

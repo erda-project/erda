@@ -15,14 +15,12 @@
 package limit_sync_group
 
 import (
-	"context"
 	"sync"
 )
 
 type function struct {
-	ctx      context.Context
 	params   []interface{}
-	function func(*Locker, context.Context, ...interface{}) error
+	function func(*Locker, ...interface{}) error
 }
 
 type Worker struct {
@@ -46,9 +44,8 @@ func NewWorker(limit int) *Worker {
 	}
 }
 
-func (that *Worker) AddFunc(fun func(*Locker, context.Context, ...interface{}) error, ctx context.Context, params ...interface{}) *Worker {
+func (that *Worker) AddFunc(fun func(*Locker, ...interface{}) error, params ...interface{}) *Worker {
 	that.functions = append(that.functions, function{
-		ctx:      ctx,
 		function: fun,
 		params:   params,
 	})
@@ -61,12 +58,8 @@ func (that *Worker) Do() *Worker {
 		go func(index int) {
 			defer func() {
 				that.wait.Done()
-
-				that.lock.RWMutex.Lock()
-				that.functions = append(that.functions[:index], that.functions[index+1:]...)
-				that.lock.RWMutex.Unlock()
 			}()
-			err := that.functions[index].function(that.lock, that.functions[index].ctx, that.functions[index].params...)
+			err := that.functions[index].function(that.lock, that.functions[index].params...)
 			if err != nil {
 				that.errInfo = err
 			}

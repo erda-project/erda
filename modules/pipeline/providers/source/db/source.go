@@ -116,6 +116,19 @@ func (client *Client) GetPipelineSourceByUnique(unique *PipelineSourceUnique, op
 	return pipelineSources, nil
 }
 
+func (client *Client) ListPipelineSource(idList []string, ops ...mysqlxorm.SessionOption) ([]PipelineSource, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var pipelineSource []PipelineSource
+	if err := session.In("id", idList).
+		Find(&pipelineSource); err != nil {
+		return nil, err
+	}
+
+	return pipelineSource, nil
+}
+
 func (p *PipelineSource) Convert() *pb.PipelineSource {
 	return &pb.PipelineSource{
 		ID:          p.ID,

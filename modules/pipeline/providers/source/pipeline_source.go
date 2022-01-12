@@ -113,7 +113,14 @@ func (p pipelineSource) List(ctx context.Context, request *pb.PipelineSourceList
 		Name:       request.Name,
 		IDList:     request.IdList,
 	}
-	sources, err := p.dbClient.GetPipelineSourceByUnique(unique)
+
+	var sources []db.PipelineSource
+	var err error
+	if request.IdList != nil {
+		sources, err = p.dbClient.ListPipelineSource(request.IdList)
+	} else {
+		sources, err = p.dbClient.GetPipelineSourceByUnique(unique)
+	}
 	if err != nil {
 		return nil, err
 	}

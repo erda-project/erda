@@ -15,7 +15,6 @@
 package dbclient
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -81,7 +80,7 @@ func (client *Client) GetPipeline(id interface{}, ops ...SessionOption) (spec.Pi
 	var labels []spec.PipelineLabel
 
 	worker := limit_sync_group.NewWorker(2)
-	worker.AddFunc(func(locker *limit_sync_group.Locker, ctx context.Context, i ...interface{}) error {
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 		// extra
 		result, found, err := client.GetPipelineExtraByPipelineID(base.ID, ops...)
 		if err != nil {
@@ -96,8 +95,8 @@ func (client *Client) GetPipeline(id interface{}, ops ...SessionOption) (spec.Pi
 		locker.Unlock()
 
 		return nil
-	}, context.Background())
-	worker.AddFunc(func(locker *limit_sync_group.Locker, ctx context.Context, i ...interface{}) error {
+	})
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 		// labels
 		result, err := client.ListLabelsByPipelineID(base.ID, ops...)
 		if err != nil {
@@ -109,7 +108,7 @@ func (client *Client) GetPipeline(id interface{}, ops ...SessionOption) (spec.Pi
 		locker.Unlock()
 
 		return nil
-	}, context.Background())
+	})
 	err = worker.Do().Error()
 	if err != nil {
 		return spec.Pipeline{}, err

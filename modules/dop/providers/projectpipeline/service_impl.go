@@ -428,7 +428,7 @@ func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.Pr
 	var result = map[string]*apistructs.PipelineDTO{}
 
 	for _, v := range definitionMap {
-		work.AddFunc(func(locker *limit_sync_group.Locker, ctx context.Context, i ...interface{}) error {
+		work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 			var definitionID = i[0].(string)
 			var sourceID = i[1].(string)
 			value, err := p.autoRunPipeline(params.IdentityInfo, definitionMap[definitionID], sourceMap[sourceID])
@@ -439,7 +439,7 @@ func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.Pr
 			result[definitionID] = value
 			locker.Unlock()
 			return nil
-		}, context.Background(), v.ID, v.PipelineSourceId)
+		}, v.ID, v.PipelineSourceId)
 	}
 	if work.Do().Error() != nil {
 		return nil, err
@@ -741,6 +741,8 @@ func (p *ProjectPipelineService) getPipelineSource(sourceID string) (pipelineSou
 func (p *ProjectPipelineService) batchGetPipelineDefinition(pipelineDefinitionIDArray []string) (map[string]*dpb.PipelineDefinition, error) {
 	var pipelineDefinitionListRequest dpb.PipelineDefinitionListRequest
 	pipelineDefinitionListRequest.IdList = pipelineDefinitionIDArray
+	pipelineDefinitionListRequest.PageNo = 1
+	pipelineDefinitionListRequest.PageSize = int64(len(pipelineDefinitionIDArray))
 	resp, err := p.PipelineDefinition.List(context.Background(), &pipelineDefinitionListRequest)
 	if err != nil {
 		return nil, err
@@ -786,7 +788,7 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
-	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{Status: string(apistructs.StatusRunning), PipelineId: int64(value.ID)})
+	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{PipelineDefinitionID: definition.ID, Status: string(apistructs.StatusRunning), PipelineId: int64(value.ID)})
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
