@@ -80,6 +80,7 @@ func (a *alertService) QueryAlert(ctx context.Context, request *alert.QueryAlert
 			List:  make([]*alert.ApmAlertData, 0),
 			Total: resp.Data.Total,
 		},
+		UserIDs: resp.UserIDs,
 	}
 
 	for _, v := range resp.Data.List {
@@ -236,7 +237,8 @@ func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAle
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	resp, err := a.p.Monitor.CreateAlert(ctx, createAlertRequest)
+	context := utils.NewContextWithHeader(ctx)
+	resp, err := a.p.Monitor.CreateAlert(context, createAlertRequest)
 	if err != nil {
 		return nil, err
 	}

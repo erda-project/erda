@@ -32,7 +32,7 @@ type (
 
 		// micro alert apis
 		QueryAlertRule(r *http.Request, scope, scopeId string) (*pb.AlertTypeRuleResp, error)
-		QueryAlert(r *http.Request, scope, scopeId string, pageNum, pageSize uint64) ([]*pb.Alert, error)
+		QueryAlert(r *http.Request, scope, scopeId string, pageNum, pageSize uint64) ([]*pb.Alert, []string, error)
 		GetAlert(lang i18n.LanguageCodes, id uint64) (*pb.Alert, error)
 		CountAlert(scope, scopeID string) (int, error)
 		GetAlertDetail(r *http.Request, id uint64) (*pb.Alert, error)
@@ -75,7 +75,7 @@ func (p *provider) QueryAlertRule(r *http.Request, scope, scopeId string) (*pb.A
 	return p.a.QueryAlertRule(api.Language(r), scope, scopeId)
 }
 
-func (p *provider) QueryAlert(r *http.Request, scope, scopeId string, pageNum, pageSize uint64) ([]*pb.Alert, error) {
+func (p *provider) QueryAlert(r *http.Request, scope, scopeId string, pageNum, pageSize uint64) ([]*pb.Alert, []string, error) {
 	return p.a.QueryAlert(api.Language(r), scope, scopeId, pageNum, pageSize)
 }
 
