@@ -164,7 +164,7 @@ func (d *DeploymentOrder) RenderDetail(userId, releaseId, workspace string) (*ap
 
 	return &apistructs.DeploymentOrderDetail{
 		DeploymentOrderItem: apistructs.DeploymentOrderItem{
-			Name: orderName,
+			Name: parseDeploymentOrderShowName(orderName),
 		},
 		ApplicationsInfo: asi,
 	}, nil
@@ -465,10 +465,7 @@ func parseOrderType(t string, isProjectRelease bool) string {
 func parseDeploymentOrderShowName(orderName string) string {
 	if strings.HasPrefix(orderName, appOrderPrefix) || strings.HasPrefix(orderName, projectOrderPrefix) {
 		nameSlice := strings.Split(orderName, "_")
-		if len(nameSlice) != 3 {
-			return orderName
-		}
-		if len(nameSlice[1]) < 6 {
+		if len(nameSlice) != 3 || len(nameSlice[1]) < 6 {
 			return orderName
 		}
 		nameSlice[1] = nameSlice[1][:6]
