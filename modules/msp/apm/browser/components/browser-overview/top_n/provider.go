@@ -43,7 +43,7 @@ const (
 	maxReqPageTop5    string = "maxReqPageTop5"
 	slowReqPageTop5   string = "slowReqPageTop5"
 	slowReqRegionTop5 string = "slowReqRegionTop5"
-	wideSpan          string = "18"
+	wideSpan          string = "24"
 )
 
 // RegisterInitializeOp .

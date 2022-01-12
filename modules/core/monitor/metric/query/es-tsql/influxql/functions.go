@@ -558,10 +558,7 @@ func newUnaryValueAggFunction(
 			call: call,
 			agg:  agg,
 			getter: func(ctx *Context, id, field string, call *influxql.Call, aggs elastic.Aggregations) (interface{}, bool) {
-				val, ok := getter(ctx, id, aggs)
-				if !ok {
-					return nil, false
-				}
+				val, _ := getter(ctx, id, aggs)
 				if val == nil || val.Value == nil {
 					return float64(0), true
 				}
