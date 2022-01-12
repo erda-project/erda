@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
+	"github.com/erda-project/erda/modules/dop/services/permission"
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
 )
 
@@ -36,10 +37,15 @@ type ProjectPipelineService struct {
 	pipelineSvc        *pipeline.Pipeline
 	PipelineSource     sourcepb.SourceServiceServer
 	PipelineDefinition dpb.DefinitionServiceServer
+	Permission         *permission.Permission
 }
 
 func (p *ProjectPipelineService) WithPipelineSvc(svc *pipeline.Pipeline) {
 	p.pipelineSvc = svc
+}
+
+func (p *ProjectPipelineService) WithPermissionSvc(permission *permission.Permission) {
+	p.Permission = permission
 }
 
 type Service interface {

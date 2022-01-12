@@ -17,7 +17,6 @@ package projectpipeline
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
@@ -87,7 +86,7 @@ func (s *ErdaProjectSourceType) GetPipelineCreateRequestV2() string {
 }
 
 func makeRemote(app *apistructs.ApplicationDTO) string {
-	return fmt.Sprintf("%s/%s/%s", app.OrgName, app.ProjectName, app.Name)
+	return filepath.Join(app.OrgName, app.ProjectName, app.Name)
 }
 
 func (s *GithubProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipelineService, params *pb.CreateProjectPipelineRequest) (*spb.PipelineSourceCreateRequest, error) {

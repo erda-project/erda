@@ -347,8 +347,8 @@ type PipelinePageListRequest struct {
 
 	// internal use
 	SelectCols []string `schema:"-" ` // 需要赋值的字段列表，若不声明，则全赋值
-	AscCols    []string `schema:"-"`
-	DescCols   []string `schema:"-"`
+	AscCols    []string `schema:"ascCols"`
+	DescCols   []string `schema:"descCols"`
 
 	// pipeline definition search
 	PipelineDefinitionRequest     *PipelineDefinitionRequest
@@ -508,6 +508,8 @@ func (req *PipelinePageListRequest) UrlQueryString() map[string][]string {
 		query["endTimeCreatedTimestamp"] = []string{strconv.FormatInt(req.EndTimeCreatedTimestamp, 10)}
 	}
 	query["selectCol"] = append(query["selectCol"], req.SelectCols...)
+	query["ascCols"] = append(query["ascCols"], req.AscCols...)
+	query["descCols"] = append(query["descCols"], req.DescCols...)
 	query["countOnly"] = []string{strconv.FormatBool(req.CountOnly)}
 	query["mustMatchLabels"] = []string{req.MustMatchLabelsJSON}
 	query["mustMatchLabel"] = req.MustMatchLabelsQueryParams

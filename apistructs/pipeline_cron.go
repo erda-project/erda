@@ -19,10 +19,11 @@ import (
 )
 
 type PipelineCronPagingRequest struct {
-	AllSources bool             `schema:"allSources"`
-	Sources    []PipelineSource `schema:"source"`  // ?source=cdp-dev&source=cdp-test
-	YmlNames   []string         `schema:"ymlName"` // ?ymlName=11&ymlName=22
-	Enable     *bool            `schema:"enable"`
+	AllSources               bool             `schema:"allSources"`
+	Sources                  []PipelineSource `schema:"source"`  // ?source=cdp-dev&source=cdp-test
+	YmlNames                 []string         `schema:"ymlName"` // ?ymlName=11&ymlName=22
+	Enable                   *bool            `schema:"enable"`
+	PipelineDefinitionIDList []string         `schema:"pipelineDefinitionIDList"`
 
 	PageSize int `schema:"pageSize"`
 	PageNo   int `schema:"pageNo"`
@@ -54,6 +55,7 @@ type PipelineCronDTO struct {
 	ConfigManageNamespaces []string   `json:"configManageNamespaces"`
 	UserID                 string     `json:"userID"`
 	OrgID                  uint64     `json:"orgID"`
+	PipelineDefinitionID   string     `json:"PipelineDefinitionId"`
 }
 
 type PipelineCronCreateRequest struct {
@@ -74,6 +76,7 @@ type PipelineCronUpdateRequest struct {
 	PipelineYml            string   `json:"pipelineYml"`
 	CronExpr               string   `json:"cronExpr"`
 	ConfigManageNamespaces []string `json:"configManageNamespaces"`
+	PipelineDefinitionID   string   `json:"pipelineDefinitionId"`
 }
 
 type PipelineCronUpdateResponse struct {

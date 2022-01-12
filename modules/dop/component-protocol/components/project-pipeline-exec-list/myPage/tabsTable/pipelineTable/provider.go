@@ -60,8 +60,8 @@ const (
 	ColumnExecutor        table.ColumnKey = "executor"
 	ColumnStartTime       table.ColumnKey = "startTime"
 
-	ColumnCostTimeOrder  = "cost_time"
-	ColumnStartTimeOrder = "start_time"
+	ColumnCostTimeOrder  = "cost_time_sec"
+	ColumnStartTimeOrder = "time_begin"
 
 	StateKeyTransactionPaging = "paging"
 	StateKeyTransactionSort   = "sort"
@@ -88,7 +88,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		var descCols []string
 		var ascCols []string
 		for _, v := range sorts {
-			if v.FieldKey != string(ColumnCostTime) && v.FieldKey != string(ColumnStartTime) {
+			if v.FieldKey != ColumnCostTimeOrder && v.FieldKey != ColumnStartTimeOrder {
 				continue
 			}
 			if v.Ascending {
@@ -205,9 +205,15 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 		Selectable: true,
 		Selected:   false,
 		CellsMap: map[table.ColumnKey]table.Cell{
-			ColumnPipelineName:    table.NewTextCell(pipeline.DefinitionPageInfo.Name).Build(),
-			ColumnPipelineStatus:  table.NewTextCell(cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)+pipeline.Status.String())).Build(),
-			ColumnCostTimeOrder:   table.NewTextCell(fmt.Sprintf("%v s", pipeline.CostTimeSec)).Build(),
+			ColumnPipelineName:   table.NewTextCell(pipeline.DefinitionPageInfo.Name).Build(),
+			ColumnPipelineStatus: table.NewTextCell(cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)+pipeline.Status.String())).Build(),
+			ColumnCostTimeOrder: table.NewTextCell(func() string {
+				if pipeline.CostTimeSec <= 0 {
+					return fmt.Sprintf("%v s", 0)
+				} else {
+					return fmt.Sprintf("%v s", pipeline.CostTimeSec)
+				}
+			}()).Build(),
 			ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote)).Build(),
 			ColumnBranch:          table.NewTextCell(pipeline.DefinitionPageInfo.SourceRef).Build(),
 			ColumnExecutor:        table.NewUserCell(commodel.User{ID: pipeline.DefinitionPageInfo.Creator}).Build(),

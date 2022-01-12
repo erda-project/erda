@@ -234,10 +234,11 @@ zh:
   branch: 分支
   executor: 执行者
   startTime: 开始时间
+
   pipelineStatusAnalyzed: 初始化成功
-  pipelineStatusBorn: 初始化成功
+  pipelineStatusBorn: 预处理成功
   pipelineStatusCreated: 创建成功
-  pipelineStatusMark: 排队中
+  pipelineStatusMark: 标记中
   pipelineStatusQueue: 排队中
   pipelineStatusRunning: 正在执行
   pipelineStatusSuccess: 执行成功
@@ -247,14 +248,14 @@ zh:
   pipelineStatusCreateError: 创建失败
   pipelineStatusStartError: 启动失败
   pipelineStatusTimeout: 超时
-  pipelineStatusStopByUser: 取消
-  pipelineStatusNoNeedBySystem: 取消
-  pipelineStatusCancelByRemote: 取消
+  pipelineStatusStopByUser: 用户取消
+  pipelineStatusNoNeedBySystem: 无需执行
+  pipelineStatusCancelByRemote: 系统取消
   pipelineStatusInitializing: 正在初始化
-  pipelineStatusError: 异常
-  pipelineStatusUnknown: 异常
-  pipelineStatusDBError: 异常
-  pipelineStatusLostConn: 异常
+  pipelineStatusError: 系统错误
+  pipelineStatusUnknown: 未知异常
+  pipelineStatusDBError: 数据库异常
+  pipelineStatusLostConn: 丢失数据库连接
   pipelineStatusDisabled: 禁用
   pipelineStatusWaitApprove: 等待审核
   pipelineStatusAccept: 人工审核通过
@@ -501,10 +502,11 @@ en:
   applicationName: Application name
   branch: Branch
   startTime: Begin time
+
   pipelineStatusAnalyzed: Analyzed
-  pipelineStatusBorn: Analyzed
+  pipelineStatusBorn: Born
   pipelineStatusCreated: Created
-  pipelineStatusMark: Queue
+  pipelineStatusMark: Mark
   pipelineStatusQueue: Queue
   pipelineStatusRunning: Running
   pipelineStatusSuccess: Success

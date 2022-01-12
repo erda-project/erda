@@ -308,7 +308,7 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 		total               int64
 		currentPageSize     int64
 		err                 error
-		needQueryDefinition bool
+		needQueryDefinition = false
 	)
 
 	// default pageNum = 1
@@ -365,7 +365,7 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	}()
 
 	// 基础信息表获取到的 pipelineIDs
-	baseSQL := session.Table(&spec.PipelineBase{}).Where("").Cols("id")
+	baseSQL := session.Table(&spec.PipelineBase{}).Where("").Cols(tableFieldName((&spec.PipelineBase{}).TableName(), "id"))
 
 	// FORCE INDEX
 	var forceIndexes []string
@@ -385,10 +385,10 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 
 	if req.PipelineDefinitionRequest != nil {
 		var definitionReq = req.PipelineDefinitionRequest
+		needQueryDefinition = true
 
 		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " is not null ")
 		baseSQL.Where(tableFieldName((&spec.PipelineBase{}).TableName(), "pipeline_definition_id") + " != '' ")
-
 		if !definitionReq.IsEmptyValue() {
 			baseSQL.Join("INNER", definitiondb.PipelineDefinition{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_definition_id", definitiondb.PipelineDefinition{}.TableName(), (&spec.PipelineBase{}).TableName()))
 			baseSQL.Join("INNER", sourcedb.PipelineSource{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_source_id", sourcedb.PipelineSource{}.TableName(), definitiondb.PipelineDefinition{}.TableName()))
@@ -673,19 +673,19 @@ func (client *Client) ListPipelinesByIDs(pipelineIDs []uint64, needQueryDefiniti
 	go func() {
 		defer wg.Done()
 		if needQueryDefinition {
-			innerBasesMap, err := client.ListPipelineBasesByIDs(pipelineIDs, ops...)
-			if err != nil {
-				errs = append(errs, err.Error())
-				return
-			}
-			basesMap = innerBasesMap
-		} else {
 			innerBaseWithDefinitionMap, err := client.ListPipelineBaseWithDefinitionByIDs(pipelineIDs, ops...)
 			if err != nil {
 				errs = append(errs, err.Error())
 				return
 			}
 			baseWithDefinitionMap = innerBaseWithDefinitionMap
+		} else {
+			innerBasesMap, err := client.ListPipelineBasesByIDs(pipelineIDs, ops...)
+			if err != nil {
+				errs = append(errs, err.Error())
+				return
+			}
+			basesMap = innerBasesMap
 		}
 	}()
 

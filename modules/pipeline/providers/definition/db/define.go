@@ -15,7 +15,6 @@
 package db
 
 import (
-	"fmt"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -222,8 +221,6 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 }
 
 func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
-	timestamp := timestamppb.New(p.StartedAt.In(time.Local))
-	fmt.Println(timestamp.AsTime())
 	return &pb.PipelineDefinition{
 		ID:          p.ID,
 		Name:        p.Name,
@@ -241,5 +238,8 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 		Path:        p.Path,
 		FileName:    p.FileName,
 		Status:      p.Status,
+		Extra: &pb.PipelineDefinitionExtra{
+			ID: p.PipelineDefinitionExtraId,
+		},
 	}
 }

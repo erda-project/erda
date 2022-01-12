@@ -18,6 +18,8 @@ import "github.com/erda-project/erda/apistructs"
 
 type ProjectPipelineRun struct {
 	PipelineDefinitionID string
+	ProjectID            uint64 `json:"projectId"`
+	apistructs.IdentityInfo
 }
 
 type ProjectPipelineRunResult struct {

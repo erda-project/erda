@@ -195,8 +195,26 @@ func (p pipelineDefinition) List(ctx context.Context, request *pb.PipelineDefini
 	}
 
 	data := make([]*pb.PipelineDefinition, 0, len(definitions))
+	var extrasIDList []string
 	for _, v := range definitions {
+		extrasIDList = append(extrasIDList, v.PipelineDefinitionExtraId)
 		data = append(data, v.Convert())
+	}
+
+	var extrasMap = map[string]db.PipelineDefinitionExtra{}
+	extras, err := p.dbClient.ListPipelineDefinitionExtra(extrasIDList)
+	if err != nil {
+		return nil, err
+	}
+	for _, extra := range extras {
+		extrasMap[extra.ID] = extra
+	}
+
+	for _, definition := range data {
+		definition.Extra = &pb.PipelineDefinitionExtra{
+			ID:    definition.Extra.ID,
+			Extra: jsonparse.JsonOneLine(extrasMap[definition.Extra.ID].Extra),
+		}
 	}
 
 	return &pb.PipelineDefinitionListResponse{

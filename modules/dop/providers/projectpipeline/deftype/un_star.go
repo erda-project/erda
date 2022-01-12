@@ -18,6 +18,7 @@ import "fmt"
 
 type ProjectPipelineUnStar struct {
 	PipelineDefinitionID string `json:"pipelineDefinitionID"`
+	ProjectID            uint64 `json:"projectId"`
 }
 
 func (p *ProjectPipelineUnStar) Validate() error {
