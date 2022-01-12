@@ -91,7 +91,10 @@ func (l *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.Opera
 	l.StdDataPtr = l.doFilterApp()
 	return nil
 }
-
+func (l *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) {
+	}
+}
 func (l *List) RegisterItemClickGotoOp(opData list.OpItemClickGoto) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
 	}
@@ -103,11 +106,6 @@ func (l *List) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.Operati
 }
 
 func (l *List) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
-	}
-}
-
-func (l *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
 	}
 }
