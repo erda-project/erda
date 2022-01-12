@@ -1,0 +1,77 @@
+@url = http://localhost:8080
+
+### List File
+GET {{url}}/api/container/ea0d72abd63a620381f761dda96aeba2bcc8d751e6a244cf7b965393ebbc1f9b/files
+    ?hostIP=10.0.6.219
+    &path=/
+    &scope=org
+Accept: application/json
+User-ID: 1100
+Org-ID: 1
+
+### ReadFile
+GET {{url}}/api/container/ea0d72abd63a620381f761dda96aeba2bcc8d751e6a244cf7b965393ebbc1f9b/file
+    ?hostIP=10.0.6.219
+    &path=/xxxxx1.txt
+    &scope=org
+Accept: application/json
+User-ID: 1100
+Org-ID: 1
+
+### WriteFile
+POST {{url}}/api/container/ea0d72abd63a620381f761dda96aeba2bcc8d751e6a244cf7b965393ebbc1f9b/file
+    ?hostIP=10.0.6.219
+    &path=/xxxxx1.txt
+    &action=
+    &scope=org
+Content-Type: application/json
+Accept: application/json
+User-ID: 1100
+Org-ID: 1
+
+{
+    "encoding": "base64",
+    "content": "eHh4eHh4"
+}
+
+### MakeDirectory
+POST {{url}}/api/container/ea0d72abd63a620381f761dda96aeba2bcc8d751e6a244cf7b965393ebbc1f9b/files/mkdir
+    ?hostIP=10.0.6.219
+    &path=/xxxxx1dir/xxx/yyy/zzzz
+    &all=true
+    &scope=org
+Content-Type: application/json
+Accept: application/json
+User-ID: 1100
+Org-ID: 1
+
+### MoveFile
+POST {{url}}/api/container/ea0d72abd63a620381f761dda96aeba2bcc8d751e6a244cf7b965393ebbc1f9b/files/mv
+    ?hostIP=10.0.6.219
+    &scope=org
+Content-Type: application/json
+Accept: application/json
+User-ID: 1100
+Org-ID: 1
+
+{
+    "source": "/xxxxx1dir/xxxxx4.txt",
+    "destination": "/xxxxx1dir/xxxxx5.txt"
+}
+
+### DeleteFile
+DELETE {{url}}/api/container/ea0d72abd63a620381f761dda96aeba2bcc8d751e6a244cf7b965393ebbc1f9b/file
+    ?hostIP=10.0.6.219
+    &path=/xxxxx1dir/xxxxx5.txt
+    &scope=org
+Accept: application/json
+User-ID: 1100
+Org-ID: 1
+
+### DownloadFile
+GET {{url}}/api/container/ea0d72abd63a620381f761dda96aeba2bcc8d751e6a244cf7b965393ebbc1f9b/files/download
+    ?hostIP=10.0.6.219
+    &path=/xxxxx1.txt
+    &scope=org
+User-ID: 1100
+Org-ID: 1

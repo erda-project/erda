@@ -25,12 +25,11 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
+	k8sclient "github.com/erda-project/erda/providers/k8s-client-manager"
 )
 
 type (
 	config struct {
-		ClientCacheSize        int           `file:"client_cache_size" default:"128"`
-		ClientCacheExpiration  time.Duration `file:"client_cache_expiration" default:"10m"`
 		PodInfoCacheSize       int           `file:"pod_info_cache_size" default:"128"`
 		PodInfoCacheExpiration time.Duration `file:"pod_info_cache_expiration" default:"3h"`
 		BufferLines            int           `file:"buffer_lines" default:"1024"`
@@ -39,17 +38,17 @@ type (
 	provider struct {
 		Cfg     *config
 		Log     logs.Logger
-		Redis   *redis.Client    `autowired:"redis-client"`
-		Loader  loader.Interface `autowired:"elasticsearch.index.loader@log"`
-		ctx     servicehub.Context
-		clients ClientManager
-		pods    PodInfoQueryer
+		Redis   *redis.Client       `autowired:"redis-client"`
+		Loader  loader.Interface    `autowired:"elasticsearch.index.loader@log"`
+		Clients k8sclient.Interface `autowired:"k8s-client-manager"`
+
+		ctx  servicehub.Context
+		pods PodInfoQueryer
 	}
 )
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.ctx = ctx
-	p.clients = newClientManager(p.Cfg)
 	p.pods = newPodInfoQueryer(p)
 	return nil
 }
@@ -58,7 +57,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 	return &cStorage{
 		log: p.Log,
 		getQueryFunc: func(clusterName string) (func(it *logsIterator, opts *v1.PodLogOptions) (io.ReadCloser, error), error) {
-			client, err := p.clients.GetClient(clusterName)
+			client, _, err := p.Clients.GetClient(clusterName)
 			if err != nil {
 				return nil, err
 			}
