@@ -14,19 +14,24 @@
 
 package deftype
 
-import "fmt"
+import (
+	"fmt"
 
-type ProjectPipelineStar struct {
+	"github.com/erda-project/erda/apistructs"
+)
+
+type ProjectPipelineCategory struct {
 	PipelineDefinitionID string `json:"pipelineDefinitionID"`
 	ProjectID            uint64 `json:"projectId"`
+	apistructs.IdentityInfo
 }
 
-func (p *ProjectPipelineStar) Validate() error {
+func (p *ProjectPipelineCategory) Validate() error {
 	if p.PipelineDefinitionID == "" {
 		return fmt.Errorf("the pipelineDefinitionID is empty")
 	}
 	return nil
 }
 
-type ProjectPipelineStarResult struct {
+type ProjectPipelineCategoryResult struct {
 }

@@ -66,7 +66,9 @@ func (s *ErdaProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipel
 	if err != nil {
 		return nil, err
 	}
-	b, err := json.Marshal(createReqV2)
+	var extra apistructs.PipelineDefinitionExtraValue
+	extra.CreateRequest = createReqV2
+	b, err := json.Marshal(extra)
 	if err != nil {
 		return nil, err
 	}

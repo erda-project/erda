@@ -230,18 +230,18 @@ func (p *ProjectPipelineService) Update(ctx context.Context, params deftype.Proj
 	return nil, err
 }
 
-func (p *ProjectPipelineService) Star(ctx context.Context, params deftype.ProjectPipelineStar) (*dpb.PipelineDefinitionUpdateResponse, error) {
+func (p *ProjectPipelineService) SetPrimary(ctx context.Context, params deftype.ProjectPipelineCategory) (*dpb.PipelineDefinitionUpdateResponse, error) {
 	if err := params.Validate(); err != nil {
-		return nil, apierrors.ErrStarProjectPipeline.InvalidParameter(err)
+		return nil, apierrors.ErrSetPrimaryProjectPipeline.InvalidParameter(err)
 	}
 
 	_, source, err := p.getPipelineDefinitionAndSource(params.PipelineDefinitionID)
 	if err != nil {
-		return nil, apierrors.ErrStarProjectPipeline.InvalidParameter(err)
+		return nil, apierrors.ErrSetPrimaryProjectPipeline.InvalidParameter(err)
 	}
 	err = p.checkDataPermissionByProjectID(params.ProjectID, source)
 	if err != nil {
-		return nil, apierrors.ErrStarProjectPipeline.AccessDenied()
+		return nil, apierrors.ErrSetPrimaryProjectPipeline.AccessDenied()
 	}
 
 	definition, err := p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
@@ -249,24 +249,24 @@ func (p *ProjectPipelineService) Star(ctx context.Context, params deftype.Projec
 		Category:             StarCategory.String(),
 	})
 	if err != nil {
-		return nil, apierrors.ErrStarProjectPipeline.InternalError(err)
+		return nil, apierrors.ErrSetPrimaryProjectPipeline.InternalError(err)
 	}
 
 	return definition, nil
 }
 
-func (p *ProjectPipelineService) UnStar(ctx context.Context, params deftype.ProjectPipelineUnStar) (*dpb.PipelineDefinitionUpdateResponse, error) {
+func (p *ProjectPipelineService) UnSetPrimary(ctx context.Context, params deftype.ProjectPipelineCategory) (*dpb.PipelineDefinitionUpdateResponse, error) {
 	if err := params.Validate(); err != nil {
-		return nil, apierrors.ErrStarProjectPipeline.InvalidParameter(err)
+		return nil, apierrors.ErrUnSetPrimaryProjectPipeline.InvalidParameter(err)
 	}
 
 	_, source, err := p.getPipelineDefinitionAndSource(params.PipelineDefinitionID)
 	if err != nil {
-		return nil, apierrors.ErrStarProjectPipeline.InvalidParameter(err)
+		return nil, apierrors.ErrUnSetPrimaryProjectPipeline.InvalidParameter(err)
 	}
 	err = p.checkDataPermissionByProjectID(params.ProjectID, source)
 	if err != nil {
-		return nil, apierrors.ErrStarProjectPipeline.AccessDenied()
+		return nil, apierrors.ErrUnSetPrimaryProjectPipeline.AccessDenied()
 	}
 
 	definition, err := p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
@@ -274,7 +274,7 @@ func (p *ProjectPipelineService) UnStar(ctx context.Context, params deftype.Proj
 		Category:             DefaultCategory.String(),
 	})
 	if err != nil {
-		return nil, apierrors.ErrStarProjectPipeline.InternalError(err)
+		return nil, apierrors.ErrUnSetPrimaryProjectPipeline.InternalError(err)
 	}
 
 	return definition, nil
@@ -913,9 +913,9 @@ type pipelineWithAppName struct {
 
 func (p *ProjectPipelineService) checkRolePermission(identityInfo apistructs.IdentityInfo, createRequest *apistructs.PipelineCreateRequestV2, apiError *errorresp.APIError) error {
 	appIDString := createRequest.Labels[apistructs.LabelAppID]
-	appID, err := strconv.ParseInt(appIDString, 64, 10)
+	appID, err := strconv.ParseInt(appIDString, 10, 64)
 	if err != nil {
-		return apiError.InternalError(fmt.Errorf("definition extras not find appID %v"))
+		return apiError.InternalError(fmt.Errorf("definition extras not find appID, err: %v", err.Error()))
 	}
 	if err := p.Permission.CheckRuntimeBranch(identityInfo, uint64(appID), createRequest.Labels[apistructs.LabelBranch], apistructs.OperateAction); err != nil {
 		return apiError.AccessDenied()

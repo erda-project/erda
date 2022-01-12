@@ -53,8 +53,8 @@ type Service interface {
 	List(ctx context.Context, params deftype.ProjectPipelineList) ([]*dpb.PipelineDefinition, int64, error)
 	Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error)
 	Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error)
-	Star(ctx context.Context, params deftype.ProjectPipelineStar) (*dpb.PipelineDefinitionUpdateResponse, error)
-	UnStar(ctx context.Context, params deftype.ProjectPipelineUnStar) (*dpb.PipelineDefinitionUpdateResponse, error)
+	SetPrimary(ctx context.Context, params deftype.ProjectPipelineCategory) (*dpb.PipelineDefinitionUpdateResponse, error)
+	UnSetPrimary(ctx context.Context, params deftype.ProjectPipelineCategory) (*dpb.PipelineDefinitionUpdateResponse, error)
 	ListApp(ctx context.Context, params *pb.ListAppRequest) (*pb.ListAppResponse, error)
 
 	Run(ctx context.Context, params deftype.ProjectPipelineRun) (*deftype.ProjectPipelineRunResult, error)

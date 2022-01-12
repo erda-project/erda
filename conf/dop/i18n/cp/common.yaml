@@ -261,7 +261,7 @@ zh:
   pipelineStatusAccept: 人工审核通过
   pipelineStatusReject: 人工审核拒绝
   setPrimary: 设为重要
-  cancelPrimary: 取消重要
+  unsetPrimary: 取消重要
   run: 执行
   cancelRun: 取消执行
   rerunFromFail: 从失败处执行
@@ -529,7 +529,7 @@ en:
   pipelineStatusApprovalSuccess: ApprovalSuccess
   pipelineStatusApprovalFail: ApprovalFail
   setPrimary: Set primary
-  cancelPrimary: Cancel primary
+  unsetPrimary: Cancel primary
   run: Run
   cancelRun: Rancel run
   rerunFromFail: Rerun from fail
