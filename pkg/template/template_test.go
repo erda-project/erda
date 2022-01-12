@@ -14,27 +14,24 @@
 
 package template
 
-import "regexp"
+import (
+	"testing"
 
-// Render 渲染简单模板 占位符格式: {{key}}
-func Render(template string, params map[string]string) string {
-	reg := regexp.MustCompile(`{{.+?}}`)
-	result := reg.ReplaceAllStringFunc(template, func(s string) string {
-		key := s[2 : len(s)-2]
-		value, ok := params[key]
-		if ok {
-			return value
-		}
-		return s
-	})
-	return result
-}
+	"github.com/stretchr/testify/assert"
+)
 
-//获取模板内容 {{ context }}
-func GetTemplateValue(template string) string {
-	subMatchs := regexp.MustCompile(`^{{\s*(\S+)\s*}}`).FindStringSubmatch(template)
-	if len(subMatchs) > 0 {
-		return subMatchs[1]
-	}
-	return ""
+func TestGetTemplateValue(t *testing.T) {
+	var tv string
+	tv = GetTemplateValue("{{   erdaService.aaa.bbb    }}")
+	assert.Equal(t, tv, "erdaService.aaa.bbb")
+
+	tv = GetTemplateValue("ttt{{   erdaService.aaa.bbb    }}")
+	assert.Equal(t, tv, "")
+
+	tv = GetTemplateValue("{{erdaService.aaa.bbb}}")
+	assert.Equal(t, tv, "erdaService.aaa.bbb")
+
+	tv = GetTemplateValue("erdaService.aaa.bbb")
+	assert.Equal(t, tv, "")
+
 }

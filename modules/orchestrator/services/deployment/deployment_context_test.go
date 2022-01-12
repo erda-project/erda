@@ -16,6 +16,7 @@ package deployment
 
 import (
 	"io/ioutil"
+	"net/http"
 	"reflect"
 	"testing"
 	"time"
@@ -139,6 +140,48 @@ func TestFSMFailDeploy(t *testing.T) {
 			`deployment is fail, status: WAITING, phrase: INIT, (fake error)`,
 		}, logging)
 	}
+}
+
+func TestConvertErdaServiceTemplate(t *testing.T) {
+	var err error
+	var result string
+	f := genFakeFSM()
+	f.Cluster.Type = apistructs.EDAS
+
+	var bdl *bundle.Bundle
+	var db *dbclient.DBClient
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetAppsByProjectAndAppName",
+		func(_ *bundle.Bundle, projectID, orgID uint64, userID string, appName string, header ...http.Header) (*apistructs.ApplicationListResponseData, error) {
+			return &apistructs.ApplicationListResponseData{
+				Total: 1,
+				List: []apistructs.ApplicationDTO{apistructs.ApplicationDTO{
+					ID: 3,
+				}},
+			}, nil
+		},
+	)
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindRuntimesByAppIdAndWorkspace",
+		func(_ *dbclient.DBClient, appId uint64, workspace string) ([]dbclient.Runtime, error) {
+			return []dbclient.Runtime{dbclient.Runtime{
+				ScheduleName: dbclient.ScheduleName{
+					Namespace: "",
+					Name:      "",
+				},
+			}}, nil
+		},
+	)
+	f.bdl = bdl
+	f.db = db
+	_, err = f.convertErdaServiceTemplate("erdaService.aaa.bbb.ccc.bbb", "project-111-prod", 1, 2, "DEV")
+	assert.Error(t, err)
+
+	result, err = f.convertErdaServiceTemplate("erdaService.pampas-blog.bbb", "project-111-prod", 1, 2, "DEV")
+	assert.Equal(t, "bbb.default.svc.cluster.local", result)
+
+	f.Cluster.Type = apistructs.K8S
+	result, err = f.convertErdaServiceTemplate("erdaService.pampas-blog.bbb", "project-111-prod", 1, 2, "DEV")
+	assert.Equal(t, "bbb.project-111-prod.svc.cluster.local", result)
 }
 
 func TestFSMPushOnPhase(t *testing.T) {
