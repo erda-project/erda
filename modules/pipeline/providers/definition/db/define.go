@@ -34,6 +34,7 @@ type PipelineDefinition struct {
 	PipelineSourceId          string    `json:"pipelineSourceId"`
 	PipelineDefinitionExtraId string    `json:"pipelineDefinitionExtraId"`
 	Category                  string    `json:"category"`
+	Status                    string    `json:"status"`
 	StartedAt                 time.Time `json:"startedAt,omitempty" xorm:"started_at"`
 	EndedAt                   time.Time `json:"endedAt,omitempty" xorm:"ended_at"`
 	TimeCreated               time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
@@ -239,5 +240,6 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 		Ref:         p.Ref,
 		Path:        p.Path,
 		FileName:    p.FileName,
+		Status:      p.Status,
 	}
 }

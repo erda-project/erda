@@ -203,7 +203,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			Selected:   false,
 			CellsMap: map[table.ColumnKey]table.Cell{
 				ColumnPipelineName:    table.NewTextCell(v.Name).Build(),
-				ColumnPipelineStatus:  table.NewTextCell(cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)) + "success").Build(),
+				ColumnPipelineStatus:  table.NewTextCell(cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)) + v.Status).Build(),
 				ColumnCostTime:        table.NewTextCell(fmt.Sprintf("%v s", v.CostTime)).Build(),
 				ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(v.Remote)).Build(),
 				ColumnBranch:          table.NewTextCell(v.Ref).Build(),

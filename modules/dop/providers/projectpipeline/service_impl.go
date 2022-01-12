@@ -37,7 +37,7 @@ type CategoryType string
 
 const (
 	DefaultCategory CategoryType = "default"
-	StarCategory    CategoryType = "star"
+	StarCategory    CategoryType = "primary"
 )
 
 func (c CategoryType) String() string {
@@ -714,6 +714,10 @@ func (p *ProjectPipelineService) autoRunPipeline(definition *dpb.PipelineDefinit
 	createV2.DefinitionID = definition.ID
 
 	value, err := p.bundle.CreatePipeline(createV2)
+	if err != nil {
+		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
+	}
+	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{Status: string(apistructs.StatusRunning)})
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
