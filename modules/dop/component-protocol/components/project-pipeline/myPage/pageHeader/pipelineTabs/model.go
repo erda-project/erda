@@ -80,7 +80,6 @@ func (t *Tab) setInParams(ctx context.Context) error {
 		return err
 	}
 
-	fmt.Println("wxj", t.InParams.FrontendProjectID)
 	t.InParams.ProjectID, err = strconv.ParseUint(t.InParams.FrontendProjectID, 10, 64)
 	return err
 }

@@ -211,7 +211,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 				ColumnStartTime: table.NewTextCell(func() string {
 					v.StartedAt.AsTime().Format("2006-01-02 15:04:05")
 					if v.StartedAt.AsTime().Year() <= 2000 {
-						return ""
+						return "-"
 					}
 					return v.StartedAt.AsTime().Format("2006-01-02 15:04:05")
 				}()).Build(),
