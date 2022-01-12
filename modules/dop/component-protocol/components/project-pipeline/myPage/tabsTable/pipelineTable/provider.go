@@ -97,14 +97,9 @@ func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				table.OpBatchRowsHandle{}.OpKey(): cputil.NewOpBuilder().WithText("批量操作").WithServerDataPtr(&table.OpBatchRowsHandleServerData{
 					Options: []table.OpBatchRowsHandleOption{
 						{
-							ID:            "delete",
-							Text:          "删除",
-							AllowedRowIDs: []string{"row1", "row2"},
-						},
-						{
-							ID:              "start",
-							Text:            "启动",
-							ForbiddenRowIDs: []string{"row2"},
+							ID:   "run",
+							Text: "执行",
+							//AllowedRowIDs: []string{"row1", "row2"},
 						},
 					},
 				}).Build(),
@@ -131,14 +126,26 @@ func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 func (p *PipelineTable) SetTableRows() []table.Row {
 	var descCols, ascCols []string
 	for _, v := range p.Sorts {
+		field := func() string {
+			if v.FieldKey == string(ColumnCostTime) {
+				return "cost_time"
+			}
+			if v.FieldKey == string(ColumnStartTime) {
+				return "started_at"
+			}
+			return ""
+		}()
+		if field == "" {
+			continue
+		}
 		if v.Ascending {
-			ascCols = append(ascCols, v.FieldKey)
+			ascCols = append(ascCols, field)
 		} else {
-			descCols = append(descCols, v.FieldKey)
+			descCols = append(descCols, field)
 		}
 	}
 	if len(ascCols) == 0 && len(descCols) == 0 {
-		descCols = append(descCols, string(ColumnStartTime))
+		descCols = append(descCols, "started_at")
 	}
 
 	filter := p.gsHelper.GetGlobalTableFilter()
@@ -196,12 +203,18 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			Selected:   false,
 			CellsMap: map[table.ColumnKey]table.Cell{
 				ColumnPipelineName:    table.NewTextCell(v.Name).Build(),
-				ColumnPipelineStatus:  table.NewTextCell(cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)) + "success").Build(),
+				ColumnPipelineStatus:  table.NewTextCell(cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)) + v.Status).Build(),
 				ColumnCostTime:        table.NewTextCell(fmt.Sprintf("%v s", v.CostTime)).Build(),
 				ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(v.Remote)).Build(),
 				ColumnBranch:          table.NewTextCell(v.Ref).Build(),
 				ColumnExecutor:        table.NewUserCell(commodel.User{ID: v.Creator}).Build(),
-				ColumnStartTime:       table.NewTextCell(v.StartedAt.AsTime().Format("2006-01-02 15:04:05")).Build(),
+				ColumnStartTime: table.NewTextCell(func() string {
+					v.StartedAt.AsTime().Format("2006-01-02 15:04:05")
+					if v.StartedAt.AsTime().Year() <= 2000 {
+						return "-"
+					}
+					return v.StartedAt.AsTime().Format("2006-01-02 15:04:05")
+				}()).Build(),
 			},
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				table.OpRowSelect{}.OpKey(): cputil.NewOpBuilder().Build(),

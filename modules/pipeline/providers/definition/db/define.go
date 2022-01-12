@@ -33,6 +33,7 @@ type PipelineDefinition struct {
 	PipelineSourceId          string    `json:"pipelineSourceId"`
 	PipelineDefinitionExtraId string    `json:"pipelineDefinitionExtraId"`
 	Category                  string    `json:"category"`
+	Status                    string    `json:"status"`
 	StartedAt                 time.Time `json:"startedAt,omitempty" xorm:"started_at"`
 	EndedAt                   time.Time `json:"endedAt,omitempty" xorm:"ended_at"`
 	TimeCreated               time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
@@ -145,11 +146,11 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 			engine = engine.Where("d.started_at <= ?", req.TimeStarted[1])
 		}
 	}
-	if len(req.AscCols) != 0 {
-		engine = engine.Asc(req.AscCols...)
+	for _, v := range req.AscCols {
+		engine = engine.Asc("d." + v)
 	}
-	if len(req.DescCols) != 0 {
-		engine = engine.Desc(req.DescCols...)
+	for _, v := range req.DescCols {
+		engine = engine.Desc("d." + v)
 	}
 
 	if err = engine.Limit(int(req.PageSize), int((req.PageNo-1)*req.PageSize)).
@@ -233,11 +234,12 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 		TimeUpdated: timestamppb.New(p.TimeUpdated),
 		SourceType:  p.SourceType,
 		Remote:      p.Remote,
+		Ref:         p.Ref,
+		Path:        p.Path,
+		FileName:    p.FileName,
+		Status:      p.Status,
 		Extra: &pb.PipelineDefinitionExtra{
 			ID: p.PipelineDefinitionExtraId,
 		},
-		Ref:      p.Ref,
-		Path:     p.Path,
-		FileName: p.FileName,
 	}
 }

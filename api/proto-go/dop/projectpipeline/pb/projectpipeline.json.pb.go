@@ -13,12 +13,72 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
+var _ json.Marshaler = (*ListAppRequest)(nil)
+var _ json.Unmarshaler = (*ListAppRequest)(nil)
+var _ json.Marshaler = (*ListAppResponse)(nil)
+var _ json.Unmarshaler = (*ListAppResponse)(nil)
+var _ json.Marshaler = (*Application)(nil)
+var _ json.Unmarshaler = (*Application)(nil)
 var _ json.Marshaler = (*CreateProjectPipelineRequest)(nil)
 var _ json.Unmarshaler = (*CreateProjectPipelineRequest)(nil)
 var _ json.Marshaler = (*CreateProjectPipelineResponse)(nil)
 var _ json.Unmarshaler = (*CreateProjectPipelineResponse)(nil)
 var _ json.Marshaler = (*ProjectPipeline)(nil)
 var _ json.Unmarshaler = (*ProjectPipeline)(nil)
+
+// ListAppRequest implement json.Marshaler.
+func (m *ListAppRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ListAppRequest implement json.Marshaler.
+func (m *ListAppRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ListAppResponse implement json.Marshaler.
+func (m *ListAppResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ListAppResponse implement json.Marshaler.
+func (m *ListAppResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// Application implement json.Marshaler.
+func (m *Application) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// Application implement json.Marshaler.
+func (m *Application) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
 
 // CreateProjectPipelineRequest implement json.Marshaler.
 func (m *CreateProjectPipelineRequest) MarshalJSON() ([]byte, error) {

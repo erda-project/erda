@@ -51,6 +51,8 @@ func (t *Tab) Render(ctx context.Context, c *cptype.Component, scenario cptype.S
 	list, total, err := t.ProjectPipelineSvc.List(ctx, deftype.ProjectPipelineList{
 		ProjectID:    t.InParams.ProjectID,
 		IdentityInfo: apistructs.IdentityInfo{UserID: t.sdk.Identity.UserID},
+		PageNo:       1,
+		PageSize:     9999,
 	})
 	if err != nil {
 		return err

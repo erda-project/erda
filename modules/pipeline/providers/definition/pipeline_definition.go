@@ -124,6 +124,9 @@ func (p pipelineDefinition) Update(ctx context.Context, request *pb.PipelineDefi
 	if request.Executor != "" {
 		pipelineDefinition.Executor = request.Executor
 	}
+	if request.Status != "" {
+		pipelineDefinition.Status = request.Status
+	}
 	err = p.dbClient.UpdatePipelineDefinition(request.PipelineDefinitionID, pipelineDefinition)
 	if err != nil {
 		return nil, err

@@ -26,7 +26,47 @@ service ProjectPipelineService {
       path : "/api/project-pipeline",
     };
   }
+
+  rpc ListApp(ListAppRequest)
+      returns(ListAppResponse) {
+    option(google.api.http) = {
+      get : "/api/project-pipeline/apps/{projectID}",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/apps/{projectID}",
+    };
+  }
 }
+
+message ListAppRequest {
+  uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
+}
+
+message ListAppResponse {
+  repeated Application data = 1;
+}
+
+message Application {
+  uint64 ID = 1;
+  string name = 2;
+  string displayName = 3;
+  string mode = 4;
+  string desc = 5;
+  string logo = 6;
+  bool isPublic = 7;
+  string creator = 8;
+  string gitRepo = 9;
+  uint64 orgID = 10;
+  string orgDisplayName = 11;
+  uint64  projectId = 12;
+  string projectName = 13;
+  bool isExternalRepo = 14;
+  google.protobuf.Timestamp createdAt = 15;
+  google.protobuf.Timestamp updatedAt = 16;
+  uint64  runningNum = 17;
+  uint64 failedNum = 18;
+}
+
 
 message CreateProjectPipelineRequest {
   uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
@@ -34,7 +74,7 @@ message CreateProjectPipelineRequest {
   uint64 appID = 3;
   string sourceType = 4 [(validator.field) = {string_not_empty: true}];
   string ref = 5 [(validator.field) = {string_not_empty: true}];
-  string path = 6 [(validator.field) = {string_not_empty: true}];
+  string path = 6;
   string fileName = 7 [(validator.field) = {string_not_empty: true}];
 }
 
