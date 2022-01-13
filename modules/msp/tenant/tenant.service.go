@@ -219,16 +219,27 @@ func (s *tenantService) covertToTenant(tenant *db.MSPTenant) *pb.Tenant {
 	}
 }
 
-func (s *tenantService) GetTenantWorkspace(ctx context.Context, req *pb.GetTenantWorkspaceRequest) (*pb.GetTenantWorkspaceResponse, error) {
-	workspace, err := s.MSPTenantDB.GetTenantWorkspaceByTenantID(req.ScopeId)
+func (s *tenantService) GetTenantProject(ctx context.Context, req *pb.GetTenantProjectRequest) (*pb.GetTenantProjectResponse, error) {
+	result := &pb.GetTenantProjectResponse{
+		Data: &pb.TenantProjectData{},
+	}
+	tenant, err := s.MSPTenantDB.QueryTenant(req.ScopeId)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	if workspace == "" {
-		workspace, err = s.MonitorDB.GetWorkspaceByTK(req.ScopeId)
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
+	if tenant != nil {
+		result.Data.ProjectId = tenant.RelatedProjectId
+		result.Data.Workspace = tenant.RelatedWorkspace
+		return result, nil
 	}
-	return &pb.GetTenantWorkspaceResponse{Data: workspace}, nil
+	spMonitor, err := s.MonitorDB.GetByTerminusKey(req.ScopeId)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if spMonitor != nil {
+		result.Data.ProjectId = spMonitor.ProjectId
+		result.Data.Workspace = spMonitor.Workspace
+		return result, nil
+	}
+	return result, errors.NewInternalServerError(fmt.Errorf("GetTenantProject is failed the project not found"))
 }

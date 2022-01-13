@@ -107,15 +107,3 @@ func (db *MonitorDB) UpdateStatusByMonitorId(monitorId string, delete int) error
 			"updated":   time.Now(),
 		}).Error
 }
-
-func (db *MonitorDB) GetWorkspaceByTK(tk string) (string, error) {
-	monitor := Monitor{}
-	err := db.Where("terminus_key = ?", tk).Find(&monitor).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return "", nil
-		}
-		return "", err
-	}
-	return monitor.Workspace, nil
-}

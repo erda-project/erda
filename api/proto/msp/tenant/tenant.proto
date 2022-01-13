@@ -25,9 +25,9 @@ service TenantService {
     };
   }
 
-  rpc GetTenantWorkspace(GetTenantWorkspaceRequest) returns (GetTenantWorkspaceResponse) {
+  rpc GetTenantProject(GetTenantProjectRequest) returns (GetTenantProjectResponse) {
     option (google.api.http) = {
-      get: "/api/msp/tenant/workspace"
+      get: "/api/msp/tenant/projectInfo"
     };
   }
 }
@@ -93,10 +93,15 @@ message Tenant {
   bool   isDeleted  = 7;
 }
 
-message GetTenantWorkspaceRequest {
+message GetTenantProjectRequest {
   string scopeId = 1;
 }
 
-message GetTenantWorkspaceResponse {
-  string data = 1;
+message GetTenantProjectResponse {
+  TenantProjectData data = 1;
+}
+
+message TenantProjectData {
+  string workspace = 1;
+  string projectId = 2;
 }

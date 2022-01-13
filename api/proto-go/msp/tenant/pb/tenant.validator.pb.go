@@ -86,9 +86,17 @@ func (this *DeleteTenantResponse) Validate() error {
 func (this *Tenant) Validate() error {
 	return nil
 }
-func (this *GetTenantWorkspaceRequest) Validate() error {
+func (this *GetTenantProjectRequest) Validate() error {
 	return nil
 }
-func (this *GetTenantWorkspaceResponse) Validate() error {
+func (this *GetTenantProjectResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *TenantProjectData) Validate() error {
 	return nil
 }

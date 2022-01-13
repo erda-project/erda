@@ -24,8 +24,8 @@ type TenantServiceHandler interface {
 	GetTenant(context.Context, *GetTenantRequest) (*GetTenantResponse, error)
 	// DELETE /api/msp/tenant
 	DeleteTenant(context.Context, *DeleteTenantRequest) (*DeleteTenantResponse, error)
-	// GET /api/msp/tenant/workspace
-	GetTenantWorkspace(context.Context, *GetTenantWorkspaceRequest) (*GetTenantWorkspaceResponse, error)
+	// GET /api/msp/tenant/projectInfo
+	GetTenantProject(context.Context, *GetTenantProjectRequest) (*GetTenantProjectResponse, error)
 }
 
 // RegisterTenantServiceHandler register TenantServiceHandler to http.Router.
@@ -171,13 +171,13 @@ func RegisterTenantServiceHandler(r http.Router, srv TenantServiceHandler, opts 
 		)
 	}
 
-	add_GetTenantWorkspace := func(method, path string, fn func(context.Context, *GetTenantWorkspaceRequest) (*GetTenantWorkspaceResponse, error)) {
+	add_GetTenantProject := func(method, path string, fn func(context.Context, *GetTenantProjectRequest) (*GetTenantProjectResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*GetTenantWorkspaceRequest))
+			return fn(ctx, req.(*GetTenantProjectRequest))
 		}
-		var GetTenantWorkspace_info transport.ServiceInfo
+		var GetTenantProject_info transport.ServiceInfo
 		if h.Interceptor != nil {
-			GetTenantWorkspace_info = transport.NewServiceInfo("erda.msp.tenant.TenantService", "GetTenantWorkspace", srv)
+			GetTenantProject_info = transport.NewServiceInfo("erda.msp.tenant.TenantService", "GetTenantProject", srv)
 			handler = h.Interceptor(handler)
 		}
 		r.Add(method, path, encodeFunc(
@@ -185,10 +185,10 @@ func RegisterTenantServiceHandler(r http.Router, srv TenantServiceHandler, opts 
 				ctx := http.WithRequest(r.Context(), r)
 				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetTenantWorkspace_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetTenantProject_info)
 				}
 				r = r.WithContext(ctx)
-				var in GetTenantWorkspaceRequest
+				var in GetTenantProjectRequest
 				if err := h.Decode(r, &in); err != nil {
 					return nil, err
 				}
@@ -210,5 +210,5 @@ func RegisterTenantServiceHandler(r http.Router, srv TenantServiceHandler, opts 
 	add_CreateTenant("POST", "/api/msp/tenant", srv.CreateTenant)
 	add_GetTenant("GET", "/api/msp/tenant", srv.GetTenant)
 	add_DeleteTenant("DELETE", "/api/msp/tenant", srv.DeleteTenant)
-	add_GetTenantWorkspace("GET", "/api/msp/tenant/workspace", srv.GetTenantWorkspace)
+	add_GetTenantProject("GET", "/api/msp/tenant/projectInfo", srv.GetTenantProject)
 }

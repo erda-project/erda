@@ -101,11 +101,11 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	workResp, err := n.p.Tenant.GetTenantWorkspace(context.Background(), &tenantpb.GetTenantWorkspaceRequest{
+	workResp, err := n.p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
 		ScopeId: request.ScopeId,
 	})
 	result.Data.ProjectId = auditProjectId
-	auditContext := auditContextMap(projectName, workResp.Data, request.Name)
+	auditContext := auditContextMap(projectName, workResp.Data.Workspace, request.Name)
 	audit.ContextEntryMap(ctx, auditContext)
 	return result, nil
 }
@@ -115,7 +115,7 @@ func (n *notifyGroupService) auditContextInfo(groupId int64, orgId string) (stri
 	if err != nil {
 		return "", "", "", 0, err
 	}
-	resp, err := n.p.Tenant.GetTenantWorkspace(context.Background(), &tenantpb.GetTenantWorkspaceRequest{
+	resp, err := n.p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
 		ScopeId: notifyGroup.Data.ScopeID,
 	})
 	if err != nil {
@@ -125,7 +125,7 @@ func (n *notifyGroupService) auditContextInfo(groupId int64, orgId string) (stri
 	if err != nil {
 		return "", "", "", 0, err
 	}
-	return projectName, resp.Data, notifyGroup.Data.Name, auditProjectId, nil
+	return projectName, resp.Data.Workspace, notifyGroup.Data.Name, auditProjectId, nil
 }
 
 func (n *notifyGroupService) GetProjectInfo(scopeId string) (string, uint64, error) {

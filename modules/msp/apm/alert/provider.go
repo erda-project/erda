@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/mysql"
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	alert "github.com/erda-project/erda-proto-go/msp/apm/alert/pb"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/monitor/common/db"
@@ -47,6 +48,7 @@ type provider struct {
 	mspDb        *db2.DB
 	bdl          *bundle.Bundle
 	audit        audit.Auditor
+	Tenant       tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
 
 	microServiceFilterTags map[string]bool
 }

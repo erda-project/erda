@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/providers/audit"
 	"strconv"
 	"strings"
 
@@ -28,12 +27,14 @@ import (
 
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	alert "github.com/erda-project/erda-proto-go/msp/apm/alert/pb"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/adapt"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type alertService struct {
@@ -239,9 +240,12 @@ func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAle
 	}
 	resp, err := a.p.Monitor.CreateAlert(ctx, createAlertRequest)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewInternalServerError(err)
 	}
 	projectName, workspace, auditProjectId, err := a.getAuditInfo(request.TenantGroup)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	auditContext := map[string]interface{}{
 		"projectName": projectName,
 		"alertName":   request.Name,
@@ -843,28 +847,46 @@ func (a *alertService) UpdateCustomizeAlert(ctx context.Context, request *alert.
 }
 
 func (a *alertService) getAuditInfo(tenantGroup string) (string, string, uint64, error) {
-	options, err := a.p.authDb.InstanceTenant.QueryOptionsByTenantGroup(tenantGroup)
+	projectData, err := a.p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
+		ScopeId: tenantGroup,
+	})
 	if err != nil {
-		return "", "", 0, errors.NewInternalServerError(err)
+		return "", "", 0, err
 	}
-	projectId, ok := options["projectId"]
-	if !ok {
-		return "", "", 0, errors.NewInternalServerError(fmt.Errorf("options projectId not found"))
-	}
-	auditProjectId, err := strconv.Atoi(projectId.(string))
+	auditProjectId, err := strconv.Atoi(projectData.Data.ProjectId)
 	if err != nil {
-		return "", "", 0, errors.NewInternalServerError(err)
+		return "", "", 0, err
 	}
-	projectName, ok := options["projectName"]
-	if !ok {
-		return "", "", 0, errors.NewInternalServerError(fmt.Errorf("options projectName not found"))
+	project, err := a.p.bdl.GetProject(uint64(auditProjectId))
+	if err != nil {
+		return "", "", 0, err
 	}
-	workspace, ok := options["workspace"]
-	if !ok {
-		return "", "", 0, errors.NewInternalServerError(fmt.Errorf("options workspace not found"))
-	}
-	return projectName.(string), workspace.(string), uint64(auditProjectId), nil
+	return project.Name, projectData.Data.Workspace, uint64(auditProjectId), nil
 }
+
+//func (a *alertService) getAuditInfo(tenantGroup string) (string, string, uint64, error) {
+//	options, err := a.p.authDb.InstanceTenant.QueryOptionsByTenantGroup(tenantGroup)
+//	if err != nil {
+//		return "", "", 0, errors.NewInternalServerError(err)
+//	}
+//	projectId, ok := options["projectId"]
+//	if !ok {
+//		return "", "", 0, errors.NewInternalServerError(fmt.Errorf("options projectId not found"))
+//	}
+//	auditProjectId, err := strconv.Atoi(projectId.(string))
+//	if err != nil {
+//		return "", "", 0, errors.NewInternalServerError(err)
+//	}
+//	projectName, ok := options["projectName"]
+//	if !ok {
+//		return "", "", 0, errors.NewInternalServerError(fmt.Errorf("options projectName not found"))
+//	}
+//	workspace, ok := options["workspace"]
+//	if !ok {
+//		return "", "", 0, errors.NewInternalServerError(fmt.Errorf("options workspace not found"))
+//	}
+//	return projectName.(string), workspace.(string), uint64(auditProjectId), nil
+//}
 
 func (a *alertService) UpdateCustomizeAlertEnable(ctx context.Context, request *alert.UpdateCustomizeAlertEnableRequest) (*alert.UpdateCustomizeAlertEnableResponse, error) {
 	req := &monitor.GetCustomizeAlertRequest{

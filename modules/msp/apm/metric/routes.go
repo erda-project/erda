@@ -226,13 +226,13 @@ func (p *provider) proxyBlocks(rw http.ResponseWriter, r *http.Request, params s
 	if err != nil {
 		return err
 	}
-	resp, err := p.Tenant.GetTenantWorkspace(context.Background(), &tenantpb.GetTenantWorkspaceRequest{
+	resp, err := p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
 		ScopeId: params.ScopeID,
 	})
 	if err != nil {
 		return err
 	}
-	return resp.Data
+	return resp.Data.Workspace
 }
 
 func (p *provider) proxyBlock(rw http.ResponseWriter, r *http.Request, params struct {
@@ -246,11 +246,11 @@ func (p *provider) proxyBlock(rw http.ResponseWriter, r *http.Request, params st
 	if err != nil {
 		return err
 	}
-	resp, err := p.Tenant.GetTenantWorkspace(context.Background(), &tenantpb.GetTenantWorkspaceRequest{
+	resp, err := p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
 		ScopeId: params.ScopeID,
 	})
 	if err != nil {
 		return err
 	}
-	return resp.Data
+	return resp.Data.Workspace
 }
