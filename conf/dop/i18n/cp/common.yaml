@@ -300,6 +300,8 @@ zh:
   latestCostTime: 最近一次执行耗时
   latestExecutor: 最近一次执行人
   latestStartTime: 最近一次开始时间
+  createTime: 创建时间
+  pipelineID: 流水线ID
 en:
   issue-manage: issue manage
   issue: issue
@@ -598,3 +600,5 @@ en:
   latestCostTime: Latest execute cost time
   latestExecutor: Latest executor
   latestStartTime: Latest start time
+  createTime: Create Time
+  pipelineID: PipelineID
