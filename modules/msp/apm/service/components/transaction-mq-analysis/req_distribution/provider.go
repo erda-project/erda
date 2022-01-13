@@ -51,6 +51,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 		bubble, err := p.DataSource.GetBubbleChart(context.WithValue(context.Background(), common.LangKey, lang),
 			datasources.BubbleChartReqDistribution,
+			20,
 			startTime,
 			endTime,
 			tenantId,

@@ -12,60 +12,76 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package req_distribution
+package kv_card
 
 import (
-	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/msp/apm/service/common/custom"
-	"github.com/erda-project/erda/modules/msp/apm/service/datasources"
-	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
+	"github.com/erda-project/erda/modules/msp/apm/browser/components/browser-overview/models"
+)
+
+const (
+	pv                     string = "pv"
+	uv                     string = "uv"
+	apdex                  string = "apdex"
+	avgPageLoadDuration    string = "avgPageLoadDuration"
+	apiSuccessRate         string = "apiSuccessRate"
+	resourceLoadErrorCount string = "resourceLoadErrorCount"
+	jsErrorCount           string = "jsErrorCount"
 )
 
 type provider struct {
-	impl.DefaultBubbleGraph
-	custom.ServiceInParams
-	Log        logs.Logger
-	I18n       i18n.Translator               `autowired:"i18n" translator:"msp-i18n"`
-	Metric     metricpb.MetricServiceServer  `autowired:"erda.core.monitor.metric.MetricService"`
-	DataSource datasources.ServiceDataSource `autowired:"component-protocol.components.datasources.msp-service"`
+	impl.DefaultKV
+	models.BrowserOverviewInParams
+	Log    logs.Logger
+	I18n   i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
+	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		lang := sdk.Lang
-		startTime := p.InParamsPtr.StartTime
-		endTime := p.InParamsPtr.EndTime
-		tenantId := p.InParamsPtr.TenantId
-		serviceId := p.InParamsPtr.ServiceId
+		data := kv.Data{}
+		var cell *kv.KV
+		var err error
 
-		bubble, err := p.DataSource.GetBubbleChart(context.WithValue(context.Background(), common.LangKey, lang),
-			datasources.BubbleChartReqDistribution,
-			20,
-			startTime,
-			endTime,
-			tenantId,
-			serviceId,
-			common.TransactionLayerRpc,
-			"")
+		switch sdk.Comp.Name {
+		case pv:
+			cell, err = p.getPv(sdk)
+		case uv:
+			cell, err = p.getUv(sdk)
+		case apdex:
+			cell, err = p.getApdex(sdk)
+		case avgPageLoadDuration:
+			cell, err = p.getAvgPageLoadDuration(sdk)
+		case apiSuccessRate:
+			cell, err = p.getApiSuccessRate(sdk)
+		case resourceLoadErrorCount:
+			cell, err = p.getResourceLoadErrorCount(sdk)
+		case jsErrorCount:
+			cell, err = p.getJsErrorCount(sdk)
+		default:
+			err = fmt.Errorf("not supported comp name: %s", sdk.Comp.Name)
+		}
 
 		if err != nil {
-			p.Log.Error(err)
+			p.Log.Error("failed to get card: %s", err)
 			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
 			return
 		}
 
-		p.StdDataPtr = bubble
+		data.List = append(data.List, cell)
+		p.StdDataPtr = &data
 	}
 }
 
@@ -76,15 +92,15 @@ func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 // Init .
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.DefaultBubbleGraph = impl.DefaultBubbleGraph{}
+	p.DefaultKV = impl.DefaultKV{}
 	v := reflect.ValueOf(p)
 	v.Elem().FieldByName("Impl").Set(v)
-	compName := "reqDistribution"
+	compName := "kvCard"
 	if ctx.Label() != "" {
 		compName = ctx.Label()
 	}
 	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
-		Scenario: "transaction-rpc-analysis",
+		Scenario: "browser-overview",
 		CompName: compName,
 		Creator:  func() cptype.IComponent { return p },
 	})
@@ -97,7 +113,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	name := "component-protocol.components.transaction-rpc-analysis.reqDistribution"
+	name := "component-protocol.components.browser-overview.kvCard"
 	cpregister.AllExplicitProviderCreatorMap[name] = nil
 	servicehub.Register(name, &servicehub.Spec{
 		Creator: func() servicehub.Provider { return &provider{} },
