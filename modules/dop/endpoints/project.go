@@ -609,6 +609,7 @@ func (e *Endpoints) ExportProjectTemplate(ctx context.Context, r *http.Request, 
 		return apierrors.ErrImportProjectTemplate.InvalidParameter("projectID").ToResp(), nil
 	}
 	exportReq.ProjectName = project.Name
+	exportReq.ProjectDisplayName = project.DisplayName
 
 	fileID, err := e.project.ExportTemplate(exportReq)
 	if err != nil {
@@ -672,6 +673,7 @@ func (e *Endpoints) ImportProjectTemplate(ctx context.Context, r *http.Request, 
 		return apierrors.ErrImportProjectTemplate.InvalidParameter("projectID").ToResp(), nil
 	}
 	req.ProjectName = project.Name
+	req.ProjectDisplayName = project.DisplayName
 	recordID, err := e.project.ImportTemplate(req, r)
 	if err != nil {
 		return apierrors.ErrImportProjectTemplate.InternalError(err).ToResp(), nil

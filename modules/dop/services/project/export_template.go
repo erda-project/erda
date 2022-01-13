@@ -15,6 +15,8 @@
 package project
 
 import (
+	"strconv"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -38,7 +40,12 @@ func (t *TemplateDB) InitData() {
 }
 
 func (t *TemplateDB) SetApplications() error {
-	appDtos, err := t.bdl.GetAppsByProject(t.ProjectID, uint64(t.OrgID), t.UserID)
+	appDtos, err := t.bdl.GetAppList(strconv.FormatInt(t.OrgID, 10), t.UserID, apistructs.ApplicationListRequest{
+		ProjectID: t.ProjectID,
+		IsSimple:  false,
+		PageSize:  9999,
+		PageNo:    1,
+	})
 	if err != nil {
 		return err
 	}

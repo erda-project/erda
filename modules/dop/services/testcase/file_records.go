@@ -103,6 +103,9 @@ func (svc *Service) ListFileRecords(req apistructs.ListTestFileRecordsRequest) (
 		if err != nil {
 			return nil, nil, nil, 0, apierrors.ErrListFileRecord.InternalError(err)
 		}
+		if pros == nil {
+			return nil, nil, nil, 0, nil
+		}
 		req.ProjectIDs = make([]uint64, 0, len(pros.List))
 		for _, pro := range pros.List {
 			req.ProjectIDs = append(req.ProjectIDs, pro.ID)
@@ -189,11 +192,13 @@ func mapping(s *dao.TestFileRecord, project, testSet string) *apistructs.TestFil
 	if record.Type == apistructs.FileProjectTemplateExport {
 		if extra.ProjectTemplateFileExtraInfo != nil && extra.ProjectTemplateFileExtraInfo.ExportRequest != nil {
 			record.ProjectName = extra.ProjectTemplateFileExtraInfo.ExportRequest.ProjectName
+			record.ProjectDisplayName = extra.ProjectTemplateFileExtraInfo.ExportRequest.ProjectDisplayName
 		}
 	}
 	if record.Type == apistructs.FileProjectTemplateImport {
 		if extra.ProjectTemplateFileExtraInfo != nil && extra.ProjectTemplateFileExtraInfo.ImportRequest != nil {
 			record.ProjectName = extra.ProjectTemplateFileExtraInfo.ImportRequest.ProjectName
+			record.ProjectDisplayName = extra.ProjectTemplateFileExtraInfo.ImportRequest.ProjectDisplayName
 		}
 	}
 	return record
