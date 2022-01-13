@@ -15,12 +15,12 @@
 package definition
 
 import (
-	logs "github.com/erda-project/erda-infra/base/logs"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	transport "github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
-	pb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	"github.com/erda-project/erda/modules/pipeline/providers/definition/db"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type config struct {
@@ -29,25 +29,26 @@ type config struct {
 // +provider
 type provider struct {
 	Cfg      *config
-	Log      logs.Logger
-	Register transport.Register  `autowired:"service-register"`
 	MySQL    mysqlxorm.Interface `autowired:"mysql-xorm"`
-
-	definitionService *definitionService
+	Register transport.Register  `autowired:"service-register" required:"true"`
+	// implements
+	pipelineDefinition *pipelineDefinition
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.definitionService = &definitionService{p: p, dbClient: &db.Client{Interface: p.MySQL}}
+	p.pipelineDefinition = &pipelineDefinition{
+		dbClient: &db.Client{Interface: p.MySQL},
+	}
 	if p.Register != nil {
-		pb.RegisterDefinitionServiceImp(p.Register, p.definitionService)
+		pb.RegisterDefinitionServiceImp(p.Register, p.pipelineDefinition, apis.Options())
 	}
 	return nil
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.core.pipeline.definition.DefinitionService" || ctx.Type() == pb.DefinitionServiceServerType() || ctx.Type() == pb.DefinitionServiceHandlerType():
-		return p.definitionService
+	case ctx.Service() == "erda.core.pipeline.definition" || ctx.Type() == pb.DefinitionServiceServerType() || ctx.Type() == pb.DefinitionServiceHandlerType():
+		return p.pipelineDefinition
 	}
 	return p
 }
@@ -56,7 +57,8 @@ func init() {
 	servicehub.Register("erda.core.pipeline.definition", &servicehub.Spec{
 		Services:             pb.ServiceNames(),
 		Types:                pb.Types(),
-		OptionalDependencies: []string{"service-register"},
+		Dependencies:         []string{"mysql-xorm-client", "service-register"},
+		OptionalDependencies: []string{},
 		Description:          "",
 		ConfigFunc: func() interface{} {
 			return &config{}

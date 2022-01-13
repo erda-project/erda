@@ -1115,3 +1115,7 @@ func (e *Endpoints) AutoTestPlanService() *atv2.Service {
 func (e *Endpoints) ProjectService() *project.Project {
 	return e.project
 }
+
+func (e *Endpoints) PermissionService() *permission.Permission {
+	return e.permission
+}

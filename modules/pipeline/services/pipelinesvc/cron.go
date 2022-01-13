@@ -110,6 +110,7 @@ func (s *PipelineSvc) RunCronPipelineFunc(id uint64) {
 			UserID:         pc.Extra.NormalLabels[apistructs.LabelUserID],
 			InternalClient: "system-cron",
 		},
+		DefinitionID: pc.PipelineDefinitionID,
 	})
 }
 

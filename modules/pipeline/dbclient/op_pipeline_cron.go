@@ -57,6 +57,10 @@ func (client *Client) PagingPipelineCron(req apistructs.PipelineCronPagingReques
 		limitSQL.Where("enable = ?", *req.Enable)
 	}
 
+	if req.PipelineDefinitionIDList != nil {
+		limitSQL.In("pipeline_definition_id", req.PipelineDefinitionIDList)
+	}
+
 	// total
 	totalSQL := *limitSQL
 	var totalIDs []spec.PipelineCron

@@ -17,6 +17,6 @@ package mysql_time
 import "time"
 
 func GetMysqlDefaultTime() *time.Time {
-	date := time.Date(1000, 01, 01, 0, 0, 0, 0, time.Local)
+	date := time.Date(1970, 01, 01, 0, 0, 0, 0, time.UTC)
 	return &date
 }

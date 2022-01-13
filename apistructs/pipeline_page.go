@@ -14,7 +14,9 @@
 
 package apistructs
 
-import "time"
+import (
+	"time"
+)
 
 // PagePipeline 用于 流水线分页查询结果，相比 PipelineDTO 删除了许多大字段
 type PagePipeline struct {
@@ -45,4 +47,14 @@ type PagePipeline struct {
 	TimeEnd     *time.Time `json:"timeEnd,omitempty"`     // 执行结束时间
 	TimeCreated *time.Time `json:"timeCreated,omitempty"` // 记录创建时间
 	TimeUpdated *time.Time `json:"timeUpdated,omitempty"` // 记录更新时间
+
+	// definition info
+	DefinitionPageInfo *DefinitionPageInfo `json:"definitionPageInfo,omitempty"`
+}
+
+type DefinitionPageInfo struct {
+	Name         string `json:"name,omitempty"`
+	Creator      string `json:"creator,omitempty"`
+	SourceRemote string `json:"sourceRemote,omitempty"`
+	SourceRef    string `json:"sourceRef,omitempty"`
 }

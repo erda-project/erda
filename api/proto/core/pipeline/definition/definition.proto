@@ -67,6 +67,7 @@ message PipelineDefinitionExtra {
   string extra = 2;
   google.protobuf.Timestamp timeCreated = 3;
   google.protobuf.Timestamp timeUpdated = 4;
+  string pipelineDefinition = 5;
 }
 
 
@@ -91,7 +92,6 @@ message PipelineDefinitionUpdateRequest {
   string executor = 3;
   string pipelineSourceId = 4;
   string category = 5;
-  PipelineDefinitionExtra extra = 6;
   google.protobuf.Timestamp startedAt = 7;
   google.protobuf.Timestamp endedAt = 8;
   string pipelineDefinitionID = 9;

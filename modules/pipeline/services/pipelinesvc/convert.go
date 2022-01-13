@@ -134,6 +134,14 @@ func (s *PipelineSvc) Convert2PagePipeline(p *spec.Pipeline) *apistructs.PagePip
 			result.TimeBegin = p.Extra.CronTriggerTime
 		}
 	}
+	if p.Definition != nil && p.Source != nil {
+		definitionPageInfo := &apistructs.DefinitionPageInfo{}
+		definitionPageInfo.Name = p.Definition.Name
+		definitionPageInfo.Creator = p.Definition.Creator
+		definitionPageInfo.SourceRef = p.Source.Ref
+		definitionPageInfo.SourceRemote = p.Source.Remote
+		result.DefinitionPageInfo = definitionPageInfo
+	}
 	return &result
 }
 

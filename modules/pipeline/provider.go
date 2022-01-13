@@ -25,17 +25,15 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
-	"github.com/erda-project/erda/modules/pipeline/providers/trigger"
 	"github.com/erda-project/erda/providers/metrics/report"
 )
 
 type provider struct {
-	CmsService         pb.CmsServiceServer     `autowired:"erda.core.pipeline.cms.CmsService"`
-	MetricReport       report.MetricReport     `autowired:"metric-report-client" optional:"true"`
-	ReconcilerElection election.Interface      `autowired:"etcd-election@reconciler"`
-	GcElection         election.Interface      `autowired:"etcd-election@gc"`
-	Router             httpserver.Router       `autowired:"http-router"`
-	TriggerService     *trigger.TriggerService `autowired:"erda.core.pipeline.trigger.TriggerService"`
+	CmsService         pb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
+	MetricReport       report.MetricReport `autowired:"metric-report-client" optional:"true"`
+	ReconcilerElection election.Interface  `autowired:"etcd-election@reconciler"`
+	GcElection         election.Interface  `autowired:"etcd-election@gc"`
+	Router             httpserver.Router   `autowired:"http-router"`
 }
 
 func (p *provider) Run(ctx context.Context) error {

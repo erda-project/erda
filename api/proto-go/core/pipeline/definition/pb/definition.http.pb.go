@@ -6,9 +6,12 @@ package pb
 import (
 	context "context"
 	http1 "net/http"
+	strings "strings"
 
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	http "github.com/erda-project/erda-infra/pkg/transport/http"
+	httprule "github.com/erda-project/erda-infra/pkg/transport/http/httprule"
+	runtime "github.com/erda-project/erda-infra/pkg/transport/http/runtime"
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
 )
 
@@ -18,10 +21,16 @@ const _ = http.SupportPackageIsVersion1
 
 // DefinitionServiceHandler is the server API for DefinitionService service.
 type DefinitionServiceHandler interface {
-	// POST /api/pipeline-definitions/actions/process
-	Process(context.Context, *PipelineDefinitionProcessRequest) (*PipelineDefinitionProcessResponse, error)
-	// GET /api/pipeline-definitions/actions/version
-	Version(context.Context, *PipelineDefinitionProcessVersionRequest) (*PipelineDefinitionProcessVersionResponse, error)
+	// POST /api/pipeline-definitions
+	Create(context.Context, *PipelineDefinitionCreateRequest) (*PipelineDefinitionCreateResponse, error)
+	// PUT /api/pipeline-definitions/{pipelineDefinitionID}
+	Update(context.Context, *PipelineDefinitionUpdateRequest) (*PipelineDefinitionUpdateResponse, error)
+	// DELETE /api/pipeline-definitions/{pipelineDefinitionID}
+	Delete(context.Context, *PipelineDefinitionDeleteRequest) (*PipelineDefinitionDeleteResponse, error)
+	// GET /api/pipeline-definitions/{pipelineDefinitionID}
+	Get(context.Context, *PipelineDefinitionGetRequest) (*PipelineDefinitionGetResponse, error)
+	// GET /api/pipeline-definitions
+	List(context.Context, *PipelineDefinitionListRequest) (*PipelineDefinitionListResponse, error)
 }
 
 // RegisterDefinitionServiceHandler register DefinitionServiceHandler to http.Router.
@@ -47,13 +56,13 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 		return handler
 	}
 
-	add_Process := func(method, path string, fn func(context.Context, *PipelineDefinitionProcessRequest) (*PipelineDefinitionProcessResponse, error)) {
+	add_Create := func(method, path string, fn func(context.Context, *PipelineDefinitionCreateRequest) (*PipelineDefinitionCreateResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*PipelineDefinitionProcessRequest))
+			return fn(ctx, req.(*PipelineDefinitionCreateRequest))
 		}
-		var Process_info transport.ServiceInfo
+		var Create_info transport.ServiceInfo
 		if h.Interceptor != nil {
-			Process_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "Process", srv)
+			Create_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "Create", srv)
 			handler = h.Interceptor(handler)
 		}
 		r.Add(method, path, encodeFunc(
@@ -61,10 +70,10 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 				ctx := http.WithRequest(r.Context(), r)
 				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, Process_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, Create_info)
 				}
 				r = r.WithContext(ctx)
-				var in PipelineDefinitionProcessRequest
+				var in PipelineDefinitionCreateRequest
 				if err := h.Decode(r, &in); err != nil {
 					return nil, err
 				}
@@ -83,13 +92,190 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 		)
 	}
 
-	add_Version := func(method, path string, fn func(context.Context, *PipelineDefinitionProcessVersionRequest) (*PipelineDefinitionProcessVersionResponse, error)) {
+	add_Update := func(method, path string, fn func(context.Context, *PipelineDefinitionUpdateRequest) (*PipelineDefinitionUpdateResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*PipelineDefinitionProcessVersionRequest))
+			return fn(ctx, req.(*PipelineDefinitionUpdateRequest))
 		}
-		var Version_info transport.ServiceInfo
+		var Update_info transport.ServiceInfo
 		if h.Interceptor != nil {
-			Version_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "Version", srv)
+			Update_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "Update", srv)
+			handler = h.Interceptor(handler)
+		}
+		compiler, _ := httprule.Parse(path)
+		temp := compiler.Compile()
+		pattern, _ := runtime.NewPattern(httprule.SupportPackageIsVersion1, temp.OpCodes, temp.Pool, temp.Verb)
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, Update_info)
+				}
+				r = r.WithContext(ctx)
+				var in PipelineDefinitionUpdateRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				path := r.URL.Path
+				if len(path) > 0 {
+					components := strings.Split(path[1:], "/")
+					last := len(components) - 1
+					var verb string
+					if idx := strings.LastIndex(components[last], ":"); idx >= 0 {
+						c := components[last]
+						components[last], verb = c[:idx], c[idx+1:]
+					}
+					vars, err := pattern.Match(components, verb)
+					if err != nil {
+						return nil, err
+					}
+					for k, val := range vars {
+						switch k {
+						case "pipelineDefinitionID":
+							in.PipelineDefinitionID = val
+						}
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_Delete := func(method, path string, fn func(context.Context, *PipelineDefinitionDeleteRequest) (*PipelineDefinitionDeleteResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*PipelineDefinitionDeleteRequest))
+		}
+		var Delete_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			Delete_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "Delete", srv)
+			handler = h.Interceptor(handler)
+		}
+		compiler, _ := httprule.Parse(path)
+		temp := compiler.Compile()
+		pattern, _ := runtime.NewPattern(httprule.SupportPackageIsVersion1, temp.OpCodes, temp.Pool, temp.Verb)
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, Delete_info)
+				}
+				r = r.WithContext(ctx)
+				var in PipelineDefinitionDeleteRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				path := r.URL.Path
+				if len(path) > 0 {
+					components := strings.Split(path[1:], "/")
+					last := len(components) - 1
+					var verb string
+					if idx := strings.LastIndex(components[last], ":"); idx >= 0 {
+						c := components[last]
+						components[last], verb = c[:idx], c[idx+1:]
+					}
+					vars, err := pattern.Match(components, verb)
+					if err != nil {
+						return nil, err
+					}
+					for k, val := range vars {
+						switch k {
+						case "pipelineDefinitionID":
+							in.PipelineDefinitionID = val
+						}
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_Get := func(method, path string, fn func(context.Context, *PipelineDefinitionGetRequest) (*PipelineDefinitionGetResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*PipelineDefinitionGetRequest))
+		}
+		var Get_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			Get_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "Get", srv)
+			handler = h.Interceptor(handler)
+		}
+		compiler, _ := httprule.Parse(path)
+		temp := compiler.Compile()
+		pattern, _ := runtime.NewPattern(httprule.SupportPackageIsVersion1, temp.OpCodes, temp.Pool, temp.Verb)
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, Get_info)
+				}
+				r = r.WithContext(ctx)
+				var in PipelineDefinitionGetRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				path := r.URL.Path
+				if len(path) > 0 {
+					components := strings.Split(path[1:], "/")
+					last := len(components) - 1
+					var verb string
+					if idx := strings.LastIndex(components[last], ":"); idx >= 0 {
+						c := components[last]
+						components[last], verb = c[:idx], c[idx+1:]
+					}
+					vars, err := pattern.Match(components, verb)
+					if err != nil {
+						return nil, err
+					}
+					for k, val := range vars {
+						switch k {
+						case "pipelineDefinitionID":
+							in.PipelineDefinitionID = val
+						}
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_List := func(method, path string, fn func(context.Context, *PipelineDefinitionListRequest) (*PipelineDefinitionListResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*PipelineDefinitionListRequest))
+		}
+		var List_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			List_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "List", srv)
 			handler = h.Interceptor(handler)
 		}
 		r.Add(method, path, encodeFunc(
@@ -97,10 +283,10 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 				ctx := http.WithRequest(r.Context(), r)
 				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, Version_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, List_info)
 				}
 				r = r.WithContext(ctx)
-				var in PipelineDefinitionProcessVersionRequest
+				var in PipelineDefinitionListRequest
 				if err := h.Decode(r, &in); err != nil {
 					return nil, err
 				}
@@ -119,6 +305,9 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 		)
 	}
 
-	add_Process("POST", "/api/pipeline-definitions/actions/process", srv.Process)
-	add_Version("GET", "/api/pipeline-definitions/actions/version", srv.Version)
+	add_Create("POST", "/api/pipeline-definitions", srv.Create)
+	add_Update("PUT", "/api/pipeline-definitions/{pipelineDefinitionID}", srv.Update)
+	add_Delete("DELETE", "/api/pipeline-definitions/{pipelineDefinitionID}", srv.Delete)
+	add_Get("GET", "/api/pipeline-definitions/{pipelineDefinitionID}", srv.Get)
+	add_List("GET", "/api/pipeline-definitions", srv.List)
 }

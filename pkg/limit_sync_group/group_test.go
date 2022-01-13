@@ -14,7 +14,28 @@
 
 package limit_sync_group
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/alecthomas/assert"
+)
+
+func Test_Work(t *testing.T) {
+	work := NewWorker(5)
+	var num uint64
+	var workNum = 5
+	for i := 0; i < 5; i++ {
+		work.AddFunc(func(locker *Locker, i ...interface{}) error {
+			locker.Lock()
+			num++
+			locker.Unlock()
+			return nil
+		})
+	}
+	err := work.Do().Error()
+	assert.NoError(t, err)
+	assert.Equal(t, num, uint64(workNum))
+}
 
 func testLimitSyncGroup(t *testing.T, wg1 *limitSyncGroup, wg2 *limitSyncGroup) {
 	n := 16

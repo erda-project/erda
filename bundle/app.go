@@ -70,6 +70,30 @@ func (b *Bundle) GetMyApps(userid string, orgid uint64) (*apistructs.Application
 	return &listResp.Data, nil
 }
 
+func (b *Bundle) GetMyAppsByProject(userid string, orgid, projectID uint64) (*apistructs.ApplicationListResponseData, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+	var listResp apistructs.ApplicationListResponse
+	resp, err := hc.Get(host).
+		Path("/api/applications/actions/list-my-applications").
+		Header(httputil.OrgHeader, strconv.FormatUint(orgid, 10)).
+		Header(httputil.UserHeader, userid).
+		Param("pageSize", "9999").
+		Param("pageNo", "1").
+		Param("projectId", strconv.FormatUint(projectID, 10)).
+		Do().JSON(&listResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !listResp.Success {
+		return nil, toAPIError(resp.StatusCode(), listResp.Error)
+	}
+	return &listResp.Data, nil
+}
+
 // GetAppsByProject 根据 projectID 获取应用列表
 func (b *Bundle) GetAppsByProject(projectID, orgID uint64, userID string) (*apistructs.ApplicationListResponseData, error) {
 	host, err := b.urls.CoreServices()

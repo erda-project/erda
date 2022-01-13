@@ -114,7 +114,7 @@ zh:
   scene-set-export-confirm: 是否确认导出
   scene-set-export-success-msg: 导出任务已创建, 请在导入导出记录表中查看进度
   status-success: 成功
-  status-failed: 失败,
+  status-failed: 失败
   status-pending: 排队中
   status-processing: 进行中
   download-file: 下载文件
