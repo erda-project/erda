@@ -40,7 +40,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
-	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -265,7 +264,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 	for _, v := range list {
 		p.UserIDs = append(p.UserIDs, v.Creator, v.Executor)
 		rows = append(rows, table.Row{
-			ID:         table.RowID(strconv.FormatInt(v.PipelineId, 10)),
+			ID:         table.RowID(v.ID),
 			Selectable: true,
 			Selected:   false,
 			CellsMap: map[table.ColumnKey]table.Cell{
@@ -338,9 +337,6 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, definitionYmlSourceMap map[string]string, ymlSourceMapCronMap map[string]*apistructs.PipelineCronDTO) []commodel.MoreOpItem {
 	items := make([]commodel.MoreOpItem, 0)
 	build := cputil.NewOpBuilder().Build()
-	serviceCnt := make(cptype.OpServerData)
-	serviceCnt["id"] = definition.ID
-	build.ServerData = &serviceCnt
 	items = append(items, commodel.MoreOpItem{
 		ID: func() string {
 			if definition.Category == "primary" {
@@ -485,7 +481,7 @@ func (p *PipelineTable) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 func (p *PipelineTable) RegisterTableChangePageOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		(*sdk.GlobalState)[transaction.StateKeyTransactionPaging] = opData.ClientData
+		(*sdk.GlobalState)[StateKeyTransactionPaging] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
 	}
 }
@@ -537,7 +533,7 @@ func init() {
 }
 
 func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick) {
-	id := opData.ServerData.ID
+	id := string(opData.ClientData.ParentDataRef.ID)
 	switch opData.ClientData.DataRef.ID {
 	case "setPrimary":
 		_, err := p.ProjectPipelineSvc.SetPrimary(p.sdk.Ctx, deftype.ProjectPipelineCategory{
@@ -635,7 +631,6 @@ func (p *PipelineTable) RegisterCompNonStdOps() (opFuncs map[cptype.OperationKey
 type OpMoreOperationsItemClick struct {
 	commodel.OpMoreOperationsItemClick
 	ClientData OpMoreOperationsItemClickClientData `json:"clientData"`
-	ServerData OpMoreOperationsItemClickServerData `json:"serverData,omitempty"`
 }
 
 type OpMoreOperationsItemClickClientData struct {

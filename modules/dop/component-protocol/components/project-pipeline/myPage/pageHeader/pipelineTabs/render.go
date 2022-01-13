@@ -17,6 +17,8 @@ package pipelineTabs
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -47,12 +49,23 @@ func (t *Tab) Render(ctx context.Context, c *cptype.Component, scenario cptype.S
 		return t.State.Value
 	}())
 	t.SetOperations(t.State.Value)
+	appNames := make([]string, 0)
+	if t.InParams.AppID != 0 {
+		app, err := t.bdl.GetApp(t.InParams.AppID)
+		if err != nil {
+			logrus.Errorf("failed to GetApp,err %s", err.Error())
+			panic(err)
+		} else {
+			appNames = append(appNames, app.Name)
+		}
+	}
 
 	list, total, err := t.ProjectPipelineSvc.List(ctx, deftype.ProjectPipelineList{
 		ProjectID:    t.InParams.ProjectID,
 		IdentityInfo: apistructs.IdentityInfo{UserID: t.sdk.Identity.UserID},
 		PageNo:       1,
 		PageSize:     9999,
+		AppName:      appNames,
 	})
 	if err != nil {
 		return err
