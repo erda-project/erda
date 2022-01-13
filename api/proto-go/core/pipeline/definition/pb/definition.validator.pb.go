@@ -79,11 +79,6 @@ func (this *PipelineDefinitionCreateResponse) Validate() error {
 	return nil
 }
 func (this *PipelineDefinitionUpdateRequest) Validate() error {
-	if this.Extra != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Extra); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("Extra", err)
-		}
-	}
 	if this.StartedAt != nil {
 		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.StartedAt); err != nil {
 			return github_com_mwitkow_go_proto_validators.FieldError("StartedAt", err)

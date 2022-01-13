@@ -25,21 +25,20 @@ import (
 )
 
 type PipelineDefinition struct {
-	ID                        string    `json:"id" xorm:"pk"`
-	Name                      string    `json:"name"`
-	CostTime                  uint64    `json:"costTime"`
-	Creator                   string    `json:"creator"`
-	Executor                  string    `json:"executor"`
-	SoftDeletedAt             uint64    `json:"softDeletedAt"`
-	PipelineSourceId          string    `json:"pipelineSourceId"`
-	PipelineDefinitionExtraId string    `json:"pipelineDefinitionExtraId"`
-	Category                  string    `json:"category"`
-	Status                    string    `json:"status"`
-	StartedAt                 time.Time `json:"startedAt,omitempty" xorm:"started_at"`
-	EndedAt                   time.Time `json:"endedAt,omitempty" xorm:"ended_at"`
-	TimeCreated               time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
-	TimeUpdated               time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
-	PipelineID                uint64    `json:"pipelineId"`
+	ID               string    `json:"id" xorm:"pk"`
+	Name             string    `json:"name"`
+	CostTime         uint64    `json:"costTime"`
+	Creator          string    `json:"creator"`
+	Executor         string    `json:"executor"`
+	SoftDeletedAt    uint64    `json:"softDeletedAt"`
+	PipelineSourceId string    `json:"pipelineSourceId"`
+	Category         string    `json:"category"`
+	Status           string    `json:"status"`
+	StartedAt        time.Time `json:"startedAt,omitempty" xorm:"started_at"`
+	EndedAt          time.Time `json:"endedAt,omitempty" xorm:"ended_at"`
+	TimeCreated      time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
+	TimeUpdated      time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
+	PipelineID       uint64    `json:"pipelineId"`
 }
 
 func (PipelineDefinition) TableName() string {
@@ -243,9 +242,6 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 		Path:             p.Path,
 		FileName:         p.FileName,
 		Status:           p.Status,
-		Extra: &pb.PipelineDefinitionExtra{
-			ID: p.PipelineDefinitionExtraId,
-		},
-		PipelineId: int64(p.PipelineID),
+		PipelineId:       int64(p.PipelineID),
 	}
 }

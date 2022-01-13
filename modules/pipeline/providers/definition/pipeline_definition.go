@@ -39,19 +39,6 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 		return nil, err
 	}
 
-	var pipelineDefinitionExtra db.PipelineDefinitionExtra
-	pipelineDefinitionExtra.ID = uuid.New().String()
-	var extra apistructs.PipelineDefinitionExtraValue
-	err := json.Unmarshal([]byte(request.Extra.Extra), &extra)
-	if err != nil {
-		return nil, err
-	}
-	pipelineDefinitionExtra.Extra = extra
-	err = p.dbClient.CreatePipelineDefinitionExtra(&pipelineDefinitionExtra)
-	if err != nil {
-		return nil, err
-	}
-
 	var pipelineDefinition db.PipelineDefinition
 	pipelineDefinition.PipelineSourceId = request.PipelineSourceId
 	pipelineDefinition.Category = request.Category
@@ -60,8 +47,21 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	pipelineDefinition.ID = uuid.New().String()
 	pipelineDefinition.StartedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
-	pipelineDefinition.PipelineDefinitionExtraId = pipelineDefinitionExtra.ID
-	err = p.dbClient.CreatePipelineDefinition(&pipelineDefinition)
+	err := p.dbClient.CreatePipelineDefinition(&pipelineDefinition)
+	if err != nil {
+		return nil, err
+	}
+
+	var pipelineDefinitionExtra db.PipelineDefinitionExtra
+	pipelineDefinitionExtra.ID = uuid.New().String()
+	var extra apistructs.PipelineDefinitionExtraValue
+	err = json.Unmarshal([]byte(request.Extra.Extra), &extra)
+	if err != nil {
+		return nil, err
+	}
+	pipelineDefinitionExtra.PipelineDefinitionID = pipelineDefinition.ID
+	pipelineDefinitionExtra.Extra = extra
+	err = p.dbClient.CreatePipelineDefinitionExtra(&pipelineDefinitionExtra)
 	if err != nil {
 		return nil, err
 	}
@@ -136,29 +136,6 @@ func (p pipelineDefinition) Update(ctx context.Context, request *pb.PipelineDefi
 	}
 
 	pbPipelineDefinition := PipelineDefinitionToPb(pipelineDefinition)
-
-	if request.Extra != nil && request.Extra.Extra != "" {
-		pipelineDefinitionExtra, err := p.dbClient.GetPipelineDefinitionExtra(pipelineDefinition.PipelineDefinitionExtraId)
-		if err != nil {
-			return nil, err
-		}
-
-		var extra apistructs.PipelineDefinitionExtraValue
-		err = json.Unmarshal([]byte(request.Extra.Extra), &extra)
-		if err != nil {
-			return nil, err
-		}
-		pipelineDefinitionExtra.Extra = extra
-
-		err = p.dbClient.UpdatePipelineDefinitionExtra(pipelineDefinition.PipelineDefinitionExtraId, pipelineDefinitionExtra)
-		if err != nil {
-			return nil, err
-		}
-
-		pbPipelineDefinitionExtra := PipelineDefinitionExtraToPb(pipelineDefinitionExtra)
-		pbPipelineDefinition.Extra = pbPipelineDefinitionExtra
-	}
-
 	return &pb.PipelineDefinitionUpdateResponse{
 		PipelineDefinition: pbPipelineDefinition,
 	}, nil
@@ -179,7 +156,7 @@ func (p pipelineDefinition) Get(ctx context.Context, request *pb.PipelineDefinit
 		return nil, err
 	}
 
-	pipelineDefinitionExtra, err := p.dbClient.GetPipelineDefinitionExtra(pipelineDefinition.PipelineDefinitionExtraId)
+	pipelineDefinitionExtra, err := p.dbClient.GetPipelineDefinitionExtraByDefinitionID(pipelineDefinition.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -199,14 +176,14 @@ func (p pipelineDefinition) List(ctx context.Context, request *pb.PipelineDefini
 	}
 
 	data := make([]*pb.PipelineDefinition, 0, len(definitions))
-	var extrasIDList []string
+	var definitionIDList []string
 	for _, v := range definitions {
-		extrasIDList = append(extrasIDList, v.PipelineDefinitionExtraId)
+		definitionIDList = append(definitionIDList, v.ID)
 		data = append(data, v.Convert())
 	}
 
 	var extrasMap = map[string]db.PipelineDefinitionExtra{}
-	extras, err := p.dbClient.ListPipelineDefinitionExtra(extrasIDList)
+	extras, err := p.dbClient.ListPipelineDefinitionExtraByDefinitionIDList(definitionIDList)
 	if err != nil {
 		return nil, err
 	}

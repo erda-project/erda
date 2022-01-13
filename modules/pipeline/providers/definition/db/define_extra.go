@@ -22,10 +22,11 @@ import (
 )
 
 type PipelineDefinitionExtra struct {
-	ID          string                                  `json:"id" xorm:"pk autoincr"`
-	Extra       apistructs.PipelineDefinitionExtraValue `json:"extra" xorm:"json"`
-	TimeCreated *time.Time                              `json:"timeCreated,omitempty" xorm:"created_at created"`
-	TimeUpdated *time.Time                              `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
+	ID                   string                                  `json:"id" xorm:"pk autoincr"`
+	Extra                apistructs.PipelineDefinitionExtraValue `json:"extra" xorm:"json"`
+	TimeCreated          *time.Time                              `json:"timeCreated,omitempty" xorm:"created_at created"`
+	TimeUpdated          *time.Time                              `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
+	PipelineDefinitionID string                                  `json:"pipelineDefinitionID"`
 }
 
 func (PipelineDefinitionExtra) TableName() string {
@@ -74,6 +75,24 @@ func (client *Client) GetPipelineDefinitionExtra(id string, ops ...mysqlxorm.Ses
 	return &pipelineDefinitionExtra, nil
 }
 
+func (client *Client) GetPipelineDefinitionExtraByDefinitionID(definitionID string, ops ...mysqlxorm.SessionOption) (*PipelineDefinitionExtra, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var pipelineDefinitionExtra PipelineDefinitionExtra
+	var has bool
+	var err error
+	if has, _, err = session.Where("pipeline_definition_id = ?", definitionID).GetFirst(&pipelineDefinitionExtra).GetResult(); err != nil {
+		return nil, err
+	}
+
+	if !has {
+		return nil, nil
+	}
+
+	return &pipelineDefinitionExtra, nil
+}
+
 func (client *Client) ListPipelineDefinitionExtra(idList []string, ops ...mysqlxorm.SessionOption) ([]PipelineDefinitionExtra, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
@@ -81,6 +100,19 @@ func (client *Client) ListPipelineDefinitionExtra(idList []string, ops ...mysqlx
 	var pipelineDefinitionExtras []PipelineDefinitionExtra
 	var err error
 	if err = session.Table(PipelineDefinitionExtra{}).In("id", idList).Find(&pipelineDefinitionExtras); err != nil {
+		return nil, err
+	}
+
+	return pipelineDefinitionExtras, nil
+}
+
+func (client *Client) ListPipelineDefinitionExtraByDefinitionIDList(definitionIDList []string, ops ...mysqlxorm.SessionOption) ([]PipelineDefinitionExtra, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var pipelineDefinitionExtras []PipelineDefinitionExtra
+	var err error
+	if err = session.Table(PipelineDefinitionExtra{}).In("pipeline_definition_id", definitionIDList).Find(&pipelineDefinitionExtras); err != nil {
 		return nil, err
 	}
 

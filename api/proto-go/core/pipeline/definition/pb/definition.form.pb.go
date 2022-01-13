@@ -123,6 +123,11 @@ func (m *PipelineDefinition) UnmarshalURLValues(prefix string, values url.Values
 					return err
 				}
 				m.Extra.TimeUpdated.Nanos = int32(val)
+			case "extra.pipelineDefinition":
+				if m.Extra == nil {
+					m.Extra = &PipelineDefinitionExtra{}
+				}
+				m.Extra.PipelineDefinition = vals[0]
 			case "startedAt":
 				if m.StartedAt == nil {
 					m.StartedAt = &timestamppb.Timestamp{}
@@ -296,6 +301,8 @@ func (m *PipelineDefinitionExtra) UnmarshalURLValues(prefix string, values url.V
 					return err
 				}
 				m.TimeUpdated.Nanos = int32(val)
+			case "pipelineDefinition":
+				m.PipelineDefinition = vals[0]
 			}
 		}
 	}
@@ -393,6 +400,11 @@ func (m *PipelineDefinitionCreateRequest) UnmarshalURLValues(prefix string, valu
 					return err
 				}
 				m.Extra.TimeUpdated.Nanos = int32(val)
+			case "extra.pipelineDefinition":
+				if m.Extra == nil {
+					m.Extra = &PipelineDefinitionExtra{}
+				}
+				m.Extra.PipelineDefinition = vals[0]
 			}
 		}
 	}
@@ -545,6 +557,14 @@ func (m *PipelineDefinitionCreateResponse) UnmarshalURLValues(prefix string, val
 					return err
 				}
 				m.PipelineDefinition.Extra.TimeUpdated.Nanos = int32(val)
+			case "pipelineDefinition.extra.pipelineDefinition":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				if m.PipelineDefinition.Extra == nil {
+					m.PipelineDefinition.Extra = &PipelineDefinitionExtra{}
+				}
+				m.PipelineDefinition.Extra.PipelineDefinition = vals[0]
 			case "pipelineDefinition.startedAt":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
@@ -747,82 +767,6 @@ func (m *PipelineDefinitionUpdateRequest) UnmarshalURLValues(prefix string, valu
 				m.PipelineSourceId = vals[0]
 			case "category":
 				m.Category = vals[0]
-			case "extra":
-				if m.Extra == nil {
-					m.Extra = &PipelineDefinitionExtra{}
-				}
-			case "extra.ID":
-				if m.Extra == nil {
-					m.Extra = &PipelineDefinitionExtra{}
-				}
-				m.Extra.ID = vals[0]
-			case "extra.extra":
-				if m.Extra == nil {
-					m.Extra = &PipelineDefinitionExtra{}
-				}
-				m.Extra.Extra = vals[0]
-			case "extra.timeCreated":
-				if m.Extra == nil {
-					m.Extra = &PipelineDefinitionExtra{}
-				}
-				if m.Extra.TimeCreated == nil {
-					m.Extra.TimeCreated = &timestamppb.Timestamp{}
-				}
-			case "extra.timeCreated.seconds":
-				if m.Extra == nil {
-					m.Extra = &PipelineDefinitionExtra{}
-				}
-				if m.Extra.TimeCreated == nil {
-					m.Extra.TimeCreated = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.Extra.TimeCreated.Seconds = val
-			case "extra.timeCreated.nanos":
-				if m.Extra == nil {
-					m.Extra = &PipelineDefinitionExtra{}
-				}
-				if m.Extra.TimeCreated == nil {
-					m.Extra.TimeCreated = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 32)
-				if err != nil {
-					return err
-				}
-				m.Extra.TimeCreated.Nanos = int32(val)
-			case "extra.timeUpdated":
-				if m.Extra == nil {
-					m.Extra = &PipelineDefinitionExtra{}
-				}
-				if m.Extra.TimeUpdated == nil {
-					m.Extra.TimeUpdated = &timestamppb.Timestamp{}
-				}
-			case "extra.timeUpdated.seconds":
-				if m.Extra == nil {
-					m.Extra = &PipelineDefinitionExtra{}
-				}
-				if m.Extra.TimeUpdated == nil {
-					m.Extra.TimeUpdated = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.Extra.TimeUpdated.Seconds = val
-			case "extra.timeUpdated.nanos":
-				if m.Extra == nil {
-					m.Extra = &PipelineDefinitionExtra{}
-				}
-				if m.Extra.TimeUpdated == nil {
-					m.Extra.TimeUpdated = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 32)
-				if err != nil {
-					return err
-				}
-				m.Extra.TimeUpdated.Nanos = int32(val)
 			case "startedAt":
 				if m.StartedAt == nil {
 					m.StartedAt = &timestamppb.Timestamp{}
@@ -1029,6 +973,14 @@ func (m *PipelineDefinitionUpdateResponse) UnmarshalURLValues(prefix string, val
 					return err
 				}
 				m.PipelineDefinition.Extra.TimeUpdated.Nanos = int32(val)
+			case "pipelineDefinition.extra.pipelineDefinition":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				if m.PipelineDefinition.Extra == nil {
+					m.PipelineDefinition.Extra = &PipelineDefinitionExtra{}
+				}
+				m.PipelineDefinition.Extra.PipelineDefinition = vals[0]
 			case "pipelineDefinition.startedAt":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
@@ -1389,6 +1341,14 @@ func (m *PipelineDefinitionGetResponse) UnmarshalURLValues(prefix string, values
 					return err
 				}
 				m.PipelineDefinition.Extra.TimeUpdated.Nanos = int32(val)
+			case "pipelineDefinition.extra.pipelineDefinition":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				if m.PipelineDefinition.Extra == nil {
+					m.PipelineDefinition.Extra = &PipelineDefinitionExtra{}
+				}
+				m.PipelineDefinition.Extra.PipelineDefinition = vals[0]
 			case "pipelineDefinition.startedAt":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
