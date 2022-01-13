@@ -38,7 +38,7 @@ type CustomFilter struct {
 	bdl      *bundle.Bundle
 	gsHelper *gshelper.GSHelper
 	sdk      *cptype.SDK
-	State    State     `json:"-"`
+	State    State     `json:"state"`
 	InParams *InParams `json:"-"`
 
 	projectPipelineSvc projectpipeline.Service `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
@@ -85,18 +85,24 @@ func (p *CustomFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			},
 			HideSave: true,
 		}
+		appNames := make([]string, 0)
 		if p.InParams.AppID != 0 {
 			app, err := p.bdl.GetApp(p.InParams.AppID)
 			if err != nil {
 				logrus.Errorf("failed to GetApp,err %s", err.Error())
 			} else {
+				appNames = append(appNames, app.Name)
 				p.gsHelper.SetGlobalTableFilter(gshelper.TableFilter{
-					App: []string{app.Name},
+					App: appNames,
 				})
 			}
 		}
-
+		p.State.FrontendConditionValues.App = appNames
 	}
+}
+
+func (p *CustomFilter) AfterHandleOp(sdk *cptype.SDK) {
+	cputil.MustObjJSONTransfer(&p.State, &p.StdStatePtr)
 }
 
 func (p *CustomFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {

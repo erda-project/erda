@@ -360,7 +360,7 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			},
 		})
 	}
-	if apistructs.PipelineStatus(definition.Status).IsEndStatus() {
+	if apistructs.PipelineStatus(definition.Status).IsFailedStatus() {
 		items = append(items, commodel.MoreOpItem{
 			ID:   "rerun",
 			Text: cputil.I18n(p.sdk.Ctx, "rerun"),
@@ -383,6 +383,14 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 				}
 				return "cron"
 			}()),
+			Operations: map[cptype.OperationKey]cptype.Operation{
+				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
+			},
+		})
+	} else {
+		items = append(items, commodel.MoreOpItem{
+			ID:   "cron",
+			Text: cputil.I18n(p.sdk.Ctx, "cron"),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
 			},

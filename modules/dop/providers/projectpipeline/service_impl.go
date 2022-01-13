@@ -904,7 +904,7 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 				}
 				return ""
 			}(),
-			PipelineDefinition: dpb.PipelineDefinition{},
+			PipelineDefinition: v,
 		})
 	}
 
@@ -918,13 +918,13 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 	timeEnd := time.Now()
 	timeStart := timeEnd.Add(-1 * 24 * time.Hour)
 	for _, v := range pipelineWithAppNames {
-		if v.Status == string(apistructs.StatusRunning) {
+		if apistructs.PipelineStatus(v.Status).IsRunningStatus() {
 			appNamePipelineNumMap[v.AppName].RunningNum++
 			continue
 		}
 		if v.StartedAt.AsTime().After(timeStart) &&
 			v.StartedAt.AsTime().Before(timeEnd) &&
-			v.Status == string(apistructs.StatusFailed) {
+			apistructs.PipelineStatus(v.Status).IsFailedStatus() {
 			appNamePipelineNumMap[v.AppName].FailedNum++
 		}
 	}
@@ -964,7 +964,7 @@ type pipelineNum struct {
 
 type pipelineWithAppName struct {
 	AppName string `json:"appName"`
-	dpb.PipelineDefinition
+	*dpb.PipelineDefinition
 }
 
 func (p *ProjectPipelineService) checkRolePermission(identityInfo apistructs.IdentityInfo, createRequest *apistructs.PipelineCreateRequestV2, apiError *errorresp.APIError) error {
