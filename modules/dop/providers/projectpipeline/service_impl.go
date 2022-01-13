@@ -64,7 +64,7 @@ func (s *ProjectPipelineService) ListPipelineYmlList(ctx context.Context, req *p
 		work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 			result, err := s.getPipelineYml(app, apis.GetUserID(ctx), req.Branch, i[0].(string))
 			if err != nil {
-				return err
+				return nil
 			}
 
 			locker.Lock()
