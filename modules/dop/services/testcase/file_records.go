@@ -103,6 +103,9 @@ func (svc *Service) ListFileRecords(req apistructs.ListTestFileRecordsRequest) (
 		if err != nil {
 			return nil, nil, nil, 0, apierrors.ErrListFileRecord.InternalError(err)
 		}
+		if pros == nil {
+			return nil, nil, nil, 0, nil
+		}
 		req.ProjectIDs = make([]uint64, 0, len(pros.List))
 		for _, pro := range pros.List {
 			req.ProjectIDs = append(req.ProjectIDs, pro.ID)
