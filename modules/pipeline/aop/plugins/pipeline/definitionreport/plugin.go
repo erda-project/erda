@@ -33,13 +33,13 @@ func (p *provider) Name() string { return "definition-report" }
 
 func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	pipeline := ctx.SDK.Pipeline
-	if pipeline.PipelineDefinitionId == "" {
+	if pipeline.PipelineDefinitionID == "" {
 		return nil
 	}
 	if !pipeline.Status.IsEndStatus() {
 		return nil
 	}
-	definition, err := p.client.GetPipelineDefinition(pipeline.PipelineDefinitionId)
+	definition, err := p.client.GetPipelineDefinition(pipeline.PipelineDefinitionID)
 	if err != nil {
 		return err
 	}

@@ -17,7 +17,7 @@ package deftype
 import "github.com/erda-project/erda/apistructs"
 
 type ProjectPipelineBatchRun struct {
-	PipelineDefinitionIDS []string
+	PipelineDefinitionIDs []string
 	ProjectID             uint64
 	apistructs.IdentityInfo
 }

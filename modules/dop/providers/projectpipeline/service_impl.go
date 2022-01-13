@@ -371,15 +371,15 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 	}
 
 	var pipelinePageListRequest = apistructs.PipelinePageListRequest{
-		PageNum:                       int(params.PageNo),
-		PageSize:                      int(params.PageSize),
-		Statuses:                      params.Statuses,
-		AllSources:                    true,
-		StartTimeBeginTimestamp:       params.StartTimeBegin.Unix(),
-		EndTimeBeginTimestamp:         params.StartTimeEnd.Unix(),
-		PipelineDefinitionRequestJSON: base64.StdEncoding.EncodeToString(jsonValue),
-		DescCols:                      params.DescCols,
-		AscCols:                       params.AscCols,
+		PageNum:                             int(params.PageNo),
+		PageSize:                            int(params.PageSize),
+		Statuses:                            params.Statuses,
+		AllSources:                          true,
+		StartTimeBeginTimestamp:             params.StartTimeBegin.Unix(),
+		EndTimeBeginTimestamp:               params.StartTimeEnd.Unix(),
+		PipelineDefinitionRequestJSONBase64: base64.StdEncoding.EncodeToString(jsonValue),
+		DescCols:                            params.DescCols,
+		AscCols:                             params.AscCols,
 	}
 	data, err := p.bundle.PageListPipeline(pipelinePageListRequest)
 	if err != nil {
@@ -391,7 +391,7 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 }
 
 func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.ProjectPipelineBatchRun) (*deftype.ProjectPipelineBatchRunResult, error) {
-	definitionMap, err := p.batchGetPipelineDefinition(params.PipelineDefinitionIDS)
+	definitionMap, err := p.batchGetPipelineDefinition(params.PipelineDefinitionIDs)
 	if err != nil {
 		return nil, apierrors.ErrBatchRunProjectPipeline.InternalError(err)
 	}

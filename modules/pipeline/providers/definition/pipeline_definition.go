@@ -75,7 +75,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 }
 
 func createPreCheck(request *pb.PipelineDefinitionCreateRequest) error {
-	if request.Name == "" {
+	if request.Name == "" || len(request.Name) > 36 {
 		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("name: %s", request.Name))
 	}
 	if request.Creator == "" {

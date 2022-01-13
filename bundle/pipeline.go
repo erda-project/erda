@@ -325,7 +325,7 @@ func (b *Bundle) PageListPipelineCrons(req apistructs.PipelineCronPagingRequest)
 
 	var pipelineDefinitionIDList = map[string][]string{}
 	if req.PipelineDefinitionIDList != nil {
-		pipelineDefinitionIDList["pipelineDefinitionIDList"] = req.PipelineDefinitionIDList
+		pipelineDefinitionIDList["pipelineDefinitionID"] = req.PipelineDefinitionIDList
 	}
 
 	var pageResp apistructs.PipelineCronPagingResponse

@@ -170,7 +170,7 @@ type PipelineCreateRequestV2 struct {
 
 	// DefinitionID pipeline definition id
 	// +optional
-	DefinitionID string `json:"definitionId"`
+	DefinitionID string `json:"definitionID"`
 
 	IdentityInfo
 }
@@ -347,12 +347,12 @@ type PipelinePageListRequest struct {
 
 	// internal use
 	SelectCols []string `schema:"-" ` // 需要赋值的字段列表，若不声明，则全赋值
-	AscCols    []string `schema:"ascCols"`
-	DescCols   []string `schema:"descCols"`
+	AscCols    []string `schema:"ascCol"`
+	DescCols   []string `schema:"descCol"`
 
 	// pipeline definition search
-	PipelineDefinitionRequest     *PipelineDefinitionRequest
-	PipelineDefinitionRequestJSON string `schema:"pipelineDefinition"`
+	PipelineDefinitionRequest           *PipelineDefinitionRequest
+	PipelineDefinitionRequestJSONBase64 string `schema:"pipelineDefinition"`
 }
 
 type PipelineDefinitionRequest struct {
@@ -463,15 +463,15 @@ func (req *PipelinePageListRequest) PostHandleQueryString() error {
 	if req.EndTimeCreatedTimestamp > 0 {
 		req.EndTimeCreated = time.Unix(req.EndTimeCreatedTimestamp, 0)
 	}
-	if req.PipelineDefinitionRequestJSON != "" {
+	if req.PipelineDefinitionRequestJSONBase64 != "" {
 		var pipelineDefinitionRequest = PipelineDefinitionRequest{}
-		value, err := base64.StdEncoding.DecodeString(req.PipelineDefinitionRequestJSON)
+		value, err := base64.StdEncoding.DecodeString(req.PipelineDefinitionRequestJSONBase64)
 		if err != nil {
-			return errors.Errorf("invalid pipelineDefinitionRequestJSON: %s", req.PipelineDefinitionRequestJSON)
+			return errors.Errorf("invalid PipelineDefinitionRequestJSONBase64: %s", req.PipelineDefinitionRequestJSONBase64)
 		}
 		err = json.Unmarshal(value, &pipelineDefinitionRequest)
 		if err != nil {
-			return errors.Errorf("invalid pipelineDefinitionRequestJSON: %s", req.PipelineDefinitionRequestJSON)
+			return errors.Errorf("invalid PipelineDefinitionRequestJSONBase64: %s", req.PipelineDefinitionRequestJSONBase64)
 		}
 		req.PipelineDefinitionRequest = &pipelineDefinitionRequest
 	}
@@ -508,8 +508,8 @@ func (req *PipelinePageListRequest) UrlQueryString() map[string][]string {
 		query["endTimeCreatedTimestamp"] = []string{strconv.FormatInt(req.EndTimeCreatedTimestamp, 10)}
 	}
 	query["selectCol"] = append(query["selectCol"], req.SelectCols...)
-	query["ascCols"] = append(query["ascCols"], req.AscCols...)
-	query["descCols"] = append(query["descCols"], req.DescCols...)
+	query["ascCol"] = append(query["ascCol"], req.AscCols...)
+	query["descCol"] = append(query["descCol"], req.DescCols...)
 	query["countOnly"] = []string{strconv.FormatBool(req.CountOnly)}
 	query["mustMatchLabels"] = []string{req.MustMatchLabelsJSON}
 	query["mustMatchLabel"] = req.MustMatchLabelsQueryParams
@@ -519,8 +519,8 @@ func (req *PipelinePageListRequest) UrlQueryString() map[string][]string {
 	query["pageSize"] = []string{strconv.FormatInt(int64(req.PageSize), 10)}
 	query["largePageSize"] = []string{strconv.FormatBool(req.LargePageSize)}
 	query["countOnly"] = []string{strconv.FormatBool(req.CountOnly)}
-	if req.PipelineDefinitionRequestJSON != "" {
-		query["pipelineDefinition"] = []string{req.PipelineDefinitionRequestJSON}
+	if req.PipelineDefinitionRequestJSONBase64 != "" {
+		query["pipelineDefinition"] = []string{req.PipelineDefinitionRequestJSONBase64}
 	}
 	return query
 }
