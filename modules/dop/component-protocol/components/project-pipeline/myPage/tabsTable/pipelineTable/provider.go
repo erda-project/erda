@@ -45,17 +45,13 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-const (
-	setPrimary cptype.OperationKey = "setPrimary"
-)
-
 type PipelineTable struct {
 	impl.DefaultTable
 
 	bdl      *bundle.Bundle
 	gsHelper *gshelper.GSHelper
 	sdk      *cptype.SDK
-	InParams InParams       `json:"-"`
+	InParams *InParams       `json:"-"`
 	PageNo   uint64         `json:"-"`
 	PageSize uint64         `json:"-"`
 	Total    uint64         `json:"-"`
@@ -83,7 +79,9 @@ func (p *PipelineTable) BeforeHandleOp(sdk *cptype.SDK) {
 	p.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	p.gsHelper = gshelper.NewGSHelper(sdk.GlobalState)
 	p.sdk = sdk
-	if err := p.setInParams(); err != nil {
+	var err error
+	p.InParams.OrgID, err = strconv.ParseUint(p.sdk.Identity.OrgID, 10, 64)
+	if err != nil {
 		panic(err)
 	}
 	p.ProjectPipelineSvc = sdk.Ctx.Value(types.ProjectPipelineService).(*projectpipeline.ProjectPipelineService)

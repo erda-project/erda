@@ -15,8 +15,10 @@
 package pipelineTable
 
 import (
-	"encoding/json"
 	"strconv"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 )
 
 type InParams struct {
@@ -30,25 +32,24 @@ type InParams struct {
 	AppID     uint64 `json:"-"`
 }
 
-func (p *PipelineTable) setInParams() error {
-	b, err := json.Marshal(p.InParamsPtr())
-	if err != nil {
-		return err
+func (p *PipelineTable) CustomInParamsPtr() interface{} {
+	if p.InParams == nil {
+		p.InParams = &InParams{}
 	}
-	if err := json.Unmarshal(b, &p.InParams); err != nil {
-		return err
-	}
+	return p.InParams
+}
 
-	p.InParams.OrgID, err = strconv.ParseUint(p.sdk.Identity.OrgID, 10, 64)
-	if err != nil {
-		return err
-	}
+func (p *PipelineTable) EncodeFromCustomInParams(customInParamsPtr interface{}, stdInParamsPtr *cptype.ExtraMap) {
+	cputil.MustObjJSONTransfer(&customInParamsPtr, stdInParamsPtr)
+}
 
+func (p *PipelineTable) DecodeToCustomInParams(stdInParamsPtr *cptype.ExtraMap, customInParamsPtr interface{}) {
+	cputil.MustObjJSONTransfer(stdInParamsPtr, &customInParamsPtr)
+	var err error
 	if p.InParams.FrontendProjectID != "" {
 		p.InParams.ProjectID, err = strconv.ParseUint(p.InParams.FrontendProjectID, 10, 64)
 		if err != nil {
-			return err
+			panic(err)
 		}
 	}
-	return nil
 }

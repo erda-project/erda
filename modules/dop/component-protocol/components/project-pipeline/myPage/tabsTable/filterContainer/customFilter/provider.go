@@ -18,6 +18,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 
@@ -37,8 +38,8 @@ type CustomFilter struct {
 	bdl      *bundle.Bundle
 	gsHelper *gshelper.GSHelper
 	sdk      *cptype.SDK
-	State    State    `json:"-"`
-	InParams InParams `json:"-"`
+	State    State     `json:"-"`
+	InParams *InParams `json:"-"`
 
 	projectPipelineSvc projectpipeline.Service `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
 }
@@ -62,7 +63,9 @@ func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
 	p.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	p.gsHelper = gshelper.NewGSHelper(sdk.GlobalState)
 	p.sdk = sdk
-	if err := p.setInParams(); err != nil {
+	var err error
+	p.InParams.OrgID, err = strconv.ParseUint(p.sdk.Identity.OrgID, 10, 64)
+	if err != nil {
 		panic(err)
 	}
 	cputil.MustObjJSONTransfer(&p.StdStatePtr, &p.State)
