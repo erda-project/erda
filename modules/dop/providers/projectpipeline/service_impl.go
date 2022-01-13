@@ -131,7 +131,7 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 
 	var apps []apistructs.ApplicationDTO
 	if len(params.AppName) == 0 {
-		appResp, err := p.bundle.GetMyApps(params.IdentityInfo.UserID, project.OrgID, project.ID)
+		appResp, err := p.bundle.GetMyAppsByProject(params.IdentityInfo.UserID, project.OrgID, project.ID)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -337,7 +337,7 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 	if err != nil {
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
 	}
-	appData, err := p.bundle.GetMyApps(params.IdentityInfo.UserID, project.OrgID, project.ID)
+	appData, err := p.bundle.GetMyAppsByProject(params.IdentityInfo.UserID, project.OrgID, project.ID)
 	if err != nil {
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
 	}
@@ -810,7 +810,7 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
 	}
 
-	appResp, err := p.bundle.GetMyApps(apis.GetUserID(ctx), project.OrgID, project.ID)
+	appResp, err := p.bundle.GetMyAppsByProject(apis.GetUserID(ctx), project.OrgID, project.ID)
 	if err != nil {
 		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
 	}

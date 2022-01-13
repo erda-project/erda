@@ -172,7 +172,7 @@ func (d *Deployment) ListOrg(userID user.ID, orgID uint64, needFilterProjectRole
 	needApproval *bool, approvedBy *user.ID, operateUsers []string, approved *bool,
 	approvalStatus *string, types []string, ids []uint64, page apistructs.PageInfo) (
 	*apistructs.DeploymentDetailListData, error) {
-	myapps, err := d.bdl.GetMyApps(userID.String(), orgID, 0)
+	myapps, err := d.bdl.GetMyApps(userID.String(), orgID)
 	if err != nil {
 		return nil, apierrors.ErrListDeployment.InternalError(err)
 	}

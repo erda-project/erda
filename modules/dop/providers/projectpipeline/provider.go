@@ -15,8 +15,9 @@
 package projectpipeline
 
 import (
-	"github.com/jinzhu/gorm"
 	"reflect"
+
+	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"

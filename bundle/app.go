@@ -47,7 +47,30 @@ func (b *Bundle) GetApp(id uint64) (*apistructs.ApplicationDTO, error) {
 	return &fetchResp.Data, nil
 }
 
-func (b *Bundle) GetMyApps(userid string, orgid, projectID uint64) (*apistructs.ApplicationListResponseData, error) {
+func (b *Bundle) GetMyApps(userid string, orgid uint64) (*apistructs.ApplicationListResponseData, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+	var listResp apistructs.ApplicationListResponse
+	resp, err := hc.Get(host).
+		Path("/api/applications/actions/list-my-applications").
+		Header(httputil.OrgHeader, strconv.FormatUint(orgid, 10)).
+		Header(httputil.UserHeader, userid).
+		Param("pageSize", "9999").
+		Param("pageNo", "1").
+		Do().JSON(&listResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !listResp.Success {
+		return nil, toAPIError(resp.StatusCode(), listResp.Error)
+	}
+	return &listResp.Data, nil
+}
+
+func (b *Bundle) GetMyAppsByProject(userid string, orgid, projectID uint64) (*apistructs.ApplicationListResponseData, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
