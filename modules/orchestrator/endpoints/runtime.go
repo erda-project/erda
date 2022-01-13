@@ -412,7 +412,7 @@ func (e *Endpoints) RuntimeLogs(ctx context.Context, r *http.Request, vars map[s
 	if err != nil {
 		return apierrors.ErrGetRuntime.InvalidParameter(strutil.Concat("deploymentID: ", id)).ToResp(), nil
 	}
-	result, err := e.runtime.RuntimeDeployLogs(userID, orgID, deploymentID, r.URL.Query())
+	result, err := e.runtime.RuntimeDeployLogs(userID, orgID, r.Header.Get("org"), deploymentID, r.URL.Query())
 	if err != nil {
 		return apierrors.ErrGetRuntime.InvalidParameter(strutil.Concat("deploymentID: ", id)).ToResp(), nil
 	}
@@ -438,7 +438,7 @@ func (e *Endpoints) OrgcenterJobLogs(ctx context.Context, r *http.Request, vars 
 	if clusterName == "" {
 		return apierrors.ErrGetRuntime.MissingParameter("clusterName").ToResp(), nil
 	}
-	result, err := e.runtime.OrgJobLogs(userID, orgID, jobID, clusterName, r.URL.Query())
+	result, err := e.runtime.OrgJobLogs(userID, orgID, r.Header.Get("org"), jobID, clusterName, r.URL.Query())
 	if err != nil {
 		return apierrors.ErrGetRuntime.InvalidParameter(strutil.Concat("jobID: ", jobID)).ToResp(), nil
 	}

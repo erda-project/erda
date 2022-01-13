@@ -702,7 +702,7 @@ func (e *Endpoints) AddonLogs(ctx context.Context, r *http.Request, vars map[str
 	logReq.ID = containerID
 	logReq.Source = apistructs.DashboardSpotLogSourceContainer
 
-	logResult, err := e.bdl.GetLog(logReq)
+	logResult, err := e.bdl.GetLog(r.Header.Get("org"), logReq)
 	if err != nil {
 		return nil, err
 	}
