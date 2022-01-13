@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -256,7 +257,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 	for _, v := range list {
 		p.UserIDs = append(p.UserIDs, v.Creator, v.Executor)
 		rows = append(rows, table.Row{
-			ID:         table.RowID(v.ID),
+			ID:         table.RowID(strconv.FormatInt(v.PipelineId, 10)),
 			Selectable: true,
 			Selected:   false,
 			CellsMap: map[table.ColumnKey]table.Cell{
@@ -299,7 +300,13 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 				}).Build(),
 			},
 			Operations: map[cptype.OperationKey]cptype.Operation{
-				table.OpRowSelect{}.OpKey(): cputil.NewOpBuilder().Build(),
+				table.OpRowSelect{}.OpKey(): func() cptype.Operation {
+					build := cputil.NewOpBuilder().Build()
+					serviceCnt := make(cptype.OpServerData)
+					serviceCnt["id"] = v.ID
+					build.ServerData = &serviceCnt
+					return build
+				}(),
 			},
 		})
 	}
@@ -308,6 +315,10 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 
 func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, definitionYmlSourceMap map[string]string, ymlSourceMapCronMap map[string]*apistructs.PipelineCronDTO) []commodel.MoreOpItem {
 	items := make([]commodel.MoreOpItem, 0)
+	build := cputil.NewOpBuilder().Build()
+	serviceCnt := make(cptype.OpServerData)
+	serviceCnt["id"] = definition.ID
+	build.ServerData = &serviceCnt
 	items = append(items, commodel.MoreOpItem{
 		ID: func() string {
 			if definition.Category == "primary" {
@@ -322,7 +333,7 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			return "setPrimary"
 		}()),
 		Operations: map[cptype.OperationKey]cptype.Operation{
-			commodel.OpMoreOperationsItemClick{}.OpKey(): cputil.NewOpBuilder().Build(),
+			commodel.OpMoreOperationsItemClick{}.OpKey(): build,
 		},
 	})
 	items = append(items, commodel.MoreOpItem{
@@ -339,7 +350,7 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			return "run"
 		}()),
 		Operations: map[cptype.OperationKey]cptype.Operation{
-			commodel.OpMoreOperationsItemClick{}.OpKey(): cputil.NewOpBuilder().Build(),
+			commodel.OpMoreOperationsItemClick{}.OpKey(): build,
 		},
 	})
 	if apistructs.PipelineStatus(definition.Status).IsFailedStatus() {
@@ -347,7 +358,7 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			ID:   "rerunFromFail",
 			Text: cputil.I18n(p.sdk.Ctx, "rerunFromFail"),
 			Operations: map[cptype.OperationKey]cptype.Operation{
-				commodel.OpMoreOperationsItemClick{}.OpKey(): cputil.NewOpBuilder().Build(),
+				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
 			},
 		})
 	}
@@ -356,7 +367,7 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			ID:   "rerun",
 			Text: cputil.I18n(p.sdk.Ctx, "rerun"),
 			Operations: map[cptype.OperationKey]cptype.Operation{
-				commodel.OpMoreOperationsItemClick{}.OpKey(): cputil.NewOpBuilder().Build(),
+				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
 			},
 		})
 	}
@@ -375,7 +386,7 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 				return "cron"
 			}()),
 			Operations: map[cptype.OperationKey]cptype.Operation{
-				commodel.OpMoreOperationsItemClick{}.OpKey(): cputil.NewOpBuilder().Build(),
+				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
 			},
 		})
 	}
@@ -384,7 +395,7 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 		ID:   "delete",
 		Text: cputil.I18n(p.sdk.Ctx, "delete"),
 		Operations: map[cptype.OperationKey]cptype.Operation{
-			commodel.OpMoreOperationsItemClick{}.OpKey(): cputil.NewOpBuilder().Build(),
+			commodel.OpMoreOperationsItemClick{}.OpKey(): build,
 		},
 	})
 	return items
@@ -496,10 +507,11 @@ func init() {
 }
 
 func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick) {
+	id := opData.ServerData.ID
 	switch opData.ClientData.DataRef.ID {
 	case "setPrimary":
 		_, err := p.ProjectPipelineSvc.SetPrimary(p.sdk.Ctx, deftype.ProjectPipelineCategory{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+			PipelineDefinitionID: id,
 			ProjectID:            p.InParams.ProjectID,
 			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
 		})
@@ -508,7 +520,7 @@ func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick
 		}
 	case "unsetPrimary":
 		_, err := p.ProjectPipelineSvc.UnSetPrimary(p.sdk.Ctx, deftype.ProjectPipelineCategory{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+			PipelineDefinitionID: id,
 			ProjectID:            p.InParams.ProjectID,
 			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
 		})
@@ -517,7 +529,7 @@ func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick
 		}
 	case "run":
 		_, err := p.ProjectPipelineSvc.Run(p.sdk.Ctx, deftype.ProjectPipelineRun{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+			PipelineDefinitionID: id,
 			ProjectID:            p.InParams.ProjectID,
 			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
 		})
@@ -526,7 +538,7 @@ func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick
 		}
 	case "cancelRun":
 		_, err := p.ProjectPipelineSvc.Cancel(p.sdk.Ctx, deftype.ProjectPipelineCancel{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+			PipelineDefinitionID: id,
 			ProjectID:            p.InParams.ProjectID,
 			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
 		})
@@ -535,7 +547,7 @@ func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick
 		}
 	case "rerun":
 		_, err := p.ProjectPipelineSvc.Rerun(p.sdk.Ctx, deftype.ProjectPipelineRerun{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+			PipelineDefinitionID: id,
 			ProjectID:            p.InParams.ProjectID,
 			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
 		})
@@ -544,7 +556,7 @@ func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick
 		}
 	case "rerunFromFail":
 		_, err := p.ProjectPipelineSvc.FailRerun(p.sdk.Ctx, deftype.ProjectPipelineFailRerun{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+			PipelineDefinitionID: id,
 			ProjectID:            p.InParams.ProjectID,
 			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
 		})
@@ -553,7 +565,7 @@ func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick
 		}
 	case "corn":
 		_, err := p.ProjectPipelineSvc.StartCron(p.sdk.Ctx, deftype.ProjectPipelineStartCron{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+			PipelineDefinitionID: id,
 			ProjectID:            p.InParams.ProjectID,
 			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
 		})
@@ -562,7 +574,7 @@ func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick
 		}
 	case "cancelCron":
 		_, err := p.ProjectPipelineSvc.EndCron(p.sdk.Ctx, deftype.ProjectPipelineEndCron{
-			PipelineDefinitionID: string(opData.ClientData.ParentDataRef.ID),
+			PipelineDefinitionID: id,
 			ProjectID:            p.InParams.ProjectID,
 			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
 		})
@@ -571,7 +583,7 @@ func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick
 		}
 	case "delete":
 		_, err := p.ProjectPipelineSvc.Delete(p.sdk.Ctx, deftype.ProjectPipelineDelete{
-			ID:           string(opData.ClientData.ParentDataRef.ID),
+			ID:           id,
 			ProjectID:    p.InParams.ProjectID,
 			IdentityInfo: apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
 		})
@@ -593,9 +605,14 @@ func (p *PipelineTable) RegisterCompNonStdOps() (opFuncs map[cptype.OperationKey
 type OpMoreOperationsItemClick struct {
 	commodel.OpMoreOperationsItemClick
 	ClientData OpMoreOperationsItemClickClientData `json:"clientData"`
+	ServerData OpMoreOperationsItemClickServerData `json:"serverData,omitempty"`
 }
 
 type OpMoreOperationsItemClickClientData struct {
 	DataRef       *commodel.MoreOpItem `json:"dataRef,omitempty"`
 	ParentDataRef table.Row            `json:"parentDataRef,omitempty"`
+}
+
+type OpMoreOperationsItemClickServerData struct {
+	ID string `json:"id"`
 }
