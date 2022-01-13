@@ -611,28 +611,28 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 		return nil, apiError.InternalError(fmt.Errorf("operation failed, the latest pipeline is not in an error state"))
 	}
 
+	var dto *apistructs.PipelineDTO
 	if rerun {
 		var req apistructs.PipelineRerunRequest
 		req.PipelineID = pipeline.ID
 		req.AutoRunAtOnce = true
 		req.IdentityInfo = identityInfo
-		dto, err := p.bundle.RerunPipeline(req)
-		if err != nil {
-			return nil, apiError.InternalError(err)
-		}
-		return dto, nil
+		dto, err = p.bundle.RerunPipeline(req)
 	} else {
 		var req apistructs.PipelineRerunFailedRequest
 		req.PipelineID = pipeline.ID
 		req.AutoRunAtOnce = true
 		req.IdentityInfo = identityInfo
-		dto, err := p.bundle.RerunFailedPipeline(req)
-		if err != nil {
-			return nil, apiError.InternalError(err)
-		}
-
-		return dto, nil
+		dto, err = p.bundle.RerunFailedPipeline(req)
 	}
+	if err != nil {
+		return nil, apiError.InternalError(err)
+	}
+	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{PipelineDefinitionID: definition.ID, Status: string(apistructs.StatusRunning), PipelineId: int64(dto.ID)})
+	if err != nil {
+		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
+	}
+	return dto, nil
 }
 
 func (p *ProjectPipelineService) startOrEndCron(identityInfo apistructs.IdentityInfo, pipelineDefinitionID string, projectID uint64, enable bool, apiError *errorresp.APIError) (*apistructs.PipelineCronDTO, error) {
