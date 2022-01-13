@@ -15,6 +15,7 @@
 package apistructs
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"strconv"
 	"strings"
@@ -166,6 +167,10 @@ type PipelineCreateRequestV2 struct {
 
 	// BindQueue represents the queue pipeline binds, internal use only, parsed from Labels: LabelBindPipelineQueueID
 	BindQueue *PipelineQueue `json:"-"`
+
+	// DefinitionID pipeline definition id
+	// +optional
+	DefinitionID string `json:"definitionID"`
 
 	IdentityInfo
 }
@@ -342,8 +347,42 @@ type PipelinePageListRequest struct {
 
 	// internal use
 	SelectCols []string `schema:"-" ` // 需要赋值的字段列表，若不声明，则全赋值
-	AscCols    []string `schema:"-"`
-	DescCols   []string `schema:"-"`
+	AscCols    []string `schema:"ascCol"`
+	DescCols   []string `schema:"descCol"`
+
+	// pipeline definition search
+	PipelineDefinitionRequest           *PipelineDefinitionRequest
+	PipelineDefinitionRequestJSONBase64 string `schema:"pipelineDefinition"`
+}
+
+type PipelineDefinitionRequest struct {
+	Name          string   `json:"name"`
+	Creators      []string `json:"creators"`
+	SourceRemotes []string `json:"sourceRemotes"`
+}
+
+func (definition *PipelineDefinitionRequest) IsEmptyValue() bool {
+	if definition == nil {
+		return true
+	}
+	if len(definition.Name) > 0 {
+		return false
+	}
+	if len(definition.Creators) > 0 {
+		return false
+	}
+	if len(definition.SourceRemotes) > 0 {
+		return false
+	}
+	return true
+}
+
+type PipelineSourceRequest struct {
+	Remote     string `json:"remote"`
+	Ref        string `json:"ref"`
+	Path       string `json:"path"`
+	Name       string `json:"name"`
+	SourceType string `json:"sourceType"`
 }
 
 func (req *PipelinePageListRequest) PostHandleQueryString() error {
@@ -424,6 +463,18 @@ func (req *PipelinePageListRequest) PostHandleQueryString() error {
 	if req.EndTimeCreatedTimestamp > 0 {
 		req.EndTimeCreated = time.Unix(req.EndTimeCreatedTimestamp, 0)
 	}
+	if req.PipelineDefinitionRequestJSONBase64 != "" {
+		var pipelineDefinitionRequest = PipelineDefinitionRequest{}
+		value, err := base64.StdEncoding.DecodeString(req.PipelineDefinitionRequestJSONBase64)
+		if err != nil {
+			return errors.Errorf("invalid PipelineDefinitionRequestJSONBase64: %s", req.PipelineDefinitionRequestJSONBase64)
+		}
+		err = json.Unmarshal(value, &pipelineDefinitionRequest)
+		if err != nil {
+			return errors.Errorf("invalid PipelineDefinitionRequestJSONBase64: %s", req.PipelineDefinitionRequestJSONBase64)
+		}
+		req.PipelineDefinitionRequest = &pipelineDefinitionRequest
+	}
 
 	return nil
 }
@@ -457,6 +508,8 @@ func (req *PipelinePageListRequest) UrlQueryString() map[string][]string {
 		query["endTimeCreatedTimestamp"] = []string{strconv.FormatInt(req.EndTimeCreatedTimestamp, 10)}
 	}
 	query["selectCol"] = append(query["selectCol"], req.SelectCols...)
+	query["ascCol"] = append(query["ascCol"], req.AscCols...)
+	query["descCol"] = append(query["descCol"], req.DescCols...)
 	query["countOnly"] = []string{strconv.FormatBool(req.CountOnly)}
 	query["mustMatchLabels"] = []string{req.MustMatchLabelsJSON}
 	query["mustMatchLabel"] = req.MustMatchLabelsQueryParams
@@ -466,7 +519,9 @@ func (req *PipelinePageListRequest) UrlQueryString() map[string][]string {
 	query["pageSize"] = []string{strconv.FormatInt(int64(req.PageSize), 10)}
 	query["largePageSize"] = []string{strconv.FormatBool(req.LargePageSize)}
 	query["countOnly"] = []string{strconv.FormatBool(req.CountOnly)}
-
+	if req.PipelineDefinitionRequestJSONBase64 != "" {
+		query["pipelineDefinition"] = []string{req.PipelineDefinitionRequestJSONBase64}
+	}
 	return query
 }
 
@@ -695,4 +750,8 @@ type PipelineDeleteResponse struct {
 type PipelineCronGetResponse struct {
 	Header
 	Data *PipelineCronDTO `json:"data"`
+}
+
+type PipelineDefinitionExtraValue struct {
+	CreateRequest *PipelineCreateRequestV2 `json:"createRequest"`
 }

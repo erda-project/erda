@@ -81,6 +81,13 @@ var PipelineEndStatuses = []PipelineStatus{
 	PipelineStatusError, PipelineStatusUnknown, PipelineStatusLostConn, PipelineStatusCancelByRemote,
 }
 
+var PipelineAllStatuses = []PipelineStatus{
+	PipelineStatusAnalyzed, PipelineStatusBorn, PipelineStatusCreated, PipelineStatusMark, PipelineStatusQueue, PipelineStatusRunning, PipelineStatusSuccess,
+	PipelineStatusFailed, PipelineStatusAnalyzeFailed, PipelineStatusPaused, PipelineStatusCreateError, PipelineStatusStartError, PipelineStatusTimeout,
+	PipelineStatusStopByUser, PipelineStatusNoNeedBySystem, PipelineStatusCancelByRemote, PipelineStatusInitializing, PipelineStatusError, PipelineStatusUnknown, PipelineStatusDBError, PipelineStatusLostConn,
+	PipelineStatusDisabled, PipelineStatusWaitApproval, PipelineStatusApprovalSuccess, PipelineStatusApprovalFail,
+}
+
 func (status PipelineStatus) ToDesc() string {
 	switch status {
 	case PipelineStatusAnalyzed, PipelineStatusBorn:

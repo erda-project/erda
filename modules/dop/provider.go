@@ -32,6 +32,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	errboxpb "github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/bundle"
@@ -39,8 +41,8 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/providers/autotest/testplan"
+	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/modules/dop/providers/taskerror"
-	"github.com/erda-project/erda/modules/pipeline/providers/definition_client"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -52,12 +54,14 @@ var scenarioFS embed.FS
 type provider struct {
 	Log logs.Logger
 
-	PipelineCms  cmspb.CmsServiceServer            `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
-	PipelineDs   definition_client.Processor       `autowired:"erda.core.pipeline.definition-process-client" optional:"true"`
-	TestPlanSvc  *testplan.TestPlanService         `autowired:"erda.core.dop.autotest.testplan.TestPlanService"`
-	Cmp          dashboardPb.ClusterResourceServer `autowired:"erda.cmp.dashboard.resource.ClusterResource"`
-	TaskErrorSvc *taskerror.TaskErrorService       `autowired:"erda.core.dop.taskerror.TaskErrorService"`
-	ErrorBoxSvc  errboxpb.ErrorBoxServiceServer    `autowired:"erda.core.services.errorbox.ErrorBoxService" optional:"true"`
+	PipelineCms        cmspb.CmsServiceServer                  `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
+	PipelineSource     sourcepb.SourceServiceServer            `autowired:"erda.core.pipeline.source" optional:"true"`
+	PipelineDefinition definitionpb.DefinitionServiceServer    `autowired:"erda.core.pipeline.definition" optional:"true"`
+	TestPlanSvc        *testplan.TestPlanService               `autowired:"erda.core.dop.autotest.testplan.TestPlanService"`
+	Cmp                dashboardPb.ClusterResourceServer       `autowired:"erda.cmp.dashboard.resource.ClusterResource"`
+	TaskErrorSvc       *taskerror.TaskErrorService             `autowired:"erda.core.dop.taskerror.TaskErrorService"`
+	ErrorBoxSvc        errboxpb.ErrorBoxServiceServer          `autowired:"erda.core.services.errorbox.ErrorBoxService" optional:"true"`
+	ProjectPipelineSvc *projectpipeline.ProjectPipelineService `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
 
 	AddonMySQLSvc addonmysqlpb.AddonMySQLServiceServer `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
 

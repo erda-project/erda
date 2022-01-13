@@ -152,7 +152,7 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	p.PipelineYmlName = req.PipelineYmlName
 	p.PipelineSource = req.PipelineSource
 	p.ClusterName = req.ClusterName
-
+	p.PipelineDefinitionID = req.DefinitionID
 	// labels
 	p.NormalLabels = req.NormalLabels
 	if p.NormalLabels == nil {

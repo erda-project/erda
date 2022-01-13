@@ -141,6 +141,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.ManualTestPlanService, ep.ManualTestPlanService())
 	p.Protocol.WithContextValue(types.AutoTestPlanService, ep.AutoTestPlanService())
 	p.Protocol.WithContextValue(types.DBClient, ep.DBClient())
+	p.Protocol.WithContextValue(types.ProjectPipelineService, p.ProjectPipelineSvc)
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
 	server := httpserver.New(":0")
@@ -577,17 +578,22 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		test_report.WithBundle(bdl.Bdl),
 	)
 
+	pipelineSvc := pipeline.New(
+		pipeline.WithBundle(bdl.Bdl),
+		pipeline.WithBranchRuleSvc(branchRule),
+		pipeline.WithPublisherSvc(pub),
+		pipeline.WithPipelineCms(p.PipelineCms),
+		pipeline.WithPipelineSource(p.PipelineSource),
+		pipeline.WithPipelineDefinition(p.PipelineDefinition),
+		pipeline.WithAppSvc(app),
+	)
+	p.ProjectPipelineSvc.WithPipelineSvc(pipelineSvc)
+	p.ProjectPipelineSvc.WithPermissionSvc(perm)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
-		endpoints.WithPipeline(pipeline.New(
-			pipeline.WithBundle(bdl.Bdl),
-			pipeline.WithBranchRuleSvc(branchRule),
-			pipeline.WithPublisherSvc(pub),
-			pipeline.WithPipelineCms(p.PipelineCms),
-			pipeline.WithPipelineDefinitionServices(p.PipelineDs),
-			pipeline.WithAppSvc(app),
-		)),
+		endpoints.WithPipeline(pipelineSvc),
 		endpoints.WithPipelineCms(p.PipelineCms),
 		endpoints.WithEvent(e),
 		endpoints.WithCDP(c),
