@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/providers/audit"
 	"reflect"
 	"strconv"
 	"strings"
@@ -36,6 +35,7 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type alertService struct {

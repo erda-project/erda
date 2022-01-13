@@ -15,10 +15,11 @@
 package monitor
 
 import (
+	"strconv"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 	"github.com/erda-project/erda/modules/openapi/api/spec"
-	"strconv"
 )
 
 var MONITOR_ADDON_LOGS_RULES_CREATE = apis.ApiSpec{
