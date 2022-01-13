@@ -87,6 +87,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			apiYAxis = append(apiYAxis, row.Values[1].GetNumberValue())
 		}
 		chart.SetYAxis(sdk.I18n("API"), apiYAxis...)
+		chart.SubTitle = "ms"
 
 		p.StdDataPtr = chart
 	}
