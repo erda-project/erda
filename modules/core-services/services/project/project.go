@@ -409,10 +409,22 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 
 	// audit
 	go func() {
-		if project.Quota == nil {
-			return
-		}
-		if !isQuotaChanged(*oldQuota, *project.Quota) {
+		if project.Quota == nil || !isQuotaChanged(*oldQuota, *project.Quota) {
+			proCtx, _ := json.Marshal(map[string]string{"projectName": project.Name})
+			if err := p.db.CreateAudit(&model.Audit{
+				ScopeType:    apistructs.ProjectScope,
+				ScopeID:      uint64(projectID),
+				ProjectID:    uint64(projectID),
+				TemplateName: apistructs.UpdateProjectTemplate,
+				UserID:       userID,
+				OrgID:        uint64(orgID),
+				Context:      string(proCtx),
+				Result:       "success",
+				StartTime:    time.Now(),
+				EndTime:      time.Now(),
+			}); err != nil {
+				logrus.Errorf("failed to create project audit event when update project %s, %v", project.Name, err)
+			}
 			return
 		}
 		var orgName = strconv.FormatInt(orgID, 10)
