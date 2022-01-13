@@ -111,6 +111,12 @@ func (e *Endpoints) ListDeploymentOrder(ctx context.Context, r *http.Request, va
 		return apierrors.ErrListDeploymentOrder.InvalidParameter(strutil.Concat("illegal workspace ", workspace)).ToResp(), nil
 	}
 
+	orderTypes := strutil.Split(r.URL.Query().Get("types"), ",", true)
+	for i, t := range orderTypes {
+		orderTypes[i] = strings.ToUpper(t)
+	}
+
+	// check permission
 	userID, err := user.GetUserID(r)
 	if err != nil {
 		return apierrors.ErrListDeployment.NotLogin().ToResp(), nil
@@ -130,6 +136,7 @@ func (e *Endpoints) ListDeploymentOrder(ctx context.Context, r *http.Request, va
 	data, err := e.deploymentOrder.List(&apistructs.DeploymentOrderListConditions{
 		ProjectId: projectId,
 		Workspace: workspace,
+		Types:     orderTypes,
 		Query:     r.URL.Query().Get("q"),
 	}, &pageInfo)
 	if err != nil {
@@ -164,7 +171,7 @@ func (e *Endpoints) DeployDeploymentOrder(ctx context.Context, r *http.Request, 
 		return errorresp.ErrResp(err)
 	}
 
-	e.auditDeploymentOrder(userID.String(), order.ProjectName, order.Name, orgID, order.ProjectId,
+	e.auditDeploymentOrder(userID.String(), order.ProjectName, utils.ParseOrderName(order.ID), orgID, order.ProjectId,
 		apistructs.ExecuteDeploymentOrderTemplate, r)
 
 	return httpserver.OkResp(nil)
@@ -198,7 +205,7 @@ func (e *Endpoints) CancelDeploymentOrder(ctx context.Context, r *http.Request, 
 	}
 
 	if order != nil {
-		e.auditDeploymentOrder(userID.String(), order.ProjectName, order.Name, orgID, order.ProjectId,
+		e.auditDeploymentOrder(userID.String(), order.ProjectName, utils.ParseOrderName(order.ID), orgID, order.ProjectId,
 			apistructs.CancelDeploymentOrderTemplate, r)
 	}
 

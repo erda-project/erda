@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/utils"
 )
 
 func (d *DeploymentOrder) List(conditions *apistructs.DeploymentOrderListConditions, pageInfo *apistructs.PageInfo) (*apistructs.DeploymentOrderListData, error) {
@@ -74,7 +75,7 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 
 		ret = append(ret, &apistructs.DeploymentOrderItem{
 			ID:                order.ID,
-			Name:              order.Name,
+			Name:              utils.ParseOrderName(order.ID),
 			ReleaseID:         order.ReleaseId,
 			ReleaseVersion:    releaseResp.Version,
 			Type:              order.Type,

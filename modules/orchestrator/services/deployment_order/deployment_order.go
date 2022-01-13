@@ -27,9 +27,6 @@ import (
 )
 
 const (
-	appOrderPrefix        = "a_"
-	projectOrderPrefix    = "p_"
-	orderNameTmpl         = "%s_%d"
 	release               = "RELEASE"
 	gitBranchLabel        = "gitBranch"
 	orderStatusWaitDeploy = "WAITDEPLOY"
