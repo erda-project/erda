@@ -504,7 +504,7 @@ func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.Pr
 			return nil
 		}, v.ID, v.PipelineSourceId)
 	}
-	if work.Do().Error() != nil {
+	if err := work.Do().Error(); err != nil {
 		return nil, err
 	}
 

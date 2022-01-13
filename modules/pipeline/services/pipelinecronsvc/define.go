@@ -150,9 +150,11 @@ func (s *PipelineCronSvc) PipelineCronUpdate(req apistructs.PipelineCronUpdateRe
 	cron.CronExpr = req.CronExpr
 	cron.Extra.PipelineYml = req.PipelineYml
 	cron.Extra.ConfigManageNamespaces = strutil.DedupSlice(append(cron.Extra.ConfigManageNamespaces, req.ConfigManageNamespaces...), true)
+	var fields = []string{spec.PipelineCronCronExpr, spec.Extra}
 	if req.PipelineDefinitionID != "" {
 		cron.PipelineDefinitionID = req.PipelineDefinitionID
+		fields = append(fields, spec.PipelineDefinitionID)
 	}
-	err = s.dbClient.UpdatePipelineCronWillUseDefault(cron.ID, &cron, []string{spec.PipelineCronCronExpr, spec.Extra})
+	err = s.dbClient.UpdatePipelineCronWillUseDefault(cron.ID, &cron, fields)
 	return err
 }

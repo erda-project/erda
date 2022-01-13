@@ -179,8 +179,10 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 	engine := session.Table("pipeline_definition").Alias("d").
 		Select("COUNT(*)").
 		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
-		Where("d.soft_deleted_at = 0").
-		In("s.remote", req.Remote)
+		Where("d.soft_deleted_at = 0")
+	if req.Remote != nil {
+		engine = engine.In("s.remote", req.Remote)
+	}
 	if req.Name != "" {
 		engine = engine.Where("d.name LIKE ?", "%"+req.Name+"%")
 	}
