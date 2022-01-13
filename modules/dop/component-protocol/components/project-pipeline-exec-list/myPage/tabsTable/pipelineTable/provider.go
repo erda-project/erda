@@ -146,7 +146,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 		tableValue.Total = uint64(result.Data.Total)
 		for _, pipeline := range result.Data.Pipelines {
-			if pipeline.DefinitionInfo == nil {
+			if pipeline.DefinitionPageInfo == nil {
 				continue
 			}
 			tableValue.Rows = append(tableValue.Rows, p.pipelineToRow(pipeline))
@@ -205,7 +205,7 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 		Selectable: true,
 		Selected:   false,
 		CellsMap: map[table.ColumnKey]table.Cell{
-			ColumnPipelineName: table.NewTextCell(pipeline.DefinitionInfo.Name).Build(),
+			ColumnPipelineName: table.NewTextCell(pipeline.DefinitionPageInfo.Name).Build(),
 			ColumnPipelineStatus: table.NewCompleteTextCell(commodel.Text{
 				Text: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)+pipeline.Status.String()),
 				Status: func() commodel.UnifiedStatus {
@@ -225,9 +225,9 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 					return fmt.Sprintf("%v s", pipeline.CostTimeSec)
 				}
 			}()).Build(),
-			ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(pipeline.DefinitionInfo.SourceRemote)).Build(),
-			ColumnBranch:          table.NewTextCell(pipeline.DefinitionInfo.SourceRef).Build(),
-			ColumnExecutor:        table.NewUserCell(commodel.User{ID: pipeline.DefinitionInfo.Creator}).Build(),
+			ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote)).Build(),
+			ColumnBranch:          table.NewTextCell(pipeline.DefinitionPageInfo.SourceRef).Build(),
+			ColumnExecutor:        table.NewUserCell(commodel.User{ID: pipeline.DefinitionPageInfo.Creator}).Build(),
 			ColumnStartTimeOrder: table.NewTextCell(func() string {
 				if pipeline.TimeBegin.Unix() <= 0 {
 					return "-"

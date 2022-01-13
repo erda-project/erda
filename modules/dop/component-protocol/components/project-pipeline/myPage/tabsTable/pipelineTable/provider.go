@@ -461,7 +461,7 @@ func (p *PipelineTable) RegisterBatchRowsHandleOp(opData table.OpBatchRowsHandle
 		switch opData.ClientData.DataRef.ID {
 		case "batchRun":
 			_, err := p.ProjectPipelineSvc.BatchRun(p.sdk.Ctx, deftype.ProjectPipelineBatchRun{
-				PipelineDefinitionIDS: opData.ClientData.SelectedRowIDs,
+				PipelineDefinitionIDs: opData.ClientData.SelectedRowIDs,
 				ProjectID:             p.InParams.ProjectID,
 				IdentityInfo:          apistructs.IdentityInfo{UserID: p.sdk.Identity.UserID},
 			})
