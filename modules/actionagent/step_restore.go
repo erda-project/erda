@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -114,6 +115,10 @@ func (agent *Agent) restore() {
 }
 
 func (agent *Agent) restoreCache(tarFile, tarExecPath string) (err error) {
+	if tarFileSize, isExceed := agent.isCachePathExceedLimit(tarFile); isExceed {
+		return fmt.Errorf("untar file: %s size: %d bytes exceed limit size: %d bytes", tarFile, tarFileSize.Bytes(),
+			agent.MaxCacheFileSizeMB.Bytes())
+	}
 	tmpDir, err := ioutil.TempDir(cacheTempDir, cacheTempPrefix)
 	if err != nil {
 		return err
@@ -133,4 +138,13 @@ func (agent *Agent) restoreCache(tarFile, tarExecPath string) (err error) {
 		return err
 	}
 	return err
+}
+
+// isCacheFileExceedLimit return path size and is-exceed-limit-size
+func (agent *Agent) isCachePathExceedLimit(tarFile string) (datasize.ByteSize, bool) {
+	size, err := agenttool.GetDiskSize(tarFile)
+	if err != nil {
+		return 0, false
+	}
+	return size, size.Bytes() > agent.MaxCacheFileSizeMB.Bytes()
 }
