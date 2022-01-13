@@ -54,7 +54,7 @@ type Pipeline struct {
 	cms                cmspb.CmsServiceServer
 	pipelineSource     sourcepb.SourceServiceServer
 	pipelineDefinition definitionpb.DefinitionServiceServer
-	appSvc        *application.Application
+	appSvc             *application.Application
 }
 
 // Option Pipeline 配置选项

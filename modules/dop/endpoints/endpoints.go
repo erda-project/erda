@@ -1119,4 +1119,3 @@ func (e *Endpoints) ProjectService() *project.Project {
 func (e *Endpoints) PermissionService() *permission.Permission {
 	return e.permission
 }
-
