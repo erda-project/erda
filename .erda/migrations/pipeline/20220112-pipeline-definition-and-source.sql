@@ -24,7 +24,7 @@ CREATE TABLE `pipeline_definition_extra` (
   `extra` mediumtext NOT NULL COMMENT '详细信息',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `soft_deleted_at` bigint(20) NOT NULL COMMENT '软删除',
+  `soft_deleted_at` bigint(20) NOT NULL NOT NULL DEFAULT '0' COMMENT '软删除',
   `pipeline_definition_id` varchar(36) NOT NULL DEFAULT '' COMMENT '定义 id',
   PRIMARY KEY (`id`),
   KEY `idx_pipeline_definition_id` (`pipeline_definition_id`)

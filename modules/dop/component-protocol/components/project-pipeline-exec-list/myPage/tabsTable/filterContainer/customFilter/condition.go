@@ -55,7 +55,7 @@ func (p *CustomFilter) StatusCondition() *model.SelectCondition {
 func (p *CustomFilter) MemberCondition(key string) (*model.SelectCondition, error) {
 	members, err := p.bdl.ListMembers(apistructs.MemberListRequest{
 		ScopeType: apistructs.ProjectScope,
-		ScopeID:   int64(p.InParams.ProjectID),
+		ScopeID:   int64(p.InParams.ProjectIDInt),
 		PageNo:    1,
 		PageSize:  500,
 	})
@@ -85,7 +85,7 @@ func (p *CustomFilter) MemberCondition(key string) (*model.SelectCondition, erro
 }
 
 func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
-	apps, err := p.bdl.GetMyAppsByProject(p.sdk.Identity.UserID, p.InParams.OrgID, p.InParams.ProjectID)
+	apps, err := p.bdl.GetMyAppsByProject(p.sdk.Identity.UserID, p.InParams.OrgIDInt, p.InParams.ProjectIDInt)
 	if err != nil {
 		return nil, err
 	}
