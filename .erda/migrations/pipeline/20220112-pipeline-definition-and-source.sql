@@ -38,10 +38,10 @@ CREATE TABLE `pipeline_source` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `version_lock` bigint(20) NOT NULL DEFAULT '1' COMMENT '乐观锁',
   `pipeline_yml` mediumtext NOT NULL COMMENT 'yml 文件内容',
-  `remote` varchar(200) NOT NULL DEFAULT '' COMMENT '源地址',
-  `ref` varchar(200) NOT NULL DEFAULT '' COMMENT '源地址位置',
-  `path` varchar(200) NOT NULL DEFAULT '' COMMENT '源地址位置目录位置',
-  `name` varchar(200) NOT NULL DEFAULT '' COMMENT '流水线名称',
+  `remote` varchar(100) NOT NULL DEFAULT '' COMMENT '源地址',
+  `ref` varchar(40) NOT NULL DEFAULT '' COMMENT '源地址位置',
+  `path` varchar(50) NOT NULL DEFAULT '' COMMENT '源地址位置目录位置',
+  `name` varchar(36) NOT NULL DEFAULT '' COMMENT '流水线名称',
   PRIMARY KEY (`id`),
   KEY `idx_remote_ref_name` (`soft_deleted_at`,`remote`, `ref`, `name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='pipeline definition source table';

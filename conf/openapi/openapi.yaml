@@ -84,6 +84,8 @@ openapi-v1-routes:
           - auto-test-space-list
           - release-manage
           - app-list-all
+          - project-pipeline
+          - project-pipeline-exec-list
       - addr: http://localhost:8080
         scenarios:
           - demo

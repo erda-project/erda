@@ -40,12 +40,70 @@ import (
 type CategoryType string
 
 const (
-	DefaultCategory CategoryType = "default"
-	StarCategory    CategoryType = "primary"
+	DefaultCategory  CategoryType = "default"
+	StarCategory     CategoryType = "primary"
+	DicePipelinePath string       = "/.dice/pipelines"
+	ErdaPipelinePath string       = "/.erda/pipelines"
 )
 
 func (c CategoryType) String() string {
 	return string(c)
+}
+
+func (s *ProjectPipelineService) ListPipelineYml(ctx context.Context, req *pb.ListAppPipelineYmlRequest) (*pb.ListAppPipelineYmlResponse, error) {
+
+	app, err := s.bundle.GetApp(req.AppID)
+	if err != nil {
+		return nil, err
+	}
+
+	work := limit_sync_group.NewWorker(3)
+	var list []*pb.PipelineYmlList
+	var pathList = []string{"", DicePipelinePath, ErdaPipelinePath}
+	for _, path := range pathList {
+		work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+			result, err := s.getPipelineYml(app, apis.GetUserID(ctx), req.Branch, i[0].(string))
+			if err != nil {
+				return nil
+			}
+
+			locker.Lock()
+			defer locker.Unlock()
+			list = append(list, result...)
+			return nil
+		}, path)
+	}
+	if err := work.Do().Error(); err != nil {
+		return nil, err
+	}
+
+	return &pb.ListAppPipelineYmlResponse{
+		Result: list,
+	}, nil
+}
+
+func (s *ProjectPipelineService) getPipelineYml(app *apistructs.ApplicationDTO, userID string, branch string, findPath string) ([]*pb.PipelineYmlList, error) {
+	var path = fmt.Sprintf("/wb/%v/%v/tree/%v%v", app.ProjectName, app.Name, branch, findPath)
+
+	diceEntrys, err := s.bundle.GetGittarTreeNode(path, strconv.Itoa(int(app.OrgID)), true, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var list []*pb.PipelineYmlList
+	for _, entry := range diceEntrys {
+		if !strings.HasSuffix(entry.Name, ".yml") {
+			continue
+		}
+		if findPath == "" && entry.Name != apistructs.DefaultPipelineYmlName {
+			continue
+		}
+		list = append(list, &pb.PipelineYmlList{
+			YmlName: entry.Name,
+			YmlPath: findPath,
+		})
+	}
+	return list, nil
 }
 
 func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error) {
@@ -131,7 +189,7 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 
 	var apps []apistructs.ApplicationDTO
 	if len(params.AppName) == 0 {
-		appResp, err := p.bundle.GetMyAppsByProject(params.IdentityInfo.UserID, project.OrgID, project.ID)
+		appResp, err := p.bundle.GetMyAppsByProject(params.IdentityInfo.UserID, project.OrgID, project.ID, "")
 		if err != nil {
 			return nil, 0, err
 		}
@@ -337,7 +395,7 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 	if err != nil {
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
 	}
-	appData, err := p.bundle.GetMyAppsByProject(params.IdentityInfo.UserID, project.OrgID, project.ID)
+	appData, err := p.bundle.GetMyAppsByProject(params.IdentityInfo.UserID, project.OrgID, project.ID, "")
 	if err != nil {
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
 	}
@@ -553,28 +611,28 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 		return nil, apiError.InternalError(fmt.Errorf("operation failed, the latest pipeline is not in an error state"))
 	}
 
+	var dto *apistructs.PipelineDTO
 	if rerun {
 		var req apistructs.PipelineRerunRequest
 		req.PipelineID = pipeline.ID
 		req.AutoRunAtOnce = true
 		req.IdentityInfo = identityInfo
-		dto, err := p.bundle.RerunPipeline(req)
-		if err != nil {
-			return nil, apiError.InternalError(err)
-		}
-		return dto, nil
+		dto, err = p.bundle.RerunPipeline(req)
 	} else {
 		var req apistructs.PipelineRerunFailedRequest
 		req.PipelineID = pipeline.ID
 		req.AutoRunAtOnce = true
 		req.IdentityInfo = identityInfo
-		dto, err := p.bundle.RerunFailedPipeline(req)
-		if err != nil {
-			return nil, apiError.InternalError(err)
-		}
-
-		return dto, nil
+		dto, err = p.bundle.RerunFailedPipeline(req)
 	}
+	if err != nil {
+		return nil, apiError.InternalError(err)
+	}
+	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{PipelineDefinitionID: definition.ID, Status: string(apistructs.StatusRunning), PipelineId: int64(dto.ID)})
+	if err != nil {
+		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
+	}
+	return dto, nil
 }
 
 func (p *ProjectPipelineService) startOrEndCron(identityInfo apistructs.IdentityInfo, pipelineDefinitionID string, projectID uint64, enable bool, apiError *errorresp.APIError) (*apistructs.PipelineCronDTO, error) {
@@ -810,7 +868,7 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
 	}
 
-	appResp, err := p.bundle.GetMyAppsByProject(apis.GetUserID(ctx), project.OrgID, project.ID)
+	appResp, err := p.bundle.GetMyAppsByProject(apis.GetUserID(ctx), project.OrgID, project.ID, params.Name)
 	if err != nil {
 		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
 	}

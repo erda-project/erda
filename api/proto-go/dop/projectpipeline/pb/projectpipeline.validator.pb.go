@@ -21,6 +21,22 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *ListAppPipelineYmlRequest) Validate() error {
+	return nil
+}
+func (this *PipelineYmlList) Validate() error {
+	return nil
+}
+func (this *ListAppPipelineYmlResponse) Validate() error {
+	for _, item := range this.Result {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Result", err)
+			}
+		}
+	}
+	return nil
+}
 func (this *ListAppRequest) Validate() error {
 	if !(this.ProjectID > 0) {
 		return github_com_mwitkow_go_proto_validators.FieldError("ProjectID", fmt.Errorf(`value '%v' must be greater than '0'`, this.ProjectID))
