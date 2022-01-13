@@ -15,9 +15,13 @@
 package topology
 
 import (
+	"bou.ke/monkey"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/gofrs/uuid"
+	"github.com/olivere/elastic"
+	"github.com/stretchr/testify/assert"
 	"log"
 	"net/http"
 	"net/url"
@@ -25,11 +29,6 @@ import (
 	"regexp"
 	"strconv"
 	"testing"
-
-	"bou.ke/monkey"
-	"github.com/gofrs/uuid"
-	"github.com/olivere/elastic"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -572,4 +571,30 @@ type MockTran struct {
 
 func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
 	return ""
+}
+
+func Test_provider_handleInstanceInfo(t *testing.T) {
+	type args struct {
+		response *query.ResultSet
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*InstanceInfo
+	}{
+		{"case1", args{response: &query.ResultSet{
+			ResultSet: &tsql.ResultSet{Rows: [][]interface{}{{"id", "172.0.0.0", "true", "127.0.0.1"}}},
+		}}, []*InstanceInfo{{Id: "id", Ip: "172.0.0.0", Status: true, HostIP: "127.0.0.1"}}},
+		{"case2", args{response: &query.ResultSet{
+			ResultSet: &tsql.ResultSet{Rows: [][]interface{}{{"id", "172.0.0.0", "xxx", "127.0.0.1"}}},
+		}}, []*InstanceInfo{{Id: "id", Ip: "172.0.0.0", Status: false, HostIP: "127.0.0.1"}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			topology := &provider{}
+			if got := topology.handleInstanceInfo(tt.args.response); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("handleInstanceInfo() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
