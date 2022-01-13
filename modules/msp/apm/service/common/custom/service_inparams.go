@@ -33,9 +33,7 @@ type ServiceInParams struct {
 }
 
 func (b *ServiceInParams) CustomInParamsPtr() interface{} {
-	if b.InParamsPtr == nil {
-		b.InParamsPtr = &Model{}
-	}
+	b.InParamsPtr = &Model{}
 	return b.InParamsPtr
 }
 

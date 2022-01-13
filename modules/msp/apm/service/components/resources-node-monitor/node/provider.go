@@ -53,7 +53,7 @@ type provider struct {
 }
 
 func (p *provider) getCpuLineGraph(ctx context.Context, startTime, endTime int64, hostIp string) ([]*model.LineGraphMetaData, error) {
-	statement := fmt.Sprintf("SELECT max(cpu_allocatable::field),avg(cpu_request_total::field) " +
+	statement := fmt.Sprintf("SELECT round_float(cpu_usage_active::field, 2) " +
 		"FROM host_summary " +
 		"WHERE host_ip::tag=$host_ip " +
 		"GROUP BY time()")
@@ -73,26 +73,19 @@ func (p *provider) getCpuLineGraph(ctx context.Context, startTime, endTime int64
 	var metadata []*model.LineGraphMetaData
 	for _, row := range rows {
 		timeFormat := row.Values[0].GetStringValue()
-		maxValue := row.Values[1].GetNumberValue()
-		usedValue := row.Values[2].GetNumberValue()
-		maxDimension := "max"
-		usedDimension := "used"
+		value := row.Values[1].GetNumberValue()
+		dimension := "usage rate"
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     maxValue,
-			Dimension: maxDimension,
-		})
-		metadata = append(metadata, &model.LineGraphMetaData{
-			Time:      timeFormat,
-			Value:     usedValue,
-			Dimension: usedDimension,
+			Value:     math.DecimalPlacesWithDigitsNumber(value, 2),
+			Dimension: dimension,
 		})
 	}
 	return metadata, nil
 }
 
 func (p *provider) getMemoryLineGraph(ctx context.Context, startTime, endTime int64, hostIp string) ([]*model.LineGraphMetaData, error) {
-	statement := fmt.Sprintf("SELECT max(mem_allocatable::field),avg(mem_request_total::field) " +
+	statement := fmt.Sprintf("SELECT round_float(mem_used_percent::field, 2) " +
 		"FROM host_summary " +
 		"WHERE host_ip::tag=$host_ip " +
 		"GROUP BY time()")
@@ -112,19 +105,12 @@ func (p *provider) getMemoryLineGraph(ctx context.Context, startTime, endTime in
 	var metadata []*model.LineGraphMetaData
 	for _, row := range rows {
 		timeFormat := row.Values[0].GetStringValue()
-		maxValue := row.Values[1].GetNumberValue()
-		usedValue := row.Values[2].GetNumberValue()
-		maxDimension := "max"
-		usedDimension := "used"
+		value := row.Values[1].GetNumberValue()
+		dimension := "usage rate"
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024/1024, 0),
-			Dimension: maxDimension,
-		})
-		metadata = append(metadata, &model.LineGraphMetaData{
-			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024/1024, 0),
-			Dimension: usedDimension,
+			Value:     math.DecimalPlacesWithDigitsNumber(value, 2),
+			Dimension: dimension,
 		})
 	}
 	return metadata, nil
@@ -250,7 +236,7 @@ func (p *provider) getDiskIoLineGraph(ctx context.Context, startTime, endTime in
 func (p *provider) getNetworkLineGraph(ctx context.Context, startTime, endTime int64, hostIp string) ([]*model.LineGraphMetaData, error) {
 	statement := fmt.Sprintf("SELECT round_float(send_rate::field, 2),round_float(recv_rate::field, 2) " +
 		"FROM net " +
-		"WHERE host_ip::tag=$host_ip " +
+		"WHERE host_ip::tag=$host_ip AND interface::tag='eth0' " +
 		"GROUP BY time()")
 	queryParams := map[string]*structpb.Value{"host_ip": structpb.NewStringValue(hostIp)}
 
@@ -306,7 +292,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, memory, "MB", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, memory, "rateUnit", graph)
 			p.StdDataPtr = line
 			return
 		case load:
