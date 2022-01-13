@@ -42,7 +42,7 @@ func (e *Endpoints) MigrationLog(ctx context.Context, r *http.Request, vars map[
 	logReq.ID = "migration-task-" + vars["migrationId"]
 	logReq.Source = apistructs.DashboardSpotLogSourceJob
 	// 查询日志信息
-	log, err := e.bdl.GetLog(logReq)
+	log, err := e.bdl.GetLog(r.Header.Get("org"), logReq)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}

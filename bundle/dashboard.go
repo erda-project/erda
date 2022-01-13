@@ -125,7 +125,7 @@ func (b *Bundle) getHostMetric(clusterName, metric string) (map[string]float64, 
 	return hostMetrics, nil
 }
 
-func (b *Bundle) GetLog(req apistructs.DashboardSpotLogRequest) (*apistructs.DashboardSpotLogData, error) {
+func (b *Bundle) GetLog(orgName string, req apistructs.DashboardSpotLogRequest) (*apistructs.DashboardSpotLogData, error) {
 	host, err := b.urls.Monitor()
 	if err != nil {
 		return nil, err
@@ -134,6 +134,7 @@ func (b *Bundle) GetLog(req apistructs.DashboardSpotLogRequest) (*apistructs.Das
 
 	request := hc.Get(host).Path("/api/logs").
 		Header("Internal-Client", "bundle").
+		Header("org", orgName).
 		Param("count", strconv.FormatInt(req.Count, 10)).
 		Param("id", req.ID).
 		Param("stream", string(req.Stream)).

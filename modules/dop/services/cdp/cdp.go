@@ -233,7 +233,7 @@ func (cdp *CDP) getFailedTaskLogs(pipelineDetail *apistructs.PipelineDetailDTO) 
 	}
 	failedDetailLogs := ""
 	for taskName, taskID := range failedTasks {
-		stdError, err := cdp.bdl.GetLog(apistructs.DashboardSpotLogRequest{
+		stdError, err := cdp.bdl.GetLog(pipelineDetail.OrgName, apistructs.DashboardSpotLogRequest{
 			ID:     taskID,
 			Source: apistructs.DashboardSpotLogSourceJob,
 			Stream: apistructs.DashboardSpotLogStreamStderr,
@@ -244,7 +244,7 @@ func (cdp *CDP) getFailedTaskLogs(pipelineDetail *apistructs.PipelineDetailDTO) 
 		if err != nil {
 			return "", err
 		}
-		stdOut, err := cdp.bdl.GetLog(apistructs.DashboardSpotLogRequest{
+		stdOut, err := cdp.bdl.GetLog(pipelineDetail.OrgName, apistructs.DashboardSpotLogRequest{
 			ID:     taskID,
 			Source: apistructs.DashboardSpotLogSourceJob,
 			Stream: apistructs.DashboardSpotLogStreamStdout,

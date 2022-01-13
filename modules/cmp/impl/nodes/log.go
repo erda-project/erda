@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-func (n *Nodes) Logs(req apistructs.OpLogsRequest) (*apistructs.DashboardSpotLogData, error) {
+func (n *Nodes) Logs(orgName string, req apistructs.OpLogsRequest) (*apistructs.DashboardSpotLogData, error) {
 	records, err := n.db.RecordsReader().ByIDs(fmt.Sprintf("%d", req.RecordID)).Do()
 	if err != nil {
 		errstr := fmt.Sprintf("failed to get record: %v", err)
@@ -42,7 +42,7 @@ func (n *Nodes) Logs(req apistructs.OpLogsRequest) (*apistructs.DashboardSpotLog
 		logrus.Errorf(errstr)
 		return nil, errors.New(errstr)
 	}
-	logData, err := n.bdl.GetLog(apistructs.DashboardSpotLogRequest{
+	logData, err := n.bdl.GetLog(orgName, apistructs.DashboardSpotLogRequest{
 		ID:     task.Extra.UUID,
 		Source: apistructs.DashboardSpotLogSourceJob,
 		Stream: apistructs.DashboardSpotLogStream(req.Stream),
