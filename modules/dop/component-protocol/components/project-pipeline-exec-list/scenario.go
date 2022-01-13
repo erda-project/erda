@@ -15,9 +15,6 @@
 package issue_manage
 
 import (
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/myPage"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/myPage/tabsTable"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/myPage/tabsTable/filterContainer"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/myPage/tabsTable/filterContainer/customFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/myPage/tabsTable/filterContainer/inputFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/myPage/tabsTable/pipelineTable"

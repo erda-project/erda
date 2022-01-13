@@ -48,7 +48,7 @@ type provider struct {
 	gsHelper *gshelper.GSHelper
 	InParams InParams `json:"-"`
 
-	ProjectPipeline projectpipeline.Service `autowired:"erda.dop.projectpipeline.ProjectPipelineServiceMethod" required:"true"`
+	ProjectPipeline projectpipeline.Service
 }
 
 const (

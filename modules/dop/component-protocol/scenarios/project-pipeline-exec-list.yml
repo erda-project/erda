@@ -15,23 +15,16 @@ hierarchy:
 components:
   myPage:
     type: Container
-    name: myPage
   pageHeader:
     type: LRContainer
-    name: rightPageHeader
   tabsTable:
-    name: tabsTable
     type: ComposeTable
   filterContainer:
     type: LRContainer
-    name: filterContainer
   pipelineTable:
     type: Table
-    name: pipelineTable
     version: 2
   inputFilter:
-    name: inputFilter
     type: ContractiveFilter
   customFilter:
-    name: releaseFilter
     type: ConfigurableFilter
