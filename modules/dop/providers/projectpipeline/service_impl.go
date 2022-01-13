@@ -42,8 +42,8 @@ type CategoryType string
 const (
 	DefaultCategory  CategoryType = "default"
 	StarCategory     CategoryType = "primary"
-	DicePipelinePath string       = "/.dice/pipelines"
-	ErdaPipelinePath string       = "/.erda/pipelines"
+	DicePipelinePath string       = ".dice/pipelines"
+	ErdaPipelinePath string       = ".erda/pipelines"
 )
 
 func (c CategoryType) String() string {
@@ -83,7 +83,12 @@ func (s *ProjectPipelineService) ListPipelineYml(ctx context.Context, req *pb.Li
 }
 
 func (s *ProjectPipelineService) getPipelineYml(app *apistructs.ApplicationDTO, userID string, branch string, findPath string) ([]*pb.PipelineYmlList, error) {
-	var path = fmt.Sprintf("/wb/%v/%v/tree/%v%v", app.ProjectName, app.Name, branch, findPath)
+	var path string
+	if findPath == "" {
+		path = fmt.Sprintf("/wb/%v/%v/tree/%v", app.ProjectName, app.Name, branch)
+	} else {
+		path = fmt.Sprintf("/wb/%v/%v/tree/%v/%v", app.ProjectName, app.Name, branch, findPath)
+	}
 
 	diceEntrys, err := s.bundle.GetGittarTreeNode(path, strconv.Itoa(int(app.OrgID)), true, userID)
 	if err != nil {
