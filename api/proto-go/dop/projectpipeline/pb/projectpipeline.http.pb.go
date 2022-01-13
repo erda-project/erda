@@ -6,13 +6,9 @@ package pb
 import (
 	context "context"
 	http1 "net/http"
-	strconv "strconv"
-	strings "strings"
 
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	http "github.com/erda-project/erda-infra/pkg/transport/http"
-	httprule "github.com/erda-project/erda-infra/pkg/transport/http/httprule"
-	runtime "github.com/erda-project/erda-infra/pkg/transport/http/runtime"
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
 )
 
@@ -24,10 +20,10 @@ const _ = http.SupportPackageIsVersion1
 type ProjectPipelineServiceHandler interface {
 	// POST /api/project-pipeline
 	Create(context.Context, *CreateProjectPipelineRequest) (*CreateProjectPipelineResponse, error)
-	// GET /api/project-pipeline/apps/{projectID}
+	// GET /api/project-pipeline-apps
 	ListApp(context.Context, *ListAppRequest) (*ListAppResponse, error)
-	// GET /api/project-pipeline/apps/actions/pipeline-yml-list
-	ListPipelineYmlList(context.Context, *ListAppPipelineYmlRequest) (*ListAppPipelineYmlResponse, error)
+	// GET /api/project-pipeline/actions/get-pipeline-yml-list
+	ListPipelineYml(context.Context, *ListAppPipelineYmlRequest) (*ListAppPipelineYmlResponse, error)
 }
 
 // RegisterProjectPipelineServiceHandler register ProjectPipelineServiceHandler to http.Router.
@@ -98,9 +94,6 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 			ListApp_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "ListApp", srv)
 			handler = h.Interceptor(handler)
 		}
-		compiler, _ := httprule.Parse(path)
-		temp := compiler.Compile()
-		pattern, _ := runtime.NewPattern(httprule.SupportPackageIsVersion1, temp.OpCodes, temp.Pool, temp.Verb)
 		r.Add(method, path, encodeFunc(
 			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
 				ctx := http.WithRequest(r.Context(), r)
@@ -119,30 +112,6 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 						return nil, err
 					}
 				}
-				path := r.URL.Path
-				if len(path) > 0 {
-					components := strings.Split(path[1:], "/")
-					last := len(components) - 1
-					var verb string
-					if idx := strings.LastIndex(components[last], ":"); idx >= 0 {
-						c := components[last]
-						components[last], verb = c[:idx], c[idx+1:]
-					}
-					vars, err := pattern.Match(components, verb)
-					if err != nil {
-						return nil, err
-					}
-					for k, val := range vars {
-						switch k {
-						case "projectID":
-							val, err := strconv.ParseUint(val, 10, 64)
-							if err != nil {
-								return nil, err
-							}
-							in.ProjectID = val
-						}
-					}
-				}
 				out, err := handler(ctx, &in)
 				if err != nil {
 					return out, err
@@ -152,13 +121,13 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 		)
 	}
 
-	add_ListPipelineYmlList := func(method, path string, fn func(context.Context, *ListAppPipelineYmlRequest) (*ListAppPipelineYmlResponse, error)) {
+	add_ListPipelineYml := func(method, path string, fn func(context.Context, *ListAppPipelineYmlRequest) (*ListAppPipelineYmlResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 			return fn(ctx, req.(*ListAppPipelineYmlRequest))
 		}
-		var ListPipelineYmlList_info transport.ServiceInfo
+		var ListPipelineYml_info transport.ServiceInfo
 		if h.Interceptor != nil {
-			ListPipelineYmlList_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "ListPipelineYmlList", srv)
+			ListPipelineYml_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "ListPipelineYml", srv)
 			handler = h.Interceptor(handler)
 		}
 		r.Add(method, path, encodeFunc(
@@ -166,7 +135,7 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 				ctx := http.WithRequest(r.Context(), r)
 				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, ListPipelineYmlList_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, ListPipelineYml_info)
 				}
 				r = r.WithContext(ctx)
 				var in ListAppPipelineYmlRequest
@@ -189,6 +158,6 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 	}
 
 	add_Create("POST", "/api/project-pipeline", srv.Create)
-	add_ListApp("GET", "/api/project-pipeline/apps/{projectID}", srv.ListApp)
-	add_ListPipelineYmlList("GET", "/api/project-pipeline/apps/actions/pipeline-yml-list", srv.ListPipelineYmlList)
+	add_ListApp("GET", "/api/project-pipeline-apps", srv.ListApp)
+	add_ListPipelineYml("GET", "/api/project-pipeline/actions/get-pipeline-yml-list", srv.ListPipelineYml)
 }

@@ -50,7 +50,7 @@ func (c CategoryType) String() string {
 	return string(c)
 }
 
-func (s *ProjectPipelineService) ListPipelineYmlList(ctx context.Context, req *pb.ListAppPipelineYmlRequest) (*pb.ListAppPipelineYmlResponse, error) {
+func (s *ProjectPipelineService) ListPipelineYml(ctx context.Context, req *pb.ListAppPipelineYmlRequest) (*pb.ListAppPipelineYmlResponse, error) {
 
 	app, err := s.bundle.GetApp(req.AppID)
 	if err != nil {
