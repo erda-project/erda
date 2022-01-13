@@ -17,7 +17,6 @@ package core_services
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
-	"github.com/erda-project/erda/modules/openapi/api/spec"
 )
 
 /**
@@ -35,21 +34,4 @@ var CMDB_PROJECT_UPDATE = apis.ApiSpec{
 	RequestType:  apistructs.ProjectUpdateRequest{},
 	ResponseType: apistructs.ProjectUpdateResponse{},
 	Doc:          "summary: 更新项目",
-	Audit: func(ctx *spec.AuditContext) error {
-		projectID, err := ctx.GetParamInt64("projectId")
-		if err != nil {
-			return err
-		}
-		project, err := ctx.GetProject(projectID)
-		if err != nil {
-			return err
-		}
-		return ctx.CreateAudit(&apistructs.Audit{
-			ScopeType:    apistructs.ProjectScope,
-			ScopeID:      uint64(projectID),
-			ProjectID:    uint64(projectID),
-			TemplateName: apistructs.UpdateProjectTemplate,
-			Context:      map[string]interface{}{"projectName": project.Name},
-		})
-	},
 }
