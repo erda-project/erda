@@ -1,3 +1,5 @@
+DROP TABLE `pipeline_definitions`;
+
 CREATE TABLE `pipeline_definitions` (
   `id` varchar(36) NOT NULL COMMENT '自增id',
   `created_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT 'CREATED AT',
