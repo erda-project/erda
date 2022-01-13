@@ -82,6 +82,17 @@ func (p *CustomFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			},
 			HideSave: true,
 		}
+		if p.InParams.AppID != 0 {
+			app, err := p.bdl.GetApp(p.InParams.AppID)
+			if err != nil {
+				logrus.Errorf("failed to GetApp,err %s", err.Error())
+			} else {
+				p.gsHelper.SetGlobalTableFilter(gshelper.TableFilter{
+					App: []string{app.Name},
+				})
+			}
+		}
+
 	}
 }
 
@@ -92,15 +103,6 @@ func (p *CustomFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
 		values := p.State.FrontendConditionValues
-		if p.InParams.AppID != 0 {
-			app, err := p.bdl.GetApp(p.InParams.AppID)
-			if err != nil {
-				logrus.Errorf("failed to GetApp,err %s", err.Error())
-			} else {
-				values.App = []string{app.Name}
-			}
-
-		}
 		p.gsHelper.SetGlobalTableFilter(gshelper.TableFilter{
 			Status:            values.Status,
 			Creator:           values.Creator,
