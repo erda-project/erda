@@ -191,12 +191,14 @@ func mapping(s *dao.TestFileRecord, project, testSet string) *apistructs.TestFil
 	extra := s.Extra
 	if record.Type == apistructs.FileProjectTemplateExport {
 		if extra.ProjectTemplateFileExtraInfo != nil && extra.ProjectTemplateFileExtraInfo.ExportRequest != nil {
-			record.ProjectName = extra.ProjectTemplateFileExtraInfo.ExportRequest.ProjectDisplayName
+			record.ProjectName = extra.ProjectTemplateFileExtraInfo.ExportRequest.ProjectName
+			record.ProjectDisplayName = extra.ProjectTemplateFileExtraInfo.ExportRequest.ProjectDisplayName
 		}
 	}
 	if record.Type == apistructs.FileProjectTemplateImport {
 		if extra.ProjectTemplateFileExtraInfo != nil && extra.ProjectTemplateFileExtraInfo.ImportRequest != nil {
-			record.ProjectName = extra.ProjectTemplateFileExtraInfo.ImportRequest.ProjectDisplayName
+			record.ProjectName = extra.ProjectTemplateFileExtraInfo.ImportRequest.ProjectName
+			record.ProjectDisplayName = extra.ProjectTemplateFileExtraInfo.ImportRequest.ProjectDisplayName
 		}
 	}
 	return record

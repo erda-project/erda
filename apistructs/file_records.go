@@ -21,21 +21,22 @@ import (
 )
 
 type TestFileRecord struct {
-	ID          uint64          `json:"id"`
-	FileName    string          `json:"name"`
-	Description string          `json:"description"`
-	ProjectName string          `json:"projectName"`
-	OrgID       uint64          `json:"orgID"`
-	ProjectID   uint64          `json:"projectID"`
-	TestSetID   uint64          `json:"testSetID"`
-	ApiFileUUID string          `json:"apiFileUUID"`
-	SpaceID     uint64          `json:"spaceID"`
-	Type        FileActionType  `json:"type"`
-	State       FileRecordState `json:"state"`
-	ErrorInfo   string          `json:"errorInfo"`
-	CreatedAt   time.Time       `json:"createdAt"`
-	UpdatedAt   time.Time       `json:"updatedAt"`
-	OperatorID  string          `json:"operatorID"`
+	ID                 uint64          `json:"id"`
+	FileName           string          `json:"name"`
+	Description        string          `json:"description"`
+	ProjectName        string          `json:"projectName"`
+	ProjectDisplayName string          `json:"projectDisplayName"`
+	OrgID              uint64          `json:"orgID"`
+	ProjectID          uint64          `json:"projectID"`
+	TestSetID          uint64          `json:"testSetID"`
+	ApiFileUUID        string          `json:"apiFileUUID"`
+	SpaceID            uint64          `json:"spaceID"`
+	Type               FileActionType  `json:"type"`
+	State              FileRecordState `json:"state"`
+	ErrorInfo          string          `json:"errorInfo"`
+	CreatedAt          time.Time       `json:"createdAt"`
+	UpdatedAt          time.Time       `json:"updatedAt"`
+	OperatorID         string          `json:"operatorID"`
 }
 
 type TestFileRecordRequest struct {

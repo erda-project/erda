@@ -164,8 +164,7 @@ func (t *TemplateDataDirector) TryCreateAppsByTemplate() error {
 			ProjectID:      projectID,
 			Mode:           apistructs.ApplicationMode(tempApp.Mode),
 			Config:         tempApp.Config,
-			IsExternalRepo: tempApp.IsExternalRepo,
-			RepoConfig:     tempApp.RepoConfig,
+			IsExternalRepo: false,
 		}
 		if _, err := t.bdl.CreateApp(appReq, identityInfo.UserID); err != nil {
 			t.failedAppNum++
