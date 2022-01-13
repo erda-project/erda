@@ -79,7 +79,7 @@ type DeploymentOrderItem struct {
 	Operator          string                `json:"operator"`
 	CreatedAt         time.Time             `json:"createdAt"`
 	UpdatedAt         time.Time             `json:"updatedAt"`
-	StartedAt         time.Time             `json:"startedAt"`
+	StartedAt         *time.Time            `json:"startedAt,omitempty"`
 }
 
 type DeploymentOrderParam []*DeploymentOrderParamData

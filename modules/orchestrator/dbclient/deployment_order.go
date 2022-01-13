@@ -108,15 +108,16 @@ func (db *DBClient) ListDeploymentOrder(conditions *apistructs.DeploymentOrderLi
 	return total, orders, nil
 }
 
-func (db *DBClient) GetOrderCountByProject(projectId uint64, tp string) (int64, error) {
+func (db *DBClient) GetOrderCountByProject(tp string, projectId uint64, releaseId string) (int64, error) {
 	if tp == apistructs.TypePipeline {
 		return 0, fmt.Errorf("pipeline type doesn't need to count")
 	}
 
 	var count int64
 
-	if err := db.Model(&DeploymentOrder{}).Where("project_id = ? and type = ?", projectId, tp).Count(&count).Error; err != nil {
-		return 0, errors.Wrapf(err, "failed to count, project: %d, rg: %s", projectId, tp)
+	if err := db.Model(&DeploymentOrder{}).Where("project_id = ? and release_id = ? and type=?", projectId, releaseId, tp).
+		Count(&count).Error; err != nil {
+		return 0, errors.Wrapf(err, "failed to count, project: %d, release id: %s, type: %s", projectId, releaseId, tp)
 	}
 
 	return count, nil

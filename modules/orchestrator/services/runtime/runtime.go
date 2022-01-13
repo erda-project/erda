@@ -1405,7 +1405,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	d.ReleaseID = deployment.ReleaseId
 	d.ClusterID = runtime.ClusterId
 	d.ClusterName = runtime.ClusterName
-	d.DeploymentOrderName = runtime.DeploymentOrderName
+	d.DeploymentOrderName = utils.ParseDeploymentOrderShowName(runtime.DeploymentOrderName)
 	d.ReleaseVersion = runtime.ReleaseVersion
 	d.Creator = runtime.Creator
 	d.ApplicationID = runtime.ApplicationID
