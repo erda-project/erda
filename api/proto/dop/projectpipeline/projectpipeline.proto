@@ -36,6 +36,30 @@ service ProjectPipelineService {
       path : "/api/project-pipeline/apps/{projectID}",
     };
   }
+
+  rpc ListPipelineYmlList(ListAppPipelineYmlRequest)
+          returns(ListAppPipelineYmlResponse) {
+    option(google.api.http) = {
+      get : "/api/project-pipeline/apps/actions/pipeline-yml-list",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/apps/actions/pipeline-yml-list",
+    };
+  }
+}
+
+message ListAppPipelineYmlRequest {
+  uint64 appID = 1;
+  string branch = 2;
+}
+
+message PipelineYmlList {
+  string ymlName = 1;
+  string ymlPath = 2;
+}
+
+message ListAppPipelineYmlResponse {
+  repeated PipelineYmlList result = 1;
 }
 
 message ListAppRequest {
