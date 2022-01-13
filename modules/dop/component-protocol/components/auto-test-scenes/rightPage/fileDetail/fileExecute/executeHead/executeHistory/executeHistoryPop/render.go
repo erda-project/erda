@@ -20,6 +20,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -28,7 +29,7 @@ type ComponentAction struct {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	return json.Unmarshal([]byte(`{"text":"执行历史"}`), &c.Props)
+	return json.Unmarshal([]byte(`{"text": `+cputil.I18n(ctx, "execHistory")+`}`), &c.Props)
 }
 
 func init() {

@@ -91,7 +91,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		id := ca.gsHelper.GetGlobalSelectedSetID()
 		export := SceneSetOperation{
 			Key:        "exportSceneSet",
-			Text:       "导出场景集",
+			Text:       ca.sdk.I18n("exportSceneSet"),
 			Reload:     true,
 			Show:       true,
 			SuccessMsg: "导出完成，请在导入导出记录中下载导出结果",
@@ -101,7 +101,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 		c.Type = "Button"
 		c.Props = map[string]interface{}{
-			"text": "导出场景集",
+			"text": ca.sdk.I18n("exportSceneSet"),
 		}
 		c.Operations = map[string]interface{}{
 			"click": export,

@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common/gshelper"
@@ -120,7 +121,7 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 	f.Type = "Chart"
 	f.Props = Props{
 		ChartType: "line",
-		Title:     "燃尽图",
+		Title:     cputil.I18n(ctx, "burnDown"),
 		PureChart: true,
 		Option: Option{
 			XAxis: XAxis{
@@ -152,7 +153,7 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 			Legend: Legend{
 				Show:   true,
 				Bottom: true,
-				Data:   []string{"剩余数"},
+				Data:   []string{cputil.I18n(ctx, "remain")},
 			},
 			Tooltip: map[string]interface{}{
 				"trigger": "axis",
@@ -168,9 +169,9 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 					}(),
 					Name: func() string {
 						if h.GetBurnoutChartDimension() == "total" {
-							return "剩余数"
+							return cputil.I18n(ctx, "remain")
 						}
-						return "事项剩余工时"
+						return cputil.I18n(ctx, "remainHour")
 					}(),
 					Type:   "line",
 					Smooth: false,
@@ -187,9 +188,9 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 								{
 									Name: func() string {
 										if h.GetBurnoutChartDimension() == "total" {
-											return "理想数"
+											return cputil.I18n(ctx, "ideal")
 										}
-										return "理想工时"
+										return cputil.I18n(ctx, "idealHour")
 									}(),
 									Coord: func() []string {
 										ss := make([]string, 0, 2)

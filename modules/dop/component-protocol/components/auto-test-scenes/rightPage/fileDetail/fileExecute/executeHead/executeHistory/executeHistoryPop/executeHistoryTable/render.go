@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
@@ -121,13 +122,13 @@ func (a *ExecuteHistoryTable) Render(ctx context.Context, c *cptype.Component, s
 	a.gsHelper = gshelper.NewGSHelper(gs)
 
 	defer func() {
-		fail := a.marshal(c)
+		fail := a.marshal(ctx, c)
 		if err == nil && fail != nil {
 			err = fail
 		}
 		// export rendered component data
 		c.Operations = getOperations()
-		c.Props = getProps()
+		c.Props = getProps(ctx)
 	}()
 
 	// listen on operation
@@ -148,7 +149,7 @@ func (a *ExecuteHistoryTable) Render(ctx context.Context, c *cptype.Component, s
 	return nil
 }
 
-func (a *ExecuteHistoryTable) marshal(c *cptype.Component) error {
+func (a *ExecuteHistoryTable) marshal(ctx context.Context, c *cptype.Component) error {
 	stateValue, err := json.Marshal(a.State)
 	if err != nil {
 		return err
@@ -168,7 +169,7 @@ func (a *ExecuteHistoryTable) marshal(c *cptype.Component) error {
 	if err != nil {
 		return err
 	}
-	c.Props = getProps()
+	c.Props = getProps(ctx)
 	c.State = state
 	c.Type = a.Type
 	return nil
@@ -189,7 +190,7 @@ func getOperations() map[string]interface{} {
 	}
 }
 
-func getProps() map[string]interface{} {
+func getProps(ctx context.Context) map[string]interface{} {
 	return map[string]interface{}{
 		"rowKey":     "id",
 		"hideHeader": true,
@@ -204,7 +205,7 @@ func getProps() map[string]interface{} {
 				DataIndex: "pipelineId",
 			},
 			{
-				Title:     "状态",
+				Title:     cputil.I18n(ctx, "state"),
 				DataIndex: "status",
 			},
 			{

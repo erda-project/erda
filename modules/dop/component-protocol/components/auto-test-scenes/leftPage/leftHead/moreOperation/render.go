@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -87,11 +88,11 @@ func (m *MoreOperation) Render(ctx context.Context, c *cptype.Component, scenari
 		"menus": []interface{}{
 			map[string]interface{}{
 				"key":   "import",
-				"label": "导入",
+				"label": cputil.I18n(ctx, "import"),
 			},
 			map[string]interface{}{
 				"key":   "record",
-				"label": "导入导出记录",
+				"label": cputil.I18n(ctx, "import-export-record"),
 			},
 		},
 	}

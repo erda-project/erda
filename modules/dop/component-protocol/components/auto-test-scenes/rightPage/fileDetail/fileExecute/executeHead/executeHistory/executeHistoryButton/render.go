@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -27,16 +28,16 @@ type ComponentAction struct {
 	base.DefaultProvider
 }
 
-func getProps(visible bool) map[string]interface{} {
+func getProps(ctx context.Context, visible bool) map[string]interface{} {
 	return map[string]interface{}{
-		"text":    "执行历史",
+		"text":    cputil.I18n(ctx, "execHistory"),
 		"visible": visible,
 	}
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	gh := gshelper.NewGSHelper(gs)
-	c.Props = getProps(gh.GetExecuteTaskBreadcrumbVisible())
+	c.Props = getProps(ctx, gh.GetExecuteTaskBreadcrumbVisible())
 	return nil
 }
 
