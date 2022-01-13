@@ -96,22 +96,6 @@ func TestFetchDeploymentOrderParam(t *testing.T) {
 	})
 }
 
-func TestRenderDeploymentOrderName(t *testing.T) {
-	order := New()
-
-	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetOrderCountByProject", func(*dbclient.DBClient, string, uint64, string) (int64, error) {
-		return 10, nil
-	})
-
-	ret, err := order.renderDeploymentOrderName(1, "015a3fbd6ae04f9ab6132d9cee5b99d5", true)
-	assert.NoError(t, err)
-	assert.Equal(t, ret, "p_015a3f_10")
-	ret2, err := order.renderDeploymentOrderName(1, "015a3fbd6ae04f9ab6132d9cee5b99d5", false)
-	assert.NoError(t, err)
-	assert.Equal(t, ret2, "a_015a3f_10")
-}
-
 func TestParseShowParams(t *testing.T) {
 	data := apistructs.DeploymentOrderParam{
 		{Key: "key1", Value: "value1", Type: "FILE"},

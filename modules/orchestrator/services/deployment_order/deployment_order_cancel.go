@@ -33,9 +33,9 @@ func (d *DeploymentOrder) Cancel(req *apistructs.DeploymentOrderCancelRequest) (
 		return nil, apierrors.ErrCancelDeploymentOrder.InternalError(err)
 	}
 
-	runtimes, err := d.db.GetRuntimeByDeployOrderName(order.ProjectId, order.Name)
+	runtimes, err := d.db.GetRuntimeByDeployOrderId(order.ProjectId, order.ID)
 	if err != nil {
-		logrus.Errorf("failed to get runtime by deployment order name: %s, project: %s, err: %v", order.Name,
+		logrus.Errorf("failed to get runtime by deployment order id: %s, project: %s, err: %v", order.ID,
 			order.ProjectName, err)
 		return nil, err
 	}

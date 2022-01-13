@@ -31,7 +31,6 @@ const (
 
 type DeploymentOrder struct {
 	ID              string `gorm:"size:36"`
-	Name            string
 	Type            string
 	Description     string
 	ReleaseId       string
@@ -55,6 +54,10 @@ func (DeploymentOrder) TableName() string {
 
 func (db *DBClient) ListDeploymentOrder(conditions *apistructs.DeploymentOrderListConditions, pageInfo *apistructs.PageInfo) (int, []DeploymentOrder, error) {
 	cursor := db.Where("project_id = ? and workspace = ?", conditions.ProjectId, conditions.Workspace)
+
+	if len(conditions.Types) != 0 {
+		cursor = cursor.Where("type in (?)", conditions.Types)
+	}
 
 	// parse query
 	if conditions.Query != "" {

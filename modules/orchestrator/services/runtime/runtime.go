@@ -306,7 +306,7 @@ func (r *Runtime) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 	// prepare runtime
 	// TODO: we do not need RepoAbbrev
 	runtime, created, err := r.db.FindRuntimeOrCreate(uniqueID, req.Operator, req.Source, req.ClusterName,
-		uint64(cluster.ID), app.GitRepoAbbrev, req.Extra.ProjectID, app.OrgID, req.DeploymentOrderName, req.ReleaseVersion)
+		uint64(cluster.ID), app.GitRepoAbbrev, req.Extra.ProjectID, app.OrgID, req.DeploymentOrderId, req.ReleaseVersion)
 	if err != nil {
 		return nil, apierrors.ErrCreateRuntime.InternalError(err)
 	}
@@ -1400,12 +1400,12 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	if runtime.LegacyStatus == dbclient.LegacyStatusDeleting {
 		d.DeleteStatus = dbclient.LegacyStatusDeleting
 	}
-	d.DeploymentOrderName = runtime.DeploymentOrderName
+	d.DeploymentOrderId = runtime.DeploymentOrderId
+	d.DeploymentOrderName = utils.ParseOrderName(runtime.DeploymentOrderId)
 	d.ReleaseVersion = runtime.ReleaseVersion
 	d.ReleaseID = deployment.ReleaseId
 	d.ClusterID = runtime.ClusterId
 	d.ClusterName = runtime.ClusterName
-	d.DeploymentOrderName = runtime.DeploymentOrderName
 	d.ReleaseVersion = runtime.ReleaseVersion
 	d.Creator = runtime.Creator
 	d.ApplicationID = runtime.ApplicationID

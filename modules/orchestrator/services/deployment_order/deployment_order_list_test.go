@@ -60,7 +60,6 @@ func TestConvertDeploymentOrderToResponseItem(t *testing.T) {
 
 	data := []dbclient.DeploymentOrder{
 		{
-			Name:       "fake-project-release",
 			Type:       apistructs.TypeProjectRelease,
 			ReleaseId:  "68a6df7529914c89b632fb18450d0055",
 			Operator:   "1",
