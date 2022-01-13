@@ -137,7 +137,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 		result, err := p.ProjectPipeline.ListExecHistory(context.Background(), req)
 		if err != nil {
-			logrus.Error("failed to get table data: %s", err)
+			logrus.Errorf("failed to get table data, err: %v", err)
 			p.StdDataPtr = &table.Data{
 				Table: tableValue,
 				Operations: map[cptype.OperationKey]cptype.Operation{
