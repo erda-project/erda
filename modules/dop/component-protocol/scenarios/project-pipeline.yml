@@ -43,3 +43,9 @@ components:
   customFilter:
     name: releaseFilter
     type: ConfigurableFilter
+
+
+rendering:
+  pipelineTable:
+    - name: pipelineTabs
+
