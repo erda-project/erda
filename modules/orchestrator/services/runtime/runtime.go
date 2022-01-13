@@ -1525,6 +1525,7 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 		return nil, err
 	}
 	data.ProjectID = app.ProjectID
+	data.ApplicationName = app.Name
 	data.CreatedAt = runtime.CreatedAt
 	data.Creator = runtime.Creator
 	data.UpdatedAt = runtime.UpdatedAt
