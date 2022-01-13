@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
@@ -49,6 +50,7 @@ type (
 		Operations         map[string]interface{} `json:"operations"`
 		InParams           InParams               `json:"-"`
 		sdk                *cptype.SDK
+		bdl                *bundle.Bundle
 		gsHelper           *gshelper.GSHelper
 		ProjectPipelineSvc *projectpipeline.ProjectPipelineService
 	}
@@ -64,6 +66,7 @@ type (
 	}
 	InParams struct {
 		FrontendProjectID string `json:"projectId,omitempty"`
+		FrontendAppID     string `json:"appId,omitempty"`
 		FrontendUrlQuery  string `json:"issueFilter__urlQuery,omitempty"`
 
 		ProjectID uint64 `json:"-"`
@@ -80,7 +83,19 @@ func (t *Tab) setInParams(ctx context.Context) error {
 		return err
 	}
 
-	t.InParams.ProjectID, err = strconv.ParseUint(t.InParams.FrontendProjectID, 10, 64)
+	if t.InParams.FrontendProjectID != "" {
+		t.InParams.ProjectID, err = strconv.ParseUint(t.InParams.FrontendProjectID, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+	if t.InParams.FrontendAppID != "" {
+		t.InParams.AppID, err = strconv.ParseUint(t.InParams.FrontendAppID, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+
 	return err
 }
 
@@ -150,6 +165,7 @@ func (t *Tab) InitFromProtocol(ctx context.Context, c *cptype.Component, gs *cpt
 
 	t.gsHelper = gshelper.NewGSHelper(gs)
 	t.sdk = cputil.SDK(ctx)
+	t.bdl = t.sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	t.ProjectPipelineSvc = ctx.Value(types.ProjectPipelineService).(*projectpipeline.ProjectPipelineService)
 	return nil
 }
