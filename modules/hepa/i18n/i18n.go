@@ -15,6 +15,8 @@
 package i18n
 
 import (
+	"fmt"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
@@ -40,5 +42,5 @@ func Sprintf(locale, key string, args ...interface{}) string {
 	if len(args) == 0 {
 		return translator.Text(codes, key)
 	}
-	return translator.Sprintf(codes, key, args...)
+	return fmt.Sprintf(translator.Sprintf(codes, key), args...)
 }
