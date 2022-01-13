@@ -43,15 +43,16 @@ func (p *provider) Run(ctx context.Context) error {
 
 func (p *provider) queryExample(ctx context.Context) error {
 	req := &pb.QueryWithInfluxFormatRequest{
-		Start:     "before_1h", // or timestamp
-		End:       "now",       // or timestamp
-		Statement: `SELECT host_ip::tag, sum(if(eq(mem_used::field, 1),mem_used::field,0)) FROM host_summary WHERE cluster_name::tag=$cluster_name GROUP BY host_ip::tag`,
+		Start:     "0",             // or timestamp
+		End:       "1642057089000", // or timestamp
+		Statement: "SELECT count(timestamp), distinct(uid::tag) FROM ta_timing WHERE tk::tag=$terminus_key GROUP BY time(15204h13m56s)",
 		Params: map[string]*structpb.Value{
 			"cluster_name": structpb.NewStringValue("terminus-dev"),
+			"terminus_key": structpb.NewStringValue("54055597b1cc15b56e59c35e7b231e0c"),
 		},
-		Options: map[string]string{
-			"debug": "true",
-		},
+		//Options: map[string]string{
+		//	"debug": "true",
+		//},
 	}
 	resp, err := p.Metric.QueryWithInfluxFormat(ctx, req)
 	if err != nil {

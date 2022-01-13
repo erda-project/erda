@@ -12,60 +12,73 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package req_distribution
+package top_n
 
 import (
-	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/msp/apm/service/common/custom"
-	"github.com/erda-project/erda/modules/msp/apm/service/datasources"
-	"github.com/erda-project/erda/modules/msp/apm/service/view/common"
+	"github.com/erda-project/erda/modules/msp/apm/browser/components/browser-overview/models"
 )
 
 type provider struct {
-	impl.DefaultBubbleGraph
-	custom.ServiceInParams
-	Log        logs.Logger
-	I18n       i18n.Translator               `autowired:"i18n" translator:"msp-i18n"`
-	Metric     metricpb.MetricServiceServer  `autowired:"erda.core.monitor.metric.MetricService"`
-	DataSource datasources.ServiceDataSource `autowired:"component-protocol.components.datasources.msp-service"`
+	impl.DefaultTop
+	models.BrowserOverviewInParams
+	Log    logs.Logger
+	I18n   i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
+	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
+
+const (
+	maxReqDomainTop5  string = "maxReqDomainTop5"
+	maxReqPageTop5    string = "maxReqPageTop5"
+	slowReqPageTop5   string = "slowReqPageTop5"
+	slowReqRegionTop5 string = "slowReqRegionTop5"
+	wideSpan          string = "24"
+)
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		lang := sdk.Lang
-		startTime := p.InParamsPtr.StartTime
-		endTime := p.InParamsPtr.EndTime
-		tenantId := p.InParamsPtr.TenantId
-		serviceId := p.InParamsPtr.ServiceId
+		data := topn.Data{}
 
-		bubble, err := p.DataSource.GetBubbleChart(context.WithValue(context.Background(), common.LangKey, lang),
-			datasources.BubbleChartReqDistribution,
-			20,
-			startTime,
-			endTime,
-			tenantId,
-			serviceId,
-			common.TransactionLayerRpc,
-			"")
+		record := topn.Record{Span: wideSpan}
+		var err error
+
+		switch sdk.Comp.Name {
+		case maxReqDomainTop5:
+			record.Title = sdk.I18n(maxReqDomainTop5)
+			record.Items, err = p.maxReqDomainTop5(sdk)
+		case maxReqPageTop5:
+			record.Title = sdk.I18n(maxReqPageTop5)
+			record.Items, err = p.maxReqPageTop5(sdk)
+		case slowReqPageTop5:
+			record.Title = sdk.I18n(slowReqPageTop5)
+			record.Items, err = p.slowReqPageTop5(sdk)
+		case slowReqRegionTop5:
+			record.Title = sdk.I18n(slowReqRegionTop5)
+			record.Items, err = p.slowReqRegionTop5(sdk)
+		default:
+			err = fmt.Errorf("not supported comp name: %s", sdk.Comp.Name)
+		}
 
 		if err != nil {
-			p.Log.Error(err)
+			p.Log.Error("failed to get topN: %s, error: %s", sdk.Comp.Name, err)
 			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
 			return
 		}
 
-		p.StdDataPtr = bubble
+		data.List = append(data.List, record)
+		p.StdDataPtr = &data
 	}
 }
 
@@ -76,15 +89,15 @@ func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 // Init .
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.DefaultBubbleGraph = impl.DefaultBubbleGraph{}
+	p.DefaultTop = impl.DefaultTop{}
 	v := reflect.ValueOf(p)
 	v.Elem().FieldByName("Impl").Set(v)
-	compName := "reqDistribution"
+	compName := "topN"
 	if ctx.Label() != "" {
 		compName = ctx.Label()
 	}
 	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
-		Scenario: "transaction-rpc-analysis",
+		Scenario: "browser-overview",
 		CompName: compName,
 		Creator:  func() cptype.IComponent { return p },
 	})
@@ -97,7 +110,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	name := "component-protocol.components.transaction-rpc-analysis.reqDistribution"
+	name := "component-protocol.components.browser-overview.topN"
 	cpregister.AllExplicitProviderCreatorMap[name] = nil
 	servicehub.Register(name, &servicehub.Spec{
 		Creator: func() servicehub.Provider { return &provider{} },

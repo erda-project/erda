@@ -88,7 +88,7 @@ func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, 
 	return line, nil
 }
 
-func (p *provider) GetBubbleChart(ctx context.Context, bubbleType BubbleChartType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*bubblegraph.Data, error) {
+func (p *provider) GetBubbleChart(ctx context.Context, bubbleType BubbleChartType, preferredChartPoints int64, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*bubblegraph.Data, error) {
 	var chartType pb.ChartType
 	switch bubbleType {
 	case BubbleChartReqDistribution:
@@ -99,9 +99,11 @@ func (p *provider) GetBubbleChart(ctx context.Context, bubbleType BubbleChartTyp
 		return nil, fmt.Errorf("not supported bubbleChartType: %s", bubbleType)
 	}
 
+	interval := getInterval(start, end, time.Second, preferredChartPoints)
 	baseChart := &chart.BaseChart{
 		StartTime: start,
 		EndTime:   end,
+		Interval:  interval,
 		TenantId:  tenantId,
 		ServiceId: serviceId,
 		Layers:    []common.TransactionLayerType{layer},

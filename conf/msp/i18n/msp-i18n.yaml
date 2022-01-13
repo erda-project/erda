@@ -80,6 +80,21 @@ en:
   podCount: Pod Count
   disk: Disk IO Rate
   network: Network Rate
+  api: "API"
+  reqAvgDuration: "Request Avg Duration"
+  pageReqDurationDistribution: "Page Load Time Distribution"
+  pvUvCount: "PV/UV"
+  pv: "PV"
+  uv: "UV"
+  apdex: "Apdex"
+  avgPageLoadDuration: "Page Load Duration"
+  apiSuccessRate: "API Success Rate"
+  resourceLoadErrorCount: "Resource Load Error Count"
+  jsErrorCount: "JS Error Count"
+  maxReqDomainTop5: "High Request Domains Top5"
+  maxReqPageTop5: "High Request Pages Top5"
+  slowReqPageTop5: "Most Slow Page Top5"
+  slowReqRegionTop5: "Most Slow Region Top5"
 zh:
   waiting_for_tracing_data: "正在获取链路追踪数据"
   success_get_tracing_data: "获取链路追踪数据成功"
@@ -162,3 +177,18 @@ zh:
   podCount: Pod 数量
   disk: 磁盘 IO 速率
   network: 网络速率
+  api: "API"
+  reqAvgDuration: "调用平均响应时间"
+  pageReqDurationDistribution: "页面加载耗时分布"
+  pvUvCount: "PV/UV"
+  pv: "PV"
+  uv: "UV"
+  apdex: "Apdex"
+  avgPageLoadDuration: "页面加载耗时"
+  apiSuccessRate: "API调用成功率"
+  resourceLoadErrorCount: "资源加载错误数"
+  jsErrorCount: "JS错误数"
+  maxReqDomainTop5: "高访问量域名 Top5"
+  maxReqPageTop5: "高访问量页面 Top5"
+  slowReqPageTop5: "慢响应页面 Top5"
+  slowReqRegionTop5: "慢响应地区 Top5"

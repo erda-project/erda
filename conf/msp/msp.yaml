@@ -298,3 +298,5 @@ component-protocol:
 component-protocol.components.service-list:
 component-protocol.components.service-overview:
 
+browser-components:
+

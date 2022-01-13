@@ -109,7 +109,8 @@ func (t *SlowTransactionTableBuilder) GetTable(ctx context.Context) (*Table, err
 	statement = fmt.Sprintf("SELECT "+
 		"timestamp, "+
 		"elapsed_mean::field, "+
-		"trace_id::tag "+
+		"trace_id::tag, "+
+		"request_id::tag "+
 		"FROM %s_slow "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
@@ -140,7 +141,7 @@ func (t *SlowTransactionTableBuilder) GetTable(ctx context.Context) (*Table, err
 		transRow := &SlowTransactionTableRow{
 			OccurTime: time.Unix(0, int64(row.Values[0].GetNumberValue())).Format("2006-01-02 15:04:05"),
 			Duration:  fmt.Sprintf("%s%s", strutil.String(d), u),
-			TraceId:   strutil.FirstNoneEmpty(row.Values[2].GetStringValue(), "-"),
+			TraceId:   strutil.FirstNoneEmpty(row.Values[2].GetStringValue(), row.Values[3].GetStringValue(), "-"),
 		}
 		table.Rows = append(table.Rows, transRow)
 	}

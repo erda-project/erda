@@ -103,6 +103,7 @@ openapi-v1-routes:
           - personal-workbench
       - addr: msp:8080
         scenarios:
+          - browser-overview
           - service-overview
           - service-list
           - transaction-cache-analysis
