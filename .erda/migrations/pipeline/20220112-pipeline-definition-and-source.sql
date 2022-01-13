@@ -13,7 +13,7 @@ CREATE TABLE `pipeline_definition` (
   `pipeline_definition_extra_id` varchar(36) NOT NULL DEFAULT '' COMMENT '详情 id',
   `category` varchar(20) NOT NULL DEFAULT '' COMMENT '类型',
   `status` varchar(20) NOT NULL COMMENT '最后一次流水线执行状态',
-  `pipeline_id` bigint(20) DEFAULT 0 COMMENT '最后一次执行的流水线id',
+  `pipeline_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '最后一次执行的流水线id',
   PRIMARY KEY (`id`),
   KEY `idx_pipeline_source_id` (`pipeline_source_id`),
   KEY `idx_pipeline_id` (`pipeline_id`),
