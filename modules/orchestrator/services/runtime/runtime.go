@@ -1886,7 +1886,7 @@ func (r *Runtime) markOutdated(deployment *dbclient.Deployment) {
 }
 
 // RuntimeDeployLogs deploy发布日志接口
-func (r *Runtime) RuntimeDeployLogs(userID user.ID, orgID uint64, deploymentID uint64, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
+func (r *Runtime) RuntimeDeployLogs(userID user.ID, orgID uint64, orgName string, deploymentID uint64, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
 	deployment, err := r.db.GetDeployment(deploymentID)
 	if err != nil {
 		return nil, apierrors.ErrGetRuntime.InternalError(err)
@@ -1897,11 +1897,11 @@ func (r *Runtime) RuntimeDeployLogs(userID user.ID, orgID uint64, deploymentID u
 	if err := r.checkRuntimeScopePermission(userID, deployment.RuntimeId); err != nil {
 		return nil, err
 	}
-	return r.requestMonitorLog(strconv.FormatUint(deploymentID, 10), paramValues, apistructs.DashboardSpotLogSourceDeploy)
+	return r.requestMonitorLog(strconv.FormatUint(deploymentID, 10), orgName, paramValues, apistructs.DashboardSpotLogSourceDeploy)
 }
 
 // OrgJobLogs 数据中心--->任务列表 日志接口
-func (r *Runtime) OrgJobLogs(userID user.ID, orgID uint64, jobID, clusterName string, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
+func (r *Runtime) OrgJobLogs(userID user.ID, orgID uint64, orgName string, jobID, clusterName string, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
 	if clusterName == "" {
 		logrus.Errorf("job instance infos without cluster, jobID is: %s", jobID)
 		return nil, apierrors.ErrOrgLog.AccessDenied()
@@ -1918,7 +1918,7 @@ func (r *Runtime) OrgJobLogs(userID user.ID, orgID uint64, jobID, clusterName st
 	if err := r.checkOrgScopePermission(userID, orgID); err != nil {
 		return nil, err
 	}
-	return r.requestMonitorLog(jobID, paramValues, apistructs.DashboardSpotLogSourceJob)
+	return r.requestMonitorLog(jobID, orgName, paramValues, apistructs.DashboardSpotLogSourceJob)
 }
 
 // checkRuntimeScopePermission 检测runtime级别的权限
@@ -1964,7 +1964,7 @@ func (r *Runtime) checkOrgScopePermission(userID user.ID, orgID uint64) error {
 }
 
 // requestMonitorLog 调用bundle monitor log接口获取数据
-func (r *Runtime) requestMonitorLog(requestID string, paramValues url.Values, source apistructs.DashboardSpotLogSource) (*apistructs.DashboardSpotLogData, error) {
+func (r *Runtime) requestMonitorLog(requestID string, orgName string, paramValues url.Values, source apistructs.DashboardSpotLogSource) (*apistructs.DashboardSpotLogData, error) {
 	// 获取日志
 	var logReq apistructs.DashboardSpotLogRequest
 	if err := queryStringDecoder.Decode(&logReq, paramValues); err != nil {
@@ -1973,7 +1973,7 @@ func (r *Runtime) requestMonitorLog(requestID string, paramValues url.Values, so
 	logReq.ID = requestID
 	logReq.Source = source
 
-	logResult, err := r.bdl.GetLog(logReq)
+	logResult, err := r.bdl.GetLog(orgName, logReq)
 	if err != nil {
 		return nil, err
 	}
