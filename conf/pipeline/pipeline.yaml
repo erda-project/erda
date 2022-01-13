@@ -81,7 +81,7 @@ erda.core.pipeline.aop.plugins.pipeline.precheck-before-pop:
 erda.core.pipeline.aop.plugins.pipeline.basic:
 erda.core.pipeline.aop.plugins.pipeline.apitest-report:
 erda.core.pipeline.aop.plugins.pipeline.scene-after:
-erda.core.pipeline.aop.plugins.pipeline.definitionreport:
+erda.core.pipeline.aop.plugins.pipeline.definition-report:
 erda.core.pipeline.aop.plugins.task.autotest-cookie-keep-before:
 erda.core.pipeline.aop.plugins.task.unit-test-report:
 erda.core.pipeline.aop.plugins.task.autotest-cookie-keep-after:
