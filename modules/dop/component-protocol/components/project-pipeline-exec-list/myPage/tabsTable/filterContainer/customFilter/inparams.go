@@ -20,8 +20,9 @@ import (
 )
 
 type InParams struct {
-	OrgID     uint64 `json:"orgID,omitempty"`
-	ProjectID uint64 `json:"projectId,omitempty"`
+	ProjectID    string `json:"projectId,omitempty"`
+	ProjectIDInt uint64
+	OrgIDInt     uint64
 }
 
 func (p *CustomFilter) setInParams() error {
@@ -33,7 +34,13 @@ func (p *CustomFilter) setInParams() error {
 		return err
 	}
 
-	p.InParams.OrgID, err = strconv.ParseUint(p.sdk.Identity.OrgID, 10, 64)
+	value, err := strconv.ParseUint(p.InParams.ProjectID, 10, 64)
+	if err != nil {
+		return err
+	}
+	p.InParams.ProjectIDInt = value
+
+	p.InParams.OrgIDInt, err = strconv.ParseUint(p.sdk.Identity.OrgID, 10, 64)
 	if err != nil {
 		return err
 	}
