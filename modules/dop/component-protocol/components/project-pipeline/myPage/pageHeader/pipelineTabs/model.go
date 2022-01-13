@@ -60,7 +60,7 @@ type (
 		Value string `json:"value"`
 	}
 	State struct {
-		Value string
+		Value string `json:"value"`
 	}
 	InParams struct {
 		FrontendProjectID string `json:"projectId,omitempty"`
