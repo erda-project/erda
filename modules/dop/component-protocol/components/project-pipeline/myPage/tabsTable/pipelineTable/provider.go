@@ -267,7 +267,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 						if v.Status == "" {
 							return "-"
 						}
-						return cputil.I18n(p.sdk.Ctx, string(ColumnPipelineLatestStatus)+v.Status)
+						return cputil.I18n(p.sdk.Ctx, "pipelineStatus"+v.Status)
 					}(),
 					Status: func() commodel.UnifiedStatus {
 						if apistructs.PipelineStatus(v.Status).IsRunningStatus() {
