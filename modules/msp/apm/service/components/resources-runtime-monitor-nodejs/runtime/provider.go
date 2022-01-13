@@ -212,7 +212,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsMemoryHeap, "mb", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsMemoryHeap, "MB", graph)
 			p.StdDataPtr = line
 			return
 		case nodejsMemoryNonHeap:
@@ -220,7 +220,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsMemoryNonHeap, "mb", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsMemoryNonHeap, "MB", graph)
 			p.StdDataPtr = line
 			return
 		case nodejsCluster:

@@ -502,7 +502,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryHeap, "mb", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryHeap, "MB", graph)
 			p.StdDataPtr = line
 			return
 		case jvmMemoryNonHeap:
@@ -510,7 +510,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryNonHeap, "mb", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryNonHeap, "MB", graph)
 			p.StdDataPtr = line
 			return
 		case jvmMemoryEdenSpace:
@@ -518,7 +518,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryEdenSpace, "mb", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryEdenSpace, "MB", graph)
 			p.StdDataPtr = line
 			return
 		case jvmMemorySurvivorSpace:
@@ -526,7 +526,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemorySurvivorSpace, "mb", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemorySurvivorSpace, "MB", graph)
 			p.StdDataPtr = line
 			return
 		case jvmMemoryOldGen:
@@ -534,7 +534,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryOldGen, "mb", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryOldGen, "MB", graph)
 			p.StdDataPtr = line
 			return
 		case jvmGcCount:
