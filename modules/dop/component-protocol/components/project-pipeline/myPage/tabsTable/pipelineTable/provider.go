@@ -460,7 +460,7 @@ func (p *PipelineTable) RegisterTableChangePageOp(opData table.OpTableChangePage
 
 func (p *PipelineTable) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
-		(*sdk.GlobalState)[transaction.StateKeyTransactionSort] = opData.ClientData
+		(*sdk.GlobalState)[StateKeyTransactionSort] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
 	}
 }
