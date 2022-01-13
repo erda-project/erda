@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/dicehub/conf"
 	"github.com/erda-project/erda/modules/dicehub/dbclient"
 	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
+	"github.com/erda-project/erda/modules/pipeline/pexpr"
 	"github.com/erda-project/erda/pkg/i18n"
 )
 
@@ -354,6 +355,11 @@ func (i *Extension) CreateExtensionVersion(req *apistructs.ExtensionVersionCreat
 	if err != nil {
 		return nil, err
 	}
+	invalidPhs := pexpr.FindInvalidPlaceholders(req.SpecYml)
+	if len(invalidPhs) > 0 {
+		return nil, fmt.Errorf("invalid i18n expression, found invalid placeholders: %s (must match: %s)", strings.Join(invalidPhs, ", "), pexpr.PhRe.String())
+	}
+
 	if specData.DisplayName == "" {
 		specData.DisplayName = specData.Name
 	}
