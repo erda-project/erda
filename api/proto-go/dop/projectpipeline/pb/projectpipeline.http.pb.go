@@ -18,7 +18,7 @@ const _ = http.SupportPackageIsVersion1
 
 // ProjectPipelineServiceHandler is the server API for ProjectPipelineService service.
 type ProjectPipelineServiceHandler interface {
-	// POST /api/project-pipeline
+	// POST /api/project-pipeline/actions/get-my-apps
 	Create(context.Context, *CreateProjectPipelineRequest) (*CreateProjectPipelineResponse, error)
 	// GET /api/project-pipeline-apps
 	ListApp(context.Context, *ListAppRequest) (*ListAppResponse, error)
@@ -157,7 +157,7 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 		)
 	}
 
-	add_Create("POST", "/api/project-pipeline", srv.Create)
+	add_Create("POST", "/api/project-pipeline/actions/get-my-apps", srv.Create)
 	add_ListApp("GET", "/api/project-pipeline-apps", srv.ListApp)
 	add_ListPipelineYml("GET", "/api/project-pipeline/actions/get-pipeline-yml-list", srv.ListPipelineYml)
 }

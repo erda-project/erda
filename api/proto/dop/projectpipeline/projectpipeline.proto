@@ -20,10 +20,10 @@ service ProjectPipelineService {
   rpc Create(CreateProjectPipelineRequest)
       returns(CreateProjectPipelineResponse) {
     option(google.api.http) = {
-      post : "/api/project-pipeline",
+      post : "/api/project-pipeline/actions/get-my-apps",
     };
     option(erda.common.openapi) = {
-      path : "/api/project-pipeline",
+      path : "/api/project-pipeline/actions/get-my-apps",
     };
   }
 
