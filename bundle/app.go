@@ -70,7 +70,7 @@ func (b *Bundle) GetMyApps(userid string, orgid uint64) (*apistructs.Application
 	return &listResp.Data, nil
 }
 
-func (b *Bundle) GetMyAppsByProject(userid string, orgid, projectID uint64) (*apistructs.ApplicationListResponseData, error) {
+func (b *Bundle) GetMyAppsByProject(userid string, orgid, projectID uint64, name string) (*apistructs.ApplicationListResponseData, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -84,6 +84,7 @@ func (b *Bundle) GetMyAppsByProject(userid string, orgid, projectID uint64) (*ap
 		Param("pageSize", "9999").
 		Param("pageNo", "1").
 		Param("projectId", strconv.FormatUint(projectID, 10)).
+		Param("name", name).
 		Do().JSON(&listResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)

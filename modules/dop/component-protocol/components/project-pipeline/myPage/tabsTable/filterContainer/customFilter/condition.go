@@ -94,7 +94,7 @@ func (p *CustomFilter) MemberCondition(key string) (*model.SelectCondition, erro
 }
 
 func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
-	apps, err := p.bdl.GetMyAppsByProject(p.sdk.Identity.UserID, p.InParams.OrgID, p.InParams.ProjectID)
+	apps, err := p.bdl.GetMyAppsByProject(p.sdk.Identity.UserID, p.InParams.OrgID, p.InParams.ProjectID, "")
 	if err != nil {
 		return nil, err
 	}

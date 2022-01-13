@@ -38,7 +38,7 @@ service ProjectPipelineService {
   }
 
   rpc ListPipelineYmlList(ListAppPipelineYmlRequest)
-          returns(ListAppPipelineYmlResponse) {
+      returns(ListAppPipelineYmlResponse) {
     option(google.api.http) = {
       get : "/api/project-pipeline/apps/actions/pipeline-yml-list",
     };
@@ -64,6 +64,7 @@ message ListAppPipelineYmlResponse {
 
 message ListAppRequest {
   uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
+  string name = 2;
 }
 
 message ListAppResponse {
