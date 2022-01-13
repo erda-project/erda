@@ -10,14 +10,12 @@ CREATE TABLE `pipeline_definition` (
   `ended_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '最后一次流水线结束时间',
   `soft_deleted_at` bigint(20) NOT NULL DEFAULT '0' COMMENT '软删除',
   `pipeline_source_id` varchar(36) NOT NULL DEFAULT '' COMMENT 'pipeline 来源id',
-  `pipeline_definition_extra_id` varchar(36) NOT NULL DEFAULT '' COMMENT '详情 id',
   `category` varchar(20) NOT NULL DEFAULT '' COMMENT '类型',
   `status` varchar(20) NOT NULL COMMENT '最后一次流水线执行状态',
   `pipeline_id` bigint(20) NOT NULL DEFAULT 0 COMMENT '最后一次执行的流水线id',
   PRIMARY KEY (`id`),
   KEY `idx_pipeline_source_id` (`pipeline_source_id`),
   KEY `idx_pipeline_id` (`pipeline_id`),
-  KEY `idx_pipeline_definition_extra_id` (`pipeline_definition_extra_id`),
   KEY `idx_name` (`soft_deleted_at`,`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='pipeline definition table';
 
