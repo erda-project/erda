@@ -245,7 +245,7 @@ func (e *Endpoints) GetPipelineTaskLogs(ctx context.Context, r *http.Request, va
 	logReq.ID = task.Extra.UUID
 	logReq.Source = apistructs.DashboardSpotLogSourceJob
 
-	log, err := e.bdl.GetLog(logReq)
+	log, err := e.bdl.GetLog(r.Header.Get("org"), logReq)
 	if err != nil {
 		return apierrors.ErrGetPipelineLog.InternalError(err).ToResp(), nil
 	}
