@@ -45,6 +45,6 @@ func (s *projectPipelineServiceWrapper) ListApp(ctx context.Context, req *pb.Lis
 	return s.client.ListApp(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
-func (s *projectPipelineServiceWrapper) ListPipelineYmlList(ctx context.Context, req *pb.ListAppPipelineYmlRequest) (*pb.ListAppPipelineYmlResponse, error) {
-	return s.client.ListPipelineYmlList(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+func (s *projectPipelineServiceWrapper) ListPipelineYml(ctx context.Context, req *pb.ListAppPipelineYmlRequest) (*pb.ListAppPipelineYmlResponse, error) {
+	return s.client.ListPipelineYml(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

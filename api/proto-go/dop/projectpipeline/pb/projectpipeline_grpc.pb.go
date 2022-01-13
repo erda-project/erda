@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion5
 type ProjectPipelineServiceClient interface {
 	Create(ctx context.Context, in *CreateProjectPipelineRequest, opts ...grpc.CallOption) (*CreateProjectPipelineResponse, error)
 	ListApp(ctx context.Context, in *ListAppRequest, opts ...grpc.CallOption) (*ListAppResponse, error)
-	ListPipelineYmlList(ctx context.Context, in *ListAppPipelineYmlRequest, opts ...grpc.CallOption) (*ListAppPipelineYmlResponse, error)
+	ListPipelineYml(ctx context.Context, in *ListAppPipelineYmlRequest, opts ...grpc.CallOption) (*ListAppPipelineYmlResponse, error)
 }
 
 type projectPipelineServiceClient struct {
@@ -52,9 +52,9 @@ func (c *projectPipelineServiceClient) ListApp(ctx context.Context, in *ListAppR
 	return out, nil
 }
 
-func (c *projectPipelineServiceClient) ListPipelineYmlList(ctx context.Context, in *ListAppPipelineYmlRequest, opts ...grpc.CallOption) (*ListAppPipelineYmlResponse, error) {
+func (c *projectPipelineServiceClient) ListPipelineYml(ctx context.Context, in *ListAppPipelineYmlRequest, opts ...grpc.CallOption) (*ListAppPipelineYmlResponse, error) {
 	out := new(ListAppPipelineYmlResponse)
-	err := c.cc.Invoke(ctx, "/erda.dop.projectpipeline.ProjectPipelineService/ListPipelineYmlList", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/erda.dop.projectpipeline.ProjectPipelineService/ListPipelineYml", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (c *projectPipelineServiceClient) ListPipelineYmlList(ctx context.Context, 
 type ProjectPipelineServiceServer interface {
 	Create(context.Context, *CreateProjectPipelineRequest) (*CreateProjectPipelineResponse, error)
 	ListApp(context.Context, *ListAppRequest) (*ListAppResponse, error)
-	ListPipelineYmlList(context.Context, *ListAppPipelineYmlRequest) (*ListAppPipelineYmlResponse, error)
+	ListPipelineYml(context.Context, *ListAppPipelineYmlRequest) (*ListAppPipelineYmlResponse, error)
 }
 
 // UnimplementedProjectPipelineServiceServer should be embedded to have forward compatible implementations.
@@ -80,8 +80,8 @@ func (*UnimplementedProjectPipelineServiceServer) Create(context.Context, *Creat
 func (*UnimplementedProjectPipelineServiceServer) ListApp(context.Context, *ListAppRequest) (*ListAppResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListApp not implemented")
 }
-func (*UnimplementedProjectPipelineServiceServer) ListPipelineYmlList(context.Context, *ListAppPipelineYmlRequest) (*ListAppPipelineYmlResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListPipelineYmlList not implemented")
+func (*UnimplementedProjectPipelineServiceServer) ListPipelineYml(context.Context, *ListAppPipelineYmlRequest) (*ListAppPipelineYmlResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListPipelineYml not implemented")
 }
 
 func RegisterProjectPipelineServiceServer(s grpc1.ServiceRegistrar, srv ProjectPipelineServiceServer, opts ...grpc1.HandleOption) {
@@ -120,13 +120,13 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 		_ProjectPipelineService_ListApp_Handler = h.Interceptor(_ProjectPipelineService_ListApp_Handler)
 	}
 
-	_ProjectPipelineService_ListPipelineYmlList_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.ListPipelineYmlList(ctx, req.(*ListAppPipelineYmlRequest))
+	_ProjectPipelineService_ListPipelineYml_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.ListPipelineYml(ctx, req.(*ListAppPipelineYmlRequest))
 	}
-	var _ProjectPipelineService_ListPipelineYmlList_info transport.ServiceInfo
+	var _ProjectPipelineService_ListPipelineYml_info transport.ServiceInfo
 	if h.Interceptor != nil {
-		_ProjectPipelineService_ListPipelineYmlList_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "ListPipelineYmlList", srv)
-		_ProjectPipelineService_ListPipelineYmlList_Handler = h.Interceptor(_ProjectPipelineService_ListPipelineYmlList_Handler)
+		_ProjectPipelineService_ListPipelineYml_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "ListPipelineYml", srv)
+		_ProjectPipelineService_ListPipelineYml_Handler = h.Interceptor(_ProjectPipelineService_ListPipelineYml_Handler)
 	}
 
 	var serviceDesc = _ProjectPipelineService_serviceDesc
@@ -178,26 +178,26 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 			},
 		},
 		{
-			MethodName: "ListPipelineYmlList",
+			MethodName: "ListPipelineYml",
 			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 				in := new(ListAppPipelineYmlRequest)
 				if err := dec(in); err != nil {
 					return nil, err
 				}
 				if interceptor == nil && h.Interceptor == nil {
-					return srv.(ProjectPipelineServiceServer).ListPipelineYmlList(ctx, in)
+					return srv.(ProjectPipelineServiceServer).ListPipelineYml(ctx, in)
 				}
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ProjectPipelineService_ListPipelineYmlList_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ProjectPipelineService_ListPipelineYml_info)
 				}
 				if interceptor == nil {
-					return _ProjectPipelineService_ListPipelineYmlList_Handler(ctx, in)
+					return _ProjectPipelineService_ListPipelineYml_Handler(ctx, in)
 				}
 				info := &grpc.UnaryServerInfo{
 					Server:     srv,
-					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/ListPipelineYmlList",
+					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/ListPipelineYml",
 				}
-				return interceptor(ctx, in, info, _ProjectPipelineService_ListPipelineYmlList_Handler)
+				return interceptor(ctx, in, info, _ProjectPipelineService_ListPipelineYml_Handler)
 			},
 		},
 	}
