@@ -164,8 +164,7 @@ func (t *TemplateDataDirector) TryCreateAppsByTemplate() error {
 			ProjectID:      projectID,
 			Mode:           apistructs.ApplicationMode(tempApp.Mode),
 			Config:         tempApp.Config,
-			IsExternalRepo: tempApp.IsExternalRepo,
-			RepoConfig:     tempApp.RepoConfig,
+			IsExternalRepo: false,
 		}
 		if _, err := t.bdl.CreateApp(appReq, identityInfo.UserID); err != nil {
 			t.failedAppNum++
@@ -220,7 +219,7 @@ func (p *Project) ExportTemplate(req apistructs.ExportProjectTemplateRequest) (u
 	packageName := fmt.Sprintf("%s.zip", p.MakeTemplatePackageName(req.ProjectName))
 	fileReq := apistructs.TestFileRecordRequest{
 		FileName:     packageName,
-		Description:  fmt.Sprintf("export project: %s template", req.ProjectName),
+		Description:  fmt.Sprintf("export project: %s template", req.ProjectDisplayName),
 		OrgID:        uint64(req.OrgID),
 		Type:         apistructs.FileProjectTemplateExport,
 		State:        apistructs.FileRecordStatePending,
@@ -265,7 +264,7 @@ func (p *Project) ImportTemplate(req apistructs.ImportProjectTemplateRequest, r 
 
 	fileReq := apistructs.TestFileRecordRequest{
 		FileName:     fileHeader.Filename,
-		Description:  fmt.Sprintf("import project: %s template", req.ProjectName),
+		Description:  fmt.Sprintf("import project: %s template", req.ProjectDisplayName),
 		OrgID:        uint64(req.OrgID),
 		ProjectID:    req.ProjectID,
 		Type:         apistructs.FileProjectTemplateImport,
