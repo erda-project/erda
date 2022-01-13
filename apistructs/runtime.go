@@ -70,17 +70,16 @@ type RuntimeCreateV2ResponseData struct {
 }
 
 type RuntimeCreateRequest struct {
-	Name                string                    `json:"name"`
-	ReleaseID           string                    `json:"releaseId"`
-	Operator            string                    `json:"operator"`
-	ClusterName         string                    `json:"clusterName"`
-	Source              RuntimeSource             `json:"source"`
-	Extra               RuntimeCreateRequestExtra `json:"extra,omitempty"`
-	SkipPushByOrch      bool                      `json:"skipPushByOrch"`
-	Param               string                    `json:"param"`
-	DeploymentOrderId   string                    `json:"deploymentOrderId,omitempty"`
-	DeploymentOrderName string                    `json:"deploymentOrderName,omitempty"`
-	ReleaseVersion      string                    `json:"releaseVersion,omitempty"`
+	Name              string                    `json:"name"`
+	ReleaseID         string                    `json:"releaseId"`
+	Operator          string                    `json:"operator"`
+	ClusterName       string                    `json:"clusterName"`
+	Source            RuntimeSource             `json:"source"`
+	Extra             RuntimeCreateRequestExtra `json:"extra,omitempty"`
+	SkipPushByOrch    bool                      `json:"skipPushByOrch"`
+	Param             string                    `json:"param"`
+	DeploymentOrderId string                    `json:"deploymentOrderId,omitempty"`
+	ReleaseVersion    string                    `json:"releaseVersion,omitempty"`
 }
 
 type RuntimeKillPodRequest struct {

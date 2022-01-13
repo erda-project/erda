@@ -15,26 +15,12 @@
 package utils
 
 import (
-	"net"
-	"net/http"
-	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func GetRealIP(request *http.Request) string {
-	ra := request.RemoteAddr
-	if ip := request.Header.Get("X-Forwarded-For"); ip != "" {
-		ra = strings.Split(ip, ", ")[0]
-	} else if ip := request.Header.Get("X-Real-IP"); ip != "" {
-		ra = ip
-	} else {
-		ra, _, _ = net.SplitHostPort(ra)
-	}
-	return ra
-}
-
-func ParseOrderName(uuid string) string {
-	if len(uuid) >= 6 {
-		return uuid[:6]
-	}
-	return uuid
+func TestParseOrder(t *testing.T) {
+	uuid := "07f3023d-46bb-49de-b139-c775c6881636"
+	assert.Equal(t, ParseOrderName(uuid), "07f302")
 }
