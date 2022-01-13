@@ -270,7 +270,7 @@ func (q *Query) parseDimensionsAggsData(rs *tsql.ResultSet, aggs elastic.Aggrega
 		for i, bucket := range histogram.Buckets {
 			if i+1 < len(histogram.Buckets) {
 				q.ctx.attributesCache["next"] = histogram.Buckets[i+1].Aggregations
-			} else if i+1 == len(histogram.Buckets) {
+			} else {
 				delete(q.ctx.attributesCache, "next")
 			}
 			if i == 0 {
