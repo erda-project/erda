@@ -180,6 +180,7 @@ func (e *EnvConfig) BatchUpdate(permission *permission.Permission, createReq *ap
 		if config.ItemType == "FILE" {
 			continue
 		}
+		newConfigKeys = append(newConfigKeys, config.ItemKey)
 		if config.Encrypt && config.ItemValue == "" {
 			continue
 		}
@@ -198,7 +199,6 @@ func (e *EnvConfig) BatchUpdate(permission *permission.Permission, createReq *ap
 		if err != nil {
 			return err
 		}
-		newConfigKeys = append(newConfigKeys, config.ItemKey)
 	}
 
 	for _, config := range oldConfigs {

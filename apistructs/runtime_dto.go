@@ -44,6 +44,7 @@ type RuntimeInspectDTO struct {
 	Errors              []ErrorResponse              `json:"errors"`
 	Creator             string                       `json:"creator"`
 	ApplicationID       uint64                       `json:"applicationId"`
+	ApplicationName     string                       `json:"applicationName"`
 	DeploymentOrderId   string                       `json:"deploymentOrderId"`
 	DeploymentOrderName string                       `json:"deploymentOrderName"`
 	ReleaseVersion      string                       `json:"releaseVersion"`
