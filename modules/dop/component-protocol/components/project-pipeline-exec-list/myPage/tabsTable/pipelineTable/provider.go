@@ -205,8 +205,19 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 		Selectable: true,
 		Selected:   false,
 		CellsMap: map[table.ColumnKey]table.Cell{
-			ColumnPipelineName:   table.NewTextCell(pipeline.DefinitionInfo.Name).Build(),
-			ColumnPipelineStatus: table.NewTextCell(cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)+pipeline.Status.String())).Build(),
+			ColumnPipelineName: table.NewTextCell(pipeline.DefinitionInfo.Name).Build(),
+			ColumnPipelineStatus: table.NewCompleteTextCell(commodel.Text{
+				Text: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)+pipeline.Status.String()),
+				Status: func() commodel.UnifiedStatus {
+					if pipeline.Status.IsRunningStatus() {
+						return commodel.ProcessingStatus
+					}
+					if pipeline.Status.IsFailedStatus() {
+						return commodel.ErrorStatus
+					}
+					return commodel.DefaultStatus
+				}(),
+			}).Build(),
 			ColumnCostTimeOrder: table.NewTextCell(func() string {
 				if pipeline.CostTimeSec <= 0 {
 					return "-"
@@ -218,7 +229,7 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 			ColumnBranch:          table.NewTextCell(pipeline.DefinitionInfo.SourceRef).Build(),
 			ColumnExecutor:        table.NewUserCell(commodel.User{ID: pipeline.DefinitionInfo.Creator}).Build(),
 			ColumnStartTimeOrder: table.NewTextCell(func() string {
-				if pipeline.TimeBegin.Year() < 2000 {
+				if pipeline.TimeBegin.Unix() <= 0 {
 					return "-"
 				}
 				return pipeline.TimeBegin.Format("2006-01-02 15:04:05")
