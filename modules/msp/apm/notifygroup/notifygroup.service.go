@@ -115,7 +115,6 @@ func (n *notifyGroupService) auditContextInfo(groupId int64, orgId string) (stri
 	if err != nil {
 		return "", "", "", 0, err
 	}
-	//workspace, err := n.getWorkSpace(notifyGroup.Data.ScopeID)
 	resp, err := n.p.Tenant.GetTenantWorkspace(context.Background(), &tenantpb.GetTenantWorkspaceRequest{
 		ScopeId: notifyGroup.Data.ScopeID,
 	})
@@ -150,20 +149,6 @@ func (n *notifyGroupService) GetProjectInfo(scopeId string) (string, uint64, err
 	}
 	return project.Name, auditProjectId, nil
 }
-
-//func (n *notifyGroupService) getWorkSpace(scopeId string) (string, error) {
-//	workspace, err := n.p.mspTenantDB.GetTenantWorkspaceByTenantID(scopeId)
-//	if err != nil {
-//		return "", errors.NewInternalServerError(err)
-//	}
-//	if workspace == "" {
-//		workspace, err = n.p.monitorDB.GetWorkspaceByTK(scopeId)
-//		if err != nil {
-//			return "", errors.NewInternalServerError(err)
-//		}
-//	}
-//	return workspace, nil
-//}
 
 func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.QueryNotifyGroupRequest) (*pb.QueryNotifyGroupResponse, error) {
 	orgId := apis.GetOrgID(ctx)
@@ -286,6 +271,10 @@ func (n *notifyGroupService) GetNotifyGroupDetail(ctx context.Context, request *
 
 func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.DeleteNotifyGroupRequest) (*pb.DeleteNotifyGroupResponse, error) {
 	orgID := apis.GetOrgID(ctx)
+	projectName, workspace, notifyGroupName, auditProjectId, err := n.auditContextInfo(request.GroupID, orgID)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	resp, err := n.p.bdl.DeleteNotifyGroup(request.GroupID, orgID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -298,10 +287,6 @@ func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.
 		Data: &pb.NotifyGroup{},
 	}
 	err = json.Unmarshal(data, result.Data)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	projectName, workspace, notifyGroupName, auditProjectId, err := n.auditContextInfo(request.GroupID, orgID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}

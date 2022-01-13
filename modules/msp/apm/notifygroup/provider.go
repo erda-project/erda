@@ -72,7 +72,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				),
 				audit.Method(NotifyService.DeleteNotifyGroup, audit.ProjectScope, string(apistructs.DeleteServiceNotifyGroup),
 					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
-						r := resp.(*pb.UpdateNotifyGroupResponse)
+						r := resp.(*pb.DeleteNotifyGroupResponse)
 						return r.Data.ProjectId, map[string]interface{}{}, nil
 					},
 				),
