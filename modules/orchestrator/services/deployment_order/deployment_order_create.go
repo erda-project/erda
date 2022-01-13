@@ -26,7 +26,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
-	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/modules/pkg/user"
 )
 
@@ -165,7 +164,7 @@ func (d *DeploymentOrder) RenderDetail(userId, releaseId, workspace string) (*ap
 
 	return &apistructs.DeploymentOrderDetail{
 		DeploymentOrderItem: apistructs.DeploymentOrderItem{
-			Name: utils.ParseDeploymentOrderShowName(orderName),
+			Name: orderName,
 		},
 		ApplicationsInfo: asi,
 	}, nil
@@ -277,7 +276,16 @@ func (d *DeploymentOrder) renderDeploymentOrderName(projectId uint64, releaseId 
 		return orderName, fmt.Errorf("count order in project %d error: %v", projectId, err)
 	}
 
-	return namePrefix + fmt.Sprintf(orderNameTmpl, releaseId, c), nil
+	newId := releaseId
+	if len(releaseId) >= 6 {
+		newId = releaseId[:6]
+	}
+
+	if c == 0 {
+		return namePrefix + newId, nil
+	}
+
+	return namePrefix + fmt.Sprintf(orderNameTmpl, newId, c), nil
 }
 
 func (d *DeploymentOrder) fetchApplicationsParams(t string, r *apistructs.ReleaseGetResponseData, workspace string) (map[string]*apistructs.DeploymentOrderParam, error) {
