@@ -1,4 +1,4 @@
-scenario: "project-pipeline-exec-list"
+scenario: project-pipeline-exec-list
 
 hierarchy:
   root: myPage
