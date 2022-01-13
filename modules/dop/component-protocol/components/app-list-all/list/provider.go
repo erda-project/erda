@@ -82,15 +82,17 @@ func (l *List) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 }
 
 func (l *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.OperationFunc) {
-	if opData.ClientData.PageNo > 0 {
-		l.filterReq.PageNo = int(opData.ClientData.PageNo)
+	return func(sdk *cptype.SDK) {
+		if opData.ClientData.PageNo > 0 {
+			l.filterReq.PageNo = int(opData.ClientData.PageNo)
+		}
+		if opData.ClientData.PageSize > 0 {
+			l.filterReq.PageSize = int(opData.ClientData.PageSize)
+		}
+		l.StdDataPtr = l.doFilterApp()
 	}
-	if opData.ClientData.PageSize > 0 {
-		l.filterReq.PageSize = int(opData.ClientData.PageSize)
-	}
-	l.StdDataPtr = l.doFilterApp()
-	return nil
 }
+
 func (l *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
 	}
