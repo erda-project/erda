@@ -15,8 +15,10 @@
 package customFilter
 
 import (
-	"encoding/json"
 	"strconv"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 )
 
 type InParams struct {
@@ -25,24 +27,24 @@ type InParams struct {
 	OrgIDInt     uint64
 }
 
-func (p *CustomFilter) setInParams() error {
-	b, err := json.Marshal(p.InParamsPtr())
-	if err != nil {
-		return err
+func (p *CustomFilter) CustomInParamsPtr() interface{} {
+	if p.InParams == nil {
+		p.InParams = &InParams{}
 	}
-	if err := json.Unmarshal(b, &p.InParams); err != nil {
-		return err
-	}
+	return p.InParams
+}
 
-	value, err := strconv.ParseUint(p.InParams.ProjectID, 10, 64)
-	if err != nil {
-		return err
-	}
-	p.InParams.ProjectIDInt = value
+func (p *CustomFilter) EncodeFromCustomInParams(customInParamsPtr interface{}, stdInParamsPtr *cptype.ExtraMap) {
+	cputil.MustObjJSONTransfer(&customInParamsPtr, stdInParamsPtr)
+}
 
-	p.InParams.OrgIDInt, err = strconv.ParseUint(p.sdk.Identity.OrgID, 10, 64)
-	if err != nil {
-		return err
+func (p *CustomFilter) DecodeToCustomInParams(stdInParamsPtr *cptype.ExtraMap, customInParamsPtr interface{}) {
+	cputil.MustObjJSONTransfer(stdInParamsPtr, &customInParamsPtr)
+	if p.InParams.ProjectID != "" {
+		value, err := strconv.ParseUint(p.InParams.ProjectID, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		p.InParams.ProjectIDInt = value
 	}
-	return nil
 }
