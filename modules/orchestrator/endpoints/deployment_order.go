@@ -181,12 +181,12 @@ func (e *Endpoints) CancelDeploymentOrder(ctx context.Context, r *http.Request, 
 
 	userID, err := user.GetUserID(r)
 	if err != nil {
-		return apierrors.ErrListDeployment.NotLogin().ToResp(), nil
+		return apierrors.ErrCancelDeploymentOrder.NotLogin().ToResp(), nil
 	}
 
 	orgID, err := getOrgID(r)
 	if err != nil {
-		return apierrors.ErrDeployDeploymentOrder.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrCancelDeploymentOrder.InvalidParameter(err).ToResp(), nil
 	}
 
 	req.DeploymentOrderId = vars["deploymentOrderID"]
@@ -197,8 +197,10 @@ func (e *Endpoints) CancelDeploymentOrder(ctx context.Context, r *http.Request, 
 		return errorresp.ErrResp(err)
 	}
 
-	e.auditDeploymentOrder(userID.String(), order.ProjectName, order.Name, orgID, order.ProjectId,
-		apistructs.CancelDeploymentOrderTemplate, r)
+	if order != nil {
+		e.auditDeploymentOrder(userID.String(), order.ProjectName, order.Name, orgID, order.ProjectId,
+			apistructs.CancelDeploymentOrderTemplate, r)
+	}
 
 	return httpserver.OkResp(nil)
 }
@@ -214,7 +216,7 @@ func (e *Endpoints) RenderDeploymentOrderDetail(ctx context.Context, r *http.Req
 
 	// verify params
 	if !verifyWorkspace(workspace) {
-		return apierrors.ErrCreateDeploymentOrder.InvalidParameter(strutil.Concat("illegal workspace ", workspace)).ToResp(), nil
+		return apierrors.ErrRenderDeploymentOrderDetail.InvalidParameter(strutil.Concat("illegal workspace ", workspace)).ToResp(), nil
 	}
 
 	ret, err := e.deploymentOrder.RenderDetail(userID.String(), v, workspace)
