@@ -16,7 +16,6 @@ package pipelineTable
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -46,7 +45,7 @@ type provider struct {
 	sdk      *cptype.SDK
 	bdl      *bundle.Bundle
 	gsHelper *gshelper.GSHelper
-	InParams InParams `json:"-"`
+	InParams *InParams `json:"-"`
 
 	ProjectPipeline projectpipeline.Service
 }
@@ -69,8 +68,12 @@ const (
 
 func (p *provider) BeforeHandleOp(sdk *cptype.SDK) {
 	p.sdk = sdk
-	if err := p.setInParams(); err != nil {
-		panic(err)
+	if p.sdk.Identity.OrgID != "" {
+		var err error
+		p.InParams.OrgIDInt, err = strconv.ParseUint(p.sdk.Identity.OrgID, 10, 64)
+		if err != nil {
+			panic(err)
+		}
 	}
 	p.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	p.gsHelper = gshelper.NewGSHelper(sdk.GlobalState)
@@ -314,24 +317,26 @@ type InParams struct {
 	OrgIDInt     uint64
 }
 
-func (p *provider) setInParams() error {
-	b, err := json.Marshal(p.InParamsPtr())
-	if err != nil {
-		return err
+func (p *provider) CustomInParamsPtr() interface{} {
+	if p.InParams == nil {
+		p.InParams = &InParams{}
 	}
-	if err := json.Unmarshal(b, &p.InParams); err != nil {
-		return err
+	return p.InParams
+}
+
+func (p *provider) EncodeFromCustomInParams(customInParamsPtr interface{}, stdInParamsPtr *cptype.ExtraMap) {
+	cputil.MustObjJSONTransfer(&customInParamsPtr, stdInParamsPtr)
+}
+
+func (p *provider) DecodeToCustomInParams(stdInParamsPtr *cptype.ExtraMap, customInParamsPtr interface{}) {
+	cputil.MustObjJSONTransfer(stdInParamsPtr, &customInParamsPtr)
+	if p.InParams.ProjectID != "" {
+		value, err := strconv.ParseUint(p.InParams.ProjectID, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		p.InParams.ProjectIDInt = value
 	}
-	value, err := strconv.ParseUint(p.InParams.ProjectID, 10, 64)
-	if err != nil {
-		return err
-	}
-	p.InParams.OrgIDInt, err = strconv.ParseUint(p.sdk.Identity.OrgID, 10, 64)
-	if err != nil {
-		return err
-	}
-	p.InParams.ProjectIDInt = value
-	return nil
 }
 
 // InParamsPtr .

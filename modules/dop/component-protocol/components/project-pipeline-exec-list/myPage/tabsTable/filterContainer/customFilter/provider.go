@@ -16,6 +16,7 @@ package customFilter
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
@@ -32,8 +33,8 @@ type CustomFilter struct {
 	bdl      *bundle.Bundle
 	gsHelper *gshelper.GSHelper
 	sdk      *cptype.SDK
-	State    State    `json:"-"`
-	InParams InParams `json:"-"`
+	State    State     `json:"-"`
+	InParams *InParams `json:"-"`
 }
 
 type State struct {
@@ -53,8 +54,12 @@ func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
 	p.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	p.gsHelper = gshelper.NewGSHelper(sdk.GlobalState)
 	p.sdk = sdk
-	if err := p.setInParams(); err != nil {
-		panic(err)
+	if p.sdk.Identity.OrgID != "" {
+		var err error
+		p.InParams.OrgIDInt, err = strconv.ParseUint(p.sdk.Identity.OrgID, 10, 64)
+		if err != nil {
+			panic(err)
+		}
 	}
 	cputil.MustObjJSONTransfer(&p.StdStatePtr, &p.State)
 }
