@@ -271,6 +271,10 @@ zh:
   cancelCron: 取消定时
   delete: 删除
   moreOperations: 操作
+  pipelineLatestStatus: 最近一次执行状态
+  latestCostTime: 最近一次执行耗时
+  latestExecutor: 最近一次执行人
+  latestStartTime: 最近一次开始时间
 en:
   issue-manage: issue manage
   issue: issue
@@ -541,3 +545,7 @@ en:
   cancelCron: Cancel cron
   delete: Delete
   moreOperations: Operation
+  pipelineLatestStatus: Latest execute status
+  latestCostTime: Latest execute cost time
+  latestExecutor: Latest executor
+  latestStartTime: Latest start time
