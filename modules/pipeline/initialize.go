@@ -207,14 +207,14 @@ func (p *provider) do() error {
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)
 
-	//p.ReconcilerElection.OnLeader(func(ctx context.Context) {
-	//	engine.StartReconciler(ctx)
-	//	pipelineSvc.DoCrondAbout(ctx)
-	//})
-	//
-	//p.GcElection.OnLeader(func(ctx context.Context) {
-	//	engine.StartGC(ctx)
-	//})
+	p.ReconcilerElection.OnLeader(func(ctx context.Context) {
+		engine.StartReconciler(ctx)
+		pipelineSvc.DoCrondAbout(ctx)
+	})
+
+	p.GcElection.OnLeader(func(ctx context.Context) {
+		engine.StartGC(ctx)
+	})
 
 	// register cluster hook after pipeline service start
 	if err := clusterinfo.RegisterClusterHook(); err != nil {
