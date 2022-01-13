@@ -67,7 +67,7 @@ components:
     options:
       asyncAtInit: true
   pageReqDurationDistributionBubble:
-    type: LineGraph
+    type: BubbleGraph
     options:
       asyncAtInit: true
   apiAndResourcesReqCountLine:
