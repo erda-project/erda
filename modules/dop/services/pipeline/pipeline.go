@@ -637,6 +637,7 @@ func (p *Pipeline) PipelineDefinitionUpdate(req apistructs.GittarPushPayloadEven
 		return err
 	}
 	for _, v := range compare.Diff.Files {
+
 		if isPipelineYmlPath(v.OldName) && v.OldName != v.Name {
 			// to delete old pipelineDefinition
 			err := p.deletePipelineDefinition(appDto, branch, v.Name)
@@ -683,11 +684,16 @@ func (p *Pipeline) PipelineDefinitionUpdate(req apistructs.GittarPushPayloadEven
 
 func (p *Pipeline) reportPipelineDefinition(appDto *apistructs.ApplicationDTO, branch string, name string, pipelineYml string) error {
 	var req = &sourcepb.PipelineSourceListRequest{}
-	req.SourceType = apistructs.PipelineSourceDice.String()
+	req.SourceType = "erda"
 	req.Remote = filepath.Join(appDto.OrgName, appDto.ProjectName, appDto.Name)
 	req.Ref = branch
-	req.Path = filepath.Dir(name)
-	req.Name = strings.Replace(name, req.Path, "", 1)
+	req.Path = func() string {
+		if filepath.Dir(name) == "." {
+			return ""
+		}
+		return filepath.Dir(name)
+	}()
+	req.Name = strings.Replace(name, req.Path+"/", "", 1)
 	result, err := p.pipelineSource.List(context.Background(), req)
 	if err != nil {
 		return err

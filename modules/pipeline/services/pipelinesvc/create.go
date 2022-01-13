@@ -454,6 +454,7 @@ func (s *PipelineSvc) makePipelineFromCopy(o *spec.Pipeline) (p *spec.Pipeline, 
 	p.TimeBegin = nil
 	p.TimeEnd = nil
 	p.CostTimeSec = -1
+	p.PipelineDefinitionID = o.PipelineDefinitionID
 
 	return p, nil
 }

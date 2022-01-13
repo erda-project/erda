@@ -15,6 +15,8 @@
 package definitionreport
 
 import (
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
@@ -32,9 +34,6 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	if pipeline.PipelineDefinitionID == "" {
 		return nil
 	}
-	if !pipeline.Status.IsEndStatus() {
-		return nil
-	}
 	definition, err := ctx.SDK.DBClient.GetPipelineDefinition(pipeline.PipelineDefinitionID)
 	if err != nil {
 		return err
@@ -45,9 +44,11 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	definition.StartedAt = *pipeline.TimeBegin
 	definition.EndedAt = *pipeline.TimeEnd
 	definition.PipelineID = pipeline.ID
+	definition.Status = pipeline.Status.String()
 
 	err = ctx.SDK.DBClient.UpdatePipelineDefinition(definition.ID, definition)
 	if err != nil {
+		logrus.Errorf("pipeline %v update definitionID was err %v", pipeline.ID, err)
 		return err
 	}
 	return nil

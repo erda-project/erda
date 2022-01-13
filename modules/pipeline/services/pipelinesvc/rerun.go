@@ -56,6 +56,7 @@ func (s *PipelineSvc) Rerun(req *apistructs.PipelineRerunRequest) (*spec.Pipelin
 		AutoStartCron:          false,
 		CronStartFrom:          originCron.Extra.CronStartFrom,
 		IdentityInfo:           req.IdentityInfo,
+		DefinitionID:           origin.PipelineDefinitionID,
 	})
 	if err != nil {
 		return nil, err
