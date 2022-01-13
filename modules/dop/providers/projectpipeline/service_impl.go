@@ -552,6 +552,10 @@ func (p *ProjectPipelineService) Cancel(ctx context.Context, params deftype.Proj
 	if err != nil {
 		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
 	}
+	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{PipelineDefinitionID: definition.ID, Status: string(apistructs.PipelineStatusStopByUser), PipelineId: int64(runningPipelineID)})
+	if err != nil {
+		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
+	}
 
 	return &deftype.ProjectPipelineCancelResult{}, nil
 }

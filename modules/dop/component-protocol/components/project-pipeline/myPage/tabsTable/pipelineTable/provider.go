@@ -246,8 +246,8 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 	crons, err := p.bdl.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
 		Sources:  pipelineSources,
 		YmlNames: pipelineYmlNames,
-		PageSize: 1,
-		PageNo:   999,
+		PageSize: 999,
+		PageNo:   1,
 	})
 	if err != nil {
 		logrus.Errorf("failed to list PageListPipelineCrons, err: %s", err.Error())
