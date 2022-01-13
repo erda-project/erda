@@ -38,9 +38,7 @@ type TraceInParams struct {
 }
 
 func (b *TraceInParams) CustomInParamsPtr() interface{} {
-	if b.InParamsPtr == nil {
-		b.InParamsPtr = &Model{}
-	}
+	b.InParamsPtr = &Model{}
 	return b.InParamsPtr
 }
 
