@@ -71,6 +71,7 @@ func (p *CustomFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				filter.OpFilter{}.OpKey():         cputil.NewOpBuilder().Build(),
 				filter.OpFilterItemSave{}.OpKey(): cputil.NewOpBuilder().Build(),
 			},
+			HideSave: true,
 		}
 	}
 }
