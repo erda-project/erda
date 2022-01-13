@@ -1,6 +1,4 @@
-DROP TABLE `pipeline_definitions`;
-
-CREATE TABLE `pipeline_definitions` (
+CREATE TABLE `pipeline_definition` (
   `id` varchar(36) NOT NULL COMMENT '自增id',
   `created_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT 'CREATED AT',
   `updated_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00' ON UPDATE CURRENT_TIMESTAMP COMMENT 'UPDATED AT',
@@ -20,19 +18,19 @@ CREATE TABLE `pipeline_definitions` (
   KEY `pipeline_source_id_index` (`pipeline_source_id`),
   KEY `pipeline_id_index` (`pipeline_id`),
   KEY `pipeline_definition_extra_id_index` (`pipeline_definition_extra_id`),
-  KEY `name_index` (`name`)
+  KEY `name_index` (`soft_deleted_at`,`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='pipeline definition table';
 
-
-CREATE TABLE `pipeline_definition_extras` (
+CREATE TABLE `pipeline_definition_extra` (
   `id` varchar(36) NOT NULL DEFAULT '' COMMENT '主键',
   `extra` mediumtext NOT NULL COMMENT '详细信息',
   `created_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '创建时间',
   `updated_at` datetime NOT NULL DEFAULT '1970-01-01 00:00:00' ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `soft_deleted_at` bigint(20) NOT NULL COMMENT '软删除',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='pipeline definition extra table';
 
-CREATE TABLE `pipeline_sources` (
+CREATE TABLE `pipeline_source` (
   `id` varchar(36) NOT NULL DEFAULT '' COMMENT '主键',
   `source_type` varchar(20) NOT NULL COMMENT '来源类型',
   `soft_deleted_at` bigint(20) NOT NULL DEFAULT '0' COMMENT '软删除',
@@ -45,12 +43,8 @@ CREATE TABLE `pipeline_sources` (
   `path` varchar(200) NOT NULL DEFAULT '' COMMENT '源地址位置目录位置',
   `name` varchar(200) NOT NULL DEFAULT '' COMMENT '流水线名称',
   PRIMARY KEY (`id`),
-  KEY `source_type_index` (`source_type`),
-  KEY `remote_index` (`remote`),
-  KEY `name_index` (`name`),
-  KEY `ref_index` (`ref`)
+  KEY `remote_ref_name_index` (`soft_deleted_at`,`remote`, `ref`, `name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='pipeline definition source table';
-
 
 ALTER TABLE `pipeline_bases` ADD COLUMN `pipeline_definition_id` varchar(36) DEFAULT '' COMMENT '流水线定义id';
 ALTER TABLE `pipeline_crons` ADD COLUMN `pipeline_definition_id` varchar(36) DEFAULT '' COMMENT '流水线定义id';

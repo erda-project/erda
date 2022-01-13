@@ -50,7 +50,7 @@ type PipelineSourceUnique struct {
 }
 
 func (PipelineSource) TableName() string {
-	return "pipeline_sources"
+	return "pipeline_source"
 }
 
 func (client *Client) CreatePipelineSource(pipelineSource *PipelineSource, ops ...mysqlxorm.SessionOption) (err error) {

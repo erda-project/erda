@@ -29,7 +29,7 @@ type PipelineDefinitionExtra struct {
 }
 
 func (PipelineDefinitionExtra) TableName() string {
-	return "pipeline_definition_extras"
+	return "pipeline_definition_extra"
 }
 
 func (client *Client) CreatePipelineDefinitionExtra(pipelineDefinitionExtra *PipelineDefinitionExtra, ops ...mysqlxorm.SessionOption) (err error) {

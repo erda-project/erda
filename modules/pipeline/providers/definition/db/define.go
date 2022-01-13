@@ -43,7 +43,7 @@ type PipelineDefinition struct {
 }
 
 func (PipelineDefinition) TableName() string {
-	return "pipeline_definitions"
+	return "pipeline_definition"
 }
 
 func (client *Client) CreatePipelineDefinition(pipelineDefinition *PipelineDefinition, ops ...mysqlxorm.SessionOption) (err error) {
@@ -106,9 +106,9 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 		pipelineDefinitionSources []PipelineDefinitionSource
 		err                       error
 	)
-	engine := session.Table("pipeline_definitions").Alias("d").
+	engine := session.Table("pipeline_definition").Alias("d").
 		Select("d.*,s.source_type,s.remote,s.ref,s.path,s.name AS file_name").
-		Join("LEFT", []string{"pipeline_sources", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
+		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
 		Where("d.soft_deleted_at = 0")
 	if req.Remote != nil {
 		engine = engine.In("s.remote", req.Remote)
@@ -177,9 +177,9 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 		total int64
 		err   error
 	)
-	engine := session.Table("pipeline_definitions").Alias("d").
+	engine := session.Table("pipeline_definition").Alias("d").
 		Select("COUNT(*)").
-		Join("LEFT", []string{"pipeline_sources", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
+		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
 		Where("d.soft_deleted_at = 0").
 		In("s.remote", req.Remote)
 	if req.Name != "" {
