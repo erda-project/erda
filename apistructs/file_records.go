@@ -105,16 +105,17 @@ const (
 )
 
 type ListTestFileRecordsRequest struct {
-	ProjectID   uint64           `json:"projectID"`
-	ProjectIDs  []uint64         `json:"-"`
-	ProjectName string           `json:"projectName"`
-	OrgID       uint64           `json:"orgID"`
-	SpaceID     uint64           `json:"spaceID"`
-	Types       []FileActionType `json:"types"`
-	Locale      string           `json:"locale"`
-	PageNo      int              `json:"pageNo"`
-	PageSize    int              `json:"pageSize"`
-	Asc         bool             `json:"asc"`
+	ProjectID          uint64           `json:"projectID"`
+	ProjectIDs         []uint64         `json:"-"`
+	ProjectName        string           `json:"projectName"`
+	ProjectDisplayName string           `json:"projectDisplayName"`
+	OrgID              uint64           `json:"orgID"`
+	SpaceID            uint64           `json:"spaceID"`
+	Types              []FileActionType `json:"types"`
+	Locale             string           `json:"locale"`
+	PageNo             int              `json:"pageNo"`
+	PageSize           int              `json:"pageSize"`
+	Asc                bool             `json:"asc"`
 
 	IdentityInfo
 }

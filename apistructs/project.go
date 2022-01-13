@@ -477,16 +477,18 @@ type GetModelProjectsMapResponse struct {
 }
 
 type ExportProjectTemplateRequest struct {
-	ProjectID   uint64 `json:"projectID"`
-	ProjectName string `json:"projectName"`
-	OrgID       int64  `json:"orgID"`
+	ProjectID          uint64 `json:"projectID"`
+	ProjectName        string `json:"projectName"`
+	ProjectDisplayName string `json:"projectDisplayName"`
+	OrgID              int64  `json:"orgID"`
 	IdentityInfo
 }
 
 type ImportProjectTemplateRequest struct {
-	ProjectID   uint64 `json:"projectID"`
-	ProjectName string `json:"projectName"`
-	OrgID       int64  `json:"orgID"`
+	ProjectID          uint64 `json:"projectID"`
+	ProjectName        string `json:"projectName"`
+	ProjectDisplayName string `json:"projectDisplayName"`
+	OrgID              int64  `json:"orgID"`
 	IdentityInfo
 }
 
