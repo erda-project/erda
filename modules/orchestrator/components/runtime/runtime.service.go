@@ -319,6 +319,7 @@ func isStatusForDisplay(status string) string {
 
 func fillInspectByApp(data *pb.RuntimeInspect, runtime *dbclient.Runtime, app *apistructs.ApplicationDTO) {
 	data.ProjectID = app.ProjectID
+	data.ApplicationName = app.Name
 	data.CreatedAt = timestamppb.New(runtime.CreatedAt)
 	data.UpdatedAt = timestamppb.New(runtime.UpdatedAt)
 	data.TimeCreated = timestamppb.New(runtime.CreatedAt)
