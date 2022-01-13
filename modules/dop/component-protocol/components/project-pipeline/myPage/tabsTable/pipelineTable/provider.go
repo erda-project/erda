@@ -51,7 +51,7 @@ type PipelineTable struct {
 	bdl      *bundle.Bundle
 	gsHelper *gshelper.GSHelper
 	sdk      *cptype.SDK
-	InParams *InParams       `json:"-"`
+	InParams *InParams      `json:"-"`
 	PageNo   uint64         `json:"-"`
 	PageSize uint64         `json:"-"`
 	Total    uint64         `json:"-"`
