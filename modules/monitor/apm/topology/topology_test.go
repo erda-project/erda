@@ -15,13 +15,9 @@
 package topology
 
 import (
-	"bou.ke/monkey"
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/gofrs/uuid"
-	"github.com/olivere/elastic"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"net/http"
 	"net/url"
@@ -29,6 +25,11 @@ import (
 	"regexp"
 	"strconv"
 	"testing"
+
+	"bou.ke/monkey"
+	"github.com/gofrs/uuid"
+	"github.com/olivere/elastic"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
