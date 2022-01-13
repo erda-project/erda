@@ -20,6 +20,8 @@ import (
 
 	"github.com/alecthomas/assert"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -32,10 +34,25 @@ func TestComponentFilter_ImportExport(t *testing.T) {
 
 }
 
+type MockTran struct {
+	i18n.Translator
+}
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
+	return ""
+}
+
+func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return ""
+}
+
 func TestSetData(t *testing.T) {
 	table := ExecuteTaskTable{
 		State: State{PageNo: 1, PageSize: 1},
 		Data:  map[string]interface{}{},
+		sdk: &cptype.SDK{
+			Tran: &MockTran{},
+		},
 	}
 	p := apistructs.PipelineDetailDTO{
 		PipelineStages: []apistructs.PipelineStageDetailDTO{

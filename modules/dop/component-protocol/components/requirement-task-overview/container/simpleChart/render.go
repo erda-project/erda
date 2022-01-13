@@ -46,7 +46,7 @@ func (s *SimpleChart) Render(ctx context.Context, c *cptype.Component, scenario 
 	s.Data = Data{
 		Main:        strconv.Itoa(len(s.Issues)),
 		Sub:         cputil.I18n(ctx, "total"),
-		CompareText: "较昨日",
+		CompareText: cputil.I18n(ctx, "comparedYesterday"),
 		CompareValue: func() string {
 			count := common.IssueCountIf(s.Issues, func(issue *dao.IssueItem) bool {
 				return common.DateTime(issue.CreatedAt).Equal(common.DateTime(time.Now()))

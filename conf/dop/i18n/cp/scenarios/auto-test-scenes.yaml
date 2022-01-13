@@ -29,7 +29,61 @@ zh:
   wb.content.autotest.scene.date_day: 当前时间1天前(yyyy-MM-dd)格式 2006-01-01
   wb.content.autotest.scene.datetime: 当前时间(yyyy-MM-dd HH:mm:ss)格式 2006-01-02 15:04:05
   wb.content.autotest.scene.datetime_hour: 当前时间1小时前(yyyy-MM-dd HH:mm:ss)格式 2006-01-02 15:04:05
-
+  sceneCatalog: 场景目录
+  addSceneSet: 添加场景集
+  scriptLang: 脚本语言
+  stepName: 步骤名称
+  stepType: 步骤类型
+  step: 步骤
+  subtask: 子任务数
+  apiPath: 接口路径
+  addScene: 添加场景
+  refSceneSet: 引用场景集
+  editSceneSet: 编辑场景集
+  editScene: 编辑场景
+  copyToAnotherSceneSet: 复制到其他场景集
+  exportSceneSet: 导出场景集
+  copyScene: 复制场景
+  addParallelScene: 添加并行场景
+  changeToSerial: 改为串行
+  sceneList: 场景列表
+  execute: 执行
+  configInfo: 配置信息
+  executeDetail: 执行明细
+  sceneInput: 场景入参
+  paramName: 参数名
+  refValue: 引用值
+  validInPlan: 在执行计划中生效
+  debugValue: 调试值
+  validInScene: 仅在当前场景执行时生效
+  selectiveExp: 可选择表达式
+  preSceneOut: 前置场景出参
+  globalInput: 全局变量入参
+  sceneStep: 场景步骤
+  sceneStepTip: 组之间是串行执行，组内是并行执行
+  addParallelApi: 添加并行接口
+  copyApi: 复制接口
+  copyJson: 复制Json格式
+  formAdd: 表单添加
+  textAdd: 粘贴文本添加
+  inputSceneParam: 本场景入参
+  preApiOut: 前置接口出参
+  preConfigOut: 前置配置单出参
+  saveExec: 保存并执行
+  addByText: 按文本添加
+  apiText: API文本
+  selectConfig: 请选择配置单
+  waitTime: 等待时间(s)
+  sceneOut: 场景出参
+  refresh: 刷新
+  execHistory: 执行历史
+  pipelineID: 流水线 ID
+  duration: 时长
+  totalApi: 接口总数
+  apiExecRate: 接口执行率
+  apiPassRate: 接口通过率
+  execStep: 执行步骤
+  checkRes: 查看结果
 en:
   wb.content.autotest.scene.string: random string like abc
   wb.content.autotest.scene.integer: random integer like 10000
@@ -61,3 +115,57 @@ en:
   wb.content.autotest.scene.date_day: current time (yyyy-MM-dd) 1 day ago format like 2006-01-01
   wb.content.autotest.scene.datetime: current time (yyyy-MM-dd HH:mm:ss) format like 2006-01-02 15:04:05
   wb.content.autotest.scene.datetime_hour: current time (yyyy-MM-dd HH:mm:ss) format with time 1 hour before like 2006-01-02 15:04:05
+  sceneCatalog: Scene catalog
+  addSceneSet: Add scene set
+  scriptLang: Script language
+  stepName: Step name
+  stepType: Step type
+  step: Step
+  subtask: Number of subtasks
+  apiPath: API path
+  addScene: Add scene
+  refSceneSet: Reference scene set
+  editSceneSet: Edit scene set
+  editScene: Edit scene
+  copyToAnotherSceneSet: Copy to other scene set
+  exportSceneSet: Export scene set
+  copyScene: Copy scene
+  addParallelScene: Add parallel scene
+  changeToSerial: Change to serial
+  sceneList: Scene list
+  execute: Execute
+  configInfo: Configuration information
+  executeDetail: Execution details
+  sceneInput: Scene input parameters
+  paramName: name
+  refValue: Reference value
+  validInPlan: Take effect in the execution plan
+  debugValue: Debug Value
+  validInScene: Take effect only when the current scene is executed
+  selectiveExp: Select expression
+  preSceneOut: Pre-scene output
+  globalInput: Global variable input
+  sceneStep: Steps
+  sceneStepTip: Serial execution between groups and parallel execution within groups
+  addParallelApi: Add parallel API
+  copyApi: Copy API
+  copyJson: Copy JSON format
+  formAdd: Add by form
+  textAdd: Add by text
+  inputSceneParam: Input parameter for this scene
+  preApiOut: Pre-API output parameter
+  preConfigOut: Pre-configuration-form output parameter
+  addByText: Add by text
+  apiText: API text
+  selectConfig: Please select configuration form
+  waitTime: Wait time(s)
+  sceneOut: Output parameters
+  refresh: Refresh
+  execHistory: Execution history
+  pipelineID: Pipeline ID
+  duration: Duration
+  totalApi: Total API
+  apiExecRate: API execution rate
+  apiPassRate: API pass rate
+  execStep: Steps
+  checkRes: Result

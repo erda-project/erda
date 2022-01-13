@@ -105,7 +105,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	case cptype.InitializeOperation, cptype.RenderingOperation:
 		c.Props = map[string]interface{}{
 			"width": 850,
-			"title": "按文本添加",
+			"title": cputil.I18n(ctx, "addByText"),
 			"fields": []interface{}{
 				map[string]interface{}{
 					"component": "textarea",
@@ -116,7 +116,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 						},
 					},
 					"key":      "apiText",
-					"label":    "API文本",
+					"label":    cputil.I18n(ctx, "apiText"),
 					"required": true,
 				},
 			},

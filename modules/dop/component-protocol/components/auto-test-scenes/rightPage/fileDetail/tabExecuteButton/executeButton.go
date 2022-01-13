@@ -249,7 +249,7 @@ func (a *ComponentAction) handleSceneSetDefault() error {
 	}
 
 	a.Props.Type = "primary"
-	a.Props.Test = "执行"
+	a.Props.Test = a.sdk.I18n("execute")
 	return nil
 }
 
@@ -322,7 +322,7 @@ func (a *ComponentAction) handleSceneDefault() error {
 	}
 
 	a.Props.Type = "primary"
-	a.Props.Test = "执行"
+	a.Props.Test = a.sdk.I18n("execute")
 	return nil
 }
 

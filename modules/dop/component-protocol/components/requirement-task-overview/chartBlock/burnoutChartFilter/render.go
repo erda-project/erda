@@ -57,17 +57,17 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 		Conditions: []filter.PropCondition{
 			{
 				Key:       "type",
-				Label:     "类型",
+				Label:     cputil.I18n(ctx, "type"),
 				EmptyText: cputil.I18n(ctx, "all"),
 				Fixed:     true,
 				Type:      filter.PropConditionTypeSelect,
 				Options: []filter.PropConditionOption{
 					{
-						Label: "需求",
+						Label: cputil.I18n(ctx, "requirement"),
 						Value: "requirement",
 					},
 					{
-						Label: "任务",
+						Label: cputil.I18n(ctx, "task"),
 						Value: "task",
 					},
 				},
@@ -77,17 +77,17 @@ func (f *Filter) Render(ctx context.Context, c *cptype.Component, scenario cptyp
 					"mode": "single",
 				},
 				Key:       "dimension",
-				Label:     "维度",
+				Label:     cputil.I18n(ctx, "dimension"),
 				EmptyText: cputil.I18n(ctx, "all"),
 				Fixed:     true,
 				Type:      filter.PropConditionTypeSelect,
 				Options: []filter.PropConditionOption{
 					{
-						Label: "按事项个数",
+						Label: cputil.I18n(ctx, "byIssueNum"),
 						Value: "total",
 					},
 					{
-						Label: "按事项工时",
+						Label: cputil.I18n(ctx, "byIssueHour"),
 						Value: "workTime",
 					},
 				},

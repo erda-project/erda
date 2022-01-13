@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
@@ -177,35 +178,35 @@ Label:
 	i.Props = make(map[string]interface{})
 	i.Props["fields"] = []PropColumn{
 		{
-			Label:    "流水线ID",
+			Label:    cputil.I18n(ctx, "pipelineID"),
 			ValueKey: "pipelineID",
 		},
 		{
-			Label:    "状态",
+			Label:    cputil.I18n(ctx, "state"),
 			ValueKey: "status",
 		},
 		{
-			Label:    "时长",
+			Label:    cputil.I18n(ctx, "duration"),
 			ValueKey: "time",
 		},
 		{
-			Label:    "开始时间",
+			Label:    cputil.I18n(ctx, "start-time"),
 			ValueKey: "timeBegin",
 		},
 		{
-			Label:    "结束时间",
+			Label:    cputil.I18n(ctx, "endTime"),
 			ValueKey: "timeEnd",
 		},
 		{
-			Label:    "接口总数",
+			Label:    cputil.I18n(ctx, "totalApi"),
 			ValueKey: "autoTestNum",
 		},
 		{
-			Label:    "接口执行率",
+			Label:    cputil.I18n(ctx, "apiExecRate"),
 			ValueKey: "autoTestExecPercent",
 		},
 		{
-			Label:    "接口通过率",
+			Label:    cputil.I18n(ctx, "apiPassRate"),
 			ValueKey: "autoTestSuccessPercent",
 		},
 	}

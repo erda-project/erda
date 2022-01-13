@@ -31,7 +31,7 @@ type value struct {
 	ApiSpec MU `json:"apiSpec"`
 }
 
-func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, error) {
+func (i *ComponentStageForm) RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, error) {
 	title := "#" + strconv.Itoa(int(step.ID)) + " "
 	if step.Type == apistructs.StepTypeWait {
 		if step.Value == "" {
@@ -88,7 +88,7 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 		o.Key = apistructs.AutoTestSceneStepCopyOperationKey.String()
 		o.Icon = "fz1"
 		//o.HoverTip = "复制接口"
-		o.Text = "复制接口"
+		o.Text = i.sdk.I18n("copyApi")
 		o.Disabled = false
 		o.Reload = true
 		o.HoverShow = true
@@ -99,7 +99,7 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 		o2 := CreateOperation{}
 		o2.Key = apistructs.AutoTestSceneStepCreateOperationKey.String()
 		o2.Icon = "add"
-		o2.HoverTip = "添加并行接口"
+		o2.HoverTip = i.sdk.I18n("addParallelApi")
 		o2.Disabled = false
 		o2.Reload = true
 		o2.HoverShow = true
@@ -110,7 +110,7 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 		o3.Key = apistructs.AutoTestSceneStepCopyAsJsonOperationKey.String()
 		o3.Icon = "fz1"
 		o3.Reload = false
-		o3.Text = "复制Json格式"
+		o3.Text = i.sdk.I18n("copyJson")
 		o3.Key = "copyAsJson"
 		o3.Disabled = false
 		o3.Group = "copy"
@@ -133,7 +133,7 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 		OperationBaseInfo: OperationBaseInfo{
 			Icon:     "split",
 			Key:      apistructs.AutoTestSceneStepSplitOperationKey.String(),
-			HoverTip: "改为串行",
+			HoverTip: i.sdk.I18n("changeToSerial"),
 			Disabled: false,
 			Reload:   true,
 		},
@@ -150,7 +150,7 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 	oc.Icon = "shanchu"
 	oc.Disabled = false
 	oc.Reload = true
-	oc.Confirm = "是否确认删除"
+	oc.Confirm = i.sdk.I18n("deleteConfirm")
 	oc.HoverShow = true
 	oc.Meta = OpMetaInfo{AutotestSceneRequest: apistructs.AutotestSceneRequest{
 		AutoTestSceneParams: apistructs.AutoTestSceneParams{
@@ -185,13 +185,13 @@ func (i *ComponentStageForm) RenderListStageForm() error {
 	}
 	var list []StageData
 	for _, v := range rsp {
-		stageData, err := RenderStage(v.ID, v)
+		stageData, err := i.RenderStage(v.ID, v)
 		if err != nil {
 			return err
 		}
 		list = append(list, stageData)
 		for _, s := range v.Children {
-			stageData, err := RenderStage(v.ID, s)
+			stageData, err := i.RenderStage(v.ID, s)
 			if err != nil {
 				return err
 			}

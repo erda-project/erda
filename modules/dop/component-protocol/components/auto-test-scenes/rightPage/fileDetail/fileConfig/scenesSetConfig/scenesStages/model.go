@@ -158,7 +158,7 @@ func (s *SceneStage) setToComponent(c *cptype.Component) error {
 	return nil
 }
 
-func NewStageData(scene apistructs.AutoTestScene, svc *autotestv2.Service) (s StageData) {
+func NewStageData(ss *SceneStage, scene apistructs.AutoTestScene, svc *autotestv2.Service) (s StageData) {
 	s.Title = fmt.Sprintf("#%d 场景: %s", scene.ID, scene.Name)
 	if scene.RefSetID > 0 {
 		s.Tags = []stages.Tag{
@@ -184,7 +184,7 @@ func NewStageData(scene apistructs.AutoTestScene, svc *autotestv2.Service) (s St
 		OperationBaseInfo: OperationBaseInfo{
 			Key:       AddParallelOperationKey.String(),
 			Icon:      "add",
-			HoverTip:  "添加并行场景",
+			HoverTip:  ss.sdk.I18n("addParallelScene"),
 			HoverShow: true,
 			Reload:    true,
 			Disabled:  false,
@@ -199,7 +199,7 @@ func NewStageData(scene apistructs.AutoTestScene, svc *autotestv2.Service) (s St
 			Icon:     "shanchu",
 			Reload:   true,
 			Disabled: false,
-			Confirm:  "是否确认删除",
+			Confirm:  ss.sdk.I18n("delete"),
 		},
 		Meta: OpMetaInfo{
 			ID: scene.ID,
@@ -209,7 +209,7 @@ func NewStageData(scene apistructs.AutoTestScene, svc *autotestv2.Service) (s St
 		OperationBaseInfo: OperationBaseInfo{
 			Key:       SplitOperationKey.String(),
 			Icon:      "split",
-			HoverTip:  "改为串行",
+			HoverTip:  ss.sdk.I18n("changeToSerial"),
 			HoverShow: true,
 			Reload:    true,
 			Disabled: func() bool {
@@ -230,7 +230,7 @@ func NewStageData(scene apistructs.AutoTestScene, svc *autotestv2.Service) (s St
 				Key:       CopyParallelOperationKey.String(),
 				Icon:      "fz1",
 				HoverShow: true,
-				Text:      "复制场景",
+				Text:      ss.sdk.I18n("copyScene"),
 				Reload:    true,
 				Disabled:  false,
 				Group:     "copy",
@@ -244,7 +244,7 @@ func NewStageData(scene apistructs.AutoTestScene, svc *autotestv2.Service) (s St
 				Key:       CopyToOperationKey.String(),
 				Icon:      "fz1",
 				HoverShow: true,
-				Text:      "复制到其他场景集",
+				Text:      ss.sdk.I18n("copyToAnotherSceneSet"),
 				Reload:    true,
 				Disabled:  false,
 				Group:     "copy",
@@ -259,7 +259,7 @@ func NewStageData(scene apistructs.AutoTestScene, svc *autotestv2.Service) (s St
 			Key:       EditOperationKey.String(),
 			Icon:      "bianji",
 			HoverShow: true,
-			Text:      "编辑场景",
+			Text:      ss.sdk.I18n("editScene"),
 			Reload:    true,
 			Disabled:  false,
 		},

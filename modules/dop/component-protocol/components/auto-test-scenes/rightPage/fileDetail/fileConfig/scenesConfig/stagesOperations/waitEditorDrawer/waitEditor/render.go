@@ -104,7 +104,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		c.Props = map[string]interface{}{
 			"fields": []map[string]interface{}{
 				{
-					"label":          "等待时间(s)",
+					"label":          cputil.I18n(ctx, "waitTime"),
 					"component":      "inputNumber",
 					"required":       true,
 					"key":            "waitTimeSec",

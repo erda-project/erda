@@ -46,7 +46,7 @@ func (i *Info) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		{
 			{
 				Main: strconv.Itoa(stats.Unclose),
-				Sub:  "未完成",
+				Sub:  cputil.I18n(ctx, "unfinished"),
 			},
 			{
 				Main: strconv.Itoa(stats.Expire),

@@ -172,7 +172,7 @@ func (ae *ApiEditor) GenExecuteButton(ctx context.Context) (string, error) {
 	}
 	mp := map[string]interface{}{
 		"menu":      list,
-		"text":      "保存并执行",
+		"text":      cputil.I18n(ctx, "saveExec"),
 		"type":      "primary",
 		"disabled":  true,
 		"allowSave": true,

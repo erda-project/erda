@@ -244,16 +244,16 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			Operations: map[string]interface{}{},
 			ExtraInfos: []ExtraInfos{
 				{
-					Text: fmt.Sprintf("场景集： %v", statsMap[each.ID].SetNum),
+					Text: fmt.Sprintf("%s: %v", a.sdk.I18n("sceneset"), statsMap[each.ID].SetNum),
 				},
 				{
-					Text: fmt.Sprintf("场景数： %v", statsMap[each.ID].SceneNum),
+					Text: fmt.Sprintf("%s: %v", a.sdk.I18n("auto-test-scene-num"), statsMap[each.ID].SceneNum),
 				},
 				{
-					Text: fmt.Sprintf("接口数： %v", statsMap[each.ID].StepNum),
+					Text: fmt.Sprintf("%s: %v", a.sdk.I18n("auto-test-api-num"), statsMap[each.ID].StepNum),
 				},
 				{
-					Text:    "更新于 " + text,
+					Text:    a.sdk.I18n("updatedAt") + " " + text,
 					Tooltip: updatedAt,
 				},
 			},

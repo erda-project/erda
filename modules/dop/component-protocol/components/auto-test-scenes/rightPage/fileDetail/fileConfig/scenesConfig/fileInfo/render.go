@@ -83,29 +83,29 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *cptype.Component, sce
 
 	i.Props["fields"] = []PropColumn{
 		{
-			Label:      "名称",
+			Label:      i.sdk.I18n("name"),
 			ValueKey:   "name",
 			RenderType: "ellipsis",
 		},
 		{
-			Label:      "描述",
+			Label:      i.sdk.I18n("desc"),
 			ValueKey:   "description",
 			RenderType: "ellipsis",
 		},
 		{
-			Label:    "创建人",
+			Label:    i.sdk.I18n("creator"),
 			ValueKey: "creatorID",
 		},
 		{
-			Label:    "创建时间",
+			Label:    i.sdk.I18n("creationTime"),
 			ValueKey: "createAtString",
 		},
 		{
-			Label:    "更新人",
+			Label:    i.sdk.I18n("updatedBy"),
 			ValueKey: "updaterID",
 		},
 		{
-			Label:    "更新时间",
+			Label:    i.sdk.I18n("updateTime"),
 			ValueKey: "updateAtString",
 		},
 	}

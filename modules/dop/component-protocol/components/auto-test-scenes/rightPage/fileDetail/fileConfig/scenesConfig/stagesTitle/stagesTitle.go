@@ -21,13 +21,14 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 )
 
 type ComponentAction struct {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	return json.Unmarshal([]byte(`{"title": "场景步骤", "level": 2,"tips": "组之间是串行执行，组内是并行执行"}`), &c.Props)
+	return json.Unmarshal([]byte(`{"title": `+cputil.I18n(ctx, "sceneStep")+`, "level": 2,"tips": `+cputil.I18n(ctx, "sceneStepTip")+`}`), &c.Props)
 }
 
 func init() {

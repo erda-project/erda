@@ -42,7 +42,7 @@ func (i *MoreButton) Render(ctx context.Context, c *cptype.Component, scenario c
 		i.State.Visible = true
 	}
 	i.Props = button.Props{
-		Text:  "更多操作",
+		Text:  i.sdk.I18n("moreOperations"),
 		Type:  "primary",
 		Ghost: true,
 		Menu: []button.MenuItem{
