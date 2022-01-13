@@ -21,13 +21,14 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 )
 
 type ComponentAction struct {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	return json.Unmarshal([]byte(`{ "trigger": "click", "placement": "bottomRight", "title": "执行历史", "size":"l" }`), &c.Props)
+	return json.Unmarshal([]byte(`{ "trigger": "click", "placement": "bottomRight", "title": `+cputil.I18n(ctx, "execHistory")+`, "size":"l" }`), &c.Props)
 }
 
 func init() {

@@ -719,6 +719,8 @@ func (fsm *DeployFSMContext) UpdateDeploymentStatusToRuntimeAndOrder() error {
 		DeploymentStatus: fsm.Deployment.Status,
 		RuntimeID:        fsm.Runtime.ID,
 	}
+	logrus.Infof("update deployment(%+v) status to deployment_order (%+v) detail is: %+v",
+		fsm.deploymentID, DeploymentOrderID, deploymentOrderStatusMap)
 	if deploymentOrderStatus, err = json.Marshal(deploymentOrderStatusMap); err != nil {
 		logrus.Warnf("failed to marshal, (%v)", err)
 		return nil

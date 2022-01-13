@@ -109,7 +109,7 @@ func (b *Bundle) GetAppsByProject(projectID, orgID uint64, userID string) (*apis
 		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
 		Header(httputil.UserHeader, userID).
 		Param("projectId", strconv.FormatUint(projectID, 10)).
-		Param("pageSize", "100").
+		Param("pageSize", "10000").
 		Param("pageNo", "1").
 		Do().JSON(&listResp)
 	if err != nil {

@@ -93,7 +93,7 @@ func (a *ComponentFileFormModal) initFields() {
 		Fields: []Entry{
 			{
 				Key:       "name",
-				Label:     "名称",
+				Label:     a.sdk.I18n("name"),
 				Required:  true,
 				Component: "input",
 				Rules: []Rule{
@@ -108,7 +108,7 @@ func (a *ComponentFileFormModal) initFields() {
 			},
 			{
 				Key:       "desc",
-				Label:     "描述",
+				Label:     a.sdk.I18n("desc"),
 				Component: "textarea",
 				Required:  false,
 				ComponentProps: ComponentProps{
@@ -125,7 +125,7 @@ func (a *ComponentFileFormModal) initSceneSetFields(inParams fileTree.InParams) 
 		Fields: []Entry{
 			{
 				Key:       "name",
-				Label:     "名称",
+				Label:     a.sdk.I18n("name"),
 				Required:  true,
 				Component: "input",
 				Rules: []Rule{
@@ -172,7 +172,7 @@ func (a *ComponentFileFormModal) initSceneSetFields(inParams fileTree.InParams) 
 			},
 			{
 				Key:       "desc",
-				Label:     "描述",
+				Label:     a.sdk.I18n("desc"),
 				Component: "textarea",
 				Required:  false,
 				ComponentProps: ComponentProps{
@@ -248,7 +248,7 @@ func (a *ComponentFileFormModal) renderHelper(inParams fileTree.InParams, event 
 	switch a.State.ActionType {
 	case "AddScene":
 		a.initFields()
-		a.Props.Title = "添加场景"
+		a.Props.Title = a.sdk.I18n("addScene")
 		a.State.FormData = FormData{
 			Name:        "",
 			Description: "",
@@ -258,7 +258,7 @@ func (a *ComponentFileFormModal) renderHelper(inParams fileTree.InParams, event 
 		if err != nil {
 			return err
 		}
-		a.Props.Title = "引用场景集"
+		a.Props.Title = a.sdk.I18n("refSceneSet")
 		a.State.FormData = FormData{
 			Name:        "",
 			Description: "",
@@ -267,20 +267,20 @@ func (a *ComponentFileFormModal) renderHelper(inParams fileTree.InParams, event 
 		}
 	case "UpdateSceneSet":
 		a.initFields()
-		a.Props.Title = "编辑场景集"
+		a.Props.Title = a.sdk.I18n("editSceneSet")
 		a.Props.Fields = []Entry{a.Props.Fields[0]}
 		if err := a.GetSceneSet(); err != nil {
 			return err
 		}
 	case "UpdateScene":
 		a.initFields()
-		a.Props.Title = "编辑场景"
+		a.Props.Title = a.sdk.I18n("editScene")
 		if err := a.GetScene(inParams); err != nil {
 			return err
 		}
 	case "ClickAddSceneSetButton":
 		a.initFields()
-		a.Props.Title = "添加场景集"
+		a.Props.Title = a.sdk.I18n("addSceneSet")
 		a.Props.Fields = []Entry{a.Props.Fields[0]}
 		a.State.FormData = FormData{
 			Name:        "",
@@ -288,7 +288,7 @@ func (a *ComponentFileFormModal) renderHelper(inParams fileTree.InParams, event 
 		}
 	case "CopyTo":
 		a.initSceneCopyToFields(inParams)
-		a.Props.Title = "复制到其他场景集"
+		a.Props.Title = a.sdk.I18n("copyToAnotherSceneSet")
 		a.Props.Fields = []Entry{a.Props.Fields[0]}
 		a.State.FormData = FormData{
 			ScenesSet: nil,
@@ -380,7 +380,7 @@ func (a *ComponentFileFormModal) GetScene(inParams fileTree.InParams) error {
 		a.Props.Fields = []Entry{
 			{
 				Key:       "name",
-				Label:     "名称",
+				Label:     a.sdk.I18n("name"),
 				Required:  true,
 				Component: "input",
 				Rules: []Rule{
@@ -418,7 +418,7 @@ func (a *ComponentFileFormModal) GetScene(inParams fileTree.InParams) error {
 			},
 			{
 				Key:       "desc",
-				Label:     "描述",
+				Label:     a.sdk.I18n("desc"),
 				Component: "textarea",
 				Required:  false,
 				ComponentProps: ComponentProps{
