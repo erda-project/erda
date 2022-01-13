@@ -116,12 +116,8 @@ func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runti
 
 	// get org locale
 	var locale string
-	if projectIDUint, err := strconv.ParseUint(projectID, 10, 32); err == nil {
-		if project, err := k.bdl.GetProject(projectIDUint); err == nil && project != nil {
-			if orgDTO, ok := orgCache.Get(strconv.FormatUint(project.OrgID, 10)); ok {
-				locale = orgDTO.Locale
-			}
-		}
+	if orgDTO, ok := orgCache.GetOrgByProjectID(projectID); ok {
+		locale = orgDTO.Locale
 	}
 
 	if requestsCPU > leftCPU || requestsMem > leftMem {

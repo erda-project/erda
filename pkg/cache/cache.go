@@ -78,7 +78,12 @@ func (c *Cache) Name() string {
 func (c *Cache) LoadWithUpdate(key interface{}) (*Item, bool) {
 	value, ok := c.Map.Load(key)
 	if !ok {
-		return c.update(key)
+		item, ok := c.update(key)
+		if !ok {
+			return nil, false
+		}
+		c.Store(key, item)
+		return item, true
 	}
 	item := value.(*Item)
 	if item.IsExpired() {

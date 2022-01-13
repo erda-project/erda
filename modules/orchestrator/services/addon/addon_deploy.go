@@ -43,7 +43,7 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 		// sleep 10秒，继续请求
 		logrus.Infof("polling addon: %v status until it's healthy", addonIns.ID)
 		if time.Now().Unix()-startTime > (conf.RuntimeUpMaxWaitTime() * 60) {
-			a.ExportLogInfo(apistructs.ErrorLevel, apistructs.AddonError, addonIns.ID, addonIns.ID+"-deploytimeout", i18n.OrgSprintf(a.bdl, addonIns.OrgID, "WaitingForAddonTimeOut"),
+			a.ExportLogInfo(apistructs.ErrorLevel, apistructs.AddonError, addonIns.ID, addonIns.ID+"-deploytimeout", i18n.OrgSprintf(addonIns.OrgID, "WaitingForAddonTimeOut"),
 				addonSpec.Name, addonIns.ID, conf.RuntimeUpMaxWaitTime())
 			logrus.Errorf("polling addon: %v status timeout(max: %d s)", addonIns.ID, apistructs.RuntimeUpMaxWaitTime)
 			break
@@ -57,7 +57,7 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 		}
 		// 如果状态是ready或者healthy，说明服务已经发起来了
 		if serviceGroup.Status == apistructs.StatusReady || serviceGroup.Status == apistructs.StatusHealthy {
-			a.ExportLogInfo(apistructs.SuccessLevel, apistructs.AddonError, addonIns.ID, addonIns.ID, i18n.OrgSprintf(a.bdl, addonIns.OrgID, "AddonIsHealthy"),
+			a.ExportLogInfo(apistructs.SuccessLevel, apistructs.AddonError, addonIns.ID, addonIns.ID, i18n.OrgSprintf(addonIns.OrgID, "AddonIsHealthy"),
 				addonIns.AddonName, addonIns.ID)
 			logrus.Infof("addon: %v is healthy!", addonIns.ID)
 			clusterInfo, err := a.bdl.QueryClusterInfo(addonInsRouting.Cluster)
@@ -131,7 +131,7 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 				for _, pod := range pendingPods {
 					podnamelist = append(podnamelist, pod.PodName)
 				}
-				a.ExportLogInfo(apistructs.InfoLevel, apistructs.AddonError, addonIns.ID, addonIns.ID, i18n.OrgSprintf(a.bdl, addonIns.OrgID, "UnhealthyAddonWithPendingPods"),
+				a.ExportLogInfo(apistructs.InfoLevel, apistructs.AddonError, addonIns.ID, addonIns.ID, i18n.OrgSprintf(addonIns.OrgID, "UnhealthyAddonWithPendingPods"),
 					addonIns.ID, strutil.Join(podnamelist, ",", true))
 			}
 		}

@@ -30,7 +30,7 @@ var (
 
 func init() {
 	bdl := bundle.New(bundle.WithCoreServices())
-	orgID2Org = cache.New("scheduler-org-id-for-org", time.Minute, func(i interface{}) (*cache.Item, bool) {
+	orgID2Org = cache.New("hepa-org-id-for-org", time.Minute, func(i interface{}) (*cache.Item, bool) {
 		orgDTO, err := bdl.GetOrg(i.(string))
 		if err != nil {
 			return nil, false
@@ -39,7 +39,7 @@ func init() {
 			Object: orgDTO,
 		}, true
 	})
-	projectID2Org = cache.New("scheduler-project-id-for-org", time.Minute, func(i interface{}) (*cache.Item, bool) {
+	projectID2Org = cache.New("hepa-project-id-for-org", time.Minute, func(i interface{}) (*cache.Item, bool) {
 		projectID, err := strconv.ParseUint(i.(string), 10, 32)
 		if err != nil {
 			return nil, false

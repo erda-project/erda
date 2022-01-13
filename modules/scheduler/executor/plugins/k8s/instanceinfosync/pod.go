@@ -302,7 +302,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 		containerIP = pod.Status.PodIP
 		hostIP = pod.Status.HostIP
 		var err error
-		orgs[i], _ = orgCache.Get(orgID)
+		orgs[i], _ = orgCache.GetOrgByOrgID(orgID)
 		cpuRequest, err = strconv.ParseFloat(pod.Spec.Containers[0].Resources.Requests.Cpu().AsDec().String(), 64)
 		if err != nil {
 			cpuRequest = 0

@@ -840,7 +840,7 @@ func (a *Addon) createAddonResource(addonIns *dbclient.AddonInstance, addonInsRo
 			}
 		} else {
 			if err := a.providerAddonDeploy(addonIns, addonInsRouting, params, addonSpec); err != nil {
-				a.ExportLogInfo(apistructs.ErrorLevel, apistructs.AddonError, addonIns.ID, addonIns.ID+"-callprovider", i18n.OrgSprintf(a.bdl, addonIns.OrgID, "FailedToCreateAddonByProvider"),
+				a.ExportLogInfo(apistructs.ErrorLevel, apistructs.AddonError, addonIns.ID, addonIns.ID+"-callprovider", i18n.OrgSprintf(addonIns.OrgID, "FailedToCreateAddonByProvider"),
 					params.AddonName, params.InstanceName, err)
 				a.pushLog(fmt.Sprintf("(%v)", err), params)
 				return err
@@ -975,7 +975,7 @@ func (a *Addon) basicAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouti
 	// 请求调度器
 	err = a.bdl.CreateServiceGroup(*addonCreateReq)
 	if err != nil {
-		a.ExportLogInfo(apistructs.ErrorLevel, apistructs.AddonError, addonIns.ID, addonIns.ID+"-internal", i18n.OrgSprintf(a.bdl, addonIns.OrgID, "FailedToCreateAddonByScheduler"), err)
+		a.ExportLogInfo(apistructs.ErrorLevel, apistructs.AddonError, addonIns.ID, addonIns.ID+"-internal", i18n.OrgSprintf(addonIns.OrgID, "FailedToCreateAddonByScheduler"), err)
 		logrus.Errorf("failed to create addon %s, instance id %v from scheduler, %v", addonSpec.Name, addonIns.ID, err)
 		return err
 	}
@@ -1010,7 +1010,7 @@ func (a *Addon) preCheck(params *apistructs.AddonHandlerCreateItem) error {
 func (a *Addon) customDeploy(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting,
 	params *apistructs.AddonHandlerCreateItem) error {
 	if len(addonIns.Config) == 0 {
-		a.ExportLogInfo(apistructs.ErrorLevel, apistructs.RuntimeError, params.RuntimeID, params.RuntimeID, i18n.OrgSprintf(a.bdl, addonIns.OrgID, "CustomAddonDoseNotExist"),
+		a.ExportLogInfo(apistructs.ErrorLevel, apistructs.RuntimeError, params.RuntimeID, params.RuntimeID, i18n.OrgSprintf(addonIns.OrgID, "CustomAddonDoseNotExist"),
 			addonInsRouting.AddonName, addonInsRouting.Name)
 		return errors.Errorf("custom addon should be created before being referenced, addon name: %s, instance name: %s", addonInsRouting.AddonName, addonInsRouting.Name)
 	}

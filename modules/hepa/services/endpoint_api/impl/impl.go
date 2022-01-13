@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/hepa/apipolicy"
 	"github.com/erda-project/erda/modules/hepa/bundle"
+	orgCache "github.com/erda-project/erda/modules/hepa/cache/org"
 	"github.com/erda-project/erda/modules/hepa/common"
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/config"
@@ -2601,12 +2602,8 @@ type endpointInfo struct {
 func (impl GatewayOpenapiServiceImpl) SetRuntimeEndpoint(info runtime_service.RuntimeEndpointInfo) error {
 	// get org locale
 	var locale string
-	if projectID, err := strconv.ParseUint(info.RuntimeService.ProjectId, 10, 32); err == nil {
-		if project, err := bundle.Bundle.GetProject(projectID); err == nil && project != nil {
-			if org, err := bundle.Bundle.GetOrg(project.OrgID); err == nil && org != nil {
-				locale = org.Locale
-			}
-		}
+	if orgDTO, ok := orgCache.GetOrgByProjectID(info.RuntimeService.ProjectId); ok {
+		locale = orgDTO.Locale
 	}
 
 	var endpoints []endpointInfo

@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
-	"github.com/erda-project/erda/bundle"
+	orgCache "github.com/erda-project/erda/modules/orchestrator/cache/org"
 )
 
 var (
@@ -46,10 +46,10 @@ func Sprintf(locale, key string, args ...interface{}) string {
 	return fmt.Sprintf(translator.Sprintf(codes, key), args...)
 }
 
-func OrgSprintf(bdl *bundle.Bundle, orgID, key string, args ...interface{}) string {
+func OrgSprintf(orgID, key string, args ...interface{}) string {
 	var locale = DefaultLocale
-	if org, err := bdl.GetOrg(orgID); err == nil {
-		locale = org.Locale
+	if orgDTO, ok := orgCache.GetOrgByOrgID(orgID); ok {
+		locale = orgDTO.Locale
 	}
 	return Sprintf(locale, key, args...)
 }

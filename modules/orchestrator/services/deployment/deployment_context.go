@@ -182,7 +182,7 @@ func (fsm *DeployFSMContext) precheck() error {
 				ResourceType:   apistructs.RuntimeError,
 				ResourceID:     strconv.FormatUint(fsm.Runtime.ID, 10),
 				OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
-				HumanLog:       i18n.OrgSprintf(fsm.bdl, strconv.FormatUint(fsm.Runtime.OrgID, 10), "InvalidServiceName", svcNames),
+				HumanLog:       i18n.OrgSprintf(strconv.FormatUint(fsm.Runtime.OrgID, 10), "InvalidServiceName", svcNames),
 				PrimevalLog: `The service name should conform to the following specifications:
 1. contain at most 63 characters 2. contain only lowercase alphanumeric characters or '-'
 3. start with an alphanumeric character 4. end with an alphanumeric character`,
@@ -911,7 +911,7 @@ func (fsm *DeployFSMContext) deployService() error {
 				ResourceType:   apistructs.RuntimeError,
 				ResourceID:     strconv.FormatUint(fsm.Runtime.ID, 10),
 				OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
-				HumanLog:       i18n.OrgSprintf(fsm.bdl, strconv.FormatUint(fsm.Runtime.OrgID, 10), "FailedToSchedule.NoNodeToDeploy"),
+				HumanLog:       i18n.OrgSprintf(strconv.FormatUint(fsm.Runtime.OrgID, 10), "FailedToSchedule.NoNodeToDeploy"),
 				PrimevalLog:    fmt.Sprintf("没有匹配的节点能部署, %s", precheckResp.Info),
 				DedupID:        fmt.Sprintf("orch-%d", fsm.Runtime.ID),
 			},
