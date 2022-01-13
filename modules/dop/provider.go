@@ -55,8 +55,8 @@ type provider struct {
 	Log logs.Logger
 
 	PipelineCms        cmspb.CmsServiceServer                  `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
-	PipelineSource     sourcepb.SourceServiceServer            `autowired:"erda.core.pipeline.source" optional:"true"`
-	PipelineDefinition definitionpb.DefinitionServiceServer    `autowired:"erda.core.pipeline.definition" optional:"true"`
+	PipelineSource     sourcepb.SourceServiceServer            `autowired:"erda.core.pipeline.source.SourceService" required:"true"`
+	PipelineDefinition definitionpb.DefinitionServiceServer    `autowired:"erda.core.pipeline.definition.DefinitionService" required:"true"`
 	TestPlanSvc        *testplan.TestPlanService               `autowired:"erda.core.dop.autotest.testplan.TestPlanService"`
 	Cmp                dashboardPb.ClusterResourceServer       `autowired:"erda.cmp.dashboard.resource.ClusterResource"`
 	TaskErrorSvc       *taskerror.TaskErrorService             `autowired:"erda.core.dop.taskerror.TaskErrorService"`
