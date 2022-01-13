@@ -156,6 +156,7 @@ func TestComposeApplicationsInfo(t *testing.T) {
 				{
 					Name:         "app1",
 					DeploymentId: 10,
+					ReleaseId:    "8d2385a088df415decdf6357147ed4a2",
 					Params: &apistructs.DeploymentOrderParam{
 						{
 							Key:     "key1",

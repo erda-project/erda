@@ -1,5 +1,4 @@
-version: 1.0
-scenario: deploy-center
+scenario: project-runtime
 
 hierarchy:
   root: page
@@ -15,34 +14,47 @@ hierarchy:
       right:
         advanceFilter
 
+options:
+  syncIntervalSecond: 30
+
 components:
   page:
     type: Container
-  topHead:
-    type: Container
-    props:
-      isTopHead: true
-  head:
+  filterContainer:
     type: LRContainer
-  filter:
+  advanceFilter:
+    type: ConfigurableFilter
+  inputFilter:
     type: ContractiveFilter
-  createReportButton:
-    type: Button
-  table:
-    type: Table
+  list:
+    type: List
+    version: 2
+  cleanData:
+    type: Container
+
 
 rendering:
-  filter:
-    - name: table
-      state:
-        - name: "values"
-          value: "{{ filter.values }}"
+  inputFilter:
+    - name: filterContainer
+    - name: advanceFilter
+    - name: list
+    - name: cleanData
+
+  advanceFilter:
+    - name: filterContainer
+    - name: inputFilter
+    - name: list
+    - name: cleanData
+
+  list:
+    - name: filterContainer
+    - name: cleanData
 
   __DefaultRendering__:
-    - name: createReportButton
-    - name: filter
-    - name: table
-      state:
-        - name: "values"
-          value: "{{ filter.values }}"
+    - name: page
+    - name: filterContainer
+    - name: advanceFilter
+    - name: inputFilter
+    - name: list
+    - name: cleanData
 

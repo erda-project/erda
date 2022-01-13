@@ -43,6 +43,7 @@ const (
 	Configs      = "configs"
 	Base64Decode = "base64-decode"
 	TriggerLabel = "triggers"
+	I18n         = "i18n"
 )
 
 const (

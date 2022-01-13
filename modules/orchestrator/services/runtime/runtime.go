@@ -234,7 +234,7 @@ func (r *Runtime) CreateByReleaseID(operator user.ID, releaseReq *apistructs.Run
 	req.Operator = operator.String()
 	req.Source = "RELEASE"
 	req.ReleaseID = releaseReq.ReleaseID
-	req.SkipPushByOrch = true
+	req.SkipPushByOrch = false
 
 	var extra apistructs.RuntimeCreateRequestExtra
 	extra.OrgID = uint64(releaseResp.OrgID)
@@ -306,7 +306,7 @@ func (r *Runtime) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 	// prepare runtime
 	// TODO: we do not need RepoAbbrev
 	runtime, created, err := r.db.FindRuntimeOrCreate(uniqueID, req.Operator, req.Source, req.ClusterName,
-		uint64(cluster.ID), app.GitRepoAbbrev, req.Extra.ProjectID, app.OrgID, req.DeploymentOrderName, req.ReleaseVersion)
+		uint64(cluster.ID), app.GitRepoAbbrev, req.Extra.ProjectID, app.OrgID, req.DeploymentOrderId, req.ReleaseVersion)
 	if err != nil {
 		return nil, apierrors.ErrCreateRuntime.InternalError(err)
 	}
@@ -533,7 +533,7 @@ func (r *Runtime) Redeploy(operator user.ID, orgID uint64, runtimeID uint64) (*a
 		DeployType:     "REDEPLOY",
 		ReleaseID:      deployment.ReleaseId,
 		Operator:       operator.String(),
-		SkipPushByOrch: true,
+		SkipPushByOrch: false,
 	}
 	return r.doDeployRuntime(&deployContext)
 }
@@ -980,7 +980,7 @@ func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, dep
 		BuiltDockerImages: rollbackTo.BuiltDockerImages,
 		NeedApproval:      needApproval,
 		ApprovalStatus:    map[bool]string{true: "WaitApprove", false: ""}[needApproval],
-		SkipPushByOrch:    true,
+		SkipPushByOrch:    false,
 		Param:             rollbackTo.Param,
 		DeploymentOrderId: rollbackTo.DeploymentOrderId,
 	}
@@ -1318,7 +1318,7 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 
 // ListGroupByApps lists all runtimes for given apps.
 // The key in the returned result map is appID.
-func (r *Runtime) ListGroupByApps(appIDs []uint64) (map[uint64][]*apistructs.RuntimeInspectDTO, error) {
+func (r *Runtime) ListGroupByApps(appIDs []uint64) (map[uint64][]*apistructs.RuntimeSummaryDTO, error) {
 	var l = logrus.WithField("func", "*Runtime.ListGroupByApps")
 	runtimes, err := r.db.FindRuntimesInApps(appIDs)
 	if err != nil {
@@ -1328,7 +1328,7 @@ func (r *Runtime) ListGroupByApps(appIDs []uint64) (map[uint64][]*apistructs.Run
 
 	// note: internal API, do not check the permission
 
-	var result = make(map[uint64][]*apistructs.RuntimeInspectDTO)
+	var result = make(map[uint64][]*apistructs.RuntimeSummaryDTO)
 	for appID, runtimeList := range runtimes {
 		for _, runtime := range runtimeList {
 			var d apistructs.RuntimeSummaryDTO
@@ -1337,7 +1337,7 @@ func (r *Runtime) ListGroupByApps(appIDs []uint64) (map[uint64][]*apistructs.Run
 					Warnln("failed to convertRuntimeSummaryDTOFromRuntimeModel")
 				continue
 			}
-			result[appID] = append(result[appID], &d.RuntimeInspectDTO)
+			result[appID] = append(result[appID], &d)
 		}
 	}
 
@@ -1378,7 +1378,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	d.ServiceGroupNamespace = runtime.ScheduleName.Namespace
 	d.ServiceGroupName = runtime.ScheduleName.Name
 	d.Source = runtime.Source
-	d.Status = apistructs.RuntimeStatusUnHealthy
+	d.Status = runtime.Status
 	if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
 		sg, err := r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
 		if err != nil {
@@ -1400,13 +1400,19 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	if runtime.LegacyStatus == dbclient.LegacyStatusDeleting {
 		d.DeleteStatus = dbclient.LegacyStatusDeleting
 	}
-	d.DeploymentOrderName = runtime.DeploymentOrderName
+	d.DeploymentOrderId = runtime.DeploymentOrderId
+	d.DeploymentOrderName = utils.ParseOrderName(runtime.DeploymentOrderId)
 	d.ReleaseVersion = runtime.ReleaseVersion
 	d.ReleaseID = deployment.ReleaseId
 	d.ClusterID = runtime.ClusterId
 	d.ClusterName = runtime.ClusterName
+	d.ReleaseVersion = runtime.ReleaseVersion
+	d.Creator = runtime.Creator
+	d.ApplicationID = runtime.ApplicationID
 	d.CreatedAt = runtime.CreatedAt
 	d.UpdatedAt = runtime.UpdatedAt
+	d.RawStatus = runtime.Status
+	d.RawDeploymentStatus = string(deployment.Status)
 	d.TimeCreated = runtime.CreatedAt
 	d.Extra = map[string]interface{}{
 		"applicationId": runtime.ApplicationID,
@@ -1421,7 +1427,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	}
 	d.LastOperator = deployment.Operator
 	d.LastOperateTime = deployment.UpdatedAt // TODO: use a standalone OperateTime
-
+	d.LastOperatorId = deployment.ID
 	return nil
 }
 
@@ -1519,7 +1525,9 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 		return nil, err
 	}
 	data.ProjectID = app.ProjectID
+	data.ApplicationName = app.Name
 	data.CreatedAt = runtime.CreatedAt
+	data.Creator = runtime.Creator
 	data.UpdatedAt = runtime.UpdatedAt
 	data.TimeCreated = runtime.CreatedAt
 	data.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)

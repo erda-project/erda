@@ -604,6 +604,11 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/projects/{projectID}/test-reports/actions/list", Method: http.MethodGet, Handler: e.ListTestReportRecord},
 		{Path: "/api/projects/{projectID}/test-reports/{id}", Method: http.MethodGet, Handler: e.GetTestReportRecord},
 
+		// project template
+		{Path: "/api/orgs/{orgID}/projects/{projectID}/template/actions/export", Method: http.MethodGet, Handler: e.ExportProjectTemplate},
+		{Path: "/api/orgs/{orgID}/projects/{projectID}/template/actions/import", Method: http.MethodPost, Handler: e.ImportProjectTemplate},
+		{Path: "/api/projects/template/actions/parse", Method: http.MethodPost, Handler: e.ParseProjectTemplate},
+
 		// core-services org
 		{Path: "/api/orgs", Method: http.MethodPost, Handler: e.CreateOrg},
 		{Path: "/api/orgs/{orgID}", Method: http.MethodPut, Handler: e.UpdateOrg},
@@ -627,6 +632,12 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
 		{Path: "/api/applications/{applicationID}", Method: http.MethodDelete, Handler: e.DeleteApplication},
 		{Path: "/api/applications/{applicationID}/actions/init", Method: http.MethodPut, Handler: e.InitApplication},
+
+		{Path: "/api/applications/actions/remove-publish-item-relations", Method: http.MethodPost, Handler: e.RemoveApplicationPublishItemRelations},
+		{Path: "/api/applications/{applicationID}/actions/get-publish-item-relations", Method: http.MethodGet, Handler: e.GetApplicationPublishItemRelationsGroupByENV},
+		{Path: "/api/applications/actions/query-publish-item-relations", Method: http.MethodGet, Handler: e.QueryApplicationPublishItemRelations},
+		{Path: "/api/applications/{applicationID}/actions/update-publish-item-relations", Method: http.MethodPost, Handler: e.UpdateApplicationPublishItemRelations},
+
 		// core-services member
 		{Path: "/api/members/actions/list-roles", Method: http.MethodGet, Handler: e.ListMemberRoles},
 		// approve
@@ -634,7 +645,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// test file records
 		{Path: "/api/test-file-records/{id}", Method: http.MethodGet, Handler: e.GetFileRecord},
-		{Path: "/api/test-file-records", Method: http.MethodGet, Handler: e.GetFileRecordsByProjectId},
+		{Path: "/api/test-file-records", Method: http.MethodGet, Handler: e.GetFileRecords},
 	}
 }
 
@@ -1099,4 +1110,12 @@ func (e *Endpoints) ManualTestPlanService() *mttestplan.TestPlan {
 
 func (e *Endpoints) AutoTestPlanService() *atv2.Service {
 	return e.autotestV2
+}
+
+func (e *Endpoints) ProjectService() *project.Project {
+	return e.project
+}
+
+func (e *Endpoints) PermissionService() *permission.Permission {
+	return e.permission
 }

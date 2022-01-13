@@ -15,16 +15,25 @@
 package components
 
 import (
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/resources-container-monitor"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/resources-node-monitor"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/resources-runtime-monitor-java"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/resources-runtime-monitor-nodejs"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/service-list"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/service-overview"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-analysis"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-detail"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-cache-slow"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-db-analysis"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-db-detail"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-db-slow"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-http-analysis"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-http-detail"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-http-slow"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-analysis"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-detail"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-slow"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-analysis"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-detail"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-rpc-slow"
 )

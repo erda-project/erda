@@ -31,7 +31,6 @@ const (
 
 type DeploymentOrder struct {
 	ID              string `gorm:"size:36"`
-	Name            string
 	Type            string
 	Description     string
 	ReleaseId       string
@@ -55,6 +54,10 @@ func (DeploymentOrder) TableName() string {
 
 func (db *DBClient) ListDeploymentOrder(conditions *apistructs.DeploymentOrderListConditions, pageInfo *apistructs.PageInfo) (int, []DeploymentOrder, error) {
 	cursor := db.Where("project_id = ? and workspace = ?", conditions.ProjectId, conditions.Workspace)
+
+	if len(conditions.Types) != 0 {
+		cursor = cursor.Where("type in (?)", conditions.Types)
+	}
 
 	// parse query
 	if conditions.Query != "" {
@@ -108,15 +111,16 @@ func (db *DBClient) ListDeploymentOrder(conditions *apistructs.DeploymentOrderLi
 	return total, orders, nil
 }
 
-func (db *DBClient) GetOrderCountByProject(projectId uint64, tp string) (int64, error) {
+func (db *DBClient) GetOrderCountByProject(tp string, projectId uint64, releaseId string) (int64, error) {
 	if tp == apistructs.TypePipeline {
 		return 0, fmt.Errorf("pipeline type doesn't need to count")
 	}
 
 	var count int64
 
-	if err := db.Model(&DeploymentOrder{}).Where("project_id = ? and type = ?", projectId, tp).Count(&count).Error; err != nil {
-		return 0, errors.Wrapf(err, "failed to count, project: %d, rg: %s", projectId, tp)
+	if err := db.Model(&DeploymentOrder{}).Where("project_id = ? and release_id = ? and type=?", projectId, releaseId, tp).
+		Count(&count).Error; err != nil {
+		return 0, errors.Wrapf(err, "failed to count, project: %d, release id: %s, type: %s", projectId, releaseId, tp)
 	}
 
 	return count, nil

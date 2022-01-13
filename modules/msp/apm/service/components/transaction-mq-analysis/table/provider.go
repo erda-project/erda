@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
@@ -59,17 +60,21 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		sorts := transaction.GetSortsFromGlobalState(*sdk.GlobalState)
 
 		data, err := p.DataSource.GetTable(context.WithValue(context.Background(), common.LangKey, lang),
-			viewtable.TableTypeTransaction,
-			startTime,
-			endTime,
-			tenantId,
-			serviceId,
-			common.TransactionLayerMq,
-			layerPath,
-			pageNo,
-			pageSize,
-			sorts...,
-		)
+			&viewtable.TransactionTableBuilder{
+				BaseBuildParams: &viewtable.BaseBuildParams{
+					StartTime: startTime,
+					EndTime:   endTime,
+					TenantId:  tenantId,
+					ServiceId: serviceId,
+					Layer:     common.TransactionLayerMq,
+					LayerPath: layerPath,
+					FuzzyPath: true,
+					OrderBy:   sorts,
+					PageNo:    pageNo,
+					PageSize:  pageSize,
+					Metric:    p.Metric,
+				},
+			})
 		if err != nil {
 			p.Log.Error("failed to get table data: %s", err)
 			return
@@ -153,7 +158,9 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("component-protocol.components.transaction-mq-analysis.table", &servicehub.Spec{
+	name := "component-protocol.components.transaction-mq-analysis.table"
+	cpregister.AllExplicitProviderCreatorMap[name] = nil
+	servicehub.Register(name, &servicehub.Spec{
 		Creator: func() servicehub.Provider { return &provider{} },
 	})
 }

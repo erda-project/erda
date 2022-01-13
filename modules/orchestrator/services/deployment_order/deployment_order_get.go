@@ -17,9 +17,11 @@ package deployment_order
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
+	"github.com/erda-project/erda/modules/orchestrator/utils"
 )
 
 func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.DeploymentOrderDetail, error) {
@@ -52,7 +54,7 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 	}
 
 	// parse status
-	appsStatus := make(map[string]apistructs.DeploymentOrderStatusItem, 0)
+	appsStatus := make(apistructs.DeploymentOrderStatusMap)
 	if order.Status != "" {
 		if err := json.Unmarshal([]byte(order.Status), &appsStatus); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal applications status, err: %v", err)
@@ -85,7 +87,7 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 	return &apistructs.DeploymentOrderDetail{
 		DeploymentOrderItem: apistructs.DeploymentOrderItem{
 			ID:        order.ID,
-			Name:      order.Name,
+			Name:      utils.ParseOrderName(order.ID),
 			ReleaseID: order.ReleaseId,
 			Type:      order.Type,
 			Workspace: order.Workspace,
@@ -93,7 +95,7 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 			Operator:  order.Operator.String(),
 			CreatedAt: order.CreatedAt,
 			UpdatedAt: order.UpdatedAt,
-			StartedAt: order.StartedAt,
+			StartedAt: parseStartedTime(order.StartedAt),
 		},
 		ApplicationsInfo: asi,
 		ReleaseVersion:   releaseResp.Version,
@@ -138,6 +140,7 @@ func composeApplicationsInfo(releases []*apistructs.ReleaseGetResponseData, para
 			Name:           applicationName,
 			DeploymentId:   app.DeploymentID,
 			Params:         &orderParamsData,
+			ReleaseId:      subRelease.ReleaseID,
 			ReleaseVersion: subRelease.Version,
 			Branch:         subRelease.Labels["gitBranch"],
 			CommitId:       subRelease.Labels["gitCommitId"],
@@ -150,7 +153,7 @@ func composeApplicationsInfo(releases []*apistructs.ReleaseGetResponseData, para
 }
 
 func parseDeploymentOrderStatus(appStatus apistructs.DeploymentOrderStatusMap) apistructs.DeploymentOrderStatus {
-	if appStatus == nil {
+	if appStatus == nil || len(appStatus) == 0 {
 		return orderStatusWaitDeploy
 	}
 
@@ -184,7 +187,18 @@ func parseDeploymentOrderStatus(appStatus apistructs.DeploymentOrderStatusMap) a
 	return apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusOK)
 }
 
+func parseStartedTime(t time.Time) *time.Time {
+	// TODO: equal started default time with unix zero
+	if t.Year() < 2000 {
+		return nil
+	}
+	return &t
+}
+
 func convertConfigType(configType string) string {
+	if configType == "dice-file" || configType == "kv" {
+		return configType
+	}
 	if configType == "FILE" {
 		return "dice-file"
 	}

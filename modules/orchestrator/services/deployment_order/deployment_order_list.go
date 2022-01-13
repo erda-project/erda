@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/utils"
 )
 
 func (d *DeploymentOrder) List(conditions *apistructs.DeploymentOrderListConditions, pageInfo *apistructs.PageInfo) (*apistructs.DeploymentOrderListData, error) {
@@ -49,7 +50,7 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 	ret := make([]*apistructs.DeploymentOrderItem, 0)
 
 	for _, order := range orders {
-		var appsStatus apistructs.DeploymentOrderStatusMap
+		appsStatus := make(apistructs.DeploymentOrderStatusMap, 0)
 		if order.Status != "" {
 			// parse status
 			if err := json.Unmarshal([]byte(order.Status), &appsStatus); err != nil {
@@ -74,7 +75,7 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 
 		ret = append(ret, &apistructs.DeploymentOrderItem{
 			ID:                order.ID,
-			Name:              order.Name,
+			Name:              utils.ParseOrderName(order.ID),
 			ReleaseID:         order.ReleaseId,
 			ReleaseVersion:    releaseResp.Version,
 			Type:              order.Type,
@@ -84,6 +85,7 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 			Operator:          string(order.Operator),
 			CreatedAt:         order.CreatedAt,
 			UpdatedAt:         order.UpdatedAt,
+			StartedAt:         parseStartedTime(order.StartedAt),
 		})
 	}
 

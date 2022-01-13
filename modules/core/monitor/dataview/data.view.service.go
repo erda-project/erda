@@ -139,6 +139,8 @@ func (s *dataViewService) ListCustomViews(ctx context.Context, req *pb.ListCusto
 		return nil, errors.NewDatabaseError(err)
 	}
 	views := &pb.ViewList{}
+	var userIDs []string
+	userIDMap := make(map[string]bool)
 	for _, item := range list {
 		view := s.parseViewBlocks(&pb.View{
 			Id:        item.ID,
@@ -147,13 +149,19 @@ func (s *dataViewService) ListCustomViews(ctx context.Context, req *pb.ListCusto
 			Version:   item.Version,
 			Name:      item.Name,
 			Desc:      item.Desc,
+			Creator:   item.CreatorID,
 			CreatedAt: item.CreatedAt.UnixNano() / int64(time.Millisecond),
 			UpdatedAt: item.UpdatedAt.UnixNano() / int64(time.Millisecond),
 		}, item.ViewConfig, item.DataConfig)
 		views.List = append(views.List, view)
+		userId := item.CreatorID
+		if userId != "" && !userIDMap[userId] {
+			userIDs = append(userIDs, userId)
+			userIDMap[userId] = true
+		}
 	}
 	views.Total = int64(len(views.List))
-	return &pb.ListCustomViewsResponse{Data: views}, nil
+	return &pb.ListCustomViewsResponse{Data: views, UserIDs: userIDs}, nil
 }
 
 func (s *dataViewService) GetCustomView(ctx context.Context, req *pb.GetCustomViewRequest) (*pb.GetCustomViewResponse, error) {
@@ -189,6 +197,7 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 	blocks, _ := json.Marshal(req.Blocks)
 	data, _ := json.Marshal(req.Data)
 	now := time.Now()
+	userId := apis.GetUserID(ctx)
 	model := &db.CustomView{
 		ID:         req.Id,
 		Name:       req.Name,
@@ -198,6 +207,7 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 		ScopeID:    req.ScopeID,
 		ViewConfig: string(blocks),
 		DataConfig: string(data),
+		CreatorID:  userId,
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}

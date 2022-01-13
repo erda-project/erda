@@ -107,7 +107,9 @@ func (m *alertService) CreateAlert(ctx context.Context, request *pb.CreateAlertR
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	userID := apis.GetUserID(ctx)
 	alert.Attributes["org_name"] = structpb.NewStringValue(org.Name)
+	alert.Attributes["creator_id"] = structpb.NewStringValue(userID)
 	id, err := m.p.a.CreateAlert(alert)
 	if err != nil {
 		return &pb.CreateAlertResponse{}, err
@@ -120,6 +122,7 @@ func (m *alertService) CreateAlert(ctx context.Context, request *pb.CreateAlertR
 
 func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrgAlertRequest) (*pb.CreateOrgAlertResponse, error) {
 	orgID := apis.GetOrgID(ctx)
+	userID := apis.GetUserID(ctx)
 	org, err := m.p.bdl.GetOrg(orgID)
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
@@ -135,6 +138,7 @@ func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrg
 	}
 	alert.Attributes = make(map[string]*structpb.Value)
 	alert.Attributes["org_name"] = structpb.NewStringValue(org.Name)
+	alert.Attributes["creator_id"] = structpb.NewStringValue(userID)
 	data, err = json.Marshal(request.TriggerCondition)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -222,12 +226,13 @@ func (m *alertService) QueryCustomizeAlert(ctx context.Context, request *pb.Quer
 		},
 	}
 	lang := apis.Language(ctx)
-	alert, total, err := m.p.a.CustomizeAlerts(lang, request.Scope, request.ScopeId, int(request.PageNo), int(request.PageSize))
+	alert, userIDs, total, err := m.p.a.CustomizeAlerts(lang, request.Scope, request.ScopeId, int(request.PageNo), int(request.PageSize))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	result.Data.List = alert
 	result.Data.Total = int64(total)
+	result.UserIDs = userIDs
 	return result, nil
 }
 
@@ -255,6 +260,7 @@ func (m alertService) GetCustomizeAlertDetail(ctx context.Context, request *pb.G
 }
 
 func (m *alertService) CreateCustomizeAlert(ctx context.Context, request *pb.CreateCustomizeAlertRequest) (*pb.CreateCustomizeAlertResponse, error) {
+	userId := apis.GetUserID(ctx)
 	data, err := json.Marshal(request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -271,7 +277,7 @@ func (m *alertService) CreateCustomizeAlert(ctx context.Context, request *pb.Cre
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	id, err := m.p.a.CreateCustomizeAlert(alert)
+	id, err := m.p.a.CreateCustomizeAlert(alert, userId)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -410,7 +416,7 @@ func (m *alertService) QueryOrgCustomizeMetric(ctx context.Context, request *pb.
 func (m *alertService) QueryOrgCustomizeAlerts(ctx context.Context, request *pb.QueryOrgCustomizeAlertsRequest) (*pb.QueryOrgCustomizeAlertsResponse, error) {
 	orgID := apis.GetOrgID(ctx)
 	language := apis.Language(ctx)
-	alert, total, err := m.p.a.CustomizeAlerts(language, "org", orgID, int(request.PageNo), int(request.PageSize))
+	alert, userIDs, total, err := m.p.a.CustomizeAlerts(language, "org", orgID, int(request.PageNo), int(request.PageSize))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -421,6 +427,7 @@ func (m *alertService) QueryOrgCustomizeAlerts(ctx context.Context, request *pb.
 	}
 	data.Data.Total = int64(total)
 	data.Data.List = alert
+	data.UserIDs = userIDs
 	return data, nil
 }
 
@@ -445,6 +452,7 @@ func (m *alertService) GetOrgCustomizeAlertDetail(ctx context.Context, request *
 
 func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.CreateOrgCustomizeAlertRequest) (*pb.CreateOrgCustomizeAlertResponse, error) {
 	orgID := apis.GetOrgID(ctx)
+	userID := apis.GetUserID(ctx)
 	if request.AlertType == "" {
 		request.AlertType = "org_customize"
 	}
@@ -499,7 +507,7 @@ func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.
 	if err := m.checkCustomizeAlert(alertDetail); err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	id, err := m.p.a.CreateCustomizeAlert(alertDetail)
+	id, err := m.p.a.CreateCustomizeAlert(alertDetail, userID)
 	if err != nil {
 		if adapt.IsAlreadyExistsError(err) {
 			return nil, errors.NewAlreadyExistsError("alert")
@@ -845,7 +853,7 @@ func (m *alertService) QueryAlertRule(ctx context.Context, request *pb.QueryAler
 }
 
 func (m *alertService) QueryAlert(ctx context.Context, request *pb.QueryAlertRequest) (*pb.QueryAlertsResponse, error) {
-	data, err := m.p.a.QueryAlert(apis.Language(ctx), request.Scope, request.ScopeId, uint64(request.PageNo), uint64(request.PageSize))
+	data, userIds, err := m.p.a.QueryAlert(apis.Language(ctx), request.Scope, request.ScopeId, uint64(request.PageNo), uint64(request.PageSize))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -861,6 +869,7 @@ func (m *alertService) QueryAlert(ctx context.Context, request *pb.QueryAlertReq
 			List:  data,
 			Total: int64(total),
 		},
+		UserIDs: userIds,
 	}
 	return result, nil
 }
@@ -971,7 +980,7 @@ func (m *alertService) QueryOrgAlert(ctx context.Context, request *pb.QueryOrgAl
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
 	lang := apis.Language(ctx)
-	data, err := m.p.a.QueryOrgAlert(lang, id, uint64(request.PageNo), uint64(request.PageSize))
+	data, userIds, err := m.p.a.QueryOrgAlert(lang, id, uint64(request.PageNo), uint64(request.PageSize))
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -984,6 +993,7 @@ func (m *alertService) QueryOrgAlert(ctx context.Context, request *pb.QueryOrgAl
 			Total: int64(total),
 			List:  data,
 		},
+		UserIDs: userIds,
 	}, nil
 }
 

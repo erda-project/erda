@@ -34,6 +34,7 @@ import (
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -298,6 +299,10 @@ func (e *Endpoints) ListProject(ctx context.Context, r *http.Request, vars map[s
 		return httpserver.OkResp(&apistructs.PagingProjectDTO{})
 	}
 
+	if err := e.setProjectResource(pagingProjects.List); err != nil {
+		return apierrors.ErrListProject.InternalError(err).ToResp(), nil
+	}
+
 	// rich statistical data
 	if params.PageSize <= 15 {
 		Once.Do(func() {
@@ -440,6 +445,12 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 	// 按项目名称搜索
 	keyword := r.URL.Query().Get("q")
 
+	var keepMsp bool
+	keepMspStr := r.URL.Query().Get("keepMsp")
+	if keepMspStr == "true" {
+		keepMsp = true
+	}
+
 	// 获取pageSize
 	pageSizeStr := r.URL.Query().Get("pageSize")
 	if pageSizeStr == "" {
@@ -470,6 +481,18 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 		asc = true
 	}
 	orderBy := r.URL.Query().Get("orderBy")
+	switch orderBy {
+	case "cpuQuota":
+		orderBy = "cpu_quota"
+	case "memQuota":
+		orderBy = "mem_quota"
+	case "activeTime":
+		orderBy = "active_time"
+	case "name":
+		orderBy = "name"
+	default:
+		orderBy = ""
+	}
 
 	return &apistructs.ProjectListRequest{
 		OrgID:    uint64(orgID),
@@ -480,7 +503,32 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 		OrderBy:  orderBy,
 		Asc:      asc,
 		IsPublic: isPublic,
+		KeepMsp:  keepMsp,
 	}, nil
+}
+
+func (e *Endpoints) getProjectID(vars map[string]string) (uint64, error) {
+	projectIDStr := vars["projectID"]
+	if projectIDStr == "" {
+		return 0, fmt.Errorf("empty project id")
+	}
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return projectID, nil
+}
+
+func (e *Endpoints) getOrgID(vars map[string]string) (int64, error) {
+	orgIDStr := vars["orgID"]
+	if orgIDStr == "" {
+		return 0, fmt.Errorf("empty org id")
+	}
+	orgID, err := strconv.ParseInt(orgIDStr, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return orgID, nil
 }
 
 // SetProjectStatsCache 设置项目状态缓存
@@ -495,4 +543,160 @@ func SetProjectStatsCache() {
 	}
 
 	c.Start()
+}
+
+func (e *Endpoints) setProjectResource(projectDTOs []apistructs.ProjectDTO) error {
+	projectIDs := make([]uint64, 0, len(projectDTOs))
+	for i := range projectDTOs {
+		projectIDs = append(projectIDs, uint64(projectDTOs[i].ID))
+	}
+	resp, err := e.bdl.ProjectResource(projectIDs)
+	if err != nil {
+		return err
+	}
+	for i := range projectDTOs {
+		if v, ok := resp.Data[projectDTOs[i].ID]; ok {
+			projectDTOs[i].CpuServiceUsed = v.CpuServiceUsed
+			projectDTOs[i].MemServiceUsed = v.MemServiceUsed
+			projectDTOs[i].CpuAddonUsed = v.CpuAddonUsed
+			projectDTOs[i].MemAddonUsed = v.MemAddonUsed
+		}
+	}
+	return nil
+}
+
+func (e *Endpoints) ExportProjectTemplate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var exportReq apistructs.ExportProjectTemplateRequest
+	projectID, err := e.getProjectID(vars)
+	if err != nil {
+		return apierrors.ErrExportProjectTemplate.InvalidParameter("projectID").ToResp(), nil
+	}
+	exportReq.ProjectID = projectID
+	orgID, err := e.getOrgID(vars)
+	if err != nil {
+		return apierrors.ErrExportProjectTemplate.InvalidParameter("orgID").ToResp(), nil
+	}
+	exportReq.OrgID = orgID
+	// check permission
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrExportProjectTemplate.NotLogin().ToResp(), nil
+	}
+	exportReq.IdentityInfo = identityInfo
+	if exportReq.OrgID == 0 || exportReq.ProjectID == 0 {
+		return apierrors.ErrExportProjectTemplate.InvalidParameter(fmt.Errorf("orgID and projectID can't be empty")).ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.OrgScope,
+			ScopeID:  uint64(exportReq.OrgID),
+			Resource: apistructs.ProjectTemplateResource,
+			Action:   apistructs.GetAction,
+		})
+		if err != nil {
+			return apierrors.ErrExportProjectTemplate.InternalError(err).ToResp(), nil
+		}
+		if !access.Access {
+			return apierrors.ErrExportProjectTemplate.AccessDenied().ToResp(), nil
+		}
+	}
+	project, err := e.bdl.GetProject(exportReq.ProjectID)
+	if err != nil {
+		return apierrors.ErrExportProjectTemplate.InternalError(err).ToResp(), nil
+	}
+	if project.OrgID != uint64(exportReq.OrgID) {
+		return apierrors.ErrImportProjectTemplate.InvalidParameter("projectID").ToResp(), nil
+	}
+	exportReq.ProjectName = project.Name
+	exportReq.ProjectDisplayName = project.DisplayName
+
+	fileID, err := e.project.ExportTemplate(exportReq)
+	if err != nil {
+		return apierrors.ErrExportProjectTemplate.InternalError(err).ToResp(), nil
+	}
+
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileSpaceActionTypeExport)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if ok {
+		e.ExportChannel <- fileID
+	}
+
+	return httpserver.OkResp(fileID)
+}
+
+func (e *Endpoints) ImportProjectTemplate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrImportExcelIssue.NotLogin().ToResp(), nil
+	}
+	var req apistructs.ImportProjectTemplateRequest
+	projectID, err := e.getProjectID(vars)
+	if err != nil {
+		return apierrors.ErrImportProjectTemplate.InvalidParameter("projectID").ToResp(), nil
+	}
+	req.ProjectID = projectID
+	orgID, err := e.getOrgID(vars)
+	if err != nil {
+		return apierrors.ErrImportProjectTemplate.InvalidParameter("orgID").ToResp(), nil
+	}
+	req.OrgID = orgID
+	req.IdentityInfo = identityInfo
+	if req.ProjectID == 0 {
+		return apierrors.ErrExportProjectTemplate.InvalidParameter("projectID").ToResp(), nil
+	}
+	if req.OrgID == 0 {
+		return apierrors.ErrImportProjectTemplate.InvalidParameter("orgID").ToResp(), nil
+	}
+	if !identityInfo.IsInternalClient() {
+		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.OrgScope,
+			ScopeID:  uint64(req.OrgID),
+			Resource: apistructs.ProjectTemplateResource,
+			Action:   apistructs.CreateAction,
+		})
+		if err != nil {
+			return apierrors.ErrImportProjectTemplate.InternalError(err).ToResp(), nil
+		}
+		if !access.Access {
+			return apierrors.ErrImportProjectTemplate.AccessDenied().ToResp(), nil
+		}
+	}
+	project, err := e.bdl.GetProject(req.ProjectID)
+	if err != nil {
+		return apierrors.ErrExportProjectTemplate.InternalError(err).ToResp(), nil
+	}
+	if project.OrgID != uint64(req.OrgID) {
+		return apierrors.ErrImportProjectTemplate.InvalidParameter("projectID").ToResp(), nil
+	}
+	req.ProjectName = project.Name
+	req.ProjectDisplayName = project.DisplayName
+	recordID, err := e.project.ImportTemplate(req, r)
+	if err != nil {
+		return apierrors.ErrImportProjectTemplate.InternalError(err).ToResp(), nil
+	}
+
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileSpaceActionTypeImport)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if ok {
+		e.ImportChannel <- recordID
+	}
+	return httpserver.OkResp(recordID)
+}
+
+func (e *Endpoints) ParseProjectTemplate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		return apierrors.ErrParseProjectTemplate.InvalidParameter("file").ToResp(), nil
+	}
+	templateData, err := e.project.ParseTemplatePackage(file)
+	if err != nil {
+		return apierrors.ErrParseProjectTemplate.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(templateData)
 }

@@ -114,7 +114,7 @@ zh:
   scene-set-export-confirm: 是否确认导出
   scene-set-export-success-msg: 导出任务已创建, 请在导入导出记录表中查看进度
   status-success: 成功
-  status-failed: 失败,
+  status-failed: 失败
   status-pending: 排队中
   status-processing: 进行中
   download-file: 下载文件
@@ -216,6 +216,32 @@ zh:
   notIncludeDueTodayTomorrowMonth: 不包含本日、明日、本周截止数据
   noDeadlineSpecified: 未指定截止日期
   total: 总数
+  dimension: 维度
+  moreOperations: 更多操作
+  sort: 排序
+  timeOrder: 按时间顺序
+  timeReverse: 按时间倒序
+  sceneset: 场景集
+  yearAgo: "年前"
+  monthAgo: "月前"
+  dayAgo: "天前"
+  hourAgo: "小时前"
+  minuteAgo: "分钟前"
+  secondAgo: "几秒前"
+  updatedAt: "更新于"
+  name: 名称
+  updatedBy: 更新人
+  creationTime: 创建时间
+  updateTime: 更新时间
+  enterName: 请输入名称
+  image: 镜像
+  command: 命令
+  enterCommand: 请输入命令
+  delete: 删除
+  deleteConfirm: 是否确认删除
+  details: 详情
+  value: 值
+  endTime: 结束时间
 en:
   issue-manage: issue manage
   issue: issue
@@ -252,7 +278,7 @@ en:
   the-number-of-boards-cannot-exceed-15: 'The number of boards cannot exceed 15'
   no-permission-to-operate: 'No permission to operate'
   my-filter-bookmark: My Filters
-  empty-filter-bookmark: No Filter
+  empty-filter-bookmark: Unselected
   choose-filter-bookmark: Choose Filter
   save-filter-bookmark-placeholder: 'Please enter a name to save the current filter'
   sprint: Sprint
@@ -431,3 +457,29 @@ en:
   notIncludeDueTodayTomorrowMonth: Not include data of due today, tomorrow, and this week
   noDeadlineSpecified: No deadline specified
   total: Total
+  dimension: Dimension
+  moreOperations: More operations
+  sort: Sort
+  timeOrder: Time order
+  timeReverse: Reverse order
+  sceneset: Scene set
+  yearAgo: year(s) ago
+  monthAgo: month(s) ago
+  dayAgo: day(s) ago
+  hourAgo: hour(s) ago
+  minuteAgo: minute(s) ago
+  secondAgo: second(s) ago
+  updatedAt: Updated
+  name: Name
+  updatedBy: Updated by
+  creationTime: Creation time
+  updateTime: Update time
+  enterName: Please enter a name
+  image: Image
+  command: Command
+  enterCommand: Please enter the command
+  delete: Delete
+  deleteConfirm: Confirm to delete
+  details: Details
+  value: Value
+  endTime: End time

@@ -14,7 +14,7 @@
   scope: project
   resource: project
   action: GET
-- role: Owner,Lead,PM
+- role: Owner,Lead,PM,Manager
   scope: project
   resource: app
   action: CREATE

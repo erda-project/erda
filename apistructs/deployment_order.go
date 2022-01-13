@@ -11,12 +11,12 @@ const (
 type DeploymentOrderStatus string
 
 type DeploymentOrderCreateRequest struct {
-	OrgID     uint64 `json:"orgId,omitempty"`
-	Type      string `json:"type,omitempty"`
+	Id        string `json:"id"`
+	Type      string `json:"type"`
 	ReleaseId string `json:"releaseId"`
-	Workspace string `json:"workspace,omitempty"`
-	Operator  string
-	AutoRun   bool `json:"autoRun"`
+	Workspace string `json:"workspace"`
+	AutoRun   bool   `json:"autoRun"`
+	Operator  string `json:"operator,omitempty"`
 }
 
 type DeploymentOrderCreateResponse struct {
@@ -40,6 +40,7 @@ type DeploymentOrderDeployRequest struct {
 type DeploymentOrderListConditions struct {
 	ProjectId uint64
 	Workspace string
+	Types     []string
 	Query     string
 }
 
@@ -52,13 +53,14 @@ type DeploymentOrderDetail struct {
 type ApplicationInfo struct {
 	Id             uint64                `json:"id"`
 	Name           string                `json:"name"`
-	DeploymentId   uint64                `json:"deploymentId"`
+	DeploymentId   uint64                `json:"deploymentId,omitempty"`
 	Params         *DeploymentOrderParam `json:"params"`
-	ReleaseVersion string                `json:"releaseVersion"`
-	Branch         string                `json:"branch"`
-	CommitId       string                `json:"commitId"`
-	DiceYaml       string                `json:"diceYaml"`
-	Status         DeploymentStatus      `json:"status"`
+	ReleaseId      string                `json:"releaseId,omitempty"`
+	ReleaseVersion string                `json:"releaseVersion,omitempty"`
+	Branch         string                `json:"branch,omitempty"`
+	CommitId       string                `json:"commitId,omitempty"`
+	DiceYaml       string                `json:"diceYaml,omitempty"`
+	Status         DeploymentStatus      `json:"status,omitempty"`
 }
 
 type DeploymentOrderListData struct {
@@ -78,7 +80,7 @@ type DeploymentOrderItem struct {
 	Operator          string                `json:"operator"`
 	CreatedAt         time.Time             `json:"createdAt"`
 	UpdatedAt         time.Time             `json:"updatedAt"`
-	StartedAt         time.Time             `json:"startedAt"`
+	StartedAt         *time.Time            `json:"startedAt,omitempty"`
 }
 
 type DeploymentOrderParam []*DeploymentOrderParamData

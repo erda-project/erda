@@ -916,36 +916,11 @@ func (topology *provider) GetExceptionDescription(language i18n.LanguageCodes, p
 	return exceptionDescriptions, nil
 }
 
-func (topology *provider) GetDashBoardByServiceType(params ProcessParams) (string, error) {
-
-	for _, processType := range ProcessTypes {
-		metricsParams := url.Values{}
-		statement := fmt.Sprintf("SELECT terminus_key::tag FROM %s WHERE terminus_key=$terminus_key "+
-			"AND service_name=$service_name LIMIT 1", processType)
-		queryParams := map[string]interface{}{
-			"terminus_key": params.TerminusKey,
-			"service_name": params.ServiceName,
-		}
-		response, err := topology.metricq.Query("influxql", statement, queryParams, metricsParams)
-		if err != nil {
-			return "", err
-		}
-		rows := response.ResultSet.Rows
-		if len(rows) == 1 {
-			return getDashboardId(processType), nil
-		}
-	}
-	return "", nil
-}
-
-func (topology *provider) GetProcessType(language string, params ServiceParams) (interface{}, error) {
-	return nil, nil
-}
-
 type InstanceInfo struct {
 	Id     string `json:"instanceId"`
 	Ip     string `json:"ip"`
 	Status bool   `json:"status"`
+	HostIP string `json:"hostIp"`
 }
 
 func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, params ServiceParams) (interface{}, interface{}) {
@@ -954,7 +929,7 @@ func (topology *provider) GetServiceInstanceIds(language i18n.LanguageCodes, par
 	metricsParams.Set("start", strconv.FormatInt(params.StartTime, 10))
 	metricsParams.Set("end", strconv.FormatInt(params.EndTime, 10))
 
-	statement := "SELECT service_instance_id::tag,service_ip::tag,if(gt(now()-timestamp,300000000000),'false','true') FROM application_service_node " +
+	statement := "SELECT service_instance_id::tag,service_ip::tag,if(gt(now()-timestamp,300000000000),'false','true'),host_ip::tag FROM application_service_node " +
 		"WHERE terminus_key=$terminus_key AND service_id=$service_id GROUP BY service_instance_id::tag"
 	queryParams := map[string]interface{}{
 		"terminus_key": params.ScopeId,
@@ -1002,6 +977,7 @@ func (topology *provider) handleInstanceInfo(response *query.ResultSet) []*Insta
 			Id:     conv.ToString(row[0]),
 			Ip:     conv.ToString(row[1]),
 			Status: status,
+			HostIP: conv.ToString(row[3]),
 		}
 		instanceIds = append(instanceIds, &instance)
 	}

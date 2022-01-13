@@ -21,6 +21,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	definitiondb "github.com/erda-project/erda/modules/pipeline/providers/definition/db"
+	sourcedb "github.com/erda-project/erda/modules/pipeline/providers/source/db"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -28,7 +30,9 @@ import (
 type Pipeline struct {
 	PipelineBase
 	PipelineExtra
-	Labels map[string]string
+	Definition *definitiondb.PipelineDefinition
+	Source     *sourcedb.PipelineSource
+	Labels     map[string]string
 }
 
 type PipelineWithStage struct {
