@@ -21,7 +21,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
-	"github.com/erda-project/erda/modules/orchestrator/utils"
 )
 
 func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.DeploymentOrderDetail, error) {
@@ -87,7 +86,7 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 	return &apistructs.DeploymentOrderDetail{
 		DeploymentOrderItem: apistructs.DeploymentOrderItem{
 			ID:        order.ID,
-			Name:      utils.ParseDeploymentOrderShowName(order.Name),
+			Name:      order.Name,
 			ReleaseID: order.ReleaseId,
 			Type:      order.Type,
 			Workspace: order.Workspace,

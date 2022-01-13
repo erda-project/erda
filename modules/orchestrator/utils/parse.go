@@ -31,18 +31,3 @@ func GetRealIP(request *http.Request) string {
 	}
 	return ra
 }
-
-func ParseDeploymentOrderShowName(orderName string) string {
-	if strings.HasPrefix(orderName, "a_") || strings.HasPrefix(orderName, "p_") {
-		nameSlice := strings.Split(orderName, "_")
-		if len(nameSlice) != 3 || len(nameSlice[1]) < 6 {
-			return orderName
-		}
-		nameSlice[1] = nameSlice[1][:6]
-		if nameSlice[2] == "0" {
-			nameSlice = nameSlice[:2]
-		}
-		return strings.Join(nameSlice, "_")
-	}
-	return orderName
-}
