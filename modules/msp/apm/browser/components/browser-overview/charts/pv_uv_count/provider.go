@@ -53,7 +53,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		statement := fmt.Sprintf("SELECT count(timestamp), distinct(uid::tag) "+
 			"FROM ta_timing "+
 			"WHERE tk::tag=$terminus_key "+
-			"GROUP BY time(%v) ",
+			"GROUP BY time(%v)",
 			utils.GetInterval(p.InParamsPtr.StartTime, p.InParamsPtr.EndTime, time.Second, 30))
 		params := map[string]*structpb.Value{
 			"terminus_key": structpb.NewStringValue(p.InParamsPtr.TenantId),

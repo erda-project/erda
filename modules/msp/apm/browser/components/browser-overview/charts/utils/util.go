@@ -15,16 +15,13 @@
 package utils
 
 import (
-	"fmt"
-	"math"
 	stdtime "time"
-
-	"github.com/erda-project/erda/pkg/strutil"
-	"github.com/erda-project/erda/pkg/time"
 )
 
 func GetInterval(startTimeMs, endTimeMs int64, minInterval stdtime.Duration, preferredPoints int64) string {
-	interval := (endTimeMs - startTimeMs) / preferredPoints
-	v, unit := time.AutomaticConversionUnit(math.Max(float64(interval*1e6), float64(minInterval.Nanoseconds())))
-	return fmt.Sprintf("%s%s", strutil.String(v), unit)
+	interval := stdtime.Duration((endTimeMs - startTimeMs) / preferredPoints / 1e3 * 1e9)
+	if interval < minInterval {
+		interval = minInterval
+	}
+	return interval.String()
 }
