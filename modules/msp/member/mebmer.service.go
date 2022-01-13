@@ -149,14 +149,14 @@ func (m memberService) DeleteMember(ctx context.Context, request *pb.DeleteMembe
 	if err != nil {
 		return nil, err
 	}
-	projectId, err := m.contextEntry(projectIdStr, request.UserIds, &ctx)
+	projectId, err := m.contextEntry(projectIdStr, request.UserIds, ctx)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	return &pb.DeleteMemberResponse{Data: projectId}, nil
 }
 
-func (m memberService) contextEntry(projectIdStr string, userIds []string, ctx *context.Context) (uint64, error) {
+func (m memberService) contextEntry(projectIdStr string, userIds []string, ctx context.Context) (uint64, error) {
 	projectName, projectId, err := m.auditContextInfo(projectIdStr)
 	if err != nil {
 		return 0, errors.NewInternalServerError(err)
@@ -169,7 +169,7 @@ func (m memberService) contextEntry(projectIdStr string, userIds []string, ctx *
 		"projectName": projectName,
 		"users":       userNameList,
 	}
-	audit.ContextEntryMap(*ctx, auditContext)
+	audit.ContextEntryMap(ctx, auditContext)
 	return projectId, nil
 }
 
@@ -218,12 +218,15 @@ func (m memberService) CreateOrUpdateMember(ctx context.Context, request *pb.Cre
 		return nil, errors.NewInternalServerError(fmt.Errorf("Query project record by scopeid is empty scopeId is %v", request.Scope.Id))
 	}
 	memberReq.Scope.ID = projectIdStr
-	userId := apis.GetUserID(ctx)
-	err = m.p.bdl.AddMember(memberReq, userId)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+	//userId := apis.GetUserID(ctx)
+	userIds := request.UserIds
+	for _, userId := range userIds {
+		err = m.p.bdl.AddMember(memberReq, userId)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
 	}
-	projectId, err := m.contextEntry(projectIdStr, request.UserIds, &ctx)
+	projectId, err := m.contextEntry(projectIdStr, request.UserIds, ctx)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}

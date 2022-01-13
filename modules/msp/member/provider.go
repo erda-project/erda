@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/msp/member/pb"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -45,6 +46,7 @@ type provider struct {
 	mspTenantDB   *db.MSPTenantDB
 	monitorDB     *db2.MonitorDb
 	audit         audit.Auditor
+	Tenant        tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -53,19 +55,20 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
 	if p.Register != nil {
 		type MemberService = pb.MemberServiceServer
-		pb.RegisterMemberServiceImp(p.Register, p.memberService, apis.Options())
-		p.audit.Audit(
-			audit.Method(MemberService.CreateOrUpdateMember, audit.ProjectScope, string(apistructs.AddServiceMember),
-				func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
-					r := resp.(*pb.CreateOrUpdateMemberResponse)
-					return r.Data, map[string]interface{}{}, nil
-				},
-			),
-			audit.Method(MemberService.DeleteMember, audit.ProjectScope, string(apistructs.DeleteServiceMember),
-				func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
-					r := resp.(*pb.DeleteMemberResponse)
-					return r.Data, map[string]interface{}{}, nil
-				},
+		pb.RegisterMemberServiceImp(p.Register, p.memberService, apis.Options(),
+			p.audit.Audit(
+				audit.Method(MemberService.CreateOrUpdateMember, audit.ProjectScope, string(apistructs.AddServiceMember),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.CreateOrUpdateMemberResponse)
+						return r.Data, map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(MemberService.DeleteMember, audit.ProjectScope, string(apistructs.DeleteServiceMember),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*pb.DeleteMemberResponse)
+						return r.Data, map[string]interface{}{}, nil
+					},
+				),
 			),
 		)
 	}

@@ -63,6 +63,7 @@ func (s *accessKeyService) GetAccessKey(ctx context.Context, req *pb.GetAccessKe
 		SubjectType: obj.SubjectType,
 		Subject:     obj.Subject,
 		Description: obj.Description,
+		ScopeId:     obj.ScopeId,
 		CreatedAt:   timestamppb.New(obj.CreatedAt),
 	}}, nil
 }

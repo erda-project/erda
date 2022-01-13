@@ -915,10 +915,17 @@ func (a *alertService) UpdateCustomizeAlertEnable(ctx context.Context, request *
 }
 
 func (a *alertService) DeleteCustomizeAlert(ctx context.Context, request *alert.DeleteCustomizeAlertRequest) (*alert.DeleteCustomizeAlertResponse, error) {
-	req := &monitor.DeleteCustomizeAlertRequest{
+	alertDetailReq := &monitor.GetCustomizeAlertDetailRequest{
 		Id: request.Id,
 	}
 	context := utils.NewContextWithHeader(ctx)
+	alertDetailResp, err := a.p.Monitor.GetCustomizeAlertDetail(context, alertDetailReq)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	req := &monitor.DeleteCustomizeAlertRequest{
+		Id: request.Id,
+	}
 	resp, err := a.p.Monitor.DeleteCustomizeAlert(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -927,13 +934,6 @@ func (a *alertService) DeleteCustomizeAlert(ctx context.Context, request *alert.
 		Data: &alert.DeleteCustomizeAlertData{
 			Name: resp.Data,
 		},
-	}
-	alertDetailReq := &monitor.GetCustomizeAlertDetailRequest{
-		Id: request.Id,
-	}
-	alertDetailResp, err := a.p.Monitor.GetCustomizeAlertDetail(context, alertDetailReq)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
 	}
 	projectName, workspace, auditProjectId, err := a.getAuditInfo(request.TenantGroup)
 	if err != nil {

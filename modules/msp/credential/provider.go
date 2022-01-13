@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -39,8 +40,9 @@ type provider struct {
 	credentialKeyService *accessKeyService
 	AccessKeyService     akpb.AccessKeyServiceServer `autowired:erda.core.services.authentication.credentials.accesskey.AccessKeyService"`
 	//notifyService        notifypb.NotifyGroupServiceServer `autowired:erda.msp.apm.notifygroup`
-	bdl   *bundle.Bundle
-	audit audit.Auditor
+	bdl    *bundle.Bundle
+	audit  audit.Auditor
+	Tenant tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -76,13 +78,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						r := resp.(*pb.CreateAccessKeyResponse)
 						return r.ProjectId, map[string]interface{}{}, nil
 					}),
-			),
-			p.audit.Audit(
 				audit.Method(AccessKeyService.DeleteAccessKey, audit.ProjectScope, string(apistructs.DeleteServiceToken),
 					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
 						r := resp.(*pb.DeleteAccessKeyResponse)
 						return r.Data, map[string]interface{}{}, nil
-					}),
+					},
+				),
 			),
 		)
 	}

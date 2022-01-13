@@ -22,6 +22,7 @@ import (
 
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/providers/audit"
 )
@@ -102,6 +103,9 @@ func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.Crea
 		return nil, errors.NewInternalServerError(err)
 	}
 	projectId, err := a.auditContextInfo(&ctx, request.ScopeId, accessKey.Data.AccessKey)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	result := &pb.CreateAccessKeyResponse{
 		Data:      accessKey.Data.AccessKey,
 		ProjectId: projectId,
@@ -110,16 +114,17 @@ func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.Crea
 }
 
 func (a *accessKeyService) auditContextInfo(ctx *context.Context, scopeId, token string) (uint64, error) {
-	detail, err := a.p.bdl.GetTenantGroupDetails(scopeId)
+	projectData, err := a.p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
+		ScopeId: scopeId,
+	})
 	if err != nil {
 		return 0, err
 	}
-	projectId, err := strconv.Atoi(detail.ProjectID)
+	auditProjectId, err := strconv.Atoi(projectData.Data.ProjectId)
 	if err != nil {
 		return 0, err
 	}
-	auditProjectId := uint64(projectId)
-	project, err := a.p.bdl.GetProject(auditProjectId)
+	project, err := a.p.bdl.GetProject(uint64(auditProjectId))
 	if err != nil {
 		return 0, err
 	}
@@ -128,7 +133,7 @@ func (a *accessKeyService) auditContextInfo(ctx *context.Context, scopeId, token
 		"token":       token,
 	}
 	audit.ContextEntryMap(*ctx, auditContext)
-	return auditProjectId, nil
+	return uint64(auditProjectId), nil
 }
 
 func (a *accessKeyService) DeleteAccessKey(ctx context.Context, request *pb.DeleteAccessKeyRequest) (*pb.DeleteAccessKeyResponse, error) {
