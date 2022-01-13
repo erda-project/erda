@@ -72,7 +72,6 @@ const (
 	AutotestSceneResource      string = "autotest-scene"
 	SceneSetResource           string = "sceneset"
 	CustomAddonResource        string = "customAddon"
-	ProjectPipelineResource    string = "projectPipeline"
 )
 
 // 权限操作集

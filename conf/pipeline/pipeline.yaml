@@ -16,7 +16,6 @@ mysql-xorm:
   username: "${MYSQL_USERNAME:root}"
   password: "${MYSQL_PASSWORD:123456}"
   database: "${MYSQL_DATABASE:test}"
-  show_sql: true
 
 etcd:
   endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
