@@ -15,10 +15,10 @@
 package common
 
 import (
+	"encoding/json"
 	"reflect"
 
 	"github.com/pkg/errors"
-	"gopkg.in/square/go-jose.v2/json"
 )
 
 const (

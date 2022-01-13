@@ -32,7 +32,7 @@ type InputFilter struct {
 	base.DefaultProvider
 	Type  string
 	sdk   *cptype.SDK
-	State State
+	State State `json:"state"`
 }
 type Values map[string]interface{}
 
@@ -58,12 +58,21 @@ func (p *InputFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 	sdk := cputil.SDK(ctx)
 	p.sdk = sdk
 	c.Operations = p.getOperation()
+	err := p.getState(sdk, c)
+	if err != nil {
+		return err
+	}
 	switch event.Operation {
-	case cptype.InitializeOperation, cptype.RenderingOperation, common.ProjectRuntimeFilter:
-		err := p.getState(sdk, c)
-		if err != nil {
-			return err
+	case cptype.InitializeOperation:
+		if p.State.Values["title"] == "" {
+			if urlquery := sdk.InParams.String("inputFilter__urlQuery"); urlquery != "" {
+				if err := p.flushOptsByFilter(urlquery); err != nil {
+					logrus.Errorf("failed to parse input filter values ,err :%v", err)
+					return err
+				}
+			}
 		}
+	case cptype.RenderingOperation, common.ProjectRuntimeFilter:
 		(*gs)["nameFilter"] = p.State.Values
 	}
 	urlParam, err := p.generateUrlQueryParams()
@@ -77,6 +86,7 @@ func (p *InputFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 	}
 	return nil
 }
+
 func (p *InputFilter) getOperation() map[string]interface{} {
 	return map[string]interface{}{
 		"filter": map[string]interface{}{"key": "filter", "reload": true},
@@ -87,26 +97,16 @@ func (p *InputFilter) getState(sdk *cptype.SDK, c *cptype.Component) error {
 	if err != nil {
 		logrus.Errorf("failed to parse input filter values ,err :%v", err)
 	}
-	if err := json.Unmarshal(b, p); err != nil {
+	if err = json.Unmarshal(b, p); err != nil {
 		return err
 	}
-	s := State{
-		Conditions: []Condition{
-			{
-				Key:         "title",
-				Placeholder: sdk.I18n("search by runtime name"),
-				Type:        "input",
-			},
+	p.State.Conditions = []Condition{
+		{
+			Key:         "title",
+			Placeholder: sdk.I18n("search by runtime name"),
+			Type:        "input",
 		},
-		Values: Values{},
 	}
-	if urlquery := sdk.InParams.String("inputFilter__urlQuery"); urlquery != "" {
-		if err = p.flushOptsByFilter(urlquery); err != nil {
-			logrus.Errorf("failed to parse input filter values ,err :%v", err)
-		}
-	}
-	p.State = s
-
 	return nil
 }
 

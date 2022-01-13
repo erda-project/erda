@@ -171,29 +171,29 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 	deploymentStatusMap := make(map[string]bool)
 	//runtimeStatusMap := make(map[string]bool)
 	deploymentOrderNameMap := make(map[string]bool)
-	runtimeNameToAppNameMap := make(map[string]string)
-	runtimeNameToAppIdMap := make(map[string]uint64)
-	selectRuntimes := make([]*bundle.GetApplicationRuntimesDataEle, 0)
+	runtimeIdToAppNameMap := make(map[uint64]string)
+	selectRuntimes := make([]bundle.GetApplicationRuntimesDataEle, 0)
 
-	for id, v := range runtimesByApp {
+	for _, v := range runtimesByApp {
 		for _, appRuntime := range v {
 			if getEnv == appRuntime.Extra.Workspace {
-				appNameMap[appIdToName[appRuntime.ApplicationID]] = true
-				deploymentOrderNameMap[appRuntime.DeploymentOrderName] = true
+				if appRuntime.DeploymentOrderName != "" {
+					deploymentOrderNameMap[appRuntime.DeploymentOrderName] = true
+				}
 				//runtimeStatusMap[appRuntime.RawStatus] = true
 				deploymentStatusMap[appRuntime.RawDeploymentStatus] = true
-				selectRuntimes = append(selectRuntimes, appRuntime)
-				runtimeNameToAppNameMap[appRuntime.Name] = appIdToName[id]
-				runtimeNameToAppIdMap[appRuntime.Name] = id
+				selectRuntimes = append(selectRuntimes, *appRuntime)
+				if appIdToName[appRuntime.ApplicationID] != "" {
+					runtimeIdToAppNameMap[appRuntime.ID] = appIdToName[appRuntime.ApplicationID]
+					appNameMap[appIdToName[appRuntime.ApplicationID]] = true
+				}
 			}
 		}
 	}
 	// set runtimes in global state
 	(*sdk.GlobalState)["runtimes"] = selectRuntimes
 	// runtimeNameToAppName
-	(*sdk.GlobalState)["runtimeNameToAppName"] = runtimeNameToAppNameMap
-	// runtimeNameToAppIdMap
-	(*sdk.GlobalState)["runtimeNameToAppIdMap"] = runtimeNameToAppIdMap
+	(*sdk.GlobalState)["runtimeIdToAppName"] = runtimeIdToAppNameMap
 
 	// filter values
 

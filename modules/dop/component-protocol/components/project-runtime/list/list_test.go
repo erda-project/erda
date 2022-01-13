@@ -47,7 +47,7 @@ var defaultSDK = &cptype.SDK{
 func TestList_doFilter(t *testing.T) {
 	type args struct {
 		conditions          map[string][]string
-		appRuntime          *bundle.GetApplicationRuntimesDataEle
+		appRuntime          bundle.GetApplicationRuntimesDataEle
 		deployAt            int64
 		appName             string
 		deploymentOrderName string
@@ -70,7 +70,8 @@ func TestList_doFilter(t *testing.T) {
 			args: args{
 				conditions: map[string][]string{
 					common.FilterDeployStatus: {""},
-				}, appRuntime: &bundle.GetApplicationRuntimesDataEle{
+				},
+				appRuntime: bundle.GetApplicationRuntimesDataEle{
 					RawDeploymentStatus: "1",
 				}},
 			want: false,
@@ -102,6 +103,7 @@ func Test_getTitleState(t *testing.T) {
 		deployStatus string
 		deploymentId string
 		appId        string
+		delete       string
 	}
 	tests := []struct {
 		name string
@@ -141,12 +143,13 @@ func Test_getTitleState(t *testing.T) {
 			args: args{
 				sdk:          defaultSDK,
 				deployStatus: string(apistructs.DeploymentStatusCanceled),
+				delete:       "s",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			getTitleState(tt.args.sdk, tt.args.deployStatus, tt.args.deploymentId, tt.args.appId)
+			getTitleState(tt.args.sdk, tt.args.deployStatus, tt.args.deploymentId, tt.args.appId, tt.args.delete)
 		})
 	}
 }
@@ -237,29 +240,12 @@ func TestList_getBatchOperation(t *testing.T) {
 				sdk: defaultSDK,
 				ids: []string{"1"},
 			},
-			want: map[cptype.OperationKey]cptype.Operation{
-				"changePage": {},
-				"batchRowsHandle": {
-					ServerData: &cptype.OpServerData{
-						"options": []list.OpBatchRowsHandleOptionServerData{
-							{
-								AllowedRowIDs: []string{"1"}, Icon: "chongxinqidong", ID: common.ReStartOp, Text: "重启", // allowedRowIDs = null 或不传这个key，表示所有都可选，allowedRowIDs=[]表示当前没有可选择，此处应该可以不传
-							},
-							{
-								AllowedRowIDs: []string{"1"}, Icon: "remove", ID: common.DeleteOp, Text: "删除",
-							},
-						},
-					},
-				},
-			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := List{}
-			if got := p.getBatchOperation(tt.args.sdk, tt.args.ids); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getBatchOperation() = %v, want %v", got, tt.want)
-			}
+			p.getBatchOperation(tt.args.sdk, tt.args.ids)
 		})
 	}
 }
@@ -272,7 +258,7 @@ func Test_getKvInfos(t *testing.T) {
 		deployOrderName string
 		deployVersion   string
 		healthStr       string
-		runtime         *bundle.GetApplicationRuntimesDataEle
+		runtime         bundle.GetApplicationRuntimesDataEle
 	}
 	tests := []struct {
 		name string
@@ -289,7 +275,7 @@ func Test_getKvInfos(t *testing.T) {
 				deployOrderName: "",
 				deployVersion:   "",
 				healthStr:       "",
-				runtime:         &bundle.GetApplicationRuntimesDataEle{LastOperateTime: time.Now()},
+				runtime:         bundle.GetApplicationRuntimesDataEle{LastOperateTime: time.Now()},
 			},
 		},
 	}

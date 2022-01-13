@@ -35,16 +35,19 @@ components:
 
 rendering:
   inputFilter:
+    - name: filterContainer
     - name: advanceFilter
     - name: list
     - name: cleanData
 
   advanceFilter:
+    - name: filterContainer
     - name: inputFilter
     - name: list
     - name: cleanData
 
   list:
+    - name: filterContainer
     - name: cleanData
 
   __DefaultRendering__:

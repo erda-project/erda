@@ -73,6 +73,7 @@ openapi-v1-routes:
           - code-coverage
           - scenes-import-record
           - test-dashboard
+          - project-runtime
           - test-report
           - addon-mysql-account
           - addon-mysql-consumer
