@@ -69,6 +69,9 @@ const (
 	ColumnBranch               table.ColumnKey = "branch"
 	ColumnLatestExecutor       table.ColumnKey = "latestExecutor"
 	ColumnLatestStartTime      table.ColumnKey = "latestStartTime"
+	ColumnCreateTime           table.ColumnKey = "createTime"
+	ColumnCreator              table.ColumnKey = "creator"
+	ColumnPipelineID           table.ColumnKey = "pipelineID"
 	ColumnMoreOperations       table.ColumnKey = "moreOperations"
 
 	StateKeyTransactionPaging = "paging"
@@ -120,7 +123,8 @@ func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 	return table.ColumnsInfo{
-		Orders: []table.ColumnKey{ColumnPipelineName, ColumnPipelineLatestStatus, ColumnLatestCostTime, ColumnApplicationName, ColumnBranch, ColumnLatestExecutor, ColumnLatestStartTime, ColumnMoreOperations},
+		Orders: []table.ColumnKey{ColumnPipelineName, ColumnPipelineLatestStatus, ColumnLatestCostTime, ColumnApplicationName, ColumnBranch,
+			ColumnLatestExecutor, ColumnLatestStartTime, ColumnCreateTime, ColumnCreator, ColumnPipelineID, ColumnMoreOperations},
 		ColumnsMap: map[table.ColumnKey]table.Column{
 			ColumnPipelineName:         {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineName))},
 			ColumnPipelineLatestStatus: {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineLatestStatus))},
@@ -130,6 +134,9 @@ func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 			ColumnLatestExecutor:       {Title: cputil.I18n(p.sdk.Ctx, string(ColumnLatestExecutor))},
 			ColumnLatestStartTime:      {Title: cputil.I18n(p.sdk.Ctx, string(ColumnLatestStartTime)), EnableSort: true},
 			ColumnMoreOperations:       {Title: cputil.I18n(p.sdk.Ctx, string(ColumnMoreOperations))},
+			ColumnCreator:              {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCreator)), Hidden: true},
+			ColumnPipelineID:           {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineID)), Hidden: true},
+			ColumnCreateTime:           {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCreateTime)), EnableSort: true, Hidden: true},
 		},
 	}
 }
@@ -143,6 +150,9 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			}
 			if v.FieldKey == string(ColumnLatestStartTime) {
 				return "started_at"
+			}
+			if v.FieldKey == string(ColumnCreateTime) {
+				return "created_at"
 			}
 			return ""
 		}()
@@ -285,13 +295,27 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 				}()).Build(),
 				ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(v.Remote)).Build(),
 				ColumnBranch:          table.NewTextCell(v.Ref).Build(),
-				ColumnLatestExecutor:  table.NewUserCell(commodel.User{ID: v.Creator}).Build(),
+				ColumnPipelineID: table.NewTextCell(func() string {
+					if v.PipelineId == 0 {
+						return "-"
+					}
+					return strconv.FormatInt(v.PipelineId, 10)
+				}()).Build(),
+				ColumnLatestExecutor: table.NewUserCell(commodel.User{ID: v.Creator}).Build(),
+				ColumnCreator:        table.NewUserCell(commodel.User{ID: v.Creator}).Build(),
 				ColumnLatestStartTime: table.NewTextCell(func() string {
 					v.StartedAt.AsTime().Format("2006-01-02 15:04:05")
 					if v.StartedAt.AsTime().Unix() <= 0 {
 						return "-"
 					}
 					return v.StartedAt.AsTime().Format("2006-01-02 15:04:05")
+				}()).Build(),
+				ColumnCreateTime: table.NewTextCell(func() string {
+					v.TimeCreated.AsTime().Format("2006-01-02 15:04:05")
+					if v.TimeCreated.AsTime().Unix() <= 0 {
+						return "-"
+					}
+					return v.TimeCreated.AsTime().Format("2006-01-02 15:04:05")
 				}()).Build(),
 				ColumnMoreOperations: table.NewMoreOperationsCell(commodel.MoreOperations{
 					Ops: p.SetTableMoreOpItem(v, definitionYmlSourceMap, ymlSourceMapCronMap),
