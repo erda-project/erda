@@ -92,11 +92,11 @@ message PipelineDefinitionUpdateRequest {
   string executor = 3;
   string pipelineSourceId = 4;
   string category = 5;
-  google.protobuf.Timestamp startedAt = 7;
-  google.protobuf.Timestamp endedAt = 8;
-  string pipelineDefinitionID = 9;
-  string status = 10;
-  int64 pipelineId = 11;
+  google.protobuf.Timestamp startedAt = 6;
+  google.protobuf.Timestamp endedAt = 7;
+  string pipelineDefinitionID = 8;
+  string status = 9;
+  int64 pipelineId = 10;
 }
 
 message PipelineDefinitionUpdateResponse {
