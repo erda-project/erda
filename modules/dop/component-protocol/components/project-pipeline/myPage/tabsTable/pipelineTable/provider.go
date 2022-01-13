@@ -589,7 +589,7 @@ func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick
 		if err != nil {
 			panic(err)
 		}
-	case "corn":
+	case "cron":
 		_, err := p.ProjectPipelineSvc.StartCron(p.sdk.Ctx, deftype.ProjectPipelineStartCron{
 			PipelineDefinitionID: id,
 			ProjectID:            p.InParams.ProjectID,
