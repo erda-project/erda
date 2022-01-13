@@ -92,7 +92,7 @@ func (d *DeploymentOrder) Deploy(req *apistructs.DeploymentOrderDeployRequest) (
 	// permission check
 	if err := d.checkExecutePermission(req.Operator, order.Workspace, nil, order.ReleaseId); err != nil {
 		logrus.Errorf("failed to check execute permission, err: %v", err)
-		return nil, apierrors.ErrCreateDeploymentOrder.InternalError(err)
+		return nil, apierrors.ErrDeployDeploymentOrder.InternalError(err)
 	}
 
 	order.Operator = user.ID(req.Operator)
@@ -164,7 +164,7 @@ func (d *DeploymentOrder) RenderDetail(userId, releaseId, workspace string) (*ap
 
 	return &apistructs.DeploymentOrderDetail{
 		DeploymentOrderItem: apistructs.DeploymentOrderItem{
-			Name: parseDeploymentOrderShowName(orderName),
+			Name: orderName,
 		},
 		ApplicationsInfo: asi,
 	}, nil
@@ -271,12 +271,21 @@ func (d *DeploymentOrder) renderDeploymentOrderName(projectId uint64, releaseId 
 		orderType = apistructs.TypeProjectRelease
 	}
 
-	c, err := d.db.GetOrderCountByProject(projectId, orderType)
+	c, err := d.db.GetOrderCountByProject(orderType, projectId, releaseId)
 	if err != nil {
 		return orderName, fmt.Errorf("count order in project %d error: %v", projectId, err)
 	}
 
-	return namePrefix + fmt.Sprintf(orderNameTmpl, releaseId, c), nil
+	newId := releaseId
+	if len(releaseId) >= 6 {
+		newId = releaseId[:6]
+	}
+
+	if c == 0 {
+		return namePrefix + newId, nil
+	}
+
+	return namePrefix + fmt.Sprintf(orderNameTmpl, newId, c), nil
 }
 
 func (d *DeploymentOrder) fetchApplicationsParams(t string, r *apistructs.ReleaseGetResponseData, workspace string) (map[string]*apistructs.DeploymentOrderParam, error) {
@@ -382,7 +391,7 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 		rtCreateReq := &apistructs.RuntimeCreateRequest{
 			Name:                branch,
 			DeploymentOrderId:   deploymentOrderId,
-			DeploymentOrderName: parseDeploymentOrderShowName(order.Name),
+			DeploymentOrderName: order.Name,
 			ReleaseVersion:      r.Version,
 			ReleaseID:           r.ReleaseID,
 			Source:              apistructs.TypePipeline,
@@ -418,7 +427,7 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 			rtCreateReq := &apistructs.RuntimeCreateRequest{
 				Name:                ar.ApplicationName,
 				DeploymentOrderId:   deploymentOrderId,
-				DeploymentOrderName: parseDeploymentOrderShowName(order.Name),
+				DeploymentOrderName: order.Name,
 				ReleaseVersion:      r.Version,
 				ReleaseID:           ar.ReleaseID,
 				Source:              release,
@@ -460,19 +469,6 @@ func parseOrderType(t string, isProjectRelease bool) string {
 	}
 
 	return orderType
-}
-
-func parseDeploymentOrderShowName(orderName string) string {
-	if strings.HasPrefix(orderName, appOrderPrefix) || strings.HasPrefix(orderName, projectOrderPrefix) {
-		nameSlice := strings.Split(orderName, "_")
-		if len(nameSlice) != 3 || len(nameSlice[1]) < 6 {
-			return orderName
-		}
-		nameSlice[1] = nameSlice[1][:6]
-		return strings.Join(nameSlice, "_")
-	} else {
-		return orderName
-	}
 }
 
 func covertParamsType(param *apistructs.DeploymentOrderParam) *apistructs.DeploymentOrderParam {
