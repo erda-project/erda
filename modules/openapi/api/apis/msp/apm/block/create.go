@@ -39,15 +39,15 @@ func auditOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditContext
 		var requestBody struct {
 			Name string `json:"name"`
 		}
-		var respBody struct {
-			Workspace string `json:"workspace"`
-		}
+		//var respBody struct {
+		//	Workspace string `json:"workspace"`
+		//}
 		if err := ctx.BindRequestData(&requestBody); err != nil {
 			return err
 		}
-		if err := ctx.BindResponseData(&respBody); err != nil {
-			return err
-		}
+		//if err := ctx.BindResponseData(&respBody); err != nil {
+		//	return err
+		//}
 		info, err := ctx.Bundle.GetTenantGroupDetails(ctx.UrlParams["tenantGroup"])
 		if err != nil {
 			return err
@@ -74,7 +74,7 @@ func auditOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditContext
 			Context: map[string]interface{}{
 				"projectName":   project.Name,
 				"dashboardName": requestBody.Name,
-				"workspace":     respBody.Workspace,
+				//"workspace":     respBody.Workspace,
 			},
 		})
 	}
