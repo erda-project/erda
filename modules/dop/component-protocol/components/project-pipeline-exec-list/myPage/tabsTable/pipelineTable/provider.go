@@ -232,7 +232,7 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 			ColumnBranch:          table.NewTextCell(pipeline.DefinitionPageInfo.SourceRef).Build(),
 			ColumnExecutor:        table.NewUserCell(commodel.User{ID: pipeline.DefinitionPageInfo.Creator}).Build(),
 			ColumnStartTimeOrder: table.NewTextCell(func() string {
-				if pipeline.TimeBegin.Unix() <= 0 {
+				if pipeline.TimeBegin == nil || pipeline.TimeBegin.Unix() <= 0 {
 					return "-"
 				}
 				return pipeline.TimeBegin.Format("2006-01-02 15:04:05")
