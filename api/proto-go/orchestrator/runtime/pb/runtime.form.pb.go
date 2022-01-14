@@ -306,6 +306,8 @@ func (m *RuntimeInspect) UnmarshalURLValues(prefix string, values url.Values) er
 					return err
 				}
 				m.ProjectID = val
+			case "applicationName":
+				m.ApplicationName = vals[0]
 			case "timeCreated":
 				if m.TimeCreated == nil {
 					m.TimeCreated = &timestamppb.Timestamp{}
