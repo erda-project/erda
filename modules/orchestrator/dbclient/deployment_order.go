@@ -55,9 +55,8 @@ func (DeploymentOrder) TableName() string {
 func (db *DBClient) ListDeploymentOrder(conditions *apistructs.DeploymentOrderListConditions, pageInfo *apistructs.PageInfo) (int, []DeploymentOrder, error) {
 	cursor := db.Where("project_id = ? and workspace = ?", conditions.ProjectId, conditions.Workspace)
 
-	if len(conditions.Types) != 0 {
-		cursor = cursor.Where("type in (?)", conditions.Types)
-	}
+	// parse user permission apps orders and project orders
+	cursor = cursor.Where("type = ? or application_id in (?)", apistructs.TypeProjectRelease, conditions.MyApplicationIds)
 
 	// parse query
 	if conditions.Query != "" {
