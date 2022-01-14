@@ -226,7 +226,6 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 	})
 	if err != nil {
 		logrus.Errorf("failed to list project pipeline, err: %s", err.Error())
-		//return nil
 	}
 
 	var (
@@ -288,12 +287,25 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 						return commodel.DefaultStatus
 					}(),
 				}).Build(),
-				ColumnCostTime: table.NewTextCell(func() string {
-					if v.CostTime <= 0 {
-						return "-"
-					}
-					return fmt.Sprintf("%v s", v.CostTime)
-				}()).Build(),
+				ColumnCostTime: table.NewCompleteTextCell(commodel.Text{
+					Text: func() string {
+						if v.CostTime <= 0 {
+							return "-"
+						}
+						return fmt.Sprintf("%v s", v.CostTime)
+					}(),
+					Tip: func() string {
+						if v.CostTime <= 0 {
+							return ""
+						}
+						return fmt.Sprintf("%s :%s\\n%s%s",
+							cputil.I18n(p.sdk.Ctx, string(ColumnCreator)),
+							v.Creator,
+							cputil.I18n(p.sdk.Ctx, string(ColumnStartTime)),
+							formatTimeToStr(v.StartedAt.AsTime()),
+						)
+					}(),
+				}).Build(),
 				ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(v.Remote)).Build(),
 				ColumnBranch:          table.NewTextCell(v.Ref).Build(),
 				ColumnPipelineID: table.NewTextCell(func() string {
@@ -302,22 +314,10 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 					}
 					return strconv.FormatInt(v.PipelineId, 10)
 				}()).Build(),
-				ColumnExecutor: table.NewUserCell(commodel.User{ID: v.Creator}).Build(),
-				ColumnCreator:  table.NewUserCell(commodel.User{ID: v.Creator}).Build(),
-				ColumnStartTime: table.NewTextCell(func() string {
-					v.StartedAt.AsTime().Format("2006-01-02 15:04:05")
-					if v.StartedAt.AsTime().Unix() <= 0 {
-						return "-"
-					}
-					return v.StartedAt.AsTime().Format("2006-01-02 15:04:05")
-				}()).Build(),
-				ColumnCreateTime: table.NewTextCell(func() string {
-					v.TimeCreated.AsTime().Format("2006-01-02 15:04:05")
-					if v.TimeCreated.AsTime().Unix() <= 0 {
-						return "-"
-					}
-					return v.TimeCreated.AsTime().Format("2006-01-02 15:04:05")
-				}()).Build(),
+				ColumnExecutor:   table.NewUserCell(commodel.User{ID: v.Creator}).Build(),
+				ColumnCreator:    table.NewUserCell(commodel.User{ID: v.Creator}).Build(),
+				ColumnStartTime:  table.NewTextCell(formatTimeToStr(v.StartedAt.AsTime())).Build(),
+				ColumnCreateTime: table.NewTextCell(formatTimeToStr(v.TimeCreated.AsTime())).Build(),
 				ColumnMoreOperations: table.NewMoreOperationsCell(commodel.MoreOperations{
 					Ops: p.SetTableMoreOpItem(v, definitionYmlSourceMap, ymlSourceMapCronMap),
 				}).Build(),
@@ -334,6 +334,14 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 		})
 	}
 	return rows
+}
+
+func formatTimeToStr(t time.Time) string {
+	t.Format("2006-01-02 15:04:05")
+	if t.Unix() <= 0 {
+		return "-"
+	}
+	return t.Format("2006-01-02 15:04:05")
 }
 
 func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, definitionYmlSourceMap map[string]string, ymlSourceMapCronMap map[string]*apistructs.PipelineCronDTO) []commodel.MoreOpItem {
