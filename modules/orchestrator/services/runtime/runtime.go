@@ -1361,7 +1361,6 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 			Warnln("failed to build summary item, failed to get last deployment")
 		return err
 	}
-	logrus.Warnf("########## deployment id= %d,runtime id = %d, status =%s ", deployment.ID, deployment.RuntimeId, deployment.Status)
 	if deployment == nil {
 		isFakeRuntime = true
 		// make a fake deployment
@@ -1380,6 +1379,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	d.ServiceGroupName = runtime.ScheduleName.Name
 	d.Source = runtime.Source
 	d.Status = runtime.Status
+	d.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
 	if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
 		sg, err := r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
 		if err != nil {
@@ -1388,7 +1388,24 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 		} else if sg.Status == "Ready" || sg.Status == "Healthy" {
 			d.Status = apistructs.RuntimeStatusHealthy
 		}
+		var dice diceyml.Object
+		if err = json.Unmarshal([]byte(deployment.Dice), &dice); err != nil {
+			return apierrors.ErrGetRuntime.InvalidState(strutil.Concat("dice.json invalid: ", err.Error()))
+		}
+		domains, err := r.db.FindDomainsByRuntimeId(runtime.ID)
+		if err != nil {
+			return apierrors.ErrGetRuntime.InternalError(err)
+		}
+		domainMap := make(map[string][]string)
+		for _, d := range domains {
+			if domainMap[d.EndpointName] == nil {
+				domainMap[d.EndpointName] = make([]string, 0)
+			}
+			domainMap[d.EndpointName] = append(domainMap[d.EndpointName], "http://"+d.Domain)
+		}
+		fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, sg, domainMap, string(deployment.Status))
 	}
+
 	d.DeployStatus = deployment.Status
 	// 如果还 deployment 的状态不是终态, runtime 的状态返回为 init(前端显示为部署中效果),
 	// 不然开始部署直接变为不健康不合理

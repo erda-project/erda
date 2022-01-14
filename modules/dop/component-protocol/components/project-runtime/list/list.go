@@ -211,11 +211,15 @@ func (p *List) getData() *list.Data {
 			appIds = append(appIds, apps.List[i].ID)
 			appIdToName[apps.List[i].ID] = apps.List[i].Name
 		}
+		logrus.Infof("start load runtimes by app %v", time.Now())
+
 		runtimesByApp, err := p.Bdl.ListRuntimesGroupByApps(oid, p.Sdk.Identity.UserID, appIds, getEnv)
 		if err != nil {
 			logrus.Errorf("get my app failed,%v", err)
 			return data
 		}
+		logrus.Infof("finish load runtimes by app %v", time.Now())
+
 		runtimeIdToAppNameMap = make(map[uint64]string)
 		for _, v := range runtimesByApp {
 			for _, appRuntime := range v {
@@ -245,21 +249,25 @@ func (p *List) getData() *list.Data {
 		}
 	}
 	logrus.Infof("runtimes:%v", runtimes)
-	oid, err := strconv.ParseUint(p.Sdk.Identity.OrgID, 10, 64)
-	if err != nil {
-		logrus.Errorf("failed to get oid ,%v", err)
-		return data
-	}
+	//oid, err := strconv.ParseUint(p.Sdk.Identity.OrgID, 10, 64)
+	//if err != nil {
+	//	logrus.Errorf("failed to get oid ,%v", err)
+	//	return data
+	//}
 
 	userReq := apistructs.UserListRequest{}
 	for _, runtime := range runtimes {
 		userReq.UserIDs = append(userReq.UserIDs, runtime.Creator)
 	}
+	logrus.Infof("start load users %v", time.Now())
+
 	users, err := p.Bdl.ListUsers(userReq)
 	if err != nil {
 		logrus.Errorf("failed to load users,err:%v", err)
 		return data
 	}
+	logrus.Infof("finish load users %v", time.Now())
+
 	uidToName := make(map[string]string)
 	for _, user := range users.Users {
 		if user.Nick == "" {
@@ -269,7 +277,6 @@ func (p *List) getData() *list.Data {
 		}
 	}
 	ids := make([]string, 0)
-
 	deployId := p.Sdk.InParams["deployId"]
 	runtimeMap := make(map[string]bundle.GetApplicationRuntimesDataEle)
 	for _, appRuntime := range runtimes {
@@ -281,7 +288,16 @@ func (p *List) getData() *list.Data {
 			}
 		}
 		//healthyMap[appRuntime.Name] = healthyCnt
-
+		healthyCnt := 0
+		for _, s := range appRuntime.Services {
+			if s.Status == "Healthy" {
+				healthyCnt++
+			}
+		}
+		var healthStr = ""
+		if len(appRuntime.Services) != 0 {
+			healthStr = fmt.Sprintf("%d/%d", healthyCnt, len(appRuntime.Services))
+		}
 		idStr := strconv.FormatUint(appRuntime.ID, 10)
 		appIdStr := strconv.FormatUint(appRuntime.ApplicationID, 10)
 		nameStr := appRuntime.Name
@@ -295,6 +311,7 @@ func (p *List) getData() *list.Data {
 			MainState:      getMainState(appRuntime.Status),
 			TitleState:     getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus),
 			Selectable:     true,
+			KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
 			Operations:     getOperations(appRuntime.ProjectID, appRuntime.ApplicationID, appRuntime.ID),
 			MoreOperations: getMoreOperations(p.Sdk, fmt.Sprintf("%d", appRuntime.ID)),
 		})
@@ -366,26 +383,26 @@ func (p *List) getData() *list.Data {
 	end := uint64(math.Min(float64((p.PageNo)*p.PageSize), float64(data.Total)))
 
 	data.List = data.List[start:end]
-	for i := 0; i < len(data.List); i++ {
-		item := data.List[i]
-		appRuntime := runtimeMap[item.ID]
-		services, err := p.Bdl.GetRuntimeServices(appRuntime.ID, oid, p.Sdk.Identity.UserID)
-		if err != nil {
-			logrus.Errorf("failed to get runtime %s of detail %v", appRuntime.Name, err)
-			continue
-		}
-		healthyCnt := 0
-		for _, s := range services.Services {
-			if s.Status == "Healthy" {
-				healthyCnt++
-			}
-		}
-		var healthStr = ""
-		if len(services.Services) != 0 {
-			healthStr = fmt.Sprintf("%d/%d", healthyCnt, len(services.Services))
-		}
-		data.List[i].KvInfos = getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime)
-	}
+	//for i := 0; i < len(data.List); i++ {
+	//	item := data.List[i]
+	//	appRuntime := runtimeMap[item.ID]
+	//	services, err := p.Bdl.GetRuntimeServices(appRuntime.ID, oid, p.Sdk.Identity.UserID)
+	//	if err != nil {
+	//		logrus.Errorf("failed to get runtime %s of detail %v", appRuntime.Name, err)
+	//		continue
+	//	}
+	//	healthyCnt := 0
+	//	for _, s := range services.Services {
+	//		if s.Status == "Healthy" {
+	//			healthyCnt++
+	//		}
+	//	}
+	//	var healthStr = ""
+	//	if len(services.Services) != 0 {
+	//		healthStr = fmt.Sprintf("%d/%d", healthyCnt, len(services.Services))
+	//	}
+	//	data.List[i].KvInfos = getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime)
+	//}
 	return data
 }
 
