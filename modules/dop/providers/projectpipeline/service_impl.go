@@ -248,13 +248,36 @@ func (p *ProjectPipelineService) Delete(ctx context.Context, params deftype.Proj
 		return nil, apierrors.ErrDeleteProjectPipeline.InvalidParameter(err)
 	}
 
-	_, source, err := p.getPipelineDefinitionAndSource(params.ID)
+	definition, source, err := p.getPipelineDefinitionAndSource(params.ID)
 	if err != nil {
 		return nil, apierrors.ErrDeleteProjectPipeline.InvalidParameter(err)
+	}
+	if definition.Creator != apis.GetUserID(ctx) {
+		return nil, apierrors.ErrDeleteProjectPipeline.AccessDenied()
 	}
 	err = p.checkDataPermissionByProjectID(params.ProjectID, source)
 	if err != nil {
 		return nil, apierrors.ErrDeleteProjectPipeline.AccessDenied()
+	}
+	if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
+		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(fmt.Errorf("pipeline wass running status"))
+	}
+	var extraValue = apistructs.PipelineDefinitionExtraValue{}
+	err = json.Unmarshal([]byte(definition.Extra.Extra), &extraValue)
+	if err != nil {
+		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
+	}
+	crons, err := p.bundle.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
+		Sources:  []apistructs.PipelineSource{extraValue.CreateRequest.PipelineSource},
+		YmlNames: []string{extraValue.CreateRequest.PipelineYmlName},
+		PageSize: 1,
+		PageNo:   1,
+	})
+	if err != nil {
+		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(err)
+	}
+	if len(crons.Data) > 0 && crons.Data[0].Enable != nil && *crons.Data[0].Enable == true {
+		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(fmt.Errorf("pipeline cron was running status"))
 	}
 
 	_, err = p.PipelineDefinition.Delete(ctx, &dpb.PipelineDefinitionDeleteRequest{PipelineDefinitionID: params.ID})

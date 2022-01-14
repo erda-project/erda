@@ -213,6 +213,7 @@ func PipelineDefinitionToPb(pipelineDefinition *db.PipelineDefinition) *pb.Pipel
 		CostTime:         pipelineDefinition.CostTime,
 		Category:         pipelineDefinition.Category,
 		PipelineSourceId: pipelineDefinition.PipelineSourceId,
+		Status:           pipelineDefinition.Status,
 		TimeCreated:      timestamppb.New(pipelineDefinition.TimeCreated),
 		TimeUpdated:      timestamppb.New(pipelineDefinition.TimeUpdated),
 		StartedAt:        timestamppb.New(pipelineDefinition.StartedAt),
