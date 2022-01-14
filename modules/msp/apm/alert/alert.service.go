@@ -244,7 +244,7 @@ func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAle
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	projectName, workspace, auditProjectId, err := a.getAuditInfo(request.TenantGroup)
+	projectName, workspace, auditProjectId, err := a.getAuditInfo(tk)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -346,7 +346,10 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	projectName, workspace, auditProjectId, err := a.getAuditInfo(request.TenantGroup)
+	projectName, workspace, auditProjectId, err := a.getAuditInfo(tk)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	auditContext := map[string]interface{}{
 		"projectName": projectName,
 		"alertName":   request.Name,
@@ -404,7 +407,14 @@ func (a *alertService) DeleteAlert(ctx context.Context, request *alert.DeleteAle
 		return nil, errors.NewInternalServerError(err)
 	}
 	if resp != nil {
-		projectName, workspace, auditProjectId, err := a.getAuditInfo(request.TenantGroup)
+		tk, err := a.getTKByTenant(request.TenantGroup)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		if tk == "" {
+			return nil, fmt.Errorf("no monitor")
+		}
+		projectName, workspace, auditProjectId, err := a.getAuditInfo(tk)
 		if err != nil {
 			return &alert.DeleteAlertResponse{}, errors.NewInternalServerError(err)
 		}
@@ -593,7 +603,7 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 		}
 		return nil, errors.NewInternalServerError(err)
 	}
-	projectName, workspace, auditProjectId, err := a.getAuditInfo(request.TenantGroup)
+	projectName, workspace, auditProjectId, err := a.getAuditInfo(tk)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -831,10 +841,7 @@ func (a *alertService) UpdateCustomizeAlert(ctx context.Context, request *alert.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	projectName, workspace, auditProjectId, err := a.getAuditInfo(request.TenantGroup)
+	projectName, workspace, auditProjectId, err := a.getAuditInfo(tk)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -914,7 +921,14 @@ func (a *alertService) DeleteCustomizeAlert(ctx context.Context, request *alert.
 			Name: resp.Data,
 		},
 	}
-	projectName, workspace, auditProjectId, err := a.getAuditInfo(request.TenantGroup)
+	tk, err := a.getTKByTenant(request.TenantGroup)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if tk == "" {
+		return nil, fmt.Errorf("no monitor")
+	}
+	projectName, workspace, auditProjectId, err := a.getAuditInfo(tk)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
