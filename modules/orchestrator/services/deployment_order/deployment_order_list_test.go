@@ -27,6 +27,28 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 )
 
+func TestListDeploymentOrder(t *testing.T) {
+	bdl := bundle.New()
+	order := New()
+
+	defer monkey.UnpatchAll()
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetMyApps", func(*bundle.Bundle, string, uint64) (*apistructs.ApplicationListResponseData, error) {
+		return &apistructs.ApplicationListResponseData{}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListDeploymentOrder", func(*dbclient.DBClient, *apistructs.DeploymentOrderListConditions, *apistructs.PageInfo) (int, []dbclient.DeploymentOrder, error) {
+		return 0, []dbclient.DeploymentOrder{}, nil
+	})
+
+	got, err := order.List("1", 1, &apistructs.DeploymentOrderListConditions{}, &apistructs.PageInfo{})
+	assert.NoError(t, err)
+	assert.Equal(t, got, &apistructs.DeploymentOrderListData{
+		Total: 0,
+		List:  []*apistructs.DeploymentOrderItem{},
+	})
+
+}
+
 func TestConvertDeploymentOrderToResponseItem(t *testing.T) {
 	bdl := bundle.New()
 	order := New()
