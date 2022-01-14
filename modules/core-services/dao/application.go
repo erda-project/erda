@@ -212,8 +212,8 @@ func (client *DBClient) ListUnblockAppCountsByProjectIDS(projectIDS []uint64) ([
 	return counters, nil
 }
 
-func (client *DBClient) GetApplicationsByNames(names []string) ([]model.Application, error) {
+func (client *DBClient) GetApplicationsByNames(projectID uint64, names []string) ([]model.Application, error) {
 	var applications []model.Application
-	err := client.Find(&applications).Where("name in (?)", names).Error
+	err := client.Where("project_id = ?", projectID).Where("name in (?)", names).Find(&applications).Error
 	return applications, err
 }
