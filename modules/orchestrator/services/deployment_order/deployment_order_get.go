@@ -86,19 +86,20 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 
 	return &apistructs.DeploymentOrderDetail{
 		DeploymentOrderItem: apistructs.DeploymentOrderItem{
-			ID:        order.ID,
-			Name:      utils.ParseOrderName(order.ID),
-			ReleaseID: order.ReleaseId,
-			Type:      order.Type,
-			Workspace: order.Workspace,
-			Status:    parseDeploymentOrderStatus(appsStatus),
-			Operator:  order.Operator.String(),
-			CreatedAt: order.CreatedAt,
-			UpdatedAt: order.UpdatedAt,
-			StartedAt: parseStartedTime(order.StartedAt),
+			ID:              order.ID,
+			Name:            utils.ParseOrderName(order.ID),
+			ReleaseID:       order.ReleaseId,
+			ReleaseVersion:  releaseResp.Version,
+			ReleaseUpdateAt: releaseResp.UpdatedAt,
+			Type:            order.Type,
+			Workspace:       order.Workspace,
+			Status:          parseDeploymentOrderStatus(appsStatus),
+			Operator:        order.Operator.String(),
+			CreatedAt:       order.CreatedAt,
+			UpdatedAt:       order.UpdatedAt,
+			StartedAt:       parseStartedTime(order.StartedAt),
 		},
 		ApplicationsInfo: asi,
-		ReleaseVersion:   releaseResp.Version,
 	}, nil
 }
 

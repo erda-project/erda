@@ -135,6 +135,8 @@ func (d *DeploymentOrder) RenderDetail(userId, releaseId, workspace string) (*ap
 
 	asi := make([]*apistructs.ApplicationInfo, 0)
 
+	orderType := apistructs.TypeApplicationRelease
+
 	if releaseResp.IsProjectRelease {
 		params, err := d.fetchApplicationsParams(apistructs.TypeProjectRelease, releaseResp, workspace)
 		if err != nil {
@@ -149,6 +151,7 @@ func (d *DeploymentOrder) RenderDetail(userId, releaseId, workspace string) (*ap
 			})
 		}
 
+		orderType = apistructs.TypeProjectRelease
 	} else {
 		params, err := d.fetchDeploymentParams(releaseResp.ApplicationID, workspace)
 		if err != nil {
@@ -166,8 +169,13 @@ func (d *DeploymentOrder) RenderDetail(userId, releaseId, workspace string) (*ap
 
 	return &apistructs.DeploymentOrderDetail{
 		DeploymentOrderItem: apistructs.DeploymentOrderItem{
-			ID:   orderId,
-			Name: utils.ParseOrderName(orderId),
+			ID:              orderId,
+			Name:            utils.ParseOrderName(orderId),
+			ReleaseID:       releaseResp.ReleaseID,
+			ReleaseVersion:  releaseResp.Version,
+			ReleaseUpdateAt: releaseResp.UpdatedAt,
+			Type:            orderType,
+			Workspace:       workspace,
 		},
 		ApplicationsInfo: asi,
 	}, nil
