@@ -270,6 +270,11 @@ func (m *GetAlertResponse) UnmarshalURLValues(prefix string, values url.Values) 
 					return err
 				}
 				m.Data.UpdateTime = val
+			case "data.creator":
+				if m.Data == nil {
+					m.Data = &ApmAlertData{}
+				}
+				m.Data.Creator = vals[0]
 			}
 		}
 	}
@@ -315,6 +320,8 @@ func (m *ApmAlertData) UnmarshalURLValues(prefix string, values url.Values) erro
 					return err
 				}
 				m.UpdateTime = val
+			case "creator":
+				m.Creator = vals[0]
 			}
 		}
 	}
