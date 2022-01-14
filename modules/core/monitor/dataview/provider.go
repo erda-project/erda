@@ -24,7 +24,6 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
-	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
@@ -49,7 +48,6 @@ type provider struct {
 	Tran            i18n.Translator `translator:"charts"`
 	bdl             *bundle.Bundle
 	audit           audit.Auditor
-	Tenant          tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
