@@ -274,14 +274,21 @@ func (db *DBClient) FindRuntimesByAppIdAndWorkspace(appId uint64, workspace stri
 
 // FindRuntimesInApps finds all runtimes for the given appIDs.
 // The key in the returned map is appID.
-func (db *DBClient) FindRuntimesInApps(appIDs []uint64) (map[uint64][]*Runtime, error) {
+func (db *DBClient) FindRuntimesInApps(appIDs []uint64, env string) (map[uint64][]*Runtime, error) {
 	var (
 		runtimes []*Runtime
 		m        = make(map[uint64][]*Runtime)
 	)
-	if err := db.Where("application_id IN (?)", appIDs).
-		Find(&runtimes).Error; err != nil && !gorm.IsRecordNotFoundError(err) {
-		return nil, err
+	if env != "" {
+		if err := db.Where("application_id IN (?) AND workspace = ? ", appIDs, env).
+			Find(&runtimes).Error; err != nil && !gorm.IsRecordNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		if err := db.Where("application_id IN (?) ", appIDs).
+			Find(&runtimes).Error; err != nil && !gorm.IsRecordNotFoundError(err) {
+			return nil, err
+		}
 	}
 	for _, runtime := range runtimes {
 		m[runtime.ApplicationID] = append(m[runtime.ApplicationID], runtime)
