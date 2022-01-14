@@ -81,7 +81,7 @@ func initBundle() {
 // Interceptor .
 func Intercepter(scope interface{}, id ValueGetter, resource interface{}, action Action) httpserver.Interceptor {
 	once.Do(initBundle)
-	fmt.Printf("permission: scope = %s, resource = %s, action = %s\n", scope, resource, action)
+	fmt.Printf("permission: scope = %v, resource = %v, action = %v\n", scope, resource, action)
 	switch res := resource.(type) {
 	case string:
 		return check(scope, id, FiexdValue(res), action)
@@ -102,29 +102,40 @@ func check(scope interface{}, idget ValueGetter, resget ValueGetter, action Acti
 				Failure(ctx, err.Error())
 				return nil
 			}
+			// get id
 			id, err := idget(ctx)
 			if err != nil {
 				Failure(ctx, err.Error())
 				return nil
-			}
-			var scopeType apistructs.ScopeType
-			switch res := scope.(type) {
-			case string:
-				scopeType = apistructs.ScopeType(res)
-			case ValueGetter:
-				f := res
-				s, err := f(ctx)
-				if err != nil {
-					Failure(ctx, err.Error())
-					return nil
-				}
-				scopeType = apistructs.ScopeType(s)
 			}
 			idval, err := strconv.ParseUint(id, 10, 64)
 			if err != nil {
 				Failure(ctx, fmt.Sprintf("fail to convert scope id: %s", err))
 				return nil
 			}
+			// get scope
+			var scopeType apistructs.ScopeType
+			var scopeTypeFunc func(ctx httpserver.Context) (string, error)
+			switch res := scope.(type) {
+			case string:
+				scopeType = apistructs.ScopeType(res)
+			case ValueGetter:
+				scopeTypeFunc = res
+			case func(ctx httpserver.Context) (string, error):
+				scopeTypeFunc = res
+			default:
+				Failure(ctx, fmt.Sprintf("invalid scope"))
+				return nil
+			}
+			if scopeTypeFunc != nil {
+				s, err := scopeTypeFunc(ctx)
+				if err != nil {
+					Failure(ctx, err.Error())
+					return nil
+				}
+				scopeType = apistructs.ScopeType(s)
+			}
+
 			resp, err := bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 				UserID:   req.Header.Get("User-ID"),
 				Scope:    scopeType,

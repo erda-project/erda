@@ -16,6 +16,7 @@ package permission
 
 import (
 	"context"
+	"reflect"
 	"testing"
 )
 
@@ -115,6 +116,52 @@ func Test_getMethodName(t *testing.T) {
 			}()
 			if got := getMethodName(tt.args.method); got != tt.want {
 				t.Errorf("getMethodName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSetPermissionDataFromContext(t *testing.T) {
+	type args struct {
+		key   string
+		value interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			args: args{
+				key:   "test-key",
+				value: "test-value",
+			},
+		},
+		{
+			args: args{
+				key:   "test-key-2",
+				value: 1024,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := WithPermissionDataContext(context.Background())
+			SetPermissionDataFromContext(ctx, tt.args.key, tt.args.value)
+
+			value, ok := GetPermissionDataFromContext(ctx, tt.args.key+"not-exit")
+			if ok {
+				t.Errorf("GetPermissionDataFromContext(ctx, %q) got %v,%v , want not fount", tt.args.key+"not-exit", value, ok)
+				return
+			}
+
+			value, ok = GetPermissionDataFromContext(ctx, tt.args.key)
+			if !ok {
+				t.Errorf("GetPermissionDataFromContext(ctx, %q) not fount value, want %v", tt.args.key, tt.args.value)
+				return
+			}
+			if !reflect.DeepEqual(value, tt.args.value) {
+				t.Errorf("GetPermissionDataFromContext(ctx, %q) got %v, want %v", tt.args.key, value, tt.args.value)
+				return
 			}
 		})
 	}

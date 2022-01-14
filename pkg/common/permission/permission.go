@@ -107,6 +107,7 @@ func (p *provider) Check(perms ...*Permission) transport.ServiceOption {
 				return nil, errors.NewPermissionError(info.Service()+"/"+info.Method(), "", "permission undefined")
 			}
 			if perm.resource != nil {
+				ctx = WithPermissionDataContext(ctx)
 				scope, err := perm.scope(ctx, req)
 				if err != nil {
 					return nil, errors.NewPermissionError(info.Service()+"/"+info.Method(), string(perm.action), err.Error())
@@ -208,6 +209,8 @@ func toValueGetter(v interface{}) ValueGetter {
 		return FiexdValue(v)
 	case ValueGetter:
 		return v
+	case func(ctx context.Context, req interface{}) (string, error):
+		return v
 	case nil:
 		return nil
 	default:
@@ -216,6 +219,42 @@ func toValueGetter(v interface{}) ValueGetter {
 		}
 	}
 	panic(fmt.Errorf("invalid value getter %V", v))
+}
+
+type (
+	permissionDataContextKey uint8
+	permissionData           struct {
+		Data map[string]interface{}
+	}
+)
+
+const permissionDataKey = 0
+
+// GetPermissionDataFromContext .
+func GetPermissionDataFromContext(ctx context.Context, key string) (interface{}, bool) {
+	data, ok := ctx.Value(permissionDataKey).(*permissionData)
+	if !ok {
+		return nil, false
+	}
+	val, ok := data.Data[key]
+	return val, ok
+}
+
+// SetPermissionDataFromContext .
+func SetPermissionDataFromContext(ctx context.Context, key string, val interface{}) {
+	data, ok := ctx.Value(permissionDataKey).(*permissionData)
+	if !ok {
+		return
+	}
+	if data.Data == nil {
+		data.Data = make(map[string]interface{})
+	}
+	data.Data[key] = val
+}
+
+// WithPermissionDataContext .
+func WithPermissionDataContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, permissionDataKey, &permissionData{})
 }
 
 // FieldValue .

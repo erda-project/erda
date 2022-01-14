@@ -49,6 +49,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/authentication/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
+	_ "github.com/erda-project/erda-proto-go/core/services/filemanager/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/notify/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/contribution/pb"

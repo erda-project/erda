@@ -47,11 +47,7 @@ func init() {
 	servicehub.Register("cluster-dialer", &servicehub.Spec{
 		Services:    []string{"cluster-dialer"},
 		Description: "cluster dialer",
-		ConfigFunc: func() interface{} {
-			return &config.Config{}
-		},
-		Creator: func() servicehub.Provider {
-			return &provider{}
-		},
+		ConfigFunc:  func() interface{} { return &config.Config{} },
+		Creator:     func() servicehub.Provider { return &provider{} },
 	})
 }

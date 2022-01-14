@@ -44,6 +44,7 @@ import (
 	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/cleaner"
 	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/retention-strategy"
+	_ "github.com/erda-project/erda/modules/core/services/filenamager"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/rules"
 	_ "github.com/erda-project/erda/modules/monitor/apm/report"
 	_ "github.com/erda-project/erda/modules/monitor/apm/runtime"
@@ -56,6 +57,7 @@ import (
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/template"
 	_ "github.com/erda-project/erda/modules/monitor/monitoring"
 	_ "github.com/erda-project/erda/modules/monitor/notify/template/query"
+	_ "github.com/erda-project/erda/providers/k8s-client-manager"
 
 	// providers
 	_ "github.com/erda-project/erda-infra/providers"
