@@ -44,7 +44,7 @@ func (t *Tab) Render(ctx context.Context, c *cptype.Component, scenario cptype.S
 		if event.Operation == cptype.InitializeOperation ||
 			event.Operation == cptype.RenderingOperation ||
 			t.State.Value == "" {
-			return defaultState.String()
+			return common.DefaultState.String()
 		}
 		return t.State.Value
 	}())

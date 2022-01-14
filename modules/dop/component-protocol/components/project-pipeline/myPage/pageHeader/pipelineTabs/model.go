@@ -23,24 +23,11 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 )
-
-type stateValue string
-
-const (
-	mimeState    stateValue = "mime"
-	primaryState stateValue = "primary"
-	allState     stateValue = "all"
-)
-
-var defaultState = mimeState
-
-func (s stateValue) String() string {
-	return string(s)
-}
 
 type (
 	Tab struct {
@@ -126,15 +113,15 @@ func (t *Tab) SetData(ctx context.Context, num Num) {
 	t.Data = Data{Options: []Option{
 		{
 			Label: cputil.I18n(ctx, "minePipeline") + fmt.Sprintf("(%d)", num.MinePipelineNum),
-			Value: mimeState.String(),
+			Value: common.MineState.String(),
 		},
 		{
 			Label: cputil.I18n(ctx, "primaryPipeline") + fmt.Sprintf("(%d)", num.PrimaryPipelineNum),
-			Value: primaryState.String(),
+			Value: common.PrimaryState.String(),
 		},
 		{
 			Label: cputil.I18n(ctx, "allPipeline") + fmt.Sprintf("(%d)", num.AllPipelineNum),
-			Value: allState.String(),
+			Value: common.AllState.String(),
 		},
 	}}
 }

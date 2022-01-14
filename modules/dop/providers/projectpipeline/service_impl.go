@@ -956,7 +956,7 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 		}
 		if v.StartedAt.AsTime().After(timeStart) &&
 			v.StartedAt.AsTime().Before(timeEnd) &&
-			apistructs.PipelineStatus(v.Status).IsFailedStatus() {
+			v.Status == apistructs.PipelineStatusFailed.String() {
 			appNamePipelineNumMap[v.AppName].FailedNum++
 		}
 	}

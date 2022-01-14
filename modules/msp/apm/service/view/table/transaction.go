@@ -31,14 +31,12 @@ var (
 	columnPath        = &Column{Key: string(transaction.ColumnTransactionName), Name: "Transaction Name"}
 	columnReqCount    = &Column{Key: string(transaction.ColumnReqCount), Name: "Req Count", Sortable: true}
 	columnErrorCount  = &Column{Key: string(transaction.ColumnErrorCount), Name: "Error Count", Sortable: true}
-	columnSlowCount   = &Column{Key: string(transaction.ColumnSlowCount), Name: "Slow Count", Sortable: true}
 	columnAvgDuration = &Column{Key: string(transaction.ColumnAvgDuration), Name: "Avg Duration", Sortable: true}
 )
 
 var TransactionTableSortFieldSqlMap = map[string]string{
 	columnReqCount.Key:    "sum(elapsed_count::field)",
 	columnErrorCount.Key:  "count(error::tag)",
-	columnSlowCount.Key:   "sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0))",
 	columnAvgDuration.Key: "avg(elapsed_mean::field)",
 }
 
@@ -46,7 +44,6 @@ type TransactionTableRow struct {
 	TransactionName string
 	ReqCount        float64
 	ErrorCount      float64
-	SlowCount       float64
 	AvgDuration     string
 }
 
@@ -55,7 +52,6 @@ func (t *TransactionTableRow) GetCells() []*Cell {
 		{Key: columnPath.Key, Value: t.TransactionName},
 		{Key: columnReqCount.Key, Value: t.ReqCount},
 		{Key: columnErrorCount.Key, Value: t.ErrorCount},
-		{Key: columnSlowCount.Key, Value: t.SlowCount},
 		{Key: columnAvgDuration.Key, Value: t.AvgDuration},
 	}
 }
@@ -70,7 +66,7 @@ func (t *TransactionTableBuilder) GetBaseBuildParams() *BaseBuildParams {
 
 func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) {
 	table := &Table{
-		Columns: []*Column{columnPath, columnReqCount, columnErrorCount, columnSlowCount, columnAvgDuration},
+		Columns: []*Column{columnPath, columnReqCount, columnErrorCount, columnAvgDuration},
 	}
 	pathField := common.GetLayerPathKeys(t.Layer)[0]
 	var layerPathParam *structpb.Value
@@ -80,15 +76,14 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		layerPathParam = structpb.NewStringValue(t.LayerPath)
 	}
 	queryParams := map[string]*structpb.Value{
-		"terminus_key":   structpb.NewStringValue(t.TenantId),
-		"service_id":     structpb.NewStringValue(t.ServiceId),
-		"layer_path":     layerPathParam,
-		"slow_threshold": structpb.NewNumberValue(common.GetSlowThreshold(t.Layer)),
+		"terminus_key": structpb.NewStringValue(t.TenantId),
+		"service_id":   structpb.NewStringValue(t.ServiceId),
+		"layer_path":   layerPathParam,
 	}
 
 	// calculate total count
 	statement := fmt.Sprintf("SELECT DISTINCT(%s) "+
-		"FROM %s "+
+		"FROM %s_slow "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
 		"%s ",
@@ -114,9 +109,8 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		"%s,"+
 		"sum(elapsed_count::field),"+
 		"count(error::tag),"+
-		"sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0)),"+
 		"format_duration(avg(elapsed_mean::field),'',2) "+
-		"FROM %s "+
+		"FROM %s_slow "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
 		"%s "+
@@ -147,8 +141,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 			TransactionName: row.Values[0].GetStringValue(),
 			ReqCount:        row.Values[1].GetNumberValue(),
 			ErrorCount:      row.Values[2].GetNumberValue(),
-			SlowCount:       row.Values[3].GetNumberValue(),
-			AvgDuration:     row.Values[4].GetStringValue(),
+			AvgDuration:     row.Values[3].GetStringValue(),
 		}
 		table.Rows = append(table.Rows, transRow)
 	}
