@@ -425,6 +425,16 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 		})
 	}
 
+	// No delete button in running and timing
+	if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
+		return items
+	}
+	if v, ok := ymlSourceMapCronMap[definitionYmlSourceMap[definition.ID]]; ok {
+		if *v.Enable {
+			return items
+		}
+	}
+
 	items = append(items, commodel.MoreOpItem{
 		ID:   "delete",
 		Text: cputil.I18n(p.sdk.Ctx, "delete"),
