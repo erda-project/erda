@@ -37,9 +37,8 @@ func (slowCount *SlowCountChart) GetChart(ctx context.Context) (*pb.ServiceChart
 	if len(slowCount.Layers) != 1 {
 		return nil, errors.NewInvalidParameterError("Layers", "multi layers not support for slow count")
 	}
-	slowThreshold := common.GetSlowThreshold(slowCount.Layers[0])
-	statement := fmt.Sprintf("SELECT sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0)) "+
-		"FROM %s "+
+	statement := fmt.Sprintf("SELECT sum(elapsed_count::field) "+
+		"FROM %s_slow "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
 		"%s "+
@@ -57,10 +56,9 @@ func (slowCount *SlowCountChart) GetChart(ctx context.Context) (*pb.ServiceChart
 	}
 
 	queryParams := map[string]*structpb.Value{
-		"terminus_key":   structpb.NewStringValue(slowCount.TenantId),
-		"service_id":     structpb.NewStringValue(slowCount.ServiceId),
-		"layer_path":     layerPathParam,
-		"slow_threshold": structpb.NewNumberValue(slowThreshold),
+		"terminus_key": structpb.NewStringValue(slowCount.TenantId),
+		"service_id":   structpb.NewStringValue(slowCount.ServiceId),
+		"layer_path":   layerPathParam,
 	}
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(slowCount.StartTime, 10),
