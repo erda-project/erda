@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
@@ -62,7 +63,7 @@ func (p *provider) proxy(hostpath string, header http.Header, params url.Values,
 		if err != nil {
 			return err
 		}
-		response.Header.Add("erda-projectId", string(project.ProjectId))
+		response.Header.Add("erda-projectId", strconv.Itoa(int(project.ProjectId)))
 		response.Header.Add("erda-projectName", project.ProjectName)
 		response.Header.Add("erda-workspace", project.Workspace)
 		return nil
