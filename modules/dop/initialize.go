@@ -557,6 +557,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		project.WithBundle(bdl.Bdl),
 		project.WithTrans(p.ResourceTrans),
 		project.WithCMP(p.Cmp),
+		project.WithNamespace(ns),
 	)
 	proj.UpdateFileRecord = testCaseSvc.UpdateFileRecord
 	proj.CreateFileRecord = testCaseSvc.CreateFileRecord

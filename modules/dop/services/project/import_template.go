@@ -126,7 +126,7 @@ func (p *Project) ImportTemplatePackage(record *dao.TestFileRecord) {
 		packageName:  record.FileName,
 	}
 	tempDirector := TemplateDataDirector{}
-	tempDirector.New(&tempZip, p.bdl)
+	tempDirector.New(&tempZip, p.bdl, p.namespace)
 	if err := tempDirector.Construct(); err != nil {
 		logrus.Errorf("%s failed to construct template data, err: %v", packageResource, err)
 		p.updateTemplateFileRecord(id, apistructs.FileRecordStateFail, "", tempDirector.GenErrInfo())

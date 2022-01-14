@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/namespace"
 	"github.com/erda-project/erda/pkg/filehelper"
 )
 
@@ -61,12 +62,14 @@ type TemplateDataDirector struct {
 	succeedAppNum int
 	failedAppNum  int
 	bdl           *bundle.Bundle
+	namespace     *namespace.Namespace
 	errs          []error
 }
 
-func (t *TemplateDataDirector) New(creator TemplateDataCreator, bdl *bundle.Bundle) {
+func (t *TemplateDataDirector) New(creator TemplateDataCreator, bdl *bundle.Bundle, namespace *namespace.Namespace) {
 	t.Creator = creator
 	t.bdl = bdl
+	t.namespace = namespace
 	t.errs = make([]error, 0)
 }
 
@@ -166,12 +169,14 @@ func (t *TemplateDataDirector) TryCreateAppsByTemplate() error {
 			Config:         tempApp.Config,
 			IsExternalRepo: false,
 		}
-		if _, err := t.bdl.CreateApp(appReq, identityInfo.UserID); err != nil {
+		newApp, err := t.bdl.CreateApp(appReq, identityInfo.UserID)
+		if err != nil {
 			t.failedAppNum++
 			t.errs = append(t.errs, fmt.Errorf("create application %s failed: %v", tempApp.Name, err))
 			logrus.Errorf("%s failed to create app: %s, err: %v", packageResource, tempApp.Name, err)
 			continue
 		}
+		t.namespace.GenerateAppExtraInfo(int64(newApp.ID), int64(newApp.ProjectID))
 		t.succeedAppNum++
 	}
 	return nil
@@ -205,7 +210,7 @@ func (p *Project) ParseTemplatePackage(r io.ReadCloser) (*apistructs.ProjectTemp
 	}
 	tempZip := TemplateZip{reader: zipReader}
 	tempDirector := TemplateDataDirector{}
-	tempDirector.New(&tempZip, p.bdl)
+	tempDirector.New(&tempZip, p.bdl, p.namespace)
 	if err := tempDirector.Construct(); err != nil {
 		return nil, err
 	}

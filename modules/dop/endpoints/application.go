@@ -79,7 +79,7 @@ func (e *Endpoints) CreateApplication(ctx context.Context, r *http.Request, vars
 	}
 
 	// generate extra info
-	e.generateExtraInfo(int64(applicationDTO.ID), int64(applicationDTO.ProjectID))
+	e.namespace.GenerateAppExtraInfo(int64(applicationDTO.ID), int64(applicationDTO.ProjectID))
 
 	return httpserver.OkResp(applicationDTO)
 }
@@ -93,64 +93,6 @@ func checkApplicationCreateParam(applicationCreateReq apistructs.ApplicationCrea
 	}
 	err := applicationCreateReq.Mode.CheckAppMode()
 	return err
-}
-
-// generateExtraInfo 创建应用时，自动生成extra信息
-func (e *Endpoints) generateExtraInfo(applicationID, projectID int64) string {
-	// 初始化DEV、TEST、STAGING、PROD四个环境namespace，eg: "DEV.configNamespace":"app-107-DEV"
-	workspaces := []apistructs.DiceWorkspace{
-		types.DefaultWorkspace,
-		types.DevWorkspace,
-		types.TestWorkspace,
-		types.StagingWorkspace,
-		types.ProdWorkspace,
-	}
-
-	relatedNamespaces := make([]string, 0, len(workspaces)-1)
-	var defaultNamespace string
-	extra := make(map[string]string, len(workspaces))
-	for _, v := range workspaces {
-		key := strutil.Concat(string(v), ".configNamespace")
-		value := strutil.Concat("app-", strconv.FormatInt(applicationID, 10), "-", string(v))
-		extra[key] = value
-
-		if v == types.DefaultWorkspace {
-			defaultNamespace = value
-		} else {
-			relatedNamespaces = append(relatedNamespaces, value)
-		}
-	}
-
-	// 创建 DEV/TEST/STAGING/PROD/DEFAULT namespace
-	for _, v := range extra {
-		namespaceCreateReq := apistructs.NamespaceCreateRequest{
-			ProjectID: projectID,
-			Dynamic:   true,
-			Name:      v,
-			IsDefault: strings.Contains(v, string(types.DefaultWorkspace)),
-		}
-		// 创建namespace
-		_, err := e.namespace.Create(&namespaceCreateReq)
-		if err != nil {
-			logrus.Errorf(err.Error())
-		}
-	}
-
-	// 创建 namespace relations
-	relationCreateReq := apistructs.NamespaceRelationCreateRequest{
-		RelatedNamespaces: relatedNamespaces,
-		DefaultNamespace:  defaultNamespace,
-	}
-
-	if err := e.namespace.CreateRelation(&relationCreateReq); err != nil {
-		logrus.Errorf(err.Error())
-	}
-
-	extraInfo, err := json.Marshal(extra)
-	if err != nil {
-		logrus.Errorf("failed to marshal extra info, (%v)", err)
-	}
-	return string(extraInfo)
 }
 
 // getWorkspaces return workspaces
