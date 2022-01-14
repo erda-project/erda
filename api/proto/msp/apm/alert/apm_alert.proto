@@ -216,7 +216,8 @@ message CreateAlertResponse {
 }
 
 message CreateAlertData {
-  uint64 id = 1;
+  uint64 id        = 1;
+  uint64 projectId = 2;
 }
 
 message UpdateAlertRequest {
@@ -237,6 +238,7 @@ message UpdateAlertRequest {
 }
 
 message UpdateAlertResponse {
+  uint64 data = 1;
 }
 
 message UpdateAlertEnableRequest {
@@ -258,7 +260,8 @@ message DeleteAlertResponse {
 }
 
 message DeleteAlertData {
-  string Name = 1;
+  string Name      = 1;
+  uint64 projectId = 2;
 }
 
 message QueryCustomizeMetricRequest {
@@ -319,7 +322,8 @@ message CreateCustomizeAlertResponse {
 }
 
 message CreateCustomizeAlertData {
-  uint64 id = 1;
+  uint64 id        = 1;
+  uint64 projectId = 2;
 }
 
 message UpdateCustomizeAlertRequest {
@@ -339,6 +343,7 @@ message UpdateCustomizeAlertRequest {
 }
 
 message UpdateCustomizeAlertResponse {
+  uint64 data = 1;
 }
 
 message UpdateCustomizeAlertEnableRequest {
@@ -360,7 +365,8 @@ message DeleteCustomizeAlertResponse {
 }
 
 message DeleteCustomizeAlertData {
-  string name = 1;
+  string name      = 1;
+  uint64 projectId = 2;
 }
 
 message GetAlertRecordAttrsRequest {

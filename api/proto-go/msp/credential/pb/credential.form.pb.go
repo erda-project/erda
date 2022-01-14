@@ -17,6 +17,7 @@ import (
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
 var _ urlenc.URLValuesUnmarshaler = (*CreateAccessKeyRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateAccessKeyResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CreateAccessKeyData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DeleteAccessKeyRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DeleteAccessKeyResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetAccessKeyRequest)(nil)
@@ -54,7 +55,42 @@ func (m *CreateAccessKeyResponse) UnmarshalURLValues(prefix string, values url.V
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "data":
-				m.Data = vals[0]
+				if m.Data == nil {
+					m.Data = &CreateAccessKeyData{}
+				}
+			case "data.id":
+				if m.Data == nil {
+					m.Data = &CreateAccessKeyData{}
+				}
+				m.Data.Id = vals[0]
+			case "data.projectId":
+				if m.Data == nil {
+					m.Data = &CreateAccessKeyData{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ProjectId = val
+			}
+		}
+	}
+	return nil
+}
+
+// CreateAccessKeyData implement urlenc.URLValuesUnmarshaler.
+func (m *CreateAccessKeyData) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "id":
+				m.Id = vals[0]
+			case "projectId":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectId = val
 			}
 		}
 	}
@@ -76,6 +112,18 @@ func (m *DeleteAccessKeyRequest) UnmarshalURLValues(prefix string, values url.Va
 
 // DeleteAccessKeyResponse implement urlenc.URLValuesUnmarshaler.
 func (m *DeleteAccessKeyResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data = val
+			}
+		}
+	}
 	return nil
 }
 

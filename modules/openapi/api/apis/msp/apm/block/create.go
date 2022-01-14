@@ -14,7 +14,13 @@
 
 package block
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"strconv"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda/modules/openapi/api/spec"
+)
 
 var CREATE_BLOCK = apis.ApiSpec{
 	Path:        "/api/tmc/dashboard/blocks",
@@ -25,4 +31,35 @@ var CREATE_BLOCK = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 创建自定义大盘",
+	Audit:       auditOperatorBlock(apistructs.AddServiceDashboard),
+}
+
+func auditOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditContext) error {
+	return func(ctx *spec.AuditContext) error {
+		var requestBody struct {
+			Name string `json:"name"`
+		}
+		if err := ctx.BindRequestData(&requestBody); err != nil {
+			return err
+		}
+		projectIdStr := ctx.BindResponseHeader("erda-projectId")
+		projectId, err := strconv.Atoi(projectIdStr)
+		if err != nil {
+			return err
+		}
+		projectName := ctx.BindResponseHeader("erda-projectName")
+		workspace := ctx.BindResponseHeader("erda-workspace")
+
+		return ctx.CreateAudit(&apistructs.Audit{
+			ScopeType:    apistructs.ProjectScope,
+			ScopeID:      uint64(projectId),
+			ProjectID:    uint64(projectId),
+			TemplateName: tmp,
+			Context: map[string]interface{}{
+				"projectName":   projectName,
+				"dashboardName": requestBody.Name,
+				"workspace":     workspace,
+			},
+		})
+	}
 }

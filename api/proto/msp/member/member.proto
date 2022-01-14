@@ -135,7 +135,7 @@ message MemberAddOptions {
 }
 
 message CreateOrUpdateMemberResponse {
-
+  uint64 data = 1;
 }
 
 message DeleteMemberRequest {
@@ -146,7 +146,7 @@ message DeleteMemberRequest {
 }
 
 message DeleteMemberResponse {
-
+  uint64 data = 1;
 }
 
 message ListMemberRolesRequest {

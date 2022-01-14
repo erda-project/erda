@@ -24,6 +24,8 @@ type TenantServiceHandler interface {
 	GetTenant(context.Context, *GetTenantRequest) (*GetTenantResponse, error)
 	// DELETE /api/msp/tenant
 	DeleteTenant(context.Context, *DeleteTenantRequest) (*DeleteTenantResponse, error)
+	// GET /api/msp/tenant/projectInfo
+	GetTenantProject(context.Context, *GetTenantProjectRequest) (*GetTenantProjectResponse, error)
 }
 
 // RegisterTenantServiceHandler register TenantServiceHandler to http.Router.
@@ -169,7 +171,44 @@ func RegisterTenantServiceHandler(r http.Router, srv TenantServiceHandler, opts 
 		)
 	}
 
+	add_GetTenantProject := func(method, path string, fn func(context.Context, *GetTenantProjectRequest) (*GetTenantProjectResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetTenantProjectRequest))
+		}
+		var GetTenantProject_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetTenantProject_info = transport.NewServiceInfo("erda.msp.tenant.TenantService", "GetTenantProject", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetTenantProject_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetTenantProjectRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_CreateTenant("POST", "/api/msp/tenant", srv.CreateTenant)
 	add_GetTenant("GET", "/api/msp/tenant", srv.GetTenant)
 	add_DeleteTenant("DELETE", "/api/msp/tenant", srv.DeleteTenant)
+	add_GetTenantProject("GET", "/api/msp/tenant/projectInfo", srv.GetTenantProject)
 }

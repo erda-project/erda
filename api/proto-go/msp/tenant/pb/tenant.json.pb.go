@@ -27,6 +27,12 @@ var _ json.Marshaler = (*DeleteTenantResponse)(nil)
 var _ json.Unmarshaler = (*DeleteTenantResponse)(nil)
 var _ json.Marshaler = (*Tenant)(nil)
 var _ json.Unmarshaler = (*Tenant)(nil)
+var _ json.Marshaler = (*GetTenantProjectRequest)(nil)
+var _ json.Unmarshaler = (*GetTenantProjectRequest)(nil)
+var _ json.Marshaler = (*GetTenantProjectResponse)(nil)
+var _ json.Unmarshaler = (*GetTenantProjectResponse)(nil)
+var _ json.Marshaler = (*TenantProjectData)(nil)
+var _ json.Unmarshaler = (*TenantProjectData)(nil)
 
 // CreateTenantRequest implement json.Marshaler.
 func (m *CreateTenantRequest) MarshalJSON() ([]byte, error) {
@@ -149,6 +155,60 @@ func (m *Tenant) MarshalJSON() ([]byte, error) {
 
 // Tenant implement json.Marshaler.
 func (m *Tenant) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetTenantProjectRequest implement json.Marshaler.
+func (m *GetTenantProjectRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetTenantProjectRequest implement json.Marshaler.
+func (m *GetTenantProjectRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetTenantProjectResponse implement json.Marshaler.
+func (m *GetTenantProjectResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetTenantProjectResponse implement json.Marshaler.
+func (m *GetTenantProjectResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// TenantProjectData implement json.Marshaler.
+func (m *TenantProjectData) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// TenantProjectData implement json.Marshaler.
+func (m *TenantProjectData) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

@@ -218,3 +218,28 @@ func (s *tenantService) covertToTenant(tenant *db.MSPTenant) *pb.Tenant {
 		IsDeleted:  tenant.IsDeleted,
 	}
 }
+
+func (s *tenantService) GetTenantProject(ctx context.Context, req *pb.GetTenantProjectRequest) (*pb.GetTenantProjectResponse, error) {
+	result := &pb.GetTenantProjectResponse{
+		Data: &pb.TenantProjectData{},
+	}
+	tenant, err := s.MSPTenantDB.QueryTenant(req.ScopeId)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if tenant != nil {
+		result.Data.ProjectId = tenant.RelatedProjectId
+		result.Data.Workspace = tenant.RelatedWorkspace
+		return result, nil
+	}
+	spMonitor, err := s.MonitorDB.GetByTerminusKey(req.ScopeId)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if spMonitor != nil {
+		result.Data.ProjectId = spMonitor.ProjectId
+		result.Data.Workspace = spMonitor.Workspace
+		return result, nil
+	}
+	return result, errors.NewInternalServerError(fmt.Errorf("GetTenantProject is failed the project not found"))
+}

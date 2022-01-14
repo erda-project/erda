@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type alertService struct {
@@ -167,6 +168,11 @@ func (m *alertService) CreateOrgAlert(ctx context.Context, request *pb.CreateOrg
 		}
 		return nil, errors.NewInternalServerError(err)
 	}
+	auditContext := map[string]interface{}{
+		"alertName": request.Name,
+		"orgName":   org.Name,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
 	return &pb.CreateOrgAlertResponse{
 		Id: aid,
 	}, nil
@@ -511,6 +517,11 @@ func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.
 	result := &pb.CreateOrgCustomizeAlertResponse{
 		Id: id,
 	}
+	auditContext := map[string]interface{}{
+		"alertRuleName": request.Name,
+		"orgName":       org.Name,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
 	return result, nil
 }
 
@@ -745,6 +756,11 @@ func (m *alertService) UpdateOrgCustomizeAlert(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	auditContext := map[string]interface{}{
+		"alertRuleName": request.Name,
+		"orgName":       org.Name,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
 	result := &pb.UpdateOrgCustomizeAlertResponse{
 		Data: true,
 	}
@@ -777,6 +793,23 @@ func (m *alertService) DeleteOrgCustomizeAlert(ctx context.Context, request *pb.
 		return result, nil
 	}
 	result.Data = structpb.NewBoolValue(true)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	orgIdStr := apis.GetOrgID(ctx)
+	org, err := m.p.bdl.GetOrg(orgIdStr)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	//orgId, err := strconv.Atoi(orgIdStr)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	auditContext := map[string]interface{}{
+		"alertName": data.Name,
+		"orgName":   org.Name,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
 	return result, nil
 }
 
@@ -1033,6 +1066,11 @@ func (m *alertService) UpdateOrgAlert(ctx context.Context, request *pb.UpdateOrg
 		}
 		return nil, errors.NewInternalServerError(err)
 	}
+	auditContext := map[string]interface{}{
+		"alertName": request.Name,
+		"orgName":   org.Name,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
 	return &pb.UpdateOrgAlertResponse{}, nil
 }
 
@@ -1053,9 +1091,13 @@ func (m *alertService) DeleteOrgAlert(ctx context.Context, request *pb.DeleteOrg
 	if len(orgID) <= 0 {
 		return nil, errors.NewInvalidParameterError("Org-ID", "Org-ID not exist")
 	}
+	org, err := m.p.bdl.GetOrg(orgID)
+	if err != nil {
+		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
+	}
 	lang := apis.Language(ctx)
 	data, _ := m.p.a.GetAlert(lang, uint64(request.Id))
-	err := m.p.a.DeleteOrgAlert(uint64(request.Id), orgID)
+	err = m.p.a.DeleteOrgAlert(uint64(request.Id), orgID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -1066,6 +1108,11 @@ func (m *alertService) DeleteOrgAlert(ctx context.Context, request *pb.DeleteOrg
 			},
 		}, nil
 	}
+	auditContext := map[string]interface{}{
+		"alertName": data.Name,
+		"orgName":   org.Name,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
 	return &pb.DeleteOrgAlertResponse{}, nil
 }
 

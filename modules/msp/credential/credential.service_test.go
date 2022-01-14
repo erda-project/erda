@@ -18,6 +18,7 @@ import (
 	"fmt"
 	http1 "net/http"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/golang/mock/gomock"
@@ -28,25 +29,70 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
+	tenant "github.com/erda-project/erda-proto-go/msp/tenant/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 )
 
 ////go:generate mockgen -destination=./credential_register_test.go -package exporter github.com/erda-project/erda-infra/pkg/transport Register
 ////go:generate mockgen -destination=./credential_ak_test.go -package exporter github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb AccessKeyServiceServer
 ////go:generate mockgen -destination=./credential_context_test.go -package exporter github.com/erda-project/erda-infra/base/servicehub Context
+////go:generate mockgen -destination=./tenant_test.go -package exporter github.com/erda-project/erda-proto-go/msp/tenant/pb TenantServiceServer
+
 func Test_accessKeyService_QueryAccessKeys(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	akService := NewMockAccessKeyServiceServer(ctrl)
+	tenantService := NewMockTenantServiceServer(ctrl)
 
 	akService.EXPECT().CreateAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&akpb.CreateAccessKeyResponse{
 		Data: &akpb.AccessKeysItem{},
 	}, nil)
+	tenantService.EXPECT().GetTenantProject(gomock.Any(), gomock.Any()).AnyTimes().Return(&tenant.GetTenantProjectResponse{
+		Data: &tenant.TenantProjectData{
+			Workspace: "PROD",
+			ProjectId: "98",
+		},
+	}, nil)
+	defer monkey.UnpatchAll()
+	monkey.Patch((*bundle.Bundle).GetProject, func(bdl *bundle.Bundle, id uint64) (*apistructs.ProjectDTO, error) {
+		return &apistructs.ProjectDTO{
+			ID:                   89,
+			Name:                 "ss",
+			DisplayName:          "ss",
+			DDHook:               "ss",
+			OrgID:                21,
+			Creator:              "ss",
+			Logo:                 "ss",
+			Desc:                 "ss",
+			Owners:               nil,
+			ActiveTime:           "ss",
+			Joined:               false,
+			CanUnblock:           nil,
+			BlockStatus:          "ss",
+			CanManage:            false,
+			IsPublic:             false,
+			Stats:                apistructs.ProjectStats{},
+			ProjectResourceUsage: apistructs.ProjectResourceUsage{},
+			ClusterConfig:        nil,
+			ResourceConfig:       nil,
+			RollbackConfig:       nil,
+			CpuQuota:             0,
+			MemQuota:             0,
+			CreatedAt:            time.Time{},
+			UpdatedAt:            time.Time{},
+			Type:                 "",
+		}, nil
+	})
 
 	pro := &provider{
 		Cfg:                  &config{},
 		Register:             NewMockRegister(ctrl),
 		credentialKeyService: &accessKeyService{},
 		AccessKeyService:     akService,
+		bdl:                  &bundle.Bundle{},
+		audit:                nil,
+		Tenant:               tenantService,
 	}
 	pro.credentialKeyService.p = pro
 	_, err := pro.credentialKeyService.CreateAccessKey(context.Background(), &pb.CreateAccessKeyRequest{
@@ -62,13 +108,69 @@ func Test_accessKeyService_QueryAccessKeys(t *testing.T) {
 func Test_accessKeyService_DeleteAccessKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+	tenantService := NewMockTenantServiceServer(ctrl)
 	akService := NewMockAccessKeyServiceServer(ctrl)
+	monkey.Patch((*bundle.Bundle).GetProject, func(bdl *bundle.Bundle, id uint64) (*apistructs.ProjectDTO, error) {
+		return &apistructs.ProjectDTO{
+			ID:                   89,
+			Name:                 "ss",
+			DisplayName:          "ss",
+			DDHook:               "ss",
+			OrgID:                21,
+			Creator:              "ss",
+			Logo:                 "ss",
+			Desc:                 "ss",
+			Owners:               nil,
+			ActiveTime:           "ss",
+			Joined:               false,
+			CanUnblock:           nil,
+			BlockStatus:          "ss",
+			CanManage:            false,
+			IsPublic:             false,
+			Stats:                apistructs.ProjectStats{},
+			ProjectResourceUsage: apistructs.ProjectResourceUsage{},
+			ClusterConfig:        nil,
+			ResourceConfig:       nil,
+			RollbackConfig:       nil,
+			CpuQuota:             0,
+			MemQuota:             0,
+			CreatedAt:            time.Time{},
+			UpdatedAt:            time.Time{},
+			Type:                 "",
+		}, nil
+	})
+	defer monkey.UnpatchAll()
+	akService.EXPECT().GetAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&akpb.GetAccessKeyResponse{
+		Data: &akpb.AccessKeysItem{
+			Id:          "2",
+			AccessKey:   "sfdfgfg",
+			SecretKey:   "sdgds",
+			Status:      0,
+			SubjectType: 0,
+			Subject:     "ss",
+			Description: "ss",
+			CreatedAt:   nil,
+			Scope:       "ss",
+			ScopeId:     "dfdfd",
+			Token:       "ss",
+			CreatorId:   "2",
+		},
+	}, nil)
+	tenantService.EXPECT().GetTenantProject(gomock.Any(), gomock.Any()).AnyTimes().Return(&tenant.GetTenantProjectResponse{
+		Data: &tenant.TenantProjectData{
+			Workspace: "PROD",
+			ProjectId: "98",
+		},
+	}, nil)
 	akService.EXPECT().DeleteAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 	pro := &provider{
 		Cfg:                  &config{},
 		Register:             NewMockRegister(ctrl),
 		credentialKeyService: &accessKeyService{},
 		AccessKeyService:     akService,
+		bdl:                  &bundle.Bundle{},
+		audit:                nil,
+		Tenant:               tenantService,
 	}
 	pro.credentialKeyService.p = pro
 	_, err := pro.credentialKeyService.DeleteAccessKey(context.Background(), &pb.DeleteAccessKeyRequest{
@@ -166,6 +268,9 @@ func Test_Init(t *testing.T) {
 		Register:             NewMockRegister(ctrl),
 		credentialKeyService: &accessKeyService{},
 		AccessKeyService:     akService,
+		bdl:                  &bundle.Bundle{},
+		audit:                nil,
+		Tenant:               nil,
 	}
 	pro.credentialKeyService.p = pro
 	defer monkey.UnpatchAll()
@@ -174,7 +279,6 @@ func Test_Init(t *testing.T) {
 	})
 	monkey.Patch(pb.RegisterAccessKeyServiceHandler, func(r http.Router, srv pb.AccessKeyServiceHandler, opts ...http.HandleOption) {})
 	monkey.Patch(pb.RegisterAccessKeyServiceServer, func(s grpc1.ServiceRegistrar, srv pb.AccessKeyServiceServer, opts ...grpc1.HandleOption) {})
-	//monkey.Patch()
 	akService.EXPECT().GetAccessKey(gomock.Any(), gomock.Any()).AnyTimes().Return(&akpb.GetAccessKeyResponse{
 		Data: &akpb.AccessKeysItem{
 			Id:          "ssss",
@@ -187,12 +291,8 @@ func Test_Init(t *testing.T) {
 			CreatedAt:   &timestamppb.Timestamp{},
 		},
 	}, nil)
-	err := pro.Init(NewMockContext(ctrl))
-	if err != nil {
-		fmt.Println("should not err")
-	}
 	pro.credentialKeyService.p = pro
-	_, err = pro.credentialKeyService.DownloadAccessKeyFile(context.Background(), &pb.DownloadAccessKeyFileRequest{
+	_, err := pro.credentialKeyService.DownloadAccessKeyFile(context.Background(), &pb.DownloadAccessKeyFileRequest{
 		Id: "ssss",
 	})
 	if err != nil {

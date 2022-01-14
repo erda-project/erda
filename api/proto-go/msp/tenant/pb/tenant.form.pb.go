@@ -19,6 +19,9 @@ var _ urlenc.URLValuesUnmarshaler = (*GetTenantResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DeleteTenantRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DeleteTenantResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Tenant)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetTenantProjectRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetTenantProjectResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*TenantProjectData)(nil)
 
 // CreateTenantRequest implement urlenc.URLValuesUnmarshaler.
 func (m *CreateTenantRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -231,6 +234,59 @@ func (m *Tenant) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.IsDeleted = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetTenantProjectRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetTenantProjectRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "scopeId":
+				m.ScopeId = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetTenantProjectResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetTenantProjectResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &TenantProjectData{}
+				}
+			case "data.workspace":
+				if m.Data == nil {
+					m.Data = &TenantProjectData{}
+				}
+				m.Data.Workspace = vals[0]
+			case "data.projectId":
+				if m.Data == nil {
+					m.Data = &TenantProjectData{}
+				}
+				m.Data.ProjectId = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// TenantProjectData implement urlenc.URLValuesUnmarshaler.
+func (m *TenantProjectData) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "workspace":
+				m.Workspace = vals[0]
+			case "projectId":
+				m.ProjectId = vals[0]
 			}
 		}
 	}

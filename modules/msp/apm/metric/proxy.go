@@ -15,10 +15,12 @@
 package metric
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
@@ -52,6 +54,19 @@ func (p *provider) proxy(hostpath string, header http.Header, params url.Values,
 			// explicitly disable User-Agent so it's not set to default value
 			req.Header.Set("User-Agent", "")
 		}
+	}, ModifyResponse: func(response *http.Response) error {
+		scopeId := r.URL.Query().Get("scopeId")
+		if scopeId == "" {
+			return nil
+		}
+		project, err := p.getProjectResult(context.Background(), scopeId)
+		if err != nil {
+			return err
+		}
+		response.Header.Add("erda-projectId", strconv.Itoa(int(project.ProjectId)))
+		response.Header.Add("erda-projectName", project.ProjectName)
+		response.Header.Add("erda-workspace", project.Workspace)
+		return nil
 	}}
 	rp.ServeHTTP(rw, r)
 	return nil
