@@ -115,7 +115,7 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 	}
 
 	// query runtimes list from orchestrator
-	runtimesM, err := p.bdl.ListRuntimesGroupByApps(orgID, req.UserID, applicationsIDs)
+	runtimesM, err := p.bdl.ListRuntimesGroupByApps(orgID, req.UserID, applicationsIDs, "")
 	if err != nil {
 		l.WithError(err).Errorln("failed to ListRuntimesGroupByApps")
 		return nil, apierrors.ErrApplicationsResources.InternalError(err)

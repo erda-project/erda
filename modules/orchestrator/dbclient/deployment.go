@@ -249,12 +249,12 @@ func (db *DBClient) FindSuccessfulDeployments(runtimeId uint64, limit int) ([]De
 	return deployments, nil
 }
 
-// if not found, will return (nil, nil)
+// FindLastDeployment first deployment has no previous, nothing found does not matter
 func (db *DBClient) FindLastDeployment(runtimeId uint64) (*Deployment, error) {
 	var deployment Deployment
 	r := db.
 		Where("runtime_id = ?", runtimeId).Order("id desc").Limit(1).
-		Take(&deployment)
+		Find(&deployment)
 	if r.Error != nil {
 		if r.RecordNotFound() {
 			return nil, nil

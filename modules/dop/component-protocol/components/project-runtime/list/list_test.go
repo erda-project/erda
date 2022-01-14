@@ -204,7 +204,7 @@ func Test_getOperations(t *testing.T) {
 			want: map[cptype.OperationKey]cptype.Operation{
 				"clickGoto": {
 					ServerData: &cptype.OpServerData{
-						"target": "runtimeDetailRoot",
+						"target": "projectDeployRuntime",
 						"params": map[string]string{
 							"projectId": "0",
 							"appId":     "0",
