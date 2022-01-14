@@ -689,6 +689,6 @@ func (a *Application) BuildItemMonitorPipelineCmsNs(appID int64, workspace strin
 	return fmt.Sprintf("publish-item-monitor-%s-%d", workspace, appID)
 }
 
-func (a *Application) GetApplicationsByNames(names []string) ([]model.Application, error) {
-	return a.db.GetApplicationsByNames(names)
+func (a *Application) GetApplicationsByNames(projectID uint64, names []string) ([]model.Application, error) {
+	return a.db.GetApplicationsByNames(projectID, names)
 }

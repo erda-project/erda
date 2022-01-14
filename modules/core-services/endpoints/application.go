@@ -708,7 +708,7 @@ func (e Endpoints) GetAppIDByNames(ctx context.Context, r *http.Request, vars ma
 	if len(names) == 0 {
 		return apierrors.ErrGetAppIDByNames.MissingParameter("name").ToResp(), nil
 	}
-	apps, err := e.app.GetApplicationsByNames(names)
+	apps, err := e.app.GetApplicationsByNames(projectID, names)
 	if err != nil {
 		return apierrors.ErrGetAppIDByNames.InternalError(err).ToResp(), nil
 	}
