@@ -46,7 +46,6 @@ type DeploymentOrderListConditions struct {
 
 type DeploymentOrderDetail struct {
 	DeploymentOrderItem
-	ReleaseVersion   string             `json:"releaseVersion,omitempty"`
 	ApplicationsInfo []*ApplicationInfo `json:"applicationsInfo"`
 }
 
@@ -73,11 +72,12 @@ type DeploymentOrderItem struct {
 	Name              string                `json:"name"`
 	ReleaseID         string                `json:"releaseId"`
 	ReleaseVersion    string                `json:"releaseVersion,omitempty"`
-	Type              string                `json:"type"`
+	ReleaseUpdateAt   time.Time             `json:"releaseUpdateAt,omitempty"`
+	Type              string                `json:"type,omitempty"`
 	ApplicationStatus string                `json:"applicationStatus,omitempty"`
 	Workspace         string                `json:"workspace"`
-	Status            DeploymentOrderStatus `json:"status"`
-	Operator          string                `json:"operator"`
+	Status            DeploymentOrderStatus `json:"status,omitempty"`
+	Operator          string                `json:"operator,omitempty"`
 	CreatedAt         time.Time             `json:"createdAt"`
 	UpdatedAt         time.Time             `json:"updatedAt"`
 	StartedAt         *time.Time            `json:"startedAt,omitempty"`
