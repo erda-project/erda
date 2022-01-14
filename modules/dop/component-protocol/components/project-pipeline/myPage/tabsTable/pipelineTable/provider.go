@@ -298,9 +298,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 						if v.CostTime <= 0 {
 							return ""
 						}
-						return fmt.Sprintf("%s :%s\\n%s%s",
-							cputil.I18n(p.sdk.Ctx, string(ColumnCreator)),
-							v.Creator,
+						return fmt.Sprintf("%s : %s",
 							cputil.I18n(p.sdk.Ctx, string(ColumnStartTime)),
 							formatTimeToStr(v.StartedAt.AsTime()),
 						)
