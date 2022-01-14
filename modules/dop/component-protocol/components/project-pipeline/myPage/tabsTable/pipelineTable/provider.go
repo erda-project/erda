@@ -186,7 +186,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			return filter.App
 		}(),
 		Creator: func() []string {
-			if p.gsHelper.GetGlobalPipelineTab() == "mine" {
+			if p.gsHelper.GetGlobalPipelineTab() == common.MineState.String() {
 				return []string{p.sdk.Identity.UserID}
 			}
 			return filter.Creator
@@ -195,7 +195,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 		PageNo:   p.PageNo,
 		PageSize: p.PageSize,
 		Category: func() []string {
-			if p.gsHelper.GetGlobalPipelineTab() == "primary" {
+			if p.gsHelper.GetGlobalPipelineTab() == common.PrimaryState.String() {
 				return []string{"primary"}
 			}
 			return nil

@@ -19,6 +19,20 @@ const (
 	DefaultPageSize = 10
 )
 
+type StateValue string
+
+func (s StateValue) String() string {
+	return string(s)
+}
+
+const (
+	MineState    StateValue = "mine"
+	PrimaryState StateValue = "primary"
+	AllState     StateValue = "all"
+)
+
+var DefaultState = MineState
+
 type Sort struct {
 	FieldKey  string
 	Ascending bool
