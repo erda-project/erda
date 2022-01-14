@@ -50,7 +50,7 @@ type Runtime struct {
 	Status              string `gorm:"column:runtime_status"`
 	DeploymentStatus    string
 	CurrentDeploymentID uint64
-	DeploymentOrderName string
+	DeploymentOrderId   string
 	ReleaseVersion      string
 	LegacyStatus        string `gorm:"column:status"`
 	Deployed            bool
@@ -259,6 +259,19 @@ func (db *DBClient) FindRuntimesByAppId(appId uint64) ([]Runtime, error) {
 	return runtimes, nil
 }
 
+func (db *DBClient) FindRuntimesByAppIdAndWorkspace(appId uint64, workspace string) ([]Runtime, error) {
+	var runtimes []Runtime
+	if appId <= 0 {
+		return runtimes, nil
+	}
+	if err := db.
+		Where("application_id = ?  AND workspace = ?", appId, workspace).
+		Find(&runtimes).Error; err != nil {
+		return nil, errors.Wrapf(err, "failed to find runtimes by appId: %v", appId)
+	}
+	return runtimes, nil
+}
+
 // FindRuntimesInApps finds all runtimes for the given appIDs.
 // The key in the returned map is appID.
 func (db *DBClient) FindRuntimesInApps(appIDs []uint64) (map[uint64][]*Runtime, error) {
@@ -277,7 +290,7 @@ func (db *DBClient) FindRuntimesInApps(appIDs []uint64) (map[uint64][]*Runtime, 
 }
 
 func (db *DBClient) FindRuntimeOrCreate(uniqueId spec.RuntimeUniqueId, operator string, source apistructs.RuntimeSource,
-	clusterName string, clusterId uint64, gitRepoAbbrev string, projectID, orgID uint64, deploymentOrderName,
+	clusterName string, clusterId uint64, gitRepoAbbrev string, projectID, orgID uint64, deploymentOrderId,
 	releaseVersion string) (*Runtime, bool, error) {
 
 	runtime, err := db.FindRuntime(uniqueId)
@@ -290,29 +303,29 @@ func (db *DBClient) FindRuntimeOrCreate(uniqueId spec.RuntimeUniqueId, operator 
 	if runtime == nil {
 		created = true
 		runtime = &Runtime{
-			ApplicationID:       uniqueId.ApplicationId,
-			ProjectID:           projectID, // TODO: currently equal to applicationID, fix later
-			Creator:             operator,
-			Workspace:           uniqueId.Workspace,
-			Env:                 uniqueId.Workspace,
-			Name:                uniqueId.Name,
-			GitBranch:           uniqueId.Name,
-			Status:              "Init",
-			LegacyStatus:        "INIT",
-			Source:              source,
-			Deleting:            false,
-			Deployed:            false,
-			Version:             "1",
-			DiceVersion:         "2",
-			ClusterName:         clusterName,
-			ClusterId:           clusterId,
-			ReadableUniqueId:    "dice-orchestrator",
-			GitRepoAbbrev:       gitRepoAbbrev,
-			Mem:                 0.0,
-			CPU:                 0.0,
-			OrgID:               orgID,
-			DeploymentOrderName: deploymentOrderName,
-			ReleaseVersion:      releaseVersion,
+			ApplicationID:     uniqueId.ApplicationId,
+			ProjectID:         projectID, // TODO: currently equal to applicationID, fix later
+			Creator:           operator,
+			Workspace:         uniqueId.Workspace,
+			Env:               uniqueId.Workspace,
+			Name:              uniqueId.Name,
+			GitBranch:         uniqueId.Name,
+			Status:            "Init",
+			LegacyStatus:      "INIT",
+			Source:            source,
+			Deleting:          false,
+			Deployed:          false,
+			Version:           "1",
+			DiceVersion:       "2",
+			ClusterName:       clusterName,
+			ClusterId:         clusterId,
+			ReadableUniqueId:  "dice-orchestrator",
+			GitRepoAbbrev:     gitRepoAbbrev,
+			Mem:               0.0,
+			CPU:               0.0,
+			OrgID:             orgID,
+			DeploymentOrderId: deploymentOrderId,
+			ReleaseVersion:    releaseVersion,
 		}
 		err = db.CreateRuntime(runtime)
 		if err != nil {
@@ -321,8 +334,8 @@ func (db *DBClient) FindRuntimeOrCreate(uniqueId spec.RuntimeUniqueId, operator 
 		}
 	} else {
 		// update deployment order name
-		if runtime.DeploymentOrderName != deploymentOrderName || runtime.ReleaseVersion != releaseVersion {
-			runtime.DeploymentOrderName = deploymentOrderName
+		if runtime.DeploymentOrderId != deploymentOrderId || runtime.ReleaseVersion != releaseVersion {
+			runtime.DeploymentOrderId = deploymentOrderId
 			runtime.ReleaseVersion = releaseVersion
 			if err := db.UpdateRuntime(runtime); err != nil {
 				return nil, false, errors.Wrapf(err, "failed to update runtime deployment order or release info, err: %v", err)
@@ -452,9 +465,9 @@ func (db *DBClient) GetRuntimeByProjectIDs(projectIDs []uint64) (*[]Runtime, err
 	return &runtimes, nil
 }
 
-func (db *DBClient) GetRuntimeByDeployOrderName(projectId uint64, orderName string) (*[]Runtime, error) {
+func (db *DBClient) GetRuntimeByDeployOrderId(projectId uint64, orderId string) (*[]Runtime, error) {
 	var runtimes []Runtime
-	if err := db.Where("project_id = ? and deployment_order_name = ?", projectId, orderName).
+	if err := db.Where("project_id = ? and deployment_order_id = ?", projectId, orderId).
 		Find(&runtimes).Error; err != nil {
 		return nil, err
 	}

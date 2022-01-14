@@ -46,8 +46,8 @@ var defaultSDK = &cptype.SDK{
 
 func TestList_doFilter(t *testing.T) {
 	type args struct {
-		conditions          map[string][]string
-		appRuntime          *bundle.GetApplicationRuntimesDataEle
+		conditions          map[string]map[string]bool
+		appRuntime          bundle.GetApplicationRuntimesDataEle
 		deployAt            int64
 		appName             string
 		deploymentOrderName string
@@ -61,28 +61,29 @@ func TestList_doFilter(t *testing.T) {
 		{
 			name: "1",
 			args: args{
-				conditions: map[string][]string{common.FilterApp: {"1"}},
+				conditions: map[string]map[string]bool{common.FilterApp: {"1": true}},
 			},
 			want: false,
 		},
 		{
 			name: "2",
 			args: args{
-				conditions: map[string][]string{
-					common.FilterDeployStatus: {""},
-				}, appRuntime: &bundle.GetApplicationRuntimesDataEle{
+				conditions: map[string]map[string]bool{
+					common.FilterDeployStatus: {"1": true},
+				},
+				appRuntime: bundle.GetApplicationRuntimesDataEle{
 					RawDeploymentStatus: "1",
 				}},
-			want: false,
-		},
-		{
-			name: "3",
-			args: args{conditions: map[string][]string{common.FilterDeployOrderName: {""}}},
 			want: true,
 		},
 		{
+			name: "3",
+			args: args{conditions: map[string]map[string]bool{common.FilterDeployOrderName: {"1": true}}},
+			want: false,
+		},
+		{
 			name: "4",
-			args: args{conditions: map[string][]string{common.FilterDeployTime: {"0", "0"}}},
+			args: args{},
 			want: true,
 		},
 	}
@@ -102,6 +103,7 @@ func Test_getTitleState(t *testing.T) {
 		deployStatus string
 		deploymentId string
 		appId        string
+		delete       string
 	}
 	tests := []struct {
 		name string
@@ -141,12 +143,13 @@ func Test_getTitleState(t *testing.T) {
 			args: args{
 				sdk:          defaultSDK,
 				deployStatus: string(apistructs.DeploymentStatusCanceled),
+				delete:       "s",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			getTitleState(tt.args.sdk, tt.args.deployStatus, tt.args.deploymentId, tt.args.appId)
+			getTitleState(tt.args.sdk, tt.args.deployStatus, tt.args.deploymentId, tt.args.appId, tt.args.delete)
 		})
 	}
 }
@@ -237,65 +240,39 @@ func TestList_getBatchOperation(t *testing.T) {
 				sdk: defaultSDK,
 				ids: []string{"1"},
 			},
-			want: map[cptype.OperationKey]cptype.Operation{
-				"changePage": {},
-				"batchRowsHandle": {
-					ServerData: &cptype.OpServerData{
-						"options": []list.OpBatchRowsHandleOptionServerData{
-							{
-								AllowedRowIDs: []string{"1"}, Icon: "chongxinqidong", ID: common.ReStartOp, Text: "重启", // allowedRowIDs = null 或不传这个key，表示所有都可选，allowedRowIDs=[]表示当前没有可选择，此处应该可以不传
-							},
-							{
-								AllowedRowIDs: []string{"1"}, Icon: "remove", ID: common.DeleteOp, Text: "删除",
-							},
-						},
-					},
-				},
-			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := List{}
-			if got := p.getBatchOperation(tt.args.sdk, tt.args.ids); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getBatchOperation() = %v, want %v", got, tt.want)
-			}
+			p.getBatchOperation(tt.args.sdk, tt.args.ids)
 		})
 	}
 }
 
 func Test_getKvInfos(t *testing.T) {
 	type args struct {
-		sdk             *cptype.SDK
-		appName         string
-		creatorName     string
-		deployOrderName string
-		deployVersion   string
-		healthStr       string
-		runtime         *bundle.GetApplicationRuntimesDataEle
+		sdk              *cptype.SDK
+		appName          string
+		creatorName      string
+		deployOrderName  string
+		deployVersion    string
+		healthStr        string
+		runtime          bundle.GetApplicationRuntimesDataEle
+		lastOperatorTime time.Time
 	}
 	tests := []struct {
 		name string
 		args args
-		want []list.KvInfo
 	}{
-		// TODO: Add test cases.
 		{
 			name: "1",
-			args: args{
-				sdk:             defaultSDK,
-				appName:         "",
-				creatorName:     "",
-				deployOrderName: "",
-				deployVersion:   "",
-				healthStr:       "",
-				runtime:         &bundle.GetApplicationRuntimesDataEle{LastOperateTime: time.Now()},
-			},
+			args: args{sdk: defaultSDK, deployOrderName: "2", healthStr: "1"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			getKvInfos(tt.args.sdk, tt.args.appName, tt.args.creatorName, tt.args.deployOrderName, tt.args.deployVersion, tt.args.healthStr, tt.args.runtime)
+			getKvInfos(tt.args.sdk, tt.args.appName, tt.args.creatorName, tt.args.deployOrderName, tt.args.deployVersion, tt.args.healthStr, tt.args.runtime, tt.args.lastOperatorTime)
 		})
 	}
 }

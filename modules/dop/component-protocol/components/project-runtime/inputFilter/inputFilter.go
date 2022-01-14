@@ -16,6 +16,10 @@ package page
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
@@ -28,7 +32,7 @@ type InputFilter struct {
 	base.DefaultProvider
 	Type  string
 	sdk   *cptype.SDK
-	State State
+	State State `json:"state"`
 }
 type Values map[string]interface{}
 
@@ -41,8 +45,9 @@ type Condition struct {
 	Placeholder string `json:"placeholder"`
 }
 type State struct {
-	Conditions []Condition `json:"conditions"`
-	Values     `json:"values"`
+	Conditions           []Condition `json:"conditions"`
+	Base64UrlQueryParams string      `json:"inputFilter__urlQuery,omitempty"`
+	Values               `json:"values"`
 }
 
 func (p *InputFilter) Init(ctx servicehub.Context) error {
@@ -53,39 +58,73 @@ func (p *InputFilter) Render(ctx context.Context, c *cptype.Component, scenario 
 	sdk := cputil.SDK(ctx)
 	p.sdk = sdk
 	c.Operations = p.getOperation()
+	err := p.getState(sdk, c)
+	if err != nil {
+		return err
+	}
 	switch event.Operation {
 	case cptype.InitializeOperation:
-		p.State = p.getState(sdk)
-	case cptype.RenderingOperation, common.ProjectRuntimeFilter:
-		err := common.Transfer(c.State, &p.State)
-		if err != nil {
-			return err
+		if p.State.Values["title"] == "" {
+			if urlquery := sdk.InParams.String("inputFilter__urlQuery"); urlquery != "" {
+				if err := p.flushOptsByFilter(urlquery); err != nil {
+					logrus.Errorf("failed to parse input filter values ,err :%v", err)
+					return err
+				}
+			}
 		}
+	case cptype.RenderingOperation, common.ProjectRuntimeFilter:
 		(*gs)["nameFilter"] = p.State.Values
 	}
-	err := common.Transfer(p.State, &c.State)
+	urlParam, err := p.generateUrlQueryParams()
+	if err != nil {
+		return err
+	}
+	p.State.Base64UrlQueryParams = urlParam
+	err = common.Transfer(p.State, &c.State)
 	if err != nil {
 		return err
 	}
 	return nil
 }
+
 func (p *InputFilter) getOperation() map[string]interface{} {
 	return map[string]interface{}{
 		"filter": map[string]interface{}{"key": "filter", "reload": true},
 	}
 }
-func (p *InputFilter) getState(sdk *cptype.SDK) State {
-	s := State{
-		Conditions: []Condition{
-			{
-				Key:         "title",
-				Placeholder: sdk.I18n("search by runtime name"),
-				Type:        "input",
-			},
-		},
-		Values: Values{},
+func (p *InputFilter) getState(sdk *cptype.SDK, c *cptype.Component) error {
+	b, err := json.Marshal(c)
+	if err != nil {
+		logrus.Errorf("failed to parse input filter values ,err :%v", err)
 	}
-	return s
+	if err = json.Unmarshal(b, p); err != nil {
+		return err
+	}
+	p.State.Conditions = []Condition{
+		{
+			Key:         "title",
+			Placeholder: sdk.I18n("search by runtime name"),
+			Type:        "input",
+		},
+	}
+	return nil
+}
+
+func (p *InputFilter) flushOptsByFilter(filterEntity string) error {
+	b, err := base64.StdEncoding.DecodeString(filterEntity)
+	if err != nil {
+		return err
+	}
+	p.State.Values = Values{}
+	return json.Unmarshal(b, &p.State.Values)
+}
+
+func (p *InputFilter) generateUrlQueryParams() (string, error) {
+	fb, err := json.Marshal(p.State.Values)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(fb), nil
 }
 
 func init() {

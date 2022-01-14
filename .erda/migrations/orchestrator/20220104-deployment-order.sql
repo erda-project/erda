@@ -1,7 +1,6 @@
 CREATE TABLE `erda_deployment_order`
 (
     `id`               varchar(36)  NOT NULL DEFAULT '' COMMENT 'deployment order id',
-    `name`             varchar(255) NOT NULL COMMENT 'deployment order name',
     `type`             varchar(32)  NOT NULL COMMENT 'deployment order type',
     `description`      text         NOT NULL COMMENT 'description',
     `release_id`       varchar(64)  NOT NULL COMMENT 'release id',
@@ -26,7 +25,7 @@ ALTER TABLE `ps_v2_deployments`
     ADD COLUMN `deployment_order_id` varchar(36) NOT NULL DEFAULT '' COMMENT 'deployment order id';
 
 ALTER TABLE `ps_v2_project_runtimes`
-    ADD COLUMN `deployment_order_name` varchar(255) COMMENT 'deployment order name',
+    ADD COLUMN `deployment_order_id` varchar(36) COMMENT 'deployment order id',
     ADD COLUMN `release_version` varchar(100) COMMENT 'deployment order version',
     ADD COLUMN `deployment_status` varchar(255) COMMENT 'deployment status',
     ADD COLUMN `current_deployment_id` bigint unsigned NOT NULL DEFAULT 0 COMMENT 'current deployment id';

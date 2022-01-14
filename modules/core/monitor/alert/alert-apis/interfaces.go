@@ -32,7 +32,7 @@ type (
 
 		// micro alert apis
 		QueryAlertRule(r *http.Request, scope, scopeId string) (*pb.AlertTypeRuleResp, error)
-		QueryAlert(r *http.Request, scope, scopeId string, pageNum, pageSize uint64) ([]*pb.Alert, error)
+		QueryAlert(r *http.Request, scope, scopeId string, pageNum, pageSize uint64) ([]*pb.Alert, []string, error)
 		GetAlert(lang i18n.LanguageCodes, id uint64) (*pb.Alert, error)
 		CountAlert(scope, scopeID string) (int, error)
 		GetAlertDetail(r *http.Request, id uint64) (*pb.Alert, error)
@@ -49,7 +49,7 @@ type (
 		CustomizeAlert(id uint64) (*pb.CustomizeAlertDetail, error)
 		CustomizeAlertDetail(id uint64) (*pb.CustomizeAlertDetail, error)
 		CheckCustomizeAlert(alert *pb.CustomizeAlertDetail) error
-		CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (alertID uint64, err error)
+		CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail, userID string) (alertID uint64, err error)
 		UpdateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (err error)
 		UpdateCustomizeAlertEnable(id uint64, enable bool) (err error)
 		DeleteCustomizeAlert(id uint64) (err error)
@@ -75,7 +75,7 @@ func (p *provider) QueryAlertRule(r *http.Request, scope, scopeId string) (*pb.A
 	return p.a.QueryAlertRule(api.Language(r), scope, scopeId)
 }
 
-func (p *provider) QueryAlert(r *http.Request, scope, scopeId string, pageNum, pageSize uint64) ([]*pb.Alert, error) {
+func (p *provider) QueryAlert(r *http.Request, scope, scopeId string, pageNum, pageSize uint64) ([]*pb.Alert, []string, error) {
 	return p.a.QueryAlert(api.Language(r), scope, scopeId, pageNum, pageSize)
 }
 
@@ -137,7 +137,7 @@ func (p *provider) NotifyTargetsKeys(lang i18n.LanguageCodes, config map[string]
 	return p.a.NotifyTargetsKeys(lang, config)
 }
 
-func (p *provider) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize int) ([]*pb.CustomizeAlertOverview, int, error) {
+func (p *provider) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize int) ([]*pb.CustomizeAlertOverview, []string, int, error) {
 	return p.a.CustomizeAlerts(lang, scope, scopeID, pageNo, pageSize)
 }
 
@@ -185,8 +185,8 @@ func (p *provider) checkCustomizeAlert(alert *pb.CustomizeAlertDetail) error {
 	return nil
 }
 
-func (p *provider) CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (alertID uint64, err error) {
-	return p.a.CreateCustomizeAlert(alertDetail)
+func (p *provider) CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail, userID string) (alertID uint64, err error) {
+	return p.a.CreateCustomizeAlert(alertDetail, userID)
 }
 
 func (p *provider) UpdateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail) (err error) {

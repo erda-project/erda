@@ -46,7 +46,7 @@ const (
 
 type ServiceDataSource interface {
 	GetChart(ctx context.Context, chartType pb.ChartType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*linegraph.Data, error)
-	GetBubbleChart(ctx context.Context, bubbleType BubbleChartType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*bubblegraph.Data, error)
+	GetBubbleChart(ctx context.Context, bubbleType BubbleChartType, preferredChartPoints int64, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*bubblegraph.Data, error)
 	GetCard(ctx context.Context, cardType card.CardType, start, end int64, tenantId, serviceId string, layer common.TransactionLayerType, path string) (*kv.KV, error)
 	GetTable(ctx context.Context, builder table.Builder) (*stdtable.Table, error)
 }

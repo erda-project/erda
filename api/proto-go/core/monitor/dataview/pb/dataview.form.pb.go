@@ -126,6 +126,11 @@ func (m *GetSystemViewResponse) UnmarshalURLValues(prefix string, values url.Val
 					m.Data = &View{}
 				}
 				m.Data.Desc = vals[0]
+			case "data.creator":
+				if m.Data == nil {
+					m.Data = &View{}
+				}
+				m.Data.Creator = vals[0]
 			case "data.createdAt":
 				if m.Data == nil {
 					m.Data = &View{}
@@ -183,6 +188,8 @@ func (m *ListCustomViewsResponse) UnmarshalURLValues(prefix string, values url.V
 					return err
 				}
 				m.Data.Total = val
+			case "userIDs":
+				m.UserIDs = vals
 			}
 		}
 	}
@@ -241,6 +248,11 @@ func (m *GetCustomViewResponse) UnmarshalURLValues(prefix string, values url.Val
 					m.Data = &View{}
 				}
 				m.Data.Desc = vals[0]
+			case "data.creator":
+				if m.Data == nil {
+					m.Data = &View{}
+				}
+				m.Data.Creator = vals[0]
 			case "data.createdAt":
 				if m.Data == nil {
 					m.Data = &View{}
@@ -327,6 +339,11 @@ func (m *CreateCustomViewResponse) UnmarshalURLValues(prefix string, values url.
 					m.Data = &View{}
 				}
 				m.Data.Desc = vals[0]
+			case "data.creator":
+				if m.Data == nil {
+					m.Data = &View{}
+				}
+				m.Data.Creator = vals[0]
 			case "data.createdAt":
 				if m.Data == nil {
 					m.Data = &View{}
@@ -449,6 +466,8 @@ func (m *View) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.Name = vals[0]
 			case "desc":
 				m.Desc = vals[0]
+			case "creator":
+				m.Creator = vals[0]
 			case "createdAt":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {

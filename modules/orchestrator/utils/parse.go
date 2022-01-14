@@ -31,3 +31,10 @@ func GetRealIP(request *http.Request) string {
 	}
 	return ra
 }
+
+func ParseOrderName(uuid string) string {
+	if len(uuid) >= 6 {
+		return uuid[:6]
+	}
+	return uuid
+}

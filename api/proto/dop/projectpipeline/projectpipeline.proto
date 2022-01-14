@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package erda.dop.projectpipeline;
+option go_package = "github.com/erda-project/erda-proto-go/dop/projectpipeline/pb";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "google/api/annotations.proto";
+import "common/openapi.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+service ProjectPipelineService {
+  option(erda.common.openapi_service) = {
+    service : "dop",
+    auth : {
+      check_login : true,
+      check_token : true,
+    }
+  };
+
+  rpc Create(CreateProjectPipelineRequest)
+      returns(CreateProjectPipelineResponse) {
+    option(google.api.http) = {
+      post : "/api/project-pipeline",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline",
+    };
+  }
+
+  rpc ListApp(ListAppRequest)
+      returns(ListAppResponse) {
+    option(google.api.http) = {
+      get : "/api/project-pipeline/actions/get-my-apps",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/actions/get-my-apps",
+    };
+  }
+
+  rpc ListPipelineYml(ListAppPipelineYmlRequest)
+      returns(ListAppPipelineYmlResponse) {
+    option(google.api.http) = {
+      get : "/api/project-pipeline/actions/get-pipeline-yml-list",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/actions/get-pipeline-yml-list",
+    };
+  }
+}
+
+message ListAppPipelineYmlRequest {
+  uint64 appID = 1;
+  string branch = 2;
+}
+
+message PipelineYmlList {
+  string ymlName = 1;
+  string ymlPath = 2;
+}
+
+message ListAppPipelineYmlResponse {
+  repeated PipelineYmlList result = 1;
+}
+
+message ListAppRequest {
+  uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
+  string name = 2;
+}
+
+message ListAppResponse {
+  repeated Application data = 1;
+}
+
+message Application {
+  uint64 ID = 1;
+  string name = 2;
+  string displayName = 3;
+  string mode = 4;
+  string desc = 5;
+  string logo = 6;
+  bool isPublic = 7;
+  string creator = 8;
+  string gitRepo = 9;
+  uint64 orgID = 10;
+  string orgDisplayName = 11;
+  uint64  projectId = 12;
+  string projectName = 13;
+  bool isExternalRepo = 14;
+  google.protobuf.Timestamp createdAt = 15;
+  google.protobuf.Timestamp updatedAt = 16;
+  uint64  runningNum = 17;
+  uint64 failedNum = 18;
+}
+
+
+message CreateProjectPipelineRequest {
+  uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
+  string name = 2 [(validator.field) = {string_not_empty: true}];
+  uint64 appID = 3;
+  string sourceType = 4 [(validator.field) = {string_not_empty: true}];
+  string ref = 5 [(validator.field) = {string_not_empty: true}];
+  string path = 6;
+  string fileName = 7 [(validator.field) = {string_not_empty: true}];
+}
+
+message CreateProjectPipelineResponse {
+  ProjectPipeline ProjectPipeline = 1;
+
+}
+
+message ProjectPipeline {
+  string ID = 1;
+  string name = 2;
+  string creator = 3;
+  string category = 4;
+  google.protobuf.Timestamp timeCreated = 5;
+  google.protobuf.Timestamp timeUpdated = 6;
+  string sourceType = 7;
+  string remote = 8;
+  string ref = 9;
+  string path = 10;
+  string fileName = 11;
+  string pipelineSourceId = 12;
+}

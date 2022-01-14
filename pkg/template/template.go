@@ -29,3 +29,12 @@ func Render(template string, params map[string]string) string {
 	})
 	return result
 }
+
+//获取模板内容 {{ context }}
+func GetTemplateValue(template string) string {
+	subMatchs := regexp.MustCompile(`^{{\s*(\S+)\s*}}`).FindStringSubmatch(template)
+	if len(subMatchs) > 0 {
+		return subMatchs[1]
+	}
+	return ""
+}

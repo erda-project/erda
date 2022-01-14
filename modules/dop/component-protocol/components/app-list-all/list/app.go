@@ -36,11 +36,6 @@ func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) 
 			Value: l.sdk.I18n(isPublic),
 		},
 		{
-			Icon:  "xiangmuguanli",
-			Tip:   l.sdk.I18n("projectInfo"),
-			Value: item.ProjectName,
-		},
-		{
 			Icon:  "list-numbers",
 			Tip:   l.sdk.I18n("runtime"),
 			Value: strconv.Itoa(int(item.Stats.CountRuntimes)),

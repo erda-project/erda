@@ -114,7 +114,7 @@ zh:
   scene-set-export-confirm: 是否确认导出
   scene-set-export-success-msg: 导出任务已创建, 请在导入导出记录表中查看进度
   status-success: 成功
-  status-failed: 失败,
+  status-failed: 失败
   status-pending: 排队中
   status-processing: 进行中
   download-file: 下载文件
@@ -216,6 +216,92 @@ zh:
   notIncludeDueTodayTomorrowMonth: 不包含本日、明日、本周截止数据
   noDeadlineSpecified: 未指定截止日期
   total: 总数
+  dimension: 维度
+  sort: 排序
+  timeOrder: 按时间顺序
+  timeReverse: 按时间倒序
+  sceneset: 场景集
+  yearAgo: "年前"
+  monthAgo: "月前"
+  dayAgo: "天前"
+  hourAgo: "小时前"
+  minuteAgo: "分钟前"
+  secondAgo: "几秒前"
+  updatedAt: "更新于"
+  name: 名称
+  updatedBy: 更新人
+  creationTime: 创建时间
+  updateTime: 更新时间
+  enterName: 请输入名称
+  image: 镜像
+  command: 命令
+  enterCommand: 请输入命令
+  deleteConfirm: 是否确认删除
+  details: 详情
+  value: 值
+  endTime: 结束时间
+
+
+  minePipeline: 我的流水线
+  primaryPipeline: 重要流水线
+  allPipeline: 全部流水线
+  createPipeline: 创建流水线
+  searchByPipelineName: 搜索流水线名称
+  application: 应用
+  started-at: 开始日期
+  please-choose-status: 请选择状态
+  please-choose-executor: 请选择执行人
+  please-choose-creator: 请选择创建人
+  please-choose-application: 请选择应用
+  pipelineName: 流水线名称
+  pipelineStatus: 状态
+  costTime: 耗时
+  applicationName: 应用
+  branch: 分支
+  executor: 执行者
+  startTime: 开始时间
+
+  pipelineStatusAnalyzed: 初始化成功
+  pipelineStatusBorn: 预处理成功
+  pipelineStatusCreated: 创建成功
+  pipelineStatusMark: 标记中
+  pipelineStatusQueue: 排队中
+  pipelineStatusRunning: 正在执行
+  pipelineStatusSuccess: 执行成功
+  pipelineStatusFailed: 执行失败
+  pipelineStatusAnalyzeFailed: 初始化失败
+  pipelineStatusPaused: 暂停
+  pipelineStatusCreateError: 创建失败
+  pipelineStatusStartError: 启动失败
+  pipelineStatusTimeout: 超时
+  pipelineStatusStopByUser: 用户取消
+  pipelineStatusNoNeedBySystem: 无需执行
+  pipelineStatusCancelByRemote: 系统取消
+  pipelineStatusInitializing: 正在初始化
+  pipelineStatusError: 系统错误
+  pipelineStatusUnknown: 未知异常
+  pipelineStatusDBError: 数据库异常
+  pipelineStatusLostConn: 丢失数据库连接
+  pipelineStatusDisabled: 禁用
+  pipelineStatusWaitApprove: 等待审核
+  pipelineStatusAccept: 人工审核通过
+  pipelineStatusReject: 人工审核拒绝
+  setPrimary: 设为重要
+  unsetPrimary: 取消重要
+  run: 执行
+  cancelRun: 取消执行
+  rerunFromFail: 从失败处执行
+  rerun: 重试全流程
+  cron: 开始定时
+  cancelCron: 取消定时
+  delete: 删除
+  moreOperations: 操作
+  pipelineLatestStatus: 最近一次执行状态
+  latestCostTime: 最近一次执行耗时
+  latestExecutor: 最近一次执行人
+  latestStartTime: 最近一次开始时间
+  createTime: 创建时间
+  pipelineID: 流水线ID
 en:
   issue-manage: issue manage
   issue: issue
@@ -252,7 +338,7 @@ en:
   the-number-of-boards-cannot-exceed-15: 'The number of boards cannot exceed 15'
   no-permission-to-operate: 'No permission to operate'
   my-filter-bookmark: My Filters
-  empty-filter-bookmark: No Filter
+  empty-filter-bookmark: Unselected
   choose-filter-bookmark: Choose Filter
   save-filter-bookmark-placeholder: 'Please enter a name to save the current filter'
   sprint: Sprint
@@ -431,3 +517,88 @@ en:
   notIncludeDueTodayTomorrowMonth: Not include data of due today, tomorrow, and this week
   noDeadlineSpecified: No deadline specified
   total: Total
+  dimension: Dimension
+  moreOperations: More operations
+  sort: Sort
+  timeOrder: Time order
+  timeReverse: Reverse order
+  sceneset: Scene set
+  yearAgo: year(s) ago
+  monthAgo: month(s) ago
+  dayAgo: day(s) ago
+  hourAgo: hour(s) ago
+  minuteAgo: minute(s) ago
+  secondAgo: second(s) ago
+  updatedAt: Updated
+  name: Name
+  updatedBy: Updated by
+  creationTime: Creation time
+  updateTime: Update time
+  enterName: Please enter a name
+  image: Image
+  command: Command
+  enterCommand: Please enter the command
+  delete: Delete
+  deleteConfirm: Confirm to delete
+  details: Details
+  value: Value
+  endTime: End time
+
+  minePipeline: Mine pipeline
+  primaryPipeline: Primary pipeline
+  allPipeline: All pipeline
+  createPipeline: Create pipeline
+  searchByPipelineName: Search by pipeline name
+  executor: Executor
+  application: Application
+  started-at: Started at
+  please-choose-status: Please choose status
+  please-choose-executor: Please choose executor
+  please-choose-creator: Please choose creator
+  please-choose-application: Please choose application
+  pipelineName: Pipeline name
+  pipelineStatus: Status
+  costTime: Cost time
+  applicationName: Application name
+  branch: Branch
+  startTime: Begin time
+
+  pipelineStatusAnalyzed: Analyzed
+  pipelineStatusBorn: Born
+  pipelineStatusCreated: Created
+  pipelineStatusMark: Mark
+  pipelineStatusQueue: Queue
+  pipelineStatusRunning: Running
+  pipelineStatusSuccess: Success
+  pipelineStatusFailed: Failed
+  pipelineStatusAnalyzeFailed: AnalyzeFailed
+  pipelineStatusPaused: Paused
+  pipelineStatusCreateError: CreateError
+  pipelineStatusStartError: StartError
+  pipelineStatusTimeout: Timeout
+  pipelineStatusStopByUser: StopByUser
+  pipelineStatusNoNeedBySystem: NoNeedBySystem
+  pipelineStatusCancelByRemote: CancelByRemote
+  pipelineStatusInitializing: Initializing
+  pipelineStatusError: Error
+  pipelineStatusUnknown: Unknown
+  pipelineStatusDBError: DBError
+  pipelineStatusLostConn: LostConn
+  pipelineStatusDisabled: Disabled
+  pipelineStatusWaitApproval: WaitApproval
+  pipelineStatusApprovalSuccess: ApprovalSuccess
+  pipelineStatusApprovalFail: ApprovalFail
+  setPrimary: Set primary
+  unsetPrimary: Cancel primary
+  run: Run
+  cancelRun: Rancel run
+  rerunFromFail: Rerun from fail
+  rerun: Rerun
+  cron: Start cron
+  cancelCron: Cancel cron
+  pipelineLatestStatus: Latest execute status
+  latestCostTime: Latest execute cost time
+  latestExecutor: Latest executor
+  latestStartTime: Latest start time
+  createTime: Create Time
+  pipelineID: PipelineID

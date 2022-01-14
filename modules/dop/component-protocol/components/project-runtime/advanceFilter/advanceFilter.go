@@ -15,6 +15,8 @@
 package page
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -45,9 +47,6 @@ type AdvanceFilter struct {
 	Values cptype.ExtraMap
 }
 
-type State struct {
-	Values cptype.ExtraMap
-}
 type Option struct {
 	Label string `json:"label"`
 	Value string `json:"value"`
@@ -68,8 +67,21 @@ func (af *AdvanceFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype
 			return
 		}
 		(*sdk.GlobalState)["advanceFilter"] = af.Values
+		urlParam, err := af.generateUrlQueryParams(af.Values)
+		if err != nil {
+			return
+		}
+		(*af.StdStatePtr)["inputFilter__urlQuery"] = urlParam
 		af.StdDataPtr = af.getData(sdk)
 	}
+}
+
+func (af *AdvanceFilter) generateUrlQueryParams(Values cptype.ExtraMap) (string, error) {
+	fb, err := json.Marshal(Values)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(fb), nil
 }
 
 func (af *AdvanceFilter) RegisterFilterItemSaveOp(opData filter.OpFilterItemSave) (opFunc cptype.OperationFunc) {
@@ -89,8 +101,33 @@ func (af *AdvanceFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 func (af *AdvanceFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
+		err := common.Transfer(sdk.Comp.State, af.StdStatePtr)
+		if err != nil {
+			return
+		}
+		if urlquery := sdk.InParams.String("inputFilter__urlQuery"); urlquery != "" {
+			if err = af.flushOptsByFilter(urlquery); err != nil {
+				logrus.Errorf("failed to transfer values in component advance filter")
+				return
+			}
+		}
+		(*sdk.GlobalState)["advanceFilter"] = af.Values
 		af.StdDataPtr = af.getData(sdk)
 	}
+}
+
+func (af *AdvanceFilter) flushOptsByFilter(filterEntity string) error {
+	b, err := base64.StdEncoding.DecodeString(filterEntity)
+	if err != nil {
+		return err
+	}
+	v := cptype.ExtraMap{}
+	err = json.Unmarshal(b, &v)
+	if err != nil {
+		return err
+	}
+	af.Values = v
+	return nil
 }
 func (af *AdvanceFilter) BeforeHandleOp(sdk *cptype.SDK) {
 	af.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
@@ -113,7 +150,7 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 		logrus.Errorf("parse oid failed,%v", err)
 		return data
 	}
-	apps, err := af.bdl.GetAppsByProject(projectId, oid, sdk.Identity.UserID)
+	apps, err := af.bdl.GetMyApps(sdk.Identity.UserID, oid)
 	if err != nil {
 		logrus.Errorf("get my app failed,%v", err)
 		return data
@@ -121,6 +158,9 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 	appIds := make([]uint64, 0)
 	appIdToName := make(map[uint64]string)
 	for i := 0; i < len(apps.List); i++ {
+		if apps.List[i].ProjectID != projectId {
+			continue
+		}
 		appIds = append(appIds, apps.List[i].ID)
 		appIdToName[apps.List[i].ID] = apps.List[i].Name
 	}
@@ -134,29 +174,29 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 	deploymentStatusMap := make(map[string]bool)
 	//runtimeStatusMap := make(map[string]bool)
 	deploymentOrderNameMap := make(map[string]bool)
-	runtimeNameToAppNameMap := make(map[string]string)
-	runtimeNameToAppIdMap := make(map[string]uint64)
-	selectRuntimes := make([]*bundle.GetApplicationRuntimesDataEle, 0)
+	runtimeIdToAppNameMap := make(map[uint64]string)
+	selectRuntimes := make([]bundle.GetApplicationRuntimesDataEle, 0)
 
-	for id, v := range runtimesByApp {
+	for _, v := range runtimesByApp {
 		for _, appRuntime := range v {
 			if getEnv == appRuntime.Extra.Workspace {
-				appNameMap[appIdToName[appRuntime.ApplicationID]] = true
-				deploymentOrderNameMap[appRuntime.DeploymentOrderName] = true
+				if appRuntime.DeploymentOrderName != "" {
+					deploymentOrderNameMap[appRuntime.DeploymentOrderName] = true
+				}
 				//runtimeStatusMap[appRuntime.RawStatus] = true
 				deploymentStatusMap[appRuntime.RawDeploymentStatus] = true
-				selectRuntimes = append(selectRuntimes, appRuntime)
-				runtimeNameToAppNameMap[appRuntime.Name] = appIdToName[id]
-				runtimeNameToAppIdMap[appRuntime.Name] = id
+				selectRuntimes = append(selectRuntimes, *appRuntime)
+				if appIdToName[appRuntime.ApplicationID] != "" {
+					runtimeIdToAppNameMap[appRuntime.ID] = appIdToName[appRuntime.ApplicationID]
+					appNameMap[appIdToName[appRuntime.ApplicationID]] = true
+				}
 			}
 		}
 	}
 	// set runtimes in global state
 	(*sdk.GlobalState)["runtimes"] = selectRuntimes
 	// runtimeNameToAppName
-	(*sdk.GlobalState)["runtimeNameToAppName"] = runtimeNameToAppNameMap
-	// runtimeNameToAppIdMap
-	(*sdk.GlobalState)["runtimeNameToAppIdMap"] = runtimeNameToAppIdMap
+	(*sdk.GlobalState)["runtimeIdToAppName"] = runtimeIdToAppNameMap
 
 	// filter values
 
@@ -165,12 +205,13 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 	//conds = append(conds, getSelectCondition(sdk, runtimeStatusMap, "runtimeStatus"))
 	conds = append(conds, getSelectCondition(sdk, appNameMap, "app"))
 	conds = append(conds, getSelectCondition(sdk, deploymentOrderNameMap, "deploymentOrderName"))
-	conds = append(conds, getRangeCondition(sdk, "deployTime"))
+	//conds = append(conds, getRangeCondition(sdk, "deployTime"))
 	err = common.Transfer(conds, &data.Conditions)
 	if err != nil {
 		return nil
 	}
 	data.Operations = af.getOperation()
+	data.HideSave = true
 	return data
 }
 
@@ -196,15 +237,15 @@ func getSelectCondition(sdk *cptype.SDK, keys map[string]bool, key string) Condi
 	return c
 }
 
-func getRangeCondition(sdk *cptype.SDK, key string) Condition {
-	c := Condition{
-		Key:         key,
-		Label:       sdk.I18n(key),
-		Placeholder: sdk.I18n(placeHolders[key]),
-		Type:        "dateRange",
-	}
-	return c
-}
+//func getRangeCondition(sdk *cptype.SDK, key string) Condition {
+//	c := Condition{
+//		Key:         key,
+//		Label:       sdk.I18n(key),
+//		Placeholder: sdk.I18n(placeHolders[key]),
+//		Type:        "dateRange",
+//	}
+//	return c
+//}
 
 func (af *AdvanceFilter) Init(ctx servicehub.Context) error {
 	return af.DefaultProvider.Init(ctx)

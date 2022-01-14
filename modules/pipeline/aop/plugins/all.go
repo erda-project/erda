@@ -17,6 +17,7 @@ package plugins
 import (
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins/pipeline/apitest_report"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins/pipeline/basic"
+	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins/pipeline/definitionreport"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins/pipeline/precheck_before_pop"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins/pipeline/project"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins/pipeline/scene_after"

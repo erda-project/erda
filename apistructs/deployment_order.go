@@ -11,12 +11,12 @@ const (
 type DeploymentOrderStatus string
 
 type DeploymentOrderCreateRequest struct {
-	OrgID     uint64 `json:"orgId,omitempty"`
-	Type      string `json:"type,omitempty"`
+	Id        string `json:"id"`
+	Type      string `json:"type"`
 	ReleaseId string `json:"releaseId"`
-	Workspace string `json:"workspace,omitempty"`
-	Operator  string `json:"operator"`
+	Workspace string `json:"workspace"`
 	AutoRun   bool   `json:"autoRun"`
+	Operator  string `json:"operator,omitempty"`
 }
 
 type DeploymentOrderCreateResponse struct {
@@ -40,6 +40,7 @@ type DeploymentOrderDeployRequest struct {
 type DeploymentOrderListConditions struct {
 	ProjectId uint64
 	Workspace string
+	Types     []string
 	Query     string
 }
 
@@ -79,7 +80,7 @@ type DeploymentOrderItem struct {
 	Operator          string                `json:"operator"`
 	CreatedAt         time.Time             `json:"createdAt"`
 	UpdatedAt         time.Time             `json:"updatedAt"`
-	StartedAt         time.Time             `json:"startedAt"`
+	StartedAt         *time.Time            `json:"startedAt,omitempty"`
 }
 
 type DeploymentOrderParam []*DeploymentOrderParamData

@@ -409,10 +409,22 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 
 	// audit
 	go func() {
-		if project.Quota == nil {
-			return
-		}
-		if !isQuotaChanged(*oldQuota, *project.Quota) {
+		if project.Quota == nil || !isQuotaChanged(*oldQuota, *project.Quota) {
+			proCtx, _ := json.Marshal(map[string]string{"projectName": project.Name})
+			if err := p.db.CreateAudit(&model.Audit{
+				ScopeType:    apistructs.ProjectScope,
+				ScopeID:      uint64(projectID),
+				ProjectID:    uint64(projectID),
+				TemplateName: apistructs.UpdateProjectTemplate,
+				UserID:       userID,
+				OrgID:        uint64(orgID),
+				Context:      string(proCtx),
+				Result:       "success",
+				StartTime:    time.Now(),
+				EndTime:      time.Now(),
+			}); err != nil {
+				logrus.Errorf("failed to create project audit event when update project %s, %v", project.Name, err)
+			}
 			return
 		}
 		var orgName = strconv.FormatInt(orgID, 10)
@@ -1296,7 +1308,7 @@ func (p *Project) GetProjectStats(projectID int64) (*apistructs.ProjectStats, er
 
 // GetProjectNSInfo 获取项目级别命名空间信息
 func (p *Project) GetProjectNSInfo(projectID int64) (*apistructs.ProjectNameSpaceInfo, error) {
-	prj, err := p.db.GetProjectByID(projectID)
+	_, err := p.db.GetProjectByID(projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -1307,10 +1319,8 @@ func (p *Project) GetProjectNSInfo(projectID int64) (*apistructs.ProjectNameSpac
 		Namespaces: make(map[string]string, 0),
 	}
 
-	if prj.EnableNS {
-		prjNsInfo.Enabled = true
-		prjNsInfo.Namespaces = genProjectNamespace(prjIDStr)
-	}
+	prjNsInfo.Enabled = true
+	prjNsInfo.Namespaces = genProjectNamespace(prjIDStr)
 
 	return prjNsInfo, nil
 }
