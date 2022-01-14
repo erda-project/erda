@@ -242,10 +242,10 @@ zh:
   endTime: 结束时间
 
 
-  minePipeline: 我的流水线
-  primaryPipeline: 重要流水线
-  allPipeline: 全部流水线
-  createPipeline: 创建流水线
+  minePipeline: 我创建的
+  primaryPipeline: 重要的
+  allPipeline: 全部
+  createPipeline: 新建
   searchByPipelineName: 搜索流水线名称
   application: 应用
   started-at: 开始日期
@@ -253,7 +253,7 @@ zh:
   please-choose-executor: 请选择执行人
   please-choose-creator: 请选择创建人
   please-choose-application: 请选择应用
-  pipelineName: 流水线名称
+  pipeline: 流水线
   pipelineStatus: 状态
   costTime: 耗时
   applicationName: 应用
@@ -544,9 +544,9 @@ en:
   value: Value
   endTime: End time
 
-  minePipeline: Mine pipeline
-  primaryPipeline: Primary pipeline
-  allPipeline: All pipeline
+  minePipeline: Mine
+  primaryPipeline: Primary
+  allPipeline: All
   createPipeline: Create pipeline
   searchByPipelineName: Search by pipeline name
   executor: Executor
@@ -556,7 +556,7 @@ en:
   please-choose-executor: Please choose executor
   please-choose-creator: Please choose creator
   please-choose-application: Please choose application
-  pipelineName: Pipeline name
+  pipeline: Pipeline
   pipelineStatus: Status
   costTime: Cost time
   applicationName: Application name
