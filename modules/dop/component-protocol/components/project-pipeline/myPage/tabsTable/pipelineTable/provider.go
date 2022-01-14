@@ -335,11 +335,10 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 }
 
 func formatTimeToStr(t time.Time) string {
-	t.Format("2006-01-02 15:04:05")
 	if t.Unix() <= 0 {
 		return "-"
 	}
-	return t.Format("2006-01-02 15:04:05")
+	return t.In(time.FixedZone("UTC+8", int((8 * time.Hour).Seconds()))).Format("2006-01-02 15:04:05")
 }
 
 func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, definitionYmlSourceMap map[string]string, ymlSourceMapCronMap map[string]*apistructs.PipelineCronDTO) []commodel.MoreOpItem {
