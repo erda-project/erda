@@ -4,8 +4,14 @@ hierarchy:
   root: page
   structure:
     page:
+      - cardsWrapper
+      - topNsWrapper
+      - chartsWrapper
+    cardsWrapper:
       - cards
+    topNsWrapper:
       - topNs
+    chartsWrapper:
       - charts
     cards:
       - kvCard@pv
@@ -28,6 +34,12 @@ hierarchy:
 components:
   page:
     type: Container
+  cardsWrapper:
+    type: CardContainer
+  topNsWrapper:
+    type: CardContainer
+  chartsWrapper:
+    type: CardContainer
   cards:
     type: Grid
   kvCard@pv:
