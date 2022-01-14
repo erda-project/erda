@@ -15,6 +15,8 @@
 package block
 
 import (
+	"strconv"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 	"github.com/erda-project/erda/modules/openapi/api/spec"
@@ -37,26 +39,26 @@ func auditOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditContext
 		var requestBody struct {
 			Name string `json:"name"`
 		}
-		var respBody struct {
-			Workspace   string `json:"workspace"`
-			ProjectName string `json:"project_name"`
-			ProjectId   uint64 `json:"project_id"`
-		}
 		if err := ctx.BindRequestData(&requestBody); err != nil {
 			return err
 		}
-		if err := ctx.BindResponseData(&respBody); err != nil {
+		projectIdStr := ctx.BindResponseHeader("erda-projectId")
+		projectId, err := strconv.Atoi(projectIdStr)
+		if err != nil {
 			return err
 		}
+		projectName := ctx.BindResponseHeader("erda-projectName")
+		workspace := ctx.BindResponseHeader("erda-workspace")
+
 		return ctx.CreateAudit(&apistructs.Audit{
 			ScopeType:    apistructs.ProjectScope,
-			ScopeID:      respBody.ProjectId,
-			ProjectID:    respBody.ProjectId,
+			ScopeID:      uint64(projectId),
+			ProjectID:    uint64(projectId),
 			TemplateName: tmp,
 			Context: map[string]interface{}{
-				"projectName":   respBody.ProjectName,
+				"projectName":   projectName,
 				"dashboardName": requestBody.Name,
-				"workspace":     respBody.Workspace,
+				"workspace":     workspace,
 			},
 		})
 	}

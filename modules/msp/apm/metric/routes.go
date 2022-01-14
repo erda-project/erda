@@ -228,16 +228,7 @@ func (p *provider) proxyBlocks(rw http.ResponseWriter, r *http.Request, params s
 }) interface{} {
 	param := url.Values{}
 	param.Set("scopeId", params.ScopeID)
-	//return p.proxyMonitor("/api/dashboard/blocks", param, rw, r)
-	err := p.proxyMonitor("/api/dashboard/blocks", param, rw, r)
-	if err != nil {
-		return err
-	}
-	result, err := p.getProjectResult(context.Background(), params.ScopeID)
-	if err != nil {
-		return err
-	}
-	return result
+	return p.proxyMonitor("/api/dashboard/blocks", param, rw, r)
 }
 
 func (p *provider) getProjectResult(ctx context.Context, scopeId string) (*ObjData, error) {
@@ -268,14 +259,5 @@ func (p *provider) proxyBlock(rw http.ResponseWriter, r *http.Request, params st
 }) interface{} {
 	param := url.Values{}
 	param.Set("scopeId", params.ScopeID)
-	//return p.proxyMonitor("/api/dashboard/blocks/"+url.PathEscape(params.ID), param, rw, r)
-	err := p.proxyMonitor("/api/dashboard/blocks/"+url.PathEscape(params.ID), param, rw, r)
-	if err != nil {
-		return err
-	}
-	result, err := p.getProjectResult(context.Background(), params.ScopeID)
-	if err != nil {
-		return err
-	}
-	return result
+	return p.proxyMonitor("/api/dashboard/blocks/"+url.PathEscape(params.ID), param, rw, r)
 }
