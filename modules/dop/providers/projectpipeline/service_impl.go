@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -26,12 +27,14 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
@@ -245,13 +248,36 @@ func (p *ProjectPipelineService) Delete(ctx context.Context, params deftype.Proj
 		return nil, apierrors.ErrDeleteProjectPipeline.InvalidParameter(err)
 	}
 
-	_, source, err := p.getPipelineDefinitionAndSource(params.ID)
+	definition, source, err := p.getPipelineDefinitionAndSource(params.ID)
 	if err != nil {
 		return nil, apierrors.ErrDeleteProjectPipeline.InvalidParameter(err)
+	}
+	if definition.Creator != apis.GetUserID(ctx) {
+		return nil, apierrors.ErrDeleteProjectPipeline.AccessDenied()
 	}
 	err = p.checkDataPermissionByProjectID(params.ProjectID, source)
 	if err != nil {
 		return nil, apierrors.ErrDeleteProjectPipeline.AccessDenied()
+	}
+	if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
+		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(fmt.Errorf("pipeline wass running status"))
+	}
+	var extraValue = apistructs.PipelineDefinitionExtraValue{}
+	err = json.Unmarshal([]byte(definition.Extra.Extra), &extraValue)
+	if err != nil {
+		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
+	}
+	crons, err := p.bundle.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
+		Sources:  []apistructs.PipelineSource{extraValue.CreateRequest.PipelineSource},
+		YmlNames: []string{extraValue.CreateRequest.PipelineYmlName},
+		PageSize: 1,
+		PageNo:   1,
+	})
+	if err != nil {
+		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(err)
+	}
+	if len(crons.Data) > 0 && crons.Data[0].Enable != nil && *crons.Data[0].Enable == true {
+		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(fmt.Errorf("pipeline cron is running status"))
 	}
 
 	_, err = p.PipelineDefinition.Delete(ctx, &dpb.PipelineDefinitionDeleteRequest{PipelineDefinitionID: params.ID})
@@ -696,6 +722,16 @@ func (p *ProjectPipelineService) startOrEndCron(identityInfo apistructs.Identity
 
 	var dto *apistructs.PipelineCronDTO
 	if enable {
+		orgStr := extraValue.CreateRequest.Labels[apistructs.LabelOrgID]
+		orgID, err := strconv.ParseUint(orgStr, 10, 64)
+		if err != nil {
+			return nil, apiError.InternalError(fmt.Errorf("not found orgID"))
+		}
+		// update CmsNsConfigs
+		if err = p.UpdateCmsNsConfigs(identityInfo.UserID, orgID); err != nil {
+			return nil, apiError.InternalError(err)
+		}
+
 		dto, err = p.bundle.StartPipelineCron(cron.Data[0].ID)
 		if err != nil {
 			return nil, apiError.InternalError(err)
@@ -850,6 +886,17 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	createV2.PipelineYml = source.PipelineYml
 	createV2.AutoRunAtOnce = true
 	createV2.DefinitionID = definition.ID
+	createV2.UserID = identityInfo.UserID
+
+	orgStr := createV2.Labels[apistructs.LabelOrgID]
+	orgID, err := strconv.ParseUint(orgStr, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrRunProjectPipeline.InternalError(fmt.Errorf("not find orgID"))
+	}
+	// update CmsNsConfigs
+	if err = p.UpdateCmsNsConfigs(identityInfo.UserID, orgID); err != nil {
+		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
+	}
 
 	value, err := p.bundle.CreatePipeline(createV2)
 	if err != nil {
@@ -1007,4 +1054,27 @@ func (p *ProjectPipelineService) checkDataPermissionByProjectID(projectID uint64
 	}
 
 	return p.checkDataPermission(project, org, source)
+}
+
+// UpdateCmsNsConfigs update CmsNsConfigs
+func (e *ProjectPipelineService) UpdateCmsNsConfigs(userID string, orgID uint64) error {
+	members, err := e.bundle.GetMemberByUserAndScope(apistructs.OrgScope, userID, orgID)
+	if err != nil {
+		return err
+	}
+
+	if len(members) <= 0 {
+		return errors.New("the member is not exist")
+	}
+
+	_, err = e.PipelineCms.UpdateCmsNsConfigs(apis.WithInternalClientContext(context.Background(), "dop"),
+		&cmspb.CmsNsConfigsUpdateRequest{
+			Ns:             utils.MakeUserOrgPipelineCmsNs(userID, orgID),
+			PipelineSource: apistructs.PipelineSourceDice.String(),
+			KVs: map[string]*cmspb.PipelineCmsConfigValue{
+				utils.MakeOrgGittarUsernamePipelineCmsNsConfig(): {Value: "git", EncryptInDB: true},
+				utils.MakeOrgGittarTokenPipelineCmsNsConfig():    {Value: members[0].Token, EncryptInDB: true}},
+		})
+
+	return err
 }
