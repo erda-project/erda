@@ -38,10 +38,10 @@ type DeploymentOrderDeployRequest struct {
 }
 
 type DeploymentOrderListConditions struct {
-	ProjectId uint64
-	Workspace string
-	Types     []string
-	Query     string
+	ProjectId        uint64
+	MyApplicationIds []uint64
+	Workspace        string
+	Query            string
 }
 
 type DeploymentOrderDetail struct {

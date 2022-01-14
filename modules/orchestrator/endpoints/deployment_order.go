@@ -111,15 +111,15 @@ func (e *Endpoints) ListDeploymentOrder(ctx context.Context, r *http.Request, va
 		return apierrors.ErrListDeploymentOrder.InvalidParameter(strutil.Concat("illegal workspace ", workspace)).ToResp(), nil
 	}
 
-	orderTypes := strutil.Split(r.URL.Query().Get("types"), ",", true)
-	for i, t := range orderTypes {
-		orderTypes[i] = strings.ToUpper(t)
-	}
-
 	// check permission
 	userID, err := user.GetUserID(r)
 	if err != nil {
-		return apierrors.ErrListDeployment.NotLogin().ToResp(), nil
+		return apierrors.ErrListDeploymentOrder.NotLogin().ToResp(), nil
+	}
+
+	orgID, err := getOrgID(r)
+	if err != nil {
+		return apierrors.ErrListDeploymentOrder.InvalidParameter(err).ToResp(), nil
 	}
 
 	if access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
@@ -129,14 +129,13 @@ func (e *Endpoints) ListDeploymentOrder(ctx context.Context, r *http.Request, va
 		Resource: apistructs.ProjectResource,
 		Action:   apistructs.GetAction,
 	}); err != nil || !access.Access {
-		return apierrors.ErrListDeployment.AccessDenied().ToResp(), nil
+		return apierrors.ErrListDeploymentOrder.AccessDenied().ToResp(), nil
 	}
 
 	// list deployment orders
-	data, err := e.deploymentOrder.List(&apistructs.DeploymentOrderListConditions{
+	data, err := e.deploymentOrder.List(userID.String(), orgID, &apistructs.DeploymentOrderListConditions{
 		ProjectId: projectId,
 		Workspace: workspace,
-		Types:     orderTypes,
 		Query:     r.URL.Query().Get("q"),
 	}, &pageInfo)
 	if err != nil {
