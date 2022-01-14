@@ -138,7 +138,8 @@ func (b *Bundle) GetApplicationRuntimes(applicationID uint64, orgID uint64, user
 }
 
 // ListRuntimesGroupByApps queries the runtimes for the given applications ids
-func (b *Bundle) ListRuntimesGroupByApps(orgID uint64, userID string, applicationsIDs []uint64) (map[uint64][]*GetApplicationRuntimesDataEle, error) {
+// if workspace not specified ,return all runtimes.
+func (b *Bundle) ListRuntimesGroupByApps(orgID uint64, userID string, applicationsIDs []uint64, workspace string) (map[uint64][]*GetApplicationRuntimesDataEle, error) {
 	l := logrus.WithField("func", "*Bundle.ListRuntimesGroupByApps")
 	host, err := b.urls.Orchestrator()
 	if err != nil {
@@ -158,6 +159,7 @@ func (b *Bundle) ListRuntimesGroupByApps(orgID uint64, userID string, applicatio
 	for _, appID := range applicationsIDs {
 		request.Param("applicationID", strconv.FormatUint(appID, 10))
 	}
+	request.Param("workspace", workspace)
 	resp, err := request.Do().JSON(&fetchResp)
 	if err != nil {
 		return nil, err

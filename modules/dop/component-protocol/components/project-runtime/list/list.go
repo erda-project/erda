@@ -211,7 +211,7 @@ func (p *List) getData() *list.Data {
 			appIds = append(appIds, apps.List[i].ID)
 			appIdToName[apps.List[i].ID] = apps.List[i].Name
 		}
-		runtimesByApp, err := p.Bdl.ListRuntimesGroupByApps(oid, p.Sdk.Identity.UserID, appIds)
+		runtimesByApp, err := p.Bdl.ListRuntimesGroupByApps(oid, p.Sdk.Identity.UserID, appIds, getEnv)
 		if err != nil {
 			logrus.Errorf("get my app failed,%v", err)
 			return data
@@ -258,6 +258,7 @@ func (p *List) getData() *list.Data {
 	users, err := p.Bdl.ListUsers(userReq)
 	if err != nil {
 		logrus.Errorf("failed to load users,err:%v", err)
+		return data
 	}
 	uidToName := make(map[string]string)
 	for _, user := range users.Users {
@@ -279,22 +280,8 @@ func (p *List) getData() *list.Data {
 				continue
 			}
 		}
-		services, err := p.Bdl.GetRuntimeServices(appRuntime.ID, oid, p.Sdk.Identity.UserID)
-		if err != nil {
-			logrus.Errorf("failed to get runtime %s of detail %v", appRuntime.Name, err)
-			continue
-		}
-		healthyCnt := 0
-		for _, s := range services.Services {
-			if s.Status == "Healthy" {
-				healthyCnt++
-			}
-		}
 		//healthyMap[appRuntime.Name] = healthyCnt
-		var healthStr = ""
-		if len(services.Services) != 0 {
-			healthStr = fmt.Sprintf("%d/%d", healthyCnt, len(services.Services))
-		}
+
 		idStr := strconv.FormatUint(appRuntime.ID, 10)
 		appIdStr := strconv.FormatUint(appRuntime.ApplicationID, 10)
 		nameStr := appRuntime.Name
@@ -307,7 +294,6 @@ func (p *List) getData() *list.Data {
 			Title:          nameStr,
 			MainState:      getMainState(appRuntime.Status),
 			TitleState:     getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus),
-			KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
 			Selectable:     true,
 			Operations:     getOperations(appRuntime.ProjectID, appRuntime.ApplicationID, appRuntime.ID),
 			MoreOperations: getMoreOperations(p.Sdk, fmt.Sprintf("%d", appRuntime.ID)),
@@ -378,8 +364,28 @@ func (p *List) getData() *list.Data {
 	//logrus.Infof("list after sort: %#v", data.List)
 
 	end := uint64(math.Min(float64((p.PageNo)*p.PageSize), float64(data.Total)))
-	data.List = data.List[start:end]
 
+	data.List = data.List[start:end]
+	for i := 0; i < len(data.List); i++ {
+		item := data.List[i]
+		appRuntime := runtimeMap[item.ID]
+		services, err := p.Bdl.GetRuntimeServices(appRuntime.ID, oid, p.Sdk.Identity.UserID)
+		if err != nil {
+			logrus.Errorf("failed to get runtime %s of detail %v", appRuntime.Name, err)
+			continue
+		}
+		healthyCnt := 0
+		for _, s := range services.Services {
+			if s.Status == "Healthy" {
+				healthyCnt++
+			}
+		}
+		var healthStr = ""
+		if len(services.Services) != 0 {
+			healthStr = fmt.Sprintf("%d/%d", healthyCnt, len(services.Services))
+		}
+		data.List[i].KvInfos = getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime)
+	}
 	return data
 }
 
@@ -446,7 +452,7 @@ func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus s
 	if dStatus == "" {
 		var deployStr list.ItemCommStatus
 		switch deployStatus {
-		case string(apistructs.DeploymentStatusInit), string(apistructs.DeploymentStatusDeploying):
+		case string(apistructs.DeploymentStatusInit), string(apistructs.DeploymentStatusDeploying), string(apistructs.DeploymentStatusWaiting):
 			deployStr = common.FrontedStatusProcessing
 		case string(apistructs.DeploymentStatusOK):
 			deployStr = common.FrontedStatusSuccess
@@ -491,7 +497,7 @@ func getOperations(projectId, appId, runtimeId uint64) map[cptype.OperationKey]c
 	return map[cptype.OperationKey]cptype.Operation{
 		"clickGoto": {
 			ServerData: &cptype.OpServerData{
-				"target": "runtimeDetailRoot",
+				"target": "projectDeployRuntime",
 				"params": map[string]string{
 					"projectId": projectIdStr,
 					"appId":     appIdStr,

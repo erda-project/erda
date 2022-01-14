@@ -6,7 +6,7 @@ zh:
   restart: 重启
   appName: 应用名称
   deployer: 部署人
-  running duration: 运行时间
+  running duration: 部署时间
   deployAt: 最近部署
   service: 服务
   deploy: 部署
