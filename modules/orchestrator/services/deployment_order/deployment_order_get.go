@@ -136,7 +136,7 @@ func composeApplicationsInfo(releases []*apistructs.ReleaseGetResponseData, para
 		}
 
 		asi = append(asi, &apistructs.ApplicationInfo{
-			Id:             app.AppID,
+			Id:             uint64(subRelease.ApplicationID),
 			Name:           applicationName,
 			DeploymentId:   app.DeploymentID,
 			Params:         &orderParamsData,
