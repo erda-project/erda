@@ -71,7 +71,7 @@ Org-ID: 1
 ### DownloadFile
 GET {{url}}/api/container/ea0d72abd63a620381f761dda96aeba2bcc8d751e6a244cf7b965393ebbc1f9b/files/download
     ?hostIP=10.0.6.219
-    &path=/xxxxx1.txt
+    &path=/xxxxx2.txt
     &scope=org
 User-ID: 1100
 Org-ID: 1
