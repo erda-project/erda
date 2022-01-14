@@ -23,6 +23,7 @@ import (
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/providers/audit"
 )
@@ -54,6 +55,7 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 			Id:        v.Id,
 			Token:     v.AccessKey,
 			CreatedAt: v.CreatedAt,
+			Creator:   v.CreatorId,
 		}
 		akList = append(akList, ak)
 	}
@@ -91,12 +93,14 @@ func (a *accessKeyService) DownloadAccessKeyFile(ctx context.Context, request *p
 }
 
 func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.CreateAccessKeyRequest) (*pb.CreateAccessKeyResponse, error) {
+	userIdStr := apis.GetUserID(ctx)
 	req := &akpb.CreateAccessKeyRequest{
 		SubjectType: request.SubjectType,
 		Subject:     request.Subject,
 		Description: request.Description,
 		Scope:       MSP_SCOPE,
 		ScopeId:     request.ScopeId,
+		CreatorId:   userIdStr,
 	}
 	accessKey, err := a.p.AccessKeyService.CreateAccessKey(ctx, req)
 	if err != nil {
