@@ -140,8 +140,14 @@ func (a *auditor) record(ctx context.Context, scope ScopeType, scopeID interface
 		a.p.Log.Error(err)
 		return
 	}
+	idstr, ok := scopeid.(string)
+	if ok {
+		scopeid, err = strconv.Atoi(idstr)
+		if err != nil {
+			a.p.Log.Errorf("scopeId failed to parse int info: %s", err)
+		}
+	}
 	audit.ScopeID = conv.ToUint64(scopeid, 0)
-
 	if err := a.setupScopeInfo(ctx, opts, &audit); err != nil {
 		a.p.Log.Errorf("failed to get scope info: %s", err)
 	}

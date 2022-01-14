@@ -15,8 +15,6 @@
 package block
 
 import (
-	"strconv"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 	"github.com/erda-project/erda/modules/openapi/api/spec"
@@ -39,42 +37,26 @@ func auditOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditContext
 		var requestBody struct {
 			Name string `json:"name"`
 		}
-		//var respBody struct {
-		//	Workspace string `json:"workspace"`
-		//}
+		var respBody struct {
+			Workspace   string `json:"workspace"`
+			ProjectName string `json:"project_name"`
+			ProjectId   uint64 `json:"project_id"`
+		}
 		if err := ctx.BindRequestData(&requestBody); err != nil {
 			return err
 		}
-		//if err := ctx.BindResponseData(&respBody); err != nil {
-		//	return err
-		//}
-		info, err := ctx.Bundle.GetTenantGroupDetails(ctx.UrlParams["tenantGroup"])
-		if err != nil {
+		if err := ctx.BindResponseData(&respBody); err != nil {
 			return err
-		}
-		if len(info.ProjectID) <= 0 {
-			return nil
-		}
-		projectID, err := strconv.ParseUint(info.ProjectID, 10, 64)
-		if err != nil {
-			return err
-		}
-		project, err := ctx.Bundle.GetProject(projectID)
-		if err != nil {
-			return err
-		}
-		if project == nil {
-			return nil
 		}
 		return ctx.CreateAudit(&apistructs.Audit{
 			ScopeType:    apistructs.ProjectScope,
-			ScopeID:      projectID,
-			ProjectID:    projectID,
+			ScopeID:      respBody.ProjectId,
+			ProjectID:    respBody.ProjectId,
 			TemplateName: tmp,
 			Context: map[string]interface{}{
-				"projectName":   project.Name,
+				"projectName":   respBody.ProjectName,
 				"dashboardName": requestBody.Name,
-				//"workspace":     respBody.Workspace,
+				"workspace":     respBody.Workspace,
 			},
 		})
 	}

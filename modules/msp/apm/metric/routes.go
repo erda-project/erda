@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
@@ -216,6 +217,12 @@ func (p *provider) getGroup(rw http.ResponseWriter, r *http.Request, params stru
 	return p.proxyMonitor("/api/metric/groups/"+url.PathEscape(params.ID), param, rw, r)
 }
 
+type ObjData struct {
+	Workspace   string `json:"workspace"`
+	ProjectName string `json:"project_name"`
+	ProjectId   uint64 `json:"project_id"`
+}
+
 func (p *provider) proxyBlocks(rw http.ResponseWriter, r *http.Request, params struct {
 	ScopeID string `query:"scopeId" validate:"required"`
 }) interface{} {
@@ -226,13 +233,33 @@ func (p *provider) proxyBlocks(rw http.ResponseWriter, r *http.Request, params s
 	if err != nil {
 		return err
 	}
-	resp, err := p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
-		ScopeId: params.ScopeID,
-	})
+	result, err := p.getProjectResult(context.Background(), params.ScopeID)
 	if err != nil {
 		return err
 	}
-	return resp.Data.Workspace
+	return result
+}
+
+func (p *provider) getProjectResult(ctx context.Context, scopeId string) (*ObjData, error) {
+	project, err := p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
+		ScopeId: scopeId,
+	})
+	if err != nil {
+		return nil, err
+	}
+	projectId, err := strconv.Atoi(project.Data.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+	projectResp, err := p.bdl.GetProject(uint64(projectId))
+	if err != nil {
+		return nil, err
+	}
+	return &ObjData{
+		Workspace:   project.Data.Workspace,
+		ProjectId:   projectResp.ID,
+		ProjectName: projectResp.Name,
+	}, nil
 }
 
 func (p *provider) proxyBlock(rw http.ResponseWriter, r *http.Request, params struct {
@@ -246,11 +273,9 @@ func (p *provider) proxyBlock(rw http.ResponseWriter, r *http.Request, params st
 	if err != nil {
 		return err
 	}
-	resp, err := p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
-		ScopeId: params.ScopeID,
-	})
+	result, err := p.getProjectResult(context.Background(), params.ScopeID)
 	if err != nil {
 		return err
 	}
-	return resp.Data.Workspace
+	return result
 }

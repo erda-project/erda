@@ -330,3 +330,5 @@ erda.core.services.notify.channel-client:
 erda.core.monitor.expression:
   alert_rules: ${CONFIG_PATH}/alert/rules
   metric_rules: ${CONFIG_PATH}/analyzer/metrics
+
+audit:

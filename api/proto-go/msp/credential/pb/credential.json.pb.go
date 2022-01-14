@@ -17,6 +17,8 @@ var _ json.Marshaler = (*CreateAccessKeyRequest)(nil)
 var _ json.Unmarshaler = (*CreateAccessKeyRequest)(nil)
 var _ json.Marshaler = (*CreateAccessKeyResponse)(nil)
 var _ json.Unmarshaler = (*CreateAccessKeyResponse)(nil)
+var _ json.Marshaler = (*CreateAccessKeyData)(nil)
+var _ json.Unmarshaler = (*CreateAccessKeyData)(nil)
 var _ json.Marshaler = (*DeleteAccessKeyRequest)(nil)
 var _ json.Unmarshaler = (*DeleteAccessKeyRequest)(nil)
 var _ json.Marshaler = (*DeleteAccessKeyResponse)(nil)
@@ -69,6 +71,24 @@ func (m *CreateAccessKeyResponse) MarshalJSON() ([]byte, error) {
 
 // CreateAccessKeyResponse implement json.Marshaler.
 func (m *CreateAccessKeyResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CreateAccessKeyData implement json.Marshaler.
+func (m *CreateAccessKeyData) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CreateAccessKeyData implement json.Marshaler.
+func (m *CreateAccessKeyData) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

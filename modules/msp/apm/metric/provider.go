@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
+	"github.com/erda-project/erda/bundle"
 	monitordb "github.com/erda-project/erda/modules/msp/instance/db/monitor"
 	mperm "github.com/erda-project/erda/modules/msp/instance/permission"
 )
@@ -37,12 +38,14 @@ type provider struct {
 	Router httpserver.Router            `autowired:"http-router"`
 	MPerm  mperm.Interface              `autowired:"msp.permission"`
 	Tenant tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
+	bdl    *bundle.Bundle
 
 	db            *monitordb.MonitorDB
 	compatibleTKs map[string][]string
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
 	p.db = &monitordb.MonitorDB{DB: p.DB}
 	err = p.loadCompatibleTKs()
 	if err != nil {
