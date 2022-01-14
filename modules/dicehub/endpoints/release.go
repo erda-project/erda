@@ -173,8 +173,24 @@ func (e *Endpoints) UploadRelease(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrCreateRelease.InvalidParameter(err).ToResp(), nil
 	}
 
+	if releaseRequest.OrgID == 0 {
+		releaseRequest.OrgID = orgID
+	}
+
 	if releaseRequest.DiceFileID == "" {
 		return apierrors.ErrCreateRelease.MissingParameter("diceFileID").ToResp(), nil
+	}
+
+	if releaseRequest.ProjectID == 0 {
+		return apierrors.ErrCreateRelease.MissingParameter("projectID").ToResp(), nil
+	}
+
+	if releaseRequest.ProjectName == "" {
+		project, err := e.bdl.GetProject(uint64(releaseRequest.ProjectID))
+		if err != nil {
+			return apierrors.ErrCreateRelease.InternalError(err).ToResp(), nil
+		}
+		releaseRequest.ProjectName = project.Name
 	}
 
 	identityInfo, err := user.GetIdentityInfo(r)
