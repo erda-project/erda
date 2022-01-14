@@ -102,7 +102,7 @@ func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.Crea
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	projectId, err := a.auditContextInfo(&ctx, request.ScopeId, accessKey.Data.AccessKey)
+	projectId, err := a.auditContextInfo(ctx, request.ScopeId, accessKey.Data.AccessKey)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -113,7 +113,7 @@ func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.Crea
 	return result, nil
 }
 
-func (a *accessKeyService) auditContextInfo(ctx *context.Context, scopeId, token string) (uint64, error) {
+func (a *accessKeyService) auditContextInfo(ctx context.Context, scopeId, token string) (uint64, error) {
 	projectData, err := a.p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
 		ScopeId: scopeId,
 	})
@@ -132,7 +132,7 @@ func (a *accessKeyService) auditContextInfo(ctx *context.Context, scopeId, token
 		"projectName": project.Name,
 		"token":       token,
 	}
-	audit.ContextEntryMap(*ctx, auditContext)
+	audit.ContextEntryMap(ctx, auditContext)
 	return uint64(auditProjectId), nil
 }
 
@@ -148,7 +148,7 @@ func (a *accessKeyService) DeleteAccessKey(ctx context.Context, request *pb.Dele
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	projectId, err := a.auditContextInfo(&ctx, accessKey.Data.ScopeId, accessKey.Data.AccessKey)
+	projectId, err := a.auditContextInfo(ctx, accessKey.Data.ScopeId, accessKey.Data.AccessKey)
 	return &pb.DeleteAccessKeyResponse{
 		Data: projectId,
 	}, nil

@@ -25,6 +25,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/conf"
 	"github.com/erda-project/erda/conf/monitor/monitor"
 	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
@@ -218,11 +219,7 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	err = s.auditContextMap(ctx, req.Name)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	return &pb.CreateCustomViewResponse{Data: s.parseViewBlocks(&pb.View{
+	result := &pb.CreateCustomViewResponse{Data: s.parseViewBlocks(&pb.View{
 		Id:        model.ID,
 		Name:      model.Name,
 		Version:   model.Version,
@@ -231,7 +228,21 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 		ScopeID:   model.ScopeID,
 		CreatedAt: model.CreatedAt.UnixNano() / int64(time.Millisecond),
 		UpdatedAt: model.UpdatedAt.UnixNano() / int64(time.Millisecond),
-	}, model.ViewConfig, model.DataConfig)}, nil
+	}, model.ViewConfig, model.DataConfig)}
+	if req.Scope == "micro_service" {
+		projectData, err := s.p.Tenant.GetTenantProject(ctx, &tenantpb.GetTenantProjectRequest{
+			ScopeId: req.ScopeID,
+		})
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		result.Workspace = projectData.Data.Workspace
+	}
+	err = s.auditContextMap(ctx, req.Name)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return result, nil
 }
 
 func (s *dataViewService) getOrgName(ctx *context.Context) (string, error) {
@@ -244,15 +255,31 @@ func (s *dataViewService) getOrgName(ctx *context.Context) (string, error) {
 }
 
 func (s *dataViewService) UpdateCustomView(ctx context.Context, req *pb.UpdateCustomViewRequest) (*pb.UpdateCustomViewResponse, error) {
-	err := s.custom.UpdateView(req.Id, fieldsForUpdate(req))
+	data, err := s.custom.GetByFields(map[string]interface{}{
+		"ID": req.Id,
+	})
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
+	}
+	err = s.custom.UpdateView(req.Id, fieldsForUpdate(req))
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	result := &pb.UpdateCustomViewResponse{Data: true}
+	if data.Scope == "micro_service" {
+		projectData, err := s.p.Tenant.GetTenantProject(ctx, &tenantpb.GetTenantProjectRequest{
+			ScopeId: data.ScopeID,
+		})
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		result.Workspace = projectData.Data.Workspace
 	}
 	err = s.auditContextMap(ctx, req.Name)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return &pb.UpdateCustomViewResponse{Data: true}, nil
+	return result, nil
 }
 
 func (s *dataViewService) DeleteCustomView(ctx context.Context, req *pb.DeleteCustomViewRequest) (*pb.DeleteCustomViewResponse, error) {
@@ -265,6 +292,16 @@ func (s *dataViewService) DeleteCustomView(ctx context.Context, req *pb.DeleteCu
 	err = s.custom.DB.Where("id=?", req.Id).Delete(&db.CustomView{}).Error
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
+	}
+	result := &pb.DeleteCustomViewResponse{Data: true}
+	if data.Scope == "micro_service" {
+		projectData, err := s.p.Tenant.GetTenantProject(ctx, &tenantpb.GetTenantProjectRequest{
+			ScopeId: data.ScopeID,
+		})
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		result.Workspace = projectData.Data.Workspace
 	}
 	err = s.auditContextMap(ctx, data.Name)
 	if err != nil {

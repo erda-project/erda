@@ -362,6 +362,8 @@ func (m *CreateCustomViewResponse) UnmarshalURLValues(prefix string, values url.
 					return err
 				}
 				m.Data.UpdatedAt = val
+			case "workspace":
+				m.Workspace = vals[0]
 			}
 		}
 	}
@@ -396,6 +398,8 @@ func (m *UpdateCustomViewResponse) UnmarshalURLValues(prefix string, values url.
 					return err
 				}
 				m.Data = val
+			case "workspace":
+				m.Workspace = vals[0]
 			}
 		}
 	}
@@ -426,6 +430,8 @@ func (m *DeleteCustomViewResponse) UnmarshalURLValues(prefix string, values url.
 					return err
 				}
 				m.Data = val
+			case "workspace":
+				m.Workspace = vals[0]
 			}
 		}
 	}

@@ -129,7 +129,8 @@ message CreateCustomViewRequest {
 }
 
 message CreateCustomViewResponse {
-  View data = 1;
+  View   data      = 1;
+  string workspace = 2;
 }
 
 // UpdateCustomView
@@ -142,7 +143,8 @@ message UpdateCustomViewRequest {
 }
 
 message UpdateCustomViewResponse {
-  bool data = 1;
+  bool   data      = 1;
+  string workspace = 2;
 }
 
 // DeleteCustomView
@@ -151,7 +153,8 @@ message DeleteCustomViewRequest {
 }
 
 message DeleteCustomViewResponse {
-  bool data = 1;
+  bool   data      = 1;
+  string workspace = 2;
 }
 
 // common
