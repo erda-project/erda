@@ -75,7 +75,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				audit.Method(AccessKeyService.CreateAccessKey, audit.ProjectScope, string(apistructs.CreateServiceToken),
 					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
 						r := resp.(*pb.CreateAccessKeyResponse)
-						return r.ProjectId, map[string]interface{}{}, nil
+						return r.Data.ProjectId, map[string]interface{}{}, nil
 					}),
 				audit.Method(AccessKeyService.DeleteAccessKey, audit.ProjectScope, string(apistructs.DeleteServiceToken),
 					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {

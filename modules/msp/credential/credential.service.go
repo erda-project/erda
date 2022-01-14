@@ -107,8 +107,10 @@ func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.Crea
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &pb.CreateAccessKeyResponse{
-		Data:      accessKey.Data.AccessKey,
-		ProjectId: projectId,
+		Data: &pb.CreateAccessKeyData{
+			Id:        accessKey.Data.AccessKey,
+			ProjectId: projectId,
+		},
 	}
 	return result, nil
 }
