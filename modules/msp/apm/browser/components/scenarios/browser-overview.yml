@@ -10,10 +10,8 @@ hierarchy:
     cardsWrapper:
       - cards
     topNsWrapper:
-      - topNsTitle
       - topNs
     chartsWrapper:
-      - chartsTitle
       - charts
     cards:
       - kvCard@pv
@@ -42,14 +40,6 @@ components:
     type: CardContainer
   chartsWrapper:
     type: CardContainer
-  topNsTitle:
-    type: Title
-    props:
-      title: "访问分析"
-  chartsTitle:
-    type: Title
-    props:
-      title: "访问概览"
   cards:
     type: Grid
   kvCard@pv:
