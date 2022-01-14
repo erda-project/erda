@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
@@ -44,6 +45,7 @@ type provider struct {
 	projectPipelineSvc *ProjectPipelineService
 	PipelineSource     sourcepb.SourceServiceServer `autowired:"erda.core.pipeline.source.SourceService" required:"true"`
 	PipelineDefinition dpb.DefinitionServiceServer  `autowired:"erda.core.pipeline.definition.DefinitionService" required:"true"`
+	PipelineCms        cmspb.CmsServiceServer       `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -58,6 +60,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		bundle:             p.bundle,
 		PipelineSource:     p.PipelineSource,
 		PipelineDefinition: p.PipelineDefinition,
+		PipelineCms:        p.PipelineCms,
 	}
 	if p.Register != nil {
 		pb.RegisterProjectPipelineServiceImp(p.Register, p.projectPipelineSvc, apis.Options())

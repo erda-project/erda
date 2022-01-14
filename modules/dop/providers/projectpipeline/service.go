@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
@@ -38,6 +39,7 @@ type ProjectPipelineService struct {
 	PipelineSource     sourcepb.SourceServiceServer
 	PipelineDefinition dpb.DefinitionServiceServer
 	Permission         *permission.Permission
+	PipelineCms        cmspb.CmsServiceServer
 }
 
 func (p *ProjectPipelineService) WithPipelineSvc(svc *pipeline.Pipeline) {
