@@ -18,6 +18,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/services/namespace"
 )
 
 // Option the is fun to set *Project property
@@ -42,5 +43,11 @@ func WithTrans(trans i18n.Translator) Option {
 func WithCMP(cmp dashboardPb.ClusterResourceServer) Option {
 	return func(p *Project) {
 		p.cmp = cmp
+	}
+}
+
+func WithNamespace(namespace *namespace.Namespace) Option {
+	return func(p *Project) {
+		p.namespace = namespace
 	}
 }

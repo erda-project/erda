@@ -22,14 +22,16 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dbclient"
+	"github.com/erda-project/erda/modules/dop/services/namespace"
 	"github.com/erda-project/erda/pkg/cache"
 )
 
 type Project struct {
-	db    *dbclient.DBClient
-	bdl   *bundle.Bundle
-	trans i18n.Translator
-	cmp   dashboardPb.ClusterResourceServer
+	db        *dbclient.DBClient
+	bdl       *bundle.Bundle
+	trans     i18n.Translator
+	cmp       dashboardPb.ClusterResourceServer
+	namespace *namespace.Namespace
 
 	appOwnerCache    *cache.Cache
 	CreateFileRecord func(req apistructs.TestFileRecordRequest) (uint64, error)

@@ -102,7 +102,7 @@ func (p *Project) ExportTemplatePackage(record *dao.TestFileRecord) {
 		packageName:  record.FileName,
 	}
 	tempDirector := TemplateDataDirector{}
-	tempDirector.New(&tempDB, p.bdl)
+	tempDirector.New(&tempDB, p.bdl, p.namespace)
 	if err := tempDirector.Construct(); err != nil {
 		logrus.Error(apierrors.ErrExportProjectTemplate.InternalError(err))
 		if err := p.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail, ErrorInfo: tempDirector.GenErrInfo()}); err != nil {

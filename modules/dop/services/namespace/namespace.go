@@ -15,6 +15,7 @@
 package namespace
 
 import (
+	"encoding/json"
 	"regexp"
 	"strconv"
 	"strings"
@@ -28,7 +29,9 @@ import (
 	"github.com/erda-project/erda/modules/dop/model"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/permission"
+	"github.com/erda-project/erda/modules/dop/types"
 	"github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
@@ -68,6 +71,62 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	return func(c *Namespace) {
 		c.bdl = bdl
 	}
+}
+
+func (n *Namespace) GenerateAppExtraInfo(applicationID, projectID int64) string {
+	workspaces := []apistructs.DiceWorkspace{
+		types.DefaultWorkspace,
+		types.DevWorkspace,
+		types.TestWorkspace,
+		types.StagingWorkspace,
+		types.ProdWorkspace,
+	}
+
+	relatedNamespaces := make([]string, 0, len(workspaces)-1)
+	var defaultNamespace string
+	extra := make(map[string]string, len(workspaces))
+	for _, v := range workspaces {
+		key := strutil.Concat(string(v), ".configNamespace")
+		value := strutil.Concat("app-", strconv.FormatInt(applicationID, 10), "-", string(v))
+		extra[key] = value
+
+		if v == types.DefaultWorkspace {
+			defaultNamespace = value
+		} else {
+			relatedNamespaces = append(relatedNamespaces, value)
+		}
+	}
+
+	// 创建 DEV/TEST/STAGING/PROD/DEFAULT namespace
+	for _, v := range extra {
+		namespaceCreateReq := apistructs.NamespaceCreateRequest{
+			ProjectID: projectID,
+			Dynamic:   true,
+			Name:      v,
+			IsDefault: strings.Contains(v, string(types.DefaultWorkspace)),
+		}
+		// 创建namespace
+		_, err := n.Create(&namespaceCreateReq)
+		if err != nil {
+			logrus.Errorf(err.Error())
+		}
+	}
+
+	// 创建 namespace relations
+	relationCreateReq := apistructs.NamespaceRelationCreateRequest{
+		RelatedNamespaces: relatedNamespaces,
+		DefaultNamespace:  defaultNamespace,
+	}
+
+	if err := n.CreateRelation(&relationCreateReq); err != nil {
+		logrus.Errorf(err.Error())
+	}
+
+	extraInfo, err := json.Marshal(extra)
+	if err != nil {
+		logrus.Errorf("failed to marshal extra info, (%v)", err)
+	}
+	return string(extraInfo)
 }
 
 // Create 创建 namespace
