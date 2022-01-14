@@ -27,7 +27,19 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/utils"
 )
 
-func (d *DeploymentOrder) List(conditions *apistructs.DeploymentOrderListConditions, pageInfo *apistructs.PageInfo) (*apistructs.DeploymentOrderListData, error) {
+func (d *DeploymentOrder) List(userId string, orgId uint64, conditions *apistructs.DeploymentOrderListConditions, pageInfo *apistructs.PageInfo) (*apistructs.DeploymentOrderListData, error) {
+	apps, err := d.bdl.GetMyApps(userId, orgId)
+	if err != nil {
+		logrus.Errorf("failed to get my apps, err: %v", err)
+		return nil, err
+	}
+
+	conditions.MyApplicationIds = make([]uint64, 0)
+
+	for _, dto := range apps.List {
+		conditions.MyApplicationIds = append(conditions.MyApplicationIds, dto.ID)
+	}
+
 	total, data, err := d.db.ListDeploymentOrder(conditions, pageInfo)
 	if err != nil {
 		logrus.Errorf("failed to list deployment order, err: %v", err)

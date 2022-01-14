@@ -83,7 +83,7 @@ func (e *Endpoints) Logs(ctx context.Context, r *http.Request, vars map[string]s
 		End:      time.Duration(endNum),
 		Count:    countNum,
 	}
-	logdata, err := e.nodes.Logs(req)
+	logdata, err := e.nodes.Logs(r.Header.Get("org"), req)
 	if err != nil {
 		return httpserver.ErrResp(200, "2", err.Error())
 	}

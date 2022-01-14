@@ -78,7 +78,7 @@ func (w *Workbench) ListAppWbData(identity apistructs.Identity, req apistructs.A
 	}
 
 	// list app related runtime
-	runtimeRes, err := w.bdl.ListRuntimesGroupByApps(uint64(orgID), identity.UserID, appIDs)
+	runtimeRes, err := w.bdl.ListRuntimesGroupByApps(uint64(orgID), identity.UserID, appIDs, "")
 	if err != nil {
 		logrus.Errorf("list runtime group by apps failed, appIDs: %v, error: %v", appIDs, err)
 		return

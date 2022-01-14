@@ -16,7 +16,6 @@ package executeHistoryPop
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
@@ -28,7 +27,10 @@ type ComponentAction struct {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	return json.Unmarshal([]byte(`{"text": `+cputil.I18n(ctx, "execHistory")+`}`), &c.Props)
+	c.Props = map[string]interface{}{
+		"text": cputil.I18n(ctx, "execHistory"),
+	}
+	return nil
 }
 
 func init() {

@@ -46,7 +46,7 @@ var defaultSDK = &cptype.SDK{
 
 func TestList_doFilter(t *testing.T) {
 	type args struct {
-		conditions          map[string][]string
+		conditions          map[string]map[string]bool
 		appRuntime          bundle.GetApplicationRuntimesDataEle
 		deployAt            int64
 		appName             string
@@ -61,29 +61,29 @@ func TestList_doFilter(t *testing.T) {
 		{
 			name: "1",
 			args: args{
-				conditions: map[string][]string{common.FilterApp: {"1"}},
+				conditions: map[string]map[string]bool{common.FilterApp: {"1": true}},
 			},
 			want: false,
 		},
 		{
 			name: "2",
 			args: args{
-				conditions: map[string][]string{
-					common.FilterDeployStatus: {""},
+				conditions: map[string]map[string]bool{
+					common.FilterDeployStatus: {"1": true},
 				},
 				appRuntime: bundle.GetApplicationRuntimesDataEle{
 					RawDeploymentStatus: "1",
 				}},
-			want: false,
-		},
-		{
-			name: "3",
-			args: args{conditions: map[string][]string{common.FilterDeployOrderName: {""}}},
 			want: true,
 		},
 		{
+			name: "3",
+			args: args{conditions: map[string]map[string]bool{common.FilterDeployOrderName: {"1": true}}},
+			want: false,
+		},
+		{
 			name: "4",
-			args: args{conditions: map[string][]string{common.FilterDeployTime: {"0", "0"}}},
+			args: args{},
 			want: true,
 		},
 	}
@@ -204,7 +204,7 @@ func Test_getOperations(t *testing.T) {
 			want: map[cptype.OperationKey]cptype.Operation{
 				"clickGoto": {
 					ServerData: &cptype.OpServerData{
-						"target": "runtimeDetailRoot",
+						"target": "projectDeployRuntime",
 						"params": map[string]string{
 							"projectId": "0",
 							"appId":     "0",
@@ -252,36 +252,27 @@ func TestList_getBatchOperation(t *testing.T) {
 
 func Test_getKvInfos(t *testing.T) {
 	type args struct {
-		sdk             *cptype.SDK
-		appName         string
-		creatorName     string
-		deployOrderName string
-		deployVersion   string
-		healthStr       string
-		runtime         bundle.GetApplicationRuntimesDataEle
+		sdk              *cptype.SDK
+		appName          string
+		creatorName      string
+		deployOrderName  string
+		deployVersion    string
+		healthStr        string
+		runtime          bundle.GetApplicationRuntimesDataEle
+		lastOperatorTime time.Time
 	}
 	tests := []struct {
 		name string
 		args args
-		want []list.KvInfo
 	}{
-		// TODO: Add test cases.
 		{
 			name: "1",
-			args: args{
-				sdk:             defaultSDK,
-				appName:         "",
-				creatorName:     "",
-				deployOrderName: "",
-				deployVersion:   "",
-				healthStr:       "",
-				runtime:         bundle.GetApplicationRuntimesDataEle{LastOperateTime: time.Now()},
-			},
+			args: args{sdk: defaultSDK, deployOrderName: "2", healthStr: "1"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			getKvInfos(tt.args.sdk, tt.args.appName, tt.args.creatorName, tt.args.deployOrderName, tt.args.deployVersion, tt.args.healthStr, tt.args.runtime)
+			getKvInfos(tt.args.sdk, tt.args.appName, tt.args.creatorName, tt.args.deployOrderName, tt.args.deployVersion, tt.args.healthStr, tt.args.runtime, tt.args.lastOperatorTime)
 		})
 	}
 }

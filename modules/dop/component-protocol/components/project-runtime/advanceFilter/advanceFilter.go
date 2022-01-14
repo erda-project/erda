@@ -150,7 +150,7 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 		logrus.Errorf("parse oid failed,%v", err)
 		return data
 	}
-	apps, err := af.bdl.GetAppsByProject(projectId, oid, sdk.Identity.UserID)
+	apps, err := af.bdl.GetMyApps(sdk.Identity.UserID, oid)
 	if err != nil {
 		logrus.Errorf("get my app failed,%v", err)
 		return data
@@ -158,10 +158,13 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 	appIds := make([]uint64, 0)
 	appIdToName := make(map[uint64]string)
 	for i := 0; i < len(apps.List); i++ {
+		if apps.List[i].ProjectID != projectId {
+			continue
+		}
 		appIds = append(appIds, apps.List[i].ID)
 		appIdToName[apps.List[i].ID] = apps.List[i].Name
 	}
-	runtimesByApp, err := af.bdl.ListRuntimesGroupByApps(oid, sdk.Identity.UserID, appIds)
+	runtimesByApp, err := af.bdl.ListRuntimesGroupByApps(oid, sdk.Identity.UserID, appIds, getEnv)
 	if err != nil {
 		logrus.Errorf("get my app failed,%v", err)
 		return data
@@ -202,12 +205,13 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 	//conds = append(conds, getSelectCondition(sdk, runtimeStatusMap, "runtimeStatus"))
 	conds = append(conds, getSelectCondition(sdk, appNameMap, "app"))
 	conds = append(conds, getSelectCondition(sdk, deploymentOrderNameMap, "deploymentOrderName"))
-	conds = append(conds, getRangeCondition(sdk, "deployTime"))
+	//conds = append(conds, getRangeCondition(sdk, "deployTime"))
 	err = common.Transfer(conds, &data.Conditions)
 	if err != nil {
 		return nil
 	}
 	data.Operations = af.getOperation()
+	data.HideSave = true
 	return data
 }
 
@@ -233,15 +237,15 @@ func getSelectCondition(sdk *cptype.SDK, keys map[string]bool, key string) Condi
 	return c
 }
 
-func getRangeCondition(sdk *cptype.SDK, key string) Condition {
-	c := Condition{
-		Key:         key,
-		Label:       sdk.I18n(key),
-		Placeholder: sdk.I18n(placeHolders[key]),
-		Type:        "dateRange",
-	}
-	return c
-}
+//func getRangeCondition(sdk *cptype.SDK, key string) Condition {
+//	c := Condition{
+//		Key:         key,
+//		Label:       sdk.I18n(key),
+//		Placeholder: sdk.I18n(placeHolders[key]),
+//		Type:        "dateRange",
+//	}
+//	return c
+//}
 
 func (af *AdvanceFilter) Init(ctx servicehub.Context) error {
 	return af.DefaultProvider.Init(ctx)
