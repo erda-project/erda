@@ -28,8 +28,8 @@ type SlowCountCard struct {
 }
 
 func (r *SlowCountCard) GetCard(ctx context.Context) (*ServiceCard, error) {
-	statement := fmt.Sprintf("SELECT sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0)) "+
-		"FROM %s "+
+	statement := fmt.Sprintf("SELECT sum(elapsed_count::field) "+
+		"FROM %s_slow "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
 		"%s ",
@@ -45,10 +45,9 @@ func (r *SlowCountCard) GetCard(ctx context.Context) (*ServiceCard, error) {
 	}
 
 	queryParams := map[string]*structpb.Value{
-		"terminus_key":   structpb.NewStringValue(r.TenantId),
-		"service_id":     structpb.NewStringValue(r.ServiceId),
-		"layer_path":     layerPathParam,
-		"slow_threshold": structpb.NewNumberValue(common.GetSlowThreshold(r.Layer)),
+		"terminus_key": structpb.NewStringValue(r.TenantId),
+		"service_id":   structpb.NewStringValue(r.ServiceId),
+		"layer_path":   layerPathParam,
 	}
 
 	return r.QueryAsServiceCard(ctx, statement, queryParams, string(CardTypeSlowCount), "", common.FormatFloatWith2Digits)
