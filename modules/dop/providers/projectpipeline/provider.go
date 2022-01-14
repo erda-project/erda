@@ -45,7 +45,7 @@ type provider struct {
 	projectPipelineSvc *ProjectPipelineService
 	PipelineSource     sourcepb.SourceServiceServer `autowired:"erda.core.pipeline.source.SourceService" required:"true"`
 	PipelineDefinition dpb.DefinitionServiceServer  `autowired:"erda.core.pipeline.definition.DefinitionService" required:"true"`
-	PipelineCms        cmspb.CmsServiceServer       `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
+	PipelineCms        cmspb.CmsServiceServer       `autowired:"erda.core.pipeline.cms.CmsService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

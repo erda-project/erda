@@ -277,7 +277,7 @@ func (p *ProjectPipelineService) Delete(ctx context.Context, params deftype.Proj
 		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(err)
 	}
 	if len(crons.Data) > 0 && crons.Data[0].Enable != nil && *crons.Data[0].Enable == true {
-		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(fmt.Errorf("pipeline cron was running status"))
+		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(fmt.Errorf("pipeline cron is running status"))
 	}
 
 	_, err = p.PipelineDefinition.Delete(ctx, &dpb.PipelineDefinitionDeleteRequest{PipelineDefinitionID: params.ID})
@@ -725,7 +725,7 @@ func (p *ProjectPipelineService) startOrEndCron(identityInfo apistructs.Identity
 		orgStr := extraValue.CreateRequest.Labels[apistructs.LabelOrgID]
 		orgID, err := strconv.ParseUint(orgStr, 10, 64)
 		if err != nil {
-			return nil, apiError.InternalError(fmt.Errorf("not find orgID"))
+			return nil, apiError.InternalError(fmt.Errorf("not found orgID"))
 		}
 		// update CmsNsConfigs
 		if err = p.UpdateCmsNsConfigs(identityInfo.UserID, orgID); err != nil {
@@ -886,6 +886,7 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	createV2.PipelineYml = source.PipelineYml
 	createV2.AutoRunAtOnce = true
 	createV2.DefinitionID = definition.ID
+	createV2.UserID = identityInfo.UserID
 
 	orgStr := createV2.Labels[apistructs.LabelOrgID]
 	orgID, err := strconv.ParseUint(orgStr, 10, 64)
