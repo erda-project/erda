@@ -1318,9 +1318,9 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 
 // ListGroupByApps lists all runtimes for given apps.
 // The key in the returned result map is appID.
-func (r *Runtime) ListGroupByApps(appIDs []uint64) (map[uint64][]*apistructs.RuntimeSummaryDTO, error) {
+func (r *Runtime) ListGroupByApps(appIDs []uint64, env string) (map[uint64][]*apistructs.RuntimeSummaryDTO, error) {
 	var l = logrus.WithField("func", "*Runtime.ListGroupByApps")
-	runtimes, err := r.db.FindRuntimesInApps(appIDs)
+	runtimes, err := r.db.FindRuntimesInApps(appIDs, env)
 	if err != nil {
 		l.WithError(err).Errorln("failed to FindRuntimesInApps")
 		return nil, err
@@ -1361,6 +1361,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 			Warnln("failed to build summary item, failed to get last deployment")
 		return err
 	}
+	logrus.Warnf("########## deployment id= %d,runtime id = %d, status =%s ", deployment.ID, deployment.RuntimeId, deployment.Status)
 	if deployment == nil {
 		isFakeRuntime = true
 		// make a fake deployment
