@@ -36,6 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/namespace"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/persistentvolumeclaim"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/secret"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/statefulset"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -296,7 +297,16 @@ func TestParseJobSpecTemplate(t *testing.T) {
 }
 
 func TestCreateStatefulSet(t *testing.T) {
-	kubernetes := &Kubernetes{}
+	kubernetes := &Kubernetes{
+		secret: &secret.Secret{},
+	}
+
+	defer monkey.UnpatchAll()
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(kubernetes.secret), "Get", func(sec *secret.Secret, namespace, name string) (*apiv1.Secret, error) {
+		b := []byte{}
+		return &apiv1.Secret{Data: map[string][]byte{".dockerconfigjson": b}}, nil
+	})
 
 	info := StatefulsetInfo{
 		sg: &apistructs.ServiceGroup{

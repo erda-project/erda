@@ -13,12 +13,54 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*ListAppPipelineYmlRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*PipelineYmlList)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ListAppPipelineYmlResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListAppRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListAppResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Application)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ProjectPipeline)(nil)
+
+// ListAppPipelineYmlRequest implement urlenc.URLValuesUnmarshaler.
+func (m *ListAppPipelineYmlRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "appID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.AppID = val
+			case "branch":
+				m.Branch = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// PipelineYmlList implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineYmlList) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "ymlName":
+				m.YmlName = vals[0]
+			case "ymlPath":
+				m.YmlPath = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ListAppPipelineYmlResponse implement urlenc.URLValuesUnmarshaler.
+func (m *ListAppPipelineYmlResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
 
 // ListAppRequest implement urlenc.URLValuesUnmarshaler.
 func (m *ListAppRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -31,6 +73,8 @@ func (m *ListAppRequest) UnmarshalURLValues(prefix string, values url.Values) er
 					return err
 				}
 				m.ProjectID = val
+			case "name":
+				m.Name = vals[0]
 			}
 		}
 	}

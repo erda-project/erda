@@ -15,18 +15,16 @@
 package definitionreport
 
 import (
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
-	"github.com/erda-project/erda/modules/pipeline/providers/definition/db"
 )
 
 // +provider
 type provider struct {
-	MySQL mysqlxorm.Interface `autowired:"mysql-xorm"`
 	aoptypes.PipelineBaseTunePoint
-	client *db.Client
 }
 
 func (p *provider) Name() string { return "definition-report" }
@@ -36,10 +34,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	if pipeline.PipelineDefinitionID == "" {
 		return nil
 	}
-	if !pipeline.Status.IsEndStatus() {
-		return nil
-	}
-	definition, err := p.client.GetPipelineDefinition(pipeline.PipelineDefinitionID)
+	definition, err := ctx.SDK.DBClient.GetPipelineDefinition(pipeline.PipelineDefinitionID)
 	if err != nil {
 		return err
 	}
@@ -49,9 +44,11 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	definition.StartedAt = *pipeline.TimeBegin
 	definition.EndedAt = *pipeline.TimeEnd
 	definition.PipelineID = pipeline.ID
+	definition.Status = pipeline.Status.String()
 
-	err = p.client.UpdatePipelineDefinition(definition.ID, definition)
+	err = ctx.SDK.DBClient.UpdatePipelineDefinition(definition.ID, definition)
 	if err != nil {
+		logrus.Errorf("pipeline %v update definitionID was err %v", pipeline.ID, err)
 		return err
 	}
 	return nil
@@ -62,7 +59,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err != nil {
 		panic(err)
 	}
-	p.client = &db.Client{Interface: p.MySQL}
 	return nil
 }
 

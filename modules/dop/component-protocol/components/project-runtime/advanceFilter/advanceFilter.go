@@ -164,7 +164,7 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 		appIds = append(appIds, apps.List[i].ID)
 		appIdToName[apps.List[i].ID] = apps.List[i].Name
 	}
-	runtimesByApp, err := af.bdl.ListRuntimesGroupByApps(oid, sdk.Identity.UserID, appIds)
+	runtimesByApp, err := af.bdl.ListRuntimesGroupByApps(oid, sdk.Identity.UserID, appIds, getEnv)
 	if err != nil {
 		logrus.Errorf("get my app failed,%v", err)
 		return data

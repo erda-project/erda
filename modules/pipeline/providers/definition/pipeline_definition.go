@@ -188,13 +188,13 @@ func (p pipelineDefinition) List(ctx context.Context, request *pb.PipelineDefini
 		return nil, err
 	}
 	for _, extra := range extras {
-		extrasMap[extra.ID] = extra
+		extrasMap[extra.PipelineDefinitionID] = extra
 	}
 
 	for _, definition := range data {
 		definition.Extra = &pb.PipelineDefinitionExtra{
-			ID:    definition.Extra.ID,
-			Extra: jsonparse.JsonOneLine(extrasMap[definition.Extra.ID].Extra),
+			ID:    extrasMap[definition.ID].ID,
+			Extra: jsonparse.JsonOneLine(extrasMap[definition.ID].Extra),
 		}
 	}
 
