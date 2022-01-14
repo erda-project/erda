@@ -39,10 +39,9 @@ type provider struct {
 	Register             transport.Register `autowired:"service-register"`
 	credentialKeyService *accessKeyService
 	AccessKeyService     akpb.AccessKeyServiceServer `autowired:erda.core.services.authentication.credentials.accesskey.AccessKeyService"`
-	//notifyService        notifypb.NotifyGroupServiceServer `autowired:erda.msp.apm.notifygroup`
-	bdl    *bundle.Bundle
-	audit  audit.Auditor
-	Tenant tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
+	bdl                  *bundle.Bundle
+	audit                audit.Auditor
+	Tenant               tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

@@ -867,30 +867,6 @@ func (a *alertService) getAuditInfo(tenantGroup string) (string, string, uint64,
 	return project.Name, projectData.Data.Workspace, uint64(auditProjectId), nil
 }
 
-//func (a *alertService) getAuditInfo(tenantGroup string) (string, string, uint64, error) {
-//	options, err := a.p.authDb.InstanceTenant.QueryOptionsByTenantGroup(tenantGroup)
-//	if err != nil {
-//		return "", "", 0, errors.NewInternalServerError(err)
-//	}
-//	projectId, ok := options["projectId"]
-//	if !ok {
-//		return "", "", 0, errors.NewInternalServerError(fmt.Errorf("options projectId not found"))
-//	}
-//	auditProjectId, err := strconv.Atoi(projectId.(string))
-//	if err != nil {
-//		return "", "", 0, errors.NewInternalServerError(err)
-//	}
-//	projectName, ok := options["projectName"]
-//	if !ok {
-//		return "", "", 0, errors.NewInternalServerError(fmt.Errorf("options projectName not found"))
-//	}
-//	workspace, ok := options["workspace"]
-//	if !ok {
-//		return "", "", 0, errors.NewInternalServerError(fmt.Errorf("options workspace not found"))
-//	}
-//	return projectName.(string), workspace.(string), uint64(auditProjectId), nil
-//}
-
 func (a *alertService) UpdateCustomizeAlertEnable(ctx context.Context, request *alert.UpdateCustomizeAlertEnableRequest) (*alert.UpdateCustomizeAlertEnableResponse, error) {
 	req := &monitor.GetCustomizeAlertRequest{
 		Id: request.Id,

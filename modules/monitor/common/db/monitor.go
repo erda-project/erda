@@ -55,16 +55,3 @@ func (db *MonitorDb) GetTkByProjectIdAndWorkspace(projectId string, workspace st
 		Error
 	return monitor.TerminusKey, err
 }
-
-//
-//func (db *MonitorDb) GetWorkspaceByTK(tk string) (string, error) {
-//	monitor := Monitor{}
-//	err := db.Where("terminus_key = ?", tk).Find(&monitor).Error
-//	if err != nil {
-//		if err == gorm.ErrRecordNotFound {
-//			return "", nil
-//		}
-//		return "", err
-//	}
-//	return monitor.Workspace, nil
-//}

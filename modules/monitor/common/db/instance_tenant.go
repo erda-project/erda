@@ -50,25 +50,3 @@ func (db *InstanceTenantDb) QueryTkByTenantGroup(tenantGroup string) (string, er
 	}
 	return tk.(string), nil
 }
-
-func (db *InstanceTenantDb) QueryOptionsByTenantGroup(tenantGroup string) (map[string]interface{}, error) {
-	var tenantInfo InstanceTenant
-	err := db.
-		Select("*").
-		Where("tenant_group = ?", tenantGroup).
-		Where("engine = ?", "monitor").
-		Where("is_deleted = ?", "N").
-		Order("create_time", false).
-		Limit(1).
-		Find(&tenantInfo).
-		Error
-	if err != nil {
-		return nil, err
-	}
-	var config map[string]interface{}
-	err = json.Unmarshal([]byte(tenantInfo.Config), &config)
-	if err != nil {
-		return nil, err
-	}
-	return config, nil
-}
