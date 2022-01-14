@@ -336,6 +336,10 @@ func (ctx *AuditContext) BindResponseData(body interface{}) error {
 	return nil
 }
 
+func (ctx *AuditContext) BindResponseHeader(key string) string {
+	return ctx.Response.Header.Get(key)
+}
+
 // CreateAudit 创建审计事件
 func (ctx *AuditContext) CreateAudit(audit *apistructs.Audit) error {
 	if err := ctx.setScopeIDsAndScopeName(audit); err != nil {

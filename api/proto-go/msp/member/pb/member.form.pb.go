@@ -366,6 +366,18 @@ func (m *MemberAddOptions) UnmarshalURLValues(prefix string, values url.Values) 
 
 // CreateOrUpdateMemberResponse implement urlenc.URLValuesUnmarshaler.
 func (m *CreateOrUpdateMemberResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data = val
+			}
+		}
+	}
 	return nil
 }
 
@@ -402,6 +414,18 @@ func (m *DeleteMemberRequest) UnmarshalURLValues(prefix string, values url.Value
 
 // DeleteMemberResponse implement urlenc.URLValuesUnmarshaler.
 func (m *DeleteMemberResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data = val
+			}
+		}
+	}
 	return nil
 }
 

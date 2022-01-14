@@ -132,3 +132,9 @@ func ContextOptions(ctx context.Context, opts ...Option) {
 func ContextEntry(ctx context.Context, key string, val interface{}) {
 	ContextOptions(ctx, Entry(key, val))
 }
+
+func ContextEntryMap(ctx context.Context, kv map[string]interface{}) {
+	for k, v := range kv {
+		ContextEntry(ctx, k, v)
+	}
+}

@@ -15,6 +15,7 @@
 package apis
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -31,6 +32,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	channelpb "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/adapt"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/cql"
@@ -42,6 +44,7 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	perm "github.com/erda-project/erda/pkg/common/permission"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type config struct {
@@ -73,6 +76,7 @@ type provider struct {
 	microServiceFilterTags      map[string]bool
 	microServiceOtherFilterTags map[string]bool
 	alertConditions             []*AlertConditions
+	audit                       audit.Auditor
 
 	Register      transport.Register           `autowired:"service-register" optional:"true"`
 	Metric        metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
@@ -82,6 +86,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.audit = audit.GetAuditor(ctx)
 	p.silencePolicies = make(map[string]bool)
 	p.orgFilterTags = make(map[string]bool)
 	p.microServiceFilterTags = make(map[string]bool)
@@ -200,7 +205,40 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(MonitorService.UpdateOrgAlertIssue, perm.ScopeOrg, "monitor_org_alert", perm.ActionUpdate, perm.OrgIDValue()),
 			perm.NoPermMethod(MonitorService.GetAlertConditions),
 			perm.NoPermMethod(MonitorService.GetAlertConditionsValue),
-		))
+		),
+			p.audit.Audit(
+				audit.Method(MonitorService.UpdateOrgCustomizeAlert, audit.OrgScope, string(apistructs.UpdateOrgCustomAlert),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(MonitorService.CreateOrgCustomizeAlert, audit.OrgScope, string(apistructs.CreateOrgCustomAlert),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(MonitorService.DeleteOrgCustomizeAlert, audit.OrgScope, string(apistructs.DeleteOrgCustomAlert),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(MonitorService.CreateOrgAlert, audit.OrgScope, string(apistructs.CreateOrgAlert),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(MonitorService.UpdateOrgAlert, audit.OrgScope, string(apistructs.UpdateOrgAlert),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(MonitorService.DeleteOrgAlert, audit.OrgScope, string(apistructs.DeleteOrgAlert),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
+					},
+				),
+			),
+		)
 	}
 	return nil
 }

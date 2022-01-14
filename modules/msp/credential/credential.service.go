@@ -18,11 +18,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"strconv"
 
 	akpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda-proto-go/msp/credential/pb"
-	"github.com/erda-project/erda/pkg/common/apis"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type accessKeyService struct {
@@ -46,28 +48,19 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	var userIDs []string
-	userIDMap := make(map[string]bool)
 	akList := make([]*pb.QueryAccessKeys, 0)
 	for _, v := range accessKeyList.Data {
 		ak := &pb.QueryAccessKeys{
 			Id:        v.Id,
 			Token:     v.AccessKey,
 			CreatedAt: v.CreatedAt,
-			Creator:   v.CreatorId,
 		}
 		akList = append(akList, ak)
-		userId := v.CreatorId
-		if userId != "" && !userIDMap[userId] {
-			userIDs = append(userIDs, userId)
-			userIDMap[userId] = true
-		}
 	}
 	result := &pb.QueryAccessKeysResponse{
 		Data: &pb.QueryAccessKeysData{
 			List: akList,
 		},
-		UserIDs: userIDs,
 	}
 	result.Data.Total = accessKeyList.Total
 	return result, nil
@@ -98,41 +91,77 @@ func (a *accessKeyService) DownloadAccessKeyFile(ctx context.Context, request *p
 }
 
 func (a *accessKeyService) CreateAccessKey(ctx context.Context, request *pb.CreateAccessKeyRequest) (*pb.CreateAccessKeyResponse, error) {
-	userId := apis.GetUserID(ctx)
 	req := &akpb.CreateAccessKeyRequest{
 		SubjectType: request.SubjectType,
 		Subject:     request.Subject,
 		Description: request.Description,
 		Scope:       MSP_SCOPE,
 		ScopeId:     request.ScopeId,
-		CreatorId:   userId,
 	}
 	accessKey, err := a.p.AccessKeyService.CreateAccessKey(ctx, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	projectId, err := a.auditContextInfo(ctx, request.ScopeId, accessKey.Data.AccessKey)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	result := &pb.CreateAccessKeyResponse{
-		Data: accessKey.Data.AccessKey,
+		Data: &pb.CreateAccessKeyData{
+			Id:        accessKey.Data.AccessKey,
+			ProjectId: projectId,
+		},
 	}
 	return result, nil
 }
 
-func (a *accessKeyService) DeleteAccessKey(ctx context.Context, request *pb.DeleteAccessKeyRequest) (*pb.DeleteAccessKeyResponse, error) {
-	akRequest := &akpb.DeleteAccessKeyRequest{
-		Id: request.Id,
+func (a *accessKeyService) auditContextInfo(ctx context.Context, scopeId, token string) (uint64, error) {
+	projectData, err := a.p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
+		ScopeId: scopeId,
+	})
+	if err != nil {
+		return 0, err
 	}
-	_, err := a.p.AccessKeyService.DeleteAccessKey(ctx, akRequest)
+	auditProjectId, err := strconv.Atoi(projectData.Data.ProjectId)
+	if err != nil {
+		return 0, err
+	}
+	project, err := a.p.bdl.GetProject(uint64(auditProjectId))
+	if err != nil {
+		return 0, err
+	}
+	auditContext := map[string]interface{}{
+		"projectName": project.Name,
+		"token":       token,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
+	return uint64(auditProjectId), nil
+}
+
+func (a *accessKeyService) DeleteAccessKey(ctx context.Context, request *pb.DeleteAccessKeyRequest) (*pb.DeleteAccessKeyResponse, error) {
+	accessKey, err := a.GetAccessKeyItem(ctx, request.Id)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return nil, nil
+	akRequest := &akpb.DeleteAccessKeyRequest{
+		Id: request.Id,
+	}
+	_, err = a.p.AccessKeyService.DeleteAccessKey(ctx, akRequest)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	projectId, err := a.auditContextInfo(ctx, accessKey.Data.ScopeId, accessKey.Data.AccessKey)
+	return &pb.DeleteAccessKeyResponse{
+		Data: projectId,
+	}, nil
 }
 
 func (a *accessKeyService) GetAccessKey(ctx context.Context, request *pb.GetAccessKeyRequest) (*pb.GetAccessKeyResponse, error) {
-	akRequest := &akpb.GetAccessKeyRequest{
-		Id: request.Id,
-	}
-	accessKey, err := a.p.AccessKeyService.GetAccessKey(ctx, akRequest)
+	//akRequest := &akpb.GetAccessKeyRequest{
+	//	Id: request.Id,
+	//}
+	//accessKey, err := a.p.AccessKeyService.GetAccessKey(ctx, akRequest)
+	accessKey, err := a.GetAccessKeyItem(ctx, request.Id)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -140,4 +169,15 @@ func (a *accessKeyService) GetAccessKey(ctx context.Context, request *pb.GetAcce
 		Data: accessKey.Data,
 	}
 	return result, nil
+}
+
+func (a *accessKeyService) GetAccessKeyItem(ctx context.Context, Id string) (*akpb.GetAccessKeyResponse, error) {
+	akRequest := &akpb.GetAccessKeyRequest{
+		Id: Id,
+	}
+	accessKey, err := a.p.AccessKeyService.GetAccessKey(ctx, akRequest)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return accessKey, nil
 }
