@@ -4,8 +4,16 @@ hierarchy:
   root: page
   structure:
     page:
+      - cardsWrapper
+      - topNsWrapper
+      - chartsWrapper
+    cardsWrapper:
       - cards
+    topNsWrapper:
+      - topNsTitle
       - topNs
+    chartsWrapper:
+      - chartsTitle
       - charts
     cards:
       - kvCard@pv
@@ -28,6 +36,20 @@ hierarchy:
 components:
   page:
     type: Container
+  cardsWrapper:
+    type: CardContainer
+  topNsWrapper:
+    type: CardContainer
+  chartsWrapper:
+    type: CardContainer
+  topNsTitle:
+    type: Title
+    props:
+      title: "访问分析"
+  chartsTitle:
+    type: Title
+    props:
+      title: "访问概览"
   cards:
     type: Grid
   kvCard@pv:
