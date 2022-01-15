@@ -50,6 +50,8 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 		return nil, errors.NewInternalServerError(err)
 	}
 	akList := make([]*pb.QueryAccessKeys, 0)
+	var userIDs []string
+	userIDMap := make(map[string]bool)
 	for _, v := range accessKeyList.Data {
 		ak := &pb.QueryAccessKeys{
 			Id:        v.Id,
@@ -57,14 +59,20 @@ func (a *accessKeyService) QueryAccessKeys(ctx context.Context, request *pb.Quer
 			CreatedAt: v.CreatedAt,
 			Creator:   v.CreatorId,
 		}
+		userId := v.CreatorId
+		if userId != "" && !userIDMap[userId] {
+			userIDs = append(userIDs, userId)
+			userIDMap[userId] = true
+		}
 		akList = append(akList, ak)
 	}
 	result := &pb.QueryAccessKeysResponse{
 		Data: &pb.QueryAccessKeysData{
-			List: akList,
+			List:  akList,
+			Total: accessKeyList.Total,
 		},
+		UserIDs: userIDs,
 	}
-	result.Data.Total = accessKeyList.Total
 	return result, nil
 }
 
