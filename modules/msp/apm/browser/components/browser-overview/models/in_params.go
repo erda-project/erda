@@ -32,9 +32,7 @@ type BrowserOverviewInParams struct {
 }
 
 func (b *BrowserOverviewInParams) CustomInParamsPtr() interface{} {
-	if b.InParamsPtr == nil {
-		b.InParamsPtr = &Model{}
-	}
+	b.InParamsPtr = &Model{}
 	return b.InParamsPtr
 }
 
