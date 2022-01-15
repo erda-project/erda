@@ -83,7 +83,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 
 	// calculate total count
 	statement := fmt.Sprintf("SELECT DISTINCT(%s) "+
-		"FROM %s_slow "+
+		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
 		"%s ",
@@ -110,7 +110,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		"sum(elapsed_count::field),"+
 		"count(error::tag),"+
 		"format_duration(avg(elapsed_mean::field),'',2) "+
-		"FROM %s_slow "+
+		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"%s "+
 		"%s "+
