@@ -607,7 +607,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithAssetSvc(assetsvc.New(
 			assetsvc.WithBranchRuleSvc(branchRule),
 			assetsvc.WithI18n(p.APIMTrans),
-			)),
+		)),
 		endpoints.WithFileTreeSvc(filetreeSvc),
 		endpoints.WithProject(proj),
 		endpoints.WithApplication(app),
