@@ -113,7 +113,7 @@ func (i *ComponentAction) GenComponentState(c *cptype.Component) error {
 	return nil
 }
 
-func (ca *ComponentAction) setData() error {
+func (ca *ComponentAction) setData(ctx context.Context) error {
 	var req apistructs.TestReportRecordListRequest
 	req.UserID = ca.sdk.Identity.UserID
 	req.ProjectID = ca.InParams.ProjectID
@@ -172,7 +172,7 @@ func (ca *ComponentAction) setData() error {
 							"reportId": record.ID,
 						},
 						"reload": false,
-						"text":   "下载",
+						"text":   cputil.I18n(ctx, "download"),
 					},
 				},
 				"renderType": "tableOperation",
@@ -210,29 +210,29 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		"columns": []interface{}{
 			map[string]interface{}{
 				"dataIndex": "name",
-				"title":     "测试报告名称",
+				"title":     cputil.I18n(ctx, "testReportName"),
 			},
 			map[string]interface{}{
 				"dataIndex": "iteration",
-				"title":     "所属迭代",
+				"title":     cputil.I18n(ctx, "belongIteration"),
 			},
 			map[string]interface{}{
 				"dataIndex": "creator",
-				"title":     "生成者",
+				"title":     cputil.I18n(ctx, "creator"),
 			},
 			map[string]interface{}{
 				"dataIndex": "quality",
 				"sorter":    true,
-				"title":     "总体质量分",
+				"title":     cputil.I18n(ctx, "qualityScore"),
 			},
 			map[string]interface{}{
 				"dataIndex": "createTime",
 				"sorter":    true,
-				"title":     "生成时间",
+				"title":     cputil.I18n(ctx, "creationTime"),
 			},
 			map[string]interface{}{
 				"dataIndex": "operate",
-				"title":     "操作",
+				"title":     cputil.I18n(ctx, "operations"),
 				"fixed":     "right",
 				"width":     120,
 			},
@@ -240,7 +240,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		"rowKey":          "id",
 		"pageSizeOptions": []interface{}{"10", "20", "50", "100"},
 	}
-	if err := ca.setData(); err != nil {
+	if err := ca.setData(ctx); err != nil {
 		return err
 	}
 	return nil
