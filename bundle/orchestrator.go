@@ -183,7 +183,7 @@ func (b *Bundle) batchProcessRuntimes(req apistructs.RuntimeScaleRecords, orgID 
 	}
 
 	if rsp.Data == nil {
-		return []byte{}, errors.Errorf("return of scale action %s is nil", action)
+		return nil, errors.Errorf("return of scale action %s is nil", action)
 	}
 
 	dataBytes, err := json.Marshal(rsp.Data)
@@ -193,7 +193,6 @@ func (b *Bundle) batchProcessRuntimes(req apistructs.RuntimeScaleRecords, orgID 
 
 	return dataBytes, nil
 }
-
 func (b *Bundle) RuntimesClusterReferred(userID, orgID, clusterName string) (referred bool, err error) {
 	host, err := b.urls.Orchestrator()
 	if err != nil {
@@ -222,4 +221,37 @@ func (b *Bundle) RuntimesClusterReferred(userID, orgID, clusterName string) (ref
 	}
 
 	return rsp.Data, nil
+}
+
+// ScaleAddon scale down addon (replicas N-->0) or scale up addon (replicas 0-->N)
+func (b *Bundle) ScaleAddon(req apistructs.AddonScaleRecords, orgID uint64, userID string, action string) (*apistructs.AddonScaleResults, error) {
+	host, err := b.urls.Orchestrator()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var rsp struct {
+		apistructs.Header
+		Data interface{}
+	}
+
+	resp, err := hc.Post(host).Path(fmt.Sprintf("/api/addons?scale_action=%s", action)).
+		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		Header(httputil.UserHeader, userID).
+		JSONBody(req).Do().JSON(&rsp)
+
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !rsp.Success {
+		return nil, toAPIError(resp.StatusCode(), rsp.Error)
+	}
+
+	result, ok := rsp.Data.(apistructs.AddonScaleResults)
+	if !ok {
+		return nil, errors.Errorf("the response rsp.Data is not in type apistructs.AddonScaleResults.")
+	}
+
+	return &result, nil
 }

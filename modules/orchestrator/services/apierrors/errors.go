@@ -68,6 +68,7 @@ var (
 	ErrFetchAddon      = err("ErrFetchAddon", "获取 addon 详情失败")
 	ErrDeleteAddon     = err("ErrDeleteAddon", "删除 addon 失败")
 	ErrListAddon       = err("ErrListAddon", "获取 addon 列表失败")
+	ErrScaleAddon      = err("ErrScaleAddon", "扩缩 addon 实例副本失败")
 	ErrListAddonMetris = err("ErrListAddonMetris", "获取 addon 监控失败")
 )
 

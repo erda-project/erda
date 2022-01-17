@@ -553,6 +553,8 @@ type AddonFetchResponseData struct {
 	CustomAddonType string `json:"customAddonType"`
 	// TenantOwner addon 租户owner的 instancerouting id
 	TenantOwner string `json:"tenantOwner"`
+	// IsInsideAddon addon 是否是 inside addon（如 kafka addon 中的 inside addon 是 zookeeper addon）
+	IsInsideAddon string `json:"isInsideAddon`
 }
 
 // ReferenceInfo 引用信息
