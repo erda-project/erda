@@ -14,6 +14,10 @@ grpc-server:
   addr: ":7080"
 service-register:
 
+i18n:
+  files:
+    - conf/orchestrator/i18n/log-trans.yaml
+
 erda.orchestrator.runtime:
 erda.orchestrator.events:
 erda.orchestrator.addon.mysql:
