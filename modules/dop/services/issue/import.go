@@ -17,8 +17,6 @@ package issue
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -29,36 +27,14 @@ import (
 )
 
 const (
-	fileUploadFrom     = "autotest-space"
-	fileValidityPeriod = 7 * time.Hour * 24
-	issueService       = "issue-service"
+	issueService = "issue-service"
 )
 
-func (svc *Issue) Import(req apistructs.IssueImportExcelRequest, r *http.Request) (uint64, error) {
-	f, fileHeader, err := r.FormFile("file")
-	if err != nil {
-		return 0, err
-	}
-	defer f.Close()
-
-	expiredAt := time.Now().Add(fileValidityPeriod)
-	uploadReq := apistructs.FileUploadRequest{
-		FileNameWithExt: fileHeader.Filename,
-		FileReader:      f,
-		From:            fileUploadFrom,
-		IsPublic:        true,
-		ExpiredAt:       &expiredAt,
-	}
-	file, err := svc.bdl.UploadFile(uploadReq)
-	if err != nil {
-		return 0, err
-	}
-
+func (svc *Issue) Import(req apistructs.IssueImportExcelRequest) (uint64, error) {
 	fileReq := apistructs.TestFileRecordRequest{
-		FileName:     fileHeader.Filename,
 		ProjectID:    req.ProjectID,
 		Type:         apistructs.FileIssueActionTypeImport,
-		ApiFileUUID:  file.UUID,
+		ApiFileUUID:  req.FileID,
 		State:        apistructs.FileRecordStatePending,
 		IdentityInfo: req.IdentityInfo,
 		Extra: apistructs.TestFileExtra{
@@ -94,7 +70,7 @@ func (svc *Issue) ImportExcel(record *dao.TestFileRecord) {
 	}
 	defer f.Close()
 
-	properties, err := svc.Ip.GetProperties(apistructs.IssuePropertiesGetRequest{OrgID: req.OrgID, PropertyIssueType: req.Type})
+	properties, err := svc.issueProperty.GetProperties(apistructs.IssuePropertiesGetRequest{OrgID: req.OrgID, PropertyIssueType: req.Type})
 	if err != nil {
 		logrus.Errorf("%s failed to get issue properties, err: %v", issueService, err)
 		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
@@ -119,7 +95,7 @@ func (svc *Issue) ImportExcel(record *dao.TestFileRecord) {
 		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
 		return
 	}
-	falseExcel, falseReason = svc.storeExcel2DB(*req, issues, instances, excelIndex, svc.Ip, falseExcel, falseReason, members)
+	falseExcel, falseReason = svc.storeExcel2DB(*req, issues, instances, excelIndex, svc.issueProperty, falseExcel, falseReason, members)
 	if len(falseExcel) <= 1 {
 		svc.updateIssueFileRecord(id, apistructs.FileRecordStateSuccess)
 		return
