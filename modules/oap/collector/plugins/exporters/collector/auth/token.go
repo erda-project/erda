@@ -15,19 +15,22 @@
 package auth
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/mitchellh/mapstructure"
 )
 
 type TokenAuth struct {
 	// token file or content
-	Token string `mapstructure:"token_file"`
+	Token        string `mapstructure:"token"`
+	tokenContent string
 }
 
 func (t *TokenAuth) Secure(req *http.Request) {
-	// TODO
+	req.Header.Set("Authorization", "Bearer "+t.tokenContent)
 }
 
 func NewTokenAuth(cfg map[string]interface{}) (*TokenAuth, error) {
@@ -36,8 +39,25 @@ func NewTokenAuth(cfg map[string]interface{}) (*TokenAuth, error) {
 	if err != nil {
 		return nil, fmt.Errorf("decode err: %w", err)
 	}
-	if ta.Token != "" {
+	if ta.Token == "" {
 		return nil, fmt.Errorf("empty token: %+v", ta)
 	}
+
+	_, err = os.Stat(ta.Token)
+	if err != nil {
+		// is content
+		if os.IsNotExist(err) {
+			ta.tokenContent = ta.Token
+			return &ta, nil
+		} else {
+			return nil, err
+		}
+	}
+
+	buf, err := os.ReadFile(ta.Token)
+	if err != nil {
+		return nil, fmt.Errorf("read file: %w", err)
+	}
+	ta.tokenContent = string(bytes.TrimRight(buf, "\n"))
 	return &ta, nil
 }

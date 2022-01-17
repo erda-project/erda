@@ -88,7 +88,7 @@ func (m *Metrics) String() string {
 }
 
 func (m *Metrics) RangeFunc(handle handleFunc) {
-	dropedList := make([]int, 0)
+	droppedList := make([]int, 0)
 	for idx, item := range m.Metrics {
 		drop, res := handle(&DataItem{
 			TimestampNano: item.TimeUnixNano,
@@ -101,10 +101,10 @@ func (m *Metrics) RangeFunc(handle handleFunc) {
 		item.Attributes = res.Tags
 		item.DataPoints = res.Fields
 		if drop {
-			dropedList = append(dropedList, idx)
+			droppedList = append(droppedList, idx)
 		}
 	}
-	// TODO remove dropped item
+	// TODO mark dropped item
 }
 
 func (m *Metrics) RangeNameFunc(handle func(name string) string) {
