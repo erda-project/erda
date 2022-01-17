@@ -53,20 +53,21 @@ type (
 	config struct {
 		RequestTimeout time.Duration `file:"request_timeout" default:"1m"`
 		CheckInterval  time.Duration `file:"check_interval" default:"1h"`
-		PrintOnly      bool          `file:"print_onluy"`
-		DiskClean      struct {
-			Enable                 bool          `file:"enable"`
-			CheckInterval          time.Duration `file:"check_interval" default:"5m"`
-			MinIndicesStore        string        `file:"min_indices_store" default:"10GB"`
-			MinIndicesStorePercent float64       `file:"min_indices_store_percent" default:"10"`
-			HighDiskUsagePercent   float64       `file:"high_disk_usage_percent" default:"85"`
-			LowDiskUsagePercent    float64       `file:"low_disk_usage_percent" default:"70"`
-			RolloverBodyFile       string        `file:"rollover_body_file"`
-			RolloverAliasPatterns  []struct {
-				Index string `file:"index"`
-				Alias string `file:"alias"`
-			} `file:"rollover_alias_patterns"`
-		} `file:"disk_clean"`
+		PrintOnly      bool          `file:"print_only"`
+		DiskClean      diskClean     `file:"disk_clean"`
+	}
+	diskClean struct {
+		Enable                 bool          `file:"enable"`
+		CheckInterval          time.Duration `file:"check_interval" default:"5m"`
+		MinIndicesStore        string        `file:"min_indices_store" default:"10GB"`
+		MinIndicesStorePercent float64       `file:"min_indices_store_percent" default:"10"`
+		HighDiskUsagePercent   float64       `file:"high_disk_usage_percent" default:"85"`
+		LowDiskUsagePercent    float64       `file:"low_disk_usage_percent" default:"70"`
+		RolloverBodyFile       string        `file:"rollover_body_file"`
+		RolloverAliasPatterns  []struct {
+			Index string `file:"index"`
+			Alias string `file:"alias"`
+		} `file:"rollover_alias_patterns"`
 	}
 	indexAliasPattern struct {
 		index *index.Pattern
@@ -118,57 +119,57 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.election.OnLeader(p.runCleanIndices)
 
-	if p.Cfg.DiskClean.Enable {
-		if int64(p.Cfg.DiskClean.CheckInterval) <= 0 {
-			return fmt.Errorf("invalid disk_clean.check_interval: %v", p.Cfg.DiskClean.CheckInterval)
-		}
+	if int64(p.Cfg.DiskClean.CheckInterval) <= 0 {
+		return fmt.Errorf("invalid disk_clean.check_interval: %v", p.Cfg.DiskClean.CheckInterval)
+	}
 
-		// rollover body for disk clean
-		if len(p.Cfg.DiskClean.RolloverBodyFile) > 0 {
-			body, err := ioutil.ReadFile(p.Cfg.DiskClean.RolloverBodyFile)
-			if err != nil {
-				return fmt.Errorf("failed to load rollover body file for disk clean: %s", err)
-			}
-			body = cfgpkg.EscapeEnv(body)
-			p.rolloverBodyForDiskClean = string(body)
-			if len(p.rolloverBodyForDiskClean) <= 0 {
-				return fmt.Errorf("RolloverBody is empty for disk clean")
-			}
-			var m map[string]interface{}
-			err = json.NewDecoder(strings.NewReader(p.rolloverBodyForDiskClean)).Decode(&m)
-			if err != nil {
-				return fmt.Errorf("invalid RolloverBody for disk clean: %v", string(body))
-			}
-			p.Log.Info("load rollover body for disk clean: \n", p.rolloverBodyForDiskClean)
-		}
-
-		minIndicesStore, err := size.ParseBytes(p.Cfg.DiskClean.MinIndicesStore)
+	// rollover body for disk clean
+	if len(p.Cfg.DiskClean.RolloverBodyFile) > 0 {
+		body, err := ioutil.ReadFile(p.Cfg.DiskClean.RolloverBodyFile)
 		if err != nil {
-			return fmt.Errorf("invalid min_indices_store: %s", err)
+			return fmt.Errorf("failed to load rollover body file for disk clean: %s", err)
 		}
-		p.minIndicesStoreInDisk = minIndicesStore
+		body = cfgpkg.EscapeEnv(body)
+		p.rolloverBodyForDiskClean = string(body)
+		if len(p.rolloverBodyForDiskClean) <= 0 {
+			return fmt.Errorf("RolloverBody is empty for disk clean")
+		}
+		var m map[string]interface{}
+		err = json.NewDecoder(strings.NewReader(p.rolloverBodyForDiskClean)).Decode(&m)
+		if err != nil {
+			return fmt.Errorf("invalid RolloverBody for disk clean: %v", string(body))
+		}
+		p.Log.Info("load rollover body for disk clean: \n", p.rolloverBodyForDiskClean)
+	}
 
-		if len(p.Cfg.DiskClean.RolloverAliasPatterns) <= 0 {
-			return fmt.Errorf("rollover_alias_patterns are required")
-		}
-		for i, ptn := range p.Cfg.DiskClean.RolloverAliasPatterns {
-			if len(ptn.Index) <= 0 || len(ptn.Alias) <= 0 {
-				return fmt.Errorf("pattern(%d) index and alias is required", i)
-			}
-			ip, err := index.BuildPattern(ptn.Index)
-			if err != nil {
-				return err
-			}
-			ap, err := index.BuildPattern(ptn.Alias)
-			if err != nil {
-				return err
-			}
-			if ap.VarNum > 0 {
-				return fmt.Errorf("pattern(%d) can't contains vars", i)
-			}
-			p.rolloverAliasPatterns = append(p.rolloverAliasPatterns, &indexAliasPattern{index: ip, alias: ap})
-		}
+	minIndicesStore, err := size.ParseBytes(p.Cfg.DiskClean.MinIndicesStore)
+	if err != nil {
+		return fmt.Errorf("invalid min_indices_store: %s", err)
+	}
+	p.minIndicesStoreInDisk = minIndicesStore
 
+	if len(p.Cfg.DiskClean.RolloverAliasPatterns) <= 0 {
+		return fmt.Errorf("rollover_alias_patterns are required")
+	}
+	for i, ptn := range p.Cfg.DiskClean.RolloverAliasPatterns {
+		if len(ptn.Index) <= 0 || len(ptn.Alias) <= 0 {
+			return fmt.Errorf("pattern(%d) index and alias is required", i)
+		}
+		ip, err := index.BuildPattern(ptn.Index)
+		if err != nil {
+			return err
+		}
+		ap, err := index.BuildPattern(ptn.Alias)
+		if err != nil {
+			return err
+		}
+		if ap.VarNum > 0 {
+			return fmt.Errorf("pattern(%d) can't contains vars", i)
+		}
+		p.rolloverAliasPatterns = append(p.rolloverAliasPatterns, &indexAliasPattern{index: ip, alias: ap})
+	}
+
+	if p.Cfg.DiskClean.Enable {
 		// run disk clean task on leader node
 		p.election.OnLeader(p.runDiskCheckAndClean)
 	}
