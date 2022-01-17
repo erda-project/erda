@@ -118,9 +118,15 @@ func (f *Filter) setState(ctx context.Context, gs *cptype.GlobalStateData) error
 
 				customProps := CustomProps{
 					AllowClear: false,
-					Ranges: Ranges{
-						Week:  []int64{weekAgo.Unix() * 1000, now.Unix() * 1000},
-						Month: []int64{monthAgo.Unix() * 1000, now.Unix() * 1000},
+					Ranges: common.Ranges{
+						Week: common.RangeItem{
+							Label: cputil.I18n(ctx, "week"),
+							Range: []int64{weekAgo.Unix() * 1000, now.Unix() * 1000},
+						},
+						Month: common.RangeItem{
+							Label: cputil.I18n(ctx, "month"),
+							Range: []int64{monthAgo.Unix() * 1000, now.Unix() * 1000},
+						},
 					},
 					SelectableTime: []int64{
 						0, now.Unix() * 1000,

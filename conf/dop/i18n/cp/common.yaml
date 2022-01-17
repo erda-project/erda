@@ -382,8 +382,8 @@ en:
   api-avg-cost: Api - Execute Avg Cost Top500
   api-failed-rate: Api - Execute Failed Rate Top500
   test-dashboard-tip: If there is no data under the selected iteration, please confirm whether there is a related test plan under the iteration, and whether the existing test plan is configured correctly for the iteration
-  week: Nearly a week
-  month: Nearly a month
+  week: Last week
+  month: Last month
   quality_score_tip--title: Quqality Score Formula (Score 0-100)
   quality_score_tip--mt_plan: Manual Test Plan
   quality_score_tip--mt_plan_rate_passed: Pass Rate：NUM(all PASSED cases in all test plans) / NUM(all cases in all test plans)
