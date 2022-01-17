@@ -25,9 +25,9 @@ en:
   MemRequiredMoreThanRemaining: "Additional %s Memory required, larger than current remaining %"
   PodRestartManyTimes: |-
     The Pod %s restarted %d times, please check the runtime log or the health probe configuration.
-    Runtime Log：Deployments -> the Workspace -> Service Details -> the stopped pod -> container log
+    Runtime Log：Deployments -> the Workspace -> Service Details -> the stopped pod -> container log;
     Health Probe Configuration: Code Repository (Files -> Source) -> dice.yml or erda.yml -> .services.{serviceName}.health_check
   FailedToSchedulePod: "Failed to schedule the Pod %s，please confirm whether there are insufficient resources to cause queuing"
   PodNotReady: |-
-    The Pod %s is not ready, it is recommended to check whether the health probe or the image is correct.
+    The Pod %s is not ready, it is recommended to check whether the health probe and the image is correct.
     Health Probe Configuration: Code Repository (Files -> Source) -> dice.yml or erda.yml -> .services.{serviceName}.health_check

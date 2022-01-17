@@ -30,16 +30,14 @@ var (
 
 func init() {
 	bdl := bundle.New(bundle.WithCoreServices())
-	orgID2Org = cache.New("orchestrator-org-id-for-org", time.Minute, func(i interface{}) (*cache.Item, bool) {
+	orgID2Org = cache.New("orchestrator-org-id-for-org", time.Minute, func(i interface{}) (interface{}, bool) {
 		orgDTO, err := bdl.GetOrg(i.(string))
 		if err != nil {
 			return nil, false
 		}
-		return &cache.Item{
-			Object: orgDTO,
-		}, true
+		return orgDTO, true
 	})
-	projectID2Org = cache.New("orchestrator-project-id-for-org", time.Minute, func(i interface{}) (*cache.Item, bool) {
+	projectID2Org = cache.New("orchestrator-project-id-for-org", time.Minute, func(i interface{}) (interface{}, bool) {
 		projectID, err := strconv.ParseUint(i.(string), 10, 32)
 		if err != nil {
 			return nil, false
@@ -52,7 +50,7 @@ func init() {
 		if !ok {
 			return nil, false
 		}
-		return &cache.Item{Object: orgDTO}, true
+		return orgDTO, true
 	})
 }
 
@@ -62,7 +60,7 @@ func GetOrgByOrgID(orgID string) (*apistructs.OrgDTO, bool) {
 	if !ok {
 		return nil, false
 	}
-	return item.Object.(*apistructs.OrgDTO), true
+	return item.(*apistructs.OrgDTO), true
 }
 
 // GetOrgByProjectID gets the *apistructs.OrgDTO by projectID from the newest cache
@@ -71,5 +69,5 @@ func GetOrgByProjectID(projectID string) (*apistructs.OrgDTO, bool) {
 	if !ok {
 		return nil, false
 	}
-	return item.Object.(*apistructs.OrgDTO), true
+	return item.(*apistructs.OrgDTO), true
 }
