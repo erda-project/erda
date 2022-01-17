@@ -49,7 +49,7 @@ func (e *Endpoints) CreateAPIVersion(ctx context.Context, r *http.Request, vars 
 		return apierrors.CreateAPIAssetVersion.MissingParameter("specDiceFileUUID").ToResp(), nil
 	}
 
-	asset, version, spec, err := e.assetSvc.CreateAPIAssetVersion(apistructs.APIAssetVersionCreateRequest{
+	asset, version, spec, err := e.assetSvc.CreateAPIAssetVersion(ctx, apistructs.APIAssetVersionCreateRequest{
 		OrgID:            orgID,
 		APIAssetID:       vars[urlPathAssetID],
 		Major:            rb.Major,
@@ -98,7 +98,7 @@ func (e *Endpoints) PagingAPIAssetVersions(ctx context.Context, r *http.Request,
 		QueryParams: &queryParams,
 	}
 
-	versions, userIDs, err := e.assetSvc.PagingAPIAssetVersions(&req)
+	versions, userIDs, err := e.assetSvc.PagingAPIAssetVersions(ctx, &req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -169,7 +169,7 @@ func (e *Endpoints) DeleteAPIAssetVersion(ctx context.Context, r *http.Request, 
 	if err != nil {
 		return apierrors.DeleteAPIAssetVersion.InvalidParameter(err).ToResp(), nil
 	}
-	if err = e.assetSvc.DeleteAssetVersionByID(orgID, vars[urlPathAssetID], versionID, identity.UserID); err != nil {
+	if err = e.assetSvc.DeleteAssetVersionByID(ctx, orgID, vars[urlPathAssetID], versionID, identity.UserID); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
@@ -258,7 +258,7 @@ func (e *Endpoints) UpdateAssetVersion(ctx context.Context, r *http.Request, var
 		return apierrors.UpdateAssetVersion.InvalidParameter("无效的请求体").ToResp(), nil
 	}
 
-	data, apiError := e.assetSvc.UpdateAssetVersion(&req)
+	data, apiError := e.assetSvc.UpdateAssetVersion(ctx, &req)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}

@@ -38,6 +38,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/dbclient"
 	"github.com/erda-project/erda/modules/dop/services/apidocsvc"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/swagger/oas2"
@@ -60,8 +61,13 @@ func myClientsPath(orgName string, clientPrimary uint64) string {
 	return filepath.Join("/", orgName, "/workBench/apiManage/client", id)
 }
 
+func (svc Service) text(ctx context.Context, key string) string {
+	langCodes := httpserver.UnwrapI18nCodes(ctx)
+	return svc.trans.Text(langCodes, key)
+}
+
 // CreateAPIAsset 创建 API 资料
-func (svc *Service) CreateAPIAsset(req apistructs.APIAssetCreateRequest) (apiAssetID string, err error) {
+func (svc *Service) CreateAPIAsset(ctx context.Context, req apistructs.APIAssetCreateRequest) (apiAssetID string, err error) {
 	// 参数校验
 	if req.AssetID == "" {
 		return "", apierrors.CreateAPIAsset.MissingParameter("assetID")
@@ -86,12 +92,12 @@ func (svc *Service) CreateAPIAsset(req apistructs.APIAssetCreateRequest) (apiAss
 		version.OrgID = req.OrgID
 		version.APIAssetID = req.AssetID
 		version.IdentityInfo = req.IdentityInfo
-		if err := svc.readSpec(&version); err != nil {
+		if err := svc.readSpec(ctx, &version); err != nil {
 			return "", apierrors.CreateAPIAsset.InvalidParameter(err)
 		}
-		if _, err := parseSpec(&version.SpecProtocol, version.Spec); err != nil {
+		if _, err := svc.parseSpec(ctx, &version.SpecProtocol, version.Spec); err != nil {
 			logrus.Errorf("failed to parseSpec, err: %v", err)
-			return "", apierrors.CreateAPIAssetVersion.InvalidParameter(errors.Wrap(err, "swagger 文件不符合 OAS2/3 标准"))
+			return "", apierrors.CreateAPIAssetVersion.InvalidParameter(errors.Wrap(err, svc.text(ctx, "SwaggerFileISInvalidOAS")))
 		}
 		// 校验每个 instance
 		for _, ins := range version.Instances {
@@ -183,7 +189,7 @@ func (svc *Service) CreateAPIAsset(req apistructs.APIAssetCreateRequest) (apiAss
 		version.APIAssetID = assetModel.AssetID
 		version.OrgID = assetModel.OrgID
 		version.IdentityInfo = req.IdentityInfo
-		if _, _, _, err := svc.CreateAPIAssetVersion(version); err != nil {
+		if _, _, _, err := svc.CreateAPIAssetVersion(ctx, version); err != nil {
 			return "", err
 		}
 	}
@@ -192,7 +198,7 @@ func (svc *Service) CreateAPIAsset(req apistructs.APIAssetCreateRequest) (apiAss
 }
 
 // CreateAPIAssetVersion 创建 API 资料版本
-func (svc *Service) CreateAPIAssetVersion(req apistructs.APIAssetVersionCreateRequest) (apiAsset *dbclient.APIAssetsModel,
+func (svc *Service) CreateAPIAssetVersion(ctx context.Context, req apistructs.APIAssetVersionCreateRequest) (apiAsset *dbclient.APIAssetsModel,
 	version *apistructs.APIAssetVersionsModel, spec *dbclient.APIAssetVersionSpecsModel, err error) {
 	// 参数校验
 	if err := apistructs.ValidateAPIAssetID(req.APIAssetID); err != nil {
@@ -225,13 +231,13 @@ func (svc *Service) CreateAPIAssetVersion(req apistructs.APIAssetVersionCreateRe
 		return nil, nil, nil, apierrors.CreateAPIAssetVersion.AccessDenied()
 	}
 
-	if err := svc.readSpec(&req); err != nil {
+	if err := svc.readSpec(ctx, &req); err != nil {
 		return nil, nil, nil, apierrors.CreateAPIAssetVersion.InvalidParameter(err)
 	}
-	swagger, err := parseSpec(&req.SpecProtocol, req.Spec)
+	swagger, err := svc.parseSpec(ctx, &req.SpecProtocol, req.Spec)
 	if err != nil {
 		logrus.Errorf("failed to parseSpec, err: %v", err)
-		return nil, nil, nil, apierrors.CreateAPIAssetVersion.InvalidParameter(errors.Wrap(err, "swagger 文件不符合 OAS2/3 标准"))
+		return nil, nil, nil, apierrors.CreateAPIAssetVersion.InvalidParameter(errors.Wrap(err, svc.text(ctx, "SwaggerFileISInvalidOAS")))
 	}
 	for i, instance := range req.Instances {
 		if err := validateVersionInstanceRequest(instance); err != nil {
@@ -323,7 +329,7 @@ func (svc *Service) CreateAPIAssetVersion(req apistructs.APIAssetVersionCreateRe
 		} else {
 			appID = *asset.AppID
 		}
-		if _, apiError := svc.CreateInstantiation(&apistructs.CreateInstantiationReq{
+		if _, apiError := svc.CreateInstantiation(ctx, &apistructs.CreateInstantiationReq{
 			OrgID:    req.OrgID,
 			Identity: &req.IdentityInfo,
 			URIParams: &apistructs.CreateInstantiationURIParams{
@@ -409,7 +415,7 @@ func (svc *Service) CreateAPIAssetVersion(req apistructs.APIAssetVersionCreateRe
 	return &updatedAsset, version, spec, nil
 }
 
-func (svc *Service) CreateInstantiation(req *apistructs.CreateInstantiationReq) (*apistructs.InstantiationModel, *errorresp.APIError) {
+func (svc *Service) CreateInstantiation(ctx context.Context, req *apistructs.CreateInstantiationReq) (*apistructs.InstantiationModel, *errorresp.APIError) {
 	// 参数校验
 	if req.Body == nil {
 		return nil, apierrors.CreateInstantiation.MissingParameter("missing body")
@@ -445,7 +451,7 @@ func (svc *Service) CreateInstantiation(req *apistructs.CreateInstantiationReq) 
 	case err == nil:
 	case gorm.IsRecordNotFoundError(err):
 		return nil, apierrors.CreateInstantiation.InternalError(
-			errors.Errorf("版本标签 %s 不存在", req.URIParams.SwaggerVersion))
+			errors.Errorf(svc.text(ctx, "VersionLabelNotExits"), req.URIParams.SwaggerVersion))
 	default:
 		logrus.Errorf("failed to FirstRecord version, err: %v", err)
 		return nil, apierrors.CreateInstantiation.InternalError(err)
@@ -526,21 +532,21 @@ func (svc *Service) CreateInstantiation(req *apistructs.CreateInstantiationReq) 
 		return nil, apiError
 	}
 	if !ok {
-		return nil, apierrors.CreateInstantiation.InternalError(errors.New("failed to CreateInstantiation"))
+		return nil, apierrors.CreateInstantiation.InternalError(errors.New(svc.text(ctx, "FailedToCreateInstantiation")))
 	}
 
 	return instantiations, nil
 }
 
-func (svc *Service) CreateClient(req *apistructs.CreateClientReq) (*apistructs.ClientModel, *errorresp.APIError) {
+func (svc *Service) CreateClient(ctx context.Context, req *apistructs.CreateClientReq) (*apistructs.ClientModel, *errorresp.APIError) {
 	if req == nil || req.Body == nil {
-		return nil, apierrors.CreateClient.InvalidParameter("无效的参数")
+		return nil, apierrors.CreateClient.InvalidParameter(svc.text(ctx, "InvalidParams"))
 	}
 	if req.Body.Name == "" {
-		return nil, apierrors.CreateClient.InvalidParameter("无效的客户端标识")
+		return nil, apierrors.CreateClient.InvalidParameter(svc.text(ctx, "InvalidClientName"))
 	}
 	if len(req.Body.DisplayName) == 0 || len(req.Body.DisplayName) > 50 {
-		return nil, apierrors.CreateClient.InvalidParameter("无效的客户端名称")
+		return nil, apierrors.CreateClient.InvalidParameter(svc.text(ctx, "InvalidClientDisplayName"))
 	}
 
 	// 检查同名 client 是否已存在
@@ -548,7 +554,7 @@ func (svc *Service) CreateClient(req *apistructs.CreateClientReq) (*apistructs.C
 		"org_id": req.OrgID,
 		"name":   req.Body.Name,
 	}); err == nil {
-		return nil, apierrors.CreateClient.InternalError(errors.New("客户端标识已存在"))
+		return nil, apierrors.CreateClient.InternalError(errors.New(svc.text(ctx, "ClientNameIsExists")))
 	}
 
 	// 检查此用户下同 displayName 的 client 是否存在
@@ -557,7 +563,7 @@ func (svc *Service) CreateClient(req *apistructs.CreateClientReq) (*apistructs.C
 		"display_name": req.Body.DisplayName,
 		"creator_id":   req.Identity.UserID,
 	}); err == nil {
-		return nil, apierrors.CreateClient.InternalError(errors.New("用户名下已有同名客户端"))
+		return nil, apierrors.CreateClient.InternalError(errors.New(svc.text(ctx, "SameNameClientIsExists")))
 	}
 
 	consumer, err := bdl.Bdl.CreateClientConsumer(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID, req.Body.Name)
@@ -590,8 +596,9 @@ func (svc *Service) CreateClient(req *apistructs.CreateClientReq) (*apistructs.C
 	return &model, nil
 }
 
-// 创建一个合约. 注意创建合约时, 需要查询客户端详情, 查询客户端详情时传入的 ClientID 是 dice_api_clients 的主键
-func (svc *Service) CreateContract(req *apistructs.CreateContractReq) (*apistructs.ClientModel, *apistructs.SK, *apistructs.ContractModel, *errorresp.APIError) {
+// CreateContract 创建一个合约. 注意创建合约时, 需要查询客户端详情, 查询客户端详情时传入的 ClientID 是 dice_api_clients 的主键
+func (svc *Service) CreateContract(ctx context.Context, req *apistructs.CreateContractReq) (*apistructs.ClientModel, *apistructs.SK,
+	*apistructs.ContractModel, *errorresp.APIError) {
 	// 参数校验
 	if req.URIParams == nil {
 		return nil, nil, nil, apierrors.CreateContract.InvalidParameter("no URI parameter")
@@ -614,7 +621,7 @@ func (svc *Service) CreateContract(req *apistructs.CreateContractReq) (*apistruc
 		"asset_id": req.Body.AssetID,
 	}); err != nil {
 		logrus.Errorf("failed to FirstRecord asset, err: %v", err)
-		return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New("查询 API 失败"))
+		return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New(svc.text(ctx, "FailedToFindAPIAsset")))
 	}
 
 	// 查询客户端详情 (一般角色只能用自己的客户端, 企业管理员可以用所有客户端)
@@ -627,7 +634,7 @@ func (svc *Service) CreateContract(req *apistructs.CreateContractReq) (*apistruc
 	}, inSlice(strconv.FormatUint(req.OrgID, 10), rolesMOrgs))
 	if err != nil {
 		logrus.Errorf("failed to GetMyClient, err: %v", err)
-		return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New("客户端不存在或无权限"))
+		return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New(svc.text(ctx, "ClientNotExistsOrPermissionDenied")))
 	}
 
 	// 查询 SK
@@ -635,7 +642,7 @@ func (svc *Service) CreateContract(req *apistructs.CreateContractReq) (*apistruc
 		client.ClientID)
 	if err != nil {
 		logrus.Errorf("failed to GetClientCredentials, err: %v", err)
-		return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New("查询客户端密钥失败"))
+		return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New(svc.text(ctx, "FailedToFindClientSecret")))
 	}
 	sk := apistructs.SK{
 		ClientID:     credentials.ClientId,
@@ -649,7 +656,7 @@ func (svc *Service) CreateContract(req *apistructs.CreateContractReq) (*apistruc
 		"swagger_version": req.Body.SwaggerVersion,
 	}); err != nil {
 		logrus.Errorf("failed to FirstRecord access: %v", err)
-		return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New("查询访问管理失败"))
+		return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New(svc.text(ctx, "FailedToFindAccessItem")))
 	}
 
 	// 查询 access 下的 SLA 列表
@@ -657,7 +664,7 @@ func (svc *Service) CreateContract(req *apistructs.CreateContractReq) (*apistruc
 	if _ = svc.ListRecords(&slas, map[string]interface{}{
 		"access_id": access.ID,
 	}); len(slas) > 0 && req.Body.SLAID == nil {
-		return nil, nil, nil, apierrors.CreateContract.InvalidParameter("未选择任何 SLA")
+		return nil, nil, nil, apierrors.CreateContract.InvalidParameter(svc.text(ctx, "NoSALBeChosen"))
 	}
 
 	tx := dbclient.Tx()
@@ -677,10 +684,10 @@ func (svc *Service) CreateContract(req *apistructs.CreateContractReq) (*apistruc
 	err = tx.Set("gorm:query_option", "FOR UPDATE").Where(where).First(&exContract).Error
 	// case 1: record not found
 	if gorm.IsRecordNotFoundError(err) {
-		contract, err := svc.createContractFirstTime(tx, req, &asset, &access, client)
+		contract, err := svc.createContractFirstTime(ctx, tx, req, &asset, &access, client)
 		if err != nil {
 			logrus.Errorf("failed to createContractFirstTime, err: %v", err)
-			return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New("调用申请失败"))
+			return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New(svc.text(ctx, "FailedToApplyToCallAPI")))
 		}
 		return client, &sk, contract, nil
 	}
@@ -690,16 +697,17 @@ func (svc *Service) CreateContract(req *apistructs.CreateContractReq) (*apistruc
 		return nil, nil, nil, apierrors.CreateContract.InvalidState(fmt.Sprintf("repeated request: %v", err))
 	}
 	// case 3: the record is already exists
-	contract, err := svc.createContractIfExists(tx, req, &asset, &access, client, &exContract)
+	contract, err := svc.createContractIfExists(ctx, tx, req, &asset, &access, client, &exContract)
 	if err != nil {
 		logrus.Errorf("failed to createContractIfExists, err: %v", err)
-		return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New("调用申请失败"))
+		return nil, nil, nil, apierrors.CreateContract.InternalError(errors.New(svc.text(ctx, "FailedToApplyToCallAPI")))
 	}
 	return client, &sk, contract, nil
 }
 
 // 创建合约时, 如果合约已存在, 进入此分支
-func (svc *Service) createContractIfExists(tx *dbclient.TX, req *apistructs.CreateContractReq, asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel,
+func (svc *Service) createContractIfExists(ctx context.Context, tx *dbclient.TX, req *apistructs.CreateContractReq, asset *apistructs.APIAssetsModel,
+	access *apistructs.APIAccessesModel,
 	client *apistructs.ClientModel, exContract *apistructs.ContractModel) (*apistructs.ContractModel, error) {
 	var (
 		err      error
@@ -710,12 +718,17 @@ func (svc *Service) createContractIfExists(tx *dbclient.TX, req *apistructs.Crea
 			ID:         0,
 			OrgID:      req.OrgID,
 			ContractID: exContract.ID,
-			Action:     "重新发起了调用申请",
+			Action:     "ActionReplyToApplyToCall",
 			CreatorID:  req.Identity.UserID,
 			CreatedAt:  timeNow,
 		}
 		sla apistructs.SLAModel
 	)
+
+	org, err := svc.bdl.GetOrg(req.OrgID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to GetOrg")
+	}
 
 	// 如果合约处于 "等待授权" 和 "已授权" 以外的情形, 则修改为 "等待授权"
 	if exContract.Status.ToLower() != apistructs.ContractApproving &&
@@ -749,28 +762,33 @@ func (svc *Service) createContractIfExists(tx *dbclient.TX, req *apistructs.Crea
 
 			// 如果申请了新的 SLA 且处于待审批的状态, 则记录操作, 并通知管理员
 			if reqSLAID, ok := updates["request_sla_id"]; ok && reqSLAID != nil {
-				go svc.contractMsgToManager(req.OrgID, req.Identity.UserID, asset, access, RequestItemSLA(sla.Name), false)
-				record.Action = fmt.Sprintf("申请了名称为 %s 的 SLA", sla.Name)
+				go svc.contractMsgToManager(ctx, req.OrgID, req.Identity.UserID, asset, access,
+					svc.RequestItemSLA(ctx, sla.Name, org.Locale),
+					false)
+				record.SLAName = sla.Name
+				record.Action = "ApplyToUseSLA"
 				break
 			}
 
 			// 如果通过了申请的 SLA, 则记录操作, 通知用户
 			if _, ok := updates["cur_sla_id"]; ok {
-				result := ApprovalResultSLAUpdated(sla.Name)
+				result := svc.ApprovalResultSLAUpdated(ctx, sla.Name, org.Locale)
 				go svc.contractMsgToUser(req.OrgID, req.Identity.UserID, asset.AssetName, client, result)
 				record.Action = string(result)
 			}
 
 		case updatingStatus == apistructs.ContractApproving:
 			// 如果是更新后的状态是"等待授权", 向管理员发送通知
-			go svc.contractMsgToManager(req.OrgID, req.Identity.UserID, asset, access,
-				RequestItemAPI(access.AssetName, access.SwaggerVersion), false)
-			record.Action += ", 等待审批中"
+			go svc.contractMsgToManager(ctx, req.OrgID, req.Identity.UserID, asset, access,
+				svc.RequestItemAPI(ctx, access.AssetName, access.SwaggerVersion, org.Locale),
+				false)
+			record.Action += "," + "WaitForProving"
 
 		case updatingStatus == apistructs.ContractApproved:
 			// 如果更新后的状态是"已授权", 向用户发送通知; 调用网关测的授权
-			go svc.contractMsgToUser(req.OrgID, req.Identity.UserID, access.AssetName, client, ManagerProvedContract)
-			record.Action += ", 并自动通过了审批"
+			go svc.contractMsgToUser(req.OrgID, req.Identity.UserID, access.AssetName, client,
+				svc.ManagerProvedContract(ctx, org.Locale))
+			record.Action += "," + "AutoProved"
 			if err = bdl.Bdl.GrantEndpointToClient(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
 				client.ClientID, access.EndpointID); err != nil {
 				err = errors.Wrapf(err, "failed to GrantEndpointToClient, clientID: %s, endpointID: %s",
@@ -825,7 +843,8 @@ func (svc *Service) createContractIfExists(tx *dbclient.TX, req *apistructs.Crea
 }
 
 // 创建合约时, 如果合约不存在, 进入此分支
-func (svc *Service) createContractFirstTime(tx *dbclient.TX, req *apistructs.CreateContractReq, asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel,
+func (svc *Service) createContractFirstTime(ctx context.Context, tx *dbclient.TX, req *apistructs.CreateContractReq,
+	asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel,
 	client *apistructs.ClientModel) (*apistructs.ContractModel, error) {
 	var (
 		timeNow  = time.Now()
@@ -849,11 +868,16 @@ func (svc *Service) createContractFirstTime(tx *dbclient.TX, req *apistructs.Cre
 		}
 	)
 
+	org, err := svc.bdl.GetOrg(req.OrgID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to GetOrg")
+	}
+
 	// 如果 access 下有 sla, 但没有申请 SLA, 则不允许申请
 	var count uint64
 	dbclient.Sq().Model(new(apistructs.SLAModel)).Where(map[string]interface{}{"access_id": access.ID}).Count(&count)
 	if count > 0 && (req.Body.SLAID == nil || *req.Body.SLAID == 0) {
-		return nil, apierrors.CreateContract.InvalidParameter("必须申请一个 SLA")
+		return nil, apierrors.CreateContract.InvalidParameter(svc.text(ctx, "MustWithOneSLA"))
 	}
 
 	// 如果 access 是自动授权的, 令 contract.Status 为 "已授权"
@@ -872,7 +896,7 @@ func (svc *Service) createContractFirstTime(tx *dbclient.TX, req *apistructs.Cre
 		req.Body.SLAID = &id
 	}
 
-	sla, err := svc.querySLAByID(*req.Body.SLAID, access)
+	sla, err := svc.querySLAByID(ctx, *req.Body.SLAID, access)
 	switch {
 	case err != nil:
 		// 查询不到申请的 SLA
@@ -905,7 +929,8 @@ func (svc *Service) createContractFirstTime(tx *dbclient.TX, req *apistructs.Cre
 		ID:         0,
 		OrgID:      req.OrgID,
 		ContractID: contract.ID,
-		Action:     "发起了调用申请",
+		Action:     "ApplyToCallAPI",
+		SLAName:    sla.Name,
 		CreatorID:  req.Identity.UserID,
 		CreatedAt:  timeNow,
 	}
@@ -914,9 +939,11 @@ func (svc *Service) createContractFirstTime(tx *dbclient.TX, req *apistructs.Cre
 	case apistructs.ContractApproving:
 		// 等待审批, 通知管理人员进行审批
 
-		go svc.contractMsgToManager(req.OrgID, req.Identity.UserID, asset, access, RequestItemAPI(access.AssetName, access.SwaggerVersion), false)
+		go svc.contractMsgToManager(ctx, req.OrgID, req.Identity.UserID, asset, access,
+			svc.RequestItemAPI(ctx, access.AssetName, access.SwaggerVersion, org.Locale),
+			false)
 
-		record.Action += ", 等待审批中"
+		record.Action += "," + "WaitForProving"
 		if err := tx.Create(&record).Error; err != nil {
 			logrus.Errorf("failed to Create record: %v", err)
 			return nil, errors.Wrap(err, "failed to Create record")
@@ -925,9 +952,10 @@ func (svc *Service) createContractFirstTime(tx *dbclient.TX, req *apistructs.Cre
 	case apistructs.ContractApproved:
 		// 如果合约已授权, 调用网关侧的授权; 通知用户已通过
 
-		go svc.contractMsgToUser(req.OrgID, req.Identity.UserID, access.AssetName, client, ManagerProvedContract)
+		go svc.contractMsgToUser(req.OrgID, req.Identity.UserID, access.AssetName, client,
+			svc.ManagerProvedContract(ctx, org.Locale))
 
-		record.Action += ", 并自动通过了审批"
+		record.Action += "," + "AutoProved"
 		if err := tx.Create(&record).Error; err != nil {
 			logrus.Errorf("failed to Create record: %v", err)
 			return nil, errors.Wrap(err, "failed to Create record")
@@ -953,7 +981,7 @@ func (svc *Service) createContractFirstTime(tx *dbclient.TX, req *apistructs.Cre
 	return &contract, nil
 }
 
-func (svc *Service) CreateAccess(req *apistructs.CreateAccessReq) (map[string]interface{}, *errorresp.APIError) {
+func (svc *Service) CreateAccess(ctx context.Context, req *apistructs.CreateAccessReq) (map[string]interface{}, *errorresp.APIError) {
 	// 参数校验
 	if req == nil || req.Body == nil {
 		return nil, apierrors.CreateAccess.InvalidParameter("invalid parameters")
@@ -985,8 +1013,7 @@ func (svc *Service) CreateAccess(req *apistructs.CreateAccessReq) (map[string]in
 		"swagger_version": swaggerVersion,
 	}).Error; {
 	case err == nil:
-		return nil, apierrors.CreateAccess.InternalError(fmt.Errorf("this access is already exists. {assetID: %s, swaggerVersion: %s}", req.Body.AssetID,
-			swaggerVersion))
+		return nil, apierrors.CreateAccess.InternalError(fmt.Errorf(svc.text(ctx, "AccessItemAlreadyExists"), req.Body.AssetID, swaggerVersion))
 	case gorm.IsRecordNotFoundError(err):
 	default:
 		return nil, apierrors.CreateAccess.InternalError(err)
@@ -1010,10 +1037,10 @@ func (svc *Service) CreateAccess(req *apistructs.CreateAccessReq) (map[string]in
 	}
 	if strings.ToLower(instantiations.Type) == InsTypeDice {
 		if req.Body.ProjectID != instantiations.ProjectID {
-			return nil, apierrors.CreateAccess.InvalidParameter("关联的项目错误, 可能实例被变更, 请刷新重试")
+			return nil, apierrors.CreateAccess.InvalidParameter(svc.text(ctx, "ProjectErrorPleaseRetry"))
 		}
 		if req.Body.Workspace != instantiations.Workspace {
-			return nil, apierrors.CreateAccess.InvalidParameter("workspace 错误, 可能实例被变更, 请刷新重试")
+			return nil, apierrors.CreateAccess.InvalidParameter(svc.text(ctx, "WorkspaceErrorPleaseRetry"))
 		}
 	}
 
@@ -1042,9 +1069,10 @@ func (svc *Service) CreateAccess(req *apistructs.CreateAccessReq) (map[string]in
 	case apistructs.AuthenticationSignAuth:
 		authType = apistructs.AT_SIGN_AUTH
 	case apistructs.AuthenticationOAuth2:
-		return nil, apierrors.CreateAccess.InvalidParameter("暂不支持 OAuth2 认证")
+		return nil, apierrors.CreateAccess.InvalidParameter(svc.text(ctx, "UnsupportedOAuth2"))
+
 	default:
-		return nil, apierrors.CreateAccess.InvalidParameter("不支持的认证方式")
+		return nil, apierrors.CreateAccess.InvalidParameter(svc.text(ctx, "UnsupportedAuthentication"))
 	}
 	endpointID, err := bdl.Bdl.CreateEndpoint(
 		strconv.FormatUint(req.OrgID, 10),
@@ -1115,22 +1143,22 @@ func (svc *Service) CreateAccess(req *apistructs.CreateAccessReq) (map[string]in
 	return map[string]interface{}{"access": access}, nil
 }
 
-func (svc *Service) CreateSLA(req *apistructs.CreateSLAReq) *errorresp.APIError {
+func (svc *Service) CreateSLA(ctx context.Context, req *apistructs.CreateSLAReq) *errorresp.APIError {
 	// 参数校验
 	if req == nil || req.URIParams == nil {
-		return apierrors.CreateSLA.InvalidParameter("参数错误")
+		return apierrors.CreateSLA.InvalidParameter(svc.text(ctx, "InvalidParams"))
 	}
 	if req.Body == nil {
-		return apierrors.CreateSLA.InvalidParameter("无效的请求体")
+		return apierrors.CreateSLA.InvalidParameter(svc.text(ctx, "InvalidRequestBody"))
 	}
 	if req.OrgID == 0 {
-		return apierrors.CreateSLA.InvalidParameter("无效的 OrgID")
+		return apierrors.CreateSLA.InvalidParameter(svc.text(ctx, "InvalidOrgID"))
 	}
 	if !req.Body.Approval.Valid() {
-		return apierrors.CreateSLA.InvalidParameter("无效的 approval")
+		return apierrors.CreateSLA.InvalidParameter(svc.text(ctx, "InvalidApprove"))
 	}
 	if len(req.Body.Limits) == 0 {
-		return apierrors.CreateSLA.InvalidParameter("至少有一个限制条件")
+		return apierrors.CreateSLA.InvalidParameter(svc.text(ctx, "AtLeastOneLimitInSLA"))
 	}
 
 	// 查询 asset
@@ -1140,7 +1168,7 @@ func (svc *Service) CreateSLA(req *apistructs.CreateSLAReq) *errorresp.APIError 
 		"asset_id": req.URIParams.AssetID,
 	}); err != nil {
 		logrus.Errorf("failed to FirstRecord, err: %v", err)
-		return apierrors.CreateSLA.InternalError(errors.New("查询 API 失败"))
+		return apierrors.CreateSLA.InternalError(errors.New(svc.text(ctx, "FailedToFindAPI")))
 	}
 
 	// 鉴权: 创建 SLA 的权限与 API Asset 的 W 权限一致
@@ -1157,12 +1185,13 @@ func (svc *Service) CreateSLA(req *apistructs.CreateSLAReq) *errorresp.APIError 
 		"swagger_version": req.URIParams.SwaggerVersion,
 	}); err != nil {
 		logrus.Errorf("failed to FirstRecord access, err: %v", err)
-		return apierrors.CreateSLA.InternalError(errors.New("查询访问管理失败"))
+		return apierrors.CreateSLA.InternalError(errors.New(svc.text(ctx, "FailedToFindAccessItme")))
 	}
 
 	// 检查重名
-	if strings.Replace(req.Body.Name, " ", "", -1) == strings.Replace(apistructs.UnlimitedSLAName, " ", "", -1) {
-		return apierrors.CreateSLA.InternalError(errors.Errorf("不可命名为 %s: 系统保留", req.Body.Name))
+	if trimSpace := strings.Replace(req.Body.Name, " ", "", -1); trimSpace == "UnlimitedSLA" || trimSpace == "无限制SLA" {
+		text := svc.text(ctx, "CanNotNamed") + ": " + svc.text(ctx, "SystemReservedName")
+		return apierrors.CreateSLA.InternalError(errors.Errorf(text, req.Body.Name))
 	}
 	var exSLA apistructs.SLAModel
 	if err := svc.FirstRecord(&exSLA, map[string]interface{}{
@@ -1170,7 +1199,7 @@ func (svc *Service) CreateSLA(req *apistructs.CreateSLAReq) *errorresp.APIError 
 		"name":      req.Body.Name,
 	}); err == nil {
 		logrus.Errorf("记录已存在: %+v", exSLA)
-		return apierrors.CreateSLA.InternalError(errors.Errorf("已存在同名 SLA: %s", req.Body.Name))
+		return apierrors.CreateSLA.InternalError(errors.New(svc.text(ctx, "SLAIsAlreadyExists") + ": " + req.Body.Name))
 	}
 
 	// 参数初始化
@@ -1196,7 +1225,7 @@ func (svc *Service) CreateSLA(req *apistructs.CreateSLAReq) *errorresp.APIError 
 			"access_id": access.ID,
 			"approval":  apistructs.AuthorizationAuto,
 		}); err == nil {
-			return apierrors.CreateSLA.InvalidParameter(errors.Errorf("已存在自动授权的 SLA: %s, 请修改授权方式后重试", exAuto.Name))
+			return apierrors.CreateSLA.InvalidParameter(errors.Errorf(svc.text(ctx, "AutoAuthIsExists"), exAuto.Name))
 		}
 	}
 
@@ -1205,15 +1234,15 @@ func (svc *Service) CreateSLA(req *apistructs.CreateSLAReq) *errorresp.APIError 
 
 	if err := tx.Create(&slaModel).Error; err != nil {
 		logrus.Errorf("failed to Create slaModel, body: %+v, err: %v", *req.Body, err)
-		return apierrors.CreateSLA.InternalError(errors.New("新建 SLA 失败"))
+		return apierrors.CreateSLA.InternalError(errors.New(svc.text(ctx, "FailedToCreateSLA")))
 	}
 
 	for _, v := range req.Body.Limits {
 		if v.Limit == 0 {
-			return apierrors.CreateSLA.InvalidParameter("次数不可为 0")
+			return apierrors.CreateSLA.InvalidParameter(svc.text(ctx, "LimitTimesCanNotBe0"))
 		}
 		if !v.Unit.Valid() {
-			return apierrors.CreateSLA.InvalidParameter("无效的时间单位")
+			return apierrors.CreateSLA.InvalidParameter(svc.text(ctx, "InvalidDurationUnit"))
 		}
 		if err := tx.Create(&apistructs.SLALimitModel{
 			BaseModel: apistructs.BaseModel{
@@ -1228,7 +1257,7 @@ func (svc *Service) CreateSLA(req *apistructs.CreateSLAReq) *errorresp.APIError 
 			Unit:  v.Unit,
 		}).Error; err != nil {
 			logrus.Errorf("failed to Create limits, body: %+v, err: %v", *req.Body, err)
-			return apierrors.CreateSLA.InternalError(errors.New("创建限制条件失败"))
+			return apierrors.CreateSLA.InternalError(errors.New(svc.text(ctx, "FailedToCreateSLALimit")))
 		}
 	}
 
@@ -1242,18 +1271,18 @@ func (svc *Service) CreateSLA(req *apistructs.CreateSLAReq) *errorresp.APIError 
 // 并设置req.Source, req.AppID, req.Branch, req.ServiceName 等描述 spec 来源的字段;
 // 如果 SpecDiceFileUUID 不为空, 则查找服务器中对应 API 文档文件, 将其作为待发布的文档;
 // 如果 Spec 不为空, 则将其作为待发布的文档.
-func (svc *Service) readSpec(req *apistructs.APIAssetVersionCreateRequest) error {
+func (svc *Service) readSpec(ctx context.Context, req *apistructs.APIAssetVersionCreateRequest) error {
 	if req.Inode != "" {
 		content, apiError := apidocsvc.FetchAPIDocContent(req.OrgID, req.UserID, req.Inode, oasconv.Protocol(req.SpecProtocol), svc.branchRuleSvc)
 		if apiError != nil {
 			return apiError
 		}
 		if content.Meta == nil {
-			return errors.New("未查询到文档内容: content is nil")
+			return errors.New(svc.text(ctx, "FailedToQueryAPIDocContent") + ": content is nil")
 		}
 		var meta apistructs.APIDocMeta
 		if err := json.Unmarshal(content.Meta, &meta); err != nil {
-			return errors.Wrap(err, "未查询到文档内容")
+			return errors.Wrap(err, svc.text(ctx, "FailedToQueryAPIDocContent"))
 		}
 		req.Spec = meta.Blob.Content
 		req.SpecDiceFileUUID = ""
@@ -1290,7 +1319,7 @@ func (svc *Service) readSpec(req *apistructs.APIAssetVersionCreateRequest) error
 	}
 
 	if req.Spec == "" {
-		return errors.New("没有传入有效的文档地址或内容")
+		return errors.New(svc.text(ctx, "NoValidAPIDocAddressOrContent"))
 	}
 
 	return nil
@@ -1365,7 +1394,7 @@ func (svc *Service) createOAS3IndexFragments(v3 *openapi3.Swagger, assetID, asse
 }
 
 // parseSpec 解析 spec protocol 和 spec
-func parseSpec(protocol *apistructs.APISpecProtocol, spec string) (v3 *openapi3.Swagger, err error) {
+func (svc *Service) parseSpec(ctx context.Context, protocol *apistructs.APISpecProtocol, spec string) (v3 *openapi3.Swagger, err error) {
 	if spec == "" {
 		return nil, apierrors.ValidateAPISpec.MissingParameter("spec")
 	}
@@ -1378,21 +1407,22 @@ func parseSpec(protocol *apistructs.APISpecProtocol, spec string) (v3 *openapi3.
 	)
 	if err = json.Unmarshal(data, &m); err != nil {
 		if err := yaml.Unmarshal(data, &m); err != nil {
-			return nil, apierrors.ValidateAPISpec.InvalidParameter("文档格式错误: 不是合法的 JSON 或 YAML 格式")
+			text := svc.text(ctx, "InvalidAPIDocFormat") + ":" + svc.text(ctx, "InvalidJsonYaml")
+			return nil, apierrors.ValidateAPISpec.InvalidParameter(text)
 		}
 		fileFormat = "yaml"
 	}
 
 	if _, ok := m["openapi"]; !ok {
 		if _, ok := m["swagger"]; !ok {
-			return nil, apierrors.ValidateAPISpec.InvalidParameter("文档缺失 openapi/swagger 协议标识, 无法识别其协议")
+			return nil, apierrors.ValidateAPISpec.InvalidParameter(svc.text(ctx, "MissingOASProtoSign"))
 		}
 		fileProtocol = "oas2"
 	}
 
 	if fileFormat == "yaml" {
 		if data, err = oasconv.YAMLToJSON(data); err != nil {
-			return nil, apierrors.ValidateAPISpec.InvalidParameter("文档格式错误")
+			return nil, apierrors.ValidateAPISpec.InvalidParameter(svc.text(ctx, "InvalidAPIDocFormat"))
 		}
 	}
 

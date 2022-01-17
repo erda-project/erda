@@ -15,10 +15,13 @@
 package dbclient
 
 import (
+	"context"
+
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 )
 
-func ListContracts(req *apistructs.ListContractsReq) (uint64, []*apistructs.ContractModelAdvance, error) {
+func ListContracts(ctx context.Context, trans i18n.Translator, req *apistructs.ListContractsReq) (uint64, []*apistructs.ContractModelAdvance, error) {
 	var (
 		models []*apistructs.ContractModel
 		total  uint64
@@ -45,8 +48,8 @@ func ListContracts(req *apistructs.ListContractsReq) (uint64, []*apistructs.Cont
 			ContractModel:     *v,
 			ClientName:        client.Name,
 			ClientDisplayName: client.DisplayName,
-			CurSLAName:        getSLAName(v.CurSLAID, names),
-			RequestSLAName:    getSLAName(v.RequestSLAID, names),
+			CurSLAName:        getSLAName(ctx, trans, v.CurSLAID, names),
+			RequestSLAName:    getSLAName(ctx, trans, v.RequestSLAID, names),
 			EndpointName:      "",
 			ProjectID:         0,
 			Workspace:         "",

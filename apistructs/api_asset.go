@@ -21,10 +21,6 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-const (
-	UnlimitedSLAName = "无限制 SLA"
-)
-
 type WorkSpace string
 
 const (
@@ -317,6 +313,7 @@ type ContractRecordModel struct {
 	OrgID      uint64    `json:"orgID"`
 	ContractID uint64    `json:"contractID"`
 	Action     string    `json:"action"`
+	SLAName    string    `json:"sla_name" gorm:"sla_name"`
 	CreatorID  string    `json:"creatorID"`
 	CreatedAt  time.Time `json:"createdAt"`
 }
