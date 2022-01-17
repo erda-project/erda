@@ -78,37 +78,14 @@ func WithDeployment(deploy *deployment.Deployment) Option {
 }
 
 // checkExecutePermission
-func (d *DeploymentOrder) checkExecutePermission(userId, workspace string, releaseResp *apistructs.ReleaseGetResponseData,
-	releaseIds ...string) error {
-
-	if len(releaseIds) != 0 {
-		var err error
-		releaseResp, err = d.bdl.GetRelease(releaseIds[0])
-		if err != nil {
-			return fmt.Errorf("failed to get release, err: %v", err)
-		}
-	}
-
-	releases := make([]*apistructs.ReleaseGetResponseData, 0)
-
-	if releaseResp.IsProjectRelease {
-		for _, r := range releaseResp.ApplicationReleaseList {
-			resp, err := d.bdl.GetRelease(r.ReleaseID)
-			if err != nil {
-				return fmt.Errorf("faield to get release, err: %v", err)
-			}
-			releases = append(releases, resp)
-		}
-	} else {
-		releases = append(releases, releaseResp)
-	}
-
+func (d *DeploymentOrder) checkExecutePermission(userId, workspace string, applicationsInfo map[int64]string) error {
 	deniedApps := make([]string, 0)
-	for _, r := range releases {
+	// TODO: core-services provide batch auth interface
+	for appId, appName := range applicationsInfo {
 		access, err := d.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 			UserID:   userId,
 			Scope:    apistructs.AppScope,
-			ScopeID:  uint64(r.ApplicationID),
+			ScopeID:  uint64(appId),
 			Resource: fmt.Sprintf("runtime-%s", strings.ToLower(workspace)),
 			Action:   apistructs.CreateAction,
 		})
@@ -117,7 +94,7 @@ func (d *DeploymentOrder) checkExecutePermission(userId, workspace string, relea
 		}
 
 		if !access.Access {
-			deniedApps = append(deniedApps, r.ApplicationName)
+			deniedApps = append(deniedApps, appName)
 		}
 	}
 
