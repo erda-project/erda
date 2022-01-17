@@ -24,7 +24,7 @@ import (
 )
 
 // Initialize Application-related initialization operations
-func Initialize() error {
+func (p *provider) Initialize() error {
 	conf.Load()
 	// control log's level.
 	if conf.Debug() {
@@ -39,6 +39,7 @@ func Initialize() error {
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 	logrus.Infof("[alert] starting scheduler instance")
 	i18n.InitI18N()
+	i18n.SetSingle(p.LogTrans)
 
 	return server.NewServer(conf.ListenAddr()).ListenAndServe()
 }

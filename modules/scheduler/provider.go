@@ -18,11 +18,14 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
-type provider struct{}
+type provider struct {
+	LogTrans i18n.Translator `translator:"log-trans"`
+}
 
-func (p *provider) Run(ctx context.Context) error { return Initialize() }
+func (p *provider) Run(ctx context.Context) error { return p.Initialize() }
 
 func init() {
 	servicehub.Register("scheduler", &servicehub.Spec{

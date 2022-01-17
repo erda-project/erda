@@ -173,12 +173,13 @@ func (s *Syncer) listSyncPod(ctx context.Context) {
 			continue
 		}
 		logrus.Infof("listpods(%d) for: %s", len(podlist.Items), s.addr)
-		if err := updatePodAndInstance(s.dbupdater, podlist, false, nil); err != nil {
+		orgs, err := updatePodAndInstance(s.dbupdater, podlist, false, nil)
+		if err != nil {
 			logrus.Errorf("failed to update instanceinfo: %v", err)
 			continue
 		}
 		logrus.Infof("export podlist info start: %s", s.addr)
-		exportPodErrInfo(s.bdl, podlist)
+		exportPodErrInfo(s.bdl, podlist, orgs)
 		logrus.Infof("export podlist info end: %s", s.addr)
 		logrus.Infof("updatepods for: %s", s.addr)
 		// it is last part of pod list, so execute gcAliveInstancesInDB
@@ -251,7 +252,7 @@ func (s *Syncer) watchSyncEvent(ctx context.Context) {
 			}
 			return
 		}
-		if err := updatePodAndInstance(s.dbupdater, &corev1.PodList{Items: []corev1.Pod{*pod}}, false,
+		if _, err := updatePodAndInstance(s.dbupdater, &corev1.PodList{Items: []corev1.Pod{*pod}}, false,
 			map[string]*corev1.Event{pod.Namespace + "/" + pod.Name: e}); err != nil {
 			logrus.Errorf("failed to updatepod: %v", err)
 			return

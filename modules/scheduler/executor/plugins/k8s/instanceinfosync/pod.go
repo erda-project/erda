@@ -25,14 +25,20 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	orgCache "github.com/erda-project/erda/modules/scheduler/cache/org"
+	"github.com/erda-project/erda/modules/scheduler/i18n"
 	"github.com/erda-project/erda/modules/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // exportPodErrInfo export pod error info
-func exportPodErrInfo(bdl *bundle.Bundle, podlist *corev1.PodList) {
+func exportPodErrInfo(bdl *bundle.Bundle, podlist *corev1.PodList, orgs []*apistructs.OrgDTO) {
 	now := time.Now()
-	for _, pod := range podlist.Items {
+	for i, pod := range podlist.Items {
+		var locale string
+		if orgs[i] != nil {
+			locale = orgs[i].Locale
+		}
 		for _, containerstatus := range pod.Status.ContainerStatuses {
 			// restartcount > 5 && The finish time of the last terminated container is within one hour (to prevent too many false positives)
 			if containerstatus.RestartCount > 5 &&
@@ -41,9 +47,7 @@ func exportPodErrInfo(bdl *bundle.Bundle, podlist *corev1.PodList) {
 				buildErrorInfo(bdl, pod,
 					fmt.Sprintf("Pod(%s)-Container(%s), restartcount(%d)",
 						pod.Name, containerstatus.Name, containerstatus.RestartCount),
-					fmt.Sprintf(`Pod(%s)重启次数过多(%d次)，建议检查程序日志或健康检查
-程序日志入口：部署中心 -> 本次服务部署环境 -> 服务详情 -> 选择已停止  -> 查看最新的容器日志
-健康检查配置入口：代码仓库 -> dice.yml -> health_check 的配置内容`, pod.Name, containerstatus.RestartCount),
+					i18n.Sprintf(locale, "PodRestartManyTimes", pod.Name, containerstatus.RestartCount),
 					"restartcount",
 				)
 			}
@@ -69,7 +73,7 @@ func exportPodErrInfo(bdl *bundle.Bundle, podlist *corev1.PodList) {
 					buildErrorInfo(bdl, pod,
 						fmt.Sprintf("Pod(%s), PodScheduled failed: %s, %s",
 							pod.Name, cond.Message, strutil.Join(waitingContainerInfos, ",")),
-						fmt.Sprintf("Pod(%s)调度失败，请确认是否资源不足导致排队。", pod.Name),
+						i18n.Sprintf(locale, "FailedToSchedulePod", pod.Name),
 						"podscheduled",
 					)
 					break
@@ -83,8 +87,7 @@ func exportPodErrInfo(bdl *bundle.Bundle, podlist *corev1.PodList) {
 							strutil.Join(waitingContainerInfos, ","),
 							pp_healthcheck(pod),
 							pp_image(pod)),
-						fmt.Sprintf(`Pod未就绪(%s), 建议查看健康检查或镜像是否存在
-健康检查配置入口：代码仓库 -> dice.yml -> health_check 的配置内容`, pod.Name),
+						i18n.Sprintf(locale, "PodNotReady", pod.Name),
 						"containerready",
 					)
 					break
@@ -238,13 +241,14 @@ func extractEnvs(pod corev1.Pod) (
 
 // updatePodInstance Update pod information to db
 func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList, delete bool,
-	eventmap map[string]*corev1.Event) error {
+	eventmap map[string]*corev1.Event) ([]*apistructs.OrgDTO, error) {
 	r := dbclient.InstanceReader()
 	w := dbclient.InstanceWriter()
 	podr := dbclient.PodReader()
 	podw := dbclient.PodWriter()
+	var orgs = make([]*apistructs.OrgDTO, len(podlist.Items))
 
-	for _, pod := range podlist.Items {
+	for i, pod := range podlist.Items {
 		var (
 			cluster             string
 			orgName             string
@@ -298,6 +302,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 		containerIP = pod.Status.PodIP
 		hostIP = pod.Status.HostIP
 		var err error
+		orgs[i], _ = orgCache.GetOrgByOrgID(orgID)
 		cpuRequest, err = strconv.ParseFloat(pod.Spec.Containers[0].Resources.Requests.Cpu().AsDec().String(), 64)
 		if err != nil {
 			cpuRequest = 0
@@ -406,14 +411,14 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 			podinfo.ID = podsinfo[0].ID
 			if delete {
 				if err := podw.Delete(podsinfo[0].ID); err != nil {
-					return err
+					return orgs, err
 				}
 			} else if err := podw.Update(podinfo); err != nil {
-				return err
+				return orgs, err
 			}
 		} else {
 			if err := podw.Create(&podinfo); err != nil {
-				return err
+				return orgs, err
 			}
 		}
 
@@ -511,7 +516,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 				ByContainerID(prevContainerID).
 				Do()
 			if err != nil {
-				return err
+				return orgs, err
 			}
 			instance := instanceinfo.InstanceInfo{
 				Cluster:             cluster,
@@ -552,25 +557,25 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 			switch len(instances) {
 			case 0:
 				if err := w.Create(&instance); err != nil {
-					return err
+					return orgs, err
 				}
 			default:
 				for _, ins := range instances {
 					instance.ID = ins.ID
 					if err := w.Update(instance); err != nil {
-						return err
+						return orgs, err
 					}
 				}
 			}
 			// remove dup instances in db
 			instances, err = r.ByContainerID(prevContainerID).Do()
 			if err != nil {
-				return err
+				return orgs, err
 			}
 			if len(instances) > 1 {
 				for i := 1; i < len(instances); i++ {
 					if err := w.Delete(instances[i].ID); err != nil {
-						return err
+						return orgs, err
 					}
 				}
 			}
@@ -578,7 +583,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 		if currentContainerID != "" {
 			instances, err := r.ByContainerID(currentContainerID).Do()
 			if err != nil {
-				return err
+				return orgs, err
 			}
 			instance := instanceinfo.InstanceInfo{
 				Cluster:             cluster,
@@ -622,7 +627,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 					break
 				}
 				if err := w.Create(&instance); err != nil {
-					return err
+					return orgs, err
 				}
 			default:
 				for _, ins := range instances {
@@ -632,37 +637,37 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 						instance.Phase = instanceinfo.InstancePhaseDead
 					}
 					if err := w.Update(instance); err != nil {
-						return err
+						return orgs, err
 					}
 				}
 			}
 			// remove dup instances in db
 			instances, err = r.ByContainerID(currentContainerID).Do()
 			if err != nil {
-				return err
+				return orgs, err
 			}
 			if len(instances) > 1 {
 				for i := 1; i < len(instances); i++ {
 					if err := w.Delete(instances[i].ID); err != nil {
-						return err
+						return orgs, err
 					}
 				}
 			}
 		}
 	}
-	return nil
+	return orgs, nil
 }
 
 func updatePodOnWatch(bdl *bundle.Bundle, db *instanceinfo.Client, addr string) (func(*corev1.Pod), func(*corev1.Pod)) {
 	addOrUpdateFunc := func(pod *corev1.Pod) {
-		if err := updatePodAndInstance(db, &corev1.PodList{Items: []corev1.Pod{*pod}}, false, nil); err != nil {
+		orgs, err := updatePodAndInstance(db, &corev1.PodList{Items: []corev1.Pod{*pod}}, false, nil)
+		if err != nil {
 			logrus.Errorf("failed to update pod: %v", err)
 		}
-		exportPodErrInfo(bdl, &corev1.PodList{Items: []corev1.Pod{*pod}})
-
+		exportPodErrInfo(bdl, &corev1.PodList{Items: []corev1.Pod{*pod}}, orgs)
 	}
 	deleteFunc := func(pod *corev1.Pod) {
-		if err := updatePodAndInstance(db, &corev1.PodList{Items: []corev1.Pod{*pod}}, true, nil); err != nil {
+		if _, err := updatePodAndInstance(db, &corev1.PodList{Items: []corev1.Pod{*pod}}, true, nil); err != nil {
 			logrus.Errorf("failed to update(delete) pod: %v", err)
 		}
 	}
