@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 func Test_fillTestPlanFields(t *testing.T) {
@@ -137,7 +138,7 @@ func Test_fillTestPlanFields(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := fillTestPlanFields(tt.args.field, tt.args.testPlans, tt.args.cms); !reflect.DeepEqual(got, tt.want) {
+			if got := fillTestPlanFields(&i18n.LocaleResource{}, tt.args.field, tt.args.testPlans, tt.args.cms); !reflect.DeepEqual(got, tt.want) {
 				fmt.Println(got)
 				fmt.Println(tt.want)
 			}

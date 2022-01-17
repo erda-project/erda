@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/test-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
@@ -45,15 +46,10 @@ type State struct {
 }
 
 type CustomProps struct {
-	AllowClear     bool    `json:"allowClear"`
-	Ranges         Ranges  `json:"ranges"`
-	SelectableTime []int64 `json:"selectableTime"`
-	BorderTime     bool    `json:"borderTime"`
-}
-
-type Ranges struct {
-	Week  []int64 `json:"近一周"`
-	Month []int64 `json:"近一月"`
+	AllowClear     bool          `json:"allowClear"`
+	Ranges         common.Ranges `json:"ranges"`
+	SelectableTime []int64       `json:"selectableTime"`
+	BorderTime     bool          `json:"borderTime"`
 }
 
 type Values struct {
