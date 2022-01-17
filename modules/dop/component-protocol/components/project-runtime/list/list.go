@@ -306,9 +306,9 @@ func (p *List) getData() *list.Data {
 		}
 
 		data.List = append(data.List, list.Item{
-			ID:             idStr,
-			Title:          nameStr,
-			MainState:      getMainState(appRuntime.Status),
+			ID:    idStr,
+			Title: nameStr,
+			//MainState:      getMainState(appRuntime.Status),
 			TitleState:     getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus),
 			Selectable:     true,
 			KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
@@ -583,29 +583,24 @@ func getMoreOperations(sdk *cptype.SDK, id string) []list.MoreOpItem {
 }
 
 func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVersion, healthStr string, runtime bundle.GetApplicationRuntimesDataEle, lastOperatorTime time.Time) []list.KvInfo {
-
-	kvs := []list.KvInfo{
-		{
-			Key:   sdk.I18n("app"),
-			Value: appName,
-		},
+	kvs := make([]list.KvInfo, 0)
+	if healthStr != "" {
+		// service
+		kvs = append(kvs, list.KvInfo{
+			Key:   sdk.I18n("service"),
+			Value: healthStr,
+		})
 	}
 	if deployOrderName != "" {
 		tip := ""
 		tip += fmt.Sprintf("%s: %s\n", sdk.I18n("release product"), deployVersion)
 		tip += fmt.Sprintf("%s: %s\n", sdk.I18n("deployer"), creatorName)
 		tip += fmt.Sprintf("%s: %s", sdk.I18n("deployAt"), runtime.LastOperateTime.Format("2006-01-02 15:04:05"))
-
+		// deployment order name
 		kvs = append(kvs, list.KvInfo{
 			Key:   sdk.I18n("deploymentOrderName"),
 			Value: deployOrderName,
 			Tip:   tip,
-		})
-	}
-	if healthStr != "" {
-		kvs = append(kvs, list.KvInfo{
-			Key:   sdk.I18n("service"),
-			Value: healthStr,
 		})
 	}
 	minutes := int64(time.Now().Sub(lastOperatorTime).Minutes())
@@ -615,18 +610,24 @@ func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVe
 	timeStr := ""
 	if day == 0 {
 		if hour == 0 {
-			timeStr = fmt.Sprintf("%dm", minute)
+			timeStr = fmt.Sprintf("%dm", minute) + sdk.I18n("ago")
 		} else {
-			timeStr = fmt.Sprintf("%dh", hour)
+			timeStr = fmt.Sprintf("%dh", hour) + sdk.I18n("ago")
 		}
 	} else {
-		timeStr = fmt.Sprintf("%dd", day)
+		timeStr = fmt.Sprintf("%dd", day) + sdk.I18n("ago")
 	}
+	// running duration
 	kvs = append(kvs, list.KvInfo{
 		Key:   sdk.I18n("running duration"),
 		Value: timeStr,
-	},
-	)
+	})
+
+	// app
+	kvs = append(kvs, list.KvInfo{
+		Key:   sdk.I18n("app"),
+		Value: appName,
+	})
 	return kvs
 }
 
