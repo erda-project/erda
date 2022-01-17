@@ -480,9 +480,6 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/erda-project/elastic v0.0.1-ex h1:5ajfxQ5S5YjpzFqY9LzL9hiKWCn6q/JDT4n8sNv7+pU=
 github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+RLSXlD4rnZRJVW0=
 github.com/erda-project/erda-infra v0.0.0-20220112033957-3978fc61e95d/go.mod h1:JEXUFWDC/a97+3AgX/cL4xRlqL9vTDM+wVV3Ee5FXYI=
-github.com/erda-project/erda-infra v0.0.0-20220107091105-3c440210901e/go.mod h1:JEXUFWDC/a97+3AgX/cL4xRlqL9vTDM+wVV3Ee5FXYI=
-github.com/erda-project/erda-infra v0.0.0-20220113174244-85068559e52e h1:mPPsqd02Am2iMztemZj+MvRX9LeyYtuL2LsoSbNx/Ro=
-github.com/erda-project/erda-infra v0.0.0-20220113174244-85068559e52e/go.mod h1:JEXUFWDC/a97+3AgX/cL4xRlqL9vTDM+wVV3Ee5FXYI=
 github.com/erda-project/erda-infra v0.0.0-20220114085927-d3879b1514e1 h1:1dqciGytoJs7Lgi+DineXBUf5IR41f+2iev9uU9yBkk=
 github.com/erda-project/erda-infra v0.0.0-20220114085927-d3879b1514e1/go.mod h1:JEXUFWDC/a97+3AgX/cL4xRlqL9vTDM+wVV3Ee5FXYI=
 github.com/erda-project/erda-infra v0.0.0-20220118032729-ccef0fd2ac41 h1:3VzEoFXWbwgrqW5fj1LwnOskSq2x81279GGnf6Q+PTU=
