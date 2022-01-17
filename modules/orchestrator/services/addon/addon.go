@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/components/addon/mysql"
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	i18n2 "github.com/erda-project/erda/modules/orchestrator/i18n"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
@@ -2630,7 +2631,7 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 	for _, v := range deploys {
 		if _, ok := AddonInfos.Load(v.AddonName); !ok {
 			a.ExportLogInfoDetail(apistructs.ErrorLevel, apistructs.RuntimeError, fmt.Sprintf("%d", req.RuntimeID),
-				fmt.Sprintf("不存在该类型 addon: %s, 请检查 diceyml 中 addon 部分是否正确", v.AddonName),
+				i18n2.OrgSprintf(strconv.FormatUint(req.OrgID, 10), "AddonTypeDoseNoExist", v.AddonName),
 				fmt.Sprintf("not found addon: %s", v.AddonName))
 			return errors.Errorf("not found addon: %s", v.AddonName)
 		}
@@ -2812,7 +2813,7 @@ func (a *Addon) PrepareCheckProjectLastResource(projectID uint64, req *[]apistru
 	// 比较项目quota预留资源是不是够
 	if utils.Smaller(projectInfo.CpuQuota-usedCpu, deployNeedCpu) {
 		s := fmt.Sprintf("The CPU reserved for the project is %.2f cores, %.2f cores have been occupied, %.2f CPUs are required for deploy, and the resources for addon are insufficient", projectInfo.CpuQuota, usedCpu, deployNeedCpu)
-		a.ExportLogInfoDetail(apistructs.ErrorLevel, apistructs.RuntimeError, (*req)[0].RuntimeID, "资源配额不足无法部署", s)
+		a.ExportLogInfoDetail(apistructs.ErrorLevel, apistructs.RuntimeError, (*req)[0].RuntimeID, i18n2.OrgSprintf(strconv.FormatUint(runtimeInfo.OrgID, 10), "NotEnoughQuotaToDeploy"), s)
 		return errors.Errorf(s)
 	}
 	useMem2, err := strconv.ParseFloat(fmt.Sprintf("%.2f", usedMem), 64)
@@ -2821,7 +2822,7 @@ func (a *Addon) PrepareCheckProjectLastResource(projectID uint64, req *[]apistru
 	}
 	if utils.Smaller(projectInfo.MemQuota*1024.0-float64(usedMem), deployNeedMem) {
 		s := fmt.Sprintf("The memory reserved for the project is %.2f G, %.2f G have been occupied, %.2f G are required for deploy, and the resources for addon are insufficient", projectInfo.MemQuota, useMem2/1024, deployNeedMem/1024.0)
-		a.ExportLogInfoDetail(apistructs.ErrorLevel, apistructs.RuntimeError, (*req)[0].RuntimeID, "资源配额不足无法部署", s)
+		a.ExportLogInfoDetail(apistructs.ErrorLevel, apistructs.RuntimeError, (*req)[0].RuntimeID, i18n2.OrgSprintf(strconv.FormatUint(runtimeInfo.OrgID, 10), "NotEnoughQuotaToDeploy"), s)
 		return errors.Errorf(s)
 	}
 
