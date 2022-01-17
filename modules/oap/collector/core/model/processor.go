@@ -19,6 +19,11 @@ type Processor interface {
 	Process(data ObservableData) (ObservableData, error)
 }
 
+type RunningProcessor interface {
+	Processor
+	StartProcessor(consumer ObservableDataConsumerFunc)
+}
+
 type NoopProcessor struct {
 }
 

@@ -53,11 +53,12 @@ func (p *provider) ComponentID() model.ComponentID {
 // 1. filter with config filters
 // 2. pass tags to handle
 func (p *provider) Process(data model.ObservableData) (model.ObservableData, error) {
-	data.RangeTagsFunc(func(tags map[string]string) map[string]string {
-		if filter.IsInclude(p.Cfg.Filter, tags) {
-			tags = p.addPodMetadata(tags)
+	data.RangeFunc(func(item *model.DataItem) (bool, *model.DataItem) {
+		if !p.Cfg.Filter.IsPass(item) {
+			return true, item
 		}
-		return tags
+		item.Tags = p.addPodMetadata(item.Tags)
+		return true, item
 	})
 	return data, nil
 }

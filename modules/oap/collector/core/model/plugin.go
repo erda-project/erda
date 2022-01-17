@@ -19,3 +19,11 @@ type ComponentID string
 type Component interface {
 	ComponentID() ComponentID
 }
+
+type (
+	MetricReceiverConsumeFunc func(data Metrics)
+	TraceReceiverConsumeFunc  func(data Traces)
+	LogReceiverConsumeFunc    func(data Logs)
+
+	ObservableDataConsumerFunc func(data ObservableData)
+)

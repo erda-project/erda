@@ -14,18 +14,10 @@
 
 package model
 
-type (
-	MetricReceiverConsumeFunc func(data Metrics)
-	TraceReceiverConsumeFunc  func(data Traces)
-	LogReceiverConsumeFunc    func(data Logs)
-
-	ObservableDataReceiverFunc func(data ObservableData)
-)
-
 type Receiver interface {
 	Component
 	// TODO
-	RegisterConsumer(consumer ObservableDataReceiverFunc)
+	RegisterConsumer(consumer ObservableDataConsumerFunc)
 }
 
 type NoopReceiver struct {
@@ -35,4 +27,4 @@ func (n *NoopReceiver) ComponentID() ComponentID {
 	return "NoopReceiver"
 }
 
-func (n *NoopReceiver) RegisterConsumer(consumer ObservableDataReceiverFunc) {}
+func (n *NoopReceiver) RegisterConsumer(consumer ObservableDataConsumerFunc) {}

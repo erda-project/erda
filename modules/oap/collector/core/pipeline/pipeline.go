@@ -90,8 +90,8 @@ func (p *Pipeline) esFromComponent(coms []model.Component) ([]model.Exporter, er
 }
 
 func (p *Pipeline) StartStream(ctx context.Context) {
-	out := make(chan model.ObservableData)
-	in := make(chan model.ObservableData)
+	out := make(chan model.ObservableData, 10)
+	in := make(chan model.ObservableData, 10)
 	go p.StartExporters(ctx, out)
 
 	go p.startProcessors(ctx, in, out)
@@ -122,6 +122,14 @@ func (p *Pipeline) StartExporters(ctx context.Context, out <-chan model.Observab
 }
 
 func (p *Pipeline) startProcessors(ctx context.Context, in <-chan model.ObservableData, out chan<- model.ObservableData) {
+	for _, r := range p.processors {
+		rp, ok := r.(model.RunningProcessor)
+		if !ok {
+			continue
+		}
+		rp.StartProcessor(newConsumer(ctx, out))
+	}
+
 	for {
 		select {
 		case data := <-in:
@@ -145,14 +153,18 @@ func (p *Pipeline) startProcessors(ctx context.Context, in <-chan model.Observab
 	}
 }
 
-func (p *Pipeline) startReceivers(ctx context.Context, in chan<- model.ObservableData) {
+func (p *Pipeline) startReceivers(ctx context.Context, out chan<- model.ObservableData) {
 	for _, r := range p.receivers {
-		consumer := func(ms model.ObservableData) {
-			select {
-			case in <- ms:
-			case <-ctx.Done():
-			}
+		r.RegisterConsumer(newConsumer(ctx, out))
+	}
+}
+
+func newConsumer(ctx context.Context, out chan<- model.ObservableData) func(md model.ObservableData) {
+	return func(md model.ObservableData) {
+		select {
+		case out <- md:
+		case <-ctx.Done():
+			return
 		}
-		r.RegisterConsumer(consumer)
 	}
 }

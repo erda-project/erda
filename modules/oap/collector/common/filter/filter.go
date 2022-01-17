@@ -14,22 +14,62 @@
 
 package filter
 
+import (
+	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+)
+
+// semantic same as https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#metric-filtering
 type Config struct {
-	Tagpass map[string][]string `file:"tagpass"`
+	Namepass  []string            `file:"namepass"`
+	Tagpass   map[string][]string `file:"tagpass"`
+	Fieldpass []string            `file:"fieldpass"`
 }
 
-func IsInclude(cfg Config, tags map[string]string) bool {
+func (cfg Config) IsPass(item *model.DataItem) bool {
+	return cfg.IsTagpass(item.Tags) && cfg.IsFieldpass(item.Fields) && cfg.IsNamepass(item.Name)
+}
+
+// IsTagpass.
+func (cfg Config) IsTagpass(tags map[string]string) bool {
 	if len(cfg.Tagpass) == 0 {
 		return true
 	}
 	for k, list := range cfg.Tagpass {
 		val, ok := tags[k]
-		if ok {
-			for _, vv := range list {
-				if vv == val {
-					return true
-				}
+		if !ok {
+			continue
+		}
+		for _, vv := range list {
+			if vv == val {
+				return true
 			}
+		}
+	}
+	return false
+}
+
+// IsFieldpass.
+func (cfg Config) IsFieldpass(fields map[string]*structpb.Value) bool {
+	if len(cfg.Fieldpass) == 0 {
+		return true
+	}
+	for _, key := range cfg.Fieldpass {
+		_, ok := fields[key]
+		if ok {
+			return true
+		}
+	}
+	return false
+}
+
+func (cfg Config) IsNamepass(name string) bool {
+	if len(cfg.Namepass) == 0 {
+		return true
+	}
+	for _, key := range cfg.Namepass {
+		if key == name {
+			return true
 		}
 	}
 	return false

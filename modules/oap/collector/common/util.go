@@ -15,20 +15,11 @@
 package common
 
 import (
-	"encoding/json"
-	"fmt"
 	"strings"
-
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
 )
 
 func NormalizeKey(key string) string {
 	key = strings.ReplaceAll(key, ".", "_")
 	key = strings.ReplaceAll(key, "/", "_")
 	return key
-}
-
-func PrintObserveData(od model.ObservableData) {
-	buf, _ := json.Marshal(od.SourceData())
-	fmt.Printf("ObservableData SourceData: %s", string(buf))
 }

@@ -15,10 +15,17 @@
 package model
 
 import (
+	"encoding/json"
+	"fmt"
+	"sort"
+	"strings"
+
+	"github.com/cespare/xxhash"
 	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
 	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	tpb "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/modules/core/monitor/metric"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 )
 
 type DataType string
@@ -29,17 +36,75 @@ const (
 	LogDataType    DataType = "log"
 )
 
+type handleFunc func(item *DataItem) (bool, *DataItem)
+
 type ObservableData interface {
 	Clone() ObservableData
+	RangeFunc(handle handleFunc)
 	RangeTagsFunc(handle func(tags map[string]string) map[string]string)
 	RangeNameFunc(handle func(name string) string)
 	SourceData() interface{}
+	String() string
 	CompatibilitySourceData() interface{}
+}
+
+// DataItem as middle object to store common data
+type DataItem struct {
+	Name          string
+	TimestampNano uint64
+	Tags          map[string]string
+	// same as DataPoints when Type is metric
+	// empty when Type is trace
+	// content&Severity when TYpe is Log
+	Fields map[string]*structpb.Value
+	Type   DataType
+}
+
+func (di DataItem) HashDataItem(fieldKey string) uint64 {
+	var sb strings.Builder
+	keys := make([]string, 0, len(di.Tags))
+	for k, _ := range di.Tags {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	sb.WriteString(di.Name + "\n")
+	for _, k := range keys {
+		sb.WriteString(k + di.Tags[k] + "\n")
+	}
+	sb.WriteString(fieldKey)
+
+	return xxhash.Sum64String(sb.String())
 }
 
 // Metrics
 type Metrics struct {
 	Metrics []*mpb.Metric `json:"metrics"`
+}
+
+func (m *Metrics) String() string {
+	buf, _ := json.Marshal(m.Metrics)
+	return fmt.Sprintf("metrics => %s", string(buf))
+}
+
+func (m *Metrics) RangeFunc(handle handleFunc) {
+	dropedList := make([]int, 0)
+	for idx, item := range m.Metrics {
+		drop, res := handle(&DataItem{
+			TimestampNano: item.TimeUnixNano,
+			Name:          item.Name,
+			Tags:          item.Attributes,
+			Fields:        item.DataPoints,
+			Type:          MetricDataType,
+		})
+		item.Name = res.Name
+		item.Attributes = res.Tags
+		item.DataPoints = res.Fields
+		if drop {
+			dropedList = append(dropedList, idx)
+		}
+	}
+	// TODO remove dropped item
 }
 
 func (m *Metrics) RangeNameFunc(handle func(name string) string) {
@@ -88,6 +153,14 @@ type Traces struct {
 	Spans []*tpb.Span `json:"spans"`
 }
 
+func (t *Traces) String() string {
+	buf, _ := json.Marshal(t.Spans)
+	return fmt.Sprintf("spans => %s", string(buf))
+}
+
+func (t *Traces) RangeFunc(handle handleFunc) {
+}
+
 func (t *Traces) RangeNameFunc(handle func(name string) string) {
 	for _, item := range t.Spans {
 		item.Name = handle(item.Name)
@@ -118,6 +191,14 @@ func (t *Traces) RangeTagsFunc(handle func(tags map[string]string) map[string]st
 // Logs
 type Logs struct {
 	Logs []*lpb.Log `json:"logs"`
+}
+
+func (l *Logs) String() string {
+	buf, _ := json.Marshal(l.Logs)
+	return fmt.Sprintf("logs => %s", string(buf))
+}
+
+func (l *Logs) RangeFunc(handle handleFunc) {
 }
 
 func (l *Logs) RangeNameFunc(handle func(name string) string) {

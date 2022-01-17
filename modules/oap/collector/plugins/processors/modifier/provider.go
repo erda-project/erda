@@ -41,17 +41,17 @@ func (p *provider) ComponentID() model.ComponentID {
 }
 
 func (p *provider) Process(data model.ObservableData) (model.ObservableData, error) {
-	data.RangeTagsFunc(func(tags map[string]string) map[string]string {
-		if filter.IsInclude(p.Cfg.Filter, tags) {
-			tags = p.modify(tags)
+	data.RangeFunc(func(item *model.DataItem) (bool, *model.DataItem) {
+		if !p.Cfg.Filter.IsPass(item) {
+			return false, item
 		}
-		return tags
+
+		item.Tags = p.modify(item.Tags)
+		if p.Cfg.NameOverride != "" {
+			item.Name = p.Cfg.NameOverride
+		}
+		return false, item
 	})
-	if p.Cfg.NameOverride != "" {
-		data.RangeNameFunc(func(name string) string {
-			return p.Cfg.NameOverride
-		})
-	}
 	return data, nil
 }
 

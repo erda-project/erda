@@ -40,7 +40,7 @@ type provider struct {
 	Log    logs.Logger
 	Router httpserver.Router `autowired:"http-router"`
 
-	consumerFunc model.ObservableDataReceiverFunc
+	consumerFunc model.ObservableDataConsumerFunc
 }
 
 // Run this is optional
@@ -73,7 +73,7 @@ func (p *provider) prwHandler(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-func (p *provider) RegisterConsumer(consumer model.ObservableDataReceiverFunc) {
+func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
 	p.consumerFunc = consumer
 }
 

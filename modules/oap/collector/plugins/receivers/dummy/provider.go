@@ -43,10 +43,10 @@ type provider struct {
 	Cfg *config
 	Log logs.Logger
 
-	consumerFunc model.ObservableDataReceiverFunc
+	consumerFunc model.ObservableDataConsumerFunc
 }
 
-func (p *provider) RegisterConsumer(consumer model.ObservableDataReceiverFunc) {
+func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
 	p.consumerFunc = consumer
 }
 
