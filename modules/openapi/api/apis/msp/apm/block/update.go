@@ -28,5 +28,5 @@ var TMC_METRIC_DASHBOARD_UPDATE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 更新自定义大盘",
-	Audit:       auditOperatorBlock(apistructs.DeleteServiceToken),
+	Audit:       auditOperatorBlock(apistructs.UpdateServiceDashboard),
 }

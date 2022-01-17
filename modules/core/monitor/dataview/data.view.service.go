@@ -228,9 +228,11 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 		CreatedAt: model.CreatedAt.UnixNano() / int64(time.Millisecond),
 		UpdatedAt: model.UpdatedAt.UnixNano() / int64(time.Millisecond),
 	}, model.ViewConfig, model.DataConfig)}
-	err = s.auditContextMap(ctx, req.Name)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+	if req.Scope == "org" {
+		err = s.auditContextMap(ctx, req.Name)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
 	}
 	return result, nil
 }
@@ -245,12 +247,23 @@ func (s *dataViewService) getOrgName(ctx *context.Context) (string, error) {
 }
 
 func (s *dataViewService) UpdateCustomView(ctx context.Context, req *pb.UpdateCustomViewRequest) (*pb.UpdateCustomViewResponse, error) {
-	err := s.custom.UpdateView(req.Id, fieldsForUpdate(req))
+	data, err := s.custom.GetByFields(map[string]interface{}{
+		"ID": req.Id,
+	})
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	err = s.custom.UpdateView(req.Id, fieldsForUpdate(req))
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
 	result := &pb.UpdateCustomViewResponse{Data: true}
-	err = s.auditContextMap(ctx, req.Name)
+	if data.Scope == "org" {
+		err = s.auditContextMap(ctx, data.Name)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+	}
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -268,9 +281,11 @@ func (s *dataViewService) DeleteCustomView(ctx context.Context, req *pb.DeleteCu
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	err = s.auditContextMap(ctx, data.Name)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+	if data.Scope == "org" {
+		err = s.auditContextMap(ctx, data.Name)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
 	}
 	return &pb.DeleteCustomViewResponse{Data: true}, nil
 }

@@ -190,6 +190,7 @@ const (
 	DeleteOrgNotifyGroup     TemplateName = "deleteOrgNotifyGroup"
 	CreateServiceNotifyGroup TemplateName = "createServiceNotifyGroup"
 	DeleteServiceNotifyGroup TemplateName = "deleteServiceNotifyGroup"
+	UpdateServiceNotifyGroup TemplateName = "updateServiceNotifyGroup"
 	// ========================DeploymentOrder================================
 	CreateDeploymentOrderTemplate  TemplateName = "createDeploymentOrder"
 	ExecuteDeploymentOrderTemplate TemplateName = "executeDeploymentOrder"
@@ -262,6 +263,7 @@ const (
 	DeleteDashboard        TemplateName = "deleteDashboard"
 	AddServiceDashboard    TemplateName = "addServiceDashboard"
 	DeleteServiceDashboard TemplateName = "deleteServiceDashboard"
+	UpdateServiceDashboard TemplateName = "updateServiceDashboard"
 
 	CreateServiceToken TemplateName = "createServiceToken"
 	DeleteServiceToken TemplateName = "deleteServiceToken"
