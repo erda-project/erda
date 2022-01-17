@@ -15,8 +15,19 @@
 package i18n
 
 import (
+	"fmt"
+
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
+
+	"github.com/erda-project/erda-infra/providers/i18n"
+)
+
+var (
+	DefaultLocale = "en,zh-CN;q=0.9,zh;q=0.8,en-US;q=0.7,en-GB;q=0.6"
+
+	translator      i18n.Translator
+	defaultCodes, _ = i18n.ParseLanguageCode(DefaultLocale)
 )
 
 func InitI18N() {
@@ -25,4 +36,22 @@ func InitI18N() {
 	message.SetString(language.SimplifiedChinese, "InsufficientResources", "资源不足")
 	message.SetString(language.SimplifiedChinese, "ProbeFailed", "健康检查失败")
 	message.SetString(language.SimplifiedChinese, "ContainerCannotRun", "容器无法启动")
+}
+
+func SetSingle(trans i18n.Translator) {
+	translator = trans
+}
+
+func Sprintf(locale, key string, args ...interface{}) string {
+	if translator == nil {
+		panic("the translator is nil")
+	}
+	codes, err := i18n.ParseLanguageCode(locale)
+	if err != nil || len(codes) == 0 || locale == "" {
+		codes = defaultCodes
+	}
+	if len(args) == 0 {
+		return translator.Text(codes, key)
+	}
+	return fmt.Sprintf(translator.Text(codes, key), args...)
 }
