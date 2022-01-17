@@ -111,7 +111,7 @@ func TestParseDeploymentOrderStatus(t *testing.T) {
 
 func TestComposeApplicationsInfo(t *testing.T) {
 	type args struct {
-		Releases   []*apistructs.ReleaseGetResponseData
+		Releases   []*dbclient.Release
 		Params     map[string]apistructs.DeploymentOrderParam
 		AppsStatus apistructs.DeploymentOrderStatusMap
 	}
@@ -138,14 +138,10 @@ func TestComposeApplicationsInfo(t *testing.T) {
 		{
 			name: "pipeline",
 			args: args{
-				Releases: []*apistructs.ReleaseGetResponseData{
+				Releases: []*dbclient.Release{
 					{
-						ReleaseID: "8d2385a088df415decdf6357147ed4a2",
-						Diceyml:   "fake-diceyaml",
-						Labels: map[string]string{
-							"gitCommitId": "27504bb7cb788bee08a50612b97faea201c0efed",
-							"gitBranch":   "master",
-						},
+						ReleaseId:       "8d2385a088df415decdf6357147ed4a2",
+						Labels:          "{\n    \"gitCommitId\": \"27504bb7cb788bee08a50612b97faea201c0efed\",\n    \"gitBranch\": \"master\"\n}",
 						ApplicationName: "app1",
 					},
 				},
@@ -174,7 +170,6 @@ func TestComposeApplicationsInfo(t *testing.T) {
 					},
 					Branch:   "master",
 					CommitId: "27504bb7cb788bee08a50612b97faea201c0efed",
-					DiceYaml: "fake-diceyaml",
 					Status:   apistructs.DeploymentStatusDeploying,
 				},
 			},

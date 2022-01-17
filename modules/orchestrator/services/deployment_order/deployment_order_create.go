@@ -44,7 +44,7 @@ func (d *DeploymentOrder) Create(req *apistructs.DeploymentOrderCreateRequest) (
 	}
 
 	// permission check
-	if err := d.checkExecutePermission(req.Operator, req.Workspace, releaseResp); err != nil {
+	if err := d.checkExecutePermission(req.Operator, req.Workspace, d.parseAppsInfoWithRelease(releaseResp)); err != nil {
 		return nil, apierrors.ErrCreateDeploymentOrder.InternalError(err)
 	}
 
@@ -95,8 +95,14 @@ func (d *DeploymentOrder) Deploy(req *apistructs.DeploymentOrderDeployRequest) (
 		return nil, err
 	}
 
+	appsInfo, err := d.parseAppsInfoWithOrder(order)
+	if err != nil {
+		logrus.Errorf("failed to parse application info with order, err: %v", err)
+		return nil, err
+	}
+
 	// permission check
-	if err := d.checkExecutePermission(req.Operator, order.Workspace, nil, order.ReleaseId); err != nil {
+	if err := d.checkExecutePermission(req.Operator, order.Workspace, appsInfo); err != nil {
 		logrus.Errorf("failed to check execute permission, err: %v", err)
 		return nil, apierrors.ErrDeployDeploymentOrder.InternalError(err)
 	}
@@ -430,6 +436,36 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 	}
 
 	return ret, nil
+}
+
+func (d *DeploymentOrder) parseAppsInfoWithOrder(order *dbclient.DeploymentOrder) (map[int64]string, error) {
+	ret := make(map[int64]string)
+	switch order.Type {
+	case apistructs.TypeProjectRelease:
+		releaseResp, err := d.bdl.GetRelease(order.ReleaseId)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range releaseResp.ApplicationReleaseList {
+			ret[r.ApplicationID] = r.ApplicationName
+		}
+	default:
+		ret[order.ApplicationId] = order.ApplicationName
+	}
+	return ret, nil
+}
+
+func (d *DeploymentOrder) parseAppsInfoWithRelease(releaseResp *apistructs.ReleaseGetResponseData) map[int64]string {
+	ret := make(map[int64]string)
+	if releaseResp.IsProjectRelease {
+		for _, r := range releaseResp.ApplicationReleaseList {
+			ret[r.ApplicationID] = r.ApplicationName
+		}
+	} else {
+		ret[releaseResp.ApplicationID] = releaseResp.ApplicationName
+	}
+
+	return ret
 }
 
 func parseOrderType(t string, isProjectRelease bool) string {
