@@ -49,7 +49,7 @@ func (e *Endpoints) CreateAccess(ctx context.Context, r *http.Request, vars map[
 		Body:     &body,
 	}
 
-	data, apiError := e.assetSvc.CreateAccess(&req)
+	data, apiError := e.assetSvc.CreateAccess(ctx, &req)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}
@@ -129,7 +129,7 @@ func (e *Endpoints) DeleteAccess(ctx context.Context, r *http.Request, vars map[
 		URIParams: &apistructs.GetAccessURIParams{AccessID: vars[urlPathAccessID]},
 	}
 
-	if apiError := e.assetSvc.DeleteAccess(&req); apiError != nil {
+	if apiError := e.assetSvc.DeleteAccess(ctx, &req); apiError != nil {
 		return apiError.ToResp(), nil
 	}
 
@@ -158,7 +158,7 @@ func (e *Endpoints) UpdateAccess(ctx context.Context, r *http.Request, vars map[
 		return apierrors.UpdateAccess.InvalidParameter("invalid body").ToResp(), nil
 	}
 
-	access, apiError := e.assetSvc.UpdateAccess(&req)
+	access, apiError := e.assetSvc.UpdateAccess(ctx, &req)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}

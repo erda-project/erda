@@ -15,9 +15,13 @@
 package dbclient
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -63,7 +67,7 @@ func GetMyClient(req *apistructs.GetClientReq, orgManager bool) (*apistructs.Cli
 	return &model, nil
 }
 
-func ListSwaggerVersionClients(req *apistructs.ListSwaggerVersionClientsReq) ([]*apistructs.ListSwaggerVersionClientOjb, error) {
+func ListSwaggerVersionClients(ctx context.Context, trans i18n.Translator, req *apistructs.ListSwaggerVersionClientsReq) ([]*apistructs.ListSwaggerVersionClientOjb, error) {
 	var (
 		list      []*apistructs.ListSwaggerVersionClientOjb
 		contracts []*apistructs.ContractModel
@@ -95,8 +99,8 @@ func ListSwaggerVersionClients(req *apistructs.ListSwaggerVersionClientsReq) ([]
 				ContractModel:     *contract,
 				ClientName:        client.Name,
 				ClientDisplayName: client.DisplayName,
-				CurSLAName:        getSLAName(contract.CurSLAID, slaNames),
-				RequestSLAName:    getSLAName(contract.RequestSLAID, slaNames),
+				CurSLAName:        getSLAName(ctx, trans, contract.CurSLAID, slaNames),
+				RequestSLAName:    getSLAName(ctx, trans, contract.RequestSLAID, slaNames),
 			},
 			Permission: map[string]bool{"edit": false},
 		}
@@ -109,13 +113,15 @@ func ListSwaggerVersionClients(req *apistructs.ListSwaggerVersionClientsReq) ([]
 // if salID is nil, returns "";
 // if slaID is in names, return the value;
 // otherwise, select out the slaName from database and records it in names.
-func getSLAName(slaID *uint64, names map[uint64]string) string {
+func getSLAName(ctx context.Context, trans i18n.Translator, slaID *uint64, names map[uint64]string) string {
+	codes := httpserver.UnwrapI18nCodes(ctx)
+
 	if slaID == nil {
 		return ""
 	}
 
 	if *slaID == 0 {
-		return "无限制 SLA"
+		return trans.Text(codes, "UnlimitedSLAName")
 	}
 
 	name, ok := names[*slaID]
