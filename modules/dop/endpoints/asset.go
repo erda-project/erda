@@ -56,7 +56,7 @@ func (e *Endpoints) CreateAPIAsset(ctx context.Context, r *http.Request, vars ma
 	}
 	req.IdentityInfo = identityInfo
 
-	assetID, err := e.assetSvc.CreateAPIAsset(req)
+	assetID, err := e.assetSvc.CreateAPIAsset(ctx, req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -172,7 +172,7 @@ func (e *Endpoints) DeleteAPIAsset(ctx context.Context, r *http.Request, vars ma
 		IdentityInfo: identityInfo,
 	}
 
-	if err = e.assetSvc.DeleteAssetByAssetID(req); err != nil {
+	if err = e.assetSvc.DeleteAssetByAssetID(ctx, req); err != nil {
 		return errorresp.ErrResp(err)
 	}
 

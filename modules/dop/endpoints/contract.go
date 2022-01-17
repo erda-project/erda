@@ -49,7 +49,7 @@ func (e *Endpoints) CreateContract(ctx context.Context, r *http.Request, vars ma
 		Body:      &body,
 	}
 
-	client, sk, contract, apiError := e.assetSvc.CreateContract(&req)
+	client, sk, contract, apiError := e.assetSvc.CreateContract(ctx, &req)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}
@@ -84,7 +84,7 @@ func (e *Endpoints) ListContract(ctx context.Context, r *http.Request, vars map[
 		QueryParams: &queryParams,
 	}
 
-	data, apiError := e.assetSvc.ListContracts(&req)
+	data, apiError := e.assetSvc.ListContracts(ctx, &req)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}
@@ -185,7 +185,7 @@ func (e *Endpoints) UpdateContract(ctx context.Context, r *http.Request, vars ma
 		return apierrors.UpdateContract.ToResp(), nil
 	}
 
-	client, contract, apiError := e.assetSvc.UpdateContract(&req)
+	client, contract, apiError := e.assetSvc.UpdateContract(ctx, &req)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}
@@ -212,7 +212,7 @@ func (e *Endpoints) DeleteContract(ctx context.Context, r *http.Request, vars ma
 		},
 	}
 
-	if apiError := e.assetSvc.DeleteContract(&req); apiError != nil {
+	if apiError := e.assetSvc.DeleteContract(ctx, &req); apiError != nil {
 		return apiError.ToResp(), nil
 	}
 	return httpserver.OkResp(nil)

@@ -69,6 +69,7 @@ type provider struct {
 	CPTran        i18n.I18n        `autowired:"i18n@cp"`
 	IssueTan      i18n.Translator  `translator:"issue-manage"`
 	ResourceTrans i18n.Translator  `translator:"resource-trans"`
+	APIMTrans     i18n.Translator  `translator:"api-management-trans"`
 	DB            *gorm.DB         `autowired:"mysql-client"`
 	ETCD          etcd.Interface   // autowired
 	EtcdClient    *clientv3.Client // autowired
