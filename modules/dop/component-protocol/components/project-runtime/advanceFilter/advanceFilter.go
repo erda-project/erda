@@ -17,6 +17,7 @@ package page
 import (
 	"encoding/base64"
 	"encoding/json"
+	"math"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -26,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
@@ -150,19 +152,32 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 		logrus.Errorf("parse oid failed,%v", err)
 		return data
 	}
+	appIds := make([]uint64, 0)
+	appIdToName := make(map[uint64]string)
+	allApps, err := af.bdl.GetAppList(sdk.Identity.OrgID, sdk.Identity.UserID, apistructs.ApplicationListRequest{
+		ProjectID: projectId,
+		IsSimple:  true,
+		PageSize:  math.MaxInt32,
+		PageNo:    1})
+	if err != nil {
+		logrus.Errorf("get my app failed,%v", err)
+		return data
+	}
+	for i := 0; i < len(allApps.List); i++ {
+		appIds = append(appIds, allApps.List[i].ID)
+		appIdToName[allApps.List[i].ID] = allApps.List[i].Name
+	}
+	myApp := make(map[uint64]bool)
 	apps, err := af.bdl.GetMyApps(sdk.Identity.UserID, oid)
 	if err != nil {
 		logrus.Errorf("get my app failed,%v", err)
 		return data
 	}
-	appIds := make([]uint64, 0)
-	appIdToName := make(map[uint64]string)
 	for i := 0; i < len(apps.List); i++ {
 		if apps.List[i].ProjectID != projectId {
 			continue
 		}
-		appIds = append(appIds, apps.List[i].ID)
-		appIdToName[apps.List[i].ID] = apps.List[i].Name
+		myApp[apps.List[i].ID] = true
 	}
 	runtimesByApp, err := af.bdl.ListRuntimesGroupByApps(oid, sdk.Identity.UserID, appIds, getEnv)
 	if err != nil {
@@ -197,6 +212,8 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 	(*sdk.GlobalState)["runtimes"] = selectRuntimes
 	// runtimeNameToAppName
 	(*sdk.GlobalState)["runtimeIdToAppName"] = runtimeIdToAppNameMap
+	// myApp
+	(*sdk.GlobalState)["myApp"] = myApp
 
 	// filter values
 
