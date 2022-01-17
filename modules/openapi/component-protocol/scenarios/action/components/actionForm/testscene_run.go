@@ -21,11 +21,13 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 // testSceneRun testSceneRun component protocol
 func testSceneRun(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error) {
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	locale := bdl.Bdl.GetLocale(bdl.Locale)
 	projectId, err := strconv.ParseInt(bdl.InParams["projectId"].(string), 10, 64)
 	if err != nil {
 		return err
@@ -187,7 +189,7 @@ func testSceneRun(ctx context.Context, c *apistructs.Component, scenario apistru
 		cms = append(cms, map[string]interface{}{"name": v.DisplayName, "value": v.Ns})
 	}
 
-	newField := fillFields(field, testSpaces, testSceneSets, testScenes, cms)
+	newField := fillFields(locale, field, testSpaces, testSceneSets, testScenes, cms)
 	newProps := map[string]interface{}{
 		"fields": newField,
 	}
@@ -223,19 +225,19 @@ func changeTestSet(newMap map[string]interface{}) map[string]interface{} {
 	return formData
 }
 
-func fillFields(field []apistructs.FormPropItem, testSpaces []map[string]interface{}, testSceneSets []map[string]interface{}, testScenes []map[string]interface{}, cms []map[string]interface{}) []apistructs.FormPropItem {
+func fillFields(locale *i18n.LocaleResource, field []apistructs.FormPropItem, testSpaces []map[string]interface{}, testSceneSets []map[string]interface{}, testScenes []map[string]interface{}, cms []map[string]interface{}) []apistructs.FormPropItem {
 
 	// Add task parameters
 	taskParams := apistructs.FormPropItem{
 		Component: "formGroup",
 		ComponentProps: map[string]interface{}{
-			"title": "任务参数",
+			"title": locale.Get("taskParams"),
 		},
 		Group: "params",
 		Key:   "params",
 	}
 	spaceField := apistructs.FormPropItem{
-		Label:     "测试空间",
+		Label:     locale.Get("testSpace"),
 		Component: "select",
 		Required:  true,
 		Key:       "params.test_space",
@@ -247,7 +249,7 @@ func fillFields(field []apistructs.FormPropItem, testSpaces []map[string]interfa
 		Group: "params",
 	}
 	sceneSetField := apistructs.FormPropItem{
-		Label:     "场景集",
+		Label:     locale.Get("tp.export.scene.set.sheet.name"),
 		Component: "select",
 		Required:  true,
 		Key:       "params.test_scene_set",
@@ -263,7 +265,7 @@ func fillFields(field []apistructs.FormPropItem, testSpaces []map[string]interfa
 	}
 
 	sceneField := apistructs.FormPropItem{
-		Label:     "场景",
+		Label:     locale.Get("scene"),
 		Component: "select",
 		Required:  true,
 		Key:       "params.test_scene",
@@ -275,7 +277,7 @@ func fillFields(field []apistructs.FormPropItem, testSpaces []map[string]interfa
 		Group: "params",
 	}
 	globalConfigField := apistructs.FormPropItem{
-		Label:     "参数配置",
+		Label:     locale.Get("paramsConfig"),
 		Component: "select",
 		Required:  true,
 		Key:       "params.cms",
@@ -287,7 +289,7 @@ func fillFields(field []apistructs.FormPropItem, testSpaces []map[string]interfa
 	var newField []apistructs.FormPropItem
 	for _, val := range field {
 		newField = append(newField, val)
-		if strings.EqualFold(val.Label, "执行条件") {
+		if strings.EqualFold(val.Label, locale.Get("execCond")) {
 			newField = append(newField, taskParams)
 			newField = append(newField, spaceField)
 			newField = append(newField, sceneSetField)

@@ -63,7 +63,7 @@ func (a *ComponentAction) GenActionState(c *apistructs.Component) (version strin
 	return
 }
 
-func GenHeaderProps(actionExt *apistructs.ExtensionVersion, versions []VersionOption) (props []apistructs.FormPropItem, err error) {
+func GenHeaderProps(local *i18n.LocaleResource, actionExt *apistructs.ExtensionVersion, versions []VersionOption) (props []apistructs.FormPropItem, err error) {
 	if actionExt == nil {
 		err = fmt.Errorf("empty action extension")
 		return
@@ -71,12 +71,12 @@ func GenHeaderProps(actionExt *apistructs.ExtensionVersion, versions []VersionOp
 	// input
 	// alias: 任务名称
 	aliasInput := apistructs.FormPropItem{
-		Label:     "任务名称",
+		Label:     local.Get("taskName"),
 		Component: "input",
 		Required:  true,
 		Key:       "alias",
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请输入任务名称",
+			"placeholder": local.Get("taskNameInput"),
 		},
 		DefaultValue: actionExt.Name,
 	}
@@ -85,7 +85,7 @@ func GenHeaderProps(actionExt *apistructs.ExtensionVersion, versions []VersionOp
 	// version: 版本
 	// 动态注入：所有版本选项，版本默认值
 	verSelect := apistructs.FormPropItem{
-		Label:     "版本",
+		Label:     local.Get("version"),
 		Component: "select",
 		Required:  true,
 		Key:       "version",
@@ -98,11 +98,11 @@ func GenHeaderProps(actionExt *apistructs.ExtensionVersion, versions []VersionOp
 	// input
 	// if: 执行条件
 	ifInput := apistructs.FormPropItem{
-		Label:     "执行条件",
+		Label:     local.Get("execCond"),
 		Component: "input",
 		Key:       "if",
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请输入执行条件",
+			"placeholder": local.Get("execCondInput"),
 		},
 	}
 	props = append(props, aliasInput, verSelect, ifInput)
@@ -124,7 +124,7 @@ func GenTimeoutProps(local *i18n.LocaleResource) (props []apistructs.FormPropIte
 	return
 }
 
-func GenResourceProps(actionExt *apistructs.ExtensionVersion) (props []apistructs.FormPropItem, err error) {
+func GenResourceProps(local *i18n.LocaleResource, actionExt *apistructs.ExtensionVersion) (props []apistructs.FormPropItem, err error) {
 	if actionExt == nil {
 		err = fmt.Errorf("empty action extension")
 		return
@@ -155,14 +155,14 @@ func GenResourceProps(actionExt *apistructs.ExtensionVersion) (props []apistruct
 		Component: "formGroup",
 		Group:     GroupResource,
 		ComponentProps: map[string]interface{}{
-			"title":         "运行资源",
+			"title":         local.Get("runResource"),
 			"expandable":    true,
 			"defaultExpand": false,
 		},
 	}
 	// 动态注入：cpu默认值
 	resourceCpu := apistructs.FormPropItem{
-		Label:          "cpu(核)",
+		Label:          local.Get("cpu"),
 		Component:      "inputNumber",
 		Key:            GroupResource + "." + "cpu",
 		Group:          GroupResource,
@@ -183,7 +183,7 @@ func GenResourceProps(actionExt *apistructs.ExtensionVersion) (props []apistruct
 	return
 }
 
-func GenParamAndLoopProps(actionExt *apistructs.ExtensionVersion) (params []apistructs.FormPropItem, loop []apistructs.FormPropItem, err error) {
+func GenParamAndLoopProps(local *i18n.LocaleResource, actionExt *apistructs.ExtensionVersion) (params []apistructs.FormPropItem, loop []apistructs.FormPropItem, err error) {
 	if actionExt == nil {
 		err = fmt.Errorf("empty action extension")
 		return
@@ -200,11 +200,11 @@ func GenParamAndLoopProps(actionExt *apistructs.ExtensionVersion) (params []apis
 		return
 	}
 	params = actionSpec.FormProps
-	loop = GenLoopProps(actionSpec.Loop)
+	loop = GenLoopProps(local, actionSpec.Loop)
 	return
 }
 
-func GenLoopProps(loop *apistructs.PipelineTaskLoop) (loopFp []apistructs.FormPropItem) {
+func GenLoopProps(local *i18n.LocaleResource, loop *apistructs.PipelineTaskLoop) (loopFp []apistructs.FormPropItem) {
 	// loopFormGroup
 	// fromGroup下会根据loop 构建一个表单
 	GroupLoop := "loop"
@@ -213,19 +213,19 @@ func GenLoopProps(loop *apistructs.PipelineTaskLoop) (loopFp []apistructs.FormPr
 		Component: "formGroup",
 		Group:     GroupLoop,
 		ComponentProps: map[string]interface{}{
-			"title":         "循环策略",
+			"title":         local.Get("loopStrategy"),
 			"expandable":    true,
 			"defaultExpand": false,
 		},
 	}
 	breakCon := apistructs.FormPropItem{
-		Label:     "循环结束条件",
+		Label:     local.Get("loopEndCondtion"),
 		Component: "input",
 		Key:       GroupLoop + "." + "break",
 		Group:     GroupLoop,
 	}
 	maxTimes := apistructs.FormPropItem{
-		Label:     "最大循环次数",
+		Label:     local.Get("maxLoop"),
 		Component: "inputNumber",
 		ComponentProps: map[string]interface{}{
 			"precision": 0,
@@ -234,24 +234,24 @@ func GenLoopProps(loop *apistructs.PipelineTaskLoop) (loopFp []apistructs.FormPr
 		Group: GroupLoop,
 	}
 	declineRatio := apistructs.FormPropItem{
-		Label:     "衰退比例",
+		Label:     local.Get("declineRatio"),
 		Component: "inputNumber",
 		Key:       GroupLoop + "." + "strategy.decline_ratio",
 		Group:     GroupLoop,
-		LabelTip:  "每次循环叠加间隔比例",
+		LabelTip:  local.Get("intervalRatio"),
 	}
 	declineLimit := apistructs.FormPropItem{
-		Label:     "衰退最大值(秒)",
+		Label:     local.Get("declineMax"),
 		Component: "inputNumber",
 		ComponentProps: map[string]interface{}{
 			"precision": 0,
 		},
 		Key:      GroupLoop + "." + "strategy.decline_limit_sec",
 		Group:    GroupLoop,
-		LabelTip: "循环最大间隔时间",
+		LabelTip: local.Get("loopMaxInterval"),
 	}
 	interval := apistructs.FormPropItem{
-		Label:     "起始间隔(秒)",
+		Label:     local.Get("startInterval"),
 		Component: "inputNumber",
 		Key:       GroupLoop + "." + "strategy.interval_sec",
 		Group:     GroupLoop,
@@ -281,19 +281,19 @@ func GenActionProps(ctx context.Context, c *apistructs.Component, name, version 
 	c.State["version"] = actionExt.Version
 	local := bdl.Bdl.GetLocale(bdl.Locale)
 
-	header, err := GenHeaderProps(actionExt, versions)
+	header, err := GenHeaderProps(local, actionExt, versions)
 	if err != nil {
 		logrus.Errorf("generate action header props failed, name:%s, version:%s, err:%v", name, version, err)
 		return
 	}
 
-	params, loop, err := GenParamAndLoopProps(actionExt)
+	params, loop, err := GenParamAndLoopProps(local, actionExt)
 	if err != nil {
 		logrus.Errorf("generate action params and loop props failed, name:%s, version:%s, err:%v", name, version, err)
 		return
 	}
 
-	resource, err := GenResourceProps(actionExt)
+	resource, err := GenResourceProps(local, actionExt)
 	if err != nil {
 		logrus.Errorf("generate action resource props failed, name:%s, version:%s, err:%v", name, version, err)
 		return

@@ -22,13 +22,14 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 // testSceneRun testSceneRun component protocol
 func testPlanRun(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error) {
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	locale := bdl.Bdl.GetLocale(bdl.Locale)
 	projectId, err := strconv.Atoi(bdl.InParams["projectId"].(string))
-
 	if err != nil {
 		return err
 	}
@@ -77,7 +78,7 @@ func testPlanRun(ctx context.Context, c *apistructs.Component, scenario apistruc
 	}
 
 	var newField []apistructs.FormPropItem
-	newField = fillTestPlanFields(field, testPlans, cms)
+	newField = fillTestPlanFields(locale, field, testPlans, cms)
 	newProps := map[string]interface{}{
 		"fields": newField,
 	}
@@ -85,19 +86,19 @@ func testPlanRun(ctx context.Context, c *apistructs.Component, scenario apistruc
 	return nil
 }
 
-func fillTestPlanFields(field []apistructs.FormPropItem, testPlans []map[string]interface{}, cms []map[string]interface{}) []apistructs.FormPropItem {
+func fillTestPlanFields(locale *i18n.LocaleResource, field []apistructs.FormPropItem, testPlans []map[string]interface{}, cms []map[string]interface{}) []apistructs.FormPropItem {
 
 	// Add task parameters
 	taskParams := apistructs.FormPropItem{
 		Component: "formGroup",
 		ComponentProps: map[string]interface{}{
-			"title": "任务参数",
+			"title": locale.Get("taskParams"),
 		},
 		Group: "params",
 		Key:   "params",
 	}
 	testPlanField := apistructs.FormPropItem{
-		Label:     "测试计划",
+		Label:     locale.Get("testPlan"),
 		Component: "select",
 		Required:  true,
 		Key:       "params.test_plan",
@@ -109,7 +110,7 @@ func fillTestPlanFields(field []apistructs.FormPropItem, testPlans []map[string]
 		Group: "params",
 	}
 	globalConfigField := apistructs.FormPropItem{
-		Label:     "参数配置",
+		Label:     locale.Get("paramsConfig"),
 		Component: "select",
 		Required:  true,
 		Key:       "params.cms",
@@ -121,7 +122,7 @@ func fillTestPlanFields(field []apistructs.FormPropItem, testPlans []map[string]
 		Group: "params",
 	}
 	isContinueExecutionField := apistructs.FormPropItem{
-		Label:        "失败后是否继续执行",
+		Label:        locale.Get("rerun"),
 		Component:    "input",
 		Required:     false,
 		Key:          "params.is_continue_execution",
@@ -131,7 +132,7 @@ func fillTestPlanFields(field []apistructs.FormPropItem, testPlans []map[string]
 	var newField []apistructs.FormPropItem
 	for _, val := range field {
 		newField = append(newField, val)
-		if strings.EqualFold(val.Label, "执行条件") {
+		if strings.EqualFold(val.Label, locale.Get("execCond")) {
 			newField = append(newField, taskParams)
 			newField = append(newField, testPlanField)
 			newField = append(newField, globalConfigField)

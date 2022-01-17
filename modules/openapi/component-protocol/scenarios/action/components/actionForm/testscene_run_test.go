@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 func Test_changeTestSet(t *testing.T) {
@@ -557,7 +558,7 @@ func Test_fillFields(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := fillFields(tt.args.field, tt.args.testSpaces, tt.args.testSceneSets, tt.args.testScenes, tt.args.cms); !reflect.DeepEqual(got, tt.want) {
+			if got := fillFields(&i18n.LocaleResource{}, tt.args.field, tt.args.testSpaces, tt.args.testSceneSets, tt.args.testScenes, tt.args.cms); !reflect.DeepEqual(got, tt.want) {
 				fmt.Println(got)
 				fmt.Println(tt.want)
 			}

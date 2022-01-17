@@ -20,6 +20,7 @@ import (
 	"github.com/bmizerany/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 func Test_fillMysqlCliFields(t *testing.T) {
@@ -97,7 +98,7 @@ func Test_fillMysqlCliFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := fillMysqlCliFields(tt.args.field, tt.args.dataSourceList)
+			got := fillMysqlCliFields(&i18n.LocaleResource{}, tt.args.field, tt.args.dataSourceList)
 			assert.Equal(t, len(got), len(tt.want))
 			for index, v := range got {
 				assert.Equal(t, v.Key, tt.want[index].Key)
