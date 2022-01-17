@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
 	"github.com/erda-project/erda/pkg/http/httputil"
@@ -353,6 +355,14 @@ func (b *Bundle) ListOrgClusterRelation(userID, clusterName string) ([]apistruct
 
 // DereferenceCluster delete the relation of org and cluster
 func (b *Bundle) DereferenceCluster(orgID uint64, clusterName, userID string) (string, error) {
+	referenceResp, err := b.FindClusterResource(clusterName, strconv.FormatUint(orgID, 10))
+	if err != nil {
+		return "", err
+	}
+	if referenceResp.AddonReference > 0 || referenceResp.ServiceReference > 0 {
+		return "", errors.Errorf("集群中存在未清理的Addon或Service，请清理后再执行.")
+	}
+
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return "", err
