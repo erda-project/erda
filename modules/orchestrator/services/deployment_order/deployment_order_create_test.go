@@ -128,3 +128,26 @@ func TestRenderDetail(t *testing.T) {
 	_, err := order.RenderDetail("1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD")
 	assert.NoError(t, err)
 }
+
+func TestParseAppsInfoWithOrder(t *testing.T) {
+	order := New()
+	got, err := order.parseAppsInfoWithOrder(&dbclient.DeploymentOrder{
+		ApplicationName: "test",
+		ApplicationId:   1,
+		Type:            apistructs.TypePipeline,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, got, map[int64]string{1: "test"})
+}
+
+func TestParseAppsInfoWithRelease(t *testing.T) {
+	order := New()
+	got := order.parseAppsInfoWithRelease(&apistructs.ReleaseGetResponseData{
+		IsProjectRelease: true,
+		ApplicationReleaseList: []*apistructs.ApplicationReleaseSummary{
+			{ApplicationName: "test-1", ApplicationID: 1},
+			{ApplicationName: "test-2", ApplicationID: 2},
+		},
+	})
+	assert.Equal(t, got, map[int64]string{1: "test-1", 2: "test-2"})
+}

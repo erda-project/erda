@@ -61,6 +61,25 @@ func (d *DeploymentOrder) List(userId string, orgId uint64, conditions *apistruc
 func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient.DeploymentOrder) ([]*apistructs.DeploymentOrderItem, error) {
 	ret := make([]*apistructs.DeploymentOrderItem, 0)
 
+	setIds := make(map[string]byte)
+	for _, order := range orders {
+		setIds[order.ReleaseId] = 0
+	}
+	releasesId := make([]string, 0)
+	for id := range setIds {
+		releasesId = append(releasesId, id)
+	}
+
+	releases, err := d.db.ListReleases(releasesId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list release, ids: %+v", releasesId)
+	}
+
+	releasesMap := make(map[string]*dbclient.Release)
+	for _, r := range releases {
+		releasesMap[r.ReleaseId] = r
+	}
+
 	for _, order := range orders {
 		appsStatus := make(apistructs.DeploymentOrderStatusMap, 0)
 		if order.Status != "" {
@@ -72,13 +91,17 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 
 		applicationCount := 1
 
-		releaseResp, err := d.bdl.GetRelease(order.ReleaseId)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get release %s, err: %v", order.ReleaseId, err)
+		releaseResp, ok := releasesMap[order.ReleaseId]
+		if !ok {
+			return nil, fmt.Errorf("failed to get release %s, not found", order.ReleaseId)
 		}
 
 		if releaseResp.IsProjectRelease {
-			applicationCount = len(releaseResp.ApplicationReleaseList)
+			subReleases := make([]string, 0)
+			if err := json.Unmarshal([]byte(releaseResp.ApplicationReleaseList), &subReleases); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal release application list, err: %v", err)
+			}
+			applicationCount = len(subReleases)
 		}
 
 		applicationStatus := strings.Join([]string{

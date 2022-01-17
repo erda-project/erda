@@ -29,7 +29,13 @@ func (d *DeploymentOrder) Cancel(req *apistructs.DeploymentOrderCancelRequest) (
 		return nil, err
 	}
 
-	if err := d.checkExecutePermission(req.Operator, order.Workspace, nil, order.ReleaseId); err != nil {
+	appsInfo, err := d.parseAppsInfoWithOrder(order)
+	if err != nil {
+		logrus.Errorf("failed to get applications info, err: %v", err)
+		return nil, err
+	}
+
+	if err := d.checkExecutePermission(req.Operator, order.Workspace, appsInfo); err != nil {
 		return nil, apierrors.ErrCancelDeploymentOrder.InternalError(err)
 	}
 

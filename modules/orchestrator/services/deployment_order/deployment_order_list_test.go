@@ -40,6 +40,10 @@ func TestListDeploymentOrder(t *testing.T) {
 		return 0, []dbclient.DeploymentOrder{}, nil
 	})
 
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
+		return []*dbclient.Release{}, nil
+	})
+
 	got, err := order.List("1", 1, &apistructs.DeploymentOrderListConditions{}, &apistructs.PageInfo{})
 	assert.NoError(t, err)
 	assert.Equal(t, got, &apistructs.DeploymentOrderListData{
@@ -50,30 +54,17 @@ func TestListDeploymentOrder(t *testing.T) {
 }
 
 func TestConvertDeploymentOrderToResponseItem(t *testing.T) {
-	bdl := bundle.New()
 	order := New()
 
 	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetRelease", func(*bundle.Bundle, string) (*apistructs.ReleaseGetResponseData, error) {
-		return &apistructs.ReleaseGetResponseData{
-			ReleaseID:        "68a6df7529914c89b632fb18450d0055",
-			ReleaseName:      "fake-project-release",
-			IsProjectRelease: true,
-			ApplicationReleaseList: []*apistructs.ApplicationReleaseSummary{
-				{
-					ApplicationName: "app-1",
-					ReleaseID:       "523af537946b79c4f8369ed39ba78605",
-					ReleaseName:     "fake-release-1",
-					Version:         "fake-version-1",
-				},
-				{
-					ApplicationName: "app-2",
-					ReleaseID:       "2deb000b57bfac9d72c14d4ed967b572",
-					ReleaseName:     "fake-release-2",
-					Version:         "fake-version-2",
-				},
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
+		return []*dbclient.Release{
+			{
+				ReleaseId:              "68a6df7529914c89b632fb18450d0055",
+				IsProjectRelease:       true,
+				ApplicationReleaseList: "[\"2deb000b57bfac9d72c14d4ed967b572\", \"523af537946b79c4f8369ed39ba78605\"]",
 			},
-			Version: "v-0000-1",
 		}, nil
 	})
 
