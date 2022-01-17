@@ -25,13 +25,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/dop/services/issueproperty"
-
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/issueproperty"
 	"github.com/erda-project/erda/modules/dop/services/issuerelated"
 	"github.com/erda-project/erda/modules/dop/services/issuestream"
 	"github.com/erda-project/erda/modules/dop/services/monitor"
@@ -41,13 +40,13 @@ import (
 
 // Issue 事件操作封装
 type Issue struct {
-	db           *dao.DBClient
-	bdl          *bundle.Bundle
-	stream       *issuestream.IssueStream
-	uc           *ucauth.UCClient
-	tran         i18n.Translator
-	issueRelated *issuerelated.IssueRelated
-	Ip           *issueproperty.IssueProperty
+	db            *dao.DBClient
+	bdl           *bundle.Bundle
+	stream        *issuestream.IssueStream
+	uc            *ucauth.UCClient
+	tran          i18n.Translator
+	issueRelated  *issuerelated.IssueRelated
+	issueProperty *issueproperty.IssueProperty
 
 	CreateFileRecord func(req apistructs.TestFileRecordRequest) (uint64, error)
 	UpdateFileRecord func(req apistructs.TestFileRecordRequest) error
@@ -90,6 +89,12 @@ func WithIssueStream(stream *issuestream.IssueStream) Option {
 func WithIssueRelated(issueRelated *issuerelated.IssueRelated) Option {
 	return func(issue *Issue) {
 		issue.issueRelated = issueRelated
+	}
+}
+
+func WithIssueProperty(issueProperty *issueproperty.IssueProperty) Option {
+	return func(issue *Issue) {
+		issue.issueProperty = issueProperty
 	}
 }
 

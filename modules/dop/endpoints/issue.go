@@ -244,29 +244,32 @@ func (e *Endpoints) ExportExcelIssue(ctx context.Context, w http.ResponseWriter,
 		// 外部创建的事件
 		pageReq.External = true
 	}
-	pageReq.PageNo = 1
-	pageReq.PageSize = 99999
-	// 分页查询
-	issues, _, err := e.issue.Paging(pageReq.IssuePagingRequest)
-	if err != nil {
-		return apierrors.ErrExportExcelIssue.InternalError(err)
-	}
-	pro, err := e.issueProperty.GetBatchProperties(pageReq.OrgID, pageReq.Type)
-	if err != nil {
-		return apierrors.ErrExportExcelIssue.InternalError(err)
-	}
+	pageReq.Locale = e.bdl.GetLocaleByRequest(r).Name()
+	if pageReq.IsDownload {
+		reader, tableName, err := e.issue.ExportTemplateExcel(&pageReq)
+		if err != nil {
+			return apierrors.ErrExportExcelIssue.InternalError(err)
+		}
+		w.Header().Add("Content-Disposition", "attachment;fileName="+tableName+".xlsx")
+		w.Header().Add("Content-Type", "application/vnd.ms-excel")
 
-	locale := e.bdl.GetLocaleByRequest(r).Name()
-	reader, tablename, err := e.issue.ExportExcel(issues, pro, pageReq.ProjectID, pageReq.IsDownload, pageReq.OrgID, locale)
+		if _, err := io.Copy(w, reader); err != nil {
+			return apierrors.ErrExportExcelIssue.InternalError(err)
+		}
+		return nil
+	}
+	recordID, err := e.issue.Export(&pageReq)
 	if err != nil {
 		return apierrors.ErrExportExcelIssue.InternalError(err)
 	}
-	w.Header().Add("Content-Disposition", "attachment;fileName="+tablename+".xlsx")
-	w.Header().Add("Content-Type", "application/vnd.ms-excel")
-
-	if _, err := io.Copy(w, reader); err != nil {
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileIssueActionTypeExport)
+	if err != nil {
 		return apierrors.ErrExportExcelIssue.InternalError(err)
 	}
+	if ok {
+		e.ExportChannel <- recordID
+	}
+	httpserver.WriteData(w, recordID)
 	return nil
 }
 
@@ -280,6 +283,9 @@ func (e *Endpoints) ImportExcelIssue(ctx context.Context, r *http.Request, vars 
 	var req apistructs.IssueImportExcelRequest
 	if err := e.queryStringDecoder.Decode(&req, r.URL.Query()); err != nil {
 		return apierrors.ErrImportExcelIssue.InvalidParameter(err).ToResp(), nil
+	}
+	if req.FileID == "" {
+		return apierrors.ErrImportExcelIssue.InvalidParameter("apiFileUUID").ToResp(), nil
 	}
 	req.IdentityInfo = identityInfo
 
@@ -304,7 +310,7 @@ func (e *Endpoints) ImportExcelIssue(ctx context.Context, r *http.Request, vars 
 		// 外部创建的事件
 	}
 
-	recordID, err := e.issue.Import(req, r)
+	recordID, err := e.issue.Import(req)
 	if err != nil {
 		return apierrors.ErrImportExcelIssue.InternalError(err).ToResp(), nil
 	}
@@ -315,10 +321,7 @@ func (e *Endpoints) ImportExcelIssue(ctx context.Context, r *http.Request, vars 
 	if ok {
 		e.ImportChannel <- recordID
 	}
-	return httpserver.HTTPResponse{
-		Status:  http.StatusAccepted,
-		Content: recordID,
-	}, nil
+	return httpserver.OkResp(recordID)
 }
 
 // UpdateIssue 更新事件
