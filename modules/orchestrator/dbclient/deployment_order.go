@@ -26,7 +26,8 @@ import (
 )
 
 const (
-	orderTableName = "erda_deployment_order"
+	orderTableName   = "erda_deployment_order"
+	releaseTableName = "dice_release"
 )
 
 type DeploymentOrder struct {
@@ -50,6 +51,22 @@ type DeploymentOrder struct {
 
 func (DeploymentOrder) TableName() string {
 	return orderTableName
+}
+
+type Release struct {
+	ReleaseId              string
+	Version                string
+	IsProjectRelease       bool
+	ApplicationName        string
+	ApplicationId          uint64
+	ApplicationReleaseList string
+	Labels                 string
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
+}
+
+func (Release) TableName() string {
+	return releaseTableName
 }
 
 func (db *DBClient) ListDeploymentOrder(conditions *apistructs.DeploymentOrderListConditions, pageInfo *apistructs.PageInfo) (int, []DeploymentOrder, error) {
@@ -141,4 +158,20 @@ func (db *DBClient) UpdateDeploymentOrder(deploymentOrder *DeploymentOrder) erro
 			deploymentOrder.ID)
 	}
 	return nil
+}
+
+func (db *DBClient) GetReleases(releaseId string) (*Release, error) {
+	var r Release
+	if err := db.Where("release_id = ?", releaseId).Find(&r).Error; err != nil {
+		return nil, errors.Wrapf(err, "failed to get release %s", releaseId)
+	}
+	return &r, nil
+}
+
+func (db *DBClient) ListReleases(releasesId []string) ([]*Release, error) {
+	releases := make([]*Release, 0)
+	if err := db.Where("release_id in (?)", releasesId).Find(&releases).Error; err != nil {
+		return nil, errors.Wrapf(err, "failed to list release %+v", releasesId)
+	}
+	return releases, nil
 }
