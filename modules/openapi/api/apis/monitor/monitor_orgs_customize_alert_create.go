@@ -33,7 +33,7 @@ var MONITOR_ORGS_CUSTOMIZE_ALERT_CREATE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 创建企业自定义告警",
-	Audit:       auditCreateOrgAlert(apistructs.CreateOrgCustomAlert),
+	//Audit:       auditCreateOrgAlert(apistructs.CreateOrgCustomAlert),
 }
 
 func auditOperateOrgCustomAlert(tmp apistructs.TemplateName, act string) func(ctx *spec.AuditContext) error {

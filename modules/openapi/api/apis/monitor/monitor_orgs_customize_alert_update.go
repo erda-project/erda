@@ -15,7 +15,6 @@
 package monitor
 
 import (
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
@@ -28,5 +27,5 @@ var MONITOR_ORGS_CUSTOMIZE_ALERT_UPDATE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 修改企业自定义告警",
-	Audit:       auditOperateOrgCustomAlert(apistructs.UpdateOrgCustomAlert, "update"),
+	//Audit:       auditOperateOrgCustomAlert(apistructs.UpdateOrgCustomAlert, "update"),
 }
