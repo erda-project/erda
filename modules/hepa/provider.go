@@ -25,9 +25,11 @@ import (
 	"github.com/erda-project/erda-infra/base/version"
 	_ "github.com/erda-project/erda-infra/providers/health"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/hepa/common"
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/config"
+	hepaI18n "github.com/erda-project/erda/modules/hepa/i18n"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
 	"github.com/erda-project/erda/modules/monitor/common/permission"
 	"github.com/erda-project/erda/pkg/discover"
@@ -42,6 +44,7 @@ type provider struct {
 	Cfg        *myCfg            // auto inject this field
 	Log        logs.Logger       // auto inject this field
 	HttpServer httpserver.Router `autowired:"http-server"`
+	LogTrans   i18n.Translator   `translator:"log-trans"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -73,6 +76,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		permission.ScopeOrg, permission.OrgIDFromHeader(),
 		"org", permission.ActionGet,
 	))
+	hepaI18n.SetSingle(ctx.Service("i18n").(i18n.I18n).Translator("log-trans"))
 	return nil
 }
 

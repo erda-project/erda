@@ -28,3 +28,7 @@ erda.core.hepa.api_policy:
 erda.core.hepa.org_client:
 erda.core.hepa.endpoint_api:
 erda.core.hepa.runtime_service:
+
+i18n:
+  files:
+    - conf/hepa/i18n/log-trans.yaml
