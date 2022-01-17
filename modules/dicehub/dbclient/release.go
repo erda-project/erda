@@ -16,6 +16,7 @@ package dbclient
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -180,7 +181,17 @@ func (client *DBClient) GetReleasesByParams(
 	}
 
 	if version != "" {
-		db = db.Where("version LIKE ?", fmt.Sprintf("%%%s%%", version))
+		var versions []string
+		splits := strings.Split(version, ",")
+		for _, v := range splits {
+			versions = append(versions, strings.TrimSpace(v))
+		}
+
+		if len(versions) == 1 {
+			db = db.Where("version LIKE ?", fmt.Sprintf("%%%s%%", version))
+		} else {
+			db = db.Where("version in (?)", versions)
+		}
 	}
 
 	if commitID != "" {
