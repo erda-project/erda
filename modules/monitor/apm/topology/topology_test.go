@@ -599,3 +599,26 @@ func Test_provider_handleInstanceInfo(t *testing.T) {
 		})
 	}
 }
+
+func Test_queryConditions(t *testing.T) {
+	type args struct {
+		indexType string
+		params    Vo
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  *elastic.BoolQuery
+		want1 string
+	}{
+		{"case1", args{params: Vo{Tags: []string{"service:service_id"}}}, nil, "service_id"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, got1 := queryConditions(tt.args.indexType, tt.args.params)
+			if got1 != tt.want1 {
+				t.Errorf("queryConditions() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
