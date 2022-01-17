@@ -37,7 +37,7 @@ func (p *provider) runDiskCheckAndClean(ctx context.Context) {
 			return
 		}
 
-		err := p.checkDiskUsage(ctx)
+		err := p.checkDiskUsage(ctx, p.Cfg.DiskClean)
 		if err != nil {
 			p.Log.Errorf("failed to check disk: %s", err)
 		}
@@ -128,10 +128,10 @@ func (p *provider) getNodeIndices(filter func(*NodeDiskUsage) bool) (map[string]
 	return nodes, routing, nil
 }
 
-func (p *provider) checkDiskUsage(ctx context.Context) error {
+func (p *provider) checkDiskUsage(ctx context.Context, config diskClean) error {
 	nodes, routing, err := p.getNodeIndices(func(n *NodeDiskUsage) bool {
-		return n.UsedPercent >= p.Cfg.DiskClean.HighDiskUsagePercent &&
-			n.StorePercent >= p.Cfg.DiskClean.MinIndicesStorePercent &&
+		return n.UsedPercent >= config.HighDiskUsagePercent &&
+			n.StorePercent >= config.MinIndicesStorePercent &&
 			n.Store >= p.minIndicesStoreInDisk
 	})
 	if err != nil {
@@ -144,9 +144,9 @@ func (p *provider) checkDiskUsage(ctx context.Context) error {
 
 		// estimate the number of deletes
 		for _, n := range nodes {
-			targetDiskUsage := int64(float64(p.Cfg.DiskClean.LowDiskUsagePercent) / 100 * float64(n.Total))
+			targetDiskUsage := int64(float64(config.LowDiskUsagePercent) / 100 * float64(n.Total))
 			delBytes := n.Used - targetDiskUsage
-			minStore := int64(float64(n.Total) * p.Cfg.DiskClean.MinIndicesStorePercent / 100)
+			minStore := int64(float64(n.Total) * config.MinIndicesStorePercent / 100)
 			if p.minIndicesStoreInDisk > minStore {
 				minStore = p.minIndicesStoreInDisk
 			}
@@ -197,8 +197,8 @@ func (p *provider) checkDiskUsage(ctx context.Context) error {
 		// continue to check
 		nodes, routing, err = p.getNodeIndices(func(n *NodeDiskUsage) bool {
 			return nodes[n.ID] != nil &&
-				n.UsedPercent >= p.Cfg.DiskClean.LowDiskUsagePercent &&
-				n.StorePercent >= p.Cfg.DiskClean.MinIndicesStorePercent &&
+				n.UsedPercent >= config.LowDiskUsagePercent &&
+				n.StorePercent >= config.MinIndicesStorePercent &&
 				n.Store >= p.minIndicesStoreInDisk
 		})
 		if err != nil {
