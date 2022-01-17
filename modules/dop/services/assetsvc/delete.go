@@ -15,6 +15,7 @@
 package assetsvc
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/jinzhu/gorm"
@@ -29,7 +30,7 @@ import (
 )
 
 // DeleteAssetByAssetID 根据给定的 orgID 和 assetID 删除 APIAsset 表和 APIAssetVersionDetail 表的记录
-func (svc *Service) DeleteAssetByAssetID(req apistructs.APIAssetDeleteRequest) error {
+func (svc *Service) DeleteAssetByAssetID(ctx context.Context, req apistructs.APIAssetDeleteRequest) error {
 	// 参数校验
 	if req.OrgID == 0 {
 		return apierrors.DeleteAPIAsset.MissingParameter(apierrors.MissingOrgID)
@@ -58,14 +59,14 @@ func (svc *Service) DeleteAssetByAssetID(req apistructs.APIAssetDeleteRequest) e
 		"org_id":   req.OrgID,
 		"asset_id": req.AssetID,
 	}); err == nil {
-		return errors.New("API 集处于访问管理中, 不可删除")
+		return errors.New(svc.text(ctx, "APIAssetIsInManagement"))
 	}
 
 	return dbclient.DeleteAPIAssetByOrgAssetID(req.OrgID, req.AssetID, true)
 }
 
 // 根据给定的主键(id)删除 APIAssetVersion 表的记录
-func (svc *Service) DeleteAssetVersionByID(orgID uint64, assetID string, versionID uint64, userID string) error {
+func (svc *Service) DeleteAssetVersionByID(ctx context.Context, orgID uint64, assetID string, versionID uint64, userID string) error {
 	var (
 		total, majorTotal, minorTotal uint64
 		asset                         apistructs.APIAssetsModel
@@ -124,14 +125,14 @@ func (svc *Service) DeleteAssetVersionByID(orgID uint64, assetID string, version
 		return err
 	}
 	if total <= 1 {
-		return errors.New("不可删除: 至少保留一个版本")
+		return errors.New(svc.text(ctx, "CanNotDelete.AtLeastOneVersion"))
 	}
 	if majorAccess && majorTotal <= 1 {
-		return errors.Errorf("不可删除: %s 处于访问管理中, 至少保留一个版本. 如要删除请先修改对此版本的访问管理",
+		return errors.Errorf(svc.text(ctx, "CanNotDelete.AtLeastOneVersionInManagement"),
 			version.SwaggerVersion)
 	}
 	if minorAccess && minorTotal <= 1 {
-		return errors.Errorf("不可删除: %s %v.%v.* 处于访问管理中, 至少保留一个修订版本. 如要删除请先修改对此版本的访问管理",
+		return errors.Errorf(svc.text(ctx, "CanNotDelete.AtLeastOnePatchVersionInManagement"),
 			version.SwaggerVersion, version.Major, version.Minor)
 	}
 
@@ -206,7 +207,7 @@ func (svc *Service) DeleteClient(req *apistructs.DeleteClientReq) *errorresp.API
 	return nil
 }
 
-func (svc *Service) DeleteAccess(req *apistructs.GetAccessReq) *errorresp.APIError {
+func (svc *Service) DeleteAccess(ctx context.Context, req *apistructs.GetAccessReq) *errorresp.APIError {
 	var (
 		asset     apistructs.APIAssetsModel
 		access    apistructs.APIAccessesModel
@@ -249,7 +250,7 @@ func (svc *Service) DeleteAccess(req *apistructs.GetAccessReq) *errorresp.APIErr
 	}
 	for _, contract := range contracts {
 		if contract.Status.ToLower() == apistructs.ContractApproved {
-			return apierrors.DeleteAccess.InternalError(errors.Errorf("不可删除: %s %s 存在已授权调用申请",
+			return apierrors.DeleteAccess.InternalError(errors.Errorf(svc.text(ctx, "CanNotDelete.AuthorizedCcallRequestExists"),
 				access.AssetName, access.SwaggerVersion))
 		}
 	}
@@ -267,7 +268,7 @@ func (svc *Service) DeleteAccess(req *apistructs.GetAccessReq) *errorresp.APIErr
 			logrus.Errorf("failed to FirstRecord client, contract: %+v, err: %v", contract, err)
 			return apierrors.DeleteContract.InternalError(err)
 		}
-		if apiError := svc.deleteContract(tx.Sq(), req.OrgID, req.Identity.UserID, contract, &client, &asset, &access); apiError != nil {
+		if apiError := svc.deleteContract(ctx, tx.Sq(), req.OrgID, req.Identity.UserID, contract, &client, &asset, &access); apiError != nil {
 			logrus.Errorf("failed to deleteContract, err: %v", apiError)
 			return apiError
 		}
@@ -288,7 +289,7 @@ func (svc *Service) DeleteAccess(req *apistructs.GetAccessReq) *errorresp.APIErr
 }
 
 // DeleteContract deletes contract
-func (svc *Service) DeleteContract(req *apistructs.GetContractReq) *errorresp.APIError {
+func (svc *Service) DeleteContract(ctx context.Context, req *apistructs.GetContractReq) *errorresp.APIError {
 	// 参数校验
 	if req == nil || req.URIParams == nil {
 		return apierrors.DeleteContract.InvalidParameter("parameters is invalid")
@@ -350,12 +351,12 @@ func (svc *Service) DeleteContract(req *apistructs.GetContractReq) *errorresp.AP
 		return apierrors.DeleteContract.InternalError(err)
 	}
 
-	return svc.deleteContract(nil, req.OrgID, req.Identity.UserID, &contract, &client, &asset, &access)
+	return svc.deleteContract(ctx, nil, req.OrgID, req.Identity.UserID, &contract, &client, &asset, &access)
 }
 
-func (svc *Service) DeleteSLA(req *apistructs.DeleteSLAReq) *errorresp.APIError {
+func (svc *Service) DeleteSLA(ctx context.Context, req *apistructs.DeleteSLAReq) *errorresp.APIError {
 	if req == nil || req.URIParams == nil {
-		return apierrors.DeleteSLA.InvalidParameter("无效的参数")
+		return apierrors.DeleteSLA.InvalidParameter(svc.text(ctx, "InvalidParams"))
 	}
 
 	var (
@@ -370,7 +371,7 @@ func (svc *Service) DeleteSLA(req *apistructs.DeleteSLAReq) *errorresp.APIError 
 		"asset_id": req.URIParams.AssetID,
 	}); err != nil {
 		logrus.Errorf("failed to FirstRecord asset, err: %v", err)
-		return apierrors.DeleteSLA.InternalError(errors.New("查询 API 失败"))
+		return apierrors.DeleteSLA.InternalError(errors.New(svc.text(ctx, "FailedToFindAPI")))
 	}
 
 	// SLA 的删除权限与对应的 API Asset 的 W 权限一致
@@ -386,13 +387,13 @@ func (svc *Service) DeleteSLA(req *apistructs.DeleteSLAReq) *errorresp.APIError 
 		"swagger_version": req.URIParams.SwaggerVersion,
 	}); err != nil {
 		logrus.Errorf("failed to FirstRecord access, err: %v", err)
-		return apierrors.DeleteSLA.InternalError(errors.New("查询访问管理失败"))
+		return apierrors.DeleteSLA.InternalError(errors.New(svc.text(ctx, "FailedToFindAccessItme")))
 	}
 
 	// 查出要删除的 SLA
 	if err := svc.FirstRecord(&sla, map[string]interface{}{"id": req.URIParams.SLAID}); err != nil {
 		logrus.Errorf("failed to FirstRecord sla, err: %v", err)
-		return apierrors.DeleteSLA.InternalError(errors.New("查询 SLA 失败"))
+		return apierrors.DeleteSLA.InternalError(errors.New(svc.text(ctx, "FailedToFindSLA")))
 	}
 
 	// 统计使用该 SLA 的合约, 如果存在则不允许删除
@@ -400,10 +401,10 @@ func (svc *Service) DeleteSLA(req *apistructs.DeleteSLAReq) *errorresp.APIError 
 		Where(map[string]interface{}{"cur_sla_id": req.URIParams.SLAID}).
 		Count(&count).Error; err != nil {
 		logrus.Errorf("failed to Count ContractModel, err: %v", err)
-		return apierrors.DeleteSLA.InternalError(errors.New("查询受影响的合约失败"))
+		return apierrors.DeleteSLA.InternalError(errors.New(svc.text(ctx, "FailedToFindRelatedContract")))
 	}
 	if count > 0 {
-		return apierrors.DeleteSLA.InternalError(errors.New("存在正在使用该 SLA 的客户端, 请先删除或更换其 SLA"))
+		return apierrors.DeleteSLA.InternalError(errors.New(svc.text(ctx, "FailedToDeleteSLA.UsedInSLA")))
 	}
 
 	tx := dbclient.Tx()
@@ -444,8 +445,13 @@ func (svc *Service) DeleteSLA(req *apistructs.DeleteSLAReq) *errorresp.APIError 
 	return nil
 }
 
-func (svc *Service) deleteContract(tx *gorm.DB, orgID uint64, userID string, contract *apistructs.ContractModel, client *apistructs.ClientModel,
-	asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel) *errorresp.APIError {
+func (svc *Service) deleteContract(ctx context.Context, tx *gorm.DB, orgID uint64, userID string, contract *apistructs.ContractModel,
+	client *apistructs.ClientModel, asset *apistructs.APIAssetsModel, access *apistructs.APIAccessesModel) *errorresp.APIError {
+	org, err := svc.bdl.GetOrg(orgID)
+	if err != nil {
+		return apierrors.DeleteContract.InternalError(errors.Wrap(err, "failed to GetOrg"))
+	}
+
 	sq := tx
 	if sq == nil {
 		sq = dbclient.Sq()
@@ -470,7 +476,8 @@ func (svc *Service) deleteContract(tx *gorm.DB, orgID uint64, userID string, con
 	}
 
 	// 邮件和站内信
-	go svc.contractMsgToUser(orgID, contract.CreatorID, asset.AssetName, client, ApprovalResultWhileDelete(contract.Status))
+	go svc.contractMsgToUser(orgID, contract.CreatorID, asset.AssetName, client,
+		svc.ApprovalResultWhileDelete(ctx, contract.Status, org.Locale))
 
 	return nil
 }

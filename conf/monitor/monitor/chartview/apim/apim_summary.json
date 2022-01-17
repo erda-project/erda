@@ -13,6 +13,12 @@
       "i": "view-5468ee74",
       "view": {
         "title": "调用量",
+        "i18n": {
+          "title": {
+            "zh": "调用量",
+            "en": "Requests"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -29,6 +35,16 @@
           "query": {
             "alias_last.tags.hts": "HTTP 状态码",
             "alias_sum.cnt_sum": "总调用量总和",
+            "i18n": {
+              "alias_last.tags.hts": {
+                "zh": "HTTP 状态码",
+                "en": "HTTP Status"
+              },
+              "alias_sum.cnt_sum": {
+                "zn": "总调用量总和",
+                "en": "Total Requests"
+              }
+            },
             "chartType": "chart:line",
             "end": 1605077486766,
             "format": "chartv2",
@@ -99,6 +115,12 @@
       "i": "view-6e99af1f",
       "view": {
         "title": "调用延时",
+        "i18n": {
+          "title": {
+            "zh": "调用延时",
+            "en": "Request Latency"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -114,6 +136,16 @@
           "query": {
             "alias_avg.reql_mean": "请求延时平均值",
             "alias_avg.upl_mean": "后端服务延时平均值",
+            "i18n": {
+              "alias_avg.reql_mean": {
+                "zh": "请求延时平均值",
+                "en": "Average Requests Latency"
+              },
+              "alias_avg.upl_mean": {
+                "zh": "后端服务延时平均值",
+                "en": "Average Backend Latency"
+              }
+            },
             "avg": [
               "upl_mean",
               "reql_mean"
@@ -178,6 +210,10 @@
       "i": "view-9147223e",
       "view": {
         "title": "客户端占比",
+        "i18n": {
+          "zh": "客户端占比",
+          "en": "Client Ratio"
+        },
         "description": "",
         "chartType": "chart:pie",
         "dataSourceType": "api",
@@ -192,6 +228,16 @@
           "query": {
             "alias_last.tags.csmr": "客户端",
             "alias_sum.cnt_sum": "总调用量总和",
+            "i18n": {
+              "alias_last.tags.csmr": {
+                "zh": "客户端",
+                "en": "Client"
+              },
+              "alias_sum.cnt_sum": {
+                "zh": "总调用量总和",
+                "en": "Total Requests"
+              }
+            },
             "chartType": "chart:pie",
             "end": 1605077486766,
             "format": "chartv2",

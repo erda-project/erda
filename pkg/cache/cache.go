@@ -51,13 +51,13 @@ type Cache struct {
 	C       chan interface{}
 	name    string
 	expired time.Duration
-	update  func(interface{}) (*Item, bool)
+	update  func(interface{}) (interface{}, bool)
 }
 
 // New returns the *Cache.
-// the function update, if found new *Item, returns true, and stores it;
+// the function update, if found new *item, returns true, and stores it;
 // else returns false, and delete the key from cache.
-func New(name string, expired time.Duration, update func(interface{}) (*Item, bool)) *Cache {
+func New(name string, expired time.Duration, update func(interface{}) (interface{}, bool)) *Cache {
 	return &Cache{
 		C:       make(chan interface{}, 1000),
 		name:    name,
@@ -72,16 +72,21 @@ func (c *Cache) Name() string {
 }
 
 // LoadWithUpdate loads the cached item.
-// if the item is not cached, it returns the newest and cache the new item.
-// if the item is expired, it returns the cached item and try to cache the newest.
-// if the item is not expired, it returns it and do nothing.
-func (c *Cache) LoadWithUpdate(key interface{}) (*Item, bool) {
+// If the item is not cached, it returns the newest and cache the new item.
+// If the time is cached, it returns the item.
+// if the cached item is expired, it tries to cache the newest.
+func (c *Cache) LoadWithUpdate(key interface{}) (interface{}, bool) {
 	value, ok := c.Map.Load(key)
 	if !ok {
-		return c.update(key)
+		obj, ok := c.update(key)
+		if !ok {
+			return nil, false
+		}
+		c.Store(key, obj)
+		return obj, true
 	}
-	item := value.(*Item)
-	if item.IsExpired() {
+	item := value.(*item)
+	if item.expired.Before(time.Now()) {
 		select {
 		case c.C <- key:
 			cachesC <- c
@@ -90,27 +95,17 @@ func (c *Cache) LoadWithUpdate(key interface{}) (*Item, bool) {
 				WithField("name", c.Name()).Warnln("channel is blocked, update cache is skipped")
 		}
 	}
-	return item, true
+	return item.Object, true
 }
 
 // Store caches the key and value, and updates its expired time.
-func (c *Cache) Store(key interface{}, value *Item) {
-	c.Map.Store(key, value)
-	value.updateExpired(c.expired)
+func (c *Cache) Store(key interface{}, value interface{}) {
+	c.Map.Store(key, &item{Object: value, expired: time.Now().Add(c.expired)})
 }
 
-// Item contains the item be cached
-type Item struct {
+// item contains the item be cached
+type item struct {
 	Object interface{}
 
 	expired time.Time
-}
-
-// IsExpired returns whether the item is expired
-func (i *Item) IsExpired() bool {
-	return i.expired.Before(time.Now())
-}
-
-func (i *Item) updateExpired(duration time.Duration) {
-	i.expired = time.Now().Add(duration)
 }

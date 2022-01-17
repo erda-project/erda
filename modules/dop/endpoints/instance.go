@@ -61,7 +61,7 @@ func (e *Endpoints) CreateInstantiation(ctx context.Context, r *http.Request, va
 		Body: &rb,
 	}
 
-	instantiation, apiError := e.assetSvc.CreateInstantiation(&req)
+	instantiation, apiError := e.assetSvc.CreateInstantiation(ctx, &req)
 	if apiError != nil {
 		return apiError.ToResp(), nil
 	}
@@ -204,7 +204,7 @@ func (e *Endpoints) UpdateInstantiation(ctx context.Context, r *http.Request, va
 		Body: &body,
 	}
 
-	instantiation, apiErr := e.assetSvc.UpdateInstantiation(&req)
+	instantiation, apiErr := e.assetSvc.UpdateInstantiation(ctx, &req)
 	if apiErr != nil {
 		return apiErr.ToResp(), nil
 	}

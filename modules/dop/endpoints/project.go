@@ -27,7 +27,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
@@ -204,9 +203,6 @@ func addOnsFilterIn(addOns []apistructs.AddonFetchResponseData, fn func(addOn *a
 // GetProject gets the project info
 func (e *Endpoints) GetProject(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	l := logrus.WithField("func", "*Endpoints.GetProject")
-
-	langCodes := i18n.Language(r)
-	ctx = context.WithValue(ctx, "lang_codes", langCodes)
 
 	// 检查projectID合法性
 	projectID, err := strutil.Atoi64(vars["projectID"])

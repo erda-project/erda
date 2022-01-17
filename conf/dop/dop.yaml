@@ -16,6 +16,7 @@ i18n:
   files:
     - conf/dop/i18n/resource-trans.yaml
     - conf/dop/i18n/issue-manage.yaml
+    - conf/dop/i18n/api-management-trans.yaml
 mysql:
   host: "${MYSQL_HOST}"
   port: "${MYSQL_PORT}"
