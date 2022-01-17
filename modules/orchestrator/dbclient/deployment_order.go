@@ -15,10 +15,12 @@
 package dbclient
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
@@ -174,4 +176,37 @@ func (db *DBClient) ListReleases(releasesId []string) ([]*Release, error) {
 		return nil, errors.Wrapf(err, "failed to list release %+v", releasesId)
 	}
 	return releases, nil
+}
+func (db *DBClient) UpateDeploymentOrderStatus(id string, appName string,
+	appStatus apistructs.DeploymentOrderStatusItem) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		var (
+			deploymentOrder       DeploymentOrder
+			deploymentOrderStatus []byte
+			err                   error
+		)
+		deploymentOrderStatusMap := make(apistructs.DeploymentOrderStatusMap)
+		if err = tx.
+			Where("id = ?", id).
+			Find(&deploymentOrder).Error; err != nil {
+			return errors.Wrapf(err, "failed to get deployment order %s", id)
+		}
+		if deploymentOrder.Status != "" {
+			if err := json.Unmarshal([]byte(deploymentOrder.Status), &deploymentOrderStatusMap); err != nil {
+				return errors.Wrapf(err, "failed to unmarshal to deployment order status (%s)",
+					deploymentOrder.ID)
+			}
+		}
+		deploymentOrderStatusMap[appName] = appStatus
+		if deploymentOrderStatus, err = json.Marshal(deploymentOrderStatusMap); err != nil {
+			return errors.Wrapf(err, "failed to marshal to deployment order status (%s)",
+				deploymentOrder.ID)
+		}
+		deploymentOrder.Status = string(deploymentOrderStatus)
+		if err = tx.Save(&deploymentOrder).Error; err != nil {
+			return errors.Wrapf(err, "failed to update deployment order, id: %v.",
+				deploymentOrder.ID)
+		}
+		return nil
+	})
 }
