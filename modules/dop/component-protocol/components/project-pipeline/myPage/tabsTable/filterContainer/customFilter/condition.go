@@ -44,9 +44,7 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 		return nil, err
 	}
 	creatorCondition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-creator")
-	creatorCondition.ConditionBase.Disabled = func() bool {
-		return p.gsHelper.GetGlobalPipelineTab() == common.MineState.String()
-	}()
+	creatorCondition.ConditionBase.Disabled = p.gsHelper.GetGlobalPipelineTab() == common.MineState.String()
 	conditions = append(conditions, creatorCondition)
 
 	conditions = append(conditions, model.NewDateRangeCondition("createdAtStartEnd", cputil.I18n(p.sdk.Ctx, "created-at")))
@@ -112,9 +110,7 @@ func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
 		}
 		return selectOptions
 	}())
-	condition.ConditionBase.Disabled = func() bool {
-		return p.InParams.AppID != 0
-	}()
+	condition.ConditionBase.Disabled = p.InParams.AppID != 0
 	condition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-application")
 	return condition, nil
 }
