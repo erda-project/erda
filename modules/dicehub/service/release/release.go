@@ -402,16 +402,19 @@ func (r *Release) Update(orgID int64, releaseID string, req *apistructs.ReleaseU
 	if release.IsFormal {
 		return errors.New("formal release can not be updated")
 	}
-	// 若version不为空时，确保Version在应用层面唯一
+	// 若version不为空时，确保Version在应用层面或项目层唯一
 	if req.Version != "" && req.Version != release.Version {
-		if req.ApplicationID > 0 {
-			releases, err := r.db.GetReleasesByAppAndVersion(req.OrgID, req.ProjectID, req.ApplicationID, req.Version)
-			if err != nil {
-				return err
-			}
-			if len(releases) > 0 {
-				return errors.Errorf("release version: %s already exist", req.Version)
-			}
+		var releases []dbclient.Release
+		if !release.IsProjectRelease {
+			releases, err = r.db.GetReleasesByAppAndVersion(req.OrgID, req.ProjectID, req.ApplicationID, req.Version)
+		} else {
+			releases, err = r.db.GetReleasesByProjectAndVersion(req.OrgID, req.ProjectID, req.Version)
+		}
+		if err != nil {
+			return err
+		}
+		if len(releases) > 0 {
+			return errors.Errorf("release version: %s already exist", req.Version)
 		}
 	}
 
