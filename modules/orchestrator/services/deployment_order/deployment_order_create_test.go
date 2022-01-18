@@ -109,26 +109,6 @@ func TestParseShowParams(t *testing.T) {
 	}
 }
 
-func TestRenderDetail(t *testing.T) {
-	order := New()
-	bdl := bundle.New()
-
-	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetRelease", func(*bundle.Bundle, string) (*apistructs.ReleaseGetResponseData, error) {
-		return &apistructs.ReleaseGetResponseData{}, nil
-	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CheckPermission", func(*bundle.Bundle, *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
-		return &apistructs.PermissionCheckResponseData{
-			Access: true}, nil
-	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "FetchDeploymentConfigDetail", func(*bundle.Bundle, string) ([]apistructs.EnvConfig, []apistructs.EnvConfig, error) {
-		return nil, nil, nil
-	})
-
-	_, err := order.RenderDetail("1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD")
-	assert.NoError(t, err)
-}
-
 func TestParseAppsInfoWithOrder(t *testing.T) {
 	order := New()
 	got, err := order.parseAppsInfoWithOrder(&dbclient.DeploymentOrder{

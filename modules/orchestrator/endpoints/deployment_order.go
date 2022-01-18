@@ -89,7 +89,7 @@ func (e *Endpoints) GetDeploymentOrder(ctx context.Context, r *http.Request, var
 		return errorresp.ErrResp(err)
 	}
 
-	return httpserver.OkResp(orderDetail, []string{orderDetail.Operator})
+	return httpserver.OkResp(orderDetail, []string{orderDetail.Operator, orderDetail.ReleaseInfo.Creator})
 }
 
 // ListDeploymentOrder list deployment order with project id.
@@ -230,7 +230,7 @@ func (e *Endpoints) RenderDeploymentOrderDetail(ctx context.Context, r *http.Req
 		return errorresp.ErrResp(err)
 	}
 
-	return httpserver.OkResp(ret)
+	return httpserver.OkResp(ret, []string{ret.ReleaseInfo.Creator})
 }
 
 func (e *Endpoints) auditDeploymentOrder(userId, projectName, orderName string, orgId, projectId uint64,

@@ -93,7 +93,8 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 
 		releaseResp, ok := releasesMap[order.ReleaseId]
 		if !ok {
-			return nil, fmt.Errorf("failed to get release %s, not found", order.ReleaseId)
+			logrus.Errorf("failed to get release %s, not found", order.ReleaseId)
+			continue
 		}
 
 		if releaseResp.IsProjectRelease {
@@ -109,10 +110,12 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 			strconv.Itoa(applicationCount)}, "/")
 
 		ret = append(ret, &apistructs.DeploymentOrderItem{
-			ID:                order.ID,
-			Name:              utils.ParseOrderName(order.ID),
-			ReleaseID:         order.ReleaseId,
-			ReleaseVersion:    releaseResp.Version,
+			ID:   order.ID,
+			Name: utils.ParseOrderName(order.ID),
+			ReleaseInfo: &apistructs.ReleaseInfo{
+				Id:      order.ReleaseId,
+				Version: releaseResp.Version,
+			},
 			Type:              order.Type,
 			ApplicationStatus: applicationStatus,
 			Workspace:         order.Workspace,

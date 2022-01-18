@@ -77,23 +77,16 @@ func WithDeployment(deploy *deployment.Deployment) Option {
 	}
 }
 
-// checkExecutePermission
-func (d *DeploymentOrder) checkExecutePermission(userId, workspace string, applicationsInfo map[int64]string) error {
+// batchCheckExecutePermission
+func (d *DeploymentOrder) batchCheckExecutePermission(userId, workspace string, applicationsInfo map[int64]string) error {
 	deniedApps := make([]string, 0)
 	// TODO: core-services provide batch auth interface
 	for appId, appName := range applicationsInfo {
-		access, err := d.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-			UserID:   userId,
-			Scope:    apistructs.AppScope,
-			ScopeID:  uint64(appId),
-			Resource: fmt.Sprintf("runtime-%s", strings.ToLower(workspace)),
-			Action:   apistructs.CreateAction,
-		})
+		isOk, err := d.checkExecutePermission(userId, workspace, uint64(appId))
 		if err != nil {
-			return fmt.Errorf("failed to check permission, err: %v", err)
+			return err
 		}
-
-		if !access.Access {
+		if !isOk {
 			deniedApps = append(deniedApps, appName)
 		}
 	}
@@ -103,4 +96,18 @@ func (d *DeploymentOrder) checkExecutePermission(userId, workspace string, appli
 	}
 
 	return nil
+}
+
+func (d *DeploymentOrder) checkExecutePermission(userId, workspace string, appId uint64) (bool, error) {
+	access, err := d.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userId,
+		Scope:    apistructs.AppScope,
+		ScopeID:  appId,
+		Resource: fmt.Sprintf("runtime-%s", strings.ToLower(workspace)),
+		Action:   apistructs.CreateAction,
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to check permission, err: %v", err)
+	}
+	return access.Access, nil
 }

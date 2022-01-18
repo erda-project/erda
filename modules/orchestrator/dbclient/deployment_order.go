@@ -61,6 +61,8 @@ type Release struct {
 	ApplicationId          uint64
 	ApplicationReleaseList string
 	Labels                 string
+	DiceYaml               string `gorm:"column:dice"`
+	UserId                 string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }

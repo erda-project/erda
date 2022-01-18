@@ -327,3 +327,12 @@ func (db *DBClient) ListAddonInstancesForClean() ([]AddonInstance, error) {
 	}
 	return instances, nil
 }
+
+func (db *DBClient) ListCustomInstancesByProjectAndEnv(projectId int64, workspace string) ([]AddonInstance, error) {
+	var instances []AddonInstance
+	if err := db.Where("is_deleted = ? and category= ?", apistructs.AddonNotDeleted, "custom").
+		Where("env = ? and project_id = ?", workspace, projectId).Find(&instances).Error; err != nil {
+		return nil, err
+	}
+	return instances, nil
+}
