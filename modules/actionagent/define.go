@@ -20,6 +20,8 @@ import (
 	"regexp"
 	"sync"
 
+	"github.com/c2h5oh/datasize"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/actionagent/filewatch"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -53,8 +55,8 @@ type Agent struct {
 	Cancel   context.CancelFunc // cancel when logic done
 	ExitCode int
 
-	StdErrRegexpList        []*regexp.Regexp
-	MaxWaitingPathUnlockSec int
+	StdErrRegexpList   []*regexp.Regexp
+	MaxCacheFileSizeMB datasize.ByteSize
 
 	TextBlackList []string // enciphered data will Replaced by '******' when log output
 }

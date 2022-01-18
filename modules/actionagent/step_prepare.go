@@ -25,15 +25,15 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/pkg/filehelper"
 )
 
 const (
-	EnvStdErrRegexpList            = "ACTIONAGENT_STDERR_REGEXP_LIST"
-	EnvMaxWaitingPathUnlockSec     = "ACTIONAGENT_MAX_WAITING_PATH_UNLOCK_SEC"
-	DefaultMaxWaitingPathUnlockSec = 10
+	EnvStdErrRegexpList = "ACTIONAGENT_STDERR_REGEXP_LIST"
+	EnvMaxCacheFileMB   = "ACTIONAGENT_MAX_CACHE_FILE_MB"
 )
 
 // 对于 custom action，需要将 commands 转换为 script 来执行
@@ -114,18 +114,16 @@ func (agent *Agent) prepare() {
 			agent.StdErrRegexpList = append(agent.StdErrRegexpList, reg)
 		}
 	}
-	maxWaitSec := DefaultMaxWaitingPathUnlockSec
-	maxWaitStr := os.Getenv(EnvMaxWaitingPathUnlockSec)
-	if maxWaitStr != "" {
-		maxWait, err := strconv.Atoi(maxWaitStr)
+	var maxCacheFileSizeMB uint64 = 500
+	var err error
+	envMaxCacheMBStr := os.Getenv(EnvMaxCacheFileMB)
+	if envMaxCacheMBStr != "" {
+		maxCacheFileSizeMB, err = strconv.ParseUint(envMaxCacheMBStr, 10, 64)
 		if err != nil {
 			agent.AppendError(err)
 		}
-		if maxWait > DefaultMaxWaitingPathUnlockSec {
-			maxWaitSec = maxWait
-		}
 	}
-	agent.MaxWaitingPathUnlockSec = maxWaitSec
+	agent.MaxCacheFileSizeMB = datasize.ByteSize(maxCacheFileSizeMB) * datasize.MB
 
 	// 6. watch files
 	agent.watchFiles()

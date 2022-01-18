@@ -15,6 +15,7 @@
 package actionagent
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -70,6 +71,10 @@ func (agent *Agent) store() {
 }
 
 func (agent *Agent) storeCache(tarFile, cachePath string) (err error) {
+	if cachePathSize, isExceed := agent.isCachePathExceedLimit(cachePath); isExceed {
+		return fmt.Errorf("tar path: %s size: %d bytes exceed limit size: %d bytes", cachePath, cachePathSize.Bytes(),
+			agent.MaxCacheFileSizeMB.Bytes())
+	}
 	tmpFile, err := ioutil.TempFile(cacheTempDir, cacheTempPrefix)
 	if err != nil {
 		return err
