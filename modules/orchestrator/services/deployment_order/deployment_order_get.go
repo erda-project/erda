@@ -92,18 +92,23 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 
 	return &apistructs.DeploymentOrderDetail{
 		DeploymentOrderItem: apistructs.DeploymentOrderItem{
-			ID:              order.ID,
-			Name:            utils.ParseOrderName(order.ID),
-			ReleaseID:       order.ReleaseId,
-			ReleaseVersion:  curRelease.Version,
-			ReleaseUpdateAt: curRelease.UpdatedAt,
-			Type:            order.Type,
-			Workspace:       order.Workspace,
-			Status:          parseDeploymentOrderStatus(appsStatus),
-			Operator:        order.Operator.String(),
-			CreatedAt:       order.CreatedAt,
-			UpdatedAt:       order.UpdatedAt,
-			StartedAt:       parseStartedTime(order.StartedAt),
+			ID:   order.ID,
+			Name: utils.ParseOrderName(order.ID),
+			ReleaseInfo: &apistructs.ReleaseInfo{
+				Id:        order.ReleaseId,
+				Version:   curRelease.Version,
+				Type:      covertReleaseType(curRelease.IsProjectRelease),
+				Creator:   curRelease.UserId,
+				CreatedAt: curRelease.CreatedAt,
+				UpdatedAt: curRelease.UpdatedAt,
+			},
+			Type:      order.Type,
+			Workspace: order.Workspace,
+			Status:    parseDeploymentOrderStatus(appsStatus),
+			Operator:  order.Operator.String(),
+			CreatedAt: order.CreatedAt,
+			UpdatedAt: order.UpdatedAt,
+			StartedAt: parseStartedTime(order.StartedAt),
 		},
 		ApplicationsInfo: asi,
 	}, nil
@@ -155,6 +160,7 @@ func composeApplicationsInfo(releases []*dbclient.Release, params map[string]api
 			ReleaseId:      subRelease.ReleaseId,
 			ReleaseVersion: subRelease.Version,
 			Branch:         labels["gitBranch"],
+			DiceYaml:       subRelease.DiceYaml,
 			CommitId:       labels["gitCommitId"],
 			Status:         status,
 		})
@@ -214,4 +220,11 @@ func convertConfigType(configType string) string {
 		return "dice-file"
 	}
 	return "kv"
+}
+
+func covertReleaseType(isProjectRelease bool) string {
+	if isProjectRelease {
+		return apistructs.ReleaseTypeProject
+	}
+	return apistructs.ReleaseTypeApplication
 }
