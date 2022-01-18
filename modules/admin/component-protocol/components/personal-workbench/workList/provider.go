@@ -99,8 +99,9 @@ func (l *WorkList) BeforeHandleOp(sdk *cptype.SDK) {
 }
 
 func (l *WorkList) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		l.StdDataPtr = l.doFilter()
+		return nil
 	}
 }
 
@@ -110,7 +111,7 @@ func (l *WorkList) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 // RegisterChangePage when change page, filter needed
 func (l *WorkList) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		logrus.Infof("change page client data: %+v", opData)
 		if opData.ClientData.PageNo > 0 {
 			l.filterReq.PageNo = opData.ClientData.PageNo
@@ -119,12 +120,13 @@ func (l *WorkList) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.O
 			l.filterReq.PageSize = opData.ClientData.PageSize
 		}
 		l.StdDataPtr = l.doFilter()
+		return nil
 	}
 }
 
 // RegisterItemStarOp when item stared, filter is unnecessary
 func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		var (
 			tp      apistructs.SubscribeType
 			tpID    uint64
@@ -141,14 +143,14 @@ func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.Ope
 		id, err := strconv.Atoi(opData.ClientData.DataRef.ID)
 		if err != nil {
 			logrus.Errorf("star operation, format ClientData id failed, id: %v, error: %v", opData.ClientData.DataRef.ID, err)
-			return
+			return nil
 		}
 		tpID = uint64(id)
 
 		// if not star, create subscribe & unstar; else delete subscribe & set state
 		if opData.ClientData.DataRef.Star == nil {
 			logrus.Errorf("nil star value")
-			return
+			return nil
 		}
 
 		if !*opData.ClientData.DataRef.Star {
@@ -161,7 +163,7 @@ func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.Ope
 			_, err = l.bdl.CreateSubscribe(l.identity.UserID, l.identity.OrgID, req)
 			if err != nil {
 				logrus.Errorf("star %v %v failed, id: %v, error: %v", req.Type, req.Name, req.TypeID, err)
-				return
+				return nil
 			}
 			star = true
 		} else {
@@ -173,14 +175,14 @@ func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.Ope
 			err = l.bdl.DeleteSubscribe(l.identity.UserID, l.identity.OrgID, req)
 			if err != nil {
 				logrus.Errorf("unstar failed, id: %v, error: %v", req.TypeID, err)
-				return
+				return nil
 			}
 			star = false
 		}
 		// TODO: update data in place, do not need reload
 		if l.StdDataPtr == nil {
 			logrus.Errorf("std data prt is nil")
-			return
+			return nil
 		}
 		for i := range l.StdDataPtr.List {
 			item := l.StdDataPtr.List[i]
@@ -193,21 +195,25 @@ func (l *WorkList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.Ope
 		if !updated {
 			logrus.Errorf("cannot update star info in local data")
 		}
+		return nil
 	}
 }
 
 func (l *WorkList) RegisterItemClickGotoOp(opData list.OpItemClickGoto) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
 	}
 }
 
 func (l *WorkList) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
 	}
 }
 
 func (l *WorkList) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
 	}
 }
 
@@ -219,6 +225,7 @@ func (l *WorkList) doFilter() *list.Data {
 		return l.doFilterApp()
 	default:
 		return l.doFilterProj()
+		return nil
 	}
 }
 

@@ -115,8 +115,9 @@ func (k *Kanban) BeforeHandleOp(sdk *cptype.SDK) {
 }
 
 func (k *Kanban) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		k.StdDataPtr = k.doFilter()
+		return nil
 	}
 }
 
@@ -229,7 +230,7 @@ func (k *Kanban) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 // RegisterBoardCreateOp no need here.
 func (k *Kanban) RegisterBoardCreateOp(opData kanban.OpBoardCreate) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		logrus.Infof("mock create board: titie: %s", opData.ClientData.Title)
 		k.StdDataPtr = k.doFilter()
 		k.StdDataPtr.Boards = append(k.StdDataPtr.Boards, kanban.Board{
@@ -244,12 +245,13 @@ func (k *Kanban) RegisterBoardCreateOp(opData kanban.OpBoardCreate) (opFunc cpty
 				kanban.OpBoardDelete{}.OpKey():   cputil.NewOpBuilder().Build(),
 			},
 		})
+		return nil
 	}
 }
 
 // RegisterBoardLoadMoreOp only return specific board data.
 func (k *Kanban) RegisterBoardLoadMoreOp(opData kanban.OpBoardLoadMore) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		if opData.ClientData.PageNo > 0 {
 			k.filterReq.PageNo = opData.ClientData.PageNo
 		}
@@ -257,12 +259,13 @@ func (k *Kanban) RegisterBoardLoadMoreOp(opData kanban.OpBoardLoadMore) (opFunc 
 			k.filterReq.PageSize = opData.ClientData.PageSize
 		}
 		k.StdDataPtr = k.doFilter(opData.ClientData.DataRef.ID)
+		return nil
 	}
 }
 
 // RegisterBoardUpdateOp no need here.
 func (k *Kanban) RegisterBoardUpdateOp(opData kanban.OpBoardUpdate) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		// mock
 		logrus.Infof("mock update board: %s, fromTitle: %s, newTitle: %s", opData.ClientData.DataRef.ID, opData.ClientData.DataRef.Title, opData.ClientData.Title)
 		k.StdDataPtr = k.doFilter()
@@ -271,12 +274,13 @@ func (k *Kanban) RegisterBoardUpdateOp(opData kanban.OpBoardUpdate) (opFunc cpty
 				k.StdDataPtr.Boards[i].Title = opData.ClientData.Title
 			}
 		}
+		return nil
 	}
 }
 
 // RegisterBoardDeleteOp no need here.
 func (k *Kanban) RegisterBoardDeleteOp(opData kanban.OpBoardDelete) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		logrus.Infof("mock delete board: %s", opData.ClientData.DataRef.ID)
 		k.StdDataPtr = k.doFilter()
 		var newBoards []kanban.Board
@@ -286,11 +290,12 @@ func (k *Kanban) RegisterBoardDeleteOp(opData kanban.OpBoardDelete) (opFunc cpty
 			}
 		}
 		k.StdDataPtr.Boards = newBoards
+		return nil
 	}
 }
 
 func (k *Kanban) RegisterCardMoveToOp(opData kanban.OpCardMoveTo) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		issueID, err := strconv.ParseUint(opData.ClientData.DataRef.ID, 10, 64)
 		if err != nil {
 			panic(fmt.Errorf("invalid card issueID: %s, err: %v", opData.ClientData.DataRef.ID, err))
@@ -309,5 +314,6 @@ func (k *Kanban) RegisterCardMoveToOp(opData kanban.OpCardMoveTo) (opFunc cptype
 			panic(fmt.Errorf("failed to update issue: %v", err))
 		}
 		k.StdDataPtr = k.doFilter()
+		return nil
 	}
 }

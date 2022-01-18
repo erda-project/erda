@@ -95,7 +95,7 @@ func (p *PipelineTable) BeforeHandleOp(sdk *cptype.SDK) {
 }
 
 func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		p.SetPagingFromGlobalState()
 		p.SetSortsFromGlobalState()
 		p.StdDataPtr = &table.Data{
@@ -121,6 +121,7 @@ func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			},
 		}
 		(*sdk.GlobalState)[protocol.GlobalInnerKeyUserIDs.String()] = strutil.DedupSlice(p.UserIDs, true)
+		return nil
 	}
 }
 
@@ -555,21 +556,23 @@ func (p *PipelineTable) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 }
 
 func (p *PipelineTable) RegisterTableChangePageOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		(*sdk.GlobalState)[StateKeyTransactionPaging] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 
 func (p *PipelineTable) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		(*sdk.GlobalState)[StateKeyTransactionSort] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 
 func (p *PipelineTable) RegisterBatchRowsHandleOp(opData table.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		switch opData.ClientData.DataRef.ID {
 		case "batchRun":
 			_, err := p.ProjectPipelineSvc.BatchRun(p.sdk.Ctx, deftype.ProjectPipelineBatchRun{
@@ -582,6 +585,7 @@ func (p *PipelineTable) RegisterBatchRowsHandleOp(opData table.OpBatchRowsHandle
 			}
 		}
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 
@@ -697,8 +701,9 @@ func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick
 
 func (p *PipelineTable) RegisterCompNonStdOps() (opFuncs map[cptype.OperationKey]cptype.OperationFunc) {
 	return map[cptype.OperationKey]cptype.OperationFunc{
-		commodel.OpMoreOperationsItemClick{}.OpKey(): func(sdk *cptype.SDK) {
+		commodel.OpMoreOperationsItemClick{}.OpKey(): func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 			p.RegisterMoreOperationOp(*cputil.MustObjJSONTransfer(&sdk.Event.OperationData, &OpMoreOperationsItemClick{}).(*OpMoreOperationsItemClick))
+			return nil
 		},
 	}
 }
