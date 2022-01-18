@@ -228,7 +228,11 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 		CreatedAt: model.CreatedAt.UnixNano() / int64(time.Millisecond),
 		UpdatedAt: model.UpdatedAt.UnixNano() / int64(time.Millisecond),
 	}, model.ViewConfig, model.DataConfig)}
-	err = s.auditContextMap(ctx, req.Name)
+	if req.Scope != "org" {
+		projectId := ctx.Value("erda-projectId").(uint64)
+		result.Data.ProjectId = projectId
+	}
+	err = s.auditContextMap(ctx, req.Name, req.Scope)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -256,7 +260,7 @@ func (s *dataViewService) UpdateCustomView(ctx context.Context, req *pb.UpdateCu
 		return nil, errors.NewDatabaseError(err)
 	}
 	result := &pb.UpdateCustomViewResponse{Data: true}
-	err = s.auditContextMap(ctx, data.Name)
+	err = s.auditContextMap(ctx, data.Name, data.Scope)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -277,14 +281,14 @@ func (s *dataViewService) DeleteCustomView(ctx context.Context, req *pb.DeleteCu
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	err = s.auditContextMap(ctx, data.Name)
+	err = s.auditContextMap(ctx, data.Name, data.Scope)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	return &pb.DeleteCustomViewResponse{Data: true}, nil
 }
 
-func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName string) error {
+func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName, scope string) error {
 	orgName, err := s.getOrgName(ctx)
 	if err != nil {
 		return err
@@ -292,6 +296,11 @@ func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName str
 	auditContext := map[string]interface{}{
 		"orgName":       orgName,
 		"dashboardName": dashboardName,
+		"scope":         scope,
+	}
+	if scope != "org" {
+		auditContext["projectName"] = ctx.Value("erda-projectName").(string)
+		auditContext["workspace"] = ctx.Value("erda-workspace").(string)
 	}
 	audit.ContextEntryMap(ctx, auditContext)
 	return nil
