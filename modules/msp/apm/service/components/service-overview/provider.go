@@ -54,7 +54,7 @@ const (
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		data := topn.Data{}
 		var records []topn.Record
 		lang := sdk.Lang
@@ -118,6 +118,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 		data.List = records
 		p.StdDataPtr = &data
+		return nil
 	}
 }
 

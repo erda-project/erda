@@ -77,7 +77,7 @@ func (f *IssueFilter) BeforeHandleOp(sdk *cptype.SDK) {
 }
 
 func (f *IssueFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		conditions, err := f.ConditionRetriever()
 		if err != nil {
 			panic(err)
@@ -103,6 +103,7 @@ func (f *IssueFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			filter.OpFilterItemSave{}.OpKey():   cputil.NewOpBuilder().Build(),
 			filter.OpFilterItemDelete{}.OpKey(): cputil.NewOpBuilder().Build(),
 		}
+		return nil
 	}
 }
 
@@ -120,7 +121,8 @@ func (f *IssueFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 }
 
 func (f *IssueFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
 	}
 }
 
@@ -134,7 +136,7 @@ func (f *IssueFilter) AfterHandleOp(sdk *cptype.SDK) {
 }
 
 func (f *IssueFilter) RegisterFilterItemSaveOp(opData filter.OpFilterItemSave) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		var data FilterSetData
 		cputil.MustObjJSONTransfer(&opData.ClientData, &data)
 		entity, err := f.CreateFilterSetEntity(opData.ClientData.Values)
@@ -160,11 +162,12 @@ func (f *IssueFilter) RegisterFilterItemSaveOp(opData filter.OpFilterItemSave) (
 			panic(err)
 		}
 		f.StdDataPtr.FilterSet = options
+		return nil
 	}
 }
 
 func (f *IssueFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDelete) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		// fmt.Println("delete op come", opData.ClientData.DataRef)
 		if err := f.issueFilterBmSvc.Delete(opData.ClientData.DataRef.ID); err != nil {
 			panic(err)
@@ -177,6 +180,7 @@ func (f *IssueFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDelet
 			panic(err)
 		}
 		f.StdDataPtr.FilterSet = options
+		return nil
 	}
 }
 
