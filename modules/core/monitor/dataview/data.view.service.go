@@ -228,11 +228,9 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 		CreatedAt: model.CreatedAt.UnixNano() / int64(time.Millisecond),
 		UpdatedAt: model.UpdatedAt.UnixNano() / int64(time.Millisecond),
 	}, model.ViewConfig, model.DataConfig)}
-	if req.Scope == "org" {
-		err = s.auditContextMap(ctx, req.Name)
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
+	err = s.auditContextMap(ctx, req.Name, req.Scope)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
 	}
 	return result, nil
 }
@@ -258,11 +256,9 @@ func (s *dataViewService) UpdateCustomView(ctx context.Context, req *pb.UpdateCu
 		return nil, errors.NewDatabaseError(err)
 	}
 	result := &pb.UpdateCustomViewResponse{Data: true}
-	if data.Scope == "org" {
-		err = s.auditContextMap(ctx, data.Name)
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
+	err = s.auditContextMap(ctx, data.Name, data.Scope)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
 	}
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -281,16 +277,14 @@ func (s *dataViewService) DeleteCustomView(ctx context.Context, req *pb.DeleteCu
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	if data.Scope == "org" {
-		err = s.auditContextMap(ctx, data.Name)
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
+	err = s.auditContextMap(ctx, data.Name, data.Scope)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
 	}
 	return &pb.DeleteCustomViewResponse{Data: true}, nil
 }
 
-func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName string) error {
+func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName, scope string) error {
 	orgName, err := s.getOrgName(&ctx)
 	if err != nil {
 		return err
@@ -298,6 +292,7 @@ func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName str
 	auditContext := map[string]interface{}{
 		"orgName":       orgName,
 		"dashboardName": dashboardName,
+		"scope":         scope,
 	}
 	audit.ContextEntryMap(ctx, auditContext)
 	return nil

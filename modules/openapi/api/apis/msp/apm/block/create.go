@@ -31,7 +31,7 @@ var CREATE_BLOCK = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 创建自定义大盘",
-	Audit:       auditOperatorBlock(apistructs.AddServiceDashboard),
+	//Audit:       auditOperatorBlock(apistructs.AddServiceDashboard),
 }
 
 func auditOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditContext) error {
