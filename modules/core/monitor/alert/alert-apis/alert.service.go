@@ -785,26 +785,9 @@ func (m *alertService) DeleteOrgCustomizeAlert(ctx context.Context, request *pb.
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &pb.DeleteOrgCustomizeAlertResponse{}
-	if data != nil {
-		resp, err := structpb.NewStruct(map[string]interface{}{
-			"name": data.Name,
-		})
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
-		result.Data = structpb.NewStructValue(resp)
-		return result, nil
-	}
 	result.Data = structpb.NewBoolValue(true)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
 	orgIdStr := apis.GetOrgID(ctx)
 	org, err := m.p.bdl.GetOrg(orgIdStr)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	//orgId, err := strconv.Atoi(orgIdStr)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -813,6 +796,13 @@ func (m *alertService) DeleteOrgCustomizeAlert(ctx context.Context, request *pb.
 		"orgName":   org.Name,
 	}
 	audit.ContextEntryMap(ctx, auditContext)
+	resp, err := structpb.NewStruct(map[string]interface{}{
+		"name": data.Name,
+	})
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	result.Data = structpb.NewStructValue(resp)
 	return result, nil
 }
 

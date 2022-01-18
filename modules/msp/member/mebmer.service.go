@@ -167,7 +167,7 @@ func (m memberService) contextEntry(projectIdStr string, userIds []string, ctx c
 	}
 	auditContext := map[string]interface{}{
 		"projectName": projectName,
-		"users":       userList,
+		"users":       userList.Users,
 	}
 	audit.ContextEntryMap(ctx, auditContext)
 	return projectId, nil
