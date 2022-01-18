@@ -18,7 +18,7 @@ import (
 	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
 )
 
 func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
@@ -44,6 +44,7 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 		return nil, err
 	}
 	creatorCondition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-creator")
+	creatorCondition.ConditionBase.Disabled = p.gsHelper.GetGlobalPipelineTab() == common.MineState.String()
 	conditions = append(conditions, creatorCondition)
 
 	conditions = append(conditions, model.NewDateRangeCondition("createdAtStartEnd", cputil.I18n(p.sdk.Ctx, "created-at")))
@@ -109,6 +110,7 @@ func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
 		}
 		return selectOptions
 	}())
+	condition.ConditionBase.Disabled = p.InParams.AppID != 0
 	condition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-application")
 	return condition, nil
 }
