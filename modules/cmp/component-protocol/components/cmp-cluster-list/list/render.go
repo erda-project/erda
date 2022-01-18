@@ -294,9 +294,9 @@ func (l *List) GetData(ctx context.Context) (map[string][]DataItem, error) {
 				if cmp.IsVirtualNode(m) {
 					continue
 				}
-				cpuCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "cpu"))
-				memoryCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "memory"))
-				podCapacity, _ := resource.ParseQuantity(m.String("status", "allocatable", "pods"))
+				cpuCapacity, _ := resource.ParseQuantity(m.String("status", "capacity", "cpu"))
+				memoryCapacity, _ := resource.ParseQuantity(m.String("status", "capacity", "memory"))
+				podCapacity, _ := resource.ParseQuantity(m.String("status", "capacity", "pods"))
 				res[clusters[i].Name].CpuTotal += float64(cpuCapacity.Value())
 				res[clusters[i].Name].MemoryTotal += float64(memoryCapacity.Value())
 				res[clusters[i].Name].PodTotal += float64(podCapacity.Value())

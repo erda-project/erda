@@ -1,3 +1,5 @@
+# center cluster collector config
+
 http-server:
     addr: ":7076"
 
