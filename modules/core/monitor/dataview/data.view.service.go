@@ -19,6 +19,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
@@ -229,8 +230,13 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 		UpdatedAt: model.UpdatedAt.UnixNano() / int64(time.Millisecond),
 	}, model.ViewConfig, model.DataConfig)}
 	if req.Scope != "org" {
-		projectId := ctx.Value("erda-projectId").(uint64)
-		result.Data.ProjectId = projectId
+		projectIdStr := apis.GetMSPInfo(ctx, "erda-projectId")
+		projectId, err := strconv.Atoi(projectIdStr)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		//projectId := ctx.Value("erda-projectId").(uint64)
+		result.Data.ProjectId = uint64(projectId)
 	}
 	err = s.auditContextMap(ctx, req.Name, req.Scope)
 	if err != nil {
@@ -299,8 +305,10 @@ func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName, sc
 		"scope":         scope,
 	}
 	if scope != "org" {
-		auditContext["projectName"] = ctx.Value("erda-projectName").(string)
-		auditContext["workspace"] = ctx.Value("erda-workspace").(string)
+		//auditContext["projectName"] = ctx.Value("erda-projectName").(string)
+		//auditContext["workspace"] = ctx.Value("erda-workspace").(string)
+		auditContext["projectName"] = apis.GetMSPInfo(ctx, "erda-projectName")
+		auditContext["workspace"] = apis.GetMSPInfo(ctx, "erda-workspace")
 	}
 	audit.ContextEntryMap(ctx, auditContext)
 	return nil
