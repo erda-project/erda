@@ -27,5 +27,4 @@ var DELETE_BLOCK = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 删除自定义大盘",
-	//Audit:       auditOperatorBlock(apistructs.DeleteServiceDashboard),
 }
