@@ -15,17 +15,18 @@
 package table
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
-	"golang.org/x/net/context"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 func Test_ConvertSortData(t *testing.T) {
@@ -84,38 +85,38 @@ func Test_executeTime(t *testing.T) {
 }
 
 func Test_Render(t *testing.T) {
-	bdl := &bundle.Bundle{}
-	cb := protocol.ContextBundle{
-		Bdl: bdl,
-		InParams: map[string]interface{}{
-			"projectId": 1,
-		},
-	}
-	ctx := context.WithValue(context.Background(), protocol.GlobalInnerKeyCtxBundle.String(), cb)
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "PagingTestPlansV2",
-		func(b *bundle.Bundle, req apistructs.TestPlanV2PagingRequest) (*apistructs.TestPlanV2PagingResponseData, error) {
-			list := []*apistructs.TestPlanV2{
-				{
-					PassRate: 10,
-				},
-				{
-					PassRate: 0,
-				},
-			}
-			if req.OrderBy == "execute_api_num" {
-				if req.Asc == true {
-					list[0].ExecuteApiNum = 1
-					list[1].ExecuteApiNum = 2
-				} else {
-					list[0].ExecuteApiNum = 2
-					list[1].ExecuteApiNum = 1
-				}
-			}
-			return &apistructs.TestPlanV2PagingResponseData{
-				List: list,
-			}, nil
+	var bdl = protocol.ContextBundle{Locale: "zh"}
+	dl := bundle.New(bundle.WithI18nLoader(&i18n.LocaleResourceLoader{}))
+	m := monkey.PatchInstanceMethod(reflect.TypeOf(dl), "GetLocale",
+		func(bdl *bundle.Bundle, local ...string) *i18n.LocaleResource {
+			return &i18n.LocaleResource{}
 		})
-	defer monkey.UnpatchAll()
+	defer m.Unpatch()
+	monkey.PatchInstanceMethod(reflect.TypeOf(dl), "PagingTestPlansV2", func(b *bundle.Bundle, req apistructs.TestPlanV2PagingRequest) (*apistructs.TestPlanV2PagingResponseData, error) {
+		list := []*apistructs.TestPlanV2{
+			{
+				PassRate: 10,
+			},
+			{
+				PassRate: 0,
+			},
+		}
+		if req.OrderBy == "execute_api_num" {
+			if req.Asc == true {
+				list[0].ExecuteApiNum = 1
+				list[1].ExecuteApiNum = 2
+			} else {
+				list[0].ExecuteApiNum = 2
+				list[1].ExecuteApiNum = 1
+			}
+		}
+		return &apistructs.TestPlanV2PagingResponseData{
+			List: list,
+		}, nil
+	})
+	bdl.Bdl = dl
+	bdl.InParams = map[string]interface{}{"projectId": 1}
+	ctx := context.WithValue(context.Background(), protocol.GlobalInnerKeyCtxBundle.String(), bdl)
 	p := &TestPlanManageTable{}
 	c := &apistructs.Component{
 		State: map[string]interface{}{

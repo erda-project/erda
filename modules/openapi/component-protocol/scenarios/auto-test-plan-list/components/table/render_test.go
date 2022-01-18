@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 func TestTestPlanManageTable_Render(t *testing.T) {
@@ -55,12 +56,17 @@ func TestTestPlanManageTable_Render(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var bdl = protocol.ContextBundle{}
-			var dl = bundle.Bundle{}
-			monkey.PatchInstanceMethod(reflect.TypeOf(&dl), "PagingTestPlansV2", func(b *bundle.Bundle, req apistructs.TestPlanV2PagingRequest) (*apistructs.TestPlanV2PagingResponseData, error) {
+			var bdl = protocol.ContextBundle{Locale: "zh"}
+			dl := bundle.New(bundle.WithI18nLoader(&i18n.LocaleResourceLoader{}))
+			m := monkey.PatchInstanceMethod(reflect.TypeOf(dl), "GetLocale",
+				func(bdl *bundle.Bundle, local ...string) *i18n.LocaleResource {
+					return &i18n.LocaleResource{}
+				})
+			defer m.Unpatch()
+			monkey.PatchInstanceMethod(reflect.TypeOf(dl), "PagingTestPlansV2", func(b *bundle.Bundle, req apistructs.TestPlanV2PagingRequest) (*apistructs.TestPlanV2PagingResponseData, error) {
 				return &apistructs.TestPlanV2PagingResponseData{}, nil
 			})
-			bdl.Bdl = &dl
+			bdl.Bdl = dl
 			bdl.InParams = map[string]interface{}{"projectId": 1}
 			tt.args.ctx = context.WithValue(tt.args.ctx, protocol.GlobalInnerKeyCtxBundle.String(), bdl)
 

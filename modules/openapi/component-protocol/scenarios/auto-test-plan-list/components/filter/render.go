@@ -22,6 +22,7 @@ import (
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/type_conversion"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-list/i18n"
 )
 
 type AutoTestPlanFilter struct{}
@@ -54,7 +55,7 @@ func (tpm *AutoTestPlanFilter) Render(ctx context.Context, c *apistructs.Compone
 	if c.State == nil {
 		c.State = make(map[string]interface{})
 	}
-	c.State["conditions"] = tpm.setConditions(iterations)
+	c.State["conditions"] = tpm.setConditions(bdl, iterations)
 	if event.Operation.String() == "filter" {
 		if _, ok := c.State["values"]; ok {
 			fiterDataBytes, err := json.Marshal(c.State["values"])
@@ -87,38 +88,39 @@ func (tpm *AutoTestPlanFilter) Render(ctx context.Context, c *apistructs.Compone
 	return nil
 }
 
-func (tpm *AutoTestPlanFilter) setConditions(iterations []apistructs.Iteration) []filter.PropCondition {
+func (tpm *AutoTestPlanFilter) setConditions(ctxBundle protocol.ContextBundle, iterations []apistructs.Iteration) []filter.PropCondition {
+	i18nLocale := ctxBundle.Bdl.GetLocale(ctxBundle.Locale)
 	return []filter.PropCondition{
 		{
 			Key:         "name",
-			Label:       "计划名",
+			Label:       i18nLocale.Get(i18n.I18nKeyPlanName),
 			Fixed:       true,
-			Placeholder: "输入计划名按回车键查询",
+			Placeholder: i18nLocale.Get(i18n.I18nKeyPlanNameRegex),
 			Type:        filter.PropConditionTypeInput,
 		},
 		{
 			Key:         "archive",
-			Label:       "归档",
-			EmptyText:   "全部",
+			Label:       i18nLocale.Get(i18n.I18nKeyArchive),
+			EmptyText:   i18nLocale.Get(i18n.I18nKeyAll),
 			Fixed:       true,
-			Placeholder: "输入计划名按回车键查询",
+			Placeholder: i18nLocale.Get(i18n.I18nKeyPlanNameRegex),
 			Type:        filter.PropConditionTypeSelect,
 			Options: []filter.PropConditionOption{
 				{
-					Label: "进行中",
+					Label: i18nLocale.Get(i18n.I18nKeyInProgress),
 					Value: "inprogress",
 				},
 				{
-					Label: "已归档",
+					Label: i18nLocale.Get(i18n.I18nKeyArchived),
 					Value: "archived",
 				},
 			},
 		},
 		{
-			EmptyText: "全部",
+			EmptyText: i18nLocale.Get(i18n.I18nKeyAll),
 			Fixed:     true,
 			Key:       "iteration",
-			Label:     "迭代",
+			Label:     i18nLocale.Get(i18n.I18nKeyIteration),
 			Options: func() (opts []filter.PropConditionOption) {
 				for _, itr := range iterations {
 					opts = append(opts, filter.PropConditionOption{

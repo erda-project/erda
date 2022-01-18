@@ -16,24 +16,29 @@ package auto_test_plan_list
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
+
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-list/i18n"
 )
 
 // GenCreateFormModalProps 生成创建测试计划表单的props
-func GenCreateFormModalProps(testSpace, iteration []byte) interface{} {
-	props := `{
-          "name": "计划",
+func GenCreateFormModalProps(ctxBundle protocol.ContextBundle, testSpace, iteration []byte) interface{} {
+	i18nLocale := ctxBundle.Bdl.GetLocale(ctxBundle.Locale)
+	props := fmt.Sprintf(`{
+          "name": "%s",
           "fields": [
             {
               "component": "input",
               "key": "name",
-              "label": "计划名称",
+              "label": "%s",
               "required": true,
               "rule": [
                 {
                   "pattern": "/^[a-z\u4e00-\u9fa5A-Z0-9_-]*$/",
-                  "msg": "可输入中文、英文、数字、中划线或下划线"
+                  "msg": "%s"
                 }
               ],
               "componentProps": {
@@ -43,26 +48,26 @@ func GenCreateFormModalProps(testSpace, iteration []byte) interface{} {
             {
               "component": "select",
               "key": "spaceId",
-              "label": "测试空间",
+              "label": "%s",
 							"disabled": false,
               "required": true,
               "componentProps": {
-                "options": ` + string(testSpace) +
+                "options": `+string(testSpace)+
 		`}
             },
 			{
               "component": "select",
               "key": "iterationId",
-              "label": "迭代",
+              "label": "%s",
 							"disabled": false,
               "required": true,
               "componentProps": {
-                "options": ` + string(iteration) +
+                "options": `+string(iteration)+
 		`}
             },
             {
               "key": "owners",
-              "label": "负责人",
+              "label": "%s",
               "required": true,
               "component": "memberSelector",
               "componentProps": {
@@ -71,7 +76,9 @@ func GenCreateFormModalProps(testSpace, iteration []byte) interface{} {
               }
             }
           ]
-        }`
+        }`, i18nLocale.Get(i18n.I18nKeyPlan), i18nLocale.Get(i18n.I18nKeyPlanName),
+		i18nLocale.Get(i18n.I18nKeyPlanNameRegex), i18nLocale.Get(i18n.I18nKeyTestSpace),
+		i18nLocale.Get(i18n.I18nKeyIteration), i18nLocale.Get(i18n.I18nKeyPrincipal))
 
 	var propsI interface{}
 	if err := json.Unmarshal([]byte(props), &propsI); err != nil {
@@ -82,19 +89,20 @@ func GenCreateFormModalProps(testSpace, iteration []byte) interface{} {
 }
 
 // GenUpdateFormModalProps 生成更新测试计划表单的props
-func GenUpdateFormModalProps(testSpace, iteration []byte) interface{} {
-	props := `{
-          "name": "计划",
+func GenUpdateFormModalProps(ctxBundle protocol.ContextBundle, testSpace, iteration []byte) interface{} {
+	i18nLocale := ctxBundle.Bdl.GetLocale(ctxBundle.Locale)
+	props := fmt.Sprintf(`{
+          "name": "%s",
           "fields": [
             {
               "component": "input",
               "key": "name",
-              "label": "计划名称",
+              "label": "%s",
               "required": true,
               "rule": [
                 {
                   "pattern": "/^[a-z\u4e00-\u9fa5A-Z0-9_-]*$/",
-                  "msg": "可输入中文、英文、数字、中划线或下划线"
+                  "msg": "%s"
                 }
               ],
               "componentProps": {
@@ -104,25 +112,25 @@ func GenUpdateFormModalProps(testSpace, iteration []byte) interface{} {
             {
               "component": "select",
               "key": "spaceId",
-              "label": "测试空间",
+              "label": "%s",
               "disabled": true,
 							"componentProps": {
-                "options": ` + string(testSpace) +
+                "options": `+string(testSpace)+
 		`}
             },
 			{
               "component": "select",
               "key": "iterationId",
-              "label": "迭代",
+              "label": "%s",
               "required": true,
               "disabled": false,
 							"componentProps": {
-                "options": ` + string(iteration) +
+                "options": `+string(iteration)+
 		`}
             },
             {
               "key": "owners",
-              "label": "负责人",
+              "label": "%s",
               "required": true,
               "component": "memberSelector",
               "componentProps": {
@@ -131,7 +139,9 @@ func GenUpdateFormModalProps(testSpace, iteration []byte) interface{} {
               }
             }
           ]
-        }`
+        }`, i18nLocale.Get(i18n.I18nKeyPlan), i18nLocale.Get(i18n.I18nKeyPlanName),
+		i18nLocale.Get(i18n.I18nKeyPlanNameRegex), i18nLocale.Get(i18n.I18nKeyTestSpace),
+		i18nLocale.Get(i18n.I18nKeyIteration), i18nLocale.Get(i18n.I18nKeyPrincipal))
 
 	var propsI interface{}
 	if err := json.Unmarshal([]byte(props), &propsI); err != nil {
