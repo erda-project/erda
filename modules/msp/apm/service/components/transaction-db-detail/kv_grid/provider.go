@@ -51,7 +51,7 @@ type provider struct {
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		lang := sdk.Lang
 		startTime := int64(p.StdInParamsPtr.Get("startTime").(float64))
 		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
@@ -108,6 +108,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		}
 		data.List = list
 		p.StdDataPtr = &data
+		return nil
 	}
 }
 

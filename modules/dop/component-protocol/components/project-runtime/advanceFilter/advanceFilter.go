@@ -62,19 +62,20 @@ type Condition struct {
 }
 
 func (af *AdvanceFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		af.Values = make(cptype.ExtraMap)
 		err := common.Transfer(opData.ClientData.Values, &af.Values)
 		if err != nil {
-			return
+			return nil
 		}
 		(*sdk.GlobalState)["advanceFilter"] = af.Values
 		urlParam, err := af.generateUrlQueryParams(af.Values)
 		if err != nil {
-			return
+			return nil
 		}
 		(*af.StdStatePtr)["advanceFilter__urlQuery"] = urlParam
 		af.StdDataPtr = af.getData(sdk)
+		return nil
 	}
 }
 
@@ -87,14 +88,16 @@ func (af *AdvanceFilter) generateUrlQueryParams(Values cptype.ExtraMap) (string,
 }
 
 func (af *AdvanceFilter) RegisterFilterItemSaveOp(opData filter.OpFilterItemSave) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 
+		return nil
 	}
 }
 
 func (af *AdvanceFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDelete) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 
+		return nil
 	}
 }
 func (af *AdvanceFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
@@ -102,19 +105,20 @@ func (af *AdvanceFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 }
 
 func (af *AdvanceFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		err := common.Transfer(sdk.Comp.State, af.StdStatePtr)
 		if err != nil {
-			return
+			return nil
 		}
 		if urlquery := sdk.InParams.String("advanceFilter__urlQuery"); urlquery != "" {
 			if err = af.flushOptsByFilter(urlquery); err != nil {
 				logrus.Errorf("failed to transfer values in component advance filter")
-				return
+				return nil
 			}
 		}
 		(*sdk.GlobalState)["advanceFilter"] = af.Values
 		af.StdDataPtr = af.getData(sdk)
+		return nil
 	}
 }
 

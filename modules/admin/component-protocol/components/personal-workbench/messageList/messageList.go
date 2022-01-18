@@ -99,8 +99,9 @@ func (l *MessageList) BeforeHandleOp(sdk *cptype.SDK) {
 }
 
 func (l *MessageList) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		l.StdDataPtr = l.doFilter()
+		return nil
 	}
 }
 
@@ -110,7 +111,7 @@ func (l *MessageList) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 // RegisterChangePage when change page, filter needed
 func (l *MessageList) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 
 		if opData.ClientData.PageNo > 0 {
 			l.filterReq.PageNo = opData.ClientData.PageNo
@@ -119,32 +120,36 @@ func (l *MessageList) RegisterChangePage(opData list.OpChangePage) (opFunc cptyp
 			l.filterReq.PageSize = opData.ClientData.PageSize
 		}
 		l.StdDataPtr = l.doFilter()
+		return nil
 	}
 }
 
 // RegisterItemStarOp when item stared, unnecessary here
 func (l *MessageList) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
 	}
 }
 
 func (l *MessageList) RegisterItemClickGotoOp(opData list.OpItemClickGoto) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
 	}
 }
 func (l *MessageList) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 
+		return nil
 	}
 }
 
 // RegisterItemClickOp get client data, and set message read
 func (l *MessageList) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		id, err := strconv.Atoi(opData.ClientData.DataRef.ID)
 		if err != nil {
 			logrus.Errorf("parse message client data failed, id: %v, error: %v", opData.ClientData.DataRef.ID, err)
-			return
+			return nil
 		}
 		req := apistructs.SetMBoxReadStatusRequest{
 			IDs: []int64{int64(id)},
@@ -152,9 +157,10 @@ func (l *MessageList) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptyp
 		err = l.bdl.SetMBoxReadStatus(l.identity, &req)
 		if err != nil {
 			logrus.Errorf("set mbox read status filed, id: %v, error: %v", id, err)
-			return
+			return nil
 		}
 		l.StdDataPtr = l.doFilter()
+		return nil
 	}
 }
 

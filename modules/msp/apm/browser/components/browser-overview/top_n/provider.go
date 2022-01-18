@@ -48,7 +48,7 @@ const (
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		data := topn.Data{}
 
 		record := topn.Record{Span: wideSpan}
@@ -74,11 +74,12 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		if err != nil {
 			p.Log.Error("failed to get topN: %s, error: %s", sdk.Comp.Name, err)
 			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
-			return
+			return nil
 		}
 
 		data.List = append(data.List, record)
 		p.StdDataPtr = &data
+		return nil
 	}
 }
 

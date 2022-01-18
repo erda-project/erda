@@ -72,8 +72,9 @@ func (l *List) BeforeHandleOp(sdk *cptype.SDK) {
 }
 
 func (l *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		l.StdDataPtr = l.doFilterApp()
+		return nil
 	}
 }
 
@@ -82,7 +83,7 @@ func (l *List) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 }
 
 func (l *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		if opData.ClientData.PageNo > 0 {
 			l.filterReq.PageNo = int(opData.ClientData.PageNo)
 		}
@@ -90,26 +91,31 @@ func (l *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.Opera
 			l.filterReq.PageSize = int(opData.ClientData.PageSize)
 		}
 		l.StdDataPtr = l.doFilterApp()
+		return nil
 	}
 }
 
 func (l *List) RegisterItemClickGotoOp(opData list.OpItemClickGoto) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
 	}
 }
 
 func (l *List) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
 	}
 }
 
 func (l *List) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
 	}
 }
 
 func (l *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
 	}
 }
 

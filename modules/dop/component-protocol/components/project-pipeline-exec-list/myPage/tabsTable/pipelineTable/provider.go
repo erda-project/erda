@@ -84,7 +84,7 @@ func (p *provider) BeforeHandleOp(sdk *cptype.SDK) {
 }
 
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		p.sdk = sdk
 		projectID := p.InParams.ProjectIDInt
 		pageNo, pageSize := GetPagingFromGlobalState(*sdk.GlobalState)
@@ -146,7 +146,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 					table.OpTableChangePage{}.OpKey(): cputil.NewOpBuilder().WithServerDataPtr(&table.OpTableChangePageServerData{}).Build(),
 					table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
 				}}
-			return
+			return nil
 		}
 
 		userIDs := make([]string, 0)
@@ -166,6 +166,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
 			}}
 		(*sdk.GlobalState)[protocol.GlobalInnerKeyUserIDs.String()] = strutil.DedupSlice(userIDs, true)
+		return nil
 	}
 }
 
@@ -275,16 +276,18 @@ func (p *provider) InitTable() table.Table {
 }
 
 func (p *provider) RegisterTableChangePageOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		(*sdk.GlobalState)[StateKeyTransactionPaging] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 
 func (p *provider) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		(*sdk.GlobalState)[StateKeyTransactionSort] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 

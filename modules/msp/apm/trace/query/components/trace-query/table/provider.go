@@ -71,7 +71,7 @@ func (p *provider) getSort(sort common.Sort) string {
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		params := p.TraceInParams.InParamsPtr
 		pageNo, pageSize := trace.GetPagingFromGlobalState(*sdk.GlobalState)
 		order := p.getSort(trace.GetSortsFromGlobalState(*sdk.GlobalState))
@@ -114,7 +114,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 		if err != nil {
 			p.Log.Error(err)
-			return
+			return nil
 		}
 		p.StdDataPtr = &table.Data{
 			Table: tt,
@@ -123,27 +123,31 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
 			},
 		}
+		return nil
 	}
 }
 
 func (p *provider) RegisterTablePagingOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		(*sdk.GlobalState)[trace.StateKeyTracePaging] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 
 func (p *provider) RegisterTableChangePageOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		(*sdk.GlobalState)[trace.StateKeyTracePaging] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 
 func (p *provider) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		(*sdk.GlobalState)[trace.StateKeyTraceSort] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 

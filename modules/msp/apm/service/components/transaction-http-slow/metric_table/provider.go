@@ -44,7 +44,7 @@ type provider struct {
 }
 
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		filter := slow_transaction.GetFilterFromGlobalState(*sdk.GlobalState)
 		pageNo, pagSize := slow_transaction.GetPagingFromGlobalState(*sdk.GlobalState)
 		sorts := slow_transaction.GetSortsFromGlobalState(*sdk.GlobalState)
@@ -70,7 +70,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		if err != nil {
 			p.Log.Error(err)
 			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
-			return
+			return nil
 		}
 
 		p.StdDataPtr = &table.Data{
@@ -80,6 +80,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
 			},
 		}
+		return nil
 	}
 }
 
@@ -88,23 +89,26 @@ func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 }
 
 func (p *provider) RegisterTablePagingOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		slow_transaction.SetPagingToGlobalState(*sdk.GlobalState, opData.ClientData)
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 
 func (p *provider) RegisterTableChangePageOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		slow_transaction.SetPagingToGlobalState(*sdk.GlobalState, opData.ClientData)
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 
 func (p *provider) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		slow_transaction.SetSortsToGlobalState(*sdk.GlobalState, opData.ClientData)
 		p.RegisterRenderingOp()(sdk)
+		return nil
 	}
 }
 

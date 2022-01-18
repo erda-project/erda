@@ -50,7 +50,7 @@ type provider struct {
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		data := kv.Data{}
 		var cell *kv.KV
 		var err error
@@ -77,11 +77,12 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		if err != nil {
 			p.Log.Error("failed to get card: %s", err)
 			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
-			return
+			return nil
 		}
 
 		data.List = append(data.List, cell)
 		p.StdDataPtr = &data
+		return nil
 	}
 }
 
