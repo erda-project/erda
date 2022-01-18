@@ -95,6 +95,9 @@ en:
   maxReqPageTop5: "High Request Pages Top5"
   slowReqPageTop5: "Most Slow Page Top5"
   slowReqRegionTop5: "Most Slow Region Top5"
+  s: s
+  m: m
+  h: h
 zh:
   waiting_for_tracing_data: "正在获取链路追踪数据"
   success_get_tracing_data: "获取链路追踪数据成功"
@@ -192,3 +195,6 @@ zh:
   maxReqPageTop5: "高访问量页面 Top5"
   slowReqPageTop5: "慢响应页面 Top5"
   slowReqRegionTop5: "慢响应地区 Top5"
+  s: 秒
+  m: 分钟
+  h: 小时

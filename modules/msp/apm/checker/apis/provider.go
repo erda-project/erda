@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
 	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
@@ -39,13 +40,14 @@ type config struct {
 
 // +provider
 type provider struct {
+	DB            *gorm.DB
 	Cfg           *config
 	Log           logs.Logger
 	Register      transport.Register             `autowired:"service-register" optional:"true"`
 	Metric        metricpb.MetricServiceServer   `autowired:"erda.core.monitor.metric.MetricService"`
 	ProjectServer projectpb.ProjectServiceServer `autowired:"erda.msp.tenant.project.ProjectService"`
 	Redis         *redis.Client                  `autowired:"redis-client"`
-	DB            *gorm.DB                       `autowired:"mysql-client"`
+	I18n          i18n.Translator                `autowired:"i18n" translator:"msp-i18n"`
 	Perm          perm.Interface                 `autowired:"permission"`
 	audit         audit.Auditor
 
@@ -60,6 +62,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 	p.checkerService = &checkerService{p}
 	p.checkerV1Service = &checkerV1Service{
+		p:             p,
 		metricq:       p.Metric,
 		projectServer: p.ProjectServer,
 		projectDB:     &db.ProjectDB{DB: p.DB},

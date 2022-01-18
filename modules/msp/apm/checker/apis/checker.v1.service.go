@@ -25,15 +25,18 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
 	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/modules/msp/apm/checker/storage/cache"
 	"github.com/erda-project/erda/modules/msp/apm/checker/storage/db"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
 
 type checkerV1Service struct {
+	p             *provider
 	projectDB     *db.ProjectDB
 	metricDB      *db.MetricDB
 	cache         *cache.Cache
@@ -330,7 +333,8 @@ func (s *checkerV1Service) DescribeCheckersV1(ctx context.Context, req *pb.Descr
 		}
 		results[item.ID] = result
 	}
-	err = s.QueryCheckersLatencySummaryByProject(req.ProjectID, results)
+	apis.Language(ctx)
+	err = s.QueryCheckersLatencySummaryByProject(apis.Language(ctx), req.ProjectID, results)
 	if err != nil {
 		return nil, errors.NewServiceInvokingError(fmt.Sprintf("status_page.project_id/%d", req.ProjectID), err)
 	}
@@ -380,7 +384,8 @@ func (s *checkerV1Service) DescribeCheckerV1(ctx context.Context, req *pb.Descri
 			Config: config,
 			Status: StatusMiss,
 		}
-		err = s.QueryCheckersLatencySummary(req.Id, req.Period, results)
+		language := apis.Language(ctx)
+		err = s.QueryCheckersLatencySummary(language, req.Id, req.Period, results)
 		if err != nil {
 			return nil, errors.NewServiceInvokingError(fmt.Sprintf("status_page.metric/%d", req.Id), err)
 		}
@@ -486,10 +491,10 @@ func getTimeRange(unit string, num int, align bool) (start int64, end int64, int
 	return
 }
 
-func (s *checkerV1Service) QueryCheckersLatencySummaryByProject(projectID int64, metrics map[int64]*pb.DescribeItemV1) error {
+func (s *checkerV1Service) QueryCheckersLatencySummaryByProject(lang i18n.LanguageCodes, projectID int64, metrics map[int64]*pb.DescribeItemV1) error {
 	start, end, duration := getTimeRange("hour", 1, false)
 	interval, _ := structpb.NewValue(map[string]interface{}{"duration": duration})
-	return s.queryCheckerMetrics(start, end, `
+	return s.queryCheckerMetrics(lang, start, end, `
 	SELECT timestamp(), metric::tag, status_name::tag, round_float(avg(latency),2), max(latency), min(latency), count(latency), sum(latency)
 	FROM status_page 
 	WHERE project_id=$projectID 
@@ -502,10 +507,10 @@ func (s *checkerV1Service) QueryCheckersLatencySummaryByProject(projectID int64,
 	)
 }
 
-func (s *checkerV1Service) QueryCheckersLatencySummary(metricID int64, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
+func (s *checkerV1Service) QueryCheckersLatencySummary(lang i18n.LanguageCodes, metricID int64, timeUnit string, metrics map[int64]*pb.DescribeItemV1) error {
 	start, end, duration := getTimeRange(timeUnit, 1, false)
 	interval, _ := structpb.NewValue(map[string]interface{}{"duration": duration})
-	return s.queryCheckerMetrics(start, end, `
+	return s.queryCheckerMetrics(lang, start, end, `
 	SELECT timestamp(), metric::tag, status_name::tag, round_float(avg(latency),2), max(latency), min(latency), count(latency), sum(latency)
 	FROM status_page 
 	WHERE metric=$metric 
@@ -518,7 +523,7 @@ func (s *checkerV1Service) QueryCheckersLatencySummary(metricID int64, timeUnit 
 	)
 }
 
-func (s *checkerV1Service) queryCheckerMetrics(start, end int64, statement string, params map[string]*structpb.Value, metrics map[int64]*pb.DescribeItemV1) error {
+func (s *checkerV1Service) queryCheckerMetrics(lang i18n.LanguageCodes, start, end int64, statement string, params map[string]*structpb.Value, metrics map[int64]*pb.DescribeItemV1) error {
 	req := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(start, 10),
 		End:       strconv.FormatInt(end, 10),
@@ -531,7 +536,7 @@ func (s *checkerV1Service) queryCheckerMetrics(start, end int64, statement strin
 	if err != nil {
 		return err
 	}
-	s.parseMetricSummaryResponse(resp, metrics)
+	s.parseMetricSummaryResponse(lang, resp, metrics)
 	return nil
 }
 
@@ -541,7 +546,7 @@ const (
 	StatusMiss  = "Miss"
 )
 
-func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithInfluxFormatResponse, metrics map[int64]*pb.DescribeItemV1) {
+func (s *checkerV1Service) parseMetricSummaryResponse(lang i18n.LanguageCodes, resp *metricpb.QueryWithInfluxFormatResponse, metrics map[int64]*pb.DescribeItemV1) {
 	type summaryItem struct {
 		time  []int64
 		avg   []float64
@@ -663,16 +668,16 @@ func (s *checkerV1Service) parseMetricSummaryResponse(resp *metricpb.QueryWithIn
 						}
 					}
 					if duration < 60 {
-						m.DownDuration = fmt.Sprintf("%d秒", duration)
+						m.DownDuration = fmt.Sprintf("%d%s", duration, s.p.I18n.Text(lang, "s"))
 					} else if duration < 60*60 {
-						m.DownDuration = fmt.Sprintf("%d分钟", (duration+60-1)/60)
+						m.DownDuration = fmt.Sprintf("%d%s", (duration+60-1)/60, s.p.I18n.Text(lang, "m"))
 					} else {
-						m.DownDuration = fmt.Sprintf("%d小时", (duration+60*60-1)/(60*60))
+						m.DownDuration = fmt.Sprintf("%d%s", (duration+60*60-1)/(60*60), s.p.I18n.Text(lang, "h"))
 					}
 				}
 			}
 			if len(m.DownDuration) <= 0 {
-				m.DownDuration = "0秒"
+				m.DownDuration = fmt.Sprintf("0%s", s.p.I18n.Text(lang, "s"))
 			}
 			if len(chart.Status) > 0 {
 				for i := len(chart.Status) - 1; i >= 0; i-- {
