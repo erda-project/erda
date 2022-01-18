@@ -64,7 +64,7 @@ type DataItem struct {
 func (di DataItem) HashDataItem(fieldKey string) uint64 {
 	var sb strings.Builder
 	keys := make([]string, 0, len(di.Tags))
-	for k, _ := range di.Tags {
+	for k := range di.Tags {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
