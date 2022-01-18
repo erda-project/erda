@@ -1130,6 +1130,17 @@ func (r *Runtime) Delete(operator user.ID, orgID uint64, runtimeID uint64) (*api
 	return dbclient.ConvertRuntimeDTO(runtime, app), nil
 }
 
+// CountPRByWorkspace count project runtimes by workspace .
+func (r *Runtime) CountPRByWorkspace(projectId uint64, env string) (uint64, error) {
+	var l = logrus.WithField("func", "*Runtime.CountPRByWorkspace")
+	cnt, err := r.db.GetProjectRuntimeNumberByWorkspace(projectId, env)
+	if err != nil {
+		l.WithError(err).Errorln("failed to CountPRByWorkspace")
+		return 0, err
+	}
+	return cnt, nil
+}
+
 // Destroy 摧毁应用实例
 func (r *Runtime) Destroy(runtimeID uint64) error {
 	// 调用hepa完成runtime删除
