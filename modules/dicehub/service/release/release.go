@@ -430,6 +430,10 @@ func (r *Release) Update(orgID int64, releaseID string, req *apistructs.ReleaseU
 	}
 
 	if release.IsProjectRelease {
+		release.ApplicationID = 0
+		release.ApplicationName = ""
+		release.Dice = ""
+
 		if len(req.ApplicationReleaseList) == 0 {
 			return errors.New("application release list can not be null for project release")
 		}
@@ -438,6 +442,14 @@ func (r *Release) Update(orgID int64, releaseID string, req *apistructs.ReleaseU
 		newAppReleases, err := r.db.GetReleases(req.ApplicationReleaseList)
 		if err != nil {
 			return errors.Errorf("failed to get application releases: %v", err)
+		}
+
+		selectedApp := make(map[int64]struct{})
+		for i := 0; i < len(newAppReleases); i++ {
+			if _, ok := selectedApp[newAppReleases[i].ApplicationID]; ok {
+				return errors.New("one application can only be selected once")
+			}
+			selectedApp[newAppReleases[i].ApplicationID] = struct{}{}
 		}
 
 		// update application_release_list
