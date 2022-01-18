@@ -12,29 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package orchestrator
 
-const (
-	ScenarioKey          = "project-pipeline"
-	DefaultPageSize      = 10
-	ColumnPipelineStatus = "pipelineStatus"
+import (
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-type StateValue string
-
-func (s StateValue) String() string {
-	return string(s)
-}
-
-const (
-	MineState    StateValue = "mine"
-	PrimaryState StateValue = "primary"
-	AllState     StateValue = "all"
-)
-
-var DefaultState = MineState
-
-type Sort struct {
-	FieldKey  string
-	Ascending bool
+var ORCHESTRATOR_PROJECT_RUNTIME_COUNT = apis.ApiSpec{
+	Path:        "/api/countProjectRuntime",
+	BackendPath: "/api/countProjectRuntime",
+	Host:        "orchestrator.marathon.l4lb.thisdcos.directory:8081",
+	Scheme:      "http",
+	Method:      "GET",
 }
