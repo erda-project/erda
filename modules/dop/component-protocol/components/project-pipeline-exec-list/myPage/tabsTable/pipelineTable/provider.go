@@ -161,6 +161,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				table.OpTableChangePage{}.OpKey(): cputil.NewOpBuilder().WithServerDataPtr(&table.OpTableChangePageServerData{}).Build(),
 				table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
 			}}
+		return nil
 	}
 }
 
