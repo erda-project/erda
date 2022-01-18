@@ -35,7 +35,7 @@ func (d *DeploymentOrder) Cancel(req *apistructs.DeploymentOrderCancelRequest) (
 		return nil, err
 	}
 
-	if err := d.checkExecutePermission(req.Operator, order.Workspace, appsInfo); err != nil {
+	if err := d.batchCheckExecutePermission(req.Operator, order.Workspace, appsInfo); err != nil {
 		return nil, apierrors.ErrCancelDeploymentOrder.InternalError(err)
 	}
 
