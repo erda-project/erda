@@ -80,6 +80,18 @@ func (m *MenuItem) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.OnlyNotK8S = val
+			case "isK8S":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsK8S = val
+			case "isEdas":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsEdas = val
 			}
 		}
 	}

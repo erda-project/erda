@@ -16,7 +16,7 @@ service MenuService {
   };
 
   rpc GetMenu (GetMenuRequest) returns (GetMenuResponse)  {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       get: "/api/msp/tenant/menu",
     };
     option (erda.common.openapi) = {
@@ -25,7 +25,7 @@ service MenuService {
   }
 
   rpc GetSetting (GetSettingRequest) returns (GetSettingResponse)  {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       get: "/api/msp/setting/{tenantGroup}",
     };
     option (erda.common.openapi) = {
@@ -60,6 +60,8 @@ message MenuItem {
   bool                onlyK8S     = 11;
   // 内部字段: 只在非K8S集群显示
   bool                onlyNotK8S  = 12;
+  bool                isK8S       = 13;
+  bool                isEdas      = 14;
 }
 
 message GetSettingRequest {
