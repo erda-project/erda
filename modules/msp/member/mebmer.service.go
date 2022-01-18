@@ -161,31 +161,16 @@ func (m memberService) contextEntry(projectIdStr string, userIds []string, ctx c
 	if err != nil {
 		return 0, errors.NewInternalServerError(err)
 	}
-	userNameList, err := m.getUsersInfo(userIds)
+	userList, err := m.p.bdl.ListUsers(apistructs.UserListRequest{UserIDs: userIds})
 	if err != nil {
 		return 0, errors.NewInternalServerError(err)
 	}
 	auditContext := map[string]interface{}{
 		"projectName": projectName,
-		"users":       userNameList,
+		"users":       userList.Users,
 	}
 	audit.ContextEntryMap(ctx, auditContext)
 	return projectId, nil
-}
-
-func (m memberService) getUsersInfo(userIds []string) ([]string, error) {
-	userListReq := apistructs.UserListRequest{
-		UserIDs: userIds,
-	}
-	userListInfo, err := m.p.bdl.ListUsers(userListReq)
-	if err != nil {
-		return nil, err
-	}
-	userNameList := make([]string, 0)
-	for _, v := range userListInfo.Users {
-		userNameList = append(userNameList, v.Name)
-	}
-	return userNameList, nil
 }
 
 func (m memberService) auditContextInfo(projectIdStr string) (string, uint64, error) {
