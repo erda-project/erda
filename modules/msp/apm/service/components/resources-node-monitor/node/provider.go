@@ -274,7 +274,7 @@ func (p *provider) getNetworkLineGraph(ctx context.Context, startTime, endTime i
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		startTime := p.ServiceInParams.InParamsPtr.StartTime
 		endTime := p.ServiceInParams.InParamsPtr.EndTime
 		hostIp := p.ServiceInParams.InParamsPtr.HostIp
@@ -282,52 +282,53 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		case cpu:
 			graph, err := p.getCpuLineGraph(sdk.Ctx, startTime, endTime, hostIp)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, cpu, "rateUnit", graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case memory:
 			graph, err := p.getMemoryLineGraph(sdk.Ctx, startTime, endTime, hostIp)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, memory, "rateUnit", graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case load:
 			graph, err := p.getLoadLineGraph(sdk.Ctx, startTime, endTime, hostIp)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, load, "", graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case podCount:
 			graph, err := p.getPodCountLineGraph(sdk.Ctx, startTime, endTime, hostIp)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, podCount, "pcsUnit", graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case disk:
 			graph, err := p.getDiskIoLineGraph(sdk.Ctx, startTime, endTime, hostIp)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, disk, "KB/s", graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case network:
 			graph, err := p.getNetworkLineGraph(sdk.Ctx, startTime, endTime, hostIp)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, network, "KB/s", graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		}
+		return nil
 	}
 }
 

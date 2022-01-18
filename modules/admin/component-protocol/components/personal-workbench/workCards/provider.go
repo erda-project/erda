@@ -49,17 +49,17 @@ func (wc *WorkCards) BeforeHandleOp(sdk *cptype.SDK) {
 }
 
 func (wc *WorkCards) RegisterCardListStarOp(opData cardlist.OpCardListStar) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		card := cardlist.Card{}
 		err := common.Transfer(opData.ClientData.DataRef, &card)
 		if err != nil {
-			return
+			return nil
 		}
 		tabName := wc.getTableName(sdk)
 		id, err := strconv.ParseUint(card.ID, 10, 64)
 		if err != nil {
 			logrus.Error(err)
-			return
+			return nil
 		}
 		req := apistructs.UnSubscribeReq{
 			Type:   apistructs.SubscribeType(tabName),
@@ -69,7 +69,7 @@ func (wc *WorkCards) RegisterCardListStarOp(opData cardlist.OpCardListStar) (opF
 		err = wc.Bdl.DeleteSubscribe(sdk.Identity.UserID, sdk.Identity.OrgID, req)
 		if err != nil {
 			logrus.Errorf("star %v failed, id: %v, error: %v", req.Type, req.TypeID, err)
-			return
+			return nil
 		}
 
 		cards := wc.StdDataPtr.Cards
@@ -81,6 +81,7 @@ func (wc *WorkCards) RegisterCardListStarOp(opData cardlist.OpCardListStar) (opF
 			}
 		}
 		wc.StdDataPtr.Cards = cards
+		return nil
 	}
 }
 
@@ -89,10 +90,11 @@ type State struct {
 }
 
 func (wc *WorkCards) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		wc.Wb = sdk.Ctx.Value(types.WorkbenchSvc).(*workbench.Workbench)
 		wc.Bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 		wc.LoadList(sdk)
+		return nil
 	}
 }
 
