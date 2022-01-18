@@ -295,8 +295,8 @@ func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName, sc
 		"scope":         scope,
 	}
 	if scope != "org" {
-		auditContext["projectName"] = apis.GetMSPInfo(ctx, "erda-projectName")
-		auditContext["workspace"] = apis.GetMSPInfo(ctx, "erda-workspace")
+		auditContext["projectName"] = apis.GetHeader(ctx, "erda-projectName")
+		auditContext["workspace"] = apis.GetHeader(ctx, "erda-workspace")
 	}
 	audit.ContextEntryMap(ctx, auditContext)
 	return nil
