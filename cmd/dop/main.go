@@ -16,6 +16,7 @@ package main
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda/pkg/common"
 
 	// providers
@@ -27,20 +28,22 @@ import (
 	_ "github.com/erda-project/erda-proto-go/cmp/dashboard/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/definition/client"
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/source/client"
 	_ "github.com/erda-project/erda-proto-go/core/services/errorbox/client"
 	_ "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/client"
 	_ "github.com/erda-project/erda/modules/dop"
 	_ "github.com/erda-project/erda/modules/dop/providers/autotest/testplan"
 	_ "github.com/erda-project/erda/modules/dop/providers/contribution"
 	_ "github.com/erda-project/erda/modules/dop/providers/project/home"
+	_ "github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	_ "github.com/erda-project/erda/modules/dop/providers/taskerror"
-	_ "github.com/erda-project/erda/modules/pipeline/providers/definition_client"
 
 	// components
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components"
 )
 
 func main() {
+	common.RegisterHubListener(cpregister.NewHubListener())
 	common.Run(&servicehub.RunOptions{
 		ConfigFile: "conf/dop/dop.yaml",
 	})

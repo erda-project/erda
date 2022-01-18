@@ -23,13 +23,13 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/issue"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -101,13 +101,14 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	var propConditions []filter.PropCondition
+	emptyText := cputil.I18n(ctx, "all")
 	// only show iteration prop when fixedIterationID not exist
 	if f.fixedIterationID == 0 {
 		propConditions = append(propConditions, filter.PropCondition{
-			EmptyText:  "全部",
+			EmptyText:  emptyText,
 			Fixed:      true,
 			Key:        "iteration",
-			Label:      "迭代",
+			Label:      cputil.I18n(ctx, "iteration"),
 			Options:    iterationOptions,
 			Type:       filter.PropConditionTypeSelect,
 			HaveFilter: true,
@@ -119,19 +120,19 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	}
 	propConditions = append(propConditions,
 		filter.PropCondition{
-			EmptyText:  "全部",
+			EmptyText:  emptyText,
 			Fixed:      true,
 			Key:        "member",
-			Label:      "成员",
+			Label:      cputil.I18n(ctx, "member"),
 			Options:    projectMemberOptions,
 			Type:       filter.PropConditionTypeSelect,
 			HaveFilter: true,
 		},
 		filter.PropCondition{
-			EmptyText:  "全部",
+			EmptyText:  emptyText,
 			Fixed:      true,
 			Key:        "label",
-			Label:      "标签",
+			Label:      cputil.I18n(ctx, "label"),
 			Options:    labelOptions,
 			Type:       filter.PropConditionTypeSelect,
 			HaveFilter: true,

@@ -16,15 +16,18 @@ package metric
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	permission "github.com/erda-project/erda/modules/monitor/common/permission"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
@@ -214,12 +217,40 @@ func (p *provider) getGroup(rw http.ResponseWriter, r *http.Request, params stru
 	return p.proxyMonitor("/api/metric/groups/"+url.PathEscape(params.ID), param, rw, r)
 }
 
+type ObjData struct {
+	Workspace   string `json:"workspace"`
+	ProjectName string `json:"project_name"`
+	ProjectId   uint64 `json:"project_id"`
+}
+
 func (p *provider) proxyBlocks(rw http.ResponseWriter, r *http.Request, params struct {
 	ScopeID string `query:"scopeId" validate:"required"`
 }) interface{} {
 	param := url.Values{}
 	param.Set("scopeId", params.ScopeID)
 	return p.proxyMonitor("/api/dashboard/blocks", param, rw, r)
+}
+
+func (p *provider) getProjectResult(ctx context.Context, scopeId string) (*ObjData, error) {
+	project, err := p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
+		ScopeId: scopeId,
+	})
+	if err != nil {
+		return nil, err
+	}
+	projectId, err := strconv.Atoi(project.Data.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+	projectResp, err := p.bdl.GetProject(uint64(projectId))
+	if err != nil {
+		return nil, err
+	}
+	return &ObjData{
+		Workspace:   project.Data.Workspace,
+		ProjectId:   projectResp.ID,
+		ProjectName: projectResp.Name,
+	}, nil
 }
 
 func (p *provider) proxyBlock(rw http.ResponseWriter, r *http.Request, params struct {

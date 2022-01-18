@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
@@ -41,7 +42,6 @@ import (
 	cmpcputil "github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/cmp/metrics"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
@@ -67,7 +67,7 @@ func (p *ComponentPodsTable) Init(ctx servicehub.Context) error {
 
 	steveServer = server
 	mServer = mserver
-	return p.DefaultProvider.Init(ctx)
+	return nil
 }
 
 func (p *ComponentPodsTable) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,

@@ -573,3 +573,52 @@ type MockTran struct {
 func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
 	return ""
 }
+
+func Test_provider_handleInstanceInfo(t *testing.T) {
+	type args struct {
+		response *query.ResultSet
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*InstanceInfo
+	}{
+		{"case1", args{response: &query.ResultSet{
+			ResultSet: &tsql.ResultSet{Rows: [][]interface{}{{"id", "172.0.0.0", "true", "127.0.0.1"}}},
+		}}, []*InstanceInfo{{Id: "id", Ip: "172.0.0.0", Status: true, HostIP: "127.0.0.1"}}},
+		{"case2", args{response: &query.ResultSet{
+			ResultSet: &tsql.ResultSet{Rows: [][]interface{}{{"id", "172.0.0.0", "xxx", "127.0.0.1"}}},
+		}}, []*InstanceInfo{{Id: "id", Ip: "172.0.0.0", Status: false, HostIP: "127.0.0.1"}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			topology := &provider{}
+			if got := topology.handleInstanceInfo(tt.args.response); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("handleInstanceInfo() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_queryConditions(t *testing.T) {
+	type args struct {
+		indexType string
+		params    Vo
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  *elastic.BoolQuery
+		want1 string
+	}{
+		{"case1", args{params: Vo{Tags: []string{"service:service_id"}}}, nil, "service_id"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, got1 := queryConditions(tt.args.indexType, tt.args.params)
+			if got1 != tt.want1 {
+				t.Errorf("queryConditions() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}

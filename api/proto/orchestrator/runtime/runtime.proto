@@ -68,12 +68,13 @@ message RuntimeInspect {
   Resources resources = 13;
   Extra extra = 14;
   uint64 projectID = 15 [json_name = "projectId"] ;
-  map<string, Service> services = 16;
-  map<string, StatusMap> lastMessage = 17;
-  google.protobuf.Timestamp timeCreated = 18;
-  google.protobuf.Timestamp createdAt = 19;
-  google.protobuf.Timestamp updatedAt = 20;
-  repeated ErrorResponse errors = 21;
+  string applicationName = 16 [json_name = "applicationName"];
+  map<string, Service> services = 17;
+  map<string, StatusMap> lastMessage = 18;
+  google.protobuf.Timestamp timeCreated = 19;
+  google.protobuf.Timestamp createdAt = 20;
+  google.protobuf.Timestamp updatedAt = 21;
+  repeated ErrorResponse errors = 22;
 }
 
 message DelRuntimeRequest {

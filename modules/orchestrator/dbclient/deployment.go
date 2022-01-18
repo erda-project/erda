@@ -57,7 +57,9 @@ type Deployment struct {
 	// TODO: add a column to indicate normal deploy or rollback or redeploy ...
 	// TODO: add a column rollbackFrom
 
-	SkipPushByOrch bool
+	SkipPushByOrch    bool
+	Param             string `gorm:"type:text"`
+	DeploymentOrderId string
 }
 
 func (Deployment) TableName() string {
@@ -168,6 +170,19 @@ func (db *DBClient) FindDeployments(runtimeId uint64, filter DeploymentFilter, o
 	return deployments, total, nil
 }
 
+func (db *DBClient) FindAllDeployments(runtimeId uint64, filter DeploymentFilter) ([]Deployment, error) {
+	r := db.Where("runtime_id = ?", runtimeId)
+	if len(filter.StatusIn) > 0 {
+		r = r.Where("status in (?)", filter.StatusIn)
+	}
+	var deployments []Deployment
+	r = r.Order("id desc").Find(&deployments)
+	if err := r.Error; err != nil {
+		return nil, errors.Wrap(err, "failed to find deployments")
+	}
+	return deployments, nil
+}
+
 func (db *DBClient) FindMultiRuntimesDeployments(runtimeids []uint64, filter DeploymentFilter, offset int, limit int) ([]Deployment, int, error) {
 	r := db.Where("runtime_id in (?)", runtimeids)
 	if len(filter.StatusIn) > 0 {
@@ -234,12 +249,12 @@ func (db *DBClient) FindSuccessfulDeployments(runtimeId uint64, limit int) ([]De
 	return deployments, nil
 }
 
-// if not found, will return (nil, nil)
+// FindLastDeployment first deployment has no previous, nothing found does not matter
 func (db *DBClient) FindLastDeployment(runtimeId uint64) (*Deployment, error) {
 	var deployment Deployment
 	r := db.
 		Where("runtime_id = ?", runtimeId).Order("id desc").Limit(1).
-		Take(&deployment)
+		Find(&deployment)
 	if r.Error != nil {
 		if r.RecordNotFound() {
 			return nil, nil
@@ -272,7 +287,6 @@ func (db *DBClient) FindNotOutdatedOlderThan(runtimeId uint64, maxId uint64) ([]
 	}
 	return deployments, nil
 }
-
 func (db *DBClient) FindPreDeployment(uniqueId spec.RuntimeUniqueId) (*PreDeployment, error) {
 	var preBuild PreDeployment
 	if err := db.Table("ps_v2_pre_builds").

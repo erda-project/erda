@@ -48,3 +48,7 @@ func (s *apmServiceServiceWrapper) GetServiceAnalyzerOverview(ctx context.Contex
 func (s *apmServiceServiceWrapper) GetServiceCount(ctx context.Context, req *pb.GetServiceCountRequest) (*pb.GetServiceCountResponse, error) {
 	return s.client.GetServiceCount(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *apmServiceServiceWrapper) GetServiceLanguage(ctx context.Context, req *pb.GetServiceLanguageRequest) (*pb.GetServiceLanguageResponse, error) {
+	return s.client.GetServiceLanguage(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

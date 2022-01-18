@@ -14,13 +14,7 @@
 
 package podsCharts
 
-import (
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-)
-
 type PodsCharts struct {
-	base.DefaultProvider
-
 	Type string `json:"type,omitempty"`
 	Data Data   `json:"data"`
 }

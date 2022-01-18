@@ -292,9 +292,12 @@ func (e *Endpoints) ListRuntimes(ctx context.Context, r *http.Request, vars map[
 
 // ListRuntimesGroupByApps responses the runtimes for the given apps.
 func (e *Endpoints) ListRuntimesGroupByApps(ctx context.Context, r *http.Request, _ map[string]string) (httpserver.Responser, error) {
-	var l = logrus.WithField("func", "*Endpoints.ListRuntimesGroupByApps")
+	var (
+		l      = logrus.WithField("func", "*Endpoints.ListRuntimesGroupByApps")
+		appIDs []uint64
+		env    string
+	)
 
-	var appIDs []uint64
 	for _, appID := range r.URL.Query()["applicationID"] {
 		id, err := strconv.ParseUint(appID, 10, 64)
 		if err != nil {
@@ -302,8 +305,14 @@ func (e *Endpoints) ListRuntimesGroupByApps(ctx context.Context, r *http.Request
 		}
 		appIDs = append(appIDs, id)
 	}
+	envParam := r.URL.Query()["workspace"]
 
-	runtimes, err := e.runtime.ListGroupByApps(appIDs)
+	if len(envParam) == 0 {
+		env = ""
+	} else {
+		env = envParam[0]
+	}
+	runtimes, err := e.runtime.ListGroupByApps(appIDs, env)
 	if err != nil {
 		return apierrors.ErrListRuntime.InternalError(err).ToResp(), nil
 	}
@@ -412,7 +421,7 @@ func (e *Endpoints) RuntimeLogs(ctx context.Context, r *http.Request, vars map[s
 	if err != nil {
 		return apierrors.ErrGetRuntime.InvalidParameter(strutil.Concat("deploymentID: ", id)).ToResp(), nil
 	}
-	result, err := e.runtime.RuntimeDeployLogs(userID, orgID, deploymentID, r.URL.Query())
+	result, err := e.runtime.RuntimeDeployLogs(userID, orgID, r.Header.Get("org"), deploymentID, r.URL.Query())
 	if err != nil {
 		return apierrors.ErrGetRuntime.InvalidParameter(strutil.Concat("deploymentID: ", id)).ToResp(), nil
 	}
@@ -438,7 +447,7 @@ func (e *Endpoints) OrgcenterJobLogs(ctx context.Context, r *http.Request, vars 
 	if clusterName == "" {
 		return apierrors.ErrGetRuntime.MissingParameter("clusterName").ToResp(), nil
 	}
-	result, err := e.runtime.OrgJobLogs(userID, orgID, jobID, clusterName, r.URL.Query())
+	result, err := e.runtime.OrgJobLogs(userID, orgID, r.Header.Get("org"), jobID, clusterName, r.URL.Query())
 	if err != nil {
 		return apierrors.ErrGetRuntime.InvalidParameter(strutil.Concat("jobID: ", jobID)).ToResp(), nil
 	}

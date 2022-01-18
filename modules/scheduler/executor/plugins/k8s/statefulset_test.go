@@ -17,12 +17,18 @@ package k8s
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
+	appsv1 "k8s.io/api/apps/v1"
+	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/deployment"
@@ -30,7 +36,9 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/namespace"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/persistentvolumeclaim"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/secret"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/statefulset"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -289,7 +297,16 @@ func TestParseJobSpecTemplate(t *testing.T) {
 }
 
 func TestCreateStatefulSet(t *testing.T) {
-	kubernetes := &Kubernetes{}
+	kubernetes := &Kubernetes{
+		secret: &secret.Secret{},
+	}
+
+	defer monkey.UnpatchAll()
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(kubernetes.secret), "Get", func(sec *secret.Secret, namespace, name string) (*apiv1.Secret, error) {
+		b := []byte{}
+		return &apiv1.Secret{Data: map[string][]byte{".dockerconfigjson": b}}, nil
+	})
 
 	info := StatefulsetInfo{
 		sg: &apistructs.ServiceGroup{
@@ -298,7 +315,7 @@ func TestCreateStatefulSet(t *testing.T) {
 				Type:   "addon",
 				Labels: nil,
 				Services: []apistructs.Service{
-					apistructs.Service{
+					{
 						Name:          "fake-test-service",
 						Namespace:     "fake-test",
 						Image:         "",
@@ -349,5 +366,123 @@ func TestCreateStatefulSet(t *testing.T) {
 	}
 
 	err := kubernetes.createStatefulSet(context.Background(), info)
+	assert.Nil(t, err)
+}
+
+func Test_scaleStatefulSet(t *testing.T) {
+	k := &Kubernetes{
+		sts: &statefulset.StatefulSet{},
+	}
+
+	sg := &apistructs.ServiceGroup{
+		Dice: apistructs.Dice{
+			ID:     "fake-test-dice",
+			Type:   "addon",
+			Labels: nil,
+			Services: []apistructs.Service{
+				{
+					Name:          "fake-test-service",
+					Namespace:     "fake-test",
+					Image:         "",
+					ImageUsername: "",
+					ImagePassword: "",
+					Cmd:           "",
+					Ports:         nil,
+					ProxyPorts:    nil,
+					Vip:           "",
+					ShortVIP:      "",
+					ProxyIp:       "",
+					PublicIp:      "",
+					Scale:         1,
+					Resources: apistructs.Resources{
+						Cpu:  100,
+						Mem:  200,
+						Disk: 0,
+					},
+					Depends:            nil,
+					Env:                nil,
+					Labels:             map[string]string{"ADDON_GROUP_ID": "11111111"},
+					DeploymentLabels:   nil,
+					Selectors:          nil,
+					Binds:              nil,
+					Volumes:            nil,
+					Hosts:              nil,
+					HealthCheck:        nil,
+					NewHealthCheck:     nil,
+					SideCars:           nil,
+					InitContainer:      nil,
+					InstanceInfos:      nil,
+					MeshEnable:         nil,
+					TrafficSecurity:    diceyml.TrafficSecurity{},
+					WorkLoad:           "",
+					ProjectServiceName: "",
+					K8SSnippet:         nil,
+					StatusDesc:         apistructs.StatusDesc{},
+				},
+			},
+			ServiceDiscoveryKind: "",
+			ServiceDiscoveryMode: "",
+			ProjectNamespace:     "",
+		},
+	}
+	monkey.PatchInstanceMethod(reflect.TypeOf(k.sts), "Put", func(*statefulset.StatefulSet, *appsv1.StatefulSet) error {
+		return nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(k), "CheckQuota", func(k *Kubernetes, ctx context.Context, projectID, workspace, runtimeID string, requestsCPU, requestsMem int64, kind, serviceName string) (bool, string, error) {
+		return true, "", nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(k.sts), "Get", func(st *statefulset.StatefulSet, namespace, name string) (*appsv1.StatefulSet, error) {
+		sts := &appsv1.StatefulSet{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "apps/v1",
+				Kind:       "StatefulSet",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        name,
+				Namespace:   namespace,
+				Labels:      make(map[string]string),
+				Annotations: make(map[string]string),
+			},
+			Spec: appsv1.StatefulSetSpec{
+				RevisionHistoryLimit: func(i int32) *int32 { return &i }(int32(3)),
+				Replicas:             func(i int32) *int32 { return &i }(int32(2)),
+				ServiceName:          name,
+				Template: apiv1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: namespace,
+						Labels: map[string]string{
+							"app": name,
+						},
+					},
+					Spec: apiv1.PodSpec{
+						EnableServiceLinks:    func(enable bool) *bool { return &enable }(false),
+						ShareProcessNamespace: func(b bool) *bool { return &b }(false),
+						Tolerations:           toleration.GenTolerations(),
+						Containers: []apiv1.Container{
+							{
+								Name:  name,
+								Image: sg.Services[0].Image,
+								Resources: apiv1.ResourceRequirements{
+									Requests: apiv1.ResourceList{
+										apiv1.ResourceCPU:    resource.MustParse("100m"),
+										apiv1.ResourceMemory: resource.MustParse("200Mi"),
+									},
+									Limits: apiv1.ResourceList{
+										apiv1.ResourceCPU:    resource.MustParse("100m"),
+										apiv1.ResourceMemory: resource.MustParse("256Mi"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		return sts, nil
+	})
+
+	err := k.scaleStatefulSet(context.Background(), sg)
 	assert.Nil(t, err)
 }

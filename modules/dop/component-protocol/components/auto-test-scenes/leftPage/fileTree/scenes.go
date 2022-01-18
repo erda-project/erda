@@ -42,7 +42,7 @@ func (i *ComponentFileTree) RenderFileTree(inParams InParams) error {
 
 	var res []SceneSet
 	for _, s := range rsp {
-		set := initSceneSet(&s)
+		set := i.initSceneSet(&s)
 		if s.ID == setId {
 			if isSelectScene {
 				children, find, err := i.findScene(s.ID, sceneId)
@@ -89,7 +89,7 @@ func (i *ComponentFileTree) findScene(setId uint64, sceneId uint64) ([]Scene, bo
 		if sceneId == s.ID {
 			find = true
 		}
-		scene := initScene(s, int(setId))
+		scene := i.initScene(s, int(setId))
 		res = append(res, scene)
 	}
 
@@ -108,7 +108,7 @@ func (i *ComponentFileTree) RenderSceneSets(inParams InParams) error {
 
 	var res []SceneSet
 	for _, s := range rsp {
-		set := initSceneSet(&s)
+		set := i.initSceneSet(&s)
 		setId := "sceneset-" + strconv.FormatUint(s.ID, 10)
 		if exist(setId, i.State.ExpandedKeys) || exist(setId, i.State.SelectedKeys) || i.State.SceneSetKey == int(s.ID) {
 			//idx == 0 ||
@@ -157,7 +157,7 @@ func exist(target string, arr []string) bool {
 	return false
 }
 
-func initSceneSet(s *apistructs.SceneSet) SceneSet {
+func (i *ComponentFileTree) initSceneSet(s *apistructs.SceneSet) SceneSet {
 	id := int(s.ID)
 	set := SceneSet{
 		Key:           "sceneset-" + strconv.FormatUint(s.ID, 10),
@@ -192,7 +192,7 @@ func initSceneSet(s *apistructs.SceneSet) SceneSet {
 
 	var addScene = SceneSetOperation{
 		Key:    "AddScene",
-		Text:   "添加场景",
+		Text:   i.sdk.I18n("addScene"),
 		Reload: true,
 		Show:   true,
 		Meta: SceneSetOperationMeta{
@@ -202,7 +202,7 @@ func initSceneSet(s *apistructs.SceneSet) SceneSet {
 
 	var refSceneSet = SceneSetOperation{
 		Key:    "RefSceneSet",
-		Text:   "引用场景集",
+		Text:   i.sdk.I18n("refSceneSet"),
 		Reload: true,
 		Show:   true,
 		Meta: SceneSetOperationMeta{
@@ -212,7 +212,7 @@ func initSceneSet(s *apistructs.SceneSet) SceneSet {
 
 	var edit = SceneSetOperation{
 		Key:    "UpdateSceneSet",
-		Text:   "编辑场景集",
+		Text:   i.sdk.I18n("editSceneSet"),
 		Reload: true,
 		Show:   true,
 		Meta: SceneSetOperationMeta{
@@ -222,8 +222,8 @@ func initSceneSet(s *apistructs.SceneSet) SceneSet {
 
 	var delete = DeleteOperation{
 		Key:     "DeleteSceneSet",
-		Text:    "删除",
-		Confirm: "是否确认删除",
+		Text:    i.sdk.I18n("delete"),
+		Confirm: i.sdk.I18n("deleteConfirm"),
 		Reload:  true,
 		Show:    true,
 		Meta: SceneSetOperationMeta{
@@ -233,7 +233,7 @@ func initSceneSet(s *apistructs.SceneSet) SceneSet {
 
 	var export = SceneSetOperation{
 		Key:        "exportSceneSet",
-		Text:       "导出场景集",
+		Text:       i.sdk.I18n("exportSceneSet"),
 		Reload:     true,
 		Show:       true,
 		SuccessMsg: "导出完成，请在导入导出记录中下载导出结果",
@@ -253,7 +253,7 @@ func initSceneSet(s *apistructs.SceneSet) SceneSet {
 	return set
 }
 
-func initScene(scene apistructs.AutoTestScene, setId int) Scene {
+func (i *ComponentFileTree) initScene(scene apistructs.AutoTestScene, setId int) Scene {
 	var s Scene
 	sceneId := strconv.FormatUint(scene.ID, 10)
 	s.Title = "#" + sceneId + " " + scene.Name
@@ -279,7 +279,7 @@ func initScene(scene apistructs.AutoTestScene, setId int) Scene {
 
 	var edit = SceneSetOperation{
 		Key:    "UpdateScene",
-		Text:   "编辑场景",
+		Text:   i.sdk.I18n("editScene"),
 		Reload: true,
 		Show:   true,
 		Meta: SceneSetOperationMeta{
@@ -290,7 +290,7 @@ func initScene(scene apistructs.AutoTestScene, setId int) Scene {
 
 	var copy = SceneSetOperation{
 		Key:    "CopyScene",
-		Text:   "复制场景",
+		Text:   i.sdk.I18n("copyScene"),
 		Reload: true,
 		Show:   true,
 		Meta: SceneSetOperationMeta{
@@ -308,8 +308,8 @@ func initScene(scene apistructs.AutoTestScene, setId int) Scene {
 
 	var deleteOperation = DeleteOperation{
 		Key:     "DeleteScene",
-		Text:    "删除",
-		Confirm: "是否确认删除",
+		Text:    i.sdk.I18n("delete"),
+		Confirm: i.sdk.I18n("deleteConfirm"),
 		Reload:  true,
 		Show:    true,
 		Meta: SceneSetOperationMeta{
@@ -575,7 +575,7 @@ func (i *ComponentFileTree) getScenes(setId uint64) ([]Scene, error) {
 
 	var res []Scene
 	for _, s := range rsp {
-		scene := initScene(s, int(setId))
+		scene := i.initScene(s, int(setId))
 		res = append(res, scene)
 	}
 

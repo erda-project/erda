@@ -17,11 +17,9 @@ package filter
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type Filter struct {
-	base.DefaultProvider
 	CtxBdl     *bundle.Bundle
 	SDK        *cptype.SDK
 	Type       string                 `json:"type"`

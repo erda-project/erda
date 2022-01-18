@@ -127,7 +127,7 @@ func (c *UCClient) FindUsers(ids []string) ([]User, error) {
 		}
 		return users, nil
 	}
-	parts := make([]string, len(ids))
+	parts := make([]string, 0)
 	for _, id := range ids {
 		parts = append(parts, "user_id:"+id)
 	}

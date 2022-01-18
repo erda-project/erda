@@ -24,17 +24,17 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/component_key"
 )
 
 type ExecuteTaskTable struct {
-	base.DefaultProvider
 	bdl        *bundle.Bundle
 	Type       string                 `json:"type"`
 	Props      map[string]interface{} `json:"props"`
@@ -43,6 +43,7 @@ type ExecuteTaskTable struct {
 	Data       map[string]interface{} `json:"data"`
 
 	pipelineID uint64
+	sdk        *cptype.SDK
 }
 
 type State struct {
@@ -151,6 +152,7 @@ func (a *ExecuteTaskTable) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 	a.pipelineID = gh.GetExecuteHistoryTablePipelineID()
+	a.sdk = cputil.SDK(ctx)
 
 	a.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 
@@ -161,7 +163,7 @@ func (a *ExecuteTaskTable) Render(ctx context.Context, c *cptype.Component, scen
 		}
 		// export rendered component data
 		c.Operations = a.Operations
-		c.Props = getProps()
+		c.Props = getProps(ctx)
 	}()
 
 	// listen on operation
@@ -192,49 +194,49 @@ func getOperations(clickableKeys []uint64) map[string]interface{} {
 	}
 }
 
-func getProps() map[string]interface{} {
+func getProps(ctx context.Context) map[string]interface{} {
 	return map[string]interface{}{
 		"rowKey":     "key",
 		"scroll":     map[string]interface{}{"x": 1200},
 		"hideHeader": true,
 		"columns": []columns{
 			{
-				Title:     "步骤名称",
+				Title:     cputil.I18n(ctx, "stepName"),
 				DataIndex: "name",
 				Width:     200,
 				Ellipsis:  true,
 				Fixed:     "left",
 			},
 			{
-				Title:     "步骤类型",
+				Title:     cputil.I18n(ctx, "stepType"),
 				DataIndex: "type",
 				Width:     85,
 				Ellipsis:  true,
 			},
 			{
-				Title:     "步骤",
+				Title:     cputil.I18n(ctx, "step"),
 				DataIndex: "step",
 				Width:     85,
 				Ellipsis:  true,
 			},
 			{
-				Title:     "子任务数",
+				Title:     cputil.I18n(ctx, "subtask"),
 				DataIndex: "tasksNum",
 				Width:     85,
 				Ellipsis:  true,
 			},
 			{
-				Title:     "接口路径",
+				Title:     cputil.I18n(ctx, "apiPath"),
 				DataIndex: "path",
 			},
 			{
-				Title:     "状态",
+				Title:     cputil.I18n(ctx, "state"),
 				DataIndex: "status",
 				Width:     120,
 				Ellipsis:  true,
 			},
 			{
-				Title:     "操作",
+				Title:     cputil.I18n(ctx, "operate"),
 				DataIndex: "operate",
 				Width:     120,
 				Ellipsis:  true,
@@ -299,7 +301,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					operations = map[string]interface{}{
 						"checkDetail": dataOperation{
 							Key:         "checkDetail",
-							Text:        "查看结果",
+							Text:        a.sdk.I18n("checkRes"),
 							Reload:      false,
 							Meta:        task.Result,
 							DisabledTip: "禁用接口无法查看结果",
@@ -308,7 +310,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						"checkLog": dataOperation{
 							Key:    "checkLog",
 							Reload: false,
-							Text:   "日志",
+							Text:   a.sdk.I18n("log"),
 							Meta: map[string]interface{}{
 								"logId":      task.Extra.UUID,
 								"pipelineId": a.pipelineID,
@@ -380,7 +382,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						operations = map[string]interface{}{
 							"checkDetail": dataOperation{
 								Key:         "checkDetail",
-								Text:        "查看结果",
+								Text:        a.sdk.I18n("checkRes"),
 								Reload:      false,
 								Disabled:    task.Status.IsDisabledStatus(),
 								DisabledTip: "禁用接口无法查看结果",
@@ -389,7 +391,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 							"checkLog": dataOperation{
 								Key:         "checkLog",
 								Reload:      false,
-								Text:        "日志",
+								Text:        a.sdk.I18n("log"),
 								Disabled:    task.Status.IsDisabledStatus(),
 								DisabledTip: "禁用接口无法查看日志",
 								Meta: map[string]interface{}{

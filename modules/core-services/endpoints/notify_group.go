@@ -111,7 +111,6 @@ func (e *Endpoints) UpdateNotifyGroup(ctx context.Context, r *http.Request, vars
 	if err != nil {
 		return apierrors.ErrUpdateNotifyGroup.InternalError(err).ToResp(), nil
 	}
-
 	return httpserver.OkResp(gronotifyGroup)
 }
 
@@ -275,7 +274,6 @@ func (e *Endpoints) DeleteNotifyGroup(ctx context.Context, r *http.Request, vars
 	if err = e.notifyGroup.Delete(notifyGroupId, orgID); err != nil {
 		return apierrors.ErrDeleteNotifyGroup.InternalError(err).ToResp(), nil
 	}
-
 	return httpserver.OkResp(notifyGroup)
 }
 

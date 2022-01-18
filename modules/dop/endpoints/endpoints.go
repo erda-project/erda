@@ -115,71 +115,83 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
 		{Path: "/_api/health", Method: http.MethodGet, Handler: e.Health},
 
-		{Path: "/api/api-assets", Method: http.MethodPost, Handler: e.CreateAPIAsset},
-		{Path: "/api/api-assets", Method: http.MethodGet, Handler: e.PagingAPIAssets},
-		{Path: "/api/api-assets/{assetID}", Method: http.MethodGet, Handler: e.GetAPIAsset},
-		{Path: "/api/api-assets/{assetID}", Method: http.MethodPut, Handler: e.UpdateAPIAsset},
-		{Path: "/api/api-assets/{assetID}", Method: http.MethodDelete, Handler: e.DeleteAPIAsset},
+		{Path: "/api/api-assets", Method: http.MethodPost, Handler: httpserver.Wrap(e.CreateAPIAsset, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets", Method: http.MethodGet, Handler: httpserver.Wrap(e.PagingAPIAssets, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets/{assetID}", Method: http.MethodGet, Handler: httpserver.Wrap(e.GetAPIAsset, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets/{assetID}", Method: http.MethodPut, Handler: httpserver.Wrap(e.UpdateAPIAsset, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets/{assetID}", Method: http.MethodDelete, Handler: httpserver.Wrap(e.DeleteAPIAsset, httpserver.WithI18nCodes)},
 
-		{Path: "/api/api-assets/{assetID}/api-gateways", Method: http.MethodGet, Handler: e.ListAPIGateways},
-		{Path: "/api/api-gateways/{projectID}", Method: http.MethodGet, Handler: e.ListProjectAPIGateways},
+		{Path: "/api/api-assets/{assetID}/api-gateways", Method: http.MethodGet, Handler: httpserver.Wrap(e.ListAPIGateways, httpserver.WithI18nCodes)},
+		{Path: "/api/api-gateways/{projectID}", Method: http.MethodGet, Handler: httpserver.Wrap(e.ListProjectAPIGateways, httpserver.WithI18nCodes)},
 
-		{Path: "/api/api-assets/{assetID}/versions", Method: http.MethodGet, Handler: e.PagingAPIAssetVersions},
-		{Path: "/api/api-assets/{assetID}/versions", Method: http.MethodPost, Handler: e.CreateAPIVersion},
-		{Path: "/api/api-assets/{assetID}/versions/{versionID}", Method: http.MethodGet, Handler: e.GetAPIAssetVersion},
-		{Path: "/api/api-assets/{assetID}/versions/{versionID}", Method: http.MethodPut, Handler: e.UpdateAssetVersion},
-		{Path: "/api/api-assets/{assetID}/versions/{versionID}", Method: http.MethodDelete, Handler: e.DeleteAPIAssetVersion},
+		{Path: "/api/api-assets/{assetID}/versions", Method: http.MethodGet, Handler: httpserver.Wrap(e.PagingAPIAssetVersions, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets/{assetID}/versions", Method: http.MethodPost, Handler: httpserver.Wrap(e.CreateAPIVersion, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets/{assetID}/versions/{versionID}", Method: http.MethodGet, Handler: httpserver.Wrap(e.GetAPIAssetVersion, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets/{assetID}/versions/{versionID}", Method: http.MethodPut, Handler: httpserver.Wrap(e.UpdateAssetVersion, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets/{assetID}/versions/{versionID}", Method: http.MethodDelete,
+			Handler: httpserver.Wrap(e.DeleteAPIAssetVersion, httpserver.WithI18nCodes)},
 		{Path: "/api/api-assets/{assetID}/versions/{versionID}/export", Method: http.MethodGet, WriterHandler: e.DownloadSpecText},
 
-		{Path: "/api/api-assets/{assetID}/swagger-versions", Method: http.MethodGet, Handler: e.ListSwaggerVersions},
+		{Path: "/api/api-assets/{assetID}/swagger-versions", Method: http.MethodGet, Handler: httpserver.Wrap(e.ListSwaggerVersions, httpserver.WithI18nCodes)},
 
-		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/clients", Method: http.MethodGet, Handler: e.ListSwaggerClient},
-		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/attempt-test", Method: http.MethodPost, Handler: e.ExecuteAttemptTest},
+		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/clients", Method: http.MethodGet,
+			Handler: httpserver.Wrap(e.ListSwaggerClient, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/attempt-test", Method: http.MethodPost,
+			Handler: httpserver.Wrap(e.ExecuteAttemptTest, httpserver.WithI18nCodes)},
 
-		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/minors/{minor}/instantiations", Method: http.MethodPost, Handler: e.CreateInstantiation},
-		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/minors/{minor}/instantiations", Method: http.MethodGet, Handler: e.GetInstantiations},
-		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/minors/{minor}/instantiations/{instantiationID}", Method: http.MethodPut, Handler: e.UpdateInstantiation},
+		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/minors/{minor}/instantiations", Method: http.MethodPost,
+			Handler: httpserver.Wrap(e.CreateInstantiation, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/minors/{minor}/instantiations", Method: http.MethodGet,
+			Handler: httpserver.Wrap(e.GetInstantiations, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/minors/{minor}/instantiations/{instantiationID}", Method: http.MethodPut,
+			Handler: httpserver.Wrap(e.UpdateInstantiation, httpserver.WithI18nCodes)},
 
-		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/slas", Method: http.MethodGet, Handler: e.ListSLAs},
-		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/slas", Method: http.MethodPost, Handler: e.CreateSLA},
-		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/slas/{slaID}", Method: http.MethodGet, Handler: e.GetSLA},
-		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/slas/{slaID}", Method: http.MethodDelete, Handler: e.DeleteSLA},
-		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/slas/{slaID}", Method: http.MethodPut, Handler: e.UpdateSLA},
+		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/slas", Method: http.MethodGet,
+			Handler: httpserver.Wrap(e.ListSLAs, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/slas", Method: http.MethodPost,
+			Handler: httpserver.Wrap(e.CreateSLA, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/slas/{slaID}", Method: http.MethodGet,
+			Handler: httpserver.Wrap(e.GetSLA, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/slas/{slaID}", Method: http.MethodDelete,
+			Handler: httpserver.Wrap(e.DeleteSLA, httpserver.WithI18nCodes)},
+		{Path: "/api/api-assets/{assetID}/swagger-versions/{swaggerVersion}/slas/{slaID}", Method: http.MethodPut,
+			Handler: httpserver.Wrap(e.UpdateSLA, httpserver.WithI18nCodes)},
 
-		{Path: "/api/api-clients", Method: http.MethodPost, Handler: e.CreateClient},
-		{Path: "/api/api-clients", Method: http.MethodGet, Handler: e.ListMyClients},
-		{Path: "/api/api-clients/{clientID}", Method: http.MethodGet, Handler: e.GetClient},
-		{Path: "/api/api-clients/{clientID}", Method: http.MethodPut, Handler: e.UpdateClient},
-		{Path: "/api/api-clients/{clientID}", Method: http.MethodDelete, Handler: e.DeleteClient},
+		{Path: "/api/api-clients", Method: http.MethodPost, Handler: httpserver.Wrap(e.CreateClient, httpserver.WithI18nCodes)},
+		{Path: "/api/api-clients", Method: http.MethodGet, Handler: httpserver.Wrap(e.ListMyClients, httpserver.WithI18nCodes)},
+		{Path: "/api/api-clients/{clientID}", Method: http.MethodGet, Handler: httpserver.Wrap(e.GetClient, httpserver.WithI18nCodes)},
+		{Path: "/api/api-clients/{clientID}", Method: http.MethodPut, Handler: httpserver.Wrap(e.UpdateClient, httpserver.WithI18nCodes)},
+		{Path: "/api/api-clients/{clientID}", Method: http.MethodDelete, Handler: httpserver.Wrap(e.DeleteClient, httpserver.WithI18nCodes)},
 
-		{Path: "/api/api-clients/{clientID}/contracts", Method: http.MethodPost, Handler: e.CreateContract},
-		{Path: "/api/api-clients/{clientID}/contracts", Method: http.MethodGet, Handler: e.ListContract},
-		{Path: "/api/api-clients/{clientID}/contracts/{contractID}", Method: http.MethodGet, Handler: e.GetContract},
-		{Path: "/api/api-clients/{clientID}/contracts/{contractID}", Method: http.MethodPut, Handler: e.UpdateContract},
-		{Path: "/api/api-clients/{clientID}/contracts/{contractID}", Method: http.MethodDelete, Handler: e.DeleteContract},
+		{Path: "/api/api-clients/{clientID}/contracts", Method: http.MethodPost, Handler: httpserver.Wrap(e.CreateContract, httpserver.WithI18nCodes)},
+		{Path: "/api/api-clients/{clientID}/contracts", Method: http.MethodGet, Handler: httpserver.Wrap(e.ListContract, httpserver.WithI18nCodes)},
+		{Path: "/api/api-clients/{clientID}/contracts/{contractID}", Method: http.MethodGet, Handler: httpserver.Wrap(e.GetContract, httpserver.WithI18nCodes)},
+		{Path: "/api/api-clients/{clientID}/contracts/{contractID}", Method: http.MethodPut, Handler: httpserver.Wrap(e.UpdateContract, httpserver.WithI18nCodes)},
+		{Path: "/api/api-clients/{clientID}/contracts/{contractID}", Method: http.MethodDelete, Handler: httpserver.Wrap(e.DeleteContract, httpserver.WithI18nCodes)},
 
-		{Path: "/api/api-clients/{clientID}/contracts/{contractID}/operation-records", Method: http.MethodGet, Handler: e.ListContractRecords},
+		{Path: "/api/api-clients/{clientID}/contracts/{contractID}/operation-records", Method: http.MethodGet,
+			Handler: httpserver.Wrap(e.ListContractRecords, httpserver.WithI18nCodes)},
 
-		{Path: "/api/api-access", Method: http.MethodPost, Handler: e.CreateAccess},
-		{Path: "/api/api-access", Method: http.MethodGet, Handler: e.ListAccess},
-		{Path: "/api/api-access/{accessID}", Method: http.MethodGet, Handler: e.GetAccess},
-		{Path: "/api/api-access/{accessID}", Method: http.MethodPut, Handler: e.UpdateAccess},
-		{Path: "/api/api-access/{accessID}", Method: http.MethodDelete, Handler: e.DeleteAccess},
+		{Path: "/api/api-access", Method: http.MethodPost, Handler: httpserver.Wrap(e.CreateAccess, httpserver.WithI18nCodes)},
+		{Path: "/api/api-access", Method: http.MethodGet, Handler: httpserver.Wrap(e.ListAccess, httpserver.WithI18nCodes)},
+		{Path: "/api/api-access/{accessID}", Method: http.MethodGet, Handler: httpserver.Wrap(e.GetAccess, httpserver.WithI18nCodes)},
+		{Path: "/api/api-access/{accessID}", Method: http.MethodPut, Handler: httpserver.Wrap(e.UpdateAccess, httpserver.WithI18nCodes)},
+		{Path: "/api/api-access/{accessID}", Method: http.MethodDelete, Handler: httpserver.Wrap(e.DeleteAccess, httpserver.WithI18nCodes)},
 
-		{Path: "/api/api-app-services/{appID}", Method: http.MethodGet, Handler: e.ListRuntimeServices},
+		{Path: "/api/api-app-services/{appID}", Method: http.MethodGet, Handler: httpserver.Wrap(e.ListRuntimeServices, httpserver.WithI18nCodes)},
 
 		{Path: "/api/apim-ws/api-docs/filetree/{inode}", Method: http.MethodGet, WriterHandler: e.APIDocWebsocket},
-		{Path: "/api/apim/{treeName}/filetree", Method: http.MethodPost, Handler: e.CreateNode},
-		{Path: "/api/apim/{treeName}/filetree", Method: http.MethodGet, Handler: e.ListChildrenNodes},
-		{Path: "/api/apim/{treeName}/filetree/{inode}", Method: http.MethodDelete, Handler: e.DeleteNode},
-		{Path: "/api/apim/{treeName}/filetree/{inode}", Method: http.MethodPut, Handler: e.UpdateNode},
-		{Path: "/api/apim/{treeName}/filetree/{inode}", Method: http.MethodGet, Handler: e.GetNodeDetail},
-		{Path: "/api/apim/{treeName}/filetree/{inode}/actions/{action}", Method: http.MethodPost, Handler: e.MvCpNode},
+		{Path: "/api/apim/{treeName}/filetree", Method: http.MethodPost, Handler: httpserver.Wrap(e.CreateNode, httpserver.WithI18nCodes)},
+		{Path: "/api/apim/{treeName}/filetree", Method: http.MethodGet, Handler: httpserver.Wrap(e.ListChildrenNodes, httpserver.WithI18nCodes)},
+		{Path: "/api/apim/{treeName}/filetree/{inode}", Method: http.MethodDelete, Handler: httpserver.Wrap(e.DeleteNode, httpserver.WithI18nCodes)},
+		{Path: "/api/apim/{treeName}/filetree/{inode}", Method: http.MethodPut, Handler: httpserver.Wrap(e.UpdateNode, httpserver.WithI18nCodes)},
+		{Path: "/api/apim/{treeName}/filetree/{inode}", Method: http.MethodGet, Handler: httpserver.Wrap(e.GetNodeDetail, httpserver.WithI18nCodes)},
+		{Path: "/api/apim/{treeName}/filetree/{inode}/actions/{action}", Method: http.MethodPost, Handler: httpserver.Wrap(e.MvCpNode, httpserver.WithI18nCodes)},
 
-		{Path: "/api/apim/operations", Method: http.MethodGet, Handler: e.SearchOperations},
-		{Path: "/api/apim/operations/{id}", Method: http.MethodGet, Handler: e.GetOperation},
+		{Path: "/api/apim/operations", Method: http.MethodGet, Handler: httpserver.Wrap(e.SearchOperations, httpserver.WithI18nCodes)},
+		{Path: "/api/apim/operations/{id}", Method: http.MethodGet, Handler: httpserver.Wrap(e.GetOperation, httpserver.WithI18nCodes)},
 
-		{Path: "/api/apim/validate-swagger", Method: http.MethodPost, Handler: e.ValidateSwagger},
+		{Path: "/api/apim/validate-swagger", Method: http.MethodPost, Handler: httpserver.Wrap(e.ValidateSwagger, httpserver.WithI18nCodes)},
 
 		// gittar 事件回调
 		{Path: ReleaseCallbackPath, Method: http.MethodPost, Handler: e.ReleaseCallback},
@@ -604,6 +616,11 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/projects/{projectID}/test-reports/actions/list", Method: http.MethodGet, Handler: e.ListTestReportRecord},
 		{Path: "/api/projects/{projectID}/test-reports/{id}", Method: http.MethodGet, Handler: e.GetTestReportRecord},
 
+		// project template
+		{Path: "/api/orgs/{orgID}/projects/{projectID}/template/actions/export", Method: http.MethodGet, Handler: e.ExportProjectTemplate},
+		{Path: "/api/orgs/{orgID}/projects/{projectID}/template/actions/import", Method: http.MethodPost, Handler: e.ImportProjectTemplate},
+		{Path: "/api/projects/template/actions/parse", Method: http.MethodPost, Handler: e.ParseProjectTemplate},
+
 		// core-services org
 		{Path: "/api/orgs", Method: http.MethodPost, Handler: e.CreateOrg},
 		{Path: "/api/orgs/{orgID}", Method: http.MethodPut, Handler: e.UpdateOrg},
@@ -617,7 +634,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// core-services project
 		{Path: "/api/projects", Method: http.MethodPost, Handler: e.CreateProject},
 		{Path: "/api/projects/{projectID}", Method: http.MethodDelete, Handler: e.DeleteProject},
-		{Path: "/api/projects/{projectID}", Method: http.MethodGet, Handler: e.GetProject},
+		{Path: "/api/projects/{projectID}", Method: http.MethodGet, Handler: httpserver.WithI18nCodes(e.GetProject)},
 		{Path: "/api/projects", Method: http.MethodGet, Handler: e.ListProject},
 
 		// resources
@@ -627,6 +644,12 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
 		{Path: "/api/applications/{applicationID}", Method: http.MethodDelete, Handler: e.DeleteApplication},
 		{Path: "/api/applications/{applicationID}/actions/init", Method: http.MethodPut, Handler: e.InitApplication},
+
+		{Path: "/api/applications/actions/remove-publish-item-relations", Method: http.MethodPost, Handler: e.RemoveApplicationPublishItemRelations},
+		{Path: "/api/applications/{applicationID}/actions/get-publish-item-relations", Method: http.MethodGet, Handler: e.GetApplicationPublishItemRelationsGroupByENV},
+		{Path: "/api/applications/actions/query-publish-item-relations", Method: http.MethodGet, Handler: e.QueryApplicationPublishItemRelations},
+		{Path: "/api/applications/{applicationID}/actions/update-publish-item-relations", Method: http.MethodPost, Handler: e.UpdateApplicationPublishItemRelations},
+
 		// core-services member
 		{Path: "/api/members/actions/list-roles", Method: http.MethodGet, Handler: e.ListMemberRoles},
 		// approve
@@ -634,7 +657,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// test file records
 		{Path: "/api/test-file-records/{id}", Method: http.MethodGet, Handler: e.GetFileRecord},
-		{Path: "/api/test-file-records", Method: http.MethodGet, Handler: e.GetFileRecordsByProjectId},
+		{Path: "/api/test-file-records", Method: http.MethodGet, Handler: e.GetFileRecords},
 	}
 }
 
@@ -1099,4 +1122,12 @@ func (e *Endpoints) ManualTestPlanService() *mttestplan.TestPlan {
 
 func (e *Endpoints) AutoTestPlanService() *atv2.Service {
 	return e.autotestV2
+}
+
+func (e *Endpoints) ProjectService() *project.Project {
+	return e.project
+}
+
+func (e *Endpoints) PermissionService() *permission.Permission {
+	return e.permission
 }

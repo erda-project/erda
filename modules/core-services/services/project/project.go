@@ -19,7 +19,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -38,7 +37,6 @@ import (
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/filehelper"
 	local "github.com/erda-project/erda/pkg/i18n"
-	"github.com/erda-project/erda/pkg/numeral"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -411,10 +409,22 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 
 	// audit
 	go func() {
-		if project.Quota == nil {
-			return
-		}
-		if !isQuotaChanged(*oldQuota, *project.Quota) {
+		if project.Quota == nil || !isQuotaChanged(*oldQuota, *project.Quota) {
+			proCtx, _ := json.Marshal(map[string]string{"projectName": project.Name})
+			if err := p.db.CreateAudit(&model.Audit{
+				ScopeType:    apistructs.ProjectScope,
+				ScopeID:      uint64(projectID),
+				ProjectID:    uint64(projectID),
+				TemplateName: apistructs.UpdateProjectTemplate,
+				UserID:       userID,
+				OrgID:        uint64(orgID),
+				Context:      string(proCtx),
+				Result:       "success",
+				StartTime:    time.Now(),
+				EndTime:      time.Now(),
+			}); err != nil {
+				logrus.Errorf("failed to create project audit event when update project %s, %v", project.Name, err)
+			}
 			return
 		}
 		var orgName = strconv.FormatInt(orgID, 10)
@@ -861,57 +871,6 @@ func (p *Project) GetModelProjectsMap(projectIDs []uint64, keepMsp bool) (map[in
 	return projectMap, nil
 }
 
-// FillQuota 根据项目资源使用情况填充项目资源配额
-func (p *Project) FillQuota(orgResources map[uint64]apistructs.OrgResourceInfo) error {
-	for k, v := range orgResources {
-		projects, err := p.db.ListProjectByOrgID(k)
-		if err != nil {
-			return err
-		}
-		// 获取当前企业下各项目已使用资源
-		projectIDs := make([]uint64, 0, len(projects))
-		for _, proj := range projects {
-			projectIDs = append(projectIDs, uint64(proj.ID))
-		}
-		resp, err := p.bdl.ProjectResource(projectIDs)
-		if err != nil {
-			return err
-		}
-
-		// 企业资源使用
-		var (
-			orgCpuUsed float64
-			orgMemUsed float64
-		)
-
-		projectCpuUsed := make(map[uint64]float64, len(projects))
-		projectMemUsed := make(map[uint64]float64, len(projects))
-		for pk, pv := range resp.Data {
-			projectCpuUsed[pk] = pv.CpuServiceUsed + pv.CpuAddonUsed
-			projectMemUsed[pk] = pv.MemServiceUsed + pv.MemAddonUsed
-
-			orgCpuUsed += projectCpuUsed[pk]
-			orgMemUsed += projectMemUsed[pk]
-		}
-		for i, proj := range projects {
-			// 修正已有项目无配额情况
-			if math.Round(proj.CpuQuota) == 0 {
-				projectCpuQuota := projectCpuUsed[uint64(proj.ID)] + projectCpuUsed[uint64(proj.ID)]*(v.TotalCpu-orgCpuUsed)/orgCpuUsed
-				projects[i].CpuQuota = numeral.Round(projectCpuQuota, 2)
-			}
-			if math.Round(proj.MemQuota) == 0 {
-				projectMemQuota := projectMemUsed[uint64(proj.ID)] + projectMemUsed[uint64(proj.ID)]*(v.TotalMem-orgMemUsed)/orgMemUsed
-				projects[i].MemQuota = numeral.Round(projectMemQuota, 2)
-			}
-			if err := p.db.UpdateProject(&projects[i]); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
 // GetAllProjects list all project
 func (p *Project) GetAllProjects() ([]apistructs.ProjectDTO, error) {
 	projects, err := p.db.GetAllProjects()
@@ -951,10 +910,6 @@ func (p *Project) ListAllProjects(userID string, params *apistructs.ProjectListR
 		projectDTOs = append(projectDTOs, p.convertToProjectDTO(flag, &projects[i]))
 		projectIDs = append(projectIDs, uint64(projects[i].ID))
 	}
-	resp, err := p.bdl.ProjectResource(projectIDs)
-	if err != nil {
-		return nil, err
-	}
 
 	projectOwnerMap := make(map[uint64][]string)
 	owners, err := p.db.GetMemberByScopeAndRole(apistructs.ProjectScope, projectIDs, []string{types.RoleProjectOwner})
@@ -969,12 +924,6 @@ func (p *Project) ListAllProjects(userID string, params *apistructs.ProjectListR
 	for i := range projectDTOs {
 		projectDTOs[i].CpuQuota = calcu.MillcoreToCore(uint64(projectDTOs[i].CpuQuota), 3)
 		projectDTOs[i].MemQuota = calcu.ByteToGibibyte(uint64(projectDTOs[i].MemQuota), 3)
-		if v, ok := resp.Data[projectDTOs[i].ID]; ok {
-			projectDTOs[i].CpuServiceUsed = v.CpuServiceUsed
-			projectDTOs[i].MemServiceUsed = v.MemServiceUsed
-			projectDTOs[i].CpuAddonUsed = v.CpuAddonUsed
-			projectDTOs[i].MemAddonUsed = v.MemAddonUsed
-		}
 		if v, ok := projectOwnerMap[projectDTOs[i].ID]; ok {
 			projectDTOs[i].Owners = v
 		}
@@ -1048,10 +997,6 @@ func (p *Project) ListPublicProjects(userID string, params *apistructs.ProjectLi
 		projectDTOs = append(projectDTOs, p.convertToProjectDTO(isJoined[uint64(projects[i].ID)], &projects[i]))
 		projectIDs = append(projectIDs, uint64(projects[i].ID))
 	}
-	resp, err := p.bdl.ProjectResource(projectIDs)
-	if err != nil {
-		return nil, err
-	}
 
 	unblockAppCounts, err := p.ListUnblockAppCountsByProjectIDS(projectIDs)
 	if err != nil {
@@ -1074,12 +1019,6 @@ func (p *Project) ListPublicProjects(userID string, params *apistructs.ProjectLi
 	}
 
 	for i := range projectDTOs {
-		if v, ok := resp.Data[projectDTOs[i].ID]; ok {
-			projectDTOs[i].CpuServiceUsed = v.CpuServiceUsed
-			projectDTOs[i].MemServiceUsed = v.MemServiceUsed
-			projectDTOs[i].CpuAddonUsed = v.CpuAddonUsed
-			projectDTOs[i].MemAddonUsed = v.MemAddonUsed
-		}
 		if v, ok := projectOwnerMap[projectDTOs[i].ID]; ok {
 			projectDTOs[i].Owners = v
 		}
@@ -1172,10 +1111,6 @@ func (p *Project) ListJoinedProjects(orgID int64, userID string, params *apistru
 		projectDTOs = append(projectDTOs, p.convertToProjectDTO(params.Joined, &projects[i]))
 		projectIDs = append(projectIDs, uint64(projects[i].ID))
 	}
-	resp, err := p.bdl.ProjectResource(projectIDs)
-	if err != nil {
-		return nil, err
-	}
 
 	projectOwnerMap := make(map[uint64][]string)
 	owners, err := p.db.GetMemberByScopeAndRole(apistructs.ProjectScope, projectIDs, []string{"owner"})
@@ -1188,12 +1123,6 @@ func (p *Project) ListJoinedProjects(orgID int64, userID string, params *apistru
 	}
 
 	for i := range projectDTOs {
-		if v, ok := resp.Data[projectDTOs[i].ID]; ok {
-			projectDTOs[i].CpuServiceUsed = v.CpuServiceUsed
-			projectDTOs[i].MemServiceUsed = v.MemServiceUsed
-			projectDTOs[i].CpuAddonUsed = v.CpuAddonUsed
-			projectDTOs[i].MemAddonUsed = v.MemAddonUsed
-		}
 		if v, ok := projectOwnerMap[projectDTOs[i].ID]; ok {
 			projectDTOs[i].Owners = v
 		}
@@ -1379,7 +1308,7 @@ func (p *Project) GetProjectStats(projectID int64) (*apistructs.ProjectStats, er
 
 // GetProjectNSInfo 获取项目级别命名空间信息
 func (p *Project) GetProjectNSInfo(projectID int64) (*apistructs.ProjectNameSpaceInfo, error) {
-	prj, err := p.db.GetProjectByID(projectID)
+	_, err := p.db.GetProjectByID(projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -1390,10 +1319,8 @@ func (p *Project) GetProjectNSInfo(projectID int64) (*apistructs.ProjectNameSpac
 		Namespaces: make(map[string]string, 0),
 	}
 
-	if prj.EnableNS {
-		prjNsInfo.Enabled = true
-		prjNsInfo.Namespaces = genProjectNamespace(prjIDStr)
-	}
+	prjNsInfo.Enabled = true
+	prjNsInfo.Namespaces = genProjectNamespace(prjIDStr)
 
 	return prjNsInfo, nil
 }

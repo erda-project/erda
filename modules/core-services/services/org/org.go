@@ -803,13 +803,6 @@ func (o *Org) DereferenceCluster(userID string, req *apistructs.DereferenceClust
 	if clusterInfo == nil {
 		return errors.Errorf("不存在的集群%s", req.Cluster)
 	}
-	referenceResp, err := o.bdl.FindClusterResource(req.Cluster, strconv.FormatInt(req.OrgID, 10))
-	if err != nil {
-		return err
-	}
-	if referenceResp.AddonReference > 0 || referenceResp.ServiceReference > 0 {
-		return errors.Errorf("集群中存在未清理的Addon或Service，请清理后再执行.")
-	}
 	if err := o.db.DeleteOrgClusterRelationByClusterAndOrg(req.Cluster, req.OrgID); err != nil {
 		return err
 	}

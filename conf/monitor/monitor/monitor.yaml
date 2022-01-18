@@ -104,8 +104,6 @@ log-storage-elasticsearch:
   read_page_size: 200
 kubernetes-logs-storage:
   _enable: ${QUERY_LOG_FROM_K8S_API_ENABLE:false}
-  client_cache_size: 128
-  client_cache_expiration: "10m"
   pod_info_cache_size: 256
   pod_info_cache_expiration: "3h"
   buffer_lines: 200
@@ -291,6 +289,12 @@ erda.core.monitor.dataview:
 dataview-v1:
 template:
 
+erda.core.services.filemanager:
+
+k8s-client-manager:
+  cache_ttl: "10m"
+  cache_size: 5000
+
 i18n:
   common:
     - conf/common/i18n/common.yml
@@ -330,3 +334,5 @@ erda.core.services.notify.channel-client:
 erda.core.monitor.expression:
   alert_rules: ${CONFIG_PATH}/alert/rules
   metric_rules: ${CONFIG_PATH}/analyzer/metrics
+
+audit:

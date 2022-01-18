@@ -27,5 +27,4 @@ import (
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/podChart"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/table"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tabs"
-	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/tabsTable"
 )

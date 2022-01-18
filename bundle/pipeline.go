@@ -334,6 +334,9 @@ func (b *Bundle) PageListPipelineCrons(req apistructs.PipelineCronPagingRequest)
 	if req.Enable != nil {
 		request = request.Param("enable", strconv.FormatBool(*req.Enable))
 	}
+	if req.PipelineDefinitionIDList != nil {
+		request = request.Params(map[string][]string{"pipelineDefinitionID": req.PipelineDefinitionIDList})
+	}
 	httpResp, err := request.Do().JSON(&pageResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)

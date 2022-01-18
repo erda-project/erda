@@ -16,6 +16,7 @@ package main
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda/conf"
 	"github.com/erda-project/erda/modules/extensions/loghub"
 	"github.com/erda-project/erda/pkg/common"
@@ -91,12 +92,15 @@ import (
 
 	_ "github.com/erda-project/erda-infra/providers/component-protocol"
 	// components
+	_ "github.com/erda-project/erda/modules/msp/apm/browser/components"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/datasources"
+	_ "github.com/erda-project/erda/modules/msp/apm/trace/query/components"
 )
 
 func main() {
 	common.RegisterInitializer(loghub.Init)
+	common.RegisterHubListener(cpregister.NewHubListener())
 	common.Run(&servicehub.RunOptions{
 		ConfigFile: conf.MSPConfigFilePath,
 		Content:    conf.MSPDefaultConfig,

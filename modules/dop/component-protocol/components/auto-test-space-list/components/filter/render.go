@@ -22,15 +22,14 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
 type ComponentFilter struct {
 	sdk *cptype.SDK
-	base.DefaultProvider
 
 	filter.CommonFilter
 	State State `json:"state,omitempty"`
@@ -52,17 +51,17 @@ func (i *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	}
 	i.State.Conditions = []filter.PropCondition{
 		{
-			EmptyText: "未选择",
+			EmptyText: cputil.I18n(ctx, "empty-filter-bookmark"),
 			Fixed:     true,
 			Key:       "order",
-			Label:     "排序",
+			Label:     cputil.I18n(ctx, "sort"),
 			Options: []filter.PropConditionOption{
 				{
-					Label: "按时间顺序",
+					Label: cputil.I18n(ctx, "timeOrder"),
 					Value: "updated_at",
 				},
 				{
-					Label: "按时间倒序",
+					Label: cputil.I18n(ctx, "timeReverse"),
 					Value: "updated_at desc",
 				},
 			},
@@ -73,10 +72,10 @@ func (i *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			},
 		},
 		{
-			EmptyText: "全部",
+			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Key:       "archiveStatus",
-			Label:     "状态",
+			Label:     cputil.I18n(ctx, "state"),
 			Options: []filter.PropConditionOption{
 				{
 					Label: i.sdk.I18n(i18n.I18nKeyAutoTestSpaceInit),
@@ -94,11 +93,11 @@ func (i *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			Type: filter.PropConditionTypeSelect,
 		},
 		{
-			EmptyText:   "全部",
+			EmptyText:   cputil.I18n(ctx, "all"),
 			Fixed:       true,
 			Key:         "spaceName",
-			Label:       "标题",
-			Placeholder: "根据名称过滤",
+			Label:       cputil.I18n(ctx, "title"),
+			Placeholder: cputil.I18n(ctx, "searchByName"),
 			Type:        filter.PropConditionTypeInput,
 		},
 	}

@@ -268,5 +268,6 @@ func (a *Adapt) newCustomizeAlertOverview(
 		Enable:        alert.Enable,
 		CreateTime:    alert.CreateTime.UnixNano() / int64(time.Millisecond),
 		UpdateTime:    alert.UpdateTime.UnixNano() / int64(time.Millisecond),
+		Creator:       alert.CreatorID,
 	}
 }

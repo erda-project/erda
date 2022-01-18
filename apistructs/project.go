@@ -475,3 +475,31 @@ type GetModelProjectsMapResponse struct {
 	Header
 	Data map[uint64]ProjectDTO `json:"data"`
 }
+
+type ExportProjectTemplateRequest struct {
+	ProjectID          uint64 `json:"projectID"`
+	ProjectName        string `json:"projectName"`
+	ProjectDisplayName string `json:"projectDisplayName"`
+	OrgID              int64  `json:"orgID"`
+	IdentityInfo
+}
+
+type ImportProjectTemplateRequest struct {
+	ProjectID          uint64 `json:"projectID"`
+	ProjectName        string `json:"projectName"`
+	ProjectDisplayName string `json:"projectDisplayName"`
+	OrgID              int64  `json:"orgID"`
+	IdentityInfo
+}
+
+type ProjectTemplateMeta struct {
+	OrgName     string `yaml:"org_name" json:"orgName"`
+	ProjectName string `yaml:"project_name" json:"projectName"`
+	Source      string `yaml:"source" json:"source"`
+}
+
+type ProjectTemplateData struct {
+	Version      string              `yaml:"version" json:"version"`
+	Applications []ApplicationDTO    `yaml:"applications" json:"applications"`
+	Meta         ProjectTemplateMeta `yaml:"meta" json:"meta"`
+}

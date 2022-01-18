@@ -27,12 +27,14 @@ import (
 
 	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	alert "github.com/erda-project/erda-proto-go/msp/apm/alert/pb"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/adapt"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	api "github.com/erda-project/erda/pkg/common/httpapi"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type alertService struct {
@@ -80,6 +82,7 @@ func (a *alertService) QueryAlert(ctx context.Context, request *alert.QueryAlert
 			List:  make([]*alert.ApmAlertData, 0),
 			Total: resp.Data.Total,
 		},
+		UserIDs: resp.UserIDs,
 	}
 
 	for _, v := range resp.Data.List {
@@ -236,13 +239,25 @@ func (a *alertService) CreateAlert(ctx context.Context, request *alert.CreateAle
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	resp, err := a.p.Monitor.CreateAlert(ctx, createAlertRequest)
+	context := utils.NewContextWithHeader(ctx)
+	resp, err := a.p.Monitor.CreateAlert(context, createAlertRequest)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewInternalServerError(err)
 	}
+	projectName, workspace, auditProjectId, err := a.getAuditInfo(tk)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	auditContext := map[string]interface{}{
+		"projectName": projectName,
+		"alertName":   request.Name,
+		"workspace":   workspace,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
 	return &alert.CreateAlertResponse{
 		Data: &alert.CreateAlertData{
-			Id: resp.Data,
+			Id:        resp.Data,
+			ProjectId: auditProjectId,
 		},
 	}, nil
 }
@@ -331,7 +346,19 @@ func (a *alertService) UpdateAlert(ctx context.Context, request *alert.UpdateAle
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return nil, nil
+	projectName, workspace, auditProjectId, err := a.getAuditInfo(tk)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	auditContext := map[string]interface{}{
+		"projectName": projectName,
+		"alertName":   request.Name,
+		"workspace":   workspace,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
+	return &alert.UpdateAlertResponse{
+		Data: auditProjectId,
+	}, nil
 }
 
 func (a *alertService) UpdateAlertEnable(ctx context.Context, request *alert.UpdateAlertEnableRequest) (*alert.UpdateAlertEnableResponse, error) {
@@ -380,13 +407,31 @@ func (a *alertService) DeleteAlert(ctx context.Context, request *alert.DeleteAle
 		return nil, errors.NewInternalServerError(err)
 	}
 	if resp != nil {
+		tk, err := a.getTKByTenant(request.TenantGroup)
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		if tk == "" {
+			return nil, fmt.Errorf("no monitor")
+		}
+		projectName, workspace, auditProjectId, err := a.getAuditInfo(tk)
+		if err != nil {
+			return &alert.DeleteAlertResponse{}, errors.NewInternalServerError(err)
+		}
+		auditContext := map[string]interface{}{
+			"projectName": projectName,
+			"alertName":   resp.Data.Name,
+			"workspace":   workspace,
+		}
+		audit.ContextEntryMap(ctx, auditContext)
 		return &alert.DeleteAlertResponse{
 			Data: &alert.DeleteAlertData{
-				Name: deleteResp.Data["name"].String(),
+				Name:      deleteResp.Data["name"].String(),
+				ProjectId: auditProjectId,
 			},
 		}, nil
 	}
-	return nil, nil
+	return &alert.DeleteAlertResponse{}, nil
 }
 
 func (a *alertService) QueryCustomizeMetric(ctx context.Context, request *alert.QueryCustomizeMetricRequest) (*alert.QueryCustomizeMetricResponse, error) {
@@ -462,7 +507,8 @@ func (a *alertService) QueryCustomizeAlerts(ctx context.Context, request *alert.
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &alert.QueryCustomizeAlertsResponse{
-		Data: resp.Data,
+		Data:    resp.Data,
+		UserIDs: resp.UserIDs,
 	}
 	return result, nil
 }
@@ -557,9 +603,20 @@ func (a *alertService) CreateCustomizeAlert(ctx context.Context, request *alert.
 		}
 		return nil, errors.NewInternalServerError(err)
 	}
+	projectName, workspace, auditProjectId, err := a.getAuditInfo(tk)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	auditContext := map[string]interface{}{
+		"projectName": projectName,
+		"alertName":   request.Name,
+		"workspace":   workspace,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
 	return &alert.CreateCustomizeAlertResponse{
 		Data: &alert.CreateCustomizeAlertData{
-			Id: resp.Data,
+			Id:        resp.Data,
+			ProjectId: auditProjectId,
 		},
 	}, nil
 }
@@ -784,7 +841,37 @@ func (a *alertService) UpdateCustomizeAlert(ctx context.Context, request *alert.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return nil, nil
+	projectName, workspace, auditProjectId, err := a.getAuditInfo(tk)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	auditContext := map[string]interface{}{
+		"projectName": projectName,
+		"alertName":   request.Name,
+		"workspace":   workspace,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
+	return &alert.UpdateCustomizeAlertResponse{
+		Data: auditProjectId,
+	}, nil
+}
+
+func (a *alertService) getAuditInfo(tenantGroup string) (string, string, uint64, error) {
+	projectData, err := a.p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
+		ScopeId: tenantGroup,
+	})
+	if err != nil {
+		return "", "", 0, err
+	}
+	auditProjectId, err := strconv.Atoi(projectData.Data.ProjectId)
+	if err != nil {
+		return "", "", 0, err
+	}
+	project, err := a.p.bdl.GetProject(uint64(auditProjectId))
+	if err != nil {
+		return "", "", 0, err
+	}
+	return project.Name, projectData.Data.Workspace, uint64(auditProjectId), nil
 }
 
 func (a *alertService) UpdateCustomizeAlertEnable(ctx context.Context, request *alert.UpdateCustomizeAlertEnableRequest) (*alert.UpdateCustomizeAlertEnableResponse, error) {
@@ -814,10 +901,17 @@ func (a *alertService) UpdateCustomizeAlertEnable(ctx context.Context, request *
 }
 
 func (a *alertService) DeleteCustomizeAlert(ctx context.Context, request *alert.DeleteCustomizeAlertRequest) (*alert.DeleteCustomizeAlertResponse, error) {
-	req := &monitor.DeleteCustomizeAlertRequest{
+	alertDetailReq := &monitor.GetCustomizeAlertDetailRequest{
 		Id: request.Id,
 	}
 	context := utils.NewContextWithHeader(ctx)
+	alertDetailResp, err := a.p.Monitor.GetCustomizeAlertDetail(context, alertDetailReq)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	req := &monitor.DeleteCustomizeAlertRequest{
+		Id: request.Id,
+	}
 	resp, err := a.p.Monitor.DeleteCustomizeAlert(context, req)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -827,6 +921,24 @@ func (a *alertService) DeleteCustomizeAlert(ctx context.Context, request *alert.
 			Name: resp.Data,
 		},
 	}
+	tk, err := a.getTKByTenant(request.TenantGroup)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if tk == "" {
+		return nil, fmt.Errorf("no monitor")
+	}
+	projectName, workspace, auditProjectId, err := a.getAuditInfo(tk)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	auditContext := map[string]interface{}{
+		"projectName": projectName,
+		"alertName":   alertDetailResp.Data.Name,
+		"workspace":   workspace,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
+	result.Data.ProjectId = auditProjectId
 	return result, nil
 }
 

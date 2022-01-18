@@ -23,9 +23,11 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb"
+	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type notifyGroupService struct {
@@ -95,7 +97,57 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	projectName, auditProjectId, err := n.GetProjectInfo(request.ScopeId)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	workResp, err := n.p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
+		ScopeId: request.ScopeId,
+	})
+	result.Data.ProjectId = auditProjectId
+	auditContext := auditContextMap(projectName, workResp.Data.Workspace, request.Name)
+	audit.ContextEntryMap(ctx, auditContext)
 	return result, nil
+}
+
+func (n *notifyGroupService) auditContextInfo(groupId int64, orgId string) (string, string, string, uint64, error) {
+	notifyGroup, err := n.p.bdl.GetNotifyGroup(groupId, orgId)
+	if err != nil {
+		return "", "", "", 0, err
+	}
+	resp, err := n.p.Tenant.GetTenantProject(context.Background(), &tenantpb.GetTenantProjectRequest{
+		ScopeId: notifyGroup.Data.ScopeID,
+	})
+	if err != nil {
+		return "", "", "", 0, err
+	}
+	projectName, auditProjectId, err := n.GetProjectInfo(notifyGroup.Data.ScopeID)
+	if err != nil {
+		return "", "", "", 0, err
+	}
+	return projectName, resp.Data.Workspace, notifyGroup.Data.Name, auditProjectId, nil
+}
+
+func (n *notifyGroupService) GetProjectInfo(scopeId string) (string, uint64, error) {
+	projectIdStr, err := n.GetProjectIdByScopeId(scopeId)
+	if err != nil {
+		return "", 0, errors.NewInternalServerError(err)
+	}
+	if projectIdStr == "" {
+		return "", 0, errors.NewInternalServerError(fmt.Errorf("Query project record by scopeid is empty scopeId is %v", scopeId))
+	}
+	projectId, err := strconv.Atoi(projectIdStr)
+	if err != nil {
+		return "", 0, errors.NewInternalServerError(err)
+	}
+	auditProjectId := uint64(projectId)
+	project, err := n.p.bdl.GetProject(auditProjectId)
+	if err != nil {
+		{
+			return "", 0, errors.NewInternalServerError(err)
+		}
+	}
+	return project.Name, auditProjectId, nil
 }
 
 func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.QueryNotifyGroupRequest) (*pb.QueryNotifyGroupResponse, error) {
@@ -182,6 +234,13 @@ func (n *notifyGroupService) UpdateNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	projectName, workspace, notifyGroupName, auditProjectId, err := n.auditContextInfo(request.GroupID, orgID)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	result.Data.ProjectId = auditProjectId
+	auditContext := auditContextMap(projectName, workspace, notifyGroupName)
+	audit.ContextEntryMap(ctx, auditContext)
 	return result, nil
 }
 
@@ -212,6 +271,10 @@ func (n *notifyGroupService) GetNotifyGroupDetail(ctx context.Context, request *
 
 func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.DeleteNotifyGroupRequest) (*pb.DeleteNotifyGroupResponse, error) {
 	orgID := apis.GetOrgID(ctx)
+	projectName, workspace, notifyGroupName, auditProjectId, err := n.auditContextInfo(request.GroupID, orgID)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	resp, err := n.p.bdl.DeleteNotifyGroup(request.GroupID, orgID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -227,5 +290,16 @@ func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	result.Data.ProjectId = auditProjectId
+	auditContext := auditContextMap(projectName, workspace, notifyGroupName)
+	audit.ContextEntryMap(ctx, auditContext)
 	return result, nil
+}
+
+func auditContextMap(projectName, workspace, notifyGroupName string) map[string]interface{} {
+	return map[string]interface{}{
+		"projectName":     projectName,
+		"workspace":       workspace,
+		"notifyGroupName": notifyGroupName,
+	}
 }

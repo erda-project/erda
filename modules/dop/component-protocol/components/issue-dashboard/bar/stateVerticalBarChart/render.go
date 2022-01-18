@@ -22,13 +22,14 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/chartbuilders"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
@@ -149,9 +150,9 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	props := make(map[string]interface{})
 	switch c.Name {
 	case "iteration":
-		props["title"] = "缺陷 - 按迭代分布"
+		props["title"] = cputil.I18n(ctx, "iterationBarChartTitle")
 	default:
-		props["title"] = "缺陷 - 按状态分布"
+		props["title"] = cputil.I18n(ctx, "stateBarChartTitle")
 	}
 	props["chartType"] = "bar"
 	props["option"] = builder.Result.Bb

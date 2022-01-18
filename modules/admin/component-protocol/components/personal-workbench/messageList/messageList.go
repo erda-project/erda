@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
@@ -34,7 +35,6 @@ import (
 	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/common/gshelper"
 	"github.com/erda-project/erda/modules/admin/component-protocol/types"
 	"github.com/erda-project/erda/modules/admin/services/workbench"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
 	rt "github.com/erda-project/erda/pkg/time/readable_time"
 )
@@ -47,7 +47,6 @@ const (
 )
 
 type MessageList struct {
-	base.DefaultProvider
 	impl.DefaultList
 
 	sdk   *cptype.SDK
@@ -111,14 +110,16 @@ func (l *MessageList) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 // RegisterChangePage when change page, filter needed
 func (l *MessageList) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.OperationFunc) {
-	if opData.ClientData.PageNo > 0 {
-		l.filterReq.PageNo = opData.ClientData.PageNo
+	return func(sdk *cptype.SDK) {
+
+		if opData.ClientData.PageNo > 0 {
+			l.filterReq.PageNo = opData.ClientData.PageNo
+		}
+		if opData.ClientData.PageSize > 0 {
+			l.filterReq.PageSize = opData.ClientData.PageSize
+		}
+		l.StdDataPtr = l.doFilter()
 	}
-	if opData.ClientData.PageSize > 0 {
-		l.filterReq.PageSize = opData.ClientData.PageSize
-	}
-	l.StdDataPtr = l.doFilter()
-	return nil
 }
 
 // RegisterItemStarOp when item stared, unnecessary here
@@ -131,24 +132,30 @@ func (l *MessageList) RegisterItemClickGotoOp(opData list.OpItemClickGoto) (opFu
 	return func(sdk *cptype.SDK) {
 	}
 }
+func (l *MessageList) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) {
+
+	}
+}
 
 // RegisterItemClickOp get client data, and set message read
 func (l *MessageList) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.OperationFunc) {
-	id, err := strconv.Atoi(opData.ClientData.DataRef.ID)
-	if err != nil {
-		logrus.Errorf("parse message client data failed, id: %v, error: %v", opData.ClientData.DataRef.ID, err)
-		return nil
+	return func(sdk *cptype.SDK) {
+		id, err := strconv.Atoi(opData.ClientData.DataRef.ID)
+		if err != nil {
+			logrus.Errorf("parse message client data failed, id: %v, error: %v", opData.ClientData.DataRef.ID, err)
+			return
+		}
+		req := apistructs.SetMBoxReadStatusRequest{
+			IDs: []int64{int64(id)},
+		}
+		err = l.bdl.SetMBoxReadStatus(l.identity, &req)
+		if err != nil {
+			logrus.Errorf("set mbox read status filed, id: %v, error: %v", id, err)
+			return
+		}
+		l.StdDataPtr = l.doFilter()
 	}
-	req := apistructs.SetMBoxReadStatusRequest{
-		IDs: []int64{int64(id)},
-	}
-	err = l.bdl.SetMBoxReadStatus(l.identity, &req)
-	if err != nil {
-		logrus.Errorf("set mbox read status filed, id: %v, error: %v", id, err)
-		return nil
-	}
-	l.StdDataPtr = l.doFilter()
-	return nil
 }
 
 func (l *MessageList) doFilter() (data *list.Data) {

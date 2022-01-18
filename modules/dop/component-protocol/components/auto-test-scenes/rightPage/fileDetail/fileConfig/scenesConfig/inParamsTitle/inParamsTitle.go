@@ -16,20 +16,22 @@ package inParamsTitle
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 )
 
 type ComponentAction struct {
-	base.DefaultProvider
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	err := json.Unmarshal([]byte(`{"title": "场景入参", "level": 2}`), &c.Props)
-	return err
+	c.Props = map[string]interface{}{
+		"title": cputil.I18n(ctx, "sceneInput"),
+		"level": 2,
+	}
+	return nil
 }
 
 func init() {

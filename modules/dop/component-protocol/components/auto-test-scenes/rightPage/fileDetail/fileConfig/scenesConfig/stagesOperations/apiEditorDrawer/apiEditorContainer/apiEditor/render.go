@@ -24,20 +24,19 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/autotest/step"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/type_conversion"
 	"github.com/erda-project/erda/pkg/expression"
 )
 
 type ApiEditor struct {
-	base.DefaultProvider
 	sdk   *cptype.SDK
 	bdl   *bundle.Bundle
 	State State `json:"state"`
@@ -176,7 +175,7 @@ func (ae *ApiEditor) Render(ctx context.Context, c *cptype.Component, scenario c
 	for _, sip := range sceneInputs {
 		children = append(children, Input{Label: sip.Name, Value: "${{ params." + sip.Name + " }}", IsLeaf: true})
 	}
-	inputs = append(inputs, Input{Label: "本场景入参", Value: "本场景入参", IsLeaf: false, Children: children})
+	inputs = append(inputs, Input{Label: cputil.I18n(ctx, "formAdd"), Value: "本场景入参", IsLeaf: false, Children: children})
 
 	// 前置接口入参
 	sceneSteps, err := ae.bdl.ListAutoTestSceneStep(sceneInputReq)
@@ -209,7 +208,7 @@ LABEL:
 		}
 		stepChildren1 = append(stepChildren1, Input{Label: k, Value: k, IsLeaf: false, Children: stepChildren2})
 	}
-	inputs = append(inputs, Input{Label: "前置接口出参", Value: "前置接口出参", IsLeaf: false, Children: stepChildren1})
+	inputs = append(inputs, Input{Label: cputil.I18n(ctx, "preApiOut"), Value: "前置接口出参", IsLeaf: false, Children: stepChildren1})
 
 	maps, err = step.GetConfigSheetStepOutPut(steps, ae.bdl, gs)
 	if err != nil {
@@ -223,7 +222,7 @@ LABEL:
 		}
 		stepChildren1 = append(stepChildren1, Input{Label: k, Value: k, IsLeaf: false, Children: stepChildren2})
 	}
-	inputs = append(inputs, Input{Label: "前置配置单出参", Value: "前置配置单出参", IsLeaf: false, Children: stepChildren1})
+	inputs = append(inputs, Input{Label: cputil.I18n(ctx, "preConfigOut"), Value: "前置配置单出参", IsLeaf: false, Children: stepChildren1})
 
 	// 全局变量入参
 	cfgReq := apistructs.AutoTestGlobalConfigListRequest{Scope: "project-autotest-testcase", ScopeID: projecrIDStr}
@@ -247,7 +246,7 @@ LABEL:
 		cfgChildren1 = append(cfgChildren1, Input{Label: "Global", Value: "Global", IsLeaf: false, Children: cfgChildren3})
 		cfgChildren0 = append(cfgChildren0, Input{Label: cfg.DisplayName, Value: cfg.DisplayName, IsLeaf: false, Children: cfgChildren1})
 	}
-	inputs = append(inputs, Input{Label: "全局变量入参", Value: "全局变量入参", IsLeaf: false, Children: cfgChildren0})
+	inputs = append(inputs, Input{Label: ae.sdk.I18n("globalInput"), Value: ae.sdk.I18n("globalInput"), IsLeaf: false, Children: cfgChildren0})
 
 	// mock 入参
 	inputs = append(inputs, ae.genMockInput())

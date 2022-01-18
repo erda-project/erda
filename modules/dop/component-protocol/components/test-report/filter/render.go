@@ -21,17 +21,15 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
-	base.DefaultProvider
-
 	Name       string                 `json:"name"`
 	Type       string                 `json:"type"`
 	Props      map[string]interface{} `json:"props"`
@@ -119,14 +117,14 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		map[string]interface{}{
 			"fixed":       true,
 			"key":         "name",
-			"placeholder": "按名称过滤",
+			"placeholder": cputil.I18n(ctx, "filterByName"),
 			"type":        "input",
 		},
 		map[string]interface{}{
-			"emptyText": "全部",
+			"emptyText": cputil.I18n(ctx, "all"),
 			"fixed":     true,
 			"key":       "iteration",
-			"label":     "迭代",
+			"label":     cputil.I18n(ctx, "iteration"),
 			"options":   iterationOptions,
 			"type":      "select",
 		},

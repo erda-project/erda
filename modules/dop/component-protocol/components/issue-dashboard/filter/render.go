@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
@@ -30,7 +31,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/services/issue"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
@@ -150,10 +150,10 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 
 	f.State.Conditions = []filter.PropCondition{
 		{
-			EmptyText: "全部",
+			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Key:       "iteration",
-			Label:     "迭代",
+			Label:     cputil.I18n(ctx, "iteration"),
 			Options:   iterationOptions,
 			Type:      filter.PropConditionTypeSelect,
 			// Required:  true,
@@ -163,18 +163,15 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			HaveFilter: true,
 		},
 		{
-			EmptyText:  "全部",
+			EmptyText:  cputil.I18n(ctx, "all"),
 			Fixed:      true,
 			Key:        "member",
-			Label:      "成员",
+			Label:      cputil.I18n(ctx, "member"),
 			Options:    projectMemberOptions,
 			Type:       filter.PropConditionTypeSelect,
 			HaveFilter: true,
 		},
 	}
-
-	// TODO select multiple iteration
-	// f.Iterations = []apistructs.Iteration{iterations[0]}
 
 	// todo modify data format
 	f.IssueList = data

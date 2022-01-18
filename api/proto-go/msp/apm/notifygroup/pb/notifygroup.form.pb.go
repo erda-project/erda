@@ -170,6 +170,15 @@ func (m *CreateNotifyGroupResponse) UnmarshalURLValues(prefix string, values url
 					m.Data = &NotifyGroup{}
 				}
 				m.Data.Label = vals[0]
+			case "data.projectId":
+				if m.Data == nil {
+					m.Data = &NotifyGroup{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ProjectId = val
 			}
 		}
 	}
@@ -219,6 +228,12 @@ func (m *NotifyGroup) UnmarshalURLValues(prefix string, values url.Values) error
 				m.Creator = vals[0]
 			case "label":
 				m.Label = vals[0]
+			case "projectId":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectId = val
 			}
 		}
 	}
@@ -392,6 +407,15 @@ func (m *GetNotifyGroupResponse) UnmarshalURLValues(prefix string, values url.Va
 					m.Data = &NotifyGroup{}
 				}
 				m.Data.Label = vals[0]
+			case "data.projectId":
+				if m.Data == nil {
+					m.Data = &NotifyGroup{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ProjectId = val
 			case "userIDs":
 				m.UserIDs = vals
 			}
@@ -530,6 +554,15 @@ func (m *UpdateNotifyGroupResponse) UnmarshalURLValues(prefix string, values url
 					m.Data = &NotifyGroup{}
 				}
 				m.Data.Label = vals[0]
+			case "data.projectId":
+				if m.Data == nil {
+					m.Data = &NotifyGroup{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ProjectId = val
 			}
 		}
 	}
@@ -734,6 +767,15 @@ func (m *DeleteNotifyGroupResponse) UnmarshalURLValues(prefix string, values url
 					m.Data = &NotifyGroup{}
 				}
 				m.Data.Label = vals[0]
+			case "data.projectId":
+				if m.Data == nil {
+					m.Data = &NotifyGroup{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ProjectId = val
 			}
 		}
 	}

@@ -19,7 +19,6 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 //batchOperationTipModal: {
@@ -48,7 +47,6 @@ type BatchOperationTipModal struct {
 	SDK        *cptype.SDK
 	CtxBdl     *bundle.Bundle
 	ctx        context.Context
-	base.DefaultProvider
 }
 
 type Props struct {

@@ -160,7 +160,8 @@ message QueryAlertRequest {
 }
 
 message QueryAlertResponse {
-  QueryAlertData data = 1;
+  QueryAlertData  data    = 1;
+  repeated string userIDs = 2;
 }
 
 message QueryAlertData {
@@ -191,6 +192,7 @@ message ApmAlertData {
   int64                                             createTime       = 11;
   int64                                             updateTime       = 12;
   repeated erda.core.monitor.alert.TriggerCondition triggerCondition = 13;
+  string                                            creator          = 14;
 }
 
 message CreateAlertRequest {
@@ -214,7 +216,8 @@ message CreateAlertResponse {
 }
 
 message CreateAlertData {
-  uint64 id = 1;
+  uint64 id        = 1;
+  uint64 projectId = 2;
 }
 
 message UpdateAlertRequest {
@@ -235,6 +238,7 @@ message UpdateAlertRequest {
 }
 
 message UpdateAlertResponse {
+  uint64 data = 1;
 }
 
 message UpdateAlertEnableRequest {
@@ -256,7 +260,8 @@ message DeleteAlertResponse {
 }
 
 message DeleteAlertData {
-  string Name = 1;
+  string Name      = 1;
+  uint64 projectId = 2;
 }
 
 message QueryCustomizeMetricRequest {
@@ -283,7 +288,8 @@ message QueryCustomizeAlertsRequest {
 }
 
 message QueryCustomizeAlertsResponse {
-  erda.core.monitor.alert.QueryCustomizeAlertData data = 1;
+  erda.core.monitor.alert.QueryCustomizeAlertData data    = 1;
+  repeated string                                 userIDs = 2;
 }
 
 message GetCustomizeAlertRequest {
@@ -316,7 +322,8 @@ message CreateCustomizeAlertResponse {
 }
 
 message CreateCustomizeAlertData {
-  uint64 id = 1;
+  uint64 id        = 1;
+  uint64 projectId = 2;
 }
 
 message UpdateCustomizeAlertRequest {
@@ -336,6 +343,7 @@ message UpdateCustomizeAlertRequest {
 }
 
 message UpdateCustomizeAlertResponse {
+  uint64 data = 1;
 }
 
 message UpdateCustomizeAlertEnableRequest {
@@ -357,7 +365,8 @@ message DeleteCustomizeAlertResponse {
 }
 
 message DeleteCustomizeAlertData {
-  string name = 1;
+  string name      = 1;
+  uint64 projectId = 2;
 }
 
 message GetAlertRecordAttrsRequest {

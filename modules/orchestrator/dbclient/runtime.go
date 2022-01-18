@@ -37,26 +37,30 @@ import (
 // projectId, git branch and working dev determine a runtime
 type Runtime struct {
 	dbengine.BaseModel
-	Name              string `gorm:"not null;unique_index:idx_unique_app_id_name"`
-	ApplicationID     uint64 `gorm:"not null;unique_index:idx_unique_app_id_name"`
-	Workspace         string `gorm:"not null;unique_index:idx_unique_app_id_name"`
-	GitBranch         string // Deprecated
-	ProjectID         uint64 `gorm:"not null"` // TODO: currently equal to applicationID, fix later
-	Env               string // Deprecated
-	ClusterName       string
-	ClusterId         uint64 // Deprecated: use clusterName
-	Creator           string `gorm:"not null"`
-	ScheduleName      ScheduleName
-	Status            string `gorm:"column:runtime_status"`
-	LegacyStatus      string `gorm:"column:status"`
-	Deployed          bool
-	Deleting          bool `gorm:"-"` // TODO: after legacyStatus removed, we use deleting instead
-	Version           string
-	Source            apistructs.RuntimeSource
-	DiceVersion       string
-	CPU               float64
-	Mem               float64 // 单位: MB
-	ConfigUpdatedDate *time.Time
+	Name                string `gorm:"not null;unique_index:idx_unique_app_id_name"`
+	ApplicationID       uint64 `gorm:"not null;unique_index:idx_unique_app_id_name"`
+	Workspace           string `gorm:"not null;unique_index:idx_unique_app_id_name"`
+	GitBranch           string // Deprecated
+	ProjectID           uint64 `gorm:"not null"` // TODO: currently equal to applicationID, fix later
+	Env                 string // Deprecated
+	ClusterName         string
+	ClusterId           uint64 // Deprecated: use clusterName
+	Creator             string `gorm:"not null"`
+	ScheduleName        ScheduleName
+	Status              string `gorm:"column:runtime_status"`
+	DeploymentStatus    string
+	CurrentDeploymentID uint64
+	DeploymentOrderId   string
+	ReleaseVersion      string
+	LegacyStatus        string `gorm:"column:status"`
+	Deployed            bool
+	Deleting            bool `gorm:"-"` // TODO: after legacyStatus removed, we use deleting instead
+	Version             string
+	Source              apistructs.RuntimeSource
+	DiceVersion         string
+	CPU                 float64
+	Mem                 float64 // 单位: MB
+	ConfigUpdatedDate   *time.Time
 	// Deprecated
 	ReadableUniqueId string
 	// Deprecated
@@ -255,16 +259,36 @@ func (db *DBClient) FindRuntimesByAppId(appId uint64) ([]Runtime, error) {
 	return runtimes, nil
 }
 
+func (db *DBClient) FindRuntimesByAppIdAndWorkspace(appId uint64, workspace string) ([]Runtime, error) {
+	var runtimes []Runtime
+	if appId <= 0 {
+		return runtimes, nil
+	}
+	if err := db.
+		Where("application_id = ?  AND workspace = ?", appId, workspace).
+		Find(&runtimes).Error; err != nil {
+		return nil, errors.Wrapf(err, "failed to find runtimes by appId: %v", appId)
+	}
+	return runtimes, nil
+}
+
 // FindRuntimesInApps finds all runtimes for the given appIDs.
 // The key in the returned map is appID.
-func (db *DBClient) FindRuntimesInApps(appIDs []uint64) (map[uint64][]*Runtime, error) {
+func (db *DBClient) FindRuntimesInApps(appIDs []uint64, env string) (map[uint64][]*Runtime, error) {
 	var (
 		runtimes []*Runtime
 		m        = make(map[uint64][]*Runtime)
 	)
-	if err := db.Where("application_id IN (?)", appIDs).
-		Find(&runtimes).Error; err != nil && !gorm.IsRecordNotFoundError(err) {
-		return nil, err
+	if env != "" {
+		if err := db.Where("application_id IN (?) AND workspace = ? ", appIDs, env).
+			Find(&runtimes).Error; err != nil && !gorm.IsRecordNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		if err := db.Where("application_id IN (?) ", appIDs).
+			Find(&runtimes).Error; err != nil && !gorm.IsRecordNotFoundError(err) {
+			return nil, err
+		}
 	}
 	for _, runtime := range runtimes {
 		m[runtime.ApplicationID] = append(m[runtime.ApplicationID], runtime)
@@ -273,42 +297,56 @@ func (db *DBClient) FindRuntimesInApps(appIDs []uint64) (map[uint64][]*Runtime, 
 }
 
 func (db *DBClient) FindRuntimeOrCreate(uniqueId spec.RuntimeUniqueId, operator string, source apistructs.RuntimeSource,
-	clusterName string, clusterId uint64, gitRepoAbbrev string, projectID, orgID uint64) (*Runtime, bool, error) {
+	clusterName string, clusterId uint64, gitRepoAbbrev string, projectID, orgID uint64, deploymentOrderId,
+	releaseVersion string) (*Runtime, bool, error) {
+
 	runtime, err := db.FindRuntime(uniqueId)
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to find runtime or create by uniqueId: %v, operator: %v",
 			uniqueId, operator)
 	}
+
 	created := false
 	if runtime == nil {
 		created = true
 		runtime = &Runtime{
-			ApplicationID:    uniqueId.ApplicationId,
-			ProjectID:        projectID, // TODO: currently equal to applicationID, fix later
-			Creator:          operator,
-			Workspace:        uniqueId.Workspace,
-			Env:              uniqueId.Workspace,
-			Name:             uniqueId.Name,
-			GitBranch:        uniqueId.Name,
-			Status:           "Init",
-			LegacyStatus:     "INIT",
-			Source:           source,
-			Deleting:         false,
-			Deployed:         false,
-			Version:          "1",
-			DiceVersion:      "2",
-			ClusterName:      clusterName,
-			ClusterId:        clusterId,
-			ReadableUniqueId: "dice-orchestrator",
-			GitRepoAbbrev:    gitRepoAbbrev,
-			Mem:              0.0,
-			CPU:              0.0,
-			OrgID:            orgID,
+			ApplicationID:     uniqueId.ApplicationId,
+			ProjectID:         projectID, // TODO: currently equal to applicationID, fix later
+			Creator:           operator,
+			Workspace:         uniqueId.Workspace,
+			Env:               uniqueId.Workspace,
+			Name:              uniqueId.Name,
+			GitBranch:         uniqueId.Name,
+			Status:            "Init",
+			LegacyStatus:      "INIT",
+			Source:            source,
+			Deleting:          false,
+			Deployed:          false,
+			Version:           "1",
+			DiceVersion:       "2",
+			ClusterName:       clusterName,
+			ClusterId:         clusterId,
+			ReadableUniqueId:  "dice-orchestrator",
+			GitRepoAbbrev:     gitRepoAbbrev,
+			Mem:               0.0,
+			CPU:               0.0,
+			OrgID:             orgID,
+			DeploymentOrderId: deploymentOrderId,
+			ReleaseVersion:    releaseVersion,
 		}
 		err = db.CreateRuntime(runtime)
 		if err != nil {
 			return nil, created, errors.Wrapf(err, "failed to find runtime or create by uniqueId: %v, operator: %v",
 				uniqueId, operator)
+		}
+	} else {
+		// update deployment order name
+		if runtime.DeploymentOrderId != deploymentOrderId || runtime.ReleaseVersion != releaseVersion {
+			runtime.DeploymentOrderId = deploymentOrderId
+			runtime.ReleaseVersion = releaseVersion
+			if err := db.UpdateRuntime(runtime); err != nil {
+				return nil, false, errors.Wrapf(err, "failed to update runtime deployment order or release info, err: %v", err)
+			}
 		}
 	}
 	return runtime, created, nil
@@ -429,6 +467,15 @@ func (db *DBClient) FindRuntimeServices(runtimeId uint64) ([]RuntimeService, err
 func (db *DBClient) GetRuntimeByProjectIDs(projectIDs []uint64) (*[]Runtime, error) {
 	var runtimes []Runtime
 	if err := db.Where("project_id in (?)", projectIDs).Find(&runtimes).Error; err != nil {
+		return nil, err
+	}
+	return &runtimes, nil
+}
+
+func (db *DBClient) GetRuntimeByDeployOrderId(projectId uint64, orderId string) (*[]Runtime, error) {
+	var runtimes []Runtime
+	if err := db.Where("project_id = ? and deployment_order_id = ?", projectId, orderId).
+		Find(&runtimes).Error; err != nil {
 		return nil, err
 	}
 	return &runtimes, nil

@@ -41,4 +41,8 @@ type DeployContext struct {
 
 	// 不由 orchestrator 来推进部署
 	SkipPushByOrch bool
+
+	// deployment order
+	DeploymentOrderId string
+	Param             string
 }

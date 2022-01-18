@@ -14,13 +14,7 @@
 
 package workloadChart
 
-import (
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-)
-
 type ComponentWorkloadChart struct {
-	base.DefaultProvider
-
 	Type  string `json:"type,omitempty"`
 	State State  `json:"state"`
 	Data  Data   `json:"data"`

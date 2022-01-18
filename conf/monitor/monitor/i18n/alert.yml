@@ -7,6 +7,7 @@ zh:
     count: 次数
     value: 值
     values: 所有值
+    distinct_count: 去重计数
     p99: 99分位
     p95: 95分位
     p90: 90分位

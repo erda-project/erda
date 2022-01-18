@@ -16,6 +16,7 @@ package deployment
 
 import (
 	"io/ioutil"
+	"net/http"
 	"reflect"
 	"testing"
 	"time"
@@ -86,6 +87,8 @@ func TestConvertGroupLabels(t *testing.T) {
 func TestFSMTimeout(t *testing.T) {
 	f := genFakeFSM()
 
+	defer monkey.UnpatchAll()
+	patchUpdateDeploymentStatusToRuntimeAndOrder(f)
 	_ = recordUpdateDeployment()
 	_ = recordEvent()
 	_ = recordDLog()
@@ -112,6 +115,8 @@ func TestFSMFailDeploy(t *testing.T) {
 	eventC := recordEvent()
 	loggingC := recordDLog()
 
+	patchUpdateDeploymentStatusToRuntimeAndOrder(f)
+
 	// do invoke
 	err := f.failDeploy(errors.Errorf("fake error"))
 
@@ -135,6 +140,48 @@ func TestFSMFailDeploy(t *testing.T) {
 			`deployment is fail, status: WAITING, phrase: INIT, (fake error)`,
 		}, logging)
 	}
+}
+
+func TestConvertErdaServiceTemplate(t *testing.T) {
+	var err error
+	var result string
+	f := genFakeFSM()
+	f.Cluster.Type = apistructs.EDAS
+
+	var bdl *bundle.Bundle
+	var db *dbclient.DBClient
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetAppsByProjectAndAppName",
+		func(_ *bundle.Bundle, projectID, orgID uint64, userID string, appName string, header ...http.Header) (*apistructs.ApplicationListResponseData, error) {
+			return &apistructs.ApplicationListResponseData{
+				Total: 1,
+				List: []apistructs.ApplicationDTO{apistructs.ApplicationDTO{
+					ID: 3,
+				}},
+			}, nil
+		},
+	)
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindRuntimesByAppIdAndWorkspace",
+		func(_ *dbclient.DBClient, appId uint64, workspace string) ([]dbclient.Runtime, error) {
+			return []dbclient.Runtime{dbclient.Runtime{
+				ScheduleName: dbclient.ScheduleName{
+					Namespace: "",
+					Name:      "",
+				},
+			}}, nil
+		},
+	)
+	f.bdl = bdl
+	f.db = db
+	_, err = f.convertErdaServiceTemplate("erdaService.aaa.bbb.ccc.bbb", "project-111-prod", 1, 2, "DEV")
+	assert.Error(t, err)
+
+	result, err = f.convertErdaServiceTemplate("erdaService.pampas-blog.bbb", "project-111-prod", 1, 2, "DEV")
+	assert.Equal(t, "bbb.default.svc.cluster.local", result)
+
+	f.Cluster.Type = apistructs.K8S
+	result, err = f.convertErdaServiceTemplate("erdaService.pampas-blog.bbb", "project-111-prod", 1, 2, "DEV")
+	assert.Equal(t, "bbb.project-111-prod.svc.cluster.local", result)
 }
 
 func TestFSMPushOnPhase(t *testing.T) {
@@ -318,6 +365,8 @@ func TestFSMContinueCanceling(t *testing.T) {
 	f.Deployment.Status = apistructs.DeploymentStatusCanceling
 	f.Runtime.Status = apistructs.RuntimeStatusHealthy
 
+	patchUpdateDeploymentStatusToRuntimeAndOrder(f)
+
 	updateC := recordUpdateDeployment()
 	emitC := recordEvent()
 	loggingC := recordDLog()
@@ -343,26 +392,6 @@ func TestFSMContinueCanceling(t *testing.T) {
 		logging := collectDLog(loggingC)
 		assert.Equal(t, []string{`deployment canceled`}, logging)
 	}
-}
-
-func TestPrecheck(t *testing.T) {
-	fsm := genFakeFSM()
-
-	var bdl *bundle.Bundle
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateErrorLog",
-		func(_ *bundle.Bundle, errorLog *apistructs.ErrorLogCreateRequest) error {
-			return nil
-		},
-	)
-
-	fsm.bdl = bdl
-	fsm.Spec = &diceyml.Object{
-		Services: map[string]*diceyml.Service{"fakesvC1-12": nil, "fakesvc2": nil},
-	}
-
-	// do invoke
-	err := fsm.precheck()
-	assert.Error(t, err)
 }
 
 func recordUpdateDeployment() chan dbclient.Deployment {
@@ -496,6 +525,12 @@ func genFakeFSM(specPath ...string) *DeployFSMContext {
 		fsm.Spec = y.Obj()
 	}
 	return &fsm
+}
+
+func patchUpdateDeploymentStatusToRuntimeAndOrder(f *DeployFSMContext) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(f), "UpdateDeploymentStatusToRuntimeAndOrder", func(*DeployFSMContext) error {
+		return nil
+	})
 }
 
 func TestUpdateServiceGroupWithLoop(t *testing.T) {

@@ -44,6 +44,7 @@ func (s *accessKeyService) QueryAccessKeys(ctx context.Context, req *pb.QueryAcc
 			CreatedAt:   timestamppb.New(obj.CreatedAt),
 			Scope:       obj.Scope,
 			ScopeId:     obj.ScopeId,
+			CreatorId:   obj.CreatorID,
 		}
 	}
 	return &pb.QueryAccessKeysResponse{Data: res, Total: total}, nil
@@ -63,6 +64,7 @@ func (s *accessKeyService) GetAccessKey(ctx context.Context, req *pb.GetAccessKe
 		SubjectType: obj.SubjectType,
 		Subject:     obj.Subject,
 		Description: obj.Description,
+		ScopeId:     obj.ScopeId,
 		CreatedAt:   timestamppb.New(obj.CreatedAt),
 	}}, nil
 }

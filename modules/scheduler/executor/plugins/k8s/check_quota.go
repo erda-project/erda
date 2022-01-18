@@ -28,6 +28,8 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	orgCache "github.com/erda-project/erda/modules/scheduler/cache/org"
+	"github.com/erda-project/erda/modules/scheduler/i18n"
 )
 
 type QuotaError struct {
@@ -112,8 +114,14 @@ func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runti
 		return false, "", err
 	}
 
+	// get org locale
+	var locale string
+	if orgDTO, ok := orgCache.GetOrgByProjectID(projectID); ok {
+		locale = orgDTO.Locale
+	}
+
 	if requestsCPU > leftCPU || requestsMem > leftMem {
-		humanLog, primevalLog := getLogContent(requestsCPU, requestsMem, leftCPU, leftMem, kind, serviceName)
+		humanLog, primevalLog := getLogContent(locale, requestsCPU, requestsMem, leftCPU, leftMem, kind, serviceName)
 		if runtimeID != "" {
 			if err = k.bdl.CreateErrorLog(&apistructs.ErrorLogCreateRequest{
 				ErrorLog: apistructs.ErrorLog{
@@ -135,7 +143,7 @@ func (k *Kubernetes) CheckQuota(ctx context.Context, projectID, workspace, runti
 	return true, "", nil
 }
 
-func getLogContent(deltaCPU, deltaMem, leftCPU, leftMem int64, kind, serviceName string) (string, string) {
+func getLogContent(locale string, deltaCPU, deltaMem, leftCPU, leftMem int64, kind, serviceName string) (string, string) {
 	leftCPU = max(leftCPU, 0)
 	leftMem = max(leftMem, 0)
 	reqCPUStr := resourceToString(float64(deltaCPU), "cpu")
@@ -146,29 +154,29 @@ func getLogContent(deltaCPU, deltaMem, leftCPU, leftMem int64, kind, serviceName
 	logrus.Infof("Checking workspace quota, requests cpu:%s cores, left %s cores; requests memory: %s, left %s",
 		reqCPUStr, leftCPUStr, reqMemStr, leftMemStr)
 
-	humanLogs := []string{"当前环境资源配额不足"}
+	humanLogs := []string{i18n.Sprintf(locale, "NotEnoughQuotaOnCurrentWorkspace")}
 	primevalLogs := []string{"Resource quota is not enough in current workspace"}
 	switch kind {
 	case "stateless":
-		humanLogs = append(humanLogs, fmt.Sprintf("服务 %s 部署失败", serviceName))
+		humanLogs = append(humanLogs, i18n.Sprintf(locale, "FailedToDeployService", serviceName))
 		primevalLogs = append(primevalLogs, fmt.Sprintf("failed to deploy service %s", serviceName))
 	case "stateful":
-		humanLogs = append(humanLogs, fmt.Sprintf("addon %s 部署失败", serviceName))
+		humanLogs = append(humanLogs, i18n.Sprintf(locale, "FailedTodDeployAddon", serviceName))
 		primevalLogs = append(primevalLogs, fmt.Sprintf("failed to deploy addon %s.", serviceName))
 	case "update":
-		humanLogs = append(humanLogs, fmt.Sprintf("服务 %s 更新失败", serviceName))
+		humanLogs = append(humanLogs, i18n.Sprintf(locale, "FailedToUpdateService", serviceName))
 		primevalLogs = append(primevalLogs, fmt.Sprintf("failed to update service %s", serviceName))
 	case "scale":
-		humanLogs = append(humanLogs, fmt.Sprintf("服务 %s 扩容失败", serviceName))
+		humanLogs = append(humanLogs, i18n.Sprintf(locale, "FailedToScaleService", serviceName))
 		primevalLogs = append(primevalLogs, fmt.Sprintf("failed to scale service %s", serviceName))
 	}
 
 	if deltaCPU > leftCPU {
-		humanLogs = append(humanLogs, fmt.Sprintf("请求 CPU 新增 %s 核，大于当前剩余 CPU %s 核", reqCPUStr, leftCPUStr))
+		humanLogs = append(humanLogs, i18n.Sprintf(locale, "CPURequiredMoreThanRemaining", reqCPUStr, leftCPUStr))
 		primevalLogs = append(primevalLogs, fmt.Sprintf("Requests CPU added %s core(s), which is greater than the current remaining CPU %s core(s)", reqCPUStr, leftCPUStr))
 	}
 	if deltaMem > leftMem {
-		humanLogs = append(humanLogs, fmt.Sprintf("请求内存新增 %s，大于当前环境剩余内存 %s", reqMemStr, leftMemStr))
+		humanLogs = append(humanLogs, i18n.Sprintf(locale, "MemRequiredMoreThanRemaining", reqMemStr, leftMemStr))
 		primevalLogs = append(primevalLogs, fmt.Sprintf("Requests memory added %s, which is greater than the current remaining %s", reqMemStr, leftMemStr))
 	}
 	return strings.Join(humanLogs, "，"), strings.Join(primevalLogs, ". ")

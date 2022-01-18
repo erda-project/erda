@@ -17,11 +17,9 @@ package tabs
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	table2 "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-nodes/common/table"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type Tabs struct {
-	base.DefaultProvider
 	SDK        *cptype.SDK
 	Type       string                 `json:"type"`
 	Props      Props                  `json:"props"`

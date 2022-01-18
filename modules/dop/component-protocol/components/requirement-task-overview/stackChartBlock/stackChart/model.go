@@ -26,12 +26,9 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/issue"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type StackChart struct {
-	base.DefaultProvider
-
 	issueSvc       *issue.Issue
 	InParams       InParams                                 `json:"-"`
 	Type           string                                   `json:"type"`

@@ -688,3 +688,7 @@ func (a *Application) RemovePublishItemRelations(request *apistructs.RemoveAppPu
 func (a *Application) BuildItemMonitorPipelineCmsNs(appID int64, workspace string) string {
 	return fmt.Sprintf("publish-item-monitor-%s-%d", workspace, appID)
 }
+
+func (a *Application) GetApplicationsByNames(projectID uint64, names []string) ([]model.Application, error) {
+	return a.db.GetApplicationsByNames(projectID, names)
+}

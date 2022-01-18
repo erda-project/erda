@@ -18,9 +18,9 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
@@ -65,29 +65,29 @@ func (s *ScenesSetInfo) Render(ctx context.Context, c *cptype.Component, scenari
 
 	s.Props["fields"] = []PropColumn{
 		{
-			Label:      "名称",
+			Label:      s.sdk.I18n("name"),
 			ValueKey:   "name",
 			RenderType: "ellipsis",
 		},
 		{
-			Label:      "描述",
+			Label:      s.sdk.I18n("desc"),
 			ValueKey:   "description",
 			RenderType: "ellipsis",
 		},
 		{
-			Label:    "创建人",
+			Label:    s.sdk.I18n("creator"),
 			ValueKey: "creatorID",
 		},
 		{
-			Label:    "创建时间",
+			Label:    s.sdk.I18n("creationTime"),
 			ValueKey: "createAtString",
 		},
 		{
-			Label:    "更新人",
+			Label:    s.sdk.I18n("updatedBy"),
 			ValueKey: "updaterID",
 		},
 		{
-			Label:    "更新时间",
+			Label:    s.sdk.I18n("updatedTime"),
 			ValueKey: "updateAtString",
 		},
 	}

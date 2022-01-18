@@ -14,10 +14,7 @@
 
 package podTitle
 
-import "github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-
 type PodTitle struct {
-	base.DefaultProvider
 	Type  string `json:"type,omitempty"`
 	Props Props  `json:"props"`
 	State State  `json:"state,omitempty"`

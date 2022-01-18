@@ -577,14 +577,18 @@ type ReleaseEventData ReleaseGetResponseData
 
 // ReleasesDeleteRequest release 批量删除请求结构
 type ReleasesDeleteRequest struct {
-	ProjectID int64    `json:"projectId"`
-	ReleaseID []string `json:"releaseID"`
+	// Use to audit
+	IsProjectRelease bool     `json:"isProjectRelease"`
+	ProjectID        int64    `json:"projectId"`
+	ReleaseID        []string `json:"releaseID"`
 }
 
 // ReleasesToFormalRequest release 批量转正请求结构
 type ReleasesToFormalRequest struct {
-	ProjectID int64    `json:"projectId"`
-	ReleaseID []string `json:"releaseID"`
+	// Use to audit
+	IsProjectRelease bool     `json:"isProjectRelease"`
+	ProjectID        int64    `json:"projectId"`
+	ReleaseID        []string `json:"releaseID"`
 }
 
 type ReleasesToFormalResponse struct {
@@ -593,6 +597,10 @@ type ReleasesToFormalResponse struct {
 }
 
 type ReleaseMetadata struct {
+	Org    string `json:"org,omitempty"`
+	Source string `json:"source,omitempty"`
+	Author string `json:"author,omitempty"`
+
 	Version   string                 `json:"version,omitempty"`
 	Desc      string                 `json:"desc,omitempty"`
 	ChangeLog string                 `json:"changeLog,omitempty"`
@@ -605,6 +613,7 @@ type AppMetadata struct {
 	GitCommitMessage string `json:"gitCommitMessage,omitempty"`
 	GitRepo          string `json:"gitRepo,omitempty"`
 	ChangeLog        string `json:"changeLog,omitempty"`
+	Version          string `json:"version,omitempty"`
 }
 
 type ReleaseCheckVersionRequest struct {

@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -322,30 +323,35 @@ func (mig *Migrator) migrateSandbox(ctx context.Context) (err error) {
 	}
 
 	// install every module
-	for moduleName, module := range mig.LocalScripts.Services {
-		for _, script := range module.Scripts {
-			logrus.WithField("module", moduleName).WithField("script", script.GetName()).
-				WithField("to install", !script.Pending).
-				Infoln("[sandbox]")
-			if !script.Pending {
-				continue
+	var scripts = SortedScripts(mig.LocalScripts.Services)
+	for _, scr := range scripts {
+		var (
+			moduleName = scr.ModuleName
+			module     = scr.Module
+			script     = scr.Script
+		)
+
+		logrus.WithField("module", moduleName).WithField("script", script.GetName()).
+			WithField("installing", !script.Pending).
+			Infoln("[Sandbox]")
+		if !script.Pending {
+			continue
+		}
+		switch script.Type {
+		case ScriptTypeSQL:
+			after := func(tx *gorm.DB, err error) {
+				tx.Commit()
 			}
-			switch script.Type {
-			case ScriptTypeSQL:
-				after := func(tx *gorm.DB, err error) {
-					tx.Commit()
-				}
-				if err := mig.installSQL(script, mig.SandBox(), func() (tx *gorm.DB) {
-					return mig.SandBox().Begin()
-				}, after); err != nil {
-					return errors.Wrapf(err, "failed to migrate in sandbox:  module name: %s, filename: %s, type: %s",
-						moduleName, script.GetName(), ScriptTypeSQL)
-				}
-			case ScriptTypePython:
-				if err := mig.installPy(script, module, mig.sandboxSettings, true); err != nil {
-					return errors.Wrapf(err, "failed to migrate in sandbox: %+v",
-						map[string]interface{}{"moduleName": moduleName, "filename": script.GetName(), "type": ScriptTypePython})
-				}
+			if err := mig.installSQL(script, mig.SandBox(), func() (tx *gorm.DB) {
+				return mig.SandBox().Begin()
+			}, after); err != nil {
+				return errors.Wrapf(err, "failed to migrate in sandbox:  module name: %s, filename: %s, type: %s",
+					moduleName, script.GetName(), ScriptTypeSQL)
+			}
+		case ScriptTypePython:
+			if err := mig.installPy(script, module, mig.sandboxSettings, true); err != nil {
+				return errors.Wrapf(err, "failed to migrate in sandbox: %+v",
+					map[string]interface{}{"moduleName": moduleName, "filename": script.GetName(), "type": ScriptTypePython})
 			}
 		}
 	}
@@ -387,55 +393,60 @@ func (mig *Migrator) migrate(ctx context.Context) error {
 	}
 
 	// install every service
-	for moduleName, mod := range mig.LocalScripts.Services {
-		logrus.WithField("module", moduleName).Infoln("MySQL Server")
-		for _, script := range mod.Scripts {
-			if !script.Pending {
-				continue
-			}
+	var scripts = SortedScripts(mig.LocalScripts.Services)
+	for _, scr := range scripts {
+		var (
+			moduleName = scr.ModuleName
+			mod        = scr.Module
+			script     = scr.Script
+		)
+		logrus.WithField("module", moduleName).WithField("scriptName", script.GetName()).
+			Infoln("[MySQL Server]")
 
-			logrus.WithField("script name", script.GetName()).Infoln("install")
-			switch script.Type {
-			case ScriptTypeSQL:
-				after := func(tx *gorm.DB, err error) {
-					if err != nil {
-						tx.Rollback()
-						mig.reverse(script.Reversing, true)
-					} else {
-						tx.Commit()
-					}
-				}
-				if err := mig.installSQL(script, mig.DB(), func() (tx *gorm.DB) {
-					return mig.DB().Begin()
-				}, after); err != nil {
-					return errors.Wrapf(err, "failed to migrate: %+v",
-						map[string]interface{}{"module name": moduleName, "script name": script.GetName(), "type": ScriptTypeSQL})
-				}
+		if !script.Pending {
+			continue
+		}
 
-			case ScriptTypePython:
-				if err := mig.installPy(script, mod, mig.dbSettings, true); err != nil {
-					return errors.Wrapf(err, "failed to migrate: %+v",
-						map[string]interface{}{"module name": moduleName, "script name": script.GetName(), "type": ScriptTypePython})
+		switch script.Type {
+		case ScriptTypeSQL:
+			after := func(tx *gorm.DB, err error) {
+				if err != nil {
+					tx.Rollback()
+					mig.reverse(script.Reversing, true)
+				} else {
+					tx.Commit()
 				}
 			}
+			if err := mig.installSQL(script, mig.DB(), func() (tx *gorm.DB) {
+				return mig.DB().Begin()
+			}, after); err != nil {
+				return errors.Wrapf(err, "failed to migrate: %+v",
+					map[string]interface{}{"module name": moduleName, "script name": script.GetName(), "type": ScriptTypeSQL})
+			}
 
-			// record it
-			strutil.ReverseSlice(script.Reversing)
-			record := HistoryModel{
-				ID:           0,
-				CreatedAt:    now,
-				UpdatedAt:    now,
-				ServiceName:  moduleName,
-				Filename:     script.GetName(),
-				Checksum:     script.Checksum(),
-				InstalledBy:  "",
-				InstalledOn:  "",
-				LanguageType: string(script.Type),
-				Reversed:     "",
+		case ScriptTypePython:
+			if err := mig.installPy(script, mod, mig.dbSettings, true); err != nil {
+				return errors.Wrapf(err, "failed to migrate: %+v",
+					map[string]interface{}{"module name": moduleName, "script name": script.GetName(), "type": ScriptTypePython})
 			}
-			if err := mig.DB().Create(&record).Error; err != nil {
-				return errors.Wrapf(err, "internal error: failed to record migration")
-			}
+		}
+
+		// record it
+		strutil.ReverseSlice(script.Reversing)
+		record := HistoryModel{
+			ID:           0,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+			ServiceName:  moduleName,
+			Filename:     script.GetName(),
+			Checksum:     script.Checksum(),
+			InstalledBy:  "",
+			InstalledOn:  "",
+			LanguageType: string(script.Type),
+			Reversed:     "",
+		}
+		if err := mig.DB().Create(&record).Error; err != nil {
+			return errors.Wrapf(err, "internal error: failed to record migration")
 		}
 	}
 
@@ -576,6 +587,37 @@ func (mig *Migrator) destructiveLint() error {
 
 func (mig *Migrator) needCompare() bool {
 	return mig.installingType == firstTimeUpdate
+}
+
+type moduleScript struct {
+	ModuleName string
+	Module     *Module
+	Script     *Script
+}
+
+// SortedScripts 对所有脚本进行总排序
+func SortedScripts(services map[string]*Module) []moduleScript {
+	var scripts []moduleScript
+	for moduleName, mod := range services {
+		for _, script := range mod.Scripts {
+			scripts = append(scripts, moduleScript{
+				ModuleName: moduleName,
+				Module:     mod,
+				Script:     script,
+			})
+		}
+	}
+	sort.Slice(scripts, func(i, j int) bool {
+		if scripts[i].Script.IsBaseline() && !scripts[j].Script.IsBaseline() {
+			return true
+		}
+		if !scripts[i].Script.IsBaseline() && scripts[j].Script.IsBaseline() {
+			return false
+		}
+		return strings.TrimSuffix(scripts[i].Script.GetName(), filepath.Ext(scripts[i].Script.GetName())) <
+			strings.TrimSuffix(scripts[j].Script.GetName(), filepath.Ext(scripts[j].Script.GetName()))
+	})
+	return scripts
 }
 
 func compareSchemas(db *gorm.DB, modules map[string]*Module) (string, bool) {

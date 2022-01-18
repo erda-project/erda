@@ -19,16 +19,15 @@ import (
 	"encoding/json"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
-	base.DefaultProvider
 	sdk *cptype.SDK
 	bdl *bundle.Bundle
 }
@@ -105,7 +104,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		c.Props = map[string]interface{}{
 			"fields": []map[string]interface{}{
 				{
-					"label":          "等待时间(s)",
+					"label":          cputil.I18n(ctx, "waitTime"),
 					"component":      "inputNumber",
 					"required":       true,
 					"key":            "waitTimeSec",

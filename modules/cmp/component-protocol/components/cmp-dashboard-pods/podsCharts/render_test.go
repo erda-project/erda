@@ -21,7 +21,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/modules/cmp/component-protocol/cputil"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type MockTran struct {
@@ -45,7 +44,6 @@ func TestPodsCharts_ParsePodStatus(t *testing.T) {
 
 func TestPodsCharts_Transfer(t *testing.T) {
 	component := &PodsCharts{
-		DefaultProvider: base.DefaultProvider{},
 		Data: Data{
 			Group: [][][]Pie{
 				{{{

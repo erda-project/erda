@@ -18,14 +18,14 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentAction struct {
-	base.DefaultProvider
 }
 
 func init() {
@@ -42,7 +42,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	case cptype.InitializeOperation, cptype.RenderingOperation:
 		c.Type = "Button"
 		c.Props = map[string]interface{}{
-			"text":       "刷新",
+			"text":       cputil.I18n(ctx, "refresh"),
 			"prefixIcon": "shuaxin",
 		}
 		c.Operations = map[string]interface{}{

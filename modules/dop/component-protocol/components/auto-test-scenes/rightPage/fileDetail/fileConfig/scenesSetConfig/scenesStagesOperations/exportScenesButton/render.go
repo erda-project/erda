@@ -20,13 +20,13 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
@@ -44,7 +44,6 @@ type InParams struct {
 }
 
 type ComponentAction struct {
-	base.DefaultProvider
 	sdk      *cptype.SDK
 	bdl      *bundle.Bundle
 	gsHelper *gshelper.GSHelper
@@ -91,7 +90,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		id := ca.gsHelper.GetGlobalSelectedSetID()
 		export := SceneSetOperation{
 			Key:        "exportSceneSet",
-			Text:       "导出场景集",
+			Text:       ca.sdk.I18n("exportSceneSet"),
 			Reload:     true,
 			Show:       true,
 			SuccessMsg: "导出完成，请在导入导出记录中下载导出结果",
@@ -101,7 +100,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		}
 		c.Type = "Button"
 		c.Props = map[string]interface{}{
-			"text": "导出场景集",
+			"text": ca.sdk.I18n("exportSceneSet"),
 		}
 		c.Operations = map[string]interface{}{
 			"click": export,

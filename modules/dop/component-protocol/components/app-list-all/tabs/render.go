@@ -19,11 +19,11 @@ import (
 	"encoding/json"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/app-list-all/common/gshelper"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type ComponentFilter struct {
@@ -32,8 +32,7 @@ type ComponentFilter struct {
 	State      State                `json:"state,omitempty"`
 	Data       Data                 `json:"data"`
 	Operations map[string]Operation `json:"operations"`
-	base.DefaultProvider
-	gsHelper *gshelper.GSHelper
+	gsHelper   *gshelper.GSHelper
 }
 
 type Option struct {
@@ -102,16 +101,20 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		f.Data = Data{
 			Options: []Option{
 				{
+					Label: cputil.I18n(ctx, "myApp"),
+					Value: "my",
+				},
+				{
 					Label: cputil.I18n(ctx, "all"),
 					Value: "all",
 				},
 				{
-					Label: cputil.I18n(ctx, "publicApp"),
-					Value: "public",
-				},
-				{
 					Label: cputil.I18n(ctx, "privateApp"),
 					Value: "private",
+				},
+				{
+					Label: cputil.I18n(ctx, "publicApp"),
+					Value: "public",
 				},
 			},
 		}
@@ -122,11 +125,12 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		f.State.Value = op.ClientData.Value
 	}
 	public := f.State.Value
-	if f.State.Value == "all" {
+	if f.State.Value == "all" || f.State.Value == "my" {
 		public = ""
 	}
 	f.gsHelper.SetAppPagingRequest(apistructs.ApplicationListRequest{
 		Public: public,
 	})
+	f.gsHelper.SetOption(f.State.Value)
 	return f.SetToProtocolComponent(c)
 }

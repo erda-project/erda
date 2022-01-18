@@ -30,7 +30,7 @@ import (
 type SourcecovAddonManagementDeps interface {
 	GetProjectNamespaceInfo(projectID uint64) (*apistructs.ProjectNameSpaceInfo, error)
 	GetOrg(idOrName interface{}) (*apistructs.OrgDTO, error)
-	GetOpenapiOAuth2Token(req apistructs.OpenapiOAuth2TokenGetRequest) (*apistructs.OpenapiOAuth2Token, error)
+	GetOAuth2Token(req apistructs.OAuth2TokenGetRequest) (*apistructs.OAuth2Token, error)
 }
 
 type SourcecovAddonManagement struct {
@@ -95,10 +95,10 @@ func (sam *SourcecovAddonManagement) BuildSourceCovServiceItem(
 }
 
 func (sam *SourcecovAddonManagement) getSourcecovToken(orgID string) (token string, err error) {
-	resp, err := sam.bdl.GetOpenapiOAuth2Token(apistructs.OpenapiOAuth2TokenGetRequest{
+	resp, err := sam.bdl.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{
 		ClientID:     conf.TokenClientID(),
 		ClientSecret: conf.TokenClientSecret(),
-		Payload: apistructs.OpenapiOAuth2TokenPayload{
+		Payload: apistructs.OAuth2TokenPayload{
 			AccessTokenExpiredIn: "0",
 			AccessibleAPIs: []apistructs.AccessibleAPI{{
 				Path:   "/api/code-coverage/actions/end-callBack",

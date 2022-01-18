@@ -36,7 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 )
 
 func init() {
@@ -53,7 +53,7 @@ func (f *ComponentFilter) Init(ctx servicehub.Context) error {
 		return errors.New("failed to init component, cmp service in ctx is not a steveServer")
 	}
 	steveServer = server
-	return f.DefaultProvider.Init(ctx)
+	return nil
 }
 
 func (f *ComponentFilter) Render(ctx context.Context, component *cptype.Component, _ cptype.Scenario,

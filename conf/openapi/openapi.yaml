@@ -73,6 +73,7 @@ openapi-v1-routes:
           - code-coverage
           - scenes-import-record
           - test-dashboard
+          - project-runtime
           - test-report
           - addon-mysql-account
           - addon-mysql-consumer
@@ -83,6 +84,8 @@ openapi-v1-routes:
           - auto-test-space-list
           - release-manage
           - app-list-all
+          - project-pipeline
+          - project-pipeline-exec-list
       - addr: http://localhost:8080
         scenarios:
           - demo
@@ -102,18 +105,29 @@ openapi-v1-routes:
           - personal-workbench
       - addr: msp:8080
         scenarios:
+          - browser-overview
           - service-overview
           - service-list
           - transaction-cache-analysis
           - transaction-cache-detail
+          - transaction-cache-slow
           - transaction-db-analysis
           - transaction-db-detail
+          - transaction-db-slow
           - transaction-http-analysis
           - transaction-http-detail
+          - transaction-http-slow
           - transaction-mq-analysis
           - transaction-mq-detail
+          - transaction-mq-slow
           - transaction-rpc-analysis
           - transaction-rpc-detail
+          - transaction-rpc-slow
+          - trace-query
+          - resources-container-monitor
+          - resources-node-monitor
+          - resources-runtime-monitor-java
+          - resources-runtime-monitor-nodejs
 
 etcd:
   _enable: ${OPENAPI_DEV_MODE:false}

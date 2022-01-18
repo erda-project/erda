@@ -22,6 +22,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/chartbuilders"
@@ -31,7 +32,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/dao"
 	issue_svc "github.com/erda-project/erda/modules/dop/services/issue"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
@@ -140,7 +140,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	}
 
 	props := make(map[string]interface{})
-	props["title"] = "缺陷 - 按标签分布（Top 500）"
+	props["title"] = cputil.I18n(ctx, "labelBarChartTitle")
 	props["chartType"] = "bar"
 	props["option"] = builder.Result.Bb
 	props["style"] = map[string]interface{}{"height": 400}

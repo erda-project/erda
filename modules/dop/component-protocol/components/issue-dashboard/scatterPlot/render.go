@@ -20,11 +20,12 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -67,35 +68,16 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		v := f.IssueList[i].FilterPropertyRetriever(f.State.Values.Type)
 		return f.State.Values.Value == nil || strutil.Exist(f.State.Values.Value, v)
 	})
-	f.Props = ScatterData(issues)
-	return f.SetToProtocolComponent(c)
-}
-
-func ScatterData(issues []dao.IssueItem) Props {
-	data := make([][]float32, 0)
-	for _, issue := range issues {
-		if issue.FinishTime == nil || issue.StartTime == nil {
-			continue
-		}
-		items := make([]float32, 0)
-		solveTime := (issue.FinishTime.UnixNano() - issue.StartTime.UnixNano()) / int64(time.Millisecond)
-		responseTime := (issue.StartTime.UnixNano() - issue.CreatedAt.UnixNano()) / int64(time.Millisecond)
-		if solveTime < 0 || responseTime < 0 {
-			continue
-		}
-		items = append(items, milliToHour(solveTime), milliToHour(responseTime))
-		data = append(data, items)
-	}
-
-	return Props{
-		Title: "缺陷 - 按响应、解决时间分布",
+	data := ScatterData(issues)
+	f.Props = Props{
+		Title: cputil.I18n(ctx, "scatterPlotTitle"),
 		Option: Option{
 			XAxis: common.XAxis{
 				Type:  "value",
-				Name:  "解决时间",
+				Name:  cputil.I18n(ctx, "resolvedTime"),
 				Scale: true,
 				AxisLabel: common.AxisLabel{
-					Fortmatter: "{value} 小时",
+					Fortmatter: "{value} " + cputil.I18n(ctx, "hour"),
 				},
 				SplitLine: common.SplitLine{
 					Show: false,
@@ -104,10 +86,10 @@ func ScatterData(issues []dao.IssueItem) Props {
 			YAxis: common.YAxis{
 				XAxis: common.XAxis{
 					Type:  "value",
-					Name:  "响应时间",
+					Name:  cputil.I18n(ctx, "responseTime"),
 					Scale: true,
 					AxisLabel: common.AxisLabel{
-						Fortmatter: "{value} 小时",
+						Fortmatter: "{value} " + cputil.I18n(ctx, "hour"),
 					},
 					SplitLine: common.SplitLine{
 						Show: true,
@@ -157,6 +139,26 @@ func ScatterData(issues []dao.IssueItem) Props {
 			},
 		},
 	}
+	return f.SetToProtocolComponent(c)
+}
+
+func ScatterData(issues []dao.IssueItem) [][]float32 {
+	data := make([][]float32, 0)
+	for _, issue := range issues {
+		if issue.FinishTime == nil || issue.StartTime == nil {
+			continue
+		}
+		items := make([]float32, 0)
+		solveTime := (issue.FinishTime.UnixNano() - issue.StartTime.UnixNano()) / int64(time.Millisecond)
+		responseTime := (issue.StartTime.UnixNano() - issue.CreatedAt.UnixNano()) / int64(time.Millisecond)
+		if solveTime < 0 || responseTime < 0 {
+			continue
+		}
+		items = append(items, milliToHour(solveTime), milliToHour(responseTime))
+		data = append(data, items)
+	}
+
+	return data
 }
 
 func milliToHour(m int64) float32 {

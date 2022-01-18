@@ -29,16 +29,14 @@ import (
 
 var (
 	columnPath        = &Column{Key: string(transaction.ColumnTransactionName), Name: "Transaction Name"}
-	columnReqCount    = &Column{Key: string(transaction.ColumnReqCount), Name: "Req Count"}
-	columnErrorCount  = &Column{Key: string(transaction.ColumnErrorCount), Name: "Error Count"}
-	columnSlowCount   = &Column{Key: string(transaction.ColumnSlowCount), Name: "Slow Count"}
-	columnAvgDuration = &Column{Key: string(transaction.ColumnAvgDuration), Name: "Avg Duration"}
+	columnReqCount    = &Column{Key: string(transaction.ColumnReqCount), Name: "Req Count", Sortable: true}
+	columnErrorCount  = &Column{Key: string(transaction.ColumnErrorCount), Name: "Error Count", Sortable: true}
+	columnAvgDuration = &Column{Key: string(transaction.ColumnAvgDuration), Name: "Avg Duration", Sortable: true}
 )
 
 var TransactionTableSortFieldSqlMap = map[string]string{
 	columnReqCount.Key:    "sum(elapsed_count::field)",
 	columnErrorCount.Key:  "count(error::tag)",
-	columnSlowCount.Key:   "sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0))",
 	columnAvgDuration.Key: "avg(elapsed_mean::field)",
 }
 
@@ -46,7 +44,6 @@ type TransactionTableRow struct {
 	TransactionName string
 	ReqCount        float64
 	ErrorCount      float64
-	SlowCount       float64
 	AvgDuration     string
 }
 
@@ -55,18 +52,21 @@ func (t *TransactionTableRow) GetCells() []*Cell {
 		{Key: columnPath.Key, Value: t.TransactionName},
 		{Key: columnReqCount.Key, Value: t.ReqCount},
 		{Key: columnErrorCount.Key, Value: t.ErrorCount},
-		{Key: columnSlowCount.Key, Value: t.SlowCount},
 		{Key: columnAvgDuration.Key, Value: t.AvgDuration},
 	}
 }
 
 type TransactionTableBuilder struct {
-	*BaseBuilder
+	*BaseBuildParams
+}
+
+func (t *TransactionTableBuilder) GetBaseBuildParams() *BaseBuildParams {
+	return t.BaseBuildParams
 }
 
 func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) {
 	table := &Table{
-		Columns: []*Column{columnPath, columnReqCount, columnErrorCount, columnSlowCount, columnAvgDuration},
+		Columns: []*Column{columnPath, columnReqCount, columnErrorCount, columnAvgDuration},
 	}
 	pathField := common.GetLayerPathKeys(t.Layer)[0]
 	var layerPathParam *structpb.Value
@@ -76,10 +76,9 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		layerPathParam = structpb.NewStringValue(t.LayerPath)
 	}
 	queryParams := map[string]*structpb.Value{
-		"terminus_key":   structpb.NewStringValue(t.TenantId),
-		"service_id":     structpb.NewStringValue(t.ServiceId),
-		"layer_path":     layerPathParam,
-		"slow_threshold": structpb.NewNumberValue(common.GetSlowThreshold(t.Layer)),
+		"terminus_key": structpb.NewStringValue(t.TenantId),
+		"service_id":   structpb.NewStringValue(t.ServiceId),
+		"layer_path":   layerPathParam,
 	}
 
 	// calculate total count
@@ -93,7 +92,6 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		common.BuildServerSideServiceIdFilterSql("$service_id", t.Layer),
 		common.BuildLayerPathFilterSql(t.LayerPath, "$layer_path", t.FuzzyPath, t.Layer),
 	)
-	fmt.Println("table query total:" + statement)
 	request := &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(t.StartTime, 10),
 		End:       strconv.FormatInt(t.EndTime, 10),
@@ -111,7 +109,6 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		"%s,"+
 		"sum(elapsed_count::field),"+
 		"count(error::tag),"+
-		"sum(if(gt(elapsed_mean::field, $slow_threshold),elapsed_count::field,0)),"+
 		"format_duration(avg(elapsed_mean::field),'',2) "+
 		"FROM %s "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
@@ -129,7 +126,6 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 		t.PageSize,
 		(t.PageNo-1)*t.PageSize,
 	)
-	fmt.Println("table query list:" + statement)
 	request = &metricpb.QueryWithInfluxFormatRequest{
 		Start:     strconv.FormatInt(t.StartTime, 10),
 		End:       strconv.FormatInt(t.EndTime, 10),
@@ -145,8 +141,7 @@ func (t *TransactionTableBuilder) GetTable(ctx context.Context) (*Table, error) 
 			TransactionName: row.Values[0].GetStringValue(),
 			ReqCount:        row.Values[1].GetNumberValue(),
 			ErrorCount:      row.Values[2].GetNumberValue(),
-			SlowCount:       row.Values[3].GetNumberValue(),
-			AvgDuration:     row.Values[4].GetStringValue(),
+			AvgDuration:     row.Values[3].GetStringValue(),
 		}
 		table.Rows = append(table.Rows, transRow)
 	}

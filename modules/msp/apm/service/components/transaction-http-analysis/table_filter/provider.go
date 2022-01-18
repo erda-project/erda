@@ -20,11 +20,12 @@ import (
 	"encoding/json"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/common/gshelper"
 	"github.com/erda-project/erda/modules/msp/apm/service/common/transaction"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
@@ -32,11 +33,13 @@ type ComponentFilter struct {
 	sdk *cptype.SDK
 	filter.CommonFilter
 	State State `json:"state,omitempty"`
-	base.DefaultProvider
+
 	gsHelper *gshelper.GSHelper
 }
 
 func init() {
+	name := "component-protocol.components.transaction-http-analysis.tableFilter"
+	cpregister.AllExplicitProviderCreatorMap[name] = nil
 	base.InitProviderWithCreator("transaction-http-analysis", "tableFilter",
 		func() servicehub.Provider { return &ComponentFilter{} },
 	)

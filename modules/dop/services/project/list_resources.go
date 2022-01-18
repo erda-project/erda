@@ -27,7 +27,6 @@ import (
 	cmpPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
-	"github.com/erda-project/erda/pkg/cache"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
@@ -95,7 +94,7 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 		item.DisplayName = application.DisplayName
 		owner := ownerUnknown()
 		if cacheItem, _ := p.appOwnerCache.LoadWithUpdate(application.ID); cacheItem != nil {
-			owners := cacheItem.Object.(*memberCacheObject)
+			owners := cacheItem.(*memberCacheObject)
 			if chosen, ok := owners.hasMemberIn(ownerFilter); ok {
 				owner = chosen
 			} else if len(ownerFilter) > 0 {
@@ -115,7 +114,7 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 	}
 
 	// query runtimes list from orchestrator
-	runtimesM, err := p.bdl.ListRuntimesGroupByApps(orgID, req.UserID, applicationsIDs)
+	runtimesM, err := p.bdl.ListRuntimesGroupByApps(orgID, req.UserID, applicationsIDs, "")
 	if err != nil {
 		l.WithError(err).Errorln("failed to ListRuntimesGroupByApps")
 		return nil, apierrors.ErrApplicationsResources.InternalError(err)
@@ -181,13 +180,12 @@ func (p *Project) ApplicationsResources(ctx context.Context, req *apistructs.App
 	return &data, nil
 }
 
-func (p *Project) updateMemberCache(key interface{}) (*cache.Item, bool) {
+func (p *Project) updateMemberCache(key interface{}) (interface{}, bool) {
 	l := logrus.WithField("func", "*Project.updateMemberCache")
 
 	unknown := ownerUnknown()
 	object := newMemberCacheObject()
 	object.m[unknown.ID] = unknown
-	cacheItem := &cache.Item{Object: object}
 
 	applicationID := key.(uint64)
 	if _, err := p.bdl.GetApp(applicationID); err != nil {
@@ -206,7 +204,7 @@ func (p *Project) updateMemberCache(key interface{}) (*cache.Item, bool) {
 	if err != nil || len(members.List) == 0 {
 		l.WithError(err).Errorln("failed to GetMembers")
 		object.m[unknown.ID] = unknown
-		return cacheItem, true
+		return object, true
 	}
 
 	for _, member := range members.List {
@@ -225,5 +223,5 @@ func (p *Project) updateMemberCache(key interface{}) (*cache.Item, bool) {
 		object.m[unknown.ID] = unknown
 	}
 
-	return cacheItem, true
+	return object, true
 }

@@ -15,6 +15,8 @@
 package assetsvc
 
 import (
+	"context"
+
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -28,7 +30,7 @@ func onceADayLimitType() []apistructs.LimitType {
 	}}
 }
 
-func unlimitedSLA(access *apistructs.APIAccessesModel) *apistructs.SLAModel {
+func (svc *Service) unlimitedSLA(ctx context.Context, access *apistructs.APIAccessesModel) *apistructs.SLAModel {
 	return &apistructs.SLAModel{
 		BaseModel: apistructs.BaseModel{
 			ID:        0,
@@ -37,8 +39,8 @@ func unlimitedSLA(access *apistructs.APIAccessesModel) *apistructs.SLAModel {
 			CreatorID: access.CreatorID,
 			UpdaterID: access.CreatorID,
 		},
-		Name:     apistructs.UnlimitedSLAName,
-		Desc:     "不限制流量 SLA",
+		Name:     svc.text(ctx, "UnlimitedSLAName"),
+		Desc:     svc.text(ctx, "UnlimitedSLADesc"),
 		Approval: apistructs.AuthorizationManual,
 		AccessID: access.ID,
 		Source:   apistructs.SourceSystem,
@@ -46,9 +48,9 @@ func unlimitedSLA(access *apistructs.APIAccessesModel) *apistructs.SLAModel {
 }
 
 // 如果传入的 slaID 为 0, 返回无限制流量的 SLA; 否则查询数据库返回 slaID 对应的库表记录
-func (svc *Service) querySLAByID(slaID uint64, access *apistructs.APIAccessesModel) (*apistructs.SLAModel, error) {
+func (svc *Service) querySLAByID(ctx context.Context, slaID uint64, access *apistructs.APIAccessesModel) (*apistructs.SLAModel, error) {
 	if slaID == 0 {
-		return unlimitedSLA(access), nil
+		return svc.unlimitedSLA(ctx, access), nil
 	}
 	var sla apistructs.SLAModel
 	if err := svc.FirstRecord(&sla, map[string]interface{}{"id": slaID}); err != nil {

@@ -80,7 +80,10 @@ func (p *provider) normalize(data *log.Log) {
 	// setup request id
 	if reqID, ok := data.Tags["request-id"]; ok {
 		data.Tags["request_id"] = reqID
+		data.Tags["trace_id"] = reqID
 		delete(data.Tags, "request-id")
+	} else if reqID, ok = data.Tags["trace_id"]; ok {
+		data.Tags["request_id"] = reqID
 	}
 
 	// setup org name

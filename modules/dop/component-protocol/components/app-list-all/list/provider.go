@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
@@ -29,7 +30,6 @@ import (
 	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/common"
 	"github.com/erda-project/erda/modules/admin/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/app-list-all/common/gshelper"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 const (
@@ -38,7 +38,6 @@ const (
 )
 
 type List struct {
-	base.DefaultProvider
 	impl.DefaultList
 
 	sdk       *cptype.SDK
@@ -83,14 +82,15 @@ func (l *List) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 }
 
 func (l *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.OperationFunc) {
-	if opData.ClientData.PageNo > 0 {
-		l.filterReq.PageNo = int(opData.ClientData.PageNo)
+	return func(sdk *cptype.SDK) {
+		if opData.ClientData.PageNo > 0 {
+			l.filterReq.PageNo = int(opData.ClientData.PageNo)
+		}
+		if opData.ClientData.PageSize > 0 {
+			l.filterReq.PageSize = int(opData.ClientData.PageSize)
+		}
+		l.StdDataPtr = l.doFilterApp()
 	}
-	if opData.ClientData.PageSize > 0 {
-		l.filterReq.PageSize = int(opData.ClientData.PageSize)
-	}
-	l.StdDataPtr = l.doFilterApp()
-	return nil
 }
 
 func (l *List) RegisterItemClickGotoOp(opData list.OpItemClickGoto) (opFunc cptype.OperationFunc) {
@@ -108,9 +108,15 @@ func (l *List) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.Opera
 	}
 }
 
+func (l *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) {
+	}
+}
+
 func (l *List) doFilterApp() (data *list.Data) {
 	data = &list.Data{}
-	apps, err := l.bdl.GetAppList(l.identity.OrgID, l.identity.UserID, *l.filterReq)
+	gh := gshelper.NewGSHelper(l.sdk.GlobalState)
+	apps, err := l.appListRetriever(gh.GetOption())
 	if err != nil {
 		logrus.Errorf("list query app workbench data failed, error: %v", err)
 		panic(err)
@@ -127,10 +133,11 @@ func (l *List) doFilterApp() (data *list.Data) {
 
 	for _, p := range apps.List {
 		item := list.Item{
-			ID:      strconv.FormatUint(p.ID, 10),
-			LogoURL: p.Logo,
-			Title:   p.Name,
-			KvInfos: l.GenAppKvInfo(p),
+			ID:          strconv.FormatUint(p.ID, 10),
+			LogoURL:     p.Logo,
+			Title:       p.Name,
+			KvInfos:     l.GenAppKvInfo(p),
+			Description: l.appDescription(p.Desc),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
 					WithSkipRender(true).
@@ -149,4 +156,22 @@ func (l *List) doFilterApp() (data *list.Data) {
 		data.List = append(data.List, item)
 	}
 	return
+}
+
+func (l *List) appDescription(desc string) string {
+	if len(desc) == 0 {
+		return l.sdk.I18n("defaultAppDescription")
+	}
+	return desc
+}
+
+func (l *List) appListRetriever(option string) (*apistructs.ApplicationListResponseData, error) {
+	if option == "my" {
+		orgID, err := strconv.Atoi(l.identity.OrgID)
+		if err != nil {
+			return nil, err
+		}
+		return l.bdl.GetAllMyApps(l.identity.UserID, uint64(orgID), *l.filterReq)
+	}
+	return l.bdl.GetAppList(l.identity.OrgID, l.identity.UserID, *l.filterReq)
 }

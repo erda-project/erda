@@ -16,6 +16,8 @@ package bundle
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -68,6 +70,31 @@ func (b *Bundle) GetMyApps(userid string, orgid uint64) (*apistructs.Application
 	return &listResp.Data, nil
 }
 
+func (b *Bundle) GetMyAppsByProject(userid string, orgid, projectID uint64, appName string) (*apistructs.ApplicationListResponseData, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+	var listResp apistructs.ApplicationListResponse
+	resp, err := hc.Get(host).
+		Path("/api/applications/actions/list-my-applications").
+		Header(httputil.OrgHeader, strconv.FormatUint(orgid, 10)).
+		Header(httputil.UserHeader, userid).
+		Param("pageSize", "9999").
+		Param("pageNo", "1").
+		Param("projectId", strconv.FormatUint(projectID, 10)).
+		Param("name", appName).
+		Do().JSON(&listResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !listResp.Success {
+		return nil, toAPIError(resp.StatusCode(), listResp.Error)
+	}
+	return &listResp.Data, nil
+}
+
 // GetAppsByProject 根据 projectID 获取应用列表
 func (b *Bundle) GetAppsByProject(projectID, orgID uint64, userID string) (*apistructs.ApplicationListResponseData, error) {
 	host, err := b.urls.CoreServices()
@@ -82,7 +109,7 @@ func (b *Bundle) GetAppsByProject(projectID, orgID uint64, userID string) (*apis
 		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
 		Header(httputil.UserHeader, userID).
 		Param("projectId", strconv.FormatUint(projectID, 10)).
-		Param("pageSize", "100").
+		Param("pageSize", "10000").
 		Param("pageNo", "1").
 		Do().JSON(&listResp)
 	if err != nil {
@@ -134,7 +161,7 @@ func (b *Bundle) GetAppList(orgID, userID string, req apistructs.ApplicationList
 }
 
 // get applications by projectID and app name
-func (b *Bundle) GetAppsByProjectAndAppName(projectID, orgID uint64, userID string, appName string) (*apistructs.ApplicationListResponseData, error) {
+func (b *Bundle) GetAppsByProjectAndAppName(projectID, orgID uint64, userID string, appName string, header ...http.Header) (*apistructs.ApplicationListResponseData, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -142,15 +169,20 @@ func (b *Bundle) GetAppsByProjectAndAppName(projectID, orgID uint64, userID stri
 	hc := b.hc
 
 	var listResp apistructs.ApplicationListResponse
-	resp, err := hc.Get(host).
+	q := hc.Get(host).
 		Path("/api/applications").
 		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
 		Header(httputil.UserHeader, userID).
 		Param("projectId", strconv.FormatUint(projectID, 10)).
 		Param("pageSize", "1").
 		Param("pageNo", "1").
-		Param("name", appName).
-		Do().JSON(&listResp)
+		Param("name", appName)
+
+	if len(header) > 0 {
+		q.Headers(header[0])
+	}
+
+	resp, err := q.Do().JSON(&listResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
@@ -224,7 +256,7 @@ func (b *Bundle) GetAppPublishItemRelationsGroupByENV(appID uint64) (*apistructs
 
 // QueryAppPublishItemRelations 查询应用关联的发布内容
 func (b *Bundle) QueryAppPublishItemRelations(req *apistructs.QueryAppPublishItemRelationRequest) (*apistructs.QueryAppPublishItemRelationResponse, error) {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +282,7 @@ func (b *Bundle) QueryAppPublishItemRelations(req *apistructs.QueryAppPublishIte
 }
 
 func (b *Bundle) RemoveAppPublishItemRelations(publishItemID int64) error {
-	host, err := b.urls.CoreServices()
+	host, err := b.urls.DOP()
 	if err != nil {
 		return err
 	}
@@ -399,4 +431,27 @@ func (b *Bundle) CountAppByProID(proID uint64) (int64, error) {
 	}
 
 	return fetchResp.Data, nil
+}
+
+func (b *Bundle) GetAppIDByNames(projectID uint64, userID string, names []string) (*apistructs.GetAppIDByNamesResponseData, error) {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return nil, err
+	}
+	hc := b.hc
+
+	var getAppIDByNamesResp apistructs.GetAppIDByNamesResponse
+	resp, err := hc.Get(host).Path("/api/applications/actions/get-id-by-names").
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		Param("projectID", strconv.FormatUint(projectID, 10)).
+		Params(url.Values{"name": names}).
+		Do().JSON(&getAppIDByNamesResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, toAPIError(resp.StatusCode(), getAppIDByNamesResp.Error)
+	}
+	return &getAppIDByNamesResp.Data, nil
 }

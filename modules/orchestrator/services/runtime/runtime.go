@@ -234,7 +234,7 @@ func (r *Runtime) CreateByReleaseID(operator user.ID, releaseReq *apistructs.Run
 	req.Operator = operator.String()
 	req.Source = "RELEASE"
 	req.ReleaseID = releaseReq.ReleaseID
-	req.SkipPushByOrch = true
+	req.SkipPushByOrch = false
 
 	var extra apistructs.RuntimeCreateRequestExtra
 	extra.OrgID = uint64(releaseResp.OrgID)
@@ -306,7 +306,7 @@ func (r *Runtime) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 	// prepare runtime
 	// TODO: we do not need RepoAbbrev
 	runtime, created, err := r.db.FindRuntimeOrCreate(uniqueID, req.Operator, req.Source, req.ClusterName,
-		uint64(cluster.ID), app.GitRepoAbbrev, req.Extra.ProjectID, app.OrgID)
+		uint64(cluster.ID), app.GitRepoAbbrev, req.Extra.ProjectID, app.OrgID, req.DeploymentOrderId, req.ReleaseVersion)
 	if err != nil {
 		return nil, apierrors.ErrCreateRuntime.InternalError(err)
 	}
@@ -337,16 +337,18 @@ func (r *Runtime) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 		deploytype = "RELEASE"
 	}
 	deployContext := DeployContext{
-		Runtime:        runtime,
-		App:            app,
-		LastDeployment: last,
-		ReleaseID:      req.ReleaseID,
-		Operator:       req.Operator,
-		BuildID:        req.Extra.BuildID,
-		DeployType:     deploytype,
-		AddonActions:   req.Extra.AddonActions,
-		InstanceID:     req.Extra.InstanceID.String(),
-		SkipPushByOrch: req.SkipPushByOrch,
+		Runtime:           runtime,
+		App:               app,
+		LastDeployment:    last,
+		ReleaseID:         req.ReleaseID,
+		Operator:          req.Operator,
+		BuildID:           req.Extra.BuildID,
+		DeployType:        deploytype,
+		AddonActions:      req.Extra.AddonActions,
+		InstanceID:        req.Extra.InstanceID.String(),
+		SkipPushByOrch:    req.SkipPushByOrch,
+		Param:             req.Param,
+		DeploymentOrderId: req.DeploymentOrderId,
 	}
 
 	return r.doDeployRuntime(&deployContext)
@@ -531,7 +533,7 @@ func (r *Runtime) Redeploy(operator user.ID, orgID uint64, runtimeID uint64) (*a
 		DeployType:     "REDEPLOY",
 		ReleaseID:      deployment.ReleaseId,
 		Operator:       operator.String(),
-		SkipPushByOrch: true,
+		SkipPushByOrch: false,
 	}
 	return r.doDeployRuntime(&deployContext)
 }
@@ -647,6 +649,8 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 		NeedApproval:      needApproval,
 		ApprovalStatus:    map[bool]string{true: "WaitApprove", false: ""}[needApproval],
 		SkipPushByOrch:    ctx.SkipPushByOrch,
+		Param:             ctx.Param,
+		DeploymentOrderId: ctx.DeploymentOrderId,
 	}
 	if err := r.db.CreateDeployment(&deployment); err != nil {
 		return nil, apierrors.ErrDeployRuntime.InternalError(err)
@@ -976,7 +980,9 @@ func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, dep
 		BuiltDockerImages: rollbackTo.BuiltDockerImages,
 		NeedApproval:      needApproval,
 		ApprovalStatus:    map[bool]string{true: "WaitApprove", false: ""}[needApproval],
-		SkipPushByOrch:    true,
+		SkipPushByOrch:    false,
+		Param:             rollbackTo.Param,
+		DeploymentOrderId: rollbackTo.DeploymentOrderId,
 	}
 	if err := r.db.CreateDeployment(&deployment); err != nil {
 		return nil, apierrors.ErrRollbackRuntime.InternalError(err)
@@ -1312,9 +1318,9 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 
 // ListGroupByApps lists all runtimes for given apps.
 // The key in the returned result map is appID.
-func (r *Runtime) ListGroupByApps(appIDs []uint64) (map[uint64][]*apistructs.RuntimeInspectDTO, error) {
+func (r *Runtime) ListGroupByApps(appIDs []uint64, env string) (map[uint64][]*apistructs.RuntimeSummaryDTO, error) {
 	var l = logrus.WithField("func", "*Runtime.ListGroupByApps")
-	runtimes, err := r.db.FindRuntimesInApps(appIDs)
+	runtimes, err := r.db.FindRuntimesInApps(appIDs, env)
 	if err != nil {
 		l.WithError(err).Errorln("failed to FindRuntimesInApps")
 		return nil, err
@@ -1322,7 +1328,7 @@ func (r *Runtime) ListGroupByApps(appIDs []uint64) (map[uint64][]*apistructs.Run
 
 	// note: internal API, do not check the permission
 
-	var result = make(map[uint64][]*apistructs.RuntimeInspectDTO)
+	var result = make(map[uint64][]*apistructs.RuntimeSummaryDTO)
 	for appID, runtimeList := range runtimes {
 		for _, runtime := range runtimeList {
 			var d apistructs.RuntimeSummaryDTO
@@ -1331,7 +1337,7 @@ func (r *Runtime) ListGroupByApps(appIDs []uint64) (map[uint64][]*apistructs.Run
 					Warnln("failed to convertRuntimeSummaryDTOFromRuntimeModel")
 				continue
 			}
-			result[appID] = append(result[appID], &d.RuntimeInspectDTO)
+			result[appID] = append(result[appID], &d)
 		}
 	}
 
@@ -1348,6 +1354,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	}
 
 	isFakeRuntime := false
+	// TODO: Deprecated, instead from runtime deployment_status filed
 	deployment, err := r.db.FindLastDeployment(runtime.ID)
 	if err != nil {
 		l.WithError(err).WithField("runtime.ID", runtime.ID).
@@ -1371,7 +1378,8 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	d.ServiceGroupNamespace = runtime.ScheduleName.Namespace
 	d.ServiceGroupName = runtime.ScheduleName.Name
 	d.Source = runtime.Source
-	d.Status = apistructs.RuntimeStatusUnHealthy
+	d.Status = runtime.Status
+	d.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
 	if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
 		sg, err := r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
 		if err != nil {
@@ -1380,7 +1388,24 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 		} else if sg.Status == "Ready" || sg.Status == "Healthy" {
 			d.Status = apistructs.RuntimeStatusHealthy
 		}
+		var dice diceyml.Object
+		if err = json.Unmarshal([]byte(deployment.Dice), &dice); err != nil {
+			return apierrors.ErrGetRuntime.InvalidState(strutil.Concat("dice.json invalid: ", err.Error()))
+		}
+		domains, err := r.db.FindDomainsByRuntimeId(runtime.ID)
+		if err != nil {
+			return apierrors.ErrGetRuntime.InternalError(err)
+		}
+		domainMap := make(map[string][]string)
+		for _, d := range domains {
+			if domainMap[d.EndpointName] == nil {
+				domainMap[d.EndpointName] = make([]string, 0)
+			}
+			domainMap[d.EndpointName] = append(domainMap[d.EndpointName], "http://"+d.Domain)
+		}
+		fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, sg, domainMap, string(deployment.Status))
 	}
+
 	d.DeployStatus = deployment.Status
 	// 如果还 deployment 的状态不是终态, runtime 的状态返回为 init(前端显示为部署中效果),
 	// 不然开始部署直接变为不健康不合理
@@ -1393,11 +1418,19 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	if runtime.LegacyStatus == dbclient.LegacyStatusDeleting {
 		d.DeleteStatus = dbclient.LegacyStatusDeleting
 	}
+	d.DeploymentOrderId = runtime.DeploymentOrderId
+	d.DeploymentOrderName = utils.ParseOrderName(runtime.DeploymentOrderId)
+	d.ReleaseVersion = runtime.ReleaseVersion
 	d.ReleaseID = deployment.ReleaseId
 	d.ClusterID = runtime.ClusterId
 	d.ClusterName = runtime.ClusterName
+	d.ReleaseVersion = runtime.ReleaseVersion
+	d.Creator = runtime.Creator
+	d.ApplicationID = runtime.ApplicationID
 	d.CreatedAt = runtime.CreatedAt
 	d.UpdatedAt = runtime.UpdatedAt
+	d.RawStatus = runtime.Status
+	d.RawDeploymentStatus = string(deployment.Status)
 	d.TimeCreated = runtime.CreatedAt
 	d.Extra = map[string]interface{}{
 		"applicationId": runtime.ApplicationID,
@@ -1412,7 +1445,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	}
 	d.LastOperator = deployment.Operator
 	d.LastOperateTime = deployment.UpdatedAt // TODO: use a standalone OperateTime
-
+	d.LastOperatorId = deployment.ID
 	return nil
 }
 
@@ -1510,7 +1543,9 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 		return nil, err
 	}
 	data.ProjectID = app.ProjectID
+	data.ApplicationName = app.Name
 	data.CreatedAt = runtime.CreatedAt
+	data.Creator = runtime.Creator
 	data.UpdatedAt = runtime.UpdatedAt
 	data.TimeCreated = runtime.CreatedAt
 	data.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
@@ -1886,7 +1921,7 @@ func (r *Runtime) markOutdated(deployment *dbclient.Deployment) {
 }
 
 // RuntimeDeployLogs deploy发布日志接口
-func (r *Runtime) RuntimeDeployLogs(userID user.ID, orgID uint64, deploymentID uint64, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
+func (r *Runtime) RuntimeDeployLogs(userID user.ID, orgID uint64, orgName string, deploymentID uint64, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
 	deployment, err := r.db.GetDeployment(deploymentID)
 	if err != nil {
 		return nil, apierrors.ErrGetRuntime.InternalError(err)
@@ -1897,11 +1932,11 @@ func (r *Runtime) RuntimeDeployLogs(userID user.ID, orgID uint64, deploymentID u
 	if err := r.checkRuntimeScopePermission(userID, deployment.RuntimeId); err != nil {
 		return nil, err
 	}
-	return r.requestMonitorLog(strconv.FormatUint(deploymentID, 10), paramValues, apistructs.DashboardSpotLogSourceDeploy)
+	return r.requestMonitorLog(strconv.FormatUint(deploymentID, 10), orgName, paramValues, apistructs.DashboardSpotLogSourceDeploy)
 }
 
 // OrgJobLogs 数据中心--->任务列表 日志接口
-func (r *Runtime) OrgJobLogs(userID user.ID, orgID uint64, jobID, clusterName string, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
+func (r *Runtime) OrgJobLogs(userID user.ID, orgID uint64, orgName string, jobID, clusterName string, paramValues url.Values) (*apistructs.DashboardSpotLogData, error) {
 	if clusterName == "" {
 		logrus.Errorf("job instance infos without cluster, jobID is: %s", jobID)
 		return nil, apierrors.ErrOrgLog.AccessDenied()
@@ -1918,7 +1953,7 @@ func (r *Runtime) OrgJobLogs(userID user.ID, orgID uint64, jobID, clusterName st
 	if err := r.checkOrgScopePermission(userID, orgID); err != nil {
 		return nil, err
 	}
-	return r.requestMonitorLog(jobID, paramValues, apistructs.DashboardSpotLogSourceJob)
+	return r.requestMonitorLog(jobID, orgName, paramValues, apistructs.DashboardSpotLogSourceJob)
 }
 
 // checkRuntimeScopePermission 检测runtime级别的权限
@@ -1964,7 +1999,7 @@ func (r *Runtime) checkOrgScopePermission(userID user.ID, orgID uint64) error {
 }
 
 // requestMonitorLog 调用bundle monitor log接口获取数据
-func (r *Runtime) requestMonitorLog(requestID string, paramValues url.Values, source apistructs.DashboardSpotLogSource) (*apistructs.DashboardSpotLogData, error) {
+func (r *Runtime) requestMonitorLog(requestID string, orgName string, paramValues url.Values, source apistructs.DashboardSpotLogSource) (*apistructs.DashboardSpotLogData, error) {
 	// 获取日志
 	var logReq apistructs.DashboardSpotLogRequest
 	if err := queryStringDecoder.Decode(&logReq, paramValues); err != nil {
@@ -1973,7 +2008,7 @@ func (r *Runtime) requestMonitorLog(requestID string, paramValues url.Values, so
 	logReq.ID = requestID
 	logReq.Source = source
 
-	logResult, err := r.bdl.GetLog(logReq)
+	logResult, err := r.bdl.GetLog(orgName, logReq)
 	if err != nil {
 		return nil, err
 	}

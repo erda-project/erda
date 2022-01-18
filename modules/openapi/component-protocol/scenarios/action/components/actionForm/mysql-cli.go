@@ -20,13 +20,14 @@ import (
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/i18n"
 
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 )
 
 func mysqlCliRender(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error) {
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-
+	locale := bdl.Bdl.GetLocale(bdl.Locale)
 	var formData map[string]interface{}
 	switch string(event.Operation) {
 	case "changeDateSource":
@@ -116,7 +117,7 @@ RESULT:
 		})
 	}
 
-	newField := fillMysqlCliFields(field, dataSourceList)
+	newField := fillMysqlCliFields(locale, field, dataSourceList)
 	newProps := map[string]interface{}{
 		"fields": newField,
 	}
@@ -125,11 +126,11 @@ RESULT:
 	return nil
 }
 
-func fillMysqlCliFields(field []apistructs.FormPropItem, dataSourceList []map[string]interface{}) []apistructs.FormPropItem {
+func fillMysqlCliFields(locale *i18n.LocaleResource, field []apistructs.FormPropItem, dataSourceList []map[string]interface{}) []apistructs.FormPropItem {
 	taskParams := apistructs.FormPropItem{
 		Component: "formGroup",
 		ComponentProps: map[string]interface{}{
-			"title": "任务参数",
+			"title": locale.Get("taskParams"),
 		},
 		Group: "params",
 		Key:   "params",
@@ -144,7 +145,7 @@ func fillMysqlCliFields(field []apistructs.FormPropItem, dataSourceList []map[st
 		},
 		Group:    "params",
 		Key:      "params.datasource",
-		LabelTip: "数据源",
+		LabelTip: locale.Get("dataSource"),
 	}
 
 	databaseField := apistructs.FormPropItem{
@@ -153,10 +154,10 @@ func fillMysqlCliFields(field []apistructs.FormPropItem, dataSourceList []map[st
 		Required:  true,
 		Key:       "params.database",
 		ComponentProps: map[string]interface{}{
-			"placeholder": "请输入数据",
+			"placeholder": locale.Get("dataInput"),
 		},
 		Group:    "params",
-		LabelTip: "数据库名称",
+		LabelTip: locale.Get("dbName"),
 	}
 
 	sqlField := apistructs.FormPropItem{
@@ -169,10 +170,10 @@ func fillMysqlCliFields(field []apistructs.FormPropItem, dataSourceList []map[st
 				"minRows": 2,
 				"maxRows": 12,
 			},
-			"placeholder": "请输入数据",
+			"placeholder": locale.Get("dataInput"),
 		},
 		Group:    "params",
-		LabelTip: "sql语句",
+		LabelTip: locale.Get("sql"),
 	}
 
 	var newField []apistructs.FormPropItem

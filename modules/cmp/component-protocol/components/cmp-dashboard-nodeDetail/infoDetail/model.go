@@ -18,11 +18,9 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type InfoDetail struct {
-	base.DefaultProvider
 	SDK   *cptype.SDK
 	Ctx   context.Context
 	Type  string          `json:"type"`

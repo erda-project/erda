@@ -20,22 +20,22 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
+	text "github.com/erda-project/erda/modules/dop/component-protocol/components/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	spec "github.com/erda-project/erda/modules/openapi/component-protocol/component_spec/table"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/project-list-my/components/list"
 )
 
 type ComponentSpaceList struct {
 	sdk *cptype.SDK
 	bdl *bundle.Bundle
-	base.DefaultProvider
+
 	State state                  `json:"state"`
 	Props spec.Props             `json:"props"`
 	Data  map[string]interface{} `json:"data"`
@@ -231,7 +231,7 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			}
 		)
 		updatedAt := each.UpdatedAt.Format("2006-01-02 15:04:05")
-		text, _ := list.CountActiveTime(updatedAt)
+		text := text.UpdatedTime(a.sdk.Ctx, each.UpdatedAt)
 		item := spaceItem{
 			ID:          each.ID,
 			Title:       each.Name,
@@ -244,16 +244,16 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			Operations: map[string]interface{}{},
 			ExtraInfos: []ExtraInfos{
 				{
-					Text: fmt.Sprintf("场景集： %v", statsMap[each.ID].SetNum),
+					Text: fmt.Sprintf("%s: %v", a.sdk.I18n("sceneset"), statsMap[each.ID].SetNum),
 				},
 				{
-					Text: fmt.Sprintf("场景数： %v", statsMap[each.ID].SceneNum),
+					Text: fmt.Sprintf("%s: %v", a.sdk.I18n("auto-test-scene-num"), statsMap[each.ID].SceneNum),
 				},
 				{
-					Text: fmt.Sprintf("接口数： %v", statsMap[each.ID].StepNum),
+					Text: fmt.Sprintf("%s: %v", a.sdk.I18n("auto-test-api-num"), statsMap[each.ID].StepNum),
 				},
 				{
-					Text:    "更新于 " + text,
+					Text:    a.sdk.I18n("updatedAt") + " " + text,
 					Tooltip: updatedAt,
 				},
 			},

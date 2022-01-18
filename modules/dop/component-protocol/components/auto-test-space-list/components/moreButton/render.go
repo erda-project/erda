@@ -18,16 +18,15 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/component_spec/button"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 type MoreButton struct {
 	sdk *cptype.SDK
-	base.DefaultProvider
 
 	Props button.Props `json:"props"`
 	State State        `json:"state"`
@@ -43,7 +42,7 @@ func (i *MoreButton) Render(ctx context.Context, c *cptype.Component, scenario c
 		i.State.Visible = true
 	}
 	i.Props = button.Props{
-		Text:  "更多操作",
+		Text:  i.sdk.I18n("moreOperations"),
 		Type:  "primary",
 		Ghost: true,
 		Menu: []button.MenuItem{

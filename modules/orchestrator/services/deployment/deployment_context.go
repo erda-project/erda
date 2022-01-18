@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -34,6 +35,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
+	"github.com/erda-project/erda/modules/orchestrator/i18n"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
@@ -46,6 +48,7 @@ import (
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/sexp"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/template"
 )
 
 type DeployFSMContext struct {
@@ -103,6 +106,12 @@ func (fsm *DeployFSMContext) Load() error {
 	runtime, err := fsm.db.GetRuntime(deployment.RuntimeId)
 	if err != nil {
 		return err
+	}
+	runtime.CurrentDeploymentID = fsm.deploymentID
+	if err := fsm.db.UpdateRuntime(runtime); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment status for runtime: %v", err)
+		logrus.Errorf("%s", errMsg)
+		return errors.Errorf("%s", errMsg)
 	}
 	if len(runtime.ClusterName) == 0 {
 		return errors.Errorf("cluster_name null, runtimeID: %v", runtime.ID)
@@ -173,7 +182,7 @@ func (fsm *DeployFSMContext) precheck() error {
 				ResourceType:   apistructs.RuntimeError,
 				ResourceID:     strconv.FormatUint(fsm.Runtime.ID, 10),
 				OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
-				HumanLog:       fmt.Sprintf("不合法的服务名, %s", svcNames),
+				HumanLog:       i18n.OrgSprintf(strconv.FormatUint(fsm.Runtime.OrgID, 10), "InvalidServiceName", svcNames),
 				PrimevalLog: `The service name should conform to the following specifications:
 1. contain at most 63 characters 2. contain only lowercase alphanumeric characters or '-'
 3. start with an alphanumeric character 4. end with an alphanumeric character`,
@@ -195,6 +204,12 @@ func (fsm *DeployFSMContext) continueWaiting() error {
 	fsm.Deployment.Phase = apistructs.DeploymentPhaseInit
 	fsm.Deployment.FailCause = "" // clear fail (for test)
 	if err := fsm.db.UpdateDeployment(fsm.Deployment); err != nil {
+		return err
+	}
+	if err := fsm.UpdateDeploymentStatusToRuntimeAndOrder(); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment status for runtime: %v", err)
+		logrus.Errorf("%s", errMsg)
+		fsm.pushLog(errMsg)
 		return err
 	}
 	if len(fsm.Deployment.ReleaseId) > 0 {
@@ -281,6 +296,11 @@ func (fsm *DeployFSMContext) pushOnCanceled() error {
 	fsm.Deployment.FinishedAt = &now
 	if err := fsm.db.UpdateDeployment(fsm.Deployment); err != nil {
 		return err
+	}
+	if err := fsm.UpdateDeploymentStatusToRuntimeAndOrder(); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment status for runtime: %v", err)
+		logrus.Errorf("%s", errMsg)
+		fsm.pushLog(errMsg)
 	}
 	// emit runtime deploy status changed event
 	event := events.RuntimeEvent{
@@ -424,6 +444,7 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 		logrus.Infof("没有找到migration相关信息, releaseId为：%s", fsm.Deployment.ReleaseId)
 		releaseResp, err := fsm.bdl.GetRelease(fsm.Deployment.ReleaseId)
 		if err != nil {
+			logrus.Errorf("get release error: %v", err)
 			return "", err
 		}
 		if len(releaseResp.Resources) == 0 {
@@ -647,6 +668,11 @@ func (fsm *DeployFSMContext) continuePhaseCompleted() error {
 		// db update fail mess up everything!
 		return err
 	}
+	if err := fsm.UpdateDeploymentStatusToRuntimeAndOrder(); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment status for runtime: %v", err)
+		logrus.Errorf("%s", errMsg)
+		fsm.pushLog(errMsg)
+	}
 	// emit runtime deploy ok event
 	event := events.RuntimeEvent{
 		EventName:  events.RuntimeDeployOk,
@@ -655,6 +681,58 @@ func (fsm *DeployFSMContext) continuePhaseCompleted() error {
 		Deployment: fsm.Deployment.Convert(),
 	}
 	fsm.evMgr.EmitEvent(&event)
+	return nil
+}
+
+func (fsm *DeployFSMContext) UpdateDeploymentStatusToRuntimeAndOrder() error {
+	var deploymentOrder *dbclient.DeploymentOrder
+	var err error
+	var app *apistructs.ApplicationDTO
+	deploymentOrderStatusMap := make(apistructs.DeploymentOrderStatusMap)
+	var deploymentOrderStatus []byte
+
+	fsm.Runtime.DeploymentStatus = string(fsm.Deployment.Status)
+	if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
+		return err
+	}
+
+	DeploymentOrderID := fsm.Deployment.DeploymentOrderId
+	//TODO: 兼容没有DeploymentOrderID的场景
+	if deploymentOrder, err = fsm.db.GetDeploymentOrder(DeploymentOrderID); err != nil {
+		errMsg := fmt.Sprintf("failed to get deployment order of deployment[%s]: %v", DeploymentOrderID, err)
+		logrus.Errorf("%s", errMsg)
+		return nil
+	}
+	if app, err = fsm.bdl.GetApp(fsm.Runtime.ApplicationID); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v", DeploymentOrderID, err)
+		logrus.Errorf("%s", errMsg)
+		return nil
+	}
+	if deploymentOrder.Status != "" {
+		if err := json.Unmarshal([]byte(deploymentOrder.Status), &deploymentOrderStatusMap); err != nil {
+			logrus.Warnf("failed to unmarshal, (%v)", err)
+			return nil
+		}
+	}
+	deploymentOrderStatusMap[app.Name] = apistructs.DeploymentOrderStatusItem{
+		AppID:            app.ID,
+		DeploymentID:     fsm.deploymentID,
+		DeploymentStatus: fsm.Deployment.Status,
+		RuntimeID:        fsm.Runtime.ID,
+	}
+	logrus.Infof("update deployment(%+v) status to deployment_order (%+v) detail is: %+v",
+		fsm.deploymentID, DeploymentOrderID, deploymentOrderStatusMap)
+	if deploymentOrderStatus, err = json.Marshal(deploymentOrderStatusMap); err != nil {
+		logrus.Warnf("failed to marshal, (%v)", err)
+		return nil
+	}
+
+	deploymentOrder.Status = string(deploymentOrderStatus)
+	if err := fsm.db.UpdateDeploymentOrder(deploymentOrder); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v", DeploymentOrderID, err)
+		logrus.Errorf("%s", errMsg)
+		return nil
+	}
 	return nil
 }
 
@@ -692,6 +770,11 @@ func (fsm *DeployFSMContext) failDeploy(oriErr error) error {
 		// db update fail mess up everything!
 		fsm.pushLog(fmt.Sprintf("failed to update deployment, (%v)", err))
 		return err
+	}
+	if err := fsm.UpdateDeploymentStatusToRuntimeAndOrder(); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment status for runtime: %v", err)
+		logrus.Errorf("%s", errMsg)
+		fsm.pushLog(errMsg)
 	}
 	// emit runtime deploy fail event
 	event := events.RuntimeEvent{
@@ -809,7 +892,6 @@ func (fsm *DeployFSMContext) deployService() error {
 
 	// generate request
 	group := apistructs.ServiceGroupCreateV2Request{}
-
 	usedAddonInsMap, usedAddonTenantMap, err := fsm.generateDeployServiceRequest(&group, *projectAddons, projectAddonTenants)
 	if err != nil {
 		return err
@@ -829,7 +911,7 @@ func (fsm *DeployFSMContext) deployService() error {
 				ResourceType:   apistructs.RuntimeError,
 				ResourceID:     strconv.FormatUint(fsm.Runtime.ID, 10),
 				OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
-				HumanLog:       fmt.Sprintf("调度失败，失败原因：没有匹配的节点能部署, 请检查节点标签是否正确"),
+				HumanLog:       i18n.OrgSprintf(strconv.FormatUint(fsm.Runtime.OrgID, 10), "FailedToSchedule.NoNodeToDeploy"),
 				PrimevalLog:    fmt.Sprintf("没有匹配的节点能部署, %s", precheckResp.Info),
 				DedupID:        fmt.Sprintf("orch-%d", fsm.Runtime.ID),
 			},
@@ -983,18 +1065,38 @@ func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.Serv
 		}
 	}
 	if len(configNamespace) > 0 {
-		// get configs from config-center
-		envconfigs, fileconfigs, err := fsm.bdl.FetchDeploymentConfig(configNamespace)
-		if err != nil {
-			return nil, nil, err
-		}
-		// configs come from config-center do override globalEnv
-		for k, v := range envconfigs {
-			groupEnv[k] = v
-		}
+		if fsm.Deployment.Param != "" {
+			var configs apistructs.DeploymentOrderParam
 
-		for k, v := range fileconfigs {
-			groupFileconfigs[k] = v
+			if err := json.Unmarshal([]byte(fsm.Deployment.Param), &configs); err != nil {
+				return nil, nil, fmt.Errorf("failed to unmarshal deployment params: %v", err)
+			}
+
+			// configs come from config-center do override globalEnv
+			for _, config := range configs {
+				switch config.Type {
+				case "ENV":
+					groupEnv[config.Key] = config.Value
+				case "FILE":
+					groupFileconfigs[config.Key] = config.Value
+				}
+			}
+		} else {
+			// TODO: deprecated
+			// get configs from config-center
+			envconfigs, fileconfigs, err := fsm.bdl.FetchDeploymentConfig(configNamespace)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			// configs come from config-center do override globalEnv
+			for k, v := range envconfigs {
+				groupEnv[k] = v
+			}
+
+			for k, v := range fileconfigs {
+				groupFileconfigs[k] = v
+			}
 		}
 	}
 
@@ -1025,8 +1127,99 @@ func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.Serv
 		}
 
 	}
+	//handle env template
+	err = fsm.convertEnvForTemplate(obj, group.ProjectNamespace, runtime.OrgID, runtime.ProjectID, runtime.Workspace)
+	if err != nil {
+		return nil, nil, err
+	}
 	group.DiceYml = *obj
 	return usedAddonInsMap, usedAddonTenantMap, nil
+}
+
+func Render(template string) string {
+	subMatchs := regexp.MustCompile(`^{{\s*(.+)\s*}}`).FindStringSubmatch(template)
+	if len(subMatchs) > 0 {
+		return subMatchs[1]
+	}
+	return ""
+}
+
+func (fsm *DeployFSMContext) convertEnvForTemplate(obj *diceyml.Object, projectNs string, orgID uint64, projectID uint64, workspace string) error {
+	var err error
+	for k, v := range obj.Envs {
+		tv := template.GetTemplateValue(v)
+		if tv == "" || !strings.HasPrefix(tv, "erdaService") {
+			continue
+		}
+		obj.Envs[k], err = fsm.convertErdaServiceTemplate(v, projectNs, orgID, projectID, workspace)
+		if err != nil {
+			return err
+		}
+	}
+
+	for k, v := range obj.Services {
+		for k1, v1 := range v.Envs {
+			tv := template.GetTemplateValue(v1)
+			if tv == "" || !strings.HasPrefix(tv, "erdaService") {
+				continue
+			}
+			obj.Services[k].Envs[k1], err = fsm.convertErdaServiceTemplate(v1, projectNs, orgID, projectID, workspace)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (fsm *DeployFSMContext) convertErdaServiceTemplate(v string, projectNs string, orgID uint64, projectID uint64, workspace string) (string, error) {
+	svcSuffix := "svc.cluster.local"
+	var (
+		result          string
+		applicationResp *apistructs.ApplicationListResponseData
+		err             error
+		runtimes        []dbclient.Runtime
+	)
+	nodes := strings.Split(v, ".")
+	if len(nodes) != 3 {
+		return "", errors.New("erdaService env template must be erdaService.<appName>.<serviceName>")
+	}
+	applicationName := nodes[1]
+	serviceName := nodes[2]
+
+	//edas集群的svc都是在defalut空间下
+	if fsm.Cluster.Type == apistructs.EDAS {
+		result = fmt.Sprintf("%s.%s.%s", serviceName, "default", svcSuffix)
+		return result, nil
+	}
+
+	if applicationResp, err = fsm.bdl.GetAppsByProjectAndAppName(projectID, orgID, fsm.Deployment.Operator, applicationName, map[string][]string{httputil.InternalHeader: {"orchestrator"}}); err != nil {
+		return "", err
+	}
+	if applicationResp.Total != 1 {
+		errMsg := fmt.Sprintf("convert erdaService Tempalte env error: %s application not found", applicationName)
+		return "", errors.New(errMsg)
+	}
+	//根据应用ID以及环境获取应用对应的runtime
+	applicationID := applicationResp.List[0].ID
+	if runtimes, err = fsm.db.FindRuntimesByAppIdAndWorkspace(applicationID, workspace); err != nil {
+		return "", err
+	}
+	//没有runtime统一按照项目级namespace来处理
+	if len(runtimes) < 1 {
+		result = fmt.Sprintf("%s.%s.%s", serviceName, projectNs, svcSuffix)
+		return result, nil
+	}
+
+	//scheduler的Name长度为10或者为空，则认为是项目级namespace
+	if len(runtimes[0].ScheduleName.Name) == 10 || runtimes[0].ScheduleName.Name == "" {
+		result = fmt.Sprintf("%s.%s.%s", serviceName, projectNs, svcSuffix)
+		return result, nil
+	}
+	//其余当做非项目级namespace来对待
+	ns := fmt.Sprintf("%s--%s", runtimes[0].ScheduleName.Namespace, runtimes[0].ScheduleName.Name)
+	result = fmt.Sprintf("%s.%s.%s", serviceName, ns, svcSuffix)
+	return result, nil
 }
 
 func (fsm *DeployFSMContext) checkCancelOk() (bool, error) {
@@ -1387,10 +1580,10 @@ func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml
 		service.ImageUsername = nexususer.Name
 	}
 	if len(groupFileconfigs) > 0 {
-		tokeninfo, err := fsm.bdl.GetOpenapiOAuth2Token(apistructs.OpenapiOAuth2TokenGetRequest{
+		tokeninfo, err := fsm.bdl.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{
 			ClientID:     conf.TokenClientID(),
 			ClientSecret: conf.TokenClientSecret(),
-			Payload: apistructs.OpenapiOAuth2TokenPayload{
+			Payload: apistructs.OAuth2TokenPayload{
 				AccessTokenExpiredIn: "1h",
 				AccessibleAPIs: []apistructs.AccessibleAPI{{
 					Path:   "/api/files",
@@ -1435,12 +1628,20 @@ func (fsm *DeployFSMContext) doCancelDeploy(operator string, force bool) error {
 			// db update fail mess up everything!
 			return errors.Wrapf(err, "failed to doCancel deploy, operator: %v", operator)
 		}
+		if err := fsm.UpdateDeploymentStatusToRuntimeAndOrder(); err != nil {
+			logrus.Errorf("failed to update deployment status for runtime: %v", err)
+			return err
+		}
 	case apistructs.DeploymentStatusInit, apistructs.DeploymentStatusWaiting, apistructs.DeploymentStatusDeploying:
 		// normal cancel
 		fsm.Deployment.Status = apistructs.DeploymentStatusCanceling
 		if err := fsm.db.UpdateDeployment(fsm.Deployment); err != nil {
 			// db update fail mess up everything!
 			return errors.Wrapf(err, "failed to doCancel deploy, operator: %v", operator)
+		}
+		if err := fsm.UpdateDeploymentStatusToRuntimeAndOrder(); err != nil {
+			logrus.Errorf("failed to update deployment status for runtime: %v", err)
+			return err
 		}
 		// emit runtime deploy fail event
 		event := events.RuntimeEvent{

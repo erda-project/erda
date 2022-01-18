@@ -16,22 +16,6 @@ erda.admin.dingtalk-test:
 
 # component-protocol framework
 component-protocol:
-# components uri of specific file
-component-protocol.components.personal-workbench.workCards:
-component-protocol.components.personal-workbench.head:
-component-protocol.components.personal-workbench.page:
-component-protocol.components.personal-workbench.workList:
-component-protocol.components.personal-workbench.leftContent:
-component-protocol.components.personal-workbench.rightContent:
-component-protocol.components.personal-workbench.workTabs:
-component-protocol.components.personal-workbench.workContainer:
-component-protocol.components.personal-workbench.messageList:
-component-protocol.components.personal-workbench.messageTabs:
-component-protocol.components.personal-workbench.messageContainer:
-component-protocol.components.personal-workbench.userProfile:
-component-protocol.components.personal-workbench.workListFilter:
-component-protocol.components.personal-workbench.cleanData:
-
 
 i18n@cp:
   common:

@@ -21,6 +21,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
@@ -28,7 +29,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
 func init() {
@@ -71,7 +71,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	).GetRetriever(f.State.Values.Type)
 
 	if c.Name == "reopenByOwner" {
-		handler = stackhandlers.NewStackRetriever().GetRetriever("重新打开次数")
+		handler = stackhandlers.NewStackRetriever().GetRetriever(cputil.I18n(ctx, "numReopen"))
 	}
 
 	builder := &chartbuilders.BarBuilder{
@@ -126,9 +126,9 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 	props := make(map[string]interface{})
 	switch c.Name {
 	case "owner":
-		props["title"] = "缺陷 - 按责任者分布（Top 500）"
+		props["title"] = cputil.I18n(ctx, "ownerBarChartTitle")
 	case "reopenByOwner":
-		props["title"] = "缺陷 - 重新打开次数最多的责任者（Top 500）"
+		props["title"] = cputil.I18n(ctx, "ownerReopenBarChartTitle")
 	}
 	props["chartType"] = "bar"
 	props["option"] = builder.Result.Bb

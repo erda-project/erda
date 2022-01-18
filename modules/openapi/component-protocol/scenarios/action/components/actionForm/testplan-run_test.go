@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 func Test_fillTestPlanFields(t *testing.T) {
@@ -137,7 +138,7 @@ func Test_fillTestPlanFields(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := fillTestPlanFields(tt.args.field, tt.args.testPlans, tt.args.cms); !reflect.DeepEqual(got, tt.want) {
+			if got := fillTestPlanFields(&i18n.LocaleResource{}, tt.args.field, tt.args.testPlans, tt.args.cms); !reflect.DeepEqual(got, tt.want) {
 				fmt.Println(got)
 				fmt.Println(tt.want)
 			}
@@ -173,7 +174,7 @@ func Test_testPlanRun(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var contextBundle = protocol.ContextBundle{}
-			var bdl = &bundle.Bundle{}
+			bdl := bundle.New(bundle.WithI18nLoader(&i18n.LocaleResourceLoader{}))
 			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "PagingTestPlansV2", func(bdl *bundle.Bundle, req apistructs.TestPlanV2PagingRequest) (*apistructs.TestPlanV2PagingResponseData, error) {
 				return &apistructs.TestPlanV2PagingResponseData{
 					Total: 0,
