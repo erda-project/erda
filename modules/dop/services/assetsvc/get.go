@@ -15,6 +15,7 @@
 package assetsvc
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -221,7 +222,7 @@ func (svc *Service) GetAssetVersion(req *apistructs.GetAPIAssetVersionReq) (*api
 	return &response, nil
 }
 
-// 查询 minor 下的 instantiation
+// GetInstantiation 查询 minor 下的 instantiation
 // ok: 是否存在这样的实例化记录, true: 存在
 func (svc *Service) GetInstantiation(req *apistructs.GetInstantiationsReq) (*apistructs.InstantiationModel, bool, *errorresp.APIError) {
 	// 参数校验
@@ -508,13 +509,13 @@ func (svc *Service) GetAccess(req *apistructs.GetAccessReq) (map[string]interfac
 	}, nil
 }
 
-func (svc *Service) GetSLA(req *apistructs.GetSLAReq) (*apistructs.GetSLARsp, *errorresp.APIError) {
+func (svc *Service) GetSLA(ctx context.Context, req *apistructs.GetSLAReq) (*apistructs.GetSLARsp, *errorresp.APIError) {
 	// 参数校验
 	if req == nil || req.URIParams == nil {
-		return nil, apierrors.GetSLA.InvalidParameter("无效的参数")
+		return nil, apierrors.GetSLA.InvalidParameter(svc.text(ctx, "InvalidParams"))
 	}
 	if req.OrgID == 0 {
-		return nil, apierrors.GetSLA.InvalidParameter("无效的参数 OrgID")
+		return nil, apierrors.GetSLA.InvalidParameter(svc.text(ctx, "InvalidParams") + ": OrgID")
 	}
 
 	var (
@@ -529,21 +530,21 @@ func (svc *Service) GetSLA(req *apistructs.GetSLAReq) (*apistructs.GetSLARsp, *e
 		"swagger_version": req.URIParams.SwaggerVersion,
 	}); err != nil {
 		logrus.Errorf("failed to FirstRecord access, err: %v", err)
-		return nil, apierrors.GetSLA.InternalError(errors.New("查询访问管理失败"))
+		return nil, apierrors.GetSLA.InternalError(errors.New(svc.text(ctx, "FailedToFindAccessItem")))
 	}
 
 	if err := svc.FirstRecord(&sla, map[string]interface{}{
 		"id": req.URIParams.SLAID,
 	}); err != nil {
 		logrus.Errorf("failed to FirstRecord SLA, err: %v", err)
-		return nil, apierrors.GetSLA.InternalError(errors.New("查询 SLA 失败"))
+		return nil, apierrors.GetSLA.InternalError(errors.New(svc.text(ctx, "FailedToFindSLA")))
 	}
 
 	if err := svc.ListRecords(&limits, map[string]interface{}{
 		"sla_id": req.URIParams.SLAID,
 	}); err != nil {
 		logrus.Errorf("failed to ListRecord limits, err: %v", err)
-		return nil, apierrors.GetSLA.InternalError(errors.New("查询 SLA 限制条件失败"))
+		return nil, apierrors.GetSLA.InternalError(errors.New(svc.text(ctx, "FailedToFindSLALimit")))
 	}
 
 	var rsp = apistructs.GetSLARsp{

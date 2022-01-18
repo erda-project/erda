@@ -133,7 +133,7 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 		c.State["visible"] = true
 		c.State["formData"] = formData
 		c.State["isUpdate"] = true
-		c.Props = auto_test_plan_list.GenUpdateFormModalProps(tsBytes, iterationsBytes)
+		c.Props = auto_test_plan_list.GenUpdateFormModalProps(bdl, tsBytes, iterationsBytes)
 		(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = resp.Data.Owners
 		return nil
 	}
@@ -179,7 +179,7 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 		}
 
 		c.State["isCreate"] = true
-		c.Props = auto_test_plan_list.GenCreateFormModalProps(tsBytes, iterationsBytes)
+		c.Props = auto_test_plan_list.GenCreateFormModalProps(bdl, tsBytes, iterationsBytes)
 		return nil
 	}
 

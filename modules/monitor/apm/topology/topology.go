@@ -599,7 +599,7 @@ func toChildrenAggregation(field *GroupByField, termEnd *elastic.TermsAggregatio
 	return termStart, termEnd
 }
 
-func queryConditions(indexType string, params Vo) *elastic.BoolQuery {
+func queryConditions(indexType string, params Vo) (*elastic.BoolQuery, string) {
 	boolQuery := elastic.NewBoolQuery()
 	boolQuery.Filter(elastic.NewRangeQuery(apm.Timestamp).Gte(params.StartTime * 1e6).Lte(params.EndTime * 1e6))
 	if ServiceNodeIndexType == indexType {
@@ -615,7 +615,7 @@ func queryConditions(indexType string, params Vo) *elastic.BoolQuery {
 		MustNot(elastic.NewTermQuery(apm.TagsTargetAddonType, "registerCenter")).
 		MustNot(elastic.NewTermQuery(apm.TagsTargetAddonType, "configCenter")).
 		MustNot(elastic.NewTermQuery(apm.TagsTargetAddonType, "noticeCenter"))
-
+	serviceId := ""
 	if params.Tags != nil && len(params.Tags) > 0 {
 		sbq := elastic.NewBoolQuery()
 		for _, v := range params.Tags {
@@ -628,16 +628,14 @@ func queryConditions(indexType string, params Vo) *elastic.BoolQuery {
 					Should(elastic.NewTermQuery(apm.TagsTargetApplicationName, value)).
 					Should(elastic.NewTermQuery(apm.TagsSourceApplicationName, value))
 			case ServiceSearchTag.Tag:
-				sbq.Should(elastic.NewTermQuery(apm.TagsServiceId, value)).
-					Should(elastic.NewTermQuery(apm.TagsTargetServiceId, value)).
-					Should(elastic.NewTermQuery(apm.TagsSourceServiceId, value))
+				serviceId = value
 			}
 		}
 		boolQuery.Filter(sbq)
 	}
 
 	boolQuery.Filter(not)
-	return boolQuery
+	return boolQuery, serviceId
 }
 
 type ExceptionDescription struct {
@@ -1470,10 +1468,9 @@ func (topology *provider) GetTopology(lang i18n.LanguageCodes, param Vo) []*Node
 	for key, typeIndices := range indices {
 
 		aggregationConditions, relations := selectRelation(key)
-
-		query := queryConditions(key, param)
+		conditions, serviceId := queryConditions(key, param)
 		searchSource := elastic.NewSearchSource()
-		searchSource.Query(query).Size(0)
+		searchSource.Query(conditions).Size(0)
 		if aggregationConditions == nil {
 			log.Fatal("aggregation conditions can't nil")
 		}
@@ -1492,17 +1489,11 @@ func (topology *provider) GetTopology(lang i18n.LanguageCodes, param Vo) []*Node
 		if param.Debug {
 			source, _ := searchSource.Source()
 			data, _ := json.Marshal(source)
-			fmt.Print("indices: ")
-			fmt.Println(typeIndices)
-			fmt.Println("request body: " + string(data))
-			fmt.Println()
+			topology.Log.Infof("indices: %s \n request body: %s \n", typeIndices, string(data))
 		}
 
-		topology.parseToTypologyNode(lang, timeRange, searchResult, relations, &nodes)
+		topology.parseToTypologyNode(lang, serviceId, timeRange, searchResult, relations, &nodes)
 	}
-	//debug
-	//nodesData, _ := json.Marshal(nodes)
-	//fmt.Println(string(nodesData))
 	return nodes
 }
 
@@ -1514,7 +1505,8 @@ func selectRelation(indexType string) (*AggregationCondition, []*NodeRelation) {
 	return aggregationConditions, relations
 }
 
-func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange int64, searchResult *elastic.SearchResult, relations []*NodeRelation, topologyNodes *[]*Node) {
+func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, serviceId string, timeRange int64, searchResult *elastic.SearchResult, relations []*NodeRelation, topologyNodes *[]*Node) {
+	nodeIds := map[string]struct{}{}
 	for _, nodeRelation := range relations {
 		targetNodeType := nodeRelation.Target
 		sourceNodeTypes := nodeRelation.Source
@@ -1546,6 +1538,10 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange
 					}
 
 					node := columnsParser(targetNodeType.Type, targetNode)
+					if node.ServiceId == serviceId {
+						nodeIds[node.Id] = struct{}{}
+					}
+
 					node.TypeDisplay = topology.t.Text(lang, strings.ToLower(node.Type))
 					if targetNodeType.Type == TargetOtherNode && node.Type == TypeInternal {
 						continue
@@ -1613,14 +1609,23 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange
 							sourceNode.Metric = sourceMetric
 							sourceNode.Parents = []*Node{}
 							node.Parents = append(node.Parents, sourceNode)
+							if node.ServiceId == serviceId || sourceNode.ServiceId == serviceId {
+								nodeIds[sourceNode.Id] = struct{}{}
+							}
 						}
 					}
 				}
 			}
 		}
 	}
+	for i := 0; i < len(*topologyNodes); i++ {
+		node := (*topologyNodes)[i]
+		if _, ok := nodeIds[node.Id]; len(nodeIds) > 0 && !ok {
+			*topologyNodes = append((*topologyNodes)[:i], (*topologyNodes)[i+1:]...)
+			i--
+			continue
+		}
 
-	for _, node := range *topologyNodes {
 		if node.Metric.Count != 0 { // by zero
 			node.Metric.RT = pkgmath.DecimalPlacesWithDigitsNumber(node.Metric.Duration/float64(node.Metric.Count)/1e6, 2)
 			node.Metric.ErrorRate = pkgmath.DecimalPlacesWithDigitsNumber(float64(node.Metric.HttpError)/float64(node.Metric.Count)*100, 2)
