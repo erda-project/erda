@@ -25,6 +25,7 @@ import (
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/type_conversion"
 	auto_test_plan_list "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-list"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-list/i18n"
 )
 
 type TestPlanManageTable struct{}
@@ -191,6 +192,7 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 	}
 	// data
 	var l []TableItem
+	i18nLocale := bdl.Bdl.GetLocale(bdl.Locale)
 	for _, data := range r.List {
 		item := TableItem{
 			Id:   data.ID,
@@ -216,20 +218,20 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 		if data.IsArchived == true {
 			item.Operate.Operations["archive"] = map[string]interface{}{
 				"key":    "archive",
-				"text":   "取消归档",
+				"text":   i18nLocale.Get(i18n.I18nKeyUnarchive),
 				"reload": true,
 				"meta":   map[string]interface{}{"id": data.ID, "isArchived": false},
 			}
 		} else {
 			item.Operate.Operations["archive"] = map[string]interface{}{
 				"key":    "archive",
-				"text":   "归档",
+				"text":   i18nLocale.Get(i18n.I18nKeyArchive),
 				"reload": true,
 				"meta":   map[string]interface{}{"id": data.ID, "isArchived": true},
 			}
 			item.Operate.Operations["edit"] = map[string]interface{}{
 				"key":       "edit",
-				"text":      "编辑",
+				"text":      i18nLocale.Get(i18n.I18nKeyEdit),
 				"reload":    true,
 				"meta":      map[string]interface{}{"id": data.ID},
 				"showIndex": 2,
