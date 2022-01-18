@@ -27,5 +27,4 @@ var MONITOR_ORGS_CUSTOMIZE_ALERT_UPDATE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 修改企业自定义告警",
-	//Audit:       auditOperateOrgCustomAlert(apistructs.UpdateOrgCustomAlert, "update"),
 }

@@ -27,5 +27,4 @@ var MONITOR_ORGS_ALERT_UPDATE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 修改企业告警",
-	//Audit:       auditOperateOrgAlert(apistructs.UpdateOrgAlert, "update"),
 }

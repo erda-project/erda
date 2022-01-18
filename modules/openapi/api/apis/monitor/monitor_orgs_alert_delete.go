@@ -27,5 +27,4 @@ var MONITOR_ORGS_ALERT_DELETE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 删除企业告警",
-	//Audit:       auditOperateOrgAlert(apistructs.DeleteOrgAlert, "delete"),
 }

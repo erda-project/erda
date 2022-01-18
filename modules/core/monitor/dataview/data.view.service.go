@@ -228,15 +228,6 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 		CreatedAt: model.CreatedAt.UnixNano() / int64(time.Millisecond),
 		UpdatedAt: model.UpdatedAt.UnixNano() / int64(time.Millisecond),
 	}, model.ViewConfig, model.DataConfig)}
-	//if req.Scope != "org" {
-	//	projectIdStr := apis.GetMSPInfo(ctx, "erda-projectId")
-	//	projectId, err := strconv.Atoi(projectIdStr)
-	//	if err != nil {
-	//		return nil, errors.NewInternalServerError(err)
-	//	}
-	//	//projectId := ctx.Value("erda-projectId").(uint64)
-	//	result.Data.ProjectId = uint64(projectId)
-	//}
 	err = s.auditContextMap(ctx, req.Name, req.Scope)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -304,8 +295,6 @@ func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName, sc
 		"scope":         scope,
 	}
 	if scope != "org" {
-		//auditContext["projectName"] = ctx.Value("erda-projectName").(string)
-		//auditContext["workspace"] = ctx.Value("erda-workspace").(string)
 		auditContext["projectName"] = apis.GetMSPInfo(ctx, "erda-projectName")
 		auditContext["workspace"] = apis.GetMSPInfo(ctx, "erda-workspace")
 	}

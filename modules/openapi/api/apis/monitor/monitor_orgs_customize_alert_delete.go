@@ -27,5 +27,4 @@ var MONITOR_ORGS_CUSTOMIZE_ALERT_DELETE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 删除企业自定义告警",
-	//Audit:       auditOperateOrgCustomAlert(apistructs.DeleteOrgCustomAlert, "delete"),
 }

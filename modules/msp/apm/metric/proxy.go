@@ -68,12 +68,6 @@ func (p *provider) proxy(hostpath string, header http.Header, params url.Values,
 			req.Header.Set("User-Agent", "")
 		}
 	},
-	//ModifyResponse: func(response *http.Response) error {
-	//	response.Header.Add("erda-projectId", strconv.Itoa(int(project.ProjectId)))
-	//	response.Header.Add("erda-projectName", project.ProjectName)
-	//	response.Header.Add("erda-workspace", project.Workspace)
-	//	return nil
-	//}
 	}
 	rp.ServeHTTP(rw, r)
 	return nil
