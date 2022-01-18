@@ -68,6 +68,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.1+incompatible
 	github.com/golang/mock v1.5.0
 	github.com/golang/protobuf v1.5.2
+	github.com/golang/snappy v0.0.4
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/googlecloudplatform/flink-operator v0.0.0-00010101000000-000000000000
@@ -110,6 +111,8 @@ require (
 	github.com/pingcap/tidb v1.1.0-beta.0.20200921100526-29e8c0913100
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/common v0.26.0
+	github.com/prometheus/prometheus v2.3.2+incompatible
 	github.com/rakyll/statik v0.1.7
 	github.com/rancher/apiserver v0.0.0-20210519053359-f943376c4b42
 	github.com/rancher/dynamiclistener v0.2.1-0.20200714201033-9c1939da3af9

@@ -24,10 +24,6 @@ var (
 
 // monitor
 var (
-	//go:embed monitor/collector/collector.yaml
-	MonitorCollectorDefaultConfig  string
-	MonitorCollectorConfigFilePath string = "conf/monitor/collector/collector.yaml"
-
 	//go:embed monitor/monitor/monitor.yaml
 	MonitorDefaultConfig  string
 	MonitorConfigFilePath string = "conf/monitor/monitor/monitor.yaml"
