@@ -324,8 +324,7 @@ prometheus:
 
 monitor-monitoring:
   usage_sync_interval:
-    metric: ${MONITOR_MONITORING_METRIC_SYNC_INTERVAL:1h}
-    log: ${MONITOR_MONITORING_LOG_SYNC_INTERVAL:30m}
+    metric: ${MONITOR_MONITORING_METRIC_SYNC_INTERVAL}
 
 grpc-client@erda.core.services.notify.channel:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
