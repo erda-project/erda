@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -969,11 +970,16 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 		appNamePipelineNumMap[v] = &pipelineNum{
 			RunningNum: 0,
 			FailedNum:  0,
+			TotalNum:   0,
 		}
 	}
 	timeEnd := time.Now()
 	timeStart := timeEnd.Add(-1 * 24 * time.Hour)
 	for _, v := range pipelineWithAppNames {
+		if _, ok := appNamePipelineNumMap[v.AppName]; !ok {
+			continue
+		}
+		appNamePipelineNumMap[v.AppName].TotalNum++
 		if apistructs.PipelineStatus(v.Status).IsRunningStatus() {
 			appNamePipelineNumMap[v.AppName].RunningNum++
 			continue
@@ -1006,8 +1012,12 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 			UpdatedAt:      timestamppb.New(v.UpdatedAt),
 			RunningNum:     uint64(appNamePipelineNumMap[v.Name].RunningNum),
 			FailedNum:      uint64(appNamePipelineNumMap[v.Name].FailedNum),
+			TotalNum:       uint64(appNamePipelineNumMap[v.Name].TotalNum),
 		})
 	}
+	sort.Slice(apps, func(i, j int) bool {
+		return apps[i].TotalNum > apps[j].TotalNum
+	})
 	return &pb.ListAppResponse{
 		Data: apps,
 	}, nil
@@ -1016,6 +1026,7 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 type pipelineNum struct {
 	RunningNum int `json:"runningNum"`
 	FailedNum  int `json:"failedNum"`
+	TotalNum   int `json:"totalNum"`
 }
 
 type pipelineWithAppName struct {

@@ -195,6 +195,12 @@ func (m *Application) UnmarshalURLValues(prefix string, values url.Values) error
 					return err
 				}
 				m.FailedNum = val
+			case "totalNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.TotalNum = val
 			}
 		}
 	}

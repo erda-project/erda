@@ -90,6 +90,7 @@ message Application {
   google.protobuf.Timestamp updatedAt = 16;
   uint64  runningNum = 17;
   uint64 failedNum = 18;
+  uint64 totalNum = 19;
 }
 
 
