@@ -15,6 +15,7 @@
 package block
 
 import (
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
@@ -27,5 +28,5 @@ var DELETE_BLOCK = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 删除自定义大盘",
-	//Audit:       auditOperatorBlock(apistructs.DeleteServiceDashboard),
+	Audit:       auditOperatorBlock(apistructs.DeleteServiceDashboard),
 }

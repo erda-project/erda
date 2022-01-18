@@ -15,6 +15,7 @@
 package block
 
 import (
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
@@ -27,5 +28,5 @@ var TMC_METRIC_DASHBOARD_UPDATE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 更新自定义大盘",
-	//Audit:       auditOperatorBlock(apistructs.UpdateServiceDashboard),
+	Audit:       auditOperatorBlock(apistructs.UpdateServiceDashboard),
 }

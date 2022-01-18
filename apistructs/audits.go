@@ -260,6 +260,7 @@ const (
 	BatchFormalReleaseAppTemplate     TemplateName = "batchFormalAppRelease"
 
 	AddDashboard           TemplateName = "addDashboard"
+	UpdateDashboard        TemplateName = "updateDashboard"
 	DeleteDashboard        TemplateName = "deleteDashboard"
 	AddServiceDashboard    TemplateName = "addServiceDashboard"
 	DeleteServiceDashboard TemplateName = "deleteServiceDashboard"
