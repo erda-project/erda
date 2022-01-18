@@ -19,9 +19,10 @@ import (
 	"fmt"
 	"sync"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var (

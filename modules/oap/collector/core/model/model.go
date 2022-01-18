@@ -21,11 +21,12 @@ import (
 	"strings"
 
 	"github.com/cespare/xxhash"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+
 	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
 	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	tpb "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/modules/core/monitor/metric"
-	structpb "github.com/golang/protobuf/ptypes/struct"
 )
 
 type DataType string

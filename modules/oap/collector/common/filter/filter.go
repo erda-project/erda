@@ -15,8 +15,9 @@
 package filter
 
 import (
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	structpb "github.com/golang/protobuf/ptypes/struct"
+
+	"github.com/erda-project/erda/modules/oap/collector/core/model"
 )
 
 // semantic same as https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#metric-filtering
