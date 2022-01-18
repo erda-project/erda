@@ -324,16 +324,16 @@ func (p *List) getData() *list.Data {
 			nameStr = runtimeIdToAppNameMap[appRuntime.ID] + "#" + nameStr
 		}
 		logrus.Infof("%s : %s", appRuntime.Name, appRuntime.LastOperator)
-		b := myApp[appRuntime.ApplicationID]
+		isMyApp := myApp[appRuntime.ApplicationID]
 		item := list.Item{
 			ID:    idStr,
 			Title: nameStr,
 			//MainState:      getMainState(appRuntime.Status),
 			TitleState: getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus),
-			Selectable: b,
+			Selectable: isMyApp,
 			KvInfos:    getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.LastOperator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
 		}
-		if b {
+		if isMyApp {
 			item.Operations = getOperations(appRuntime.ProjectID, appRuntime.ApplicationID, appRuntime.ID)
 			item.MoreOperations = getMoreOperations(p.Sdk, fmt.Sprintf("%d", appRuntime.ID))
 		}
