@@ -516,6 +516,18 @@ func (m *UpdateAlertEnableRequest) UnmarshalURLValues(prefix string, values url.
 
 // UpdateAlertEnableResponse implement urlenc.URLValuesUnmarshaler.
 func (m *UpdateAlertEnableResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data = val
+			}
+		}
+	}
 	return nil
 }
 

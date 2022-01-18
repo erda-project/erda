@@ -65,7 +65,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						return r.Data.ProjectId, map[string]interface{}{}, nil
 					},
 				),
-				audit.Method(NotifyService.UpdateNotifyGroup, audit.ProjectScope, string(apistructs.CreateServiceNotifyGroup),
+				audit.Method(NotifyService.UpdateNotifyGroup, audit.ProjectScope, string(apistructs.UpdateServiceNotifyGroup),
 					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
 						r := resp.(*pb.UpdateNotifyGroupResponse)
 						return r.Data.ProjectId, map[string]interface{}{}, nil

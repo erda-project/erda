@@ -33,7 +33,6 @@ var MONITOR_ORGS_ALERT_CREATE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 创建企业告警",
-	Audit:       auditCreateOrgAlert(apistructs.CreateOrgAlert),
 }
 
 func auditCreateOrgAlert(tmp apistructs.TemplateName) func(ctx *spec.AuditContext) error {

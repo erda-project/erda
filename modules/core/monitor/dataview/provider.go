@@ -73,7 +73,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
 					},
 				),
-				audit.Method(DataViewService.UpdateCustomView, audit.OrgScope, string(apistructs.AddDashboard),
+				audit.Method(DataViewService.UpdateCustomView, audit.OrgScope, string(apistructs.UpdateDashboard),
 					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
 						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
 					},

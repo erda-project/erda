@@ -385,7 +385,26 @@ func (a *alertService) UpdateAlertEnable(ctx context.Context, request *alert.Upd
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return nil, nil
+	tk, err := a.getTKByTenant(request.TenantGroup)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	projectName, workspace, auditProjectId, err := a.getAuditInfo(tk)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	action := "enabled"
+	if request.Enable == false {
+		action = "disabled"
+	}
+	auditContext := map[string]interface{}{
+		"projectName": projectName,
+		"alertName":   resp.Data.Name,
+		"workspace":   workspace,
+		"action":      action,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
+	return &alert.UpdateAlertEnableResponse{Data: auditProjectId}, nil
 }
 
 func (a *alertService) DeleteAlert(ctx context.Context, request *alert.DeleteAlertRequest) (*alert.DeleteAlertResponse, error) {
