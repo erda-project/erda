@@ -53,6 +53,7 @@ type (
 		Type      string                 `json:"type"`
 		AxisLine  map[string]interface{} `json:"axisLine"`
 		AxisLabel map[string]interface{} `json:"axisLabel"`
+		Max       string                 `json:"max"`
 	}
 
 	Legend struct {

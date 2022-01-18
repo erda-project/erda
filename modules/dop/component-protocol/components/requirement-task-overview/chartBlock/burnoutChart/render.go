@@ -136,6 +136,7 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 			},
 			YAxis: YAxis{
 				Type: "value",
+
 				AxisLine: map[string]interface{}{
 					"lineStyle": map[string]interface{}{
 						"color": "rgba(48,38,71,0.30)",
@@ -149,6 +150,13 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 						return "{value} h"
 					}(),
 				},
+				Max: func() string {
+					if h.GetBurnoutChartDimension() == "total" {
+						return strconv.Itoa(sum)
+					} else {
+						return strconv.Itoa(sum / 60)
+					}
+				}(),
 			},
 			Legend: Legend{
 				Show:   true,
