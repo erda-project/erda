@@ -30,6 +30,14 @@ func (p *provider) proxy(hostpath string, header http.Header, params url.Values,
 	if err != nil {
 		return err
 	}
+	scopeId := r.URL.Query().Get("scopeId")
+	var project *ObjData
+	if scopeId != "" {
+		project, err = p.getProjectResult(context.Background(), scopeId)
+		if err != nil {
+			return err
+		}
+	}
 	path, rawpath := target.Path, target.EscapedPath()
 	rp := &httputil.ReverseProxy{Director: func(req *http.Request) {
 		for k, vals := range header {
@@ -39,6 +47,11 @@ func (p *provider) proxy(hostpath string, header http.Header, params url.Values,
 			}
 		}
 		query := req.URL.Query()
+		if project != nil {
+			req.Header.Add("erda-projectId", strconv.Itoa(int(project.ProjectId)))
+			req.Header.Add("erda-projectName", project.ProjectName)
+			req.Header.Add("erda-workspace", project.Workspace)
+		}
 		for k, vals := range params {
 			query.Del(k)
 			for _, val := range vals {
@@ -54,20 +67,8 @@ func (p *provider) proxy(hostpath string, header http.Header, params url.Values,
 			// explicitly disable User-Agent so it's not set to default value
 			req.Header.Set("User-Agent", "")
 		}
-	}, ModifyResponse: func(response *http.Response) error {
-		scopeId := r.URL.Query().Get("scopeId")
-		if scopeId == "" {
-			return nil
-		}
-		project, err := p.getProjectResult(context.Background(), scopeId)
-		if err != nil {
-			return err
-		}
-		response.Header.Add("erda-projectId", strconv.Itoa(int(project.ProjectId)))
-		response.Header.Add("erda-projectName", project.ProjectName)
-		response.Header.Add("erda-workspace", project.Workspace)
-		return nil
-	}}
+	},
+	}
 	rp.ServeHTTP(rw, r)
 	return nil
 }

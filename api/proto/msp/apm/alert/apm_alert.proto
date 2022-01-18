@@ -248,6 +248,7 @@ message UpdateAlertEnableRequest {
 }
 
 message UpdateAlertEnableResponse {
+  uint64 data = 1;
 }
 
 message DeleteAlertRequest {
