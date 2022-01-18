@@ -148,6 +148,8 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 			}
 			item.ClusterName = clusterName
 			item.ClusterType = clusterType
+			item.IsK8S = isK8s
+			item.IsEdas = clusterInfo.IsEDAS()
 			for _, child := range item.Children {
 				if len(child.Href) > 0 {
 					child.Href = s.version + child.Href
