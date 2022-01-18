@@ -44,7 +44,7 @@ type provider struct {
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		lang := sdk.Lang
 		startTime := int64(p.StdInParamsPtr.Get("startTime").(float64))
 		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
@@ -77,7 +77,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			})
 		if err != nil {
 			p.Log.Error("failed to get table data: %s", err)
-			return
+			return nil
 		}
 
 		p.StdDataPtr = &table.Data{
@@ -86,27 +86,31 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				table.OpTableChangePage{}.OpKey(): cputil.NewOpBuilder().WithServerDataPtr(&table.OpTableChangePageServerData{}).Build(),
 				table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
 			}}
+		return nil
 	}
 }
 
 func (p *provider) RegisterTablePagingOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		(*sdk.GlobalState)[transaction.StateKeyTransactionPaging] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 
 func (p *provider) RegisterTableChangePageOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		(*sdk.GlobalState)[transaction.StateKeyTransactionPaging] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 
 func (p *provider) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		(*sdk.GlobalState)[transaction.StateKeyTransactionSort] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 
