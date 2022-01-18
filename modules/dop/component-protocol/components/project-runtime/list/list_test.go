@@ -276,3 +276,25 @@ func Test_getKvInfos(t *testing.T) {
 		})
 	}
 }
+
+func Test_getMoreOperations(t *testing.T) {
+	type args struct {
+		sdk *cptype.SDK
+		id  string
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{sdk: defaultSDK},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			getMoreOperations(tt.args.sdk, tt.args.id)
+		})
+	}
+}

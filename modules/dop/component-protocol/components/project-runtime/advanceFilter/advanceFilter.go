@@ -73,7 +73,7 @@ func (af *AdvanceFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype
 		if err != nil {
 			return
 		}
-		(*af.StdStatePtr)["inputFilter__urlQuery"] = urlParam
+		(*af.StdStatePtr)["advanceFilter__urlQuery"] = urlParam
 		af.StdDataPtr = af.getData(sdk)
 	}
 }
@@ -107,7 +107,7 @@ func (af *AdvanceFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		if err != nil {
 			return
 		}
-		if urlquery := sdk.InParams.String("inputFilter__urlQuery"); urlquery != "" {
+		if urlquery := sdk.InParams.String("advanceFilter__urlQuery"); urlquery != "" {
 			if err = af.flushOptsByFilter(urlquery); err != nil {
 				logrus.Errorf("failed to transfer values in component advance filter")
 				return

@@ -290,6 +290,43 @@ func (e *Endpoints) ListRuntimes(ctx context.Context, r *http.Request, vars map[
 	return httpserver.OkResp(data, userIDs)
 }
 
+// CountPRByWorkspace .
+func (e *Endpoints) CountPRByWorkspace(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	var (
+		l          = logrus.WithField("func", "*Endpoints.CountPRByWorkspace")
+		projectId  uint64
+		resp       = make(map[string]uint64)
+		defaultEnv = []string{"STAGING", "DEV", "PROD", "TEST"}
+	)
+	projectIdStr := r.URL.Query().Get("projectId")
+	if projectIdStr == "" {
+		return apierrors.ErrGetRuntime.InvalidParameter("projectId").ToResp(), nil
+	}
+	projectId, err := strconv.ParseUint(projectIdStr, 10, 64)
+	if err != nil {
+		return apierrors.ErrGetRuntime.InvalidParameter("projectId").ToResp(), nil
+	}
+	envParam := r.URL.Query()["workspace"]
+	if len(envParam) == 0 || envParam[0] == "" {
+		for i := 0; i < len(defaultEnv); i++ {
+			cnt, err := e.runtime.CountPRByWorkspace(projectId, defaultEnv[i])
+			if err != nil {
+				l.WithError(err).Warnf("count runtimes of workspace %s failed", defaultEnv[i])
+			}
+			resp[defaultEnv[i]] = cnt
+		}
+	} else {
+		env := envParam[0]
+		cnt, err := e.runtime.CountPRByWorkspace(projectId, env)
+		if err != nil {
+			l.WithError(err).Warnf("count runtimes of workspace %s failed", env)
+		}
+		resp[env] = cnt
+	}
+
+	return httpserver.OkResp(resp)
+}
+
 // ListRuntimesGroupByApps responses the runtimes for the given apps.
 func (e *Endpoints) ListRuntimesGroupByApps(ctx context.Context, r *http.Request, _ map[string]string) (httpserver.Responser, error) {
 	var (
