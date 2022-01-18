@@ -149,6 +149,15 @@ func (m *GetSystemViewResponse) UnmarshalURLValues(prefix string, values url.Val
 					return err
 				}
 				m.Data.UpdatedAt = val
+			case "data.projectId":
+				if m.Data == nil {
+					m.Data = &View{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ProjectId = val
 			}
 		}
 	}
@@ -271,6 +280,15 @@ func (m *GetCustomViewResponse) UnmarshalURLValues(prefix string, values url.Val
 					return err
 				}
 				m.Data.UpdatedAt = val
+			case "data.projectId":
+				if m.Data == nil {
+					m.Data = &View{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ProjectId = val
 			}
 		}
 	}
@@ -362,6 +380,15 @@ func (m *CreateCustomViewResponse) UnmarshalURLValues(prefix string, values url.
 					return err
 				}
 				m.Data.UpdatedAt = val
+			case "data.projectId":
+				if m.Data == nil {
+					m.Data = &View{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.ProjectId = val
 			}
 		}
 	}
@@ -480,6 +507,12 @@ func (m *View) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.UpdatedAt = val
+			case "projectId":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectId = val
 			}
 		}
 	}

@@ -228,6 +228,10 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 		CreatedAt: model.CreatedAt.UnixNano() / int64(time.Millisecond),
 		UpdatedAt: model.UpdatedAt.UnixNano() / int64(time.Millisecond),
 	}, model.ViewConfig, model.DataConfig)}
+	if req.Scope != "org" {
+		projectId := ctx.Value("erda-projectId").(uint64)
+		result.Data.ProjectId = projectId
+	}
 	err = s.auditContextMap(ctx, req.Name, req.Scope)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -235,8 +239,8 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 	return result, nil
 }
 
-func (s *dataViewService) getOrgName(ctx *context.Context) (string, error) {
-	orgId := apis.GetOrgID(*ctx)
+func (s *dataViewService) getOrgName(ctx context.Context) (string, error) {
+	orgId := apis.GetOrgID(ctx)
 	org, err := s.p.bdl.GetOrg(orgId)
 	if err != nil {
 		return "", err
@@ -285,7 +289,7 @@ func (s *dataViewService) DeleteCustomView(ctx context.Context, req *pb.DeleteCu
 }
 
 func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName, scope string) error {
-	orgName, err := s.getOrgName(&ctx)
+	orgName, err := s.getOrgName(ctx)
 	if err != nil {
 		return err
 	}
@@ -293,6 +297,10 @@ func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName, sc
 		"orgName":       orgName,
 		"dashboardName": dashboardName,
 		"scope":         scope,
+	}
+	if scope != "org" {
+		auditContext["projectName"] = ctx.Value("erda-projectName").(string)
+		auditContext["workspace"] = ctx.Value("erda-workspace").(string)
 	}
 	audit.ContextEntryMap(ctx, auditContext)
 	return nil

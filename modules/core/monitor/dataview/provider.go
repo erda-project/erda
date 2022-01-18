@@ -70,7 +70,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			p.audit.Audit(
 				audit.Method(DataViewService.CreateCustomView, audit.OrgScope, string(apistructs.AddDashboard),
 					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
-						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
+						r := resp.(*pb.CreateCustomViewResponse)
+						if r.Data.Scope == "org" {
+							return apis.GetOrgID(ctx), map[string]interface{}{}, nil
+						}
+						return r.Data.ProjectId, map[string]interface{}{}, nil
 					},
 				),
 				audit.Method(DataViewService.UpdateCustomView, audit.OrgScope, string(apistructs.AddDashboard),
