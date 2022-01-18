@@ -37,6 +37,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
@@ -272,12 +273,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			CellsMap: map[table.ColumnKey]table.Cell{
 				ColumnPipelineName: table.NewTextCell(v.Name).Build(),
 				ColumnPipelineStatus: table.NewCompleteTextCell(commodel.Text{
-					Text: func() string {
-						if v.Status == "" {
-							return "-"
-						}
-						return cputil.I18n(p.sdk.Ctx, "pipelineStatus"+v.Status)
-					}(),
+					Text: util.DisplayStatusText(p.sdk.Ctx, v.Status),
 					Status: func() commodel.UnifiedStatus {
 						if apistructs.PipelineStatus(v.Status).IsRunningStatus() {
 							return commodel.ProcessingStatus
