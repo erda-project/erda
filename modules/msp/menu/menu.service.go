@@ -142,6 +142,8 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 					if child.MustExists {
 						child.Exists = true
 					}
+					child.IsK8S = isK8s
+					child.IsEdas = clusterInfo.IsEDAS()
 				}
 			}
 			item.ClusterName = clusterName
@@ -204,6 +206,8 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 				if child.MustExists {
 					child.Exists = true
 				}
+				child.IsK8S = isK8s
+				child.IsEdas = clusterInfo.IsEDAS()
 			}
 		}
 	}
