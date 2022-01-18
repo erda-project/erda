@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
@@ -86,17 +87,28 @@ func (p *CustomFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			HideSave: true,
 		}
 		p.clearState()
+		var appNames []string
 		if p.InParams.AppID != 0 {
 			app, err := p.bdl.GetApp(p.InParams.AppID)
 			if err != nil {
 				logrus.Errorf("failed to GetApp,err %s", err.Error())
 				panic(err)
 			}
-			p.gsHelper.SetGlobalTableFilter(gshelper.TableFilter{
-				App: []string{app.Name},
-			})
-			p.State.FrontendConditionValues.App = []string{app.Name}
+			appNames = []string{app.Name}
 		}
+
+		p.State.FrontendConditionValues.App = appNames
+		p.State.FrontendConditionValues.Creator = func() []string {
+			if p.gsHelper.GetGlobalPipelineTab() == common.MineState.String() {
+				return []string{p.sdk.Identity.UserID}
+			}
+			return nil
+		}()
+		p.gsHelper.SetGlobalTableFilter(gshelper.TableFilter{
+			App:     p.State.FrontendConditionValues.App,
+			Creator: p.State.FrontendConditionValues.Creator,
+		})
+
 	}
 }
 
