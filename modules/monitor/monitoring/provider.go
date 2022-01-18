@@ -15,6 +15,7 @@
 package monitoring
 
 import (
+	"context"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -29,8 +30,8 @@ type config struct {
 }
 
 type syncInterval struct {
-	Metric time.Duration `file:"metric" default:"1h"`
-	Log    time.Duration `file:"log" default:"5m"`
+	Metric time.Duration `file:"metric"`
+	Log    time.Duration `file:"log"`
 }
 
 // +provider
@@ -43,9 +44,18 @@ type provider struct {
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
+	return nil
+}
 
-	go p.syncStorage(newEsStorageMetric(p.metricq), metricStorageUsage, p.Cfg.UsageSyncInterval.Metric)
-	// go p.syncStorage(newCassandraStorageLog(p.metricq), logStorageUsage, p.Cfg.UsageSyncInterval.Log)
+func (p *provider) Run(ctx context.Context) error {
+	if p.Cfg.UsageSyncInterval.Metric > 0 {
+		p.Log.Info("metric storage stats sync start")
+		go p.syncStorage(ctx, newEsStorageMetric(p.metricq), metricStorageUsage, p.Cfg.UsageSyncInterval.Metric)
+	}
+
+	if p.Cfg.UsageSyncInterval.Log > 0 {
+		// go p.syncStorage(newCassandraStorageLog(p.metricq), logStorageUsage, p.Cfg.UsageSyncInterval.Log)
+	}
 	return nil
 }
 
@@ -54,7 +64,7 @@ type storageMetric interface {
 	UsageSummaryOrg() (map[string]uint64, error)
 }
 
-func (p *provider) syncStorage(sm storageMetric, gauge *prometheus.GaugeVec, interval time.Duration) {
+func (p *provider) syncStorage(ctx context.Context, sm storageMetric, gauge *prometheus.GaugeVec, interval time.Duration) {
 	prometheus.MustRegister(gauge)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -71,6 +81,8 @@ func (p *provider) syncStorage(sm storageMetric, gauge *prometheus.GaugeVec, int
 		p.Log.Debugf("data of %T: %+v", sm, data)
 		select {
 		case <-ticker.C:
+		case <-ctx.Done():
+			return
 		}
 	}
 }
