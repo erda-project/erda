@@ -73,7 +73,7 @@ func (p *provider) handleWebsocket(ctx servicehub.Context) func(resp http.Respon
 			err := websocket.Message.Send(ws, "Hello, Client!")
 			if err != nil {
 				p.Log.Error(err)
-				return nil
+				return
 			}
 
 			// Read
@@ -81,7 +81,7 @@ func (p *provider) handleWebsocket(ctx servicehub.Context) func(resp http.Respon
 			err = websocket.Message.Receive(ws, &msg)
 			if err != nil {
 				p.Log.Error(err)
-				return nil
+				return
 			}
 			fmt.Printf("%s\n", msg)
 		}
