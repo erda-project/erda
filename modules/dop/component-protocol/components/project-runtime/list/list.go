@@ -336,7 +336,7 @@ func (p *List) getData() *list.Data {
 			Title: nameStr,
 			//MainState:      getMainState(appRuntime.Status),
 			TitleState: getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus),
-			Selectable: isMyApp,
+			Selectable: &isMyApp,
 			KvInfos:    getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.LastOperator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
 		}
 		if isMyApp {
