@@ -1631,6 +1631,16 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, serviceId
 			node.Metric.ErrorRate = pkgmath.DecimalPlacesWithDigitsNumber(float64(node.Metric.HttpError)/float64(node.Metric.Count)*100, 2)
 		}
 		node.Metric.RPS = pkgmath.DecimalPlacesWithDigitsNumber(float64(node.Metric.Count)/float64(timeRange), 2)
+
+		if serviceId != "" && node.ServiceId != serviceId {
+			for j := 0; j < len(node.Parents); j++ {
+				p := node.Parents[j]
+				if p.ServiceId != serviceId {
+					node.Parents = append(node.Parents[:j], node.Parents[j+1:]...)
+					j--
+				}
+			}
+		}
 	}
 }
 
