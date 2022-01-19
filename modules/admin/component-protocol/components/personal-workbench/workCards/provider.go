@@ -303,7 +303,7 @@ func (wc *WorkCards) getAppCardOps(sdk *cptype.SDK, app apistructs.AppWorkBenchI
 	}
 	serviceOp := common.Operation{
 		JumpOut: false,
-		Target:  "mspServiceList",
+		Target:  "repo",
 		Params:  map[string]interface{}{"projectId": app.ProjectID, "appId": app.ID},
 	}
 	serverData := make(cptype.OpServerData)
