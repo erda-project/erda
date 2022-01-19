@@ -51,8 +51,8 @@ func WithBranchRuleSvc(svc *branchrule.BranchRule) Option {
 	}
 }
 
-func WithBundle(bdl *bundle.Bundle) Option {
+func WithBundle(bundle *bundle.Bundle) Option {
 	return func(svc *Service) {
-		svc.bdl = bdl
+		svc.bdl = bundle
 	}
 }
