@@ -1618,6 +1618,10 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, serviceId
 			}
 		}
 	}
+	filterNodes(topologyNodes, nodeIds, timeRange, serviceId)
+}
+
+func filterNodes(topologyNodes *[]*Node, nodeIds map[string]struct{}, timeRange int64, serviceId string) {
 	for i := 0; i < len(*topologyNodes); i++ {
 		node := (*topologyNodes)[i]
 		if _, ok := nodeIds[node.Id]; len(nodeIds) > 0 && !ok {
