@@ -39,6 +39,7 @@ type PipelineDefinition struct {
 	TimeCreated      time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
 	TimeUpdated      time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
 	PipelineID       uint64    `json:"pipelineId"`
+	Remote           string    `json:"remote"`
 }
 
 func (PipelineDefinition) TableName() string {

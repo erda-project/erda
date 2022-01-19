@@ -79,6 +79,7 @@ message PipelineDefinitionCreateRequest {
   string pipelineSourceId = 4;
   string category = 5;
   PipelineDefinitionExtra extra = 6;
+  string remote = 7;
 }
 
 message PipelineDefinitionCreateResponse {
