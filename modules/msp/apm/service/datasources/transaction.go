@@ -83,7 +83,7 @@ func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, 
 	yUnitGetter := func(chartType pb.ChartType) (structure.Type, structure.Precision) {
 		switch strings.ToLower(chartType.String()) {
 		case strings.ToLower(pb.ChartType_AvgDuration.String()):
-			return structure.Number, structure.Millisecond
+			return structure.Time, structure.Millisecond
 		default:
 			return structure.Number, ""
 		}
@@ -134,7 +134,7 @@ func (p *provider) GetBubbleChart(ctx context.Context, bubbleType BubbleChartTyp
 	yUnitGetter := func(chartType pb.ChartType) (structure.Type, structure.Precision) {
 		switch strings.ToLower(chartType.String()) {
 		case strings.ToLower(pb.ChartType_AvgDurationDistribution.String()), strings.ToLower(pb.ChartType_SlowDurationDistribution.String()):
-			return structure.Number, structure.Millisecond
+			return structure.Time, structure.Millisecond
 		default:
 			return structure.Number, ""
 		}

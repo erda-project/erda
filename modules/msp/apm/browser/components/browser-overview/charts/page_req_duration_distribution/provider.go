@@ -75,7 +75,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 		rows := response.Results[0].Series[0].Rows
 		builder := bubblegraph.NewDataBuilder().WithTitle(sdk.I18n(chartName)).
-			WithYOptions(bubblegraph.NewOptionsBuilder().WithType(structure.Number).WithPrecision(structure.Millisecond).Build())
+			WithYOptions(bubblegraph.NewOptionsBuilder().WithType(structure.Time).WithPrecision(structure.Millisecond).Build())
 		for _, row := range rows {
 			date := row.Values[0].GetStringValue()
 			parse, err := time.ParseInLocation(parseLayout, date, time.Local)
