@@ -77,10 +77,6 @@ func GetUserID(ctx context.Context) string {
 	return GetHeader(ctx, "user-id")
 }
 
-func GetMSPInfo(ctx context.Context, key string) string {
-	return GetHeader(ctx, key)
-}
-
 // GetIntUserID .
 func GetIntUserID(ctx context.Context) (int64, error) {
 	return strconv.ParseInt(GetUserID(ctx), 10, 64)
