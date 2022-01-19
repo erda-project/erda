@@ -45,11 +45,11 @@ type provider struct {
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		params := p.TraceInParams.InParamsPtr
 
 		if params.TenantId == "" {
-			return
+			return nil
 		}
 
 		//lang := sdk.Lang
@@ -61,12 +61,12 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			WithYOptions(bubblegraph.NewOptionsBuilder().WithType(structure.Time).WithPrecision(structure.Nanosecond).Build())
 		if response == nil {
 			p.StdDataPtr = dataBuilder.Build()
-			return
+			return nil
 		}
 		rows := response.Results[0].Series[0].Rows
 		if rows == nil || len(rows) == 0 {
 			p.StdDataPtr = dataBuilder.Build()
-			return
+			return nil
 		}
 		for _, row := range response.Results[0].Series[0].Rows {
 			timeFormat := row.Values[0].GetStringValue()
@@ -84,6 +84,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				Build())
 		}
 		p.StdDataPtr = dataBuilder.Build()
+		return nil
 	}
 }
 

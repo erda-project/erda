@@ -46,17 +46,19 @@ type List struct {
 }
 
 func (p *List) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
 	}
 }
 
 func (p *List) RegisterItemClickGotoOp(opData list.OpItemClickGoto) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
 	}
 }
 
 func (p *List) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		// rerender list after any operation
 		req := apistructs.RuntimeScaleRecords{}
 		idStr := opData.ClientData.DataRef.ID
@@ -91,6 +93,7 @@ func (p *List) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.Opera
 			}
 		}
 		p.StdDataPtr = p.getData()
+		return nil
 	}
 }
 
@@ -100,7 +103,7 @@ type ClickClientData struct {
 }
 
 func (p *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		req := apistructs.RuntimeScaleRecords{}
 		for _, idStr := range opData.ClientData.SelectedRowIDs {
 			id, err := strconv.ParseUint(idStr, 10, 64)
@@ -135,6 +138,7 @@ func (p *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.Ope
 			}
 		}
 		p.StdDataPtr = p.getData()
+		return nil
 	}
 }
 
@@ -157,16 +161,18 @@ func (p *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.Opera
 }
 
 func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		p.Sdk = sdk
 		p.StdDataPtr = p.getData()
+		return nil
 	}
 }
 
 func (p *List) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		p.Sdk = sdk
 		p.StdDataPtr = p.getData()
+		return nil
 	}
 }
 
@@ -605,13 +611,13 @@ func getMoreOperations(sdk *cptype.SDK, id string) []list.MoreOpItem {
 	}
 }
 
-func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVersion, healthStr string, runtime bundle.GetApplicationRuntimesDataEle, lastOperatorTime time.Time) []list.KvInfo {
+func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVersion, health string, runtime bundle.GetApplicationRuntimesDataEle, lastOperatorTime time.Time) []list.KvInfo {
 	kvs := make([]list.KvInfo, 0)
-	if healthStr != "" {
+	if health != "" {
 		// service
 		kvs = append(kvs, list.KvInfo{
 			Key:   sdk.I18n("service"),
-			Value: healthStr,
+			Value: health,
 		})
 	}
 	if deployOrderName != "" {

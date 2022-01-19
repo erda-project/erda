@@ -489,7 +489,7 @@ func (p *provider) getThreadLineGraph(ctx context.Context, startTime, endTime in
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		startTime := p.ServiceInParams.InParamsPtr.StartTime
 		endTime := p.ServiceInParams.InParamsPtr.EndTime
 		tenantId := p.ServiceInParams.InParamsPtr.TenantId
@@ -501,77 +501,78 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		case jvmMemoryHeap:
 			graph, err := p.getMemoryHeapLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryHeap, structure.Storage, structure.KB, graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case jvmMemoryNonHeap:
 			graph, err := p.getMemoryNonHeapLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryNonHeap, structure.Storage, structure.KB, graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case jvmMemoryEdenSpace:
 			graph, err := p.getMemoryEdenSpaceLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryEdenSpace, structure.Storage, structure.KB, graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case jvmMemorySurvivorSpace:
 			graph, err := p.getMemorySurvivorSpaceLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemorySurvivorSpace, structure.Storage, structure.KB, graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case jvmMemoryOldGen:
 			graph, err := p.getMemoryOldGenLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryOldGen, structure.Storage, structure.KB, graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case jvmGcCount:
 			graph, err := p.getGCCountLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmGcCount, structure.String, "countUnit", graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case jvmGcTime:
 			graph, err := p.getGCAvgDurationLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmGcTime, structure.Time, "ns", graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case jvmClassLoader:
 			graph, err := p.getClassCountLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmClassLoader, structure.String, "pcsUnit", graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case jvmThread:
 			graph, err := p.getThreadLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmThread, structure.String, "pcsUnit", graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		}
 		p.StdDataPtr = &data
+		return nil
 	}
 }
 

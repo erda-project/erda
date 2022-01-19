@@ -15,8 +15,9 @@
 package common
 
 const (
-	ScenarioKey     = "project-pipeline"
-	DefaultPageSize = 10
+	ScenarioKey          = "project-pipeline"
+	DefaultPageSize      = 10
+	ColumnPipelineStatus = "pipelineStatus"
 )
 
 type StateValue string

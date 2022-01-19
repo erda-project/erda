@@ -518,8 +518,8 @@ func (m *alertService) CreateOrgCustomizeAlert(ctx context.Context, request *pb.
 		Id: id,
 	}
 	auditContext := map[string]interface{}{
-		"alertRuleName": request.Name,
-		"orgName":       org.Name,
+		"alertName": request.Name,
+		"orgName":   org.Name,
 	}
 	audit.ContextEntryMap(ctx, auditContext)
 	return result, nil
@@ -757,8 +757,8 @@ func (m *alertService) UpdateOrgCustomizeAlert(ctx context.Context, request *pb.
 		return nil, errors.NewInternalServerError(err)
 	}
 	auditContext := map[string]interface{}{
-		"alertRuleName": request.Name,
-		"orgName":       org.Name,
+		"alertName": request.Name,
+		"orgName":   org.Name,
 	}
 	audit.ContextEntryMap(ctx, auditContext)
 	result := &pb.UpdateOrgCustomizeAlertResponse{
@@ -776,32 +776,18 @@ func (m *alertService) UpdateOrgCustomizeAlertEnable(ctx context.Context, reques
 }
 
 func (m *alertService) DeleteOrgCustomizeAlert(ctx context.Context, request *pb.DeleteOrgCustomizeAlertRequest) (*pb.DeleteOrgCustomizeAlertResponse, error) {
-	data, _ := m.p.a.CustomizeAlert(request.Id)
-	err := m.p.a.DeleteCustomizeAlert(request.Id)
+	data, err := m.p.a.CustomizeAlert(request.Id)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	err = m.p.a.DeleteCustomizeAlert(request.Id)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	result := &pb.DeleteOrgCustomizeAlertResponse{}
-	if data != nil {
-		resp, err := structpb.NewStruct(map[string]interface{}{
-			"name": data.Name,
-		})
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
-		result.Data = structpb.NewStructValue(resp)
-		return result, nil
-	}
 	result.Data = structpb.NewBoolValue(true)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
 	orgIdStr := apis.GetOrgID(ctx)
 	org, err := m.p.bdl.GetOrg(orgIdStr)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	//orgId, err := strconv.Atoi(orgIdStr)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -810,6 +796,13 @@ func (m *alertService) DeleteOrgCustomizeAlert(ctx context.Context, request *pb.
 		"orgName":   org.Name,
 	}
 	audit.ContextEntryMap(ctx, auditContext)
+	resp, err := structpb.NewStruct(map[string]interface{}{
+		"name": data.Name,
+	})
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	result.Data = structpb.NewStructValue(resp)
 	return result, nil
 }
 
@@ -1096,11 +1089,19 @@ func (m *alertService) DeleteOrgAlert(ctx context.Context, request *pb.DeleteOrg
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
 	lang := apis.Language(ctx)
-	data, _ := m.p.a.GetAlert(lang, uint64(request.Id))
+	data, err := m.p.a.GetAlert(lang, uint64(request.Id))
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	err = m.p.a.DeleteOrgAlert(uint64(request.Id), orgID)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	auditContext := map[string]interface{}{
+		"alertName": data.Name,
+		"orgName":   org.Name,
+	}
+	audit.ContextEntryMap(ctx, auditContext)
 	if data != nil {
 		return &pb.DeleteOrgAlertResponse{
 			Data: map[string]*structpb.Value{
@@ -1108,11 +1109,6 @@ func (m *alertService) DeleteOrgAlert(ctx context.Context, request *pb.DeleteOrg
 			},
 		}, nil
 	}
-	auditContext := map[string]interface{}{
-		"alertName": data.Name,
-		"orgName":   org.Name,
-	}
-	audit.ContextEntryMap(ctx, auditContext)
 	return &pb.DeleteOrgAlertResponse{}, nil
 }
 

@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
@@ -72,7 +73,7 @@ func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
 }
 
 func (p *CustomFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		conditions, err := p.ConditionRetriever()
 		if err != nil {
 			panic(err)
@@ -86,17 +87,29 @@ func (p *CustomFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			HideSave: true,
 		}
 		p.clearState()
+		var appNames []string
 		if p.InParams.AppID != 0 {
 			app, err := p.bdl.GetApp(p.InParams.AppID)
 			if err != nil {
 				logrus.Errorf("failed to GetApp,err %s", err.Error())
 				panic(err)
 			}
-			p.gsHelper.SetGlobalTableFilter(gshelper.TableFilter{
-				App: []string{app.Name},
-			})
-			p.State.FrontendConditionValues.App = []string{app.Name}
+			appNames = []string{app.Name}
 		}
+
+		p.State.FrontendConditionValues.App = appNames
+		p.State.FrontendConditionValues.Creator = func() []string {
+			if p.gsHelper.GetGlobalPipelineTab() == common.MineState.String() {
+				return []string{p.sdk.Identity.UserID}
+			}
+			return nil
+		}()
+		p.gsHelper.SetGlobalTableFilter(gshelper.TableFilter{
+			App:     p.State.FrontendConditionValues.App,
+			Creator: p.State.FrontendConditionValues.Creator,
+		})
+
+		return nil
 	}
 }
 
@@ -113,7 +126,7 @@ func (p *CustomFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 }
 
 func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		values := p.State.FrontendConditionValues
 		p.gsHelper.SetGlobalTableFilter(gshelper.TableFilter{
 			Status:            values.Status,
@@ -123,18 +136,21 @@ func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.O
 			CreatedAtStartEnd: values.CreatedAtStartEnd,
 			StartedAtStartEnd: values.StartedAtStartEnd,
 		})
+		return nil
 	}
 }
 
 func (p *CustomFilter) RegisterFilterItemSaveOp(opData filter.OpFilterItemSave) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		fmt.Println("op come", opData.ClientData)
+		return nil
 	}
 }
 
 func (p *CustomFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDelete) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		fmt.Println("op come", opData.ClientData.DataRef)
+		return nil
 	}
 }
 

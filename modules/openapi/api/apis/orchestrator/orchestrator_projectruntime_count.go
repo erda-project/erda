@@ -12,19 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package monitor
+package orchestrator
 
 import (
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var MONITOR_ORGS_CUSTOMIZE_ALERT_UPDATE = apis.ApiSpec{
-	Path:        "/api/orgCenter/customize/alerts/<id>",
-	BackendPath: "/api/orgs/customize/alerts/<id>",
-	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
+var ORCHESTRATOR_PROJECT_RUNTIME_COUNT = apis.ApiSpec{
+	Path:        "/api/countProjectRuntime",
+	BackendPath: "/api/countProjectRuntime",
+	Host:        "orchestrator.marathon.l4lb.thisdcos.directory:8081",
 	Scheme:      "http",
-	Method:      "PUT",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 修改企业自定义告警",
+	Method:      "GET",
 }

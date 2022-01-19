@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/mholt/archiver"
 
 	"github.com/erda-project/erda/pkg/retry"
@@ -106,4 +107,30 @@ func IsTarCommandExist() bool {
 		}
 	}
 	return false
+}
+
+// GetDiskSize if dir recursion sum size, file return size directly.
+// return size unit is Byte
+func GetDiskSize(path string) (datasize.ByteSize, error) {
+	var totalSize datasize.ByteSize
+	fi, err := os.Stat(path)
+	if err != nil {
+		return 0, err
+	}
+	if fi.IsDir() {
+		files, err := os.ReadDir(path)
+		if err != nil {
+			return 0, err
+		}
+		for _, file := range files {
+			size, err := GetDiskSize(filepath.Join(path, file.Name()))
+			if err != nil {
+				return 0, err
+			}
+			totalSize += size
+		}
+	} else {
+		totalSize += datasize.ByteSize(fi.Size())
+	}
+	return totalSize, nil
 }

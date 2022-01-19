@@ -200,7 +200,7 @@ func (p *provider) getAsyncResourcesLineGraph(ctx context.Context, startTime, en
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		startTime := p.ServiceInParams.InParamsPtr.StartTime
 		endTime := p.ServiceInParams.InParamsPtr.EndTime
 		tenantId := p.ServiceInParams.InParamsPtr.TenantId
@@ -211,36 +211,37 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		case nodejsMemoryHeap:
 			graph, err := p.getMemoryHeapLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsMemoryHeap, structure.Storage, structure.KB, graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case nodejsMemoryNonHeap:
 			graph, err := p.getMemoryNonHeapLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsMemoryNonHeap, structure.Storage, structure.KB, graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case nodejsCluster:
 			graph, err := p.getClusterCountLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsCluster, structure.String, "pcsUnit", graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case nodejsAsyncResource:
 			graph, err := p.getAsyncResourcesLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsAsyncResource, structure.String, "pcsUnit", graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		}
+		return nil
 	}
 }
 
