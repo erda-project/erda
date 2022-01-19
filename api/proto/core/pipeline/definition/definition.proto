@@ -37,6 +37,11 @@ service DefinitionService {
       get: "/api/pipeline-definitions",
     };
   }
+  rpc StaticsGroupByRemote (PipelineDefinitionStaticsRequest) returns (PipelineDefinitionStaticsResponse) {
+    option (google.api.http) = {
+      get: "/api/pipeline-definitions/actions/statics-group-by-remote",
+    };
+  }
 }
 
 message PipelineDefinition {
@@ -79,7 +84,7 @@ message PipelineDefinitionCreateRequest {
   string pipelineSourceId = 4;
   string category = 5;
   PipelineDefinitionExtra extra = 6;
-  string remote = 7;
+  string location = 7;
 }
 
 message PipelineDefinitionCreateResponse {
@@ -120,7 +125,7 @@ message PipelineDefinitionGetResponse {
   PipelineDefinition pipelineDefinition = 1;
 }
 
-// list
+
 message PipelineDefinitionListRequest {
   int64 pageSize = 1;
   int64 pageNo = 2;
@@ -136,6 +141,22 @@ message PipelineDefinitionListRequest {
   repeated string idList = 13;
   repeated string ascCols = 14;
   repeated string descCols = 15;
+  string location = 16;
+}
+
+message PipelineDefinitionStaticsRequest {
+  string location = 1;
+}
+
+message PipelineDefinitionStaticsResponse {
+  repeated PipelineDefinitionStatistics PipelineDefinitionStatistics = 1;
+}
+
+message PipelineDefinitionStatistics {
+  string remote = 1;
+  uint64 failedNum = 2;
+  uint64 runningNum = 3;
+  uint64 totalNum = 4;
 }
 
 message PipelineDefinitionListResponse {

@@ -52,6 +52,7 @@ message PipelineSource {
   int64 softDeletedAt = 9;
   google.protobuf.Timestamp timeCreated = 10;
   google.protobuf.Timestamp timeUpdated = 11;
+  string  location = 12;
 }
 
 // create
@@ -64,6 +65,7 @@ message PipelineSourceCreateRequest {
   string name = 6;
   string pipelineYml = 7;
   uint64 versionLock = 8;
+  string location = 9;
 }
 
 message PipelineSourceCreateResponse {

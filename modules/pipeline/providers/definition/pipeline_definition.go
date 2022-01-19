@@ -235,3 +235,21 @@ func PipelineDefinitionExtraToPb(pipelineDefinitionExtra *db.PipelineDefinitionE
 	}
 	return de
 }
+
+func (p pipelineDefinition) StaticsGroupByRemote(ctx context.Context, request *pb.PipelineDefinitionStaticsRequest) (*pb.PipelineDefinitionStaticsResponse, error) {
+	statics, err := p.dbClient.StaticsGroupByRemote(request)
+	if err != nil {
+		return nil, err
+	}
+
+	pipelineDefinitionStatistics := make([]*pb.PipelineDefinitionStatistics, 0, len(statics))
+	for _, v := range statics {
+		pipelineDefinitionStatistics = append(pipelineDefinitionStatistics, &pb.PipelineDefinitionStatistics{
+			Remote:     v.Remote,
+			FailedNum:  v.FailedNum,
+			RunningNum: v.RunningNum,
+			TotalNum:   v.TotalNum,
+		})
+	}
+	return &pb.PipelineDefinitionStaticsResponse{PipelineDefinitionStatistics: pipelineDefinitionStatistics}, nil
+}

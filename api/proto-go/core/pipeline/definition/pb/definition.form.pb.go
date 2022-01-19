@@ -24,6 +24,9 @@ var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionDeleteResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionGetRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionGetResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionListRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStaticsRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStaticsResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStatistics)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionListResponse)(nil)
 
 // PipelineDefinition implement urlenc.URLValuesUnmarshaler.
@@ -405,6 +408,8 @@ func (m *PipelineDefinitionCreateRequest) UnmarshalURLValues(prefix string, valu
 					m.Extra = &PipelineDefinitionExtra{}
 				}
 				m.Extra.PipelineDefinition = vals[0]
+			case "location":
+				m.Location = vals[0]
 			}
 		}
 	}
@@ -1573,6 +1578,57 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 				m.AscCols = vals
 			case "descCols":
 				m.DescCols = vals
+			case "location":
+				m.Location = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// PipelineDefinitionStaticsRequest implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineDefinitionStaticsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "location":
+				m.Location = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// PipelineDefinitionStaticsResponse implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineDefinitionStaticsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// PipelineDefinitionStatistics implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineDefinitionStatistics) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "remote":
+				m.Remote = vals[0]
+			case "failedNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.FailedNum = val
+			case "runningNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.RunningNum = val
+			case "totalNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.TotalNum = val
 			}
 		}
 	}
