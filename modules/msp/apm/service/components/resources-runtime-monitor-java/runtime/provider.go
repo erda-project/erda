@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
@@ -93,22 +94,22 @@ func (p *provider) getMemoryHeapLineGraph(ctx context.Context, startTime, endTim
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -150,17 +151,17 @@ func (p *provider) getMemoryNonHeapLineGraph(ctx context.Context, startTime, end
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -203,22 +204,22 @@ func (p *provider) getMemoryEdenSpaceLineGraph(ctx context.Context, startTime, e
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -261,22 +262,22 @@ func (p *provider) getMemorySurvivorSpaceLineGraph(ctx context.Context, startTim
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -319,22 +320,22 @@ func (p *provider) getMemoryOldGenLineGraph(ctx context.Context, startTime, endT
 
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(committedValue/1024, 0),
 			Dimension: committedDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(initValue/1024, 0),
 			Dimension: initDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -502,7 +503,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryHeap, "MB", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryHeap, structure.Storage, structure.KB, graph)
 			p.StdDataPtr = line
 			return
 		case jvmMemoryNonHeap:
@@ -510,7 +511,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryNonHeap, "MB", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryNonHeap, structure.Storage, structure.KB, graph)
 			p.StdDataPtr = line
 			return
 		case jvmMemoryEdenSpace:
@@ -518,7 +519,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryEdenSpace, "MB", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryEdenSpace, structure.Storage, structure.KB, graph)
 			p.StdDataPtr = line
 			return
 		case jvmMemorySurvivorSpace:
@@ -526,7 +527,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemorySurvivorSpace, "MB", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemorySurvivorSpace, structure.Storage, structure.KB, graph)
 			p.StdDataPtr = line
 			return
 		case jvmMemoryOldGen:
@@ -534,7 +535,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryOldGen, "MB", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryOldGen, structure.Storage, structure.KB, graph)
 			p.StdDataPtr = line
 			return
 		case jvmGcCount:
@@ -542,7 +543,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmGcCount, "countUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmGcCount, structure.String, "countUnit", graph)
 			p.StdDataPtr = line
 			return
 		case jvmGcTime:
@@ -550,7 +551,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmGcTime, "ns", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmGcTime, structure.Time, "ns", graph)
 			p.StdDataPtr = line
 			return
 		case jvmClassLoader:
@@ -558,7 +559,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmClassLoader, "pcsUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmClassLoader, structure.String, "pcsUnit", graph)
 			p.StdDataPtr = line
 			return
 		case jvmThread:
@@ -566,7 +567,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmThread, "pcsUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmThread, structure.String, "pcsUnit", graph)
 			p.StdDataPtr = line
 			return
 		}
