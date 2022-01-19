@@ -1618,6 +1618,10 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, serviceId
 			}
 		}
 	}
+	filterNodes(topologyNodes, nodeIds, timeRange, serviceId)
+}
+
+func filterNodes(topologyNodes *[]*Node, nodeIds map[string]struct{}, timeRange int64, serviceId string) {
 	for i := 0; i < len(*topologyNodes); i++ {
 		node := (*topologyNodes)[i]
 		if _, ok := nodeIds[node.Id]; len(nodeIds) > 0 && !ok {
@@ -1631,6 +1635,16 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, serviceId
 			node.Metric.ErrorRate = pkgmath.DecimalPlacesWithDigitsNumber(float64(node.Metric.HttpError)/float64(node.Metric.Count)*100, 2)
 		}
 		node.Metric.RPS = pkgmath.DecimalPlacesWithDigitsNumber(float64(node.Metric.Count)/float64(timeRange), 2)
+
+		if serviceId != "" && node.ServiceId != serviceId {
+			for j := 0; j < len(node.Parents); j++ {
+				p := node.Parents[j]
+				if p.ServiceId != serviceId {
+					node.Parents = append(node.Parents[:j], node.Parents[j+1:]...)
+					j--
+				}
+			}
+		}
 	}
 }
 
