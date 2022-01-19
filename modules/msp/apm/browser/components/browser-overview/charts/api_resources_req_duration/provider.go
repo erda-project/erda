@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
@@ -87,6 +88,8 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			apiYAxis = append(apiYAxis, row.Values[1].GetNumberValue())
 		}
 		chart.SetYAxis(sdk.I18n("API"), apiYAxis...)
+		chart.SetYOptions(linegraph.NewOptionsBuilder().
+			WithDimension(sdk.I18n("API")).WithType(structure.Number).WithPrecision(structure.Millisecond).Build())
 		chart.SubTitle = "ms"
 
 		p.StdDataPtr = chart

@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph/impl"
+	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
@@ -73,7 +74,8 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		}
 
 		rows := response.Results[0].Series[0].Rows
-		builder := bubblegraph.NewDataBuilder().WithTitle(sdk.I18n(chartName))
+		builder := bubblegraph.NewDataBuilder().WithTitle(sdk.I18n(chartName)).
+			WithYOptions(bubblegraph.NewOptionsBuilder().WithType(structure.Number).WithPrecision(structure.Millisecond).Build())
 		for _, row := range rows {
 			date := row.Values[0].GetStringValue()
 			parse, err := time.ParseInLocation(parseLayout, date, time.Local)

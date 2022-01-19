@@ -24,6 +24,7 @@ import (
 	"github.com/ahmetb/go-linq/v3"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph"
+	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph"
 	stdtable "github.com/erda-project/erda-infra/providers/component-protocol/components/table"
@@ -79,10 +80,21 @@ func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, 
 			}
 		}).
 		ToSlice(&yAxis)
+	yUnitGetter := func(chartType pb.ChartType) (structure.Type, structure.Precision) {
+		switch strings.ToLower(chartType.String()) {
+		case strings.ToLower(pb.ChartType_AvgDuration.String()):
+			return structure.Number, structure.Millisecond
+		default:
+			return structure.Number, ""
+		}
+	}
+	yType, yUnit := yUnitGetter(chartType)
 
-	line := linegraph.New(p.I18n.Text(ctx.Value(common.LangKey).(i18n.LanguageCodes), strings.ToLower(data.Type)))
-	line.SetXAxis(xAxis...)
-	line.SetYAxis(dimension.(string), yAxis...)
+	builder := linegraph.NewDataBuilder().WithTitle(p.I18n.Text(ctx.Value(common.LangKey).(i18n.LanguageCodes), strings.ToLower(data.Type)))
+	builder.WithXAxis(xAxis...).WithXOptions(linegraph.NewOptionsBuilder().WithType(structure.String).Build())
+	builder.WithYAxis(dimension.(string), yAxis...).WithYOptions(linegraph.NewOptionsBuilder().
+		WithDimension(dimension.(string)).WithType(yType).WithPrecision(yUnit).Build())
+	line := builder.Build()
 	line.SubTitle = chart.GetChartUnitDefault(chartType, ctx.Value(common.LangKey).(i18n.LanguageCodes), p.I18n)
 
 	return line, nil
@@ -119,6 +131,14 @@ func (p *provider) GetBubbleChart(ctx context.Context, bubbleType BubbleChartTyp
 
 	// convert model
 	layout := "2006-01-02 15:04:05"
+	yUnitGetter := func(chartType pb.ChartType) (structure.Type, structure.Precision) {
+		switch strings.ToLower(chartType.String()) {
+		case strings.ToLower(pb.ChartType_AvgDurationDistribution.String()), strings.ToLower(pb.ChartType_SlowDurationDistribution.String()):
+			return structure.Number, structure.Millisecond
+		default:
+			return structure.Number, ""
+		}
+	}
 	yAxisFormatter := func(value float64) interface{} {
 		switch strings.ToLower(chartType.String()) {
 		case strings.ToLower(pb.ChartType_AvgDurationDistribution.String()), strings.ToLower(pb.ChartType_SlowDurationDistribution.String()):
@@ -135,7 +155,10 @@ func (p *provider) GetBubbleChart(ctx context.Context, bubbleType BubbleChartTyp
 		dimension = data.Type
 	}
 
-	builder := bubblegraph.NewDataBuilder().WithTitle(p.I18n.Text(ctx.Value(common.LangKey).(i18n.LanguageCodes), strings.ToLower(string(bubbleType))))
+	yType, yUnit := yUnitGetter(chartType)
+	builder := bubblegraph.NewDataBuilder().WithTitle(p.I18n.Text(ctx.Value(common.LangKey).(i18n.LanguageCodes), strings.ToLower(string(bubbleType)))).
+		WithXOptions(bubblegraph.NewOptionsBuilder().WithType(structure.String).Build()).
+		WithYOptions(bubblegraph.NewOptionsBuilder().WithType(yType).WithPrecision(yUnit).WithDimension(dimension.(string)).Build())
 	for _, item := range data.View {
 		builder.WithBubble(bubblegraph.NewBubbleBuilder().
 			WithDimension(dimension.(string)).
