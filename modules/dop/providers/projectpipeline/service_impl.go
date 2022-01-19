@@ -36,6 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/utils"
+	def "github.com/erda-project/erda/modules/pipeline/providers/definition"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
@@ -263,8 +264,8 @@ func (p *ProjectPipelineService) Delete(ctx context.Context, params deftype.Proj
 	if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
 		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(fmt.Errorf("pipeline wass running status"))
 	}
-	var extraValue = apistructs.PipelineDefinitionExtraValue{}
-	err = json.Unmarshal([]byte(definition.Extra.Extra), &extraValue)
+
+	extraValue, err := def.GetExtraValue(definition)
 	if err != nil {
 		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
 	}
@@ -521,10 +522,12 @@ func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.Pr
 		work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 			var definitionID = i[0].(string)
 			var sourceID = i[1].(string)
+
 			value, err := p.autoRunPipeline(params.IdentityInfo, definitionMap[definitionID], sourceMap[sourceID])
 			if err != nil {
 				return err
 			}
+
 			locker.Lock()
 			result[definitionID] = value
 			locker.Unlock()
@@ -554,8 +557,7 @@ func (p *ProjectPipelineService) Cancel(ctx context.Context, params deftype.Proj
 		return nil, apierrors.ErrCancelProjectPipeline.AccessDenied()
 	}
 
-	var extraValue = apistructs.PipelineDefinitionExtraValue{}
-	err = json.Unmarshal([]byte(definition.Extra.Extra), &extraValue)
+	extraValue, err := def.GetExtraValue(definition)
 	if err != nil {
 		return nil, apierrors.ErrCancelProjectPipeline.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
 	}
@@ -622,8 +624,7 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 		return nil, apiError.AccessDenied()
 	}
 
-	var extraValue = apistructs.PipelineDefinitionExtraValue{}
-	err = json.Unmarshal([]byte(definition.Extra.Extra), &extraValue)
+	extraValue, err := def.GetExtraValue(definition)
 	if err != nil {
 		return nil, apiError.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
 	}
@@ -685,8 +686,7 @@ func (p *ProjectPipelineService) startOrEndCron(identityInfo apistructs.Identity
 		return nil, apiError.AccessDenied()
 	}
 
-	var extraValue = apistructs.PipelineDefinitionExtraValue{}
-	err = json.Unmarshal([]byte(definition.Extra.Extra), &extraValue)
+	extraValue, err := def.GetExtraValue(definition)
 	if err != nil {
 		return nil, apiError.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
 	}
@@ -873,31 +873,57 @@ func (p *ProjectPipelineService) batchGetPipelineSources(pipelineSourceIDArray [
 }
 
 func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.IdentityInfo, definition *dpb.PipelineDefinition, source *spb.PipelineSource) (*apistructs.PipelineDTO, error) {
-	var extraValue = apistructs.PipelineDefinitionExtraValue{}
-	err := json.Unmarshal([]byte(definition.Extra.Extra), &extraValue)
+	extraValue, err := def.GetExtraValue(definition)
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
 	}
+	createV2 := extraValue.CreateRequest
 
 	if err := p.checkRolePermission(identityInfo, extraValue.CreateRequest, apierrors.ErrRunProjectPipeline); err != nil {
 		return nil, err
 	}
 
-	createV2 := extraValue.CreateRequest
-	createV2.PipelineYml = source.PipelineYml
+	appIDString := createV2.Labels[apistructs.LabelAppID]
+	appID, err := strconv.ParseUint(appIDString, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	// update user gittar token
+	var worker = limit_sync_group.NewWorker(3)
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		orgStr := createV2.Labels[apistructs.LabelOrgID]
+		orgID, err := strconv.ParseUint(orgStr, 10, 64)
+		if err != nil {
+			return apierrors.ErrRunProjectPipeline.InternalError(fmt.Errorf("not find orgID"))
+		}
+		// update CmsNsConfigs
+		if err = p.UpdateCmsNsConfigs(identityInfo.UserID, orgID); err != nil {
+			return apierrors.ErrRunProjectPipeline.InternalError(err)
+		}
+		return nil
+	})
+
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		createV2, err = p.pipelineSvc.ConvertPipelineToV2(&apistructs.PipelineCreateRequest{
+			PipelineYmlName:    filepath.Join(source.Path, source.Name),
+			AppID:              appID,
+			Branch:             createV2.Labels[apistructs.LabelBranch],
+			PipelineYmlContent: source.PipelineYml,
+			UserID:             identityInfo.UserID,
+		})
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if worker.Do().Error() != nil {
+		return nil, worker.Error()
+	}
+
 	createV2.AutoRunAtOnce = true
 	createV2.DefinitionID = definition.ID
 	createV2.UserID = identityInfo.UserID
-
-	orgStr := createV2.Labels[apistructs.LabelOrgID]
-	orgID, err := strconv.ParseUint(orgStr, 10, 64)
-	if err != nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(fmt.Errorf("not find orgID"))
-	}
-	// update CmsNsConfigs
-	if err = p.UpdateCmsNsConfigs(identityInfo.UserID, orgID); err != nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
-	}
 
 	value, err := p.bundle.CreatePipeline(createV2)
 	if err != nil {
