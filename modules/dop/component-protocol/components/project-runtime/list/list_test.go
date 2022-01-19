@@ -188,6 +188,7 @@ func Test_getOperations(t *testing.T) {
 		projectId uint64
 		appId     uint64
 		runtimeId uint64
+		disable   bool
 	}
 	tests := []struct {
 		name string
@@ -217,7 +218,7 @@ func Test_getOperations(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getOperations(tt.args.projectId, tt.args.appId, tt.args.runtimeId); !reflect.DeepEqual(got, tt.want) {
+			if got := getOperations(defaultSDK, tt.args.projectId, tt.args.appId, tt.args.runtimeId, tt.args.disable); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getOperations() = %v, want %v", got, tt.want)
 			}
 		})
