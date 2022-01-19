@@ -317,7 +317,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return nil
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, disk, structure.String, structure.KBSlashS, graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, disk, structure.TrafficRate, structure.KBSlashS, graph)
 			p.StdDataPtr = line
 			return nil
 		case network:
@@ -325,7 +325,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return nil
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, network, structure.String, structure.KBSlashS, graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, network, structure.TrafficRate, structure.KBSlashS, graph)
 			p.StdDataPtr = line
 			return nil
 		}
