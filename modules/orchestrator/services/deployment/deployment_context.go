@@ -685,11 +685,8 @@ func (fsm *DeployFSMContext) continuePhaseCompleted() error {
 }
 
 func (fsm *DeployFSMContext) UpdateDeploymentStatusToRuntimeAndOrder() error {
-	var deploymentOrder *dbclient.DeploymentOrder
 	var err error
 	var app *apistructs.ApplicationDTO
-	deploymentOrderStatusMap := make(apistructs.DeploymentOrderStatusMap)
-	var deploymentOrderStatus []byte
 
 	fsm.Runtime.DeploymentStatus = string(fsm.Deployment.Status)
 	if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
@@ -697,39 +694,24 @@ func (fsm *DeployFSMContext) UpdateDeploymentStatusToRuntimeAndOrder() error {
 	}
 
 	DeploymentOrderID := fsm.Deployment.DeploymentOrderId
-	//TODO: 兼容没有DeploymentOrderID的场景
-	if deploymentOrder, err = fsm.db.GetDeploymentOrder(DeploymentOrderID); err != nil {
-		errMsg := fmt.Sprintf("failed to get deployment order of deployment[%s]: %v", DeploymentOrderID, err)
-		logrus.Errorf("%s", errMsg)
-		return nil
-	}
 	if app, err = fsm.bdl.GetApp(fsm.Runtime.ApplicationID); err != nil {
-		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v", DeploymentOrderID, err)
+		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v",
+			DeploymentOrderID, err)
 		logrus.Errorf("%s", errMsg)
 		return nil
 	}
-	if deploymentOrder.Status != "" {
-		if err := json.Unmarshal([]byte(deploymentOrder.Status), &deploymentOrderStatusMap); err != nil {
-			logrus.Warnf("failed to unmarshal, (%v)", err)
-			return nil
-		}
-	}
-	deploymentOrderStatusMap[app.Name] = apistructs.DeploymentOrderStatusItem{
+	appDeploymentStatus := apistructs.DeploymentOrderStatusItem{
 		AppID:            app.ID,
 		DeploymentID:     fsm.deploymentID,
 		DeploymentStatus: fsm.Deployment.Status,
 		RuntimeID:        fsm.Runtime.ID,
 	}
-	logrus.Infof("update deployment(%+v) status to deployment_order (%+v) detail is: %+v",
-		fsm.deploymentID, DeploymentOrderID, deploymentOrderStatusMap)
-	if deploymentOrderStatus, err = json.Marshal(deploymentOrderStatusMap); err != nil {
-		logrus.Warnf("failed to marshal, (%v)", err)
-		return nil
-	}
-
-	deploymentOrder.Status = string(deploymentOrderStatus)
-	if err := fsm.db.UpdateDeploymentOrder(deploymentOrder); err != nil {
-		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v", DeploymentOrderID, err)
+	logrus.Infof("update deployment(%+v) status for app (%+v) to deployment_order (%+v) detail is: %+v",
+		fsm.deploymentID, app.Name, DeploymentOrderID, appDeploymentStatus)
+	if err := fsm.db.UpateDeploymentOrderStatus(DeploymentOrderID,
+		app.Name, appDeploymentStatus); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v",
+			DeploymentOrderID, err)
 		logrus.Errorf("%s", errMsg)
 		return nil
 	}

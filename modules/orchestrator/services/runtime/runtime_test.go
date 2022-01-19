@@ -18,6 +18,7 @@ package runtime
 import (
 	"encoding/json"
 	"reflect"
+	"sync"
 	"testing"
 
 	"bou.ke/monkey"
@@ -26,6 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -234,4 +236,67 @@ func Test_setClusterName(t *testing.T) {
 	}
 	runtimeSvc.setClusterName(rt)
 	assert.Equal(t, "erda-center", rt.ClusterName)
+}
+
+func Test_convertRuntimeSummaryDTOFromRuntimeModel(t *testing.T) {
+	var bdl *bundle.Bundle
+	var db *dbclient.DBClient
+	runtime := New(WithBundle(bdl), WithDBClient(db))
+	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindLastDeployment", func(_ *dbclient.DBClient, runtimeId uint64) (*dbclient.Deployment, error) {
+		return &dbclient.Deployment{
+			BaseModel: dbengine.BaseModel{
+				ID: 3,
+			},
+			RuntimeId: 111,
+			ReleaseId: "aaaa-bbbbb-cccc",
+			Operator:  "erda",
+			Status:    "OK",
+		}, nil
+	})
+	defer m1.Unpatch()
+	a := &apistructs.RuntimeSummaryDTO{}
+	r := dbclient.Runtime{
+		BaseModel: dbengine.BaseModel{
+			ID: 111,
+		},
+		Name:          "master",
+		ApplicationID: 0,
+		Workspace:     "",
+	}
+	_ = runtime.convertRuntimeSummaryDTOFromRuntimeModel(a, r)
+	assert.Equal(t, apistructs.DeploymentStatus("OK"), a.DeployStatus)
+}
+
+func Test_generateListGroupAppResult(t *testing.T) {
+	var bdl *bundle.Bundle
+	var db *dbclient.DBClient
+	runtime := New(WithBundle(bdl), WithDBClient(db))
+	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindLastDeployment", func(_ *dbclient.DBClient, runtimeId uint64) (*dbclient.Deployment, error) {
+		return &dbclient.Deployment{
+			BaseModel: dbengine.BaseModel{
+				ID: 3,
+			},
+			RuntimeId: 111,
+			ReleaseId: "aaaa-bbbbb-cccc",
+			Operator:  "erda",
+			Status:    "OK",
+		}, nil
+	})
+	defer m1.Unpatch()
+	var result = struct {
+		sync.RWMutex
+		m map[uint64][]*apistructs.RuntimeSummaryDTO
+	}{m: make(map[uint64][]*apistructs.RuntimeSummaryDTO)}
+	var wg sync.WaitGroup
+	r := dbclient.Runtime{
+		BaseModel: dbengine.BaseModel{
+			ID: 111,
+		},
+		Name:          "master",
+		ApplicationID: 1,
+		Workspace:     "",
+	}
+	wg.Add(1)
+	runtime.generateListGroupAppResult(&result, 1, &r, &wg)
+	assert.Equal(t, apistructs.DeploymentStatus("OK"), result.m[1][0].DeployStatus)
 }
