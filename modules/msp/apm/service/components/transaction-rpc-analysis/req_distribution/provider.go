@@ -42,7 +42,7 @@ type provider struct {
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		lang := sdk.Lang
 		startTime := p.InParamsPtr.StartTime
 		endTime := p.InParamsPtr.EndTime
@@ -62,10 +62,11 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		if err != nil {
 			p.Log.Error(err)
 			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
-			return
+			return nil
 		}
 
 		p.StdDataPtr = bubble
+		return nil
 	}
 }
 

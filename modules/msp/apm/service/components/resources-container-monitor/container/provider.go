@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -112,12 +113,12 @@ func (p *provider) getMemoryLineGraph(ctx context.Context, startTime, endTime in
 		usedDimension := "used"
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(maxValue/1024, 0),
 			Dimension: maxDimension,
 		})
 		metadata = append(metadata, &model.LineGraphMetaData{
 			Time:      timeFormat,
-			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024/1024, 0),
+			Value:     math.DecimalPlacesWithDigitsNumber(usedValue/1024, 0),
 			Dimension: usedDimension,
 		})
 	}
@@ -220,7 +221,7 @@ func (p *provider) getNetworkLineGraph(ctx context.Context, startTime, endTime i
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		startTime := p.ServiceInParams.InParamsPtr.StartTime
 		endTime := p.ServiceInParams.InParamsPtr.EndTime
 		tenantId := p.ServiceInParams.InParamsPtr.TenantId
@@ -230,36 +231,37 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		case cpu:
 			graph, err := p.getCpuLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, cpu, "rateUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, cpu, structure.String, "rateUnit", graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case memory:
 			graph, err := p.getMemoryLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, memory, "MB", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, memory, structure.Storage, structure.KB, graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case diskIO:
 			graph, err := p.getDiskIoLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, diskIO, "KB/s", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, diskIO, structure.TrafficRate, structure.KBSlashS, graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		case network:
 			graph, err := p.getNetworkLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
-				return
+				return nil
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, network, "KB/s", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, network, structure.TrafficRate, structure.KBSlashS, graph)
 			p.StdDataPtr = line
-			return
+			return nil
 		}
+		return nil
 	}
 }
 

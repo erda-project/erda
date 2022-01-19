@@ -604,7 +604,11 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithProjectPipelineFileTree(pFileTree),
 
 		endpoints.WithQueryStringDecoder(queryStringDecoder),
-		endpoints.WithAssetSvc(assetsvc.New(assetsvc.WithBranchRuleSvc(branchRule))),
+		endpoints.WithAssetSvc(assetsvc.New(
+			assetsvc.WithBranchRuleSvc(branchRule),
+			assetsvc.WithI18n(p.APIMTrans),
+			assetsvc.WithBundle(bdl.Bdl),
+		)),
 		endpoints.WithFileTreeSvc(filetreeSvc),
 		endpoints.WithProject(proj),
 		endpoints.WithApplication(app),

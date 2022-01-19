@@ -18,12 +18,12 @@ import (
 	"context"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph/impl"
+	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
@@ -45,11 +45,11 @@ type provider struct {
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		params := p.TraceInParams.InParamsPtr
 
 		if params.TenantId == "" {
-			return
+			return nil
 		}
 
 		//lang := sdk.Lang
@@ -57,22 +57,23 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		if err != nil {
 			p.Log.Error(err)
 		}
-		dataBuilder := bubblegraph.NewDataBuilder().WithTitle(p.I18n.Text(sdk.Lang, "traceDistribution"))
+		dataBuilder := bubblegraph.NewDataBuilder().WithTitle(p.I18n.Text(sdk.Lang, "traceDistribution")).
+			WithYOptions(bubblegraph.NewOptionsBuilder().WithType(structure.Time).WithPrecision(structure.Nanosecond).Build())
 		if response == nil {
 			p.StdDataPtr = dataBuilder.Build()
-			return
+			return nil
 		}
 		rows := response.Results[0].Series[0].Rows
 		if rows == nil || len(rows) == 0 {
 			p.StdDataPtr = dataBuilder.Build()
-			return
+			return nil
 		}
 		for _, row := range response.Results[0].Series[0].Rows {
 			timeFormat := row.Values[0].GetStringValue()
 			timeFormat = strings.ReplaceAll(timeFormat, "T", " ")
 			timeFormat = strings.ReplaceAll(timeFormat, "Z", "")
 			x := timeFormat
-			y := math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue()/float64(time.Millisecond), 2)
+			y := math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
 			size := row.Values[2].GetNumberValue()
 
 			dataBuilder.WithBubble(bubblegraph.NewBubbleBuilder().
@@ -83,6 +84,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				Build())
 		}
 		p.StdDataPtr = dataBuilder.Build()
+		return nil
 	}
 }
 

@@ -140,6 +140,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 						return r.Data.ProjectId, map[string]interface{}{}, nil
 					},
 				),
+				audit.Method(AlertService.UpdateAlertEnable, audit.ProjectScope, string(apistructs.SwitchMicroserviceAlert),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						r := resp.(*alert.UpdateAlertEnableResponse)
+						return r.Data, map[string]interface{}{}, nil
+					}),
 			),
 		)
 	}

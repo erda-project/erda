@@ -38,6 +38,8 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type provider struct {
@@ -82,7 +84,7 @@ func (p *provider) BeforeHandleOp(sdk *cptype.SDK) {
 }
 
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		p.sdk = sdk
 		projectID := p.InParams.ProjectIDInt
 		pageNo, pageSize := GetPagingFromGlobalState(*sdk.GlobalState)
@@ -144,14 +146,16 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 					table.OpTableChangePage{}.OpKey(): cputil.NewOpBuilder().WithServerDataPtr(&table.OpTableChangePageServerData{}).Build(),
 					table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
 				}}
-			return
+			return nil
 		}
 
+		userIDs := make([]string, 0)
 		tableValue.Total = uint64(result.Data.Total)
 		for _, pipeline := range result.Data.Pipelines {
 			if pipeline.DefinitionPageInfo == nil {
 				continue
 			}
+			userIDs = append(userIDs, pipeline.DefinitionPageInfo.Creator)
 			tableValue.Rows = append(tableValue.Rows, p.pipelineToRow(pipeline))
 		}
 
@@ -161,6 +165,8 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				table.OpTableChangePage{}.OpKey(): cputil.NewOpBuilder().WithServerDataPtr(&table.OpTableChangePageServerData{}).Build(),
 				table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
 			}}
+		(*sdk.GlobalState)[protocol.GlobalInnerKeyUserIDs.String()] = strutil.DedupSlice(userIDs, true)
+		return nil
 	}
 }
 
@@ -270,16 +276,18 @@ func (p *provider) InitTable() table.Table {
 }
 
 func (p *provider) RegisterTableChangePageOp(opData table.OpTableChangePage) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		(*sdk.GlobalState)[StateKeyTransactionPaging] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 
 func (p *provider) RegisterTableSortOp(opData table.OpTableChangeSort) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		(*sdk.GlobalState)[StateKeyTransactionSort] = opData.ClientData
 		p.RegisterInitializeOp()(sdk)
+		return nil
 	}
 }
 

@@ -40,7 +40,7 @@ type PipelineDefinition struct {
 	TimeCreated      time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
 	TimeUpdated      time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
 	PipelineID       uint64    `json:"pipelineId"`
-	Remote           string    `json:"remote"`
+	Location         string    `json:"location"`
 }
 
 func (PipelineDefinition) TableName() string {
@@ -115,7 +115,7 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 	if req.Location == "" {
 		return nil, 0, fmt.Errorf("the location is empty")
 	}
-	engine = engine.Where("d.location LIKE ?", req.Location+"%")
+	engine = engine.Where("d.location = ?", req.Location)
 	if req.Remote != nil {
 		engine = engine.In("s.remote", req.Remote)
 	}
@@ -187,6 +187,10 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 		Select("COUNT(*)").
 		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
 		Where("d.soft_deleted_at = 0")
+	if req.Location == "" {
+		return 0, fmt.Errorf("the location is empty")
+	}
+	engine = engine.Where("d.location = ?", req.Location)
 	if req.Remote != nil {
 		engine = engine.In("s.remote", req.Remote)
 	}

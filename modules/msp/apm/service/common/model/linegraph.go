@@ -20,6 +20,7 @@ import (
 	"github.com/ahmetb/go-linq/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/pkg/math"
@@ -40,7 +41,7 @@ func ToQueryParams(tenantId string, serviceId string, instanceId string) map[str
 	return queryParams
 }
 
-func HandleLineGraphMetaData(lang i18n.LanguageCodes, i18n i18n.Translator, title, subTitle string, graph []*LineGraphMetaData) *linegraph.Data {
+func HandleLineGraphMetaData(lang i18n.LanguageCodes, i18n i18n.Translator, title string, dataType structure.Type, dataPrecision structure.Precision, graph []*LineGraphMetaData) *linegraph.Data {
 	line := linegraph.New(i18n.Text(lang, title))
 	var yAxis []linq.Group
 	linq.From(graph).GroupBy(
@@ -63,6 +64,11 @@ func HandleLineGraphMetaData(lang i18n.LanguageCodes, i18n i18n.Translator, titl
 		return t
 	}).ToSlice(&xAxis)
 	line.SetXAxis(xAxis...)
-	line.SubTitle = i18n.Text(lang, subTitle)
+	line.SetYOptions(&linegraph.Options{Structure: &structure.DataStructure{
+		Type:      dataType,
+		Precision: structure.Precision(i18n.Text(lang, string(dataPrecision))),
+		Enable:    true,
+	}})
+
 	return line
 }

@@ -245,6 +245,8 @@ func (m *PipelineDefinition) UnmarshalURLValues(prefix string, values url.Values
 					return err
 				}
 				m.PipelineId = val
+			case "location":
+				m.Location = vals[0]
 			}
 		}
 	}
@@ -747,6 +749,11 @@ func (m *PipelineDefinitionCreateResponse) UnmarshalURLValues(prefix string, val
 					return err
 				}
 				m.PipelineDefinition.PipelineId = val
+			case "pipelineDefinition.location":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.Location = vals[0]
 			}
 		}
 	}
@@ -1163,6 +1170,11 @@ func (m *PipelineDefinitionUpdateResponse) UnmarshalURLValues(prefix string, val
 					return err
 				}
 				m.PipelineDefinition.PipelineId = val
+			case "pipelineDefinition.location":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.Location = vals[0]
 			}
 		}
 	}
@@ -1531,6 +1543,11 @@ func (m *PipelineDefinitionGetResponse) UnmarshalURLValues(prefix string, values
 					return err
 				}
 				m.PipelineDefinition.PipelineId = val
+			case "pipelineDefinition.location":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.Location = vals[0]
 			}
 		}
 	}

@@ -65,6 +65,7 @@ message PipelineDefinition {
   string pipelineSourceId = 18;
   string status = 19;
   int64 pipelineId = 20;
+  string location = 21;
 }
 
 message PipelineDefinitionExtra {

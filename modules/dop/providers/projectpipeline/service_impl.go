@@ -21,9 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -142,6 +142,11 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
 
+	app, err := p.bundle.GetApp(params.AppID)
+	if err != nil {
+		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
+	}
+
 	definitionRsp, err := p.PipelineDefinition.Create(ctx, &dpb.PipelineDefinitionCreateRequest{
 		Name:             params.Name,
 		Creator:          apis.GetUserID(ctx),
@@ -150,7 +155,7 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		Extra: &dpb.PipelineDefinitionExtra{
 			Extra: p.pipelineSourceType.GetPipelineCreateRequestV2(),
 		},
-		Location: sourceRsp.PipelineSource.Location,
+		Location: makeLocation(app, cicdPipelineType),
 	})
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
@@ -945,38 +950,21 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
 	}
 
-	pipelineWithAppNames := make([]*pipelineWithAppName, 0, len(statics.GetPipelineDefinitionStatistics()))
-	for _, v := range statics.GetPipelineDefinitionStatistics() {
-		split := strings.Split(v.Remote, "/")
-		pipelineWithAppNames = append(pipelineWithAppNames, &pipelineWithAppName{
-			AppName: func() string {
-				if len(split) > 0 {
-					return split[len(split)-1]
-				}
-				return ""
-			}(),
-		})
-	}
-
 	appNamePipelineNumMap := make(map[string]*pipelineNum)
 	for _, v := range appNames {
 		appNamePipelineNumMap[v] = &pipelineNum{
 			RunningNum: 0,
 			FailedNum:  0,
+			TotalNum:   0,
 		}
 	}
 
-	timeEnd := time.Now()
-	timeStart := timeEnd.Add(-1 * 24 * time.Hour)
-	for _, v := range pipelineWithAppNames {
-		if apistructs.PipelineStatus(v.Status).IsRunningStatus() {
-			appNamePipelineNumMap[v.AppName].RunningNum++
-			continue
-		}
-		if v.StartedAt.AsTime().After(timeStart) &&
-			v.StartedAt.AsTime().Before(timeEnd) &&
-			v.Status == apistructs.PipelineStatusFailed.String() {
-			appNamePipelineNumMap[v.AppName].FailedNum++
+	for _, v := range statics.GetPipelineDefinitionStatistics() {
+		split := strings.Split(v.Remote, "/")
+		if _, ok := appNamePipelineNumMap[split[len(split)-1]]; ok {
+			appNamePipelineNumMap[split[len(split)-1]].FailedNum = int(v.FailedNum)
+			appNamePipelineNumMap[split[len(split)-1]].RunningNum = int(v.RunningNum)
+			appNamePipelineNumMap[split[len(split)-1]].TotalNum = int(v.TotalNum)
 		}
 	}
 
@@ -1001,8 +989,12 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 			UpdatedAt:      timestamppb.New(v.UpdatedAt),
 			RunningNum:     uint64(appNamePipelineNumMap[v.Name].RunningNum),
 			FailedNum:      uint64(appNamePipelineNumMap[v.Name].FailedNum),
+			TotalNum:       uint64(appNamePipelineNumMap[v.Name].TotalNum),
 		})
 	}
+	sort.Slice(apps, func(i, j int) bool {
+		return apps[i].TotalNum > apps[j].TotalNum
+	})
 	return &pb.ListAppResponse{
 		Data: apps,
 	}, nil
@@ -1011,11 +1003,7 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 type pipelineNum struct {
 	RunningNum int `json:"runningNum"`
 	FailedNum  int `json:"failedNum"`
-}
-
-type pipelineWithAppName struct {
-	AppName string `json:"appName"`
-	*dpb.PipelineDefinition
+	TotalNum   int `json:"totalNum"`
 }
 
 func (p *ProjectPipelineService) checkRolePermission(identityInfo apistructs.IdentityInfo, createRequest *apistructs.PipelineCreateRequestV2, apiError *errorresp.APIError) error {

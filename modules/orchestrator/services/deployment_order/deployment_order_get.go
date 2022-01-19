@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
 )
@@ -40,12 +41,6 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 		return nil, apierrors.ErrListDeploymentOrder.AccessDenied()
 	}
 
-	// get release info
-	releaseResp, err := d.bdl.GetRelease(order.ReleaseId)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get release, err: %v", err)
-	}
-
 	// parse params
 	var params map[string]apistructs.DeploymentOrderParam
 
@@ -61,19 +56,30 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 		}
 	}
 
-	releases := make([]*apistructs.ReleaseGetResponseData, 0)
+	curRelease, err := d.db.GetReleases(order.ReleaseId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get release, err: %v", err)
+	}
+
+	releases := make([]*dbclient.Release, 0)
 
 	switch order.Type {
 	case apistructs.TypePipeline, apistructs.TypeApplicationRelease:
-		releases = append(releases, releaseResp)
+		releases = append(releases, curRelease)
 	case apistructs.TypeProjectRelease:
-		for _, r := range releaseResp.ApplicationReleaseList {
-			ret, err := d.bdl.GetRelease(r.ReleaseID)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get release repsonse, err: %v", err)
-			}
-			releases = append(releases, ret)
+		subReleasesId := make([]string, 0)
+		if err := json.Unmarshal([]byte(curRelease.ApplicationReleaseList), &subReleasesId); err != nil {
+			return nil, fmt.Errorf("failed to get sub release, err: %v", err)
 		}
+
+		subReleases, err := d.db.ListReleases(subReleasesId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list sub release, err: %v", err)
+		}
+		for _, subRelease := range subReleases {
+			releases = append(releases, subRelease)
+		}
+
 	default:
 		return nil, fmt.Errorf("deployment order type %s is illegal", order.Type)
 	}
@@ -86,24 +92,29 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 
 	return &apistructs.DeploymentOrderDetail{
 		DeploymentOrderItem: apistructs.DeploymentOrderItem{
-			ID:              order.ID,
-			Name:            utils.ParseOrderName(order.ID),
-			ReleaseID:       order.ReleaseId,
-			ReleaseVersion:  releaseResp.Version,
-			ReleaseUpdateAt: releaseResp.UpdatedAt,
-			Type:            order.Type,
-			Workspace:       order.Workspace,
-			Status:          parseDeploymentOrderStatus(appsStatus),
-			Operator:        order.Operator.String(),
-			CreatedAt:       order.CreatedAt,
-			UpdatedAt:       order.UpdatedAt,
-			StartedAt:       parseStartedTime(order.StartedAt),
+			ID:   order.ID,
+			Name: utils.ParseOrderName(order.ID),
+			ReleaseInfo: &apistructs.ReleaseInfo{
+				Id:        order.ReleaseId,
+				Version:   curRelease.Version,
+				Type:      covertReleaseType(curRelease.IsProjectRelease),
+				Creator:   curRelease.UserId,
+				CreatedAt: curRelease.CreatedAt,
+				UpdatedAt: curRelease.UpdatedAt,
+			},
+			Type:      order.Type,
+			Workspace: order.Workspace,
+			Status:    parseDeploymentOrderStatus(appsStatus),
+			Operator:  order.Operator.String(),
+			CreatedAt: order.CreatedAt,
+			UpdatedAt: order.UpdatedAt,
+			StartedAt: parseStartedTime(order.StartedAt),
 		},
 		ApplicationsInfo: asi,
 	}, nil
 }
 
-func composeApplicationsInfo(releases []*apistructs.ReleaseGetResponseData, params map[string]apistructs.DeploymentOrderParam,
+func composeApplicationsInfo(releases []*dbclient.Release, params map[string]apistructs.DeploymentOrderParam,
 	appsStatus apistructs.DeploymentOrderStatusMap) ([]*apistructs.ApplicationInfo, error) {
 
 	asi := make([]*apistructs.ApplicationInfo, 0)
@@ -136,16 +147,21 @@ func composeApplicationsInfo(releases []*apistructs.ReleaseGetResponseData, para
 			status = app.DeploymentStatus
 		}
 
+		labels := make(map[string]string)
+		if err := json.Unmarshal([]byte(subRelease.Labels), &labels); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal release labels, err: %v", err)
+		}
+
 		asi = append(asi, &apistructs.ApplicationInfo{
-			Id:             uint64(subRelease.ApplicationID),
+			Id:             subRelease.ApplicationId,
 			Name:           applicationName,
 			DeploymentId:   app.DeploymentID,
 			Params:         &orderParamsData,
-			ReleaseId:      subRelease.ReleaseID,
+			ReleaseId:      subRelease.ReleaseId,
 			ReleaseVersion: subRelease.Version,
-			Branch:         subRelease.Labels["gitBranch"],
-			CommitId:       subRelease.Labels["gitCommitId"],
-			DiceYaml:       subRelease.Diceyml,
+			Branch:         labels["gitBranch"],
+			DiceYaml:       subRelease.DiceYaml,
+			CommitId:       labels["gitCommitId"],
 			Status:         status,
 		})
 	}
@@ -204,4 +220,11 @@ func convertConfigType(configType string) string {
 		return "dice-file"
 	}
 	return "kv"
+}
+
+func covertReleaseType(isProjectRelease bool) string {
+	if isProjectRelease {
+		return apistructs.ReleaseTypeProject
+	}
+	return apistructs.ReleaseTypeApplication
 }

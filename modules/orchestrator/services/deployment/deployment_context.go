@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
+	"github.com/erda-project/erda/modules/orchestrator/i18n"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
@@ -181,7 +182,7 @@ func (fsm *DeployFSMContext) precheck() error {
 				ResourceType:   apistructs.RuntimeError,
 				ResourceID:     strconv.FormatUint(fsm.Runtime.ID, 10),
 				OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
-				HumanLog:       fmt.Sprintf("不合法的服务名, %s", svcNames),
+				HumanLog:       i18n.OrgSprintf(strconv.FormatUint(fsm.Runtime.OrgID, 10), "InvalidServiceName", svcNames),
 				PrimevalLog: `The service name should conform to the following specifications:
 1. contain at most 63 characters 2. contain only lowercase alphanumeric characters or '-'
 3. start with an alphanumeric character 4. end with an alphanumeric character`,
@@ -684,11 +685,8 @@ func (fsm *DeployFSMContext) continuePhaseCompleted() error {
 }
 
 func (fsm *DeployFSMContext) UpdateDeploymentStatusToRuntimeAndOrder() error {
-	var deploymentOrder *dbclient.DeploymentOrder
 	var err error
 	var app *apistructs.ApplicationDTO
-	deploymentOrderStatusMap := make(apistructs.DeploymentOrderStatusMap)
-	var deploymentOrderStatus []byte
 
 	fsm.Runtime.DeploymentStatus = string(fsm.Deployment.Status)
 	if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
@@ -696,39 +694,24 @@ func (fsm *DeployFSMContext) UpdateDeploymentStatusToRuntimeAndOrder() error {
 	}
 
 	DeploymentOrderID := fsm.Deployment.DeploymentOrderId
-	//TODO: 兼容没有DeploymentOrderID的场景
-	if deploymentOrder, err = fsm.db.GetDeploymentOrder(DeploymentOrderID); err != nil {
-		errMsg := fmt.Sprintf("failed to get deployment order of deployment[%s]: %v", DeploymentOrderID, err)
-		logrus.Errorf("%s", errMsg)
-		return nil
-	}
 	if app, err = fsm.bdl.GetApp(fsm.Runtime.ApplicationID); err != nil {
-		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v", DeploymentOrderID, err)
+		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v",
+			DeploymentOrderID, err)
 		logrus.Errorf("%s", errMsg)
 		return nil
 	}
-	if deploymentOrder.Status != "" {
-		if err := json.Unmarshal([]byte(deploymentOrder.Status), &deploymentOrderStatusMap); err != nil {
-			logrus.Warnf("failed to unmarshal, (%v)", err)
-			return nil
-		}
-	}
-	deploymentOrderStatusMap[app.Name] = apistructs.DeploymentOrderStatusItem{
+	appDeploymentStatus := apistructs.DeploymentOrderStatusItem{
 		AppID:            app.ID,
 		DeploymentID:     fsm.deploymentID,
 		DeploymentStatus: fsm.Deployment.Status,
 		RuntimeID:        fsm.Runtime.ID,
 	}
-	logrus.Infof("update deployment(%+v) status to deployment_order (%+v) detail is: %+v",
-		fsm.deploymentID, DeploymentOrderID, deploymentOrderStatusMap)
-	if deploymentOrderStatus, err = json.Marshal(deploymentOrderStatusMap); err != nil {
-		logrus.Warnf("failed to marshal, (%v)", err)
-		return nil
-	}
-
-	deploymentOrder.Status = string(deploymentOrderStatus)
-	if err := fsm.db.UpdateDeploymentOrder(deploymentOrder); err != nil {
-		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v", DeploymentOrderID, err)
+	logrus.Infof("update deployment(%+v) status for app (%+v) to deployment_order (%+v) detail is: %+v",
+		fsm.deploymentID, app.Name, DeploymentOrderID, appDeploymentStatus)
+	if err := fsm.db.UpateDeploymentOrderStatus(DeploymentOrderID,
+		app.Name, appDeploymentStatus); err != nil {
+		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v",
+			DeploymentOrderID, err)
 		logrus.Errorf("%s", errMsg)
 		return nil
 	}
@@ -910,7 +893,7 @@ func (fsm *DeployFSMContext) deployService() error {
 				ResourceType:   apistructs.RuntimeError,
 				ResourceID:     strconv.FormatUint(fsm.Runtime.ID, 10),
 				OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
-				HumanLog:       fmt.Sprintf("调度失败，失败原因：没有匹配的节点能部署, 请检查节点标签是否正确"),
+				HumanLog:       i18n.OrgSprintf(strconv.FormatUint(fsm.Runtime.OrgID, 10), "FailedToSchedule.NoNodeToDeploy"),
 				PrimevalLog:    fmt.Sprintf("没有匹配的节点能部署, %s", precheckResp.Info),
 				DedupID:        fmt.Sprintf("orch-%d", fsm.Runtime.ID),
 			},

@@ -90,13 +90,13 @@ func (s *ErdaProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipel
 		Path:        params.Path,
 		Name:        params.FileName,
 		PipelineYml: createReqV2.PipelineYml,
-		Location:    makeLocation(app, cicdPipelineType),
 	}, nil
 }
 
 func (s *ErdaProjectSourceType) GetPipelineCreateRequestV2() string {
 	return s.PipelineCreateRequestV2
 }
+
 
 func makeRemote(app *apistructs.ApplicationDTO) string {
 	return filepath.Join(app.OrgName, app.ProjectName, app.Name)

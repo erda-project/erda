@@ -228,15 +228,15 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 		CreatedAt: model.CreatedAt.UnixNano() / int64(time.Millisecond),
 		UpdatedAt: model.UpdatedAt.UnixNano() / int64(time.Millisecond),
 	}, model.ViewConfig, model.DataConfig)}
-	err = s.auditContextMap(ctx, req.Name)
+	err = s.auditContextMap(ctx, req.Name, req.Scope)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	return result, nil
 }
 
-func (s *dataViewService) getOrgName(ctx *context.Context) (string, error) {
-	orgId := apis.GetOrgID(*ctx)
+func (s *dataViewService) getOrgName(ctx context.Context) (string, error) {
+	orgId := apis.GetOrgID(ctx)
 	org, err := s.p.bdl.GetOrg(orgId)
 	if err != nil {
 		return "", err
@@ -245,12 +245,21 @@ func (s *dataViewService) getOrgName(ctx *context.Context) (string, error) {
 }
 
 func (s *dataViewService) UpdateCustomView(ctx context.Context, req *pb.UpdateCustomViewRequest) (*pb.UpdateCustomViewResponse, error) {
-	err := s.custom.UpdateView(req.Id, fieldsForUpdate(req))
+	data, err := s.custom.GetByFields(map[string]interface{}{
+		"ID": req.Id,
+	})
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	err = s.custom.UpdateView(req.Id, fieldsForUpdate(req))
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
 	result := &pb.UpdateCustomViewResponse{Data: true}
-	err = s.auditContextMap(ctx, req.Name)
+	err = s.auditContextMap(ctx, data.Name, data.Scope)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -268,21 +277,26 @@ func (s *dataViewService) DeleteCustomView(ctx context.Context, req *pb.DeleteCu
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
-	err = s.auditContextMap(ctx, data.Name)
+	err = s.auditContextMap(ctx, data.Name, data.Scope)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	return &pb.DeleteCustomViewResponse{Data: true}, nil
 }
 
-func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName string) error {
-	orgName, err := s.getOrgName(&ctx)
+func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName, scope string) error {
+	orgName, err := s.getOrgName(ctx)
 	if err != nil {
 		return err
 	}
 	auditContext := map[string]interface{}{
 		"orgName":       orgName,
 		"dashboardName": dashboardName,
+		"scope":         scope,
+	}
+	if scope != "org" {
+		auditContext["projectName"] = apis.GetHeader(ctx, "erda-projectName")
+		auditContext["workspace"] = apis.GetHeader(ctx, "erda-workspace")
 	}
 	audit.ContextEntryMap(ctx, auditContext)
 	return nil

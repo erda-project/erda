@@ -188,6 +188,7 @@ func Test_getOperations(t *testing.T) {
 		projectId uint64
 		appId     uint64
 		runtimeId uint64
+		disable   bool
 	}
 	tests := []struct {
 		name string
@@ -217,7 +218,7 @@ func Test_getOperations(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getOperations(tt.args.projectId, tt.args.appId, tt.args.runtimeId); !reflect.DeepEqual(got, tt.want) {
+			if got := getOperations(defaultSDK, tt.args.projectId, tt.args.appId, tt.args.runtimeId, tt.args.disable); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getOperations() = %v, want %v", got, tt.want)
 			}
 		})
@@ -273,6 +274,28 @@ func Test_getKvInfos(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			getKvInfos(tt.args.sdk, tt.args.appName, tt.args.creatorName, tt.args.deployOrderName, tt.args.deployVersion, tt.args.healthStr, tt.args.runtime, tt.args.lastOperatorTime)
+		})
+	}
+}
+
+func Test_getMoreOperations(t *testing.T) {
+	type args struct {
+		sdk *cptype.SDK
+		id  string
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{sdk: defaultSDK},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			getMoreOperations(tt.args.sdk, tt.args.id)
 		})
 	}
 }

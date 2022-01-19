@@ -17,6 +17,7 @@ package page
 import (
 	"encoding/base64"
 	"encoding/json"
+	"math"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -26,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
@@ -60,19 +62,20 @@ type Condition struct {
 }
 
 func (af *AdvanceFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		af.Values = make(cptype.ExtraMap)
 		err := common.Transfer(opData.ClientData.Values, &af.Values)
 		if err != nil {
-			return
+			return nil
 		}
 		(*sdk.GlobalState)["advanceFilter"] = af.Values
 		urlParam, err := af.generateUrlQueryParams(af.Values)
 		if err != nil {
-			return
+			return nil
 		}
-		(*af.StdStatePtr)["inputFilter__urlQuery"] = urlParam
+		(*af.StdStatePtr)["advanceFilter__urlQuery"] = urlParam
 		af.StdDataPtr = af.getData(sdk)
+		return nil
 	}
 }
 
@@ -85,14 +88,16 @@ func (af *AdvanceFilter) generateUrlQueryParams(Values cptype.ExtraMap) (string,
 }
 
 func (af *AdvanceFilter) RegisterFilterItemSaveOp(opData filter.OpFilterItemSave) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 
+		return nil
 	}
 }
 
 func (af *AdvanceFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDelete) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 
+		return nil
 	}
 }
 func (af *AdvanceFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
@@ -100,19 +105,20 @@ func (af *AdvanceFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 }
 
 func (af *AdvanceFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		err := common.Transfer(sdk.Comp.State, af.StdStatePtr)
 		if err != nil {
-			return
+			return nil
 		}
-		if urlquery := sdk.InParams.String("inputFilter__urlQuery"); urlquery != "" {
+		if urlquery := sdk.InParams.String("advanceFilter__urlQuery"); urlquery != "" {
 			if err = af.flushOptsByFilter(urlquery); err != nil {
 				logrus.Errorf("failed to transfer values in component advance filter")
-				return
+				return nil
 			}
 		}
 		(*sdk.GlobalState)["advanceFilter"] = af.Values
 		af.StdDataPtr = af.getData(sdk)
+		return nil
 	}
 }
 
@@ -150,19 +156,32 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 		logrus.Errorf("parse oid failed,%v", err)
 		return data
 	}
+	appIds := make([]uint64, 0)
+	appIdToName := make(map[uint64]string)
+	allApps, err := af.bdl.GetAppList(sdk.Identity.OrgID, sdk.Identity.UserID, apistructs.ApplicationListRequest{
+		ProjectID: projectId,
+		IsSimple:  true,
+		PageSize:  math.MaxInt32,
+		PageNo:    1})
+	if err != nil {
+		logrus.Errorf("get my app failed,%v", err)
+		return data
+	}
+	for i := 0; i < len(allApps.List); i++ {
+		appIds = append(appIds, allApps.List[i].ID)
+		appIdToName[allApps.List[i].ID] = allApps.List[i].Name
+	}
+	myApp := make(map[uint64]bool)
 	apps, err := af.bdl.GetMyApps(sdk.Identity.UserID, oid)
 	if err != nil {
 		logrus.Errorf("get my app failed,%v", err)
 		return data
 	}
-	appIds := make([]uint64, 0)
-	appIdToName := make(map[uint64]string)
 	for i := 0; i < len(apps.List); i++ {
 		if apps.List[i].ProjectID != projectId {
 			continue
 		}
-		appIds = append(appIds, apps.List[i].ID)
-		appIdToName[apps.List[i].ID] = apps.List[i].Name
+		myApp[apps.List[i].ID] = true
 	}
 	runtimesByApp, err := af.bdl.ListRuntimesGroupByApps(oid, sdk.Identity.UserID, appIds, getEnv)
 	if err != nil {
@@ -197,6 +216,8 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 	(*sdk.GlobalState)["runtimes"] = selectRuntimes
 	// runtimeNameToAppName
 	(*sdk.GlobalState)["runtimeIdToAppName"] = runtimeIdToAppNameMap
+	// myApp
+	(*sdk.GlobalState)["myApp"] = myApp
 
 	// filter values
 

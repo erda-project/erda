@@ -46,17 +46,19 @@ type List struct {
 }
 
 func (p *List) RegisterItemStarOp(opData list.OpItemStar) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
 	}
 }
 
 func (p *List) RegisterItemClickGotoOp(opData list.OpItemClickGoto) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
 	}
 }
 
 func (p *List) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		// rerender list after any operation
 		req := apistructs.RuntimeScaleRecords{}
 		idStr := opData.ClientData.DataRef.ID
@@ -91,6 +93,7 @@ func (p *List) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.Opera
 			}
 		}
 		p.StdDataPtr = p.getData()
+		return nil
 	}
 }
 
@@ -100,7 +103,7 @@ type ClickClientData struct {
 }
 
 func (p *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		req := apistructs.RuntimeScaleRecords{}
 		for _, idStr := range opData.ClientData.SelectedRowIDs {
 			id, err := strconv.ParseUint(idStr, 10, 64)
@@ -135,6 +138,7 @@ func (p *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.Ope
 			}
 		}
 		p.StdDataPtr = p.getData()
+		return nil
 	}
 }
 
@@ -157,16 +161,18 @@ func (p *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.Opera
 }
 
 func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		p.Sdk = sdk
 		p.StdDataPtr = p.getData()
+		return nil
 	}
 }
 
 func (p *List) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		p.Sdk = sdk
 		p.StdDataPtr = p.getData()
+		return nil
 	}
 }
 
@@ -180,6 +186,8 @@ func (p *List) getData() *list.Data {
 	data.PageSize = p.PageSize
 	var runtimes []bundle.GetApplicationRuntimesDataEle
 	var runtimeIdToAppNameMap map[uint64]string
+	var myApp map[uint64]bool
+
 	if gsRuntimes, ok := (*p.Sdk.GlobalState)["runtimes"]; !ok {
 		logrus.Infof("not found runtimes")
 		getEnv, ok := p.Sdk.InParams["env"].(string)
@@ -204,13 +212,28 @@ func (p *List) getData() *list.Data {
 		}
 		appIds := make([]uint64, 0)
 		appIdToName := make(map[uint64]string)
+
+		allApps, err := p.Bdl.GetAppList(p.Sdk.Identity.OrgID, p.Sdk.Identity.UserID, apistructs.ApplicationListRequest{
+			ProjectID: projectId,
+			IsSimple:  true,
+			PageSize:  math.MaxInt32,
+			PageNo:    1})
+		if err != nil {
+			logrus.Errorf("get my app failed,%v", err)
+			return data
+		}
+		for i := 0; i < len(allApps.List); i++ {
+			appIds = append(appIds, allApps.List[i].ID)
+			appIdToName[allApps.List[i].ID] = allApps.List[i].Name
+		}
+		myApp = make(map[uint64]bool)
 		for i := 0; i < len(apps.List); i++ {
 			if apps.List[i].ProjectID != projectId {
 				continue
 			}
-			appIds = append(appIds, apps.List[i].ID)
-			appIdToName[apps.List[i].ID] = apps.List[i].Name
+			myApp[apps.List[i].ID] = true
 		}
+
 		logrus.Infof("start load runtimes by app %v", time.Now())
 
 		runtimesByApp, err := p.Bdl.ListRuntimesGroupByApps(oid, p.Sdk.Identity.UserID, appIds, getEnv)
@@ -247,6 +270,7 @@ func (p *List) getData() *list.Data {
 			logrus.Errorf("failed to transfer runtimeMap, runtimeMap %#v", (*p.Sdk.GlobalState)["runtimeIdToAppName"])
 			return data
 		}
+		myApp = (*p.Sdk.GlobalState)["myApp"].(map[uint64]bool)
 	}
 	logrus.Infof("runtimes:%v", runtimes)
 	//oid, err := strconv.ParseUint(p.Sdk.Identity.OrgID, 10, 64)
@@ -257,7 +281,7 @@ func (p *List) getData() *list.Data {
 
 	userReq := apistructs.UserListRequest{}
 	for _, runtime := range runtimes {
-		userReq.UserIDs = append(userReq.UserIDs, runtime.Creator)
+		userReq.UserIDs = append(userReq.UserIDs, runtime.LastOperator)
 	}
 	logrus.Infof("start load users %v", time.Now())
 
@@ -275,6 +299,7 @@ func (p *List) getData() *list.Data {
 		} else {
 			uidToName[user.ID] = user.Nick
 		}
+		logrus.Infof("%s : %s", user.ID, uidToName[user.ID])
 	}
 	ids := make([]string, 0)
 	deployId := p.Sdk.InParams["deployId"]
@@ -304,17 +329,19 @@ func (p *List) getData() *list.Data {
 		if runtimeIdToAppNameMap[appRuntime.ID] != nameStr {
 			nameStr = runtimeIdToAppNameMap[appRuntime.ID] + "#" + nameStr
 		}
-
-		data.List = append(data.List, list.Item{
+		logrus.Infof("%s : %s", appRuntime.Name, appRuntime.LastOperator)
+		isMyApp := myApp[appRuntime.ApplicationID]
+		item := list.Item{
 			ID:    idStr,
 			Title: nameStr,
 			//MainState:      getMainState(appRuntime.Status),
 			TitleState:     getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus),
-			Selectable:     true,
-			KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
-			Operations:     getOperations(appRuntime.ProjectID, appRuntime.ApplicationID, appRuntime.ID),
+			Selectable:     isMyApp,
+			KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.LastOperator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
+			Operations:     getOperations(p.Sdk, appRuntime.ProjectID, appRuntime.ApplicationID, appRuntime.ID, isMyApp),
 			MoreOperations: getMoreOperations(p.Sdk, fmt.Sprintf("%d", appRuntime.ID)),
-		})
+		}
+		data.List = append(data.List, item)
 		ids = append(ids, idStr)
 		runtimeMap[idStr] = appRuntime
 	}
@@ -507,12 +534,18 @@ func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus s
 	}
 }
 
-func getOperations(projectId, appId, runtimeId uint64) map[cptype.OperationKey]cptype.Operation {
+func getOperations(sdk *cptype.SDK, projectId, appId, runtimeId uint64, disable bool) map[cptype.OperationKey]cptype.Operation {
+	tip := ""
+	if disable {
+		tip = sdk.I18n("no authority found")
+	}
 	projectIdStr := fmt.Sprintf("%d", projectId)
 	appIdStr := fmt.Sprintf("%d", appId)
 	runtimeIdStr := fmt.Sprintf("%d", runtimeId)
 	return map[cptype.OperationKey]cptype.Operation{
 		"clickGoto": {
+			Disabled: disable,
+			Tip:      tip,
 			ServerData: &cptype.OpServerData{
 				"target": "projectDeployRuntime",
 				"params": map[string]string{
@@ -582,13 +615,13 @@ func getMoreOperations(sdk *cptype.SDK, id string) []list.MoreOpItem {
 	}
 }
 
-func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVersion, healthStr string, runtime bundle.GetApplicationRuntimesDataEle, lastOperatorTime time.Time) []list.KvInfo {
+func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVersion, health string, runtime bundle.GetApplicationRuntimesDataEle, lastOperatorTime time.Time) []list.KvInfo {
 	kvs := make([]list.KvInfo, 0)
-	if healthStr != "" {
+	if health != "" {
 		// service
 		kvs = append(kvs, list.KvInfo{
 			Key:   sdk.I18n("service"),
-			Value: healthStr,
+			Value: health,
 		})
 	}
 	if deployOrderName != "" {
@@ -610,12 +643,12 @@ func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVe
 	timeStr := ""
 	if day == 0 {
 		if hour == 0 {
-			timeStr = fmt.Sprintf("%dm", minute) + sdk.I18n("ago")
+			timeStr = fmt.Sprintf("%dm ", minute) + sdk.I18n("ago")
 		} else {
-			timeStr = fmt.Sprintf("%dh", hour) + sdk.I18n("ago")
+			timeStr = fmt.Sprintf("%dh ", hour) + sdk.I18n("ago")
 		}
 	} else {
-		timeStr = fmt.Sprintf("%dd", day) + sdk.I18n("ago")
+		timeStr = fmt.Sprintf("%dd ", day) + sdk.I18n("ago")
 	}
 	// running duration
 	kvs = append(kvs, list.KvInfo{

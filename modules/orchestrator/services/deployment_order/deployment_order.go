@@ -77,47 +77,17 @@ func WithDeployment(deploy *deployment.Deployment) Option {
 	}
 }
 
-// checkExecutePermission
-func (d *DeploymentOrder) checkExecutePermission(userId, workspace string, releaseResp *apistructs.ReleaseGetResponseData,
-	releaseIds ...string) error {
-
-	if len(releaseIds) != 0 {
-		var err error
-		releaseResp, err = d.bdl.GetRelease(releaseIds[0])
-		if err != nil {
-			return fmt.Errorf("failed to get release, err: %v", err)
-		}
-	}
-
-	releases := make([]*apistructs.ReleaseGetResponseData, 0)
-
-	if releaseResp.IsProjectRelease {
-		for _, r := range releaseResp.ApplicationReleaseList {
-			resp, err := d.bdl.GetRelease(r.ReleaseID)
-			if err != nil {
-				return fmt.Errorf("faield to get release, err: %v", err)
-			}
-			releases = append(releases, resp)
-		}
-	} else {
-		releases = append(releases, releaseResp)
-	}
-
+// batchCheckExecutePermission
+func (d *DeploymentOrder) batchCheckExecutePermission(userId, workspace string, applicationsInfo map[int64]string) error {
 	deniedApps := make([]string, 0)
-	for _, r := range releases {
-		access, err := d.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-			UserID:   userId,
-			Scope:    apistructs.AppScope,
-			ScopeID:  uint64(r.ApplicationID),
-			Resource: fmt.Sprintf("runtime-%s", strings.ToLower(workspace)),
-			Action:   apistructs.CreateAction,
-		})
+	// TODO: core-services provide batch auth interface
+	for appId, appName := range applicationsInfo {
+		isOk, err := d.checkExecutePermission(userId, workspace, uint64(appId))
 		if err != nil {
-			return fmt.Errorf("failed to check permission, err: %v", err)
+			return err
 		}
-
-		if !access.Access {
-			deniedApps = append(deniedApps, r.ApplicationName)
+		if !isOk {
+			deniedApps = append(deniedApps, appName)
 		}
 	}
 
@@ -126,4 +96,18 @@ func (d *DeploymentOrder) checkExecutePermission(userId, workspace string, relea
 	}
 
 	return nil
+}
+
+func (d *DeploymentOrder) checkExecutePermission(userId, workspace string, appId uint64) (bool, error) {
+	access, err := d.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userId,
+		Scope:    apistructs.AppScope,
+		ScopeID:  appId,
+		Resource: fmt.Sprintf("runtime-%s", strings.ToLower(workspace)),
+		Action:   apistructs.CreateAction,
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to check permission, err: %v", err)
+	}
+	return access.Access, nil
 }

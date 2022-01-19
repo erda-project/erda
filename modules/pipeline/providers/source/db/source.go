@@ -111,7 +111,8 @@ func (client *Client) GetPipelineSourceByUnique(unique *PipelineSourceUnique, op
 		Where("path = ?", unique.Path).
 		Where("name = ?", unique.Name).
 		Where("soft_deleted_at = 0").
-		Find(&pipelineSources); err != nil {
+		Find(&pipelineSources)
+		err != nil {
 		return nil, err
 	}
 	return pipelineSources, nil

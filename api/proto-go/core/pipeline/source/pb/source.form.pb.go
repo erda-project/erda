@@ -100,8 +100,6 @@ func (m *PipelineSource) UnmarshalURLValues(prefix string, values url.Values) er
 					return err
 				}
 				m.TimeUpdated.Nanos = int32(val)
-			case "location":
-				m.Location = vals[0]
 			}
 		}
 	}
@@ -133,8 +131,6 @@ func (m *PipelineSourceCreateRequest) UnmarshalURLValues(prefix string, values u
 					return err
 				}
 				m.VersionLock = val
-			case "location":
-				m.Location = vals[0]
 			}
 		}
 	}
@@ -265,11 +261,6 @@ func (m *PipelineSourceCreateResponse) UnmarshalURLValues(prefix string, values 
 					return err
 				}
 				m.PipelineSource.TimeUpdated.Nanos = int32(val)
-			case "pipelineSource.location":
-				if m.PipelineSource == nil {
-					m.PipelineSource = &PipelineSource{}
-				}
-				m.PipelineSource.Location = vals[0]
 			}
 		}
 	}
@@ -421,11 +412,6 @@ func (m *PipelineSourceUpdateResponse) UnmarshalURLValues(prefix string, values 
 					return err
 				}
 				m.PipelineSource.TimeUpdated.Nanos = int32(val)
-			case "pipelineSource.location":
-				if m.PipelineSource == nil {
-					m.PipelineSource = &PipelineSource{}
-				}
-				m.PipelineSource.Location = vals[0]
 			}
 		}
 	}
@@ -587,11 +573,6 @@ func (m *PipelineSourceGetResponse) UnmarshalURLValues(prefix string, values url
 					return err
 				}
 				m.PipelineSource.TimeUpdated.Nanos = int32(val)
-			case "pipelineSource.location":
-				if m.PipelineSource == nil {
-					m.PipelineSource = &PipelineSource{}
-				}
-				m.PipelineSource.Location = vals[0]
 			}
 		}
 	}

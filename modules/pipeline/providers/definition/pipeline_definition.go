@@ -47,6 +47,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	pipelineDefinition.ID = uuid.New().String()
 	pipelineDefinition.StartedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
+	pipelineDefinition.Location = request.Location
 	err := p.dbClient.CreatePipelineDefinition(&pipelineDefinition)
 	if err != nil {
 		return nil, err
@@ -218,6 +219,7 @@ func PipelineDefinitionToPb(pipelineDefinition *db.PipelineDefinition) *pb.Pipel
 		TimeUpdated:      timestamppb.New(pipelineDefinition.TimeUpdated),
 		StartedAt:        timestamppb.New(pipelineDefinition.StartedAt),
 		EndedAt:          timestamppb.New(pipelineDefinition.EndedAt),
+		Location:         pipelineDefinition.Location,
 	}
 	return de
 }

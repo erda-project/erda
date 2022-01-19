@@ -15,10 +15,12 @@
 package dbclient
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
@@ -26,7 +28,8 @@ import (
 )
 
 const (
-	orderTableName = "erda_deployment_order"
+	orderTableName   = "erda_deployment_order"
+	releaseTableName = "dice_release"
 )
 
 type DeploymentOrder struct {
@@ -50,6 +53,24 @@ type DeploymentOrder struct {
 
 func (DeploymentOrder) TableName() string {
 	return orderTableName
+}
+
+type Release struct {
+	ReleaseId              string
+	Version                string
+	IsProjectRelease       bool
+	ApplicationName        string
+	ApplicationId          uint64
+	ApplicationReleaseList string
+	Labels                 string
+	DiceYaml               string `gorm:"column:dice"`
+	UserId                 string
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
+}
+
+func (Release) TableName() string {
+	return releaseTableName
 }
 
 func (db *DBClient) ListDeploymentOrder(conditions *apistructs.DeploymentOrderListConditions, pageInfo *apistructs.PageInfo) (int, []DeploymentOrder, error) {
@@ -141,4 +162,53 @@ func (db *DBClient) UpdateDeploymentOrder(deploymentOrder *DeploymentOrder) erro
 			deploymentOrder.ID)
 	}
 	return nil
+}
+
+func (db *DBClient) GetReleases(releaseId string) (*Release, error) {
+	var r Release
+	if err := db.Where("release_id = ?", releaseId).Find(&r).Error; err != nil {
+		return nil, errors.Wrapf(err, "failed to get release %s", releaseId)
+	}
+	return &r, nil
+}
+
+func (db *DBClient) ListReleases(releasesId []string) ([]*Release, error) {
+	releases := make([]*Release, 0)
+	if err := db.Where("release_id in (?)", releasesId).Find(&releases).Error; err != nil {
+		return nil, errors.Wrapf(err, "failed to list release %+v", releasesId)
+	}
+	return releases, nil
+}
+func (db *DBClient) UpateDeploymentOrderStatus(id string, appName string,
+	appStatus apistructs.DeploymentOrderStatusItem) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		var (
+			deploymentOrder       DeploymentOrder
+			deploymentOrderStatus []byte
+			err                   error
+		)
+		deploymentOrderStatusMap := make(apistructs.DeploymentOrderStatusMap)
+		if err = tx.
+			Where("id = ?", id).
+			Find(&deploymentOrder).Error; err != nil {
+			return errors.Wrapf(err, "failed to get deployment order %s", id)
+		}
+		if deploymentOrder.Status != "" {
+			if err := json.Unmarshal([]byte(deploymentOrder.Status), &deploymentOrderStatusMap); err != nil {
+				return errors.Wrapf(err, "failed to unmarshal to deployment order status (%s)",
+					deploymentOrder.ID)
+			}
+		}
+		deploymentOrderStatusMap[appName] = appStatus
+		if deploymentOrderStatus, err = json.Marshal(deploymentOrderStatusMap); err != nil {
+			return errors.Wrapf(err, "failed to marshal to deployment order status (%s)",
+				deploymentOrder.ID)
+		}
+		deploymentOrder.Status = string(deploymentOrderStatus)
+		if err = tx.Save(&deploymentOrder).Error; err != nil {
+			return errors.Wrapf(err, "failed to update deployment order, id: %v.",
+				deploymentOrder.ID)
+		}
+		return nil
+	})
 }

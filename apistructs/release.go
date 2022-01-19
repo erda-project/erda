@@ -34,6 +34,11 @@ const (
 )
 
 const (
+	ReleaseTypeProject     = "project"
+	ReleaseTypeApplication = "application"
+)
+
+const (
 	// ResourceTypeDiceYml 资源类型为dice.yml
 	ResourceTypeDiceYml ResourceType = "diceyml"
 	// ResourceTypeAddonYml 资源类型为addon.yml
