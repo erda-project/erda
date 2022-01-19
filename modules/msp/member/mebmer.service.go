@@ -73,6 +73,7 @@ func (m memberService) ListMemberRoles(ctx context.Context, request *pb.ListMemb
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	lang := apis.Language(ctx)
 	if project.Data.Type == "DOP" {
 		scopeId, err := strconv.Atoi(projectId)
 		if err != nil {
@@ -109,15 +110,15 @@ func (m memberService) ListMemberRoles(ctx context.Context, request *pb.ListMemb
 			List: []*pb.RoleInfo{
 				{
 					Role: "Owner",
-					Name: "项目所有者",
+					Name: m.p.I18n.Text(lang, "project_owner_role"),
 				},
 				{
 					Role: "Lead",
-					Name: "研发主管",
+					Name: m.p.I18n.Text(lang, "project_lead_role"),
 				},
 				{
 					Role: "Dev",
-					Name: "开发工程师",
+					Name: m.p.I18n.Text(lang, "project_dev_role"),
 				},
 			},
 			Total: 3,
