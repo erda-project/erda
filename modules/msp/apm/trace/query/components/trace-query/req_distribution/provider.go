@@ -18,12 +18,12 @@ import (
 	"context"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/bubblegraph/impl"
+	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
@@ -57,7 +57,8 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		if err != nil {
 			p.Log.Error(err)
 		}
-		dataBuilder := bubblegraph.NewDataBuilder().WithTitle(p.I18n.Text(sdk.Lang, "traceDistribution"))
+		dataBuilder := bubblegraph.NewDataBuilder().WithTitle(p.I18n.Text(sdk.Lang, "traceDistribution")).
+			WithYOptions(bubblegraph.NewOptionsBuilder().WithType(structure.Time).WithPrecision(structure.Nanosecond).Build())
 		if response == nil {
 			p.StdDataPtr = dataBuilder.Build()
 			return nil
@@ -72,7 +73,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			timeFormat = strings.ReplaceAll(timeFormat, "T", " ")
 			timeFormat = strings.ReplaceAll(timeFormat, "Z", "")
 			x := timeFormat
-			y := math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue()/float64(time.Millisecond), 2)
+			y := math.DecimalPlacesWithDigitsNumber(row.Values[1].GetNumberValue(), 2)
 			size := row.Values[2].GetNumberValue()
 
 			dataBuilder.WithBubble(bubblegraph.NewBubbleBuilder().

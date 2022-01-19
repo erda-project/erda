@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -284,7 +285,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return nil
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, cpu, "rateUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, cpu, structure.String, "rateUnit", graph)
 			p.StdDataPtr = line
 			return nil
 		case memory:
@@ -292,7 +293,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return nil
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, memory, "rateUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, memory, structure.String, "rateUnit", graph)
 			p.StdDataPtr = line
 			return nil
 		case load:
@@ -300,7 +301,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return nil
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, load, "", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, load, structure.String, "", graph)
 			p.StdDataPtr = line
 			return nil
 		case podCount:
@@ -308,7 +309,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return nil
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, podCount, "pcsUnit", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, podCount, structure.String, "pcsUnit", graph)
 			p.StdDataPtr = line
 			return nil
 		case disk:
@@ -316,7 +317,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return nil
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, disk, "KB/s", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, disk, structure.TrafficRate, structure.KBSlashS, graph)
 			p.StdDataPtr = line
 			return nil
 		case network:
@@ -324,7 +325,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				return nil
 			}
-			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, network, "KB/s", graph)
+			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, network, structure.TrafficRate, structure.KBSlashS, graph)
 			p.StdDataPtr = line
 			return nil
 		}
