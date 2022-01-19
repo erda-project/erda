@@ -211,8 +211,10 @@
       "view": {
         "title": "客户端占比",
         "i18n": {
-          "zh": "客户端占比",
-          "en": "Client Ratio"
+          "title": {
+            "zh": "客户端占比",
+            "en": "Client Ratio"
+          }
         },
         "description": "",
         "chartType": "chart:pie",
