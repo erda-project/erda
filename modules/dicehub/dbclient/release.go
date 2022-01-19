@@ -124,7 +124,7 @@ func (client *DBClient) GetReleasesByParams(
 	orgID, projectID int64, applicationID []string,
 	keyword, releaseName, branch string,
 	isStable, isFormal, isProjectRelease *bool,
-	userID []string, version string, commitID, tags,
+	userID []string, version, releaseID string, commitID, tags,
 	cluster string, crossCluster *bool, isVersion bool, crossClusterOrSpecifyCluster *string,
 	startTime, endTime, pageNum, pageSize int64,
 	orderBy, order string) (int64, []Release, error) {
@@ -188,9 +188,23 @@ func (client *DBClient) GetReleasesByParams(
 		}
 
 		if len(versions) == 1 {
-			db = db.Where("version LIKE ?", fmt.Sprintf("%%%s%%", version))
+			db = db.Where("version LIKE ?", fmt.Sprintf("%%%s%%", versions[0]))
 		} else {
 			db = db.Where("version in (?)", versions)
+		}
+	}
+
+	if releaseID != "" {
+		var releaseIDs []string
+		splits := strings.Split(releaseID, ",")
+		for _, id := range splits {
+			releaseIDs = append(releaseIDs, strings.TrimSpace(id))
+		}
+
+		if len(releaseIDs) == 1 {
+			db = db.Where("release_id LIKE ?", fmt.Sprintf("%%%s%%", releaseIDs[0]))
+		} else {
+			db = db.Where("release_id IN (?)", releaseIDs)
 		}
 	}
 

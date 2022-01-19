@@ -24,6 +24,9 @@ zh:
   releaseDeleteFailed: 制品删除失败
   releaseFormalFailed: 制品转正失败
   releaseName: 制品名称
+  referencedReleases: 查看引用制品
+  releaseID: 制品ID
+  inputReleaseID: 请输入制品ID
 en:
   searchByVersion: Search by version
   application: Application
@@ -50,3 +53,6 @@ en:
   releaseDeleteFailed: Failed to delete release
   releaseFormalFailed: Failed to formal release
   releaseName: Release Name
+  referencedReleases: Referenced Releases
+  releaseID: Release ID
+  inputReleaseID: Input release ID
