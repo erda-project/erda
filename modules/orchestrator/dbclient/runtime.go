@@ -48,7 +48,7 @@ type Runtime struct {
 	Creator             string `gorm:"not null"`
 	ScheduleName        ScheduleName
 	Status              string `gorm:"column:runtime_status"`
-	DeploymentStatus    string
+	DeploymentStatus    apistructs.DeploymentStatus
 	CurrentDeploymentID uint64
 	DeploymentOrderId   string
 	ReleaseVersion      string
@@ -518,4 +518,13 @@ func (db *DBClient) CountServiceReferenceByClusterAndOrg(clusterName, orgID stri
 		return 0, err
 	}
 	return total, nil
+}
+
+func (db *DBClient) ListRuntimesByAppsName(env string, projectId uint64, appsName []string) (*[]Runtime, error) {
+	var runtimes []Runtime
+	if err := db.Model(&Runtime{}).Where("project_id = ? and env = ?", projectId, strings.ToUpper(env)).
+		Where("name in (?)", appsName).Find(&runtimes).Error; err != nil {
+		return nil, err
+	}
+	return &runtimes, nil
 }
