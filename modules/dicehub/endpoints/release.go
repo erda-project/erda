@@ -78,6 +78,22 @@ func (e *Endpoints) CreateRelease(ctx context.Context, r *http.Request, vars map
 		releaseRequest.IsStable = true
 	}
 
+	if releaseRequest.OrgID == 0 {
+		releaseRequest.OrgID = orgID
+	}
+
+	if releaseRequest.ProjectID == 0 {
+		return apierrors.ErrCreateRelease.MissingParameter("projectID").ToResp(), nil
+	}
+
+	if releaseRequest.ProjectName == "" {
+		project, err := e.bdl.GetProject(uint64(releaseRequest.ProjectID))
+		if err != nil {
+			return apierrors.ErrCreateRelease.InternalError(err).ToResp(), nil
+		}
+		releaseRequest.ProjectName = project.Name
+	}
+
 	// 如果没有传 version, 则查找规则列表, 如果当前分支能匹配上某个规则且分支 base 部分符合语义化版本号, 则将 version 生成出来, 并且令 IsStable=true
 	if releaseRequest.Version == "" {
 		branch, ok := releaseRequest.Labels["gitBranch"]

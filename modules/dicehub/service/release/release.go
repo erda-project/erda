@@ -402,16 +402,19 @@ func (r *Release) Update(orgID int64, releaseID string, req *apistructs.ReleaseU
 	if release.IsFormal {
 		return errors.New("formal release can not be updated")
 	}
-	// 若version不为空时，确保Version在应用层面唯一
+	// 若version不为空时，确保Version在应用层面或项目层唯一
 	if req.Version != "" && req.Version != release.Version {
-		if req.ApplicationID > 0 {
-			releases, err := r.db.GetReleasesByAppAndVersion(req.OrgID, req.ProjectID, req.ApplicationID, req.Version)
-			if err != nil {
-				return err
-			}
-			if len(releases) > 0 {
-				return errors.Errorf("release version: %s already exist", req.Version)
-			}
+		var releases []dbclient.Release
+		if !release.IsProjectRelease {
+			releases, err = r.db.GetReleasesByAppAndVersion(req.OrgID, req.ProjectID, req.ApplicationID, req.Version)
+		} else {
+			releases, err = r.db.GetReleasesByProjectAndVersion(req.OrgID, req.ProjectID, req.Version)
+		}
+		if err != nil {
+			return err
+		}
+		if len(releases) > 0 {
+			return errors.Errorf("release version: %s already exist", req.Version)
 		}
 	}
 
@@ -430,6 +433,10 @@ func (r *Release) Update(orgID int64, releaseID string, req *apistructs.ReleaseU
 	}
 
 	if release.IsProjectRelease {
+		release.ApplicationID = 0
+		release.ApplicationName = ""
+		release.Dice = ""
+
 		if len(req.ApplicationReleaseList) == 0 {
 			return errors.New("application release list can not be null for project release")
 		}
@@ -438,6 +445,14 @@ func (r *Release) Update(orgID int64, releaseID string, req *apistructs.ReleaseU
 		newAppReleases, err := r.db.GetReleases(req.ApplicationReleaseList)
 		if err != nil {
 			return errors.Errorf("failed to get application releases: %v", err)
+		}
+
+		selectedApp := make(map[int64]struct{})
+		for i := 0; i < len(newAppReleases); i++ {
+			if _, ok := selectedApp[newAppReleases[i].ApplicationID]; ok {
+				return errors.New("one application can only be selected once")
+			}
+			selectedApp[newAppReleases[i].ApplicationID] = struct{}{}
 		}
 
 		// update application_release_list
