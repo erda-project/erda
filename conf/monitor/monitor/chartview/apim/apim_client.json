@@ -193,7 +193,7 @@
                 "zh": "请求延时平均值",
                 "en": "Average Request Latency"
               }
-            }
+            },
             "avg": [
               "reql_mean"
             ],
@@ -258,7 +258,7 @@
         "title": "流量总览",
         "i18n": {
           "title": {
-            "zh":"流量总览",
+            "zh": "流量总览",
             "en": "Traffic Overview"
           }
         },
@@ -474,7 +474,7 @@
             "zh": "响应状态码分布",
             "en": "Response Status"
           }
-        }
+        },
         "description": "",
         "chartType": "chart:pie",
         "dataSourceType": "api",
@@ -498,7 +498,7 @@
                 "zh": "总调用量总和",
                 "en": "Total Requests"
               }
-            }
+            },
             "chartType": "chart:pie",
             "end": 1605077182581,
             "format": "chartv2",
@@ -601,7 +601,7 @@
                 "zh": "服务端出错(5XX)总和",
                 "en": "Server 5xx Status"
               }
-            }
+            },
             "chartType": "chart:line",
             "end": 1605077182581,
             "format": "chartv2",
