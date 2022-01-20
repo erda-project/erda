@@ -21,6 +21,7 @@ import (
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/addPodFileEditor"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/addPodFilter"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/charts"
+	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/consoleButton"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/filter"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/page"
 	_ "github.com/erda-project/erda/modules/cmp/component-protocol/components/cmp-dashboard-pods/podsCharts"

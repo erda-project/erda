@@ -21,6 +21,7 @@ hierarchy:
       - podsTotal
       - podsCharts
     topHead:
+      - consoleButton
       - addPodButton
     tableContainer:
       - tabsTable
@@ -41,12 +42,14 @@ components:
     type: FileEditor
   addPodButton:
     type: Button
+  consoleButton:
+    type: Custom
   filter:
     type: ContractiveFilter
   page:
     type: Container
   topHead:
-    type: Container
+    type: RowContainer
   charts:
     type: Container
   chartContainer:
