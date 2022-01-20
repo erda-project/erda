@@ -34,6 +34,15 @@ type pipelineDefinition struct {
 	dbClient *db.Client
 }
 
+func GetExtraValue(definition *pb.PipelineDefinition) (*apistructs.PipelineDefinitionExtraValue, error) {
+	var extraValue = apistructs.PipelineDefinitionExtraValue{}
+	err := json.Unmarshal([]byte(definition.Extra.Extra), &extraValue)
+	if err != nil {
+		return nil, err
+	}
+	return &extraValue, nil
+}
+
 func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefinitionCreateRequest) (*pb.PipelineDefinitionCreateResponse, error) {
 	if err := createPreCheck(request); err != nil {
 		return nil, err
