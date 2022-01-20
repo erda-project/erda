@@ -41,6 +41,7 @@ type Values struct {
 	CommitID          string   `json:"commitID,omitempty"`
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd,omitempty"`
 	UserIDs           []string `json:"userIDs,omitempty"`
+	ReleaseID         string   `json:"releaseID,omitempty"`
 }
 
 type Data struct {

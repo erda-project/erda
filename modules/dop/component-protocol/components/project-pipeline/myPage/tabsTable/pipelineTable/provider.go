@@ -109,7 +109,7 @@ func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 					Options: []table.OpBatchRowsHandleOption{
 						{
 							ID:              "batchRun",
-							Text:            "执行",
+							Text:            cputil.I18n(p.sdk.Ctx, "execute"),
 							ForbiddenRowIDs: []string{},
 						},
 					},
@@ -313,7 +313,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 					}
 					return strconv.FormatInt(v.PipelineId, 10)
 				}()).Build(),
-				ColumnExecutor:   table.NewUserCell(commodel.User{ID: v.Creator}).Build(),
+				ColumnExecutor:   table.NewUserCell(commodel.User{ID: v.Executor}).Build(),
 				ColumnCreator:    table.NewUserCell(commodel.User{ID: v.Creator}).Build(),
 				ColumnStartTime:  table.NewTextCell(formatTimeToStr(v.StartedAt.AsTime())).Build(),
 				ColumnCreateTime: table.NewTextCell(formatTimeToStr(v.TimeCreated.AsTime())).Build(),
