@@ -393,7 +393,7 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
 			},
 			Icon: &commodel.Icon{
-				Type: "shuaxin",
+				Type: "refresh",
 			},
 		})
 	}
@@ -427,7 +427,7 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			Icon: func() *commodel.Icon {
 				if *v.Enable {
 					return &commodel.Icon{
-						Type: "shijian",
+						Type: "start-timing",
 					}
 				}
 				return &commodel.Icon{
@@ -446,7 +446,7 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
 			},
 			Icon: &commodel.Icon{
-				Type: "shijian",
+				Type: "start-timing",
 			},
 		})
 	}
