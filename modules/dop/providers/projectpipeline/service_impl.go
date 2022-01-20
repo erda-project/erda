@@ -974,10 +974,10 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 
 	for _, v := range statics.GetPipelineDefinitionStatistics() {
 		appName := getAppNameByRemote(v.Remote)
-		if _, ok := appNamePipelineNumMap[appName]; ok {
-			appNamePipelineNumMap[appName].FailedNum = int(v.FailedNum)
-			appNamePipelineNumMap[appName].RunningNum = int(v.RunningNum)
-			appNamePipelineNumMap[appName].TotalNum = int(v.TotalNum)
+		if v2, ok := appNamePipelineNumMap[appName]; ok {
+			v2.FailedNum = int(v.FailedNum)
+			v2.RunningNum = int(v.RunningNum)
+			v2.TotalNum = int(v.TotalNum)
 		}
 	}
 
