@@ -148,6 +148,14 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
 
+	haveSameNameDefinition, err := p.checkDefinitionRemoteSameName(params.AppID, params.Name, apis.GetUserID(ctx))
+	if err != nil {
+		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
+	}
+	if haveSameNameDefinition {
+		return nil, apierrors.ErrCreateProjectPipeline.InternalError(fmt.Errorf("project have same name definition"))
+	}
+
 	sourceRsp, err := p.PipelineSource.Create(ctx, sourceReq)
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
@@ -184,6 +192,31 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		FileName:         sourceRsp.PipelineSource.Name,
 		PipelineSourceId: sourceRsp.PipelineSource.ID,
 	}}, nil
+}
+
+func (p *ProjectPipelineService) checkDefinitionRemoteSameName(appID uint64, name string, userID string) (bool, error) {
+	location, err := p.makeLocationByAppID(appID)
+	if err != nil {
+		return false, err
+	}
+
+	resp, err := p.PipelineDefinition.List(context.Background(), &dpb.PipelineDefinitionListRequest{
+		Location: location,
+		Name:     name,
+		PageNo:   1,
+		PageSize: 999,
+		Creator:  []string{userID},
+	})
+	if err != nil {
+		return false, err
+	}
+	// pipelineDefinition list method param name was like search, should be determine whether it is equal
+	for _, definition := range resp.Data {
+		if definition.Name == name {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (p *ProjectPipelineService) getYmlFromGittar(app *apistructs.ApplicationDTO, ref, filePath, userID string) (string, error) {
