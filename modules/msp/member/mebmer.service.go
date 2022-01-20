@@ -80,7 +80,7 @@ func (m memberService) ListMemberRoles(ctx context.Context, request *pb.ListMemb
 		roleList, err := m.p.bdl.ListMemberRoles(apistructs.ListScopeManagersByScopeIDRequest{
 			ScopeType: apistructs.ScopeType(request.ScopeType),
 			ScopeID:   int64(scopeId),
-		}, int64(orgId))
+		}, int64(orgId), lang[0].Code)
 		if err != nil {
 			return nil, errors.NewInternalServerError(err)
 		}
