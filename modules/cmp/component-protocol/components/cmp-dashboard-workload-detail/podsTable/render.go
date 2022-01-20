@@ -363,29 +363,29 @@ func (p *ComponentPodsTable) RenderTable() error {
 				},
 			},
 		}
-		if len(containerNames) != 0 && len(containerIDs) != 0 {
-			operate.Operations["log"] = LinkOperation{
-				Key:    "checkLog",
-				Text:   p.sdk.I18n("log"),
-				Reload: false,
-				Meta: map[string]interface{}{
-					"containerName": containerNames[0],
-					"podName":       name,
-					"namespace":     namespace,
-					"containerId":   containerIDs[0],
-				},
-			}
-			operate.Operations["console"] = LinkOperation{
-				Key:    "checkConsole",
-				Text:   p.sdk.I18n("console"),
-				Reload: false,
-				Meta: map[string]interface{}{
-					"containerName": containerNames[0],
-					"podName":       name,
-					"namespace":     namespace,
-				},
-			}
-		}
+		//if len(containerNames) != 0 && len(containerIDs) != 0 {
+		//	operate.Operations["log"] = LinkOperation{
+		//		Key:    "checkLog",
+		//		Text:   p.sdk.I18n("log"),
+		//		Reload: false,
+		//		Meta: map[string]interface{}{
+		//			"containerName": containerNames[0],
+		//			"podName":       name,
+		//			"namespace":     namespace,
+		//			"containerId":   containerIDs[0],
+		//		},
+		//	}
+		//	operate.Operations["console"] = LinkOperation{
+		//		Key:    "checkConsole",
+		//		Text:   p.sdk.I18n("console"),
+		//		Reload: false,
+		//		Meta: map[string]interface{}{
+		//			"containerName": containerNames[0],
+		//			"podName":       name,
+		//			"namespace":     namespace,
+		//		},
+		//	}
+		//}
 
 		items = append(items, Item{
 			ID:     id,
