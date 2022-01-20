@@ -36,6 +36,8 @@ func (m *PipelineDefinition) UnmarshalURLValues(prefix string, values url.Values
 			switch prefix + key {
 			case "ID":
 				m.ID = vals[0]
+			case "location":
+				m.Location = vals[0]
 			case "name":
 				m.Name = vals[0]
 			case "creator":
@@ -245,8 +247,6 @@ func (m *PipelineDefinition) UnmarshalURLValues(prefix string, values url.Values
 					return err
 				}
 				m.PipelineId = val
-			case "location":
-				m.Location = vals[0]
 			}
 		}
 	}
@@ -432,6 +432,11 @@ func (m *PipelineDefinitionCreateResponse) UnmarshalURLValues(prefix string, val
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
 				m.PipelineDefinition.ID = vals[0]
+			case "pipelineDefinition.location":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.Location = vals[0]
 			case "pipelineDefinition.name":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
@@ -749,11 +754,6 @@ func (m *PipelineDefinitionCreateResponse) UnmarshalURLValues(prefix string, val
 					return err
 				}
 				m.PipelineDefinition.PipelineId = val
-			case "pipelineDefinition.location":
-				if m.PipelineDefinition == nil {
-					m.PipelineDefinition = &PipelineDefinition{}
-				}
-				m.PipelineDefinition.Location = vals[0]
 			}
 		}
 	}
@@ -853,6 +853,11 @@ func (m *PipelineDefinitionUpdateResponse) UnmarshalURLValues(prefix string, val
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
 				m.PipelineDefinition.ID = vals[0]
+			case "pipelineDefinition.location":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.Location = vals[0]
 			case "pipelineDefinition.name":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
@@ -1170,11 +1175,6 @@ func (m *PipelineDefinitionUpdateResponse) UnmarshalURLValues(prefix string, val
 					return err
 				}
 				m.PipelineDefinition.PipelineId = val
-			case "pipelineDefinition.location":
-				if m.PipelineDefinition == nil {
-					m.PipelineDefinition = &PipelineDefinition{}
-				}
-				m.PipelineDefinition.Location = vals[0]
 			}
 		}
 	}
@@ -1226,6 +1226,11 @@ func (m *PipelineDefinitionGetResponse) UnmarshalURLValues(prefix string, values
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
 				m.PipelineDefinition.ID = vals[0]
+			case "pipelineDefinition.location":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.Location = vals[0]
 			case "pipelineDefinition.name":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
@@ -1543,11 +1548,6 @@ func (m *PipelineDefinitionGetResponse) UnmarshalURLValues(prefix string, values
 					return err
 				}
 				m.PipelineDefinition.PipelineId = val
-			case "pipelineDefinition.location":
-				if m.PipelineDefinition == nil {
-					m.PipelineDefinition = &PipelineDefinition{}
-				}
-				m.PipelineDefinition.Location = vals[0]
 			}
 		}
 	}
