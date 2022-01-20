@@ -15,6 +15,7 @@
 package apistructs
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -55,6 +56,17 @@ type PagePipeline struct {
 type DefinitionPageInfo struct {
 	Name         string `json:"name,omitempty"`
 	Creator      string `json:"creator,omitempty"`
+	Executor     string `json:"executor,omitempty"`
 	SourceRemote string `json:"sourceRemote,omitempty"`
 	SourceRef    string `json:"sourceRef,omitempty"`
+}
+
+func (p *PagePipeline) GetUserID() string {
+	if p.Extra.RunUser != nil && p.Extra.RunUser.ID != nil {
+		return fmt.Sprintf("%v", p.Extra.RunUser.ID)
+	}
+	if p.Extra.SubmitUser != nil && p.Extra.SubmitUser.ID != nil {
+		return fmt.Sprintf("%v", p.Extra.SubmitUser.ID)
+	}
+	return ""
 }
