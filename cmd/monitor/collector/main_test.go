@@ -18,8 +18,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 func Test_initConfigFile(t *testing.T) {
