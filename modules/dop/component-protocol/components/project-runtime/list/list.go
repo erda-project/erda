@@ -329,13 +329,11 @@ func (p *List) getData() *list.Data {
 			ID:    idStr,
 			Title: nameStr,
 			//MainState:      getMainState(appRuntime.Status),
-			TitleState: getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus),
-			Selectable: isMyApp,
-			KvInfos:    getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.LastOperator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
-		}
-		if isMyApp {
-			item.Operations = getOperations(appRuntime.ProjectID, appRuntime.ApplicationID, appRuntime.ID)
-			item.MoreOperations = getMoreOperations(p.Sdk, fmt.Sprintf("%d", appRuntime.ID))
+			TitleState:     getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus),
+			Selectable:     isMyApp,
+			KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.LastOperator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
+			Operations:     getOperations(p.Sdk, appRuntime.ProjectID, appRuntime.ApplicationID, appRuntime.ID, isMyApp),
+			MoreOperations: getMoreOperations(p.Sdk, fmt.Sprintf("%d", appRuntime.ID)),
 		}
 		data.List = append(data.List, item)
 		ids = append(ids, idStr)
@@ -530,12 +528,18 @@ func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus s
 	}
 }
 
-func getOperations(projectId, appId, runtimeId uint64) map[cptype.OperationKey]cptype.Operation {
+func getOperations(sdk *cptype.SDK, projectId, appId, runtimeId uint64, disable bool) map[cptype.OperationKey]cptype.Operation {
+	tip := ""
+	if disable {
+		tip = sdk.I18n("no authority found")
+	}
 	projectIdStr := fmt.Sprintf("%d", projectId)
 	appIdStr := fmt.Sprintf("%d", appId)
 	runtimeIdStr := fmt.Sprintf("%d", runtimeId)
 	return map[cptype.OperationKey]cptype.Operation{
 		"clickGoto": {
+			Disabled: disable,
+			Tip:      tip,
 			ServerData: &cptype.OpServerData{
 				"target": "projectDeployRuntime",
 				"params": map[string]string{
