@@ -61,6 +61,7 @@ erda.core.pipeline.aop:
       task_after_exec:
         - "unit-test-report"
         - "autotest-cookie-keep-after"
+        - "definition-report"
       task_before_prepare:
       task_after_prepare:
       task_before_create:
@@ -85,4 +86,5 @@ erda.core.pipeline.aop.plugins.pipeline.definition-report:
 erda.core.pipeline.aop.plugins.task.autotest-cookie-keep-before:
 erda.core.pipeline.aop.plugins.task.unit-test-report:
 erda.core.pipeline.aop.plugins.task.autotest-cookie-keep-after:
+erda.core.pipeline.aop.plugins.task.definition-report:
 

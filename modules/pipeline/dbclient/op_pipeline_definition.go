@@ -45,3 +45,11 @@ func (client *Client) UpdatePipelineDefinition(id string, pipelineDefinition *db
 	_, err := session.ID(id).AllCols().Update(pipelineDefinition)
 	return err
 }
+
+func (client *Client) IncreaseExecutedActionNum(id string, ops ...SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+	sql := `update pipeline_definition set executed_action_num = IF(executed_action_num<0,1,executed_action_num + 1) where id = ? AND soft_deleted_at = 0`
+	_, err := session.Exec(sql, id)
+	return err
+}

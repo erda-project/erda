@@ -112,16 +112,16 @@ func (t *Tab) SetOperations(activeKey string) {
 func (t *Tab) SetData(ctx context.Context, num Num) {
 	t.Data = Data{Options: []Option{
 		{
+			Label: cputil.I18n(ctx, "allPipeline") + fmt.Sprintf("(%d)", num.AllPipelineNum),
+			Value: common.AllState.String(),
+		},
+		{
 			Label: cputil.I18n(ctx, "minePipeline") + fmt.Sprintf("(%d)", num.MinePipelineNum),
 			Value: common.MineState.String(),
 		},
 		{
 			Label: cputil.I18n(ctx, "primaryPipeline") + fmt.Sprintf("(%d)", num.PrimaryPipelineNum),
 			Value: common.PrimaryState.String(),
-		},
-		{
-			Label: cputil.I18n(ctx, "allPipeline") + fmt.Sprintf("(%d)", num.AllPipelineNum),
-			Value: common.AllState.String(),
 		},
 	}}
 }

@@ -26,5 +26,6 @@ import (
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins/pipeline/testplan_before"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins/task/autotest_cookie_keep_after"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins/task/autotest_cookie_keep_before"
+	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins/task/definitionreport"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins/task/unit_test_report"
 )
