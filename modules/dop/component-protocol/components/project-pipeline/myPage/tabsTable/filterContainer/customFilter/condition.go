@@ -19,6 +19,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 )
 
@@ -53,7 +54,7 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 }
 
 func (p *CustomFilter) StatusCondition() *model.SelectCondition {
-	statuses := apistructs.PipelineAllStatuses
+	statuses := util.PipelineDefinitionStatus
 	var opts []model.SelectOption
 	for _, status := range statuses {
 		opts = append(opts, *model.NewSelectOption(cputil.I18n(p.sdk.Ctx, common.ColumnPipelineStatus+status.String()), status.String()))
