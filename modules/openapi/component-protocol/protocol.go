@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"regexp"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type GlobalInnerKey string
@@ -65,6 +67,7 @@ type ContextBundle struct {
 
 // scenario name: scenario default protocol
 var DefaultProtocols = make(map[string]apistructs.ComponentProtocol)
+var DefaultProtocolsRaw = make(map[string]string)
 
 // default path: libs/erda-configs/permission
 func InitDefaultCompProtocols(path string) {
@@ -100,13 +103,36 @@ func InitDefaultCompProtocols(path string) {
 	}
 }
 
-func LoadDefaultProtocol(scenario string) (apistructs.ComponentProtocol, error) {
-	s, ok := DefaultProtocols[scenario]
+var CpPlaceHolderRe = regexp.MustCompile(`\${{[ ]{1}([^{}\s]+)[ ]{1}}}`)
+
+const I18n = "i18n"
+
+func LoadDefaultProtocol(ctx context.Context, scenario string) (apistructs.ComponentProtocol, error) {
+	rawYamlStr, ok := DefaultProtocolsRaw[scenario]
 	if !ok {
-		err := fmt.Errorf("default protocol not exist, scenario:%s", scenario)
-		return apistructs.ComponentProtocol{}, err
+		p, ok := DefaultProtocols[scenario]
+		if !ok {
+			err := fmt.Errorf("default protocol not exist, scenario:%s", scenario)
+			return apistructs.ComponentProtocol{}, err
+		}
+		return p, nil
 	}
-	return s, nil
+	bdl := ctx.Value(GlobalInnerKeyCtxBundle.String()).(ContextBundle)
+	locale := bdl.Bdl.GetLocale(bdl.Locale)
+	replaced := strutil.ReplaceAllStringSubmatchFunc(CpPlaceHolderRe, rawYamlStr, func(v []string) string {
+		if len(v) == 2 && strings.HasPrefix(v[1], I18n+".") {
+			key := strings.TrimPrefix(v[1], I18n+".")
+			if len(key) > 0 {
+				return locale.Get(key)
+			}
+		}
+		return v[0]
+	})
+	var p apistructs.ComponentProtocol
+	if err := yaml.Unmarshal([]byte(replaced), &p); err != nil {
+		return apistructs.ComponentProtocol{}, fmt.Errorf("failed to parse protocol yaml i18n, err: %v", err)
+	}
+	return p, nil
 }
 
 func deepCopy(src, dst interface{}) error {
