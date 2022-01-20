@@ -41,7 +41,9 @@ components:
 rendering:
   pipelineTable:
     - name: pipelineTabs
-
+  customFilter:
+    - name: pipelineTabs
+    - name: pipelineTable
   __DefaultRendering__:
     - name: myPage
     - name: pageHeader
