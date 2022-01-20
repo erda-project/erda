@@ -89,7 +89,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		}
 		chart.SetYAxis(sdk.I18n("API"), apiYAxis...)
 		chart.SetYOptions(linegraph.NewOptionsBuilder().
-			WithDimension(sdk.I18n("API")).WithType(structure.Time).WithPrecision(structure.Millisecond).Build())
+			WithDimension(sdk.I18n("API")).WithType(structure.Time).WithPrecision(structure.Millisecond).WithEnable(true).Build())
 		chart.SubTitle = "ms"
 
 		p.StdDataPtr = chart

@@ -93,7 +93,7 @@ func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, 
 	builder := linegraph.NewDataBuilder().WithTitle(p.I18n.Text(ctx.Value(common.LangKey).(i18n.LanguageCodes), strings.ToLower(data.Type)))
 	builder.WithXAxis(xAxis...).WithXOptions(linegraph.NewOptionsBuilder().WithType(structure.String).Build())
 	builder.WithYAxis(dimension.(string), yAxis...).WithYOptions(linegraph.NewOptionsBuilder().
-		WithDimension(dimension.(string)).WithType(yType).WithPrecision(yUnit).Build())
+		WithDimension(dimension.(string)).WithType(yType).WithPrecision(yUnit).WithEnable(true).Build())
 	line := builder.Build()
 	line.SubTitle = chart.GetChartUnitDefault(chartType, ctx.Value(common.LangKey).(i18n.LanguageCodes), p.I18n)
 
@@ -158,7 +158,7 @@ func (p *provider) GetBubbleChart(ctx context.Context, bubbleType BubbleChartTyp
 	yType, yUnit := yUnitGetter(chartType)
 	builder := bubblegraph.NewDataBuilder().WithTitle(p.I18n.Text(ctx.Value(common.LangKey).(i18n.LanguageCodes), strings.ToLower(string(bubbleType)))).
 		WithXOptions(bubblegraph.NewOptionsBuilder().WithType(structure.String).Build()).
-		WithYOptions(bubblegraph.NewOptionsBuilder().WithType(yType).WithPrecision(yUnit).WithDimension(dimension.(string)).Build())
+		WithYOptions(bubblegraph.NewOptionsBuilder().WithType(yType).WithPrecision(yUnit).WithDimension(dimension.(string)).WithEnable(true).Build())
 	for _, item := range data.View {
 		builder.WithBubble(bubblegraph.NewBubbleBuilder().
 			WithDimension(dimension.(string)).
