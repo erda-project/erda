@@ -84,6 +84,8 @@ func (p *provider) GetChart(ctx context.Context, chartType pb.ChartType, start, 
 		switch strings.ToLower(chartType.String()) {
 		case strings.ToLower(pb.ChartType_AvgDuration.String()):
 			return structure.Time, structure.Millisecond
+		case strings.ToLower(pb.ChartType_RPS.String()):
+			return structure.String, structure.ReqSlashS
 		default:
 			return structure.Number, ""
 		}
