@@ -14,5 +14,3 @@ jobs:
         run: git remote add mirror https://${{ secrets.ERDA_CLOUD_MIRROR_GIT_USERNAME }}:${{ secrets.ERDA_CLOUD_MIRROR_GIT_PASSWORD }}@erda.cloud/erda/dop/erda-project/erda-mirror
       - name: push
         run: git push --tags --force --prune mirror "refs/remotes/origin/*:refs/heads/*"
-      - name: hack master
-        run: git push --force mirror "refs/remotes/origin/master:refs/heads/release/master"

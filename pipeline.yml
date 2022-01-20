@@ -3,6 +3,7 @@ version: "1.1"
 on:
   push:
     branches:
+      - master
       - release/*
     tags:
       - v*
@@ -40,7 +41,7 @@ stages:
       - git-checkout:
           alias: erda-java-extensions
           params:
-            uri: https://github.com/erda-project/erda-java-extensions.git
+            uri: https://erda.cloud/erda/dop/erda-project/erda-java-extensions-mirror
             branch: master
             depth: 1
   - stage:
