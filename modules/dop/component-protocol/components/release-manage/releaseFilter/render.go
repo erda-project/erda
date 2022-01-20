@@ -133,8 +133,9 @@ func (f *ComponentReleaseFilter) DecodeURLQuery() error {
 	f.State.Values.ApplicationIDs = appIDs
 	f.State.Values.UserIDs = userIDs
 	f.State.Values.CreatedAtStartEnd = timestamps
-	f.State.Values.CommitID = query["commitID"].(string)
-	f.State.Values.BranchID = query["branchID"].(string)
+	f.State.Values.CommitID, _ = query["commitID"].(string)
+	f.State.Values.BranchID, _ = query["branchID"].(string)
+	f.State.Values.ReleaseID, _ = query["releaseID"].(string)
 	return nil
 }
 
@@ -145,6 +146,7 @@ func (f *ComponentReleaseFilter) EncodeURLQuery() error {
 	urlQuery["createdAtStartEnd"] = f.State.Values.CreatedAtStartEnd
 	urlQuery["commitID"] = f.State.Values.CommitID
 	urlQuery["branchID"] = f.State.Values.BranchID
+	urlQuery["releaseID"] = f.State.Values.ReleaseID
 	jsonData, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err

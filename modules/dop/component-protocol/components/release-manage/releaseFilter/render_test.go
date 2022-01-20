@@ -61,6 +61,7 @@ func getPair() (Values, string) {
 		CommitID:          "testCommitID",
 		UserIDs:           []string{"testUserID"},
 		CreatedAtStartEnd: []int64{1, 1},
+		ReleaseID:         "testReleaseID",
 	}
 	data, err := json.Marshal(v)
 	if err != nil {
