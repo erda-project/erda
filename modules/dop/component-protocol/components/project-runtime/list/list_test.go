@@ -149,7 +149,7 @@ func Test_getTitleState(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			getTitleState(tt.args.sdk, tt.args.deployStatus, tt.args.deploymentId, tt.args.appId, tt.args.delete)
+			getTitleState(tt.args.sdk, tt.args.deployStatus, tt.args.deploymentId, tt.args.appId, tt.args.delete, false)
 		})
 	}
 }
@@ -201,6 +201,7 @@ func Test_getOperations(t *testing.T) {
 				projectId: 0,
 				appId:     0,
 				runtimeId: 0,
+				disable:   true,
 			},
 			want: map[cptype.OperationKey]cptype.Operation{
 				"clickGoto": {
