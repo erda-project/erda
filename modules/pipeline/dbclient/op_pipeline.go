@@ -392,7 +392,7 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 			baseSQL.Join("INNER", definitiondb.PipelineDefinition{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_definition_id", definitiondb.PipelineDefinition{}.TableName(), (&spec.PipelineBase{}).TableName()))
 			baseSQL.Join("INNER", sourcedb.PipelineSource{}.TableName(), fmt.Sprintf("%v.id = %v.pipeline_source_id", sourcedb.PipelineSource{}.TableName(), definitiondb.PipelineDefinition{}.TableName()))
 			if len(definitionReq.Name) > 0 {
-				baseSQL.Where(fmt.Sprintf("%v.name like ?", definitiondb.PipelineDefinition{}.TableName()), definitionReq.Name+"%")
+				baseSQL.Where(fmt.Sprintf("%v.name like ?", definitiondb.PipelineDefinition{}.TableName()), "%"+definitionReq.Name+"%")
 			}
 			if len(definitionReq.SourceRemotes) > 0 {
 				baseSQL.In(tableFieldName(sourcedb.PipelineSource{}.TableName(), "remote"), definitionReq.SourceRemotes)
