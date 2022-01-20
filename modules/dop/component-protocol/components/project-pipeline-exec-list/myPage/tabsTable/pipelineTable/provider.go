@@ -35,6 +35,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
@@ -210,7 +211,7 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 		CellsMap: map[table.ColumnKey]table.Cell{
 			ColumnPipelineName: table.NewTextCell(pipeline.DefinitionPageInfo.Name).Build(),
 			ColumnPipelineStatus: table.NewCompleteTextCell(commodel.Text{
-				Text: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus)+pipeline.Status.String()),
+				Text: util.DisplayStatusText(p.sdk.Ctx, pipeline.Status.String()),
 				Status: func() commodel.UnifiedStatus {
 					if pipeline.Status.IsRunningStatus() {
 						return commodel.ProcessingStatus

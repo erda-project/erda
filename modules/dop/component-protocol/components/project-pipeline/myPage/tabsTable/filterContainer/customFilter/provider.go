@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 )
@@ -127,8 +128,14 @@ func (p *CustomFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) {
 		values := p.State.FrontendConditionValues
+
+		var realSearchStatus []string
+		for _, status := range values.Status {
+			realSearchStatus = append(realSearchStatus, util.TransferStatus(status)...)
+		}
+
 		p.gsHelper.SetGlobalTableFilter(gshelper.TableFilter{
-			Status:            values.Status,
+			Status:            realSearchStatus,
 			Creator:           values.Creator,
 			App:               values.App,
 			Executor:          values.Executor,
