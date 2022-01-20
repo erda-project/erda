@@ -1491,16 +1491,20 @@ func (topology *provider) GetTopology(lang i18n.LanguageCodes, param Vo) []*Node
 		topology.parseToTypologyNode(lang, timeRange, searchResult, relations, &nodes)
 	}
 
-	if tagInfo.ServiceId == "" {
-		return nodes
+	if tagInfo.ServiceId != "" {
+		return filterNodesByServiceId(tagInfo.ServiceId, nodes)
 	}
+	return nodes
+}
+
+func filterNodesByServiceId(serviceId string, nodes []*Node) []*Node {
 	relatedServiceNode := make([]*Node, 0)
-	currentServiceNode := getServiceNode(tagInfo.ServiceId, nodes)
+	currentServiceNode := getServiceNode(serviceId, nodes)
 	serviceParentNodeIds := getNodeParentNodeId(currentServiceNode)
 
 	for _, node := range nodes {
 		// filter service
-		if node.ServiceId == tagInfo.ServiceId {
+		if node.ServiceId == serviceId {
 			relatedServiceNode = append(relatedServiceNode, node)
 			continue
 		}
@@ -1508,7 +1512,7 @@ func (topology *provider) GetTopology(lang i18n.LanguageCodes, param Vo) []*Node
 		if _, ok := serviceParentNodeIds[node.Id]; ok {
 			for j := 0; j < len(node.Parents); j++ {
 				p := node.Parents[j]
-				if p.ServiceId != tagInfo.ServiceId {
+				if p.ServiceId != serviceId {
 					node.Parents = append(node.Parents[:j], node.Parents[j+1:]...)
 					j--
 				}
@@ -1518,7 +1522,7 @@ func (topology *provider) GetTopology(lang i18n.LanguageCodes, param Vo) []*Node
 		}
 		// filter service downstream
 		for _, parent := range node.Parents {
-			if parent.ServiceId == tagInfo.ServiceId {
+			if parent.ServiceId == serviceId {
 				var pNodes []*Node
 				pNodes = append(pNodes, parent)
 				node.Parents = pNodes
