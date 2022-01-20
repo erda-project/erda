@@ -186,16 +186,11 @@ func (a *ComponentAction) handleSceneSetDefault() error {
 	if setID == 0 {
 		return nil
 	}
-	sceneSet, err := a.AutoTestSvc.GetSceneSet(setID)
-	if err != nil {
-		return err
+	projectID, ok := a.sdk.InParams["projectId"].(float64)
+	if !ok {
+		return fmt.Errorf("inparams projectID not find")
 	}
-	spaces, err := a.AutoTestSvc.GetSpace(sceneSet.SpaceID)
-	if err != nil {
-		return err
-	}
-
-	project, err := a.bdl.GetProject(uint64(spaces.ProjectID))
+	project, err := a.bdl.GetProject(uint64(projectID))
 	if err != nil {
 		return err
 	}
@@ -254,21 +249,11 @@ func (a *ComponentAction) handleSceneSetDefault() error {
 }
 
 func (a *ComponentAction) handleSceneDefault() error {
-	scenesID := a.State.ScenesID
-	var req apistructs.AutotestSceneRequest
-	req.SceneID = scenesID
-	req.UserID = a.sdk.Identity.UserID
-	scene, err := a.bdl.GetAutoTestScene(req)
-	if err != nil {
-		return err
+	projectID, ok := a.sdk.InParams["projectId"].(float64)
+	if !ok {
+		return fmt.Errorf("inparams projectID not find")
 	}
-
-	spaces, err := a.bdl.GetTestSpace(scene.SpaceID)
-	if err != nil {
-		return err
-	}
-
-	project, err := a.bdl.GetProject(uint64(spaces.ProjectID))
+	project, err := a.bdl.GetProject(uint64(projectID))
 	if err != nil {
 		return err
 	}
