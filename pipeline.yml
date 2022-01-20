@@ -3,6 +3,7 @@ version: "1.1"
 on:
   push:
     branches:
+      - master
       - release/*
     tags:
       - v*
@@ -40,7 +41,7 @@ stages:
       - git-checkout:
           alias: erda-java-extensions
           params:
-            uri: https://github.com/erda-project/erda-java-extensions.git
+            uri: https://erda.cloud/erda/dop/erda-project/erda-java-extensions-mirror
             branch: master
             depth: 1
   - stage:
@@ -124,6 +125,7 @@ stages:
             check_diceyml: false
             cross_cluster: "true"
             dice_yml: ${{ dirs.erda }}/erda.yml
+            tag_version: ${{ outputs.extract-repo-version.version }}
             image:
               action-runner-scheduler: ${{ outputs.build-erda.image }}
               admin: ${{ outputs.build-erda.image }}
@@ -149,5 +151,3 @@ stages:
               scheduler: ${{ outputs.build-erda.image }}
               streaming: ${{ outputs.build-erda.image }}
               uc-adaptor: ${{ outputs.build-erda.image }}
-            migration_type: erda
-            migration_dir: ${{ dirs.erda }}/.erda/migrations

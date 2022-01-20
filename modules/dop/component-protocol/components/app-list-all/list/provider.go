@@ -20,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/commodel"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
@@ -140,7 +141,7 @@ func (l *List) doFilterApp() (data *list.Data) {
 	for _, p := range apps.List {
 		item := list.Item{
 			ID:          strconv.FormatUint(p.ID, 10),
-			LogoURL:     p.Logo,
+			Icon:        &commodel.Icon{URL: p.Logo},
 			Title:       p.Name,
 			KvInfos:     l.GenAppKvInfo(p),
 			Description: l.appDescription(p.Desc),

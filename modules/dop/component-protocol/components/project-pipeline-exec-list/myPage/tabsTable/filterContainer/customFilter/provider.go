@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 )
 
@@ -90,7 +91,12 @@ func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.O
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		state := p.State.FrontendConditionValues
 
-		p.gsHelper.SetStatuesFilter(state.Status)
+		var realSearchStatus []string
+		for _, status := range state.Status {
+			realSearchStatus = append(realSearchStatus, util.TransferStatus(status)...)
+		}
+
+		p.gsHelper.SetStatuesFilter(realSearchStatus)
 		p.gsHelper.SetAppsFilter(state.AppList)
 		p.gsHelper.SetExecutorsFilter(state.Executor)
 

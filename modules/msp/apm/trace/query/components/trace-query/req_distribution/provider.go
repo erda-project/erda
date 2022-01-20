@@ -58,7 +58,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			p.Log.Error(err)
 		}
 		dataBuilder := bubblegraph.NewDataBuilder().WithTitle(p.I18n.Text(sdk.Lang, "traceDistribution")).
-			WithYOptions(bubblegraph.NewOptionsBuilder().WithType(structure.Time).WithPrecision(structure.Nanosecond).Build())
+			WithYOptions(bubblegraph.NewOptionsBuilder().WithType(structure.Time).WithPrecision(structure.Nanosecond).WithEnable(true).Build())
 		if response == nil {
 			p.StdDataPtr = dataBuilder.Build()
 			return nil

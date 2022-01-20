@@ -60,31 +60,43 @@ func (t *Tab) Render(ctx context.Context, c *cptype.Component, scenario cptype.S
 		}
 	}
 
-	list, total, err := t.ProjectPipelineSvc.List(ctx, deftype.ProjectPipelineList{
-		ProjectID:    t.InParams.ProjectID,
-		IdentityInfo: apistructs.IdentityInfo{UserID: t.sdk.Identity.UserID},
-		PageNo:       1,
-		PageSize:     9999,
-		AppName:      appNames,
-	})
+	mineCount, err := t.CountPipelineByParams(ctx, appNames, []string{t.sdk.Identity.UserID}, nil)
+	if err != nil {
+		return err
+	}
+	primaryCount, err := t.CountPipelineByParams(ctx, appNames, []string{t.sdk.Identity.UserID}, []string{"primary"})
+	if err != nil {
+		return err
+	}
+	totalCount, err := t.CountPipelineByParams(ctx, appNames, nil, nil)
 	if err != nil {
 		return err
 	}
 	t.SetData(ctx, Num{
-		MinePipelineNum: func() uint64 {
-			return uint64(len(pipelineFilterIn(list, func(pipeline *dpb.PipelineDefinition) bool {
-				return pipeline.Creator == t.sdk.Identity.UserID
-			})))
-		}(),
-		PrimaryPipelineNum: func() uint64 {
-			return uint64(len(pipelineFilterIn(list, func(pipeline *dpb.PipelineDefinition) bool {
-				return pipeline.Category == "primary"
-			})))
-		}(),
-		AllPipelineNum: uint64(total),
+		MinePipelineNum:    mineCount,
+		PrimaryPipelineNum: primaryCount,
+		AllPipelineNum:     totalCount,
 	})
 	t.gsHelper.SetGlobalPipelineTab(t.State.Value)
 	return t.SetToProtocolComponent(c)
+}
+
+func (t *Tab) CountPipelineByParams(ctx context.Context, appNames, creators, categories []string) (uint64, error) {
+	req := deftype.ProjectPipelineList{
+		ProjectID:    t.InParams.ProjectID,
+		IdentityInfo: apistructs.IdentityInfo{UserID: t.sdk.Identity.UserID},
+		PageNo:       1,
+		PageSize:     1,
+		AppName:      appNames,
+	}
+	if len(creators) != 0 {
+		req.Creator = creators
+	}
+	if len(categories) != 0 {
+		req.Category = categories
+	}
+	_, total, err := t.ProjectPipelineSvc.List(ctx, req)
+	return uint64(total), err
 }
 
 func pipelineFilterIn(pipelines []*dpb.PipelineDefinition, fn func(pipeline *dpb.PipelineDefinition) bool) []*dpb.PipelineDefinition {
