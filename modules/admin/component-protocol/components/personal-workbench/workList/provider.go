@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/commodel"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
@@ -339,7 +340,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		ts, _ := l.GenProjTitleState(p.ProjectDTO.Type)
 		item := list.Item{
 			ID:          strconv.FormatUint(p.ProjectDTO.ID, 10),
-			LogoURL:     p.ProjectDTO.Logo,
+			Icon:        &commodel.Icon{URL: p.ProjectDTO.Logo},
 			Title:       p.ProjectDTO.DisplayName,
 			TitleState:  ts,
 			Star:        &star,
@@ -434,7 +435,7 @@ func (l *WorkList) doFilterApp() (data *list.Data) {
 		ts, _ := l.GenAppTitleState(p.Mode)
 		item := list.Item{
 			ID:          strconv.FormatUint(p.ID, 10),
-			LogoURL:     p.Logo,
+			Icon:        &commodel.Icon{URL: p.Logo},
 			Title:       p.Name,
 			TitleState:  ts,
 			Star:        &star,
