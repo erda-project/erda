@@ -1,5 +1,5 @@
 zh:
-  searchByVersion: 按版本搜索
+  searchByVersion: 搜索版本
   application: 应用
   selectApplication: 请选择应用
   branch: 分支
@@ -15,7 +15,7 @@ zh:
   confirmDelete: 确认删除？
   deleteRelease: 删除
   deleteSucceeded: 制品删除成功
-  version: 版本名称
+  version: 版本
   applicationName: 应用名称
   desc: 备注信息
   createdAt: 创建日期
@@ -24,6 +24,9 @@ zh:
   releaseDeleteFailed: 制品删除失败
   releaseFormalFailed: 制品转正失败
   releaseName: 制品名称
+  referencedReleases: 查看引用制品
+  releaseID: 制品ID
+  inputReleaseID: 请输入制品ID
 en:
   searchByVersion: Search by version
   application: Application
@@ -50,3 +53,6 @@ en:
   releaseDeleteFailed: Failed to delete release
   releaseFormalFailed: Failed to formal release
   releaseName: Release Name
+  referencedReleases: Referenced Releases
+  releaseID: Release ID
+  inputReleaseID: Input release ID

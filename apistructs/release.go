@@ -354,6 +354,9 @@ type ReleaseListRequest struct {
 	// 查询参数，releaseId/releaseName/version
 	Query string `json:"-" query:"q"` // 查询参数，可根据releaseId/releaseName/version模糊匹配
 
+	// releaseID 可通过半角逗号间隔，精确匹配多个release
+	ReleaseID string `json:"-" query:"releaseID"`
+
 	// release 名字精确匹配
 	ReleaseName string `json:"-" query:"releaseName"`
 
@@ -476,6 +479,9 @@ func (req ReleaseListRequest) ConvertToQueryParams() url.Values {
 	}
 	if req.Version != "" {
 		values.Add("version", req.Version)
+	}
+	if req.ReleaseID != "" {
+		values.Add("releaseId", req.ReleaseID)
 	}
 	if req.Tags != "" {
 		values.Add("tags", req.Tags)

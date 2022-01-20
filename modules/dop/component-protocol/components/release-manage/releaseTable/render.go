@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -197,6 +198,7 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		IsProjectRelease: &r.State.IsProjectRelease,
 		UserID:           r.State.FilterValues.UserIDs,
 		Version:          r.State.VersionValues.Version,
+		ReleaseID:        r.State.FilterValues.ReleaseID,
 		CommitID:         r.State.FilterValues.CommitID,
 		ApplicationID:    appIDs,
 		ProjectID:        projectID,
@@ -307,6 +309,18 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		}
 		if r.State.IsProjectRelease {
 			item.Operations.Operations["download"] = downloadOperation
+
+			var refReleasedList []string
+			if err := json.Unmarshal([]byte(release.ApplicationReleaseList), &refReleasedList); err != nil {
+				return err
+			}
+			item.Operations.Operations["referencedReleases"] = Operation{
+				Meta: map[string]interface{}{
+					"appReleaseIDs": strings.Join(refReleasedList, ","),
+				},
+				Key:  "referencedReleases",
+				Text: r.sdk.I18n("referencedReleases"),
+			}
 		}
 		if !r.State.IsFormal {
 			item.Operations.Operations["edit"] = editOperation
@@ -372,7 +386,7 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	columns := []Column{
 		{
 			DataIndex: "version",
-			Title:     r.sdk.I18n("releaseName"),
+			Title:     r.sdk.I18n("version"),
 		},
 		{
 			DataIndex: "application",
