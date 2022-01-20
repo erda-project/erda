@@ -230,7 +230,7 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 			}()).Build(),
 			ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote)).Build(),
 			ColumnBranch:          table.NewTextCell(pipeline.DefinitionPageInfo.SourceRef).Build(),
-			ColumnExecutor:        table.NewUserCell(commodel.User{ID: pipeline.DefinitionPageInfo.Creator}).Build(),
+			ColumnExecutor:        table.NewUserCell(commodel.User{ID: pipeline.GetUserID()}).Build(),
 			ColumnStartTimeOrder: table.NewTextCell(func() string {
 				if pipeline.TimeBegin == nil || pipeline.TimeBegin.Unix() <= 0 {
 					return "-"
