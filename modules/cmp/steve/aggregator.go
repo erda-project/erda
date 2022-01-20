@@ -200,6 +200,7 @@ func (a *Aggregator) Add(clusterInfo apistructs.ClusterInfo) {
 	}
 
 	if _, ok := a.servers.Load(clusterInfo.Name); ok {
+		logrus.Infof("cluster %s is already existed, skip adding cluster", clusterInfo.Name)
 		return
 	}
 
@@ -302,6 +303,7 @@ func (a *Aggregator) insureSystemNamespace(client *k8sclient.K8sClient) error {
 func (a *Aggregator) Delete(clusterName string) {
 	g, ok := a.servers.Load(clusterName)
 	if !ok {
+		logrus.Infof("steve server for cluster %s not existed, skip", clusterName)
 		return
 	}
 
@@ -310,6 +312,7 @@ func (a *Aggregator) Delete(clusterName string) {
 		group.cancel()
 	}
 	a.servers.Delete(clusterName)
+	logrus.Infof("steve server for cluster %s stopped", clusterName)
 }
 
 // ServeHTTP forwards API request to corresponding steve server

@@ -237,6 +237,9 @@ func (e *Endpoints) BatchOfflineEdgeCluster(ctx context.Context, r *http.Request
 		err = fmt.Errorf("failed to offline cluster: %v", err)
 		return
 	}
+	for _, cluster := range req.Clusters {
+		e.SteveAggregator.Delete(cluster)
+	}
 
 	return mkResponse(apistructs.OfflineEdgeClusterResponse{
 		Header: apistructs.Header{Success: true},
@@ -320,6 +323,15 @@ func (e *Endpoints) ClusterUpdate(ctx context.Context, r *http.Request, vars map
 		err = fmt.Errorf("failed to update clusterinfo: %v", err)
 		return
 	}
+
+	clusterInfo, err := e.bdl.GetCluster(req.Name)
+	if err == nil {
+		e.SteveAggregator.Delete(req.Name)
+		e.SteveAggregator.Add(*clusterInfo)
+	} else {
+		logrus.Errorf("failed to get cluster %s when update steve server", req.Name)
+	}
+
 	return mkResponse(apistructs.OpsClusterInfoResponse{
 		Header: apistructs.Header{Success: true},
 		Data:   nil,
