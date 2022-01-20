@@ -100,11 +100,6 @@ const (
 	NodeJsProcessType = "nodejs_memory"
 )
 
-var ProcessTypes = []string{
-	JavaProcessType,
-	NodeJsProcessType,
-}
-
 const (
 	TypeService        = "Service"
 	TypeMysql          = "Mysql"
@@ -141,28 +136,12 @@ var (
 	}
 )
 
-var ErrorReqMetricNames = []string{
-	"application_http_error",
-	"application_rpc_error",
-	"application_cache_error",
-	"application_db_error",
-	"application_mq_error",
-}
-
 var ReqMetricNames = []string{
 	"application_http_service",
 	"application_rpc_service",
 	"application_cache_service",
 	"application_db_service",
 	"application_mq_service",
-}
-
-var ReqMetricNamesDesc = map[string]string{
-	"application_http_service":  "HTTP 请求",
-	"application_rpc_service":   "RPC 请求",
-	"application_cache_service": "缓存请求",
-	"application_db_service":    "数据库请求",
-	"application_mq_service":    "MQ 请求",
 }
 
 type Field struct {
@@ -263,13 +242,6 @@ var IndexPrefix = []string{
 	HttpIndex, RpcIndex, MicroIndex,
 	MqIndex, DbIndex, CacheIndex,
 	ServiceNodeIndex,
-}
-
-var NodeTypes = []string{
-	TypeService, TypeMysql, TypeRedis,
-	TypeExternal, TypeDubbo, TypeSidecar,
-	TypeGateway, TypeRegisterCenter, TypeConfigCenter,
-	TypeNoticeCenter, TypeElasticsearch,
 }
 
 type ServiceDashboard struct {
@@ -1500,7 +1472,7 @@ func (topology *provider) GetTopology(lang i18n.LanguageCodes, param Vo) []*Node
 func filterNodesByServiceId(serviceId string, nodes []*Node) []*Node {
 	relatedServiceNode := make([]*Node, 0)
 	currentServiceNode := getServiceNode(serviceId, nodes)
-	serviceParentNodeIds := getNodeParentNodeId(currentServiceNode)
+	serviceParentNodeIds := getNodeParentNodeIds(currentServiceNode)
 
 	for _, node := range nodes {
 		// filter service
@@ -1510,13 +1482,14 @@ func filterNodesByServiceId(serviceId string, nodes []*Node) []*Node {
 		}
 		// filter service upstream
 		if _, ok := serviceParentNodeIds[node.Id]; ok {
-			for j := 0; j < len(node.Parents); j++ {
-				p := node.Parents[j]
-				if p.ServiceId != serviceId {
-					node.Parents = append(node.Parents[:j], node.Parents[j+1:]...)
-					j--
+			pNodes := make([]*Node, 0, 10)
+			for _, parent := range node.Parents {
+				if parent.ServiceId == serviceId {
+					pNodes = append(pNodes, parent)
+					break
 				}
 			}
+			node.Parents = pNodes
 			relatedServiceNode = append(relatedServiceNode, node)
 			continue
 		}
@@ -1534,8 +1507,11 @@ func filterNodesByServiceId(serviceId string, nodes []*Node) []*Node {
 	return relatedServiceNode
 }
 
-func getNodeParentNodeId(node *Node) map[string]struct{} {
+func getNodeParentNodeIds(node *Node) map[string]struct{} {
 	ids := map[string]struct{}{}
+	if node == nil {
+		return ids
+	}
 	for _, parent := range node.Parents {
 		ids[parent.Id] = struct{}{}
 	}
