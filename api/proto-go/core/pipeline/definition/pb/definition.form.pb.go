@@ -405,6 +405,18 @@ func (m *PipelineDefinitionCreateRequest) UnmarshalURLValues(prefix string, valu
 					m.Extra = &PipelineDefinitionExtra{}
 				}
 				m.Extra.PipelineDefinition = vals[0]
+			case "totalActionNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.TotalActionNum = val
+			case "ExecActionNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ExecActionNum = val
 			}
 		}
 	}
@@ -821,6 +833,18 @@ func (m *PipelineDefinitionUpdateRequest) UnmarshalURLValues(prefix string, valu
 					return err
 				}
 				m.PipelineId = val
+			case "totalActionNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.TotalActionNum = val
+			case "ExecActionNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ExecActionNum = val
 			}
 		}
 	}
@@ -1573,6 +1597,18 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 				m.AscCols = vals
 			case "descCols":
 				m.DescCols = vals
+			case "totalActionNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.TotalActionNum = val
+			case "ExecutedActionNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ExecutedActionNum = val
 			}
 		}
 	}

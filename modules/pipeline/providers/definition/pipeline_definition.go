@@ -47,6 +47,8 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	pipelineDefinition.ID = uuid.New().String()
 	pipelineDefinition.StartedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
+	pipelineDefinition.ExecutedActionNum = 0
+	pipelineDefinition.TotalActionNum = request.TotalActionNum
 	err := p.dbClient.CreatePipelineDefinition(&pipelineDefinition)
 	if err != nil {
 		return nil, err

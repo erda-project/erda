@@ -72,6 +72,7 @@ const (
 	ColumnCreator         table.ColumnKey = "creator"
 	ColumnPipelineID      table.ColumnKey = "pipelineID"
 	ColumnMoreOperations  table.ColumnKey = "moreOperations"
+	ColumnSource          table.ColumnKey = "source"
 
 	StateKeyTransactionPaging = "paging"
 	StateKeyTransactionSort   = "sort"
@@ -123,14 +124,18 @@ func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 	return table.ColumnsInfo{
-		Orders: []table.ColumnKey{ColumnPipelineName, ColumnApplicationName, ColumnBranch, ColumnPipelineStatus, ColumnCostTime,
+		Merges: map[table.ColumnKey]table.MergedColumn{
+			ColumnSource: {[]table.ColumnKey{ColumnApplicationName, ColumnBranch}},
+		},
+		Orders: []table.ColumnKey{ColumnPipelineName, ColumnSource, ColumnApplicationName, ColumnBranch, ColumnPipelineStatus, ColumnCostTime,
 			ColumnExecutor, ColumnStartTime, ColumnCreateTime, ColumnCreator, ColumnPipelineID, ColumnMoreOperations},
 		ColumnsMap: map[table.ColumnKey]table.Column{
 			ColumnPipelineName:    {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineName))},
-			ColumnPipelineStatus:  {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus))},
-			ColumnCostTime:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCostTime)), EnableSort: true},
+			ColumnSource:          {Title: cputil.I18n(p.sdk.Ctx, string(ColumnSource))},
 			ColumnApplicationName: {Title: cputil.I18n(p.sdk.Ctx, string(ColumnApplicationName))},
 			ColumnBranch:          {Title: cputil.I18n(p.sdk.Ctx, string(ColumnBranch))},
+			ColumnPipelineStatus:  {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus))},
+			ColumnCostTime:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCostTime)), EnableSort: true},
 			ColumnExecutor:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnExecutor)), Hidden: true},
 			ColumnStartTime:       {Title: cputil.I18n(p.sdk.Ctx, string(ColumnStartTime)), EnableSort: true, Hidden: true},
 			ColumnMoreOperations:  {Title: cputil.I18n(p.sdk.Ctx, string(ColumnMoreOperations))},

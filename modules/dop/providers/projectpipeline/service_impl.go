@@ -39,6 +39,7 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 type CategoryType string
@@ -142,6 +143,15 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
+	pipelineYml, err := pipelineyml.New([]byte(sourceReq.PipelineYml))
+	if err != nil {
+		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
+	}
+
+	totalActionNum := 0
+	pipelineYml.Spec().LoopStagesActions(func(stage int, action *pipelineyml.Action) {
+		totalActionNum++
+	})
 
 	definitionRsp, err := p.PipelineDefinition.Create(ctx, &dpb.PipelineDefinitionCreateRequest{
 		Name:             params.Name,
@@ -151,6 +161,7 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		Extra: &dpb.PipelineDefinitionExtra{
 			Extra: p.pipelineSourceType.GetPipelineCreateRequestV2(),
 		},
+		TotalActionNum: uint64(totalActionNum),
 	})
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
