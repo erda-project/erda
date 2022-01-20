@@ -109,7 +109,7 @@ func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 					Options: []table.OpBatchRowsHandleOption{
 						{
 							ID:              "batchRun",
-							Text:            "执行",
+							Text:            cputil.I18n(p.sdk.Ctx, "execute"),
 							ForbiddenRowIDs: []string{},
 						},
 					},
