@@ -1308,7 +1308,7 @@ func (p *Project) GetProjectStats(projectID int64) (*apistructs.ProjectStats, er
 
 // GetProjectNSInfo 获取项目级别命名空间信息
 func (p *Project) GetProjectNSInfo(projectID int64) (*apistructs.ProjectNameSpaceInfo, error) {
-	_, err := p.db.GetProjectByID(projectID)
+	prj, err := p.db.GetProjectByID(projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -1319,8 +1319,10 @@ func (p *Project) GetProjectNSInfo(projectID int64) (*apistructs.ProjectNameSpac
 		Namespaces: make(map[string]string, 0),
 	}
 
-	prjNsInfo.Enabled = true
-	prjNsInfo.Namespaces = genProjectNamespace(prjIDStr)
+	if prj.EnableNS {
+		prjNsInfo.Enabled = true
+		prjNsInfo.Namespaces = genProjectNamespace(prjIDStr)
+	}
 
 	return prjNsInfo, nil
 }
