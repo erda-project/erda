@@ -681,7 +681,7 @@ func (r *Release) List(orgID int64, req *apistructs.ReleaseListRequest) (*apistr
 		orgID, req.ProjectID, req.ApplicationID,
 		req.Query, req.ReleaseName, req.Branch,
 		req.IsStable, req.IsFormal, req.IsProjectRelease,
-		req.UserID, req.Version, req.CommitID, req.Tags,
+		req.UserID, req.Version, req.ReleaseID, req.CommitID, req.Tags,
 		req.Cluster, req.CrossCluster, req.IsVersion,
 		req.CrossClusterOrSpecifyCluster,
 		req.StartTime, req.EndTime, req.PageNum, req.PageSize,

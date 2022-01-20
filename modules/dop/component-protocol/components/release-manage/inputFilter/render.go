@@ -113,6 +113,11 @@ func (c *ComponentInputFilter) EncodeURLQuery() error {
 }
 
 func (c *ComponentInputFilter) SetComponentValue() {
+	version, _ := c.sdk.InParams["version"].(string)
+	if version != "" {
+		c.State.Values.Version = version
+	}
+
 	c.State.Conditions = []Condition{
 		{
 			EmptyText:   "all",

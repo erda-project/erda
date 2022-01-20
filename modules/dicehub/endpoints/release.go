@@ -920,6 +920,8 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 
 	tags := r.URL.Query().Get("tags")
 
+	releaseID := r.URL.Query().Get("releaseId")
+
 	orderBy := r.URL.Query().Get("orderBy")
 	order := strings.ToUpper(r.URL.Query().Get("order"))
 	switch order {
@@ -932,6 +934,7 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 
 	return &apistructs.ReleaseListRequest{
 		Query:                        keyword,
+		ReleaseID:                    releaseID,
 		ReleaseName:                  releaseName,
 		Cluster:                      clusterName,
 		Branch:                       branch,
