@@ -10,6 +10,7 @@ hierarchy:
       - addWorkloadDrawer
       - yamlDrawer
     workloadHead:
+      - consoleButton
       - addWorkloadButton
     charts:
       - chartContainer
@@ -31,7 +32,7 @@ components:
   page:
     type: Container
   workloadHead:
-    type: Container
+    type: RowContainer
   charts:
     type: Container
   chartContainer:
@@ -54,6 +55,8 @@ components:
     type: Drawer
   addWorkloadButton:
     type: Button
+  consoleButton:
+    type: Custom
   table:
     type: ComposeTable
   yamlDrawer:
