@@ -151,5 +151,3 @@ stages:
               scheduler: ${{ outputs.build-erda.image }}
               streaming: ${{ outputs.build-erda.image }}
               uc-adaptor: ${{ outputs.build-erda.image }}
-            migration_type: erda
-            migration_dir: ${{ dirs.erda }}/.erda/migrations
