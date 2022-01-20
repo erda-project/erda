@@ -66,7 +66,7 @@ func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
 }
 
 func (p *CustomFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		conditions, err := p.ConditionRetriever()
 		if err != nil {
 			panic(err)
@@ -79,6 +79,7 @@ func (p *CustomFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			},
 			HideSave: true,
 		}
+		return nil
 	}
 }
 
@@ -87,7 +88,7 @@ func (p *CustomFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 }
 
 func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		state := p.State.FrontendConditionValues
 
 		var realSearchStatus []string
@@ -105,17 +106,20 @@ func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.O
 		if len(state.StartedAtStartEnd) == 2 {
 			p.gsHelper.SetBeginTimeEndFilter(state.StartedAtStartEnd[1])
 		}
+		return nil
 	}
 }
 
 func (p *CustomFilter) RegisterFilterItemSaveOp(opData filter.OpFilterItemSave) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		fmt.Println("op come", opData.ClientData)
+		return nil
 	}
 }
 
 func (p *CustomFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDelete) (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		fmt.Println("op come", opData.ClientData.DataRef)
+		return nil
 	}
 }

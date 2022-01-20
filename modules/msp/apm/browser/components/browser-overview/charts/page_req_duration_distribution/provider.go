@@ -49,7 +49,7 @@ type provider struct {
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		statement := fmt.Sprintf("SELECT avg(plt::field), count(timestamp) "+
 			"FROM ta_timing "+
 			"WHERE tk::tag=$terminus_key "+
@@ -69,7 +69,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		if err != nil {
 			p.Log.Errorf("failed to get %s, err: %s, statement:%s", sdk.Comp.Name, err, statement)
 			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
-			return
+			return nil
 		}
 
 		rows := response.Results[0].Series[0].Rows
@@ -80,7 +80,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if err != nil {
 				p.Log.Errorf("failed to parse time: %s", date)
 				(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
-				return
+				return nil
 			}
 
 			builder.WithBubble(bubblegraph.NewBubbleBuilder().
@@ -93,6 +93,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 		chart := builder.Build()
 		p.StdDataPtr = chart
+		return nil
 	}
 }
 
