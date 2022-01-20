@@ -140,6 +140,12 @@ func (p pipelineDefinition) Update(ctx context.Context, request *pb.PipelineDefi
 	if request.PipelineId > 0 {
 		pipelineDefinition.PipelineID = uint64(request.PipelineId)
 	}
+	if pipelineDefinition.TotalActionNum != 0 {
+		pipelineDefinition.TotalActionNum = request.TotalActionNum
+	}
+	if pipelineDefinition.ExecutedActionNum != 0 {
+		pipelineDefinition.ExecutedActionNum = request.ExecutedActionNum
+	}
 	err = p.dbClient.UpdatePipelineDefinition(request.PipelineDefinitionID, pipelineDefinition)
 	if err != nil {
 		return nil, err

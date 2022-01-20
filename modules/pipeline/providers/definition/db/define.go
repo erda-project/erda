@@ -26,21 +26,23 @@ import (
 )
 
 type PipelineDefinition struct {
-	ID               string    `json:"id" xorm:"pk"`
-	Location         string    `json:"location"`
-	Name             string    `json:"name"`
-	CostTime         uint64    `json:"costTime"`
-	Creator          string    `json:"creator"`
-	Executor         string    `json:"executor"`
-	SoftDeletedAt    uint64    `json:"softDeletedAt"`
-	PipelineSourceId string    `json:"pipelineSourceId"`
-	Category         string    `json:"category"`
-	Status           string    `json:"status"`
-	StartedAt        time.Time `json:"startedAt,omitempty" xorm:"started_at"`
-	EndedAt          time.Time `json:"endedAt,omitempty" xorm:"ended_at"`
-	TimeCreated      time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
-	TimeUpdated      time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
-	PipelineID       uint64    `json:"pipelineId"`
+	ID                string    `json:"id" xorm:"pk"`
+	Location          string    `json:"location"`
+	Name              string    `json:"name"`
+	CostTime          uint64    `json:"costTime"`
+	Creator           string    `json:"creator"`
+	Executor          string    `json:"executor"`
+	SoftDeletedAt     uint64    `json:"softDeletedAt"`
+	PipelineSourceId  string    `json:"pipelineSourceId"`
+	Category          string    `json:"category"`
+	Status            string    `json:"status"`
+	StartedAt         time.Time `json:"startedAt,omitempty" xorm:"started_at"`
+	EndedAt           time.Time `json:"endedAt,omitempty" xorm:"ended_at"`
+	TimeCreated       time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
+	TimeUpdated       time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
+	PipelineID        uint64    `json:"pipelineId"`
+	TotalActionNum    int64     `json:"totalActionNum"`
+	ExecutedActionNum int64     `json:"executedActionNum"`
 }
 
 func (PipelineDefinition) TableName() string {
@@ -265,23 +267,25 @@ func (client *Client) StaticsGroupByRemote(req *pb.PipelineDefinitionStaticsRequ
 
 func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 	return &pb.PipelineDefinition{
-		ID:               p.ID,
-		Name:             p.Name,
-		Creator:          p.Creator,
-		Category:         p.Category,
-		CostTime:         p.CostTime,
-		Executor:         p.Executor,
-		StartedAt:        timestamppb.New(p.StartedAt),
-		EndedAt:          timestamppb.New(p.EndedAt),
-		TimeCreated:      timestamppb.New(p.TimeCreated),
-		TimeUpdated:      timestamppb.New(p.TimeUpdated),
-		SourceType:       p.SourceType,
-		PipelineSourceId: p.PipelineSourceId,
-		Remote:           p.Remote,
-		Ref:              p.Ref,
-		Path:             p.Path,
-		FileName:         p.FileName,
-		Status:           p.Status,
-		PipelineId:       int64(p.PipelineID),
+		ID:                p.ID,
+		Name:              p.Name,
+		Creator:           p.Creator,
+		Category:          p.Category,
+		CostTime:          p.CostTime,
+		Executor:          p.Executor,
+		StartedAt:         timestamppb.New(p.StartedAt),
+		EndedAt:           timestamppb.New(p.EndedAt),
+		TimeCreated:       timestamppb.New(p.TimeCreated),
+		TimeUpdated:       timestamppb.New(p.TimeUpdated),
+		SourceType:        p.SourceType,
+		PipelineSourceId:  p.PipelineSourceId,
+		Remote:            p.Remote,
+		Ref:               p.Ref,
+		Path:              p.Path,
+		FileName:          p.FileName,
+		Status:            p.Status,
+		PipelineId:        int64(p.PipelineID),
+		TotalActionNum:    p.TotalActionNum,
+		ExecutedActionNum: p.ExecutedActionNum,
 	}
 }
