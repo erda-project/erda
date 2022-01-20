@@ -1315,16 +1315,6 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 		data = append(data, d)
 	}
 
-	// It takes some time to initialize and run the pipeline when creating a runtime
-	// through the release, but we should let users know that thisruntime is being created.
-	if len(workspace) == 0 && len(name) == 0 {
-		creatingRTs, err := utils.FindCreatingRuntimesByRelease(appID, rtEnvPermBranchMark, "", r.bdl)
-		if err != nil {
-			return nil, err
-		}
-		data = append(data, creatingRTs...)
-	}
-
 	return data, nil
 }
 
