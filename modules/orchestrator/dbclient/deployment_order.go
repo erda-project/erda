@@ -115,7 +115,8 @@ func (db *DBClient) ListDeploymentOrder(conditions *apistructs.DeploymentOrderLi
 			rRet = append(rRet, i.ReleaseId)
 		}
 
-		cursor = cursor.Where("release_id in (?) or operator in (?)", rRet, uRet)
+		cursor = cursor.Where("SUBSTRING(id,1,6) like ? or release_id in (?) or operator in (?)",
+			qv, rRet, uRet)
 	}
 
 	var (
