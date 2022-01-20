@@ -303,6 +303,8 @@ zh:
   createTime: 创建时间
   pipelineID: 流水线ID
   execute: 执行
+  source: 源
+  process: 进度
 en:
   issue-manage: issue manage
   issue: issue
@@ -604,3 +606,5 @@ en:
   createTime: Create Time
   pipelineID: PipelineID
   execute: Execute
+  source: Source
+  process: Process
