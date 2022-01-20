@@ -31,7 +31,6 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/i18n"
-	"github.com/erda-project/erda/modules/orchestrator/services/log"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
