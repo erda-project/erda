@@ -180,6 +180,8 @@ func (p *List) getData() *list.Data {
 	data.PageSize = p.PageSize
 	var runtimes []bundle.GetApplicationRuntimesDataEle
 	var runtimeIdToAppNameMap map[uint64]string
+	var myApp map[uint64]bool
+
 	if gsRuntimes, ok := (*p.Sdk.GlobalState)["runtimes"]; !ok {
 		logrus.Infof("not found runtimes")
 		getEnv, ok := p.Sdk.InParams["env"].(string)
@@ -204,13 +206,28 @@ func (p *List) getData() *list.Data {
 		}
 		appIds := make([]uint64, 0)
 		appIdToName := make(map[uint64]string)
+
+		allApps, err := p.Bdl.GetAppList(p.Sdk.Identity.OrgID, p.Sdk.Identity.UserID, apistructs.ApplicationListRequest{
+			ProjectID: projectId,
+			IsSimple:  true,
+			PageSize:  math.MaxInt32,
+			PageNo:    1})
+		if err != nil {
+			logrus.Errorf("get my app failed,%v", err)
+			return data
+		}
+		for i := 0; i < len(allApps.List); i++ {
+			appIds = append(appIds, allApps.List[i].ID)
+			appIdToName[allApps.List[i].ID] = allApps.List[i].Name
+		}
+		myApp = make(map[uint64]bool)
 		for i := 0; i < len(apps.List); i++ {
 			if apps.List[i].ProjectID != projectId {
 				continue
 			}
-			appIds = append(appIds, apps.List[i].ID)
-			appIdToName[apps.List[i].ID] = apps.List[i].Name
+			myApp[apps.List[i].ID] = true
 		}
+
 		logrus.Infof("start load runtimes by app %v", time.Now())
 
 		runtimesByApp, err := p.Bdl.ListRuntimesGroupByApps(oid, p.Sdk.Identity.UserID, appIds, getEnv)
@@ -247,6 +264,7 @@ func (p *List) getData() *list.Data {
 			logrus.Errorf("failed to transfer runtimeMap, runtimeMap %#v", (*p.Sdk.GlobalState)["runtimeIdToAppName"])
 			return data
 		}
+		myApp = (*p.Sdk.GlobalState)["myApp"].(map[uint64]bool)
 	}
 	logrus.Infof("runtimes:%v", runtimes)
 	//oid, err := strconv.ParseUint(p.Sdk.Identity.OrgID, 10, 64)
@@ -257,7 +275,7 @@ func (p *List) getData() *list.Data {
 
 	userReq := apistructs.UserListRequest{}
 	for _, runtime := range runtimes {
-		userReq.UserIDs = append(userReq.UserIDs, runtime.Creator)
+		userReq.UserIDs = append(userReq.UserIDs, runtime.LastOperator)
 	}
 	logrus.Infof("start load users %v", time.Now())
 
@@ -275,6 +293,7 @@ func (p *List) getData() *list.Data {
 		} else {
 			uidToName[user.ID] = user.Nick
 		}
+		logrus.Infof("%s : %s", user.ID, uidToName[user.ID])
 	}
 	ids := make([]string, 0)
 	deployId := p.Sdk.InParams["deployId"]
@@ -304,17 +323,21 @@ func (p *List) getData() *list.Data {
 		if runtimeIdToAppNameMap[appRuntime.ID] != nameStr {
 			nameStr = runtimeIdToAppNameMap[appRuntime.ID] + "#" + nameStr
 		}
-
-		data.List = append(data.List, list.Item{
+		logrus.Infof("%s : %s", appRuntime.Name, appRuntime.LastOperator)
+		b := myApp[appRuntime.ApplicationID]
+		item := list.Item{
 			ID:    idStr,
 			Title: nameStr,
 			//MainState:      getMainState(appRuntime.Status),
-			TitleState:     getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus),
-			Selectable:     true,
-			KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
-			Operations:     getOperations(appRuntime.ProjectID, appRuntime.ApplicationID, appRuntime.ID),
-			MoreOperations: getMoreOperations(p.Sdk, fmt.Sprintf("%d", appRuntime.ID)),
-		})
+			TitleState: getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus),
+			Selectable: b,
+			KvInfos:    getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.LastOperator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
+		}
+		if b {
+			item.Operations = getOperations(appRuntime.ProjectID, appRuntime.ApplicationID, appRuntime.ID)
+			item.MoreOperations = getMoreOperations(p.Sdk, fmt.Sprintf("%d", appRuntime.ID))
+		}
+		data.List = append(data.List, item)
 		ids = append(ids, idStr)
 		runtimeMap[idStr] = appRuntime
 	}
@@ -610,12 +633,12 @@ func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVe
 	timeStr := ""
 	if day == 0 {
 		if hour == 0 {
-			timeStr = fmt.Sprintf("%dm", minute) + sdk.I18n("ago")
+			timeStr = fmt.Sprintf("%dm ", minute) + sdk.I18n("ago")
 		} else {
-			timeStr = fmt.Sprintf("%dh", hour) + sdk.I18n("ago")
+			timeStr = fmt.Sprintf("%dh ", hour) + sdk.I18n("ago")
 		}
 	} else {
-		timeStr = fmt.Sprintf("%dd", day) + sdk.I18n("ago")
+		timeStr = fmt.Sprintf("%dd ", day) + sdk.I18n("ago")
 	}
 	// running duration
 	kvs = append(kvs, list.KvInfo{
