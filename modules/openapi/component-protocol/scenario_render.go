@@ -183,7 +183,7 @@ func RunScenarioRender(ctx context.Context, req *apistructs.ComponentProtocolReq
 
 	if req.Protocol == nil || req.Event.Component == "" {
 		isDefaultProtocol = true
-		p, err := LoadDefaultProtocol(sk)
+		p, err := LoadDefaultProtocol(ctx, sk)
 		if err != nil {
 			logrus.Errorf("load default protocol failed, scenario:%+v, err:%v", req.Scenario, err)
 			return err
