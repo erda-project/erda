@@ -58,8 +58,14 @@ type ApplicationInfo struct {
 	ReleaseVersion string                `json:"releaseVersion,omitempty"`
 	Branch         string                `json:"branch,omitempty"`
 	CommitId       string                `json:"commitId,omitempty"`
+	PreCheckResult *PreCheckResult       `json:"preCheckResult,omitempty"`
 	DiceYaml       string                `json:"diceYaml,omitempty"`
 	Status         DeploymentStatus      `json:"status,omitempty"`
+}
+
+type PreCheckResult struct {
+	Success     bool     `json:"success"`
+	FailReasons []string `json:"failReasons,omitempty"`
 }
 
 type DeploymentOrderListData struct {
@@ -70,9 +76,7 @@ type DeploymentOrderListData struct {
 type DeploymentOrderItem struct {
 	ID                string                `json:"id"`
 	Name              string                `json:"name"`
-	ReleaseID         string                `json:"releaseId"`
-	ReleaseVersion    string                `json:"releaseVersion,omitempty"`
-	ReleaseUpdateAt   time.Time             `json:"releaseUpdateAt,omitempty"`
+	ReleaseInfo       *ReleaseInfo          `json:"releaseInfo"`
 	Type              string                `json:"type,omitempty"`
 	ApplicationStatus string                `json:"applicationStatus,omitempty"`
 	Workspace         string                `json:"workspace"`
@@ -81,6 +85,15 @@ type DeploymentOrderItem struct {
 	CreatedAt         time.Time             `json:"createdAt"`
 	UpdatedAt         time.Time             `json:"updatedAt"`
 	StartedAt         *time.Time            `json:"startedAt,omitempty"`
+}
+
+type ReleaseInfo struct {
+	Id        string    `json:"id"`
+	Version   string    `json:"version,omitempty"`
+	Type      string    `json:"type"`
+	Creator   string    `json:"creator,omitempty"`
+	CreatedAt time.Time `json:"createdAt,omitempty"`
+	UpdatedAt time.Time `json:"updatedAt,omitempty"`
 }
 
 type DeploymentOrderParam []*DeploymentOrderParamData
