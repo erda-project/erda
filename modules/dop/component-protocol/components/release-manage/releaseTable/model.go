@@ -114,6 +114,7 @@ type FilterValues struct {
 	UserIDs           []string `json:"userIDs,omitempty"`
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd,omitempty"`
 	ReleaseID         string   `json:"releaseID,omitempty"`
+	ApplicationIDs    []string `json:"applicationIDs,omitempty"`
 }
 
 type Sorter struct {
