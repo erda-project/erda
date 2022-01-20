@@ -23,6 +23,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/schema"
@@ -1325,23 +1326,38 @@ func (r *Runtime) ListGroupByApps(appIDs []uint64, env string) (map[uint64][]*ap
 		l.WithError(err).Errorln("failed to FindRuntimesInApps")
 		return nil, err
 	}
-
 	// note: internal API, do not check the permission
-
-	var result = make(map[uint64][]*apistructs.RuntimeSummaryDTO)
+	var result = struct {
+		sync.RWMutex
+		m map[uint64][]*apistructs.RuntimeSummaryDTO
+	}{m: make(map[uint64][]*apistructs.RuntimeSummaryDTO)}
+	//var result sync.Map
+	var wg sync.WaitGroup
 	for appID, runtimeList := range runtimes {
 		for _, runtime := range runtimeList {
-			var d apistructs.RuntimeSummaryDTO
-			if err := r.convertRuntimeSummaryDTOFromRuntimeModel(&d, *runtime); err != nil {
-				l.WithError(err).WithField("runtime.ID", runtime.ID).
-					Warnln("failed to convertRuntimeSummaryDTOFromRuntimeModel")
-				continue
-			}
-			result[appID] = append(result[appID], &d)
+			wg.Add(1)
+			go r.generateListGroupAppResult(&result, appID, runtime, &wg)
 		}
 	}
+	wg.Wait()
+	return result.m, nil
+}
 
-	return result, nil
+func (r *Runtime) generateListGroupAppResult(result *struct {
+	sync.RWMutex
+	m map[uint64][]*apistructs.RuntimeSummaryDTO
+}, appID uint64,
+	runtime *dbclient.Runtime, wg *sync.WaitGroup) {
+	var l = logrus.WithField("func", "*Runtime.ListGroupByApps")
+	var d apistructs.RuntimeSummaryDTO
+	if err := r.convertRuntimeSummaryDTOFromRuntimeModel(&d, *runtime); err != nil {
+		l.WithError(err).WithField("runtime.ID", runtime.ID).
+			Warnln("failed to convertRuntimeSummaryDTOFromRuntimeModel")
+	}
+	result.Lock()
+	result.m[appID] = append(result.m[appID], &d)
+	result.Unlock()
+	wg.Done()
 }
 
 func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.RuntimeSummaryDTO, runtime dbclient.Runtime) error {
@@ -1392,18 +1408,7 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 		if err = json.Unmarshal([]byte(deployment.Dice), &dice); err != nil {
 			return apierrors.ErrGetRuntime.InvalidState(strutil.Concat("dice.json invalid: ", err.Error()))
 		}
-		domains, err := r.db.FindDomainsByRuntimeId(runtime.ID)
-		if err != nil {
-			return apierrors.ErrGetRuntime.InternalError(err)
-		}
-		domainMap := make(map[string][]string)
-		for _, d := range domains {
-			if domainMap[d.EndpointName] == nil {
-				domainMap[d.EndpointName] = make([]string, 0)
-			}
-			domainMap[d.EndpointName] = append(domainMap[d.EndpointName], "http://"+d.Domain)
-		}
-		fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, sg, domainMap, string(deployment.Status))
+		fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, sg, nil, string(deployment.Status))
 	}
 
 	d.DeployStatus = deployment.Status
@@ -1599,7 +1604,7 @@ func fillRuntimeDataWithServiceGroup(data *apistructs.RuntimeInspectDTO, targetS
 				svcPortExpose = true
 			}
 		}
-		if len(v.Expose) != 0 || svcPortExpose {
+		if (len(v.Expose) != 0 || svcPortExpose) && domainMap != nil {
 			expose = domainMap[k]
 		}
 
