@@ -31,6 +31,7 @@ import (
 func (e *Endpoints) ListMemberRoles(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
 	v := r.URL.Query().Get("scopeType")
+	locale := r.Header.Get("lang")
 	scopeType := apistructs.ScopeType(v)
 	if _, ok := types.AllScopeRoleMap[scopeType]; !ok {
 		return nil, errors.Errorf("invalid request, scopeType is invalid")
@@ -68,7 +69,7 @@ func (e *Endpoints) ListMemberRoles(ctx context.Context, r *http.Request, vars m
 	roles, err := e.bdl.ListMemberRoles(apistructs.ListScopeManagersByScopeIDRequest{
 		ScopeType: apistructs.ScopeType(r.URL.Query().Get("scopeType")),
 		ScopeID:   scopeID,
-	}, orgID)
+	}, orgID, locale)
 
 	publiserID := e.org.GetPublisherID(orgID)
 	if publiserID != 0 {

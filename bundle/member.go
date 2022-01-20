@@ -256,7 +256,7 @@ func (b *Bundle) ListScopeManagersByScopeID(req apistructs.ListScopeManagersBySc
 }
 
 // ListMemberRoles list member roles
-func (b *Bundle) ListMemberRoles(req apistructs.ListScopeManagersByScopeIDRequest, orgID int64) (*apistructs.RoleList, error) {
+func (b *Bundle) ListMemberRoles(req apistructs.ListScopeManagersByScopeIDRequest, orgID int64, locale string) (*apistructs.RoleList, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -267,6 +267,7 @@ func (b *Bundle) ListMemberRoles(req apistructs.ListScopeManagersByScopeIDReques
 	resp, err := hc.Get(host).Path("/api/members/actions/list-roles").
 		Header(httputil.InternalHeader, "bundle").
 		Header(httputil.OrgHeader, strconv.FormatInt(orgID, 10)).
+		Header(httputil.LangHeader, locale).
 		Param("scopeType", string(req.ScopeType)).
 		Param("scopeID", strconv.FormatInt(req.ScopeID, 10)).
 		Do().JSON(&memberResp)
