@@ -37,29 +37,35 @@ service DefinitionService {
       get: "/api/pipeline-definitions",
     };
   }
+  rpc StaticsGroupByRemote (PipelineDefinitionStaticsRequest) returns (PipelineDefinitionStaticsResponse) {
+    option (google.api.http) = {
+      get: "/api/pipeline-definitions/actions/statics-group-by-remote",
+    };
+  }
 }
 
 message PipelineDefinition {
   string ID = 1 [json_name = "id"];
-  string name = 2;
-  string creator = 3;
-  string category = 4;
-  uint64 costTime = 5;
-  string executor = 6;
-  PipelineDefinitionExtra extra = 7;
-  google.protobuf.Timestamp startedAt = 8;
-  google.protobuf.Timestamp endedAt = 9;
-  google.protobuf.Timestamp timeCreated = 10;
-  google.protobuf.Timestamp timeUpdated = 11;
-  int64 softDeletedAt = 12;
-  string sourceType = 13;
-  string remote = 14;
-  string ref = 15;
-  string path = 16;
-  string fileName = 17;
-  string pipelineSourceId = 18;
-  string status = 19;
-  int64 pipelineId = 20;
+  string location = 2;
+  string name = 3;
+  string creator = 4;
+  string category = 5;
+  uint64 costTime = 6;
+  string executor = 7;
+  PipelineDefinitionExtra extra = 8;
+  google.protobuf.Timestamp startedAt = 9;
+  google.protobuf.Timestamp endedAt = 10;
+  google.protobuf.Timestamp timeCreated = 11;
+  google.protobuf.Timestamp timeUpdated = 12;
+  int64 softDeletedAt = 13;
+  string sourceType = 14;
+  string remote = 15;
+  string ref = 16;
+  string path = 17;
+  string fileName = 18;
+  string pipelineSourceId = 19;
+  string status = 20;
+  int64 pipelineId = 21;
 }
 
 message PipelineDefinitionExtra {
@@ -74,13 +80,14 @@ message PipelineDefinitionExtra {
 // create
 message PipelineDefinitionCreateRequest {
   string ID = 1 [json_name = "id"];
-  string name = 2;
-  string creator = 3;
-  string pipelineSourceId = 4;
-  string category = 5;
-  PipelineDefinitionExtra extra = 6;
-  uint64 totalActionNum = 7;
-  uint64 ExecActionNum = 8;
+  string location = 2;
+  string name = 3;
+  string creator = 4;
+  string pipelineSourceId = 5;
+  string category = 6;
+  PipelineDefinitionExtra extra = 7;
+  uint64 totalActionNum = 8;
+  uint64 ExecActionNum = 9;
 }
 
 message PipelineDefinitionCreateResponse {
@@ -123,24 +130,40 @@ message PipelineDefinitionGetResponse {
   PipelineDefinition pipelineDefinition = 1;
 }
 
-// list
+
 message PipelineDefinitionListRequest {
   int64 pageSize = 1;
   int64 pageNo = 2;
-  repeated string creator = 3;
-  repeated  string executor = 4;
-  repeated string category = 5;
-  repeated string ref = 6;
-  string name = 7;
-  repeated string remote = 8;
-  repeated string timeCreated = 9;
-  repeated string timeStarted = 10;
-  repeated string  status = 12;
+  string location = 3;
+  string name = 4;
+  repeated string creator = 5;
+  repeated string executor = 6;
+  repeated string category = 7;
+  repeated string ref = 8;
+  repeated string remote = 9;
+  repeated string timeCreated = 10;
+  repeated string timeStarted = 11;
+  repeated string status = 12;
   repeated string idList = 13;
   repeated string ascCols = 14;
   repeated string descCols = 15;
   uint64 totalActionNum = 16;
   uint64 ExecutedActionNum = 17;
+}
+
+message PipelineDefinitionStaticsRequest {
+  string location = 1;
+}
+
+message PipelineDefinitionStaticsResponse {
+  repeated PipelineDefinitionStatistics PipelineDefinitionStatistics = 1;
+}
+
+message PipelineDefinitionStatistics {
+  string remote = 1;
+  uint64 failedNum = 2;
+  uint64 runningNum = 3;
+  uint64 totalNum = 4;
 }
 
 message PipelineDefinitionListResponse {

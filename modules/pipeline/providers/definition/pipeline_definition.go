@@ -40,10 +40,11 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	}
 
 	var pipelineDefinition db.PipelineDefinition
+	pipelineDefinition.Location = request.Location
+	pipelineDefinition.Name = request.Name
 	pipelineDefinition.PipelineSourceId = request.PipelineSourceId
 	pipelineDefinition.Category = request.Category
 	pipelineDefinition.Creator = request.Creator
-	pipelineDefinition.Name = request.Name
 	pipelineDefinition.ID = uuid.New().String()
 	pipelineDefinition.StartedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
@@ -209,6 +210,7 @@ func (p pipelineDefinition) List(ctx context.Context, request *pb.PipelineDefini
 func PipelineDefinitionToPb(pipelineDefinition *db.PipelineDefinition) *pb.PipelineDefinition {
 	de := &pb.PipelineDefinition{
 		ID:               pipelineDefinition.ID,
+		Location:         pipelineDefinition.Location,
 		Name:             pipelineDefinition.Name,
 		Creator:          pipelineDefinition.Creator,
 		Executor:         pipelineDefinition.Executor,
@@ -236,4 +238,22 @@ func PipelineDefinitionExtraToPb(pipelineDefinitionExtra *db.PipelineDefinitionE
 		de.TimeUpdated = timestamppb.New(*pipelineDefinitionExtra.TimeUpdated)
 	}
 	return de
+}
+
+func (p pipelineDefinition) StaticsGroupByRemote(ctx context.Context, request *pb.PipelineDefinitionStaticsRequest) (*pb.PipelineDefinitionStaticsResponse, error) {
+	statics, err := p.dbClient.StaticsGroupByRemote(request)
+	if err != nil {
+		return nil, err
+	}
+
+	pipelineDefinitionStatistics := make([]*pb.PipelineDefinitionStatistics, 0, len(statics))
+	for _, v := range statics {
+		pipelineDefinitionStatistics = append(pipelineDefinitionStatistics, &pb.PipelineDefinitionStatistics{
+			Remote:     v.Remote,
+			FailedNum:  v.FailedNum,
+			RunningNum: v.RunningNum,
+			TotalNum:   v.TotalNum,
+		})
+	}
+	return &pb.PipelineDefinitionStaticsResponse{PipelineDefinitionStatistics: pipelineDefinitionStatistics}, nil
 }

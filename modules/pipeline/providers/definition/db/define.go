@@ -22,10 +22,12 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	"github.com/erda-project/erda/apistructs"
 )
 
 type PipelineDefinition struct {
 	ID                string    `json:"id" xorm:"pk"`
+	Location          string    `json:"location"`
 	Name              string    `json:"name"`
 	CostTime          uint64    `json:"costTime"`
 	Creator           string    `json:"creator"`
@@ -111,6 +113,11 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 		Select("d.*,s.source_type,s.remote,s.ref,s.path,s.name AS file_name").
 		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
 		Where("d.soft_deleted_at = 0")
+
+	if req.Location == "" {
+		return nil, 0, fmt.Errorf("the location is empty")
+	}
+	engine = engine.Where("d.location = ?", req.Location)
 	if req.Remote != nil {
 		engine = engine.In("s.remote", req.Remote)
 	}
@@ -182,6 +189,10 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 		Select("COUNT(*)").
 		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
 		Where("d.soft_deleted_at = 0")
+	if req.Location == "" {
+		return 0, fmt.Errorf("the location is empty")
+	}
+	engine = engine.Where("d.location = ?", req.Location)
 	if req.Remote != nil {
 		engine = engine.In("s.remote", req.Remote)
 	}
@@ -225,6 +236,33 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 		return 0, err
 	}
 	return total, nil
+}
+
+type PipelineDefinitionStatistics struct {
+	Remote     string
+	FailedNum  uint64
+	RunningNum uint64
+	TotalNum   uint64
+}
+
+func (client *Client) StaticsGroupByRemote(req *pb.PipelineDefinitionStaticsRequest, ops ...mysqlxorm.SessionOption) ([]PipelineDefinitionStatistics, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var (
+		list []PipelineDefinitionStatistics
+		err  error
+	)
+	err = session.Table("pipeline_definition").Alias("d").
+		Select(fmt.Sprintf("s.remote,COUNT(*) AS total_num,COUNT( IF ( d.`status` = '%s' , 1, NULL) ) AS running_num,"+
+			"COUNT(IF(DATE_SUB(CURDATE(), INTERVAL 1 DAY) <= d.started_at AND d.`status` = '%s',1,NULL)) AS failed_num",
+			apistructs.PipelineStatusRunning, apistructs.PipelineStatusFailed)).
+		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
+		Where("d.soft_deleted_at = 0").
+		Where("d.location = ?", req.GetLocation()).
+		GroupBy("s.remote").
+		Find(&list)
+	return list, err
 }
 
 func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {

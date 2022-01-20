@@ -125,6 +125,7 @@ stages:
             check_diceyml: false
             cross_cluster: "true"
             dice_yml: ${{ dirs.erda }}/erda.yml
+            tag_version: ${{ outputs.extract-repo-version.version }}
             image:
               action-runner-scheduler: ${{ outputs.build-erda.image }}
               admin: ${{ outputs.build-erda.image }}

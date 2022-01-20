@@ -24,6 +24,9 @@ var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionDeleteResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionGetRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionGetResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionListRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStaticsRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStaticsResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStatistics)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionListResponse)(nil)
 
 // PipelineDefinition implement urlenc.URLValuesUnmarshaler.
@@ -33,6 +36,8 @@ func (m *PipelineDefinition) UnmarshalURLValues(prefix string, values url.Values
 			switch prefix + key {
 			case "ID":
 				m.ID = vals[0]
+			case "location":
+				m.Location = vals[0]
 			case "name":
 				m.Name = vals[0]
 			case "creator":
@@ -316,6 +321,8 @@ func (m *PipelineDefinitionCreateRequest) UnmarshalURLValues(prefix string, valu
 			switch prefix + key {
 			case "ID":
 				m.ID = vals[0]
+			case "location":
+				m.Location = vals[0]
 			case "name":
 				m.Name = vals[0]
 			case "creator":
@@ -437,6 +444,11 @@ func (m *PipelineDefinitionCreateResponse) UnmarshalURLValues(prefix string, val
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
 				m.PipelineDefinition.ID = vals[0]
+			case "pipelineDefinition.location":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.Location = vals[0]
 			case "pipelineDefinition.name":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
@@ -865,6 +877,11 @@ func (m *PipelineDefinitionUpdateResponse) UnmarshalURLValues(prefix string, val
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
 				m.PipelineDefinition.ID = vals[0]
+			case "pipelineDefinition.location":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.Location = vals[0]
 			case "pipelineDefinition.name":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
@@ -1233,6 +1250,11 @@ func (m *PipelineDefinitionGetResponse) UnmarshalURLValues(prefix string, values
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
 				m.PipelineDefinition.ID = vals[0]
+			case "pipelineDefinition.location":
+				if m.PipelineDefinition == nil {
+					m.PipelineDefinition = &PipelineDefinition{}
+				}
+				m.PipelineDefinition.Location = vals[0]
 			case "pipelineDefinition.name":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
@@ -1573,6 +1595,10 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 					return err
 				}
 				m.PageNo = val
+			case "location":
+				m.Location = vals[0]
+			case "name":
+				m.Name = vals[0]
 			case "creator":
 				m.Creator = vals
 			case "executor":
@@ -1581,8 +1607,6 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 				m.Category = vals
 			case "ref":
 				m.Ref = vals
-			case "name":
-				m.Name = vals[0]
 			case "remote":
 				m.Remote = vals
 			case "timeCreated":
@@ -1609,6 +1633,55 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 					return err
 				}
 				m.ExecutedActionNum = val
+			}
+		}
+	}
+	return nil
+}
+
+// PipelineDefinitionStaticsRequest implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineDefinitionStaticsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "location":
+				m.Location = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// PipelineDefinitionStaticsResponse implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineDefinitionStaticsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// PipelineDefinitionStatistics implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineDefinitionStatistics) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "remote":
+				m.Remote = vals[0]
+			case "failedNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.FailedNum = val
+			case "runningNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.RunningNum = val
+			case "totalNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.TotalNum = val
 			}
 		}
 	}
