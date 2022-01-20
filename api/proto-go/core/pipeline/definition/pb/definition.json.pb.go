@@ -35,6 +35,12 @@ var _ json.Marshaler = (*PipelineDefinitionGetResponse)(nil)
 var _ json.Unmarshaler = (*PipelineDefinitionGetResponse)(nil)
 var _ json.Marshaler = (*PipelineDefinitionListRequest)(nil)
 var _ json.Unmarshaler = (*PipelineDefinitionListRequest)(nil)
+var _ json.Marshaler = (*PipelineDefinitionStaticsRequest)(nil)
+var _ json.Unmarshaler = (*PipelineDefinitionStaticsRequest)(nil)
+var _ json.Marshaler = (*PipelineDefinitionStaticsResponse)(nil)
+var _ json.Unmarshaler = (*PipelineDefinitionStaticsResponse)(nil)
+var _ json.Marshaler = (*PipelineDefinitionStatistics)(nil)
+var _ json.Unmarshaler = (*PipelineDefinitionStatistics)(nil)
 var _ json.Marshaler = (*PipelineDefinitionListResponse)(nil)
 var _ json.Unmarshaler = (*PipelineDefinitionListResponse)(nil)
 
@@ -231,6 +237,60 @@ func (m *PipelineDefinitionListRequest) MarshalJSON() ([]byte, error) {
 
 // PipelineDefinitionListRequest implement json.Marshaler.
 func (m *PipelineDefinitionListRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// PipelineDefinitionStaticsRequest implement json.Marshaler.
+func (m *PipelineDefinitionStaticsRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// PipelineDefinitionStaticsRequest implement json.Marshaler.
+func (m *PipelineDefinitionStaticsRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// PipelineDefinitionStaticsResponse implement json.Marshaler.
+func (m *PipelineDefinitionStaticsResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// PipelineDefinitionStaticsResponse implement json.Marshaler.
+func (m *PipelineDefinitionStaticsResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// PipelineDefinitionStatistics implement json.Marshaler.
+func (m *PipelineDefinitionStatistics) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// PipelineDefinitionStatistics implement json.Marshaler.
+func (m *PipelineDefinitionStatistics) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

@@ -54,6 +54,16 @@ func (c CategoryType) String() string {
 	return string(c)
 }
 
+type PipelineType string
+
+const (
+	cicdPipelineType PipelineType = "cicd"
+)
+
+func (p PipelineType) String() string {
+	return string(p)
+}
+
 func (s *ProjectPipelineService) ListPipelineYml(ctx context.Context, req *pb.ListAppPipelineYmlRequest) (*pb.ListAppPipelineYmlResponse, error) {
 
 	app, err := s.bundle.GetApp(req.AppID)
@@ -142,8 +152,13 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
+	location, err := p.makeLocationByAppID(params.AppID)
+	if err != nil {
+		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
+	}
 
 	definitionRsp, err := p.PipelineDefinition.Create(ctx, &dpb.PipelineDefinitionCreateRequest{
+		Location:         location,
 		Name:             params.Name,
 		Creator:          apis.GetUserID(ctx),
 		PipelineSourceId: sourceRsp.PipelineSource.ID,
@@ -196,30 +211,18 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
 	}
 
-	var apps []apistructs.ApplicationDTO
-	if len(params.AppName) == 0 {
-		appResp, err := p.bundle.GetMyAppsByProject(params.IdentityInfo.UserID, project.OrgID, project.ID, "")
-		if err != nil {
-			return nil, 0, err
-		}
-		apps = appResp.List
-	}
-	for _, v := range apps {
-		params.AppName = append(params.AppName, v.Name)
-	}
-	// No application returned directly
-	if len(params.AppName) == 0 {
-		return []*dpb.PipelineDefinition{}, 0, nil
-	}
-
 	list, err := p.PipelineDefinition.List(ctx, &dpb.PipelineDefinitionListRequest{
 		PageSize: int64(params.PageSize),
 		PageNo:   int64(params.PageNo),
+		Location: makeLocation(&apistructs.ApplicationDTO{
+			OrgName:     org.Name,
+			ProjectName: project.Name,
+		}, cicdPipelineType),
+		Name:     params.Name,
 		Creator:  params.Creator,
 		Executor: params.Executor,
 		Category: params.Category,
 		Ref:      params.Ref,
-		Name:     params.Name,
 		Remote: func() []string {
 			remotes := make([]string, 0, len(params.AppName))
 			for _, v := range params.AppName {
@@ -481,7 +484,7 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 }
 
 func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.ProjectPipelineBatchRun) (*deftype.ProjectPipelineBatchRunResult, error) {
-	definitionMap, err := p.batchGetPipelineDefinition(params.PipelineDefinitionIDs)
+	definitionMap, err := p.batchGetPipelineDefinition(params.PipelineDefinitionIDs, params.ProjectID)
 	if err != nil {
 		return nil, apierrors.ErrBatchRunProjectPipeline.InternalError(err)
 	}
@@ -847,12 +850,17 @@ func (p *ProjectPipelineService) getPipelineSource(sourceID string) (pipelineSou
 	return source.PipelineSource, nil
 }
 
-func (p *ProjectPipelineService) batchGetPipelineDefinition(pipelineDefinitionIDArray []string) (map[string]*dpb.PipelineDefinition, error) {
-	var pipelineDefinitionListRequest dpb.PipelineDefinitionListRequest
-	pipelineDefinitionListRequest.IdList = pipelineDefinitionIDArray
-	pipelineDefinitionListRequest.PageNo = 1
-	pipelineDefinitionListRequest.PageSize = int64(len(pipelineDefinitionIDArray))
-	resp, err := p.PipelineDefinition.List(context.Background(), &pipelineDefinitionListRequest)
+func (p *ProjectPipelineService) batchGetPipelineDefinition(pipelineDefinitionIDArray []string, projectID uint64) (map[string]*dpb.PipelineDefinition, error) {
+	location, err := p.makeLocationByProjectID(projectID)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := p.PipelineDefinition.List(context.Background(), &dpb.PipelineDefinitionListRequest{
+		PageNo:   1,
+		PageSize: int64(len(pipelineDefinitionIDArray)),
+		Location: location,
+		IdList:   pipelineDefinitionIDArray,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -945,34 +953,14 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 		appNames = append(appNames, v.Name)
 	}
 
-	list, err := p.PipelineDefinition.List(ctx, &dpb.PipelineDefinitionListRequest{
-		PageSize: 9999,
-		PageNo:   1,
-
-		Remote: func() []string {
-			remotes := make([]string, 0, len(appNames))
-			for _, v := range appNames {
-				remotes = append(remotes, fmt.Sprintf("%s/%s/%s", org.Name, project.Name, v))
-			}
-			return remotes
-		}(),
+	statics, err := p.PipelineDefinition.StaticsGroupByRemote(ctx, &dpb.PipelineDefinitionStaticsRequest{
+		Location: makeLocation(&apistructs.ApplicationDTO{
+			OrgName:     org.Name,
+			ProjectName: project.Name,
+		}, cicdPipelineType),
 	})
 	if err != nil {
 		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
-	}
-
-	pipelineWithAppNames := make([]*pipelineWithAppName, 0, len(list.Data))
-	for _, v := range list.Data {
-		split := strings.Split(v.Remote, "/")
-		pipelineWithAppNames = append(pipelineWithAppNames, &pipelineWithAppName{
-			AppName: func() string {
-				if len(split) > 0 {
-					return split[len(split)-1]
-				}
-				return ""
-			}(),
-			PipelineDefinition: v,
-		})
 	}
 
 	appNamePipelineNumMap := make(map[string]*pipelineNum)
@@ -983,21 +971,13 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 			TotalNum:   0,
 		}
 	}
-	timeEnd := time.Now()
-	timeStart := timeEnd.Add(-1 * 24 * time.Hour)
-	for _, v := range pipelineWithAppNames {
-		if _, ok := appNamePipelineNumMap[v.AppName]; !ok {
-			continue
-		}
-		appNamePipelineNumMap[v.AppName].TotalNum++
-		if apistructs.PipelineStatus(v.Status).IsRunningStatus() {
-			appNamePipelineNumMap[v.AppName].RunningNum++
-			continue
-		}
-		if v.StartedAt.AsTime().After(timeStart) &&
-			v.StartedAt.AsTime().Before(timeEnd) &&
-			v.Status == apistructs.PipelineStatusFailed.String() {
-			appNamePipelineNumMap[v.AppName].FailedNum++
+
+	for _, v := range statics.GetPipelineDefinitionStatistics() {
+		appName := getAppNameByRemote(v.Remote)
+		if v2, ok := appNamePipelineNumMap[appName]; ok {
+			v2.FailedNum = int(v.FailedNum)
+			v2.RunningNum = int(v.RunningNum)
+			v2.TotalNum = int(v.TotalNum)
 		}
 	}
 
@@ -1037,11 +1017,6 @@ type pipelineNum struct {
 	RunningNum int `json:"runningNum"`
 	FailedNum  int `json:"failedNum"`
 	TotalNum   int `json:"totalNum"`
-}
-
-type pipelineWithAppName struct {
-	AppName string `json:"appName"`
-	*dpb.PipelineDefinition
 }
 
 func (p *ProjectPipelineService) checkRolePermission(identityInfo apistructs.IdentityInfo, createRequest *apistructs.PipelineCreateRequestV2, apiError *errorresp.APIError) error {
@@ -1098,4 +1073,43 @@ func (e *ProjectPipelineService) UpdateCmsNsConfigs(userID string, orgID uint64)
 		})
 
 	return err
+}
+
+func makeLocation(app *apistructs.ApplicationDTO, t PipelineType) string {
+	return filepath.Join(t.String(), app.OrgName, app.ProjectName)
+}
+
+func (p *ProjectPipelineService) makeLocationByProjectID(projectID uint64) (string, error) {
+	projectDto, err := p.bundle.GetProject(projectID)
+	if err != nil {
+		return "", err
+	}
+	orgDto, err := p.bundle.GetOrg(projectDto.OrgID)
+	if err != nil {
+		return "", err
+	}
+
+	return makeLocation(&apistructs.ApplicationDTO{
+		OrgName:     orgDto.Name,
+		ProjectName: projectDto.Name,
+	}, cicdPipelineType), nil
+}
+
+func (p *ProjectPipelineService) makeLocationByAppID(appID uint64) (string, error) {
+	app, err := p.bundle.GetApp(appID)
+	if err != nil {
+		return "", err
+	}
+	return makeLocation(&apistructs.ApplicationDTO{
+		OrgName:     app.OrgName,
+		ProjectName: app.ProjectName,
+	}, cicdPipelineType), nil
+}
+
+func getAppNameByRemote(remote string) string {
+	splits := strings.Split(remote, string(filepath.Separator))
+	if len(splits) != 3 {
+		return ""
+	}
+	return splits[2]
 }

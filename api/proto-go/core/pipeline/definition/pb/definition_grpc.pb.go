@@ -26,6 +26,7 @@ type DefinitionServiceClient interface {
 	Delete(ctx context.Context, in *PipelineDefinitionDeleteRequest, opts ...grpc.CallOption) (*PipelineDefinitionDeleteResponse, error)
 	Get(ctx context.Context, in *PipelineDefinitionGetRequest, opts ...grpc.CallOption) (*PipelineDefinitionGetResponse, error)
 	List(ctx context.Context, in *PipelineDefinitionListRequest, opts ...grpc.CallOption) (*PipelineDefinitionListResponse, error)
+	StaticsGroupByRemote(ctx context.Context, in *PipelineDefinitionStaticsRequest, opts ...grpc.CallOption) (*PipelineDefinitionStaticsResponse, error)
 }
 
 type definitionServiceClient struct {
@@ -81,6 +82,15 @@ func (c *definitionServiceClient) List(ctx context.Context, in *PipelineDefiniti
 	return out, nil
 }
 
+func (c *definitionServiceClient) StaticsGroupByRemote(ctx context.Context, in *PipelineDefinitionStaticsRequest, opts ...grpc.CallOption) (*PipelineDefinitionStaticsResponse, error) {
+	out := new(PipelineDefinitionStaticsResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.pipeline.definition.DefinitionService/StaticsGroupByRemote", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DefinitionServiceServer is the server API for DefinitionService service.
 // All implementations should embed UnimplementedDefinitionServiceServer
 // for forward compatibility
@@ -90,6 +100,7 @@ type DefinitionServiceServer interface {
 	Delete(context.Context, *PipelineDefinitionDeleteRequest) (*PipelineDefinitionDeleteResponse, error)
 	Get(context.Context, *PipelineDefinitionGetRequest) (*PipelineDefinitionGetResponse, error)
 	List(context.Context, *PipelineDefinitionListRequest) (*PipelineDefinitionListResponse, error)
+	StaticsGroupByRemote(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error)
 }
 
 // UnimplementedDefinitionServiceServer should be embedded to have forward compatible implementations.
@@ -110,6 +121,9 @@ func (*UnimplementedDefinitionServiceServer) Get(context.Context, *PipelineDefin
 }
 func (*UnimplementedDefinitionServiceServer) List(context.Context, *PipelineDefinitionListRequest) (*PipelineDefinitionListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
+func (*UnimplementedDefinitionServiceServer) StaticsGroupByRemote(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StaticsGroupByRemote not implemented")
 }
 
 func RegisterDefinitionServiceServer(s grpc1.ServiceRegistrar, srv DefinitionServiceServer, opts ...grpc1.HandleOption) {
@@ -173,6 +187,15 @@ func _get_DefinitionService_serviceDesc(srv DefinitionServiceServer, opts ...grp
 	if h.Interceptor != nil {
 		_DefinitionService_List_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "List", srv)
 		_DefinitionService_List_Handler = h.Interceptor(_DefinitionService_List_Handler)
+	}
+
+	_DefinitionService_StaticsGroupByRemote_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.StaticsGroupByRemote(ctx, req.(*PipelineDefinitionStaticsRequest))
+	}
+	var _DefinitionService_StaticsGroupByRemote_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_DefinitionService_StaticsGroupByRemote_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "StaticsGroupByRemote", srv)
+		_DefinitionService_StaticsGroupByRemote_Handler = h.Interceptor(_DefinitionService_StaticsGroupByRemote_Handler)
 	}
 
 	var serviceDesc = _DefinitionService_serviceDesc
@@ -290,6 +313,29 @@ func _get_DefinitionService_serviceDesc(srv DefinitionServiceServer, opts ...grp
 					FullMethod: "/erda.core.pipeline.definition.DefinitionService/List",
 				}
 				return interceptor(ctx, in, info, _DefinitionService_List_Handler)
+			},
+		},
+		{
+			MethodName: "StaticsGroupByRemote",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(PipelineDefinitionStaticsRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(DefinitionServiceServer).StaticsGroupByRemote(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _DefinitionService_StaticsGroupByRemote_info)
+				}
+				if interceptor == nil {
+					return _DefinitionService_StaticsGroupByRemote_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.pipeline.definition.DefinitionService/StaticsGroupByRemote",
+				}
+				return interceptor(ctx, in, info, _DefinitionService_StaticsGroupByRemote_Handler)
 			},
 		},
 	}

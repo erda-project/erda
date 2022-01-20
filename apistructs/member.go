@@ -67,6 +67,19 @@ type Member struct {
 	Token   string `json:"token"`
 }
 
+func (m *Member) GetUserName() string {
+	if m.Nick != "" {
+		return m.Nick
+	}
+	if m.Name != "" {
+		return m.Name
+	}
+	if m.Mobile != "" {
+		return m.Mobile
+	}
+	return m.Email
+}
+
 // RoleInfo 角色信息
 type RoleInfo struct {
 	Role string `json:"role"`

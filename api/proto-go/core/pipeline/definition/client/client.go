@@ -56,3 +56,7 @@ func (s *definitionServiceWrapper) Get(ctx context.Context, req *pb.PipelineDefi
 func (s *definitionServiceWrapper) List(ctx context.Context, req *pb.PipelineDefinitionListRequest) (*pb.PipelineDefinitionListResponse, error) {
 	return s.client.List(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *definitionServiceWrapper) StaticsGroupByRemote(ctx context.Context, req *pb.PipelineDefinitionStaticsRequest) (*pb.PipelineDefinitionStaticsResponse, error) {
+	return s.client.StaticsGroupByRemote(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
