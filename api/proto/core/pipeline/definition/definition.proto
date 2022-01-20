@@ -66,6 +66,8 @@ message PipelineDefinition {
   string pipelineSourceId = 19;
   string status = 20;
   int64 pipelineId = 21;
+  int64 totalActionNum = 22;
+  int64 ExecutedActionNum = 23;
 }
 
 message PipelineDefinitionExtra {
@@ -86,8 +88,8 @@ message PipelineDefinitionCreateRequest {
   string pipelineSourceId = 5;
   string category = 6;
   PipelineDefinitionExtra extra = 7;
-  uint64 totalActionNum = 8;
-  uint64 ExecActionNum = 9;
+  int64 totalActionNum = 8;
+  int64 ExecutedActionNum = 9;
 }
 
 message PipelineDefinitionCreateResponse {
@@ -106,8 +108,8 @@ message PipelineDefinitionUpdateRequest {
   string pipelineDefinitionID = 8;
   string status = 9;
   int64 pipelineId = 10;
-  uint64 totalActionNum = 11;
-  uint64 ExecActionNum = 12;
+  int64 totalActionNum = 11;
+  int64 ExecutedActionNum = 12;
 }
 
 message PipelineDefinitionUpdateResponse {
@@ -147,8 +149,8 @@ message PipelineDefinitionListRequest {
   repeated string idList = 13;
   repeated string ascCols = 14;
   repeated string descCols = 15;
-  uint64 totalActionNum = 16;
-  uint64 ExecutedActionNum = 17;
+  int64 totalActionNum = 16;
+  int64 ExecutedActionNum = 17;
 }
 
 message PipelineDefinitionStaticsRequest {

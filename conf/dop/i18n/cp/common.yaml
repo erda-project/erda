@@ -304,6 +304,7 @@ zh:
   pipelineID: 流水线ID
   execute: 执行
   source: 源
+  process: 进度
 en:
   issue-manage: issue manage
   issue: issue
@@ -606,3 +607,4 @@ en:
   pipelineID: PipelineID
   execute: Execute
   source: Source
+  process: Process

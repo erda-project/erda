@@ -73,6 +73,7 @@ const (
 	ColumnPipelineID      table.ColumnKey = "pipelineID"
 	ColumnMoreOperations  table.ColumnKey = "moreOperations"
 	ColumnSource          table.ColumnKey = "source"
+	ColumnProcess         table.ColumnKey = "process"
 
 	StateKeyTransactionPaging = "paging"
 	StateKeyTransactionSort   = "sort"
@@ -127,14 +128,14 @@ func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 		Merges: map[table.ColumnKey]table.MergedColumn{
 			ColumnSource: {[]table.ColumnKey{ColumnApplicationName, ColumnBranch}},
 		},
-		Orders: []table.ColumnKey{ColumnPipelineName, ColumnSource, ColumnApplicationName, ColumnBranch, ColumnPipelineStatus, ColumnCostTime,
+		Orders: []table.ColumnKey{ColumnPipelineName, ColumnApplicationName, ColumnBranch, ColumnPipelineStatus, ColumnProcess, ColumnCostTime,
 			ColumnExecutor, ColumnStartTime, ColumnCreateTime, ColumnCreator, ColumnPipelineID, ColumnMoreOperations},
 		ColumnsMap: map[table.ColumnKey]table.Column{
 			ColumnPipelineName:    {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineName))},
-			ColumnSource:          {Title: cputil.I18n(p.sdk.Ctx, string(ColumnSource))},
 			ColumnApplicationName: {Title: cputil.I18n(p.sdk.Ctx, string(ColumnApplicationName))},
 			ColumnBranch:          {Title: cputil.I18n(p.sdk.Ctx, string(ColumnBranch))},
 			ColumnPipelineStatus:  {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus))},
+			ColumnProcess:         {Title: cputil.I18n(p.sdk.Ctx, string(ColumnProcess))},
 			ColumnCostTime:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCostTime)), EnableSort: true},
 			ColumnExecutor:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnExecutor)), Hidden: true},
 			ColumnStartTime:       {Title: cputil.I18n(p.sdk.Ctx, string(ColumnStartTime)), EnableSort: true, Hidden: true},
@@ -310,6 +311,20 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 						)
 					}(),
 				}).Build(),
+				ColumnProcess: table.NewCompleteTextCell(commodel.Text{
+					Text: func() string {
+						if v.Status == "" {
+							return "-"
+						}
+						if v.ExecutedActionNum < 0 {
+							v.ExecutedActionNum = 0
+						}
+						if v.ExecutedActionNum > v.TotalActionNum {
+							v.ExecutedActionNum = v.TotalActionNum
+						}
+						return fmt.Sprintf("%d/%d", v.ExecutedActionNum, v.TotalActionNum)
+					}(),
+				}).Build(),
 				ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(v.Remote)).Build(),
 				ColumnBranch:          table.NewTextCell(v.Ref).Build(),
 				ColumnPipelineID: table.NewTextCell(func() string {
@@ -352,34 +367,20 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 	build := cputil.NewOpBuilder().Build()
 	items = append(items, commodel.MoreOpItem{
 		ID: func() string {
-			if definition.Category == "primary" {
-				return "unsetPrimary"
+			if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
+				return "cancelRun"
 			}
-			return "setPrimary"
+			return "run"
 		}(),
 		Text: cputil.I18n(p.sdk.Ctx, func() string {
-			if definition.Category == "primary" {
-				return "unsetPrimary"
+			if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
+				return "cancelRun"
 			}
-			return "setPrimary"
+			return "run"
 		}()),
-		Operations: map[cptype.OperationKey]cptype.Operation{
-			commodel.OpMoreOperationsItemClick{}.OpKey(): build,
+		Icon: &commodel.Icon{
+			Type: "play",
 		},
-	})
-	items = append(items, commodel.MoreOpItem{
-		ID: func() string {
-			if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
-				return "cancelRun"
-			}
-			return "run"
-		}(),
-		Text: cputil.I18n(p.sdk.Ctx, func() string {
-			if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
-				return "cancelRun"
-			}
-			return "run"
-		}()),
 		Operations: map[cptype.OperationKey]cptype.Operation{
 			commodel.OpMoreOperationsItemClick{}.OpKey(): build,
 		},
@@ -391,6 +392,9 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
 			},
+			Icon: &commodel.Icon{
+				Type: "shuaxin",
+			},
 		})
 	}
 	if apistructs.PipelineStatus(definition.Status).IsFailedStatus() {
@@ -399,6 +403,9 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			Text: cputil.I18n(p.sdk.Ctx, "rerun"),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
+			},
+			Icon: &commodel.Icon{
+				Type: "restart",
 			},
 		})
 	}
@@ -416,6 +423,17 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 				}
 				return "cron"
 			}()),
+
+			Icon: func() *commodel.Icon {
+				if *v.Enable {
+					return &commodel.Icon{
+						Type: "shijian",
+					}
+				}
+				return &commodel.Icon{
+					Type: "stop",
+				}
+			}(),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
 			},
@@ -427,9 +445,32 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
 			},
+			Icon: &commodel.Icon{
+				Type: "shijian",
+			},
 		})
 	}
 
+	items = append(items, commodel.MoreOpItem{
+		ID: func() string {
+			if definition.Category == "primary" {
+				return "unsetPrimary"
+			}
+			return "setPrimary"
+		}(),
+		Text: cputil.I18n(p.sdk.Ctx, func() string {
+			if definition.Category == "primary" {
+				return "unsetPrimary"
+			}
+			return "setPrimary"
+		}()),
+		Icon: &commodel.Icon{
+			Type: "star",
+		},
+		Operations: map[cptype.OperationKey]cptype.Operation{
+			commodel.OpMoreOperationsItemClick{}.OpKey(): build,
+		},
+	})
 	// No delete button in running and timing
 	if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
 		return items
@@ -445,6 +486,9 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 		Text: cputil.I18n(p.sdk.Ctx, "delete"),
 		Operations: map[cptype.OperationKey]cptype.Operation{
 			commodel.OpMoreOperationsItemClick{}.OpKey(): build,
+		},
+		Icon: &commodel.Icon{
+			Type: "delete1",
 		},
 	})
 	return items

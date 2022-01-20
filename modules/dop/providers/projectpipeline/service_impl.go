@@ -154,16 +154,6 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
 
-	pipelineYml, err := pipelineyml.New([]byte(sourceReq.PipelineYml))
-	if err != nil {
-		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
-	}
-
-	totalActionNum := 0
-	pipelineYml.Spec().LoopStagesActions(func(stage int, action *pipelineyml.Action) {
-		totalActionNum++
-	})
-
 	location, err := p.makeLocationByAppID(params.AppID)
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
@@ -178,7 +168,6 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		Extra: &dpb.PipelineDefinitionExtra{
 			Extra: p.pipelineSourceType.GetPipelineCreateRequestV2(),
 		},
-		TotalActionNum: uint64(totalActionNum),
 	})
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
@@ -680,11 +669,17 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 	if err != nil {
 		return nil, apiError.InternalError(err)
 	}
+	totalActionNum, err := countActionNumByPipelineYml(source.PipelineYml)
+	if err != nil {
+		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
+	}
 	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{
 		PipelineDefinitionID: definition.ID,
 		Status:               string(apistructs.StatusRunning),
 		Executor:             identityInfo.UserID,
 		StartedAt:            timestamppb.New(time.Now()),
+		TotalActionNum:       totalActionNum,
+		ExecutedActionNum:    -1,
 		PipelineId:           int64(dto.ID)})
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
@@ -929,16 +924,35 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
+	totalActionNum, err := countActionNumByPipelineYml(source.PipelineYml)
+	if err != nil {
+		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
+	}
 	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{
 		PipelineDefinitionID: definition.ID,
 		Status:               string(apistructs.StatusRunning),
 		Executor:             identityInfo.UserID,
 		StartedAt:            timestamppb.New(time.Now()),
+		TotalActionNum:       totalActionNum,
+		ExecutedActionNum:    -1,
 		PipelineId:           int64(value.ID)})
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
 	return value, nil
+}
+
+func countActionNumByPipelineYml(pipelineYmlStr string) (int64, error) {
+	pipelineYml, err := pipelineyml.New([]byte(pipelineYmlStr))
+	if err != nil {
+		return 0, apierrors.ErrCreateProjectPipeline.InternalError(err)
+	}
+
+	var totalActionNum int64
+	pipelineYml.Spec().LoopStagesActions(func(stage int, action *pipelineyml.Action) {
+		totalActionNum++
+	})
+	return totalActionNum, nil
 }
 
 func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListAppRequest) (*pb.ListAppResponse, error) {

@@ -38,15 +38,9 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 		return nil
 	}
 
-	definition, err := ctx.SDK.DBClient.GetPipelineDefinition(pipeline.PipelineDefinitionID)
+	err := ctx.SDK.DBClient.IncreaseExecutedActionNum(pipeline.PipelineDefinitionID)
 	if err != nil {
-		return err
-	}
-
-	definition.ExecutedActionNum += 1
-	err = ctx.SDK.DBClient.UpdatePipelineDefinition(definition.ID, definition)
-	if err != nil {
-		logrus.Errorf("pipeline %v update definitionID was err %v", pipeline.ID, err)
+		logrus.Errorf("failed to IncreaseExecutedActionNum, pipelineID: %d, err: %v", pipeline.ID, err)
 		return err
 	}
 	return nil
