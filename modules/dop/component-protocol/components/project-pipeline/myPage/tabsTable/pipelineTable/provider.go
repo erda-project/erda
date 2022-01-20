@@ -333,7 +333,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 						if v.CostTime <= 0 {
 							return "-"
 						}
-						return fmt.Sprintf("%v s", v.CostTime)
+						return fmt.Sprintf("%vs", v.CostTime)
 					}(),
 					Tip: func() string {
 						if v.CostTime <= 0 {

@@ -156,7 +156,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if pipeline.DefinitionPageInfo == nil {
 				continue
 			}
-			userIDs = append(userIDs, pipeline.DefinitionPageInfo.Creator)
+			userIDs = append(userIDs, pipeline.GetUserID())
 			tableValue.Rows = append(tableValue.Rows, p.pipelineToRow(pipeline))
 		}
 
@@ -232,7 +232,7 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 				if pipeline.CostTimeSec <= 0 {
 					return "-"
 				} else {
-					return fmt.Sprintf("%v s", pipeline.CostTimeSec)
+					return fmt.Sprintf("%vs", pipeline.CostTimeSec)
 				}
 			}()).Build(),
 			ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote)).Build(),
