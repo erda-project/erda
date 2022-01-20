@@ -82,9 +82,8 @@ func (p *CustomFilter) MemberCondition() (MemberCondition, error) {
 	executorCondition := model.NewSelectCondition("executor", cputil.I18n(p.sdk.Ctx, "executor"), func() []model.SelectOption {
 		selectOptions := make([]model.SelectOption, 0, len(members)+1)
 		for _, v := range members {
-			selectOptions = append(selectOptions, *model.NewSelectOption(func() string {
-				return v.GetUserName()
-			}(),
+			selectOptions = append(selectOptions, *model.NewSelectOption(
+				v.GetUserName(),
 				v.UserID,
 			))
 		}

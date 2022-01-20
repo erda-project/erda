@@ -208,6 +208,7 @@ func (p pipelineDefinition) List(ctx context.Context, request *pb.PipelineDefini
 func PipelineDefinitionToPb(pipelineDefinition *db.PipelineDefinition) *pb.PipelineDefinition {
 	de := &pb.PipelineDefinition{
 		ID:               pipelineDefinition.ID,
+		Location:         pipelineDefinition.Location,
 		Name:             pipelineDefinition.Name,
 		Creator:          pipelineDefinition.Creator,
 		Executor:         pipelineDefinition.Executor,
@@ -219,7 +220,6 @@ func PipelineDefinitionToPb(pipelineDefinition *db.PipelineDefinition) *pb.Pipel
 		TimeUpdated:      timestamppb.New(pipelineDefinition.TimeUpdated),
 		StartedAt:        timestamppb.New(pipelineDefinition.StartedAt),
 		EndedAt:          timestamppb.New(pipelineDefinition.EndedAt),
-		Location:         pipelineDefinition.Location,
 	}
 	return de
 }

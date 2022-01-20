@@ -53,6 +53,16 @@ func (c CategoryType) String() string {
 	return string(c)
 }
 
+type PipelineType string
+
+const (
+	cicdPipelineType PipelineType = "cicd"
+)
+
+func (p PipelineType) String() string {
+	return string(p)
+}
+
 func (s *ProjectPipelineService) ListPipelineYml(ctx context.Context, req *pb.ListAppPipelineYmlRequest) (*pb.ListAppPipelineYmlResponse, error) {
 
 	app, err := s.bundle.GetApp(req.AppID)
@@ -141,13 +151,13 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
-
-	app, err := p.bundle.GetApp(params.AppID)
+	location, err := p.makeLocationByAppID(params.AppID)
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
 
 	definitionRsp, err := p.PipelineDefinition.Create(ctx, &dpb.PipelineDefinitionCreateRequest{
+		Location:         location,
 		Name:             params.Name,
 		Creator:          apis.GetUserID(ctx),
 		PipelineSourceId: sourceRsp.PipelineSource.ID,
@@ -155,7 +165,6 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		Extra: &dpb.PipelineDefinitionExtra{
 			Extra: p.pipelineSourceType.GetPipelineCreateRequestV2(),
 		},
-		Location: makeLocation(app, cicdPipelineType),
 	})
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
@@ -204,11 +213,15 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 	list, err := p.PipelineDefinition.List(ctx, &dpb.PipelineDefinitionListRequest{
 		PageSize: int64(params.PageSize),
 		PageNo:   int64(params.PageNo),
+		Location: makeLocation(&apistructs.ApplicationDTO{
+			OrgName:     org.Name,
+			ProjectName: project.Name,
+		}, cicdPipelineType),
+		Name:     params.Name,
 		Creator:  params.Creator,
 		Executor: params.Executor,
 		Category: params.Category,
 		Ref:      params.Ref,
-		Name:     params.Name,
 		Remote: func() []string {
 			remotes := make([]string, 0, len(params.AppName))
 			for _, v := range params.AppName {
@@ -225,10 +238,6 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 		Status:      params.Status,
 		AscCols:     params.AscCols,
 		DescCols:    params.DescCols,
-		Location: makeLocation(&apistructs.ApplicationDTO{
-			OrgName:     org.Name,
-			ProjectName: project.Name,
-		}, cicdPipelineType),
 	})
 	if err != nil {
 		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
@@ -836,22 +845,15 @@ func (p *ProjectPipelineService) getPipelineSource(sourceID string) (pipelineSou
 }
 
 func (p *ProjectPipelineService) batchGetPipelineDefinition(pipelineDefinitionIDArray []string, projectID uint64) (map[string]*dpb.PipelineDefinition, error) {
-	projectDto, err := p.bundle.GetProject(projectID)
-	if err != nil {
-		return nil, err
-	}
-	orgDto, err := p.bundle.GetOrg(projectDto.OrgID)
+	location, err := p.makeLocationByProjectID(projectID)
 	if err != nil {
 		return nil, err
 	}
 	resp, err := p.PipelineDefinition.List(context.Background(), &dpb.PipelineDefinitionListRequest{
 		PageNo:   1,
 		PageSize: int64(len(pipelineDefinitionIDArray)),
-		Location: makeLocation(&apistructs.ApplicationDTO{
-			OrgName:     orgDto.Name,
-			ProjectName: projectDto.Name,
-		}, cicdPipelineType),
-		IdList: pipelineDefinitionIDArray,
+		Location: location,
+		IdList:   pipelineDefinitionIDArray,
 	})
 	if err != nil {
 		return nil, err
@@ -1060,4 +1062,35 @@ func (e *ProjectPipelineService) UpdateCmsNsConfigs(userID string, orgID uint64)
 		})
 
 	return err
+}
+
+func makeLocation(app *apistructs.ApplicationDTO, t PipelineType) string {
+	return filepath.Join(t.String(), app.OrgName, app.ProjectName)
+}
+
+func (p *ProjectPipelineService) makeLocationByProjectID(projectID uint64) (string, error) {
+	projectDto, err := p.bundle.GetProject(projectID)
+	if err != nil {
+		return "", err
+	}
+	orgDto, err := p.bundle.GetOrg(projectDto.OrgID)
+	if err != nil {
+		return "", err
+	}
+
+	return makeLocation(&apistructs.ApplicationDTO{
+		OrgName:     orgDto.Name,
+		ProjectName: projectDto.Name,
+	}, cicdPipelineType), nil
+}
+
+func (p *ProjectPipelineService) makeLocationByAppID(appID uint64) (string, error) {
+	app, err := p.bundle.GetApp(appID)
+	if err != nil {
+		return "", err
+	}
+	return makeLocation(&apistructs.ApplicationDTO{
+		OrgName:     app.OrgName,
+		ProjectName: app.ProjectName,
+	}, cicdPipelineType), nil
 }

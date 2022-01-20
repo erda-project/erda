@@ -31,16 +31,6 @@ type ProjectSourceType interface {
 	GetPipelineCreateRequestV2() string
 }
 
-type PipelineType string
-
-const (
-	cicdPipelineType PipelineType = "cicd"
-)
-
-func (p PipelineType) String() string {
-	return string(p)
-}
-
 type ErdaProjectSourceType struct {
 	PipelineCreateRequestV2 string `json:"pipelineCreateRequestV2"`
 }
@@ -99,10 +89,6 @@ func (s *ErdaProjectSourceType) GetPipelineCreateRequestV2() string {
 
 func makeRemote(app *apistructs.ApplicationDTO) string {
 	return filepath.Join(app.OrgName, app.ProjectName, app.Name)
-}
-
-func makeLocation(app *apistructs.ApplicationDTO, t PipelineType) string {
-	return filepath.Join(t.String(), app.OrgName, app.ProjectName)
 }
 
 func (s *GithubProjectSourceType) GenerateReq(ctx context.Context, p *ProjectPipelineService, params *pb.CreateProjectPipelineRequest) (*spb.PipelineSourceCreateRequest, error) {

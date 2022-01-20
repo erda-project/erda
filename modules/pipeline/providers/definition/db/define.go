@@ -27,6 +27,7 @@ import (
 
 type PipelineDefinition struct {
 	ID               string    `json:"id" xorm:"pk"`
+	Location         string    `json:"location"`
 	Name             string    `json:"name"`
 	CostTime         uint64    `json:"costTime"`
 	Creator          string    `json:"creator"`
@@ -40,7 +41,6 @@ type PipelineDefinition struct {
 	TimeCreated      time.Time `json:"timeCreated,omitempty" xorm:"created_at created"`
 	TimeUpdated      time.Time `json:"timeUpdated,omitempty" xorm:"updated_at updated"`
 	PipelineID       uint64    `json:"pipelineId"`
-	Location         string    `json:"location"`
 }
 
 func (PipelineDefinition) TableName() string {

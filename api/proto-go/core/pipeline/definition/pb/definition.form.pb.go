@@ -1571,6 +1571,10 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 					return err
 				}
 				m.PageNo = val
+			case "location":
+				m.Location = vals[0]
+			case "name":
+				m.Name = vals[0]
 			case "creator":
 				m.Creator = vals
 			case "executor":
@@ -1579,8 +1583,6 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 				m.Category = vals
 			case "ref":
 				m.Ref = vals
-			case "name":
-				m.Name = vals[0]
 			case "remote":
 				m.Remote = vals
 			case "timeCreated":
@@ -1595,8 +1597,6 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 				m.AscCols = vals
 			case "descCols":
 				m.DescCols = vals
-			case "location":
-				m.Location = vals[0]
 			}
 		}
 	}

@@ -130,19 +130,19 @@ message PipelineDefinitionGetResponse {
 message PipelineDefinitionListRequest {
   int64 pageSize = 1;
   int64 pageNo = 2;
-  repeated string creator = 3;
-  repeated  string executor = 4;
-  repeated string category = 5;
-  repeated string ref = 6;
-  string name = 7;
-  repeated string remote = 8;
-  repeated string timeCreated = 9;
-  repeated string timeStarted = 10;
+  string location = 3;
+  string name = 4;
+  repeated string creator = 5;
+  repeated  string executor = 6;
+  repeated string category = 7;
+  repeated string ref = 8;
+  repeated string remote = 9;
+  repeated string timeCreated = 10;
+  repeated string timeStarted = 11;
   repeated string  status = 12;
   repeated string idList = 13;
   repeated string ascCols = 14;
   repeated string descCols = 15;
-  string location = 16;
 }
 
 message PipelineDefinitionStaticsRequest {
