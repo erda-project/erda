@@ -171,7 +171,7 @@ func Test_memberService_ListMemberRoles(t *testing.T) {
 			IsDeleted:   "",
 		}, nil
 	})
-	monkey.Patch((*bundle.Bundle).ListMemberRoles, func(_ *bundle.Bundle, _ apistructs.ListScopeManagersByScopeIDRequest, _ int64) (*apistructs.RoleList, error) {
+	monkey.Patch((*bundle.Bundle).ListMemberRoles, func(_ *bundle.Bundle, _ apistructs.ListScopeManagersByScopeIDRequest, _ int64, _ string) (*apistructs.RoleList, error) {
 		return &apistructs.RoleList{
 			List: []apistructs.RoleInfo{
 				{
