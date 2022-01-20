@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/commodel"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
@@ -332,9 +333,9 @@ func (p *List) getData() *list.Data {
 		logrus.Infof("%s : %s", appRuntime.Name, appRuntime.LastOperator)
 		isMyApp := myApp[appRuntime.ApplicationID]
 		item := list.Item{
-			ID:    idStr,
-			Title: nameStr,
-			//MainState:      getMainState(appRuntime.Status),
+			ID:             idStr,
+			Title:          nameStr,
+			Icon:           getIcon(appRuntime.Status),
 			TitleState:     getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus, isMyApp),
 			Selectable:     isMyApp,
 			KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.LastOperator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
@@ -474,22 +475,20 @@ func (p *List) doFilter(conds map[string]map[string]bool, appRuntime bundle.GetA
 	return true
 }
 
-func getMainState(runtimeStatus string) *list.StateInfo {
+func getIcon(runtimeStatus string) *commodel.Icon {
 	var (
-		statusStr list.ItemCommStatus
+		statusStr string
 	)
 	switch runtimeStatus {
 	case apistructs.RuntimeStatusHealthy:
-		statusStr = common.FrontedStatusSuccess
-	case apistructs.RuntimeStatusUnHealthy:
-		statusStr = common.FrontedStatusError
+		statusStr = common.FrontedIconBreathing
+	//case apistructs.RuntimeStatusUnHealthy:
+	//	statusStr = common.FrontedStatusError
 	default:
-		statusStr = common.FrontedStatusDefault
+		statusStr = common.FrontedIconLoading
 	}
 
-	return &list.StateInfo{
-		Status: statusStr,
-	}
+	return &commodel.Icon{URL: statusStr}
 }
 
 func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus string, isMyApp bool) []list.StateInfo {
