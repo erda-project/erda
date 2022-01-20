@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
@@ -89,7 +90,10 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		}
 		chart.SetYAxis(sdk.I18n("PV"), pvYAxis...)
 		chart.SetYAxis(sdk.I18n("UV"), uvYAxis...)
-
+		chart.SetYOptions(linegraph.NewOptionsBuilder().
+			WithEnable(true).WithType(structure.Number).WithDimension(sdk.I18n("PV")).Build())
+		chart.SetYOptions(linegraph.NewOptionsBuilder().
+			WithEnable(true).WithType(structure.Number).WithDimension(sdk.I18n("UV")).Build())
 		p.StdDataPtr = chart
 		return nil
 	}
