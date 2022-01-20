@@ -97,7 +97,6 @@ func (s *ErdaProjectSourceType) GetPipelineCreateRequestV2() string {
 	return s.PipelineCreateRequestV2
 }
 
-
 func makeRemote(app *apistructs.ApplicationDTO) string {
 	return filepath.Join(app.OrgName, app.ProjectName, app.Name)
 }

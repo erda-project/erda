@@ -27,8 +27,9 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 	conditions = append(conditions, p.StatusCondition())
 
 	var (
-		appCondition, executorCondition, creatorCondition *model.SelectCondition
-		err                                               error
+		appCondition    *model.SelectCondition
+		memberCondition MemberCondition
+		err             error
 	)
 
 	worker := limit_sync_group.NewWorker(2)
@@ -37,17 +38,16 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 		return err
 	})
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
-		executorCondition, creatorCondition, err = p.MemberCondition()
-
+		memberCondition, err = p.MemberCondition()
 		return err
 	})
 	if err := worker.Do().Error(); err != nil {
 		return nil, err
 	}
 	conditions = append(conditions, appCondition)
-	conditions = append(conditions, executorCondition)
+	conditions = append(conditions, memberCondition.executorCondition)
 	conditions = append(conditions, model.NewDateRangeCondition("startedAtStartEnd", cputil.I18n(p.sdk.Ctx, "started-at")))
-	conditions = append(conditions, creatorCondition)
+	conditions = append(conditions, memberCondition.creatorCondition)
 	conditions = append(conditions, model.NewDateRangeCondition("createdAtStartEnd", cputil.I18n(p.sdk.Ctx, "created-at")))
 	return conditions, nil
 }
@@ -63,7 +63,12 @@ func (p *CustomFilter) StatusCondition() *model.SelectCondition {
 	return condition
 }
 
-func (p *CustomFilter) MemberCondition() (*model.SelectCondition, *model.SelectCondition, error) {
+type MemberCondition struct {
+	executorCondition *model.SelectCondition
+	creatorCondition  *model.SelectCondition
+}
+
+func (p *CustomFilter) MemberCondition() (MemberCondition, error) {
 	members, err := p.bdl.ListMembers(apistructs.MemberListRequest{
 		ScopeType: apistructs.ProjectScope,
 		ScopeID:   int64(p.InParams.ProjectID),
@@ -71,20 +76,14 @@ func (p *CustomFilter) MemberCondition() (*model.SelectCondition, *model.SelectC
 		PageSize:  500,
 	})
 	if err != nil {
-		return nil, nil, err
+		return MemberCondition{}, err
 	}
 
 	executorCondition := model.NewSelectCondition("executor", cputil.I18n(p.sdk.Ctx, "executor"), func() []model.SelectOption {
 		selectOptions := make([]model.SelectOption, 0, len(members)+1)
 		for _, v := range members {
 			selectOptions = append(selectOptions, *model.NewSelectOption(func() string {
-				if v.Nick != "" {
-					return v.Nick
-				}
-				if v.Name != "" {
-					return v.Name
-				}
-				return v.Mobile
+				return v.GetUserName()
 			}(),
 				v.UserID,
 			))
@@ -98,13 +97,7 @@ func (p *CustomFilter) MemberCondition() (*model.SelectCondition, *model.SelectC
 		selectOptions := make([]model.SelectOption, 0, len(members)+1)
 		for _, v := range members {
 			selectOptions = append(selectOptions, *model.NewSelectOption(func() string {
-				if v.Nick != "" {
-					return v.Nick
-				}
-				if v.Name != "" {
-					return v.Name
-				}
-				return v.Mobile
+				return v.GetUserName()
 			}(),
 				v.UserID,
 			))
@@ -114,7 +107,11 @@ func (p *CustomFilter) MemberCondition() (*model.SelectCondition, *model.SelectC
 	}())
 	creatorCondition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-creator")
 	creatorCondition.ConditionBase.Disabled = p.gsHelper.GetGlobalPipelineTab() == common.MineState.String()
-	return executorCondition, creatorCondition, nil
+
+	return MemberCondition{
+		executorCondition: executorCondition,
+		creatorCondition:  creatorCondition,
+	}, nil
 }
 
 func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
