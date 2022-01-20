@@ -23,18 +23,15 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-func Test_initConfigFile(t *testing.T) {
+func Test_getConfigFile(t *testing.T) {
 	os.Setenv(envCollectorConfigFile, "aaa.yaml")
-	initConfigFile()
-	assert.Equal(t, "aaa.yaml", os.Getenv(envCollectorConfigFile))
+	assert.Equal(t, "aaa.yaml", getConfigfile())
 	os.Unsetenv(envCollectorConfigFile)
 
 	os.Setenv(string(apistructs.DICE_IS_EDGE), "true")
-	initConfigFile()
-	assert.Equal(t, edgeConfigFile, os.Getenv(envCollectorConfigFile))
+	assert.Equal(t, edgeConfigFile, getConfigfile())
 	os.Unsetenv(string(apistructs.DICE_IS_EDGE))
 	os.Unsetenv(envCollectorConfigFile)
 
-	initConfigFile()
-	assert.Equal(t, centerConfigFile, os.Getenv(envCollectorConfigFile))
+	assert.Equal(t, centerConfigFile, getConfigfile())
 }
