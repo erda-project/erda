@@ -138,6 +138,7 @@ func (s *PipelineSvc) Convert2PagePipeline(p *spec.Pipeline) *apistructs.PagePip
 		definitionPageInfo := &apistructs.DefinitionPageInfo{}
 		definitionPageInfo.Name = p.Definition.Name
 		definitionPageInfo.Creator = p.Definition.Creator
+		definitionPageInfo.Executor = p.Definition.Executor
 		definitionPageInfo.SourceRef = p.Source.Ref
 		definitionPageInfo.SourceRemote = p.Source.Remote
 		result.DefinitionPageInfo = definitionPageInfo

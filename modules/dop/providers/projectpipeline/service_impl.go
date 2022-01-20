@@ -664,7 +664,12 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 	if err != nil {
 		return nil, apiError.InternalError(err)
 	}
-	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{PipelineDefinitionID: definition.ID, Status: string(apistructs.StatusRunning), PipelineId: int64(dto.ID)})
+	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{
+		PipelineDefinitionID: definition.ID,
+		Status:               string(apistructs.StatusRunning),
+		Executor:             identityInfo.UserID,
+		StartedAt:            timestamppb.New(time.Now()),
+		PipelineId:           int64(dto.ID)})
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
@@ -903,7 +908,12 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
-	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{PipelineDefinitionID: definition.ID, Status: string(apistructs.StatusRunning), PipelineId: int64(value.ID)})
+	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{
+		PipelineDefinitionID: definition.ID,
+		Status:               string(apistructs.StatusRunning),
+		Executor:             identityInfo.UserID,
+		StartedAt:            timestamppb.New(time.Now()),
+		PipelineId:           int64(value.ID)})
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
