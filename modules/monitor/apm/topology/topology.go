@@ -1538,7 +1538,7 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, serviceId
 					}
 
 					node := columnsParser(targetNodeType.Type, targetNode)
-					if node.ServiceId == serviceId {
+					if serviceId != "" && node.ServiceId == serviceId {
 						nodeIds[node.Id] = struct{}{}
 					}
 
@@ -1609,7 +1609,7 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, serviceId
 							sourceNode.Metric = sourceMetric
 							sourceNode.Parents = []*Node{}
 							node.Parents = append(node.Parents, sourceNode)
-							if node.ServiceId == serviceId || sourceNode.ServiceId == serviceId {
+							if serviceId != "" && (node.ServiceId == serviceId || sourceNode.ServiceId == serviceId) {
 								nodeIds[sourceNode.Id] = struct{}{}
 							}
 						}
