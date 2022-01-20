@@ -43,6 +43,9 @@ const (
 	FrontedStatusError      = "error"
 	FrontedStatusWarning    = "warning"
 	FrontedStatusProcessing = "processing"
+
+	FrontedIconLoading   = "default_loading"
+	FrontedIconBreathing = "default_breathing"
 )
 
 var (
