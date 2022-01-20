@@ -40,14 +40,14 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	}
 
 	var pipelineDefinition db.PipelineDefinition
+	pipelineDefinition.Location = request.Location
+	pipelineDefinition.Name = request.Name
 	pipelineDefinition.PipelineSourceId = request.PipelineSourceId
 	pipelineDefinition.Category = request.Category
 	pipelineDefinition.Creator = request.Creator
-	pipelineDefinition.Name = request.Name
 	pipelineDefinition.ID = uuid.New().String()
 	pipelineDefinition.StartedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
-	pipelineDefinition.Location = request.Location
 	err := p.dbClient.CreatePipelineDefinition(&pipelineDefinition)
 	if err != nil {
 		return nil, err

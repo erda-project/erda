@@ -962,11 +962,11 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 	}
 
 	for _, v := range statics.GetPipelineDefinitionStatistics() {
-		split := strings.Split(v.Remote, "/")
-		if _, ok := appNamePipelineNumMap[split[len(split)-1]]; ok {
-			appNamePipelineNumMap[split[len(split)-1]].FailedNum = int(v.FailedNum)
-			appNamePipelineNumMap[split[len(split)-1]].RunningNum = int(v.RunningNum)
-			appNamePipelineNumMap[split[len(split)-1]].TotalNum = int(v.TotalNum)
+		appName := getAppNameByRemote(v.Remote)
+		if _, ok := appNamePipelineNumMap[appName]; ok {
+			appNamePipelineNumMap[appName].FailedNum = int(v.FailedNum)
+			appNamePipelineNumMap[appName].RunningNum = int(v.RunningNum)
+			appNamePipelineNumMap[appName].TotalNum = int(v.TotalNum)
 		}
 	}
 
@@ -1093,4 +1093,12 @@ func (p *ProjectPipelineService) makeLocationByAppID(appID uint64) (string, erro
 		OrgName:     app.OrgName,
 		ProjectName: app.ProjectName,
 	}, cicdPipelineType), nil
+}
+
+func getAppNameByRemote(remote string) string {
+	splits := strings.Split(remote, string(filepath.Separator))
+	if len(splits) != 3 {
+		return ""
+	}
+	return splits[2]
 }
