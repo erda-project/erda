@@ -329,7 +329,7 @@ func (p *List) getData() *list.Data {
 			ID:    idStr,
 			Title: nameStr,
 			//MainState:      getMainState(appRuntime.Status),
-			TitleState:     getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus),
+			TitleState:     getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus, isMyApp),
 			Selectable:     isMyApp,
 			KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.LastOperator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
 			Operations:     getOperations(p.Sdk, appRuntime.ProjectID, appRuntime.ApplicationID, appRuntime.ID, isMyApp),
@@ -486,7 +486,7 @@ func getMainState(runtimeStatus string) *list.StateInfo {
 	}
 }
 
-func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus string) []list.StateInfo {
+func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus string, isMyApp bool) []list.StateInfo {
 	if dStatus == "" {
 		var deployStr list.ItemCommStatus
 		switch deployStatus {
@@ -501,22 +501,26 @@ func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus s
 		case string(apistructs.DeploymentStatusCanceled):
 			deployStr = common.FrontedStatusDefault
 		}
-		return []list.StateInfo{
+
+		info := []list.StateInfo{
 			{
 				Status:     deployStr,
 				Text:       sdk.I18n(deployStatus),
 				SuffixIcon: "right",
-				Operations: map[cptype.OperationKey]cptype.Operation{
-					"click": {
-						SkipRender: true,
-						ServerData: &cptype.OpServerData{
-							"logId": deploymentId,
-							"appId": appId,
-						},
-					},
-				},
 			},
 		}
+		if isMyApp {
+			info[0].Operations = map[cptype.OperationKey]cptype.Operation{
+				"click": {
+					SkipRender: true,
+					ServerData: &cptype.OpServerData{
+						"logId": deploymentId,
+						"appId": appId,
+					},
+				},
+			}
+		}
+		return info
 	} else {
 		return []list.StateInfo{
 			{
@@ -528,9 +532,9 @@ func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus s
 	}
 }
 
-func getOperations(sdk *cptype.SDK, projectId, appId, runtimeId uint64, disable bool) map[cptype.OperationKey]cptype.Operation {
+func getOperations(sdk *cptype.SDK, projectId, appId, runtimeId uint64, isMyApp bool) map[cptype.OperationKey]cptype.Operation {
 	tip := ""
-	if disable {
+	if !isMyApp {
 		tip = sdk.I18n("no authority found")
 	}
 	projectIdStr := fmt.Sprintf("%d", projectId)
@@ -538,7 +542,7 @@ func getOperations(sdk *cptype.SDK, projectId, appId, runtimeId uint64, disable 
 	runtimeIdStr := fmt.Sprintf("%d", runtimeId)
 	return map[cptype.OperationKey]cptype.Operation{
 		"clickGoto": {
-			Disabled: disable,
+			Disabled: !isMyApp,
 			Tip:      tip,
 			ServerData: &cptype.OpServerData{
 				"target": "projectDeployRuntime",
