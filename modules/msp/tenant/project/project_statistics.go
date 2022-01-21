@@ -193,7 +193,10 @@ func (s *projectService) getProjectsStatistics(projectIds ...string) (map[string
 	for _, projectId := range projectIds {
 		stats, ok := statisticMap.statForProjectId(projectId)
 		if !ok {
-			tks := terminusKeyMap[projectId]
+			var tks []string
+			linq.From(terminusKeyMap[projectId]).Select(func(i interface{}) interface{} {
+				return i.(linq.KeyValue).Value
+			}).ToSlice(&tks)
 			stats, ok = statisticMap.statForTerminusKeys("", tks...)
 		}
 		if !ok {
