@@ -26,6 +26,8 @@ type ExpressionServiceHandler interface {
 	GetAlertNotifies(context.Context, *GetAlertNotifiesRequest) (*GetAlertNotifiesResponse, error)
 	// GET /api/alert/templates
 	GetTemplates(context.Context, *GetTemplatesRequest) (*GetTemplatesResponse, error)
+	// GET /api/alert/org-locale
+	GetOrgsLocale(context.Context, *GetOrgsLocaleRequest) (*GetOrgsLocaleResponse, error)
 }
 
 // RegisterExpressionServiceHandler register ExpressionServiceHandler to http.Router.
@@ -195,8 +197,45 @@ func RegisterExpressionServiceHandler(r http.Router, srv ExpressionServiceHandle
 		)
 	}
 
+	add_GetOrgsLocale := func(method, path string, fn func(context.Context, *GetOrgsLocaleRequest) (*GetOrgsLocaleResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetOrgsLocaleRequest))
+		}
+		var GetOrgsLocale_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetOrgsLocale_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetOrgsLocale", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetOrgsLocale_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetOrgsLocaleRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_GetAlertExpressions("GET", "/api/alert/expressions", srv.GetAlertExpressions)
 	add_GetMetricExpressions("GET", "/api/metric/expressions", srv.GetMetricExpressions)
 	add_GetAlertNotifies("GET", "/api/alert/notifies", srv.GetAlertNotifies)
 	add_GetTemplates("GET", "/api/alert/templates", srv.GetTemplates)
+	add_GetOrgsLocale("GET", "/api/alert/org-locale", srv.GetOrgsLocale)
 }

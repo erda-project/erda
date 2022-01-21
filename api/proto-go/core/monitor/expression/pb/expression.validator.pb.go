@@ -115,3 +115,10 @@ func (this *AlertTemplate) Validate() error {
 	// Validation of proto3 map<> fields is unsupported.
 	return nil
 }
+func (this *GetOrgsLocaleRequest) Validate() error {
+	return nil
+}
+func (this *GetOrgsLocaleResponse) Validate() error {
+	// Validation of proto3 map<> fields is unsupported.
+	return nil
+}

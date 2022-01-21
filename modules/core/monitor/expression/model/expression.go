@@ -46,6 +46,7 @@ type NotifyTemplate struct {
 	Template   string                 `json:"template"`
 	Formats    map[string]interface{} `json:"formats"`
 	Version    string                 `json:"version"`
+	Language   string                 `json:"language"`
 }
 
 type AlertConfig struct {

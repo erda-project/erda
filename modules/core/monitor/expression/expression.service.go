@@ -26,6 +26,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/expression/pb"
+	"github.com/erda-project/erda/modules/core-services/dao"
 	alertdb "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/modules/core/monitor/expression/model"
 )
@@ -52,6 +53,24 @@ type expressionService struct {
 	metricDB                       *alertdb.MetricExpressionDB
 	customizeAlertNotifyTemplateDB *alertdb.CustomizeAlertNotifyTemplateDB
 	alertNotifyDB                  *alertdb.AlertNotifyDB
+	clientDB                       *dao.DBClient
+}
+
+func (e *expressionService) GetOrgsLocale(ctx context.Context, request *pb.GetOrgsLocaleRequest) (*pb.GetOrgsLocaleResponse, error) {
+	list, err := e.clientDB.GetOrgList()
+	if err != nil {
+		return nil, err
+	}
+	orgLocale := make(map[string]string)
+	for _, v := range list {
+		if v.Locale == "" {
+			v.Locale = "zh-CN"
+		}
+		orgLocale[v.Name] = v.Locale
+	}
+	return &pb.GetOrgsLocaleResponse{
+		Data: orgLocale,
+	}, nil
 }
 
 func (e *expressionService) init(alertRules, metricRules string) error {

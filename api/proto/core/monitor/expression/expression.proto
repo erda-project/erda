@@ -36,6 +36,11 @@ service ExpressionService {
       get: "/api/alert/templates"
     };
   }
+  rpc GetOrgsLocale (GetOrgsLocaleRequest) returns (GetOrgsLocaleResponse) {
+    option (google.api.http) = {
+      get: "/api/alert/org-locale"
+    };
+  }
 }
 
 message GetExpressionsRequest {
@@ -125,4 +130,12 @@ message AlertTemplate {
   map<string, google.protobuf.Value> formats    = 8;
   string                             version    = 9;
   bool                               enable     = 10;
+  string                             language   = 11;
+}
+
+message GetOrgsLocaleRequest {
+
+}
+message GetOrgsLocaleResponse {
+  map<string, string> data = 1;
 }

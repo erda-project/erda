@@ -1,6 +1,7 @@
 - name: "应用实例内存使用率异常"
   trigger: "alert"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:1"
     mem_usage_value: "size:byte"
@@ -38,6 +39,7 @@
 - name: "应用实例内存使用率异常"
   trigger: "alert"
   target: "sms"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:1"
     mem_usage_value: "size:byte"
@@ -50,6 +52,7 @@
 - name: "应用实例内存使用率异常"
   trigger: "alert"
   target: "vms"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:1"
     mem_usage_value: "size:byte"
@@ -62,6 +65,7 @@
 - name: "应用实例内存异常恢复"
   trigger: "recover"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:1"
     trigger_duration: "time:ms"
@@ -96,6 +100,7 @@
 - name: "应用实例内存异常恢复"
   trigger: "recover"
   target: "sms"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:1"
     trigger_duration: "time:ms"
@@ -108,6 +113,7 @@
 - name: "应用实例内存异常恢复"
   trigger: "recover"
   target: "vms"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:1"
     trigger_duration: "time:ms"
@@ -116,3 +122,126 @@
     【{{application_name}}应用{{service_name}}服务内存使用率异常恢复】
   template: |
     {{application_name}}应用{{service_name}}服务触发内存使用率异常恢复，terminus_key: {{terminus_key}}，内存使用率: {{mem_usage_percent_avg}}
+
+- name: "Memory usage exception of application instance"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    container_id: "string:6"
+  title: |
+    [Memory usage exception alarm of service {{service_name}} of application {{application_name}}]
+  template: |
+    [Memory usage exception alarm of application instance]
+
+    Project: {{project_name}}
+
+    Application: {{application_name}}
+
+    Service instance: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
+
+    Memory usage rate: {{mem_usage_percent_avg}}
+
+    Memory usage: {{mem_usage_value}}
+
+    Memory limit: {{mem_limit_value}}
+
+    Machine: {{host_ip}}
+
+    terminus_key: {{terminus_key}}
+
+    Time: {{timestamp}}
+
+    [View details]({{display_url}})
+
+    [View records]({{record_url}})
+
+- name: "Memory usage exception of application instance"
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    container_id: "string:6"
+  title: |
+    [Memory usage exception alarm of service {{service_name}} of application {{application_name}}]
+  template: |
+    Memory usage exception alarm triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, memory usage: {{mem_usage_percent_avg}}
+- name: "Memory usage exception of application instance"
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    container_id: "string:6"
+  title: |
+    [Memory usage exception alarm of service {{service_name}} of application {{application_name}}]
+  template: |
+    Memory usage exception alarm triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, memory usage: {{mem_usage_percent_avg}}
+- name: "Memory exception recovery of application instance"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    trigger_duration: "time:ms"
+    container_id: "string:6"
+  title: |
+    [Memory usage exception recovery of service {{service_name}} of application {{application_name}}]
+  template: |
+    [Memory usage exception recovery of application instance]
+
+    Project: {{project_name}}
+
+    Application: {{application_name}}
+
+    Service instance: {{runtime_name}} - {{service_name}}.{{container_id}} - {{pod_ip}}
+
+    Memory usage rate: {{mem_usage_percent_avg}}
+
+    Memory usage: {{mem_usage_value}}
+
+    Memory limit: {{mem_limit_value}}
+
+    Machine: {{host_ip}}
+
+    terminus_key: {{terminus_key}}
+
+    Duration: {{trigger_duration}}
+
+    Recovery time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "Memory exception recovery of application instance"
+  trigger: "recover"
+  target: "sms"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    trigger_duration: "time:ms"
+    container_id: "string:6"
+  title: |
+    [Memory usage exception recovery of service {{service_name}} of application {{application_name}}]
+  template: |
+    Memory usage exception recovery triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, memory usage: {{mem_usage_percent_avg}}
+
+- name: "Memory exception recovery of application instance"
+  trigger: "recover"
+  target: "vms"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:1"
+    trigger_duration: "time:ms"
+    container_id: "string:6"
+  title: |
+    [Memory usage exception recovery of service {{service_name}} of application {{application_name}}]
+  template: |
+    Memory usage exception recovery triggered by service {{service_name}} of application {{application_name}}, terminus_key: {{terminus_key}}, memory usage: {{mem_usage_percent_avg}}

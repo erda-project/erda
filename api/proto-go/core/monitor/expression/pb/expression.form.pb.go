@@ -27,6 +27,8 @@ var _ urlenc.URLValuesUnmarshaler = (*GetTemplatesRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetTemplatesResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AlertTemplateData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AlertTemplate)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetOrgsLocaleRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetOrgsLocaleResponse)(nil)
 
 // GetExpressionsRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetExpressionsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -399,8 +401,20 @@ func (m *AlertTemplate) UnmarshalURLValues(prefix string, values url.Values) err
 					return err
 				}
 				m.Enable = val
+			case "language":
+				m.Language = vals[0]
 			}
 		}
 	}
+	return nil
+}
+
+// GetOrgsLocaleRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetOrgsLocaleRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// GetOrgsLocaleResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetOrgsLocaleResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }
