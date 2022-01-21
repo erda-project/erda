@@ -345,26 +345,6 @@ func TestFSMContinueCanceling(t *testing.T) {
 	}
 }
 
-func TestPrecheck(t *testing.T) {
-	fsm := genFakeFSM()
-
-	var bdl *bundle.Bundle
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateErrorLog",
-		func(_ *bundle.Bundle, errorLog *apistructs.ErrorLogCreateRequest) error {
-			return nil
-		},
-	)
-
-	fsm.bdl = bdl
-	fsm.Spec = &diceyml.Object{
-		Services: map[string]*diceyml.Service{"fakesvC1-12": nil, "fakesvc2": nil},
-	}
-
-	// do invoke
-	err := fsm.precheck()
-	assert.Error(t, err)
-}
-
 func recordUpdateDeployment() chan dbclient.Deployment {
 	var db *dbclient.DBClient
 	c := make(chan dbclient.Deployment, 1000)

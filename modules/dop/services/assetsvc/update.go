@@ -15,6 +15,7 @@
 package assetsvc
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -138,7 +139,7 @@ func (svc *Service) UpdateAPIAsset(req *apistructs.UpdateAPIAssetReq) *errorresp
 	return nil
 }
 
-func (svc *Service) UpdateInstantiation(req *apistructs.UpdateInstantiationReq) (*apistructs.InstantiationModel, *errorresp.APIError) {
+func (svc *Service) UpdateInstantiation(ctx context.Context, req *apistructs.UpdateInstantiationReq) (*apistructs.InstantiationModel, *errorresp.APIError) {
 	// parameters validation
 	if req.URIParams == nil {
 		return nil, apierrors.UpdateInstantiation.MissingParameter("URI parameters")
@@ -179,7 +180,7 @@ func (svc *Service) UpdateInstantiation(req *apistructs.UpdateInstantiationReq) 
 		"swagger_version": req.URIParams.SwaggerVersion,
 		"minor":           req.URIParams.Minor,
 	}); err == nil {
-		return nil, apierrors.UpdateInstantiation.InternalError(errors.New("实例处于访问管理中, 不可修改"))
+		return nil, apierrors.UpdateInstantiation.InternalError(errors.New(svc.text(ctx, "CanNotUpdateInstance")))
 	}
 
 	// parse the url of runtime instance
@@ -276,7 +277,8 @@ func (svc *Service) UpdateClient(req *apistructs.UpdateClientReq) (*apistructs.C
 	return &model, &sk, nil
 }
 
-func (svc *Service) UpdateContract(req *apistructs.UpdateContractReq) (*apistructs.ClientModel, *apistructs.ContractModel, *errorresp.APIError) {
+func (svc *Service) UpdateContract(ctx context.Context, req *apistructs.UpdateContractReq) (*apistructs.ClientModel, *apistructs.ContractModel,
+	*errorresp.APIError) {
 	if req == nil || req.URIParams == nil || req.Body == nil {
 		return nil, nil, apierrors.UpdateContract.InvalidParameter("invalid parameter")
 	}
@@ -304,7 +306,7 @@ func (svc *Service) UpdateContract(req *apistructs.UpdateContractReq) (*apistruc
 	}); err != nil {
 		logrus.Errorf("failed to FirstRecord client, err: %v", err)
 		if gorm.IsRecordNotFoundError(err) {
-			return nil, nil, apierrors.UpdateContract.InternalError(errors.New("没有此客户端"))
+			return nil, nil, apierrors.UpdateContract.InternalError(errors.New(svc.text(ctx, "ClientNotFound")))
 		}
 		return nil, nil, apierrors.UpdateContract.InternalError(err)
 	}
@@ -358,9 +360,9 @@ func (svc *Service) UpdateContract(req *apistructs.UpdateContractReq) (*apistruc
 		if !inSlice(strconv.FormatUint(req.OrgID, 10), rolesSet.RolesOrgs(bdl.OrgMRoles...)) && req.Identity.UserID != contract.CreatorID {
 			return nil, nil, apierrors.UpdateContract.AccessDenied()
 		}
-		if err := svc.updateContractRequestSLA(req, &contract, &access, &asset); err != nil {
+		if err := svc.updateContractRequestSLA(ctx, req, &contract, &access, &asset); err != nil {
 			logrus.Errorf("failed to updateContractRequestSLA, err: %v", err)
-			return nil, nil, apierrors.UpdateContract.InternalError(errors.New("申请 SLA 失败"))
+			return nil, nil, apierrors.UpdateContract.InternalError(errors.New(svc.text(ctx, "FailedToApplySLA")))
 		}
 
 	case req.Body.Status != nil:
@@ -368,9 +370,9 @@ func (svc *Service) UpdateContract(req *apistructs.UpdateContractReq) (*apistruc
 			return nil, nil, apierrors.UpdateContract.AccessDenied()
 		}
 
-		if err := svc.updateContractStatus(req, &client, &access, &contract); err != nil {
+		if err := svc.updateContractStatus(ctx, req, &client, &access, &contract); err != nil {
 			logrus.Errorf("failed to updateContractStatus, err: %v", err)
-			return nil, nil, apierrors.UpdateContract.InternalError(errors.New("审批调用申请状态失败"))
+			return nil, nil, apierrors.UpdateContract.InternalError(errors.New(svc.text(ctx, "FailedToProcessContract")))
 		}
 
 	case req.Body.CurSLAID != nil:
@@ -378,21 +380,26 @@ func (svc *Service) UpdateContract(req *apistructs.UpdateContractReq) (*apistruc
 			return nil, nil, apierrors.UpdateContract.AccessDenied()
 		}
 
-		if err := svc.updateContractCurSLA(req, &contract, &client, &access); err != nil {
+		if err := svc.updateContractCurSLA(ctx, req, &contract, &client, &access); err != nil {
 			logrus.Errorf("failed to updateContractCurSLA, err: %v", err)
-			return nil, nil, apierrors.UpdateContract.InternalError(errors.New("变更 SLA 失败"))
+			return nil, nil, apierrors.UpdateContract.InternalError(errors.New(svc.text(ctx, "FailedToUpdateSLA")))
 		}
 
 	default:
-		return nil, nil, apierrors.UpdateContract.InvalidParameter("无效的请求体")
+		return nil, nil, apierrors.UpdateContract.InvalidParameter("invalid request body")
 	}
 
 	return &client, &contract, nil
 }
 
 // the manager modifies the contract status (approve the contract)
-func (svc *Service) updateContractStatus(req *apistructs.UpdateContractReq, client *apistructs.ClientModel, access *apistructs.APIAccessesModel,
+func (svc *Service) updateContractStatus(ctx context.Context, req *apistructs.UpdateContractReq, client *apistructs.ClientModel, access *apistructs.APIAccessesModel,
 	contract *apistructs.ContractModel) error {
+	org, err := svc.bdl.GetOrg(req.OrgID)
+	if err != nil {
+		return errors.Wrap(err, "failed to GetOrg")
+	}
+
 	if req.Body.Status == nil {
 		return nil
 	}
@@ -444,20 +451,26 @@ func (svc *Service) updateContractStatus(req *apistructs.UpdateContractReq, clie
 	tx.Commit()
 
 	// notification by mail and in-site letter
-	go svc.contractMsgToUser(req.OrgID, contract.CreatorID, access.AssetName, client, ApprovalResultFromStatus(status))
+	go svc.contractMsgToUser(req.OrgID, contract.CreatorID, access.AssetName, client,
+		svc.ApprovalResultFromStatus(ctx, status, org.Locale))
 
 	return nil
 }
 
 // 管理人员修改合约的 SLA
-func (svc *Service) updateContractCurSLA(req *apistructs.UpdateContractReq, contract *apistructs.ContractModel, client *apistructs.ClientModel,
+func (svc *Service) updateContractCurSLA(ctx context.Context, req *apistructs.UpdateContractReq, contract *apistructs.ContractModel, client *apistructs.ClientModel,
 	access *apistructs.APIAccessesModel) error {
+	org, err := svc.bdl.GetOrg(req.OrgID)
+	if err != nil {
+		return errors.Wrap(err, "failed to GetOrg")
+	}
+
 	if req.Body.CurSLAID == nil {
 		return nil
 	}
 
 	// 查出 SLA
-	sla := unlimitedSLA(access)
+	sla := svc.unlimitedSLA(ctx, access)
 	if *req.Body.CurSLAID != 0 {
 		if err := svc.FirstRecord(sla, map[string]interface{}{"id": *req.Body.CurSLAID}); err != nil {
 			return errors.Wrap(err, "failed to FirstRecord sla")
@@ -502,20 +515,26 @@ func (svc *Service) updateContractCurSLA(req *apistructs.UpdateContractReq, cont
 
 	tx.Commit()
 
-	go svc.contractMsgToUser(req.OrgID, contract.CreatorID, access.AssetName, client, ApprovalResultSLAUpdated(sla.Name))
+	go svc.contractMsgToUser(req.OrgID, contract.CreatorID, access.AssetName, client,
+		svc.ApprovalResultSLAUpdated(ctx, sla.Name, org.Locale))
 
 	return nil
 }
 
-func (svc *Service) updateContractRequestSLA(req *apistructs.UpdateContractReq, contract *apistructs.ContractModel, access *apistructs.APIAccessesModel,
+func (svc *Service) updateContractRequestSLA(ctx context.Context, req *apistructs.UpdateContractReq, contract *apistructs.ContractModel, access *apistructs.APIAccessesModel,
 	asset *apistructs.APIAssetsModel) error {
+	org, err := svc.bdl.GetOrg(req.OrgID)
+	if err != nil {
+		return errors.Wrap(err, "failed to GetOrg")
+	}
+
 	// 如果申请的是本来就在申请中(页面逻辑不会出现这种情况), 直接返回
 	if contract.RequestSLAID != nil {
 		if *req.Body.RequestSLAID == *contract.RequestSLAID {
 			return nil
 		}
 		if *req.Body.RequestSLAID == 0 {
-			return errors.New("SLAID 错误")
+			return errors.New("invalid SLA ID")
 		}
 	}
 
@@ -581,12 +600,14 @@ func (svc *Service) updateContractRequestSLA(req *apistructs.UpdateContractReq, 
 
 	tx.Commit()
 
-	go svc.contractMsgToManager(req.OrgID, req.Identity.UserID, asset, access, RequestItemSLA(sla.Name), updates["request_sla_id"] == nil)
+	go svc.contractMsgToManager(ctx, req.OrgID, req.Identity.UserID, asset, access,
+		svc.RequestItemSLA(ctx, sla.Name, org.Locale),
+		updates["request_sla_id"] == nil)
 
 	return nil
 }
 
-func (svc *Service) UpdateAccess(req *apistructs.UpdateAccessReq) (*apistructs.APIAccessesModel, *errorresp.APIError) {
+func (svc *Service) UpdateAccess(ctx context.Context, req *apistructs.UpdateAccessReq) (*apistructs.APIAccessesModel, *errorresp.APIError) {
 	if req == nil || req.Body == nil {
 		return nil, apierrors.UpdateAccess.InvalidParameter("invalid parameters")
 	}
@@ -624,7 +645,7 @@ func (svc *Service) UpdateAccess(req *apistructs.UpdateAccessReq) (*apistructs.A
 	}
 	if err := svc.FirstRecord(&asset, whereFirstAsset); err != nil {
 		logrus.Errorf("failed to FirstRecord asset, where: %v, err: %v", whereFirstAsset, err)
-		return nil, apierrors.UpdateAccess.InternalError(errors.Errorf("没有这样的API, API 名称: %s", access.AssetName))
+		return nil, apierrors.UpdateAccess.InternalError(errors.Errorf("API %s not found", access.AssetName))
 
 	}
 
@@ -673,7 +694,7 @@ func (svc *Service) UpdateAccess(req *apistructs.UpdateAccessReq) (*apistructs.A
 
 	// 检查两次实例的 workspace 是否被切换 (不允许切换)
 	if exInstantiation.Workspace != instantiations.Workspace {
-		return nil, apierrors.UpdateAccess.InternalError(errors.Errorf("不能从 %v.%v.* [环境:%s] 切换到 %v.%v.* [环境:%s], 因为所属环境不一致",
+		return nil, apierrors.UpdateAccess.InternalError(errors.Errorf("can not checkout from %v.%v.* [workspace:%s] to %v.%v.* [workspace:%s]: different workspace",
 			exInstantiation.Major, exInstantiation.Minor, exInstantiation.Workspace,
 			instantiations.Major, exInstantiation.Minor, exInstantiation.Workspace))
 	}
@@ -681,7 +702,7 @@ func (svc *Service) UpdateAccess(req *apistructs.UpdateAccessReq) (*apistructs.A
 	if strings.ToLower(instantiations.Type) == InsTypeDice {
 		// 检查实例的环境与请求的环境是否一致 (不允许不一致)
 		if instantiations.Workspace != req.Body.Workspace {
-			return nil, apierrors.UpdateAccess.InternalError(errors.Errorf("不可修改, 所选实例的环境[%s]与所选网关环境[%s]不一致",
+			return nil, apierrors.UpdateAccess.InternalError(errors.Errorf("can not update, different workspace between the intance [%s] and the gateway [%s]",
 				instantiations.Workspace, req.Body.Workspace))
 		}
 	}
@@ -719,9 +740,9 @@ func (svc *Service) UpdateAccess(req *apistructs.UpdateAccessReq) (*apistructs.A
 	case apistructs.AuthenticationSignAuth:
 		authType = apistructs.AT_SIGN_AUTH
 	case apistructs.AuthenticationOAuth2:
-		return nil, apierrors.CreateAccess.InvalidParameter("暂不支持 OAuth2 认证")
+		return nil, apierrors.CreateAccess.InvalidParameter("not support OAuth2 yet")
 	default:
-		return nil, apierrors.CreateAccess.InvalidParameter("不支持的认证方式")
+		return nil, apierrors.CreateAccess.InvalidParameter("not support the authentication method yet")
 	}
 	if err := bdl.Bdl.UpdateEndpoint(
 		strconv.FormatUint(req.OrgID, 10),
@@ -749,19 +770,24 @@ func (svc *Service) UpdateAccess(req *apistructs.UpdateAccessReq) (*apistructs.A
 	return &access, nil
 }
 
-func (svc *Service) UpdateSLA(req *apistructs.UpdateSLAReq) *errorresp.APIError {
+func (svc *Service) UpdateSLA(ctx context.Context, req *apistructs.UpdateSLAReq) *errorresp.APIError {
 	if req == nil || req.URIParams == nil || req.Body == nil {
-		return apierrors.UpdateSLA.InvalidParameter("无效的参数")
+		return apierrors.UpdateSLA.InvalidParameter(svc.text(ctx, "InvalidParams"))
 	}
 	if len(req.Body.Limits) != 1 {
-		return apierrors.UpdateSLA.InvalidParameter("至少且只能设置一条限制条件")
+		return apierrors.UpdateSLA.InvalidParameter("at least and only one limit condition can be set")
 	}
 	limit := req.Body.Limits[0]
 	if limit.Limit == 0 {
-		return apierrors.UpdateSLA.InvalidParameter("次数不可为 0")
+		return apierrors.UpdateSLA.InvalidParameter("the limit times can not be 0")
 	}
 	if !limit.Unit.Valid() {
-		return apierrors.UpdateSLA.InvalidParameter("无效的的时间单位")
+		return apierrors.UpdateSLA.InvalidParameter("invalid time unit")
+	}
+
+	org, err := svc.bdl.GetOrg(req.OrgID)
+	if err != nil {
+		return apierrors.UpdateSLA.InternalError(errors.Wrap(err, "failed to GetOrg"))
 	}
 
 	var (
@@ -780,7 +806,7 @@ func (svc *Service) UpdateSLA(req *apistructs.UpdateSLAReq) *errorresp.APIError 
 		"asset_id": req.URIParams.AssetID,
 	}); err != nil {
 		logrus.Errorf("failed to FirstRecord asset, err: %v", err)
-		return apierrors.UpdateSLA.InternalError(errors.New("查询 API 失败"))
+		return apierrors.UpdateSLA.InternalError(errors.New(svc.text(ctx, "FailedToFindAPIAsset")))
 	}
 
 	// SLA 的编辑权限与 API Asset 的 W 权限一致
@@ -796,19 +822,20 @@ func (svc *Service) UpdateSLA(req *apistructs.UpdateSLAReq) *errorresp.APIError 
 		"swagger_version": req.URIParams.SwaggerVersion,
 	}); err != nil {
 		logrus.Errorf("failed to FirstRecord access, err: %v", err)
-		return apierrors.UpdateSLA.InternalError(errors.New("查询访问管理失败"))
+		return apierrors.UpdateSLA.InternalError(errors.New(svc.text(ctx, "FailedToFindAccessItem")))
 	}
 
 	// 查出 SLA
 	if err := svc.FirstRecord(&sla, where); err != nil {
 		logrus.Errorf("failed to FirstRecord sla, err: %v", err)
-		return apierrors.UpdateSLA.InternalError(errors.New("查询 SLA 失败"))
+		return apierrors.UpdateSLA.InternalError(errors.New(svc.text(ctx, "FailedToFindSLA")))
 	}
 
 	// 如果要修改名称, 则要检查是否被改成同名的 SLA
-	if req.Body.Name != nil &&
-		strings.Replace(*req.Body.Name, " ", "", -1) == strings.Replace(apistructs.UnlimitedSLAName, " ", "", -1) {
-		return apierrors.CreateSLA.InternalError(errors.Errorf("不可命名为 %s: 系统保留", *req.Body.Name))
+	if req.Body.Name != nil {
+		if trimSpace := strings.Replace(*req.Body.Name, " ", "", -1); trimSpace == "UnlimitedSLA" || trimSpace == "无限制SLA" {
+			return apierrors.CreateSLA.InternalError(errors.Errorf(svc.text(ctx, "CanNotNamed")+":"+svc.text(ctx, "SystemReserved"), *req.Body.Name))
+		}
 	}
 	var (
 		exName apistructs.SLAModel
@@ -818,7 +845,7 @@ func (svc *Service) UpdateSLA(req *apistructs.UpdateSLAReq) *errorresp.APIError 
 		"name":      req.Body.Name,
 	}).Where("id != ?", req.URIParams.SLAID).
 		Find(&exName).Error; err == nil {
-		return apierrors.UpdateSLA.InvalidParameter(errors.New("已存在同名 SLA, 请修改后重试"))
+		return apierrors.UpdateSLA.InvalidParameter(errors.New(svc.text(ctx, "SameNameSLA")))
 	}
 
 	// 如果要更新授权方式为自动, 则要先验证是否已存在自动授权的 SLA
@@ -829,7 +856,7 @@ func (svc *Service) UpdateSLA(req *apistructs.UpdateSLAReq) *errorresp.APIError 
 			"approval":  apistructs.AuthorizationAuto,
 		}).Where("id != ?", req.URIParams.SLAID).
 			Find(&exAuto).Error; err == nil {
-			return apierrors.UpdateSLA.InvalidParameter(errors.Errorf("已存在自动授权的 SLA: %s, 请修改后重试", exAuto.Name))
+			return apierrors.UpdateSLA.InvalidParameter(errors.Errorf(svc.text(ctx, "AutoSLA"), exAuto.Name))
 		}
 	}
 
@@ -852,14 +879,14 @@ func (svc *Service) UpdateSLA(req *apistructs.UpdateSLAReq) *errorresp.APIError 
 			Updates(updates).
 			Error; err != nil {
 			logrus.Errorf("failed to Update SLAModel, err: %v", err)
-			return apierrors.UpdateSLA.InternalError(errors.New("更新SLA失败"))
+			return apierrors.UpdateSLA.InternalError(errors.New("failed to update SLA"))
 		}
 	}
 
 	// 更新 limit
 	if err := tx.Delete(new(apistructs.SLALimitModel), map[string]interface{}{"sla_id": sla.ID}).Error; err != nil {
 		logrus.Errorf("failed to Delete SLALimitModel, err: %v", err)
-		return apierrors.DeleteSLA.InternalError(errors.New("覆盖原有限制条件失败"))
+		return apierrors.DeleteSLA.InternalError(errors.New("failed to override limit"))
 	}
 	if err := tx.Create(&apistructs.SLALimitModel{
 		BaseModel: apistructs.BaseModel{
@@ -874,7 +901,7 @@ func (svc *Service) UpdateSLA(req *apistructs.UpdateSLAReq) *errorresp.APIError 
 		Unit:  limit.Unit,
 	}).Error; err != nil {
 		logrus.Errorf("failed to Create limits, err: %v", err)
-		return apierrors.UpdateSLA.InternalError(errors.New("更新限制条件失败"))
+		return apierrors.UpdateSLA.InternalError(errors.New("failed to update limit"))
 	}
 
 	if len(updates) > 0 {
@@ -911,7 +938,8 @@ func (svc *Service) UpdateSLA(req *apistructs.UpdateSLAReq) *errorresp.APIError 
 				if _, ok := sentContractIDs[affectedContract.ID]; ok {
 					continue
 				}
-				svc.contractMsgToUser(req.OrgID, affectedContract.CreatorID, asset.AssetName, affectedClient, ManagerRewriteSLA(sla.Name))
+				svc.contractMsgToUser(req.OrgID, affectedContract.CreatorID, asset.AssetName, affectedClient,
+					svc.ManagerRewriteSLA(ctx, sla.Name, org.Locale))
 				err = svc.createOrUpdateClientLimits(strconv.FormatUint(req.OrgID, 10), req.Identity.UserID,
 					access.EndpointID, affectedClient.ClientID, affectedContract.ID)
 				if err != nil {
@@ -925,12 +953,12 @@ func (svc *Service) UpdateSLA(req *apistructs.UpdateSLAReq) *errorresp.APIError 
 }
 
 // 修改 asset version
-func (svc *Service) UpdateAssetVersion(req *apistructs.UpdateAssetVersionReq) (*apistructs.APIAssetVersionsModel, *errorresp.APIError) {
+func (svc *Service) UpdateAssetVersion(ctx context.Context, req *apistructs.UpdateAssetVersionReq) (*apistructs.APIAssetVersionsModel, *errorresp.APIError) {
 	if req == nil || req.URIParams == nil {
-		return nil, apierrors.UpdateAssetVersion.InvalidParameter("无效的参数")
+		return nil, apierrors.UpdateAssetVersion.InvalidParameter(svc.text(ctx, "InvalidParams"))
 	}
 	if req.Body == nil {
-		return nil, apierrors.UpdateAssetVersion.InvalidParameter("无效的请求体")
+		return nil, apierrors.UpdateAssetVersion.InvalidParameter("invalid request body")
 	}
 
 	// 鉴权
@@ -942,7 +970,7 @@ func (svc *Service) UpdateAssetVersion(req *apistructs.UpdateAssetVersionReq) (*
 	var version apistructs.APIAssetVersionsModel
 	if err := svc.FirstRecord(&version, map[string]interface{}{"id": req.URIParams.VersionID, "org_id": req.OrgID}); err != nil {
 		logrus.Errorf("failed to FirstRecord version, err: %v", err)
-		return nil, apierrors.UpdateAssetVersion.InternalError(errors.New("查询版本失败"))
+		return nil, apierrors.UpdateAssetVersion.InternalError(errors.New(svc.text(ctx, "FailedToFindVersion")))
 	}
 
 	// 更新版本
@@ -953,7 +981,7 @@ func (svc *Service) UpdateAssetVersion(req *apistructs.UpdateAssetVersionReq) (*
 	}
 	if err := dbclient.Sq().Model(&version).Updates(updates).Error; err != nil {
 		logrus.Errorf("failed to FirstRecord version, err: %v", err)
-		return nil, apierrors.UpdateAssetVersion.InternalError(errors.New("标记失败"))
+		return nil, apierrors.UpdateAssetVersion.InternalError(errors.New("failed to set the version deprecated"))
 	}
 
 	// 消息通知

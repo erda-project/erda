@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/config"
 	gw "github.com/erda-project/erda/modules/hepa/gateway/dto"
+	"github.com/erda-project/erda/modules/hepa/i18n"
 	"github.com/erda-project/erda/modules/hepa/k8s"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
 	db "github.com/erda-project/erda/modules/hepa/repository/service"
@@ -175,7 +176,7 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntimeComplete(ctx map[string
 			err = (*impl.packageBiz).SetRuntimeEndpoint(runtimeEndpoint)
 			if err != nil {
 				log.Errorf("set runtime endpoint failed, err:%+v, runtimeEndpoint:%+v", err, runtimeEndpoint)
-				humanLog := fmt.Sprintf("服务:%s 的 endpoint 绑定失败，点击查看详情", runtimeEndpoint.RuntimeService.ServiceName)
+				humanLog := i18n.Sprintf(ctx["locale"].(string), "FailedToBindServiceEndpoint", runtimeEndpoint.RuntimeService.ServiceName)
 				detailLog := fmt.Sprintf("endpoint and service info: %+v, error:%s", runtimeEndpoint, errors.Cause(err).Error())
 				go common.AsyncRuntimeError(runtimeEndpoint.RuntimeService.RuntimeId, humanLog, detailLog)
 			}
@@ -222,6 +223,9 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntime(reqDto *gw.RuntimeServ
 	err = reqDto.CheckValid()
 	if err != nil {
 		return
+	}
+	if org, err := bundle.Bundle.GetOrg(reqDto.OrgId); err == nil {
+		ctx["locale"] = org.Locale
 	}
 	diceYaml, err = bundle.Bundle.GetDiceYAML(reqDto.ReleaseId, reqDto.Env)
 	if err != nil {

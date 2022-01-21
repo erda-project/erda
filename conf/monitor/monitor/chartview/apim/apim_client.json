@@ -26,6 +26,12 @@
           "url": "/api/apim/metrics/agg_kong",
           "query": {
             "alias_sum.succ_sum": "请求成功总和",
+            "i18n": {
+              "alias_sum.succ_sum": {
+                "zn": "请求成功总和",
+                "en": "Total Successful Requests"
+              }
+            },
             "chartType": "card",
             "end": 1605077182581,
             "format": "chartv2",
@@ -101,6 +107,12 @@
           "url": "/api/apim/metrics/agg_kong",
           "query": {
             "alias_sum.err_sum": "请求出错总和",
+            "i18n": {
+              "alias_sum.err_sum": {
+                "zh": "请求出错总和",
+                "en": "Total Error Requests"
+              }
+            },
             "chartType": "card",
             "end": 1605077182581,
             "format": "chartv2",
@@ -176,6 +188,12 @@
           "url": "/api/apim/metrics/agg_kong",
           "query": {
             "alias_avg.reql_mean": "请求延时平均值",
+            "i18n": {
+              "alias_avg.reql_mean": {
+                "zh": "请求延时平均值",
+                "en": "Average Request Latency"
+              }
+            },
             "avg": [
               "reql_mean"
             ],
@@ -238,6 +256,12 @@
       "i": "view-65868916",
       "view": {
         "title": "流量总览",
+        "i18n": {
+          "title": {
+            "zh": "流量总览",
+            "en": "Traffic Overview"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -254,6 +278,20 @@
             "alias_sum.err_sum": "请求出错总和",
             "alias_sum.lim_sum": "请求被限流总和",
             "alias_sum.succ_sum": "请求成功总和",
+            "i18n": {
+              "alias_sum.err_sum": {
+                "zh": "请求出错总和",
+                "en": "Total Error Request"
+              },
+              "alias_sum.lim_sum": {
+                "zh": "请求被限流总和",
+                "en": "Total Limited Requests"
+              },
+              "alias_sum.succ_sum": {
+                "zh": "请求成功总和",
+                "en": "Total Successful Requests"
+              }
+            },
             "chartType": "chart:line",
             "end": 1605077182581,
             "format": "chartv2",
@@ -330,6 +368,12 @@
       "i": "view-627169bc",
       "view": {
         "title": "平均时延",
+        "i18n": {
+          "title": {
+            "zh": "平均时延",
+            "en": "Average Latency"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -345,6 +389,16 @@
           "query": {
             "alias_avg.reql_mean": "请求延时平均值",
             "alias_avg.upl_mean": "后端服务延时平均值",
+            "i18n": {
+              "alias_avg.reql_mean": {
+                "zh": "请求延时平均值",
+                "en": "Average Request Latency"
+              },
+              "alias_avg.upl_mean": {
+                "zh": "后端服务延时平均值",
+                "en": "Average Backend Latency"
+              }
+            },
             "avg": [
               "upl_mean",
               "reql_mean"
@@ -415,6 +469,12 @@
       "i": "view-c327ff5b",
       "view": {
         "title": "响应状态码分布",
+        "i18n": {
+          "title": {
+            "zh": "响应状态码分布",
+            "en": "Response Status"
+          }
+        },
         "description": "",
         "chartType": "chart:pie",
         "dataSourceType": "api",
@@ -429,6 +489,16 @@
           "query": {
             "alias_last.tags.hts": "HTTP 状态码",
             "alias_sum.cnt_sum": "总调用量总和",
+            "i18n": {
+              "alias_last.tags.hts": {
+                "zh": "HTTP 状态码",
+                "en": "HTTP Status"
+              },
+              "alias_sum.cnt_sum": {
+                "zh": "总调用量总和",
+                "en": "Total Requests"
+              }
+            },
             "chartType": "chart:pie",
             "end": 1605077182581,
             "format": "chartv2",
@@ -501,6 +571,12 @@
       "i": "view-c49ffc2e",
       "view": {
         "title": "请求出错分类",
+        "i18n": {
+          "title": {
+            "zh": "请求出错分类",
+            "en": "Requests Errors"
+          }
+        },
         "description": "",
         "chartType": "chart:line",
         "dataSourceType": "api",
@@ -516,6 +592,16 @@
           "query": {
             "alias_sum.cerr_sum": "客户端出错(4XX)总和",
             "alias_sum.serr_sum": "服务端出错(5XX)总和",
+            "i18n": {
+              "alias_sum.cerr_sum": {
+                "zh": "客户端出错(4XX)总和",
+                "en": "Client 4xx Status"
+              },
+              "alias_sum.serr_sum": {
+                "zh": "服务端出错(5XX)总和",
+                "en": "Server 5xx Status"
+              }
+            },
             "chartType": "chart:line",
             "end": 1605077182581,
             "format": "chartv2",
