@@ -27,7 +27,6 @@ import (
 	definitiondb "github.com/erda-project/erda/modules/pipeline/providers/definition/db"
 	sourcedb "github.com/erda-project/erda/modules/pipeline/providers/source/db"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -79,40 +78,20 @@ func (client *Client) GetPipeline(id interface{}, ops ...SessionOption) (spec.Pi
 	var extra spec.PipelineExtra
 	var labels []spec.PipelineLabel
 
-	worker := limit_sync_group.NewWorker(2)
-	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
-		// extra
-		result, found, err := client.GetPipelineExtraByPipelineID(base.ID, ops...)
-		if err != nil {
-			return err
-		}
-		if !found {
-			return errors.New("not found extra")
-		}
-
-		locker.Lock()
-		extra = result
-		locker.Unlock()
-
-		return nil
-	})
-	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
-		// labels
-		result, err := client.ListLabelsByPipelineID(base.ID, ops...)
-		if err != nil {
-			return err
-		}
-
-		locker.Lock()
-		labels = result
-		locker.Unlock()
-
-		return nil
-	})
-	err = worker.Do().Error()
+	result, found, err := client.GetPipelineExtraByPipelineID(base.ID, ops...)
 	if err != nil {
 		return spec.Pipeline{}, err
 	}
+	if !found {
+		return spec.Pipeline{}, errors.New("not found extra")
+	}
+	extra = result
+
+	labelsResult, err := client.ListLabelsByPipelineID(base.ID, ops...)
+	if err != nil {
+		return spec.Pipeline{}, err
+	}
+	labels = labelsResult
 
 	// combine pipeline
 	var p spec.Pipeline
