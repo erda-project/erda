@@ -122,7 +122,7 @@ func (d *DeploymentOrder) RenderDetail(userId, releaseId, workspace string) (*ap
 			ReleaseInfo: &apistructs.ReleaseInfo{
 				Id:        releaseResp.ReleaseID,
 				Version:   releaseResp.Version,
-				Type:      covertReleaseType(releaseResp.IsProjectRelease),
+				Type:      convertReleaseType(releaseResp.IsProjectRelease),
 				Creator:   releaseResp.UserID,
 				CreatedAt: releaseResp.CreatedAt,
 				UpdatedAt: releaseResp.UpdatedAt,

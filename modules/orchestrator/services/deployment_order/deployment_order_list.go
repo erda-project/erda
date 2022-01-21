@@ -91,15 +91,15 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 
 		applicationCount := 1
 
-		releaseResp, ok := releasesMap[order.ReleaseId]
+		r, ok := releasesMap[order.ReleaseId]
 		if !ok {
 			logrus.Errorf("failed to get release %s, not found", order.ReleaseId)
 			continue
 		}
 
-		if releaseResp.IsProjectRelease {
+		if r.IsProjectRelease {
 			subReleases := make([]string, 0)
-			if err := json.Unmarshal([]byte(releaseResp.ApplicationReleaseList), &subReleases); err != nil {
+			if err := json.Unmarshal([]byte(r.ApplicationReleaseList), &subReleases); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal release application list, err: %v", err)
 			}
 			applicationCount = len(subReleases)
@@ -113,8 +113,11 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 			ID:   order.ID,
 			Name: utils.ParseOrderName(order.ID),
 			ReleaseInfo: &apistructs.ReleaseInfo{
-				Id:      order.ReleaseId,
-				Version: releaseResp.Version,
+				Id:        order.ReleaseId,
+				Version:   r.Version,
+				Type:      convertReleaseType(r.IsProjectRelease),
+				CreatedAt: r.CreatedAt,
+				UpdatedAt: r.UpdatedAt,
 			},
 			Type:              order.Type,
 			ApplicationStatus: applicationStatus,
