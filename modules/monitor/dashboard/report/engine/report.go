@@ -79,6 +79,7 @@ type viewConfig struct {
 		DataSourceType string      `json:"dataSourceType"`
 		API            apiEntity   `json:"api"`
 		Config         interface{} `json:"config"`
+		I18n           interface{} `json:"i18n"`
 	} `json:"view"`
 }
 

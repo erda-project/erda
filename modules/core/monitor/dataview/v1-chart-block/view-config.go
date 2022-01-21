@@ -67,6 +67,7 @@ type View struct {
 	Config         config      `json:"config"`
 	API            *API        `json:"api"`
 	Controls       interface{} `json:"controls"`
+	I18N           interface{} `json:"i18n"`
 }
 
 // API .
