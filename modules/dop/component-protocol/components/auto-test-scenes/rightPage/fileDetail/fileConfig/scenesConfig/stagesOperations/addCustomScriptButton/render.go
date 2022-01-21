@@ -74,7 +74,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	case cptype.InitializeOperation, cptype.RenderingOperation:
 		c.Type = "Button"
 		c.Props = map[string]interface{}{
-			"text": "+ 自定义脚本",
+			"text": "+ " + ca.sdk.I18n("customScript"),
 		}
 		c.Operations = map[string]interface{}{
 			"click": map[string]interface{}{

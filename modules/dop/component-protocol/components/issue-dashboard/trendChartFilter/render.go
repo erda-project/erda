@@ -131,7 +131,7 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Key:       "time",
-			Label:     "时间",
+			Label:     cputil.I18n(ctx, "time"),
 			Type:      filter.PropConditionTypeRangePicker,
 			CustomProps: map[string]interface{}{
 				"allowClear":     false,
