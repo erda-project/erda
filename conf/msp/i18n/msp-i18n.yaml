@@ -158,7 +158,7 @@ zh:
   traceServices: 服务
   traceDistribution: 链路耗时分布
   cpuUsage: 容器 CPU
-  memoryUsage: 容器 内存
+  memoryUsage: 容器内存
   diskioUsage: 磁盘 IO
   networkUsage: 容器网络
   nodejs_memory_heap: 堆内存
@@ -188,9 +188,9 @@ zh:
   uv: "UV"
   apdex: "Apdex"
   avgPageLoadDuration: "页面加载耗时"
-  apiSuccessRate: "API调用成功率"
+  apiSuccessRate: "API 调用成功率"
   resourceLoadErrorCount: "资源加载错误数"
-  jsErrorCount: "JS错误数"
+  jsErrorCount: "JS 错误数"
   maxReqDomainTop5: "高访问量域名 Top5"
   maxReqPageTop5: "高访问量页面 Top5"
   slowReqPageTop5: "慢响应页面 Top5"

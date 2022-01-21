@@ -100,11 +100,6 @@ const (
 	NodeJsProcessType = "nodejs_memory"
 )
 
-var ProcessTypes = []string{
-	JavaProcessType,
-	NodeJsProcessType,
-}
-
 const (
 	TypeService        = "Service"
 	TypeMysql          = "Mysql"
@@ -141,28 +136,12 @@ var (
 	}
 )
 
-var ErrorReqMetricNames = []string{
-	"application_http_error",
-	"application_rpc_error",
-	"application_cache_error",
-	"application_db_error",
-	"application_mq_error",
-}
-
 var ReqMetricNames = []string{
 	"application_http_service",
 	"application_rpc_service",
 	"application_cache_service",
 	"application_db_service",
 	"application_mq_service",
-}
-
-var ReqMetricNamesDesc = map[string]string{
-	"application_http_service":  "HTTP 请求",
-	"application_rpc_service":   "RPC 请求",
-	"application_cache_service": "缓存请求",
-	"application_db_service":    "数据库请求",
-	"application_mq_service":    "MQ 请求",
 }
 
 type Field struct {
@@ -263,13 +242,6 @@ var IndexPrefix = []string{
 	HttpIndex, RpcIndex, MicroIndex,
 	MqIndex, DbIndex, CacheIndex,
 	ServiceNodeIndex,
-}
-
-var NodeTypes = []string{
-	TypeService, TypeMysql, TypeRedis,
-	TypeExternal, TypeDubbo, TypeSidecar,
-	TypeGateway, TypeRegisterCenter, TypeConfigCenter,
-	TypeNoticeCenter, TypeElasticsearch,
 }
 
 type ServiceDashboard struct {
@@ -599,7 +571,7 @@ func toChildrenAggregation(field *GroupByField, termEnd *elastic.TermsAggregatio
 	return termStart, termEnd
 }
 
-func queryConditions(indexType string, params Vo) (*elastic.BoolQuery, string) {
+func queryConditions(indexType string, params Vo, tagInfo *TagInfo) *elastic.BoolQuery {
 	boolQuery := elastic.NewBoolQuery()
 	boolQuery.Filter(elastic.NewRangeQuery(apm.Timestamp).Gte(params.StartTime * 1e6).Lte(params.EndTime * 1e6))
 	if ServiceNodeIndexType == indexType {
@@ -615,27 +587,15 @@ func queryConditions(indexType string, params Vo) (*elastic.BoolQuery, string) {
 		MustNot(elastic.NewTermQuery(apm.TagsTargetAddonType, "registerCenter")).
 		MustNot(elastic.NewTermQuery(apm.TagsTargetAddonType, "configCenter")).
 		MustNot(elastic.NewTermQuery(apm.TagsTargetAddonType, "noticeCenter"))
-	serviceId := ""
-	if params.Tags != nil && len(params.Tags) > 0 {
+	if tagInfo.ApplicationName != "" {
 		sbq := elastic.NewBoolQuery()
-		for _, v := range params.Tags {
-			tagInfo := strings.Split(v, ":")
-			tag := tagInfo[0]
-			value := tagInfo[1]
-			switch tag {
-			case ApplicationSearchTag.Tag:
-				sbq.Should(elastic.NewTermQuery(apm.TagsApplicationName, value)).
-					Should(elastic.NewTermQuery(apm.TagsTargetApplicationName, value)).
-					Should(elastic.NewTermQuery(apm.TagsSourceApplicationName, value))
-			case ServiceSearchTag.Tag:
-				serviceId = value
-			}
-		}
+		sbq.Should(elastic.NewTermQuery(apm.TagsApplicationName, tagInfo.ApplicationName)).
+			Should(elastic.NewTermQuery(apm.TagsTargetApplicationName, tagInfo.ApplicationName)).
+			Should(elastic.NewTermQuery(apm.TagsSourceApplicationName, tagInfo.ApplicationName))
 		boolQuery.Filter(sbq)
 	}
-
 	boolQuery.Filter(not)
-	return boolQuery, serviceId
+	return boolQuery
 }
 
 type ExceptionDescription struct {
@@ -1458,6 +1418,13 @@ func (topology *provider) GetSearchTagv(r *http.Request, tag, scopeId string, st
 	}
 }
 
+type TagInfo struct {
+	ApplicationId   string
+	ApplicationName string
+	ServiceId       string
+	ServiceName     string
+}
+
 func (topology *provider) GetTopology(lang i18n.LanguageCodes, param Vo) []*Node {
 
 	indices := createTypologyIndices(param.StartTime, param.EndTime)
@@ -1465,10 +1432,12 @@ func (topology *provider) GetTopology(lang i18n.LanguageCodes, param Vo) []*Node
 	ctx := context.Background()
 
 	nodes := make([]*Node, 0)
+	tagInfo := parserTag(param)
+
 	for key, typeIndices := range indices {
 
 		aggregationConditions, relations := selectRelation(key)
-		conditions, serviceId := queryConditions(key, param)
+		conditions := queryConditions(key, param, tagInfo)
 		searchSource := elastic.NewSearchSource()
 		searchSource.Query(conditions).Size(0)
 		if aggregationConditions == nil {
@@ -1491,10 +1460,89 @@ func (topology *provider) GetTopology(lang i18n.LanguageCodes, param Vo) []*Node
 			data, _ := json.Marshal(source)
 			topology.Log.Infof("indices: %s \n request body: %s \n", typeIndices, string(data))
 		}
+		topology.parseToTypologyNode(lang, timeRange, searchResult, relations, &nodes)
+	}
 
-		topology.parseToTypologyNode(lang, serviceId, timeRange, searchResult, relations, &nodes)
+	if tagInfo.ServiceId != "" {
+		return filterNodesByServiceId(tagInfo.ServiceId, nodes)
 	}
 	return nodes
+}
+
+func filterNodesByServiceId(serviceId string, nodes []*Node) []*Node {
+	relatedServiceNode := make([]*Node, 0)
+	currentServiceNode := getServiceNode(serviceId, nodes)
+	serviceParentNodeIds := getNodeParentNodeIds(currentServiceNode)
+
+	for _, node := range nodes {
+		// filter service
+		if node.ServiceId == serviceId {
+			relatedServiceNode = append(relatedServiceNode, node)
+			continue
+		}
+		// filter service upstream
+		if _, ok := serviceParentNodeIds[node.Id]; ok {
+			pNodes := make([]*Node, 0, 10)
+			for _, parent := range node.Parents {
+				if parent.ServiceId == serviceId {
+					pNodes = append(pNodes, parent)
+					break
+				}
+			}
+			node.Parents = pNodes
+			relatedServiceNode = append(relatedServiceNode, node)
+			continue
+		}
+		// filter service downstream
+		for _, parent := range node.Parents {
+			if parent.ServiceId == serviceId {
+				var pNodes []*Node
+				pNodes = append(pNodes, parent)
+				node.Parents = pNodes
+				relatedServiceNode = append(relatedServiceNode, node)
+				break
+			}
+		}
+	}
+	return relatedServiceNode
+}
+
+func getNodeParentNodeIds(node *Node) map[string]struct{} {
+	ids := map[string]struct{}{}
+	if node == nil {
+		return ids
+	}
+	for _, parent := range node.Parents {
+		ids[parent.Id] = struct{}{}
+	}
+	return ids
+}
+
+func getServiceNode(serviceId string, nodes []*Node) *Node {
+	for _, node := range nodes {
+		if node.ServiceId == serviceId {
+			return node
+		}
+	}
+	return nil
+}
+
+func parserTag(param Vo) *TagInfo {
+	tagInfo := &TagInfo{}
+	if param.Tags != nil && len(param.Tags) > 0 {
+		for _, v := range param.Tags {
+			tag := strings.Split(v, ":")
+			key := tag[0]
+			value := tag[1]
+			switch key {
+			case ApplicationSearchTag.Tag:
+				tagInfo.ApplicationName = value
+			case ServiceSearchTag.Tag:
+				tagInfo.ServiceId = value
+			}
+		}
+	}
+	return tagInfo
 }
 
 func selectRelation(indexType string) (*AggregationCondition, []*NodeRelation) {
@@ -1505,8 +1553,7 @@ func selectRelation(indexType string) (*AggregationCondition, []*NodeRelation) {
 	return aggregationConditions, relations
 }
 
-func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, serviceId string, timeRange int64, searchResult *elastic.SearchResult, relations []*NodeRelation, topologyNodes *[]*Node) {
-	nodeIds := map[string]struct{}{}
+func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange int64, searchResult *elastic.SearchResult, relations []*NodeRelation, topologyNodes *[]*Node) {
 	for _, nodeRelation := range relations {
 		targetNodeType := nodeRelation.Target
 		sourceNodeTypes := nodeRelation.Source
@@ -1538,10 +1585,6 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, serviceId
 					}
 
 					node := columnsParser(targetNodeType.Type, targetNode)
-					if node.ServiceId == serviceId {
-						nodeIds[node.Id] = struct{}{}
-					}
-
 					node.TypeDisplay = topology.t.Text(lang, strings.ToLower(node.Type))
 					if targetNodeType.Type == TargetOtherNode && node.Type == TypeInternal {
 						continue
@@ -1609,23 +1652,14 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, serviceId
 							sourceNode.Metric = sourceMetric
 							sourceNode.Parents = []*Node{}
 							node.Parents = append(node.Parents, sourceNode)
-							if node.ServiceId == serviceId || sourceNode.ServiceId == serviceId {
-								nodeIds[sourceNode.Id] = struct{}{}
-							}
 						}
 					}
 				}
 			}
 		}
 	}
-	for i := 0; i < len(*topologyNodes); i++ {
-		node := (*topologyNodes)[i]
-		if _, ok := nodeIds[node.Id]; len(nodeIds) > 0 && !ok {
-			*topologyNodes = append((*topologyNodes)[:i], (*topologyNodes)[i+1:]...)
-			i--
-			continue
-		}
 
+	for _, node := range *topologyNodes {
 		if node.Metric.Count != 0 { // by zero
 			node.Metric.RT = pkgmath.DecimalPlacesWithDigitsNumber(node.Metric.Duration/float64(node.Metric.Count)/1e6, 2)
 			node.Metric.ErrorRate = pkgmath.DecimalPlacesWithDigitsNumber(float64(node.Metric.HttpError)/float64(node.Metric.Count)*100, 2)
