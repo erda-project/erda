@@ -71,7 +71,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 						Color: "text-desc",
 					},
 					Icon:    "help",
-					IconTip: "不包含本日截止数据",
+					IconTip: cputil.I18n(ctx, "notIncludeDueToday"),
 				},
 			},
 		},

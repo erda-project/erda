@@ -16,6 +16,7 @@ package apiEditor
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -25,170 +26,7 @@ import (
 	"github.com/erda-project/erda/pkg/expression"
 )
 
-var props1 = `{
-	 "loopFormField":[
-		{
-			"component":"formGroup",
-			"key":"loop",
-			"componentProps":{
-				"defaultExpand": ` + LoopFormFieldDefaultExpand.string() + `,
-				"expandable":true,
-				"title":"循环策略"
-			},
-			"group":"loop"
-		},
-		{
-			"label":"循环结束条件",
-			"component":"input",
-			"key":"loop.break",
-			"group":"loop"
-		},
-		{
-			"label":"最大循环次数",
-			"component":"inputNumber",
-			"key":"loop.strategy.max_times",
-			"group":"loop"
-		},
-		{
-			"label":"衰退比例",
-			"component":"inputNumber",
-			"key":"loop.strategy.decline_ratio",
-			"group":"loop",
-			"labelTip":"每次循环叠加间隔比例"
-		},
-		{
-			"label":"衰退最大值(秒)",
-			"component":"inputNumber",
-			"key":"loop.strategy.decline_limit_sec",
-			"group":"loop",
-			"labelTip":"循环最大间隔时间"
-		},
-		{
-			"label":"起始间隔(秒)",
-			"component":"inputNumber",
-			"key":"loop.strategy.interval_sec",
-			"group":"loop"
-		}
-   ],
-  "methodList": [
-    "GET",
-    "POST",
-    "PUT",
-    "DELETE",
-    "OPTIONS",
-    "PATCH",
-    "COPY",
-    "HEAD"
-  ],
-  "commonTemp": {
-    "target": [
-      "headers",
-      "body.form"
-    ],
-    "temp": [
-      {
-        "title": "参数名",
-        "key": "key",
-        "width": 150,
-        "render": {
-          "required": true,
-          "uniqueValue": true,
-          "rules": [
-						{
-							"max": 50,
-							"msg": "参数名最大长度不能超过50"
-						},
-            {
-              "pattern": "/^[a-zA-Z0-9_-]*$/",
-              "msg": "参数名为英文、数字、中划线或下划线"
-            }
-          ],
-          "props": {
-            "placeholder": "参数名"
-          }
-        }
-      },
-      {
-        "title": "默认值",
-        "key": "value",
-        "flex": 2,
-        "render": {
-          "type": "inputSelect",
-					"valueConvertType": "last",
-          "required": true,
-          "props": {
-            "placeholder": "可选择表达式",
-            "options": ` //[
-//   {
-//     "label": "前置场景",
-//     "value": "$alias1.params1",
-//     "isLeaf": false
-//   },
-//   {
-//     "label": "全局参数",
-//     "value": "$alias1.params2",
-//     "isLeaf": true
-//   }
-// ]
-const props2 string = `}
-        }
-      },
-      {
-        "title": "描述",
-        "key": "desc",
-        "width": 300,
-        "render": {
-          "type": "textarea",
-          "required": false,
-					"rules": [
-						{
-							"max": 1000,
-							"msg": "描述最大长度不能超过1000"
-						}
-					],
-          "props": {
-            "placeholder": "描述"
-          }
-        }
-      }
-    ]
-  },
-  "params": {
-    "temp": [
-      {
-        "title": "参数名",
-        "key": "key",
-        "width": 150,
-        "name": "key",
-        "render": {
-          "required": true,
-          "rules": [
-						{
-  						"max": 50,
-  						"msg": "参数名最大长度不能超过50"
-						},
-            {
-              "pattern": "/^[.a-zA-Z0-9_-]*$/",
-              "msg": "参数名为英文、数字、点、中划线或下划线"
-            }
-          ],
-          "props": {
-            "placeholder": "参数名"
-          }
-        }
-      },
-      {
-        "title": "默认值",
-        "key": "value",
-        "flex": 2,
-        "name": "value",
-        "render": {
-          "type": "inputSelect",
-					"valueConvertType": "last",
-          "required": true,
-          "props": {
-            "placeholder": "可选择表达式",
-            "options": ` //[
+//[
 //   {
 //     "label": "前置场景",
 //     "value": "$alias1.params1",
@@ -212,104 +50,6 @@ const props2 string = `}
 //     "isLeaf": true
 //   }
 // ]
-const props3 string = `}
-        }
-      },
-      {
-        "title": "描述",
-        "key": "desc",
-        "placeholder": "描述",
-        "name": "desc",
-        "width": 300,
-        "render": {
-          "type": "textarea",
-          "required": false,
-					"rules": [
-						{
-							"max": 1000,
-							"msg": "描述最大长度不能超过1000"
-						}
-					],
-          "props": {
-            "placeholder": "描述"
-          }
-        }
-      }
-    ],
-    "showTitle": false
-  },
-  "headers": {
-    "showTitle": false
-  },
-  "body": {
-    "form": {
-      "showTitle": false
-    }
-  },
-  "asserts": {
-    "comparisonOperators": [
-      {
-        "label": "大于",
-        "value": ">"
-      },
-      {
-        "label": "大于等于",
-        "value": ">="
-      },
-      {
-        "label": "等于",
-        "value": "="
-      },
-      {
-        "label": "小于等于",
-        "value": "<="
-      },
-      {
-        "label": "小于",
-        "value": "<"
-      },
-      {
-        "label": "不等于",
-        "value": "!="
-      },
-      {
-        "label": "包含",
-        "value": "contains"
-      },
-      {
-        "label": "不包含",
-        "value": "not_contains"
-      },
-      {
-        "label": "存在",
-        "value": "exist"
-      },
-      {
-        "label": "不存在",
-        "value": "not_exist"
-      },
-      {
-        "label": "为空",
-        "value": "empty",
-				"allowEmpty": true
-      },
-      {
-        "label": "不为空",
-        "value": "not_empty",
-				"allowEmpty": true
-      },
-      {
-        "label": "属于",
-        "value": "belong"
-      },
-      {
-        "label": "不属于",
-        "value": "not_belong"
-      }
-    ]
-  },
-  "apiExecute":
-`
 
 //apiExecute: {
 //  text: '执行',
@@ -357,7 +97,268 @@ var defaultReplaceOptions = []replaceOption{
 	},
 }
 
-func genProps(input, execute string, replaceOpts ...replaceOption) cptype.ComponentProps {
+func (ae *ApiEditor) genProps(input, execute string, replaceOpts ...replaceOption) cptype.ComponentProps {
+	var props1 = fmt.Sprintf(`{
+    "loopFormField":[
+     {
+       "component":"formGroup",
+       "key":"loop",
+       "componentProps":{
+         "defaultExpand": `+LoopFormFieldDefaultExpand.string()+`,
+         "expandable":true,
+         "title":"%s"
+       },
+       "group":"loop"
+     },
+     {
+       "label":"%s",
+       "component":"input",
+       "key":"loop.break",
+       "group":"loop"
+     },
+     {
+       "label":"%s",
+       "component":"inputNumber",
+       "key":"loop.strategy.max_times",
+       "group":"loop"
+     },
+     {
+       "label":"%s",
+       "component":"inputNumber",
+       "key":"loop.strategy.decline_ratio",
+       "group":"loop",
+       "labelTip":"%s"
+     },
+     {
+       "label":"%s",
+       "component":"inputNumber",
+       "key":"loop.strategy.decline_limit_sec",
+       "group":"loop",
+       "labelTip":"%s"
+     },
+     {
+       "label":"%s",
+       "component":"inputNumber",
+       "key":"loop.strategy.interval_sec",
+       "group":"loop"
+     }
+    ],
+   "methodList": [
+     "GET",
+     "POST",
+     "PUT",
+     "DELETE",
+     "OPTIONS",
+     "PATCH",
+     "COPY",
+     "HEAD"
+   ],
+   "commonTemp": {
+     "target": [
+       "headers",
+       "body.form"
+     ],
+     "temp": [
+       {
+         "title": "%s",
+         "key": "key",
+         "width": 150,
+         "render": {
+           "required": true,
+           "uniqueValue": true,
+           "rules": [
+             {
+               "max": 50,
+               "msg": "%s"
+             },
+             {
+               "pattern": "/^[a-zA-Z0-9_-]*$/",
+               "msg": "%s"
+             }
+           ],
+           "props": {
+             "placeholder": "%s"
+           }
+         }
+       },
+       {
+         "title": "%s",
+         "key": "value",
+         "flex": 2,
+         "render": {
+           "type": "inputSelect",
+           "valueConvertType": "last",
+           "required": true,
+           "props": {
+             "placeholder": "%s",
+             "options": `, ae.sdk.I18n("loopStrategy"), ae.sdk.I18n("loopEndCondition"), ae.sdk.I18n("maxLoop"), ae.sdk.I18n("declineRatio"),
+		ae.sdk.I18n("intervalRatio"), ae.sdk.I18n("declineMax"), ae.sdk.I18n("loopMaxInterval"), ae.sdk.I18n("startInterval"),
+		ae.sdk.I18n("paramName"), ae.sdk.I18n("paramNameMessage1"), ae.sdk.I18n("paramNameMessage2"), ae.sdk.I18n("paramName"),
+		ae.sdk.I18n("defaultValue"), ae.sdk.I18n("selectiveExp"))
+
+	var props2 string = fmt.Sprintf(`}
+         }
+       },
+       {
+         "title": "%s",
+         "key": "desc",
+         "width": 300,
+         "render": {
+           "type": "textarea",
+           "required": false,
+           "rules": [
+             {
+               "max": 1000,
+               "msg": "%s"
+             }
+           ],
+           "props": {
+             "placeholder": "%s"
+           }
+         }
+       }
+     ]
+   },
+   "params": {
+     "temp": [
+       {
+         "title": "%s",
+         "key": "key",
+         "width": 150,
+         "name": "key",
+         "render": {
+           "required": true,
+           "rules": [
+             {
+               "max": 50,
+               "msg": "%s"
+             },
+             {
+               "pattern": "/^[.a-zA-Z0-9_-]*$/",
+               "msg": "%s"
+             }
+           ],
+           "props": {
+             "placeholder": "%s"
+           }
+         }
+       },
+       {
+         "title": "%s",
+         "key": "value",
+         "flex": 2,
+         "name": "value",
+         "render": {
+           "type": "inputSelect",
+           "valueConvertType": "last",
+           "required": true,
+           "props": {
+             "placeholder": "%s",
+             "options": `, ae.sdk.I18n("desc"), ae.sdk.I18n("descLimit"), ae.sdk.I18n("desc"), ae.sdk.I18n("paramName"),
+		ae.sdk.I18n("paramNameMessage1"), ae.sdk.I18n("paramNameMessage3"), ae.sdk.I18n("paramName"), ae.sdk.I18n("defaultValue"), ae.sdk.I18n("selectiveExp"))
+
+	var props3 string = fmt.Sprintf(`}
+         }
+       },
+       {
+         "title": "%s",
+         "key": "desc",
+         "placeholder": "%s",
+         "name": "desc",
+         "width": 300,
+         "render": {
+           "type": "textarea",
+           "required": false,
+           "rules": [
+             {
+               "max": 1000,
+               "msg": "%s"
+             }
+           ],
+           "props": {
+             "placeholder": "%s"
+           }
+         }
+       }
+     ],
+     "showTitle": false
+   },
+   "headers": {
+     "showTitle": false
+   },
+   "body": {
+     "form": {
+       "showTitle": false
+     }
+   },
+   "asserts": {
+     "comparisonOperators": [
+       {
+         "label": "%s",
+         "value": ">"
+       },
+       {
+         "label": "%s",
+         "value": ">="
+       },
+       {
+         "label": "%s",
+         "value": "="
+       },
+       {
+         "label": "%s",
+         "value": "<="
+       },
+       {
+         "label": "%s",
+         "value": "<"
+       },
+       {
+         "label": "%s",
+         "value": "!="
+       },
+       {
+         "label": "%s",
+         "value": "contains"
+       },
+       {
+         "label": "%s",
+         "value": "not_contains"
+       },
+       {
+         "label": "%s",
+         "value": "exist"
+       },
+       {
+         "label": "%s",
+         "value": "not_exist"
+       },
+       {
+         "label": "%s",
+         "value": "empty",
+         "allowEmpty": true
+       },
+       {
+         "label": "%s",
+         "value": "not_empty",
+         "allowEmpty": true
+       },
+       {
+         "label": "%s",
+         "value": "belong"
+       },
+       {
+         "label": "%s",
+         "value": "not_belong"
+       }
+     ]
+   },
+   "apiExecute":
+ `, ae.sdk.I18n("desc"), ae.sdk.I18n("desc"), ae.sdk.I18n("descLimit"), ae.sdk.I18n("desc"),
+		ae.sdk.I18n("greater"), ae.sdk.I18n("greaterEqual"), ae.sdk.I18n("equal"), ae.sdk.I18n("lessEqual"),
+		ae.sdk.I18n("less"), ae.sdk.I18n("notEqual"), ae.sdk.I18n("contain"), ae.sdk.I18n("notContain"),
+		ae.sdk.I18n("exist"), ae.sdk.I18n("notExist"), ae.sdk.I18n("isEmpty"), ae.sdk.I18n("notEmpty"),
+		ae.sdk.I18n("belong"), ae.sdk.I18n("notBelong"))
 	// because props are assembled by splicing json strings,
 	// dynamic setting values can only be replaced by placeholders.
 	var propsJson = props1 + input + props2 + input + props3 + execute + props4

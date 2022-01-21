@@ -47,7 +47,7 @@ var IssueTemplate = map[string]map[IssueStreamType]string{
 		ISTChangeLabel:                   `标签发生变更`,
 	},
 	`en`: {
-		ISTCreate:                        `{{.UserName}} created`,
+		ISTCreate:                        `Created by {{.UserName}}`,
 		ISTComment:                       `{{.Comment}}`,
 		ISTRelateMR:                      `mrInfo: {{.MRInfo}}`,
 		ISTAssign:                        `assigned to "{{.UserName}}"`,
