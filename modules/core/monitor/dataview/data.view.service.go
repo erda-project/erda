@@ -228,9 +228,15 @@ func (s *dataViewService) CreateCustomView(ctx context.Context, req *pb.CreateCu
 		CreatedAt: model.CreatedAt.UnixNano() / int64(time.Millisecond),
 		UpdatedAt: model.UpdatedAt.UnixNano() / int64(time.Millisecond),
 	}, model.ViewConfig, model.DataConfig)}
+
+	// bypass reportengine's call, just return
+	if userId == "" {
+		return result, nil
+	}
+
 	err = s.auditContextMap(ctx, req.Name, req.Scope)
 	if err != nil {
-		return nil, errors.NewInternalServerError(err)
+		return nil, errors.NewInternalServerError(fmt.Errorf("auditContextMap: %w", err))
 	}
 	return result, nil
 }
