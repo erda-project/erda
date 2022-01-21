@@ -183,9 +183,9 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/publish-items/{publishItemId}/err/rate", Method: http.MethodGet, Handler: e.GetCrashRate},
 
 		// 分支 release 规则
-		{Path: "/api/release-rules", Method: http.MethodPost, Handler: httpserver.Wrap(e.CreateRule, e.ReleaseRuleAuth)},
-		{Path: "/api/release-rules", Method: http.MethodGet, Handler: httpserver.Wrap(e.ListRules, e.ReleaseRuleAuth)},
-		{Path: "/api/release-rules/{id}", Method: http.MethodPut, Handler: httpserver.Wrap(e.UpdateRule, e.ReleaseRuleAuth)},
-		{Path: "/api/release-rules/{id}", Method: http.MethodDelete, Handler: httpserver.Wrap(e.DeleteRule, e.ReleaseRuleAuth)},
+		{Path: "/api/release-rules", Method: http.MethodPost, Handler: httpserver.Wrap(e.CreateRule, e.ReleaseRuleMiddleware)},
+		{Path: "/api/release-rules", Method: http.MethodGet, Handler: httpserver.Wrap(e.ListRules, e.ReleaseRuleMiddleware)},
+		{Path: "/api/release-rules/{id}", Method: http.MethodPut, Handler: httpserver.Wrap(e.UpdateRule, e.ReleaseRuleMiddleware)},
+		{Path: "/api/release-rules/{id}", Method: http.MethodDelete, Handler: httpserver.Wrap(e.DeleteRule, e.ReleaseRuleMiddleware)},
 	}
 }
