@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/i18n"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/types"
 )
 
@@ -75,13 +76,14 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 		}
 	}()
 	i.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	i18nLocale := i.CtxBdl.Bdl.GetLocale(i.CtxBdl.Locale)
 
 	envData := (*gs)[types.AutotestGlobalKeyEnvData].(apistructs.AutoTestAPIConfig)
 
 	i.Props = make(map[string]interface{})
 	i.Props["fields"] = []PropColumn{
 		{
-			Label:    "环境域名",
+			Label:    i18nLocale.Get(i18n.I18nKeyEnvironDomain),
 			ValueKey: "domain",
 		},
 	}

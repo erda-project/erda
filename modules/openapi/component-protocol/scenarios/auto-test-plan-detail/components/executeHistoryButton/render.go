@@ -19,24 +19,22 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/i18n"
 )
 
 type ComponentAction struct{}
 
-func getProps(visible bool) map[string]interface{} {
-	return map[string]interface{}{
-		"text":    "执行历史",
-		"visible": visible,
-	}
-}
-
 func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	//return json.Unmarshal([]byte(`{"text":"执行历史"}`), &c.Props)
 	visible := true
 	if _, ok := c.State["visible"]; ok {
 		visible = c.State["visible"].(bool)
 	}
-	c.Props = getProps(visible)
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	i18nLocale := bdl.Bdl.GetLocale(bdl.Locale)
+	c.Props = map[string]interface{}{
+		"text":    i18nLocale.Get(i18n.I18nKeyHistoryExecute),
+		"visible": visible,
+	}
 	return nil
 }
 

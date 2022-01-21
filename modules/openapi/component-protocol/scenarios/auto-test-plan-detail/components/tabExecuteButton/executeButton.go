@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/i18n"
 )
 
 type ComponentAction struct {
@@ -188,8 +189,9 @@ func (a *ComponentAction) handleDefault() error {
 		return fmt.Errorf("not found cluster")
 	}
 
+	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
 	a.Props.Type = "primary"
-	a.Props.Test = "执行"
+	a.Props.Test = i18nLocale.Get(i18n.I18nKeyExecute)
 
 	var autoTestGlobalConfigListRequest apistructs.AutoTestGlobalConfigListRequest
 	autoTestGlobalConfigListRequest.ScopeID = strconv.Itoa(int(project.ID))
@@ -202,7 +204,7 @@ func (a *ComponentAction) handleDefault() error {
 
 	a.Props.Menus = []Menu{
 		{
-			Text: "无",
+			Text: i18nLocale.Get(i18n.I18nKeyPlanNull),
 			Key:  "无",
 			Operations: map[string]interface{}{
 				apistructs.ClickOperation.String(): ClickOperation{

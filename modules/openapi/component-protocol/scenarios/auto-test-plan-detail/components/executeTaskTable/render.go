@@ -27,6 +27,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/component_key"
+	i18nkey "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/i18n"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 type ExecuteTaskTable struct {
@@ -129,6 +131,7 @@ func (a *ExecuteTaskTable) Render(ctx context.Context, c *apistructs.Component, 
 	}
 
 	a.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
 
 	if a.CtxBdl.InParams == nil {
 		return fmt.Errorf("params is empty")
@@ -149,7 +152,7 @@ func (a *ExecuteTaskTable) Render(ctx context.Context, c *apistructs.Component, 
 		}
 		// export rendered component data
 		c.Operations = a.Operations
-		c.Props = getProps()
+		c.Props = getProps(i18nLocale)
 	}()
 
 	// listen on operation
@@ -169,7 +172,7 @@ func (a *ExecuteTaskTable) Render(ctx context.Context, c *apistructs.Component, 
 			return err
 		}
 	}
-	a.Props = getProps()
+	a.Props = getProps(i18nLocale)
 	return nil
 }
 
@@ -185,54 +188,54 @@ func getOperations(clickableKeys []uint64) map[string]interface{} {
 	}
 }
 
-func getProps() map[string]interface{} {
+func getProps(i18nLocale *i18n.LocaleResource) map[string]interface{} {
 	return map[string]interface{}{
 		"rowKey": "key",
 		"scroll": map[string]interface{}{"x": 1200},
 		"columns": []columns{
 			{
-				Title:     "步骤名称",
+				Title:     i18nLocale.Get(i18nkey.I18nKeyStepName),
 				DataIndex: "name",
 				Width:     200,
 				Ellipsis:  true,
 				Fixed:     "left",
 			},
 			{
-				Title:     "步骤类型",
+				Title:     i18nLocale.Get(i18nkey.I18nKeyStepType),
 				DataIndex: "type",
 				Width:     85,
 				Ellipsis:  true,
 			},
 			{
-				Title:     "步骤",
+				Title:     i18nLocale.Get(i18nkey.I18nKeyStep),
 				DataIndex: "step",
 				Width:     85,
 				Ellipsis:  true,
 			},
 			{
-				Title:     "子任务数",
+				Title:     i18nLocale.Get(i18nkey.I18nKeyNumberOfSubtasks),
 				DataIndex: "tasksNum",
 				Width:     85,
 				Ellipsis:  true,
 			},
 			{
-				Title:     "执行时间",
+				Title:     i18nLocale.Get(i18nkey.I18nKeyStepExecutionTime),
 				DataIndex: "time",
 				Width:     85,
 				Ellipsis:  true,
 			},
 			{
-				Title:     "接口路径",
+				Title:     i18nLocale.Get(i18nkey.I18nKeyInterfacePath),
 				DataIndex: "path",
 			},
 			{
-				Title:     "状态",
+				Title:     i18nLocale.Get(i18nkey.I18nKeyStatus),
 				DataIndex: "status",
 				Width:     120,
 				Ellipsis:  true,
 			},
 			{
-				Title:     "操作",
+				Title:     i18nLocale.Get(i18nkey.I18nKeyOperations),
 				DataIndex: "operate",
 				Width:     120,
 				Ellipsis:  true,
@@ -242,28 +245,28 @@ func getProps() map[string]interface{} {
 	}
 }
 
-func transformStepType(str apistructs.StepAPIType) string {
+func transformStepType(str apistructs.StepAPIType, i18nLocale *i18n.LocaleResource) string {
 	switch str {
 	case apistructs.StepTypeWait:
-		return "等待"
+		return i18nLocale.Get(i18nkey.I18nKeyWait)
 	case apistructs.StepTypeAPI:
-		return "接口"
+		return i18nLocale.Get(i18nkey.I18nKeyInterface)
 	case apistructs.StepTypeScene:
-		return "场景"
+		return i18nLocale.Get(i18nkey.I18nKeyScene)
 	case apistructs.StepTypeConfigSheet:
-		return "配置单"
+		return i18nLocale.Get(i18nkey.I18nKeyConfigSheet)
 	case apistructs.StepTypeCustomScript:
-		return "自定义"
+		return i18nLocale.Get(i18nkey.I18nKeyCustomize)
 	case apistructs.AutotestSceneStep:
-		return "步骤"
+		return i18nLocale.Get(i18nkey.I18nKeyStep)
 	case apistructs.AutotestSceneSet:
-		return "场景集"
+		return i18nLocale.Get(i18nkey.I18nKeySceneSet)
 	}
 	return string(str)
 }
 
-func getStatus(req apistructs.PipelineStatus) map[string]interface{} {
-	res := map[string]interface{}{"renderType": "textWithBadge", "value": req.ToDesc()}
+func getStatus(req apistructs.PipelineStatus, i18nLocale *i18n.LocaleResource) map[string]interface{} {
+	res := map[string]interface{}{"renderType": "textWithBadge", "value": i18nkey.TransferTaskStatus(req, i18nLocale)}
 	if req.IsSuccessStatus() {
 		res["status"] = "success"
 	}
@@ -282,7 +285,7 @@ func getStatus(req apistructs.PipelineStatus) map[string]interface{} {
 	return res
 }
 
-func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error {
+func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO, i18nLocale *i18n.LocaleResource) error {
 	lists := []map[string]interface{}{}
 	clickableKeys := []uint64{}
 	a.State.Total = 0
@@ -300,17 +303,17 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						"operations": map[string]interface{}{
 							"checkDetail": dataOperation{
 								Key:         "checkDetail",
-								Text:        "查看结果",
+								Text:        i18nLocale.Get(i18nkey.I18nKeyViewResult),
 								Reload:      false,
-								DisabledTip: "禁用接口无法查看结果",
+								DisabledTip: i18nLocale.Get(i18nkey.I18nKeyDisableTaskTip),
 								Disabled:    task.Status.IsDisabledStatus(),
 								Meta:        task.Result,
 							},
 							"checkLog": dataOperation{
 								Key:         "checkLog",
 								Reload:      false,
-								Text:        "日志",
-								DisabledTip: "禁用接口无法查看日志",
+								Text:        i18nLocale.Get(i18nkey.I18nKeyLog),
+								DisabledTip: i18nLocale.Get(i18nkey.I18nKeyDisableLogTip),
 								Disabled:    task.Status.IsDisabledStatus(),
 								Meta: map[string]interface{}{
 									"logId":      task.Extra.UUID,
@@ -322,8 +325,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					},
 					"tasksNum": "-",
 					"name":     task.Name,
-					"status":   getStatus(task.Status),
-					"type":     transformStepType(apistructs.StepAPIType(task.Type)),
+					"status":   getStatus(task.Status, i18nLocale),
+					"type":     transformStepType(apistructs.StepAPIType(task.Type), i18nLocale),
 					"path":     "",
 					"time":     a.getCostTime(task),
 				}
@@ -357,7 +360,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						if value.WaitTime > 0 {
 							value.WaitTimeSec = value.WaitTime
 						}
-						res.Name = transformStepType(res.Type) + strconv.FormatInt(value.WaitTimeSec, 10) + "s"
+						res.Name = transformStepType(res.Type, i18nLocale) + strconv.FormatInt(value.WaitTimeSec, 10) + "s"
 					}
 				} else {
 					res.Name = task.Name
@@ -368,18 +371,18 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					operations = map[string]interface{}{
 						"checkDetail": dataOperation{
 							Key:         "checkDetail",
-							Text:        "查看结果",
+							Text:        i18nLocale.Get(i18nkey.I18nKeyViewResult),
 							Reload:      false,
 							Disabled:    task.Status.IsDisabledStatus(),
-							DisabledTip: "禁用接口无法查看结果",
+							DisabledTip: i18nLocale.Get(i18nkey.I18nKeyDisableTaskTip),
 							Meta:        task.Result,
 						},
 						"checkLog": dataOperation{
 							Key:         "checkLog",
 							Reload:      false,
-							Text:        "日志",
+							Text:        i18nLocale.Get(i18nkey.I18nKeyLog),
 							Disabled:    task.Status.IsDisabledStatus(),
-							DisabledTip: "禁用接口无法查看日志",
+							DisabledTip: i18nLocale.Get(i18nkey.I18nKeyDisableLogTip),
 							Meta: map[string]interface{}{
 								"logId":      task.Extra.UUID,
 								"pipelineId": a.State.PipelineID,
@@ -402,8 +405,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					},
 					"tasksNum": "-",
 					"name":     res.Name,
-					"status":   getStatus(task.Status),
-					"type":     transformStepType(res.Type),
+					"status":   getStatus(task.Status, i18nLocale),
+					"type":     transformStepType(res.Type, i18nLocale),
 					"path":     path,
 					"time":     a.getCostTime(task),
 					"step":     stepIdx,
@@ -438,8 +441,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					},
 					"tasksNum": "-",
 					"name":     res.SceneSetName,
-					"status":   getStatus(task.Status),
-					"type":     transformStepType(apistructs.AutotestSceneSet),
+					"status":   getStatus(task.Status, i18nLocale),
+					"type":     transformStepType(apistructs.AutotestSceneSet, i18nLocale),
 					"path":     "",
 					"time":     a.getCostTime(task),
 					"step":     stepIdx,
@@ -472,8 +475,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					},
 					"tasksNum": "-",
 					"name":     res.Name,
-					"status":   getStatus(task.Status),
-					"type":     transformStepType(apistructs.AutotestScene),
+					"status":   getStatus(task.Status, i18nLocale),
+					"type":     transformStepType(apistructs.AutotestScene, i18nLocale),
 					"path":     "",
 					"time":     a.getCostTime(task),
 					"step":     stepIdx,
@@ -550,8 +553,9 @@ func (e *ExecuteTaskTable) handlerListOperation(bdl protocol.ContextBundle, c *a
 		return nil
 	}
 
+	i18nLocale := bdl.Bdl.GetLocale(bdl.Locale)
 	list := e.State.PipelineDetail
-	err := e.setData(list)
+	err := e.setData(list, i18nLocale)
 	if err != nil {
 		return err
 	}

@@ -84,33 +84,33 @@ components:
       scroll:
         x: 1200
       columns:
-        - title: "计划id"
+        - title: ${{ i18n.autotest.plan.id }}
           dataIndex: "id"
           width: 90
-        - title: "计划名"
+        - title: ${{ i18n.autotest.plan.plan.name }}
           dataIndex: "name"
-        - title: "测试空间"
+        - title: ${{ i18n.autotest.plan.test.space }}
           dataIndex: "testSpace"
           width: 100
-        - title: "迭代"
+        - title: ${{ i18n.autotest.plan.iteration }}
           dataIndex: "iteration"
           width: 80
-        - title: "负责人"
+        - title: ${{ i18n.autotest.plan.principal }}
           dataIndex: "owners"
           width: 80
-        - title: "最近执行接口总数"
+        - title: ${{ i18n.autotest.plan.total.executed.interfaces }}
           dataIndex: "executeApiNum"
           width: 150
           sorter: true
-        - title: "最近执行通过率"
+        - title: ${{ i18n.autotest.plan.execution.pass.rate }}
           dataIndex: "passRate"
           width: 150
           sorter: true
-        - title: "最近执行时间"
+        - title: ${{ i18n.autotest.plan.execution.time }}
           dataIndex: "executeTime"
           width: 160
           sorter: true
-        - title: "操作"
+        - title: ${{ i18n.autotest.plan.operations }}
           dataIndex: "operate"
           width: 120
           fixed: "right"
@@ -131,5 +131,5 @@ components:
         key: "addTest"
         reload: true
     props:
-      text: "新建计划"
+      text: ${{ i18n.autotest.plan.new.plan }}
       type: "primary"

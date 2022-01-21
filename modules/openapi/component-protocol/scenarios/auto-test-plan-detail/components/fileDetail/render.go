@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/i18n"
 )
 
 type ComponentAction struct {
@@ -70,6 +71,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 		c.State = map[string]interface{}{}
 	}
 
+	i18nLocale := bdl.Bdl.GetLocale(bdl.Locale)
 	if err := ca.RenderState(c); err != nil {
 		return err
 	}
@@ -77,8 +79,8 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 	// props
 	ca.Props = make(map[string]interface{})
 	ca.Props["tabMenu"] = []map[string]string{
-		{"key": apistructs.ConfigTestPlanActiveKey.String(), "name": "配置信息"},
-		{"key": apistructs.ExecuteTestPlanActiveKey.String(), "name": "执行明细"},
+		{"key": apistructs.ConfigTestPlanActiveKey.String(), "name": i18nLocale.Get(i18n.I18nKeyConfigurationInformation)},
+		{"key": apistructs.ExecuteTestPlanActiveKey.String(), "name": i18nLocale.Get(i18n.I18nKeyExecutionDetail)},
 	}
 	switch event.Operation {
 	case apistructs.InitializeOperation:

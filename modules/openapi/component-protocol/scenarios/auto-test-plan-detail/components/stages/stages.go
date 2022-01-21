@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/i18n"
 )
 
 func (i *ComponentStageForm) RenderStage(step apistructs.TestPlanV2Step) (StageData, error) {
@@ -27,8 +28,9 @@ func (i *ComponentStageForm) RenderStage(step apistructs.TestPlanV2Step) (StageD
 	if groupID == 0 {
 		groupID = int(step.ID)
 	}
+	i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
 	pd := StageData{
-		Title:      fmt.Sprintf("#%d 场景集: %s", step.ID, step.SceneSetName),
+		Title:      fmt.Sprintf("#%d %s: %s", step.ID, i18nLocale.Get(i18n.I18nKeySceneSet), step.SceneSetName),
 		ID:         step.ID,
 		GroupID:    groupID,
 		Operations: make(map[string]interface{}),
@@ -36,7 +38,7 @@ func (i *ComponentStageForm) RenderStage(step apistructs.TestPlanV2Step) (StageD
 	o := CreateOperation{}
 	o.Key = apistructs.AutoTestSceneStepCreateOperationKey.String()
 	o.Icon = "add"
-	o.HoverTip = "添加步骤"
+	o.HoverTip = i18nLocale.Get(i18n.I18nKeyAddStep)
 	o.Disabled = false
 	o.Reload = true
 	o.HoverShow = true
@@ -55,7 +57,7 @@ func (i *ComponentStageForm) RenderStage(step apistructs.TestPlanV2Step) (StageD
 		OperationBaseInfo: OperationBaseInfo{
 			Icon:     "split",
 			Key:      apistructs.AutoTestSceneStepSplitOperationKey.String(),
-			HoverTip: "改为串行",
+			HoverTip: i18nLocale.Get(i18n.I18nKeyChangeSerial),
 			Disabled: true,
 			Reload:   true,
 		},

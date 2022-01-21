@@ -16,23 +16,35 @@ package executeTaskTable
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 func Test_handlerListOperation(t *testing.T) {
-	ctx := protocol.ContextBundle{
-		InParams: map[string]interface{}{},
-	}
-	ctx1 := context.WithValue(context.Background(), protocol.GlobalInnerKeyCtxBundle.String(), ctx)
+	var bdl = protocol.ContextBundle{Locale: "zh"}
+	dl := bundle.New(bundle.WithI18nLoader(&i18n.LocaleResourceLoader{}))
+	m := monkey.PatchInstanceMethod(reflect.TypeOf(dl), "GetLocale",
+		func(bdl *bundle.Bundle, local ...string) *i18n.LocaleResource {
+			return &i18n.LocaleResource{}
+		})
+	defer m.Unpatch()
+	monkey.PatchInstanceMethod(reflect.TypeOf(dl), "PagingTestPlansV2", func(b *bundle.Bundle, req apistructs.TestPlanV2PagingRequest) (*apistructs.TestPlanV2PagingResponseData, error) {
+		return &apistructs.TestPlanV2PagingResponseData{}, nil
+	})
+	bdl.Bdl = dl
+	bdl.InParams = map[string]interface{}{"projectId": 1}
+	ctx := context.WithValue(context.Background(), protocol.GlobalInnerKeyCtxBundle.String(), bdl)
 	a := &ExecuteTaskTable{}
 	a.State.PipelineDetail = nil
-	err := a.Render(ctx1, &apistructs.Component{}, apistructs.ComponentProtocolScenario{},
+	err := a.Render(ctx, &apistructs.Component{}, apistructs.ComponentProtocolScenario{},
 		apistructs.ComponentEvent{
 			Operation:     apistructs.ExecuteChangePageNoOperationKey,
 			OperationData: nil,
@@ -117,7 +129,8 @@ func TestSetData(t *testing.T) {
 			},
 		},
 	}
-	err := table.setData(&p)
+	i18nLocale := &i18n.LocaleResource{}
+	err := table.setData(&p, i18nLocale)
 	assert.Equal(t, nil, err)
 
 	waiP := apistructs.PipelineDetailDTO{
@@ -135,6 +148,6 @@ func TestSetData(t *testing.T) {
 			},
 		},
 	}
-	err = table.setData(&waiP)
+	err = table.setData(&waiP, i18nLocale)
 	assert.Equal(t, nil, err)
 }

@@ -23,6 +23,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	i18nkey "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/i18n"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 type ComponentAction struct {
@@ -169,6 +171,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component,
 	}
 
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	i18nLocale := bdl.Bdl.GetLocale(bdl.Locale)
 	err = ca.SetBundle(bdl)
 	if err != nil {
 		return err
@@ -217,7 +220,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component,
 
 	switch event.Operation {
 	case apistructs.OnSearchOperation:
-		if err := ca.HandlerDefaultValue(meta, bdl.InParams); err != nil {
+		if err := ca.HandlerDefaultValue(meta, bdl.InParams, i18nLocale); err != nil {
 			return err
 		}
 	case apistructs.OnChangeOperation:
@@ -225,11 +228,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component,
 			return err
 		}
 	case apistructs.OnLoadDataOperation:
-		if err := ca.HandlerDefaultValue(meta, bdl.InParams); err != nil {
+		if err := ca.HandlerDefaultValue(meta, bdl.InParams, i18nLocale); err != nil {
 			return err
 		}
 	case apistructs.InitializeOperation, apistructs.RenderingOperation:
-		if err := ca.HandlerDefaultValue(meta, bdl.InParams); err != nil {
+		if err := ca.HandlerDefaultValue(meta, bdl.InParams, i18nLocale); err != nil {
 			return err
 		}
 	}
@@ -283,7 +286,7 @@ func (i *ComponentAction) HandlerSearchValue(meta map[string]interface{}) error 
 	return nil
 }
 
-func (i *ComponentAction) HandlerDefaultValue(meta map[string]interface{}, inParams map[string]interface{}) error {
+func (i *ComponentAction) HandlerDefaultValue(meta map[string]interface{}, inParams map[string]interface{}, i18nLocale *i18n.LocaleResource) error {
 	resp, err := i.CtxBdl.Bdl.GetTestPlanV2Step(i.State.TestPlanStepId)
 	if err != nil {
 		return err
@@ -331,8 +334,8 @@ func (i *ComponentAction) HandlerDefaultValue(meta map[string]interface{}, inPar
 	}
 	i.Type = "TreeSelect"
 	i.Props = props{
-		Placeholder: "请选择",
-		Title:       "请选择场景集",
+		Placeholder: i18nLocale.Get(i18nkey.I18nKeyChoose),
+		Title:       i18nLocale.Get(i18nkey.I18nKeySelectSceneSet),
 	}
 	i.State.Visible = true
 	return nil

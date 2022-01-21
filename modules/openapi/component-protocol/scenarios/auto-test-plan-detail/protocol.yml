@@ -129,7 +129,7 @@ components:
     props:
       placement: "bottomRight"
       size: "l"
-      title: "执行历史"
+      title: ${{ i18n.autotest.plan.execute.history }}
       trigger: "click"
   executeHistoryButton:
     type: Button
