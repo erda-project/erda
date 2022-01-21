@@ -24,7 +24,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/msp/instance/db/monitor"
 )
 
 type projectStats struct {
@@ -88,24 +87,43 @@ func (s *projectService) getProjectsStatistics(projectIds ...string) (map[string
 	oneDayAgoMillSeconds := endMillSeconds - int64(24*time.Hour/time.Millisecond)
 	//sevenDayAgoMillSeconds := endMillSeconds - int64(7*24*time.Hour/time.Millisecond)
 
-	terminusKeyMap := map[string][]string{}
-	var terminusIds []interface{}
+	terminusKeyMap := map[string]map[string]string{}
+	setTkMapKey := func(projectId, workspace, tk string) {
+		ws, ok := terminusKeyMap[projectId]
+		if !ok {
+			ws = map[string]string{}
+			terminusKeyMap[projectId] = ws
+		}
+		ws[workspace] = tk
+	}
 	for _, projectId := range projectIds {
+		// get tk from tenant table
+		tenants, err := s.MSPTenantDB.QueryTenantByProjectID(projectId)
+		if err != nil {
+			s.p.Log.Warnf("fail to get sp_tenant info, projectId: %s", projectId)
+			continue
+		}
+		for _, tenant := range tenants {
+			setTkMapKey(projectId, tenant.RelatedWorkspace, tenant.Id)
+		}
+
 		intPId, _ := strconv.ParseInt(projectId, 10, 64)
 		monitors, err := s.MonitorDB.GetMonitorByProjectId(intPId)
-		var tks []string
 		if err != nil {
 			s.p.Log.Warnf("fail to get sp_monitor info, projectId: %s", projectId)
 			continue
 		}
-		linq.From(monitors).
-			Select(func(i interface{}) interface{} { return i.(*monitor.Monitor).TerminusKey }).
-			ToSlice(&tks)
-		terminusKeyMap[projectId] = tks
-		for _, tk := range tks {
-			terminusIds = append(terminusIds, tk)
+		for _, m := range monitors {
+			setTkMapKey(projectId, m.Workspace, m.TerminusKey)
 		}
 	}
+
+	var terminusIds []interface{}
+	linq.From(terminusKeyMap).SelectManyBy(func(i interface{}) linq.Query {
+		return linq.From(i.(linq.KeyValue).Value)
+	}, func(inner interface{}, outer interface{}) interface{} {
+		return inner.(linq.KeyValue).Value
+	}).ToSlice(&terminusIds)
 
 	terminusKeyList, _ := structpb.NewList(terminusIds)
 	statisticMap := projectStatisticMap{}
