@@ -16,11 +16,17 @@ package issue
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
+	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/tealeg/xlsx/v3"
+
+	"github.com/erda-project/erda/modules/dop/conf"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -32,6 +38,92 @@ import (
 type issueStage struct {
 	Type  apistructs.IssueType
 	Value string
+}
+
+func (svc *Issue) Export(req *apistructs.IssueExportExcelRequest) (uint64, error) {
+	req.PageNo = 1
+	req.PageSize = 99999
+	fileReq := apistructs.TestFileRecordRequest{
+		ProjectID:    req.ProjectID,
+		OrgID:        uint64(req.OrgID),
+		Type:         apistructs.FileIssueActionTypeExport,
+		State:        apistructs.FileRecordStatePending,
+		IdentityInfo: req.IdentityInfo,
+		Extra: apistructs.TestFileExtra{
+			IssueFileExtraInfo: &apistructs.IssueFileExtraInfo{
+				ExportRequest: req,
+			},
+		},
+	}
+	id, err := svc.CreateFileRecord(fileReq)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func (svc *Issue) ExportExcelAsync(record *dao.TestFileRecord) {
+	extra := record.Extra.IssueFileExtraInfo
+	if extra == nil || extra.ExportRequest == nil {
+		return
+	}
+	req := extra.ExportRequest
+	id := record.ID
+	if err := svc.updateIssueFileRecord(id, apistructs.FileRecordStateProcessing); err != nil {
+		return
+	}
+	issues, _, err := svc.Paging(req.IssuePagingRequest)
+	if err != nil {
+		logrus.Errorf("%s failed to page issues, err: %v", issueService, err)
+		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
+	}
+	pro, err := svc.issueProperty.GetBatchProperties(req.OrgID, req.Type)
+	if err != nil {
+		logrus.Errorf("%s failed to batch get properties, err: %v", issueService, err)
+		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
+	}
+
+	reader, tableName, err := svc.ExportExcel(issues, pro, req.ProjectID, req.IsDownload, req.OrgID, req.Locale)
+	if err != nil {
+		logrus.Errorf("%s failed to export excel, err: %v", issueService, err)
+		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
+	}
+	f, err := ioutil.TempFile("", "export.*")
+	if err != nil {
+		logrus.Errorf("%s failed to create temp file, err: %v", issueService, err)
+		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
+	}
+	defer f.Close()
+	defer func() {
+		if err := os.Remove(f.Name()); err != nil {
+			logrus.Errorf("%s failed to remove temp file, err: %v", issueService, err)
+		}
+	}()
+	if _, err := io.Copy(f, reader); err != nil {
+		logrus.Errorf("%s failed to copy export file, err: %v", issueService, err)
+		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
+	}
+	f.Seek(0, 0)
+	expiredAt := time.Now().Add(time.Duration(conf.ExportIssueFileStoreDay()) * 24 * time.Hour)
+	uploadReq := apistructs.FileUploadRequest{
+		FileNameWithExt: fmt.Sprintf("%s.xlsx", tableName),
+		FileReader:      f,
+		From:            issueService,
+		IsPublic:        true,
+		ExpiredAt:       &expiredAt,
+	}
+	fileUUID, err := svc.bdl.UploadFile(uploadReq)
+	if err != nil {
+		logrus.Errorf("%s failed to upload file, err: %v", issueService, err)
+		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
+		return
+	}
+	svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess, ApiFileUUID: fileUUID.UUID})
 }
 
 func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool, orgID int64, locale string) (io.Reader, string, error) {

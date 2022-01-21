@@ -19,22 +19,32 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
+	"github.com/erda-project/erda/pkg/limit_sync_group"
 )
 
 func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 	conditions := make([]interface{}, 0)
 	conditions = append(conditions, p.StatusCondition())
-	appCondition, err := p.AppCondition()
-	if err != nil {
-		return nil, err
-	}
-	conditions = append(conditions, appCondition)
 
-	executorCondition, err := p.MemberCondition("executor")
-	if err != nil {
+	var (
+		appCondition, executorCondition *model.SelectCondition
+		err                             error
+	)
+	worker := limit_sync_group.NewWorker(2)
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		appCondition, err = p.AppCondition()
+		return err
+	})
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		executorCondition, err = p.MemberCondition()
+		return err
+	})
+	if err := worker.Do().Error(); err != nil {
 		return nil, err
 	}
-	executorCondition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-executor")
+
+	conditions = append(conditions, appCondition)
 	conditions = append(conditions, executorCondition)
 
 	conditions = append(conditions, model.NewDateRangeCondition("startedAtStartEnd", cputil.I18n(p.sdk.Ctx, "started-at")))
@@ -42,7 +52,7 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 }
 
 func (p *CustomFilter) StatusCondition() *model.SelectCondition {
-	statuses := apistructs.PipelineAllStatuses
+	statuses := util.PipelineDefinitionStatus
 	var opts []model.SelectOption
 	for _, status := range statuses {
 		opts = append(opts, *model.NewSelectOption(cputil.I18n(p.sdk.Ctx, common.ColumnPipelineStatus+status.String()), status.String()))
@@ -52,7 +62,7 @@ func (p *CustomFilter) StatusCondition() *model.SelectCondition {
 	return condition
 }
 
-func (p *CustomFilter) MemberCondition(key string) (*model.SelectCondition, error) {
+func (p *CustomFilter) MemberCondition() (*model.SelectCondition, error) {
 	members, err := p.bdl.ListMembers(apistructs.MemberListRequest{
 		ScopeType: apistructs.ProjectScope,
 		ScopeID:   int64(p.InParams.ProjectIDInt),
@@ -63,25 +73,20 @@ func (p *CustomFilter) MemberCondition(key string) (*model.SelectCondition, erro
 		return nil, err
 	}
 
-	condition := model.NewSelectCondition(key, cputil.I18n(p.sdk.Ctx, key), func() []model.SelectOption {
+	executorCondition := model.NewSelectCondition("executor", cputil.I18n(p.sdk.Ctx, "executor"), func() []model.SelectOption {
 		selectOptions := make([]model.SelectOption, 0, len(members)+1)
 		for _, v := range members {
-			selectOptions = append(selectOptions, *model.NewSelectOption(func() string {
-				if v.Nick != "" {
-					return v.Nick
-				}
-				if v.Name != "" {
-					return v.Name
-				}
-				return v.Mobile
-			}(),
+			selectOptions = append(selectOptions, *model.NewSelectOption(
+				v.GetUserName(),
 				v.UserID,
 			))
 		}
 		selectOptions = append(selectOptions, *model.NewSelectOption(cputil.I18n(p.sdk.Ctx, "choose-yourself"), p.sdk.Identity.UserID).WithFix(true))
 		return selectOptions
 	}())
-	return condition, nil
+	executorCondition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-executor")
+
+	return executorCondition, nil
 }
 
 func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {

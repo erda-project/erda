@@ -28,3 +28,12 @@ components:
     type: ContractiveFilter
   customFilter:
     type: ConfigurableFilter
+
+rendering:
+  __DefaultRendering__:
+    - name: myPage
+    - name: tabsTable
+    - name: filterContainer
+    - name: inputFilter
+    - name: customFilter
+    - name: pipelineTable

@@ -302,6 +302,9 @@ zh:
   latestStartTime: 最近一次开始时间
   createTime: 创建时间
   pipelineID: 流水线ID
+  execute: 执行
+  source: 源
+  process: 进度
 en:
   issue-manage: issue manage
   issue: issue
@@ -602,3 +605,6 @@ en:
   latestStartTime: Latest start time
   createTime: Create Time
   pipelineID: PipelineID
+  execute: Execute
+  source: Source
+  process: Process

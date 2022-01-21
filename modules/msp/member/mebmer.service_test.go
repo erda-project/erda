@@ -24,6 +24,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/golang/mock/gomock"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/msp/member/pb"
 	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -154,6 +155,14 @@ func Test_memberService_ListMemberRoles(t *testing.T) {
 	monkey.Patch(apis.GetOrgID, func(_ context.Context) string {
 		return "1"
 	})
+	monkey.Patch(apis.Language, func(_ context.Context) i18n.LanguageCodes {
+		return i18n.LanguageCodes{
+			{
+				Code:    "zh",
+				Quality: 0,
+			},
+		}
+	})
 	monkey.Patch((*db.MSPTenantDB).QueryTenant, func(_ *db.MSPTenantDB, _ string) (*db.MSPTenant, error) {
 		return nil, nil
 	})
@@ -171,7 +180,7 @@ func Test_memberService_ListMemberRoles(t *testing.T) {
 			IsDeleted:   "",
 		}, nil
 	})
-	monkey.Patch((*bundle.Bundle).ListMemberRoles, func(_ *bundle.Bundle, _ apistructs.ListScopeManagersByScopeIDRequest, _ int64) (*apistructs.RoleList, error) {
+	monkey.Patch((*bundle.Bundle).ListMemberRoles, func(_ *bundle.Bundle, _ apistructs.ListScopeManagersByScopeIDRequest, _ int64, _ string) (*apistructs.RoleList, error) {
 		return &apistructs.RoleList{
 			List: []apistructs.RoleInfo{
 				{

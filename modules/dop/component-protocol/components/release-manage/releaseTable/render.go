@@ -102,12 +102,12 @@ func (r *ComponentReleaseTable) InitComponent(ctx context.Context) {
 	r.bdl = bdl
 }
 
-func (r *ComponentReleaseTable) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(c.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
@@ -119,38 +119,38 @@ func (r *ComponentReleaseTable) GenComponentState(c *cptype.Component) error {
 }
 
 func (r *ComponentReleaseTable) DecodeURLQuery() error {
-	query, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
+	queryData, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(query)
+	decode, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
-	urlQuery := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &urlQuery); err != nil {
+	query := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &query); err != nil {
 		return err
 	}
-	r.State.PageNo = int64(urlQuery["pageNo"].(float64))
-	r.State.PageSize = int64(urlQuery["pageSize"].(float64))
-	sorterData := urlQuery["sorterData"].(map[string]interface{})
-	r.State.Sorter.Field, _ = sorterData["field"].(string)
-	r.State.Sorter.Order, _ = sorterData["order"].(string)
+	r.State.PageNo = int64(query["pageNo"].(float64))
+	r.State.PageSize = int64(query["pageSize"].(float64))
+	sorter := query["sorterData"].(map[string]interface{})
+	r.State.Sorter.Field, _ = sorter["field"].(string)
+	r.State.Sorter.Order, _ = sorter["order"].(string)
 	return nil
 }
 
 func (r *ComponentReleaseTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = r.State.PageNo
-	urlQuery["pageSize"] = r.State.PageSize
-	urlQuery["sorterData"] = r.State.Sorter
-	jsonData, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = r.State.PageNo
+	query["pageSize"] = r.State.PageSize
+	query["sorterData"] = r.State.Sorter
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(jsonData)
-	r.State.ReleaseTableURLQuery = encoded
+	encode := base64.StdEncoding.EncodeToString(data)
+	r.State.ReleaseTableURLQuery = encode
 	return nil
 }
 
@@ -174,11 +174,6 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		endTime = r.State.FilterValues.CreatedAtStartEnd[1]
 	}
 
-	var appIDs []string
-	if r.State.ApplicationID > 0 {
-		appIDs = append(appIDs, strconv.FormatInt(r.State.ApplicationID, 10))
-	}
-
 	isStable := true
 
 	order := "DESC"
@@ -200,7 +195,7 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		Version:          r.State.VersionValues.Version,
 		ReleaseID:        r.State.FilterValues.ReleaseID,
 		CommitID:         r.State.FilterValues.CommitID,
-		ApplicationID:    appIDs,
+		ApplicationID:    r.State.FilterValues.ApplicationIDs,
 		ProjectID:        projectID,
 		StartTime:        startTime,
 		EndTime:          endTime,

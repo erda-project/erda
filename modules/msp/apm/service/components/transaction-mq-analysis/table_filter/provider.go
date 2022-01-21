@@ -116,7 +116,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 				Fixed:       true,
 				Key:         "title",
 				Label:       "title",
-				Placeholder: "按事务名称搜索",
+				Placeholder: f.sdk.I18n("SearchByTransactionName"),
 				Type:        filter.PropConditionTypeInput,
 			},
 		}
