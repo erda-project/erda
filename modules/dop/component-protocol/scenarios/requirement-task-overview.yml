@@ -71,7 +71,7 @@ components:
   chartBlock:
     type: ChartBlock
     data:
-      title: 燃尽图
+      title: ${{ i18n.burnDown }}
   burnoutChart:
     type: Chart
     props:
@@ -271,7 +271,7 @@ components:
   stackChartBlock:
     type: ChartBlock
     data:
-      title: 累积流图
+      title: ${{ i18n.cumulativeFlow }}
   stackChartFilter:
     type: ContractiveFilter
     props:
