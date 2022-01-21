@@ -1,7 +1,1 @@
 report-engine:
-  report_id: 21
-  #monitor_addr: monitor.project-387-dev.svc.cluster.local:7096
-  monitor_addr: localhost:7096
-  eventbox_addr: eventbox.project-387-dev.svc.cluster.local:9528
-  domain_addr: dice.test.terminus.io
-  org_name: erda
