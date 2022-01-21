@@ -228,13 +228,15 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 					return commodel.DefaultStatus
 				}(),
 			}).Build(),
-			ColumnCostTimeOrder: table.NewTextCell(func() string {
-				if pipeline.CostTimeSec <= 0 {
-					return "-"
-				} else {
-					return fmt.Sprintf("%vs", pipeline.CostTimeSec)
-				}
-			}()).Build(),
+			ColumnCostTimeOrder: table.NewDurationCell(commodel.Duration{
+				Value: func() int64 {
+					if !pipeline.Status.IsRunningStatus() &&
+						!pipeline.Status.IsEndStatus() {
+						return -1
+					}
+					return pipeline.CostTimeSec
+				}(),
+			}).Build(),
 			ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote)).Build(),
 			ColumnBranch:          table.NewTextCell(pipeline.DefinitionPageInfo.SourceRef).Build(),
 			ColumnExecutor:        table.NewUserCell(commodel.User{ID: pipeline.GetUserID()}).Build(),
