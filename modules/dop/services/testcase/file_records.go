@@ -51,7 +51,6 @@ func convertTestFileExtra(fileExtra apistructs.TestFileExtra) dao.TestFileExtra 
 		AutotestSpaceFileExtraInfo:    fileExtra.AutotestSpaceFileExtraInfo,
 		AutotestSceneSetFileExtraInfo: fileExtra.AutotestSceneSetFileExtraInfo,
 		ProjectTemplateFileExtraInfo:  fileExtra.ProjectTemplateFileExtraInfo,
-		IssueFileExtraInfo:            fileExtra.IssueFileExtraInfo,
 	}
 }
 
