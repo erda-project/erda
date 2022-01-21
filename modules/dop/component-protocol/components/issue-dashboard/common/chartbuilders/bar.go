@@ -15,12 +15,14 @@
 package chartbuilders
 
 import (
+	"context"
 	"sort"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 
 	"github.com/erda-project/erda-infra/pkg/strutil"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/stackhandlers"
 )
@@ -68,8 +70,8 @@ type Result struct {
 	PostProcessor func(*Result) error
 }
 
-func (f *BarBuilder) Generate() error {
-	series, colors, realY, sum := f.groupToBarData()
+func (f *BarBuilder) Generate(ctx context.Context) error {
+	series, colors, realY, sum := f.groupToBarData(ctx)
 
 	bar := charts.NewBar()
 	bar.Colors = colors
@@ -97,7 +99,7 @@ func (f *BarBuilder) Generate() error {
 	return f.PostProcessor(&f.Result)
 }
 
-func (f *BarBuilder) groupToBarData() (charts.MultiSeries, []string, []string, []int) {
+func (f *BarBuilder) groupToBarData(ctx context.Context) (charts.MultiSeries, []string, []string, []int) {
 	counter := make(map[string]map[string]int)
 	counterSingle := make(map[string]int)
 
@@ -179,7 +181,7 @@ func (f *BarBuilder) groupToBarData() (charts.MultiSeries, []string, []string, [
 		msNew := make(charts.MultiSeries, len(ms)+1)
 		colorsNew := make([]string, len(colors)+1)
 
-		msNew[0] = f.SeriesConverter("全部", totalRes)
+		msNew[0] = f.SeriesConverter(cputil.I18n(ctx, "all"), totalRes)
 		colorsNew[0] = "gray"
 		for i := range ms {
 			msNew[i+1] = ms[i]

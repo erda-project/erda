@@ -215,7 +215,7 @@ func (a *ComponentAction) handleSceneSetDefault() error {
 
 	a.Props.Menus = []Menu{
 		{
-			Text: "无",
+			Text: a.sdk.I18n("empty"),
 			Key:  "无",
 			Operations: map[string]interface{}{
 				apistructs.ClickOperation.String(): ClickOperation{
@@ -288,7 +288,7 @@ func (a *ComponentAction) handleSceneDefault() error {
 
 	a.Props.Menus = []Menu{
 		{
-			Text: "无",
+			Text: a.sdk.I18n("empty"),
 			Key:  "无",
 			Operations: map[string]interface{}{
 				apistructs.ClickOperation.String(): ClickOperation{

@@ -242,6 +242,73 @@ zh:
   details: 详情
   value: 值
   endTime: 结束时间
+
+
+  minePipeline: 我创建的
+  primaryPipeline: 重要的
+  allPipeline: 全部
+  createPipeline: 新建
+  searchByPipelineName: 搜索流水线名称
+  application: 应用
+  started-at: 开始日期
+  please-choose-status: 请选择状态
+  please-choose-executor: 请选择执行人
+  please-choose-creator: 请选择创建人
+  please-choose-application: 请选择应用
+  pipeline: 流水线
+  pipelineStatus: 状态
+  costTime: 耗时
+  applicationName: 应用
+  branch: 分支
+  executor: 执行者
+  startTime: 开始时间
+
+  pipelineStatusAnalyzed: 初始化成功
+  pipelineStatusBorn: 预处理成功
+  pipelineStatusCreated: 创建成功
+  pipelineStatusMark: 标记中
+  pipelineStatusQueue: 排队中
+  pipelineStatusRunning: 执行中
+  pipelineStatusSuccess: 成功
+  pipelineStatusFailed: 失败
+  pipelineStatusAnalyzeFailed: 初始化失败
+  pipelineStatusPaused: 暂停
+  pipelineStatusCreateError: 创建失败
+  pipelineStatusStartError: 启动失败
+  pipelineStatusTimeout: 超时
+  pipelineStatusStopByUser: 取消
+  pipelineStatusNoNeedBySystem: 无需执行
+  pipelineStatusCancelByRemote: 系统取消
+  pipelineStatusInitializing: 正在初始化
+  pipelineStatusError: 系统错误
+  pipelineStatusUnknown: 未知异常
+  pipelineStatusDBError: 数据库异常
+  pipelineStatusLostConn: 丢失数据库连接
+  pipelineStatusDisabled: 禁用
+  pipelineStatusWaitApprove: 等待审核
+  pipelineStatusAccept: 人工审核通过
+  pipelineStatusReject: 人工审核拒绝
+  setPrimary: 设为重要
+  unsetPrimary: 取消重要
+  run: 执行
+  cancelRun: 取消执行
+  rerunFromFail: 从失败处执行
+  rerun: 重试全流程
+  cron: 开始定时
+  cancelCron: 取消定时
+  delete: 删除
+  moreOperations: 操作
+  pipelineLatestStatus: 最近一次执行状态
+  latestCostTime: 最近一次执行耗时
+  latestExecutor: 最近一次执行人
+  latestStartTime: 最近一次开始时间
+  createTime: 创建时间
+  pipelineID: 流水线ID
+  execute: 执行
+  source: 源
+  process: 进度
+  openAll: 全部打开
+  second: 秒
 en:
   issue-manage: issue manage
   issue: issue
@@ -483,3 +550,67 @@ en:
   details: Details
   value: Value
   endTime: End time
+
+  minePipeline: Mine
+  primaryPipeline: Primary
+  allPipeline: All
+  createPipeline: Create pipeline
+  searchByPipelineName: Search by pipeline name
+  executor: Executor
+  application: Application
+  started-at: Started at
+  please-choose-status: Please choose status
+  please-choose-executor: Please choose executor
+  please-choose-creator: Please choose creator
+  please-choose-application: Please choose application
+  pipeline: Pipeline
+  pipelineStatus: Status
+  costTime: Cost time
+  applicationName: Application name
+  branch: Branch
+  startTime: Begin time
+
+  pipelineStatusAnalyzed: Analyzed
+  pipelineStatusBorn: Born
+  pipelineStatusCreated: Created
+  pipelineStatusMark: Mark
+  pipelineStatusQueue: Queue
+  pipelineStatusRunning: Running
+  pipelineStatusSuccess: Success
+  pipelineStatusFailed: Failed
+  pipelineStatusAnalyzeFailed: AnalyzeFailed
+  pipelineStatusPaused: Paused
+  pipelineStatusCreateError: CreateError
+  pipelineStatusStartError: StartError
+  pipelineStatusTimeout: Timeout
+  pipelineStatusStopByUser: StopByUser
+  pipelineStatusNoNeedBySystem: NoNeedBySystem
+  pipelineStatusCancelByRemote: CancelByRemote
+  pipelineStatusInitializing: Initializing
+  pipelineStatusError: Error
+  pipelineStatusUnknown: Unknown
+  pipelineStatusDBError: DBError
+  pipelineStatusLostConn: LostConn
+  pipelineStatusDisabled: Disabled
+  pipelineStatusWaitApproval: WaitApproval
+  pipelineStatusApprovalSuccess: ApprovalSuccess
+  pipelineStatusApprovalFail: ApprovalFail
+  setPrimary: Set primary
+  unsetPrimary: Cancel primary
+  run: Run
+  cancelRun: Rancel run
+  rerunFromFail: Rerun from fail
+  rerun: Rerun
+  cron: Start cron
+  cancelCron: Cancel cron
+  pipelineLatestStatus: Latest execute status
+  latestCostTime: Latest execute cost time
+  latestExecutor: Latest executor
+  latestStartTime: Latest start time
+  createTime: Create Time
+  pipelineID: PipelineID
+  execute: Execute
+  source: Source
+  process: Process
+  openAll: Open all
+  second: Second

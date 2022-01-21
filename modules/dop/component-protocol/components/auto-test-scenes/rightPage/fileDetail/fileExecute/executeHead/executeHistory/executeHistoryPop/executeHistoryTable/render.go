@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -36,6 +37,7 @@ type ExecuteHistoryTable struct {
 	base.DefaultProvider
 	bdl      *bundle.Bundle
 	gsHelper *gshelper.GSHelper
+	sdk      *cptype.SDK
 
 	Type       string                 `json:"type"`
 	State      State                  `json:"state"`
@@ -113,6 +115,7 @@ func (a *ExecuteHistoryTable) Import(c *cptype.Component) error {
 
 func (a *ExecuteHistoryTable) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) (err error) {
 	gh := gshelper.NewGSHelper(gs)
+	a.sdk = cputil.SDK(ctx)
 	// import component data
 	if err := a.Import(c); err != nil {
 		logrus.Errorf("import component failed, err:%v", err)
@@ -196,7 +199,7 @@ func getProps(ctx context.Context) map[string]interface{} {
 		"hideHeader": true,
 		"columns": []columns{
 			{
-				Title:     "版本",
+				Title:     cputil.I18n(ctx, "version"),
 				DataIndex: "version",
 				Width:     60,
 			},
@@ -209,19 +212,19 @@ func getProps(ctx context.Context) map[string]interface{} {
 				DataIndex: "status",
 			},
 			{
-				Title:     "执行人",
+				Title:     cputil.I18n(ctx, "executor"),
 				DataIndex: "runUser",
 			},
 			{
-				Title:     "触发时间",
+				Title:     cputil.I18n(ctx, "triggerTime"),
 				DataIndex: "triggerTime",
 			},
 		},
 	}
 }
 
-func getStatus(req apistructs.PipelineStatus) map[string]interface{} {
-	res := map[string]interface{}{"renderType": "textWithBadge", "value": req.ToDesc()}
+func (e *ExecuteHistoryTable) getStatus(req apistructs.PipelineStatus) map[string]interface{} {
+	res := map[string]interface{}{"renderType": "textWithBadge", "value": e.sdk.I18n(util.ColumnPipelineStatus + req.String())}
 	if req.IsFailedStatus() {
 		res["status"] = "error"
 	} else if req.IsSuccessStatus() {
@@ -251,7 +254,7 @@ func (e *ExecuteHistoryTable) setData(pipeline *apistructs.PipelinePageListData,
 			//"id":          each.ID,
 			"version":     "#" + strconv.FormatInt(num, 10),
 			"pipelineId":  each.ID,
-			"status":      getStatus(each.Status),
+			"status":      e.getStatus(each.Status),
 			"runUser":     runUser,
 			"triggerTime": each.TimeCreated.Format(timeLayoutStr),
 		}

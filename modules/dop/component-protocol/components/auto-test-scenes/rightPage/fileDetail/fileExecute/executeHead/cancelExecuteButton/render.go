@@ -62,7 +62,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 
 		c.State["reloadScenesInfo"] = true
 		c.Props = map[string]interface{}{
-			"text":    "取消执行",
+			"text":    ca.sdk.I18n("cancelRun"),
 			"visible": false,
 		}
 	case cptype.InitializeOperation, cptype.RenderingOperation:
@@ -85,7 +85,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 			visible = false
 		}
 		c.Props = map[string]interface{}{
-			"text":    "取消执行",
+			"text":    ca.sdk.I18n("cancelRun"),
 			"visible": visible,
 		}
 		c.Operations = map[string]interface{}{

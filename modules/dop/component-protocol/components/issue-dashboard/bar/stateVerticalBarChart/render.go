@@ -143,7 +143,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		},
 	}
 
-	if err := builder.Generate(); err != nil {
+	if err := builder.Generate(ctx); err != nil {
 		return err
 	}
 

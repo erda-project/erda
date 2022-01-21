@@ -99,7 +99,7 @@ func (a *ComponentFileFormModal) initFields() {
 				Rules: []Rule{
 					{
 						Pattern: `/^[a-z\u4e00-\u9fa5A-Z0-9_-]*$/`,
-						Msg:     "可输入中文、英文、数字、中划线或下划线",
+						Msg:     a.sdk.I18n("sceneSetRuleMessage"),
 					},
 				},
 				ComponentProps: ComponentProps{
@@ -131,7 +131,7 @@ func (a *ComponentFileFormModal) initSceneSetFields(inParams fileTree.InParams) 
 				Rules: []Rule{
 					{
 						Pattern: `/^[a-z\u4e00-\u9fa5A-Z0-9_-]*$/`,
-						Msg:     "可输入中文、英文、数字、中划线或下划线",
+						Msg:     a.sdk.I18n("sceneSetRuleMessage"),
 					},
 				},
 				ComponentProps: ComponentProps{
@@ -140,27 +140,27 @@ func (a *ComponentFileFormModal) initSceneSetFields(inParams fileTree.InParams) 
 			},
 			{
 				Key:       "scenesSet",
-				Label:     "选择场景集",
+				Label:     a.sdk.I18n("selectSceneSet"),
 				Component: "select",
 				Required:  true,
 				ComponentProps: ComponentProps{
-					Placeholder: "请选择场景集",
+					Placeholder: a.sdk.I18n("selectSceneSetPlace"),
 				},
 			},
 			{
 				Key:       "policy",
-				Label:     "引用策略",
+				Label:     a.sdk.I18n("referPolicy"),
 				Component: "select",
 				Required:  true,
 				ComponentProps: ComponentProps{
-					Placeholder: "请选择引用策略",
+					Placeholder: a.sdk.I18n("referPolicyPlace"),
 					Options: []interface{}{
 						PolicyOption{
-							apistructs.NewRunPolicyType.GetZhName(),
+							a.sdk.I18n("new-run"),
 							apistructs.NewRunPolicyType,
 						},
 						PolicyOption{
-							apistructs.TryLatestSuccessResultPolicyType.GetZhName(),
+							a.sdk.I18n("try-latest-success-result"),
 							apistructs.TryLatestSuccessResultPolicyType,
 						},
 					},
@@ -207,11 +207,11 @@ func (a *ComponentFileFormModal) initSceneCopyToFields(inParams fileTree.InParam
 		Fields: []Entry{
 			{
 				Key:       "scenesSet",
-				Label:     "选择场景集",
+				Label:     a.sdk.I18n("selectSceneSet"),
 				Component: "select",
 				Required:  true,
 				ComponentProps: ComponentProps{
-					Placeholder: "请选择场景集",
+					Placeholder: a.sdk.I18n("selectSceneSetPlace"),
 				},
 			},
 		},
@@ -391,11 +391,11 @@ func (a *ComponentFileFormModal) GetScene(inParams fileTree.InParams) error {
 			},
 			{
 				Key:       "policy",
-				Label:     "引用策略",
+				Label:     a.sdk.I18n("referPolicy"),
 				Component: "select",
 				Required:  true,
 				ComponentProps: ComponentProps{
-					Placeholder: "请选择引用策略",
+					Placeholder: a.sdk.I18n("referPolicyPlace"),
 					Options: []interface{}{
 						PolicyOption{
 							apistructs.NewRunPolicyType.GetZhName(),
