@@ -24,6 +24,8 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	i18nkey "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/i18n"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 type ExecuteHistoryTable struct {
@@ -119,6 +121,7 @@ func (a *ExecuteHistoryTable) Render(ctx context.Context, c *apistructs.Componen
 	}
 
 	a.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	i18nLocale := a.CtxBdl.Bdl.GetLocale(a.CtxBdl.Locale)
 
 	if a.CtxBdl.InParams == nil {
 		return fmt.Errorf("params is empty")
@@ -135,13 +138,13 @@ func (a *ExecuteHistoryTable) Render(ctx context.Context, c *apistructs.Componen
 	}
 
 	defer func() {
-		fail := a.marshal(c)
+		fail := a.marshal(c, i18nLocale)
 		if err == nil && fail != nil {
 			err = fail
 		}
 		// export rendered component data
 		c.Operations = getOperations()
-		c.Props = getProps()
+		c.Props = getProps(i18nLocale)
 	}()
 
 	// listen on operation
@@ -159,7 +162,7 @@ func (a *ExecuteHistoryTable) Render(ctx context.Context, c *apistructs.Componen
 	return nil
 }
 
-func (a *ExecuteHistoryTable) marshal(c *apistructs.Component) error {
+func (a *ExecuteHistoryTable) marshal(c *apistructs.Component, i18nLocale *i18n.LocaleResource) error {
 	stateValue, err := json.Marshal(a.State)
 	if err != nil {
 		return err
@@ -180,7 +183,7 @@ func (a *ExecuteHistoryTable) marshal(c *apistructs.Component) error {
 		return err
 	}
 
-	c.Props = getProps()
+	c.Props = getProps(i18nLocale)
 	c.State = state
 	c.Type = a.Type
 	return nil
@@ -201,12 +204,12 @@ func getOperations() map[string]interface{} {
 	}
 }
 
-func getProps() map[string]interface{} {
+func getProps(i18nLocale *i18n.LocaleResource) map[string]interface{} {
 	return map[string]interface{}{
 		"rowKey": "id",
 		"columns": []columns{
 			{
-				Title:     "版本",
+				Title:     i18nLocale.Get(i18nkey.I18nKeyVersion),
 				DataIndex: "version",
 				Width:     60,
 			},
@@ -215,23 +218,23 @@ func getProps() map[string]interface{} {
 				DataIndex: "pipelineId",
 			},
 			{
-				Title:     "状态",
+				Title:     i18nLocale.Get(i18nkey.I18nKeyStatus),
 				DataIndex: "status",
 			},
 			{
-				Title:     "执行人",
+				Title:     i18nLocale.Get(i18nkey.I18nKeyExecutor),
 				DataIndex: "runUser",
 			},
 			{
-				Title:     "触发时间",
+				Title:     i18nLocale.Get(i18nkey.I18nKeyTriggerTime),
 				DataIndex: "triggerTime",
 			},
 		},
 	}
 }
 
-func getStatus(req apistructs.PipelineStatus) map[string]interface{} {
-	res := map[string]interface{}{"renderType": "textWithBadge", "value": req.ToDesc()}
+func getStatus(req apistructs.PipelineStatus, i18nLocale *i18n.LocaleResource) map[string]interface{} {
+	res := map[string]interface{}{"renderType": "textWithBadge", "value": i18nkey.TransferTaskStatus(req, i18nLocale)}
 	if req.IsFailedStatus() {
 		res["status"] = "error"
 	} else if req.IsSuccessStatus() {
@@ -244,7 +247,7 @@ func getStatus(req apistructs.PipelineStatus) map[string]interface{} {
 	return res
 }
 
-func (e *ExecuteHistoryTable) setData(pipeline *apistructs.PipelinePageListData, num int64, event apistructs.OperationKey) error {
+func (e *ExecuteHistoryTable) setData(pipeline *apistructs.PipelinePageListData, num int64, event apistructs.OperationKey, i18nLocale *i18n.LocaleResource) error {
 	lists := []map[string]interface{}{}
 	if len(pipeline.Pipelines) > 0 && event != apistructs.ExecuteChangePageNoOperationKey {
 		e.State.PipelineID = pipeline.Pipelines[0].ID
@@ -260,7 +263,7 @@ func (e *ExecuteHistoryTable) setData(pipeline *apistructs.PipelinePageListData,
 		list := map[string]interface{}{
 			"version":     "#" + strconv.FormatInt(num, 10),
 			"pipelineId":  each.ID,
-			"status":      getStatus(each.Status),
+			"status":      getStatus(each.Status, i18nLocale),
 			"runUser":     runUser,
 			"triggerTime": each.TimeCreated.Format(timeLayoutStr),
 		}
@@ -287,7 +290,8 @@ func (e *ExecuteHistoryTable) handlerListOperation(bdl protocol.ContextBundle, c
 		return err
 	}
 	e.State.Total = list.Total
-	err = e.setData(list, list.Total-(e.State.PageNo-1)*e.State.PageSize, event.Operation)
+	i18nLocale := bdl.Bdl.GetLocale(bdl.Locale)
+	err = e.setData(list, list.Total-(e.State.PageNo-1)*e.State.PageSize, event.Operation, i18nLocale)
 	if err != nil {
 		return err
 	}

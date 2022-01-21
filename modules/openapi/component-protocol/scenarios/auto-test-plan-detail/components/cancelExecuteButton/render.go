@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/i18n"
 )
 
 type ComponentAction struct {
@@ -46,6 +47,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 
+	i18nLocale := bdl.Bdl.GetLocale(bdl.Locale)
 	switch event.Operation {
 	case "cancelExecute":
 
@@ -59,7 +61,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 
 		c.State["reloadScenesInfo"] = true
 		c.Props = map[string]interface{}{
-			"text":    "取消执行",
+			"text":    i18nLocale.Get(i18n.I18nKeyUnExecute),
 			"visible": false,
 		}
 	case apistructs.InitializeOperation, apistructs.RenderingOperation:
@@ -81,13 +83,13 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 			}
 		}
 		c.Props = map[string]interface{}{
-			"text":    "取消执行",
+			"text":    i18nLocale.Get(i18n.I18nKeyUnExecute),
 			"visible": visible,
 		}
 		c.Operations = map[string]interface{}{
 			"click": map[string]interface{}{
 				"key":     "cancelExecute",
-				"confirm": "是否确认取消?",
+				"confirm": i18nLocale.Get(i18n.I18nKeyWhetherCancel),
 				"reload":  true,
 			},
 		}

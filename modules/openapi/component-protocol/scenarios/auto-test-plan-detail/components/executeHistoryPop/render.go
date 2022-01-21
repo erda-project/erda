@@ -17,15 +17,19 @@ package executeHistoryPop
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/i18n"
 )
 
 type ComponentAction struct{}
 
 func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	return json.Unmarshal([]byte(`{"text":"执行历史"}`), &c.Props)
+	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	i18nLocale := bdl.Bdl.GetLocale(bdl.Locale)
+	return json.Unmarshal([]byte(fmt.Sprintf(`{"text":"%s"}`, i18nLocale.Get(i18n.I18nKeyHistoryExecute))), &c.Props)
 }
 
 func RenderCreator() protocol.CompRender {

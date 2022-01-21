@@ -20,6 +20,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/i18n"
 )
 
 type ComponentAction struct{}
@@ -28,6 +29,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 
 	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 
+	i18nLocale := bdl.Bdl.GetLocale(bdl.Locale)
 	switch event.Operation {
 	case apistructs.ExecuteAddApiOperationKey:
 		resp, err := bdl.Bdl.GetTestPlanV2(uint64(c.State["testPlanId"].(float64)))
@@ -57,7 +59,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, 
 	case apistructs.InitializeOperation, apistructs.RenderingOperation:
 		c.Type = "Button"
 		c.Props = map[string]interface{}{
-			"text": "+ 场景集",
+			"text": fmt.Sprintf("+ %s", i18nLocale.Get(i18n.I18nKeySceneSet)),
 		}
 		c.Operations = map[string]interface{}{
 			"click": map[string]interface{}{

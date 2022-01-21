@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/autotest"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/gshelper"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/i18n"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/types"
 )
 
@@ -98,6 +99,7 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 	}
 
 	i.CtxBdl = ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	i18nLocale := i.CtxBdl.Bdl.GetLocale(i.CtxBdl.Locale)
 
 	defer func() {
 		fail := i.marshal(c)
@@ -124,7 +126,7 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 			}
 			i.Data = map[string]interface{}{
 				"pipelineID": i.State.PipelineID,
-				"status":     rsp.Status.ToDesc(),
+				"status":     i18n.TransferTaskStatus(rsp.Status, i18nLocale),
 				"time":       h + time.Unix(int64(t.Seconds())-8*3600, 0).Format("04:05"),
 				"timeBegin":  rsp.TimeBegin.Format(timeLayoutStr),
 				"timeEnd":    rsp.TimeEnd.Format(timeLayoutStr),
@@ -133,20 +135,20 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 			var timeLayoutStr = "2006-01-02 15:04:05" //go中的时间格式化必须是这个时间
 			i.Data = map[string]interface{}{
 				"pipelineID": i.State.PipelineID,
-				"status":     rsp.Status.ToDesc(),
+				"status":     i18n.TransferTaskStatus(rsp.Status, i18nLocale),
 				"timeBegin":  rsp.TimeBegin.Format(timeLayoutStr),
 			}
 		} else {
 			i.Data = map[string]interface{}{
 				"pipelineID": i.State.PipelineID,
-				"status":     rsp.Status.ToDesc(),
+				"status":     i18n.TransferTaskStatus(rsp.Status, i18nLocale),
 			}
 		}
 		if rsp.Status == apistructs.PipelineStatusStopByUser {
-			i.Data["status"] = "用户取消"
+			i.Data["status"] = i18nLocale.Get(i18n.I18nKeyUserCancels)
 		}
 		if rsp.Status == apistructs.PipelineStatusNoNeedBySystem {
-			i.Data["status"] = "无需执行"
+			i.Data["status"] = i18nLocale.Get(i18n.I18nKeyNoNeedExecute)
 		}
 		reports, err := i.CtxBdl.Bdl.GetPipelineReportSet(i.State.PipelineID, []string{
 			string(apistructs.PipelineReportTypeAPITest),
@@ -184,40 +186,40 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 	i.Props = make(map[string]interface{})
 	i.Props["fields"] = []PropColumn{
 		{
-			Label:    "流水线ID",
+			Label:    i18nLocale.Get(i18n.I18nKeyPipelineID),
 			ValueKey: "pipelineID",
 		},
 		{
-			Label:    "状态",
+			Label:    i18nLocale.Get(i18n.I18nKeyStatus),
 			ValueKey: "status",
 		},
 		{
-			Label:    "时长",
+			Label:    i18nLocale.Get(i18n.I18nKeyDuration),
 			ValueKey: "time",
 		},
 		{
-			Label:    "开始时间",
+			Label:    i18nLocale.Get(i18n.I18nKeyStartTime),
 			ValueKey: "timeBegin",
 		},
 		{
-			Label:    "结束时间",
+			Label:    i18nLocale.Get(i18n.I18nKeyEndTime),
 			ValueKey: "timeEnd",
 		},
 		{
-			Label:    "接口总数",
+			Label:    i18nLocale.Get(i18n.I18nKeyTotalInterface),
 			ValueKey: "autoTestNum",
-			Tips:     "接口总数不包括禁用接口、引用场景集以及等待类型",
+			Tips:     i18nLocale.Get(i18n.I18nKeyTotalInterfaceTip),
 		},
 		{
-			Label:    "接口执行率",
+			Label:    i18nLocale.Get(i18n.I18nKeyTotalInterfaceExecutionRate),
 			ValueKey: "autoTestExecPercent",
 		},
 		{
-			Label:    "接口通过率",
+			Label:    i18nLocale.Get(i18n.I18nKeyTotalInterfacePassRate),
 			ValueKey: "autoTestSuccessPercent",
 		},
 		{
-			Label:      "执行环境参数",
+			Label:      i18nLocale.Get(i18n.I18nKeyTotalInterfaceExecutionParams),
 			ValueKey:   "executeEnv",
 			RenderType: "linkText",
 			Operations: map[apistructs.OperationKey]apistructs.Operation{
