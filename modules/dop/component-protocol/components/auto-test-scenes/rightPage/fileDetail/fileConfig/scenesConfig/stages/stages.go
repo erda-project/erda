@@ -35,7 +35,7 @@ func (i *ComponentStageForm) RenderStage(groupID uint64, step apistructs.AutoTes
 	title := "#" + strconv.Itoa(int(step.ID)) + " "
 	if step.Type == apistructs.StepTypeWait {
 		if step.Value == "" {
-			title = title + "空 等待"
+			title = title + i.sdk.I18n("emptyWait")
 		} else {
 			var value apistructs.AutoTestRunWait
 			if err := json.Unmarshal([]byte(step.Value), &value); err != nil {
@@ -44,17 +44,17 @@ func (i *ComponentStageForm) RenderStage(groupID uint64, step apistructs.AutoTes
 			if value.WaitTime > 0 {
 				value.WaitTimeSec = value.WaitTime
 			}
-			title = title + "等待 " + strconv.Itoa(value.WaitTimeSec) + " 秒"
+			title = title + i.sdk.I18n("wait") + " " + strconv.Itoa(value.WaitTimeSec) + " " + i.sdk.I18n("second")
 		}
 	} else if step.Type == apistructs.StepTypeAPI {
 		if step.Value == "" {
-			title = title + "空 接口"
+			title = title + i.sdk.I18n("emptyApi")
 		} else {
 			var value value
 			if err := json.Unmarshal([]byte(step.Value), &value); err != nil {
 				return StageData{}, err
 			}
-			title = title + "接口: " + step.Name + " " + value.ApiSpec.Method + ":" + value.ApiSpec.URL
+			title = title + i.sdk.I18n("API") + ": " + step.Name + " " + value.ApiSpec.Method + ":" + value.ApiSpec.URL
 		}
 	} else if step.Type == apistructs.StepTypeConfigSheet {
 		//if step.Value == "" {
@@ -65,15 +65,15 @@ func (i *ComponentStageForm) RenderStage(groupID uint64, step apistructs.AutoTes
 		//	return StageData{}, err
 		//}
 		//title = "配置单: " + value.ConfigSheetName
-		title = title + "配置单: " + step.Name
+		title = title + i.sdk.I18n("configForm") + ": " + step.Name
 		//}
 	} else if step.Type == apistructs.StepTypeScene {
-		title = title + "嵌套场景: " + step.Name
+		title = title + i.sdk.I18n("nestedScene") + ": " + step.Name
 	} else if step.Type == apistructs.StepTypeCustomScript {
 		if step.Value == "" {
-			title = title + "空 自定义脚本"
+			title = title + i.sdk.I18n("emptyCustomScript")
 		} else {
-			title = title + "自定义脚本: " + step.Name
+			title = title + i.sdk.I18n("customScript") + ": " + step.Name
 		}
 	}
 	pd := StageData{

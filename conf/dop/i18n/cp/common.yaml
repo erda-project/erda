@@ -305,6 +305,8 @@ zh:
   execute: 执行
   source: 源
   process: 进度
+  openAll: 全部打开
+  second: 秒
 en:
   issue-manage: issue manage
   issue: issue
@@ -608,3 +610,5 @@ en:
   execute: Execute
   source: Source
   process: Process
+  openAll: Open all
+  second: Second

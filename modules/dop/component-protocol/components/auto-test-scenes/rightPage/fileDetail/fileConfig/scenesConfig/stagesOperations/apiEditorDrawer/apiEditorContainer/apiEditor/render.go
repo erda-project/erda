@@ -259,7 +259,7 @@ LABEL:
 	if err != nil {
 		return err
 	}
-	c.Props = genProps(string(inputBytes), executeString)
+	c.Props = ae.genProps(string(inputBytes), executeString)
 
 	// marketProto 的changeAPISpec 事件
 	tmpSpecID, ok := c.State["changeApiSpecId"]
@@ -376,7 +376,7 @@ LABEL:
 			value: "true",
 		})
 	}
-	c.Props = genProps(string(inputBytes), executeString, opts...)
+	c.Props = ae.genProps(string(inputBytes), executeString, opts...)
 
 	apiInfo.APIInfo.Name = sceneStep.Name
 	c.State["data"] = map[string]interface{}{"apiSpec": apiInfo.APIInfo, "apiSpecId": sceneStep.APISpecID, "loop": apiInfo.Loop}
