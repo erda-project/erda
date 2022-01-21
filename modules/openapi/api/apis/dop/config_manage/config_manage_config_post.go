@@ -23,5 +23,6 @@ var CONFIG_MANAGE_CONFIG_POST = apis.ApiSpec{
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,
+	CheckToken:  true,
 	Doc:         "summary: 新增指定命名空间下的一个或多个配置",
 }
