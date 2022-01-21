@@ -39,6 +39,8 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type provider struct {
@@ -148,11 +150,13 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			return nil
 		}
 
+		userIDs := make([]string, 0)
 		tableValue.Total = uint64(result.Data.Total)
 		for _, pipeline := range result.Data.Pipelines {
 			if pipeline.DefinitionPageInfo == nil {
 				continue
 			}
+			userIDs = append(userIDs, pipeline.DefinitionPageInfo.Creator)
 			tableValue.Rows = append(tableValue.Rows, p.pipelineToRow(pipeline))
 		}
 
@@ -162,6 +166,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				table.OpTableChangePage{}.OpKey(): cputil.NewOpBuilder().WithServerDataPtr(&table.OpTableChangePageServerData{}).Build(),
 				table.OpTableChangeSort{}.OpKey(): cputil.NewOpBuilder().Build(),
 			}}
+		(*sdk.GlobalState)[protocol.GlobalInnerKeyUserIDs.String()] = strutil.DedupSlice(userIDs, true)
 		return nil
 	}
 }
