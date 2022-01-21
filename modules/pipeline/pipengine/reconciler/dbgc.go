@@ -110,7 +110,7 @@ func (r *Reconciler) doAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
 	req.IncludeSnippet = isSnippetPipeline
 	req.DescCols = []string{"id"}
 	req.EndTimeCreated = time.Now().Add(-time.Second * time.Duration(conf.AnalyzedPipelineDefaultDatabaseGCTTLSec()))
-	req.PageSize = 1000
+	req.PageSize = 100
 	req.LargePageSize = true
 	req.PageNum = 1
 	req.AllSources = true
@@ -125,7 +125,7 @@ func (r *Reconciler) doNotAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
 	req.IncludeSnippet = isSnippetPipeline
 	req.DescCols = []string{"id"}
 	req.EndTimeCreated = time.Now().Add(-time.Second * time.Duration(conf.FinishedPipelineDefaultDatabaseGCTTLSec()))
-	req.PageSize = 1000
+	req.PageSize = 100
 	req.LargePageSize = true
 	req.PageNum = 1
 	req.AllSources = true
