@@ -19,6 +19,8 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 const DicehubExtensionsMenu = "dicehub.extensions.menu"
@@ -75,6 +77,9 @@ const specDisplayName = "displayName"
 const specDesc = "desc"
 
 func (spec *Spec) GetLocaleDisplayName(lang string) string {
+	if lang == "" {
+		lang = i18n.ZH
+	}
 	if spec.Locale == nil || spec.Locale[lang] == nil {
 		return spec.DisplayName
 	}
@@ -85,6 +90,9 @@ func (spec *Spec) GetLocaleDisplayName(lang string) string {
 }
 
 func (spec *Spec) GetLocaleDesc(lang string) string {
+	if lang == "" {
+		lang = i18n.ZH
+	}
 	if spec.Locale == nil || spec.Locale[lang] == nil {
 		return spec.Desc
 	}
