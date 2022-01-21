@@ -74,7 +74,6 @@ type Conf struct {
 	ProjectStatsCacheCron       string `env:"PROJECT_STATS_CACHE_CRON" default:"0 0 1 * * ?"`
 	UpdateIssueExpiryStatusCron string `env:"UPDATE_ISSUE_EXPIRY_STATUS_CRON" default:"0 0 * * *"`
 	UpdateMemberActiveRankCron  string `env:"UPDATE_MEMBER_ACTIVE_RANK_CRON" default:"0 0 * * *"`
-	ExportIssueFileStoreDay     int    `env:"EXPORT_ISSUE_FILE_STORE_DAY" default:"7"`
 }
 
 var cfg Conf
@@ -260,8 +259,4 @@ func UpdateIssueExpiryStatusCron() string {
 
 func UpdateMemberActiveRankCron() string {
 	return cfg.UpdateMemberActiveRankCron
-}
-
-func ExportIssueFileStoreDay() int {
-	return cfg.ExportIssueFileStoreDay
 }
