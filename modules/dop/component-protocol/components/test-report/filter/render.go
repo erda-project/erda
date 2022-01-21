@@ -119,14 +119,14 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		map[string]interface{}{
 			"fixed":       true,
 			"key":         "name",
-			"placeholder": "按名称过滤",
+			"placeholder": cputil.I18n(ctx, "filterByName"),
 			"type":        "input",
 		},
 		map[string]interface{}{
-			"emptyText": "全部",
+			"emptyText": cputil.I18n(ctx, "all"),
 			"fixed":     true,
 			"key":       "iteration",
-			"label":     "迭代",
+			"label":     cputil.I18n(ctx, "iteration"),
 			"options":   iterationOptions,
 			"type":      "select",
 		},
