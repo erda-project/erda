@@ -200,6 +200,12 @@ func (f *ComponentReleaseFilter) RenderFilter() error {
 			Placeholder: f.sdk.I18n("inputCommitID"),
 			Type:        "input",
 		})
+		f.Data.Conditions = append(f.Data.Conditions, Condition{
+			Key:         "releaseID",
+			Label:       f.sdk.I18n("releaseID"),
+			Placeholder: f.sdk.I18n("inputReleaseID"),
+			Type:        "input",
+		})
 	}
 
 	userCondition := Condition{
@@ -227,12 +233,6 @@ func (f *ComponentReleaseFilter) RenderFilter() error {
 	}
 	userCondition.Options = userOptions
 	f.Data.Conditions = append(f.Data.Conditions, userCondition)
-	f.Data.Conditions = append(f.Data.Conditions, Condition{
-		Key:         "releaseID",
-		Label:       f.sdk.I18n("releaseID"),
-		Placeholder: f.sdk.I18n("inputReleaseID"),
-		Type:        "input",
-	})
 	return nil
 }
 
