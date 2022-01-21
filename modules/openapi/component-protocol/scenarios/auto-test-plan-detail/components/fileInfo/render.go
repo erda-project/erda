@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/i18n"
 )
 
 // SetCtxBundle 设置bundle
@@ -111,6 +112,7 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 		return err
 	}
 
+	i18nLocale := bdl.Bdl.GetLocale(bdl.Locale)
 	// visible
 	i.Props = make(map[string]interface{})
 	i.Props["visible"] = i.State.Visible
@@ -146,23 +148,23 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *apistructs.Component,
 
 	i.Props["fields"] = []PropColumn{
 		{
-			Label:    "名称",
+			Label:    i18nLocale.Get(i18n.I18nKeyName),
 			ValueKey: "name",
 		},
 		{
-			Label:    "创建人",
+			Label:    i18nLocale.Get(i18n.I18nKeyCreator),
 			ValueKey: "creatorID",
 		},
 		{
-			Label:    "创建时间",
+			Label:    i18nLocale.Get(i18n.I18nKeyCreationTime),
 			ValueKey: "createAtString",
 		},
 		{
-			Label:    "更新人",
+			Label:    i18nLocale.Get(i18n.I18nKeyUpdater),
 			ValueKey: "updaterID",
 		},
 		{
-			Label:    "更新时间",
+			Label:    i18nLocale.Get(i18n.I18nKeyUpdateTime),
 			ValueKey: "updateAtString",
 		},
 	}
