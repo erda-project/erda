@@ -356,6 +356,28 @@ func (e *Endpoints) ListRuntimesGroupByApps(ctx context.Context, r *http.Request
 	return httpserver.OkResp(runtimes)
 }
 
+// BatchRuntimeServices responses the runtimes for the given apps.
+func (e *Endpoints) BatchRuntimeServices(ctx context.Context, r *http.Request, _ map[string]string) (httpserver.Responser, error) {
+	var (
+		l          = logrus.WithField("func", "*Endpoints.BatchRuntimeServices")
+		runtimeIDs []uint64
+	)
+
+	for _, runtimeID := range r.URL.Query()["runtimeID"] {
+		id, err := strconv.ParseUint(runtimeID, 10, 64)
+		if err != nil {
+			l.WithError(err).Warnf("failed to parse applicationID: failed to ParseUint: %s", runtimeID)
+		}
+		runtimeIDs = append(runtimeIDs, id)
+	}
+
+	serviceMap, err := e.runtime.GetServiceByRuntime(runtimeIDs)
+	if err != nil {
+		return apierrors.ErrListRuntime.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(serviceMap)
+}
+
 // GetRuntime 查询应用实例
 func (e *Endpoints) GetRuntime(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	orgID, err := getOrgID(r)

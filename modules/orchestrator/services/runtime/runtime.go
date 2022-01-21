@@ -1361,6 +1361,62 @@ func (r *Runtime) generateListGroupAppResult(result *struct {
 	wg.Done()
 }
 
+func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistructs.RuntimeSummaryDTO, error) {
+	logrus.Infof("get services finished")
+	var l = logrus.WithField("func", "*Runtime.GetServiceByRuntime")
+	runtimes, err := r.db.FindRuntimesByIds(runtimeIDs)
+	if err != nil {
+		return nil, err
+	}
+	servicesMap := make(map[uint64]*apistructs.RuntimeSummaryDTO)
+	wg := sync.WaitGroup{}
+	for i := 0; i < len(runtimes); i++ {
+		runtime := runtimes[i]
+		deployment, err := r.db.FindLastDeployment(runtime.ID)
+		if err != nil {
+			l.WithError(err).WithField("runtime.ID", runtime.ID).
+				Warnln("failed to build summary item, failed to get last deployment")
+			continue
+		}
+		if deployment == nil {
+			// make a fake deployment
+			deployment = &dbclient.Deployment{
+				RuntimeId: runtime.ID,
+				Status:    apistructs.DeploymentStatusInit,
+				BaseModel: dbengine.BaseModel{
+					UpdatedAt: runtime.UpdatedAt,
+				},
+			}
+		}
+		if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
+			wg.Add(1)
+			go func(rt dbclient.Runtime, wg *sync.WaitGroup, servicesMap map[uint64]*apistructs.RuntimeSummaryDTO, deployment *dbclient.Deployment) {
+				d := apistructs.RuntimeSummaryDTO{}
+				sg, err := r.bdl.InspectServiceGroupWithTimeout(rt.ScheduleName.Args())
+				if err != nil {
+					l.WithError(err).Warnf("failed to inspect servicegroup: %s/%s",
+						rt.ScheduleName.Namespace, rt.ScheduleName.Name)
+				} else if sg.Status == "Ready" || sg.Status == "Healthy" {
+					d.Status = apistructs.RuntimeStatusHealthy
+				}
+				var dice diceyml.Object
+				if err = json.Unmarshal([]byte(deployment.Dice), &dice); err != nil {
+					logrus.Error(apierrors.ErrGetRuntime.InvalidState(strutil.Concat("dice.json invalid: ", err.Error())))
+					return
+				}
+				d.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
+				fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, sg, nil, string(deployment.Status))
+				servicesMap[rt.ID] = &d
+				wg.Done()
+			}(runtime, &wg, servicesMap, deployment)
+		}
+	}
+	wg.Wait()
+	logrus.Infof("get services finished")
+	return servicesMap, nil
+
+}
+
 func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.RuntimeSummaryDTO, runtime dbclient.Runtime) error {
 	var l = logrus.WithField("func", "Runtime.convertRuntimeInspectDTOFromRuntimeModel")
 
@@ -1397,20 +1453,20 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	d.Source = runtime.Source
 	d.Status = runtime.Status
 	d.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
-	if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
-		sg, err := r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
-		if err != nil {
-			l.WithError(err).Warnf("failed to inspect servicegroup: %s/%s",
-				runtime.ScheduleName.Namespace, runtime.ScheduleName.Name)
-		} else if sg.Status == "Ready" || sg.Status == "Healthy" {
-			d.Status = apistructs.RuntimeStatusHealthy
-		}
-		var dice diceyml.Object
-		if err = json.Unmarshal([]byte(deployment.Dice), &dice); err != nil {
-			return apierrors.ErrGetRuntime.InvalidState(strutil.Concat("dice.json invalid: ", err.Error()))
-		}
-		fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, sg, nil, string(deployment.Status))
-	}
+	//if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
+	//	sg, err := r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
+	//	if err != nil {
+	//		l.WithError(err).Warnf("failed to inspect servicegroup: %s/%s",
+	//			runtime.ScheduleName.Namespace, runtime.ScheduleName.Name)
+	//	} else if sg.Status == "Ready" || sg.Status == "Healthy" {
+	//		d.Status = apistructs.RuntimeStatusHealthy
+	//	}
+	//	var dice diceyml.Object
+	//	if err = json.Unmarshal([]byte(deployment.Dice), &dice); err != nil {
+	//		return apierrors.ErrGetRuntime.InvalidState(strutil.Concat("dice.json invalid: ", err.Error()))
+	//	}
+	//	fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, sg, nil, string(deployment.Status))
+	//}
 
 	d.DeployStatus = deployment.Status
 	// 如果还 deployment 的状态不是终态, runtime 的状态返回为 init(前端显示为部署中效果),
