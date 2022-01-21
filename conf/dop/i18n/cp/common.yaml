@@ -266,15 +266,15 @@ zh:
   pipelineStatusCreated: 创建成功
   pipelineStatusMark: 标记中
   pipelineStatusQueue: 排队中
-  pipelineStatusRunning: 正在执行
-  pipelineStatusSuccess: 执行成功
-  pipelineStatusFailed: 执行失败
+  pipelineStatusRunning: 执行中
+  pipelineStatusSuccess: 成功
+  pipelineStatusFailed: 失败
   pipelineStatusAnalyzeFailed: 初始化失败
   pipelineStatusPaused: 暂停
   pipelineStatusCreateError: 创建失败
   pipelineStatusStartError: 启动失败
   pipelineStatusTimeout: 超时
-  pipelineStatusStopByUser: 用户取消
+  pipelineStatusStopByUser: 取消
   pipelineStatusNoNeedBySystem: 无需执行
   pipelineStatusCancelByRemote: 系统取消
   pipelineStatusInitializing: 正在初始化
@@ -305,6 +305,8 @@ zh:
   execute: 执行
   source: 源
   process: 进度
+  openAll: 全部打开
+  second: 秒
 en:
   issue-manage: issue manage
   issue: issue
@@ -608,3 +610,5 @@ en:
   execute: Execute
   source: Source
   process: Process
+  openAll: Open all
+  second: Second

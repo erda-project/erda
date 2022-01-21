@@ -646,6 +646,16 @@ func Test_getProjectsStatistics(t *testing.T) {
 	})
 	defer monkey.Unpatch((*monitor.MonitorDB).GetMonitorByProjectId)
 
+	monkey.Patch((*db.MSPTenantDB).QueryTenantByProjectID, func(tdb *db.MSPTenantDB, projectID string) ([]*db.MSPTenant, error) {
+		return []*db.MSPTenant{
+			{
+				Id:               "tn1",
+				RelatedProjectId: "1",
+			},
+		}, nil
+	})
+	defer monkey.Unpatch((*db.MSPTenantDB).QueryTenantByProjectID)
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	logger := NewMockLogger(ctrl)

@@ -22,6 +22,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	i18nkey "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-detail/i18n"
@@ -30,6 +31,7 @@ import (
 
 type ExecuteHistoryTable struct {
 	CtxBdl     protocol.ContextBundle
+	sdk        *cptype.SDK
 	Type       string                 `json:"type"`
 	State      State                  `json:"state"`
 	Props      map[string]interface{} `json:"props"`

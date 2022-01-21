@@ -17,8 +17,7 @@ package issue
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/sirupsen/logrus"
+	"net/http"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -26,103 +25,21 @@ import (
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
-const (
-	issueService = "issue-service"
-)
-
-func (svc *Issue) Import(req apistructs.IssueImportExcelRequest) (uint64, error) {
-	fileReq := apistructs.TestFileRecordRequest{
-		ProjectID:    req.ProjectID,
-		Type:         apistructs.FileIssueActionTypeImport,
-		ApiFileUUID:  req.FileID,
-		State:        apistructs.FileRecordStatePending,
-		IdentityInfo: req.IdentityInfo,
-		Extra: apistructs.TestFileExtra{
-			IssueFileExtraInfo: &apistructs.IssueFileExtraInfo{
-				ImportRequest: &req,
-			},
-		},
-	}
-	id, err := svc.CreateFileRecord(fileReq)
+func (svc *Issue) ImportExcel(req apistructs.IssueImportExcelRequest, r *http.Request, properties []apistructs.IssuePropertyIndex, ip *issueproperty.IssueProperty, member []apistructs.Member) (*apistructs.IssueImportExcelResponse, error) {
+	// 获取测试用例数据
+	f, _, err := r.FormFile("file")
 	if err != nil {
-		return 0, err
-	}
-	return id, nil
-}
-
-func (svc *Issue) ImportExcel(record *dao.TestFileRecord) {
-	extra := record.Extra.IssueFileExtraInfo
-	if extra == nil || extra.ImportRequest == nil {
-		return
-	}
-
-	req := extra.ImportRequest
-	id := record.ID
-	if err := svc.updateIssueFileRecord(id, apistructs.FileRecordStateProcessing); err != nil {
-		return
-	}
-
-	f, err := svc.bdl.DownloadDiceFile(record.ApiFileUUID)
-	if err != nil {
-		logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
-		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
+		return nil, err
 	}
 	defer f.Close()
-
-	properties, err := svc.issueProperty.GetProperties(apistructs.IssuePropertiesGetRequest{OrgID: req.OrgID, PropertyIssueType: req.Type})
+	issues, instances, falseExcel, excelIndex, falseReason, allNumber, err := svc.decodeFromExcelFile(req, f, properties)
+	ff, _, err := r.FormFile("file")
 	if err != nil {
-		logrus.Errorf("%s failed to get issue properties, err: %v", issueService, err)
-		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
-	}
-	memberQuery := apistructs.MemberListRequest{
-		ScopeType: apistructs.ProjectScope,
-		ScopeID:   int64(req.ProjectID),
-		PageNo:    1,
-		PageSize:  99999,
-	}
-	members, err := svc.bdl.ListMembers(memberQuery)
-	if err != nil {
-		logrus.Errorf("%s failed to get members, err: %v", issueService, err)
-		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
-	}
-
-	issues, instances, falseExcel, excelIndex, falseReason, allNumber, err := svc.decodeFromExcelFile(*req, f, properties)
-	if err != nil {
-		logrus.Errorf("%s failed to decode excel file, err: %v", issueService, err)
-		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
-	}
-	falseExcel, falseReason = svc.storeExcel2DB(*req, issues, instances, excelIndex, svc.issueProperty, falseExcel, falseReason, members)
-	if len(falseExcel) <= 1 {
-		svc.updateIssueFileRecord(id, apistructs.FileRecordStateSuccess)
-		return
-	}
-	ff, err := svc.bdl.DownloadDiceFile(record.ApiFileUUID)
-	if err != nil {
-		logrus.Errorf("%s failed to download excel file, err: %v", issueService, err)
-		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
+		return nil, err
 	}
 	defer ff.Close()
-	res, err := svc.ExportFalseExcel(ff, falseExcel, falseReason, allNumber)
-	if err != nil {
-		logrus.Errorf("%s failed to export false excel, err: %v", issueService, err)
-		svc.updateIssueFileRecord(id, apistructs.FileRecordStateFail)
-		return
-	}
-	desc := fmt.Sprintf("事项总数: %d, 成功: %d, 失败: %d", res.SuccessNumber+res.FalseNumber, res.SuccessNumber, res.FalseNumber)
-	svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, Description: desc, ApiFileUUID: res.UUID, State: apistructs.FileRecordStateFail})
-}
-
-func (svc *Issue) updateIssueFileRecord(id uint64, state apistructs.FileRecordState) error {
-	if err := svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: state}); err != nil {
-		logrus.Errorf("%s failed to update file record, err: %v", issueService, err)
-		return err
-	}
-	return nil
+	falseExcel, falseReason = svc.storeExcel2DB(req, issues, instances, excelIndex, ip, falseExcel, falseReason, member)
+	return svc.ExportFalseExcel(ff, falseExcel, falseReason, allNumber)
 }
 
 func (svc *Issue) storeExcel2DB(request apistructs.IssueImportExcelRequest, issues []apistructs.Issue, instances []apistructs.IssuePropertyRelationCreateRequest, excelIndex []int,

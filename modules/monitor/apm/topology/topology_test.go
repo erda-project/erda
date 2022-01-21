@@ -600,217 +600,66 @@ func Test_provider_handleInstanceInfo(t *testing.T) {
 	}
 }
 
-func Test_queryConditions(t *testing.T) {
+func Test_parserTag(t *testing.T) {
 	type args struct {
-		indexType string
-		params    Vo
+		param Vo
 	}
 	tests := []struct {
-		name  string
-		args  args
-		want  *elastic.BoolQuery
-		want1 string
+		name string
+		args args
+		want *TagInfo
 	}{
-		{"case1", args{params: Vo{Tags: []string{"service:service_id"}}}, nil, "service_id"},
+		{"case1", args{param: Vo{Tags: []string{"service:service_id"}}}, &TagInfo{ServiceId: "service_id"}},
+		{"case2", args{param: Vo{Tags: []string{"application:application_name"}}}, &TagInfo{ApplicationName: "application_name"}},
+		{"case3", args{param: Vo{Tags: []string{"unknown:xx"}}}, &TagInfo{}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, got1 := queryConditions(tt.args.indexType, tt.args.params)
-			if got1 != tt.want1 {
-				t.Errorf("queryConditions() got1 = %v, want %v", got1, tt.want1)
+			if got := parserTag(tt.args.param); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parserTag() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_filterNodes(t *testing.T) {
+func Test_getServiceNode(t *testing.T) {
 	type args struct {
-		topologyNodes *[]*Node
-		nodeIds       map[string]struct{}
-		timeRange     int64
-		serviceId     string
+		serviceId string
+		nodes     []*Node
 	}
 	tests := []struct {
 		name string
 		args args
-		want *[]*Node
+		want *Node
 	}{
-		{"case1", args{topologyNodes: &[]*Node{
-			{
-				Id:        "test_id",
-				ServiceId: "test_service_id",
-				Parents: []*Node{
-					{
-						Id:        "test_id2",
-						ServiceId: "test_service_id2",
-						Parents:   []*Node{},
-						Metric:    &Metric{},
-					},
-				},
-				Metric: &Metric{},
-			},
-			{
-				Id:        "test_id2",
-				ServiceId: "test_service_id2",
-				Parents: []*Node{
-					{
-						Id:        "test_id",
-						ServiceId: "test_service_id",
-						Parents:   []*Node{},
-						Metric:    &Metric{},
-					},
-					{
-						Id:        "test_id3",
-						ServiceId: "test_service_id3",
-						Parents:   []*Node{},
-						Metric:    &Metric{},
-					},
-				},
-				Metric: &Metric{},
-			},
-			{
-				Id:        "test_id3",
-				ServiceId: "test_service_id3",
-				Parents: []*Node{
-					{
-						Id:        "test_id2",
-						ServiceId: "test_service_id2",
-						Parents:   []*Node{},
-						Metric:    &Metric{},
-					},
-				},
-				Metric: &Metric{},
-			},
-		}, nodeIds: map[string]struct{}{
-			"test_id":  {},
-			"test_id2": {},
-		}, timeRange: 1, serviceId: "test_service_id"}, &[]*Node{
-			{
-				Id:        "test_id",
-				ServiceId: "test_service_id",
-				Parents: []*Node{
-					{
-						Id:        "test_id2",
-						ServiceId: "test_service_id2",
-						Parents:   []*Node{},
-						Metric:    &Metric{},
-					},
-				},
-				Metric: &Metric{},
-			},
-			{
-				Id:        "test_id2",
-				ServiceId: "test_service_id2",
-				Parents: []*Node{
-					{
-						Id:        "test_id",
-						ServiceId: "test_service_id",
-						Parents:   []*Node{},
-						Metric:    &Metric{},
-					},
-				},
-				Metric: &Metric{},
-			},
-		}},
-		{"case2", args{topologyNodes: &[]*Node{
-			{
-				Id:        "test_id",
-				ServiceId: "test_service_id",
-				Parents: []*Node{
-					{
-						Id:        "test_id2",
-						ServiceId: "test_service_id2",
-						Parents:   []*Node{},
-						Metric:    &Metric{},
-					},
-				},
-				Metric: &Metric{},
-			},
-			{
-				Id:        "test_id2",
-				ServiceId: "test_service_id2",
-				Parents: []*Node{
-					{
-						Id:        "test_id",
-						ServiceId: "test_service_id",
-						Parents:   []*Node{},
-						Metric:    &Metric{},
-					},
-					{
-						Id:        "test_id3",
-						ServiceId: "test_service_id3",
-						Parents:   []*Node{},
-						Metric:    &Metric{},
-					},
-				},
-				Metric: &Metric{},
-			},
-			{
-				Id:        "test_id3",
-				ServiceId: "test_service_id3",
-				Parents: []*Node{
-					{
-						Id:        "test_id2",
-						ServiceId: "test_service_id2",
-						Parents:   []*Node{},
-						Metric:    &Metric{},
-					},
-				},
-				Metric: &Metric{},
-			},
-		}, nodeIds: map[string]struct{}{}, timeRange: 1, serviceId: ""}, &[]*Node{
-			{
-				Id:        "test_id",
-				ServiceId: "test_service_id",
-				Parents: []*Node{
-					{
-						Id:        "test_id2",
-						ServiceId: "test_service_id2",
-						Parents:   []*Node{},
-						Metric:    &Metric{},
-					},
-				},
-				Metric: &Metric{},
-			},
-			{
-				Id:        "test_id2",
-				ServiceId: "test_service_id2",
-				Parents: []*Node{
-					{
-						Id:        "test_id",
-						ServiceId: "test_service_id",
-						Parents:   []*Node{},
-						Metric:    &Metric{},
-					},
-					{
-						Id:        "test_id3",
-						ServiceId: "test_service_id3",
-						Parents:   []*Node{},
-						Metric:    &Metric{},
-					},
-				},
-				Metric: &Metric{},
-			},
-			{
-				Id:        "test_id3",
-				ServiceId: "test_service_id3",
-				Parents: []*Node{
-					{
-						Id:        "test_id2",
-						ServiceId: "test_service_id2",
-						Parents:   []*Node{},
-						Metric:    &Metric{},
-					},
-				},
-				Metric: &Metric{},
-			},
-		}},
+		{"case1", args{serviceId: "service_id", nodes: []*Node{{Id: "id", ServiceId: "service_id"}}}, &Node{Id: "id", ServiceId: "service_id"}},
+		{"case2", args{serviceId: "unknown", nodes: []*Node{{Id: "id", ServiceId: "service_id"}}}, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			filterNodes(tt.args.topologyNodes, tt.args.nodeIds, tt.args.timeRange, tt.args.serviceId)
-			if !reflect.DeepEqual(tt.args.topologyNodes, tt.want) {
-				t.Errorf("filted %s , want %s", fmt.Sprintf("%v", tt.args.topologyNodes), fmt.Sprintf("%v", tt.want))
+			if got := getServiceNode(tt.args.serviceId, tt.args.nodes); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getServiceNode() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getNodeParentNodeIds(t *testing.T) {
+	type args struct {
+		node *Node
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]struct{}
+	}{
+		{"case1", args{node: &Node{Id: "id", ServiceId: "service_id", Parents: []*Node{}}}, map[string]struct{}{}},
+		{"case2", args{node: &Node{Id: "id", ServiceId: "service_id", Parents: []*Node{{Id: "pid", ServiceId: "pservice_id"}}}}, map[string]struct{}{"pid": {}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getNodeParentNodeIds(tt.args.node); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getNodeParentNodeIds() = %v, want %v", got, tt.want)
 			}
 		})
 	}
