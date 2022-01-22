@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/msp/member/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
@@ -46,6 +47,7 @@ type provider struct {
 	instanceDB    *instancedb.InstanceTenantDB
 	mspTenantDB   *db.MSPTenantDB
 	monitorDB     *db2.MonitorDb
+	I18n          i18n.Translator `autowired:"i18n" translator:"cs-i18n"`
 	audit         audit.Auditor
 	Tenant        tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
 }
