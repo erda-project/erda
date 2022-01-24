@@ -43,7 +43,10 @@ func Test_adapterService_GetInstrumentationLibrary(t *testing.T) {
 			&InstrumentationLibrary{InstrumentationLibrary: "Jaeger", Languages: []*Language{&Language{Name: "Java", Enabled: true}}},
 		},
 		templates: map[string]*InstrumentationLibraryTemplate{
-			"Jaeger": &InstrumentationLibraryTemplate{InstrumentationLibrary: "Jaeger", Templates: []*Template{&Template{Language: "Java", Template: ""}}},
+			"Jaeger": {InstrumentationLibrary: "Jaeger", Templates: []*Template{&Template{Language: "Java", Template: map[string]string{
+				"zh-CN": "这是中文模版",
+				"en-US": "this is english template",
+			}}}},
 		},
 	}
 	pro.adapterService.p = pro
@@ -70,7 +73,10 @@ func Test_adapterService_GetInstrumentationLibraryDocs(t *testing.T) {
 			{InstrumentationLibrary: "Jaeger", Languages: []*Language{&Language{Name: "Java", Enabled: true}}},
 		},
 		templates: map[string]*InstrumentationLibraryTemplate{
-			"Jaeger": {InstrumentationLibrary: "Jaeger", Templates: []*Template{&Template{Language: "Java", Template: ""}}},
+			"Jaeger": {InstrumentationLibrary: "Jaeger", Templates: []*Template{&Template{Language: "Java", Template: map[string]string{
+				"zh-CN": "这是中文模版",
+				"en-US": "this is english template",
+			}}}},
 		},
 	}
 	pro.adapterService.p = pro
