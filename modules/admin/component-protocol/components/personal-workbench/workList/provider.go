@@ -347,6 +347,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 			Selectable:  true,
 			KvInfos:     kvs,
 			ColumnsInfo: columns,
+			Selectable:  true,
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemStar{}.OpKey(): cputil.NewOpBuilder().WithDisable(starDisable, starTip).Build(),
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
@@ -443,6 +444,7 @@ func (l *WorkList) doFilterApp() (data *list.Data) {
 			Selectable:  true,
 			KvInfos:     l.GenAppKvInfo(p),
 			ColumnsInfo: l.GenAppColumnInfo(p),
+			Selectable:  true,
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemStar{}.OpKey(): cputil.NewOpBuilder().WithDisable(starDisable, starTip).Build(),
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().

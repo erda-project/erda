@@ -146,6 +146,7 @@ func (l *List) doFilterApp() (data *list.Data) {
 			Selectable:  true,
 			KvInfos:     l.GenAppKvInfo(p),
 			Description: l.appDescription(p.Desc),
+			Selectable:  true,
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
 					WithSkipRender(true).
