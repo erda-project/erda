@@ -18,15 +18,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/common"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-space-list/i18n"
-	text "github.com/erda-project/erda/modules/dop/component-protocol/components/common"
-	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
 	spec "github.com/erda-project/erda/modules/openapi/component-protocol/component_spec/table"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/common"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-space-list/i18n"
+	locale "github.com/erda-project/erda/pkg/i18n"
 )
 
 type ComponentSpaceList struct {
@@ -243,7 +243,7 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			}
 		)
 		updatedAt := each.UpdatedAt.Format("2006-01-02 15:04:05")
-		text := text.UpdatedTime(a.sdk.Ctx, each.UpdatedAt)
+		text := UpdatedTime(i18nLocale, each.UpdatedAt)
 		item := spaceItem{
 			ID:          each.ID,
 			Title:       each.Name,
@@ -256,16 +256,16 @@ func (a *ComponentSpaceList) setData(projectID int64, spaces apistructs.AutoTest
 			Operations: map[string]interface{}{},
 			ExtraInfos: []ExtraInfos{
 				{
-					Text: fmt.Sprintf("%s: %v", a.sdk.I18n("sceneset"), statsMap[each.ID].SetNum),
+					Text: fmt.Sprintf("%s: %v", i18nLocale.Get("sceneset"), statsMap[each.ID].SetNum),
 				},
 				{
-					Text: fmt.Sprintf("%s: %v", a.sdk.I18n("auto-test-scene-num"), statsMap[each.ID].SceneNum),
+					Text: fmt.Sprintf("%s: %v", i18nLocale.Get("auto-test-scene-num"), statsMap[each.ID].SceneNum),
 				},
 				{
-					Text: fmt.Sprintf("%s: %v", a.sdk.I18n("auto-test-api-num"), statsMap[each.ID].StepNum),
+					Text: fmt.Sprintf("%s: %v", i18nLocale.Get("auto-test-api-num"), statsMap[each.ID].StepNum),
 				},
 				{
-					Text:    a.sdk.I18n("updatedAt") + " " + text,
+					Text:    i18nLocale.Get("updatedAt") + " " + text,
 					Tooltip: updatedAt,
 				},
 			},
@@ -352,4 +352,24 @@ func RenderCreator() protocol.CompRender {
 		State:  state{},
 		Data:   map[string]interface{}{},
 	}
+}
+
+func UpdatedTime(i18nLocale *locale.LocaleResource, activeTime time.Time) string {
+	var subStr string
+	nowTime := time.Now()
+	sub := nowTime.Sub(activeTime)
+	if int64(sub.Hours()) >= 24*30*12 {
+		subStr = strconv.FormatInt(int64(sub.Hours())/(24*30*12), 10) + " " + i18nLocale.Get("yearAgo")
+	} else if int64(sub.Hours()) >= 24*30 {
+		subStr = strconv.FormatInt(int64(sub.Hours())/(24*30), 10) + " " + i18nLocale.Get("monthAgo")
+	} else if int64(sub.Hours()) >= 24 {
+		subStr = strconv.FormatInt(int64(sub.Hours())/24, 10) + " " + i18nLocale.Get("dayAgo")
+	} else if int64(sub.Hours()) > 0 {
+		subStr = strconv.FormatInt(int64(sub.Hours()), 10) + " " + i18nLocale.Get("hourAgo")
+	} else if int64(sub.Minutes()) > 0 {
+		subStr = strconv.FormatInt(int64(sub.Minutes()), 10) + " " + i18nLocale.Get("minuteAgo")
+	} else {
+		subStr = i18nLocale.Get("secondAgo")
+	}
+	return subStr
 }

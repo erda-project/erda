@@ -65,17 +65,17 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s
 	}
 	i.State.Conditions = []filter.PropCondition{
 		{
-			EmptyText: cputil.I18n(ctx, "empty-filter-bookmark"),
+			EmptyText: i18nLocale.Get("empty-filter-bookmark"),
 			Fixed:     true,
 			Key:       "order",
-			Label:     cputil.I18n(ctx, "sort"),
+			Label:     i18nLocale.Get("sort"),
 			Options: []filter.PropConditionOption{
 				{
-					Label: cputil.I18n(ctx, "timeOrder"),
+					Label: i18nLocale.Get("timeOrder"),
 					Value: "updated_at",
 				},
 				{
-					Label: cputil.I18n(ctx, "timeReverse"),
+					Label: i18nLocale.Get("timeReverse"),
 					Value: "updated_at desc",
 				},
 			},
@@ -86,10 +86,10 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s
 			},
 		},
 		{
-			EmptyText: cputil.I18n(ctx, "all"),
+			EmptyText: i18nLocale.Get("autotest.plan.all"),
 			Fixed:     true,
 			Key:       "archiveStatus",
-			Label:     cputil.I18n(ctx, "state"),
+			Label:     i18nLocale.Get("state"),
 			Options: []filter.PropConditionOption{
 				{
 					Label: i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInit),
@@ -107,11 +107,11 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s
 			Type: filter.PropConditionTypeSelect,
 		},
 		{
-			EmptyText:   cputil.I18n(ctx, "all"),
+			EmptyText:   i18nLocale.Get("autotest.plan.all"),
 			Fixed:       true,
 			Key:         "spaceName",
-			Label:       cputil.I18n(ctx, "title"),
-			Placeholder: cputil.I18n(ctx, "searchByName"),
+			Label:       i18nLocale.Get("title"),
+			Placeholder: i18nLocale.Get("searchByName"),
 			Type:        filter.PropConditionTypeInput,
 		},
 	}
