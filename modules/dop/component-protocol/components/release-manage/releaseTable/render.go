@@ -189,7 +189,7 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 	releaseResp, err := r.bdl.ListReleases(apistructs.ReleaseListRequest{
 		Branch:           r.State.FilterValues.BranchID,
 		IsStable:         &isStable,
-		IsFormal:         &r.State.IsFormal,
+		IsFormal:         r.State.IsFormal,
 		IsProjectRelease: &r.State.IsProjectRelease,
 		UserID:           r.State.FilterValues.UserIDs,
 		Version:          r.State.VersionValues.Version,
@@ -317,7 +317,7 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 				Text: r.sdk.I18n("referencedReleases"),
 			}
 		}
-		if !r.State.IsFormal {
+		if r.State.IsFormal != nil && !*r.State.IsFormal {
 			item.Operations.Operations["edit"] = editOperation
 			item.Operations.Operations["formal"] = formalOperation
 			item.Operations.Operations["delete"] = deleteOperation
@@ -374,7 +374,7 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	}
 
 	var batchOperations []string
-	if !r.State.IsFormal {
+	if r.State.IsFormal != nil && !*r.State.IsFormal {
 		batchOperations = []string{"formal", "delete"}
 	}
 
@@ -398,7 +398,7 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 		},
 	}
 
-	if r.State.IsProjectRelease || !r.State.IsFormal {
+	if r.State.IsProjectRelease || (r.State.IsFormal != nil && !*r.State.IsFormal) {
 		columns = append(columns, Column{
 			DataIndex: "operations",
 			Title:     r.sdk.I18n("operations"),
@@ -414,7 +414,7 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	r.Props = Props{
 		RequestIgnore:   []string{"data"},
 		BatchOperations: batchOperations,
-		Selectable:      !r.State.IsFormal,
+		Selectable:      r.State.IsFormal != nil && !*r.State.IsFormal,
 		Columns:         columns,
 		PageSizeOptions: []string{"10", "20", "50", "100"},
 		RowKey:          "id",

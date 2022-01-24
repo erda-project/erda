@@ -98,7 +98,7 @@ type State struct {
 	Sorter               Sorter        `json:"sorterData"`
 	IsProjectRelease     bool          `json:"isProjectRelease"`
 	ProjectID            int64         `json:"projectID"`
-	IsFormal             bool          `json:"isFormal"`
+	IsFormal             *bool         `json:"isFormal,omitempty"`
 	VersionValues        VersionValues `json:"versionValues"`
 	FilterValues         FilterValues  `json:"filterValues"`
 	ApplicationID        int64         `json:"applicationID"`
