@@ -305,6 +305,7 @@ func (p *List) getData() *list.Data {
 	ids := make([]string, 0)
 	deployId := p.Sdk.InParams["deployId"]
 	runtimeMap := make(map[string]bundle.GetApplicationRuntimesDataEle)
+	//oid, _ := strconv.ParseUint(p.Sdk.Identity.OrgID, 10, 64)
 	for _, appRuntime := range runtimes {
 		//healthyMap := make(map[string]int)
 		deployIdStr := strconv.FormatUint(appRuntime.LastOperatorId, 10)
@@ -314,16 +315,16 @@ func (p *List) getData() *list.Data {
 			}
 		}
 		//healthyMap[appRuntime.Name] = healthyCnt
-		healthyCnt := 0
-		for _, s := range appRuntime.Services {
-			if s.Status == "Healthy" {
-				healthyCnt++
-			}
-		}
-		var healthStr = ""
-		if len(appRuntime.Services) != 0 {
-			healthStr = fmt.Sprintf("%d/%d", healthyCnt, len(appRuntime.Services))
-		}
+		//healthyCnt := 0
+		//for _, s := range appRuntime.Services {
+		//	if s.Status == "Healthy" {
+		//		healthyCnt++
+		//	}
+		//}
+		//var healthStr = ""
+		//if len(appRuntime.Services) != 0 {
+		//	healthStr = fmt.Sprintf("%d/%d", healthyCnt, len(appRuntime.Services))
+		//}
 		idStr := strconv.FormatUint(appRuntime.ID, 10)
 		appIdStr := strconv.FormatUint(appRuntime.ApplicationID, 10)
 		nameStr := appRuntime.Name
@@ -333,12 +334,12 @@ func (p *List) getData() *list.Data {
 		logrus.Infof("%s : %s", appRuntime.Name, appRuntime.LastOperator)
 		isMyApp := myApp[appRuntime.ApplicationID]
 		item := list.Item{
-			ID:             idStr,
-			Title:          nameStr,
-			Icon:           getIcon(appRuntime.Status),
-			TitleState:     getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus, isMyApp),
-			Selectable:     isMyApp,
-			KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.LastOperator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
+			ID:         idStr,
+			Title:      nameStr,
+			Icon:       getIcon(appRuntime.Status),
+			TitleState: getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus, isMyApp),
+			Selectable: isMyApp,
+			//KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.LastOperator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
 			Operations:     getOperations(p.Sdk, appRuntime.ProjectID, appRuntime.ApplicationID, appRuntime.ID, isMyApp),
 			MoreOperations: getMoreOperations(p.Sdk, fmt.Sprintf("%d", appRuntime.ID)),
 		}
@@ -411,26 +412,44 @@ func (p *List) getData() *list.Data {
 	end := uint64(math.Min(float64((p.PageNo)*p.PageSize), float64(data.Total)))
 
 	data.List = data.List[start:end]
-	//for i := 0; i < len(data.List); i++ {
-	//	item := data.List[i]
-	//	appRuntime := runtimeMap[item.ID]
-	//	services, err := p.Bdl.GetRuntimeServices(appRuntime.ID, oid, p.Sdk.Identity.UserID)
-	//	if err != nil {
-	//		logrus.Errorf("failed to get runtime %s of detail %v", appRuntime.Name, err)
-	//		continue
-	//	}
-	//	healthyCnt := 0
-	//	for _, s := range services.Services {
-	//		if s.Status == "Healthy" {
-	//			healthyCnt++
-	//		}
-	//	}
-	//	var healthStr = ""
-	//	if len(services.Services) != 0 {
-	//		healthStr = fmt.Sprintf("%d/%d", healthyCnt, len(services.Services))
-	//	}
-	//	data.List[i].KvInfos = getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime)
-	//}
+	serviceRuntimes := make([]uint64, 0)
+	for _, r := range data.List {
+		rid, err := strconv.ParseUint(r.ID, 10, 64)
+		if err != nil {
+			continue
+		}
+		serviceRuntimes = append(serviceRuntimes, rid)
+	}
+	services, err := p.Bdl.BatchGetRuntimeServices(serviceRuntimes, p.Sdk.Identity.OrgID, p.Sdk.Identity.UserID)
+	if err != nil {
+		logrus.Errorf("failed to get services err = %v", err)
+	}
+	for rid, s := range services {
+		logrus.Infof("services %d:%v", rid, s)
+		healthyCnt := 0
+		for _, ss := range s.Services {
+			if ss.Status == "Healthy" {
+				healthyCnt++
+			}
+		}
+		var healthStr = ""
+		if len(s.Services) != 0 {
+			healthStr = fmt.Sprintf("%d/%d", healthyCnt, len(s.Services))
+		}
+		for i := 0; i < len(data.List); i++ {
+			appRuntime := runtimeMap[data.List[i].ID]
+			ridStr := fmt.Sprintf("%d", rid)
+			if ridStr != data.List[i].ID {
+				continue
+			}
+			if err != nil {
+				logrus.Errorf("failed to get runtime %s of detail %v", appRuntime.Name, err)
+				continue
+			}
+			data.List[i].KvInfos = getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime)
+			break
+		}
+	}
 	return data
 }
 
@@ -618,13 +637,13 @@ func getMoreOperations(sdk *cptype.SDK, id string) []list.MoreOpItem {
 	}
 }
 
-func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVersion, health string, runtime bundle.GetApplicationRuntimesDataEle, lastOperatorTime time.Time) []list.KvInfo {
+func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVersion, healthStr string, runtime bundle.GetApplicationRuntimesDataEle, lastOperatorTime time.Time) []list.KvInfo {
 	kvs := make([]list.KvInfo, 0)
-	if health != "" {
+	if healthStr != "" {
 		// service
 		kvs = append(kvs, list.KvInfo{
 			Key:   sdk.I18n("service"),
-			Value: health,
+			Value: healthStr,
 		})
 	}
 	if deployOrderName != "" {

@@ -214,6 +214,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/runtimes/actions/get-app-workspace-releases", Method: http.MethodGet, Handler: e.GetAppWorkspaceReleases},
 		{Path: "/api/runtimes/actions/group-by-apps", Method: http.MethodGet, Handler: e.ListRuntimesGroupByApps},
 		{Path: "/api/countProjectRuntime", Method: http.MethodGet, Handler: e.CountPRByWorkspace},
+		{Path: "/api/runtimesServices", Method: http.MethodGet, Handler: e.BatchRuntimeServices},
 
 		{Path: "/api/deployment-orders/{deploymentOrderID}", Method: http.MethodGet, Handler: e.GetDeploymentOrder},
 		{Path: "/api/deployment-orders", Method: http.MethodGet, Handler: e.ListDeploymentOrder},
