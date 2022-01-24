@@ -17,16 +17,17 @@ package dbclient
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/pexpr"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type Extension struct {
@@ -78,14 +79,13 @@ func (ExtensionVersion) TableName() string {
 }
 
 func (ext *ExtensionVersion) ToApiData(typ string, yamlFormat bool) *apistructs.ExtensionVersion {
-	spec := ext.SpecI18nReplace()
 	if yamlFormat {
 		return &apistructs.ExtensionVersion{
 			Name:      ext.Name,
 			Type:      typ,
 			Version:   ext.Version,
 			Dice:      ext.Dice,
-			Spec:      spec,
+			Spec:      ext.Spec,
 			Swagger:   ext.Swagger,
 			Readme:    ext.Readme,
 			CreatedAt: ext.CreatedAt,
@@ -95,20 +95,23 @@ func (ext *ExtensionVersion) ToApiData(typ string, yamlFormat bool) *apistructs.
 		}
 	} else {
 		diceData, _ := yaml.YAMLToJSON([]byte(ext.Dice))
-		specData, _ := yaml.YAMLToJSON([]byte(spec))
 		swaggerData, _ := yaml.YAMLToJSON([]byte(ext.Swagger))
 		var diceJson interface{}
-		var specJson interface{}
 		var swaggerJson interface{}
 		json.Unmarshal(diceData, &diceJson)
-		json.Unmarshal(specData, &specJson)
 		json.Unmarshal(swaggerData, &swaggerJson)
+
+		withLocaleInfo, spec := ext.SpecI18nReplace()
+		if !withLocaleInfo {
+			specData, _ := yaml.YAMLToJSON([]byte(ext.Spec))
+			json.Unmarshal(specData, &spec)
+		}
 		return &apistructs.ExtensionVersion{
 			Name:      ext.Name,
 			Type:      typ,
 			Version:   ext.Version,
 			Dice:      diceJson,
-			Spec:      specJson,
+			Spec:      spec,
 			Swagger:   swaggerJson,
 			Readme:    ext.Readme,
 			CreatedAt: ext.CreatedAt,
@@ -119,24 +122,72 @@ func (ext *ExtensionVersion) ToApiData(typ string, yamlFormat bool) *apistructs.
 	}
 }
 
-func (ext *ExtensionVersion) SpecI18nReplace() (specStr string) {
-	locale := i18n.GetGoroutineBindLang()
-	specStr = ext.Spec
-	if locale == "" {
-		locale = i18n.ZH
+const localeSpecEntry = "locale"
+
+func (ext *ExtensionVersion) SpecI18nReplace() (withLocaleInfo bool, spec interface{}) {
+	localeName := i18n.GetGoroutineBindLang()
+	if localeName == "" {
+		localeName = i18n.ZH
 	}
-	var specData apistructs.Spec
+	spec = ext.Spec
+	var specData map[string]interface{}
 	if err := yaml.Unmarshal([]byte(ext.Spec), &specData); err != nil {
 		return
 	}
-	values, ok := specData.Locale[locale]
+	localeEntry, ok := specData[localeSpecEntry]
 	if !ok {
 		return
 	}
-	for i, v := range values {
-		specStr = strings.ReplaceAll(specStr, fmt.Sprintf("%s %s.%s %s", expression.LeftPlaceholder, expression.I18n, i, expression.RightPlaceholder), v)
+	l, ok := localeEntry.(map[string]interface{})
+	if !ok {
+		return
 	}
+	locale, ok := l[localeName]
+	if !ok {
+		return
+	}
+	localeMap, ok := locale.(map[string]interface{})
+	if !ok {
+		return
+	}
+	withLocaleInfo = true
+	spec = dfs(specData, localeMap)
 	return
+}
+
+func dfs(obj interface{}, locale map[string]interface{}) interface{} {
+	switch obj.(type) {
+	case string:
+		return strutil.ReplaceAllStringSubmatchFunc(pexpr.PhRe, obj.(string), func(v []string) string {
+			if len(v) == 2 && strings.HasPrefix(v[1], expression.I18n+".") {
+				key := strings.TrimPrefix(v[1], expression.I18n+".")
+				if len(key) > 0 {
+					if r, ok := locale[key]; ok {
+						return r.(string)
+					}
+					return v[0]
+				}
+			}
+			return v[0]
+		})
+	case map[string]interface{}:
+		m := obj.(map[string]interface{})
+		for i, v := range m {
+			if i == localeSpecEntry {
+				continue
+			}
+			m[i] = dfs(v, locale)
+		}
+		return m
+	case []interface{}:
+		l := obj.([]interface{})
+		for i, v := range l {
+			l[i] = dfs(v, locale)
+		}
+		return l
+	default:
+		return obj
+	}
 }
 
 func (client *DBClient) CreateExtension(extension *Extension) error {
