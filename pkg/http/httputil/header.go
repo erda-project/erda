@@ -18,6 +18,7 @@ package httputil
 const (
 	UserHeader                 = "User-ID"
 	OrgHeader                  = "Org-ID"
+	LangHeader                 = "Lang"
 	InternalHeader             = "Internal-Client"        // 内部服务间调用时使用
 	InternalActionHeader       = "Internal-Action-Client" // action calls the api header
 	RequestIDHeader            = "RequestID"

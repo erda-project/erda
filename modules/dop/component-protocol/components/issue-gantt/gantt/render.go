@@ -122,8 +122,8 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 		id := op.Meta.Nodes.Key
 		if err := f.issueSvc.UpdateIssue(apistructs.IssueUpdateRequest{
 			ID:             id,
-			PlanStartedAt:  timeFromMilli(op.Meta.Nodes.Start),
-			PlanFinishedAt: timeFromMilli(op.Meta.Nodes.End),
+			PlanStartedAt:  apistructs.IssueTime(timeFromMilli(op.Meta.Nodes.Start)),
+			PlanFinishedAt: apistructs.IssueTime(timeFromMilli(op.Meta.Nodes.End)),
 			IdentityInfo: apistructs.IdentityInfo{
 				UserID: f.sdk.Identity.UserID,
 			},
@@ -206,10 +206,10 @@ func convertIssueItem(issue *dao.IssueItem) *Item {
 	}
 }
 
-func timeFromMilli(millis int64) *time.Time {
+func timeFromMilli(millis int64) time.Time {
 	// use seconds, ignore ms
 	t := time.Unix(millis/1000, 0)
-	return &t
+	return t
 }
 
 func milliFromTime(t *time.Time) int64 {

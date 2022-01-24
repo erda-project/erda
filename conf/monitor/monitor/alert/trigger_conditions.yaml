@@ -17,12 +17,8 @@
     - key: application_name
       index: application_service_node
       filters:
-        - org_name
-        - project_id
         - terminus_key
     - key: service_name
       index: application_service_node
       filters:
-        - org_name
-        - project_id
         - terminus_key

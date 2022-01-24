@@ -20,12 +20,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mcuadros/go-version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/i18n"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -41,7 +43,8 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 		// sleep 10秒，继续请求
 		logrus.Infof("polling addon: %v status until it's healthy", addonIns.ID)
 		if time.Now().Unix()-startTime > (conf.RuntimeUpMaxWaitTime() * 60) {
-			a.ExportLogInfo(apistructs.ErrorLevel, apistructs.AddonError, addonIns.ID, addonIns.ID+"-deploytimeout", "等待 addon(%s)(%s) 健康超时(%d min)", addonSpec.Name, addonIns.ID, conf.RuntimeUpMaxWaitTime())
+			a.ExportLogInfo(apistructs.ErrorLevel, apistructs.AddonError, addonIns.ID, addonIns.ID+"-deploytimeout", i18n.OrgSprintf(addonIns.OrgID, "WaitingForAddonTimeOut"),
+				addonSpec.Name, addonIns.ID, conf.RuntimeUpMaxWaitTime())
 			logrus.Errorf("polling addon: %v status timeout(max: %d s)", addonIns.ID, apistructs.RuntimeUpMaxWaitTime)
 			break
 		}
@@ -54,7 +57,8 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 		}
 		// 如果状态是ready或者healthy，说明服务已经发起来了
 		if serviceGroup.Status == apistructs.StatusReady || serviceGroup.Status == apistructs.StatusHealthy {
-			a.ExportLogInfo(apistructs.SuccessLevel, apistructs.AddonError, addonIns.ID, addonIns.ID, "addon(%s)(%s) 已健康", addonIns.AddonName, addonIns.ID)
+			a.ExportLogInfo(apistructs.SuccessLevel, apistructs.AddonError, addonIns.ID, addonIns.ID, i18n.OrgSprintf(addonIns.OrgID, "AddonIsHealthy"),
+				addonIns.AddonName, addonIns.ID)
 			logrus.Infof("addon: %v is healthy!", addonIns.ID)
 			clusterInfo, err := a.bdl.QueryClusterInfo(addonInsRouting.Cluster)
 			if err != nil {
@@ -127,7 +131,7 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 				for _, pod := range pendingPods {
 					podnamelist = append(podnamelist, pod.PodName)
 				}
-				a.ExportLogInfo(apistructs.InfoLevel, apistructs.AddonError, addonIns.ID, addonIns.ID, "unhealthy addon(%s) with pending pods: [%s]",
+				a.ExportLogInfo(apistructs.InfoLevel, apistructs.AddonError, addonIns.ID, addonIns.ID, i18n.OrgSprintf(addonIns.OrgID, "UnhealthyAddonWithPendingPods"),
 					addonIns.ID, strutil.Join(podnamelist, ",", true))
 			}
 		}
@@ -500,8 +504,9 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 			buildErr = a.BuildMysqlOperatorServiceItem(addonIns, addonOperatorDice, &clusterInfo)
 		}
 	case apistructs.AddonES:
-		if capacity.Data.ElasticsearchOperator && addonSpec.Version == "6.8.9" {
-			buildErr = a.BuildESOperatorServiceItem(addonIns, addonDice, &clusterInfo)
+		// 6.8.9 or later version use operator.
+		if capacity.Data.ElasticsearchOperator && version.Compare(addonSpec.Version, "6.8.9", ">=") {
+			buildErr = a.BuildESOperatorServiceItem(addonIns, addonDice, addonSpec.Version)
 		} else {
 			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "1"
 			buildErr = a.BuildEsServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)

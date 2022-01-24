@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"bou.ke/monkey"
-
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
@@ -30,83 +29,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/issuestream"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
-
-func Test_getExpiryStatus(t *testing.T) {
-	type args struct {
-		planFinishedAt *time.Time
-		timeBase       time.Time
-	}
-
-	timeBase := time.Date(2021, 9, 1, 0, 0, 0, 0, time.Now().Location())
-	before := time.Date(2021, 8, 30, 0, 0, 0, 0, time.Now().Location())
-	today := time.Date(2021, 9, 1, 0, 0, 0, 0, time.Now().Location())
-	tomorrow := time.Date(2021, 9, 2, 0, 0, 0, 0, time.Now().Location())
-	week := time.Date(2021, 9, 7, 0, 0, 0, 0, time.Now().Location())
-	month := time.Date(2021, 9, 8, 0, 0, 0, 0, time.Now().Location())
-	future := time.Date(2021, 10, 15, 0, 0, 0, 0, time.Now().Location())
-	tests := []struct {
-		name string
-		args args
-		want dao.ExpireType
-	}{
-		{
-			name: "N/A",
-			args: args{
-				planFinishedAt: nil,
-			},
-			want: dao.ExpireTypeUndefined,
-		},
-		{
-			name: "Expired",
-			args: args{
-				planFinishedAt: &before,
-			},
-			want: dao.ExpireTypeExpired,
-		},
-		{
-			name: "Today",
-			args: args{
-				planFinishedAt: &today,
-			},
-			want: dao.ExpireTypeExpireIn1Day,
-		},
-		{
-			name: "Tomorrow",
-			args: args{
-				planFinishedAt: &tomorrow,
-			},
-			want: dao.ExpireTypeExpireIn2Days,
-		},
-		{
-			name: "This week",
-			args: args{
-				planFinishedAt: &week,
-			},
-			want: dao.ExpireTypeExpireIn7Days,
-		},
-		{
-			name: "This mouth",
-			args: args{
-				planFinishedAt: &month,
-			},
-			want: dao.ExpireTypeExpireIn30Days,
-		},
-		{
-			name: "Future",
-			args: args{
-				planFinishedAt: &future,
-			},
-			want: dao.ExpireTypeExpireInFuture,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := getExpiryStatus(tt.args.planFinishedAt, timeBase); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getExpiryStatus() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestCreateStream(t *testing.T) {
 	streamFields := map[string][]interface{}{
@@ -166,4 +88,57 @@ func TestCreateStream(t *testing.T) {
 	svc := &Issue{db: db, uc: uc, bdl: bdl, stream: stream}
 	err := svc.CreateStream(apistructs.IssueUpdateRequest{ID: 1, IdentityInfo: apistructs.IdentityInfo{UserID: "1"}}, streamFields)
 	assert.NoError(t, err)
+}
+
+func Test_validPlanTime(t *testing.T) {
+	type args struct {
+		req   apistructs.IssueUpdateRequest
+		issue *dao.Issue
+	}
+	timeBase := time.Date(2021, 9, 1, 0, 0, 0, 0, time.Now().Location())
+	today := time.Date(2021, 9, 1, 0, 0, 0, 0, time.Now().Location())
+	tomorrow := time.Date(2021, 9, 2, 0, 0, 0, 0, time.Now().Location())
+	nilTime := time.Unix(0, 0)
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			args: args{
+				req: apistructs.IssueUpdateRequest{},
+				issue: &dao.Issue{
+					PlanStartedAt:  &timeBase,
+					PlanFinishedAt: &timeBase,
+				},
+			},
+		},
+		{
+			args: args{
+				req: apistructs.IssueUpdateRequest{
+					PlanStartedAt:  apistructs.IssueTime(tomorrow),
+					PlanFinishedAt: apistructs.IssueTime(today),
+				},
+				issue: &dao.Issue{},
+			},
+			wantErr: true,
+		},
+		{
+			args: args{
+				req: apistructs.IssueUpdateRequest{
+					PlanStartedAt: apistructs.IssueTime(nilTime),
+				},
+				issue: &dao.Issue{
+					PlanStartedAt: &timeBase,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validPlanTime(tt.args.req, tt.args.issue); (err != nil) != tt.wantErr {
+				t.Errorf("validPlanTime() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }

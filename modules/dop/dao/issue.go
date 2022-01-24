@@ -78,6 +78,25 @@ const (
 
 var ExpireTypes = []ExpireType{ExpireTypeUndefined, ExpireTypeExpired, ExpireTypeExpireIn1Day, ExpireTypeExpireIn2Days, ExpireTypeExpireIn7Days, ExpireTypeExpireIn30Days, ExpireTypeExpireInFuture}
 
+func GetExpiryStatus(planFinishedAt *time.Time, timeBase time.Time) ExpireType {
+	if planFinishedAt == nil {
+		return ExpireTypeUndefined
+	}
+	if planFinishedAt.Before(timeBase) {
+		return ExpireTypeExpired
+	} else if planFinishedAt.Before(timeBase.Add(1 * 24 * time.Hour)) {
+		return ExpireTypeExpireIn1Day
+	} else if planFinishedAt.Before(timeBase.Add(2 * 24 * time.Hour)) {
+		return ExpireTypeExpireIn2Days
+	} else if planFinishedAt.Before(timeBase.Add(7 * 24 * time.Hour)) {
+		return ExpireTypeExpireIn7Days
+	} else if planFinishedAt.Before(timeBase.Add(30 * 24 * time.Hour)) {
+		return ExpireTypeExpireIn30Days
+	} else {
+		return ExpireTypeExpireInFuture
+	}
+}
+
 func (Issue) TableName() string {
 	return "dice_issues"
 }
@@ -748,13 +767,13 @@ var expireTypes = []ExpireType{
 }
 
 var conditions = map[ExpireType]string{
-	ExpireTypeUndefined:      "a.plan_finished_at IS NULL",
-	ExpireTypeExpired:        "a.plan_finished_at < CURDATE()",
-	ExpireTypeExpireIn1Day:   "a.plan_finished_at = CURDATE()",
-	ExpireTypeExpireIn2Days:  "a.plan_finished_at = DATE_ADD(CURDATE(),INTERVAL 1 DAY)",
-	ExpireTypeExpireIn7Days:  "a.plan_finished_at > DATE_ADD(CURDATE(),INTERVAL 1 DAY) AND a.plan_finished_at < DATE_ADD(CURDATE(),INTERVAL 7 DAY)",
-	ExpireTypeExpireIn30Days: "a.plan_finished_at >= DATE_ADD(CURDATE(),INTERVAL 7 DAY) AND a.plan_finished_at < DATE_ADD(CURDATE(),INTERVAL 30 DAY)",
-	ExpireTypeExpireInFuture: "a.plan_finished_at >= DATE_ADD(CURDATE(),INTERVAL 30 DAY)",
+	ExpireTypeUndefined:      "DATE(a.plan_finished_at) IS NULL",
+	ExpireTypeExpired:        "DATE(a.plan_finished_at) < CURDATE()",
+	ExpireTypeExpireIn1Day:   "DATE(a.plan_finished_at) = CURDATE()",
+	ExpireTypeExpireIn2Days:  "DATE(a.plan_finished_at) = DATE_ADD(CURDATE(),INTERVAL 1 DAY)",
+	ExpireTypeExpireIn7Days:  "DATE(a.plan_finished_at) > DATE_ADD(CURDATE(),INTERVAL 1 DAY) AND DATE(a.plan_finished_at) < DATE_ADD(CURDATE(),INTERVAL 7 DAY)",
+	ExpireTypeExpireIn30Days: "DATE(a.plan_finished_at) >= DATE_ADD(CURDATE(),INTERVAL 7 DAY) AND DATE(a.plan_finished_at) < DATE_ADD(CURDATE(),INTERVAL 30 DAY)",
+	ExpireTypeExpireInFuture: "DATE(a.plan_finished_at) >= DATE_ADD(CURDATE(),INTERVAL 30 DAY)",
 }
 
 func (client *DBClient) BatchUpdateIssueExpiryStatus(states []apistructs.IssueStateBelong) error {

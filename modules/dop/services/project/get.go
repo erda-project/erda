@@ -22,11 +22,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	calcu "github.com/erda-project/erda/pkg/resourcecalculator"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -121,7 +121,7 @@ func (p *Project) makeProjectResourceTips(ctx context.Context, dto *apistructs.P
 		return
 	}
 
-	langCodes, _ := ctx.Value("lang_codes").(i18n.LanguageCodes)
+	langCodes := httpserver.UnwrapI18nCodes(ctx)
 
 	for _, resource := range []*apistructs.ResourceConfigInfo{
 		dto.ResourceConfig.PROD,

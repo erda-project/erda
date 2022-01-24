@@ -32,12 +32,14 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/components/addon/mysql"
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	i18n2 "github.com/erda-project/erda/modules/orchestrator/i18n"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/sexp"
@@ -2186,14 +2188,19 @@ func (a *Addon) ListExtension(extensionType string) (*[]map[string]interface{}, 
 
 // ListCustomAddon 包装api/extensions接口，返回第三方addon
 func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
+	locale := a.bdl.GetLocale(i18n.GetGoroutineBindLang())
+	basic := locale.Get("basicPlan")
+	professional := locale.Get("professionalPlan")
+
 	createableAddons := []string{"api-gateway", "mysql", "canal", "monitor"}
 	createableAddonVersion := map[string]string{"api-gateway": "3.0.0", "mysql": "5.7.29", "canal": "1.1.0", "monitor": "3.6"}
 	createableAddonPlan := map[string][]map[string]string{
-		"api-gateway": {{"label": "基础版", "value": "api-gateway:basic"}},
-		"mysql":       {{"label": "基础版", "value": "mysql:basic"}},
-		"canal":       {{"label": "基础版", "value": "canal:basic"}},
-		"monitor":     {{"label": "专业版", "value": "monitor:professional"}},
+		"api-gateway": {{"label": basic, "value": "api-gateway:basic"}},
+		"mysql":       {{"label": basic, "value": "mysql:basic"}},
+		"canal":       {{"label": basic, "value": "canal:basic"}},
+		"monitor":     {{"label": professional, "value": "monitor:professional"}},
 	}
+
 	// 构建请求参数，请求extension
 	req := apistructs.ExtensionQueryRequest{
 		All:  "true",
@@ -2624,7 +2631,7 @@ func (a *Addon) deployAddons(req *apistructs.AddonCreateRequest, deploys []dbcli
 	for _, v := range deploys {
 		if _, ok := AddonInfos.Load(v.AddonName); !ok {
 			a.ExportLogInfoDetail(apistructs.ErrorLevel, apistructs.RuntimeError, fmt.Sprintf("%d", req.RuntimeID),
-				fmt.Sprintf("不存在该类型 addon: %s, 请检查 diceyml 中 addon 部分是否正确", v.AddonName),
+				i18n2.OrgSprintf(strconv.FormatUint(req.OrgID, 10), "AddonTypeDoseNoExist", v.AddonName),
 				fmt.Sprintf("not found addon: %s", v.AddonName))
 			return errors.Errorf("not found addon: %s", v.AddonName)
 		}
@@ -2806,7 +2813,7 @@ func (a *Addon) PrepareCheckProjectLastResource(projectID uint64, req *[]apistru
 	// 比较项目quota预留资源是不是够
 	if utils.Smaller(projectInfo.CpuQuota-usedCpu, deployNeedCpu) {
 		s := fmt.Sprintf("The CPU reserved for the project is %.2f cores, %.2f cores have been occupied, %.2f CPUs are required for deploy, and the resources for addon are insufficient", projectInfo.CpuQuota, usedCpu, deployNeedCpu)
-		a.ExportLogInfoDetail(apistructs.ErrorLevel, apistructs.RuntimeError, (*req)[0].RuntimeID, "资源配额不足无法部署", s)
+		a.ExportLogInfoDetail(apistructs.ErrorLevel, apistructs.RuntimeError, (*req)[0].RuntimeID, i18n2.OrgSprintf(strconv.FormatUint(runtimeInfo.OrgID, 10), "NotEnoughQuotaToDeploy"), s)
 		return errors.Errorf(s)
 	}
 	useMem2, err := strconv.ParseFloat(fmt.Sprintf("%.2f", usedMem), 64)
@@ -2815,7 +2822,7 @@ func (a *Addon) PrepareCheckProjectLastResource(projectID uint64, req *[]apistru
 	}
 	if utils.Smaller(projectInfo.MemQuota*1024.0-float64(usedMem), deployNeedMem) {
 		s := fmt.Sprintf("The memory reserved for the project is %.2f G, %.2f G have been occupied, %.2f G are required for deploy, and the resources for addon are insufficient", projectInfo.MemQuota, useMem2/1024, deployNeedMem/1024.0)
-		a.ExportLogInfoDetail(apistructs.ErrorLevel, apistructs.RuntimeError, (*req)[0].RuntimeID, "资源配额不足无法部署", s)
+		a.ExportLogInfoDetail(apistructs.ErrorLevel, apistructs.RuntimeError, (*req)[0].RuntimeID, i18n2.OrgSprintf(strconv.FormatUint(runtimeInfo.OrgID, 10), "NotEnoughQuotaToDeploy"), s)
 		return errors.Errorf(s)
 	}
 

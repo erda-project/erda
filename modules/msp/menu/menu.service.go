@@ -46,7 +46,7 @@ var NotExist = map[string]bool{
 	//"RegisterCenter":  true,
 	//"ConfigCenter":    true,
 	//"AlarmManagement": true,
-	"AlertCenter":   true,
+	//"AlertCenter":   true,
 	"ServiceManage": true,
 }
 
@@ -142,10 +142,14 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 					if child.MustExists {
 						child.Exists = true
 					}
+					child.IsK8S = isK8s
+					child.IsEdas = clusterInfo.IsEDAS()
 				}
 			}
 			item.ClusterName = clusterName
 			item.ClusterType = clusterType
+			item.IsK8S = isK8s
+			item.IsEdas = clusterInfo.IsEDAS()
 			for _, child := range item.Children {
 				if len(child.Href) > 0 {
 					child.Href = s.version + child.Href
@@ -204,6 +208,8 @@ func (s *menuService) GetMenu(ctx context.Context, req *pb.GetMenuRequest) (*pb.
 				if child.MustExists {
 					child.Exists = true
 				}
+				child.IsK8S = isK8s
+				child.IsEdas = clusterInfo.IsEDAS()
 			}
 		}
 	}

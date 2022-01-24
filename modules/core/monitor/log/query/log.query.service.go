@@ -22,6 +22,7 @@ import (
 	"time"
 
 	linq "github.com/ahmetb/go-linq/v3"
+	"github.com/mohae/deepcopy"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	pb "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
@@ -223,7 +224,13 @@ func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn fun
 	if fn != nil {
 		sel = fn(sel)
 	}
-	it, err := s.getIterator(ctx, sel, req.GetLive())
+	var it storekit.Iterator
+	if withTotal {
+		it, err = s.getIterator(ctx, sel, req.GetLive())
+	} else {
+		it, err = s.getOrderedIterator(ctx, s.splitSelectors(sel, 24*time.Hour, 10), req.GetLive())
+	}
+
 	if err != nil {
 		return nil, 0, errors.NewInternalServerError(err)
 	}
@@ -286,6 +293,51 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 		return errors.NewInternalServerError(it.Error())
 	}
 	return nil
+}
+
+func (s *logQueryService) splitSelectors(sel *storage.Selector, interval time.Duration, maxSlices int) []*storage.Selector {
+	var sels []*storage.Selector
+	end := sel.End
+	count := 0
+
+	for end > sel.Start {
+		start := end - int64(interval)
+		if start < sel.Start || (count+1) >= maxSlices {
+			start = sel.Start
+		}
+
+		subSel := deepcopy.Copy(sel).(*storage.Selector)
+		subSel.Start = start
+		subSel.End = end
+		sels = append(sels, subSel)
+		count++
+
+		end = start
+	}
+
+	length := len(sels)
+	if length <= 1 {
+		return sels
+	}
+	reversed := make([]*storage.Selector, length)
+	for i := 0; i < length; i++ {
+		reversed[i] = sels[length-1-i]
+	}
+
+	return reversed
+}
+
+func (s *logQueryService) getOrderedIterator(ctx context.Context, sels []*storage.Selector, live bool) (storekit.Iterator, error) {
+	var its []storekit.Iterator
+	for _, item := range sels {
+		it, err := s.getIterator(ctx, item, live)
+		if err != nil {
+			return nil, err
+		}
+		its = append(its, it)
+	}
+
+	return storekit.OrderedIterator(its...), nil
 }
 
 func (s *logQueryService) getIterator(ctx context.Context, sel *storage.Selector, live bool) (storekit.Iterator, error) {
@@ -362,7 +414,7 @@ const (
 	defaultQueryCount     = 50
 	maxQueryCount         = 700
 	maxTimeRange          = 30 * 24 * int64(time.Hour)
-	defaultQueryTimeRange = 3 * int64(time.Hour)
+	defaultQueryTimeRange = 7 * 24 * int64(time.Hour)
 )
 
 func getLimit(count int64) int {

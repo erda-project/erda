@@ -168,7 +168,7 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		External:       req.External,
 		Stage:          req.GetStage(),
 		Owner:          req.Owner,
-		ExpiryStatus:   getExpiryStatus(req.PlanFinishedAt, now),
+		ExpiryStatus:   dao.GetExpiryStatus(req.PlanFinishedAt, now),
 	}
 	if err := svc.db.CreateIssue(&create); err != nil {
 		return nil, apierrors.ErrCreateIssue.InternalError(err)
@@ -230,25 +230,6 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 	go monitor.MetricsIssueById(int(create.ID), svc.db, svc.uc, svc.bdl)
 
 	return &create, nil
-}
-
-func getExpiryStatus(planFinishedAt *time.Time, timeBase time.Time) dao.ExpireType {
-	if planFinishedAt == nil {
-		return dao.ExpireTypeUndefined
-	}
-	if planFinishedAt.Before(timeBase) {
-		return dao.ExpireTypeExpired
-	} else if planFinishedAt.Before(timeBase.Add(1 * 24 * time.Hour)) {
-		return dao.ExpireTypeExpireIn1Day
-	} else if planFinishedAt.Before(timeBase.Add(2 * 24 * time.Hour)) {
-		return dao.ExpireTypeExpireIn2Days
-	} else if planFinishedAt.Before(timeBase.Add(7 * 24 * time.Hour)) {
-		return dao.ExpireTypeExpireIn7Days
-	} else if planFinishedAt.Before(timeBase.Add(30 * 24 * time.Hour)) {
-		return dao.ExpireTypeExpireIn30Days
-	} else {
-		return dao.ExpireTypeExpireInFuture
-	}
 }
 
 // Paging 分页查询事件
@@ -507,6 +488,24 @@ func (svc *Issue) GetIssue(req apistructs.IssueGetRequest) (*apistructs.Issue, e
 	return issue, nil
 }
 
+func validPlanTime(req apistructs.IssueUpdateRequest, issue *dao.Issue) error {
+	started := req.PlanStartedAt.Value()
+	finished := req.PlanFinishedAt.Value()
+	if started != nil && finished != nil {
+		if started.After(*finished) {
+			return fmt.Errorf("plan started is after plan finished time")
+		}
+	} else {
+		if finished != nil && issue.PlanStartedAt != nil && issue.PlanStartedAt.After(*finished) {
+			return apierrors.ErrUpdateIssue.InvalidParameter("plan finished at")
+		}
+		if started != nil && issue.PlanFinishedAt != nil && started.After(*issue.PlanFinishedAt) {
+			return apierrors.ErrUpdateIssue.InvalidParameter("plan started at")
+		}
+	}
+	return nil
+}
+
 // UpdateIssue 更新事件
 func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	// 请求校验
@@ -522,17 +521,8 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		return apierrors.ErrGetIssue.InternalError(err)
 	}
 
-	if req.PlanFinishedAt != nil && req.PlanStartedAt != nil {
-		if req.PlanStartedAt.After(*req.PlanFinishedAt) {
-			return fmt.Errorf("plan started is after plan finished time")
-		}
-	} else {
-		if req.PlanFinishedAt != nil && issueModel.PlanStartedAt != nil && issueModel.PlanStartedAt.After(*req.PlanFinishedAt) {
-			return apierrors.ErrUpdateIssue.InvalidParameter("plan finished at")
-		}
-		if req.PlanStartedAt != nil && issueModel.PlanFinishedAt != nil && req.PlanStartedAt.After(*issueModel.PlanFinishedAt) {
-			return apierrors.ErrUpdateIssue.InvalidParameter("plan started at")
-		}
+	if err := validPlanTime(req, &issueModel); err != nil {
+		return err
 	}
 
 	//如果是BUG从打开或者重新打开切换状态为已解决，修改责任人为当前用户
@@ -554,9 +544,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	canUpdateFields := issueModel.GetCanUpdateFields()
 	// 请求传入的需要更新的字段
 	changedFields := req.GetChangedFields(canUpdateFields["man_hour"].(string))
-	if req.PlanFinishedAt != nil {
+	if !req.PlanFinishedAt.IsEmpty() {
+		// change plan finished at, update exipry status
 		now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
-		changedFields["expiry_status"] = getExpiryStatus(req.PlanFinishedAt, now)
+		changedFields["expiry_status"] = dao.GetExpiryStatus(req.PlanFinishedAt.Time(), now)
 	}
 	// 检查修改的字段合法性
 	if err := svc.checkChangeFields(changedFields); err != nil {
@@ -672,25 +663,7 @@ func (svc *Issue) AfterIssueChildrenUpdate(id uint64) error {
 	}
 
 	if len(parents) == 1 {
-		item := parents[0]
-		fields := make(map[string]interface{})
-		start, end, err := svc.db.FindIssueChildrenTimeRange(item.ID)
-		if err != nil {
-			return err
-		}
-		if start != nil {
-			fields["plan_started_at"] = start
-		}
-		if end != nil {
-			now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
-			fields["expiry_status"] = getExpiryStatus(end, now)
-			fields["plan_finished_at"] = end
-		}
-		if len(fields) > 0 {
-			if err := svc.db.UpdateIssue(item.ID, fields); err != nil {
-				return apierrors.ErrUpdateIssue.InternalError(err)
-			}
-		}
+		return svc.issueRelated.AfterIssueInclusionRelationChange(parents[0].ID)
 	}
 	return nil
 }
