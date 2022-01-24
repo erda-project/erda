@@ -408,10 +408,9 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 							inode = fmt.Sprintf("%v/%v/tree/%v/%v/%v", p.InParams.ProjectID, appNameIDMap.AppNameToID[appName], v.Ref, v.Path, v.FileName)
 						}
 					}
-
 					build.ServerData = &cptype.OpServerData{
 						"pipelineID": v.PipelineId,
-						"inode":      base64.StdEncoding.EncodeToString([]byte(inode)),
+						"inode":      base64.URLEncoding.EncodeToString([]byte(inode)),
 						"appName":    appName,
 					}
 					return build
