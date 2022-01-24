@@ -24,6 +24,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	checkerpb "github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
 	"github.com/erda-project/erda/modules/msp/apm/checker/storage/db"
 )
@@ -38,14 +40,14 @@ func Test_checkerV1Service_DescribeCheckersV1(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"case1", args{ctx: nil, req: &checkerpb.DescribeCheckersV1Request{ProjectID: -1, Env: "TEST", TenantId: "test"}}, true},
-		{"case2", args{ctx: nil, req: &checkerpb.DescribeCheckersV1Request{ProjectID: 0, Env: "TEST", TenantId: "error"}}, true},
-		{"case2-1", args{ctx: nil, req: &checkerpb.DescribeCheckersV1Request{ProjectID: 0, Env: "TEST", TenantId: "test"}}, false},
-		{"case3", args{ctx: nil, req: &checkerpb.DescribeCheckersV1Request{ProjectID: 1, Env: "TEST", TenantId: "test"}}, false},
-		{"case4", args{ctx: nil, req: &checkerpb.DescribeCheckersV1Request{ProjectID: -2, Env: "TEST", TenantId: "test"}}, true},
-		{"case5", args{ctx: nil, req: &checkerpb.DescribeCheckersV1Request{ProjectID: 2, Env: "TEST", TenantId: "test"}}, true},
-		{"case6", args{ctx: nil, req: &checkerpb.DescribeCheckersV1Request{ProjectID: 3, Env: "TEST", TenantId: "test"}}, false},
-		{"case7", args{ctx: nil, req: &checkerpb.DescribeCheckersV1Request{ProjectID: 4, Env: "TEST", TenantId: "test"}}, false},
+		{"case1", args{ctx: transport.WithHeader(context.Background(), transport.Header{"lang": []string{"zh"}}), req: &checkerpb.DescribeCheckersV1Request{ProjectID: -1, Env: "TEST", TenantId: "test"}}, true},
+		{"case2", args{ctx: transport.WithHeader(context.Background(), transport.Header{"lang": []string{"zh"}}), req: &checkerpb.DescribeCheckersV1Request{ProjectID: 0, Env: "TEST", TenantId: "error"}}, true},
+		{"case2-1", args{ctx: transport.WithHeader(context.Background(), transport.Header{"lang": []string{"zh"}}), req: &checkerpb.DescribeCheckersV1Request{ProjectID: 0, Env: "TEST", TenantId: "test"}}, false},
+		{"case3", args{ctx: transport.WithHeader(context.Background(), transport.Header{"lang": []string{"zh"}}), req: &checkerpb.DescribeCheckersV1Request{ProjectID: 1, Env: "TEST", TenantId: "test"}}, false},
+		{"case4", args{ctx: transport.WithHeader(context.Background(), transport.Header{"lang": []string{"zh"}}), req: &checkerpb.DescribeCheckersV1Request{ProjectID: -2, Env: "TEST", TenantId: "test"}}, true},
+		{"case5", args{ctx: transport.WithHeader(context.Background(), transport.Header{"lang": []string{"zh"}}), req: &checkerpb.DescribeCheckersV1Request{ProjectID: 2, Env: "TEST", TenantId: "test"}}, true},
+		{"case6", args{ctx: transport.WithHeader(context.Background(), transport.Header{"lang": []string{"zh"}}), req: &checkerpb.DescribeCheckersV1Request{ProjectID: 3, Env: "TEST", TenantId: "test"}}, false},
+		{"case7", args{ctx: transport.WithHeader(context.Background(), transport.Header{"lang": []string{"zh"}}), req: &checkerpb.DescribeCheckersV1Request{ProjectID: 4, Env: "TEST", TenantId: "test"}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -129,7 +131,7 @@ func Test_checkerV1Service_DescribeCheckersV1(t *testing.T) {
 				return ms, nil
 			})
 			var cv1s *checkerV1Service
-			monkey.PatchInstanceMethod(reflect.TypeOf(cv1s), "QueryCheckersLatencySummaryByProject", func(cv1s *checkerV1Service, projectID int64, metrics map[int64]*checkerpb.DescribeItemV1) error {
+			monkey.PatchInstanceMethod(reflect.TypeOf(cv1s), "QueryCheckersLatencySummaryByProject", func(cv1s *checkerV1Service, lang i18n.LanguageCodes, projectID int64, metrics map[int64]*checkerpb.DescribeItemV1) error {
 				if projectID == -2 || projectID == 2 {
 					return errors.New("no project")
 				}
@@ -156,13 +158,14 @@ func Test_checkerV1Service_DescribeCheckerV1(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"case1", args{ctx: nil, req: &checkerpb.DescribeCheckerV1Request{Id: -1, Period: ""}}, true},
-		{"case2", args{ctx: nil, req: &checkerpb.DescribeCheckerV1Request{Id: 0, Period: ""}}, false},
-		{"case3", args{ctx: nil, req: &checkerpb.DescribeCheckerV1Request{Id: 1, Period: ""}}, false},
-		{"case4", args{ctx: nil, req: &checkerpb.DescribeCheckerV1Request{Id: -2, Period: ""}}, true},
+		{"case1", args{ctx: transport.WithHeader(context.Background(), transport.Header{"lang": []string{"zh"}}), req: &checkerpb.DescribeCheckerV1Request{Id: -1, Period: ""}}, true},
+		{"case2", args{ctx: transport.WithHeader(context.Background(), transport.Header{"lang": []string{"zh"}}), req: &checkerpb.DescribeCheckerV1Request{Id: 0, Period: ""}}, false},
+		{"case3", args{ctx: transport.WithHeader(context.Background(), transport.Header{"lang": []string{"zh"}}), req: &checkerpb.DescribeCheckerV1Request{Id: 1, Period: ""}}, false},
+		{"case4", args{ctx: transport.WithHeader(context.Background(), transport.Header{"lang": []string{"zh"}}), req: &checkerpb.DescribeCheckerV1Request{Id: -2, Period: ""}}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			monkey.UnpatchAll()
 			var metricdb *db.MetricDB
 			monkey.PatchInstanceMethod(reflect.TypeOf(metricdb), "GetByID", func(metricdb *db.MetricDB, id int64) (*db.Metric, error) {
 				if id == -1 {
@@ -179,7 +182,7 @@ func Test_checkerV1Service_DescribeCheckerV1(t *testing.T) {
 			})
 
 			var cv1s *checkerV1Service
-			monkey.PatchInstanceMethod(reflect.TypeOf(cv1s), "QueryCheckersLatencySummary", func(cv1s *checkerV1Service, metricID int64, timeUnit string, metrics map[int64]*checkerpb.DescribeItemV1) error {
+			monkey.PatchInstanceMethod(reflect.TypeOf(cv1s), "QueryCheckersLatencySummary", func(cv1s *checkerV1Service, lang i18n.LanguageCodes, metricID int64, timeUnit string, metrics map[int64]*checkerpb.DescribeItemV1) error {
 				if metricID == -2 {
 					return errors.New("no metric")
 				}
