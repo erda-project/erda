@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/template"
 )
@@ -60,6 +61,7 @@ func (s *adapterService) GetInstrumentationLibrary(ctx context.Context, request 
 }
 
 func (s *adapterService) GetInstrumentationLibraryDocs(ctx context.Context, request *pb.GetInstrumentationLibraryDocsRequest) (*pb.GetInstrumentationLibraryDocsResponse, error) {
+	lang := apis.GetLang(ctx)
 	if templates, ok := s.p.templates[request.Strategy]; ok {
 		for _, t := range templates.Templates {
 			if t.Language != request.Language {
@@ -69,7 +71,7 @@ func (s *adapterService) GetInstrumentationLibraryDocs(ctx context.Context, requ
 				"erda_env_id": request.ScopeId,
 				"endpoint":    s.p.Cfg.CollectorUrl + endpoints[request.Strategy],
 			}
-			result := template.Render(t.Template, renderMap)
+			result := template.Render(t.Template[lang], renderMap)
 			return &pb.GetInstrumentationLibraryDocsResponse{
 				Data: result,
 			}, nil
