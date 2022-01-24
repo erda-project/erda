@@ -21,6 +21,36 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *CreateProjectPipelineSourcePreCheckRequest) Validate() error {
+	if !(this.AppID > 0) {
+		return github_com_mwitkow_go_proto_validators.FieldError("AppID", fmt.Errorf(`value '%v' must be greater than '0'`, this.AppID))
+	}
+	if this.SourceType == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("SourceType", fmt.Errorf(`value '%v' must not be an empty string`, this.SourceType))
+	}
+	if this.Ref == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("Ref", fmt.Errorf(`value '%v' must not be an empty string`, this.Ref))
+	}
+	if this.FileName == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("FileName", fmt.Errorf(`value '%v' must not be an empty string`, this.FileName))
+	}
+	return nil
+}
+func (this *CreateProjectPipelineSourcePreCheckResponse) Validate() error {
+	return nil
+}
+func (this *CreateProjectPipelineNamePreCheckRequest) Validate() error {
+	if !(this.ProjectID > 0) {
+		return github_com_mwitkow_go_proto_validators.FieldError("ProjectID", fmt.Errorf(`value '%v' must be greater than '0'`, this.ProjectID))
+	}
+	if this.Name == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("Name", fmt.Errorf(`value '%v' must not be an empty string`, this.Name))
+	}
+	return nil
+}
+func (this *CreateProjectPipelineNamePreCheckResponse) Validate() error {
+	return nil
+}
 func (this *ListAppPipelineYmlRequest) Validate() error {
 	return nil
 }
