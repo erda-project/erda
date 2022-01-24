@@ -24,9 +24,11 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
@@ -109,6 +111,7 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *cptype.Component, sce
 		if err != nil {
 			return err
 		}
+		status := cputil.I18n(ctx, util.ColumnPipelineStatus+rsp.Status.String())
 		if rsp.TimeBegin != nil && (rsp.TimeEnd != nil || rsp.TimeUpdated != nil) && rsp.Status.IsEndStatus() {
 			var timeLayoutStr = "2006-01-02 15:04:05" //go中的时间格式化必须是这个时间
 			if rsp.TimeEnd == nil {
@@ -121,7 +124,7 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *cptype.Component, sce
 			}
 			i.Data = map[string]interface{}{
 				"pipelineID": pipelineID,
-				"status":     rsp.Status.ToDesc(),
+				"status":     status,
 				"time":       h + time.Unix(int64(t.Seconds())-8*3600, 0).Format("04:05"),
 				"timeBegin":  rsp.TimeBegin.Format(timeLayoutStr),
 				"timeEnd":    rsp.TimeEnd.Format(timeLayoutStr),
@@ -130,20 +133,20 @@ func (i *ComponentFileInfo) Render(ctx context.Context, c *cptype.Component, sce
 			var timeLayoutStr = "2006-01-02 15:04:05" //go中的时间格式化必须是这个时间
 			i.Data = map[string]interface{}{
 				"pipelineID": pipelineID,
-				"status":     rsp.Status.ToDesc(),
+				"status":     status,
 				"timeBegin":  rsp.TimeBegin.Format(timeLayoutStr),
 			}
 		} else {
 			i.Data = map[string]interface{}{
 				"pipelineID": pipelineID,
-				"status":     rsp.Status.ToDesc(),
+				"status":     status,
 			}
 		}
 		if rsp.Status == apistructs.PipelineStatusStopByUser {
-			i.Data["status"] = "用户取消"
+			i.Data["status"] = status
 		}
 		if rsp.Status == apistructs.PipelineStatusNoNeedBySystem {
-			i.Data["status"] = "无需执行"
+			i.Data["status"] = status
 		}
 		res, err := i.bdl.GetPipelineReportSet(pipelineID, []string{"api-test"})
 		if err != nil {
@@ -177,35 +180,35 @@ Label:
 	i.Props = make(map[string]interface{})
 	i.Props["fields"] = []PropColumn{
 		{
-			Label:    "流水线ID",
+			Label:    cputil.I18n(ctx, "pipelineID"),
 			ValueKey: "pipelineID",
 		},
 		{
-			Label:    "状态",
+			Label:    cputil.I18n(ctx, "state"),
 			ValueKey: "status",
 		},
 		{
-			Label:    "时长",
+			Label:    cputil.I18n(ctx, "duration"),
 			ValueKey: "time",
 		},
 		{
-			Label:    "开始时间",
+			Label:    cputil.I18n(ctx, "start-time"),
 			ValueKey: "timeBegin",
 		},
 		{
-			Label:    "结束时间",
+			Label:    cputil.I18n(ctx, "endTime"),
 			ValueKey: "timeEnd",
 		},
 		{
-			Label:    "接口总数",
+			Label:    cputil.I18n(ctx, "totalApi"),
 			ValueKey: "autoTestNum",
 		},
 		{
-			Label:    "接口执行率",
+			Label:    cputil.I18n(ctx, "apiExecRate"),
 			ValueKey: "autoTestExecPercent",
 		},
 		{
-			Label:    "接口通过率",
+			Label:    cputil.I18n(ctx, "apiPassRate"),
 			ValueKey: "autoTestSuccessPercent",
 		},
 	}

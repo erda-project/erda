@@ -87,7 +87,7 @@ func (s *ScenesSetInfo) Render(ctx context.Context, c *cptype.Component, scenari
 			ValueKey: "updaterID",
 		},
 		{
-			Label:    s.sdk.I18n("updateTime"),
+			Label:    s.sdk.I18n("updatedTime"),
 			ValueKey: "updateAtString",
 		},
 	}

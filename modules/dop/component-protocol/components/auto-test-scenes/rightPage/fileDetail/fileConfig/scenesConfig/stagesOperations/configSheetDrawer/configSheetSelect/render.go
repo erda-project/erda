@@ -365,7 +365,7 @@ func (i *ComponentAction) HandlerDefaultValue(meta map[string]interface{}, ctx c
 	i.Type = "TreeSelect"
 	i.Props = props{
 		Placeholder: "请选择",
-		Title:       "请选择配置单",
+		Title:       cputil.I18n(ctx, "selectConfig"),
 	}
 	i.Operations = map[string]operations{
 		apistructs.OnSearchOperation.String(): {

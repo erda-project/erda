@@ -116,10 +116,10 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 
 	f.State.Conditions = []filter.PropCondition{
 		{
-			EmptyText: "全部",
+			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Key:       "iteration",
-			Label:     "迭代",
+			Label:     cputil.I18n(ctx, "iteration"),
 			Options:   iterationOptions,
 			Type:      filter.PropConditionTypeSelect,
 			Required:  true,
@@ -129,10 +129,10 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			HaveFilter: true,
 		},
 		{
-			EmptyText:  "全部",
+			EmptyText:  cputil.I18n(ctx, "all"),
 			Fixed:      true,
 			Key:        "member",
-			Label:      "成员",
+			Label:      cputil.I18n(ctx, "member"),
 			Options:    projectMemberOptions,
 			Type:       filter.PropConditionTypeSelect,
 			HaveFilter: true,

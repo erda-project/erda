@@ -31,11 +31,11 @@ type value struct {
 	ApiSpec MU `json:"apiSpec"`
 }
 
-func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, error) {
+func (i *ComponentStageForm) RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, error) {
 	title := "#" + strconv.Itoa(int(step.ID)) + " "
 	if step.Type == apistructs.StepTypeWait {
 		if step.Value == "" {
-			title = title + "空 等待"
+			title = title + i.sdk.I18n("emptyWait")
 		} else {
 			var value apistructs.AutoTestRunWait
 			if err := json.Unmarshal([]byte(step.Value), &value); err != nil {
@@ -44,17 +44,17 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 			if value.WaitTime > 0 {
 				value.WaitTimeSec = value.WaitTime
 			}
-			title = title + "等待 " + strconv.Itoa(value.WaitTimeSec) + " 秒"
+			title = title + i.sdk.I18n("wait") + " " + strconv.Itoa(value.WaitTimeSec) + " " + i.sdk.I18n("second")
 		}
 	} else if step.Type == apistructs.StepTypeAPI {
 		if step.Value == "" {
-			title = title + "空 接口"
+			title = title + i.sdk.I18n("emptyApi")
 		} else {
 			var value value
 			if err := json.Unmarshal([]byte(step.Value), &value); err != nil {
 				return StageData{}, err
 			}
-			title = title + "接口: " + step.Name + " " + value.ApiSpec.Method + ":" + value.ApiSpec.URL
+			title = title + i.sdk.I18n("API") + ": " + step.Name + " " + value.ApiSpec.Method + ":" + value.ApiSpec.URL
 		}
 	} else if step.Type == apistructs.StepTypeConfigSheet {
 		//if step.Value == "" {
@@ -65,15 +65,15 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 		//	return StageData{}, err
 		//}
 		//title = "配置单: " + value.ConfigSheetName
-		title = title + "配置单: " + step.Name
+		title = title + i.sdk.I18n("configForm") + ": " + step.Name
 		//}
 	} else if step.Type == apistructs.StepTypeScene {
-		title = title + "嵌套场景: " + step.Name
+		title = title + i.sdk.I18n("nestedScene") + ": " + step.Name
 	} else if step.Type == apistructs.StepTypeCustomScript {
 		if step.Value == "" {
-			title = title + "空 自定义脚本"
+			title = title + i.sdk.I18n("emptyCustomScript")
 		} else {
-			title = title + "自定义脚本: " + step.Name
+			title = title + i.sdk.I18n("customScript") + ": " + step.Name
 		}
 	}
 	pd := StageData{
@@ -88,7 +88,7 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 		o.Key = apistructs.AutoTestSceneStepCopyOperationKey.String()
 		o.Icon = "fz1"
 		//o.HoverTip = "复制接口"
-		o.Text = "复制接口"
+		o.Text = i.sdk.I18n("copyApi")
 		o.Disabled = false
 		o.Reload = true
 		o.HoverShow = true
@@ -99,7 +99,7 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 		o2 := CreateOperation{}
 		o2.Key = apistructs.AutoTestSceneStepCreateOperationKey.String()
 		o2.Icon = "add"
-		o2.HoverTip = "添加并行接口"
+		o2.HoverTip = i.sdk.I18n("addParallelApi")
 		o2.Disabled = false
 		o2.Reload = true
 		o2.HoverShow = true
@@ -110,7 +110,7 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 		o3.Key = apistructs.AutoTestSceneStepCopyAsJsonOperationKey.String()
 		o3.Icon = "fz1"
 		o3.Reload = false
-		o3.Text = "复制Json格式"
+		o3.Text = i.sdk.I18n("copyJson")
 		o3.Key = "copyAsJson"
 		o3.Disabled = false
 		o3.Group = "copy"
@@ -133,7 +133,7 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 		OperationBaseInfo: OperationBaseInfo{
 			Icon:     "split",
 			Key:      apistructs.AutoTestSceneStepSplitOperationKey.String(),
-			HoverTip: "改为串行",
+			HoverTip: i.sdk.I18n("changeToSerial"),
 			Disabled: false,
 			Reload:   true,
 		},
@@ -150,7 +150,7 @@ func RenderStage(groupID uint64, step apistructs.AutoTestSceneStep) (StageData, 
 	oc.Icon = "shanchu"
 	oc.Disabled = false
 	oc.Reload = true
-	oc.Confirm = "是否确认删除"
+	oc.Confirm = i.sdk.I18n("deleteConfirm")
 	oc.HoverShow = true
 	oc.Meta = OpMetaInfo{AutotestSceneRequest: apistructs.AutotestSceneRequest{
 		AutoTestSceneParams: apistructs.AutoTestSceneParams{
@@ -185,13 +185,13 @@ func (i *ComponentStageForm) RenderListStageForm() error {
 	}
 	var list []StageData
 	for _, v := range rsp {
-		stageData, err := RenderStage(v.ID, v)
+		stageData, err := i.RenderStage(v.ID, v)
 		if err != nil {
 			return err
 		}
 		list = append(list, stageData)
 		for _, s := range v.Children {
-			stageData, err := RenderStage(v.ID, s)
+			stageData, err := i.RenderStage(v.ID, s)
 			if err != nil {
 				return err
 			}

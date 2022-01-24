@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/project-list-all/i18n"
 )
 
 func GetOpsInfo(opsData interface{}) (*Meta, error) {
@@ -45,8 +46,9 @@ func GetOpsInfo(opsData interface{}) (*Meta, error) {
 	return &meta, nil
 }
 
-func RenItem(pro apistructs.ProjectDTO, orgDomain string) (ProItem, error) {
-	activeTime, err := CountActiveTime(pro.ActiveTime)
+func (i *ComponentList) RenItem(pro apistructs.ProjectDTO, orgDomain string) (ProItem, error) {
+	i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
+	activeTime, err := i.CountActiveTime(pro.ActiveTime)
 	if err != nil {
 		return ProItem{}, err
 	}
@@ -72,8 +74,8 @@ func RenItem(pro apistructs.ProjectDTO, orgDomain string) (ProItem, error) {
 	opExist := Operation{
 		Key:     apistructs.ListProjectExistOperationKey.String(),
 		Reload:  true,
-		Text:    "退出",
-		Confirm: "退出当前项目后，将不再有项目协作权限，如要再次加入需要项目管理员邀请，请确认是否退出？",
+		Text:    i18nLocale.Get("exitProject"),
+		Confirm: i18nLocale.Get("exitProjectConfirm"),
 		Meta: Meta{
 			ID: pro.ID,
 		},
@@ -98,17 +100,17 @@ func RenItem(pro apistructs.ProjectDTO, orgDomain string) (ProItem, error) {
 			map[bool]ExtraInfos{
 				true: {
 					Icon: "unlock",
-					Text: "公开项目",
+					Text: i18nLocale.Get(i18n.I18nPublicProject),
 				},
 				false: {
 					Icon: "lock",
-					Text: "私有项目",
+					Text: i18nLocale.Get(i18n.I18nPrivateProject),
 				},
 			}[pro.IsPublic],
 			{
 				Icon:    "application-one",
 				Text:    strconv.Itoa(pro.Stats.CountApplications),
-				Tooltip: "应用数",
+				Tooltip: i18nLocale.Get(i18n.I18nAppNumber),
 			},
 			{
 				Icon:    "time",
@@ -183,7 +185,7 @@ func (i *ComponentList) RenderList() error {
 	i.State.Total = 0
 	if projectDTO != nil {
 		for _, v := range projectDTO.List {
-			p, err := RenItem(v, org.Domain)
+			p, err := i.RenItem(v, org.Domain)
 			if err != nil {
 				return err
 			}
@@ -230,8 +232,9 @@ func (i *ComponentList) RenderChangePageNo(ops interface{}) error {
 	return nil
 }
 
-func CountActiveTime(ActiveTimeStr string) (string, error) {
+func (i *ComponentList) CountActiveTime(ActiveTimeStr string) (string, error) {
 	var subStr string
+	i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
 	nowTime := time.Now()
 	activeTime, err := time.Parse("2006-01-02 15:04:05", ActiveTimeStr)
 	if err != nil {
@@ -241,17 +244,17 @@ func CountActiveTime(ActiveTimeStr string) (string, error) {
 	sub := nowTime.Sub(activeTime)
 	sub = sub + 8*time.Hour
 	if int64(sub.Hours()) >= 24*30*12 {
-		subStr = strconv.FormatInt(int64(sub.Hours())/(24*30*12), 10) + " 年前"
+		subStr = strconv.FormatInt(int64(sub.Hours())/(24*30*12), 10) + " " + i18nLocale.Get(i18n.I18nYearAgo)
 	} else if int64(sub.Hours()) >= 24*30 {
-		subStr = strconv.FormatInt(int64(sub.Hours())/(24*30), 10) + " 月前"
+		subStr = strconv.FormatInt(int64(sub.Hours())/(24*30), 10) + " " + i18nLocale.Get(i18n.I18nMonthAgo)
 	} else if int64(sub.Hours()) >= 24 {
-		subStr = strconv.FormatInt(int64(sub.Hours())/24, 10) + " 天前"
+		subStr = strconv.FormatInt(int64(sub.Hours())/24, 10) + " " + i18nLocale.Get(i18n.I18nDayAgo)
 	} else if int64(sub.Hours()) > 0 {
-		subStr = strconv.FormatInt(int64(sub.Hours()), 10) + " 小时前"
+		subStr = strconv.FormatInt(int64(sub.Hours()), 10) + " " + i18nLocale.Get(i18n.I18nHourAgo)
 	} else if int64(sub.Minutes()) > 0 {
-		subStr = strconv.FormatInt(int64(sub.Minutes()), 10) + " 分钟前"
+		subStr = strconv.FormatInt(int64(sub.Minutes()), 10) + " " + i18nLocale.Get(i18n.I18nMinuteAgo)
 	} else {
-		subStr = "几秒前"
+		subStr = i18nLocale.Get(i18n.I18nSecondAgo)
 	}
 	return subStr, nil
 }

@@ -74,7 +74,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	case cptype.InitializeOperation, cptype.RenderingOperation:
 		c.Type = "Button"
 		c.Props = map[string]interface{}{
-			"text": "+ 接口",
+			"text": "+ " + cputil.I18n(ctx, "API"),
 			"menu": []interface{}{
 				map[string]interface{}{
 					"key": "addApi",
@@ -84,11 +84,11 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 							"reload": true,
 						},
 					},
-					"text": "表单添加",
+					"text": cputil.I18n(ctx, "formAdd"),
 				},
 				map[string]interface{}{
 					"key":  "addByCopyText",
-					"text": "粘贴文本添加",
+					"text": cputil.I18n(ctx, "textAdd"),
 					"operations": map[string]interface{}{
 						"click": map[string]interface{}{
 							"key":    "addByCopyText",

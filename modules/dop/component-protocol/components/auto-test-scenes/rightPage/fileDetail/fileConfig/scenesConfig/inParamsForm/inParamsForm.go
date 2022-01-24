@@ -27,7 +27,7 @@ import (
 
 func (i *ComponentInParamsForm) SetProps() {
 	paramsNameProp := PropColumn{
-		Title: "参数名",
+		Title: i.sdk.I18n("paramName"),
 		Key:   PropsKeyParamsName,
 		Width: 150,
 		Render: PropRender{
@@ -37,14 +37,14 @@ func (i *ComponentInParamsForm) SetProps() {
 			Rules: []PropRenderRule{
 				{
 					Pattern: "/^[a-zA-Z0-9_-]*$/",
-					Msg:     "参数名为英文、数字、中划线或下划线",
+					Msg:     i.sdk.I18n("paramNameMessage2"),
 				},
 			},
 			Props: PropRenderProp{MaxLength: 50},
 		},
 	}
 	descProp := PropColumn{
-		Title: "描述",
+		Title: i.sdk.I18n("name"),
 		Key:   PropsKeyDesc,
 		Width: 150,
 		Render: PropRender{
@@ -53,8 +53,8 @@ func (i *ComponentInParamsForm) SetProps() {
 		},
 	}
 	defaultValueProp := PropColumn{
-		Title:    "引用值",
-		TitleTip: "在执行计划中生效",
+		Title:    i.sdk.I18n("refValue"),
+		TitleTip: i.sdk.I18n("validInPlan"),
 		Key:      PropsKeyDefaultValue,
 		Flex:     2,
 		Render: PropRender{
@@ -62,10 +62,10 @@ func (i *ComponentInParamsForm) SetProps() {
 			ValueConvertType: "last",
 			Required:         true,
 			Props: PropRenderProp{
-				Placeholder: "可选择表达式",
+				Placeholder: i.sdk.I18n("selectiveExp"),
 				Options: []PropChangeOption{
 					{
-						Label:  "前置场景出参",
+						Label:  i.sdk.I18n("preSceneOut"),
 						Value:  BeforeSceneOutPutOptionValue.String(),
 						IsLeaf: false,
 					},
@@ -75,7 +75,7 @@ func (i *ComponentInParamsForm) SetProps() {
 						IsLeaf: false,
 					},
 					{
-						Label:  "全局变量入参",
+						Label:  i.sdk.I18n("globalInput"),
 						Value:  GlobalOptionValue.String(),
 						IsLeaf: false,
 					},
@@ -90,8 +90,8 @@ func (i *ComponentInParamsForm) SetProps() {
 	o.FillMeta = "selectOption"
 	defaultValueProp.Render.Operations[apistructs.AutoTestSceneInputOnSelectOperationKey.String()] = o
 	valueProp := PropColumn{
-		Title:    "调试值",
-		TitleTip: "仅在当前场景执行时生效",
+		Title:    i.sdk.I18n("debugValue"),
+		TitleTip: i.sdk.I18n("validInScene"),
 		Key:      PropsKeyValue,
 		Width:    200,
 	}

@@ -100,6 +100,9 @@ func main() {
 	buf.WriteString("\t\t\tpanic(err)\n")
 	buf.WriteString("\t\t}\n")
 	buf.WriteString("\t\tprotocol.DefaultProtocols[pName] = p\n")
+	buf.WriteString("\t\tif protocol.CpPlaceHolderRe.Match([]byte(pStr)) {\n")
+	buf.WriteString("\t\t\tprotocol.DefaultProtocolsRaw[pName] = pStr\n")
+	buf.WriteString("\t\t}\n")
 	buf.WriteString("\t}\n")
 
 	buf.WriteString("}\n")

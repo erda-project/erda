@@ -16,10 +16,10 @@ package scenesStagesTitle
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -28,7 +28,11 @@ type ComponentAction struct {
 }
 
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	return json.Unmarshal([]byte(`{"title": "场景列表", "level": 2}`), &c.Props)
+	c.Props = map[string]interface{}{
+		"title": cputil.I18n(ctx, "sceneList"),
+		"level": 2,
+	}
+	return nil
 }
 
 func init() {

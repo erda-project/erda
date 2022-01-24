@@ -24,9 +24,11 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/component_key"
@@ -42,6 +44,7 @@ type ExecuteTaskTable struct {
 	Data       map[string]interface{} `json:"data"`
 
 	pipelineID uint64
+	sdk        *cptype.SDK
 }
 
 type State struct {
@@ -150,6 +153,7 @@ func (a *ExecuteTaskTable) Render(ctx context.Context, c *cptype.Component, scen
 		return err
 	}
 	a.pipelineID = gh.GetExecuteHistoryTablePipelineID()
+	a.sdk = cputil.SDK(ctx)
 
 	a.bdl = ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 
@@ -160,7 +164,7 @@ func (a *ExecuteTaskTable) Render(ctx context.Context, c *cptype.Component, scen
 		}
 		// export rendered component data
 		c.Operations = a.Operations
-		c.Props = getProps()
+		c.Props = getProps(ctx)
 	}()
 
 	// listen on operation
@@ -191,49 +195,49 @@ func getOperations(clickableKeys []uint64) map[string]interface{} {
 	}
 }
 
-func getProps() map[string]interface{} {
+func getProps(ctx context.Context) map[string]interface{} {
 	return map[string]interface{}{
 		"rowKey":     "key",
 		"scroll":     map[string]interface{}{"x": 1200},
 		"hideHeader": true,
 		"columns": []columns{
 			{
-				Title:     "步骤名称",
+				Title:     cputil.I18n(ctx, "stepName"),
 				DataIndex: "name",
 				Width:     200,
 				Ellipsis:  true,
 				Fixed:     "left",
 			},
 			{
-				Title:     "步骤类型",
+				Title:     cputil.I18n(ctx, "stepType"),
 				DataIndex: "type",
 				Width:     85,
 				Ellipsis:  true,
 			},
 			{
-				Title:     "步骤",
+				Title:     cputil.I18n(ctx, "step"),
 				DataIndex: "step",
 				Width:     85,
 				Ellipsis:  true,
 			},
 			{
-				Title:     "子任务数",
+				Title:     cputil.I18n(ctx, "subtask"),
 				DataIndex: "tasksNum",
 				Width:     85,
 				Ellipsis:  true,
 			},
 			{
-				Title:     "接口路径",
+				Title:     cputil.I18n(ctx, "apiPath"),
 				DataIndex: "path",
 			},
 			{
-				Title:     "状态",
+				Title:     cputil.I18n(ctx, "state"),
 				DataIndex: "status",
 				Width:     120,
 				Ellipsis:  true,
 			},
 			{
-				Title:     "操作",
+				Title:     cputil.I18n(ctx, "operate"),
 				DataIndex: "operate",
 				Width:     120,
 				Ellipsis:  true,
@@ -243,26 +247,26 @@ func getProps() map[string]interface{} {
 	}
 }
 
-func transformStepType(str apistructs.StepAPIType) string {
+func (a *ExecuteTaskTable) transformStepType(str apistructs.StepAPIType) string {
 	switch str {
 	case apistructs.StepTypeWait:
-		return "等待"
+		return a.sdk.I18n("wait")
 	case apistructs.StepTypeAPI:
-		return "接口"
+		return a.sdk.I18n("API")
 	case apistructs.StepTypeScene:
-		return "场景"
+		return a.sdk.I18n("scene")
 	case apistructs.StepTypeConfigSheet:
-		return "配置单"
+		return a.sdk.I18n("configForm")
 	case apistructs.StepTypeCustomScript:
-		return "自定义"
+		return a.sdk.I18n("custom")
 	case apistructs.AutotestSceneSet:
-		return "场景集"
+		return a.sdk.I18n("sceneset")
 	}
 	return string(str)
 }
 
-func getStatus(req apistructs.PipelineStatus) map[string]interface{} {
-	res := map[string]interface{}{"renderType": "textWithBadge", "value": req.ToDesc()}
+func (a *ExecuteTaskTable) getStatus(req apistructs.PipelineStatus) map[string]interface{} {
+	res := map[string]interface{}{"renderType": "textWithBadge", "value": a.sdk.I18n(util.ColumnPipelineStatus + req.String())}
 	if req.IsSuccessStatus() {
 		res["status"] = "success"
 	}
@@ -298,7 +302,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					operations = map[string]interface{}{
 						"checkDetail": dataOperation{
 							Key:         "checkDetail",
-							Text:        "查看结果",
+							Text:        a.sdk.I18n("checkRes"),
 							Reload:      false,
 							Meta:        task.Result,
 							DisabledTip: "禁用接口无法查看结果",
@@ -307,7 +311,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						"checkLog": dataOperation{
 							Key:    "checkLog",
 							Reload: false,
-							Text:   "日志",
+							Text:   a.sdk.I18n("log"),
 							Meta: map[string]interface{}{
 								"logId":      task.Extra.UUID,
 								"pipelineId": a.pipelineID,
@@ -334,8 +338,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					},
 					"tasksNum": taskNum,
 					"name":     task.Name,
-					"status":   getStatus(task.Status),
-					"type":     transformStepType(apistructs.StepAPIType(task.Type)),
+					"status":   a.getStatus(task.Status),
+					"type":     a.transformStepType(apistructs.StepAPIType(task.Type)),
 					"path":     "",
 					"step":     stepIdx,
 				}
@@ -368,7 +372,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 							if value.WaitTime > 0 {
 								value.WaitTimeSec = value.WaitTime
 							}
-							res.Name = transformStepType(res.Type) + strconv.FormatInt(value.WaitTimeSec, 10) + "s"
+							res.Name = a.transformStepType(res.Type) + strconv.FormatInt(value.WaitTimeSec, 10) + "s"
 						}
 					} else {
 						res.Name = task.Name
@@ -379,7 +383,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						operations = map[string]interface{}{
 							"checkDetail": dataOperation{
 								Key:         "checkDetail",
-								Text:        "查看结果",
+								Text:        a.sdk.I18n("checkRes"),
 								Reload:      false,
 								Disabled:    task.Status.IsDisabledStatus(),
 								DisabledTip: "禁用接口无法查看结果",
@@ -388,7 +392,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 							"checkLog": dataOperation{
 								Key:         "checkLog",
 								Reload:      false,
-								Text:        "日志",
+								Text:        a.sdk.I18n("log"),
 								Disabled:    task.Status.IsDisabledStatus(),
 								DisabledTip: "禁用接口无法查看日志",
 								Meta: map[string]interface{}{
@@ -413,8 +417,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						},
 						"tasksNum": "-",
 						"name":     res.Name,
-						"status":   getStatus(task.Status),
-						"type":     transformStepType(res.Type),
+						"status":   a.getStatus(task.Status),
+						"type":     a.transformStepType(res.Type),
 						"path":     path,
 						"step":     stepIdx,
 					}
@@ -447,8 +451,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						},
 						"tasksNum": "-",
 						"name":     res.SceneSetName,
-						"status":   getStatus(task.Status),
-						"type":     transformStepType(apistructs.AutotestSceneSet),
+						"status":   a.getStatus(task.Status),
+						"type":     a.sdk.I18n("sceneset"),
 						"path":     "",
 						"step":     stepIdx,
 					}
@@ -480,8 +484,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						},
 						"tasksNum": "-",
 						"name":     res.Name,
-						"status":   getStatus(task.Status),
-						"type":     transformStepType(apistructs.AutotestScene),
+						"status":   a.getStatus(task.Status),
+						"type":     a.sdk.I18n("scene"),
 						"path":     "",
 						"step":     stepIdx,
 					}

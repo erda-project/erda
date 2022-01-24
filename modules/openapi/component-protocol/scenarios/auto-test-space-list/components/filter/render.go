@@ -65,17 +65,17 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s
 	}
 	i.State.Conditions = []filter.PropCondition{
 		{
-			EmptyText: "未选择",
+			EmptyText: i18nLocale.Get("empty-filter-bookmark"),
 			Fixed:     true,
 			Key:       "order",
-			Label:     "排序",
+			Label:     i18nLocale.Get("sort"),
 			Options: []filter.PropConditionOption{
 				{
-					Label: "按时间顺序",
+					Label: i18nLocale.Get("timeOrder"),
 					Value: "updated_at",
 				},
 				{
-					Label: "按时间倒序",
+					Label: i18nLocale.Get("timeReverse"),
 					Value: "updated_at desc",
 				},
 			},
@@ -86,10 +86,10 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s
 			},
 		},
 		{
-			EmptyText: "全部",
+			EmptyText: i18nLocale.Get("autotest.plan.all"),
 			Fixed:     true,
 			Key:       "archiveStatus",
-			Label:     "状态",
+			Label:     i18nLocale.Get("state"),
 			Options: []filter.PropConditionOption{
 				{
 					Label: i18nLocale.Get(i18n.I18nKeyAutoTestSpaceInit),
@@ -107,11 +107,11 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, s
 			Type: filter.PropConditionTypeSelect,
 		},
 		{
-			EmptyText:   "全部",
+			EmptyText:   i18nLocale.Get("autotest.plan.all"),
 			Fixed:       true,
 			Key:         "spaceName",
-			Label:       "标题",
-			Placeholder: "根据名称过滤",
+			Label:       i18nLocale.Get("title"),
+			Placeholder: i18nLocale.Get("searchByName"),
 			Type:        filter.PropConditionTypeInput,
 		},
 	}

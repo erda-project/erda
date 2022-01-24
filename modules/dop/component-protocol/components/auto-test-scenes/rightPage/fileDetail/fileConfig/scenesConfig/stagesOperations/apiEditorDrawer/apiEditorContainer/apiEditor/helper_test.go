@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/i18n"
 )
 
 func TestGenEmptyAPISpecStr(t *testing.T) {
@@ -30,7 +31,24 @@ func TestGenEmptyAPISpecStr(t *testing.T) {
 		testEmptyAPISpecStr)
 }
 
+type MockTran struct {
+	i18n.Translator
+}
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
+	return ""
+}
+
+func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return ""
+}
+
 func Test_genProps(t *testing.T) {
+	ae := ApiEditor{
+		sdk: &cptype.SDK{
+			Tran: &MockTran{},
+		},
+	}
 	type args struct {
 		input       string
 		execute     string
@@ -58,7 +76,7 @@ func Test_genProps(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := genProps(tt.args.input, tt.args.execute, tt.args.replaceOpts...); !reflect.DeepEqual(got, tt.want) {
+			if got := ae.genProps(tt.args.input, tt.args.execute, tt.args.replaceOpts...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("genProps() = %v, want %v", got, tt.want)
 			}
 		})

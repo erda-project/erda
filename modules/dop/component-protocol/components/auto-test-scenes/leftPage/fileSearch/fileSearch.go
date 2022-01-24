@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -30,7 +31,7 @@ type ComponentAction struct {
 func (i *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	i.Props = map[string]interface{}{}
 	i.Props["disabled"] = true
-	i.Props["placeholder"] = "搜索(敬请期待)"
+	i.Props["placeholder"] = cputil.I18n(ctx, "searchPlaceHolder")
 	c.Props = i.Props
 	return nil
 }

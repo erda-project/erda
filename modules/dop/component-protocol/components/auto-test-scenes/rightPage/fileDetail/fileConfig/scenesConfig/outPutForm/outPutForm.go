@@ -24,7 +24,7 @@ import (
 
 func (i *ComponentOutPutForm) SetProps(gs *cptype.GlobalStateData) error {
 	paramsNameProp := PropColumn{
-		Title: "参数名",
+		Title: i.sdk.I18n("paramName"),
 		Key:   PropsKeyParamsName,
 		Width: 200,
 		Render: PropRender{
@@ -34,14 +34,14 @@ func (i *ComponentOutPutForm) SetProps(gs *cptype.GlobalStateData) error {
 			Rules: []PropRenderRule{
 				{
 					Pattern: "/^[a-zA-Z0-9_-]*$/",
-					Msg:     "参数名为英文、数字、中划线或下划线",
+					Msg:     i.sdk.I18n("paramNameMessage2"),
 				},
 			},
 			Props: PropRenderProp{MaxLength: 50},
 		},
 	}
 	descProp := PropColumn{
-		Title: "描述",
+		Title: i.sdk.I18n("desc"),
 		Key:   PropsKeyDesc,
 		Width: 200,
 		Render: PropRender{
@@ -50,7 +50,7 @@ func (i *ComponentOutPutForm) SetProps(gs *cptype.GlobalStateData) error {
 		},
 	}
 	ValueProp := PropColumn{
-		Title: "值",
+		Title: i.sdk.I18n("value"),
 		Key:   PropsKeyValue,
 		Flex:  2,
 		Render: PropRender{

@@ -57,7 +57,7 @@ func (i *MoreButton) Render(ctx context.Context, c *apistructs.Component, scenar
 	}
 	i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
 	i.Props = button.Props{
-		Text:  "更多操作",
+		Text:  i18nLocale.Get("moreOperations"),
 		Type:  "primary",
 		Ghost: true,
 		Menu: []button.MenuItem{

@@ -135,12 +135,12 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 		},
 	}
 
-	if err := builder.Generate(); err != nil {
+	if err := builder.Generate(ctx); err != nil {
 		return err
 	}
 
 	props := make(map[string]interface{})
-	props["title"] = "缺陷 - 按标签分布（Top 500）"
+	props["title"] = cputil.I18n(ctx, "labelBarChartTitle")
 	props["chartType"] = "bar"
 	props["option"] = builder.Result.Bb
 	props["style"] = map[string]interface{}{"height": 400}

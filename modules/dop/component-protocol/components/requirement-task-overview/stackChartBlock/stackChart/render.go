@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common/gshelper"
@@ -54,11 +55,11 @@ func (f *StackChart) Render(ctx context.Context, c *cptype.Component, scenario c
 		return err
 	}
 	f.setDateMap()
-	f.setProps()
+	f.setProps(ctx)
 	return f.SetToProtocolComponent(c)
 }
 
-func (f *StackChart) setProps() {
+func (f *StackChart) setProps(ctx context.Context) {
 	f.Type = "Chart"
 	series := make([]Series, 0, len(f.States))
 	for i := len(f.States) - 1; i >= 0; i-- {
@@ -85,7 +86,7 @@ func (f *StackChart) setProps() {
 	}
 	f.Props = Props{
 		ChartType: "line",
-		Title:     "累积流图",
+		Title:     cputil.I18n(ctx, "cumulativeFlow"),
 		PureChart: true,
 		Option: Option{
 			XAxis: XAxis{

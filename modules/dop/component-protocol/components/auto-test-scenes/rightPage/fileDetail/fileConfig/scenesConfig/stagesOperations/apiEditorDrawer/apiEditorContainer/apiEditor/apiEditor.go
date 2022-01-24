@@ -138,7 +138,7 @@ func (ae *ApiEditor) GenExecuteButton(ctx context.Context) (string, error) {
 	}
 	list := []Menu{
 		{
-			Text: "无",
+			Text: ae.sdk.I18n("empty"),
 			Key:  "无",
 			Operations: map[string]interface{}{
 				apistructs.ClickOperation.String(): ClickOperation{
@@ -172,7 +172,7 @@ func (ae *ApiEditor) GenExecuteButton(ctx context.Context) (string, error) {
 	}
 	mp := map[string]interface{}{
 		"menu":      list,
-		"text":      "保存并执行",
+		"text":      cputil.I18n(ctx, "saveExec"),
 		"type":      "primary",
 		"disabled":  true,
 		"allowSave": true,

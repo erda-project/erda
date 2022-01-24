@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/requirement-task-overview/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -44,8 +45,8 @@ func (s *SimpleChart) Render(ctx context.Context, c *cptype.Component, scenario 
 	s.Type = "SimpleChart"
 	s.Data = Data{
 		Main:        strconv.Itoa(len(s.Issues)),
-		Sub:         "总数",
-		CompareText: "较昨日",
+		Sub:         cputil.I18n(ctx, "total"),
+		CompareText: cputil.I18n(ctx, "comparedYesterday"),
 		CompareValue: func() string {
 			count := common.IssueCountIf(s.Issues, func(issue *dao.IssueItem) bool {
 				return common.DateTime(issue.CreatedAt).Equal(common.DateTime(time.Now()))

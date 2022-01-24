@@ -63,3 +63,5 @@ quick-start/data
 
 modules/openapi/api/generate
 /fake_subscriber.txt
+
+.history/

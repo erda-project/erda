@@ -66,7 +66,7 @@ func RenderList(s *SceneStage) error {
 	s.Data.List = func() []StageData {
 		stages := make([]StageData, 0, len(scenes))
 		for _, v := range scenes {
-			stages = append(stages, NewStageData(v, s.atTestPlan))
+			stages = append(stages, NewStageData(s, v, s.atTestPlan))
 		}
 		return stages
 	}()
