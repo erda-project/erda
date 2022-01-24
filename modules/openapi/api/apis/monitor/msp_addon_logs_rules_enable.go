@@ -16,13 +16,13 @@ package monitor
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var MONITOR_ADDON_LOGS_RULES_TEST = apis.ApiSpec{
-	Path:        "/api/micro-service/logs/rules/test",
-	BackendPath: "/api/logs/metric/micro_service/rules/test",
-	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
+var MSP_ADDON_LOGS_RULES_ENABLE = apis.ApiSpec{
+	Path:        "/api/micro-service/logs/rules/<id>/state",
+	BackendPath: "/api/logs/metric/micro_service/rules/<id>/state",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
-	Method:      "POST",
+	Method:      "PUT",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "summary: 测试日志规则",
+	Doc:         "summary: 启动日志规则",
 }

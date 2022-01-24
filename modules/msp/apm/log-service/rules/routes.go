@@ -23,8 +23,8 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
-	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
-	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors/regex" //
+	"github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors"
+	_ "github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors/regex" //
 	api "github.com/erda-project/erda/pkg/common/httpapi"
 )
 

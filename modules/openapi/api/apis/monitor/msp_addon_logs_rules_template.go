@@ -16,10 +16,10 @@ package monitor
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var MONITOR_ADDON_LOGS_RULES_TEMPLATE = apis.ApiSpec{
+var MSP_ADDON_LOGS_RULES_TEMPLATE = apis.ApiSpec{
 	Path:        "/api/micro-service/logs/rules/templates/<name>",
 	BackendPath: "/api/logs/metric/micro_service/rules/templates/<name>",
-	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "GET",
 	CheckLogin:  true,

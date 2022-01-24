@@ -25,6 +25,10 @@ type MetricMetaServiceHandler interface {
 	ListMetricNames(context.Context, *ListMetricNamesRequest) (*ListMetricNamesResponse, error)
 	// GET /api/metric-meta
 	ListMetricMeta(context.Context, *ListMetricMetaRequest) (*ListMetricMetaResponse, error)
+	// POST /api/metric-meta
+	RegisterMetricMeta(context.Context, *RegisterMetricMetaRequest) (*RegisterMetricMetaResponse, error)
+	// DELETE /api/metric-meta
+	UnRegisterMetricMeta(context.Context, *UnRegisterMetricMetaRequest) (*UnRegisterMetricMetaResponse, error)
 	// GET /api/metric-groups
 	ListMetricGroups(context.Context, *ListMetricGroupsRequest) (*ListMetricGroupsResponse, error)
 	// GET /api/metric-groups/{id}
@@ -124,6 +128,78 @@ func RegisterMetricMetaServiceHandler(r http.Router, srv MetricMetaServiceHandle
 				params := r.URL.Query()
 				if vals := params["scopeId"]; len(vals) > 0 {
 					in.ScopeID = vals[0]
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_RegisterMetricMeta := func(method, path string, fn func(context.Context, *RegisterMetricMetaRequest) (*RegisterMetricMetaResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*RegisterMetricMetaRequest))
+		}
+		var RegisterMetricMeta_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			RegisterMetricMeta_info = transport.NewServiceInfo("erda.core.monitor.metric.MetricMetaService", "RegisterMetricMeta", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, RegisterMetricMeta_info)
+				}
+				r = r.WithContext(ctx)
+				var in RegisterMetricMetaRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_UnRegisterMetricMeta := func(method, path string, fn func(context.Context, *UnRegisterMetricMetaRequest) (*UnRegisterMetricMetaResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*UnRegisterMetricMetaRequest))
+		}
+		var UnRegisterMetricMeta_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			UnRegisterMetricMeta_info = transport.NewServiceInfo("erda.core.monitor.metric.MetricMetaService", "UnRegisterMetricMeta", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, UnRegisterMetricMeta_info)
+				}
+				r = r.WithContext(ctx)
+				var in UnRegisterMetricMetaRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
 				}
 				out, err := handler(ctx, &in)
 				if err != nil {
@@ -239,6 +315,8 @@ func RegisterMetricMetaServiceHandler(r http.Router, srv MetricMetaServiceHandle
 
 	add_ListMetricNames("GET", "/api/metric-names", srv.ListMetricNames)
 	add_ListMetricMeta("GET", "/api/metric-meta", srv.ListMetricMeta)
+	add_RegisterMetricMeta("POST", "/api/metric-meta", srv.RegisterMetricMeta)
+	add_UnRegisterMetricMeta("DELETE", "/api/metric-meta", srv.UnRegisterMetricMeta)
 	add_ListMetricGroups("GET", "/api/metric-groups", srv.ListMetricGroups)
 	add_GetMetricGroup("GET", "/api/metric-groups/{id}", srv.GetMetricGroup)
 }

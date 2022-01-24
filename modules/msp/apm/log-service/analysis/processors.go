@@ -18,8 +18,8 @@ import (
 	"github.com/recallsong/go-utils/encoding"
 	"github.com/recallsong/go-utils/reflectx"
 
-	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
-	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors/regex" //
+	"github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors"
+	_ "github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors/regex" //
 )
 
 type processorConfig struct {

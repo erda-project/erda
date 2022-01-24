@@ -40,6 +40,23 @@ func (this *ListMetricNamesResponse) Validate() error {
 	}
 	return nil
 }
+func (this *RegisterMetricMetaRequest) Validate() error {
+	if this.Meta != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Meta); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Meta", err)
+		}
+	}
+	return nil
+}
+func (this *RegisterMetricMetaResponse) Validate() error {
+	return nil
+}
+func (this *UnRegisterMetricMetaRequest) Validate() error {
+	return nil
+}
+func (this *UnRegisterMetricMetaResponse) Validate() error {
+	return nil
+}
 func (this *ListMetricMetaRequest) Validate() error {
 	if this.Scope == "" {
 		return github_com_mwitkow_go_proto_validators.FieldError("Scope", fmt.Errorf(`value '%v' must not be an empty string`, this.Scope))
