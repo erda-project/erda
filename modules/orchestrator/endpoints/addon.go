@@ -306,7 +306,7 @@ func (e *Endpoints) ListAddon(ctx context.Context, r *http.Request, vars map[str
 
 			var find = false
 			for _, displayName := range displayNames {
-				if v.AddonDisplayName == displayName {
+				if v.AddonName == strings.ToLower(displayName) {
 					find = true
 					break
 				}
