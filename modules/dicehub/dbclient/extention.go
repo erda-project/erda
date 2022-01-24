@@ -185,8 +185,9 @@ func dfs(obj interface{}, locale map[string]interface{}) interface{} {
 			l[i] = dfs(v, locale)
 		}
 		return l
+	default:
+		return obj
 	}
-	return nil
 }
 
 func (client *DBClient) CreateExtension(extension *Extension) error {
