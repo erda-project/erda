@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
@@ -62,8 +63,8 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	c.State["conditions"] = []filter.PropCondition{
 		{
 			Key:       "account",
-			Label:     "账号",
-			EmptyText: "全部",
+			Label:     cputil.I18n(ctx, "account"),
+			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Type:      filter.PropConditionTypeSelect,
 			Options: func() (opt []filter.PropConditionOption) {
@@ -78,19 +79,19 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		},
 		{
 			Key:       "state",
-			Label:     "是否切换中",
-			EmptyText: "全部",
+			Label:     cputil.I18n(ctx, "state_is_switching"),
+			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Type:      filter.PropConditionTypeSelect,
 			Options: []filter.PropConditionOption{
-				{Value: "PRE", Label: "是"},
-				{Value: "CUR", Label: "否"},
+				{Value: "PRE", Label: cputil.I18n(ctx, "yes")},
+				{Value: "CUR", Label: cputil.I18n(ctx, "no")},
 			},
 		},
 		{
 			Key:       "app",
-			Label:     "应用",
-			EmptyText: "全部",
+			Label:     cputil.I18n(ctx, "app"),
+			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Type:      filter.PropConditionTypeSelect,
 			Options: func() (opt []filter.PropConditionOption) {

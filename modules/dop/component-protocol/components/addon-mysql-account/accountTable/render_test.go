@@ -15,12 +15,15 @@
 package accountTable
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/accountTable/table"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
@@ -76,7 +79,7 @@ func Test_comp_getDatum(t *testing.T) {
 			},
 			want: map[string]table.ColumnData{
 				"attachments": {
-					Value:      "未被使用",
+					Value:      "i18n:not_used",
 					RenderType: "text",
 				},
 				"createdAt": {
@@ -98,33 +101,41 @@ func Test_comp_getDatum(t *testing.T) {
 					Operations: map[string]*table.Operation{
 						"viewPassword": {
 							Key:    "viewPassword",
-							Text:   "查看密码",
+							Text:   "i18n:view_password",
 							Reload: true,
 							Meta: map[string]string{
 								"id": "111",
 							},
 							Disabled:    true,
-							DisabledTip: "您没有权限查看密码，请联系项目管理员",
+							DisabledTip: "i18n:view_password_no_perm_tip",
 							ShowIndex:   1,
 						},
 						"delete": {
 							Key:    "delete",
-							Text:   "删除",
+							Text:   "i18n:delete",
 							Reload: true,
 							Meta: map[string]string{
 								"id": "111",
 							},
 							Disabled:    true,
-							DisabledTip: "您没有权限删除账号，请联系项目管理员",
+							DisabledTip: "i18n:delete_no_perm_tip",
 							ShowIndex:   2,
-							Confirm:     "是否确认删除",
-							SuccessMsg:  "删除成功",
+							Confirm:     "i18n:delete_confirm",
+							SuccessMsg:  "i18n:delete_success_tip",
 						},
 					},
 				},
 			},
 		},
 	}
+
+	sdk := cptype.SDK{
+		Tran: &MockTran{},
+	}
+
+	// make ctx with sdk
+	ctx := context.WithValue(context.Background(), cptype.GlobalInnerKeyCtxSDK, &sdk)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := &comp{
@@ -132,25 +143,21 @@ func Test_comp_getDatum(t *testing.T) {
 				pg:      tt.fields.pg,
 				userIDs: tt.fields.userIDs,
 			}
-			if got := f.getDatum(tt.args.item); !reflect.DeepEqual(got, tt.want) {
+			if got := f.getDatum(ctx, tt.args.item); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getDatum() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_getTitles(t *testing.T) {
-	tests := []struct {
-		name string
-		want []*table.ColumnTitle
-	}{
-		{name: "t1", want: getTitles()},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := getTitles(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getTitles() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+type MockTran struct {
+	i18n.Translator
+}
+
+func (m *MockTran) Text(lang i18n.LanguageCodes, key string) string {
+	return "i18n:" + key
+}
+
+func (m *MockTran) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return "i18n:" + key
 }
