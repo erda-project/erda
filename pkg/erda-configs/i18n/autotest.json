@@ -31,7 +31,9 @@
 
     "autoTestSpaceInit": "未开始",
     "autoTestSpaceInProgress": "进行中",
-    "autoTestSpaceCompleted":"已完成"
+    "autoTestSpaceCompleted":"已完成",
+    "spaceName": "空间名",
+    "sceneSetRuleMessage": "可输入中文、英文、数字、中划线或下划线"
   },
   "en-US": {
     "wb.content.autotest.space.add": "Create Space",
@@ -65,7 +67,9 @@
 
     "autoTestSpaceInit": "init",
     "autoTestSpaceInProgress": "inprogress",
-    "autoTestSpaceCompleted": "completed"
+    "autoTestSpaceCompleted": "completed",
+    "spaceName": "Space name",
+    "sceneSetRuleMessage": "You can enter Chinese, English, numbers, dashes or underscores"
   }
 }
 

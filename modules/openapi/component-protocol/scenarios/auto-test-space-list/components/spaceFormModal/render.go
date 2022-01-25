@@ -68,7 +68,7 @@ func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, sc
 	a.Props.Fields = []spec.Field{
 		{
 			Key:       "name",
-			Label:     cputil.I18n(ctx, "spaceName"),
+			Label:     i18nLocale.Get("spaceName"),
 			Component: "input",
 			Required:  true,
 			ComponentProps: spec.ComponentProps{
@@ -77,13 +77,13 @@ func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, sc
 			Rules: []spec.FieldRule{
 				{
 					Pattern: `/^[.a-z\u4e00-\u9fa5A-Z0-9_-\s]*$/`,
-					Msg:     cputil.I18n(ctx, "sceneSetRuleMessage"),
+					Msg:     i18nLocale.Get("sceneSetRuleMessage"),
 				},
 			},
 		},
 		{
 			Key:       "archiveStatus",
-			Label:     cputil.I18n(ctx, "state"),
+			Label:     i18nLocale.Get(i18n.I18nKeyTableStatus),
 			Component: "select",
 			Required:  true,
 			ComponentProps: spec.ComponentProps{
@@ -105,7 +105,7 @@ func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, sc
 		},
 		{
 			Key:       "desc",
-			Label:     cputil.I18n(ctx, "desc"),
+			Label:     i18nLocale.Get(i18n.I18nKeyTableDesc),
 			Component: "textarea",
 			Required:  false,
 			ComponentProps: spec.ComponentProps{
