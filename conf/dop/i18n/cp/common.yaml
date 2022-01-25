@@ -309,6 +309,7 @@ zh:
   process: 进度
   openAll: 全部打开
   second: 秒
+  iterationUnassigned: 待处理
 en:
   issue-manage: issue manage
   issue: issue
@@ -614,3 +615,4 @@ en:
   process: Process
   openAll: Open all
   second: Second
+  iterationUnassigned: Unassigned

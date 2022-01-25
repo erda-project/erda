@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -34,7 +35,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 		},
 	}
 	c.Props = map[string]interface{}{
-		"text":       "返回最新记录",
+		"text":       cputil.I18n(ctx, "backLatestResult"),
 		"type":       "text",
 		"prefixIcon": "shuaxin",
 		"style":      map[string]interface{}{"width": 140},

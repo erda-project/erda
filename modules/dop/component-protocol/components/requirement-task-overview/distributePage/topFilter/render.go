@@ -232,7 +232,7 @@ func (f *ComponentFilter) getPropIterationsOptions() (map[int64]apistructs.Itera
 	}
 	f.Iterations = append(iterations, apistructs.Iteration{
 		ID:    -1,
-		Title: "待处理",
+		Title: f.sdk.I18n("iterationUnassigned"),
 		StartedAt: func() *time.Time {
 			t := time.Now().AddDate(0, -1, 0)
 			return &t
