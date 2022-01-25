@@ -124,7 +124,7 @@ func (f *ComponentFilter) InitDefaultOperation(ctx context.Context, state State)
 			Fixed:     true,
 			Key:       "value",
 			Label:     cputil.I18n(ctx, "value"),
-			Options:   handler.GetFilterOptions(),
+			Options:   handler.GetFilterOptions(ctx),
 			Type:      filter.PropConditionTypeSelect,
 		},
 		{

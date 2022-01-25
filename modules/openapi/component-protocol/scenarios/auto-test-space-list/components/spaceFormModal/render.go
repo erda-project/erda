@@ -68,7 +68,7 @@ func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, sc
 	a.Props.Fields = []spec.Field{
 		{
 			Key:       "name",
-			Label:     "空间名",
+			Label:     cputil.I18n(ctx, "spaceName"),
 			Component: "input",
 			Required:  true,
 			ComponentProps: spec.ComponentProps{
@@ -77,13 +77,13 @@ func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, sc
 			Rules: []spec.FieldRule{
 				{
 					Pattern: `/^[.a-z\u4e00-\u9fa5A-Z0-9_-\s]*$/`,
-					Msg:     "可输入中文、英文、数字、中划线或下划线",
+					Msg:     cputil.I18n(ctx, "sceneSetRuleMessage"),
 				},
 			},
 		},
 		{
 			Key:       "archiveStatus",
-			Label:     "状态",
+			Label:     cputil.I18n(ctx, "state"),
 			Component: "select",
 			Required:  true,
 			ComponentProps: spec.ComponentProps{
@@ -105,7 +105,7 @@ func (a *SpaceFormModal) Render(ctx context.Context, c *apistructs.Component, sc
 		},
 		{
 			Key:       "desc",
-			Label:     "描述",
+			Label:     cputil.I18n(ctx, "desc"),
 			Component: "textarea",
 			Required:  false,
 			ComponentProps: spec.ComponentProps{

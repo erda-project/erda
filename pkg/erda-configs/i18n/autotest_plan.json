@@ -124,7 +124,7 @@
     "autotest.plan.plan.regex": "Can input Chinese, English, numbers, underline or underline",
     "autotest.plan.step": "Plan step",
     "autotest.plan.detail": "Plan detail",
-    "autotest.plan.null": "Null",
+    "autotest.plan.null": "None",
     "autotest.plan.test.space": "Test space",
     "autotest.plan.task.parameter": "Task parameters",
     "autotest.plan.parameter.configuration": "Parameter configuration",

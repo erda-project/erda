@@ -95,7 +95,8 @@
         "tp.export.config.global.value": "参数内容",
         "tp.export.config.global.description": "描述",
 
-        "tp.export.project.name": "项目"
+        "tp.export.project.name": "项目",
+        "ErrUpdateTestPlan": "更新测试计划失败"
     },
     "en-US": {
         "tp.export.testplan.sheet.name": "test result",
@@ -191,6 +192,7 @@
         "tp.export.config.global.value": "value",
         "tp.export.config.global.description": "description",
 
-        "tp.export.project.name": "Project"
+        "tp.export.project.name": "Project",
+        "ErrUpdateTestPlan": "Failed to update test plan"
     }
 }

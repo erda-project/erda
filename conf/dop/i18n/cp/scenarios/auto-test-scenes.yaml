@@ -143,6 +143,7 @@ zh:
   executor: 执行人
   triggerTime: 触发时间
   searchPlaceHolder: 搜索(敬请期待)
+  backLatestResult: 返回最新记录
 en:
   wb.content.autotest.scene.string: random string like abc
   wb.content.autotest.scene.integer: random integer like 10000
@@ -181,7 +182,7 @@ en:
   stepType: Step type
   step: Step
   subtask: Number of subtasks
-  apiPath: API path
+  apiPath: Interface path
   addScene: Add scene
   refSceneSet: Reference scene set
   editSceneSet: Edit scene set
@@ -196,23 +197,23 @@ en:
   configInfo: Configuration information
   executeDetail: Execution details
   sceneInput: Input parameters
-  paramName: Name
+  paramName: Parameter name
   refValue: Reference value
   validInPlan: Take effect in the execution plan
-  debugValue: Debug Value
+  debugValue: Debug value
   validInScene: Take effect only when the current scene is executed
   selectiveExp: Select expression
   preSceneOut: Pre-scene output
   globalInput: Global variable input
   sceneStep: Steps
   sceneStepTip: Serial execution between groups and parallel execution within groups
-  addParallelApi: Add parallel API
-  copyApi: Copy API
+  addParallelApi: Add parallel interface
+  copyApi: Copy interfaces
   copyJson: Copy JSON format
   formAdd: Add by form
   textAdd: Add by text
   inputSceneParam: Input parameter for this scene
-  preApiOut: Pre-API output parameter
+  preApiOut: Pre-interface output parameter
   preConfigOut: Pre-configuration-form output parameter
   addByText: Add by text
   apiText: API text
@@ -223,9 +224,9 @@ en:
   execHistory: Execution history
   pipelineID: Pipeline ID
   duration: Duration
-  totalApi: Total API
-  apiExecRate: API execution rate
-  apiPassRate: API pass rate
+  totalApi: Total interfaces
+  apiExecRate: Interface execution rate
+  apiPassRate: Interface pass rate
   execStep: Steps
   checkRes: Result
   selectSceneSet: Select scene set
@@ -238,7 +239,7 @@ en:
   sceneSetRefer: Scene set reference
   configForm: Configuration form
   configInfo: Configuration form info
-  apiInfo: API info
+  apiInfo: Interface info
   nestedScene: Nested scene
   nestedSceneInfo: Nested scene info
   customScript: Custom script
@@ -251,8 +252,8 @@ en:
   marketProtoPlace: Please select an interface name or path to search
   marketProtoChangeApi: Confirm to overwrite the current interface definition
   marketProtoChangeApiConfirm: The interface definition cannot be restored after it is overwritten. Are you sure to overwrite it?
-  API: API
-  emptyApi: empty API
+  API: Interface
+  emptyApi: empty interface
   paramNameMessage1: The maximum length of parameter name cannot exceed 50
   paramNameMessage2: Parameter names are English, numbers, dashes, or underscores
   paramNameMessage3: Parameter names are English, numbers, dots, dashes, or underscores
@@ -287,3 +288,4 @@ en:
   executor: Executor
   triggerTime: Trigger time
   searchPlaceHolder: Search (stay tuned)
+  backLatestResult: Back to latest record
