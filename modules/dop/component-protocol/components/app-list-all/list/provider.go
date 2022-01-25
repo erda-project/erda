@@ -143,6 +143,7 @@ func (l *List) doFilterApp() (data *list.Data) {
 			ID:          strconv.FormatUint(p.ID, 10),
 			Icon:        &commodel.Icon{URL: p.Logo},
 			Title:       p.Name,
+			Selectable:  true,
 			KvInfos:     l.GenAppKvInfo(p),
 			Description: l.appDescription(p.Desc),
 			Operations: map[cptype.OperationKey]cptype.Operation{
