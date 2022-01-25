@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-attachment/editFormModal/form"
@@ -87,26 +88,26 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 
 	props := make(map[string]interface{})
 	props["requestIgnore"] = []string{"props", "data"}
-	props["title"] = "编辑"
+	props["title"] = cputil.I18n(ctx, "edit")
 	props["fields"] = []form.Field{
 		{
 			Component: "input",
 			Key:       "app",
-			Label:     "应用",
+			Label:     cputil.I18n(ctx, "app"),
 			Required:  true,
 			Disabled:  true,
 		},
 		{
 			Component: "select",
 			Key:       "runtime",
-			Label:     "实例",
+			Label:     cputil.I18n(ctx, "runtime"),
 			Required:  true,
 			Disabled:  true,
 		},
 		{
 			Component: "select",
 			Key:       "account",
-			Label:     "数据库账号",
+			Label:     cputil.I18n(ctx, "db_account"),
 			ComponentProps: map[string]interface{}{
 				"options": accountList,
 			},

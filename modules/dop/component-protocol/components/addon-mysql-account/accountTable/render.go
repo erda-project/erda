@@ -89,52 +89,52 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	}
 
 	var props table.Props
-	props.Columns = getTitles()
+	props.Columns = getTitles(ctx)
 	props.RowKey = "id"
 	props.RequestIgnore = []string{"props", "data", "operations"}
 	c.Props = cputil.MustConvertProps(props)
 
 	c.Data = make(map[string]interface{})
-	c.Data["list"] = f.getData()
+	c.Data["list"] = f.getData(ctx)
 
 	(*gs)[string(cptype.GlobalInnerKeyUserIDs)] = strutil.DedupSlice(f.userIDs, true)
 
 	return nil
 }
 
-func getTitles() []*table.ColumnTitle {
+func getTitles(ctx context.Context) []*table.ColumnTitle {
 	return []*table.ColumnTitle{
 		{
-			Title:     "账号",
+			Title:     cputil.I18n(ctx, "account"),
 			DataIndex: "username",
 		},
 		{
-			Title:     "使用状态",
+			Title:     cputil.I18n(ctx, "attachment.status"),
 			DataIndex: "attachments",
 		},
 		{
-			Title:     "创建者",
+			Title:     cputil.I18n(ctx, "creator"),
 			DataIndex: "creator",
 		},
 		{
-			Title:     "创建时间",
+			Title:     cputil.I18n(ctx, "created_at"),
 			DataIndex: "createdAt",
 		},
 		{
-			Title:     "操作",
+			Title:     cputil.I18n(ctx, "operate"),
 			DataIndex: "operate",
 			Width:     180,
 		},
 	}
 }
 
-func (f *comp) getData() []map[string]table.ColumnData {
+func (f *comp) getData(ctx context.Context) []map[string]table.ColumnData {
 	var columns []map[string]table.ColumnData
 	for _, i := range f.ac.Accounts {
 		if !f.getFilter().Match(i) {
 			continue
 		}
-		datum := f.getDatum(i)
+		datum := f.getDatum(ctx, i)
 		if datum == nil {
 			continue
 		}
@@ -176,12 +176,12 @@ func (f *comp) getFilter() table.Matcher {
 	)
 }
 
-func (f *comp) getDatum(item *addonmysqlpb.MySQLAccount) map[string]table.ColumnData {
+func (f *comp) getDatum(ctx context.Context, item *addonmysqlpb.MySQLAccount) map[string]table.ColumnData {
 	datum := make(map[string]table.ColumnData)
 	datum["username"] = table.ColumnData{RenderType: "text", Value: item.Username}
 
 	cnt := f.ac.AccountRefCount[item.Id]
-	datum["attachments"] = table.ColumnData{RenderType: "linkText", Value: fmt.Sprintf("使用中 (%d)", cnt), Operations: map[string]*table.Operation{
+	datum["attachments"] = table.ColumnData{RenderType: "linkText", Value: cputil.I18n(ctx, "in_use_cnt", cnt), Operations: map[string]*table.Operation{
 		"click": {
 			Key:    "gotoMysqlUserManager",
 			Reload: false,
@@ -202,7 +202,7 @@ func (f *comp) getDatum(item *addonmysqlpb.MySQLAccount) map[string]table.Column
 		},
 	}}
 	if cnt == 0 {
-		datum["attachments"] = table.ColumnData{RenderType: "text", Value: "未被使用"}
+		datum["attachments"] = table.ColumnData{RenderType: "text", Value: cputil.I18n(ctx, "not_used")}
 	}
 
 	datum["creator"] = table.ColumnData{RenderType: "userAvatar", Value: item.Creator}
@@ -211,7 +211,7 @@ func (f *comp) getDatum(item *addonmysqlpb.MySQLAccount) map[string]table.Column
 	datum["operate"] = table.ColumnData{RenderType: "tableOperation", Operations: map[string]*table.Operation{
 		"viewPassword": {
 			Key:    "viewPassword",
-			Text:   "查看密码",
+			Text:   cputil.I18n(ctx, "view_password"),
 			Reload: true,
 			Meta: map[string]string{
 				"id": item.Id,
@@ -219,7 +219,7 @@ func (f *comp) getDatum(item *addonmysqlpb.MySQLAccount) map[string]table.Column
 			Disabled: !f.ac.EditPerm,
 			DisabledTip: func() string {
 				if !f.ac.EditPerm {
-					return "您没有权限查看密码，请联系项目管理员"
+					return cputil.I18n(ctx, "view_password_no_perm_tip")
 				}
 				return ""
 			}(),
@@ -227,7 +227,7 @@ func (f *comp) getDatum(item *addonmysqlpb.MySQLAccount) map[string]table.Column
 		},
 		"delete": {
 			Key:    "delete",
-			Text:   "删除",
+			Text:   cputil.I18n(ctx, "delete"),
 			Reload: true,
 			Meta: map[string]string{
 				"id": item.Id,
@@ -235,16 +235,16 @@ func (f *comp) getDatum(item *addonmysqlpb.MySQLAccount) map[string]table.Column
 			Disabled: !f.ac.EditPerm || cnt > 0,
 			DisabledTip: func() string {
 				if !f.ac.EditPerm {
-					return "您没有权限删除账号，请联系项目管理员"
+					return cputil.I18n(ctx, "delete_no_perm_tip")
 				}
 				if cnt > 0 {
-					return "账号正在被引用，无法删除"
+					return cputil.I18n(ctx, "deleting_tip")
 				}
 				return ""
 			}(),
 			ShowIndex:  2,
-			Confirm:    "是否确认删除",
-			SuccessMsg: "删除成功",
+			Confirm:    cputil.I18n(ctx, "delete_confirm"),
+			SuccessMsg: cputil.I18n(ctx, "delete_success_tip"),
 		},
 	}}
 	return datum
