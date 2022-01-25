@@ -228,6 +228,7 @@ func (l *MessageList) doFilterMsg() (data *list.Data) {
 			TitleSummary: strconv.FormatInt(p.UnreadCount, 10),
 			MainState:    &list.StateInfo{Status: common.UnreadMsgStatus},
 			Description:  stream.Content,
+			Selectable:   true,
 			ColumnsInfo: map[string]interface{}{
 				"users": []string{stream.Operator},
 				"text": []map[string]string{{

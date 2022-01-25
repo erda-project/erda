@@ -16,9 +16,16 @@ package workList
 
 import (
 	"fmt"
+	"reflect"
+	"testing"
+
+	"bou.ke/monkey"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/admin/services/workbench"
 )
 
 type NopTranslator struct{}
@@ -35,4 +42,63 @@ var defaultSDK = &cptype.SDK{
 
 	GlobalState: &cptype.GlobalStateData{},
 	Tran:        &NopTranslator{},
+}
+
+func TestDoFilterProj(t *testing.T) {
+	sdk := &cptype.SDK{}
+	bdl := &bundle.Bundle{}
+	wbSvc := &workbench.Workbench{}
+
+	w := WorkList{
+		sdk:   sdk,
+		bdl:   bdl,
+		wbSvc: wbSvc,
+	}
+
+	// monkey patch sdk
+	monkey.PatchInstanceMethod(reflect.TypeOf(sdk), "I18n", func(_ *cptype.SDK, key string, args ...interface{}) string {
+		return key
+	})
+
+	// monkey patch bundle
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ListSubscribes", func(_ *bundle.Bundle, userID, orgID string, req apistructs.GetSubscribeReq) (data *apistructs.SubscribeDTO, err error) {
+		return &apistructs.SubscribeDTO{
+			Total: 1,
+			List: []apistructs.Subscribe{{
+				ID:     "111",
+				Type:   "project",
+				TypeID: 666,
+				Name:   "fake-project",
+				UserID: "2",
+				OrgID:  1,
+			},
+			},
+		}, nil
+	})
+
+	// monkey patch Workbench
+	monkey.PatchInstanceMethod(reflect.TypeOf(wbSvc), "ListQueryProjWbData", func(_ *workbench.Workbench, identity apistructs.Identity, page apistructs.PageRequest, query string) (data *apistructs.WorkbenchProjOverviewRespData, err error) {
+		return &apistructs.WorkbenchProjOverviewRespData{
+			Total: 1,
+			List: []apistructs.WorkbenchProjOverviewItem{{
+				ProjectDTO: apistructs.ProjectDTO{
+					ID:          666,
+					Name:        "fake-project",
+					DisplayName: "fake-project",
+					Type:        "DevOps",
+				},
+				IssueInfo: &apistructs.ProjectIssueInfo{},
+			}},
+		}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(wbSvc), "GetMspUrlParamsMap", func(_ *workbench.Workbench, identity apistructs.Identity, projectIDs []uint64, limit int) (urlParams map[string]workbench.UrlParams, err error) {
+		return map[string]workbench.UrlParams{}, nil
+	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(wbSvc), "GetProjIssueQueries", func(_ *workbench.Workbench, userID string, projIDs []uint64, limit int) (data map[uint64]workbench.IssueUrlQueries, err error) {
+		return map[uint64]workbench.IssueUrlQueries{}, nil
+	})
+
+	w.doFilterProj()
 }
