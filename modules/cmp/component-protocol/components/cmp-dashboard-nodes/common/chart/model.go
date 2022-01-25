@@ -56,7 +56,7 @@ func (cht *Chart) ChartRender(ctx context.Context, c *cptype.Component, scenario
 	case CPU:
 		cht.Data.Label = cht.SDK.I18n("Cpu")
 	case Memory:
-		cht.Data.Label = cht.SDK.I18n("Memory")
+		cht.Data.Label = cht.SDK.I18n("Mem")
 	case Pods:
 		cht.Data.Label = cht.SDK.I18n("Pods")
 	}
