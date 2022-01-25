@@ -64,11 +64,11 @@ func (p *WsPublisher) publishWsDeployStatusUpdate(event *RuntimeEvent) {
 	if !strings.HasPrefix(string(event.EventName), "RuntimeDeploy") {
 		return
 	}
-	e := websocket.Event{
+	e := websocket.Event{Scope: websocket.Scope{
 		Scope: apistructs.Scope{
 			Type: apistructs.AppScope,
 			ID:   fmt.Sprintf("%d", event.Runtime.ApplicationID),
-		},
+		}},
 		Type: ws.R_DEPLOY_STATUS_UPDATE,
 		Payload: ws.DeployStatusUpdatePayload{
 			DeploymentId: event.Deployment.ID,
@@ -86,10 +86,10 @@ func (p *WsPublisher) publishWsRuntimeStatusChanged(event *RuntimeEvent) {
 		return
 	}
 	e := websocket.Event{
-		Scope: apistructs.Scope{
+		Scope: websocket.Scope{Scope: apistructs.Scope{
 			Type: apistructs.AppScope,
 			ID:   fmt.Sprintf("%d", event.Runtime.ApplicationID),
-		},
+		}},
 		Type: ws.R_RUNTIME_STATUS_CHANGED,
 		Payload: ws.RuntimeStatusChangedPayload{
 			RuntimeId: event.Runtime.ID,
@@ -105,10 +105,10 @@ func (p *WsPublisher) publishWsRuntimeServiceStatusChanged(event *RuntimeEvent) 
 		return
 	}
 	e := websocket.Event{
-		Scope: apistructs.Scope{
+		Scope: websocket.Scope{Scope: apistructs.Scope{
 			Type: apistructs.AppScope,
 			ID:   fmt.Sprintf("%d", event.Runtime.ApplicationID),
-		},
+		}},
 		Type: ws.R_RUNTIME_SERVICE_STATUS_CHANGED,
 		Payload: ws.RuntimeServiceStatusChangedPayload{
 			RuntimeId:   event.Runtime.ID,
@@ -125,10 +125,10 @@ func (p *WsPublisher) publishWsRuntimeDeleting(event *RuntimeEvent) {
 		return
 	}
 	e := websocket.Event{
-		Scope: apistructs.Scope{
+		Scope: websocket.Scope{Scope: apistructs.Scope{
 			Type: apistructs.AppScope,
 			ID:   fmt.Sprintf("%d", event.Runtime.ApplicationID),
-		},
+		}},
 		Type: ws.R_RUNTIME_DELETING,
 		Payload: ws.RuntimeDeletingPayload{
 			RuntimeId: event.Runtime.ID,
@@ -142,10 +142,10 @@ func (p *WsPublisher) publishWsRuntimeDeleted(event *RuntimeEvent) {
 		return
 	}
 	e := websocket.Event{
-		Scope: apistructs.Scope{
+		Scope: websocket.Scope{Scope: apistructs.Scope{
 			Type: apistructs.AppScope,
 			ID:   fmt.Sprintf("%d", event.Runtime.ApplicationID),
-		},
+		}},
 		Type: ws.R_RUNTIME_DELETED,
 		Payload: ws.RuntimeDeletingPayload{
 			RuntimeId: event.Runtime.ID,

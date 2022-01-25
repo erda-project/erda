@@ -88,10 +88,10 @@ func (e *PipelineTaskRuntimeEvent) HandleWebSocket() error {
 	payload.RuntimeID = e.RuntimeID
 
 	wsEvent := websocket.Event{
-		Scope: apistructs.Scope{
+		Scope: websocket.Scope{Scope: apistructs.Scope{
 			Type: apistructs.AppScope,
 			ID:   e.Pipeline.Labels[apistructs.LabelAppID],
-		},
+		}},
 		Type:    WSTypePipelineTaskRuntimeIDUpdate,
 		Payload: payload,
 	}

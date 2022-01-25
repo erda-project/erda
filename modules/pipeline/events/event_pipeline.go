@@ -109,10 +109,10 @@ func (e *PipelineEvent) HandleWebSocket() error {
 	payload.CostTimeSec = e.Content().(apistructs.PipelineInstanceEventData).CostTimeSec
 
 	wsEvent := websocket.Event{
-		Scope: apistructs.Scope{
+		Scope: websocket.Scope{Scope: apistructs.Scope{
 			Type: apistructs.AppScope,
 			ID:   e.Header().ApplicationID,
-		},
+		}},
 		Type:    WSTypePipelineStatusUpdate,
 		Payload: payload,
 	}

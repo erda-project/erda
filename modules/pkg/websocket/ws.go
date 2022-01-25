@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/pkg/errors"
@@ -35,18 +36,28 @@ const (
 )
 
 type Protocol struct {
-	Scope   apistructs.Scope `json:"scope"`
-	Command Command          `json:"command"`
+	Scope   Scope   `json:"scope"`
+	Command Command `json:"command"`
+}
+
+// Scope wrap apistructs.Scope with Extras scope info.
+type Scope struct {
+	apistructs.Scope
+
+	// Extras include other scope information.
+	// Such as:
+	//   scenario: issue-manage
+	Extras map[string]string `json:"extras,omitempty"`
 }
 
 type Event struct {
-	Scope   apistructs.Scope `json:"scope"`
-	Type    string           `json:"type"`
-	Payload interface{}      `json:"payload"`
+	Scope   Scope       `json:"scope"`
+	Type    string      `json:"type"`
+	Payload interface{} `json:"payload"`
 }
 
 type eventChan struct {
-	Scope apistructs.Scope
+	Scope Scope
 	EC    chan *Event
 }
 
@@ -102,7 +113,7 @@ func (m *Manager) Start() {
 			case r := <-m.registerC:
 				logrus.Debugf("register channel to manager: %+v", r)
 				m.sessions[r.Session] = &eventChan{
-					Scope: apistructs.Scope{},
+					Scope: Scope{},
 					EC:    r.EC,
 				}
 
@@ -120,7 +131,7 @@ func (m *Manager) Start() {
 					}
 				case Detach:
 					if eventChan, ok := m.sessions[p.Session]; ok {
-						eventChan.Scope = apistructs.Scope{}
+						eventChan.Scope = Scope{}
 					} else {
 						logrus.Warnf("no session found when detach, session: %+v", p.Session)
 					}
@@ -134,7 +145,7 @@ func (m *Manager) Start() {
 				for _, eventChan := range m.sessions {
 
 					logrus.Debugf("compare entities, attached scope: %+v,  event scope: %+v", eventChan.Scope, e.Scope)
-					if eventChan.Scope != e.Scope {
+					if !reflect.DeepEqual(eventChan.Scope, e.Scope) {
 						continue
 					}
 
@@ -249,10 +260,10 @@ func (m *Manager) publishTestEvent() {
 		for t := range ticker.C {
 			event := Event{
 				Type: "YY",
-				Scope: apistructs.Scope{
+				Scope: Scope{Scope: apistructs.Scope{
 					Type: apistructs.AppScope,
 					ID:   "100",
-				},
+				}},
 				Payload: map[string]string{
 					"time": fmt.Sprintf("%v", t),
 				},
