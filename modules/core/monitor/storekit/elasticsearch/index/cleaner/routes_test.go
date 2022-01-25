@@ -79,3 +79,30 @@ func Test_cleanExpiredIndices_With_ValidTimeOffset_Should_AddTime(t *testing.T) 
 	assert.Equal(t, true, result)
 	assert.Equal(t, nowTime.Add(time.Hour), actualTime)
 }
+
+func Test_cleanByDiskUsage_With_ValidParams_Should_Affect(t *testing.T) {
+	p := &provider{
+		Cfg: &config{
+			DiskClean: diskClean{},
+		},
+	}
+	var actualCfg diskClean
+
+	monkey.Patch((*provider).checkDiskUsage, func(p *provider, ctx context.Context, config diskClean) error {
+		actualCfg = config
+		return nil
+	})
+	defer monkey.Unpatch((*provider).checkDiskUsage)
+
+	r, _ := http.NewRequest("GET", "url", nil)
+	result := p.cleanByDiskUsage(r, struct {
+		TargetUsagePercent     float64 `query:"targetPercent"`
+		ThresholdPercent       float64 `query:"thresholdPercent"`
+		MinIndicesStorePercent float64 `query:"minIndicesStorePercent"`
+	}{TargetUsagePercent: 1, ThresholdPercent: 2, MinIndicesStorePercent: 3})
+
+	assert.Equal(t, true, result)
+	assert.Equal(t, float64(1), actualCfg.LowDiskUsagePercent)
+	assert.Equal(t, float64(2), actualCfg.HighDiskUsagePercent)
+	assert.Equal(t, float64(3), actualCfg.MinIndicesStorePercent)
+}
