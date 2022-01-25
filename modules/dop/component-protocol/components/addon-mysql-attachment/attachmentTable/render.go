@@ -59,47 +59,47 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	}
 
 	var props table.Props
-	props.Columns = getTitles()
+	props.Columns = getTitles(ctx)
 	props.RowKey = "id"
 	props.RequestIgnore = []string{"props", "data", "operations"}
 	c.Props = cputil.MustConvertProps(props)
 
 	c.Data = make(map[string]interface{})
-	c.Data["list"] = f.getData()
+	c.Data["list"] = f.getData(ctx)
 
 	return nil
 }
 
-func getTitles() []*table.ColumnTitle {
+func getTitles(ctx context.Context) []*table.ColumnTitle {
 	return []*table.ColumnTitle{
 		{
-			Title:     "应用",
+			Title:     cputil.I18n(ctx, "app"),
 			DataIndex: "appName",
 			Width:     180,
 		},
 		{
-			Title:     "实例",
+			Title:     cputil.I18n(ctx, "runtime"),
 			DataIndex: "runtime",
 		},
 		{
-			Title:     "账号",
+			Title:     cputil.I18n(ctx, "account"),
 			DataIndex: "account",
 		},
 		{
-			Title:     "操作",
+			Title:     cputil.I18n(ctx, "operate"),
 			DataIndex: "operate",
 			Width:     260,
 		},
 	}
 }
 
-func (f *comp) getData() []map[string]table.ColumnData {
+func (f *comp) getData(ctx context.Context) []map[string]table.ColumnData {
 	var columns []map[string]table.ColumnData
 	for _, i := range f.ac.Attachments {
 		if !f.getFilter().Match(i) {
 			continue
 		}
-		columns = append(columns, f.getDatum(i))
+		columns = append(columns, f.getDatum(ctx, i))
 	}
 	return columns
 }
@@ -147,7 +147,7 @@ func (f *comp) appFilter(v interface{}) bool {
 	return strutil.Exist(opts, item.AppId)
 }
 
-func (f *comp) getDatum(item *addonmysqlpb.Attachment) map[string]table.ColumnData {
+func (f *comp) getDatum(ctx context.Context, item *addonmysqlpb.Attachment) map[string]table.ColumnData {
 	switching := item.AccountState == "PRE"
 
 	datum := make(map[string]table.ColumnData)
@@ -165,7 +165,7 @@ func (f *comp) getDatum(item *addonmysqlpb.Attachment) map[string]table.ColumnDa
 	if switching {
 		datum["runtime"] = table.ColumnData{RenderType: "textWithTags", Value: item.RuntimeName, Tags: []table.ColumnDataTag{
 			{
-				Tag:   "账号切换中",
+				Tag:   cputil.I18n(ctx, "account_switching"),
 				Color: "orange",
 			},
 		}}
@@ -176,7 +176,7 @@ func (f *comp) getDatum(item *addonmysqlpb.Attachment) map[string]table.ColumnDa
 	datum["operate"] = table.ColumnData{RenderType: "tableOperation", Operations: map[string]*table.Operation{
 		"showConfig": {
 			Key:    "showConfig",
-			Text:   "查看服务参数",
+			Text:   cputil.I18n(ctx, "show_config"),
 			Reload: true,
 			Meta: map[string]string{
 				"id": fmt.Sprintf("%d", item.Id),
@@ -185,7 +185,7 @@ func (f *comp) getDatum(item *addonmysqlpb.Attachment) map[string]table.ColumnDa
 		},
 		"click": {
 			Key:    "gotoRuntimeDetail",
-			Text:   "跳转部署详情",
+			Text:   cputil.I18n(ctx, "goto_runtime_detail"),
 			Reload: false,
 			Command: &table.OperationCommand{
 				Key: "goto",
@@ -209,7 +209,7 @@ func (f *comp) getDatum(item *addonmysqlpb.Attachment) map[string]table.ColumnDa
 		},
 		"edit": {
 			Key:    "editAttachment",
-			Text:   "编辑",
+			Text:   cputil.I18n(ctx, "edit"),
 			Reload: true,
 			Meta: map[string]string{
 				"id": fmt.Sprintf("%d", item.Id),
@@ -217,7 +217,7 @@ func (f *comp) getDatum(item *addonmysqlpb.Attachment) map[string]table.ColumnDa
 			Disabled: !f.ac.EditPerm,
 			DisabledTip: func() string {
 				if !f.ac.EditPerm {
-					return "您没有权限编辑账号使用，请联系项目管理员"
+					return cputil.I18n(ctx, "edit_no_perm_tip")
 				}
 				return ""
 			}(),
