@@ -40,6 +40,7 @@ type Values struct {
 	BranchID          string   `json:"branchID,omitempty"`
 	CommitID          string   `json:"commitID,omitempty"`
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd,omitempty"`
+	Latest            bool     `json:"latest"`
 	ReleaseID         string   `json:"releaseID,omitempty"`
 	UserIDs           []string `json:"userIDs,omitempty"`
 }

@@ -27,6 +27,7 @@ zh:
   referencedReleases: 查看引用制品
   releaseID: 制品ID
   inputReleaseID: 请输入制品ID
+  aggregateByBranch: 按分支聚合
 en:
   searchByVersion: Search by version
   application: Application
@@ -56,3 +57,4 @@ en:
   referencedReleases: Referenced Releases
   releaseID: Release ID
   inputReleaseID: Input release ID
+  aggregateByBranch: Aggregate by branch

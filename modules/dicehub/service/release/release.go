@@ -677,15 +677,7 @@ func (r *Release) Get(orgID int64, releaseID string) (*apistructs.ReleaseGetResp
 
 // List 根据搜索条件进行搜索
 func (r *Release) List(orgID int64, req *apistructs.ReleaseListRequest) (*apistructs.ReleaseListResponseData, error) {
-	total, releases, err := r.db.GetReleasesByParams(
-		orgID, req.ProjectID, req.ApplicationID,
-		req.Query, req.ReleaseName, req.Branch,
-		req.IsStable, req.IsFormal, req.IsProjectRelease,
-		req.UserID, req.Version, req.ReleaseID, req.CommitID, req.Tags,
-		req.Cluster, req.CrossCluster, req.IsVersion,
-		req.CrossClusterOrSpecifyCluster,
-		req.StartTime, req.EndTime, req.PageNum, req.PageSize,
-		req.OrderBy, req.Order)
+	total, releases, err := r.db.GetReleasesByParams(orgID, req)
 	if err != nil {
 		return nil, err
 	}
@@ -913,6 +905,7 @@ func (r *Release) Convert(releaseRequest *apistructs.ReleaseCreateRequest, appRe
 			return nil, err
 		}
 		release.Labels = string(labelBytes)
+		release.GitBranch = releaseRequest.Labels["gitBranch"]
 	}
 
 	if len(releaseRequest.Tags) > 0 {

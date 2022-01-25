@@ -59,9 +59,10 @@ func getPair() (Values, string) {
 		ApplicationIDs:    []string{"testAppID"},
 		BranchID:          "testBranchID",
 		CommitID:          "testCommitID",
-		UserIDs:           []string{"testUserID"},
 		CreatedAtStartEnd: []int64{1, 1},
 		ReleaseID:         "testReleaseID",
+		UserIDs:           []string{"testUserID"},
+		Latest:            true,
 	}
 	data, err := json.Marshal(v)
 	if err != nil {
