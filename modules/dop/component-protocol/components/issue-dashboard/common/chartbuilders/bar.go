@@ -154,7 +154,7 @@ func (f *BarBuilder) groupToBarData(ctx context.Context) (charts.MultiSeries, []
 	var colors []string
 	total := make([]int, len(f.XAxis))
 
-	for _, stack := range f.StackHandler.GetStacks() {
+	for _, stack := range f.StackHandler.GetStacks(ctx) {
 		if !showStack(f.DataWhiteList, stack.Value) {
 			continue
 		}

@@ -52,7 +52,7 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 
 	handler := stackhandlers.NewSeverityStackHandler(false)
 
-	seriesData, colors := common.GroupToPieData(helper.GetIssueList(), handler)
+	seriesData, colors := common.GroupToPieData(ctx, helper.GetIssueList(), handler)
 
 	pie := charts.NewPie()
 	pie.Tooltip.Show = true

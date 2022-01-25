@@ -15,6 +15,9 @@
 package stackhandlers
 
 import (
+	"context"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/model"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -37,12 +40,12 @@ var severityColorMap = map[apistructs.IssueSeverity]string{
 	apistructs.IssueSeverityLow:     "green",
 }
 
-func (h *SeverityStackHandler) GetStacks() []Stack {
+func (h *SeverityStackHandler) GetStacks(ctx context.Context) []Stack {
 	var stacks []Stack
 	for i := len(apistructs.IssueSeveritys) - 1; i >= 0; i-- {
 		severity := apistructs.IssueSeveritys[i]
 		stacks = append(stacks, Stack{
-			Name:  severity.GetZhName(),
+			Name:  cputil.I18n(ctx, string(severity)),
 			Value: string(severity),
 			Color: severityColorMap[severity],
 		})
@@ -66,6 +69,6 @@ func (h *SeverityStackHandler) GetIndexer() func(issue interface{}) string {
 	}
 }
 
-func (h *SeverityStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks(), true)
+func (h *SeverityStackHandler) GetFilterOptions(ctx context.Context) []filter.PropConditionOption {
+	return getFilterOptions(h.GetStacks(ctx), true)
 }

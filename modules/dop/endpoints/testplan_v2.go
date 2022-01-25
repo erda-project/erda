@@ -137,7 +137,7 @@ func (e *Endpoints) UpdateTestPlanV2(ctx context.Context, r *http.Request, vars 
 	}
 
 	if err := e.autotestV2.UpdateTestPlanV2(&req); err != nil {
-		return errorresp.ErrResp(err)
+		return apierrors.ErrUpdateTestPlan.InternalError(err).ToResp(), nil
 	}
 
 	return httpserver.OkResp(testPlanID)

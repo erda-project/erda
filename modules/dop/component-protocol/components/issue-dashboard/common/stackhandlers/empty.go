@@ -14,7 +14,11 @@
 
 package stackhandlers
 
-import "github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
+import (
+	"context"
+
+	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
+)
 
 type DefaultStackHandler struct {
 	SingleStackName string
@@ -24,7 +28,7 @@ func NewDefaultStackHandler(single string) *DefaultStackHandler {
 	return &DefaultStackHandler{SingleStackName: single}
 }
 
-func (h *DefaultStackHandler) GetStacks() []Stack {
+func (h *DefaultStackHandler) GetStacks(ctx context.Context) []Stack {
 	return []Stack{{
 		Name:  h.SingleStackName,
 		Value: "",
@@ -38,6 +42,6 @@ func (h *DefaultStackHandler) GetIndexer() func(issue interface{}) string {
 	}
 }
 
-func (h *DefaultStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks())
+func (h *DefaultStackHandler) GetFilterOptions(ctx context.Context) []filter.PropConditionOption {
+	return getFilterOptions(h.GetStacks(ctx))
 }

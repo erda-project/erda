@@ -27,13 +27,14 @@ type ComponentAction struct {
 
 func (ca *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
 	ctxBdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+	i18nLocale := ctxBdl.Bdl.GetLocale(ctxBdl.Locale)
 	orgID := ctxBdl.Identity.OrgID
 	org, err := ctxBdl.Bdl.GetOrg(orgID)
 	if err != nil {
 		return err
 	}
 	if org.BlockoutConfig.BlockDEV || org.BlockoutConfig.BlockProd || org.BlockoutConfig.BlockStage || org.BlockoutConfig.BlockTEST {
-		return json.Unmarshal([]byte(`{ "visible": true, "message": "企业处于封网期间，生产环境禁止部署！", "type": "error" }`), &c.Props)
+		return json.Unmarshal([]byte(`{ "visible": true, "message": "`+i18nLocale.Get("blockMessage")+`", "type": "error" }`), &c.Props)
 	}
 	return json.Unmarshal([]byte(`{ "visible": false }`), &c.Props)
 }

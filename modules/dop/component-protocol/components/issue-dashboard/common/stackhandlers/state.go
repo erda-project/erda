@@ -15,6 +15,7 @@
 package stackhandlers
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
@@ -52,7 +53,7 @@ var stateColorMap = map[apistructs.IssueStateBelong][]string{
 	apistructs.IssueStateBelongClosed: {"darkseagreen"},
 }
 
-func (h *StateStackHandler) GetStacks() []Stack {
+func (h *StateStackHandler) GetStacks(ctx context.Context) []Stack {
 	var stacks []Stack
 	belongCounter := make(map[apistructs.IssueStateBelong]int)
 	for _, i := range h.issueStateList {
@@ -86,6 +87,6 @@ func (h *StateStackHandler) GetIndexer() func(issue interface{}) string {
 	}
 }
 
-func (h *StateStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks())
+func (h *StateStackHandler) GetFilterOptions(ctx context.Context) []filter.PropConditionOption {
+	return getFilterOptions(h.GetStacks(ctx))
 }

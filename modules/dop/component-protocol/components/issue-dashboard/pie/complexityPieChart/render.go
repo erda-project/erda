@@ -50,9 +50,10 @@ func (f *ComponentAction) Render(ctx context.Context, c *cptype.Component, scena
 
 	helper := gshelper.NewGSHelper(gs)
 
+	f.sdk = cputil.SDK(ctx)
 	handler := stackhandlers.NewComplexityStackHandler(false)
 
-	seriesData, colors := common.GroupToPieData(helper.GetIssueList(), handler)
+	seriesData, colors := common.GroupToPieData(ctx, helper.GetIssueList(), handler)
 
 	pie := charts.NewPie()
 	pie.Tooltip.Show = true

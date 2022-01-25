@@ -15,6 +15,8 @@
 package stackhandlers
 
 import (
+	"context"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/model"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -35,7 +37,7 @@ func NewStageStackHandler(reverse bool, issueStageList []apistructs.IssueStage) 
 
 var stageColorList = []string{"red", "yellow", "green"}
 
-func (h *StageStackHandler) GetStacks() []Stack {
+func (h *StageStackHandler) GetStacks(ctx context.Context) []Stack {
 	l := len(stageColorList)
 	var stacks []Stack
 	for idx, i := range h.issueStageList {
@@ -67,6 +69,6 @@ func (h *StageStackHandler) GetIndexer() func(issue interface{}) string {
 	}
 }
 
-func (h *StageStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks())
+func (h *StageStackHandler) GetFilterOptions(ctx context.Context) []filter.PropConditionOption {
+	return getFilterOptions(h.GetStacks(ctx))
 }

@@ -15,16 +15,18 @@
 package stackhandlers
 
 import (
+	"context"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
 type StackHandler interface {
-	GetStacks() []Stack
+	GetStacks(ctx context.Context) []Stack
 	GetIndexer() func(issue interface{}) string
 
-	GetFilterOptions() []filter.PropConditionOption
+	GetFilterOptions(ctx context.Context) []filter.PropConditionOption
 }
 
 type Stack struct {
