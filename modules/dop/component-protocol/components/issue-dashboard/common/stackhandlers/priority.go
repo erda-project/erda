@@ -15,6 +15,9 @@
 package stackhandlers
 
 import (
+	"context"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/model"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -36,11 +39,11 @@ var priorityColorMap = map[apistructs.IssuePriority]string{
 	apistructs.IssuePriorityLow:    "green",
 }
 
-func (h *PriorityStackHandler) GetStacks() []Stack {
+func (h *PriorityStackHandler) GetStacks(ctx context.Context) []Stack {
 	var stacks []Stack
 	for _, i := range apistructs.IssuePriorityList {
 		stacks = append(stacks, Stack{
-			Name:  i.GetZhName(),
+			Name:  cputil.I18n(ctx, string(i)),
 			Value: string(i),
 			Color: priorityColorMap[i],
 		})
@@ -64,6 +67,6 @@ func (h *PriorityStackHandler) GetIndexer() func(issue interface{}) string {
 	}
 }
 
-func (h *PriorityStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks(), true)
+func (h *PriorityStackHandler) GetFilterOptions(ctx context.Context) []filter.PropConditionOption {
+	return getFilterOptions(h.GetStacks(ctx), true)
 }
