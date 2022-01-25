@@ -166,7 +166,7 @@ func (f *ComponentFilter) getPropIterationsOptions() (int64, []filter.PropCondit
 	}
 	iterations = append(iterations, apistructs.Iteration{
 		ID:    -1,
-		Title: "待处理",
+		Title: f.sdk.I18n("iterationUnassigned"),
 	})
 	var options []filter.PropConditionOption
 	for _, iteration := range iterations {

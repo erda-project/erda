@@ -83,7 +83,7 @@ func (i *ComponentList) RenItem(pro apistructs.ProjectDTO, orgDomain string) (Pr
 	opApplyDeploy := Operation{
 		Key:    apistructs.ApplyDeployProjectFilterOperation.String(),
 		Reload: false,
-		Text:   "申请部署",
+		Text:   i18nLocale.Get("applyDeploy"),
 		Meta: Meta{
 			ProjectId:   pro.ID,
 			ProjectName: pro.DisplayName,
