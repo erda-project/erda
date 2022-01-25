@@ -1405,7 +1405,7 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 		}
 		if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
 			wg.Add(1)
-			go func(rt dbclient.Runtime, wg *sync.WaitGroup, servicesMap struct {
+			go func(rt dbclient.Runtime, wg *sync.WaitGroup, servicesMap *struct {
 				sync.RWMutex
 				m map[uint64]*apistructs.RuntimeSummaryDTO
 			}, deployment *dbclient.Deployment) {
@@ -1428,7 +1428,7 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 				servicesMap.m[rt.ID] = &d
 				servicesMap.Unlock()
 				wg.Done()
-			}(runtime, &wg, servicesMap, deployment)
+			}(runtime, &wg, &servicesMap, deployment)
 		}
 	}
 	wg.Wait()
