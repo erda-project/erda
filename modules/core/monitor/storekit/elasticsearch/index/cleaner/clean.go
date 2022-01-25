@@ -56,11 +56,14 @@ func (p *provider) runCleanIndices(ctx context.Context) {
 
 // CleanIndices .
 func (p *provider) CleanIndices(ctx context.Context, filter loader.Matcher) error {
+	return p.checkAndDeleteIndices(ctx, time.Now(), filter)
+}
+
+func (p *provider) checkAndDeleteIndices(ctx context.Context, now time.Time, filter loader.Matcher) error {
 	indices := p.loader.AllIndices()
 	if indices == nil {
 		return nil
 	}
-	now := time.Now()
 	removeList := p.getRemoveList(ctx, indices, filter, now)
 	p.Log.Infof("about to remove %d indices: %v", len(removeList), removeList)
 	if len(removeList) > 0 {
