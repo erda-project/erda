@@ -242,18 +242,6 @@ func Test_convertRuntimeSummaryDTOFromRuntimeModel(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	runtime := New(WithBundle(bdl), WithDBClient(db))
-	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindLastDeployment", func(_ *dbclient.DBClient, runtimeId uint64) (*dbclient.Deployment, error) {
-		return &dbclient.Deployment{
-			BaseModel: dbengine.BaseModel{
-				ID: 3,
-			},
-			RuntimeId: 111,
-			ReleaseId: "aaaa-bbbbb-cccc",
-			Operator:  "erda",
-			Status:    "OK",
-		}, nil
-	})
-	defer m1.Unpatch()
 	a := &apistructs.RuntimeSummaryDTO{}
 	r := dbclient.Runtime{
 		BaseModel: dbengine.BaseModel{
@@ -263,7 +251,16 @@ func Test_convertRuntimeSummaryDTOFromRuntimeModel(t *testing.T) {
 		ApplicationID: 0,
 		Workspace:     "",
 	}
-	_ = runtime.convertRuntimeSummaryDTOFromRuntimeModel(a, r)
+	d := dbclient.Deployment{
+		BaseModel: dbengine.BaseModel{
+			ID: 3,
+		},
+		RuntimeId: 111,
+		ReleaseId: "aaaa-bbbbb-cccc",
+		Operator:  "erda",
+		Status:    "OK",
+	}
+	_ = runtime.convertRuntimeSummaryDTOFromRuntimeModel(a, r, &d)
 	assert.Equal(t, apistructs.DeploymentStatus("OK"), a.DeployStatus)
 }
 
@@ -271,18 +268,6 @@ func Test_generateListGroupAppResult(t *testing.T) {
 	var bdl *bundle.Bundle
 	var db *dbclient.DBClient
 	runtime := New(WithBundle(bdl), WithDBClient(db))
-	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindLastDeployment", func(_ *dbclient.DBClient, runtimeId uint64) (*dbclient.Deployment, error) {
-		return &dbclient.Deployment{
-			BaseModel: dbengine.BaseModel{
-				ID: 3,
-			},
-			RuntimeId: 111,
-			ReleaseId: "aaaa-bbbbb-cccc",
-			Operator:  "erda",
-			Status:    "OK",
-		}, nil
-	})
-	defer m1.Unpatch()
 	var result = struct {
 		sync.RWMutex
 		m map[uint64][]*apistructs.RuntimeSummaryDTO
@@ -296,7 +281,55 @@ func Test_generateListGroupAppResult(t *testing.T) {
 		ApplicationID: 1,
 		Workspace:     "",
 	}
+	d := dbclient.Deployment{
+		BaseModel: dbengine.BaseModel{
+			ID: 3,
+		},
+		RuntimeId: 111,
+		ReleaseId: "aaaa-bbbbb-cccc",
+		Operator:  "erda",
+		Status:    "OK",
+	}
 	wg.Add(1)
-	runtime.generateListGroupAppResult(&result, 1, &r, &wg)
+	runtime.generateListGroupAppResult(&result, 1, &r, d, &wg)
 	assert.Equal(t, apistructs.DeploymentStatus("OK"), result.m[1][0].DeployStatus)
+}
+
+func Test_listGroupByApps(t *testing.T) {
+	var bdl *bundle.Bundle
+	var db *dbclient.DBClient
+	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindRuntimesInApps", func(_ *dbclient.DBClient, appIDs []uint64, env string) (map[uint64][]*dbclient.Runtime, []uint64, error) {
+		a := make(map[uint64][]*dbclient.Runtime)
+		a[1] = []*dbclient.Runtime{&dbclient.Runtime{
+			BaseModel: dbengine.BaseModel{
+				ID: 1,
+			},
+			Name:          "master",
+			Workspace:     "DEV",
+			ApplicationID: 1,
+		}}
+		return a, []uint64{1}, nil
+	})
+	defer m1.Unpatch()
+
+	m2 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindLastDeploymentIDsByRutimeIDs", func(_ *dbclient.DBClient, runtimeIDs []uint64) ([]uint64, error) {
+		return []uint64{5}, nil
+	})
+	defer m2.Unpatch()
+
+	m3 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindDeploymentsByIDs", func(_ *dbclient.DBClient, ids []uint64) (map[uint64]dbclient.Deployment, error) {
+		a := make(map[uint64]dbclient.Deployment)
+		a[1] = dbclient.Deployment{
+			BaseModel: dbengine.BaseModel{
+				ID: 5,
+			},
+			RuntimeId: 1,
+			Status:    "OK",
+		}
+		return a, nil
+	})
+	defer m3.Unpatch()
+	runtime := New(WithBundle(bdl), WithDBClient(db))
+	result, _ := runtime.ListGroupByApps([]uint64{1}, "DEV")
+	assert.Equal(t, apistructs.DeploymentStatus("OK"), result[1][0].DeployStatus)
 }
