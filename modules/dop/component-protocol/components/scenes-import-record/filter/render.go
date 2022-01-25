@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/components/base"
 )
 
@@ -70,17 +71,17 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	}
 	ca.State.Conditions = []interface{}{
 		map[string]interface{}{
-			"emptyText": "全部",
+			"emptyText": cputil.I18n(ctx, "all"),
 			"fixed":     true,
 			"key":       "type",
-			"label":     "类型",
+			"label":     cputil.I18n(ctx, "type"),
 			"options": []interface{}{
 				map[string]interface{}{
-					"label": "导入",
+					"label": cputil.I18n(ctx, "import"),
 					"value": "import",
 				},
 				map[string]interface{}{
-					"label": "导出",
+					"label": cputil.I18n(ctx, "export"),
 					"value": "export",
 				},
 			},
