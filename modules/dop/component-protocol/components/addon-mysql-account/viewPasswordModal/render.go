@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
 )
 
@@ -43,7 +44,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	}
 
 	props := make(map[string]interface{})
-	props["title"] = "账号密码查看"
+	props["title"] = cputil.I18n(ctx, "password_viewer_title")
 	props["size"] = "big"
 	props["requestIgnore"] = []string{"props", "data", "operations"}
 	c.Props = props

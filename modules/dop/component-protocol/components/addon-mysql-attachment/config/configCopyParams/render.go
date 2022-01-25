@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -62,8 +63,8 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 
 	c.Props = map[string]interface{}{
 		"copyText":      string(b),
-		"copyTip":       "参数",
-		"buttonText":    "复制参数",
+		"copyTip":       cputil.I18n(ctx, "copyTip"),
+		"buttonText":    cputil.I18n(ctx, "copyText"),
 		"requestIgnore": []string{"props", "data", "operations"},
 	}
 

@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	addonmysqlpb "github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
@@ -42,7 +43,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 		return err
 	}
 	props := map[string]interface{}{
-		"text":          "一键创建账号",
+		"text":          cputil.I18n(ctx, "one_click_create"),
 		"type":          "primary",
 		"requestIgnore": []string{"props", "data", "operations"},
 		"tipProps": map[string]interface{}{
@@ -51,7 +52,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	}
 	if !ac.EditPerm {
 		props["disabled"] = true
-		props["disabledTip"] = "您没有权限创建账号，请联系项目管理员"
+		props["disabledTip"] = cputil.I18n(ctx, "create_no_perm_tip")
 	}
 	c.Props = props
 	c.Operations = map[string]interface{}{
