@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/dop/contribution/pb"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -27,6 +28,7 @@ import (
 type contributionService struct {
 	logger logs.Logger
 	db     *dao.DBClient
+	i18n   i18n.Translator
 }
 
 func (s *contributionService) GetPersonalContribution(ctx context.Context, req *pb.GetPersonalContributionRequest) (*pb.GetPersonalContributionResponse, error) {
@@ -53,13 +55,13 @@ func (s *contributionService) GetPersonalContribution(ctx context.Context, req *
 	if pivot == 0 {
 		pivot = 1
 	}
+	lang := apis.Language(ctx)
 	indicator := &pb.Indicator{
 		Data: []*pb.IndicatorData{
 			{Data: []uint64{data.Data.Events, data.Data.Commits, data.Data.Cases}},
 		},
-		Max: []uint64{pivot, pivot, pivot},
-		// TODO i18n
-		Title: []string{"协同", "代码", "质量"},
+		Max:   []uint64{pivot, pivot, pivot},
+		Title: []string{s.i18n.Text(lang, "coordination"), s.i18n.Text(lang, "code"), s.i18n.Text(lang, "quality")},
 	}
 	data.Indicators = indicator
 	return &pb.GetPersonalContributionResponse{Data: data}, nil
