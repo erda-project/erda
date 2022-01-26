@@ -1,0 +1,187 @@
+syntax = "proto3";
+
+package erda.core.monitor.diagnotor;
+option go_package = "github.com/erda-project/erda-proto-go/core/monitor/diagnotor/pb";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "google/protobuf/descriptor.proto";
+import "google/api/annotations.proto";
+import "common/openapi.proto";
+
+service DiagnotorService {
+  option (erda.common.openapi_service) = {
+    service: "monitor",
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
+  // rpc ListServices (ListFilesRequest) returns (ListFilesResponse) {
+  //   option (google.api.http) = {
+  //     get: "/api/diagnosis/services"
+  //   };
+  //   option (erda.common.openapi) = {
+  //     path: "/api/diagnosis/services",
+  //   };
+  // }
+
+  // rpc ListInstances (ListFilesRequest) returns (ListFilesResponse) {
+  //   option (google.api.http) = {
+  //     get: "/api/diagnosis/services/instances"
+  //   };
+  //   option (erda.common.openapi) = {
+  //     path: "/api/diagnosis/services/instances",
+  //   };
+  // }
+
+  rpc StartDiagnosis (StartDiagnosisRequest) returns (StartDiagnosisResponse) {
+    option (google.api.http) = {
+      post: "/api/diagnosis"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/diagnosis",
+    };
+  }
+
+  rpc QueryDiagnosisStatus (QueryDiagnosisStatusRequest) returns (QueryDiagnosisStatusResponse) {
+    option (google.api.http) = {
+      get: "/api/diagnosis/namespaces/{namespace}/pods/{podName}/status"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/diagnosis/namespaces/{namespace}/pods/{podName}/status",
+    };
+  }
+
+  rpc ListProcesses (ListProcessesRequest) returns (ListProcessesResponse) {
+    option (google.api.http) = {
+      get: "/api/diagnosis/namespaces/{namespace}/pods/{podName}/processes"
+    };
+    option (erda.common.openapi) = {
+      path: "/api/diagnosis/namespaces/{namespace}/pods/{podName}/processes",
+    };
+  }
+  
+}
+
+message StartDiagnosisRequest {
+  string clusterName = 1 [(validator.field) = {string_not_empty: true}];
+  string namespace = 2 [(validator.field) = {string_not_empty: true}];
+  string podName = 3 [(validator.field) = {string_not_empty: true}];
+  map<string, string> labels = 4;
+}
+
+message StartDiagnosisResponse {
+  DiagnosisInstance data = 1;
+}
+
+message QueryDiagnosisStatusRequest {
+  string clusterName = 1 [(validator.field) = {string_not_empty: true}];
+  string namespace = 2 [(validator.field) = {string_not_empty: true}];
+  string podName = 3 [(validator.field) = {string_not_empty: true}];
+}
+
+message QueryDiagnosisStatusResponse {
+  DiagnosisInstance data = 1;
+}
+
+message DiagnosisInstance {
+  string clusterName = 1;
+  string namespace = 2;
+  string podName = 3;
+  string hostIP = 5;
+  string podIP = 6;
+  string status = 7;
+  string message = 8;
+}
+
+message ListProcessesRequest {
+  string clusterName = 1 [(validator.field) = {string_not_empty: true}];
+  string namespace = 2 [(validator.field) = {string_not_empty: true}];
+  string podName = 3 [(validator.field) = {string_not_empty: true}];
+  string podIP = 4 [(validator.field) = {string_not_empty: true}];
+}
+
+message ListProcessesResponse {
+  HostProcessStatus data = 1;
+}
+
+message HostProcessStatus {
+  repeated Process processes = 1;
+}
+
+message Process {
+  string pid = 1;
+  string name = 2;
+  string cmdline = 3;
+  string user = 4;
+  int64 createTime = 5;
+  int64 numThreads = 6;
+  int64 numFDs = 7;
+
+  ProcessCPUStatus cpu = 8;
+  ProcessMemoryStatus memory = 9;
+  ProcessIOStatus io = 10;
+  ProcessContextSwitches contextSwitches = 11;
+  ProcessRLimit rlimit = 12;
+
+  string appType = 20;
+}
+
+message ProcessRLimit {
+  ProcessRLimitStatus cpuTime = 1;
+  ProcessRLimitStatus memoryData = 2;
+  ProcessRLimitStatus memoryStack = 3;
+  ProcessRLimitStatus memoryRss = 4;
+  ProcessRLimitStatus memoryLocked = 5;
+  ProcessRLimitStatus memoryVms = 6;
+  ProcessRLimitStatus numFDs = 7;
+  ProcessRLimitStatus fileLocks = 8;
+  ProcessRLimitStatus signalsPending = 9;
+  ProcessRLimitStatus nicePriority = 10;
+  ProcessRLimitStatus realtimePriority = 11;
+}
+
+message ProcessRLimitStatus {
+  int64 soft = 1;
+  int64 Hard = 2;
+  int64 used = 3;
+}
+
+message ProcessMemoryStatus {
+  int64 rss  = 1;
+  int64 vms  = 2;
+  int64 swap  = 3;
+  int64 data  = 4;
+  int64 stack  = 5;
+  int64 locked = 6;
+  double usage = 7;
+}
+
+message ProcessCPUStatus {
+  double user = 1;
+  double system = 2;
+  double idle = 3;
+  double nice = 4;
+  double ioWait = 5;
+  double irq = 6;
+  double softIrq = 7;
+  double steal = 8;
+  double stolen = 9;
+  double guest = 10;
+  double guestNice = 11;
+  double usage = 12;
+}
+
+message ProcessIOStatus {
+  int64 readCount = 8;
+  int64 readBytes = 9;
+  double readRate = 10;
+  int64 writeCount = 11;
+  int64 writeBytes = 12;
+  double writeRate = 13;
+}
+
+message ProcessContextSwitches {
+  int64 voluntary = 1;
+  int64 involuntary = 2;
+}

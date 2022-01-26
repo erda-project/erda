@@ -30,6 +30,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alertdetail/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/collector/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
+	_ "github.com/erda-project/erda-proto-go/core/monitor/diagnotor/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/event/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/expression/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"

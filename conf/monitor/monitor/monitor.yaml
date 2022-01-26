@@ -291,6 +291,9 @@ template:
 
 erda.core.services.filemanager:
 
+erda.core.monitor.diagnotor:
+  agent_image: "${DIAGNOTOR_AGENT_IMAGE}"
+
 k8s-client-manager:
   cache_ttl: "10m"
   cache_size: 5000
