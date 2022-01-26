@@ -52,7 +52,7 @@ func (s *fileManagerService) ListFiles(ctx context.Context, req *pb.ListFilesReq
 		return nil, err
 	}
 	stdout := &strings.Builder{}
-	err = s.execInPod(instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
+	err = s.execInPod(ctx, instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
 		[]string{
 			"sh", "-c", command,
 		},
@@ -127,7 +127,7 @@ func (s *fileManagerService) ReadFile(ctx context.Context, req *pb.ReadFileReque
 
 	checkFile := func() (*pb.FileInfo, error) {
 		stdout := &strings.Builder{}
-		err = s.execInPod(instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
+		err = s.execInPod(ctx, instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
 			[]string{
 				"sh", "-c", fmt.Sprintf("TIME_STYLE='+%%Y-%%m-%%dT%%H:%%M:%%S.%%N' ls -la %q", noExpandPath(req.Path)),
 			},
@@ -163,7 +163,7 @@ func (s *fileManagerService) ReadFile(ctx context.Context, req *pb.ReadFileReque
 
 	// read file
 	stdout := &bytes.Buffer{}
-	err = s.execInPod(instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
+	err = s.execInPod(ctx, instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
 		[]string{
 			"sh", "-c", fmt.Sprintf("dd if=%q", noExpandPath(req.Path)),
 		},
@@ -223,7 +223,7 @@ func (s *fileManagerService) WriteFile(ctx context.Context, req *pb.WriteFileReq
 		return nil, err
 	}
 	stdout := &bytes.Buffer{}
-	err = s.execInPod(instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
+	err = s.execInPod(ctx, instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
 		[]string{
 			"sh", "-c", command,
 		},
@@ -256,7 +256,7 @@ func (s *fileManagerService) MakeDirectory(ctx context.Context, req *pb.MakeDire
 		return nil, err
 	}
 	stdout := &bytes.Buffer{}
-	err = s.execInPod(instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
+	err = s.execInPod(ctx, instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
 		[]string{
 			"sh", "-c", command,
 		},
@@ -281,7 +281,7 @@ func (s *fileManagerService) MoveFile(ctx context.Context, req *pb.MoveFileReque
 		return nil, err
 	}
 	stdout := &bytes.Buffer{}
-	err = s.execInPod(instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
+	err = s.execInPod(ctx, instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
 		[]string{
 			"sh", "-c", fmt.Sprintf("mv %q %q", noExpandPath(req.Source), noExpandPath(req.Destination)),
 		},
@@ -308,7 +308,7 @@ func (s *fileManagerService) DeleteFile(ctx context.Context, req *pb.DeleteFileR
 		return nil, err
 	}
 	stdout := &bytes.Buffer{}
-	err = s.execInPod(instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
+	err = s.execInPod(ctx, instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
 		[]string{
 			"sh", "-c", fmt.Sprintf("rm -rf %q", noExpandPath(req.Path)),
 		},
@@ -343,7 +343,7 @@ func (s *fileManagerService) DownloadFile(rw http.ResponseWriter, req *http.Requ
 	setHeader := true // delay to set header
 	var count int
 	path := noExpandPath(params.Path)
-	err = s.execInPod(instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
+	err = s.execInPod(ctx, instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
 		[]string{
 			"sh", "-c", fmt.Sprintf("([ -f %q ] || [ -d %q ]) && tar -zcf - %q", path, path, path),
 		},
@@ -401,7 +401,7 @@ func (s *fileManagerService) UploadFile(rw http.ResponseWriter, req *http.Reques
 	}
 	path := noExpandPath(params.Path)
 	stdout := &bytes.Buffer{}
-	err = s.execInPod(instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
+	err = s.execInPod(ctx, instance.ClusterName, instance.Namespace, instance.PodName, instance.ContainerName,
 		[]string{
 			"sh", "-c", fmt.Sprintf("([ ! -f %q ] && [ ! -d %q ]) && dd of=%q", path, path, path),
 		},

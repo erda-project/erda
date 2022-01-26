@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/common/errors"
 	perm "github.com/erda-project/erda/pkg/common/permission"
+	remotecommandexec "github.com/erda-project/erda/pkg/k8s/remotecommand"
 )
 
 const instanceKey = "instance"
@@ -93,7 +94,7 @@ func parseInstanceMetadata(text string) map[string]string {
 	return kvs
 }
 
-func (s *fileManagerService) execInPod(clluster, namespace, podName, container string, command []string, stdin io.Reader, stdout io.Writer) error {
+func (s *fileManagerService) execInPod(ctx context.Context, clluster, namespace, podName, container string, command []string, stdin io.Reader, stdout io.Writer) error {
 	if len(namespace) <= 0 || len(podName) <= 0 {
 		return errors.NewNotFoundError(fmt.Sprintf("pods %s/%s", namespace, podName))
 	}
@@ -114,7 +115,7 @@ func (s *fileManagerService) execInPod(clluster, namespace, podName, container s
 			Stderr:    true,
 			TTY:       false,
 		}, scheme.ParameterCodec)
-	executor, err := remotecommand.NewSPDYExecutor(cfg, http.MethodPost, req.URL())
+	executor, err := remotecommandexec.NewSPDYExecutor(cfg, http.MethodPost, req.URL())
 	if err != nil {
 		return errors.NewInternalServerError(fmt.Errorf("failed to NewSPDYExecutor: %s", err))
 	}
