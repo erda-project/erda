@@ -17,6 +17,8 @@ package list
 import (
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
@@ -26,14 +28,24 @@ import (
 
 func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) {
 	var isPublic = "privateApp"
+	var publicIcon = "siyou"
 	if item.IsPublic {
 		isPublic = "publicApp"
+		publicIcon = "gongyou"
 	}
 	updated := common.UpdatedTime(l.sdk.Ctx, item.UpdatedAt)
+	runtimeUrlQuery, err := common.GenerateUrlQueryParams(map[string]interface{}{
+		"app": []string{item.Name},
+	})
+	if err != nil {
+		logrus.Errorf("run time url query encode failed, error: %v", err)
+		panic(err)
+	}
 	kvs = []list.KvInfo{
 		{
-			Icon:  "lock",
+			Icon:  publicIcon,
 			Value: l.sdk.I18n(isPublic),
+			Tip:   l.sdk.I18n("publicProperty"),
 		},
 		{
 			Icon:  "list-numbers",
@@ -46,9 +58,12 @@ func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) 
 						OpItemBasicServerData: list.OpItemBasicServerData{
 							Params: map[string]interface{}{
 								"projectId": item.ProjectID,
-								"appId":     item.ID,
+								"env":       "dev",
 							},
-							Target: "deploy",
+							Target: "projectDeployEnv",
+							Query: map[string]interface{}{
+								"advanceFilter__urlQuery": runtimeUrlQuery,
+							},
 						},
 					}).
 					Build(),
