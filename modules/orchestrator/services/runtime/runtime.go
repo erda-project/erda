@@ -1305,9 +1305,14 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 		}
 		// record all runtime's branchs in each environment
 		rtEnvPermBranchMark[env] = append(rtEnvPermBranchMark[env], runtime.GitBranch)
-
+		deployment, err := r.db.FindLastDeployment(runtime.ID)
+		if err != nil {
+			l.WithError(err).WithField("runtime.ID", runtime.ID).
+				Warnln("failed to build summary item, failed to get last deployment")
+			return nil, err
+		}
 		var d apistructs.RuntimeSummaryDTO
-		if err := r.convertRuntimeSummaryDTOFromRuntimeModel(&d, runtime); err != nil {
+		if err := r.convertRuntimeSummaryDTOFromRuntimeModel(&d, runtime, deployment); err != nil {
 			l.WithError(err).WithField("runtime.ID", runtime.ID).
 				Warnln("failed to convertRuntimeSummaryDTOFromRuntimeModel")
 			continue
@@ -1322,22 +1327,29 @@ func (r *Runtime) List(userID user.ID, orgID uint64, appID uint64, workspace, na
 // The key in the returned result map is appID.
 func (r *Runtime) ListGroupByApps(appIDs []uint64, env string) (map[uint64][]*apistructs.RuntimeSummaryDTO, error) {
 	var l = logrus.WithField("func", "*Runtime.ListGroupByApps")
-	runtimes, err := r.db.FindRuntimesInApps(appIDs, env)
+	runtimes, ids, err := r.db.FindRuntimesInApps(appIDs, env)
 	if err != nil {
 		l.WithError(err).Errorln("failed to FindRuntimesInApps")
 		return nil, err
 	}
+	deploymentIDs, err := r.db.FindLastDeploymentIDsByRutimeIDs(ids)
+	if err != nil {
+		l.WithError(err).Errorf("failed to list runtimes: %+v\n", err)
+		return nil, err
+	}
+	deployments, err := r.db.FindDeploymentsByIDs(deploymentIDs)
 	// note: internal API, do not check the permission
 	var result = struct {
 		sync.RWMutex
 		m map[uint64][]*apistructs.RuntimeSummaryDTO
 	}{m: make(map[uint64][]*apistructs.RuntimeSummaryDTO)}
-	//var result sync.Map
 	var wg sync.WaitGroup
 	for appID, runtimeList := range runtimes {
 		for _, runtime := range runtimeList {
 			wg.Add(1)
-			go r.generateListGroupAppResult(&result, appID, runtime, &wg)
+			go func(runtime *dbclient.Runtime, deployment dbclient.Deployment) {
+				r.generateListGroupAppResult(&result, appID, runtime, deployment, &wg)
+			}(runtime, deployments[runtime.ID])
 		}
 	}
 	wg.Wait()
@@ -1348,10 +1360,10 @@ func (r *Runtime) generateListGroupAppResult(result *struct {
 	sync.RWMutex
 	m map[uint64][]*apistructs.RuntimeSummaryDTO
 }, appID uint64,
-	runtime *dbclient.Runtime, wg *sync.WaitGroup) {
+	runtime *dbclient.Runtime, deployment dbclient.Deployment, wg *sync.WaitGroup) {
 	var l = logrus.WithField("func", "*Runtime.ListGroupByApps")
 	var d apistructs.RuntimeSummaryDTO
-	if err := r.convertRuntimeSummaryDTOFromRuntimeModel(&d, *runtime); err != nil {
+	if err := r.convertRuntimeSummaryDTOFromRuntimeModel(&d, *runtime, &deployment); err != nil {
 		l.WithError(err).WithField("runtime.ID", runtime.ID).
 			Warnln("failed to convertRuntimeSummaryDTOFromRuntimeModel")
 	}
@@ -1368,7 +1380,10 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 	if err != nil {
 		return nil, err
 	}
-	servicesMap := make(map[uint64]*apistructs.RuntimeSummaryDTO)
+	var servicesMap = struct {
+		sync.RWMutex
+		m map[uint64]*apistructs.RuntimeSummaryDTO
+	}{m: make(map[uint64]*apistructs.RuntimeSummaryDTO)}
 	wg := sync.WaitGroup{}
 	for i := 0; i < len(runtimes); i++ {
 		runtime := runtimes[i]
@@ -1390,7 +1405,10 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 		}
 		if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
 			wg.Add(1)
-			go func(rt dbclient.Runtime, wg *sync.WaitGroup, servicesMap map[uint64]*apistructs.RuntimeSummaryDTO, deployment *dbclient.Deployment) {
+			go func(rt dbclient.Runtime, wg *sync.WaitGroup, servicesMap struct {
+				sync.RWMutex
+				m map[uint64]*apistructs.RuntimeSummaryDTO
+			}, deployment *dbclient.Deployment) {
 				d := apistructs.RuntimeSummaryDTO{}
 				sg, err := r.bdl.InspectServiceGroupWithTimeout(rt.ScheduleName.Args())
 				if err != nil {
@@ -1406,18 +1424,20 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 				}
 				d.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
 				fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, sg, nil, string(deployment.Status))
-				servicesMap[rt.ID] = &d
+				servicesMap.Lock()
+				servicesMap.m[rt.ID] = &d
+				servicesMap.Unlock()
 				wg.Done()
 			}(runtime, &wg, servicesMap, deployment)
 		}
 	}
 	wg.Wait()
 	logrus.Infof("get services finished")
-	return servicesMap, nil
+	return servicesMap.m, nil
 
 }
 
-func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.RuntimeSummaryDTO, runtime dbclient.Runtime) error {
+func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.RuntimeSummaryDTO, runtime dbclient.Runtime, deployment *dbclient.Deployment) error {
 	var l = logrus.WithField("func", "Runtime.convertRuntimeInspectDTOFromRuntimeModel")
 
 	if d == nil {
@@ -1428,12 +1448,6 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 
 	isFakeRuntime := false
 	// TODO: Deprecated, instead from runtime deployment_status filed
-	deployment, err := r.db.FindLastDeployment(runtime.ID)
-	if err != nil {
-		l.WithError(err).WithField("runtime.ID", runtime.ID).
-			Warnln("failed to build summary item, failed to get last deployment")
-		return err
-	}
 	if deployment == nil {
 		isFakeRuntime = true
 		// make a fake deployment
@@ -1453,21 +1467,6 @@ func (r *Runtime) convertRuntimeSummaryDTOFromRuntimeModel(d *apistructs.Runtime
 	d.Source = runtime.Source
 	d.Status = runtime.Status
 	d.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
-	//if runtime.ScheduleName.Namespace != "" && runtime.ScheduleName.Name != "" {
-	//	sg, err := r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
-	//	if err != nil {
-	//		l.WithError(err).Warnf("failed to inspect servicegroup: %s/%s",
-	//			runtime.ScheduleName.Namespace, runtime.ScheduleName.Name)
-	//	} else if sg.Status == "Ready" || sg.Status == "Healthy" {
-	//		d.Status = apistructs.RuntimeStatusHealthy
-	//	}
-	//	var dice diceyml.Object
-	//	if err = json.Unmarshal([]byte(deployment.Dice), &dice); err != nil {
-	//		return apierrors.ErrGetRuntime.InvalidState(strutil.Concat("dice.json invalid: ", err.Error()))
-	//	}
-	//	fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, sg, nil, string(deployment.Status))
-	//}
-
 	d.DeployStatus = deployment.Status
 	// 如果还 deployment 的状态不是终态, runtime 的状态返回为 init(前端显示为部署中效果),
 	// 不然开始部署直接变为不健康不合理
