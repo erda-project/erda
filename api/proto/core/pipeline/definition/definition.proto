@@ -151,6 +151,7 @@ message PipelineDefinitionListRequest {
   repeated string descCols = 15;
   int64 totalActionNum = 16;
   int64 ExecutedActionNum = 17;
+  repeated string sourceIDList = 18;
 }
 
 message PipelineDefinitionStaticsRequest {

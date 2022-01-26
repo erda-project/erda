@@ -1,4 +1,17 @@
-# curl 'https://erda.dev.terminus.io/api/erda/component-protocol/actions/render?scenario=code-coverage'
+### project pipeline pre check same name
+GET http://localhost:9527/api/project-pipeline/actions/name-pre-check?projectID=1&name=qwe1
+user-id: 2
+ORG-ID: 1
+Content-Type: application/json
+
+### project pipeline pre check same source
+GET http://localhost:9527/api/project-pipeline/actions/source-pre-check?appID=1&sourceType=erda&ref=master&fileName=pipeline.yml
+user-id: 2
+ORG-ID: 1
+Lang: zh-CN
+Content-Type: application/json
+
+### curl 'https://erda.dev.terminus.io/api/erda/component-protocol/actions/render?scenario=code-coverage'
 POST http://localhost:9527/api/component-protocol/actions/render?scenario=code-coverage
 user-id: 2
 ORG-ID: 1

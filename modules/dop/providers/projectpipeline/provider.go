@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
@@ -41,6 +42,7 @@ type provider struct {
 	bundle   *bundle.Bundle
 	DB       *gorm.DB           `autowired:"mysql-client"`
 	Register transport.Register `autowired:"service-register" required:"true"`
+	Trans    i18n.Translator    `translator:"project-pipeline" required:"true"`
 
 	projectPipelineSvc *ProjectPipelineService
 	PipelineSource     sourcepb.SourceServiceServer `autowired:"erda.core.pipeline.source.SourceService" required:"true"`
@@ -61,6 +63,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		PipelineSource:     p.PipelineSource,
 		PipelineDefinition: p.PipelineDefinition,
 		PipelineCms:        p.PipelineCms,
+		trans:              p.Trans,
 	}
 	if p.Register != nil {
 		pb.RegisterProjectPipelineServiceImp(p.Register, p.projectPipelineSvc, apis.Options())

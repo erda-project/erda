@@ -1699,6 +1699,8 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 					return err
 				}
 				m.ExecutedActionNum = val
+			case "sourceIDList":
+				m.SourceIDList = vals
 			}
 		}
 	}

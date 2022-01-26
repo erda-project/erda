@@ -24,6 +24,8 @@ type ProjectPipelineServiceClient interface {
 	Create(ctx context.Context, in *CreateProjectPipelineRequest, opts ...grpc.CallOption) (*CreateProjectPipelineResponse, error)
 	ListApp(ctx context.Context, in *ListAppRequest, opts ...grpc.CallOption) (*ListAppResponse, error)
 	ListPipelineYml(ctx context.Context, in *ListAppPipelineYmlRequest, opts ...grpc.CallOption) (*ListAppPipelineYmlResponse, error)
+	CreateNamePreCheck(ctx context.Context, in *CreateProjectPipelineNamePreCheckRequest, opts ...grpc.CallOption) (*CreateProjectPipelineNamePreCheckResponse, error)
+	CreateSourcePreCheck(ctx context.Context, in *CreateProjectPipelineSourcePreCheckRequest, opts ...grpc.CallOption) (*CreateProjectPipelineSourcePreCheckResponse, error)
 }
 
 type projectPipelineServiceClient struct {
@@ -61,6 +63,24 @@ func (c *projectPipelineServiceClient) ListPipelineYml(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *projectPipelineServiceClient) CreateNamePreCheck(ctx context.Context, in *CreateProjectPipelineNamePreCheckRequest, opts ...grpc.CallOption) (*CreateProjectPipelineNamePreCheckResponse, error) {
+	out := new(CreateProjectPipelineNamePreCheckResponse)
+	err := c.cc.Invoke(ctx, "/erda.dop.projectpipeline.ProjectPipelineService/CreateNamePreCheck", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectPipelineServiceClient) CreateSourcePreCheck(ctx context.Context, in *CreateProjectPipelineSourcePreCheckRequest, opts ...grpc.CallOption) (*CreateProjectPipelineSourcePreCheckResponse, error) {
+	out := new(CreateProjectPipelineSourcePreCheckResponse)
+	err := c.cc.Invoke(ctx, "/erda.dop.projectpipeline.ProjectPipelineService/CreateSourcePreCheck", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectPipelineServiceServer is the server API for ProjectPipelineService service.
 // All implementations should embed UnimplementedProjectPipelineServiceServer
 // for forward compatibility
@@ -68,6 +88,8 @@ type ProjectPipelineServiceServer interface {
 	Create(context.Context, *CreateProjectPipelineRequest) (*CreateProjectPipelineResponse, error)
 	ListApp(context.Context, *ListAppRequest) (*ListAppResponse, error)
 	ListPipelineYml(context.Context, *ListAppPipelineYmlRequest) (*ListAppPipelineYmlResponse, error)
+	CreateNamePreCheck(context.Context, *CreateProjectPipelineNamePreCheckRequest) (*CreateProjectPipelineNamePreCheckResponse, error)
+	CreateSourcePreCheck(context.Context, *CreateProjectPipelineSourcePreCheckRequest) (*CreateProjectPipelineSourcePreCheckResponse, error)
 }
 
 // UnimplementedProjectPipelineServiceServer should be embedded to have forward compatible implementations.
@@ -82,6 +104,12 @@ func (*UnimplementedProjectPipelineServiceServer) ListApp(context.Context, *List
 }
 func (*UnimplementedProjectPipelineServiceServer) ListPipelineYml(context.Context, *ListAppPipelineYmlRequest) (*ListAppPipelineYmlResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPipelineYml not implemented")
+}
+func (*UnimplementedProjectPipelineServiceServer) CreateNamePreCheck(context.Context, *CreateProjectPipelineNamePreCheckRequest) (*CreateProjectPipelineNamePreCheckResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateNamePreCheck not implemented")
+}
+func (*UnimplementedProjectPipelineServiceServer) CreateSourcePreCheck(context.Context, *CreateProjectPipelineSourcePreCheckRequest) (*CreateProjectPipelineSourcePreCheckResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSourcePreCheck not implemented")
 }
 
 func RegisterProjectPipelineServiceServer(s grpc1.ServiceRegistrar, srv ProjectPipelineServiceServer, opts ...grpc1.HandleOption) {
@@ -127,6 +155,24 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 	if h.Interceptor != nil {
 		_ProjectPipelineService_ListPipelineYml_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "ListPipelineYml", srv)
 		_ProjectPipelineService_ListPipelineYml_Handler = h.Interceptor(_ProjectPipelineService_ListPipelineYml_Handler)
+	}
+
+	_ProjectPipelineService_CreateNamePreCheck_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.CreateNamePreCheck(ctx, req.(*CreateProjectPipelineNamePreCheckRequest))
+	}
+	var _ProjectPipelineService_CreateNamePreCheck_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ProjectPipelineService_CreateNamePreCheck_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "CreateNamePreCheck", srv)
+		_ProjectPipelineService_CreateNamePreCheck_Handler = h.Interceptor(_ProjectPipelineService_CreateNamePreCheck_Handler)
+	}
+
+	_ProjectPipelineService_CreateSourcePreCheck_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.CreateSourcePreCheck(ctx, req.(*CreateProjectPipelineSourcePreCheckRequest))
+	}
+	var _ProjectPipelineService_CreateSourcePreCheck_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ProjectPipelineService_CreateSourcePreCheck_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "CreateSourcePreCheck", srv)
+		_ProjectPipelineService_CreateSourcePreCheck_Handler = h.Interceptor(_ProjectPipelineService_CreateSourcePreCheck_Handler)
 	}
 
 	var serviceDesc = _ProjectPipelineService_serviceDesc
@@ -198,6 +244,52 @@ func _get_ProjectPipelineService_serviceDesc(srv ProjectPipelineServiceServer, o
 					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/ListPipelineYml",
 				}
 				return interceptor(ctx, in, info, _ProjectPipelineService_ListPipelineYml_Handler)
+			},
+		},
+		{
+			MethodName: "CreateNamePreCheck",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(CreateProjectPipelineNamePreCheckRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ProjectPipelineServiceServer).CreateNamePreCheck(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ProjectPipelineService_CreateNamePreCheck_info)
+				}
+				if interceptor == nil {
+					return _ProjectPipelineService_CreateNamePreCheck_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/CreateNamePreCheck",
+				}
+				return interceptor(ctx, in, info, _ProjectPipelineService_CreateNamePreCheck_Handler)
+			},
+		},
+		{
+			MethodName: "CreateSourcePreCheck",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(CreateProjectPipelineSourcePreCheckRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ProjectPipelineServiceServer).CreateSourcePreCheck(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ProjectPipelineService_CreateSourcePreCheck_info)
+				}
+				if interceptor == nil {
+					return _ProjectPipelineService_CreateSourcePreCheck_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.dop.projectpipeline.ProjectPipelineService/CreateSourcePreCheck",
+				}
+				return interceptor(ctx, in, info, _ProjectPipelineService_CreateSourcePreCheck_Handler)
 			},
 		},
 	}
