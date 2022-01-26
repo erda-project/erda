@@ -90,7 +90,7 @@ func (s *IssueStream) Create(req *apistructs.IssueStreamCreateRequest) (int64, e
 }
 
 // Paging 事件流记录分页查询
-func (s *IssueStream) Paging(req *apistructs.IssueStreamPagingRequest) (*apistructs.IssueStreamPagingResponseData, error) {
+func (s *IssueStream) Paging(req *apistructs.IssueStreamPagingRequest, locale string) (*apistructs.IssueStreamPagingResponseData, error) {
 	// 请求校验
 	if req.IssueID == 0 {
 		return nil, apierrors.ErrPagingIssueStream.MissingParameter("missing issueID")
@@ -119,7 +119,7 @@ func (s *IssueStream) Paging(req *apistructs.IssueStreamPagingRequest) (*apistru
 		if v.StreamType == apistructs.ISTRelateMR {
 			is.MRInfo = v.StreamParams.MRInfo
 		} else {
-			content, err := getDefaultContent(v.StreamType, v.StreamParams)
+			content, err := getDefaultContent(v.StreamType, v.StreamParams, locale)
 			if err != nil {
 				return nil, err
 			}

@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 // SetCtxBundle 设置bundle
@@ -56,7 +57,7 @@ func (i *ComponentFilter) GenComponentState(c *apistructs.Component) error {
 	return nil
 }
 
-func (i *ComponentFilter) SetComponentValue() {
+func (i *ComponentFilter) SetComponentValue(locale *i18n.LocaleResource) {
 	i.Props = Props{
 		Delay: 1000,
 	}
@@ -69,11 +70,9 @@ func (i *ComponentFilter) SetComponentValue() {
 	i.State.Conditions = []StateConditions{
 		{
 			Key:         "title",
-			Label:       "标题",
-			EmptyText:   "全部",
 			Fixed:       true,
 			ShowIndex:   2,
-			Placeholder: "搜索",
+			Placeholder: locale.Get("search"),
 			Type:        "input",
 		},
 	}
@@ -102,6 +101,7 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, _
 	if err = i.SetCtxBundle(bdl); err != nil {
 		return
 	}
+	i18nLocale := i.ctxBdl.Bdl.GetLocale(i.ctxBdl.Locale)
 	if err = i.GenComponentState(c); err != nil {
 		return
 	}
@@ -111,7 +111,7 @@ func (i *ComponentFilter) Render(ctx context.Context, c *apistructs.Component, _
 		i.State.IsFirstFilter = true
 	}
 
-	i.SetComponentValue()
+	i.SetComponentValue(i18nLocale)
 
 	if err := i.RenderProtocol(c, gs); err != nil {
 		return err
