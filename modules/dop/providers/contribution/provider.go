@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/dop/contribution/pb"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -34,6 +35,7 @@ type provider struct {
 	Log      logs.Logger
 	Register transport.Register `autowired:"service-register" required:"true"`
 	DB       *gorm.DB           `autowired:"mysql-client"`
+	I18n     i18n.Translator    `autowired:"i18n" translator:"contribution"`
 
 	contributionService pb.ContributionServiceServer
 }
@@ -46,6 +48,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			},
 		},
 		logger: p.Log,
+		i18n:   p.I18n,
 	}
 
 	if p.Register != nil {

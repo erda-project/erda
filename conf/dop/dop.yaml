@@ -18,6 +18,7 @@ i18n:
     - conf/dop/i18n/issue-manage.yaml
     - conf/dop/i18n/project-pipeline.yaml
     - conf/dop/i18n/api-management-trans.yaml
+    - conf/dop/i18n/contribution.yaml
 mysql:
   host: "${MYSQL_HOST}"
   port: "${MYSQL_PORT}"

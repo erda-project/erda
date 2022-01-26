@@ -386,7 +386,7 @@ func (a *ComponentFileFormModal) GetScene(inParams fileTree.InParams) error {
 				Rules: []Rule{
 					{
 						Pattern: `/^[a-z\u4e00-\u9fa5A-Z0-9_-]*$/`,
-						Msg:     "可输入中文、英文、数字、中划线或下划线",
+						Msg:     a.sdk.I18n("sceneSetRuleMessage"),
 					},
 				},
 				ComponentProps: ComponentProps{
@@ -402,15 +402,15 @@ func (a *ComponentFileFormModal) GetScene(inParams fileTree.InParams) error {
 					Placeholder: a.sdk.I18n("referPolicyPlace"),
 					Options: []interface{}{
 						PolicyOption{
-							apistructs.NewRunPolicyType.GetZhName(),
+							a.sdk.I18n("new-run"),
 							apistructs.NewRunPolicyType,
 						},
 						PolicyOption{
-							apistructs.TryLatestSuccessResultPolicyType.GetZhName(),
+							a.sdk.I18n("try-latest-success-result"),
 							apistructs.TryLatestSuccessResultPolicyType,
 						},
 						PolicyOption{
-							apistructs.TryLatestResultPolicyType.GetZhName(),
+							a.sdk.I18n("try-latest-result"),
 							apistructs.TryLatestResultPolicyType,
 						},
 					},

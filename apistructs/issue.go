@@ -371,6 +371,17 @@ func (i IssuePriority) GetZhName() string {
 	}
 }
 
+func IssueStreamPriorityName(priority, locale string) string {
+	if len(priority) == 0 {
+		return ""
+	}
+	c := IssuePriorityUrgent.GetEnName(priority)
+	if strings.Contains(locale, "en") {
+		return strings.ToLower(string(c))
+	}
+	return c.GetZhName()
+}
+
 // IssueComplexity 事件复杂度
 type IssueComplexity string
 
@@ -403,6 +414,17 @@ func (is IssueComplexity) GetZhName() string {
 	default:
 		panic(fmt.Sprintf("invalid issue complexity: %s", is))
 	}
+}
+
+func IssueStreamComplexityName(complexity, locale string) string {
+	if len(complexity) == 0 {
+		return ""
+	}
+	c := IssueComplexityHard.GetEnName(complexity)
+	if strings.Contains(locale, "en") {
+		return strings.ToLower(string(c))
+	}
+	return c.GetZhName()
 }
 
 // IssueSeverity 事件严重程度
@@ -455,6 +477,17 @@ func (is IssueSeverity) GetI18nKeyAlias() string {
 		return "ordinary"
 	}
 	return strings.ToLower(string(is))
+}
+
+func IssueStreamSeverityName(severity, locale string) string {
+	if len(severity) == 0 {
+		return ""
+	}
+	c := IssueSeverityFatal.GetEnName(severity)
+	if strings.Contains(locale, "en") {
+		return strings.ToLower(string(c))
+	}
+	return c.GetZhName()
 }
 
 var IssueSeveritys = []IssueSeverity{IssueSeverityFatal, IssueSeveritySerious, IssueSeverityNormal, IssueSeveritySlight, IssueSeverityLow}
