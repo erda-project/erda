@@ -144,7 +144,13 @@ func (i *ComponentInParamsForm) Render(ctx context.Context, c *cptype.Component,
 	}
 	i.Props = visible
 
-	i.SetProps()
+	// change scene reset temp value
+	if c.State["isChangeScene"] != nil {
+		i.SetProps(nil)
+		c.State["isChangeScene"] = nil
+	} else {
+		i.SetProps(c.Props)
+	}
 	switch apistructs.OperationKey(event.Operation) {
 	case apistructs.InitializeOperation:
 		err = i.RenderListInParamsForm()
