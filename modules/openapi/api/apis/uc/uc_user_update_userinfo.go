@@ -234,7 +234,8 @@ func createAudit(ctx *spec.AuditContext, req apistructs.UserUpdateInfoRequset, o
 func GetRealIP(request *http.Request) string {
 	ra := request.RemoteAddr
 	if ip := request.Header.Get("X-Forwarded-For"); ip != "" {
-		ra = strings.Split(ip, ", ")[0]
+		forwardedFilterSpace := strings.ReplaceAll(ip, " ", "")
+		ra = strings.Split(forwardedFilterSpace, ",")[0]
 	} else if ip := request.Header.Get("X-Real-IP"); ip != "" {
 		ra = ip
 	} else {
