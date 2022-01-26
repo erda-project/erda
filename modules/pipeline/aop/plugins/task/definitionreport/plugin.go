@@ -34,7 +34,8 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	if pipeline.PipelineDefinitionID == "" {
 		return nil
 	}
-	if !ctx.SDK.Task.Status.IsEndStatus() {
+	// Only success status will be reported
+	if !ctx.SDK.Task.Status.IsSuccessStatus() {
 		return nil
 	}
 
