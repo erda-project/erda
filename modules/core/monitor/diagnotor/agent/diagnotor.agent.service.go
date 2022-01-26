@@ -20,9 +20,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/shirou/gopsutil/process"
+
 	"github.com/erda-project/erda-proto-go/core/monitor/diagnotor/pb"
 	"github.com/erda-project/erda/pkg/common/errors"
-	"github.com/shirou/gopsutil/process"
 )
 
 type diagnotorAgentService struct {
