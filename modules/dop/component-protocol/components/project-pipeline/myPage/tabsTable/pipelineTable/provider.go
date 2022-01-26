@@ -371,10 +371,10 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 				ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(v.Remote)).Build(),
 				ColumnBranch:          table.NewTextCell(v.Ref).Build(),
 				ColumnPipelineID: table.NewTextCell(func() string {
-					if v.PipelineId == 0 {
+					if v.PipelineID == 0 {
 						return "-"
 					}
-					return strconv.FormatInt(v.PipelineId, 10)
+					return strconv.FormatInt(v.PipelineID, 10)
 				}()).Build(),
 				ColumnExecutor:   table.NewUserCell(commodel.User{ID: v.Executor}).Build(),
 				ColumnCreator:    table.NewUserCell(commodel.User{ID: v.Creator}).Build(),
@@ -409,7 +409,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 						}
 					}
 					build.ServerData = &cptype.OpServerData{
-						"pipelineID": v.PipelineId,
+						"pipelineID": v.PipelineID,
 						"inode":      base64.URLEncoding.EncodeToString([]byte(inode)),
 						"appName":    appName,
 					}

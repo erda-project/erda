@@ -65,7 +65,7 @@ message PipelineDefinition {
   string fileName = 18;
   string pipelineSourceId = 19;
   string status = 20;
-  int64 pipelineId = 21;
+  int64 pipelineID = 21;
   int64 totalActionNum = 22;
   int64 ExecutedActionNum = 23;
 }

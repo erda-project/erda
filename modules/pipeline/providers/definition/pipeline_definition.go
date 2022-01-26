@@ -235,6 +235,7 @@ func PipelineDefinitionToPb(pipelineDefinition *db.PipelineDefinition) *pb.Pipel
 		TimeUpdated:      timestamppb.New(pipelineDefinition.TimeUpdated),
 		StartedAt:        timestamppb.New(pipelineDefinition.StartedAt),
 		EndedAt:          timestamppb.New(pipelineDefinition.EndedAt),
+		PipelineID:       int64(pipelineDefinition.PipelineID),
 	}
 	return de
 }
