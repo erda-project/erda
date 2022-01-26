@@ -908,6 +908,14 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 		isProjectReleasePtr = &isProjectRelease
 	}
 
+	var latest bool
+	if s := r.URL.Query().Get("latest"); s != "" {
+		latest, err = strconv.ParseBool(s)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	userIDStr := r.URL.Query()["userId"]
 	var userID []string
 	for _, id := range userIDStr {
@@ -938,6 +946,7 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 		ReleaseName:                  releaseName,
 		Cluster:                      clusterName,
 		Branch:                       branch,
+		Latest:                       latest,
 		IsStable:                     isStablePtr,
 		IsFormal:                     isFormalPtr,
 		IsProjectRelease:             isProjectReleasePtr,
