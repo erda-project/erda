@@ -47,7 +47,7 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 	conditions = append(conditions, appCondition)
 	conditions = append(conditions, executorCondition)
 
-	conditions = append(conditions, model.NewDateRangeCondition("startedAtStartEnd", cputil.I18n(p.sdk.Ctx, "started-at")))
+	conditions = append(conditions, model.NewDateRangeCondition("startedAtStartEnd", cputil.I18n(p.sdk.Ctx, "start-time")))
 	return conditions, nil
 }
 

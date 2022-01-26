@@ -225,6 +225,9 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 					if pipeline.Status.IsFailedStatus() {
 						return commodel.ErrorStatus
 					}
+					if pipeline.Status.IsSuccessStatus() {
+						return commodel.SuccessStatus
+					}
 					return commodel.DefaultStatus
 				}(),
 			}).Build(),

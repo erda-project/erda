@@ -29,7 +29,7 @@ type PipelineDefinition struct {
 	ID                string    `json:"id" xorm:"pk"`
 	Location          string    `json:"location"`
 	Name              string    `json:"name"`
-	CostTime          uint64    `json:"costTime"`
+	CostTime          int64     `json:"costTime"`
 	Creator           string    `json:"creator"`
 	Executor          string    `json:"executor"`
 	SoftDeletedAt     uint64    `json:"softDeletedAt"`
