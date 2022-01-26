@@ -335,7 +335,7 @@ components:
     type: Button
   referSceneSetButton:
     type: Button
-    
+
 rendering:
   # 前端触发组件
   # 先渲染前端触发组件，再渲染关联组件
@@ -372,6 +372,8 @@ rendering:
       state:
         - name: "setId"
           value: "{{ fileTree.sceneSetKey }}"
+        - name: "isChangeScene"
+          value: "{{ fileTree.isClickScene }}"
     - name: stages
     - name: outPutTitle
     - name: outPutForm
