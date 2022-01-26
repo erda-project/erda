@@ -41,12 +41,12 @@ type ComponentAction struct{ base.DefaultProvider }
 func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	c.Props = cputil.MustConvertProps(IssueExportProps{
 		Size:       "small",
-		Tooltip:    "导出",
+		Tooltip:    cputil.I18n(ctx, "export"),
 		PrefixIcon: "export",
 	})
 	var click interface{}
 	c.Operations = map[string]interface{}{}
-	if err := json.Unmarshal([]byte(`{"reload":false,"confirm":"是否确认导出"}`), &click); err != nil {
+	if err := json.Unmarshal([]byte(`{"reload":false,"confirm":"`+cputil.I18n(ctx, "scene-set-export-confirm")+`"}`), &click); err != nil {
 		return err
 	}
 	c.Operations["click"] = click

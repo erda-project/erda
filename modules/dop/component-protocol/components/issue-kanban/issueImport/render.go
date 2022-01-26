@@ -43,7 +43,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	sdk := cputil.SDK(ctx)
 	c.Props = cputil.MustConvertProps(IssueImportProps{
 		Size:       "small",
-		Tooltip:    "导入",
+		Tooltip:    cputil.I18n(ctx, "import"),
 		PrefixIcon: "import",
 		Visible:    sdk.InParams["fixedIssueType"].(string) != "ALL",
 	})
