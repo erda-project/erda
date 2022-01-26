@@ -308,6 +308,7 @@ zh:
   openAll: 全部打开
   second: 秒
   iterationUnassigned: 待处理
+  processTip: 执行成功 Action 数/ Action 总数
 en:
   issue-manage: issue manage
   issue: issue
@@ -614,3 +615,4 @@ en:
   openAll: Open all
   second: Second
   iterationUnassigned: Unassigned
+  processTip: Successful actions/Total actions
