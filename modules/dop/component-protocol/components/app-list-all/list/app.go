@@ -28,10 +28,10 @@ import (
 
 func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) {
 	var isPublic = "privateApp"
-	var publicIcon = "siyou"
+	var publicIcon = "private"
 	if item.IsPublic {
 		isPublic = "publicApp"
-		publicIcon = "gongyou"
+		publicIcon = "public"
 	}
 	updated := common.UpdatedTime(l.sdk.Ctx, item.UpdatedAt)
 	runtimeUrlQuery, err := common.GenerateUrlQueryParams(map[string]interface{}{
