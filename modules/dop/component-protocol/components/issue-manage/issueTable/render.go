@@ -140,6 +140,7 @@ type Name struct {
 type ExtraContent struct {
 	RenderType string  `json:"renderType"`
 	Value      []Label `json:"value"`
+	ShowCount  int     `json:"showCount,omitempty"`
 }
 
 type Label struct {
@@ -783,6 +784,7 @@ func (ca *ComponentAction) getNameColumn(issue *apistructs.Issue) Name {
 		ExtraContent: ExtraContent{
 			RenderType: "tags",
 			Value:      tags,
+			ShowCount:  4,
 		},
 	}
 }

@@ -309,6 +309,7 @@ zh:
   second: 秒
   iterationUnassigned: 待处理
   processTip: 执行成功 Action 数/ Action 总数
+  appNotAuthorized: 暂无所属应用权限
 en:
   issue-manage: issue manage
   issue: issue
@@ -616,3 +617,4 @@ en:
   second: Second
   iterationUnassigned: Unassigned
   processTip: Successful actions/Total actions
+  appNotAuthorized: No application permission
