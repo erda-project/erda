@@ -79,6 +79,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/ticket"
 	"github.com/erda-project/erda/modules/dop/services/workbench"
 	"github.com/erda-project/erda/modules/dop/utils"
+	"github.com/erda-project/erda/modules/pkg/websocket"
 	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -323,6 +324,11 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		return nil, err
 	}
 
+	wsPublisher, err := websocket.NewPublisher()
+	if err != nil {
+		return nil, err
+	}
+
 	if utils.IsOSS(conf.AvatarStorageURL()) {
 		url, err := url.Parse(conf.AvatarStorageURL())
 		if err != nil {
@@ -466,6 +472,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		issue.WithTranslator(p.IssueTan),
 		issue.WithIssueRelated(issueRelated),
 		issue.WithIssueProperty(issueproperty),
+		issue.WithWsPublisher(wsPublisher, conf.EnableIssueWebSocket()),
 	)
 	issue.CreateFileRecord = testCaseSvc.CreateFileRecord
 	issue.UpdateFileRecord = testCaseSvc.UpdateFileRecord

@@ -16,6 +16,7 @@
 package issue
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -34,6 +35,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/issuerelated"
 	"github.com/erda-project/erda/modules/dop/services/issuestream"
 	"github.com/erda-project/erda/modules/dop/services/monitor"
+	"github.com/erda-project/erda/modules/pkg/websocket"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -50,6 +52,9 @@ type Issue struct {
 
 	CreateFileRecord func(req apistructs.TestFileRecordRequest) (uint64, error)
 	UpdateFileRecord func(req apistructs.TestFileRecordRequest) error
+
+	enablePublisher bool
+	publisher       *websocket.Publisher
 }
 
 // Option 定义 Issue 配置选项
@@ -108,6 +113,13 @@ func WithUCClient(uc *ucauth.UCClient) Option {
 func WithTranslator(tran i18n.Translator) Option {
 	return func(issue *Issue) {
 		issue.tran = tran
+	}
+}
+
+func WithWsPublisher(pub *websocket.Publisher, enable bool) Option {
+	return func(issue *Issue) {
+		issue.publisher = pub
+		issue.enablePublisher = enable
 	}
 }
 
@@ -240,6 +252,16 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 	}()
 
 	go monitor.MetricsIssueById(int(create.ID), svc.db, svc.uc, svc.bdl)
+
+	go func() {
+		if !svc.enablePublisher {
+			return
+		}
+		err := svc.publisher.EmitEvent(context.Background(), makeIssueCreateEvent(create))
+		if err != nil {
+			logrus.Errorf("failed to emit issue create event, err: %v", err)
+		}
+	}()
 
 	return &create, nil
 }

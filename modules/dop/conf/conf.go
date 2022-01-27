@@ -75,6 +75,9 @@ type Conf struct {
 	UpdateIssueExpiryStatusCron string `env:"UPDATE_ISSUE_EXPIRY_STATUS_CRON" default:"0 0 * * *"`
 	UpdateMemberActiveRankCron  string `env:"UPDATE_MEMBER_ACTIVE_RANK_CRON" default:"0 0 * * *"`
 	ExportIssueFileStoreDay     int    `env:"EXPORT_ISSUE_FILE_STORE_DAY" default:"7"`
+
+	// websocket
+	EnableIssueWebSocket bool `env:"ENABLE_ISSUE_WEBSOCKET" default:"true"`
 }
 
 var cfg Conf
@@ -264,4 +267,8 @@ func UpdateMemberActiveRankCron() string {
 
 func ExportIssueFileStoreDay() int {
 	return cfg.ExportIssueFileStoreDay
+}
+
+func EnableIssueWebSocket() bool {
+	return cfg.EnableIssueWebSocket
 }
