@@ -20,7 +20,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-func FirstPlaceholder(s string) (string, int, int, error) {
+// FirstPlaceholder 找出字符串 s 中第一个形如 ${PLACEHOLDER} 的占位符,
+// 返回值 placeholder 是占位符中的键,
+// indexStart 是占位符起始位置, 即 '$' 所在的位置,
+// indexEnd 是占位符结束位置, 即 '}' 所在位置.
+// 占位符中不能出现 '\n' '\r' 字符.
+// 当字符串 s 中不存在占位符时, indexStart 和 indexEnd 都为 0.
+func FirstPlaceholder(s string) (placeholder string, indexStart int, indexEnd int, err error) {
 	for i := 0; i <= len(s)-2; i++ {
 		if s[i] == '$' && s[i+1] == '{' {
 			for j := i; j < len(s); j++ {
@@ -68,6 +74,8 @@ func Interpolate(s string, values map[string]string, defaultPrecedence bool) (st
 	}
 }
 
+// InterpolationDereference 渲染出 values 值之间的互相引用.
+// 注意 key 中不能出现占位符; 不能出现循环引用.
 func InterpolationDereference(values map[string]string) error {
 	for k, v := range values {
 		placeholder, indexStart, indexEnd, err := FirstPlaceholder(k)
