@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -109,6 +110,20 @@ func NewPublisher() (*Publisher, error) {
 }
 
 func (p *Publisher) EmitEvent(ctx context.Context, e Event) error {
+	events := broadcastEvent(e)
+	var errMsgs []string
+	for _, be := range events {
+		if err := p.emitEvent(ctx, be); err != nil {
+			errMsgs = append(errMsgs, err.Error())
+		}
+	}
+	if len(errMsgs) > 0 {
+		return fmt.Errorf("%s", strings.Join(errMsgs, ", "))
+	}
+	return nil
+}
+
+func (p *Publisher) emitEvent(ctx context.Context, e Event) error {
 	path := generatePath()
 	lease := clientv3.NewLease(p.es.GetClient())
 	r, err := lease.Grant(ctx, ttl)
