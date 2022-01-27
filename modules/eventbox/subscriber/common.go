@@ -12,33 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package eventbox
+package subscriber
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
+	"context"
+	"encoding/json"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
-	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
-	"github.com/erda-project/erda/modules/eventbox/dispatcher"
+	"github.com/erda-project/erda/apistructs"
 )
 
-func Initialize(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServiceServer) error {
-	dp, err := dispatcher.New(dingtalk, messenger)
+func SaveNotifyHistories(request *apistructs.CreateNotifyHistoryRequest, messenger pb.NotifyServiceServer) {
+	var createRequest *pb.CreateNotifyHistoryRequest
+	data, err := json.Marshal(request)
 	if err != nil {
-		panic(err)
+		logrus.Errorf("创建通知历史记录失败: %v", err)
+		return
 	}
-
-	sig := make(chan os.Signal)
-	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
-	go func() {
-		for range sig {
-			dp.Stop()
-			os.Exit(0)
-		}
-	}()
-
-	dp.Start()
-	return nil
+	err = json.Unmarshal(data, &createRequest)
+	if err != nil {
+		logrus.Errorf("创建通知历史记录失败: %v", err)
+		return
+	}
+	_, err = messenger.CreateNotifyHistory(context.Background(), createRequest)
+	if err != nil {
+		logrus.Errorf("创建通知历史记录失败: %v", err)
+	}
 }

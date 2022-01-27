@@ -79,6 +79,7 @@ func (d *GroupSubscriber) Publish(dest string, content string, time int64, msg *
 		NotifyTargets: groupDetail.Targets,
 		Status:        "success",
 		OrgID:         groupNotifyContent.OrgID,
+		AlertID:       groupNotifyContent.AlertID,
 		Label:         groupNotifyContent.Label,
 		ClusterName:   groupNotifyContent.ClusterName,
 	}
@@ -126,9 +127,10 @@ func (d *GroupSubscriber) Publish(dest string, content string, time int64, msg *
 				Labels: map[types.LabelKey]interface{}{
 					"EMAIL": emails,
 				},
+				CreateHistory: &chr,
 			}
 			if len(emails) > 0 {
-				d.routeMessage(msg, &chr)
+				d.routeMessage(msg)
 			}
 		} else if channel.Name == "sms" {
 			mobiles := []string{}
@@ -145,9 +147,10 @@ func (d *GroupSubscriber) Publish(dest string, content string, time int64, msg *
 				Labels: map[types.LabelKey]interface{}{
 					"SMS": mobiles,
 				},
+				CreateHistory: &chr,
 			}
 			if len(mobiles) > 0 {
-				d.routeMessage(msg, &chr)
+				d.routeMessage(msg)
 			}
 		} else if channel.Name == "vms" {
 			mobiles := []string{}
@@ -164,9 +167,10 @@ func (d *GroupSubscriber) Publish(dest string, content string, time int64, msg *
 				Labels: map[types.LabelKey]interface{}{
 					"VMS": mobiles,
 				},
+				CreateHistory: &chr,
 			}
 			if len(mobiles) > 0 {
-				d.routeMessage(msg, &chr)
+				d.routeMessage(msg)
 			}
 		} else if channel.Name == "dingding" {
 			var atMobiles []string
@@ -205,9 +209,10 @@ func (d *GroupSubscriber) Publish(dest string, content string, time int64, msg *
 						"atMobiles": atMobiles,
 					},
 				},
+				CreateHistory: &chr,
 			}
 			if len(groupDetail.DingdingList) > 0 {
-				d.routeMessage(msg, &chr)
+				d.routeMessage(msg)
 			}
 		} else if channel.Name == "mbox" {
 			userIDs := []string{}
@@ -220,9 +225,10 @@ func (d *GroupSubscriber) Publish(dest string, content string, time int64, msg *
 				Labels: map[types.LabelKey]interface{}{
 					"MBOX": userIDs,
 				},
+				CreateHistory: &chr,
 			}
 			if len(userIDs) > 0 {
-				d.routeMessage(msg, &chr)
+				d.routeMessage(msg)
 			}
 		} else if channel.Name == "webhook" {
 			msg := &types.Message{
@@ -235,9 +241,10 @@ func (d *GroupSubscriber) Publish(dest string, content string, time int64, msg *
 				Labels: map[types.LabelKey]interface{}{
 					"HTTP": groupDetail.WebHookList,
 				},
+				CreateHistory: &chr,
 			}
 			if len(groupDetail.WebHookList) > 0 {
-				d.routeMessage(msg, &chr)
+				d.routeMessage(msg)
 			}
 		} else if channel.Name == "dingtalk_work_notice" {
 			mobiles := []string{}
@@ -253,9 +260,10 @@ func (d *GroupSubscriber) Publish(dest string, content string, time int64, msg *
 				Labels: map[types.LabelKey]interface{}{
 					"DINGTALK_WORK_NOTICE": mobiles,
 				},
+				CreateHistory: &chr,
 			}
 			if len(mobiles) > 0 {
-				d.routeMessage(msg, &chr)
+				d.routeMessage(msg)
 			}
 		}
 	}
@@ -270,12 +278,8 @@ func (d *GroupSubscriber) Name() string {
 	return "GROUP"
 }
 
-func (d *GroupSubscriber) routeMessage(msg *types.Message, createHistoryRequest *apistructs.CreateNotifyHistoryRequest) {
+func (d *GroupSubscriber) routeMessage(msg *types.Message) {
 	go func() {
 		d.router.Route(msg)
-		_, err := d.bundle.CreateNotifyHistory(createHistoryRequest)
-		if err != nil {
-			logrus.Errorf("创建通知历史记录失败: %v", err)
-		}
 	}()
 }

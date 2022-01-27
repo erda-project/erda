@@ -56,3 +56,10 @@ var (
 	MSPAddonInitSqls   embed.FS
 	MSPAddonFsRootPath = "msp/init_sqls"
 )
+
+// messenger
+var (
+	//go:embed messenger/messenger.yaml
+	MessengerDefaultConfig string
+	MessengerFilePath      = "conf/messenger/messenger.yaml"
+)

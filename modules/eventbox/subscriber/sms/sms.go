@@ -23,6 +23,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
@@ -35,6 +36,7 @@ type MobileSubscriber struct {
 	signName            string
 	monitorTemplateCode string
 	bundle              *bundle.Bundle
+	messenger           pb.NotifyServiceServer
 }
 
 type MobileData struct {
@@ -45,12 +47,13 @@ type MobileData struct {
 
 type Option func(*MobileSubscriber)
 
-func New(accessKeyId, accessKeySecret, signName, monitorTemplateCode string, bundle *bundle.Bundle) subscriber.Subscriber {
+func New(accessKeyId, accessKeySecret, signName, monitorTemplateCode string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer) subscriber.Subscriber {
 	subscriber := &MobileSubscriber{
 		accessKeyId:  accessKeyId,
 		accessSecret: accessKeySecret,
 		signName:     signName,
 		bundle:       bundle,
+		messenger:    messenger,
 	}
 	return subscriber
 }
@@ -123,16 +126,19 @@ func (d *MobileSubscriber) Publish(dest string, content string, time int64, msg 
 	request.QueryParams["SignName"] = signName
 	request.QueryParams["TemplateCode"] = templateCode
 	request.QueryParams["TemplateParam"] = string(paramStr)
-
 	response, err := sdkClient.ProcessCommonRequest(request)
 	if err != nil {
 		logrus.Errorf("failed to send sms  %s", err)
-		return []error{err}
+		errs = append(errs, err)
 	}
 	if !response.IsSuccess() {
 		logrus.Errorf("failed to send sms  %s", response.GetHttpContentString())
-		return []error{fmt.Errorf("failed to send sms %s", response.GetHttpContentString())}
+		errs = append(errs, fmt.Errorf("failed to send sms %s", response.GetHttpContentString()))
 	}
+	if len(errs) > 0 {
+		msg.CreateHistory.Status = "failed"
+	}
+	subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
 	logrus.Infof("sms send success %s", response.GetHttpContentString())
 	return errs
 }

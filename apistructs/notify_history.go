@@ -66,6 +66,7 @@ type CreateNotifyHistoryRequest struct {
 	Status                string         `json:"status"`
 	ErrorMsg              string         `json:"errorMsg"`
 	OrgID                 int64          `json:"orgId"`
+	AlertID               int64          `json:"alertId"`
 	Label                 string         `json:"label"`
 	ClusterName           string         `query:"clusterName"`
 }

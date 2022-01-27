@@ -12,23 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package model
 
-import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+import "time"
 
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers/redis"
-	_ "github.com/erda-project/erda-proto-go/core/messenger/notify/client"
-	_ "github.com/erda-project/erda/modules/core-services/services/dingtalk/api"
-	_ "github.com/erda-project/erda/modules/eventbox"
+type BaseModel struct {
+	ID        int64     `json:"id" gorm:"primary_key"`
+	CreatedAt time.Time `json:"createdAt" gorm:"created_at"`
+	UpdatedAt time.Time `json:"updatedAt" gorm:"updated_at"`
+}
 
-	_ "github.com/erda-project/erda-infra/providers"
-)
-
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/eventbox/eventbox.yaml",
-	})
+type FilterStatusRequest struct {
+	OrgId     int
+	ScopeType string
+	ScopeId   string
+	StartTime string
+	EndTime   string
 }

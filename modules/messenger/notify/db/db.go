@@ -12,23 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package db
 
-import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/pkg/common"
+import "github.com/jinzhu/gorm"
 
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers/redis"
-	_ "github.com/erda-project/erda-proto-go/core/messenger/notify/client"
-	_ "github.com/erda-project/erda/modules/core-services/services/dingtalk/api"
-	_ "github.com/erda-project/erda/modules/eventbox"
+type DB struct {
+	*gorm.DB
+	AlertNotifyIndexDB AlertNotifyIndexDB
+	NotifyHistoryDB    NotifyHistoryDB
+}
 
-	_ "github.com/erda-project/erda-infra/providers"
-)
+func New(db *gorm.DB) *DB {
+	return &DB{
+		DB:                 db,
+		AlertNotifyIndexDB: AlertNotifyIndexDB{db},
+		NotifyHistoryDB:    NotifyHistoryDB{db},
+	}
+}
 
-func main() {
-	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/eventbox/eventbox.yaml",
-	})
+func (db *DB) Begin() *DB {
+	return New(db.DB.Begin())
 }

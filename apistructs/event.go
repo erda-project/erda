@@ -124,6 +124,7 @@ type GroupNotifyContent struct {
 	NotifyItemDisplayName string               `json:"notifyItemDisplayName"`
 	Channels              []GroupNotifyChannel `json:"channels"`
 	OrgID                 int64                `json:"orgId"`
+	AlertID               int64                `json:"alertId"`
 	Label                 string               `json:"label"`
 	ClusterName           string               `json:"clusterName"`
 	CalledShowNumber      string               `json:"calledShowNumber"`

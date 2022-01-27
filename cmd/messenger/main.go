@@ -16,19 +16,21 @@ package main
 
 import (
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/conf"
+	"github.com/erda-project/erda/modules/extensions/loghub"
 	"github.com/erda-project/erda/pkg/common"
 
-	// providers and modules
-	_ "github.com/erda-project/erda-infra/providers/redis"
-	_ "github.com/erda-project/erda-proto-go/core/messenger/notify/client"
-	_ "github.com/erda-project/erda/modules/core-services/services/dingtalk/api"
-	_ "github.com/erda-project/erda/modules/eventbox"
+	//modules
+	_ "github.com/erda-project/erda/modules/messenger/notify"
 
+	// providers
 	_ "github.com/erda-project/erda-infra/providers"
 )
 
 func main() {
+	common.RegisterInitializer(loghub.Init)
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/eventbox/eventbox.yaml",
+		ConfigFile: conf.MessengerFilePath,
+		Content:    conf.MessengerDefaultConfig,
 	})
 }
