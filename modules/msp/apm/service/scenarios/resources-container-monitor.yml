@@ -10,6 +10,12 @@ hierarchy:
     - container@memoryUsage
     - container@diskioUsage
     - container@networkUsage
+  parallel:
+    container:
+    - container@cpuUsage
+    - container@memoryUsage
+    - container@diskioUsage
+    - container@networkUsage
 components:
   page:
     type: Container
