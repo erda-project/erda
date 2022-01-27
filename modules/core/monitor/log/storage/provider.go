@@ -88,7 +88,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.output = cass.NewBatchWriter(session, &p.Cfg.Output.Cassandra.WriterConfig, p.createLogStatementBuilder)
 
 	p.ttl = &mysqlStore{
-		ttlValue:      make(map[string]int),
 		defaultTTLSec: int(p.Cfg.Output.Cassandra.DefaultTTL.Seconds()),
 		mysql:         p.Mysql.DB(),
 		Log:           p.Log.Sub("ttlStore"),
