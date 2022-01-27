@@ -15,6 +15,7 @@ hierarchy:
       - issueFilter
       - issueExport
       - issueImport
+      - issueRefresh
     
 options:
   syncIntervalSecond: 0
@@ -33,6 +34,8 @@ components:
   issueExport:
     type: Custom
   issueImport:
+    type: Custom
+  issueRefresh:
     type: Custom
   inputFilter:
     type: ContractiveFilter

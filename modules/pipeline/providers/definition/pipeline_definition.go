@@ -57,6 +57,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	pipelineDefinition.ID = uuid.New().String()
 	pipelineDefinition.StartedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
+	pipelineDefinition.CostTime = -1
 	err := p.dbClient.CreatePipelineDefinition(&pipelineDefinition)
 	if err != nil {
 		return nil, err
@@ -117,7 +118,7 @@ func (p pipelineDefinition) Update(ctx context.Context, request *pb.PipelineDefi
 	if request.Name != "" {
 		pipelineDefinition.Name = request.Name
 	}
-	if request.CostTime > 0 {
+	if request.CostTime != 0 {
 		pipelineDefinition.CostTime = request.CostTime
 	}
 	if request.PipelineSourceId != "" {
