@@ -16,6 +16,7 @@ package dingtalk_worknotice
 
 import (
 	"encoding/json"
+
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"

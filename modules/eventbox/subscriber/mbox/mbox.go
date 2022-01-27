@@ -16,13 +16,13 @@ package sms
 
 import (
 	"encoding/json"
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/template"
 
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/eventbox/types"
+	"github.com/erda-project/erda/pkg/template"
 )
 
 type MBoxSubscriber struct {
