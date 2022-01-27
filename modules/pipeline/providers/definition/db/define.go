@@ -287,7 +287,7 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 		Path:              p.Path,
 		FileName:          p.FileName,
 		Status:            p.Status,
-		PipelineId:        int64(p.PipelineID),
+		PipelineID:        int64(p.PipelineID),
 		TotalActionNum:    p.TotalActionNum,
 		ExecutedActionNum: p.ExecutedActionNum,
 	}

@@ -721,25 +721,29 @@ func (p *ProjectPipelineService) Cancel(ctx context.Context, params deftype.Proj
 		return nil, err
 	}
 
-	runningPipelineID, err := p.getRunningPipeline(extraValue.CreateRequest.PipelineSource.String(), extraValue.CreateRequest.PipelineYmlName)
+	pipelineInfo, err := p.bundle.GetPipeline(uint64(definition.PipelineID))
 	if err != nil {
 		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
-	}
-	if runningPipelineID == 0 {
-		return nil, apierrors.ErrCancelProjectPipeline.InternalError(fmt.Errorf("not find running pipeline, can not cancel"))
 	}
 
-	var req apistructs.PipelineCancelRequest
-	req.PipelineID = runningPipelineID
-	req.IdentityInfo = params.IdentityInfo
-	err = p.bundle.CancelPipeline(req)
-	if err != nil {
-		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
+	if pipelineInfo.Status.IsRunningStatus() {
+		var req apistructs.PipelineCancelRequest
+		req.PipelineID = uint64(definition.PipelineID)
+		req.IdentityInfo = params.IdentityInfo
+		err = p.bundle.CancelPipeline(req)
+		if err != nil {
+			return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
+		}
+
+		_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{PipelineDefinitionID: definition.ID, Status: string(apistructs.PipelineStatusStopByUser), PipelineId: definition.PipelineID})
+		if err != nil {
+			return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
+		}
+
+		return &deftype.ProjectPipelineCancelResult{}, nil
 	}
-	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{
-		PipelineDefinitionID: definition.ID,
-		Status:               string(apistructs.PipelineStatusStopByUser),
-		PipelineId:           int64(runningPipelineID)})
+
+	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{PipelineDefinitionID: definition.ID, Status: string(pipelineInfo.Status), PipelineId: definition.PipelineID})
 	if err != nil {
 		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
 	}
@@ -791,31 +795,16 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 		return nil, err
 	}
 
-	runningPipelineID, err := p.getRunningPipeline(extraValue.CreateRequest.PipelineSource.String(), extraValue.CreateRequest.PipelineYmlName)
-	if err != nil {
-		return nil, apiError.InternalError(err)
-	}
-	if runningPipelineID > 0 {
-		return nil, apiError.InternalError(fmt.Errorf("operation failed, pipeline %v was running status", runningPipelineID))
-	}
-	pipeline, err := p.getLatestPipeline(extraValue.CreateRequest.PipelineSource.String(), extraValue.CreateRequest.PipelineYmlName)
-	if err != nil {
-		return nil, apiError.InternalError(err)
-	}
-	if !pipeline.Status.IsFailedStatus() {
-		return nil, apiError.InternalError(fmt.Errorf("operation failed, the latest pipeline is not in an error state"))
-	}
-
 	var dto *apistructs.PipelineDTO
 	if rerun {
 		var req apistructs.PipelineRerunRequest
-		req.PipelineID = pipeline.ID
+		req.PipelineID = uint64(definition.PipelineID)
 		req.AutoRunAtOnce = true
 		req.IdentityInfo = identityInfo
 		dto, err = p.bundle.RerunPipeline(req)
 	} else {
 		var req apistructs.PipelineRerunFailedRequest
-		req.PipelineID = pipeline.ID
+		req.PipelineID = uint64(definition.PipelineID)
 		req.AutoRunAtOnce = true
 		req.IdentityInfo = identityInfo
 		dto, err = p.bundle.RerunFailedPipeline(req)
@@ -823,6 +812,7 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 	if err != nil {
 		return nil, apiError.InternalError(err)
 	}
+
 	definitionUpdateReq := &dpb.PipelineDefinitionUpdateRequest{
 		PipelineDefinitionID: definition.ID,
 		Status:               string(apistructs.StatusRunning),
