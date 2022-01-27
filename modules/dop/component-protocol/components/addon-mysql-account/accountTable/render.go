@@ -181,7 +181,7 @@ func (f *comp) getDatum(ctx context.Context, item *addonmysqlpb.MySQLAccount) ma
 	datum["username"] = table.ColumnData{RenderType: "text", Value: item.Username}
 
 	cnt := f.ac.AccountRefCount[item.Id]
-	datum["attachments"] = table.ColumnData{RenderType: "linkText", Value: cputil.I18n(ctx, "in_use_cnt", cnt), Operations: map[string]*table.Operation{
+	datum["attachments"] = table.ColumnData{RenderType: "linkText", Value: cputil.I18n(ctx, "${in_use_cnt}", cnt), Operations: map[string]*table.Operation{
 		"click": {
 			Key:    "gotoMysqlUserManager",
 			Reload: false,
