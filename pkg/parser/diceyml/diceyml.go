@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
@@ -230,27 +229,12 @@ func (d *DiceYaml) getEnvValueData(env ...string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 不传环境时，以 default 为优先
-	priorUseDefault := len(env) == 0
-	return matchRegex.ReplaceAllFunc(d.data, func(match []byte) []byte {
-		key := keyRegex.Find(match)
-		var value, findValue, defaultValue []byte
-		if find, ok := valueMap[string(key)]; ok {
-			findValue = []byte(find)
-		}
-		defaultValue = valueRegex.Find(match)
-		if defaultValue == nil && findValue == nil {
-			return match
-		}
-		if defaultValue != nil && (priorUseDefault || findValue == nil) {
-			// delete ":"
-			value = defaultValue[1:]
-		} else {
-			value = findValue
-		}
-		return []byte(strings.TrimSpace(string(value)))
-	}), nil
 
+	s, err := strutil.Interpolate(string(d.data), valueMap)
+	if err != nil {
+		return nil, err
+	}
+	return []byte(s), nil
 }
 
 func (d *DiceYaml) Compose(env string, yml *DiceYaml) error {
