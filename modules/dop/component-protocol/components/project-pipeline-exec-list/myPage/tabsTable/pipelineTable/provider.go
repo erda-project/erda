@@ -156,7 +156,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if pipeline.DefinitionPageInfo == nil {
 				continue
 			}
-			userIDs = append(userIDs, pipeline.DefinitionPageInfo.Creator)
+			userIDs = append(userIDs, pipeline.GetUserID())
 			tableValue.Rows = append(tableValue.Rows, p.pipelineToRow(pipeline))
 		}
 
@@ -225,16 +225,21 @@ func (p *provider) pipelineToRow(pipeline apistructs.PagePipeline) table.Row {
 					if pipeline.Status.IsFailedStatus() {
 						return commodel.ErrorStatus
 					}
+					if pipeline.Status.IsSuccessStatus() {
+						return commodel.SuccessStatus
+					}
 					return commodel.DefaultStatus
 				}(),
 			}).Build(),
-			ColumnCostTimeOrder: table.NewTextCell(func() string {
-				if pipeline.CostTimeSec <= 0 {
-					return "-"
-				} else {
-					return fmt.Sprintf("%v s", pipeline.CostTimeSec)
-				}
-			}()).Build(),
+			ColumnCostTimeOrder: table.NewDurationCell(commodel.Duration{
+				Value: func() int64 {
+					if !pipeline.Status.IsRunningStatus() &&
+						!pipeline.Status.IsEndStatus() {
+						return -1
+					}
+					return pipeline.CostTimeSec
+				}(),
+			}).Build(),
 			ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(pipeline.DefinitionPageInfo.SourceRemote)).Build(),
 			ColumnBranch:          table.NewTextCell(pipeline.DefinitionPageInfo.SourceRef).Build(),
 			ColumnExecutor:        table.NewUserCell(commodel.User{ID: pipeline.GetUserID()}).Build(),

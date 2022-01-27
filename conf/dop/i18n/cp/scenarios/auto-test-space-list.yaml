@@ -31,6 +31,7 @@ zh:
   autoTestSpaceInit: 未开始
   autoTestSpaceInProgress: 进行中
   autoTestSpaceCompleted: 已完成
+  spaceName: 空间名
 
 en:
   wb.content.autotest.space.add: Create Space
@@ -64,4 +65,5 @@ en:
 
   autoTestSpaceInit: init
   autoTestSpaceInProgress: inprogress
-  autoTestSpaceCompleted: completed"
+  autoTestSpaceCompleted: completed
+  spaceName: Space name

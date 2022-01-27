@@ -84,6 +84,66 @@ zh:
   apiPassRate: 接口通过率
   execStep: 执行步骤
   checkRes: 查看结果
+  selectSceneSet: 选择场景集
+  selectSceneSetPlace: 请选择场景集
+  referPolicy: 引用策略
+  referPolicyPlace: 请选择引用策略
+  new-run: 重新执行并引用执行结果
+  try-latest-success-result: 最近一次执行成功的结果
+  try-latest-result: 最近一次执行的结果
+  sceneSetRefer: 场景集引用
+  configForm: 配置单
+  configInfo: 配置单信息
+  apiInfo: 接口信息
+  nestedScene: 嵌套场景
+  nestedSceneInfo: 嵌套场景信息
+  customScript: 自定义脚本
+  emptyCustomScript: 空 自定义脚本
+  wait: 等待
+  emptyWait: 空 等待
+  waitInfo: 等待信息
+  marketProto: 市场原型
+  marketProtoTip: 当前主要通过api集市引入接口，请搜索选择使用
+  marketProtoPlace: 请选择接口名称或路径进行搜索
+  marketProtoChangeApi: 确认覆盖当前接口定义
+  marketProtoChangeApiConfirm: 接口定义覆盖后无法恢复, 确认覆盖？
+  API: 接口
+  emptyApi: 空 接口
+  paramNameMessage1: 参数名最大长度不能超过50
+  paramNameMessage2: 参数名为英文、数字、中划线或下划线
+  paramNameMessage3: 参数名为英文、数字、点、中划线或下划线
+  defaultValue: 默认值
+  descLimit: 描述最大长度不能超过1000
+  greater: 大于
+  greaterEqual: 大于等于
+  equal: 等于
+  lessEqual: 小于等于
+  less: 小于
+  notEqual: 不等于
+  contain: 包含
+  notContain: 不包含
+  exist: 存在
+  notExist: 不存在
+  isEmpty: 为空
+  notEmpty: 不为空
+  belong: 属于
+  notBelong: 不属于
+  empty: 无
+  sceneSetRuleMessage: 可输入中文、英文、数字、中划线或下划线
+  scene: 场景
+  loopStrategy: 循环策略
+  loopEndCondition: 循环结束条件
+  maxLoop: 最大循环次数
+  declineRatio: 衰退比例
+  intervalRatio: 每次循环叠加间隔比例
+  declineMax: 衰退最大值(秒)
+  loopMaxInterval: 循环最大间隔时间
+  startInterval: 起始间隔(秒)
+  version: 版本
+  executor: 执行人
+  triggerTime: 触发时间
+  searchPlaceHolder: 搜索(敬请期待)
+  backLatestResult: 返回最新记录
 en:
   wb.content.autotest.scene.string: random string like abc
   wb.content.autotest.scene.integer: random integer like 10000
@@ -122,7 +182,7 @@ en:
   stepType: Step type
   step: Step
   subtask: Number of subtasks
-  apiPath: API path
+  apiPath: Interface path
   addScene: Add scene
   refSceneSet: Reference scene set
   editSceneSet: Edit scene set
@@ -136,24 +196,24 @@ en:
   execute: Execute
   configInfo: Configuration information
   executeDetail: Execution details
-  sceneInput: Scene input parameters
-  paramName: name
+  sceneInput: Input parameters
+  paramName: Parameter name
   refValue: Reference value
   validInPlan: Take effect in the execution plan
-  debugValue: Debug Value
+  debugValue: Debug value
   validInScene: Take effect only when the current scene is executed
   selectiveExp: Select expression
   preSceneOut: Pre-scene output
   globalInput: Global variable input
   sceneStep: Steps
   sceneStepTip: Serial execution between groups and parallel execution within groups
-  addParallelApi: Add parallel API
-  copyApi: Copy API
+  addParallelApi: Add parallel interface
+  copyApi: Copy interfaces
   copyJson: Copy JSON format
   formAdd: Add by form
   textAdd: Add by text
   inputSceneParam: Input parameter for this scene
-  preApiOut: Pre-API output parameter
+  preApiOut: Pre-interface output parameter
   preConfigOut: Pre-configuration-form output parameter
   addByText: Add by text
   apiText: API text
@@ -164,8 +224,68 @@ en:
   execHistory: Execution history
   pipelineID: Pipeline ID
   duration: Duration
-  totalApi: Total API
-  apiExecRate: API execution rate
-  apiPassRate: API pass rate
+  totalApi: Total interfaces
+  apiExecRate: Interface execution rate
+  apiPassRate: Interface pass rate
   execStep: Steps
   checkRes: Result
+  selectSceneSet: Select scene set
+  selectSceneSetPlace: Please select scene set
+  referPolicy: Reference strategy
+  referPolicyPlace: Please select reference strategy
+  new-run: Re-run and reference the execution result
+  try-latest-success-result: Result of last successful execution
+  try-latest-result: Result of last execution
+  sceneSetRefer: Scene set reference
+  configForm: Configuration form
+  configInfo: Configuration form info
+  apiInfo: Interface info
+  nestedScene: Nested scene
+  nestedSceneInfo: Nested scene info
+  customScript: Custom script
+  emptyCustomScript: Empty custom script
+  wait: Wait 
+  emptyWait: Empty wait
+  waitInfo: Wait Info
+  marketProto: Market prototype
+  marketProtoTip: Currently, the interface is mainly introduced through API market. Please search and select
+  marketProtoPlace: Please select an interface name or path to search
+  marketProtoChangeApi: Confirm to overwrite the current interface definition
+  marketProtoChangeApiConfirm: The interface definition cannot be restored after it is overwritten. Are you sure to overwrite it?
+  API: Interface
+  emptyApi: empty interface
+  paramNameMessage1: The maximum length of parameter name cannot exceed 50
+  paramNameMessage2: Parameter names are English, numbers, dashes, or underscores
+  paramNameMessage3: Parameter names are English, numbers, dots, dashes, or underscores
+  defaultValue: Default value
+  descLimit: The maximum length of the description cannot exceed 1000
+  greater: Greater
+  greaterEqual: Greater or equal
+  equal: Equal
+  lessEqual: Less or equal
+  less: Less
+  notEqual: Not equal
+  contain: Contain
+  notContain: Not contain
+  exist: Exist
+  notExist: Not exist
+  isEmpty: Empty
+  notEmpty: Not empty
+  belong: Belong
+  notBelong: Not belong
+  empty: None
+  sceneSetRuleMessage: You can enter Chinese, English, numbers, dashes or underscores
+  scene: Scene
+  loopStrategy: Loop strategy
+  loopEndCondition: Condition to end loop
+  maxLoop: Maximum number of loops
+  declineRatio: Decline ratio
+  intervalRatio: The ratio of overlap interval per loop
+  declineMax: Maximum value of decline (seconds)
+  loopMaxInterval: Maximum loop interval time
+  startInterval: Start interval (seconds)
+  version: Version
+  executor: Executor
+  triggerTime: Trigger time
+  searchPlaceHolder: Search (stay tuned)
+  backLatestResult: Back to latest record

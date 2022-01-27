@@ -60,8 +60,10 @@ zh:
   rebootTimes: 重启次数
   podInspect: 查看容器
   desc: 注释
-  Memory Chart: 内存
-  Pod Chart: Pods
+  Memory: 内存
+  Pods: Pods
+  Pod: Pods
+  Mem: 内存
   enterprise: 企业
   location-cluster-service: 集群级服务
   stateless-service: 无状态服务
@@ -69,7 +71,7 @@ zh:
   label-value: 标签值
   begin and end with character and number,include: 以字母或数字开头或结尾，可以包含
   e.g.: 例如
-  Cpu Chart: CPU
+  Cpu: CPU
   annotation: 注释
   placeholderFilterByNodeName: 按节点名称过滤
   cpuUsage: CPU 使用率

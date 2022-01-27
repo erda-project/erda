@@ -127,6 +127,9 @@ type ReleaseCreateRequest struct {
 
 	// CrossCluster 跨集群
 	CrossCluster bool `json:"crossCluster,omitempty"`
+
+	// 分支
+	GitBranch string `json:"gitBranch,omitempty"`
 }
 
 type ReleaseUploadRequest struct {
@@ -371,6 +374,9 @@ type ReleaseListRequest struct {
 	// 分支名
 	Branch string `json:"-" query:"branchName"`
 
+	// 是否为每个分支的最新制品
+	Latest bool `json:"-" query:"latest"`
+
 	// stable表示非临时制品
 	IsStable *bool `json:"-" query:"isStable"`
 
@@ -466,6 +472,9 @@ func (req ReleaseListRequest) ConvertToQueryParams() url.Values {
 	}
 	if req.Branch != "" {
 		values.Add("branchName", req.Branch)
+	}
+	if req.Latest {
+		values.Add("latest", "true")
 	}
 	if req.IsStable != nil {
 		values.Add("isStable", strconv.FormatBool(*req.IsStable))

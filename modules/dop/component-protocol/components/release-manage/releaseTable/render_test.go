@@ -134,6 +134,7 @@ func TestComponentReleaseTable_SetComponentValue(t *testing.T) {
 }
 
 func TestComponentReleaseTable_Transfer(t *testing.T) {
+	tmp := true
 	r := ComponentReleaseTable{
 		Data: Data{
 			List: []Item{
@@ -198,7 +199,7 @@ func TestComponentReleaseTable_Transfer(t *testing.T) {
 			},
 			IsProjectRelease: true,
 			ProjectID:        1,
-			IsFormal:         true,
+			IsFormal:         &tmp,
 			VersionValues: VersionValues{
 				Version: "testVersion",
 			},

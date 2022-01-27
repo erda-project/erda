@@ -97,7 +97,7 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 			ReleaseInfo: &apistructs.ReleaseInfo{
 				Id:        order.ReleaseId,
 				Version:   curRelease.Version,
-				Type:      covertReleaseType(curRelease.IsProjectRelease),
+				Type:      convertReleaseType(curRelease.IsProjectRelease),
 				Creator:   curRelease.UserId,
 				CreatedAt: curRelease.CreatedAt,
 				UpdatedAt: curRelease.UpdatedAt,
@@ -222,7 +222,7 @@ func convertConfigType(configType string) string {
 	return "kv"
 }
 
-func covertReleaseType(isProjectRelease bool) string {
+func convertReleaseType(isProjectRelease bool) string {
 	if isProjectRelease {
 		return apistructs.ReleaseTypeProject
 	}

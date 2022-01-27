@@ -11,7 +11,12 @@
     "project.list.all.day.ago": "天前",
     "project.list.all.hour.ago": "小时前",
     "project.list.all.minute.ago": "分钟前",
-    "project.list.all.second.ago": "几秒前"
+    "project.list.all.second.ago": "几秒前",
+    "exitProject": "退出",
+    "exitProjectConfirm": "退出当前项目后，将不再有项目协作权限，如要再次加入需要项目管理员邀请，请确认是否退出？",
+    "applyDeploy": "申请部署",
+    "blockMessage": "企业处于封网期间，生产环境禁止部署！",
+    "search": "搜索"
   },
   "en-US": {
     "project.list.all.project.public": "Public project",
@@ -25,6 +30,11 @@
     "project.list.all.day.ago": "day(s) ago",
     "project.list.all.hour.ago": "hour(s) ago",
     "project.list.all.minute.ago": "minute(s) ago",
-    "project.list.all.second.ago": "second(s) ago"
+    "project.list.all.second.ago": "second(s) ago",
+    "exitProject": "Exit",
+    "exitProjectConfirm": "After exiting the current project, you will no longer have project collaboration permission. If you want to join again, you need to be invited by the project administrator. Are you sure you want to exit?",
+    "applyDeploy": "Apply for deployment",
+    "blockMessage": "The production environment is prohibited from deployment when the enterprise is blocked!",
+    "search": "Search"
   }
 }

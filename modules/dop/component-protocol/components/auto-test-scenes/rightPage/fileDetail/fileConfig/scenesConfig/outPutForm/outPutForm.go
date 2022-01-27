@@ -34,7 +34,7 @@ func (i *ComponentOutPutForm) SetProps(gs *cptype.GlobalStateData) error {
 			Rules: []PropRenderRule{
 				{
 					Pattern: "/^[a-zA-Z0-9_-]*$/",
-					Msg:     "参数名为英文、数字、中划线或下划线",
+					Msg:     i.sdk.I18n("paramNameMessage2"),
 				},
 			},
 			Props: PropRenderProp{MaxLength: 50},

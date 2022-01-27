@@ -28,6 +28,8 @@ import (
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
+const deploymentsTableName = "ps_v2_deployments"
+
 type Deployment struct {
 	dbengine.BaseModel
 	RuntimeId uint64 `gorm:"not null;index:idx_runtime_id"`
@@ -63,7 +65,7 @@ type Deployment struct {
 }
 
 func (Deployment) TableName() string {
-	return "ps_v2_deployments"
+	return deploymentsTableName
 }
 
 type DeploymentExtra struct {
@@ -226,6 +228,44 @@ func (db *DBClient) FindMultiRuntimesDeployments(runtimeids []uint64, filter Dep
 		return nil, 0, errors.Wrap(err, "failed to find deployments")
 	}
 	return deployments, total, nil
+}
+
+// FindLastDeploymentIDsByRutimeIDs
+func (db *DBClient) FindLastDeploymentIDsByRutimeIDs(runtimeIDs []uint64) ([]uint64, error) {
+	var deploymentIDs []uint64
+	var id uint64
+	rows, err := db.Table(deploymentsTableName).
+		Select("MAX(id) as id").
+		Group("runtime_id").
+		Having("runtime_id in (?)", runtimeIDs).Rows()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find last deployment, runtimeId: %v", runtimeIDs)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		if err := rows.Scan(&id); err != nil {
+			return nil, errors.Wrapf(err, "failed to find last deployment, runtimeId: %v", runtimeIDs)
+		}
+		deploymentIDs = append(deploymentIDs, id)
+	}
+	return deploymentIDs, nil
+}
+
+func (db *DBClient) FindDeploymentsByIDs(ids []uint64) (map[uint64]Deployment, error) {
+	var (
+		d           = make(map[uint64]Deployment)
+		deployments []Deployment
+	)
+
+	if err := db.
+		Where("id in (?)", ids).
+		Find(&deployments).Error; err != nil {
+		return nil, errors.Wrapf(err, "failed to get deployment by ids: %+v", ids)
+	}
+	for _, deployment := range deployments {
+		d[deployment.RuntimeId] = deployment
+	}
+	return d, nil
 }
 
 func (db *DBClient) FindUnfinishedDeployments() ([]Deployment, error) {

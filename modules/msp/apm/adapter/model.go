@@ -31,6 +31,6 @@ type InstrumentationLibraryTemplate struct {
 }
 
 type Template struct {
-	Language string `yaml:"language"`
-	Template string `yaml:"template"`
+	Language string            `yaml:"language"`
+	Template map[string]string `json:"template"`
 }

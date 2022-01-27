@@ -74,8 +74,8 @@ func (i *ComponentList) RenItem(pro apistructs.ProjectDTO, orgDomain string) (Pr
 	opExist := Operation{
 		Key:     apistructs.ListProjectExistOperationKey.String(),
 		Reload:  true,
-		Text:    "退出",
-		Confirm: "退出当前项目后，将不再有项目协作权限，如要再次加入需要项目管理员邀请，请确认是否退出？",
+		Text:    i18nLocale.Get("exitProject"),
+		Confirm: i18nLocale.Get("exitProjectConfirm"),
 		Meta: Meta{
 			ID: pro.ID,
 		},
@@ -83,7 +83,7 @@ func (i *ComponentList) RenItem(pro apistructs.ProjectDTO, orgDomain string) (Pr
 	opApplyDeploy := Operation{
 		Key:    apistructs.ApplyDeployProjectFilterOperation.String(),
 		Reload: false,
-		Text:   "申请部署",
+		Text:   i18nLocale.Get("applyDeploy"),
 		Meta: Meta{
 			ProjectId:   pro.ID,
 			ProjectName: pro.DisplayName,

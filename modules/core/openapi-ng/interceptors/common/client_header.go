@@ -19,7 +19,9 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/core/openapi-ng/interceptors"
+	"github.com/erda-project/erda/pkg/goroutine_context"
 	"github.com/erda-project/erda/pkg/http/httputil"
+	"github.com/erda-project/erda/pkg/i18n"
 )
 
 // +provider
@@ -38,6 +40,11 @@ func (p *provider) Interceptor(h http.HandlerFunc) http.HandlerFunc {
 		r.Header.Del(httputil.InternalHeader)
 		r.Header.Del(httputil.ClientIDHeader)
 		r.Header.Del(httputil.ClientNameHeader)
+		localeName := i18n.GetLocaleNameByRequest(r)
+		// set global context bind goroutine id
+		i18n.SetGoroutineBindLang(localeName)
+		// clear all global context
+		defer goroutine_context.ClearContext()
 		h(rw, r)
 	}
 }

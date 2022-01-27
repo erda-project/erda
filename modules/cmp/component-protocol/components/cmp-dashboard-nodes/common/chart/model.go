@@ -54,11 +54,11 @@ func (cht *Chart) ChartRender(ctx context.Context, c *cptype.Component, scenario
 	cht.Data = ChartData{Data: (*gs)[ResourceType+"Chart"].([]DataItem)}
 	switch ResourceType {
 	case CPU:
-		cht.Data.Label = cht.SDK.I18n("Cpu Chart")
+		cht.Data.Label = cht.SDK.I18n("Cpu")
 	case Memory:
-		cht.Data.Label = cht.SDK.I18n("Memory Chart")
+		cht.Data.Label = cht.SDK.I18n("Mem")
 	case Pods:
-		cht.Data.Label = cht.SDK.I18n("Pod Chart")
+		cht.Data.Label = cht.SDK.I18n("Pods")
 	}
 	return common.Transfer(cht.Data, &c.Data)
 }

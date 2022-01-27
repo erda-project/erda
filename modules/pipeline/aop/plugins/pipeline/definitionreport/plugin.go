@@ -40,7 +40,7 @@ func (p *provider) Handle(ctx *aoptypes.TuneContext) error {
 	}
 
 	definition.Executor = pipeline.GetUserID()
-	definition.CostTime = uint64(pipeline.CostTimeSec)
+	definition.CostTime = pipeline.CostTimeSec
 	definition.StartedAt = *pipeline.TimeBegin
 	definition.EndedAt = *pipeline.TimeEnd
 	definition.PipelineID = pipeline.ID

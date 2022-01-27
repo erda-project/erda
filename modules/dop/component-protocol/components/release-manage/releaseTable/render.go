@@ -102,16 +102,16 @@ func (r *ComponentReleaseTable) InitComponent(ctx context.Context) {
 	r.bdl = bdl
 }
 
-func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (r *ComponentReleaseTable) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(component.State)
+	jsonData, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err = json.Unmarshal(jsonData, &state); err != nil {
 		return err
 	}
 	r.State = state
@@ -119,38 +119,38 @@ func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) e
 }
 
 func (r *ComponentReleaseTable) DecodeURLQuery() error {
-	queryData, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
+	query, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(queryData)
+	decoded, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
-	query := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &query); err != nil {
+	urlQuery := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &urlQuery); err != nil {
 		return err
 	}
-	r.State.PageNo = int64(query["pageNo"].(float64))
-	r.State.PageSize = int64(query["pageSize"].(float64))
-	sorter := query["sorterData"].(map[string]interface{})
-	r.State.Sorter.Field, _ = sorter["field"].(string)
-	r.State.Sorter.Order, _ = sorter["order"].(string)
+	r.State.PageNo = int64(urlQuery["pageNo"].(float64))
+	r.State.PageSize = int64(urlQuery["pageSize"].(float64))
+	sorterData := urlQuery["sorterData"].(map[string]interface{})
+	r.State.Sorter.Field, _ = sorterData["field"].(string)
+	r.State.Sorter.Order, _ = sorterData["order"].(string)
 	return nil
 }
 
 func (r *ComponentReleaseTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = r.State.PageNo
-	query["pageSize"] = r.State.PageSize
-	query["sorterData"] = r.State.Sorter
-	data, err := json.Marshal(query)
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = r.State.PageNo
+	urlQuery["pageSize"] = r.State.PageSize
+	urlQuery["sorterData"] = r.State.Sorter
+	jsonData, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(data)
-	r.State.ReleaseTableURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+	r.State.ReleaseTableURLQuery = encoded
 	return nil
 }
 
@@ -188,8 +188,9 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 	logrus.Debugf("[DEBUG] start list releases")
 	releaseResp, err := r.bdl.ListReleases(apistructs.ReleaseListRequest{
 		Branch:           r.State.FilterValues.BranchID,
+		Latest:           r.State.FilterValues.Latest,
 		IsStable:         &isStable,
-		IsFormal:         &r.State.IsFormal,
+		IsFormal:         r.State.IsFormal,
 		IsProjectRelease: &r.State.IsProjectRelease,
 		UserID:           r.State.FilterValues.UserIDs,
 		Version:          r.State.VersionValues.Version,
@@ -317,7 +318,7 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 				Text: r.sdk.I18n("referencedReleases"),
 			}
 		}
-		if !r.State.IsFormal {
+		if r.State.IsFormal != nil && !*r.State.IsFormal {
 			item.Operations.Operations["edit"] = editOperation
 			item.Operations.Operations["formal"] = formalOperation
 			item.Operations.Operations["delete"] = deleteOperation
@@ -374,7 +375,7 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	}
 
 	var batchOperations []string
-	if !r.State.IsFormal {
+	if r.State.IsFormal != nil && !*r.State.IsFormal {
 		batchOperations = []string{"formal", "delete"}
 	}
 
@@ -385,7 +386,7 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 		},
 		{
 			DataIndex: "application",
-			Title:     r.sdk.I18n("applicationName"),
+			Title:     r.sdk.I18n("application"),
 		},
 		{
 			DataIndex: "creator",
@@ -398,7 +399,7 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 		},
 	}
 
-	if r.State.IsProjectRelease || !r.State.IsFormal {
+	if r.State.IsProjectRelease || (r.State.IsFormal != nil && !*r.State.IsFormal) {
 		columns = append(columns, Column{
 			DataIndex: "operations",
 			Title:     r.sdk.I18n("operations"),
@@ -414,7 +415,7 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	r.Props = Props{
 		RequestIgnore:   []string{"data"},
 		BatchOperations: batchOperations,
-		Selectable:      !r.State.IsFormal,
+		Selectable:      r.State.IsFormal != nil && !*r.State.IsFormal,
 		Columns:         columns,
 		PageSizeOptions: []string{"10", "20", "50", "100"},
 		RowKey:          "id",

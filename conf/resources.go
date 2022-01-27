@@ -43,7 +43,7 @@ var (
 
 	//go:embed monitor/agent-injector/agent-injector.yaml
 	MonitorAgentInjectorDefaultConfig string
-	MonitorAgentInjectorFilePath      string = "conf/monitor/agent-injector.yaml"
+	MonitorAgentInjectorFilePath      string = "conf/monitor/agent-injector/agent-injector.yaml"
 )
 
 // msp

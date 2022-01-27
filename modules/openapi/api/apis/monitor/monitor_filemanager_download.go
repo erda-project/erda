@@ -17,8 +17,8 @@ package monitor
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
 var MONITOR_FILEMANAGER_DOWNLOAD = apis.ApiSpec{
-	Path:        "/api/container/:containerID/files/download",
-	BackendPath: "/api/container/:containerID/files/download",
+	Path:        "/api/container/<containerID>/files/download",
+	BackendPath: "/api/container/<containerID>/files/download",
 	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
 	Scheme:      "http",
 	Method:      "GET",

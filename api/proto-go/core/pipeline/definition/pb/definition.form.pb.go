@@ -45,7 +45,7 @@ func (m *PipelineDefinition) UnmarshalURLValues(prefix string, values url.Values
 			case "category":
 				m.Category = vals[0]
 			case "costTime":
-				val, err := strconv.ParseUint(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
@@ -480,7 +480,7 @@ func (m *PipelineDefinitionCreateResponse) UnmarshalURLValues(prefix string, val
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
-				val, err := strconv.ParseUint(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
@@ -810,7 +810,7 @@ func (m *PipelineDefinitionUpdateRequest) UnmarshalURLValues(prefix string, valu
 			case "name":
 				m.Name = vals[0]
 			case "costTime":
-				val, err := strconv.ParseUint(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
@@ -931,7 +931,7 @@ func (m *PipelineDefinitionUpdateResponse) UnmarshalURLValues(prefix string, val
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
-				val, err := strconv.ParseUint(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
@@ -1322,7 +1322,7 @@ func (m *PipelineDefinitionGetResponse) UnmarshalURLValues(prefix string, values
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
-				val, err := strconv.ParseUint(vals[0], 10, 64)
+				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
@@ -1699,6 +1699,8 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 					return err
 				}
 				m.ExecutedActionNum = val
+			case "sourceIDList":
+				m.SourceIDList = vals
 			}
 		}
 	}

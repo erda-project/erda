@@ -47,7 +47,7 @@ var IssueTemplate = map[string]map[IssueStreamType]string{
 		ISTChangeLabel:                   `标签发生变更`,
 	},
 	`en`: {
-		ISTCreate:                        `{{.UserName}} created`,
+		ISTCreate:                        `Created by {{.UserName}}`,
 		ISTComment:                       `{{.Comment}}`,
 		ISTRelateMR:                      `mrInfo: {{.MRInfo}}`,
 		ISTAssign:                        `assigned to "{{.UserName}}"`,
@@ -171,7 +171,13 @@ func (p *ISTParam) Localize(locale string) *ISTParam {
 	//p.CurrentState = IssueState(p.CurrentState).Desc(locale)
 	//
 	//// NewStatue
-	//p.NewState = IssueState(p.NewState).Desc(locale)
+	// p.NewState = IssueState(p.NewState).Desc(locale)
 
+	p.CurrentComplexity = IssueStreamComplexityName(p.CurrentComplexity, locale)
+	p.NewComplexity = IssueStreamComplexityName(p.NewComplexity, locale)
+	p.CurrentSeverity = IssueStreamSeverityName(p.CurrentSeverity, locale)
+	p.NewSeverity = IssueStreamSeverityName(p.NewSeverity, locale)
+	p.CurrentPriority = IssueStreamPriorityName(p.CurrentPriority, locale)
+	p.NewPriority = IssueStreamPriorityName(p.NewPriority, locale)
 	return p
 }

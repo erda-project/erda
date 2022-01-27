@@ -73,7 +73,7 @@ func (ca *ComponentAction) Render(ctx context.Context, c *cptype.Component, scen
 	case cptype.InitializeOperation, cptype.RenderingOperation:
 		c.Type = "Button"
 		c.Props = map[string]interface{}{
-			"text": "+ 接口",
+			"text": "+ " + cputil.I18n(ctx, "API"),
 			"menu": []interface{}{
 				map[string]interface{}{
 					"key": "addApi",

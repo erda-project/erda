@@ -16,16 +16,21 @@ package inParamsForm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/expression"
 )
 
-func (i *ComponentInParamsForm) SetProps() {
+func (i *ComponentInParamsForm) SetProps(props cptype.ComponentProps) {
+	// default temp value
 	paramsNameProp := PropColumn{
 		Title: i.sdk.I18n("paramName"),
 		Key:   PropsKeyParamsName,
@@ -37,7 +42,7 @@ func (i *ComponentInParamsForm) SetProps() {
 			Rules: []PropRenderRule{
 				{
 					Pattern: "/^[a-zA-Z0-9_-]*$/",
-					Msg:     "参数名为英文、数字、中划线或下划线",
+					Msg:     i.sdk.I18n("paramNameMessage2"),
 				},
 			},
 			Props: PropRenderProp{MaxLength: 50},
@@ -84,6 +89,7 @@ func (i *ComponentInParamsForm) SetProps() {
 			Operations: make(map[string]interface{}),
 		},
 	}
+
 	o := OperationInfo{}
 	o.Key = apistructs.AutoTestSceneInputOnSelectOperationKey.String()
 	o.Reload = true
@@ -96,6 +102,26 @@ func (i *ComponentInParamsForm) SetProps() {
 		Width:    200,
 	}
 	i.Props["temp"] = []PropColumn{paramsNameProp, descProp, defaultValueProp, valueProp}
+
+	// set request props temp value
+	if props == nil || props["temp"] == nil {
+		return
+	}
+	tempValue, err := json.Marshal(props["temp"])
+	if err != nil {
+		logrus.Errorf("Marshal temp %v error %v", props["temp"], err)
+		return
+	}
+	var reqPropColumn []PropColumn
+	err = json.Unmarshal(tempValue, &reqPropColumn)
+	if err != nil {
+		logrus.Errorf("Unmarshal tempValue error %v", err)
+		return
+	}
+	if reqPropColumn == nil {
+		return
+	}
+	i.Props["temp"] = reqPropColumn
 }
 
 func (i *ComponentInParamsForm) RenderListInParamsForm() error {

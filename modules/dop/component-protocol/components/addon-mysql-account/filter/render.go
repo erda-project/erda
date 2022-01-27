@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/addon-mysql-account/common"
@@ -96,19 +97,19 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	c.State["conditions"] = []filter.PropCondition{
 		{
 			Key:       "status",
-			Label:     "使用状态",
-			EmptyText: "全部",
+			Label:     cputil.I18n(ctx, "attachment.status"),
+			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Type:      filter.PropConditionTypeSelect,
 			Options: []filter.PropConditionOption{
-				{Label: "未被使用", Value: "NO"},
-				{Label: "使用中", Value: "YES"},
+				{Label: cputil.I18n(ctx, "not_used"), Value: "NO"},
+				{Label: cputil.I18n(ctx, "in_use"), Value: "YES"},
 			},
 		},
 		{
 			Key:       "creator",
-			Label:     "创建者",
-			EmptyText: "全部",
+			Label:     cputil.I18n(ctx, "creator"),
+			EmptyText: cputil.I18n(ctx, "all"),
 			Fixed:     true,
 			Type:      filter.PropConditionTypeSelect,
 			Options:   userOpt,

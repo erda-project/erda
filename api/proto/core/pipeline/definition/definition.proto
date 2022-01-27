@@ -50,7 +50,7 @@ message PipelineDefinition {
   string name = 3;
   string creator = 4;
   string category = 5;
-  uint64 costTime = 6;
+  int64 costTime = 6;
   string executor = 7;
   PipelineDefinitionExtra extra = 8;
   google.protobuf.Timestamp startedAt = 9;
@@ -99,7 +99,7 @@ message PipelineDefinitionCreateResponse {
 // update
 message PipelineDefinitionUpdateRequest {
   string name = 1;
-  uint64 costTime = 2;
+  int64 costTime = 2;
   string executor = 3;
   string pipelineSourceId = 4;
   string category = 5;
@@ -151,6 +151,7 @@ message PipelineDefinitionListRequest {
   repeated string descCols = 15;
   int64 totalActionNum = 16;
   int64 ExecutedActionNum = 17;
+  repeated string sourceIDList = 18;
 }
 
 message PipelineDefinitionStaticsRequest {

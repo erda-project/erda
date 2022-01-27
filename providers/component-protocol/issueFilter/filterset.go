@@ -41,7 +41,7 @@ func (f *IssueFilter) FilterSet() ([]filter.SetItem, error) {
 	options := []filter.SetItem{
 		{
 			ID:       "all",
-			Label:    "全部打开",
+			Label:    f.sdk.I18n("openAll"),
 			IsPreset: true,
 		},
 	}

@@ -46,6 +46,49 @@ service ProjectPipelineService {
       path : "/api/project-pipeline/actions/get-pipeline-yml-list",
     };
   }
+
+  rpc CreateNamePreCheck(CreateProjectPipelineNamePreCheckRequest)
+          returns(CreateProjectPipelineNamePreCheckResponse) {
+    option(google.api.http) = {
+      get : "/api/project-pipeline/actions/name-pre-check",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/actions/name-pre-check",
+    };
+  }
+
+  rpc CreateSourcePreCheck(CreateProjectPipelineSourcePreCheckRequest)
+          returns(CreateProjectPipelineSourcePreCheckResponse) {
+    option(google.api.http) = {
+      get : "/api/project-pipeline/actions/source-pre-check",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/actions/source-pre-check",
+    };
+  }
+}
+
+message CreateProjectPipelineSourcePreCheckRequest {
+  uint64 appID = 1 [(validator.field) = {int_gt: 0}];
+  string sourceType = 2 [(validator.field) = {string_not_empty: true}];
+  string ref = 3 [(validator.field) = {string_not_empty: true}];
+  string path = 4;
+  string fileName = 5 [(validator.field) = {string_not_empty: true}];
+}
+
+message CreateProjectPipelineSourcePreCheckResponse {
+  bool pass = 1;
+  string message = 2;
+}
+
+message CreateProjectPipelineNamePreCheckRequest {
+  uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
+  string name = 2 [(validator.field) = {string_not_empty: true}];
+}
+
+message CreateProjectPipelineNamePreCheckResponse {
+  bool pass = 1;
+  string message = 2;
 }
 
 message ListAppPipelineYmlRequest {
