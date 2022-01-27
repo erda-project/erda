@@ -54,7 +54,7 @@ func (ls *LogStatement) GetStatement(data interface{}) (string, []interface{}, e
 }
 
 func (p *provider) getLogStatement(log *logmodule.Log, reusedWriter *gzip.Writer) (string, []interface{}, error) {
-	ttl := p.ttl.GetSecondByKey(log.Tags[diceOrgNameKey])
+	ttl := p.ttl.GetSecond(log.Source, log.Tags)
 
 	var requestID *string // request_id 字段不存在时为null，所以使用指针
 	if rid, ok := log.Tags["request-id"]; ok {
@@ -87,7 +87,7 @@ func (p *provider) getLogStatement(log *logmodule.Log, reusedWriter *gzip.Writer
 }
 
 func (p *provider) getMetaStatement(meta *logmodule.LogMeta) (string, []interface{}, error) {
-	ttl := p.ttl.GetSecondByKey(meta.Tags[diceOrgNameKey])
+	ttl := p.ttl.GetSecond(meta.Source, meta.Tags)
 	cql := `INSERT INTO spot_prod.base_log_meta (source, id, tags) VALUES (?, ?, ?) USING TTL ?;`
 	return cql, []interface{}{
 		meta.Source,

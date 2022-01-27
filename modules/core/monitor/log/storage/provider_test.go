@@ -100,8 +100,8 @@ func newMockMysql() *mockMysql {
 		panic(err)
 	}
 	// construct
-	rows := sqlmock.NewRows([]string{"org_name", "names", "filters", "config", "key"}).
-		AddRow("erda", "", "", "", "")
+	rows := sqlmock.NewRows([]string{"org_name", "type", "names", "filters", "config", "key"}).
+		AddRow("erda", "log", "container", "[{\"key\":\"dice_org_name\",\"value\":\"erda\"},{\"key\":\"dice_workspace\",\"value\":\"prod\"}]", "{\"ttl\":\"360h0m0s\"}", "aaa")
 	mock.ExpectQuery("^SELECT (.*)").WillReturnRows(rows)
 
 	gdb, err := gorm.Open("mysql", sqlDB)
