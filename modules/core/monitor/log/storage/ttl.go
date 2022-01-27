@@ -88,6 +88,10 @@ func (m *mysqlStore) loadLogsTTL() error {
 }
 
 func (m *mysqlStore) GetSecond(name string, kvs map[string]string) int {
+	if m.ttlsValue.Load() == nil {
+		return m.defaultTTLSec
+	}
+
 	r := m.ttlsValue.Load().(*router.Router)
 	if r == nil {
 		return m.defaultTTLSec
@@ -104,11 +108,11 @@ func (m *mysqlStore) Run(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
+		if err := m.loadLogsTTL(); err != nil {
+			m.Log.Errorf("loadLogs failed. err=%s", err)
+		}
 		select {
 		case <-ticker.C:
-			if err := m.loadLogsTTL(); err != nil {
-				m.Log.Errorf("loadLogs failed. err=%s", err)
-			}
 		case <-ctx.Done():
 			return
 		}
