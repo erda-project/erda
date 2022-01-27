@@ -1031,6 +1031,9 @@ services:
 
 func TestDiceYmlObj(t *testing.T) {
 	d, err := New([]byte(yml), true)
+	if err != nil {
+		t.Fatalf("failed to New: %v", err)
+	}
 	assert.Nil(t, err)
 	obj := d.Obj()
 	assert.Equal(t, "TCP", string(obj.Services["web"].Ports[0].Protocol))

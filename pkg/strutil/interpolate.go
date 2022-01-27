@@ -68,7 +68,7 @@ func Interpolate(s string, values map[string]string, defaultPrecedence bool) (st
 		placeholder = strings.TrimSpace(kv[0])
 		value, ok := valuesCopy[placeholder]
 		if len(kv) > 1 && (!ok || defaultPrecedence) {
-			value = strings.TrimSpace(kv[1])
+			value = strings.TrimSpace(strings.Join(kv[1:], ":"))
 		}
 		s = s[:indexStart] + value + s[indexEnd:]
 	}
