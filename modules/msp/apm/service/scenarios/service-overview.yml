@@ -12,6 +12,14 @@ hierarchy:
     - service-overview@exceptionCountTop5
     page:
     - grid
+  parallel:
+    grid:
+    - service-overview@pathRpsMaxTop5
+    - service-overview@pathSlowTop5
+    - service-overview@pathErrorRateTop5
+    - service-overview@pathClientRpsMaxTop5
+    - service-overview@sqlSlowTop5
+    - service-overview@exceptionCountTop5
 components:
   page:
     type: CardContainer

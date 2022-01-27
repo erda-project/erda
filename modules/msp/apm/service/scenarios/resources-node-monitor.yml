@@ -12,6 +12,14 @@ hierarchy:
     - node@podCount
     - node@disk
     - node@network
+  parallel:
+    node:
+    - node@cpu
+    - node@memory
+    - node@load
+    - node@podCount
+    - node@disk
+    - node@network
 components:
   page:
     type: Container

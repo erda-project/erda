@@ -16,7 +16,6 @@ package kv_grid
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -24,7 +23,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/service/datasources"
@@ -60,55 +58,63 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		layerPath := p.StdInParamsPtr.Get("layerPath").(string)
 		ctx := context.WithValue(context.Background(), common.LangKey, lang)
 
-		data := kv.Data{}
-		var list []*kv.KV
 		switch sdk.Comp.Name {
 		case totalCount:
+			var list []*kv.KV
 			cell, err := p.DataSource.GetCard(ctx, card.CardTypeReqCount, startTime, endTime, tenantId, serviceId, common.TransactionLayerMq, layerPath)
 			if err != nil {
 				p.Log.Error("failed to get card: %s", err)
 				break
 			}
 			list = append(list, cell)
+			return &impl.StdStructuredPtr{StdDataPtr: &kv.Data{List: list}}
 		case avgRps:
+			var list []*kv.KV
 			cell, err := p.DataSource.GetCard(ctx, card.CardTypeRps, startTime, endTime, tenantId, serviceId, common.TransactionLayerMq, layerPath)
 			if err != nil {
 				p.Log.Error("failed to get card: %s", err)
 				break
 			}
 			list = append(list, cell)
+			return &impl.StdStructuredPtr{StdDataPtr: &kv.Data{List: list}}
 		case avgDuration:
+			var list []*kv.KV
 			cell, err := p.DataSource.GetCard(ctx, card.CardTypeAvgDuration, startTime, endTime, tenantId, serviceId, common.TransactionLayerMq, layerPath)
 			if err != nil {
 				p.Log.Error("failed to get card: %s", err)
 				break
 			}
 			list = append(list, cell)
+			return &impl.StdStructuredPtr{StdDataPtr: &kv.Data{List: list}}
 		case slowCount:
+			var list []*kv.KV
 			cell, err := p.DataSource.GetCard(ctx, card.CardTypeSlowCount, startTime, endTime, tenantId, serviceId, common.TransactionLayerMq, layerPath)
 			if err != nil {
 				p.Log.Error("failed to get card: %s", err)
 				break
 			}
 			list = append(list, cell)
+			return &impl.StdStructuredPtr{StdDataPtr: &kv.Data{List: list}}
 		case errorCount:
+			var list []*kv.KV
 			cell, err := p.DataSource.GetCard(ctx, card.CardTypeErrorCount, startTime, endTime, tenantId, serviceId, common.TransactionLayerMq, layerPath)
 			if err != nil {
 				p.Log.Error("failed to get card: %s", err)
 				break
 			}
 			list = append(list, cell)
+			return &impl.StdStructuredPtr{StdDataPtr: &kv.Data{List: list}}
 		case errorRate:
+			var list []*kv.KV
 			cell, err := p.DataSource.GetCard(ctx, card.CardTypeErrorRate, startTime, endTime, tenantId, serviceId, common.TransactionLayerMq, layerPath)
 			if err != nil {
 				p.Log.Error("failed to get card: %s", err)
 				break
 			}
 			list = append(list, cell)
+			return &impl.StdStructuredPtr{StdDataPtr: &kv.Data{List: list}}
 		}
-		data.List = list
-		p.StdDataPtr = &data
-		return nil
+		return &impl.StdStructuredPtr{StdDataPtr: &kv.Data{}}
 	}
 }
 
@@ -117,32 +123,11 @@ func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return p.RegisterInitializeOp()
 }
 
-// Init .
-func (p *provider) Init(ctx servicehub.Context) error {
-	p.DefaultKV = impl.DefaultKV{}
-	v := reflect.ValueOf(p)
-	v.Elem().FieldByName("Impl").Set(v)
-	compName := "kvGrid"
-	if ctx.Label() != "" {
-		compName = ctx.Label()
-	}
-	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
-		Scenario: "transaction-mq-detail",
-		CompName: compName,
-		Creator:  func() cptype.IComponent { return p },
-	})
-	return nil
-}
-
 // Provide .
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	return p
 }
 
 func init() {
-	name := "component-protocol.components.transaction-mq-detail.kvGrid"
-	cpregister.AllExplicitProviderCreatorMap[name] = nil
-	servicehub.Register(name, &servicehub.Spec{
-		Creator: func() servicehub.Provider { return &provider{} },
-	})
+	cpregister.RegisterProviderComponent("transaction-mq-detail", "kvGrid", &provider{})
 }

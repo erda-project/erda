@@ -16,7 +16,6 @@ package req_distribution
 
 import (
 	"context"
-	"reflect"
 	"strings"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -26,7 +25,6 @@ import (
 	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/trace/query"
@@ -93,32 +91,11 @@ func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return p.RegisterInitializeOp()
 }
 
-// Init .
-func (p *provider) Init(ctx servicehub.Context) error {
-	p.DefaultBubbleGraph = impl.DefaultBubbleGraph{}
-	v := reflect.ValueOf(p)
-	v.Elem().FieldByName("Impl").Set(v)
-	compName := "reqDistribution"
-	if ctx.Label() != "" {
-		compName = ctx.Label()
-	}
-	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
-		Scenario: "trace-query",
-		CompName: compName,
-		Creator:  func() cptype.IComponent { return p },
-	})
-	return nil
-}
-
 // Provide .
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	return p
 }
 
 func init() {
-	name := "component-protocol.components.trace-query.reqDistribution"
-	cpregister.AllExplicitProviderCreatorMap[name] = nil
-	servicehub.Register(name, &servicehub.Spec{
-		Creator: func() servicehub.Provider { return &provider{} },
-	})
+	cpregister.RegisterProviderComponent("trace-query", "reqDistribution", &provider{})
 }
