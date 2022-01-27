@@ -230,7 +230,7 @@ func (d *DiceYaml) getEnvValueData(env ...string) ([]byte, error) {
 		return nil, err
 	}
 
-	s, err := strutil.Interpolate(string(d.data), valueMap)
+	s, err := strutil.Interpolate(string(d.data), valueMap, len(env) == 0)
 	if err != nil {
 		return nil, err
 	}

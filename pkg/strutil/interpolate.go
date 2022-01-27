@@ -37,7 +37,7 @@ func FirstPlaceholder(s string) (string, int, int, error) {
 }
 
 // Interpolate 对 s 中的 ${PLACEHOLDER} 或 ${PLACEHOLDER:DEFAULT} 占位符进行插值
-func Interpolate(s string, values map[string]string) (string, error) {
+func Interpolate(s string, values map[string]string, defaultPrecedence bool) (string, error) {
 	if values == nil {
 		values = make(map[string]string)
 	}
@@ -59,10 +59,10 @@ func Interpolate(s string, values map[string]string) (string, error) {
 			return s, nil
 		}
 		kv := strings.Split(placeholder, ":")
-		placeholder = kv[0]
+		placeholder = strings.TrimSpace(kv[0])
 		value, ok := valuesCopy[placeholder]
-		if !ok && len(kv) > 1 {
-			value = kv[1]
+		if len(kv) > 1 && (!ok || defaultPrecedence) {
+			value = strings.TrimSpace(kv[1])
 		}
 		s = s[:indexStart] + value + s[indexEnd:]
 	}

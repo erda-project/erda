@@ -29,14 +29,14 @@ func TestInterpolate(t *testing.T) {
 			"k3": "do ${k2}",
 		}
 	)
-	s, err := strutil.Interpolate(s, values)
+	s, err := strutil.Interpolate(s, values, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log(s)
 
 	s = "do ${k2} and ${k4:clean up}"
-	s, err = strutil.Interpolate(s, values)
+	s, err = strutil.Interpolate(s, values, false)
 	if err != nil {
 		t.Fatal(err)
 	}
