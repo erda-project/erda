@@ -15,26 +15,20 @@
 package websocket
 
 import (
-	"fmt"
-
 	"github.com/erda-project/erda/apistructs"
 )
 
-var broadcasterFactory = map[apistructs.ScopeType]map[string]EventBroadcaster{}
+var eventBroadcasterFactory = map[apistructs.ScopeType]map[string][]EventProductor{}
 
-func RegisterEventBroadcaster(scopeType apistructs.ScopeType, eventType string, bc EventBroadcaster) {
-	if broadcasterFactory[scopeType] == nil {
-		broadcasterFactory[scopeType] = make(map[string]EventBroadcaster)
+func RegisterEventProductor(scopeType apistructs.ScopeType, eventType string, productor EventProductor) {
+	if eventBroadcasterFactory[scopeType] == nil {
+		eventBroadcasterFactory[scopeType] = make(map[string][]EventProductor)
 	}
-	bc, exist := broadcasterFactory[scopeType][eventType]
-	if exist {
-		panic(fmt.Errorf("broadcaster already exists, scopeType: %s, eventType: %s", scopeType, eventType))
-	}
-	broadcasterFactory[scopeType][eventType] = bc
+	eventBroadcasterFactory[scopeType][eventType] = append(eventBroadcasterFactory[scopeType][eventType], productor)
 }
 
-type EventBroadcaster interface {
-	Product(e Event) (events []Event)
+type EventProductor interface {
+	Product(e Event) *Event
 }
 
 // broadcastEvent receive one event and output batch events
@@ -43,17 +37,22 @@ func broadcastEvent(e Event) (events []Event) {
 	events = []Event{e}
 
 	// find broadcaster
-	scopedMap, ok := broadcasterFactory[e.Scope.Type]
+	scopedMap, ok := eventBroadcasterFactory[e.Scope.Type]
 	if !ok {
 		return
 	}
-	broadcaster, ok := scopedMap[e.Type]
+	productors, ok := scopedMap[e.Type]
 	if !ok {
 		return
 	}
 
 	// product events
-	events = append(events, broadcaster.Product(e)...)
+	for _, productor := range productors {
+		ne := productor.Product(e)
+		if ne != nil {
+			events = append(events, *ne)
+		}
+	}
 
 	return
 }
