@@ -21,10 +21,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/kanban"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/kanban/impl"
-	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
@@ -33,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	issuesvc "github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/erda-project/erda/modules/dop/services/issuestate"
+	"github.com/erda-project/erda/modules/pkg/websocket"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -74,9 +74,8 @@ func (e IssueCardExtra) ToExtra() cptype.Extra {
 }
 
 func init() {
-	base.InitProviderWithCreator("issue-kanban", "issueKanbanV2", func() servicehub.Provider {
-		return &Kanban{}
-	})
+	cpregister.RegisterComponent("issue-kanban", "issueKanbanV2", func() cptype.IComponent { return &Kanban{} })
+	websocket.RegisterEventProductor(apistructs.ProjectScope, issuesvc.WsTypeIssueCreate, &eventBroadcaster{})
 }
 
 func (k *Kanban) Initialize(sdk *cptype.SDK) {}
