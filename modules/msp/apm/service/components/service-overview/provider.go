@@ -17,7 +17,6 @@ package service_overview
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"sort"
 	"strconv"
 
@@ -27,8 +26,8 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/pkg/math"
@@ -55,8 +54,6 @@ const (
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
-		data := topn.Data{}
-		var records []topn.Record
 		lang := sdk.Lang
 		startTime := int64(p.StdInParamsPtr.Get("startTime").(float64))
 		endTime := int64(p.StdInParamsPtr.Get("endTime").(float64))
@@ -67,6 +64,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 		switch sdk.Comp.Name {
 		case PathRpsMaxTop5:
+			var records []topn.Record
 			pathRpsMaxTop5, err := p.pathRpsMaxTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
 			if err != nil {
 				p.Log.Error(err)
@@ -74,7 +72,9 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			pathRpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, PathRpsMaxTop5), Span: Span}
 			pathRpsMaxTop5Records.Items = pathRpsMaxTop5
 			records = append(records, pathRpsMaxTop5Records)
+			return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{List: records}}
 		case PathSlowTop5:
+			var records []topn.Record
 			pathSlowTop5, err := p.pathSlowTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
 			if err != nil {
 				p.Log.Error(err)
@@ -82,7 +82,9 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			pathSlowTop5Records := topn.Record{Title: p.I18n.Text(lang, PathSlowTop5), Span: Span}
 			pathSlowTop5Records.Items = pathSlowTop5
 			records = append(records, pathSlowTop5Records)
+			return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{List: records}}
 		case PathErrorRateTop5:
+			var records []topn.Record
 			pathErrorRateTop5, err := p.pathErrorRateTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
 			if err != nil {
 				p.Log.Error(err)
@@ -90,7 +92,9 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			pathErrorRateTop5Records := topn.Record{Title: p.I18n.Text(lang, PathErrorRateTop5), Span: Span}
 			pathErrorRateTop5Records.Items = pathErrorRateTop5
 			records = append(records, pathErrorRateTop5Records)
+			return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{List: records}}
 		case PathClientRpsMaxTop5:
+			var records []topn.Record
 			pathClientRpsMaxTop5, err := p.pathClientRpsMaxTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
 			if err != nil {
 				p.Log.Error(err)
@@ -98,7 +102,9 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			pathClientRpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, PathClientRpsMaxTop5), Span: Span}
 			pathClientRpsMaxTop5Records.Items = pathClientRpsMaxTop5
 			records = append(records, pathClientRpsMaxTop5Records)
+			return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{List: records}}
 		case SqlSlowTop5:
+			var records []topn.Record
 			sqlSlowRpsMaxTop5, err := p.sqlSlowTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
 			if err != nil {
 				p.Log.Error(err)
@@ -106,7 +112,9 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			sqlSlowTop5Records := topn.Record{Title: p.I18n.Text(lang, SqlSlowTop5), Span: Span}
 			sqlSlowTop5Records.Items = sqlSlowRpsMaxTop5
 			records = append(records, sqlSlowTop5Records)
+			return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{List: records}}
 		case ExceptionCountTop5:
+			var records []topn.Record
 			exceptionCountTop5, err := p.exceptionCountTop5(interval, tenantId, serviceId, startTime, endTime, ctx)
 			if err != nil {
 				p.Log.Error(err)
@@ -114,11 +122,9 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			exceptionCountTop5Records := topn.Record{Title: p.I18n.Text(lang, ExceptionCountTop5), Span: Span}
 			exceptionCountTop5Records.Items = exceptionCountTop5
 			records = append(records, exceptionCountTop5Records)
+			return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{List: records}}
 		}
-
-		data.List = records
-		p.StdDataPtr = &data
-		return nil
+		return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{}}
 	}
 }
 
@@ -412,30 +418,11 @@ func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return p.RegisterInitializeOp()
 }
 
-// Init .
-func (p *provider) Init(ctx servicehub.Context) error {
-	p.DefaultTop = impl.DefaultTop{}
-	v := reflect.ValueOf(p)
-	v.Elem().FieldByName("Impl").Set(v)
-	compName := "service-overview"
-	if ctx.Label() != "" {
-		compName = ctx.Label()
-	}
-	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
-		Scenario: "service-overview",
-		CompName: compName,
-		Creator:  func() cptype.IComponent { return p },
-	})
-	return nil
-}
-
 // Provide .
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	return p
 }
 
 func init() {
-	servicehub.Register("component-protocol.components.service-overview", &servicehub.Spec{
-		Creator: func() servicehub.Provider { return &provider{} },
-	})
+	cpregister.RegisterProviderComponent("service-overview", "service-overview", &provider{})
 }
