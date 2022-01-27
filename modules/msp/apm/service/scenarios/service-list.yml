@@ -10,6 +10,12 @@ hierarchy:
     - service-list@errorRateTop5
     page:
     - grid
+  parallel:
+    grid:
+    - service-list@rpsMaxTop5
+    - service-list@rpsMinTop5
+    - service-list@avgDurationTop5
+    - service-list@errorRateTop5
 components:
   page:
     type: CardContainer

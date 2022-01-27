@@ -52,7 +52,7 @@ func (l *WorkList) GenAppKvInfo(item apistructs.AppWorkBenchItem) (kvs []list.Kv
 		// mr count
 		{
 			ID:    strconv.FormatUint(item.ID, 10),
-			Key:   l.sdk.I18n(i18n.I18nKeyMrCount),
+			Key:   l.sdk.I18n(i18n.I18nKeyMR),
 			Value: strconv.FormatInt(int64(item.AppOpenMrNum), 10),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
@@ -72,7 +72,7 @@ func (l *WorkList) GenAppKvInfo(item apistructs.AppWorkBenchItem) (kvs []list.Kv
 		// runtime count
 		{
 			ID:    strconv.FormatUint(item.ID, 10),
-			Key:   l.sdk.I18n(i18n.I18nKeyRuntimeCount),
+			Key:   l.sdk.I18n(i18n.I18nKeyRuntime),
 			Value: strconv.FormatInt(int64(item.AppRuntimeNum), 10),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().

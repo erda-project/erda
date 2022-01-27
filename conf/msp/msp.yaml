@@ -295,8 +295,5 @@ erda.msp.apm.log_service:
 # component-protocol framework
 component-protocol:
 
-component-protocol.components.service-list:
-component-protocol.components.service-overview:
-
 browser-components:
 

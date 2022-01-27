@@ -15,6 +15,14 @@ hierarchy:
       table: table
     head:
       left: tableFilter
+  parallel:
+    page:
+    - grid
+    - content
+    grid:
+    - rps
+    - avgDuration
+    - reqDistribution
 components:
   page:
     type: Container

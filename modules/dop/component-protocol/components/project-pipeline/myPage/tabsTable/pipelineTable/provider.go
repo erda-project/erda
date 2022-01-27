@@ -141,7 +141,7 @@ func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 			ColumnApplicationName: {Title: cputil.I18n(p.sdk.Ctx, string(ColumnApplicationName))},
 			ColumnBranch:          {Title: cputil.I18n(p.sdk.Ctx, string(ColumnBranch))},
 			ColumnPipelineStatus:  {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus))},
-			ColumnProcess:         {Title: cputil.I18n(p.sdk.Ctx, string(ColumnProcess))},
+			ColumnProcess:         {Title: cputil.I18n(p.sdk.Ctx, string(ColumnProcess)), Tip: cputil.I18n(p.sdk.Ctx, "processTip")},
 			ColumnCostTime:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCostTime)), EnableSort: true},
 			ColumnExecutor:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnExecutor)), Hidden: true},
 			ColumnStartTime:       {Title: cputil.I18n(p.sdk.Ctx, string(ColumnStartTime)), EnableSort: true, Hidden: true},

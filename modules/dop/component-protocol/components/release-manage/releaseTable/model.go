@@ -115,6 +115,7 @@ type FilterValues struct {
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd,omitempty"`
 	ReleaseID         string   `json:"releaseID,omitempty"`
 	ApplicationIDs    []string `json:"applicationIDs,omitempty"`
+	Latest            bool     `json:"latest"`
 }
 
 type Sorter struct {
