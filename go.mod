@@ -8,7 +8,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
-	github.com/Shopify/sarama v1.19.0
+	github.com/Shopify/sarama v1.19.0 // indirect
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alecthomas/colour v0.1.0 // indirect
@@ -41,7 +41,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v0.0.0-20220126094422-965ff1ff8e1d
+	github.com/erda-project/erda-infra v0.0.0-20220128070422-ec5f19f47e16
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/erda-project/erda-sourcecov v0.1.0
@@ -50,7 +50,7 @@ require (
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/fatih/color v1.10.0
-	github.com/fntlnz/mountinfo v0.0.0-20171106231217-40cb42681fad
+	github.com/fntlnz/mountinfo v0.0.0-20171106231217-40cb42681fad // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/getkin/kin-openapi v0.49.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -130,13 +130,13 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f
 	github.com/satori/go.uuid v1.2.0
 	github.com/scylladb/gocqlx v1.5.0
-	github.com/shirou/gopsutil v3.21.11+incompatible
+	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/shirou/gopsutil/v3 v3.21.3
 	github.com/shogo82148/androidbinary v1.0.2
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/sony/sonyflake v1.0.0
-	github.com/spf13/afero v1.6.0
+	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0

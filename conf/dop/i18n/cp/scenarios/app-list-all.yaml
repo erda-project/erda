@@ -20,7 +20,6 @@ zh:
   secondAgo: "几秒前"
   defaultAppDescription: 可在应用设置修改相关应用描述
   myApp: 我参与的
-  publicProperty: 公开属性
 en:
   searchByName: Search by name
   publicApp: Public application
@@ -43,4 +42,3 @@ en:
   secondAgo: second(s) ago
   defaultAppDescription: Edit description in application setting
   myApp: My application
-  publicProperty: Public property

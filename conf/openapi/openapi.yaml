@@ -86,6 +86,7 @@ openapi-v1-routes:
           - app-list-all
           - project-pipeline
           - project-pipeline-exec-list
+          - project-list-all
       - addr: http://localhost:8080
         scenarios:
           - demo
