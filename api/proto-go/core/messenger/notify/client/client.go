@@ -48,3 +48,7 @@ func (s *notifyServiceWrapper) QueryNotifyHistories(ctx context.Context, req *pb
 func (s *notifyServiceWrapper) GetNotifyStatus(ctx context.Context, req *pb.GetNotifyStatusRequest) (*pb.GetNotifyStatusResponse, error) {
 	return s.client.GetNotifyStatus(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *notifyServiceWrapper) GetNotifyHistogram(ctx context.Context, req *pb.GetNotifyHistogramRequest) (*pb.GetNotifyHistogramResponse, error) {
+	return s.client.GetNotifyHistogram(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

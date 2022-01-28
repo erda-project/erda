@@ -35,6 +35,14 @@ var _ json.Marshaler = (*GetNotifyStatusRequest)(nil)
 var _ json.Unmarshaler = (*GetNotifyStatusRequest)(nil)
 var _ json.Marshaler = (*GetNotifyStatusResponse)(nil)
 var _ json.Unmarshaler = (*GetNotifyStatusResponse)(nil)
+var _ json.Marshaler = (*GetNotifyHistogramRequest)(nil)
+var _ json.Unmarshaler = (*GetNotifyHistogramRequest)(nil)
+var _ json.Marshaler = (*GetNotifyHistogramResponse)(nil)
+var _ json.Unmarshaler = (*GetNotifyHistogramResponse)(nil)
+var _ json.Marshaler = (*NotifyHistogramData)(nil)
+var _ json.Unmarshaler = (*NotifyHistogramData)(nil)
+var _ json.Marshaler = (*StatisticValue)(nil)
+var _ json.Unmarshaler = (*StatisticValue)(nil)
 
 // CreateNotifyHistoryRequest implement json.Marshaler.
 func (m *CreateNotifyHistoryRequest) MarshalJSON() ([]byte, error) {
@@ -229,6 +237,78 @@ func (m *GetNotifyStatusResponse) MarshalJSON() ([]byte, error) {
 
 // GetNotifyStatusResponse implement json.Marshaler.
 func (m *GetNotifyStatusResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetNotifyHistogramRequest implement json.Marshaler.
+func (m *GetNotifyHistogramRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetNotifyHistogramRequest implement json.Marshaler.
+func (m *GetNotifyHistogramRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetNotifyHistogramResponse implement json.Marshaler.
+func (m *GetNotifyHistogramResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetNotifyHistogramResponse implement json.Marshaler.
+func (m *GetNotifyHistogramResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// NotifyHistogramData implement json.Marshaler.
+func (m *NotifyHistogramData) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// NotifyHistogramData implement json.Marshaler.
+func (m *NotifyHistogramData) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// StatisticValue implement json.Marshaler.
+func (m *StatisticValue) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// StatisticValue implement json.Marshaler.
+func (m *StatisticValue) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

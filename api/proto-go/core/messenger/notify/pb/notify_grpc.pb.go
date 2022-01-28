@@ -24,6 +24,7 @@ type NotifyServiceClient interface {
 	CreateNotifyHistory(ctx context.Context, in *CreateNotifyHistoryRequest, opts ...grpc.CallOption) (*CreateNotifyHistoryResponse, error)
 	QueryNotifyHistories(ctx context.Context, in *QueryNotifyHistoriesRequest, opts ...grpc.CallOption) (*QueryNotifyHistoriesResponse, error)
 	GetNotifyStatus(ctx context.Context, in *GetNotifyStatusRequest, opts ...grpc.CallOption) (*GetNotifyStatusResponse, error)
+	GetNotifyHistogram(ctx context.Context, in *GetNotifyHistogramRequest, opts ...grpc.CallOption) (*GetNotifyHistogramResponse, error)
 }
 
 type notifyServiceClient struct {
@@ -61,6 +62,15 @@ func (c *notifyServiceClient) GetNotifyStatus(ctx context.Context, in *GetNotify
 	return out, nil
 }
 
+func (c *notifyServiceClient) GetNotifyHistogram(ctx context.Context, in *GetNotifyHistogramRequest, opts ...grpc.CallOption) (*GetNotifyHistogramResponse, error) {
+	out := new(GetNotifyHistogramResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.messenger.notify.NotifyService/GetNotifyHistogram", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NotifyServiceServer is the server API for NotifyService service.
 // All implementations should embed UnimplementedNotifyServiceServer
 // for forward compatibility
@@ -68,6 +78,7 @@ type NotifyServiceServer interface {
 	CreateNotifyHistory(context.Context, *CreateNotifyHistoryRequest) (*CreateNotifyHistoryResponse, error)
 	QueryNotifyHistories(context.Context, *QueryNotifyHistoriesRequest) (*QueryNotifyHistoriesResponse, error)
 	GetNotifyStatus(context.Context, *GetNotifyStatusRequest) (*GetNotifyStatusResponse, error)
+	GetNotifyHistogram(context.Context, *GetNotifyHistogramRequest) (*GetNotifyHistogramResponse, error)
 }
 
 // UnimplementedNotifyServiceServer should be embedded to have forward compatible implementations.
@@ -82,6 +93,9 @@ func (*UnimplementedNotifyServiceServer) QueryNotifyHistories(context.Context, *
 }
 func (*UnimplementedNotifyServiceServer) GetNotifyStatus(context.Context, *GetNotifyStatusRequest) (*GetNotifyStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetNotifyStatus not implemented")
+}
+func (*UnimplementedNotifyServiceServer) GetNotifyHistogram(context.Context, *GetNotifyHistogramRequest) (*GetNotifyHistogramResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNotifyHistogram not implemented")
 }
 
 func RegisterNotifyServiceServer(s grpc1.ServiceRegistrar, srv NotifyServiceServer, opts ...grpc1.HandleOption) {
@@ -127,6 +141,15 @@ func _get_NotifyService_serviceDesc(srv NotifyServiceServer, opts ...grpc1.Handl
 	if h.Interceptor != nil {
 		_NotifyService_GetNotifyStatus_info = transport.NewServiceInfo("erda.core.messenger.notify.NotifyService", "GetNotifyStatus", srv)
 		_NotifyService_GetNotifyStatus_Handler = h.Interceptor(_NotifyService_GetNotifyStatus_Handler)
+	}
+
+	_NotifyService_GetNotifyHistogram_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetNotifyHistogram(ctx, req.(*GetNotifyHistogramRequest))
+	}
+	var _NotifyService_GetNotifyHistogram_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_NotifyService_GetNotifyHistogram_info = transport.NewServiceInfo("erda.core.messenger.notify.NotifyService", "GetNotifyHistogram", srv)
+		_NotifyService_GetNotifyHistogram_Handler = h.Interceptor(_NotifyService_GetNotifyHistogram_Handler)
 	}
 
 	var serviceDesc = _NotifyService_serviceDesc
@@ -198,6 +221,29 @@ func _get_NotifyService_serviceDesc(srv NotifyServiceServer, opts ...grpc1.Handl
 					FullMethod: "/erda.core.messenger.notify.NotifyService/GetNotifyStatus",
 				}
 				return interceptor(ctx, in, info, _NotifyService_GetNotifyStatus_Handler)
+			},
+		},
+		{
+			MethodName: "GetNotifyHistogram",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetNotifyHistogramRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(NotifyServiceServer).GetNotifyHistogram(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _NotifyService_GetNotifyHistogram_info)
+				}
+				if interceptor == nil {
+					return _NotifyService_GetNotifyHistogram_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.messenger.notify.NotifyService/GetNotifyHistogram",
+				}
+				return interceptor(ctx, in, info, _NotifyService_GetNotifyHistogram_Handler)
 			},
 		},
 	}

@@ -176,13 +176,8 @@ func (db *NotifyHistoryDB) QueryNotifyHistories(request *pb.QueryNotifyHistories
 	return notifyHistories, int64(count), nil
 }
 
-type FilterStatusResult struct {
-	Status string
-	Count  int64
-}
-
-func (db *NotifyHistoryDB) FilterStatus(request *model.FilterStatusRequest) ([]*FilterStatusResult, error) {
-	result := make([]*FilterStatusResult, 0)
+func (db *NotifyHistoryDB) FilterStatus(request *model.FilterStatusRequest) ([]*model.FilterStatusResult, error) {
+	result := make([]*model.FilterStatusResult, 0)
 	startTime, err := ToTime(request.StartTime)
 	if err != nil {
 		return nil, err
@@ -207,4 +202,22 @@ func ToTime(timestampStr string) (time.Time, error) {
 	tm := time.Unix(0, timestampInt*int64(time.Millisecond))
 	tm.Format("2006-02-01 15:04:05")
 	return tm, nil
+}
+
+func (db *NotifyHistoryDB) QueryNotifyValue(key string, orgId int, scopeId string, startTime, endTime int64) ([]*model.NotifyValue, error) {
+	db.LogMode(true)
+	result := make([]*model.NotifyValue, 0)
+	sTime := time.Unix(0, startTime*int64(time.Millisecond))
+	eTime := time.Unix(0, endTime*int64(time.Millisecond))
+	err := db.Model(&NotifyHistory{}).Select(key+" as field,count(1) as count").
+		Where("created_at >= ?", sTime).
+		Where("created_at <= ?", eTime).
+		Where("org_id = ?", orgId).
+		Where("source_id = ?", scopeId).
+		Group(key).
+		Scan(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }

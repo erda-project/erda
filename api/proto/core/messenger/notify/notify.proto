@@ -25,20 +25,25 @@ service NotifyService {
       get: "/api/messenger/notify-histories/status"
     };
   }
+  rpc GetNotifyHistogram(GetNotifyHistogramRequest) returns (GetNotifyHistogramResponse) {
+    option(google.api.http) = {
+      get: "/api/messenger/notify-histories/{statistic}/histogram"
+    };
+  }
 }
 
 message CreateNotifyHistoryRequest {
-  string                notifyName            = 1 [json_name = "notifyName"];
-  string                notifyItemDisplayName = 2 [json_name = "notifyItemDisplayName"];
-  string                channel               = 3 [json_name = "channel"];
-  repeated NotifyTarget notifyTargets         = 4 [json_name = "notifyTargets"];
-  NotifySource          notifySource          = 5 [json_name = "notifySource"];
-  string                status                = 6;
-  string                errorMsg              = 7 [json_name = "errorMsg"];
-  int64                 orgID                 = 8 [json_name = "orgId"];
-  int64                 alertID               = 9 [json_name = "alertId"];
-  string                label                 = 10;
-  string                clusterName           = 11 [json_name = "clusterName"];
+  string                             notifyName            = 1 [json_name = "notifyName"];
+  string                             notifyItemDisplayName = 2 [json_name = "notifyItemDisplayName"];
+  string                             channel               = 3 [json_name = "channel"];
+  repeated NotifyTarget              notifyTargets         = 4 [json_name = "notifyTargets"];
+  NotifySource                       notifySource          = 5 [json_name = "notifySource"];
+  string                             status                = 6;
+  string                             errorMsg              = 7 [json_name = "errorMsg"];
+  int64                              orgID                 = 8 [json_name = "orgId"];
+  map<string, google.protobuf.Value> notifyTags            = 9 [json_name = "notifyTags"];
+  string                             label                 = 10;
+  string                             clusterName           = 11 [json_name = "clusterName"];
 }
 
 message NotifyTarget {
@@ -106,4 +111,25 @@ message GetNotifyStatusRequest {
 
 message GetNotifyStatusResponse {
   map<string, int64> data = 1;
+}
+
+message GetNotifyHistogramRequest {
+  string startTime = 1;
+  string endTime   = 2;
+  string scopeId   = 3;
+  int64  points    = 4;
+  string statistic = 5;
+}
+
+message GetNotifyHistogramResponse {
+  NotifyHistogramData data = 1;
+}
+
+message NotifyHistogramData {
+  repeated int64              timestamp = 1;
+  map<string, StatisticValue> value     = 2;
+}
+
+message StatisticValue {
+  repeated int64 value = 1;
 }

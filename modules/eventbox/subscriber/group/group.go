@@ -79,7 +79,7 @@ func (d *GroupSubscriber) Publish(dest string, content string, time int64, msg *
 		NotifyTargets: groupDetail.Targets,
 		Status:        "success",
 		OrgID:         groupNotifyContent.OrgID,
-		AlertID:       groupNotifyContent.AlertID,
+		NotifyTags:    groupNotifyContent.NotifyTags,
 		Label:         groupNotifyContent.Label,
 		ClusterName:   groupNotifyContent.ClusterName,
 	}

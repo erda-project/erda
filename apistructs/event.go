@@ -117,17 +117,17 @@ type GroupNotifyEvent struct {
 }
 
 type GroupNotifyContent struct {
-	SourceName            string               `json:"sourceName"`
-	SourceType            string               `json:"sourceType"`
-	SourceID              string               `json:"sourceId"`
-	NotifyName            string               `json:"notifyName"`
-	NotifyItemDisplayName string               `json:"notifyItemDisplayName"`
-	Channels              []GroupNotifyChannel `json:"channels"`
-	OrgID                 int64                `json:"orgId"`
-	AlertID               int64                `json:"alertId"`
-	Label                 string               `json:"label"`
-	ClusterName           string               `json:"clusterName"`
-	CalledShowNumber      string               `json:"calledShowNumber"`
+	SourceName            string                 `json:"sourceName"`
+	SourceType            string                 `json:"sourceType"`
+	SourceID              string                 `json:"sourceId"`
+	NotifyName            string                 `json:"notifyName"`
+	NotifyItemDisplayName string                 `json:"notifyItemDisplayName"`
+	Channels              []GroupNotifyChannel   `json:"channels"`
+	OrgID                 int64                  `json:"orgId"`
+	NotifyTags            map[string]interface{} `json:"notifyTags"`
+	Label                 string                 `json:"label"`
+	ClusterName           string                 `json:"clusterName"`
+	CalledShowNumber      string                 `json:"calledShowNumber"`
 }
 
 type GroupNotifyChannel struct {

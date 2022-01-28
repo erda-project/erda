@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
+	"github.com/erda-project/erda/modules/messenger/notify/common"
 	"github.com/erda-project/erda/modules/messenger/notify/db"
 	"github.com/erda-project/erda/modules/messenger/notify/model"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -36,10 +37,13 @@ func (n notifyService) CreateNotifyHistory(ctx context.Context, request *pb.Crea
 	result := &pb.CreateNotifyHistoryResponse{}
 	var historyId int64
 	var err error
-	if request.AlertID != 0 {
-		historyId, err = n.CreateHistoryAndIndex(request)
-		if err != nil {
-			return result, errors.NewInternalServerError(err)
+	if request.NotifyTags != nil {
+		alertId, ok := request.NotifyTags["alertId"]
+		if ok && alertId.GetNumberValue() > 0 {
+			historyId, err = n.CreateHistoryAndIndex(request)
+			if err != nil {
+				return result, errors.NewInternalServerError(err)
+			}
 		}
 	} else {
 		history, err := n.DB.NotifyHistoryDB.CreateNotifyHistory(request)
@@ -68,12 +72,13 @@ func (n notifyService) CreateHistoryAndIndex(request *pb.CreateNotifyHistoryRequ
 	if err != nil {
 		return 0, err
 	}
+	alertId := request.NotifyTags["alertId"]
 	alertNotifyIndex := &db.AlertNotifyIndex{
 		NotifyID:   history.ID,
 		NotifyName: request.NotifyName,
 		Status:     request.Status,
 		Channel:    request.Channel,
-		AlertID:    request.AlertID,
+		AlertID:    int64(alertId.GetNumberValue()),
 		CreatedAt:  time.Now(),
 		SendTime:   history.CreatedAt,
 	}
@@ -134,5 +139,59 @@ func (n notifyService) GetNotifyStatus(ctx context.Context, request *pb.GetNotif
 	for _, v := range filterStatusResult {
 		result.Data[v.Status] = v.Count
 	}
+	return result, nil
+}
+
+func (n notifyService) GetNotifyHistogram(ctx context.Context, request *pb.GetNotifyHistogramRequest) (*pb.GetNotifyHistogramResponse, error) {
+	orgIdStr := apis.GetOrgID(ctx)
+	orgId, err := strconv.Atoi(orgIdStr)
+	result := &pb.GetNotifyHistogramResponse{
+		Data: &pb.NotifyHistogramData{
+			Timestamp: make([]int64, 0),
+			Value:     make(map[string]*pb.StatisticValue),
+		},
+	}
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	//(endTime-startTime)/points算出interval
+	startTime, err := strconv.ParseInt(request.StartTime, 10, 64)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	endTime, err := strconv.ParseInt(request.EndTime, 10, 64)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	interval := (endTime - startTime) / request.Points
+	//和最小的interval进行比较
+	if interval < common.Interval {
+		interval = common.Interval
+		request.Points = (endTime - startTime) / interval
+	}
+	valueMap := map[string]*pb.StatisticValue{}
+	//根据interval获取到时间间隔
+	for i := 0; int64(i) < request.Points; i++ {
+		result.Data.Timestamp = append(result.Data.Timestamp, startTime)
+		rs, err := n.DB.NotifyHistoryDB.QueryNotifyValue(request.Statistic, orgId, request.ScopeId, startTime, startTime+interval)
+		startTime = startTime + interval
+		if err != nil {
+			return result, errors.NewInternalServerError(err)
+		}
+		if len(rs) > 0 {
+			for _, v := range rs {
+				if v.Count > 0 {
+					_, ok := valueMap[v.Field]
+					if !ok {
+						valueMap[v.Field] = &pb.StatisticValue{
+							Value: make([]int64, request.Points),
+						}
+					}
+					valueMap[v.Field].Value[i] = v.Count
+				}
+			}
+		}
+	}
+	result.Data.Value = valueMap
 	return result, nil
 }

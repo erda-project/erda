@@ -27,6 +27,10 @@ var _ urlenc.URLValuesUnmarshaler = (*QueryNotifyHistoryData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NotifyHistory)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNotifyStatusRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNotifyStatusResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetNotifyHistogramRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetNotifyHistogramResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*NotifyHistogramData)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*StatisticValue)(nil)
 
 // CreateNotifyHistoryRequest implement urlenc.URLValuesUnmarshaler.
 func (m *CreateNotifyHistoryRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -266,12 +270,6 @@ func (m *CreateNotifyHistoryRequest) UnmarshalURLValues(prefix string, values ur
 					return err
 				}
 				m.OrgID = val
-			case "alertID":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.AlertID = val
 			case "label":
 				m.Label = vals[0]
 			case "clusterName":
@@ -745,5 +743,100 @@ func (m *GetNotifyStatusRequest) UnmarshalURLValues(prefix string, values url.Va
 
 // GetNotifyStatusResponse implement urlenc.URLValuesUnmarshaler.
 func (m *GetNotifyStatusResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// GetNotifyHistogramRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetNotifyHistogramRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "startTime":
+				m.StartTime = vals[0]
+			case "endTime":
+				m.EndTime = vals[0]
+			case "scopeId":
+				m.ScopeId = vals[0]
+			case "points":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Points = val
+			case "statistic":
+				m.Statistic = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetNotifyHistogramResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetNotifyHistogramResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &NotifyHistogramData{}
+				}
+			case "data.timestamp":
+				if m.Data == nil {
+					m.Data = &NotifyHistogramData{}
+				}
+				list := make([]int64, 0, len(vals))
+				for _, text := range vals {
+					val, err := strconv.ParseInt(text, 10, 64)
+					if err != nil {
+						return err
+					}
+					list = append(list, val)
+				}
+				m.Data.Timestamp = list
+			}
+		}
+	}
+	return nil
+}
+
+// NotifyHistogramData implement urlenc.URLValuesUnmarshaler.
+func (m *NotifyHistogramData) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "timestamp":
+				list := make([]int64, 0, len(vals))
+				for _, text := range vals {
+					val, err := strconv.ParseInt(text, 10, 64)
+					if err != nil {
+						return err
+					}
+					list = append(list, val)
+				}
+				m.Timestamp = list
+			}
+		}
+	}
+	return nil
+}
+
+// StatisticValue implement urlenc.URLValuesUnmarshaler.
+func (m *StatisticValue) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "value":
+				list := make([]int64, 0, len(vals))
+				for _, text := range vals {
+					val, err := strconv.ParseInt(text, 10, 64)
+					if err != nil {
+						return err
+					}
+					list = append(list, val)
+				}
+				m.Value = list
+			}
+		}
+	}
 	return nil
 }

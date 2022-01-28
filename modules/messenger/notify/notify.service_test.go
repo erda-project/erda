@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/messenger/notify/db"
 	"github.com/erda-project/erda/modules/messenger/notify/model"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func Test_notifyService_CreateNotifyHistory(t *testing.T) {
@@ -69,9 +70,11 @@ func Test_notifyService_CreateNotifyHistory(t *testing.T) {
 					Status:                "success",
 					ErrorMsg:              "",
 					OrgID:                 1,
-					AlertID:               3,
-					Label:                 "",
-					ClusterName:           "",
+					NotifyTags: map[string]*structpb.Value{
+						"alertId": structpb.NewNumberValue(float64(3)),
+					},
+					Label:       "",
+					ClusterName: "",
 				},
 			},
 		},
@@ -151,9 +154,11 @@ func Test_notifyService_CreateHistoryAndIndex(t *testing.T) {
 					Status:                "success",
 					ErrorMsg:              "",
 					OrgID:                 1,
-					AlertID:               3,
-					Label:                 "",
-					ClusterName:           "",
+					NotifyTags: map[string]*structpb.Value{
+						"alertId": structpb.NewNumberValue(float64(2)),
+					},
+					Label:       "",
+					ClusterName: "",
 				},
 			},
 			wantHistoryId: 3,
@@ -329,8 +334,8 @@ func Test_notifyService_GetNotifyStatus(t *testing.T) {
 		monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
 			return "1"
 		})
-		monkey.PatchInstanceMethod(reflect.TypeOf(&db.NotifyHistoryDB{}), "FilterStatus", func(_ *db.NotifyHistoryDB, request *model.FilterStatusRequest) ([]*db.FilterStatusResult, error) {
-			return []*db.FilterStatusResult{
+		monkey.PatchInstanceMethod(reflect.TypeOf(&db.NotifyHistoryDB{}), "FilterStatus", func(_ *db.NotifyHistoryDB, request *model.FilterStatusRequest) ([]*model.FilterStatusResult, error) {
+			return []*model.FilterStatusResult{
 				{
 					Status: "success",
 					Count:  13,
@@ -349,6 +354,75 @@ func Test_notifyService_GetNotifyStatus(t *testing.T) {
 			_, err := n.GetNotifyStatus(tt.args.ctx, tt.args.request)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetNotifyStatus() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func Test_notifyService_GetNotifyHistogram(t *testing.T) {
+	type fields struct {
+		DB *db.DB
+		L  logs.Logger
+	}
+	type args struct {
+		ctx     context.Context
+		request *pb.GetNotifyHistogramRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *pb.GetNotifyHistogramResponse
+		wantErr bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				DB: &db.DB{
+					DB: &gorm.DB{},
+					AlertNotifyIndexDB: db.AlertNotifyIndexDB{
+						DB: &gorm.DB{},
+					},
+					NotifyHistoryDB: db.NotifyHistoryDB{
+						DB: &gorm.DB{},
+					},
+				},
+				L: nil,
+			},
+			args: args{
+				ctx: context.Background(),
+				request: &pb.GetNotifyHistogramRequest{
+					StartTime: "1642678216000",
+					EndTime:   "1642681816000",
+					ScopeId:   "1",
+					Points:    30,
+					Statistic: "channel",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
+			return "1"
+		})
+		monkey.PatchInstanceMethod(reflect.TypeOf(&db.NotifyHistoryDB{}), "QueryNotifyValue", func(_ *db.NotifyHistoryDB, key string, orgId int, scopeId string, startTime, endTime int64) ([]*model.NotifyValue, error) {
+			return []*model.NotifyValue{
+				{
+					Field: "mbox",
+					Count: 1,
+				},
+			}, nil
+		})
+		t.Run(tt.name, func(t *testing.T) {
+			n := notifyService{
+				DB: tt.fields.DB,
+				L:  tt.fields.L,
+			}
+			_, err := n.GetNotifyHistogram(tt.args.ctx, tt.args.request)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetNotifyHistogram() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})

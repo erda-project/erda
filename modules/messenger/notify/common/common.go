@@ -12,30 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
+package common
 
-import "time"
-
-type BaseModel struct {
-	ID        int64     `json:"id" gorm:"primary_key"`
-	CreatedAt time.Time `json:"createdAt" gorm:"created_at"`
-	UpdatedAt time.Time `json:"updatedAt" gorm:"updated_at"`
-}
-
-type FilterStatusRequest struct {
-	OrgId     int
-	ScopeType string
-	ScopeId   string
-	StartTime string
-	EndTime   string
-}
-
-type FilterStatusResult struct {
-	Status string
-	Count  int64
-}
-
-type NotifyValue struct {
-	Field string
-	Count int64
-}
+const (
+	Interval = 1000 //in milliseconds
+)
