@@ -21,13 +21,13 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/jinzhu/gorm"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/modules/messenger/notify/db"
 	"github.com/erda-project/erda/modules/messenger/notify/model"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func Test_notifyService_CreateNotifyHistory(t *testing.T) {
