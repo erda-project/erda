@@ -119,7 +119,7 @@ func composeEnvs(envs map[string]string) []corev1.EnvVar {
 	return envVars
 }
 
-func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkoperatorv1beta1.FlinkCluster {
+func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistructs.BigdataConf, hostURL string) *flinkoperatorv1beta1.FlinkCluster {
 
 	flinkCluster := flinkoperatorv1beta1.FlinkCluster{
 		TypeMeta: metav1.TypeMeta{
