@@ -1,0 +1,10 @@
+en:
+  alertEvent: Alert Event
+  alertNotify: Alert Notify
+  alertDurationAnalysis: Alert Duration Analysis
+  UnRecoverAlerts: UnRecover Alerts
+zh:
+  alertEvent: 告警事件
+  alertNotify: 告警通知
+  alertDurationAnalysis: 告警持续时间分析
+  UnRecoverAlerts: 未恢复告警
