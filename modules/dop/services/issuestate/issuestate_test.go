@@ -83,17 +83,25 @@ func TestInitProjectState(t *testing.T) {
 	m := NewMockIssueStater(ctrl)
 
 	m.EXPECT().CreateIssuesState(gomock.Any()).AnyTimes().Return(nil)
-	m.EXPECT().UpdateIssueStateRelations(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	m.EXPECT().UpdateIssueStateRelations(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 
 	is := New(WithDBClient(m))
-	if err := is.InitProjectState(1); err != nil {
+	if err := is.InitProjectState(1, ""); err != nil {
 		t.Error(err)
 	}
 
 	s := NewMockIssueStater(ctrl)
 	s.EXPECT().CreateIssuesState(gomock.Any()).AnyTimes().Return(errors.New("db error"))
 	is = New(WithDBClient(s))
-	if err := is.InitProjectState(1); err != nil {
+	if err := is.InitProjectState(1, ""); err != nil {
 		assert.Error(t, err)
 	}
+}
+
+func Test_getStateInitData(t *testing.T) {
+	is := New()
+	zhInitData := is.getStateInitData("")
+	enInitData := is.getStateInitData("en-US")
+	assert.Equal(t, 5, len(zhInitData))
+	assert.Equal(t, 5, len(enInitData))
 }

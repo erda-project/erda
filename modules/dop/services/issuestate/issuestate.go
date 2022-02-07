@@ -15,6 +15,9 @@
 package issuestate
 
 import (
+	_ "embed"
+	"encoding/json"
+
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
@@ -22,6 +25,26 @@ import (
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 )
+
+var (
+	//go:embed state-zh_CN.json
+	zhStateConfig   []byte
+	zhStateInitData []apistructs.StateDefinitionCustomizeData
+	//go:embed state-en_US.json
+	enStateConfig   []byte
+	enStateInitData []apistructs.StateDefinitionCustomizeData
+
+	stateInitRole = "Ops,Dev,QA,Owner,Lead"
+)
+
+func init() {
+	if err := json.Unmarshal(zhStateConfig, &zhStateInitData); err != nil {
+		panic(err)
+	}
+	if err := json.Unmarshal(enStateConfig, &enStateInitData); err != nil {
+		panic(err)
+	}
+}
 
 // IssueState issue state service 对象
 type IssueState struct {
@@ -237,83 +260,52 @@ func (is *IssueState) GetIssuesStatesNameByID(id []int64) ([]apistructs.IssueSta
 	return status, nil
 }
 
-func (is *IssueState) InitProjectState(projectID int64) error {
-	var (
-		states    []dao.IssueState
-		relations []dao.IssueStateRelation
-	)
-	relation := []int64{
-		0, 1, 0, 2, 0, 3, 1, 2, 1, 3, 2, 3, 1, 0, 2, 0, 3, 0, 2, 1, 3, 1, 3, 2,
-		4, 5, 5, 6,
-		7, 8, 8, 9,
-		10, 14, 15, 14, 12, 15, 13, 15, 14, 15, 10, 12, 15, 12, 10, 13, 15, 13, 12, 16, 13, 16, 14, 16, 10, 11, 11, 12, 11, 13, 11, 14, 11, 15, 15, 11,
-		17, 20, 21, 20, 18, 21, 19, 21, 20, 21, 17, 18, 21, 18, 17, 19, 21, 19, 18, 22, 19, 22, 20, 22,
+func (is *IssueState) getStateInitData(locale string) []apistructs.StateDefinitionCustomizeData {
+	switch locale {
+	case "zh-CN":
+		return zhStateInitData
+	case "en-US":
+		return enStateInitData
+	default:
+		return zhStateInitData
 	}
-	name := []string{
-		"待处理", "进行中", "测试中", "已完成",
-		"待处理", "进行中", "已完成",
-		"待处理", "进行中", "已完成",
-		"待处理", "进行中", "无需修复", "重复提交", "已解决", "重新打开", "已关闭",
-		"待处理", "无需修复", "重复提交", "已解决", "重新打开", "已关闭",
-	}
-	belong := []apistructs.IssueStateBelong{
-		"OPEN", "WORKING", "WORKING", "DONE",
-		"OPEN", "WORKING", "DONE",
-		"OPEN", "WORKING", "DONE",
-		"OPEN", "WORKING", "WONTFIX", "WONTFIX", "RESOLVED", "REOPEN", "CLOSED",
-		"OPEN", "WONTFIX", "WONTFIX", "RESOLVED", "REOPEN", "CLOSED",
-	}
-	index := []int64{
-		0, 1, 2, 3,
-		0, 1, 2,
-		0, 1, 2,
-		0, 1, 2, 3, 4, 5, 6,
-		0, 1, 2, 3, 4, 5,
-	}
-	// state
-	for i := 0; i < 23; i++ {
-		states = append(states, dao.IssueState{
-			ProjectID: uint64(projectID),
-			Name:      name[i],
-			Belong:    belong[i],
-			Index:     index[i],
-			Role:      "Ops,Dev,QA,Owner,Lead",
-		})
-		if i < 4 {
-			states[i].IssueType = apistructs.IssueTypeRequirement
-		} else if i < 7 {
-			states[i].IssueType = apistructs.IssueTypeTask
-		} else if i < 10 {
-			states[i].IssueType = apistructs.IssueTypeEpic
-		} else if i < 17 {
-			states[i].IssueType = apistructs.IssueTypeBug
-		} else if i < 23 {
-			states[i].IssueType = apistructs.IssueTypeTicket
+}
+
+func (is *IssueState) InitProjectState(projectID int64, locale string) error {
+	initData := is.getStateInitData(locale)
+	for _, stateData := range initData {
+		var (
+			states    []dao.IssueState
+			relations []dao.IssueStateRelation
+		)
+		for _, initState := range stateData.States {
+			state := dao.IssueState{
+				ProjectID: uint64(projectID),
+				IssueType: stateData.IssueType,
+				Name:      initState.Name,
+				Belong:    initState.IssueStateBelong,
+				Index:     initState.Index,
+				Role:      stateInitRole,
+			}
+			if err := is.db.CreateIssuesState(&state); err != nil {
+				return err
+			}
+			states = append(states, state)
 		}
-		if err := is.db.CreateIssuesState(&states[i]); err != nil {
+		for _, customRelation := range stateData.Relations {
+			relation := dao.IssueStateRelation{
+				ProjectID:    projectID,
+				IssueType:    stateData.IssueType,
+				StartStateID: int64(states[customRelation.From].ID),
+				EndStateID:   int64(states[customRelation.To].ID),
+			}
+			relations = append(relations, relation)
+		}
+		if err := is.db.UpdateIssueStateRelations(projectID, stateData.IssueType, relations); err != nil {
 			return err
 		}
 	}
-	// state relation
-	for i := 0; i < 46; i++ {
-		relations = append(relations, dao.IssueStateRelation{
-			ProjectID:    projectID,
-			StartStateID: int64(states[relation[i*2]].ID),
-			EndStateID:   int64(states[relation[i*2+1]].ID),
-		})
-		if i < 12 {
-			relations[i].IssueType = apistructs.IssueTypeRequirement
-		} else if i < 14 {
-			relations[i].IssueType = apistructs.IssueTypeTask
-		} else if i < 16 {
-			relations[i].IssueType = apistructs.IssueTypeEpic
-		} else if i < 34 {
-			relations[i].IssueType = apistructs.IssueTypeBug
-		} else if i < 46 {
-			relations[i].IssueType = apistructs.IssueTypeTicket
-		}
-	}
-	return is.db.UpdateIssueStateRelations(projectID, apistructs.IssueTypeTask, relations)
+	return nil
 }
 
 type IssueStater interface {
