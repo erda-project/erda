@@ -176,15 +176,20 @@ func (l *List) doFilterProject() (data *list.Data) {
 	}
 	l.visible = visible
 	gh.SetIsEmpty(!visible)
-	if !visible {
+	if !visible || data.Total == 0 {
 		return
 	}
 
 	for _, p := range projects.List {
 		// authorized := selectedOption == "my"
 		item := list.Item{
-			ID:          strconv.FormatUint(p.ID, 10),
-			Icon:        &commodel.Icon{URL: p.Logo},
+			ID: strconv.FormatUint(p.ID, 10),
+			Icon: &commodel.Icon{URL: func() string {
+				if len(p.Logo) == 0 {
+					return "frontImg_default_project_icon"
+				}
+				return p.Logo
+			}()},
 			Title:       p.DisplayName,
 			Selectable:  true,
 			KvInfos:     l.GenProjectKvInfo(p),
@@ -209,18 +214,6 @@ func (l *List) doFilterProject() (data *list.Data) {
 			},
 		}
 		if selectedOption == "my" {
-			item.MoreOperations = []list.MoreOpItem{
-				{
-					ID:   "exit",
-					Text: l.sdk.I18n("exit"),
-					Operations: map[cptype.OperationKey]cptype.Operation{
-						"click": {
-							Confirm:    l.sdk.I18n("exitProjectConfirm"),
-							ClientData: &cptype.OpClientData{},
-						},
-					},
-				},
-			}
 			if p.CanManage && (p.BlockStatus == "unblocked" || p.BlockStatus == "unblocking" || p.BlockStatus == "blocked") {
 				item.MoreOperations = append(item.MoreOperations,
 					list.MoreOpItem{
@@ -234,6 +227,18 @@ func (l *List) doFilterProject() (data *list.Data) {
 					},
 				)
 			}
+			item.MoreOperations = append(item.MoreOperations,
+				list.MoreOpItem{
+					ID:   "exit",
+					Text: l.sdk.I18n("exit"),
+					Operations: map[cptype.OperationKey]cptype.Operation{
+						"click": {
+							Confirm:    l.sdk.I18n("exitProjectConfirm"),
+							ClientData: &cptype.OpClientData{},
+						},
+					},
+				},
+			)
 		}
 		data.List = append(data.List, item)
 	}
