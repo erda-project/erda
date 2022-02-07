@@ -83,6 +83,12 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrCreateProject.AccessDenied().ToResp(), nil
 	}
 
+	// get org locale
+	org, err := e.bdl.GetOrg(projectCreateReq.OrgID)
+	if err != nil {
+		return apierrors.ErrCreateProject.InternalError(err).ToResp(), nil
+	}
+
 	// create project
 	projectID, err := e.bdl.CreateProject(projectCreateReq, identity.UserID)
 	if err != nil {
@@ -95,7 +101,7 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 	}
 
 	// init projectState
-	if err := e.issueState.InitProjectState(int64(projectID)); err != nil {
+	if err := e.issueState.InitProjectState(int64(projectID), org.Locale); err != nil {
 		logrus.Warnf("failed to add state to db when create project, (%v)", err)
 	}
 
