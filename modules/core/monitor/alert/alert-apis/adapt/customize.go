@@ -587,6 +587,7 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail, userI
 	alertIndex := structpb.NewStringValue(index)
 	//alertDashboardID := structpb.NewStringValue(dashboardID)
 	alertDetail.Attributes["alert_index"] = alertIndex
+	alertDetail.Attributes["alert_source"] = structpb.NewStringValue("Custom")
 	//alertDetail.Attributes["alert_dashboard_id"] = alertDashboardID
 	alert := a.CustomizeAlertToModel(alertDetail)
 	alert.CreatorID = userID

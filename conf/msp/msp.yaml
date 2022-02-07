@@ -117,7 +117,8 @@ i18n:
     - conf/common/i18n/common.yml
     - conf/common/i18n/apis.yml
     - conf/msp/i18n/msp-i18n.yaml
-    - conf/msp/i18n/service-overview.yaml
+  files:
+    - conf/msp/i18n/cp
 
 metric-report-client:
   report_config:
@@ -299,4 +300,6 @@ component-protocol.components.service-list:
 component-protocol.components.service-overview:
 
 browser-components:
+msp-alert-components:
+msp-alert-overview.unRecoverAlertChart.provider:
 
