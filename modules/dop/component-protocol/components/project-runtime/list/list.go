@@ -364,8 +364,8 @@ func (p *List) getData() *list.Data {
 		}
 	}
 	var filterName string
-	if nameFilterMap, ok := (*p.Sdk.GlobalState)["nameFilter"]; ok {
-		cputil.MustObjJSONTransfer(nameFilterMap, &filterName)
+	if nameFilterValue, ok := (*p.Sdk.GlobalState)["nameFilter"]; ok {
+		cputil.MustObjJSONTransfer(nameFilterValue, &filterName)
 	}
 
 	logrus.Infof("inputFilter: %v", filterName)
