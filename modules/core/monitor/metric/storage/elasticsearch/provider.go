@@ -76,7 +76,6 @@ func (p *provider) encodeToDocument(ctx context.Context) func(val interface{}) (
 	return func(val interface{}) (index, id, typ string, body interface{}, err error) {
 		m := val.(*metric.Metric)
 		processInvalidFields(m)
-		processApmMetricCompatible(m)
 
 		// TODO: configurable "full_cluster"
 		namespace, key := "full_cluster", p.Retention.GetConfigKey(m.Name, m.Tags)
