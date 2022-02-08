@@ -64,11 +64,11 @@ components:
   alertEventGrid:
     type: Grid
   alertEventGroupByLevelCountLine:
-    type: LineGraph
+    type: ComplexGraph
     options:
       asyncAtInit: true
   alertEventGroupByTypeCountLine:
-    type: LineGraph
+    type: ComplexGraph
     options:
       asyncAtInit: true
   alertNotifyCharts:
@@ -78,11 +78,11 @@ components:
   alertNotifyGrid:
     type: Grid
   alertNotifyGroupByStatusCountLine:
-    type: LineGraph
+    type: ComplexGraph
     options:
       asyncAtInit: true
   alertNotifyGroupByTypeCountLine:
-    type: LineGraph
+    type: ComplexGraph
     options:
       asyncAtInit: true
   alertDurationAnalysis:
