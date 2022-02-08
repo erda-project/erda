@@ -9,10 +9,9 @@ hierarchy:
       - toolbar
       - issueKanbanV2
     toolbar:
-      left: inputFilter
+      left: issueFilter
       right: issueOperations
     issueOperations:
-      - issueFilter
       - issueExport
       - issueImport
       - issueRefresh
@@ -37,14 +36,9 @@ components:
     type: Custom
   issueRefresh:
     type: Custom
-  inputFilter:
-    type: ContractiveFilter
   issueKanbanV2:
     type: Kanban
 
 rendering:
   issueFilter:
-    - name: issueKanbanV2
-  inputFilter:
-    - name: issueFilter
     - name: issueKanbanV2

@@ -10,8 +10,6 @@ hierarchy:
         filterContainer
     filterContainer:
       left:
-        inputFilter
-      right:
         advanceFilter
 
 options:
@@ -24,8 +22,6 @@ components:
     type: LRContainer
   advanceFilter:
     type: ConfigurableFilter
-  inputFilter:
-    type: ContractiveFilter
   list:
     type: List
     version: 2
@@ -34,15 +30,8 @@ components:
 
 
 rendering:
-  inputFilter:
-    - name: filterContainer
-    - name: advanceFilter
-    - name: list
-    - name: cleanData
-
   advanceFilter:
     - name: filterContainer
-    - name: inputFilter
     - name: list
     - name: cleanData
 
@@ -54,7 +43,6 @@ rendering:
     - name: page
     - name: filterContainer
     - name: advanceFilter
-    - name: inputFilter
     - name: list
     - name: cleanData
 

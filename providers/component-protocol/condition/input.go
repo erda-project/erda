@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package project_runtime
+package condition
 
-import (
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/advanceFilter"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/cleanData"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/filterContainer"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/list"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/page"
-)
+import model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
+
+func ExternalInputCondition(key, label, placeholder string) *model.InputCondition {
+	input := model.NewInputCondition(key, label)
+	input.Placeholder = placeholder
+	input.Outside = true
+	return input
+}
