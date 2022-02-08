@@ -68,7 +68,7 @@ components:
     options:
       asyncAtInit: true
   alertEventGroupByTypeCountLine:
-    type: lineGraph
+    type: LineGraph
     options:
       asyncAtInit: true
   alertNotifyCharts:
