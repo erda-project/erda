@@ -186,9 +186,6 @@ func (f *IssueFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDelet
 
 func (f *IssueFilter) Finalize(sdk *cptype.SDK) {
 	issuePagingRequest := f.generateIssuePagingRequest()
-	if req, ok := f.gsHelper.GetIssuePagingRequest(); ok {
-		issuePagingRequest.Title = req.Title
-	}
 	f.gsHelper.SetIssuePagingRequest(issuePagingRequest)
 }
 
@@ -241,7 +238,7 @@ func (f *IssueFilter) generateIssuePagingRequest() apistructs.IssuePagingRequest
 		PageSize: 0,
 		OrgID:    int64(f.InParams.OrgID),
 		IssueListRequest: apistructs.IssueListRequest{
-			// Title:           f.State.FrontendConditionValues.Title,
+			Title:           f.State.FrontendConditionValues.Title,
 			Type:            f.InParams.IssueTypes,
 			ProjectID:       f.InParams.ProjectID,
 			IterationID:     f.InParams.IterationID,

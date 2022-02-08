@@ -59,6 +59,7 @@ type FrontendConditions struct {
 	Executor          []string `json:"executor"`
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd"`
 	StartedAtStartEnd []int64  `json:"startedAtStartEnd"`
+	Title             string   `json:"title"`
 }
 
 func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
@@ -142,6 +143,7 @@ func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.O
 			Executor:          values.Executor,
 			CreatedAtStartEnd: values.CreatedAtStartEnd,
 			StartedAtStartEnd: values.StartedAtStartEnd,
+			Title:             values.Title,
 		})
 		return nil
 	}

@@ -41,7 +41,6 @@ func TestComponentReleaseTable_GenComponentState(t *testing.T) {
 			"isProjectRelease": true,
 			"projectID":        1,
 			"isFormal":         true,
-			"versionValues":    VersionValues{Version: "testVersion"},
 			"filterValues": FilterValues{
 				BranchID:          "testBranchID",
 				CommitID:          "testCommitID",
@@ -200,9 +199,6 @@ func TestComponentReleaseTable_Transfer(t *testing.T) {
 			IsProjectRelease: true,
 			ProjectID:        1,
 			IsFormal:         &tmp,
-			VersionValues: VersionValues{
-				Version: "testVersion",
-			},
 			FilterValues: FilterValues{
 				BranchID: "testBranchID",
 				CommitID: "testCommitID",

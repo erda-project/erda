@@ -15,7 +15,6 @@
 package release_manage
 
 import (
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/release-manage/inputFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/release-manage/releaseFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/release-manage/releaseTable"
 )

@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
+	"github.com/erda-project/erda/providers/component-protocol/condition"
 )
 
 func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
@@ -48,6 +49,7 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 	conditions = append(conditions, executorCondition)
 
 	conditions = append(conditions, model.NewDateRangeCondition("startedAtStartEnd", cputil.I18n(p.sdk.Ctx, "start-time")))
+	conditions = append(conditions, condition.ExternalInputCondition("title", "title", cputil.I18n(p.sdk.Ctx, "searchByPipelineName")))
 	return conditions, nil
 }
 

@@ -193,7 +193,7 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		IsFormal:         r.State.IsFormal,
 		IsProjectRelease: &r.State.IsProjectRelease,
 		UserID:           r.State.FilterValues.UserIDs,
-		Version:          r.State.VersionValues.Version,
+		Version:          r.State.FilterValues.Version,
 		ReleaseID:        r.State.FilterValues.ReleaseID,
 		CommitID:         r.State.FilterValues.CommitID,
 		ApplicationID:    r.State.FilterValues.ApplicationIDs,
@@ -438,7 +438,6 @@ func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
 		"projectID":              r.State.ProjectID,
 		"isFormal":               r.State.IsFormal,
 		"applicationID":          r.State.ApplicationID,
-		"versionValues":          r.State.VersionValues,
 		"filterValues":           r.State.FilterValues,
 	}
 	c.Operations = r.Operations

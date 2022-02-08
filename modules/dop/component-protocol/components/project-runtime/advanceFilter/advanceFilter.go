@@ -27,10 +27,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
+	"github.com/erda-project/erda/providers/component-protocol/condition"
 )
 
 // todo placeholder
@@ -74,6 +76,9 @@ func (af *AdvanceFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype
 			return nil
 		}
 		(*af.StdStatePtr)["advanceFilter__urlQuery"] = urlParam
+		if v, ok := af.Values["title"]; ok {
+			(*sdk.GlobalState)["nameFilter"] = v
+		}
 		af.StdDataPtr = af.getData(sdk)
 		return nil
 	}
@@ -231,6 +236,7 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 	if err != nil {
 		return nil
 	}
+	data.Conditions = append(data.Conditions, condition.ExternalInputCondition("title", "title", cputil.I18n(sdk.Ctx, "search by runtime name")))
 	data.Operations = af.getOperation()
 	data.HideSave = true
 	return data

@@ -217,7 +217,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			}
 			return nil
 		}(),
-		Name: p.gsHelper.GetGlobalNameInputFilter(),
+		Name: filter.Title,
 		TimeCreated: func() []string {
 			timeCreated := make([]string, 0)
 			if len(filter.CreatedAtStartEnd) == 2 {

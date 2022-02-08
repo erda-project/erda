@@ -493,6 +493,10 @@ github.com/erda-project/erda-infra v0.0.0-20220127101456-3b261ac6bc93 h1:otzUX0R
 github.com/erda-project/erda-infra v0.0.0-20220127101456-3b261ac6bc93/go.mod h1:3MGvEI3uNp1tB5Kl4VnTd1ZJs8aHgWitdN1qz3MMMkQ=
 github.com/erda-project/erda-infra v0.0.0-20220128070422-ec5f19f47e16 h1:wRLHXp6kiiE6EHUvW0KOy/qWF+9gkDEDe+iYwCjPSxc=
 github.com/erda-project/erda-infra v0.0.0-20220128070422-ec5f19f47e16/go.mod h1:3MGvEI3uNp1tB5Kl4VnTd1ZJs8aHgWitdN1qz3MMMkQ=
+github.com/erda-project/erda-infra v0.0.0-20220129080105-f98694bc0f17 h1:bYhtyAwn/9d+5KnOc9ZAFauc+bUoRtkJl6uDtsOTM3A=
+github.com/erda-project/erda-infra v0.0.0-20220129080105-f98694bc0f17/go.mod h1:3MGvEI3uNp1tB5Kl4VnTd1ZJs8aHgWitdN1qz3MMMkQ=
+github.com/erda-project/erda-infra v0.0.0-20220129110528-767540736c51 h1:C53swk0zHaV6QAy19TR/o7MsIGnM7axW5jpztoJPxws=
+github.com/erda-project/erda-infra v0.0.0-20220129110528-767540736c51/go.mod h1:3MGvEI3uNp1tB5Kl4VnTd1ZJs8aHgWitdN1qz3MMMkQ=
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b h1:GWf2ChasZFerFwQoTokIvjJLWH57ligTSLD2hUb7UWk=
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b/go.mod h1:H/f81Thef2Tnz4nUeLt0r4VwHdOznthpyXBwT9vDWo0=
 github.com/erda-project/erda-sourcecov v0.1.0 h1:iLvoMsQ1xX81KNOW98BKr85Vs7sSazrIDEphLYdmgP4=

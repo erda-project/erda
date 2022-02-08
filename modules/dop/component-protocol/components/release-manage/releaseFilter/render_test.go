@@ -63,6 +63,7 @@ func getPair() (Values, string) {
 		ReleaseID:         "testReleaseID",
 		UserIDs:           []string{"testUserID"},
 		Latest:            true,
+		Version:           "test",
 	}
 	data, err := json.Marshal(v)
 	if err != nil {

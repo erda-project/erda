@@ -9,8 +9,7 @@ hierarchy:
       slot: head
       table: releaseTable
     head:
-      left: inputFilter
-      right: releaseFilter
+      left: releaseFilter
 
 
 components:
@@ -18,8 +17,6 @@ components:
     type: ComposeTable
   head:
     type: LRContainer
-  inputFilter:
-    type: ContractiveFilter
   releaseFilter:
     type: ConfigurableFilter
   releaseManage:
@@ -32,7 +29,6 @@ rendering:
     - name: releaseManage
     - name: content
     - name: head
-    - name: inputFilter
     - name: releaseFilter
       state:
         - name: "projectID"
@@ -49,23 +45,8 @@ rendering:
           value: "{{ __InParams__.isProjectRelease }}"
         - name: "applicationID"
           value: "{{ __InParams__.applicationID }}"
-        - name: "versionValues"
-          value: "{{ inputFilter.values }}"
         - name: "filterValues"
           value: "{{ releaseFilter.values }}"
-  inputFilter:
-    - name: releaseTable
-      state:
-        - name: "projectID"
-          value: "{{ __InParams__.projectID }}"
-        - name: "isFormal"
-          value: "{{ __InParams__.isFormal }}"
-        - name: "isProjectRelease"
-          value: "{{ __InParams__.isProjectRelease }}"
-        - name: "applicationID"
-          value: "{{ __InParams__.applicationID }}"
-        - name: "versionValues"
-          value: "{{ inputFilter.values }}"
   releaseFilter:
     - name: releaseTable
       state:

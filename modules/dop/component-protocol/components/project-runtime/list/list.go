@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/admin/component-protocol/types"
@@ -351,7 +352,6 @@ func (p *List) getData() *list.Data {
 	data.Operations = p.getBatchOperation(p.Sdk, ids)
 	// filter by name and advanced condition
 	var advancedFilter map[string][]string
-	var nameFilter map[string]string
 	if advancedFilterMap, ok := (*p.Sdk.GlobalState)["advanceFilter"]; ok {
 		err := common.Transfer(advancedFilterMap, &advancedFilter)
 		if err != nil {
@@ -363,17 +363,11 @@ func (p *List) getData() *list.Data {
 			}
 		}
 	}
-	if nameFilterMap, ok := (*p.Sdk.GlobalState)["nameFilter"]; ok {
-		err := common.Transfer(nameFilterMap, &nameFilter)
-		if err != nil {
-			logrus.Errorf("parse input filter failed err :%v", err)
-		}
-	}
 	var filterName string
-	filterName, ok := nameFilter[common.FilterInputCondition]
-	if !ok {
-		filterName = ""
+	if nameFilterValue, ok := (*p.Sdk.GlobalState)["nameFilter"]; ok {
+		cputil.MustObjJSONTransfer(nameFilterValue, &filterName)
 	}
+
 	logrus.Infof("inputFilter: %v", filterName)
 	logrus.Infof("advanceFilter: %#v", advancedFilter)
 	filter := make(map[string]map[string]bool)

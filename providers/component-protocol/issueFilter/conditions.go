@@ -21,6 +21,7 @@ import (
 	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/providers/component-protocol/condition"
 )
 
 const (
@@ -179,6 +180,7 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 		conditions = append(conditions, labels, priority, complexity, creator, assignee, owner, created, finished)
 	}
 
+	conditions = append(conditions, condition.ExternalInputCondition("title", "title", cputil.I18n(f.sdk.Ctx, "searchByName")))
 	return conditions, nil
 }
 

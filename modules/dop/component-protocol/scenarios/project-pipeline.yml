@@ -13,8 +13,7 @@ hierarchy:
       slot: filterContainer
       table: pipelineTable
     filterContainer:
-      left: inputFilter
-      right: customFilter
+      left: customFilter
 
 components:
   myPage:
@@ -32,8 +31,6 @@ components:
   pipelineTable:
     type: Table
     version: 2
-  inputFilter:
-    type: ContractiveFilter
   customFilter:
     type: ConfigurableFilter
 
@@ -51,7 +48,6 @@ rendering:
     - name: addPipelineBtn
     - name: pipelineTabs
     - name: filterContainer
-    - name: inputFilter
     - name: customFilter
     - name: pipelineTable
 
