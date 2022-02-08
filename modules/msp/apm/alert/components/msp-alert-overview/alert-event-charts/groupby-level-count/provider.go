@@ -87,9 +87,6 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 		return nil, errors.NewInternalServerError(err)
 	}
 	rows := response.Results[0].Series[0].Rows
-	if len(rows) == 0 {
-		return nil, errors.NewInternalServerErrorMessage("empty query result")
-	}
 
 	// prepare group
 	var levels = map[string]*complexgraph.SereBuilder{}
