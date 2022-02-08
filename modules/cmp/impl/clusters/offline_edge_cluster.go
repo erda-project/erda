@@ -23,8 +23,6 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
-	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
@@ -55,29 +53,20 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 	status := dbclient.StatusTypeSuccess
 	detail := ""
 	if !fakecluster && !req.Force {
-		// Check project whether to use cluster
-		projectRefer := precheckResp{}
-		resp, err := httpclient.New().Get(discover.CoreServices()).
-			Header("Internal-Client", "cmp").
-			Path("/api/projects/actions/refer-cluster").
-			Param("cluster", req.ClusterName).Do().JSON(&projectRefer)
+		// project cluster refer check
+		referred, err := c.bdl.ProjectClusterReferred(userid, orgid, req.ClusterName)
 		if err != nil {
-			errstr := fmt.Sprintf("failed to call core-services /api/projects/actions/refer-cluster: %v", err)
-			logrus.Errorf(errstr)
-			err := errors.New(errstr)
+			status = dbclient.StatusTypeFailed
+			logrus.Errorf("check project cluster refer info failed, orgid: %s, cluster_name: %s", orgid, req.ClusterName)
 			return recordID, err
 		}
-		if !resp.IsOK() || !projectRefer.Success {
-			errstr := fmt.Sprintf("call core-services /api/projects/actions/refer-cluster, statuscode: %d, resp: %+v", resp.StatusCode(), projectRefer)
-			logrus.Errorf(errstr)
-			err := errors.New(errstr)
-			return recordID, err
-		}
-		if projectRefer.Data {
+
+		if referred {
 			status = dbclient.StatusTypeFailed
 			detail = "An existing project is using the cluster and cannot offline this cluster."
 		}
 
+		// runtime cluster refer check
 		if status == dbclient.StatusTypeSuccess {
 			referred, err := c.bdl.RuntimesClusterReferred(userid, orgid, req.ClusterName)
 			if err != nil {

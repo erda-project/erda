@@ -1143,8 +1143,8 @@ func (p *Project) ListJoinedProjects(orgID int64, userID string, params *apistru
 }
 
 // ReferCluster 检查 cluster 是否被某个项目所使用
-func (p *Project) ReferCluster(clusterName string) bool {
-	projects, err := p.db.ListProjectByCluster(clusterName)
+func (p *Project) ReferCluster(clusterName string, orgID uint64) bool {
+	projects, err := p.db.ListProjectByOrgCluster(clusterName, orgID)
 	if err != nil {
 		logrus.Warnf("check cluster if referred by project")
 		return true

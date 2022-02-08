@@ -180,6 +180,15 @@ func (client *DBClient) ListProjectByCluster(clusterName string) ([]model.Projec
 	return projects, nil
 }
 
+// ListProjectByOrgCluster 根据 orgID 和 clusterName 获取项目列表
+func (client *DBClient) ListProjectByOrgCluster(clusterName string, orgID uint64) ([]model.Project, error) {
+	var projects []model.Project
+	if err := client.Scopes(NotDeleted).Where("cluster_config LIKE ? AND org_id = ?", "%"+clusterName+"%", orgID).Find(&projects).Error; err != nil {
+		return nil, err
+	}
+	return projects, nil
+}
+
 // UpdateProjectQuota 更新项目配额
 func (client *DBClient) UpdateProjectQuota(clusterName string, cpuOverSellChangeRatio float64) error {
 	return client.Scopes(NotDeleted).Model(model.Project{}).
