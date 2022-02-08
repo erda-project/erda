@@ -452,8 +452,13 @@ func (e *Endpoints) ReferCluster(ctx context.Context, r *http.Request, vars map[
 		return apierrors.ErrReferRuntime.AccessDenied().ToResp(), nil
 	}
 
+	orgID, err := getOrgID(r)
+	if err != nil {
+		return apierrors.ErrReferRuntime.InvalidParameter(err).ToResp(), nil
+	}
+
 	clusterName := r.URL.Query().Get("cluster")
-	referred := e.runtime.ReferCluster(clusterName)
+	referred := e.runtime.ReferCluster(clusterName, orgID)
 
 	return httpserver.OkResp(referred)
 }

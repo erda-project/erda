@@ -79,25 +79,14 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 		}
 
 		if status == dbclient.StatusTypeSuccess {
-			runtimeRefer := precheckResp{}
-			resp, err := httpclient.New().Get(discover.Orchestrator()).
-				Header("Internal-Client", "cmp").
-				Path("/api/runtimes/actions/refer-cluster").
-				Param("cluster", req.ClusterName).Do().JSON(&runtimeRefer)
+			referred, err := c.bdl.RuntimesClusterReferred(userid, orgid, req.ClusterName)
 			if err != nil {
-				errstr := fmt.Sprintf("failed to call orch /api/runtimes/actions/refer-cluster: %v", err)
-				logrus.Errorf(errstr)
-				err := errors.New(errstr)
+				status = dbclient.StatusTypeFailed
+				logrus.Errorf("check runtime cluster refer info failed, orgid: %s, cluster_name: %s", orgid, req.ClusterName)
 				return recordID, err
 			}
-			if !resp.IsOK() || !runtimeRefer.Success {
-				errstr := fmt.Sprintf("call orch /api/runtimes/actions/refer-cluster, statuscode: %d, resp: %+v",
-					resp.StatusCode(), runtimeRefer)
-				logrus.Errorf(errstr)
-				err := errors.New(errstr)
-				return recordID, err
-			}
-			if runtimeRefer.Data {
+
+			if referred {
 				status = dbclient.StatusTypeFailed
 				detail = "There are the Runtime (Addon) in the cluster, cannot offline this cluster"
 			}

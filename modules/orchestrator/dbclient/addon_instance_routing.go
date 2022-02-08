@@ -545,6 +545,19 @@ func (db *DBClient) ListRoutingInstanceByCluster(clusterName string) ([]AddonIns
 	return routingInstances, nil
 }
 
+// ListRoutingInstanceByOrgCluster 根据 clusterName 查找 addon 列表
+func (db *DBClient) ListRoutingInstanceByOrgCluster(clusterName string, orgID uint64) ([]AddonInstanceRouting, error) {
+	var routingInstances []AddonInstanceRouting
+	if err := db.Where("az = ?", clusterName).
+		Where("is_deleted = ?", apistructs.AddonNotDeleted).
+		Where("platform_service_type = ?", apistructs.PlatformServiceTypeBasic).
+		Where("org_id = ?", orgID).
+		Find(&routingInstances).Error; err != nil {
+		return nil, err
+	}
+	return routingInstances, nil
+}
+
 func (db *DBClient) ListAttachedRoutingInstance() ([]AddonInstanceRouting, error) {
 	var instances []AddonInstanceRouting
 	if err := db.Where("is_deleted = ?", apistructs.AddonNotDeleted).

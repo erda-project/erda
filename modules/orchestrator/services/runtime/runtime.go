@@ -1929,8 +1929,8 @@ func (r *Runtime) fullGCForSingleRuntime(runtimeID uint64, keep int) {
 }
 
 // ReferCluster 查看 runtime & addon 是否有使用集群
-func (r *Runtime) ReferCluster(clusterName string) bool {
-	runtimes, err := r.db.ListRuntimeByCluster(clusterName)
+func (r *Runtime) ReferCluster(clusterName string, orgID uint64) bool {
+	runtimes, err := r.db.ListRuntimeByOrgCluster(clusterName, orgID)
 	if err != nil {
 		logrus.Warnf("failed to list runtime, %v", err)
 		return true
@@ -1939,7 +1939,7 @@ func (r *Runtime) ReferCluster(clusterName string) bool {
 		return true
 	}
 
-	routingInstances, err := r.db.ListRoutingInstanceByCluster(clusterName)
+	routingInstances, err := r.db.ListRoutingInstanceByOrgCluster(clusterName, orgID)
 	if err != nil {
 		logrus.Warnf("failed to list addon, %v", err)
 		return true
