@@ -130,10 +130,10 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 		Select(func(i interface{}) interface{} { return i.(linq.KeyValue).Key }).
 		OrderBy(func(i interface{}) interface{} { return i }).
 		ForEachIndexed(func(i int, t interface{}) {
-			xAxisBuilder.WithData(t)
+			xAxisBuilder.WithData(t.(int64) / 1e6)
 			for level, builder := range levels {
 				if val, ok := groups[t.(int64)][level]; ok {
-					builder.WithData(val / 1e6)
+					builder.WithData(val)
 				} else {
 					builder.WithData(float64(0))
 				}
