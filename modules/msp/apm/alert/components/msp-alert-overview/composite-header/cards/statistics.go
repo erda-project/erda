@@ -88,7 +88,7 @@ func (p *provider) alertReduceCount(sdk *cptype.SDK) (*kv.KV, error) {
 	}
 	statement := fmt.Sprintf("SELECT sum(reduced::field) " +
 		"FROM analyzer_alert_notify " +
-		"WHERE _metric_scope::tag=$scope AND _metric_scope_id::tag=$scope_id")
+		"WHERE alert_scope::tag=$scope AND alert_scope_id::tag=$scope_id")
 
 	params := map[string]*structpb.Value{
 		"scope":    structpb.NewStringValue(inParams.Scope),
@@ -113,7 +113,7 @@ func (p *provider) alertSilenceCount(sdk *cptype.SDK) (*kv.KV, error) {
 	}
 	statement := fmt.Sprintf("SELECT sum(silenced::field) " +
 		"FROM analyzer_alert_notify " +
-		"WHERE _metric_scope::tag=$scope AND _metric_scope_id::tag=$scope_id")
+		"WHERE alert_scope::tag=$scope AND alert_scope_id::tag=$scope_id")
 
 	params := map[string]*structpb.Value{
 		"scope":    structpb.NewStringValue(inParams.Scope),
