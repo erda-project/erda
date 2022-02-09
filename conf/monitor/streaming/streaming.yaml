@@ -445,6 +445,15 @@ entity-persist:
   buffer_size: ${ENTITY_BATCH_SIZE:200}
   parallelism: ${ENTITY_PERSIST_PARALLELISM:3}
 
+alert-event-storage:
+  input:
+    topics: "${ALERT_EVENT_TOPICS:spot-alert-record}"
+    group: "${ALERT_EVENT_GROUP_ID:spot-alert-event-dev}"
+    parallelism: ${TRACE_CONSUMERS:3}
+    options:
+      auto.offset.reset: "${KAFKA_AUTO_OFFSET_RESET:latest}"
+      auto.commit.interval.ms: "${KAFKA_AUTO_COMMIT_INTERVAL_MS:1000}"
+
 alert-storage:
   input:
     topics: "${TRACE_TOPICS:spot-alert-record}"
