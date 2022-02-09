@@ -119,7 +119,7 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 	yAxisBuilder := complexgraph.NewAxisBuilder().
 		WithType(complexgraph.Value).
 		WithDataStructure(structure.Number, "", true)
-	for level, _ := range levels {
+	for level := range levels {
 		yAxisBuilder.WithDimensions(sdk.I18n(level))
 		levels[level] = complexgraph.NewSereBuilder().
 			WithType(complexgraph.Line).
