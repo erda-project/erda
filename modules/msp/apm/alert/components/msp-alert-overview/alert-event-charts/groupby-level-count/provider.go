@@ -141,7 +141,7 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 		})
 
 	dataBuilder := complexgraph.NewDataBuilder().
-		WithTitle(common.ComponentNameAlertEventGroupByLevelCountLine).
+		WithTitle(sdk.I18n(common.ComponentNameAlertEventGroupByLevelCountLine)).
 		WithXAxis(xAxisBuilder.Build()).
 		WithYAxis(yAxisBuilder.Build())
 	for _, sereBuilder := range levels {
