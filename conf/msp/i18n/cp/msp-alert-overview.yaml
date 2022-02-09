@@ -4,7 +4,7 @@ en:
   alertDurationAnalysis: Alert Duration Analysis
   UnRecoverAlerts: UnRecover Alerts
   alertEventGroupByLevelCountLine: By Level
-  alertEventGroupByTypeCountLine: By Catagory
+  alertEventGroupByTypeCountLine: By Category
   unRecoverAlertChart: UnRecover Alerts
   alertTriggerCount: Alert Events
   alertRecoverCount: Recover Events
