@@ -39,3 +39,15 @@ type NotifyValue struct {
 	Field string
 	Count int64
 }
+
+type QueryNotifyHistoriesRequest struct {
+	PageNo      int64  `json:"pageNo"`
+	PageSize    int64  `json:"pageSize"`
+	Channel     string `json:"channel"`
+	NotifyName  string `json:"notifyName"`
+	StartTime   string `json:"startTime"`
+	EndTime     string `json:"endTime"`
+	Label       string `json:"label"`
+	ClusterName string `json:"clusterName"`
+	OrgID       int64  `json:"orgID"`
+}

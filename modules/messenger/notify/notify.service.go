@@ -16,6 +16,7 @@ package notify
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
 	"time"
 
@@ -46,7 +47,11 @@ func (n notifyService) CreateNotifyHistory(ctx context.Context, request *pb.Crea
 			}
 		}
 	} else {
-		history, err := n.DB.NotifyHistoryDB.CreateNotifyHistory(request)
+		dbReq, err := ToDBNotifyHistory(request)
+		if err != nil {
+			return result, errors.NewInternalServerError(err)
+		}
+		history, err := n.DB.NotifyHistoryDB.CreateNotifyHistory(dbReq)
 		if err != nil {
 			return result, errors.NewInternalServerError(err)
 		}
@@ -54,6 +59,32 @@ func (n notifyService) CreateNotifyHistory(ctx context.Context, request *pb.Crea
 	}
 	result.Data = historyId
 	return result, nil
+}
+
+func ToDBNotifyHistory(request *pb.CreateNotifyHistoryRequest) (*db.NotifyHistory, error) {
+	targetData, err := json.Marshal(request.NotifyTargets)
+	if err != nil {
+		return nil, err
+	}
+	sourceData, err := json.Marshal(request.NotifySource)
+	if err != nil {
+		return nil, err
+	}
+	history := &db.NotifyHistory{
+		NotifyName:            request.NotifyName,
+		NotifyItemDisplayName: request.NotifyItemDisplayName,
+		Channel:               request.Channel,
+		TargetData:            string(targetData),
+		SourceData:            string(sourceData),
+		Status:                request.Status,
+		OrgID:                 request.OrgID,
+		Label:                 request.Label,
+		ClusterName:           request.ClusterName,
+		SourceType:            request.NotifySource.SourceType,
+		SourceID:              request.NotifySource.SourceID,
+		ErrorMsg:              request.ErrorMsg,
+	}
+	return history, nil
 }
 
 func (n notifyService) CreateHistoryAndIndex(request *pb.CreateNotifyHistoryRequest) (historyId int64, err error) {
@@ -68,7 +99,11 @@ func (n notifyService) CreateHistoryAndIndex(request *pb.CreateNotifyHistoryRequ
 			tx.Commit()
 		}
 	}()
-	history, err := tx.NotifyHistoryDB.CreateNotifyHistory(request)
+	dbReq, err := ToDBNotifyHistory(request)
+	if err != nil {
+		return 0, errors.NewInternalServerError(err)
+	}
+	history, err := tx.NotifyHistoryDB.CreateNotifyHistory(dbReq)
 	if err != nil {
 		return 0, err
 	}
@@ -96,7 +131,16 @@ func (n notifyService) QueryNotifyHistories(ctx context.Context, request *pb.Que
 		return nil, errors.NewInternalServerError(err)
 	}
 	request.OrgID = int64(orgId)
-	list, count, err := n.DB.NotifyHistoryDB.QueryNotifyHistories(request)
+	queryReq := &model.QueryNotifyHistoriesRequest{}
+	data, err := json.Marshal(request)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	err = json.Unmarshal(data, queryReq)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	list, count, err := n.DB.NotifyHistoryDB.QueryNotifyHistories(queryReq)
 	if err != nil {
 		return &pb.QueryNotifyHistoriesResponse{}, nil
 	}

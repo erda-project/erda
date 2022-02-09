@@ -97,37 +97,15 @@ func (notifyHistory *NotifyHistory) ToApiData() (*pb.NotifyHistory, error) {
 	return data, nil
 }
 
-func (db *NotifyHistoryDB) CreateNotifyHistory(request *pb.CreateNotifyHistoryRequest) (*NotifyHistory, error) {
-	targetData, err := json.Marshal(request.NotifyTargets)
+func (db *NotifyHistoryDB) CreateNotifyHistory(request *NotifyHistory) (*NotifyHistory, error) {
+	err := db.Save(request).Error
 	if err != nil {
 		return nil, err
 	}
-	sourceData, err := json.Marshal(request.NotifySource)
-	if err != nil {
-		return nil, err
-	}
-	history := &NotifyHistory{
-		NotifyName:            request.NotifyName,
-		NotifyItemDisplayName: request.NotifyItemDisplayName,
-		Channel:               request.Channel,
-		TargetData:            string(targetData),
-		SourceData:            string(sourceData),
-		Status:                request.Status,
-		OrgID:                 request.OrgID,
-		Label:                 request.Label,
-		ClusterName:           request.ClusterName,
-		SourceType:            request.NotifySource.SourceType,
-		SourceID:              request.NotifySource.SourceID,
-		ErrorMsg:              request.ErrorMsg,
-	}
-	err = db.Save(history).Error
-	if err != nil {
-		return nil, err
-	}
-	return history, nil
+	return request, nil
 }
 
-func (db *NotifyHistoryDB) QueryNotifyHistories(request *pb.QueryNotifyHistoriesRequest) ([]NotifyHistory, int64, error) {
+func (db *NotifyHistoryDB) QueryNotifyHistories(request *model.QueryNotifyHistoriesRequest) ([]NotifyHistory, int64, error) {
 	var notifyHistories []NotifyHistory
 	query := db.Model(&NotifyHistory{}).Where("org_id = ?", request.OrgID)
 	if request.Label != "" {
