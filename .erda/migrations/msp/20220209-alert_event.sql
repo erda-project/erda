@@ -22,8 +22,7 @@ create table sp_alert_event
     scope_id           varchar(64)                         null comment '域id',
     created            datetime  default CURRENT_TIMESTAMP not null comment '创建时间',
     updated            timestamp default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    constraint sp_alert_event_alert_group_id_uindex
-        unique (alert_group_id)
+    constraint sp_alert_event_alert_group_id_uindex unique (alert_group_id)
 ) comment '告警事件';
 
 create table sp_alert_event_suppress
@@ -35,6 +34,5 @@ create table sp_alert_event_suppress
     enable         bit                                null comment '是否启用',
     created        datetime default CURRENT_TIMESTAMP null comment '创建时间',
     updated        datetime default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP null comment '更新时间',
-    constraint sp_alert_event_suppress_alert_event_id_uindex
-        unique (alert_event_id)
+    constraint sp_alert_event_suppress_alert_event_id_uindex unique (alert_event_id)
 ) comment '告警事件抑制设置';
