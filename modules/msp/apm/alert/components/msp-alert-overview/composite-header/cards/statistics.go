@@ -126,7 +126,7 @@ func (p *provider) alertSilenceCount(sdk *cptype.SDK) (*kv.KV, error) {
 	}
 
 	return &kv.KV{
-		Key:   sdk.I18n(alertReduceCount),
+		Key:   sdk.I18n(alertSilenceCount),
 		Value: strutil.String(result),
 	}, nil
 }

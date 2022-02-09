@@ -49,6 +49,7 @@ type provider struct {
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		sdk.Tran = p.I18n
 		data := kv.Data{}
 		var cell *kv.KV
 		var err error

@@ -45,6 +45,7 @@ type provider struct {
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		sdk.Tran = p.I18n
 		chart, err := p.getAlertDurationDistributionChart(sdk)
 		if err != nil {
 			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
@@ -88,8 +89,8 @@ func (p *provider) getAlertDurationDistributionChart(sdk *cptype.SDK) (*bubblegr
 	}
 
 	rows := response.Results[0].Series[0].Rows
-	builder := bubblegraph.NewDataBuilder().WithTitle(sdk.I18n(common.ComponentNameAlertDurationDistributionBubble)).
-		WithYOptions(bubblegraph.NewOptionsBuilder().WithType(structure.Time).WithPrecision(structure.Millisecond).WithEnable(true).Build())
+	builder := bubblegraph.NewDataBuilder(). //WithTitle(sdk.I18n(common.ComponentNameAlertDurationDistributionBubble)).
+							WithYOptions(bubblegraph.NewOptionsBuilder().WithType(structure.Time).WithPrecision(structure.Millisecond).WithEnable(true).Build())
 	for _, row := range rows {
 		date := row.Values[0].GetStringValue()
 		parse, err := time.ParseInLocation(parseLayout, date, time.Local)
