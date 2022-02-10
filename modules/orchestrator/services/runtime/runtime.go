@@ -326,12 +326,8 @@ func (r *Runtime) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 	if err != nil {
 		return nil, apierrors.ErrCreateRuntime.InternalError(err)
 	}
-	if last != nil {
-		switch last.Status {
-		// report error, we no longer support auto-cancel
-		case apistructs.DeploymentStatusWaitApprove, apistructs.DeploymentStatusInit, apistructs.DeploymentStatusWaiting, apistructs.DeploymentStatusDeploying:
-			return nil, apierrors.ErrCreateRuntime.InvalidState("正在部署中，请不要重复部署")
-		}
+	if last != nil && IsDeploying(last.Status) {
+		return nil, apierrors.ErrCreateRuntime.InvalidState("正在部署中，请不要重复部署")
 	}
 	deploytype := "BUILD"
 	if req.Extra.DeployType == "RELEASE" {
@@ -2115,4 +2111,14 @@ func getServicesNames(diceYml string) ([]string, error) {
 		names = append(names, k)
 	}
 	return names, nil
+}
+
+func IsDeploying(status apistructs.DeploymentStatus) bool {
+	switch status {
+	// report error, we no longer support auto-cancel
+	case apistructs.DeploymentStatusWaitApprove, apistructs.DeploymentStatusInit, apistructs.DeploymentStatusWaiting, apistructs.DeploymentStatusDeploying:
+		return true
+	default:
+		return false
+	}
 }

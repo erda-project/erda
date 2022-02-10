@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/i18n"
 )
 
 func getFakeErdaYaml() []byte {
@@ -73,10 +74,13 @@ func TestPreCheck(t *testing.T) {
 		},
 	)
 
-	got, err := order.preCheck("1", string(apistructs.WorkspaceDev), 1, 1, getFakeErdaYaml())
+	monkey.Patch(i18n.OrgSprintf, func(string, string, ...interface{}) string {
+		return ""
+	})
+
+	got, err := order.staticPreCheck(1, "1", string(apistructs.WorkspaceDev), 1, 1, getFakeErdaYaml())
 	assert.NoError(t, err)
-	assert.Equal(t, got.Success, false)
-	assert.Equal(t, len(got.FailReasons), 2)
+	assert.Equal(t, len(got), 2)
 }
 
 func TestRenderDetail(t *testing.T) {
@@ -101,7 +105,16 @@ func TestRenderDetail(t *testing.T) {
 			return []dbclient.AddonInstance{}, nil
 		},
 	)
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListRuntimesByAppsName",
+		func(*dbclient.DBClient, string, uint64, []string) (*[]dbclient.Runtime, error) {
+			return &[]dbclient.Runtime{}, nil
+		},
+	)
 
-	_, err := order.RenderDetail("1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD")
+	monkey.Patch(i18n.OrgSprintf, func(string, string, ...interface{}) string {
+		return ""
+	})
+
+	_, err := order.RenderDetail(1, "1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD")
 	assert.NoError(t, err)
 }
