@@ -91,6 +91,7 @@ rendering:
         - name: "values"
           value: "{{ workloadTable.countValues }}"
     - name: addWorkloadButton
+    - name: consoleButton
   workloadTable:
     - name: yamlDrawer
     - name: yamlFileEditor
