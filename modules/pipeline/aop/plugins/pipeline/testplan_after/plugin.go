@@ -297,8 +297,14 @@ func statistics(ctx *aoptypes.TuneContext, pipelineID uint64) (*ApiNumStatistics
 			apiSuccessNum++
 		}
 	}
+	// Filter out duplicate pipelines
+	pipelineIDMap := make(map[uint64]struct{})
 	for id, reports := range snippetReports {
 		for _, report := range reports {
+			if _, ok := pipelineIDMap[report.PipelineID]; ok {
+				continue
+			}
+			pipelineIDMap[report.PipelineID] = struct{}{}
 			meta, err := convertReport(id, report)
 			if err != nil {
 				continue

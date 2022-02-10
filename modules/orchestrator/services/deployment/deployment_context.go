@@ -688,7 +688,7 @@ func (fsm *DeployFSMContext) UpdateDeploymentStatusToRuntimeAndOrder() error {
 	var err error
 	var app *apistructs.ApplicationDTO
 
-	fsm.Runtime.DeploymentStatus = string(fsm.Deployment.Status)
+	fsm.Runtime.DeploymentStatus = fsm.Deployment.Status
 	if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
 		return err
 	}

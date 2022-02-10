@@ -187,3 +187,81 @@ func TestBatchOfflineEdgeCluster(t *testing.T) {
 	err := c.BatchOfflineEdgeCluster(req, "")
 	assert.Error(t, err)
 }
+
+func TestOfflineEdgeClusters(t *testing.T) {
+	type args struct {
+		forceOffline             bool
+		projectClusterReferError bool
+		projectClusterReferred   bool
+		runtimeClusterReferError bool
+		runtimeClusterReferred   bool
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "test1_project_cluster_refer_error",
+			wantErr: true,
+			args:    args{projectClusterReferError: true},
+		},
+		{
+			name:    "test2_runtime_cluster_refer_error",
+			wantErr: true,
+			args:    args{runtimeClusterReferError: true},
+		},
+	}
+
+	var bdl *bundle.Bundle
+	var db *dbclient.DBClient
+
+	req := apistructs.OfflineEdgeClusterRequest{
+		ClusterName: "fake-cluster",
+	}
+
+	// monkey patch Bundle
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "QueryClusterInfo", func(_ *bundle.Bundle, _ string) (apistructs.ClusterInfoData, error) {
+				if tt.args.forceOffline {
+					req.Force = true
+				}
+				return apistructs.ClusterInfoData{apistructs.DICE_CLUSTER_NAME: "fake-cluster", apistructs.DICE_IS_EDGE: "true"}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ProjectClusterReferred", func(_ *bundle.Bundle, userID, orgID, clusterName string) (referred bool, err error) {
+				if tt.args.projectClusterReferError {
+					return false, fmt.Errorf("fake error")
+				}
+				return tt.args.projectClusterReferred, nil
+			})
+			defer monkey.UnpatchAll()
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "RuntimesClusterReferred", func(_ *bundle.Bundle, userID, orgID, clusterName string) (referred bool, err error) {
+				if tt.args.runtimeClusterReferError {
+					return false, fmt.Errorf("fake error")
+				}
+				return tt.args.runtimeClusterReferred, nil
+			})
+
+			// monkey record delete func
+			monkey.Patch(createRecord, func(_ *dbclient.DBClient, _ dbclient.Record) (uint64, error) {
+				return 0, nil
+			})
+
+			c := New(db, bdl, nil)
+
+			_, err := c.OfflineEdgeCluster(req, "", "")
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("OfflineEdgeCluster error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+		})
+	}
+}

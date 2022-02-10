@@ -43,6 +43,7 @@ type Values struct {
 	Latest            bool     `json:"latest"`
 	ReleaseID         string   `json:"releaseID,omitempty"`
 	UserIDs           []string `json:"userIDs,omitempty"`
+	Version           string   `json:"version,omitempty"`
 }
 
 type Data struct {
@@ -56,6 +57,7 @@ type Condition struct {
 	Placeholder string   `json:"placeholder,omitempty"`
 	Type        string   `json:"type,omitempty"`
 	Options     []Option `json:"options,omitempty"`
+	Outside     bool     `json:"outside,omitempty"`
 }
 
 type Option struct {
