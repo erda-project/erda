@@ -281,7 +281,7 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 		TimeCreated:       timestamppb.New(p.TimeCreated),
 		TimeUpdated:       timestamppb.New(p.TimeUpdated),
 		SourceType:        p.SourceType,
-		PipelineSourceId:  p.PipelineSourceId,
+		PipelineSourceID:  p.PipelineSourceId,
 		Remote:            p.Remote,
 		Ref:               p.Ref,
 		Path:              p.Path,

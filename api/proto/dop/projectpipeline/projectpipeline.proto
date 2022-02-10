@@ -126,7 +126,7 @@ message Application {
   string gitRepo = 9;
   uint64 orgID = 10;
   string orgDisplayName = 11;
-  uint64  projectId = 12;
+  uint64  projectID = 12;
   string projectName = 13;
   bool isExternalRepo = 14;
   google.protobuf.Timestamp createdAt = 15;
@@ -164,5 +164,5 @@ message ProjectPipeline {
   string ref = 9;
   string path = 10;
   string fileName = 11;
-  string pipelineSourceId = 12;
+  string pipelineSourceID = 12;
 }
