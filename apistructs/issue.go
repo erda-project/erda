@@ -715,7 +715,8 @@ func (ipr *IssuePagingRequest) GetUserIDs() []string {
 // IssueExportExcelRequest 事件导出 excel 请求
 type IssueExportExcelRequest struct {
 	IssuePagingRequest
-	IsDownload bool `json:"isDownload"`
+	Locale     string `json:"locale"`
+	IsDownload bool   `json:"isDownload"`
 }
 
 // IssueImportExcelRequest 事件导入excel请求
@@ -723,6 +724,7 @@ type IssueImportExcelRequest struct {
 	ProjectID uint64            `json:"projectID"`
 	OrgID     int64             `json:"orgID"`
 	Type      PropertyIssueType `json:"type"`
+	FileID    string            `json:"fileID"`
 	IdentityInfo
 }
 
@@ -796,7 +798,7 @@ type IssueListRequest struct {
 	// internal use, get from *http.Request
 	IdentityInfo
 	// 用来区分是通过ui还是bundle创建的
-	External bool `json:"-"`
+	External bool `json:"external"`
 	// Optional custom panel id for issues
 	CustomPanelID int64 `json:"customPanelID"`
 
