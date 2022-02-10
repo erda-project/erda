@@ -15,15 +15,21 @@
 package apidocsvc
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dbclient"
 	"github.com/erda-project/erda/modules/dop/services/branchrule"
+	"github.com/erda-project/erda/pkg/http/httpserver"
 )
 
 type Service struct {
 	db            *dbclient.DBClient
 	bdl           *bundle.Bundle
 	branchRuleSvc *branchrule.BranchRule
+	trans         i18n.Translator
 }
 
 type Option func(service *Service)
@@ -52,4 +58,18 @@ func WithBranchRuleSvc(svc *branchrule.BranchRule) Option {
 	return func(service *Service) {
 		service.branchRuleSvc = svc
 	}
+}
+
+func WithTrans(trans i18n.Translator) Option {
+	return func(svc *Service) {
+		svc.trans = trans
+	}
+}
+
+func (svc Service) text(ctx context.Context, key string, a ...interface{}) string {
+	codes := httpserver.UnwrapI18nCodes(ctx)
+	if len(a) == 0 {
+		return svc.trans.Text(codes, key)
+	}
+	return fmt.Sprintf(svc.trans.Text(codes, key), a...)
 }

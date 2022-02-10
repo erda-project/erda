@@ -51,59 +51,59 @@ func New(options ...Option) *Org {
 }
 
 // WithDBClient 配置 db client
-func WithDBClient(db *dao.DBClient) Option {
+func WithDBClient(dbClient *dao.DBClient) Option {
 	return func(o *Org) {
-		o.db = db
+		o.db = dbClient
 	}
 }
 
 // WithUCClient 配置 uc client
-func WithUCClient(uc *ucauth.UCClient) Option {
+func WithUCClient(ucClient *ucauth.UCClient) Option {
 	return func(o *Org) {
-		o.uc = uc
+		o.uc = ucClient
 	}
 }
 
 // WithBundle 配置 bundle
-func WithBundle(bdl *bundle.Bundle) Option {
+func WithBundle(bundle *bundle.Bundle) Option {
 	return func(o *Org) {
-		o.bdl = bdl
+		o.bdl = bundle
 	}
 }
 
 // WithPublisher 配置 publisher
-func WithPublisher(publisher *publisher.Publisher) Option {
+func WithPublisher(pub *publisher.Publisher) Option {
 	return func(o *Org) {
-		o.publisher = publisher
+		o.publisher = pub
 	}
 }
 
 // WithNexusSvc 配置 nexus service
-func WithNexusSvc(svc *nexussvc.NexusSvc) Option {
+func WithNexusSvc(nexusSvc *nexussvc.NexusSvc) Option {
 	return func(o *Org) {
-		o.nexusSvc = svc
+		o.nexusSvc = nexusSvc
 	}
 }
 
 // WithRedisClient 配置 redis client
-func WithRedisClient(cli *redis.Client) Option {
+func WithRedisClient(redisClient *redis.Client) Option {
 	return func(o *Org) {
-		o.redisCli = cli
+		o.redisCli = redisClient
 	}
 }
 
 // WithCMP sets the gRPC client to invoke CMP service
 // Todo: the dependency on CMP will be moved to a service which is more suitable
-func WithCMP(cmp dashboardPb.ClusterResourceServer) Option {
+func WithCMP(clusterResourceServer dashboardPb.ClusterResourceServer) Option {
 	return func(org *Org) {
-		org.cmp = cmp
+		org.cmp = clusterResourceServer
 	}
 }
 
 // WithTrans sets the i18n.Translator
-func WithTrans(trans i18n.Translator) Option {
+func WithTrans(translator i18n.Translator) Option {
 	return func(org *Org) {
-		org.trans = trans
+		org.trans = translator
 	}
 }
 

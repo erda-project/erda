@@ -435,7 +435,10 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	// init permission
 	perm := permission.New(permission.WithBundle(bdl.Bdl), permission.WithBranchRule(branchRule))
 
-	filetreeSvc := apidocsvc.New(apidocsvc.WithBranchRuleSvc(branchRule))
+	filetreeSvc := apidocsvc.New(
+		apidocsvc.WithBranchRuleSvc(branchRule),
+		apidocsvc.WithTrans(p.APIMTrans),
+	)
 
 	env := environment.New(
 		environment.WithDBClient(db),

@@ -21,10 +21,12 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/websocket"
+	"github.com/erda-project/erda/modules/scheduler/cache/org"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
@@ -50,6 +52,10 @@ func (svc *Service) Upgrade(w http.ResponseWriter, r *http.Request, req *apistru
 		svc:       svc,
 		sessionID: uuid.New().String(),
 		ft:        ft,
+		trans:     svc.trans,
+	}
+	if orgDTO, ok := org.GetOrgByOrgID(strconv.FormatUint(req.OrgID, 10)); ok {
+		h.codes, _ = i18n.ParseLanguageCode(orgDTO.Locale)
 	}
 
 	ws := websocket.New()
