@@ -134,5 +134,5 @@ func (s *SimpleChart) getLatestChartValue(chart *Chart) int {
 	if len(chart.Series[0].Data) == 0 {
 		return 0
 	}
-	return chart.Series[0].Data[0]
+	return chart.Series[0].Data[len(chart.Series[0].Data)-1]
 }

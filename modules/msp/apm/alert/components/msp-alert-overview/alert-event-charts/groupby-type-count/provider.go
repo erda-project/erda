@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/complexgraph/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-overview/common"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -37,12 +38,14 @@ type provider struct {
 	impl.DefaultComplexGraph
 
 	Log    logs.Logger
+	I18n   i18n.Translator              `autowired:"i18n" translator:"msp-alert-overview"`
 	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
 
 // RegisterInitializeOp .
 func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		sdk.Tran = p.I18n
 		data, err := p.getAlertEventChart(sdk)
 		if err != nil {
 			p.Log.Errorf("failed to render chart: %s", err)
@@ -92,7 +95,7 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 	var types = map[string]*complexgraph.SereBuilder{}
 	var groups = map[int64]map[string]float64{}
 	for _, row := range rows {
-		if row.Values[2] == nil {
+		if row.Values[2] == nil || row.Values[2].GetStringValue() == "" {
 			continue
 		}
 
@@ -112,11 +115,11 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 	//build the graph
 	xAxisBuilder := complexgraph.NewAxisBuilder().
 		WithType(complexgraph.Category).
-		WithDataStructure(structure.Timestamp, structure.Nanosecond, true)
+		WithDataStructure(structure.Timestamp, "", true)
 	yAxisBuilder := complexgraph.NewAxisBuilder().
 		WithType(complexgraph.Value).
 		WithDataStructure(structure.Number, "", true)
-	for level, _ := range types {
+	for level := range types {
 		yAxisBuilder.WithDimensions(sdk.I18n(level))
 		types[level] = complexgraph.NewSereBuilder().
 			WithType(complexgraph.Line).
@@ -127,7 +130,7 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 		Select(func(i interface{}) interface{} { return i.(linq.KeyValue).Key }).
 		OrderBy(func(i interface{}) interface{} { return i }).
 		ForEachIndexed(func(i int, t interface{}) {
-			xAxisBuilder.WithData(t)
+			xAxisBuilder.WithData(t.(int64) / 1e6)
 			for level, builder := range types {
 				if val, ok := groups[t.(int64)][level]; ok {
 					builder.WithData(val)
@@ -138,7 +141,7 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 		})
 
 	dataBuilder := complexgraph.NewDataBuilder().
-		WithTitle(common.ComponentNameAlertEventGroupByTypeCountLine).
+		WithTitle(sdk.I18n(common.ComponentNameAlertEventGroupByTypeCountLine)).
 		WithXAxis(xAxisBuilder.Build()).
 		WithYAxis(yAxisBuilder.Build())
 	for _, sereBuilder := range types {
