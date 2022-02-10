@@ -119,6 +119,7 @@ message GetNotifyHistogramRequest {
   string scopeId   = 3;
   int64  points    = 4;
   string statistic = 5;
+  string scopeType = 6;
 }
 
 message GetNotifyHistogramResponse {

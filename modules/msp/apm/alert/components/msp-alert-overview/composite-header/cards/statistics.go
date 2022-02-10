@@ -23,7 +23,9 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/kv"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	messengerpb "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-overview/common"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -132,17 +134,48 @@ func (p *provider) alertSilenceCount(sdk *cptype.SDK) (*kv.KV, error) {
 }
 
 func (p *provider) notifySuccessCount(sdk *cptype.SDK) (*kv.KV, error) {
+	inParams, err := common.ParseFromCpSdk(sdk)
+	if err != nil {
+		return nil, errors.NewInvalidParameterError("InParams", err.Error())
+	}
+	result, err := p.queryStatusCount(sdk.Ctx, inParams)
+	if err != nil {
+		return nil, err
+	}
 	return &kv.KV{
 		Key:   sdk.I18n(notifySuccessCount),
-		Value: "todo@pjy",
+		Value: strutil.String(result["success"]),
 	}, nil
 }
 
 func (p *provider) notifyFailCount(sdk *cptype.SDK) (*kv.KV, error) {
+	inParams, err := common.ParseFromCpSdk(sdk)
+	if err != nil {
+		return nil, errors.NewInvalidParameterError("InParams", err.Error())
+	}
+	result, err := p.queryStatusCount(sdk.Ctx, inParams)
+	if err != nil {
+		return nil, err
+	}
 	return &kv.KV{
 		Key:   sdk.I18n(notifyFailCount),
-		Value: "todo@pjy",
+		Value: strutil.String(result["failed"]),
 	}, nil
+}
+
+func (p *provider) queryStatusCount(ctx context.Context, params *common.InParams) (map[string]int64, error) {
+	statusRequest := &messengerpb.GetNotifyStatusRequest{
+		StartTime: strconv.FormatInt(params.StartTime, 10),
+		EndTime:   strconv.FormatInt(params.EndTime, 10),
+		ScopeType: params.Scope,
+		ScopeId:   params.ScopeId,
+	}
+	context := utils.NewContextWithHeader(ctx)
+	response, err := p.Messenger.GetNotifyStatus(context, statusRequest)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return response.Data, nil
 }
 
 func (p *provider) doQuerySql(ctx context.Context, startTime, endTime int64, statement string, params map[string]*structpb.Value) (float64, error) {

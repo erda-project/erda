@@ -765,6 +765,8 @@ func (m *GetNotifyHistogramRequest) UnmarshalURLValues(prefix string, values url
 				m.Points = val
 			case "statistic":
 				m.Statistic = vals[0]
+			case "scopeType":
+				m.ScopeType = vals[0]
 			}
 		}
 	}

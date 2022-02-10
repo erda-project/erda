@@ -18,6 +18,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/jinzhu/gorm"
@@ -407,11 +408,12 @@ func Test_notifyService_GetNotifyHistogram(t *testing.T) {
 		monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
 			return "1"
 		})
-		monkey.PatchInstanceMethod(reflect.TypeOf(&db.NotifyHistoryDB{}), "QueryNotifyValue", func(_ *db.NotifyHistoryDB, key string, orgId int, scopeId string, startTime, endTime int64) ([]*model.NotifyValue, error) {
+		monkey.PatchInstanceMethod(reflect.TypeOf(&db.NotifyHistoryDB{}), "QueryNotifyValue", func(_ *db.NotifyHistoryDB, key string, orgId int, scopeType, scopeId string, interval, startTime, endTime int64) ([]*model.NotifyValue, error) {
 			return []*model.NotifyValue{
 				{
-					Field: "mbox",
-					Count: 1,
+					Field:     "mbox",
+					Count:     1,
+					RoundTime: time.Now(),
 				},
 			}, nil
 		})

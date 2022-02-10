@@ -1,6 +1,7 @@
 http-server:
   addr: ":8081"
 health:
+  path: "/api/health"
 
 grpc-server:
   addr: ":7081"

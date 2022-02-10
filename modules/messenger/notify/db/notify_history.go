@@ -16,6 +16,7 @@ package db
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -178,21 +179,21 @@ func ToTime(timestampStr string) (time.Time, error) {
 		return time.Time{}, err
 	}
 	tm := time.Unix(0, timestampInt*int64(time.Millisecond))
-	tm.Format("2006-02-01 15:04:05")
+	tm.Format("2006-01-02 15:04:05")
 	return tm, nil
 }
 
-func (db *NotifyHistoryDB) QueryNotifyValue(key string, orgId int, scopeId string, startTime, endTime int64) ([]*model.NotifyValue, error) {
-	db.LogMode(true)
+func (db *NotifyHistoryDB) QueryNotifyValue(key string, orgId int, scopeId, scopeType string, interval, startTime, endTime int64) ([]*model.NotifyValue, error) {
 	result := make([]*model.NotifyValue, 0)
 	sTime := time.Unix(0, startTime*int64(time.Millisecond))
 	eTime := time.Unix(0, endTime*int64(time.Millisecond))
-	err := db.Model(&NotifyHistory{}).Select(key+" as field,count(1) as count").
+	err := db.Model(&NotifyHistory{}).Select(fmt.Sprintf("FROM_UNIXTIME(UNIX_TIMESTAMP(created_at) - MOD(UNIX_TIMESTAMP(created_at),%v)) as round_time,%s as field,count(*) as count", interval/1000, key)).
 		Where("created_at >= ?", sTime).
 		Where("created_at <= ?", eTime).
 		Where("org_id = ?", orgId).
 		Where("source_id = ?", scopeId).
-		Group(key).
+		Where("source_type = ?", scopeType).
+		Group("round_time,field").
 		Scan(&result).Error
 	if err != nil {
 		return nil, err

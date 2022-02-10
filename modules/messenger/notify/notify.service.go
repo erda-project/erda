@@ -214,26 +214,29 @@ func (n notifyService) GetNotifyHistogram(ctx context.Context, request *pb.GetNo
 		request.Points = (endTime - startTime) / interval
 	}
 	valueMap := map[string]*pb.StatisticValue{}
-	//根据interval获取到时间间隔
+	rs, err := n.DB.NotifyHistoryDB.QueryNotifyValue(request.Statistic, orgId, request.ScopeId, request.ScopeType, interval, startTime, endTime)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
 	for i := 0; int64(i) < request.Points; i++ {
 		result.Data.Timestamp = append(result.Data.Timestamp, startTime)
-		rs, err := n.DB.NotifyHistoryDB.QueryNotifyValue(request.Statistic, orgId, request.ScopeId, startTime, startTime+interval)
 		startTime = startTime + interval
-		if err != nil {
-			return result, errors.NewInternalServerError(err)
-		}
-		if len(rs) > 0 {
-			for _, v := range rs {
-				if v.Count > 0 {
-					_, ok := valueMap[v.Field]
-					if !ok {
-						valueMap[v.Field] = &pb.StatisticValue{
-							Value: make([]int64, request.Points),
-						}
-					}
-					valueMap[v.Field].Value[i] = v.Count
-				}
+	}
+	for _, v := range rs {
+		_, ok := valueMap[v.Field]
+		if !ok {
+			valueMap[v.Field] = &pb.StatisticValue{
+				Value: make([]int64, request.Points),
 			}
+		}
+		var i int64
+		for i < request.Points {
+			timeUnix := v.RoundTime.UnixNano() / 1e6
+			if timeUnix <= result.Data.Timestamp[i] || (timeUnix > result.Data.Timestamp[i] && timeUnix <= result.Data.Timestamp[i]+interval) {
+				valueMap[v.Field].Value[i] = v.Count
+				break
+			}
+			i++
 		}
 	}
 	result.Data.Value = valueMap

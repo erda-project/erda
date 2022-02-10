@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	messengerpb "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-overview/common"
 )
@@ -41,9 +42,10 @@ const (
 
 type provider struct {
 	impl.DefaultKV
-	Log    logs.Logger
-	I18n   i18n.Translator              `autowired:"i18n" translator:"msp-alert-overview"`
-	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
+	Log       logs.Logger
+	I18n      i18n.Translator                 `autowired:"i18n" translator:"msp-alert-overview"`
+	Metric    metricpb.MetricServiceServer    `autowired:"erda.core.monitor.metric.MetricService"`
+	Messenger messengerpb.NotifyServiceServer `autowired:"erda.core.messenger.notify.NotifyService"`
 }
 
 // RegisterInitializeOp .

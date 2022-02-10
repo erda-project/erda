@@ -36,8 +36,9 @@ type FilterStatusResult struct {
 }
 
 type NotifyValue struct {
-	Field string
-	Count int64
+	Field     string    `json:"field"`
+	Count     int64     `json:"count"`
+	RoundTime time.Time `json:"round_time"`
 }
 
 type QueryNotifyHistoriesRequest struct {
