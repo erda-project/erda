@@ -402,6 +402,16 @@ func (db *DBClient) ListRuntimeByCluster(clusterName string) ([]Runtime, error) 
 	return runtimes, nil
 }
 
+// ListRuntimeByOrgCluster 根据 clusterName 和 orgID 查找 runtime 列表
+func (db *DBClient) ListRuntimeByOrgCluster(clusterName string, orgID uint64) ([]Runtime, error) {
+	var runtimes []Runtime
+	if err := db.Where("cluster_name = ? AND org_id = ?", clusterName, orgID).Find(&runtimes).Error; err != nil {
+		return nil, err
+	}
+
+	return runtimes, nil
+}
+
 func (db *DBClient) CreateOrUpdateRuntimeService(service *RuntimeService, overrideStatus bool) error {
 	var old RuntimeService
 	result := db.
