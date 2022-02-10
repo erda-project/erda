@@ -17,14 +17,19 @@ package clusterutil
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
+	"sync/atomic"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/scheduler/conf"
+	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
 	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/pkg/schedule/executorconfig"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -133,4 +138,42 @@ func GenerateExecutorByCluster(cluster, executorType string) string {
 
 func GenerateExecutorByClusterName(clustername string) string {
 	return GenerateExecutorByCluster(clustername, ServiceKindMarathon)
+}
+
+func GetExecuteConfigByExecutorName(name executortypes.Name) (string, *executorconfig.ExecutorConfig, error) {
+	var (
+		count  int64
+		retKey string
+		ret    = executorconfig.ExecutorConfig{}
+	)
+
+	f := func(s string, bytes []byte) error {
+		e := executorconfig.ExecutorConfig{}
+		if err := json.Unmarshal(bytes, &e); err != nil {
+			return err
+		}
+
+		if e.Name != name.String() {
+			return nil
+		}
+
+		if count != 0 {
+			return errors.Errorf("found multi name executor %s", name)
+		}
+
+		ret = e
+		retKey = s
+		atomic.AddInt64(&count, 1)
+		return nil
+	}
+
+	if err := preFetcher.ForEachRaw(context.Background(), conf.CLUSTERS_CONFIG_PATH, f); err != nil {
+		return "", nil, errors.Errorf("failed to for each find executor, err: %v", err)
+	}
+
+	if count == 0 {
+		return "", nil, errors.Errorf("can't find executor by name %s", name)
+	}
+
+	return retKey, &ret, nil
 }
