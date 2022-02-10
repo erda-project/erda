@@ -15,8 +15,7 @@
 package issueFilter
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	issueFilter "github.com/erda-project/erda/providers/component-protocol/issueFilter"
 	"github.com/erda-project/erda/providers/component-protocol/issueFilter/gshelper"
@@ -27,7 +26,7 @@ type provider struct {
 }
 
 func init() {
-	base.InitProviderWithCreator("issue-manage", "issueFilter", func() servicehub.Provider { return &provider{} })
+	cpregister.RegisterComponent("issue-manage", "issueFilter", func() cptype.IComponent { return &provider{} })
 }
 
 func (p *provider) BeforeHandleOp(sdk *cptype.SDK) {
