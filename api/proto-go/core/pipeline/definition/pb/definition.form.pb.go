@@ -237,8 +237,8 @@ func (m *PipelineDefinition) UnmarshalURLValues(prefix string, values url.Values
 				m.Path = vals[0]
 			case "fileName":
 				m.FileName = vals[0]
-			case "pipelineSourceId":
-				m.PipelineSourceId = vals[0]
+			case "pipelineSourceID":
+				m.PipelineSourceID = vals[0]
 			case "status":
 				m.Status = vals[0]
 			case "pipelineID":
@@ -339,8 +339,8 @@ func (m *PipelineDefinitionCreateRequest) UnmarshalURLValues(prefix string, valu
 				m.Name = vals[0]
 			case "creator":
 				m.Creator = vals[0]
-			case "pipelineSourceId":
-				m.PipelineSourceId = vals[0]
+			case "pipelineSourceID":
+				m.PipelineSourceID = vals[0]
 			case "category":
 				m.Category = vals[0]
 			case "extra":
@@ -759,11 +759,11 @@ func (m *PipelineDefinitionCreateResponse) UnmarshalURLValues(prefix string, val
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
 				m.PipelineDefinition.FileName = vals[0]
-			case "pipelineDefinition.pipelineSourceId":
+			case "pipelineDefinition.pipelineSourceID":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
-				m.PipelineDefinition.PipelineSourceId = vals[0]
+				m.PipelineDefinition.PipelineSourceID = vals[0]
 			case "pipelineDefinition.status":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
@@ -817,8 +817,8 @@ func (m *PipelineDefinitionUpdateRequest) UnmarshalURLValues(prefix string, valu
 				m.CostTime = val
 			case "executor":
 				m.Executor = vals[0]
-			case "pipelineSourceId":
-				m.PipelineSourceId = vals[0]
+			case "pipelineSourceID":
+				m.PipelineSourceID = vals[0]
 			case "category":
 				m.Category = vals[0]
 			case "startedAt":
@@ -869,12 +869,12 @@ func (m *PipelineDefinitionUpdateRequest) UnmarshalURLValues(prefix string, valu
 				m.PipelineDefinitionID = vals[0]
 			case "status":
 				m.Status = vals[0]
-			case "pipelineId":
+			case "pipelineID":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.PipelineId = val
+				m.PipelineID = val
 			case "totalActionNum":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
@@ -1210,11 +1210,11 @@ func (m *PipelineDefinitionUpdateResponse) UnmarshalURLValues(prefix string, val
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
 				m.PipelineDefinition.FileName = vals[0]
-			case "pipelineDefinition.pipelineSourceId":
+			case "pipelineDefinition.pipelineSourceID":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
-				m.PipelineDefinition.PipelineSourceId = vals[0]
+				m.PipelineDefinition.PipelineSourceID = vals[0]
 			case "pipelineDefinition.status":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
@@ -1601,11 +1601,11 @@ func (m *PipelineDefinitionGetResponse) UnmarshalURLValues(prefix string, values
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
 				m.PipelineDefinition.FileName = vals[0]
-			case "pipelineDefinition.pipelineSourceId":
+			case "pipelineDefinition.pipelineSourceID":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
 				}
-				m.PipelineDefinition.PipelineSourceId = vals[0]
+				m.PipelineDefinition.PipelineSourceID = vals[0]
 			case "pipelineDefinition.status":
 				if m.PipelineDefinition == nil {
 					m.PipelineDefinition = &PipelineDefinition{}
