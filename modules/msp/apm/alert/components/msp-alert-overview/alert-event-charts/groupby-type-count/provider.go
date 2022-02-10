@@ -95,7 +95,7 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 	var types = map[string]*complexgraph.SereBuilder{}
 	var groups = map[int64]map[string]float64{}
 	for _, row := range rows {
-		if row.Values[2] == nil {
+		if row.Values[2] == nil || row.Values[2].GetStringValue() == "" {
 			continue
 		}
 
