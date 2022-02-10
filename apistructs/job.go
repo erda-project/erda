@@ -93,6 +93,8 @@ type JobFromUser struct {
 	BackoffLimit            int                    `json:"backoffLimit,omitempty"`
 	Params                  map[string]interface{} `json:"params,omitempty"`
 	TaskContainers          []TaskContainer        `json:"taskContainers"`
+
+	ContainerInstanceProvider *ContainerInstanceProvider `json:"containerInstanceProvider,omitempty"` // ContainerInstanceProvider pointer type if not hitted of specified, it will be nil
 }
 
 // PreFetcher 用于 job 下载功能

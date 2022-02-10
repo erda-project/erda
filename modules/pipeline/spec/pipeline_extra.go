@@ -108,6 +108,8 @@ type PipelineExtraInfo struct {
 	QueueInfo *QueueInfo `json:"queueInfo,omitempty"`
 
 	TaskOperates []apistructs.PipelineTaskOperateRequest `json:"taskTaskOperates,omitempty"`
+
+	ContainerInstanceProvider *apistructs.ContainerInstanceProvider `json:"containerInstanceProvider,omitempty"`
 }
 
 type QueueInfo struct {

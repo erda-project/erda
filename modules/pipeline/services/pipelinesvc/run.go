@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
+	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/expression"
@@ -111,6 +112,11 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 	now := time.Now()
 	p.TimeBegin = &now
 
+	clusterInfo, err := s.bdl.QueryClusterInfo(p.ClusterName)
+	if err != nil {
+		return nil, apierrors.ErrRunPipeline.InternalError(err)
+	}
+	container_provider.DealPipelineProviderBeforeRun(&p, clusterInfo)
 	// update pipeline base
 	if err := s.dbClient.UpdatePipelineBase(p.ID, &p.PipelineBase); err != nil {
 		return nil, apierrors.ErrUpdatePipeline.InternalError(err)
