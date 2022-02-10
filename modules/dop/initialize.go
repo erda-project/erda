@@ -464,7 +464,10 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		issue.WithUCClient(uc),
 		issue.WithTranslator(p.IssueTan),
 		issue.WithIssueRelated(issueRelated),
+		issue.WithIssueProperty(issueproperty),
 	)
+	issue.CreateFileRecord = testCaseSvc.CreateFileRecord
+	issue.UpdateFileRecord = testCaseSvc.UpdateFileRecord
 
 	issueState := issuestate.New(
 		issuestate.WithDBClient(db),
@@ -719,7 +722,8 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeExport,
 		apistructs.FileSpaceActionTypeExport,
 		apistructs.FileSceneSetActionTypeExport,
-		apistructs.FileProjectTemplateExport)
+		apistructs.FileProjectTemplateExport,
+		apistructs.FileIssueActionTypeExport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -739,6 +743,9 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 	case apistructs.FileProjectTemplateExport:
 		pro := ep.ProjectService()
 		pro.ExportTemplatePackage(record)
+	case apistructs.FileIssueActionTypeExport:
+		issueSvc := ep.IssueService()
+		issueSvc.ExportExcelAsync(record)
 	default:
 
 	}
@@ -749,7 +756,8 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 	ok, record, err := svc.GetFirstFileReady(apistructs.FileActionTypeImport,
 		apistructs.FileSpaceActionTypeImport,
 		apistructs.FileSceneSetActionTypeImport,
-		apistructs.FileProjectTemplateImport)
+		apistructs.FileProjectTemplateImport,
+		apistructs.FileIssueActionTypeImport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
 		return
@@ -769,6 +777,9 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 	case apistructs.FileProjectTemplateImport:
 		pro := ep.ProjectService()
 		pro.ImportTemplatePackage(record)
+	case apistructs.FileIssueActionTypeImport:
+		issueSvc := ep.IssueService()
+		issueSvc.ImportExcel(record)
 	default:
 
 	}
