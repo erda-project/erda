@@ -109,6 +109,8 @@ type PipelineTaskExtra struct {
 	EncryptSecretKeys []string `json:"encryptSecretKeys"` // the encrypt envs' key list
 
 	CurrentPolicy apistructs.Policy `json:"currentPolicy"` // task execution strategy
+
+	ContainerInstanceProvider *apistructs.ContainerInstanceProvider `json:"containerInstanceProvider,omitempty"`
 }
 
 type FlinkSparkConf struct {
