@@ -63,10 +63,7 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 
 	releases := make([]*dbclient.Release, 0)
 
-	switch order.Type {
-	case apistructs.TypePipeline, apistructs.TypeApplicationRelease:
-		releases = append(releases, curRelease)
-	case apistructs.TypeProjectRelease:
+	if curRelease.IsProjectRelease {
 		subReleasesId := make([]string, 0)
 		if err := json.Unmarshal([]byte(curRelease.ApplicationReleaseList), &subReleasesId); err != nil {
 			return nil, fmt.Errorf("failed to get sub release, err: %v", err)
@@ -79,9 +76,8 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 		for _, subRelease := range subReleases {
 			releases = append(releases, subRelease)
 		}
-
-	default:
-		return nil, fmt.Errorf("deployment order type %s is illegal", order.Type)
+	} else {
+		releases = append(releases, curRelease)
 	}
 
 	// compose applications info
