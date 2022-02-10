@@ -211,12 +211,12 @@ func (m *Application) UnmarshalURLValues(prefix string, values url.Values) error
 				m.OrgID = val
 			case "orgDisplayName":
 				m.OrgDisplayName = vals[0]
-			case "projectId":
+			case "projectID":
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.ProjectId = val
+				m.ProjectID = val
 			case "projectName":
 				m.ProjectName = vals[0]
 			case "isExternalRepo":
@@ -442,11 +442,11 @@ func (m *CreateProjectPipelineResponse) UnmarshalURLValues(prefix string, values
 					m.ProjectPipeline = &ProjectPipeline{}
 				}
 				m.ProjectPipeline.FileName = vals[0]
-			case "ProjectPipeline.pipelineSourceId":
+			case "ProjectPipeline.pipelineSourceID":
 				if m.ProjectPipeline == nil {
 					m.ProjectPipeline = &ProjectPipeline{}
 				}
-				m.ProjectPipeline.PipelineSourceId = vals[0]
+				m.ProjectPipeline.PipelineSourceID = vals[0]
 			}
 		}
 	}
@@ -520,8 +520,8 @@ func (m *ProjectPipeline) UnmarshalURLValues(prefix string, values url.Values) e
 				m.Path = vals[0]
 			case "fileName":
 				m.FileName = vals[0]
-			case "pipelineSourceId":
-				m.PipelineSourceId = vals[0]
+			case "pipelineSourceID":
+				m.PipelineSourceID = vals[0]
 			}
 		}
 	}

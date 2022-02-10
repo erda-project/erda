@@ -18,7 +18,6 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/advanceFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/cleanData"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/filterContainer"
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/inputFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/list"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime/page"
 )

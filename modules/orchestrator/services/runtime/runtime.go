@@ -326,12 +326,8 @@ func (r *Runtime) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 	if err != nil {
 		return nil, apierrors.ErrCreateRuntime.InternalError(err)
 	}
-	if last != nil {
-		switch last.Status {
-		// report error, we no longer support auto-cancel
-		case apistructs.DeploymentStatusWaitApprove, apistructs.DeploymentStatusInit, apistructs.DeploymentStatusWaiting, apistructs.DeploymentStatusDeploying:
-			return nil, apierrors.ErrCreateRuntime.InvalidState("正在部署中，请不要重复部署")
-		}
+	if last != nil && IsDeploying(last.Status) {
+		return nil, apierrors.ErrCreateRuntime.InvalidState("正在部署中，请不要重复部署")
 	}
 	deploytype := "BUILD"
 	if req.Extra.DeployType == "RELEASE" {
@@ -1929,8 +1925,8 @@ func (r *Runtime) fullGCForSingleRuntime(runtimeID uint64, keep int) {
 }
 
 // ReferCluster 查看 runtime & addon 是否有使用集群
-func (r *Runtime) ReferCluster(clusterName string) bool {
-	runtimes, err := r.db.ListRuntimeByCluster(clusterName)
+func (r *Runtime) ReferCluster(clusterName string, orgID uint64) bool {
+	runtimes, err := r.db.ListRuntimeByOrgCluster(clusterName, orgID)
 	if err != nil {
 		logrus.Warnf("failed to list runtime, %v", err)
 		return true
@@ -1939,7 +1935,7 @@ func (r *Runtime) ReferCluster(clusterName string) bool {
 		return true
 	}
 
-	routingInstances, err := r.db.ListRoutingInstanceByCluster(clusterName)
+	routingInstances, err := r.db.ListRoutingInstanceByOrgCluster(clusterName, orgID)
 	if err != nil {
 		logrus.Warnf("failed to list addon, %v", err)
 		return true
@@ -2115,4 +2111,14 @@ func getServicesNames(diceYml string) ([]string, error) {
 		names = append(names, k)
 	}
 	return names, nil
+}
+
+func IsDeploying(status apistructs.DeploymentStatus) bool {
+	switch status {
+	// report error, we no longer support auto-cancel
+	case apistructs.DeploymentStatusWaitApprove, apistructs.DeploymentStatusInit, apistructs.DeploymentStatusWaiting, apistructs.DeploymentStatusDeploying:
+		return true
+	default:
+		return false
+	}
 }

@@ -16,6 +16,7 @@ package i18n
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/erda-project/erda-infra/providers/i18n"
 	orgCache "github.com/erda-project/erda/modules/orchestrator/cache/org"
@@ -52,4 +53,8 @@ func OrgSprintf(orgID, key string, args ...interface{}) string {
 		locale = orgDTO.Locale
 	}
 	return Sprintf(locale, key, args...)
+}
+
+func OrgUintSprintf(orgId uint64, key string, arg ...interface{}) string {
+	return OrgSprintf(strconv.FormatUint(orgId, 10), key, arg)
 }

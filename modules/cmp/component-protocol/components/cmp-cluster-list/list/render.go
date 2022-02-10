@@ -526,7 +526,7 @@ func (l *List) GetExtraContent(res *ResData) ExtraContent {
 			Value:       memRate,
 			Total:       100,
 			Color:       "green",
-			CenterLabel: l.SDK.I18n("Memory"),
+			CenterLabel: l.SDK.I18n("Mem"),
 			Info: []ExtraDataItem{
 				{
 					Main: fmt.Sprintf("%.1f%%", memRate),

@@ -25,6 +25,7 @@ import (
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-gantt"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-manage"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-list-all"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline-exec-list"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/project-runtime"

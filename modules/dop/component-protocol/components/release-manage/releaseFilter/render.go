@@ -47,6 +47,7 @@ func (f *ComponentReleaseFilter) Render(ctx context.Context, component *cptype.C
 	}
 
 	if event.Operation == cptype.InitializeOperation {
+		f.State.Values.Latest = true
 		if err := f.DecodeURLQuery(); err != nil {
 			return errors.Errorf("failed to decode url query for release filter component, %v", err)
 		}
@@ -137,6 +138,7 @@ func (f *ComponentReleaseFilter) DecodeURLQuery() error {
 	f.State.Values.BranchID, _ = queryData["branchID"].(string)
 	f.State.Values.ReleaseID, _ = queryData["releaseID"].(string)
 	f.State.Values.Latest, _ = queryData["latest"].(bool)
+	f.State.Values.Version, _ = queryData["version"].(string)
 	return nil
 }
 
@@ -149,6 +151,7 @@ func (f *ComponentReleaseFilter) EncodeURLQuery() error {
 	query["branchID"] = f.State.Values.BranchID
 	query["releaseID"] = f.State.Values.ReleaseID
 	query["latest"] = f.State.Values.Latest
+	query["version"] = f.State.Values.Version
 	data, err := json.Marshal(query)
 	if err != nil {
 		return err
@@ -242,15 +245,22 @@ func (f *ComponentReleaseFilter) RenderFilter() error {
 			Type:  "checkbox",
 		})
 	}
+	f.Data.Conditions = append(f.Data.Conditions, Condition{
+		Key:         "version",
+		Label:       "version",
+		Placeholder: f.sdk.I18n("searchByVersion"),
+		Type:        "input",
+		Outside:     true,
+	})
 	return nil
 }
 
-func (f *ComponentReleaseFilter) Transfer(c *cptype.Component) {
-	c.Data = map[string]interface{}{
+func (f *ComponentReleaseFilter) Transfer(component *cptype.Component) {
+	component.Data = map[string]interface{}{
 		"conditions": f.Data.Conditions,
 		"hideSave":   f.Data.HideSave,
 	}
-	c.State = map[string]interface{}{
+	component.State = map[string]interface{}{
 		"values":                  f.State.Values,
 		"releaseFilter__urlQuery": f.State.ReleaseFilterURLQuery,
 		"isProjectRelease":        f.State.IsProjectRelease,

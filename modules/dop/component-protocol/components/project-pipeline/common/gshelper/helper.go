@@ -31,6 +31,7 @@ type TableFilter struct {
 	Executor          []string `json:"executor"`
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd"`
 	StartedAtStartEnd []int64  `json:"startedAtStartEnd"`
+	Title             string   `json:"title"`
 }
 
 func NewGSHelper(gs *cptype.GlobalStateData) *GSHelper {
@@ -58,22 +59,6 @@ func (h *GSHelper) GetGlobalPipelineTab() string {
 	}
 	var t string
 	_ = assign((*h.gs)["GlobalPipelineTab"], &t)
-	return t
-}
-
-func (h *GSHelper) SetGlobalNameInputFilter(t string) {
-	if h.gs == nil {
-		return
-	}
-	(*h.gs)["GlobalNameInputFilter"] = t
-}
-
-func (h *GSHelper) GetGlobalNameInputFilter() string {
-	if h.gs == nil {
-		return ""
-	}
-	var t string
-	_ = assign((*h.gs)["GlobalNameInputFilter"], &t)
 	return t
 }
 

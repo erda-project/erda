@@ -443,17 +443,18 @@ func getOrgID(r *http.Request) (uint64, error) {
 
 // ReferCluster 查看 runtime & addon 是否有使用集群
 func (e *Endpoints) ReferCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	identityInfo, err := user.GetIdentityInfo(r)
+	_, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrReferRuntime.NotLogin().ToResp(), nil
 	}
-	// 仅内部使用
-	if !identityInfo.IsInternalClient() {
-		return apierrors.ErrReferRuntime.AccessDenied().ToResp(), nil
+
+	orgID, err := getOrgID(r)
+	if err != nil {
+		return apierrors.ErrReferRuntime.InvalidParameter(err).ToResp(), nil
 	}
 
 	clusterName := r.URL.Query().Get("cluster")
-	referred := e.runtime.ReferCluster(clusterName)
+	referred := e.runtime.ReferCluster(clusterName, orgID)
 
 	return httpserver.OkResp(referred)
 }
