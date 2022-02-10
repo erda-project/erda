@@ -71,6 +71,7 @@ rendering:
     - name: charts
     - name: chartContainer
     - name: addWorkloadContainer
+    - name: consoleButton
     - name: filter
       state:
         - name: "clusterName"
