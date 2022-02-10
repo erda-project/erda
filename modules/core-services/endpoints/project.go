@@ -398,20 +398,21 @@ func (e *Endpoints) ListPublicProject(ctx context.Context, r *http.Request, vars
 
 // ReferCluster 查看集群是否被项目引用
 func (e *Endpoints) ReferCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	identityInfo, err := user.GetIdentityInfo(r)
+	_, err := user.GetIdentityInfo(r)
 	if err != nil {
-		return apierrors.ErrReferProject.NotLogin().ToResp(), nil
+		return apierrors.ErrReferCluster.NotLogin().ToResp(), nil
 	}
-	// 仅内部使用
-	if !identityInfo.IsInternalClient() {
-		return apierrors.ErrReferProject.AccessDenied().ToResp(), nil
+
+	orgID, err := user.GetOrgID(r)
+	if err != nil {
+		return apierrors.ErrReferCluster.InvalidParameter(err).ToResp(), nil
 	}
 
 	clusterName := r.URL.Query().Get("cluster")
 	if clusterName == "" {
-		return apierrors.ErrReferProject.MissingParameter("cluster").ToResp(), nil
+		return apierrors.ErrReferCluster.MissingParameter("cluster").ToResp(), nil
 	}
-	reffered := e.project.ReferCluster(clusterName)
+	reffered := e.project.ReferCluster(clusterName, orgID)
 
 	return httpserver.OkResp(reffered)
 }

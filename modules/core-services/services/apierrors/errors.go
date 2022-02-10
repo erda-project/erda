@@ -47,6 +47,7 @@ var (
 	ErrListProjectUsage                     = err("ErrListProjectUsage", "获取项目资源使用列表失败")
 	ErrListAllProject                       = err("ErrListAllProject", "获取所有项目列表失败")
 	ErrReferProject                         = err("ErrReferProject", "查看集群项目引用失败")
+	ErrReferCluster                         = err("ErrReferCluster", "查看企业集群引用失败")
 	ErrFillProjectQuota                     = err("ErrFillProjectQuota", "填充项目配额失败")
 	ErrCreateApplication                    = err("ErrCreateApplication", "创建应用失败")
 	ErrInitApplication                      = err("ErrInitApplication", "应用初始化失败")
