@@ -47,7 +47,7 @@ func (f *ComponentReleaseFilter) Render(ctx context.Context, component *cptype.C
 	}
 
 	if event.Operation == cptype.InitializeOperation {
-		f.State.Values.Latest = true
+		//f.State.Values.Latest = true
 		if err := f.DecodeURLQuery(); err != nil {
 			return errors.Errorf("failed to decode url query for release filter component, %v", err)
 		}
@@ -238,13 +238,13 @@ func (f *ComponentReleaseFilter) RenderFilter() error {
 	}
 	userCondition.Options = userOptions
 	f.Data.Conditions = append(f.Data.Conditions, userCondition)
-	if !f.State.IsProjectRelease {
-		f.Data.Conditions = append(f.Data.Conditions, Condition{
-			Key:   "latest",
-			Label: f.sdk.I18n("aggregateByBranch"),
-			Type:  "checkbox",
-		})
-	}
+	//if !f.State.IsProjectRelease {
+	//	f.Data.Conditions = append(f.Data.Conditions, Condition{
+	//		Key:   "latest",
+	//		Label: f.sdk.I18n("aggregateByBranch"),
+	//		Type:  "checkbox",
+	//	})
+	//}
 	f.Data.Conditions = append(f.Data.Conditions, Condition{
 		Key:         "version",
 		Label:       "version",

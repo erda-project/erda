@@ -26,6 +26,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	transgrpc "github.com/erda-project/erda-infra/pkg/transport/grpc"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
@@ -124,6 +125,16 @@ func (w *responseWriter) Write(b []byte) (int, error) {
 	return w.ResponseWriter.Write(b)
 }
 
+func wrapGrpcError(h interceptor.Handler) interceptor.Handler {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		resp, err := h(ctx, req)
+		if err != nil {
+			err = errors.ToGrpcError(err)
+		}
+		return resp, err
+	}
+}
+
 func wrapResponse(h interceptor.Handler) interceptor.Handler {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		resp, err := h(ctx, req)
@@ -190,5 +201,6 @@ func Options() transport.ServiceOption {
 		transport.WithInterceptors(validRequest)(opts)
 		transport.WithHTTPOptions(transhttp.WithInterceptor(wrapResponse))(opts)
 		transport.WithHTTPOptions(transhttp.WithErrorEncoder(encodeError))(opts)
+		opts.GRPC = append(opts.GRPC, transgrpc.WithInterceptor(wrapGrpcError))
 	})
 }
