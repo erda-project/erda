@@ -26,6 +26,7 @@ import (
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/details-apis"
 	_ "github.com/erda-project/erda/modules/core/monitor/dataview"
 	_ "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
+	_ "github.com/erda-project/erda/modules/core/monitor/diagnotor/controller"
 	_ "github.com/erda-project/erda/modules/core/monitor/entity/query"
 	_ "github.com/erda-project/erda/modules/core/monitor/entity/storage"
 	_ "github.com/erda-project/erda/modules/core/monitor/entity/storage/elasticsearch"
@@ -57,6 +58,7 @@ import (
 	_ "github.com/erda-project/erda/modules/monitor/dashboard/template"
 	_ "github.com/erda-project/erda/modules/monitor/monitoring"
 	_ "github.com/erda-project/erda/modules/monitor/notify/template/query"
+	_ "github.com/erda-project/erda/pkg/common/permission"
 	_ "github.com/erda-project/erda/providers/k8s-client-manager"
 
 	// providers

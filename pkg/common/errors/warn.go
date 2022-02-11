@@ -23,7 +23,6 @@ import (
 
 // WarnError warn error
 type WarnError struct {
-	Code    int64
 	Name    string
 	Message string
 }
