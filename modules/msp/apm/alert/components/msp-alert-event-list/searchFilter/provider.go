@@ -102,7 +102,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 				Key:         "name",
 				Label:       f.sdk.I18n("name"),
 				Placeholder: f.sdk.I18n("searchByName"),
-				Type:        filter.PropConditionTypeTimespanRange,
+				Type:        filter.PropConditionTypeInput,
 			},
 		}
 	}
