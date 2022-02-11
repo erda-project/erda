@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-list"
 	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-overview"
 )
 

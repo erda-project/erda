@@ -1,0 +1,183 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package configurableFilter
+
+import (
+	"context"
+
+	"github.com/ahmetb/go-linq/v3"
+
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
+	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda-infra/providers/i18n"
+	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-list/common"
+)
+
+type provider struct {
+	impl.DefaultFilter
+
+	Log     logs.Logger
+	I18n    i18n.Translator            `autowired:"i18n" translator:"msp-alert-event-list"`
+	Monitor monitor.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService"`
+}
+
+func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		sdk.Tran = p.I18n
+		inParams, err := common.ParseFromCpSdk(sdk)
+		if err != nil {
+			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
+			return nil
+		}
+		p.StdDataPtr = &filter.Data{
+			Conditions: p.getConfigurableFilterOptions(sdk, inParams),
+			Operations: map[cptype.OperationKey]cptype.Operation{
+				filter.OpFilter{}.OpKey(): cputil.NewOpBuilder().Build(),
+			},
+		}
+		return nil
+	}
+}
+
+func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
+	return p.RegisterInitializeOp()
+}
+
+func (p *provider) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		common.NewConfigurableFilterOptions().
+			DecodeFromClientData(opData.ClientData).
+			SetToGlobalState(*sdk.GlobalState)
+		return nil
+	}
+}
+
+func (p *provider) getConfigurableFilterOptions(sdk *cptype.SDK, inParams *common.InParams) []interface{} {
+	// system default rules have no id, not support on this field
+	//alertRules, _ := p.getAlertRules(sdk.Ctx, inParams)
+	//alertRuleIdSelectCondition := model.NewSelectCondition("alertRuleIds", "告警规则", common.IdNameValuesToSelectOptions(alertRules)).WithPlaceHolder("选择告警规则")
+
+	alerts, _ := p.getAlerts(sdk.Ctx, inParams)
+	alertSelectCondition := model.NewSelectCondition("alertIds", "告警策略", common.IdNameValuesToSelectOptions(alerts)).WithPlaceHolder("选择告警策略")
+
+	alertLevels := p.getAlertLevels(sdk, inParams)
+	alertLevelSelectCondition := model.NewSelectCondition("alertLevels", "级别", common.IdNameValuesToSelectOptions(alertLevels)).WithPlaceHolder("选择级别")
+
+	alertStates := p.getAlertStates(sdk, inParams)
+	alertStateSelectCondition := model.NewSelectCondition("alertStates", "级别", common.IdNameValuesToSelectOptions(alertStates)).WithPlaceHolder("选择状态")
+
+	alertSources := p.getAlertSources(sdk, inParams)
+	alertSourceSelectCondition := model.NewSelectCondition("alertSources", "事件来源", common.IdNameValuesToSelectOptions(alertSources)).WithPlaceHolder("选择事件来源")
+
+	alertTriggerTimeRangeCondition := model.NewDateRangeCondition("lastTriggerTime", "最后触发时间")
+
+	return []interface{}{alertSelectCondition, alertLevelSelectCondition, alertStateSelectCondition, alertSourceSelectCondition, alertTriggerTimeRangeCondition}
+}
+
+func (p *provider) getAlertRules(ctx context.Context, params *common.InParams) ([]*common.IdNameValue, error) {
+	resp, err := p.Monitor.QueryAlertRule(ctx, &monitor.QueryAlertRuleRequest{
+		Scope:   params.Scope,
+		ScopeId: params.ScopeId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []*common.IdNameValue
+	linq.From(resp.Data.AlertTypeRules).SelectManyBy(func(i interface{}) linq.Query {
+		return linq.From(i.(*monitor.AlertTypeRule).Rules)
+	}, func(inner interface{}, outer interface{}) interface{} {
+		return &common.IdNameValue{
+			Name: inner.(*monitor.AlertRule).Name,
+			Id:   inner.(*monitor.AlertRule).Id,
+		}
+	}).ToSlice(&values)
+
+	return values, nil
+}
+
+func (p *provider) getAlerts(ctx context.Context, params *common.InParams) ([]*common.IdNameValue, error) {
+	resp, err := p.Monitor.QueryAlert(ctx, &monitor.QueryAlertRequest{
+		Scope:    params.Scope,
+		ScopeId:  params.ScopeId,
+		PageSize: int64(^uint(0) >> 1),
+		PageNo:   1,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var values []*common.IdNameValue
+	linq.From(resp.Data.List).Select(func(i interface{}) interface{} {
+		return &common.IdNameValue{
+			Name: i.(*monitor.Alert).Name,
+			Id:   i.(*monitor.Alert).Id,
+		}
+	}).ToSlice(&values)
+
+	return values, nil
+}
+
+func (p *provider) getAlertLevels(sdk *cptype.SDK, params *common.InParams) []*common.IdNameValue {
+	levels := []string{"Fatal", "Critical", "Warning", "Notice"}
+
+	var values []*common.IdNameValue
+	for _, level := range levels {
+		values = append(values, &common.IdNameValue{
+			Id:   level,
+			Name: sdk.I18n(level),
+		})
+	}
+
+	return values
+}
+
+func (p *provider) getAlertStates(sdk *cptype.SDK, params *common.InParams) []*common.IdNameValue {
+	states := []string{"alert", "recover", "pause", "stop"}
+
+	var values []*common.IdNameValue
+	for _, state := range states {
+		values = append(values, &common.IdNameValue{
+			Id:   state,
+			Name: sdk.I18n(state),
+		})
+	}
+
+	return values
+}
+
+func (p *provider) getAlertSources(sdk *cptype.SDK, params *common.InParams) []*common.IdNameValue {
+	sources := []string{"System", "Custom"}
+
+	var values []*common.IdNameValue
+	for _, source := range sources {
+		values = append(values, &common.IdNameValue{
+			Id:   source,
+			Name: sdk.I18n(source),
+		})
+	}
+
+	return values
+}
+
+func init() {
+	cpregister.RegisterProviderComponent(common.ScenarioKey, common.ComponentNameConfigurableFilter, &provider{})
+}
