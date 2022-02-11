@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/pkg/containers"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 )
 
 const (
@@ -119,8 +120,10 @@ func composeEnvs(envs map[string]string) []corev1.EnvVar {
 	return envVars
 }
 
-func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkoperatorv1beta1.FlinkCluster {
+func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistructs.BigdataConf, hostURL string) *flinkoperatorv1beta1.FlinkCluster {
 
+	scheduleInfo2, _, _ := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), job)
+	affinity := &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity
 	flinkCluster := flinkoperatorv1beta1.FlinkCluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "FlinkCluster",
@@ -155,6 +158,7 @@ func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkoper
 				VolumeMounts:   nil,
 				InitContainers: nil,
 				NodeSelector:   nil,
+				Affinity:       affinity,
 				Tolerations:    nil,
 				Sidecars:       nil,
 				PodAnnotations: nil,
@@ -169,6 +173,7 @@ func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkoper
 				VolumeMounts:   nil,
 				InitContainers: nil,
 				NodeSelector:   nil,
+				Affinity:       affinity,
 				Tolerations:    nil,
 				Sidecars:       nil,
 				PodAnnotations: nil,
@@ -180,13 +185,14 @@ func ComposeFlinkCluster(data apistructs.BigdataConf, hostURL string) *flinkoper
 	}
 
 	if data.Spec.FlinkConf.Kind == apistructs.FlinkJob {
-		flinkCluster.Spec.Job = composeFlinkJob(data)
+		flinkCluster.Spec.Job = k.composeFlinkJob(job, data)
 	}
 
 	return &flinkCluster
 }
 
-func composeFlinkJob(data apistructs.BigdataConf) *flinkoperatorv1beta1.JobSpec {
+func (k *K8sFlink) composeFlinkJob(job apistructs.JobFromUser, data apistructs.BigdataConf) *flinkoperatorv1beta1.JobSpec {
+	scheduleInfo2, _, _ := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), job)
 	return &flinkoperatorv1beta1.JobSpec{
 		JarFile:           data.Spec.Resource,
 		ClassName:         &data.Spec.Class,
@@ -202,6 +208,7 @@ func composeFlinkJob(data apistructs.BigdataConf) *flinkoperatorv1beta1.JobSpec 
 			AfterJobFails:     flinkoperatorv1beta1.CleanupActionKeepCluster,
 			AfterJobCancelled: flinkoperatorv1beta1.CleanupActionDeleteTaskManager,
 		},
+		Affinity:        &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity,
 		CancelRequested: nil,
 		PodAnnotations:  nil,
 		Resources:       corev1.ResourceRequirements{},

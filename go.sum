@@ -487,8 +487,8 @@ github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b/go.mod h1:H/f81Thef2Tnz4nUeLt0r4VwHdOznthpyXBwT9vDWo0=
 github.com/erda-project/erda-sourcecov v0.1.0 h1:iLvoMsQ1xX81KNOW98BKr85Vs7sSazrIDEphLYdmgP4=
 github.com/erda-project/erda-sourcecov v0.1.0/go.mod h1:eOMWjU0sXF9sLFqh6MkPpzuo+FkdQW7UCQ0rj3h+sXw=
-github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2 h1:5QKXIq0yTPulGqXzEQx96fLK6HDCb8xC1H6kOjj4hsk=
-github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2/go.mod h1:QbDTwfKi8Nd8VR7cdOqRyWM2Ymul7m0hzSaoC3xSho8=
+github.com/erda-project/flink-on-k8s-operator v0.0.0-20220211023605-1a64c463171a h1:rtiVTOVRjY5z9I7dk2M3PBvEhIlLmXOBwe63pjlwPGc=
+github.com/erda-project/flink-on-k8s-operator v0.0.0-20220211023605-1a64c463171a/go.mod h1:QbDTwfKi8Nd8VR7cdOqRyWM2Ymul7m0hzSaoC3xSho8=
 github.com/erda-project/influxql v1.1.0-ex h1:NgP5+S5Qo234IVSIJ3N/egvzCNYJURfMAett3e8a9LE=
 github.com/erda-project/influxql v1.1.0-ex/go.mod h1:gHp9y86a/pxhjJ+zMjNXiQAA197Xk9wLxaz+fGG+kWk=
 github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23 h1:NaKo6voQVqZM6DMBVhcTT4gjd+lr1C3zE17RROspfg0=
