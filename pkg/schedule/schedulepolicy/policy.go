@@ -112,7 +112,7 @@ func LabelFilterChain(configs *executorconfig.ExecutorWholeConfigs, name, kind s
 			}
 		}
 	case labelconfig.EXECUTOR_METRONOME, labelconfig.EXECUTOR_SPARK, labelconfig.EXECUTOR_K8SJOB,
-		labelconfig.EXECUTOR_K8SSPARK:
+		labelconfig.EXECUTOR_K8SSPARK, labelconfig.EXECUTOR_K8SFLINK:
 		j, ok := obj.(apistructs.Job)
 		if !ok {
 			return defaultScheduleInfo2, defaultScheduleInfo, nil, NOT_RECOGNIZED_JOB_TYPE

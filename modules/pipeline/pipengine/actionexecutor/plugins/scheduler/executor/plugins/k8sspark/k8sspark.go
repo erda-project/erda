@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/pkg/containers"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -480,20 +481,21 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 	}
 	sparkApp.Spec.Volumes = vols
 
-	sparkApp.Spec.Driver.SparkPodSpec = k.composePodSpec(conf, sparkDriverType, volMounts)
+	sparkApp.Spec.Driver.SparkPodSpec = k.composePodSpec(job, conf, sparkDriverType, volMounts)
 	sparkApp.Spec.Driver.ServiceAccount = stringptr(sparkServiceAccountName)
 
-	sparkApp.Spec.Executor.SparkPodSpec = k.composePodSpec(conf, sparkExecutorType, volMounts)
+	sparkApp.Spec.Executor.SparkPodSpec = k.composePodSpec(job, conf, sparkExecutorType, volMounts)
 	sparkApp.Spec.Executor.Instances = int32ptr(conf.Spec.SparkConf.ExecutorResource.Replica)
 
 	return sparkApp, nil
 }
 
-func (k *K8sSpark) composePodSpec(conf *apistructs.BigdataConf, podType string, mount []corev1.VolumeMount) sparkv1beta2.SparkPodSpec {
+func (k *K8sSpark) composePodSpec(job *apistructs.JobFromUser, conf *apistructs.BigdataConf, podType string, mount []corev1.VolumeMount) sparkv1beta2.SparkPodSpec {
 	podSpec := sparkv1beta2.SparkPodSpec{}
 
 	resource := apistructs.BigdataResource{}
 
+	scheduleInfo2, _, _ := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), *job)
 	switch podType {
 	case sparkDriverType:
 		resource = conf.Spec.SparkConf.DriverResource
@@ -506,6 +508,7 @@ func (k *K8sSpark) composePodSpec(conf *apistructs.BigdataConf, podType string, 
 	k.appendEnvs(&podSpec, &resource, conf.Name, podType)
 	podSpec.Labels = addLabels(conf)
 	podSpec.VolumeMounts = mount
+	podSpec.Affinity = &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity
 	return podSpec
 }
 

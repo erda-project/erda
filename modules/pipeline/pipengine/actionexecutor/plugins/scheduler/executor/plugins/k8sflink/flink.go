@@ -150,7 +150,7 @@ func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 	}
 	hosts := append([]string{FlinkIngressPrefix}, job.Namespace, clusterInfo[DiceRootDomain])
 	hostURL := strings.Join(hosts, ".")
-	flinkCluster := ComposeFlinkCluster(bigDataConf, hostURL)
+	flinkCluster := k.ComposeFlinkCluster(job, bigDataConf, hostURL)
 	flinkCluster.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
 		composeOwnerReferences("v1", "Namespace", ns.Name, ns.UID),
 	}
