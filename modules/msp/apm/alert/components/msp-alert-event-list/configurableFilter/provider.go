@@ -149,7 +149,7 @@ func (p *provider) getAlerts(ctx context.Context, params *common.InParams) ([]*c
 }
 
 func (p *provider) getAlertLevels(sdk *cptype.SDK, params *common.InParams) []*common.IdNameValue {
-	levels := []string{"Fatal", "Critical", "Warning", "Notice"}
+	levels := []string{"FATAL", "CRITICAL", "WARNING", "NOTICE"}
 
 	var values []*common.IdNameValue
 	for _, level := range levels {
