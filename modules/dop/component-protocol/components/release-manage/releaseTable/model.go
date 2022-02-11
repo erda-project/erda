@@ -90,22 +90,17 @@ type Column struct {
 }
 
 type State struct {
-	ReleaseTableURLQuery string        `json:"releaseTable__urlQuery"`
-	PageNo               int64         `json:"pageNo"`
-	PageSize             int64         `json:"pageSize"`
-	Total                int64         `json:"total"`
-	SelectedRowKeys      []string      `json:"selectedRowKeys,omitempty"`
-	Sorter               Sorter        `json:"sorterData"`
-	IsProjectRelease     bool          `json:"isProjectRelease"`
-	ProjectID            int64         `json:"projectID"`
-	IsFormal             *bool         `json:"isFormal,omitempty"`
-	VersionValues        VersionValues `json:"versionValues"`
-	FilterValues         FilterValues  `json:"filterValues"`
-	ApplicationID        int64         `json:"applicationID"`
-}
-
-type VersionValues struct {
-	Version string `json:"version,omitempty"`
+	ReleaseTableURLQuery string       `json:"releaseTable__urlQuery"`
+	PageNo               int64        `json:"pageNo"`
+	PageSize             int64        `json:"pageSize"`
+	Total                int64        `json:"total"`
+	SelectedRowKeys      []string     `json:"selectedRowKeys,omitempty"`
+	Sorter               Sorter       `json:"sorterData"`
+	IsProjectRelease     bool         `json:"isProjectRelease"`
+	ProjectID            int64        `json:"projectID"`
+	IsFormal             *bool        `json:"isFormal,omitempty"`
+	FilterValues         FilterValues `json:"filterValues"`
+	ApplicationID        int64        `json:"applicationID"`
 }
 
 type FilterValues struct {
@@ -116,6 +111,7 @@ type FilterValues struct {
 	ReleaseID         string   `json:"releaseID,omitempty"`
 	ApplicationIDs    []string `json:"applicationIDs,omitempty"`
 	Latest            bool     `json:"latest"`
+	Version           string   `json:"version,omitempty"`
 }
 
 type Sorter struct {

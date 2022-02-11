@@ -9,12 +9,12 @@ hierarchy:
       - toolbar
       - issueKanbanV2
     toolbar:
-      left: inputFilter
+      left: issueFilter
       right: issueOperations
     issueOperations:
-      - issueFilter
       - issueExport
       - issueImport
+      - issueRefresh
     
 options:
   syncIntervalSecond: 0
@@ -34,14 +34,11 @@ components:
     type: Custom
   issueImport:
     type: Custom
-  inputFilter:
-    type: ContractiveFilter
+  issueRefresh:
+    type: Custom
   issueKanbanV2:
     type: Kanban
 
 rendering:
   issueFilter:
-    - name: issueKanbanV2
-  inputFilter:
-    - name: issueFilter
     - name: issueKanbanV2

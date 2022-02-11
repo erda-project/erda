@@ -309,6 +309,10 @@ zh:
   second: 秒
   iterationUnassigned: 待处理
   processTip: 执行成功 Action 数/ Action 总数
+  appNotAuthorized: 暂无所属应用权限
+  publicProperty: 公开属性
+  exit: 退出
+  exitProjectConfirm: 退出当前项目后，将不再有项目协作权限，如要再次加入需要项目管理员邀请，请确认是否退出？
 en:
   issue-manage: issue manage
   issue: issue
@@ -616,3 +620,7 @@ en:
   second: Second
   iterationUnassigned: Unassigned
   processTip: Successful actions/Total actions
+  appNotAuthorized: No application permission
+  publicProperty: Public property
+  exit: Exit
+  exitProjectConfirm: After exiting the current project, you will no longer have project collaboration permission. If you want to join again, you need to be invited by the project administrator. Are you sure you want to exit?

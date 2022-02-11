@@ -193,3 +193,33 @@ func (b *Bundle) batchProcessRuntimes(req apistructs.RuntimeScaleRecords, orgID 
 
 	return dataBytes, nil
 }
+
+func (b *Bundle) RuntimesClusterReferred(userID, orgID, clusterName string) (referred bool, err error) {
+	host, err := b.urls.Orchestrator()
+	if err != nil {
+		return
+	}
+	hc := b.hc
+
+	var rsp struct {
+		apistructs.Header
+		Data bool `json:"data"`
+	}
+
+	resp, err := hc.Get(host).
+		Path(fmt.Sprintf("/api/runtimes/actions/refer-cluster")).
+		Header(httputil.OrgHeader, orgID).
+		Header(httputil.UserHeader, userID).
+		Param("cluster", clusterName).
+		Do().JSON(&rsp)
+
+	if err != nil {
+		return
+	}
+	if !resp.IsOK() || !rsp.Success {
+		err = toAPIError(resp.StatusCode(), rsp.Error)
+		return
+	}
+
+	return rsp.Data, nil
+}

@@ -18,6 +18,22 @@ hierarchy:
     - kvGrid@slowCount
     - kvGrid@errorCount
     - kvGrid@errorRate
+  parallel:
+    page:
+    - kvGrid
+    - grid
+    grid:
+    - rps
+    - avgDuration
+    - slowCount
+    - errorCount
+    kvGrid:
+    - kvGrid@totalCount
+    - kvGrid@avgRps
+    - kvGrid@avgDuration
+    - kvGrid@slowCount
+    - kvGrid@errorCount
+    - kvGrid@errorRate
 components:
   page:
     type: Container

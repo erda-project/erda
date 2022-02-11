@@ -132,21 +132,6 @@ func (db *DBClient) ListDeploymentOrder(conditions *apistructs.DeploymentOrderLi
 	return total, orders, nil
 }
 
-func (db *DBClient) GetOrderCountByProject(tp string, projectId uint64, releaseId string) (int64, error) {
-	if tp == apistructs.TypePipeline {
-		return 0, fmt.Errorf("pipeline type doesn't need to count")
-	}
-
-	var count int64
-
-	if err := db.Model(&DeploymentOrder{}).Where("project_id = ? and release_id = ? and type=?", projectId, releaseId, tp).
-		Count(&count).Error; err != nil {
-		return 0, errors.Wrapf(err, "failed to count, project: %d, release id: %s, type: %s", projectId, releaseId, tp)
-	}
-
-	return count, nil
-}
-
 func (db *DBClient) GetDeploymentOrder(id string) (*DeploymentOrder, error) {
 	var deploymentOrder DeploymentOrder
 	if err := db.
@@ -212,4 +197,29 @@ func (db *DBClient) UpateDeploymentOrderStatus(id string, appName string,
 		}
 		return nil
 	})
+}
+
+func (db *DBClient) GetProjectReleaseByVersion(version string, projectId uint64) (*Release, error) {
+	var r Release
+	if err := db.Model(&Release{}).Where("project_id = ? and version = ? and is_project_release = ?",
+		projectId, version, true).Find(&r).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.Wrapf(err, "version: %s, projectId: %d", version, projectId)
+		}
+		return nil, errors.Wrapf(err, "failed to get project release, version: %s, projectId: %d", version, projectId)
+	}
+	return &r, nil
+}
+
+func (db *DBClient) GetApplicationReleaseByVersion(version, appName string) (*Release, error) {
+	var r Release
+	if err := db.Model(&Release{}).Where("application_name = ? and version = ? and is_project_release = ?",
+		appName, version, false).Find(&r).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.Wrapf(err, "version: %s, application_name: %s", version, appName)
+		}
+		return nil, errors.Wrapf(err, "failed to get project release, version: %s, application_name: %s",
+			version, appName)
+	}
+	return &r, nil
 }

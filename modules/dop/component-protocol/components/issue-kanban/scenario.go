@@ -15,6 +15,5 @@
 package issue_kanban
 
 import (
-	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/inputFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/issueKanbanV2"
 )

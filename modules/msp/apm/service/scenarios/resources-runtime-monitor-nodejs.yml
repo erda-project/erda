@@ -10,6 +10,12 @@ hierarchy:
     - runtime@nodejs_memory_non_heap
     - runtime@nodejs_cluster
     - runtime@nodejs_async_resource
+  parallel:
+    runtime:
+    - runtime@nodejs_memory_heap
+    - runtime@nodejs_memory_non_heap
+    - runtime@nodejs_cluster
+    - runtime@nodejs_async_resource
 components:
   page:
     type: Container

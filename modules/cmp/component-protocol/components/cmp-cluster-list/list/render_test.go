@@ -81,7 +81,7 @@ func TestList_GetExtraContent(t *testing.T) {
 						Value:       75.0,
 						Total:       100,
 						Color:       "green",
-						CenterLabel: "Memory",
+						CenterLabel: "Mem",
 						Info: []ExtraDataItem{
 							{
 								Main: "75.0%",

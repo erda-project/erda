@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/conf"
 	"github.com/erda-project/erda/modules/scheduler/events"
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
+	"github.com/erda-project/erda/modules/scheduler/impl/cluster/clusterutil"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
@@ -48,7 +49,8 @@ func GetManager() *Manager {
 
 // Manager is a executor manager, it holds the all executor instances.
 type Manager struct {
-	sync.Mutex
+	// update register list lock
+	uLock sync.Mutex
 
 	factory   map[executortypes.Kind]executortypes.CreateFn
 	executors map[executortypes.Name]executortypes.Executor
@@ -121,13 +123,18 @@ func createOneExecutor(m *Manager, eConfig *executorconfig.ExecutorConfig) error
 
 	name := executortypes.Name(eConfig.Name)
 
+	if _, ok := m.executors[name]; ok {
+		logrus.Warnf("executor %s already registered, skip", name)
+		return nil
+	}
+
 	executor, err := create(name, eConfig.ClusterName, eConfig.Options, eConfig.OptionsPlus)
 	if err != nil {
 		return err
 	}
 
-	m.Lock()
-	defer m.Unlock()
+	m.uLock.Lock()
+	defer m.uLock.Unlock()
 
 	m.executors[name] = executor
 	m.pools[name] = goroutinepool.New(conf.PoolSize())
@@ -214,7 +221,18 @@ func (m *Manager) Pool(name executortypes.Name) *goroutinepool.GoroutinePool {
 func (m *Manager) Get(name executortypes.Name) (executortypes.Executor, error) {
 	c, ok := m.executors[name]
 	if !ok {
-		return nil, errors.Errorf("not found executor: %s", name)
+		k, e, err := clusterutil.GetExecuteConfigByExecutorName(name)
+		if err != nil {
+			logrus.Errorf("faield to recreate executor, name: %v, err: %v", name, err)
+			return nil, err
+		}
+		// TODO: execute once when concurrent request
+		m.pools[defaultGoPool].MustGo(func() {
+			if err := createOneExecutor(m, e); err != nil {
+				logrus.Errorf("failed to create executor(name: %s, key: %s) error: %v", e.Name, k, err)
+			}
+		})
+		return nil, errors.Errorf("try to create executor %s, please try again later", name)
 	}
 	return c, nil
 }

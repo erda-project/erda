@@ -29,7 +29,7 @@ type PipelineDefinition struct {
 	ID                string    `json:"id" xorm:"pk"`
 	Location          string    `json:"location"`
 	Name              string    `json:"name"`
-	CostTime          uint64    `json:"costTime"`
+	CostTime          int64     `json:"costTime"`
 	Creator           string    `json:"creator"`
 	Executor          string    `json:"executor"`
 	SoftDeletedAt     uint64    `json:"softDeletedAt"`
@@ -281,13 +281,13 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 		TimeCreated:       timestamppb.New(p.TimeCreated),
 		TimeUpdated:       timestamppb.New(p.TimeUpdated),
 		SourceType:        p.SourceType,
-		PipelineSourceId:  p.PipelineSourceId,
+		PipelineSourceID:  p.PipelineSourceId,
 		Remote:            p.Remote,
 		Ref:               p.Ref,
 		Path:              p.Path,
 		FileName:          p.FileName,
 		Status:            p.Status,
-		PipelineId:        int64(p.PipelineID),
+		PipelineID:        int64(p.PipelineID),
 		TotalActionNum:    p.TotalActionNum,
 		ExecutedActionNum: p.ExecutedActionNum,
 	}

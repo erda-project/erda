@@ -50,7 +50,7 @@ message PipelineDefinition {
   string name = 3;
   string creator = 4;
   string category = 5;
-  uint64 costTime = 6;
+  int64 costTime = 6;
   string executor = 7;
   PipelineDefinitionExtra extra = 8;
   google.protobuf.Timestamp startedAt = 9;
@@ -63,9 +63,9 @@ message PipelineDefinition {
   string ref = 16;
   string path = 17;
   string fileName = 18;
-  string pipelineSourceId = 19;
+  string pipelineSourceID = 19;
   string status = 20;
-  int64 pipelineId = 21;
+  int64 pipelineID = 21;
   int64 totalActionNum = 22;
   int64 ExecutedActionNum = 23;
 }
@@ -85,7 +85,7 @@ message PipelineDefinitionCreateRequest {
   string location = 2;
   string name = 3;
   string creator = 4;
-  string pipelineSourceId = 5;
+  string pipelineSourceID = 5;
   string category = 6;
   PipelineDefinitionExtra extra = 7;
   int64 totalActionNum = 8;
@@ -99,15 +99,15 @@ message PipelineDefinitionCreateResponse {
 // update
 message PipelineDefinitionUpdateRequest {
   string name = 1;
-  uint64 costTime = 2;
+  int64 costTime = 2;
   string executor = 3;
-  string pipelineSourceId = 4;
+  string pipelineSourceID = 4;
   string category = 5;
   google.protobuf.Timestamp startedAt = 6;
   google.protobuf.Timestamp endedAt = 7;
   string pipelineDefinitionID = 8;
   string status = 9;
-  int64 pipelineId = 10;
+  int64 pipelineID = 10;
   int64 totalActionNum = 11;
   int64 ExecutedActionNum = 12;
 }

@@ -49,6 +49,7 @@ type FrontendConditions struct {
 	AppList           []uint64 `json:"appList"`
 	Executor          []string `json:"executor"`
 	StartedAtStartEnd []int64  `json:"startedAtStartEnd"`
+	Title             string   `json:"title"`
 }
 
 func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
@@ -99,6 +100,7 @@ func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.O
 		p.gsHelper.SetStatuesFilter(realSearchStatus)
 		p.gsHelper.SetAppsFilter(state.AppList)
 		p.gsHelper.SetExecutorsFilter(state.Executor)
+		p.gsHelper.SetPipelineNameFilter(state.Title)
 
 		if len(state.StartedAtStartEnd) > 0 {
 			p.gsHelper.SetBeginTimeStartFilter(state.StartedAtStartEnd[0])

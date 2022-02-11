@@ -58,10 +58,10 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 	}
 
 	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
-		Type:      apistructs.TypePipeline,
+		Type:      apistructs.TypeApplicationRelease,
 		Params:    string(paramsJson),
 		Workspace: apistructs.WORKSPACE_PROD,
-	}, releaseResp)
+	}, releaseResp, apistructs.SourceDeployCenter, false)
 	assert.NoError(t, err)
 
 	releaseResp.ApplicationReleaseList = []*apistructs.ApplicationReleaseSummary{
@@ -72,7 +72,7 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 		Type:      apistructs.TypeProjectRelease,
 		Params:    string(paramsJson),
 		Workspace: apistructs.WORKSPACE_PROD,
-	}, releaseResp)
+	}, releaseResp, apistructs.SourceDeployCenter, false)
 	assert.NoError(t, err)
 }
 
@@ -114,7 +114,7 @@ func TestParseAppsInfoWithOrder(t *testing.T) {
 	got, err := order.parseAppsInfoWithOrder(&dbclient.DeploymentOrder{
 		ApplicationName: "test",
 		ApplicationId:   1,
-		Type:            apistructs.TypePipeline,
+		Type:            apistructs.TypeApplicationRelease,
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, got, map[int64]string{1: "test"})
