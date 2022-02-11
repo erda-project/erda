@@ -28,7 +28,7 @@ components:
   issueOperations:
     type: RowContainer
   issueFilter:
-    type: ContractiveFilter
+    type: ConfigurableFilter
   issueExport:
     type: Custom
   issueImport:

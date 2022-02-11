@@ -12,14 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package issueFilter
+package gshelper
 
 import (
-	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda/apistructs"
 )
 
-func init() {
-	base.InitProviderWithCreator("issue-manage", "issueFilter",
-		func() servicehub.Provider { return &ComponentFilter{} })
+const (
+	KeyIssuePagingRequestKanban = "IssuePagingRequestKanban"
+	KeyIssuePagingRequest       = "IssuePagingRequest"
+)
+
+type GSHelper struct {
+	gs *cptype.GlobalStateData
+}
+
+func NewGSHelper(gs *cptype.GlobalStateData) *GSHelper {
+	return &GSHelper{gs}
+}
+
+func (h *GSHelper) SetIssuePagingRequest(key string, req apistructs.IssuePagingRequest) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)[key] = req
 }

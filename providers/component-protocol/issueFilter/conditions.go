@@ -148,26 +148,30 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 	}
 	complexity := model.NewSelectCondition(PropConditionKeyComplexity, cputil.I18n(f.sdk.Ctx, "complexity"), complexityOptions)
 
-	// statesMap, err := f.issueStateSvc.GetIssueStatesMap(&apistructs.IssueStatesGetRequest{
-	// 	ProjectID: f.InParams.ProjectID,
-	// })
-	// if err != nil {
-	// 	return nil, err
-	// }
+	if f.State.WithStateCondition {
+		statesMap, err := f.issueStateSvc.GetIssueStatesMap(&apistructs.IssueStatesGetRequest{
+			ProjectID: f.InParams.ProjectID,
+		})
+		if err != nil {
+			return nil, err
+		}
 
-	// status := func() interface{} {
-	// 	switch f.InParams.FrontendFixedIssueType {
-	// 	case "ALL":
-	// 		return model.NewSelectConditionWithChildren(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertAllConditions(f.sdk.Ctx, statesMap))
-	// 	case apistructs.IssueTypeRequirement.String():
-	// 		return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeRequirement]))
-	// 	case apistructs.IssueTypeTask.String():
-	// 		return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeTask]))
-	// 	case apistructs.IssueTypeBug.String():
-	// 		return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeBug]))
-	// 	}
-	// 	return nil
-	// }()
+		status := func() interface{} {
+			switch f.InParams.FrontendFixedIssueType {
+			case "ALL":
+				return model.NewSelectConditionWithChildren(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertAllConditions(f.sdk.Ctx, statesMap))
+			case apistructs.IssueTypeRequirement.String():
+				return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeRequirement]))
+			case apistructs.IssueTypeTask.String():
+				return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeTask]))
+			case apistructs.IssueTypeBug.String():
+				return model.NewSelectCondition(PropConditionKeyStates, cputil.I18n(f.sdk.Ctx, "state"), convertConditions(statesMap[apistructs.IssueTypeBug]))
+			}
+			return nil
+		}()
+
+		conditions = append(conditions, status)
+	}
 
 	switch f.InParams.FrontendFixedIssueType {
 	case apistructs.IssueTypeRequirement.String():
