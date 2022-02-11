@@ -971,10 +971,22 @@ func getBranchStr(name string) string {
 	}
 
 	rightNameValue := splitValue[3]
-	afterIndex := strings.LastIndex(rightNameValue, "/.dice/")
-	if afterIndex == -1 {
-		afterIndex = strings.LastIndex(rightNameValue, "/.erda/")
+
+	var afterIndex = -1
+	if strings.HasSuffix(rightNameValue, "/.dice") {
+		afterIndex = strings.LastIndex(rightNameValue, "/.dice")
+	} else {
+		afterIndex = strings.LastIndex(rightNameValue, "/.dice/")
 	}
+
+	if afterIndex == -1 {
+		if strings.HasSuffix(rightNameValue, "/.erda") {
+			afterIndex = strings.LastIndex(rightNameValue, "/.erda")
+		} else {
+			afterIndex = strings.LastIndex(rightNameValue, "/.erda/")
+		}
+	}
+
 	if afterIndex == -1 {
 		afterIndex = strings.LastIndex(rightNameValue, "/pipeline.yml")
 	}

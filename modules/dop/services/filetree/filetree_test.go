@@ -74,6 +74,41 @@ func Test_getBranchStr(t *testing.T) {
 			},
 			want: "feature/sad",
 		},
+		{
+			name: "test 7",
+			args: args{
+				name: "1/2/tree/feature/.diced",
+			},
+			want: "feature/.diced",
+		},
+		{
+			name: "test 8",
+			args: args{
+				name: "1/2/tree/feature/.dice/.dice",
+			},
+			want: "feature/.dice",
+		},
+		{
+			name: "test 9",
+			args: args{
+				name: "1/2/tree/.dice",
+			},
+			want: ".dice",
+		},
+		{
+			name: "test 10",
+			args: args{
+				name: "1/2/tree/.dice/.diced/.erda",
+			},
+			want: ".dice/.diced",
+		},
+		{
+			name: "test 11",
+			args: args{
+				name: "1/2/tree/develop/.dice",
+			},
+			want: "develop",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
