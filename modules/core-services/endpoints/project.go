@@ -587,11 +587,11 @@ func getListProjectsParam(r *http.Request) (*apistructs.ProjectListRequest, erro
 
 	orderBy := r.URL.Query().Get("orderBy")
 	switch orderBy {
-	case "cpuQuota":
+	case "cpuQuota", "cpu_quota":
 		orderBy = "cpu_quota"
-	case "memQuota":
+	case "memQuota", "mem_quota":
 		orderBy = "mem_quota"
-	case "activeTime":
+	case "activeTime", "active_time":
 		orderBy = "active_time"
 	case "name":
 		orderBy = "name"
