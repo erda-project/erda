@@ -15,10 +15,12 @@
 package bootstrap
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/exec"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	containerruntime "github.com/erda-project/erda/modules/core/monitor/diagnotor/agent/container-runtime"
@@ -57,27 +59,39 @@ func bootstrap() {
 }
 
 func runInTargetNamespace(targetPID string) {
+	sc := make(chan os.Signal, 1)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	args := []string{
+		"--target", targetPID, "--uts", "--ipc", "--net", "--pid", // "--user", // nsenter: setns(): can't reassociate to namespace 'user': Invalid argument
+	}
+	args = append(args, os.Args...)
+	cmd := exec.CommandContext(ctx, "nsenter", args...)
+	cmd.Env = append(os.Environ(), "DIAGNOTOR_AGENT_RUN_MODE=program")
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-		args := []string{
-			"--target", targetPID, "--uts", "--ipc", "--net", "--pid", // "--user", // nsenter: setns(): can't reassociate to namespace 'user': Invalid argument
-		}
-		args = append(args, os.Args...)
-		cmd := exec.Command("nsenter", args...)
-		cmd.Env = append(os.Environ(), "DIAGNOTOR_AGENT_RUN_MODE=program")
-		cmd.Stdin = os.Stdin
-		cmd.Stderr = os.Stderr
-		cmd.Stdout = os.Stdout
+		defer wg.Done()
 		err := cmd.Run()
 		if err != nil {
 			log.Fatalf("failed to run program with namespaces: %s", err)
-			return
+		}
+		select {
+		case sc <- syscall.SIGQUIT:
+		default:
 		}
 	}()
 
 	log.Println("wait to exit ...")
-	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	<-sc
+
+	cmd.Process.Kill()
+	wg.Wait()
 }
 
 func initNamespace() error {

@@ -15,18 +15,23 @@
 package diagnotor
 
 import (
+	"context"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/pkg/transport/interceptor"
 	"github.com/erda-project/erda-proto-go/core/monitor/diagnotor/pb"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type config struct {
 	GatherInterval          time.Duration `file:"gather_interval" default:"5s"`
+	Keepalive               time.Duration `file:"keepalive" default:"30m"`
+	CheckKeepaliveInterval  time.Duration `file:"check_keepalive_interval" default:"1m"`
 	TargetContainerCpuLimit int64         `file:"target_container_cpu_limit" env:"TARGET_CONTAINER_CPU_LIMIT"`
 	TargetContainerMemLimit int64         `file:"target_container_mem_limit" env:"TARGET_CONTAINER_MEM_LIMIT"`
 }
@@ -37,6 +42,8 @@ type provider struct {
 	Log      logs.Logger
 	Register transport.Register `autowired:"service-register" optional:"true"`
 
+	lock                  sync.RWMutex
+	lastAccessTime        time.Time
 	exit                  func() error
 	diagnotorAgentService *diagnotorAgentService
 }
@@ -48,11 +55,50 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		lastStatus: &pb.HostProcessStatus{},
 	}
 	if p.Register != nil {
-		pb.RegisterDiagnotorAgentServiceImp(p.Register, p.diagnotorAgentService, apis.Options())
+		pb.RegisterDiagnotorAgentServiceImp(p.Register, p.diagnotorAgentService, apis.Options(), transport.WithInterceptors(p.keepalive))
 	}
+	p.lastAccessTime = time.Now()
 	ctx.AddTask(p.diagnotorAgentService.runGatherProcStat)
+	ctx.AddTask(p.checkKeepalive)
 	p.exit = ctx.Hub().Close
 	return nil
+}
+
+func (p *provider) keepalive(h interceptor.Handler) interceptor.Handler {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		p.lock.Lock()
+		p.lastAccessTime = time.Now()
+		p.Log.Debugf("update last access time %v", p.lastAccessTime)
+		p.lock.Unlock()
+		resp, err := h(ctx, req)
+		return resp, err
+	}
+}
+
+func (p *provider) checkKeepalive(ctx context.Context) error {
+	timer := time.NewTimer(p.Cfg.CheckKeepaliveInterval)
+	defer timer.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-timer.C:
+		}
+
+		p.lock.RLock()
+		lastAccessTime := p.lastAccessTime
+		p.lock.RUnlock()
+
+		p.Log.Debugf("check keepalive (%s > %s) = %v", time.Now().Sub(lastAccessTime), p.Cfg.Keepalive, time.Now().Sub(lastAccessTime) > p.Cfg.Keepalive)
+		if time.Now().Sub(lastAccessTime) > p.Cfg.Keepalive {
+			go func() {
+				p.exit()
+			}()
+			return nil
+		}
+
+		timer.Reset(p.Cfg.CheckKeepaliveInterval)
+	}
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {

@@ -37,7 +37,7 @@ func (s *diagnotorService) createAgent(ctx context.Context, client *kubernetes.C
 	if pod == nil {
 		return nil, nil, errors.New("pod not found")
 	}
-	if len(pod.Spec.NodeName) <= 0 {
+	if len(pod.Spec.NodeName) <= 0 || pod.Status.Phase != corev1.PodRunning {
 		return nil, nil, errNotReady
 	}
 
@@ -50,9 +50,25 @@ func (s *diagnotorService) createAgent(ctx context.Context, client *kubernetes.C
 		return nil, nil, err
 	}
 
+retry:
 	agentPod := s.newAgentPod(pod, container, containerID, clusterName, labels)
 	agent, err := client.CoreV1().Pods(namespace).Create(ctx, agentPod, metav1.CreateOptions{})
 	if err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			agent, err := client.CoreV1().Pods(namespace).Get(ctx, agentPod.ObjectMeta.Name, metav1.GetOptions{})
+			if err != nil {
+				if strings.Contains(err.Error(), "not found") {
+					goto retry
+				}
+				return nil, nil, err
+			} else if agent.Status.Phase == corev1.PodSucceeded || agent.Status.Phase == corev1.PodFailed {
+				err := client.CoreV1().Pods(namespace).Delete(ctx, agentPod.ObjectMeta.Name, metav1.DeleteOptions{})
+				if err != nil && !strings.Contains(err.Error(), "not found") {
+					return nil, nil, err
+				}
+				goto retry
+			}
+		}
 		return nil, nil, err
 	}
 	return agent, pod, nil
@@ -157,6 +173,10 @@ func (s *diagnotorService) newAgentPod(target *corev1.Pod, targetContainer *core
 						{
 							Name:  "HTTP_SERVER_PORT",
 							Value: strconv.Itoa(agentHttpServerPort),
+						},
+						{
+							Name:  "LOG_LEVEL",
+							Value: "debug",
 						},
 					},
 					SecurityContext: &corev1.SecurityContext{

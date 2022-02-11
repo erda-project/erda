@@ -47,6 +47,7 @@ func (p *procStat) Percent(d time.Duration) (float64, error) {
 
 func (s *diagnotorAgentService) runGatherProcStat(ctx context.Context) error {
 	timer := time.NewTimer(0)
+	defer timer.Stop()
 	for {
 		err := s.gatherProcStat()
 		if err != nil {
