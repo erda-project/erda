@@ -94,7 +94,7 @@ func (p *provider) getConfigurableFilterOptions(sdk *cptype.SDK, inParams *commo
 	alertLevelSelectCondition := model.NewSelectCondition("alertLevels", "级别", common.IdNameValuesToSelectOptions(alertLevels)).WithPlaceHolder("选择级别")
 
 	alertStates := p.getAlertStates(sdk, inParams)
-	alertStateSelectCondition := model.NewSelectCondition("alertStates", "级别", common.IdNameValuesToSelectOptions(alertStates)).WithPlaceHolder("选择状态")
+	alertStateSelectCondition := model.NewSelectCondition("alertStates", "状态", common.IdNameValuesToSelectOptions(alertStates)).WithPlaceHolder("选择状态")
 
 	alertSources := p.getAlertSources(sdk, inParams)
 	alertSourceSelectCondition := model.NewSelectCondition("alertSources", "事件来源", common.IdNameValuesToSelectOptions(alertSources)).WithPlaceHolder("选择事件来源")
