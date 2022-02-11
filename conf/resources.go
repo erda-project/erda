@@ -44,6 +44,10 @@ var (
 	//go:embed monitor/agent-injector/agent-injector.yaml
 	MonitorAgentInjectorDefaultConfig string
 	MonitorAgentInjectorFilePath      string = "conf/monitor/agent-injector/agent-injector.yaml"
+
+	//go:embed monitor/diagnotor-agent/diagnotor-agent.yaml
+	DiagnotorAgentDefaultConfig  string
+	DiagnotorAgentConfigFilePath string = "conf/monitor/diagnotor-agent/diagnotor-agent.yaml"
 )
 
 // msp

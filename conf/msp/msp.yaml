@@ -111,6 +111,11 @@ span-storage-elasticsearch:
   query_timeout: "1m"
   read_page_size: 200
 
+grpc-client@erda.core.monitor.diagnotor:
+  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+erda.core.monitor.diagnotor-client:
+
+erda.msp.apm.diagnotor:
 
 i18n:
   common:

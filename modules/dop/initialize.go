@@ -123,8 +123,6 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 
 	registerWebHook(bdl.Bdl)
 
-	go endpoints.SetProjectStatsCache()
-
 	// 注册 hook
 	if err := ep.RegisterEvents(); err != nil {
 		return err

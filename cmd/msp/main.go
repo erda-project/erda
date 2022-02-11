@@ -32,6 +32,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/oap/entity/client"
 
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
+	_ "github.com/erda-project/erda-proto-go/core/monitor/diagnotor/client"
 	_ "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/client"
 	_ "github.com/erda-project/erda/modules/core/monitor/settings"
 	_ "github.com/erda-project/erda/modules/core/monitor/settings/retention-strategy"
@@ -51,6 +52,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/task"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/task/fetcher/fixed"
 	_ "github.com/erda-project/erda/modules/msp/apm/checker/task/fetcher/scheduled"
+	_ "github.com/erda-project/erda/modules/msp/apm/diagnotor"
 	_ "github.com/erda-project/erda/modules/msp/apm/exception/query"
 	_ "github.com/erda-project/erda/modules/msp/apm/log-service/query"
 	_ "github.com/erda-project/erda/modules/msp/apm/metric"

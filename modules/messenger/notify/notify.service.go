@@ -116,6 +116,8 @@ func (n notifyService) CreateHistoryAndIndex(request *pb.CreateNotifyHistoryRequ
 		AlertID:    int64(alertId.GetNumberValue()),
 		CreatedAt:  time.Now(),
 		SendTime:   history.CreatedAt,
+		ScopeType:  request.NotifySource.SourceType,
+		ScopeID:    request.NotifySource.SourceID,
 	}
 	_, err = tx.AlertNotifyIndexDB.CreateAlertNotifyIndex(alertNotifyIndex)
 	if err != nil {
