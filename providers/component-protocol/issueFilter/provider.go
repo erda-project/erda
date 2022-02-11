@@ -43,11 +43,10 @@ type IssueFilter struct {
 	gsHelper         *gshelper.GSHelper
 	sdk              *cptype.SDK
 
-	filterReq          apistructs.IssuePagingRequest `json:"-"`
-	State              State                         `json:"_"`
-	InParams           InParams                      `json:"-"`
-	Bms                []issuefilterbm.MyFilterBm    `json:"-"`
-	defaultStateValues []int64                       `json:"-"`
+	filterReq apistructs.IssuePagingRequest `json:"-"`
+	State     State                         `json:"_"`
+	InParams  InParams                      `json:"-"`
+	Bms       []issuefilterbm.MyFilterBm    `json:"-"`
 }
 
 type State struct {
@@ -56,6 +55,7 @@ type State struct {
 	SelectedFilterSet       string             `json:"selectedFilterSet,omitempty"`
 	WithStateCondition      bool               `json:"-"`
 	IssueRequestKey         string             `json:"-"`
+	DefaultStateValues      []int64            `json:"defaultStateValues,omitempty"`
 }
 
 func init() {
@@ -308,6 +308,6 @@ func (f *IssueFilter) setDefaultState() error {
 		res["ALL"] = append(res["ALL"], ids...)
 	}
 	f.State.FrontendConditionValues.States = res[f.InParams.FrontendFixedIssueType]
-	f.defaultStateValues = res[f.InParams.FrontendFixedIssueType]
+	f.State.DefaultStateValues = res[f.InParams.FrontendFixedIssueType]
 	return nil
 }

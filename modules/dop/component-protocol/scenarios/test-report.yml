@@ -42,3 +42,5 @@ rendering:
         - name: "values"
           value: "{{ filter.values }}"
 
+options:
+  returnAllComponents: true

@@ -320,3 +320,6 @@ rendering:
       state:
         - name: "showSettingModal"
           value: "{{ configButton.showSettingModal }}"
+
+options:
+  returnAllComponents: true
