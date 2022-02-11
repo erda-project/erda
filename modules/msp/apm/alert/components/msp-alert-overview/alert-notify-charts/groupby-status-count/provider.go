@@ -71,20 +71,20 @@ func (p *provider) getNotifyStatusChart(sdk *cptype.SDK) (*complexgraph.Data, er
 	}
 	xAxisBuilder := complexgraph.NewAxisBuilder().
 		WithType(complexgraph.Category).
-		WithDataStructure(structure.Timestamp, structure.Nanosecond, true).
+		WithDataStructure(structure.Timestamp, "", true).
 		WithData(response.Data.Timestamp)
 	yAxisBuilder := complexgraph.NewAxisBuilder().
 		WithType(complexgraph.Value).
 		WithDataStructure(structure.Number, "", true)
 
 	dataBuilder := complexgraph.NewDataBuilder().
-		WithTitle(common.ComponentNameAlertNotifyGroupByStatusCountLine).
+		WithTitle(sdk.I18n(common.ComponentNameAlertNotifyGroupByStatusCountLine)).
 		WithXAxis(xAxisBuilder.Build())
 
 	for status, data := range response.Data.Value {
 		yAxisBuilder.WithDimensions(sdk.I18n(status))
 		sere := complexgraph.NewSereBuilder().WithType(complexgraph.Line).
-			WithDimension(sdk.I18n(status)).WithData(data).Build()
+			WithDimension(sdk.I18n(status)).WithData(data.Value).Build()
 		dataBuilder.WithDimensions(sere.Dimension)
 		dataBuilder.WithSeries(sere)
 	}
