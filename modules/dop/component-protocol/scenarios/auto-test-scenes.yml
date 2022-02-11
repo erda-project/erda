@@ -361,7 +361,9 @@ rendering:
         - name: "actionType"
           value: "{{ fileTree.actionType }}"
         - name: "isAddParallel"
-          value: "{{ scenesStages.isAddParallel }}"
+          value: "{{ fileTree.isAddParallel }}"
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
     - name: fileDetail
       state:
         - name: "isChangeScene"
