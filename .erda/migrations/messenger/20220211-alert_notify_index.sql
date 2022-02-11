@@ -7,7 +7,7 @@ CREATE TABLE `alert_notify_index`
     `channel`     varchar(150) NOT NULL COMMENT '通知发送方式',
     `alert_id`    int(11)      NOT NULL COMMENT '告警策略关联id',
     `created_at`  datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updated_at`  datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+    `updated_at`  datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `send_time`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
     `scope_type`  varchar(150) NOT NULL COMMENT '类型',
     `scope_id`    varchar(150) NOT NULL COMMENT 'id',
