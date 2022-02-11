@@ -110,7 +110,7 @@ func (n notifyService) CreateHistoryAndIndex(request *pb.CreateNotifyHistoryRequ
 	alertId := request.NotifyTags["alertId"]
 	alertNotifyIndex := &db.AlertNotifyIndex{
 		NotifyID:   history.ID,
-		NotifyName: request.NotifyName,
+		NotifyName: request.NotifyItemDisplayName,
 		Status:     request.Status,
 		Channel:    request.Channel,
 		AlertID:    int64(alertId.GetNumberValue()),
