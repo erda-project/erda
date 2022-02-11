@@ -67,7 +67,9 @@ func (f *ComponentFilter) InitFromProtocol(ctx context.Context, c *cptype.Compon
 
 	// sdk
 	f.sdk = cputil.SDK(ctx)
-	f.sdk.Tran = f.I18n
+	if f.I18n != nil {
+		f.sdk.Tran = f.I18n
+	}
 	return nil
 }
 

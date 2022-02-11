@@ -70,6 +70,18 @@ func (p *provider) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.Opera
 	}
 }
 
+func (p *provider) RegisterFilterItemSaveOp(opData filter.OpFilterItemSave) (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
+	}
+}
+
+func (p *provider) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDelete) (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		return nil
+	}
+}
+
 func (p *provider) getConfigurableFilterOptions(sdk *cptype.SDK, inParams *common.InParams) []interface{} {
 	// system default rules have no id, not support on this field
 	//alertRules, _ := p.getAlertRules(sdk.Ctx, inParams)
