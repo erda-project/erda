@@ -330,7 +330,7 @@ func (p *List) getData() *list.Data {
 		appIdStr := strconv.FormatUint(appRuntime.ApplicationID, 10)
 		nameStr := appRuntime.Name
 		if runtimeIdToAppNameMap[appRuntime.ID] != nameStr {
-			nameStr = runtimeIdToAppNameMap[appRuntime.ID] + "#" + nameStr
+			nameStr = runtimeIdToAppNameMap[appRuntime.ID] + "/" + nameStr
 		}
 		logrus.Infof("%s : %s", appRuntime.Name, appRuntime.LastOperator)
 		isMyApp := myApp[appRuntime.ApplicationID]
@@ -504,7 +504,7 @@ func getIcon(runtimeStatus string) *commodel.Icon {
 	return &commodel.Icon{URL: statusStr}
 }
 
-func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus string, isMyApp bool) []list.StateInfo {
+func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus string, isMy bool) []list.StateInfo {
 	if dStatus == "" {
 		var deployStr list.ItemCommStatus
 		switch deployStatus {
@@ -527,7 +527,7 @@ func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus s
 				SuffixIcon: "right",
 			},
 		}
-		if isMyApp {
+		if isMy {
 			info[0].Operations = map[cptype.OperationKey]cptype.Operation{
 				"click": {
 					SkipRender: true,
