@@ -31,6 +31,8 @@ type AlertNotifyIndex struct {
 	Status     string    `json:"status" gorm:"column:status"`
 	Channel    string    `json:"channel" gorm:"column:channel"`
 	AlertID    int64     `json:"alert_id" gorm:"column:alert_id"`
+	ScopeType  string    `json:"scope_type" gorm:"column:scope_type"`
+	ScopeID    string    `json:"scope_id" gorm:"column:scope_id"`
 	CreatedAt  time.Time `json:"created_at" gorm:"column:created_at"`
 	SendTime   time.Time `json:"send_time" gorm:"column:send_time"`
 }
