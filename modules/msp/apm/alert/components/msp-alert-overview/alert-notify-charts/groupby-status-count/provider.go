@@ -69,10 +69,11 @@ func (p *provider) getNotifyStatusChart(sdk *cptype.SDK) (*complexgraph.Data, er
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	timestamp := common.ToInterface(response.Data.Timestamp)
 	xAxisBuilder := complexgraph.NewAxisBuilder().
 		WithType(complexgraph.Category).
 		WithDataStructure(structure.Timestamp, "", true).
-		WithData(response.Data.Timestamp)
+		WithData(timestamp...)
 	yAxisBuilder := complexgraph.NewAxisBuilder().
 		WithType(complexgraph.Value).
 		WithDataStructure(structure.Number, "", true)
