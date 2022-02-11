@@ -118,6 +118,15 @@ stages:
           resources:
             cpu: 1
             mem: 1024
+      - custom-script:
+          alias: build-diagnotor-agent
+          commands:
+            - cd ${{ dirs.erda }}
+            - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
+            - make build-push-image MODULE_PATH=monitor/diagnotor-agent
+          resources:
+            cpu: 1
+            mem: 1024
   - stage:
       - release:
           alias: release-erda
