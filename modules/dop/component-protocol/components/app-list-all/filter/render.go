@@ -90,7 +90,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 				Fixed:       true,
 				Key:         "title",
 				Label:       "title",
-				Placeholder: cputil.I18n(ctx, "searchByName"),
+				Placeholder: cputil.I18n(ctx, "searchAppName"),
 				Type:        filter.PropConditionTypeInput,
 			},
 		}
