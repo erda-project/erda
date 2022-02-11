@@ -12,32 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package diagnotor
+package errors
 
 import (
-	"context"
-	"sync"
-
-	"github.com/erda-project/erda-proto-go/core/monitor/diagnotor/pb"
+	"reflect"
+	"testing"
 )
 
-type diagnotorAgentService struct {
-	p   *provider
-	pid int
-
-	lock       sync.RWMutex
-	lastStatus *pb.HostProcessStatus
-
-	lastIOStat map[int32]*ioCountersStatEntry
-	procStats  map[int32]*procStat
-}
-
-func (s *diagnotorAgentService) ListTargetProcesses(ctx context.Context, req *pb.ListTargetProcessesRequest) (*pb.ListTargetProcessesResponse, error) {
-	s.lock.RLock()
-	status := s.lastStatus
-	s.lock.RUnlock()
-
-	return &pb.ListTargetProcessesResponse{
-		Data: status,
-	}, nil
+func TestToGrpcError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+	}{
+		{
+			err: NewNotFoundError("test1"),
+		},
+		{
+			err: NewMissingParameterError("test2"),
+		},
+	}
+	deepEqual := reflect.DeepEqual
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			grpcErr := ToGrpcError(tt.err)
+			err := FromGrpcError(grpcErr)
+			if !deepEqual(err, tt.err) {
+				t.Errorf("FromGrpcError(ToGrpcError(tt.err))\n got %q,\n grpcErr %q,\n want %q", err, grpcErr, tt.err)
+			}
+		})
+	}
 }

@@ -5,6 +5,7 @@ package pb
 
 import (
 	url "net/url"
+	strconv "strconv"
 
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
 )
@@ -28,6 +29,69 @@ func (m *ListTargetProcessesResponse) UnmarshalURLValues(prefix string, values u
 				if m.Data == nil {
 					m.Data = &HostProcessStatus{}
 				}
+			case "data.totalMemory":
+				if m.Data == nil {
+					m.Data = &HostProcessStatus{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.TotalMemory = val
+			case "data.memoryUsed":
+				if m.Data == nil {
+					m.Data = &HostProcessStatus{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.MemoryUsed = val
+			case "data.memoryUsedPercent":
+				if m.Data == nil {
+					m.Data = &HostProcessStatus{}
+				}
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.Data.MemoryUsedPercent = val
+			case "data.totalCpuCores":
+				if m.Data == nil {
+					m.Data = &HostProcessStatus{}
+				}
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.Data.TotalCpuCores = val
+			case "data.cpuUsedCores":
+				if m.Data == nil {
+					m.Data = &HostProcessStatus{}
+				}
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.Data.CpuUsedCores = val
+			case "data.cpuUsedPercent":
+				if m.Data == nil {
+					m.Data = &HostProcessStatus{}
+				}
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.Data.CpuUsedPercent = val
+			case "data.connections":
+				if m.Data == nil {
+					m.Data = &HostProcessStatus{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.Connections = val
 			}
 		}
 	}

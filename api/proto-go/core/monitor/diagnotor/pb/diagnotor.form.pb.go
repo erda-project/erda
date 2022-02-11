@@ -17,6 +17,8 @@ var _ urlenc.URLValuesUnmarshaler = (*StartDiagnosisResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*QueryDiagnosisStatusRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*QueryDiagnosisStatusResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DiagnosisInstance)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*StopDiagnosisRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*StopDiagnosisResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListProcessesRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListProcessesResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*HostProcessStatus)(nil)
@@ -187,6 +189,36 @@ func (m *DiagnosisInstance) UnmarshalURLValues(prefix string, values url.Values)
 	return nil
 }
 
+// StopDiagnosisRequest implement urlenc.URLValuesUnmarshaler.
+func (m *StopDiagnosisRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "clusterName":
+				m.ClusterName = vals[0]
+			case "namespace":
+				m.Namespace = vals[0]
+			case "podName":
+				m.PodName = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// StopDiagnosisResponse implement urlenc.URLValuesUnmarshaler.
+func (m *StopDiagnosisResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				m.Data = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
 // ListProcessesRequest implement urlenc.URLValuesUnmarshaler.
 func (m *ListProcessesRequest) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
@@ -215,6 +247,69 @@ func (m *ListProcessesResponse) UnmarshalURLValues(prefix string, values url.Val
 				if m.Data == nil {
 					m.Data = &HostProcessStatus{}
 				}
+			case "data.totalMemory":
+				if m.Data == nil {
+					m.Data = &HostProcessStatus{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.TotalMemory = val
+			case "data.memoryUsed":
+				if m.Data == nil {
+					m.Data = &HostProcessStatus{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.MemoryUsed = val
+			case "data.memoryUsedPercent":
+				if m.Data == nil {
+					m.Data = &HostProcessStatus{}
+				}
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.Data.MemoryUsedPercent = val
+			case "data.totalCpuCores":
+				if m.Data == nil {
+					m.Data = &HostProcessStatus{}
+				}
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.Data.TotalCpuCores = val
+			case "data.cpuUsedCores":
+				if m.Data == nil {
+					m.Data = &HostProcessStatus{}
+				}
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.Data.CpuUsedCores = val
+			case "data.cpuUsedPercent":
+				if m.Data == nil {
+					m.Data = &HostProcessStatus{}
+				}
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.Data.CpuUsedPercent = val
+			case "data.connections":
+				if m.Data == nil {
+					m.Data = &HostProcessStatus{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.Connections = val
 			}
 		}
 	}
@@ -223,6 +318,54 @@ func (m *ListProcessesResponse) UnmarshalURLValues(prefix string, values url.Val
 
 // HostProcessStatus implement urlenc.URLValuesUnmarshaler.
 func (m *HostProcessStatus) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "totalMemory":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.TotalMemory = val
+			case "memoryUsed":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.MemoryUsed = val
+			case "memoryUsedPercent":
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.MemoryUsedPercent = val
+			case "totalCpuCores":
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.TotalCpuCores = val
+			case "cpuUsedCores":
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.CpuUsedCores = val
+			case "cpuUsedPercent":
+				val, err := strconv.ParseFloat(vals[0], 64)
+				if err != nil {
+					return err
+				}
+				m.CpuUsedPercent = val
+			case "connections":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Connections = val
+			}
+		}
+	}
 	return nil
 }
 
@@ -257,6 +400,12 @@ func (m *Process) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.NumFDs = val
+			case "connections":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Connections = val
 			case "cpu":
 				if m.Cpu == nil {
 					m.Cpu = &ProcessCPUStatus{}
@@ -279,24 +428,6 @@ func (m *Process) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.Cpu.System = val
-			case "cpu.idle":
-				if m.Cpu == nil {
-					m.Cpu = &ProcessCPUStatus{}
-				}
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.Cpu.Idle = val
-			case "cpu.nice":
-				if m.Cpu == nil {
-					m.Cpu = &ProcessCPUStatus{}
-				}
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.Cpu.Nice = val
 			case "cpu.ioWait":
 				if m.Cpu == nil {
 					m.Cpu = &ProcessCPUStatus{}
@@ -306,7 +437,7 @@ func (m *Process) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.Cpu.IoWait = val
-			case "cpu.irq":
+			case "cpu.usedCores":
 				if m.Cpu == nil {
 					m.Cpu = &ProcessCPUStatus{}
 				}
@@ -314,8 +445,8 @@ func (m *Process) UnmarshalURLValues(prefix string, values url.Values) error {
 				if err != nil {
 					return err
 				}
-				m.Cpu.Irq = val
-			case "cpu.softIrq":
+				m.Cpu.UsedCores = val
+			case "cpu.usedPercent":
 				if m.Cpu == nil {
 					m.Cpu = &ProcessCPUStatus{}
 				}
@@ -323,8 +454,8 @@ func (m *Process) UnmarshalURLValues(prefix string, values url.Values) error {
 				if err != nil {
 					return err
 				}
-				m.Cpu.SoftIrq = val
-			case "cpu.steal":
+				m.Cpu.UsedPercent = val
+			case "cpu.usedPercentInHost":
 				if m.Cpu == nil {
 					m.Cpu = &ProcessCPUStatus{}
 				}
@@ -332,43 +463,7 @@ func (m *Process) UnmarshalURLValues(prefix string, values url.Values) error {
 				if err != nil {
 					return err
 				}
-				m.Cpu.Steal = val
-			case "cpu.stolen":
-				if m.Cpu == nil {
-					m.Cpu = &ProcessCPUStatus{}
-				}
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.Cpu.Stolen = val
-			case "cpu.guest":
-				if m.Cpu == nil {
-					m.Cpu = &ProcessCPUStatus{}
-				}
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.Cpu.Guest = val
-			case "cpu.guestNice":
-				if m.Cpu == nil {
-					m.Cpu = &ProcessCPUStatus{}
-				}
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.Cpu.GuestNice = val
-			case "cpu.usage":
-				if m.Cpu == nil {
-					m.Cpu = &ProcessCPUStatus{}
-				}
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.Cpu.Usage = val
+				m.Cpu.UsedPercentInHost = val
 			case "memory":
 				if m.Memory == nil {
 					m.Memory = &ProcessMemoryStatus{}
@@ -427,7 +522,7 @@ func (m *Process) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.Memory.Locked = val
-			case "memory.usage":
+			case "memory.usedPercent":
 				if m.Memory == nil {
 					m.Memory = &ProcessMemoryStatus{}
 				}
@@ -435,7 +530,7 @@ func (m *Process) UnmarshalURLValues(prefix string, values url.Values) error {
 				if err != nil {
 					return err
 				}
-				m.Memory.Usage = val
+				m.Memory.UsedPercent = val
 			case "io":
 				if m.Io == nil {
 					m.Io = &ProcessIOStatus{}
@@ -1423,12 +1518,12 @@ func (m *ProcessMemoryStatus) UnmarshalURLValues(prefix string, values url.Value
 					return err
 				}
 				m.Locked = val
-			case "usage":
+			case "usedPercent":
 				val, err := strconv.ParseFloat(vals[0], 64)
 				if err != nil {
 					return err
 				}
-				m.Usage = val
+				m.UsedPercent = val
 			}
 		}
 	}
@@ -1452,66 +1547,30 @@ func (m *ProcessCPUStatus) UnmarshalURLValues(prefix string, values url.Values) 
 					return err
 				}
 				m.System = val
-			case "idle":
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.Idle = val
-			case "nice":
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.Nice = val
 			case "ioWait":
 				val, err := strconv.ParseFloat(vals[0], 64)
 				if err != nil {
 					return err
 				}
 				m.IoWait = val
-			case "irq":
+			case "usedCores":
 				val, err := strconv.ParseFloat(vals[0], 64)
 				if err != nil {
 					return err
 				}
-				m.Irq = val
-			case "softIrq":
+				m.UsedCores = val
+			case "usedPercent":
 				val, err := strconv.ParseFloat(vals[0], 64)
 				if err != nil {
 					return err
 				}
-				m.SoftIrq = val
-			case "steal":
+				m.UsedPercent = val
+			case "usedPercentInHost":
 				val, err := strconv.ParseFloat(vals[0], 64)
 				if err != nil {
 					return err
 				}
-				m.Steal = val
-			case "stolen":
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.Stolen = val
-			case "guest":
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.Guest = val
-			case "guestNice":
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.GuestNice = val
-			case "usage":
-				val, err := strconv.ParseFloat(vals[0], 64)
-				if err != nil {
-					return err
-				}
-				m.Usage = val
+				m.UsedPercentInHost = val
 			}
 		}
 	}

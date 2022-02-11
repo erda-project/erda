@@ -48,7 +48,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if len(p.Cfg.AgentImage) <= 0 {
 		return fmt.Errorf("agent_image is required")
 	}
-	fmt.Println(p.Cfg.AgentImage)
+	p.Log.Infof("agent_image = %q", p.Cfg.AgentImage)
 
 	p.diagnotorService = &diagnotorService{p: p}
 	if p.Register != nil {

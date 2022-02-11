@@ -23,6 +23,10 @@ var _ json.Marshaler = (*QueryDiagnosisStatusResponse)(nil)
 var _ json.Unmarshaler = (*QueryDiagnosisStatusResponse)(nil)
 var _ json.Marshaler = (*DiagnosisInstance)(nil)
 var _ json.Unmarshaler = (*DiagnosisInstance)(nil)
+var _ json.Marshaler = (*StopDiagnosisRequest)(nil)
+var _ json.Unmarshaler = (*StopDiagnosisRequest)(nil)
+var _ json.Marshaler = (*StopDiagnosisResponse)(nil)
+var _ json.Unmarshaler = (*StopDiagnosisResponse)(nil)
 var _ json.Marshaler = (*ListProcessesRequest)(nil)
 var _ json.Unmarshaler = (*ListProcessesRequest)(nil)
 var _ json.Marshaler = (*ListProcessesResponse)(nil)
@@ -129,6 +133,42 @@ func (m *DiagnosisInstance) MarshalJSON() ([]byte, error) {
 
 // DiagnosisInstance implement json.Marshaler.
 func (m *DiagnosisInstance) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// StopDiagnosisRequest implement json.Marshaler.
+func (m *StopDiagnosisRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// StopDiagnosisRequest implement json.Marshaler.
+func (m *StopDiagnosisRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// StopDiagnosisResponse implement json.Marshaler.
+func (m *StopDiagnosisResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// StopDiagnosisResponse implement json.Marshaler.
+func (m *StopDiagnosisResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

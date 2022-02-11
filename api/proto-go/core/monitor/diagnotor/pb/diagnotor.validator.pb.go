@@ -7,7 +7,6 @@ import (
 	fmt "fmt"
 	math "math"
 
-	_ "github.com/erda-project/erda-proto-go/common/pb"
 	proto "github.com/golang/protobuf/proto"
 	_ "github.com/mwitkow/go-proto-validators"
 	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
@@ -62,6 +61,21 @@ func (this *QueryDiagnosisStatusResponse) Validate() error {
 	return nil
 }
 func (this *DiagnosisInstance) Validate() error {
+	return nil
+}
+func (this *StopDiagnosisRequest) Validate() error {
+	if this.ClusterName == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("ClusterName", fmt.Errorf(`value '%v' must not be an empty string`, this.ClusterName))
+	}
+	if this.Namespace == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("Namespace", fmt.Errorf(`value '%v' must not be an empty string`, this.Namespace))
+	}
+	if this.PodName == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("PodName", fmt.Errorf(`value '%v' must not be an empty string`, this.PodName))
+	}
+	return nil
+}
+func (this *StopDiagnosisResponse) Validate() error {
 	return nil
 }
 func (this *ListProcessesRequest) Validate() error {

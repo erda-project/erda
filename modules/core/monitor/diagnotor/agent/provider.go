@@ -15,6 +15,9 @@
 package diagnotor
 
 import (
+	"os"
+	"time"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
@@ -23,21 +26,32 @@ import (
 )
 
 type config struct {
+	GatherInterval          time.Duration `file:"gather_interval" default:"5s"`
+	TargetContainerCpuLimit int64         `file:"target_container_cpu_limit" env:"TARGET_CONTAINER_CPU_LIMIT"`
+	TargetContainerMemLimit int64         `file:"target_container_mem_limit" env:"TARGET_CONTAINER_MEM_LIMIT"`
 }
 
 // +provider
 type provider struct {
-	Cfg                   *config
-	Log                   logs.Logger
-	Register              transport.Register
+	Cfg      *config
+	Log      logs.Logger
+	Register transport.Register `autowired:"service-register" optional:"true"`
+
+	exit                  func() error
 	diagnotorAgentService *diagnotorAgentService
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.diagnotorAgentService = &diagnotorAgentService{p: p}
+	p.diagnotorAgentService = &diagnotorAgentService{
+		p:          p,
+		pid:        os.Getpid(),
+		lastStatus: &pb.HostProcessStatus{},
+	}
 	if p.Register != nil {
 		pb.RegisterDiagnotorAgentServiceImp(p.Register, p.diagnotorAgentService, apis.Options())
 	}
+	ctx.AddTask(p.diagnotorAgentService.runGatherProcStat)
+	p.exit = ctx.Hub().Close
 	return nil
 }
 

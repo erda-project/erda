@@ -1,8 +1,17 @@
 @url = http://localhost:8080
 
 ### List File
-GET {{url}}/api/container/ea0d72abd63a620381f761dda96aeba2bcc8d751e6a244cf7b965393ebbc1f9b/files
-    ?hostIP=10.0.6.219
+GET {{url}}/api/container/6e7bbccdc0db85d158aee8cf413c04b1f868017482e6f2e9dd29efde976e6e55/files
+    ?hostIP=10.167.0.101
+    &path=/
+    &scope=org
+Accept: application/json
+User-ID: 1100
+Org-ID: 1
+
+### List File
+GET {{url}}/api/container/a302ff5f972b25da25e12f8b3842a68de3dd905414fba8156b23aa271b8e8995/files
+    ?hostIP=10.0.0.85
     &path=/
     &scope=org
 Accept: application/json

@@ -47,6 +47,9 @@ func (s *diagnotorService) StartDiagnosis(ctx context.Context, req *pb.StartDiag
 		if strings.Contains(err.Error(), "already exists") {
 			return nil, errors.NewInvalidParameterError("podName", err.Error())
 		}
+		if strings.Contains(err.Error(), "not found") {
+			return nil, errors.NewNotFoundError(fmt.Sprintf("pod %q", req.Namespace+"/"+req.PodName))
+		}
 		return nil, errors.NewInternalServerError(err)
 	}
 	return &pb.StartDiagnosisResponse{
@@ -91,6 +94,26 @@ func (s *diagnotorService) QueryDiagnosisStatus(ctx context.Context, req *pb.Que
 			Status:      string(agent.Status.Phase),
 			Message:     agent.Status.Message,
 		},
+	}, nil
+}
+
+func (s *diagnotorService) StopDiagnosis(ctx context.Context, req *pb.StopDiagnosisRequest) (*pb.StopDiagnosisResponse, error) {
+	client, err := s.getClient(req.ClusterName)
+	if err != nil {
+		return nil, err
+	}
+	podName := req.PodName
+	if !strings.HasSuffix(podName, agentPodNameSuffix) {
+		podName = getAgentPodName(podName)
+	}
+	err = client.CoreV1().Pods(req.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+	if err != nil {
+		if !strings.Contains(err.Error(), "not found") {
+			return nil, errors.NewInternalServerError(err)
+		}
+	}
+	return &pb.StopDiagnosisResponse{
+		Data: "OK",
 	}, nil
 }
 

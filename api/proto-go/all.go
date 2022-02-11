@@ -60,6 +60,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/msp/apm/adapter/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/alert/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/checker/pb"
+	_ "github.com/erda-project/erda-proto-go/msp/apm/diagnotor/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/exception/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/expression/pb"
 	_ "github.com/erda-project/erda-proto-go/msp/apm/log-service/pb"

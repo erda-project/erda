@@ -49,7 +49,8 @@ func bootstrap() {
 	}
 	targetPID, err := containerruntime.FindPidByPodContainer(targetPodUID, targetContainerID)
 	if err != nil {
-		log.Fatalf("failed to pid by pod + container: %s", err)
+		log.Printf("failed to find pid by pod + container: %s", err)
+		log.Printf("It is possible that the target container has exited")
 		return
 	}
 	runInTargetNamespace(targetPID)

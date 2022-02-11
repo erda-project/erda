@@ -34,20 +34,23 @@ func (s *diagnotorService) createAgent(ctx context.Context, client *kubernetes.C
 	if err != nil {
 		return nil, nil, err
 	}
-	if pod == nil || len(pod.Spec.NodeName) <= 0 {
+	if pod == nil {
+		return nil, nil, errors.New("pod not found")
+	}
+	if len(pod.Spec.NodeName) <= 0 {
 		return nil, nil, errNotReady
 	}
 
-	containerName := findMainContainerName(pod)
-	if len(containerName) <= 0 {
+	container := findMainContainer(pod)
+	if container == nil {
 		return nil, nil, fmt.Errorf("not contains container")
 	}
-	containerID, err := getContainerIDByName(pod, containerName)
+	containerID, err := getContainerIDByName(pod, container.Name)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	agentPod := s.newAgentPod(pod, containerName, containerID, clusterName, labels)
+	agentPod := s.newAgentPod(pod, container, containerID, clusterName, labels)
 	agent, err := client.CoreV1().Pods(namespace).Create(ctx, agentPod, metav1.CreateOptions{})
 	if err != nil {
 		return nil, nil, err
@@ -69,7 +72,7 @@ func getAgentPodName(name string) string {
 	return name + agentPodNameSuffix
 }
 
-func (s *diagnotorService) newAgentPod(target *corev1.Pod, targetContainerName, targetContainerID, clusterName string, ls map[string]string) *corev1.Pod {
+func (s *diagnotorService) newAgentPod(target *corev1.Pod, targetContainer *corev1.Container, targetContainerID, clusterName string, ls map[string]string) *corev1.Pod {
 	labels := map[string]string{
 		"erda-diagnotor": "true",
 		"target-pod":     target.Name,
@@ -78,6 +81,10 @@ func (s *diagnotorService) newAgentPod(target *corev1.Pod, targetContainerName, 
 	for k, v := range ls {
 		labels[k] = v
 	}
+
+	resources := targetContainer.Resources
+	cpuLimit, _ := strconv.ParseFloat(fmt.Sprint(resources.Limits.Cpu().AsDec()), 64)
+	memLimit, _ := strconv.ParseInt(fmt.Sprint(resources.Limits.Memory().AsDec()), 10, 64)
 
 	privileged := true
 	agentHttpServerPort := 14975
@@ -117,11 +124,19 @@ func (s *diagnotorService) newAgentPod(target *corev1.Pod, targetContainerName, 
 						},
 						{
 							Name:  "TARGET_CONTAINER_NAME",
-							Value: targetContainerName,
+							Value: targetContainer.Name,
 						},
 						{
 							Name:  "TARGET_CONTAINER_ID",
 							Value: targetContainerID,
+						},
+						{
+							Name:  "TARGET_CONTAINER_CPU_LIMIT",
+							Value: strconv.FormatInt(int64(cpuLimit*1000), 10),
+						},
+						{
+							Name:  "TARGET_CONTAINER_MEM_LIMIT",
+							Value: strconv.FormatInt(memLimit, 10),
 						},
 						{
 							Name: "NAMESPACE",
@@ -203,7 +218,7 @@ func getHealthProbe(port int) *corev1.Probe {
 	}
 }
 
-func findMainContainerName(pod *corev1.Pod) string {
+func findMainContainer(pod *corev1.Pod) *corev1.Container {
 	for _, c := range pod.Spec.Containers {
 		var hasOrg, hasProject, hasApp bool
 		for _, env := range c.Env {
@@ -216,14 +231,14 @@ func findMainContainerName(pod *corev1.Pod) string {
 				hasApp = true
 			}
 			if hasOrg && hasProject && hasApp {
-				return c.Name
+				return &c
 			}
 		}
 	}
 	if len(pod.Spec.Containers) > 0 {
-		return pod.Spec.Containers[0].Name
+		return &pod.Spec.Containers[0]
 	}
-	return ""
+	return nil
 }
 
 func getContainerIDByName(pod *corev1.Pod, containerName string) (string, error) {

@@ -105,6 +105,9 @@ func parseFileInfo(line string) (*pb.FileInfo, error) {
 			fi.Name = fi.Name[:idx]
 		}
 	}
+	if strings.Contains(fi.Mode, "d") {
+		fi.IsDir = true
+	}
 	// parse modTime
 	t, err := time.ParseInLocation("2006-01-02T15:04:05.000000000", modTime, time.Local)
 	if err != nil {

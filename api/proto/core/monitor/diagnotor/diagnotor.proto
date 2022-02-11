@@ -5,41 +5,12 @@ option go_package = "github.com/erda-project/erda-proto-go/core/monitor/diagnoto
 import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "google/protobuf/descriptor.proto";
 import "google/api/annotations.proto";
-import "common/openapi.proto";
 
 service DiagnotorService {
-  option (erda.common.openapi_service) = {
-    service: "monitor",
-    auth: {
-      check_login: true,
-      check_token: true,
-    }
-  };
-
-  // rpc ListServices (ListFilesRequest) returns (ListFilesResponse) {
-  //   option (google.api.http) = {
-  //     get: "/api/diagnosis/services"
-  //   };
-  //   option (erda.common.openapi) = {
-  //     path: "/api/diagnosis/services",
-  //   };
-  // }
-
-  // rpc ListInstances (ListFilesRequest) returns (ListFilesResponse) {
-  //   option (google.api.http) = {
-  //     get: "/api/diagnosis/services/instances"
-  //   };
-  //   option (erda.common.openapi) = {
-  //     path: "/api/diagnosis/services/instances",
-  //   };
-  // }
 
   rpc StartDiagnosis (StartDiagnosisRequest) returns (StartDiagnosisResponse) {
     option (google.api.http) = {
       post: "/api/diagnosis"
-    };
-    option (erda.common.openapi) = {
-      path: "/api/diagnosis",
     };
   }
 
@@ -47,17 +18,17 @@ service DiagnotorService {
     option (google.api.http) = {
       get: "/api/diagnosis/namespaces/{namespace}/pods/{podName}/status"
     };
-    option (erda.common.openapi) = {
-      path: "/api/diagnosis/namespaces/{namespace}/pods/{podName}/status",
+  }
+
+  rpc StopDiagnosis (StopDiagnosisRequest) returns (StopDiagnosisResponse) {
+    option (google.api.http) = {
+      delete: "/api/diagnosis/namespaces/{namespace}/pods/{podName}"
     };
   }
 
   rpc ListProcesses (ListProcessesRequest) returns (ListProcessesResponse) {
     option (google.api.http) = {
       get: "/api/diagnosis/namespaces/{namespace}/pods/{podName}/processes"
-    };
-    option (erda.common.openapi) = {
-      path: "/api/diagnosis/namespaces/{namespace}/pods/{podName}/processes",
     };
   }
   
@@ -94,6 +65,16 @@ message DiagnosisInstance {
   string message = 8;
 }
 
+message StopDiagnosisRequest {
+  string clusterName = 1 [(validator.field) = {string_not_empty: true}];
+  string namespace = 2 [(validator.field) = {string_not_empty: true}];
+  string podName = 3 [(validator.field) = {string_not_empty: true}];
+}
+
+message StopDiagnosisResponse {
+  string data = 1;
+}
+
 message ListProcessesRequest {
   string clusterName = 1 [(validator.field) = {string_not_empty: true}];
   string namespace = 2 [(validator.field) = {string_not_empty: true}];
@@ -107,6 +88,13 @@ message ListProcessesResponse {
 
 message HostProcessStatus {
   repeated Process processes = 1;
+  int64 totalMemory = 2;
+  int64 memoryUsed = 3;
+  double memoryUsedPercent = 4;
+  double totalCpuCores = 5;
+  double cpuUsedCores = 6;
+  double cpuUsedPercent = 7;
+  int64 connections = 8;
 }
 
 message Process {
@@ -117,12 +105,13 @@ message Process {
   int64 createTime = 5;
   int64 numThreads = 6;
   int64 numFDs = 7;
+  int64 connections = 8;
 
-  ProcessCPUStatus cpu = 8;
-  ProcessMemoryStatus memory = 9;
-  ProcessIOStatus io = 10;
-  ProcessContextSwitches contextSwitches = 11;
-  ProcessRLimit rlimit = 12;
+  ProcessCPUStatus cpu = 9;
+  ProcessMemoryStatus memory = 10;
+  ProcessIOStatus io = 11;
+  ProcessContextSwitches contextSwitches = 12;
+  ProcessRLimit rlimit = 13;
 
   string appType = 20;
 }
@@ -154,22 +143,24 @@ message ProcessMemoryStatus {
   int64 data  = 4;
   int64 stack  = 5;
   int64 locked = 6;
-  double usage = 7;
+  double usedPercent = 7;
 }
 
 message ProcessCPUStatus {
   double user = 1;
   double system = 2;
-  double idle = 3;
-  double nice = 4;
+  // double idle = 3;
+  // double nice = 4;
   double ioWait = 5;
-  double irq = 6;
-  double softIrq = 7;
-  double steal = 8;
-  double stolen = 9;
-  double guest = 10;
-  double guestNice = 11;
-  double usage = 12;
+  // double irq = 6;
+  // double softIrq = 7;
+  // double steal = 8;
+  // double stolen = 9;
+  // double guest = 10;
+  // double guestNice = 11;
+  double usedCores = 12;
+  double usedPercent = 13;
+  double usedPercentInHost = 14;
 }
 
 message ProcessIOStatus {
