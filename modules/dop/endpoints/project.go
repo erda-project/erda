@@ -305,27 +305,6 @@ func (e *Endpoints) ListProject(ctx context.Context, r *http.Request, vars map[s
 		return apierrors.ErrListProject.InternalError(err).ToResp(), nil
 	}
 
-	// rich statistical data
-	if params.PageSize <= 15 {
-		Once.Do(func() {
-			ProjectStatsCache = &sync.Map{}
-		})
-		for i := range pagingProjects.List {
-			prjID := int64(pagingProjects.List[i].ID)
-			stats, ok := ProjectStatsCache.Load(prjID)
-			if !ok {
-				logrus.Infof("get a new project %v add in cache", prjID)
-				stats, err = e.getProjectStats(uint64(prjID))
-				if err != nil {
-					logrus.Errorf("fail to getProjectStats,%v", err)
-					continue
-				}
-				ProjectStatsCache.Store(prjID, stats)
-			}
-			pagingProjects.List[i].Stats = *stats.(*apistructs.ProjectStats)
-		}
-	}
-
 	var userIDs []string
 	for _, v := range pagingProjects.List {
 		userIDs = append(userIDs, v.Owners...)

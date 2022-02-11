@@ -1255,7 +1255,15 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		l.WithError(err).Errorln("failed to Unmarshal project.ClusterConfig")
 	}
 
-	total, _ := p.db.GetApplicationCountByProjectID(project.ID)
+	totalApp, err := p.db.GetApplicationCountByProjectID(project.ID)
+	if err != nil {
+		l.WithError(err).Errorln("failed to count app")
+	}
+
+	totalMember, _, err := p.db.GetMembersWithoutExtraByScope(apistructs.ProjectScope, project.ID)
+	if err != nil {
+		l.WithError(err).Errorln("failed to count member")
+	}
 
 	projectDto := apistructs.ProjectDTO{
 		ID:          uint64(project.ID),
@@ -1268,7 +1276,8 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		Creator:     project.UserID,
 		DDHook:      project.DDHook,
 		Stats: apistructs.ProjectStats{
-			CountApplications: int(total),
+			CountApplications: int(totalApp),
+			CountMembers:      totalMember,
 		},
 		ClusterConfig:  clusterConfig,
 		RollbackConfig: rollbackConfig,
