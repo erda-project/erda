@@ -10,5 +10,7 @@ CREATE TABLE `alert_notify_index`
     `send_time`   timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
     `scope_type`  varchar(150) NOT NULL,
     `scope_id`    varchar(150) NOT NULL,
+    `org_id`      bigint(20)   NOT NULL,
     PRIMARY KEY (`id`)
-) ENGINE InnoDB DEFAULT CHARSET=utf8mb4 COMMENT = '告警通知索引表'
+) ENGINE InnoDB
+  DEFAULT CHARSET = utf8mb4 COMMENT = '告警通知索引表'
