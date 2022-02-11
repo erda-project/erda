@@ -21,7 +21,7 @@ var MONITOR_FILEMANAGER_UPLOAD = apis.ApiSpec{
 	BackendPath: "/api/container/<containerID>/files/upload",
 	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
 	Scheme:      "http",
-	Method:      "GET",
+	Method:      "POST",
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 上传容器文件",
