@@ -64,6 +64,9 @@ components:
   yamlFileEditor:
     type: FileEditor
 
+options:
+  returnAllComponents: true
+
 rendering:
   __DefaultRendering__:
     - name: page
