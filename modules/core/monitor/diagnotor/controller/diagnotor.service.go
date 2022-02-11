@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"google.golang.org/grpc"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -79,9 +80,9 @@ func (s *diagnotorService) QueryDiagnosisStatus(ctx context.Context, req *pb.Que
 		if strings.Contains(err.Error(), "not found") {
 			return nil, errors.NewNotFoundError(fmt.Sprintf("pod %q", req.Namespace+"/"+podName))
 		}
-		return nil, errors.NewInternalServerError(err)
+		return nil, errors.NewServiceInvokingError("api-server", err)
 	}
-	if agent == nil {
+	if agent == nil || agent.Status.Phase == corev1.PodSucceeded || agent.Status.Phase == corev1.PodFailed {
 		return nil, errors.NewNotFoundError(agentContainerName)
 	}
 	return &pb.QueryDiagnosisStatusResponse{
@@ -109,7 +110,7 @@ func (s *diagnotorService) StopDiagnosis(ctx context.Context, req *pb.StopDiagno
 	err = client.CoreV1().Pods(req.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 	if err != nil {
 		if !strings.Contains(err.Error(), "not found") {
-			return nil, errors.NewInternalServerError(err)
+			return nil, errors.NewServiceInvokingError("api-server", err)
 		}
 	}
 	return &pb.StopDiagnosisResponse{
