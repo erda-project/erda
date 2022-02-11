@@ -69,22 +69,24 @@ func (p *provider) getNotifyChannelChart(sdk *cptype.SDK) (*complexgraph.Data, e
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	timestamp := common.ToInterface(response.Data.Timestamp)
 	xAxisBuilder := complexgraph.NewAxisBuilder().
 		WithType(complexgraph.Category).
-		WithDataStructure(structure.Timestamp, structure.Nanosecond, true).
-		WithData(response.Data.Timestamp)
+		WithDataStructure(structure.Timestamp, "", true).
+		WithData(timestamp...)
 	yAxisBuilder := complexgraph.NewAxisBuilder().
 		WithType(complexgraph.Value).
 		WithDataStructure(structure.Number, "", true)
 
 	dataBuilder := complexgraph.NewDataBuilder().
-		WithTitle(common.ComponentNameAlertNotifyGroupByStatusCountLine).
+		WithTitle(sdk.I18n(common.ComponentNameAlertNotifyGroupByTypeCountLine)).
 		WithXAxis(xAxisBuilder.Build())
 
 	for status, data := range response.Data.Value {
 		yAxisBuilder.WithDimensions(sdk.I18n(status))
+		value := common.ToInterface(data.Value)
 		sere := complexgraph.NewSereBuilder().WithType(complexgraph.Line).
-			WithDimension(sdk.I18n(status)).WithData(data).Build()
+			WithDimension(sdk.I18n(status)).WithData(value...).Build()
 		dataBuilder.WithDimensions(sere.Dimension)
 		dataBuilder.WithSeries(sere)
 	}

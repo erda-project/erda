@@ -26,12 +26,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-kanban/common/gshelper"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/issuefilterbm"
 	"github.com/erda-project/erda/modules/dop/services/issuestate"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/providers/component-protocol/issueFilter/gshelper"
 )
 
 type IssueFilter struct {
@@ -43,16 +43,19 @@ type IssueFilter struct {
 	gsHelper         *gshelper.GSHelper
 	sdk              *cptype.SDK
 
-	filterReq apistructs.IssuePagingRequest `json:"-"`
-	State     State                         `json:"_"`
-	InParams  InParams                      `json:"-"`
-	Bms       []issuefilterbm.MyFilterBm    `json:"-"`
+	filterReq          apistructs.IssuePagingRequest `json:"-"`
+	State              State                         `json:"_"`
+	InParams           InParams                      `json:"-"`
+	Bms                []issuefilterbm.MyFilterBm    `json:"-"`
+	defaultStateValues []int64                       `json:"-"`
 }
 
 type State struct {
 	Base64UrlQueryParams    string             `json:"issueFilter__urlQuery,omitempty"`
 	FrontendConditionValues FrontendConditions `json:"values,omitempty"`
 	SelectedFilterSet       string             `json:"selectedFilterSet,omitempty"`
+	WithStateCondition      bool               `json:"-"`
+	IssueRequestKey         string             `json:"-"`
 }
 
 func init() {
@@ -61,7 +64,7 @@ func init() {
 	})
 }
 
-func (f *IssueFilter) BeforeHandleOp(sdk *cptype.SDK) {
+func (f *IssueFilter) Initial(sdk *cptype.SDK) {
 	f.bdl = sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	f.issueFilterBmSvc = sdk.Ctx.Value(types.IssueFilterBmService).(*issuefilterbm.IssueFilterBookmark)
 	f.issueStateSvc = sdk.Ctx.Value(types.IssueStateService).(*issuestate.IssueState)
@@ -76,6 +79,11 @@ func (f *IssueFilter) BeforeHandleOp(sdk *cptype.SDK) {
 	}
 }
 
+func (f *IssueFilter) BeforeHandleOp(sdk *cptype.SDK) {
+	f.Initial(sdk)
+	f.State.IssueRequestKey = gshelper.KeyIssuePagingRequestKanban
+}
+
 func (f *IssueFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		conditions, err := f.ConditionRetriever()
@@ -83,21 +91,21 @@ func (f *IssueFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			panic(err)
 		}
 		f.StdDataPtr.Conditions = conditions
-		options, err := f.FilterSet()
-		if err != nil {
-			panic(err)
-		}
-		f.StdDataPtr.FilterSet = options
 		if f.InParams.FrontendUrlQuery != "" {
 			if err := f.flushOptsByFilter(f.InParams.FrontendUrlQuery); err != nil {
 				panic(err)
 			}
 		}
-		// if f.State.FrontendConditionValues.States == nil {
-		// 	if err := f.setDefaultState(); err != nil {
-		// 		panic(err)
-		// 	}
-		// }
+		if f.State.WithStateCondition && f.State.FrontendConditionValues.States == nil {
+			if err := f.setDefaultState(); err != nil {
+				panic(err)
+			}
+		}
+		options, err := f.FilterSet()
+		if err != nil {
+			panic(err)
+		}
+		f.StdDataPtr.FilterSet = options
 		f.StdDataPtr.Operations = map[cptype.OperationKey]cptype.Operation{
 			filter.OpFilter{}.OpKey():           cputil.NewOpBuilder().Build(),
 			filter.OpFilterItemSave{}.OpKey():   cputil.NewOpBuilder().Build(),
@@ -186,7 +194,7 @@ func (f *IssueFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDelet
 
 func (f *IssueFilter) Finalize(sdk *cptype.SDK) {
 	issuePagingRequest := f.generateIssuePagingRequest()
-	f.gsHelper.SetIssuePagingRequest(issuePagingRequest)
+	f.gsHelper.SetIssuePagingRequest(f.State.IssueRequestKey, issuePagingRequest)
 }
 
 func (f *IssueFilter) generateIssuePagingRequest() apistructs.IssuePagingRequest {
@@ -300,5 +308,6 @@ func (f *IssueFilter) setDefaultState() error {
 		res["ALL"] = append(res["ALL"], ids...)
 	}
 	f.State.FrontendConditionValues.States = res[f.InParams.FrontendFixedIssueType]
+	f.defaultStateValues = res[f.InParams.FrontendFixedIssueType]
 	return nil
 }

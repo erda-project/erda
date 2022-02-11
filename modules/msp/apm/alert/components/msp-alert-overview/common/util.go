@@ -25,3 +25,11 @@ func GetInterval(startTimeMs, endTimeMs int64, minInterval stdtime.Duration, pre
 	}
 	return interval.String()
 }
+
+func ToInterface(value []int64) []interface{} {
+	arr := make([]interface{}, 0)
+	for _, v := range value {
+		arr = append(arr, v)
+	}
+	return arr
+}

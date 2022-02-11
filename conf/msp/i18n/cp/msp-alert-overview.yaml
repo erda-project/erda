@@ -5,6 +5,8 @@ en:
   UnRecoverAlerts: UnRecover Alerts
   alertEventGroupByLevelCountLine: By Level
   alertEventGroupByTypeCountLine: By Category
+  alertNotifyGroupByStatusCountLine: By Status
+  alertNotifyGroupByTypeCountLine: By Channel Type
   unRecoverAlertChart: UnRecover Alerts
   alertTriggerCount: Alert Events
   alertRecoverCount: Recover Events
@@ -19,6 +21,8 @@ zh:
   UnRecoverAlerts: 未恢复告警
   alertEventGroupByLevelCountLine: 按级别
   alertEventGroupByTypeCountLine: 按类别
+  alertNotifyGroupByStatusCountLine: 按状态
+  alertNotifyGroupByTypeCountLine: 按通知方式
   unRecoverAlertChart: 未恢复告警数
   alertTriggerCount: 告警事件
   alertRecoverCount: 恢复事件
