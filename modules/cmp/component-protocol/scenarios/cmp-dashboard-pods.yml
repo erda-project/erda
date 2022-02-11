@@ -71,6 +71,8 @@ components:
   yamlFileEditor:
     type: FileEditor
 
+options:
+  returnAllComponents: true
 
 rendering:
   __DefaultRendering__:

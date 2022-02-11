@@ -202,6 +202,7 @@ require (
 replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/docker/spdystream => github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96
+	github.com/erda-project/erda-infra => github.com/craigmchen/erda-infra v0.0.0-20220211060547-6343947fecb6
 	github.com/erda-project/erda-proto-go v0.0.0 => ./api/proto-go
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/googlecloudplatform/flink-operator => github.com/erda-project/flink-on-k8s-operator v0.0.0-20210828094530-28e003581cf2
