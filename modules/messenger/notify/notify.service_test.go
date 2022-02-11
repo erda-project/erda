@@ -171,7 +171,7 @@ func Test_notifyService_CreateHistoryAndIndex(t *testing.T) {
 		monkey.PatchInstanceMethod(reflect.TypeOf(ns), "CreateHistoryAndIndex", func(_ notifyService, request *pb.CreateNotifyHistoryRequest) (historyId int64, err error) {
 			return 3, nil
 		})
-		monkey.PatchInstanceMethod(reflect.TypeOf(&db.NotifyHistoryDB{}), "CreateNotifyHistory", func(_ *db.NotifyHistoryDB, request *pb.CreateNotifyHistoryRequest) (*db.NotifyHistory, error) {
+		monkey.PatchInstanceMethod(reflect.TypeOf(&db.NotifyHistoryDB{}), "CreateNotifyHistory", func(_ *db.NotifyHistoryDB, request *db.NotifyHistory) (*db.NotifyHistory, error) {
 			return &db.NotifyHistory{
 				BaseModel:             model.BaseModel{},
 				NotifyName:            "sss",
@@ -256,7 +256,7 @@ func Test_notifyService_QueryNotifyHistories(t *testing.T) {
 			return "1"
 		})
 		defer monkey.UnpatchAll()
-		monkey.PatchInstanceMethod(reflect.TypeOf(&db.NotifyHistoryDB{}), "QueryNotifyHistories", func(_ *db.NotifyHistoryDB, request *pb.QueryNotifyHistoriesRequest) ([]db.NotifyHistory, int64, error) {
+		monkey.PatchInstanceMethod(reflect.TypeOf(&db.NotifyHistoryDB{}), "QueryNotifyHistories", func(_ *db.NotifyHistoryDB, request *model.QueryNotifyHistoriesRequest) ([]db.NotifyHistory, int64, error) {
 			return []db.NotifyHistory{
 				{
 					BaseModel:             model.BaseModel{},
