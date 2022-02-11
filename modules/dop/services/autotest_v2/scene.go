@@ -138,6 +138,17 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 		}
 	}
 
+	// Check if in the same scene set
+	if preID > 0 {
+		preScene, err := svc.db.GetAutotestScene(preID)
+		if err != nil {
+			return 0, err
+		}
+		if preScene.SetID != req.SetID {
+			return 0, fmt.Errorf("operation is not in the same scene set")
+		}
+	}
+
 	scene := &dao.AutoTestScene{
 		Name:        req.Name,
 		Description: req.Description,
