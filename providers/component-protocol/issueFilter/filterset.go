@@ -50,7 +50,7 @@ func (f *IssueFilter) FilterSet() ([]filter.SetItem, error) {
 			ID:       "defaultState",
 			Label:    f.sdk.I18n("unfinishedIssue"),
 			IsPreset: true,
-			Values:   map[string]interface{}{PropConditionKeyStates: f.defaultStateValues},
+			Values:   map[string]interface{}{PropConditionKeyStates: f.State.DefaultStateValues},
 		})
 	}
 	for _, i := range f.Bms {
