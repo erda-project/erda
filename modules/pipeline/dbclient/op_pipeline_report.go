@@ -120,7 +120,7 @@ func (client *Client) DeletePipelineReportsByPipelineID(pipelineID uint64, ops .
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	_, err := session.ID(pipelineID).Delete(&spec.PipelineReport{})
+	_, err := session.Where("pipeline_id=?", pipelineID).Delete(&spec.PipelineReport{})
 	return err
 }
 
