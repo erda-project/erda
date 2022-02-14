@@ -15,6 +15,7 @@
 package apidocsvc
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 
@@ -42,22 +43,22 @@ const (
 	actionDelete = "delete"
 )
 
-func (svc *Service) CreateNode(req *apistructs.APIDocCreateNodeReq) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
+func (svc *Service) CreateNode(ctx context.Context, req *apistructs.APIDocCreateNodeReq) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	if req.Body.Type != apistructs.NodeTypeFile {
-		return nil, apierrors.CreateNode.InvalidParameter("节点类型错误, 只能创建文件类型(f)的节点")
+		return nil, apierrors.CreateNode.InvalidParameter(svc.text(ctx, "InvalidNodeType"))
 	}
 
 	var meta apistructs.CreateAPIDocMeta
 	_ = json.Unmarshal(req.Body.Meta, &meta)
 
 	// 主流程在 createDoc 中完成
-	return svc.createDoc(req.OrgID, req.Identity.UserID, req.Body.Pinode, req.Body.Name, meta.Content)
+	return svc.createDoc(ctx, req.OrgID, req.Identity.UserID, req.Body.Pinode, req.Body.Name, meta.Content)
 }
 
-func (svc *Service) DeleteNode(req *apistructs.APIDocDeleteNodeReq) *errorresp.APIError {
+func (svc *Service) DeleteNode(ctx context.Context, req *apistructs.APIDocDeleteNodeReq) *errorresp.APIError {
 	switch req.URIParams.TreeName {
 	case TreeNameAPIDocs:
-		return svc.deleteAPIDoc(req.OrgID, req.Identity.UserID, req.URIParams.Inode)
+		return svc.deleteAPIDoc(ctx, req.OrgID, req.Identity.UserID, req.URIParams.Inode)
 	default:
 		return apierrors.DeleteNode.NotFound()
 	}
@@ -72,19 +73,19 @@ func (svc *Service) UpdateNode(req *apistructs.APIDocUpdateNodeReq) (*apistructs
 	}
 }
 
-func (svc *Service) MoveNode(req *apistructs.APIDocMvCpNodeReq) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
+func (svc *Service) MoveNode(ctx context.Context, req *apistructs.APIDocMvCpNodeReq) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	switch req.URIParams.TreeName {
 	case TreeNameAPIDocs:
-		return svc.moveAPIDco(req.OrgID, req.Identity.UserID, req.URIParams.Inode, req.Body.Pinode)
+		return svc.moveAPIDco(ctx, req.OrgID, req.Identity.UserID, req.URIParams.Inode, req.Body.Pinode)
 	default:
 		return nil, apierrors.MoveNode.NotFound()
 	}
 }
 
-func (svc *Service) CopyNode(req *apistructs.APIDocMvCpNodeReq) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
+func (svc *Service) CopyNode(ctx context.Context, req *apistructs.APIDocMvCpNodeReq) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	switch req.URIParams.TreeName {
 	case TreeNameAPIDocs:
-		return svc.copyAPIDoc(req.OrgID, req.Identity.UserID, req.URIParams.Inode, req.Body.Pinode)
+		return svc.copyAPIDoc(ctx, req.OrgID, req.Identity.UserID, req.URIParams.Inode, req.Body.Pinode)
 	default:
 		return nil, apierrors.CopyNode.NotFound()
 	}

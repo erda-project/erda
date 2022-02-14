@@ -90,6 +90,20 @@ zh:
 
   FailedToFindVersion: 查询版本失败
 
+  InvalidParentNodeID: 不合法的父节点编号
+  SameNameDocAlreadlyExists: 已存在同名文档
+  FailedToFindDocNod: 查询文档节点失败
+  CanNotDeleteDir: 只可以删除文档文件, 不可以删除目录
+  CanNotNotDeleteDocWhileEditing: 文档正在编辑中, 不能删除
+  DeleteFileFromAPIDesign: "从 API 设计中心删除了文件 %s"
+  InvalidNodeType: 节点类型错误, 只能创建文件类型(f)的节点
+
+  FailedToGetDocLock: 获取文档锁失败
+  AutoCommitDoc: 用户离开 API 设计中心, 自动提交修改的文档
+  FailedToSaveDoc: 暂存文档失败
+  FailedToUpdateDoc: 更新文档失败
+  UpdateDocFromDesignCenter: 从 API 设计中心更新文档
+
 en:
   SwaggerFileISInvalidOAS: invalid OAS2/3 document
   VersionLabelNotExits: "version %s is not exists"
@@ -181,3 +195,17 @@ en:
   AutoSLA: "there is already an SLA with automatically authentication: %s"
 
   FailedToFindVersion: failed to find the version
+
+  InvalidParentNodeID: invalid parent node id
+  SameNameDocAlreadlyExists: there is already same name document
+  FailedToFindDocNod: failed to find document node
+  CanNotDeleteDir: you could not delete a directory
+  CanNotNotDeleteDocWhileEditing: could not delete a document while it is in editing
+  DeleteFileFromAPIDesign: "delete the file %s from API Design Center"
+  InvalidNodeType: can only create f(ile)-type node
+
+  FailedToGetDocLock: failed to get document lock
+  AutoCommitDoc: the revised document is automatically submitted when the user leaves the API Design Center
+  FailedToSaveDoc: failed to save the document
+  FailedToUpdateDoc: failed to update the document
+  UpdateDocFromDesignCenter: update the API document from API Design Center

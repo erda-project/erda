@@ -15,6 +15,7 @@
 package apidocsvc
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -40,14 +41,14 @@ import (
 	"github.com/erda-project/erda/pkg/swagger/oasconv"
 )
 
-func (svc *Service) createDoc(orgID uint64, userID string, dstPinode, serviceName, content string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
+func (svc *Service) createDoc(ctx context.Context, orgID uint64, userID string, dstPinode, serviceName, content string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	orgIDStr := strconv.FormatUint(orgID, 10)
-	filenameFromRepoRoot := filepath.Join(apiDocsPathFromRepoRoot, mustSuffix(serviceName, ".yaml"))
+	filenameFromRepoRoot := filepath.Join(apiDocsPathFromRepoRoot, MustSuffix(serviceName, ".yaml"))
 
 	// pft: parentFileTree object
 	pft, err := bundle.NewGittarFileTree(dstPinode)
 	if err != nil || pft.ApplicationID() == "" {
-		return nil, apierrors.CreateNode.InvalidParameter(errors.Wrap(err, "不合法的父节点编号"))
+		return nil, apierrors.CreateNode.InvalidParameter(errors.Wrap(err, svc.text(ctx, "InvalidParentNodeID")))
 	}
 
 	// 无需前置检查分支是否存在, 如不存在, commit 时会返回错误
@@ -56,7 +57,7 @@ func (svc *Service) createDoc(orgID uint64, userID string, dstPinode, serviceNam
 	// 检查父目录中是否已存在同名文档
 	ft := pft.Clone().SetPathFromRepoRoot(filenameFromRepoRoot)
 	if _, err := bdl.Bdl.GetGittarTreeNodeInfo(ft.TreePath(), orgIDStr, userID); err == nil {
-		return nil, apierrors.CreateNode.InvalidParameter("已存在同名文档")
+		return nil, apierrors.CreateNode.InvalidParameter(svc.text(ctx, "SameNameDocAlreadlyExists"))
 	}
 
 	repo := strings.TrimPrefix(pft.RepoPath(), "/")
@@ -71,7 +72,7 @@ func (svc *Service) createDoc(orgID uint64, userID string, dstPinode, serviceNam
 		Pinode:    dstPinode,
 		Scope:     "application",
 		ScopeID:   ft.ApplicationID(),
-		Name:      mustSuffix(serviceName, ""),
+		Name:      MustSuffix(serviceName, ""),
 		CreatorID: userID,
 		UpdaterID: userID,
 		Meta:      nil,
@@ -80,7 +81,7 @@ func (svc *Service) createDoc(orgID uint64, userID string, dstPinode, serviceNam
 	return &rspData, nil
 }
 
-func (svc *Service) deleteAPIDoc(orgID uint64, userID, dstInode string) *errorresp.APIError {
+func (svc *Service) deleteAPIDoc(ctx context.Context, orgID uint64, userID, dstInode string) *errorresp.APIError {
 	// todo: 鉴权 谁能删
 
 	// 查询这个 gittar 路径对应的节点
@@ -91,10 +92,10 @@ func (svc *Service) deleteAPIDoc(orgID uint64, userID, dstInode string) *errorre
 	nodeInfo, err := bdl.Bdl.GetGittarTreeNodeInfo(ft.TreePath(), strconv.FormatUint(orgID, 10), userID)
 	if err != nil {
 		logrus.Errorf("查询文档节点失败, ft: %+v, err: %v", ft, err)
-		return apierrors.DeleteNode.InternalError(errors.Wrap(err, "查询文档节点失败"))
+		return apierrors.DeleteNode.InternalError(errors.Wrap(err, svc.text(ctx, "FailedToFindDocNod")))
 	}
 	if nodeInfo.Type != "blob" {
-		return apierrors.DeleteNode.InvalidParameter("只可以删除文档文件, 不可以删除目录")
+		return apierrors.DeleteNode.InvalidParameter(svc.text(ctx, "CanNotDeleteDir"))
 	}
 
 	// 正在编辑的文档不可删除
@@ -110,12 +111,12 @@ func (svc *Service) deleteAPIDoc(orgID uint64, userID, dstInode string) *errorre
 	if record := dbclient.Sq().Where(where).
 		Where("is_locked = true AND expired_at > ?", timeNow).
 		First(&lock); record.RowsAffected > 0 {
-		return apierrors.DeleteNode.InternalError(errors.New("文档正在编辑中, 不能删除"))
+		return apierrors.DeleteNode.InternalError(errors.New(svc.text(ctx, "CanNotNotDeleteDocWhileEditing")))
 	}
 
 	// 删除这个文件
 	var commitRequest = apistructs.GittarCreateCommitRequest{
-		Message: "从 API 设计中心删除了文件 " + nodeInfo.Path,
+		Message: svc.text(ctx, "DeleteFileFromAPIDesign", nodeInfo.Path),
 		Actions: []apistructs.EditActionItem{{
 			Action:   "delete",
 			Content:  "",
@@ -163,7 +164,7 @@ func (svc *Service) renameAPIDoc(orgID uint64, userID, dstInode, docName string)
 		return nil, apierrors.UpdateNode.InternalError(errors.New("不合法的 inode"))
 	}
 
-	docName = mustSuffix(docName, suffixYaml)
+	docName = MustSuffix(docName, suffixYaml)
 	if docName == filepath.Base(ft.PathFromRepoRoot()) {
 		return nil, apierrors.UpdateNode.InvalidParameter(errors.New("重命名的文档名与原文档名一致"))
 	}
@@ -223,7 +224,7 @@ func (svc *Service) renameAPIDoc(orgID uint64, userID, dstInode, docName string)
 		Pinode:    nft.Clone().DeletePathFromRepoRoot().Inode(),
 		Scope:     "application",
 		ScopeID:   nft.ApplicationID(),
-		Name:      mustSuffix(docName, ""),
+		Name:      MustSuffix(docName, ""),
 		CreatorID: "",
 		UpdaterID: "",
 		Meta:      nil,
@@ -231,7 +232,7 @@ func (svc *Service) renameAPIDoc(orgID uint64, userID, dstInode, docName string)
 	return data, nil
 }
 
-func (svc *Service) moveAPIDco(orgID uint64, userID, srcInode, dstPinode string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
+func (svc *Service) moveAPIDco(ctx context.Context, orgID uint64, userID, srcInode, dstPinode string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	ft, err := bundle.NewGittarFileTree(srcInode)
 	if err != nil {
 		return nil, apierrors.MoveNode.InvalidParameter(errors.New("不合法的 inode"))
@@ -249,20 +250,20 @@ func (svc *Service) moveAPIDco(orgID uint64, userID, srcInode, dstPinode string)
 	}
 
 	// 拷贝文档到目标分支
-	data, err2 := svc.copyAPIDoc(orgID, userID, srcInode, dstPinode)
+	data, err2 := svc.copyAPIDoc(ctx, orgID, userID, srcInode, dstPinode)
 	if err2 != nil {
 		return nil, err2
 	}
 
 	// 在本分支中删除文档
-	if err2 := svc.deleteAPIDoc(orgID, userID, srcInode); err2 != nil {
+	if err2 := svc.deleteAPIDoc(ctx, orgID, userID, srcInode); err2 != nil {
 		return nil, err2
 	}
 
 	return data, nil
 }
 
-func (svc *Service) copyAPIDoc(orgID uint64, userID, srcInode, dstPinode string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
+func (svc *Service) copyAPIDoc(ctx context.Context, orgID uint64, userID, srcInode, dstPinode string) (*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	// 查找文档内容
 	ft, err := bundle.NewGittarFileTree(srcInode)
 	if err != nil {
@@ -277,7 +278,7 @@ func (svc *Service) copyAPIDoc(orgID uint64, userID, srcInode, dstPinode string)
 	}
 
 	// 将文档内容写入目标路径
-	data, err2 := svc.createDoc(orgID, userID, dstPinode, filepath.Base(blob.Path), blob.Content)
+	data, err2 := svc.createDoc(ctx, orgID, userID, dstPinode, filepath.Base(blob.Path), blob.Content)
 	if err2 != nil {
 		return nil, err2
 	}
@@ -336,7 +337,7 @@ func (svc *Service) listBranches(orgID, appID uint64, userID string) ([]*apistru
 // listAPIDocs lists all api docs names as nodes
 func (svc *Service) listAPIDocs(orgID uint64, userID, pinode string) ([]*apistructs.FileTreeNodeRspData, *errorresp.APIError) {
 	return svc.listServices(orgID, userID, pinode, apiDocsPathFromRepoRoot, func(node apistructs.TreeEntry) bool {
-		return node.Type == "blob" && matchSuffix(node.Name, suffixYaml, suffixYml)
+		return node.Type == "blob" && MatchSuffix(node.Name, suffixYaml, suffixYml)
 	})
 }
 
@@ -395,7 +396,7 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 			Pinode:    pinode,
 			Scope:     "application",
 			ScopeID:   cft.ApplicationID(),
-			Name:      mustSuffix(node.Name, ""),
+			Name:      MustSuffix(node.Name, ""),
 			CreatorID: "",
 			UpdaterID: "",
 			Meta:      meta,
@@ -479,7 +480,7 @@ func (svc *Service) getSchemaContent(orgID uint64, userID, inode string) (*apist
 	if err != nil {
 		return nil, apierrors.GetNodeDetail.InternalError(err)
 	}
-	serviceName := mustSuffix(filepath.Base(ft.PathFromRepoRoot()), "")
+	serviceName := MustSuffix(filepath.Base(ft.PathFromRepoRoot()), "")
 	ft.SetPathFromRepoRoot(filepath.Join(migrationsPathFromRepoRoot, serviceName))
 
 	orgIDStr := strconv.FormatUint(orgID, 10)

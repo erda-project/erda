@@ -25,29 +25,29 @@ import (
 type Option func(project *Project)
 
 // WithBundle sets the bundle to invoke other services
-func WithBundle(bdl *bundle.Bundle) Option {
+func WithBundle(bundle *bundle.Bundle) Option {
 	return func(p *Project) {
-		p.bdl = bdl
+		p.bdl = bundle
 	}
 }
 
 // WithTrans sets the translator for i18n
-func WithTrans(trans i18n.Translator) Option {
+func WithTrans(translator i18n.Translator) Option {
 	return func(p *Project) {
-		p.trans = trans
+		p.trans = translator
 	}
 }
 
 // WithCMP sets the gRPC client to invoke CMP service
 // Todo: the dependency on CMP will be moved to a service which is more suitable
-func WithCMP(cmp dashboardPb.ClusterResourceServer) Option {
+func WithCMP(cmpServer dashboardPb.ClusterResourceServer) Option {
 	return func(p *Project) {
-		p.cmp = cmp
+		p.cmp = cmpServer
 	}
 }
 
-func WithNamespace(namespace *namespace.Namespace) Option {
+func WithNamespace(ns *namespace.Namespace) Option {
 	return func(p *Project) {
-		p.namespace = namespace
+		p.namespace = ns
 	}
 }

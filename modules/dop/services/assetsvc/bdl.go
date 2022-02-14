@@ -99,7 +99,7 @@ func (svc *Service) createOrUpdateClientLimits(orgID, userID, endpointID, client
 	switch curSLAID := contract.CurSLAID; {
 	case curSLAID == nil:
 		// 无当前 SLA, 设置 1 次/天 的流量限制
-		return bdl.Bdl.CreateOrUpdateClientLimits(orgID, userID, clientID, endpointID, onceADayLimitType())
+		return bdl.Bdl.CreateOrUpdateClientLimits(orgID, userID, clientID, endpointID, OnceADayLimitType())
 	case *curSLAID == 0:
 		// 设置无流量限制
 		return bdl.Bdl.CreateOrUpdateClientLimits(orgID, userID, clientID, endpointID, nil)
