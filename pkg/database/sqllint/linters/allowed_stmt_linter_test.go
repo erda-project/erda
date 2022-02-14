@@ -21,7 +21,7 @@ import (
 	_ "github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
 
-const allowedStmtLinterConfig = `# 允许的 SQL 语句清单
+const allowedStmtLinterConfig = `# allowed SQL list
 - name: AllowedStmtLinter
   switch: on
   white:
@@ -197,7 +197,7 @@ func TestAllowedStmtLinter_LoadConfig(t *testing.T) {
 }
 
 func TestAllowedStmtLinter_NotAllowedAlterTableStmt(t *testing.T) {
-	var config = `# 允许的 SQL 语句清单
+	var config = `# allowed SQL list
 - name: AllowedStmtLinter
   switchOn: true
   white:
@@ -222,7 +222,7 @@ func TestAllowedStmtLinter_NotAllowedAlterTableStmt(t *testing.T) {
 }
 
 func TestAllowedStmtLint_AllowedAlterTableStmt_White(t *testing.T) {
-	var config = `# 允许的 SQL 语句清单
+	var config = `# allowed SQL list
 - name: AllowedStmtLinter
   switchOn: true
   white:

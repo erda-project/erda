@@ -74,7 +74,7 @@ type necessaryTableOptionLinter struct {
 func (hub) NecessaryTableOptionLinter(s script.Script, c sqllint.Config) (sqllint.Rule, error) {
 	var meta necessaryTableOptionLinterMeta
 	if err := yaml.Unmarshal(c.Meta, &meta); err != nil {
-		return nil, errors.Wrap(err, "解析 NecessaryTableOptionLinter.meta 错误")
+		return nil, errors.Wrap(err, "failed to parse NecessaryTableOptionLinter.meta")
 	}
 	var (
 		ok    = false
@@ -87,7 +87,7 @@ func (hub) NecessaryTableOptionLinter(s script.Script, c sqllint.Config) (sqllin
 		}
 	}
 	if !ok {
-		return nil, errors.Errorf("未定义的 tableOption: %s, 请参考 tableOptions 列表重新配置: %s", meta.Key, strings.Join(types, ", "))
+		return nil, errors.Errorf("undefined tableOption: %s. Optional tableOptions: %s", meta.Key, strings.Join(types, ", "))
 	}
 
 	return &necessaryTableOptionLinter{
@@ -112,7 +112,7 @@ func (l *necessaryTableOptionLinter) Enter(in ast.Node) (ast.Node, bool) {
 	}
 	v, ok := m[l.meta.Key]
 	if !ok {
-		l.err = linterror.New(l.s, l.text, fmt.Sprintf("表缺少必要的 tableOption: %v", l.meta.Key),
+		l.err = linterror.New(l.s, l.text, fmt.Sprintf("missing necessary tableOption: %s", l.meta.Key),
 			func(line []byte) bool {
 				return false
 			})
@@ -127,7 +127,7 @@ func (l *necessaryTableOptionLinter) Enter(in ast.Node) (ast.Node, bool) {
 			return in, true
 		}
 	}
-	l.err = linterror.New(l.s, l.text, fmt.Sprintf("tableOption %s 的值 %s 不符合给定的值 %s",
+	l.err = linterror.New(l.s, l.text, fmt.Sprintf("tableOption %s's value %s dose not match the given value %s",
 		l.meta.Key, v, strings.Join(l.meta.Values, ",")), func(line []byte) bool {
 		return bytes.Contains(line, []byte(l.meta.Key))
 	})

@@ -45,7 +45,7 @@ func (hub) ManualTimeSetterLinter(script script.Script, c sqllint.Config) (sqlli
 		baseLinter: newBaseLinter(script),
 	}
 	if err := yaml.Unmarshal(c.Meta, &l.meta); err != nil {
-		return nil, errors.Wrap(err, "解析 ManualTimeSetterLinter.meta 错误")
+		return nil, errors.Wrap(err, "failed to parse ManualTimeSetterLinter.meta")
 	}
 	return &l, nil
 }
@@ -63,14 +63,14 @@ func (l *manualTimeSetterLinter) Enter(in ast.Node) (out ast.Node, skipChildren 
 	case *ast.InsertStmt:
 		for _, col := range stmt.Columns {
 			if col.Name.String() == l.meta.ColumnName {
-				l.err = linterror.New(l.s, l.text, fmt.Sprintf("禁止手动为 %s 字段插入时间值", l.meta.ColumnName), getLint)
+				l.err = linterror.New(l.s, l.text, fmt.Sprintf("not allowed to manual insert value into column %s", l.meta.ColumnName), getLint)
 				return in, true
 			}
 		}
 	case *ast.UpdateStmt:
 		for _, col := range stmt.List {
 			if col.Column.String() == l.meta.ColumnName {
-				l.err = linterror.New(l.s, l.text, fmt.Sprintf("禁止手动为 %s 字段插入时间值", l.meta.ColumnName), getLint)
+				l.err = linterror.New(l.s, l.text, fmt.Sprintf("not allowed to manual insert value into column %s", l.meta.ColumnName), getLint)
 				return in, true
 			}
 		}

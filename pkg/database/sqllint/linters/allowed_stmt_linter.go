@@ -78,7 +78,8 @@ type allowedStmtLinter struct {
 }
 
 // AllowedStmtLinter
-// 原则 1: "法无禁止皆可为", 即如果没有对某句型进行配置, 则认为允许
+// Principle 1: "Everything is allowed if it is not prohibited",
+// that is, if a sentence pattern is not configured, it is considered to be allowed
 func (hub) AllowedStmtLinter(s script.Script, c sqllint.Config) (sqllint.Rule, error) {
 	var l = allowedStmtLinter{
 		baseLinter: newBaseLinter(s),
@@ -86,7 +87,7 @@ func (hub) AllowedStmtLinter(s script.Script, c sqllint.Config) (sqllint.Rule, e
 	}
 	var metas []allowedStmtLinterMetaItem
 	if err := yaml.Unmarshal(c.Meta, &metas); err != nil {
-		return nil, errors.Wrapf(err, "解析 AllowedStmtLinter.meta 失败, raw meta: %s", string(c.Meta))
+		return nil, errors.Wrapf(err, "failed to paerse AllowedStmtLinter.meta, raw meta: %s", string(c.Meta))
 	}
 	for _, item := range metas {
 		l.meta[item.StmtType] = item

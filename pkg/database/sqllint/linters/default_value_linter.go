@@ -39,7 +39,7 @@ func (hub) DefaultValueLinter(script script.Script, c sqllint.Config) (sqllint.R
 		meta:       defaultValueLinterMeta{},
 	}
 	if err := yaml.Unmarshal(c.Meta, &l.meta); err != nil {
-		return nil, errors.Wrap(err, "解析 DefaultValueLinter.meta 错误")
+		return nil, errors.Wrap(err, "failed to DefaultValueLinter.meta")
 	}
 	return &l, nil
 }
@@ -68,9 +68,10 @@ func (l *defaultValueLinter) Enter(in ast.Node) (ast.Node, bool) {
 			}
 		}
 
-		l.err = linterror.New(l.s, l.text, fmt.Sprintf("默认值错误 %s 的默认值应当为 %s", l.meta.ColumnName, l.meta.DefaultValue), func(line []byte) bool {
-			return bytes.Contains(bytes.ToLower(line), []byte(l.meta.ColumnName))
-		})
+		l.err = linterror.New(l.s, l.text, fmt.Sprintf("default value error. %s's default value shoud be %s", l.meta.ColumnName, l.meta.DefaultValue),
+			func(line []byte) bool {
+				return bytes.Contains(bytes.ToLower(line), []byte(l.meta.ColumnName))
+			})
 		return in, true
 
 	}

@@ -30,9 +30,9 @@ type booleanFieldLinter struct {
 	baseLinter
 }
 
-// BooleanFieldLinter 引用规约:
-// 1、表达是否概念的字段，必须使用boolean、bool、tinyint(1) 、bit 类型。
-// 命名方式应当为系表结构如：is_deleted, is_public，符合表达习惯。
+// BooleanFieldLinter :
+// 1. boolean field should be one of types boolean, bool, tinyint(1).
+// 2. boolean field should named as phylum structure, like：is_deleted, is_public.
 func (hub) BooleanFieldLinter(script script.Script, config sqllint.Config) (sqllint.Rule, error) {
 	return &booleanFieldLinter{baseLinter: newBaseLinter(script)}, nil
 }
@@ -52,7 +52,7 @@ func (l *booleanFieldLinter) Enter(in ast.Node) (ast.Node, bool) {
 	switch colType {
 	case "bool", "boolean", "tinyint(1)", "bit":
 		if !(strings.HasPrefix(colName, "is_") || strings.HasPrefix(colName, "has_")) {
-			l.err = linterror.New(l.s, l.text, "布尔类型字段名应当为系表结构, 如 is_deleted, has_child",
+			l.err = linterror.New(l.s, l.text, "Boolean field should be phylum structure, like is_deleted, has_child",
 				func(line []byte) bool {
 					return bytes.Contains(line, []byte(colName))
 				})
@@ -65,7 +65,7 @@ func (l *booleanFieldLinter) Enter(in ast.Node) (ast.Node, bool) {
 		case "bool", "boolean", "tinyint(1)", "bit":
 			return in, true
 		default:
-			l.err = linterror.New(l.s, l.text, "表达是否概念的字段类型应当为 tinyint(1) 或 boolean",
+			l.err = linterror.New(l.s, l.text, "Field types expressing 'true or false' should be tinyint(1) or boolean",
 				func(line []byte) bool {
 					return bytes.Contains(line, []byte(colName))
 				})

@@ -33,14 +33,14 @@ type necessaryColumnLinter struct {
 	c    sqllint.Config
 }
 
-// NecessaryColumnLinter 校验是否存在必要字段
+// NecessaryColumnLinter checks if there is the necessary column.
 func (hub) NecessaryColumnLinter(s script.Script, c sqllint.Config) (sqllint.Rule, error) {
 	var meta necessaryColumnLinterMeta
 	if err := yaml.Unmarshal(c.Meta, &meta); err != nil {
-		return nil, errors.Wrap(err, "解析 NecessaryColumnLinter.meta 错误")
+		return nil, errors.Wrap(err, "failed to parse NecessaryColumnLinter.meta")
 	}
 	if len(meta.ColumnName) == 0 {
-		return nil, errors.Errorf("NecessaryColumnLinter.meta 中不包含任何字段名")
+		return nil, errors.Errorf("no column name in NecessaryColumnLinter.meta")
 	}
 	return &necessaryColumnLinter{baseLinter: newBaseLinter(s), meta: meta, c: c}, nil
 }
@@ -55,7 +55,7 @@ func (l *necessaryColumnLinter) Enter(in ast.Node) (ast.Node, bool) {
 		return in, true
 	}
 
-	// 查询目标字段
+	// to find the goal column which named l.meta.ColumnName
 	for _, col := range createStmt.Cols {
 		for _, name := range l.meta.ColumnName {
 			if col.Name != nil && strings.EqualFold(col.Name.String(), name) {
@@ -64,9 +64,10 @@ func (l *necessaryColumnLinter) Enter(in ast.Node) (ast.Node, bool) {
 		}
 	}
 
-	l.err = linterror.New(l.s, l.text, fmt.Sprintf("缺少必要的字段, alias: %s, meta.ColumnName: %s", l.c.Alias, l.meta.ColumnName), func(line []byte) bool {
-		return false
-	})
+	l.err = linterror.New(l.s, l.text, fmt.Sprintf("missing necessary column, alias: %s, meta.ColumnName: %s", l.c.Alias, l.meta.ColumnName),
+		func(line []byte) bool {
+			return false
+		})
 
 	return in, true
 }

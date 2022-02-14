@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	// 工厂总线单例, 确保工厂方法只注册一次
+	// factory hub singleton, it make sure every method will be registered once.
 	h    hub
 	once sync.Once
 )
@@ -47,10 +47,10 @@ func newBaseLinter(script script.Script) baseLinter {
 	return baseLinter{s: script}
 }
 
-// hub 工厂方法总线, 它实现了一系列 rules.Factory
+// hub implements rules.Factory
 type hub struct{}
 
-// register 将 hub 上的一系列 rules.Factory 注册到 linters
+// register all rules.Factory into linters
 func register() {
 	fmt.Println("register linters:")
 	valueOf := reflect.ValueOf(h)

@@ -52,18 +52,18 @@ type necessaryColumnOptionLinter struct {
 	meta necessaryColumnOptionLinterMeta
 }
 
-// NecessaryColumnOptionLinter 校验是否存在必要的列选项
+// NecessaryColumnOptionLinter checks if there is the necessary column option.
 func (hub) NecessaryColumnOptionLinter(s script.Script, c sqllint.Config) (sqllint.Rule, error) {
 	var meta necessaryColumnOptionLinterMeta
 	if err := yaml.Unmarshal(c.Meta, &meta); err != nil {
 		meta = necessaryColumnOptionLinterMeta{ColumnOptionType: []string{"example"}}
 		out, _ := yaml.Marshal(meta)
-		return nil, errors.Wrapf(err, "NecessaryColumnOptionLinter 解析 meta 发生错误, 正确格式形如:\n%s\n, 请检查",
+		return nil, errors.Wrapf(err, "failed to parse NecessaryColumnOptionLinter, the correct format is like:\n%s\n",
 			string(out))
 	}
 	for _, typ := range meta.ColumnOptionType {
 		if _, ok := columnOptionNames[typ]; !ok {
-			return nil, errors.Errorf("未找到配置的列选项 %s, 可配置的列选项: %+v", meta.ColumnOptionType, columnOptionNames)
+			return nil, errors.Errorf("failed to find the matched column option %s. The optional items: %+v", meta.ColumnOptionType, columnOptionNames)
 		}
 	}
 
@@ -95,7 +95,7 @@ func (l *necessaryColumnOptionLinter) Enter(in ast.Node) (ast.Node, bool) {
 			}
 		}
 	}
-	l.err = linterror.New(l.s, l.text, fmt.Sprintf("缺少必要的列选项: %v", l.meta.ColumnOptionType), func(line []byte) bool {
+	l.err = linterror.New(l.s, l.text, fmt.Sprintf("missing necessary column option: %v", l.meta.ColumnOptionType), func(line []byte) bool {
 		if col.Name == nil {
 			return true
 		}

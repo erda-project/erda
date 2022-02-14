@@ -39,7 +39,7 @@ func (hub) KeywordsLinter(script script.Script, c sqllint.Config) (sqllint.Rule,
 		meta:       make(map[string]bool),
 	}
 	if err := yaml.Unmarshal(c.Meta, &l.meta); err != nil {
-		return nil, errors.Wrap(err, "解析 KeywordsLinter.meta 错误")
+		return nil, errors.Wrap(err, "failed to parse KeywordsLinter.meta")
 	}
 	for k, v := range l.meta {
 		l.meta[strings.ToUpper(k)] = v

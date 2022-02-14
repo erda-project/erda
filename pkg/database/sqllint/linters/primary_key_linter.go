@@ -33,7 +33,7 @@ type primaryKeyLinter struct {
 	meta primaryKeyLinterMeta
 }
 
-// PrimaryKeyLinter 主键校验
+// PrimaryKeyLinter checks if the primary key is named as the specified name.
 func (hub) PrimaryKeyLinter(script script.Script, c sqllint.Config) (sqllint.Rule, error) {
 	var l = primaryKeyLinter{
 		baseLinter: newBaseLinter(script),
@@ -42,7 +42,7 @@ func (hub) PrimaryKeyLinter(script script.Script, c sqllint.Config) (sqllint.Rul
 	if err := yaml.Unmarshal(c.Meta, &l.meta); err != nil {
 		l.meta.ColumnName = "example"
 		out, _ := yaml.Marshal(l.meta)
-		return nil, errors.Wrapf(err, fmt.Sprintf("解析 PrimaryKeyLinter.meta, 请参考示例\n%s\n重新配置", string(out)))
+		return nil, errors.Wrapf(err, fmt.Sprintf("failed to parse PrimaryKeyLinter.meta. Example:\n%s\n", string(out)))
 	}
 	return &l, nil
 }
@@ -81,7 +81,7 @@ func (l *primaryKeyLinter) Enter(in ast.Node) (ast.Node, bool) {
 		}
 
 		// check id column is whether defined bo be primary key in constraint
-		l.err = linterror.New(l.s, l.text, fmt.Sprintf("主键错误, 应当配置为: PRIMARY KEY (%s)", l.meta.ColumnName), func(line []byte) bool {
+		l.err = linterror.New(l.s, l.text, fmt.Sprintf("primary key error, it should be: PRIMARY KEY (%s)", l.meta.ColumnName), func(line []byte) bool {
 			return bytes.Contains(bytes.ToLower(line), []byte(l.meta.ColumnName))
 		})
 	}

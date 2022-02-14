@@ -40,10 +40,10 @@ func (hub) TableNameLinter(script script.Script, c sqllint.Config) (sqllint.Rule
 		meta:       tableNameLinterMeta{},
 	}
 	if err := yaml.Unmarshal(c.Meta, &l.meta); err != nil {
-		return nil, errors.Wrap(err, "解析 TableNameLinter.meta 错误")
+		return nil, errors.Wrap(err, "failed to parse TableNameLinter.meta")
 	}
 	if len(l.meta.Patterns) == 0 {
-		return nil, errors.New("TableNameLinter.meta 中没有配置任何表名模式")
+		return nil, errors.New("no table name pattern in TableNameLinter.meta")
 	}
 	return &l, nil
 }
@@ -55,7 +55,7 @@ func (l *tableNameLinter) Enter(in ast.Node) (ast.Node, bool) {
 
 	stmt, ok := in.(*ast.CreateTableStmt)
 	if !ok {
-		return in, true // 只有 create stmt 才验证表名
+		return in, true // only to check table name on CreateStmt
 	}
 
 	name := extractCreateName(stmt)
@@ -67,7 +67,7 @@ func (l *tableNameLinter) Enter(in ast.Node) (ast.Node, bool) {
 			return in, true
 		}
 	}
-	l.err = linterror.New(l.s, l.text, fmt.Sprintf("不合法的表名, 表名应当符合以下模式中的一个:\n%s", strings.Join(l.meta.Patterns, "\n")),
+	l.err = linterror.New(l.s, l.text, fmt.Sprintf("invalid table name, it should match one of these patterns:\n%s", strings.Join(l.meta.Patterns, "\n")),
 		func(line []byte) bool {
 			return bytes.Contains(bytes.ToLower(line), bytes.ToLower([]byte(name)))
 		})

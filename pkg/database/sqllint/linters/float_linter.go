@@ -30,7 +30,8 @@ type floatDoubleLinter struct {
 	baseLinter
 }
 
-// FloatDoubleLinter 小数校验
+// FloatDoubleLinter
+// You can not use fload and double type, please use decimal.
 func (hub) FloatDoubleLinter(script script.Script, _ sqllint.Config) (sqllint.Rule, error) {
 	return &floatDoubleLinter{newBaseLinter(script)}, nil
 }

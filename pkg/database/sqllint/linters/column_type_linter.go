@@ -95,17 +95,17 @@ type columnTypeLinter struct {
 	c    sqllint.Config
 }
 
-// ColumnTypeLinter 列类型检查
+// ColumnTypeLinter check column's type
 func (hub) ColumnTypeLinter(s script.Script, c sqllint.Config) (sqllint.Rule, error) {
 	var meta columnTypeLinterMeta
 	if err := yaml.Unmarshal(c.Meta, &meta); err != nil || meta.ColumnName == "" {
-		return nil, errors.Wrap(err, "解析 ColumnTypeLinter.meta, 请重新配置\n")
+		return nil, errors.Wrap(err, "failed to parse ColumnTypeLinter.meta, please reconfigure\n")
 	}
 	if meta.ColumnName == "" {
-		return nil, errors.Errorf("ColumnTypeLinter.meta.columnName 不可为空, 请重新配置")
+		return nil, errors.Errorf("ColumnTypeLinter.meta.columnName can not be empty, please reconfigure")
 	}
 	if len(meta.Types) == 0 {
-		return nil, errors.Errorf("ColumnTypeLinter.meta 中没有配置任何类型, 请重新配置")
+		return nil, errors.Errorf("there is no type confiured in ColumnTypeLinter.meta, please reconfigure")
 	}
 	for _, typ := range meta.Types {
 		if _, ok := columnTypes[strings.ToLower(typ.Type)]; !ok {
@@ -113,14 +113,14 @@ func (hub) ColumnTypeLinter(s script.Script, c sqllint.Config) (sqllint.Rule, er
 			for k := range columnTypes {
 				typeList = append(typeList, k)
 			}
-			return nil, errors.Errorf("ColumnTypeLinter.meta 不支持类型: %s, 可配置的类型如下, 请重新配置:\n%v", typ.Type, typeList)
+			return nil, errors.Errorf("unsupport type in ColumnTypeLinter.meta: %s. please refer the following list and reconfigure:\n%v", typ.Type, typeList)
 		}
 		for _, flag := range typ.Flags {
 			var flagsList []string
 			for k := range columnFlags {
 				flagsList = append(flagsList, k)
 			}
-			return nil, errors.Errorf("ColumnTypeLinter.meta 不支持的 flag: %s, 可配置的 flag 如下, 请重新配置:\n%v", flag, flagsList)
+			return nil, errors.Errorf("unsupport ColumnTypeLinter.meta flag: %s, please refer the following list and reconfigure:\n%v", flag, flagsList)
 		}
 	}
 
@@ -175,7 +175,7 @@ func (l *columnTypeLinter) Enter(in ast.Node) (ast.Node, bool) {
 	find := func(line []byte) bool {
 		return bytes.Contains(bytes.ToLower(line), []byte(col.Name.OrigColName()))
 	}
-	l.err = linterror.New(l.s, l.text, fmt.Sprintf("字段类型不符合配置中的任何一个类型，请参见规约：%s", strconv.Quote(l.c.Alias)), find)
+	l.err = linterror.New(l.s, l.text, fmt.Sprintf("column type not in the configuration，see more at：%s", strconv.Quote(l.c.Alias)), find)
 	return in, false
 }
 

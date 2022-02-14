@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -50,13 +51,13 @@ func (w White) Match(moduleName, scriptName string) bool {
 		return true
 	}
 
-	// 是否能匹配到 module
+	// whether it can match the module
 	for _, module := range w.Modules {
 		if module == moduleName {
 			return true
 		}
 	}
-	// 是否能匹配到文件名(去除路径和拓展后相等则匹配)
+	// whether is can match the filename
 	scriptName = filepath.Base(scriptName)
 	ext := filepath.Ext(scriptName)
 	scriptName = strings.TrimSuffix(scriptName, ext)
@@ -68,7 +69,7 @@ func (w White) Match(moduleName, scriptName string) bool {
 			return true
 		}
 	}
-	// 是否匹配到到 committedAt
+	// whether it can match the committedAt
 	if len(scriptName) >= 8 {
 		if _, err := time.Parse("20060102", scriptName[:8]); err == nil {
 			for _, t := range w.CommittedAt {
@@ -97,7 +98,7 @@ func (w White) Match(moduleName, scriptName string) bool {
 			}
 		}
 	}
-	// 是否匹配到正则
+	// whether it can match the regex pattern
 	for _, pat := range w.Patterns {
 		if ok, _ := regexp.Match(pat, []byte(scriptName)); ok {
 			return true
@@ -113,14 +114,14 @@ func LoadConfig(data []byte) (map[string]Config, error) {
 		configs = make(map[string]Config)
 	)
 	if err := yaml.Unmarshal(data, &list); err != nil {
-		return nil, errors.Wrap(err, "不合法的配置文件")
+		return nil, errors.Wrap(err, "invalid configuration file")
 	}
 	for _, config := range list {
 		if config.Alias == "" {
 			config.Alias = config.Name
 		}
 		if _, ok := configs[config.Alias]; ok {
-			return nil, errors.Errorf("检查项已存在, 请勿重复定义, alias: %s", config.Alias)
+			return nil, errors.Errorf("the lint item %s already exists, please do not repeat the definetion.", strconv.Quote(config.Alias))
 		}
 		configs[config.Alias] = config
 	}

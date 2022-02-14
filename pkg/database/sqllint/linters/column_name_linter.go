@@ -40,7 +40,7 @@ func (hub) ColumnNameLinter(script script.Script, c sqllint.Config) (sqllint.Rul
 		meta:       columnNameLinterMeta{},
 	}
 	if err := yaml.Unmarshal(c.Meta, &l.meta); err != nil {
-		return nil, errors.Wrap(err, "解析 ColumnNameLinter.meta 错误")
+		return nil, errors.Wrap(err, "failed to parse ColumnNameLinter.meta")
 	}
 	return &l, nil
 }
@@ -82,7 +82,7 @@ func (l *columnNameLinter) Enter(in ast.Node) (ast.Node, bool) {
 	l.err = linterror.LintError{
 		ScriptName: l.s.Name(),
 		Stmt:       l.text,
-		Lint:       fmt.Sprintf("不合法的列名, 列名应当符合以下模式之一:\n%s", strings.Join(l.meta.Patterns, "\n")),
+		Lint:       fmt.Sprintf("invalid column name, it should match one of these patterns:\n%s", strings.Join(l.meta.Patterns, "\n")),
 		Line:       "",
 		LintNo:     0,
 	}

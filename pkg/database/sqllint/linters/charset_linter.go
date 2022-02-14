@@ -41,7 +41,7 @@ func (hub) CharsetLinter(script script.Script, c sqllint.Config) (sqllint.Rule, 
 	if err := yaml.Unmarshal(c.Meta, &meta); err != nil {
 		meta.TableOptionCharset = map[string]bool{UTF8: true, UTF8MB4: true}
 		out, _ := yaml.Marshal(meta)
-		return nil, errors.Wrapf(err, "解析 CharsetLinter.meta 错误, CharsetLinter 的 meta 结构应当形如: %s",
+		return nil, errors.Wrapf(err, "failed to parse CharsetLinter.meta, the structure of CharsetLinter.meta should be like: %s",
 			string(out))
 	}
 	for k, v := range meta.TableOptionCharset {
@@ -54,7 +54,7 @@ func (hub) CharsetLinter(script script.Script, c sqllint.Config) (sqllint.Rule, 
 		}
 	}
 	if count == 0 {
-		return nil, errors.Errorf("配置 CharsetLinter.meta.TableOptionCharset 错误, 至少应当包含一个允许的 charset")
+		return nil, errors.Errorf("CharsetLinter.meta.TableOptionCharset configurated error, it atleast be one charset")
 	}
 	return &charsetLinter{newBaseLinter(script), meta}, nil
 }
@@ -76,7 +76,7 @@ func (l *charsetLinter) Enter(in ast.Node) (ast.Node, bool) {
 			}
 		}
 	}
-	l.err = linterror.New(l.s, l.text, "表 charset 错误, 请参见 CharsetLinter 配置的许可的 charset",
+	l.err = linterror.New(l.s, l.text, "table charset error, please see the charset in your configuration of CharsetLinter",
 		func(line []byte) bool {
 			return false
 		})

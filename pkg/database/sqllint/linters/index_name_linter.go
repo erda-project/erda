@@ -39,7 +39,7 @@ func (hub) IndexNameLinter(script script.Script, c sqllint.Config) (sqllint.Rule
 		meta:       indexNameLinterMeta{},
 	}
 	if err := yaml.Unmarshal(c.Meta, &l.meta); err != nil {
-		return nil, errors.Wrap(err, "解析 IndexNameLinter.meta 错误")
+		return nil, errors.Wrap(err, "failed to parse IndexNameLinter.meta")
 	}
 	return &l, nil
 }
@@ -57,7 +57,7 @@ func (l *indexNameLinter) Enter(in ast.Node) (ast.Node, bool) {
 	switch constraint.Tp {
 	case ast.ConstraintIndex:
 		if ok, _ := regexp.Match(l.meta.IndexPattern, []byte(constraint.Name)); !ok {
-			l.err = linterror.New(l.s, l.text, fmt.Sprintf("普通索引名称应当形如 %s", l.meta.IndexPattern),
+			l.err = linterror.New(l.s, l.text, fmt.Sprintf("index name should be like %s", l.meta.IndexPattern),
 				func(line []byte) bool {
 					return bytes.Contains(bytes.ToLower(line), []byte("index")) &&
 						bytes.Contains(bytes.ToLower(line), bytes.ToLower([]byte(constraint.Name)))
@@ -66,7 +66,7 @@ func (l *indexNameLinter) Enter(in ast.Node) (ast.Node, bool) {
 		}
 	case ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex:
 		if ok, _ := regexp.Match(l.meta.UniqPattern, []byte(constraint.Name)); !ok {
-			l.err = linterror.New(l.s, l.text, fmt.Sprintf("唯一索引名称应当形如 %s", l.meta.UniqPattern),
+			l.err = linterror.New(l.s, l.text, fmt.Sprintf("unique index name should be like %s", l.meta.UniqPattern),
 				func(line []byte) bool {
 					return bytes.Contains(bytes.ToLower(line), []byte("unique")) &&
 						bytes.Contains(bytes.ToLower(line), bytes.ToLower([]byte(constraint.Name)))
