@@ -39,13 +39,10 @@ func (n notifyService) CreateNotifyHistory(ctx context.Context, request *pb.Crea
 	var historyId int64
 	var err error
 	if request.NotifyTags != nil {
-		//alertId, ok := request.NotifyTags["alertId"]
-		//if ok && alertId.GetNumberValue() > 0 {
 		historyId, err = n.CreateHistoryAndIndex(request)
 		if err != nil {
 			return result, errors.NewInternalServerError(err)
 		}
-		//}
 	} else {
 		dbReq, err := ToDBNotifyHistory(request)
 		if err != nil {
