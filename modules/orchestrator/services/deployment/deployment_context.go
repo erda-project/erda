@@ -1489,13 +1489,15 @@ func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml
 	groupLabels map[string]string, addonEnv map[string]string, groupEnv, groupFileconfigs map[string]string,
 	runtime *dbclient.Runtime, projectAddons []dbclient.AddonInstanceRouting,
 	projectAddonTenants []dbclient.AddonInstanceTenant) (map[string]dbclient.AddonInstanceRouting, map[string]dbclient.AddonInstanceTenant, error) {
-	volumePrefixDir := utils.BuildVolumeRootDir(runtime)
-	bs, err := convertBinds(serviceName, volumePrefixDir, service.Volumes)
-	if err != nil {
-		return nil, nil, err
-	}
-	service.Binds = append(service.Binds, bs...)
-	service.Volumes = nil
+	/*
+		volumePrefixDir := utils.BuildVolumeRootDir(runtime)
+		bs, err := convertBinds(serviceName, volumePrefixDir, service.Volumes)
+		if err != nil {
+			return nil, nil, err
+		}
+		service.Binds = append(service.Binds, bs...)
+		service.Volumes = nil
+	*/
 	service.Labels = utils.ConvertServiceLabels(groupLabels, service.Labels, serviceName)
 	// TODO:
 	// currently platformEnv > serviceEnv > addonEnv > groupEnv

@@ -121,6 +121,42 @@ func Test_GetAddonConfig(t *testing.T) {
 	assert.Equal(t, "fake1", cfg["MYSQL_PASSWORD"].(string))
 }
 
+func TestSetAddonVolumes(t *testing.T) {
+	type args struct {
+		service    *diceyml.Service
+		options    map[string]string
+		hostPath   string
+		targetPath string
+		readOnly   bool
+	}
+
+	service := &diceyml.Service{}
+	options := map[string]string{
+		"app_kind":             "deployment",
+		"alibabacloud.com/eci": "true",
+	}
+
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "case_01",
+			args: args{
+				service:    service,
+				options:    options,
+				hostPath:   "/opt/data",
+				targetPath: "/opt/data",
+				readOnly:   false,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+		})
+	}
+}
+
 func Test_addonCanScale(t *testing.T) {
 	type args struct {
 		addonName    string
@@ -484,6 +520,32 @@ func TestAddon_insideAddonCanNotScale(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "test_02",
+			fields: fields{
+				db: &dbclient.DBClient{},
+			},
+			args: args{
+				routingIns: &dbclient.AddonInstanceRouting{
+					AddonName:    "mysql",
+					RealInstance: "y6f6485f7d9974c32b47c3a1ecd244109",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "test_03",
+			fields: fields{
+				db: &dbclient.DBClient{},
+			},
+			args: args{
+				routingIns: &dbclient.AddonInstanceRouting{
+					AddonName:    "mysql",
+					RealInstance: "y6f6485f7d9974c32b47c3a1ecd244109",
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -494,6 +556,9 @@ func TestAddon_insideAddonCanNotScale(t *testing.T) {
 
 			monkey.PatchInstanceMethod(reflect.TypeOf(a.db), "GetByInSideInstanceID",
 				func(db *dbclient.DBClient, instanceID string) (*dbclient.AddonInstanceRelation, error) {
+					if tt.name == "test_02" {
+						return nil, nil
+					}
 					return &dbclient.AddonInstanceRelation{
 						OutsideInstanceID: "c32a40074138a4910af97cff325f8bcd5",
 						InsideInstanceID:  "y6f6485f7d9974c32b47c3a1ecd244109",
@@ -503,6 +568,9 @@ func TestAddon_insideAddonCanNotScale(t *testing.T) {
 
 			monkey.PatchInstanceMethod(reflect.TypeOf(a.db), "GetInstanceRoutingByRealInstance",
 				func(db *dbclient.DBClient, realIns string) (*[]dbclient.AddonInstanceRouting, error) {
+					if tt.name == "test_03" {
+						return nil, nil
+					}
 					ars := make([]dbclient.AddonInstanceRouting, 0)
 					ars = append(ars, dbclient.AddonInstanceRouting{
 						Name: "kafka",

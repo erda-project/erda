@@ -235,6 +235,35 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 	}
 	podAnnotations(service, daemonset.Spec.Template.Annotations)
 
+	// inherit Labels from service.Labels and service.DeploymentLabels
+	err = inheritDaemonsetLabels(service, daemonset)
+	if err != nil {
+		logrus.Errorf("failed to set labels for service %s for Pod with error: %v\n", service.Name, err)
+		return nil, err
+	}
+
+	// set pod Annotations from service.Labels and service.DeploymentLabels
+	setPodAnnotationsFromLabels(service, daemonset.Spec.Template.Annotations)
+
+	// daemonset pod should not deployed on ECI
+	daemonset.Spec.Template.Spec.Affinity = &corev1.Affinity{
+		NodeAffinity: &corev1.NodeAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+				NodeSelectorTerms: []corev1.NodeSelectorTerm{
+					{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							{
+								Key:      "type",
+								Operator: corev1.NodeSelectorOpNotIn,
+								Values:   []string{"virtual-kubelet"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
 	// According to the current setting, there is only one user container in a pod
 	if service.Cmd != "" {
 		for i := range containers {
@@ -264,7 +293,11 @@ func (k *Kubernetes) newDaemonSet(service *apistructs.Service, sg *apistructs.Se
 		secretvolmounts = append(secretvolmounts, volmount)
 	}
 
-	k.AddPodMountVolume(service, &daemonset.Spec.Template.Spec, secretvolmounts, secretvolumes)
+	err = k.AddPodMountVolume(service, &daemonset.Spec.Template.Spec, secretvolmounts, secretvolumes)
+	if err != nil {
+		logrus.Errorf("failed to AddPodMountVolume for daemonset %s/%s: %v", daemonset.Namespace, daemonset.Name, err)
+		return nil, err
+	}
 	k.AddSpotEmptyDir(&daemonset.Spec.Template.Spec)
 
 	logrus.Debugf("show k8s daemonset, name: %s, daemonset: %+v", deployName, daemonset)

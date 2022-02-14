@@ -105,7 +105,7 @@ func (o *BasicValidateVisitor) VisitService(v DiceYmlVisitor, obj *Service) {
 		}
 	}
 	for _, vol := range obj.Volumes {
-		if !path.IsAbs(vol.Path) {
+		if !path.IsAbs(vol.Path) && !path.IsAbs(vol.TargetPath) {
 			o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentService}, "volumes")] = errors.Wrap(invalidVolume, o.currentService)
 			break
 		}

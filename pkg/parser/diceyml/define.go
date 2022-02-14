@@ -39,6 +39,29 @@ const (
 	WS_TEST                 = "test"
 	WS_STAGING              = "staging"
 	WS_PROD                 = "production"
+
+	// Addon new options for create labels
+	// disk type: ‘SSD’、'NAS'、'OSS'、''
+	AddonDiskType = "addonDiskType"
+	// volume capacity: at least 20GB
+	AddonVolumeSize = "addonVolumeSize"
+	//historical snapshot count
+	AddonSnapMaxHistory = "addonSnapMaxHistory"
+	// enable addon running as ECI Pod
+	AddonEnableECI = "alibabacloud.com/eci"
+	// addon image private registry
+	AddonImageRegistry = "k8s.aliyun.com/insecure-registry"
+	// Erda addon images registry
+	AddonPublicRegistry = "registry.erda.cloud"
+	// Env for orchestrator
+	ErdaImageRegistry = "DICE_IMAGE_REGISTRY"
+
+	// 容量最大限制 2TB
+	AddonVolumeSizeMax = int32(2000)
+	// 容量最小限制 20GiB
+	AddonVolumeSizeMin = int32(20)
+	// 历史快照数量限制 100 个
+	AddonVolumeSnapshotMax = int32(100)
 )
 
 type Object struct {
@@ -90,10 +113,42 @@ type AddOn struct {
 }
 
 type Volume struct {
-	ID *string `json:"id"`
+	// TODO: DEPRECATED IN FUTURE
+	ID *string `yaml:"id,omitempty" json:"id,omitempty"`
+	// TODO: DEPRECATED IN FUTURE
 	// nfs, local
-	Storage string `json:"storage"`
-	Path    string `json:"path"`
+	Storage string `yaml:"storage,omitempty" json:"storage,omitempty"`
+	// TODO: DEPRECATED IN FUTURE
+	Path string `yaml:"path,omitempty" json:"path,omitempty"`
+
+	// Type is the type of volume, it will be supported DICE-NAS, DICE-LOCAL, SSD, NAS, OSS...
+	// only support DICE-NAS, DICE-LOCAL, SSD currently
+	Type string `yaml:"type,omitempty" json:"type,omitempty"`
+	// Capacity is the capacity of volume and the default unit is 'GB'
+	Capacity int32 `yaml:"size,omitempty" json:"size,omitempty"`
+	// SourcePath is the volume source path that is used in the local PV or host path
+	// Default is empty
+	//SourcePath string `yaml:"sourcePath,omitempty" json:"sourcePath,omitempty"`
+	// TargetPath indicates will mount the file or directory in the volume to the
+	// specified location of the container. Default is '/'
+	TargetPath string `yaml:"targetPath,omitempty" json:"targetPath,omitempty"`
+	// ReadOnly set the file in the volume allow to be read-only
+	// Default is false
+	ReadOnly bool `yaml:"readOnly,omitempty" json:"readOnly,omitempty"`
+	// Snapshot indicates use can create snapshots of this volume
+	// if Snapshot field isn't null and the default time interval is 3600 second
+	// Note: Now, only for Alibaba disk ssd storageclass
+	Snapshot *VolumeSnapshot `yaml:"snapshot,omitempty" json:"snapshot,omitempty"`
+}
+
+type VolumeSnapshot struct {
+	// MaxHistory indicates the max count of the snapshot can be created
+	// if the number of snapshots is beyond the max, the earliest one will be deleted
+	MaxHistory int32 `yaml:"maxHistory,omitempty" json:"maxHistory,omitempty"`
+}
+
+type SnapshotAnnotations struct {
+	Snapshot map[string]VolumeSnapshot
 }
 type Volumes []Volume
 
@@ -368,13 +423,25 @@ func unmarshalVolume(v *Volume, unmarshal func(interface{}) error) error {
 	volobj := struct {
 		ID *string `json:"id"`
 		// nfs, local
-		Storage string `json:"storage"`
-		Path    string `json:"path"`
+		Storage  string `json:"storage"`
+		Path     string `json:"path"`
+		Type     string `json:"type,omitempty"`
+		Capacity int32  `json:"size,omitempty"`
+		//SourcePath string          `json:"sourcePath,omitempty"`
+		TargetPath string          `json:"targetPath,omitempty"`
+		ReadOnly   bool            `json:"readOnly,omitempty"`
+		Snapshot   *VolumeSnapshot `json:"snapshot,omitempty"`
 	}{}
 	if err := unmarshal(&volobj); err == nil {
 		v.ID = volobj.ID
 		v.Storage = volobj.Storage
 		v.Path = volobj.Path
+		v.Type = volobj.Type
+		v.Capacity = volobj.Capacity
+		//v.SourcePath = volobj.SourcePath
+		v.TargetPath = volobj.TargetPath
+		v.ReadOnly = volobj.ReadOnly
+		v.Snapshot = volobj.Snapshot
 		return nil
 	}
 	if err := unmarshal(&s); err != nil {

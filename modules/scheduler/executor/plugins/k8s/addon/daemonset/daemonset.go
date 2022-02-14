@@ -94,6 +94,68 @@ func (d *DaemonsetOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 		LivenessProbe:  probe,
 		ReadinessProbe: probe,
 	}
+
+	// daemonset pod should not deployed on ECI
+	if affinity.NodeAffinity != nil {
+		if affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+			if len(affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms) == 0 {
+				affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms = []corev1.NodeSelectorTerm{
+					{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							{
+								Key:      "kubernetes.io/role",
+								Operator: corev1.NodeSelectorOpNotIn,
+								Values:   []string{"agent"},
+							},
+						},
+					},
+				}
+			} else {
+				affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms = append(affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms, corev1.NodeSelectorTerm{
+					MatchExpressions: []corev1.NodeSelectorRequirement{
+						{
+							Key:      "kubernetes.io/role",
+							Operator: corev1.NodeSelectorOpNotIn,
+							Values:   []string{"agent"},
+						},
+					},
+				})
+			}
+
+		} else {
+			affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution = &corev1.NodeSelector{
+				NodeSelectorTerms: []corev1.NodeSelectorTerm{
+					{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							{
+								Key:      "kubernetes.io/role",
+								Operator: corev1.NodeSelectorOpNotIn,
+								Values:   []string{"agent"},
+							},
+						},
+					},
+				},
+			}
+		}
+
+	} else {
+		affinity.NodeAffinity = &corev1.NodeAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+				NodeSelectorTerms: []corev1.NodeSelectorTerm{
+					{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							{
+								Key:      "kubernetes.io/role",
+								Operator: corev1.NodeSelectorOpNotIn,
+								Values:   []string{"agent"},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
 	return appsv1.DaemonSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DaemonSet",

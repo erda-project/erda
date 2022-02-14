@@ -14,7 +14,9 @@
 
 package apistructs
 
-import "time"
+import (
+	"time"
+)
 
 type RuntimeInspectDTO struct {
 	ID uint64 `json:"id"`

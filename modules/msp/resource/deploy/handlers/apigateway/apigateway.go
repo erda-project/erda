@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
+	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
@@ -141,12 +142,22 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 		service.Labels["HAPROXY_GROUP"] = "external"
 		service.Labels["HAPROXY_0_VHOST"] = p.getHaproxyVHost(clusterConfig["DICE_ROOT_DOMAIN"])
 
+		options := map[string]string{}
+		utils.JsonConvertObjToType(tmcInstance.Options, &options)
+		utils.SetlabelsFromOptions(options, service.Labels)
+
 		// volumes
-		hostPath := tmcInstance.ID
+		//hostPath := tmcInstance.ID
 		if p.IsNotDCOSCluster(clusterConfig["DICE_CLUSTER_TYPE"]) {
-			service.Binds = diceyml.Binds{
-				hostPath + ":/opt/backup:rw",
-			}
+			/*
+				service.Binds = diceyml.Binds{
+					hostPath + ":/opt/backup:rw",
+				}
+			*/
+
+			//  /opt/backup volume
+			vol := addon.SetAddonVolumes(options, "/opt/backup", false)
+			service.Volumes = diceyml.Volumes{vol}
 		}
 	}
 

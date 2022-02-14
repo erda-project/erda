@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sapi"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -141,6 +142,11 @@ func (eo *ElasticsearchOperator) Convert(sg *apistructs.ServiceGroup) interface{
 			},
 		},
 	}
+
+	// set Labels and annotations
+	es.Labels = make(map[string]string)
+	es.Annotations = make(map[string]string)
+	addon.SetAddonLabelsAndAnnotations(svc0, es.Labels, es.Annotations)
 
 	secret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -301,6 +307,23 @@ func genK8SNamespace(namespace, name string) string {
 }
 
 func (eo *ElasticsearchOperator) NodeSetsConvert(svc apistructs.Service, scname string, affinity *corev1.NodeAffinity) NodeSetsSettings {
+	// 默认 volume size
+	capacity := "20Gi"
+	// ES 只有一个 pvc，所以只取第一个 volume 的设置
+	if len(svc.Volumes) > 0 {
+		if svc.Volumes[0].SCVolume.Capacity >= diceyml.AddonVolumeSizeMin && svc.Volumes[0].SCVolume.Capacity <= diceyml.AddonVolumeSizeMax {
+			capacity = fmt.Sprintf("%dGi", svc.Volumes[0].SCVolume.Capacity)
+		}
+
+		if svc.Volumes[0].SCVolume.Capacity > diceyml.AddonVolumeSizeMax {
+			capacity = fmt.Sprintf("%dGi", diceyml.AddonVolumeSizeMax)
+		}
+
+		if svc.Volumes[0].SCVolume.StorageClassName != "" {
+			scname = svc.Volumes[0].SCVolume.StorageClassName
+		}
+	}
+
 	config, _ := convertJsontToMap(svc.Env["config"])
 	nodeSets := NodeSetsSettings{
 		Name:   "addon",
@@ -340,7 +363,7 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(svc apistructs.Service, scname 
 					AccessModes: []string{"ReadWriteOnce"},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
-							"storage": resource.MustParse("10Gi"),
+							"storage": resource.MustParse(capacity),
 						},
 					},
 					StorageClassName: scname,
@@ -348,6 +371,25 @@ func (eo *ElasticsearchOperator) NodeSetsConvert(svc apistructs.Service, scname 
 			},
 		},
 	}
+
+	// set pvc annotations for snapshot
+	if len(svc.Volumes) > 0 {
+		if svc.Volumes[0].SCVolume.Snapshot.MaxHistory > 0 {
+			if scname == apistructs.AlibabaSSDSC {
+				nodeSets.VolumeClaimTemplates[0].Annotations = make(map[string]string)
+				vs := diceyml.VolumeSnapshot{
+					MaxHistory: svc.Volumes[0].SCVolume.Snapshot.MaxHistory,
+				}
+				vsMap := map[string]diceyml.VolumeSnapshot{}
+				vsMap[scname] = vs
+				data, _ := json.Marshal(vsMap)
+				nodeSets.VolumeClaimTemplates[0].Annotations[apistructs.CSISnapshotMaxHistory] = string(data)
+			} else {
+				logrus.Warnf("Service %s pvc volume use storageclass %v, it do not support snapshot. Only volume.type SSD for Alibaba disk SSD support snapshot\n", svc.Name, scname)
+			}
+		}
+	}
+
 	return nodeSets
 }
 

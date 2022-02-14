@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
+	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -48,11 +49,24 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 		}
 		utils.AppendMap(service.Envs, env)
 
+		// labels
+		if service.Labels == nil {
+			service.Labels = make(map[string]string)
+		}
+		options := map[string]string{}
+		utils.JsonConvertObjToType(tmcInstance.Options, &options)
+		utils.SetlabelsFromOptions(options, service.Labels)
+
 		// volumes
 		if p.IsNotDCOSCluster(clusterConfig["DICE_CLUSTER_TYPE"]) {
-			service.Binds = diceyml.Binds{
-				nodeId + "_data:/kafka/data:rw",
-			}
+			/*
+				service.Binds = diceyml.Binds{
+					nodeId + "_data:/kafka/data:rw",
+				}
+			*/
+			//  /kafka/data volume
+			vol := addon.SetAddonVolumes(options, "/kafka/data", false)
+			service.Volumes = diceyml.Volumes{vol}
 		} else {
 			service.Binds = diceyml.Binds{
 				clusterConfig["DICE_STORAGE_MOUNTPOINT"] + "/addon/kafka/" + nodeId + "/kafka/data:/kafka/data:rw",
