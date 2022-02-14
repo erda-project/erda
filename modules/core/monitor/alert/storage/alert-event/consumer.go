@@ -106,8 +106,8 @@ var alertEventFieldOrderMap = func() map[int]string {
 }()
 
 func (p *provider) calcNeedUpdateFields(old *db.AlertEvent, new *db.AlertEvent) map[string]interface{} {
-	oldValue := reflect.ValueOf(old)
-	newValue := reflect.ValueOf(new)
+	oldValue := reflect.ValueOf(old).Elem()
+	newValue := reflect.ValueOf(new).Elem()
 	updateFields := map[string]interface{}{}
 
 	for i := 0; i < oldValue.NumField(); i++ {
