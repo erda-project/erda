@@ -12,47 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package asset API 资产
-package assetsvc
+package apidocsvc_test
 
 import (
+	"testing"
+
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/dbclient"
+	"github.com/erda-project/erda/modules/dop/services/apidocsvc"
 	"github.com/erda-project/erda/modules/dop/services/branchrule"
 )
 
-type Service struct {
-	trans         i18n.Translator
-	branchRuleSvc *branchrule.BranchRule
-	bdl           *bundle.Bundle
-}
-
-type Option func(*Service)
-
-func New(opts ...Option) *Service {
-	r := &Service{}
-	for _, op := range opts {
-		op(r)
-	}
-	return r
-}
-
-// WithI18n sets the i18n client
-func WithI18n(translator i18n.Translator) Option {
-	return func(svc *Service) {
-		svc.trans = translator
-	}
-}
-
-// WithBranchRuleSvc sets the branch rule client
-func WithBranchRuleSvc(branchRule *branchrule.BranchRule) Option {
-	return func(service *Service) {
-		service.branchRuleSvc = branchRule
-	}
-}
-
-func WithBundle(bdl *bundle.Bundle) Option {
-	return func(svc *Service) {
-		svc.bdl = bdl
-	}
+func TestNew(t *testing.T) {
+	var (
+		db      *dbclient.DBClient
+		bdl     *bundle.Bundle
+		ruleSvc *branchrule.BranchRule
+		trans   i18n.Translator
+	)
+	apidocsvc.New(
+		apidocsvc.WithDBClient(db),
+		apidocsvc.WithBundle(bdl),
+		apidocsvc.WithBranchRuleSvc(ruleSvc),
+		apidocsvc.WithTrans(trans),
+	)
 }

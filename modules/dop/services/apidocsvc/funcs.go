@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/bdl"
+	"github.com/erda-project/erda/modules/dop/cache/org"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/branchrule"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
@@ -39,7 +40,24 @@ const oas3Text = `{
   "openapi": "3.0.0",
   "info": {
     "title": "%s",
-    "description": "# API 设计中心创建的 API 文档。\n\n请在『API 概况』中填写 API 文档的基本信息；在『API列表』新增接口描述；在『数据类型』中定义要引用的数据结构。\n",
+    "description": "# API 设计中心创建的 API 文档\n\n请在『API 概况』中填写 API 文档的基本信息；在『API列表』新增接口描述；在『数据类型』中定义要引用的数据结构。\n",
+    "version": "default"
+  },
+  "paths": {
+    "/new-resource": {}
+  },
+  "tags": [
+  	{
+   		"name": "其他"
+  	}
+ ]
+}
+`
+const oas3TextEn = `{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "%s",
+    "description": "# The API Doc Creating From Desigin Center\n\nPlease write the base information in API Overview；add URI in API List；define data structure in Data Types.\n",
     "version": "default"
   },
   "paths": {
@@ -79,7 +97,7 @@ func FetchAPIDocContent(orgID uint64, userID, inode string, specProtocol oasconv
 			return nil, apierrors.GetNodeDetail.InternalError(errors.New("failed to convert doc to oas3-json"))
 		}
 		blob.Content = string(data)
-		blob.Path = mustSuffix(blob.Path, ".json")
+		blob.Path = MustSuffix(blob.Path, ".json")
 	case oasconv.OAS2YAML:
 		v3, err := swagger.LoadFromData([]byte(blob.Content))
 		if err == nil {
@@ -98,7 +116,7 @@ func FetchAPIDocContent(orgID uint64, userID, inode string, specProtocol oasconv
 			return nil, apierrors.GetNodeDetail.InternalError(errors.Wrap(err, "failed to convert doc to oas2-yaml"))
 		}
 		blob.Content = string(data)
-		blob.Path = mustSuffix(blob.Path, ".yaml")
+		blob.Path = MustSuffix(blob.Path, ".yaml")
 	case oasconv.OAS2JSON:
 		v3, err := swagger.LoadFromData([]byte(blob.Content))
 		if err == nil {
@@ -113,7 +131,7 @@ func FetchAPIDocContent(orgID uint64, userID, inode string, specProtocol oasconv
 			return nil, apierrors.GetNodeDetail.InternalError(errors.New("failed to convert doc to oas2-json"))
 		}
 		blob.Content = string(data)
-		blob.Path = mustSuffix(blob.Path, ".json")
+		blob.Path = MustSuffix(blob.Path, ".json")
 	default:
 		return nil, apierrors.GetNodeDetail.InvalidParameter(errors.Errorf("invalid specProtocol: %s", specProtocol))
 	}
@@ -135,7 +153,7 @@ func FetchAPIDocContent(orgID uint64, userID, inode string, specProtocol oasconv
 		Pinode:    ft.Clone().DeletePathFromRepoRoot().Inode(),
 		Scope:     "application",
 		ScopeID:   ft.ApplicationID(),
-		Name:      mustSuffix(path.Base(ft.PathFromRepoRoot()), ""),
+		Name:      MustSuffix(path.Base(ft.PathFromRepoRoot()), ""),
 		CreatorID: "",
 		UpdaterID: "",
 		Meta:      json.RawMessage(metaData),
@@ -158,7 +176,7 @@ func CommitAPIDocModifies(orgID uint64, userID, repo, commitMessage, serviceName
 func commitAPIDocContent(orgID uint64, userID, repo, commitMessage, serviceName, content, branch, action string) error {
 	// if the content is empty, set default
 	if content == "" {
-		content = defaultOAS3Content(serviceName)
+		content = defaultOAS3Content(strconv.FormatUint(orgID, 10), serviceName)
 	}
 
 	// load structural Openapi 3
@@ -175,7 +193,7 @@ func commitAPIDocContent(orgID uint64, userID, repo, commitMessage, serviceName,
 	content = string(data)
 
 	// change filename suffix to .yaml
-	serviceName = mustSuffix(serviceName, suffixYaml)
+	serviceName = MustSuffix(serviceName, suffixYaml)
 	filenameFromRepoRoot := filepath.Join(apiDocsPathFromRepoRoot, serviceName)
 
 	// make commit: .dice/apidocs/{docName}
@@ -200,11 +218,11 @@ func commitAPIDocContent(orgID uint64, userID, repo, commitMessage, serviceName,
 	return nil
 }
 
-func mustSuffix(filename, suffix string) string {
+func MustSuffix(filename, suffix string) string {
 	return strings.TrimSuffix(filename, filepath.Ext(filename)) + suffix
 }
 
-func matchSuffix(filename string, suffix ...string) bool {
+func MatchSuffix(filename string, suffix ...string) bool {
 	ext := strings.ToLower(filepath.Ext(filename))
 	for _, s := range suffix {
 		if s == ext {
@@ -214,7 +232,10 @@ func matchSuffix(filename string, suffix ...string) bool {
 	return false
 }
 
-func defaultOAS3Content(title string) string {
+func defaultOAS3Content(orgID string, title string) string {
+	if orgDTO, ok := org.GetOrgByOrgID(orgID); ok && strings.Contains(orgDTO.Locale, "en") {
+		return fmt.Sprintf(oas3TextEn, title)
+	}
 	return fmt.Sprintf(oas3Text, title)
 }
 
@@ -267,7 +288,7 @@ func branchHasAPIDoc(orgID uint64, branchInode string) bool {
 	}
 	for _, node := range nodes {
 		// 如果 .dice/apidocs 目录下存在 .yaml 或 .yml 的文件 则认为该分支下存在文档
-		if node.Type == "blob" && matchSuffix(node.Name, suffixYaml, suffixYaml) {
+		if node.Type == "blob" && MatchSuffix(node.Name, suffixYaml, suffixYaml) {
 			return true
 		}
 	}

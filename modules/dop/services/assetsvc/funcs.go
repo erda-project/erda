@@ -20,7 +20,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
-func onceADayLimitType() []apistructs.LimitType {
+func OnceADayLimitType() []apistructs.LimitType {
 	once := 1
 	return []apistructs.LimitType{{
 		Day:    &once,
