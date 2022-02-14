@@ -337,7 +337,6 @@ func (p *List) getData() *list.Data {
 		item := list.Item{
 			ID:         idStr,
 			Title:      nameStr,
-			Icon:       getIcon(appRuntime.Status),
 			TitleState: getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus, isMyApp),
 			Selectable: isMyApp,
 			//KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.LastOperator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
@@ -441,6 +440,7 @@ func (p *List) getData() *list.Data {
 				continue
 			}
 			data.List[i].KvInfos = getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime)
+			data.List[i].Icon = getIconByServiceCnt(healthyCnt, len(s.Services))
 			break
 		}
 	}
@@ -501,6 +501,18 @@ func getIcon(runtimeStatus string) *commodel.Icon {
 		statusStr = common.FrontedIconLoading
 	}
 
+	return &commodel.Icon{URL: statusStr}
+}
+
+func getIconByServiceCnt(svcCnt, allCnt int) *commodel.Icon {
+	var (
+		statusStr string
+	)
+	if svcCnt < allCnt {
+		statusStr = common.FrontedIconLoading
+	} else {
+		statusStr = common.FrontedIconBreathing
+	}
 	return &commodel.Icon{URL: statusStr}
 }
 
