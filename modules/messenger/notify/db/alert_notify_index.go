@@ -25,12 +25,13 @@ type AlertNotifyIndexDB struct {
 }
 
 type AlertNotifyIndex struct {
-	ID         int64     `json:"id" gorm:"column:id"`
-	NotifyID   int64     `json:"notify_id" gorm:"column:notify_id"`
-	NotifyName string    `json:"notify_name" gorm:"column:notify_name"`
-	Status     string    `json:"status" gorm:"column:status"`
-	Channel    string    `json:"channel" gorm:"column:channel"`
-	AlertID    int64     `json:"alert_id" gorm:"column:alert_id"`
+	ID         int64  `json:"id" gorm:"column:id"`
+	NotifyID   int64  `json:"notify_id" gorm:"column:notify_id"`
+	NotifyName string `json:"notify_name" gorm:"column:notify_name"`
+	Status     string `json:"status" gorm:"column:status"`
+	Channel    string `json:"channel" gorm:"column:channel"`
+	//AlertID    int64     `json:"alert_id" gorm:"column:alert_id"`
+	Attributes string    `json:"attributes" gorm:"column:attributes"`
 	ScopeType  string    `json:"scope_type" gorm:"column:scope_type"`
 	ScopeID    string    `json:"scope_id" gorm:"column:scope_id"`
 	OrgID      int64     `json:"org_id" gorm:"column:org_id"`
