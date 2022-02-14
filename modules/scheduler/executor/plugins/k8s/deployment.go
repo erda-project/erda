@@ -695,6 +695,9 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	k.AddPodMountVolume(service, &deployment.Spec.Template.Spec, secretvolmounts, secretvolumes)
 	k.AddSpotEmptyDir(&deployment.Spec.Template.Spec)
 
+	if err = DereferenceEnvs(deployment); err != nil {
+		return nil, err
+	}
 	logrus.Debugf("show k8s deployment, name: %s, deployment: %+v", deploymentName, deployment)
 	return deployment, nil
 }
@@ -1084,6 +1087,7 @@ func (k *Kubernetes) setContainerResources(service apistructs.Service, container
 
 	return nil
 }
+
 func (k *Kubernetes) UpdateContainerResourceEnv(originResource apistructs.Resources, container *apiv1.Container) {
 	for index, env := range container.Env {
 		var needToUpdate = false
@@ -1112,4 +1116,67 @@ func (k *Kubernetes) UpdateContainerResourceEnv(originResource apistructs.Resour
 		}
 	}
 	return
+}
+
+// DereferenceEnvs dereferences envs if the placeholder ${env.PLACEHOLDER} in the env.
+func DereferenceEnvs(deployment *appsv1.Deployment) error {
+	for i, container := range deployment.Spec.Template.Spec.Containers {
+		var envMap = make(map[string]string)
+		for _, env := range container.Env {
+			if env.ValueFrom != nil {
+				continue
+			}
+			envMap[env.Name] = env.Value
+		}
+		if err := dereferenceMap(envMap); err != nil {
+			return err
+		}
+		for j, env := range deployment.Spec.Template.Spec.Containers[i].Env {
+			if value, ok := envMap[env.Name]; ok && container.Env[j].ValueFrom == nil {
+				deployment.Spec.Template.Spec.Containers[i].Env[j].Value = value
+			}
+		}
+	}
+	return nil
+}
+
+func dereferenceMap(values map[string]string) error {
+	var left, right = "${", "}"
+	for k, v := range values {
+		placeholder, start, end, err := strutil.FirstCustomPlaceholder(v, left, right)
+		if err != nil {
+			return err
+		}
+		if start == end {
+			break
+		}
+		if !strings.HasPrefix(placeholder, "env.") {
+			continue
+		}
+		placeholder = strings.TrimPrefix(placeholder, "env.")
+		if placeholder == k {
+			return errors.Errorf("loop reference in env: %s", placeholder)
+		}
+		kv := strings.Split(placeholder, ":")
+		placeholder = kv[0]
+		ref, ok := values[placeholder]
+		if !ok {
+			if len(kv) > 1 {
+				ref = kv[1]
+			} else {
+				return errors.Errorf("reference invalid env key: %s", placeholder)
+			}
+		}
+		values[k] = strutil.Replace(v, ref, start, end)
+	}
+	for k := range values {
+		placeholder, start, end, err := strutil.FirstCustomPlaceholder(values[k], left, right)
+		if err != nil {
+			return err
+		}
+		if start != end && strings.HasPrefix(placeholder, "env.") {
+			return dereferenceMap(values)
+		}
+	}
+	return nil
 }
