@@ -1343,7 +1343,6 @@ func (a *Addon) Get(userID, orgID, routingInstanceID string, internalcall bool) 
 				}
 			}
 		}
-
 	}
 
 	// 非管理员，隐匿 addon 值信息
@@ -1607,7 +1606,6 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 								return err
 							}
 						}
-
 					}
 				}
 			}
@@ -1630,6 +1628,318 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 	}
 
 	return nil
+}
+
+// Scale 根据 routingInstanceID 调整 addon 实例副本数实现:
+// 停止: 副本数设置为 0
+// 启动: 副本数调整为期望值
+// 平台级 addon 只支持扩，不支持缩
+func (a *Addon) Scale(userID, routingInstanceID, action string) error {
+	//鉴权
+	errMsg := ""
+	routingIns, err := a.db.GetInstanceRouting(routingInstanceID)
+	if err != nil {
+		logrus.Errorf("scale addon failed: get routing instance error, %+v", err)
+		return err
+	}
+
+	if routingIns == nil || routingIns.ID == "" {
+		errMsg = fmt.Sprintf("scale addon failed: not found addon with routing id %s", routingInstanceID)
+		logrus.Errorf(errMsg)
+		return errors.New(errMsg)
+	}
+
+	// 不允许对 inside addon 执行 scale 操作，需要对上层 outside addon 进行 scale 操作以触发 inside addon 的 scale 操作
+	// 例如不能对 kafka addon 中的 zookeeper addon 执行 scale 操作，只能对 kafka addon 执行 scale 操作
+	if routingIns.InsideAddon == apistructs.INSIDE {
+		return a.insideAddonCanNotScale(routingIns)
+	}
+
+	projectIDInt, _ := strconv.Atoi(routingIns.ProjectID)
+	pcr := &apistructs.PermissionCheckRequest{
+		UserID:   userID,
+		Scope:    apistructs.ProjectScope,
+		ScopeID:  uint64(projectIDInt),
+		Resource: "addon",
+		Action:   apistructs.UpdateAction,
+	}
+	if routingIns.ProjectID != "" {
+		//projectIDInt, err := strconv.Atoi(routingIns.ProjectID)
+		permissionResult, err := a.bdl.CheckPermission(pcr)
+		if err != nil {
+			logrus.Errorf("scale addon failed: check permission error, %+v", err)
+			return err
+		}
+		if !permissionResult.Access {
+			return errors.New("scale addon failed: access denied")
+		}
+	}
+
+	// 根据 addon 状态，判断当前是否支持对应 action 的操作
+	err = addonCanScale(routingIns.AddonName, routingIns.RealInstance, routingIns.Plan, routingIns.Version, routingIns.Status, action)
+	if err != nil {
+		logrus.Errorf("%v", err)
+		return err
+	}
+
+	// 若引用关系存在，不能停止
+	count, err := a.db.GetAttachmentCountByRoutingInstanceID(routingInstanceID)
+	if err != nil {
+		logrus.Errorf("scale addon failed: get routing attachments error, %+v", err)
+		return err
+	}
+	if count > 0 && action == apistructs.ScaleActionDown {
+		return errors.New("scale addon failed: addon is being referenced, can't scale to 0")
+	}
+
+	addonInstance, err := a.db.GetAddonInstance(routingIns.RealInstance)
+	if err != nil {
+		logrus.Errorf("scale addon failed: get addon instance error, %+v", err)
+		return err
+	}
+	if addonInstance == nil || addonInstance.ID == "" {
+		errMsg = fmt.Sprintf("scale addon failed: not found addon with id %s", routingIns.RealInstance)
+		logrus.Errorf(errMsg)
+		return errors.New(errMsg)
+	}
+
+	// 根据 addon 状态，判断当前是否支持对应 action 的操作
+	err = addonCanScale(addonInstance.AddonName, addonInstance.ID, addonInstance.Plan, addonInstance.Version, addonInstance.Status, action)
+	if err != nil {
+		logrus.Errorf("scale inside addon %s wint id %s failed, error: %v", addonInstance.AddonName, addonInstance.ID, err)
+		return err
+	}
+
+	addonSpec, err := a.getAddonExtension(routingIns.AddonName, routingIns.Version)
+	if err != nil {
+		logrus.Errorf("scale addon failed: get extension error, %+v", err)
+		return err
+	}
+	if addonSpec.SubCategory != apistructs.BasicAddon { // 业务 addon
+		// TODO: 业务 addon 是否需要支持启动/停止？
+		errMsg = fmt.Sprintf("scale addon failed: can not support scale addon %s with subCategory %s", addonSpec.Name, addonSpec.SubCategory)
+		logrus.Errorf(errMsg)
+		return errors.New(errMsg)
+	} else { // 基础 addon
+		if addonSpec.Category != apistructs.AddonCustomCategory {
+			// 调用 scheduler API 进行 addon scale 操作
+			relationAddons, err := a.db.GetByOutSideInstanceID(routingIns.RealInstance)
+			if err != nil {
+				logrus.Errorf("scale addon failed: get addon addonInstanceRelations info for instance %s with id %s , error: %v", routingIns.AddonName, routingIns.RealInstance, err)
+				return err
+			}
+
+			// 1. addon 对应有 inside addon，则先对 inside addon 进行 scale 操作
+			if relationAddons != nil && len(*relationAddons) > 0 {
+				for _, relationItem := range *relationAddons {
+					count, err = a.db.GetAttachmentCountByInstanceID(relationItem.InsideInstanceID)
+					if err != nil {
+						return err
+					}
+					// 如果引用计数 > 0,则不能停止 addon
+					if count > 0 && action == apistructs.ScaleActionDown {
+						continue
+					}
+
+					// 查看 inside addon 对应的 routing 表中对应的状态。确保状态满足执行 scale
+					routingInstances, err := a.db.GetInstanceRoutingByRealInstance(relationItem.InsideInstanceID)
+					if err != nil {
+						logrus.Errorf("scale addon failed: get routing instance error, %+v", err)
+						return err
+					}
+
+					if routingInstances == nil || len(*routingInstances) == 0 {
+						errMsg = fmt.Sprintf("scale addon failed: not found addon routings with real_instance %s", relationItem.InsideInstanceID)
+						logrus.Errorf(errMsg)
+						return errors.New(errMsg)
+					}
+					for _, rInstance := range *routingInstances {
+						err = addonCanScale(rInstance.AddonName, rInstance.RealInstance, rInstance.Plan, rInstance.Version, rInstance.Status, action)
+						if err != nil {
+							logrus.Errorf("%v", err)
+							return err
+						}
+					}
+
+					relationIns, err := a.db.GetAddonInstance(relationItem.InsideInstanceID)
+					if err != nil {
+						return err
+					}
+					if relationIns == nil || relationIns.ID == "" {
+						continue
+					}
+
+					err = addonCanScale(relationIns.AddonName, relationIns.ID, relationIns.Plan, relationIns.Version, relationIns.Status, action)
+					if err != nil {
+						logrus.Errorf("scale inside addon %s wint id %s failed, error: %v", relationIns.AddonName, relationIns.ID, err)
+						return err
+					}
+
+					err = a.doAddonScale(relationIns, routingInstances, action)
+					if err != nil {
+						return err
+					}
+				}
+			}
+
+			// 2. addon 无 inside addon，直接对 addon 进行 scale 操作
+			routingInstances := make([]dbclient.AddonInstanceRouting, 0)
+			routingInstances = append(routingInstances, *routingIns)
+			return a.doAddonScale(addonInstance, &routingInstances, action)
+		} else {
+			// custom addon, 不支持启动/停止
+			errMsg = fmt.Sprintf("scale addon failed: can not support scale addon %s with subCategory %s", addonSpec.Name, addonSpec.SubCategory)
+			logrus.Errorf(errMsg)
+			return errors.New(errMsg)
+		}
+	}
+}
+
+func (a *Addon) insideAddonCanNotScale(routingIns *dbclient.AddonInstanceRouting) error {
+	errMsg := ""
+	addonRelation, err := a.db.GetByInSideInstanceID(routingIns.RealInstance)
+	if err != nil {
+		errMsg = fmt.Sprintf("scale addon failed: addon %s with id %s is a inside addon which can not do scale. can not found the outside addon for it, error: %v", routingIns.AddonName, routingIns.RealInstance, err)
+		logrus.Errorf(errMsg)
+		return errors.New(errMsg)
+	}
+
+	if addonRelation == nil || addonRelation.OutsideInstanceID == "" {
+		errMsg = fmt.Sprintf("scale addon failed: addon %s with id %s is a inside addon which can not do scale. can not found the outside addon for it, error: %v", routingIns.AddonName, routingIns.RealInstance, err)
+		logrus.Errorf(errMsg)
+		return errors.New(errMsg)
+	}
+
+	relationAddonRoutings, err := a.db.GetInstanceRoutingByRealInstance(addonRelation.OutsideInstanceID)
+	if err != nil {
+		errMsg = fmt.Sprintf("scale addon failed: addon %s with id %s is a inside addon which can not do scale. can not found outside addon %s routings info. error: %v", routingIns.AddonName, routingIns.RealInstance, addonRelation.OutsideInstanceID, err)
+		logrus.Errorf(errMsg)
+		return errors.New(errMsg)
+	}
+
+	if relationAddonRoutings == nil || len(*relationAddonRoutings) == 0 {
+		errMsg = fmt.Sprintf("scale addon failed: addon %s with id %s is a inside addon which can not do scale. no routings info for outside addon %s", routingIns.AddonName, routingIns.RealInstance, addonRelation.OutsideInstanceID)
+		logrus.Errorf(errMsg)
+		return errors.New(errMsg)
+	}
+
+	type addonAndRotingIds struct {
+		Name string
+		Id   string
+	}
+	addonAndIds := make([]addonAndRotingIds, 0)
+	for _, rr := range *relationAddonRoutings {
+		addonAndIds = append(addonAndIds, addonAndRotingIds{
+			Name: rr.Name,
+			Id:   rr.ID,
+		})
+	}
+
+	errMsg = fmt.Sprintf("scale addon failed: addon %s with id %s is a inside addon which can not do scale. please scale outside addon use routing ID in %+v instead.", routingIns.AddonName, routingIns.RealInstance, addonAndIds)
+	logrus.Errorf(errMsg)
+	return errors.New(errMsg)
+}
+
+func (a *Addon) doAddonScale(addonInstance *dbclient.AddonInstance, addonInstanceRoutings *[]dbclient.AddonInstanceRouting, action string) error {
+	var optionMap map[string]string
+	json.Unmarshal([]byte(addonInstance.Options), &optionMap)
+	createItem := &apistructs.AddonHandlerCreateItem{
+		InstanceName: addonInstance.Name,
+		AddonName:    addonInstance.AddonName,
+		//TODO: Plan
+		Plan:          addonInstance.Plan,
+		ClusterName:   addonInstance.Cluster,
+		Workspace:     addonInstance.Workspace,
+		OrgID:         addonInstance.OrgID,
+		ProjectID:     addonInstance.ProjectID,
+		ApplicationID: addonInstance.ApplicationID,
+	}
+	var optionsMap map[string]string
+	if err := json.Unmarshal([]byte(addonInstance.Options), &optionsMap); err != nil {
+		return errors.Wrapf(err, "Unmarshal instance optiosn for addon %s with id %s failed, error: %v", addonInstance.Name, addonInstance.ID, err)
+	}
+
+	createItem.Options = optionsMap
+
+	if runtimeName, ok := optionMap["runtimeName"]; ok {
+		createItem.RuntimeName = runtimeName
+	}
+
+	if runtimeID, ok := optionMap["runtimeId"]; ok {
+		createItem.RuntimeID = runtimeID
+	}
+
+	req, err := a.createAddonScaleRequest(createItem, addonInstance, action)
+	if err != nil {
+		logrus.Errorf("scale addon failed: create addon scale request error: %v", err)
+		return err
+	}
+
+	sgb, _ := json.Marshal(req)
+	logrus.Infof("scale service group body is %s", string(sgb))
+	if err := a.bdl.ScaleServiceGroup(*req); err != nil {
+		logrus.Errorf("scale service group failed, request: %v, error: %v", req, err)
+		return err
+	}
+
+	// 更新 inside addon status
+	newStatus := ""
+	switch action {
+	case apistructs.ScaleActionDown:
+		newStatus = string(apistructs.AddonOffline)
+	case apistructs.ScaleActionUp:
+		newStatus = string(apistructs.AddonAttached)
+	}
+
+	if err := a.db.UpdateAddonInstanceStatus(addonInstance.ID, newStatus); err != nil {
+		return err
+	}
+
+	for _, rInstance := range *addonInstanceRoutings {
+		rInstance.Status = newStatus
+		if err := a.db.UpdateInstanceRouting(&rInstance); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func addonCanScale(addonName, addonId, plan, version, status, action string) error {
+	if plan == "professional" {
+		if addonName == apistructs.AddonRedis && (action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp) {
+			errMsg := fmt.Sprintf("scale addon failed: addon %s is an operator which can not do %s", addonName, action)
+			return errors.New(errMsg)
+		}
+
+		if addonName == apistructs.AddonES && (action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp) && (version == "6.8.9" || version == "6.8.22") {
+			errMsg := fmt.Sprintf("scale addon failed: addon %s is an operator which can not do %s", addonName, action)
+			return errors.New(errMsg)
+		}
+	}
+
+	// 如果 addon status 不是 运行中(ATTACHED)，则不能执行 scaleDown 或变更 非0 副本数之类的 scale 操作
+	if action == apistructs.ScaleActionDown && status != string(apistructs.AddonAttached) {
+		errMsg := fmt.Sprintf("scale addon failed: addon %s with id %s is not in running state, can not do %s", addonName, addonId, apistructs.ScaleActionDown)
+		return errors.New(errMsg)
+	}
+
+	// 如果 addon status 不是未启动(OFFLINE)状态，则不能执行 scaleUp操作
+	if action == apistructs.ScaleActionUp && status != string(apistructs.AddonOffline) {
+		errMsg := fmt.Sprintf("scale addon failed: addon %s with id %s is not in offline state, can not do %s", addonName, addonId, apistructs.ScaleActionUp)
+		return errors.New(errMsg)
+	}
+	return nil
+}
+
+// createAddonScaleRequest 构建 addon scale 操作对应的请求
+func (a *Addon) createAddonScaleRequest(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, scaleAction string) (*apistructs.UpdateServiceGroupScaleRequst, error) {
+	// 获取addon extension信息
+	addonSpec, addonDice, err := a.GetAddonExtention(params)
+	if err != nil {
+		logrus.Errorf("AttachAndCreate GetAddonExtention err:  %v", err)
+		return nil, err
+	}
+	return a.BuildAddonScaleRequestGroup(params, addonIns, scaleAction, addonSpec, addonDice)
 }
 
 // getAddonExtension 获取extension信息
@@ -1778,7 +2088,7 @@ func (a *Addon) ListByProject(orgID, projectID uint64, category string) (*[]apis
 		if az, ok := projectInfo.ClusterConfig[v.Workspace]; !ok || az != v.Cluster {
 			continue
 		}
-		if v.Category != apistructs.AddonCustomCategory && v.Status != string(apistructs.AddonAttached) {
+		if v.Category != apistructs.AddonCustomCategory && v.Status != string(apistructs.AddonAttached) && v.Status != string(apistructs.AddonOffline) {
 			continue
 		}
 		addonRespList = append(addonRespList, a.convert(&v))
@@ -3212,6 +3522,7 @@ func (a *Addon) convert(routingInstance *dbclient.AddonInstanceRouting) apistruc
 		Platform:            routingInstance.IsPlatform,
 		CreatedAt:           routingInstance.CreatedAt,
 		UpdatedAt:           routingInstance.UpdatedAt,
+		IsInsideAddon:       routingInstance.InsideAddon,
 	}
 
 	if routingInstance.Options != "" {
