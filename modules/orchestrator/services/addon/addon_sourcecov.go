@@ -89,6 +89,16 @@ func (sam *SourcecovAddonManagement) BuildSourceCovServiceItem(
 			MaxCPU: addonDeployPlan.MaxCPU,
 			MaxMem: addonDeployPlan.MaxMem,
 		}
+
+		if service.Labels == nil {
+			service.Labels = make(map[string]string)
+		}
+
+		SetlabelsFromOptions(params.Options, service.Labels)
+
+		//  主要目的是传递 PVC 相关信息
+		vol01 := SetAddonVolumes(params.Options, "", false)
+		service.Volumes = diceyml.Volumes{vol01}
 	}
 
 	return nil

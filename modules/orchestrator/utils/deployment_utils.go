@@ -76,7 +76,7 @@ func ConvertToLegacyDice(dice *diceyml.DiceYaml, addonActions map[string]interfa
 func convertVolumeToLegacyDice(volumes diceyml.Volumes) []string {
 	vs := make([]string, len(volumes))
 	for i, volume := range volumes {
-		vs[i] = volume.Path
+		vs[i] = volume.TargetPath
 	}
 	return vs
 }

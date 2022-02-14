@@ -42,6 +42,10 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 			"ZOOKEEPER_ADDR":    instanceOptions["ZK_HOSTS"],
 		}
 		utils.AppendMap(service.Envs, env)
+		if service.Labels == nil {
+			service.Labels = make(map[string]string)
+		}
+		utils.SetlabelsFromOptions(instanceOptions, service.Labels)
 	}
 
 	return req

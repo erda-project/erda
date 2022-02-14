@@ -16,7 +16,9 @@ package k8s
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -26,6 +28,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/k8sapi"
@@ -43,7 +46,29 @@ const (
 	sidecarNamePrefix       = "sidecar-"
 	EnableServiceLinks      = "ENABLE_SERVICE_LINKS"
 	RegistrySecretName      = "REGISTRY_SECRET_NAME"
+
+	LabelKeyPrefix          = "annotations/"
+	ECIPodLabel             = "alibabacloud.com/eci"
+	ECIPodSidecarConfigPath = "/etc/sidecarconf"
+
+	// ECI Pod fluent-bit sidecar contianer configuration
+	ECIPodFluentbitSidecarImageEnvName                 = "ECI_POD_FLUENTBIT_SIDECAR_IMAGE"
+	ECIPodFluentbitSidecarImage                        = "registry.erda.cloud/erda/erda-fluent-bit:1.4-20211201-543951a"
+	ECIPodFluentbitCollectorAuthPassword               = "G$9767bP32drYFPWrK4XMLRMTatiM6cU"
+	ECIPodFluentbitCollectorAuthUsername               = "collector"
+	ECIPodFluentbitOutputBatchEventLimit               = "250"
+	ECIPodFluentbitOutputBatchTriggerContentLimitBytes = "314572"
+	ECIPodFluentbitOutputNetLimitBytesPerSecond        = "104857"
+	ECIPodFluentbitInputTailReadFromHead               = "true"
 )
+
+var ECIPodSidecarENVFromScheduler = []string{"ECI_POD_FLUENTBIT_COLLECTOR_ADDR", "ECI_POD_FLUENTBIT_COLLECTOR_AUTH_USERNAME",
+	"ECI_POD_FLUENTBIT_INPUT_TAIL_READ_FROM_HEAD", "ECI_POD_FLUENTBIT_OUTPUT_BATCH_TRIGGER_CONTENT_LIMIT_BYTES",
+	"ECI_POD_FLUENTBIT_COLLECTOR_AUTH_PASSWORD", "ECI_POD_FLUENTBIT_SIDECAR_IMAGE",
+	"ECI_POD_FLUENTBIT_OUTPUT_BATCH_EVENT_LIMIT", "ECI_POD_FLUENTBIT_OUTPUT_NET_LIMIT_BYTES_PER_SECOND"}
+
+var ECIPodSidecarENV = []string{"COLLECTOR_ADDR", "COLLECTOR_AUTH_USERNAME", "INPUT_TAIL_READ_FROM_HEAD", "OUTPUT_BATCH_TRIGGER_CONTENT_LIMIT_BYTES",
+	"COLLECTOR_AUTH_PASSWORD", "ECI_POD_FLUENTBIT_SIDECAR_IMAGE", "OUTPUT_BATCH_EVENT_LIMIT", "OUTPUT_NET_LIMIT_BYTES_PER_SECOND"}
 
 func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
 	deployment, err := k.newDeployment(service, sg)
@@ -524,7 +549,11 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 				Value: fmt.Sprintf("%d", limitmem/1024/1024)},
 		)
 
-		containers[i].Env = envs
+		if len(containers[i].Env) > 0 {
+			containers[i].Env = append(containers[i].Env, envs...)
+		} else {
+			containers[i].Env = envs
+		}
 	}
 	return nil
 }
@@ -656,6 +685,16 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	}
 	podAnnotations(service, deployment.Spec.Template.Annotations)
 
+	// inherit Labels from service.Labels and service.DeploymentLabels
+	err = inheritDeploymentLabels(service, deployment)
+	if err != nil {
+		logrus.Errorf("failed to set labels for service %s for Pod with error: %v\n", service.Name, err)
+		return nil, err
+	}
+
+	// set pod Annotations from service.Labels and service.DeploymentLabels
+	setPodAnnotationsFromLabels(service, deployment.Spec.Template.Annotations)
+
 	// According to the current setting, there is only one user container in a pod
 	if service.Cmd != "" {
 		for i := range containers {
@@ -666,10 +705,22 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 		}
 	}
 
+	// ECI Pod inject fluent-bit sidecar container
+	useECI := UseECI(deployment.Labels, deployment.Spec.Template.Labels)
+	if useECI {
+		sidecar, err := GenerateECIPodSidecarContainers()
+		if err != nil {
+			logrus.Errorf("%v", err)
+			return nil, err
+		}
+		SetPodContainerLifecycleAndSharedVolumes(&deployment.Spec.Template.Spec)
+		deployment.Spec.Template.Spec.Containers = append(deployment.Spec.Template.Spec.Containers, sidecar)
+	}
+
 	// Configure health check
 	SetHealthCheck(&deployment.Spec.Template.Spec.Containers[0], service)
 
-	if err := k.AddContainersEnv(containers, service, serviceGroup); err != nil {
+	if err := k.AddContainersEnv(deployment.Spec.Template.Spec.Containers /*containers*/, service, serviceGroup); err != nil {
 		return nil, err
 	}
 
@@ -692,7 +743,11 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 		secretvolmounts = append(secretvolmounts, volmount)
 	}
 
-	k.AddPodMountVolume(service, &deployment.Spec.Template.Spec, secretvolmounts, secretvolumes)
+	err = k.AddPodMountVolume(service, &deployment.Spec.Template.Spec, secretvolmounts, secretvolumes)
+	if err != nil {
+		logrus.Errorf("failed to AddPodMountVolume for deployment %s/%s: %v", deployment.Namespace, deployment.Name, err)
+		return nil, err
+	}
 	k.AddSpotEmptyDir(&deployment.Spec.Template.Spec)
 
 	if err = DereferenceEnvs(deployment); err != nil {
@@ -801,10 +856,14 @@ func makeEnvVariableName(str string) string {
 func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *apiv1.PodSpec,
 	secretvolmounts []apiv1.VolumeMount, secretvolumes []apiv1.Volume) error {
 
-	podSpec.Volumes = make([]apiv1.Volume, 0)
+	if len(podSpec.Volumes) == 0 {
+		podSpec.Volumes = make([]apiv1.Volume, 0)
+	}
 
 	//Pay attention to the settings mentioned above, there is only one container in a pod
-	podSpec.Containers[0].VolumeMounts = make([]apiv1.VolumeMount, 0)
+	if len(podSpec.Containers[0].VolumeMounts) == 0 {
+		podSpec.Containers[0].VolumeMounts = make([]apiv1.VolumeMount, 0)
+	}
 
 	// get cluster info
 	clusterInfo, err := k.ClusterInfo.Get()
@@ -815,7 +874,7 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 	// hostPath type
 	for i, bind := range service.Binds {
 		if bind.HostPath == "" || bind.ContainerPath == "" {
-			continue
+			return errors.New("bind HostPath or ContainerPath is empty")
 		}
 		//Name formation '[a-z0-9]([-a-z0-9]*[a-z0-9])?'
 		name := "volume" + "-bind-" + strconv.Itoa(i)
@@ -824,7 +883,10 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 		if err != nil {
 			return err
 		}
-		if !strutil.HasPrefixes(hostPath, "/") {
+
+		// The hostPath that does not start with an absolute path is used to apply for local disk resources in the old volume interface
+		if !strings.HasPrefix(hostPath, "/") {
+			//hostPath = strutil.Concat("/mnt/k8s/", hostPath)
 			pvcName := strings.Replace(hostPath, "_", "-", -1)
 			sc := "dice-local-volume"
 			if err := k.pvc.CreateIfNotExists(&apiv1.PersistentVolumeClaim{
@@ -882,6 +944,13 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 			})
 	}
 
+	// pvc volume type
+	if len(service.Volumes) > 0 {
+		if err := k.setStatelessServiceVolumes(service, podSpec); err != nil {
+			return err
+		}
+	}
+
 	// Configure the business container sidecar shared directory
 	for name, sidecar := range service.SideCars {
 		for _, dir := range sidecar.SharedDirs {
@@ -926,6 +995,135 @@ func (k *Kubernetes) AddPodMountVolume(service *apistructs.Service, podSpec *api
 	podSpec.Volumes = append(podSpec.Volumes, secretvolumes...)
 	podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts, secretvolmounts...)
 
+	return nil
+}
+
+func (k *Kubernetes) setStatelessServiceVolumes(service *apistructs.Service, podSpec *apiv1.PodSpec) error {
+
+	runtimeName := ""
+	workspace := ""
+	pvcUUID := ""
+	for _, v := range podSpec.Containers[0].Env {
+		if v.Name == "DICE_RUNTIME_NAME" || strings.HasSuffix(v.Name, "_DICE_RUNTIME_NAME") {
+			runtimeName = v.Value
+			continue
+		}
+
+		if v.Name == "DICE_WORKSPACE" || strings.HasSuffix(v.Name, "_DICE_WORKSPACE") {
+			workspace = v.Value
+			continue
+		}
+
+		if v.Name == "DICE_APPLICATION_ID" || strings.HasSuffix(v.Name, "_DICE_APPLICATION_ID") {
+			pvcUUID = v.Value
+			continue
+		}
+	}
+
+	if runtimeName != "" {
+		if pvcUUID != "" {
+			pvcUUID = fmt.Sprintf("%s-%s", pvcUUID, strings.Replace(runtimeName, "/", "-", -1))
+		} else {
+			pvcUUID = fmt.Sprintf("%s", strings.Replace(runtimeName, "/", "-", -1))
+		}
+	}
+
+	if workspace != "" {
+		pvcUUID = fmt.Sprintf("%s-%s", pvcUUID, workspace)
+	}
+
+	for i, vol := range service.Volumes {
+		//Name formation '[a-z0-9]([-a-z0-9]*[a-z0-9])?'
+		name := "volume" + "-pvc-" + strconv.Itoa(i)
+		pvcName := ""
+		if pvcUUID != "" {
+			pvcName = fmt.Sprintf("%s-%s-%s", service.Name, pvcUUID, vol.ID)
+		} else {
+			pvcName = fmt.Sprintf("%s-%s", podSpec.Containers[0].Name, vol.ID)
+		}
+		sc := "dice-local-volume"
+		capacity := "20Gi"
+		if vol.StorageClassName != "" {
+			sc = vol.StorageClassName
+		}
+
+		// 校验 sc 是否存在（volume 的 type + vendor 的组合可能会产生当前不支持的 sc）
+		_, err := k.storageClass.Get(sc)
+		if err != nil {
+			if err.Error() == "not found" {
+				logrus.Errorf("failed to set volume for sevice %s: storageclass %s not found.", service.Name, sc)
+				return errors.Errorf("failed to set volume for sevice %s: storageclass %s not found.", service.Name, sc)
+			} else {
+				logrus.Errorf("failed to set volume for sevice %s: get storageclass %s from cluster failed: %#v", service.Name, sc, err)
+				return errors.Errorf("failed to set volume for sevice %s: get storageclass %s from cluster failed: %#v", service.Name, sc, err)
+			}
+		}
+
+		// stateless service with replicas > 1, only use sc support mounted by by multi-pods
+		if service.WorkLoad == ServicePerNode && !strings.Contains(sc, "-nfs-") && !strings.Contains(sc, "-nas-") {
+			// for daemonset
+			return errors.Errorf("failed to set volume for sevice %s: can not use storageclass %s create pvc for per_node service, please set volume type to 'NAS' or 'DICE-NAS'", service.Name, sc)
+		} else {
+			// for deployment
+			if service.Scale > 1 && !strings.Contains(sc, "-nfs-") && !strings.Contains(sc, "-nas-") {
+				return errors.Errorf("failed to set volume for sevice %s: can not use storageclass %s create pvc for service with more than one replicas for stateless service, please set volume type to 'NAS'", service.Name, sc)
+			}
+		}
+
+		if vol.Capacity > 20 {
+			capacity = fmt.Sprintf("%dGi", vol.Capacity)
+		}
+		pvc := apiv1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      pvcName,
+				Namespace: service.Namespace,
+			},
+			Spec: apiv1.PersistentVolumeClaimSpec{
+				AccessModes: []apiv1.PersistentVolumeAccessMode{apiv1.ReadWriteOnce},
+				Resources: apiv1.ResourceRequirements{
+					Requests: apiv1.ResourceList{
+						apiv1.ResourceStorage: resource.MustParse(capacity),
+					},
+				},
+				StorageClassName: &sc,
+			},
+		}
+		if vol.SCVolume.Snapshot != nil && vol.SCVolume.Snapshot.MaxHistory > 0 {
+			if sc == apistructs.AlibabaSSDSC {
+				pvc.Annotations = make(map[string]string)
+				vs := diceyml.VolumeSnapshot{
+					MaxHistory: vol.SCVolume.Snapshot.MaxHistory,
+				}
+				vsMap := map[string]diceyml.VolumeSnapshot{}
+				vsMap[sc] = vs
+				data, _ := json.Marshal(vsMap)
+				pvc.Annotations[apistructs.CSISnapshotMaxHistory] = string(data)
+			} else {
+				logrus.Warnf("Service %s pvc volume use storageclass %v, it do not support snapshot. Only volume.type SSD for Alibaba disk SSD support snapshot\n", service.Name, sc)
+			}
+		}
+
+		if err := k.pvc.CreateIfNotExists(&pvc); err != nil {
+			return err
+		}
+
+		podSpec.Volumes = append(podSpec.Volumes,
+			apiv1.Volume{
+				Name: name,
+				VolumeSource: apiv1.VolumeSource{
+					PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+						ClaimName: pvcName,
+					},
+				},
+			})
+
+		podSpec.Containers[0].VolumeMounts = append(podSpec.Containers[0].VolumeMounts,
+			apiv1.VolumeMount{
+				Name:      name,
+				MountPath: vol.TargetPath,
+				ReadOnly:  vol.ReadOnly,
+			})
+	}
 	return nil
 }
 
@@ -984,6 +1182,24 @@ func (k *Kubernetes) scaleDeployment(ctx context.Context, sg *apistructs.Service
 	if err != nil {
 		getErr := fmt.Errorf("failed to get the deployment %s in namespace %s, err is: %s", deploymentName, ns, err.Error())
 		return getErr
+	}
+
+	// 如果扩展为多个(>=2)副本，需要判断 deployment 的 Pod 是否挂载支持共享挂载的 PVC，如果不支持，则不能扩展
+	if scalingService.Scale > 1 {
+		for _, vol := range deploy.Spec.Template.Spec.Volumes {
+			if vol.PersistentVolumeClaim != nil && vol.PersistentVolumeClaim.ClaimName != "" {
+				pvc, err := k.pvc.Get(deploy.Namespace, vol.PersistentVolumeClaim.ClaimName)
+				if err != nil {
+					return fmt.Errorf("failed to update the deployment, err is: %v", err)
+				}
+				if *pvc.Spec.StorageClassName == apistructs.AlibabaSSDSC ||
+					*pvc.Spec.StorageClassName == apistructs.VolumeTypeDiceLOCAL ||
+					*pvc.Spec.StorageClassName == apistructs.TencentSSDSC ||
+					*pvc.Spec.StorageClassName == apistructs.HuaweiSSDSC {
+					return fmt.Errorf("failed to update the deployment %s/%s, it has pvc with name %s which can not mounted by multi-pods", deploy.Namespace, deploy.Name, pvc.Name)
+				}
+			}
+		}
 	}
 
 	oldCPU, oldMem := getRequestsResources(deploy.Spec.Template.Spec.Containers)
@@ -1179,4 +1395,337 @@ func dereferenceMap(values map[string]string) error {
 		}
 	}
 	return nil
+}
+
+// inherit Labels from service.Labels and service.DeploymentLabels
+// Now, some of these labels used for AliCloud ECI Pod Annotations (https://www.alibabacloud.com/help/zh/doc-detail/144561.htm).
+// But, this can be used for setting any pod labels as wished.
+func inheritDeploymentLabels(service *apistructs.Service, deployment *appsv1.Deployment) error {
+	if deployment == nil {
+		return nil
+	}
+
+	if deployment.Labels == nil {
+		deployment.Labels = make(map[string]string)
+	}
+
+	if deployment.Spec.Template.Labels == nil {
+		deployment.Spec.Template.Labels = make(map[string]string)
+	}
+
+	hasHostPath := serviceHasHostpath(service)
+
+	err := setPodLabelsFromService(hasHostPath, service.Labels, deployment.Labels)
+	if err != nil {
+		return errors.Errorf("error in service.Labels: for deployment %v in namesapce %v with error: %v\n", deployment.Name, deployment.Namespace, err)
+	}
+
+	err = setPodLabelsFromService(hasHostPath, service.Labels, deployment.Spec.Template.Labels)
+	if err != nil {
+		return errors.Errorf("error in service.Labels: for deployment %v in namesapce %v with error: %v\n", deployment.Name, deployment.Namespace, err)
+	}
+
+	err = setPodLabelsFromService(hasHostPath, service.DeploymentLabels, deployment.Spec.Template.Labels)
+	if err != nil {
+		return errors.Errorf("error in service.DeploymentLabels: for deployment %v in namesapce %v with error: %v\n", deployment.Name, deployment.Namespace, err)
+	}
+
+	return nil
+}
+
+// inherit Labels from service.Labels and service.DeploymentLabels
+// Now, some of these labels used for AliCloud ECI Pod Annotations (https://www.alibabacloud.com/help/zh/doc-detail/144561.htm).
+// But, this can be used for setting any pod labels as wished.
+func inheritDaemonsetLabels(service *apistructs.Service, daemonset *appsv1.DaemonSet) error {
+	if daemonset == nil {
+		return nil
+	}
+
+	if daemonset.Labels == nil {
+		daemonset.Labels = make(map[string]string)
+	}
+
+	if daemonset.Spec.Template.Labels == nil {
+		daemonset.Spec.Template.Labels = make(map[string]string)
+	}
+
+	hasHostPath := serviceHasHostpath(service)
+
+	err := setPodLabelsFromService(hasHostPath, service.Labels, daemonset.Labels)
+	if err != nil {
+		return errors.Errorf("error in service.Labels: for daemonset %v in namesapce %v with error: %v\n", daemonset.Name, daemonset.Namespace, err)
+	}
+
+	for lk, lv := range daemonset.Labels {
+		if lk == ECIPodLabel && lv == "true" {
+			return errors.Errorf("error in service.Labels: for daemonset %v in namesapce %v with error: ECI not support daemonset, do not set lables %s='true' for daemonset", daemonset.Name, daemonset.Namespace, lk)
+		}
+	}
+
+	err = setPodLabelsFromService(hasHostPath, service.Labels, daemonset.Spec.Template.Labels)
+	if err != nil {
+		return errors.Errorf("error in service.Labels: for daemonset %v in namesapce %v with error: %v\n", daemonset.Name, daemonset.Namespace, err)
+	}
+
+	err = setPodLabelsFromService(hasHostPath, service.DeploymentLabels, daemonset.Spec.Template.Labels)
+	if err != nil {
+		return errors.Errorf("error in service.DeploymentLabels: for daemonset %v in namesapce %v with error: %v\n", daemonset.Name, daemonset.Namespace, err)
+	}
+
+	for lk, lv := range daemonset.Spec.Template.Labels {
+		if lk == ECIPodLabel && lv == "true" {
+			return errors.Errorf("error in service.DeploymentLabels: for daemonset %v in namesapce %v with error: ECI not support daemonset, do not set lables %s='true' for daemonset.\n", daemonset.Name, daemonset.Namespace, lk)
+		}
+	}
+
+	return nil
+}
+
+// setPodLabelsFromService
+func setPodLabelsFromService(hasHostPath bool, labels map[string]string, podLabels map[string]string) error {
+	for key, value := range labels {
+		if len(value) > 63 {
+			logrus.Warnf("Label key: %s with Invalid value: %s: must be no more than 63 characters", key, value)
+			logrus.Warnf("Label key: %s with value: %s will not convert to j8s label.", key, value)
+			continue
+		}
+
+		if errs := validation.IsValidLabelValue(value); len(errs) > 0 {
+			logrus.Warnf("Label key: %s with invalid value: %s will not convert to j8s label.", key, value)
+			continue
+		}
+
+		// labels begin with `annotations/` from service.Labels and service.DeploymentLabels used for
+		// generating Pod Annotations, not for Labels
+		if strings.HasPrefix(key, LabelKeyPrefix) {
+			continue
+		}
+		// HostPath not supported in AliCloud ECI
+		if hasHostPath && key == ECIPodLabel && value == "true" {
+			return errors.Errorf("can not create ECI Pod with hostPath")
+		}
+
+		if _, ok := podLabels[key]; !ok {
+			podLabels[key] = value
+		}
+	}
+	return nil
+}
+
+// Set pod Annotations from service.Labels and service.DeploymentLabels
+// Now, these annotations used for AliCloud ECI Pod Annotations (https://www.alibabacloud.com/help/zh/doc-detail/144561.htm).
+// But, this can be used for setting any pod annotations as wished.
+func setPodAnnotationsFromLabels(service *apistructs.Service, podannotations map[string]string) {
+	if podannotations == nil {
+		return
+	}
+
+	for key, value := range service.Labels {
+		// labels begin with `annotations/` from service.Labels and service.DeploymentLabels used for
+		// generating Pod Annotations, not for Labels
+		if strings.HasPrefix(key, LabelKeyPrefix) {
+			podannotations[strings.TrimPrefix(key, LabelKeyPrefix)] = value
+			continue
+		}
+
+		if key == ECIPodLabel && value == "true" {
+			images := strings.Split(service.Image, "/")
+			if len(images) >= 2 {
+				podannotations[diceyml.AddonImageRegistry] = images[0]
+			}
+		}
+	}
+	for key, value := range service.DeploymentLabels {
+		// labels begin with `annotations/` from service.Labels and service.DeploymentLabels used for
+		// generating Pod Annotations, not for Labels
+		if strings.HasPrefix(key, LabelKeyPrefix) {
+			podannotations[strings.TrimPrefix(key, LabelKeyPrefix)] = value
+			continue
+		}
+
+		if key == ECIPodLabel && value == "true" {
+			images := strings.Split(service.Image, "/")
+			if len(images) >= 2 {
+				podannotations[diceyml.AddonImageRegistry] = images[0]
+			}
+		}
+	}
+}
+
+func serviceHasHostpath(service *apistructs.Service) bool {
+	for _, bind := range service.Binds {
+		if strutil.HasPrefixes(bind.HostPath, "/") {
+			return true
+		}
+	}
+	return false
+}
+
+func GenerateECIPodSidecarContainers() (apiv1.Container, error) {
+	sc := apiv1.Container{
+		Name: "fluent-bit",
+		//Image: sidecar.Image,
+		Resources: apiv1.ResourceRequirements{
+			Requests: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("0.1"),
+				apiv1.ResourceMemory: resource.MustParse("256Mi"),
+			},
+			Limits: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("1"),
+				apiv1.ResourceMemory: resource.MustParse("1Gi"),
+			},
+		},
+		Command:      []string{"./fluent-bit/bin/fluent-bit"},
+		Args:         []string{"-c", "/fluent-bit/etc/sidecar/fluent-bit.conf"},
+		VolumeMounts: []apiv1.VolumeMount{},
+	}
+
+	if err := getSideCarConfigFromConfigMapVolumeFiles(&sc); err != nil {
+		logrus.Errorf("Can not create log collector sidecar container for ECI Pod, error：%v", err)
+		return sc, errors.Errorf("Can not create log collector sidecar container for ECI Pod, error：%v", err)
+	}
+
+	sc.VolumeMounts = append(sc.VolumeMounts, apiv1.VolumeMount{
+		Name:      "erda-volume",
+		MountPath: "/erda",
+		ReadOnly:  false, // rw
+	})
+
+	sc.VolumeMounts = append(sc.VolumeMounts, apiv1.VolumeMount{
+		Name:      "stdlog",
+		MountPath: "/stdlog",
+		ReadOnly:  false, // rw
+	})
+
+	return sc, nil
+}
+
+func SetPodContainerLifecycleAndSharedVolumes(podSpec *apiv1.PodSpec) {
+	for i := range podSpec.Containers {
+		if len(podSpec.Containers[i].VolumeMounts) == 0 {
+			podSpec.Containers[i].VolumeMounts = make([]apiv1.VolumeMount, 0)
+		}
+		podSpec.Containers[i].VolumeMounts = append(podSpec.Containers[i].VolumeMounts, apiv1.VolumeMount{
+			Name:      "erda-volume",
+			MountPath: "/erda",
+			ReadOnly:  false, // rw
+		})
+
+		podSpec.Containers[i].VolumeMounts = append(podSpec.Containers[i].VolumeMounts, apiv1.VolumeMount{
+			Name:      "stdlog",
+			MountPath: "/stdlog",
+			ReadOnly:  false, // rw
+		})
+		lifecyclePostStartExecCmd := fmt.Sprintf("mkdir -p /erda/containers/%s && cp /proc/self/cpuset /erda/containers/%s/cpuset", podSpec.Containers[i].Name, podSpec.Containers[i].Name)
+		podSpec.Containers[i].Lifecycle = &apiv1.Lifecycle{
+			PostStart: &apiv1.Handler{
+				Exec: &apiv1.ExecAction{
+					Command: []string{"sh", "-c", lifecyclePostStartExecCmd},
+				},
+			},
+		}
+	}
+
+	if len(podSpec.Volumes) == 0 {
+		podSpec.Volumes = make([]apiv1.Volume, 0)
+	}
+	podSpec.Volumes = append(podSpec.Volumes, apiv1.Volume{
+		Name: "erda-volume",
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
+		},
+	})
+	podSpec.Volumes = append(podSpec.Volumes, apiv1.Volume{
+		Name: "stdlog",
+		VolumeSource: apiv1.VolumeSource{
+			FlexVolume: &apiv1.FlexVolumeSource{
+				Driver: "alicloud/pod-stdlog",
+			},
+		},
+	})
+}
+
+func getSideCarConfigFromConfigMapVolumeFiles(sc *apiv1.Container) error {
+	if sc.Env == nil {
+		sc.Env = make([]apiv1.EnvVar, 0)
+	}
+
+	for _, envKey := range ECIPodSidecarENVFromScheduler {
+		envValue := os.Getenv(envKey)
+		if envKey == ECIPodFluentbitSidecarImageEnvName {
+			if envValue != "" {
+				sc.Image = envValue
+			} else {
+				sc.Image = ECIPodFluentbitSidecarImage
+			}
+			continue
+		}
+
+		if envValue != "" {
+			sc.Env = append(sc.Env, apiv1.EnvVar{
+				Name:  strutil.TrimPrefixes(envKey, "ECI_POD_FLUENTBIT_"),
+				Value: envValue,
+			})
+		} else {
+			switch envKey {
+			case "ECI_POD_FLUENTBIT_COLLECTOR_AUTH_USERNAME":
+				envValue = ECIPodFluentbitCollectorAuthUsername
+			case "ECI_POD_FLUENTBIT_COLLECTOR_AUTH_PASSWORD":
+				envValue = ECIPodFluentbitCollectorAuthPassword
+			case "ECI_POD_FLUENTBIT_INPUT_TAIL_READ_FROM_HEAD":
+				envValue = ECIPodFluentbitInputTailReadFromHead
+			case "ECI_POD_FLUENTBIT_OUTPUT_BATCH_TRIGGER_CONTENT_LIMIT_BYTES":
+				envValue = ECIPodFluentbitOutputBatchTriggerContentLimitBytes
+			case "ECI_POD_FLUENTBIT_OUTPUT_BATCH_EVENT_LIMIT":
+				envValue = ECIPodFluentbitOutputBatchEventLimit
+			case "ECI_POD_FLUENTBIT_OUTPUT_NET_LIMIT_BYTES_PER_SECOND":
+				envValue = ECIPodFluentbitOutputNetLimitBytesPerSecond
+			}
+		}
+
+		sc.Env = append(sc.Env, apiv1.EnvVar{
+			Name:  strutil.TrimPrefixes(envKey, "ECI_POD_FLUENTBIT_"),
+			Value: envValue,
+		})
+	}
+
+	// COLLECTOR_ADDR
+	ns := os.Getenv("DICE_NAMESPACE")
+	if ns == "" {
+		ns = "default"
+	}
+	sc.Env = append(sc.Env, apiv1.EnvVar{
+		Name:  "COLLECTOR_ADDR",
+		Value: fmt.Sprintf("collector.%s.svc.cluster.local:7076", ns),
+	})
+
+	// COLLECTOR_PUBLIC_URL
+	collcror_pubilic_url := os.Getenv("COLLECTOR_PUBLIC_URL")
+	if collcror_pubilic_url != "" {
+		sc.Env = append(sc.Env, apiv1.EnvVar{
+			Name:  "COLLECTOR_PUBLIC_URL",
+			Value: collcror_pubilic_url,
+		})
+	}
+
+	return nil
+}
+
+func UseECI(controllerLabels, PodLabels map[string]string) bool {
+	if len(controllerLabels) == 0 && len(PodLabels) == 0 {
+		return false
+	}
+
+	if value, ok := controllerLabels[ECIPodLabel]; ok {
+		if value == "true" {
+			return true
+		}
+	}
+
+	if value, ok := PodLabels[ECIPodLabel]; ok {
+		if value == "true" {
+			return true
+		}
+	}
+	return false
 }

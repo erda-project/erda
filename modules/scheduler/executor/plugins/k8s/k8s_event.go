@@ -174,7 +174,9 @@ func (k *Kubernetes) InstanceEvent(event Event, runtimeName string, notifier eve
 	}
 	// "containerID": "docker://c894809fa10635e455be2bfec5c151a23ac9d27ec6cfc5948444ff01b6836819"
 	// remove prefix "docker://"
-	ie.ID = strutil.TrimPrefixes(pod.Status.ContainerStatuses[0].ContainerID, "docker://")
+	//ie.ID = strutil.TrimPrefixes(pod.Status.ContainerStatuses[0].ContainerID, "docker://")
+	runtimeAndId := strings.Split(pod.Status.ContainerStatuses[0].ContainerID, "://")
+	ie.ID = runtimeAndId[1]
 
 	// compatible edas v2
 	for _, env := range pod.Spec.Containers[0].Env {

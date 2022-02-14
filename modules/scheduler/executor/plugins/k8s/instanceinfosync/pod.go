@@ -444,7 +444,9 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 		mainContainer := getMainContainerStatus(pod.Status.ContainerStatuses, container.Name)
 		terminatedContainer := mainContainer.LastTerminationState.Terminated
 		if terminatedContainer != nil {
-			prevContainerID = strutil.TrimPrefixes(terminatedContainer.ContainerID, "docker://")
+			//prevContainerID = strutil.TrimPrefixes(terminatedContainer.ContainerID, "docker://")
+			runtimeAndId := strings.Split(terminatedContainer.ContainerID, "://")
+			prevContainerID = runtimeAndId[1]
 			prevContainerStartedAt = terminatedContainer.StartedAt.Time
 			if prevContainerStartedAt.Year() < 2000 {
 				prevContainerStartedAt, _ = time.Parse("2006-01", "2000-01")
@@ -461,7 +463,9 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 		}
 		currentContainer := mainContainer.State.Running
 		if currentContainer != nil {
-			currentContainerID = strutil.TrimPrefixes(mainContainer.ContainerID, "docker://")
+			//currentContainerID = strutil.TrimPrefixes(mainContainer.ContainerID, "docker://")
+			runtimeAndId := strings.Split(mainContainer.ContainerID, "://")
+			currentContainerID = runtimeAndId[1]
 			currentContainerStartedAt = mainContainer.State.Running.StartedAt.Time
 			currentPhase = instanceinfo.InstancePhaseUnHealthy
 			for _, cond := range pod.Status.Conditions {
@@ -481,7 +485,9 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 		} else {
 			currentTerminatedContainer := mainContainer.State.Terminated
 			if currentTerminatedContainer != nil {
-				currentContainerID = strutil.TrimPrefixes(mainContainer.ContainerID, "docker://")
+				//currentContainerID = strutil.TrimPrefixes(mainContainer.ContainerID, "docker://")
+				runtimeAndId := strings.Split(mainContainer.ContainerID, "://")
+				currentContainerID = runtimeAndId[1]
 				currentContainerStartedAt = mainContainer.State.Terminated.StartedAt.Time
 				currentContainerFinishedAt = &mainContainer.State.Terminated.FinishedAt.Time
 				if currentContainerFinishedAt.Year() < 2000 {

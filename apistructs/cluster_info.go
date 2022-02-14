@@ -52,6 +52,8 @@ const (
 	ISTIO_INSTALLED         ClusterInfoMapKey = "ISTIO_INSTALLED"         // 是否启用了 istio
 	ISTIO_VERSION           ClusterInfoMapKey = "ISTIO_VERSION"           // istio 的版本
 	JOB_CLUSTER             ClusterInfoMapKey = "JOB_CLUSTER"             // specify the job execute cluster
+
+	CLUSTER_SC_VENDOR ClusterInfoMapKey = "CLOUD_PROVISIONER" // k8s 集群的 SC Vendor（如 Tecent 或 Alibaba）
 )
 
 type ClusterInfoResponse struct {

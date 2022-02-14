@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
+	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -46,12 +47,29 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 		}
 		utils.AppendMap(service.Envs, env)
 
+		//labels
+		if service.Labels == nil {
+			service.Labels = make(map[string]string)
+		}
+		options := map[string]string{}
+		utils.JsonConvertObjToType(tmcInstance.Options, &options)
+		utils.SetlabelsFromOptions(options, service.Labels)
+
 		// volumes
 		if p.IsNotDCOSCluster(clusterConfig["DICE_CLUSTER_TYPE"]) {
-			service.Binds = diceyml.Binds{
-				nodeId + "_data:/data:rw",
-				nodeId + "_datalog:/datalog:rw",
-			}
+			/*
+				service.Binds = diceyml.Binds{
+					nodeId + "_data:/data:rw",
+					nodeId + "_datalog:/datalog:rw",
+				}
+			*/
+
+			//  /data volume
+			vol01 := addon.SetAddonVolumes(options, "/data", false)
+			//  /datalog volume
+			vol02 := addon.SetAddonVolumes(options, "/datalog", false)
+			service.Volumes = diceyml.Volumes{vol01, vol02}
+
 		} else {
 			service.Binds = diceyml.Binds{
 				clusterConfig["DICE_STORAGE_MOUNTPOINT"] + "/addon/zookeeper/data/" + nodeId + ":/data:rw",

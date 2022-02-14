@@ -150,14 +150,21 @@ func (ro *RedisOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 		sentinel = convertSentinel(svc1, &affinity)
 	}
 
+	labels := make(map[string]string)
+	annotations := make(map[string]string)
+	addon.SetAddonLabelsAndAnnotations(svc0, labels, annotations)
+	addon.SetAddonLabelsAndAnnotations(svc1, labels, annotations)
+
 	rf := RedisFailover{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "databases.spotahome.com/v1",
 			Kind:       "RedisFailover",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      sg.ID,
-			Namespace: genK8SNamespace(sg.Type, sg.ID),
+			Name:        sg.ID,
+			Namespace:   genK8SNamespace(sg.Type, sg.ID),
+			Labels:      labels,
+			Annotations: annotations,
 		},
 		Spec: RedisFailoverSpec{
 			Redis:    redis,

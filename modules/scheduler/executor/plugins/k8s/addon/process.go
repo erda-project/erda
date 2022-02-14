@@ -18,6 +18,11 @@ import (
 	"github.com/erda-project/erda/apistructs"
 )
 
+const (
+	LabelKeyPrefix = "annotations/"
+	ECIPodLabel    = "alibabacloud.com/eci"
+)
+
 func Create(op AddonOperator, sg *apistructs.ServiceGroup) error {
 	if err := op.Validate(sg); err != nil {
 		return err

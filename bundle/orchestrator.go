@@ -176,10 +176,10 @@ func (b *Bundle) batchProcessRuntimes(req apistructs.RuntimeScaleRecords, orgID 
 		JSONBody(req).Do().JSON(&rsp)
 
 	if err != nil {
-		return []byte{}, apierrors.ErrInvoke.InternalError(err)
+		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 	if !resp.IsOK() || !rsp.Success {
-		return []byte{}, toAPIError(resp.StatusCode(), rsp.Error)
+		return nil, toAPIError(resp.StatusCode(), rsp.Error)
 	}
 
 	if rsp.Data == nil {

@@ -323,6 +323,43 @@ func (d *Deployment) List(userID user.ID, orgID uint64, runtimeID uint64, status
 	return &data, nil
 }
 
+// ListAllDeployments 查询所有部署记录列表
+func (d *Deployment) ListAllDeployments(userID user.ID, orgID uint64, runtimeID uint64, statuses []string) (
+	*apistructs.DeploymentListData, error) {
+	runtime, err := d.db.GetRuntime(runtimeID)
+	if err != nil {
+		return nil, apierrors.ErrListDeployment.InternalError(err)
+	}
+	perm, err := d.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+		UserID:   userID.String(),
+		Scope:    apistructs.AppScope,
+		ScopeID:  runtime.ApplicationID,
+		Resource: "runtime-" + strutil.ToLower(runtime.Workspace),
+		Action:   apistructs.GetAction,
+	})
+	if err != nil {
+		return nil, apierrors.ErrListDeployment.InternalError(err)
+	}
+	if !perm.Access {
+		return nil, apierrors.ErrListDeployment.AccessDenied()
+	}
+
+	filter := dbclient.DeploymentFilter{StatusIn: statuses}
+	deployments, err := d.db.FindAllDeployments(runtimeID, filter)
+	if err != nil {
+		return nil, apierrors.ErrListDeployment.InternalError(err)
+	}
+	list := make([]*apistructs.Deployment, 0, len(deployments))
+	for i := range deployments {
+		list = append(list, deployments[i].Convert())
+	}
+	data := apistructs.DeploymentListData{
+		Total: len(list),
+		List:  list,
+	}
+	return &data, nil
+}
+
 // GetStatus 查询部署状态
 func (d *Deployment) GetStatus(deploymentID uint64) (*apistructs.DeploymentStatusDTO, error) {
 	deployment, err := d.db.GetDeployment(deploymentID)

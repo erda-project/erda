@@ -17,8 +17,10 @@ package servicegroup
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -28,10 +30,12 @@ import (
 	"github.com/erda-project/erda/modules/scheduler/conf"
 	"github.com/erda-project/erda/modules/scheduler/executor"
 	"github.com/erda-project/erda/modules/scheduler/executor/executortypes"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s"
 	"github.com/erda-project/erda/modules/scheduler/impl/cluster/clusterutil"
 	"github.com/erda-project/erda/modules/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/scheduler/task"
 	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/pkg/k8s/storage"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -218,6 +222,24 @@ func convertServiceGroup(req apistructs.ServiceGroupCreateV2Request, clusterinfo
 
 	sgServices := []apistructs.Service{}
 	for name, service := range yml.Services {
+		// check eci enabled
+		enableECI := false
+		for k, v := range service.Labels {
+			if k == k8s.ECIPodLabel && v == "true" {
+				enableECI = true
+				break
+			}
+		}
+
+		for k, v := range service.Deployments.Labels {
+			if k == k8s.ECIPodLabel && v == "true" {
+				enableECI = true
+				break
+			}
+		}
+
+		volumes := []apistructs.Volume{}
+		// binds only for hostPath volume
 		binds := []apistructs.ServiceBind{}
 		ymlbinds, err := diceyml.ParseBinds(service.Binds)
 		if err != nil {
@@ -228,6 +250,12 @@ func convertServiceGroup(req apistructs.ServiceGroupCreateV2Request, clusterinfo
 			if bind.Type == "rw" {
 				ro = false
 			}
+
+			// 卷映射的容器目录合法性检查
+			if bind.ContainerPath == "" || bind.ContainerPath == "/" {
+				return apistructs.ServiceGroup{}, errors.New(fmt.Sprintf("invalid bind container path [%s]", bind.ContainerPath))
+			}
+
 			binds = append(binds, apistructs.ServiceBind{
 				Bind: apistructs.Bind{
 					ContainerPath: bind.ContainerPath,
@@ -237,7 +265,12 @@ func convertServiceGroup(req apistructs.ServiceGroupCreateV2Request, clusterinfo
 			})
 		}
 
-		volumes := []apistructs.Volume{}
+		// hostPath not supported by ECI Pod
+		if len(binds) > 0 && enableECI {
+			logrus.Errorf("Service has Binds(hostpath) can not running as ECI Pod\n")
+			return apistructs.ServiceGroup{}, errors.New("Service has Binds(hostpath) can not running as ECI Pod")
+		}
+
 		volumeInfo, ok := reqVolumesInfo[name]
 		if ok {
 			var tp apistructs.VolumeType
@@ -251,6 +284,11 @@ func convertServiceGroup(req apistructs.ServiceGroupCreateV2Request, clusterinfo
 
 				}
 			}
+			// 卷映射的容器目录合法性检查
+			if volumeInfo.ContainerPath == "" || volumeInfo.ContainerPath == "/" {
+				return apistructs.ServiceGroup{}, errors.New(fmt.Sprintf("invalid ServiceGroupCreateV2Request RequestVolumeInfo volume container path [%s]", volumeInfo.ContainerPath))
+			}
+
 			volumes = append(volumes, apistructs.Volume{
 				ID:            volumeInfo.ID,
 				VolumeType:    tp,
@@ -258,6 +296,14 @@ func convertServiceGroup(req apistructs.ServiceGroupCreateV2Request, clusterinfo
 				ContainerPath: volumeInfo.ContainerPath,
 			})
 		}
+
+		// 从  diceYaml 的 Service 里读取 volumes 配置用于更新 ServiceGroup 里的 Service 的 volumes
+		vs, err := setServiceVolumes(sg.ClusterName, service, clusterinfo, enableECI)
+		if err != nil {
+			return apistructs.ServiceGroup{}, fmt.Errorf("set service %s volumes failed: %v", name, err)
+
+		}
+		volumes = append(volumes, vs...)
 
 		sgService := apistructs.Service{
 			Name:          name,
@@ -329,4 +375,75 @@ func appendServiceTags(labels map[string]string, executor string) map[string]str
 	labels[apistructs.LabelMatchTags] = strings.Join(matchTags, ",")
 	labels[apistructs.LabelExcludeTags] = apistructs.TagLocked + "," + apistructs.TagPlatform
 	return labels
+}
+
+func setServiceVolumes(clusterName string, service *diceyml.Service, clusterinfo clusterinfo.ClusterInfo, enableECI bool) ([]apistructs.Volume, error) {
+	volumes := []apistructs.Volume{}
+
+	// TODO: 集群里加入 CLUSTER_SC_VENDOR 信息
+	info, err := clusterinfo.Info(clusterName)
+	if err != nil {
+		logrus.Errorf("failed to get cluster info, clusterName: %s, (%v)", clusterName, err)
+		return []apistructs.Volume{}, errors.Errorf("failed to get cluster info, clusterName: %s, (%v)", clusterName, err)
+	}
+
+	for i, v := range service.Volumes {
+		// TODO:   oldVolumeType  may not needed
+		oldVolumeType := apistructs.LocalVolume
+		snap := int32(0)
+		if v.Snapshot != nil && v.Snapshot.MaxHistory > snap {
+			snap = v.Snapshot.MaxHistory
+		}
+
+		cloudProvisioner := info.Get(apistructs.CLUSTER_SC_VENDOR)
+		if cloudProvisioner == "" {
+			cloudProvisioner = os.Getenv("CLOUD_PROVISIONER")
+		}
+		scName, err := storage.VolumeTypeToSCName(v.Type, cloudProvisioner)
+		if err != nil {
+			logrus.Errorf("can not detect storageclass for volume: %v", err)
+			return []apistructs.Volume{}, errors.Errorf("can not detect storageclass for volume: %v", err)
+		}
+
+		if enableECI {
+			if scName != apistructs.AlibabaSSDSC && scName != apistructs.AlibabaNASSC {
+				logrus.Errorf("can not create Service with ECI enabled for volumes use storageclass %s\n", scName)
+				return []apistructs.Volume{}, errors.Errorf("can not create Service with ECI enabled for volumes use storageclass %s", scName)
+			}
+		}
+
+		// 小于 等于 20 （包括负数，一般写错才有负数），修正为默认值
+		if v.Capacity < diceyml.AddonVolumeSizeMin {
+			v.Capacity = diceyml.AddonVolumeSizeMin
+		}
+		// 大于 2000，修正为 2000
+		if v.Capacity >= diceyml.AddonVolumeSizeMax {
+			v.Capacity = diceyml.AddonVolumeSizeMax
+		}
+
+		// 卷映射的容器目录合法性检查
+		if v.TargetPath == "" || v.TargetPath == "/" {
+			return []apistructs.Volume{}, errors.New(fmt.Sprintf("invalid targetPath [%s]", v.TargetPath))
+		}
+
+		scVolume := apistructs.SCVolume{
+			Type:             v.Type,
+			StorageClassName: scName,
+			Capacity:         v.Capacity,
+			//SourcePath:       v.SourcePath,
+			TargetPath: v.TargetPath,
+			ReadOnly:   v.ReadOnly,
+			Snapshot:   &apistructs.VolumeSnapshot{MaxHistory: snap},
+		}
+		volumes = append(volumes, apistructs.Volume{
+			ID: fmt.Sprintf(strconv.Itoa(i)),
+			//VolumePath: v.SourcePath,
+			// TODO: oldVolumeType  may not needed
+			VolumeType:    oldVolumeType,
+			Size:          int(v.Capacity),
+			ContainerPath: v.TargetPath,
+			SCVolume:      scVolume,
+		})
+	}
+	return volumes, nil
 }

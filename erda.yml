@@ -668,6 +668,7 @@ services:
       CMDB_CONTAINER_TOPIC: "spot-metaserver_container"
       CMDB_GROUP: "spot_cmdb_group2"
       DEBUG: "false"
+      ECI_POD_FLUENTBIT_SIDECAR_IMAGE: "<services.fluent-bit.image>"
     resources:
       cpu: ${request_cpu:1}
       max_cpu: 1

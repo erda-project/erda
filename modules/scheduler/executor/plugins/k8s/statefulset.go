@@ -17,6 +17,7 @@ package k8s
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -32,6 +33,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/toleration"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders/constraints"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -99,6 +101,7 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 				"app":      statefulName,
 				"addon_id": info.sg.Dice.ID,
 			},
+			Annotations: map[string]string{},
 		},
 		Spec: apiv1.PodSpec{
 			EnableServiceLinks:    func(enable bool) *bool { return &enable }(false),
@@ -106,6 +109,24 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 			Tolerations:           toleration.GenTolerations(),
 		},
 	}
+
+	hasHostPath := serviceHasHostpath(service)
+	err := setPodLabelsFromService(hasHostPath, service.Labels, set.Labels)
+	if err != nil {
+		return errors.Errorf("error in service.Labels: %v for statefulset %v in namesapce %v", err, set.Name, set.Namespace)
+	}
+	err = setPodLabelsFromService(hasHostPath, service.Labels, set.Spec.Template.Labels)
+	if err != nil {
+		return errors.Errorf("error in service.Labels: %v for statefulset %v in namesapce %v", err, set.Name, set.Namespace)
+	}
+	err = setPodLabelsFromService(hasHostPath, service.DeploymentLabels, set.Spec.Template.Labels)
+	if err != nil {
+		return errors.Errorf("error in service.DeploymentLabels: %v for statefulset %v in namesapce %v", err, set.Name, set.Namespace)
+	}
+
+	// set pod Annotations from service.Labels and service.DeploymentLabels
+	setPodAnnotationsFromLabels(service, set.Spec.Template.Annotations)
+
 	set.Spec.Template.Spec.Affinity = &affinity
 
 	imagePullSecrets, err := k.setImagePullSecrets(service.Namespace)
@@ -165,10 +186,27 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 	if err := k.SetOverCommitMem(container, memSubscribeRatio); err != nil {
 		return err
 	}
-	// Set the statefulset environment variable
-	setEnv(container, info.envs, info.sg, info.namespace)
 
 	set.Spec.Template.Spec.Containers = []apiv1.Container{*container}
+
+	// ECI Pod inject fluent-bit sidecar container
+	useECI := UseECI(set.Labels, set.Spec.Template.Labels)
+	if useECI {
+		sidecar, err := GenerateECIPodSidecarContainers()
+		if err != nil {
+			logrus.Errorf("%v", err)
+			return err
+		}
+		SetPodContainerLifecycleAndSharedVolumes(&set.Spec.Template.Spec)
+		set.Spec.Template.Spec.Containers = append(set.Spec.Template.Spec.Containers, sidecar)
+	}
+
+	// Set the statefulset environment variable
+	for i := range set.Spec.Template.Spec.Containers {
+		setEnv(&set.Spec.Template.Spec.Containers[i], info.envs, info.sg, info.namespace)
+	}
+	//setEnv(container, info.envs, info.sg, info.namespace)
+
 	if info.namespace == "fake-test" {
 		return nil
 	}
@@ -216,10 +254,11 @@ func extractContainerEnvs(containers []corev1.Container) (addonID, projectID, wo
 	return
 }
 
+// setBind only set hostPath for volume
 func (k *Kubernetes) setBind(set *appsv1.StatefulSet, container *apiv1.Container, service *apistructs.Service) error {
 	for i, bind := range service.Binds {
 		if bind.HostPath == "" || bind.ContainerPath == "" {
-			continue
+			return errors.New("bind HostPath or ContainerPath is empty")
 		}
 
 		clusterInfo, err := k.ClusterInfo.Get()
@@ -263,8 +302,11 @@ func (k *Kubernetes) setBind(set *appsv1.StatefulSet, container *apiv1.Container
 }
 
 func (k *Kubernetes) setVolume(set *appsv1.StatefulSet, container *apiv1.Container, service *apistructs.Service) error {
+
+	return k.setStatefulSetServiceVolumes(set, container, service)
+
 	// HostPath is all used in Bind, and the host path is mounted to the container
-	return k.setBind(set, container, service)
+	//return k.setBind(set, container, service)
 
 	// new volume interface
 	// configNewVolume(set, container, service)
@@ -274,6 +316,14 @@ func (k *Kubernetes) requestLocalVolume(set *appsv1.StatefulSet, container *apiv
 	logrus.Infof("in requestLocalVolume, statefulset name: %s, hostPath: %s", set.Name, bind.HostPath)
 
 	sc := localStorage
+	capacity := "20Gi"
+	if bind.SCVolume.Capacity >= 20 {
+		capacity = fmt.Sprintf("%dGi", bind.SCVolume.Capacity)
+	}
+
+	if bind.SCVolume.StorageClassName != "" {
+		sc = bind.SCVolume.StorageClassName
+	}
 
 	hostPath := bind.HostPath
 	pvcName := strings.Replace(hostPath, "_", "-", -1)
@@ -285,7 +335,7 @@ func (k *Kubernetes) requestLocalVolume(set *appsv1.StatefulSet, container *apiv
 			AccessModes: []apiv1.PersistentVolumeAccessMode{apiv1.ReadWriteOnce},
 			Resources: apiv1.ResourceRequirements{
 				Requests: apiv1.ResourceList{
-					apiv1.ResourceStorage: resource.MustParse("10Gi"),
+					apiv1.ResourceStorage: resource.MustParse(capacity),
 				},
 			},
 			StorageClassName: &sc,
@@ -496,6 +546,89 @@ func ParseJobHostBindTemplate(hostPath string, clusterInfo map[string]string) (s
 	}
 
 	return b.String(), nil
+}
+
+func (k *Kubernetes) setStatefulSetServiceVolumes(set *appsv1.StatefulSet, container *apiv1.Container, service *apistructs.Service) error {
+
+	//step 1: set hostpath volume if service.Binds not empty
+	if err := k.setBind(set, container, service); err != nil {
+		return err
+	}
+
+	//step 2: set pvc volume if service.Volumes not empty
+	sc := localStorage
+	capacity := "20Gi"
+	for _, vol := range service.Volumes {
+		if vol.ContainerPath == "" {
+			return errors.New("volume targetPath is empty")
+		}
+
+		if vol.SCVolume.Capacity >= diceyml.AddonVolumeSizeMin && vol.SCVolume.Capacity <= diceyml.AddonVolumeSizeMax {
+			capacity = fmt.Sprintf("%dGi", vol.SCVolume.Capacity)
+		}
+
+		if vol.SCVolume.Capacity > diceyml.AddonVolumeSizeMax {
+			capacity = fmt.Sprintf("%dGi", diceyml.AddonVolumeSizeMax)
+		}
+
+		if vol.SCVolume.StorageClassName != "" {
+			sc = vol.SCVolume.StorageClassName
+		}
+
+		// 校验 sc 是否存在（volume 的 type + vendor 的组合可能会产生当前不支持的 sc）
+		_, err := k.storageClass.Get(sc)
+		if err != nil {
+			if err.Error() == "not found" {
+				logrus.Errorf("failed to set volume for sevice %s: storageclass %s not found.", service.Name, sc)
+				return errors.Errorf("failed to set volume for sevice %s: storageclass %s not found.", service.Name, sc)
+			} else {
+				logrus.Errorf("failed to set volume for sevice %s: get storageclass %s from cluster failed: %#v", service.Name, sc, err)
+				return errors.Errorf("failed to set volume for sevice %s: get storageclass %s from cluster failed: %#v", service.Name, sc, err)
+			}
+		}
+
+		pvcName := fmt.Sprintf("%s-%s-%s", service.Name, container.Name, vol.ID)
+		pvc := apiv1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: pvcName,
+			},
+			Spec: apiv1.PersistentVolumeClaimSpec{
+				AccessModes: []apiv1.PersistentVolumeAccessMode{apiv1.ReadWriteOnce},
+				Resources: apiv1.ResourceRequirements{
+					Requests: apiv1.ResourceList{
+						apiv1.ResourceStorage: resource.MustParse(capacity),
+					},
+				},
+				StorageClassName: &sc,
+			},
+		}
+
+		if vol.SCVolume.Snapshot != nil && vol.SCVolume.Snapshot.MaxHistory > 0 {
+			if sc == apistructs.AlibabaSSDSC {
+				pvc.Annotations = make(map[string]string)
+				vs := diceyml.VolumeSnapshot{
+					MaxHistory: vol.SCVolume.Snapshot.MaxHistory,
+				}
+				vsMap := map[string]diceyml.VolumeSnapshot{}
+				vsMap[sc] = vs
+				data, _ := json.Marshal(vsMap)
+				pvc.Annotations[apistructs.CSISnapshotMaxHistory] = string(data)
+			} else {
+				logrus.Warnf("Service %s pvc volume use storageclass %v, it do not support snapshot. Only volume.type SSD for Alibaba disk SSD support snapshot\n", service.Name, sc)
+			}
+		}
+		set.Spec.VolumeClaimTemplates = append(set.Spec.VolumeClaimTemplates, pvc)
+
+		container.VolumeMounts = append(container.VolumeMounts,
+			apiv1.VolumeMount{
+				Name:      pvcName,
+				MountPath: vol.TargetPath,
+				ReadOnly:  vol.ReadOnly,
+			})
+
+	}
+
+	return nil
 }
 
 // scaleStatefulSet scale statefulset application

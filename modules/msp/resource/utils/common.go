@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/kms/kmscrypto"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 // GetRandomId 生成随机33位uuid，并且，（首字母开头 + 32位uuid）构成Id
@@ -86,4 +87,24 @@ func AesDecrypt(data string) string {
 	}
 
 	return string(plainText)
+}
+
+// SetlabelsFromOptions set service labels from addon Options
+func SetlabelsFromOptions(options, labels map[string]string) {
+	// addons[xxx].options 中指定的 Option 创建为 labels
+	if _, ok := options[diceyml.AddonDiskType]; ok {
+		labels[diceyml.AddonDiskType] = options[diceyml.AddonDiskType]
+	}
+
+	if _, ok := options[diceyml.AddonVolumeSize]; ok {
+		labels[diceyml.AddonVolumeSize] = options[diceyml.AddonVolumeSize]
+	}
+
+	if _, ok := options[diceyml.AddonSnapMaxHistory]; ok {
+		labels[diceyml.AddonSnapMaxHistory] = options[diceyml.AddonSnapMaxHistory]
+	}
+
+	if _, ok := options[diceyml.AddonEnableECI]; ok {
+		labels[diceyml.AddonEnableECI] = options[diceyml.AddonEnableECI]
+	}
 }

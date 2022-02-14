@@ -40,6 +40,10 @@ func (h *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 			"ETCD_ENDPOINTS": instanceOptions["ETCD_ADDRESS"],
 		}
 		utils.AppendMap(service.Envs, env)
+		if service.Labels == nil {
+			service.Labels = make(map[string]string)
+		}
+		utils.SetlabelsFromOptions(instanceOptions, service.Labels)
 	}
 
 	return req

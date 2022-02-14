@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -102,6 +103,24 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 	mysql := sg.Services[0]
 	scname := "dice-local-volume"
 	nfsscname := "dice-nfs-volume"
+	capacity := "20Gi"
+
+	// volumes in an addon service has same storageclass
+	if len(mysql.Volumes) > 0 {
+		if mysql.Volumes[0].SCVolume.Capacity >= diceyml.AddonVolumeSizeMin && mysql.Volumes[0].SCVolume.Capacity <= diceyml.AddonVolumeSizeMax {
+			capacity = fmt.Sprintf("%dGi", mysql.Volumes[0].SCVolume.Capacity)
+		}
+
+		if mysql.Volumes[0].SCVolume.Capacity > diceyml.AddonVolumeSizeMax {
+			capacity = fmt.Sprintf("%dGi", diceyml.AddonVolumeSizeMax)
+		}
+
+		if mysql.Volumes[0].SCVolume.StorageClassName != "" {
+			scname = mysql.Volumes[0].SCVolume.StorageClassName
+			nfsscname = mysql.Volumes[0].SCVolume.StorageClassName
+		}
+	}
+
 	replica := int32(mysql.Scale)
 	passwd := mysql.Env["MYSQL_ROOT_PASSWORD"]
 	secret := corev1.Secret{
@@ -126,12 +145,31 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
-					"storage": resource.MustParse("10Gi"),
+					"storage": resource.MustParse(capacity),
 				},
 			},
 			StorageClassName: &nfsscname,
 		},
 	}
+
+	// set pvc annotations for snapshot
+	if len(mysql.Volumes) > 0 {
+		if mysql.Volumes[0].SCVolume.Snapshot.MaxHistory > 0 {
+			if scname == apistructs.AlibabaSSDSC {
+				backupPVC.Annotations = make(map[string]string)
+				vs := diceyml.VolumeSnapshot{
+					MaxHistory: mysql.Volumes[0].SCVolume.Snapshot.MaxHistory,
+				}
+				vsMap := map[string]diceyml.VolumeSnapshot{}
+				vsMap[scname] = vs
+				data, _ := json.Marshal(vsMap)
+				backupPVC.Annotations[apistructs.CSISnapshotMaxHistory] = string(data)
+			} else {
+				logrus.Warnf("Service %s pvc volume use storageclass %s, it do not support snapshot. Only volume.type SSD for Alibaba disk SSD support snapshot\n", mysql.Name, scname)
+			}
+		}
+	}
+
 	mysqlstruct := MySQL{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "kubedb.com/v1alpha1",
@@ -149,7 +187,7 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 				AccessModes:      []corev1.PersistentVolumeAccessMode{"ReadWriteOnce"},
 				Resources: corev1.ResourceRequirements{
 					Requests: corev1.ResourceList{
-						"storage": resource.MustParse("10Gi"),
+						"storage": resource.MustParse(capacity),
 					},
 				},
 			},
@@ -176,6 +214,12 @@ func (my *MysqlOperator) Convert(sg *apistructs.ServiceGroup) interface{} {
 			},
 		},
 	}
+
+	// set Labels and annotations
+	mysqlstruct.Labels = make(map[string]string)
+	mysqlstruct.Annotations = make(map[string]string)
+	addon.SetAddonLabelsAndAnnotations(mysql, mysqlstruct.Labels, mysqlstruct.Annotations)
+
 	return mysqlSecretBackupPVC{
 		secret:    &secret,
 		mysql:     &mysqlstruct,

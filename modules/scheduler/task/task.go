@@ -108,11 +108,13 @@ func (t *Task) Run(ctx context.Context) TaskResponse {
 		)
 		runtime, ok := t.Spec.(apistructs.ServiceGroup)
 		if ok {
-			if err := t.volumesAttach(&runtime); err != nil {
-				return TaskResponse{
-					err: err,
+			/*
+				if err := t.volumesAttach(&runtime); err != nil {
+					return TaskResponse{
+						err: err,
+					}
 				}
-			}
+			*/
 			t.Spec = runtime
 		}
 		if resp, err = executor.Create(ctx, t.Spec); err != nil {
@@ -131,11 +133,13 @@ func (t *Task) Run(ctx context.Context) TaskResponse {
 		)
 		runtime, ok := t.Spec.(apistructs.ServiceGroup)
 		if ok {
-			if err := t.volumesAttach(&runtime); err != nil {
-				return TaskResponse{
-					err: err,
+			/*
+				if err := t.volumesAttach(&runtime); err != nil {
+					return TaskResponse{
+						err: err,
+					}
 				}
-			}
+			*/
 			t.Spec = runtime
 
 		}

@@ -76,6 +76,10 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 
 	for _, service := range req.DiceYml.Services {
 		utils.AppendMap(service.Envs, envs)
+		if service.Labels == nil {
+			service.Labels = make(map[string]string)
+		}
+		utils.SetlabelsFromOptions(options, service.Labels)
 		service.HealthCheck = healthCheck
 	}
 
