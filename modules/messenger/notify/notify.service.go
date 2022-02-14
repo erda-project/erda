@@ -104,7 +104,6 @@ func (n notifyService) CreateHistoryAndIndex(request *pb.CreateNotifyHistoryRequ
 	if err != nil {
 		return 0, err
 	}
-	//alertId := request.NotifyTags["alertId"]
 	attributes, err := json.Marshal(request.NotifyTags)
 	if err != nil {
 		return 0, err
@@ -114,7 +113,6 @@ func (n notifyService) CreateHistoryAndIndex(request *pb.CreateNotifyHistoryRequ
 		NotifyName: request.NotifyItemDisplayName,
 		Status:     request.Status,
 		Channel:    request.Channel,
-		//AlertID:    int64(alertId.GetNumberValue()),
 		Attributes: string(attributes),
 		CreatedAt:  time.Now(),
 		SendTime:   history.CreatedAt,
