@@ -262,6 +262,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/addons/{addonID}", Method: http.MethodGet, Handler: e.GetAddon},
 		{Path: "/api/addons/{addonID}/actions/references", Method: http.MethodGet, Handler: e.GetAddonReferences},
 		{Path: "/api/addons", Method: http.MethodGet, Handler: e.ListAddon},
+		{Path: "/api/addons", Method: http.MethodPost, Handler: e.ScaleAddon},
 		{Path: "/api/addons/actions/list-extension", Method: http.MethodGet, Handler: e.ListExtensionAddon},
 		{Path: "/api/addons/types/{addonName}", Method: http.MethodGet, Handler: e.ListByAddonName},
 		{Path: "/api/addons/actions/list-available", Method: http.MethodGet, Handler: e.ListAvailableAddon},

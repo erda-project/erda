@@ -261,9 +261,72 @@ func (ro *RedisOperator) Remove(sg *apistructs.ServiceGroup) error {
 	return nil
 }
 
+// Update 支持镜像、环境变量、资源、副本数(不能为0) 等更新
+// 副本数限制参考: https://github.com/spotahome/redis-operator/blob/0.5.8/api/redisfailover/v1alpha2/validate.go
 func (ro *RedisOperator) Update(k8syml interface{}) error {
 	// TODO:
-	return fmt.Errorf("redisoperator not impl Update yet")
+	redis, ok := k8syml.(RedisFailover)
+	if !ok {
+		return fmt.Errorf("[BUG] 01 this k8syml should be RedisFailover")
+	}
+
+	if redis.Spec.Redis.Replicas == 0 || redis.Spec.Sentinel.Replicas == 0 {
+		return fmt.Errorf("failed to update redisfailover, %s/%s, redisfailover do not surpport set replicas to 0", redis.Namespace, redis.Name)
+	}
+
+	// 更新  RedisFailover (副本数不能为 0，否则将)
+	var oldRedis RedisFailover
+	resp, err := ro.client.Get(ro.k8s.GetK8SAddr()).
+		Path(fmt.Sprintf("/apis/storage.spotahome.com/v1alpha2/namespaces/%s/redisfailovers/%s", redis.Namespace, redis.Name)).
+		Do().JSON(&oldRedis)
+	if err != nil {
+		return fmt.Errorf("failed to update redisfailover, %s/%s, get redisfailover failed, err: %v, body: %v ", redis.Namespace, redis.Name, err, string(resp.Body()))
+	}
+	if !resp.IsOK() {
+		return fmt.Errorf("failed to update redisfailover, %s/%s, get redisfailover is not OK, err: %v, body: %v ", redis.Namespace, redis.Name, err, string(resp.Body()))
+	}
+
+	// update redis
+	if redis.Spec.Redis.Replicas != 0 {
+		oldRedis.Spec.Redis.Replicas = redis.Spec.Redis.Replicas
+	}
+	oldRedis.Spec.Redis.Resources = redis.Spec.Redis.Resources
+	oldRedis.Spec.Redis.Image = redis.Spec.Redis.Image
+	oldRedis.Spec.Redis.CustomConfig = redis.Spec.Redis.CustomConfig
+	oldRedis.Spec.Redis.Command = redis.Spec.Redis.Command
+	oldRedis.Spec.Redis.ShutdownConfigMap = redis.Spec.Redis.ShutdownConfigMap
+	oldRedis.Spec.Redis.Exporter = redis.Spec.Redis.Exporter
+	oldRedis.Spec.Redis.Envs = redis.Spec.Redis.Envs
+	oldRedis.Spec.Redis.Exporter = redis.Spec.Redis.Exporter
+	oldRedis.Spec.Redis.ExporterImage = redis.Spec.Redis.ExporterImage
+	oldRedis.Spec.Redis.ExporterVersion = redis.Spec.Redis.ExporterVersion
+	oldRedis.Spec.Redis.DisableExporterProbes = redis.Spec.Redis.DisableExporterProbes
+	oldRedis.Spec.Redis.Version = redis.Spec.Redis.Version
+
+	// update sentinels
+	if redis.Spec.Sentinel.Replicas != 0 {
+		oldRedis.Spec.Redis.Replicas = redis.Spec.Redis.Replicas
+	}
+	oldRedis.Spec.Sentinel.Resources = redis.Spec.Sentinel.Resources
+	oldRedis.Spec.Sentinel.Resources = redis.Spec.Sentinel.Resources
+	oldRedis.Spec.Sentinel.CustomConfig = redis.Spec.Sentinel.CustomConfig
+	oldRedis.Spec.Sentinel.Command = redis.Spec.Sentinel.Command
+	oldRedis.Spec.Sentinel.Envs = redis.Spec.Sentinel.Envs
+
+	var b bytes.Buffer
+	resp, err = ro.client.Put(ro.k8s.GetK8SAddr()).
+		Path(fmt.Sprintf("/apis/storage.spotahome.com/v1alpha2/namespaces/%s/redisfailovers/%s", oldRedis.Namespace, oldRedis.Name)).
+		JSONBody(oldRedis).
+		Do().
+		Body(&b)
+	if err != nil {
+		return fmt.Errorf("failed to update redisfailover, %s/%s, err: %v, body: %v ", oldRedis.Namespace, oldRedis.Name, err, b.String())
+	}
+	if !resp.IsOK() {
+		return fmt.Errorf("failed to update redisfailover, %s/%s, statuscode: %v, body: %v", oldRedis.Namespace, oldRedis.Name, resp.StatusCode(), b.String())
+	}
+
+	return nil
 }
 
 func (ro *RedisOperator) convertRedis(svc apistructs.Service) RedisSettings {
