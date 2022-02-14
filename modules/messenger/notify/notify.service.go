@@ -39,12 +39,9 @@ func (n notifyService) CreateNotifyHistory(ctx context.Context, request *pb.Crea
 	var historyId int64
 	var err error
 	if request.NotifyTags != nil {
-		alertId, ok := request.NotifyTags["alertId"]
-		if ok && alertId.GetNumberValue() > 0 {
-			historyId, err = n.CreateHistoryAndIndex(request)
-			if err != nil {
-				return result, errors.NewInternalServerError(err)
-			}
+		historyId, err = n.CreateHistoryAndIndex(request)
+		if err != nil {
+			return result, errors.NewInternalServerError(err)
 		}
 	} else {
 		dbReq, err := ToDBNotifyHistory(request)
@@ -107,13 +104,16 @@ func (n notifyService) CreateHistoryAndIndex(request *pb.CreateNotifyHistoryRequ
 	if err != nil {
 		return 0, err
 	}
-	alertId := request.NotifyTags["alertId"]
+	attributes, err := json.Marshal(request.NotifyTags)
+	if err != nil {
+		return 0, err
+	}
 	alertNotifyIndex := &db.AlertNotifyIndex{
 		NotifyID:   history.ID,
 		NotifyName: request.NotifyItemDisplayName,
 		Status:     request.Status,
 		Channel:    request.Channel,
-		AlertID:    int64(alertId.GetNumberValue()),
+		Attributes: string(attributes),
 		CreatedAt:  time.Now(),
 		SendTime:   history.CreatedAt,
 		ScopeType:  request.NotifySource.SourceType,
