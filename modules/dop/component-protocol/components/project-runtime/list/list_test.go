@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/commodel"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/i18n"
@@ -179,6 +180,42 @@ func Test_getMainState(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			getIcon(tt.args.runtimeStatus)
+		})
+	}
+}
+
+func Test_getIconByServiceCnt(t *testing.T) {
+	type args struct {
+		healthy int
+		all     int
+	}
+	tests := []struct {
+		name string
+		args args
+		want *commodel.Icon
+	}{
+		{
+			name: "1",
+			args: args{
+				healthy: 0,
+				all:     10,
+			},
+			want: &commodel.Icon{URL: common.FrontedIconLoading},
+		},
+		{
+			name: "2",
+			args: args{
+				healthy: 10,
+				all:     10,
+			},
+			want: &commodel.Icon{URL: common.FrontedIconBreathing},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getIconByServiceCnt(tt.args.healthy, tt.args.all); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getOperations() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
