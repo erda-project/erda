@@ -20,6 +20,7 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
+	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -250,5 +251,21 @@ func TestSetPodAnnotationsBaseContainerEnvs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 		})
+	}
+}
+
+func TestDereferenceEnvs(t *testing.T) {
+	var d = new(appsv1.Deployment)
+	d.Spec.Template.Spec.Containers = []apiv1.Container{
+		{Env: []apiv1.EnvVar{
+			{Name: "ENV_A", Value: "homework"},
+			{Name: "ENV_B", Value: "do ${env.ENV_A}"},
+		}},
+	}
+	if err := DereferenceEnvs(d); err != nil {
+		t.Fatal(err)
+	}
+	for _, env := range d.Spec.Template.Spec.Containers[0].Env {
+		t.Logf("Name: %s, Value: %s", env.Name, env.Value)
 	}
 }

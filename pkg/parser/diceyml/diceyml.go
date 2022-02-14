@@ -15,6 +15,7 @@
 package diceyml
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -224,6 +225,7 @@ func (d *DiceYaml) getDefaultValueData() ([]byte, error) {
 var matchRegex = regexp.MustCompile(`\$\{[\w-]+(:[^\}]*)?\}`)
 var keyRegex = regexp.MustCompile(`[\w-]+`)
 var valueRegex = regexp.MustCompile(`:[^\}]*`)
+var reservedExpressionPrefix = []string{"env."}
 
 func (d *DiceYaml) getEnvValueData(env ...string) ([]byte, error) {
 	valueMap, err := d.extractValues(env...)
@@ -234,6 +236,13 @@ func (d *DiceYaml) getEnvValueData(env ...string) ([]byte, error) {
 	priorUseDefault := len(env) == 0
 	return matchRegex.ReplaceAllFunc(d.data, func(match []byte) []byte {
 		key := keyRegex.Find(match)
+
+		for _, prefix := range reservedExpressionPrefix {
+			if bytes.HasPrefix(bytes.TrimSpace(key), []byte(prefix)) {
+				return match
+			}
+		}
+
 		var value, findValue, defaultValue []byte
 		if find, ok := valueMap[string(key)]; ok {
 			findValue = []byte(find)
