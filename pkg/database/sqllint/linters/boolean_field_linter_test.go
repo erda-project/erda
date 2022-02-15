@@ -18,8 +18,19 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
-	"github.com/erda-project/erda/pkg/database/sqllint/linters"
+	_ "github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
+
+const booleanFieldLinterConfig = `
+- name: BooleanFieldLinter
+  switchOn: true
+  white:
+    patterns:
+      - ".*-base$"
+    modules: [ ]
+    committedAt: [ ]
+    filenames: [ ]
+  meta: { }`
 
 const booleanFieldLinterSQL = `
 create table some_table (
@@ -36,8 +47,12 @@ create table some_table (
 `
 
 func TestNewBooleanFieldLinter(t *testing.T) {
-	linter := sqllint.New(linters.NewBooleanFieldLinter)
-	if err := linter.Input([]byte(booleanFieldLinterSQL), "booleanFieldLinterSQL"); err != nil {
+	cfg, err := sqllint.LoadConfig([]byte(booleanFieldLinterConfig))
+	if err != nil {
+		t.Fatal("failed to LoadConfig", err)
+	}
+	linter := sqllint.New(cfg)
+	if err := linter.Input("", "booleanFieldLinterSQL", []byte(booleanFieldLinterSQL)); err != nil {
 		t.Error(err)
 	}
 	errors := linter.Errors()

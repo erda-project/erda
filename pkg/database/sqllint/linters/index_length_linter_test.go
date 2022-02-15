@@ -18,8 +18,13 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
-	"github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
+
+const indexLengthLinterConfig = `- name: IndexLengthLinter
+  switchOn: true
+  white:
+    patterns:
+      - ".*-base$"`
 
 const indexLengthLinterSQL = `
 create table some_table (
@@ -80,8 +85,12 @@ func TestNewIndexLengthLinter(t *testing.T) {
 }
 
 func testNewIndexLengthLinter1(t *testing.T) {
-	linter := sqllint.New(linters.NewIndexLengthLinter)
-	if err := linter.Input([]byte(indexLengthLinterSQL), "indexLengthLinterSQL"); err != nil {
+	cfg, err := sqllint.LoadConfig([]byte(indexLengthLinterConfig))
+	if err != nil {
+		t.Fatal("failed to LoadConfig", err)
+	}
+	linter := sqllint.New(cfg)
+	if err := linter.Input("", "indexLengthLinterSQL", []byte(indexLengthLinterSQL)); err != nil {
 		t.Error(err)
 	}
 	errors := linter.Errors()
@@ -92,22 +101,32 @@ func testNewIndexLengthLinter1(t *testing.T) {
 }
 
 func testNewIndexLengthLinter2(t *testing.T) {
-	linter := sqllint.New(linters.NewIndexLengthLinter)
-	if err := linter.Input([]byte(indexLengthLinterSQL2), "indexLengthLinterSQL2"); err != nil {
+	cfg, err := sqllint.LoadConfig([]byte(indexLengthLinterConfig))
+	if err != nil {
+		t.Fatal("failed to LoadConfig", err)
+	}
+	name := "indexLengthLinterSQL2"
+	linter := sqllint.New(cfg)
+	if err := linter.Input("", name, []byte(indexLengthLinterSQL2)); err != nil {
 		t.Fatal(err)
 	}
-	errors := linter.Errors()
+	errors := linter.Errors()[name].Lints
 	if len(errors) > 0 {
 		t.Fatal(errors)
 	}
 }
 
 func testNewIndexLengthLinter3(t *testing.T) {
-	linter := sqllint.New(linters.NewIndexLengthLinter)
-	if err := linter.Input([]byte(indexLengthLinterSQL3), "indexLengthLinterSQL3"); err != nil {
+	cfg, err := sqllint.LoadConfig([]byte(indexLengthLinterConfig))
+	if err != nil {
+		t.Fatal("failed to LoadConfig", err)
+	}
+	name := "indexLengthLinterSQL3"
+	linter := sqllint.New(cfg)
+	if err := linter.Input("", name, []byte(indexLengthLinterSQL3)); err != nil {
 		t.Fatal(err)
 	}
-	errors := linter.Errors()
+	errors := linter.Errors()[name].Lints
 	t.Logf("errors: %v", errors)
 	if len(errors) == 0 {
 		t.Fatal("fails")

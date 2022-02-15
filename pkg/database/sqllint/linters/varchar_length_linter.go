@@ -20,20 +20,20 @@ import (
 
 	"github.com/pingcap/parser/ast"
 
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 )
 
-type VarcharLengthLinter struct {
+type varcharLengthLinter struct {
 	baseLinter
 }
 
-func NewVarcharLengthLinter(script script.Script) rules.Rule {
-	return &VarcharLengthLinter{newBaseLinter(script)}
+func (hub) VarcharLengthLinter(s script.Script, c sqllint.Config) (sqllint.Rule, error) {
+	return &varcharLengthLinter{newBaseLinter(s)}, nil
 }
 
-func (l *VarcharLengthLinter) Enter(in ast.Node) (ast.Node, bool) {
+func (l *varcharLengthLinter) Enter(in ast.Node) (ast.Node, bool) {
 	if l.text == "" || in.Text() != "" {
 		l.text = in.Text()
 	}
@@ -56,10 +56,10 @@ func (l *VarcharLengthLinter) Enter(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (l *VarcharLengthLinter) Leave(in ast.Node) (ast.Node, bool) {
+func (l *varcharLengthLinter) Leave(in ast.Node) (ast.Node, bool) {
 	return in, l.err == nil
 }
 
-func (l *VarcharLengthLinter) Error() error {
+func (l *varcharLengthLinter) Error() error {
 	return l.err
 }

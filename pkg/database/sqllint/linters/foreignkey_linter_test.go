@@ -18,24 +18,37 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
-	"github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
 
-const foreignkeyLinterSQL = `
+const foreignKeyLinterConfig = `
+- name: ForeignKeyLinter
+  switchOn: true
+  white:
+    patterns:
+      - ".*-base$"
+      - "^fdp.*"`
+
+func TestNewForeignKeyLinter(t *testing.T) {
+	cfg, err := sqllint.LoadConfig([]byte(foreignKeyLinterConfig))
+	if err != nil {
+		t.Fatal("failed to LoadConfig", err)
+	}
+	var s = script{
+		Name: "stmt",
+		Content: `
 ALTER TABLE students
 ADD CONSTRAINT fk_class_id
 FOREIGN KEY (class_id)
 REFERENCES classes (id);
-`
-
-func TestNewForeignKeyLinter(t *testing.T) {
-	linter := sqllint.New(linters.NewForeignKeyLinter)
-	if err := linter.Input([]byte(foreignkeyLinterSQL), "foreignkeyLinterSQL"); err != nil {
+`,
+	}
+	linter := sqllint.New(cfg)
+	if err := linter.Input("", s.Name, s.GetContent()); err != nil {
 		t.Error(err)
 	}
-	errors := linter.Errors()
-	t.Logf("errors: %v", errors)
-	if len(errors) == 0 {
+	lints := linter.Errors()[s.Name].Lints
+	t.Logf("lints: %v", lints)
+	if len(lints) == 0 {
 		t.Fatal("failed")
 	}
 }

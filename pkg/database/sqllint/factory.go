@@ -12,21 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rules
+package sqllint
 
 import (
-	"github.com/pingcap/parser/ast"
-
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 )
 
-// Rule is an Error and SQL ast visitor,
-// can accept a SQL stmt and lint it.
-type Rule interface {
-	ast.Visitor
-
-	Error() error
-}
-
-// Ruler is a function that returns a Rule interface
-type Ruler func(script script.Script) Rule
+// Factory is a function that returns a Rule interface
+type Factory func(script script.Script, config Config) (rule Rule, err error)

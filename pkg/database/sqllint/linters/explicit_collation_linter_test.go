@@ -18,70 +18,94 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
-	"github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
+
+const explicitCollationLinterConfig = `
+- name: ExplicitCollationLinter
+  switchOn: true
+  white:
+    patterns:
+      - ".*-base$"`
 
 func TestNewExplicitCollationLinter(t *testing.T) {
 	var (
-		sqlA = `
+		sqlA = script{
+			Name: "sql-a",
+			Content: `
 create table t0 (
 	left_key varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'asset id'
 );
-`
-		sqlB = `
+`,
+		}
+		sqlB = script{
+			Name: "sql-b",
+			Content: `
 create table t0 (
 	left_key varchar(1024)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API';
-`
-		sqlC = `
+`,
+		}
+		sqlC = script{
+			Name: "sql-c",
+			Content: `
 create table t0 (
 	left_key varchar(1024) character set utf8mb4  COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'asset id'
 )
-`
+`,
+		}
 
-		sqlD = `
+		sqlD = script{
+			Name: "sql-d",
+			Content: `
 create table t0 (
 	left_key varchar(1024)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='API';
-`
+`,
+		}
 	)
 
-	linter := sqllint.New(linters.NewExplicitCollationLinter)
-	if err := linter.Input([]byte(sqlA), "sqlA"); err != nil {
+	cfg, err := sqllint.LoadConfig([]byte(explicitCollationLinterConfig))
+	if err != nil {
+		t.Fatal("failed to LoadConfig", err)
+	}
+
+	linter := sqllint.New(cfg)
+	if err := linter.Input("", sqlA.Name, sqlA.GetContent()); err != nil {
 		t.Fatalf("failed to Input sqlA to linter: %v", err)
 	}
-	if errs := linter.Errors(); len(errs) == 0 {
+	lints := linter.Errors()[sqlA.Name].Lints
+	if len(lints) == 0 {
 		t.Fatal("failed to lint, there should be some errors")
-	} else {
-		t.Logf("sqlA's error: %+v", errs)
 	}
+	t.Logf("sqlA's error: %+v", lints)
 
-	linter = sqllint.New(linters.NewExplicitCollationLinter)
-	if err := linter.Input([]byte(sqlB), "sqlB"); err != nil {
+	linter = sqllint.New(cfg)
+	if err := linter.Input("", sqlB.Name, sqlB.GetContent()); err != nil {
 		t.Fatalf("failed to Input sqlB to linter: %v", err)
 	}
-	if errs := linter.Errors(); len(errs) == 0 {
+	lints = linter.Errors()[sqlB.Name].Lints
+	if len(lints) == 0 {
 		t.Fatal("failed to lint, there should be some errors")
-	} else {
-		t.Logf("sqlB's error: %+v", errs)
 	}
+	t.Logf("sqlB's error: %+v", lints)
 
-	linter = sqllint.New(linters.NewExplicitCollationLinter)
-	if err := linter.Input([]byte(sqlC), "sqlC"); err != nil {
+	linter = sqllint.New(cfg)
+	if err := linter.Input("", sqlC.Name, sqlC.GetContent()); err != nil {
 		t.Fatalf("failed to Input sqlC to linter: %v", err)
 	}
-	if errs := linter.Errors(); len(errs) == 0 {
+	lints = linter.Errors()[sqlC.Name].Lints
+	if len(lints) == 0 {
 		t.Fatal("failed to lint, there should be some errors")
-	} else {
-		t.Logf("sqlC's error: %v", errs)
 	}
+	t.Logf("sqlC's error: %v", lints)
 
-	linter = sqllint.New(linters.NewExplicitCollationLinter)
-	if err := linter.Input([]byte(sqlD), "sqlD"); err != nil {
+	linter = sqllint.New(cfg)
+	if err := linter.Input("", sqlD.Name, sqlD.GetContent()); err != nil {
 		t.Fatalf("failed to Input sqlC to linter: %v", err)
 	}
-	if errs := linter.Errors(); len(errs) != 0 {
-		t.Fatalf("failed to lint, there should be no errors, but errors: %+v", errs)
+	lints = linter.Errors()[sqlD.Name].Lints
+	if len(lints) != 0 {
+		t.Fatalf("failed to lint, there should be no errors, but errors: %+v", lints)
 	}
 
 }

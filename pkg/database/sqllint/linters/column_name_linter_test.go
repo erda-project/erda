@@ -18,8 +18,16 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
-	"github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
+
+const columnNameLinterConfig = `
+- name: ColumnNameLinter
+  white:
+    patterns:
+    - ".*-base"
+  meta:
+    patterns: 
+    - "^[0-9a-z_]{1,64}$"`
 
 const columnNameLinterSQL = `
 create table some_table (
@@ -40,14 +48,20 @@ create table some_table (
 `
 
 func TestNewColumnNameLinter(t *testing.T) {
-	linter := sqllint.New(linters.NewColumnNameLinter)
-	if err := linter.Input([]byte(columnNameLinterSQL), "columnNameLinterSQL"); err != nil {
-		t.Error(err)
+	cfg, err := sqllint.LoadConfig([]byte(columnNameLinterConfig))
+	if err != nil {
+		t.Fatal("failed to LoadConfig", err)
+	}
+	linter := sqllint.New(cfg)
+	var scriptName = "columnNameLinterSQL"
+	if err := linter.Input("", scriptName, []byte(columnNameLinterSQL)); err != nil {
+		t.Fatal(err)
 	}
 
-	errors := linter.Errors()
-	t.Logf("errors: %v", errors)
-	if len(errors["columnNameLinterSQL [lints]"]) != 4 {
-		t.Fatal("failed", len(errors["columnNameLinterSQL"]))
+	errs := linter.Errors()
+	lintInfo := errs[scriptName]
+	t.Logf("errs: %v", errs)
+	if len(lintInfo.Lints) == 0 {
+		t.Fatal("failed to lint")
 	}
 }

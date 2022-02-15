@@ -21,8 +21,8 @@ import (
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/types"
 
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 	"github.com/erda-project/erda/pkg/swagger/ddlconv"
 )
@@ -35,15 +35,15 @@ const (
 	charDefaultFlen    = 255
 )
 
-type IndexLengthLinter struct {
+type indexLengthLinter struct {
 	baseLinter
 }
 
-func NewIndexLengthLinter(script script.Script) rules.Rule {
-	return &IndexLengthLinter{newBaseLinter(script)}
+func (hub) IndexLengthLinter(script script.Script, _ sqllint.Config) (sqllint.Rule, error) {
+	return &indexLengthLinter{newBaseLinter(script)}, nil
 }
 
-func (l *IndexLengthLinter) Enter(in ast.Node) (ast.Node, bool) {
+func (l *indexLengthLinter) Enter(in ast.Node) (ast.Node, bool) {
 	if l.text == "" || in.Text() != "" {
 		l.text = in.Text()
 	}
@@ -244,10 +244,10 @@ func (l *IndexLengthLinter) Enter(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (l *IndexLengthLinter) Leave(in ast.Node) (ast.Node, bool) {
+func (l *indexLengthLinter) Leave(in ast.Node) (ast.Node, bool) {
 	return in, l.err == nil
 }
 
-func (l *IndexLengthLinter) Error() error {
+func (l *indexLengthLinter) Error() error {
 	return l.err
 }

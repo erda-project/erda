@@ -18,8 +18,20 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
-	"github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
+
+const tableNameLinterConfig = `# 表名称校验(1) 表名应当以 erda 开头
+- name: TableNameLinter
+  alias: TableNameLinter.以erda_开头仅包含小写英文字母数字下划线
+  white:
+    patterns:
+      - ".*-base"
+    committedAt:
+      - <=20211230
+  meta:
+    patterns: 
+    - "^erda_[a-z0-9_]{1,59}"
+`
 
 const tablenameLinterSQL = `
 create table some_0_table (
@@ -30,19 +42,31 @@ create table Some_table (
 	id int
 );
 
-create table 某表 (
+create table erda_某表 (
+	id int
+);
+
+create table erda_Big (
 	id int
 );
 `
 
 func TestNewTableNameLinter(t *testing.T) {
-	linter := sqllint.New(linters.NewTableNameLinter)
-	if err := linter.Input([]byte(tablenameLinterSQL), "tablenameLinterSQL"); err != nil {
+	cfg, err := sqllint.LoadConfig([]byte(tableNameLinterConfig))
+	if err != nil {
+		t.Fatal("failed to LoadConfig", err)
+	}
+	var s = script{
+		Name:    "stmt-1",
+		Content: tablenameLinterSQL,
+	}
+	linter := sqllint.New(cfg)
+	if err := linter.Input("", s.Name, s.GetContent()); err != nil {
 		t.Error(err)
 	}
-	errors := linter.Errors()
-	t.Logf("errors: %v", errors)
-	if len(errors) == 0 {
-		t.Fatal("failed")
+	lints := linter.Errors()[s.Name].Lints
+	if len(lints) != 4 {
+		t.Fatal("failed", len(lints))
 	}
+	t.Logf("errors: %v", lints)
 }

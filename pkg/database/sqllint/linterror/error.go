@@ -28,11 +28,11 @@ import (
 )
 
 type LintError struct {
-	ScriptName string // 脚本名称
-	Stmt       string // SQL 语句
-	Lint       string // lint 提示
-	Line       string // lint 提示所在的行内容
-	LintNo     int    // lint 提示所在行行号
+	ScriptName string // the script name
+	Stmt       string // the SQL statement
+	Lint       string // the error lint info
+	Line       string // the error line content
+	LintNo     int    // the error line No
 }
 
 func New(script script.Script, stmt string, lint string, getLine func(line []byte) bool) LintError {

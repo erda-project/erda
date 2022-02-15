@@ -19,22 +19,22 @@ import (
 
 	"github.com/pingcap/parser/ast"
 
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 )
 
-// ExplicitCollationLinter lints if user set the collation explicitly
-type ExplicitCollationLinter struct {
+// explicitCollationLinter lints if user set the collation explicitly
+type explicitCollationLinter struct {
 	baseLinter
 }
 
-// NewExplicitCollationLinter returns an ExplicitCollationLinter
-func NewExplicitCollationLinter(script script.Script) rules.Rule {
-	return &ExplicitCollationLinter{baseLinter: newBaseLinter(script)}
+// ExplicitCollationLinter returns an explicitCollationLinter
+func (hub) ExplicitCollationLinter(script script.Script, _ sqllint.Config) (sqllint.Rule, error) {
+	return &explicitCollationLinter{baseLinter: newBaseLinter(script)}, nil
 }
 
-func (l *ExplicitCollationLinter) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+func (l *explicitCollationLinter) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
 	if l.text == "" || in.Text() != "" {
 		l.text = in.Text()
 	}
@@ -84,6 +84,6 @@ func (l *ExplicitCollationLinter) Enter(in ast.Node) (node ast.Node, skipChildre
 	return in, true
 }
 
-func (l *ExplicitCollationLinter) Leave(in ast.Node) (node ast.Node, ok bool) {
+func (l *explicitCollationLinter) Leave(in ast.Node) (node ast.Node, ok bool) {
 	return in, true
 }

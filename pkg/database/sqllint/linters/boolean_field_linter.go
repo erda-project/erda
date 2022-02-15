@@ -20,21 +20,24 @@ import (
 
 	"github.com/pingcap/parser/ast"
 
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 	"github.com/erda-project/erda/pkg/swagger/ddlconv"
 )
 
-type BooleanFieldLinter struct {
+type booleanFieldLinter struct {
 	baseLinter
 }
 
-func NewBooleanFieldLinter(script script.Script) rules.Rule {
-	return &BooleanFieldLinter{baseLinter: newBaseLinter(script)}
+// BooleanFieldLinter :
+// 1. boolean field should be one of types boolean, bool, tinyint(1).
+// 2. boolean field should named as phylum structure, like：is_deleted, is_public.
+func (hub) BooleanFieldLinter(script script.Script, config sqllint.Config) (sqllint.Rule, error) {
+	return &booleanFieldLinter{baseLinter: newBaseLinter(script)}, nil
 }
 
-func (l *BooleanFieldLinter) Enter(in ast.Node) (ast.Node, bool) {
+func (l *booleanFieldLinter) Enter(in ast.Node) (ast.Node, bool) {
 	if l.text == "" || in.Text() != "" {
 		l.text = in.Text()
 	}
@@ -49,7 +52,7 @@ func (l *BooleanFieldLinter) Enter(in ast.Node) (ast.Node, bool) {
 	switch colType {
 	case "bool", "boolean", "tinyint(1)", "bit":
 		if !(strings.HasPrefix(colName, "is_") || strings.HasPrefix(colName, "has_")) {
-			l.err = linterror.New(l.s, l.text, "boolean field should start with linking-verb, e.g. is_deleted, has_child",
+			l.err = linterror.New(l.s, l.text, "Boolean field should be phylum structure, like is_deleted, has_child",
 				func(line []byte) bool {
 					return bytes.Contains(line, []byte(colName))
 				})
@@ -62,7 +65,7 @@ func (l *BooleanFieldLinter) Enter(in ast.Node) (ast.Node, bool) {
 		case "bool", "boolean", "tinyint(1)", "bit":
 			return in, true
 		default:
-			l.err = linterror.New(l.s, l.text, "boolean field type should be tinyint(1) or boolean",
+			l.err = linterror.New(l.s, l.text, "Field types expressing 'true or false' should be tinyint(1) or boolean",
 				func(line []byte) bool {
 					return bytes.Contains(line, []byte(colName))
 				})
@@ -73,10 +76,10 @@ func (l *BooleanFieldLinter) Enter(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (l *BooleanFieldLinter) Leave(in ast.Node) (ast.Node, bool) {
+func (l *booleanFieldLinter) Leave(in ast.Node) (ast.Node, bool) {
 	return in, l.err == nil
 }
 
-func (l *BooleanFieldLinter) Error() error {
+func (l *booleanFieldLinter) Error() error {
 	return l.err
 }

@@ -17,18 +17,18 @@ package linters
 import (
 	"github.com/pingcap/parser/ast"
 
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 )
 
-// CompleteInsertLinter lints if the INSERT statement is complete
-type CompleteInsertLinter struct {
+// completeInsertLinter lints if the INSERT statement is complete
+type completeInsertLinter struct {
 	baseLinter
 }
 
-// NewCompleteInsertLinter returns a CompleteInsertLinter
-// CompleteInsertLinter lint if the INSERT statement is complete-insert.
+// CompleteInsertLinter returns a completeInsertLinter
+// completeInsertLinter lint if the INSERT statement is complete-insert.
 //
 // e.g. NOT OK:
 // INSERT INTO table_name
@@ -37,11 +37,11 @@ type CompleteInsertLinter struct {
 // OK:
 // INSERT INTO table_name (column1,column2,column3,...)
 // VALUES (value1,value2,value3,...);
-func NewCompleteInsertLinter(script script.Script) rules.Rule {
-	return &CompleteInsertLinter{baseLinter: newBaseLinter(script)}
+func (hub) CompleteInsertLinter(script script.Script, _ sqllint.Config) (sqllint.Rule, error) {
+	return &completeInsertLinter{baseLinter: newBaseLinter(script)}, nil
 }
 
-func (l *CompleteInsertLinter) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+func (l *completeInsertLinter) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
 	if l.text == "" || in.Text() != "" {
 		l.text = in.Text()
 	}
@@ -61,6 +61,6 @@ func (l *CompleteInsertLinter) Enter(in ast.Node) (node ast.Node, skipChildren b
 	return in, true
 }
 
-func (l *CompleteInsertLinter) Leave(in ast.Node) (node ast.Node, ok bool) {
+func (l *completeInsertLinter) Leave(in ast.Node) (node ast.Node, ok bool) {
 	return in, true
 }
