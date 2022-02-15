@@ -458,7 +458,7 @@
     patterns:
       - ".*-base$"
     committedAt:
-      - "<=20220201"
+      - "<=20220215"
   meta:
     columnName:
       - org_name
@@ -470,7 +470,7 @@
     patterns:
       - ".*-base$"
     committedAt:
-      - "<=20220209"
+      - "<=20220215"
   meta:
     columnName:
       - org_id
@@ -482,7 +482,7 @@
     patterns:
       - ".*-base$"
     committedAt:
-      - "<=20220209"
+      - "<=20220215"
   meta:
     columnName:
       - deleted_at
@@ -557,7 +557,7 @@
     patterns:
       - ".*-base$"
     committedAt:
-      - "<=20220201"
+      - "<=20220215"
   meta:
     patterns:
       - "^erda_[a-z0-9_]{1,59}"
