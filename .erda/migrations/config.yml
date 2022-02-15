@@ -177,7 +177,7 @@
     patterns:
       - ".*-base$"
     committedAt:
-      - "<=20220101"
+      - "<=20220115"
   meta:
     columnName: id
     types:
