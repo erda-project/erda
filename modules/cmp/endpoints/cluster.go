@@ -191,17 +191,19 @@ func (e *Endpoints) OfflineEdgeCluster(ctx context.Context, r *http.Request, var
 		return
 	}
 
-	recordID, err := e.clusters.OfflineEdgeCluster(req, i.UserID, i.OrgID)
+	recordID, preCheckHint, err := e.clusters.OfflineEdgeCluster(req, i.UserID, i.OrgID)
 	if err != nil {
 		err = fmt.Errorf("failed to offline cluster: %v", err)
 		return
 	}
 
-	e.SteveAggregator.Delete(req.ClusterName)
+	if !req.PreCheck {
+		e.SteveAggregator.Delete(req.ClusterName)
+	}
 
 	return mkResponse(apistructs.OfflineEdgeClusterResponse{
 		Header: apistructs.Header{Success: true},
-		Data:   apistructs.OfflineEdgeClusterData{RecordID: recordID},
+		Data:   apistructs.OfflineEdgeClusterData{RecordID: recordID, PreCheckHint: preCheckHint},
 	})
 }
 
