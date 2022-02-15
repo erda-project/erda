@@ -64,8 +64,10 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 	}, releaseResp, apistructs.SourceDeployCenter, false)
 	assert.NoError(t, err)
 
-	releaseResp.ApplicationReleaseList = []*apistructs.ApplicationReleaseSummary{
-		{ReleaseID: "8781f475e5617a04"},
+	releaseResp.ApplicationReleaseList = [][]*apistructs.ApplicationReleaseSummary{
+		{
+			{ReleaseID: "8781f475e5617a04"},
+		},
 	}
 
 	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
@@ -124,9 +126,11 @@ func TestParseAppsInfoWithRelease(t *testing.T) {
 	order := New()
 	got := order.parseAppsInfoWithRelease(&apistructs.ReleaseGetResponseData{
 		IsProjectRelease: true,
-		ApplicationReleaseList: []*apistructs.ApplicationReleaseSummary{
-			{ApplicationName: "test-1", ApplicationID: 1},
-			{ApplicationName: "test-2", ApplicationID: 2},
+		ApplicationReleaseList: [][]*apistructs.ApplicationReleaseSummary{
+			{
+				{ApplicationName: "test-1", ApplicationID: 1},
+				{ApplicationName: "test-2", ApplicationID: 2},
+			},
 		},
 	})
 	assert.Equal(t, got, map[int64]string{1: "test-1", 2: "test-2"})
