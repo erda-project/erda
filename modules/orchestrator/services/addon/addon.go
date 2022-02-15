@@ -1498,7 +1498,7 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 				if err != nil {
 					logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", routingInstance.Cluster, err)
 					//The addon can also be forcibly deleted, when the cluster is not exists
-					if err.(*errorresp.APIError).Code() != "NotFound" {
+					if !errorresp.IsNotFound(err) {
 						return err
 					}
 				}
