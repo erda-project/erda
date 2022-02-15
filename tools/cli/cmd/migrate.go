@@ -24,8 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/pkg/database/sqllint/configuration"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqlparser/migrator"
 	"github.com/erda-project/erda/tools/cli/command"
 )
@@ -163,7 +162,7 @@ func RunMigrate(ctx *command.Context, host string, port int, username, password,
 		modules:        nil,
 		workdir:        "",
 		debugSQL:       debugSQL,
-		rules:          configuration.DefaultRulers(),
+		cfg:            make(map[string]sqllint.Config),
 		skipLint:       skipLint,
 		skipSandbox:    skipSandbox,
 		skipPreMigrate: skipPreMig,
@@ -177,15 +176,13 @@ func RunMigrate(ctx *command.Context, host string, port int, username, password,
 		}
 	}
 
-	lintCfg, err := configuration.FromLocal(lintConfig)
+	cfg, err := sqllint.LoadConfigFromLocal(lintConfig)
 	if err != nil {
 		logrus.WithError(err).Warnln("failed to load lint config from local config file. use default!")
-	} else {
-		p.rules, err = lintCfg.Rulers()
-		if err != nil {
-			return errors.Wrap(err, "failed to load lint config from local config file")
-		}
+		cfg = make(map[string]sqllint.Config)
 	}
+	p.cfg = cfg
+
 	if !skipSandbox {
 		go func() {
 			if err := StartSandbox(sandboxPort, sandboxContainerName); err != nil {
@@ -258,7 +255,7 @@ type parameters struct {
 	modules       []string
 	workdir       string
 	debugSQL      bool
-	rules         []rules.Ruler
+	cfg           map[string]sqllint.Config
 
 	skipLint       bool
 	skipSandbox    bool
@@ -314,8 +311,11 @@ func (p parameters) SkipMigrate() bool {
 	return p.skipMigrate
 }
 
-func (p parameters) Rules() []rules.Ruler {
-	return p.rules
+func (p parameters) LintConfig() map[string]sqllint.Config {
+	if len(p.cfg) == 0 {
+		return make(map[string]sqllint.Config)
+	}
+	return p.cfg
 }
 
 func (p parameters) SQLCollectorDir() string {

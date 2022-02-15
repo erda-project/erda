@@ -16,76 +16,95 @@ package sqllint
 
 import (
 	"github.com/pingcap/parser"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 )
 
 type Linter struct {
-	stop    bool
-	layer   int
-	errs    map[string][]error
+	errs    map[string]LintInfo
 	reports map[string]map[string][]string
-	linters []rules.Ruler
+	configs map[string]Config
 }
 
-func New(rules ...rules.Ruler) *Linter {
-	r := &Linter{
-		stop:    false,
-		layer:   0,
-		errs:    make(map[string][]error, 0),
-		reports: make(map[string]map[string][]string, 0),
-		linters: nil,
+func New(configs map[string]Config) *Linter {
+	return &Linter{
+		errs:    make(map[string]LintInfo),
+		reports: make(map[string]map[string][]string),
+		configs: configs,
 	}
-	for _, l := range rules {
-		r.linters = append(r.linters, l)
-	}
-	return r
 }
 
-func (r *Linter) Input(scriptData []byte, scriptName string) error {
-	p := parser.New()
-	nodes, warns, err := p.Parse(string(scriptData), "", "")
+func (r *Linter) Input(moduleName, scriptName string, scriptData []byte) error {
+	nodes, warns, err := parser.New().Parse(string(scriptData), "", "")
 	if err != nil {
 		return err
 	}
 
 	s := script.New(scriptName, scriptData)
-	r.reports[scriptName] = make(map[string][]string, 0)
-
+	r.reports[scriptName] = make(map[string][]string)
 	var errs []error
-	for _, node := range nodes {
-		for _, f := range r.linters {
-			linter := f(s)
-			_, _ = node.Accept(linter)
-			if err := linter.Error(); err != nil {
-				errs = append(errs, err)
-				lintError, ok := err.(linterror.LintError)
-				if !ok {
-					continue
-				}
-				stmtName := lintError.StmtName()
-				if stmtName == "" {
-					continue
-				}
-				r.reports[scriptName][stmtName] = append(r.reports[scriptName][stmtName], lintError.Lint)
+	for _, cfg := range r.configs {
+		// retrieve factory method
+		factory, ok := Get().Load(cfg.Name)
+		if !ok {
+			return errors.Errorf("not implement lint: %s, please check your config file", cfg.Name)
+		}
+
+		// lint on this script ?
+		if cfg.DoNotLintOn(moduleName, scriptName) {
+			continue
+		}
+
+		// lint on every node in the script
+		for _, node := range nodes {
+			// generate the lint rule
+			rule, err := factory(s, cfg)
+			if err != nil {
+				return errors.Wrapf(err, "failed to generate the lint rule, lint alias: %s", cfg.Alias)
 			}
+			if rule == nil {
+				return errors.Errorf("failed to generate the lint rule, lint name: %s", cfg.Name)
+			}
+
+			// node accept the rule
+			node.Accept(rule)
+			err = rule.Error()
+			if err == nil {
+				continue
+			}
+			errs = append(errs, err)
+			lintErr, ok := err.(linterror.LintError)
+			if !ok {
+				continue
+			}
+			if stmtName := lintErr.StmtName(); stmtName != "" {
+				r.reports[scriptName][stmtName] = append(r.reports[scriptName][stmtName], lintErr.Lint)
+			}
+
 		}
 	}
 
+	if _, ok := r.errs[scriptName]; !ok {
+		r.errs[scriptName] = LintInfo{}
+	}
 	if len(warns) > 0 {
-		r.errs[scriptName+" [warns]"] = warns
+		lintInfo := r.errs[scriptName]
+		lintInfo.Warns = append(lintInfo.Warns, warns...)
+		r.errs[scriptName] = lintInfo
 	}
 	if len(errs) > 0 {
-		r.errs[scriptName+" [lints]"] = errs
+		lintInfo := r.errs[scriptName]
+		lintInfo.Lints = append(lintInfo.Lints, errs...)
+		r.errs[scriptName] = lintInfo
 	}
 
 	return nil
 }
 
-func (r *Linter) Errors() map[string][]error {
+func (r *Linter) Errors() map[string]LintInfo {
 	return r.errs
 }
 
@@ -95,4 +114,12 @@ func (r *Linter) Report() string {
 		return ""
 	}
 	return string(data)
+}
+
+type factoryError struct {
+	error
+}
+
+type LintInfo struct {
+	Lints, Warns []error
 }

@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configuration_test
+package sqllint
 
 import (
-	"testing"
-
-	"github.com/erda-project/erda/pkg/database/sqllint/configuration"
+	"github.com/pingcap/parser/ast"
 )
 
-func TestDefaultRulers(t *testing.T) {
-	rulers := configuration.DefaultRulers()
-	if len(rulers) != 28 {
-		t.Fatal("numbers of rulers err")
-	}
+// Rule is an Error and SQL ast visitor,
+// can accept a SQL stmt and lint it.
+type Rule interface {
+	ast.Visitor
+
+	Error() error
 }
