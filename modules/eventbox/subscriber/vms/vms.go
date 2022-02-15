@@ -22,6 +22,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dyvmsapi"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
@@ -35,6 +36,7 @@ type VoiceSubscriber struct {
 	monitorTtsCode          string
 	monitorCalledShowNumber string
 	bundle                  *bundle.Bundle
+	messenger               pb.NotifyServiceServer
 }
 
 // VoiceData 语音通知数据
@@ -48,13 +50,14 @@ type VoiceData struct {
 type Option func(*VoiceSubscriber)
 
 // New 新建一个语音通知分发的实例
-func New(accessKeyID, accessKeySecret, monitorTtsCode, monitorCalledShowNumber string, bundle *bundle.Bundle) subscriber.Subscriber {
+func New(accessKeyID, accessKeySecret, monitorTtsCode, monitorCalledShowNumber string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer) subscriber.Subscriber {
 	subscriber := &VoiceSubscriber{
 		accessKeyID:             accessKeyID,
 		accessSecret:            accessKeySecret,
 		monitorTtsCode:          monitorTtsCode,
 		monitorCalledShowNumber: monitorCalledShowNumber,
 		bundle:                  bundle,
+		messenger:               messenger,
 	}
 	return subscriber
 }
@@ -129,10 +132,12 @@ func (d *VoiceSubscriber) Publish(dest string, content string, time int64, msg *
 
 			response, err := client.SingleCallByTts(request)
 			if err != nil {
+				msg.CreateHistory.Status = "failed"
 				logrus.Errorf("failed to send voice to %s: %s", mobile, err)
 				errs = append(errs, fmt.Errorf("failed to send voice to %s: %s", mobile, err))
 			}
 			if !response.IsSuccess() {
+				msg.CreateHistory.Status = "failed"
 				logrus.Errorf("failed to send voice to %s: %s", mobile, response.GetHttpContentString())
 				errs = append(errs, fmt.Errorf("failed to send voice to %s: %s", mobile, err))
 			}
@@ -143,6 +148,7 @@ func (d *VoiceSubscriber) Publish(dest string, content string, time int64, msg *
 	if len(errs) == 0 {
 		logrus.Info("voice send success")
 	}
+	subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
 
 	return errs
 }

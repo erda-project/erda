@@ -57,7 +57,7 @@ func (e *Endpoints) CreateNode(ctx context.Context, r *http.Request, vars map[st
 	req.Body = &body
 	req.URIParams = &apistructs.FileTreeDetailURI{TreeName: apidocsvc.TreeNameAPIDocs}
 
-	data, err2 := e.fileTreeSvc.CreateNode(&req)
+	data, err2 := e.fileTreeSvc.CreateNode(ctx, &req)
 	if err2 != nil {
 		return err2.ToResp(), nil
 	}
@@ -91,7 +91,7 @@ func (e *Endpoints) DeleteNode(ctx context.Context, r *http.Request, vars map[st
 		}
 	)
 
-	if err2 := e.fileTreeSvc.DeleteNode(&req); err2 != nil {
+	if err2 := e.fileTreeSvc.DeleteNode(ctx, &req); err2 != nil {
 		return err2.ToResp(), nil
 	}
 
@@ -183,7 +183,7 @@ func (e *Endpoints) MvCpNode(ctx context.Context, r *http.Request, vars map[stri
 	}
 
 	if action == "move" {
-		data, err2 := e.fileTreeSvc.MoveNode(&req)
+		data, err2 := e.fileTreeSvc.MoveNode(ctx, &req)
 		if err2 != nil {
 			return err2.ToResp(), nil
 		}
@@ -191,7 +191,7 @@ func (e *Endpoints) MvCpNode(ctx context.Context, r *http.Request, vars map[stri
 	}
 
 	if action == "copy" {
-		data, err2 := e.fileTreeSvc.CopyNode(&req)
+		data, err2 := e.fileTreeSvc.CopyNode(ctx, &req)
 		if err2 != nil {
 			return err2.ToResp(), nil
 		}

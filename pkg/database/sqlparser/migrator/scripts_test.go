@@ -18,7 +18,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqlparser/migrator"
 )
 
@@ -59,8 +59,8 @@ func (p parameter) NeedErdaMySQLLint() bool {
 	return false
 }
 
-func (p parameter) Rules() []rules.Ruler {
-	return nil
+func (p parameter) LintConfig() map[string]sqllint.Config {
+	return make(map[string]sqllint.Config)
 }
 
 func TestNewScripts(t *testing.T) {

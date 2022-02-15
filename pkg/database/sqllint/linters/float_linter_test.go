@@ -18,24 +18,35 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
-	"github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
 
-const floatLinterSQL = `
+const floatDoubleLinterConfig = `- name: FloatDoubleLinter
+  switchOn: true
+  white:
+    patterns:
+      - ".*-base"`
+
+func TestNewFloatDoubleLinter(t *testing.T) {
+	cfg, err := sqllint.LoadConfig([]byte(floatDoubleLinterConfig))
+	if err != nil {
+		t.Fatal("failed to LoadConfig", err)
+	}
+	var s = script{
+		Name: "stmt",
+		Content: `
 create table some_table (
 	-- score float,
 	score_rate double
 );
-`
-
-func TestNewFloatDoubleLinter(t *testing.T) {
-	linter := sqllint.New(linters.NewFloatDoubleLinter)
-	if err := linter.Input([]byte(floatLinterSQL), "floatLinterSQL"); err != nil {
+`,
+	}
+	linter := sqllint.New(cfg)
+	if err := linter.Input("", s.Name, s.GetContent()); err != nil {
 		t.Error(err)
 	}
-	errors := linter.Errors()
-	t.Logf("errors: %v", errors)
-	if len(errors["floatLinterSQL [lints]"]) == 0 {
-		t.Fatal("failed")
+	lints := linter.Errors()[s.Name].Lints
+	if len(lints) == 0 {
+		t.Fatal("there should be errors")
 	}
+	t.Logf("errors: %v", lints)
 }

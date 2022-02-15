@@ -43,9 +43,12 @@ func (p *provider) Run(ctx context.Context) error {
 
 func (p *provider) queryExample(ctx context.Context) error {
 	req := &pb.QueryWithInfluxFormatRequest{
-		Start:     "0",             // or timestamp
-		End:       "1642057089000", // or timestamp
-		Statement: "SELECT count(timestamp), distinct(uid::tag) FROM ta_timing WHERE tk::tag=$terminus_key GROUP BY time(15204h13m56s)",
+		Start: "0",             // or timestamp
+		End:   "1642057089000", // or timestamp
+		Statement: "SELECT timestamp(), level::tag, count(timestamp) " +
+			"FROM analyzer_alert " +
+			"WHERE alert_scope::tag='org' AND alert_scope_id::tag='4' " +
+			"GROUP BY time(),host_ip::tag",
 		Params: map[string]*structpb.Value{
 			"cluster_name": structpb.NewStringValue("terminus-dev"),
 			"terminus_key": structpb.NewStringValue("54055597b1cc15b56e59c35e7b231e0c"),

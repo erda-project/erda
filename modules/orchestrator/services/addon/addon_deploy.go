@@ -52,7 +52,8 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 		// 获取addon状态
 		serviceGroup, err := a.bdl.InspectServiceGroup(addonIns.Namespace, addonIns.ScheduleName)
 		if err != nil {
-			logrus.Errorf("拉取schedule状态接口失败")
+			logrus.Errorf("拉取schedule状态接口失败, error: %v", err)
+			time.Sleep(10 * time.Second)
 			continue
 		}
 		// 如果状态是ready或者healthy，说明服务已经发起来了
@@ -62,7 +63,7 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 			logrus.Infof("addon: %v is healthy!", addonIns.ID)
 			clusterInfo, err := a.bdl.QueryClusterInfo(addonInsRouting.Cluster)
 			if err != nil {
-				logrus.Errorf("拉取cluster接口失败")
+				logrus.Errorf("拉取cluster接口失败, error: %v", err)
 				return err
 			}
 
@@ -475,7 +476,7 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 			if err != nil {
 				return nil, err
 			}
-			buildErr = a.BuildRedisOperatorServiceItem(addonIns, addonOperatorDice)
+			buildErr = a.BuildRedisOperatorServiceItem(params.Options, addonIns, addonOperatorDice)
 			addonDice = addonOperatorDice
 		} else {
 			if params.Plan == apistructs.AddonBasic {
@@ -501,12 +502,12 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 			if err != nil {
 				return nil, err
 			}
-			buildErr = a.BuildMysqlOperatorServiceItem(addonIns, addonOperatorDice, &clusterInfo)
+			buildErr = a.BuildMysqlOperatorServiceItem(params.Options, addonIns, addonOperatorDice, &clusterInfo)
 		}
 	case apistructs.AddonES:
 		// 6.8.9 or later version use operator.
 		if capacity.Data.ElasticsearchOperator && version.Compare(addonSpec.Version, "6.8.9", ">=") {
-			buildErr = a.BuildESOperatorServiceItem(addonIns, addonDice, addonSpec.Version)
+			buildErr = a.BuildESOperatorServiceItem(params.Options, addonIns, addonDice, addonSpec.Version)
 		} else {
 			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "1"
 			buildErr = a.BuildEsServiceItem(params, addonIns, addonSpec, addonDice, &clusterInfo)
@@ -567,6 +568,59 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 		}
 	}
 	addonDeployGroup.DiceYml = *addonDice
+	return &addonDeployGroup, nil
+}
+
+// BuildAddonScaleRequestGroup build请求serviceGroup的body信息
+func (a *Addon) BuildAddonScaleRequestGroup(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, scaleAction string, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.UpdateServiceGroupScaleRequst, error) {
+	addonDeployGroup := apistructs.UpdateServiceGroupScaleRequst{
+		Namespace:   addonIns.Namespace,
+		Name:        addonIns.ScheduleName,
+		ClusterName: params.ClusterName,
+		Labels:      make(map[string]string),
+		Services:    make([]apistructs.Service, 0),
+	}
+
+	addonCreateReq, err := a.buildAddonRequestGroup(params, addonIns, addonSpec, addonDice)
+	if err != nil || addonCreateReq == nil {
+		logrus.Errorf("failed to build addon creating request body, addon: %v, err: %v", addonIns.ID, err)
+		return nil, err
+	}
+
+	addonDeployGroup.Labels = addonCreateReq.GroupLabels
+	addonDeployGroup.Addon = *addonCreateReq
+
+	for k, v := range addonCreateReq.DiceYml.Meta {
+		addonDeployGroup.Labels[k] = v
+	}
+
+	for _, s := range addonCreateReq.DiceYml.Services {
+		for k, v := range s.Labels {
+			addonDeployGroup.Labels[k] = v
+		}
+	}
+
+	for svcName, svc := range addonCreateReq.DiceYml.Services {
+		scale := 0
+		if scaleAction == apistructs.ScaleActionDown {
+			scale = 0
+		}
+		if scaleAction == apistructs.ScaleActionUp {
+			// TODO: 从数据库表获取前一次 scaleUp 成功之后的 replicas
+			scale = svc.Deployments.Replicas
+		}
+
+		addonDeployGroup.Services = append(addonDeployGroup.Services, apistructs.Service{
+			Name:  svcName,
+			Scale: scale,
+			Resources: apistructs.Resources{
+				Cpu:  svc.Resources.CPU,
+				Mem:  float64(svc.Resources.Mem),
+				Disk: float64(svc.Resources.Disk),
+			},
+		})
+	}
+
 	return &addonDeployGroup, nil
 }
 

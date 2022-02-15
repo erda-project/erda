@@ -16,6 +16,7 @@ package apidocsvc
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
@@ -24,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dbclient"
@@ -62,13 +64,15 @@ type APIDocWSHandler struct {
 	req          *apistructs.WsAPIDocHandShakeReq
 	svc          *Service
 	ft           *bundle.GittarFileTree
+	trans        i18n.Translator
+	codes        i18n.LanguageCodes
 }
 
 // 每个消息的通用处理过程: 确认是否持有锁; 如未持有锁则尝试抢占; 锁定文档锁所在的行; 更新过期时效
 func (h *APIDocWSHandler) wrap(handler handler) websocket.Handler {
 	return func(w websocket.ResponseWriter, r *apistructs.WebsocketRequest) error {
 		if r != nil && r.SessionID != h.sessionID {
-			return apierrors.WsUpgrade.InvalidParameter("错误的 sessionID")
+			return apierrors.WsUpgrade.InvalidParameter("invalid sessionID")
 		}
 
 		tx := dbclient.Tx()
@@ -128,7 +132,7 @@ func (h *APIDocWSHandler) wrap(handler handler) websocket.Handler {
 				logrus.Errorf("failed to Updates, err: %v, RowsAffected: %v", updates.Error, updates.RowsAffected)
 				h.hasLock = false
 				h.setLockedUser(lock.CreatorID)
-				h.responseError(w, errors.New("获取文档锁失败"))
+				h.responseError(w, errors.New(h.text("FailedToGetDocLock")))
 				h.responseDocLockStatus(w)
 				return nil
 			}
@@ -181,7 +185,7 @@ func (h *APIDocWSHandler) beforeClose(tx *dbclient.TX, writer websocket.Response
 	}
 
 	// 暂存的文档提交到 gittar
-	if err := h.commitTmpToGittar("用户离开 API 设计中心, 自动提交修改的文档"); err != nil {
+	if err := h.commitTmpToGittar(h.text("AutoCommitDoc")); err != nil {
 		h.responseError(writer, err)
 	}
 
@@ -243,7 +247,7 @@ func (h *APIDocWSHandler) handleAutoSave(tx *dbclient.TX, w websocket.ResponseWr
 			UpdaterID:     h.req.Identity.UserID,
 		}
 		if create := tx.Create(&tmpDoc); create.Error != nil {
-			h.responseError(w, errors.Wrap(create.Error, "暂存文档失败"))
+			h.responseError(w, errors.Wrap(create.Error, h.text("FailedToSaveDoc")))
 			return nil
 		}
 
@@ -256,7 +260,7 @@ func (h *APIDocWSHandler) handleAutoSave(tx *dbclient.TX, w websocket.ResponseWr
 			"content":    data.Content,
 		})
 		if updates.Error != nil {
-			h.responseError(w, errors.Wrap(updates.Error, "更新文档失败"))
+			h.responseError(w, errors.Wrap(updates.Error, h.text("FailedToUpdateDoc")))
 			return nil
 		}
 	default:
@@ -280,7 +284,7 @@ func (h *APIDocWSHandler) handleCommit(tx *dbclient.TX, w websocket.ResponseWrit
 	}
 
 	repo := strings.TrimPrefix(h.ft.RepoPath(), "/")
-	if err := CommitAPIDocModifies(h.orgID, h.userID, repo, "从 API 设计中心更新文档",
+	if err := CommitAPIDocModifies(h.orgID, h.userID, repo, h.text("UpdateDocFromDesignCenter"),
 		h.filename, data.Content, h.ft.BranchName()); err != nil {
 		h.responseError(w, err)
 		return nil
@@ -411,4 +415,11 @@ func (h *APIDocWSHandler) commitTmpToGittar(commitMessage string) error {
 	}
 
 	return nil
+}
+
+func (h APIDocWSHandler) text(key string, a ...interface{}) string {
+	if len(a) == 0 {
+		return h.trans.Text(h.codes, key)
+	}
+	return fmt.Sprintf(h.trans.Text(h.codes, key), a...)
 }

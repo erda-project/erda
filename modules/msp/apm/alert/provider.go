@@ -66,7 +66,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			p.microServiceFilterTags[k] = true
 		}
 	}
-	p.alertService = &alertService{p}
 	p.authDb = db.New(ctx.Service("mysql").(mysql.Interface).DB())
 	p.mspDb = db2.New(ctx.Service("mysql").(mysql.Interface).DB())
 	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())

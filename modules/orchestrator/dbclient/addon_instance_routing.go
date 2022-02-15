@@ -436,7 +436,7 @@ func (db *DBClient) GetRoutingInstancesByProject(orgID, projectID uint64, catego
 		Where("project_id = ?", projectID).
 		Where("category != ?", "discovery").
 		Where("is_deleted = ?", apistructs.AddonNotDeleted).
-		Where("status in (?)", []apistructs.AddonStatus{apistructs.AddonAttached, apistructs.AddonAttaching, apistructs.AddonAttachFail})
+		Where("status in (?)", []apistructs.AddonStatus{apistructs.AddonAttached, apistructs.AddonAttaching, apistructs.AddonAttachFail, apistructs.AddonOffline})
 	if category != "" {
 		client = client.Where("category = ?", category)
 	}

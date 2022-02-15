@@ -20,6 +20,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -391,6 +392,8 @@ func (a *Addon) BuildZookeeperServiceItem(params *apistructs.AddonHandlerCreateI
 			serviceItem.Labels = map[string]string{}
 		}
 		serviceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name
+		SetlabelsFromOptions(params.Options, serviceItem.Labels)
+
 		// envs
 		heapSize := fmt.Sprintf("%.f", float64(addonDeployPlan.Mem)*0.5)
 
@@ -424,7 +427,16 @@ func (a *Addon) BuildZookeeperServiceItem(params *apistructs.AddonHandlerCreateI
 				(*clusterInfo)[apistructs.DICE_STORAGE_MOUNTPOINT] + "/addon/zookeeper/datalog/" + addonIns.ID + "/" + nodeID + ":/datalog:rw",
 			}
 		default:
-			serviceItem.Binds = diceyml.Binds{nodeID + "-data:/data:rw", nodeID + "-data:/datalog:rw"}
+			/*
+				serviceItem.Binds = diceyml.Binds{nodeID + "-data:/data:rw", nodeID + "-data:/datalog:rw"}
+			*/
+			//  /data volume
+			vol01 := SetAddonVolumes(params.Options, "/data", false)
+
+			//  /datalog volume
+			vol02 := SetAddonVolumes(params.Options, "/datalog", false)
+
+			serviceItem.Volumes = diceyml.Volumes{vol01, vol02}
 		}
 		// 设置service
 		serviceMap[strings.Join([]string{addonSpec.Name, strconv.Itoa(i)}, "-")] = &serviceItem
@@ -458,6 +470,7 @@ func (a *Addon) BuildRealZkServiceItem(params *apistructs.AddonHandlerCreateItem
 			serviceItem.Labels = map[string]string{}
 		}
 		serviceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name
+		SetlabelsFromOptions(params.Options, serviceItem.Labels)
 		// envs
 		heapSize := fmt.Sprintf("%.f", float64(addonDeployPlan.Mem)*0.5)
 
@@ -491,7 +504,14 @@ func (a *Addon) BuildRealZkServiceItem(params *apistructs.AddonHandlerCreateItem
 				(*clusterInfo)[apistructs.DICE_STORAGE_MOUNTPOINT] + "/addon/zookeeper/datalog/" + addonIns.ID + "/" + nodeID + ":/datalog:rw",
 			}
 		default:
-			serviceItem.Binds = diceyml.Binds{nodeID + "-data:/data:rw", nodeID + "-data:/datalog:rw"}
+			//serviceItem.Binds = diceyml.Binds{nodeID + "-data:/data:rw", nodeID + "-data:/datalog:rw"}
+			//  /data volume
+			vol01 := SetAddonVolumes(params.Options, "/data", false)
+
+			//  /datalog volume
+			vol02 := SetAddonVolumes(params.Options, "/datalog", false)
+
+			serviceItem.Volumes = diceyml.Volumes{vol01, vol02}
 		}
 		// 设置service
 		serviceMap[strings.Join([]string{addonSpec.Name, strconv.Itoa(i)}, "-")] = &serviceItem
@@ -521,8 +541,12 @@ func (a *Addon) BuildConsulServiceItem(params *apistructs.AddonHandlerCreateItem
 			serviceItem.Labels = map[string]string{}
 		}
 		serviceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name
+		SetlabelsFromOptions(params.Options, serviceItem.Labels)
 		// volume信息
-		serviceItem.Binds = diceyml.Binds{(*clusterInfo)[apistructs.DICE_STORAGE_MOUNTPOINT] + "/addon/consul/" + a.getRandomId() + ":/consul/data:rw"}
+		//serviceItem.Binds = diceyml.Binds{(*clusterInfo)[apistructs.DICE_STORAGE_MOUNTPOINT] + "/addon/consul/" + a.getRandomId() + ":/consul/data:rw"}
+		//  /consul/data volume
+		vol01 := SetAddonVolumes(params.Options, "/consul/data", false)
+		serviceItem.Volumes = diceyml.Volumes{vol01}
 
 		// 设置service
 		serviceMap[strings.Join([]string{addonSpec.Name, strconv.Itoa(i)}, "-")] = &serviceItem
@@ -556,6 +580,7 @@ func (a *Addon) BuildEsServiceItem(params *apistructs.AddonHandlerCreateItem, ad
 			serviceItem.Labels = map[string]string{}
 		}
 		serviceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name
+		SetlabelsFromOptions(params.Options, serviceItem.Labels)
 		// envs
 		heapSize := fmt.Sprintf("%.f", float64(addonDeployPlan.Mem)*0.5)
 		serviceItem.Envs = map[string]string{
@@ -574,7 +599,11 @@ func (a *Addon) BuildEsServiceItem(params *apistructs.AddonHandlerCreateItem, ad
 			"UPDATE_DICT_URL":                    "http://esplus." + (*clusterInfo)[apistructs.DICE_ROOT_DOMAIN] + "/api/esplus/dict/esload/" + addonIns.ID,
 		}
 		// volume信息
-		serviceItem.Binds = diceyml.Binds{"es-data:/usr/share/elasticsearch/data:rw"}
+		//serviceItem.Binds = diceyml.Binds{"es-data:/usr/share/elasticsearch/data:rw"}
+		//  /usr/share/elasticsearch/data volume
+		vol01 := SetAddonVolumes(params.Options, "/usr/share/elasticsearch/data", false)
+		serviceItem.Volumes = diceyml.Volumes{vol01}
+
 		//health check
 		serviceItem.HealthCheck.HTTP = &diceyml.HTTPCheck{Port: 9200, Path: "/_cluster/health", Duration: 180}
 		// 设置service
@@ -652,6 +681,7 @@ func (a *Addon) BuildKafkaServiceItem(params *apistructs.AddonHandlerCreateItem,
 			serviceItem.Labels = map[string]string{}
 		}
 		serviceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-cluster"
+		SetlabelsFromOptions(params.Options, serviceItem.Labels)
 		// envs
 		heapSize := getHeapSize(kafkaPlan.Mem)
 
@@ -673,7 +703,10 @@ func (a *Addon) BuildKafkaServiceItem(params *apistructs.AddonHandlerCreateItem,
 		case apistructs.DCOS, apistructs.DCOS_OP:
 			serviceItem.Binds = diceyml.Binds{(*clusterInfo)[apistructs.DICE_STORAGE_MOUNTPOINT] + "/addon/kafka/" + nodeID + ":/kafka/data:rw"}
 		default:
-			serviceItem.Binds = diceyml.Binds{nodeID + ":/kafka/data:rw"}
+			//serviceItem.Binds = diceyml.Binds{nodeID + ":/kafka/data:rw"}
+			//  /kafka/data volume
+			vol01 := SetAddonVolumes(params.Options, "/kafka/data", false)
+			serviceItem.Volumes = diceyml.Volumes{vol01}
 		}
 
 		// 设置service
@@ -704,6 +737,8 @@ func (a *Addon) BuildKafkaServiceItem(params *apistructs.AddonHandlerCreateItem,
 	managerServiceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-manager"
 	managerServiceItem.Labels["HAPROXY_GROUP"] = "external"
 	managerServiceItem.Labels["HAPROXY_0_VHOST"] = strings.Join([]string{addonSpec.Name + "-manager", "-", addonIns.ID, ".", (*clusterInfo)[apistructs.DICE_ROOT_DOMAIN]}, "")
+
+	SetlabelsFromOptions(params.Options, managerServiceItem.Labels)
 	// 设置service
 	serviceMap[strings.Join([]string{addonSpec.Name, "manager"}, "-")] = managerServiceItem
 
@@ -746,6 +781,7 @@ func (a *Addon) BuildRocketMqServiceItem(params *apistructs.AddonHandlerCreateIt
 			nameServiceItem.Labels = map[string]string{}
 		}
 		nameServiceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-namesrv"
+		SetlabelsFromOptions(params.Options, nameServiceItem.Labels)
 		// envs
 		heapSize := getHeapSize(nameServiceItem.Resources.Mem)
 		heapSizeInt, err := strconv.Atoi(heapSize)
@@ -768,7 +804,12 @@ func (a *Addon) BuildRocketMqServiceItem(params *apistructs.AddonHandlerCreateIt
 			nameServiceItem.Binds = diceyml.Binds{(*clusterInfo)[apistructs.DICE_STORAGE_MOUNTPOINT] + "/addon/rocketmq/" + addonIns.ID + "/" + nameSrvNodeId + "/namesrv/logs:/opt/store:rw",
 				(*clusterInfo)[apistructs.DICE_STORAGE_MOUNTPOINT] + "/addon/rocketmq/" + addonIns.ID + "/" + nameSrvNodeId + "/namesrv/logs:/opt/logs:rw"}
 		default:
-			nameServiceItem.Binds = diceyml.Binds{nameSrvNodeId + "-namesrv-store:/opt/store:rw", nameSrvNodeId + "-namesrv-logs:/opt/logs:rw"}
+			//nameServiceItem.Binds = diceyml.Binds{nameSrvNodeId + "-namesrv-store:/opt/store:rw", nameSrvNodeId + "-namesrv-logs:/opt/logs:rw"}
+			//  /opt/store volume
+			vol01 := SetAddonVolumes(params.Options, "/opt/store", false)
+			//  /opt/logs volume
+			vol02 := SetAddonVolumes(params.Options, "/opt/logs", false)
+			nameServiceItem.Volumes = diceyml.Volumes{vol01, vol02}
 		}
 
 		// 设置service
@@ -791,6 +832,7 @@ func (a *Addon) BuildRocketMqServiceItem(params *apistructs.AddonHandlerCreateIt
 			brokerServiceItem.Labels = map[string]string{}
 		}
 		brokerServiceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-broker"
+		SetlabelsFromOptions(params.Options, brokerServiceItem.Labels)
 		// envs
 		heapSize := getHeapSize(brokerPlan.Mem)
 		heapSizeInt, err := strconv.Atoi(heapSize)
@@ -815,7 +857,12 @@ func (a *Addon) BuildRocketMqServiceItem(params *apistructs.AddonHandlerCreateIt
 			brokerServiceItem.Binds = diceyml.Binds{(*clusterInfo)[apistructs.DICE_STORAGE_MOUNTPOINT] + "/addon/rocketmq/" + addonIns.ID + "/" + brokerNodeId + "/broker/logs:/opt/store:rw",
 				(*clusterInfo)[apistructs.DICE_STORAGE_MOUNTPOINT] + "/addon/rocketmq/" + addonIns.ID + "/" + brokerNodeId + "/broker/logs:/opt/logs:rw"}
 		default:
-			brokerServiceItem.Binds = diceyml.Binds{brokerNodeId + "-broker-store:/opt/store:rw", brokerNodeId + "-broker-logs:/opt/logs:rw"}
+			//brokerServiceItem.Binds = diceyml.Binds{brokerNodeId + "-broker-store:/opt/store:rw", brokerNodeId + "-broker-logs:/opt/logs:rw"}
+			//  /opt/store volume
+			vol01 := SetAddonVolumes(params.Options, "/opt/store", false)
+			//  /opt/logs volume
+			vol02 := SetAddonVolumes(params.Options, "/opt/logs", false)
+			brokerServiceItem.Volumes = diceyml.Volumes{vol01, vol02}
 		}
 		// depends
 		brokerServiceItem.DependsOn = nameSrvNameNodes
@@ -832,6 +879,7 @@ func (a *Addon) BuildRocketMqServiceItem(params *apistructs.AddonHandlerCreateIt
 		consoleServiceItem.Labels = map[string]string{}
 	}
 	consoleServiceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-console"
+	SetlabelsFromOptions(params.Options, consoleServiceItem.Labels)
 	// envs
 	heapSize := getHeapSize(consolePlan.Mem)
 	heapSizeInt, err := strconv.Atoi(heapSize)
@@ -881,14 +929,27 @@ func (a *Addon) BuildMysqlServiceItem(params *apistructs.AddonHandlerCreateItem,
 		// Resource资源
 		serviceItem.Resources = diceyml.Resources{CPU: addonDeployPlan.CPU, MaxCPU: addonDeployPlan.MaxCPU, Mem: addonDeployPlan.Mem, MaxMem: addonDeployPlan.MaxMem}
 		// label
-		labels := make(map[string]string)
-		for k, v := range serviceItem.Labels {
-			labels[k] = v
+		if len(serviceItem.Labels) == 0 {
+			serviceItem.Labels = map[string]string{}
 		}
-		serviceItem.Labels = labels
-		// volume信息
-		serviceItem.Binds = diceyml.Binds{strings.Join([]string{strings.Join([]string{(*clusterInfo)[apistructs.DICE_STORAGE_MOUNTPOINT], "/addon/mysql/backup/", addonIns.ID, "_", strconv.Itoa(i)}, ""), "/var/backup/mysql", "rw"}, ":"),
-			strings.Join([]string{strings.Join([]string{addonIns.ID, strconv.Itoa(i)}, "_"), "/var/lib/mysql", "rw"}, ":")}
+
+		SetlabelsFromOptions(params.Options, serviceItem.Labels)
+
+		/*
+			// volume信息
+			serviceItem.Binds = diceyml.Binds{strings.Join([]string{strings.Join([]string{(*clusterInfo)[apistructs.DICE_STORAGE_MOUNTPOINT], "/addon/mysql/backup/", addonIns.ID, "_", strconv.Itoa(i)}, ""), "/var/backup/mysql", "rw"}, ":"),
+				strings.Join([]string{strings.Join([]string{addonIns.ID, strconv.Itoa(i)}, "_"), "/var/lib/mysql", "rw"}, ":")}
+		*/
+
+		// Use volumes 代替 Binds
+		//  /var/backup/mysql volume
+		vol01 := SetAddonVolumes(params.Options, "/var/backup/mysql", false)
+
+		//  /var/lib/mysql volume
+		vol02 := SetAddonVolumes(params.Options, "/var/lib/mysql", false)
+
+		serviceItem.Volumes = diceyml.Volumes{vol01, vol02}
+
 		// health check
 		execHealth := diceyml.ExecCheck{Cmd: fmt.Sprintf("mysql -uroot -p%s  -e 'select 1'", password)}
 		health := diceyml.HealthCheck{Exec: &execHealth}
@@ -936,7 +997,7 @@ func (a *Addon) deepCopy(dst, src interface{}) error {
 	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
 }
 
-func (a *Addon) BuildESOperatorServiceItem(addonIns *dbclient.AddonInstance, addonDice *diceyml.Object, version string) error {
+func (a *Addon) BuildESOperatorServiceItem(options map[string]string, addonIns *dbclient.AddonInstance, addonDice *diceyml.Object, version string) error {
 	// 设置密码
 	password, err := a.savePassword(addonIns, apistructs.AddonESPasswordKey)
 	if err != nil {
@@ -944,7 +1005,7 @@ func (a *Addon) BuildESOperatorServiceItem(addonIns *dbclient.AddonInstance, add
 	}
 	addonDice.Meta = map[string]string{
 		"USE_OPERATOR": "elasticsearch",
-		"VERSION":      version,
+		"VERSION":      "6.8.9",
 	}
 	//设置环境变量
 	for _, v := range addonDice.Services {
@@ -958,12 +1019,17 @@ func (a *Addon) BuildESOperatorServiceItem(addonIns *dbclient.AddonInstance, add
 			v.Envs["requirepass"] = password
 		}
 
+		SetlabelsFromOptions(options, v.Labels)
+
+		//  主要目的是传递 PVC 相关信息
+		vol01 := SetAddonVolumes(options, "", false)
+		v.Volumes = diceyml.Volumes{vol01}
 	}
 	return nil
 }
 
 // buildMysqlOperatorServiceItem 生成operator发布的格式
-func (a *Addon) BuildMysqlOperatorServiceItem(addonIns *dbclient.AddonInstance, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
+func (a *Addon) BuildMysqlOperatorServiceItem(options map[string]string, addonIns *dbclient.AddonInstance, addonDice *diceyml.Object, clusterInfo *apistructs.ClusterInfoData) error {
 	// 设置密码
 	password, err := a.savePassword(addonIns, apistructs.AddonMysqlPasswordKey)
 	if err != nil {
@@ -980,6 +1046,16 @@ func (a *Addon) BuildMysqlOperatorServiceItem(addonIns *dbclient.AddonInstance, 
 			"ADDON_NODE_ID":       a.getRandomId(),
 			"MYSQL_ROOT_PASSWORD": password,
 		}
+
+		if len(v.Labels) == 0 {
+			v.Labels = make(map[string]string)
+		}
+		SetlabelsFromOptions(options, v.Labels)
+
+		//  主要目的是传递 PVC 相关信息
+		vol01 := SetAddonVolumes(options, "", false)
+		v.Volumes = diceyml.Volumes{vol01}
+
 		addonInstanceExtra := dbclient.AddonInstanceExtra{
 			ID:         a.getRandomId(),
 			InstanceID: addonIns.ID,
@@ -1026,6 +1102,9 @@ func (a *Addon) BuildRedisServiceItem(params *apistructs.AddonHandlerCreateItem,
 		masterServiceItem.Labels = map[string]string{}
 	}
 	masterServiceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name
+	// set options for label
+	SetlabelsFromOptions(params.Options, masterServiceItem.Labels)
+
 	serviceMap[apistructs.RedisMasterNamePrefix] = masterServiceItem
 
 	if params.Plan == apistructs.AddonProfessional {
@@ -1072,6 +1151,9 @@ func (a *Addon) BuildRedisServiceItem(params *apistructs.AddonHandlerCreateItem,
 				sentinelServiceItem.Labels = map[string]string{}
 			}
 			sentinelServiceItem.Labels["ADDON_GROUP_ID"] = apistructs.RedisSentinelNamePrefix
+			// set options for label
+			SetlabelsFromOptions(params.Options, sentinelServiceItem.Labels)
+
 			// depends_on
 			sentinelServiceItem.DependsOn = []string{apistructs.RedisMasterNamePrefix, apistructs.RedisSlaveNamePrefix}
 			// put到dice.Services中
@@ -1084,7 +1166,7 @@ func (a *Addon) BuildRedisServiceItem(params *apistructs.AddonHandlerCreateItem,
 }
 
 // buildRedisOperatorServiceItem redis operator build service item
-func (a *Addon) BuildRedisOperatorServiceItem(addonIns *dbclient.AddonInstance, addonDice *diceyml.Object) error {
+func (a *Addon) BuildRedisOperatorServiceItem(options map[string]string, addonIns *dbclient.AddonInstance, addonDice *diceyml.Object) error {
 	// 设置密码
 	password, err := a.savePassword(addonIns, apistructs.AddonRedisPasswordKey)
 	if err != nil {
@@ -1101,6 +1183,11 @@ func (a *Addon) BuildRedisOperatorServiceItem(addonIns *dbclient.AddonInstance, 
 			"ADDON_NODE_ID": a.getRandomId(),
 			"requirepass":   password,
 		}
+		// set options for label
+		if len(v.Labels) == 0 {
+			v.Labels = make(map[string]string)
+		}
+		SetlabelsFromOptions(options, v.Labels)
 	}
 	return nil
 }
@@ -1304,8 +1391,13 @@ func (a *Addon) BuildCanalServiceItem(params *apistructs.AddonHandlerCreateItem,
 			serviceItem.Labels = map[string]string{}
 		}
 		serviceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name
+		SetlabelsFromOptions(params.Options, serviceItem.Labels)
 		// volume信息
-		serviceItem.Binds = diceyml.Binds{"canal-data:/usr/share/canal/logs:rw"}
+		//serviceItem.Binds = diceyml.Binds{"canal-data:/usr/share/canal/logs:rw"}
+
+		//  /usr/share/canal/logs volume
+		vol01 := SetAddonVolumes(params.Options, "/usr/share/canal/logs", false)
+		serviceItem.Volumes = diceyml.Volumes{vol01}
 		// envs
 		heapSize := fmt.Sprintf("%.f", float64(addonDeployPlan.Mem)*0.7)
 		serviceItem.Envs = map[string]string{
@@ -1365,9 +1457,16 @@ func (a *Addon) BuildRabbitmqServiceItem(params *apistructs.AddonHandlerCreateIt
 			serviceItem.Labels = map[string]string{}
 		}
 		serviceItem.Labels["ADDON_GROUP_ID"] = addonSpec.Name + "-" + strconv.Itoa(i)
+		SetlabelsFromOptions(params.Options, serviceItem.Labels)
+
 		// volume信息
 		nodeId := a.getRandomId()
-		serviceItem.Binds = diceyml.Binds{nodeId + "-mq-data:/var/lib/rabbitmq:rw"}
+		//serviceItem.Binds = diceyml.Binds{nodeId + "-mq-data:/var/lib/rabbitmq:rw"}
+
+		//  /var/lib/rabbitmq volume
+		vol01 := SetAddonVolumes(params.Options, "/var/lib/rabbitmq", false)
+		serviceItem.Volumes = diceyml.Volumes{vol01}
+
 		// envs
 		heapSize := getHeapSize(addonDeployPlan.Mem)
 		serviceItem.Envs = map[string]string{
@@ -1514,4 +1613,82 @@ func (a *Addon) savePassword(addonIns *dbclient.AddonInstance, key string) (stri
 		return "", err
 	}
 	return password, nil
+}
+
+// setAddonVolumes set Volumes for diceyml.Service for addon service
+// service： addon service
+// options:  主要获取如下三种 options
+//     "addonDiskType": "SSD"
+//     "addonVolumeSize": "10"
+//     "addonSnapMaxHistory": "3"
+// targetPath：容器中卷映射目录
+// readOnly： 表明卷是否以只读方式挂载
+func SetAddonVolumes(options map[string]string, targetPath string, readOnly bool) diceyml.Volume {
+	snap := diceyml.VolumeSnapshot{
+		MaxHistory: 0,
+	}
+
+	volume := diceyml.Volume{
+		//SourcePath: hostPath,
+		TargetPath: targetPath,
+		ReadOnly:   readOnly,
+		Snapshot:   &snap,
+	}
+
+	// Type
+	if dt, ok := options[diceyml.AddonDiskType]; ok {
+		volume.Type = dt
+	} else {
+		volume.Type = ""
+	}
+
+	// Capacity
+	if ds, ok := options[diceyml.AddonVolumeSize]; ok {
+		dsize, _ := strconv.Atoi(ds)
+		// 卷容量最大限制 2000Gi
+		if int32(dsize) >= diceyml.AddonVolumeSizeMin && int32(dsize) < diceyml.AddonVolumeSizeMax {
+			volume.Capacity = int32(dsize)
+		}
+
+		// 小于 0，修正为默认值
+		if int32(dsize) < diceyml.AddonVolumeSizeMin {
+			volume.Capacity = diceyml.AddonVolumeSizeMin
+		}
+		// 大于 2000，修正为 2000
+		if int32(dsize) >= diceyml.AddonVolumeSizeMax {
+			volume.Capacity = diceyml.AddonVolumeSizeMax
+		}
+	}
+
+	// Snapshot
+	if sc, ok := options[diceyml.AddonSnapMaxHistory]; ok {
+		snapshotCount, _ := strconv.Atoi(sc)
+		// 卷快照数量最大限制 100
+		if snapshotCount > 0 && int32(snapshotCount) < diceyml.AddonVolumeSnapshotMax {
+			volume.Snapshot.MaxHistory = int32(snapshotCount)
+		}
+	}
+
+	return volume
+}
+
+// SetlabelsFromOptions set service labels from addon.Optons
+func SetlabelsFromOptions(options, labels map[string]string) {
+	// addons[xxx].options 中的部分 Option 创建为 labels
+	for k, v := range options {
+		switch k {
+		// some options may be is not a valid value for labels, so only set some predefined options
+		case diceyml.AddonDiskType, diceyml.AddonVolumeSize, diceyml.AddonSnapMaxHistory, diceyml.AddonEnableECI:
+			labels[k] = v
+			if k == diceyml.AddonEnableECI && v == "true" {
+				registry := os.Getenv(diceyml.ErdaImageRegistry)
+				if registry != "" {
+					// 从 orchestraor 的环境变量获取 addon 组件的镜像仓库
+					labels[diceyml.AddonImageRegistry] = registry
+				} else {
+					labels[diceyml.AddonImageRegistry] = diceyml.AddonPublicRegistry
+				}
+			}
+		}
+	}
 }

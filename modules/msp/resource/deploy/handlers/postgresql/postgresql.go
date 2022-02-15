@@ -19,6 +19,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
+	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -78,13 +79,30 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 		}
 		utils.AppendMap(service.Envs, env)
 
+		//labels
+		if service.Labels == nil {
+			service.Labels = make(map[string]string)
+		}
+		options := map[string]string{}
+		utils.JsonConvertObjToType(tmcInstance.Options, &options)
+		utils.SetlabelsFromOptions(options, service.Labels)
+
 		// volumes
 		hostPath := tmcInstance.ID
 		if p.IsNotDCOSCluster(clusterConfig["DICE_CLUSTER_TYPE"]) {
-			service.Binds = diceyml.Binds{
-				hostPath + ":/var/lib/postgresql/data:rw",
-				clusterConfig["DICE_STORAGE_MOUNTPOINT"] + "/addon/postgresql/backup/" + hostPath + ":/var/backup/pg:rw",
-			}
+			/*
+				service.Binds = diceyml.Binds{
+					hostPath + ":/var/lib/postgresql/data:rw",
+					clusterConfig["DICE_STORAGE_MOUNTPOINT"] + "/addon/postgresql/backup/" + hostPath + ":/var/backup/pg:rw",
+				}
+			*/
+
+			//  /var/lib/postgresql/data volume
+			vol01 := addon.SetAddonVolumes(options, "/var/lib/postgresql/data", false)
+			//  /var/backup/pg volume
+			vol02 := addon.SetAddonVolumes(options, "/var/backup/pg", false)
+			service.Volumes = diceyml.Volumes{vol01, vol02}
+
 		} else {
 			service.Binds = diceyml.Binds{
 				clusterConfig["DICE_STORAGE_MOUNTPOINT"] + "/addon/postgresql/data/" + hostPath + ":/var/lib/postgresql/data:rw",

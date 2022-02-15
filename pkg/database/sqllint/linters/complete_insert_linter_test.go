@@ -18,40 +18,44 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
-	"github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
 
 func TestNewCompleteInsertLinter(t *testing.T) {
-	var (
-		insert         = "insert into t1 \nvalues (1, 2, 3)"
-		completeInsert = "insert into t2 (col1, col2, col3) \nvalues (1, 2, 3)"
-		skip           = "create table t1 (id bigint)"
-	)
-	linter := sqllint.New(linters.NewCompleteInsertLinter)
-	if err := linter.Input([]byte(insert), "insert"); err != nil {
-		t.Fatalf("failed to Input data to linter: %v", err)
-	}
-	if errs := linter.Errors(); len(errs) == 0 {
-		t.Fatal("failed to lint, there should be some errors")
-	} else {
-		t.Logf("%+v", errs)
-	}
-
-	linter = sqllint.New(linters.NewCompleteInsertLinter)
-	if err := linter.Input([]byte(completeInsert), "completeInsert"); err != nil {
-		t.Fatalf("failed to Input data to linter: %v", err)
-	}
-	if errs := linter.Errors(); len(errs) != 0 {
-		t.Logf("%+v", errs)
-		t.Fatal("failed to lint, there should be no error")
+	var config = `
+- name: CompleteInsertLinter
+  switchOn: true
+  white:
+    patterns:
+      - ".*-base$"
+    modules: [ ]
+    committedAt: [ ]
+    filenames: [ ]
+  meta: { }`
+	cfg, err := sqllint.LoadConfig([]byte(config))
+	if err != nil {
+		t.Fatal("failed to LoadConfig", err)
 	}
 
-	linter = sqllint.New(linters.NewCompleteInsertLinter)
-	if err := linter.Input([]byte(skip), "skip"); err != nil {
+	var s = script{
+		Name:    "insert-1",
+		Content: "insert into t1 \nvalues (1, 2, 3)",
+	}
+	linter := sqllint.New(cfg)
+	if err := linter.Input("", s.Name, s.GetContent()); err != nil {
 		t.Fatalf("failed to Input data to linter: %v", err)
 	}
-	if errs := linter.Errors(); len(errs) > 0 {
-		t.Log(errs)
-		t.Fatalf("failed to lint: %s", "skip")
+	if len(linter.Errors()[s.Name].Lints) == 0 {
+		t.Fatal("there should be errors")
+	}
+	t.Log(linter.Errors()[s.Name].Lints)
+
+	s.Name = "insert-2"
+	s.Content = "insert into t2 (col1, col2, col3) \nvalues (1, 2, 3)"
+	linter = sqllint.New(cfg)
+	if err := linter.Input("", s.Name, s.GetContent()); err != nil {
+		t.Fatalf("failed to Input data to linter: %v", err)
+	}
+	if len(linter.Errors()[s.Name].Lints) > 0 {
+		t.Fatal("there should be no errors")
 	}
 }

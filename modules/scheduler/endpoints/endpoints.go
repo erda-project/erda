@@ -206,6 +206,15 @@ func (h *HTTPEndpoints) ServiceGroupCreate(ctx context.Context, r *http.Request,
 				Error:   apistructs.ErrorResponse{Msg: errstr},
 			}})
 	}
+	logrus.Infof("ServiceGroupCreate http.Request:  %#v", req)
+	logrus.Infof("ServiceGroupCreate http.Request req.DiceYml.Services: %#v", req.DiceYml.Services)
+	for name, s := range req.DiceYml.Services {
+		logrus.Infof("ServiceGroupCreate http.Request req.DiceYml.Services %s Volumes: %#v", name, s.Volumes)
+		for i, v := range s.Volumes {
+			logrus.Infof("ServiceGroupCreate http.Request req.DiceYml.Services %s Volumes[%d]: %#v", name, i, v)
+		}
+	}
+
 	sg, err := h.serviceGroupImpl.Create(req)
 	if err != nil {
 		errstr := fmt.Sprintf("create servicegroup fail: %v", err)
@@ -1213,6 +1222,7 @@ func (h *HTTPEndpoints) ServiceScaling(ctx context.Context, r *http.Request, var
 				}},
 		})
 	}
+
 	sgb, _ := json.Marshal(&sg)
 	logrus.Infof("scale service group body is %s", string(sgb))
 	if _, err = h.serviceGroupImpl.Scale(&sg); err != nil {
