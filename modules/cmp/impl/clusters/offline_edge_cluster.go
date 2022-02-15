@@ -35,62 +35,88 @@ type cmdbDeleteClusterResp struct {
 	Data    string `json:"data"`
 }
 
-func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, userid string, orgid string) (uint64, error) {
-	var recordID uint64
-	var fakecluster bool
-	clusterInfo, err := c.bdl.QueryClusterInfo(req.ClusterName)
-	if err != nil {
+func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, userid string, orgid string) (recordID uint64, preCheckHint string, err error) {
+	var (
+		fakecluster bool
+	)
+
+	clusterInfo, er := c.bdl.QueryClusterInfo(req.ClusterName)
+	if er != nil {
 		fakecluster = true
 	} else {
 		isEdgeCluster := clusterInfo.Get(apistructs.DICE_IS_EDGE)
 		if isEdgeCluster != "true" {
 			errstr := fmt.Sprintf("unsupport to offline non-edge cluster, clustername: %s", clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME))
 			logrus.Errorf(errstr)
-			err := errors.New(errstr)
-			return recordID, err
+			err = errors.New(errstr)
+			return
 		}
 	}
 	status := dbclient.StatusTypeSuccess
 	detail := ""
 	if !fakecluster && !req.Force {
 		// project cluster refer check
-		referred, err := c.bdl.ProjectClusterReferred(userid, orgid, req.ClusterName)
+		var projReferred bool
+		projReferred, err = c.bdl.ProjectClusterReferred(userid, orgid, req.ClusterName)
 		if err != nil {
 			status = dbclient.StatusTypeFailed
 			logrus.Errorf("check project cluster refer info failed, orgid: %s, cluster_name: %s", orgid, req.ClusterName)
-			return recordID, err
+			return
 		}
 
-		if referred {
+		if projReferred {
 			status = dbclient.StatusTypeFailed
-			detail = "An existing project is using the cluster and cannot offline this cluster."
+			detail = "An existing project is using the cluster and cannot offline this cluster if force offline is not set."
+			// pre-check failed
+			if req.PreCheck {
+				preCheckHint = detail
+				return
+			}
 		}
 
 		// runtime cluster refer check
 		if status == dbclient.StatusTypeSuccess {
-			referred, err := c.bdl.RuntimesClusterReferred(userid, orgid, req.ClusterName)
+			var referenceResp *apistructs.ResourceReferenceData
+			var rReferred bool
+			referenceResp, err = c.bdl.FindClusterResource(req.ClusterName, orgid)
 			if err != nil {
 				status = dbclient.StatusTypeFailed
 				logrus.Errorf("check runtime cluster refer info failed, orgid: %s, cluster_name: %s", orgid, req.ClusterName)
-				return recordID, err
+				return
 			}
 
-			if referred {
+			if referenceResp.AddonReference > 0 || referenceResp.ServiceReference > 0 {
+				rReferred = true
+			}
+
+			if rReferred {
 				status = dbclient.StatusTypeFailed
-				detail = "There are the Runtime (Addon) in the cluster, cannot offline this cluster"
+				detail = "There are Runtimes (Addons) in the cluster, cannot offline this cluster if force offline is not set."
+				// pre-check failed
+				if req.PreCheck {
+					preCheckHint = detail
+					return
+				}
 			}
 		}
 	}
+
+	if req.PreCheck {
+		logrus.Infof("edge cluster offline line pre check done")
+		return
+	}
+
 	// Offline cluster by call cmd /api/clusters/<clusterName>
 	if status == dbclient.StatusTypeSuccess {
 		if _, err = c.bdl.DereferenceCluster(req.OrgID, req.ClusterName, userid); err != nil {
-			return recordID, err
+			return
 		}
 
-		relations, err := c.bdl.ListOrgClusterRelation(userid, req.ClusterName)
+		var relations []apistructs.OrgClusterRelationDTO
+		relations, err = c.bdl.ListOrgClusterRelation(userid, req.ClusterName)
 		if err != nil {
 			logrus.Errorf("list org cluster relation failed, cluster: %s, error: %v", req.ClusterName, err)
-			return recordID, err
+			return
 		}
 
 		if len(relations) == 0 || req.Force {
@@ -99,20 +125,20 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 				errstr := fmt.Sprintf("failed to delete cluster %s : %v", req.ClusterName, err)
 				logrus.Errorf(errstr)
 				err = errors.New(errstr)
-				return recordID, err
+				return
 			}
 
 			// Delete accessKey
 			if err = c.DeleteAccessKey(req.ClusterName); err != nil {
 				errStr := fmt.Sprintf("failed to delete cluster access key, cluster: %v, err: %v", req.ClusterName, err)
 				logrus.Error(errStr)
-				return recordID, err
+				return
 			}
 		}
 	}
 
 	if req.OrgID <= 0 {
-		return recordID, nil
+		return
 	}
 
 	recordID, err = createRecord(c.db, dbclient.Record{
@@ -130,7 +156,7 @@ func (c *Clusters) OfflineEdgeCluster(req apistructs.OfflineEdgeClusterRequest, 
 	}
 
 	logrus.Infof("detail: %v", detail)
-	return recordID, nil
+	return
 }
 
 func createRecord(db *dbclient.DBClient, record dbclient.Record) (recordID uint64, err error) {
@@ -144,7 +170,7 @@ func (c *Clusters) BatchOfflineEdgeCluster(req apistructs.BatchOfflineEdgeCluste
 			ClusterName: cluster,
 			Force:       true,
 		}
-		_, err := c.OfflineEdgeCluster(req, "onlyYou", strconv.Itoa(int(req.OrgID)))
+		_, _, err := c.OfflineEdgeCluster(req, "onlyYou", strconv.Itoa(int(req.OrgID)))
 		if err != nil {
 			err := fmt.Errorf("cluster offline failed, cluster: %s, error: %v", cluster, err)
 			logrus.Errorf(err.Error())
