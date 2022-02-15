@@ -40,6 +40,8 @@
     "select": {
       "component": "#component",
       "host": "#host",
+      "db_host": "#db_host",
+      "db_system": "#db_system",
       "cluster_name": "#cluster_name",
       "source_project_id": "#source_project_id",
       "source_project_name": "#source_project_name",
