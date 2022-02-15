@@ -32,7 +32,45 @@ const (
 	TableAlertExpression              = "sp_alert_expression"
 	TableMetricExpression             = "sp_metric_expression"
 	TableAlert                        = "sp_alert"
+	TableAlertEvent                   = "sp_alert_event"
+	TableAlertEventSuppress           = "sp_alert_event_suppress"
 )
+
+type AlertEvent struct {
+	Id               string    `gorm:"column:id;primary_key"`
+	Name             string    `gorm:"column:name"`
+	OrgID            int64     `gorm:"column:org_id"`
+	AlertGroupID     string    `gorm:"column:alert_group_id"`
+	AlertGroup       string    `gorm:"column:alert_group"`
+	Scope            string    `gorm:"column:scope"`
+	ScopeID          string    `gorm:"column:scope_id"`
+	AlertID          uint64    `gorm:"column:alert_id"`
+	AlertName        string    `gorm:"column:alert_name"`
+	AlertType        string    `gorm:"column:alert_type"`
+	AlertIndex       string    `gorm:"column:alert_index"`
+	AlertLevel       string    `gorm:"column:alert_level"`
+	AlertSource      string    `gorm:"column:alert_source"`
+	AlertSubject     string    `gorm:"column:alert_subject"`
+	AlertState       string    `gorm:"column:alert_state"`
+	RuleID           uint64    `gorm:"column:rule_id"`
+	RuleName         string    `gorm:"column:rule_name"`
+	ExpressionID     uint64    `gorm:"column:expression_id"`
+	LastTriggerTime  time.Time `gorm:"column:last_trigger_time"`
+	FirstTriggerTime time.Time `gorm:"column:first_trigger_time"`
+}
+
+// TableName .
+func (AlertEvent) TableName() string { return TableAlertEvent }
+
+type AlertEventSuppress struct {
+	Id           string    `gorm:"column:id;primary_key"`
+	AlertEventID string    `gorm:"column:alert_event_id"`
+	SuppressType string    `gorm:"column:suppress_type"`
+	ExpireTime   time.Time `gorm:"column:expire_time"`
+	Enable       bool      `gorm:"column:enable"`
+}
+
+func (AlertEventSuppress) TableName() string { return TableAlertEventSuppress }
 
 type AlertRecord struct {
 	GroupID       string    `gorm:"column:group_id;primary_key"`
