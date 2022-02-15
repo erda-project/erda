@@ -20,10 +20,15 @@ type Component interface {
 	ComponentID() ComponentID
 }
 
+type ComponentUnit struct {
+	Component Component
+	Name      string
+}
+
 type (
-	MetricReceiverConsumeFunc func(data Metrics)
-	TraceReceiverConsumeFunc  func(data Traces)
-	LogReceiverConsumeFunc    func(data Logs)
+	// MetricReceiverConsumeFunc func(data Metrics)
+	// TraceReceiverConsumeFunc  func(data Traces)
+	// LogReceiverConsumeFunc    func(data Logs)
 
 	ObservableDataConsumerFunc func(data ObservableData)
 )

@@ -14,6 +14,11 @@
 
 package model
 
+type ReceiverUnit struct {
+	Name     string
+	Receiver Receiver
+}
+
 type Receiver interface {
 	Component
 	// TODO

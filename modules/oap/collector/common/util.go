@@ -15,11 +15,54 @@
 package common
 
 import (
+	"compress/gzip"
+	"fmt"
+	"io"
+	"net/http"
 	"strings"
+
+	"github.com/golang/snappy"
 )
 
 func NormalizeKey(key string) string {
 	key = strings.ReplaceAll(key, ".", "_")
 	key = strings.ReplaceAll(key, "/", "_")
 	return key
+}
+
+// read request's body based on Content-Encoding Header
+func ReadBody(req *http.Request) ([]byte, error) {
+	encoding := req.Header.Get("Content-Encoding")
+	defer req.Body.Close()
+
+	switch encoding {
+	case "gzip":
+		r, err := gzip.NewReader(req.Body)
+		if err != nil {
+			return nil, fmt.Errorf("gzip.NewReader err: %w", err)
+		}
+
+		bytes, err := io.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
+		return bytes, nil
+	case "snappy":
+		bytes, err := io.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		// snappy block format is only supported by decode/encode not snappy reader/writer
+		bytes, err = snappy.Decode(nil, bytes)
+		if err != nil {
+			return nil, fmt.Errorf("snappy.Decode err: %w", err)
+		}
+		return bytes, nil
+	default:
+		bytes, err := io.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		return bytes, nil
+	}
 }

@@ -17,6 +17,7 @@ package all
 import (
 	// receivers
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/dummy"
+	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/fluentbit"
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/promremotewrite"
 
 	// processors

@@ -24,9 +24,9 @@ import (
 )
 
 type Pipeline struct {
-	receivers  []model.Receiver
-	processors []model.Processor
-	exporters  []model.Exporter
+	receivers  []model.ReceiverUnit
+	processors []model.ProcessorUnit
+	exporters  []model.ExporterUnit
 
 	Log logs.Logger
 }
@@ -35,7 +35,7 @@ func NewPipeline(log logs.Logger) *Pipeline {
 	return &Pipeline{Log: log}
 }
 
-func (p *Pipeline) InitComponents(receivers, processors, exporters []model.Component) error {
+func (p *Pipeline) InitComponents(receivers, processors, exporters []model.ComponentUnit) error {
 	rs, err := p.rsFromComponent(receivers)
 	if err != nil {
 		return err
@@ -55,36 +55,36 @@ func (p *Pipeline) InitComponents(receivers, processors, exporters []model.Compo
 	return nil
 }
 
-func (p *Pipeline) rsFromComponent(coms []model.Component) ([]model.Receiver, error) {
-	res := make([]model.Receiver, 0, len(coms))
+func (p *Pipeline) rsFromComponent(coms []model.ComponentUnit) ([]model.ReceiverUnit, error) {
+	res := make([]model.ReceiverUnit, 0, len(coms))
 	for _, com := range coms {
-		r, ok := com.(model.Receiver)
+		c, ok := com.Component.(model.Receiver)
 		if !ok {
-			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.ComponentID(), com)
+			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.Name, com.Component)
 		}
-		res = append(res, r)
+		res = append(res, model.ReceiverUnit{Name: com.Name, Receiver: c})
 	}
 	return res, nil
 }
-func (p *Pipeline) prsFromComponent(coms []model.Component) ([]model.Processor, error) {
-	res := make([]model.Processor, 0, len(coms))
+func (p *Pipeline) prsFromComponent(coms []model.ComponentUnit) ([]model.ProcessorUnit, error) {
+	res := make([]model.ProcessorUnit, 0, len(coms))
 	for _, com := range coms {
-		r, ok := com.(model.Processor)
+		c, ok := com.Component.(model.Processor)
 		if !ok {
-			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.ComponentID(), com)
+			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.Name, com.Component)
 		}
-		res = append(res, r)
+		res = append(res, model.ProcessorUnit{Name: com.Name, Processor: c})
 	}
 	return res, nil
 }
-func (p *Pipeline) esFromComponent(coms []model.Component) ([]model.Exporter, error) {
-	res := make([]model.Exporter, 0, len(coms))
+func (p *Pipeline) esFromComponent(coms []model.ComponentUnit) ([]model.ExporterUnit, error) {
+	res := make([]model.ExporterUnit, 0, len(coms))
 	for _, com := range coms {
-		r, ok := com.(model.Exporter)
+		c, ok := com.Component.(model.Exporter)
 		if !ok {
-			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.ComponentID(), com)
+			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.Name, com.Component)
 		}
-		res = append(res, r)
+		res = append(res, model.ExporterUnit{Name: com.Name, Exporter: c})
 	}
 	return res, nil
 }
@@ -106,11 +106,11 @@ func (p *Pipeline) StartExporters(ctx context.Context, out <-chan model.Observab
 			var wg sync.WaitGroup
 			wg.Add(len(p.exporters))
 			for _, e := range p.exporters {
-				go func(exp model.Exporter, od model.ObservableData) {
+				go func(exp model.ExporterUnit, od model.ObservableData) {
 					defer wg.Done()
-					err := exp.Export(od)
+					err := exp.Exporter.Export(od)
 					if err != nil {
-						p.Log.Errorf("Exporter<%s> export data error: %s", exp.ComponentID(), err)
+						p.Log.Errorf("Exporter<%s> export data error: %s", exp.Name, err)
 					}
 				}(e, data.Clone())
 			}
@@ -123,7 +123,7 @@ func (p *Pipeline) StartExporters(ctx context.Context, out <-chan model.Observab
 
 func (p *Pipeline) startProcessors(ctx context.Context, in <-chan model.ObservableData, out chan<- model.ObservableData) {
 	for _, r := range p.processors {
-		rp, ok := r.(model.RunningProcessor)
+		rp, ok := r.Processor.(model.RunningProcessor)
 		if !ok {
 			continue
 		}
@@ -134,9 +134,9 @@ func (p *Pipeline) startProcessors(ctx context.Context, in <-chan model.Observab
 		select {
 		case data := <-in:
 			for _, pr := range p.processors {
-				tmp, err := pr.Process(data)
+				tmp, err := pr.Processor.Process(data)
 				if err != nil {
-					p.Log.Errorf("Processor<%s> process data error: %s", pr.ComponentID(), err)
+					p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
 					continue
 				}
 				data = tmp
@@ -155,7 +155,7 @@ func (p *Pipeline) startProcessors(ctx context.Context, in <-chan model.Observab
 
 func (p *Pipeline) startReceivers(ctx context.Context, out chan<- model.ObservableData) {
 	for _, r := range p.receivers {
-		r.RegisterConsumer(newConsumer(ctx, out))
+		r.Receiver.RegisterConsumer(newConsumer(ctx, out))
 	}
 }
 

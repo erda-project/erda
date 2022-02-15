@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/erda-project/erda/modules/oap/collector/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/labstack/echo"
 	"github.com/prometheus/prometheus/prompb"
@@ -45,7 +46,7 @@ type provider struct {
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.Router.POST("/api/v1/prometheus-remote-write", p.prwHandler)
+	p.Router.POST("/api/v1/collect/prometheus-remote-write", p.prwHandler)
 	return nil
 }
 
@@ -54,7 +55,7 @@ func (p *provider) prwHandler(ctx echo.Context) error {
 		return ctx.NoContent(http.StatusOK)
 	}
 	req := ctx.Request()
-	buf, err := ReadBody(req)
+	buf, err := common.ReadBody(req)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("read body err: %s", err))
 	}

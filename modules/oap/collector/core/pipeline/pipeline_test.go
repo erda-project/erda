@@ -32,10 +32,10 @@ func TestPipeline_StartStream(t *testing.T) {
 	pipe := NewPipeline(logrusx.New().Sub("collector"))
 
 	// invalid
-	assert.Error(t, pipe.InitComponents([]model.Component{&model.NoopProcessor{}}, nil, nil))
+	assert.Error(t, pipe.InitComponents([]model.ComponentUnit{{Component: &model.NoopProcessor{}}}, nil, nil))
 
 	// normal
-	err := pipe.InitComponents([]model.Component{&model.NoopReceiver{}}, []model.Component{&model.NoopProcessor{}}, []model.Component{&model.NoopExporter{}})
+	err := pipe.InitComponents([]model.ComponentUnit{{Component: &model.NoopReceiver{}}}, []model.ComponentUnit{{Component: &model.NoopProcessor{}}}, []model.ComponentUnit{{Component: &model.NoopExporter{}}})
 	assert.Nil(t, err)
 
 	pipe.StartStream(ctx)

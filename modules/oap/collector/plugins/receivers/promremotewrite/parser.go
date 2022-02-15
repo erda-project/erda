@@ -15,14 +15,10 @@
 package promremotewrite
 
 import (
-	"compress/gzip"
 	"fmt"
-	"io"
 	"math"
-	"net/http"
 	"time"
 
-	"github.com/golang/snappy"
 	pmodel "github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -30,42 +26,6 @@ import (
 	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 )
-
-func ReadBody(req *http.Request) ([]byte, error) {
-	encoding := req.Header.Get("Content-Encoding")
-	defer req.Body.Close()
-
-	switch encoding {
-	case "gzip":
-		r, err := gzip.NewReader(req.Body)
-		if err != nil {
-			return nil, fmt.Errorf("gzip.NewReader err: %w", err)
-		}
-
-		bytes, err := io.ReadAll(r)
-		if err != nil {
-			return nil, err
-		}
-		return bytes, nil
-	case "snappy":
-		bytes, err := io.ReadAll(req.Body)
-		if err != nil {
-			return nil, err
-		}
-		// snappy block format is only supported by decode/encode not snappy reader/writer
-		bytes, err = snappy.Decode(nil, bytes)
-		if err != nil {
-			return nil, fmt.Errorf("snappy.Decode err: %w", err)
-		}
-		return bytes, nil
-	default:
-		bytes, err := io.ReadAll(req.Body)
-		if err != nil {
-			return nil, err
-		}
-		return bytes, nil
-	}
-}
 
 func convertToMetrics(wr prompb.WriteRequest) (*model.Metrics, error) {
 	chunk := make([]*mpb.Metric, 0)

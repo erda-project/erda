@@ -14,18 +14,18 @@
 
 package model
 
-type ExporterDescriber interface {
-	Component
-	Connect() error
+type ExporterUnit struct {
+	Name     string
+	Exporter Exporter
 }
 
 type Exporter interface {
-	ExporterDescriber
+	Component
+	Connect() error
 	Export(data ObservableData) error
 }
 
-type NoopExporter struct {
-}
+type NoopExporter struct{}
 
 func (n *NoopExporter) ComponentID() ComponentID {
 	return "NoopExporter"

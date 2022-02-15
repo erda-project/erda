@@ -91,8 +91,8 @@ func (p *provider) start(ctx context.Context) {
 	}
 }
 
-func findComponents(ctx servicehub.Context, components []string) ([]model.Component, error) {
-	res := make([]model.Component, 0)
+func findComponents(ctx servicehub.Context, components []string) ([]model.ComponentUnit, error) {
+	res := make([]model.ComponentUnit, 0)
 	for _, item := range components {
 		obj := ctx.Service(item)
 		if obj == nil {
@@ -102,7 +102,10 @@ func findComponents(ctx servicehub.Context, components []string) ([]model.Compon
 		if !ok {
 			return nil, fmt.Errorf("%s is not a Component", item)
 		}
-		res = append(res, com)
+		res = append(res, model.ComponentUnit{
+			Component: com,
+			Name:      item,
+		})
 	}
 	return res, nil
 }

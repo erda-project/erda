@@ -12,30 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
-
-type ProcessorUnit struct {
-	Name      string
-	Processor Processor
-}
-
-type Processor interface {
-	Component
-	Process(data ObservableData) (ObservableData, error)
-}
-
-type RunningProcessor interface {
-	Processor
-	StartProcessor(consumer ObservableDataConsumerFunc)
-}
-
-type NoopProcessor struct {
-}
-
-func (n *NoopProcessor) ComponentID() ComponentID {
-	return "NoopProcessor"
-}
-
-func (n *NoopProcessor) Process(data ObservableData) (ObservableData, error) {
-	return data, nil
-}
+package decompressor

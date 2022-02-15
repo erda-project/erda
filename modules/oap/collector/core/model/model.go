@@ -23,10 +23,7 @@ import (
 	"github.com/cespare/xxhash"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 
-	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
-	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	tpb "github.com/erda-project/erda-proto-go/oap/trace/pb"
-	"github.com/erda-project/erda/modules/core/monitor/metric"
 )
 
 type DataType string
@@ -55,8 +52,7 @@ type DataItem struct {
 	TimestampNano uint64
 	Tags          map[string]string
 	// same as DataPoints when Type is metric
-	// empty when Type is trace
-	// content&Severity when TYpe is Log
+	// nothing when Type is trace&log
 	Fields map[string]*structpb.Value
 	Type   DataType
 }
@@ -76,77 +72,6 @@ func (di DataItem) HashDataItem(fieldKey string) uint64 {
 	sb.WriteString(fieldKey)
 
 	return xxhash.Sum64String(sb.String())
-}
-
-// Metrics
-type Metrics struct {
-	Metrics []*mpb.Metric `json:"metrics"`
-}
-
-func (m *Metrics) String() string {
-	buf, _ := json.Marshal(m.Metrics)
-	return fmt.Sprintf("metrics => %s", string(buf))
-}
-
-func (m *Metrics) RangeFunc(handle handleFunc) {
-	droppedList := make([]int, 0)
-	for idx, item := range m.Metrics {
-		drop, res := handle(&DataItem{
-			TimestampNano: item.TimeUnixNano,
-			Name:          item.Name,
-			Tags:          item.Attributes,
-			Fields:        item.DataPoints,
-			Type:          MetricDataType,
-		})
-		item.Name = res.Name
-		item.Attributes = res.Tags
-		item.DataPoints = res.Fields
-		if drop {
-			droppedList = append(droppedList, idx)
-		}
-	}
-	// TODO mark dropped item
-}
-
-func (m *Metrics) RangeNameFunc(handle func(name string) string) {
-	for _, item := range m.Metrics {
-		item.Name = handle(item.Name)
-	}
-}
-
-func (m *Metrics) SourceData() interface{} {
-	return m.Metrics
-}
-
-func (m *Metrics) CompatibilitySourceData() interface{} {
-	res := make([]*metric.Metric, len(m.Metrics))
-	for idx, item := range m.Metrics {
-		fields := make(map[string]interface{}, len(item.DataPoints))
-		for k, v := range item.DataPoints {
-			fields[k] = v
-		}
-		res[idx] = &metric.Metric{
-			Name:      item.Name,
-			Timestamp: int64(item.TimeUnixNano),
-			Tags:      item.Attributes,
-			Fields:    fields,
-		}
-	}
-	return map[string]interface{}{
-		"metrics": res,
-	}
-}
-
-func (m *Metrics) RangeTagsFunc(handle func(tags map[string]string) map[string]string) {
-	for _, item := range m.Metrics {
-		item.Attributes = handle(item.Attributes)
-	}
-}
-
-func (m *Metrics) Clone() ObservableData {
-	data := make([]*mpb.Metric, len(m.Metrics))
-	copy(data, m.Metrics)
-	return &Metrics{Metrics: data}
 }
 
 // Traces
@@ -185,46 +110,6 @@ func (t *Traces) Clone() ObservableData {
 
 func (t *Traces) RangeTagsFunc(handle func(tags map[string]string) map[string]string) {
 	for _, item := range t.Spans {
-		item.Attributes = handle(item.Attributes)
-	}
-}
-
-// Logs
-type Logs struct {
-	Logs []*lpb.Log `json:"logs"`
-}
-
-func (l *Logs) String() string {
-	buf, _ := json.Marshal(l.Logs)
-	return fmt.Sprintf("logs => %s", string(buf))
-}
-
-func (l *Logs) RangeFunc(handle handleFunc) {
-}
-
-func (l *Logs) RangeNameFunc(handle func(name string) string) {
-	for _, item := range l.Logs {
-		item.Name = handle(item.Name)
-	}
-}
-
-func (l *Logs) SourceData() interface{} {
-	return l.Logs
-}
-
-func (l *Logs) CompatibilitySourceData() interface{} {
-	// todo
-	return nil
-}
-
-func (l *Logs) Clone() ObservableData {
-	data := make([]*lpb.Log, len(l.Logs))
-	copy(data, l.Logs)
-	return &Logs{Logs: data}
-}
-
-func (l *Logs) RangeTagsFunc(handle func(tags map[string]string) map[string]string) {
-	for _, item := range l.Logs {
 		item.Attributes = handle(item.Attributes)
 	}
 }
