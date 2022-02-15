@@ -470,7 +470,7 @@
     patterns:
       - ".*-base$"
     committedAt:
-      - "<=20220201"
+      - "<=20220209"
   meta:
     columnName:
       - org_id
@@ -482,7 +482,7 @@
     patterns:
       - ".*-base$"
     committedAt:
-      - "<=20220201"
+      - "<=20220209"
   meta:
     columnName:
       - deleted_at
