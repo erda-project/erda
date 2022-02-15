@@ -44,11 +44,6 @@ func (b *Bundle) GetCluster(idOrName string) (*apistructs.ClusterInfo, error) {
 	}
 
 	if !resp.IsOK() || !getResp.Success {
-		if resp.IsNotfound() {
-			return nil, toAPIError(resp.StatusCode(), apistructs.ErrorResponse{
-				Msg: fmt.Sprintf("cluster %s is not found, response: %s", idOrName, string(resp.Body())),
-			})
-		}
 		return nil, toAPIError(resp.StatusCode(), getResp.Error)
 	}
 	return &getResp.Data, nil

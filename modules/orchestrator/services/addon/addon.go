@@ -39,6 +39,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -1488,11 +1489,17 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 			if addonSpec.Category != apistructs.AddonCustomCategory {
 				// 调用 scheduler API 删除
 				relationAddons, err := a.db.GetByOutSideInstanceID(routingInstance.RealInstance)
-
+				if err != nil {
+					logrus.Errorf("failed to GetByOutSideInstanceID, %+v", err)
+					return err
+				}
 				cInfo, err := a.bdl.GetCluster(routingInstance.Cluster)
 				if err != nil {
 					logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", routingInstance.Cluster, err)
-					return err
+					//The addon can also be forcibly deleted, when the cluster is not exists
+					if !errorresp.IsNotFound(err) {
+						return err
+					}
 				}
 				var force bool
 				if cInfo != nil && cInfo.OpsConfig != nil && cInfo.OpsConfig.Status == apistructs.ClusterStatusOffline {
