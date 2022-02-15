@@ -18,27 +18,34 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
-	"github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
 
-const tableCommentLinterTest = `
-CREATE TABLE IF NOT EXISTS dice_api_slas(
-    id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'primary key'
-);
-
-CREATE TABLE IF NOT EXISTS dice_api_slas(
-    id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'primary key'
-) comment='this is comment';
+func TestHub_NecessaryColumnOptionLinter(t *testing.T) {
+	var config = `
+- name: NecessaryColumnOptionLinter
+  alias: 列注释校验
+  white:
+    patterns:
+      - ".*-base$"
+  meta:
+    columnOptionType:
+    - "ColumnOptionComment"
 `
-
-func TestNewTableCommentLinter(t *testing.T) {
-	linter := sqllint.New(linters.NewTableCommentLinter)
-	if err := linter.Input([]byte(tableCommentLinterTest), "tableCommentLinterTest"); err != nil {
-		t.Error(err)
+	var s = script{
+		Name:    "stmt",
+		Content: "create table t1 (col1 datetime)",
 	}
-	errors := linter.Errors()
-	t.Logf("errors: %v", errors)
-	if len(errors) == 0 {
-		t.Fatal("failed")
+	cfg, err := sqllint.LoadConfig([]byte(config))
+	if err != nil {
+		t.Fatalf("failed to LoadConfig: %v", err)
 	}
+	linter := sqllint.New(cfg)
+	if err = linter.Input("", s.Name, s.GetContent()); err != nil {
+		t.Fatalf("failed to Input: %v", err)
+	}
+	lints := linter.Errors()[s.Name].Lints
+	if len(lints) == 0 {
+		t.Fatal("there should be errors")
+	}
+	t.Log(lints)
 }

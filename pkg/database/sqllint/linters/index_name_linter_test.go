@@ -18,8 +18,17 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
-	"github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
+
+const indexNameLinterConfig = `
+- name: IndexNameLinter
+  switchOn: true
+  white:
+    patterns:
+      - ".*-base$"
+  meta:
+    indexPattern: "^idx_.*"
+    uniqPattern: "^uk_.*"`
 
 const indexNameLinterSQL = `
 create table some_table (
@@ -48,11 +57,16 @@ create table some_table (
 `
 
 func TestNewIndexNameLinter(t *testing.T) {
-	linter := sqllint.New(linters.NewIndexNameLinter)
-	if err := linter.Input([]byte(indexNameLinterSQL), "indexNameLinterSQL"); err != nil {
+	cfg, err := sqllint.LoadConfig([]byte(indexNameLinterConfig))
+	if err != nil {
+		t.Fatal("failed to LoadConfig", err)
+	}
+	name := "indexNameLinterSQL"
+	linter := sqllint.New(cfg)
+	if err := linter.Input("", name, []byte(indexNameLinterSQL)); err != nil {
 		t.Error(err)
 	}
-	errors := linter.Errors()
+	errors := linter.Errors()[name].Lints
 	t.Logf("errors: %v", errors)
 	if len(errors) == 0 {
 		t.Fatal("failed")
