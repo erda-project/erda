@@ -685,11 +685,14 @@ func (fsm *DeployFSMContext) continuePhaseCompleted() error {
 }
 
 func (fsm *DeployFSMContext) UpdateDeploymentStatusToRuntimeAndOrder() error {
-	var err error
-	var app *apistructs.ApplicationDTO
+	var (
+		err error
+		app *apistructs.ApplicationDTO
+	)
 
 	fsm.Runtime.DeploymentStatus = fsm.Deployment.Status
-	if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
+	if err := fsm.db.UpdateRuntimeDeploymentInfo(fsm.Runtime.ID, fsm.Deployment.ID, fsm.Deployment.Status); err != nil {
+		logrus.Errorf("update runtime deployment status error: %v", err)
 		return err
 	}
 
@@ -708,7 +711,7 @@ func (fsm *DeployFSMContext) UpdateDeploymentStatusToRuntimeAndOrder() error {
 	}
 	logrus.Infof("update deployment(%+v) status for app (%+v) to deployment_order (%+v) detail is: %+v",
 		fsm.deploymentID, app.Name, DeploymentOrderID, appDeploymentStatus)
-	if err := fsm.db.UpateDeploymentOrderStatus(DeploymentOrderID,
+	if err := fsm.db.UpdateDeploymentOrderStatus(DeploymentOrderID,
 		app.Name, appDeploymentStatus); err != nil {
 		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v",
 			DeploymentOrderID, err)
