@@ -211,12 +211,14 @@ func (d *DeploymentOrder) fetchApplicationsParams(r *apistructs.ReleaseGetRespon
 	ret := make(map[string]*apistructs.DeploymentOrderParam, 0)
 
 	if r.IsProjectRelease {
-		for _, ar := range r.ApplicationReleaseList {
-			params, err := d.fetchDeploymentParams(ar.ApplicationID, workspace)
-			if err != nil {
-				return nil, err
+		for i := 0; i < len(r.ApplicationReleaseList); i++ {
+			for _, ar := range r.ApplicationReleaseList[i] {
+				params, err := d.fetchDeploymentParams(ar.ApplicationID, workspace)
+				if err != nil {
+					return nil, err
+				}
+				ret[ar.ApplicationName] = params
 			}
-			ret[ar.ApplicationName] = params
 		}
 	} else {
 		params, err := d.fetchDeploymentParams(r.ApplicationID, workspace)
@@ -306,34 +308,36 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 	runtimeSource := apistructs.RuntimeSource(source)
 
 	if r.IsProjectRelease {
-		for _, ar := range r.ApplicationReleaseList {
-			rtCreateReq := &apistructs.RuntimeCreateRequest{
-				Name:              ar.ApplicationName,
-				DeploymentOrderId: deploymentOrderId,
-				ReleaseVersion:    r.Version,
-				ReleaseID:         ar.ReleaseID,
-				Source:            runtimeSource,
-				Operator:          operator,
-				ClusterName:       clusterName,
-				Extra: apistructs.RuntimeCreateRequestExtra{
-					OrgID:           orgId,
-					ProjectID:       projectId,
-					ApplicationName: ar.ApplicationName,
-					ApplicationID:   uint64(ar.ApplicationID),
-					DeployType:      release,
-					Workspace:       workspace,
-					BuildID:         0, // Deprecated
-				},
-				SkipPushByOrch: false,
-			}
+		for i := 0; i < len(r.ApplicationReleaseList); i++ {
+			for _, ar := range r.ApplicationReleaseList[i] {
+				rtCreateReq := &apistructs.RuntimeCreateRequest{
+					Name:              ar.ApplicationName,
+					DeploymentOrderId: deploymentOrderId,
+					ReleaseVersion:    r.Version,
+					ReleaseID:         ar.ReleaseID,
+					Source:            runtimeSource,
+					Operator:          operator,
+					ClusterName:       clusterName,
+					Extra: apistructs.RuntimeCreateRequestExtra{
+						OrgID:           orgId,
+						ProjectID:       projectId,
+						ApplicationName: ar.ApplicationName,
+						ApplicationID:   uint64(ar.ApplicationID),
+						DeployType:      release,
+						Workspace:       workspace,
+						BuildID:         0, // Deprecated
+					},
+					SkipPushByOrch: false,
+				}
 
-			paramJson, err := json.Marshal(orderParams[ar.ApplicationName])
-			if err != nil {
-				return nil, err
-			}
-			rtCreateReq.Param = string(paramJson)
+				paramJson, err := json.Marshal(orderParams[ar.ApplicationName])
+				if err != nil {
+					return nil, err
+				}
+				rtCreateReq.Param = string(paramJson)
 
-			ret = append(ret, rtCreateReq)
+				ret = append(ret, rtCreateReq)
+			}
 		}
 	} else {
 		rtCreateReq := &apistructs.RuntimeCreateRequest{
@@ -385,8 +389,10 @@ func (d *DeploymentOrder) parseAppsInfoWithOrder(order *dbclient.DeploymentOrder
 		if err != nil {
 			return nil, err
 		}
-		for _, r := range releaseResp.ApplicationReleaseList {
-			ret[r.ApplicationID] = r.ApplicationName
+		for i := 0; i < len(releaseResp.ApplicationReleaseList); i++ {
+			for _, r := range releaseResp.ApplicationReleaseList[i] {
+				ret[r.ApplicationID] = r.ApplicationName
+			}
 		}
 	default:
 		ret[order.ApplicationId] = order.ApplicationName
@@ -397,8 +403,10 @@ func (d *DeploymentOrder) parseAppsInfoWithOrder(order *dbclient.DeploymentOrder
 func (d *DeploymentOrder) parseAppsInfoWithRelease(releaseResp *apistructs.ReleaseGetResponseData) map[int64]string {
 	ret := make(map[int64]string)
 	if releaseResp.IsProjectRelease {
-		for _, r := range releaseResp.ApplicationReleaseList {
-			ret[r.ApplicationID] = r.ApplicationName
+		for i := 0; i < len(releaseResp.ApplicationReleaseList); i++ {
+			for _, r := range releaseResp.ApplicationReleaseList[i] {
+				ret[r.ApplicationID] = r.ApplicationName
+			}
 		}
 	} else {
 		ret[releaseResp.ApplicationID] = releaseResp.ApplicationName

@@ -85,7 +85,7 @@ func TestEndpoints_getListParams(t *testing.T) {
 }
 
 func TestUnmarshalApplicationReleaseList(t *testing.T) {
-	list := []string{"1", "2", "3"}
+	list := [][]string{{"1"}, {"2"}, {"3"}}
 	data, err := json.Marshal(list)
 	if err != nil {
 		t.Fatal(err)
@@ -99,8 +99,10 @@ func TestUnmarshalApplicationReleaseList(t *testing.T) {
 		t.Errorf("test failed, length of res is not expected")
 	}
 	for i := range list {
-		if list[i] != res[i] {
-			t.Errorf("test failed, res is not expected")
+		for j := range list[i] {
+			if list[i][j] != res[i][j] {
+				t.Errorf("test failed, res is not expected")
+			}
 		}
 	}
 }
@@ -121,11 +123,13 @@ func TestMakeMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	appReleases := []dbclient.Release{
+	appReleases := [][]dbclient.Release{
 		{
-			Changelog:       "testMarkdown",
-			Labels:          string(data),
-			ApplicationName: "testApp",
+			{
+				Changelog:       "testMarkdown",
+				Labels:          string(data),
+				ApplicationName: "testApp",
+			},
 		},
 	}
 	releaseMeta := apistructs.ReleaseMetadata{
@@ -135,13 +139,16 @@ func TestMakeMetadata(t *testing.T) {
 		Version:   projectRelease.Version,
 		Desc:      projectRelease.Desc,
 		ChangeLog: projectRelease.Changelog,
-		AppList: map[string]apistructs.AppMetadata{
-			appReleases[0].ApplicationName: {
-				GitBranch:        labels["gitBranch"],
-				GitCommitID:      labels["gitCommitId"],
-				GitCommitMessage: labels["gitCommitMessage"],
-				GitRepo:          labels["gitRepo"],
-				ChangeLog:        appReleases[0].Changelog,
+		AppList: [][]apistructs.AppMetadata{
+			{
+				{
+					AppName:          "testApp",
+					GitBranch:        labels["gitBranch"],
+					GitCommitID:      labels["gitCommitId"],
+					GitCommitMessage: labels["gitCommitMessage"],
+					GitRepo:          labels["gitRepo"],
+					ChangeLog:        appReleases[0][0].Changelog,
+				},
 			},
 		},
 	}
@@ -164,14 +171,17 @@ func TestParseMetadata(t *testing.T) {
 		Version:   "1.0",
 		Desc:      "testDesc",
 		ChangeLog: "testChangelog",
-		AppList: map[string]apistructs.AppMetadata{
-			"test-app": {
-				GitBranch:        "feature/1.0",
-				GitCommitID:      "12345678",
-				GitCommitMessage: "testMsg",
-				GitRepo:          "http://test.com/testApp",
-				ChangeLog:        "testChangelog",
-				Version:          "testVersion",
+		AppList: [][]apistructs.AppMetadata{
+			{
+				{
+					AppName:          "test-app",
+					GitBranch:        "feature/1.0",
+					GitCommitID:      "12345678",
+					GitCommitMessage: "testMsg",
+					GitRepo:          "http://test.com/testApp",
+					ChangeLog:        "testChangelog",
+					Version:          "testVersion",
+				},
 			},
 		},
 	}
@@ -188,7 +198,7 @@ func TestParseMetadata(t *testing.T) {
 	}
 
 	if metadata.Version != target.Version || metadata.Desc != target.Desc || metadata.ChangeLog != target.ChangeLog ||
-		metadata.AppList["test-app"] != target.AppList["test-app"] {
+		metadata.AppList[0][0] != target.AppList[0][0] {
 		t.Errorf("test failed, result metadata is not expected")
 	}
 }

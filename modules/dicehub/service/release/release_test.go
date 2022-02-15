@@ -61,7 +61,7 @@ func TestLimitLabelsLength(t *testing.T) {
 }
 
 func TestUnmarshalApplicationReleaseList(t *testing.T) {
-	list := []string{"1", "2", "3"}
+	list := [][]string{{"1"}, {"2"}, {"3"}}
 	data, err := json.Marshal(list)
 	if err != nil {
 		t.Fatal(err)
@@ -74,9 +74,13 @@ func TestUnmarshalApplicationReleaseList(t *testing.T) {
 	if len(list) != len(res) {
 		t.Errorf("test failed, length of res is not expected")
 	}
-	for i := range list {
-		if list[i] != res[i] {
-			t.Errorf("test failed, res is not expected")
+	k := 0
+	for i := 0; i < len(list); i++ {
+		for j := 0; j < len(list[i]); j++ {
+			if list[i][j] != res[k] {
+				t.Errorf("test failed, res is not expected")
+			}
+			k++
 		}
 	}
 }

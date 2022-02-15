@@ -196,11 +196,17 @@ version: "2.0"
 
 func TestReleaseGetResponseData_ReLoadImages(t *testing.T) {
 	var data ReleaseGetResponseData
-	data.ApplicationReleaseList = []*ApplicationReleaseSummary{{DiceYml: testDiceyml}}
+	data.ApplicationReleaseList = [][]*ApplicationReleaseSummary{
+		{
+			{
+				DiceYml: testDiceyml,
+			},
+		},
+	}
 	if err := data.ReLoadImages(); err != nil {
 		t.Fatal(err)
 	}
-	assertServices(t, data.ApplicationReleaseList[0].Services)
+	assertServices(t, data.ApplicationReleaseList[0][0].Services)
 
 	data.Diceyml = testDiceyml
 	if err := data.ReLoadImages(); err != nil {
