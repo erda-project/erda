@@ -232,3 +232,15 @@ func (s *alertServiceWrapper) GetAlertConditions(ctx context.Context, req *pb.Ge
 func (s *alertServiceWrapper) GetAlertConditionsValue(ctx context.Context, req *pb.GetAlertConditionsValueRequest) (*pb.GetAlertConditionsValueResponse, error) {
 	return s.client.GetAlertConditionsValue(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *alertServiceWrapper) GetAlertEvents(ctx context.Context, req *pb.GetAlertEventRequest) (*pb.GetAlertEventResponse, error) {
+	return s.client.GetAlertEvents(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *alertServiceWrapper) SuppressAlertEvent(ctx context.Context, req *pb.SuppressAlertEventRequest) (*pb.SuppressAlertEventResponse, error) {
+	return s.client.SuppressAlertEvent(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *alertServiceWrapper) CancelSuppressAlertEvent(ctx context.Context, req *pb.CancelSuppressAlertEventRequest) (*pb.CancelSuppressAlertEventResponse, error) {
+	return s.client.CancelSuppressAlertEvent(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

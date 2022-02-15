@@ -15,13 +15,37 @@
 package db
 
 import (
+	"bytes"
+	"reflect"
+	"time"
+
 	"github.com/jinzhu/gorm"
+
+	"github.com/erda-project/erda/pkg/database/gormutil"
 )
 
 // AlertEventDB .
 type AlertEventDB struct {
 	*gorm.DB
 }
+
+type AlertEventQueryCondition struct {
+	Name                 string
+	Ids                  []string
+	AlertLevels          []string
+	AlertIds             []uint64
+	AlertStates          []string
+	AlertSources         []string
+	LastTriggerTimeMsMin uint64
+	LastTriggerTimeMsMax uint64
+}
+
+type AlertEventSort struct {
+	SortField  string
+	Descending bool
+}
+
+var columnNameMap = gormutil.GetFieldToColumnMap(reflect.TypeOf(AlertEvent{}))
 
 func (db *AlertEventDB) CreateAlertEvent(data *AlertEvent) error {
 	return db.Create(data).Error
@@ -56,11 +80,71 @@ func (db *AlertEventDB) GetByAlertGroupID(groupID string) (*AlertEvent, error) {
 }
 
 // QueryByCondition .
-func (db *AlertEventDB) QueryByCondition(scope, scopeKey string) {
-	panic("implement me")
+func (db *AlertEventDB) QueryByCondition(scope, scopeId string, condition *AlertEventQueryCondition, sorts []*AlertEventSort, pageNo, pageSize int64) ([]*AlertEvent, error) {
+	var result []*AlertEvent
+	query := db.Table(TableAlertEvent).Where("scope=?", scope).Where("scope_id=?", scopeId)
+	query = db.buildWhereQuery(query, condition)
+	query = db.buildSortSqlPart(query, sorts)
+	query = query.Offset((pageNo - 1) * pageSize).Limit(pageSize)
+	err := query.Find(&result).Error
+	if !gorm.IsRecordNotFoundError(err) {
+		return nil, err
+	}
+	return result, nil
 }
 
 // CountByCondition .
-func (db *AlertEventDB) CountByCondition(scope, scopeKey string) {
-	panic("implement me")
+func (db *AlertEventDB) CountByCondition(scope, scopeId string, condition *AlertEventQueryCondition) (int64, error) {
+	var count int64
+	query := db.Table(TableAlertEvent).Where("scope=?", scope).Where("scope_id=?", scopeId)
+	query = db.buildWhereQuery(query, condition)
+	err := query.Count(&count).Error
+	return count, err
+}
+
+func (db *AlertEventDB) buildSortSqlPart(query *gorm.DB, sorts []*AlertEventSort) *gorm.DB {
+	if len(sorts) == 0 {
+		return query
+	}
+	var buff bytes.Buffer
+	for i, sort := range sorts {
+		buff.WriteString(columnNameMap[sort.SortField])
+		if sort.Descending {
+			buff.WriteString(" DESC")
+		}
+		if i+1 == len(sorts) {
+			break
+		}
+		buff.WriteString(", ")
+	}
+
+	return query.Order(buff.String())
+}
+
+func (db *AlertEventDB) buildWhereQuery(query *gorm.DB, condition *AlertEventQueryCondition) *gorm.DB {
+	if len(condition.Name) > 0 {
+		query.Where("name like ?", "%"+condition.Name+"%")
+	}
+	if len(condition.Ids) > 0 {
+		query.Where("id in (?)", condition.Ids)
+	}
+	if len(condition.AlertIds) > 0 {
+		query.Where("alert_id in (?)", condition.AlertIds)
+	}
+	if len(condition.AlertLevels) > 0 {
+		query.Where("alert_level in (?)", condition.AlertLevels)
+	}
+	if len(condition.AlertStates) > 0 {
+		query.Where("alert_state in (?)", condition.AlertStates)
+	}
+	if len(condition.AlertSources) > 0 {
+		query.Where("alert_source in (?)", condition.AlertSources)
+	}
+	if condition.LastTriggerTimeMsMin > 0 {
+		query.Where("last_trigger_time >= ?", time.Unix(int64(condition.LastTriggerTimeMsMin)/1e3, int64(condition.LastTriggerTimeMsMin)%1e3))
+	}
+	if condition.LastTriggerTimeMsMax > 0 {
+		query.Where("last_trigger_time < ?", time.Unix(int64(condition.LastTriggerTimeMsMax)/1e3, int64(condition.LastTriggerTimeMsMax)%1e3))
+	}
+	return query
 }

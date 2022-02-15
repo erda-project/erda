@@ -37,7 +37,7 @@ func SetPagingToGlobalState(globalState cptype.GlobalStateData, opData table.OpT
 	globalState[GlobalStateKeyPaging] = opData
 }
 
-func GetPagingFromGlobalState(globalState cptype.GlobalStateData) (pageNo int, pageSize int) {
+func GetPagingFromGlobalState(globalState cptype.GlobalStateData) (pageNo int64, pageSize int64) {
 	pageNo = 1
 	pageSize = DefaultPageSize
 	if paging, ok := globalState[GlobalStateKeyPaging]; ok && paging != nil {
@@ -47,8 +47,8 @@ func GetPagingFromGlobalState(globalState cptype.GlobalStateData) (pageNo int, p
 			ok = mapstructure.Decode(paging, &clientPaging) == nil
 		}
 		if ok {
-			pageNo = int(clientPaging.PageNo)
-			pageSize = int(clientPaging.PageSize)
+			pageNo = int64(clientPaging.PageNo)
+			pageSize = int64(clientPaging.PageSize)
 		}
 	}
 	return pageNo, pageSize

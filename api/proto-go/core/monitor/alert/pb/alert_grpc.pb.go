@@ -70,6 +70,9 @@ type AlertServiceClient interface {
 	UpdateOrgAlertIssue(ctx context.Context, in *UpdateOrgAlertIssueRequest, opts ...grpc.CallOption) (*UpdateOrgAlertIssueResponse, error)
 	GetAlertConditions(ctx context.Context, in *GetAlertConditionsRequest, opts ...grpc.CallOption) (*GetAlertConditionsResponse, error)
 	GetAlertConditionsValue(ctx context.Context, in *GetAlertConditionsValueRequest, opts ...grpc.CallOption) (*GetAlertConditionsValueResponse, error)
+	GetAlertEvents(ctx context.Context, in *GetAlertEventRequest, opts ...grpc.CallOption) (*GetAlertEventResponse, error)
+	SuppressAlertEvent(ctx context.Context, in *SuppressAlertEventRequest, opts ...grpc.CallOption) (*SuppressAlertEventResponse, error)
+	CancelSuppressAlertEvent(ctx context.Context, in *CancelSuppressAlertEventRequest, opts ...grpc.CallOption) (*CancelSuppressAlertEventResponse, error)
 }
 
 type alertServiceClient struct {
@@ -521,6 +524,33 @@ func (c *alertServiceClient) GetAlertConditionsValue(ctx context.Context, in *Ge
 	return out, nil
 }
 
+func (c *alertServiceClient) GetAlertEvents(ctx context.Context, in *GetAlertEventRequest, opts ...grpc.CallOption) (*GetAlertEventResponse, error) {
+	out := new(GetAlertEventResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.alert.AlertService/GetAlertEvents", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *alertServiceClient) SuppressAlertEvent(ctx context.Context, in *SuppressAlertEventRequest, opts ...grpc.CallOption) (*SuppressAlertEventResponse, error) {
+	out := new(SuppressAlertEventResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.alert.AlertService/SuppressAlertEvent", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *alertServiceClient) CancelSuppressAlertEvent(ctx context.Context, in *CancelSuppressAlertEventRequest, opts ...grpc.CallOption) (*CancelSuppressAlertEventResponse, error) {
+	out := new(CancelSuppressAlertEventResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.alert.AlertService/CancelSuppressAlertEvent", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AlertServiceServer is the server API for AlertService service.
 // All implementations should embed UnimplementedAlertServiceServer
 // for forward compatibility
@@ -574,6 +604,9 @@ type AlertServiceServer interface {
 	UpdateOrgAlertIssue(context.Context, *UpdateOrgAlertIssueRequest) (*UpdateOrgAlertIssueResponse, error)
 	GetAlertConditions(context.Context, *GetAlertConditionsRequest) (*GetAlertConditionsResponse, error)
 	GetAlertConditionsValue(context.Context, *GetAlertConditionsValueRequest) (*GetAlertConditionsValueResponse, error)
+	GetAlertEvents(context.Context, *GetAlertEventRequest) (*GetAlertEventResponse, error)
+	SuppressAlertEvent(context.Context, *SuppressAlertEventRequest) (*SuppressAlertEventResponse, error)
+	CancelSuppressAlertEvent(context.Context, *CancelSuppressAlertEventRequest) (*CancelSuppressAlertEventResponse, error)
 }
 
 // UnimplementedAlertServiceServer should be embedded to have forward compatible implementations.
@@ -726,6 +759,15 @@ func (*UnimplementedAlertServiceServer) GetAlertConditions(context.Context, *Get
 }
 func (*UnimplementedAlertServiceServer) GetAlertConditionsValue(context.Context, *GetAlertConditionsValueRequest) (*GetAlertConditionsValueResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAlertConditionsValue not implemented")
+}
+func (*UnimplementedAlertServiceServer) GetAlertEvents(context.Context, *GetAlertEventRequest) (*GetAlertEventResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAlertEvents not implemented")
+}
+func (*UnimplementedAlertServiceServer) SuppressAlertEvent(context.Context, *SuppressAlertEventRequest) (*SuppressAlertEventResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SuppressAlertEvent not implemented")
+}
+func (*UnimplementedAlertServiceServer) CancelSuppressAlertEvent(context.Context, *CancelSuppressAlertEventRequest) (*CancelSuppressAlertEventResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CancelSuppressAlertEvent not implemented")
 }
 
 func RegisterAlertServiceServer(s grpc1.ServiceRegistrar, srv AlertServiceServer, opts ...grpc1.HandleOption) {
@@ -1185,6 +1227,33 @@ func _get_AlertService_serviceDesc(srv AlertServiceServer, opts ...grpc1.HandleO
 	if h.Interceptor != nil {
 		_AlertService_GetAlertConditionsValue_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "GetAlertConditionsValue", srv)
 		_AlertService_GetAlertConditionsValue_Handler = h.Interceptor(_AlertService_GetAlertConditionsValue_Handler)
+	}
+
+	_AlertService_GetAlertEvents_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetAlertEvents(ctx, req.(*GetAlertEventRequest))
+	}
+	var _AlertService_GetAlertEvents_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_AlertService_GetAlertEvents_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "GetAlertEvents", srv)
+		_AlertService_GetAlertEvents_Handler = h.Interceptor(_AlertService_GetAlertEvents_Handler)
+	}
+
+	_AlertService_SuppressAlertEvent_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.SuppressAlertEvent(ctx, req.(*SuppressAlertEventRequest))
+	}
+	var _AlertService_SuppressAlertEvent_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_AlertService_SuppressAlertEvent_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "SuppressAlertEvent", srv)
+		_AlertService_SuppressAlertEvent_Handler = h.Interceptor(_AlertService_SuppressAlertEvent_Handler)
+	}
+
+	_AlertService_CancelSuppressAlertEvent_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.CancelSuppressAlertEvent(ctx, req.(*CancelSuppressAlertEventRequest))
+	}
+	var _AlertService_CancelSuppressAlertEvent_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_AlertService_CancelSuppressAlertEvent_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "CancelSuppressAlertEvent", srv)
+		_AlertService_CancelSuppressAlertEvent_Handler = h.Interceptor(_AlertService_CancelSuppressAlertEvent_Handler)
 	}
 
 	var serviceDesc = _AlertService_serviceDesc
@@ -2314,6 +2383,75 @@ func _get_AlertService_serviceDesc(srv AlertServiceServer, opts ...grpc1.HandleO
 					FullMethod: "/erda.core.monitor.alert.AlertService/GetAlertConditionsValue",
 				}
 				return interceptor(ctx, in, info, _AlertService_GetAlertConditionsValue_Handler)
+			},
+		},
+		{
+			MethodName: "GetAlertEvents",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetAlertEventRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(AlertServiceServer).GetAlertEvents(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _AlertService_GetAlertEvents_info)
+				}
+				if interceptor == nil {
+					return _AlertService_GetAlertEvents_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.alert.AlertService/GetAlertEvents",
+				}
+				return interceptor(ctx, in, info, _AlertService_GetAlertEvents_Handler)
+			},
+		},
+		{
+			MethodName: "SuppressAlertEvent",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(SuppressAlertEventRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(AlertServiceServer).SuppressAlertEvent(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _AlertService_SuppressAlertEvent_info)
+				}
+				if interceptor == nil {
+					return _AlertService_SuppressAlertEvent_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.alert.AlertService/SuppressAlertEvent",
+				}
+				return interceptor(ctx, in, info, _AlertService_SuppressAlertEvent_Handler)
+			},
+		},
+		{
+			MethodName: "CancelSuppressAlertEvent",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(CancelSuppressAlertEventRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(AlertServiceServer).CancelSuppressAlertEvent(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _AlertService_CancelSuppressAlertEvent_info)
+				}
+				if interceptor == nil {
+					return _AlertService_CancelSuppressAlertEvent_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.alert.AlertService/CancelSuppressAlertEvent",
+				}
+				return interceptor(ctx, in, info, _AlertService_CancelSuppressAlertEvent_Handler)
 			},
 		},
 	}

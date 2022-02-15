@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ahmetb/go-linq/v3"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -31,6 +32,7 @@ import (
 	channelpb "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/adapt"
+	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -1433,6 +1435,139 @@ func (m *alertService) GetAlertConditionsValue(ctx context.Context, request *pb.
 		result.Data = append(result.Data, value)
 	}
 	return result, nil
+}
+
+func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEventRequest) (*pb.GetAlertEventResponse, error) {
+	var eventQuery = &db.AlertEventQueryCondition{
+		Name:                 req.Condition.Name,
+		Ids:                  req.Condition.Ids,
+		AlertLevels:          req.Condition.AlertLevels,
+		AlertIds:             req.Condition.AlertIds,
+		AlertStates:          req.Condition.AlertStates,
+		AlertSources:         req.Condition.AlertSources,
+		LastTriggerTimeMsMax: req.Condition.LastTriggerTimeMsMax,
+		LastTriggerTimeMsMin: req.Condition.LastTriggerTimeMsMin,
+	}
+
+	var suppressStates []string
+	linq.From(req.Condition.AlertStates).Where(func(i interface{}) bool {
+		return i.(string) == "pause" || i.(string) == "stop"
+	}).ToSlice(&suppressStates)
+	if len(suppressStates) > 0 {
+		suppressList, err := m.p.db.AlertEventSuppressDB.QueryByCondition(req.Scope, req.ScopeId, &db.AlertEventSuppressQueryCondition{
+			SuppressTypes: suppressStates,
+		})
+		if err != nil {
+			for _, item := range suppressList {
+				eventQuery.Ids = append(eventQuery.Ids, item.AlertEventID)
+			}
+		}
+	}
+
+	total, err := m.p.db.AlertEventDB.CountByCondition(req.Scope, req.ScopeId, eventQuery)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if total == 0 {
+		return &pb.GetAlertEventResponse{}, nil
+	}
+
+	var sorts []*db.AlertEventSort
+	linq.From(req.Sorts).Select(func(i interface{}) interface{} {
+		return &db.AlertEventSort{
+			SortField:  i.(*pb.AlertEventSort).SortField,
+			Descending: i.(*pb.AlertEventSort).Descending,
+		}
+	}).ToSlice(&sorts)
+
+	list, err := m.p.db.AlertEventDB.QueryByCondition(req.Scope, req.ScopeId, eventQuery, sorts, req.PageNo, req.PageSize)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+
+	// prepare suppress state
+	suppressStateMap := map[string]string{}
+	var eventIds []string
+	linq.From(list).Select(func(i interface{}) interface{} {
+		return i.(*db.AlertEvent).Id
+	}).ToSlice(&eventIds)
+
+	if len(eventIds) > 0 {
+		suppressList, err := m.p.db.AlertEventSuppressDB.QueryByCondition(req.Scope, req.ScopeId, &db.AlertEventSuppressQueryCondition{
+			EventIds: eventIds,
+		})
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		for _, suppress := range suppressList {
+			if !suppress.Enabled || suppress.ExpireTime.Before(time.Now()) {
+				continue
+			}
+			suppressStateMap[suppress.AlertEventID] = suppress.SuppressType
+		}
+	}
+
+	result := &pb.GetAlertEventResponse{
+		Total: total,
+	}
+	for _, event := range list {
+		item := &pb.AlertEventItem{
+			Id:               event.Id,
+			Name:             event.Name,
+			OrgID:            event.OrgID,
+			AlertGroupID:     event.AlertGroupID,
+			AlertGroup:       event.AlertGroup,
+			Scope:            event.Scope,
+			ScopeId:          event.ScopeID,
+			AlertID:          event.AlertID,
+			AlertName:        event.AlertName,
+			AlertType:        event.AlertType,
+			AlertIndex:       event.AlertIndex,
+			AlertLevel:       event.AlertLevel,
+			AlertSource:      event.AlertLevel,
+			AlertSubject:     event.AlertSubject,
+			AlertState:       event.AlertState,
+			RuleID:           event.RuleID,
+			RuleName:         event.RuleName,
+			ExpressionID:     event.ExpressionID,
+			LastTriggerTime:  event.LastTriggerTime.UnixNano() / 1e6,
+			FirstTriggerTime: event.LastTriggerTime.UnixNano() / 1e6,
+		}
+		if suppressType, ok := suppressStateMap[item.Id]; ok {
+			item.AlertState = suppressType
+		}
+		result.Items = append(result.Items)
+	}
+	return result, nil
+}
+
+func (m *alertService) SuppressAlertEvent(ctx context.Context, req *pb.SuppressAlertEventRequest) (*pb.SuppressAlertEventResponse, error) {
+	orgId := req.OrgID
+	if len(orgId) == 0 {
+		orgId = apis.GetOrgID(ctx)
+	}
+	orgIdValue, err := strconv.ParseInt(orgId, 10, 64)
+	if err != nil {
+		return nil, errors.NewInvalidParameterError("orgId", "invalid orgId")
+	}
+	result, err := m.p.db.AlertEventSuppressDB.Suppress(orgIdValue, req.Scope, req.ScopeID,
+		req.AlertEventID, req.SuppressType, time.Unix(int64(req.ExpireTime/1e3), 0))
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return &pb.SuppressAlertEventResponse{
+		Result: result,
+	}, nil
+}
+
+func (m *alertService) CancelSuppressAlertEvent(ctx context.Context, req *pb.CancelSuppressAlertEventRequest) (*pb.CancelSuppressAlertEventResponse, error) {
+	result, err := m.p.db.AlertEventSuppressDB.CancelSuppress(req.AlertEventID)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return &pb.CancelSuppressAlertEventResponse{
+		Result: result,
+	}, nil
 }
 
 func getResultValue(result []*metricpb.Result) []*structpb.Value {

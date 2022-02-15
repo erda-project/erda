@@ -245,6 +245,96 @@ service AlertService {
   }
   rpc GetAlertConditions (GetAlertConditionsRequest) returns (GetAlertConditionsResponse) {}
   rpc GetAlertConditionsValue (GetAlertConditionsValueRequest) returns (GetAlertConditionsValueResponse) {}
+
+  rpc GetAlertEvents (GetAlertEventRequest) returns (GetAlertEventResponse) {
+    option (google.api.http) = {
+      get: "/api/alert-events"
+    };
+  }
+  rpc SuppressAlertEvent (SuppressAlertEventRequest) returns (SuppressAlertEventResponse) {
+    option (google.api.http) = {
+      post: "/api/alert-events/suppress"
+    };
+  }
+  rpc CancelSuppressAlertEvent (CancelSuppressAlertEventRequest) returns (CancelSuppressAlertEventResponse) {
+    option (google.api.http) = {
+      post: "/api/alert-events/cancel-suppress"
+    };
+  }
+}
+
+message AlertEventSort {
+  string sortField  = 1;
+  bool   Descending = 2;
+}
+
+message SuppressAlertEventRequest {
+  string orgID        = 1;
+  string scope        = 2;
+  string scopeID      = 3;
+  string alertEventID = 4;
+  string suppressType = 5;
+  uint64 expireTime   = 6;
+}
+
+message SuppressAlertEventResponse {
+  bool result = 1;
+}
+
+message CancelSuppressAlertEventRequest {
+  string alertEventID = 1;
+}
+
+message CancelSuppressAlertEventResponse {
+  bool result = 1;
+}
+
+message GetAlertEventRequest {
+  string                        scope     = 1;
+  string                        scopeId   = 2;
+  GetAlertEventRequestCondition condition = 3;
+  int64                         pageNo    = 4;
+  int64                         pageSize  = 5;
+  repeated AlertEventSort       sorts     = 6;
+}
+
+message GetAlertEventRequestCondition {
+  string          name                 = 1;
+  repeated string ids                  = 2;
+  repeated string alertLevels          = 3;
+  repeated uint64 alertIds             = 4;
+  repeated string alertStates          = 5;
+  repeated string alertSources         = 6;
+  uint64          lastTriggerTimeMsMin = 7;
+  uint64          lastTriggerTimeMsMax = 8;
+}
+
+message GetAlertEventResponse {
+  int64                   total = 1;
+  repeated AlertEventItem items = 2;
+}
+
+message AlertEventItem {
+  string id               = 1;
+  string name             = 2;
+  int64  orgID            = 3;
+  string alertGroupID     = 4;
+  string alertGroup       = 5;
+  string scope            = 6;
+  string scopeId          = 7;
+  uint64 alertID          = 8;
+  string alertName        = 9;
+  string alertType        = 10;
+  string alertIndex       = 11;
+  string alertLevel       = 12;
+  string alertSource      = 13;
+  string alertSubject     = 14;
+  uint64 ruleID           = 15;
+  string ruleName         = 16;
+  uint64 expressionID     = 17;
+  int64  lastTriggerTime  = 18;
+  int64  firstTriggerTime = 19;
+  string AlertState       = 20;
 }
 
 message QueryCustomizeMetricRequest {

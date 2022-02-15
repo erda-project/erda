@@ -16,6 +16,15 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*AlertEventSort)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*SuppressAlertEventRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*SuppressAlertEventResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CancelSuppressAlertEventRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CancelSuppressAlertEventResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertEventRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertEventRequestCondition)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertEventResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AlertEventItem)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*QueryCustomizeMetricRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*QueryCustomizeMetricResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CustomizeMetrics)(nil)
@@ -156,6 +165,321 @@ var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsValueRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ConditionsValueRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsValueResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AlertConditionsValue)(nil)
+
+// AlertEventSort implement urlenc.URLValuesUnmarshaler.
+func (m *AlertEventSort) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "sortField":
+				m.SortField = vals[0]
+			case "Descending":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Descending = val
+			}
+		}
+	}
+	return nil
+}
+
+// SuppressAlertEventRequest implement urlenc.URLValuesUnmarshaler.
+func (m *SuppressAlertEventRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "orgID":
+				m.OrgID = vals[0]
+			case "scope":
+				m.Scope = vals[0]
+			case "scopeID":
+				m.ScopeID = vals[0]
+			case "alertEventID":
+				m.AlertEventID = vals[0]
+			case "suppressType":
+				m.SuppressType = vals[0]
+			case "expireTime":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ExpireTime = val
+			}
+		}
+	}
+	return nil
+}
+
+// SuppressAlertEventResponse implement urlenc.URLValuesUnmarshaler.
+func (m *SuppressAlertEventResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "result":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Result = val
+			}
+		}
+	}
+	return nil
+}
+
+// CancelSuppressAlertEventRequest implement urlenc.URLValuesUnmarshaler.
+func (m *CancelSuppressAlertEventRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "alertEventID":
+				m.AlertEventID = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// CancelSuppressAlertEventResponse implement urlenc.URLValuesUnmarshaler.
+func (m *CancelSuppressAlertEventResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "result":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Result = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetAlertEventRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertEventRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "scope":
+				m.Scope = vals[0]
+			case "scopeId":
+				m.ScopeId = vals[0]
+			case "condition":
+				if m.Condition == nil {
+					m.Condition = &GetAlertEventRequestCondition{}
+				}
+			case "condition.name":
+				if m.Condition == nil {
+					m.Condition = &GetAlertEventRequestCondition{}
+				}
+				m.Condition.Name = vals[0]
+			case "condition.ids":
+				if m.Condition == nil {
+					m.Condition = &GetAlertEventRequestCondition{}
+				}
+				m.Condition.Ids = vals
+			case "condition.alertLevels":
+				if m.Condition == nil {
+					m.Condition = &GetAlertEventRequestCondition{}
+				}
+				m.Condition.AlertLevels = vals
+			case "condition.alertIds":
+				if m.Condition == nil {
+					m.Condition = &GetAlertEventRequestCondition{}
+				}
+				list := make([]uint64, 0, len(vals))
+				for _, text := range vals {
+					val, err := strconv.ParseUint(text, 10, 64)
+					if err != nil {
+						return err
+					}
+					list = append(list, val)
+				}
+				m.Condition.AlertIds = list
+			case "condition.alertStates":
+				if m.Condition == nil {
+					m.Condition = &GetAlertEventRequestCondition{}
+				}
+				m.Condition.AlertStates = vals
+			case "condition.alertSources":
+				if m.Condition == nil {
+					m.Condition = &GetAlertEventRequestCondition{}
+				}
+				m.Condition.AlertSources = vals
+			case "condition.lastTriggerTimeMsMin":
+				if m.Condition == nil {
+					m.Condition = &GetAlertEventRequestCondition{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Condition.LastTriggerTimeMsMin = val
+			case "condition.lastTriggerTimeMsMax":
+				if m.Condition == nil {
+					m.Condition = &GetAlertEventRequestCondition{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Condition.LastTriggerTimeMsMax = val
+			case "pageNo":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageNo = val
+			case "pageSize":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageSize = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetAlertEventRequestCondition implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertEventRequestCondition) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "name":
+				m.Name = vals[0]
+			case "ids":
+				m.Ids = vals
+			case "alertLevels":
+				m.AlertLevels = vals
+			case "alertIds":
+				list := make([]uint64, 0, len(vals))
+				for _, text := range vals {
+					val, err := strconv.ParseUint(text, 10, 64)
+					if err != nil {
+						return err
+					}
+					list = append(list, val)
+				}
+				m.AlertIds = list
+			case "alertStates":
+				m.AlertStates = vals
+			case "alertSources":
+				m.AlertSources = vals
+			case "lastTriggerTimeMsMin":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.LastTriggerTimeMsMin = val
+			case "lastTriggerTimeMsMax":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.LastTriggerTimeMsMax = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetAlertEventResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertEventResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "total":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Total = val
+			}
+		}
+	}
+	return nil
+}
+
+// AlertEventItem implement urlenc.URLValuesUnmarshaler.
+func (m *AlertEventItem) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "id":
+				m.Id = vals[0]
+			case "name":
+				m.Name = vals[0]
+			case "orgID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.OrgID = val
+			case "alertGroupID":
+				m.AlertGroupID = vals[0]
+			case "alertGroup":
+				m.AlertGroup = vals[0]
+			case "scope":
+				m.Scope = vals[0]
+			case "scopeId":
+				m.ScopeId = vals[0]
+			case "alertID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.AlertID = val
+			case "alertName":
+				m.AlertName = vals[0]
+			case "alertType":
+				m.AlertType = vals[0]
+			case "alertIndex":
+				m.AlertIndex = vals[0]
+			case "alertLevel":
+				m.AlertLevel = vals[0]
+			case "alertSource":
+				m.AlertSource = vals[0]
+			case "alertSubject":
+				m.AlertSubject = vals[0]
+			case "ruleID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.RuleID = val
+			case "ruleName":
+				m.RuleName = vals[0]
+			case "expressionID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ExpressionID = val
+			case "lastTriggerTime":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.LastTriggerTime = val
+			case "firstTriggerTime":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.FirstTriggerTime = val
+			case "AlertState":
+				m.AlertState = vals[0]
+			}
+		}
+	}
+	return nil
+}
 
 // QueryCustomizeMetricRequest implement urlenc.URLValuesUnmarshaler.
 func (m *QueryCustomizeMetricRequest) UnmarshalURLValues(prefix string, values url.Values) error {

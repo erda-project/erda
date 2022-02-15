@@ -66,6 +66,7 @@ func (p *provider) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.Opera
 		common.NewConfigurableFilterOptions().
 			DecodeFromClientData(opData.ClientData).
 			SetToGlobalState(*sdk.GlobalState)
+		p.RegisterInitializeOp()(sdk)
 		return nil
 	}
 }

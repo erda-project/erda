@@ -20,6 +20,52 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *AlertEventSort) Validate() error {
+	return nil
+}
+func (this *SuppressAlertEventRequest) Validate() error {
+	return nil
+}
+func (this *SuppressAlertEventResponse) Validate() error {
+	return nil
+}
+func (this *CancelSuppressAlertEventRequest) Validate() error {
+	return nil
+}
+func (this *CancelSuppressAlertEventResponse) Validate() error {
+	return nil
+}
+func (this *GetAlertEventRequest) Validate() error {
+	if this.Condition != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Condition); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Condition", err)
+		}
+	}
+	for _, item := range this.Sorts {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Sorts", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *GetAlertEventRequestCondition) Validate() error {
+	return nil
+}
+func (this *GetAlertEventResponse) Validate() error {
+	for _, item := range this.Items {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Items", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *AlertEventItem) Validate() error {
+	return nil
+}
 func (this *QueryCustomizeMetricRequest) Validate() error {
 	return nil
 }
