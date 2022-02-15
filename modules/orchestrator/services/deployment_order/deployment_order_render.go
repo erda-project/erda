@@ -222,8 +222,10 @@ func (d *DeploymentOrder) composeAppsInfoByReleaseResp(releaseResp *apistructs.R
 		}
 
 		releasesId := make([]string, 0)
-		for _, r := range releaseResp.ApplicationReleaseList {
-			releasesId = append(releasesId, r.ReleaseID)
+		for i := 0; i < len(releaseResp.ApplicationReleaseList); i++ {
+			for _, r := range releaseResp.ApplicationReleaseList[i] {
+				releasesId = append(releasesId, r.ReleaseID)
+			}
 		}
 
 		releases, err := d.db.ListReleases(releasesId)
@@ -237,18 +239,20 @@ func (d *DeploymentOrder) composeAppsInfoByReleaseResp(releaseResp *apistructs.R
 			releasesMap[r.ReleaseId] = r
 		}
 
-		for _, r := range releaseResp.ApplicationReleaseList {
-			ret, ok := releasesMap[r.ReleaseID]
-			if !ok {
-				return nil, fmt.Errorf("failed to get releases %s from dicehub", r.ReleaseID)
-			}
+		for i := 0; i < len(releaseResp.ApplicationReleaseList); i++ {
+			for _, r := range releaseResp.ApplicationReleaseList[i] {
+				ret, ok := releasesMap[r.ReleaseID]
+				if !ok {
+					return nil, fmt.Errorf("failed to get releases %s from dicehub", r.ReleaseID)
+				}
 
-			asi = append(asi, &apistructs.ApplicationInfo{
-				Id:       uint64(r.ApplicationID),
-				Name:     r.ApplicationName,
-				Params:   covertParamsType(params[r.ApplicationName]),
-				DiceYaml: ret.DiceYaml,
-			})
+				asi = append(asi, &apistructs.ApplicationInfo{
+					Id:       uint64(r.ApplicationID),
+					Name:     r.ApplicationName,
+					Params:   covertParamsType(params[r.ApplicationName]),
+					DiceYaml: ret.DiceYaml,
+				})
+			}
 		}
 	} else {
 		params, err := d.fetchDeploymentParams(releaseResp.ApplicationID, workspace)

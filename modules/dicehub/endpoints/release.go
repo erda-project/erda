@@ -1147,18 +1147,21 @@ func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
-	releases, err := e.db.GetReleases(releaseIDs)
+
+	appReleases, err := e.getAppReleases(releaseIDs)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
 
-	for _, r := range releases {
-		f, err := zw.Create(filepath.Join(dir, "dicefile", r.ApplicationName, "dice.yml"))
-		if err != nil {
-			return apierrors.ErrDownloadRelease.InternalError(err)
-		}
-		if _, err := f.Write([]byte(r.Dice)); err != nil {
-			return apierrors.ErrDownloadRelease.InternalError(err)
+	for i := 0; i < len(appReleases); i++ {
+		for j := 0; j < len(appReleases[i]); j++ {
+			f, err := zw.Create(filepath.Join(dir, "dicefile", appReleases[i][j].ApplicationName, "dice.yml"))
+			if err != nil {
+				return apierrors.ErrDownloadRelease.InternalError(err)
+			}
+			if _, err := f.Write([]byte(appReleases[i][j].Dice)); err != nil {
+				return apierrors.ErrDownloadRelease.InternalError(err)
+			}
 		}
 	}
 
@@ -1170,7 +1173,7 @@ func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
-	metadata, err := makeMetadata(org.DisplayName, u.Nick, release, releases)
+	metadata, err := makeMetadata(org.DisplayName, u.Nick, release, appReleases)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
@@ -1194,6 +1197,32 @@ func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
 	return nil
+}
+
+func (e *Endpoints) getAppReleases(releaseList [][]string) ([][]dbclient.Release, error) {
+	var list []string
+	for i := 0; i < len(releaseList); i++ {
+		list = append(list, releaseList[i]...)
+	}
+
+	releases, err := e.db.GetReleases(list)
+	if err != nil {
+		return nil, err
+	}
+
+	id2Release := make(map[string]*dbclient.Release)
+	for i := 0; i < len(releases); i++ {
+		id2Release[releases[i].ReleaseID] = &releases[i]
+	}
+
+	appReleases := make([][]dbclient.Release, len(releaseList))
+	for i := 0; i < len(releaseList); i++ {
+		appReleases[i] = make([]dbclient.Release, len(releaseList[i]))
+		for j := 0; j < len(releaseList[i]); j++ {
+			appReleases[i][j] = *id2Release[releaseList[i][j]]
+		}
+	}
+	return appReleases, nil
 }
 
 func (e *Endpoints) CheckVersion(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
@@ -1339,28 +1368,32 @@ func (e *Endpoints) hasWriteAccess(identity apistructs.IdentityInfo, projectID i
 	return hasAppAccess, nil
 }
 
-func unmarshalApplicationReleaseList(str string) ([]string, error) {
-	var list []string
+func unmarshalApplicationReleaseList(str string) ([][]string, error) {
+	var list [][]string
 	if err := json.Unmarshal([]byte(str), &list); err != nil {
 		return nil, err
 	}
 	return list, nil
 }
 
-func makeMetadata(orgName, userName string, release *dbclient.Release, appReleases []dbclient.Release) ([]byte, error) {
-	appList := make(map[string]apistructs.AppMetadata)
-	for i := range appReleases {
-		labels := make(map[string]string)
-		if err := json.Unmarshal([]byte(appReleases[i].Labels), &labels); err != nil {
-			return nil, errors.Errorf("failed to unmarshal labels for release %s", appReleases[i].ReleaseID)
-		}
-		appList[appReleases[i].ApplicationName] = apistructs.AppMetadata{
-			GitBranch:        labels["gitBranch"],
-			GitCommitID:      labels["gitCommitId"],
-			GitCommitMessage: labels["gitCommitMessage"],
-			GitRepo:          labels["gitRepo"],
-			ChangeLog:        appReleases[i].Changelog,
-			Version:          appReleases[i].Version,
+func makeMetadata(orgName, userName string, release *dbclient.Release, appReleases [][]dbclient.Release) ([]byte, error) {
+	appList := make([][]apistructs.AppMetadata, len(appReleases))
+	for i := 0; i < len(appReleases); i++ {
+		appList[i] = make([]apistructs.AppMetadata, len(appReleases[i]))
+		for j := 0; j < len(appReleases[i]); j++ {
+			labels := make(map[string]string)
+			if err := json.Unmarshal([]byte(appReleases[i][j].Labels), &labels); err != nil {
+				logrus.Errorf("failed to unmarshal labels for release %s, %v", appReleases[i][j].ReleaseID, err)
+			}
+			appList[i][j] = apistructs.AppMetadata{
+				AppName:          appReleases[i][j].ApplicationName,
+				GitBranch:        labels["gitBranch"],
+				GitCommitID:      labels["gitCommitId"],
+				GitCommitMessage: labels["gitCommitMessage"],
+				GitRepo:          labels["gitRepo"],
+				ChangeLog:        appReleases[i][j].Changelog,
+				Version:          appReleases[i][j].Version,
+			}
 		}
 	}
 	releaseMeta := apistructs.ReleaseMetadata{
