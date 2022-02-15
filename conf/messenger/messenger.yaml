@@ -1,0 +1,22 @@
+http-server:
+  addr: ":8081"
+health:
+  path: "/api/health"
+
+grpc-server:
+  addr: ":7081"
+
+http-server@admin:
+  addr: ":9081"
+pprof:
+
+service-register:
+
+mysql:
+  host: "${MYSQL_HOST:localhost}"
+  port: ${MYSQL_PORT:3306}
+  username: "${MYSQL_USERNAME:root}"
+  password: "${MYSQL_PASSWORD:123456}"
+  database: "${MYSQL_DATABASE:dice}"
+
+erda.core.messenger.notify:

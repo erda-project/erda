@@ -24,6 +24,7 @@ import (
 	// modules and providers
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda-infra/providers/cassandra"
+	_ "github.com/erda-project/erda-proto-go/core/messenger/notify/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/event/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/log/query/client"
@@ -94,6 +95,7 @@ import (
 
 	_ "github.com/erda-project/erda-infra/providers/component-protocol"
 	// components
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components"
 	_ "github.com/erda-project/erda/modules/msp/apm/browser/components"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/datasources"

@@ -19,6 +19,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
@@ -33,6 +34,7 @@ type DingWorkNoticeSubscriber struct {
 	AppSecret   string
 	bundle      *bundle.Bundle
 	dingTalkApi interfaces.DingTalkApiClientFactory
+	messenger   pb.NotifyServiceServer
 }
 
 type WorkNoticeData struct {
@@ -41,16 +43,18 @@ type WorkNoticeData struct {
 	OrgID    int64             `json:"orgID"`
 }
 
-func New(bundle *bundle.Bundle, dingtalk interfaces.DingTalkApiClientFactory) subscriber.Subscriber {
+func New(bundle *bundle.Bundle, dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServiceServer) subscriber.Subscriber {
 	subscriber := &DingWorkNoticeSubscriber{
 		bundle:      bundle,
 		dingTalkApi: dingtalk,
+		messenger:   messenger,
 	}
 	return subscriber
 }
 
 func (d DingWorkNoticeSubscriber) Publish(dest string, content string, time int64, m *types.Message) []error {
 	var mobiles []string
+	errs := []error{}
 	err := json.Unmarshal([]byte(dest), &mobiles)
 	if err != nil {
 		return []error{err}
@@ -87,8 +91,12 @@ func (d DingWorkNoticeSubscriber) Publish(dest string, content string, time int6
 	dingClient := d.dingTalkApi.GetClient(appKey, appSecret, agentId)
 	err = dingClient.SendWorkNotice(mobiles, paramMap["title"], workNotifyData.Template)
 	if err != nil {
-		return []error{err}
+		errs = append(errs, err)
 	}
+	if len(errs) > 0 {
+		m.CreateHistory.Status = "failed"
+	}
+	subscriber.SaveNotifyHistories(m.CreateHistory, d.messenger)
 	return nil
 }
 

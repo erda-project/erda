@@ -424,6 +424,39 @@ services:
         path: "/health"
         duration: 120
       exec: { }
+  messenger:
+    cmd: "/app/messenger"
+    ports:
+      - port: 8081
+        protocol: "TCP"
+        l4_protocol: "TCP"
+      - port: 7081
+        protocol: "TCP"
+        l4_protocol: "TCP"
+      - port: 9081
+        protocol: "TCP"
+        l4_protocol: "TCP"
+    envs:
+      LOG_LEVEL: INFO
+    resources:
+      cpu: ${request_cpu:0.5}
+      mem: ${request_mem:512}
+      max_cpu: 1
+      max_mem: 1024
+      network:
+        mode: "container"
+    deployments:
+      replicas: ${replicas:2}
+      labels:
+        GROUP: "messenger"
+    health_check:
+      http:
+        port: 8081
+        path: "/api/health"
+        duration: 120
+      exec: { }
+    expose: [ ]
+    hosts: [ ]
   monitor:
     cmd: "/app/monitor"
     ports:

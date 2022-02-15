@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// modules
+	_ "github.com/erda-project/erda/modules/core/monitor/alert/storage/alert-event"
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/storage/alert-record"
 	_ "github.com/erda-project/erda/modules/core/monitor/entity/persist"
 	_ "github.com/erda-project/erda/modules/core/monitor/entity/storage"

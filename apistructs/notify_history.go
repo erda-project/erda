@@ -58,16 +58,17 @@ type QueryNotifyHistoryData struct {
 
 // CreateNotifyHistoryRequest 创建通知发送记录请求
 type CreateNotifyHistoryRequest struct {
-	NotifyName            string         `json:"notifyName"`
-	NotifyItemDisplayName string         `json:"notifyItemDisplayName"`
-	Channel               string         `json:"channel"`
-	NotifyTargets         []NotifyTarget `json:"notifyTargets"`
-	NotifySource          NotifySource   `json:"notifySource"`
-	Status                string         `json:"status"`
-	ErrorMsg              string         `json:"errorMsg"`
-	OrgID                 int64          `json:"orgId"`
-	Label                 string         `json:"label"`
-	ClusterName           string         `query:"clusterName"`
+	NotifyName            string                 `json:"notifyName"`
+	NotifyItemDisplayName string                 `json:"notifyItemDisplayName"`
+	Channel               string                 `json:"channel"`
+	NotifyTargets         []NotifyTarget         `json:"notifyTargets"`
+	NotifySource          NotifySource           `json:"notifySource"`
+	Status                string                 `json:"status"`
+	ErrorMsg              string                 `json:"errorMsg"`
+	OrgID                 int64                  `json:"orgId"`
+	NotifyTags            map[string]interface{} `json:"notifyTags"`
+	Label                 string                 `json:"label"`
+	ClusterName           string                 `query:"clusterName"`
 }
 
 // CreateNotifyHistoryResponse 创建通知发送记录响应

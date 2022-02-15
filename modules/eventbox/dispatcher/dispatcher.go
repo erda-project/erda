@@ -23,6 +23,7 @@ import (
 	"gopkg.in/igm/sockjs-go.v2/sockjs"
 
 	"github.com/erda-project/erda-infra/base/version"
+	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
 	"github.com/erda-project/erda/modules/eventbox/conf"
@@ -67,7 +68,7 @@ type DispatcherImpl struct {
 	runningWg sync.WaitGroup
 }
 
-func New(dingtalk interfaces.DingTalkApiClientFactory) (Dispatcher, error) {
+func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServiceServer) (Dispatcher, error) {
 	dispatcher := DispatcherImpl{
 		subscribers:     make(map[string]subscriber.Subscriber),
 		subscriberspool: make(map[string]*goroutinepool.GoroutinePool),
@@ -87,19 +88,19 @@ func New(dingtalk interfaces.DingTalkApiClientFactory) (Dispatcher, error) {
 	}
 	httpS := httpsubscriber.New()
 	bundleS := bundle.New(bundle.WithCoreServices())
-	dingdingS := dingdingsubscriber.New(conf.Proxy())
-	dingdingWorknoticeS := dingdingworknoticesubscriber.New(conf.Proxy())
-	mboxS := mbox.New(bundle.New(bundle.WithCoreServices()))
+	dingdingS := dingdingsubscriber.New(conf.Proxy(), messenger)
+	dingdingWorknoticeS := dingdingworknoticesubscriber.New(conf.Proxy(), messenger)
+	mboxS := mbox.New(bundle.New(bundle.WithCoreServices()), messenger)
 	emailS := emailsubscriber.New(conf.SmtpHost(), conf.SmtpPort(), conf.SmtpUser(), conf.SmtpPassword(),
-		conf.SmtpDisplayUser(), conf.SmtpIsSSL(), conf.SMTPInsecureSkipVerify(), bundleS)
+		conf.SmtpDisplayUser(), conf.SmtpIsSSL(), conf.SMTPInsecureSkipVerify(), bundleS, messenger)
 	smsS := smssubscriber.New(
 		conf.AliyunAccessKeyID(),
 		conf.AliyunAccessKeySecret(),
 		conf.AliyunSmsSignName(),
-		conf.AliyunSmsMonitorTemplateCode(), bundleS)
+		conf.AliyunSmsMonitorTemplateCode(), bundleS, messenger)
 	vmsS := vmssubscriber.New(conf.AliyunAccessKeyID(), conf.AliyunAccessKeySecret(), conf.AliyunVmsMonitorTtsCode(),
-		conf.AliyunVmsMonitorCalledShowNumber(), bundleS)
-	dingWorkNotice := dingtalk_worknotice.New(bundleS, dingtalk)
+		conf.AliyunVmsMonitorCalledShowNumber(), bundleS, messenger)
+	dingWorkNotice := dingtalk_worknotice.New(bundleS, dingtalk, messenger)
 	groupS := groupsubscriber.New(bundleS)
 	if err != nil {
 		return nil, err

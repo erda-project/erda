@@ -59,6 +59,7 @@ func GetAccessToken(appKey, appSecret string) (accessToken string, expireIn int6
 func GetUserIdByMobile(accessToken string, mobile string) (userId string, err error) {
 	request := GetUserIdByMobileRequest{
 		mobile,
+		true,
 	}
 	var result GetUserIdByMobileResponse
 

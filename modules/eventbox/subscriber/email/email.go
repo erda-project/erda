@@ -27,6 +27,7 @@ import (
 	"github.com/russross/blackfriday/v2"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
@@ -44,6 +45,7 @@ type MailSubscriber struct {
 	isSSLStr           string
 	insecureSkipVerify bool
 	bundle             *bundle.Bundle
+	messenger          pb.NotifyServiceServer
 }
 
 type MailSubscriberInfo struct {
@@ -81,7 +83,7 @@ func NewMailSubscriberInfo(host, port, user, password, displayUser, isSSLStr, in
 	return subscriber
 }
 
-func New(host, port, user, password, displayUser, isSSLStr, insecureSkipVerify string, bundle *bundle.Bundle) subscriber.Subscriber {
+func New(host, port, user, password, displayUser, isSSLStr, insecureSkipVerify string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer) subscriber.Subscriber {
 	subscriber := &MailSubscriber{
 		host:        host,
 		port:        port,
@@ -90,6 +92,7 @@ func New(host, port, user, password, displayUser, isSSLStr, insecureSkipVerify s
 		displayUser: displayUser,
 		isSSLStr:    isSSLStr,
 		bundle:      bundle,
+		messenger:   messenger,
 	}
 	isSSL, _ := strconv.ParseBool(isSSLStr)
 	subscriber.isSSL = isSSL
@@ -122,9 +125,11 @@ func (d *MailSubscriber) Publish(dest string, content string, time int64, msg *t
 	}
 	err = d.sendToMail(mails, &mailData)
 	if err != nil {
+		msg.CreateHistory.Status = "failed"
 		logrus.Errorf("send email err: %v", err)
-		return []error{err}
+		errs = append(errs, err)
 	}
+	subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
 	return errs
 }
 

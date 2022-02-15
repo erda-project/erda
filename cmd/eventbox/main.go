@@ -20,8 +20,11 @@ import (
 
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers/redis"
+	_ "github.com/erda-project/erda-proto-go/core/messenger/notify/client"
 	_ "github.com/erda-project/erda/modules/core-services/services/dingtalk/api"
 	_ "github.com/erda-project/erda/modules/eventbox"
+
+	_ "github.com/erda-project/erda-infra/providers"
 )
 
 func main() {

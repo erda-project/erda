@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/modules/eventbox/monitor"
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/eventbox/subscriber/dingding"
@@ -51,13 +52,15 @@ type dst []struct {
 
 // WorkNoticeSubscriber 输出插件：工作通知
 type WorkNoticeSubscriber struct {
-	proxy string
+	proxy     string
+	messenger pb.NotifyServiceServer
 }
 
 // New 创建 WorkNoticeSubscriber
-func New(proxy string) subscriber.Subscriber {
+func New(proxy string, messenger pb.NotifyServiceServer) subscriber.Subscriber {
 	return WorkNoticeSubscriber{
-		proxy: proxy,
+		proxy:     proxy,
+		messenger: messenger,
 	}
 }
 
@@ -87,6 +90,10 @@ func (s WorkNoticeSubscriber) Publish(dest, content string, time int64, msg *typ
 			errs = append(errs, err)
 		}
 	}
+	if len(errs) > 0 {
+		msg.CreateHistory.Status = "failed"
+	}
+	subscriber.SaveNotifyHistories(msg.CreateHistory, s.messenger)
 	return errs
 }
 

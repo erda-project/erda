@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/eventbox/monitor"
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
@@ -75,12 +76,14 @@ type LegacyDDDest []string
 type DDDest [][]string
 
 type DDSubscriber struct {
-	proxy string
+	proxy     string
+	messenger pb.NotifyServiceServer
 }
 
-func New(proxy string) subscriber.Subscriber {
+func New(proxy string, messenger pb.NotifyServiceServer) subscriber.Subscriber {
 	return &DDSubscriber{
-		proxy: proxy,
+		proxy:     proxy,
+		messenger: messenger,
 	}
 }
 
@@ -158,6 +161,10 @@ func (d *DDSubscriber) Publish(dest string, content string, time int64, msg *typ
 			errs = append(errs, err)
 		}
 	}
+	if len(errs) > 0 {
+		msg.CreateHistory.Status = "failed"
+	}
+	subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
 	return errs
 }
 

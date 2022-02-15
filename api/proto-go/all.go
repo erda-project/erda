@@ -26,6 +26,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/hepa/org_client/pb"
 	_ "github.com/erda-project/erda-proto-go/core/hepa/pb"
 	_ "github.com/erda-project/erda-proto-go/core/hepa/runtime_service/pb"
+	_ "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alertdetail/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/collector/pb"

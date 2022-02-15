@@ -19,12 +19,13 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
 	"github.com/erda-project/erda/modules/eventbox/dispatcher"
 )
 
-func Initialize(dingtalk interfaces.DingTalkApiClientFactory) error {
-	dp, err := dispatcher.New(dingtalk)
+func Initialize(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServiceServer) error {
+	dp, err := dispatcher.New(dingtalk, messenger)
 	if err != nil {
 		panic(err)
 	}

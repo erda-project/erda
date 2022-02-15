@@ -17,16 +17,17 @@ package sms
 import (
 	"encoding/json"
 
+	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/pkg/template"
-
 	"github.com/erda-project/erda/modules/eventbox/subscriber"
 	"github.com/erda-project/erda/modules/eventbox/types"
+	"github.com/erda-project/erda/pkg/template"
 )
 
 type MBoxSubscriber struct {
-	bundle *bundle.Bundle
+	bundle    *bundle.Bundle
+	messenger pb.NotifyServiceServer
 }
 
 type MBoxData struct {
@@ -39,9 +40,10 @@ type MBoxData struct {
 
 type Option func(*MBoxSubscriber)
 
-func New(bundle *bundle.Bundle) subscriber.Subscriber {
+func New(bundle *bundle.Bundle, messenger pb.NotifyServiceServer) subscriber.Subscriber {
 	return &MBoxSubscriber{
-		bundle: bundle,
+		bundle:    bundle,
+		messenger: messenger,
 	}
 }
 
@@ -70,8 +72,10 @@ func (d *MBoxSubscriber) Publish(dest string, content string, time int64, msg *t
 		DeduplicateID: mboxData.DeduplicateID,
 	})
 	if err != nil {
-		return []error{err}
+		msg.CreateHistory.Status = "failed"
+		errs = append(errs, err)
 	}
+	subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
 	return errs
 }
 

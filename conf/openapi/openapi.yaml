@@ -129,6 +129,7 @@ openapi-v1-routes:
           - resources-node-monitor
           - resources-runtime-monitor-java
           - resources-runtime-monitor-nodejs
+          - msp-alert-overview
 
 etcd:
   _enable: ${OPENAPI_DEV_MODE:false}
