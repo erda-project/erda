@@ -17,6 +17,7 @@ package apis
 import (
 	"context"
 	"fmt"
+	projectpb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"strconv"
 
 	"github.com/erda-project/erda/modules/msp/apm/checker/storage/db"
@@ -25,10 +26,10 @@ import (
 )
 
 func (s *checkerV1Service) getProjectFromMetricID() func(ctx context.Context, req interface{}) (string, error) {
-	return getProjectFromMetricID(s.metricDB, s.projectDB)
+	return getProjectFromMetricID(s.metricDB, s.projectDB, s.projectServer)
 }
 
-func getProjectFromMetricID(metricDB *db.MetricDB, projectDB *db.ProjectDB) func(ctx context.Context, req interface{}) (string, error) {
+func getProjectFromMetricID(metricDB *db.MetricDB, projectDB *db.ProjectDB, projectService projectpb.ProjectServiceServer) func(ctx context.Context, req interface{}) (string, error) {
 	getter := perm.FieldValue("Id")
 	return func(ctx context.Context, req interface{}) (string, error) {
 		mid, err := getter(ctx, req)
@@ -66,8 +67,16 @@ func getProjectFromMetricID(metricDB *db.MetricDB, projectDB *db.ProjectDB) func
 			return "", errors.NewDatabaseError(err)
 		}
 		if proj == nil {
-			return "", fmt.Errorf("not found id for permission")
+			project, err := projectService.GetProject(ctx, &projectpb.GetProjectRequest{ProjectID: strconv.FormatInt(m.ProjectID, 10)})
+			if err != nil {
+				return "", errors.NewDatabaseError(err)
+			}
+			if project == nil {
+				return "", fmt.Errorf("not found id for permission")
+			}
+			return project.Data.Id, nil
 		}
+
 		return strconv.FormatInt(proj.ProjectID, 10), nil
 	}
 }
