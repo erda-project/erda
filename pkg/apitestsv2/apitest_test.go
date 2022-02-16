@@ -67,17 +67,9 @@ func TestAPITest_Invoke(t *testing.T) {
 				testEnv:    &apistructs.APITestEnvData{},
 				caseParams: nil,
 			},
-			want: &apistructs.APIRequestInfo{
-				URL:     "http://www.erda.cloud",
-				Method:  "GET",
-				Headers: map[string][]string{"Accept-Encoding": {"identity"}},
-				Params:  map[string][]string{},
-				Body: apistructs.APIBody{
-					Content: "",
-				},
-			},
+			want:    nil,
 			want1:   &apistructs.APIResp{},
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
