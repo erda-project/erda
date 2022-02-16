@@ -19,7 +19,7 @@ FROM ${BASE_DOCKER_IMAGE}
 
 ENV KUBECTL_VERSION v1.19.7
 ARG ARCH=amd64
-
+sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 RUN apk add --no-cache jq py3-pip && \
     apk add --update nodejs nodejs-npm && \
     npm i -g jackson-converter@1.0.10 && \
