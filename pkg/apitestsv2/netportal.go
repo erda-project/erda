@@ -20,6 +20,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/customhttp"
 	"github.com/erda-project/erda/pkg/http/httpclientutil"
@@ -29,8 +31,12 @@ import (
 const k8sServiceSuffix = ".svc.cluster.local"
 
 func handleCustomNetportalRequest(apiReq *apistructs.APIRequestInfo, netportalOpt *netportalOption) (*http.Request, error) {
-	if err := checkNetportal(apiReq.URL, netportalOpt); err != nil {
+	useNetportal, err := useNetportal(apiReq.URL, netportalOpt)
+	if err != nil {
 		return nil, err
+	}
+	if !useNetportal && apiReq.Headers.Get("useNetportal") == "" {
+		return http.NewRequest(apiReq.Method, apiReq.URL, nil)
 	}
 
 	// use netportal
@@ -49,23 +55,29 @@ func handleCustomNetportalRequest(apiReq *apistructs.APIRequestInfo, netportalOp
 	return customReq, nil
 }
 
-func checkNetportal(inputURL string, netportalOpt *netportalOption) error {
+// useNetportal return true or false to represent use netportal or not.
+func useNetportal(inputURL string, netportalOpt *netportalOption) (bool, error) {
+	// cannot use if no netportal url
 	if netportalOpt == nil || netportalOpt.url == "" {
-		return fmt.Errorf("not find netportal")
+		return false, nil
 	}
-
-	// black access check
+	// only host have k8s service suffix will use netportal
 	r, err := url.ParseRequestURI(inputURL)
 	if err != nil {
-		return fmt.Errorf("failed to parse apitest url, url: %s, err: %v", inputURL, err)
+		logrus.Errorf("failed to parse apitest url, url: %s, err: %v", inputURL, err)
+		// if err, not use netportal
+		return false, nil
 	}
-	ss := strings.SplitN(r.Host, ":", 2)
-	ns := getK8sNamespace(ss[0])
+	hostport := r.Host
+	ss := strings.SplitN(hostport, ":", 2)
+	host := ss[0]
+	// if parsed k8s namespace is blacklist, do not use netportal
+	ns := getK8sNamespace(host)
 	inBlacklist := strutil.Exist(netportalOpt.blacklistOfK8sNamespaceAccess, ns)
 	if inBlacklist {
-		return fmt.Errorf("no access to blacklist addresses %v", r.Host)
+		return false, fmt.Errorf("no access to blacklist addresses")
 	}
-	return nil
+	return true, nil
 }
 
 func getK8sNamespace(k8sHost string) string {
