@@ -28,7 +28,8 @@ const (
 )
 
 type GetUserIdByMobileRequest struct {
-	Mobile string `json:"mobile"`
+	Mobile                        string `json:"mobile"`
+	SupportExclusiveAccountSearch bool   `json:"support_exclusive_account_search"`
 }
 
 type DingtalkBaseResponse struct {
