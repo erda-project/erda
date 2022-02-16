@@ -389,7 +389,7 @@ func setServiceVolumes(clusterName string, service *diceyml.Service, clusterinfo
 
 	for i, v := range service.Volumes {
 		// TODO:   oldVolumeType  may not needed
-		oldVolumeType := apistructs.LocalVolume
+		oldVolumeType := apistructs.NasVolume
 		snap := int32(0)
 		if v.Snapshot != nil && v.Snapshot.MaxHistory > snap {
 			snap = v.Snapshot.MaxHistory
@@ -399,10 +399,24 @@ func setServiceVolumes(clusterName string, service *diceyml.Service, clusterinfo
 		if cloudProvisioner == "" {
 			cloudProvisioner = os.Getenv("CLOUD_PROVISIONER")
 		}
-		scName, err := storage.VolumeTypeToSCName(v.Type, cloudProvisioner)
-		if err != nil {
-			logrus.Errorf("can not detect storageclass for volume: %v", err)
-			return []apistructs.Volume{}, errors.Errorf("can not detect storageclass for volume: %v", err)
+
+		scName := apistructs.DiceNFSVolumeSC
+		if v.Storage != "" {
+			switch v.Storage {
+			case "local":
+				scName = apistructs.DiceLocalVolumeSC
+			case "nfs":
+				scName = apistructs.DiceNFSVolumeSC
+			default:
+				logrus.Errorf("can not detect storageclass for volume: storage %s invalid", v.Storage)
+				return []apistructs.Volume{}, errors.Errorf("can not detect storageclass for volume: storage %s invalid", v.Storage)
+			}
+		} else {
+			scName, err = storage.VolumeTypeToSCName(v.Type, cloudProvisioner)
+			if err != nil {
+				logrus.Errorf("can not detect storageclass for volume: %v", err)
+				return []apistructs.Volume{}, errors.Errorf("can not detect storageclass for volume: %v", err)
+			}
 		}
 
 		if enableECI {
@@ -421,9 +435,25 @@ func setServiceVolumes(clusterName string, service *diceyml.Service, clusterinfo
 			v.Capacity = diceyml.AddonVolumeSizeMax
 		}
 
+		if v.Path != "" && v.TargetPath == "" {
+			v.TargetPath = v.Path
+		}
+
+		if v.Path != "" && v.TargetPath != "" && v.Path != v.TargetPath {
+			return []apistructs.Volume{}, errors.New("if path and taragetPath set in volume, they must same.")
+		}
 		// 卷映射的容器目录合法性检查
 		if v.TargetPath == "" || v.TargetPath == "/" {
 			return []apistructs.Volume{}, errors.New(fmt.Sprintf("invalid targetPath [%s]", v.TargetPath))
+		}
+
+		if v.Type == "" {
+			switch v.Storage {
+			case "local":
+				v.Type = apistructs.VolumeTypeDiceLOCAL
+			default:
+				v.Type = apistructs.VolumeTypeDiceNAS
+			}
 		}
 
 		scVolume := apistructs.SCVolume{
