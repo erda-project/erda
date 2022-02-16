@@ -1486,7 +1486,7 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 	}
 
 	// prepare suppress state
-	suppressStateMap := map[string]string{}
+	suppressEventIdMap := map[string]*db.AlertEventSuppress{}
 	var eventIds []string
 	linq.From(list).Select(func(i interface{}) interface{} {
 		return i.(*db.AlertEvent).Id
@@ -1503,7 +1503,7 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 			if !suppress.Enabled || suppress.ExpireTime.Before(time.Now()) {
 				continue
 			}
-			suppressStateMap[suppress.AlertEventID] = suppress.SuppressType
+			suppressEventIdMap[suppress.AlertEventID] = suppress
 		}
 	}
 
@@ -1533,8 +1533,9 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 			LastTriggerTime:  event.LastTriggerTime.UnixNano() / 1e6,
 			FirstTriggerTime: event.LastTriggerTime.UnixNano() / 1e6,
 		}
-		if suppressType, ok := suppressStateMap[item.Id]; ok {
-			item.AlertState = suppressType
+		if suppressSettings, ok := suppressEventIdMap[item.Id]; ok {
+			item.AlertState = suppressSettings.SuppressType
+			item.SuppressExpireTime = suppressSettings.ExpireTime.UnixNano() / 1e6
 		}
 		result.Items = append(result.Items)
 	}

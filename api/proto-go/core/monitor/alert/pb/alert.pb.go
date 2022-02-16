@@ -558,26 +558,27 @@ type AlertEventItem struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id               string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name             string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	OrgID            int64  `protobuf:"varint,3,opt,name=orgID,proto3" json:"orgID,omitempty"`
-	AlertGroupID     string `protobuf:"bytes,4,opt,name=alertGroupID,proto3" json:"alertGroupID,omitempty"`
-	AlertGroup       string `protobuf:"bytes,5,opt,name=alertGroup,proto3" json:"alertGroup,omitempty"`
-	Scope            string `protobuf:"bytes,6,opt,name=scope,proto3" json:"scope,omitempty"`
-	ScopeId          string `protobuf:"bytes,7,opt,name=scopeId,proto3" json:"scopeId,omitempty"`
-	AlertID          uint64 `protobuf:"varint,8,opt,name=alertID,proto3" json:"alertID,omitempty"`
-	AlertName        string `protobuf:"bytes,9,opt,name=alertName,proto3" json:"alertName,omitempty"`
-	AlertType        string `protobuf:"bytes,10,opt,name=alertType,proto3" json:"alertType,omitempty"`
-	AlertIndex       string `protobuf:"bytes,11,opt,name=alertIndex,proto3" json:"alertIndex,omitempty"`
-	AlertLevel       string `protobuf:"bytes,12,opt,name=alertLevel,proto3" json:"alertLevel,omitempty"`
-	AlertSource      string `protobuf:"bytes,13,opt,name=alertSource,proto3" json:"alertSource,omitempty"`
-	AlertSubject     string `protobuf:"bytes,14,opt,name=alertSubject,proto3" json:"alertSubject,omitempty"`
-	RuleID           uint64 `protobuf:"varint,15,opt,name=ruleID,proto3" json:"ruleID,omitempty"`
-	RuleName         string `protobuf:"bytes,16,opt,name=ruleName,proto3" json:"ruleName,omitempty"`
-	ExpressionID     uint64 `protobuf:"varint,17,opt,name=expressionID,proto3" json:"expressionID,omitempty"`
-	LastTriggerTime  int64  `protobuf:"varint,18,opt,name=lastTriggerTime,proto3" json:"lastTriggerTime,omitempty"`
-	FirstTriggerTime int64  `protobuf:"varint,19,opt,name=firstTriggerTime,proto3" json:"firstTriggerTime,omitempty"`
-	AlertState       string `protobuf:"bytes,20,opt,name=AlertState,proto3" json:"AlertState,omitempty"`
+	Id                 string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name               string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	OrgID              int64  `protobuf:"varint,3,opt,name=orgID,proto3" json:"orgID,omitempty"`
+	AlertGroupID       string `protobuf:"bytes,4,opt,name=alertGroupID,proto3" json:"alertGroupID,omitempty"`
+	AlertGroup         string `protobuf:"bytes,5,opt,name=alertGroup,proto3" json:"alertGroup,omitempty"`
+	Scope              string `protobuf:"bytes,6,opt,name=scope,proto3" json:"scope,omitempty"`
+	ScopeId            string `protobuf:"bytes,7,opt,name=scopeId,proto3" json:"scopeId,omitempty"`
+	AlertID            uint64 `protobuf:"varint,8,opt,name=alertID,proto3" json:"alertID,omitempty"`
+	AlertName          string `protobuf:"bytes,9,opt,name=alertName,proto3" json:"alertName,omitempty"`
+	AlertType          string `protobuf:"bytes,10,opt,name=alertType,proto3" json:"alertType,omitempty"`
+	AlertIndex         string `protobuf:"bytes,11,opt,name=alertIndex,proto3" json:"alertIndex,omitempty"`
+	AlertLevel         string `protobuf:"bytes,12,opt,name=alertLevel,proto3" json:"alertLevel,omitempty"`
+	AlertSource        string `protobuf:"bytes,13,opt,name=alertSource,proto3" json:"alertSource,omitempty"`
+	AlertSubject       string `protobuf:"bytes,14,opt,name=alertSubject,proto3" json:"alertSubject,omitempty"`
+	RuleID             uint64 `protobuf:"varint,15,opt,name=ruleID,proto3" json:"ruleID,omitempty"`
+	RuleName           string `protobuf:"bytes,16,opt,name=ruleName,proto3" json:"ruleName,omitempty"`
+	ExpressionID       uint64 `protobuf:"varint,17,opt,name=expressionID,proto3" json:"expressionID,omitempty"`
+	LastTriggerTime    int64  `protobuf:"varint,18,opt,name=lastTriggerTime,proto3" json:"lastTriggerTime,omitempty"`
+	FirstTriggerTime   int64  `protobuf:"varint,19,opt,name=firstTriggerTime,proto3" json:"firstTriggerTime,omitempty"`
+	AlertState         string `protobuf:"bytes,20,opt,name=AlertState,proto3" json:"AlertState,omitempty"`
+	SuppressExpireTime int64  `protobuf:"varint,21,opt,name=suppressExpireTime,proto3" json:"suppressExpireTime,omitempty"`
 }
 
 func (x *AlertEventItem) Reset() {
@@ -750,6 +751,13 @@ func (x *AlertEventItem) GetAlertState() string {
 		return x.AlertState
 	}
 	return ""
+}
+
+func (x *AlertEventItem) GetSuppressExpireTime() int64 {
+	if x != nil {
+		return x.SuppressExpireTime
+	}
+	return 0
 }
 
 type QueryCustomizeMetricRequest struct {
@@ -10820,7 +10828,7 @@ var file_alert_proto_rawDesc = []byte{
 	0x20, 0x03, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x65, 0x72, 0x64, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65,
 	0x2e, 0x6d, 0x6f, 0x6e, 0x69, 0x74, 0x6f, 0x72, 0x2e, 0x61, 0x6c, 0x65, 0x72, 0x74, 0x2e, 0x41,
 	0x6c, 0x65, 0x72, 0x74, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x49, 0x74, 0x65, 0x6d, 0x52, 0x05, 0x69,
-	0x74, 0x65, 0x6d, 0x73, 0x22, 0xe8, 0x04, 0x0a, 0x0e, 0x41, 0x6c, 0x65, 0x72, 0x74, 0x45, 0x76,
+	0x74, 0x65, 0x6d, 0x73, 0x22, 0x98, 0x05, 0x0a, 0x0e, 0x41, 0x6c, 0x65, 0x72, 0x74, 0x45, 0x76,
 	0x65, 0x6e, 0x74, 0x49, 0x74, 0x65, 0x6d, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20,
 	0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18,
 	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x6f,
@@ -10858,7 +10866,10 @@ var file_alert_proto_rawDesc = []byte{
 	0x67, 0x65, 0x72, 0x54, 0x69, 0x6d, 0x65, 0x18, 0x13, 0x20, 0x01, 0x28, 0x03, 0x52, 0x10, 0x66,
 	0x69, 0x72, 0x73, 0x74, 0x54, 0x72, 0x69, 0x67, 0x67, 0x65, 0x72, 0x54, 0x69, 0x6d, 0x65, 0x12,
 	0x1e, 0x0a, 0x0a, 0x41, 0x6c, 0x65, 0x72, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x18, 0x14, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x0a, 0x41, 0x6c, 0x65, 0x72, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x22,
+	0x01, 0x28, 0x09, 0x52, 0x0a, 0x41, 0x6c, 0x65, 0x72, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12,
+	0x2e, 0x0a, 0x12, 0x73, 0x75, 0x70, 0x70, 0x72, 0x65, 0x73, 0x73, 0x45, 0x78, 0x70, 0x69, 0x72,
+	0x65, 0x54, 0x69, 0x6d, 0x65, 0x18, 0x15, 0x20, 0x01, 0x28, 0x03, 0x52, 0x12, 0x73, 0x75, 0x70,
+	0x70, 0x72, 0x65, 0x73, 0x73, 0x45, 0x78, 0x70, 0x69, 0x72, 0x65, 0x54, 0x69, 0x6d, 0x65, 0x22,
 	0x61, 0x0a, 0x1b, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x69, 0x7a,
 	0x65, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x12,
 	0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61,

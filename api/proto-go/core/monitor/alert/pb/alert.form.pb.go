@@ -475,6 +475,12 @@ func (m *AlertEventItem) UnmarshalURLValues(prefix string, values url.Values) er
 				m.FirstTriggerTime = val
 			case "AlertState":
 				m.AlertState = vals[0]
+			case "suppressExpireTime":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.SuppressExpireTime = val
 			}
 		}
 	}

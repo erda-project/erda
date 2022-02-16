@@ -42,6 +42,9 @@ func (p *provider) Run(ctx context.Context) error {
 }
 
 func (p *provider) queryExample(ctx context.Context) error {
+	defer func() {
+		recover()
+	}()
 	req := &pb.QueryWithInfluxFormatRequest{
 		Start: "0",             // or timestamp
 		End:   "1642057089000", // or timestamp
