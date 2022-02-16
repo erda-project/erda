@@ -21,8 +21,8 @@ import (
 )
 
 type InParams struct {
-	ScopeType string `json:"scopeType"`
-	ScopeID   string `json:"scopeId"`
+	Scope   string `json:"scope"`
+	ScopeID string `json:"scopeId"`
 }
 
 func ParseFromCpSdk(sdk *cptype.SDK) (*InParams, error) {

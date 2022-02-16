@@ -108,7 +108,7 @@ func (p *provider) getNotifyStatus(sdk *cptype.SDK, params *common.InParams) []*
 
 func (p *provider) getAlerts(ctx context.Context, params *common.InParams) ([]*common.IdNameValue, error) {
 	resp, err := p.Monitor.QueryAlert(ctx, &monitor.QueryAlertRequest{
-		Scope:    params.ScopeType,
+		Scope:    params.Scope,
 		ScopeId:  params.ScopeID,
 		PageSize: math.MaxInt64,
 		PageNo:   1,
@@ -130,7 +130,7 @@ func (p *provider) getAlerts(ctx context.Context, params *common.InParams) ([]*c
 
 func (p *provider) getNotifies(ctx context.Context, params *common.InParams) ([]*common.IdNameValue, error) {
 	resp, err := p.Messenger.QueryAlertNotifyHistories(ctx, &messenger.QueryAlertNotifyHistoriesRequest{
-		ScopeType: params.ScopeType,
+		ScopeType: params.Scope,
 		ScopeID:   params.ScopeID,
 		PageNo:    1,
 		PageSize:  math.MaxInt64,
