@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/clusterinfo"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/persistentvolumeclaim"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/secret"
 	"github.com/erda-project/erda/modules/scheduler/executor/plugins/k8s/storageclass"
@@ -98,6 +99,9 @@ func TestNewDeployment(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(k), "AddPodMountVolume", func(kube *Kubernetes, service *apistructs.Service, podSpec *apiv1.PodSpec,
 		secretvolmounts []apiv1.VolumeMount, secretvolumes []apiv1.Volume) error {
 		return nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(k.ClusterInfo), "Get", func(clusterInfo *clusterinfo.ClusterInfo) (map[string]string, error) {
+		return nil, nil
 	})
 	deploy, err := k.newDeployment(service, servicegroup)
 	assert.Equal(t, err, nil)

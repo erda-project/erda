@@ -366,7 +366,6 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	resourceInfo := resourceinfo.New(addr, client)
 
 	var istioEngine istioctl.IstioEngine
-
 	rawData, err := clusterInfo.Get()
 	if err != nil {
 		logrus.Errorf("failed to get cluster info, executorName:%s, clusterName: %s, err:%v",
@@ -382,7 +381,6 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 				name, clusterName, err)
 		}
 	}
-
 	evCh := make(chan *eventtypes.StatusEvent, 10)
 
 	// Synchronize cluster info to ETCD (every 10m)

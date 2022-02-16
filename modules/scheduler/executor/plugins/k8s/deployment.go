@@ -439,10 +439,21 @@ func (k *Kubernetes) AddContainersEnv(containers []apiv1.Container, service *api
 		}
 	}
 
+	clusterInfo, err := k.ClusterInfo.Get()
+	if err != nil {
+		return errors.Errorf("failed to get cluster info, clusterName: %s, (%v)", k.clusterName, err)
+	}
+
 	// add K8S label
 	envs = append(envs, apiv1.EnvVar{
 		Name:  "IS_K8S",
 		Value: "true",
+	})
+
+	// add root domain
+	envs = append(envs, apiv1.EnvVar{
+		Name:  "DICE_ROOT_DOMAIN",
+		Value: clusterInfo["DICE_ROOT_DOMAIN"],
 	})
 
 	// add namespace label
