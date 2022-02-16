@@ -164,6 +164,7 @@ func (p *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.Opera
 
 func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		logrus.Debug("list component init")
 		p.Sdk = sdk
 		p.StdDataPtr = p.getData()
 		return nil
@@ -172,6 +173,7 @@ func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 func (p *List) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		logrus.Debug("list component rendering")
 		p.Sdk = sdk
 		p.StdDataPtr = p.getData()
 		return nil
