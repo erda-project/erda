@@ -82,7 +82,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			sendTime = []string{startTime, endTime}
 		}
 		notifyHistory := &messenger.QueryAlertNotifyHistoriesRequest{
-			ScopeType:  inParams.ScopeType,
+			ScopeType:  inParams.Scope,
 			ScopeID:    inParams.ScopeID,
 			NotifyName: filters.NotifyName,
 			Status:     filters.Status,
@@ -104,7 +104,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		alerts, err := p.getAlerts(sdk.Ctx, inParams)
 		alertMap := make(map[int64]string)
 		for _, v := range alerts {
-			alertMap[v.Id.(int64)] = v.Name
+			alertMap[int64(v.Id.(uint64))] = v.Name
 		}
 		t := &table.Table{
 			Columns: table.ColumnsInfo{
@@ -170,7 +170,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 func (p *provider) getAlerts(ctx context.Context, params *common.InParams) ([]*common.IdNameValue, error) {
 	resp, err := p.Monitor.QueryAlert(ctx, &monitor.QueryAlertRequest{
-		Scope:    params.ScopeType,
+		Scope:    params.Scope,
 		ScopeId:  params.ScopeID,
 		PageSize: math.MaxInt64,
 		PageNo:   1,
