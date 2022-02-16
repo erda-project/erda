@@ -121,6 +121,10 @@ func (af *AdvanceFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				return nil
 			}
 		}
+		if v, ok := af.Values["title"]; ok {
+			delete(af.Values, "title")
+			(*sdk.GlobalState)["nameFilter"] = v
+		}
 		(*sdk.GlobalState)["advanceFilter"] = af.Values
 		af.StdDataPtr = af.getData(sdk)
 		return nil
