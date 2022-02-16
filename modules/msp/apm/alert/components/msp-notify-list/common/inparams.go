@@ -12,30 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package db
+package common
 
 import (
-	"github.com/jinzhu/gorm"
+	"github.com/mitchellh/mapstructure"
 
-	db2 "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 )
 
-type DB struct {
-	*gorm.DB
-	AlertNotifyIndexDB AlertNotifyIndexDB
-	NotifyHistoryDB    NotifyHistoryDB
-	AlertNotifyDB      db2.AlertNotifyDB
+type InParams struct {
+	ScopeType string `json:"scopeType"`
+	ScopeID   string `json:"scopeId"`
 }
 
-func New(db *gorm.DB) *DB {
-	return &DB{
-		DB:                 db,
-		AlertNotifyIndexDB: AlertNotifyIndexDB{db},
-		NotifyHistoryDB:    NotifyHistoryDB{db},
-		AlertNotifyDB:      db2.AlertNotifyDB{db},
+func ParseFromCpSdk(sdk *cptype.SDK) (*InParams, error) {
+	var param InParams
+	err := mapstructure.Decode(sdk.InParams, &param)
+	if err != nil {
+		return nil, err
 	}
-}
-
-func (db *DB) Begin() *DB {
-	return New(db.DB.Begin())
+	return &param, nil
 }

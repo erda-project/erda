@@ -12,30 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package db
+package eventStatusInfo
 
 import (
-	"github.com/jinzhu/gorm"
-
-	db2 "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/providers/i18n"
+	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 )
 
-type DB struct {
-	*gorm.DB
-	AlertNotifyIndexDB AlertNotifyIndexDB
-	NotifyHistoryDB    NotifyHistoryDB
-	AlertNotifyDB      db2.AlertNotifyDB
+type provider struct {
+	Log       logs.Logger
+	I18n      i18n.Translator               `autowired:"i18n" translator:"msp-alert-event-list"`
+	Messenger messenger.NotifyServiceServer `autowired:"erda.core.messenger.notify.NotifyService"`
 }
 
-func New(db *gorm.DB) *DB {
-	return &DB{
-		DB:                 db,
-		AlertNotifyIndexDB: AlertNotifyIndexDB{db},
-		NotifyHistoryDB:    NotifyHistoryDB{db},
-		AlertNotifyDB:      db2.AlertNotifyDB{db},
-	}
-}
-
-func (db *DB) Begin() *DB {
-	return New(db.DB.Begin())
-}
+//func (p *provider) RegisterInitializeOp()

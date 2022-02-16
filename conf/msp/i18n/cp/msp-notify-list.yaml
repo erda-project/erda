@@ -1,0 +1,25 @@
+en:
+  success: success
+  failed: failed
+  dingding: dingding
+  webhook: webhook
+  email: email
+  mbox: mbox
+  vms: voice notify
+  sms: short message notify
+  dingtalk_work_notice: dingding work notify
+
+zh:
+  NotifyName: 通知名称
+  Status: 状态
+  Channel: 通知渠道
+  LinkedStrategy: 关联策略
+  SendTime: 发送时间
+  dingding: 钉钉群
+  email: 邮箱
+  mbox: 站内信
+  vms: 语音通知
+  sms: 短信通知
+  dingtalk_work_notice: 钉钉工作通知
+  success: 成功
+  failed: 失败
