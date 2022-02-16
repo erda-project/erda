@@ -80,7 +80,7 @@ func (svc *Service) CreateRepo(request *apistructs.CreateRepoRequest) (*Repo, er
 	if request.IsExternal {
 		repo.Config = getConfigStr(request.Config)
 	}
-	repo.Path = repo.OrgName + "-" + repo.ProjectName + "/" + repo.AppName
+	repo.Path = apistructs.MakeRepoPath(repo.OrgName, repo.ProjectName, repo.AppName)
 	if request.OnlyCheck {
 		if request.IsExternal {
 			err := gitmodule.CheckRemoteHttpRepo(request.Config.Url, request.Config.Username, request.Config.Password)

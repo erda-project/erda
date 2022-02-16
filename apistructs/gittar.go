@@ -453,7 +453,7 @@ type CreateRepoResponse struct {
 type CreateRepoResponseData struct {
 	ID int64 `json:"id"`
 
-	// 仓库相对路基
+	// 仓库相对路径
 	RepoPath string `json:"repo_path"`
 }
 
@@ -769,4 +769,8 @@ type CheckRunRequest struct {
 	Path   string `json:"path"`
 	MRID   int64  `json:"mrId"`
 	Branch string `json:"branch"`
+}
+
+func MakeRepoPath(orgName, proName, appName string) string {
+	return orgName + "-" + proName + "/" + appName
 }

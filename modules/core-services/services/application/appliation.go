@@ -156,23 +156,7 @@ func (a *Application) Create(userID string, createReq *apistructs.ApplicationCre
 		UserID:         userID,
 		IsExternalRepo: createReq.IsExternalRepo,
 	}
-	// 关联gittar
-	repoReq := apistructs.CreateRepoRequest{
-		OrgID:       org.ID,
-		OrgName:     org.Name,
-		ProjectID:   project.ID,
-		ProjectName: project.Name,
-		AppName:     application.Name,
-		IsExternal:  createReq.IsExternalRepo,
-		Config:      createReq.RepoConfig,
-	}
-	// 外置仓库先尝试检测一下有效性
 	if createReq.IsExternalRepo {
-		repoReq.OnlyCheck = true
-		_, err := a.bdl.CreateRepo(repoReq)
-		if err != nil {
-			return nil, errors.Errorf("failed to create repo, (%v)", err)
-		}
 		application.RepoConfig = getRepoConfigStr(createReq.RepoConfig)
 	}
 	if err = a.db.CreateApplication(&application); err != nil {
@@ -180,18 +164,9 @@ func (a *Application) Create(userID string, createReq *apistructs.ApplicationCre
 		return nil, errors.Errorf("failed to insert application to db")
 	}
 
-	repoReq.OnlyCheck = false
-	repoReq.AppID = application.ID
-	gittarResp, err := a.bdl.CreateRepo(repoReq)
-	if err != nil {
-		a.db.DeleteApplication(application.ID)
-		a.bdl.DeleteRepo(application.ID)
-		return nil, errors.Errorf("failed to create repo, (%v)", err)
-	}
-
 	// 更新extra等信息
 	application.Extra = a.generateExtraInfo(application.ID, application.ProjectID)
-	application.GitRepoAbbrev = gittarResp.RepoPath
+	application.GitRepoAbbrev = apistructs.MakeRepoPath(org.Name, project.Name, application.Name)
 	if err = a.db.UpdateApplication(&application); err != nil {
 		logrus.Errorf("failed to update application extra, (%v)", err)
 	}
@@ -314,13 +289,6 @@ func (a *Application) Update(appID int64, updateReq *apistructs.ApplicationUpdat
 	application.Config = string(config)
 	if application.IsExternalRepo && updateReq.RepoConfig != nil {
 		application.RepoConfig = getRepoConfigStr(updateReq.RepoConfig)
-		err = a.bdl.UpdateRepo(apistructs.UpdateRepoRequest{
-			AppID:  application.ID,
-			Config: updateReq.RepoConfig,
-		})
-		if err != nil {
-			return nil, errors.Errorf("failed to update repo, (%v)", err)
-		}
 	}
 	if err = a.db.UpdateApplication(&application); err != nil {
 		logrus.Warnf("failed to update application, (%v)", err)
@@ -423,22 +391,6 @@ func (a *Application) Delete(applicationID int64) (*model.Application, error) {
 	application, err := a.db.GetApplicationByID(applicationID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to delete application")
-	}
-
-	// 判断应用下是否有runtime，无 runtime 时应用可删除
-	var runtimeCount int64
-	a.db.Table("ps_v2_project_runtimes").Where("application_id = ?", applicationID).Count(&runtimeCount)
-	if runtimeCount > 0 {
-		return nil, errors.Errorf("failed to delete application(there exists runtime)")
-	}
-
-	// 删除gittar repo
-	if err = a.bdl.DeleteRepo(application.ID); err != nil {
-		// 防止有老数据不存在repoID，还是以repo路径进行删除
-		if err = a.bdl.DeleteGitRepo(application.GitRepoAbbrev); err != nil {
-			logrus.Errorf(err.Error())
-			return nil, fmt.Errorf("failed to delete repo, please try again")
-		}
 	}
 
 	// 删除应用

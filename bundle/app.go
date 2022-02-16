@@ -21,6 +21,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle/apierrors"
@@ -342,6 +343,7 @@ func (b *Bundle) GetAllMyApps(userid string, orgid uint64, req apistructs.Applic
 }
 
 // CreateApp create app
+// This will no longer create gittar repo
 func (b *Bundle) CreateApp(req apistructs.ApplicationCreateRequest, userID string) (*apistructs.ApplicationDTO, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
@@ -362,6 +364,49 @@ func (b *Bundle) CreateApp(req apistructs.ApplicationCreateRequest, userID strin
 	}
 
 	return &fetchResp.Data, nil
+}
+
+// CreateAppWithRepo Create app with gittar repo
+func (b *Bundle) CreateAppWithRepo(req apistructs.ApplicationCreateRequest, userID string) (*apistructs.ApplicationDTO, error) {
+	appDto, err := b.CreateApp(req, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			logrus.Infof("delete app, appID: %d", appDto.ID)
+			_, deleteAppErr := b.DeleteApp(appDto.ID, userID)
+			if deleteAppErr != nil {
+				logrus.Errorf("failed to delete app, err: %v", deleteAppErr)
+			}
+			if deleteRepoErr := b.DeleteRepo(int64(appDto.ID)); deleteRepoErr != nil {
+				logrus.Errorf("failed to delete repo, err: %v", deleteRepoErr)
+			}
+		}
+	}()
+	repoReq := apistructs.CreateRepoRequest{
+		OrgID:       int64(appDto.OrgID),
+		OrgName:     appDto.OrgName,
+		ProjectID:   int64(appDto.ProjectID),
+		ProjectName: appDto.ProjectName,
+		AppName:     appDto.Name,
+		IsExternal:  req.IsExternalRepo,
+		Config:      req.RepoConfig,
+	}
+	if req.IsExternalRepo {
+		repoReq.OnlyCheck = true
+		_, err = b.CreateRepo(repoReq)
+		if err != nil {
+			return nil, errors.Errorf("failed to create repo, err: %v", err)
+		}
+	}
+	repoReq.OnlyCheck = false
+	repoReq.AppID = int64(appDto.ID)
+	_, err = b.CreateRepo(repoReq)
+	if err != nil {
+		return nil, errors.Errorf("failed to create repo, err: %v", err)
+	}
+	return appDto, nil
 }
 
 // UpdateApp update app
