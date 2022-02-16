@@ -63,6 +63,7 @@
       white:
         filenames:
           - "20220113-pipeline-definition-change-field"
+          - "20220211-deployment-order-batches.sql"
     - stmtType: AlterTableStmt.AlterTableRenameColumn
       forbidden: true
     - stmtType: AlterTableStmt.AlterTableRenameTable
