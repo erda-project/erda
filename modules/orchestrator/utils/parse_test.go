@@ -18,9 +18,93 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 func TestParseOrder(t *testing.T) {
 	uuid := "07f3023d-46bb-49de-b139-c775c6881636"
 	assert.Equal(t, ParseOrderName(uuid), "07f302")
+}
+
+func TestParseDeploymentOrderStatus(t *testing.T) {
+	type args struct {
+		DeploymentStatus apistructs.DeploymentOrderStatusMap
+	}
+	tests := []struct {
+		name string
+		args args
+		want apistructs.DeploymentOrderStatus
+	}{
+		{
+			name: "apps-1",
+			args: args{
+				DeploymentStatus: apistructs.DeploymentOrderStatusMap{
+					"app-1": apistructs.DeploymentOrderStatusItem{
+						DeploymentStatus: apistructs.DeploymentStatusWaiting,
+					},
+					"app-2": apistructs.DeploymentOrderStatusItem{
+						DeploymentStatus: apistructs.DeploymentStatusOK,
+					},
+				},
+			},
+			want: apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusDeploying),
+		},
+		{
+			name: "apps-2",
+			args: args{
+				DeploymentStatus: apistructs.DeploymentOrderStatusMap{
+					"app-1": apistructs.DeploymentOrderStatusItem{
+						DeploymentStatus: apistructs.DeploymentStatusFailed,
+					},
+					"app-2": apistructs.DeploymentOrderStatusItem{
+						DeploymentStatus: apistructs.DeploymentStatusOK,
+					},
+				},
+			},
+			want: apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusFailed),
+		},
+		{
+			name: "apps-3",
+			args: args{
+				DeploymentStatus: nil,
+			},
+			want: apistructs.DeploymentOrderStatus(apistructs.OrderStatusWaitDeploy),
+		},
+		{
+			name: "apps-4",
+			args: args{
+				DeploymentStatus: apistructs.DeploymentOrderStatusMap{
+					"app-1": apistructs.DeploymentOrderStatusItem{
+						DeploymentStatus: apistructs.DeploymentStatusCanceling,
+					},
+					"app-2": apistructs.DeploymentOrderStatusItem{
+						DeploymentStatus: apistructs.DeploymentStatusOK,
+					},
+				},
+			},
+			want: apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusCanceled),
+		},
+		{
+			name: "apps-5",
+			args: args{
+				DeploymentStatus: apistructs.DeploymentOrderStatusMap{
+					"app-1": apistructs.DeploymentOrderStatusItem{
+						DeploymentStatus: apistructs.DeploymentStatusOK,
+					},
+				},
+			},
+			want: apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusOK),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ParseDeploymentOrderStatus(tt.args.DeploymentStatus)
+
+			if tt.want != got {
+				t.Errorf("parseDeploymentOrderStatus got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
