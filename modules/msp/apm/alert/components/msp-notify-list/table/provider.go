@@ -93,8 +93,10 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			PageNo:     int64(pageNo),
 			PageSize:   int64(pagSize),
 		}
-		if dataRef.DataRef != nil && dataRef.DataRef["fieldBindToOrder"].(string) == "SendTime" && dataRef.DataRef["ascOrder"].(bool) == true {
-			notifyHistory.TimeOrder = true
+		if dataRef.DataRef != nil && dataRef.DataRef["fieldBindToOrder"].(string) == "SendTime" && dataRef.DataRef["ascOrder"] != nil {
+			if dataRef.DataRef["ascOrder"].(bool) == true {
+				notifyHistory.TimeOrder = true
+			}
 		}
 		data, err := p.Messenger.QueryAlertNotifyHistories(context, notifyHistory)
 		if err != nil {
