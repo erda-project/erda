@@ -25,6 +25,7 @@ import (
 	_ "github.com/erda-project/erda/modules/core-services"
 	_ "github.com/erda-project/erda/modules/core-services/services/notify/channel"
 	_ "github.com/erda-project/erda/modules/core/services/authentication/credentials/accesskey"
+	_ "github.com/erda-project/erda/modules/messenger/notify"
 
 	// infra
 	_ "github.com/erda-project/erda-infra/providers/grpcserver"

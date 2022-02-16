@@ -165,7 +165,10 @@ func (db *NotifyHistoryDB) FilterStatus(request *model.FilterStatusRequest) ([]*
 	if err != nil {
 		return nil, err
 	}
-	err = db.Model(&NotifyHistory{}).Select("status,count(1) as count").Where("created_at >= ?", startTime).Where("created_at <= ?", endTime).
+	err = db.Model(&NotifyHistory{}).Select("status,count(1) as count").
+		Where("source_type = ?", request.ScopeType).
+		Where("source_id = ?", request.ScopeId).
+		Where("created_at >= ?", startTime).Where("created_at <= ?", endTime).
 		Group("status").Scan(&result).Error
 	if err != nil {
 		return nil, err

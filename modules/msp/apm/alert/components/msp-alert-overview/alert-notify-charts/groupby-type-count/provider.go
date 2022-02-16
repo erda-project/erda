@@ -85,7 +85,7 @@ func (p *provider) getNotifyChannelChart(sdk *cptype.SDK) (*complexgraph.Data, e
 	for status, data := range response.Data.Value {
 		yAxisBuilder.WithDimensions(sdk.I18n(status))
 		value := common.ToInterface(data.Value)
-		sere := complexgraph.NewSereBuilder().WithType(complexgraph.Line).
+		sere := complexgraph.NewSereBuilder().WithType(complexgraph.Bar).
 			WithDimension(sdk.I18n(status)).WithData(value...).Build()
 		dataBuilder.WithDimensions(sere.Dimension)
 		dataBuilder.WithSeries(sere)
