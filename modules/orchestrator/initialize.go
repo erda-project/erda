@@ -190,6 +190,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		deployment_order.WithBundle(bdl),
 		deployment_order.WithRuntime(rt),
 		deployment_order.WithDeployment(d),
+		deployment_order.WithQueue(p.PusherQueue),
 	)
 
 	// compose endpoints
@@ -221,6 +222,11 @@ func initLeaderCron(ep *endpoints.Endpoints, ctx context.Context) error {
 		loop.WithDeclineLimit(3*time.Second)).Do(ep.PushOnDeployment)
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Second)).Do(ep.PushOnDeletingRuntimesPolling)
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(2*time.Second)).Do(ep.PushOnDeletingRuntimes)
+
+	// con for push on deployment order batches
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Second)).Do(ep.PushOnDeploymentOrderPolling)
+	go loop.New(loop.WithContext(ctx), loop.WithDeclineRatio(1.2), loop.WithInterval(50*time.Millisecond),
+		loop.WithDeclineLimit(3*time.Second)).Do(ep.PushOnDeploymentOrder)
 
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Minute)).Do(ep.SyncAddonReferenceNum)
 

@@ -76,7 +76,7 @@ column_name_linter: true
 created_at_default_value_linter: true
 created_at_exists_linter: true
 created_at_type_linter: true
-destruct_linter: true
+destruct_linter: false
 float_double_linter: true
 foreign_key_linter: true
 id_exists_linter: true

@@ -63,7 +63,7 @@ func TestConvertDeploymentOrderToResponseItem(t *testing.T) {
 			{
 				ReleaseId:              "68a6df7529914c89b632fb18450d0055",
 				IsProjectRelease:       true,
-				ApplicationReleaseList: "[\"2deb000b57bfac9d72c14d4ed967b572\", \"523af537946b79c4f8369ed39ba78605\"]",
+				ApplicationReleaseList: "[[\"2deb000b57bfac9d72c14d4ed967b572\"], [\"523af537946b79c4f8369ed39ba78605\"]]",
 			},
 		}, nil
 	})
@@ -73,11 +73,11 @@ func TestConvertDeploymentOrderToResponseItem(t *testing.T) {
 
 	data := []dbclient.DeploymentOrder{
 		{
-			Type:       apistructs.TypeProjectRelease,
-			ReleaseId:  "68a6df7529914c89b632fb18450d0055",
-			Operator:   "1",
-			Status:     string(statusMapJson),
-			IsOutdated: 0,
+			Type:         apistructs.TypeProjectRelease,
+			ReleaseId:    "68a6df7529914c89b632fb18450d0055",
+			Operator:     "1",
+			StatusDetail: string(statusMapJson),
+			IsOutdated:   0,
 		},
 	}
 
