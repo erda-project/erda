@@ -43,10 +43,10 @@ type IssueFilter struct {
 	gsHelper         *gshelper.GSHelper
 	sdk              *cptype.SDK
 
-	filterReq apistructs.IssuePagingRequest `json:"-"`
-	State     State                         `json:"_"`
-	InParams  InParams                      `json:"-"`
-	Bms       []issuefilterbm.MyFilterBm    `json:"-"`
+	filterReq apistructs.IssuePagingRequest
+	State     State
+	InParams  InParams
+	Bms       []issuefilterbm.MyFilterBm
 }
 
 type State struct {
