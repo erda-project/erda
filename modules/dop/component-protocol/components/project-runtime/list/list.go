@@ -417,7 +417,10 @@ func (p *List) getData() *list.Data {
 	if err != nil {
 		logrus.Errorf("failed to get services err = %v", err)
 	}
+	healthyCntMap := make(map[uint64]int)
+	serviceCntMap := make(map[uint64]int)
 	for rid, s := range services {
+		serviceCntMap[rid] = len(s.Services)
 		logrus.Infof("services %d:%v", rid, s)
 		healthyCnt := 0
 		for _, ss := range s.Services {
@@ -425,30 +428,31 @@ func (p *List) getData() *list.Data {
 				healthyCnt++
 			}
 		}
-		var healthStr = ""
-		if len(s.Services) != 0 {
-			healthStr = fmt.Sprintf("%d/%d", healthyCnt, len(s.Services))
+		healthyCntMap[rid] = healthyCnt
+
+	}
+
+	for i := 0; i < len(data.List); i++ {
+		var healthyCnt int
+		var serviceCnt int
+		rid, _ := strconv.ParseUint(data.List[i].ID, 10, 64)
+		if c, ok := healthyCntMap[rid]; ok {
+			healthyCnt = c
 		}
-		for i := 0; i < len(data.List); i++ {
-			appRuntime := runtimeMap[data.List[i].ID]
-			ridStr := fmt.Sprintf("%d", rid)
-			if ridStr != data.List[i].ID {
-				continue
-			}
-			if err != nil {
-				logrus.Errorf("failed to get runtime %s of detail %v", appRuntime.Name, err)
-				continue
-			}
-			data.List[i].KvInfos = getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime)
-			data.List[i].Icon = getIconByServiceCnt(healthyCnt, len(s.Services))
-			break
+		if c, ok := serviceCntMap[rid]; ok {
+			serviceCnt = c
 		}
+		healthStr := fmt.Sprintf("%d/%d", healthyCnt, serviceCnt)
+		appRuntime := runtimeMap[data.List[i].ID]
+		// set icon once without service.
+		data.List[i].KvInfos = getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime)
+		data.List[i].Icon = getIconByServiceCnt(healthyCnt, serviceCnt)
 	}
 	return data
 }
 
 func (p *List) doFilter(conds map[string]map[string]bool, appRuntime bundle.GetApplicationRuntimesDataEle, deployAt int64, appName, deploymentOrderName string) bool {
-	if conds == nil || len(conds) == 0 {
+	if len(conds) == 0 {
 		return true
 	}
 	for k, v := range conds {
@@ -508,7 +512,7 @@ func getIconByServiceCnt(svcCnt, allCnt int) *commodel.Icon {
 	var (
 		statusStr string
 	)
-	if svcCnt < allCnt {
+	if svcCnt == 0 || svcCnt < allCnt {
 		statusStr = common.FrontedIconLoading
 	} else {
 		statusStr = common.FrontedIconBreathing
@@ -643,13 +647,13 @@ func getMoreOperations(sdk *cptype.SDK, id string) []list.MoreOpItem {
 	}
 }
 
-func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVersion, healthStr string, runtime bundle.GetApplicationRuntimesDataEle, lastOperatorTime time.Time) []list.KvInfo {
+func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVersion, healthyStr string, runtime bundle.GetApplicationRuntimesDataEle, lastOperatorTime time.Time) []list.KvInfo {
 	kvs := make([]list.KvInfo, 0)
-	if healthStr != "" {
+	if healthyStr != "" {
 		// service
 		kvs = append(kvs, list.KvInfo{
 			Key:   sdk.I18n("service"),
-			Value: healthStr,
+			Value: healthyStr,
 		})
 	}
 	if deployOrderName != "" {
