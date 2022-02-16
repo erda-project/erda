@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/commodel"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/table/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
@@ -144,13 +145,21 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 					return nil
 				}
 			}
+			sdk.I18n(item.Status)
 			str := strings.TrimLeft(item.NotifyName, "【")
 			str = strings.TrimRight(str, "】\n")
+			status := "success"
+			if item.Status == "failed" {
+				status = "error"
+			}
 			t.Rows = append(t.Rows, table.Row{
 				ID: table.RowID(strconv.Itoa(int(item.Id))),
 				CellsMap: map[table.ColumnKey]table.Cell{
-					"NotifyName":     table.NewTextCell(str).Build(),
-					"Status":         table.NewTextCell(sdk.I18n(item.Status)).Build(),
+					"NotifyName": table.NewTextCell(str).Build(),
+					"Status": table.NewCompleteTextCell(commodel.Text{
+						Text:   sdk.I18n(item.Status),
+						Status: commodel.UnifiedStatus(status),
+					}).Build(),
 					"Channel":        table.NewTextCell(sdk.I18n(item.Channel)).Build(),
 					"LinkedStrategy": table.NewTextCell(alertMap[notifyAttributes.AlertId]).Build(),
 					"SendTime":       table.NewTextCell(item.SendTime.AsTime().Format("2006/01/02 15:04:05")).Build(),
