@@ -68,7 +68,7 @@ package kms
 //
 //	// describe
 //	keyID := createKeyResp.KeyMetadata.KeyID
-//	descKeyResp, err := plugin.DescribeKey(ctx, &kmstypes.DescribeKeyRequest{KeyID: keyID})
+//	descKeyResp, err := plugin.KmsDescribeKey(ctx, &kmstypes.DescribeKeyRequest{KeyID: keyID})
 //	assert.NoError(t, err)
 //	spew.Dump("describe key", descKeyResp.KeyMetadata)
 //

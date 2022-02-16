@@ -43,7 +43,7 @@ func (e *Endpoints) KmsCreateKey(ctx context.Context, r *http.Request, vars map[
 	return httpserver.OkResp(createKeyResp)
 }
 
-func (e *Endpoints) DescribeKey(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+func (e *Endpoints) KmsDescribeKey(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var req kmstypes.DescribeKeyRequest
 	if err := e.parseRequestBody(r, &req); err != nil {
 		return err.ToResp(), nil
