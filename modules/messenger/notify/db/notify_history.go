@@ -156,6 +156,7 @@ func (db *NotifyHistoryDB) QueryNotifyHistories(request *model.QueryNotifyHistor
 }
 
 func (db *NotifyHistoryDB) FilterStatus(request *model.FilterStatusRequest) ([]*model.FilterStatusResult, error) {
+	db.LogMode(true)
 	result := make([]*model.FilterStatusResult, 0)
 	startTime, err := ToTime(request.StartTime)
 	if err != nil {
@@ -165,7 +166,10 @@ func (db *NotifyHistoryDB) FilterStatus(request *model.FilterStatusRequest) ([]*
 	if err != nil {
 		return nil, err
 	}
-	err = db.Model(&NotifyHistory{}).Select("status,count(1) as count").Where("created_at >= ?", startTime).Where("created_at <= ?", endTime).
+	err = db.Model(&NotifyHistory{}).Select("status,count(1) as count").
+		Where("source_type = ?", request.ScopeType).
+		Where("source_id = ?", request.ScopeId).
+		Where("created_at >= ?", startTime).Where("created_at <= ?", endTime).
 		Group("status").Scan(&result).Error
 	if err != nil {
 		return nil, err
@@ -199,4 +203,13 @@ func (db *NotifyHistoryDB) QueryNotifyValue(key string, orgId int, scopeId, scop
 		return nil, err
 	}
 	return result, nil
+}
+
+func (db *NotifyHistoryDB) GetAlertNotifyHistory(id int64) (*NotifyHistory, error) {
+	var notifyHistory NotifyHistory
+	err := db.Where("id = ?", id).Find(&notifyHistory).Error
+	if err != nil {
+		return nil, err
+	}
+	return &notifyHistory, nil
 }

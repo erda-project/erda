@@ -643,9 +643,6 @@ func (this *QueryAlertRequest) Validate() error {
 	if !(this.PageSize > 0) {
 		return github_com_mwitkow_go_proto_validators.FieldError("PageSize", fmt.Errorf(`value '%v' must be greater than '0'`, this.PageSize))
 	}
-	if !(this.PageSize < 101) {
-		return github_com_mwitkow_go_proto_validators.FieldError("PageSize", fmt.Errorf(`value '%v' must be less than '101'`, this.PageSize))
-	}
 	return nil
 }
 func (this *QueryAlertsResponse) Validate() error {

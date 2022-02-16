@@ -677,7 +677,7 @@ message QueryAlertRequest {
   string scope    = 1;
   string scopeId  = 2;
   int64  pageNo   = 3 [(validator.field) = {int_gt: 0}];
-  int64  pageSize = 4 [(validator.field) = {int_gt: 0,int_lt: 101}];
+  int64  pageSize = 4 [(validator.field) = {int_gt: 0}];
 }
 
 message QueryAlertsResponse {

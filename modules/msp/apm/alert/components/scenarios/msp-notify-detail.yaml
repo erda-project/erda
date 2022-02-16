@@ -1,0 +1,21 @@
+scenario: msp-notify-detail
+hierarchy:
+  root: page
+  structure:
+    page:
+      - eventStatusInfo
+      - eventOverview
+      - notificationContent
+      - notificationContentInfo
+
+components:
+  page:
+    type: Container
+  eventStatusInfo:
+    type: Panel
+  eventOverview:
+    type: ChartBlock
+  notificationContent:
+    type: ChartBlock
+  notificationContentInfo:
+    type: MarkdownPreview

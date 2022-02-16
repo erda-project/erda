@@ -30,6 +30,16 @@ service NotifyService {
       get: "/api/messenger/notify-histories/{statistic}/histogram"
     };
   }
+  rpc QueryAlertNotifyHistories(QueryAlertNotifyHistoriesRequest) returns (QueryAlertNotifyHistoriesResponse) {
+    option(google.api.http) = {
+      get: "/api/messenger/alert-notify-histories"
+    };
+  }
+  rpc GetAlertNotifyDetail(GetAlertNotifyDetailRequest) returns (GetAlertNotifyDetailResponse) {
+    option(google.api.http) = {
+      get: "/api/messenger/alert-notify-histories/{id}"
+    };
+  }
 }
 
 message CreateNotifyHistoryRequest {
@@ -133,4 +143,53 @@ message NotifyHistogramData {
 
 message StatisticValue {
   repeated int64 value = 1;
+}
+
+message QueryAlertNotifyHistoriesRequest {
+  string          scopeType  = 1;
+  string          scopeID    = 2;
+  string          notifyName = 3;
+  string          status     = 4;
+  string          channel    = 5;
+  int64           alertID    = 6;
+  repeated string sendTime   = 7;
+  int64           pageNo     = 8;
+  int64           pageSize   = 9;
+  bool            timeOrder  = 10;
+}
+
+message QueryAlertNotifyHistoriesResponse {
+  AlertNotifyHistories data = 1;
+}
+
+message AlertNotifyHistories {
+  repeated AlertNotifyIndex list  = 1;
+  int64                     total = 2;
+}
+
+message AlertNotifyIndex {
+  int64                     id         = 1;
+  int64                     notifyID   = 2;
+  string                    notifyName = 3;
+  string                    status     = 4;
+  string                    channel    = 5;
+  string                    attributes = 6;
+  google.protobuf.Timestamp sendTime   = 7;
+}
+
+message GetAlertNotifyDetailRequest {
+  int64 id = 1;
+}
+
+message GetAlertNotifyDetailResponse {
+  AlertNotifyDetail data = 1;
+}
+
+message AlertNotifyDetail {
+  string                    channel       = 1;
+  string                    status        = 2;
+  string                    notifyGroup   = 3;
+  string                    notifyRule    = 4;
+  string                    notifyContent = 5;
+  google.protobuf.Timestamp sendTime      = 6;
 }

@@ -31,6 +31,13 @@ var _ urlenc.URLValuesUnmarshaler = (*GetNotifyHistogramRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetNotifyHistogramResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NotifyHistogramData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*StatisticValue)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*QueryAlertNotifyHistoriesRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*QueryAlertNotifyHistoriesResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AlertNotifyHistories)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AlertNotifyIndex)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertNotifyDetailRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetAlertNotifyDetailResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AlertNotifyDetail)(nil)
 
 // CreateNotifyHistoryRequest implement urlenc.URLValuesUnmarshaler.
 func (m *CreateNotifyHistoryRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -837,6 +844,278 @@ func (m *StatisticValue) UnmarshalURLValues(prefix string, values url.Values) er
 					list = append(list, val)
 				}
 				m.Value = list
+			}
+		}
+	}
+	return nil
+}
+
+// QueryAlertNotifyHistoriesRequest implement urlenc.URLValuesUnmarshaler.
+func (m *QueryAlertNotifyHistoriesRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "scopeType":
+				m.ScopeType = vals[0]
+			case "scopeID":
+				m.ScopeID = vals[0]
+			case "notifyName":
+				m.NotifyName = vals[0]
+			case "status":
+				m.Status = vals[0]
+			case "channel":
+				m.Channel = vals[0]
+			case "alertID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.AlertID = val
+			case "sendTime":
+				m.SendTime = vals
+			case "pageNo":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageNo = val
+			case "pageSize":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageSize = val
+			case "timeOrder":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.TimeOrder = val
+			}
+		}
+	}
+	return nil
+}
+
+// QueryAlertNotifyHistoriesResponse implement urlenc.URLValuesUnmarshaler.
+func (m *QueryAlertNotifyHistoriesResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &AlertNotifyHistories{}
+				}
+			case "data.total":
+				if m.Data == nil {
+					m.Data = &AlertNotifyHistories{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.Total = val
+			}
+		}
+	}
+	return nil
+}
+
+// AlertNotifyHistories implement urlenc.URLValuesUnmarshaler.
+func (m *AlertNotifyHistories) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "total":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Total = val
+			}
+		}
+	}
+	return nil
+}
+
+// AlertNotifyIndex implement urlenc.URLValuesUnmarshaler.
+func (m *AlertNotifyIndex) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "id":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Id = val
+			case "notifyID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.NotifyID = val
+			case "notifyName":
+				m.NotifyName = vals[0]
+			case "status":
+				m.Status = vals[0]
+			case "channel":
+				m.Channel = vals[0]
+			case "attributes":
+				m.Attributes = vals[0]
+			case "sendTime":
+				if m.SendTime == nil {
+					m.SendTime = &timestamppb.Timestamp{}
+				}
+			case "sendTime.seconds":
+				if m.SendTime == nil {
+					m.SendTime = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.SendTime.Seconds = val
+			case "sendTime.nanos":
+				if m.SendTime == nil {
+					m.SendTime = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.SendTime.Nanos = int32(val)
+			}
+		}
+	}
+	return nil
+}
+
+// GetAlertNotifyDetailRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertNotifyDetailRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "id":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Id = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetAlertNotifyDetailResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetAlertNotifyDetailResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &AlertNotifyDetail{}
+				}
+			case "data.channel":
+				if m.Data == nil {
+					m.Data = &AlertNotifyDetail{}
+				}
+				m.Data.Channel = vals[0]
+			case "data.status":
+				if m.Data == nil {
+					m.Data = &AlertNotifyDetail{}
+				}
+				m.Data.Status = vals[0]
+			case "data.notifyGroup":
+				if m.Data == nil {
+					m.Data = &AlertNotifyDetail{}
+				}
+				m.Data.NotifyGroup = vals[0]
+			case "data.notifyRule":
+				if m.Data == nil {
+					m.Data = &AlertNotifyDetail{}
+				}
+				m.Data.NotifyRule = vals[0]
+			case "data.notifyContent":
+				if m.Data == nil {
+					m.Data = &AlertNotifyDetail{}
+				}
+				m.Data.NotifyContent = vals[0]
+			case "data.sendTime":
+				if m.Data == nil {
+					m.Data = &AlertNotifyDetail{}
+				}
+				if m.Data.SendTime == nil {
+					m.Data.SendTime = &timestamppb.Timestamp{}
+				}
+			case "data.sendTime.seconds":
+				if m.Data == nil {
+					m.Data = &AlertNotifyDetail{}
+				}
+				if m.Data.SendTime == nil {
+					m.Data.SendTime = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.SendTime.Seconds = val
+			case "data.sendTime.nanos":
+				if m.Data == nil {
+					m.Data = &AlertNotifyDetail{}
+				}
+				if m.Data.SendTime == nil {
+					m.Data.SendTime = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.Data.SendTime.Nanos = int32(val)
+			}
+		}
+	}
+	return nil
+}
+
+// AlertNotifyDetail implement urlenc.URLValuesUnmarshaler.
+func (m *AlertNotifyDetail) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "channel":
+				m.Channel = vals[0]
+			case "status":
+				m.Status = vals[0]
+			case "notifyGroup":
+				m.NotifyGroup = vals[0]
+			case "notifyRule":
+				m.NotifyRule = vals[0]
+			case "notifyContent":
+				m.NotifyContent = vals[0]
+			case "sendTime":
+				if m.SendTime == nil {
+					m.SendTime = &timestamppb.Timestamp{}
+				}
+			case "sendTime.seconds":
+				if m.SendTime == nil {
+					m.SendTime = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.SendTime.Seconds = val
+			case "sendTime.nanos":
+				if m.SendTime == nil {
+					m.SendTime = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.SendTime.Nanos = int32(val)
 			}
 		}
 	}

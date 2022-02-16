@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 
 	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-overview"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-list"
 )
 
 //go:embed scenarios
