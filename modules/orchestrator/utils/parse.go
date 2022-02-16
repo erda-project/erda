@@ -18,6 +18,8 @@ import (
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 func GetRealIP(request *http.Request) string {
@@ -37,4 +39,49 @@ func ParseOrderName(uuid string) string {
 		return uuid[:6]
 	}
 	return uuid
+}
+
+func ParseDeploymentOrderStatus(appStatus apistructs.DeploymentOrderStatusMap) apistructs.DeploymentOrderStatus {
+	if appStatus == nil || len(appStatus) == 0 {
+		return apistructs.OrderStatusWaitDeploy
+	}
+
+	status := make([]apistructs.DeploymentStatus, 0)
+	for _, a := range appStatus {
+		if a.DeploymentStatus == apistructs.DeploymentStatusWaitApprove ||
+			a.DeploymentStatus == apistructs.DeploymentStatusInit ||
+			a.DeploymentStatus == apistructs.DeploymentStatusWaiting ||
+			a.DeploymentStatus == apistructs.DeploymentStatusDeploying {
+			return apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusDeploying)
+		}
+		status = append(status, a.DeploymentStatus)
+	}
+
+	var (
+		isFailed   bool
+		isAllEmpty = true
+	)
+
+	for _, s := range status {
+		if s == apistructs.DeploymentStatusCanceling ||
+			s == apistructs.DeploymentStatusCanceled {
+			return apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusCanceled)
+		}
+		if s == apistructs.DeploymentStatusFailed {
+			isFailed = true
+		}
+		if s != "" {
+			isAllEmpty = false
+		}
+	}
+
+	if isFailed {
+		return apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusFailed)
+	}
+
+	if isAllEmpty {
+		return apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusDeploying)
+	}
+
+	return apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusOK)
 }

@@ -27,8 +27,9 @@ import (
 type QueueEnum string
 
 const (
-	DEPLOY_CONTINUING QueueEnum = "DEPLOY_CONTINUING"
-	RUNTIME_DELETING  QueueEnum = "RUNTIME_DELETING"
+	DEPLOY_CONTINUING        QueueEnum = "DEPLOY_CONTINUING"
+	RUNTIME_DELETING         QueueEnum = "RUNTIME_DELETING"
+	DEPLOYMENT_ORDER_BATCHES QueueEnum = "DEPLOYMENT_ORDER_BATCHES"
 )
 
 type PusherQueue struct {

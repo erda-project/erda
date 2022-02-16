@@ -15,12 +15,10 @@
 package utils
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/spec"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -250,10 +248,6 @@ func ConvertBinds(volumePrefixDir string, vol []string) (binds []apistructs.Serv
 	}
 
 	return
-}
-
-func BuildVolumeRootDir(runtime *dbclient.Runtime) string {
-	return fmt.Sprintf("/netdata/volumes/%s/%s", runtime.GitRepoAbbrev, strings.ToLower(runtime.Workspace))
 }
 
 func BuildDiscoveryConfig(appName string, group *apistructs.ServiceGroup) map[string]string {

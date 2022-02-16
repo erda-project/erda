@@ -239,8 +239,8 @@ func (d *DeploymentOrder) composeAppsInfoByReleaseResp(releaseResp *apistructs.R
 			releasesMap[r.ReleaseId] = r
 		}
 
-		for i := 0; i < len(releaseResp.ApplicationReleaseList); i++ {
-			for _, r := range releaseResp.ApplicationReleaseList[i] {
+		for batchId, batch := range releaseResp.ApplicationReleaseList {
+			for _, r := range batch {
 				ret, ok := releasesMap[r.ReleaseID]
 				if !ok {
 					return nil, fmt.Errorf("failed to get releases %s from dicehub", r.ReleaseID)
@@ -249,6 +249,7 @@ func (d *DeploymentOrder) composeAppsInfoByReleaseResp(releaseResp *apistructs.R
 				asi = append(asi, &apistructs.ApplicationInfo{
 					Id:       uint64(r.ApplicationID),
 					Name:     r.ApplicationName,
+					Batch:    batchId + 1,
 					Params:   covertParamsType(params[r.ApplicationName]),
 					DiceYaml: ret.DiceYaml,
 				})

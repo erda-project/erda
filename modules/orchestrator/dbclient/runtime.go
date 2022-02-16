@@ -383,6 +383,16 @@ func (db *DBClient) UpdateRuntime(runtime *Runtime) error {
 	return nil
 }
 
+func (db *DBClient) UpdateRuntimeDeploymentInfo(runtimeId, curDeploymentId uint64, status apistructs.DeploymentStatus) error {
+	if err := db.Model(&Runtime{}).Where("id = ?", runtimeId).Update(&Runtime{
+		DeploymentStatus:    status,
+		CurrentDeploymentID: curDeploymentId,
+	}).Error; err != nil {
+		return errors.Wrapf(err, "failed to update runtime deployment status, id: %v", runtimeId)
+	}
+	return nil
+}
+
 func (db *DBClient) DeleteRuntime(runtimeId uint64) error {
 	if err := db.
 		Where("id = ?", runtimeId).
@@ -431,7 +441,7 @@ func (db *DBClient) CreateOrUpdateRuntimeService(service *RuntimeService, overri
 		service.UpdatedAt = old.UpdatedAt
 		service.Errors = old.Errors // TODO: should we change errors or not ?
 		if !overrideStatus {
-			// not override status, still use old.Status
+			// not override status, still use old.StatusDetail
 			service.Status = old.Status
 		}
 		if err := db.Save(service).Error; err != nil {
@@ -539,4 +549,13 @@ func (db *DBClient) ListRuntimesByAppsName(env string, projectId uint64, appsNam
 		return nil, err
 	}
 	return &runtimes, nil
+}
+
+func (db *DBClient) GetRuntimeByAppName(env string, projectId uint64, appName string) (*Runtime, error) {
+	var runtime Runtime
+	if err := db.Model(&Runtime{}).Where("project_id = ? and env = ?", projectId, strings.ToUpper(env)).
+		Where("name = ?", appName).Find(&runtime).Error; err != nil {
+		return nil, err
+	}
+	return &runtime, nil
 }
