@@ -353,6 +353,41 @@ func (e *Endpoints) PushOnDeployment() (bool, error) {
 	return false, nil
 }
 
+func (e *Endpoints) PushOnDeploymentOrderPolling() (abort bool, err0 error) {
+	// database operator move to service layer
+	return e.deploymentOrder.PushOnDeploymentOrderPolling()
+}
+
+func (e *Endpoints) PushOnDeploymentOrder() (abort bool, err0 error) {
+	item, err := e.queue.Pop(queue.DEPLOYMENT_ORDER_BATCHES)
+	if err != nil {
+		logrus.Warnf("failed to pop DEPLOYMENT_ORDER_BATCHES task, err: %v", err)
+		return
+	}
+	if item == "" {
+		// tasks not found
+		return
+	}
+
+	doDeployOrder := func() {
+		if err := e.deploymentOrder.ContinueDeployOrder(item); err != nil {
+			logrus.Warnf("failed to execute deployment order, order id: %s, (%v)", item, err)
+		}
+
+		// update batch count
+		if _, err := e.queue.Unlock(queue.DEPLOYMENT_ORDER_BATCHES, item); err != nil {
+			logrus.Errorf("[alert] failed to unlock %v/%v, (%v)", queue.DEPLOYMENT_ORDER_BATCHES, item, err)
+		}
+	}
+
+	if err := e.pool.GoWithTimeout(doDeployOrder, 5*time.Second); err != nil {
+		logrus.Warnf("failed to do deployment order batches, timeout after 5 second")
+		return
+	}
+
+	return
+}
+
 // TODO: we should refactor the polling
 func (e *Endpoints) PushOnDeletingRuntimesPolling() (abort bool, err0 error) {
 	runtimes, err := e.db.FindDeletingRuntimes()

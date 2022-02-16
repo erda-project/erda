@@ -82,9 +82,9 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 
 	for _, order := range orders {
 		appsStatus := make(apistructs.DeploymentOrderStatusMap, 0)
-		if order.Status != "" {
+		if order.StatusDetail != "" {
 			// parse status
-			if err := json.Unmarshal([]byte(order.Status), &appsStatus); err != nil {
+			if err := json.Unmarshal([]byte(order.StatusDetail), &appsStatus); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal applications status, err: %v", err)
 			}
 		}
@@ -98,16 +98,24 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 		}
 
 		if r.IsProjectRelease {
-			subReleases := make([]string, 0)
+			subReleases := make([][]string, 0)
 			if err := json.Unmarshal([]byte(r.ApplicationReleaseList), &subReleases); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal release application list, err: %v", err)
 			}
-			applicationCount = len(subReleases)
+			applicationCount = 0
+			for _, subRelease := range subReleases {
+				applicationCount += len(subRelease)
+			}
 		}
 
 		applicationStatus := strings.Join([]string{
 			strconv.Itoa(parseApplicationStatus(appsStatus)),
 			strconv.Itoa(applicationCount)}, "/")
+
+		status := apistructs.DeploymentOrderStatus(order.Status)
+		if status == "" {
+			status = utils.ParseDeploymentOrderStatus(appsStatus)
+		}
 
 		ret = append(ret, &apistructs.DeploymentOrderItem{
 			ID:   order.ID,
@@ -122,7 +130,9 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 			Type:              order.Type,
 			ApplicationStatus: applicationStatus,
 			Workspace:         order.Workspace,
-			Status:            parseDeploymentOrderStatus(appsStatus),
+			BatchSize:         order.BatchSize,
+			CurrentBatch:      order.CurrentBatch,
+			Status:            status,
 			Operator:          string(order.Operator),
 			CreatedAt:         order.CreatedAt,
 			UpdatedAt:         order.UpdatedAt,

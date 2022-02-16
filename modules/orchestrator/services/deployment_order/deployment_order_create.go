@@ -30,6 +30,10 @@ import (
 	"github.com/erda-project/erda/modules/pkg/user"
 )
 
+const (
+	FirstBatch = iota + 1
+)
+
 func (d *DeploymentOrder) Create(req *apistructs.DeploymentOrderCreateRequest) (*apistructs.DeploymentOrderCreateResponse, error) {
 	// generate order id
 	if req.Id == "" {
@@ -77,10 +81,11 @@ func (d *DeploymentOrder) Create(req *apistructs.DeploymentOrderCreateRequest) (
 		ProjectName:     order.ProjectName,
 		ApplicationId:   order.ApplicationId,
 		ApplicationName: order.ApplicationName,
-		Status:          parseDeploymentOrderStatus(nil),
+		Status:          utils.ParseDeploymentOrderStatus(nil),
 	}
 
 	if req.AutoRun {
+		order.CurrentBatch = FirstBatch
 		executeDeployResp, err := d.executeDeploy(order, releaseResp, req.Source, parseRuntimeNameFromBranch(req))
 		if err != nil {
 			logrus.Errorf("failed to executeDeploy, err: %v", err)
@@ -119,6 +124,10 @@ func (d *DeploymentOrder) Deploy(req *apistructs.DeploymentOrderDeployRequest) (
 		return nil, err
 	}
 
+	// deploy interface will means execute from the first batch
+	// TODO: continue deploying need front function design
+	order.CurrentBatch = FirstBatch
+
 	if _, err := d.executeDeploy(order, releaseResp, apistructs.SourceDeployCenter, false); err != nil {
 		logrus.Errorf("failed to execute deploy, order id: %s, err: %v", req.DeploymentOrderId, err)
 		return nil, err
@@ -127,30 +136,53 @@ func (d *DeploymentOrder) Deploy(req *apistructs.DeploymentOrderDeployRequest) (
 	return order, nil
 }
 
+// ContinueDeployOrder deploy from queue compensation
+func (d *DeploymentOrder) ContinueDeployOrder(orderId string) error {
+	order, err := d.db.GetDeploymentOrder(orderId)
+	if err != nil {
+		logrus.Errorf("failed to get deployment order, err: %v", err)
+		return err
+	}
+	releaseResp, err := d.bdl.GetRelease(order.ReleaseId)
+	if err != nil {
+		logrus.Errorf("failed to get release, err: %v", err)
+		return err
+	}
+
+	_, err = d.executeDeploy(order, releaseResp, apistructs.SourceDeployCenter, false)
+	if err != nil {
+		logrus.Errorf("failed to execute deploy, order id: %s, err: %v", orderId, err)
+		return err
+	}
+
+	return nil
+}
+
 func (d *DeploymentOrder) executeDeploy(order *dbclient.DeploymentOrder, releaseResp *apistructs.ReleaseGetResponseData,
 	source string, isRuntimeNameFromBranch bool) (map[string]*apistructs.DeploymentCreateResponseDTO, error) {
-	// compose runtime create requests
+	// compose runtime create requests with order current batch
 	rtCreateReqs, err := d.composeRuntimeCreateRequests(order, releaseResp, source, isRuntimeNameFromBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compose runtime create requests, err: %v", err)
 	}
 
-	deployResponse := make(map[string]*apistructs.DeploymentCreateResponseDTO)
 	applicationsStatus := make(apistructs.DeploymentOrderStatusMap)
-
-	// create runtimes
-	for _, rtCreateReq := range rtCreateReqs {
-		runtimeCreateResp, err := d.rt.Create(order.Operator, rtCreateReq)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create runtime %s, cluster: %s, release id: %s, err: %v",
-				rtCreateReq.Name, rtCreateReq.ClusterName, rtCreateReq.ReleaseID, err)
+	// redeploy
+	if order.CurrentBatch != FirstBatch {
+		if order.StatusDetail != "" {
+			if err := json.Unmarshal([]byte(order.StatusDetail), &applicationsStatus); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal to deployment order status (%s), err: %v",
+					order.ID, err)
+			}
 		}
-		deployResponse[rtCreateReq.Extra.ApplicationName] = runtimeCreateResp
+	} else {
+		order.StartedAt = time.Now()
+	}
+
+	// compose init status
+	for _, rtCreateReq := range rtCreateReqs {
 		applicationsStatus[rtCreateReq.Extra.ApplicationName] = apistructs.DeploymentOrderStatusItem{
-			DeploymentID:     runtimeCreateResp.DeploymentID,
-			AppID:            runtimeCreateResp.ApplicationID,
 			DeploymentStatus: apistructs.DeploymentStatusInit,
-			RuntimeID:        runtimeCreateResp.RuntimeID,
 		}
 	}
 
@@ -160,11 +192,23 @@ func (d *DeploymentOrder) executeDeploy(order *dbclient.DeploymentOrder, release
 		return nil, fmt.Errorf("failed to marshal applications status, err: %v", err)
 	}
 
-	// update deployment order status
-	order.StartedAt = time.Now()
-	order.Status = string(jsonAppStatus)
+	order.StatusDetail = string(jsonAppStatus)
+	order.Status = string(apistructs.DeploymentStatusDeploying)
+
 	if err := d.db.UpdateDeploymentOrder(order); err != nil {
+		logrus.Errorf("failed to update deployment order, err: %v", err)
 		return nil, err
+	}
+
+	deployResponse := make(map[string]*apistructs.DeploymentCreateResponseDTO)
+	// create runtimes
+	for _, rtCreateReq := range rtCreateReqs {
+		runtimeCreateResp, err := d.rt.Create(order.Operator, rtCreateReq)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create runtime %s, cluster: %s, release id: %s, err: %v",
+				rtCreateReq.Name, rtCreateReq.ClusterName, rtCreateReq.ReleaseID, err)
+		}
+		deployResponse[rtCreateReq.Extra.ApplicationName] = runtimeCreateResp
 	}
 
 	return deployResponse, nil
@@ -186,6 +230,7 @@ func (d *DeploymentOrder) composeDeploymentOrder(release *apistructs.ReleaseGetR
 		ProjectId:   uint64(release.ProjectID),
 		ReleaseId:   release.ReleaseID,
 		ProjectName: release.ProjectName,
+		BatchSize:   uint64(len(release.ApplicationReleaseList)),
 	}
 
 	params, err := d.fetchApplicationsParams(release, workspace)
@@ -202,6 +247,7 @@ func (d *DeploymentOrder) composeDeploymentOrder(release *apistructs.ReleaseGetR
 
 	if orderType == apistructs.TypeApplicationRelease {
 		order.ApplicationId, order.ApplicationName = release.ApplicationID, release.ApplicationName
+		order.BatchSize = 1
 	}
 
 	return order, nil
@@ -266,9 +312,12 @@ func (d *DeploymentOrder) fetchDeploymentParams(applicationId int64, workspace s
 
 func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.DeploymentOrder, r *apistructs.ReleaseGetResponseData,
 	source string, isRuntimeNameFromBranch bool) ([]*apistructs.RuntimeCreateRequest, error) {
-
 	if order == nil || r == nil {
 		return nil, fmt.Errorf("deployment order or release response data is nil")
+	}
+
+	if order.CurrentBatch == 0 {
+		return nil, fmt.Errorf("current batch is 0")
 	}
 
 	var (
@@ -308,36 +357,34 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 	runtimeSource := apistructs.RuntimeSource(source)
 
 	if r.IsProjectRelease {
-		for i := 0; i < len(r.ApplicationReleaseList); i++ {
-			for _, ar := range r.ApplicationReleaseList[i] {
-				rtCreateReq := &apistructs.RuntimeCreateRequest{
-					Name:              ar.ApplicationName,
-					DeploymentOrderId: deploymentOrderId,
-					ReleaseVersion:    r.Version,
-					ReleaseID:         ar.ReleaseID,
-					Source:            runtimeSource,
-					Operator:          operator,
-					ClusterName:       clusterName,
-					Extra: apistructs.RuntimeCreateRequestExtra{
-						OrgID:           orgId,
-						ProjectID:       projectId,
-						ApplicationName: ar.ApplicationName,
-						ApplicationID:   uint64(ar.ApplicationID),
-						DeployType:      release,
-						Workspace:       workspace,
-						BuildID:         0, // Deprecated
-					},
-					SkipPushByOrch: false,
-				}
-
-				paramJson, err := json.Marshal(orderParams[ar.ApplicationName])
-				if err != nil {
-					return nil, err
-				}
-				rtCreateReq.Param = string(paramJson)
-
-				ret = append(ret, rtCreateReq)
+		for _, ar := range r.ApplicationReleaseList[order.CurrentBatch-1] {
+			rtCreateReq := &apistructs.RuntimeCreateRequest{
+				Name:              ar.ApplicationName,
+				DeploymentOrderId: deploymentOrderId,
+				ReleaseVersion:    r.Version,
+				ReleaseID:         ar.ReleaseID,
+				Source:            runtimeSource,
+				Operator:          operator,
+				ClusterName:       clusterName,
+				Extra: apistructs.RuntimeCreateRequestExtra{
+					OrgID:           orgId,
+					ProjectID:       projectId,
+					ApplicationName: ar.ApplicationName,
+					ApplicationID:   uint64(ar.ApplicationID),
+					DeployType:      release,
+					Workspace:       workspace,
+					BuildID:         0, // Deprecated
+				},
+				SkipPushByOrch: false,
 			}
+
+			paramJson, err := json.Marshal(orderParams[ar.ApplicationName])
+			if err != nil {
+				return nil, err
+			}
+			rtCreateReq.Param = string(paramJson)
+
+			ret = append(ret, rtCreateReq)
 		}
 	} else {
 		rtCreateReq := &apistructs.RuntimeCreateRequest{
