@@ -65,8 +65,7 @@ func (d *Dice) CreateKey(ctx context.Context, req *kmstypes.CreateKeyRequest) (*
 	}
 
 	// key spec
-	if req.CustomerMasterKeySpec != kmstypes.CustomerMasterKeySpec_SYMMETRIC_DEFAULT &&
-		req.CustomerMasterKeySpec != kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_4096 {
+	if !req.CustomerMasterKeySpec.IsValid() {
 		return nil, fmt.Errorf("not supported key spec: %s", req.CustomerMasterKeySpec)
 	}
 
@@ -81,14 +80,17 @@ func (d *Dice) CreateKey(ctx context.Context, req *kmstypes.CreateKeyRequest) (*
 	}
 	switch req.CustomerMasterKeySpec {
 	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_4096:
-		publicKey, privateKey, err := encryption.GenRsaKey(4096)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create rsa key pair, err: %v", err)
+		if err := d.fillRsaKeyVersionByBits(&primaryKeyVersion, 4096); err != nil {
+			return nil, err
 		}
-		publicKeyBase64 := base64.StdEncoding.EncodeToString(publicKey)
-		privateKeyBase64 := base64.StdEncoding.EncodeToString(privateKey)
-		primaryKeyVersion.PublicKeyBase64 = publicKeyBase64
-		primaryKeyVersion.PrivateKeyBase64 = privateKeyBase64
+	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_3072:
+		if err := d.fillRsaKeyVersionByBits(&primaryKeyVersion, 3072); err != nil {
+			return nil, err
+		}
+	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_2048:
+		if err := d.fillRsaKeyVersionByBits(&primaryKeyVersion, 2048); err != nil {
+			return nil, err
+		}
 	case kmstypes.CustomerMasterKeySpec_SYMMETRIC_DEFAULT:
 		symmetricKeyBytes, err := kmscrypto.GenerateAes256Key()
 		if err != nil {
@@ -161,7 +163,8 @@ func (d *Dice) Encrypt(ctx context.Context, req *kmstypes.EncryptRequest) (*kmst
 	// encrypt
 	var ciphertext []byte
 	switch keyInfo.GetKeySpec() {
-	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_4096:
+	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_4096, kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_2048,
+		kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_3072:
 		rsaCrypt := encryption.NewRSAScrypt(encryption.RSASecret{
 			PublicKey:          keyInfo.GetPrimaryKeyVersion().GetPublicKeyBase64(),
 			PublicKeyDataType:  encryption.Base64,
@@ -245,7 +248,8 @@ func (d *Dice) Decrypt(ctx context.Context, req *kmstypes.DecryptRequest) (resp 
 	// decrypt ciphertext
 	var plaintextBytes []byte
 	switch keyInfo.GetKeySpec() {
-	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_4096:
+	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_4096, kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_2048,
+		kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_3072:
 		rsaCrypt := encryption.NewRSAScrypt(encryption.RSASecret{
 			PublicKey:          keyInfo.GetPrimaryKeyVersion().GetPublicKeyBase64(),
 			PublicKeyDataType:  encryption.Base64,
@@ -325,14 +329,17 @@ func (d *Dice) RotateKeyVersion(ctx context.Context, req *kmstypes.RotateKeyVers
 	}
 	switch keyInfo.GetKeySpec() {
 	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_4096:
-		publicKey, privateKey, err := encryption.GenRsaKey(4096)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create rsa key pair, err: %v", err)
+		if err := d.fillRsaKeyVersionByBits(&newKeyVersion, 4096); err != nil {
+			return nil, err
 		}
-		publicKeyBase64 := base64.StdEncoding.EncodeToString(publicKey)
-		privateKeyBase64 := base64.StdEncoding.EncodeToString(privateKey)
-		newKeyVersion.PublicKeyBase64 = publicKeyBase64
-		newKeyVersion.PrivateKeyBase64 = privateKeyBase64
+	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_3072:
+		if err := d.fillRsaKeyVersionByBits(&newKeyVersion, 3072); err != nil {
+			return nil, err
+		}
+	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_2048:
+		if err := d.fillRsaKeyVersionByBits(&newKeyVersion, 2048); err != nil {
+			return nil, err
+		}
 	case kmstypes.CustomerMasterKeySpec_SYMMETRIC_DEFAULT:
 		symmetricKey, err := kmscrypto.GenerateAes256Key()
 		if err != nil {
@@ -354,6 +361,18 @@ func (d *Dice) RotateKeyVersion(ctx context.Context, req *kmstypes.RotateKeyVers
 
 	resp := kmstypes.RotateKeyVersionResponse{KeyMetadata: kmstypes.GetKeyMetadata(keyInfo)}
 	return &resp, nil
+}
+
+func (d *Dice) fillRsaKeyVersionByBits(keyVersion *kmstypes.KeyVersion, bits int) error {
+	publicKey, privateKey, err := encryption.GenRsaKey(bits)
+	if err != nil {
+		return fmt.Errorf("failed to create rsa key pair, err: %v", err)
+	}
+	publicKeyBase64 := base64.StdEncoding.EncodeToString(publicKey)
+	privateKeyBase64 := base64.StdEncoding.EncodeToString(privateKey)
+	keyVersion.PublicKeyBase64 = publicKeyBase64
+	keyVersion.PrivateKeyBase64 = privateKeyBase64
+	return nil
 }
 
 func (d *Dice) GetPublicKey(ctx context.Context, req *kmstypes.GetPublicKeyRequest) (*kmstypes.PublicKey, error) {
