@@ -1531,7 +1531,7 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 			RuleName:         event.RuleName,
 			ExpressionID:     event.ExpressionID,
 			LastTriggerTime:  event.LastTriggerTime.UnixNano() / 1e6,
-			FirstTriggerTime: event.LastTriggerTime.UnixNano() / 1e6,
+			FirstTriggerTime: event.FirstTriggerTime.UnixNano() / 1e6,
 		}
 		if suppressSettings, ok := suppressEventIdMap[item.Id]; ok {
 			item.AlertState = suppressSettings.SuppressType
