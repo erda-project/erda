@@ -6,6 +6,15 @@ en:
   Rule: Associate Alert Rule
   EventOverview: Event Overview
   NotifyContent: Notify Content
+  success: success
+  failed: failed
+  dingding: dingding
+  webhook: webhook
+  email: email
+  mbox: mbox
+  vms: voice notify
+  sms: short message notify
+  dingtalk_work_notice: dingding work notify
 
 zh:
   Channel: 通知方式
@@ -15,3 +24,13 @@ zh:
   Rule: 关联告警规则
   EventOverview: 事件概览
   NotifyContent: 通知内容
+  NotifyName: 通知名称
+  LinkedStrategy: 关联策略
+  dingding: 钉钉群
+  email: 邮箱
+  mbox: 站内信
+  vms: 语音通知
+  sms: 短信通知
+  dingtalk_work_notice: 钉钉工作通知
+  success: 成功
+  failed: 失败

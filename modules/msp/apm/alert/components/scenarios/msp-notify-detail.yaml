@@ -3,8 +3,8 @@ hierarchy:
   root: page
   structure:
     page:
-      - eventStatusInfo
       - eventOverview
+      - eventStatusInfo
       - notificationContent
       - notificationContentInfo
 
