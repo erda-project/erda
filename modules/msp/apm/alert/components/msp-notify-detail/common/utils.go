@@ -21,6 +21,7 @@ import (
 
 func SetNotifyIndexToGlobalState(gs cptype.GlobalStateData, alertIndex *messenger.AlertNotifyDetail) {
 	gs[AlertIndex] = alertIndex
+	gs[StateKeyPageTitle] = alertIndex.AlertName
 }
 
 func GetNotifyIndexFromGlobalState(gs cptype.GlobalStateData) *messenger.AlertNotifyDetail {
