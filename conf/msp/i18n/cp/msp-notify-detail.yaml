@@ -1,0 +1,17 @@
+en:
+  Channel: Notify Channel
+  Status: Send Status
+  SendTime: Send Time
+  Group: Associate Notify Groups
+  Rule: Associate Alert Rule
+  EventOverview: Event Overview
+  NotifyContent: Notify Content
+
+zh:
+  Channel: 通知方式
+  Status: 发送状态
+  SendTime: 发送时间
+  Group: 关联通知组
+  Rule: 关联告警规则
+  EventOverview: 事件概览
+  NotifyContent: 通知内容

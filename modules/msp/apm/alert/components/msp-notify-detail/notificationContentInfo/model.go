@@ -12,15 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package notificationContentInfo
 
-const ScenarioKey = "msp-notify-list"
-
-const (
-	ComponentNameEventStatusInfo         = "eventStatusInfo"
-	ComponentNameNotificationContentInfo = "notificationContentInfo"
+import (
+	"context"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 )
 
-const (
-	AlertIndex = "alertIndex"
-)
+type ComponentNotifyInfo struct {
+	sdk *cptype.SDK `json:"-"`
+	ctx context.Context
+
+	Type  string            `json:"type,omitempty"`
+	Data  map[string]string `json:"data,omitempty"`
+	State State             `json:"state,omitempty"`
+}
+
+type State struct {
+}

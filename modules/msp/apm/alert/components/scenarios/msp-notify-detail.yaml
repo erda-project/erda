@@ -15,7 +15,11 @@ components:
     type: Panel
   eventOverview:
     type: ChartBlock
+    data:
+      title: ${{ i18n.EventOverview }}
   notificationContent:
     type: ChartBlock
+    data:
+      title: ${{ i18n.NotifyContent }}
   notificationContentInfo:
     type: MarkdownPreview

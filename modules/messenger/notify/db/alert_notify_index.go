@@ -38,6 +38,7 @@ type AlertNotifyIndex struct {
 	OrgID      int64     `json:"org_id" gorm:"column:org_id"`
 	CreatedAt  time.Time `json:"created_at" gorm:"column:created_at"`
 	SendTime   time.Time `json:"sendTime" gorm:"column:send_time"`
+	AlertId    int64     `json:"alertId,gorm:"column:alert_id"`
 }
 
 func (AlertNotifyIndex) TableName() string {
