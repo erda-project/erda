@@ -15,9 +15,10 @@
 package common
 
 import (
+	"github.com/mitchellh/mapstructure"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/mitchellh/mapstructure"
 )
 
 type IdNameValue struct {

@@ -21,13 +21,11 @@ import (
 	"strconv"
 	"time"
 
-	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
-
 	"github.com/ahmetb/go-linq/v3"
-
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/complexgraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/complexgraph/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"

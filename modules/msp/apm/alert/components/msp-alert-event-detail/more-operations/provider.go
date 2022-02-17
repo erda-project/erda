@@ -19,13 +19,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
-
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-detail/common"
 )
 

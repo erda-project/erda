@@ -17,16 +17,14 @@ package components
 import (
 	"embed"
 
-	"github.com/erda-project/erda/modules/msp/apm/alert/components/common"
-
-	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
-	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/modules/msp/apm/alert/components/common"
 
 	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-detail"
 	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-list"

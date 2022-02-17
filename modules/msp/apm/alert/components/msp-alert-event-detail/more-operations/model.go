@@ -17,11 +17,9 @@ package more_operations
 import (
 	"context"
 
-	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
-
-	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-detail/common"
-
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-detail/common"
 )
 
 type ComponentOperationButton struct {
