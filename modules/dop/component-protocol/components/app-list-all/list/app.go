@@ -15,7 +15,10 @@
 package list
 
 import (
+	"fmt"
+	"runtime/debug"
 	"strconv"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 
@@ -26,7 +29,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/common"
 )
 
-func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) {
+func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO, mrCount int) (kvs []list.KvInfo) {
 	var isPublic = "privateApp"
 	var publicIcon = "private"
 	if item.IsPublic {
@@ -34,13 +37,6 @@ func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) 
 		publicIcon = "public"
 	}
 	updated := common.UpdatedTime(l.sdk.Ctx, item.UpdatedAt)
-	runtimeUrlQuery, err := common.GenerateUrlQueryParams(map[string]interface{}{
-		"app": []string{item.Name},
-	})
-	if err != nil {
-		logrus.Errorf("run time url query encode failed, error: %v", err)
-		panic(err)
-	}
 	kvs = []list.KvInfo{
 		{
 			Icon:  publicIcon,
@@ -49,8 +45,8 @@ func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) 
 		},
 		{
 			Icon:  "list-numbers",
-			Tip:   l.sdk.I18n("runtime"),
-			Value: strconv.Itoa(int(item.Stats.CountRuntimes)),
+			Tip:   l.sdk.I18n("openMrCount"),
+			Value: strconv.Itoa(mrCount),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
 					WithSkipRender(true).
@@ -58,12 +54,9 @@ func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) 
 						OpItemBasicServerData: list.OpItemBasicServerData{
 							Params: map[string]interface{}{
 								"projectId": item.ProjectID,
-								"env":       "dev",
+								"appId":     item.ID,
 							},
-							Target: "projectDeployEnv",
-							Query: map[string]interface{}{
-								"advanceFilter__urlQuery": runtimeUrlQuery,
-							},
+							Target: "appOpenMr",
 						},
 					}).
 					Build(),
@@ -80,5 +73,62 @@ func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) 
 			Value: l.sdk.I18n("appMode" + item.Mode),
 		},
 	}
+	return
+}
+
+func (l *List) ListOpenMrWithLimitRate(identity apistructs.Identity, appIDs []uint64, limit int) (result map[uint64]int, err error) {
+	req := apistructs.GittarQueryMrRequest{
+		State: "open",
+		Page:  1,
+		Size:  0,
+	}
+	if limit <= 0 {
+		limit = 5
+	}
+
+	result = make(map[uint64]int)
+	store := new(sync.Map)
+	limitCh := make(chan struct{}, limit)
+	wg := sync.WaitGroup{}
+	defer close(limitCh)
+
+	for _, v := range appIDs {
+		limitCh <- struct{}{}
+		wg.Add(1)
+		go func(appID uint64) {
+			defer func() {
+				if err := recover(); err != nil {
+					logrus.Errorf("")
+					logrus.Errorf("%s", debug.Stack())
+				}
+				<-limitCh
+				wg.Done()
+			}()
+			res, err := l.bdl.ListMergeRequest(appID, identity.UserID, req)
+			if err != nil {
+				logrus.Warnf("list merget request failed, appID: %v, error: %v", appID, err)
+			}
+			if res == nil {
+				store.Store(appID, 0)
+			} else {
+				store.Store(appID, res.Total)
+			}
+		}(v)
+	}
+	wg.Wait()
+	store.Range(func(k interface{}, v interface{}) bool {
+		appID, ok := k.(uint64)
+		if !ok {
+			err = fmt.Errorf("appID type: [int64], assert failed")
+			return false
+		}
+		openMrNum, ok := v.(int)
+		if !ok {
+			err = fmt.Errorf("openMrNum type: [int], assert failed")
+			return false
+		}
+		result[appID] = openMrNum
+		return true
+	})
 	return
 }
