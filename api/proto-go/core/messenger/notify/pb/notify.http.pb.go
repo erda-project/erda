@@ -6,6 +6,7 @@ package pb
 import (
 	context "context"
 	http1 "net/http"
+	strconv "strconv"
 	strings "strings"
 
 	transport "github.com/erda-project/erda-infra/pkg/transport"
@@ -29,6 +30,10 @@ type NotifyServiceHandler interface {
 	GetNotifyStatus(context.Context, *GetNotifyStatusRequest) (*GetNotifyStatusResponse, error)
 	// GET /api/messenger/notify-histories/{statistic}/histogram
 	GetNotifyHistogram(context.Context, *GetNotifyHistogramRequest) (*GetNotifyHistogramResponse, error)
+	// GET /api/messenger/alert-notify-histories
+	QueryAlertNotifyHistories(context.Context, *QueryAlertNotifyHistoriesRequest) (*QueryAlertNotifyHistoriesResponse, error)
+	// GET /api/messenger/alert-notify-histories/{id}
+	GetAlertNotifyDetail(context.Context, *GetAlertNotifyDetailRequest) (*GetAlertNotifyDetailResponse, error)
 }
 
 // RegisterNotifyServiceHandler register NotifyServiceHandler to http.Router.
@@ -221,8 +226,109 @@ func RegisterNotifyServiceHandler(r http.Router, srv NotifyServiceHandler, opts 
 		)
 	}
 
+	add_QueryAlertNotifyHistories := func(method, path string, fn func(context.Context, *QueryAlertNotifyHistoriesRequest) (*QueryAlertNotifyHistoriesResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*QueryAlertNotifyHistoriesRequest))
+		}
+		var QueryAlertNotifyHistories_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			QueryAlertNotifyHistories_info = transport.NewServiceInfo("erda.core.messenger.notify.NotifyService", "QueryAlertNotifyHistories", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, QueryAlertNotifyHistories_info)
+				}
+				r = r.WithContext(ctx)
+				var in QueryAlertNotifyHistoriesRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_GetAlertNotifyDetail := func(method, path string, fn func(context.Context, *GetAlertNotifyDetailRequest) (*GetAlertNotifyDetailResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetAlertNotifyDetailRequest))
+		}
+		var GetAlertNotifyDetail_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetAlertNotifyDetail_info = transport.NewServiceInfo("erda.core.messenger.notify.NotifyService", "GetAlertNotifyDetail", srv)
+			handler = h.Interceptor(handler)
+		}
+		compiler, _ := httprule.Parse(path)
+		temp := compiler.Compile()
+		pattern, _ := runtime.NewPattern(httprule.SupportPackageIsVersion1, temp.OpCodes, temp.Pool, temp.Verb)
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAlertNotifyDetail_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetAlertNotifyDetailRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				path := r.URL.Path
+				if len(path) > 0 {
+					components := strings.Split(path[1:], "/")
+					last := len(components) - 1
+					var verb string
+					if idx := strings.LastIndex(components[last], ":"); idx >= 0 {
+						c := components[last]
+						components[last], verb = c[:idx], c[idx+1:]
+					}
+					vars, err := pattern.Match(components, verb)
+					if err != nil {
+						return nil, err
+					}
+					for k, val := range vars {
+						switch k {
+						case "id":
+							val, err := strconv.ParseInt(val, 10, 64)
+							if err != nil {
+								return nil, err
+							}
+							in.Id = val
+						}
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_CreateNotifyHistory("POST", "/api/messenger/notify-histories", srv.CreateNotifyHistory)
 	add_QueryNotifyHistories("GET", "/api/messenger/notify-histories", srv.QueryNotifyHistories)
 	add_GetNotifyStatus("GET", "/api/messenger/notify-histories/status", srv.GetNotifyStatus)
 	add_GetNotifyHistogram("GET", "/api/messenger/notify-histories/{statistic}/histogram", srv.GetNotifyHistogram)
+	add_QueryAlertNotifyHistories("GET", "/api/messenger/alert-notify-histories", srv.QueryAlertNotifyHistories)
+	add_GetAlertNotifyDetail("GET", "/api/messenger/alert-notify-histories/{id}", srv.GetAlertNotifyDetail)
 }

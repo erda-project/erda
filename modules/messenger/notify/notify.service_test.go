@@ -430,3 +430,83 @@ func Test_notifyService_GetNotifyHistogram(t *testing.T) {
 		})
 	}
 }
+
+func Test_notifyService_QueryAlertNotifyHistories(t *testing.T) {
+	type fields struct {
+		DB *db.DB
+		L  logs.Logger
+	}
+	type args struct {
+		ctx     context.Context
+		request *pb.QueryAlertNotifyHistoriesRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *pb.QueryAlertNotifyHistoriesResponse
+		wantErr bool
+	}{
+		{
+			name: "test",
+			fields: fields{
+				DB: &db.DB{
+					DB: &gorm.DB{},
+					AlertNotifyIndexDB: db.AlertNotifyIndexDB{
+						DB: &gorm.DB{},
+					},
+					NotifyHistoryDB: db.NotifyHistoryDB{
+						DB: &gorm.DB{},
+					},
+				},
+				L: nil,
+			},
+			args: args{
+				ctx: context.Background(),
+				request: &pb.QueryAlertNotifyHistoriesRequest{
+					ScopeType:  "org",
+					ScopeID:    "1",
+					NotifyName: "",
+					Status:     "success",
+					Channel:    "mbox",
+					AlertID:    0,
+					PageNo:     1,
+					PageSize:   20,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		monkey.Patch(apis.GetOrgID, func(ctx context.Context) string {
+			return "1"
+		})
+		monkey.PatchInstanceMethod(reflect.TypeOf(&db.AlertNotifyIndexDB{}), "QueryAlertNotifyHistories", func(_ *db.AlertNotifyIndexDB, request *model.QueryAlertNotifyIndexRequest) ([]db.AlertNotifyIndex, int64, error) {
+			return []db.AlertNotifyIndex{
+				{
+					ID:         1,
+					NotifyID:   1,
+					NotifyName: "test",
+					Status:     "success",
+					Channel:    "mbox",
+					ScopeType:  "org",
+					ScopeID:    "1",
+					OrgID:      1,
+					CreatedAt:  time.Now(),
+					SendTime:   time.Now(),
+				},
+			}, 1, nil
+		})
+		t.Run(tt.name, func(t *testing.T) {
+			n := notifyService{
+				DB: tt.fields.DB,
+				L:  tt.fields.L,
+			}
+			_, err := n.QueryAlertNotifyHistories(tt.args.ctx, tt.args.request)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("QueryAlertNotifyHistories() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}

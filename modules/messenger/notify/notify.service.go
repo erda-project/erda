@@ -18,10 +18,15 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"strings"
 	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
+	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/messenger/notify/common"
 	"github.com/erda-project/erda/modules/messenger/notify/db"
 	"github.com/erda-project/erda/modules/messenger/notify/model"
@@ -30,8 +35,10 @@ import (
 )
 
 type notifyService struct {
-	DB *db.DB
-	L  logs.Logger
+	DB      *db.DB
+	L       logs.Logger
+	bdl     *bundle.Bundle
+	Monitor monitor.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService" optional:"true"`
 }
 
 func (n notifyService) CreateNotifyHistory(ctx context.Context, request *pb.CreateNotifyHistoryRequest) (*pb.CreateNotifyHistoryResponse, error) {
@@ -108,6 +115,7 @@ func (n notifyService) CreateHistoryAndIndex(request *pb.CreateNotifyHistoryRequ
 	if err != nil {
 		return 0, err
 	}
+	alertId := int64(request.NotifyTags["alertId"].GetNumberValue())
 	alertNotifyIndex := &db.AlertNotifyIndex{
 		NotifyID:   history.ID,
 		NotifyName: request.NotifyItemDisplayName,
@@ -119,6 +127,7 @@ func (n notifyService) CreateHistoryAndIndex(request *pb.CreateNotifyHistoryRequ
 		ScopeType:  request.NotifySource.SourceType,
 		ScopeID:    request.NotifySource.SourceID,
 		OrgID:      request.OrgID,
+		AlertId:    alertId,
 	}
 	_, err = tx.AlertNotifyIndexDB.CreateAlertNotifyIndex(alertNotifyIndex)
 	if err != nil {
@@ -233,9 +242,9 @@ func (n notifyService) GetNotifyHistogram(ctx context.Context, request *pb.GetNo
 			}
 		}
 		var i int64
+		timeUnix := v.RoundTime.UnixNano() / 1e6
 		for i < request.Points {
-			timeUnix := v.RoundTime.UnixNano() / 1e6
-			if timeUnix <= result.Data.Timestamp[i] || (timeUnix > result.Data.Timestamp[i] && timeUnix <= result.Data.Timestamp[i]+interval) {
+			if timeUnix <= result.Data.Timestamp[i] {
 				valueMap[v.Field].Value[i] = v.Count
 				break
 			}
@@ -243,5 +252,86 @@ func (n notifyService) GetNotifyHistogram(ctx context.Context, request *pb.GetNo
 		}
 	}
 	result.Data.Value = valueMap
+	return result, nil
+}
+
+func (n notifyService) QueryAlertNotifyHistories(ctx context.Context, request *pb.QueryAlertNotifyHistoriesRequest) (*pb.QueryAlertNotifyHistoriesResponse, error) {
+	result := &pb.QueryAlertNotifyHistoriesResponse{
+		Data: &pb.AlertNotifyHistories{},
+	}
+	orgIdStr := apis.GetOrgID(ctx)
+	orgId, err := strconv.Atoi(orgIdStr)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	queryRequest := &model.QueryAlertNotifyIndexRequest{}
+	data, err := json.Marshal(request)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	err = json.Unmarshal(data, queryRequest)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	queryRequest.OrgID = int64(orgId)
+	list, count, err := n.DB.AlertNotifyIndexDB.QueryAlertNotifyHistories(queryRequest)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	result.Data.Total = count
+	result.Data.List = make([]*pb.AlertNotifyIndex, 0)
+	data, err = json.Marshal(list)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	err = json.Unmarshal(data, &result.Data.List)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	return result, nil
+}
+
+func (n notifyService) GetAlertNotifyDetail(ctx context.Context, request *pb.GetAlertNotifyDetailRequest) (*pb.GetAlertNotifyDetailResponse, error) {
+	result := &pb.GetAlertNotifyDetailResponse{
+		Data: &pb.AlertNotifyDetail{},
+	}
+	alertNotifyIndex, err := n.DB.AlertNotifyIndexDB.GetAlertNotifyIndex(request.Id)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	attributes := model.AlertIndexAttribute{}
+	err = json.Unmarshal([]byte(alertNotifyIndex.Attributes), &attributes)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	result.Data.Channel = alertNotifyIndex.Channel
+	result.Data.SendTime = timestamppb.New(alertNotifyIndex.SendTime)
+	result.Data.Status = alertNotifyIndex.Status
+	result.Data.NotifyRule = attributes.AlertName
+	alertNotifyHistory, err := n.DB.NotifyHistoryDB.GetAlertNotifyHistory(alertNotifyIndex.NotifyID)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	str := strings.TrimLeft(alertNotifyHistory.NotifyName, "【")
+	str = strings.TrimRight(str, "】\n")
+	result.Data.AlertName = str
+	sourceDataParam := model.NotifySourceData{}
+	err = json.Unmarshal([]byte(alertNotifyHistory.SourceData), &sourceDataParam)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	result.Data.NotifyContent = sourceDataParam.Params.Content
+	//根据groupid获取通知组名字
+	orgIdStr := apis.GetOrgID(ctx)
+	orgId, err := strconv.ParseInt(orgIdStr, 10, 64)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	userIdStr := apis.GetUserID(ctx)
+	notifyGroup, err := n.bdl.GetNotifyGroupDetail(attributes.GroupID, orgId, userIdStr)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	result.Data.NotifyGroup = notifyGroup.Name
 	return result, nil
 }

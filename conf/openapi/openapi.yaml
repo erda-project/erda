@@ -132,6 +132,8 @@ openapi-v1-routes:
           - msp-alert-overview
           - msp-alert-event-list
           - msp-alert-event-detail
+          - msp-notify-list
+          - msp-notify-detail
 
 etcd:
   _enable: ${OPENAPI_DEV_MODE:false}

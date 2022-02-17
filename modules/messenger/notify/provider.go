@@ -31,12 +31,12 @@ type provider struct {
 	C             *config
 	Register      transport.Register `autowired:"service-register" optional:"true"`
 	notifyService *notifyService
-	bdl           *bundle.Bundle
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.notifyService = &notifyService{}
 	p.notifyService.DB = db.New(ctx.Service("mysql").(mysql.Interface).DB())
+	p.notifyService.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
 	if p.Register != nil {
 		type NotifyService = pb.NotifyServiceServer
 		pb.RegisterNotifyServiceImp(p.Register, p.notifyService, apis.Options())

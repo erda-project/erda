@@ -52,3 +52,11 @@ func (s *notifyServiceWrapper) GetNotifyStatus(ctx context.Context, req *pb.GetN
 func (s *notifyServiceWrapper) GetNotifyHistogram(ctx context.Context, req *pb.GetNotifyHistogramRequest) (*pb.GetNotifyHistogramResponse, error) {
 	return s.client.GetNotifyHistogram(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *notifyServiceWrapper) QueryAlertNotifyHistories(ctx context.Context, req *pb.QueryAlertNotifyHistoriesRequest) (*pb.QueryAlertNotifyHistoriesResponse, error) {
+	return s.client.QueryAlertNotifyHistories(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *notifyServiceWrapper) GetAlertNotifyDetail(ctx context.Context, req *pb.GetAlertNotifyDetailRequest) (*pb.GetAlertNotifyDetailResponse, error) {
+	return s.client.GetAlertNotifyDetail(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

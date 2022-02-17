@@ -12,30 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package db
+package notificationContentInfo
 
 import (
-	"github.com/jinzhu/gorm"
+	"context"
 
-	db2 "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 )
 
-type DB struct {
-	*gorm.DB
-	AlertNotifyIndexDB AlertNotifyIndexDB
-	NotifyHistoryDB    NotifyHistoryDB
-	AlertNotifyDB      db2.AlertNotifyDB
+type ComponentNotifyInfo struct {
+	sdk *cptype.SDK `json:"-"`
+	ctx context.Context
+
+	Type  string            `json:"type,omitempty"`
+	Data  map[string]string `json:"data,omitempty"`
+	State State             `json:"state,omitempty"`
 }
 
-func New(db *gorm.DB) *DB {
-	return &DB{
-		DB:                 db,
-		AlertNotifyIndexDB: AlertNotifyIndexDB{db},
-		NotifyHistoryDB:    NotifyHistoryDB{db},
-		AlertNotifyDB:      db2.AlertNotifyDB{db},
-	}
-}
-
-func (db *DB) Begin() *DB {
-	return New(db.DB.Begin())
+type State struct {
 }

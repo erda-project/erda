@@ -126,3 +126,51 @@ func (this *NotifyHistogramData) Validate() error {
 func (this *StatisticValue) Validate() error {
 	return nil
 }
+func (this *QueryAlertNotifyHistoriesRequest) Validate() error {
+	return nil
+}
+func (this *QueryAlertNotifyHistoriesResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *AlertNotifyHistories) Validate() error {
+	for _, item := range this.List {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("List", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *AlertNotifyIndex) Validate() error {
+	if this.SendTime != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.SendTime); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("SendTime", err)
+		}
+	}
+	return nil
+}
+func (this *GetAlertNotifyDetailRequest) Validate() error {
+	return nil
+}
+func (this *GetAlertNotifyDetailResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *AlertNotifyDetail) Validate() error {
+	if this.SendTime != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.SendTime); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("SendTime", err)
+		}
+	}
+	return nil
+}
