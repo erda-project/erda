@@ -27,6 +27,7 @@ import (
 )
 
 const k8sServiceSuffix = ".svc.cluster.local"
+const netNetportalSchemeHeader = "X-Portal-Scheme"
 
 func handleCustomNetportalRequest(apiReq *apistructs.APIRequestInfo, netportalOpt *netportalOption) (*http.Request, error) {
 	if err := checkNetportal(apiReq.URL, netportalOpt); err != nil {
@@ -34,6 +35,7 @@ func handleCustomNetportalRequest(apiReq *apistructs.APIRequestInfo, netportalOp
 	}
 
 	// use netportal
+	var scheme = httpclientutil.GetProto(apiReq.URL)
 	apiReq.URL = strutil.Concat(netportalOpt.url, "/", httpclientutil.RmProto(apiReq.URL))
 
 	customReq, err := customhttp.NewRequest(apiReq.Method, apiReq.URL, nil)
@@ -45,6 +47,8 @@ func handleCustomNetportalRequest(apiReq *apistructs.APIRequestInfo, netportalOp
 			apiReq.Headers.Add(k, v)
 		}
 	}
+
+	apiReq.Headers.Add(netNetportalSchemeHeader, scheme)
 
 	return customReq, nil
 }
