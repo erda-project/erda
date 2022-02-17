@@ -18,8 +18,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/erda-project/erda/modules/messenger/notify/model"
 	"github.com/jinzhu/gorm"
+
+	"github.com/erda-project/erda/modules/messenger/notify/model"
 )
 
 type AlertNotifyIndexDB struct {
