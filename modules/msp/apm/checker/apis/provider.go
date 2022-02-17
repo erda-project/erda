@@ -76,12 +76,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		pb.RegisterCheckerV1ServiceImp(p.Register, p.checkerV1Service, apis.Options(),
 			p.Perm.Check(
 				perm.Method(CheckerServiceV1.CreateCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionCreate, perm.FieldValue("Data.ProjectID")),
-				perm.Method(CheckerServiceV1.UpdateCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionUpdate, p.checkerV1Service.getProjectFromMetricID()),
-				perm.Method(CheckerServiceV1.DeleteCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionDelete, p.checkerV1Service.getProjectFromMetricID()),
+				perm.Method(CheckerServiceV1.UpdateCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionUpdate, p.checkerV1Service.GetProjectFromMetricID()),
+				perm.Method(CheckerServiceV1.DeleteCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionDelete, p.checkerV1Service.GetProjectFromMetricID()),
 				perm.Method(CheckerServiceV1.DescribeCheckersV1, perm.ScopeProject, "monitor_status", perm.ActionList, perm.FieldValue("ProjectID")),
-				perm.Method(CheckerServiceV1.DescribeCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionList, p.checkerV1Service.getProjectFromMetricID()),
-				perm.Method(CheckerServiceV1.GetCheckerStatusV1, perm.ScopeProject, "monitor_status", perm.ActionGet, p.checkerV1Service.getProjectFromMetricID()),
-				perm.Method(CheckerServiceV1.GetCheckerIssuesV1, perm.ScopeProject, "monitor_status", perm.ActionGet, p.checkerV1Service.getProjectFromMetricID()),
+				perm.Method(CheckerServiceV1.DescribeCheckerV1, perm.ScopeProject, "monitor_status", perm.ActionList, p.checkerV1Service.GetProjectFromMetricID()),
+				perm.Method(CheckerServiceV1.GetCheckerStatusV1, perm.ScopeProject, "monitor_status", perm.ActionGet, p.checkerV1Service.GetProjectFromMetricID()),
+				perm.Method(CheckerServiceV1.GetCheckerIssuesV1, perm.ScopeProject, "monitor_status", perm.ActionGet, p.checkerV1Service.GetProjectFromMetricID()),
 			),
 			p.audit.Audit(
 				audit.Method(CheckerServiceV1.CreateCheckerV1, audit.ProjectScope, "createInitiativeMonitor",
