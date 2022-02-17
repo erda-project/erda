@@ -12,10 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package eventStatusInfo
+package common
 
-//func init() {
-//	base.InitProviderWithCreator("msp-notify-detail","eventStatusInfo", func() servicehub.Provider {
-//		//return &pod
-//	})
-//}
+import (
+	"github.com/mitchellh/mapstructure"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+)
+
+type InParams struct {
+	Scope   string `json:"scope"`
+	ScopeId string `json:"scopeId"`
+	Id      int64  `json:"id"`
+}
+
+func ParseFromCpSdk(sdk *cptype.SDK) (*InParams, error) {
+	var param InParams
+	err := mapstructure.Decode(sdk.InParams, &param)
+	if err != nil {
+		return nil, err
+	}
+	return &param, nil
+}

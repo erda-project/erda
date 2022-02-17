@@ -14,13 +14,23 @@
 
 package common
 
-const ScenarioKey = "msp-notify-list"
-
-const (
-	ComponentNameEventStatusInfo         = "eventStatusInfo"
-	ComponentNameNotificationContentInfo = "notificationContentInfo"
+import (
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 )
 
-const (
-	AlertIndex = "alertIndex"
-)
+func SetNotifyIndexToGlobalState(gs cptype.GlobalStateData, alertIndex *messenger.AlertNotifyDetail) {
+	gs[AlertIndex] = alertIndex
+}
+
+func GetNotifyIndexFromGlobalState(gs cptype.GlobalStateData) *messenger.AlertNotifyDetail {
+	item, ok := gs[AlertIndex]
+	if !ok {
+		return nil
+	}
+	typedItem, ok := item.(*messenger.AlertNotifyDetail)
+	if !ok {
+		return nil
+	}
+	return typedItem
+}

@@ -12,18 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package eventStatusInfo
+package msp_notify_detail
 
 import (
-	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda-infra/providers/i18n"
-	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-detail/eventStatusInfo"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-detail/notificationContentInfo"
 )
-
-type provider struct {
-	Log       logs.Logger
-	I18n      i18n.Translator               `autowired:"i18n" translator:"msp-alert-event-list"`
-	Messenger messenger.NotifyServiceServer `autowired:"erda.core.messenger.notify.NotifyService"`
-}
-
-//func (p *provider) RegisterInitializeOp()

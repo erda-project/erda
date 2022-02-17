@@ -29,6 +29,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-detail"
 	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-list"
 	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-overview"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-detail"
 	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-list"
 )
 

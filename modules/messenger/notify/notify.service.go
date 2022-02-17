@@ -114,6 +114,7 @@ func (n notifyService) CreateHistoryAndIndex(request *pb.CreateNotifyHistoryRequ
 	if err != nil {
 		return 0, err
 	}
+	alertId := int64(request.NotifyTags["alertId"].GetNumberValue())
 	alertNotifyIndex := &db.AlertNotifyIndex{
 		NotifyID:   history.ID,
 		NotifyName: request.NotifyItemDisplayName,
@@ -125,6 +126,7 @@ func (n notifyService) CreateHistoryAndIndex(request *pb.CreateNotifyHistoryRequ
 		ScopeType:  request.NotifySource.SourceType,
 		ScopeID:    request.NotifySource.SourceID,
 		OrgID:      request.OrgID,
+		AlertId:    alertId,
 	}
 	_, err = tx.AlertNotifyIndexDB.CreateAlertNotifyIndex(alertNotifyIndex)
 	if err != nil {
