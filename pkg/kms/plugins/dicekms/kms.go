@@ -23,7 +23,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/kms/kmscrypto"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
@@ -65,8 +64,7 @@ func (d *Dice) CreateKey(ctx context.Context, req *kmstypes.CreateKeyRequest) (*
 	}
 
 	// key spec
-	if req.CustomerMasterKeySpec != kmstypes.CustomerMasterKeySpec_SYMMETRIC_DEFAULT &&
-		req.CustomerMasterKeySpec != kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_4096 {
+	if req.CustomerMasterKeySpec != kmstypes.CustomerMasterKeySpec_SYMMETRIC_DEFAULT {
 		return nil, fmt.Errorf("not supported key spec: %s", req.CustomerMasterKeySpec)
 	}
 
@@ -80,15 +78,6 @@ func (d *Dice) CreateKey(ctx context.Context, req *kmstypes.CreateKeyRequest) (*
 		VersionID: uuid.UUID(),
 	}
 	switch req.CustomerMasterKeySpec {
-	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_4096:
-		publicKey, privateKey, err := encryption.GenRsaKey(4096)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create rsa key pair, err: %v", err)
-		}
-		publicKeyBase64 := base64.StdEncoding.EncodeToString(publicKey)
-		privateKeyBase64 := base64.StdEncoding.EncodeToString(privateKey)
-		primaryKeyVersion.PublicKeyBase64 = publicKeyBase64
-		primaryKeyVersion.PrivateKeyBase64 = privateKeyBase64
 	case kmstypes.CustomerMasterKeySpec_SYMMETRIC_DEFAULT:
 		symmetricKeyBytes, err := kmscrypto.GenerateAes256Key()
 		if err != nil {
@@ -159,37 +148,20 @@ func (d *Dice) Encrypt(ctx context.Context, req *kmstypes.EncryptRequest) (*kmst
 	}
 
 	// encrypt
-	var ciphertext []byte
-	switch keyInfo.GetKeySpec() {
-	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_4096:
-		rsaCrypt := encryption.NewRSAScrypt(encryption.RSASecret{
-			PublicKey:          keyInfo.GetPrimaryKeyVersion().GetPublicKeyBase64(),
-			PublicKeyDataType:  encryption.Base64,
-			PrivateKey:         keyInfo.GetPrimaryKeyVersion().GetPrivateKeyBase64(),
-			PrivateKeyDataType: encryption.Base64,
-			PrivateKeyType:     encryption.PKCS1,
-		})
-		encryptedV, err := rsaCrypt.Encrypt(string(plaintextBytes), encryption.String)
-		if err != nil {
-			return nil, err
-		}
-		ciphertext = []byte(encryptedV)
-	case kmstypes.CustomerMasterKeySpec_SYMMETRIC_DEFAULT:
-		additionalData := additionalData{
-			KeyID: keyInfo.GetKeyID(),
-		}
-		additionalDataJSON, err := json.Marshal(&additionalData)
-		if err != nil {
-			return nil, err
-		}
-		symmetricKeyBytes, err := base64.StdEncoding.DecodeString(keyInfo.GetPrimaryKeyVersion().GetSymmetricKeyBase64())
-		if err != nil {
-			return nil, err
-		}
-		ciphertext, err = kmscrypto.AesGcmEncrypt(symmetricKeyBytes, plaintextBytes, additionalDataJSON)
-		if err != nil {
-			return nil, err
-		}
+	additionalData := additionalData{
+		KeyID: keyInfo.GetKeyID(),
+	}
+	additionalDataJSON, err := json.Marshal(&additionalData)
+	if err != nil {
+		return nil, err
+	}
+	symmetricKeyBytes, err := base64.StdEncoding.DecodeString(keyInfo.GetPrimaryKeyVersion().GetSymmetricKeyBase64())
+	if err != nil {
+		return nil, err
+	}
+	ciphertext, err := kmscrypto.AesGcmEncrypt(symmetricKeyBytes, plaintextBytes, additionalDataJSON)
+	if err != nil {
+		return nil, err
 	}
 	// prefix append keyVersionID into ciphertext
 	keyVersionIDPrefix, err := kmscrypto.PrefixAppend000Length([]byte(keyInfo.GetPrimaryKeyVersion().GetVersionID()))
@@ -243,35 +215,15 @@ func (d *Dice) Decrypt(ctx context.Context, req *kmstypes.DecryptRequest) (resp 
 	}
 
 	// decrypt ciphertext
-	var plaintextBytes []byte
-	switch keyInfo.GetKeySpec() {
-	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_4096:
-		rsaCrypt := encryption.NewRSAScrypt(encryption.RSASecret{
-			PublicKey:          keyInfo.GetPrimaryKeyVersion().GetPublicKeyBase64(),
-			PublicKeyDataType:  encryption.Base64,
-			PrivateKey:         keyInfo.GetPrimaryKeyVersion().GetPrivateKeyBase64(),
-			PrivateKeyDataType: encryption.Base64,
-			PrivateKeyType:     encryption.PKCS1,
-		})
-		plaintext, err := rsaCrypt.Decrypt(string(ciphertext), encryption.String)
-		if err != nil {
-			return nil, err
-		}
-		plaintextBytes = []byte(plaintext)
-	case kmstypes.CustomerMasterKeySpec_SYMMETRIC_DEFAULT:
-		symmetricKey, err := base64.StdEncoding.DecodeString(keyVersionInfo.GetSymmetricKeyBase64())
-		if err != nil {
-			return nil, err
-		}
-		additionalDataJSON, err := json.Marshal(&additionalData{KeyID: keyInfo.GetKeyID()})
-		if err != nil {
-			return nil, err
-		}
-		plaintextBytes, err = kmscrypto.AesGcmDecrypt(symmetricKey, ciphertext, additionalDataJSON)
-		if err != nil {
-			return nil, err
-		}
+	symmetricKey, err := base64.StdEncoding.DecodeString(keyVersionInfo.GetSymmetricKeyBase64())
+	if err != nil {
+		return nil, err
 	}
+	additionalDataJSON, err := json.Marshal(&additionalData{KeyID: keyInfo.GetKeyID()})
+	if err != nil {
+		return nil, err
+	}
+	plaintextBytes, err := kmscrypto.AesGcmDecrypt(symmetricKey, ciphertext, additionalDataJSON)
 	if err != nil {
 		return nil, err
 	}
@@ -316,30 +268,14 @@ func (d *Dice) GenerateDataKey(ctx context.Context, req *kmstypes.GenerateDataKe
 }
 
 func (d *Dice) RotateKeyVersion(ctx context.Context, req *kmstypes.RotateKeyVersionRequest) (*kmstypes.RotateKeyVersionResponse, error) {
-	keyInfo, err := d.store.GetKey(req.KeyID)
+	// generate new symmetric key
+	symmetricKey, err := kmscrypto.GenerateAes256Key()
 	if err != nil {
 		return nil, err
 	}
 	newKeyVersion := kmstypes.KeyVersion{
-		VersionID: uuid.UUID(),
-	}
-	switch keyInfo.GetKeySpec() {
-	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_4096:
-		publicKey, privateKey, err := encryption.GenRsaKey(4096)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create rsa key pair, err: %v", err)
-		}
-		publicKeyBase64 := base64.StdEncoding.EncodeToString(publicKey)
-		privateKeyBase64 := base64.StdEncoding.EncodeToString(privateKey)
-		newKeyVersion.PublicKeyBase64 = publicKeyBase64
-		newKeyVersion.PrivateKeyBase64 = privateKeyBase64
-	case kmstypes.CustomerMasterKeySpec_SYMMETRIC_DEFAULT:
-		symmetricKey, err := kmscrypto.GenerateAes256Key()
-		if err != nil {
-			return nil, err
-		}
-		symmetricKeyBase64 := base64.StdEncoding.EncodeToString(symmetricKey)
-		newKeyVersion.SymmetricKeyBase64 = symmetricKeyBase64
+		VersionID:          uuid.UUID(),
+		SymmetricKeyBase64: base64.StdEncoding.EncodeToString(symmetricKey),
 	}
 
 	// rotate key version
@@ -347,7 +283,7 @@ func (d *Dice) RotateKeyVersion(ctx context.Context, req *kmstypes.RotateKeyVers
 	if err != nil {
 		return nil, err
 	}
-	keyInfo, err = d.store.GetKey(req.KeyID)
+	keyInfo, err := d.store.GetKey(req.KeyID)
 	if err != nil {
 		return nil, err
 	}

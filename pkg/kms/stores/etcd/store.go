@@ -90,8 +90,6 @@ func (s *Store) CreateKey(keyInfo kmstypes.KeyInfo) error {
 	keyVersion := kmstypes.KeyVersion{
 		VersionID:          keyInfo.GetPrimaryKeyVersion().GetVersionID(),
 		SymmetricKeyBase64: keyInfo.GetPrimaryKeyVersion().GetSymmetricKeyBase64(),
-		PublicKeyBase64:    keyInfo.GetPrimaryKeyVersion().GetPublicKeyBase64(),
-		PrivateKeyBase64:   keyInfo.GetPrimaryKeyVersion().GetPrivateKeyBase64(),
 		CreatedAt:          &now,
 		UpdatedAt:          &now,
 	}
