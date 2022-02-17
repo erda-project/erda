@@ -6,7 +6,7 @@ en:
   "moreOperations": "More Operations"
   "pauseAlert": "Pause Alert"
   "stopAlert": "Stop Alert"
-  "resumeAlert":"Resume Alert"
+  "resumeAlert": "Resume Alert"
   "restartAlert": "Restart Alert"
   "stopAlertSuccessfully": "Stop alert successfully"
   "confirmToStopAlert": "Confirm to stop alert?"
