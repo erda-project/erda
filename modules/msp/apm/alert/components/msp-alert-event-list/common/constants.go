@@ -29,7 +29,7 @@ const (
 	GlobalStateKeySort                         = "table_sort"
 )
 
-const DefaultPageSize = 10
+const DefaultPageSize = 20
 
 const (
 	Fatal    string = "FATAL"
