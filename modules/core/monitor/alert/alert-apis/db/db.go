@@ -30,6 +30,8 @@ type DB struct {
 	AlertNotifyTemplate          AlertNotifyTemplateDB
 	AlertRule                    AlertRuleDB
 	AlertRecord                  AlertRecordDB
+	AlertEventDB                 AlertEventDB
+	AlertEventSuppressDB         AlertEventSuppressDB
 }
 
 // New .
@@ -45,6 +47,8 @@ func New(db *gorm.DB) *DB {
 		AlertNotifyTemplate:          AlertNotifyTemplateDB{db},
 		AlertRule:                    AlertRuleDB{db},
 		AlertRecord:                  AlertRecordDB{db},
+		AlertEventDB:                 AlertEventDB{db},
+		AlertEventSuppressDB:         AlertEventSuppressDB{db},
 	}
 }
 

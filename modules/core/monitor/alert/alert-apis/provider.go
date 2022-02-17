@@ -183,6 +183,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.NoPermMethod(MonitorService.UpdateAlert),
 			perm.NoPermMethod(MonitorService.UpdateAlertEnable),
 			perm.NoPermMethod(MonitorService.DeleteAlert),
+			perm.NoPermMethod(MonitorService.GetRawAlertExpression),
 			perm.Method(MonitorService.QueryOrgAlertRule, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
 			perm.Method(MonitorService.QueryOrgAlert, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
 			perm.Method(MonitorService.GetOrgAlertDetail, perm.ScopeOrg, "monitor_org_alert", perm.ActionList, perm.OrgIDValue()),
@@ -205,6 +206,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(MonitorService.UpdateOrgAlertIssue, perm.ScopeOrg, "monitor_org_alert", perm.ActionUpdate, perm.OrgIDValue()),
 			perm.NoPermMethod(MonitorService.GetAlertConditions),
 			perm.NoPermMethod(MonitorService.GetAlertConditionsValue),
+			perm.NoPermMethod(MonitorService.GetAlertEvents),
+			perm.NoPermMethod(MonitorService.SuppressAlertEvent),
+			perm.NoPermMethod(MonitorService.CancelSuppressAlertEvent),
 		),
 			p.audit.Audit(
 				audit.Method(MonitorService.UpdateOrgCustomizeAlert, audit.OrgScope, string(apistructs.UpdateOrgCustomAlert),

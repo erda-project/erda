@@ -102,6 +102,24 @@ en:
   project_lead_role: project development lead
   project_dev_role: development engineer
   searchByTransactionName: "input transaction name"
+  searchByName: input name
+  alertListTableColumnName: Name
+  alertListTableColumnAlertName: AlertName
+  alertListTableColumnTriggerCount: TriggerCount
+  alertListTableColumnAlertLevel: AlertLevel
+  alertListTableColumnAlertState: AlertState
+  alertListTableColumnAlertSource: AlertSource
+  alertListTableColumnLastTriggerTime: LastTriggerTime
+  FATAL: FATAL
+  CRITICAL: CRITICAL
+  WARNING: WARNING
+  NOTICE: NOTICE
+  alert: Alert
+  recover: Recover
+  pause: Pause
+  stop: Stop
+  System: System
+  Custom: Custom
 zh:
   waiting_for_tracing_data: "正在获取链路追踪数据"
   success_get_tracing_data: "获取链路追踪数据成功"
@@ -206,3 +224,21 @@ zh:
   project_lead_role: 研发主管
   project_dev_role: 开发工程师
   searchByTransactionName: "按事务名称搜索"
+  searchByName: 按名称搜索
+  alertListTableColumnName: 名称
+  alertListTableColumnAlertName: 所属策略
+  alertListTableColumnTriggerCount: 事件次数
+  alertListTableColumnAlertLevel: 级别
+  alertListTableColumnAlertState: 状态
+  alertListTableColumnAlertSource: 事件来源
+  alertListTableColumnLastTriggerTime: 最后触发时间
+  FATAL: 故障
+  CRITICAL: 严重
+  WARNING: 告警
+  NOTICE: 提示
+  alert: 告警
+  recover: 恢复
+  pause: 暂停
+  stop: 屏蔽
+  System: 系统
+  Custom: 自定义
