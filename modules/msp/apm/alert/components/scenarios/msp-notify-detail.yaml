@@ -4,10 +4,11 @@ hierarchy:
   structure:
     page:
       - eventOverview
-      - eventStatusInfo
       - notificationContent
+    eventOverview:
+      - eventStatusInfo
+    notificationContent:
       - notificationContentInfo
-
 components:
   page:
     type: Container
