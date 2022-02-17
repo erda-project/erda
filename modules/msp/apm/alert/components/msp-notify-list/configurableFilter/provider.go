@@ -38,7 +38,7 @@ type provider struct {
 	impl.DefaultFilter
 
 	Log       logs.Logger
-	I18n      i18n.Translator               `autowired:"i18n" translator:"msp-alert-event-list"`
+	I18n      i18n.Translator               `autowired:"i18n" translator:"msp-notify-list"`
 	Messenger messenger.NotifyServiceServer `autowired:"erda.core.messenger.notify.NotifyService"`
 	Monitor   monitor.AlertServiceServer    `autowired:"erda.core.monitor.alert.AlertService"`
 }

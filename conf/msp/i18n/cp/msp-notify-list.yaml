@@ -8,6 +8,11 @@ en:
   vms: voice notify
   sms: short message notify
   dingtalk_work_notice: dingding work notify
+  NotifyName: Notify Name
+  Status: Status
+  Channel: Notify Channel
+  LinkedStrategy: Associate Strategy
+  SendTime: Send Time
 
 zh:
   NotifyName: 通知名称
