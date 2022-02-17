@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
+	"github.com/erda-project/erda/pkg/gittarutil"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -166,7 +167,7 @@ func (a *Application) Create(userID string, createReq *apistructs.ApplicationCre
 
 	// 更新extra等信息
 	application.Extra = a.generateExtraInfo(application.ID, application.ProjectID)
-	application.GitRepoAbbrev = apistructs.MakeRepoPath(org.Name, project.Name, application.Name)
+	application.GitRepoAbbrev = gittarutil.MakeRepoPath(org.Name, project.Name, application.Name)
 	if err = a.db.UpdateApplication(&application); err != nil {
 		logrus.Errorf("failed to update application extra, (%v)", err)
 	}

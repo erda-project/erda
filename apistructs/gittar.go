@@ -770,7 +770,3 @@ type CheckRunRequest struct {
 	MRID   int64  `json:"mrId"`
 	Branch string `json:"branch"`
 }
-
-func MakeRepoPath(orgName, proName, appName string) string {
-	return orgName + "-" + proName + "/" + appName
-}
