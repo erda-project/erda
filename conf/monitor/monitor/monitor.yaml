@@ -114,6 +114,10 @@ log-storage-cassandra:
     keyspace:
       name: "spot_prod"
 erda.core.monitor.log.query:
+  download_api_throttling:
+    # at most 2000 record per second
+    duration: ${LOG_DOWNLOAD_API_THROTTLING_DURATION:1s}
+    limit: ${LOG_DOWNLOAD_API_THROTTLING_LIMIT:1000}
 
 # event
 elasticsearch@event:

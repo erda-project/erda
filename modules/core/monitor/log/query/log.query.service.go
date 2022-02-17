@@ -32,11 +32,12 @@ import (
 )
 
 type logQueryService struct {
-	p                   *provider
-	startTime           int64
-	storageReader       storage.Storage
-	k8sReader           storage.Storage
-	frozenStorageReader storage.Storage
+	p                      *provider
+	startTime              int64
+	storageReader          storage.Storage
+	k8sReader              storage.Storage
+	frozenStorageReader    storage.Storage
+	downloadAPIRateLimiter storekit.RateLimiter
 }
 
 func (s *logQueryService) GetLog(ctx context.Context, req *pb.GetLogRequest) (*pb.GetLogResponse, error) {
@@ -254,9 +255,9 @@ func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn fun
 }
 
 func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) (*storage.Selector, error), walk func(item *pb.LogItem) error) error {
-	//if req.GetCount() < 0 {
+	// if req.GetCount() < 0 {
 	//	return errors.NewInvalidParameterError("count", "not allowed negative")
-	//}
+	// }
 	sel, err := toQuerySelector(req)
 	if err != nil {
 		return err
@@ -279,6 +280,11 @@ func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func
 	}
 
 	for next() {
+		if delay := s.downloadAPIRateLimiter.ReserveN(1); delay > 0 {
+			// time.Sleep(delay)
+			return fmt.Errorf("walkLogItems throttling trigger, please wait for a while")
+		}
+
 		log, ok := it.Value().(*pb.LogItem)
 		if !ok {
 			continue
