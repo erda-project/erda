@@ -39,7 +39,7 @@ type State struct {
 }
 
 type FrontendConditions struct {
-	IterationIDs []int64  `json:"iteration,omitempty"`
-	AssigneeIDs  []string `json:"member,omitempty"`
+	IterationIDs []int64  `json:"iterationIDs,omitempty"`
+	AssigneeIDs  []string `json:"assignee,omitempty"`
 	LabelIDs     []uint64 `json:"label,omitempty"`
 }

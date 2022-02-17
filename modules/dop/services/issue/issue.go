@@ -988,6 +988,8 @@ func (svc *Issue) CreateStream(updateReq apistructs.IssueUpdateRequest, streamFi
 				streamReq.StreamType = apistructs.ISTChangeTaskType
 			} else if issue.Type == apistructs.IssueTypeBug {
 				streamReq.StreamType = apistructs.ISTChangeBugStage
+			} else {
+				continue
 			}
 			project, err := svc.bdl.GetProject(issue.ProjectID)
 			if err != nil {
