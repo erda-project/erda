@@ -49,6 +49,13 @@ type AdvanceFilter struct {
 	bdl *bundle.Bundle
 	impl.DefaultFilter
 	Values cptype.ExtraMap
+	State  State
+}
+type State struct {
+	Title               string   `json:"title,omitempty"`
+	DeploymentStatus    []string `json:"deploymentStatus,omitempty"`
+	App                 []string `json:"app,omitempty"`
+	DeploymentOrderName []string `json:"deploymentOrderName,omitempty"`
 }
 
 type Option struct {
@@ -70,15 +77,16 @@ func (af *AdvanceFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype
 		if err != nil {
 			return nil
 		}
-		(*sdk.GlobalState)["advanceFilter"] = af.Values
 		urlParam, err := af.generateUrlQueryParams(af.Values)
 		if err != nil {
 			return nil
 		}
 		(*af.StdStatePtr)["advanceFilter__urlQuery"] = urlParam
 		if v, ok := af.Values["title"]; ok {
+			delete(af.Values, "title")
 			(*sdk.GlobalState)["nameFilter"] = v
 		}
+		(*sdk.GlobalState)["advanceFilter"] = af.Values
 		af.StdDataPtr = af.getData(sdk)
 		return nil
 	}
@@ -111,16 +119,21 @@ func (af *AdvanceFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 func (af *AdvanceFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
-		err := common.Transfer(sdk.Comp.State, af.StdStatePtr)
-		if err != nil {
-			return nil
-		}
+		// err := common.Transfer(sdk.Comp.State, af.StdStatePtr)
+		// if err != nil {
+		// 	return nil
+		// }
 		if urlquery := sdk.InParams.String("advanceFilter__urlQuery"); urlquery != "" {
-			if err = af.flushOptsByFilter(urlquery); err != nil {
+			if err := af.flushOptsByFilter(urlquery); err != nil {
 				logrus.Errorf("failed to transfer values in component advance filter")
 				return nil
 			}
 		}
+		state := State{}
+		common.Transfer(af.Values, &state)
+		stdState := cptype.ExtraMap{}
+		common.Transfer(state, &stdState)
+		af.StdStatePtr = &cptype.ExtraMap{"values": stdState}
 		if v, ok := af.Values["title"]; ok {
 			delete(af.Values, "title")
 			(*sdk.GlobalState)["nameFilter"] = v
