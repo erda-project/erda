@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
+	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-detail/common"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -31,13 +32,9 @@ import (
 
 //type provider struct {
 //	ComponentEventOverviewInfo
-//	Log logs.Logger
+//	Log       logs.Logger
 //}
 
-//func (cp *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-//	return cp
-//}
-//
 //func (cp *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 //	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 //		inParams, err := common.ParseFromCpSdk(sdk)
@@ -83,19 +80,17 @@ import (
 //	}
 //}
 
-func (receiver *ComponentEventOverviewInfo) Init(ctx servicehub.Context) error {
-	fmt.Sprint("xxxx")
-	return nil
-}
-
 func (cp *ComponentEventOverviewInfo) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	if err := cp.GenComponentState(c); err != nil {
 		return err
 	}
+	cp.Messenger = ctx.Value("messenger").(messenger.NotifyServiceServer)
 	cp.ctx = ctx
 	cp.sdk = cputil.SDK(ctx)
-	alertIndex, err := cp.Messenger.GetAlertNotifyDetail(ctx, &messenger.GetAlertNotifyDetailRequest{
-		Id: cp.InParams.Id,
+	inParams, err := common.ParseFromCpSdk(cp.sdk)
+	detailCtx := utils.NewContextWithHeader(ctx)
+	alertIndex, err := cp.Messenger.GetAlertNotifyDetail(detailCtx, &messenger.GetAlertNotifyDetailRequest{
+		Id: inParams.Id,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to gen eventStatusInfo component err: %s", err)

@@ -18,7 +18,6 @@ import (
 	"context"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
-	monitor "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-detail/common"
 )
 
@@ -33,7 +32,6 @@ type ComponentEventOverviewInfo struct {
 	InParams *common.InParams `json:"inParams"`
 
 	Messenger messenger.NotifyServiceServer `autowired:"erda.core.messenger.notify.NotifyService"`
-	Monitor   monitor.AlertServiceServer    `autowired:"erda.core.monitor.alert.AlertService"`
 }
 
 type Data struct {
