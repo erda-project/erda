@@ -112,6 +112,9 @@ type Conf struct {
 	// scheduler executor refresh interval
 	ExecutorRefreshIntervalMinute uint64 `env:"EXECUTOR_REFRESH_INTERVAL_MINUTE" default:"20"`
 	SpecifyImagePullPolicy        string `env:"SPECIFY_IMAGE_PULL_POLICY" default:"IfNotPresent"`
+
+	// k8s executor goroutine pool size
+	K8SExecutorPoolSize int `env:"K8S_EXECUTOR_POOL_SIZE" default:"50"`
 }
 
 var cfg Conf
@@ -362,4 +365,9 @@ func ExecutorRefreshIntervalMinute() uint64 {
 // SpecifyImagePullPolicy return default image pull policy
 func SpecifyImagePullPolicy() string {
 	return cfg.SpecifyImagePullPolicy
+}
+
+// K8SExecutorPoolSize return default k8s executor pool size
+func K8SExecutorPoolSize() int {
+	return cfg.K8SExecutorPoolSize
 }
