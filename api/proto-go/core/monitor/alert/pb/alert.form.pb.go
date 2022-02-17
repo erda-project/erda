@@ -16,6 +16,9 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*GetRawAlertExpressionResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*RawAlertExpression)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetRawAlertExpressionRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AlertEventSort)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*SuppressAlertEventRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*SuppressAlertEventResponse)(nil)
@@ -165,6 +168,115 @@ var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsValueRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ConditionsValueRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetAlertConditionsValueResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AlertConditionsValue)(nil)
+
+// GetRawAlertExpressionResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetRawAlertExpressionResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &RawAlertExpression{}
+				}
+			case "data.id":
+				if m.Data == nil {
+					m.Data = &RawAlertExpression{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.Id = val
+			case "data.alertId":
+				if m.Data == nil {
+					m.Data = &RawAlertExpression{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.AlertId = val
+			case "data.expression":
+				if m.Data == nil {
+					m.Data = &RawAlertExpression{}
+				}
+				m.Data.Expression = vals[0]
+			case "data.attributes":
+				if m.Data == nil {
+					m.Data = &RawAlertExpression{}
+				}
+				m.Data.Attributes = vals[0]
+			case "data.version":
+				if m.Data == nil {
+					m.Data = &RawAlertExpression{}
+				}
+				m.Data.Version = vals[0]
+			case "data.enable":
+				if m.Data == nil {
+					m.Data = &RawAlertExpression{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data.Enable = val
+			}
+		}
+	}
+	return nil
+}
+
+// RawAlertExpression implement urlenc.URLValuesUnmarshaler.
+func (m *RawAlertExpression) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "id":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Id = val
+			case "alertId":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.AlertId = val
+			case "expression":
+				m.Expression = vals[0]
+			case "attributes":
+				m.Attributes = vals[0]
+			case "version":
+				m.Version = vals[0]
+			case "enable":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Enable = val
+			}
+		}
+	}
+	return nil
+}
+
+// GetRawAlertExpressionRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetRawAlertExpressionRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "id":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Id = val
+			}
+		}
+	}
+	return nil
+}
 
 // AlertEventSort implement urlenc.URLValuesUnmarshaler.
 func (m *AlertEventSort) UnmarshalURLValues(prefix string, values url.Values) error {

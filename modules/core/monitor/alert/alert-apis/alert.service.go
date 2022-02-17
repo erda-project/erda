@@ -1571,6 +1571,29 @@ func (m *alertService) CancelSuppressAlertEvent(ctx context.Context, req *pb.Can
 	}, nil
 }
 
+func (m *alertService) GetRawAlertExpression(ctx context.Context, req *pb.GetRawAlertExpressionRequest) (*pb.GetRawAlertExpressionResponse, error) {
+	list, err := m.p.db.AlertExpression.QueryByIDs([]uint64{req.Id})
+	if err != nil {
+		return nil, err
+	}
+	if len(list) == 0 {
+		return nil, fmt.Errorf("data not exists")
+	}
+	expr := list[0]
+	expressions, _ := expr.Expression.Value()
+	attributes, _ := expr.Attributes.Value()
+	return &pb.GetRawAlertExpressionResponse{
+		Data: &pb.RawAlertExpression{
+			Id:         expr.ID,
+			AlertId:    int64(expr.AlertID),
+			Expression: string(expressions.([]byte)),
+			Attributes: string(attributes.([]byte)),
+			Version:    expr.Version,
+			Enable:     expr.Enable,
+		},
+	}, nil
+}
+
 func getResultValue(result []*metricpb.Result) []*structpb.Value {
 	value := make([]*structpb.Value, 0)
 	for _, v := range result {

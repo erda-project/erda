@@ -1,0 +1,31 @@
+en:
+  "eventStatus": "Event Status"
+  "eventSummary": "Event Summary"
+  "monitorData": "Monitor Data"
+  "eventHistory": "Event History"
+  "moreOperations": "More Operations"
+zh:
+  "eventStatus": "事件状态"
+  "eventSummary": "事件概览"
+  "monitorData": "监控数据"
+  "eventHistory": "事件历史"
+  "moreOperations": "更多操作"
+  "Status": "状态"
+  "Related Alert Rule": "关联告警规则"
+  "Related Alert": "关联告警策略"
+  "Alert Level": "级别"
+  "Alert Source": "事件来源"
+  "Alert Subject": "关联对象"
+  "Alert Count": "事件触发次数"
+  "First Trigger Time": "首次触发时间"
+  "Last Trigger Time": "最后触发时间"
+  "Trigger Time": "触发时间"
+  "Alert Status": "状态"
+  "Trigger Values": "触发值"
+  "Alert Duration": "持续时间"
+  "Tags": "标签"
+
+
+
+
+

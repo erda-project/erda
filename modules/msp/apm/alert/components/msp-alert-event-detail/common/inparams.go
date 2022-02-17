@@ -24,6 +24,8 @@ type InParams struct {
 	Scope        string `json:"scope"`
 	ScopeId      string `json:"scopeId"`
 	AlertEventId string `json:"alertEventId"`
+	StartTime    int64  `json:"startTime"`
+	EndTime      int64  `json:"endTime"`
 }
 
 func ParseFromCpSdk(sdk *cptype.SDK) (*InParams, error) {

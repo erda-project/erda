@@ -37,14 +37,8 @@ type Props struct {
 }
 
 type Data struct {
-	RelatedRuleName  string `json:"relatedRuleName"`
-	RelatedAlertName string `json:"relatedAlertName"`
-	AlertLevel       string `json:"alertLevel"`
-	AlertSource      string `json:"alertSource"`
-	AlertSubject     []Tag  `json:"alertSubject"`
-	AlertCount       string `json:"alertCount"`
-	FirstTriggerTime string `json:"firstTriggerTime"`
-	LastTriggerTime  string `json:"lastTriggerTime"`
+	SuppressExpireTime string `json:"suppressExpireTime"`
+	AlertState         []Tag  `json:"alertState"`
 }
 
 type Field struct {
@@ -77,6 +71,7 @@ type CommandState struct {
 type Tag struct {
 	Label string `json:"label,omitempty"`
 	Group string `json:"group,omitempty"`
+	Color string `json:"color,omitempty"`
 }
 
 type State struct {

@@ -20,11 +20,20 @@ const (
 	ComponentNameMoreOperations    = "moreOperations"
 	ComponentNamePauseFormModal    = "pauseFormModal"
 	ComponentNameEventOverviewInfo = "eventOverviewInfo"
+	ComponentNameEventStatusInfo   = "eventStatusInfo"
+	ComponentNameMonitorDataChart  = "monitorDataChart"
+	ComponentNameEventHistoryTable = "eventHistoryTable"
 )
 
 const (
 	StateKeyAlertEvent = "alertEvent"
 	StateKeyPageTitle  = "pageTitle"
+)
+
+const (
+	GlobalStateKeyConfigurableFilterOptionsKey = "gsConfigurableFilterOptions"
+	GlobalStateKeyPaging                       = "table_paging"
+	GlobalStateKeySort                         = "table_sort"
 )
 
 const (
@@ -35,3 +44,4 @@ const (
 )
 
 const TimeFormatLayout = "2006/01/02 15:04:05"
+const DefaultPageSize = 10

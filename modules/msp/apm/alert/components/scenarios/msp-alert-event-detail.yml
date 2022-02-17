@@ -64,9 +64,8 @@ components:
       title: ${{ i18n.eventHistory }}
   eventHistoryTable:
     type: Table
-    version: 2,
+    version: 2
     props:
-      tableProps:
-        hideHeader: true
+      hideHeader: true
   pauseFormModal:
     type: FormModal

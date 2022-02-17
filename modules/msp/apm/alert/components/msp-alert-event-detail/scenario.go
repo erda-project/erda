@@ -13,3 +13,12 @@
 // limitations under the License.
 
 package msp_alert_event_detail
+
+import (
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-detail/event-history-table"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-detail/event-overview-info"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-detail/event-status-info"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-detail/monitor-data-chart"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-detail/more-operations"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-detail/pause-form-modal"
+)

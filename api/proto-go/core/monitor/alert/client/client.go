@@ -145,6 +145,10 @@ func (s *alertServiceWrapper) DeleteAlert(ctx context.Context, req *pb.DeleteAle
 	return s.client.DeleteAlert(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
+func (s *alertServiceWrapper) GetRawAlertExpression(ctx context.Context, req *pb.GetRawAlertExpressionRequest) (*pb.GetRawAlertExpressionResponse, error) {
+	return s.client.GetRawAlertExpression(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
 func (s *alertServiceWrapper) QueryOrgAlertRule(ctx context.Context, req *pb.QueryOrgAlertRuleRequest) (*pb.QueryOrgAlertRuleResponse, error) {
 	return s.client.QueryOrgAlertRule(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

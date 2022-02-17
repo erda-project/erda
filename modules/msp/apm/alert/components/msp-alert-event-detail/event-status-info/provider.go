@@ -19,12 +19,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
@@ -45,14 +44,8 @@ func (cp *ComponentEventStatusInfo) Render(ctx context.Context, c *cptype.Compon
 	}
 
 	data := Data{
-		RelatedRuleName:  alertEvent.RuleName,
-		RelatedAlertName: alertEvent.AlertName,
-		AlertLevel:       cp.sdk.I18n(alertEvent.AlertLevel),
-		AlertSource:      cp.sdk.I18n(alertEvent.AlertSource),
-		AlertSubject:     cp.getAlertSubjectTags(alertEvent),
-		AlertCount:       "todo",
-		FirstTriggerTime: common.FormatTimeMs(alertEvent.FirstTriggerTime),
-		LastTriggerTime:  common.FormatTimeMs(alertEvent.LastTriggerTime),
+		AlertState:         []Tag{cp.getAlertStateTags(alertEvent)},
+		SuppressExpireTime: common.FormatTimeMs(alertEvent.SuppressExpireTime),
 	}
 	cp.Props = cp.getProps(alertEvent)
 	cp.Data = map[string]Data{
@@ -91,57 +84,58 @@ func (cp *ComponentEventStatusInfo) Transfer(component *cptype.Component) {
 	component.State = map[string]interface{}{}
 }
 
-func (cp *ComponentEventStatusInfo) getAlertSubjectTags(alertEvent *monitorpb.AlertEventItem) (list []Tag) {
-	var subjects map[string]interface{}
-	err := json.Unmarshal([]byte(alertEvent.AlertSubject), &subjects)
-	if err != nil {
-		return []Tag{{Label: alertEvent.AlertSubject}}
+func (cp *ComponentEventStatusInfo) getAlertStateTags(alertEvent *monitorpb.AlertEventItem) Tag {
+	switch alertEvent.AlertState {
+	case "alert":
+		return Tag{
+			Label: cp.sdk.I18n(alertEvent.AlertState),
+			Color: "red",
+		}
+	case "recover":
+		return Tag{
+			Label: cp.sdk.I18n(alertEvent.AlertState),
+			Color: "green",
+		}
+	case "pause", "stop":
+		return Tag{
+			Label: cp.sdk.I18n(alertEvent.AlertState),
+			Color: "blue",
+		}
+	default:
+		return Tag{
+			Label: cp.sdk.I18n(alertEvent.AlertState),
+		}
 	}
-
-	for k, v := range subjects {
-		list = append(list, Tag{Label: fmt.Sprintf("%s=%s", cp.sdk.I18n(k), v)})
-	}
-	return list
 }
 
 func (cp *ComponentEventStatusInfo) getProps(alertEvent *monitorpb.AlertEventItem) Props {
-	levelColor := ""
-	levelRenderType := ""
-	if alertEvent.AlertLevel == "FATAL" {
-		levelColor = "red"
-		levelRenderType = "highlightText"
-	}
 
-	return Props{
+	props := Props{
 		RequestIgnore: []string{"data"},
 		ColumnNum:     4,
 		Fields: []Field{
-			{Label: cp.sdk.I18n("Related Alert Rule"), ValueKey: "relatedRuleName"},
-			{Label: cp.sdk.I18n("Related Alert"), ValueKey: "relatedAlertName"},
 			{
-				Label:      cp.sdk.I18n("Alert Level"),
-				ValueKey:   "alertLevel",
-				RenderType: levelRenderType,
-				Color:      levelColor,
-			},
-			{Label: cp.sdk.I18n("Alert Source"), ValueKey: "alertSource"},
-			{
-				Label:      cp.sdk.I18n("Alert Subject"),
-				ValueKey:   "alertSubject",
+				Label:      cp.sdk.I18n("Status"),
+				ValueKey:   "alertState",
 				RenderType: "tagsRow",
-				SpaceNum:   2,
 			},
-			{Label: cp.sdk.I18n("Alert Count"), ValueKey: "alertCount"},
-			{Label: cp.sdk.I18n("First Trigger Time"), ValueKey: "firstTriggerTime"},
-			{Label: cp.sdk.I18n("Last Trigger Time"), ValueKey: "lastTriggerTime"},
 		},
 	}
+
+	if alertEvent.AlertState == "pause" {
+		props.Fields = append(props.Fields, Field{
+			Label:    cp.sdk.I18n("Pause Expire Time"),
+			ValueKey: "suppressExpireTime",
+		})
+	}
+
+	return props
 }
 
 func init() {
-	name := fmt.Sprintf("component-protocol.components.%s.%s", common.ScenarioKey, common.ComponentNameEventOverviewInfo)
+	name := fmt.Sprintf("component-protocol.components.%s.%s", common.ScenarioKey, common.ComponentNameEventStatusInfo)
 	cpregister.AllExplicitProviderCreatorMap[name] = nil
-	base.InitProviderWithCreator(common.ScenarioKey, common.ComponentNameEventOverviewInfo, func() servicehub.Provider {
+	base.InitProviderWithCreator(common.ScenarioKey, common.ComponentNameEventStatusInfo, func() servicehub.Provider {
 		return &ComponentEventStatusInfo{}
 	})
 }

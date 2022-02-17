@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package components
+package common
 
-const ContextKeyService = "xx"
+const (
+	ContextKeyServiceMonitorMetricService = "monitorMetricService"
+	ContextKeyServiceMonitorAlertService  = "monitorAlertService"
+)

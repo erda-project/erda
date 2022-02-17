@@ -48,6 +48,7 @@ type AlertServiceClient interface {
 	UpdateAlert(ctx context.Context, in *UpdateAlertRequest, opts ...grpc.CallOption) (*UpdateAlertResponse, error)
 	UpdateAlertEnable(ctx context.Context, in *UpdateAlertEnableRequest, opts ...grpc.CallOption) (*UpdateAlertEnableResponse, error)
 	DeleteAlert(ctx context.Context, in *DeleteAlertRequest, opts ...grpc.CallOption) (*DeleteAlertResponse, error)
+	GetRawAlertExpression(ctx context.Context, in *GetRawAlertExpressionRequest, opts ...grpc.CallOption) (*GetRawAlertExpressionResponse, error)
 	QueryOrgAlertRule(ctx context.Context, in *QueryOrgAlertRuleRequest, opts ...grpc.CallOption) (*QueryOrgAlertRuleResponse, error)
 	QueryOrgAlert(ctx context.Context, in *QueryOrgAlertRequest, opts ...grpc.CallOption) (*QueryOrgAlertResponse, error)
 	GetOrgAlertDetail(ctx context.Context, in *GetOrgAlertDetailRequest, opts ...grpc.CallOption) (*GetOrgAlertDetailResponse, error)
@@ -326,6 +327,15 @@ func (c *alertServiceClient) DeleteAlert(ctx context.Context, in *DeleteAlertReq
 	return out, nil
 }
 
+func (c *alertServiceClient) GetRawAlertExpression(ctx context.Context, in *GetRawAlertExpressionRequest, opts ...grpc.CallOption) (*GetRawAlertExpressionResponse, error) {
+	out := new(GetRawAlertExpressionResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.alert.AlertService/GetRawAlertExpression", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *alertServiceClient) QueryOrgAlertRule(ctx context.Context, in *QueryOrgAlertRuleRequest, opts ...grpc.CallOption) (*QueryOrgAlertRuleResponse, error) {
 	out := new(QueryOrgAlertRuleResponse)
 	err := c.cc.Invoke(ctx, "/erda.core.monitor.alert.AlertService/QueryOrgAlertRule", in, out, opts...)
@@ -582,6 +592,7 @@ type AlertServiceServer interface {
 	UpdateAlert(context.Context, *UpdateAlertRequest) (*UpdateAlertResponse, error)
 	UpdateAlertEnable(context.Context, *UpdateAlertEnableRequest) (*UpdateAlertEnableResponse, error)
 	DeleteAlert(context.Context, *DeleteAlertRequest) (*DeleteAlertResponse, error)
+	GetRawAlertExpression(context.Context, *GetRawAlertExpressionRequest) (*GetRawAlertExpressionResponse, error)
 	QueryOrgAlertRule(context.Context, *QueryOrgAlertRuleRequest) (*QueryOrgAlertRuleResponse, error)
 	QueryOrgAlert(context.Context, *QueryOrgAlertRequest) (*QueryOrgAlertResponse, error)
 	GetOrgAlertDetail(context.Context, *GetOrgAlertDetailRequest) (*GetOrgAlertDetailResponse, error)
@@ -693,6 +704,9 @@ func (*UnimplementedAlertServiceServer) UpdateAlertEnable(context.Context, *Upda
 }
 func (*UnimplementedAlertServiceServer) DeleteAlert(context.Context, *DeleteAlertRequest) (*DeleteAlertResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteAlert not implemented")
+}
+func (*UnimplementedAlertServiceServer) GetRawAlertExpression(context.Context, *GetRawAlertExpressionRequest) (*GetRawAlertExpressionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRawAlertExpression not implemented")
 }
 func (*UnimplementedAlertServiceServer) QueryOrgAlertRule(context.Context, *QueryOrgAlertRuleRequest) (*QueryOrgAlertRuleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryOrgAlertRule not implemented")
@@ -1029,6 +1043,15 @@ func _get_AlertService_serviceDesc(srv AlertServiceServer, opts ...grpc1.HandleO
 	if h.Interceptor != nil {
 		_AlertService_DeleteAlert_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "DeleteAlert", srv)
 		_AlertService_DeleteAlert_Handler = h.Interceptor(_AlertService_DeleteAlert_Handler)
+	}
+
+	_AlertService_GetRawAlertExpression_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetRawAlertExpression(ctx, req.(*GetRawAlertExpressionRequest))
+	}
+	var _AlertService_GetRawAlertExpression_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_AlertService_GetRawAlertExpression_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "GetRawAlertExpression", srv)
+		_AlertService_GetRawAlertExpression_Handler = h.Interceptor(_AlertService_GetRawAlertExpression_Handler)
 	}
 
 	_AlertService_QueryOrgAlertRule_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -1877,6 +1900,29 @@ func _get_AlertService_serviceDesc(srv AlertServiceServer, opts ...grpc1.HandleO
 					FullMethod: "/erda.core.monitor.alert.AlertService/DeleteAlert",
 				}
 				return interceptor(ctx, in, info, _AlertService_DeleteAlert_Handler)
+			},
+		},
+		{
+			MethodName: "GetRawAlertExpression",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetRawAlertExpressionRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(AlertServiceServer).GetRawAlertExpression(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _AlertService_GetRawAlertExpression_info)
+				}
+				if interceptor == nil {
+					return _AlertService_GetRawAlertExpression_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.alert.AlertService/GetRawAlertExpression",
+				}
+				return interceptor(ctx, in, info, _AlertService_GetRawAlertExpression_Handler)
 			},
 		},
 		{

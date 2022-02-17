@@ -85,6 +85,7 @@ func (b *ComponentOperationButton) InitComponent(ctx context.Context) {
 	inParams, _ := common.ParseFromCpSdk(sdk)
 	b.inParams = inParams
 	b.sdk = sdk
+	b.MonitorAlertService = common.GetMonitorAlertServiceFromContext(ctx)
 }
 
 func (b *ComponentOperationButton) GenComponentState(c *cptype.Component) error {

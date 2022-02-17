@@ -13,6 +13,12 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
+var _ json.Marshaler = (*GetRawAlertExpressionResponse)(nil)
+var _ json.Unmarshaler = (*GetRawAlertExpressionResponse)(nil)
+var _ json.Marshaler = (*RawAlertExpression)(nil)
+var _ json.Unmarshaler = (*RawAlertExpression)(nil)
+var _ json.Marshaler = (*GetRawAlertExpressionRequest)(nil)
+var _ json.Unmarshaler = (*GetRawAlertExpressionRequest)(nil)
 var _ json.Marshaler = (*AlertEventSort)(nil)
 var _ json.Unmarshaler = (*AlertEventSort)(nil)
 var _ json.Marshaler = (*SuppressAlertEventRequest)(nil)
@@ -311,6 +317,60 @@ var _ json.Marshaler = (*GetAlertConditionsValueResponse)(nil)
 var _ json.Unmarshaler = (*GetAlertConditionsValueResponse)(nil)
 var _ json.Marshaler = (*AlertConditionsValue)(nil)
 var _ json.Unmarshaler = (*AlertConditionsValue)(nil)
+
+// GetRawAlertExpressionResponse implement json.Marshaler.
+func (m *GetRawAlertExpressionResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetRawAlertExpressionResponse implement json.Marshaler.
+func (m *GetRawAlertExpressionResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// RawAlertExpression implement json.Marshaler.
+func (m *RawAlertExpression) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// RawAlertExpression implement json.Marshaler.
+func (m *RawAlertExpression) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetRawAlertExpressionRequest implement json.Marshaler.
+func (m *GetRawAlertExpressionRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetRawAlertExpressionRequest implement json.Marshaler.
+func (m *GetRawAlertExpressionRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
 
 // AlertEventSort implement json.Marshaler.
 func (m *AlertEventSort) MarshalJSON() ([]byte, error) {

@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 
@@ -38,10 +39,16 @@ func (cp *ComponentEventOverviewInfo) Render(ctx context.Context, c *cptype.Comp
 	}
 	cp.ctx = ctx
 	cp.sdk = cputil.SDK(ctx)
+	cp.Metric = common.GetMonitorMetricServiceFromContext(ctx)
 
 	alertEvent := common.GetAlertEventFromGlobalState(*gs)
 	if alertEvent == nil {
 		return errors.Errorf("alertEvent should be exists in globalState")
+	}
+
+	alertCount, err := cp.countAlertEvents(ctx, alertEvent.Id)
+	if err != nil {
+		return fmt.Errorf("failed to calc alertCount")
 	}
 
 	data := Data{
@@ -50,7 +57,7 @@ func (cp *ComponentEventOverviewInfo) Render(ctx context.Context, c *cptype.Comp
 		AlertLevel:       cp.sdk.I18n(alertEvent.AlertLevel),
 		AlertSource:      cp.sdk.I18n(alertEvent.AlertSource),
 		AlertSubject:     cp.getAlertSubjectTags(alertEvent),
-		AlertCount:       "todo",
+		AlertCount:       strconv.FormatInt(alertCount, 10),
 		FirstTriggerTime: common.FormatTimeMs(alertEvent.FirstTriggerTime),
 		LastTriggerTime:  common.FormatTimeMs(alertEvent.LastTriggerTime),
 	}
@@ -129,7 +136,6 @@ func (cp *ComponentEventOverviewInfo) getProps(alertEvent *monitorpb.AlertEventI
 				Label:      cp.sdk.I18n("Alert Subject"),
 				ValueKey:   "alertSubject",
 				RenderType: "tagsRow",
-				SpaceNum:   2,
 			},
 			{Label: cp.sdk.I18n("Alert Count"), ValueKey: "alertCount"},
 			{Label: cp.sdk.I18n("First Trigger Time"), ValueKey: "firstTriggerTime"},

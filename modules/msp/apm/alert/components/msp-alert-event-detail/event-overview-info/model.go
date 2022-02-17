@@ -17,6 +17,8 @@ package event_overview_info
 import (
 	"context"
 
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 )
 
@@ -24,10 +26,11 @@ type ComponentEventOverviewInfo struct {
 	sdk *cptype.SDK `json:"-"`
 	ctx context.Context
 
-	Type  string          `json:"type,omitempty"`
-	Props Props           `json:"props"`
-	Data  map[string]Data `json:"data,omitempty"`
-	State State           `json:"state,omitempty"`
+	Type   string                       `json:"type,omitempty"`
+	Props  Props                        `json:"props"`
+	Data   map[string]Data              `json:"data,omitempty"`
+	State  State                        `json:"state,omitempty"`
+	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
 
 type Props struct {
