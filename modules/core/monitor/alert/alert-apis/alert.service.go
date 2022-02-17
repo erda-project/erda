@@ -1524,7 +1524,7 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 			AlertType:        event.AlertType,
 			AlertIndex:       event.AlertIndex,
 			AlertLevel:       event.AlertLevel,
-			AlertSource:      event.AlertLevel,
+			AlertSource:      event.AlertSource,
 			AlertSubject:     event.AlertSubject,
 			AlertState:       event.AlertState,
 			RuleID:           event.RuleID,
@@ -1537,7 +1537,7 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 			item.AlertState = suppressSettings.SuppressType
 			item.SuppressExpireTime = suppressSettings.ExpireTime.UnixNano() / 1e6
 		}
-		result.Items = append(result.Items)
+		result.Items = append(result.Items, item)
 	}
 	return result, nil
 }

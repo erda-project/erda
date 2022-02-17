@@ -47,13 +47,14 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
 			return nil
 		}
-		p.StdDataPtr = &filter.Data{
+		data := &filter.Data{
 			Conditions: p.getConfigurableFilterOptions(sdk, inParams),
+			HideSave:   true,
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				filter.OpFilter{}.OpKey(): cputil.NewOpBuilder().Build(),
 			},
 		}
-		return nil
+		return &impl.StdStructuredPtr{StdDataPtr: data}
 	}
 }
 
@@ -84,10 +85,6 @@ func (p *provider) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDelete) 
 }
 
 func (p *provider) getConfigurableFilterOptions(sdk *cptype.SDK, inParams *common.InParams) []interface{} {
-	// system default rules have no id, not support on this field
-	//alertRules, _ := p.getAlertRules(sdk.Ctx, inParams)
-	//alertRuleIdSelectCondition := model.NewSelectCondition("alertRuleIds", "告警规则", common.IdNameValuesToSelectOptions(alertRules)).WithPlaceHolder("选择告警规则")
-
 	alerts, _ := p.getAlerts(sdk.Ctx, inParams)
 	alertSelectCondition := model.NewSelectCondition("alertIds", "告警策略", common.IdNameValuesToSelectOptions(alerts)).WithPlaceHolder("选择告警策略")
 
@@ -101,7 +98,6 @@ func (p *provider) getConfigurableFilterOptions(sdk *cptype.SDK, inParams *commo
 	alertSourceSelectCondition := model.NewSelectCondition("alertSources", "事件来源", common.IdNameValuesToSelectOptions(alertSources)).WithPlaceHolder("选择事件来源")
 
 	alertTriggerTimeRangeCondition := model.NewDateRangeCondition("lastTriggerTime", "最后触发时间")
-
 	return []interface{}{alertSelectCondition, alertLevelSelectCondition, alertStateSelectCondition, alertSourceSelectCondition, alertTriggerTimeRangeCondition}
 }
 
@@ -131,7 +127,7 @@ func (p *provider) getAlerts(ctx context.Context, params *common.InParams) ([]*c
 	resp, err := p.Monitor.QueryAlert(ctx, &monitor.QueryAlertRequest{
 		Scope:    params.Scope,
 		ScopeId:  params.ScopeId,
-		PageSize: int64(^uint(0) >> 1),
+		PageSize: 100,
 		PageNo:   1,
 	})
 	if err != nil {
@@ -150,7 +146,12 @@ func (p *provider) getAlerts(ctx context.Context, params *common.InParams) ([]*c
 }
 
 func (p *provider) getAlertLevels(sdk *cptype.SDK, params *common.InParams) []*common.IdNameValue {
-	levels := []string{"FATAL", "CRITICAL", "WARNING", "NOTICE"}
+	levels := []string{
+		"FATAL",
+		"CRITICAL",
+		"WARNING",
+		"NOTICE",
+	}
 
 	var values []*common.IdNameValue
 	for _, level := range levels {
@@ -164,7 +165,12 @@ func (p *provider) getAlertLevels(sdk *cptype.SDK, params *common.InParams) []*c
 }
 
 func (p *provider) getAlertStates(sdk *cptype.SDK, params *common.InParams) []*common.IdNameValue {
-	states := []string{"alert", "recover", "pause", "stop"}
+	states := []string{
+		"alert",
+		"recover",
+		"pause",
+		"stop",
+	}
 
 	var values []*common.IdNameValue
 	for _, state := range states {
@@ -178,7 +184,10 @@ func (p *provider) getAlertStates(sdk *cptype.SDK, params *common.InParams) []*c
 }
 
 func (p *provider) getAlertSources(sdk *cptype.SDK, params *common.InParams) []*common.IdNameValue {
-	sources := []string{"System", "Custom"}
+	sources := []string{
+		"System",
+		"Custom",
+	}
 
 	var values []*common.IdNameValue
 	for _, source := range sources {

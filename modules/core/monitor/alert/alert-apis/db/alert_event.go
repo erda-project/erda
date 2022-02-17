@@ -87,7 +87,7 @@ func (db *AlertEventDB) QueryByCondition(scope, scopeId string, condition *Alert
 	query = db.buildSortSqlPart(query, sorts)
 	query = query.Offset((pageNo - 1) * pageSize).Limit(pageSize)
 	err := query.Find(&result).Error
-	if !gorm.IsRecordNotFoundError(err) {
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, err
 	}
 	return result, nil
@@ -123,28 +123,28 @@ func (db *AlertEventDB) buildSortSqlPart(query *gorm.DB, sorts []*AlertEventSort
 
 func (db *AlertEventDB) buildWhereQuery(query *gorm.DB, condition *AlertEventQueryCondition) *gorm.DB {
 	if len(condition.Name) > 0 {
-		query.Where("name like ?", "%"+condition.Name+"%")
+		query = query.Where("name like ?", "%"+condition.Name+"%")
 	}
 	if len(condition.Ids) > 0 {
-		query.Where("id in (?)", condition.Ids)
+		query = query.Where("id in (?)", condition.Ids)
 	}
 	if len(condition.AlertIds) > 0 {
-		query.Where("alert_id in (?)", condition.AlertIds)
+		query = query.Where("alert_id in (?)", condition.AlertIds)
 	}
 	if len(condition.AlertLevels) > 0 {
-		query.Where("alert_level in (?)", condition.AlertLevels)
+		query = query.Where("alert_level in (?)", condition.AlertLevels)
 	}
 	if len(condition.AlertStates) > 0 {
-		query.Where("alert_state in (?)", condition.AlertStates)
+		query = query.Where("alert_state in (?)", condition.AlertStates)
 	}
 	if len(condition.AlertSources) > 0 {
-		query.Where("alert_source in (?)", condition.AlertSources)
+		query = query.Where("alert_source in (?)", condition.AlertSources)
 	}
 	if condition.LastTriggerTimeMsMin > 0 {
-		query.Where("last_trigger_time >= ?", time.Unix(int64(condition.LastTriggerTimeMsMin)/1e3, int64(condition.LastTriggerTimeMsMin)%1e3))
+		query = query.Where("last_trigger_time >= ?", time.Unix(int64(condition.LastTriggerTimeMsMin)/1e3, int64(condition.LastTriggerTimeMsMin)%1e3))
 	}
 	if condition.LastTriggerTimeMsMax > 0 {
-		query.Where("last_trigger_time < ?", time.Unix(int64(condition.LastTriggerTimeMsMax)/1e3, int64(condition.LastTriggerTimeMsMax)%1e3))
+		query = query.Where("last_trigger_time < ?", time.Unix(int64(condition.LastTriggerTimeMsMax)/1e3, int64(condition.LastTriggerTimeMsMax)%1e3))
 	}
 	return query
 }

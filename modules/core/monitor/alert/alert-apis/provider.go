@@ -204,7 +204,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			perm.Method(MonitorService.CreateOrgAlertIssue, perm.ScopeOrg, "monitor_org_alert", perm.ActionCreate, perm.OrgIDValue()),
 			perm.Method(MonitorService.UpdateOrgAlertIssue, perm.ScopeOrg, "monitor_org_alert", perm.ActionUpdate, perm.OrgIDValue()),
 			perm.NoPermMethod(MonitorService.GetAlertConditions),
-			perm.NoPermMethod(MonitorService.GetAlertConditionsValue),
+			perm.NoPermMethod(MonitorService.GetAlertEvents),
+			perm.NoPermMethod(MonitorService.SuppressAlertEvent),
+			perm.NoPermMethod(MonitorService.CancelSuppressAlertEvent),
 		),
 			p.audit.Audit(
 				audit.Method(MonitorService.UpdateOrgCustomizeAlert, audit.OrgScope, string(apistructs.UpdateOrgCustomAlert),
