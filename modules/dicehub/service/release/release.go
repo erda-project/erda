@@ -118,7 +118,13 @@ func (r *Release) Create(req *apistructs.ReleaseCreateRequest) (string, error) {
 	)
 	if req.IsProjectRelease {
 		var list []string
+		if len(req.ApplicationReleaseList) == 0 {
+			return "", errors.New("application release list can not be empty")
+		}
 		for i := 0; i < len(req.ApplicationReleaseList); i++ {
+			if len(req.ApplicationReleaseList[i]) == 0 {
+				return "", errors.New("application release group can not be empty")
+			}
 			sort.Strings(req.ApplicationReleaseList[i])
 			list = append(list, req.ApplicationReleaseList[i]...)
 		}
@@ -451,6 +457,9 @@ func (r *Release) Update(orgID int64, releaseID string, req *apistructs.ReleaseU
 
 		var newList []string
 		for i := 0; i < len(req.ApplicationReleaseList); i++ {
+			if len(req.ApplicationReleaseList[i]) == 0 {
+				return errors.New("application release group can not be empty")
+			}
 			sort.Strings(req.ApplicationReleaseList[i])
 			newList = append(newList, req.ApplicationReleaseList[i]...)
 		}

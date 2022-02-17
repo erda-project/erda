@@ -26,8 +26,30 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/services/runtime"
+	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
+
+var ProjectReleaseResp = &apistructs.ReleaseGetResponseData{
+	IsProjectRelease: true,
+	Labels:           map[string]string{gitBranchLabel: "master"},
+	ApplicationReleaseList: [][]*apistructs.ApplicationReleaseSummary{
+		{
+			{
+				ReleaseID:   "0856df7931494d239abf07a145ade6e9",
+				ReleaseName: "release/1.0.1",
+				Version:     "1.0.1+20220210153458",
+			},
+		},
+	},
+}
+
+var AppReleaseResp = &apistructs.ReleaseGetResponseData{
+	Labels:          map[string]string{gitBranchLabel: "master"},
+	ApplicationID:   1,
+	ApplicationName: "test",
+}
 
 func TestComposeRuntimeCreateRequests(t *testing.T) {
 	do := New()
@@ -42,9 +64,7 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetRelease",
 		func(*bundle.Bundle, string) (*apistructs.ReleaseGetResponseData, error) {
-			return &apistructs.ReleaseGetResponseData{
-				Labels: map[string]string{gitBranchLabel: "master"},
-			}, nil
+			return ProjectReleaseResp, nil
 		},
 	)
 
@@ -53,28 +73,28 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 	paramsJson, err := json.Marshal(params)
 	assert.NoError(t, err)
 
-	releaseResp := &apistructs.ReleaseGetResponseData{
-		Labels: map[string]string{gitBranchLabel: "master"},
-	}
-
-	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
-		Type:      apistructs.TypeApplicationRelease,
-		Params:    string(paramsJson),
-		Workspace: apistructs.WORKSPACE_PROD,
-	}, releaseResp, apistructs.SourceDeployCenter, false)
-	assert.NoError(t, err)
-
-	releaseResp.ApplicationReleaseList = [][]*apistructs.ApplicationReleaseSummary{
+	ProjectReleaseResp.ApplicationReleaseList = [][]*apistructs.ApplicationReleaseSummary{
 		{
 			{ReleaseID: "8781f475e5617a04"},
 		},
 	}
 
 	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
-		Type:      apistructs.TypeProjectRelease,
-		Params:    string(paramsJson),
-		Workspace: apistructs.WORKSPACE_PROD,
-	}, releaseResp, apistructs.SourceDeployCenter, false)
+		BatchSize:    10,
+		CurrentBatch: 1,
+		Type:         apistructs.TypeProjectRelease,
+		Params:       string(paramsJson),
+		Workspace:    apistructs.WORKSPACE_PROD,
+	}, ProjectReleaseResp, apistructs.SourceDeployCenter, false)
+	assert.NoError(t, err)
+
+	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
+		BatchSize:    1,
+		CurrentBatch: 1,
+		Type:         apistructs.TypeApplicationRelease,
+		Params:       string(paramsJson),
+		Workspace:    apistructs.WORKSPACE_PROD,
+	}, AppReleaseResp, apistructs.SourceDeployCenter, false)
 	assert.NoError(t, err)
 }
 
@@ -134,4 +154,44 @@ func TestParseAppsInfoWithRelease(t *testing.T) {
 		},
 	})
 	assert.Equal(t, got, map[int64]string{1: "test-1", 2: "test-2"})
+}
+
+func TestContinueDeployOrder(t *testing.T) {
+	order := New()
+	bdl := bundle.New()
+	rt := runtime.New()
+
+	params := map[string]*apistructs.DeploymentOrderParam{}
+
+	paramsJson, err := json.Marshal(params)
+	assert.NoError(t, err)
+
+	defer monkey.UnpatchAll()
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetDeploymentOrder", func(*dbclient.DBClient, string) (*dbclient.DeploymentOrder, error) {
+		return &dbclient.DeploymentOrder{
+			CurrentBatch: 1,
+			BatchSize:    3,
+			Workspace:    apistructs.WORKSPACE_PROD,
+			Params:       string(paramsJson),
+		}, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "UpdateDeploymentOrder", func(*dbclient.DBClient, *dbclient.DeploymentOrder) error {
+		return nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetRelease",
+		func(*bundle.Bundle, string) (*apistructs.ReleaseGetResponseData, error) {
+			return ProjectReleaseResp, nil
+		},
+	)
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProjectWithSetter",
+		func(*bundle.Bundle, uint64, ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error) {
+			return &apistructs.ProjectDTO{ClusterConfig: map[string]string{"PROD": "fake-cluster"}}, nil
+		},
+	)
+	monkey.PatchInstanceMethod(reflect.TypeOf(rt), "Create", func(*runtime.Runtime, user.ID, *apistructs.RuntimeCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
+		return &apistructs.DeploymentCreateResponseDTO{}, nil
+	})
+
+	err = order.ContinueDeployOrder("d9f06aaf-e3b7-4e05-9433-7742162e98f9")
+	assert.NoError(t, err)
 }

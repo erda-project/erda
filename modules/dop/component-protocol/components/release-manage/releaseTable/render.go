@@ -140,17 +140,17 @@ func (r *ComponentReleaseTable) DecodeURLQuery() error {
 }
 
 func (r *ComponentReleaseTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = r.State.PageNo
-	query["pageSize"] = r.State.PageSize
-	query["sorterData"] = r.State.Sorter
-	data, err := json.Marshal(query)
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = r.State.PageNo
+	urlQuery["pageSize"] = r.State.PageSize
+	urlQuery["sorterData"] = r.State.Sorter
+	jsonData, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(data)
-	r.State.ReleaseTableURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+	r.State.ReleaseTableURLQuery = encoded
 	return nil
 }
 

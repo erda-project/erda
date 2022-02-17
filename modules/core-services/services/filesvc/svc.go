@@ -16,6 +16,7 @@ package filesvc
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -60,11 +61,20 @@ func New(options ...Option) *FileService {
 			}
 			panic(err)
 		}
-		if len(kv.Value) == 0 {
+		kmsKey = string(kv.Value)
+		if len(kmsKey) == 0 {
 			ApplyKmsCmk(svc)
 			return
+		} else {
+			_, err = svc.bdl.KMSRotateKeyVersion(apistructs.KMSRotateKeyVersionRequest{
+				RotateKeyVersionRequest: kmstypes.RotateKeyVersionRequest{
+					KeyID: kmsKey,
+				},
+			})
+			if err != nil {
+				panic(fmt.Errorf("dop files kms cmk rotate key version failed, keyID: %s", kmsKey))
+			}
 		}
-		kmsKey = string(kv.Value)
 		_, err = svc.bdl.KMSDescribeKey(apistructs.KMSDescribeKeyRequest{
 			DescribeKeyRequest: kmstypes.DescribeKeyRequest{
 				KeyID: kmsKey,

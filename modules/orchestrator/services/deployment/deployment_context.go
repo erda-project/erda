@@ -685,11 +685,14 @@ func (fsm *DeployFSMContext) continuePhaseCompleted() error {
 }
 
 func (fsm *DeployFSMContext) UpdateDeploymentStatusToRuntimeAndOrder() error {
-	var err error
-	var app *apistructs.ApplicationDTO
+	var (
+		err error
+		app *apistructs.ApplicationDTO
+	)
 
 	fsm.Runtime.DeploymentStatus = fsm.Deployment.Status
-	if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
+	if err := fsm.db.UpdateRuntimeDeploymentInfo(fsm.Runtime.ID, fsm.Deployment.ID, fsm.Deployment.Status); err != nil {
+		logrus.Errorf("update runtime deployment status error: %v", err)
 		return err
 	}
 
@@ -708,7 +711,7 @@ func (fsm *DeployFSMContext) UpdateDeploymentStatusToRuntimeAndOrder() error {
 	}
 	logrus.Infof("update deployment(%+v) status for app (%+v) to deployment_order (%+v) detail is: %+v",
 		fsm.deploymentID, app.Name, DeploymentOrderID, appDeploymentStatus)
-	if err := fsm.db.UpateDeploymentOrderStatus(DeploymentOrderID,
+	if err := fsm.db.UpdateDeploymentOrderStatus(DeploymentOrderID,
 		app.Name, appDeploymentStatus); err != nil {
 		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v",
 			DeploymentOrderID, err)
@@ -1485,19 +1488,37 @@ func (fsm *DeployFSMContext) evalTemplate(projectAddons []dbclient.AddonInstance
 	return result_envs, usedAddonInsMap, usedAddonTenantMap, nil
 }
 
+func BuildVolumeRootDir(runtime *dbclient.Runtime) string {
+	return fmt.Sprintf("/netdata/volumes/%s/%s", runtime.GitRepoAbbrev, strings.ToLower(runtime.Workspace))
+}
+
 func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml.Service,
 	groupLabels map[string]string, addonEnv map[string]string, groupEnv, groupFileconfigs map[string]string,
 	runtime *dbclient.Runtime, projectAddons []dbclient.AddonInstanceRouting,
 	projectAddonTenants []dbclient.AddonInstanceTenant) (map[string]dbclient.AddonInstanceRouting, map[string]dbclient.AddonInstanceTenant, error) {
-	/*
-		volumePrefixDir := utils.BuildVolumeRootDir(runtime)
-		bs, err := convertBinds(serviceName, volumePrefixDir, service.Volumes)
-		if err != nil {
-			return nil, nil, err
+
+	// 用于兼容使用旧的 volume 定义方式的 volume，避免创建新 volume
+	oldTypeVolumes := make([]diceyml.Volume, 0)
+	newVolumes := make([]diceyml.Volume, 0)
+	for _, vol := range service.Volumes {
+		if vol.Storage != "" {
+			oldTypeVolumes = append(oldTypeVolumes, vol)
+		} else {
+			newVolumes = append(newVolumes, vol)
 		}
-		service.Binds = append(service.Binds, bs...)
+	}
+
+	volumePrefixDir := BuildVolumeRootDir(runtime)
+	bs, err := convertBinds(serviceName, volumePrefixDir, oldTypeVolumes)
+	if err != nil {
+		return nil, nil, err
+	}
+	service.Binds = append(service.Binds, bs...)
+	if len(newVolumes) > 0 {
+		service.Volumes = newVolumes
+	} else {
 		service.Volumes = nil
-	*/
+	}
 	service.Labels = utils.ConvertServiceLabels(groupLabels, service.Labels, serviceName)
 	// TODO:
 	// currently platformEnv > serviceEnv > addonEnv > groupEnv

@@ -237,7 +237,7 @@ func (cdp *CDP) getFailedTaskLogs(pipelineDetail *apistructs.PipelineDetailDTO) 
 			ID:     taskID,
 			Source: apistructs.DashboardSpotLogSourceJob,
 			Stream: apistructs.DashboardSpotLogStreamStderr,
-			Count:  -50,
+			Count:  -10,
 			Start:  0,
 			End:    time.Duration(time.Now().UnixNano()),
 		})
@@ -248,7 +248,7 @@ func (cdp *CDP) getFailedTaskLogs(pipelineDetail *apistructs.PipelineDetailDTO) 
 			ID:     taskID,
 			Source: apistructs.DashboardSpotLogSourceJob,
 			Stream: apistructs.DashboardSpotLogStreamStdout,
-			Count:  -50,
+			Count:  -10,
 			Start:  0,
 			End:    time.Duration(time.Now().UnixNano()),
 		})
