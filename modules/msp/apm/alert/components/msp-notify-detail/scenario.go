@@ -12,30 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package db
+package msp_notify_detail
 
 import (
-	"github.com/jinzhu/gorm"
-
-	db2 "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-detail/eventStatusInfo"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-detail/notificationContentInfo"
 )
-
-type DB struct {
-	*gorm.DB
-	AlertNotifyIndexDB AlertNotifyIndexDB
-	NotifyHistoryDB    NotifyHistoryDB
-	AlertNotifyDB      db2.AlertNotifyDB
-}
-
-func New(db *gorm.DB) *DB {
-	return &DB{
-		DB:                 db,
-		AlertNotifyIndexDB: AlertNotifyIndexDB{db},
-		NotifyHistoryDB:    NotifyHistoryDB{db},
-		AlertNotifyDB:      db2.AlertNotifyDB{db},
-	}
-}
-
-func (db *DB) Begin() *DB {
-	return New(db.DB.Begin())
-}

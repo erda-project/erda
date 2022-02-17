@@ -12,30 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package db
+package msp_notify_list
 
 import (
-	"github.com/jinzhu/gorm"
-
-	db2 "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-list/configurableFilter"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-list/searchFilter"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-list/table"
 )
-
-type DB struct {
-	*gorm.DB
-	AlertNotifyIndexDB AlertNotifyIndexDB
-	NotifyHistoryDB    NotifyHistoryDB
-	AlertNotifyDB      db2.AlertNotifyDB
-}
-
-func New(db *gorm.DB) *DB {
-	return &DB{
-		DB:                 db,
-		AlertNotifyIndexDB: AlertNotifyIndexDB{db},
-		NotifyHistoryDB:    NotifyHistoryDB{db},
-		AlertNotifyDB:      db2.AlertNotifyDB{db},
-	}
-}
-
-func (db *DB) Begin() *DB {
-	return New(db.DB.Begin())
-}
