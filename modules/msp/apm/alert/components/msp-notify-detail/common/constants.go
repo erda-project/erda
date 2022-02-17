@@ -14,7 +14,7 @@
 
 package common
 
-const ScenarioKey = "msp-notify-list"
+const ScenarioKey = "msp-notify-detail"
 
 const (
 	ComponentNameEventStatusInfo         = "eventStatusInfo"

@@ -16,6 +16,7 @@ package components
 
 import (
 	"embed"
+	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -40,10 +41,13 @@ type provider struct {
 
 	Protocol componentprotocol.Interface
 	CPTran   i18n.I18n `autowired:"i18n"`
+
+	Messenger messenger.NotifyServiceServer `autowired:"erda.core.messenger.notify.NotifyService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.Protocol.SetI18nTran(p.CPTran)
+	p.Protocol.WithContextValue("messenger", p.Messenger)
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	return nil
 }
