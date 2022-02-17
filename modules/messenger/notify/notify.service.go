@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"strings"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -311,6 +312,9 @@ func (n notifyService) GetAlertNotifyDetail(ctx context.Context, request *pb.Get
 	if err != nil {
 		return result, errors.NewInternalServerError(err)
 	}
+	str := strings.TrimLeft(alertNotifyHistory.NotifyName, "【")
+	str = strings.TrimRight(str, "】\n")
+	result.Data.AlertName = str
 	sourceDataParam := model.NotifySourceData{}
 	err = json.Unmarshal([]byte(alertNotifyHistory.SourceData), &sourceDataParam)
 	if err != nil {

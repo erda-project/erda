@@ -192,4 +192,5 @@ message AlertNotifyDetail {
   string                    notifyRule    = 4;
   string                    notifyContent = 5;
   google.protobuf.Timestamp sendTime      = 6;
+  string                    alertName     = 7;
 }

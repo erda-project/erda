@@ -22,5 +22,6 @@ const (
 )
 
 const (
-	AlertIndex = "alertIndex"
+	AlertIndex        = "alertIndex"
+	StateKeyPageTitle = "pageTitle"
 )

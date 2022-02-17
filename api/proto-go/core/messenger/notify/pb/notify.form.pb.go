@@ -1073,6 +1073,11 @@ func (m *GetAlertNotifyDetailResponse) UnmarshalURLValues(prefix string, values 
 					return err
 				}
 				m.Data.SendTime.Nanos = int32(val)
+			case "data.alertName":
+				if m.Data == nil {
+					m.Data = &AlertNotifyDetail{}
+				}
+				m.Data.AlertName = vals[0]
 			}
 		}
 	}
@@ -1116,6 +1121,8 @@ func (m *AlertNotifyDetail) UnmarshalURLValues(prefix string, values url.Values)
 					return err
 				}
 				m.SendTime.Nanos = int32(val)
+			case "alertName":
+				m.AlertName = vals[0]
 			}
 		}
 	}
