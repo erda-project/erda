@@ -16,6 +16,7 @@ package notificationContentInfo
 
 import (
 	"context"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 )
 

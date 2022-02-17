@@ -16,13 +16,13 @@ package components
 
 import (
 	"embed"
-	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/common"

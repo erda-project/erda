@@ -18,6 +18,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
@@ -26,59 +30,7 @@ import (
 	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-detail/common"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
-
-//type provider struct {
-//	ComponentEventOverviewInfo
-//	Log       logs.Logger
-//}
-
-//func (cp *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-//	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
-//		inParams, err := common.ParseFromCpSdk(sdk)
-//		if err != nil {
-//			cp.Log.Error(err)
-//			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
-//			return nil
-//		}
-//		alertIndex, err := cp.Messenger.GetAlertNotifyDetail(sdk.Ctx, &messenger.GetAlertNotifyDetailRequest{
-//			Id: inParams.Id,
-//		})
-//		if err != nil {
-//			cp.Log.Error(err)
-//			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
-//			return nil
-//		}
-//		if alertIndex == nil {
-//			cp.Log.Error(err)
-//			(*sdk.GlobalState)[string(cptype.GlobalInnerKeyError)] = err.Error()
-//			return nil
-//		}
-//		common.SetNotifyIndexToGlobalState(*sdk.GlobalState, alertIndex.Data)
-//		status := Status{
-//			Label: cp.sdk.I18n(alertIndex.Data.Status),
-//			Color: "green",
-//		}
-//		if alertIndex.Data.Status == "failed" {
-//			status.Color = "red"
-//		}
-//		data := Data{
-//			Channel:    cp.sdk.I18n(alertIndex.Data.Channel),
-//			Status:     status,
-//			SendTime:   alertIndex.Data.SendTime.AsTime().Format("2006/01/02 15:04:05"),
-//			Group:      alertIndex.Data.NotifyGroup,
-//			LinkedRule: alertIndex.Data.NotifyRule,
-//		}
-//		cp.Props = cp.getProps()
-//		cp.Data = map[string]Data{
-//			"data": data,
-//		}
-//		cp.Transfer(sdk.Comp)
-//		return nil
-//	}
-//}
 
 func (cp *ComponentEventOverviewInfo) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	if err := cp.GenComponentState(c); err != nil {
