@@ -146,12 +146,7 @@ func (p *provider) getAlerts(ctx context.Context, params *common.InParams) ([]*c
 }
 
 func (p *provider) getAlertLevels(sdk *cptype.SDK, params *common.InParams) []*common.IdNameValue {
-	levels := []string{
-		"FATAL",
-		"CRITICAL",
-		"WARNING",
-		"NOTICE",
-	}
+	levels := []string{common.Fatal, common.Critical, common.Warning, common.Notice}
 
 	var values []*common.IdNameValue
 	for _, level := range levels {
@@ -165,12 +160,7 @@ func (p *provider) getAlertLevels(sdk *cptype.SDK, params *common.InParams) []*c
 }
 
 func (p *provider) getAlertStates(sdk *cptype.SDK, params *common.InParams) []*common.IdNameValue {
-	states := []string{
-		"alert",
-		"recover",
-		"pause",
-		"stop",
-	}
+	states := []string{common.Alert, common.Recover, common.Pause, common.Stop}
 
 	var values []*common.IdNameValue
 	for _, state := range states {
@@ -184,10 +174,7 @@ func (p *provider) getAlertStates(sdk *cptype.SDK, params *common.InParams) []*c
 }
 
 func (p *provider) getAlertSources(sdk *cptype.SDK, params *common.InParams) []*common.IdNameValue {
-	sources := []string{
-		"System",
-		"Custom",
-	}
+	sources := []string{common.System, common.Custom}
 
 	var values []*common.IdNameValue
 	for _, source := range sources {

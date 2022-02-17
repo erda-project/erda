@@ -30,3 +30,37 @@ const (
 )
 
 const DefaultPageSize = 10
+
+const (
+	Fatal    string = "FATAL"
+	Critical string = "CRITICAL"
+	Warning  string = "WARNING"
+	Notice   string = "NOTICE"
+
+	Alert   string = "alert"
+	Recover string = "recover"
+	Pause   string = "pause"
+	Stop    string = "stop"
+
+	System string = "System"
+	Custom string = "Custom"
+
+	ColorProcessing string = "processing"
+	ColorDefault    string = "default"
+	ColorWarning    string = "warning"
+	ColorError      string = "error"
+)
+
+var LevelColors = map[string]string{
+	Fatal:    ColorError,
+	Critical: ColorWarning,
+	Warning:  ColorDefault,
+	Notice:   ColorProcessing,
+}
+
+var StateColors = map[string]string{
+	Alert:   ColorError,
+	Recover: ColorProcessing,
+	Pause:   ColorDefault,
+	Stop:    ColorWarning,
+}
