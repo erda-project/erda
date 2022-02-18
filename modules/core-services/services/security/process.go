@@ -263,7 +263,7 @@ func (d AppPermissionProcess) check(ctx context.Context) (bool, error) {
 func (a AppPermissionProcess) GetAllRoles(ctx context.Context) ([]string, error) {
 	dto, err := a.Adaptor.Db.GetApplicationByID(a.Adaptor.GetScopeID(ctx))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get application")
+		return nil, err
 	}
 	// get all project-level application
 	_, data, err := a.Adaptor.Db.GetApplicationsByIDs(&dto.OrgID, &dto.ProjectID, nil, &apistructs.ApplicationListRequest{
