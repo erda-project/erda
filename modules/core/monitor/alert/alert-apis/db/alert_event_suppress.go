@@ -90,7 +90,7 @@ func (db *AlertEventSuppressDB) Suppress(orgId int64, scope, scopeId string, eve
 }
 
 func (db *AlertEventSuppressDB) CancelSuppress(eventId string) (bool, error) {
-	query := db.Table(TableAlertEventSuppress).Where("alert_event_id=?", eventId).Update("enabled=?", false)
+	query := db.Table(TableAlertEventSuppress).Where("alert_event_id=?", eventId).Update("enabled", false)
 	if query.Error != nil {
 		return false, query.Error
 	}
