@@ -1454,8 +1454,10 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 		return i.(string) == "pause" || i.(string) == "stop"
 	}).ToSlice(&suppressStates)
 	if len(suppressStates) > 0 {
+		bv := true
 		suppressList, err := m.p.db.AlertEventSuppressDB.QueryByCondition(req.Scope, req.ScopeId, &db.AlertEventSuppressQueryCondition{
 			SuppressTypes: suppressStates,
+			Enabled:       &bv,
 		})
 		if err != nil {
 			for _, item := range suppressList {
@@ -1493,8 +1495,10 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 	}).ToSlice(&eventIds)
 
 	if len(eventIds) > 0 {
+		bv := true
 		suppressList, err := m.p.db.AlertEventSuppressDB.QueryByCondition(req.Scope, req.ScopeId, &db.AlertEventSuppressQueryCondition{
 			EventIds: eventIds,
+			Enabled:  &bv,
 		})
 		if err != nil {
 			return nil, errors.NewInternalServerError(err)

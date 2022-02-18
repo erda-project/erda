@@ -115,9 +115,9 @@ func (b *ComponentOperationButton) SetComponentValue(alertEvent *monitorpb.Alert
 			Operations: map[string]interface{}{
 				"click": Operation{
 					Key:    operationPauseAlert,
-					Reload: true,
+					Reload: false,
 					Command: Command{
-						Key: "setPauseExpireTime",
+						Key: "set",
 						State: CommandState{
 							Visible: true,
 						},

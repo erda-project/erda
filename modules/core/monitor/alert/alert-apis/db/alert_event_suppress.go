@@ -35,15 +35,18 @@ type AlertEventSuppressDB struct {
 type AlertEventSuppressQueryCondition struct {
 	SuppressTypes []string
 	EventIds      []string
+	Enabled       *bool
 }
 
 func (db *AlertEventSuppressDB) QueryByCondition(scope, scopeId string, condition *AlertEventSuppressQueryCondition) ([]*AlertEventSuppress, error) {
-	query := db.Table(TableAlertEventSuppress).Where("scope=?", scope).Where("scope_id=?", scopeId).
-		Where("enabled=?", true).Where("expire_time > now()")
+	query := db.Table(TableAlertEventSuppress).Where("scope=?", scope).Where("scope_id=?", scopeId)
 
 	if condition != nil {
+		if condition.Enabled != nil {
+			query = query.Where("enabled = ?", *condition.Enabled)
+		}
 		if len(condition.SuppressTypes) > 0 {
-			query = query.Where("suppress_type in (?)", condition.SuppressTypes)
+			query = query.Where("suppress_type in (?)", condition.SuppressTypes).Where("expire_time > now()")
 		}
 		if len(condition.EventIds) > 0 {
 			query = query.Where("alert_event_id in (?)", condition.EventIds)
