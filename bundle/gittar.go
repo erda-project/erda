@@ -655,3 +655,35 @@ func (b *Bundle) GetGittarCompare(after, before string, appID int64, userID stri
 
 	return &compareResponse.Data, nil
 }
+
+func (b *Bundle) MergeRequestCount(userID string, req apistructs.MergeRequestCountRequest) (map[string]int, error) {
+	var (
+		host string
+		err  error
+		rsp  apistructs.MergeRequestCountResponse
+	)
+	hc := b.hc
+	host, err = b.urls.Gittar()
+	if err != nil {
+		return nil, err
+	}
+
+	values := url.Values{}
+	for _, i := range req.AppIDs {
+		values.Add("appIDs", strconv.FormatUint(i, 10))
+	}
+
+	resp, err := hc.Get(host).
+		Header(httputil.UserHeader, userID).
+		Param("state", req.State).
+		Path(fmt.Sprintf("/api/merge-requests-count")).
+		Params(values).
+		Do().JSON(&rsp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(errors.Errorf("failed to list merge request count"))
+	}
+	return rsp.Data, nil
+}

@@ -91,7 +91,10 @@ func (w *Workbench) ListAppWbData(identity apistructs.Identity, req apistructs.A
 	}
 
 	// list app related open mr
-	mrResult, err := w.ListOpenMrWithLimitRate(identity, appIDs, limit)
+	mrResult, err := w.bdl.MergeRequestCount(identity.UserID, apistructs.MergeRequestCountRequest{
+		AppIDs: appIDs,
+		State:  "open",
+	})
 	if err != nil {
 		logrus.Errorf("list open mr failed, appIDs: %v, error: %v", appIDs, err)
 		return
@@ -103,7 +106,7 @@ func (w *Workbench) ListAppWbData(identity apistructs.Identity, req apistructs.A
 		data.List = append(data.List, apistructs.AppWorkBenchItem{
 			ApplicationDTO: appRes.List[i],
 			AppRuntimeNum:  len(runtimeRes[appRes.List[i].ID]),
-			AppOpenMrNum:   mrResult[appRes.List[i].ID],
+			AppOpenMrNum:   mrResult[strconv.FormatUint(appRes.List[i].ID, 10)],
 		})
 	}
 	return
