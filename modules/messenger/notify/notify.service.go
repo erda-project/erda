@@ -324,3 +324,32 @@ func (n notifyService) GetAlertNotifyDetail(ctx context.Context, request *pb.Get
 	result.Data.NotifyContent = sourceDataParam.Params.Content
 	return result, nil
 }
+
+func (n notifyService) GetTypeNotifyHistogram(ctx context.Context, request *pb.GetTypeNotifyHistogramRequest) (*pb.GetTypeNotifyHistogramResponse, error) {
+	result := &pb.GetTypeNotifyHistogramResponse{
+		Data: &pb.TypeNotifyHistogram{
+			Value: make(map[string]*pb.StatisticValue),
+		},
+	}
+	orgIdStr := apis.GetOrgID(ctx)
+	orgId, err := strconv.Atoi(orgIdStr)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	startTime, err := strconv.ParseInt(request.StartTime, 10, 64)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	endTime, err := strconv.ParseInt(request.EndTime, 10, 64)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	rs, err := n.DB.NotifyHistoryDB.NotifyHistoryType(request.Statistic, orgId, request.ScopeId, request.ScopeType, startTime, endTime)
+	if err != nil {
+		return result, errors.NewInternalServerError(err)
+	}
+	for _, item := range rs {
+		result.Data.Value[item.Field] = &pb.StatisticValue{Value: []int64{item.Count}}
+	}
+	return result, nil
+}
