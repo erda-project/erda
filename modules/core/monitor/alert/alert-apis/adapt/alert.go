@@ -142,7 +142,7 @@ const (
 	WebhookNotifyTarget            NotifyTargetType = "webhook"
 
 	dashboardPath = "/dataCenter/customDashboard"
-	recordPath    = "/cmp/alarm/record/events"
+	recordPath    = "/cmp/alarm/record/events/{{family_id}}"
 
 	TriggerCondition = "trigger_condition"
 )
