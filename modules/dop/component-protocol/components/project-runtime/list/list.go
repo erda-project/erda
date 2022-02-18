@@ -600,10 +600,10 @@ func (p List) getBatchOperation(sdk *cptype.SDK, ids []string) map[cptype.Operat
 			ServerData: &cptype.OpServerData{
 				"options": []list.OpBatchRowsHandleOptionServerData{
 					{
-						AllowedRowIDs: ids, Icon: "chongxinqidong", ID: common.ReStartOp, Text: sdk.I18n("restart"), // allowedRowIDs = null 或不传这个key，表示所有都可选，allowedRowIDs=[]表示当前没有可选择，此处应该可以不传
+						AllowedRowIDs: ids, Icon: &commodel.Icon{Type: "chongxinqidong"}, ID: common.ReStartOp, Text: sdk.I18n("restart"), // allowedRowIDs = null 或不传这个key，表示所有都可选，allowedRowIDs=[]表示当前没有可选择，此处应该可以不传
 					},
 					{
-						AllowedRowIDs: ids, Icon: "remove", ID: common.DeleteOp, Text: sdk.I18n("delete"),
+						AllowedRowIDs: ids, Icon: &commodel.Icon{Type: "remove"}, ID: common.DeleteOp, Text: sdk.I18n("delete"),
 					},
 				},
 			},
