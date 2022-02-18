@@ -59,11 +59,13 @@ func (f *ConfigurableFilterOptions) GetFromGlobalState(gs cptype.GlobalStateData
 	}
 
 	_ = mapstructure.Decode(val, f)
+	f.fillLastTriggerTime()
 	return f
 }
 
 func (f *ConfigurableFilterOptions) DecodeFromClientData(data filter.OpFilterClientData) *ConfigurableFilterOptions {
 	_ = mapstructure.Decode(data.Values, f)
+	f.fillLastTriggerTime()
 	return f
 }
 
@@ -74,4 +76,16 @@ func (f *ConfigurableFilterOptions) UpdateName(name string) *ConfigurableFilterO
 
 func (f *ConfigurableFilterOptions) SetToGlobalState(gs cptype.GlobalStateData) {
 	gs[GlobalStateKeyConfigurableFilterOptionsKey] = f
+}
+
+func (f *ConfigurableFilterOptions) fillLastTriggerTime() {
+	if len(f.LastTriggerTime) != 2 {
+		return
+	}
+	if f.LastTriggerTime[0] != nil {
+		f.LastTriggerTimeMin = *f.LastTriggerTime[0]
+	}
+	if f.LastTriggerTime[1] != nil {
+		f.LastTriggerTimeMax = *f.LastTriggerTime[1]
+	}
 }

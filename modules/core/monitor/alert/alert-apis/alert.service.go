@@ -1454,8 +1454,10 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 		return i.(string) == "pause" || i.(string) == "stop"
 	}).ToSlice(&suppressStates)
 	if len(suppressStates) > 0 {
+		bv := true
 		suppressList, err := m.p.db.AlertEventSuppressDB.QueryByCondition(req.Scope, req.ScopeId, &db.AlertEventSuppressQueryCondition{
 			SuppressTypes: suppressStates,
+			Enabled:       &bv,
 		})
 		if err != nil {
 			for _, item := range suppressList {
@@ -1493,8 +1495,10 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 	}).ToSlice(&eventIds)
 
 	if len(eventIds) > 0 {
+		bv := true
 		suppressList, err := m.p.db.AlertEventSuppressDB.QueryByCondition(req.Scope, req.ScopeId, &db.AlertEventSuppressQueryCondition{
 			EventIds: eventIds,
+			Enabled:  &bv,
 		})
 		if err != nil {
 			return nil, errors.NewInternalServerError(err)
@@ -1551,8 +1555,13 @@ func (m *alertService) SuppressAlertEvent(ctx context.Context, req *pb.SuppressA
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "invalid orgId")
 	}
+	expireTime := time.Unix(int64(req.ExpireTime/1e3), 0)
+	// todo: define the suppress types in one place
+	if req.SuppressType == "stop" {
+		expireTime = time.Date(9999, 1, 1, 0, 0, 0, 0, time.Local)
+	}
 	result, err := m.p.db.AlertEventSuppressDB.Suppress(orgIdValue, req.Scope, req.ScopeID,
-		req.AlertEventID, req.SuppressType, time.Unix(int64(req.ExpireTime/1e3), 0))
+		req.AlertEventID, req.SuppressType, expireTime)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
