@@ -65,6 +65,7 @@ erda.core.dop.autotest.testplan:
 erda.dop.projecthome:
 erda.dop.contribution:
 erda.dop.projectpipeline:
+erda.dop.issue:
 
 # component-protocol framework
 component-protocol:
