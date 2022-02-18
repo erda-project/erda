@@ -317,7 +317,7 @@ func (e *Endpoints) scopeIsDeleted(ctx context.Context, scopeType apistructs.Sco
 		return false, err
 	case apistructs.AppScope:
 		_, err := e.app.Get(scopeID)
-		if err != nil && err.Error() == "failed to get application: "+dao.ErrNotFoundApplication.Error() {
+		if err != nil && dao.IsApplicationNotFoundError(err) {
 			return true, nil
 		}
 		return false, err

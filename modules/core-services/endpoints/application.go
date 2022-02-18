@@ -27,6 +27,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/conf"
+	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
@@ -264,9 +265,15 @@ func (e *Endpoints) DeleteApplication(ctx context.Context, r *http.Request, vars
 		Action:   apistructs.DeleteAction,
 	}
 	if access, err := e.permission.CheckPermission(&req); err != nil || !access {
+		if dao.IsApplicationNotFoundError(err) {
+			return apierrors.ErrDeleteApplication.NotFound().ToResp(), nil
+		}
 		return apierrors.ErrDeleteApplication.AccessDenied().ToResp(), nil
 	}
 	app, err := e.app.Get(applicationID)
+	if err != nil {
+		return apierrors.ErrDeleteApplication.InternalError(err).ToResp(), nil
+	}
 	applicationDTO := e.convertToApplicationDTO(ctx, *app, false, userID.String(), nil)
 
 	// 删除应用

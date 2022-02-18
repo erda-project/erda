@@ -15,6 +15,7 @@
 package project
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -410,4 +411,16 @@ func TestListUnblockAppCountsByProjectIDS(t *testing.T) {
 	counts, err := p.ListUnblockAppCountsByProjectIDS([]uint64{1})
 	assert.NoError(t, err)
 	assert.Equal(t, counts[0].UnblockAppCount, int64(1))
+}
+
+func TestGetNotFoundProject(t *testing.T) {
+	db := &dao.DBClient{}
+	m := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetProjectByID",
+		func(db *dao.DBClient, projectID int64) (model.Project, error) {
+			return model.Project{}, dao.ErrNotFoundProject
+		})
+	defer m.Unpatch()
+	p := Project{db: db}
+	_, err := p.Get(context.Background(), 1, true)
+	assert.Equal(t, dao.ErrNotFoundProject, err)
 }

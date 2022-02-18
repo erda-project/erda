@@ -30,3 +30,7 @@ var (
 	ErrNotFoundApprove     = errors.New("approve not found")
 	ErrNotFoundUsecase     = errors.New("usecase not found")
 )
+
+func IsApplicationNotFoundError(err error) bool {
+	return err == ErrNotFoundApplication
+}
