@@ -21,14 +21,12 @@ type config struct {
 
 // This is the key mappings config of erda's internal model to fluent-bit's output format
 type flbKeyMappings struct {
-	TimestampNano string `file:"timestamp_nano" default:"time"`
-	Name          string `file:"name" default:"source"`
-	Content       string `file:"log" default:"log"`
-	Severity      string `file:"severity" default:"level"`
+	TimeUnixNano string `file:"time_unix_nano" default:"time"`
+	Name         string `file:"name" default:"source"`
+	Content      string `file:"log" default:"log"`
+	Severity     string `file:"severity" default:"level"`
 	// parse kubernetes's metadata from `kubernetes` field
 	Kubernetes string `file:"kubernetes" default:"kubernetes"`
-	// parse erda's metadata from `erda` field
-	Erda string `file:"erda" default:"erda"`
 }
 
 // +provider
