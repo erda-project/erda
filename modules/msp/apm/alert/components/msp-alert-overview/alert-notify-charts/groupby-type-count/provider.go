@@ -89,11 +89,12 @@ func (p *provider) getNotifyChannelChart(sdk *cptype.SDK) (*complexgraph.Data, e
 	dataBuilder := complexgraph.NewDataBuilder().
 		WithTitle(sdk.I18n(common.ComponentNameAlertNotifyGroupByTypeCountLine)).
 		WithXAxis(xAxisBuilder.Build())
-
-	sere := complexgraph.NewSereBuilder().WithType(complexgraph.Bar).
-		WithDimension("count").WithData(common.ToInterface(count)...).Build()
-	dataBuilder.WithDimensions("count")
-	dataBuilder.WithSeries(sere)
+	if len(response.Data.Value) > 0 {
+		sere := complexgraph.NewSereBuilder().WithType(complexgraph.Bar).
+			WithDimension("count").WithData(common.ToInterface(count)...).Build()
+		dataBuilder.WithDimensions("count")
+		dataBuilder.WithSeries(sere)
+	}
 	dataBuilder.WithYAxis(yAxisBuilder.Build())
 
 	return dataBuilder.Build(), nil
