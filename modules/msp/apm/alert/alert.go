@@ -50,9 +50,8 @@ const (
 	OperateIn           = "in"
 	OperatorTypeOne     = "one"
 	DashboardPathFormat = "/microService/%s/%s/%s/alarm-management/%s/custom-dashboard"
-	RecordPathFormat    = "/microService/%s/%s/%s/alarm-management/%s/alarm-record"
-
-	TriggerCondition = "trigger_condition"
+	RecordPathFormat    = "/msp/%s/%s/%s/alarm-management/%s/list/events/{{family_id}}"
+	TriggerCondition    = "trigger_condition"
 
 	NotifyTemplateSample = `【服务HTTP慢事务异常告警】
 
