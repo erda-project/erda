@@ -19,7 +19,7 @@ import "github.com/erda-project/erda/modules/openapi/api/apis"
 var SCHEDULER_TERMINAL = apis.ApiSpec{
 	Path:        "/api/terminal",
 	BackendPath: "/api/terminal",
-	Host:        "scheduler.marathon.l4lb.thisdcos.directory:9091",
+	Host:        "orchestrator.marathon.l4lb.thisdcos.directory:8081",
 	Scheme:      "ws",
 	Method:      "GET",
 	CheckLogin:  true,

@@ -33,6 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	i18n2 "github.com/erda-project/erda/modules/orchestrator/i18n"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
@@ -71,6 +72,8 @@ type Addon struct {
 	resource *resource.Resource
 	kms      mysql.KMSWrapper
 	Logger   *log.DeployLogHelper
+
+	scheduler *scheduler.Scheduler
 }
 
 // Option addon 实例对象配置选项
@@ -125,6 +128,12 @@ func WithResource(resource *resource.Resource) Option {
 func WithKMSWrapper(kms mysql.KMSWrapper) Option {
 	return func(a *Addon) {
 		a.kms = kms
+	}
+}
+
+func WithScheduler(scheduler *scheduler.Scheduler) Option {
+	return func(a *Addon) {
+		a.scheduler = scheduler
 	}
 }
 

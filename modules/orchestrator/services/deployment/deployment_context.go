@@ -1758,6 +1758,7 @@ func (fsm *DeployFSMContext) PutHepaService() error {
 		logrus.Info("start request hepa service, sg is not null.")
 		// 查询该runtime各个模块的domain信息
 		domains, err := fsm.db.FindDomainsByRuntimeId(fsm.Runtime.ID)
+		logrus.Info("ZZZZXXXX01")
 		if err != nil {
 			return err
 		}
@@ -1805,7 +1806,9 @@ func (fsm *DeployFSMContext) PutHepaService() error {
 		}
 		// 查询出是否addon中依赖了api gateway
 		useApigw := false
+		logrus.Info("ZZZZXXXX02")
 		prebuilds, err := fsm.db.GetPreBuildsByRuntimeID(fsm.Runtime.ID)
+		logrus.Info("ZZZZXXXX03")
 		if err == nil {
 			if prebuilds != nil && len(*prebuilds) > 0 {
 				for _, v := range *prebuilds {
@@ -1819,6 +1822,7 @@ func (fsm *DeployFSMContext) PutHepaService() error {
 			}
 		}
 		runtimeServiceReq.UseApigw = useApigw
+		logrus.Info("ZZZZXXXX04")
 		if err := fsm.bdl.PutRuntimeService(&runtimeServiceReq); err != nil {
 			return err
 		}

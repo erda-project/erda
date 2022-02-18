@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/endpoints"
 	"github.com/erda-project/erda/modules/orchestrator/i18n"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment_order"
@@ -88,9 +89,13 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		logrus.Infof("i resign the leader now")
 	})
 
+	go scheduler.GetDCOSTokenAuthPeriodically()
+
 	// start cron jobs to sync addon & project infos
 	go initCron(ep, ctx)
 
+	//i18nscheduler.InitI18N()
+	i18n.InitI18N()
 	i18n.SetSingle(p.LogTrans)
 
 	return nil
@@ -135,6 +140,9 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 			PrivateKeyDataType: encryption.Base64,
 		})))
 
+	// init scheduler
+	scheduler := scheduler.NewScheduler()
+
 	migration := migration.New(
 		migration.WithBundle(bdl),
 		migration.WithDBClient(db))
@@ -154,6 +162,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		addon.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second, time.Second*60),
 		)),
+		addon.WithScheduler(scheduler),
 	)
 
 	// init runtime service
@@ -209,6 +218,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		endpoints.WithEnvEncrypt(encrypt),
 		endpoints.WithResource(resource),
 		endpoints.WithMigration(migration),
+		endpoints.WithScheduler(scheduler),
 	)
 
 	return ep, nil

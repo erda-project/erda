@@ -97,11 +97,14 @@ func (a *Addon) MySQLDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup
 	}
 
 	// 查询集群operator支持情况
-	capacity, err := a.bdl.CapacityInfo(addonIns.Cluster)
-	if err != nil {
-		return nil, err
-	}
-	if !capacity.Data.MysqlOperator {
+	capacity := a.scheduler.Httpendpoints.Cap.CapacityInfo(addonIns.Cluster)
+	/*
+		capacity, err := a.bdl.CapacityInfo(addonIns.Cluster)
+		if err != nil {
+			return nil, err
+		}
+	*/
+	if !capacity.MysqlOperator {
 		logrus.Info("mysql operator switch is off")
 		// 执行mysql主从初始化
 		if err := a.initMsAfterStart(serviceGroup, masterName.Value, decPwd, clusterInfo); err != nil {

@@ -22,7 +22,7 @@ import (
 var SCHEDULER_NODELABEL_SET = apis.ApiSpec{
 	Path:         "/api/nodelabels",
 	BackendPath:  "/api/nodelabels",
-	Host:         "scheduler.marathon.l4lb.thisdcos.directory:9091",
+	Host:         "orchestrator.marathon.l4lb.thisdcos.directory:8081",
 	Scheme:       "http",
 	Method:       "POST",
 	CheckLogin:   true,

@@ -448,11 +448,7 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 		return nil, err
 	}
 	// 查询集群operator支持情况
-	capacity, err := a.bdl.CapacityInfo(params.ClusterName)
-	if err != nil {
-		return nil, err
-	}
-
+	capacity := a.scheduler.Httpendpoints.Cap.CapacityInfo(params.ClusterName)
 	var buildErr error
 	switch params.AddonName {
 	case apistructs.AddonZookeeper:
@@ -468,7 +464,7 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 		addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "1"
 		buildErr = a.BuildCanalServiceItem(params, addonIns, addonSpec, addonDice)
 	case apistructs.AddonRedis:
-		if capacity.Data.RedisOperator && params.Plan == apistructs.AddonProfessional {
+		if capacity.RedisOperator && params.Plan == apistructs.AddonProfessional {
 			_, addonOperatorDice, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
 				AddonName: apistructs.AddonRedis + "-operator",
 				Plan:      apistructs.AddonBasic,
@@ -488,7 +484,7 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 			buildErr = a.BuildRedisServiceItem(params, addonIns, addonSpec, addonDice)
 		}
 	case apistructs.AddonMySQL:
-		if !capacity.Data.MysqlOperator {
+		if !capacity.MysqlOperator {
 			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "2"
 
 			mysqlPreProcess(params, addonSpec, &addonDeployGroup)
@@ -506,7 +502,7 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 		}
 	case apistructs.AddonES:
 		// 6.8.9 or later version use operator.
-		if capacity.Data.ElasticsearchOperator && version.Compare(addonSpec.Version, "6.8.9", ">=") {
+		if capacity.ElasticsearchOperator && version.Compare(addonSpec.Version, "6.8.9", ">=") {
 			buildErr = a.BuildESOperatorServiceItem(params.Options, addonIns, addonDice, addonSpec.Version)
 		} else {
 			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "1"
@@ -527,7 +523,7 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 		}
 		buildErr = a.BuildRabbitmqServiceItem(params, addonIns, addonSpec, addonDice)
 	case apistructs.AddonSourcecov:
-		if !capacity.Data.SourcecovOperator {
+		if !capacity.SourcecovOperator {
 			return nil, errors.New("sourcecov operator not installed")
 		}
 		sam := &SourcecovAddonManagement{bdl: a.bdl}
