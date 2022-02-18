@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 const (
@@ -36,11 +38,12 @@ type AlertEventSuppressQueryCondition struct {
 }
 
 func (db *AlertEventSuppressDB) QueryByCondition(scope, scopeId string, condition *AlertEventSuppressQueryCondition) ([]*AlertEventSuppress, error) {
-	query := db.Table(TableAlertEventSuppress).Where("scope=?", scope).Where("scope_id=?", scopeId).Where("enabled=?", true)
+	query := db.Table(TableAlertEventSuppress).Where("scope=?", scope).Where("scope_id=?", scopeId).
+		Where("enabled=?", true).Where("expire_time > now()")
 
 	if condition != nil {
 		if len(condition.SuppressTypes) > 0 {
-			query = query.Where("suppress_type in (?) AND expire_time < now()", condition.SuppressTypes)
+			query = query.Where("suppress_type in (?)", condition.SuppressTypes)
 		}
 		if len(condition.EventIds) > 0 {
 			query = query.Where("alert_event_id in (?)", condition.EventIds)
@@ -49,7 +52,7 @@ func (db *AlertEventSuppressDB) QueryByCondition(scope, scopeId string, conditio
 
 	var list []*AlertEventSuppress
 	err := query.Find(&list).Error
-	if !gorm.IsRecordNotFoundError(err) {
+	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		return nil, err
 	}
 	return list, nil
@@ -71,6 +74,7 @@ func (db *AlertEventSuppressDB) Suppress(orgId int64, scope, scopeId string, eve
 		data.Enabled = true
 	} else {
 		data = &AlertEventSuppress{
+			Id:           uuid.UUID(),
 			AlertEventID: eventId,
 			OrgID:        orgId,
 			Scope:        scope,

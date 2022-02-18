@@ -1551,8 +1551,13 @@ func (m *alertService) SuppressAlertEvent(ctx context.Context, req *pb.SuppressA
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("orgId", "invalid orgId")
 	}
+	expireTime := time.Unix(int64(req.ExpireTime/1e3), 0)
+	// todo: define the suppress types in one place
+	if req.SuppressType == "stop" {
+		expireTime = time.Date(9999, 1, 1, 0, 0, 0, 0, time.Local)
+	}
 	result, err := m.p.db.AlertEventSuppressDB.Suppress(orgIdValue, req.Scope, req.ScopeID,
-		req.AlertEventID, req.SuppressType, time.Unix(int64(req.ExpireTime/1e3), 0))
+		req.AlertEventID, req.SuppressType, expireTime)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
