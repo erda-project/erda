@@ -40,6 +40,9 @@ service NotifyService {
       get: "/api/messenger/alert-notify-histories/{id}"
     };
   }
+  rpc GetTypeNotifyHistogram(GetTypeNotifyHistogramRequest) returns (GetTypeNotifyHistogramResponse) {
+
+  }
 }
 
 message CreateNotifyHistoryRequest {
@@ -193,4 +196,20 @@ message AlertNotifyDetail {
   string                    notifyContent = 5;
   google.protobuf.Timestamp sendTime      = 6;
   string                    alertName     = 7;
+}
+
+message GetTypeNotifyHistogramRequest {
+  string startTime = 1;
+  string endTime   = 2;
+  string scopeId   = 3;
+  string statistic = 4;
+  string scopeType = 5;
+}
+
+message GetTypeNotifyHistogramResponse {
+  TypeNotifyHistogram data = 1;
+}
+
+message TypeNotifyHistogram {
+  map<string, StatisticValue> value = 1;
 }

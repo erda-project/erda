@@ -174,3 +174,18 @@ func (this *AlertNotifyDetail) Validate() error {
 	}
 	return nil
 }
+func (this *GetTypeNotifyHistogramRequest) Validate() error {
+	return nil
+}
+func (this *GetTypeNotifyHistogramResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *TypeNotifyHistogram) Validate() error {
+	// Validation of proto3 map<> fields is unsupported.
+	return nil
+}

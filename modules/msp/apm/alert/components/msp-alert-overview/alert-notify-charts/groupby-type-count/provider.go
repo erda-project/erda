@@ -56,40 +56,45 @@ func (p *provider) getNotifyChannelChart(sdk *cptype.SDK) (*complexgraph.Data, e
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("InParams", err.Error())
 	}
-	request := &messengerpb.GetNotifyHistogramRequest{
+	request := &messengerpb.GetTypeNotifyHistogramRequest{
 		StartTime: strconv.FormatInt(inParams.StartTime, 10),
 		EndTime:   strconv.FormatInt(inParams.EndTime, 10),
 		ScopeId:   inParams.ScopeId,
 		ScopeType: inParams.Scope,
-		Points:    30,
 		Statistic: "channel",
 	}
 	context := utils.NewContextWithHeader(sdk.Ctx)
-	response, err := p.Messenger.GetNotifyHistogram(context, request)
+	response, err := p.Messenger.GetTypeNotifyHistogram(context, request)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	timestamp := common.ToInterface(response.Data.Timestamp)
+
+	channel := make([]string, 0)
+	count := make([]int64, 0)
+	for k, v := range response.Data.Value {
+		channel = append(channel, sdk.I18n(k))
+		count = append(count, v.Value[0])
+	}
+
 	xAxisBuilder := complexgraph.NewAxisBuilder().
 		WithType(complexgraph.Category).
-		WithDataStructure(structure.Timestamp, "", true).
-		WithData(timestamp...)
+		WithDataStructure(structure.String, "", true).WithData(common.StringToInterface(channel)...)
+
 	yAxisBuilder := complexgraph.NewAxisBuilder().
 		WithType(complexgraph.Value).
-		WithDataStructure(structure.Number, "", true)
+		WithDataStructure(structure.Number, "", true).
+		WithData(common.ToInterface(count)).
+		WithDimensions("count")
 
 	dataBuilder := complexgraph.NewDataBuilder().
 		WithTitle(sdk.I18n(common.ComponentNameAlertNotifyGroupByTypeCountLine)).
 		WithXAxis(xAxisBuilder.Build())
 
-	for status, data := range response.Data.Value {
-		yAxisBuilder.WithDimensions(sdk.I18n(status))
-		value := common.ToInterface(data.Value)
-		sere := complexgraph.NewSereBuilder().WithType(complexgraph.Bar).
-			WithDimension(sdk.I18n(status)).WithData(value...).Build()
-		dataBuilder.WithDimensions(sere.Dimension)
-		dataBuilder.WithSeries(sere)
-	}
+	sere := complexgraph.NewSereBuilder().WithType(complexgraph.Bar).
+		WithDimension("count").WithData(common.ToInterface(count)...).Build()
+	dataBuilder.WithDimensions("count")
+	dataBuilder.WithSeries(sere)
+	//}
 	dataBuilder.WithYAxis(yAxisBuilder.Build())
 
 	return dataBuilder.Build(), nil

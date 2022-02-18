@@ -33,3 +33,11 @@ func ToInterface(value []int64) []interface{} {
 	}
 	return arr
 }
+
+func StringToInterface(value []string) []interface{} {
+	arr := make([]interface{}, 0)
+	for _, v := range value {
+		arr = append(arr, v)
+	}
+	return arr
+}
