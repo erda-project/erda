@@ -36,6 +36,10 @@ func (client *DBClient) CreateIssueAppRelation(issueAppRel *IssueAppRelation) er
 	return client.Create(issueAppRel).Error
 }
 
+func (client *DBClient) BatchCreateIssueAppRelation(issueAppRel []IssueAppRelation) error {
+	return client.BulkInsert(issueAppRel)
+}
+
 // DeleteIssueAppRelationsByComment 根据 commentID 删除关联关系
 func (client *DBClient) DeleteIssueAppRelationsByComment(commentID int64) error {
 	return client.Where("comment_id = ?", commentID).Delete(&IssueAppRelation{}).Error

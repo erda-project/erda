@@ -52,6 +52,10 @@ func (client *DBClient) CreateIssueStream(is *IssueStream) error {
 	return client.Create(is).Error
 }
 
+func (client *DBClient) BatchCreateIssueStream(issueStreams []IssueStream) error {
+	return client.BulkInsert(issueStreams)
+}
+
 // UpdateIssueStream 更新 issue 事件流
 func (client *DBClient) UpdateIssueStream(is *IssueStream) error {
 	return client.Update(is).Error
