@@ -69,7 +69,7 @@ func (f *ComponentFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			panic(err)
 		}
 		if f.fixedIterationID == 0 {
-			iterations = model.NewSelectCondition("iteration", cputil.I18n(f.sdk.Ctx, "sprint"), iterationOptions).WithPlaceHolder(cputil.I18n(f.sdk.Ctx, "choose-sprint"))
+			iterations = model.NewSelectCondition("iterationIDs", cputil.I18n(f.sdk.Ctx, "sprint"), iterationOptions).WithPlaceHolder(cputil.I18n(f.sdk.Ctx, "choose-sprint"))
 			conditions = append(conditions, iterations)
 		}
 
@@ -88,7 +88,7 @@ func (f *ComponentFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		if err != nil {
 			panic(err)
 		}
-		assignee := model.NewSelectCondition("member", cputil.I18n(f.sdk.Ctx, "assignee"), memberOptions)
+		assignee := model.NewSelectCondition("assignee", cputil.I18n(f.sdk.Ctx, "assignee"), memberOptions)
 		labelOptions, err := f.getProjectLabelsOptions()
 		if err != nil {
 			panic(err)
