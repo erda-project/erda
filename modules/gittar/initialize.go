@@ -115,6 +115,11 @@ func (p *provider) Initialize() error {
 	gitApiGroupV3 := e.Group("/:org/dop/:project/:app", webcontext.WrapMiddlewareHandler(auth.AuthenticateV3))
 	addApiRoutes(gitApiGroupV3)
 
+	functionalGroup := e.Group("/api")
+	{
+		functionalGroup.GET("/merge-requests-count", webcontext.WrapHandler(api.MergeRequestCount))
+	}
+
 	logger := middleware.Logger()
 	e.Use(logger)
 

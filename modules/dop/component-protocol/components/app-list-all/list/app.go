@@ -17,8 +17,6 @@ package list
 import (
 	"strconv"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
@@ -26,7 +24,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/common"
 )
 
-func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) {
+func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO, mrCount int) (kvs []list.KvInfo) {
 	var isPublic = "privateApp"
 	var publicIcon = "private"
 	if item.IsPublic {
@@ -34,13 +32,6 @@ func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) 
 		publicIcon = "public"
 	}
 	updated := common.UpdatedTime(l.sdk.Ctx, item.UpdatedAt)
-	runtimeUrlQuery, err := common.GenerateUrlQueryParams(map[string]interface{}{
-		"app": []string{item.Name},
-	})
-	if err != nil {
-		logrus.Errorf("run time url query encode failed, error: %v", err)
-		panic(err)
-	}
 	kvs = []list.KvInfo{
 		{
 			Icon:  publicIcon,
@@ -49,8 +40,8 @@ func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) 
 		},
 		{
 			Icon:  "list-numbers",
-			Tip:   l.sdk.I18n("runtime"),
-			Value: strconv.Itoa(int(item.Stats.CountRuntimes)),
+			Tip:   l.sdk.I18n("openMrCount"),
+			Value: strconv.Itoa(mrCount),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
 					WithSkipRender(true).
@@ -58,12 +49,9 @@ func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) 
 						OpItemBasicServerData: list.OpItemBasicServerData{
 							Params: map[string]interface{}{
 								"projectId": item.ProjectID,
-								"env":       "dev",
+								"appId":     item.ID,
 							},
-							Target: "projectDeployEnv",
-							Query: map[string]interface{}{
-								"advanceFilter__urlQuery": runtimeUrlQuery,
-							},
+							Target: "appOpenMr",
 						},
 					}).
 					Build(),
