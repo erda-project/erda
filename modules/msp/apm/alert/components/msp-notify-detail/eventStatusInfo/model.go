@@ -19,6 +19,7 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-detail/common"
 )
 
@@ -32,6 +33,7 @@ type ComponentEventOverviewInfo struct {
 	State    State            `json:"state,omitempty"`
 	InParams *common.InParams `json:"inParams"`
 
+	bdl       *bundle.Bundle
 	Messenger messenger.NotifyServiceServer `autowired:"erda.core.messenger.notify.NotifyService"`
 }
 

@@ -20,6 +20,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ahmetb/go-linq/v3"
 
@@ -154,6 +155,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			if item.Status == "failed" {
 				status = "error"
 			}
+			sendTime := time.Unix(item.SendTime.GetSeconds(), int64(item.SendTime.GetNanos())).Format("2006/01/02 15:04:05")
 			t.Rows = append(t.Rows, table.Row{
 				ID: table.RowID(strconv.Itoa(int(item.Id))),
 				CellsMap: map[table.ColumnKey]table.Cell{
@@ -164,7 +166,7 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 					}).Build(),
 					"Channel":        table.NewTextCell(sdk.I18n(item.Channel)).Build(),
 					"LinkedStrategy": table.NewTextCell(alertMap[notifyAttributes.AlertId]).Build(),
-					"SendTime":       table.NewTextCell(item.SendTime.AsTime().Format("2006/01/02 15:04:05")).Build(),
+					"SendTime":       table.NewTextCell(sendTime).Build(),
 				},
 			})
 		}

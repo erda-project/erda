@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -30,13 +31,15 @@ import (
 	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-detail/common"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 func (cp *ComponentEventOverviewInfo) Render(ctx context.Context, c *cptype.Component, s cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	if err := cp.GenComponentState(c); err != nil {
 		return err
 	}
-	cp.Messenger = ctx.Value("messenger").(messenger.NotifyServiceServer)
+	cp.Messenger = common.GetMessengerServiceFromContext(ctx)
+	cp.bdl = common.GetCoreServiceUrlFromContext(ctx)
 	cp.ctx = ctx
 	cp.sdk = cputil.SDK(ctx)
 	inParams, err := common.ParseFromCpSdk(cp.sdk)
@@ -58,11 +61,27 @@ func (cp *ComponentEventOverviewInfo) Render(ctx context.Context, c *cptype.Comp
 	if alertIndex.Data.Status == "failed" {
 		status.Color = "red"
 	}
+
+	//根据groupid获取通知组名字
+	orgIdStr := apis.GetOrgID(ctx)
+	orgId, err := strconv.ParseInt(orgIdStr, 10, 64)
+	if err != nil {
+		return err
+	}
+	userIdStr := apis.GetUserID(ctx)
+	groupId, err := strconv.Atoi(alertIndex.Data.NotifyGroup)
+	if err != nil {
+		return err
+	}
+	notifyGroup, err := cp.bdl.GetNotifyGroupDetail(int64(groupId), orgId, userIdStr)
+	if err != nil {
+		return err
+	}
 	data := Data{
 		Channel:    cp.sdk.I18n(alertIndex.Data.Channel),
 		Status:     status,
 		SendTime:   alertIndex.Data.SendTime.AsTime().Format("2006/01/02 15:04:05"),
-		Group:      alertIndex.Data.NotifyGroup,
+		Group:      notifyGroup.Name,
 		LinkedRule: alertIndex.Data.NotifyRule,
 	}
 	cp.Props = cp.getProps()

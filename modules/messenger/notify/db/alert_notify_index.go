@@ -55,7 +55,6 @@ func (db *AlertNotifyIndexDB) CreateAlertNotifyIndex(alertNotifyIndex *AlertNoti
 }
 
 func (db *AlertNotifyIndexDB) QueryAlertNotifyHistories(queryRequest *model.QueryAlertNotifyIndexRequest) ([]AlertNotifyIndex, int64, error) {
-	db.LogMode(true)
 	var alertNotifyIndex []AlertNotifyIndex
 	query := db.Model(&AlertNotifyIndex{}).Where("org_id = ?", queryRequest.OrgID).
 		Where("scope_type = ?", queryRequest.ScopeType).

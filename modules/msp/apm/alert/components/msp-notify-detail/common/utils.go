@@ -15,8 +15,12 @@
 package common
 
 import (
+	"context"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/msp/apm/alert/components/common"
 )
 
 func SetNotifyIndexToGlobalState(gs cptype.GlobalStateData, alertIndex *messenger.AlertNotifyDetail) {
@@ -34,4 +38,30 @@ func GetNotifyIndexFromGlobalState(gs cptype.GlobalStateData) *messenger.AlertNo
 		return nil
 	}
 	return typedItem
+}
+
+func GetMessengerServiceFromContext(ctx context.Context) messenger.NotifyServiceServer {
+	val := ctx.Value(common.ContextKeyServiceMessengerService)
+	if val == nil {
+		return nil
+	}
+
+	typed, ok := val.(messenger.NotifyServiceServer)
+	if !ok {
+		return nil
+	}
+	return typed
+}
+
+func GetCoreServiceUrlFromContext(ctx context.Context) *bundle.Bundle {
+	val := ctx.Value(common.ContextKeyCoreServicesUrl)
+	if val == nil {
+		return nil
+	}
+
+	typed, ok := val.(*bundle.Bundle)
+	if !ok {
+		return nil
+	}
+	return typed
 }
