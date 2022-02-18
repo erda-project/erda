@@ -60,3 +60,7 @@ func (s *notifyServiceWrapper) QueryAlertNotifyHistories(ctx context.Context, re
 func (s *notifyServiceWrapper) GetAlertNotifyDetail(ctx context.Context, req *pb.GetAlertNotifyDetailRequest) (*pb.GetAlertNotifyDetailResponse, error) {
 	return s.client.GetAlertNotifyDetail(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *notifyServiceWrapper) GetTypeNotifyHistogram(ctx context.Context, req *pb.GetTypeNotifyHistogramRequest) (*pb.GetTypeNotifyHistogramResponse, error) {
+	return s.client.GetTypeNotifyHistogram(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

@@ -38,6 +38,9 @@ var _ urlenc.URLValuesUnmarshaler = (*AlertNotifyIndex)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetAlertNotifyDetailRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetAlertNotifyDetailResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AlertNotifyDetail)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetTypeNotifyHistogramRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetTypeNotifyHistogramResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*TypeNotifyHistogram)(nil)
 
 // CreateNotifyHistoryRequest implement urlenc.URLValuesUnmarshaler.
 func (m *CreateNotifyHistoryRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -1126,5 +1129,46 @@ func (m *AlertNotifyDetail) UnmarshalURLValues(prefix string, values url.Values)
 			}
 		}
 	}
+	return nil
+}
+
+// GetTypeNotifyHistogramRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetTypeNotifyHistogramRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "startTime":
+				m.StartTime = vals[0]
+			case "endTime":
+				m.EndTime = vals[0]
+			case "scopeId":
+				m.ScopeId = vals[0]
+			case "statistic":
+				m.Statistic = vals[0]
+			case "scopeType":
+				m.ScopeType = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// GetTypeNotifyHistogramResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetTypeNotifyHistogramResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &TypeNotifyHistogram{}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// TypeNotifyHistogram implement urlenc.URLValuesUnmarshaler.
+func (m *TypeNotifyHistogram) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }

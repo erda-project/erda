@@ -120,6 +120,14 @@ en:
   stop: Stop
   System: System
   Custom: Custom
+  dingding: dingding
+  email: email
+  mbox: mbox
+  vms: voice
+  sms: short message
+  dingtalk_work_notice: dingtalk
+  success: success
+  failed: failed
 zh:
   waiting_for_tracing_data: "正在获取链路追踪数据"
   success_get_tracing_data: "获取链路追踪数据成功"
@@ -242,3 +250,11 @@ zh:
   stop: 屏蔽
   System: 系统
   Custom: 自定义
+  dingding: 钉钉群
+  email: 邮箱
+  mbox: 站内信
+  vms: 语音通知
+  sms: 短信通知
+  dingtalk_work_notice: 钉钉工作通知
+  success: 成功
+  failed: 失败
