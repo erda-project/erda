@@ -45,7 +45,8 @@ services:
     traffic_security:
       mode: https
     endpoints:
-    - domain: dubbo-test.*
+    - domain: ${platform.DICE_PROJECT_NAME}${platform.DICE_PROJECT_NAME}.*
+    - domain: erda-${platform.DICE_PROJECT_NAME}.*
     - domain: dubbo-cc.dev.terminus.io
       path: /123
       policies:
