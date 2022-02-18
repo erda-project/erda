@@ -95,20 +95,21 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 	var levels = map[string]*complexgraph.SereBuilder{}
 	var groups = map[int64]map[string]float64{}
 	for _, row := range rows {
-		if row.Values[2] == nil || row.Values[2].GetStringValue() == "" {
-			continue
-		}
-
 		timestamp := int64(row.Values[1].GetNumberValue())
 		level := row.Values[2].GetStringValue()
+
+		if _, ok := groups[timestamp]; !ok {
+			groups[timestamp] = map[string]float64{}
+		}
+
+		if len(level) == 0 {
+			continue
+		}
 
 		if _, ok := levels[level]; !ok {
 			levels[level] = nil
 		}
 
-		if _, ok := groups[timestamp]; !ok {
-			groups[timestamp] = map[string]float64{}
-		}
 		groups[timestamp][level] = row.Values[3].GetNumberValue()
 	}
 

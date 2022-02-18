@@ -66,6 +66,7 @@ components:
     type: Table
     version: 2
     props:
-      hideHeader: true
+      tableProps:
+        hideHeader: true
   pauseFormModal:
     type: FormModal

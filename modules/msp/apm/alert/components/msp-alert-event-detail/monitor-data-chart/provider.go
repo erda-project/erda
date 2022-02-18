@@ -34,6 +34,7 @@ import (
 	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-detail/common"
+	"github.com/erda-project/erda/pkg/math"
 )
 
 type provider struct {
@@ -126,7 +127,7 @@ func (p *provider) queryMetrics(sdk *cptype.SDK, inParams *common.InParams, aler
 			return nil, fmt.Errorf("failed to convert to pb value: %s, val: %v", err, filter.Value)
 		}
 		filters = append(filters, &metricpb.Filter{
-			Key:   filter.Tag,
+			Key:   fmt.Sprintf("tags.%s", filter.Tag),
 			Value: pbVal,
 			Op:    filter.Operator,
 		})
@@ -137,7 +138,7 @@ func (p *provider) queryMetrics(sdk *cptype.SDK, inParams *common.InParams, aler
 		metric = alertExpression.Metrics[0]
 	}
 
-	statement := fmt.Sprintf("SELECT timestamp(), %s(%s) FROM %s WHERE %s GROUP BY time(%v)",
+	statement := fmt.Sprintf("SELECT timestamp(), %s(%s::field) FROM %s WHERE %s GROUP BY time(%v)",
 		function.Aggregator, function.Field, metric, whereSql.String(), common.GetInterval(inParams.StartTime, inParams.EndTime, time.Second, 60))
 
 	request := &metricpb.QueryWithInfluxFormatRequest{
@@ -168,7 +169,7 @@ func (p *provider) queryMetrics(sdk *cptype.SDK, inParams *common.InParams, aler
 
 	for _, row := range rows {
 		xAxisBuilder.WithData(int64(row.Values[1].GetNumberValue()) / 1e6)
-		sereBuilder.WithData(row.Values[2].GetNumberValue())
+		sereBuilder.WithData(math.DecimalPlacesWithDigitsNumber(row.Values[2].GetNumberValue(), 2))
 	}
 
 	dataBuilder := complexgraph.NewDataBuilder().

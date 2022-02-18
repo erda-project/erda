@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ahmetb/go-linq/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -244,12 +245,19 @@ func (p *provider) getTriggerValueLabels(colMap map[string]int, row *metricpb.Ro
 
 func (p *provider) getTagLabels(colMap map[string]int, row *metricpb.Row) commodel.Labels {
 	var labels = commodel.Labels{}
-	for k, index := range colMap {
-		if !strings.HasSuffix(k, "::tag") {
+	var orderedColMap []linq.KeyValue
+
+	linq.From(colMap).OrderBy(func(i interface{}) interface{} {
+		return i.(linq.KeyValue).Key
+	}).ToSlice(&orderedColMap)
+
+	for _, item := range orderedColMap {
+		if !strings.HasSuffix(item.Key.(string), "::tag") {
 			continue
 		}
+
 		labels.Labels = append(labels.Labels, commodel.Label{
-			Title: fmt.Sprintf("%v=%v", k, row.Values[index].GetStringValue()),
+			Title: fmt.Sprintf("%v=%v", item.Key, row.Values[item.Value.(int)].GetStringValue()),
 		})
 	}
 	return labels

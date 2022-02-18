@@ -52,7 +52,7 @@ func (db *AlertEventDB) CreateAlertEvent(data *AlertEvent) error {
 }
 
 func (db *AlertEventDB) UpdateAlertEvent(id string, fields map[string]interface{}) error {
-	return db.Table(TableAlertEvent).Updates(fields).Where("id=?", id).Error
+	return db.Table(TableAlertEvent).Where("id=?", id).Updates(fields).Error
 }
 
 func (db *AlertEventDB) GetById(id string) (*AlertEvent, error) {
@@ -87,7 +87,7 @@ func (db *AlertEventDB) QueryByCondition(scope, scopeId string, condition *Alert
 	query = db.buildSortSqlPart(query, sorts)
 	query = query.Offset((pageNo - 1) * pageSize).Limit(pageSize)
 	err := query.Find(&result).Error
-	if gorm.IsRecordNotFoundError(err) {
+	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		return nil, err
 	}
 	return result, nil

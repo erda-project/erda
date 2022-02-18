@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 const (
@@ -33,14 +35,18 @@ type AlertEventSuppressDB struct {
 type AlertEventSuppressQueryCondition struct {
 	SuppressTypes []string
 	EventIds      []string
+	Enabled       *bool
 }
 
 func (db *AlertEventSuppressDB) QueryByCondition(scope, scopeId string, condition *AlertEventSuppressQueryCondition) ([]*AlertEventSuppress, error) {
-	query := db.Table(TableAlertEventSuppress).Where("scope=?", scope).Where("scope_id=?", scopeId).Where("enabled=?", true)
+	query := db.Table(TableAlertEventSuppress).Where("scope=?", scope).Where("scope_id=?", scopeId)
 
 	if condition != nil {
+		if condition.Enabled != nil {
+			query = query.Where("enabled = ?", *condition.Enabled)
+		}
 		if len(condition.SuppressTypes) > 0 {
-			query = query.Where("suppress_type in (?) AND expire_time < now()", condition.SuppressTypes)
+			query = query.Where("suppress_type in (?)", condition.SuppressTypes).Where("expire_time > now()")
 		}
 		if len(condition.EventIds) > 0 {
 			query = query.Where("alert_event_id in (?)", condition.EventIds)
@@ -49,7 +55,7 @@ func (db *AlertEventSuppressDB) QueryByCondition(scope, scopeId string, conditio
 
 	var list []*AlertEventSuppress
 	err := query.Find(&list).Error
-	if !gorm.IsRecordNotFoundError(err) {
+	if err != nil && !gorm.IsRecordNotFoundError(err) {
 		return nil, err
 	}
 	return list, nil
@@ -71,6 +77,7 @@ func (db *AlertEventSuppressDB) Suppress(orgId int64, scope, scopeId string, eve
 		data.Enabled = true
 	} else {
 		data = &AlertEventSuppress{
+			Id:           uuid.UUID(),
 			AlertEventID: eventId,
 			OrgID:        orgId,
 			Scope:        scope,
@@ -86,7 +93,7 @@ func (db *AlertEventSuppressDB) Suppress(orgId int64, scope, scopeId string, eve
 }
 
 func (db *AlertEventSuppressDB) CancelSuppress(eventId string) (bool, error) {
-	query := db.Table(TableAlertEventSuppress).Where("alert_event_id=?", eventId).Update("enabled=?", false)
+	query := db.Table(TableAlertEventSuppress).Where("alert_event_id=?", eventId).Update("enabled", false)
 	if query.Error != nil {
 		return false, query.Error
 	}
