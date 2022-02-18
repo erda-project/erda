@@ -15,13 +15,21 @@
 package deployment_order
 
 import (
+	"context"
+	"encoding/json"
+
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/queue"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error) {
@@ -44,7 +52,8 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 			continue
 		}
 
-		releaseResp, err := d.bdl.GetRelease(order.ReleaseId)
+		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+		releaseResp, err := d.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: order.ReleaseId})
 		if err != nil {
 			logrus.Warnf("failed to get release %s, (%v)", order.ReleaseId, err)
 			return
@@ -52,7 +61,7 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 
 		// get runtime status, and update
 		statusMap := apistructs.DeploymentOrderStatusMap{}
-		for _, app := range releaseResp.ApplicationReleaseList[order.CurrentBatch-1] {
+		for _, app := range releaseResp.Data.ApplicationReleaseList[order.CurrentBatch-1].List {
 			rt, errGetRuntime := d.db.GetRuntimeByAppName(order.Workspace, order.ProjectId, app.ApplicationName)
 			lastDeployment, err := d.db.FindLastDeployment(rt.ID)
 			if err != nil {
@@ -90,7 +99,7 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 		}
 
 		// status update, only update status of current batch
-		if err := d.db.UpdateDeploymentOrderAppsStatus(order.ID, statusMap); err != nil {
+		if err := inspectDeploymentStatusDetail(&order, statusMap); err != nil {
 			logrus.Errorf("failed to update deployment order %s status, (%v)", order.ID, err)
 			continue
 		}
@@ -131,4 +140,31 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 	}
 
 	return
+}
+
+func inspectDeploymentStatusDetail(order *dbclient.DeploymentOrder, newOrderStatusMap apistructs.DeploymentOrderStatusMap) error {
+	curOrderStatusMap := make(apistructs.DeploymentOrderStatusMap, 0)
+
+	if order.StatusDetail != "" {
+		if err := json.Unmarshal([]byte(order.StatusDetail), &curOrderStatusMap); err != nil {
+			return errors.Wrapf(err, "failed to unmarshal to deployment order status (%s)",
+				order.ID)
+		}
+	}
+
+	for appName, status := range newOrderStatusMap {
+		if status.DeploymentID == 0 || status.DeploymentStatus == "" {
+			continue
+		}
+		curOrderStatusMap[appName] = status
+	}
+
+	orderStatusMapJson, err := json.Marshal(curOrderStatusMap)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal to deployment order status (%s)",
+			order.ID)
+	}
+
+	order.StatusDetail = string(orderStatusMapJson)
+	return nil
 }

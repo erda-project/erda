@@ -95,7 +95,7 @@ func PoolSize() int {
 
 func SchedulerAddr() string {
 	SchedulerAddrLock.Do(func() {
-		e := discover.Scheduler()
+		e := discover.Orchestrator()
 		if e == "" {
 			e = "127.0.0.1:6666"
 		}

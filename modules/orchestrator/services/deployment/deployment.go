@@ -16,6 +16,7 @@
 package deployment
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -25,7 +26,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
@@ -36,19 +40,21 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // Deployment 部署对象封装
 type Deployment struct {
-	db        *dbclient.DBClient
-	evMgr     *events.EventManager
-	bdl       *bundle.Bundle
-	addon     *addon.Addon
-	resource  *resource.Resource
-	migration *migration.Migration
-	encrypt   *encryption.EnvEncrypt
+	db         *dbclient.DBClient
+	evMgr      *events.EventManager
+	bdl        *bundle.Bundle
+	addon      *addon.Addon
+	resource   *resource.Resource
+	migration  *migration.Migration
+	encrypt    *encryption.EnvEncrypt
+	releaseSvc pb.ReleaseServiceServer
 }
 
 // Option 部署对象配置选项
@@ -112,9 +118,16 @@ func WithResource(resource *resource.Resource) Option {
 	}
 }
 
+// WithReleaseSvc 配置 dicehub release service
+func WithReleaseSvc(releaseSvc pb.ReleaseServiceServer) Option {
+	return func(d *Deployment) {
+		d.releaseSvc = releaseSvc
+	}
+}
+
 func (d *Deployment) ContinueDeploy(deploymentID uint64) error {
 	// prepare the context
-	fsm := NewFSMContext(deploymentID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource)
+	fsm := NewFSMContext(deploymentID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc)
 	if err := fsm.Load(); err != nil {
 		return errors.Wrapf(err, "failed to load fsm, deployment: %d, (%v)", deploymentID, err)
 	}
@@ -147,7 +160,7 @@ func (d *Deployment) CancelLastDeploy(runtimeID uint64, operator string, force b
 	if deployment == nil {
 		return apierrors.ErrCancelDeployment.NotFound()
 	}
-	fsm := NewFSMContext(deployment.ID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource)
+	fsm := NewFSMContext(deployment.ID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc)
 	if err := fsm.Load(); err != nil {
 		return err
 	}
@@ -168,7 +181,7 @@ func (d *Deployment) CancelLastDeploy(runtimeID uint64, operator string, force b
 }
 
 // ListOrg 查询部署记录(列出orgid下所有有权限的deployments)
-func (d *Deployment) ListOrg(userID user.ID, orgID uint64, needFilterProjectRole bool,
+func (d *Deployment) ListOrg(ctx context.Context, userID user.ID, orgID uint64, needFilterProjectRole bool,
 	needApproval *bool, approvedBy *user.ID, operateUsers []string, approved *bool,
 	approvalStatus *string, types []string, ids []uint64, page apistructs.PageInfo) (
 	*apistructs.DeploymentDetailListData, error) {
@@ -270,11 +283,13 @@ func (d *Deployment) ListOrg(userID user.ID, orgID uint64, needFilterProjectRole
 		dd.ProjectID = proj.ID
 		dd.ProjectName = proj.Name
 
-		release, err := d.bdl.GetRelease(deployments[i].ReleaseId)
+		ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+		releaseResp, err := d.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: deployments[i].ReleaseId})
 		if err != nil {
 			// release 可能已经过期清理，忽略该条
 			continue
 		}
+		release := releaseResp.Data
 		dd.CommitID = release.Labels["gitCommitId"]
 		dd.CommitMessage = release.Labels["gitCommitMessage"]
 		list = append(list, &dd)

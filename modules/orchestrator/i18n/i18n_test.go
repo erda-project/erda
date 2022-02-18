@@ -47,3 +47,7 @@ func TestOrgSprintf(t *testing.T) {
 	i18n.SetSingle(new(mockTranslator))
 	i18n.OrgSprintf("0", "hello erda")
 }
+
+func TestInitI18N(t *testing.T) {
+	i18n.InitI18N()
+}
