@@ -23,7 +23,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	pb "github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/core/monitor/log/storage"
-	"github.com/erda-project/erda/modules/core/monitor/storekit"
 	"github.com/erda-project/erda/modules/monitor/common"
 	monitorperm "github.com/erda-project/erda/modules/monitor/common/permission"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -31,7 +30,9 @@ import (
 )
 
 type config struct {
-	DownloadAPIThrottling storekit.RateLimitConfig `file:"download_api_throttling"`
+	DownloadAPIThrottling struct {
+		CurrentLimit int64 `file:"current_limit"`
+	} `file:"download_api_throttling"`
 }
 
 type provider struct {
@@ -49,12 +50,14 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.logQueryService = &logQueryService{
-		p:                      p,
-		startTime:              time.Now().UnixNano(),
-		storageReader:          p.StorageReader,
-		k8sReader:              p.K8sReader,
-		frozenStorageReader:    p.FrozenStorageReader,
-		downloadAPIRateLimiter: storekit.NewInMemoryRateLimiter(p.Cfg.DownloadAPIThrottling),
+		p:                   p,
+		startTime:           time.Now().UnixNano(),
+		storageReader:       p.StorageReader,
+		k8sReader:           p.K8sReader,
+		frozenStorageReader: p.FrozenStorageReader,
+	}
+	if p.Cfg.DownloadAPIThrottling.CurrentLimit > 0 {
+		p.logQueryService.currentDownloadLimit = &p.Cfg.DownloadAPIThrottling.CurrentLimit
 	}
 	if p.Register != nil {
 		pb.RegisterLogQueryServiceImp(p.Register, p.logQueryService, apis.Options(), p.Perm.Check(
