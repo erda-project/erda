@@ -71,7 +71,11 @@ func (b *ComponentOperationButton) Render(ctx context.Context, component *cptype
 		}
 	}
 
-	// todo: re update the alertEvent state?
+	alertEvent, err = b.GetAlertEvent(ctx)
+	if err != nil {
+		return err
+	}
+	common.SetAlertEventToGlobalState(*gs, alertEvent)
 
 	b.SetComponentValue(alertEvent)
 	b.Transfer(component)
