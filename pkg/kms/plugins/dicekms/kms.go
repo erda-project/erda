@@ -23,7 +23,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/kms/kmscrypto"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
@@ -165,14 +164,14 @@ func (d *Dice) Encrypt(ctx context.Context, req *kmstypes.EncryptRequest) (*kmst
 	switch keyInfo.GetKeySpec() {
 	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_4096, kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_2048,
 		kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_3072:
-		rsaCrypt := encryption.NewRSAScrypt(encryption.RSASecret{
+		rsaCrypt := kmscrypto.NewRSACrypt(kmscrypto.RSASecret{
 			PublicKey:          keyInfo.GetPrimaryKeyVersion().GetPublicKeyBase64(),
-			PublicKeyDataType:  encryption.Base64,
+			PublicKeyDataType:  kmscrypto.Base64,
 			PrivateKey:         keyInfo.GetPrimaryKeyVersion().GetPrivateKeyBase64(),
-			PrivateKeyDataType: encryption.Base64,
-			PrivateKeyType:     encryption.PKCS1,
+			PrivateKeyDataType: kmscrypto.Base64,
+			PrivateKeyType:     kmscrypto.PKCS1,
 		})
-		encryptedV, err := rsaCrypt.Encrypt(string(plaintextBytes), encryption.String)
+		encryptedV, err := rsaCrypt.Encrypt(string(plaintextBytes), kmscrypto.String)
 		if err != nil {
 			return nil, err
 		}
@@ -250,14 +249,14 @@ func (d *Dice) Decrypt(ctx context.Context, req *kmstypes.DecryptRequest) (resp 
 	switch keyInfo.GetKeySpec() {
 	case kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_4096, kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_2048,
 		kmstypes.CustomerMasterKeySpec_ASYMMETRIC_RSA_3072:
-		rsaCrypt := encryption.NewRSAScrypt(encryption.RSASecret{
+		rsaCrypt := kmscrypto.NewRSACrypt(kmscrypto.RSASecret{
 			PublicKey:          keyInfo.GetPrimaryKeyVersion().GetPublicKeyBase64(),
-			PublicKeyDataType:  encryption.Base64,
+			PublicKeyDataType:  kmscrypto.Base64,
 			PrivateKey:         keyInfo.GetPrimaryKeyVersion().GetPrivateKeyBase64(),
-			PrivateKeyDataType: encryption.Base64,
-			PrivateKeyType:     encryption.PKCS1,
+			PrivateKeyDataType: kmscrypto.Base64,
+			PrivateKeyType:     kmscrypto.PKCS1,
 		})
-		plaintext, err := rsaCrypt.Decrypt(string(ciphertext), encryption.String)
+		plaintext, err := rsaCrypt.Decrypt(string(ciphertext), kmscrypto.String)
 		if err != nil {
 			return nil, err
 		}
@@ -364,7 +363,7 @@ func (d *Dice) RotateKeyVersion(ctx context.Context, req *kmstypes.RotateKeyVers
 }
 
 func (d *Dice) fillRsaKeyVersionByBits(keyVersion *kmstypes.KeyVersion, bits int) error {
-	publicKey, privateKey, err := encryption.GenRsaKey(bits)
+	publicKey, privateKey, err := kmscrypto.GenRsaKey(bits)
 	if err != nil {
 		return fmt.Errorf("failed to create rsa key pair, err: %v", err)
 	}
