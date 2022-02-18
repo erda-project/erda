@@ -308,6 +308,7 @@ func (n notifyService) GetAlertNotifyDetail(ctx context.Context, request *pb.Get
 	result.Data.SendTime = timestamppb.New(alertNotifyIndex.SendTime)
 	result.Data.Status = alertNotifyIndex.Status
 	result.Data.NotifyRule = attributes.AlertName
+	result.Data.NotifyGroup = strconv.Itoa(int(attributes.GroupID))
 	alertNotifyHistory, err := n.DB.NotifyHistoryDB.GetAlertNotifyHistory(alertNotifyIndex.NotifyID)
 	if err != nil {
 		return result, errors.NewInternalServerError(err)
@@ -321,18 +322,6 @@ func (n notifyService) GetAlertNotifyDetail(ctx context.Context, request *pb.Get
 		return result, errors.NewInternalServerError(err)
 	}
 	result.Data.NotifyContent = sourceDataParam.Params.Content
-	//根据groupid获取通知组名字
-	orgIdStr := apis.GetOrgID(ctx)
-	orgId, err := strconv.ParseInt(orgIdStr, 10, 64)
-	if err != nil {
-		return result, errors.NewInternalServerError(err)
-	}
-	userIdStr := apis.GetUserID(ctx)
-	notifyGroup, err := n.bdl.GetNotifyGroupDetail(attributes.GroupID, orgId, userIdStr)
-	if err != nil {
-		return result, errors.NewInternalServerError(err)
-	}
-	result.Data.NotifyGroup = notifyGroup.Name
 	return result, nil
 }
 

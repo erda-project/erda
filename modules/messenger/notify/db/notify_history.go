@@ -156,7 +156,6 @@ func (db *NotifyHistoryDB) QueryNotifyHistories(request *model.QueryNotifyHistor
 }
 
 func (db *NotifyHistoryDB) FilterStatus(request *model.FilterStatusRequest) ([]*model.FilterStatusResult, error) {
-	db.LogMode(true)
 	result := make([]*model.FilterStatusResult, 0)
 	startTime, err := ToTime(request.StartTime)
 	if err != nil {

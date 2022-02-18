@@ -17,4 +17,6 @@ package common
 const (
 	ContextKeyServiceMonitorMetricService = "monitorMetricService"
 	ContextKeyServiceMonitorAlertService  = "monitorAlertService"
+	ContextKeyServiceMessengerService     = "messenger"
+	ContextKeyCoreServicesUrl             = "coreServiceUrl"
 )

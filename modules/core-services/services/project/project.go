@@ -679,7 +679,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 func (p *Project) Get(ctx context.Context, projectID int64, withQuota bool) (*apistructs.ProjectDTO, error) {
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get project")
+		return nil, err
 	}
 	projectDTO := p.convertToProjectDTO(true, &project)
 
