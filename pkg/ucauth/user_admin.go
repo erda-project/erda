@@ -342,7 +342,11 @@ func (c *UCClient) findUsersByQuery(query string, idOrder ...string) ([]User, er
 		}
 		var orderedUsers []User
 		for _, id := range idOrder {
-			orderedUsers = append(orderedUsers, userMap[id])
+			user, ok := userMap[id]
+			if !ok {
+				return nil, fmt.Errorf("failed to find user by id: %s", id)
+			}
+			orderedUsers = append(orderedUsers, user)
 		}
 		return orderedUsers, nil
 	}
