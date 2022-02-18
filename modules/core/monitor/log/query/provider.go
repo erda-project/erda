@@ -29,7 +29,11 @@ import (
 	perm "github.com/erda-project/erda/pkg/common/permission"
 )
 
-type config struct{}
+type config struct {
+	DownloadAPIThrottling struct {
+		CurrentLimit int64 `file:"current_limit"`
+	} `file:"download_api_throttling"`
+}
 
 type provider struct {
 	Cfg                 *config
@@ -51,6 +55,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		storageReader:       p.StorageReader,
 		k8sReader:           p.K8sReader,
 		frozenStorageReader: p.FrozenStorageReader,
+	}
+	if p.Cfg.DownloadAPIThrottling.CurrentLimit > 0 {
+		p.logQueryService.currentDownloadLimit = &p.Cfg.DownloadAPIThrottling.CurrentLimit
 	}
 	if p.Register != nil {
 		pb.RegisterLogQueryServiceImp(p.Register, p.logQueryService, apis.Options(), p.Perm.Check(

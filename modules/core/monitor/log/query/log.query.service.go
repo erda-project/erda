@@ -18,6 +18,7 @@ import (
 	context "context"
 	"fmt"
 	"sort"
+	"sync/atomic"
 	"time"
 
 	linq "github.com/ahmetb/go-linq/v3"
@@ -32,11 +33,12 @@ import (
 )
 
 type logQueryService struct {
-	p                   *provider
-	startTime           int64
-	storageReader       storage.Storage
-	k8sReader           storage.Storage
-	frozenStorageReader storage.Storage
+	p                    *provider
+	startTime            int64
+	storageReader        storage.Storage
+	k8sReader            storage.Storage
+	frozenStorageReader  storage.Storage
+	currentDownloadLimit *int64
 }
 
 func (s *logQueryService) GetLog(ctx context.Context, req *pb.GetLogRequest) (*pb.GetLogResponse, error) {
@@ -254,9 +256,17 @@ func (s *logQueryService) queryLogItems(ctx context.Context, req Request, fn fun
 }
 
 func (s *logQueryService) walkLogItems(ctx context.Context, req Request, fn func(sel *storage.Selector) (*storage.Selector, error), walk func(item *pb.LogItem) error) error {
-	//if req.GetCount() < 0 {
+	// if req.GetCount() < 0 {
 	//	return errors.NewInvalidParameterError("count", "not allowed negative")
-	//}
+	// }
+	if s.currentDownloadLimit != nil {
+		if atomic.LoadInt64(s.currentDownloadLimit) < 1 {
+			return fmt.Errorf("current download reached, please wait for a while")
+		}
+		atomic.AddInt64(s.currentDownloadLimit, -1)
+		defer atomic.AddInt64(s.currentDownloadLimit, 1)
+	}
+
 	sel, err := toQuerySelector(req)
 	if err != nil {
 		return err
