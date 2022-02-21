@@ -519,6 +519,7 @@ func (a *alertService) QueryCustomizeAlerts(ctx context.Context, request *alert.
 		ScopeId:  request.TenantGroup,
 		PageNo:   request.PageNo,
 		PageSize: request.PageSize,
+		Name:     request.Name,
 	}
 	context := utils.NewContextWithHeader(ctx)
 	resp, err := a.p.Monitor.QueryCustomizeAlert(context, req)

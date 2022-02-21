@@ -228,7 +228,7 @@ func (m *alertService) QueryCustomizeAlert(ctx context.Context, request *pb.Quer
 		},
 	}
 	lang := apis.Language(ctx)
-	alert, userIDs, total, err := m.p.a.CustomizeAlerts(lang, request.Scope, request.ScopeId, int(request.PageNo), int(request.PageSize))
+	alert, userIDs, total, err := m.p.a.CustomizeAlerts(lang, request.Scope, request.ScopeId, int(request.PageNo), int(request.PageSize), request.Name)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -418,7 +418,7 @@ func (m *alertService) QueryOrgCustomizeMetric(ctx context.Context, request *pb.
 func (m *alertService) QueryOrgCustomizeAlerts(ctx context.Context, request *pb.QueryOrgCustomizeAlertsRequest) (*pb.QueryOrgCustomizeAlertsResponse, error) {
 	orgID := apis.GetOrgID(ctx)
 	language := apis.Language(ctx)
-	alert, userIDs, total, err := m.p.a.CustomizeAlerts(language, "org", orgID, int(request.PageNo), int(request.PageSize))
+	alert, userIDs, total, err := m.p.a.CustomizeAlerts(language, "org", orgID, int(request.PageNo), int(request.PageSize), request.Name)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -848,14 +848,14 @@ func (m *alertService) QueryAlertRule(ctx context.Context, request *pb.QueryAler
 }
 
 func (m *alertService) QueryAlert(ctx context.Context, request *pb.QueryAlertRequest) (*pb.QueryAlertsResponse, error) {
-	data, userIds, err := m.p.a.QueryAlert(apis.Language(ctx), request.Scope, request.ScopeId, uint64(request.PageNo), uint64(request.PageSize))
+	data, userIds, err := m.p.a.QueryAlert(apis.Language(ctx), request.Scope, request.ScopeId, uint64(request.PageNo), uint64(request.PageSize), request.Name)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	if data == nil {
 		data = make([]*pb.Alert, 0)
 	}
-	total, err := m.p.a.CountAlert(request.Scope, request.ScopeId)
+	total, err := m.p.a.CountAlert(request.Scope, request.ScopeId, request.Name)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -975,11 +975,11 @@ func (m *alertService) QueryOrgAlert(ctx context.Context, request *pb.QueryOrgAl
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
 	lang := apis.Language(ctx)
-	data, userIds, err := m.p.a.QueryOrgAlert(lang, id, uint64(request.PageNo), uint64(request.PageSize))
+	data, userIds, err := m.p.a.QueryOrgAlert(lang, id, uint64(request.PageNo), uint64(request.PageSize), request.Name)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	total, err := m.p.a.CountOrgAlert(id)
+	total, err := m.p.a.CountOrgAlert(id, request.Name)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
