@@ -45,7 +45,6 @@ const (
 	REGISTRY_USERNAME       ClusterInfoMapKey = "REGISTRY_USERNAME"       // registry username
 	REGISTRY_PASSWORD       ClusterInfoMapKey = "REGISTRY_PASSWORD"       // registry password
 	SOLDIER_ADDR            ClusterInfoMapKey = "SOLDIER_ADDR"            // soldier的地址
-	NETPORTAL_URL           ClusterInfoMapKey = "NETPORTAL_URL"           // netportal的集群入口url
 	EDASJOB_CLUSTER_NAME    ClusterInfoMapKey = "EDASJOB_CLUSTER_NAME"    // edas 集群可能会使用别的集群运行 JOB，若该字段为空，则说明使用本集群运行 JOB
 	CLUSTER_DNS             ClusterInfoMapKey = "CLUSTER_DNS"             // k8s 或 dcos 内部域名服务器，逗号分隔
 	ISTIO_ALIYUN            ClusterInfoMapKey = "ISTIO_ALIYUN"            // 是否用aliyn asm，true or false
