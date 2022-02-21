@@ -4595,6 +4595,12 @@ func (m *Alert) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.UpdateTime = val
 			case "creator":
 				m.Creator = vals[0]
+			case "ruleCount":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.RuleCount = val
 			}
 		}
 	}
@@ -5011,6 +5017,15 @@ func (m *GetAlertResponse) UnmarshalURLValues(prefix string, values url.Values) 
 					m.Data = &Alert{}
 				}
 				m.Data.Creator = vals[0]
+			case "data.ruleCount":
+				if m.Data == nil {
+					m.Data = &Alert{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.RuleCount = val
 			}
 		}
 	}
@@ -5109,6 +5124,15 @@ func (m *GetAlertDetailResponse) UnmarshalURLValues(prefix string, values url.Va
 					m.Data = &Alert{}
 				}
 				m.Data.Creator = vals[0]
+			case "data.ruleCount":
+				if m.Data == nil {
+					m.Data = &Alert{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.RuleCount = val
 			}
 		}
 	}
@@ -5468,6 +5492,15 @@ func (m *GetOrgAlertDetailResponse) UnmarshalURLValues(prefix string, values url
 					m.Data = &Alert{}
 				}
 				m.Data.Creator = vals[0]
+			case "data.ruleCount":
+				if m.Data == nil {
+					m.Data = &Alert{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.RuleCount = val
 			}
 		}
 	}

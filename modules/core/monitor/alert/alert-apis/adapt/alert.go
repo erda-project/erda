@@ -238,13 +238,30 @@ func (a *Adapt) QueryAlert(code i18n.LanguageCodes, scope, scopeID string, pageN
 	if err != nil {
 		return nil, nil, err
 	}
+	ruleCountMap, err := a.getRuleCountByAlertIDs(alertIDs)
+	if err != nil {
+		return nil, nil, err
+	}
 	var list []*pb.Alert
 	for _, item := range alerts {
 		alert := FromDBAlertModel(item)
 		alert.Notifies = notifyMap[alert.Id]
+		alert.RuleCount = ruleCountMap[alert.Id]
 		list = append(list, alert)
 	}
 	return list, userIDs, nil
+}
+
+// get alert rules count
+func (a *Adapt) getRuleCountByAlertIDs(alertIDs []uint64) (map[uint64]int64, error) {
+	if len(alertIDs) == 0 {
+		return nil, nil
+	}
+	ruleCounts, err := a.db.AlertExpression.QueryRuleCount(alertIDs)
+	if err != nil {
+		return nil, err
+	}
+	return ruleCounts, nil
 }
 
 // according to alertID get alert
