@@ -276,7 +276,7 @@ func (client *Client) UpdateWholeStatusCancel(p *spec.Pipeline, ops ...SessionOp
 	return nil
 }
 
-// return: pagingPipelines, pagingPipelineIDs, total, currentPageSize, error
+// PageListPipelines return pagingPipelines, pagingPipelineIDs, total, currentPageSize, error
 func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, ops ...SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
 
 	session := client.NewSession(ops...)
@@ -348,7 +348,10 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	// FORCE INDEX
 	var forceIndexes []string
 	// idx_id_source_cluster_status
-	if !req.AllSources && len(req.Sources) > 0 {
+	if !req.AllSources && len(req.Sources) > 0 &&
+		len(req.ClusterNames) > 0 &&
+		len(req.Statuses) > 0 &&
+		len(req.AscCols) == 0 && len(req.DescCols) == 0 {
 		if !req.StartTimeBegin.IsZero() || !req.EndTimeBegin.IsZero() {
 			forceIndexes = append(forceIndexes, "`idx_source_status_cluster_timebegin_timeend_id`")
 		} else {
