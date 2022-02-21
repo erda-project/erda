@@ -125,8 +125,10 @@ func (d *DeploymentOrder) Deploy(req *apistructs.DeploymentOrderDeployRequest) (
 	}
 
 	// deploy interface will means execute from the first batch
-	// TODO: continue deploying need front function design
-	order.CurrentBatch = FirstBatch
+	// if current batch is not zero, means it is a retry at current batch, deploy will continue from the current batch
+	if order.CurrentBatch == 0 {
+		order.CurrentBatch = FirstBatch
+	}
 
 	if _, err := d.executeDeploy(order, releaseResp, apistructs.SourceDeployCenter, false); err != nil {
 		logrus.Errorf("failed to execute deploy, order id: %s, err: %v", req.DeploymentOrderId, err)
@@ -168,12 +170,10 @@ func (d *DeploymentOrder) executeDeploy(order *dbclient.DeploymentOrder, release
 
 	applicationsStatus := make(apistructs.DeploymentOrderStatusMap)
 	// redeploy
-	if order.CurrentBatch != FirstBatch {
-		if order.StatusDetail != "" {
-			if err := json.Unmarshal([]byte(order.StatusDetail), &applicationsStatus); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal to deployment order status (%s), err: %v",
-					order.ID, err)
-			}
+	if order.CurrentBatch != FirstBatch && order.StatusDetail != "" {
+		if err := json.Unmarshal([]byte(order.StatusDetail), &applicationsStatus); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal to deployment order status (%s), err: %v",
+				order.ID, err)
 		}
 	} else {
 		order.StartedAt = time.Now()

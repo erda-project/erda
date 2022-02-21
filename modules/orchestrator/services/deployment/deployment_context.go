@@ -711,7 +711,7 @@ func (fsm *DeployFSMContext) UpdateDeploymentStatusToRuntimeAndOrder() error {
 	}
 	logrus.Infof("update deployment(%+v) status for app (%+v) to deployment_order (%+v) detail is: %+v",
 		fsm.deploymentID, app.Name, DeploymentOrderID, appDeploymentStatus)
-	if err := fsm.db.UpdateDeploymentOrderStatus(DeploymentOrderID,
+	if err := fsm.db.UpdateDeploymentOrderAppStatus(DeploymentOrderID,
 		app.Name, appDeploymentStatus); err != nil {
 		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v",
 			DeploymentOrderID, err)
