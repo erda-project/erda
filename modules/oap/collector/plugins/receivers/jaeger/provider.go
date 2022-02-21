@@ -21,8 +21,12 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	pb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
+	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/oap/collector/plugins"
 	"github.com/erda-project/erda/modules/oap/collector/receivers/common"
 )
+
+var providerName = plugins.WithPrefixReceiver("jaeger")
 
 type config struct {
 	// some fields of config for this provider
@@ -40,6 +44,16 @@ type provider struct {
 	Register      transport.Register  `autowired:"service-register" optional:"true"`
 	Kafka         kafka.Interface     `autowired:"kafka@receiver-jaeger"`
 	Interceptors  common.Interceptors `autowired:"erda.oap.collector.receiver.common.Interceptor"`
+
+	consumer model.ObservableDataConsumerFunc
+}
+
+func (p *provider) ComponentID() model.ComponentID {
+	return model.ComponentID(providerName)
+}
+
+func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
+	p.consumer = consumer
 }
 
 // Run this is optional
@@ -49,10 +63,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		if err != nil {
 			return err
 		}
-		p.jaegerService = &jaegerServiceImpl{Log: p.Log, writer: writer}
+		p.jaegerService = &jaegerServiceImpl{Log: p.Log, writer: writer, p: p}
 		pb.RegisterJaegerServiceImp(p.Register, p.jaegerService,
-			transport.WithHTTPOptions(transhttp.WithDecoder(ThriftDecoder),
-				transhttp.WithInterceptor(p.Interceptors.ExtractHttpHeaders)),
+			transport.WithHTTPOptions(transhttp.WithDecoder(ThriftDecoder), transhttp.WithInterceptor(p.Interceptors.ExtractHttpHeaders)),
 			transport.WithInterceptors(p.Interceptors.Authentication, p.Interceptors.SpanTagOverwrite),
 		)
 	}
@@ -68,7 +81,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("erda.oap.collector.receiver.jaeger", &servicehub.Spec{
+	servicehub.Register(providerName, &servicehub.Spec{
 		Services:    pb.ServiceNames(),
 		Description: "here is description of erda.oap.collector.receiver.jaeger",
 		ConfigFunc: func() interface{} {

@@ -18,6 +18,8 @@ import (
 	// receivers
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/dummy"
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/fluentbit"
+	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/jaeger"
+	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/opentelemetry"
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/promremotewrite"
 
 	// processors

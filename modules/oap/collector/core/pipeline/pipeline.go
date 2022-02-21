@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 type Pipeline struct {
@@ -90,8 +91,8 @@ func (p *Pipeline) esFromComponent(coms []model.ComponentUnit) ([]model.Exporter
 }
 
 func (p *Pipeline) StartStream(ctx context.Context) {
-	out := make(chan model.ObservableData, 10)
-	in := make(chan model.ObservableData, 10)
+	out := make(chan odata.ObservableData, 10)
+	in := make(chan odata.ObservableData, 10)
 	go p.StartExporters(ctx, out)
 
 	go p.startProcessors(ctx, in, out)
@@ -99,16 +100,17 @@ func (p *Pipeline) StartStream(ctx context.Context) {
 	p.startReceivers(ctx, in)
 }
 
-func (p *Pipeline) StartExporters(ctx context.Context, out <-chan model.ObservableData) {
+func (p *Pipeline) StartExporters(ctx context.Context, out <-chan odata.ObservableData) {
 	for {
 		select {
 		case data := <-out:
 			var wg sync.WaitGroup
 			wg.Add(len(p.exporters))
 			for _, e := range p.exporters {
-				go func(exp model.ExporterUnit, od model.ObservableData) {
+				go func(exp model.ExporterUnit, od odata.ObservableData) {
 					defer wg.Done()
-					err := exp.Exporter.Export(od)
+					// TODO. batch
+					err := exp.Exporter.Export([]odata.ObservableData{od})
 					if err != nil {
 						p.Log.Errorf("Exporter<%s> export data error: %s", exp.Name, err)
 					}
@@ -121,7 +123,7 @@ func (p *Pipeline) StartExporters(ctx context.Context, out <-chan model.Observab
 	}
 }
 
-func (p *Pipeline) startProcessors(ctx context.Context, in <-chan model.ObservableData, out chan<- model.ObservableData) {
+func (p *Pipeline) startProcessors(ctx context.Context, in <-chan odata.ObservableData, out chan<- odata.ObservableData) {
 	for _, r := range p.processors {
 		rp, ok := r.Processor.(model.RunningProcessor)
 		if !ok {
@@ -133,19 +135,24 @@ func (p *Pipeline) startProcessors(ctx context.Context, in <-chan model.Observab
 	for {
 		select {
 		case data := <-in:
+			// TODO. batch
+			batch := []odata.ObservableData{data}
 			for _, pr := range p.processors {
-				tmp, err := pr.Processor.Process(data)
+				tmp, err := pr.Processor.Process(batch...)
 				if err != nil {
 					p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
 					continue
 				}
-				data = tmp
+				batch = tmp
 			}
-			// wait forever
-			select {
-			case out <- data:
-			case <-ctx.Done():
-				return
+
+			for _, item := range batch {
+				// wait forever
+				select {
+				case out <- item:
+				case <-ctx.Done():
+					return
+				}
 			}
 		case <-ctx.Done():
 			return
@@ -153,16 +160,16 @@ func (p *Pipeline) startProcessors(ctx context.Context, in <-chan model.Observab
 	}
 }
 
-func (p *Pipeline) startReceivers(ctx context.Context, out chan<- model.ObservableData) {
+func (p *Pipeline) startReceivers(ctx context.Context, out chan<- odata.ObservableData) {
 	for _, r := range p.receivers {
 		r.Receiver.RegisterConsumer(newConsumer(ctx, out))
 	}
 }
 
-func newConsumer(ctx context.Context, out chan<- model.ObservableData) func(md model.ObservableData) {
-	return func(md model.ObservableData) {
+func newConsumer(ctx context.Context, out chan<- odata.ObservableData) model.ObservableDataConsumerFunc {
+	return func(od odata.ObservableData) {
 		select {
-		case out <- md:
+		case out <- od:
 		case <-ctx.Done():
 			return
 		}

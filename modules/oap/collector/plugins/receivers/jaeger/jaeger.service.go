@@ -21,19 +21,23 @@ import (
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	jaegerpb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 type jaegerServiceImpl struct {
 	Log    logs.Logger
 	writer writer.Writer
+
+	p *provider
 }
 
 func (s *jaegerServiceImpl) SpansWithThrift(ctx context.Context, req *jaegerpb.PostSpansRequest) (*common.VoidResponse, error) {
 	if req.Spans != nil {
 		for _, span := range req.Spans {
-			if err := s.writer.Write(span); err != nil {
-				s.Log.Warn("write jaeger traces to kafka failed")
-			}
+			s.p.consumer(odata.NewSpan(span))
+			// if err := s.writer.Write(span); err != nil {
+			// 	s.Log.Warn("write jaeger traces to kafka failed")
+			// }
 		}
 	}
 	return &common.VoidResponse{}, nil

@@ -67,22 +67,16 @@ func (p *provider) initComponents() error {
 			return err
 		}
 
-		switch item.DataType {
-		case model.MetricDataType:
-			pipe := pipeline.NewPipeline(p.Log.Sub("MetricsPipeline"))
-			err := pipe.InitComponents(rs, ps, es)
-			if err != nil {
-				return fmt.Errorf("init components err: %w", err)
-			}
-			p.pipelines = append(p.pipelines, pipe)
-		case model.TraceDataType:
-		case model.LogDataType:
-		default:
-			return fmt.Errorf("unsupported data_type: %s", item.DataType)
+		pipe := pipeline.NewPipeline(p.Log.Sub("core-pipeline"))
+		err = pipe.InitComponents(rs, ps, es)
+		if err != nil {
+			return fmt.Errorf("init components err: %w", err)
 		}
+		p.pipelines = append(p.pipelines, pipe)
 	}
 	return nil
 }
+
 func (p *provider) start(ctx context.Context) {
 	for _, pipe := range p.pipelines {
 		go func(pi *pipeline.Pipeline) {

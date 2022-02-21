@@ -20,35 +20,8 @@ import (
 
 	"github.com/buger/jsonparser"
 	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
-	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	jsoniter "github.com/json-iterator/go"
 )
-
-const defaultLogBatchSize = 10
-
-func (p *provider) convertToLogs(buf []byte) (*odata.Logs, error) {
-	res := &odata.Logs{
-		// TODO avoid gc
-		Logs: make([]*lpb.Log, 0, defaultLogBatchSize),
-	}
-
-	_, err := jsonparser.ArrayEach(buf, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-		if err != nil {
-			p.Log.Errorf("jsonparser err: %s", err)
-			return
-		}
-		lg, err := parseItem(value, p.Cfg.FLBKeyMappings)
-		if err != nil {
-			p.Log.Errorf("parseItem err: %s", err)
-		}
-
-		res.Logs = append(res.Logs, lg)
-	})
-	if err != nil {
-		return nil, fmt.Errorf("parser err: %w", err)
-	}
-	return res, nil
-}
 
 func parseItem(value []byte, cfg flbKeyMappings) (*lpb.Log, error) {
 	lg := &lpb.Log{

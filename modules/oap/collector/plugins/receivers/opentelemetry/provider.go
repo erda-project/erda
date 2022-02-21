@@ -20,12 +20,17 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/providers/kafka"
+	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/oap/collector/plugins"
 	"github.com/erda-project/erda/modules/oap/collector/receivers/common"
 
 	pb "github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb"
 )
 
-var serviceName = "erda.oap.collector.receiver.opentelemetry.OpenTelemetryService"
+var (
+	serviceName  = "erda.oap.collector.receiver.opentelemetry.OpenTelemetryService"
+	providerName = plugins.WithPrefixReceiver("opentelemetry")
+)
 
 type config struct {
 	Kafka struct {
@@ -43,6 +48,16 @@ type provider struct {
 	Register     transport.Register  `autowired:"service-register" optional:"true"`
 	Kafka        kafka.Interface     `autowired:"kafka@receiver-opentelemetry"`
 	Interceptors common.Interceptors `autowired:"erda.oap.collector.receiver.common.Interceptor"`
+
+	consumer model.ObservableDataConsumerFunc
+}
+
+func (p *provider) ComponentID() model.ComponentID {
+	return model.ComponentID(providerName)
+}
+
+func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
+	p.consumer = consumer
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -52,8 +67,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 			return err
 		}
 		p.otlpService = &otlpService{Log: p.Log, writer: writer}
-		pb.RegisterOpenTelemetryServiceImp(p.Register, p.otlpService, transport.WithHTTPOptions(transhttp.WithDecoder(ProtoDecoder), transhttp.WithInterceptor(p.Interceptors.ExtractHttpHeaders)),
-			transport.WithInterceptors(p.Interceptors.SpanTagOverwrite))
+		pb.RegisterOpenTelemetryServiceImp(
+			p.Register,
+			p.otlpService,
+			transport.WithHTTPOptions(transhttp.WithDecoder(ProtoDecoder), transhttp.WithInterceptor(p.Interceptors.ExtractHttpHeaders)),
+			transport.WithInterceptors(p.Interceptors.SpanTagOverwrite),
+		)
 	}
 	return nil
 }
@@ -67,7 +86,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("erda.oap.collector.receiver.opentelemetry", &servicehub.Spec{
+	servicehub.Register(providerName, &servicehub.Spec{
 		Services:    pb.ServiceNames(),
 		Description: "here is description of erda.oap.collector.receiver.opentelemetry",
 		ConfigFunc: func() interface{} {

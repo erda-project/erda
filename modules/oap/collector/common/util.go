@@ -15,6 +15,7 @@
 package common
 
 import (
+	"bytes"
 	"compress/gzip"
 	"fmt"
 	"io"
@@ -28,6 +29,11 @@ func NormalizeKey(key string) string {
 	key = strings.ReplaceAll(key, ".", "_")
 	key = strings.ReplaceAll(key, "/", "_")
 	return key
+}
+
+func IsJSONArray(b []byte) bool {
+	x := bytes.TrimLeft(b, " \t\r\n")
+	return len(x) > 0 && x[0] == '['
 }
 
 // read request's body based on Content-Encoding Header

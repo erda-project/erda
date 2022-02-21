@@ -21,19 +21,22 @@ import (
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	pb "github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 type otlpService struct {
 	Log    logs.Logger
 	writer writer.Writer
+	p      *provider
 }
 
 func (s *otlpService) Export(ctx context.Context, req *pb.PostSpansRequest) (*common.VoidResponse, error) {
-	if req.Spans != nil {
+	if req.Spans != nil && s.p.consumer != nil {
 		for _, span := range req.Spans {
-			if err := s.writer.Write(span); err != nil {
-				s.Log.Error("write opentelemetry traces to kafka failed.")
-			}
+			s.p.consumer(odata.NewSpan(span))
+			// 	if err := s.writer.Write(span); err != nil {
+			// 		s.Log.Error("write opentelemetry traces to kafka failed.")
+			// 	}
 		}
 	}
 	return &common.VoidResponse{}, nil

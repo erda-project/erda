@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/buger/jsonparser"
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda/modules/oap/collector/common"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 	"github.com/labstack/echo"
 )
@@ -63,11 +65,20 @@ func (p *provider) flbHandler(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("read body err: %s", err))
 	}
 
-	data, err := p.convertToLogs(buf)
+	_, err = jsonparser.ArrayEach(buf, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		if err != nil {
+			p.Log.Errorf("jsonparser err: %s", err)
+			return
+		}
+		lg, err := parseItem(value, p.Cfg.FLBKeyMappings)
+		if err != nil {
+			p.Log.Errorf("parseItem err: %s", err)
+		}
+		p.consumerFunc(odata.NewLog(lg))
+	})
 	if err != nil {
-		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("convertToLogs err: %s", err))
+		return fmt.Errorf("parser err: %w", err)
 	}
-	p.consumerFunc(data)
 
 	return ctx.NoContent(http.StatusOK)
 }

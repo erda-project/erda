@@ -14,17 +14,12 @@
 
 package config
 
-import (
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
-)
-
 type Config struct {
 	Pipelines []Pipeline `file:"pipelines" desc:"compose of components"`
 }
 
 type Pipeline struct {
-	Receivers  []string       `file:"receivers"`
-	Processors []string       `file:"processors"`
-	Exporters  []string       `file:"exporters"`
-	DataType   model.DataType `file:"data_type"`
+	Receivers  []string `file:"receivers"`
+	Processors []string `file:"processors"`
+	Exporters  []string `file:"exporters"`
 }

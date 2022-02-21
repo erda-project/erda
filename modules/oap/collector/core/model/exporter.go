@@ -14,6 +14,10 @@
 
 package model
 
+import (
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
+)
+
 type ExporterUnit struct {
 	Name     string
 	Exporter Exporter
@@ -22,7 +26,7 @@ type ExporterUnit struct {
 type Exporter interface {
 	Component
 	Connect() error
-	Export(data ObservableData) error
+	Export(ods []odata.ObservableData) error
 }
 
 type NoopExporter struct{}
@@ -35,10 +39,6 @@ func (n *NoopExporter) Connect() error {
 	return nil
 }
 
-func (n *NoopExporter) Close() error {
-	return nil
-}
-
-func (n *NoopExporter) Export(data ObservableData) error {
+func (n *NoopExporter) Export(ods []odata.ObservableData) error {
 	return nil
 }

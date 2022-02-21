@@ -16,8 +16,6 @@ package filter
 
 import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
-
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
 )
 
 // semantic same as https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#metric-filtering
@@ -27,9 +25,9 @@ type Config struct {
 	Fieldpass []string            `file:"fieldpass"`
 }
 
-func (cfg Config) IsPass(item *model.DataItem) bool {
-	return cfg.IsTagpass(item.Tags) && cfg.IsFieldpass(item.Fields) && cfg.IsNamepass(item.Name)
-}
+// func (cfg Config) IsPass(item *model.DataItem) bool {
+// 	return cfg.IsTagpass(item.Tags) && cfg.IsFieldpass(item.Fields) && cfg.IsNamepass(item.Name)
+// }
 
 // IsTagpass.
 func (cfg Config) IsTagpass(tags map[string]string) bool {

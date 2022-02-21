@@ -24,11 +24,3 @@ type ComponentUnit struct {
 	Component Component
 	Name      string
 }
-
-type (
-	// MetricReceiverConsumeFunc func(data Metrics)
-	// TraceReceiverConsumeFunc  func(data Traces)
-	// LogReceiverConsumeFunc    func(data Logs)
-
-	ObservableDataConsumerFunc func(data ObservableData)
-)

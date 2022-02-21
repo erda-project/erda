@@ -16,12 +16,18 @@ package promremotewrite
 
 import (
 	"fmt"
+	"math"
 	"net/http"
+	"time"
 
+	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	"github.com/erda-project/erda/modules/oap/collector/common"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/golang/protobuf/proto"
 	"github.com/labstack/echo"
+	pmodel "github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -65,11 +71,39 @@ func (p *provider) prwHandler(ctx echo.Context) error {
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("unmarshal body err: %s", err))
 	}
-	ms, err := convertToMetrics(wr)
-	if err != nil {
-		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("convertToMetrics err: %s", err))
+
+	now := time.Now()
+	for _, ts := range wr.Timeseries {
+		attrs := map[string]string{}
+		for _, l := range ts.Labels {
+			attrs[l.Name] = l.Value
+		}
+		metricName := attrs[pmodel.MetricNameLabel]
+		if metricName == "" {
+			return fmt.Errorf("metric name %q not found in attrs or empty", pmodel.MetricNameLabel)
+		}
+		delete(attrs, pmodel.MetricNameLabel)
+		for _, s := range ts.Samples {
+			dataPoints := make(map[string]*structpb.Value)
+			if !math.IsNaN(s.Value) {
+				dataPoints[metricName] = structpb.NewNumberValue(s.Value)
+			}
+			// converting to metric
+			if len(dataPoints) > 0 {
+				t := now
+				if s.Timestamp > 0 {
+					t = time.Unix(0, s.Timestamp*1000000)
+				}
+				m := &mpb.Metric{
+					Name:         "prometheus_remote_write",
+					TimeUnixNano: uint64(t.UnixNano()),
+					Attributes:   attrs,
+					DataPoints:   dataPoints,
+				}
+				p.consumerFunc(odata.NewMetric(m))
+			}
+		}
 	}
-	p.consumerFunc(ms)
 
 	return ctx.NoContent(http.StatusOK)
 }
