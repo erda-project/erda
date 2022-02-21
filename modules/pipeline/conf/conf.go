@@ -17,7 +17,6 @@ package conf
 
 import (
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/erda-project/erda/pkg/envconf"
@@ -87,9 +86,6 @@ type Conf struct {
 
 	// queue handle loop interval
 	QueueLoopHandleIntervalSec uint64 `env:"QUEUE_LOOP_HANDLE_INTERVAL_SEC" default:"10"`
-
-	// API-Test
-	APITestNetportalAccessK8sNamespaceBlacklist string `env:"APITEST_NETPORTAL_ACCESS_K8S_NAMESPACE_BLACKLIST" default:"default,kube-system"`
 
 	// initialize send running pipeline interval
 	InitializeSendRunningIntervalSec uint64 `env:"INITIALIZE_SEND_RUNNING_INTERVAL_SEC" default:"10"`
@@ -305,11 +301,6 @@ func DisableMetrics() bool {
 // QueueLoopHandleIntervalSec return reconciler queueManager loop handle interval second.
 func QueueLoopHandleIntervalSec() uint64 {
 	return cfg.QueueLoopHandleIntervalSec
-}
-
-// APITestNetportalAccessK8sNamespaceBlacklist 返回 api-test 调用 netportal 代理的 k8s namespace 黑名单.
-func APITestNetportalAccessK8sNamespaceBlacklist() []string {
-	return strings.Split(cfg.APITestNetportalAccessK8sNamespaceBlacklist, ",")
 }
 
 // InitializeSendIntervalTime return initialize send running pipeline id interval second

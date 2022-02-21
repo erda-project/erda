@@ -14,6 +14,11 @@
 
 package apitestsv2
 
+import (
+	"os"
+	"strings"
+)
+
 type option struct {
 	tryV1RenderJsonBodyFirst bool
 	netportalOption          *netportalOption
@@ -23,6 +28,9 @@ type netportalOption struct {
 	url                           string
 	blacklistOfK8sNamespaceAccess []string
 }
+
+const defaultBlackList = "default,kube-system"
+const blackListEnv = "APITEST_NETPORTAL_ACCESS_K8S_NAMESPACE_BLACKLIST"
 
 type OpOption func(*option)
 
@@ -35,11 +43,20 @@ func WithTryV1RenderJsonBodyFirst() OpOption {
 }
 
 // WithNetportalConfigs set netportal url, whitelist and others.
-func WithNetportalConfigs(netportalURL string, blacklistOfK8sNamespaceAccess []string) OpOption {
+func WithNetportalConfigs(netportalURL string) OpOption {
 	return func(opt *option) {
 		opt.netportalOption = &netportalOption{
 			url:                           netportalURL,
-			blacklistOfK8sNamespaceAccess: blacklistOfK8sNamespaceAccess,
+			blacklistOfK8sNamespaceAccess: netportalAccessK8sNamespaceBlacklist(),
 		}
 	}
+}
+
+// netportalAccessK8sNamespaceBlacklist
+func netportalAccessK8sNamespaceBlacklist() []string {
+	list := os.Getenv(blackListEnv)
+	if list == "" {
+		list = defaultBlackList
+	}
+	return strings.Split(list, ",")
 }
