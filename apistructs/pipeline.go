@@ -47,6 +47,9 @@ const (
 	EnvDiceOrgID   = "DICE_ORG_ID"
 )
 
+// pipeline reconcileTask context key
+const ClusterNameContextKey = "cluster_name"
+
 // pipeline create
 
 type PipelineCreateRequest struct {
