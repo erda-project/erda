@@ -38,13 +38,22 @@ func (d *TableDefinition) Enter(in ast.Node) (ast.Node, bool) {
 		return in, false
 	}
 
-	// note: only AddColumns, ModifyColumn, ChangeColumn are considered to change column and column type.
+	// note: only AddColumns, DropColumns, ModifyColumn, ChangeColumn are considered to change column and column type.
 	// other specs either do not conform to the ErdaMySQLLint or will not change the column type.
 	for _, spec := range alter.Specs {
 		switch spec.Tp {
 		case ast.AlterTableAddColumns:
 			d.CreateStmt.Cols = append(d.CreateStmt.Cols, spec.NewColumns...)
-
+		case ast.AlterTableDropColumn:
+			if spec.OldColumnName == nil {
+				continue
+			}
+			for i := 0; i < len(d.CreateStmt.Cols); i++ {
+				if spec.OldColumnName.String() == d.CreateStmt.Cols[i].Name.String() {
+					d.CreateStmt.Cols = append(d.CreateStmt.Cols[:i], d.CreateStmt.Cols[i:]...)
+					break
+				}
+			}
 		case ast.AlterTableModifyColumn, ast.AlterTableChangeColumn:
 			columnDef := spec.NewColumns[0]
 			if columnDef.Tp != nil {
