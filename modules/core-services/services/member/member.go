@@ -93,6 +93,9 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 		logrus.Warnf("failed to get user info, (%v)", err)
 		return errors.Errorf("failed to get user info")
 	}
+	if err := m.checkUCUserInfo(users); err != nil {
+		return err
+	}
 
 	for _, role := range req.Roles {
 		if types.CheckIfRoleIsOwner(role) {
@@ -910,4 +913,13 @@ func (m *Member) getMember(scopeType apistructs.ScopeType, scopeID int64) (map[s
 	}
 
 	return members, nil
+}
+
+func (m *Member) checkUCUserInfo(users []ucauth.User) error {
+	for _, user := range users {
+		if user.ID == "" {
+			return errors.Errorf("failed to get user info")
+		}
+	}
+	return nil
 }

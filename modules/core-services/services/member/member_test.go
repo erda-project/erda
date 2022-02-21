@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/dao"
+	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 func Test_checkCreateParam(t *testing.T) {
@@ -50,4 +51,12 @@ func Test_CheckPermission(t *testing.T) {
 	m.db = db
 	err := m.CheckPermission("1", apistructs.SysScope, 0)
 	assert.NoError(t, err)
+}
+
+func Test_checkUCUserInfo(t *testing.T) {
+	emptyUsers := make([]ucauth.User, 0)
+	emptyUsers = append(emptyUsers, ucauth.User{})
+	m := New()
+	err := m.checkUCUserInfo(emptyUsers)
+	assert.Equal(t, "failed to get user info", err.Error())
 }
