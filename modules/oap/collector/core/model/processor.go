@@ -25,7 +25,7 @@ type ProcessorUnit struct {
 
 type Processor interface {
 	Component
-	Process(in ...odata.ObservableData) ([]odata.ObservableData, error)
+	Process(in odata.ObservableData) (odata.ObservableData, error)
 }
 
 type RunningProcessor interface {
@@ -40,6 +40,6 @@ func (n *NoopProcessor) ComponentID() ComponentID {
 	return "NoopProcessor"
 }
 
-func (n *NoopProcessor) Process(in ...odata.ObservableData) ([]odata.ObservableData, error) {
+func (n *NoopProcessor) Process(in odata.ObservableData) (odata.ObservableData, error) {
 	return in, nil
 }

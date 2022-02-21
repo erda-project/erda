@@ -21,8 +21,8 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/oap/collector/interceptor"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
-	"github.com/erda-project/erda/modules/oap/collector/receivers/common"
 
 	pb "github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb"
 )
@@ -45,9 +45,9 @@ type provider struct {
 
 	otlpService pb.OpenTelemetryServiceServer
 
-	Register     transport.Register  `autowired:"service-register" optional:"true"`
-	Kafka        kafka.Interface     `autowired:"kafka@receiver-opentelemetry"`
-	Interceptors common.Interceptors `autowired:"erda.oap.collector.receiver.common.Interceptor"`
+	Register     transport.Register       `autowired:"service-register" optional:"true"`
+	Kafka        kafka.Interface          `autowired:"kafka@receiver-opentelemetry"`
+	Interceptors interceptor.Interceptors `autowired:"erda.oap.collector.interceptor.Interceptor"`
 
 	consumer model.ObservableDataConsumerFunc
 }

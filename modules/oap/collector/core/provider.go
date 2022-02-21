@@ -53,7 +53,7 @@ func (p *provider) Run(ctx context.Context) error {
 }
 
 func (p *provider) initComponents() error {
-	for _, item := range p.Cfg.Pipelines {
+	for idx, item := range p.Cfg.Pipelines {
 		rs, err := findComponents(p.servicectx, item.Receivers)
 		if err != nil {
 			return err
@@ -67,7 +67,7 @@ func (p *provider) initComponents() error {
 			return err
 		}
 
-		pipe := pipeline.NewPipeline(p.Log.Sub("core-pipeline"))
+		pipe := pipeline.NewPipeline(p.Log.Sub(fmt.Sprintf("core-pipeline-%d", idx)))
 		err = pipe.InitComponents(rs, ps, es)
 		if err != nil {
 			return fmt.Errorf("init components err: %w", err)

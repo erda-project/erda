@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package interceptor
 
 import (
 	"reflect"
@@ -43,18 +43,17 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.oap.collector.receiver.common.Interceptor" || ctx.Type() == InterceptorType:
+	case ctx.Service() == "erda.oap.collector.interceptor.Interceptor" || ctx.Type() == InterceptorType:
 		return p.interceptors
 	}
 	return p
 }
 
 func init() {
-	servicehub.Register("erda.oap.collector.receiver.common", &servicehub.Spec{
+	servicehub.Register("erda.oap.collector.interceptor", &servicehub.Spec{
 		Services: []string{
-			"erda.oap.collector.receiver.common.Interceptor",
+			"erda.oap.collector.interceptor.Interceptor",
 		},
-		Description: "here is description of erda.oap.collector.receiver",
 		ConfigFunc: func() interface{} {
 			return &config{}
 		},

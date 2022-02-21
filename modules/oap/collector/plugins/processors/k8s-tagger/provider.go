@@ -53,15 +53,14 @@ func (p *provider) ComponentID() model.ComponentID {
 
 // 1. filter with config filters
 // 2. pass tags to handle
-func (p *provider) Process(in ...odata.ObservableData) ([]odata.ObservableData, error) {
-	for _, item := range in {
-		item.HandleAttributes(func(attr map[string]string) map[string]string {
-			if !p.Cfg.Filter.IsTagpass(attr) {
-				return attr
-			}
-			return p.addPodMetadata(attr)
-		})
-	}
+func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
+	in.HandleAttributes(func(attr map[string]string) map[string]string {
+		if !p.Cfg.Filter.IsTagpass(attr) {
+			return attr
+		}
+		return p.addPodMetadata(attr)
+	})
+
 	return in, nil
 }
 

@@ -31,7 +31,7 @@ type Metric struct {
 }
 
 func NewMetric(item *mpb.Metric) *Metric {
-	return &Metric{Item: item, Meta: &Metadata{data: map[string]string{}}}
+	return &Metric{Item: item, Meta: &Metadata{Data: map[string]string{}}}
 }
 
 func (m *Metric) AddMetadata(key, value string) {

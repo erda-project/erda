@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package interceptor
 
 import "github.com/erda-project/erda-proto-go/oap/trace/pb"
 

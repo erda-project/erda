@@ -22,8 +22,8 @@ import (
 	"github.com/erda-project/erda-infra/providers/kafka"
 	pb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/oap/collector/interceptor"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
-	"github.com/erda-project/erda/modules/oap/collector/receivers/common"
 )
 
 var providerName = plugins.WithPrefixReceiver("jaeger")
@@ -41,9 +41,9 @@ type provider struct {
 	Log logs.Logger
 
 	jaegerService pb.JaegerServiceServer
-	Register      transport.Register  `autowired:"service-register" optional:"true"`
-	Kafka         kafka.Interface     `autowired:"kafka@receiver-jaeger"`
-	Interceptors  common.Interceptors `autowired:"erda.oap.collector.receiver.common.Interceptor"`
+	Register      transport.Register       `autowired:"service-register" optional:"true"`
+	Kafka         kafka.Interface          `autowired:"kafka@receiver-jaeger"`
+	Interceptors  interceptor.Interceptors `autowired:"erda.oap.collector.interceptor.Interceptor"`
 
 	consumer model.ObservableDataConsumerFunc
 }

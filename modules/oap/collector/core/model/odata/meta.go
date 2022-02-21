@@ -19,41 +19,41 @@ import (
 )
 
 type Metadata struct {
-	data map[string]string
+	Data map[string]string `json:"data"`
 	mu   sync.RWMutex
 }
 
 func (m *Metadata) Add(key, value string) {
-	if m.data == nil {
+	if m.Data == nil {
 		m.init()
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.data[key] = value
+	m.Data[key] = value
 }
 
 func (m *Metadata) Get(key string) (string, bool) {
-	if m.data == nil {
+	if m.Data == nil {
 		m.init()
 	}
 	m.mu.RLock()
 	defer m.mu.Unlock()
-	v, ok := m.data[key]
+	v, ok := m.Data[key]
 	return v, ok
 }
 
 func (m *Metadata) Clone() *Metadata {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	newdata := make(map[string]string, len(m.data))
-	for k, v := range m.data {
+	newdata := make(map[string]string, len(m.Data))
+	for k, v := range m.Data {
 		newdata[k] = v
 	}
 	return &Metadata{
-		data: newdata,
+		Data: newdata,
 	}
 }
 
 func (m *Metadata) init() {
-	m.data = make(map[string]string)
+	m.Data = make(map[string]string)
 }

@@ -47,6 +47,7 @@ func (p *provider) collectLogs(ctx echo.Context) error {
 			return
 		}
 		od := odata.NewRaw(value)
+		p.Log.Infof("name: %s", name)
 		od.AddMetadata("KAFKA-TOPIC", name)
 
 		p.consumer(od)

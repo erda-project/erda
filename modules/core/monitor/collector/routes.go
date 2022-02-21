@@ -56,7 +56,7 @@ func (p *provider) intRoute(r httpserver.Router) error {
 	groupV1 := "/api/v1"
 	{
 		r.POST(groupV1+"/collect/:metric", p.collectMetric, p.auth.keyAuth())
-		r.POST(groupV1+"/collect/logs/:source", p.collectLogs, p.auth.keyAuth())
+		// r.POST(groupV1+"/collect/logs/:source", p.collectLogs, p.auth.keyAuth())
 	}
 	return nil
 }

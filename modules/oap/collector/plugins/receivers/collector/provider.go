@@ -1,28 +1,31 @@
 package collector
 
 import (
-	"context"
-	"time"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/oap/collector/authentication"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 )
 
 var providerName = plugins.WithPrefixReceiver("collector")
 
 type config struct {
-	// some fields of config for this provider
-	Message string `file:"message" flag:"msg" default:"hi" desc:"message to print"`
+	Auth struct {
+		Skip bool `file:"skip"`
+	}
 }
 
 // +provider
 type provider struct {
-	Cfg    *config
-	Log    logs.Logger
-	Router httpserver.Router `autowired:"http-router"`
+	Cfg       *config
+	Log       logs.Logger
+	Router    httpserver.Router        `autowired:"http-router"`
+	Validator authentication.Validator `autowired:"erda.oap.collector.authentication.Validator"`
 
 	consumer model.ObservableDataConsumerFunc
 }
@@ -35,33 +38,39 @@ func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
 	p.consumer = consumer
 }
 
+func (p *provider) tokenAuth() interface{} {
+	return middleware.KeyAuthWithConfig(middleware.KeyAuthConfig{
+		Validator: func(s string, context echo.Context) (bool, error) {
+			clusterName := context.Request().Header.Get(apistructs.AuthClusterKeyHeader)
+			if clusterName == "" {
+				return false, nil
+			}
+
+			if p.Validator.Validate(apistructs.CMPClusterScope, clusterName, s) {
+				return true, nil
+			}
+
+			return false, nil
+		},
+		Skipper: func(context echo.Context) bool {
+			if p.Cfg.Auth.Skip {
+				return true
+			}
+			return false
+		},
+	})
+}
+
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-
-	return nil
-}
-
-func (p *provider) routes() {
 	// old
-	// p.Router.POST("/collect/logs/:source", p.collectLogs)
-}
-
-// Run this is optional
-func (p *provider) Run(ctx context.Context) error {
-	tick := time.NewTicker(3 * time.Second)
-	defer tick.Stop()
-	for {
-		select {
-		case <-tick.C:
-			p.Log.Info("do something...")
-		case <-ctx.Done():
-			return nil
-		}
-	}
+	p.Router.POST("/api/v1/collect/logs/:source", p.collectLogs, p.tokenAuth())
+	return nil
 }
 
 func init() {
 	servicehub.Register(providerName, &servicehub.Spec{
+		Services:    []string{providerName},
 		Description: "here is description of erda.oap.collector.receiver.collector",
 		ConfigFunc: func() interface{} {
 			return &config{}

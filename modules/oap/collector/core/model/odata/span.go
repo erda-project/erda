@@ -30,19 +30,19 @@ type Span struct {
 }
 
 func NewSpan(item *tpb.Span) *Span {
-	return &Span{Item: item, Meta: &Metadata{data: map[string]string{}}}
+	return &Span{Item: item, Meta: &Metadata{Data: map[string]string{}}}
 }
 
 func (s *Span) AddMetadata(key, value string) {
 	if s.Meta == nil {
-		s.Meta = &Metadata{data: make(map[string]string)}
+		s.Meta = &Metadata{Data: make(map[string]string)}
 	}
 	s.Meta.Add(key, value)
 }
 
 func (s *Span) GetMetadata(key string) (string, bool) {
 	if s.Meta == nil {
-		s.Meta = &Metadata{data: make(map[string]string)}
+		s.Meta = &Metadata{Data: make(map[string]string)}
 	}
 	return s.Meta.Get(key)
 }

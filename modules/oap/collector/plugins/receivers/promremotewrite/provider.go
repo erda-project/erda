@@ -83,6 +83,11 @@ func (p *provider) prwHandler(ctx echo.Context) error {
 			return fmt.Errorf("metric name %q not found in attrs or empty", pmodel.MetricNameLabel)
 		}
 		delete(attrs, pmodel.MetricNameLabel)
+		job := attrs[pmodel.JobLabel]
+		if metricName == "" {
+			return fmt.Errorf("job %q not found in attrs or empty", pmodel.MetricNameLabel)
+		}
+		delete(attrs, pmodel.JobLabel)
 		for _, s := range ts.Samples {
 			dataPoints := make(map[string]*structpb.Value)
 			if !math.IsNaN(s.Value) {
@@ -95,7 +100,7 @@ func (p *provider) prwHandler(ctx echo.Context) error {
 					t = time.Unix(0, s.Timestamp*1000000)
 				}
 				m := &mpb.Metric{
-					Name:         "prometheus_remote_write",
+					Name:         "prw_" + job,
 					TimeUnixNano: uint64(t.UnixNano()),
 					Attributes:   attrs,
 					DataPoints:   dataPoints,

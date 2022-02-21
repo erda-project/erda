@@ -27,7 +27,7 @@ type Raw struct {
 }
 
 func NewRaw(item []byte) *Raw {
-	return &Raw{Item: item, Meta: &Metadata{data: map[string]string{}}}
+	return &Raw{Item: item, Meta: &Metadata{Data: map[string]string{}}}
 }
 
 func (r *Raw) AddMetadata(key, value string) {

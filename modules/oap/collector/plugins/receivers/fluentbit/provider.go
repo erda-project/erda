@@ -73,6 +73,7 @@ func (p *provider) flbHandler(ctx echo.Context) error {
 		lg, err := parseItem(value, p.Cfg.FLBKeyMappings)
 		if err != nil {
 			p.Log.Errorf("parseItem err: %s", err)
+			return
 		}
 		p.consumerFunc(odata.NewLog(lg))
 	})
@@ -80,7 +81,7 @@ func (p *provider) flbHandler(ctx echo.Context) error {
 		return fmt.Errorf("parser err: %w", err)
 	}
 
-	return ctx.NoContent(http.StatusOK)
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 func init() {

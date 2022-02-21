@@ -109,7 +109,7 @@ func (p *Pipeline) StartExporters(ctx context.Context, out <-chan odata.Observab
 			for _, e := range p.exporters {
 				go func(exp model.ExporterUnit, od odata.ObservableData) {
 					defer wg.Done()
-					// TODO. batch
+					// TODO. flush trigger
 					err := exp.Exporter.Export([]odata.ObservableData{od})
 					if err != nil {
 						p.Log.Errorf("Exporter<%s> export data error: %s", exp.Name, err)
@@ -135,24 +135,20 @@ func (p *Pipeline) startProcessors(ctx context.Context, in <-chan odata.Observab
 	for {
 		select {
 		case data := <-in:
-			// TODO. batch
-			batch := []odata.ObservableData{data}
 			for _, pr := range p.processors {
-				tmp, err := pr.Processor.Process(batch...)
+				tmp, err := pr.Processor.Process(data)
 				if err != nil {
 					p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
 					continue
 				}
-				batch = tmp
+				data = tmp
 			}
 
-			for _, item := range batch {
-				// wait forever
-				select {
-				case out <- item:
-				case <-ctx.Done():
-					return
-				}
+			// wait forever
+			select {
+			case out <- data:
+			case <-ctx.Done():
+				return
 			}
 		case <-ctx.Done():
 			return

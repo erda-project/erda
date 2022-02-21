@@ -38,7 +38,7 @@ type Log struct {
 }
 
 func NewLog(item *lpb.Log) *Log {
-	return &Log{Item: item, Meta: &Metadata{data: map[string]string{}}}
+	return &Log{Item: item, Meta: &Metadata{Data: map[string]string{}}}
 }
 
 func (l *Log) AddMetadata(key, value string) {
