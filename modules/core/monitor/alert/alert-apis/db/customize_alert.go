@@ -56,7 +56,7 @@ func (db *CustomizeAlertDB) QueryByScopeAndScopeID(scope, scopeID string, pageNo
 	var alerts []*CustomizeAlert
 	query := db.Where("alert_scope=? AND alert_scope_id=?", scope, scopeID)
 	if name != "" {
-		query.Where("name like ?", "%"+name+"%")
+		query = query.Where("name like ?", "%"+name+"%")
 	}
 	if err := query.Order("update_time DESC").
 		Offset((pageNo - 1) * pageSize).Limit(pageSize).

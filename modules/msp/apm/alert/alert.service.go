@@ -68,6 +68,7 @@ func (a *alertService) QueryAlert(ctx context.Context, request *alert.QueryAlert
 	}
 	req.Scope = MicroServiceScope
 	req.ScopeId = request.TenantGroup
+	req.Name = request.Name
 	context := utils.NewContextWithHeader(ctx)
 	resp, err := a.p.Monitor.QueryAlert(context, req)
 	if err != nil {
