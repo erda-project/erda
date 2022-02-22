@@ -72,7 +72,7 @@ func New(options ...Option) *FileService {
 				},
 			})
 			if err != nil {
-				panic(fmt.Errorf("dop files kms cmk rotate key version failed, keyID: %s", kmsKey))
+				panic(fmt.Errorf("dop files kms cmk rotate key version failed, keyID: %s, err: %v", kmsKey, err))
 			}
 		}
 		_, err = svc.bdl.KMSDescribeKey(apistructs.KMSDescribeKeyRequest{
@@ -81,7 +81,7 @@ func New(options ...Option) *FileService {
 			},
 		})
 		if err != nil {
-			logrus.Errorf("dop files kms cmk describe failed, keyID: %s", kmsKey)
+			logrus.Errorf("dop files kms cmk describe failed, keyID: %s, err: %v", kmsKey, err)
 			ApplyKmsCmk(svc)
 			return
 		}
