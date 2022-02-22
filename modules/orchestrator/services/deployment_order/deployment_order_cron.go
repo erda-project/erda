@@ -15,11 +15,14 @@
 package deployment_order
 
 import (
+	"encoding/json"
+
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/queue"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
 )
@@ -90,7 +93,7 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 		}
 
 		// status update, only update status of current batch
-		if err := d.db.UpdateDeploymentOrderAppsStatus(order.ID, statusMap); err != nil {
+		if err := inspectDeploymentStatusDetail(&order, statusMap); err != nil {
 			logrus.Errorf("failed to update deployment order %s status, (%v)", order.ID, err)
 			continue
 		}
@@ -131,4 +134,31 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 	}
 
 	return
+}
+
+func inspectDeploymentStatusDetail(order *dbclient.DeploymentOrder, newOrderStatusMap apistructs.DeploymentOrderStatusMap) error {
+	curOrderStatusMap := make(apistructs.DeploymentOrderStatusMap, 0)
+
+	if order.StatusDetail != "" {
+		if err := json.Unmarshal([]byte(order.StatusDetail), &curOrderStatusMap); err != nil {
+			return errors.Wrapf(err, "failed to unmarshal to deployment order status (%s)",
+				order.ID)
+		}
+	}
+
+	for appName, status := range newOrderStatusMap {
+		if status.DeploymentID == 0 || status.DeploymentStatus == "" {
+			continue
+		}
+		curOrderStatusMap[appName] = status
+	}
+
+	orderStatusMapJson, err := json.Marshal(curOrderStatusMap)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal to deployment order status (%s)",
+			order.ID)
+	}
+
+	order.StatusDetail = string(orderStatusMapJson)
+	return nil
 }

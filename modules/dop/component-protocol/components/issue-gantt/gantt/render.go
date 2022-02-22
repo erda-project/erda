@@ -146,6 +146,7 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 	f.Data.ExpandList = expand
 	f.Data.UpdateList = update
 	(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = strutil.DedupSlice(f.users)
+	c.Data = nil
 	cputil.MustObjJSONTransfer(&f, &c)
 	return nil
 }
