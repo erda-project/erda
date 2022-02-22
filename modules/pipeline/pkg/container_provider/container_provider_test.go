@@ -21,15 +21,16 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-func TestConstructContainerProviderByLabel(t *testing.T) {
+func TestConstructContainerProvider(t *testing.T) {
 	validLabel := map[string]string{
 		apistructs.ContainerInstanceLabelType:     string(apistructs.ContainerInstanceECI),
 		apistructs.ContainerInstanceLabelCPU:      "1.0",
 		apistructs.ContainerInstanceLabelMemoryMB: "1024",
 	}
-	validProvider := ConstructContainerProviderByLabel(validLabel)
+	validProvider := ConstructContainerProvider(WithLabels(validLabel), WithStages([]*pipelineyml.Stage{}))
 	assert.Equal(t, apistructs.ContainerInstanceECI, validProvider.ContainerInstanceType)
 
 	invalidLabel := map[string]string{
@@ -37,15 +38,15 @@ func TestConstructContainerProviderByLabel(t *testing.T) {
 		apistructs.ContainerInstanceLabelCPU:      "1.0",
 		apistructs.ContainerInstanceLabelMemoryMB: "1024",
 	}
-	invalidProvider := ConstructContainerProviderByLabel(invalidLabel)
-	assert.Equal(t, true, invalidProvider == nil)
+	invalidProvider := ConstructContainerProvider(WithLabels(invalidLabel), WithStages([]*pipelineyml.Stage{}))
+	assert.Equal(t, false, invalidProvider.IsHitted)
 
 	validTypeButInvalidCPU := map[string]string{
 		apistructs.ContainerInstanceLabelType:     string(apistructs.ContainerInstanceECI),
 		apistructs.ContainerInstanceLabelCPU:      "xxx",
 		apistructs.ContainerInstanceLabelMemoryMB: "1024",
 	}
-	validTypeButInvalidCPUProvider := ConstructContainerProviderByLabel(validTypeButInvalidCPU)
+	validTypeButInvalidCPUProvider := ConstructContainerProvider(WithLabels(validTypeButInvalidCPU), WithStages([]*pipelineyml.Stage{}))
 	assert.Equal(t, true, validTypeButInvalidCPUProvider.IsHitted)
 	assert.Equal(t, float64(0), validTypeButInvalidCPUProvider.CPU)
 
@@ -54,9 +55,28 @@ func TestConstructContainerProviderByLabel(t *testing.T) {
 		apistructs.ContainerInstanceLabelCPU:      "1.0",
 		apistructs.ContainerInstanceLabelMemoryMB: "xxx",
 	}
-	validTypeButInvalidMemProvider := ConstructContainerProviderByLabel(validTypeButInvalidMem)
+	validTypeButInvalidMemProvider := ConstructContainerProvider(WithLabels(validTypeButInvalidMem), WithStages([]*pipelineyml.Stage{}))
 	assert.Equal(t, true, validTypeButInvalidMemProvider.IsHitted)
 	assert.Equal(t, float64(0), validTypeButInvalidMemProvider.MemoryMB)
+
+	customPipelineYml := `version: "1.1"
+stages:
+  - stage:
+      - custom-script:
+          alias: custom-script
+          description: 运行自定义命令
+          version: "1.0"
+          commands:
+            - sleep 1200
+            - sleep 21
+          resources:
+            cpu: 0.5
+            mem: 1024`
+	pipelineYml, err := pipelineyml.New([]byte(customPipelineYml))
+	assert.NoError(t, err)
+	customPipelineProvider := ConstructContainerProvider(WithLabels(validLabel), WithStages(pipelineYml.Spec().Stages))
+	assert.Equal(t, true, customPipelineProvider.IsDisabled)
+	assert.Equal(t, false, customPipelineProvider.IsHitted)
 }
 
 func TestDealPipelineProviderBeforeRun(t *testing.T) {
