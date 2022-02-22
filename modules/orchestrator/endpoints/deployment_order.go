@@ -58,6 +58,7 @@ func (e *Endpoints) CreateDeploymentOrder(ctx context.Context, r *http.Request, 
 		return apierrors.ErrCreateDeploymentOrder.InvalidParameter(strutil.Concat("illegal workspace ", req.Workspace)).ToResp(), nil
 	}
 
+	req.Workspace = strings.ToUpper(req.Workspace)
 	req.Operator = userID.String()
 
 	data, err := e.deploymentOrder.Create(&req)
