@@ -14,6 +14,8 @@
 
 package apistructs
 
+import "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+
 // AppWorkspaceReleasesGetRequest 查询应用某个环境所有可部署的 release 请求
 type AppWorkspaceReleasesGetRequest struct {
 	AppID     uint64        `schema:"appID,required"`
@@ -27,4 +29,4 @@ type AppWorkspaceReleasesGetResponse struct {
 }
 
 // AppWorkspaceReleasesGetResponseData map key: branch, map value: paging releases
-type AppWorkspaceReleasesGetResponseData map[string]*ReleaseListResponseData
+type AppWorkspaceReleasesGetResponseData map[string]*pb.ReleaseListResponseData

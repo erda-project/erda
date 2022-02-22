@@ -29,3 +29,7 @@ mysql:
   username: "${MYSQL_USERNAME:root}"
   password: "${MYSQL_PASSWORD:123456}"
   database: "${MYSQL_DATABASE:dice}"
+
+grpc-client@erda.core.dicehub.release:
+  addr: "${DICEHUB_GRPC_ADDR:dicehub:7080}"
+erda.core.dicehub.release-client:
