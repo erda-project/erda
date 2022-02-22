@@ -68,18 +68,18 @@ func (t *ComponentEventTable) InitComponent(ctx context.Context) error {
 	return nil
 }
 
-func (t *ComponentEventTable) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (t *ComponentEventTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 
-	jsonData, err := json.Marshal(c.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
 		logrus.Errorf("failed to marshal for eventTable state, %v", err)
 		return err
 	}
 	var state State
-	err = json.Unmarshal(jsonData, &state)
+	err = json.Unmarshal(data, &state)
 	if err != nil {
 		logrus.Errorf("failed to unmarshal for eventTable state, %v", err)
 		return err
@@ -194,16 +194,16 @@ func (t *ComponentEventTable) SetComponentValue(ctx context.Context) {
 	}
 }
 
-func (t *ComponentEventTable) Transfer(component *cptype.Component) {
-	component.Props = cputil.MustConvertProps(t.Props)
-	component.Data = map[string]interface{}{
+func (t *ComponentEventTable) Transfer(c *cptype.Component) {
+	c.Props = cputil.MustConvertProps(t.Props)
+	c.Data = map[string]interface{}{
 		"list": t.Data.List,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"clusterName": t.State.ClusterName,
 		"podId":       t.State.PodID,
 	}
-	component.Operations = t.Operations
+	c.Operations = t.Operations
 }
 
 func contain(arr []string, target string) bool {

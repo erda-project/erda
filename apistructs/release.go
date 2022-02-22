@@ -147,7 +147,11 @@ type ReleaseUploadRequest struct {
 	ClusterName string `json:"clusterName,omitempty"`
 }
 
-type ReleaseParseVersionResponse struct {
+type ParseReleaseFileRequest struct {
+	DiceFileID string `json:"diceFileID,omitempty"`
+}
+
+type ParseReleaseFileResponse struct {
 	Header
 	Data ParseReleaseFileResponseData `json:"data"`
 }

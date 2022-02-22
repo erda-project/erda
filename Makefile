@@ -102,7 +102,7 @@ ifeq "$(SKIP_PREPARE)" ""
 	${GO_BUILD_ENV} go generate ./apistructs && \
 	${GO_BUILD_ENV} go generate ./modules/openapi/api/generate && \
 	${GO_BUILD_ENV} go generate ./modules/openapi/component-protocol/generate
-	make prepare-cli
+	GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore make prepare-cli
 endif
 
 submodule:
@@ -127,7 +127,7 @@ run-ps: build
 	./bin/${APP_NAME} --providers
 
 miglint: cli
-	./bin/erda-cli migrate lint --input=.erda/migrations --lint-config=.erda/migrations/config.yml
+	GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ./bin/erda-cli migrate lint --input=.erda/migrations --lint-config=.erda/migrations/config.yml
 
 # normalize all go files before push to git repo
 normalize:

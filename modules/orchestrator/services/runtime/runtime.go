@@ -16,6 +16,7 @@
 package runtime
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -29,8 +30,11 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
@@ -43,16 +47,18 @@ import (
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // Runtime 应用实例对象封装
 type Runtime struct {
-	db    *dbclient.DBClient
-	evMgr *events.EventManager
-	bdl   *bundle.Bundle
-	addon *addon.Addon
+	db         *dbclient.DBClient
+	evMgr      *events.EventManager
+	bdl        *bundle.Bundle
+	addon      *addon.Addon
+	releaseSvc pb.ReleaseServiceServer
 }
 
 // Option 应用实例对象配置选项
@@ -95,8 +101,16 @@ func WithAddon(a *addon.Addon) Option {
 	}
 }
 
-func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, releaseReq *apistructs.RuntimeReleaseCreateRequest) (*apistructs.RuntimeDeployDTO, error) {
-	releaseResp, err := r.bdl.GetRelease(releaseReq.ReleaseID)
+// WithReleaseSvc 配置 dicehub release service
+func WithReleaseSvc(svc pb.ReleaseServiceServer) Option {
+	return func(r *Runtime) {
+		r.releaseSvc = svc
+	}
+}
+
+func (r *Runtime) CreateByReleaseIDPipeline(ctx context.Context, orgid uint64, operator user.ID, releaseReq *apistructs.RuntimeReleaseCreateRequest) (*apistructs.RuntimeDeployDTO, error) {
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	releaseResp, err := r.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: releaseReq.ReleaseID})
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +119,8 @@ func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, rele
 		return nil, err
 	}
 	workspaces := strutil.Split(releaseReq.Workspace, ",", true)
-	commitid := releaseResp.Labels["gitCommitId"]
-	branch := releaseResp.Labels["gitBranch"]
+	commitid := releaseResp.Data.Labels["gitCommitId"]
+	branch := releaseResp.Data.Labels["gitBranch"]
 
 	// check if there is a runtime already being created by release
 	pipelines, err := utils.FindCRBRRunningPipeline(releaseReq.ApplicationID, workspaces[0],
@@ -158,7 +172,7 @@ func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, rele
 		IdentityInfo: apistructs.IdentityInfo{UserID: operator.String()},
 		PipelineYml:  string(b),
 		Labels: map[string]string{
-			apistructs.LabelBranch:        releaseResp.ReleaseName,
+			apistructs.LabelBranch:        releaseResp.Data.ReleaseName,
 			apistructs.LabelOrgID:         strconv.FormatUint(orgid, 10),
 			apistructs.LabelProjectID:     strconv.FormatUint(releaseReq.ProjectID, 10),
 			apistructs.LabelAppID:         strconv.FormatUint(releaseReq.ApplicationID, 10),
@@ -169,29 +183,30 @@ func (r *Runtime) CreateByReleaseIDPipeline(orgid uint64, operator user.ID, rele
 		},
 		PipelineYmlName: fmt.Sprintf("dice-deploy-release-%s-%d-%s", releaseReq.Workspace,
 			releaseReq.ApplicationID, branch),
-		ClusterName:    releaseResp.ClusterName,
+		ClusterName:    releaseResp.Data.ClusterName,
 		PipelineSource: apistructs.PipelineSourceDice,
 		AutoRunAtOnce:  true,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return convertRuntimeDeployDto(app, releaseResp, dto)
+	return convertRuntimeDeployDto(app, releaseResp.Data, dto)
 }
 
 // Create 创建应用实例
-func (r *Runtime) CreateByReleaseID(operator user.ID, releaseReq *apistructs.RuntimeReleaseCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
-	releaseResp, err := r.bdl.GetRelease(releaseReq.ReleaseID)
+func (r *Runtime) CreateByReleaseID(ctx context.Context, operator user.ID, releaseReq *apistructs.RuntimeReleaseCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	releaseResp, err := r.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: releaseReq.ReleaseID})
 	if err != nil {
 		return nil, err
 	}
 	if releaseReq == nil {
 		return nil, errors.Errorf("releaseId does not exist")
 	}
-	if releaseReq.ProjectID != uint64(releaseResp.ProjectID) {
+	if releaseReq.ProjectID != uint64(releaseResp.Data.ProjectID) {
 		return nil, errors.Errorf("release does not correspond to the project")
 	}
-	if releaseReq.ApplicationID != uint64(releaseResp.ApplicationID) {
+	if releaseReq.ApplicationID != uint64(releaseResp.Data.ApplicationID) {
 		return nil, errors.Errorf("release does not correspond to the application")
 	}
 	branchWorkspaces, err := r.bdl.GetAllValidBranchWorkspace(releaseReq.ApplicationID, string(operator))
@@ -218,30 +233,30 @@ func (r *Runtime) CreateByReleaseID(operator user.ID, releaseReq *apistructs.Run
 	var targetClusterName string
 	// 跨集群部署
 	// 部署的目标集群，默认情况下为 release 所属的集群，跨集群部署时，部署到项目环境对应的集群
-	if releaseResp.CrossCluster {
+	if releaseResp.Data.CrossCluster {
 		targetClusterName = wsCluster
 	} else {
 		// 在制品所属集群部署
 		// 校验制品所属集群和环境对应集群是否相同
-		if releaseResp.ClusterName != wsCluster {
+		if releaseResp.Data.ClusterName != wsCluster {
 			return nil, fmt.Errorf("release does not correspond to the cluster")
 		}
-		targetClusterName = releaseResp.ClusterName
+		targetClusterName = releaseResp.Data.ClusterName
 	}
 
 	var req apistructs.RuntimeCreateRequest
 	req.ClusterName = targetClusterName
-	req.Name = releaseResp.ReleaseName
+	req.Name = releaseResp.Data.ReleaseName
 	req.Operator = operator.String()
 	req.Source = "RELEASE"
 	req.ReleaseID = releaseReq.ReleaseID
 	req.SkipPushByOrch = false
 
 	var extra apistructs.RuntimeCreateRequestExtra
-	extra.OrgID = uint64(releaseResp.OrgID)
-	extra.ProjectID = uint64(releaseResp.ProjectID)
-	extra.ApplicationID = uint64(releaseResp.ApplicationID)
-	extra.ApplicationName = releaseResp.ApplicationName
+	extra.OrgID = uint64(releaseResp.Data.OrgID)
+	extra.ProjectID = uint64(releaseResp.Data.ProjectID)
+	extra.ApplicationID = uint64(releaseResp.Data.ApplicationID)
+	extra.ApplicationName = releaseResp.Data.ApplicationName
 	extra.Workspace = releaseReq.Workspace
 	extra.DeployType = "RELEASE"
 	req.Extra = extra
@@ -389,7 +404,7 @@ func (r *Runtime) StopRuntime(operator user.ID, orgID uint64, runtimeID uint64) 
 	return r.doDeployRuntime(&deployContext)
 }
 
-func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDeployDTO, error) {
+func (r *Runtime) RedeployPipeline(ctx context.Context, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDeployDTO, error) {
 	runtime, err := r.db.GetRuntime(runtimeID)
 	if err != nil {
 		return nil, err
@@ -403,11 +418,12 @@ func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uin
 	if err != nil {
 		return nil, err
 	}
-	releaseResp, err := r.bdl.GetRelease(deployment.ReleaseId)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	releaseResp, err := r.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: deployment.ReleaseId})
 	if err != nil {
 		return nil, err
 	}
-	commitid := releaseResp.Labels["gitCommitId"]
+	commitid := releaseResp.Data.Labels["gitCommitId"]
 	detail := apistructs.CommitDetail{
 		CommitID: "",
 		Repo:     app.GitRepo,
@@ -467,7 +483,7 @@ func (r *Runtime) RedeployPipeline(operator user.ID, orgID uint64, runtimeID uin
 		return nil, err
 	}
 
-	return convertRuntimeDeployDto(app, releaseResp, dto)
+	return convertRuntimeDeployDto(app, releaseResp.Data, dto)
 }
 
 func (r *Runtime) setClusterName(rt *dbclient.Runtime) error {
@@ -785,7 +801,7 @@ func (r *Runtime) checkOrgDeployBlocked(orgID uint64, runtime *dbclient.Runtime)
 	}
 	return blocked, nil
 }
-func (r *Runtime) RollbackPipeline(operator user.ID, orgID uint64, runtimeID uint64, deploymentID uint64) (
+func (r *Runtime) RollbackPipeline(ctx context.Context, operator user.ID, orgID uint64, runtimeID uint64, deploymentID uint64) (
 	*apistructs.RuntimeDeployDTO, error) {
 	runtime, err := r.db.GetRuntime(runtimeID)
 	if err != nil {
@@ -840,11 +856,12 @@ func (r *Runtime) RollbackPipeline(operator user.ID, orgID uint64, runtimeID uin
 	if err != nil {
 		return nil, err
 	}
-	releaseResp, err := r.bdl.GetRelease(deployment.ReleaseId)
+	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	releaseResp, err := r.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: deployment.ReleaseId})
 	if err != nil {
 		return nil, err
 	}
-	commitid := releaseResp.Labels["gitCommitId"]
+	commitid := releaseResp.Data.Labels["gitCommitId"]
 	detail := apistructs.CommitDetail{
 		CommitID: "",
 		Repo:     app.GitRepo,
@@ -894,7 +911,7 @@ func (r *Runtime) RollbackPipeline(operator user.ID, orgID uint64, runtimeID uin
 	if err != nil {
 		return nil, err
 	}
-	return convertRuntimeDeployDto(app, releaseResp, dto)
+	return convertRuntimeDeployDto(app, releaseResp.Data, dto)
 }
 
 func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, deploymentID uint64) (
@@ -1970,7 +1987,11 @@ func (r *Runtime) markOutdated(deployment *dbclient.Deployment) {
 		return
 	}
 	if len(deployment.ReleaseId) > 0 {
-		if err := r.bdl.DecreaseReference(deployment.ReleaseId); err != nil {
+		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+		if _, err := r.releaseSvc.UpdateReleaseReference(ctx, &pb.ReleaseReferenceUpdateRequest{
+			ReleaseID: deployment.ReleaseId,
+			Increase:  false,
+		}); err != nil {
 			logrus.Errorf("[alert] failed to decrease reference of release: %s, (%v)",
 				deployment.ReleaseId, err)
 		}
@@ -2083,7 +2104,7 @@ func getRedeployPipelineYmlName(runtime dbclient.Runtime) string {
 	return fmt.Sprintf("%d/%s/%s/pipeline.yml", runtime.ApplicationID, runtime.Workspace, runtime.Name)
 }
 
-func convertRuntimeDeployDto(app *apistructs.ApplicationDTO, release *apistructs.ReleaseGetResponseData, dto *apistructs.PipelineDTO) (*apistructs.RuntimeDeployDTO, error) {
+func convertRuntimeDeployDto(app *apistructs.ApplicationDTO, release *pb.ReleaseGetResponseData, dto *apistructs.PipelineDTO) (*apistructs.RuntimeDeployDTO, error) {
 	names, err := getServicesNames(release.Diceyml)
 	if err != nil {
 		return nil, err

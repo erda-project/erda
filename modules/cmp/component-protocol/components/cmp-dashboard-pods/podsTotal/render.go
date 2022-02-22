@@ -46,8 +46,8 @@ func (p *PodsTotal) Render(ctx context.Context, c *cptype.Component, s cptype.Sc
 	return nil
 }
 
-func (p *PodsTotal) Transfer(c *cptype.Component) {
-	c.Data = map[string]interface{}{
+func (p *PodsTotal) Transfer(component *cptype.Component) {
+	component.Data = map[string]interface{}{
 		"data": p.Data.Data,
 	}
 }

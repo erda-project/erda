@@ -96,8 +96,8 @@ func (p *PodsCharts) ParsePodStatus(ctx context.Context, state string, count, to
 	return []Pie{status}
 }
 
-func (p *PodsCharts) Transfer(component *cptype.Component) {
-	component.Data = map[string]interface{}{
+func (p *PodsCharts) Transfer(c *cptype.Component) {
+	c.Data = map[string]interface{}{
 		"group": p.Data.Group,
 	}
 }

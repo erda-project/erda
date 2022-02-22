@@ -83,20 +83,20 @@ func (f *ComponentYamlFileEditor) InitComponent(ctx context.Context) {
 	f.server = steveServer
 }
 
-func (f *ComponentYamlFileEditor) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (f *ComponentYamlFileEditor) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(c.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &state); err != nil {
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	f.State = state
-	f.Transfer(c)
+	f.Transfer(component)
 	return nil
 }
 
@@ -240,12 +240,12 @@ func (f *ComponentYamlFileEditor) SetComponentValue() {
 	}
 }
 
-func (f *ComponentYamlFileEditor) Transfer(c *cptype.Component) {
-	c.Props = cputil.MustConvertProps(f.Props)
-	c.State = map[string]interface{}{
+func (f *ComponentYamlFileEditor) Transfer(component *cptype.Component) {
+	component.Props = cputil.MustConvertProps(f.Props)
+	component.State = map[string]interface{}{
 		"clusterName": f.State.ClusterName,
 		"workloadId":  f.State.WorkloadID,
 		"value":       f.State.Value,
 	}
-	c.Operations = f.Operations
+	component.Operations = f.Operations
 }

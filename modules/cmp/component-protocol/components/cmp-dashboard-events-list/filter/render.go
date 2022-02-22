@@ -87,49 +87,49 @@ func (f *ComponentFilter) InitComponent(ctx context.Context) {
 }
 
 func (f *ComponentFilter) DecodeURLQuery() error {
-	queryData, ok := f.sdk.InParams["filter__urlQuery"].(string)
+	urlQuery, ok := f.sdk.InParams["filter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(queryData)
+	decode, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
-	var values Values
-	if err := json.Unmarshal(decoded, &values); err != nil {
+	var v Values
+	if err := json.Unmarshal(decode, &v); err != nil {
 		return err
 	}
-	f.State.Values = values
+	f.State.Values = v
 	return nil
 }
 
 func (f *ComponentFilter) EncodeURLQuery() error {
-	data, err := json.Marshal(f.State.Values)
+	jsonData, err := json.Marshal(f.State.Values)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(data)
-	f.State.FilterURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+	f.State.FilterURLQuery = encoded
 	return nil
 }
 
-func (f *ComponentFilter) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (f *ComponentFilter) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
-	var state State
-	cont, err := json.Marshal(component.State)
+	var s State
+	cont, err := json.Marshal(c.State)
 	if err != nil {
-		logrus.Errorf("marshal component state failed, content:%v, err:%v", component.State, err)
+		logrus.Errorf("marshal component state failed, content:%v, err:%v", c.State, err)
 		return err
 	}
-	err = json.Unmarshal(cont, &state)
+	err = json.Unmarshal(cont, &s)
 	if err != nil {
 		logrus.Errorf("unmarshal component state failed, content:%v, err:%v", cont, err)
 		return err
 	}
-	f.State = state
+	f.State = s
 	return nil
 }
 
@@ -289,14 +289,14 @@ func (f *ComponentFilter) SetComponentValue(ctx context.Context) error {
 	return nil
 }
 
-func (f *ComponentFilter) Transfer(c *cptype.Component) {
-	c.State = map[string]interface{}{
+func (f *ComponentFilter) Transfer(component *cptype.Component) {
+	component.State = map[string]interface{}{
 		"clusterName":      f.State.ClusterName,
 		"conditions":       f.State.Conditions,
 		"values":           f.State.Values,
 		"filter__urlQuery": f.State.FilterURLQuery,
 	}
-	c.Operations = f.Operations
+	component.Operations = f.Operations
 }
 
 func (f *ComponentFilter) getDisplayName(name string) (string, error) {

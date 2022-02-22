@@ -82,16 +82,16 @@ func (f *ComponentAddPodFilter) InitComponent(ctx context.Context) {
 	f.server = steveServer
 }
 
-func (f *ComponentAddPodFilter) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (f *ComponentAddPodFilter) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(c.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &state); err != nil {
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	f.State = state
@@ -232,13 +232,13 @@ func (f *ComponentAddPodFilter) SetComponentValue(ctx context.Context) error {
 	return nil
 }
 
-func (f *ComponentAddPodFilter) Transfer(c *cptype.Component) {
-	c.State = map[string]interface{}{
+func (f *ComponentAddPodFilter) Transfer(component *cptype.Component) {
+	component.State = map[string]interface{}{
 		"clusterName": f.State.ClusterName,
 		"conditions":  f.State.Conditions,
 		"values":      f.State.Values,
 	}
-	c.Operations = f.Operations
+	component.Operations = f.Operations
 }
 
 func hasSuffix(name string) (string, bool) {

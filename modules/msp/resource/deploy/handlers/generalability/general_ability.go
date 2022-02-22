@@ -15,18 +15,23 @@
 package generalability
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ghodss/yaml"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -291,10 +296,17 @@ func (p *provider) createRelease(orgId uint64, dice *diceyml.Object, engine stri
 		return "", fmt.Errorf("error marshal to yaml:%s", err.Error())
 	}
 
-	return p.Bdl.CreateRelease(apistructs.ReleaseCreateRequest{
+	ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	resp, err := p.DicehubReleaseSvc.CreateRelease(ctx, &pb.ReleaseCreateRequest{
 		ReleaseName: releaseName,
 		Dice:        string(yml),
-	}, orgId, p.GetDiceOperatorId())
+		OrgID:       int64(orgId),
+		UserID:      p.GetDiceOperatorId(),
+	})
+	if err != nil {
+		return "", err
+	}
+	return resp.ReleaseID, nil
 }
 
 func (p *provider) getRuntimeId(deployMode string, orgId uint64, projectId uint64, applicationId uint64, workspace string, version string, releaseId string, clusterName string) (uint64, error) {

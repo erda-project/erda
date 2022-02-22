@@ -7,6 +7,7 @@ import (
 	fmt "fmt"
 	math "math"
 
+	_ "github.com/erda-project/erda-proto-go/common/pb"
 	proto "github.com/golang/protobuf/proto"
 	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
@@ -20,7 +21,17 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *ReleaseList) Validate() error {
+	return nil
+}
 func (this *ReleaseCreateRequest) Validate() error {
+	for _, item := range this.ApplicationReleaseList {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("ApplicationReleaseList", err)
+			}
+		}
+	}
 	// Validation of proto3 map<> fields is unsupported.
 	for _, item := range this.Resources {
 		if item != nil {
@@ -47,6 +58,13 @@ func (this *ReleaseCreateResponseData) Validate() error {
 	return nil
 }
 func (this *ReleaseUpdateRequest) Validate() error {
+	for _, item := range this.ApplicationReleaseList {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("ApplicationReleaseList", err)
+			}
+		}
+	}
 	return nil
 }
 func (this *ReleaseDataResponse) Validate() error {
@@ -84,11 +102,35 @@ func (this *ReleaseGetResponse) Validate() error {
 	}
 	return nil
 }
+func (this *ReleaseSummaryArray) Validate() error {
+	for _, item := range this.List {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("List", err)
+			}
+		}
+	}
+	return nil
+}
 func (this *ReleaseGetResponseData) Validate() error {
+	for _, item := range this.ApplicationReleaseList {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("ApplicationReleaseList", err)
+			}
+		}
+	}
 	for _, item := range this.Resources {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
 				return github_com_mwitkow_go_proto_validators.FieldError("Resources", err)
+			}
+		}
+	}
+	for _, item := range this.ServiceImages {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("ServiceImages", err)
 			}
 		}
 	}
@@ -101,6 +143,19 @@ func (this *ReleaseGetResponseData) Validate() error {
 	if this.UpdatedAt != nil {
 		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.UpdatedAt); err != nil {
 			return github_com_mwitkow_go_proto_validators.FieldError("UpdatedAt", err)
+		}
+	}
+	return nil
+}
+func (this *ServiceImagePair) Validate() error {
+	return nil
+}
+func (this *ApplicationReleaseSummary) Validate() error {
+	for _, item := range this.Services {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Services", err)
+			}
 		}
 	}
 	return nil
@@ -123,11 +178,32 @@ func (this *ListReleaseNameResponse) Validate() error {
 	return nil
 }
 func (this *ReleaseListResponseData) Validate() error {
-	for _, item := range this.Releases {
+	for _, item := range this.List {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("Releases", err)
+				return github_com_mwitkow_go_proto_validators.FieldError("List", err)
 			}
+		}
+	}
+	return nil
+}
+func (this *ReleaseData) Validate() error {
+	for _, item := range this.Resources {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Resources", err)
+			}
+		}
+	}
+	// Validation of proto3 map<> fields is unsupported.
+	if this.CreatedAt != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.CreatedAt); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("CreatedAt", err)
+		}
+	}
+	if this.UpdatedAt != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.UpdatedAt); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("UpdatedAt", err)
 		}
 	}
 	return nil
@@ -165,5 +241,62 @@ func (this *GetLatestReleasesResponseData) Validate() error {
 	return nil
 }
 func (this *ReleaseGCRequest) Validate() error {
+	return nil
+}
+func (this *ReleaseUploadRequest) Validate() error {
+	return nil
+}
+func (this *ReleaseUploadResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *ParseReleaseFileRequest) Validate() error {
+	return nil
+}
+func (this *ParseReleaseFileResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *ParseReleaseFileResponseData) Validate() error {
+	return nil
+}
+func (this *FormalReleaseRequest) Validate() error {
+	return nil
+}
+func (this *FormalReleaseResponse) Validate() error {
+	return nil
+}
+func (this *FormalReleasesRequest) Validate() error {
+	return nil
+}
+func (this *FormalReleasesResponse) Validate() error {
+	return nil
+}
+func (this *ReleasesDeleteRequest) Validate() error {
+	return nil
+}
+func (this *ReleasesDeleteResponse) Validate() error {
+	return nil
+}
+func (this *CheckVersionRequest) Validate() error {
+	return nil
+}
+func (this *CheckVersionResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *CheckVersionResponseData) Validate() error {
 	return nil
 }

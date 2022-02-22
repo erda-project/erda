@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
@@ -57,6 +58,7 @@ type Endpoints struct {
 	encrypt         *encryption.EnvEncrypt
 	instance        *instance.Instance
 	migration       *migration.Migration
+	releaseSvc      pb.ReleaseServiceServer
 }
 
 // Option Endpoints 配置选项
@@ -168,6 +170,13 @@ func WithResource(resource *resource.Resource) Option {
 func WithMigration(migration *migration.Migration) Option {
 	return func(e *Endpoints) {
 		e.migration = migration
+	}
+}
+
+// WithReleaseSvc 设置 dicehub release service
+func WithReleaseSvc(svc pb.ReleaseServiceServer) Option {
+	return func(e *Endpoints) {
+		e.releaseSvc = svc
 	}
 }
 

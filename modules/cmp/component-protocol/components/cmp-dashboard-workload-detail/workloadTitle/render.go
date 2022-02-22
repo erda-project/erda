@@ -112,9 +112,9 @@ func (t *ComponentWorkloadTitle) GenComponentState(component *cptype.Component) 
 	return nil
 }
 
-func (t *ComponentWorkloadTitle) Transfer(c *cptype.Component) {
-	c.Props = cputil.MustConvertProps(t.Props)
-	c.State = map[string]interface{}{
+func (t *ComponentWorkloadTitle) Transfer(component *cptype.Component) {
+	component.Props = cputil.MustConvertProps(t.Props)
+	component.State = map[string]interface{}{
 		"workloadId":  t.State.WorkloadID,
 		"podId":       t.State.PodID,
 		"clusterName": t.State.ClusterName,

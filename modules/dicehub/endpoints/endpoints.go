@@ -120,24 +120,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/healthz", Method: http.MethodGet, Handler: e.Info},
 
 		// Release相关
-		{Path: "/api/releases", Method: http.MethodPost, Handler: e.CreateRelease},
-		{Path: "/api/releases/actions/upload", Method: http.MethodPost, Handler: e.UploadRelease},
-		{Path: "/api/releases/actions/parse-version", Method: http.MethodGet, Handler: e.ParseReleaseFile},
-		{Path: "/api/releases/{releaseId}", Method: http.MethodPut, Handler: e.UpdateRelease},
-		{Path: "/api/releases/{releaseId}/reference/actions/change", Method: http.MethodPut, Handler: e.UpdateReleaseReference},
-		{Path: "/api/releases/{releaseId}/actions/formal", Method: http.MethodPut, Handler: e.ToFormalRelease},
-		{Path: "/api/releases/{releaseId}/actions/get-plist", Method: http.MethodGet, WriterHandler: e.GetIosPlist},
-		{Path: "/api/releases/{releaseId}/actions/download", Method: http.MethodGet, WriterHandler: e.DownloadYaml},
-		{Path: "/api/releases/{releaseId}", Method: http.MethodGet, Handler: e.GetRelease},
-		{Path: "/api/releases/{releaseId}", Method: http.MethodDelete, Handler: e.DeleteRelease},
-		{Path: "/api/releases", Method: http.MethodPut, Handler: e.ToFormalReleases},
-		{Path: "/api/releases", Method: http.MethodDelete, Handler: e.DeleteReleases},
-		{Path: "/api/releases", Method: http.MethodGet, Handler: e.ListRelease},
-		{Path: "/api/releases/actions/get-name", Method: http.MethodGet, Handler: e.ListReleaseName},
-		{Path: "/api/releases/actions/get-latest", Method: http.MethodGet, Handler: e.GetLatestReleases},
-		{Path: "/api/releases/actions/check-version", Method: http.MethodGet, Handler: e.CheckVersion},
-
-		{Path: "/gc", Method: http.MethodPost, Handler: e.ReleaseGC},
+		{Path: "/api/releases/{releaseId}/actions/download", Method: http.MethodGet, WriterHandler: e.DownloadRelease},
 
 		//插件市场
 		{Path: "/api/extensions/actions/search", Method: http.MethodPost, Handler: e.SearchExtensions},

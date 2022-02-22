@@ -82,12 +82,12 @@ func (f *ComponentAddWorkloadFilter) InitComponent(ctx context.Context) {
 	f.server = steveServer
 }
 
-func (f *ComponentAddWorkloadFilter) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (f *ComponentAddWorkloadFilter) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(c.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
@@ -231,13 +231,13 @@ func (f *ComponentAddWorkloadFilter) SetComponentValue(ctx context.Context) erro
 	return nil
 }
 
-func (f *ComponentAddWorkloadFilter) Transfer(c *cptype.Component) {
-	c.State = map[string]interface{}{
+func (f *ComponentAddWorkloadFilter) Transfer(component *cptype.Component) {
+	component.State = map[string]interface{}{
 		"clusterName": f.State.ClusterName,
 		"conditions":  f.State.Conditions,
 		"values":      f.State.Values,
 	}
-	c.Operations = f.Operations
+	component.Operations = f.Operations
 }
 
 func hasSuffix(name string) (string, bool) {

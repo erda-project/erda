@@ -161,7 +161,9 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		runtime.WithDBClient(db),
 		runtime.WithEventManager(p.EventManager),
 		runtime.WithBundle(bdl),
-		runtime.WithAddon(a))
+		runtime.WithAddon(a),
+		runtime.WithReleaseSvc(p.DicehubReleaseSvc),
+	)
 
 	// init deployment service
 	d := deployment.New(
@@ -172,6 +174,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		deployment.WithMigration(migration),
 		deployment.WithEncrypt(encrypt),
 		deployment.WithResource(resource),
+		deployment.WithReleaseSvc(p.DicehubReleaseSvc),
 	)
 
 	// init domain service
@@ -191,6 +194,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		deployment_order.WithRuntime(rt),
 		deployment_order.WithDeployment(d),
 		deployment_order.WithQueue(p.PusherQueue),
+		deployment_order.WithReleaseSvc(p.DicehubReleaseSvc),
 	)
 
 	// compose endpoints
@@ -209,6 +213,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		endpoints.WithEnvEncrypt(encrypt),
 		endpoints.WithResource(resource),
 		endpoints.WithMigration(migration),
+		endpoints.WithReleaseSvc(p.DicehubReleaseSvc),
 	)
 
 	return ep, nil

@@ -283,6 +283,10 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 			gitRepo := metadata.AppList[i][j].GitRepo
 			changelog := metadata.AppList[i][j].ChangeLog
 
+			if _, ok := appName2ID[appName]; !ok {
+				return nil, nil, errors.Errorf("app %s is not existed", appName)
+			}
+
 			existedReleases, err := r.db.GetReleasesByAppAndVersion(req.OrgID, req.ProjectID, appName2ID[appName], version)
 			if err != nil {
 				return nil, nil, errors.Errorf("failed to get releases by app and version, %v", err)

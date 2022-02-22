@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/etcd"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
@@ -63,7 +64,8 @@ type provider struct {
 	ErrorBoxSvc        errboxpb.ErrorBoxServiceServer          `autowired:"erda.core.services.errorbox.ErrorBoxService" optional:"true"`
 	ProjectPipelineSvc *projectpipeline.ProjectPipelineService `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
 
-	AddonMySQLSvc addonmysqlpb.AddonMySQLServiceServer `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
+	AddonMySQLSvc     addonmysqlpb.AddonMySQLServiceServer `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
+	DicehubReleaseSvc dicehubpb.ReleaseServiceServer       `autowired:"erda.core.dicehub.release.ReleaseService"`
 
 	Protocol      componentprotocol.Interface
 	CPTran        i18n.I18n        `autowired:"i18n@cp"`
@@ -109,6 +111,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.Log.Info("init component-protocol done")
 
 	p.Protocol.WithContextValue(types.AddonMySQLService, p.AddonMySQLSvc)
+	p.Protocol.WithContextValue(types.DicehubReleaseService, p.DicehubReleaseSvc)
 
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,

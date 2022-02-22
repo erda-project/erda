@@ -70,11 +70,11 @@ func Test_releaseService_CreateRelease(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.ReleaseServiceServer)
 			got, err := srv.CreateRelease(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("releaseService.CreateRelease() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ReleaseService.CreateRelease() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("releaseService.CreateRelease() = %v, want %v", got, tt.wantResp)
+				t.Errorf("ReleaseService.CreateRelease() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -127,11 +127,11 @@ func Test_releaseService_UpdateRelease(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.ReleaseServiceServer)
 			got, err := srv.UpdateRelease(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("releaseService.UpdateRelease() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ReleaseService.UpdateRelease() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("releaseService.UpdateRelease() = %v, want %v", got, tt.wantResp)
+				t.Errorf("ReleaseService.UpdateRelease() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -184,11 +184,11 @@ func Test_releaseService_UpdateReleaseReference(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.ReleaseServiceServer)
 			got, err := srv.UpdateReleaseReference(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("releaseService.UpdateReleaseReference() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ReleaseService.UpdateReleaseReference() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("releaseService.UpdateReleaseReference() = %v, want %v", got, tt.wantResp)
+				t.Errorf("ReleaseService.UpdateReleaseReference() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -241,11 +241,11 @@ func Test_releaseService_GetIosPlist(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.ReleaseServiceServer)
 			got, err := srv.GetIosPlist(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("releaseService.GetIosPlist() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ReleaseService.GetIosPlist() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("releaseService.GetIosPlist() = %v, want %v", got, tt.wantResp)
+				t.Errorf("ReleaseService.GetIosPlist() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -254,7 +254,7 @@ func Test_releaseService_GetIosPlist(t *testing.T) {
 func Test_releaseService_GetRelease(t *testing.T) {
 	type args struct {
 		ctx context.Context
-		req *pb.GetIosPlistRequest
+		req *pb.ReleaseGetRequest
 	}
 	tests := []struct {
 		name     string
@@ -298,11 +298,11 @@ func Test_releaseService_GetRelease(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.ReleaseServiceServer)
 			got, err := srv.GetRelease(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("releaseService.GetRelease() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ReleaseService.GetRelease() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("releaseService.GetRelease() = %v, want %v", got, tt.wantResp)
+				t.Errorf("ReleaseService.GetRelease() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -311,7 +311,7 @@ func Test_releaseService_GetRelease(t *testing.T) {
 func Test_releaseService_DeleteRelease(t *testing.T) {
 	type args struct {
 		ctx context.Context
-		req *pb.GetIosPlistRequest
+		req *pb.ReleaseDeleteRequest
 	}
 	tests := []struct {
 		name     string
@@ -355,11 +355,11 @@ func Test_releaseService_DeleteRelease(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.ReleaseServiceServer)
 			got, err := srv.DeleteRelease(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("releaseService.DeleteRelease() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ReleaseService.DeleteRelease() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("releaseService.DeleteRelease() = %v, want %v", got, tt.wantResp)
+				t.Errorf("ReleaseService.DeleteRelease() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -412,11 +412,11 @@ func Test_releaseService_ListRelease(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.ReleaseServiceServer)
 			got, err := srv.ListRelease(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("releaseService.ListRelease() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ReleaseService.ListRelease() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("releaseService.ListRelease() = %v, want %v", got, tt.wantResp)
+				t.Errorf("ReleaseService.ListRelease() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -469,11 +469,11 @@ func Test_releaseService_ListReleaseName(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.ReleaseServiceServer)
 			got, err := srv.ListReleaseName(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("releaseService.ListReleaseName() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ReleaseService.ListReleaseName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("releaseService.ListReleaseName() = %v, want %v", got, tt.wantResp)
+				t.Errorf("ReleaseService.ListReleaseName() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -526,11 +526,11 @@ func Test_releaseService_GetLatestReleases(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.ReleaseServiceServer)
 			got, err := srv.GetLatestReleases(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("releaseService.GetLatestReleases() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ReleaseService.GetLatestReleases() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("releaseService.GetLatestReleases() = %v, want %v", got, tt.wantResp)
+				t.Errorf("ReleaseService.GetLatestReleases() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
@@ -583,11 +583,11 @@ func Test_releaseService_ReleaseGC(t *testing.T) {
 			srv := hub.Service(tt.service).(pb.ReleaseServiceServer)
 			got, err := srv.ReleaseGC(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("releaseService.ReleaseGC() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ReleaseService.ReleaseGC() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.wantResp) {
-				t.Errorf("releaseService.ReleaseGC() = %v, want %v", got, tt.wantResp)
+				t.Errorf("ReleaseService.ReleaseGC() = %v, want %v", got, tt.wantResp)
 			}
 		})
 	}
