@@ -15,8 +15,9 @@ grpc-server:
 service-register:
 
 i18n:
-  files:
+  common:
     - conf/orchestrator/i18n/log-trans.yaml
+    - conf/orchestrator/i18n/deployment-order-precheck.yaml
 
 erda.orchestrator.runtime:
 erda.orchestrator.events:
