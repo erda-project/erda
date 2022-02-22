@@ -199,18 +199,18 @@ func (containerTable *ContainerTable) Render(ctx context.Context, c *cptype.Comp
 	return nil
 }
 
-func (containerTable *ContainerTable) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (containerTable *ContainerTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 
-	data, err := json.Marshal(c.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		logrus.Errorf("failed to marshal for eventTable state, %v", err)
 		return err
 	}
 	var state State
-	err = json.Unmarshal(data, &state)
+	err = json.Unmarshal(jsonData, &state)
 	if err != nil {
 		logrus.Errorf("failed to unmarshal for eventTable state, %v", err)
 		return err
@@ -219,22 +219,22 @@ func (containerTable *ContainerTable) GenComponentState(c *cptype.Component) err
 	return nil
 }
 
-func (containerTable *ContainerTable) Transfer(c *cptype.Component) {
-	c.Props = cputil.MustConvertProps(containerTable.Props)
-	c.Data = map[string]interface{}{}
+func (containerTable *ContainerTable) Transfer(component *cptype.Component) {
+	component.Props = cputil.MustConvertProps(containerTable.Props)
+	component.Data = map[string]interface{}{}
 	for k, v := range containerTable.Data {
-		c.Data[k] = v
+		component.Data[k] = v
 	}
-	c.State = map[string]interface{}{
+	component.State = map[string]interface{}{
 		"clusterName": containerTable.State.ClusterName,
 		"podId":       containerTable.State.PodID,
 	}
 }
 
-func parseContainerStatus(ctx context.Context, state string) Status {
+func parseContainerStatus(ctx context.Context, s string) Status {
 	color := ""
 	breathing := false
-	switch state {
+	switch s {
 	case "running":
 		color = "success"
 		breathing = true
@@ -245,7 +245,7 @@ func parseContainerStatus(ctx context.Context, state string) Status {
 	}
 	return Status{
 		RenderType: "textWithBadge",
-		Value:      cputil.I18n(ctx, state),
+		Value:      cputil.I18n(ctx, s),
 		Status:     color,
 		Breathing:  breathing,
 	}

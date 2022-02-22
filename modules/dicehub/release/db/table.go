@@ -27,8 +27,22 @@ type Release struct {
 	Dice string `json:"dice" gorm:"type:text"` // dice.yml
 	// Addon When ResourceType is addonyml，store addon.yml context，optional
 	Addon string `json:"addon" gorm:"type:text"`
+	// Changelog changelog，optional
+	Changelog string `json:"changelog" gorm:"type:text"`
+	// IsStable not temp if ture, otherwise temp
+	IsStable bool `json:"isStable" gorm:"type:tinyint(1)"`
+	// IsFormal formal
+	IsFormal bool `json:"isFormal" gorm:"type:tinyint(1)"`
+	// IsProjectRelease .
+	IsProjectRelease bool `json:"IsProjectRelease" gorm:"type:tinyint(1)"`
+	// ApplicationReleaseList referenced application releases id list
+	ApplicationReleaseList string `json:"applicationReleaseList" gorm:"type:text"`
 	// Labels map type, the maximum length is 1000, optional
 	Labels string `json:"labels" gorm:"type:varchar(1000)"`
+	// GitBranch
+	GitBranch string `json:"gitBranch" gorm:"type:varchar(255)"`
+	// Tags
+	Tags string `json:"tags" gorm:"type:varchar(100)"`
 	// Version store release version, only in the same company, same project and same application，the maximum length is 100，optional
 	Version string `json:"version" gorm:"type:varchar(100)"`
 	// OrgID Corporate identifier，optional

@@ -24,6 +24,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
@@ -197,7 +198,7 @@ func TestConvertRuntimeDeployDto(t *testing.T) {
 		ProjectName: "bar",
 	}
 
-	release := &apistructs.ReleaseGetResponseData{
+	release := &pb.ReleaseGetResponseData{
 		Diceyml: diceYml,
 	}
 

@@ -75,16 +75,16 @@ func (b *ComponentOperationButton) InitComponent(ctx context.Context) {
 	b.server = steveServer
 }
 
-func (b *ComponentOperationButton) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (b *ComponentOperationButton) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(c.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &state); err != nil {
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	b.State = state
@@ -136,7 +136,7 @@ func (b *ComponentOperationButton) DeletePod() error {
 	}
 	namespace, name := splits[0], splits[1]
 
-	req := &apistructs.SteveRequest{
+	request := &apistructs.SteveRequest{
 		UserID:      b.sdk.Identity.UserID,
 		OrgID:       b.sdk.Identity.OrgID,
 		Type:        apistructs.K8SPod,
@@ -145,12 +145,12 @@ func (b *ComponentOperationButton) DeletePod() error {
 		Namespace:   namespace,
 	}
 
-	return b.server.DeleteSteveResource(b.ctx, req)
+	return b.server.DeleteSteveResource(b.ctx, request)
 }
 
-func (b *ComponentOperationButton) Transfer(component *cptype.Component) {
-	component.Props = cputil.MustConvertProps(b.Props)
-	component.State = map[string]interface{}{
+func (b *ComponentOperationButton) Transfer(c *cptype.Component) {
+	c.Props = cputil.MustConvertProps(b.Props)
+	c.State = map[string]interface{}{
 		"clusterName": b.State.ClusterName,
 		"podId":       b.State.PodID,
 	}

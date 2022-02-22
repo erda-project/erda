@@ -452,7 +452,7 @@ func (s *Endpoints) BatchUpdateOverlay(ctx context.Context, r *http.Request, var
 	// 批量重新部署
 	case apistructs.ScaleActionReDeploy:
 		logrus.Infof("[batch redeploy] do batch runtimes redeploy")
-		batchRuntimeReDeployResult := s.batchRuntimeReDeploy(userID, runtimes, runtimeScaleRecords)
+		batchRuntimeReDeployResult := s.batchRuntimeReDeploy(ctx, userID, runtimes, runtimeScaleRecords)
 		if batchRuntimeReDeployResult.Failed > 0 {
 			return httpserver.NotOkResp(batchRuntimeReDeployResult, http.StatusInternalServerError)
 		}
@@ -538,7 +538,7 @@ func genOverlayDataForAudit(oldService *diceyml.Service) *apistructs.RuntimeInsp
 }
 
 // batchRuntimeReDeploy 批量重新部署
-func (s *Endpoints) batchRuntimeReDeploy(userID user.ID, runtimes []dbclient.Runtime, runtimeScaleRecords apistructs.RuntimeScaleRecords) apistructs.BatchRuntimeReDeployResults {
+func (s *Endpoints) batchRuntimeReDeploy(ctx context.Context, userID user.ID, runtimes []dbclient.Runtime, runtimeScaleRecords apistructs.RuntimeScaleRecords) apistructs.BatchRuntimeReDeployResults {
 	batchRuntimeReDeployResult := apistructs.BatchRuntimeReDeployResults{
 		Total:           len(runtimeScaleRecords.Runtimes),
 		Success:         0,
@@ -553,7 +553,7 @@ func (s *Endpoints) batchRuntimeReDeploy(userID user.ID, runtimes []dbclient.Run
 	// 根据请求 RuntimeScaleRecords.IDs  执行重新部署
 	if len(runtimeScaleRecords.IDs) > 0 {
 		for _, runtime := range runtimes {
-			redep, err := s.runtime.RedeployPipeline(userID, runtime.OrgID, runtime.ID)
+			redep, err := s.runtime.RedeployPipeline(ctx, userID, runtime.OrgID, runtime.ID)
 			if err != nil {
 				logrus.Errorf("[batch redeploy] redeploy failed for runtime %s for runtime instance: %#v, error: %v", runtime.Name, runtime, err)
 				errMsg := fmt.Sprintf("redeploy redeploy failed for runtime %s for runtime instance: %#v, error: %v", runtime.Name, runtime, err)
@@ -609,7 +609,7 @@ func (s *Endpoints) batchRuntimeReDeploy(userID user.ID, runtimes []dbclient.Run
 				continue
 			}
 
-			redep, err := s.runtime.RedeployPipeline(userID, runtime.OrgID, runtime.ID)
+			redep, err := s.runtime.RedeployPipeline(ctx, userID, runtime.OrgID, runtime.ID)
 			if err != nil {
 				logrus.Errorf("[batch redeploy] redeploy failed for runtime %s for %#v", uniqueId.Name, uniqueId)
 				errMsg := fmt.Sprintf("redeploy failed for runtime %s for %#v", uniqueId.Name, uniqueId)
