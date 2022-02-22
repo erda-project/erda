@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda-infra/providers/legacy/httpendpoints/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/modules/core-services/types"
@@ -53,10 +52,9 @@ func (e *Endpoints) CreateOrUpdateMember(ctx context.Context, r *http.Request, v
 		return apierrors.ErrAddMember.InvalidParameter(err).ToResp(), nil
 	}
 	logrus.Infof("create request: %+v", memberCreateReq)
-	ctx = context.WithValue(ctx, "lang_codes", i18n.Language(r))
 
 	// 创建/更新成员信息至DB
-	if err := e.member.CreateOrUpdate(ctx, userID.String(), memberCreateReq); err != nil {
+	if err := e.member.CreateOrUpdate(userID.String(), memberCreateReq); err != nil {
 		return apierrors.ErrAddMember.InternalError(err).ToResp(), nil
 	}
 	return httpserver.OkResp("add members succ")
@@ -415,9 +413,8 @@ func (e *Endpoints) CreateMemberByInviteCode(ctx context.Context, r *http.Reques
 		return apierrors.ErrAddMember.ErrorVerificationCode(err).ToResp(), nil
 	}
 
-	ctx = context.WithValue(ctx, "lang_codes", i18n.Language(r))
 	// 创建/更新成员信息至DB
-	if err := e.member.CreateOrUpdate(ctx, userID, apistructs.MemberAddRequest{
+	if err := e.member.CreateOrUpdate(userID, apistructs.MemberAddRequest{
 		Scope: apistructs.Scope{
 			Type: apistructs.OrgScope,
 			ID:   req.OrgID,

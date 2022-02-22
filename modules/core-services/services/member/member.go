@@ -16,7 +16,6 @@
 package member
 
 import (
-	"context"
 	"strconv"
 	"time"
 	"unicode/utf8"
@@ -85,14 +84,13 @@ func WithTranslator(tran i18n.Translator) Option {
 }
 
 // CreateOrUpdate 创建/更新成员
-func (m *Member) CreateOrUpdate(ctx context.Context, userID string, req apistructs.MemberAddRequest) error {
+func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) error {
 	// 参数校验
 	if err := m.checkCreateParam(req); err != nil {
 		return err
 	}
 
-	langCodes := ctx.Value("lang_codes").(i18n.LanguageCodes)
-
+	langCodes, _ := i18n.ParseLanguageCode(locale.GetGoroutineBindLang())
 	scopeID, err := strconv.ParseInt(req.Scope.ID, 10, 64)
 	if err != nil {
 		return errors.Errorf("failed to create permission(invalid scope id)")
