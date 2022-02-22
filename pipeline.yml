@@ -128,6 +128,37 @@ stages:
             cpu: 1
             mem: 1024
   - stage:
+      - erda-mysql-migration:
+          alias: dryrun-on-mysql80
+          version: 1.0-80
+          params:
+            database: erda
+            lint_config: .erda/migrations/config.yml
+            migrationdir: .erda/migrations
+            mysql_host: ${{ configs.lagacy_migration_mysql_host }}
+            mysql_password: ${{ configs.lagacy_migration_mysql_password }}
+            mysql_port: 3306
+            mysql_username: root
+            retry_timeout: 150
+            skip_migration: "true"
+            skip_pre_migration: true
+            workdir: ${{ dirs.erda }}
+      - erda-mysql-migration:
+          alias: dryrun-on-mysql56
+          version: 1.0-56
+          params:
+            database: erda
+            lint_config: .erda/migrations/config.yml
+            migrationdir: .erda/migrations
+            mysql_host: ${{ configs.lagacy_migration_mysql_host }}
+            mysql_password: ${{ configs.lagacy_migration_mysql_password }}
+            mysql_port: 3306
+            mysql_username: root
+            retry_timeout: 150
+            skip_migration: "true"
+            skip_pre_migration: true
+            workdir: ${{ dirs.erda }}
+  - stage:
       - release:
           alias: release-erda
           params:
