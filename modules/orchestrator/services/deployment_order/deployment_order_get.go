@@ -61,7 +61,7 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 		return nil, fmt.Errorf("failed to get release, err: %v", err)
 	}
 
-	releases := make([]*dbclient.Release, 0)
+	releases := make([][]*dbclient.Release, 0)
 
 	if curRelease.IsProjectRelease {
 		subReleasesId := make([][]string, 0)
@@ -74,15 +74,21 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 			conditionData = append(conditionData, id...)
 		}
 
-		subReleases, err := d.db.ListReleases(conditionData)
+		subReleaseMap, err := d.db.ListReleasesMap(conditionData)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list sub release, err: %v", err)
 		}
-		for _, subRelease := range subReleases {
-			releases = append(releases, subRelease)
+
+		for _, sr := range subReleasesId {
+			tmp := make([]*dbclient.Release, 0)
+			for _, r := range sr {
+				tmp = append(tmp, subReleaseMap[r])
+			}
+			releases = append(releases, tmp)
 		}
+
 	} else {
-		releases = append(releases, curRelease)
+		releases = append(releases, []*dbclient.Release{curRelease})
 	}
 
 	// compose applications info
@@ -117,56 +123,60 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 	}, nil
 }
 
-func composeApplicationsInfo(releases []*dbclient.Release, params map[string]apistructs.DeploymentOrderParam,
-	appsStatus apistructs.DeploymentOrderStatusMap) ([]*apistructs.ApplicationInfo, error) {
+func composeApplicationsInfo(releases [][]*dbclient.Release, params map[string]apistructs.DeploymentOrderParam,
+	appsStatus apistructs.DeploymentOrderStatusMap) ([][]*apistructs.ApplicationInfo, error) {
 
-	asi := make([]*apistructs.ApplicationInfo, 0)
+	asi := make([][]*apistructs.ApplicationInfo, 0)
 
-	for _, subRelease := range releases {
-		applicationName := subRelease.ApplicationName
+	for _, sr := range releases {
+		ai := make([]*apistructs.ApplicationInfo, 0)
+		for _, r := range sr {
+			applicationName := r.ApplicationName
 
-		// parse deployment order
-		orderParamsData := make(apistructs.DeploymentOrderParam, 0)
+			// parse deployment order
+			orderParamsData := make(apistructs.DeploymentOrderParam, 0)
 
-		param, ok := params[applicationName]
-		if ok {
-			for _, data := range param {
-				if data.Encrypt {
-					data.Value = ""
+			param, ok := params[applicationName]
+			if ok {
+				for _, data := range param {
+					if data.Encrypt {
+						data.Value = ""
+					}
+					orderParamsData = append(orderParamsData, &apistructs.DeploymentOrderParamData{
+						Key:     data.Key,
+						Value:   data.Value,
+						Encrypt: data.Encrypt,
+						Type:    convertConfigType(data.Type),
+						Comment: data.Comment,
+					})
 				}
-				orderParamsData = append(orderParamsData, &apistructs.DeploymentOrderParamData{
-					Key:     data.Key,
-					Value:   data.Value,
-					Encrypt: data.Encrypt,
-					Type:    convertConfigType(data.Type),
-					Comment: data.Comment,
-				})
 			}
-		}
 
-		var status apistructs.DeploymentStatus
-		app, ok := appsStatus[subRelease.ApplicationName]
-		if ok {
-			status = app.DeploymentStatus
-		}
+			var status apistructs.DeploymentStatus = apistructs.OrderStatusWaitDeploy
+			app, ok := appsStatus[r.ApplicationName]
+			if ok {
+				status = app.DeploymentStatus
+			}
 
-		labels := make(map[string]string)
-		if err := json.Unmarshal([]byte(subRelease.Labels), &labels); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal release labels, err: %v", err)
-		}
+			labels := make(map[string]string)
+			if err := json.Unmarshal([]byte(r.Labels), &labels); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal release labels, err: %v", err)
+			}
 
-		asi = append(asi, &apistructs.ApplicationInfo{
-			Id:             subRelease.ApplicationId,
-			Name:           applicationName,
-			DeploymentId:   app.DeploymentID,
-			Params:         &orderParamsData,
-			ReleaseId:      subRelease.ReleaseId,
-			ReleaseVersion: subRelease.Version,
-			Branch:         labels["gitBranch"],
-			DiceYaml:       subRelease.DiceYaml,
-			CommitId:       labels["gitCommitId"],
-			Status:         status,
-		})
+			ai = append(ai, &apistructs.ApplicationInfo{
+				Id:             r.ApplicationId,
+				Name:           applicationName,
+				DeploymentId:   app.DeploymentID,
+				Params:         &orderParamsData,
+				ReleaseId:      r.ReleaseId,
+				ReleaseVersion: r.Version,
+				Branch:         labels["gitBranch"],
+				DiceYaml:       r.DiceYaml,
+				CommitId:       labels["gitCommitId"],
+				Status:         status,
+			})
+		}
+		asi = append(asi, ai)
 	}
 
 	return asi, nil

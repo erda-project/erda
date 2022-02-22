@@ -59,7 +59,7 @@ type DeploymentOrderListConditions struct {
 
 type DeploymentOrderDetail struct {
 	DeploymentOrderItem
-	ApplicationsInfo []*ApplicationInfo `json:"applicationsInfo"`
+	ApplicationsInfo [][]*ApplicationInfo `json:"applicationsInfo"`
 }
 
 type ApplicationInfo struct {
@@ -73,7 +73,6 @@ type ApplicationInfo struct {
 	CommitId       string                `json:"commitId,omitempty"`
 	PreCheckResult *PreCheckResult       `json:"preCheckResult,omitempty"`
 	DiceYaml       string                `json:"diceYaml,omitempty"`
-	Batch          int                   `json:"batch"`
 	Status         DeploymentStatus      `json:"status,omitempty"`
 }
 

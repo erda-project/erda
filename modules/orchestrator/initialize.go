@@ -91,7 +91,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	// start cron jobs to sync addon & project infos
 	go initCron(ep, ctx)
 
-	i18n.SetSingle(p.LogTrans)
+	i18n.SetSingle(p.Trans)
 
 	return nil
 }

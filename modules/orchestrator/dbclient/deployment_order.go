@@ -170,7 +170,19 @@ func (db *DBClient) ListReleases(releasesId []string) ([]*Release, error) {
 	return releases, nil
 }
 
-func (db *DBClient) UpdateDeploymentOrderAppsStatus(orderId string, newOrderStatusMap apistructs.DeploymentOrderStatusMap) error {
+func (db *DBClient) ListReleasesMap(releasesId []string) (map[string]*Release, error) {
+	releases := make([]*Release, 0)
+	releaseMap := make(map[string]*Release, 0)
+	if err := db.Where("release_id in (?)", releasesId).Find(&releases).Error; err != nil {
+		return nil, errors.Wrapf(err, "failed to list release %+v", releasesId)
+	}
+	for _, r := range releases {
+		releaseMap[r.ReleaseId] = r
+	}
+	return releaseMap, nil
+}
+
+func (db *DBClient) UpdateDeploymentOrderStatusDetail(orderId string, newOrderStatusMap apistructs.DeploymentOrderStatusMap) error {
 	var (
 		deploymentOrder   DeploymentOrder
 		curOrderStatusMap apistructs.DeploymentOrderStatusMap
@@ -209,7 +221,7 @@ func (db *DBClient) UpdateDeploymentOrderAppsStatus(orderId string, newOrderStat
 	return nil
 }
 
-func (db *DBClient) UpdateDeploymentOrderStatus(id string, appName string,
+func (db *DBClient) UpdateDeploymentOrderAppStatus(id string, appName string,
 	appStatus apistructs.DeploymentOrderStatusItem) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		var (

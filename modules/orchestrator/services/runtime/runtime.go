@@ -1370,7 +1370,7 @@ func (r *Runtime) generateListGroupAppResult(result *struct {
 }
 
 func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistructs.RuntimeSummaryDTO, error) {
-	logrus.Infof("get services finished")
+	logrus.Debug("get services started")
 	var l = logrus.WithField("func", "*Runtime.GetServiceByRuntime")
 	runtimes, err := r.db.FindRuntimesByIds(runtimeIDs)
 	if err != nil {
@@ -1428,7 +1428,7 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 		}
 	}
 	wg.Wait()
-	logrus.Infof("get services finished")
+	logrus.Debug("get services finished")
 	return servicesMap.m, nil
 
 }

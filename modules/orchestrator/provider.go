@@ -29,7 +29,7 @@ type provider struct {
 	Orm          *gorm.DB             `autowired:"mysql-client"`
 	EventManager *events.EventManager `autowired:"erda.orchestrator.events.event-manager"`
 	PusherQueue  *queue.PusherQueue   `autowired:"erda.orchestrator.events.pusher-queue"`
-	LogTrans     i18n.Translator      `translator:"log-trans"`
+	Trans        i18n.Translator      `autowired:"i18n" translator:"common"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
