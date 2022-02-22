@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/alecthomas/assert"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda/apistructs"
 )
