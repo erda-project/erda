@@ -135,7 +135,7 @@ func (p *provider) queryAlertEvents(sdk *cptype.SDK, ctx context.Context, params
 	}
 
 	statement := fmt.Sprintf("SELECT count(timestamp) FROM analyzer_alert " +
-		"WHERE family_id::tag=$eventId")
+		"WHERE family_id::tag=$eventId AND alert_suppressed::tag='false' ")
 	resp, err := p.Metric.QueryWithInfluxFormat(ctx, &metricpb.QueryWithInfluxFormatRequest{
 		Start:     "0",
 		End:       strconv.FormatInt(time.Now().UnixNano()/1e6, 10),
@@ -167,7 +167,7 @@ func (p *provider) queryAlertEvents(sdk *cptype.SDK, ctx context.Context, params
 	}
 
 	statement = fmt.Sprintf("SELECT * FROM analyzer_alert "+
-		"WHERE family_id::tag=$eventId "+
+		"WHERE family_id::tag=$eventId AND alert_suppressed::tag='false' "+
 		"ORDER BY timestamp DESC "+
 		"LIMIT %v OFFSET %v ", pageSize, (pageNo-1)*pageSize)
 	resp, err = p.Metric.QueryWithInfluxFormat(ctx, &metricpb.QueryWithInfluxFormatRequest{
