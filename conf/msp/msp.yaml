@@ -154,6 +154,10 @@ grpc-client@erda.oap.entity:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
 erda.oap.entity-client:
 
+grpc-client@erda.core.dicehub.release:
+  addr: "${DICEHUB_GRPC_ADDR:dicehub:7080}"
+erda.core.dicehub.release-client:
+
 erda.msp.apm.alert:
   micro_service_filter_tags: "${MICRO_SERVICE_FILTER_TAGS:_metric_name,_metric_scope,_metric_scope_id}"
 

@@ -15,6 +15,7 @@
 package deployment_order
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -23,29 +24,33 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	release2 "github.com/erda-project/erda/modules/dicehub/release"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/services/runtime"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
-var ProjectReleaseResp = &apistructs.ReleaseGetResponseData{
+var ProjectReleaseResp = &pb.ReleaseGetResponseData{
 	IsProjectRelease: true,
 	Labels:           map[string]string{gitBranchLabel: "master"},
-	ApplicationReleaseList: [][]*apistructs.ApplicationReleaseSummary{
+	ApplicationReleaseList: []*pb.ReleaseSummaryArray{
 		{
-			{
-				ReleaseID:   "0856df7931494d239abf07a145ade6e9",
-				ReleaseName: "release/1.0.1",
-				Version:     "1.0.1+20220210153458",
+			List: []*pb.ApplicationReleaseSummary{
+				{
+					ReleaseID:   "0856df7931494d239abf07a145ade6e9",
+					ReleaseName: "release/1.0.1",
+					Version:     "1.0.1+20220210153458",
+				},
 			},
 		},
 	},
 }
 
-var AppReleaseResp = &apistructs.ReleaseGetResponseData{
+var AppReleaseResp = &pb.ReleaseGetResponseData{
 	Labels:          map[string]string{gitBranchLabel: "master"},
 	ApplicationID:   1,
 	ApplicationName: "test",
@@ -62,20 +67,18 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 		},
 	)
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetRelease",
-		func(*bundle.Bundle, string) (*apistructs.ReleaseGetResponseData, error) {
-			return ProjectReleaseResp, nil
-		},
-	)
-
 	params := map[string]*apistructs.DeploymentOrderParam{}
 
 	paramsJson, err := json.Marshal(params)
 	assert.NoError(t, err)
 
-	ProjectReleaseResp.ApplicationReleaseList = [][]*apistructs.ApplicationReleaseSummary{
+	ProjectReleaseResp.ApplicationReleaseList = []*pb.ReleaseSummaryArray{
 		{
-			{ReleaseID: "8781f475e5617a04"},
+			List: []*pb.ApplicationReleaseSummary{
+				{
+					ReleaseID: "8781f475e5617a04",
+				},
+			},
 		},
 	}
 
@@ -133,7 +136,7 @@ func TestParseShowParams(t *testing.T) {
 
 func TestParseAppsInfoWithOrder(t *testing.T) {
 	order := New()
-	got, err := order.parseAppsInfoWithOrder(&dbclient.DeploymentOrder{
+	got, err := order.parseAppsInfoWithOrder(context.Background(), &dbclient.DeploymentOrder{
 		ApplicationName: "test",
 		ApplicationId:   1,
 		Type:            apistructs.TypeApplicationRelease,
@@ -144,12 +147,14 @@ func TestParseAppsInfoWithOrder(t *testing.T) {
 
 func TestParseAppsInfoWithRelease(t *testing.T) {
 	order := New()
-	got := order.parseAppsInfoWithRelease(&apistructs.ReleaseGetResponseData{
+	got := order.parseAppsInfoWithRelease(&pb.ReleaseGetResponseData{
 		IsProjectRelease: true,
-		ApplicationReleaseList: [][]*apistructs.ApplicationReleaseSummary{
+		ApplicationReleaseList: []*pb.ReleaseSummaryArray{
 			{
-				{ApplicationName: "test-1", ApplicationID: 1},
-				{ApplicationName: "test-2", ApplicationID: 2},
+				List: []*pb.ApplicationReleaseSummary{
+					{ApplicationName: "test-1", ApplicationID: 1},
+					{ApplicationName: "test-2", ApplicationID: 2},
+				},
 			},
 		},
 	})
@@ -160,6 +165,8 @@ func TestContinueDeployOrder(t *testing.T) {
 	order := New()
 	bdl := bundle.New()
 	rt := runtime.New()
+	releaseSvc := &release2.ReleaseService{}
+	order.releaseSvc = releaseSvc
 
 	params := map[string]*apistructs.DeploymentOrderParam{}
 
@@ -178,9 +185,9 @@ func TestContinueDeployOrder(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "UpdateDeploymentOrder", func(*dbclient.DBClient, *dbclient.DeploymentOrder) error {
 		return nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetRelease",
-		func(*bundle.Bundle, string) (*apistructs.ReleaseGetResponseData, error) {
-			return ProjectReleaseResp, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(releaseSvc), "GetRelease",
+		func(*release2.ReleaseService, context.Context, *pb.ReleaseGetRequest) (*pb.ReleaseGetResponse, error) {
+			return &pb.ReleaseGetResponse{Data: ProjectReleaseResp}, nil
 		},
 	)
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProjectWithSetter",
