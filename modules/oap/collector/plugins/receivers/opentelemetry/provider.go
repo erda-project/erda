@@ -46,7 +46,6 @@ type provider struct {
 	otlpService pb.OpenTelemetryServiceServer
 
 	Register     transport.Register       `autowired:"service-register" optional:"true"`
-	Kafka        kafka.Interface          `autowired:"kafka@receiver-opentelemetry"`
 	Interceptors interceptor.Interceptors `autowired:"erda.oap.collector.interceptor.Interceptor"`
 
 	consumer model.ObservableDataConsumerFunc
@@ -62,11 +61,7 @@ func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Register != nil {
-		writer, err := p.Kafka.NewProducer(&p.Cfg.Kafka.Producer)
-		if err != nil {
-			return err
-		}
-		p.otlpService = &otlpService{Log: p.Log, writer: writer}
+		p.otlpService = &otlpService{Log: p.Log, p: p}
 		pb.RegisterOpenTelemetryServiceImp(
 			p.Register,
 			p.otlpService,
@@ -87,7 +82,7 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 
 func init() {
 	servicehub.Register(providerName, &servicehub.Spec{
-		Services:    pb.ServiceNames(),
+		Services:    pb.ServiceNames(providerName),
 		Description: "here is description of erda.oap.collector.receiver.opentelemetry",
 		ConfigFunc: func() interface{} {
 			return &config{}

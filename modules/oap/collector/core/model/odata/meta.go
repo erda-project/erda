@@ -37,7 +37,7 @@ func (m *Metadata) Get(key string) (string, bool) {
 		m.init()
 	}
 	m.mu.RLock()
-	defer m.mu.Unlock()
+	defer m.mu.RUnlock()
 	v, ok := m.Data[key]
 	return v, ok
 }

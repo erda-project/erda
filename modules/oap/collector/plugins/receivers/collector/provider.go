@@ -15,7 +15,8 @@ import (
 var providerName = plugins.WithPrefixReceiver("collector")
 
 type config struct {
-	Auth struct {
+	MetadataKeyOfTopic string `file:"metadata_key_of_topic"`
+	Auth               struct {
 		Skip bool `file:"skip"`
 	}
 }

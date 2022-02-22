@@ -22,6 +22,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda/modules/oap/collector/common"
 	"github.com/erda-project/erda/modules/oap/collector/common/compressor"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
@@ -80,7 +81,8 @@ func (p *provider) Connect() error {
 }
 
 func (p *provider) Export(ods []odata.ObservableData) error {
-	buf, err := doSerialize(p.Cfg.Serializer, ods, p.Cfg.Compatibility)
+	// TODO. not support Raw ObservableData
+	buf, err := common.SerializeBatch(p.Cfg.Serializer, ods, p.Cfg.Compatibility)
 	if err != nil {
 		return fmt.Errorf("serialize err: %w", err)
 	}

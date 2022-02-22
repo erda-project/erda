@@ -12,4 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package decompressor
+package kafka
+
+import (
+	"encoding/json"
+	"testing"
+)
+
+func TestXXX(t *testing.T) {
+	data := []byte("{\"date\":\"2018-05-30T09:39:52.000681Z\",\"log\":\"hello world\\n\",\"stream\":\"stdout\",\"time\":\"2021-08-16T07:56:01.025279973Z\",\"level\":\"INFO\",\"source\":\"container\",\"kubernetes\":{\"pod_name\":\"pod\",\"namespace\":\"ns\",\"container_name\":\"cname\",\"container_id\":\"cid\",\"pod_id\":\"pid\",\"labels\":{\"k\":\"v\"},\"annotations\":{\"k\":\"v\"}}}")
+	buf, _ := json.Marshal(data)
+	t.Log(string(buf))
+}

@@ -30,5 +30,6 @@ import (
 
 	// exporters
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/exporters/collector"
+	_ "github.com/erda-project/erda/modules/oap/collector/plugins/exporters/kafka"
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/exporters/stdout"
 )

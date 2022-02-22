@@ -19,15 +19,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
-)
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
-
-const (
-	JSONSerializer = "json"
 )
 
 const (
@@ -55,22 +47,5 @@ func doRequest(client *http.Client, req *http.Request) (int, error) {
 func setHeaders(req *http.Request, headers map[string]string) {
 	for k, v := range headers {
 		req.Header.Set(k, v)
-	}
-}
-
-func doSerialize(s string, ods []odata.ObservableData, compatibility bool) ([]byte, error) {
-	batch := make([]interface{}, len(ods))
-	for idx, item := range ods {
-		if compatibility {
-			batch[idx] = item.SourceCompatibility()
-		} else {
-			batch[idx] = item
-		}
-	}
-	switch s {
-	case JSONSerializer:
-		return json.Marshal(batch)
-	default:
-		return nil, fmt.Errorf("invalid serializer: %q", s)
 	}
 }

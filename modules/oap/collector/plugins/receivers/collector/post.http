@@ -1,28 +1,50 @@
 POST http://localhost:7076/api/v1/collect/logs/container
 Content-Type: application/json
+# adjust according config
 X-Erda-Cluster-Key: erda-op
 Authorization: Bearer lMh8UjcN2WsCq7959Yb4vCDf
 
 [
   {
-    "date": "2018-05-30T09:39:52.000681Z",
-    "log": "hello world\n",
-    "stream": "stdout",
-    "time": "2021-08-16T07:56:01.025279973Z",
-    "level": "INFO",
     "source": "container",
-    "kubernetes": {
-      "pod_name": "pod",
-      "namespace": "ns",
-      "container_name": "cname",
-      "container_id": "cid",
-      "pod_id": "pid",
-      "labels": {
-        "k": "v"
-      },
-      "annotations": {
-        "k": "v"
-      }
+    "id": "3bdcc48e7222be90b889fffba685c762da74b61be8528605ecb2decaab4933f3",
+    "stream": "stdout",
+    "content": "hello world",
+    "offset": 0,
+    "timestamp": 1640796626617075700,
+    "tags": {
+      "application_id": "60",
+      "application_name": "log-service",
+      "cluster_name": "terminus-dev",
+      "container_id": "3bdcc48e7222be90b889fffba685c762da74b61be8528605ecb2decaab4933f3",
+      "container_name": "nginx",
+      "dice_application_id": "60",
+      "dice_application_name": "log-service",
+      "dice_cluster_name": "terminus-dev",
+      "dice_org_id": "1",
+      "dice_org_name": "erda",
+      "dice_project_id": "60",
+      "dice_project_name": "log-fluent-bit",
+      "dice_runtime_id": "71",
+      "dice_runtime_name": "release/log",
+      "dice_service_name": "nginx",
+      "dice_workspace": "staging",
+      "level": "INFO",
+      "msp_env_id": "a1b5fe1e7a0cfef8fa9c526c35fa34cc",
+      "msp_log_attach": "true",
+      "org_id": "1",
+      "org_name": "erda",
+      "pod_id": "bcdd5a10-03b3-4c4b-b265-458c7ab2745d",
+      "pod_ip": "10.112.4.21",
+      "pod_name": "nginx-3f4cc48691-6497545cf-7pfhx",
+      "pod_namespace": "project-60-staging",
+      "project_id": "60",
+      "project_name": "log-fluent-bit",
+      "runtime_id": "71",
+      "runtime_name": "release/log",
+      "service_name": "nginx",
+      "terminus_key": "a1b5fe1e7a0cfef8fa9c526c35fa34cc",
+      "workspace": "staging"
     }
   }
 ]

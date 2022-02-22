@@ -18,16 +18,15 @@ import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	common "github.com/erda-project/erda-proto-go/common/pb"
 	pb "github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 type otlpService struct {
-	Log    logs.Logger
-	writer writer.Writer
-	p      *provider
+	Log logs.Logger
+	// writer writer.Writer
+	p *provider
 }
 
 func (s *otlpService) Export(ctx context.Context, req *pb.PostSpansRequest) (*common.VoidResponse, error) {

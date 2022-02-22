@@ -56,6 +56,7 @@ require (
 	github.com/gin-gonic/gin v1.7.0
 	github.com/go-echarts/go-echarts/v2 v2.2.4
 	github.com/go-eden/routine v0.0.2
+	github.com/go-errors/errors v1.0.1
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.8
 	github.com/go-openapi/strfmt v0.19.5
