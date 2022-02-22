@@ -15,16 +15,21 @@
 package deployment_order
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/queue"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
+	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error) {
@@ -47,7 +52,8 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 			continue
 		}
 
-		releaseResp, err := d.bdl.GetRelease(order.ReleaseId)
+		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+		releaseResp, err := d.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: order.ReleaseId})
 		if err != nil {
 			logrus.Warnf("failed to get release %s, (%v)", order.ReleaseId, err)
 			return
@@ -55,7 +61,7 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 
 		// get runtime status, and update
 		statusMap := apistructs.DeploymentOrderStatusMap{}
-		for _, app := range releaseResp.ApplicationReleaseList[order.CurrentBatch-1] {
+		for _, app := range releaseResp.Data.ApplicationReleaseList[order.CurrentBatch-1].List {
 			rt, errGetRuntime := d.db.GetRuntimeByAppName(order.Workspace, order.ProjectId, app.ApplicationName)
 			lastDeployment, err := d.db.FindLastDeployment(rt.ID)
 			if err != nil {

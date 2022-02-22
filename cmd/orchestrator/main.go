@@ -20,6 +20,7 @@ import (
 
 	// providers and modules
 	_ "github.com/erda-project/erda-infra/providers"
+	_ "github.com/erda-project/erda-proto-go/core/dicehub/release/client"
 	_ "github.com/erda-project/erda/modules/orchestrator"
 	_ "github.com/erda-project/erda/modules/orchestrator/components"
 )

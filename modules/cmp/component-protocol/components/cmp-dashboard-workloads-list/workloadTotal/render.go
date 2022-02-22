@@ -46,16 +46,16 @@ func (w *ComponentWorkloadTotal) Render(ctx context.Context, component *cptype.C
 	return nil
 }
 
-func (w *ComponentWorkloadTotal) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (w *ComponentWorkloadTotal) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(c.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err = json.Unmarshal(jsonData, &state); err != nil {
 		return err
 	}
 	w.State = state
