@@ -87,14 +87,16 @@ func (d *DeploymentOrder) RenderDetail(orgId uint64, userId, releaseId, workspac
 	}, nil
 }
 
-func (d *DeploymentOrder) renderAppsPreCheckResult(orgId uint64, projectId int64, userId, workspace string, asi *[]*apistructs.ApplicationInfo) error {
+func (d *DeploymentOrder) renderAppsPreCheckResult(orgId uint64, projectId int64, userId, workspace string, asi *[][]*apistructs.ApplicationInfo) error {
 	if asi == nil {
 		return nil
 	}
 
 	appList := make([]string, 0)
-	for _, info := range *asi {
-		appList = append(appList, info.Name)
+	for _, apps := range *asi {
+		for _, info := range apps {
+			appList = append(appList, info.Name)
+		}
 	}
 
 	appStatus, err := d.getDeploymentsStatus(workspace, uint64(projectId), appList)
@@ -102,26 +104,28 @@ func (d *DeploymentOrder) renderAppsPreCheckResult(orgId uint64, projectId int64
 		return err
 	}
 
-	for _, info := range *asi {
-		failReasons, err := d.staticPreCheck(orgId, userId, workspace, projectId, info.Id, []byte(info.DiceYaml))
-		if err != nil {
-			return err
-		}
-		isDeploying, ok := appStatus[info.Id]
-		if ok && isDeploying {
-			failReasons = append(failReasons, i18n.OrgUintSprintf(orgId, I18nApplicationDeploying, info.Name))
-		}
+	for _, apps := range *asi {
+		for _, info := range apps {
+			failReasons, err := d.staticPreCheck(orgId, userId, workspace, projectId, info.Id, []byte(info.DiceYaml))
+			if err != nil {
+				return err
+			}
+			isDeploying, ok := appStatus[info.Id]
+			if ok && isDeploying {
+				failReasons = append(failReasons, i18n.OrgUintSprintf(orgId, I18nApplicationDeploying, info.Name))
+			}
 
-		checkResult := &apistructs.PreCheckResult{
-			Success: true,
-		}
+			checkResult := &apistructs.PreCheckResult{
+				Success: true,
+			}
 
-		if len(failReasons) != 0 {
-			checkResult.Success = false
-			checkResult.FailReasons = failReasons
-		}
+			if len(failReasons) != 0 {
+				checkResult.Success = false
+				checkResult.FailReasons = failReasons
+			}
 
-		info.PreCheckResult = checkResult
+			info.PreCheckResult = checkResult
+		}
 	}
 
 	return nil
@@ -212,9 +216,9 @@ func (d *DeploymentOrder) staticPreCheck(orgId uint64, userId, workspace string,
 }
 
 func (d *DeploymentOrder) composeAppsInfoByReleaseResp(releaseResp *apistructs.ReleaseGetResponseData, workspace string) (
-	[]*apistructs.ApplicationInfo, error) {
+	[][]*apistructs.ApplicationInfo, error) {
 
-	asi := make([]*apistructs.ApplicationInfo, 0)
+	asi := make([][]*apistructs.ApplicationInfo, 0)
 	if releaseResp.IsProjectRelease {
 		params, err := d.fetchApplicationsParams(releaseResp, workspace)
 		if err != nil {
@@ -239,21 +243,22 @@ func (d *DeploymentOrder) composeAppsInfoByReleaseResp(releaseResp *apistructs.R
 			releasesMap[r.ReleaseId] = r
 		}
 
-		for batchId, batch := range releaseResp.ApplicationReleaseList {
+		for _, batch := range releaseResp.ApplicationReleaseList {
+			ai := make([]*apistructs.ApplicationInfo, 0)
 			for _, r := range batch {
 				ret, ok := releasesMap[r.ReleaseID]
 				if !ok {
 					return nil, fmt.Errorf("failed to get releases %s from dicehub", r.ReleaseID)
 				}
 
-				asi = append(asi, &apistructs.ApplicationInfo{
+				ai = append(ai, &apistructs.ApplicationInfo{
 					Id:       uint64(r.ApplicationID),
 					Name:     r.ApplicationName,
-					Batch:    batchId + 1,
 					Params:   covertParamsType(params[r.ApplicationName]),
 					DiceYaml: ret.DiceYaml,
 				})
 			}
+			asi = append(asi, ai)
 		}
 	} else {
 		params, err := d.fetchDeploymentParams(releaseResp.ApplicationID, workspace)
@@ -261,11 +266,13 @@ func (d *DeploymentOrder) composeAppsInfoByReleaseResp(releaseResp *apistructs.R
 			return nil, fmt.Errorf("failed to fetch deployment params, err: %v", err)
 		}
 
-		asi = append(asi, &apistructs.ApplicationInfo{
-			Id:       uint64(releaseResp.ApplicationID),
-			Name:     releaseResp.ApplicationName,
-			Params:   covertParamsType(params),
-			DiceYaml: releaseResp.Diceyml,
+		asi = append(asi, []*apistructs.ApplicationInfo{
+			{
+				Id:       uint64(releaseResp.ApplicationID),
+				Name:     releaseResp.ApplicationName,
+				Params:   covertParamsType(params),
+				DiceYaml: releaseResp.Diceyml,
+			},
 		})
 	}
 
