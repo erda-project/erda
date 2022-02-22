@@ -34,24 +34,28 @@ func (r *Reconciler) doCronCompensate(pCtx context.Context, pipelineID uint64) {
 	}
 
 	logrus.Infof("[doCronCompensate] get cronID from etcd. if have compensate")
-	//监听是否在执行的时候阻塞了补偿，阻塞了就立马补偿下, 获取etcd中当前pipeline的cron的id，然后立马删除对应的etcd的值
-	if err := r.js.Get(pCtx, fmt.Sprint(EtcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID), nil); err == nil {
-		//移除cronId
-		if err := r.js.Remove(pCtx, fmt.Sprint(EtcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID), nil); err != nil {
-			logrus.Infof("[doCronCompensate] can not delete etcd key, key: %s, cronId: %d, error : %v",
-				fmt.Sprint(EtcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID), *pipelineWithTasks.Pipeline.CronID, err)
-		}
 
-		logrus.Infof("[doCronCompensate] ready to Compensate, cronId: %d", *pipelineWithTasks.Pipeline.CronID)
+	// Monitor whether the compensation is blocked during execution, and immediately compensate if it is blocked,
+	// obtain the id of the cron of the current pipeline in etcd, and then immediately delete the corresponding etcd value
+	notFound, err := r.js.Notfound(pCtx, fmt.Sprint(EtcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID))
+	if err != nil {
+		logrus.Infof("[doCronCompensate]: can not get cronID: %d, err: %v", *pipelineWithTasks.Pipeline.CronID, err)
+		return
+	}
 
-		//执行补偿的操作
+	if !notFound {
+		logrus.Infof("[doCronCompensate] ready to Compensate, cronID: %d", *pipelineWithTasks.Pipeline.CronID)
+
+		// perform the compensation operation
 		if err := r.pipelineSvcFunc.CronNotExecuteCompensate(*pipelineWithTasks.Pipeline.CronID); err != nil {
-			logrus.Infof("[doCronCompensate] to Compensate error, cronId: %d, error : %v",
+			logrus.Infof("[doCronCompensate] to Compensate error, cronID: %d, err : %v",
 				*pipelineWithTasks.Pipeline.CronID, err)
 		}
 
-	} else {
-
-		logrus.Infof("[doCronCompensate]: can not get cronId %d err: %v", *pipelineWithTasks.Pipeline.CronID, err)
+		// remove cronID
+		if err := r.js.Remove(pCtx, fmt.Sprint(EtcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID), nil); err != nil {
+			logrus.Infof("[doCronCompensate] can not delete etcd key, key: %s, cronID: %d, err : %v",
+				fmt.Sprint(EtcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID), *pipelineWithTasks.Pipeline.CronID, err)
+		}
 	}
 }
