@@ -22,7 +22,7 @@ en:
   FailedToUpdateService: "Failed to update the service %s"
   FailedToScaleService: "Failed to scale the service %s"
   CPURequiredMoreThanRemaining: "Additional %s core CPU required, larger than current remaining %s core"
-  MemRequiredMoreThanRemaining: "Additional %s Memory required, larger than current remaining %"
+  MemRequiredMoreThanRemaining: "Additional %s Memory required, larger than current remaining %s"
   PodRestartManyTimes: |-
     The Pod %s restarted %d times, please check the runtime log or the health probe configuration.
     Runtime Log：Deployments -> the Workspace -> Service Details -> the stopped pod -> container log;
