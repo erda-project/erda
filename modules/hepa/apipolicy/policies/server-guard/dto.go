@@ -15,9 +15,11 @@
 package serverguard
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"regexp"
+	"strconv"
 
 	"github.com/erda-project/erda/modules/hepa/apipolicy"
 )
@@ -25,6 +27,16 @@ import (
 const (
 	LIMIT_INNER_STATUS = 581
 )
+
+var allowsCors = `
+    more_set_headers 'Access-Control-Allow-Origin: $from_request_origin_or_referer';
+    more_set_headers 'Access-Control-Allow-Methods: GET, PUT, POST, DELETE, PATCH, OPTIONS';
+    more_set_headers 'Access-Control-Allow-Headers: $http_access_control_request_headers';
+    more_set_headers 'Access-Control-Allow-Credentials: true';
+    more_set_headers 'Access-Control-Max-Age: 86400';
+    more_set_headers 'Content-Type: text/plain charset=UTF-8';
+    more_set_headers 'Content-Length: 0';
+`
 
 type PolicyDto struct {
 	apipolicy.BaseDto
@@ -71,4 +83,11 @@ func (dto *PolicyDto) AdjustDto() {
 	if dto.ExtraLatency != 0 && dto.ExtraLatency < 1000/dto.MaxTps*2 {
 		dto.ExtraLatency = int64(math.Ceil(1000 / float64(dto.MaxTps) * 2))
 	}
+}
+
+func (dto PolicyDto) RefuseResonseCanBeJson() bool {
+	if s, err := strconv.Unquote("\"" + dto.RefuseResponse + "\""); err == nil {
+		return json.Unmarshal([]byte(s), new(interface{})) == nil
+	}
+	return false
 }

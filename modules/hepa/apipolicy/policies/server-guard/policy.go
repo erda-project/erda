@@ -160,6 +160,12 @@ location @LIMIT-%s {
     log_by_lua_block {
         plugins.run()
     }
+    more_set_headers 'Access-Control-Allow-Origin: $from_request_origin_or_referer';
+    more_set_headers 'Access-Control-Allow-Methods: GET, PUT, POST, DELETE, PATCH, OPTIONS';
+    more_set_headers 'Access-Control-Allow-Headers: $http_access_control_request_headers';
+    more_set_headers 'Access-Control-Allow-Credentials: true';
+    more_set_headers 'Access-Control-Max-Age: 86400';
+    more_set_headers 'Content-Type: text/plain charset=UTF-8';
     return %d;
 }
 `, id, policyDto.RefuseCode)
@@ -169,19 +175,34 @@ location @LIMIT-%s {
     log_by_lua_block {
         plugins.run()
     }
+    more_set_headers 'Access-Control-Allow-Origin: $from_request_origin_or_referer';
+    more_set_headers 'Access-Control-Allow-Methods: GET, PUT, POST, DELETE, PATCH, OPTIONS';
+    more_set_headers 'Access-Control-Allow-Headers: $http_access_control_request_headers';
+    more_set_headers 'Access-Control-Allow-Credentials: true';
+    more_set_headers 'Access-Control-Max-Age: 86400';
+    more_set_headers 'Content-Type: text/plain charset=UTF-8';
     return %d "%s";
 }
 `, id, policyDto.RefuseCode, policyDto.RefuseResponse)
 	} else {
+		contentType := "text/plain; charset=utf-8"
+		if policyDto.RefuseResonseCanBeJson() {
+			contentType = "application/json"
+		}
 		namedLocation = fmt.Sprintf(`
 location @LIMIT-%s {
     log_by_lua_block {
         plugins.run()
     }
-    more_set_headers 'Content-Type: text/plain; charset=utf-8';
+    more_set_headers 'Access-Control-Allow-Origin: $from_request_origin_or_referer';
+    more_set_headers 'Access-Control-Allow-Methods: GET, PUT, POST, DELETE, PATCH, OPTIONS';
+    more_set_headers 'Access-Control-Allow-Headers: $http_access_control_request_headers';
+    more_set_headers 'Access-Control-Allow-Credentials: true';
+    more_set_headers 'Access-Control-Max-Age: 86400';
+    more_set_headers 'Content-Type: %s';
     return %d "%s";
 }
-`, id, policyDto.RefuseCode, policyDto.RefuseResponse)
+`, id, contentType, policyDto.RefuseCode, policyDto.RefuseResponse)
 	}
 	locationSnippet := limitReq + limitReqStatus + errorPage
 	res.IngressAnnotation = &apipolicy.IngressAnnotation{
