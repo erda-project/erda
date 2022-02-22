@@ -15,6 +15,7 @@
 package helper
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"fmt"
@@ -75,6 +76,17 @@ func runCommand2(w io.Writer, cmd *exec.Cmd, readers ...io.Reader) {
 		logrus.Printf("[ERROR] get command stdout error %v", err)
 		return
 	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		logrus.Printf("[ERROR] get command stderr error %v", err)
+		return
+	}
+	scanner := bufio.NewScanner(stderr)
+	go func() {
+		for scanner.Scan() {
+			logrus.Printf("[ERROR] stderr > %s\n", scanner.Text())
+		}
+	}()
 	if err := cmd.Start(); err != nil {
 		logrus.Printf("[ERROR] command start error %v", err)
 		return
