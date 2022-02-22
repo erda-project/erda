@@ -19,6 +19,7 @@ zh:
   FailedDeleteProject: "删除项目失败"
   PROJECT: 项目
   APPLICATION: 应用
+  ErrAddMemberOwner: "添加所有者失败，数量超过上限"
 
 en:
   AvailableIsLessThanQuota: The actual available resource on this workspace in the cluster is less than the quota. Please ask the Ops to allocate project resources reasonably
@@ -41,3 +42,4 @@ en:
   FailedDeleteProject: "failed to delete project"
   PROJECT: project
   APPLICATION: application
+  ErrAddMemberOwner: "failed to add project owner, quantity exceeds limit"

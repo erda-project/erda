@@ -234,6 +234,7 @@
     "ErrDeleteLabel": "Failed to delete label",
     "ErrUpdateLabel": "Failed to update label",
     "ErrGetLabels": "Failed to get label list",
-    "ErrCreateAudit": "Failed to create audit event"
-  }
+    "ErrCreateAudit": "Failed to create audit event",
+    "ErrAddMember": "Failed to add member"
+  }                 
 }

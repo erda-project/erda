@@ -25,13 +25,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
-	"github.com/erda-project/erda/modules/core-services/services/apierrors"
 	"github.com/erda-project/erda/modules/core-services/types"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
-	"github.com/erda-project/erda/pkg/i18n"
+	locale "github.com/erda-project/erda/pkg/i18n"
 	"github.com/erda-project/erda/pkg/strutil"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
@@ -41,6 +41,7 @@ type Member struct {
 	db       *dao.DBClient
 	uc       *ucauth.UCClient
 	redisCli *redis.Client
+	tran     i18n.Translator
 }
 
 // Option 定义 Member 对象配置选项
@@ -76,6 +77,12 @@ func WithRedisClient(cli *redis.Client) Option {
 	}
 }
 
+func WithTranslator(tran i18n.Translator) Option {
+	return func(m *Member) {
+		m.tran = tran
+	}
+}
+
 // CreateOrUpdate 创建/更新成员
 func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) error {
 	// 参数校验
@@ -83,6 +90,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 		return err
 	}
 
+	langCodes, _ := i18n.ParseLanguageCode(locale.GetGoroutineBindLang())
 	scopeID, err := strconv.ParseInt(req.Scope.ID, 10, 64)
 	if err != nil {
 		return errors.Errorf("failed to create permission(invalid scope id)")
@@ -109,7 +117,7 @@ func (m *Member) CreateOrUpdate(userID string, req apistructs.MemberAddRequest) 
 					return err
 				}
 				if ownerCount+uint64(len(req.UserIDs))-oldCount > 1 {
-					return apierrors.ErrAddMemberOwner
+					return errors.Errorf(m.tran.Text(langCodes, "ErrAddMemberOwner"))
 				}
 			}
 		}
@@ -312,7 +320,7 @@ func (m *Member) Delete(userID string, req apistructs.MemberRemoveRequest) error
 }
 
 // ListMemberRolesByUser 根据用户查看角色
-func (m *Member) ListMemberRolesByUser(l *i18n.LocaleResource, identityInfo apistructs.IdentityInfo, pageReq apistructs.ListMemberRolesByUserRequest) (int,
+func (m *Member) ListMemberRolesByUser(l *locale.LocaleResource, identityInfo apistructs.IdentityInfo, pageReq apistructs.ListMemberRolesByUserRequest) (int,
 	[]apistructs.UserScopeRole, error) {
 	// 鉴权
 	if !identityInfo.IsInternalClient() {

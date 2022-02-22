@@ -93,7 +93,7 @@ zh:
   try-latest-result: 最近一次执行的结果
   sceneSetRefer: 场景集引用
   configForm: 配置单
-  configInfo: 配置单信息
+  configFormInfo: 配置单信息
   apiInfo: 接口信息
   nestedScene: 嵌套场景
   nestedSceneInfo: 嵌套场景信息
@@ -238,7 +238,7 @@ en:
   try-latest-result: Result of last execution
   sceneSetRefer: Scene set reference
   configForm: Configuration form
-  configInfo: Configuration form info
+  configFormInfo: Configuration form info
   apiInfo: Interface info
   nestedScene: Nested scene
   nestedSceneInfo: Nested scene info
