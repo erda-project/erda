@@ -22,6 +22,16 @@ type (
 	KeyState              string
 )
 
+func (s *CustomerMasterKeySpec) IsValid() bool {
+	switch *s {
+	case CustomerMasterKeySpec_SYMMETRIC_DEFAULT, CustomerMasterKeySpec_ASYMMETRIC_RSA_2048,
+		CustomerMasterKeySpec_ASYMMETRIC_RSA_3072, CustomerMasterKeySpec_ASYMMETRIC_RSA_4096:
+		return true
+	default:
+		return false
+	}
+}
+
 type (
 	KeyMetadata struct {
 		KeyID                 string                `json:"keyID,omitempty"`
