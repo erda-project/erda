@@ -10,5 +10,5 @@ redis:
 dingtalk.api:
 
 grpc-client@erda.core.messenger.notify:
-  addr: "${MESSENGER_GRPC_ADDR:messenger:7081}"
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.messenger.notify-client:

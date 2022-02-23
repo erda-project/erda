@@ -264,10 +264,6 @@ func (mig *Migrator) reverse(reversing []string, reverseSlice bool) error {
 }
 
 func (mig *Migrator) migrateSandbox(ctx context.Context) (err error) {
-	if err = mig.destructiveLint(); err != nil {
-		return err
-	}
-
 	snap, err := snapshot.From(mig.DB())
 	if err != nil {
 		return err
@@ -574,15 +570,6 @@ func (mig *Migrator) installPy(s *Script, module *Module, settings *pygrator.Set
 	defer p.Remove()
 
 	return p.Run()
-}
-
-func (mig *Migrator) destructiveLint() error {
-	text, ok := mig.LocalScripts.HasDestructiveOperationInPending()
-	if ok {
-		return errors.Errorf("there is desctructive SQL in pending scripts, SQL: %s", text)
-	}
-
-	return nil
 }
 
 func (mig *Migrator) needCompare() bool {

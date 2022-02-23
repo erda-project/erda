@@ -15,6 +15,7 @@
 package deployment
 
 import (
+	"context"
 	"crypto/md5" // #nosec G501
 	"encoding/hex"
 	"encoding/json"
@@ -29,7 +30,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/conf"
@@ -69,14 +73,15 @@ type DeployFSMContext struct {
 	evMgr *events.EventManager
 	bdl   *bundle.Bundle
 	// TODO: should we put deployment.Deployment here?
-	addon     *addon.Addon
-	migration *migration.Migration
-	resource  *resource.Resource
-	encrypt   *encryption.EnvEncrypt
+	addon      *addon.Addon
+	migration  *migration.Migration
+	resource   *resource.Resource
+	encrypt    *encryption.EnvEncrypt
+	releaseSvc pb.ReleaseServiceServer
 }
 
 // TODO: context should base on deployment service
-func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.EventManager, bdl *bundle.Bundle, a *addon.Addon, m *migration.Migration, encrypt *encryption.EnvEncrypt, resource *resource.Resource) *DeployFSMContext {
+func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.EventManager, bdl *bundle.Bundle, a *addon.Addon, m *migration.Migration, encrypt *encryption.EnvEncrypt, resource *resource.Resource, releaseSvc pb.ReleaseServiceServer) *DeployFSMContext {
 	logger := log.DeployLogHelper{DeploymentID: deploymentID, Bdl: bdl}
 	a.Logger = &logger
 	// prepare the context
@@ -90,6 +95,7 @@ func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.Eve
 		migration:    m,
 		encrypt:      encrypt,
 		resource:     resource,
+		releaseSvc:   releaseSvc,
 	}
 }
 
@@ -214,7 +220,11 @@ func (fsm *DeployFSMContext) continueWaiting() error {
 	}
 	if len(fsm.Deployment.ReleaseId) > 0 {
 		fsm.pushLog("increasing release reference...")
-		if err := fsm.bdl.IncreaseReference(fsm.Deployment.ReleaseId); err != nil {
+		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+		if _, err := fsm.releaseSvc.UpdateReleaseReference(ctx, &pb.ReleaseReferenceUpdateRequest{
+			ReleaseID: fsm.Deployment.ReleaseId,
+			Increase:  true,
+		}); err != nil {
 			return fsm.failDeploy(err)
 		}
 	}
@@ -442,20 +452,30 @@ func (fsm *DeployFSMContext) continueMigration() (string, error) {
 		}
 	} else {
 		logrus.Infof("没有找到migration相关信息, releaseId为：%s", fsm.Deployment.ReleaseId)
-		releaseResp, err := fsm.bdl.GetRelease(fsm.Deployment.ReleaseId)
+		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+		releaseResp, err := fsm.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: fsm.Deployment.ReleaseId})
 		if err != nil {
 			logrus.Errorf("get release error: %v", err)
 			return "", err
 		}
-		if len(releaseResp.Resources) == 0 {
+		if len(releaseResp.Data.Resources) == 0 {
 			fsm.pushLog(`no migration found, keep going deployment...`)
 			return "", nil
 		}
 		// 遍历resource数组，查看是否存在migration信息需要执行
 		var resourceRelease apistructs.ReleaseResource
-		for _, v := range releaseResp.Resources {
-			if v.Type == apistructs.ResourceTypeMigration {
-				resourceRelease = v
+		for _, v := range releaseResp.Data.Resources {
+			if v.Type == string(apistructs.ResourceTypeMigration) {
+				meta := make(map[string]interface{})
+				for key, value := range v.Meta {
+					meta[key] = value.GetStringValue()
+				}
+				resourceRelease = apistructs.ReleaseResource{
+					Type: apistructs.ResourceType(v.Type),
+					Name: v.Name,
+					URL:  v.URL,
+					Meta: meta,
+				}
 			}
 		}
 		// 如果没有migration信息需要执行，则直接返回，不执行migration信息
@@ -685,11 +705,14 @@ func (fsm *DeployFSMContext) continuePhaseCompleted() error {
 }
 
 func (fsm *DeployFSMContext) UpdateDeploymentStatusToRuntimeAndOrder() error {
-	var err error
-	var app *apistructs.ApplicationDTO
+	var (
+		err error
+		app *apistructs.ApplicationDTO
+	)
 
 	fsm.Runtime.DeploymentStatus = fsm.Deployment.Status
-	if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
+	if err := fsm.db.UpdateRuntimeDeploymentInfo(fsm.Runtime.ID, fsm.Deployment.ID, fsm.Deployment.Status); err != nil {
+		logrus.Errorf("update runtime deployment status error: %v", err)
 		return err
 	}
 
@@ -708,7 +731,7 @@ func (fsm *DeployFSMContext) UpdateDeploymentStatusToRuntimeAndOrder() error {
 	}
 	logrus.Infof("update deployment(%+v) status for app (%+v) to deployment_order (%+v) detail is: %+v",
 		fsm.deploymentID, app.Name, DeploymentOrderID, appDeploymentStatus)
-	if err := fsm.db.UpateDeploymentOrderStatus(DeploymentOrderID,
+	if err := fsm.db.UpdateDeploymentOrderAppStatus(DeploymentOrderID,
 		app.Name, appDeploymentStatus); err != nil {
 		errMsg := fmt.Sprintf("failed to update deployment order status of deployment[%s]: %v",
 			DeploymentOrderID, err)
@@ -1485,19 +1508,37 @@ func (fsm *DeployFSMContext) evalTemplate(projectAddons []dbclient.AddonInstance
 	return result_envs, usedAddonInsMap, usedAddonTenantMap, nil
 }
 
+func BuildVolumeRootDir(runtime *dbclient.Runtime) string {
+	return fmt.Sprintf("/netdata/volumes/%s/%s", runtime.GitRepoAbbrev, strings.ToLower(runtime.Workspace))
+}
+
 func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml.Service,
 	groupLabels map[string]string, addonEnv map[string]string, groupEnv, groupFileconfigs map[string]string,
 	runtime *dbclient.Runtime, projectAddons []dbclient.AddonInstanceRouting,
 	projectAddonTenants []dbclient.AddonInstanceTenant) (map[string]dbclient.AddonInstanceRouting, map[string]dbclient.AddonInstanceTenant, error) {
-	/*
-		volumePrefixDir := utils.BuildVolumeRootDir(runtime)
-		bs, err := convertBinds(serviceName, volumePrefixDir, service.Volumes)
-		if err != nil {
-			return nil, nil, err
+
+	// 用于兼容使用旧的 volume 定义方式的 volume，避免创建新 volume
+	oldTypeVolumes := make([]diceyml.Volume, 0)
+	newVolumes := make([]diceyml.Volume, 0)
+	for _, vol := range service.Volumes {
+		if vol.Storage != "" {
+			oldTypeVolumes = append(oldTypeVolumes, vol)
+		} else {
+			newVolumes = append(newVolumes, vol)
 		}
-		service.Binds = append(service.Binds, bs...)
+	}
+
+	volumePrefixDir := BuildVolumeRootDir(runtime)
+	bs, err := convertBinds(serviceName, volumePrefixDir, oldTypeVolumes)
+	if err != nil {
+		return nil, nil, err
+	}
+	service.Binds = append(service.Binds, bs...)
+	if len(newVolumes) > 0 {
+		service.Volumes = newVolumes
+	} else {
 		service.Volumes = nil
-	*/
+	}
 	service.Labels = utils.ConvertServiceLabels(groupLabels, service.Labels, serviceName)
 	// TODO:
 	// currently platformEnv > serviceEnv > addonEnv > groupEnv
@@ -1814,7 +1855,6 @@ func (fsm *DeployFSMContext) PrepareCheckProjectResource(app *apistructs.Applica
 	查找该项目当前环境的 quota，记为 Q；
 	如果 Q - AlreadyRequest < CurrentRequest, 则配额不够，不可部署。
 	如果 Allocatable - ActualRequest < CurrentRequest, 则提示实际资源不够，但仍允许部署（不管它是否部得起来）
-
 	注意：声明的资源都是超卖后的。
 	*/
 

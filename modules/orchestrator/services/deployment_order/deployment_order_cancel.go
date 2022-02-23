@@ -15,6 +15,8 @@
 package deployment_order
 
 import (
+	"context"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
@@ -22,14 +24,14 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 )
 
-func (d *DeploymentOrder) Cancel(req *apistructs.DeploymentOrderCancelRequest) (*dbclient.DeploymentOrder, error) {
+func (d *DeploymentOrder) Cancel(ctx context.Context, req *apistructs.DeploymentOrderCancelRequest) (*dbclient.DeploymentOrder, error) {
 	order, err := d.db.GetDeploymentOrder(req.DeploymentOrderId)
 	if err != nil {
 		logrus.Errorf("failed to get order, id: %s, err: %v", req.DeploymentOrderId, err)
 		return nil, err
 	}
 
-	appsInfo, err := d.parseAppsInfoWithOrder(order)
+	appsInfo, err := d.parseAppsInfoWithOrder(ctx, order)
 	if err != nil {
 		logrus.Errorf("failed to get applications info, err: %v", err)
 		return nil, err

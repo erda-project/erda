@@ -451,7 +451,7 @@ func (e *Endpoints) DeleteRelease(ctx context.Context, r *http.Request, vars map
 
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
-		return apierrors.ErrCreateRelease.NotLogin().ToResp(), nil
+		return apierrors.ErrDeleteRelease.NotLogin().ToResp(), nil
 	}
 	release, err := e.db.GetRelease(releaseID)
 	if err != nil {
@@ -724,12 +724,6 @@ func (e *Endpoints) ListRelease(ctx context.Context, r *http.Request, vars map[s
 			return apierrors.ErrListRelease.NotLogin().ToResp(), nil
 		}
 
-		// 获取当前用户
-		userID, err := user.GetUserID(r)
-		if err != nil {
-			return apierrors.ErrListRelease.NotLogin().ToResp(), nil
-		}
-
 		var (
 			req      apistructs.PermissionCheckRequest
 			permResp *apistructs.PermissionCheckResponseData
@@ -738,7 +732,7 @@ func (e *Endpoints) ListRelease(ctx context.Context, r *http.Request, vars map[s
 
 		if !access {
 			req = apistructs.PermissionCheckRequest{
-				UserID:   userID.String(),
+				UserID:   identityInfo.UserID,
 				Scope:    apistructs.OrgScope,
 				ScopeID:  uint64(orgID),
 				Resource: "release",
@@ -1048,7 +1042,7 @@ func (e *Endpoints) ToFormalReleases(ctx context.Context, r *http.Request, vars 
 func (e *Endpoints) ToFormalRelease(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	orgID, err := getPermissionHeader(r)
 	if err != nil {
-		return apierrors.ErrDeleteRelease.NotLogin().ToResp(), nil
+		return apierrors.ErrFormalRelease.NotLogin().ToResp(), nil
 	}
 
 	releaseID := vars["releaseId"]
@@ -1105,8 +1099,8 @@ func (e *Endpoints) ToFormalRelease(ctx context.Context, r *http.Request, vars m
 	return httpserver.OkResp("Formal release succ")
 }
 
-// DownloadYaml GET /api/releases/{releaseId}/actions/download-yaml 下载Yaml文件
-func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+// DownloadRelease GET /api/releases/{releaseId}/actions/download 下载制品zip包
+func (e *Endpoints) DownloadRelease(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	orgID, err := getPermissionHeader(r)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.NotLogin()
@@ -1229,10 +1223,6 @@ func (e *Endpoints) CheckVersion(ctx context.Context, r *http.Request, vars map[
 	_, err := getPermissionHeader(r)
 	if err != nil {
 		return apierrors.ErrCheckReleaseVersion.NotLogin().ToResp(), nil
-	}
-
-	if r.Body == nil {
-		return apierrors.ErrCheckReleaseVersion.MissingParameter("body").ToResp(), nil
 	}
 
 	isProjectReleaseStr := r.URL.Query().Get("isProjectRelease")

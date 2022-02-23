@@ -8,6 +8,8 @@ const (
 
 	SourceDeployCenter   = "DEPLOY_CENTER"
 	SourceDeployPipeline = "PIPELINE"
+
+	OrderStatusWaitDeploy = "WAITDEPLOY"
 )
 
 type DeploymentOrderStatus string
@@ -57,7 +59,7 @@ type DeploymentOrderListConditions struct {
 
 type DeploymentOrderDetail struct {
 	DeploymentOrderItem
-	ApplicationsInfo []*ApplicationInfo `json:"applicationsInfo"`
+	ApplicationsInfo [][]*ApplicationInfo `json:"applicationsInfo"`
 }
 
 type ApplicationInfo struct {
@@ -91,6 +93,8 @@ type DeploymentOrderItem struct {
 	Type              string                `json:"type,omitempty"`
 	ApplicationStatus string                `json:"applicationStatus,omitempty"`
 	Workspace         string                `json:"workspace"`
+	BatchSize         uint64                `json:"batchSize"`
+	CurrentBatch      uint64                `json:"currentBatch"`
 	Status            DeploymentOrderStatus `json:"status,omitempty"`
 	Operator          string                `json:"operator,omitempty"`
 	CreatedAt         time.Time             `json:"createdAt"`

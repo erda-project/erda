@@ -15,37 +15,31 @@
 package filter
 
 import (
+	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/issue"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/components/filter"
 )
 
 type ComponentFilter struct {
-	sdk      *cptype.SDK
-	bdl      *bundle.Bundle
-	issueSvc *issue.Issue
-	filter.CommonFilter
-	State State `json:"state,omitempty"`
+	impl.DefaultFilter
+	sdk              *cptype.SDK
+	bdl              *bundle.Bundle
+	issueSvc         *issue.Issue
+	State            State
+	FrontendUrlQuery string
+	projectID        uint64
 
-	FrontendUrlQuery string              `json:"-"`
-	projectID        uint64              `json:"-"`
-	Members          []apistructs.Member `json:"-"`
-
-	fixedIterationID uint64 `json:"-"`
+	fixedIterationID uint64
 }
 
 type State struct {
-	Base64UrlQueryParams string                 `json:"filter__urlQuery,omitempty"`
-	Conditions           []filter.PropCondition `json:"conditions,omitempty"`
-	Values               FrontendConditions     `json:"values,omitempty"`
+	Base64UrlQueryParams string             `json:"filter__urlQuery,omitempty"`
+	Values               FrontendConditions `json:"values,omitempty"`
 }
 
 type FrontendConditions struct {
-	IterationIDs []int64  `json:"iteration,omitempty"`
-	AssigneeIDs  []string `json:"member,omitempty"`
+	IterationIDs []int64  `json:"iterationIDs,omitempty"`
+	AssigneeIDs  []string `json:"assignee,omitempty"`
 	LabelIDs     []uint64 `json:"label,omitempty"`
 }
-
-const OperationKeyFilter filter.OperationKey = "filter"

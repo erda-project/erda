@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/dop/services/websocket"
-	"github.com/erda-project/erda/modules/scheduler/cache/org"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/cache/org"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 

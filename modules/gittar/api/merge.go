@@ -474,3 +474,19 @@ func getLink(domain, orgName string, projectId, appId, orgId, mrId int64) string
 			"mrId":      strconv.FormatInt(mrId, 10),
 		}))
 }
+
+func MergeRequestCount(ctx *webcontext.Context) {
+	params := ctx.EchoContext.QueryParams()
+	state := ctx.Query("state")
+	appIDs, ok := params["appIDs"]
+	if !ok {
+		ctx.Abort(errors.New("invalid parameters"))
+		return
+	}
+	response, err := ctx.Service.CountMergeRequests(appIDs, state)
+	if err != nil {
+		ctx.Abort(err)
+		return
+	}
+	ctx.Success(response)
+}

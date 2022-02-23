@@ -67,6 +67,11 @@ type KeyVersionInfo interface {
 	GetSymmetricKeyBase64() string
 	SetSymmetricKeyBase64(string)
 
+	GetPublicKeyBase64() string
+	SetPublicKeyBase64(string)
+	GetPrivateKeyBase64() string
+	SetPrivateKeyBase64(string)
+
 	GetCreatedAt() *time.Time
 	SetCreatedAt(time.Time)
 
@@ -130,6 +135,8 @@ func (k *Key) SetPrimaryKeyVersion(version KeyVersionInfo) {
 	k.PrimaryKeyVersion = KeyVersion{
 		VersionID:          version.GetVersionID(),
 		SymmetricKeyBase64: version.GetSymmetricKeyBase64(),
+		PublicKeyBase64:    version.GetPublicKeyBase64(),
+		PrivateKeyBase64:   version.GetPrivateKeyBase64(),
 		CreatedAt:          version.GetCreatedAt(),
 		UpdatedAt:          version.GetUpdatedAt(),
 	}
@@ -139,6 +146,8 @@ type KeyVersion struct {
 	VersionID string `json:"versionID,omitempty"`
 	// base64 encoded
 	SymmetricKeyBase64 string     `json:"symmetricKeyBase64,omitempty"`
+	PublicKeyBase64    string     `json:"publicKeyBase64,omitempty"`
+	PrivateKeyBase64   string     `json:"privateKeyBase64,omitempty"`
 	CreatedAt          *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt          *time.Time `json:"updatedAt,omitempty"`
 }
@@ -152,3 +161,7 @@ func (k *KeyVersion) GetCreatedAt() *time.Time       { return k.CreatedAt }
 func (k *KeyVersion) SetCreatedAt(t time.Time)       { k.CreatedAt = &t }
 func (k *KeyVersion) GetUpdatedAt() *time.Time       { return k.UpdatedAt }
 func (k *KeyVersion) SetUpdatedAt(t time.Time)       { k.UpdatedAt = &t }
+func (k *KeyVersion) GetPublicKeyBase64() string     { return k.PublicKeyBase64 }
+func (k *KeyVersion) SetPublicKeyBase64(s string)    { k.PublicKeyBase64 = s }
+func (k *KeyVersion) GetPrivateKeyBase64() string    { return k.PrivateKeyBase64 }
+func (k *KeyVersion) SetPrivateKeyBase64(s string)   { k.PrivateKeyBase64 = s }

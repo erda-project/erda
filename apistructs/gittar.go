@@ -770,3 +770,13 @@ type CheckRunRequest struct {
 	MRID   int64  `json:"mrId"`
 	Branch string `json:"branch"`
 }
+
+type MergeRequestCountRequest struct {
+	AppIDs []uint64 `query:"appIDs"`
+	State  string   `query:"state"`
+}
+
+type MergeRequestCountResponse struct {
+	Header
+	Data map[string]int `json:"data"`
+}

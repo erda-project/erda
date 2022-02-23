@@ -54,6 +54,7 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 	if err := json.Unmarshal(inParamsBytes, &inParams); err != nil {
 		return err
 	}
+	cputil.MustObjJSONTransfer(&c.State, &f.State)
 	f.projectID, err = strconv.ParseUint(inParams.ProjectID, 10, 64)
 	if err != nil {
 		return err
@@ -145,6 +146,8 @@ func (f *ComponentGantt) Render(ctx context.Context, c *cptype.Component, scenar
 	f.Data.ExpandList = expand
 	f.Data.UpdateList = update
 	(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = strutil.DedupSlice(f.users)
+	c.Data = nil
+	cputil.MustObjJSONTransfer(&f, &c)
 	return nil
 }
 

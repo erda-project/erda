@@ -286,7 +286,7 @@ components:
     state:
       visible: false
     props:
-      title: ${{ i18n.configInfo }}
+      title: ${{ i18n.configFormInfo }}
       size: "l"
   apiEditorDrawer:
     type: Drawer

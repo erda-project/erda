@@ -64,6 +64,16 @@ func RmProto(url string) string {
 	return url
 }
 
+func GetProto(url string) string {
+	if strings.HasPrefix(url, httpProto) {
+		return "http"
+	}
+	if strings.HasPrefix(url, httpsProto) {
+		return "https"
+	}
+	return "http"
+}
+
 func GetHost(rawurl string) string {
 	URL, _ := url.Parse(WrapProto(rawurl))
 	return URL.Host

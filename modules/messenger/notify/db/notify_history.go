@@ -165,7 +165,10 @@ func (db *NotifyHistoryDB) FilterStatus(request *model.FilterStatusRequest) ([]*
 	if err != nil {
 		return nil, err
 	}
-	err = db.Model(&NotifyHistory{}).Select("status,count(1) as count").Where("created_at >= ?", startTime).Where("created_at <= ?", endTime).
+	err = db.Model(&NotifyHistory{}).Select("status,count(1) as count").
+		Where("source_type = ?", request.ScopeType).
+		Where("source_id = ?", request.ScopeId).
+		Where("created_at >= ?", startTime).Where("created_at <= ?", endTime).
 		Group("status").Scan(&result).Error
 	if err != nil {
 		return nil, err
@@ -199,4 +202,32 @@ func (db *NotifyHistoryDB) QueryNotifyValue(key string, orgId int, scopeId, scop
 		return nil, err
 	}
 	return result, nil
+}
+
+func (db *NotifyHistoryDB) NotifyHistoryType(key string, orgId int, scopeId, scopeType string, startTime, endTime int64) ([]*model.NotifyValue, error) {
+	db.LogMode(true)
+	result := make([]*model.NotifyValue, 0)
+	sTime := time.Unix(0, startTime*int64(time.Millisecond))
+	eTime := time.Unix(0, endTime*int64(time.Millisecond))
+	err := db.Model(&NotifyHistory{}).Select(fmt.Sprintf("%s as field,count(*) as count", key)).
+		Where("created_at >= ?", sTime).
+		Where("created_at <= ?", eTime).
+		Where("org_id = ?", orgId).
+		Where("source_id = ?", scopeId).
+		Where("source_type = ?", scopeType).
+		Group("field").
+		Scan(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (db *NotifyHistoryDB) GetAlertNotifyHistory(id int64) (*NotifyHistory, error) {
+	var notifyHistory NotifyHistory
+	err := db.Where("id = ?", id).Find(&notifyHistory).Error
+	if err != nil {
+		return nil, err
+	}
+	return &notifyHistory, nil
 }

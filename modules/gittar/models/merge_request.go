@@ -410,6 +410,27 @@ func (svc *Service) BatchGetMergeRequests(request *BatchSearchMrRequest) ([]apis
 	return mergeRequests, nil
 }
 
+type MergeCount struct {
+	AppID uint64
+	Count int
+}
+
+func (svc *Service) CountMergeRequests(appIDs []string, state string) (map[uint64]int, error) {
+	var count []MergeCount
+	query := svc.db.Table("dice_repo_merge_requests a").Joins("LEFT JOIN dice_repos b ON b.id = a.repo_id")
+	if len(state) > 0 {
+		query = query.Where("a.state = ?", state)
+	}
+	if err := query.Select("count(a.id) as count, b.app_id").Where("b.app_id IN (?)", appIDs).Group("b.id").Find(&count).Error; err != nil {
+		return nil, err
+	}
+	res := make(map[uint64]int)
+	for _, i := range count {
+		res[i.AppID] = i.Count
+	}
+	return res, nil
+}
+
 func (svc *Service) Merge(repo *gitmodule.Repository, user *User, mergeId int, mergeOptions *MergeOptions) (*gitmodule.Commit, error) {
 	var mergeRequest MergeRequest
 	err := svc.db.Where("repo_id =? and repo_merge_id=?", repo.ID, mergeId).First(&mergeRequest).Error

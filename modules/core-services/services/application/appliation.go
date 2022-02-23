@@ -425,7 +425,7 @@ func (a *Application) Delete(applicationID int64) (*model.Application, error) {
 func (a *Application) Get(applicationID int64) (*model.Application, error) {
 	application, err := a.db.GetApplicationByID(applicationID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get application")
+		return nil, err
 	}
 	if application.DisplayName == "" {
 		application.DisplayName = application.Name

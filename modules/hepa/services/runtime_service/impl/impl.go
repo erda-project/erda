@@ -17,7 +17,9 @@ package impl
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -38,6 +40,7 @@ import (
 	"github.com/erda-project/erda/modules/hepa/services/micro_api"
 	"github.com/erda-project/erda/modules/hepa/services/runtime_service"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type GatewayRuntimeServiceServiceImpl struct {
@@ -173,7 +176,11 @@ func (impl GatewayRuntimeServiceServiceImpl) TouchRuntimeComplete(ctx map[string
 			return
 		}
 		for _, runtimeEndpoint := range runtimeEndpoints {
-			err = (*impl.packageBiz).SetRuntimeEndpoint(runtimeEndpoint)
+			// render platform placeholder
+			runtimeEndpoint.Endpoints, err = renderPlatformInfo(runtimeEndpoint.Endpoints, reqDto.ProjectId)
+			if err == nil {
+				err = (*impl.packageBiz).SetRuntimeEndpoint(runtimeEndpoint)
+			}
 			if err != nil {
 				log.Errorf("set runtime endpoint failed, err:%+v, runtimeEndpoint:%+v", err, runtimeEndpoint)
 				humanLog := i18n.Sprintf(ctx["locale"].(string), "FailedToBindServiceEndpoint", runtimeEndpoint.RuntimeService.ServiceName)
@@ -662,4 +669,45 @@ func (impl GatewayRuntimeServiceServiceImpl) GetServiceApiPrefix(req *gw.ApiPref
 	}
 	sort.Strings(prefixs)
 	return
+}
+
+func renderPlatformInfo(endpoints []diceyml.Endpoint, projectIdStr string) ([]diceyml.Endpoint, error) {
+	var (
+		projectName              *string
+		left, right, platformTag = "${", "}", "platform."
+		rePlaceholder            = regexp.MustCompile("\\$\\{(.+?)\\}")
+	)
+
+	for i, endpoint := range endpoints {
+		if !rePlaceholder.MatchString(endpoint.Domain) {
+			continue
+		}
+		res := rePlaceholder.FindAllString(endpoint.Domain, -1)
+		for _, r := range res {
+			placeholder, start, end, err := strutil.FirstCustomPlaceholder(r, left, right)
+			if err != nil || start == end || !strings.HasPrefix(placeholder, platformTag) {
+				return nil, fmt.Errorf("placeholder %s format error, %v", placeholder, err)
+			}
+
+			switch strings.Trim(placeholder, platformTag) {
+			case "DICE_PROJECT_NAME":
+				if projectName == nil {
+					projectId, err := strconv.ParseUint(projectIdStr, 10, 64)
+					if err != nil {
+						return nil, fmt.Errorf("failed to parse project id %s, err: %v", projectIdStr, err)
+					}
+					project, err := bundle.Bundle.GetProject(projectId)
+					if err != nil {
+						return nil, fmt.Errorf("faield to get project, id: %d, err: %v", projectId, err)
+					}
+					projectName = &project.Name
+				}
+				endpoints[i].Domain = strings.ReplaceAll(endpoints[i].Domain, r, *projectName)
+			default:
+				return nil, fmt.Errorf("placeholder %s doesn't support", placeholder)
+			}
+		}
+	}
+
+	return endpoints, nil
 }

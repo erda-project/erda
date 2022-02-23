@@ -16,27 +16,29 @@ package deployment_order
 
 import (
 	"fmt"
-
 	"strings"
 
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/queue"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
 	"github.com/erda-project/erda/modules/orchestrator/services/runtime"
 )
 
 const (
-	release               = "RELEASE"
-	gitBranchLabel        = "gitBranch"
-	orderStatusWaitDeploy = "WAITDEPLOY"
+	release        = "RELEASE"
+	gitBranchLabel = "gitBranch"
 )
 
 type DeploymentOrder struct {
-	db     *dbclient.DBClient
-	bdl    *bundle.Bundle
-	rt     *runtime.Runtime
-	deploy *deployment.Deployment
+	db         *dbclient.DBClient
+	bdl        *bundle.Bundle
+	rt         *runtime.Runtime
+	deploy     *deployment.Deployment
+	queue      *queue.PusherQueue
+	releaseSvc pb.ReleaseServiceServer
 }
 
 type Option func(*DeploymentOrder)
@@ -74,6 +76,20 @@ func WithRuntime(rt *runtime.Runtime) Option {
 func WithDeployment(deploy *deployment.Deployment) Option {
 	return func(d *DeploymentOrder) {
 		d.deploy = deploy
+	}
+}
+
+// WithQueue with queue service
+func WithQueue(queue *queue.PusherQueue) Option {
+	return func(d *DeploymentOrder) {
+		d.queue = queue
+	}
+}
+
+// WithReleaseSvc with dicehub release service
+func WithReleaseSvc(svc pb.ReleaseServiceServer) Option {
+	return func(d *DeploymentOrder) {
+		d.releaseSvc = svc
 	}
 }
 

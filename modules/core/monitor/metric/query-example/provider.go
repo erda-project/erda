@@ -42,16 +42,17 @@ func (p *provider) Run(ctx context.Context) error {
 }
 
 func (p *provider) queryExample(ctx context.Context) error {
+	defer func() {
+		recover()
+	}()
 	req := &pb.QueryWithInfluxFormatRequest{
-		Start: "0",             // or timestamp
-		End:   "1642057089000", // or timestamp
-		Statement: "SELECT timestamp(), level::tag, count(timestamp) " +
-			"FROM analyzer_alert " +
-			"WHERE alert_scope::tag='org' AND alert_scope_id::tag='4' " +
-			"GROUP BY time(),host_ip::tag",
+		Start:     "1645158894018", // or timestamp
+		End:       "1645162494018", // or timestamp
+		Statement: "SELECT timestamp(), avg(cpu_usage_percent) FROM docker_container_summary WHERE container_id::tag = $container_id  GROUP BY time(1m0s) ",
 		Params: map[string]*structpb.Value{
 			"cluster_name": structpb.NewStringValue("terminus-dev"),
 			"terminus_key": structpb.NewStringValue("54055597b1cc15b56e59c35e7b231e0c"),
+			"container_id": structpb.NewStringValue("6078d040a8b01f92f380c76e877301cd1a0a1842bcc1790ab86fe7db798eb8ce"),
 		},
 		//Options: map[string]string{
 		//	"debug": "true",

@@ -306,43 +306,6 @@ func (s *Scripts) SameNameLint() error {
 	return nil
 }
 
-func (s *Scripts) HasDestructiveOperationInPending() (string, bool) {
-	if s.destructive == 1 {
-		return s.destructiveText, true
-	}
-	if s.destructive == -1 {
-		return "", false
-	}
-
-	s.destructive = -1
-	for _, module := range s.Services {
-		for _, script := range module.Scripts {
-			if !script.Pending || script.IsBaseline() {
-				continue
-			}
-			for _, node := range script.Nodes {
-				switch stmt := node.(type) {
-				case *ast.DropDatabaseStmt, *ast.DropTableStmt, *ast.TruncateTableStmt:
-					s.destructive = 1
-					s.destructiveText = node.Text()
-					return s.destructiveText, true
-				case *ast.AlterTableStmt:
-					for _, spec := range stmt.Specs {
-						switch spec.Tp {
-						case ast.AlterTableDropColumn:
-							s.destructive = 1
-							s.destructiveText = node.Text()
-							return s.destructiveText, true
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return "", false
-}
-
 func (s *Scripts) FreshBaselineModules(db *gorm.DB) map[string]*Module {
 	var modules = make(map[string]*Module)
 	for name, mod := range s.Services {
