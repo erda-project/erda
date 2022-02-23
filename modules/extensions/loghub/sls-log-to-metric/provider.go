@@ -19,10 +19,11 @@ import (
 	"fmt"
 	"time"
 
-	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	report "github.com/erda-project/erda/providers/metrics/report"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 )
 
 type (
