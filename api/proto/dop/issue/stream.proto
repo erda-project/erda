@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package erda.dop.issue;
+option go_package = "github.com/erda-project/erda-proto-go/dop/issue/pb";
+import "google/api/annotations.proto";
+import "common/openapi.proto";
+
+service CommentIssueStreamService {
+  option(erda.common.openapi_service) = {
+    service : "dop",
+    auth : {
+      check_login : true,
+      check_token: true,
+    }
+  };
+
+  rpc BatchCreateIssueStream(CommentIssueStreamBatchCreateRequest) returns(CommentIssueStreamBatchCreateResponse) {
+    option(google.api.http) = {
+      post : "/api/issues/actions/batch-create-comment-stream",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/issues/actions/batch-create-comment-stream",
+    };
+  }
+}
+
+message CommentIssueStreamCreateRequest {
+    int64 issueID = 1;
+    string type = 2;
+    string content = 3;
+    MRCommentInfo mrInfo = 4;
+    string userID = 5;
+}
+
+message MRCommentInfo {
+	int64 appID = 1;
+	int64 mrID = 2;
+	string mrTitle= 3;
+}
+
+message CommentIssueStreamBatchCreateRequest {
+    repeated CommentIssueStreamCreateRequest issueStreams = 1;
+}
+
+message CommentIssueStreamBatchCreateResponse {  }

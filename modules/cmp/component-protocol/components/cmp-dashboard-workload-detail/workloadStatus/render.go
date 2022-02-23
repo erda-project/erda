@@ -116,9 +116,9 @@ func (s *ComponentWorkloadStatus) SetComponentValue() error {
 	return nil
 }
 
-func (s *ComponentWorkloadStatus) Transfer(c *cptype.Component) {
-	c.Props = cputil2.MustConvertProps(s.Props)
-	c.State = map[string]interface{}{
+func (s *ComponentWorkloadStatus) Transfer(component *cptype.Component) {
+	component.Props = cputil2.MustConvertProps(s.Props)
+	component.State = map[string]interface{}{
 		"clusterName": s.State.ClusterName,
 		"workloadId":  s.State.WorkloadID,
 	}

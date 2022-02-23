@@ -52,6 +52,10 @@ grpc-client@erda.cmp.dashboard.resource:
   block: false
 erda.cmp.dashboard.resource-client:
 
+grpc-client@erda.core.dicehub.release:
+  addr: "${DICEHUB_GRPC_ADDR:dicehub:7080}"
+erda.core.dicehub.release-client:
+
 ## orchestrator addon mysql
 grpc-client@erda.orchestrator.addon.mysql:
   addr: "${ORCHESTRATOR_GRPC_ADDR:orchestrator:7080}"
@@ -65,6 +69,7 @@ erda.core.dop.autotest.testplan:
 erda.dop.projecthome:
 erda.dop.contribution:
 erda.dop.projectpipeline:
+erda.dop.issue.stream:
 
 # component-protocol framework
 component-protocol:

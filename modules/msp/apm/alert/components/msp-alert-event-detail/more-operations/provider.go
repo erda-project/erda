@@ -71,7 +71,11 @@ func (b *ComponentOperationButton) Render(ctx context.Context, component *cptype
 		}
 	}
 
-	// todo: re update the alertEvent state?
+	alertEvent, err = b.GetAlertEvent(ctx)
+	if err != nil {
+		return err
+	}
+	common.SetAlertEventToGlobalState(*gs, alertEvent)
 
 	b.SetComponentValue(alertEvent)
 	b.Transfer(component)
@@ -115,9 +119,9 @@ func (b *ComponentOperationButton) SetComponentValue(alertEvent *monitorpb.Alert
 			Operations: map[string]interface{}{
 				"click": Operation{
 					Key:    operationPauseAlert,
-					Reload: true,
+					Reload: false,
 					Command: Command{
-						Key: "setPauseExpireTime",
+						Key: "set",
 						State: CommandState{
 							Visible: true,
 						},

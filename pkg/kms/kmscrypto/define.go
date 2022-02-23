@@ -12,23 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package kmscrypto
 
-import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+// Encode defines the type of bytes encoded to string
+type Encode uint
+
+const (
+	String Encode = iota
+	HEX
+	Base64
 )
 
-var DICEHUB_RELEASES_DELETE = apis.ApiSpec{
-	Path:         "/api/releases/<releaseId>",
-	BackendPath:  "/api/releases/<releaseId>",
-	Host:         "dicehub.marathon.l4lb.thisdcos.directory:10000",
-	Scheme:       "http",
-	Method:       "DELETE",
-	RequestType:  apistructs.ReleaseDeleteRequest{},
-	ResponseType: apistructs.ReleaseDeleteResponse{},
-	IsOpenAPI:    true,
-	CheckLogin:   true,
-	CheckToken:   true,
-	Doc:          `summary: 删除版本`,
-}
+// Secret defines the private key type
+type Secret uint
+
+const (
+	PKCS1 Secret = iota
+	PKCS8
+)

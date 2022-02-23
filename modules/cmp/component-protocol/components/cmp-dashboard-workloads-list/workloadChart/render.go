@@ -171,11 +171,11 @@ func (w *ComponentWorkloadChart) SetComponentValue(ctx context.Context) error {
 	return nil
 }
 
-func (w *ComponentWorkloadChart) Transfer(c *cptype.Component) {
-	c.State = map[string]interface{}{
+func (w *ComponentWorkloadChart) Transfer(component *cptype.Component) {
+	component.State = map[string]interface{}{
 		"values": w.State.Values,
 	}
-	c.Data = map[string]interface{}{
+	component.Data = map[string]interface{}{
 		"option": w.Data.Option,
 	}
 }

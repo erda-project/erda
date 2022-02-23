@@ -83,6 +83,10 @@ func parseInetUrl(url string) (portalHost string, portalDest string, portalUrl s
 	return
 }
 
+func GetNetPortalUrl(clusterName string) string {
+	return "inet://" + clusterName
+}
+
 func NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	if !strings.HasPrefix(url, "inet://") {
 		return http.NewRequest(method, url, body)

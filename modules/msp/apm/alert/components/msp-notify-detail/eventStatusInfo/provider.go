@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -77,10 +78,11 @@ func (cp *ComponentEventOverviewInfo) Render(ctx context.Context, c *cptype.Comp
 	if err != nil {
 		return err
 	}
+	sendTime := time.Unix(alertIndex.Data.SendTime.GetSeconds(), int64(alertIndex.Data.SendTime.GetNanos())).Format("2006/01/02 15:04:05")
 	data := Data{
 		Channel:    cp.sdk.I18n(alertIndex.Data.Channel),
 		Status:     status,
-		SendTime:   alertIndex.Data.SendTime.AsTime().Format("2006/01/02 15:04:05"),
+		SendTime:   sendTime,
 		Group:      notifyGroup.Name,
 		LinkedRule: alertIndex.Data.NotifyRule,
 	}

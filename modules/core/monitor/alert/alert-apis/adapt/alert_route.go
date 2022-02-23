@@ -334,5 +334,5 @@ func convertDashboardURL(domain, orgName, path, dashboardID string, groups []str
 
 // transform record url
 func convertRecordURL(domain, orgName, path string) string {
-	return domain + "/" + orgName + path + "/{{alert_group_id}}"
+	return domain + "/" + orgName + path
 }

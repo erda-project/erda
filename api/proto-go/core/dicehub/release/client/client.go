@@ -62,7 +62,7 @@ func (s *releaseServiceWrapper) CreateRelease(ctx context.Context, req *pb.Relea
 	return s.client.CreateRelease(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
-func (s *releaseServiceWrapper) UpdateRelease(ctx context.Context, req *pb.ReleaseUpdateRequest) (*pb.ReleaseDataResponse, error) {
+func (s *releaseServiceWrapper) UpdateRelease(ctx context.Context, req *pb.ReleaseUpdateRequest) (*pb.ReleaseUpdateResponse, error) {
 	return s.client.UpdateRelease(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
@@ -74,11 +74,11 @@ func (s *releaseServiceWrapper) GetIosPlist(ctx context.Context, req *pb.GetIosP
 	return s.client.GetIosPlist(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
-func (s *releaseServiceWrapper) GetRelease(ctx context.Context, req *pb.GetIosPlistRequest) (*pb.ReleaseGetResponse, error) {
+func (s *releaseServiceWrapper) GetRelease(ctx context.Context, req *pb.ReleaseGetRequest) (*pb.ReleaseGetResponse, error) {
 	return s.client.GetRelease(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
-func (s *releaseServiceWrapper) DeleteRelease(ctx context.Context, req *pb.GetIosPlistRequest) (*pb.ReleaseDataResponse, error) {
+func (s *releaseServiceWrapper) DeleteRelease(ctx context.Context, req *pb.ReleaseDeleteRequest) (*pb.ReleaseDeleteResponse, error) {
 	return s.client.DeleteRelease(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
@@ -96,4 +96,28 @@ func (s *releaseServiceWrapper) GetLatestReleases(ctx context.Context, req *pb.G
 
 func (s *releaseServiceWrapper) ReleaseGC(ctx context.Context, req *pb.ReleaseGCRequest) (*pb.ReleaseDataResponse, error) {
 	return s.client.ReleaseGC(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *releaseServiceWrapper) UploadRelease(ctx context.Context, req *pb.ReleaseUploadRequest) (*pb.ReleaseUploadResponse, error) {
+	return s.client.UploadRelease(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *releaseServiceWrapper) ParseReleaseFile(ctx context.Context, req *pb.ParseReleaseFileRequest) (*pb.ParseReleaseFileResponse, error) {
+	return s.client.ParseReleaseFile(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *releaseServiceWrapper) ToFormalRelease(ctx context.Context, req *pb.FormalReleaseRequest) (*pb.FormalReleaseResponse, error) {
+	return s.client.ToFormalRelease(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *releaseServiceWrapper) ToFormalReleases(ctx context.Context, req *pb.FormalReleasesRequest) (*pb.FormalReleasesResponse, error) {
+	return s.client.ToFormalReleases(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *releaseServiceWrapper) DeleteReleases(ctx context.Context, req *pb.ReleasesDeleteRequest) (*pb.ReleasesDeleteResponse, error) {
+	return s.client.DeleteReleases(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *releaseServiceWrapper) CheckVersion(ctx context.Context, req *pb.CheckVersionRequest) (*pb.CheckVersionResponse, error) {
+	return s.client.CheckVersion(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
