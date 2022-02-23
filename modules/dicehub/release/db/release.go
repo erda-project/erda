@@ -171,14 +171,14 @@ func (client *ReleaseConfigDB) GetReleasesByParams(
 		db = db.Where("created_at <= ?", time.Unix(req.EndTime/1000, 0))
 	}
 
+	if req.IsLatest {
+		db = db.Where("is_latest = true")
+	}
+
 	if req.OrderBy != "" {
 		db = db.Order(req.OrderBy + " " + req.Order)
 	} else {
 		db = db.Order("created_at DESC")
-	}
-
-	if req.Latest {
-		db = db.Select("*, max(created_at)").Group("project_id, application_name, git_branch")
 	}
 
 	if err := db.Offset((req.PageNum - 1) * req.PageSize).
@@ -278,6 +278,15 @@ func (client *ReleaseConfigDB) GetUnReferedReleasesBefore(before time.Time) ([]R
 func (client *ReleaseConfigDB) GetReleases(releaseIDs []string) ([]Release, error) {
 	var releases []Release
 	if err := client.Where("release_id in (?)", releaseIDs).Find(&releases).Error; err != nil {
+		return nil, err
+	}
+	return releases, nil
+}
+
+func (client *ReleaseConfigDB) GetReleasesByBranch(projectID, appID int64, gitBranch string) ([]Release, error) {
+	var releases []Release
+	if err := client.Where("project_id = ?", projectID).Where("application_id = ?", appID).
+		Where("git_branch = ?", gitBranch).Find(&releases).Error; err != nil {
 		return nil, err
 	}
 	return releases, nil
