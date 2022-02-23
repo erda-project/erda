@@ -113,7 +113,7 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 			}
 			tr := taskrun.New(ctx, task,
 				ctx.Value(ctxKeyPipelineExitCh).(chan struct{}), ctx.Value(ctxKeyPipelineExitChCancelFunc).(context.CancelFunc),
-				r.TaskThrottler, executor, &p, r.bdl, r.dbClient, r.js,
+				executor, &p, r.bdl, r.dbClient, r.js,
 				r.actionAgentSvc, r.extMarketSvc)
 
 			// tear down task

@@ -219,7 +219,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/_daemon/reload-action-executor-config", Method: http.MethodGet, Handler: e.reloadActionExecutorConfig},
 		{Path: "/_daemon/crond/actions/reload", Method: http.MethodGet, Handler: e.crondReload},
 		{Path: "/_daemon/crond/actions/snapshot", Method: http.MethodGet, Handler: e.crondSnapshot},
-		{Path: "/_daemon/reconciler/throttler/snapshot", Method: http.MethodGet, WriterHandler: e.throttlerSnapshot},
 
 		{Path: "/api/pipeline-snippets/actions/query-details", Method: http.MethodPost, Handler: e.querySnippetDetails},
 

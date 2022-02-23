@@ -23,7 +23,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
-	"github.com/erda-project/erda/modules/pipeline/providers/queuemanage/pkg/queue/throttler"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -36,7 +35,6 @@ type TaskRun struct {
 
 	Ctx                   context.Context
 	Executor              types.ActionExecutor
-	Throttler             throttler.Throttler
 	P                     *spec.Pipeline
 	QueriedPipelineStatus apistructs.PipelineStatus
 
@@ -66,7 +64,6 @@ type TaskRun struct {
 // New returns a TaskRun.
 func New(ctx context.Context, task *spec.PipelineTask,
 	pExitCh <-chan struct{}, pExitChCancel context.CancelFunc,
-	throttler throttler.Throttler,
 	executor types.ActionExecutor, p *spec.Pipeline, bdl *bundle.Bundle, dbClient *dbclient.Client, js jsonstore.JsonStore,
 	actionAgentSvc *actionagentsvc.ActionAgentSvc,
 	extMarketSvc *extmarketsvc.ExtMarketSvc,
@@ -74,11 +71,10 @@ func New(ctx context.Context, task *spec.PipelineTask,
 	// make executor has buffer, don't block task framework
 	executorCh := make(chan spec.ExecutorDoneChanData, 1)
 	return &TaskRun{
-		Ctx:       context.WithValue(ctx, spec.MakeTaskExecutorCtxKey(task), executorCh),
-		Task:      task,
-		Executor:  executor,
-		Throttler: throttler,
-		P:         p,
+		Ctx:      context.WithValue(ctx, spec.MakeTaskExecutorCtxKey(task), executorCh),
+		Task:     task,
+		Executor: executor,
+		P:        p,
 
 		Bdl:      bdl,
 		DBClient: dbClient,

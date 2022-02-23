@@ -16,7 +16,6 @@ package taskop
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -25,10 +24,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -47,73 +44,6 @@ func (s *start) TaskRun() *taskrun.TaskRun {
 }
 
 func (s *start) Processing() (interface{}, error) {
-
-	alerted := false
-
-	_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*30)).Do(func() (abort bool, err error) {
-		popSuccess, popDetail := s.Throttler.PopPending(s.Task.Extra.UUID)
-
-		// 推进成功，退出循环
-		if popSuccess {
-			return true, nil
-		}
-
-		rlog.TDebugf(s.P.ID, s.Task.ID, "throttler: pop detail: %+v", popDetail)
-		if !alerted {
-			if err := s.TaskRun().AppendLastMsg(fmt.Sprintf("Pop pending failed, detail: %+v", popDetail)); err == nil {
-				alerted = true
-			}
-		}
-		return false, fmt.Errorf("for decline ratio wating")
-	})
-
-	//alerted := false
-	//
-	//// 轮训
-	//_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*30)).Do(func() (abort bool, err error) {
-	//	// get max
-	//	actionSpec := s.TaskRun().GetActionSpec()
-	//
-	//	// 获取限制
-	//	max := s.TaskRun().GetConcurrencyLimit(actionSpec.Concurrency)
-	//	rlog.TDebugf(s.P.ID, s.Task.ID, "task-concurrency: actionType: %s, clusterName: %s, max: %d", s.Task.Type, s.P.ClusterName, max)
-	//	// 无限制
-	//	if max == taskrun.NoConcurrencyLimit {
-	//		return true, nil
-	//	}
-	//
-	//	// check task concurrency
-	//	current := s.TaskRun().GetTaskConcurrencyCount()
-	//	rlog.TDebugf(s.P.ID, s.Task.ID, "task-concurrency: actionType: %s, ensure get task concurrency count: %d", s.Task.Type, current)
-	//
-	//	// 当前并发数大于等于最大并发限制，等待
-	//	if current >= max {
-	//		rlog.TDebugf(s.P.ID, s.Task.ID, "task-concurrency: actionType: %s, current[%d] >= max[%d], ", s.Task.Type, current, max)
-	//		// 插入 lastMsg 提示用户
-	//		if !alerted {
-	//			rlog.TDebugf(s.P.ID, s.Task.ID, "task-concurrency: Maximum [%s] concurrency limit reached, max: %d, current: %d", s.Task.Type, max, current)
-	//			if err := s.TaskRun().AppendLastMsg(
-	//				fmt.Sprintf("Maximum [%s] concurrency limit reached, max: %d, current: %d", s.Task.Type, max, current)); err == nil {
-	//				alerted = true
-	//			}
-	//		}
-	//		// 并发数超过最大并发限制时，从数据库查询数据校准
-	//		s.TaskRun().CalibrateConcurrencyCountFromDB()
-	//		return false, fmt.Errorf("for decline ratio waiting")
-	//	}
-	//
-	//	rlog.TDebugf(s.P.ID, s.Task.ID, "task-concurrency: actionType: %s, current[%d] < max[%d], update count", s.Task.Type, current, max)
-	//	// 当前小于最大并发限制，修改 current 并开始执行
-	//	s.TaskRun().AddTaskConcurrencyCount(1)
-	//	// 打印 解除并发限制 日志至 lastMsg
-	//	if alerted {
-	//		if err := s.TaskRun().AppendLastMsg(
-	//			fmt.Sprintf("Maximum [%s] concurrency limit unreached, max: %d, current: %d, begin start task", s.Task.Type, max, current)); err == nil {
-	//		}
-	//	}
-	//	return true, nil
-	//})
-
 	// start
 	data, err := s.Executor.Start(s.Ctx, s.Task)
 	if err != nil {

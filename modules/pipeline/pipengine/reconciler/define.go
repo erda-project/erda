@@ -25,7 +25,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/pkg/action_info"
-	"github.com/erda-project/erda/modules/pipeline/providers/queuemanage/pkg/queue/throttler"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanage/types"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
@@ -52,8 +51,7 @@ type Reconciler struct {
 	bdl      *bundle.Bundle
 	dbClient *dbclient.Client
 
-	QueueManager  types.QueueManager
-	TaskThrottler throttler.Throttler // TODO remove the throttler.Throttler, after release/1.3 iteration throttler is not necessary
+	QueueManager types.QueueManager
 
 	// processingTasks store task id which is in processing
 	processingTasks sync.Map

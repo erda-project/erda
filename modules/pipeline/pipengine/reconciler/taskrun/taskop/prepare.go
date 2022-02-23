@@ -39,7 +39,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/pkg/containers"
 	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
-	"github.com/erda-project/erda/modules/pipeline/providers/queuemanage/pkg/queue/throttler"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -556,9 +555,6 @@ makeOutStorages:
 		return true, err
 	}
 
-	// insert into queue
-	pre.insertIntoQueue(*specYmlJob)
-
 	return false, nil
 }
 
@@ -576,30 +572,6 @@ func existContinuePrivateEnv(privateEnvs map[string]string, key string) bool {
 		return true
 	}
 	return false
-}
-
-// insertIntoQueue 插入队列
-func (pre *prepare) insertIntoQueue(actionSpec apistructs.ActionSpec) {
-	if actionSpec.Priority == nil || !actionSpec.Priority.Enable {
-		return
-	}
-	var addKeyToQueueReq []throttler.AddKeyToQueueRequest
-	now := time.Now()
-	for _, cfg := range actionSpec.Priority.V1 {
-		if cfg.Queue == "" {
-			continue
-		}
-		addKeyToQueueReq = append(addKeyToQueueReq, throttler.AddKeyToQueueRequest{
-			QueueName:    cfg.Queue,
-			QueueWindow:  &cfg.Concurrency,
-			Priority:     cfg.Priority,
-			CreationTime: now,
-		})
-	}
-	if len(addKeyToQueueReq) == 0 {
-		return
-	}
-	pre.Throttler.AddKeyToQueues(pre.Task.Extra.UUID, addKeyToQueueReq)
 }
 
 func handleAccessTokenExpiredIn(task *spec.PipelineTask) string {
