@@ -91,9 +91,9 @@ func TestGetRollbackConfig(t *testing.T) {
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetAllProjects",
 		func(*bundle.Bundle) ([]apistructs.ProjectDTO, error) {
 			return []apistructs.ProjectDTO{
-				apistructs.ProjectDTO{ID: 1, RollbackConfig: map[string]int{"DEV": 3, "TEST": 5, "STAGING": 4, "PROD": 6}},
-				apistructs.ProjectDTO{ID: 2, RollbackConfig: map[string]int{"DEV": 4, "TEST": 6, "STAGING": 5, "PROD": 7}},
-				apistructs.ProjectDTO{ID: 3, RollbackConfig: map[string]int{"DEV": 5, "TEST": 7, "STAGING": 6, "PROD": 8}},
+				{ID: 1, RollbackConfig: map[string]int{"DEV": 3, "TEST": 5, "STAGING": 4, "PROD": 6}},
+				{ID: 2, RollbackConfig: map[string]int{"DEV": 4, "TEST": 6, "STAGING": 5, "PROD": 7}},
+				{ID: 3, RollbackConfig: map[string]int{"DEV": 5, "TEST": 7, "STAGING": 6, "PROD": 8}},
 			}, nil
 		},
 	)
@@ -301,7 +301,7 @@ func Test_listGroupByApps(t *testing.T) {
 	var db *dbclient.DBClient
 	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindRuntimesInApps", func(_ *dbclient.DBClient, appIDs []uint64, env string) (map[uint64][]*dbclient.Runtime, []uint64, error) {
 		a := make(map[uint64][]*dbclient.Runtime)
-		a[1] = []*dbclient.Runtime{&dbclient.Runtime{
+		a[1] = []*dbclient.Runtime{{
 			BaseModel: dbengine.BaseModel{
 				ID: 1,
 			},
