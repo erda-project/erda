@@ -104,7 +104,8 @@ func Interpolate(s string, values map[string]string, defaultPrecedence bool, lef
 // InterpolationDereference 渲染出 values 值之间的互相引用.
 // 注意 key 中不能出现占位符; 不能出现循环引用.
 func InterpolationDereference(values map[string]string, left, right string) error {
-	for k, v := range values {
+	for k := range values {
+		// validate the key
 		placeholder, indexStart, indexEnd, err := FirstCustomPlaceholder(k, left, right)
 		if err != nil {
 			return err
@@ -112,25 +113,19 @@ func InterpolationDereference(values map[string]string, left, right string) erro
 		if indexStart != indexEnd {
 			return errors.Errorf("placeholder %s in the values' key %s", placeholder, k)
 		}
-		placeholder, indexStart, indexEnd, err = FirstCustomPlaceholder(v, left, right)
-		if err != nil {
-			return err
-		}
-		if indexStart == 0 && indexEnd == 0 {
-			break
-		}
-		if placeholder == k {
-			return errors.Errorf("loop reference in key %s", k)
-		}
-		values[k] = v[:indexStart] + values[placeholder] + v[indexEnd:]
-	}
-	for k := range values {
-		_, indexStart, indexEnd, err := FirstCustomPlaceholder(values[k], left, right)
-		if err != nil {
-			return err
-		}
-		if indexStart != indexEnd {
-			return InterpolationDereference(values, left, right)
+
+		for {
+			placeholder, indexStart, indexEnd, err = FirstCustomPlaceholder(values[k], left, right)
+			if err != nil {
+				return err
+			}
+			if indexStart == indexEnd {
+				break
+			}
+			if placeholder == k {
+				return errors.Errorf("loop reference in key %s", k)
+			}
+			values[k] = values[k][:indexStart] + values[placeholder] + values[k][indexEnd:]
 		}
 	}
 	return nil
