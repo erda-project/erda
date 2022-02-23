@@ -55,7 +55,6 @@ func (db *AlertDB) GetByScopeAndScopeIDAndName(scope, scopeID, name string) (*Al
 
 // QueryByScopeAndScopeID .
 func (db *AlertDB) QueryByScopeAndScopeID(scope, scopeID string, pageNo, pageSize uint64, name string) ([]*Alert, error) {
-	db.LogMode(true)
 	var alerts []*Alert
 	query := db.Where("alert_scope=?", scope).Where("alert_scope_id=?", scopeID)
 	if name != "" {
