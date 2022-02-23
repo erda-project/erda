@@ -20,16 +20,20 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/type_conversion"
-	auto_test_plan_list "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-list"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-plan-list/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 )
 
 type TestPlanManageFormModal struct{}
 
-func RenderCreator() protocol.CompRender {
-	return &TestPlanManageFormModal{}
+func init() {
+	cpregister.RegisterLegacyComponent("auto-test-plan-list", "formModal", func() protocol.CompRender { return &TestPlanManageFormModal{} })
 }
 
 type FormModalData struct {
@@ -38,12 +42,10 @@ type FormModalData struct {
 	SpaceID uint64   `json:"spaceID"`
 }
 
-func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
-	projectID, err := type_conversion.InterfaceToUint64(bdl.InParams["projectId"])
-	if err != nil {
-		return err
-	}
+func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	sdk := cputil.SDK(ctx)
+	bdl := sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	projectID := uint64(cputil.GetInParamByKey(sdk.Ctx, "projectId").(float64))
 
 	// 新建测试计划
 	switch event.Operation.String() {
@@ -65,9 +67,9 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 			if err := json.Unmarshal(formDataByte, &req); err != nil {
 				return err
 			}
-			req.UserID = bdl.Identity.UserID
+			req.UserID = sdk.Identity.UserID
 			req.TestPlanID = uint64(c.State["formModalTestPlanID"].(float64))
-			if err := bdl.Bdl.UpdateTestPlanV2(req); err != nil {
+			if err := bdl.UpdateTestPlanV2(req); err != nil {
 				return err
 			}
 			c.State["visible"] = false
@@ -82,10 +84,10 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 			if err := json.Unmarshal(formDataByte, &req); err != nil {
 				return err
 			}
-			req.UserID = bdl.Identity.UserID
+			req.UserID = sdk.Identity.UserID
 			req.ProjectID = projectID
 
-			if err := bdl.Bdl.CreateTestPlanV2(req); err != nil {
+			if err := bdl.CreateTestPlanV2(req); err != nil {
 				return err
 			}
 			c.State["visible"] = false
@@ -97,11 +99,11 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 	// 更新动作呼出的表单页
 	if _, ok := c.State["formModalVisible"]; ok && c.State["formModalVisible"].(bool) {
 		defer delete(c.State, "formModalVisible")
-		resp, err := bdl.Bdl.GetTestPlanV2(c.State["formModalTestPlanID"].(uint64))
+		resp, err := bdl.GetTestPlanV2(c.State["formModalTestPlanID"].(uint64))
 		if err != nil {
 			return err
 		}
-		space, err := bdl.Bdl.GetTestSpace(resp.Data.SpaceID)
+		space, err := bdl.GetTestSpace(resp.Data.SpaceID)
 		if err != nil {
 			return err
 		}
@@ -111,7 +113,7 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 			return err
 		}
 
-		iterations, err := bdl.Bdl.ListProjectIterations(apistructs.IterationPagingRequest{
+		iterations, err := bdl.ListProjectIterations(apistructs.IterationPagingRequest{
 			PageNo:              1,
 			PageSize:            999,
 			ProjectID:           projectID,
@@ -133,8 +135,8 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 		c.State["visible"] = true
 		c.State["formData"] = formData
 		c.State["isUpdate"] = true
-		c.Props = auto_test_plan_list.GenUpdateFormModalProps(bdl, tsBytes, iterationsBytes)
-		(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = resp.Data.Owners
+		c.Props = cputil.MustConvertProps(common.GenUpdateFormModalProps(ctx, tsBytes, iterationsBytes))
+		(*gs)[cptype.GlobalInnerKeyUserIDs.String()] = resp.Data.Owners
 		return nil
 	}
 
@@ -143,7 +145,7 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 		// 创建动作呼出的表单页面
 		c.State["visible"] = true
 		c.State["formData"] = nil
-		result, err := bdl.Bdl.ListTestSpace(apistructs.AutoTestSpaceListRequest{
+		result, err := bdl.ListTestSpace(apistructs.AutoTestSpaceListRequest{
 			ProjectID: int64(projectID),
 			PageNo:    1,
 			PageSize:  500,
@@ -160,7 +162,7 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 			return err
 		}
 
-		iterations, err := bdl.Bdl.ListProjectIterations(apistructs.IterationPagingRequest{
+		iterations, err := bdl.ListProjectIterations(apistructs.IterationPagingRequest{
 			PageNo:              1,
 			PageSize:            999,
 			ProjectID:           projectID,
@@ -179,7 +181,7 @@ func (tpm *TestPlanManageFormModal) Render(ctx context.Context, c *apistructs.Co
 		}
 
 		c.State["isCreate"] = true
-		c.Props = auto_test_plan_list.GenCreateFormModalProps(bdl, tsBytes, iterationsBytes)
+		c.Props = cputil.MustConvertProps(common.GenCreateFormModalProps(ctx, tsBytes, iterationsBytes))
 		return nil
 	}
 
