@@ -12,18 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package manager
 
 import (
 	"context"
-	"time"
+	"testing"
 
-	"github.com/erda-project/erda/pkg/retry"
+	"github.com/erda-project/erda/modules/pipeline/providers/queuemanage/types"
 )
 
-func (r *Reconciler) beforeListen(ctx context.Context) error {
-	if err := retry.DoWithInterval(func() error { return r.loadThrottler(ctx) }, 3, time.Second*10); err != nil {
-		return err
+func Test_defaultManager_Stop(t *testing.T) {
+	// nil mgr
+	var mgr types.QueueManager = (*defaultManager)(nil)
+	mgr.Stop()
+
+	// mgr with multiple stop channels
+	ctx := context.Background()
+	mgr = New(ctx)
+	mgr.(*defaultManager).queueStopChanByID["id1"] = make(chan struct{})
+	mgr.(*defaultManager).queueStopChanByID["id2"] = make(chan struct{})
+	for _, stopCh := range mgr.(*defaultManager).queueStopChanByID {
+		go func(ch chan struct{}) {
+			<-ch
+		}(stopCh)
 	}
-	return nil
+	// no blocking
+	mgr.Stop()
 }

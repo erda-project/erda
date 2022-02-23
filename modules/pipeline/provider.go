@@ -25,6 +25,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/dispatcher"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
+	"github.com/erda-project/erda/modules/pipeline/providers/queuemanage"
 	"github.com/erda-project/erda/providers/metrics/report"
 )
 
@@ -34,6 +37,8 @@ type provider struct {
 	ReconcilerElection election.Interface  `autowired:"etcd-election@reconciler"`
 	GcElection         election.Interface  `autowired:"etcd-election@gc"`
 	Router             httpserver.Router   `autowired:"http-router"`
+
+	QueueManager queuemanage.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

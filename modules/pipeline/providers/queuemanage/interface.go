@@ -12,18 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package queuemanage
 
 import (
-	"context"
-	"time"
-
-	"github.com/erda-project/erda/pkg/retry"
+	"github.com/erda-project/erda/modules/pipeline/providers/queuemanage/types"
 )
 
-func (r *Reconciler) beforeListen(ctx context.Context) error {
-	if err := retry.DoWithInterval(func() error { return r.loadThrottler(ctx) }, 3, time.Second*10); err != nil {
-		return err
-	}
-	return nil
+type Interface interface {
+	types.QueueManager
 }

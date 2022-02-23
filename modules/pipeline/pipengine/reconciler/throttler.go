@@ -22,7 +22,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/throttler"
+	"github.com/erda-project/erda/modules/pipeline/providers/queuemanage/pkg/queue/throttler"
 	"github.com/erda-project/erda/pkg/jsonstore"
 )
 

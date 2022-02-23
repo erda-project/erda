@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/throttler"
+	"github.com/erda-project/erda/modules/pipeline/providers/queuemanage/pkg/queue/throttler"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"

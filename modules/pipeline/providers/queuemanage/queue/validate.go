@@ -12,18 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package queue
 
 import (
-	"context"
-	"time"
-
-	"github.com/erda-project/erda/pkg/retry"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/providers/queuemanage/types"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (r *Reconciler) beforeListen(ctx context.Context) error {
-	if err := retry.DoWithInterval(func() error { return r.loadThrottler(ctx) }, 3, time.Second*10); err != nil {
-		return err
+func (q *defaultQueue) validatePipeline(p *spec.Pipeline) apistructs.PipelineQueueValidateResult {
+	// capacity
+	result := q.ValidateCapacity(p)
+	if result.IsFailed() {
+		return result
 	}
-	return nil
+	// free resources
+	result = q.ValidateFreeResources(p)
+	if result.IsFailed() {
+		return result
+	}
+
+	// default result
+	return types.SuccessValidateResult
 }
