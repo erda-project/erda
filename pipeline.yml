@@ -136,9 +136,9 @@ stages:
             lint_config: .erda/migrations/config.yml
             migrationdir: .erda/migrations
             mysql_host: ${{ configs.lagacy_migration_mysql_host }}
-            mysql_password: ${{ configs.lagacy_migration_mysql_password }}
             mysql_port: 3306
-            mysql_username: root
+            mysql_username: ${{ configs.lagacy_migration_mysql_username }}
+            mysql_password: ${{ configs.lagacy_migration_mysql_password }}
             retry_timeout: 150
             skip_migration: "true"
             skip_pre_migration: true
@@ -151,9 +151,9 @@ stages:
             lint_config: .erda/migrations/config.yml
             migrationdir: .erda/migrations
             mysql_host: ${{ configs.lagacy_migration_mysql_host }}
-            mysql_password: ${{ configs.lagacy_migration_mysql_password }}
             mysql_port: 3306
-            mysql_username: root
+            mysql_username: ${{ configs.lagacy_migration_mysql_username }}
+            mysql_password: ${{ configs.lagacy_migration_mysql_password }}
             retry_timeout: 150
             skip_migration: "true"
             skip_pre_migration: true
