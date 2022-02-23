@@ -101,6 +101,7 @@ func (a *Addon) MySQLDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup
 	if err != nil {
 		return nil, err
 	}
+
 	if !capacity.Data.MysqlOperator {
 		logrus.Info("mysql operator switch is off")
 		// 执行mysql主从初始化

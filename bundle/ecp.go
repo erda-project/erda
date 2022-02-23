@@ -1126,7 +1126,7 @@ func (b *Bundle) GetClusterInfo(clusterName string, identify apistructs.Identity
 		buffer     bytes.Buffer
 	)
 
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return nil, err
 	}
@@ -1169,7 +1169,7 @@ func (b *Bundle) GetEdgeInstanceInfo(orgID int64, appName, site string, identify
 		buffer     bytes.Buffer
 	)
 
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return nil, err
 	}

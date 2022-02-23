@@ -55,8 +55,8 @@ func init() {
 		if !ok {
 			return nil, errors.Errorf("not found some config of action executor, kind [%s], name [%s], field [ADDR]", Kind, name)
 		}
-		if discover.Scheduler() != "" {
-			addr = discover.Scheduler()
+		if discover.Orchestrator() != "" {
+			addr = discover.Orchestrator()
 			logrus.Infof("=> kind [%v], name [%v], option: %s=%s from env", Kind, name, OPTION_ADDR, addr)
 		}
 

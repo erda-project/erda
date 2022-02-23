@@ -452,7 +452,6 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 	if err != nil {
 		return nil, err
 	}
-
 	var buildErr error
 	switch params.AddonName {
 	case apistructs.AddonZookeeper:

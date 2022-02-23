@@ -75,7 +75,7 @@ func (m *Migration) Create(migrationLog *dbclient.MigrationLog, diceyml *diceyml
 	bb, err := json.Marshal(job)
 	logrus.Infof("Create schedule job body: %s", string(bb))
 	var body bytes.Buffer
-	resp, err := httpclient.New().Put(discover.Scheduler()).
+	resp, err := httpclient.New().Put(discover.Orchestrator()).
 		Path("/v1/job/create").JSONBody(apistructs.JobCreateRequest(job)).
 		Do().Body(&body)
 	if err != nil {
@@ -117,7 +117,7 @@ func (m *Migration) Start(migrationLog *dbclient.MigrationLog, diceyml *diceyml.
 
 	namespace, name := getNamespaceAndName(migrationLog)
 	var body bytes.Buffer
-	resp, err := httpclient.New().Post(discover.Scheduler()).
+	resp, err := httpclient.New().Post(discover.Orchestrator()).
 		Path(fmt.Sprintf("/v1/job/%s/%s/start", namespace, name)).
 		Do().Body(&body)
 	if err != nil {
@@ -186,7 +186,7 @@ func (m *Migration) Exist(migrationLog *dbclient.MigrationLog) (created, started
 func (m *Migration) Status(migrationLog *dbclient.MigrationLog) (desc apistructs.MigrationStatusDesc, err error) {
 	namespace, name := getNamespaceAndName(migrationLog)
 	var body bytes.Buffer
-	resp, err := httpclient.New().Get(discover.Scheduler(), httpclient.RetryErrResp).
+	resp, err := httpclient.New().Get(discover.Orchestrator(), httpclient.RetryErrResp).
 		Path(fmt.Sprintf("/v1/job/%s/%s", namespace, name)).
 		Do().Body(&body)
 	if err != nil {
@@ -328,7 +328,7 @@ func (m *Migration) CleanUnusedMigrationNs() (bool, error) {
 
 func (m *Migration) Remove(namespace string, migrationLog *dbclient.MigrationLog) (err error) {
 	var body bytes.Buffer
-	resp, err := httpclient.New().Delete(discover.Scheduler()).
+	resp, err := httpclient.New().Delete(discover.Orchestrator()).
 		Path(fmt.Sprintf("/v1/job/%s/deletealljobs", namespace)).
 		Do().Body(&body)
 	if err != nil {

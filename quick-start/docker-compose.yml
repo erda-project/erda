@@ -393,25 +393,6 @@ services:
     restart: always
     platform: linux/amd64
 
-  scheduler:
-    image: registry.erda.cloud/erda/erda:1.3.0-stable-20211015023812-fee1f38
-    command: /app/scheduler
-    container_name: erda-scheduler
-    depends_on:
-      - erda-migration
-      - etcd
-    env_file:
-      - ./env
-    environment:
-      - ENABLE_SPECIFIED_K8S_NAMESPACE=erda-system
-      - CMDB_CONTAINER_TOPIC=spot-metaserver_container
-      - CMDB_GROUP=spot_cmdb_group2
-      - DEBUG=false
-    ports:
-      - "9091"
-    restart: always
-    platform: linux/amd64
-
   streaming:
     image: registry.erda.cloud/erda/erda:1.3.0-stable-20211015023812-fee1f38
     command: /app/streaming

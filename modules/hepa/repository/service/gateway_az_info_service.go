@@ -127,7 +127,7 @@ func (impl *GatewayAzInfoServiceImpl) GetAzInfoByClusterName(name string) (*orm.
 	info := &orm.GatewayAzInfo{
 		Az: name,
 	}
-	code, body, err := util.CommonRequest("GET", discover.Scheduler()+"/api/clusterinfo/"+name, nil, map[string]string{"Internal-Client": "hepa-gateway"})
+	code, body, err := util.CommonRequest("GET", discover.Orchestrator()+"/api/clusterinfo/"+name, nil, map[string]string{"Internal-Client": "hepa-gateway"})
 	if code >= 300 {
 		err = errors.Errorf("get cluster info failed, code:%d", code)
 	}
@@ -182,7 +182,7 @@ func (impl *GatewayAzInfoServiceImpl) GetAzInfo(cond *orm.GatewayAzInfo) (*orm.G
 			err = errors.Errorf("can't find az of info[%+v] in admin resp[%s]", cond, body)
 			goto failback
 		}
-		code, body, err = util.CommonRequest("GET", discover.Scheduler()+"/api/clusterinfo/"+az, nil, map[string]string{"Internal-Client": "hepa-gateway"})
+		code, body, err = util.CommonRequest("GET", discover.Orchestrator()+"/api/clusterinfo/"+az, nil, map[string]string{"Internal-Client": "hepa-gateway"})
 		if code >= 300 || err != nil {
 			goto failback
 		}

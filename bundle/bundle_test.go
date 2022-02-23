@@ -81,9 +81,4 @@ func TestBundleOption(t *testing.T) {
 	v, err = b.urls.Orchestrator()
 	assert.Equal(t, v, "http://a.com")
 	assert.Nil(t, err)
-
-	v, err = b.urls.Scheduler()
-	assert.Equal(t, v, "http://a.com")
-	assert.Nil(t, err)
-
 }

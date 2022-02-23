@@ -252,7 +252,7 @@ func GetCLusterInfo(clusterName string) (map[string]string, error) {
 	}
 
 	var body bytes.Buffer
-	resp, err := httpclient.New().Get(discover.Scheduler()).
+	resp, err := httpclient.New().Get(discover.Orchestrator()).
 		Path(strutil.Concat("/api/clusterinfo/", clusterName)).
 		Do().Body(&body)
 	if err != nil {

@@ -1855,7 +1855,6 @@ func (fsm *DeployFSMContext) PrepareCheckProjectResource(app *apistructs.Applica
 	查找该项目当前环境的 quota，记为 Q；
 	如果 Q - AlreadyRequest < CurrentRequest, 则配额不够，不可部署。
 	如果 Allocatable - ActualRequest < CurrentRequest, 则提示实际资源不够，但仍允许部署（不管它是否部得起来）
-
 	注意：声明的资源都是超卖后的。
 	*/
 

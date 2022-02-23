@@ -23,7 +23,7 @@ import (
 )
 
 func (b *Bundle) CreateJob(job apistructs.JobFromUser) (jsonResp apistructs.JobCreateResponse, err error) {
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return
 	}
@@ -45,7 +45,7 @@ func (b *Bundle) CreateJob(job apistructs.JobFromUser) (jsonResp apistructs.JobC
 }
 
 func (b *Bundle) StartJob(namespace string, name string) (jsonResp apistructs.JobStartResponse, err error) {
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return
 	}
@@ -69,7 +69,7 @@ func (b *Bundle) StartJob(namespace string, name string) (jsonResp apistructs.Jo
 func (b *Bundle) GetJobStatus(namespace string, name string) (status apistructs.StatusCode, err error) {
 	status = apistructs.StatusUnknown
 
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return
 	}
@@ -97,7 +97,7 @@ func (b *Bundle) GetJobStatus(namespace string, name string) (status apistructs.
 }
 
 func (b *Bundle) DeleteJob(namespace string, name string) (jsonResp apistructs.JobDeleteResponse, err error) {
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return
 	}
@@ -119,7 +119,7 @@ func (b *Bundle) DeleteJob(namespace string, name string) (jsonResp apistructs.J
 }
 
 func (b *Bundle) StopJob(namespace string, name string) (jsonResp apistructs.JobStopResponse, err error) {
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return
 	}

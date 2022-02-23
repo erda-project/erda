@@ -44,7 +44,7 @@ func (b *Bundle) CreateServiceGroup(sg apistructs.ServiceGroupCreateV2Request) e
 
 // DeleteServiceGroup delete servicegroup
 func (b *Bundle) DeleteServiceGroup(namespace, name string) error {
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (b *Bundle) ForceDeleteServiceGroup(req apistructs.ServiceGroupDeleteReques
 	} else {
 		force = "false"
 	}
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (b *Bundle) UpdateServiceGroup(sg apistructs.ServiceGroupUpdateV2Request) e
 func (b *Bundle) InspectServiceGroup(namespace, name string) (
 	*apistructs.ServiceGroup, error) {
 	sg := apistructs.ServiceGroupInfoRequest{Type: namespace, ID: name}
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return nil, err
 	}
@@ -129,18 +129,6 @@ func (b *Bundle) InspectServiceGroup(namespace, name string) (
 		return nil, toAPIError(r.StatusCode(), resp.Error)
 	}
 	return &resp.Data, nil
-}
-
-// CreateJobVolume create job volume
-func (b *Bundle) CreateJobVolume(v apistructs.JobVolume) (string, error) {
-	var resp apistructs.JobVolumeCreateResponse
-	if err := callScheduler(b, v, &resp, "/api/jobvolume", b.hc.Post); err != nil {
-		return "", err
-	}
-	if resp.Error != "" {
-		return "", fmt.Errorf(resp.Error)
-	}
-	return resp.ID, nil
 }
 
 func (b *Bundle) KillPod(r apistructs.ServiceGroupKillPodRequest) error {
@@ -187,7 +175,7 @@ func (b *Bundle) InspectServiceGroupWithTimeout(namespace, name string) (*apistr
 
 // CancelServiceGroup will be DEPRECATED
 func (b *Bundle) CancelServiceGroup(namespace, name string) error {
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return err
 	}
@@ -205,7 +193,7 @@ func (b *Bundle) CancelServiceGroup(namespace, name string) error {
 
 // GetServiceGroupStatus will be DEPRECATED
 func (b *Bundle) GetServiceGroupStatus(namespace, name string) (*apistructs.MultiLevelStatus, error) {
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +210,7 @@ func (b *Bundle) GetServiceGroupStatus(namespace, name string) (*apistructs.Mult
 }
 
 func (b *Bundle) GetPodInfo(req apistructs.PodInfoRequest) (*apistructs.PodInfoResponse, error) {
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +273,7 @@ func (b *Bundle) GetPodInfo(req apistructs.PodInfoRequest) (*apistructs.PodInfoR
 
 // GetInstanceInfo 实例状态 list
 func (b *Bundle) GetInstanceInfo(req apistructs.InstanceInfoRequest) (*apistructs.InstanceInfoResponse, error) {
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +344,7 @@ func (b *Bundle) GetInstanceInfo(req apistructs.InstanceInfoRequest) (*apistruct
 }
 
 func (b *Bundle) CapacityInfo(clustername string) (*apistructs.CapacityInfoResponse, error) {
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +363,7 @@ func (b *Bundle) CapacityInfo(clustername string) (*apistructs.CapacityInfoRespo
 
 // PARAM: brief, 是否需要已使用资源信息
 func (b *Bundle) ResourceInfo(clustername string, brief bool) (*apistructs.ClusterResourceInfoData, error) {
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return nil, err
 	}
@@ -424,7 +412,7 @@ func (b *Bundle) ScaleServiceGroup(sg apistructs.UpdateServiceGroupScaleRequst) 
 
 func callScheduler(b *Bundle, req, resp interface{}, path string,
 	httpfunc func(host string, retry ...httpclient.RetryOption) *httpclient.Request) error {
-	host, err := b.urls.Scheduler()
+	host, err := b.urls.Orchestrator()
 	if err != nil {
 		return err
 	}

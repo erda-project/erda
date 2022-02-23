@@ -16,7 +16,14 @@
 package conf
 
 import (
+	"sync"
+	"time"
+
 	"github.com/erda-project/erda/pkg/envconf"
+)
+
+const (
+	CLUSTERS_CONFIG_PATH = "/dice/scheduler/configs/cluster/"
 )
 
 // Conf 定义配置对象.
@@ -41,6 +48,14 @@ type Conf struct {
 	TokenClientID              string `env:"TOKEN_CLIENT_ID" default:"orchestrator"`
 	TokenClientSecret          string `env:"TOKEN_CLIENT_SECRET" default:"devops/orchestrator"`
 	InspectServiceGroupTimeout int    `env:"INSPECT_SERVICEGROUP_TIMEOUT" default:"60"`
+
+	// Conf for scheduler
+	DefaultRuntimeExecutor string `env:"DEFAULT_RUNTIME_EXECUTOR" default:"MARATHON"`
+	// TraceLogEnv shows the key of environment variable defined for tracing log
+	TraceLogEnv           string `env:"TRACELOGENV" default:"TERMINUS_DEFINE_TAG"`
+	WsDiceRootDomain      string `env:"WS_DICE_ROOT_DOMAIN" default:"app.terminus.io,erda.cloud"`
+	TerminalSecurity      bool   `env:"TERMINAL_SECURITY" default:"false"`
+	ExecutorClientTimeout int    `env:"EXECUTOR_CLIENT_TIMEOUT" default:"10"`
 }
 
 var cfg Conf
@@ -148,4 +163,37 @@ func TokenClientSecret() string {
 // InspectServiceGroupTimeout time out of servicegroup
 func InspectServiceGroupTimeout() int {
 	return cfg.InspectServiceGroupTimeout
+}
+
+var confStore ConfStore
+
+func GetConfStore() *ConfStore {
+	return &confStore
+}
+
+type ConfStore struct {
+	ExecutorStore sync.Map
+}
+
+func WsDiceRootDomain() string {
+	return cfg.WsDiceRootDomain
+}
+
+// DefaultRuntimeExecutor return cfg.DefaultRuntimeExecutor
+func DefaultRuntimeExecutor() string {
+	return cfg.DefaultRuntimeExecutor
+}
+
+// TraceLogEnv return cfg.TraceLogEnv
+func TraceLogEnv() string {
+	return cfg.TraceLogEnv
+}
+
+// TerminalSecurity return cfg.TerminalSecurity
+func TerminalSecurity() bool {
+	return cfg.TerminalSecurity
+}
+
+func ExecutorClientTimeout() time.Duration {
+	return time.Duration(cfg.ExecutorClientTimeout) * time.Second
 }

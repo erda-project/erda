@@ -7186,7 +7186,7 @@ CREATE TABLE `pipeline_configs` (
 
 LOCK TABLES `pipeline_configs` WRITE;
 /*!40000 ALTER TABLE `pipeline_configs` DISABLE KEYS */;
-INSERT INTO `pipeline_configs` VALUES (1,'action_executor','{\n	\"kind\": \"SCHEDULER\",\n	\"name\": \"scheduler\",\n	\"options\": {\n		\"ADDR\": \"scheduler.marathon.l4lb.thisdcos.directory:9091\"\n	}\n}');
+INSERT INTO `pipeline_configs` VALUES (1,'action_executor','{\n	\"kind\": \"SCHEDULER\",\n	\"name\": \"scheduler\",\n	\"options\": {\n		\"ADDR\": \"orchestrator.marathon.l4lb.thisdcos.directory:8081\"\n	}\n}');
 /*!40000 ALTER TABLE `pipeline_configs` ENABLE KEYS */;
 UNLOCK TABLES;
 
