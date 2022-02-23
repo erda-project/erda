@@ -17,17 +17,15 @@ package addButton
 import (
 	"context"
 
-	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 )
 
-type TestPlanManageAddButton struct{}
-
-func RenderCreator() protocol.CompRender {
-	return &TestPlanManageAddButton{}
+type TestPlanManageAddButton struct {
 }
 
-func (tpm *TestPlanManageAddButton) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
+func (tpm *TestPlanManageAddButton) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	if event.Operation.String() == "addTest" {
 		if c.State == nil {
 			c.State = make(map[string]interface{}, 0)
@@ -36,4 +34,8 @@ func (tpm *TestPlanManageAddButton) Render(ctx context.Context, c *apistructs.Co
 	}
 
 	return nil
+}
+
+func init() {
+	cpregister.RegisterLegacyComponent("auto-test-plan-list", "addButton", func() protocol.CompRender { return &TestPlanManageAddButton{} })
 }

@@ -21,17 +21,21 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/type_conversion"
-	auto_test_plan_list "github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-list"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-list/i18n"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-plan-list/common"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-plan-list/i18n"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 )
 
 type TestPlanManageTable struct{}
 
-func RenderCreator() protocol.CompRender {
-	return &TestPlanManageTable{}
+func init() {
+	cpregister.RegisterLegacyComponent("auto-test-plan-list", "table", func() protocol.CompRender { return &TestPlanManageTable{} })
 }
 
 type TableItem struct {
@@ -75,16 +79,13 @@ const (
 	OrderDescend string = "descend"
 )
 
-func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, gs *apistructs.GlobalStateData) error {
-	bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
+func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
+	sdk := cputil.SDK(ctx)
+	bdl := sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
+	projectID := uint64(cputil.GetInParamByKey(sdk.Ctx, "projectId").(float64))
 
-	projectID, err := type_conversion.InterfaceToUint64(bdl.InParams["projectId"])
-	if err != nil {
-		return err
-	}
-
-	cond := apistructs.TestPlanV2PagingRequest{ProjectID: projectID, PageNo: 1, PageSize: auto_test_plan_list.DefaultTablePageSize}
-	cond.UserID = bdl.Identity.UserID
+	cond := apistructs.TestPlanV2PagingRequest{ProjectID: projectID, PageNo: 1, PageSize: common.DefaultTablePageSize}
+	cond.UserID = sdk.Identity.UserID
 	if _, ok := c.State["pageNo"]; ok {
 		cond.PageNo = uint64(c.State["pageNo"].(float64))
 	}
@@ -120,11 +121,11 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 		if err := json.Unmarshal(odBytes, &operationData); err != nil {
 			return err
 		}
-		testplan, err := bdl.Bdl.GetTestPlanV2(operationData.Meta.ID)
+		testplan, err := bdl.GetTestPlanV2(operationData.Meta.ID)
 		if err != nil {
 			return err
 		}
-		if err := bdl.Bdl.UpdateTestPlanV2(apistructs.TestPlanV2UpdateRequest{
+		if err := bdl.UpdateTestPlanV2(apistructs.TestPlanV2UpdateRequest{
 			Name:         testplan.Data.Name,
 			Desc:         testplan.Data.Desc,
 			SpaceID:      testplan.Data.SpaceID,
@@ -132,12 +133,12 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 			IsArchived:   &operationData.Meta.IsArchived,
 			TestPlanID:   testplan.Data.ID,
 			IterationID:  testplan.Data.IterationID,
-			IdentityInfo: apistructs.IdentityInfo{UserID: bdl.Identity.UserID},
+			IdentityInfo: apistructs.IdentityInfo{UserID: sdk.Identity.UserID},
 		}); err != nil {
 			return err
 		}
 		now := strconv.FormatInt(time.Now().Unix(), 10)
-		project, err := bdl.Bdl.GetProject(projectID)
+		project, err := bdl.GetProject(projectID)
 		if err != nil {
 			return err
 		}
@@ -159,7 +160,7 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 		if !operationData.Meta.IsArchived {
 			audit.TemplateName = apistructs.UnarchiveTestPlanTemplate
 		}
-		if err := bdl.Bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
+		if err := bdl.CreateAuditEvent(&apistructs.AuditCreateRequest{Audit: audit}); err != nil {
 			return err
 		}
 	}
@@ -181,18 +182,17 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 		cond.IsArchived = &isArchive
 	}
 	// orderBy and ASC
-	err = convertSortData(&cond, c)
+	err := convertSortData(&cond, c)
 	if err != nil {
 		return err
 	}
 
-	r, err := bdl.Bdl.PagingTestPlansV2(cond)
+	r, err := bdl.PagingTestPlansV2(cond)
 	if err != nil {
 		return err
 	}
 	// data
 	var l []TableItem
-	i18nLocale := bdl.Bdl.GetLocale(bdl.Locale)
 	for _, data := range r.List {
 		item := TableItem{
 			Id:   data.ID,
@@ -218,20 +218,20 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 		if data.IsArchived == true {
 			item.Operate.Operations["archive"] = map[string]interface{}{
 				"key":    "archive",
-				"text":   i18nLocale.Get(i18n.I18nKeyUnarchive),
+				"text":   sdk.I18n(i18n.I18nKeyUnarchive),
 				"reload": true,
 				"meta":   map[string]interface{}{"id": data.ID, "isArchived": false},
 			}
 		} else {
 			item.Operate.Operations["archive"] = map[string]interface{}{
 				"key":    "archive",
-				"text":   i18nLocale.Get(i18n.I18nKeyArchive),
+				"text":   sdk.I18n(i18n.I18nKeyArchive),
 				"reload": true,
 				"meta":   map[string]interface{}{"id": data.ID, "isArchived": true},
 			}
 			item.Operate.Operations["edit"] = map[string]interface{}{
 				"key":       "edit",
-				"text":      i18nLocale.Get(i18n.I18nKeyEdit),
+				"text":      sdk.I18n(i18n.I18nKeyEdit),
 				"reload":    true,
 				"meta":      map[string]interface{}{"id": data.ID},
 				"showIndex": 2,
@@ -250,11 +250,11 @@ func (tpmt *TestPlanManageTable) Render(ctx context.Context, c *apistructs.Compo
 	c.State["pageSize"] = cond.PageSize
 	c.State["formModalVisible"] = false
 	c.State["formModalTestPlanID"] = 0
-	(*gs)[protocol.GlobalInnerKeyUserIDs.String()] = r.UserIDs
+	(*gs)[cptype.GlobalInnerKeyUserIDs.String()] = r.UserIDs
 	return nil
 }
 
-func convertSortData(req *apistructs.TestPlanV2PagingRequest, c *apistructs.Component) error {
+func convertSortData(req *apistructs.TestPlanV2PagingRequest, c *cptype.Component) error {
 	if _, ok := c.State["sorterData"]; !ok {
 		return nil
 	}

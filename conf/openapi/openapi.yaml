@@ -87,6 +87,7 @@ openapi-v1-routes:
           - project-pipeline
           - project-pipeline-exec-list
           - project-list-all
+          - auto-test-plan-list
       - addr: http://localhost:8080
         scenarios:
           - demo

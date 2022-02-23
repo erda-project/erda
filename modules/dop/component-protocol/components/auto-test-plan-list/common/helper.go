@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package auto_test_plan_list
+package common
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
 
-	protocol "github.com/erda-project/erda/modules/openapi/component-protocol"
-	"github.com/erda-project/erda/modules/openapi/component-protocol/scenarios/auto-test-plan-list/i18n"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-plan-list/i18n"
 )
 
 // GenCreateFormModalProps 生成创建测试计划表单的props
-func GenCreateFormModalProps(ctxBundle protocol.ContextBundle, testSpace, iteration []byte) interface{} {
-	i18nLocale := ctxBundle.Bdl.GetLocale(ctxBundle.Locale)
+func GenCreateFormModalProps(ctx context.Context, testSpace, iteration []byte) interface{} {
 	props := fmt.Sprintf(`{
           "name": "%s",
           "fields": [
@@ -76,9 +76,9 @@ func GenCreateFormModalProps(ctxBundle protocol.ContextBundle, testSpace, iterat
               }
             }
           ]
-        }`, i18nLocale.Get(i18n.I18nKeyPlan), i18nLocale.Get(i18n.I18nKeyPlanName),
-		i18nLocale.Get(i18n.I18nKeyPlanNameRegex), i18nLocale.Get(i18n.I18nKeyTestSpace),
-		i18nLocale.Get(i18n.I18nKeyIteration), i18nLocale.Get(i18n.I18nKeyPrincipal))
+        }`, cputil.I18n(ctx, i18n.I18nKeyPlan), cputil.I18n(ctx, i18n.I18nKeyPlanName),
+		cputil.I18n(ctx, i18n.I18nKeyPlanNameRegex), cputil.I18n(ctx, i18n.I18nKeyTestSpace),
+		cputil.I18n(ctx, i18n.I18nKeyIteration), cputil.I18n(ctx, i18n.I18nKeyPrincipal))
 
 	var propsI interface{}
 	if err := json.Unmarshal([]byte(props), &propsI); err != nil {
@@ -89,8 +89,7 @@ func GenCreateFormModalProps(ctxBundle protocol.ContextBundle, testSpace, iterat
 }
 
 // GenUpdateFormModalProps 生成更新测试计划表单的props
-func GenUpdateFormModalProps(ctxBundle protocol.ContextBundle, testSpace, iteration []byte) interface{} {
-	i18nLocale := ctxBundle.Bdl.GetLocale(ctxBundle.Locale)
+func GenUpdateFormModalProps(ctx context.Context, testSpace, iteration []byte) interface{} {
 	props := fmt.Sprintf(`{
           "name": "%s",
           "fields": [
@@ -139,9 +138,9 @@ func GenUpdateFormModalProps(ctxBundle protocol.ContextBundle, testSpace, iterat
               }
             }
           ]
-        }`, i18nLocale.Get(i18n.I18nKeyPlan), i18nLocale.Get(i18n.I18nKeyPlanName),
-		i18nLocale.Get(i18n.I18nKeyPlanNameRegex), i18nLocale.Get(i18n.I18nKeyTestSpace),
-		i18nLocale.Get(i18n.I18nKeyIteration), i18nLocale.Get(i18n.I18nKeyPrincipal))
+        }`, cputil.I18n(ctx, i18n.I18nKeyPlan), cputil.I18n(ctx, i18n.I18nKeyPlanName),
+		cputil.I18n(ctx, i18n.I18nKeyPlanNameRegex), cputil.I18n(ctx, i18n.I18nKeyTestSpace),
+		cputil.I18n(ctx, i18n.I18nKeyIteration), cputil.I18n(ctx, i18n.I18nKeyPrincipal))
 
 	var propsI interface{}
 	if err := json.Unmarshal([]byte(props), &propsI); err != nil {
@@ -150,3 +149,7 @@ func GenUpdateFormModalProps(ctxBundle protocol.ContextBundle, testSpace, iterat
 
 	return propsI
 }
+
+const (
+	DefaultTablePageSize = 15
+)

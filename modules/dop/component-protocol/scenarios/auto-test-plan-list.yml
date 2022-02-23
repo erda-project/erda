@@ -1,11 +1,14 @@
-# 场景名
 scenario: "auto-test-plan-list"
 
-# 布局
 hierarchy:
   root: "autoTestPlan"
   structure:
-    autoTestPlan: [ "filter", "table", "topHead", "formModal" ]
+    autoTestPlan: [ "tableContainer", "topHead", "formModal" ]
+    tableContainer:
+      slot: tableHead
+      table: table
+    tableHead:
+      left: filter
     topHead: [ "addButton" ]
 
 rendering:
@@ -38,7 +41,11 @@ rendering:
           value: "{{ addButton.addTest }}"
 
   __DefaultRendering__:
+    - name: autoTestPlan
+    - name: tableContainer
+    - name: tableHead
     - name: formModal
+    - name: topHead
     - name: addButton
     - name: filter
     - name: table
@@ -49,20 +56,12 @@ rendering:
           value: "{{ filter.archive }}"
         - name: "iteration"
           value: "{{ filter.iteration }}"
-# 组件
-#TODO: add i18n
+
 components:
   autoTestPlan:
     type: "Container"
   filter:
-    type: "ContractiveFilter"
-    props:
-      delay: 1000
-    state:
-    operations:
-      filter:
-        key: "filter"
-        reload: true
+    type: "ConfigurableFilter"
   table:
     type: "Table"
     operations:
@@ -114,10 +113,12 @@ components:
           dataIndex: "operate"
           width: 120
           fixed: "right"
-  topHead:
-    type: "RowContainer"
+  tableContainer:
+    type: "ComposeTable"
     props:
       isTopHead: true
+  tableHead:
+    type: LRContainer
   formModal:
     type: 'FormModal'
     operations:
@@ -133,3 +134,7 @@ components:
     props:
       text: ${{ i18n.autotest.plan.new.plan }}
       type: "primary"
+  topHead:
+    type: RowContainer
+    props:
+      isTopHead: true
