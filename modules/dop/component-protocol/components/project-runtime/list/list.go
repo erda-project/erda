@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gogap/errors"
 	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
 
@@ -184,13 +185,29 @@ func (p *List) Init(ctx servicehub.Context) error {
 	return p.DefaultProvider.Init(ctx)
 }
 
+func (p *List) initMyApps(sdk *cptype.SDK, oid, projectId uint64) (map[uint64]string, error) {
+	myApp := make(map[uint64]string)
+	apps, err := p.Bdl.GetMyApps(sdk.Identity.UserID, oid)
+	if err != nil {
+		logrus.Errorf("get my app failed,%v", err)
+		return myApp, errors.Errorf("get my app failed,%v", err)
+	}
+	for i := 0; i < len(apps.List); i++ {
+		if apps.List[i].ProjectID != projectId {
+			continue
+		}
+		myApp[apps.List[i].ID] = apps.List[i].Name
+	}
+	return myApp, nil
+}
+
 func (p *List) getData() *list.Data {
 	data := &list.Data{}
 	data.PageNo = p.PageNo
 	data.PageSize = p.PageSize
 	var runtimes []bundle.GetApplicationRuntimesDataEle
 	var runtimeIdToAppNameMap map[uint64]string
-	var myApp map[uint64]bool
+	var myApp map[uint64]string
 
 	if gsRuntimes, ok := (*p.Sdk.GlobalState)["runtimes"]; !ok {
 		logrus.Infof("not found runtimes")
@@ -209,11 +226,6 @@ func (p *List) getData() *list.Data {
 			logrus.Errorf("parse oid failed,%v", err)
 			return data
 		}
-		apps, err := p.Bdl.GetMyApps(p.Sdk.Identity.UserID, oid)
-		if err != nil {
-			logrus.Errorf("get my app failed,%v", err)
-			return data
-		}
 		appIds := make([]uint64, 0)
 		appIdToName := make(map[uint64]string)
 
@@ -222,20 +234,15 @@ func (p *List) getData() *list.Data {
 			IsSimple:  true,
 			PageSize:  math.MaxInt32,
 			PageNo:    1})
-		if err != nil {
-			logrus.Errorf("get my app failed,%v", err)
-			return data
-		}
+
 		for i := 0; i < len(allApps.List); i++ {
 			appIds = append(appIds, allApps.List[i].ID)
 			appIdToName[allApps.List[i].ID] = allApps.List[i].Name
 		}
-		myApp = make(map[uint64]bool)
-		for i := 0; i < len(apps.List); i++ {
-			if apps.List[i].ProjectID != projectId {
-				continue
-			}
-			myApp[apps.List[i].ID] = true
+		myApp, err = p.initMyApps(p.Sdk, projectId, oid)
+		if err != nil {
+			logrus.Errorf("get my app failed,%v", err)
+			return data
 		}
 
 		logrus.Infof("start load runtimes by app %v", time.Now())
@@ -274,7 +281,7 @@ func (p *List) getData() *list.Data {
 			logrus.Errorf("failed to transfer runtimeMap, runtimeMap %#v", (*p.Sdk.GlobalState)["runtimeIdToAppName"])
 			return data
 		}
-		myApp = (*p.Sdk.GlobalState)["myApp"].(map[uint64]bool)
+		myApp = (*p.Sdk.GlobalState)["myApp"].(map[uint64]string)
 	}
 	logrus.Infof("runtimes:%v", runtimes)
 	//oid, err := strconv.ParseUint(p.Sdk.Identity.OrgID, 10, 64)
@@ -335,7 +342,7 @@ func (p *List) getData() *list.Data {
 			nameStr = runtimeIdToAppNameMap[appRuntime.ID] + "/" + nameStr
 		}
 		logrus.Infof("%s : %s", appRuntime.Name, appRuntime.LastOperator)
-		isMyApp := myApp[appRuntime.ApplicationID]
+		_, isMyApp := myApp[appRuntime.ApplicationID]
 		item := list.Item{
 			ID:         idStr,
 			Title:      nameStr,
