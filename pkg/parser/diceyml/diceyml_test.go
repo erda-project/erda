@@ -876,38 +876,6 @@ services:
       mem: ${request_mem:1536}
       network:
         mode: container
-  scheduler:
-    binds:
-    - ${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro
-    - ${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro
-    - ${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro
-    cmd: /app/scheduler
-    deployments:
-      labels:
-        GROUP: dice
-      replicas: ${replicas:1}
-    envs:
-      CMDB_CONTAINER_TOPIC: spot-metaserver_container
-      CMDB_GROUP: spot_cmdb_group2
-      DEBUG: "false"
-    health_check:
-      exec: {}
-      http:
-        duration: 120
-        path: /info
-        port: 9091
-    image: registry.erda.cloud/erda/erda:1.4.0-alpha-20211008033801-158b666
-    ports:
-    - l4_protocol: TCP
-      port: 9091
-      protocol: TCP
-    resources:
-      cpu: ${request_cpu:1}
-      max_cpu: 1
-      max_mem: 2048
-      mem: ${request_mem:2048}
-      network:
-        mode: container
   streaming:
     binds:
     - ${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro
