@@ -229,18 +229,42 @@ func (p *provider) getTriggerValueLabels(colMap map[string]int, row *metricpb.Ro
 			continue
 		}
 
-		triggerValue := function.Value
-		triggerValueFieldName := fmt.Sprintf("%s_%s::field", function.Field, function.Aggregator)
+		thresholdValue, triggerValue := function.Value, function.Value
+		var triggerValueFieldName string
+		if function.Alias != nil {
+			triggerValueFieldName = fmt.Sprintf("%s::field", *function.Alias)
+		} else {
+			triggerValueFieldName = fmt.Sprintf("%s_%s::field", function.Field, function.Aggregator)
+		}
 		if val, ok := colMap[triggerValueFieldName]; ok {
 			triggerValue = val
 		}
 
 		labels.Labels = append(labels.Labels, commodel.Label{
-			Title: fmt.Sprintf("%s_%s %v %v", function.Field, function.Aggregator, *function.Operator, triggerValue),
+			Title: fmt.Sprintf("%s_%s=%v (%v %v)", function.Field, function.Aggregator, triggerValue, p.formatOperator(*function.Operator), thresholdValue),
 		})
 	}
 
 	return labels
+}
+
+func (p *provider) formatOperator(op string) string {
+	switch op {
+	case "gte":
+		return ">="
+	case "gt":
+		return ">"
+	case "lte":
+		return "<"
+	case "lt":
+		return "<"
+	case "eq":
+		return "="
+	case "neq":
+		return "!="
+	default:
+		return op
+	}
 }
 
 func (p *provider) getTagLabels(colMap map[string]int, row *metricpb.Row) commodel.Labels {
