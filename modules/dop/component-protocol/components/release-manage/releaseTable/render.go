@@ -435,12 +435,12 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	}
 }
 
-func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
-	c.Props = cputil.MustConvertProps(r.Props)
-	c.Data = map[string]interface{}{
+func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
+	component.Props = cputil.MustConvertProps(r.Props)
+	component.Data = map[string]interface{}{
 		"list": r.Data.List,
 	}
-	c.State = map[string]interface{}{
+	component.State = map[string]interface{}{
 		"releaseTable__urlQuery": r.State.ReleaseTableURLQuery,
 		"pageNo":                 r.State.PageNo,
 		"pageSize":               r.State.PageSize,
@@ -453,7 +453,7 @@ func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
 		"applicationID":          r.State.ApplicationID,
 		"filterValues":           r.State.FilterValues,
 	}
-	c.Operations = r.Operations
+	component.Operations = r.Operations
 }
 
 func (r *ComponentReleaseTable) formalReleases(ctx context.Context, releaseID []string) error {
