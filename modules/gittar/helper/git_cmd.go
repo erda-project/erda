@@ -81,14 +81,23 @@ func runCommand2(w io.Writer, cmd *exec.Cmd, readers ...io.Reader) {
 		logrus.Printf("[ERROR] get command stderr error %v", err)
 		return
 	}
+
 	scanner := bufio.NewScanner(stderr)
 	go func() {
+		var errBuffer bytes.Buffer
 		for scanner.Scan() {
-			logrus.Printf("[ERROR] stderr > %s\n", scanner.Text())
+			errBuffer.Write(scanner.Bytes())
+		}
+		if errBuffer.Len() > 0 {
+			logrus.Printf("[ERROR] stderr %s\n", errBuffer.String())
 		}
 	}()
+
 	if err := cmd.Start(); err != nil {
 		logrus.Printf("[ERROR] command start error %v", err)
+		stdin.Close()
+		stdout.Close()
+		stderr.Close()
 		return
 	}
 	logrus.Infof("command %v processId:%s", cmd.Args, strconv.Itoa(cmd.Process.Pid))
@@ -104,7 +113,6 @@ func runCommand2(w io.Writer, cmd *exec.Cmd, readers ...io.Reader) {
 		}
 	}
 
-	stdin.Close()
 	_, err = io.Copy(w, stdout)
 	if err != nil {
 		logrus.Infof("[ERROR] stdout write error %v", err)
