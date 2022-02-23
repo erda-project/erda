@@ -55,7 +55,6 @@ services:
       cpu: 1
       mem: 1024
 version: "2.0"
-
 `)
 }
 
