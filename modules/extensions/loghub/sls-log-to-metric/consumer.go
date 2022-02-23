@@ -18,13 +18,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda-infra/base/logs"
-	"github.com/erda-project/erda/providers/metrics/report"
-
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	slsconsumer "github.com/aliyun/aliyun-log-go-sdk/consumer"
 	"github.com/recallsong/go-utils/conv"
 	"github.com/recallsong/go-utils/encoding/md5x"
+
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/providers/metrics/report"
 )
 
 // Consumer .
