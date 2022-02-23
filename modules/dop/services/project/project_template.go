@@ -169,7 +169,7 @@ func (t *TemplateDataDirector) TryCreateAppsByTemplate() error {
 			Config:         tempApp.Config,
 			IsExternalRepo: false,
 		}
-		newApp, err := t.bdl.CreateApp(appReq, identityInfo.UserID)
+		newApp, err := t.bdl.CreateAppWithRepo(appReq, identityInfo.UserID)
 		if err != nil {
 			t.failedAppNum++
 			t.errs = append(t.errs, fmt.Errorf("create application %s failed: %v", tempApp.Name, err))

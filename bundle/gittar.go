@@ -63,7 +63,6 @@ func (b *Bundle) CreateRepo(repo apistructs.CreateRepoRequest) (*apistructs.Crea
 		return nil, err
 	}
 	hc := b.hc
-
 	var response apistructs.CreateRepoResponse
 	resp, err := hc.Post(host).Path("/_system/repos").JSONBody(repo).Do().JSON(&response)
 	if err != nil {

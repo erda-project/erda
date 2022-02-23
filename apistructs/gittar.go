@@ -453,7 +453,7 @@ type CreateRepoResponse struct {
 type CreateRepoResponseData struct {
 	ID int64 `json:"id"`
 
-	// 仓库相对路基
+	// 仓库相对路径
 	RepoPath string `json:"repo_path"`
 }
 

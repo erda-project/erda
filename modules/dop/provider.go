@@ -93,14 +93,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		bundle.WithPipeline(),
 		bundle.WithMonitor(),
 		bundle.WithCollector(),
-		bundle.WithHTTPClient(httpclient.New(
-			httpclient.WithTimeout(time.Second*15, time.Duration(conf.BundleTimeoutSecond())*time.Second), // bundle 默认 (time.Second, time.Second*3)
-		)),
 		bundle.WithKMS(),
 		bundle.WithCoreServices(),
 		bundle.WithHTTPClient(
 			httpclient.New(
-				httpclient.WithTimeout(time.Second, time.Second*90),
+				httpclient.WithTimeout(time.Second, time.Duration(conf.BundleTimeoutSecond())*time.Second),
 				httpclient.WithEnableAutoRetry(false),
 			)),
 		// TODO remove it after internal bundle invoke inside cp issue-manage adjusted
