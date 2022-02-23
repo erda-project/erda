@@ -26,6 +26,7 @@ import (
 func (cl Clean) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	cl.State = map[string]interface{}{}
 	delete(*gs, "runtimes")
+	delete(*gs, "getAll")
 	c.State = cl.State
 	return nil
 }
