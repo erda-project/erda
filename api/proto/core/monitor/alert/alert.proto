@@ -429,6 +429,7 @@ message QueryCustomizeAlertRequest {
   string scopeId  = 2;
   int64  pageNo   = 3 [(validator.field) = {int_gt: 0}];
   int64  pageSize = 4 [(validator.field) = {int_gt: 0,int_lt: 101}];
+  string name     = 5;
 }
 
 message QueryCustomizeAlertResponse {
@@ -592,8 +593,9 @@ message QueryOrgCustomizeMetricResponse {
 }
 
 message QueryOrgCustomizeAlertsRequest {
-  int64 pageNo   = 1 [(validator.field) = {int_gt: 0}];
-  int64 pageSize = 2 [(validator.field) = {int_gt: 0,int_lt: 101}];
+  int64  pageNo   = 1 [(validator.field) = {int_gt: 0}];
+  int64  pageSize = 2 [(validator.field) = {int_gt: 0,int_lt: 101}];
+  string name     = 3;
 }
 
 message QueryOrgCustomizeAlertsResponse {
@@ -791,6 +793,7 @@ message QueryAlertRequest {
   string scopeId  = 2;
   int64  pageNo   = 3 [(validator.field) = {int_gt: 0}];
   int64  pageSize = 4 [(validator.field) = {int_gt: 0}];
+  string name     = 5;
 }
 
 message QueryAlertsResponse {
@@ -961,8 +964,9 @@ message QueryOrgAlertRuleResponse {
 }
 
 message QueryOrgAlertRequest {
-  int64 pageNo   = 1 [(validator.field) = {int_gt: 0}];
-  int64 pageSize = 2 [(validator.field) = {int_gt: 0,int_lt: 101}];
+  int64  pageNo   = 1 [(validator.field) = {int_gt: 0}];
+  int64  pageSize = 2 [(validator.field) = {int_gt: 0,int_lt: 101}];
+  string name     = 3;
 }
 
 message QueryOrgAlertResponse {

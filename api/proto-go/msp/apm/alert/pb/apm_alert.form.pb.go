@@ -132,6 +132,8 @@ func (m *QueryAlertRequest) UnmarshalURLValues(prefix string, values url.Values)
 					return err
 				}
 				m.PageSize = val
+			case "name":
+				m.Name = vals[0]
 			}
 		}
 	}
@@ -693,6 +695,8 @@ func (m *QueryCustomizeAlertsRequest) UnmarshalURLValues(prefix string, values u
 					return err
 				}
 				m.PageSize = val
+			case "name":
+				m.Name = vals[0]
 			}
 		}
 	}
