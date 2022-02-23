@@ -39,3 +39,34 @@ func TestPolicyDto_RefuseResponseQuote(t *testing.T) {
 		t.Fatalf("quote error,\n quote: %s,\nquoted: %s", dto.RefuseResponseQuote(), quoted)
 	}
 }
+
+func TestPolicyDto_AdjustDto(t *testing.T) {
+	var dto serverguard.PolicyDto
+	{
+	}
+	dto.MaxTps = -1
+	dto.AdjustDto()
+	if dto.Switch {
+		t.Fatal("switch should be false")
+	}
+
+	dto.MaxTps = 100
+	dto.RefuseCode = 99
+	dto.AdjustDto()
+	if dto.RefuseCode != 429 {
+		t.Fatal("refuseCode should be 429")
+	}
+
+	dto.RefuseCode = 302
+	dto.RefuseResponse = "busy"
+	dto.AdjustDto()
+	if dto.RefuseCode != 429 {
+		t.Fatal("refuseCode should be 429")
+	}
+
+	dto.ExtraLatency = 10
+	dto.AdjustDto()
+	if dto.ExtraLatency != 20 {
+		t.Fatalf("expected extraLatency: 20, actual: %v", dto.ExtraLatency)
+	}
+}
