@@ -699,7 +699,8 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 					return nil, nil, errors.Errorf("dice yml for app %s release is invalid, %v", appName, err)
 				}
 				if !reflect.DeepEqual(oldDice.Obj(), newDice.Obj()) {
-					return nil, nil, errors.Errorf("app release %s was already existed but has different dice yml", version)
+					logrus.Warningf("app release %s (ID: %s) to upload was already existed but has different dice yml. Use old dice yml instead. Old: %v. New:%v",
+						version, existedReleases[0].ReleaseID, oldDice.Obj(), newDice.Obj())
 				}
 				appReleaseList[i][j] = existedReleases[0].ReleaseID
 				continue
