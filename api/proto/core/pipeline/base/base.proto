@@ -8,7 +8,7 @@ import "google/protobuf/struct.proto";
 import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "common/identity.proto";
 import "common/commit.proto";
-import "common/metadata.proto";
+import "common/md.proto";
 import "core/pipeline/queue/queue.proto";
 import "core/pipeline/cron/cron.proto";
 
