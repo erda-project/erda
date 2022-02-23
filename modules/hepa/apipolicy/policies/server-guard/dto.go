@@ -86,8 +86,9 @@ func (dto *PolicyDto) AdjustDto() {
 }
 
 func (dto PolicyDto) RefuseResonseCanBeJson() bool {
-	if s, err := strconv.Unquote("\"" + dto.RefuseResponse + "\""); err == nil {
-		return json.Unmarshal([]byte(s), new(interface{})) == nil
-	}
-	return false
+	return json.Unmarshal([]byte(dto.RefuseResponse), new(interface{})) == nil
+}
+
+func (dto PolicyDto) RefuseResponseQuote() string {
+	return strconv.Quote(dto.RefuseResponse)
 }

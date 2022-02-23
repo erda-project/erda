@@ -200,9 +200,9 @@ location @LIMIT-%s {
     more_set_headers 'Access-Control-Allow-Credentials: true';
     more_set_headers 'Access-Control-Max-Age: 86400';
     more_set_headers 'Content-Type: %s';
-    return %d "%s";
+    return %d %s;
 }
-`, id, contentType, policyDto.RefuseCode, policyDto.RefuseResponse)
+`, id, contentType, policyDto.RefuseCode, policyDto.RefuseResponseQuote())
 	}
 	locationSnippet := limitReq + limitReqStatus + errorPage
 	res.IngressAnnotation = &apipolicy.IngressAnnotation{

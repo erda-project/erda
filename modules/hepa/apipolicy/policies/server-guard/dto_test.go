@@ -22,5 +22,20 @@ import (
 
 func TestPolicyDto_ApplicationJson(t *testing.T) {
 	var dto = serverguard.PolicyDto{RefuseResponse: `{\"success\": true, \"msg\": \"访问频繁\"}`}
-	t.Logf("application/json: %v", dto.RefuseResonseCanBeJson())
+	if dto.RefuseResonseCanBeJson() {
+		t.Fatal("the refuseResponse can not be json")
+	}
+	dto.RefuseResponse = `{"success": true, "msg": "访问频繁"}`
+	if !dto.RefuseResonseCanBeJson() {
+		t.Fatal("the refuseResponse can be json")
+	}
+}
+
+func TestPolicyDto_RefuseResponseQuote(t *testing.T) {
+	var dto = serverguard.PolicyDto{RefuseResponse: `{"success": true, "msg": "访问频繁"}`}
+	t.Logf("quote: %s", dto.RefuseResponseQuote())
+	quoted := `"{\"success\": true, \"msg\": \"访问频繁\"}"`
+	if dto.RefuseResponseQuote() != quoted {
+		t.Fatalf("quote error,\n quote: %s,\nquoted: %s", dto.RefuseResponseQuote(), quoted)
+	}
 }
