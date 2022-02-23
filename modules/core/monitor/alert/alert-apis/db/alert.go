@@ -54,12 +54,13 @@ func (db *AlertDB) GetByScopeAndScopeIDAndName(scope, scopeID, name string) (*Al
 }
 
 // QueryByScopeAndScopeID .
-func (db *AlertDB) QueryByScopeAndScopeID(scope, scopeID string, pageNo, pageSize uint64) ([]*Alert, error) {
+func (db *AlertDB) QueryByScopeAndScopeID(scope, scopeID string, pageNo, pageSize uint64, name string) ([]*Alert, error) {
 	var alerts []*Alert
-	if err := db.
-		Where("alert_scope=?", scope).
-		Where("alert_scope_id=?", scopeID).
-		Order("id DESC").
+	query := db.Where("alert_scope=?", scope).Where("alert_scope_id=?", scopeID)
+	if name != "" {
+		query = query.Where("name like ?", "%"+name+"%")
+	}
+	if err := query.Order("id DESC").
 		Offset((pageNo - 1) * pageSize).Limit(pageSize).
 		Find(&alerts).Error; err != nil {
 		return nil, err
@@ -68,13 +69,13 @@ func (db *AlertDB) QueryByScopeAndScopeID(scope, scopeID string, pageNo, pageSiz
 }
 
 // CountByScopeAndScopeID .
-func (db *AlertDB) CountByScopeAndScopeID(scope, scopeID string) (int, error) {
+func (db *AlertDB) CountByScopeAndScopeID(scope, scopeID, name string) (int, error) {
 	var count int
-	if err := db.
-		Table(TableAlert).
-		Where("alert_scope=?", scope).
-		Where("alert_scope_id=?", scopeID).
-		Count(&count).Error; err != nil {
+	query := db.Table(TableAlert).Where("alert_scope=?", scope).Where("alert_scope_id=?", scopeID)
+	if name != "" {
+		query = query.Where("name like ?", "%"+name+"%")
+	}
+	if err := query.Count(&count).Error; err != nil {
 		return 0, err
 	}
 	return count, nil

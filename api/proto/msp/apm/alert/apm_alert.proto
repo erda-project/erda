@@ -157,6 +157,7 @@ message QueryAlertRequest {
   string tenantGroup = 1;
   int64  pageNo      = 2 [(validator.field) = {int_gt: 0}];
   int64  pageSize    = 3 [(validator.field) = {int_gt: 0, int_lt: 101}];
+  string name        = 4;
 }
 
 message QueryAlertResponse {
@@ -287,6 +288,7 @@ message QueryCustomizeAlertsRequest {
   string tenantGroup = 1;
   int64  pageNo      = 2 [(validator.field) = {int_gt: 0}];
   int64  pageSize    = 3 [(validator.field) = {int_gt: 0,int_lt: 101}];
+  string name        = 4;
 }
 
 message QueryCustomizeAlertsResponse {

@@ -265,8 +265,8 @@ func (m *QueryNotifyGroupRequest) UnmarshalURLValues(prefix string, values url.V
 				m.Label = vals[0]
 			case "clusterName":
 				m.ClusterName = vals[0]
-			case "names":
-				m.Names = vals
+			case "name":
+				m.Name = vals[0]
 			}
 		}
 	}

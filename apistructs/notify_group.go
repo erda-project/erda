@@ -182,7 +182,7 @@ type QueryNotifyGroupRequest struct {
 	Label       string `query:"label"`
 	ClusterName string `query:"clusterName"`
 	// 通知组名字
-	Names []string `query:"names"`
+	Name string `query:"name"`
 }
 
 // QueryNotifyGroupResponse 查询通知组列表响应

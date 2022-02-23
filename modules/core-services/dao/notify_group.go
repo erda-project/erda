@@ -87,6 +87,9 @@ func (client *DBClient) QueryNotifyGroup(request *apistructs.QueryNotifyGroupReq
 	if request.ClusterName != "" {
 		query = query.Where("cluster_name =? ", request.ClusterName)
 	}
+	if request.Name != "" {
+		query = query.Where("name like ?", "%"+request.Name+"%")
+	}
 	err := query.Count(&count).Error
 	if err != nil {
 		return nil, err

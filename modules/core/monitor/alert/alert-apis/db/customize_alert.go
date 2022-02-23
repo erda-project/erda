@@ -52,11 +52,13 @@ func (db *CustomizeAlertDB) GetByScopeAndScopeIDAndName(scope, scopeID, name str
 }
 
 // QueryByScopeAndScopeID .
-func (db *CustomizeAlertDB) QueryByScopeAndScopeID(scope, scopeID string, pageNo, pageSize int) ([]*CustomizeAlert, error) {
+func (db *CustomizeAlertDB) QueryByScopeAndScopeID(scope, scopeID string, pageNo, pageSize int, name string) ([]*CustomizeAlert, error) {
 	var alerts []*CustomizeAlert
-	if err := db.
-		Where("alert_scope=? AND alert_scope_id=?", scope, scopeID).
-		Order("update_time DESC").
+	query := db.Where("alert_scope=? AND alert_scope_id=?", scope, scopeID)
+	if name != "" {
+		query = query.Where("name like ?", "%"+name+"%")
+	}
+	if err := query.Order("update_time DESC").
 		Offset((pageNo - 1) * pageSize).Limit(pageSize).
 		Find(&alerts).Error; err != nil {
 		return nil, err
@@ -65,12 +67,15 @@ func (db *CustomizeAlertDB) QueryByScopeAndScopeID(scope, scopeID string, pageNo
 }
 
 // CountByScopeAndScopeID .
-func (db *CustomizeAlertDB) CountByScopeAndScopeID(scope, scopeID string) (int, error) {
+func (db *CustomizeAlertDB) CountByScopeAndScopeID(scope, scopeID, name string) (int, error) {
 	var count int
-	if err := db.Table(TableCustomizeAlert).
+	query := db.Table(TableCustomizeAlert).
 		Where("alert_scope=?", scope).
-		Where("alert_scope_id=?", scopeID).
-		Count(&count).Error; err != nil {
+		Where("alert_scope_id=?", scopeID)
+	if name != "" {
+		query = query.Where("name like ?", "%"+name+"%")
+	}
+	if err := query.Count(&count).Error; err != nil {
 		return 0, err
 	}
 	return count, nil
