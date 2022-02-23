@@ -15,58 +15,60 @@
 package collector
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 
 	"github.com/buger/jsonparser"
 	"github.com/erda-project/erda/modules/oap/collector/common"
-	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/labstack/echo"
 )
 
-func (p *provider) collectLogs(ctx echo.Context) error {
-	source := ctx.Param("source")
-	if source == "" {
-		return ctx.NoContent(http.StatusBadRequest)
+func (p *provider) collectMetric(ctx echo.Context) error {
+	contentType := ctx.Request().Header.Get("Content-Type")
+	if strings.Contains(contentType, "application/json") {
+		return p.parseJSON(ctx, ctx.Param("metric"))
 	}
-	name := source + "_log"
+	return p.parseLine(ctx, ctx.Param("metric"))
+}
 
+func (p *provider) parseJSON(ctx echo.Context, name string) error {
 	body, err := common.ReadBody(ctx.Request())
 	if err != nil {
-		return fmt.Errorf("fail to read request body, err: %w", err)
+		return fmt.Errorf("parseJSON readBody: %w", err)
 	}
-
-	if !common.IsJSONArray(body) {
-		p.Log.Warnf("the body is not a json array. body=%s", string(body))
-		return ctx.NoContent(http.StatusNoContent)
-	}
-
 	if _, err := jsonparser.ArrayEach(body, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		if err != nil {
-			p.Log.Errorf("fail to json parse, err: %v", err)
 			return
 		}
+
 		if err := p.sendRaw(name, value); err != nil {
 			p.Log.Errorf("sendRaw err: %s", err)
 		}
-	}); err != nil {
-		return fmt.Errorf("collectLogs: %w", err)
+	}, name); err != nil {
+		return fmt.Errorf("parseJSON ArrayEach: %w", err)
 	}
 
 	return ctx.NoContent(http.StatusNoContent)
 }
 
-func (p *provider) sendRaw(name string, value []byte) error {
-	od := odata.NewRaw(value)
-
-	if p.Cfg.MetadataKeyOfTopic != "" {
-		topic, err := p.getTopic(name)
-		if err != nil {
-			return fmt.Errorf("getTopic with name: %s, err: %w", name, err)
-		}
-		od.AddMetadata(p.Cfg.MetadataKeyOfTopic, topic)
+func (p *provider) parseLine(ctx echo.Context, name string) error {
+	r, err := common.ReadBody(ctx.Request())
+	if err != nil {
+		return fmt.Errorf("parseLine readBody: %w", err)
 	}
-
-	p.consumer(od)
-	return nil
+	buf := bufio.NewReader(bytes.NewReader(r))
+	for {
+		line, err := buf.ReadString('\n')
+		if e := p.sendRaw(name, []byte(line)); e != nil {
+			return e
+		}
+		if err != nil || err == io.EOF {
+			break
+		}
+	}
+	return ctx.NoContent(http.StatusNoContent)
 }

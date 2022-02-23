@@ -1,8 +1,8 @@
-POST http://localhost:7076/api/v1/collect/logs/container
+POST http://{{collector_addr}}/api/v1/collect/logs/container
 Content-Type: application/json
 # adjust according config
-X-Erda-Cluster-Key: erda-op
-Authorization: Bearer lMh8UjcN2WsCq7959Yb4vCDf
+X-Erda-Cluster-Key: {{erda_key}}
+Authorization: Bearer {{token}}
 
 [
   {
@@ -16,35 +16,44 @@ Authorization: Bearer lMh8UjcN2WsCq7959Yb4vCDf
       "application_id": "60",
       "application_name": "log-service",
       "cluster_name": "terminus-dev",
-      "container_id": "3bdcc48e7222be90b889fffba685c762da74b61be8528605ecb2decaab4933f3",
       "container_name": "nginx",
       "dice_application_id": "60",
       "dice_application_name": "log-service",
-      "dice_cluster_name": "terminus-dev",
-      "dice_org_id": "1",
-      "dice_org_name": "erda",
-      "dice_project_id": "60",
-      "dice_project_name": "log-fluent-bit",
-      "dice_runtime_id": "71",
-      "dice_runtime_name": "release/log",
-      "dice_service_name": "nginx",
-      "dice_workspace": "staging",
       "level": "INFO",
-      "msp_env_id": "a1b5fe1e7a0cfef8fa9c526c35fa34cc",
-      "msp_log_attach": "true",
-      "org_id": "1",
-      "org_name": "erda",
-      "pod_id": "bcdd5a10-03b3-4c4b-b265-458c7ab2745d",
-      "pod_ip": "10.112.4.21",
-      "pod_name": "nginx-3f4cc48691-6497545cf-7pfhx",
-      "pod_namespace": "project-60-staging",
-      "project_id": "60",
-      "project_name": "log-fluent-bit",
-      "runtime_id": "71",
-      "runtime_name": "release/log",
-      "service_name": "nginx",
-      "terminus_key": "a1b5fe1e7a0cfef8fa9c526c35fa34cc",
       "workspace": "staging"
     }
   }
 ]
+
+###
+
+# json array
+POST http://{{collector_addr}}/api/v1/collect/metrics
+Content-Type: application/json
+# adjust according config
+X-Erda-Cluster-Key: {{erda_key}}
+Authorization: Bearer {{token}}
+
+{"metrics":[{"name":"host_summary","timestamp":1644481950000000000,"tags":{"cluster_name":"terminus-dev","host_ip":"10.0.6.221","hostname":"node-010000006221","os":"centos 8.4.2105"},"fields":{"containers":45,"cpu_allocatable":8,"cpu_usage_active":8.799462883889937}},{"name":"host_summary","timestamp":1644481950000000000,"tags":{"cluster_name":"terminus-dev","host_ip":"10.0.6.221","hostname":"node-010000006221","os":"centos 8.4.2105"},"fields":{"containers":45,"cpu_allocatable":8,"cpu_usage_active":8.799462883889937}}]}
+
+###
+
+# json lines
+POST http://{{collector_addr}}/api/v1/collect/metrics
+# adjust according config
+X-Erda-Cluster-Key: {{erda_key}}
+Authorization: Bearer {{token}}
+
+{"name":"host_summary","timestamp":1644481950000000000,"tags":{"cluster_name":"terminus-dev","host_ip":"10.0.6.221","hostname":"node-010000006221","os":"centos 8.4.2105"},"fields":{"containers":45,"cpu_allocatable":8,"cpu_usage_active":8.799462883889937}}
+{"name":"host_summary","timestamp":1644481950000000000,"tags":{"cluster_name":"terminus-dev","host_ip":"10.0.6.221","hostname":"node-010000006221","os":"centos 8.4.2105"},"fields":{"containers":45,"cpu_allocatable":8,"cpu_usage_active":8.799462883889937}}
+
+###
+
+# json lines b64
+POST http://{{collector_addr}}/api/v1/collect/metrics
+# adjust according config
+X-Erda-Cluster-Key: {{erda_key}}
+Authorization: Bearer {{token}}
+Custom-Content-Encoding: base64
+
+eyJuYW1lIjoiaG9zdF9zdW1tYXJ5IiwidGltZXN0YW1wIjoxNjQ0NDgxOTUwMDAwMDAwMDAwLCJ0YWdzIjp7ImNsdXN0ZXJfbmFtZSI6InRlcm1pbnVzLWRldiIsImhvc3RfaXAiOiIxMC4wLjYuMjIxIiwiaG9zdG5hbWUiOiJub2RlLTAxMDAwMDAwNjIyMSIsIm9zIjoiY2VudG9zIDguNC4yMTA1In0sImZpZWxkcyI6eyJjb250YWluZXJzIjo0NSwiY3B1X2FsbG9jYXRhYmxlIjo4LCJjcHVfdXNhZ2VfYWN0aXZlIjo4Ljc5OTQ2Mjg4Mzg4OTkzN319CnsibmFtZSI6Imhvc3Rfc3VtbWFyeSIsInRpbWVzdGFtcCI6MTY0NDQ4MTk1MDAwMDAwMDAwMCwidGFncyI6eyJjbHVzdGVyX25hbWUiOiJ0ZXJtaW51cy1kZXYiLCJob3N0X2lwIjoiMTAuMC42LjIyMSIsImhvc3RuYW1lIjoibm9kZS0wMTAwMDAwMDYyMjEiLCJvcyI6ImNlbnRvcyA4LjQuMjEwNSJ9LCJmaWVsZHMiOnsiY29udGFpbmVycyI6NDUsImNwdV9hbGxvY2F0YWJsZSI6OCwiY3B1X3VzYWdlX2FjdGl2ZSI6OC43OTk0NjI4ODM4ODk5Mzd9fQo=

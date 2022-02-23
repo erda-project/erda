@@ -17,6 +17,7 @@ package common
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
@@ -38,37 +39,51 @@ func IsJSONArray(b []byte) bool {
 
 // read request's body based on Content-Encoding Header
 func ReadBody(req *http.Request) ([]byte, error) {
-	encoding := req.Header.Get("Content-Encoding")
 	defer req.Body.Close()
 
-	switch encoding {
+	var res []byte
+	switch req.Header.Get("Content-Encoding") {
 	case "gzip":
 		r, err := gzip.NewReader(req.Body)
 		if err != nil {
 			return nil, fmt.Errorf("gzip.NewReader err: %w", err)
 		}
 
-		bytes, err := io.ReadAll(r)
+		data, err := io.ReadAll(r)
 		if err != nil {
 			return nil, err
 		}
-		return bytes, nil
+		res = data
 	case "snappy":
-		bytes, err := io.ReadAll(req.Body)
+		data, err := io.ReadAll(req.Body)
 		if err != nil {
 			return nil, err
 		}
 		// snappy block format is only supported by decode/encode not snappy reader/writer
-		bytes, err = snappy.Decode(nil, bytes)
+		data, err = snappy.Decode(nil, data)
 		if err != nil {
 			return nil, fmt.Errorf("snappy.Decode err: %w", err)
 		}
-		return bytes, nil
+		res = data
 	default:
-		bytes, err := io.ReadAll(req.Body)
+		data, err := io.ReadAll(req.Body)
 		if err != nil {
 			return nil, err
 		}
-		return bytes, nil
+		res = data
 	}
+
+	switch req.Header.Get("Custom-Content-Encoding") {
+	case "base64":
+		dst := make([]byte, base64.StdEncoding.DecodedLen(len(res)))
+		_, err := base64.StdEncoding.Decode(dst, res)
+		if err != nil {
+			return nil, fmt.Errorf("base64 decode: %w", err)
+		}
+		res = dst
+	case "":
+	default:
+		return nil, fmt.Errorf("unsupported custom-content-encoding")
+	}
+	return res, nil
 }
