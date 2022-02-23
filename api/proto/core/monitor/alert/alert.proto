@@ -819,6 +819,7 @@ message Alert {
   int64                              updateTime       = 13;
   repeated TriggerCondition          triggerCondition = 14;
   string                             creator          = 15;
+  int64                              ruleCount        = 16;
 }
 
 message AlertExpression {
