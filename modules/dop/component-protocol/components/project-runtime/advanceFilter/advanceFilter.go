@@ -119,6 +119,7 @@ func (af *AdvanceFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 func (af *AdvanceFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		logrus.Infof("advanded init")
 		// err := common.Transfer(sdk.Comp.State, af.StdStatePtr)
 		// if err != nil {
 		// 	return nil
@@ -128,6 +129,8 @@ func (af *AdvanceFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				logrus.Errorf("failed to transfer values in component advance filter")
 				return nil
 			}
+		} else {
+			(*sdk.GlobalState)["getAll"] = "ture"
 		}
 		state := State{}
 		common.Transfer(af.Values, &state)
@@ -193,7 +196,7 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 		appIds = append(appIds, allApps.List[i].ID)
 		appIdToName[allApps.List[i].ID] = allApps.List[i].Name
 	}
-	myApp := make(map[uint64]bool)
+	myApp := make(map[uint64]string)
 	apps, err := af.bdl.GetMyApps(sdk.Identity.UserID, oid)
 	if err != nil {
 		logrus.Errorf("get my app failed,%v", err)
@@ -203,7 +206,7 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 		if apps.List[i].ProjectID != projectId {
 			continue
 		}
-		myApp[apps.List[i].ID] = true
+		myApp[apps.List[i].ID] = apps.List[i].Name
 	}
 	runtimesByApp, err := af.bdl.ListRuntimesGroupByApps(oid, sdk.Identity.UserID, appIds, getEnv)
 	if err != nil {
@@ -240,7 +243,23 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 	(*sdk.GlobalState)["runtimeIdToAppName"] = runtimeIdToAppNameMap
 	// myApp
 	(*sdk.GlobalState)["myApp"] = myApp
-
+	// init filter
+	if _, ok := (*sdk.GlobalState)["getAll"]; ok {
+		state := State{}
+		myAppNames := make([]string, 0)
+		for appName := range appNameMap {
+			for _, appName2 := range myApp {
+				if appName == appName2 {
+					myAppNames = append(myAppNames, appName)
+				}
+			}
+		}
+		af.Values = cptype.ExtraMap{"app": myAppNames}
+		common.Transfer(af.Values, &state)
+		stdState := cptype.ExtraMap{}
+		common.Transfer(state, &stdState)
+		af.StdStatePtr = &cptype.ExtraMap{"values": stdState}
+	}
 	// filter values
 
 	var conds []Condition
