@@ -17,6 +17,7 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -72,8 +73,8 @@ func (e *Endpoints) CreateApplication(ctx context.Context, r *http.Request, vars
 		return apierrors.ErrCreateApplication.AccessDenied().ToResp(), nil
 	}
 
-	// create app
-	applicationDTO, err := e.bdl.CreateApp(applicationCreateReq, identity.UserID)
+	// Create app with repo
+	applicationDTO, err := e.bdl.CreateAppWithRepo(applicationCreateReq, identity.UserID)
 	if err != nil {
 		return apierrors.ErrCreateApplication.InternalError(err).ToResp(), nil
 	}
@@ -149,7 +150,26 @@ func (e *Endpoints) DeleteApplication(ctx context.Context, r *http.Request, vars
 	if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
 		return apierrors.ErrDeleteApplication.AccessDenied().ToResp(), nil
 	}
-	appDto, err := e.bdl.DeleteApp(uint64(applicationID), identity.UserID)
+	appDto, err := e.bdl.GetApp(uint64(applicationID))
+	if err != nil {
+		return apierrors.ErrDeleteApplication.InternalError(err).ToResp(), nil
+	}
+
+	// Check if there is a runtime under the application
+	runtimes, err := e.bdl.GetApplicationRuntimes(appDto.ID, appDto.OrgID, identity.UserID)
+	if err != nil {
+		return apierrors.ErrDeleteApplication.InternalError(err).ToResp(), nil
+	}
+	if len(runtimes) > 0 {
+		return apierrors.ErrDeleteApplication.InternalError(fmt.Errorf("failed to delete application(there exists runtime)")).ToResp(), nil
+	}
+	// Delete repo
+	if err = e.deleteGittarRepo(appDto); err != nil {
+		return apierrors.ErrDeleteApplication.InternalError(err).ToResp(), nil
+	}
+
+	// Delete app
+	_, err = e.bdl.DeleteApp(uint64(applicationID), identity.UserID)
 	if err != nil {
 		return apierrors.ErrDeleteApplication.InternalError(err).ToResp(), nil
 	}
@@ -168,6 +188,17 @@ func (e *Endpoints) DeleteApplication(ctx context.Context, r *http.Request, vars
 	}
 
 	return httpserver.OkResp(appDto)
+}
+
+func (e *Endpoints) deleteGittarRepo(appDto *apistructs.ApplicationDTO) (err error) {
+	if err = e.bdl.DeleteRepo(int64(appDto.ID)); err != nil {
+		// 防止有老数据不存在repoID，还是以repo路径进行删除
+		if err = e.bdl.DeleteGitRepo(appDto.GitRepoAbbrev); err != nil {
+			logrus.Errorf(err.Error())
+			return fmt.Errorf("failed to delete repo, please try again")
+		}
+	}
+	return nil
 }
 
 // 从addon platform删除namespace
@@ -232,4 +263,70 @@ func (e *Endpoints) InitApplication(ctx context.Context, r *http.Request, vars m
 	}
 
 	return httpserver.OkResp(pipelineID)
+}
+
+// UpdateApplication 更新应用
+func (e *Endpoints) UpdateApplication(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	identity, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return apierrors.ErrUpdateApplication.NotLogin().ToResp(), nil
+	}
+
+	applicationID, err := strutil.Atoi64(vars["applicationID"])
+	if err != nil {
+		return apierrors.ErrUpdateApplication.InvalidParameter(err).ToResp(), nil
+	}
+	if r.Body == nil {
+		return apierrors.ErrUpdateApplication.MissingParameter("body").ToResp(), nil
+	}
+	var applicationUpdateReq apistructs.ApplicationUpdateRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&applicationUpdateReq); err != nil {
+		return apierrors.ErrUpdateApplication.InvalidParameter(err).ToResp(), nil
+	}
+
+	// Check permission
+	req := apistructs.PermissionCheckRequest{
+		UserID:   identity.UserID,
+		Scope:    apistructs.AppScope,
+		ScopeID:  uint64(applicationID),
+		Resource: apistructs.AppResource,
+		Action:   apistructs.UpdateAction,
+	}
+	if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
+		return apierrors.ErrUpdateApplication.AccessDenied().ToResp(), nil
+	}
+
+	appDto, err := e.bdl.GetApp(uint64(applicationID))
+	if err != nil {
+		return apierrors.ErrUpdateApplication.InternalError(err).ToResp(), nil
+	}
+	if appDto.IsPublic != applicationUpdateReq.IsPublic {
+		req = apistructs.PermissionCheckRequest{
+			UserID:   identity.UserID,
+			Scope:    apistructs.AppScope,
+			ScopeID:  uint64(applicationID),
+			Resource: apistructs.AppPublicResource,
+			Action:   apistructs.UpdateAction,
+		}
+		if access, err := e.bdl.CheckPermission(&req); err != nil || !access.Access {
+			return apierrors.ErrUpdateApplication.AccessDenied().ToResp(), nil
+		}
+	}
+
+	if appDto.IsExternalRepo && applicationUpdateReq.RepoConfig != nil {
+		err = e.bdl.UpdateRepo(apistructs.UpdateRepoRequest{
+			AppID:  int64(appDto.ID),
+			Config: applicationUpdateReq.RepoConfig,
+		})
+		if err != nil {
+			return apierrors.ErrUpdateApplication.InternalError(err).ToResp(), nil
+		}
+	}
+
+	_, err = e.bdl.UpdateApp(applicationUpdateReq, uint64(applicationID), identity.UserID)
+	if err != nil {
+		return apierrors.ErrUpdateApplication.InternalError(err).ToResp(), nil
+	}
+
+	return httpserver.OkResp("update succ")
 }
