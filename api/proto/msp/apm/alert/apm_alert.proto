@@ -193,6 +193,7 @@ message ApmAlertData {
   int64                                             updateTime       = 12;
   repeated erda.core.monitor.alert.TriggerCondition triggerCondition = 13;
   string                                            creator          = 14;
+  int64                                             ruleCount        = 15;
 }
 
 message CreateAlertRequest {
