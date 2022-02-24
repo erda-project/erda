@@ -18,6 +18,6 @@ import (
 	"strings"
 )
 
-func IsCannotAddOrUpdateAChildRowError(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "Error 1452")
+func IsCannotAddOrUpdateAChildRowError(e error) bool {
+	return e != nil && strings.Contains(e.Error(), "Error 1452")
 }
