@@ -362,7 +362,7 @@ message ReleaseGetResponseData {
 }
 
 message ServiceImagePair {
-  string serviceName = 1;
+  string serviceName = 1 [json_name = "name"];
   string image = 2;
 }
 
