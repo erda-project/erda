@@ -70,7 +70,7 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 	}
 	statement := fmt.Sprintf("SELECT timestamp(), alert_type::tag, count(timestamp) "+
 		"FROM analyzer_alert "+
-		"WHERE alert_scope::tag=$scope AND alert_scope_id::tag=$scope_id AND trigger::tag='alert' "+
+		"WHERE alert_scope::tag=$scope AND alert_scope_id::tag=$scope_id AND trigger::tag='alert' AND alert_suppressed::tag='false' "+
 		"GROUP BY time(%s),alert_type::tag", common.GetInterval(inParams.StartTime, inParams.EndTime, time.Second, 30))
 
 	params := map[string]*structpb.Value{

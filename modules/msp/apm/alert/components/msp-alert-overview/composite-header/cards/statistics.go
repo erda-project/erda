@@ -38,7 +38,7 @@ func (p *provider) alertTriggerCount(sdk *cptype.SDK) (*kv.KV, error) {
 	}
 	statement := fmt.Sprintf("SELECT count(timestamp) " +
 		"FROM analyzer_alert " +
-		"WHERE alert_scope::tag=$scope AND alert_scope_id::tag=$scope_id AND trigger::tag=$trigger")
+		"WHERE alert_scope::tag=$scope AND alert_scope_id::tag=$scope_id AND trigger::tag=$trigger AND alert_suppressed::tag='false' ")
 
 	params := map[string]*structpb.Value{
 		"scope":    structpb.NewStringValue(inParams.Scope),
@@ -64,7 +64,7 @@ func (p *provider) alertRecoverCount(sdk *cptype.SDK) (*kv.KV, error) {
 	}
 	statement := fmt.Sprintf("SELECT count(timestamp) " +
 		"FROM analyzer_alert " +
-		"WHERE alert_scope::tag=$scope AND alert_scope_id::tag=$scope_id AND trigger::tag=$trigger")
+		"WHERE alert_scope::tag=$scope AND alert_scope_id::tag=$scope_id AND trigger::tag=$trigger AND alert_suppressed::tag='false' ")
 
 	params := map[string]*structpb.Value{
 		"scope":    structpb.NewStringValue(inParams.Scope),
