@@ -1482,6 +1482,14 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 		}
 	}).ToSlice(&sorts)
 
+	// default sort by LastTriggerTime desc
+	if len(sorts) == 0 {
+		sorts = append(sorts, &db.AlertEventSort{
+			SortField:  "LastTriggerTime",
+			Descending: true,
+		})
+	}
+
 	list, err := m.p.db.AlertEventDB.QueryByCondition(req.Scope, req.ScopeId, eventQuery, sorts, req.PageNo, req.PageSize)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)

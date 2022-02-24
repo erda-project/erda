@@ -536,7 +536,6 @@ func (a *Adapt) CreateAlert(alert *pb.Alert) (alertID uint64, err error) {
 		return 0, ErrorAlreadyExists
 	}
 	alert.Enable = true
-	alert.Attributes["alert_source"] = structpb.NewStringValue("System")
 	data := ToDBAlertModel(alert)
 	data.ID = 0
 	err = tx.Alert.Insert(data)
