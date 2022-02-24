@@ -64,3 +64,23 @@ func (s *metricMetaService) GetMetricGroup(ctx context.Context, req *pb.GetMetri
 	}
 	return &pb.GetMetricGroupResponse{Data: list}, nil
 }
+
+func (s *metricMetaService) RegisterMetricMeta(ctx context.Context, req *pb.RegisterMetricMetaRequest) (*pb.RegisterMetricMetaResponse, error) {
+	err := s.meta.RegeistMetricMeta(req.Scope, req.ScopeID, req.Group, req.Meta)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.RegisterMetricMetaResponse{
+		Data: true,
+	}, nil
+}
+
+func (s *metricMetaService) UnRegisterMetricMeta(ctx context.Context, req *pb.UnRegisterMetricMetaRequest) (*pb.UnRegisterMetricMetaResponse, error) {
+	err := s.meta.UnregeistMetricMeta(req.Scope, req.ScopeID, req.Group, req.MetricName)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.UnRegisterMetricMetaResponse{
+		Data: true,
+	}, nil
+}

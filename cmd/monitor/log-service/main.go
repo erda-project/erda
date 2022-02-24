@@ -22,7 +22,7 @@ import (
 	"github.com/erda-project/erda/pkg/common/addon"
 
 	// providers and modules
-	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis"
+	_ "github.com/erda-project/erda/modules/msp/apm/log-service/analysis"
 
 	// log export outputs
 	_ "github.com/erda-project/erda/modules/extensions/loghub/exporter"

@@ -23,7 +23,7 @@ import (
 
 	logs "github.com/erda-project/erda/modules/core/monitor/log"
 	metrics "github.com/erda-project/erda/modules/core/monitor/metric"
-	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
+	"github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary

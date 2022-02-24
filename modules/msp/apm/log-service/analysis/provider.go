@@ -26,7 +26,7 @@ import (
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda-infra/providers/mysql"
-	"github.com/erda-project/erda/modules/extensions/loghub/metrics/rules/db"
+	"github.com/erda-project/erda/modules/msp/apm/log-service/rules/db"
 )
 
 type config struct {

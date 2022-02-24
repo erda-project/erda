@@ -53,6 +53,14 @@ func (s *metricMetaServiceWrapper) ListMetricMeta(ctx context.Context, req *pb.L
 	return s.client.ListMetricMeta(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
+func (s *metricMetaServiceWrapper) RegisterMetricMeta(ctx context.Context, req *pb.RegisterMetricMetaRequest) (*pb.RegisterMetricMetaResponse, error) {
+	return s.client.RegisterMetricMeta(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *metricMetaServiceWrapper) UnRegisterMetricMeta(ctx context.Context, req *pb.UnRegisterMetricMetaRequest) (*pb.UnRegisterMetricMetaResponse, error) {
+	return s.client.UnRegisterMetricMeta(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
 func (s *metricMetaServiceWrapper) ListMetricGroups(ctx context.Context, req *pb.ListMetricGroupsRequest) (*pb.ListMetricGroupsResponse, error) {
 	return s.client.ListMetricGroups(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

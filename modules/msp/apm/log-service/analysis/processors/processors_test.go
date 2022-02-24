@@ -20,8 +20,8 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
-	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors/regex" //
+	"github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors"
+	_ "github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors/regex" //
 )
 
 func TestExampleProcessors(t *testing.T) {

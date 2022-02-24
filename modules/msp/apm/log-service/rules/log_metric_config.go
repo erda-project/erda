@@ -15,6 +15,7 @@
 package rules
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/recallsong/go-utils/encoding/md5x"
@@ -23,8 +24,8 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/core/monitor/metric"
-	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
-	"github.com/erda-project/erda/modules/extensions/loghub/metrics/rules/db"
+	"github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors"
+	"github.com/erda-project/erda/modules/msp/apm/log-service/rules/db"
 	"github.com/erda-project/erda/modules/pkg/mysql"
 )
 
@@ -70,7 +71,12 @@ func (p *provider) CreateLogMetricConfig(cfg *LogMetricConfig) (bool, error) {
 		}
 		return false, err
 	}
-	err = p.metricq.RegeistMetricMeta(cfg.Scope, cfg.ScopeID, "log_metrics", meta)
+	_, err = p.MetricMeta.RegisterMetricMeta(context.Background(), &pb.RegisterMetricMetaRequest{
+		Scope:   cfg.Scope,
+		ScopeID: cfg.ScopeID,
+		Group:   "log_metrics",
+		Meta:    meta,
+	})
 	if err != nil {
 		return false, err
 	}
@@ -104,7 +110,12 @@ func (p *provider) UpdateLogMetricConfig(cfg *LogMetricConfig) (bool, error) {
 		db.Rollback()
 		return false, err
 	}
-	err = p.metricq.RegeistMetricMeta(cfg.Scope, cfg.ScopeID, "log_metrics", meta)
+	_, err = p.MetricMeta.RegisterMetricMeta(context.Background(), &pb.RegisterMetricMetaRequest{
+		Scope:   cfg.Scope,
+		ScopeID: cfg.ScopeID,
+		Group:   "log_metrics",
+		Meta:    meta,
+	})
 	if err != nil {
 		db.Rollback()
 		return false, err
@@ -176,7 +187,12 @@ func (p *provider) DeleteLogMetricConfig(scope, scopeID string, id int64) error 
 	}
 	err = db.LogMetricConfig.Delete(scope, scopeID, id)
 	if err == nil && c != nil {
-		err := p.metricq.UnregeistMetricMeta(scope, scopeID, "log_metrics", c.Metric)
+		_, err = p.MetricMeta.UnRegisterMetricMeta(context.Background(), &pb.UnRegisterMetricMetaRequest{
+			Scope:      scope,
+			ScopeID:    scopeID,
+			Group:      "log_metrics",
+			MetricName: c.Metric,
+		})
 		if err != nil {
 			db.Rollback()
 			return err
