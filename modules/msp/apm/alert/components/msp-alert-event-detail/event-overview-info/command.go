@@ -31,7 +31,7 @@ func (cp *ComponentEventOverviewInfo) countAlertEvents(ctx context.Context, even
 	}
 
 	statement := fmt.Sprintf("SELECT count(timestamp) FROM analyzer_alert " +
-		"WHERE family_id::tag=$eventId")
+		"WHERE family_id::tag=$eventId AND alert_suppressed::tag='false' ")
 	resp, err := cp.Metric.QueryWithInfluxFormat(ctx, &metricpb.QueryWithInfluxFormatRequest{
 		Start:     "0",
 		End:       strconv.FormatInt(time.Now().UnixNano()/1e6, 10),
