@@ -69,7 +69,7 @@ func TestParseDeploymentOrderStatus(t *testing.T) {
 			args: args{
 				DeploymentStatus: nil,
 			},
-			want: apistructs.DeploymentOrderStatus(apistructs.OrderStatusWaitDeploy),
+			want: apistructs.DeploymentOrderStatus(apistructs.DeployStatusWaitDeploy),
 		},
 		{
 			name: "apps-4",
@@ -101,6 +101,70 @@ func TestParseDeploymentOrderStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := ParseDeploymentOrderStatus(tt.args.DeploymentStatus)
+
+			if tt.want != got {
+				t.Errorf("parseDeploymentOrderStatus got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestParseDeploymentStatus(t *testing.T) {
+	type args struct {
+		DeploymentStatus apistructs.DeploymentStatus
+	}
+	tests := []struct {
+		name string
+		args args
+		want apistructs.DeploymentStatus
+	}{
+		{
+			name: "apps-1",
+			args: args{
+				DeploymentStatus: apistructs.DeploymentStatusWaiting,
+			},
+			want: apistructs.DeploymentStatusDeploying,
+		},
+		{
+			name: "apps-2",
+			args: args{
+				DeploymentStatus: apistructs.DeployStatusWaitDeploy,
+			},
+			want: apistructs.DeployStatusWaitDeploy,
+		},
+		{
+			name: "apps-3",
+			args: args{
+				DeploymentStatus: apistructs.DeploymentStatusCanceling,
+			},
+			want: apistructs.DeploymentStatusCanceled,
+		},
+		{
+			name: "apps-4",
+			args: args{
+				DeploymentStatus: apistructs.DeploymentStatusCanceled,
+			},
+			want: apistructs.DeploymentStatusCanceled,
+		},
+		{
+			name: "apps-5",
+			args: args{
+				DeploymentStatus: apistructs.DeploymentStatusFailed,
+			},
+			want: apistructs.DeploymentStatusFailed,
+		},
+		{
+			name: "apps-6",
+			args: args{
+				DeploymentStatus: apistructs.DeploymentStatusOK,
+			},
+			want: apistructs.DeploymentStatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ParseDeploymentStatus(tt.args.DeploymentStatus)
 
 			if tt.want != got {
 				t.Errorf("parseDeploymentOrderStatus got = %v, want %v", got, tt.want)

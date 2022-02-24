@@ -202,3 +202,28 @@ func TestContinueDeployOrder(t *testing.T) {
 	err = order.ContinueDeployOrder("d9f06aaf-e3b7-4e05-9433-7742162e98f9")
 	assert.NoError(t, err)
 }
+
+func TestParseRuntimeNameFromBranch(t *testing.T) {
+	// from deploy center
+	assert.Equal(t, parseRuntimeNameFromBranch(&apistructs.DeploymentOrderCreateRequest{
+		Source: apistructs.SourceDeployCenter,
+	}), false)
+	// from pipeline, if not specified deployWithoutBranch, then use branch name
+	assert.Equal(t, parseRuntimeNameFromBranch(&apistructs.DeploymentOrderCreateRequest{
+		Source:    apistructs.SourceDeployPipeline,
+		ReleaseId: "fake-release-id",
+	}), true)
+	// from pipeline, specified deployWithoutBranch
+	assert.Equal(t, parseRuntimeNameFromBranch(&apistructs.DeploymentOrderCreateRequest{
+		Source:              apistructs.SourceDeployPipeline,
+		ReleaseId:           "fake-release-id",
+		DeployWithoutBranch: true,
+	}), false)
+	// deploy application release
+	assert.Equal(t, parseRuntimeNameFromBranch(&apistructs.DeploymentOrderCreateRequest{
+		Type:            apistructs.TypeProjectRelease,
+		ReleaseName:     "1.0.0",
+		ApplicationName: "app-1",
+		Source:          apistructs.SourceDeployPipeline,
+	}), false)
+}
