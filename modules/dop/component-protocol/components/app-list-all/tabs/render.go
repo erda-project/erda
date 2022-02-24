@@ -118,7 +118,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 				},
 			},
 		}
-		f.State.Value = "all"
+		f.State.Value = "my"
 	case OperationKeyOnChange:
 		var op Operation
 		cputil.MustObjJSONTransfer(event.OperationData, &op)
