@@ -41,9 +41,23 @@ func ParseOrderName(uuid string) string {
 	return uuid
 }
 
+func ParseDeploymentStatus(status apistructs.DeploymentStatus) apistructs.DeploymentStatus {
+	switch status {
+	case apistructs.DeploymentStatusWaitApprove, apistructs.DeploymentStatusInit,
+		apistructs.DeploymentStatusWaiting, apistructs.DeploymentStatusDeploying:
+		return apistructs.DeploymentStatusDeploying
+	case apistructs.DeploymentStatusCanceling, apistructs.DeploymentStatusCanceled:
+		return apistructs.DeploymentStatusCanceled
+	case apistructs.DeploymentStatusFailed, apistructs.DeploymentStatusOK:
+		return status
+	default:
+		return apistructs.DeployStatusWaitDeploy
+	}
+}
+
 func ParseDeploymentOrderStatus(appStatus apistructs.DeploymentOrderStatusMap) apistructs.DeploymentOrderStatus {
 	if appStatus == nil || len(appStatus) == 0 {
-		return apistructs.OrderStatusWaitDeploy
+		return apistructs.DeployStatusWaitDeploy
 	}
 
 	status := make([]apistructs.DeploymentStatus, 0)
