@@ -519,11 +519,7 @@ func (d *DeploymentOrder) getReleaseIdFromReq(req *apistructs.DeploymentOrderCre
 }
 
 func parseRuntimeNameFromBranch(r *apistructs.DeploymentOrderCreateRequest) bool {
-	if r.Source != apistructs.SourceDeployPipeline || r.ReleaseId == "" {
-		return false
-	}
-	// TODO: from pipeline build deploy but want runtime name is application name
-	return true
+	return r.Source == apistructs.SourceDeployPipeline && r.ReleaseId != "" && !r.DeployWithoutBranch
 }
 
 func parseOrderType(isProjectRelease bool) string {
