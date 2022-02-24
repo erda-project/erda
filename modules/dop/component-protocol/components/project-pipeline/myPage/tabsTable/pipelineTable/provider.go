@@ -64,7 +64,8 @@ type PipelineTable struct {
 }
 
 const (
-	ColumnPipelineName    table.ColumnKey = "pipeline"
+	ColumnPipelineName    table.ColumnKey = "pipelineName"
+	ColumnPipeline        table.ColumnKey = "pipeline"
 	ColumnPipelineStatus  table.ColumnKey = "pipelineStatus"
 	ColumnCostTime        table.ColumnKey = "costTime"
 	ColumnApplicationName table.ColumnKey = "applicationName"
@@ -76,6 +77,7 @@ const (
 	ColumnPipelineID      table.ColumnKey = "pipelineID"
 	ColumnMoreOperations  table.ColumnKey = "moreOperations"
 	ColumnSource          table.ColumnKey = "source"
+	ColumnSourceFile      table.ColumnKey = "sourceFile"
 	ColumnProcess         table.ColumnKey = "process"
 	ColumnIcon            table.ColumnKey = "icon"
 
@@ -132,9 +134,10 @@ func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 	return table.ColumnsInfo{
 		Merges: map[table.ColumnKey]table.MergedColumn{
-			ColumnSource: {[]table.ColumnKey{ColumnApplicationName, ColumnIcon, ColumnBranch}},
+			ColumnSource:   {[]table.ColumnKey{ColumnApplicationName, ColumnIcon, ColumnBranch}},
+			ColumnPipeline: {[]table.ColumnKey{ColumnPipelineName, ColumnSourceFile}},
 		},
-		Orders: []table.ColumnKey{ColumnPipelineName, ColumnSource, ColumnPipelineStatus, ColumnProcess, ColumnCostTime,
+		Orders: []table.ColumnKey{ColumnPipeline, ColumnSource, ColumnSourceFile, ColumnPipelineStatus, ColumnProcess, ColumnCostTime,
 			ColumnExecutor, ColumnStartTime, ColumnCreateTime, ColumnCreator, ColumnPipelineID, ColumnMoreOperations},
 		ColumnsMap: map[table.ColumnKey]table.Column{
 			ColumnPipelineName:    {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineName))},
@@ -150,7 +153,9 @@ func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 			ColumnPipelineID:      {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineID)), Hidden: true},
 			ColumnCreateTime:      {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCreateTime)), EnableSort: true, Hidden: true},
 			ColumnSource:          {Title: cputil.I18n(p.sdk.Ctx, string(ColumnSource))},
+			ColumnSourceFile:      {Title: cputil.I18n(p.sdk.Ctx, string(ColumnSourceFile))},
 			ColumnIcon:            {Title: cputil.I18n(p.sdk.Ctx, string(ColumnIcon))},
+			ColumnPipeline:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipeline))},
 		},
 	}
 }
@@ -383,6 +388,9 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 				ColumnMoreOperations: table.NewMoreOperationsCell(commodel.MoreOperations{
 					Ops: p.SetTableMoreOpItem(v, definitionYmlSourceMap, ymlSourceMapCronMap),
 				}).Build(),
+				ColumnSourceFile: table.NewTextCell(func() string {
+					return v.FileName
+				}()).Build(),
 				ColumnIcon: table.NewIconCell(commodel.Icon{
 					Type: "branch",
 				}).Build(),
