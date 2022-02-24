@@ -484,7 +484,7 @@ func RegisterReleaseServiceHandler(r http.Router, srv ReleaseServiceHandler, opt
 					if err != nil {
 						return nil, err
 					}
-					in.Latest = val
+					in.IsLatest = val
 				}
 				if vals := params["order"]; len(vals) > 0 {
 					in.Order = vals[0]

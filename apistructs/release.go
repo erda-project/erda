@@ -295,6 +295,8 @@ type ReleaseGetResponseData struct {
 	ClusterName string    `json:"clusterName"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+	// IsLatest 是否为分支最新
+	IsLatest bool `json:"isLatest"`
 }
 
 func (r *ReleaseGetResponseData) ReLoadImages() error {
@@ -574,6 +576,8 @@ type ReleaseData struct {
 	ClusterName string    `json:"clusterName"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+	// 是否为分支最新
+	IsLatest bool `json:"isLatest"`
 }
 
 // ReleaseNameListRequest releaseName列表请求

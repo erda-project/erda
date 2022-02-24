@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -32,7 +33,6 @@ import (
 
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/dicehub/dbclient"
 	imagedb "github.com/erda-project/erda/modules/dicehub/image/db"
 	"github.com/erda-project/erda/modules/dicehub/registry"
 	"github.com/erda-project/erda/modules/dicehub/release/db"
@@ -78,7 +78,7 @@ func (s *ReleaseService) formalRelease(release *db.Release) (err error) {
 
 		for i := 0; i < len(list); i++ {
 			for j := 0; j < len(list[i]); j++ {
-				if err = tx.Model(&dbclient.Release{}).Where("release_id = ?", list[i][j]).Updates(map[string]interface{}{
+				if err = tx.Model(&db.Release{}).Where("release_id = ?", list[i][j]).Updates(map[string]interface{}{
 					"is_stable": true,
 					"is_formal": true,
 				}).Error; err != nil {
@@ -88,7 +88,7 @@ func (s *ReleaseService) formalRelease(release *db.Release) (err error) {
 		}
 	}
 
-	if err = tx.Model(&dbclient.Release{}).Where("release_id = ?", release.ReleaseID).Update("is_formal", true).Error; err != nil {
+	if err = tx.Model(&db.Release{}).Where("release_id = ?", release.ReleaseID).Update("is_formal", true).Error; err != nil {
 		return
 	}
 	return tx.Commit().Error
@@ -154,8 +154,7 @@ func (s *ReleaseService) Create(req *pb.ReleaseCreateRequest) (string, error) {
 		}
 	} else {
 		dices = append(dices, req.Dice)
-		err = s.db.CreateRelease(release)
-		if err != nil {
+		if err = s.createAppReleaseAndSetLatest(release); err != nil {
 			return "", err
 		}
 	}
@@ -173,6 +172,30 @@ func (s *ReleaseService) Create(req *pb.ReleaseCreateRequest) (string, error) {
 	event.SendReleaseEvent(event.ReleaseEventCreate, release)
 
 	return release.ReleaseID, nil
+}
+
+func (s *ReleaseService) createAppReleaseAndSetLatest(release *db.Release) (err error) {
+	tx := s.db.Begin()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	var latest db.Release
+	if err = tx.Where("project_id = ?", release.ProjectID).Where("application_id = ?", release.ApplicationID).
+		Where("git_branch = ?", release.GitBranch).Where("is_formal = ?", release.IsFormal).
+		Where("is_latest = true").Where("is_project_release = false").Find(&latest).Error; err == nil {
+		latest.IsLatest = false
+		tx.Save(&latest)
+	} else if !gorm.IsRecordNotFoundError(err) {
+		return
+	}
+
+	if err = tx.Create(release).Error; err != nil {
+		return
+	}
+	return tx.Commit().Error
 }
 
 // Update update Release
@@ -426,6 +449,21 @@ func (s *ReleaseService) Delete(orgID int64, releaseIDs ...string) error {
 				logrus.Errorf("failed to delete release %s, %v", releaseID, err)
 				continue
 			}
+			if !release.IsProjectRelease && release.IsLatest {
+				latest, err := s.GetBranchLatestRelease(release.ProjectID, release.ApplicationID, release.GitBranch)
+				if err != nil {
+					logrus.Errorf("failed to get latest release after delete release %s, %v", releaseID, err)
+					continue
+				}
+				if latest == nil {
+					continue
+				}
+				latest.IsLatest = true
+				if err = s.db.Save(latest).Error; err != nil {
+					logrus.Errorf("failed to set latest release after delete release %s, %v", releaseID, err)
+					continue
+				}
+			}
 		}
 
 		// send release delete event to eventbox
@@ -533,6 +571,7 @@ func convertToListReleaseResponse(release *db.Release) (*pb.ReleaseData, error) 
 		ClusterName:            release.ClusterName,
 		CreatedAt:              timestamppb.New(release.CreatedAt),
 		UpdatedAt:              timestamppb.New(release.UpdatedAt),
+		IsLatest:               release.IsLatest,
 	}
 	return respData, nil
 }
@@ -587,6 +626,23 @@ func (s *ReleaseService) GetImages(dices []string) []*imagedb.Image {
 	return images
 }
 
+// GetBranchLatestRelease return the latest release with target gitBranch.
+// return nil if not found.
+func (s *ReleaseService) GetBranchLatestRelease(projectID, appID int64, gitBranch string) (*db.Release, error) {
+	releases, err := s.db.GetReleasesByBranch(projectID, appID, gitBranch)
+	if err != nil {
+		return nil, err
+	}
+
+	var latest *db.Release
+	for i := range releases {
+		if latest == nil || latest.CreatedAt.Before(releases[i].CreatedAt) {
+			latest = &releases[i]
+		}
+	}
+	return latest, nil
+}
+
 func (s *ReleaseService) CreateByFile(req *pb.ReleaseUploadRequest, file io.ReadCloser) (string, string, error) {
 	projectRelease, appReleases, err := s.parseReleaseFile(req, file)
 	if err != nil {
@@ -608,7 +664,7 @@ func (s *ReleaseService) CreateByFile(req *pb.ReleaseUploadRequest, file io.Read
 	return projectRelease.Version, projectRelease.ReleaseID, nil
 }
 
-func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.ReadCloser) (*dbclient.Release, []dbclient.Release, error) {
+func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.ReadCloser) (*db.Release, []db.Release, error) {
 	var metadata apistructs.ReleaseMetadata
 	dices := make(map[string]string)
 	buf := bytes.Buffer{}
@@ -667,7 +723,7 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 
 	now := time.Now()
 
-	var appReleases []dbclient.Release
+	var appReleases []db.Release
 	appReleaseList := make([][]string, len(metadata.AppList))
 	for i := 0; i < len(metadata.AppList); i++ {
 		appReleaseList[i] = make([]string, len(metadata.AppList[i]))
@@ -718,7 +774,7 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 			}
 
 			appReleaseList[i][j] = id
-			appReleases = append(appReleases, dbclient.Release{
+			appReleases = append(appReleases, db.Release{
 				ReleaseID:        id,
 				ReleaseName:      gitBranch,
 				Desc:             fmt.Sprintf("referenced by project release %s", projectReleaseID),
@@ -740,6 +796,7 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 				Reference:        1,
 				CreatedAt:        now,
 				UpdatedAt:        now,
+				IsLatest:         true,
 			})
 		}
 	}
@@ -748,7 +805,7 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 	if err != nil {
 		return nil, nil, errors.Errorf("faield to marshal application release list, %v", err)
 	}
-	projectRelease := &dbclient.Release{
+	projectRelease := &db.Release{
 		ReleaseID:              projectReleaseID,
 		Desc:                   metadata.Desc,
 		Changelog:              metadata.ChangeLog,
@@ -768,7 +825,7 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 	return projectRelease, appReleases, nil
 }
 
-func (s *ReleaseService) createReleases(releases []dbclient.Release) (err error) {
+func (s *ReleaseService) createReleases(releases []db.Release) (err error) {
 	tx := s.db.Begin()
 	defer func() {
 		if err != nil {
@@ -777,6 +834,17 @@ func (s *ReleaseService) createReleases(releases []dbclient.Release) (err error)
 	}()
 
 	for i := range releases {
+		if !releases[i].IsProjectRelease {
+			var latest *db.Release
+			latest, err = s.GetBranchLatestRelease(releases[i].ProjectID, releases[i].ApplicationID, releases[i].GitBranch)
+			if err != nil {
+				return
+			}
+			if latest != nil {
+				latest.IsLatest = false
+				tx.Save(latest)
+			}
+		}
 		if err = tx.Create(releases[i]).Error; err != nil {
 			return
 		}

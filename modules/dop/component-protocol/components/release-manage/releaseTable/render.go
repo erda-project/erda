@@ -197,13 +197,14 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 		isFormal = strconv.FormatBool(*r.State.IsFormal)
 	}
 	releaseResp, err := r.svc.ListRelease(ctx, &dicehubpb.ReleaseListRequest{
+		ReleaseID:        r.State.FilterValues.ReleaseID,
 		Branch:           r.State.FilterValues.BranchID,
+		IsLatest:         r.State.FilterValues.Latest,
 		IsStable:         "true",
 		IsFormal:         isFormal,
 		IsProjectRelease: strconv.FormatBool(r.State.IsProjectRelease),
 		UserID:           r.State.FilterValues.UserIDs,
 		Version:          r.State.FilterValues.Version,
-		ReleaseID:        r.State.FilterValues.ReleaseID,
 		CommitID:         r.State.FilterValues.CommitID,
 		ApplicationID:    r.State.FilterValues.ApplicationIDs,
 		ProjectID:        projectID,
@@ -312,7 +313,7 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 				RenderType: "tableOperation",
 			},
 		}
-		if r.State.IsProjectRelease {
+		if release.IsProjectRelease {
 			item.Operations.Operations["download"] = downloadOperation
 
 			var refReleasedList [][]string
@@ -331,14 +332,21 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 				Text: r.sdk.I18n("referencedReleases"),
 			}
 		}
-		if r.State.IsFormal != nil && !*r.State.IsFormal {
-			item.Operations.Operations["edit"] = editOperation
-			item.Operations.Operations["formal"] = formalOperation
-			item.Operations.Operations["delete"] = deleteOperation
+		if !release.IsFormal {
 			if hasWriteAccess {
 				item.BatchOperations = []string{"formal", "delete"}
 			}
+		} else {
+			editOperation.Disabled = true
+			editOperation.DisabledTip = r.sdk.I18n("formalReleaseCanNotBeModified")
+			formalOperation.Disabled = true
+			formalOperation.DisabledTip = r.sdk.I18n("formalReleaseCanNotBeModified")
+			deleteOperation.Disabled = true
+			deleteOperation.DisabledTip = r.sdk.I18n("formalReleaseCanNotBeModified")
 		}
+		item.Operations.Operations["edit"] = editOperation
+		item.Operations.Operations["formal"] = formalOperation
+		item.Operations.Operations["delete"] = deleteOperation
 
 		list = append(list, item)
 	}
@@ -412,13 +420,16 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 		},
 	}
 
-	if r.State.IsProjectRelease || (r.State.IsFormal != nil && !*r.State.IsFormal) {
+	// 项目制品、全部应用制品、非正式应用制品需要有操作列
+	if r.State.IsProjectRelease || r.State.IsFormal == nil || !*r.State.IsFormal {
 		columns = append(columns, Column{
 			DataIndex: "operations",
 			Title:     r.sdk.I18n("operations"),
 			Align:     "right",
 		})
 	}
+
+	// 项目制品不需要应用列
 	if r.State.IsProjectRelease {
 		columns = append(columns[:1], columns[2:]...)
 	}

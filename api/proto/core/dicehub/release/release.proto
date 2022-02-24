@@ -73,7 +73,7 @@ service ReleaseService {
 
   rpc ListRelease (ReleaseListRequest) returns (ReleaseListResponse)  {
     option (google.api.http) = {
-      get: "/api/releases?q={query}&releaseId={releaseID}&releaseName={releaseName}&cluster={cluster}&branch={branch}&latest={latest}&isStable={isStable}&isFormal={isFormal}&isProjectRelease={isProjectRelease}&userId={userID}&version={version}&commitId={commitID}&tags={tags}&isVersion={isVersion}&crossCluster={crossCluster}&crossClusterOrSpecifyCluster={crossClusterOrSpecifyCluster}&applicationId={applicationID}&projectId={projectID}&startTime={startTime]&endTime={endTime}&pageSize={pageSize}&pageNum={pageNum}&orderBy={orderBy}&order={order}",
+      get: "/api/releases?q={query}&releaseId={releaseID}&releaseName={releaseName}&cluster={cluster}&branch={branch}&latest={isLatest}&isStable={isStable}&isFormal={isFormal}&isProjectRelease={isProjectRelease}&userId={userID}&version={version}&commitId={commitID}&tags={tags}&isVersion={isVersion}&crossCluster={crossCluster}&crossClusterOrSpecifyCluster={crossClusterOrSpecifyCluster}&applicationId={applicationID}&projectId={projectID}&startTime={startTime]&endTime={endTime}&pageSize={pageSize}&pageNum={pageNum}&orderBy={orderBy}&order={order}",
     };
     option (erda.common.openapi) = {
       path: "/api/releases",
@@ -356,6 +356,9 @@ message ReleaseGetResponseData {
   string clusterName = 25;
   google.protobuf.Timestamp createdAt = 26;
   google.protobuf.Timestamp updatedAt = 27;
+
+  // 是否为分支最新
+  bool isLatest = 28;
 }
 
 message ServiceImagePair {
@@ -388,7 +391,7 @@ message ReleaseListRequest {
 
   // branch name
   string branch = 5;
-  bool latest = 6;
+  bool isLatest = 6;
   string isStable = 7;
   string isFormal = 8;
   string isProjectRelease = 9;
@@ -480,6 +483,9 @@ message ReleaseData {
   string clusterName = 24;
   google.protobuf.Timestamp createdAt = 25;
   google.protobuf.Timestamp updatedAt = 26;
+
+  // 是否为分支最新
+  bool isLatest = 27;
 }
 
 // ReleaseNameListRequest release name list request

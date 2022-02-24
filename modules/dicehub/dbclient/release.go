@@ -79,6 +79,8 @@ type Release struct {
 	CreatedAt time.Time `json:"createdAt"`
 	// UpdatedAt release更新时间, 更新时由服务端更新
 	UpdatedAt time.Time `json:"updatedAt"`
+	// IsLatest 是否为分支最新
+	IsLatest bool `json:"isLatest"`
 }
 
 // Set table name
@@ -222,14 +224,14 @@ func (client *DBClient) GetReleasesByParams(
 		db = db.Where("created_at <= ?", req.EndTime/1000)
 	}
 
+	if req.Latest {
+		db = db.Where("is_latest = true")
+	}
+
 	if req.OrderBy != "" {
 		db = db.Order(req.Order + " " + req.Order)
 	} else {
 		db = db.Order("created_at DESC")
-	}
-
-	if req.Latest {
-		db = db.Select("*, max(created_at)").Group("project_id, application_name, git_branch")
 	}
 
 	if err := db.Offset((req.PageNum - 1) * req.PageSize).
@@ -322,6 +324,15 @@ func (client *DBClient) GetUnReferedReleasesBefore(before time.Time) ([]Release,
 	var releases []Release
 	if err := client.Where("reference <= ?", 0).Where("is_stable = ?", false).Where("updated_at < ?", before).
 		Order("updated_at").Find(&releases).Error; err != nil {
+		return nil, err
+	}
+	return releases, nil
+}
+
+func (client *DBClient) GetReleasesByBranch(projectID, appID int64, gitBranch string) ([]Release, error) {
+	var releases []Release
+	if err := client.Where("project_id = ?", projectID).Where("application_id = ?", appID).
+		Where("git_branch = ?", gitBranch).Find(&releases).Error; err != nil {
 		return nil, err
 	}
 	return releases, nil

@@ -35,6 +35,8 @@ rendering:
           value: "{{ __InParams__.projectID }}"
         - name: "isProjectRelease"
           value: "{{ __InParams__.isProjectRelease }}"
+        - name: "isFormal"
+          value: "{{ __InParams__.isFormal }}"
     - name: releaseTable
       state:
         - name: "projectID"
