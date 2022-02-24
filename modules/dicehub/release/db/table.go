@@ -69,6 +69,8 @@ type Release struct {
 	CreatedAt time.Time `json:"createdAt"`
 	// UpdatedAt Release updated time
 	UpdatedAt time.Time `json:"updatedAt"`
+	// IsLatest 是否为分支最新
+	IsLatest bool `json:"isLatest"`
 }
 
 // Set table name
