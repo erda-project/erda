@@ -166,3 +166,30 @@ stages:
             workspace: TEST
             application_name: uc-deploy
             type: application
+  - stage:
+      - dingtalk-robot-msg:
+          alias: dingtalk-robot-msg-qa
+          version: "1.0"
+          params:
+            access_token: ${{ configs.dingtalk_robot_access_token_qa }}
+            msg_ctx:
+              app1: erda-ui
+              branch1: ${{ outputs.erda-ui.branch }}
+              commit1: ${{ outputs.erda-ui.commit }}
+              app2: erda-analyzer
+              branch2: ${{ outputs.erda-analyzer.branch }}
+              commit2: ${{ outputs.erda-analyzer.commit }}
+              app3: erda-fluent-bit
+              branch3: ${{ outputs.erda-fluent-bit.branch }}
+              commit3: ${{ outputs.erda-fluent-bit.commit }}
+              app4: erda-telegraf
+              branch4: ${{ outputs.erda-telegraf.branch }}
+              commit4: ${{ outputs.erda-telegraf.commit }}
+              app5: uc
+              branch5: ${{ outputs.uc.branch }}
+              commit5: ${{ outputs.uc.commit }}
+              app6: erda
+              branch6: ${{ outputs.erda.branch }}
+              commit6: ${{ outputs.erda.commit }}
+            msg_file: ${{ dirs.erda }}/.erda/msg.jsonnet
+            secret: ${{ configs.dingtalk_robot_secret_qa }}
