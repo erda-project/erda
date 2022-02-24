@@ -152,7 +152,7 @@ func composeApplicationsInfo(releases [][]*dbclient.Release, params map[string]a
 				}
 			}
 
-			var status apistructs.DeploymentStatus = apistructs.OrderStatusWaitDeploy
+			var status apistructs.DeploymentStatus = apistructs.DeployStatusWaitDeploy
 			app, ok := appsStatus[r.ApplicationName]
 			if ok {
 				status = app.DeploymentStatus
@@ -173,7 +173,7 @@ func composeApplicationsInfo(releases [][]*dbclient.Release, params map[string]a
 				Branch:         labels["gitBranch"],
 				DiceYaml:       r.DiceYaml,
 				CommitId:       labels["gitCommitId"],
-				Status:         status,
+				Status:         utils.ParseDeploymentStatus(status),
 			})
 		}
 		asi = append(asi, ai)

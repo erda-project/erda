@@ -9,7 +9,7 @@ const (
 	SourceDeployCenter   = "DEPLOY_CENTER"
 	SourceDeployPipeline = "PIPELINE"
 
-	OrderStatusWaitDeploy = "WAITDEPLOY"
+	DeployStatusWaitDeploy = "WAITDEPLOY"
 )
 
 type DeploymentOrderStatus string
@@ -27,9 +27,10 @@ type DeploymentOrderCreateRequest struct {
 	ProjectId       uint64 `json:"projectId"`
 	ApplicationName string `json:"applicationName"`
 
-	Source   string `json:"source"` // default: DEPLOY_CENTER; value: PIPELINE
-	AutoRun  bool   `json:"autoRun"`
-	Operator string
+	Source              string `json:"source"` // default: DEPLOY_CENTER; value: PIPELINE
+	AutoRun             bool   `json:"autoRun"`
+	DeployWithoutBranch bool   `json:"deployWithoutBranch"`
+	Operator            string
 }
 
 type DeploymentOrderCreateResponse struct {
