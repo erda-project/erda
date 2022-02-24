@@ -137,7 +137,7 @@ func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 			ColumnSource:   {[]table.ColumnKey{ColumnApplicationName, ColumnIcon, ColumnBranch}},
 			ColumnPipeline: {[]table.ColumnKey{ColumnPipelineName, ColumnSourceFile}},
 		},
-		Orders: []table.ColumnKey{ColumnPipeline, ColumnSource, ColumnSourceFile, ColumnPipelineStatus, ColumnProcess, ColumnCostTime,
+		Orders: []table.ColumnKey{ColumnPipeline, ColumnSource, ColumnPipelineStatus, ColumnProcess, ColumnCostTime,
 			ColumnExecutor, ColumnStartTime, ColumnCreateTime, ColumnCreator, ColumnPipelineID, ColumnMoreOperations},
 		ColumnsMap: map[table.ColumnKey]table.Column{
 			ColumnPipelineName:    {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineName))},
