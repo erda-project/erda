@@ -239,7 +239,7 @@ func (p *List) getData() *list.Data {
 			appIds = append(appIds, allApps.List[i].ID)
 			appIdToName[allApps.List[i].ID] = allApps.List[i].Name
 		}
-		myApp, err = p.initMyApps(p.Sdk, projectId, oid)
+		myApp, err = p.initMyApps(p.Sdk, oid, projectId)
 		if err != nil {
 			logrus.Errorf("get my app failed,%v", err)
 			return data
