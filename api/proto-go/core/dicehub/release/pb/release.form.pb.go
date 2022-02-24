@@ -570,6 +570,15 @@ func (m *ReleaseGetResponse) UnmarshalURLValues(prefix string, values url.Values
 					return err
 				}
 				m.Data.UpdatedAt.Nanos = int32(val)
+			case "data.isLatest":
+				if m.Data == nil {
+					m.Data = &ReleaseGetResponseData{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data.IsLatest = val
 			}
 		}
 	}
@@ -704,6 +713,12 @@ func (m *ReleaseGetResponseData) UnmarshalURLValues(prefix string, values url.Va
 					return err
 				}
 				m.UpdatedAt.Nanos = int32(val)
+			case "isLatest":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsLatest = val
 			}
 		}
 	}
@@ -769,12 +784,12 @@ func (m *ReleaseListRequest) UnmarshalURLValues(prefix string, values url.Values
 				m.Cluster = vals[0]
 			case "branch":
 				m.Branch = vals[0]
-			case "latest":
+			case "isLatest":
 				val, err := strconv.ParseBool(vals[0])
 				if err != nil {
 					return err
 				}
-				m.Latest = val
+				m.IsLatest = val
 			case "isStable":
 				m.IsStable = vals[0]
 			case "isFormal":
@@ -1035,6 +1050,12 @@ func (m *ReleaseData) UnmarshalURLValues(prefix string, values url.Values) error
 					return err
 				}
 				m.UpdatedAt.Nanos = int32(val)
+			case "isLatest":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsLatest = val
 			}
 		}
 	}

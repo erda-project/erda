@@ -1047,7 +1047,7 @@ func (s *ReleaseService) Convert(releaseRequest *pb.ReleaseCreateRequest, appRel
 		Addon:            releaseRequest.Addon,
 		Changelog:        releaseRequest.Changelog,
 		IsStable:         releaseRequest.IsStable,
-		IsFormal:         releaseRequest.IsFormal,
+		IsFormal:         false,
 		IsProjectRelease: releaseRequest.IsProjectRelease,
 		Version:          releaseRequest.Version,
 		OrgID:            releaseRequest.OrgID,
@@ -1123,6 +1123,8 @@ func (s *ReleaseService) Convert(releaseRequest *pb.ReleaseCreateRequest, appRel
 			return nil, errors.Errorf("failed to marshal release list, %v", err)
 		}
 		release.ApplicationReleaseList = string(listData)
+	} else {
+		release.IsLatest = true
 	}
 	return &release, nil
 }
@@ -1205,6 +1207,7 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 		ClusterName:            release.ClusterName,
 		CreatedAt:              timestamppb.New(release.CreatedAt),
 		UpdatedAt:              timestamppb.New(release.UpdatedAt),
+		IsLatest:               release.IsLatest,
 	}
 	if err = respDataReLoadImages(respData); err != nil {
 		logrus.WithError(err).Errorln("failed to ReLoadImages")

@@ -33,6 +33,7 @@ type State struct {
 	ReleaseFilterURLQuery string `json:"releaseFilter__urlQuery,omitempty"`
 	IsProjectRelease      bool   `json:"isProjectRelease"`
 	ProjectID             int64  `json:"projectID"`
+	IsFormal              *bool  `json:"isFormal,omitempty"`
 }
 
 type Values struct {
