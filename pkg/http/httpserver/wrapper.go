@@ -45,7 +45,7 @@ func WithI18nCodes(h Handler) Handler {
 
 func UnwrapI18nCodes(ctx context.Context) i18nProviders.LanguageCodes {
 	var lang struct{ Lang string }
-	if codes := ctx.Value(lang).(i18nProviders.LanguageCodes); len(codes) > 0 {
+	if codes, _ := ctx.Value(lang).(i18nProviders.LanguageCodes); len(codes) > 0 {
 		return codes
 	}
 	codes, _ := i18nProviders.ParseLanguageCode("en,zh-CN;q=0.9,zh;q=0.8,en-US;q=0.7,en-GB;q=0.6")
