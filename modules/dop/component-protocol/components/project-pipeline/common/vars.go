@@ -32,7 +32,7 @@ const (
 	AllState     StateValue = "all"
 )
 
-var DefaultState = AllState
+var DefaultState = MineState
 
 type Sort struct {
 	FieldKey  string
