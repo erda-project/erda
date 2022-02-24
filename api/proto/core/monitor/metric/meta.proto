@@ -28,8 +28,20 @@ service MetricMetaService {
     };
   }
 
-  rpc ListMetricGroups (ListMetricGroupsRequest) returns (ListMetricGroupsResponse)  {
+  rpc RegisterMetricMeta (RegisterMetricMetaRequest) returns (RegisterMetricMetaResponse) {
     option (google.api.http) = {
+      post: "/api/metric-meta"
+    };
+  }
+
+  rpc UnRegisterMetricMeta (UnRegisterMetricMetaRequest) returns (UnRegisterMetricMetaResponse) {
+    option (google.api.http) = {
+      delete: "/api/metric-meta"
+    };
+  }
+
+  rpc ListMetricGroups (ListMetricGroupsRequest) returns (ListMetricGroupsResponse)  {
+    option (google.api.http)     = {
       get: "/api/metric-groups?scopeId={scopeID}"
     };
     option (erda.common.openapi) = {
@@ -37,7 +49,7 @@ service MetricMetaService {
     };
   }
   rpc GetMetricGroup (GetMetricGroupRequest) returns (GetMetricGroupResponse)  {
-    option (google.api.http) = {
+    option (google.api.http)     = {
       get: "/api/metric-groups/{id}?scopeId={scopeID}"
     };
     option (erda.common.openapi) = {
@@ -49,7 +61,7 @@ service MetricMetaService {
 
 // ListMetricNames
 message ListMetricNamesRequest {
-  string scope = 1 [(validator.field) = {string_not_empty : true}];
+  string scope   = 1 [(validator.field) = {string_not_empty : true}];
   string scopeID = 2 [(validator.field) = {string_not_empty : true}];
 }
 
@@ -57,10 +69,32 @@ message ListMetricNamesResponse {
   repeated NameDefine data = 1;
 }
 
+message RegisterMetricMetaRequest {
+  string     scope   = 1;
+  string     scopeID = 2;
+  string     group   = 3;
+  MetricMeta meta    = 4;
+}
+
+message RegisterMetricMetaResponse {
+  bool data = 1;
+}
+
+message UnRegisterMetricMetaRequest {
+  string scope      = 1;
+  string scopeID    = 2;
+  string group      = 3;
+  string metricName = 4;
+}
+
+message UnRegisterMetricMetaResponse {
+  bool data = 1;
+}
+
 // ListMetricMeta
 message ListMetricMetaRequest {
-  string scope = 1 [(validator.field) = {string_not_empty : true}];
-  string scopeID = 2 [(validator.field) = {string_not_empty : true}];
+  string          scope   = 1 [(validator.field) = {string_not_empty : true}];
+  string          scopeID = 2 [(validator.field) = {string_not_empty : true}];
   repeated string metrics = 3;
 }
 
@@ -70,9 +104,9 @@ message ListMetricMetaResponse {
 
 // ListMetricGroups
 message ListMetricGroupsRequest {
-  string scope = 1 [(validator.field) = {string_not_empty : true}];
+  string scope   = 1 [(validator.field) = {string_not_empty : true}];
   string scopeID = 2 [(validator.field) = {string_not_empty : true}];
-  string mode = 3;
+  string mode    = 3;
 }
 
 message ListMetricGroupsResponse {
@@ -81,13 +115,13 @@ message ListMetricGroupsResponse {
 
 // GetMetricGroup
 message GetMetricGroupRequest {
-  string scope = 1 [(validator.field) = {string_not_empty : true}];
-  string scopeID = 2 [(validator.field) = {string_not_empty : true}];
-  string id = 3  [(validator.field) = {string_not_empty : true}];
-  string mode = 4;
-  string version = 5;
-  string format = 6;
-  bool appendTags = 7;
+  string scope      = 1 [(validator.field) = {string_not_empty : true}];
+  string scopeID    = 2 [(validator.field) = {string_not_empty : true}];
+  string id         = 3  [(validator.field) = {string_not_empty : true}];
+  string mode       = 4;
+  string version    = 5;
+  string format     = 6;
+  bool   appendTags = 7;
 }
 
 message GetMetricGroupResponse {
@@ -95,83 +129,83 @@ message GetMetricGroupResponse {
 }
 
 message MetricGroup {
-  string id = 1;
-  MetaMode meta = 2;
+  string                   id      = 1;
+  MetaMode                 meta    = 2;
   repeated GroupMetricMeta metrics = 3;
 }
 
 message GroupMetricMeta {
-  string metric = 1;            
-  string name = 2;               
-  repeated TagFilter filters = 3;           
-  repeated FieldDefine fields = 4;
-  repeated TagDefine tags = 5;
+  string               metric  = 1;
+  string               name    = 2;
+  repeated TagFilter   filters = 3;
+  repeated FieldDefine fields  = 4;
+  repeated TagDefine   tags    = 5;
 }
 
 // common
 message MetricMeta {
-  NameDefine name = 1;
-  map<string, string> labels = 2;
-  map<string, TagDefine> tags = 3;
+  NameDefine               name   = 1;
+  map<string, string>      labels = 2;
+  map<string, TagDefine>   tags   = 3;
   map<string, FieldDefine> fields = 4;
 }
 
 message NameDefine {
-  string key = 1;
+  string key  = 1;
   string name = 2;
 }
 
 message TagDefine {
-  string key = 1;
-  string name = 2;
+  string               key    = 1;
+  string               name   = 2;
   repeated ValueDefine values = 5;
 }
 
 message FieldDefine {
-  string key = 1;
-  string type = 2;
-  string name = 3;
-  string unit = 4;
+  string               key    = 1;
+  string               type   = 2;
+  string               name   = 3;
+  string               unit   = 4;
   repeated ValueDefine values = 5;
 }
 
 message ValueDefine {
-  string name = 1;
+  string                name  = 1;
   google.protobuf.Value value = 2;
 }
 
 message Group {
-  string id = 1;
-  string name = 2;
-  int32 order = 3;
+  string         id       = 1;
+  string         name     = 2;
+  int32          order    = 3;
   repeated Group children = 4;
 }
 
 message MetaMode {
-  map<string, TypeDefine> types = 1;
-  repeated Operation filters = 2;
+  map<string, TypeDefine> types   = 1;
+  repeated Operation      filters = 2;
 }
 
 message TypeDefine  {
   repeated Aggregation aggregations = 1;
-  repeated Operation operations = 2;
-  repeated Operation filters = 3;
+  repeated Operation   operations   = 2;
+  repeated Operation   filters      = 3;
 }
 
 message Aggregation {
   string aggregation = 1;
-  string name = 2;
+  string name        = 2;
   string result_type = 3 [json_name = "result_type"];
 }
 
 message Operation {
   string operation = 1;
-  string name = 2;
-  bool multi = 3;
+  string name      = 2;
+  bool   multi     = 3;
 }
 
 message TagFilter {
-  string tag = 1;
-  string op = 2;
+  string tag   = 1;
+  string op    = 2;
   string value = 3;
 }

@@ -301,6 +301,7 @@ erda.msp.apm.log_service:
   query_log_elasticsearch_enabled: ${QUERY_LOG_FROM_ES_ENABLE:true}
   index_field_settings:
       file: ${CONFIG_PATH}/logs/default_field_settings.yml
+log-metric-rules:
 
 # component-protocol framework
 component-protocol:

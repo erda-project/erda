@@ -14,15 +14,19 @@
 
 package monitor
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+)
 
-var MONITOR_ADDON_LOGS_RULES = apis.ApiSpec{
-	Path:        "/api/micro-service/logs/rules",
-	BackendPath: "/api/logs/metric/micro_service/rules",
-	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
+var MSP_ADDON_LOGS_RULES_DELETE = apis.ApiSpec{
+	Path:        "/api/micro-service/logs/rules/<id>",
+	BackendPath: "/api/logs/metric/micro_service/rules/<id>",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
-	Method:      "GET",
+	Method:      "DELETE",
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         "summary: 获取日志清洗规则列表",
+	Doc:         "summary: 删除日志规则",
+	Audit:       auditOperatorBlock(apistructs.DeleteAnalyzerRule),
 }

@@ -22,10 +22,10 @@ import (
 	"github.com/erda-project/erda/modules/openapi/api/spec"
 )
 
-var MONITOR_ADDON_LOGS_RULES_CREATE = apis.ApiSpec{
+var MSP_ADDON_LOGS_RULES_CREATE = apis.ApiSpec{
 	Path:        "/api/micro-service/logs/rules",
 	BackendPath: "/api/logs/metric/micro_service/rules",
-	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
+	Host:        "msp.marathon.l4lb.thisdcos.directory:8080",
 	Scheme:      "http",
 	Method:      "POST",
 	CheckLogin:  true,

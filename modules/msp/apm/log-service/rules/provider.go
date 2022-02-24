@@ -17,6 +17,8 @@ package rules
 import (
 	"time"
 
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
@@ -24,20 +26,19 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql"
 	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/core/monitor/metric/query/metricq"
-	"github.com/erda-project/erda/modules/extensions/loghub/metrics/rules/db"
+	"github.com/erda-project/erda/modules/msp/apm/log-service/rules/db"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type config struct{}
 
 type provider struct {
-	C       *config
-	L       logs.Logger
-	db      *db.DB
-	bdl     *bundle.Bundle
-	metricq metricq.Queryer
-	t       i18n.Translator
+	C          *config
+	L          logs.Logger
+	db         *db.DB
+	bdl        *bundle.Bundle
+	MetricMeta metricpb.MetricMetaServiceServer `autowired:"erda.core.monitor.metric.MetricMetaService"`
+	t          i18n.Translator
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -48,7 +49,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	)
 	p.t = ctx.Service("i18n").(i18n.I18n).Translator("log-metrics")
 	p.db = db.New(ctx.Service("mysql").(mysql.Interface).DB())
-	p.metricq = ctx.Service("metrics-query").(metricq.Queryer)
 	routes := ctx.Service("http-server", interceptors.Recover(p.L)).(httpserver.Router)
 	return p.intRoutes(routes)
 }
@@ -56,7 +56,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 func init() {
 	servicehub.Register("log-metric-rules", &servicehub.Spec{
 		Services:     []string{"log-metric-rules"},
-		Dependencies: []string{"http-server", "mysql", "i18n", "metrics-query"},
+		Dependencies: []string{"http-server", "mysql", "i18n"},
 		Description:  "logs metric rules",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {

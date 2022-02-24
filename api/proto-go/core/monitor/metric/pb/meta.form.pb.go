@@ -17,6 +17,10 @@ import (
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
 var _ urlenc.URLValuesUnmarshaler = (*ListMetricNamesRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListMetricNamesResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*RegisterMetricMetaRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*RegisterMetricMetaResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*UnRegisterMetricMetaRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*UnRegisterMetricMetaResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListMetricMetaRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListMetricMetaResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListMetricGroupsRequest)(nil)
@@ -54,6 +58,103 @@ func (m *ListMetricNamesRequest) UnmarshalURLValues(prefix string, values url.Va
 
 // ListMetricNamesResponse implement urlenc.URLValuesUnmarshaler.
 func (m *ListMetricNamesResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// RegisterMetricMetaRequest implement urlenc.URLValuesUnmarshaler.
+func (m *RegisterMetricMetaRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "scope":
+				m.Scope = vals[0]
+			case "scopeID":
+				m.ScopeID = vals[0]
+			case "group":
+				m.Group = vals[0]
+			case "meta":
+				if m.Meta == nil {
+					m.Meta = &MetricMeta{}
+				}
+			case "meta.name":
+				if m.Meta == nil {
+					m.Meta = &MetricMeta{}
+				}
+				if m.Meta.Name == nil {
+					m.Meta.Name = &NameDefine{}
+				}
+			case "meta.name.key":
+				if m.Meta == nil {
+					m.Meta = &MetricMeta{}
+				}
+				if m.Meta.Name == nil {
+					m.Meta.Name = &NameDefine{}
+				}
+				m.Meta.Name.Key = vals[0]
+			case "meta.name.name":
+				if m.Meta == nil {
+					m.Meta = &MetricMeta{}
+				}
+				if m.Meta.Name == nil {
+					m.Meta.Name = &NameDefine{}
+				}
+				m.Meta.Name.Name = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// RegisterMetricMetaResponse implement urlenc.URLValuesUnmarshaler.
+func (m *RegisterMetricMetaResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data = val
+			}
+		}
+	}
+	return nil
+}
+
+// UnRegisterMetricMetaRequest implement urlenc.URLValuesUnmarshaler.
+func (m *UnRegisterMetricMetaRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "scope":
+				m.Scope = vals[0]
+			case "scopeID":
+				m.ScopeID = vals[0]
+			case "group":
+				m.Group = vals[0]
+			case "metricName":
+				m.MetricName = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// UnRegisterMetricMetaResponse implement urlenc.URLValuesUnmarshaler.
+func (m *UnRegisterMetricMetaResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data = val
+			}
+		}
+	}
 	return nil
 }
 

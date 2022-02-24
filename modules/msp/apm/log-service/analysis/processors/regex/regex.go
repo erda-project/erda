@@ -22,8 +22,8 @@ import (
 	"github.com/recallsong/go-utils/reflectx"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors"
-	"github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis/processors/convert"
+	"github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors"
+	"github.com/erda-project/erda/modules/msp/apm/log-service/analysis/processors/convert"
 )
 
 type config struct {

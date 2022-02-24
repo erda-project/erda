@@ -20,8 +20,8 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	_ "github.com/erda-project/erda/modules/extensions/cloud/aliyun/metrics/cloudcat"
-	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/analysis"
 	_ "github.com/erda-project/erda/modules/extensions/loghub/sls-import"
+	_ "github.com/erda-project/erda/modules/msp/apm/log-service/analysis"
 
 	// infra
 	_ "github.com/erda-project/erda-infra/providers/health"

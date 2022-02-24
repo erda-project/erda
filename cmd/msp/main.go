@@ -56,6 +56,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/diagnotor"
 	_ "github.com/erda-project/erda/modules/msp/apm/exception/query"
 	_ "github.com/erda-project/erda/modules/msp/apm/log-service/query"
+	_ "github.com/erda-project/erda/modules/msp/apm/log-service/rules"
 	_ "github.com/erda-project/erda/modules/msp/apm/metric"
 	_ "github.com/erda-project/erda/modules/msp/apm/notifygroup"
 	_ "github.com/erda-project/erda/modules/msp/apm/service"
