@@ -41,7 +41,7 @@ type Values struct {
 	BranchID          string   `json:"branchID,omitempty"`
 	CommitID          string   `json:"commitID,omitempty"`
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd,omitempty"`
-	Latest            bool     `json:"latest"`
+	Latest            string   `json:"latest,omitempty"`
 	ReleaseID         string   `json:"releaseID,omitempty"`
 	UserIDs           []string `json:"userIDs,omitempty"`
 	Version           string   `json:"version,omitempty"`

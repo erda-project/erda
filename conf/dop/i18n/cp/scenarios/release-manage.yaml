@@ -1,4 +1,6 @@
 zh:
+  true: 是
+  false: 否
   searchByVersion: 搜索版本
   application: 应用
   selectApplication: 请选择应用
@@ -60,3 +62,5 @@ en:
   inputReleaseID: Input release ID
   aggregateByBranch: Aggregate by branch
   formalReleaseCanNotBeModified: Formal release can not be modified
+  true: "true"
+  false: "false"

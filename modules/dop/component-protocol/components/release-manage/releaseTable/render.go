@@ -144,17 +144,17 @@ func (r *ComponentReleaseTable) DecodeURLQuery() error {
 }
 
 func (r *ComponentReleaseTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = r.State.PageNo
-	urlQuery["pageSize"] = r.State.PageSize
-	urlQuery["sorterData"] = r.State.Sorter
-	jsonData, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = r.State.PageNo
+	query["pageSize"] = r.State.PageSize
+	query["sorterData"] = r.State.Sorter
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(jsonData)
-	r.State.ReleaseTableURLQuery = encoded
+	encode := base64.StdEncoding.EncodeToString(data)
+	r.State.ReleaseTableURLQuery = encode
 	return nil
 }
 
@@ -199,7 +199,7 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 	releaseResp, err := r.svc.ListRelease(ctx, &dicehubpb.ReleaseListRequest{
 		ReleaseID:        r.State.FilterValues.ReleaseID,
 		Branch:           r.State.FilterValues.BranchID,
-		IsLatest:         r.State.FilterValues.Latest,
+		IsLatest:         r.State.FilterValues.Latest == "true" && r.State.IsFormal == nil && !r.State.IsProjectRelease,
 		IsStable:         "true",
 		IsFormal:         isFormal,
 		IsProjectRelease: strconv.FormatBool(r.State.IsProjectRelease),

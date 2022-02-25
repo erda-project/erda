@@ -47,14 +47,9 @@ func (f *ComponentReleaseFilter) Render(ctx context.Context, component *cptype.C
 	}
 
 	if event.Operation == cptype.InitializeOperation {
-		if f.State.IsFormal == nil && !f.State.IsProjectRelease {
-			f.State.Values.Latest = true
-		}
+		f.State.Values.Latest = "true"
 		if err := f.DecodeURLQuery(); err != nil {
 			return errors.Errorf("failed to decode url query for release filter component, %v", err)
-		}
-		if f.State.IsFormal != nil || f.State.IsProjectRelease {
-			f.State.Values.Latest = false
 		}
 		releaseID, _ := f.sdk.InParams["appReleaseIDs"].(string)
 		if releaseID != "" {
@@ -142,7 +137,7 @@ func (f *ComponentReleaseFilter) DecodeURLQuery() error {
 	f.State.Values.CommitID, _ = query["commitID"].(string)
 	f.State.Values.BranchID, _ = query["branchID"].(string)
 	f.State.Values.ReleaseID, _ = query["releaseID"].(string)
-	f.State.Values.Latest, _ = query["latest"].(bool)
+	f.State.Values.Latest, _ = query["latest"].(string)
 	f.State.Values.Version, _ = query["version"].(string)
 	return nil
 }
@@ -248,7 +243,17 @@ func (f *ComponentReleaseFilter) RenderFilter() error {
 		f.Data.Conditions = append(f.Data.Conditions, Condition{
 			Key:   "latest",
 			Label: f.sdk.I18n("aggregateByBranch"),
-			Type:  "checkbox",
+			Type:  "select",
+			Options: []Option{
+				{
+					Label: f.sdk.I18n("true"),
+					Value: "true",
+				},
+				{
+					Label: f.sdk.I18n("false"),
+					Value: "false",
+				},
+			},
 		})
 	}
 	f.Data.Conditions = append(f.Data.Conditions, Condition{
