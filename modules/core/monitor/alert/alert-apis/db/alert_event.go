@@ -45,6 +45,13 @@ type AlertEventSort struct {
 	Descending bool
 }
 
+type AlertEventScopeCountResult struct {
+	OrgID   int64
+	Scope   string
+	ScopeId string
+	Count   int64
+}
+
 var columnNameMap = gormutil.GetFieldToColumnMap(reflect.TypeOf(AlertEvent{}))
 
 func (db *AlertEventDB) CreateAlertEvent(data *AlertEvent) error {
@@ -100,6 +107,37 @@ func (db *AlertEventDB) CountByCondition(scope, scopeId string, condition *Alert
 	query = db.buildWhereQuery(query, condition)
 	err := query.Count(&count).Error
 	return count, err
+}
+
+func (db *AlertEventDB) CountUnRecoverEventsGroupByScope() ([]*AlertEventScopeCountResult, error) {
+	var list []*AlertEventScopeCountResult
+
+	err := db.Table(TableAlertEvent).
+		Select("org_id, scope, scope_id, count(*) as count").
+		Where("alert_state=?", "alert").
+		Group("org_id,scope,scope_id").
+		Scan(&list).Error
+
+	if err != nil && gorm.IsRecordNotFoundError(err) {
+		return nil, nil
+	}
+	return list, err
+}
+
+func (db *AlertEventDB) CountUnRecoverEvents(scope, scopeId string) (int64, error) {
+	var result AlertEventScopeCountResult
+
+	err := db.Table(TableAlertEvent).
+		Select("count(*) as count").
+		Where("alert_state=?", "alert").
+		Where("scope=?", scope).
+		Where("scope_id?", scopeId).
+		Find(&result).Error
+
+	if err != nil && gorm.IsRecordNotFoundError(err) {
+		return 0, nil
+	}
+	return result.Count, err
 }
 
 func (db *AlertEventDB) buildSortSqlPart(query *gorm.DB, sorts []*AlertEventSort) *gorm.DB {
