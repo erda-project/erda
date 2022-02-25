@@ -1355,62 +1355,44 @@ func (k *Kubernetes) UpdateContainerResourceEnv(originResource apistructs.Resour
 
 // DereferenceEnvs dereferences envs if the placeholder ${env.PLACEHOLDER} in the env.
 func DereferenceEnvs(deployment *appsv1.Deployment) error {
+	var (
+		left, right = "${", "}"
+		find        = func(p string) bool { return strings.HasPrefix(p, "env.") }
+	)
 	for i, container := range deployment.Spec.Template.Spec.Containers {
 		var envMap = make(map[string]string)
 		for _, env := range container.Env {
-			if env.ValueFrom != nil {
-				continue
-			}
-			envMap[env.Name] = env.Value
-		}
-		if err := dereferenceMap(envMap); err != nil {
-			return err
-		}
-		for j, env := range deployment.Spec.Template.Spec.Containers[i].Env {
-			if value, ok := envMap[env.Name]; ok && container.Env[j].ValueFrom == nil {
-				deployment.Spec.Template.Spec.Containers[i].Env[j].Value = value
+			if env.ValueFrom == nil {
+				envMap[env.Name] = env.Value
 			}
 		}
-	}
-	return nil
-}
-
-func dereferenceMap(values map[string]string) error {
-	var left, right = "${", "}"
-	for k, v := range values {
-		placeholder, start, end, err := strutil.FirstCustomPlaceholder(v, left, right)
-		if err != nil {
-			return err
-		}
-		if start == end {
-			break
-		}
-		if !strings.HasPrefix(placeholder, "env.") {
-			continue
-		}
-		placeholder = strings.TrimPrefix(placeholder, "env.")
-		if placeholder == k {
-			return errors.Errorf("loop reference in env: %s", placeholder)
-		}
-		kv := strings.Split(placeholder, ":")
-		placeholder = kv[0]
-		ref, ok := values[placeholder]
-		if !ok {
-			if len(kv) > 1 {
-				ref = kv[1]
-			} else {
-				return errors.Errorf("reference invalid env key: %s", placeholder)
+		for j := range container.Env {
+			name, value := container.Env[j].Name, container.Env[j].Value
+			for {
+				placeholder, indexStart, indexEnd, err := strutil.FirstCustomExpression(value, left, right, find)
+				if err != nil {
+					return err
+				}
+				if indexStart == indexEnd {
+					break
+				}
+				placeholder = strings.TrimPrefix(placeholder, "env.")
+				kv := strings.Split(placeholder, ":")
+				placeholder = kv[0]
+				if placeholder == name {
+					return errors.Errorf("loop reference in env name %s", name)
+				}
+				v, ok := envMap[placeholder]
+				if !ok {
+					if len(kv) > 1 {
+						v = strings.TrimPrefix(kv[1], " ")
+					} else {
+						return errors.Errorf("env reference not found and default value not be set: %s", placeholder)
+					}
+				}
+				value = strutil.Replace(value, v, indexStart, indexEnd)
 			}
-		}
-		values[k] = strutil.Replace(v, ref, start, end)
-	}
-	for k := range values {
-		placeholder, start, end, err := strutil.FirstCustomPlaceholder(values[k], left, right)
-		if err != nil {
-			return err
-		}
-		if start != end && strings.HasPrefix(placeholder, "env.") {
-			return dereferenceMap(values)
+			deployment.Spec.Template.Spec.Containers[i].Env[j].Value = value
 		}
 	}
 	return nil

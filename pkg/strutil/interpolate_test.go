@@ -15,6 +15,7 @@
 package strutil_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/erda-project/erda/pkg/strutil"
@@ -114,4 +115,59 @@ func TestInterpolationDereference(t *testing.T) {
 		t.Fatal("errors", values)
 	}
 	t.Log(err)
+}
+
+func TestFirstCustomExpression(t *testing.T) {
+	type testCase struct {
+		s           string
+		left, right string
+		key         string
+		f           func(string) bool
+	}
+	var cases = []testCase{
+		{
+			s:     "do ${something}",
+			left:  "${",
+			right: "}",
+			key:   "something",
+			f: func(_ string) bool {
+				return true
+			},
+		}, {
+			s:     "do ((something))",
+			left:  "((",
+			right: "))",
+			key:   "something",
+			f: func(_ string) bool {
+				return true
+			},
+		}, {
+			s:     "do ${{ configs.something }}",
+			left:  "${{",
+			right: "}}",
+			key:   "something",
+			f: func(s string) bool {
+				return strings.HasPrefix(s, "configs.")
+			},
+		}, {
+			s:     "do ${env.something:homework}",
+			left:  "${",
+			right: "}",
+			key:   "something",
+			f: func(s string) bool {
+				return strings.HasPrefix(s, "env.")
+			},
+		},
+	}
+	for i, testCase := range cases {
+		placeholder, start, end, err := strutil.FirstCustomExpression(testCase.s, testCase.left, testCase.right, testCase.f)
+		if err != nil {
+			t.Fatal(i, err)
+		}
+		t.Logf("[%v] placeholder: %s, indexStart: %v, indexEnd: %v, after interpolation: %s",
+			i, placeholder, start, end, strutil.Replace(testCase.s, "homework", start, end))
+		if strutil.Replace(testCase.s, "homework", start, end) != "do homework" {
+			t.Fatal("replace error")
+		}
+	}
 }
