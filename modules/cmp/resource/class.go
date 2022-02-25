@@ -339,7 +339,7 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 		start, _ = request.Query.GetStart()
 		end, _   = request.Query.GetEnd()
 	)
-	langCodes := ctx.Value(Lang).(i18n.LanguageCodes)
+	langCodes, _ := ctx.Value(Lang).(i18n.LanguageCodes)
 	td = &Histogram{
 		Name: r.I18n(langCodes, "cluster trend"),
 	}
@@ -468,9 +468,9 @@ func (r *Resource) GetClusterTrend(ctx context.Context, ordId int64, userId stri
 func (r *Resource) GetProjectTrend(ctx context.Context, request *apistructs.TrendRequest) (*Histogram, error) {
 	var (
 		//l          = logrus.WithField("func", "*Resource.GetProjectTrend")
-		langCodes = ctx.Value(Lang).(i18n.LanguageCodes)
-		td        = new(Histogram)
-		orgID, _  = request.GetOrgID()
+		langCodes, _ = ctx.Value(Lang).(i18n.LanguageCodes)
+		td           = new(Histogram)
+		orgID, _     = request.GetOrgID()
 		//userID, _  = request.GetUserID()
 		start, _   = request.Query.GetStart()
 		end, _     = request.Query.GetEnd()
