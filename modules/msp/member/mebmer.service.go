@@ -204,13 +204,10 @@ func (m memberService) CreateOrUpdateMember(ctx context.Context, request *pb.Cre
 		return nil, errors.NewInternalServerError(fmt.Errorf("Query project record by scopeid is empty scopeId is %v", request.Scope.Id))
 	}
 	memberReq.Scope.ID = projectIdStr
-	//userId := apis.GetUserID(ctx)
-	userIds := request.UserIds
-	for _, userId := range userIds {
-		err = m.p.bdl.AddMember(memberReq, userId)
-		if err != nil {
-			return nil, errors.NewInternalServerError(err)
-		}
+	userId := apis.GetUserID(ctx)
+	err = m.p.bdl.AddMember(memberReq, userId)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
 	}
 	projectId, err := m.contextEntry(projectIdStr, request.UserIds, ctx)
 	if err != nil {
