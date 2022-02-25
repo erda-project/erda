@@ -307,7 +307,7 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 				RenderType: "userAvatar",
 				Value:      []string{release.UserID},
 			},
-			CreatedAt: release.CreatedAt.AsTime().Format("2006/01/02 15:04:05"),
+			CreatedAt: release.CreatedAt.AsTime().Local().Format("2006/01/02 15:04:05"),
 			Operations: TableOperations{
 				Operations: map[string]interface{}{},
 				RenderType: "tableOperation",

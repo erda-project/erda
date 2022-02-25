@@ -254,6 +254,8 @@ func (f *ComponentReleaseFilter) RenderFilter() error {
 					Value: "false",
 				},
 			},
+			Mode:     "single",
+			Required: true,
 		})
 	}
 	f.Data.Conditions = append(f.Data.Conditions, Condition{
@@ -266,12 +268,12 @@ func (f *ComponentReleaseFilter) RenderFilter() error {
 	return nil
 }
 
-func (f *ComponentReleaseFilter) Transfer(component *cptype.Component) {
-	component.Data = map[string]interface{}{
+func (f *ComponentReleaseFilter) Transfer(c *cptype.Component) {
+	c.Data = map[string]interface{}{
 		"conditions": f.Data.Conditions,
 		"hideSave":   f.Data.HideSave,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"values":                  f.State.Values,
 		"releaseFilter__urlQuery": f.State.ReleaseFilterURLQuery,
 		"isProjectRelease":        f.State.IsProjectRelease,

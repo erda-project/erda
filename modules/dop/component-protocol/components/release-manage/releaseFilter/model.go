@@ -59,6 +59,8 @@ type Condition struct {
 	Type        string   `json:"type,omitempty"`
 	Options     []Option `json:"options,omitempty"`
 	Outside     bool     `json:"outside,omitempty"`
+	Mode        string   `json:"mode,omitempty"`
+	Required    bool     `json:"required"`
 }
 
 type Option struct {
