@@ -68,6 +68,10 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 				logrus.Errorf("failed to find last deployment for runtime %d, (%v)", rt.ID, err)
 				return
 			}
+			if lastDeployment == nil {
+				logrus.Errorf("failed to find last deployment for runtime, last deployment is nil, runtime id: %d", rt.ID)
+				return
+			}
 			if errGetRuntime != nil {
 				if !errors.Is(errGetRuntime, gorm.ErrRecordNotFound) {
 					logrus.Errorf("failed to get runtime by app name %s, (%v)", app.ApplicationName, errGetRuntime)
