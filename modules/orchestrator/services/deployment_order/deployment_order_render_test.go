@@ -22,6 +22,7 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	infrai18n "github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -76,11 +77,11 @@ func TestPreCheck(t *testing.T) {
 		},
 	)
 
-	monkey.Patch(i18n.OrgSprintf, func(string, string, ...interface{}) string {
+	monkey.Patch(i18n.LangCodesSprintf, func(infrai18n.LanguageCodes, string, ...interface{}) string {
 		return ""
 	})
 
-	got, err := order.staticPreCheck(1, "1", string(apistructs.WorkspaceDev), 1, 1, getFakeErdaYaml())
+	got, err := order.staticPreCheck([]*infrai18n.LanguageCode{{Code: "en", Quality: 1}}, "1", string(apistructs.WorkspaceDev), 1, 1, getFakeErdaYaml())
 	assert.NoError(t, err)
 	assert.Equal(t, len(got), 2)
 }
@@ -113,10 +114,10 @@ func TestRenderDetail(t *testing.T) {
 		},
 	)
 
-	monkey.Patch(i18n.OrgSprintf, func(string, string, ...interface{}) string {
+	monkey.Patch(i18n.LangCodesSprintf, func(infrai18n.LanguageCodes, string, ...interface{}) string {
 		return ""
 	})
 
-	_, err := order.RenderDetail(context.Background(), 1, "1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD")
+	_, err := order.RenderDetail(context.Background(), "1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD")
 	assert.NoError(t, err)
 }

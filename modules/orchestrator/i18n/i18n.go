@@ -16,7 +16,6 @@ package i18n
 
 import (
 	"fmt"
-	"strconv"
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -44,6 +43,13 @@ func SetSingle(trans i18n.Translator) {
 	translator = trans
 }
 
+func LangCodesSprintf(codes i18n.LanguageCodes, key string, args ...interface{}) string {
+	if len(args) == 0 {
+		return translator.Text(codes, key)
+	}
+	return fmt.Sprintf(translator.Text(codes, key), args...)
+}
+
 func Sprintf(locale, key string, args ...interface{}) string {
 	if translator == nil {
 		panic("the translator is nil")
@@ -64,8 +70,4 @@ func OrgSprintf(orgID, key string, args ...interface{}) string {
 		locale = orgDTO.Locale
 	}
 	return Sprintf(locale, key, args...)
-}
-
-func OrgUintSprintf(orgId uint64, key string, arg ...interface{}) string {
-	return OrgSprintf(strconv.FormatUint(orgId, 10), key, arg)
 }
