@@ -38,7 +38,7 @@ func newRoute(format string, paramFuncs ...routeParamFunc) routeFunc {
 const (
 	routeFormatHostMetric   = "/dataCenter/alarm/report/%s/%s?category=alert&x_filter_host_ip=%s&x_timestamp=%s"
 	routeFormatHostDetail   = "/dataCenter/alarm/report/%s/machine-list/%s"
-	routeFormatRuntime      = "/workBench/projects/%s/apps/%s/deploy/runtimes/%s/overview"
+	routeFormatRuntime      = "/dop/projects/%s/deploy/list/%s/%s/runtime/%s"
 	routeFormatTopology     = "/microService/%s/%s/%s/topology/%s?appId=%s"
 	routeFormatErrorDetail  = "/microService/%s/%s/%s/monitor/%s/error/error-detail/%s"
 	routeFormatStatusList   = "/microService/%s/%s/%s/monitor/%s/status"
@@ -122,6 +122,7 @@ var routeMap = map[string]routeFunc{
 	routeWorkbenchRuntimeId: newRoute(
 		routeFormatRuntime,
 		routeParamConvert("project_id"),
+		routeParamConvert("workspace"),
 		routeParamConvert("application_id"),
 		routeParamConvert("runtime_id"),
 	),
