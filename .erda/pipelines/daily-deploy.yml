@@ -18,19 +18,19 @@ stages:
       - git-checkout:
           alias: erda-analyzer
           params:
-            uri: https://erda.cloud/erda/dop/erda-project/erda-analyzer-mirror
+            uri: https://erda.cloud/erda/dop/erda-project/erda-analyzer
             branch: ${{ outputs.erda.branch }}
             depth: 1
       - git-checkout:
           alias: erda-fluent-bit
           params:
-            uri: https://erda.cloud/erda/dop/erda-project/erda-fluent-bit-mirror
+            uri: https://erda.cloud/erda/dop/erda-project/erda-fluent-bit
             branch: ${{ outputs.erda.branch }}
             depth: 1
       - git-checkout:
           alias: erda-telegraf
           params:
-            uri: https://erda.cloud/erda/dop/erda-project/telegraf-mirror
+            uri: https://erda.cloud/erda/dop/erda-project/telegraf
             branch: ${{ outputs.erda.branch }}
             depth: 1
       - git-checkout:
@@ -55,19 +55,19 @@ stages:
       - release-fetch:
           alias: fetch-release-erda-analyzer
           params:
-            application_name: erda-analyzer-mirror
+            application_name: erda-analyzer
             branch: ${{ outputs.erda-analyzer.branch }}
             #check_commit: ${{ outputs.erda-analyzer.commit }}
       - release-fetch:
           alias: fetch-release-erda-fluent-bit
           params:
-            application_name: erda-fluent-bit-mirror
+            application_name: erda-fluent-bit
             branch: ${{ outputs.erda-fluent-bit.branch }}
             #check_commit: ${{ outputs.erda-fluent-bit.commit }}
       - release-fetch:
           alias: fetch-release-erda-telegraf
           params:
-            application_name: telegraf-mirror
+            application_name: telegraf
             branch: ${{ outputs.erda-telegraf.branch }}
             #check_commit: ${{ outputs.erda-telegraf.commit }}
       - release-fetch:
@@ -143,21 +143,21 @@ stages:
           params:
             release_name: ${{ outputs.fetch-release-erda-analyzer.release_name }}
             workspace: TEST
-            application_name: erda-analyzer-mirror
+            application_name: erda-analyzer
             type: application
       - dice:
           alias: deploy-erda-fluent-bit
           params:
             release_name: ${{ outputs.fetch-release-erda-fluent-bit.release_name }}
             workspace: TEST
-            application_name: erda-fluent-bit-mirror
+            application_name: erda-fluent-bit
             type: application
       - dice:
           alias: deploy-erda-telegraf
           params:
             release_name: ${{ outputs.fetch-release-erda-telegraf.release_name }}
             workspace: TEST
-            application_name: telegraf-mirror
+            application_name: telegraf
             type: application
       - dice:
           alias: deploy-uc
