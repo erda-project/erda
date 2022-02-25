@@ -141,6 +141,11 @@ func (af *AdvanceFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			delete(af.Values, "title")
 			(*sdk.GlobalState)["nameFilter"] = v
 		}
+		urlParam, err := af.generateUrlQueryParams(af.Values)
+		if err != nil {
+			return nil
+		}
+		(*af.StdStatePtr)["advanceFilter__urlQuery"] = urlParam
 		(*sdk.GlobalState)["advanceFilter"] = af.Values
 		af.StdDataPtr = af.getData(sdk)
 		return nil
@@ -258,7 +263,8 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 		common.Transfer(af.Values, &state)
 		stdState := cptype.ExtraMap{}
 		common.Transfer(state, &stdState)
-		af.StdStatePtr = &cptype.ExtraMap{"values": stdState}
+		(*af.StdStatePtr)["values"] = stdState
+		(*sdk.GlobalState)["advanceFilter"] = af.Values
 	}
 	// filter values
 
