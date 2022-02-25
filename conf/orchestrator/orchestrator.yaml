@@ -16,7 +16,8 @@ service-register:
 
 i18n:
   common:
-    - conf/orchestrator/i18n/log-trans.yaml
+    - conf/orchestrator/i18n/scheduler-log-trans.yaml
+    - conf/orchestrator/i18n/orchestrator-log-trans.yaml
     - conf/orchestrator/i18n/deployment-order-precheck.yaml
 
 erda.orchestrator.runtime:
