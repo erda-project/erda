@@ -183,10 +183,15 @@ func RunProcess(service string, c *webcontext.Context) {
 		}
 		logrus.Infof("push header:" + string(header))
 		re := regexp.MustCompile(
-			`(?mi)(?P<before>[0-9a-fA-F]{40}) (?P<after>[0-9a-fA-F]{40}) (?P<ref>refs\/(heads|tags)\/.*?)\0`,
+			`(?mi)(?P<before>[0-9a-fA-F]{40}) (?P<after>[0-9a-fA-F]{40}) (?P<ref>refs\/(heads|tags)\/\S*)`,
 		)
+		// remove 0000
+		matchHeader := make([]byte, 0, len(header)-4)
+		for i := 0; i < len(header)-4; i++ {
+			matchHeader = append(matchHeader, header[i])
+		}
 
-		for _, matches := range re.FindAllSubmatch(header, -1) {
+		for _, matches := range re.FindAllSubmatch(matchHeader, -1) {
 			pushEvent := &models.PayloadPushEvent{
 				Before:            string(matches[1]),
 				After:             string(matches[2]),
@@ -201,7 +206,16 @@ func RunProcess(service string, c *webcontext.Context) {
 
 		repository := c.MustGet("repository").(*gitmodule.Repository)
 		if preReceiveHook(pushEvents, c) {
-
+			// Only when one branch is created will it be written to the writer
+			// Refer to github
+			if len(pushEvents) == 1 && pushEvents[0].IsCreateNewBranch() {
+				// TODO write create pipeline link to writer
+				//c.GetWriter().Write(NewReportStatus(
+				//	"unpack ok",
+				//	"ok "+pushEvents[0].Ref,
+				//	fmt.Sprintf("\nCreate a pipeline request for '%s' on Erda by visiting:\n"+
+				//		"https://erda.cloud\n", pushEvents[0].Ref[len("refs/heads/"):])))
+			}
 			runCommand2(c.GetWriter(), gitCommand(
 				version,
 				service,
