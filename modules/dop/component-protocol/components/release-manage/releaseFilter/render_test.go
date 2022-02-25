@@ -62,7 +62,7 @@ func getPair() (Values, string) {
 		CreatedAtStartEnd: []int64{1, 1},
 		ReleaseID:         "testReleaseID",
 		UserIDs:           []string{"testUserID"},
-		Latest:            true,
+		Latest:            "true",
 		Version:           "test",
 	}
 	data, err := json.Marshal(v)

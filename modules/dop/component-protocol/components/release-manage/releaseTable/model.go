@@ -112,7 +112,7 @@ type FilterValues struct {
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd,omitempty"`
 	ReleaseID         string   `json:"releaseID,omitempty"`
 	ApplicationIDs    []string `json:"applicationIDs,omitempty"`
-	Latest            bool     `json:"latest"`
+	Latest            string   `json:"latest,omitempty"`
 	Version           string   `json:"version,omitempty"`
 }
 
