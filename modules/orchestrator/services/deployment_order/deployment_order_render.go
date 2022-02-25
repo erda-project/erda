@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
+	infrai18n "github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
@@ -43,10 +44,18 @@ const (
 	I18nCustomAddonNotReady   = "CustomAddonNotReady"
 	I18nAddonDoesNotExist     = "AddonDoesNotExist"
 	I18nApplicationDeploying  = "ApplicationDeploying"
+
+	AddonCustomCategory = "custom"
 )
 
-func (d *DeploymentOrder) RenderDetail(ctx context.Context, orgId uint64, userId, releaseId, workspace string) (*apistructs.DeploymentOrderDetail, error) {
+var (
+	lang struct{ Lang string }
+)
+
+func (d *DeploymentOrder) RenderDetail(ctx context.Context, userId, releaseId, workspace string) (*apistructs.DeploymentOrderDetail, error) {
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+	langCodes, _ := ctx.Value(lang).(infrai18n.LanguageCodes)
+
 	releaseResp, err := d.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: releaseId})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get release %s, err: %v", releaseId, err)
@@ -67,7 +76,7 @@ func (d *DeploymentOrder) RenderDetail(ctx context.Context, orgId uint64, userId
 		return nil, err
 	}
 
-	err = d.renderAppsPreCheckResult(orgId, releaseResp.Data.ProjectID, userId, workspace, &asi)
+	err = d.renderAppsPreCheckResult(langCodes, releaseResp.Data.ProjectID, userId, workspace, &asi)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render application precheck result, err: %v", err)
 	}
@@ -93,7 +102,7 @@ func (d *DeploymentOrder) RenderDetail(ctx context.Context, orgId uint64, userId
 	}, nil
 }
 
-func (d *DeploymentOrder) renderAppsPreCheckResult(orgId uint64, projectId int64, userId, workspace string, asi *[][]*apistructs.ApplicationInfo) error {
+func (d *DeploymentOrder) renderAppsPreCheckResult(langCodes infrai18n.LanguageCodes, projectId int64, userId, workspace string, asi *[][]*apistructs.ApplicationInfo) error {
 	if asi == nil {
 		return nil
 	}
@@ -112,13 +121,13 @@ func (d *DeploymentOrder) renderAppsPreCheckResult(orgId uint64, projectId int64
 
 	for _, apps := range *asi {
 		for _, info := range apps {
-			failReasons, err := d.staticPreCheck(orgId, userId, workspace, projectId, info.Id, []byte(info.DiceYaml))
+			failReasons, err := d.staticPreCheck(langCodes, userId, workspace, projectId, info.Id, []byte(info.DiceYaml))
 			if err != nil {
 				return err
 			}
 			isDeploying, ok := appStatus[info.Id]
 			if ok && isDeploying {
-				failReasons = append(failReasons, i18n.OrgUintSprintf(orgId, I18nApplicationDeploying, info.Name))
+				failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nApplicationDeploying, info.Name))
 			}
 
 			checkResult := &apistructs.PreCheckResult{
@@ -156,7 +165,7 @@ func (d *DeploymentOrder) getDeploymentsStatus(workspace string, projectId uint6
 	return ret, nil
 }
 
-func (d *DeploymentOrder) staticPreCheck(orgId uint64, userId, workspace string, projectId int64, appId uint64, erdaYaml []byte) ([]string, error) {
+func (d *DeploymentOrder) staticPreCheck(langCodes infrai18n.LanguageCodes, userId, workspace string, projectId int64, appId uint64, erdaYaml []byte) ([]string, error) {
 	failReasons := make([]string, 0)
 
 	// check execute permission
@@ -165,18 +174,18 @@ func (d *DeploymentOrder) staticPreCheck(orgId uint64, userId, workspace string,
 		return nil, err
 	}
 	if !isOk {
-		failReasons = append(failReasons, i18n.OrgUintSprintf(orgId, I18nPermissionDeniedKey))
+		failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nPermissionDeniedKey))
 	}
 
 	if len(erdaYaml) == 0 {
-		failReasons = append(failReasons, i18n.OrgUintSprintf(orgId, I18nEmptyErdaYaml))
+		failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nEmptyErdaYaml))
 		return failReasons, nil
 	}
 
 	// parse erda yaml
 	dy, err := diceyml.New(erdaYaml, true)
 	if err != nil {
-		failReasons = append(failReasons, i18n.OrgUintSprintf(orgId, I18nFailedToParseErdaYaml))
+		failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nFailedToParseErdaYaml))
 		return failReasons, nil
 	}
 
@@ -200,7 +209,7 @@ func (d *DeploymentOrder) staticPreCheck(orgId uint64, userId, workspace string,
 		extensionI, ok := addon.AddonInfos.Load(plan[0])
 		if !ok {
 			// addon doesn't support
-			failReasons = append(failReasons, i18n.OrgUintSprintf(orgId, I18nAddonDoesNotExist, instanceName, plan[0]))
+			failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nAddonDoesNotExist, instanceName, plan[0]))
 			continue
 		}
 
@@ -209,10 +218,10 @@ func (d *DeploymentOrder) staticPreCheck(orgId uint64, userId, workspace string,
 			return nil, fmt.Errorf("failed to assert extension (%s) to Extension", plan[0])
 		}
 
-		if extension.Category == "custom" {
+		if extension.Category == AddonCustomCategory {
 			_, ok := customAddonsMap[instanceName]
 			if !ok {
-				failReasons = append(failReasons, i18n.OrgUintSprintf(orgId, I18nCustomAddonNotReady, instanceName))
+				failReasons = append(failReasons, i18n.LangCodesSprintf(langCodes, I18nCustomAddonNotReady, instanceName))
 				continue
 			}
 		}
