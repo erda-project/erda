@@ -102,7 +102,7 @@ func (db *DBClient) ListDeploymentOrder(conditions *apistructs.DeploymentOrderLi
 			ReleaseId string
 		}
 		var ReleaseRange []ReleaseIndex
-		if err := db.Table("dice_release").Where("project_id = ? and (release_id like ? or version like ?)", conditions.ProjectId, qv, qv).
+		if err := db.Table("dice_release").Where("project_id = ? and version like ?", conditions.ProjectId, qv).
 			Select("release_id").Scan(&ReleaseRange).Error; err != nil {
 			return 0, nil, fmt.Errorf("failed to query user info, err: %v", err)
 		}

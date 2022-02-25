@@ -30,8 +30,7 @@ type provider struct {
 	Orm               *gorm.DB                       `autowired:"mysql-client"`
 	EventManager      *events.EventManager           `autowired:"erda.orchestrator.events.event-manager"`
 	PusherQueue       *queue.PusherQueue             `autowired:"erda.orchestrator.events.pusher-queue"`
-	Trans             i18n.Translator                `autowired:"i18n" translator:"common"`
-	LogTrans          i18n.Translator                `translator:"log-trans"`
+	Trans             i18n.Translator                `translator:"common"`
 	DicehubReleaseSvc dicehubpb.ReleaseServiceServer `autowired:"erda.core.dicehub.release.ReleaseService"`
 }
 

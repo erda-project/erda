@@ -1,5 +1,0 @@
-scheduler:
-
-i18n:
-  files:
-    - conf/scheduler/i18n/log-trans.yaml
