@@ -16,7 +16,6 @@
 package pipeline
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -191,7 +190,8 @@ func (p *provider) do() error {
 		endpoints.WithPipelineSvc(pipelineSvc),
 		endpoints.WithReportSvc(reportSvc),
 		endpoints.WithQueueManage(queueManage),
-		endpoints.WithReconciler(r),
+		endpoints.WithQueueManager(p.QueueManager),
+		endpoints.WithEngine(p.Engine),
 	)
 
 	//server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("pipeline"))

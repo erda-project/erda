@@ -21,8 +21,9 @@ import (
 	"github.com/gorilla/schema"
 
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/providers/engine"
+	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
@@ -54,7 +55,8 @@ type Endpoints struct {
 	dbClient           *dbclient.Client
 	queryStringDecoder *schema.Decoder
 
-	reconciler *reconciler.Reconciler
+	engine       engine.Interface
+	queueManager queuemanager.Interface
 }
 
 type Option func(*Endpoints)
@@ -148,9 +150,15 @@ func WithQueryStringDecoder(decoder *schema.Decoder) Option {
 	}
 }
 
-func WithReconciler(r *reconciler.Reconciler) Option {
+func WithEngine(engine engine.Interface) Option {
 	return func(e *Endpoints) {
-		e.reconciler = r
+		e.engine = engine
+	}
+}
+
+func WithQueueManager(qm queuemanager.Interface) Option {
+	return func(e *Endpoints) {
+		e.queueManager = qm
 	}
 }
 

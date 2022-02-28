@@ -82,7 +82,7 @@ func (e *Endpoints) getPipelineQueue(ctx context.Context, r *http.Request, vars 
 	}
 
 	// set usage
-	queue.Usage = e.reconciler.QueueManager.QueryQueueUsage(queue)
+	queue.Usage = e.queueManager.DistributedQueryQueueUsage(ctx, queue)
 
 	return httpserver.OkResp(queue)
 }
@@ -148,7 +148,7 @@ func (e *Endpoints) updatePipelineQueue(ctx context.Context, r *http.Request, va
 	}
 
 	// update queue in manager
-	e.reconciler.QueueManager.SendQueueToEtcd(queue.ID)
+	e.queueManager.DistributedUpdateQueue(ctx, queueID)
 
 	return httpserver.OkResp(queue)
 }
@@ -204,7 +204,7 @@ func (e *Endpoints) batchUpgradePipelinePriority(ctx context.Context, r *http.Re
 		return errorresp.ErrResp(err)
 	}
 
-	e.reconciler.QueueManager.SendUpdatePriorityPipelineIDsToEtcd(queue.ID, req.PipelineIDsOrderByPriorityFromHighToLow)
+	e.queueManager.DistributedBatchUpdatePipelinePriority(ctx, queue.ID, req.PipelineIDsOrderByPriorityFromHighToLow)
 
 	return httpserver.OkResp(nil)
 }
