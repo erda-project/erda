@@ -359,7 +359,7 @@ func (f *FileExtensionSource) updateOrCreateExtension(fileAddr string) error {
 		Readme:      string(version.ReadmeContent),
 		Public:      specData.Public,
 		ForceUpdate: true,
-		All:         false,
+		All:         true,
 		IsDefault:   specData.IsDefault,
 	}
 	_, err = f.s.CreateExtensionVersionByRequest(request)

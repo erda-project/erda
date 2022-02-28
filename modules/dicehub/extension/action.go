@@ -131,7 +131,7 @@ func (s *extensionService) RunExtensionsPush(dir string, extensionVersionMap, ex
 		Readme:      string(version.ReadmeContent),
 		Public:      specData.Public,
 		ForceUpdate: forceUpdate,
-		All:         false,
+		All:         true,
 		IsDefault:   specData.IsDefault,
 	}
 
