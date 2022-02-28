@@ -137,7 +137,7 @@ func (e *Endpoints) ListDeploymentOrder(ctx context.Context, r *http.Request, va
 	data, err := e.deploymentOrder.List(userID.String(), orgID, &apistructs.DeploymentOrderListConditions{
 		ProjectId: projectId,
 		Workspace: workspace,
-		Query:     r.URL.Query().Get("q"),
+		Query:     strings.TrimSpace(r.URL.Query().Get("q")),
 	}, &pageInfo)
 	if err != nil {
 		return errorresp.ErrResp(err)
@@ -216,11 +216,6 @@ func (e *Endpoints) RenderDeploymentOrderDetail(ctx context.Context, r *http.Req
 	v := r.URL.Query().Get("releaseID")
 	workspace := r.URL.Query().Get("workspace")
 
-	orgID, err := getOrgID(r)
-	if err != nil {
-		return apierrors.ErrRenderDeploymentOrderDetail.InvalidParameter(err).ToResp(), nil
-	}
-
 	userID, err := user.GetUserID(r)
 	if err != nil {
 		return apierrors.ErrRenderDeploymentOrderDetail.NotLogin().ToResp(), nil
@@ -231,7 +226,7 @@ func (e *Endpoints) RenderDeploymentOrderDetail(ctx context.Context, r *http.Req
 		return apierrors.ErrRenderDeploymentOrderDetail.InvalidParameter(strutil.Concat("illegal workspace ", workspace)).ToResp(), nil
 	}
 
-	ret, err := e.deploymentOrder.RenderDetail(ctx, orgID, userID.String(), v, workspace)
+	ret, err := e.deploymentOrder.RenderDetail(ctx, userID.String(), v, workspace)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}

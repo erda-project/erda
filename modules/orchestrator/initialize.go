@@ -95,6 +95,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	go initCron(ep, ctx)
 
 	i18n.InitI18N()
+	// TODO: split common trans
 	i18n.SetSingle(p.Trans)
 
 	return nil

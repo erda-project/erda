@@ -20,6 +20,20 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+func (this *CountUnRecoverAlertEventsRequest) Validate() error {
+	return nil
+}
+func (this *CountUnRecoverAlertEventsResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *CountUnRecoverAlertEventsResult) Validate() error {
+	return nil
+}
 func (this *GetRawAlertExpressionResponse) Validate() error {
 	if this.Data != nil {
 		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {

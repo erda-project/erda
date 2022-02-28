@@ -13,6 +13,12 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
+var _ json.Marshaler = (*CountUnRecoverAlertEventsRequest)(nil)
+var _ json.Unmarshaler = (*CountUnRecoverAlertEventsRequest)(nil)
+var _ json.Marshaler = (*CountUnRecoverAlertEventsResponse)(nil)
+var _ json.Unmarshaler = (*CountUnRecoverAlertEventsResponse)(nil)
+var _ json.Marshaler = (*CountUnRecoverAlertEventsResult)(nil)
+var _ json.Unmarshaler = (*CountUnRecoverAlertEventsResult)(nil)
 var _ json.Marshaler = (*GetRawAlertExpressionResponse)(nil)
 var _ json.Unmarshaler = (*GetRawAlertExpressionResponse)(nil)
 var _ json.Marshaler = (*RawAlertExpression)(nil)
@@ -317,6 +323,60 @@ var _ json.Marshaler = (*GetAlertConditionsValueResponse)(nil)
 var _ json.Unmarshaler = (*GetAlertConditionsValueResponse)(nil)
 var _ json.Marshaler = (*AlertConditionsValue)(nil)
 var _ json.Unmarshaler = (*AlertConditionsValue)(nil)
+
+// CountUnRecoverAlertEventsRequest implement json.Marshaler.
+func (m *CountUnRecoverAlertEventsRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CountUnRecoverAlertEventsRequest implement json.Marshaler.
+func (m *CountUnRecoverAlertEventsRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CountUnRecoverAlertEventsResponse implement json.Marshaler.
+func (m *CountUnRecoverAlertEventsResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CountUnRecoverAlertEventsResponse implement json.Marshaler.
+func (m *CountUnRecoverAlertEventsResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CountUnRecoverAlertEventsResult implement json.Marshaler.
+func (m *CountUnRecoverAlertEventsResult) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CountUnRecoverAlertEventsResult implement json.Marshaler.
+func (m *CountUnRecoverAlertEventsResult) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
 
 // GetRawAlertExpressionResponse implement json.Marshaler.
 func (m *GetRawAlertExpressionResponse) MarshalJSON() ([]byte, error) {

@@ -74,6 +74,7 @@ type AlertServiceClient interface {
 	GetAlertEvents(ctx context.Context, in *GetAlertEventRequest, opts ...grpc.CallOption) (*GetAlertEventResponse, error)
 	SuppressAlertEvent(ctx context.Context, in *SuppressAlertEventRequest, opts ...grpc.CallOption) (*SuppressAlertEventResponse, error)
 	CancelSuppressAlertEvent(ctx context.Context, in *CancelSuppressAlertEventRequest, opts ...grpc.CallOption) (*CancelSuppressAlertEventResponse, error)
+	CountUnRecoverAlertEvents(ctx context.Context, in *CountUnRecoverAlertEventsRequest, opts ...grpc.CallOption) (*CountUnRecoverAlertEventsResponse, error)
 }
 
 type alertServiceClient struct {
@@ -561,6 +562,15 @@ func (c *alertServiceClient) CancelSuppressAlertEvent(ctx context.Context, in *C
 	return out, nil
 }
 
+func (c *alertServiceClient) CountUnRecoverAlertEvents(ctx context.Context, in *CountUnRecoverAlertEventsRequest, opts ...grpc.CallOption) (*CountUnRecoverAlertEventsResponse, error) {
+	out := new(CountUnRecoverAlertEventsResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.alert.AlertService/CountUnRecoverAlertEvents", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AlertServiceServer is the server API for AlertService service.
 // All implementations should embed UnimplementedAlertServiceServer
 // for forward compatibility
@@ -618,6 +628,7 @@ type AlertServiceServer interface {
 	GetAlertEvents(context.Context, *GetAlertEventRequest) (*GetAlertEventResponse, error)
 	SuppressAlertEvent(context.Context, *SuppressAlertEventRequest) (*SuppressAlertEventResponse, error)
 	CancelSuppressAlertEvent(context.Context, *CancelSuppressAlertEventRequest) (*CancelSuppressAlertEventResponse, error)
+	CountUnRecoverAlertEvents(context.Context, *CountUnRecoverAlertEventsRequest) (*CountUnRecoverAlertEventsResponse, error)
 }
 
 // UnimplementedAlertServiceServer should be embedded to have forward compatible implementations.
@@ -782,6 +793,9 @@ func (*UnimplementedAlertServiceServer) SuppressAlertEvent(context.Context, *Sup
 }
 func (*UnimplementedAlertServiceServer) CancelSuppressAlertEvent(context.Context, *CancelSuppressAlertEventRequest) (*CancelSuppressAlertEventResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CancelSuppressAlertEvent not implemented")
+}
+func (*UnimplementedAlertServiceServer) CountUnRecoverAlertEvents(context.Context, *CountUnRecoverAlertEventsRequest) (*CountUnRecoverAlertEventsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CountUnRecoverAlertEvents not implemented")
 }
 
 func RegisterAlertServiceServer(s grpc1.ServiceRegistrar, srv AlertServiceServer, opts ...grpc1.HandleOption) {
@@ -1277,6 +1291,15 @@ func _get_AlertService_serviceDesc(srv AlertServiceServer, opts ...grpc1.HandleO
 	if h.Interceptor != nil {
 		_AlertService_CancelSuppressAlertEvent_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "CancelSuppressAlertEvent", srv)
 		_AlertService_CancelSuppressAlertEvent_Handler = h.Interceptor(_AlertService_CancelSuppressAlertEvent_Handler)
+	}
+
+	_AlertService_CountUnRecoverAlertEvents_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.CountUnRecoverAlertEvents(ctx, req.(*CountUnRecoverAlertEventsRequest))
+	}
+	var _AlertService_CountUnRecoverAlertEvents_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_AlertService_CountUnRecoverAlertEvents_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "CountUnRecoverAlertEvents", srv)
+		_AlertService_CountUnRecoverAlertEvents_Handler = h.Interceptor(_AlertService_CountUnRecoverAlertEvents_Handler)
 	}
 
 	var serviceDesc = _AlertService_serviceDesc
@@ -2498,6 +2521,29 @@ func _get_AlertService_serviceDesc(srv AlertServiceServer, opts ...grpc1.HandleO
 					FullMethod: "/erda.core.monitor.alert.AlertService/CancelSuppressAlertEvent",
 				}
 				return interceptor(ctx, in, info, _AlertService_CancelSuppressAlertEvent_Handler)
+			},
+		},
+		{
+			MethodName: "CountUnRecoverAlertEvents",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(CountUnRecoverAlertEventsRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(AlertServiceServer).CountUnRecoverAlertEvents(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _AlertService_CountUnRecoverAlertEvents_info)
+				}
+				if interceptor == nil {
+					return _AlertService_CountUnRecoverAlertEvents_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.alert.AlertService/CountUnRecoverAlertEvents",
+				}
+				return interceptor(ctx, in, info, _AlertService_CountUnRecoverAlertEvents_Handler)
 			},
 		},
 	}

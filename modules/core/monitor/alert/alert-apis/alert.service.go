@@ -1437,6 +1437,18 @@ func (m *alertService) GetAlertConditionsValue(ctx context.Context, request *pb.
 	return result, nil
 }
 
+func (m *alertService) CountUnRecoverAlertEvents(ctx context.Context, req *pb.CountUnRecoverAlertEventsRequest) (*pb.CountUnRecoverAlertEventsResponse, error) {
+	count, err := m.p.db.AlertEventDB.CountUnRecoverEvents(req.Scope, req.ScopeId)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.CountUnRecoverAlertEventsResponse{
+		Data: &pb.CountUnRecoverAlertEventsResult{
+			Count: count,
+		},
+	}, nil
+}
+
 func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEventRequest) (*pb.GetAlertEventResponse, error) {
 	var eventQuery = &db.AlertEventQueryCondition{
 		Name:                 req.Condition.Name,

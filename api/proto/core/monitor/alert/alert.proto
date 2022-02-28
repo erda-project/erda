@@ -266,6 +266,25 @@ service AlertService {
       post: "/api/alert-events/cancel-suppress"
     };
   }
+
+  rpc CountUnRecoverAlertEvents (CountUnRecoverAlertEventsRequest) returns (CountUnRecoverAlertEventsResponse) {
+    option (google.api.http) = {
+      get: "/api/alert-events/stats/unrecover"
+    };
+  }
+}
+
+message CountUnRecoverAlertEventsRequest {
+  string scope   = 1;
+  string scopeId = 2;
+}
+
+message CountUnRecoverAlertEventsResponse {
+  CountUnRecoverAlertEventsResult data = 1;
+}
+
+message CountUnRecoverAlertEventsResult {
+  int64 count = 1;
 }
 
 message GetRawAlertExpressionResponse {

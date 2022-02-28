@@ -264,10 +264,18 @@ func TestSetPodAnnotationsBaseContainerEnvs(t *testing.T) {
 
 func TestDereferenceEnvs(t *testing.T) {
 	var d = new(appsv1.Deployment)
-	d.Spec.Template.Spec.Containers = []apiv1.Container{
-		{Env: []apiv1.EnvVar{
+	d.Spec.Template.Spec.Containers = []apiv1.Container{{
+		Env: []apiv1.EnvVar{
 			{Name: "ENV_A", Value: "homework"},
 			{Name: "ENV_B", Value: "do ${env.ENV_A}"},
+			{Name: "COOKIE_DOMAIN", Value: "${domain-prefix}${env.DICE_ROOT_DOMAIN}"},
+			{Name: "REPORT_DB_PSWD", Value: "${env.MYSQL_PASSWORD}"},
+			{Name: "REPORT_DB_USER", Value: "${env.MYSQL_USERNAME}"},
+			{Name: "DICE_ROOT_DOMAIN", Value: "erda.cloud"},
+			{Name: "MYSQL_PASSWORD", Value: "1234"},
+			{Name: "MYSQL_USERNAME", Value: "root"},
+			{Name: "MYSQL_HOST", Value: "localhost"},
+			{Name: "MYSQL_PORT", Value: "${env.port: 3306}"},
 		}},
 	}
 	if err := DereferenceEnvs(d); err != nil {
@@ -275,6 +283,32 @@ func TestDereferenceEnvs(t *testing.T) {
 	}
 	for _, env := range d.Spec.Template.Spec.Containers[0].Env {
 		t.Logf("Name: %s, Value: %s", env.Name, env.Value)
+	}
+}
+
+func BenchmarkName(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		var d = new(appsv1.Deployment)
+		d.Spec.Template.Spec.Containers = []apiv1.Container{{
+			Env: []apiv1.EnvVar{
+				{Name: "ENV_A", Value: "homework"},
+				{Name: "ENV_B", Value: "do ${env.ENV_A}"},
+				{Name: "COOKIE_DOMAIN", Value: "${env.DICE_ROOT_DOMAIN}"},
+				{Name: "REPORT_DB_PSWD", Value: "${env.MYSQL_PASSWORD}"},
+				{Name: "REPORT_DB_USER", Value: "${env.MYSQL_USERNAME}"},
+				{Name: "DICE_ROOT_DOMAIN", Value: "erda.cloud"},
+				{Name: "MYSQL_PASSWORD", Value: "1234"},
+				{Name: "MYSQL_USERNAME", Value: "root"},
+				{Name: "MYSQL_HOST", Value: "localhost"},
+				{Name: "MYSQL_PORT", Value: "3306"},
+			}},
+		}
+		if err := DereferenceEnvs(d); err != nil {
+			b.Fatal(err)
+		}
+		for _, env := range d.Spec.Template.Spec.Containers[0].Env {
+			b.Logf("Name: %s, Value: %s", env.Name, env.Value)
+		}
 	}
 }
 
