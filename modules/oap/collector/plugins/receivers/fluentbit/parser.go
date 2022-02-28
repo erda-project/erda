@@ -50,8 +50,14 @@ func parseItem(value []byte, cfg flbKeyMappings) (*lpb.Log, error) {
 	}
 	lg.Content = content
 
+	stream, err := jsonparser.GetString(value, cfg.Stream)
+	if err != nil {
+		stream = "stdout"
+	}
+	lg.Attributes["stream"] = stream
+
 	k8sBuf, _, _, _ := jsonparser.Get(value, cfg.Kubernetes)
-	k8sTags := parseMapStr("k8s", k8sBuf)
+	k8sTags := parseMapStr(cfg.Kubernetes, k8sBuf)
 	for k, v := range k8sTags {
 		lg.Attributes[k] = v
 	}
