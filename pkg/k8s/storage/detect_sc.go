@@ -82,7 +82,7 @@ func VolumeTypeToSCName(diskType string, vendor string) (string, error) {
 			}
 	*/
 	case "":
-		return apistructs.DiceLocalVolumeSC, nil
+		return apistructs.DiceNFSVolumeSC, nil
 	//case apistructs.VolumeTypeOSS:
 	default:
 		return "", errors.New(fmt.Sprintf("unsupported disk type %s", diskType))

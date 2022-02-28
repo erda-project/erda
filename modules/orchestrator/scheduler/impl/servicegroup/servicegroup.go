@@ -438,6 +438,11 @@ func setServiceVolumes(clusterName string, service *diceyml.Service, clusterinfo
 		if v.Path != "" && v.TargetPath != "" && v.Path != v.TargetPath {
 			return []apistructs.Volume{}, errors.New("if path and taragetPath set in volume, they must same.")
 		}
+
+		if v.TargetPath == "" && v.Path != "" {
+			v.TargetPath = v.Path
+		}
+
 		// 卷映射的容器目录合法性检查
 		if v.TargetPath == "" || v.TargetPath == "/" {
 			return []apistructs.Volume{}, errors.New(fmt.Sprintf("invalid targetPath [%s]", v.TargetPath))
