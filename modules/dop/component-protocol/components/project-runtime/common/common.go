@@ -77,3 +77,47 @@ func Transfer(a, b interface{}) error {
 	}
 	return nil
 }
+
+func getNextWithoutCase(s string) []int {
+	next := make([]int, len(s)+1)
+	next[0] = -1
+	j := 0
+	k := -1
+	for j < len(s)-1 {
+		if k == -1 || tolower(s[j]) == tolower(s[k]) {
+			j++
+			k++
+			if tolower(s[j]) == tolower(s[k]) {
+				next[j] = next[k]
+			} else {
+				next[j] = k
+			}
+		} else {
+			k = next[k]
+		}
+	}
+	return next
+}
+func tolower(c uint8) uint8 {
+	if c >= 'a' && c <= 'z' {
+		return c - 32
+	}
+	return c
+}
+func ExitsWithoutCase(s, sub string) bool {
+	i := 0
+	j := 0
+	next := getNextWithoutCase(sub)
+	for i < len(s) && j < len(sub) {
+		if j == -1 || tolower(s[i]) == tolower(sub[j]) {
+			i++
+			j++
+		} else {
+			j = next[j]
+		}
+	}
+	if j == len(sub) {
+		return true
+	}
+	return false
+}

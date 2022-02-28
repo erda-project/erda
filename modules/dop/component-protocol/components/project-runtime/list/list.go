@@ -374,8 +374,8 @@ func (p *List) getData() *list.Data {
 	var filterName string
 	if nameFilterValue, ok := (*p.Sdk.GlobalState)["nameFilter"]; ok {
 		cputil.MustObjJSONTransfer(nameFilterValue, &filterName)
+		filterName = strings.Trim(filterName, " ")
 	}
-
 	logrus.Infof("inputFilter: %v", filterName)
 	logrus.Infof("advanceFilter: %#v", advancedFilter)
 	filter := make(map[string]map[string]bool)
@@ -391,7 +391,7 @@ func (p *List) getData() *list.Data {
 	for i := 0; i < len(needFilter); i++ {
 		runtime := runtimeMap[needFilter[i].ID]
 		if filterName != "" {
-			if !strings.Contains(needFilter[i].Title, filterName) {
+			if common.ExitsWithoutCase(needFilter[i].Title, filterName) {
 				continue
 			}
 		}
