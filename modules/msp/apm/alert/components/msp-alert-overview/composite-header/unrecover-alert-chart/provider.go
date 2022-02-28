@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 
+	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-overview/common"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -35,15 +36,9 @@ import (
 const parseLayout = "2006-01-02T15:04:05Z"
 const formatLayout = "2006-01-02 15:04:05"
 
-var sharedMetricq metricpb.MetricServiceServer
-
 type provider struct {
-	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
-}
-
-func (p *provider) Init(ctx servicehub.Context) error {
-	sharedMetricq = p.Metric
-	return nil
+	MonitorAlertService monitorpb.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService"`
+	Metric              metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 }
 
 func init() {
@@ -82,10 +77,10 @@ func (s *SimpleChart) getUnRecoverAlertEventsChart() (*Chart, error) {
 	if err != nil {
 		return nil, errors.NewInvalidParameterError("InParams", err.Error())
 	}
-	statement := fmt.Sprintf("SELECT max_value(sum(if(eq(trigger::tag,'alert'),1,0))-sum(if(eq(trigger::tag,'alert'),0,1)),0) "+
-		"FROM analyzer_alert "+
+	statement := fmt.Sprintf("SELECT  avg(unrecover_count::field) "+
+		"FROM alert_event_unrecover "+
 		"WHERE alert_scope::tag=$scope AND alert_scope_id::tag=$scope_id "+
-		"GROUP BY time(%s)", common.GetInterval(inParams.StartTime, inParams.EndTime, time.Second, 10))
+		"GROUP BY time(%s)", common.GetInterval(inParams.StartTime, inParams.EndTime, 5*time.Minute, 10))
 
 	params := map[string]*structpb.Value{
 		"scope":    structpb.NewStringValue(inParams.Scope),
@@ -116,6 +111,16 @@ func (s *SimpleChart) getUnRecoverAlertEventsChart() (*Chart, error) {
 		parse, _ := time.ParseInLocation(parseLayout, date, time.Local)
 		xAxis = append(xAxis, parse.Format(formatLayout))
 		yAxis = append(yAxis, int(row.Values[1].GetNumberValue()))
+	}
+
+	// append the latest count
+	latestStat, err := s.MonitorAlertService.CountUnRecoverAlertEvents(s.sdk.Ctx, &monitorpb.CountUnRecoverAlertEventsRequest{
+		Scope:   inParams.Scope,
+		ScopeId: inParams.ScopeId,
+	})
+	if latestStat != nil {
+		xAxis = append(xAxis, time.Now().Format(formatLayout))
+		yAxis = append(yAxis, int(latestStat.Data.Count))
 	}
 
 	chart := &Chart{

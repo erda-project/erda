@@ -340,3 +340,15 @@ erda.core.monitor.expression:
   metric_rules: ${CONFIG_PATH}/analyzer/metrics
 
 audit:
+
+erda.core.monitor.alert.jobs.unrecover-alerts:
+
+etcd-election@alert-event-metrics:
+  root_path: "/erda/monitor-alert-metrics-report-election"
+
+metric-report-client:
+  report_config:
+    collector:
+      addr: "${COLLECTOR_ADDR:collector:7076}"
+      username: ${COLLECTOR_AUTH_USERNAME}
+      password: ${COLLECTOR_AUTH_PASSWORD}

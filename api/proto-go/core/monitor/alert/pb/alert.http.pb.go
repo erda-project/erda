@@ -124,6 +124,8 @@ type AlertServiceHandler interface {
 	SuppressAlertEvent(context.Context, *SuppressAlertEventRequest) (*SuppressAlertEventResponse, error)
 	// POST /api/alert-events/cancel-suppress
 	CancelSuppressAlertEvent(context.Context, *CancelSuppressAlertEventRequest) (*CancelSuppressAlertEventResponse, error)
+	// GET /api/alert-events/stats/unrecover
+	CountUnRecoverAlertEvents(context.Context, *CountUnRecoverAlertEventsRequest) (*CountUnRecoverAlertEventsResponse, error)
 }
 
 // RegisterAlertServiceHandler register AlertServiceHandler to http.Router.
@@ -2688,6 +2690,42 @@ func RegisterAlertServiceHandler(r http.Router, srv AlertServiceHandler, opts ..
 		)
 	}
 
+	add_CountUnRecoverAlertEvents := func(method, path string, fn func(context.Context, *CountUnRecoverAlertEventsRequest) (*CountUnRecoverAlertEventsResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*CountUnRecoverAlertEventsRequest))
+		}
+		var CountUnRecoverAlertEvents_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			CountUnRecoverAlertEvents_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "CountUnRecoverAlertEvents", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, CountUnRecoverAlertEvents_info)
+				}
+				r = r.WithContext(ctx)
+				var in CountUnRecoverAlertEventsRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_QueryCustomizeMetric("GET", "/api/customize/alerts/metrics", srv.QueryCustomizeMetric)
 	add_QueryCustomizeNotifyTarget("GET", "/api/customize/alerts/notifies/targets", srv.QueryCustomizeNotifyTarget)
 	add_QueryOrgCustomizeNotifyTarget("GET", "/api/orgs/customize/alerts/notifies/targets", srv.QueryOrgCustomizeNotifyTarget)
@@ -2739,4 +2777,5 @@ func RegisterAlertServiceHandler(r http.Router, srv AlertServiceHandler, opts ..
 	add_GetAlertEvents("GET", "/api/alert-events", srv.GetAlertEvents)
 	add_SuppressAlertEvent("POST", "/api/alert-events/suppress", srv.SuppressAlertEvent)
 	add_CancelSuppressAlertEvent("POST", "/api/alert-events/cancel-suppress", srv.CancelSuppressAlertEvent)
+	add_CountUnRecoverAlertEvents("GET", "/api/alert-events/stats/unrecover", srv.CountUnRecoverAlertEvents)
 }

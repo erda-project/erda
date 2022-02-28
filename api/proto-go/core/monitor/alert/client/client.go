@@ -248,3 +248,7 @@ func (s *alertServiceWrapper) SuppressAlertEvent(ctx context.Context, req *pb.Su
 func (s *alertServiceWrapper) CancelSuppressAlertEvent(ctx context.Context, req *pb.CancelSuppressAlertEventRequest) (*pb.CancelSuppressAlertEventResponse, error) {
 	return s.client.CancelSuppressAlertEvent(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *alertServiceWrapper) CountUnRecoverAlertEvents(ctx context.Context, req *pb.CountUnRecoverAlertEventsRequest) (*pb.CountUnRecoverAlertEventsResponse, error) {
+	return s.client.CountUnRecoverAlertEvents(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

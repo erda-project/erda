@@ -24,6 +24,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/services/notify/channel/client"
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis"
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/details-apis"
+	_ "github.com/erda-project/erda/modules/core/monitor/alert/jobs/unrecover-alerts"
 	_ "github.com/erda-project/erda/modules/core/monitor/dataview"
 	_ "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
 	_ "github.com/erda-project/erda/modules/core/monitor/diagnotor/controller"

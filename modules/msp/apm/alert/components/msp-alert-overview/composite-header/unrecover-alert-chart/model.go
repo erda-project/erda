@@ -22,14 +22,16 @@ import (
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-overview/common"
 )
 
 type SimpleChart struct {
-	Type   string                       `json:"type"`
-	Data   Data                         `json:"data"`
-	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService" json:"-"`
+	Type                string                       `json:"type"`
+	Data                Data                         `json:"data"`
+	Metric              metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService" json:"-"`
+	MonitorAlertService monitorpb.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService" json:"-"`
 
 	sdk      *cptype.SDK
 	inParams common.InParams
@@ -71,7 +73,8 @@ func (s *SimpleChart) InitFromProtocol(ctx context.Context, c *cptype.Component)
 		return err
 	}
 
-	s.Metric = sharedMetricq
+	s.Metric = common.GetMonitorMetricServiceFromContext(ctx)
+	s.MonitorAlertService = common.GetMonitorAlertServiceFromContext(ctx)
 	s.sdk = cputil.SDK(ctx)
 	var inParams common.InParams
 	err = mapstructure.Decode(s.sdk.InParams, &inParams)

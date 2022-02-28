@@ -50,6 +50,21 @@ func (mr *MockAlertServiceServerMockRecorder) CancelSuppressAlertEvent(arg0, arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelSuppressAlertEvent", reflect.TypeOf((*MockAlertServiceServer)(nil).CancelSuppressAlertEvent), arg0, arg1)
 }
 
+// CountUnRecoverAlertEvents mocks base method.
+func (m *MockAlertServiceServer) CountUnRecoverAlertEvents(arg0 context.Context, arg1 *pb.CountUnRecoverAlertEventsRequest) (*pb.CountUnRecoverAlertEventsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountUnRecoverAlertEvents", arg0, arg1)
+	ret0, _ := ret[0].(*pb.CountUnRecoverAlertEventsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountUnRecoverAlertEvents indicates an expected call of CountUnRecoverAlertEvents.
+func (mr *MockAlertServiceServerMockRecorder) CountUnRecoverAlertEvents(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountUnRecoverAlertEvents", reflect.TypeOf((*MockAlertServiceServer)(nil).CountUnRecoverAlertEvents), arg0, arg1)
+}
+
 // CreateAlert mocks base method.
 func (m *MockAlertServiceServer) CreateAlert(arg0 context.Context, arg1 *pb.CreateAlertRequest) (*pb.CreateAlertResponse, error) {
 	m.ctrl.T.Helper()
