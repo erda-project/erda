@@ -8,45 +8,24 @@ import "google/protobuf/struct.proto";
 
 service ExtensionService {
     rpc SearchExtensions (ExtensionSearchRequest) returns (ExtensionSearchResponse)  {
-        option (google.api.http) = {
-            post: "/api/extensions/actions/search",
-        };
     }
 
     rpc CreateExtension (ExtensionCreateRequest) returns (ExtensionCreateResponse)  {
-        option (google.api.http) = {
-            post: "/api/extensions",
-        };
     }
 
     rpc QueryExtensions (QueryExtensionsRequest) returns (QueryExtensionsResponse)  {
-        option (google.api.http) = {
-            get: "/api/extensions",
-        };
     }
 
     rpc QueryExtensionsMenu (QueryExtensionsMenuRequest) returns (QueryExtensionsMenuResponse)  {
-        option (google.api.http) = {
-            get: "/api/extensions/actions/query-menu",
-        };
     }
 
     rpc CreateExtensionVersion (ExtensionVersionCreateRequest) returns (ExtensionVersionCreateResponse)  {
-        option (google.api.http) = {
-            post: "/api/extensions/{name}",
-        };
     }
 
     rpc GetExtensionVersion (GetExtensionVersionRequest) returns (GetExtensionVersionResponse)  {
-        option (google.api.http) = {
-            get: "/api/extensions/{name}/{version}",
-        };
     }
 
     rpc QueryExtensionVersions (ExtensionVersionQueryRequest) returns (ExtensionVersionQueryResponse)  {
-        option (google.api.http) = {
-            get: "/api/extensions/{name}",
-        };
     }
 }
 
