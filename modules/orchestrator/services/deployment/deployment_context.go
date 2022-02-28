@@ -1521,7 +1521,7 @@ func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml
 	oldTypeVolumes := make([]diceyml.Volume, 0)
 	newVolumes := make([]diceyml.Volume, 0)
 	for _, vol := range service.Volumes {
-		if vol.Storage != "" {
+		if vol.Path != "" {
 			oldTypeVolumes = append(oldTypeVolumes, vol)
 		} else {
 			newVolumes = append(newVolumes, vol)
