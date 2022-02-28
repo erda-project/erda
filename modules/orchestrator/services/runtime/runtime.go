@@ -41,6 +41,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/events"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
+	"github.com/erda-project/erda/modules/orchestrator/services/branch"
 	"github.com/erda-project/erda/modules/orchestrator/spec"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
@@ -59,6 +60,7 @@ type Runtime struct {
 	bdl        *bundle.Bundle
 	addon      *addon.Addon
 	releaseSvc pb.ReleaseServiceServer
+	branch     *branch.Branch
 }
 
 // Option 应用实例对象配置选项
@@ -105,6 +107,13 @@ func WithAddon(a *addon.Addon) Option {
 func WithReleaseSvc(svc pb.ReleaseServiceServer) Option {
 	return func(r *Runtime) {
 		r.releaseSvc = svc
+	}
+}
+
+// WithReleaseSvc 配置 dicehub release service
+func WithBranch(br *branch.Branch) Option {
+	return func(r *Runtime) {
+		r.branch = br
 	}
 }
 
@@ -291,7 +300,7 @@ func (r *Runtime) Create(operator user.ID, req *apistructs.RuntimeCreateRequest)
 	//}
 
 	resource := apistructs.NormalBranchResource
-	rules, err := r.bdl.GetProjectBranchRules(app.ProjectID)
+	rules, err := r.branch.QueryBranchRules(apistructs.ProjectScope, app.ProjectID)
 	if err != nil {
 		return nil, apierrors.ErrCreateRuntime.InternalError(err)
 	}
@@ -632,17 +641,17 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 	status := apistructs.DeploymentStatusWaiting
 	reason := ""
 	needApproval := false
-	branchrules, err := r.bdl.GetProjectBranchRules(ctx.Runtime.ProjectID)
+	branchRules, err := r.branch.QueryBranchRules(apistructs.ProjectScope, ctx.Runtime.ProjectID)
 	if err != nil {
 		return nil, apierrors.ErrDeployRuntime.InternalError(err)
 	}
-	branch := diceworkspace.GetValidBranchByGitReference(ctx.Runtime.Name, branchrules)
+	validBranch := diceworkspace.GetValidBranchByGitReference(ctx.Runtime.Name, branchRules)
 	if blocked {
 		status = apistructs.DeploymentStatusFailed
 		reason = "企业封网中,无法部署"
 	} else {
 		// 检查 branchrule 来判断是否需要审批
-		if branch.NeedApproval {
+		if validBranch.NeedApproval {
 			status = apistructs.DeploymentStatusWaitApprove
 			needApproval = true
 		}
@@ -670,7 +679,7 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 	}
 
 	// 发送 审批站内信
-	if !blocked && branch.NeedApproval {
+	if !blocked && validBranch.NeedApproval {
 		for range []int{0} {
 			approvers, err := r.bdl.ListMembers(apistructs.MemberListRequest{
 				ScopeType: "project",
@@ -965,18 +974,18 @@ func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, dep
 	status := apistructs.DeploymentStatusWaiting
 	reason := ""
 	needApproval := false
-	branchrules, err := r.bdl.GetProjectBranchRules(runtime.ProjectID)
+	branchrules, err := r.branch.QueryBranchRules(apistructs.ProjectScope, runtime.ProjectID)
 	if err != nil {
 		return nil, apierrors.ErrDeployRuntime.InternalError(err)
 	}
-	branch := diceworkspace.GetValidBranchByGitReference(runtime.Name, branchrules)
+	validBranch := diceworkspace.GetValidBranchByGitReference(runtime.Name, branchrules)
 
 	if blocked {
 		status = apistructs.DeploymentStatusFailed
 		reason = "企业封网中,无法部署"
 	} else {
 		// 检查 branchrule 来判断是否需要审批
-		if branch.NeedApproval {
+		if validBranch.NeedApproval {
 			status = apistructs.DeploymentStatusWaitApprove
 			needApproval = true
 		}
@@ -1001,7 +1010,7 @@ func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, dep
 	if err := r.db.CreateDeployment(&deployment); err != nil {
 		return nil, apierrors.ErrRollbackRuntime.InternalError(err)
 	}
-	if !blocked && branch.NeedApproval {
+	if !blocked && validBranch.NeedApproval {
 		for range []int{0} {
 			approvers, err := r.bdl.ListMembers(apistructs.MemberListRequest{
 				ScopeType: "project",

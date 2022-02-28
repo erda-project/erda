@@ -530,7 +530,7 @@ func (d *DeploymentOrder) getReleaseIdFromReq(req *apistructs.DeploymentOrderCre
 }
 
 func (d *DeploymentOrder) getWorkspaceFromBranch(projectId uint64, branch string) (string, error) {
-	rules, err := d.bdl.GetProjectBranchRules(projectId)
+	rules, err := d.branch.QueryBranchRules(apistructs.ProjectScope, projectId)
 	if err != nil {
 		return "", err
 	}

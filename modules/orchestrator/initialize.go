@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/i18n"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
+	"github.com/erda-project/erda/modules/orchestrator/services/branch"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment_order"
 	"github.com/erda-project/erda/modules/orchestrator/services/domain"
@@ -164,6 +165,11 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		)),
 	)
 
+	br := branch.New(
+		branch.WithDBClient(db),
+		branch.WithBundle(bdl),
+	)
+
 	// init runtime service
 	rt := runtime.New(
 		runtime.WithDBClient(db),
@@ -171,6 +177,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		runtime.WithBundle(bdl),
 		runtime.WithAddon(a),
 		runtime.WithReleaseSvc(p.DicehubReleaseSvc),
+		runtime.WithBranch(br),
 	)
 
 	// init deployment service
@@ -203,6 +210,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		deployment_order.WithDeployment(d),
 		deployment_order.WithQueue(p.PusherQueue),
 		deployment_order.WithReleaseSvc(p.DicehubReleaseSvc),
+		deployment_order.WithBranch(br),
 	)
 
 	// compose endpoints
