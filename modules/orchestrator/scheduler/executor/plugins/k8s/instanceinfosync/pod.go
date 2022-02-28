@@ -491,9 +491,12 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 		} else {
 			currentTerminatedContainer := mainContainer.State.Terminated
 			if currentTerminatedContainer != nil {
-				//currentContainerID = strutil.TrimPrefixes(mainContainer.ContainerID, "docker://")
-				runtimeAndId := strings.Split(mainContainer.ContainerID, "://")
-				currentContainerID = runtimeAndId[1]
+				if len(strings.Split(mainContainer.ContainerID, "://")) == 2 {
+					runtimeAndId := strings.Split(mainContainer.ContainerID, "://")
+					currentContainerID = runtimeAndId[1]
+				} else {
+					currentContainerID = strutil.TrimPrefixes(mainContainer.ContainerID, "docker://")
+				}
 				currentContainerStartedAt = mainContainer.State.Terminated.StartedAt.Time
 				currentContainerFinishedAt = &mainContainer.State.Terminated.FinishedAt.Time
 				if currentContainerFinishedAt.Year() < 2000 {
