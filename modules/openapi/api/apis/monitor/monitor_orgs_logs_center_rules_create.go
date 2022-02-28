@@ -14,7 +14,14 @@
 
 package monitor
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"encoding/json"
+	"io/ioutil"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"github.com/erda-project/erda/modules/openapi/api/spec"
+)
 
 var MONITOR_ORG_LOGS_RULES_CREATE = apis.ApiSpec{
 	Path:        "/api/org/logs/rules",
@@ -25,4 +32,44 @@ var MONITOR_ORG_LOGS_RULES_CREATE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 创建日志规则",
+	Audit:       auditOrgOperatorBlock(apistructs.CreateOrgAnalyzerRule),
+}
+
+func auditOrgOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditContext) error {
+	return func(ctx *spec.AuditContext) error {
+		reqBody := apistructs.LogMetricConfig{}
+		body, err := ioutil.ReadAll(ctx.Request.Body)
+		if err != nil {
+			return err
+		}
+		if string(body) != "" {
+			err = json.Unmarshal(body, &reqBody)
+			if err != nil {
+				return err
+			}
+		}
+		body, err = ioutil.ReadAll(ctx.Response.Body)
+		if err != nil {
+			return err
+		}
+		audit := &apistructs.Audit{
+			ScopeType:    apistructs.OrgScope,
+			ScopeID:      uint64(ctx.OrgID),
+			TemplateName: tmp,
+			Context: map[string]interface{}{
+				"analyzeRule": reqBody.Name,
+			},
+		}
+		respBody := apistructs.DeleteNameResp{}
+		if string(body) != "" {
+			err = json.Unmarshal(body, &respBody)
+			if err != nil {
+				return err
+			}
+		}
+		if respBody.Data != "" && respBody.Data != "OK" {
+			audit.Context["analyzeRule"] = respBody.Data
+		}
+		return ctx.CreateAudit(audit)
+	}
 }

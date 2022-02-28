@@ -12,21 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package monitor
+package apistructs
 
-import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
-)
+type TenantGroupInfo struct {
+	Workspace string `json:"workspace"`
+	ProjectId string `json:"projectId"`
+}
 
-var MONITOR_ORG_LOGS_RULES_UPDATE = apis.ApiSpec{
-	Path:        "/api/org/logs/rules/<id>",
-	BackendPath: "/api/logs/metric/org/rules/<id>",
-	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
-	Scheme:      "http",
-	Method:      "PUT",
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         "summary: 更新日志规则",
-	Audit:       auditOrgOperatorBlock(apistructs.UpdateOrgAnalyzerRule),
+type GetTenantGroupInfoResponse struct {
+	Header
+	Data *TenantGroupInfo `json:"data"`
 }

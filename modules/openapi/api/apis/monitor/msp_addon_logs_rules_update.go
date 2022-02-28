@@ -28,5 +28,5 @@ var MSP_ADDON_LOGS_RULES_UPDATE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 更新日志规则",
-	Audit:       auditOperatorBlock(apistructs.CreateAnalyzerRule),
+	Audit:       auditOperatorBlock(apistructs.UpdateAnalyzerRule),
 }

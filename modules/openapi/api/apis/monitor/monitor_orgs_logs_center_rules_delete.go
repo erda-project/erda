@@ -14,7 +14,10 @@
 
 package monitor
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+)
 
 var MONITOR_ORG_LOGS_RULES_DELETE = apis.ApiSpec{
 	Path:        "/api/org/logs/rules/<id>",
@@ -25,4 +28,5 @@ var MONITOR_ORG_LOGS_RULES_DELETE = apis.ApiSpec{
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 删除日志规则",
+	Audit:       auditOrgOperatorBlock(apistructs.DeleteOrgAnalyzerRule),
 }

@@ -15,6 +15,8 @@
 package monitor
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
@@ -36,26 +38,22 @@ var MSP_ADDON_LOGS_RULES_CREATE = apis.ApiSpec{
 
 func auditOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditContext) error {
 	return func(ctx *spec.AuditContext) error {
-		var requestBody struct {
-			Name string `json:"name"`
-		}
-		var respBody struct {
-			Data string `json:"data"`
-		}
-		if err := ctx.BindRequestData(&requestBody); err != nil {
-			return err
-		}
-		if err := ctx.BindResponseData(&respBody); err != nil {
-			return err
-		}
-		info, err := ctx.Bundle.GetTenantGroupDetails(ctx.UrlParams["tenantGroup"])
+		reqBody := apistructs.LogMetricConfig{}
+		body, err := ioutil.ReadAll(ctx.Request.Body)
 		if err != nil {
 			return err
 		}
-		if len(info.ProjectID) <= 0 {
-			return nil
+		if string(body) != "" {
+			err = json.Unmarshal(body, &reqBody)
+			if err != nil {
+				return err
+			}
 		}
-		projectID, err := strconv.ParseUint(info.ProjectID, 10, 64)
+		info, err := ctx.Bundle.TenantGroupInfo(ctx.Request.FormValue("scopeID"))
+		if err != nil {
+			return err
+		}
+		projectID, err := strconv.ParseUint(info.ProjectId, 10, 64)
 		if err != nil {
 			return err
 		}
@@ -66,16 +64,31 @@ func auditOperatorBlock(tmp apistructs.TemplateName) func(ctx *spec.AuditContext
 		if project == nil {
 			return nil
 		}
-		return ctx.CreateAudit(&apistructs.Audit{
+		body, err = ioutil.ReadAll(ctx.Response.Body)
+		if err != nil {
+			return err
+		}
+		respBody := apistructs.DeleteNameResp{}
+		if string(body) != "" {
+			err = json.Unmarshal(body, &respBody)
+			if err != nil {
+				return err
+			}
+		}
+		audit := &apistructs.Audit{
 			ScopeType:    apistructs.ProjectScope,
 			ScopeID:      projectID,
 			ProjectID:    projectID,
 			TemplateName: tmp,
 			Context: map[string]interface{}{
 				"projectName": project.Name,
-				"analyzeRule": requestBody.Name,
-				"workspace":   respBody.Data,
+				"analyzeRule": reqBody.Name,
+				"workspace":   info.Workspace,
 			},
-		})
+		}
+		if respBody.Data != "" && respBody.Data != "OK" {
+			audit.Context["analyzeRule"] = respBody.Data
+		}
+		return ctx.CreateAudit(audit)
 	}
 }

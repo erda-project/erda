@@ -53,3 +53,32 @@ var (
 	CollectorLogPushStreamStdout = "stdout"
 	CollectorLogPushStreamStderr = "stderr"
 )
+
+type LogMetricConfig struct {
+	ID         int64              `json:"id"`
+	OrgID      int64              `json:"org_id"`
+	Scope      string             `json:"scope"`
+	ScopeID    string             `json:"Scope_id"`
+	Name       string             `json:"name"`
+	Metric     string             `json:"metric"`
+	Filters    []*LogTag          `json:"filters"`
+	Processors []*ProcessorConfig `json:"processors"`
+	Enable     bool               `json:"enable"`
+	CreatorID  string             `json:"creator_id"`
+	CreateTime int64              `json:"create_time"`
+	UpdateTime int64              `json:"update_time"`
+}
+
+type LogTag struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type ProcessorConfig struct {
+	Type   string                 `json:"type"`
+	Config map[string]interface{} `json:"config"`
+}
+
+type DeleteNameResp struct {
+	Data string `json:"data"`
+}

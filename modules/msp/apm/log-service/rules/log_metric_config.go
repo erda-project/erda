@@ -178,12 +178,12 @@ func (p *provider) convertToMetricMeta(cfg *db.LogMetricConfig) (*pb.MetricMeta,
 }
 
 // DeleteLogMetricConfig .
-func (p *provider) DeleteLogMetricConfig(scope, scopeID string, id int64) error {
+func (p *provider) DeleteLogMetricConfig(scope, scopeID string, id int64) (string, error) {
 	db := p.db.Begin()
 	c, err := db.LogMetricConfig.QueryByID(scope, scopeID, id)
 	if err != nil {
 		db.Rollback()
-		return err
+		return "", err
 	}
 	err = db.LogMetricConfig.Delete(scope, scopeID, id)
 	if err == nil && c != nil {
@@ -195,12 +195,12 @@ func (p *provider) DeleteLogMetricConfig(scope, scopeID string, id int64) error 
 		})
 		if err != nil {
 			db.Rollback()
-			return err
+			return "", err
 		}
 	}
 	if err != nil {
 		db.Rollback()
-		return err
+		return "", err
 	}
-	return db.Commit().Error
+	return c.Name, db.Commit().Error
 }
