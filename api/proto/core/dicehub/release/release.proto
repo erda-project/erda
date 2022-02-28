@@ -232,7 +232,7 @@ message ReleaseResource {
   // URL 资源URL, 可直接wget获取到资源, 选填(当type为diceyml, 资源作为release的dice字段在mysql存储)
 
   // URL resources URL, can get by wget
-  string URL = 3;
+  string URL = 3 [json_name = "url"];
 
   map<string, google.protobuf.Value> meta = 4;
 }
