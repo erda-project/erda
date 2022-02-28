@@ -270,7 +270,12 @@ const (
 	DeleteServiceToken TemplateName = "deleteServiceToken"
 
 	CreateAnalyzerRule TemplateName = "createAnalyzerRule"
+	UpdateAnalyzerRule TemplateName = "updateAnalyzerRule"
 	DeleteAnalyzerRule TemplateName = "deleteAnalyzerRule"
+
+	CreateOrgAnalyzerRule TemplateName = "createOrgAnalyzerRule"
+	UpdateOrgAnalyzerRule TemplateName = "updateOrgAnalyzerRule"
+	DeleteOrgAnalyzerRule TemplateName = "deleteOrgAnalyzerRule"
 )
 
 // AuditTemplateMap 解析前端审计模版全家桶

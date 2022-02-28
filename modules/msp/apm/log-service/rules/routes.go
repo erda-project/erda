@@ -266,11 +266,11 @@ func (p *provider) deleteRule(r *http.Request, params struct {
 		}
 		scopeID = name
 	}
-	err := p.DeleteLogMetricConfig(scope, scopeID, int64(params.ID))
+	name, err := p.DeleteLogMetricConfig(scope, scopeID, int64(params.ID))
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
-	return api.Success("OK")
+	return api.Success(name)
 }
 
 func (p *provider) testRule(params struct {

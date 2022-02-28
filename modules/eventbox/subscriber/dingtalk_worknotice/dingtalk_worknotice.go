@@ -97,7 +97,7 @@ func (d DingWorkNoticeSubscriber) Publish(dest string, content string, time int6
 		m.CreateHistory.Status = "failed"
 	}
 	subscriber.SaveNotifyHistories(m.CreateHistory, d.messenger)
-	return nil
+	return errs
 }
 
 func (d DingWorkNoticeSubscriber) Status() interface{} {
