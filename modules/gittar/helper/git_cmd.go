@@ -231,7 +231,7 @@ func RunProcess(service string, c *webcontext.Context) {
 }
 
 // removeEndMarkerFromHeader remove end marker '0000' from header
-// see https://github.com/git/git/blob/master/Documentation/technical/http-protocol.txt
+// see https://github.com/git/git/blob/master/Documentation/technical/http-protocol.txt line:342
 func removeEndMarkerFromHeader(header []byte) []byte {
 	matchHeader := make([]byte, 0, len(header)-4)
 	for i := 0; i < len(header)-4; i++ {

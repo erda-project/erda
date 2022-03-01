@@ -26,7 +26,8 @@ func TestRemoveEndMarkerFromHeader(t *testing.T) {
 		want   string
 	}{
 		{"00aa0000000000000000000000000000000000000000 5cf4abb264b4a3a0d99e2b967ef8980a1cc41e77 refs/heads/test1 report-status-v2 side-band-64k object-format=sha1 agent=git/2.33.10000",
-			"00aa0000000000000000000000000000000000000000 5cf4abb264b4a3a0d99e2b967ef8980a1cc41e77 refs/heads/test1 report-status-v2 side-band-64k object-format=sha1 agent=git/2.33.1"},
+			"00aa0000000000000000000000000000000000000000 5cf4abb264b4a3a0d99e2b967ef8980a1cc41e77 refs/heads/test1 report-status-v2 side-band-64k object-format=sha1 agent=git/2.33.1",
+		},
 		{
 			"00aa0000000000000000000000000000000000000000 5cf4abb264b4a3a0d99e2b967ef8980a1cc41e77 refs/heads/test2 report-status-v2 side-band-64k object-format=sha1 agent=git/2.33.100660000000000000000000000000000000000000000 5cf4abb264b4a3a0d99e2b967ef8980a1cc41e77 refs/heads/test30000",
 			"00aa0000000000000000000000000000000000000000 5cf4abb264b4a3a0d99e2b967ef8980a1cc41e77 refs/heads/test2 report-status-v2 side-band-64k object-format=sha1 agent=git/2.33.100660000000000000000000000000000000000000000 5cf4abb264b4a3a0d99e2b967ef8980a1cc41e77 refs/heads/test3",
