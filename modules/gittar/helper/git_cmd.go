@@ -185,12 +185,8 @@ func RunProcess(service string, c *webcontext.Context) {
 		re := regexp.MustCompile(
 			`(?mi)(?P<before>[0-9a-fA-F]{40}) (?P<after>[0-9a-fA-F]{40}) (?P<ref>refs\/(heads|tags)\/\S*)`,
 		)
-		// remove 0000
-		matchHeader := make([]byte, 0, len(header)-4)
-		for i := 0; i < len(header)-4; i++ {
-			matchHeader = append(matchHeader, header[i])
-		}
 
+		matchHeader := removeEndMarkerFromHeader(header)
 		for _, matches := range re.FindAllSubmatch(matchHeader, -1) {
 			pushEvent := &models.PayloadPushEvent{
 				Before:            string(matches[1]),
@@ -232,6 +228,16 @@ func RunProcess(service string, c *webcontext.Context) {
 			c.MustGet("repository").(*gitmodule.Repository).DiskPath(),
 		), reqBody)
 	}
+}
+
+// removeEndMarkerFromHeader remove end marker '0000' from header
+// see https://github.com/git/git/blob/master/Documentation/technical/http-protocol.txt
+func removeEndMarkerFromHeader(header []byte) []byte {
+	matchHeader := make([]byte, 0, len(header)-4)
+	for i := 0; i < len(header)-4; i++ {
+		matchHeader = append(matchHeader, header[i])
+	}
+	return matchHeader
 }
 
 func RunArchive(c *webcontext.Context, ref string, format string) {
