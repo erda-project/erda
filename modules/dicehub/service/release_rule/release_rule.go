@@ -209,3 +209,16 @@ func (rule *ReleaseRule) Delete(request *apistructs.CreateUpdateDeleteReleaseRul
 	}
 	return nil
 }
+
+func (rule *ReleaseRule) Get(projectID uint64, ID string) (*apistructs.BranchReleaseRuleModel, *errorresp.APIError) {
+	var l = logrus.WithField("func", "*Release.Delete").WithField("id", ID)
+	var releaseRule *apistructs.BranchReleaseRuleModel
+	if err := rule.db.Find(releaseRule, map[string]interface{}{
+		"project_id": projectID,
+		"id":         ID,
+	}).Error; err != nil {
+		l.WithError(err).Errorln("failed to get")
+		return nil, apierrors.ErrGetReleaseRule.InternalError(err)
+	}
+	return releaseRule, nil
+}
