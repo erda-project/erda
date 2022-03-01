@@ -22,8 +22,10 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/orchestrator/addon/mysql/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
@@ -52,6 +54,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				DB: p.DB,
 			},
 		},
+		encrypt: encryption.New(
+			encryption.WithRSAScrypt(encryption.NewRSAScrypt(encryption.RSASecret{
+				PublicKey:          conf.PublicKey(),
+				PublicKeyDataType:  encryption.Base64,
+				PrivateKey:         conf.PrivateKey(),
+				PrivateKeyType:     encryption.PKCS1,
+				PrivateKeyDataType: encryption.Base64,
+			}))),
 	}
 	if p.Register != nil {
 		pb.RegisterAddonMySQLServiceImp(p.Register, p.addonMySQLService, apis.Options())
