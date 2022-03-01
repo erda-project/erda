@@ -134,11 +134,20 @@ func CreateRepoBranch(context *webcontext.Context) {
 		return
 	}
 
-	err = repository.CreateBranch(request.Name, request.Ref)
+	commit, err := repository.CreateBranch(request.Name, request.Ref)
 	if err != nil {
 		context.Abort(err)
 		return
 	}
+	pushEvent := &models.PayloadPushEvent{
+		IsTag:    false,
+		Ref:      gitmodule.BRANCH_PREFIX + request.Ref,
+		After:    commit.ID,
+		Before:   gitmodule.INIT_COMMIT_ID,
+		IsDelete: false,
+		Pusher:   context.User,
+	}
+	go helper.PostReceiveHook([]*models.PayloadPushEvent{pushEvent}, context)
 	context.Success("")
 }
 

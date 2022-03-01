@@ -163,22 +163,22 @@ func (repo *Repository) DeleteBranch(name string) error {
 }
 
 // CreateBranch create a branch from repository.
-func (repo *Repository) CreateBranch(name string, ref string) error {
+func (repo *Repository) CreateBranch(name string, ref string) (*Commit, error) {
 	commit, err := repo.GetCommitByAny(ref)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	rawrepo, err := repo.GetRawRepo()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	rawCommit, err := rawrepo.LookupCommit(commit.Git2Oid())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	//不覆盖已有同名分支
 	_, err = rawrepo.CreateBranch(name, rawCommit, false)
-	return err
+	return commit, err
 }
 
 // AddRemote adds a new remote to repository.
