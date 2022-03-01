@@ -15,6 +15,8 @@
 package page
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -44,6 +46,7 @@ type List struct {
 	PageNo   uint64
 	PageSize uint64
 	Total    uint64
+	State    cptype.ExtraMap
 	Bdl      *bundle.Bundle
 	Sdk      *cptype.SDK
 }
@@ -146,6 +149,7 @@ func (p *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.Ope
 }
 
 func (p *List) BeforeHandleOp(sdk *cptype.SDK) {
+	p.State = cptype.ExtraMap{}
 	p.Sdk = sdk
 	p.Bdl = p.Sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	p.PageNo = 1
@@ -156,9 +160,11 @@ func (p *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.Opera
 	logrus.Infof("change page client data: %+v", opData)
 	if opData.ClientData.PageNo > 0 {
 		p.PageNo = opData.ClientData.PageNo
+		p.State["pageNo"] = p.PageNo
 	}
 	if opData.ClientData.PageSize > 0 {
 		p.PageSize = opData.ClientData.PageSize
+		p.State["pageSize"] = p.PageSize
 	}
 	return p.RegisterRenderingOp()
 }
@@ -166,17 +172,59 @@ func (p *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.Opera
 func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		logrus.Debug("list component init")
+		if urlquery := sdk.InParams.String("list__urlQuery"); urlquery != "" {
+			if err := p.flushOptsByFilter(urlquery); err != nil {
+				logrus.Errorf("failed to transfer values in component advance filter")
+				return nil
+			}
+		}
+		urlParam, err := p.generateUrlQueryParams(p.State)
+		if err != nil {
+			logrus.Errorf("fail to parse list url")
+			return nil
+		}
+		p.State["list__urlQuery"] = urlParam
 		p.Sdk = sdk
 		p.StdDataPtr = p.getData()
+		p.StdStatePtr = &p.State
 		return nil
 	}
+}
+
+func (p *List) flushOptsByFilter(filterEntity string) error {
+	b, err := base64.StdEncoding.DecodeString(filterEntity)
+	if err != nil {
+		return err
+	}
+	v := cptype.ExtraMap{}
+	err = json.Unmarshal(b, &v)
+	if err != nil {
+		return err
+	}
+	p.State = v
+	return nil
+}
+
+func (p *List) generateUrlQueryParams(Values cptype.ExtraMap) (string, error) {
+	fb, err := json.Marshal(Values)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(fb), nil
 }
 
 func (p *List) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		logrus.Debug("list component rendering")
 		p.Sdk = sdk
+		urlParam, err := p.generateUrlQueryParams(p.State)
+		if err != nil {
+			logrus.Errorf("fail to parse list url")
+			return nil
+		}
+		p.State["list__urlQuery"] = urlParam
 		p.StdDataPtr = p.getData()
+		p.StdStatePtr = &p.State
 		return nil
 	}
 }
