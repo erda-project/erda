@@ -62,6 +62,8 @@ groups:
               name: PS Survivor Space
             - id: application_jvm_memory_other
               name: Other Memory
+        - id: jvm_process_cpu_usage
+          name: Process CPU Usage
         - id: application_jvm_gc
           name: GC
         - id: application_jvm_thread
@@ -193,6 +195,8 @@ mapping:
               value: "*_survivor_space"
     application_jvm_memory_other:
         - name: jvm_memory
+    jvm_process_cpu_usage:
+        - name: jvm_process_cpu_usage
     application_jvm_gc:
         - name: jvm_gc
     application_jvm_thread:
