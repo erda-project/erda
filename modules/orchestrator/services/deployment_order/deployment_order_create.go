@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
+	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
@@ -59,6 +60,16 @@ func (d *DeploymentOrder) Create(ctx context.Context, req *apistructs.Deployment
 	if err != nil {
 		logrus.Errorf("failed to get release %s, err: %v", releaseId, err)
 		return nil, err
+	}
+
+	// get workspace
+	if req.Workspace == "" {
+		workspace, err := d.getWorkspaceFromBranch(uint64(releaseResp.Data.ProjectID), releaseResp.Data.Labels[gitBranchLabel])
+		if err != nil {
+			logrus.Errorf("failed to get workspace, err: %v", err)
+			return nil, err
+		}
+		req.Workspace = strings.ToUpper(workspace)
 	}
 
 	// permission check
@@ -516,6 +527,18 @@ func (d *DeploymentOrder) getReleaseIdFromReq(req *apistructs.DeploymentOrderCre
 	default:
 		return "", fmt.Errorf("deploy type %s is not support", req.Type)
 	}
+}
+
+func (d *DeploymentOrder) getWorkspaceFromBranch(projectId uint64, branch string) (string, error) {
+	rules, err := d.bdl.GetProjectBranchRules(projectId)
+	if err != nil {
+		return "", err
+	}
+	workspace, err := diceworkspace.GetByGitReference(branch, rules)
+	if err != nil {
+		return "", fmt.Errorf("failed to get workspace by branch %s: %v", branch, err)
+	}
+	return workspace.String(), nil
 }
 
 func parseRuntimeNameFromBranch(r *apistructs.DeploymentOrderCreateRequest) bool {
