@@ -63,15 +63,6 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 		statusMap := apistructs.DeploymentOrderStatusMap{}
 		for _, app := range releaseResp.Data.ApplicationReleaseList[order.CurrentBatch-1].List {
 			rt, errGetRuntime := d.db.GetRuntimeByAppName(order.Workspace, order.ProjectId, app.ApplicationName)
-			lastDeployment, err := d.db.FindLastDeployment(rt.ID)
-			if err != nil {
-				logrus.Errorf("failed to find last deployment for runtime %d, (%v)", rt.ID, err)
-				return
-			}
-			if lastDeployment == nil {
-				logrus.Errorf("failed to find last deployment for runtime, last deployment is nil, runtime id: %d", rt.ID)
-				return
-			}
 			if errGetRuntime != nil {
 				if !errors.Is(errGetRuntime, gorm.ErrRecordNotFound) {
 					logrus.Errorf("failed to get runtime by app name %s, (%v)", app.ApplicationName, errGetRuntime)
@@ -91,6 +82,16 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 					logrus.Errorf("failed to push on DEPLOYMENT_ORDER_BATCHES, deploymentOrderID: %s, (%v)", order.ID, err)
 					return
 				}
+				return
+			}
+
+			lastDeployment, err := d.db.FindLastDeployment(rt.ID)
+			if err != nil {
+				logrus.Errorf("failed to find last deployment for runtime %d, (%v)", rt.ID, err)
+				return
+			}
+			if lastDeployment == nil {
+				logrus.Errorf("failed to find last deployment for runtime, last deployment is nil, runtime id: %d", rt.ID)
 				return
 			}
 
