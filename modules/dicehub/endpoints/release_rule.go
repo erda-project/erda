@@ -69,65 +69,80 @@ func (e *Endpoints) DeleteRule(ctx context.Context, r *http.Request, vars map[st
 	return httpserver.OkResp(nil)
 }
 
-func (e *Endpoints) ReleaseRuleAuth(handler httpserver.Handler) httpserver.Handler {
+func (e *Endpoints) ReleaseRuleMiddleware(handler httpserver.Handler) httpserver.Handler {
 	return func(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-		if apiError := e.releaseRuleAuth(&ctx, r, vars); apiError != nil {
+		l := logrus.WithField("func", "*Endpoints.ReleaseMiddleWare")
+
+		info, apierr := getUserInfo(r)
+		if apierr != nil {
+			return apierr.ToResp(), nil
+		}
+
+		var (
+			oldReleaseRule *apistructs.BranchReleaseRuleModel
+			err            error
+		)
+		id := vars["id"]
+		if id != "" {
+			oldReleaseRule, err = e.releaseRule.Get(info.projectID, id)
+			if err != nil {
+				l.WithError(err).Errorln("failed to get releaseRule")
+				return apierrors.ErrGetReleaseRule.InternalError(err).ToResp(), nil
+			}
+		}
+
+		if apiError := e.releaseRuleAuth(info, &ctx, r, vars); apiError != nil {
 			return apiError.ToResp(), nil
 		}
-		return handler(ctx, r, vars)
+		resp, err := handler(ctx, r, vars)
+		if err != nil {
+			return resp, err
+		}
+
+		go func() {
+			if err := e.releaseRuleAudit(r, vars, info, oldReleaseRule); err != nil {
+				l.WithError(err).Errorln("failed to audit")
+			}
+		}()
+		return resp, nil
 	}
 }
 
-func (e *Endpoints) releaseRuleAuth(ctx *context.Context, r *http.Request, vars map[string]string) *errorresp.APIError {
-	var l = logrus.WithField("func", "*Endpoints.ReleaseRuleAuth")
+type userInfo struct {
+	orgID     uint64
+	projectID uint64
+	userID    uint64
+}
 
-	// 常规性地参数检查
-	userIDStr, err := user.GetUserID(r)
-	if err != nil {
-		l.WithError(err).Errorln("failed to GetUserID")
-		return apierrors.ErrAuthReleaseRule.NotLogin()
+func (e *Endpoints) releaseRuleAuth(info *userInfo, ctx *context.Context, r *http.Request, vars map[string]string) *errorresp.APIError {
+	var l = logrus.WithField("func", "*Endpoints.ReleaseRuleMiddleware")
 
-	}
-	userID, err := strconv.ParseUint(userIDStr.String(), 10, 32)
+	identity, err := user.GetIdentityInfo(r)
 	if err != nil {
-		l.WithError(err).WithField("userID", userIDStr).Errorln("failed to ParseUint")
-		return apierrors.ErrAuthReleaseRule.InvalidParameter("invalid userID").NotLogin()
-	}
-	orgID, err := user.GetOrgID(r)
-	if err != nil {
-		l.WithError(err).Errorln("failed to GetOrgID")
+		l.WithError(err).Errorln("failed to GetIdentityInfo")
 		return apierrors.ErrAuthReleaseRule.NotLogin()
 	}
-	projectIDStr := r.URL.Query().Get("projectID")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
-	if err != nil {
-		l.WithError(err).WithField("projectID", projectIDStr).Errorln("failed to parseUint")
-		return apierrors.ErrAuthReleaseRule.InvalidParameter("invalid query parameter projectID")
-	}
-
+	access := false
 	// 鉴权
 	switch r.Method {
 	case http.MethodPost, http.MethodPut, http.MethodDelete:
-		identity, err := user.GetIdentityInfo(r)
-		if err != nil {
-			l.WithError(err).Errorln("failed to GetIdentityInfo")
-			return apierrors.ErrAuthReleaseRule.NotLogin()
-		}
-		access, err := e.hasWriteAccess(identity, int64(projectID), true, 0)
-		if err != nil {
-			l.WithError(err).Errorln("failed to hasWriteAccess")
-			return apierrors.ErrAuthReleaseRule.InternalError(err)
-		}
-		if !access {
-			return apierrors.ErrAuthReleaseRule.AccessDenied()
-		}
+		access, err = e.hasWriteAccess(identity, int64(info.projectID), true, 0)
+	default:
+		access, err = e.hasReadAccess(identity, int64(info.projectID))
+	}
+	if err != nil {
+		l.WithError(err).Errorln("failed to authenticate")
+		return apierrors.ErrAuthReleaseRule.InternalError(err)
+	}
+	if !access {
+		return apierrors.ErrAuthReleaseRule.AccessDenied()
 	}
 
 	// 封装参数
 	var request = apistructs.CreateUpdateDeleteReleaseRuleRequest{
-		OrgID:     orgID,
-		ProjectID: projectID,
-		UserID:    userID,
+		OrgID:     info.orgID,
+		ProjectID: info.projectID,
+		UserID:    info.userID,
 		RuleID:    vars["id"],
 		Body:      new(apistructs.CreateUpdateReleaseRuleRequestBody),
 	}
@@ -139,4 +154,81 @@ func (e *Endpoints) releaseRuleAuth(ctx *context.Context, r *http.Request, vars 
 	}
 	*ctx = context.WithValue(*ctx, "CreateUpdateDeleteReleaseRuleRequest", &request)
 	return nil
+}
+
+func (e *Endpoints) releaseRuleAudit(r *http.Request, vars map[string]string, info *userInfo,
+	releaseRule *apistructs.BranchReleaseRuleModel) error {
+
+	org, err := e.bdl.GetOrg(info.orgID)
+	if err != nil {
+		return err
+	}
+	project, err := e.bdl.GetProject(info.projectID)
+	if err != nil {
+		return err
+	}
+
+	auditCtx := map[string]interface{}{
+		"orgName":     org.Name,
+		"projectName": project.Name,
+	}
+
+	var templateName string
+	switch r.Method {
+	case http.MethodPost:
+		templateName = string(apistructs.CreateReleaseRuleTemplate)
+		auditCtx["releaseRule"] = releaseRule.Pattern
+	case http.MethodPut:
+		templateName = string(apistructs.UpdateReleaseRuleTemplate)
+		auditCtx["oldReleaseRule"] = releaseRule.Pattern
+		id := vars["id"]
+		newReleaseRule, err := e.releaseRule.Get(info.projectID, id)
+		if err != nil {
+			return err
+		}
+		auditCtx["newReleaseRule"] = newReleaseRule.Pattern
+	case http.MethodDelete:
+		templateName = string(apistructs.DeleteReleaseRuleTemplate)
+		auditCtx["releaseRule"] = releaseRule.Pattern
+	default:
+		return nil
+	}
+
+	return e.audit(r, auditParams{
+		orgID:        int64(info.orgID),
+		projectID:    int64(info.projectID),
+		userID:       strconv.FormatUint(info.userID, 10),
+		templateName: templateName,
+		ctx:          auditCtx,
+	})
+}
+
+func getUserInfo(r *http.Request) (*userInfo, *errorresp.APIError) {
+	l := logrus.WithField("func", "*getUserInfo")
+	userIDStr, err := user.GetUserID(r)
+	if err != nil {
+		l.WithError(err).Errorln("failed to GetUserID")
+		return nil, apierrors.ErrAuthReleaseRule.NotLogin()
+	}
+	userID, err := strconv.ParseUint(userIDStr.String(), 10, 32)
+	if err != nil {
+		l.WithError(err).WithField("userID", userIDStr).Errorln("failed to ParseUint")
+		return nil, apierrors.ErrAuthReleaseRule.InvalidParameter("invalid userID").NotLogin()
+	}
+	orgID, err := user.GetOrgID(r)
+	if err != nil {
+		l.WithError(err).Errorln("failed to GetOrgID")
+		return nil, apierrors.ErrAuthReleaseRule.NotLogin()
+	}
+	projectIDStr := r.URL.Query().Get("projectID")
+	projectID, err := strconv.ParseUint(projectIDStr, 10, 64)
+	if err != nil {
+		l.WithError(err).WithField("projectID", projectIDStr).Errorln("failed to parseUint")
+		return nil, apierrors.ErrAuthReleaseRule.InvalidParameter("invalid query parameter projectID")
+	}
+	return &userInfo{
+		orgID:     orgID,
+		projectID: projectID,
+		userID:    userID,
+	}, nil
 }
