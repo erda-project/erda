@@ -63,6 +63,7 @@ zh:
   Memory: 内存
   Pods: Pods
   Pod: Pods
+  Mem: 内存
   enterprise: 企业
   location-cluster-service: 集群级服务
   stateless-service: 无状态服务

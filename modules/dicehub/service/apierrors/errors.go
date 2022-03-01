@@ -79,6 +79,7 @@ var (
 	ErrUpdateReleaseRule = err("ErrUpdateReleaseRule", "更新制品规则失败")
 	ErrDeleteReleaseRule = err("ErrDeleteReleaseRule", "删除制品规则失败")
 	ErrAuthReleaseRule   = err("ErrAuthReleaseRule", "制品规则鉴权失败")
+	ErrGetReleaseRule    = err("ErrGetReleaseRule", "获取制品规则失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

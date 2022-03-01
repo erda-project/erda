@@ -258,6 +258,9 @@ const (
 	BatchDeleteAppReleaseTemplate     TemplateName = "batchDeleteAppRelease"
 	BatchFormalReleaseProjectTemplate TemplateName = "batchFormalProjectRelease"
 	BatchFormalReleaseAppTemplate     TemplateName = "batchFormalAppRelease"
+	CreateReleaseRuleTemplate         TemplateName = "createReleaseRule"
+	UpdateReleaseRuleTemplate         TemplateName = "updateReleaseRule"
+	DeleteReleaseRuleTemplate         TemplateName = "deleteReleaseRule"
 
 	AddDashboard           TemplateName = "addDashboard"
 	UpdateDashboard        TemplateName = "updateDashboard"
@@ -270,7 +273,12 @@ const (
 	DeleteServiceToken TemplateName = "deleteServiceToken"
 
 	CreateAnalyzerRule TemplateName = "createAnalyzerRule"
+	UpdateAnalyzerRule TemplateName = "updateAnalyzerRule"
 	DeleteAnalyzerRule TemplateName = "deleteAnalyzerRule"
+
+	CreateOrgAnalyzerRule TemplateName = "createOrgAnalyzerRule"
+	UpdateOrgAnalyzerRule TemplateName = "updateOrgAnalyzerRule"
+	DeleteOrgAnalyzerRule TemplateName = "deleteOrgAnalyzerRule"
 )
 
 // AuditTemplateMap 解析前端审计模版全家桶

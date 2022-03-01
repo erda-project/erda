@@ -41,6 +41,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
+	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
 
 type CategoryType string
@@ -50,6 +51,9 @@ const (
 	StarCategory     CategoryType = "primary"
 	DicePipelinePath string       = ".dice/pipelines"
 	ErdaPipelinePath string       = ".erda/pipelines"
+
+	CreateProjectPipelineNamePreCheckLocaleKey   string = "ProjectPipelineCreateNamePreCheckNotPass"
+	CreateProjectPipelineSourcePreCheckLocaleKey string = "ProjectPipelineCreateSourcePreCheckNotPass"
 )
 
 func (c CategoryType) String() string {
@@ -127,6 +131,76 @@ func (s *ProjectPipelineService) getPipelineYml(app *apistructs.ApplicationDTO, 
 	return list, nil
 }
 
+func (p *ProjectPipelineService) CreateSourcePreCheck(ctx context.Context, params *pb.CreateProjectPipelineSourcePreCheckRequest) (*pb.CreateProjectPipelineSourcePreCheckResponse, error) {
+	if err := params.Validate(); err != nil {
+		return nil, apierrors.ErrCreateProjectPipeline.InvalidParameter(err)
+	}
+
+	app, err := p.bundle.GetApp(params.AppID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := p.PipelineSource.List(ctx, &spb.PipelineSourceListRequest{
+		SourceType: params.SourceType,
+		Remote:     makeRemote(app),
+		Ref:        params.Ref,
+		Path:       params.Path,
+		Name:       params.FileName,
+	})
+	if err != nil {
+		return nil, apierrors.ErrCreateProjectPipeline.InvalidParameter(err)
+	}
+	if len(resp.Data) == 0 {
+		return &pb.CreateProjectPipelineSourcePreCheckResponse{
+			Pass: true,
+		}, nil
+	}
+
+	definitionList, err := p.PipelineDefinition.List(ctx, &dpb.PipelineDefinitionListRequest{
+		Location: makeLocation(&apistructs.ApplicationDTO{
+			OrgName:     app.OrgName,
+			ProjectName: app.ProjectName,
+		}, cicdPipelineType),
+		SourceIDList: []string{resp.Data[0].ID},
+	})
+	if err != nil {
+		return nil, apierrors.ErrCreateProjectPipeline.InvalidParameter(err)
+	}
+
+	if len(definitionList.Data) == 0 {
+		return &pb.CreateProjectPipelineSourcePreCheckResponse{
+			Pass: true,
+		}, nil
+	}
+	definitionName := definitionList.Data[0].Name
+
+	return &pb.CreateProjectPipelineSourcePreCheckResponse{
+		Pass:    false,
+		Message: fmt.Sprintf(p.trans.Text(apis.Language(ctx), CreateProjectPipelineSourcePreCheckLocaleKey), definitionName),
+	}, nil
+}
+
+func (p *ProjectPipelineService) CreateNamePreCheck(ctx context.Context, req *pb.CreateProjectPipelineNamePreCheckRequest) (*pb.CreateProjectPipelineNamePreCheckResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, apierrors.ErrCreateProjectPipeline.InvalidParameter(err)
+	}
+	haveSameNameDefinition, err := p.checkDefinitionRemoteSameName(req.ProjectID, req.Name, apis.GetUserID(ctx))
+	if err != nil {
+		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
+	}
+	if haveSameNameDefinition {
+		return &pb.CreateProjectPipelineNamePreCheckResponse{
+			Pass:    false,
+			Message: p.trans.Text(apis.Language(ctx), CreateProjectPipelineNamePreCheckLocaleKey),
+		}, nil
+	}
+
+	return &pb.CreateProjectPipelineNamePreCheckResponse{
+		Pass: true,
+	}, nil
+}
+
 func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error) {
 	if err := params.Validate(); err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InvalidParameter(err)
@@ -144,18 +218,35 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		return nil, err
 	}
 
+	nameCheckResult, err := p.CreateNamePreCheck(ctx, &pb.CreateProjectPipelineNamePreCheckRequest{
+		ProjectID: params.ProjectID,
+		Name:      params.Name,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !nameCheckResult.Pass {
+		return nil, apierrors.ErrCreateProjectPipeline.InternalError(fmt.Errorf(nameCheckResult.Message))
+	}
+
+	sourceCheckResult, err := p.CreateSourcePreCheck(ctx, &pb.CreateProjectPipelineSourcePreCheckRequest{
+		SourceType: params.SourceType,
+		Ref:        params.Ref,
+		Path:       params.Path,
+		FileName:   params.FileName,
+		AppID:      params.AppID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !sourceCheckResult.Pass {
+		return nil, apierrors.ErrCreateProjectPipeline.InternalError(fmt.Errorf(sourceCheckResult.Message))
+	}
+
 	p.pipelineSourceType = NewProjectSourceType(params.SourceType)
 	sourceReq, err := p.pipelineSourceType.GenerateReq(ctx, p, params)
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
-	}
-
-	haveSameNameDefinition, err := p.checkDefinitionRemoteSameName(params.AppID, params.Name, apis.GetUserID(ctx))
-	if err != nil {
-		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
-	}
-	if haveSameNameDefinition {
-		return nil, apierrors.ErrCreateProjectPipeline.InternalError(fmt.Errorf("project have same name definition"))
 	}
 
 	sourceRsp, err := p.PipelineSource.Create(ctx, sourceReq)
@@ -172,7 +263,7 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		Location:         location,
 		Name:             params.Name,
 		Creator:          apis.GetUserID(ctx),
-		PipelineSourceId: sourceRsp.PipelineSource.ID,
+		PipelineSourceID: sourceRsp.PipelineSource.ID,
 		Category:         DefaultCategory.String(),
 		Extra: &dpb.PipelineDefinitionExtra{
 			Extra: p.pipelineSourceType.GetPipelineCreateRequestV2(),
@@ -193,15 +284,25 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		Ref:              sourceRsp.PipelineSource.Ref,
 		Path:             sourceRsp.PipelineSource.Path,
 		FileName:         sourceRsp.PipelineSource.Name,
-		PipelineSourceId: sourceRsp.PipelineSource.ID,
+		PipelineSourceID: sourceRsp.PipelineSource.ID,
 	}}, nil
 }
 
-func (p *ProjectPipelineService) checkDefinitionRemoteSameName(appID uint64, name string, userID string) (bool, error) {
-	location, err := p.makeLocationByAppID(appID)
+func (p *ProjectPipelineService) checkDefinitionRemoteSameName(projectID uint64, name string, userID string) (bool, error) {
+	projectDto, err := p.bundle.GetProject(projectID)
 	if err != nil {
 		return false, err
 	}
+
+	orgDto, err := p.bundle.GetOrg(projectDto.OrgID)
+	if err != nil {
+		return false, err
+	}
+
+	location := makeLocation(&apistructs.ApplicationDTO{
+		OrgName:     orgDto.Name,
+		ProjectName: projectDto.Name,
+	}, cicdPipelineType)
 
 	resp, err := p.PipelineDefinition.List(context.Background(), &dpb.PipelineDefinitionListRequest{
 		Location: location,
@@ -245,6 +346,22 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 	org, err := p.bundle.GetOrg(project.OrgID)
 	if err != nil {
 		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
+	}
+
+	var apps []apistructs.ApplicationDTO
+	if len(params.AppName) == 0 {
+		appResp, err := p.bundle.GetMyAppsByProject(params.IdentityInfo.UserID, project.OrgID, project.ID, "")
+		if err != nil {
+			return nil, 0, err
+		}
+		apps = appResp.List
+	}
+	for _, v := range apps {
+		params.AppName = append(params.AppName, v.Name)
+	}
+	// No application returned directly
+	if len(params.AppName) == 0 {
+		return []*dpb.PipelineDefinition{}, 0, nil
 	}
 
 	list, err := p.PipelineDefinition.List(ctx, &dpb.PipelineDefinitionListRequest{
@@ -352,7 +469,7 @@ func (p *ProjectPipelineService) Update(ctx context.Context, params deftype.Proj
 	}
 	_, err = p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
 		PipelineDefinitionID: params.ID,
-		PipelineSourceId:     sourceRsp.PipelineSource.ID,
+		PipelineSourceID:     sourceRsp.PipelineSource.ID,
 	})
 
 	return nil, err
@@ -527,10 +644,10 @@ func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.Pr
 
 	var pipelineSourceIDArray []string
 	for _, v := range definitionMap {
-		if v.PipelineSourceId == "" {
+		if v.PipelineSourceID == "" {
 			return nil, apierrors.ErrBatchRunProjectPipeline.InternalError(fmt.Errorf("definition %v pipeline source was empty", v.ID))
 		}
-		pipelineSourceIDArray = append(pipelineSourceIDArray, v.PipelineSourceId)
+		pipelineSourceIDArray = append(pipelineSourceIDArray, v.PipelineSourceID)
 	}
 
 	sourceMap, err := p.batchGetPipelineSources(pipelineSourceIDArray)
@@ -570,7 +687,7 @@ func (p *ProjectPipelineService) BatchRun(ctx context.Context, params deftype.Pr
 			result[definitionID] = value
 			locker.Unlock()
 			return nil
-		}, v.ID, v.PipelineSourceId)
+		}, v.ID, v.PipelineSourceID)
 	}
 	if err := work.Do().Error(); err != nil {
 		return nil, err
@@ -604,22 +721,29 @@ func (p *ProjectPipelineService) Cancel(ctx context.Context, params deftype.Proj
 		return nil, err
 	}
 
-	runningPipelineID, err := p.getRunningPipeline(extraValue.CreateRequest.PipelineSource.String(), extraValue.CreateRequest.PipelineYmlName)
+	pipelineInfo, err := p.bundle.GetPipeline(uint64(definition.PipelineID))
 	if err != nil {
 		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
-	}
-	if runningPipelineID == 0 {
-		return nil, apierrors.ErrCancelProjectPipeline.InternalError(fmt.Errorf("not find running pipeline, can not cancel"))
 	}
 
-	var req apistructs.PipelineCancelRequest
-	req.PipelineID = runningPipelineID
-	req.IdentityInfo = params.IdentityInfo
-	err = p.bundle.CancelPipeline(req)
-	if err != nil {
-		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
+	if pipelineInfo.Status.IsRunningStatus() {
+		var req apistructs.PipelineCancelRequest
+		req.PipelineID = uint64(definition.PipelineID)
+		req.IdentityInfo = params.IdentityInfo
+		err = p.bundle.CancelPipeline(req)
+		if err != nil {
+			return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
+		}
+
+		_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{PipelineDefinitionID: definition.ID, Status: string(apistructs.PipelineStatusStopByUser), PipelineID: definition.PipelineID})
+		if err != nil {
+			return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
+		}
+
+		return &deftype.ProjectPipelineCancelResult{}, nil
 	}
-	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{PipelineDefinitionID: definition.ID, Status: string(apistructs.PipelineStatusStopByUser), PipelineId: int64(runningPipelineID)})
+
+	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{PipelineDefinitionID: definition.ID, Status: string(pipelineInfo.Status), PipelineID: definition.PipelineID})
 	if err != nil {
 		return nil, apierrors.ErrCancelProjectPipeline.InternalError(err)
 	}
@@ -671,31 +795,16 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 		return nil, err
 	}
 
-	runningPipelineID, err := p.getRunningPipeline(extraValue.CreateRequest.PipelineSource.String(), extraValue.CreateRequest.PipelineYmlName)
-	if err != nil {
-		return nil, apiError.InternalError(err)
-	}
-	if runningPipelineID > 0 {
-		return nil, apiError.InternalError(fmt.Errorf("operation failed, pipeline %v was running status", runningPipelineID))
-	}
-	pipeline, err := p.getLatestPipeline(extraValue.CreateRequest.PipelineSource.String(), extraValue.CreateRequest.PipelineYmlName)
-	if err != nil {
-		return nil, apiError.InternalError(err)
-	}
-	if !pipeline.Status.IsFailedStatus() {
-		return nil, apiError.InternalError(fmt.Errorf("operation failed, the latest pipeline is not in an error state"))
-	}
-
 	var dto *apistructs.PipelineDTO
 	if rerun {
 		var req apistructs.PipelineRerunRequest
-		req.PipelineID = pipeline.ID
+		req.PipelineID = uint64(definition.PipelineID)
 		req.AutoRunAtOnce = true
 		req.IdentityInfo = identityInfo
 		dto, err = p.bundle.RerunPipeline(req)
 	} else {
 		var req apistructs.PipelineRerunFailedRequest
-		req.PipelineID = pipeline.ID
+		req.PipelineID = uint64(definition.PipelineID)
 		req.AutoRunAtOnce = true
 		req.IdentityInfo = identityInfo
 		dto, err = p.bundle.RerunFailedPipeline(req)
@@ -703,18 +812,19 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 	if err != nil {
 		return nil, apiError.InternalError(err)
 	}
-	totalActionNum, err := countActionNumByPipelineYml(source.PipelineYml)
-	if err != nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
-	}
-	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{
+
+	definitionUpdateReq := &dpb.PipelineDefinitionUpdateRequest{
 		PipelineDefinitionID: definition.ID,
 		Status:               string(apistructs.StatusRunning),
 		Executor:             identityInfo.UserID,
-		StartedAt:            timestamppb.New(time.Now()),
-		TotalActionNum:       totalActionNum,
-		ExecutedActionNum:    -1,
-		PipelineId:           int64(dto.ID)})
+		EndedAt:              timestamppb.New(*mysql_time.GetMysqlDefaultTime()),
+		PipelineID:           int64(dto.ID)}
+	if rerun {
+		definitionUpdateReq.ExecutedActionNum = -1
+		definitionUpdateReq.StartedAt = timestamppb.New(time.Now())
+	}
+
+	_, err = p.PipelineDefinition.Update(context.Background(), definitionUpdateReq)
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
@@ -858,7 +968,7 @@ func (p *ProjectPipelineService) getPipelineDefinitionAndSource(pipelineDefiniti
 	if err != nil {
 		return nil, nil, err
 	}
-	source, err := p.getPipelineSource(definition.PipelineSourceId)
+	source, err := p.getPipelineSource(definition.PipelineSourceID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -992,9 +1102,11 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 		Status:               string(apistructs.StatusRunning),
 		Executor:             identityInfo.UserID,
 		StartedAt:            timestamppb.New(time.Now()),
+		EndedAt:              timestamppb.New(*mysql_time.GetMysqlDefaultTime()),
 		TotalActionNum:       totalActionNum,
 		ExecutedActionNum:    -1,
-		PipelineId:           int64(value.ID)})
+		CostTime:             -1,
+		PipelineID:           int64(value.ID)})
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
@@ -1081,7 +1193,7 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 			GitRepo:        v.GitRepo,
 			OrgID:          v.OrgID,
 			OrgDisplayName: v.OrgDisplayName,
-			ProjectId:      v.ProjectID,
+			ProjectID:      v.ProjectID,
 			ProjectName:    v.ProjectName,
 			IsExternalRepo: v.IsExternalRepo,
 			CreatedAt:      timestamppb.New(v.CreatedAt),

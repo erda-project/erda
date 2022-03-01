@@ -17,6 +17,7 @@ package definition
 import (
 	"context"
 	"encoding/json"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -51,12 +52,13 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	var pipelineDefinition db.PipelineDefinition
 	pipelineDefinition.Location = request.Location
 	pipelineDefinition.Name = request.Name
-	pipelineDefinition.PipelineSourceId = request.PipelineSourceId
+	pipelineDefinition.PipelineSourceId = request.PipelineSourceID
 	pipelineDefinition.Category = request.Category
 	pipelineDefinition.Creator = request.Creator
 	pipelineDefinition.ID = uuid.New().String()
 	pipelineDefinition.StartedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
+	pipelineDefinition.CostTime = -1
 	err := p.dbClient.CreatePipelineDefinition(&pipelineDefinition)
 	if err != nil {
 		return nil, err
@@ -85,7 +87,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 }
 
 func createPreCheck(request *pb.PipelineDefinitionCreateRequest) error {
-	if request.Name == "" || len(request.Name) > 36 {
+	if request.Name == "" || utf8.RuneCountInString(request.Name) >= 30 {
 		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("name: %s", request.Name))
 	}
 	if request.Creator == "" {
@@ -94,8 +96,8 @@ func createPreCheck(request *pb.PipelineDefinitionCreateRequest) error {
 	if request.Category == "" {
 		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("category: %s", request.Category))
 	}
-	if request.PipelineSourceId == "" {
-		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("pipelineSourceId: %s", request.PipelineSourceId))
+	if request.PipelineSourceID == "" {
+		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("pipelineSourceId: %s", request.PipelineSourceID))
 	}
 	if request.Extra == nil || request.Extra.Extra == "" {
 		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("extra: %s", request.Extra))
@@ -117,11 +119,11 @@ func (p pipelineDefinition) Update(ctx context.Context, request *pb.PipelineDefi
 	if request.Name != "" {
 		pipelineDefinition.Name = request.Name
 	}
-	if request.CostTime > 0 {
+	if request.CostTime != 0 {
 		pipelineDefinition.CostTime = request.CostTime
 	}
-	if request.PipelineSourceId != "" {
-		pipelineDefinition.PipelineSourceId = request.PipelineSourceId
+	if request.PipelineSourceID != "" {
+		pipelineDefinition.PipelineSourceId = request.PipelineSourceID
 	}
 	if request.StartedAt != nil {
 		var startAt = request.StartedAt.AsTime()
@@ -137,8 +139,8 @@ func (p pipelineDefinition) Update(ctx context.Context, request *pb.PipelineDefi
 	if request.Status != "" {
 		pipelineDefinition.Status = request.Status
 	}
-	if request.PipelineId > 0 {
-		pipelineDefinition.PipelineID = uint64(request.PipelineId)
+	if request.PipelineID > 0 {
+		pipelineDefinition.PipelineID = uint64(request.PipelineID)
 	}
 	if request.TotalActionNum != 0 {
 		pipelineDefinition.TotalActionNum = request.TotalActionNum
@@ -229,12 +231,13 @@ func PipelineDefinitionToPb(pipelineDefinition *db.PipelineDefinition) *pb.Pipel
 		Executor:         pipelineDefinition.Executor,
 		CostTime:         pipelineDefinition.CostTime,
 		Category:         pipelineDefinition.Category,
-		PipelineSourceId: pipelineDefinition.PipelineSourceId,
+		PipelineSourceID: pipelineDefinition.PipelineSourceId,
 		Status:           pipelineDefinition.Status,
 		TimeCreated:      timestamppb.New(pipelineDefinition.TimeCreated),
 		TimeUpdated:      timestamppb.New(pipelineDefinition.TimeUpdated),
 		StartedAt:        timestamppb.New(pipelineDefinition.StartedAt),
 		EndedAt:          timestamppb.New(pipelineDefinition.EndedAt),
+		PipelineID:       int64(pipelineDefinition.PipelineID),
 	}
 	return de
 }

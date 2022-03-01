@@ -1,5 +1,7 @@
 zh:
-  searchByVersion: 搜索版本
+  true: 是
+  false: 否
+  searchByVersionOrID: 按版本或 ID 进行搜索
   application: 应用
   selectApplication: 请选择应用
   branch: 分支
@@ -27,8 +29,10 @@ zh:
   referencedReleases: 查看引用制品
   releaseID: 制品ID
   inputReleaseID: 请输入制品ID
+  aggregateByBranch: 只显示版本最新制品
+  formalReleaseCanNotBeModified: 正式制品不可修改
 en:
-  searchByVersion: Search by version
+  searchByVersionOrID: Search by version or releaseID
   application: Application
   selectApplication: Select application
   branch: Branch
@@ -56,3 +60,7 @@ en:
   referencedReleases: Referenced Releases
   releaseID: Release ID
   inputReleaseID: Input release ID
+  aggregateByBranch: Only display the latest release
+  formalReleaseCanNotBeModified: Formal release can not be modified
+  true: "true"
+  false: "false"

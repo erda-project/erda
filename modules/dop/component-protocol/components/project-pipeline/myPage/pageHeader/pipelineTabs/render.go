@@ -42,7 +42,6 @@ func (t *Tab) Render(ctx context.Context, c *cptype.Component, scenario cptype.S
 	t.SetType()
 	t.SetState(func() string {
 		if event.Operation == cptype.InitializeOperation ||
-			event.Operation == cptype.RenderingOperation ||
 			t.State.Value == "" {
 			return common.DefaultState.String()
 		}
@@ -64,7 +63,7 @@ func (t *Tab) Render(ctx context.Context, c *cptype.Component, scenario cptype.S
 	if err != nil {
 		return err
 	}
-	primaryCount, err := t.CountPipelineByParams(ctx, appNames, []string{t.sdk.Identity.UserID}, []string{"primary"})
+	primaryCount, err := t.CountPipelineByParams(ctx, appNames, nil, []string{"primary"})
 	if err != nil {
 		return err
 	}

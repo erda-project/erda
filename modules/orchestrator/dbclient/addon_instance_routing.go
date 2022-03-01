@@ -436,7 +436,7 @@ func (db *DBClient) GetRoutingInstancesByProject(orgID, projectID uint64, catego
 		Where("project_id = ?", projectID).
 		Where("category != ?", "discovery").
 		Where("is_deleted = ?", apistructs.AddonNotDeleted).
-		Where("status in (?)", []apistructs.AddonStatus{apistructs.AddonAttached, apistructs.AddonAttaching, apistructs.AddonAttachFail})
+		Where("status in (?)", []apistructs.AddonStatus{apistructs.AddonAttached, apistructs.AddonAttaching, apistructs.AddonAttachFail, apistructs.AddonOffline})
 	if category != "" {
 		client = client.Where("category = ?", category)
 	}
@@ -539,6 +539,19 @@ func (db *DBClient) ListRoutingInstanceByCluster(clusterName string) ([]AddonIns
 	if err := db.Where("az = ?", clusterName).
 		Where("is_deleted = ?", apistructs.AddonNotDeleted).
 		Where("platform_service_type = ?", apistructs.PlatformServiceTypeBasic).
+		Find(&routingInstances).Error; err != nil {
+		return nil, err
+	}
+	return routingInstances, nil
+}
+
+// ListRoutingInstanceByOrgCluster 根据 clusterName 查找 addon 列表
+func (db *DBClient) ListRoutingInstanceByOrgCluster(clusterName string, orgID uint64) ([]AddonInstanceRouting, error) {
+	var routingInstances []AddonInstanceRouting
+	if err := db.Where("az = ?", clusterName).
+		Where("is_deleted = ?", apistructs.AddonNotDeleted).
+		Where("platform_service_type = ?", apistructs.PlatformServiceTypeBasic).
+		Where("org_id = ?", orgID).
 		Find(&routingInstances).Error; err != nil {
 		return nil, err
 	}

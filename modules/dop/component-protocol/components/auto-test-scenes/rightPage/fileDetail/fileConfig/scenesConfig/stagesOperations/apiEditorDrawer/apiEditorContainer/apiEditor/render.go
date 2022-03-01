@@ -175,7 +175,7 @@ func (ae *ApiEditor) Render(ctx context.Context, c *cptype.Component, scenario c
 	for _, sip := range sceneInputs {
 		children = append(children, Input{Label: sip.Name, Value: "${{ params." + sip.Name + " }}", IsLeaf: true})
 	}
-	inputs = append(inputs, Input{Label: cputil.I18n(ctx, "formAdd"), Value: "本场景入参", IsLeaf: false, Children: children})
+	inputs = append(inputs, Input{Label: cputil.I18n(ctx, "inputSceneParam"), Value: "本场景入参", IsLeaf: false, Children: children})
 
 	// 前置接口入参
 	sceneSteps, err := ae.bdl.ListAutoTestSceneStep(sceneInputReq)
@@ -259,7 +259,7 @@ LABEL:
 	if err != nil {
 		return err
 	}
-	c.Props = genProps(string(inputBytes), executeString)
+	c.Props = ae.genProps(string(inputBytes), executeString)
 
 	// marketProto 的changeAPISpec 事件
 	tmpSpecID, ok := c.State["changeApiSpecId"]
@@ -376,7 +376,7 @@ LABEL:
 			value: "true",
 		})
 	}
-	c.Props = genProps(string(inputBytes), executeString, opts...)
+	c.Props = ae.genProps(string(inputBytes), executeString, opts...)
 
 	apiInfo.APIInfo.Name = sceneStep.Name
 	c.State["data"] = map[string]interface{}{"apiSpec": apiInfo.APIInfo, "apiSpecId": sceneStep.APISpecID, "loop": apiInfo.Loop}

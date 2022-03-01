@@ -23,12 +23,16 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -74,7 +78,7 @@ func (e *Endpoints) CreateRuntimeByRelease(ctx context.Context, r *http.Request,
 		return apierrors.ErrCreateRuntime.InvalidParameter("req body").ToResp(), nil
 	}
 
-	data, err := e.runtime.CreateByReleaseIDPipeline(orgid, operator, &req)
+	data, err := e.runtime.CreateByReleaseIDPipeline(ctx, orgid, operator, &req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -91,7 +95,7 @@ func (e *Endpoints) CreateRuntimeByReleaseAction(ctx context.Context, r *http.Re
 		// param problem
 		return apierrors.ErrCreateRuntime.InvalidParameter("req body").ToResp(), nil
 	}
-	data, err := e.runtime.CreateByReleaseID(operator, &req)
+	data, err := e.runtime.CreateByReleaseID(ctx, operator, &req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -192,7 +196,7 @@ func (e *Endpoints) RedeployRuntime(ctx context.Context, r *http.Request, vars m
 	if err != nil {
 		return apierrors.ErrDeployRuntime.InvalidParameter("runtimeID: " + v).ToResp(), nil
 	}
-	data, err := e.runtime.RedeployPipeline(operator, orgID, runtimeID)
+	data, err := e.runtime.RedeployPipeline(ctx, operator, orgID, runtimeID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -251,7 +255,7 @@ func (e *Endpoints) RollbackRuntime(ctx context.Context, r *http.Request, vars m
 	if err != nil {
 		return apierrors.ErrRollbackRuntime.InvalidParameter(strutil.Concat("runtimeID: ", v)).ToResp(), nil
 	}
-	data, err := e.runtime.RollbackPipeline(operator, orgID, runtimeID, req.DeploymentID)
+	data, err := e.runtime.RollbackPipeline(ctx, operator, orgID, runtimeID, req.DeploymentID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -356,6 +360,28 @@ func (e *Endpoints) ListRuntimesGroupByApps(ctx context.Context, r *http.Request
 	return httpserver.OkResp(runtimes)
 }
 
+// BatchRuntimeServices responses the runtimes for the given apps.
+func (e *Endpoints) BatchRuntimeServices(ctx context.Context, r *http.Request, _ map[string]string) (httpserver.Responser, error) {
+	var (
+		l          = logrus.WithField("func", "*Endpoints.BatchRuntimeServices")
+		runtimeIDs []uint64
+	)
+
+	for _, runtimeID := range r.URL.Query()["runtimeID"] {
+		id, err := strconv.ParseUint(runtimeID, 10, 64)
+		if err != nil {
+			l.WithError(err).Warnf("failed to parse applicationID: failed to ParseUint: %s", runtimeID)
+		}
+		runtimeIDs = append(runtimeIDs, id)
+	}
+
+	serviceMap, err := e.runtime.GetServiceByRuntime(runtimeIDs)
+	if err != nil {
+		return apierrors.ErrListRuntime.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(serviceMap)
+}
+
 // GetRuntime 查询应用实例
 func (e *Endpoints) GetRuntime(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	orgID, err := getOrgID(r)
@@ -421,17 +447,18 @@ func getOrgID(r *http.Request) (uint64, error) {
 
 // ReferCluster 查看 runtime & addon 是否有使用集群
 func (e *Endpoints) ReferCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	identityInfo, err := user.GetIdentityInfo(r)
+	_, err := user.GetIdentityInfo(r)
 	if err != nil {
 		return apierrors.ErrReferRuntime.NotLogin().ToResp(), nil
 	}
-	// 仅内部使用
-	if !identityInfo.IsInternalClient() {
-		return apierrors.ErrReferRuntime.AccessDenied().ToResp(), nil
+
+	orgID, err := getOrgID(r)
+	if err != nil {
+		return apierrors.ErrReferRuntime.InvalidParameter(err).ToResp(), nil
 	}
 
 	clusterName := r.URL.Query().Get("cluster")
-	referred := e.runtime.ReferCluster(clusterName)
+	referred := e.runtime.ReferCluster(clusterName, orgID)
 
 	return httpserver.OkResp(referred)
 }
@@ -553,9 +580,10 @@ func (e *Endpoints) GetAppWorkspaceReleases(ctx context.Context, r *http.Request
 		if !matchArtifactWorkspace {
 			continue
 		}
-		releases, err := e.bdl.ListReleases(apistructs.ReleaseListRequest{
+		ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+		releases, err := e.releaseSvc.ListRelease(ctx, &pb.ReleaseListRequest{
 			Branch:                       branch.Name,
-			CrossClusterOrSpecifyCluster: &clusterName,
+			CrossClusterOrSpecifyCluster: clusterName,
 			ApplicationID:                []string{strconv.FormatUint(req.AppID, 10)},
 			PageSize:                     5,
 			PageNum:                      1,
@@ -563,7 +591,7 @@ func (e *Endpoints) GetAppWorkspaceReleases(ctx context.Context, r *http.Request
 		if err != nil {
 			return apierrors.ErrGetAppWorkspaceReleases.InternalError(err).ToResp(), nil
 		}
-		result[branch.Name] = releases
+		result[branch.Name] = releases.Data
 	}
 
 	return httpserver.OkResp(result)

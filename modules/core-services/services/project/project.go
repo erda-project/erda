@@ -679,7 +679,7 @@ func (p *Project) Delete(projectID int64) (*model.Project, error) {
 func (p *Project) Get(ctx context.Context, projectID int64, withQuota bool) (*apistructs.ProjectDTO, error) {
 	project, err := p.db.GetProjectByID(projectID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get project")
+		return nil, err
 	}
 	projectDTO := p.convertToProjectDTO(true, &project)
 
@@ -1143,8 +1143,8 @@ func (p *Project) ListJoinedProjects(orgID int64, userID string, params *apistru
 }
 
 // ReferCluster 检查 cluster 是否被某个项目所使用
-func (p *Project) ReferCluster(clusterName string) bool {
-	projects, err := p.db.ListProjectByCluster(clusterName)
+func (p *Project) ReferCluster(clusterName string, orgID uint64) bool {
+	projects, err := p.db.ListProjectByOrgCluster(clusterName, orgID)
 	if err != nil {
 		logrus.Warnf("check cluster if referred by project")
 		return true
@@ -1255,7 +1255,15 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		l.WithError(err).Errorln("failed to Unmarshal project.ClusterConfig")
 	}
 
-	total, _ := p.db.GetApplicationCountByProjectID(project.ID)
+	totalApp, err := p.db.GetApplicationCountByProjectID(project.ID)
+	if err != nil {
+		l.WithError(err).Errorln("failed to count app")
+	}
+
+	totalMember, _, err := p.db.GetMembersWithoutExtraByScope(apistructs.ProjectScope, project.ID)
+	if err != nil {
+		l.WithError(err).Errorln("failed to count member")
+	}
 
 	projectDto := apistructs.ProjectDTO{
 		ID:          uint64(project.ID),
@@ -1268,7 +1276,8 @@ func (p *Project) convertToProjectDTO(joined bool, project *model.Project) apist
 		Creator:     project.UserID,
 		DDHook:      project.DDHook,
 		Stats: apistructs.ProjectStats{
-			CountApplications: int(total),
+			CountApplications: int(totalApp),
+			CountMembers:      totalMember,
 		},
 		ClusterConfig:  clusterConfig,
 		RollbackConfig: rollbackConfig,

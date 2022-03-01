@@ -64,6 +64,9 @@ components:
   yamlFileEditor:
     type: FileEditor
 
+options:
+  returnAllComponents: true
+
 rendering:
   __DefaultRendering__:
     - name: page
@@ -71,6 +74,7 @@ rendering:
     - name: charts
     - name: chartContainer
     - name: addWorkloadContainer
+    - name: consoleButton
     - name: filter
       state:
         - name: "clusterName"

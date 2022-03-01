@@ -89,6 +89,16 @@ func (sam *SourcecovAddonManagement) BuildSourceCovServiceItem(
 			MaxCPU: addonDeployPlan.MaxCPU,
 			MaxMem: addonDeployPlan.MaxMem,
 		}
+
+		if service.Labels == nil {
+			service.Labels = make(map[string]string)
+		}
+
+		SetlabelsFromOptions(params.Options, service.Labels)
+
+		//  主要目的是传递 卷配置信息以及标签给后端 sourcecov-agent 对象，本身不会创建卷
+		vol01 := SetAddonVolumes(params.Options, "/for-agent", false)
+		service.Volumes = diceyml.Volumes{vol01}
 	}
 
 	return nil

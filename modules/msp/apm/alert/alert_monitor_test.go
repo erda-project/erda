@@ -35,6 +35,36 @@ func (m *MockAlertServiceServer) EXPECT() *MockAlertServiceServerMockRecorder {
 	return m.recorder
 }
 
+// CancelSuppressAlertEvent mocks base method.
+func (m *MockAlertServiceServer) CancelSuppressAlertEvent(arg0 context.Context, arg1 *pb.CancelSuppressAlertEventRequest) (*pb.CancelSuppressAlertEventResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CancelSuppressAlertEvent", arg0, arg1)
+	ret0, _ := ret[0].(*pb.CancelSuppressAlertEventResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CancelSuppressAlertEvent indicates an expected call of CancelSuppressAlertEvent.
+func (mr *MockAlertServiceServerMockRecorder) CancelSuppressAlertEvent(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelSuppressAlertEvent", reflect.TypeOf((*MockAlertServiceServer)(nil).CancelSuppressAlertEvent), arg0, arg1)
+}
+
+// CountUnRecoverAlertEvents mocks base method.
+func (m *MockAlertServiceServer) CountUnRecoverAlertEvents(arg0 context.Context, arg1 *pb.CountUnRecoverAlertEventsRequest) (*pb.CountUnRecoverAlertEventsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountUnRecoverAlertEvents", arg0, arg1)
+	ret0, _ := ret[0].(*pb.CountUnRecoverAlertEventsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountUnRecoverAlertEvents indicates an expected call of CountUnRecoverAlertEvents.
+func (mr *MockAlertServiceServerMockRecorder) CountUnRecoverAlertEvents(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountUnRecoverAlertEvents", reflect.TypeOf((*MockAlertServiceServer)(nil).CountUnRecoverAlertEvents), arg0, arg1)
+}
+
 // CreateAlert mocks base method.
 func (m *MockAlertServiceServer) CreateAlert(arg0 context.Context, arg1 *pb.CreateAlertRequest) (*pb.CreateAlertResponse, error) {
 	m.ctrl.T.Helper()
@@ -245,6 +275,21 @@ func (mr *MockAlertServiceServerMockRecorder) GetAlertDetail(arg0, arg1 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAlertDetail", reflect.TypeOf((*MockAlertServiceServer)(nil).GetAlertDetail), arg0, arg1)
 }
 
+// GetAlertEvents mocks base method.
+func (m *MockAlertServiceServer) GetAlertEvents(arg0 context.Context, arg1 *pb.GetAlertEventRequest) (*pb.GetAlertEventResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAlertEvents", arg0, arg1)
+	ret0, _ := ret[0].(*pb.GetAlertEventResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAlertEvents indicates an expected call of GetAlertEvents.
+func (mr *MockAlertServiceServerMockRecorder) GetAlertEvents(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAlertEvents", reflect.TypeOf((*MockAlertServiceServer)(nil).GetAlertEvents), arg0, arg1)
+}
+
 // GetAlertRecord mocks base method.
 func (m *MockAlertServiceServer) GetAlertRecord(arg0 context.Context, arg1 *pb.GetAlertRecordRequest) (*pb.GetAlertRecordResponse, error) {
 	m.ctrl.T.Helper()
@@ -363,6 +408,21 @@ func (m *MockAlertServiceServer) GetOrgCustomizeAlertDetail(arg0 context.Context
 func (mr *MockAlertServiceServerMockRecorder) GetOrgCustomizeAlertDetail(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgCustomizeAlertDetail", reflect.TypeOf((*MockAlertServiceServer)(nil).GetOrgCustomizeAlertDetail), arg0, arg1)
+}
+
+// GetRawAlertExpression mocks base method.
+func (m *MockAlertServiceServer) GetRawAlertExpression(arg0 context.Context, arg1 *pb.GetRawAlertExpressionRequest) (*pb.GetRawAlertExpressionResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRawAlertExpression", arg0, arg1)
+	ret0, _ := ret[0].(*pb.GetRawAlertExpressionResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRawAlertExpression indicates an expected call of GetRawAlertExpression.
+func (mr *MockAlertServiceServerMockRecorder) GetRawAlertExpression(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRawAlertExpression", reflect.TypeOf((*MockAlertServiceServer)(nil).GetRawAlertExpression), arg0, arg1)
 }
 
 // QueryAlert mocks base method.
@@ -618,6 +678,21 @@ func (m *MockAlertServiceServer) QueryOrgHostsAlertRecord(arg0 context.Context, 
 func (mr *MockAlertServiceServerMockRecorder) QueryOrgHostsAlertRecord(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryOrgHostsAlertRecord", reflect.TypeOf((*MockAlertServiceServer)(nil).QueryOrgHostsAlertRecord), arg0, arg1)
+}
+
+// SuppressAlertEvent mocks base method.
+func (m *MockAlertServiceServer) SuppressAlertEvent(arg0 context.Context, arg1 *pb.SuppressAlertEventRequest) (*pb.SuppressAlertEventResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SuppressAlertEvent", arg0, arg1)
+	ret0, _ := ret[0].(*pb.SuppressAlertEventResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SuppressAlertEvent indicates an expected call of SuppressAlertEvent.
+func (mr *MockAlertServiceServerMockRecorder) SuppressAlertEvent(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SuppressAlertEvent", reflect.TypeOf((*MockAlertServiceServer)(nil).SuppressAlertEvent), arg0, arg1)
 }
 
 // UpdateAlert mocks base method.

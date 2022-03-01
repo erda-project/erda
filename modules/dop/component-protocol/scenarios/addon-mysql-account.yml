@@ -39,6 +39,7 @@ rendering:
   accountTable:
     - name: viewPasswordModal
     - name: viewPassword
+    - name: addAccountButton
   addAccountButton:
     - name: root
     - name: accountTable

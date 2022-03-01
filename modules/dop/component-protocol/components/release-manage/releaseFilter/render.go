@@ -47,6 +47,7 @@ func (f *ComponentReleaseFilter) Render(ctx context.Context, component *cptype.C
 	}
 
 	if event.Operation == cptype.InitializeOperation {
+		f.State.Values.Latest = "true"
 		if err := f.DecodeURLQuery(); err != nil {
 			return errors.Errorf("failed to decode url query for release filter component, %v", err)
 		}
@@ -74,16 +75,16 @@ func (f *ComponentReleaseFilter) InitComponent(ctx context.Context) {
 	f.bdl = bdl
 }
 
-func (f *ComponentReleaseFilter) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (f *ComponentReleaseFilter) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(c.State)
+	jsonData, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err = json.Unmarshal(jsonData, &state); err != nil {
 		return err
 	}
 	f.State = state
@@ -91,20 +92,20 @@ func (f *ComponentReleaseFilter) GenComponentState(c *cptype.Component) error {
 }
 
 func (f *ComponentReleaseFilter) DecodeURLQuery() error {
-	queryData, ok := f.sdk.InParams["releaseFilter__urlQuery"].(string)
+	urlQuery, ok := f.sdk.InParams["releaseFilter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(queryData)
+	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
-	query := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &query); err != nil {
+	queryData := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &queryData); err != nil {
 		return err
 	}
 
-	sli, _ := query["applicationIDs"].([]interface{})
+	sli, _ := queryData["applicationIDs"].([]interface{})
 	var appIDs []string
 	for i := range sli {
 		id, _ := sli[i].(string)
@@ -113,7 +114,7 @@ func (f *ComponentReleaseFilter) DecodeURLQuery() error {
 		}
 	}
 
-	sli, _ = query["userIDs"].([]interface{})
+	sli, _ = queryData["userIDs"].([]interface{})
 	var userIDs []string
 	for i := range sli {
 		id, _ := sli[i].(string)
@@ -122,7 +123,7 @@ func (f *ComponentReleaseFilter) DecodeURLQuery() error {
 		}
 	}
 
-	sli, _ = query["createdAtStartEnd"].([]interface{})
+	sli, _ = queryData["createdAtStartEnd"].([]interface{})
 	var timestamps []int64
 	for i := range sli {
 		id, _ := sli[i].(float64)
@@ -133,9 +134,11 @@ func (f *ComponentReleaseFilter) DecodeURLQuery() error {
 	f.State.Values.ApplicationIDs = appIDs
 	f.State.Values.UserIDs = userIDs
 	f.State.Values.CreatedAtStartEnd = timestamps
-	f.State.Values.CommitID, _ = query["commitID"].(string)
-	f.State.Values.BranchID, _ = query["branchID"].(string)
-	f.State.Values.ReleaseID, _ = query["releaseID"].(string)
+	f.State.Values.CommitID, _ = queryData["commitID"].(string)
+	f.State.Values.BranchID, _ = queryData["branchID"].(string)
+	f.State.Values.ReleaseID, _ = queryData["releaseID"].(string)
+	f.State.Values.Latest, _ = queryData["latest"].(string)
+	f.State.Values.Version, _ = queryData["version"].(string)
 	return nil
 }
 
@@ -147,6 +150,8 @@ func (f *ComponentReleaseFilter) EncodeURLQuery() error {
 	urlQuery["commitID"] = f.State.Values.CommitID
 	urlQuery["branchID"] = f.State.Values.BranchID
 	urlQuery["releaseID"] = f.State.Values.ReleaseID
+	urlQuery["latest"] = f.State.Values.Latest
+	urlQuery["version"] = f.State.Values.Version
 	jsonData, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
@@ -200,6 +205,12 @@ func (f *ComponentReleaseFilter) RenderFilter() error {
 			Placeholder: f.sdk.I18n("inputCommitID"),
 			Type:        "input",
 		})
+		f.Data.Conditions = append(f.Data.Conditions, Condition{
+			Key:         "releaseID",
+			Label:       f.sdk.I18n("releaseID"),
+			Placeholder: f.sdk.I18n("inputReleaseID"),
+			Type:        "input",
+		})
 	}
 
 	userCondition := Condition{
@@ -227,11 +238,32 @@ func (f *ComponentReleaseFilter) RenderFilter() error {
 	}
 	userCondition.Options = userOptions
 	f.Data.Conditions = append(f.Data.Conditions, userCondition)
+
+	if f.State.IsFormal == nil && !f.State.IsProjectRelease {
+		f.Data.Conditions = append(f.Data.Conditions, Condition{
+			Key:   "latest",
+			Label: f.sdk.I18n("aggregateByBranch"),
+			Type:  "select",
+			Options: []Option{
+				{
+					Label: f.sdk.I18n("true"),
+					Value: "true",
+				},
+				{
+					Label: f.sdk.I18n("false"),
+					Value: "false",
+				},
+			},
+			Mode:     "single",
+			Required: true,
+		})
+	}
 	f.Data.Conditions = append(f.Data.Conditions, Condition{
-		Key:         "releaseID",
-		Label:       f.sdk.I18n("releaseID"),
-		Placeholder: f.sdk.I18n("inputReleaseID"),
+		Key:         "version",
+		Label:       "version",
+		Placeholder: f.sdk.I18n("searchByVersionOrID"),
 		Type:        "input",
+		Outside:     true,
 	})
 	return nil
 }

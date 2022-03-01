@@ -199,24 +199,24 @@ components:
   marketProtoTitle:
     type: Title
     props:
-      title: "市场原型"
+      title: ${{ i18n.marketProto }}
       level: 3
-      tips: "当前主要通过api集市引入接口，请搜索选择使用"
+      tips: ${{ i18n.marketProtoTip }}
   marketProto:
     type: 'SelectPro'
     props:
       renderType: "apiProto"
       optionLabelProp: "label"
       showSearch: true
-      placeholder: "请选择接口名称或路径进行搜索"
+      placeholder: ${{ i18n.marketProtoPlace }}
       allowClear: true
     operations:
       onChange:
         reload: true
         key: changeAPISpec
         confirm:
-          title: "确认覆盖当前接口定义"
-          subTitle: "接口定义覆盖后无法恢复, 确认覆盖？"
+          title: ${{ i18n.marketProtoChangeApi }}
+          subTitle: ${{ i18n.marketProtoChangeApiConfirm }}
         fillMeta: "selectApiSpecId"
         meta:
           selectApiSpecId: ""
@@ -265,35 +265,35 @@ components:
     state:
       visible: false
     props:
-      title: "等待信息"
+      title: ${{ i18n.waitInfo }}
       size: "l"
   customScriptDrawer:
     type: Drawer
     state:
       visible: false
     props:
-      title: "自定义脚本"
+      title: ${{ i18n.customScript }}
       size: "l"
   nestedSceneDrawer:
     type: Drawer
     state:
       visible: false
     props:
-      title: "嵌套场景信息"
+      title: ${{ i18n.nestedSceneInfo }}
       size: "l"
   configSheetDrawer:
     type: Drawer
     state:
       visible: false
     props:
-      title: "配置单信息"
+      title: ${{ i18n.configFormInfo }}
       size: "l"
   apiEditorDrawer:
     type: Drawer
     state:
       visible: false
     props:
-      title: "接口信息"
+      title: ${{ i18n.apiInfo }}
       size: "l"
       closable: false
       maskClosable: false
@@ -335,7 +335,7 @@ components:
     type: Button
   referSceneSetButton:
     type: Button
-    
+
 rendering:
   # 前端触发组件
   # 先渲染前端触发组件，再渲染关联组件
@@ -361,7 +361,9 @@ rendering:
         - name: "actionType"
           value: "{{ fileTree.actionType }}"
         - name: "isAddParallel"
-          value: "{{ scenesStages.isAddParallel }}"
+          value: "{{ fileTree.isAddParallel }}"
+        - name: "sceneId"
+          value: "{{ fileTree.sceneId }}"
     - name: fileDetail
       state:
         - name: "isChangeScene"
@@ -372,6 +374,8 @@ rendering:
       state:
         - name: "setId"
           value: "{{ fileTree.sceneSetKey }}"
+        - name: "isChangeScene"
+          value: "{{ fileTree.isClickScene }}"
     - name: stages
     - name: outPutTitle
     - name: outPutForm

@@ -203,7 +203,9 @@ func modifyResponse(res *http.Response) error {
 func GetRealIP(request *http.Request) string {
 	ra := request.RemoteAddr
 	if ip := request.Header.Get("X-Forwarded-For"); ip != "" {
-		ra = strings.Split(ip, ", ")[0]
+		// filter space like '42.120.75.131,::ffff:10.112.1.1, 10.112.3.224'
+		forwardedFilterSpace := strings.ReplaceAll(ip, " ", "")
+		ra = strings.Split(forwardedFilterSpace, ",")[0]
 	} else if ip := request.Header.Get("X-Real-IP"); ip != "" {
 		ra = ip
 	} else {

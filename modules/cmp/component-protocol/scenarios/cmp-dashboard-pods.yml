@@ -71,12 +71,15 @@ components:
   yamlFileEditor:
     type: FileEditor
 
+options:
+  returnAllComponents: true
 
 rendering:
   __DefaultRendering__:
     - name: page
     - name: topHead
     - name: addPodButton
+    - name: consoleButton
     - name: addPodContainer
     - name: filter
       state:

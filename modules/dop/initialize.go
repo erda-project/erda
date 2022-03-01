@@ -123,8 +123,6 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 
 	registerWebHook(bdl.Bdl)
 
-	go endpoints.SetProjectStatsCache()
-
 	// 注册 hook
 	if err := ep.RegisterEvents(); err != nil {
 		return err
@@ -435,7 +433,10 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	// init permission
 	perm := permission.New(permission.WithBundle(bdl.Bdl), permission.WithBranchRule(branchRule))
 
-	filetreeSvc := apidocsvc.New(apidocsvc.WithBranchRuleSvc(branchRule))
+	filetreeSvc := apidocsvc.New(
+		apidocsvc.WithBranchRuleSvc(branchRule),
+		apidocsvc.WithTrans(p.APIMTrans),
+	)
 
 	env := environment.New(
 		environment.WithDBClient(db),

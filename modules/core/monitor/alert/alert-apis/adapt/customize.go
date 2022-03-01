@@ -293,8 +293,8 @@ const (
 )
 
 // CustomizeAlerts .
-func (a *Adapt) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize int) ([]*pb.CustomizeAlertOverview, []string, int, error) {
-	alerts, err := a.db.CustomizeAlert.QueryByScopeAndScopeID(scope, scopeID, pageNo, pageSize)
+func (a *Adapt) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize int, name string) ([]*pb.CustomizeAlertOverview, []string, int, error) {
+	alerts, err := a.db.CustomizeAlert.QueryByScopeAndScopeID(scope, scopeID, pageNo, pageSize, name)
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -328,7 +328,7 @@ func (a *Adapt) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, 
 		}
 		list = append(list, alert)
 	}
-	total, err := a.db.CustomizeAlert.CountByScopeAndScopeID(scope, scopeID)
+	total, err := a.db.CustomizeAlert.CountByScopeAndScopeID(scope, scopeID, name)
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -587,6 +587,7 @@ func (a *Adapt) CreateCustomizeAlert(alertDetail *pb.CustomizeAlertDetail, userI
 	alertIndex := structpb.NewStringValue(index)
 	//alertDashboardID := structpb.NewStringValue(dashboardID)
 	alertDetail.Attributes["alert_index"] = alertIndex
+	alertDetail.Attributes["alert_source"] = structpb.NewStringValue("Custom")
 	//alertDetail.Attributes["alert_dashboard_id"] = alertDashboardID
 	alert := a.CustomizeAlertToModel(alertDetail)
 	alert.CreatorID = userID

@@ -41,9 +41,17 @@ func (f *IssueFilter) FilterSet() ([]filter.SetItem, error) {
 	options := []filter.SetItem{
 		{
 			ID:       "all",
-			Label:    "全部打开",
+			Label:    f.sdk.I18n("openAll"),
 			IsPreset: true,
 		},
+	}
+	if f.State.WithStateCondition {
+		options = append(options, filter.SetItem{
+			ID:       "defaultState",
+			Label:    f.sdk.I18n("unfinishedIssue"),
+			IsPreset: true,
+			Values:   map[string]interface{}{PropConditionKeyStates: f.State.DefaultStateValues},
+		})
 	}
 	for _, i := range f.Bms {
 		value, err := FilterSetValueRetriever(i.FilterEntity)

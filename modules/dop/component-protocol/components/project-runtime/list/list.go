@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gogap/errors"
 	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/admin/component-protocol/types"
@@ -163,6 +165,7 @@ func (p *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.Opera
 
 func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		logrus.Debug("list component init")
 		p.Sdk = sdk
 		p.StdDataPtr = p.getData()
 		return nil
@@ -171,6 +174,7 @@ func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 func (p *List) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		logrus.Debug("list component rendering")
 		p.Sdk = sdk
 		p.StdDataPtr = p.getData()
 		return nil
@@ -181,13 +185,29 @@ func (p *List) Init(ctx servicehub.Context) error {
 	return p.DefaultProvider.Init(ctx)
 }
 
+func (p *List) initMyApps(sdk *cptype.SDK, oid, projectId uint64) (map[uint64]string, error) {
+	myApp := make(map[uint64]string)
+	apps, err := p.Bdl.GetMyApps(sdk.Identity.UserID, oid)
+	if err != nil {
+		logrus.Errorf("get my app failed,%v", err)
+		return myApp, errors.Errorf("get my app failed,%v", err)
+	}
+	for i := 0; i < len(apps.List); i++ {
+		if apps.List[i].ProjectID != projectId {
+			continue
+		}
+		myApp[apps.List[i].ID] = apps.List[i].Name
+	}
+	return myApp, nil
+}
+
 func (p *List) getData() *list.Data {
 	data := &list.Data{}
 	data.PageNo = p.PageNo
 	data.PageSize = p.PageSize
 	var runtimes []bundle.GetApplicationRuntimesDataEle
 	var runtimeIdToAppNameMap map[uint64]string
-	var myApp map[uint64]bool
+	var myApp map[uint64]string
 
 	if gsRuntimes, ok := (*p.Sdk.GlobalState)["runtimes"]; !ok {
 		logrus.Infof("not found runtimes")
@@ -206,11 +226,6 @@ func (p *List) getData() *list.Data {
 			logrus.Errorf("parse oid failed,%v", err)
 			return data
 		}
-		apps, err := p.Bdl.GetMyApps(p.Sdk.Identity.UserID, oid)
-		if err != nil {
-			logrus.Errorf("get my app failed,%v", err)
-			return data
-		}
 		appIds := make([]uint64, 0)
 		appIdToName := make(map[uint64]string)
 
@@ -219,20 +234,15 @@ func (p *List) getData() *list.Data {
 			IsSimple:  true,
 			PageSize:  math.MaxInt32,
 			PageNo:    1})
-		if err != nil {
-			logrus.Errorf("get my app failed,%v", err)
-			return data
-		}
+
 		for i := 0; i < len(allApps.List); i++ {
 			appIds = append(appIds, allApps.List[i].ID)
 			appIdToName[allApps.List[i].ID] = allApps.List[i].Name
 		}
-		myApp = make(map[uint64]bool)
-		for i := 0; i < len(apps.List); i++ {
-			if apps.List[i].ProjectID != projectId {
-				continue
-			}
-			myApp[apps.List[i].ID] = true
+		myApp, err = p.initMyApps(p.Sdk, oid, projectId)
+		if err != nil {
+			logrus.Errorf("get my app failed,%v", err)
+			return data
 		}
 
 		logrus.Infof("start load runtimes by app %v", time.Now())
@@ -271,7 +281,7 @@ func (p *List) getData() *list.Data {
 			logrus.Errorf("failed to transfer runtimeMap, runtimeMap %#v", (*p.Sdk.GlobalState)["runtimeIdToAppName"])
 			return data
 		}
-		myApp = (*p.Sdk.GlobalState)["myApp"].(map[uint64]bool)
+		myApp = (*p.Sdk.GlobalState)["myApp"].(map[uint64]string)
 	}
 	logrus.Infof("runtimes:%v", runtimes)
 	//oid, err := strconv.ParseUint(p.Sdk.Identity.OrgID, 10, 64)
@@ -305,6 +315,7 @@ func (p *List) getData() *list.Data {
 	ids := make([]string, 0)
 	deployId := p.Sdk.InParams["deployId"]
 	runtimeMap := make(map[string]bundle.GetApplicationRuntimesDataEle)
+	//oid, _ := strconv.ParseUint(p.Sdk.Identity.OrgID, 10, 64)
 	for _, appRuntime := range runtimes {
 		//healthyMap := make(map[string]int)
 		deployIdStr := strconv.FormatUint(appRuntime.LastOperatorId, 10)
@@ -314,31 +325,30 @@ func (p *List) getData() *list.Data {
 			}
 		}
 		//healthyMap[appRuntime.Name] = healthyCnt
-		healthyCnt := 0
-		for _, s := range appRuntime.Services {
-			if s.Status == "Healthy" {
-				healthyCnt++
-			}
-		}
-		var healthStr = ""
-		if len(appRuntime.Services) != 0 {
-			healthStr = fmt.Sprintf("%d/%d", healthyCnt, len(appRuntime.Services))
-		}
+		//healthyCnt := 0
+		//for _, s := range appRuntime.Services {
+		//	if s.Status == "Healthy" {
+		//		healthyCnt++
+		//	}
+		//}
+		//var healthStr = ""
+		//if len(appRuntime.Services) != 0 {
+		//	healthStr = fmt.Sprintf("%d/%d", healthyCnt, len(appRuntime.Services))
+		//}
 		idStr := strconv.FormatUint(appRuntime.ID, 10)
 		appIdStr := strconv.FormatUint(appRuntime.ApplicationID, 10)
 		nameStr := appRuntime.Name
 		if runtimeIdToAppNameMap[appRuntime.ID] != nameStr {
-			nameStr = runtimeIdToAppNameMap[appRuntime.ID] + "#" + nameStr
+			nameStr = runtimeIdToAppNameMap[appRuntime.ID] + "/" + nameStr
 		}
 		logrus.Infof("%s : %s", appRuntime.Name, appRuntime.LastOperator)
-		isMyApp := myApp[appRuntime.ApplicationID]
+		_, isMyApp := myApp[appRuntime.ApplicationID]
 		item := list.Item{
-			ID:             idStr,
-			Title:          nameStr,
-			Icon:           getIcon(appRuntime.Status),
-			TitleState:     getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus, isMyApp),
-			Selectable:     isMyApp,
-			KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.LastOperator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
+			ID:         idStr,
+			Title:      nameStr,
+			TitleState: getTitleState(p.Sdk, appRuntime.RawDeploymentStatus, deployIdStr, appIdStr, appRuntime.DeleteStatus, isMyApp),
+			Selectable: isMyApp,
+			//KvInfos:        getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.LastOperator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime),
 			Operations:     getOperations(p.Sdk, appRuntime.ProjectID, appRuntime.ApplicationID, appRuntime.ID, isMyApp),
 			MoreOperations: getMoreOperations(p.Sdk, fmt.Sprintf("%d", appRuntime.ID)),
 		}
@@ -350,7 +360,6 @@ func (p *List) getData() *list.Data {
 	data.Operations = p.getBatchOperation(p.Sdk, ids)
 	// filter by name and advanced condition
 	var advancedFilter map[string][]string
-	var nameFilter map[string]string
 	if advancedFilterMap, ok := (*p.Sdk.GlobalState)["advanceFilter"]; ok {
 		err := common.Transfer(advancedFilterMap, &advancedFilter)
 		if err != nil {
@@ -362,16 +371,10 @@ func (p *List) getData() *list.Data {
 			}
 		}
 	}
-	if nameFilterMap, ok := (*p.Sdk.GlobalState)["nameFilter"]; ok {
-		err := common.Transfer(nameFilterMap, &nameFilter)
-		if err != nil {
-			logrus.Errorf("parse input filter failed err :%v", err)
-		}
-	}
 	var filterName string
-	filterName, ok := nameFilter[common.FilterInputCondition]
-	if !ok {
-		filterName = ""
+	if nameFilterValue, ok := (*p.Sdk.GlobalState)["nameFilter"]; ok {
+		cputil.MustObjJSONTransfer(nameFilterValue, &filterName)
+		filterName = strings.Trim(filterName, " ")
 	}
 	logrus.Infof("inputFilter: %v", filterName)
 	logrus.Infof("advanceFilter: %#v", advancedFilter)
@@ -388,7 +391,7 @@ func (p *List) getData() *list.Data {
 	for i := 0; i < len(needFilter); i++ {
 		runtime := runtimeMap[needFilter[i].ID]
 		if filterName != "" {
-			if !strings.Contains(needFilter[i].Title, filterName) {
+			if common.ExitsWithoutCase(needFilter[i].Title, filterName) {
 				continue
 			}
 		}
@@ -411,31 +414,54 @@ func (p *List) getData() *list.Data {
 	end := uint64(math.Min(float64((p.PageNo)*p.PageSize), float64(data.Total)))
 
 	data.List = data.List[start:end]
-	//for i := 0; i < len(data.List); i++ {
-	//	item := data.List[i]
-	//	appRuntime := runtimeMap[item.ID]
-	//	services, err := p.Bdl.GetRuntimeServices(appRuntime.ID, oid, p.Sdk.Identity.UserID)
-	//	if err != nil {
-	//		logrus.Errorf("failed to get runtime %s of detail %v", appRuntime.Name, err)
-	//		continue
-	//	}
-	//	healthyCnt := 0
-	//	for _, s := range services.Services {
-	//		if s.Status == "Healthy" {
-	//			healthyCnt++
-	//		}
-	//	}
-	//	var healthStr = ""
-	//	if len(services.Services) != 0 {
-	//		healthStr = fmt.Sprintf("%d/%d", healthyCnt, len(services.Services))
-	//	}
-	//	data.List[i].KvInfos = getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime)
-	//}
+	serviceRuntimes := make([]uint64, 0)
+	for _, r := range data.List {
+		rid, err := strconv.ParseUint(r.ID, 10, 64)
+		if err != nil {
+			continue
+		}
+		serviceRuntimes = append(serviceRuntimes, rid)
+	}
+	services, err := p.Bdl.BatchGetRuntimeServices(serviceRuntimes, p.Sdk.Identity.OrgID, p.Sdk.Identity.UserID)
+	if err != nil {
+		logrus.Errorf("failed to get services err = %v", err)
+	}
+	healthyCntMap := make(map[uint64]int)
+	serviceCntMap := make(map[uint64]int)
+	for rid, s := range services {
+		serviceCntMap[rid] = len(s.Services)
+		logrus.Infof("services %d:%v", rid, s)
+		healthyCnt := 0
+		for _, ss := range s.Services {
+			if ss.Status == "Healthy" {
+				healthyCnt++
+			}
+		}
+		healthyCntMap[rid] = healthyCnt
+
+	}
+
+	for i := 0; i < len(data.List); i++ {
+		var healthyCnt int
+		var serviceCnt int
+		rid, _ := strconv.ParseUint(data.List[i].ID, 10, 64)
+		if c, ok := healthyCntMap[rid]; ok {
+			healthyCnt = c
+		}
+		if c, ok := serviceCntMap[rid]; ok {
+			serviceCnt = c
+		}
+		healthStr := fmt.Sprintf("%d/%d", healthyCnt, serviceCnt)
+		appRuntime := runtimeMap[data.List[i].ID]
+		// set icon once without service.
+		data.List[i].KvInfos = getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime)
+		data.List[i].Icon = getIconByServiceCnt(healthyCnt, serviceCnt)
+	}
 	return data
 }
 
 func (p *List) doFilter(conds map[string]map[string]bool, appRuntime bundle.GetApplicationRuntimesDataEle, deployAt int64, appName, deploymentOrderName string) bool {
-	if conds == nil || len(conds) == 0 {
+	if len(conds) == 0 {
 		return true
 	}
 	for k, v := range conds {
@@ -491,7 +517,19 @@ func getIcon(runtimeStatus string) *commodel.Icon {
 	return &commodel.Icon{URL: statusStr}
 }
 
-func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus string, isMyApp bool) []list.StateInfo {
+func getIconByServiceCnt(svcCnt, allCnt int) *commodel.Icon {
+	var (
+		statusStr string
+	)
+	if svcCnt == 0 || svcCnt < allCnt {
+		statusStr = common.FrontedIconLoading
+	} else {
+		statusStr = common.FrontedIconBreathing
+	}
+	return &commodel.Icon{URL: statusStr}
+}
+
+func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus string, isMy bool) []list.StateInfo {
 	if dStatus == "" {
 		var deployStr list.ItemCommStatus
 		switch deployStatus {
@@ -514,7 +552,7 @@ func getTitleState(sdk *cptype.SDK, deployStatus, deploymentId, appId, dStatus s
 				SuffixIcon: "right",
 			},
 		}
-		if isMyApp {
+		if isMy {
 			info[0].Operations = map[cptype.OperationKey]cptype.Operation{
 				"click": {
 					SkipRender: true,
@@ -569,10 +607,10 @@ func (p List) getBatchOperation(sdk *cptype.SDK, ids []string) map[cptype.Operat
 			ServerData: &cptype.OpServerData{
 				"options": []list.OpBatchRowsHandleOptionServerData{
 					{
-						AllowedRowIDs: ids, Icon: "chongxinqidong", ID: common.ReStartOp, Text: sdk.I18n("restart"), // allowedRowIDs = null 或不传这个key，表示所有都可选，allowedRowIDs=[]表示当前没有可选择，此处应该可以不传
+						AllowedRowIDs: ids, Icon: &commodel.Icon{Type: "chongxinqidong"}, ID: common.ReStartOp, Text: sdk.I18n("restart"), // allowedRowIDs = null 或不传这个key，表示所有都可选，allowedRowIDs=[]表示当前没有可选择，此处应该可以不传
 					},
 					{
-						AllowedRowIDs: ids, Icon: "remove", ID: common.DeleteOp, Text: sdk.I18n("delete"),
+						AllowedRowIDs: ids, Icon: &commodel.Icon{Type: "remove"}, ID: common.DeleteOp, Text: sdk.I18n("delete"),
 					},
 				},
 			},
@@ -618,13 +656,13 @@ func getMoreOperations(sdk *cptype.SDK, id string) []list.MoreOpItem {
 	}
 }
 
-func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVersion, health string, runtime bundle.GetApplicationRuntimesDataEle, lastOperatorTime time.Time) []list.KvInfo {
+func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVersion, healthyStr string, runtime bundle.GetApplicationRuntimesDataEle, lastOperatorTime time.Time) []list.KvInfo {
 	kvs := make([]list.KvInfo, 0)
-	if health != "" {
+	if healthyStr != "" {
 		// service
 		kvs = append(kvs, list.KvInfo{
 			Key:   sdk.I18n("service"),
-			Value: health,
+			Value: healthyStr,
 		})
 	}
 	if deployOrderName != "" {

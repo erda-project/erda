@@ -266,15 +266,15 @@ zh:
   pipelineStatusCreated: 创建成功
   pipelineStatusMark: 标记中
   pipelineStatusQueue: 排队中
-  pipelineStatusRunning: 正在执行
-  pipelineStatusSuccess: 执行成功
-  pipelineStatusFailed: 执行失败
+  pipelineStatusRunning: 执行中
+  pipelineStatusSuccess: 成功
+  pipelineStatusFailed: 失败
   pipelineStatusAnalyzeFailed: 初始化失败
   pipelineStatusPaused: 暂停
   pipelineStatusCreateError: 创建失败
   pipelineStatusStartError: 启动失败
   pipelineStatusTimeout: 超时
-  pipelineStatusStopByUser: 用户取消
+  pipelineStatusStopByUser: 取消
   pipelineStatusNoNeedBySystem: 无需执行
   pipelineStatusCancelByRemote: 系统取消
   pipelineStatusInitializing: 正在初始化
@@ -305,6 +305,18 @@ zh:
   execute: 执行
   source: 源
   process: 进度
+  openAll: 全部打开
+  second: 秒
+  iterationUnassigned: 待处理
+  processTip: 执行成功 Action 数/ Action 总数
+  appNotAuthorized: 暂无所属应用权限
+  publicProperty: 公开属性
+  exit: 退出
+  exitProjectConfirm: 退出当前项目后，将不再有项目协作权限，如要再次加入需要项目管理员邀请，请确认是否退出？
+  searchAppName: 搜索应用名
+  unfinishedIssue: 未完成的事项
+  sourceFile: 源文件
+  
 en:
   issue-manage: issue manage
   issue: issue
@@ -608,3 +620,14 @@ en:
   execute: Execute
   source: Source
   process: Process
+  openAll: Open all
+  second: Second
+  iterationUnassigned: Unassigned
+  processTip: Successful actions/Total actions
+  appNotAuthorized: No application permission
+  publicProperty: Public property
+  exit: Exit
+  exitProjectConfirm: After exiting the current project, you will no longer have project collaboration permission. If you want to join again, you need to be invited by the project administrator. Are you sure you want to exit?
+  searchAppName: Search app name
+  unfinishedIssue: Unfinished issue
+  sourceFile: source file

@@ -16,24 +16,35 @@ package linters
 
 import (
 	"bytes"
-	"strings"
+	"fmt"
+	"regexp"
 
 	"github.com/pingcap/parser/ast"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 )
 
-type IndexNameLinter struct {
+type indexNameLinter struct {
 	baseLinter
+	meta indexNameLinterMeta
 }
 
-func NewIndexNameLinter(script script.Script) rules.Rule {
-	return &IndexNameLinter{newBaseLinter(script)}
+func (hub) IndexNameLinter(script script.Script, c sqllint.Config) (sqllint.Rule, error) {
+	var l = indexNameLinter{
+		baseLinter: newBaseLinter(script),
+		meta:       indexNameLinterMeta{},
+	}
+	if err := yaml.Unmarshal(c.Meta, &l.meta); err != nil {
+		return nil, errors.Wrap(err, "failed to parse IndexNameLinter.meta")
+	}
+	return &l, nil
 }
 
-func (l *IndexNameLinter) Enter(in ast.Node) (ast.Node, bool) {
+func (l *indexNameLinter) Enter(in ast.Node) (ast.Node, bool) {
 	if l.text == "" || in.Text() != "" {
 		l.text = in.Text()
 	}
@@ -45,8 +56,8 @@ func (l *IndexNameLinter) Enter(in ast.Node) (ast.Node, bool) {
 
 	switch constraint.Tp {
 	case ast.ConstraintIndex:
-		if !strings.HasPrefix(constraint.Name, "idx_") {
-			l.err = linterror.New(l.s, l.text, "index name error: normal index name should start with idx_",
+		if ok, _ := regexp.Match(l.meta.IndexPattern, []byte(constraint.Name)); !ok {
+			l.err = linterror.New(l.s, l.text, fmt.Sprintf("index name should be like %s", l.meta.IndexPattern),
 				func(line []byte) bool {
 					return bytes.Contains(bytes.ToLower(line), []byte("index")) &&
 						bytes.Contains(bytes.ToLower(line), bytes.ToLower([]byte(constraint.Name)))
@@ -54,8 +65,8 @@ func (l *IndexNameLinter) Enter(in ast.Node) (ast.Node, bool) {
 			return in, true
 		}
 	case ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex:
-		if !strings.HasPrefix(constraint.Name, "uk_") {
-			l.err = linterror.New(l.s, l.text, "index name error: unique index name should start with uk_",
+		if ok, _ := regexp.Match(l.meta.UniqPattern, []byte(constraint.Name)); !ok {
+			l.err = linterror.New(l.s, l.text, fmt.Sprintf("unique index name should be like %s", l.meta.UniqPattern),
 				func(line []byte) bool {
 					return bytes.Contains(bytes.ToLower(line), []byte("unique")) &&
 						bytes.Contains(bytes.ToLower(line), bytes.ToLower([]byte(constraint.Name)))
@@ -67,10 +78,15 @@ func (l *IndexNameLinter) Enter(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (l *IndexNameLinter) Leave(in ast.Node) (ast.Node, bool) {
+func (l *indexNameLinter) Leave(in ast.Node) (ast.Node, bool) {
 	return in, l.err == nil
 }
 
-func (l *IndexNameLinter) Error() error {
+func (l *indexNameLinter) Error() error {
 	return l.err
+}
+
+type indexNameLinterMeta struct {
+	IndexPattern string `json:"indexPattern" yaml:"indexPattern"`
+	UniqPattern  string `json:"uniqPattern" yaml:"uniqPattern"`
 }

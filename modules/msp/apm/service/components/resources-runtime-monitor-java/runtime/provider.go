@@ -17,7 +17,6 @@ package runtime
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strconv"
 
 	"google.golang.org/protobuf/types/known/structpb"
@@ -25,11 +24,9 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	structure "github.com/erda-project/erda-infra/providers/component-protocol/components/commodel/data-structure"
-	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/service/common/custom"
@@ -496,7 +493,6 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		serviceId := p.ServiceInParams.InParamsPtr.ServiceId
 		instanceId := p.ServiceInParams.InParamsPtr.InstanceId
 
-		data := linegraph.Data{}
 		switch sdk.Comp.Name {
 		case jvmMemoryHeap:
 			graph, err := p.getMemoryHeapLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
@@ -504,75 +500,65 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryHeap, structure.Storage, structure.KB, graph)
-			p.StdDataPtr = line
-			return nil
+			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case jvmMemoryNonHeap:
 			graph, err := p.getMemoryNonHeapLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryNonHeap, structure.Storage, structure.KB, graph)
-			p.StdDataPtr = line
-			return nil
+			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case jvmMemoryEdenSpace:
 			graph, err := p.getMemoryEdenSpaceLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryEdenSpace, structure.Storage, structure.KB, graph)
-			p.StdDataPtr = line
-			return nil
+			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case jvmMemorySurvivorSpace:
 			graph, err := p.getMemorySurvivorSpaceLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemorySurvivorSpace, structure.Storage, structure.KB, graph)
-			p.StdDataPtr = line
-			return nil
+			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case jvmMemoryOldGen:
 			graph, err := p.getMemoryOldGenLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmMemoryOldGen, structure.Storage, structure.KB, graph)
-			p.StdDataPtr = line
-			return nil
+			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case jvmGcCount:
 			graph, err := p.getGCCountLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmGcCount, structure.String, "countUnit", graph)
-			p.StdDataPtr = line
-			return nil
+			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case jvmGcTime:
 			graph, err := p.getGCAvgDurationLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmGcTime, structure.Time, "ns", graph)
-			p.StdDataPtr = line
-			return nil
+			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case jvmClassLoader:
 			graph, err := p.getClassCountLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmClassLoader, structure.String, "pcsUnit", graph)
-			p.StdDataPtr = line
-			return nil
+			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case jvmThread:
 			graph, err := p.getThreadLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, jvmThread, structure.String, "pcsUnit", graph)
-			p.StdDataPtr = line
-			return nil
+			return &impl.StdStructuredPtr{StdDataPtr: line}
 		}
-		p.StdDataPtr = &data
-		return nil
+		return &impl.StdStructuredPtr{}
 	}
 }
 
@@ -581,32 +567,11 @@ func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return p.RegisterInitializeOp()
 }
 
-// Init .
-func (p *provider) Init(ctx servicehub.Context) error {
-	p.DefaultLineGraph = impl.DefaultLineGraph{}
-	v := reflect.ValueOf(p)
-	v.Elem().FieldByName("Impl").Set(v)
-	compName := "runtime"
-	if ctx.Label() != "" {
-		compName = ctx.Label()
-	}
-	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
-		Scenario: "resources-runtime-monitor-java",
-		CompName: compName,
-		Creator:  func() cptype.IComponent { return p },
-	})
-	return nil
-}
-
 // Provide .
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	return p
 }
 
 func init() {
-	name := "component-protocol.components.resources-runtime-monitor-java.runtime"
-	cpregister.AllExplicitProviderCreatorMap[name] = nil
-	servicehub.Register(name, &servicehub.Spec{
-		Creator: func() servicehub.Provider { return &provider{} },
-	})
+	cpregister.RegisterProviderComponent("resources-runtime-monitor-java", "runtime", &provider{})
 }

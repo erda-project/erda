@@ -111,13 +111,19 @@ span-storage-elasticsearch:
   query_timeout: "1m"
   read_page_size: 200
 
+grpc-client@erda.core.monitor.diagnotor:
+  addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
+erda.core.monitor.diagnotor-client:
+
+erda.msp.apm.diagnotor:
 
 i18n:
   common:
     - conf/common/i18n/common.yml
     - conf/common/i18n/apis.yml
     - conf/msp/i18n/msp-i18n.yaml
-    - conf/msp/i18n/service-overview.yaml
+  files:
+    - conf/msp/i18n/cp
 
 metric-report-client:
   report_config:
@@ -147,6 +153,10 @@ erda.core.monitor.log.query-client:
 grpc-client@erda.oap.entity:
   addr: "${MONITOR_GRPC_ADDR:monitor:7080}"
 erda.oap.entity-client:
+
+grpc-client@erda.core.dicehub.release:
+  addr: "${DICEHUB_GRPC_ADDR:dicehub:7080}"
+erda.core.dicehub.release-client:
 
 erda.msp.apm.alert:
   micro_service_filter_tags: "${MICRO_SERVICE_FILTER_TAGS:_metric_name,_metric_scope,_metric_scope_id}"
@@ -291,12 +301,16 @@ erda.msp.apm.log_service:
   query_log_elasticsearch_enabled: ${QUERY_LOG_FROM_ES_ENABLE:true}
   index_field_settings:
       file: ${CONFIG_PATH}/logs/default_field_settings.yml
+log-metric-rules:
 
 # component-protocol framework
 component-protocol:
 
-component-protocol.components.service-list:
-component-protocol.components.service-overview:
-
 browser-components:
+msp-alert-components:
+msp-alert-overview.unRecoverAlertChart.provider:
+
+grpc-client@erda.core.messenger.notify:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.messenger.notify-client:
 

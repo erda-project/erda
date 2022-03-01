@@ -502,7 +502,9 @@ func verifyEnvConfigs(configs []apistructs.EnvConfig) error {
 		if env.Key == "" {
 			return errors.Errorf("environment config key error, env: %+v", env)
 		}
-		if env.ConfigType != "FILE" && env.ConfigType != "ENV" {
+		if env.Type == "dice-file" {
+			configs[i].ConfigType = "FILE"
+		} else {
 			configs[i].ConfigType = "ENV"
 		}
 	}

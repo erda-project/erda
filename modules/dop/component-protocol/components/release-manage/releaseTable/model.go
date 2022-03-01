@@ -16,12 +16,14 @@ package releaseTable
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/bundle"
 )
 
 type ComponentReleaseTable struct {
 	sdk *cptype.SDK
 	bdl *bundle.Bundle
+	svc dicehubpb.ReleaseServiceServer
 
 	Type       string                 `json:"type,omitempty"`
 	Data       Data                   `json:"data"`
@@ -90,22 +92,17 @@ type Column struct {
 }
 
 type State struct {
-	ReleaseTableURLQuery string        `json:"releaseTable__urlQuery"`
-	PageNo               int64         `json:"pageNo"`
-	PageSize             int64         `json:"pageSize"`
-	Total                int64         `json:"total"`
-	SelectedRowKeys      []string      `json:"selectedRowKeys,omitempty"`
-	Sorter               Sorter        `json:"sorterData"`
-	IsProjectRelease     bool          `json:"isProjectRelease"`
-	ProjectID            int64         `json:"projectID"`
-	IsFormal             bool          `json:"isFormal"`
-	VersionValues        VersionValues `json:"versionValues"`
-	FilterValues         FilterValues  `json:"filterValues"`
-	ApplicationID        int64         `json:"applicationID"`
-}
-
-type VersionValues struct {
-	Version string `json:"version,omitempty"`
+	ReleaseTableURLQuery string       `json:"releaseTable__urlQuery"`
+	PageNo               int64        `json:"pageNo"`
+	PageSize             int64        `json:"pageSize"`
+	Total                int64        `json:"total"`
+	SelectedRowKeys      []string     `json:"selectedRowKeys,omitempty"`
+	Sorter               Sorter       `json:"sorterData"`
+	IsProjectRelease     bool         `json:"isProjectRelease"`
+	ProjectID            int64        `json:"projectID"`
+	IsFormal             *bool        `json:"isFormal,omitempty"`
+	FilterValues         FilterValues `json:"filterValues"`
+	ApplicationID        int64        `json:"applicationID"`
 }
 
 type FilterValues struct {
@@ -115,6 +112,8 @@ type FilterValues struct {
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd,omitempty"`
 	ReleaseID         string   `json:"releaseID,omitempty"`
 	ApplicationIDs    []string `json:"applicationIDs,omitempty"`
+	Latest            string   `json:"latest,omitempty"`
+	Version           string   `json:"version,omitempty"`
 }
 
 type Sorter struct {

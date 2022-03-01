@@ -451,7 +451,7 @@ func (e *Endpoints) DeleteRelease(ctx context.Context, r *http.Request, vars map
 
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
-		return apierrors.ErrCreateRelease.NotLogin().ToResp(), nil
+		return apierrors.ErrDeleteRelease.NotLogin().ToResp(), nil
 	}
 	release, err := e.db.GetRelease(releaseID)
 	if err != nil {
@@ -724,12 +724,6 @@ func (e *Endpoints) ListRelease(ctx context.Context, r *http.Request, vars map[s
 			return apierrors.ErrListRelease.NotLogin().ToResp(), nil
 		}
 
-		// 获取当前用户
-		userID, err := user.GetUserID(r)
-		if err != nil {
-			return apierrors.ErrListRelease.NotLogin().ToResp(), nil
-		}
-
 		var (
 			req      apistructs.PermissionCheckRequest
 			permResp *apistructs.PermissionCheckResponseData
@@ -738,7 +732,7 @@ func (e *Endpoints) ListRelease(ctx context.Context, r *http.Request, vars map[s
 
 		if !access {
 			req = apistructs.PermissionCheckRequest{
-				UserID:   userID.String(),
+				UserID:   identityInfo.UserID,
 				Scope:    apistructs.OrgScope,
 				ScopeID:  uint64(orgID),
 				Resource: "release",
@@ -908,6 +902,14 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 		isProjectReleasePtr = &isProjectRelease
 	}
 
+	var latest bool
+	if s := r.URL.Query().Get("latest"); s != "" {
+		latest, err = strconv.ParseBool(s)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	userIDStr := r.URL.Query()["userId"]
 	var userID []string
 	for _, id := range userIDStr {
@@ -938,6 +940,7 @@ func (e *Endpoints) getListParams(r *http.Request, vars map[string]string) (*api
 		ReleaseName:                  releaseName,
 		Cluster:                      clusterName,
 		Branch:                       branch,
+		Latest:                       latest,
 		IsStable:                     isStablePtr,
 		IsFormal:                     isFormalPtr,
 		IsProjectRelease:             isProjectReleasePtr,
@@ -1039,7 +1042,7 @@ func (e *Endpoints) ToFormalReleases(ctx context.Context, r *http.Request, vars 
 func (e *Endpoints) ToFormalRelease(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	orgID, err := getPermissionHeader(r)
 	if err != nil {
-		return apierrors.ErrDeleteRelease.NotLogin().ToResp(), nil
+		return apierrors.ErrFormalRelease.NotLogin().ToResp(), nil
 	}
 
 	releaseID := vars["releaseId"]
@@ -1096,8 +1099,8 @@ func (e *Endpoints) ToFormalRelease(ctx context.Context, r *http.Request, vars m
 	return httpserver.OkResp("Formal release succ")
 }
 
-// DownloadYaml GET /api/releases/{releaseId}/actions/download-yaml 下载Yaml文件
-func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+// DownloadRelease GET /api/releases/{releaseId}/actions/download 下载制品zip包
+func (e *Endpoints) DownloadRelease(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	orgID, err := getPermissionHeader(r)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.NotLogin()
@@ -1138,18 +1141,21 @@ func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
-	releases, err := e.db.GetReleases(releaseIDs)
+
+	appReleases, err := e.getAppReleases(releaseIDs)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
 
-	for _, r := range releases {
-		f, err := zw.Create(filepath.Join(dir, "dicefile", r.ApplicationName, "dice.yml"))
-		if err != nil {
-			return apierrors.ErrDownloadRelease.InternalError(err)
-		}
-		if _, err := f.Write([]byte(r.Dice)); err != nil {
-			return apierrors.ErrDownloadRelease.InternalError(err)
+	for i := 0; i < len(appReleases); i++ {
+		for j := 0; j < len(appReleases[i]); j++ {
+			f, err := zw.Create(filepath.Join(dir, "dicefile", appReleases[i][j].ApplicationName, "dice.yml"))
+			if err != nil {
+				return apierrors.ErrDownloadRelease.InternalError(err)
+			}
+			if _, err := f.Write([]byte(appReleases[i][j].Dice)); err != nil {
+				return apierrors.ErrDownloadRelease.InternalError(err)
+			}
 		}
 	}
 
@@ -1161,7 +1167,7 @@ func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
-	metadata, err := makeMetadata(org.DisplayName, u.Nick, release, releases)
+	metadata, err := makeMetadata(org.DisplayName, u.Nick, release, appReleases)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
@@ -1187,14 +1193,36 @@ func (e *Endpoints) DownloadYaml(ctx context.Context, w http.ResponseWriter, r *
 	return nil
 }
 
+func (e *Endpoints) getAppReleases(releaseList [][]string) ([][]dbclient.Release, error) {
+	var list []string
+	for i := 0; i < len(releaseList); i++ {
+		list = append(list, releaseList[i]...)
+	}
+
+	releases, err := e.db.GetReleases(list)
+	if err != nil {
+		return nil, err
+	}
+
+	id2Release := make(map[string]*dbclient.Release)
+	for i := 0; i < len(releases); i++ {
+		id2Release[releases[i].ReleaseID] = &releases[i]
+	}
+
+	appReleases := make([][]dbclient.Release, len(releaseList))
+	for i := 0; i < len(releaseList); i++ {
+		appReleases[i] = make([]dbclient.Release, len(releaseList[i]))
+		for j := 0; j < len(releaseList[i]); j++ {
+			appReleases[i][j] = *id2Release[releaseList[i][j]]
+		}
+	}
+	return appReleases, nil
+}
+
 func (e *Endpoints) CheckVersion(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	_, err := getPermissionHeader(r)
 	if err != nil {
 		return apierrors.ErrCheckReleaseVersion.NotLogin().ToResp(), nil
-	}
-
-	if r.Body == nil {
-		return apierrors.ErrCheckReleaseVersion.MissingParameter("body").ToResp(), nil
 	}
 
 	isProjectReleaseStr := r.URL.Query().Get("isProjectRelease")
@@ -1330,28 +1358,32 @@ func (e *Endpoints) hasWriteAccess(identity apistructs.IdentityInfo, projectID i
 	return hasAppAccess, nil
 }
 
-func unmarshalApplicationReleaseList(str string) ([]string, error) {
-	var list []string
+func unmarshalApplicationReleaseList(str string) ([][]string, error) {
+	var list [][]string
 	if err := json.Unmarshal([]byte(str), &list); err != nil {
 		return nil, err
 	}
 	return list, nil
 }
 
-func makeMetadata(orgName, userName string, release *dbclient.Release, appReleases []dbclient.Release) ([]byte, error) {
-	appList := make(map[string]apistructs.AppMetadata)
-	for i := range appReleases {
-		labels := make(map[string]string)
-		if err := json.Unmarshal([]byte(appReleases[i].Labels), &labels); err != nil {
-			return nil, errors.Errorf("failed to unmarshal labels for release %s", appReleases[i].ReleaseID)
-		}
-		appList[appReleases[i].ApplicationName] = apistructs.AppMetadata{
-			GitBranch:        labels["gitBranch"],
-			GitCommitID:      labels["gitCommitId"],
-			GitCommitMessage: labels["gitCommitMessage"],
-			GitRepo:          labels["gitRepo"],
-			ChangeLog:        appReleases[i].Changelog,
-			Version:          appReleases[i].Version,
+func makeMetadata(orgName, userName string, release *dbclient.Release, appReleases [][]dbclient.Release) ([]byte, error) {
+	appList := make([][]apistructs.AppMetadata, len(appReleases))
+	for i := 0; i < len(appReleases); i++ {
+		appList[i] = make([]apistructs.AppMetadata, len(appReleases[i]))
+		for j := 0; j < len(appReleases[i]); j++ {
+			labels := make(map[string]string)
+			if err := json.Unmarshal([]byte(appReleases[i][j].Labels), &labels); err != nil {
+				logrus.Errorf("failed to unmarshal labels for release %s, %v", appReleases[i][j].ReleaseID, err)
+			}
+			appList[i][j] = apistructs.AppMetadata{
+				AppName:          appReleases[i][j].ApplicationName,
+				GitBranch:        labels["gitBranch"],
+				GitCommitID:      labels["gitCommitId"],
+				GitCommitMessage: labels["gitCommitMessage"],
+				GitRepo:          labels["gitRepo"],
+				ChangeLog:        appReleases[i][j].Changelog,
+				Version:          appReleases[i][j].Version,
+			}
 		}
 	}
 	releaseMeta := apistructs.ReleaseMetadata{

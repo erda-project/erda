@@ -17,7 +17,6 @@ package runtime
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strconv"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -26,7 +25,6 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/linegraph/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda/modules/msp/apm/service/common/custom"
@@ -214,34 +212,30 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsMemoryHeap, structure.Storage, structure.KB, graph)
-			p.StdDataPtr = line
-			return nil
+			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case nodejsMemoryNonHeap:
 			graph, err := p.getMemoryNonHeapLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsMemoryNonHeap, structure.Storage, structure.KB, graph)
-			p.StdDataPtr = line
-			return nil
+			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case nodejsCluster:
 			graph, err := p.getClusterCountLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsCluster, structure.String, "pcsUnit", graph)
-			p.StdDataPtr = line
-			return nil
+			return &impl.StdStructuredPtr{StdDataPtr: line}
 		case nodejsAsyncResource:
 			graph, err := p.getAsyncResourcesLineGraph(sdk.Ctx, startTime, endTime, tenantId, instanceId, serviceId)
 			if err != nil {
 				return nil
 			}
 			line := model.HandleLineGraphMetaData(sdk.Lang, p.I18n, nodejsAsyncResource, structure.String, "pcsUnit", graph)
-			p.StdDataPtr = line
-			return nil
+			return &impl.StdStructuredPtr{StdDataPtr: line}
 		}
-		return nil
+		return &impl.StdStructuredPtr{}
 	}
 }
 
@@ -250,32 +244,11 @@ func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return p.RegisterInitializeOp()
 }
 
-// Init .
-func (p *provider) Init(ctx servicehub.Context) error {
-	p.DefaultLineGraph = impl.DefaultLineGraph{}
-	v := reflect.ValueOf(p)
-	v.Elem().FieldByName("Impl").Set(v)
-	compName := "runtime"
-	if ctx.Label() != "" {
-		compName = ctx.Label()
-	}
-	protocol.MustRegisterComponent(&protocol.CompRenderSpec{
-		Scenario: "resources-runtime-monitor-nodejs",
-		CompName: compName,
-		Creator:  func() cptype.IComponent { return p },
-	})
-	return nil
-}
-
 // Provide .
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	return p
 }
 
 func init() {
-	name := "component-protocol.components.resources-runtime-monitor-nodejs.runtime"
-	cpregister.AllExplicitProviderCreatorMap[name] = nil
-	servicehub.Register(name, &servicehub.Spec{
-		Creator: func() servicehub.Provider { return &provider{} },
-	})
+	cpregister.RegisterProviderComponent("resources-runtime-monitor-nodejs", "runtime", &provider{})
 }

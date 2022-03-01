@@ -40,6 +40,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/utils"
 	"github.com/erda-project/erda/pkg/apitestsv2"
 	"github.com/erda-project/erda/pkg/expression"
+	"github.com/erda-project/erda/pkg/http/customhttp"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pexpr"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -135,6 +136,17 @@ func (svc *Service) CreateAutotestScene(req apistructs.AutotestSceneRequest) (ui
 			preID = scenes[len(scenes)-1].ID
 		} else {
 			preID = 0
+		}
+	}
+
+	// Check if in the same scene set
+	if preID > 0 {
+		preScene, err := svc.db.GetAutotestScene(preID)
+		if err != nil {
+			return 0, err
+		}
+		if preScene.SetID != req.SetID {
+			return 0, fmt.Errorf("operation is not in the same scene set")
 		}
 	}
 
@@ -741,6 +753,11 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 		return nil, err
 	}
 
+	clusterName, err := svc.getClusterNameBySpaceID(step.SpaceID)
+	if err != nil {
+		return nil, err
+	}
+
 	apiTest := apitestsv2.New(&apistructs.APIInfo{
 		ID:        apiInfoV2.ID,
 		Name:      apiInfoV2.Name,
@@ -751,7 +768,8 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 		Body:      apiInfoV2.Body,
 		OutParams: apiInfoV2.OutParams,
 		Asserts:   [][]apistructs.APIAssert{apiInfoV2.Asserts},
-	})
+	}, apitestsv2.WithNetportalConfigs(customhttp.GetNetPortalUrl(clusterName)))
+
 	var respData apistructs.AutotestExecuteSceneStepRespData
 	cookieJar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	if err != nil {
@@ -788,6 +806,24 @@ func (svc *Service) ExecuteDiceAutotestSceneStep(req apistructs.AutotestExecuteS
 	}
 
 	return &respData, nil
+}
+
+func (svc *Service) getClusterNameBySpaceID(spaceID uint64) (string, error) {
+	space, err := svc.GetSpace(spaceID)
+	if err != nil {
+		return "", fmt.Errorf("not find step space %v", spaceID)
+	}
+
+	project, err := svc.bdl.GetProject(uint64(space.ProjectID))
+	if err != nil {
+		return "", err
+	}
+	testClusterName, ok := project.ClusterConfig[string(apistructs.TestWorkspace)]
+	if !ok {
+		return "", fmt.Errorf("not found cluster")
+	}
+
+	return testClusterName, nil
 }
 
 func (svc *Service) renderPreSceneStepsOutput(sceneID uint64, replaceYml string) string {

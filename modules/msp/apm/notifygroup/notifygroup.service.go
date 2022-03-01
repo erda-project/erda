@@ -159,7 +159,7 @@ func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.Q
 		ScopeID:     request.ScopeId,
 		Label:       request.Label,
 		ClusterName: request.ClusterName,
-		Names:       request.Names,
+		Name:        request.Name,
 	}
 	resp, err := n.p.bdl.QueryNotifyGroup(orgId, queryReq)
 	if err != nil {

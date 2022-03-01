@@ -17,6 +17,7 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -197,10 +198,10 @@ func (e *Endpoints) PagingIssues(ctx context.Context, r *http.Request, vars map[
 }
 
 // ExportExcelIssue 导出事件到 excel
-func (e *Endpoints) ExportExcelIssue(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+func (e *Endpoints) ExportExcelIssue(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) (err error) {
 	var pageReq apistructs.IssueExportExcelRequest
 	if err := e.queryStringDecoder.Decode(&pageReq, r.URL.Query()); err != nil {
-		return apierrors.ErrExportExcelIssue.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrExportExcelIssue.InvalidParameter(err)
 	}
 	switch pageReq.OrderBy {
 	case "":
@@ -213,19 +214,19 @@ func (e *Endpoints) ExportExcelIssue(ctx context.Context, r *http.Request, vars 
 	case "updatedAt", "updated_at":
 		pageReq.OrderBy = "updated_at"
 	default:
-		return apierrors.ErrExportExcelIssue.InvalidParameter("orderBy").ToResp(), nil
+		return apierrors.ErrExportExcelIssue.InvalidParameter("orderBy")
 	}
 
 	// 鉴权
 	identityInfo, err := user.GetIdentityInfo(r)
 	if err != nil {
-		return apierrors.ErrExportExcelIssue.NotLogin().ToResp(), nil
+		return apierrors.ErrExportExcelIssue.NotLogin()
 	}
 	pageReq.IdentityInfo = identityInfo
 	if !identityInfo.IsInternalClient() {
 		// issue 分页查询 校验用户在 当前 project 下是否拥有 GET ${project} 权限
 		if pageReq.ProjectID == 0 {
-			return apierrors.ErrPagingIssues.MissingParameter("projectID").ToResp(), nil
+			return apierrors.ErrPagingIssues.MissingParameter("projectID")
 		}
 		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
 			UserID:   identityInfo.UserID,
@@ -235,30 +236,41 @@ func (e *Endpoints) ExportExcelIssue(ctx context.Context, r *http.Request, vars 
 			Action:   apistructs.GetAction,
 		})
 		if err != nil {
-			return apierrors.ErrExportExcelIssue.InternalError(err).ToResp(), nil
+			return apierrors.ErrExportExcelIssue.InternalError(err)
 		}
 		if !access.Access {
-			return apierrors.ErrExportExcelIssue.AccessDenied().ToResp(), nil
+			return apierrors.ErrExportExcelIssue.AccessDenied()
 		}
 		// 外部创建的事件
 		pageReq.External = true
 	}
 	pageReq.Locale = e.bdl.GetLocaleByRequest(r).Name()
+	if pageReq.IsDownload {
+		reader, tableName, err := e.issue.ExportTemplateExcel(&pageReq)
+		if err != nil {
+			return apierrors.ErrExportExcelIssue.InternalError(err)
+		}
+		w.Header().Add("Content-Disposition", "attachment;fileName="+tableName+".xlsx")
+		w.Header().Add("Content-Type", "application/vnd.ms-excel")
+
+		if _, err := io.Copy(w, reader); err != nil {
+			return apierrors.ErrExportExcelIssue.InternalError(err)
+		}
+		return nil
+	}
 	recordID, err := e.issue.Export(&pageReq)
 	if err != nil {
-		return apierrors.ErrExportExcelIssue.InternalError(err).ToResp(), nil
+		return apierrors.ErrExportExcelIssue.InternalError(err)
 	}
 	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileIssueActionTypeExport)
 	if err != nil {
-		return errorresp.ErrResp(err)
+		return apierrors.ErrExportExcelIssue.InternalError(err)
 	}
 	if ok {
 		e.ExportChannel <- recordID
 	}
-	return httpserver.HTTPResponse{
-		Status:  http.StatusAccepted,
-		Content: recordID,
-	}, nil
+	httpserver.WriteData(w, recordID)
+	return nil
 }
 
 // ImportExcelIssue 从excel导入事项
@@ -309,10 +321,7 @@ func (e *Endpoints) ImportExcelIssue(ctx context.Context, r *http.Request, vars 
 	if ok {
 		e.ImportChannel <- recordID
 	}
-	return httpserver.HTTPResponse{
-		Status:  http.StatusAccepted,
-		Content: recordID,
-	}, nil
+	return httpserver.OkResp(recordID)
 }
 
 // UpdateIssue 更新事件

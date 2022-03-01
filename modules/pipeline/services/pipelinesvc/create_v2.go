@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -225,6 +226,10 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	if v, ok := labels[apistructs.LabelCommit]; ok {
 		p.CommitDetail.CommitID = v
 	}
+
+	// container instance provider
+	p.Extra.ContainerInstanceProvider = container_provider.ConstructContainerProvider(container_provider.WithLabels(labels),
+		container_provider.WithStages(pipelineYml.Spec().Stages))
 
 	// pipelineYmlSource
 	p.Extra.PipelineYmlSource = apistructs.PipelineYmlSourceContent

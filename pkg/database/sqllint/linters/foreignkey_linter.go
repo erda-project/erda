@@ -19,20 +19,20 @@ import (
 
 	"github.com/pingcap/parser/ast"
 
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 )
 
-type ForeignKeyLinter struct {
+type foreignKeyLinter struct {
 	baseLinter
 }
 
-func NewForeignKeyLinter(script script.Script) rules.Rule {
-	return &ForeignKeyLinter{newBaseLinter(script)}
+func (hub) ForeignKeyLinter(script script.Script, _ sqllint.Config) (sqllint.Rule, error) {
+	return &foreignKeyLinter{newBaseLinter(script)}, nil
 }
 
-func (l *ForeignKeyLinter) Enter(in ast.Node) (ast.Node, bool) {
+func (l *foreignKeyLinter) Enter(in ast.Node) (ast.Node, bool) {
 	if l.text == "" || in.Text() != "" {
 		l.text = in.Text()
 	}
@@ -52,10 +52,10 @@ func (l *ForeignKeyLinter) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-func (l *ForeignKeyLinter) Leave(in ast.Node) (ast.Node, bool) {
+func (l *foreignKeyLinter) Leave(in ast.Node) (ast.Node, bool) {
 	return in, l.err == nil
 }
 
-func (l *ForeignKeyLinter) Error() error {
+func (l *foreignKeyLinter) Error() error {
 	return l.err
 }

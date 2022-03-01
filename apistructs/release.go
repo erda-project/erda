@@ -93,7 +93,7 @@ type ReleaseCreateRequest struct {
 	Changelog string `json:"changelog,omitempty"`
 
 	// ApplicationReleaseList 项目级制品依赖的应用级制品ID列表
-	ApplicationReleaseList []string `json:"applicationReleaseList,omitempty"`
+	ApplicationReleaseList [][]string `json:"applicationReleaseList,omitempty"`
 
 	// Labels 用于release分类，描述release类别，map类型, 最大长度1000, 选填
 	Labels map[string]string `json:"labels,omitempty"`
@@ -127,6 +127,9 @@ type ReleaseCreateRequest struct {
 
 	// CrossCluster 跨集群
 	CrossCluster bool `json:"crossCluster,omitempty"`
+
+	// 分支
+	GitBranch string `json:"gitBranch,omitempty"`
 }
 
 type ReleaseUploadRequest struct {
@@ -144,7 +147,11 @@ type ReleaseUploadRequest struct {
 	ClusterName string `json:"clusterName,omitempty"`
 }
 
-type ReleaseParseVersionResponse struct {
+type ParseReleaseFileRequest struct {
+	DiceFileID string `json:"diceFileID,omitempty"`
+}
+
+type ParseReleaseFileResponse struct {
 	Header
 	Data ParseReleaseFileResponseData `json:"data"`
 }
@@ -190,11 +197,11 @@ type ReleaseUpdateRequest struct {
 
 // ReleaseUpdateRequestData 更新 release 请求数据结构
 type ReleaseUpdateRequestData struct {
-	Version                string   `json:"version,omitempty"`
-	Desc                   string   `json:"desc,omitempty"`
-	Changelog              string   `json:"changelog,omitempty"`
-	Dice                   string   `json:"dice,omitempty"` // 项目级别制品使用
-	ApplicationReleaseList []string `json:"applicationReleaseList,omitempty"`
+	Version                string     `json:"version,omitempty"`
+	Desc                   string     `json:"desc,omitempty"`
+	Changelog              string     `json:"changelog,omitempty"`
+	Dice                   string     `json:"dice,omitempty"` // 项目级别制品使用
+	ApplicationReleaseList [][]string `json:"applicationReleaseList,omitempty"`
 	// 以下信息主要为了version覆盖使用，找出之前的version清除
 
 	// 企业标识
@@ -243,22 +250,22 @@ type ReleaseGetResponse struct {
 
 // ReleaseGetResponseData release 详情API实际返回数据
 type ReleaseGetResponseData struct {
-	ReleaseID              string                       `json:"releaseId"`
-	ReleaseName            string                       `json:"releaseName"`
-	Diceyml                string                       `json:"diceyml"`
-	Desc                   string                       `json:"desc,omitempty"`
-	Addon                  string                       `json:"addon,omitempty"`
-	Changelog              string                       `json:"changelog,omitempty"`
-	IsStable               bool                         `json:"isStable"`
-	IsFormal               bool                         `json:"isFormal"`
-	IsProjectRelease       bool                         `json:"isProjectRelease"`
-	ApplicationReleaseList []*ApplicationReleaseSummary `json:"applicationReleaseList,omitempty"`
-	Resources              []ReleaseResource            `json:"resources,omitempty"`
-	Images                 []string                     `json:"images,omitempty"`
-	ServiceImages          []*ServiceImagePair          `json:"serviceImages"`
-	Labels                 map[string]string            `json:"labels,omitempty"`
-	Tags                   string                       `json:"tags,omitempty"`
-	Version                string                       `json:"version,omitempty"`
+	ReleaseID              string                         `json:"releaseId"`
+	ReleaseName            string                         `json:"releaseName"`
+	Diceyml                string                         `json:"diceyml"`
+	Desc                   string                         `json:"desc,omitempty"`
+	Addon                  string                         `json:"addon,omitempty"`
+	Changelog              string                         `json:"changelog,omitempty"`
+	IsStable               bool                           `json:"isStable"`
+	IsFormal               bool                           `json:"isFormal"`
+	IsProjectRelease       bool                           `json:"isProjectRelease"`
+	ApplicationReleaseList [][]*ApplicationReleaseSummary `json:"applicationReleaseList,omitempty"`
+	Resources              []ReleaseResource              `json:"resources,omitempty"`
+	Images                 []string                       `json:"images,omitempty"`
+	ServiceImages          []*ServiceImagePair            `json:"serviceImages"`
+	Labels                 map[string]string              `json:"labels,omitempty"`
+	Tags                   string                         `json:"tags,omitempty"`
+	Version                string                         `json:"version,omitempty"`
 
 	// CrossCluster 是否可以跨集群
 	CrossCluster bool `json:"crossCluster,omitempty"`
@@ -288,12 +295,16 @@ type ReleaseGetResponseData struct {
 	ClusterName string    `json:"clusterName"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+	// IsLatest 是否为分支最新
+	IsLatest bool `json:"isLatest"`
 }
 
 func (r *ReleaseGetResponseData) ReLoadImages() error {
-	for _, app := range r.ApplicationReleaseList {
-		if err := app.ReLoadImages(); err != nil {
-			return err
+	for i := 0; i < len(r.ApplicationReleaseList); i++ {
+		for j := 0; j < len(r.ApplicationReleaseList[i]); j++ {
+			if err := r.ApplicationReleaseList[i][j].ReLoadImages(); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -370,6 +381,9 @@ type ReleaseListRequest struct {
 
 	// 分支名
 	Branch string `json:"-" query:"branchName"`
+
+	// 是否为每个分支的最新制品
+	Latest bool `json:"-" query:"latest"`
 
 	// stable表示非临时制品
 	IsStable *bool `json:"-" query:"isStable"`
@@ -467,6 +481,9 @@ func (req ReleaseListRequest) ConvertToQueryParams() url.Values {
 	if req.Branch != "" {
 		values.Add("branchName", req.Branch)
 	}
+	if req.Latest {
+		values.Add("latest", "true")
+	}
 	if req.IsStable != nil {
 		values.Add("isStable", strconv.FormatBool(*req.IsStable))
 	}
@@ -559,6 +576,8 @@ type ReleaseData struct {
 	ClusterName string    `json:"clusterName"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+	// 是否为分支最新
+	IsLatest bool `json:"isLatest"`
 }
 
 // ReleaseNameListRequest releaseName列表请求
@@ -612,13 +631,14 @@ type ReleaseMetadata struct {
 	Source string `json:"source,omitempty"`
 	Author string `json:"author,omitempty"`
 
-	Version   string                 `json:"version,omitempty"`
-	Desc      string                 `json:"desc,omitempty"`
-	ChangeLog string                 `json:"changeLog,omitempty"`
-	AppList   map[string]AppMetadata `json:"appList,omitempty"`
+	Version   string          `json:"version,omitempty"`
+	Desc      string          `json:"desc,omitempty"`
+	ChangeLog string          `json:"changeLog,omitempty"`
+	AppList   [][]AppMetadata `json:"appList,omitempty"`
 }
 
 type AppMetadata struct {
+	AppName          string `json:"appName,omitempty"`
 	GitBranch        string `json:"gitBranch,omitempty"`
 	GitCommitID      string `json:"gitCommitId,omitempty"`
 	GitCommitMessage string `json:"gitCommitMessage,omitempty"`

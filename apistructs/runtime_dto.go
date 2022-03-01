@@ -14,7 +14,9 @@
 
 package apistructs
 
-import "time"
+import (
+	"time"
+)
 
 type RuntimeInspectDTO struct {
 	ID uint64 `json:"id"`
@@ -212,4 +214,33 @@ type BatchRuntimeReDeployResults struct {
 	UnReDeployed    []RuntimeDTO       `json:"reDeployedFailed,omitempty"`
 	UnReDeployedIds []uint64           `json:"reDeployedFailedIds,omitempty"`
 	ErrMsg          []string           `json:"errorMsgs,omitempty"`
+}
+
+// AddonScaleRecords 表示 Addon 的 scale 请求群信息
+type AddonScaleRecords struct {
+	// Addons 不为空则无需设置 AddonRoutingIDs, 二者必选其一
+	// 格式: map[{addon instance's routing ID}]AddonScaleRecord
+	Addons map[string]AddonScaleRecord `json:"addonScaleRecords,omitempty"`
+	// AddonRoutingIDs is the list of addon instance's routing ID
+	AddonRoutingIDs []string `json:"ids,omitempty"`
+}
+
+// AddonScaleRecord is the addon
+type AddonScaleRecord struct {
+	AddonName                   string                                      `json:"addonName,omitempty"`
+	ServiceResourcesAndReplicas map[string]AddonServiceResourcesAndReplicas `json:"services,omitempty"`
+}
+
+// AddonServiceResourcesAndReplicas set the desired resources and replicas for addon services
+type AddonServiceResourcesAndReplicas struct {
+	Resources Resources `json:"resources,omitempty"`
+	Replicas  int32     `json:"replicas,omitempty"`
+}
+
+type AddonScaleResults struct {
+	Total     int `json:"total"`
+	Successed int `json:"successed"`
+	Faild     int `json:"failed"`
+	// FailedInfo   map[{addon routingID}]errMsg
+	FailedInfo map[string]string `json:"errors,omitempty"`
 }

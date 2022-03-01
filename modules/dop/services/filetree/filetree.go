@@ -965,30 +965,34 @@ func getBranchExcessLength(name string) int {
 }
 
 func getBranchStr(name string) string {
-	treeIndex := strings.Index(name, "tree")
-	blobIndex := strings.Index(name, "blob")
-	diceIndex := strings.Index(name, ".dice")
-	pipelineIndex := strings.Index(name, "pipeline.yml")
-	if diceIndex == -1 {
-		diceIndex = strings.Index(name, ".erda")
+	splitValue := strings.SplitN(name, "/", 4)
+	if len(splitValue) != 4 {
+		return name
 	}
 
-	beforeIndex := treeIndex
-	if beforeIndex == -1 {
-		beforeIndex = blobIndex
-	}
-	if beforeIndex == -1 {
-		return ""
+	rightNameValue := splitValue[3]
+
+	var afterIndex = -1
+	if strings.HasSuffix(rightNameValue, "/.dice") {
+		afterIndex = strings.LastIndex(rightNameValue, "/.dice")
+	} else {
+		afterIndex = strings.LastIndex(rightNameValue, "/.dice/")
 	}
 
-	afterIndex := diceIndex
 	if afterIndex == -1 {
-		afterIndex = pipelineIndex
-	}
-	if afterIndex == -1 {
-		return name[beforeIndex+5:]
+		if strings.HasSuffix(rightNameValue, "/.erda") {
+			afterIndex = strings.LastIndex(rightNameValue, "/.erda")
+		} else {
+			afterIndex = strings.LastIndex(rightNameValue, "/.erda/")
+		}
 	}
 
-	result := name[beforeIndex+5 : afterIndex-1]
-	return result
+	if afterIndex == -1 {
+		afterIndex = strings.LastIndex(rightNameValue, "/pipeline.yml")
+	}
+
+	if afterIndex == -1 {
+		return rightNameValue
+	}
+	return rightNameValue[:afterIndex]
 }

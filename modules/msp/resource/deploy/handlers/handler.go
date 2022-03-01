@@ -444,6 +444,33 @@ func (h *DefaultDeployHandler) GetResourceInfo(req *ResourceDeployRequest) (*Res
 	}
 	info.Dice = &dice
 
+	// 继承 req 中的 addonDiskType、addonVolumeSize、addonSnapMaxHistory、alibabacloud.com/eci 等 options
+	for _, addon := range info.Dice.AddOns {
+		if addon.Options == nil {
+			addon.Options = make(map[string]string)
+		}
+
+		// addonDiskType
+		if _, ok := req.Options[diceyml.AddonDiskType]; ok {
+			addon.Options[diceyml.AddonDiskType] = req.Options[diceyml.AddonDiskType]
+		}
+
+		// addonVolumeSize
+		if _, ok := req.Options[diceyml.AddonVolumeSize]; ok {
+			addon.Options[diceyml.AddonVolumeSize] = req.Options[diceyml.AddonVolumeSize]
+		}
+
+		// alibabacloud.com/eci
+		if _, ok := req.Options[diceyml.AddonEnableECI]; ok {
+			addon.Options[diceyml.AddonEnableECI] = req.Options[diceyml.AddonEnableECI]
+		}
+
+		// addonSnapMaxHistory
+		if _, ok := req.Options[diceyml.AddonSnapMaxHistory]; ok {
+			addon.Options[diceyml.AddonSnapMaxHistory] = req.Options[diceyml.AddonSnapMaxHistory]
+		}
+	}
+
 	return &info, nil
 }
 
@@ -550,6 +577,10 @@ func (h *DefaultDeployHandler) BuildServiceGroupRequest(resourceInfo *ResourceIn
 
 	for _, service := range req.DiceYml.Services {
 		utils.AppendMap(service.Envs, labels)
+		if service.Labels == nil {
+			service.Labels = make(map[string]string)
+		}
+		utils.SetlabelsFromOptions(options, service.Labels)
 	}
 
 	return &req

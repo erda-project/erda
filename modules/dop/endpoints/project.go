@@ -84,6 +84,12 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 		return apierrors.ErrCreateProject.AccessDenied().ToResp(), nil
 	}
 
+	// get org locale
+	org, err := e.bdl.GetOrg(projectCreateReq.OrgID)
+	if err != nil {
+		return apierrors.ErrCreateProject.InternalError(err).ToResp(), nil
+	}
+
 	// create project
 	projectID, err := e.bdl.CreateProject(projectCreateReq, identity.UserID)
 	if err != nil {
@@ -96,7 +102,7 @@ func (e *Endpoints) CreateProject(ctx context.Context, r *http.Request, vars map
 	}
 
 	// init projectState
-	if err := e.issueState.InitProjectState(int64(projectID)); err != nil {
+	if err := e.issueState.InitProjectState(int64(projectID), org.Locale); err != nil {
 		logrus.Warnf("failed to add state to db when create project, (%v)", err)
 	}
 
@@ -297,27 +303,6 @@ func (e *Endpoints) ListProject(ctx context.Context, r *http.Request, vars map[s
 
 	if err := e.setProjectResource(pagingProjects.List); err != nil {
 		return apierrors.ErrListProject.InternalError(err).ToResp(), nil
-	}
-
-	// rich statistical data
-	if params.PageSize <= 15 {
-		Once.Do(func() {
-			ProjectStatsCache = &sync.Map{}
-		})
-		for i := range pagingProjects.List {
-			prjID := int64(pagingProjects.List[i].ID)
-			stats, ok := ProjectStatsCache.Load(prjID)
-			if !ok {
-				logrus.Infof("get a new project %v add in cache", prjID)
-				stats, err = e.getProjectStats(uint64(prjID))
-				if err != nil {
-					logrus.Errorf("fail to getProjectStats,%v", err)
-					continue
-				}
-				ProjectStatsCache.Store(prjID, stats)
-			}
-			pagingProjects.List[i].Stats = *stats.(*apistructs.ProjectStats)
-		}
 	}
 
 	var userIDs []string

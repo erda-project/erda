@@ -15,6 +15,7 @@
 package deployment_order
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -23,11 +24,37 @@ import (
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	release2 "github.com/erda-project/erda/modules/dicehub/release"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/services/runtime"
+	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 )
+
+var ProjectReleaseResp = &pb.ReleaseGetResponseData{
+	IsProjectRelease: true,
+	Labels:           map[string]string{gitBranchLabel: "master"},
+	ApplicationReleaseList: []*pb.ReleaseSummaryArray{
+		{
+			List: []*pb.ApplicationReleaseSummary{
+				{
+					ReleaseID:   "0856df7931494d239abf07a145ade6e9",
+					ReleaseName: "release/1.0.1",
+					Version:     "1.0.1+20220210153458",
+				},
+			},
+		},
+	},
+}
+
+var AppReleaseResp = &pb.ReleaseGetResponseData{
+	Labels:          map[string]string{gitBranchLabel: "master"},
+	ApplicationID:   1,
+	ApplicationName: "test",
+}
 
 func TestComposeRuntimeCreateRequests(t *testing.T) {
 	do := New()
@@ -40,39 +67,37 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 		},
 	)
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetRelease",
-		func(*bundle.Bundle, string) (*apistructs.ReleaseGetResponseData, error) {
-			return &apistructs.ReleaseGetResponseData{
-				Labels: map[string]string{gitBranchLabel: "master"},
-			}, nil
-		},
-	)
-
 	params := map[string]*apistructs.DeploymentOrderParam{}
 
 	paramsJson, err := json.Marshal(params)
 	assert.NoError(t, err)
 
-	releaseResp := &apistructs.ReleaseGetResponseData{
-		Labels: map[string]string{gitBranchLabel: "master"},
+	ProjectReleaseResp.ApplicationReleaseList = []*pb.ReleaseSummaryArray{
+		{
+			List: []*pb.ApplicationReleaseSummary{
+				{
+					ReleaseID: "8781f475e5617a04",
+				},
+			},
+		},
 	}
 
 	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
-		Type:      apistructs.TypePipeline,
-		Params:    string(paramsJson),
-		Workspace: apistructs.WORKSPACE_PROD,
-	}, releaseResp)
+		BatchSize:    10,
+		CurrentBatch: 1,
+		Type:         apistructs.TypeProjectRelease,
+		Params:       string(paramsJson),
+		Workspace:    apistructs.WORKSPACE_PROD,
+	}, ProjectReleaseResp, apistructs.SourceDeployCenter, false)
 	assert.NoError(t, err)
 
-	releaseResp.ApplicationReleaseList = []*apistructs.ApplicationReleaseSummary{
-		{ReleaseID: "8781f475e5617a04"},
-	}
-
 	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
-		Type:      apistructs.TypeProjectRelease,
-		Params:    string(paramsJson),
-		Workspace: apistructs.WORKSPACE_PROD,
-	}, releaseResp)
+		BatchSize:    1,
+		CurrentBatch: 1,
+		Type:         apistructs.TypeApplicationRelease,
+		Params:       string(paramsJson),
+		Workspace:    apistructs.WORKSPACE_PROD,
+	}, AppReleaseResp, apistructs.SourceDeployCenter, false)
 	assert.NoError(t, err)
 }
 
@@ -111,10 +136,10 @@ func TestParseShowParams(t *testing.T) {
 
 func TestParseAppsInfoWithOrder(t *testing.T) {
 	order := New()
-	got, err := order.parseAppsInfoWithOrder(&dbclient.DeploymentOrder{
+	got, err := order.parseAppsInfoWithOrder(context.Background(), &dbclient.DeploymentOrder{
 		ApplicationName: "test",
 		ApplicationId:   1,
-		Type:            apistructs.TypePipeline,
+		Type:            apistructs.TypeApplicationRelease,
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, got, map[int64]string{1: "test"})
@@ -122,12 +147,83 @@ func TestParseAppsInfoWithOrder(t *testing.T) {
 
 func TestParseAppsInfoWithRelease(t *testing.T) {
 	order := New()
-	got := order.parseAppsInfoWithRelease(&apistructs.ReleaseGetResponseData{
+	got := order.parseAppsInfoWithRelease(&pb.ReleaseGetResponseData{
 		IsProjectRelease: true,
-		ApplicationReleaseList: []*apistructs.ApplicationReleaseSummary{
-			{ApplicationName: "test-1", ApplicationID: 1},
-			{ApplicationName: "test-2", ApplicationID: 2},
+		ApplicationReleaseList: []*pb.ReleaseSummaryArray{
+			{
+				List: []*pb.ApplicationReleaseSummary{
+					{ApplicationName: "test-1", ApplicationID: 1},
+					{ApplicationName: "test-2", ApplicationID: 2},
+				},
+			},
 		},
 	})
 	assert.Equal(t, got, map[int64]string{1: "test-1", 2: "test-2"})
+}
+
+func TestContinueDeployOrder(t *testing.T) {
+	order := New()
+	bdl := bundle.New()
+	rt := runtime.New()
+	releaseSvc := &release2.ReleaseService{}
+	order.releaseSvc = releaseSvc
+
+	params := map[string]*apistructs.DeploymentOrderParam{}
+
+	paramsJson, err := json.Marshal(params)
+	assert.NoError(t, err)
+
+	defer monkey.UnpatchAll()
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetDeploymentOrder", func(*dbclient.DBClient, string) (*dbclient.DeploymentOrder, error) {
+		return &dbclient.DeploymentOrder{
+			CurrentBatch: 1,
+			BatchSize:    3,
+			Workspace:    apistructs.WORKSPACE_PROD,
+			Params:       string(paramsJson),
+		}, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "UpdateDeploymentOrder", func(*dbclient.DBClient, *dbclient.DeploymentOrder) error {
+		return nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(releaseSvc), "GetRelease",
+		func(*release2.ReleaseService, context.Context, *pb.ReleaseGetRequest) (*pb.ReleaseGetResponse, error) {
+			return &pb.ReleaseGetResponse{Data: ProjectReleaseResp}, nil
+		},
+	)
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProjectWithSetter",
+		func(*bundle.Bundle, uint64, ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error) {
+			return &apistructs.ProjectDTO{ClusterConfig: map[string]string{"PROD": "fake-cluster"}}, nil
+		},
+	)
+	monkey.PatchInstanceMethod(reflect.TypeOf(rt), "Create", func(*runtime.Runtime, user.ID, *apistructs.RuntimeCreateRequest) (*apistructs.DeploymentCreateResponseDTO, error) {
+		return &apistructs.DeploymentCreateResponseDTO{}, nil
+	})
+
+	err = order.ContinueDeployOrder("d9f06aaf-e3b7-4e05-9433-7742162e98f9")
+	assert.NoError(t, err)
+}
+
+func TestParseRuntimeNameFromBranch(t *testing.T) {
+	// from deploy center
+	assert.Equal(t, parseRuntimeNameFromBranch(&apistructs.DeploymentOrderCreateRequest{
+		Source: apistructs.SourceDeployCenter,
+	}), false)
+	// from pipeline, if not specified deployWithoutBranch, then use branch name
+	assert.Equal(t, parseRuntimeNameFromBranch(&apistructs.DeploymentOrderCreateRequest{
+		Source:    apistructs.SourceDeployPipeline,
+		ReleaseId: "fake-release-id",
+	}), true)
+	// from pipeline, specified deployWithoutBranch
+	assert.Equal(t, parseRuntimeNameFromBranch(&apistructs.DeploymentOrderCreateRequest{
+		Source:              apistructs.SourceDeployPipeline,
+		ReleaseId:           "fake-release-id",
+		DeployWithoutBranch: true,
+	}), false)
+	// deploy application release
+	assert.Equal(t, parseRuntimeNameFromBranch(&apistructs.DeploymentOrderCreateRequest{
+		Type:            apistructs.TypeProjectRelease,
+		ReleaseName:     "1.0.0",
+		ApplicationName: "app-1",
+		Source:          apistructs.SourceDeployPipeline,
+	}), false)
 }

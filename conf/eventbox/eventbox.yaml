@@ -8,3 +8,7 @@ redis:
   sentinels_addr: "${REDIS_SENTINELS_ADDR}"
 
 dingtalk.api:
+
+grpc-client@erda.core.messenger.notify:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.messenger.notify-client:

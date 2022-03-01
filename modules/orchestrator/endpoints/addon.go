@@ -17,6 +17,7 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,14 +27,14 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/orchestrator/services/addon"
+	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
+	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
-
-	"github.com/erda-project/erda/modules/orchestrator/services/addon"
-	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 )
 
 func (e *Endpoints) CreateAddonDirectly(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
@@ -194,6 +195,69 @@ func (e *Endpoints) GetAddon(ctx context.Context, r *http.Request, vars map[stri
 	return httpserver.OkResp(addonInfo)
 }
 
+// ScaleAddon 设置 addon 服务停止（副本数 N--->0）/启动（副本数 0--->N）
+func (e *Endpoints) ScaleAddon(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+
+	action := r.URL.Query().Get(apistructs.ScaleAction)
+	if action != apistructs.ScaleActionUp && action != apistructs.ScaleActionDown {
+		return apierrors.ErrScaleAddon.InvalidParameter("no parameter " + apistructs.ScaleAction + " or invalid parameter value for parameter " + apistructs.ScaleAction).ToResp(), nil
+	}
+
+	userID, err := user.GetUserID(r)
+	if err != nil {
+		return apierrors.ErrScaleAddon.NotLogin().ToResp(), nil
+	}
+
+	orgID := r.Header.Get(httputil.OrgHeader)
+	if orgID == "" {
+		return apierrors.ErrScaleAddon.MissingParameter("ORG-ID").ToResp(), nil
+	}
+
+	var addonScaleRecords apistructs.AddonScaleRecords
+	if err := json.NewDecoder(r.Body).Decode(&addonScaleRecords); err != nil {
+		return utils.ErrRespIllegalParam(err, "failed to batch update Overlay, failed to parse req")
+	}
+
+	if len(addonScaleRecords.Addons) == 0 && len(addonScaleRecords.AddonRoutingIDs) == 0 {
+		return utils.ErrRespIllegalParam(err, "failed to batch update Overlay, no addonScaleRecords or ids provided in request body")
+	}
+
+	if len(addonScaleRecords.Addons) != 0 && len(addonScaleRecords.AddonRoutingIDs) != 0 {
+		return utils.ErrRespIllegalParam(err, "failed to batch update Overlay, addonScaleRecords and ids must only one with non-empty values in request body")
+	}
+
+	var result apistructs.AddonScaleResults
+	if len(addonScaleRecords.AddonRoutingIDs) > 0 {
+		// scale addon from N--->0 or 0--->N
+		result.Total = len(addonScaleRecords.AddonRoutingIDs)
+		for _, addonRoutingId := range addonScaleRecords.AddonRoutingIDs {
+			if err := e.addon.Scale(userID.String(), addonRoutingId, action); err != nil {
+				logrus.Errorf("Do %s for addon %s failed. error: %v", action, addonRoutingId, err)
+				msg := fmt.Sprintf("Do %s for addon %s failed. error: %v", action, addonRoutingId, err)
+				if result.FailedInfo == nil {
+					result.FailedInfo = make(map[string]string)
+				}
+				result.Faild++
+				result.FailedInfo[addonRoutingId] = msg
+			} else {
+				logrus.Infof("Do %s for addon %s successfully.", action, vars["addonID"])
+				result.Successed++
+			}
+		}
+	}
+
+	if len(addonScaleRecords.Addons) > 0 {
+		// ToDo: scale addon for replicas or/and resources
+	}
+
+	if result.Faild > 0 {
+		return httpserver.NotOkResp(result, http.StatusInternalServerError)
+	}
+	logrus.Infof("scale all addons successfully")
+
+	return httpserver.OkResp(result)
+}
+
 // DeleteAddon 删除 addon
 func (e *Endpoints) DeleteAddon(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	userID, err := user.GetUserID(r)
@@ -306,7 +370,7 @@ func (e *Endpoints) ListAddon(ctx context.Context, r *http.Request, vars map[str
 
 			var find = false
 			for _, displayName := range displayNames {
-				if v.AddonDisplayName == displayName {
+				if v.AddonName == strings.ToLower(displayName) {
 					find = true
 					break
 				}

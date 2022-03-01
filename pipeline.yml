@@ -118,6 +118,46 @@ stages:
           resources:
             cpu: 1
             mem: 1024
+      - custom-script:
+          alias: build-diagnotor-agent
+          commands:
+            - cd ${{ dirs.erda }}
+            - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
+            - make build-push-image MODULE_PATH=monitor/diagnotor-agent
+          resources:
+            cpu: 1
+            mem: 1024
+  - stage:
+      - erda-mysql-migration:
+          alias: dryrun-on-mysql80
+          version: 1.0-80
+          params:
+            database: erda
+            lint_config: .erda/migrations/config.yml
+            migrationdir: .erda/migrations
+            mysql_host: ${{ configs.legacy_migration_mysql_host }}
+            mysql_port: 3306
+            mysql_username: ${{ configs.legacy_migration_mysql_username }}
+            mysql_password: ${{ configs.legacy_migration_mysql_password }}
+            retry_timeout: 150
+            skip_migration: "true"
+            skip_pre_migration: true
+            workdir: ${{ dirs.erda }}
+      - erda-mysql-migration:
+          alias: dryrun-on-mysql56
+          version: 1.0-56
+          params:
+            database: erda
+            lint_config: .erda/migrations/config.yml
+            migrationdir: .erda/migrations
+            mysql_host: ${{ configs.legacy_migration_mysql_host }}
+            mysql_port: 3306
+            mysql_username: ${{ configs.legacy_migration_mysql_username }}
+            mysql_password: ${{ configs.legacy_migration_mysql_password }}
+            retry_timeout: 150
+            skip_migration: "true"
+            skip_pre_migration: true
+            workdir: ${{ dirs.erda }}
   - stage:
       - release:
           alias: release-erda

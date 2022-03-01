@@ -17,11 +17,11 @@ package monitor
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
 var MONITOR_FILEMANAGER_UPLOAD = apis.ApiSpec{
-	Path:        "/api/container/:containerID/files/upload",
-	BackendPath: "/api/container/:containerID/files/upload",
+	Path:        "/api/container/<containerID>/files/upload",
+	BackendPath: "/api/container/<containerID>/files/upload",
 	Host:        "monitor.marathon.l4lb.thisdcos.directory:7096",
 	Scheme:      "http",
-	Method:      "GET",
+	Method:      "POST",
 	CheckLogin:  true,
 	CheckToken:  true,
 	Doc:         "summary: 上传容器文件",

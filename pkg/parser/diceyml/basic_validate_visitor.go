@@ -46,6 +46,17 @@ func (o *BasicValidateVisitor) isEndpointValid(endpoint Endpoint) bool {
 		o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentService}, "endpoints")] = errors.Wrap(emptyEndpointDomain, o.currentService)
 		return false
 	}
+
+	// replace all ${}
+	rePlaceholder := regexp.MustCompile("\\$\\{(.+?)\\}")
+	if ok := rePlaceholder.MatchString(endpoint.Domain); ok {
+		endpoint.Domain = string(rePlaceholder.ReplaceAllString(endpoint.Domain, ""))
+		// e.g. ${platform.DICE_PROJECT_NAME}.*.
+		if strings.TrimSuffix(endpoint.Domain, ".*") == "" {
+			return true
+		}
+	}
+
 	if strings.HasSuffix(endpoint.Domain, ".*") {
 		if ok, _ := regexp.MatchString(`^[0-9a-zA-z-_]+$`, strings.TrimSuffix(endpoint.Domain, ".*")); !ok {
 			o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentService, "endpoints"}, endpoint.Domain)] = errors.Wrap(invalidEndpointDomain, o.currentService)
@@ -105,7 +116,7 @@ func (o *BasicValidateVisitor) VisitService(v DiceYmlVisitor, obj *Service) {
 		}
 	}
 	for _, vol := range obj.Volumes {
-		if !path.IsAbs(vol.Path) {
+		if !path.IsAbs(vol.Path) && !path.IsAbs(vol.TargetPath) {
 			o.collectErrors[yamlHeaderRegexWithUpperHeader([]string{o.currentService}, "volumes")] = errors.Wrap(invalidVolume, o.currentService)
 			break
 		}

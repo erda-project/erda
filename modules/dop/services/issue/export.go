@@ -126,6 +126,24 @@ func (svc *Issue) ExportExcelAsync(record *dao.TestFileRecord) {
 	svc.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateSuccess, ApiFileUUID: fileUUID.UUID})
 }
 
+func (svc *Issue) ExportTemplateExcel(req *apistructs.IssueExportExcelRequest) (io.Reader, string, error) {
+	req.PageNo = 1
+	req.PageSize = 1
+	issues, _, err := svc.Paging(req.IssuePagingRequest)
+	if err != nil {
+		return nil, "", err
+	}
+	pro, err := svc.issueProperty.GetBatchProperties(req.OrgID, req.Type)
+	if err != nil {
+		return nil, "", err
+	}
+	reader, tableName, err := svc.ExportExcel(issues, pro, req.ProjectID, true, req.OrgID, req.Locale)
+	if err != nil {
+		return nil, "", err
+	}
+	return reader, tableName, nil
+}
+
 func (svc *Issue) ExportExcel(issues []apistructs.Issue, properties []apistructs.IssuePropertyIndex, projectID uint64, isDownload bool, orgID int64, locale string) (io.Reader, string, error) {
 	// list of  issue stage
 	stages, err := svc.db.GetIssuesStageByOrgID(orgID)

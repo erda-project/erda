@@ -123,7 +123,8 @@ func (l *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.Ope
 func (l *List) doFilterApp() (data *list.Data) {
 	data = &list.Data{}
 	gh := gshelper.NewGSHelper(l.sdk.GlobalState)
-	apps, err := l.appListRetriever(gh.GetOption())
+	selectedOption := gh.GetOption()
+	apps, err := l.appListRetriever(selectedOption)
 	if err != nil {
 		logrus.Errorf("list query app workbench data failed, error: %v", err)
 		panic(err)
@@ -138,26 +139,68 @@ func (l *List) doFilterApp() (data *list.Data) {
 		},
 	}
 
+	myAppMap := make(map[uint64]bool)
+	if selectedOption != "my" {
+		orgID, err := strconv.Atoi(l.identity.OrgID)
+		if err != nil {
+			panic(err)
+		}
+		myApps, err := l.bdl.GetAllMyApps(l.identity.UserID, uint64(orgID), apistructs.ApplicationListRequest{
+			ProjectID: l.filterReq.ProjectID,
+			IsSimple:  true,
+			Query:     l.filterReq.Query,
+			PageNo:    1,
+			PageSize:  1000,
+		})
+		if err != nil {
+			panic(err)
+		}
+		for i := 0; i < len(myApps.List); i++ {
+			myAppMap[myApps.List[i].ID] = true
+		}
+	}
+	var appIDs []uint64
+	for i := range apps.List {
+		appIDs = append(appIDs, apps.List[i].ID)
+	}
+
+	mrResult, err := l.bdl.MergeRequestCount(l.identity.UserID, apistructs.MergeRequestCountRequest{
+		AppIDs: appIDs,
+		State:  "open",
+	})
+	if err != nil {
+		logrus.Errorf("list open mr failed, appIDs: %v, error: %v", appIDs, err)
+		return
+	}
+
 	for _, p := range apps.List {
+		_, ok := myAppMap[p.ID]
+		authorized := selectedOption == "my" || ok
 		item := list.Item{
 			ID:          strconv.FormatUint(p.ID, 10),
 			Icon:        &commodel.Icon{URL: p.Logo},
 			Title:       p.Name,
-			KvInfos:     l.GenAppKvInfo(p),
+			Selectable:  authorized,
+			KvInfos:     l.GenAppKvInfo(p, mrResult[strconv.FormatUint(p.ID, 10)]),
 			Description: l.appDescription(p.Desc),
 			Operations: map[cptype.OperationKey]cptype.Operation{
-				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
-					WithSkipRender(true).
-					WithServerDataPtr(list.OpItemClickGotoServerData{
-						OpItemBasicServerData: list.OpItemBasicServerData{
-							Params: map[string]interface{}{
-								common.OpKeyProjectID: p.ProjectID,
-								common.OpKeyAppID:     p.ID,
+				list.OpItemClickGoto{}.OpKey(): func() cptype.Operation {
+					builder := cputil.NewOpBuilder().
+						WithSkipRender(true).
+						WithServerDataPtr(list.OpItemClickGotoServerData{
+							OpItemBasicServerData: list.OpItemBasicServerData{
+								Params: map[string]interface{}{
+									common.OpKeyProjectID: p.ProjectID,
+									common.OpKeyAppID:     p.ID,
+								},
+								Target: common.OpValTargetRepo,
 							},
-							Target: common.OpValTargetRepo,
-						},
-					}).
-					Build(),
+						})
+					if !authorized {
+						builder = builder.WithDisable(true, l.sdk.I18n("appNotAuthorized"))
+					}
+					return builder.Build()
+				}(),
 			},
 		}
 		data.List = append(data.List, item)

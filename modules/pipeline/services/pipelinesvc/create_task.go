@@ -44,6 +44,7 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 	task.Extra.ClusterName = p.ClusterName
 	task.Extra.AllowFailure = false
 	task.Extra.Pause = false
+	task.Extra.ContainerInstanceProvider = p.Extra.ContainerInstanceProvider
 	task.Extra.Timeout = time.Duration(action.Timeout * int64(time.Second))
 	if action.Timeout < 0 {
 		task.Extra.Timeout = time.Duration(action.Timeout)
@@ -162,6 +163,7 @@ func (s *PipelineSvc) genSnippetTaskExtra(p *spec.Pipeline, action *pipelineyml.
 	ex.RuntimeResource = spec.GenDefaultTaskResource()
 	ex.RunAfter = s.calculateTaskRunAfter(action)
 	ex.Action = *action
+	ex.ContainerInstanceProvider = p.Extra.ContainerInstanceProvider
 	return ex
 }
 

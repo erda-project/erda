@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
+	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -83,13 +84,28 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 		}
 		utils.AppendMap(service.Envs, envs)
 
-		// bind volumes
-		hostPath := tmcInstance.ID
-		serverId := service.Envs["SERVER_ID"]
-		service.Binds = diceyml.Binds{
-			clusterConfig["DICE_STORAGE_MOUNTPOINT"] + "/addon/mysql/backup/" + hostPath + "_" + serverId + ":/var/backup/mysql:rw",
-			hostPath + "_" + serverId + ":/var/lib/mysql:rw",
+		//labels
+		if service.Labels == nil {
+			service.Labels = make(map[string]string)
 		}
+		options := map[string]string{}
+		utils.JsonConvertObjToType(tmcInstance.Options, &options)
+		utils.SetlabelsFromOptions(options, service.Labels)
+
+		// bind volumes
+		/*
+			hostPath := tmcInstance.ID
+			serverId := service.Envs["SERVER_ID"]
+			service.Binds = diceyml.Binds{
+				clusterConfig["DICE_STORAGE_MOUNTPOINT"] + "/addon/mysql/backup/" + hostPath + "_" + serverId + ":/var/backup/mysql:rw",
+				hostPath + "_" + serverId + ":/var/lib/mysql:rw",
+			}
+		*/
+		//  /var/backup/mysql volume
+		vol01 := addon.SetAddonVolumes(options, "/var/backup/mysql", false)
+		//  /var/lib/mysql volume
+		vol02 := addon.SetAddonVolumes(options, "/var/lib/mysql", false)
+		service.Volumes = diceyml.Volumes{vol01, vol02}
 
 		// health check
 		service.HealthCheck = diceyml.HealthCheck{

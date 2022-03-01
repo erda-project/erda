@@ -31,3 +31,11 @@ type PayloadPushEvent struct {
 	Pusher            *User                 `json:"pusher"`
 	Repository        *gitmodule.Repository `json:"repository"`
 }
+
+func (p *PayloadPushEvent) IsCreateNewBranch() bool {
+	return p.Before == gitmodule.INIT_COMMIT_ID
+}
+
+func (p *PayloadPushEvent) IsDeleteBranch() bool {
+	return p.After == gitmodule.INIT_COMMIT_ID
+}

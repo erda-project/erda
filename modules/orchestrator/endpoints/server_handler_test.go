@@ -15,6 +15,7 @@
 package endpoints
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -530,7 +531,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 		}
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(s.runtime), "RedeployPipeline", func(rt *runtime.Runtime, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDeployDTO, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(s.runtime), "RedeployPipeline", func(rt *runtime.Runtime, ctx context.Context, operator user.ID, orgID uint64, runtimeID uint64) (*apistructs.RuntimeDeployDTO, error) {
 		if runtimeID == 128 {
 			ret := &apistructs.RuntimeDeployDTO{
 				PipelineID:      10000260,
@@ -629,7 +630,8 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 		UnReDeployedIds: []uint64{130},
 		ErrMsg:          []string{"failed"},
 	}
-	got := s.batchRuntimeReDeploy(userID, runtimes, runtimeScaleRecords1)
+	ctx := context.Background()
+	got := s.batchRuntimeReDeploy(ctx, userID, runtimes, runtimeScaleRecords1)
 	if len(got.ReDeployedIds) != len(want1.ReDeployedIds) {
 		t.Errorf("batchRuntimeReDeploy() = %v, want %v", got, want1)
 	}
@@ -645,7 +647,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 	}
 
 	var rts []dbclient.Runtime
-	got = s.batchRuntimeReDeploy(userID, rts, runtimeScaleRecords2)
+	got = s.batchRuntimeReDeploy(ctx, userID, rts, runtimeScaleRecords2)
 	if len(got.ReDeployedIds) != len(want2.ReDeployedIds) {
 		t.Errorf("batchRuntimeReDeploy() = %v, want %v", got, want2)
 	}
@@ -660,7 +662,7 @@ func TestEndpoints_batchRuntimeReDeploy(t *testing.T) {
 	}
 
 	runtimes3 := []dbclient.Runtime{runtime3}
-	got = s.batchRuntimeReDeploy(userID, runtimes3, runtimeScaleRecords3)
+	got = s.batchRuntimeReDeploy(ctx, userID, runtimes3, runtimeScaleRecords3)
 	if len(got.UnReDeployedIds) != len(want3.UnReDeployedIds) {
 		t.Errorf("batchRuntimeReDeploy() = %v, want %v", got, want3)
 	}

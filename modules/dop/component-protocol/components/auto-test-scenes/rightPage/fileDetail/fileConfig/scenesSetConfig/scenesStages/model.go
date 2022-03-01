@@ -159,15 +159,15 @@ func (s *SceneStage) setToComponent(c *cptype.Component) error {
 }
 
 func NewStageData(ss *SceneStage, scene apistructs.AutoTestScene, svc *autotestv2.Service) (s StageData) {
-	s.Title = fmt.Sprintf("#%d 场景: %s", scene.ID, scene.Name)
+	s.Title = fmt.Sprintf("#%d %s: %s", scene.ID, ss.sdk.I18n("scene"), scene.Name)
 	if scene.RefSetID > 0 {
 		s.Tags = []stages.Tag{
 			{
-				Label: "场景集引用",
+				Label: ss.sdk.I18n("sceneSetRefer"),
 				Color: "red",
 			},
 			{
-				Label: scene.Policy.GetZhName(),
+				Label: ss.sdk.I18n(scene.Policy.ToString()),
 				Color: "blue",
 			},
 		}

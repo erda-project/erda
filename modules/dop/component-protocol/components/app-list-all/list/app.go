@@ -24,21 +24,24 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/common"
 )
 
-func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) {
+func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO, mrCount int) (kvs []list.KvInfo) {
 	var isPublic = "privateApp"
+	var publicIcon = "private"
 	if item.IsPublic {
 		isPublic = "publicApp"
+		publicIcon = "public"
 	}
 	updated := common.UpdatedTime(l.sdk.Ctx, item.UpdatedAt)
 	kvs = []list.KvInfo{
 		{
-			Icon:  "lock",
+			Icon:  publicIcon,
 			Value: l.sdk.I18n(isPublic),
+			Tip:   l.sdk.I18n("publicProperty"),
 		},
 		{
 			Icon:  "list-numbers",
-			Tip:   l.sdk.I18n("runtime"),
-			Value: strconv.Itoa(int(item.Stats.CountRuntimes)),
+			Tip:   l.sdk.I18n("openMrCount"),
+			Value: strconv.Itoa(mrCount),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
 					WithSkipRender(true).
@@ -48,7 +51,7 @@ func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO) (kvs []list.KvInfo) 
 								"projectId": item.ProjectID,
 								"appId":     item.ID,
 							},
-							Target: "deploy",
+							Target: "appOpenMr",
 						},
 					}).
 					Build(),

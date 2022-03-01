@@ -1,4 +1,3 @@
-version: 1.0
 scenario: issue-gantt
 
 hierarchy:
@@ -23,7 +22,7 @@ components:
   ganttContainer:
     type: Container
   filter:
-    type: ContractiveFilter
+    type: ConfigurableFilter
   gantt:
     type: Gantt
   

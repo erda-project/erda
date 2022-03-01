@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/instance/db"
 	"github.com/erda-project/erda/modules/msp/resource/deploy/handlers"
 	"github.com/erda-project/erda/modules/msp/resource/utils"
+	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -79,12 +80,28 @@ func (p *provider) BuildServiceGroupRequest(resourceInfo *handlers.ResourceInfo,
 			continue
 		}
 
+		// labels
+		if service.Labels == nil {
+			service.Labels = make(map[string]string)
+		}
+		options := map[string]string{}
+		utils.JsonConvertObjToType(tmcInstance.Options, &options)
+		utils.SetlabelsFromOptions(options, service.Labels)
+
 		// volumes
 		if p.IsNotDCOSCluster(clusterConfig["DICE_CLUSTER_TYPE"]) {
-			service.Binds = diceyml.Binds{
-				nodeId + "_data:/usr/share/elasticsearch/data:rw",
-				nodeId + "_logs:/usr/share/elasticsearch/logs:rw",
-			}
+			/*
+				service.Binds = diceyml.Binds{
+					nodeId + "_data:/usr/share/elasticsearch/data:rw",
+					nodeId + "_logs:/usr/share/elasticsearch/logs:rw",
+				}
+			*/
+			//  /usr/share/elasticsearch/data volume
+			vol01 := addon.SetAddonVolumes(options, "/usr/share/elasticsearch/data", false)
+			//  /usr/share/elasticsearch/logs volume
+			vol02 := addon.SetAddonVolumes(options, "/usr/share/elasticsearch/logs", false)
+			service.Volumes = diceyml.Volumes{vol01, vol02}
+
 		} else {
 			service.Binds = diceyml.Binds{
 				clusterConfig["DICE_STORAGE_MOUNTPOINT"] + "/addon/elasticsearch/" + nodeId + "/data:/usr/share/elasticsearch/data:rw",

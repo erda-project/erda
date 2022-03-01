@@ -398,9 +398,6 @@ func (svc *Service) ListTestPlanV2Step(testPlanID, groupID uint64) ([]*apistruct
 func (svc *Service) getChangedFields(req *apistructs.TestPlanV2UpdateRequest, model *dao.TestPlanV2) (map[string]interface{}, error) {
 	fields := make(map[string]interface{}, 0)
 	if req.Name != model.Name {
-		if err := svc.db.CheckTestPlanV2NameExist(req.Name); err != nil {
-			return nil, err
-		}
 		fields["name"] = req.Name
 	}
 

@@ -3,20 +3,34 @@ package apistructs
 import "time"
 
 const (
-	TypePipeline           = "PIPELINE"
 	TypeApplicationRelease = "APPLICATION_RELEASE"
 	TypeProjectRelease     = "PROJECT_RELEASE"
+
+	SourceDeployCenter   = "DEPLOY_CENTER"
+	SourceDeployPipeline = "PIPELINE"
+
+	DeployStatusWaitDeploy = "WAITDEPLOY"
 )
 
 type DeploymentOrderStatus string
 
 type DeploymentOrderCreateRequest struct {
-	Id        string `json:"id"`
-	Type      string `json:"type"`
+	Workspace string `json:"workspace"` // target workspace
+	Id        string `json:"id"`        // auto generate if empty
+
+	// deploy center or pipeline build
 	ReleaseId string `json:"releaseId"`
-	Workspace string `json:"workspace"`
-	AutoRun   bool   `json:"autoRun"`
-	Operator  string `json:"operator,omitempty"`
+
+	// pipeline, application or project
+	Type            string `json:"type"` // application_release or project_release
+	ReleaseName     string `json:"releaseName"`
+	ProjectId       uint64 `json:"projectId"`
+	ApplicationName string `json:"applicationName"`
+
+	Source              string `json:"source"` // default: DEPLOY_CENTER; value: PIPELINE
+	AutoRun             bool   `json:"autoRun"`
+	DeployWithoutBranch bool   `json:"deployWithoutBranch"`
+	Operator            string
 }
 
 type DeploymentOrderCreateResponse struct {
@@ -29,7 +43,7 @@ type DeploymentOrderCreateResponse struct {
 	ApplicationId   int64                                   `json:"applicationId"`
 	ApplicationName string                                  `json:"applicationName"`
 	Status          DeploymentOrderStatus                   `json:"status"`
-	Deployments     map[uint64]*DeploymentCreateResponseDTO `json:"deployments,omitempty"`
+	Deployments     map[string]*DeploymentCreateResponseDTO `json:"deployments,omitempty"`
 }
 
 type DeploymentOrderDeployRequest struct {
@@ -46,7 +60,7 @@ type DeploymentOrderListConditions struct {
 
 type DeploymentOrderDetail struct {
 	DeploymentOrderItem
-	ApplicationsInfo []*ApplicationInfo `json:"applicationsInfo"`
+	ApplicationsInfo [][]*ApplicationInfo `json:"applicationsInfo"`
 }
 
 type ApplicationInfo struct {
@@ -80,6 +94,8 @@ type DeploymentOrderItem struct {
 	Type              string                `json:"type,omitempty"`
 	ApplicationStatus string                `json:"applicationStatus,omitempty"`
 	Workspace         string                `json:"workspace"`
+	BatchSize         uint64                `json:"batchSize"`
+	CurrentBatch      uint64                `json:"currentBatch"`
 	Status            DeploymentOrderStatus `json:"status,omitempty"`
 	Operator          string                `json:"operator,omitempty"`
 	CreatedAt         time.Time             `json:"createdAt"`

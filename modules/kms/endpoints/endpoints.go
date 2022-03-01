@@ -57,6 +57,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/kms/decrypt", Method: http.MethodPost, Handler: e.KmsDecrypt},
 		{Path: "/api/kms/generate-data-key", Method: http.MethodPost, Handler: e.KmsGenerateDataKey},
 		{Path: "/api/kms/rotate-key-version", Method: http.MethodPost, Handler: e.KmsRotateKeyVersion},
-		{Path: "/api/kms/describe-key", Method: http.MethodGet, Handler: e.KmsRotateKeyVersion},
+		{Path: "/api/kms/describe-key", Method: http.MethodGet, Handler: e.KmsDescribeKey},
 	}
 }

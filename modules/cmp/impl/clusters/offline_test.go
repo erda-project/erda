@@ -64,7 +64,7 @@ func TestOfflineEdgeCluster(t *testing.T) {
 		return nil
 	})
 
-	_, err := c.OfflineEdgeCluster(req, "", "")
+	_, _, err := c.OfflineEdgeCluster(req, "", "")
 	assert.NoError(t, err)
 }
 
@@ -104,7 +104,7 @@ func TestOfflineWithDeleteClusterFailed(t *testing.T) {
 		return nil
 	})
 
-	_, err := c.OfflineEdgeCluster(req, "", "")
+	_, _, err := c.OfflineEdgeCluster(req, "", "")
 	assert.Error(t, err)
 }
 
@@ -144,7 +144,7 @@ func TestOfflineWithDeleteAKFailed(t *testing.T) {
 		return fmt.Errorf("fake error")
 	})
 
-	_, err := c.OfflineEdgeCluster(req, "", "")
+	_, _, err := c.OfflineEdgeCluster(req, "", "")
 	assert.Error(t, err)
 }
 
@@ -186,4 +186,103 @@ func TestBatchOfflineEdgeCluster(t *testing.T) {
 
 	err := c.BatchOfflineEdgeCluster(req, "")
 	assert.Error(t, err)
+}
+
+func TestOfflineEdgeClusters(t *testing.T) {
+	type args struct {
+		preCheck                 bool
+		forceOffline             bool
+		projectClusterReferError bool
+		projectClusterReferred   bool
+		runtimeClusterReferError bool
+		runtimeClusterReferred   bool
+	}
+
+	tests := []struct {
+		name             string
+		args             args
+		wantErr          bool
+		wantPreCheckHint bool
+	}{
+		{
+			name:    "test1_project_cluster_refer_error",
+			wantErr: true,
+			args:    args{projectClusterReferError: true},
+		},
+		{
+			name:    "test2_runtime_cluster_refer_error",
+			wantErr: true,
+			args:    args{runtimeClusterReferError: true},
+		},
+		{
+			name:             "test3_project_cluster_referred_pre_check",
+			args:             args{preCheck: true, projectClusterReferred: true},
+			wantPreCheckHint: true,
+		},
+		{
+			name:             "test4_runtime_cluster_referred_pre_check",
+			args:             args{preCheck: true, runtimeClusterReferred: true},
+			wantPreCheckHint: true,
+		},
+	}
+
+	var bdl *bundle.Bundle
+	var db *dbclient.DBClient
+
+	req := apistructs.OfflineEdgeClusterRequest{
+		ClusterName: "fake-cluster",
+	}
+
+	// monkey patch Bundle
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			req.PreCheck = tt.args.preCheck
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "QueryClusterInfo", func(_ *bundle.Bundle, _ string) (apistructs.ClusterInfoData, error) {
+				if tt.args.forceOffline {
+					req.Force = true
+				}
+				return apistructs.ClusterInfoData{apistructs.DICE_CLUSTER_NAME: "fake-cluster", apistructs.DICE_IS_EDGE: "true"}, nil
+			})
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "ProjectClusterReferred", func(_ *bundle.Bundle, userID, orgID, clusterName string) (referred bool, err error) {
+				if tt.args.projectClusterReferError {
+					return false, fmt.Errorf("fake error")
+				}
+				return tt.args.projectClusterReferred, nil
+			})
+			defer monkey.UnpatchAll()
+
+			monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "FindClusterResource", func(_ *bundle.Bundle, clusterName, orgID string) (*apistructs.ResourceReferenceData, error) {
+				if tt.args.runtimeClusterReferError {
+					return nil, fmt.Errorf("fake error")
+				}
+				if tt.args.runtimeClusterReferred {
+					return &apistructs.ResourceReferenceData{AddonReference: 1}, nil
+				}
+				return &apistructs.ResourceReferenceData{}, nil
+			})
+
+			// monkey record delete func
+			monkey.Patch(createRecord, func(_ *dbclient.DBClient, _ dbclient.Record) (uint64, error) {
+				return 0, nil
+			})
+
+			c := New(db, bdl, nil)
+
+			_, hint, err := c.OfflineEdgeCluster(req, "", "")
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("OfflineEdgeCluster error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if (hint != "") != tt.args.preCheck {
+				t.Errorf("OfflineEdgeCluster hint = %v, wantPreCheckHint %v", hint, tt.wantPreCheckHint)
+				return
+			}
+		})
+	}
 }

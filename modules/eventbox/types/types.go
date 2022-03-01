@@ -16,6 +16,8 @@ package types
 
 import (
 	"strings"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 // LabelKey `Message.Labels' key
@@ -23,10 +25,11 @@ type LabelKey string
 
 // Message 通用消息结构体
 type Message struct {
-	Sender  string                   `json:"sender"`
-	Content interface{}              `json:"content"`
-	Labels  map[LabelKey]interface{} `json:"labels"`
-	Time    int64                    `json:"time,omitempty"` // UnixNano
+	Sender        string                   `json:"sender"`
+	Content       interface{}              `json:"content"`
+	Labels        map[LabelKey]interface{} `json:"labels"`
+	Time          int64                    `json:"time,omitempty"` // UnixNano
+	CreateHistory *apistructs.CreateNotifyHistoryRequest
 
 	originContent interface{} `json:"-"`
 }

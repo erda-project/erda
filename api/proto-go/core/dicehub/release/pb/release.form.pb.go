@@ -13,6 +13,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*ReleaseList)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseCreateRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseResource)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseCreateResponse)(nil)
@@ -28,18 +29,49 @@ var _ urlenc.URLValuesUnmarshaler = (*ReleaseDeleteRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseDeleteResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ReleaseSummaryArray)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetResponseData)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ServiceImagePair)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ApplicationReleaseSummary)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseListRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseListResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListReleaseNameRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListReleaseNameResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseListResponseData)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ReleaseData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseNameListRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseNameListResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetLatestReleasesRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetLatestReleasesResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetLatestReleasesResponseData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseGCRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ReleaseUploadRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ReleaseUploadResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ParseReleaseFileRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ParseReleaseFileResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ParseReleaseFileResponseData)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*FormalReleaseRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*FormalReleaseResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*FormalReleasesRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*FormalReleasesResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ReleasesDeleteRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ReleasesDeleteResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CheckVersionRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CheckVersionResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CheckVersionResponseData)(nil)
+
+// ReleaseList implement urlenc.URLValuesUnmarshaler.
+func (m *ReleaseList) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "list":
+				m.List = vals
+			}
+		}
+	}
+	return nil
+}
 
 // ReleaseCreateRequest implement urlenc.URLValuesUnmarshaler.
 func (m *ReleaseCreateRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -54,6 +86,30 @@ func (m *ReleaseCreateRequest) UnmarshalURLValues(prefix string, values url.Valu
 				m.Dice = vals[0]
 			case "addon":
 				m.Addon = vals[0]
+			case "tag":
+				m.Tag = vals
+			case "isStable":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsStable = val
+			case "isFormal":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsFormal = val
+			case "isProjectRelease":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsProjectRelease = val
+			case "Changelog":
+				m.Changelog = vals[0]
+			case "tags":
+				m.Tags = vals
 			case "version":
 				m.Version = vals[0]
 			case "orgID":
@@ -155,6 +211,8 @@ func (m *ReleaseUpdateRequest) UnmarshalURLValues(prefix string, values url.Valu
 				m.Version = vals[0]
 			case "desc":
 				m.Desc = vals[0]
+			case "changelog":
+				m.Changelog = vals[0]
 			case "orgID":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
@@ -338,11 +396,48 @@ func (m *ReleaseGetResponse) UnmarshalURLValues(prefix string, values url.Values
 					m.Data = &ReleaseGetResponseData{}
 				}
 				m.Data.Addon = vals[0]
+			case "data.changelog":
+				if m.Data == nil {
+					m.Data = &ReleaseGetResponseData{}
+				}
+				m.Data.Changelog = vals[0]
+			case "data.isStable":
+				if m.Data == nil {
+					m.Data = &ReleaseGetResponseData{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data.IsStable = val
+			case "data.isFormal":
+				if m.Data == nil {
+					m.Data = &ReleaseGetResponseData{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data.IsFormal = val
+			case "data.isProjectRelease":
+				if m.Data == nil {
+					m.Data = &ReleaseGetResponseData{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data.IsProjectRelease = val
 			case "data.images":
 				if m.Data == nil {
 					m.Data = &ReleaseGetResponseData{}
 				}
 				m.Data.Images = vals
+			case "data.tags":
+				if m.Data == nil {
+					m.Data = &ReleaseGetResponseData{}
+				}
+				m.Data.Tags = vals[0]
 			case "data.version":
 				if m.Data == nil {
 					m.Data = &ReleaseGetResponseData{}
@@ -475,9 +570,23 @@ func (m *ReleaseGetResponse) UnmarshalURLValues(prefix string, values url.Values
 					return err
 				}
 				m.Data.UpdatedAt.Nanos = int32(val)
+			case "data.isLatest":
+				if m.Data == nil {
+					m.Data = &ReleaseGetResponseData{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data.IsLatest = val
 			}
 		}
 	}
+	return nil
+}
+
+// ReleaseSummaryArray implement urlenc.URLValuesUnmarshaler.
+func (m *ReleaseSummaryArray) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }
 
@@ -496,8 +605,30 @@ func (m *ReleaseGetResponseData) UnmarshalURLValues(prefix string, values url.Va
 				m.Desc = vals[0]
 			case "addon":
 				m.Addon = vals[0]
+			case "changelog":
+				m.Changelog = vals[0]
+			case "isStable":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsStable = val
+			case "isFormal":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsFormal = val
+			case "isProjectRelease":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsProjectRelease = val
 			case "images":
 				m.Images = vals
+			case "tags":
+				m.Tags = vals[0]
 			case "version":
 				m.Version = vals[0]
 			case "crossCluster":
@@ -582,6 +713,56 @@ func (m *ReleaseGetResponseData) UnmarshalURLValues(prefix string, values url.Va
 					return err
 				}
 				m.UpdatedAt.Nanos = int32(val)
+			case "isLatest":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsLatest = val
+			}
+		}
+	}
+	return nil
+}
+
+// ServiceImagePair implement urlenc.URLValuesUnmarshaler.
+func (m *ServiceImagePair) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "serviceName":
+				m.ServiceName = vals[0]
+			case "image":
+				m.Image = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ApplicationReleaseSummary implement urlenc.URLValuesUnmarshaler.
+func (m *ApplicationReleaseSummary) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "releaseID":
+				m.ReleaseID = vals[0]
+			case "releaseName":
+				m.ReleaseName = vals[0]
+			case "version":
+				m.Version = vals[0]
+			case "applicationID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ApplicationID = val
+			case "applicationName":
+				m.ApplicationName = vals[0]
+			case "createdAt":
+				m.CreatedAt = vals[0]
+			case "diceYml":
+				m.DiceYml = vals[0]
 			}
 		}
 	}
@@ -595,12 +776,34 @@ func (m *ReleaseListRequest) UnmarshalURLValues(prefix string, values url.Values
 			switch prefix + key {
 			case "query":
 				m.Query = vals[0]
+			case "releaseID":
+				m.ReleaseID = vals[0]
 			case "releaseName":
 				m.ReleaseName = vals[0]
 			case "cluster":
 				m.Cluster = vals[0]
 			case "branch":
 				m.Branch = vals[0]
+			case "isLatest":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsLatest = val
+			case "isStable":
+				m.IsStable = vals[0]
+			case "isFormal":
+				m.IsFormal = vals[0]
+			case "isProjectRelease":
+				m.IsProjectRelease = vals[0]
+			case "userID":
+				m.UserID = vals
+			case "version":
+				m.Version = vals[0]
+			case "commitID":
+				m.CommitID = vals[0]
+			case "tags":
+				m.Tags = vals[0]
 			case "isVersion":
 				val, err := strconv.ParseBool(vals[0])
 				if err != nil {
@@ -612,11 +815,7 @@ func (m *ReleaseListRequest) UnmarshalURLValues(prefix string, values url.Values
 			case "crossClusterOrSpecifyCluster":
 				m.CrossClusterOrSpecifyCluster = vals[0]
 			case "applicationID":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.ApplicationID = val
+				m.ApplicationID = vals
 			case "projectID":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
@@ -647,6 +846,10 @@ func (m *ReleaseListRequest) UnmarshalURLValues(prefix string, values url.Values
 					return err
 				}
 				m.PageNum = val
+			case "orderBy":
+				m.OrderBy = vals[0]
+			case "order":
+				m.Order = vals[0]
 			}
 		}
 	}
@@ -716,6 +919,143 @@ func (m *ReleaseListResponseData) UnmarshalURLValues(prefix string, values url.V
 					return err
 				}
 				m.Total = val
+			}
+		}
+	}
+	return nil
+}
+
+// ReleaseData implement urlenc.URLValuesUnmarshaler.
+func (m *ReleaseData) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "releaseID":
+				m.ReleaseID = vals[0]
+			case "releaseName":
+				m.ReleaseName = vals[0]
+			case "diceyml":
+				m.Diceyml = vals[0]
+			case "desc":
+				m.Desc = vals[0]
+			case "addon":
+				m.Addon = vals[0]
+			case "changelog":
+				m.Changelog = vals[0]
+			case "isStable":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsStable = val
+			case "isFormal":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsFormal = val
+			case "isProjectRelease":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsProjectRelease = val
+			case "applicationReleaseList":
+				m.ApplicationReleaseList = vals[0]
+			case "images":
+				m.Images = vals
+			case "tags":
+				m.Tags = vals[0]
+			case "version":
+				m.Version = vals[0]
+			case "crossCluster":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.CrossCluster = val
+			case "reference":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Reference = val
+			case "orgID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.OrgID = val
+			case "projectID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			case "applicationID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ApplicationID = val
+			case "projectName":
+				m.ProjectName = vals[0]
+			case "applicationName":
+				m.ApplicationName = vals[0]
+			case "userID":
+				m.UserID = vals[0]
+			case "clusterName":
+				m.ClusterName = vals[0]
+			case "createdAt":
+				if m.CreatedAt == nil {
+					m.CreatedAt = &timestamppb.Timestamp{}
+				}
+			case "createdAt.seconds":
+				if m.CreatedAt == nil {
+					m.CreatedAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.CreatedAt.Seconds = val
+			case "createdAt.nanos":
+				if m.CreatedAt == nil {
+					m.CreatedAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.CreatedAt.Nanos = int32(val)
+			case "updatedAt":
+				if m.UpdatedAt == nil {
+					m.UpdatedAt = &timestamppb.Timestamp{}
+				}
+			case "updatedAt.seconds":
+				if m.UpdatedAt == nil {
+					m.UpdatedAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.UpdatedAt.Seconds = val
+			case "updatedAt.nanos":
+				if m.UpdatedAt == nil {
+					m.UpdatedAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.UpdatedAt.Nanos = int32(val)
+			case "isLatest":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsLatest = val
 			}
 		}
 	}
@@ -883,5 +1223,282 @@ func (m *GetLatestReleasesResponseData) UnmarshalURLValues(prefix string, values
 
 // ReleaseGCRequest implement urlenc.URLValuesUnmarshaler.
 func (m *ReleaseGCRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// ReleaseUploadRequest implement urlenc.URLValuesUnmarshaler.
+func (m *ReleaseUploadRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "diceFileID":
+				m.DiceFileID = vals[0]
+			case "projectID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			case "projectName":
+				m.ProjectName = vals[0]
+			case "orgID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.OrgID = val
+			case "userID":
+				m.UserID = vals[0]
+			case "clusterName":
+				m.ClusterName = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ReleaseUploadResponse implement urlenc.URLValuesUnmarshaler.
+func (m *ReleaseUploadResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &ReleaseCreateResponseData{}
+				}
+			case "data.releaseID":
+				if m.Data == nil {
+					m.Data = &ReleaseCreateResponseData{}
+				}
+				m.Data.ReleaseID = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ParseReleaseFileRequest implement urlenc.URLValuesUnmarshaler.
+func (m *ParseReleaseFileRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "diceFileID":
+				m.DiceFileID = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ParseReleaseFileResponse implement urlenc.URLValuesUnmarshaler.
+func (m *ParseReleaseFileResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &ParseReleaseFileResponseData{}
+				}
+			case "data.version":
+				if m.Data == nil {
+					m.Data = &ParseReleaseFileResponseData{}
+				}
+				m.Data.Version = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ParseReleaseFileResponseData implement urlenc.URLValuesUnmarshaler.
+func (m *ParseReleaseFileResponseData) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "version":
+				m.Version = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// FormalReleaseRequest implement urlenc.URLValuesUnmarshaler.
+func (m *FormalReleaseRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "releaseId":
+				m.ReleaseId = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// FormalReleaseResponse implement urlenc.URLValuesUnmarshaler.
+func (m *FormalReleaseResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				m.Data = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// FormalReleasesRequest implement urlenc.URLValuesUnmarshaler.
+func (m *FormalReleasesRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "isProjectRelease":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsProjectRelease = val
+			case "projectId":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectId = val
+			case "releaseId":
+				m.ReleaseId = vals
+			}
+		}
+	}
+	return nil
+}
+
+// FormalReleasesResponse implement urlenc.URLValuesUnmarshaler.
+func (m *FormalReleasesResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				m.Data = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ReleasesDeleteRequest implement urlenc.URLValuesUnmarshaler.
+func (m *ReleasesDeleteRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "isProjectRelease":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsProjectRelease = val
+			case "projectId":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectId = val
+			case "releaseId":
+				m.ReleaseId = vals
+			}
+		}
+	}
+	return nil
+}
+
+// ReleasesDeleteResponse implement urlenc.URLValuesUnmarshaler.
+func (m *ReleasesDeleteResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				m.Data = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// CheckVersionRequest implement urlenc.URLValuesUnmarshaler.
+func (m *CheckVersionRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "isProjectRelease":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsProjectRelease = val
+			case "appID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.AppID = val
+			case "orgID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.OrgID = val
+			case "projectID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			case "version":
+				m.Version = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// CheckVersionResponse implement urlenc.URLValuesUnmarshaler.
+func (m *CheckVersionResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "data":
+				if m.Data == nil {
+					m.Data = &CheckVersionResponseData{}
+				}
+			case "data.isUnique":
+				if m.Data == nil {
+					m.Data = &CheckVersionResponseData{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data.IsUnique = val
+			}
+		}
+	}
+	return nil
+}
+
+// CheckVersionResponseData implement urlenc.URLValuesUnmarshaler.
+func (m *CheckVersionResponseData) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "isUnique":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsUnique = val
+			}
+		}
+	}
 	return nil
 }

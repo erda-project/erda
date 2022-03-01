@@ -177,6 +177,11 @@ type GetRuntimeServicesResponse struct {
 	Data *GetRuntimeServicesResponseData
 }
 
+type GetBatchRuntimeServicesResponse struct {
+	apistructs.Header
+	Data map[uint64]*GetRuntimeServicesResponseData
+}
+
 type GetRuntimeServicesResponseData struct {
 	ID                    uint64                                            `json:"id"`
 	Name                  string                                            `json:"name"`
@@ -234,6 +239,37 @@ func (b *Bundle) GetRuntimeServices(runtimeID uint64, orgID uint64, userID strin
 	}
 
 	logrus.Infof("GetRuntimeServices: respBody: %s", string(resp.Body()))
+
+	return fetchResp.Data, nil
+}
+
+func (b *Bundle) BatchGetRuntimeServices(runtimeIDs []uint64, orgID, userID string) (map[uint64]*GetRuntimeServicesResponseData, error) {
+	host, err := b.urls.Orchestrator()
+	if err != nil {
+		return nil, err
+	}
+	var (
+		fetchResp GetBatchRuntimeServicesResponse
+		hc        = b.hc
+	)
+
+	req := hc.Get(host).
+		Path("/api/runtimesServices").
+		Header(httputil.InternalHeader, "bundle").
+		Header("User-ID", userID).
+		Header("Org-ID", orgID)
+	for i := 0; i < len(runtimeIDs); i++ {
+		req.Param("runtimeID", strconv.FormatUint(runtimeIDs[i], 10))
+	}
+	resp, err := req.Do().JSON(&fetchResp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() || !fetchResp.Success {
+		return nil, toAPIError(resp.StatusCode(), fetchResp.Error)
+	}
+
+	logrus.Infof("BatchGetRuntimeServices: respBody: %s", string(resp.Body()))
 
 	return fetchResp.Data, nil
 }

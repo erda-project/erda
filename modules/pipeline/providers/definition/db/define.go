@@ -29,7 +29,7 @@ type PipelineDefinition struct {
 	ID                string    `json:"id" xorm:"pk"`
 	Location          string    `json:"location"`
 	Name              string    `json:"name"`
-	CostTime          uint64    `json:"costTime"`
+	CostTime          int64     `json:"costTime"`
 	Creator           string    `json:"creator"`
 	Executor          string    `json:"executor"`
 	SoftDeletedAt     uint64    `json:"softDeletedAt"`
@@ -141,6 +141,9 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 	}
 	if len(req.Status) != 0 {
 		engine = engine.In("d.status", req.Status)
+	}
+	if len(req.SourceIDList) != 0 {
+		engine = engine.In("d.pipeline_source_id", req.SourceIDList)
 	}
 	if len(req.TimeCreated) == 2 {
 		if req.TimeCreated[0] != "" {
@@ -278,13 +281,13 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 		TimeCreated:       timestamppb.New(p.TimeCreated),
 		TimeUpdated:       timestamppb.New(p.TimeUpdated),
 		SourceType:        p.SourceType,
-		PipelineSourceId:  p.PipelineSourceId,
+		PipelineSourceID:  p.PipelineSourceId,
 		Remote:            p.Remote,
 		Ref:               p.Ref,
 		Path:              p.Path,
 		FileName:          p.FileName,
 		Status:            p.Status,
-		PipelineId:        int64(p.PipelineID),
+		PipelineID:        int64(p.PipelineID),
 		TotalActionNum:    p.TotalActionNum,
 		ExecutedActionNum: p.ExecutedActionNum,
 	}

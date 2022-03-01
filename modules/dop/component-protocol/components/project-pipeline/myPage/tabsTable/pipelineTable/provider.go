@@ -64,7 +64,8 @@ type PipelineTable struct {
 }
 
 const (
-	ColumnPipelineName    table.ColumnKey = "pipeline"
+	ColumnPipelineName    table.ColumnKey = "pipelineName"
+	ColumnPipeline        table.ColumnKey = "pipeline"
 	ColumnPipelineStatus  table.ColumnKey = "pipelineStatus"
 	ColumnCostTime        table.ColumnKey = "costTime"
 	ColumnApplicationName table.ColumnKey = "applicationName"
@@ -76,7 +77,9 @@ const (
 	ColumnPipelineID      table.ColumnKey = "pipelineID"
 	ColumnMoreOperations  table.ColumnKey = "moreOperations"
 	ColumnSource          table.ColumnKey = "source"
+	ColumnSourceFile      table.ColumnKey = "sourceFile"
 	ColumnProcess         table.ColumnKey = "process"
+	ColumnIcon            table.ColumnKey = "icon"
 
 	StateKeyTransactionPaging = "paging"
 	StateKeyTransactionSort   = "sort"
@@ -131,16 +134,17 @@ func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 	return table.ColumnsInfo{
 		Merges: map[table.ColumnKey]table.MergedColumn{
-			ColumnSource: {[]table.ColumnKey{ColumnApplicationName, ColumnBranch}},
+			ColumnSource:   {[]table.ColumnKey{ColumnApplicationName, ColumnIcon, ColumnBranch}},
+			ColumnPipeline: {[]table.ColumnKey{ColumnPipelineName, ColumnSourceFile}},
 		},
-		Orders: []table.ColumnKey{ColumnPipelineName, ColumnApplicationName, ColumnBranch, ColumnPipelineStatus, ColumnProcess, ColumnCostTime,
+		Orders: []table.ColumnKey{ColumnPipeline, ColumnSource, ColumnPipelineStatus, ColumnProcess, ColumnCostTime,
 			ColumnExecutor, ColumnStartTime, ColumnCreateTime, ColumnCreator, ColumnPipelineID, ColumnMoreOperations},
 		ColumnsMap: map[table.ColumnKey]table.Column{
 			ColumnPipelineName:    {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineName))},
 			ColumnApplicationName: {Title: cputil.I18n(p.sdk.Ctx, string(ColumnApplicationName))},
 			ColumnBranch:          {Title: cputil.I18n(p.sdk.Ctx, string(ColumnBranch))},
 			ColumnPipelineStatus:  {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineStatus))},
-			ColumnProcess:         {Title: cputil.I18n(p.sdk.Ctx, string(ColumnProcess))},
+			ColumnProcess:         {Title: cputil.I18n(p.sdk.Ctx, string(ColumnProcess)), Tip: cputil.I18n(p.sdk.Ctx, "processTip")},
 			ColumnCostTime:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCostTime)), EnableSort: true},
 			ColumnExecutor:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnExecutor)), Hidden: true},
 			ColumnStartTime:       {Title: cputil.I18n(p.sdk.Ctx, string(ColumnStartTime)), EnableSort: true, Hidden: true},
@@ -148,6 +152,10 @@ func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 			ColumnCreator:         {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCreator)), Hidden: true},
 			ColumnPipelineID:      {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineID)), Hidden: true},
 			ColumnCreateTime:      {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCreateTime)), EnableSort: true, Hidden: true},
+			ColumnSource:          {Title: cputil.I18n(p.sdk.Ctx, string(ColumnSource))},
+			ColumnSourceFile:      {Title: cputil.I18n(p.sdk.Ctx, string(ColumnSourceFile))},
+			ColumnIcon:            {Title: cputil.I18n(p.sdk.Ctx, string(ColumnIcon))},
+			ColumnPipeline:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipeline))},
 		},
 	}
 }
@@ -214,7 +222,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			}
 			return nil
 		}(),
-		Name: p.gsHelper.GetGlobalNameInputFilter(),
+		Name: filter.Title,
 		TimeCreated: func() []string {
 			timeCreated := make([]string, 0)
 			if len(filter.CreatedAtStartEnd) == 2 {
@@ -317,26 +325,20 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			CellsMap: map[table.ColumnKey]table.Cell{
 				ColumnPipelineName: table.NewTextCell(v.Name).Build(),
 				ColumnPipelineStatus: table.NewCompleteTextCell(commodel.Text{
-					Text: util.DisplayStatusText(p.sdk.Ctx, v.Status),
-					Status: func() commodel.UnifiedStatus {
-						if apistructs.PipelineStatus(v.Status).IsRunningStatus() {
-							return commodel.ProcessingStatus
-						}
-						if apistructs.PipelineStatus(v.Status).IsFailedStatus() {
-							return commodel.ErrorStatus
-						}
-						return commodel.DefaultStatus
-					}(),
+					Text:   util.DisplayStatusText(p.sdk.Ctx, v.Status),
+					Status: getStatus(apistructs.PipelineStatus(v.Status)),
 				}).Build(),
-				ColumnCostTime: table.NewCompleteTextCell(commodel.Text{
-					Text: func() string {
-						if v.CostTime <= 0 {
-							return "-"
+				ColumnCostTime: table.NewDurationCell(commodel.Duration{
+					Value: func() int64 {
+						if !apistructs.PipelineStatus(v.Status).IsRunningStatus() &&
+							!apistructs.PipelineStatus(v.Status).IsEndStatus() {
+							return -1
 						}
-						return fmt.Sprintf("%v s", v.CostTime)
+						return int64(v.CostTime)
 					}(),
 					Tip: func() string {
-						if v.CostTime <= 0 {
+						if !apistructs.PipelineStatus(v.Status).IsRunningStatus() &&
+							!apistructs.PipelineStatus(v.Status).IsEndStatus() {
 							return ""
 						}
 						return fmt.Sprintf("%s : %s",
@@ -345,10 +347,21 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 						)
 					}(),
 				}).Build(),
-				ColumnProcess: table.NewCompleteTextCell(commodel.Text{
+				ColumnProcess: table.NewProgressBarCell(commodel.ProgressBar{
+					BarCompletedNum: func() int64 {
+						if v.ExecutedActionNum < 0 {
+							return 0
+						}
+						if v.ExecutedActionNum > v.TotalActionNum {
+							return v.TotalActionNum
+						}
+						return v.ExecutedActionNum
+					}(),
+					BarTotalNum: v.TotalActionNum,
 					Text: func() string {
-						if v.Status == "" {
-							return "-"
+						if !apistructs.PipelineStatus(v.Status).IsRunningStatus() &&
+							!apistructs.PipelineStatus(v.Status).IsEndStatus() {
+							return ""
 						}
 						if v.ExecutedActionNum < 0 {
 							v.ExecutedActionNum = 0
@@ -358,14 +371,15 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 						}
 						return fmt.Sprintf("%d/%d", v.ExecutedActionNum, v.TotalActionNum)
 					}(),
+					Status: getStatus(apistructs.PipelineStatus(v.Status)),
 				}).Build(),
 				ColumnApplicationName: table.NewTextCell(getApplicationNameFromDefinitionRemote(v.Remote)).Build(),
 				ColumnBranch:          table.NewTextCell(v.Ref).Build(),
 				ColumnPipelineID: table.NewTextCell(func() string {
-					if v.PipelineId == 0 {
+					if v.PipelineID == 0 {
 						return "-"
 					}
-					return strconv.FormatInt(v.PipelineId, 10)
+					return strconv.FormatInt(v.PipelineID, 10)
 				}()).Build(),
 				ColumnExecutor:   table.NewUserCell(commodel.User{ID: v.Executor}).Build(),
 				ColumnCreator:    table.NewUserCell(commodel.User{ID: v.Creator}).Build(),
@@ -373,6 +387,12 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 				ColumnCreateTime: table.NewTextCell(formatTimeToStr(v.TimeCreated.AsTime())).Build(),
 				ColumnMoreOperations: table.NewMoreOperationsCell(commodel.MoreOperations{
 					Ops: p.SetTableMoreOpItem(v, definitionYmlSourceMap, ymlSourceMapCronMap),
+				}).Build(),
+				ColumnSourceFile: table.NewTextCell(func() string {
+					return v.FileName
+				}()).Build(),
+				ColumnIcon: table.NewIconCell(commodel.Icon{
+					Type: "branch",
 				}).Build(),
 			},
 			Operations: map[cptype.OperationKey]cptype.Operation{
@@ -396,10 +416,10 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 							inode = fmt.Sprintf("%v/%v/tree/%v/%v/%v", p.InParams.ProjectID, appNameIDMap.AppNameToID[appName], v.Ref, v.Path, v.FileName)
 						}
 					}
-
 					build.ServerData = &cptype.OpServerData{
-						"pipelineID": v.PipelineId,
-						"inode":      base64.StdEncoding.EncodeToString([]byte(inode)),
+						"pipelineID": v.PipelineID,
+						"inode":      base64.URLEncoding.EncodeToString([]byte(inode)),
+						"appName":    appName,
 					}
 					return build
 				}(),
@@ -765,4 +785,17 @@ type OpMoreOperationsItemClickClientData struct {
 
 type OpMoreOperationsItemClickServerData struct {
 	ID string `json:"id"`
+}
+
+func getStatus(status apistructs.PipelineStatus) commodel.UnifiedStatus {
+	if status.IsRunningStatus() {
+		return commodel.ProcessingStatus
+	}
+	if status.IsFailedStatus() {
+		return commodel.ErrorStatus
+	}
+	if status.IsSuccessStatus() {
+		return commodel.SuccessStatus
+	}
+	return commodel.DefaultStatus
 }

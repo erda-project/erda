@@ -29,30 +29,30 @@ type Service struct {
 
 type Option func(*Service)
 
-func New(options ...Option) *Service {
+func New(opts ...Option) *Service {
 	r := &Service{}
-	for _, op := range options {
+	for _, op := range opts {
 		op(r)
 	}
 	return r
 }
 
 // WithI18n sets the i18n client
-func WithI18n(trans i18n.Translator) Option {
+func WithI18n(translator i18n.Translator) Option {
 	return func(svc *Service) {
-		svc.trans = trans
+		svc.trans = translator
 	}
 }
 
 // WithBranchRuleSvc sets the branch rule client
-func WithBranchRuleSvc(svc *branchrule.BranchRule) Option {
+func WithBranchRuleSvc(branchRule *branchrule.BranchRule) Option {
 	return func(service *Service) {
-		service.branchRuleSvc = svc
+		service.branchRuleSvc = branchRule
 	}
 }
 
-func WithBundle(bundle *bundle.Bundle) Option {
+func WithBundle(bdl *bundle.Bundle) Option {
 	return func(svc *Service) {
-		svc.bdl = bundle
+		svc.bdl = bdl
 	}
 }

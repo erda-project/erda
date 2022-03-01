@@ -37,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/queue/throttler"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
+	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/pkg/containers"
 	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
@@ -126,7 +127,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	if err != nil {
 		return true, apierrors.ErrGetCluster.InternalError(err)
 	}
-	pre.Ctx = context.WithValue(pre.Ctx, apistructs.NETPORTAL_URL, "inet://"+p.ClusterName)
+	pre.Ctx = context.WithValue(pre.Ctx, apistructs.ClusterNameContextKey, p.ClusterName)
 
 	// TODO 目前 initSQL 需要存储在 网盘上，暂时不能用 volume 来解
 	mountPoint := clusterInfo.MustGet(apistructs.DICE_STORAGE_MOUNTPOINT)
@@ -334,13 +335,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	task.Extra.TaskContainers = taskContainers
 
 	// --- resource ---
-	task.Extra.RuntimeResource = spec.RuntimeResource{
-		CPU:       task.Extra.AppliedResources.Requests.CPU,
-		Memory:    task.Extra.AppliedResources.Requests.MemoryMB,
-		MaxCPU:    task.Extra.AppliedResources.Limits.CPU,
-		MaxMemory: task.Extra.AppliedResources.Limits.MemoryMB,
-		Disk:      0,
-	}
+	container_provider.DealTaskRuntimeResource(task)
 	if diceYmlJob.Resources.Disk > 0 {
 		task.Extra.RuntimeResource.Disk = float64(diceYmlJob.Resources.Disk)
 	}

@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-scenes/common/gshelper"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/openapi/component-protocol/pkg/component_key"
 )
@@ -246,26 +247,26 @@ func getProps(ctx context.Context) map[string]interface{} {
 	}
 }
 
-func transformStepType(str apistructs.StepAPIType) string {
+func (a *ExecuteTaskTable) transformStepType(str apistructs.StepAPIType) string {
 	switch str {
 	case apistructs.StepTypeWait:
-		return "等待"
+		return a.sdk.I18n("wait")
 	case apistructs.StepTypeAPI:
-		return "接口"
+		return a.sdk.I18n("API")
 	case apistructs.StepTypeScene:
-		return "场景"
+		return a.sdk.I18n("scene")
 	case apistructs.StepTypeConfigSheet:
-		return "配置单"
+		return a.sdk.I18n("configForm")
 	case apistructs.StepTypeCustomScript:
-		return "自定义"
+		return a.sdk.I18n("custom")
 	case apistructs.AutotestSceneSet:
-		return "场景集"
+		return a.sdk.I18n("sceneset")
 	}
 	return string(str)
 }
 
-func getStatus(req apistructs.PipelineStatus) map[string]interface{} {
-	res := map[string]interface{}{"renderType": "textWithBadge", "value": req.ToDesc()}
+func (a *ExecuteTaskTable) getStatus(req apistructs.PipelineStatus) map[string]interface{} {
+	res := map[string]interface{}{"renderType": "textWithBadge", "value": a.sdk.I18n(util.ColumnPipelineStatus + req.String())}
 	if req.IsSuccessStatus() {
 		res["status"] = "success"
 	}
@@ -337,8 +338,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 					},
 					"tasksNum": taskNum,
 					"name":     task.Name,
-					"status":   getStatus(task.Status),
-					"type":     transformStepType(apistructs.StepAPIType(task.Type)),
+					"status":   a.getStatus(task.Status),
+					"type":     a.transformStepType(apistructs.StepAPIType(task.Type)),
 					"path":     "",
 					"step":     stepIdx,
 				}
@@ -371,7 +372,7 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 							if value.WaitTime > 0 {
 								value.WaitTimeSec = value.WaitTime
 							}
-							res.Name = transformStepType(res.Type) + strconv.FormatInt(value.WaitTimeSec, 10) + "s"
+							res.Name = a.transformStepType(res.Type) + strconv.FormatInt(value.WaitTimeSec, 10) + "s"
 						}
 					} else {
 						res.Name = task.Name
@@ -416,8 +417,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						},
 						"tasksNum": "-",
 						"name":     res.Name,
-						"status":   getStatus(task.Status),
-						"type":     transformStepType(res.Type),
+						"status":   a.getStatus(task.Status),
+						"type":     a.transformStepType(res.Type),
 						"path":     path,
 						"step":     stepIdx,
 					}
@@ -450,8 +451,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						},
 						"tasksNum": "-",
 						"name":     res.SceneSetName,
-						"status":   getStatus(task.Status),
-						"type":     transformStepType(apistructs.AutotestSceneSet),
+						"status":   a.getStatus(task.Status),
+						"type":     a.sdk.I18n("sceneset"),
 						"path":     "",
 						"step":     stepIdx,
 					}
@@ -483,8 +484,8 @@ func (a *ExecuteTaskTable) setData(pipeline *apistructs.PipelineDetailDTO) error
 						},
 						"tasksNum": "-",
 						"name":     res.Name,
-						"status":   getStatus(task.Status),
-						"type":     transformStepType(apistructs.AutotestScene),
+						"status":   a.getStatus(task.Status),
+						"type":     a.sdk.I18n("scene"),
 						"path":     "",
 						"step":     stepIdx,
 					}

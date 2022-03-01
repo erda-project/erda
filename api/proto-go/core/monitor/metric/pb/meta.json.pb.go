@@ -17,6 +17,14 @@ var _ json.Marshaler = (*ListMetricNamesRequest)(nil)
 var _ json.Unmarshaler = (*ListMetricNamesRequest)(nil)
 var _ json.Marshaler = (*ListMetricNamesResponse)(nil)
 var _ json.Unmarshaler = (*ListMetricNamesResponse)(nil)
+var _ json.Marshaler = (*RegisterMetricMetaRequest)(nil)
+var _ json.Unmarshaler = (*RegisterMetricMetaRequest)(nil)
+var _ json.Marshaler = (*RegisterMetricMetaResponse)(nil)
+var _ json.Unmarshaler = (*RegisterMetricMetaResponse)(nil)
+var _ json.Marshaler = (*UnRegisterMetricMetaRequest)(nil)
+var _ json.Unmarshaler = (*UnRegisterMetricMetaRequest)(nil)
+var _ json.Marshaler = (*UnRegisterMetricMetaResponse)(nil)
+var _ json.Unmarshaler = (*UnRegisterMetricMetaResponse)(nil)
 var _ json.Marshaler = (*ListMetricMetaRequest)(nil)
 var _ json.Unmarshaler = (*ListMetricMetaRequest)(nil)
 var _ json.Marshaler = (*ListMetricMetaResponse)(nil)
@@ -87,6 +95,78 @@ func (m *ListMetricNamesResponse) MarshalJSON() ([]byte, error) {
 
 // ListMetricNamesResponse implement json.Marshaler.
 func (m *ListMetricNamesResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// RegisterMetricMetaRequest implement json.Marshaler.
+func (m *RegisterMetricMetaRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// RegisterMetricMetaRequest implement json.Marshaler.
+func (m *RegisterMetricMetaRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// RegisterMetricMetaResponse implement json.Marshaler.
+func (m *RegisterMetricMetaResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// RegisterMetricMetaResponse implement json.Marshaler.
+func (m *RegisterMetricMetaResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// UnRegisterMetricMetaRequest implement json.Marshaler.
+func (m *UnRegisterMetricMetaRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// UnRegisterMetricMetaRequest implement json.Marshaler.
+func (m *UnRegisterMetricMetaRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// UnRegisterMetricMetaResponse implement json.Marshaler.
+func (m *UnRegisterMetricMetaResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// UnRegisterMetricMetaResponse implement json.Marshaler.
+func (m *UnRegisterMetricMetaResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

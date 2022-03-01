@@ -13,6 +13,10 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineSourcePreCheckRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineSourcePreCheckResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineNamePreCheckRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineNamePreCheckResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListAppPipelineYmlRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineYmlList)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListAppPipelineYmlResponse)(nil)
@@ -22,6 +26,88 @@ var _ urlenc.URLValuesUnmarshaler = (*Application)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ProjectPipeline)(nil)
+
+// CreateProjectPipelineSourcePreCheckRequest implement urlenc.URLValuesUnmarshaler.
+func (m *CreateProjectPipelineSourcePreCheckRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "appID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.AppID = val
+			case "sourceType":
+				m.SourceType = vals[0]
+			case "ref":
+				m.Ref = vals[0]
+			case "path":
+				m.Path = vals[0]
+			case "fileName":
+				m.FileName = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// CreateProjectPipelineSourcePreCheckResponse implement urlenc.URLValuesUnmarshaler.
+func (m *CreateProjectPipelineSourcePreCheckResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pass":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Pass = val
+			case "message":
+				m.Message = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// CreateProjectPipelineNamePreCheckRequest implement urlenc.URLValuesUnmarshaler.
+func (m *CreateProjectPipelineNamePreCheckRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "projectID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			case "name":
+				m.Name = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// CreateProjectPipelineNamePreCheckResponse implement urlenc.URLValuesUnmarshaler.
+func (m *CreateProjectPipelineNamePreCheckResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pass":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Pass = val
+			case "message":
+				m.Message = vals[0]
+			}
+		}
+	}
+	return nil
+}
 
 // ListAppPipelineYmlRequest implement urlenc.URLValuesUnmarshaler.
 func (m *ListAppPipelineYmlRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -125,12 +211,12 @@ func (m *Application) UnmarshalURLValues(prefix string, values url.Values) error
 				m.OrgID = val
 			case "orgDisplayName":
 				m.OrgDisplayName = vals[0]
-			case "projectId":
+			case "projectID":
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.ProjectId = val
+				m.ProjectID = val
 			case "projectName":
 				m.ProjectName = vals[0]
 			case "isExternalRepo":
@@ -356,11 +442,11 @@ func (m *CreateProjectPipelineResponse) UnmarshalURLValues(prefix string, values
 					m.ProjectPipeline = &ProjectPipeline{}
 				}
 				m.ProjectPipeline.FileName = vals[0]
-			case "ProjectPipeline.pipelineSourceId":
+			case "ProjectPipeline.pipelineSourceID":
 				if m.ProjectPipeline == nil {
 					m.ProjectPipeline = &ProjectPipeline{}
 				}
-				m.ProjectPipeline.PipelineSourceId = vals[0]
+				m.ProjectPipeline.PipelineSourceID = vals[0]
 			}
 		}
 	}
@@ -434,8 +520,8 @@ func (m *ProjectPipeline) UnmarshalURLValues(prefix string, values url.Values) e
 				m.Path = vals[0]
 			case "fileName":
 				m.FileName = vals[0]
-			case "pipelineSourceId":
-				m.PipelineSourceId = vals[0]
+			case "pipelineSourceID":
+				m.PipelineSourceID = vals[0]
 			}
 		}
 	}

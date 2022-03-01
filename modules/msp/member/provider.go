@@ -49,7 +49,7 @@ type provider struct {
 	monitorDB     *db2.MonitorDb
 	audit         audit.Auditor
 	Tenant        tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
-	I18n          i18n.Translator              `autowired:"i18n" translator:"cs-i18n"`
+	I18n          i18n.Translator              `autowired:"i18n"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

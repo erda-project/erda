@@ -502,7 +502,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/issues/{id}", Method: http.MethodPut, Handler: e.UpdateIssue},
 		{Path: "/api/issues/{id}", Method: http.MethodDelete, Handler: e.DeleteIssue},
 		{Path: "/api/issues/actions/batch-update", Method: http.MethodPut, Handler: e.BatchUpdateIssue},
-		{Path: "/api/issues/actions/export-excel", Method: http.MethodGet, Handler: e.ExportExcelIssue},
+		{Path: "/api/issues/actions/export-excel", Method: http.MethodGet, WriterHandler: e.ExportExcelIssue},
 		{Path: "/api/issues/actions/import-excel", Method: http.MethodPost, Handler: e.ImportExcelIssue},
 		{Path: "/api/issues/actions/man-hour", Method: http.MethodGet, Handler: e.GetIssueManHourSum},
 		{Path: "/api/issues/actions/bug-percentage", Method: http.MethodGet, Handler: e.GetIssueBugPercentage},
@@ -644,6 +644,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
 		{Path: "/api/applications/{applicationID}", Method: http.MethodDelete, Handler: e.DeleteApplication},
 		{Path: "/api/applications/{applicationID}/actions/init", Method: http.MethodPut, Handler: e.InitApplication},
+		{Path: "/api/applications/{applicationID}", Method: http.MethodPut, Handler: e.UpdateApplication},
 
 		{Path: "/api/applications/actions/remove-publish-item-relations", Method: http.MethodPost, Handler: e.RemoveApplicationPublishItemRelations},
 		{Path: "/api/applications/{applicationID}/actions/get-publish-item-relations", Method: http.MethodGet, Handler: e.GetApplicationPublishItemRelationsGroupByENV},

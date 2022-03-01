@@ -48,7 +48,7 @@ type Runtime struct {
 	Creator             string `gorm:"not null"`
 	ScheduleName        ScheduleName
 	Status              string `gorm:"column:runtime_status"`
-	DeploymentStatus    string
+	DeploymentStatus    apistructs.DeploymentStatus
 	CurrentDeploymentID uint64
 	DeploymentOrderId   string
 	ReleaseVersion      string
@@ -274,26 +274,28 @@ func (db *DBClient) FindRuntimesByAppIdAndWorkspace(appId uint64, workspace stri
 
 // FindRuntimesInApps finds all runtimes for the given appIDs.
 // The key in the returned map is appID.
-func (db *DBClient) FindRuntimesInApps(appIDs []uint64, env string) (map[uint64][]*Runtime, error) {
+func (db *DBClient) FindRuntimesInApps(appIDs []uint64, env string) (map[uint64][]*Runtime, []uint64, error) {
 	var (
 		runtimes []*Runtime
 		m        = make(map[uint64][]*Runtime)
+		ids      []uint64
 	)
 	if env != "" {
 		if err := db.Where("application_id IN (?) AND workspace = ? ", appIDs, env).
 			Find(&runtimes).Error; err != nil && !gorm.IsRecordNotFoundError(err) {
-			return nil, err
+			return nil, nil, err
 		}
 	} else {
 		if err := db.Where("application_id IN (?) ", appIDs).
 			Find(&runtimes).Error; err != nil && !gorm.IsRecordNotFoundError(err) {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	for _, runtime := range runtimes {
 		m[runtime.ApplicationID] = append(m[runtime.ApplicationID], runtime)
+		ids = append(ids, runtime.ID)
 	}
-	return m, nil
+	return m, ids, nil
 }
 
 func (db *DBClient) FindRuntimeOrCreate(uniqueId spec.RuntimeUniqueId, operator string, source apistructs.RuntimeSource,
@@ -381,6 +383,16 @@ func (db *DBClient) UpdateRuntime(runtime *Runtime) error {
 	return nil
 }
 
+func (db *DBClient) UpdateRuntimeDeploymentInfo(runtimeId, curDeploymentId uint64, status apistructs.DeploymentStatus) error {
+	if err := db.Model(&Runtime{}).Where("id = ?", runtimeId).Update(&Runtime{
+		DeploymentStatus:    status,
+		CurrentDeploymentID: curDeploymentId,
+	}).Error; err != nil {
+		return errors.Wrapf(err, "failed to update runtime deployment status, id: %v", runtimeId)
+	}
+	return nil
+}
+
 func (db *DBClient) DeleteRuntime(runtimeId uint64) error {
 	if err := db.
 		Where("id = ?", runtimeId).
@@ -394,6 +406,16 @@ func (db *DBClient) DeleteRuntime(runtimeId uint64) error {
 func (db *DBClient) ListRuntimeByCluster(clusterName string) ([]Runtime, error) {
 	var runtimes []Runtime
 	if err := db.Where("cluster_name = ?", clusterName).Find(&runtimes).Error; err != nil {
+		return nil, err
+	}
+
+	return runtimes, nil
+}
+
+// ListRuntimeByOrgCluster 根据 clusterName 和 orgID 查找 runtime 列表
+func (db *DBClient) ListRuntimeByOrgCluster(clusterName string, orgID uint64) ([]Runtime, error) {
+	var runtimes []Runtime
+	if err := db.Where("cluster_name = ? AND org_id = ?", clusterName, orgID).Find(&runtimes).Error; err != nil {
 		return nil, err
 	}
 
@@ -419,7 +441,7 @@ func (db *DBClient) CreateOrUpdateRuntimeService(service *RuntimeService, overri
 		service.UpdatedAt = old.UpdatedAt
 		service.Errors = old.Errors // TODO: should we change errors or not ?
 		if !overrideStatus {
-			// not override status, still use old.Status
+			// not override status, still use old.StatusDetail
 			service.Status = old.Status
 		}
 		if err := db.Save(service).Error; err != nil {
@@ -518,4 +540,22 @@ func (db *DBClient) CountServiceReferenceByClusterAndOrg(clusterName, orgID stri
 		return 0, err
 	}
 	return total, nil
+}
+
+func (db *DBClient) ListRuntimesByAppsName(env string, projectId uint64, appsName []string) (*[]Runtime, error) {
+	var runtimes []Runtime
+	if err := db.Model(&Runtime{}).Where("project_id = ? and env = ?", projectId, strings.ToUpper(env)).
+		Where("name in (?)", appsName).Find(&runtimes).Error; err != nil {
+		return nil, err
+	}
+	return &runtimes, nil
+}
+
+func (db *DBClient) GetRuntimeByAppName(env string, projectId uint64, appName string) (*Runtime, error) {
+	var runtime Runtime
+	if err := db.Model(&Runtime{}).Where("project_id = ? and env = ?", projectId, strings.ToUpper(env)).
+		Where("name = ?", appName).Find(&runtime).Error; err != nil {
+		return nil, err
+	}
+	return &runtime, nil
 }

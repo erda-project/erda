@@ -67,7 +67,7 @@ func (f *comp) Render(ctx context.Context, c *cptype.Component, scenario cptype.
 	c.Props = cputil.MustConvertProps(props)
 
 	c.Data = make(map[string]interface{})
-	c.Data["list"] = getData(ac.AccountMap[pg.AccountID])
+	c.Data["list"] = getData(ctx, ac.AccountMap[pg.AccountID])
 
 	state := make(map[string]interface{})
 	state["visible"] = true
@@ -88,17 +88,17 @@ func getTitles() []*table.ColumnTitle {
 	}
 }
 
-func getData(account *addonmysqlpb.MySQLAccount) []map[string]interface{} {
+func getData(ctx context.Context, account *addonmysqlpb.MySQLAccount) []map[string]interface{} {
 	if account == nil {
 		return nil
 	}
 	return []map[string]interface{}{
 		{
-			"label": "账号",
+			"label": cputil.I18n(ctx, "account"),
 			"value": account.Username,
 		},
 		{
-			"label": "密码",
+			"label": cputil.I18n(ctx, "password"),
 			"value": account.Password,
 		},
 	}

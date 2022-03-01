@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -30,6 +31,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/mysqlhelper"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -40,6 +42,8 @@ type mysqlService struct {
 	kms  KMSWrapper
 	perm PermissionWrapper
 	db   *dbclient.DBClient
+
+	encrypt *encryption.EnvEncrypt
 }
 
 // ListMySQLAccount returns a list of MySQL accounts
@@ -343,16 +347,25 @@ func (s *mysqlService) UpdateAttachmentAccount(ctx context.Context, req *pb.Upda
 }
 
 func (s *mysqlService) decrypt(acc *dbclient.MySQLAccount) (string, error) {
-	pass := "***fail***"
-	r, err := s.kms.Decrypt(acc.Password, acc.KMSKey)
-	if err != nil {
-		return pass, err
-	}
-	decodePasswordStr, err := base64.StdEncoding.DecodeString(r.PlaintextBase64)
-	if err != nil {
-		return pass, err
+	pass := acc.Password
+	if acc.KMSKey != "" {
+		dr, err := s.kms.Decrypt(acc.Password, acc.KMSKey)
+		if err != nil {
+			return pass, err
+		}
+		rawSecret, err := base64.StdEncoding.DecodeString(dr.PlaintextBase64)
+		if err != nil {
+			return pass, err
+		}
+		pass = string(rawSecret)
 	} else {
-		pass = string(decodePasswordStr)
+		// try to decrypt in old-style
+		_password, err := s.encrypt.DecryptPassword(acc.Password)
+		if err != nil {
+			logrus.Errorf("failed to decrypt password for mysql account %s: %s", acc.ID, err)
+		} else {
+			pass = _password
+		}
 	}
 	return pass, nil
 }

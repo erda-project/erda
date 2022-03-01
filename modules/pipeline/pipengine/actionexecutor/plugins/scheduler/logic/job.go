@@ -185,7 +185,8 @@ func TransferToSchedulerJob(task *spec.PipelineTask) (job apistructs.JobFromUser
 		MainClass: task.Extra.FlinkSparkConf.MainClass,
 		MainArgs:  task.Extra.FlinkSparkConf.MainArgs,
 		// 重试不依赖 scheduler，由 pipeline engine 自己实现，保证所有 action executor 均适用
-		Params: task.Extra.Action.Params,
+		Params:                    task.Extra.Action.Params,
+		ContainerInstanceProvider: task.Extra.ContainerInstanceProvider,
 	}, nil
 }
 
@@ -251,7 +252,7 @@ func GetCLusterInfo(clusterName string) (map[string]string, error) {
 	}
 
 	var body bytes.Buffer
-	resp, err := httpclient.New().Get(discover.Scheduler()).
+	resp, err := httpclient.New().Get(discover.Orchestrator()).
 		Path(strutil.Concat("/api/clusterinfo/", clusterName)).
 		Do().Body(&body)
 	if err != nil {

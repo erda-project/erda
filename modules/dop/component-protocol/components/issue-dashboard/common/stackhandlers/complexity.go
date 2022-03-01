@@ -15,6 +15,9 @@
 package stackhandlers
 
 import (
+	"context"
+
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/issue-dashboard/common/model"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -26,7 +29,7 @@ type ComplexityStackHandler struct {
 }
 
 func NewComplexityStackHandler(reverse bool) *ComplexityStackHandler {
-	return &ComplexityStackHandler{reverse: reverse}
+	return &ComplexityStackHandler{reverse}
 }
 
 var complexityColorMap = map[apistructs.IssueComplexity]string{
@@ -35,7 +38,7 @@ var complexityColorMap = map[apistructs.IssueComplexity]string{
 	apistructs.IssueComplexityEasy:   "green",
 }
 
-func (h *ComplexityStackHandler) GetStacks() []Stack {
+func (h *ComplexityStackHandler) GetStacks(ctx context.Context) []Stack {
 	var stacks []Stack
 	for _, i := range []apistructs.IssueComplexity{
 		apistructs.IssueComplexityEasy,
@@ -43,7 +46,7 @@ func (h *ComplexityStackHandler) GetStacks() []Stack {
 		apistructs.IssueComplexityHard,
 	} {
 		stacks = append(stacks, Stack{
-			Name:  i.GetZhName(),
+			Name:  cputil.I18n(ctx, string(i)),
 			Value: string(i),
 			Color: complexityColorMap[i],
 		})
@@ -67,6 +70,6 @@ func (h *ComplexityStackHandler) GetIndexer() func(issue interface{}) string {
 	}
 }
 
-func (h *ComplexityStackHandler) GetFilterOptions() []filter.PropConditionOption {
-	return getFilterOptions(h.GetStacks(), true)
+func (h *ComplexityStackHandler) GetFilterOptions(ctx context.Context) []filter.PropConditionOption {
+	return getFilterOptions(h.GetStacks(ctx), true)
 }
