@@ -258,6 +258,9 @@ const (
 	BatchDeleteAppReleaseTemplate     TemplateName = "batchDeleteAppRelease"
 	BatchFormalReleaseProjectTemplate TemplateName = "batchFormalProjectRelease"
 	BatchFormalReleaseAppTemplate     TemplateName = "batchFormalAppRelease"
+	CreateReleaseRuleTemplate         TemplateName = "createReleaseRule"
+	UpdateReleaseRuleTemplate         TemplateName = "updateReleaseRule"
+	DeleteReleaseRuleTemplate         TemplateName = "deleteReleaseRule"
 
 	AddDashboard           TemplateName = "addDashboard"
 	UpdateDashboard        TemplateName = "updateDashboard"
