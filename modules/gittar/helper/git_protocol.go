@@ -59,7 +59,7 @@ func NewPtkLine(line string) []byte {
 	return append(lenBytes, lineBytes...)
 }
 
-func NewReportStatus(unpackStatus string, refState string, errMsg string) []byte {
+func NewReportStatus(unpackStatus string, refState string, remoteMsg string) []byte {
 	var statusBuffer bytes.Buffer
 	var totalBuffer bytes.Buffer
 	var headLines []string
@@ -76,10 +76,10 @@ func NewReportStatus(unpackStatus string, refState string, errMsg string) []byte
 	totalBuffer.WriteByte(1)
 	totalBuffer.Write(headBytes)
 
-	var errorMsgBuffer bytes.Buffer
-	errorMsgBuffer.Write([]byte(errMsg + "\n"))
-	errorMsgBuffer.Write([]byte("0000"))
-	msgBytes := errorMsgBuffer.Bytes()
+	var msgBuffer bytes.Buffer
+	msgBuffer.Write([]byte(remoteMsg + "\n"))
+	msgBuffer.Write([]byte("0000"))
+	msgBytes := msgBuffer.Bytes()
 	msgLen := len(msgBytes)
 	totalBuffer.Write(getLengthBytes(msgLen + 1))
 	totalBuffer.WriteByte(2)
