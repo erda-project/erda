@@ -228,7 +228,8 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	}
 
 	// container instance provider
-	p.Extra.ContainerInstanceProvider = container_provider.ConstructContainerProviderByLabel(labels)
+	p.Extra.ContainerInstanceProvider = container_provider.ConstructContainerProvider(container_provider.WithLabels(labels),
+		container_provider.WithStages(pipelineYml.Spec().Stages))
 
 	// pipelineYmlSource
 	p.Extra.PipelineYmlSource = apistructs.PipelineYmlSourceContent

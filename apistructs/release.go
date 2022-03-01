@@ -147,7 +147,11 @@ type ReleaseUploadRequest struct {
 	ClusterName string `json:"clusterName,omitempty"`
 }
 
-type ReleaseParseVersionResponse struct {
+type ParseReleaseFileRequest struct {
+	DiceFileID string `json:"diceFileID,omitempty"`
+}
+
+type ParseReleaseFileResponse struct {
 	Header
 	Data ParseReleaseFileResponseData `json:"data"`
 }
@@ -291,6 +295,8 @@ type ReleaseGetResponseData struct {
 	ClusterName string    `json:"clusterName"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+	// IsLatest 是否为分支最新
+	IsLatest bool `json:"isLatest"`
 }
 
 func (r *ReleaseGetResponseData) ReLoadImages() error {
@@ -570,6 +576,8 @@ type ReleaseData struct {
 	ClusterName string    `json:"clusterName"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+	// 是否为分支最新
+	IsLatest bool `json:"isLatest"`
 }
 
 // ReleaseNameListRequest releaseName列表请求

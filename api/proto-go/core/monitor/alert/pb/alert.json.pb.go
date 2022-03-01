@@ -13,6 +13,36 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
+var _ json.Marshaler = (*CountUnRecoverAlertEventsRequest)(nil)
+var _ json.Unmarshaler = (*CountUnRecoverAlertEventsRequest)(nil)
+var _ json.Marshaler = (*CountUnRecoverAlertEventsResponse)(nil)
+var _ json.Unmarshaler = (*CountUnRecoverAlertEventsResponse)(nil)
+var _ json.Marshaler = (*CountUnRecoverAlertEventsResult)(nil)
+var _ json.Unmarshaler = (*CountUnRecoverAlertEventsResult)(nil)
+var _ json.Marshaler = (*GetRawAlertExpressionResponse)(nil)
+var _ json.Unmarshaler = (*GetRawAlertExpressionResponse)(nil)
+var _ json.Marshaler = (*RawAlertExpression)(nil)
+var _ json.Unmarshaler = (*RawAlertExpression)(nil)
+var _ json.Marshaler = (*GetRawAlertExpressionRequest)(nil)
+var _ json.Unmarshaler = (*GetRawAlertExpressionRequest)(nil)
+var _ json.Marshaler = (*AlertEventSort)(nil)
+var _ json.Unmarshaler = (*AlertEventSort)(nil)
+var _ json.Marshaler = (*SuppressAlertEventRequest)(nil)
+var _ json.Unmarshaler = (*SuppressAlertEventRequest)(nil)
+var _ json.Marshaler = (*SuppressAlertEventResponse)(nil)
+var _ json.Unmarshaler = (*SuppressAlertEventResponse)(nil)
+var _ json.Marshaler = (*CancelSuppressAlertEventRequest)(nil)
+var _ json.Unmarshaler = (*CancelSuppressAlertEventRequest)(nil)
+var _ json.Marshaler = (*CancelSuppressAlertEventResponse)(nil)
+var _ json.Unmarshaler = (*CancelSuppressAlertEventResponse)(nil)
+var _ json.Marshaler = (*GetAlertEventRequest)(nil)
+var _ json.Unmarshaler = (*GetAlertEventRequest)(nil)
+var _ json.Marshaler = (*GetAlertEventRequestCondition)(nil)
+var _ json.Unmarshaler = (*GetAlertEventRequestCondition)(nil)
+var _ json.Marshaler = (*GetAlertEventResponse)(nil)
+var _ json.Unmarshaler = (*GetAlertEventResponse)(nil)
+var _ json.Marshaler = (*AlertEventItem)(nil)
+var _ json.Unmarshaler = (*AlertEventItem)(nil)
 var _ json.Marshaler = (*QueryCustomizeMetricRequest)(nil)
 var _ json.Unmarshaler = (*QueryCustomizeMetricRequest)(nil)
 var _ json.Marshaler = (*QueryCustomizeMetricResponse)(nil)
@@ -293,6 +323,276 @@ var _ json.Marshaler = (*GetAlertConditionsValueResponse)(nil)
 var _ json.Unmarshaler = (*GetAlertConditionsValueResponse)(nil)
 var _ json.Marshaler = (*AlertConditionsValue)(nil)
 var _ json.Unmarshaler = (*AlertConditionsValue)(nil)
+
+// CountUnRecoverAlertEventsRequest implement json.Marshaler.
+func (m *CountUnRecoverAlertEventsRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CountUnRecoverAlertEventsRequest implement json.Marshaler.
+func (m *CountUnRecoverAlertEventsRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CountUnRecoverAlertEventsResponse implement json.Marshaler.
+func (m *CountUnRecoverAlertEventsResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CountUnRecoverAlertEventsResponse implement json.Marshaler.
+func (m *CountUnRecoverAlertEventsResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CountUnRecoverAlertEventsResult implement json.Marshaler.
+func (m *CountUnRecoverAlertEventsResult) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CountUnRecoverAlertEventsResult implement json.Marshaler.
+func (m *CountUnRecoverAlertEventsResult) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetRawAlertExpressionResponse implement json.Marshaler.
+func (m *GetRawAlertExpressionResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetRawAlertExpressionResponse implement json.Marshaler.
+func (m *GetRawAlertExpressionResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// RawAlertExpression implement json.Marshaler.
+func (m *RawAlertExpression) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// RawAlertExpression implement json.Marshaler.
+func (m *RawAlertExpression) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetRawAlertExpressionRequest implement json.Marshaler.
+func (m *GetRawAlertExpressionRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetRawAlertExpressionRequest implement json.Marshaler.
+func (m *GetRawAlertExpressionRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// AlertEventSort implement json.Marshaler.
+func (m *AlertEventSort) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// AlertEventSort implement json.Marshaler.
+func (m *AlertEventSort) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// SuppressAlertEventRequest implement json.Marshaler.
+func (m *SuppressAlertEventRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// SuppressAlertEventRequest implement json.Marshaler.
+func (m *SuppressAlertEventRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// SuppressAlertEventResponse implement json.Marshaler.
+func (m *SuppressAlertEventResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// SuppressAlertEventResponse implement json.Marshaler.
+func (m *SuppressAlertEventResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CancelSuppressAlertEventRequest implement json.Marshaler.
+func (m *CancelSuppressAlertEventRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CancelSuppressAlertEventRequest implement json.Marshaler.
+func (m *CancelSuppressAlertEventRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// CancelSuppressAlertEventResponse implement json.Marshaler.
+func (m *CancelSuppressAlertEventResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// CancelSuppressAlertEventResponse implement json.Marshaler.
+func (m *CancelSuppressAlertEventResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetAlertEventRequest implement json.Marshaler.
+func (m *GetAlertEventRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetAlertEventRequest implement json.Marshaler.
+func (m *GetAlertEventRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetAlertEventRequestCondition implement json.Marshaler.
+func (m *GetAlertEventRequestCondition) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetAlertEventRequestCondition implement json.Marshaler.
+func (m *GetAlertEventRequestCondition) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetAlertEventResponse implement json.Marshaler.
+func (m *GetAlertEventResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetAlertEventResponse implement json.Marshaler.
+func (m *GetAlertEventResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// AlertEventItem implement json.Marshaler.
+func (m *AlertEventItem) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// AlertEventItem implement json.Marshaler.
+func (m *AlertEventItem) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
 
 // QueryCustomizeMetricRequest implement json.Marshaler.
 func (m *QueryCustomizeMetricRequest) MarshalJSON() ([]byte, error) {

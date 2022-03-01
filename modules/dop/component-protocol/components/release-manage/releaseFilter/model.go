@@ -33,6 +33,7 @@ type State struct {
 	ReleaseFilterURLQuery string `json:"releaseFilter__urlQuery,omitempty"`
 	IsProjectRelease      bool   `json:"isProjectRelease"`
 	ProjectID             int64  `json:"projectID"`
+	IsFormal              *bool  `json:"isFormal,omitempty"`
 }
 
 type Values struct {
@@ -40,7 +41,7 @@ type Values struct {
 	BranchID          string   `json:"branchID,omitempty"`
 	CommitID          string   `json:"commitID,omitempty"`
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd,omitempty"`
-	Latest            bool     `json:"latest"`
+	Latest            string   `json:"latest,omitempty"`
 	ReleaseID         string   `json:"releaseID,omitempty"`
 	UserIDs           []string `json:"userIDs,omitempty"`
 	Version           string   `json:"version,omitempty"`
@@ -58,6 +59,8 @@ type Condition struct {
 	Type        string   `json:"type,omitempty"`
 	Options     []Option `json:"options,omitempty"`
 	Outside     bool     `json:"outside,omitempty"`
+	Mode        string   `json:"mode,omitempty"`
+	Required    bool     `json:"required"`
 }
 
 type Option struct {

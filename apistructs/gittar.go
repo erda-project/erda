@@ -453,7 +453,7 @@ type CreateRepoResponse struct {
 type CreateRepoResponseData struct {
 	ID int64 `json:"id"`
 
-	// 仓库相对路基
+	// 仓库相对路径
 	RepoPath string `json:"repo_path"`
 }
 
@@ -769,4 +769,14 @@ type CheckRunRequest struct {
 	Path   string `json:"path"`
 	MRID   int64  `json:"mrId"`
 	Branch string `json:"branch"`
+}
+
+type MergeRequestCountRequest struct {
+	AppIDs []uint64 `query:"appIDs"`
+	State  string   `query:"state"`
+}
+
+type MergeRequestCountResponse struct {
+	Header
+	Data map[string]int `json:"data"`
 }

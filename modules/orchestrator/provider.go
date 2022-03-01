@@ -20,16 +20,18 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/modules/orchestrator/events"
 	"github.com/erda-project/erda/modules/orchestrator/queue"
 )
 
 type provider struct {
-	Election     election.Interface   `autowired:"etcd-election"`
-	Orm          *gorm.DB             `autowired:"mysql-client"`
-	EventManager *events.EventManager `autowired:"erda.orchestrator.events.event-manager"`
-	PusherQueue  *queue.PusherQueue   `autowired:"erda.orchestrator.events.pusher-queue"`
-	LogTrans     i18n.Translator      `translator:"log-trans"`
+	Election          election.Interface             `autowired:"etcd-election"`
+	Orm               *gorm.DB                       `autowired:"mysql-client"`
+	EventManager      *events.EventManager           `autowired:"erda.orchestrator.events.event-manager"`
+	PusherQueue       *queue.PusherQueue             `autowired:"erda.orchestrator.events.pusher-queue"`
+	Trans             i18n.Translator                `translator:"common"`
+	DicehubReleaseSvc dicehubpb.ReleaseServiceServer `autowired:"erda.core.dicehub.release.ReleaseService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

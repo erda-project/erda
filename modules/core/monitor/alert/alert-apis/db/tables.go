@@ -64,10 +64,13 @@ func (AlertEvent) TableName() string { return TableAlertEvent }
 
 type AlertEventSuppress struct {
 	Id           string    `gorm:"column:id;primary_key"`
+	OrgID        int64     `gorm:"column:org_id"`
+	Scope        string    `gorm:"column:scope"`
+	ScopeID      string    `gorm:"column:scope_id"`
 	AlertEventID string    `gorm:"column:alert_event_id"`
 	SuppressType string    `gorm:"column:suppress_type"`
 	ExpireTime   time.Time `gorm:"column:expire_time"`
-	Enable       bool      `gorm:"column:enable"`
+	Enabled      bool      `gorm:"column:enabled"`
 }
 
 func (AlertEventSuppress) TableName() string { return TableAlertEventSuppress }

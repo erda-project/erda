@@ -132,6 +132,8 @@ func (m *QueryAlertRequest) UnmarshalURLValues(prefix string, values url.Values)
 					return err
 				}
 				m.PageSize = val
+			case "name":
+				m.Name = vals[0]
 			}
 		}
 	}
@@ -275,6 +277,15 @@ func (m *GetAlertResponse) UnmarshalURLValues(prefix string, values url.Values) 
 					m.Data = &ApmAlertData{}
 				}
 				m.Data.Creator = vals[0]
+			case "data.ruleCount":
+				if m.Data == nil {
+					m.Data = &ApmAlertData{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.RuleCount = val
 			}
 		}
 	}
@@ -322,6 +333,12 @@ func (m *ApmAlertData) UnmarshalURLValues(prefix string, values url.Values) erro
 				m.UpdateTime = val
 			case "creator":
 				m.Creator = vals[0]
+			case "ruleCount":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.RuleCount = val
 			}
 		}
 	}
@@ -678,6 +695,8 @@ func (m *QueryCustomizeAlertsRequest) UnmarshalURLValues(prefix string, values u
 					return err
 				}
 				m.PageSize = val
+			case "name":
+				m.Name = vals[0]
 			}
 		}
 	}

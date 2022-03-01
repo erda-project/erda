@@ -145,6 +145,10 @@ func (s *alertServiceWrapper) DeleteAlert(ctx context.Context, req *pb.DeleteAle
 	return s.client.DeleteAlert(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
+func (s *alertServiceWrapper) GetRawAlertExpression(ctx context.Context, req *pb.GetRawAlertExpressionRequest) (*pb.GetRawAlertExpressionResponse, error) {
+	return s.client.GetRawAlertExpression(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
 func (s *alertServiceWrapper) QueryOrgAlertRule(ctx context.Context, req *pb.QueryOrgAlertRuleRequest) (*pb.QueryOrgAlertRuleResponse, error) {
 	return s.client.QueryOrgAlertRule(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
@@ -231,4 +235,20 @@ func (s *alertServiceWrapper) GetAlertConditions(ctx context.Context, req *pb.Ge
 
 func (s *alertServiceWrapper) GetAlertConditionsValue(ctx context.Context, req *pb.GetAlertConditionsValueRequest) (*pb.GetAlertConditionsValueResponse, error) {
 	return s.client.GetAlertConditionsValue(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *alertServiceWrapper) GetAlertEvents(ctx context.Context, req *pb.GetAlertEventRequest) (*pb.GetAlertEventResponse, error) {
+	return s.client.GetAlertEvents(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *alertServiceWrapper) SuppressAlertEvent(ctx context.Context, req *pb.SuppressAlertEventRequest) (*pb.SuppressAlertEventResponse, error) {
+	return s.client.SuppressAlertEvent(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *alertServiceWrapper) CancelSuppressAlertEvent(ctx context.Context, req *pb.CancelSuppressAlertEventRequest) (*pb.CancelSuppressAlertEventResponse, error) {
+	return s.client.CancelSuppressAlertEvent(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *alertServiceWrapper) CountUnRecoverAlertEvents(ctx context.Context, req *pb.CountUnRecoverAlertEventsRequest) (*pb.CountUnRecoverAlertEventsResponse, error) {
+	return s.client.CountUnRecoverAlertEvents(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

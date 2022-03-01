@@ -70,7 +70,7 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 	}
 	statement := fmt.Sprintf("SELECT timestamp(), alert_type::tag, count(timestamp) "+
 		"FROM analyzer_alert "+
-		"WHERE alert_scope::tag=$scope AND alert_scope_id::tag=$scope_id AND trigger::tag='alert' "+
+		"WHERE alert_scope::tag=$scope AND alert_scope_id::tag=$scope_id AND trigger::tag='alert' AND alert_suppressed::tag='false' "+
 		"GROUP BY time(%s),alert_type::tag", common.GetInterval(inParams.StartTime, inParams.EndTime, time.Second, 30))
 
 	params := map[string]*structpb.Value{
@@ -95,20 +95,22 @@ func (p *provider) getAlertEventChart(sdk *cptype.SDK) (*complexgraph.Data, erro
 	var types = map[string]*complexgraph.SereBuilder{}
 	var groups = map[int64]map[string]float64{}
 	for _, row := range rows {
-		if row.Values[2] == nil || row.Values[2].GetStringValue() == "" {
-			continue
-		}
 
 		timestamp := int64(row.Values[1].GetNumberValue())
 		typ := row.Values[2].GetStringValue()
+
+		if _, ok := groups[timestamp]; !ok {
+			groups[timestamp] = map[string]float64{}
+		}
+
+		if len(typ) == 0 {
+			continue
+		}
 
 		if _, ok := types[typ]; !ok {
 			types[typ] = nil
 		}
 
-		if _, ok := groups[timestamp]; !ok {
-			groups[timestamp] = map[string]float64{}
-		}
 		groups[timestamp][typ] = row.Values[3].GetNumberValue()
 	}
 

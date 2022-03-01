@@ -23,11 +23,15 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
 	"github.com/erda-project/erda/modules/orchestrator/queue"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment_order"
@@ -39,6 +43,7 @@ import (
 	"github.com/erda-project/erda/pkg/crypto/encryption"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // Endpoints 定义 endpoint 方法
@@ -57,6 +62,8 @@ type Endpoints struct {
 	encrypt         *encryption.EnvEncrypt
 	instance        *instance.Instance
 	migration       *migration.Migration
+	releaseSvc      pb.ReleaseServiceServer
+	scheduler       *scheduler.Scheduler
 }
 
 // Option Endpoints 配置选项
@@ -171,6 +178,13 @@ func WithMigration(migration *migration.Migration) Option {
 	}
 }
 
+// WithReleaseSvc 设置 dicehub release service
+func WithReleaseSvc(svc pb.ReleaseServiceServer) Option {
+	return func(e *Endpoints) {
+		e.releaseSvc = svc
+	}
+}
+
 func (e *Endpoints) DBClient() *dbclient.DBClient {
 	return e.db
 }
@@ -181,6 +195,12 @@ func (e *Endpoints) Bdl() *bundle.Bundle {
 
 func (e *Endpoints) Addon() *addon.Addon {
 	return e.addon
+}
+
+func WithScheduler(scheduler *scheduler.Scheduler) Option {
+	return func(e *Endpoints) {
+		e.scheduler = scheduler
+	}
 }
 
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
@@ -221,7 +241,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/deployment-orders", Method: http.MethodPost, Handler: e.CreateDeploymentOrder},
 		{Path: "/api/deployment-orders/{deploymentOrderID}/actions/deploy", Method: http.MethodPost, Handler: e.DeployDeploymentOrder},
 		{Path: "/api/deployment-orders/{deploymentOrderID}/actions/cancel", Method: http.MethodPost, Handler: e.CancelDeploymentOrder},
-		{Path: "/api/deployment-orders/actions/render-detail", Method: http.MethodGet, Handler: e.RenderDeploymentOrderDetail},
+		{Path: "/api/deployment-orders/actions/render-detail", Method: http.MethodGet, Handler: httpserver.Wrap(e.RenderDeploymentOrderDetail, httpserver.WithI18nCodes)},
 
 		// kill pod (only k8s)
 		{Path: "/api/runtimes/actions/killpod", Method: http.MethodPost, Handler: e.KillPod},
@@ -303,6 +323,61 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// export, import addonyml
 		{Path: "/api/addon/action/yml-export", Method: http.MethodPost, Handler: e.AddonYmlExport},
 		{Path: "/api/addon/action/yml-import", Method: http.MethodPost, Handler: e.AddonYmlImport},
+
+		// follows API for scheduler
+		// Deprecated, use for forward compatibility
+		// job endpoints
+		{Path: "/v1/job/create", Method: http.MethodPut, Handler: e.scheduler.Httpendpoints.JobCreate},
+		{Path: "/v1/job/{namespace}/{name}/start", Method: http.MethodPost, Handler: e.scheduler.Httpendpoints.JobStart},
+		{Path: "/v1/job/{namespace}/{name}/stop", Method: http.MethodPost, Handler: e.scheduler.Httpendpoints.JobStop},
+		{Path: "/v1/job/{namespace}/{name}/delete", Method: http.MethodDelete, Handler: e.scheduler.Httpendpoints.JobDelete},
+		{Path: "/v1/jobs", Method: http.MethodDelete, Handler: e.scheduler.Httpendpoints.DeleteJobs},
+		{Path: "/v1/job/{namespace}/{name}", Method: http.MethodGet, Handler: e.scheduler.Httpendpoints.JobInspect},
+
+		// Deprecated, use for forward compatibility
+		// service endpoints
+		{Path: "/v1/runtime/{namespace}/{name}/cancel", Method: http.MethodPost, Handler: e.scheduler.EpCancelAction},
+
+		// Deprecated, use for forward compatibility
+		// runtimeinfo endpoints for display
+		{Path: "/v1/runtimeinfo/status/{namespace}/{name}", Method: http.MethodGet, Handler: e.scheduler.EpGetRuntimeStatus},
+
+		// servicegroup endpoints
+		{Path: "/api/servicegroup", Method: http.MethodPost, Handler: e.scheduler.Httpendpoints.ServiceGroupCreate},
+		{Path: "/api/servicegroup", Method: http.MethodPut, Handler: e.scheduler.Httpendpoints.ServiceGroupUpdate},
+		{Path: "/api/servicegroup", Method: http.MethodDelete, Handler: e.scheduler.Httpendpoints.ServiceGroupDelete},
+		{Path: "/api/servicegroup", Method: http.MethodGet, Handler: i18nPrinter(e.scheduler.Httpendpoints.ServiceGroupInfo)},
+		{Path: "/api/servicegroup/actions/precheck", Method: http.MethodPost, Handler: e.scheduler.Httpendpoints.ServiceGroupPrecheck},
+		{Path: "/api/servicegroup/actions/config", Method: http.MethodPut, Handler: e.scheduler.Httpendpoints.ServiceGroupConfigUpdate},
+		{Path: "/api/servicegroup/actions/killpod", Method: http.MethodPost, Handler: e.scheduler.Httpendpoints.ServiceGroupKillPod},
+		{Path: "/api/servicegroup/actions/scale", Method: http.MethodPut, Handler: e.scheduler.Httpendpoints.ServiceScaling},
+
+		// creating cluster by hooking colony-soldier's event
+		{Path: "/clusterhook", Method: http.MethodPost, Handler: e.scheduler.Httpendpoints.ClusterHook},
+
+		{Path: "/api/nodelabels", Method: http.MethodGet, Handler: e.scheduler.Httpendpoints.LabelList},
+		{Path: "/api/nodelabels", Method: http.MethodPost, Handler: e.scheduler.Httpendpoints.SetNodeLabels},
+
+		{Path: "/api/podinfo", Method: http.MethodGet, Handler: e.scheduler.Httpendpoints.PodInfo},
+		{Path: "/api/instanceinfo", Method: http.MethodGet, Handler: e.scheduler.Httpendpoints.InstanceInfo},
+
+		{Path: "/api/clusterinfo/{clusterName}", Method: http.MethodGet, Handler: e.scheduler.Httpendpoints.ClusterInfo},
+		{Path: "/api/resourceinfo/{clusterName}", Method: http.MethodGet, Handler: e.scheduler.Httpendpoints.ResourceInfo},
+		{Path: "/api/capacity", Method: http.MethodGet, Handler: e.scheduler.Httpendpoints.CapacityInfo},
+
+		{Path: "/api/terminal", Method: http.MethodGet, WriterHandler: e.scheduler.Httpendpoints.Terminal},
+	}
+}
+
+func i18nPrinter(f httpserver.Handler) httpserver.Handler {
+	return func(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+		lang := r.Header.Get("Lang")
+		p := message.NewPrinter(language.English)
+		if strutil.Contains(lang, "zh") {
+			p = message.NewPrinter(language.SimplifiedChinese)
+		}
+		ctx2 := context.WithValue(ctx, "i18nPrinter", p)
+		return f(ctx2, r, vars)
 	}
 }
 
@@ -352,6 +427,41 @@ func (e *Endpoints) PushOnDeployment() (bool, error) {
 		return false, err
 	}
 	return false, nil
+}
+
+func (e *Endpoints) PushOnDeploymentOrderPolling() (abort bool, err0 error) {
+	// database operator move to service layer
+	return e.deploymentOrder.PushOnDeploymentOrderPolling()
+}
+
+func (e *Endpoints) PushOnDeploymentOrder() (abort bool, err0 error) {
+	item, err := e.queue.Pop(queue.DEPLOYMENT_ORDER_BATCHES)
+	if err != nil {
+		logrus.Warnf("failed to pop DEPLOYMENT_ORDER_BATCHES task, err: %v", err)
+		return
+	}
+	if item == "" {
+		// tasks not found
+		return
+	}
+
+	doDeployOrder := func() {
+		if err := e.deploymentOrder.ContinueDeployOrder(item); err != nil {
+			logrus.Warnf("failed to execute deployment order, order id: %s, (%v)", item, err)
+		}
+
+		// update batch count
+		if _, err := e.queue.Unlock(queue.DEPLOYMENT_ORDER_BATCHES, item); err != nil {
+			logrus.Errorf("[alert] failed to unlock %v/%v, (%v)", queue.DEPLOYMENT_ORDER_BATCHES, item, err)
+		}
+	}
+
+	if err := e.pool.GoWithTimeout(doDeployOrder, 5*time.Second); err != nil {
+		logrus.Warnf("failed to do deployment order batches, timeout after 5 second")
+		return
+	}
+
+	return
 }
 
 // TODO: we should refactor the polling

@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
@@ -118,7 +119,13 @@ func (r *Release) Create(req *apistructs.ReleaseCreateRequest) (string, error) {
 	)
 	if req.IsProjectRelease {
 		var list []string
+		if len(req.ApplicationReleaseList) == 0 {
+			return "", errors.New("application release list can not be empty")
+		}
 		for i := 0; i < len(req.ApplicationReleaseList); i++ {
+			if len(req.ApplicationReleaseList[i]) == 0 {
+				return "", errors.New("application release group can not be empty")
+			}
 			sort.Strings(req.ApplicationReleaseList[i])
 			list = append(list, req.ApplicationReleaseList[i]...)
 		}
@@ -141,8 +148,7 @@ func (r *Release) Create(req *apistructs.ReleaseCreateRequest) (string, error) {
 		}
 	} else {
 		dices = append(dices, req.Dice)
-		err = r.db.CreateRelease(release)
-		if err != nil {
+		if err = r.createAppReleaseAndSetLatest(release); err != nil {
 			return "", err
 		}
 	}
@@ -179,6 +185,30 @@ func (r *Release) createProjectReleaseAndUpdateReference(release *dbclient.Relea
 		if err = tx.Save(appReleases[i]).Error; err != nil {
 			return
 		}
+	}
+	return tx.Commit().Error
+}
+
+func (r *Release) createAppReleaseAndSetLatest(release *dbclient.Release) (err error) {
+	tx := r.db.Begin()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	var latest dbclient.Release
+	if err = tx.Where("project_id = ?", release.ProjectID).Where("application_id = ?", release.ApplicationID).
+		Where("git_branch = ?", release.GitBranch).Where("is_formal = ?", release.IsFormal).
+		Where("is_latest = true").Where("is_project_release = false").Find(latest).Error; err == nil {
+		latest.IsLatest = false
+		tx.Save(&latest)
+	} else if !gorm.IsRecordNotFoundError(err) {
+		return
+	}
+
+	if err = tx.Create(release).Error; err != nil {
+		return
 	}
 	return tx.Commit().Error
 }
@@ -277,6 +307,10 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 			gitRepo := metadata.AppList[i][j].GitRepo
 			changelog := metadata.AppList[i][j].ChangeLog
 
+			if _, ok := appName2ID[appName]; !ok {
+				return nil, nil, errors.Errorf("app %s is not existed", appName)
+			}
+
 			existedReleases, err := r.db.GetReleasesByAppAndVersion(req.OrgID, req.ProjectID, appName2ID[appName], version)
 			if err != nil {
 				return nil, nil, errors.Errorf("failed to get releases by app and version, %v", err)
@@ -331,6 +365,7 @@ func (r *Release) parseReleaseFile(req apistructs.ReleaseUploadRequest, file io.
 				Reference:        1,
 				CreatedAt:        now,
 				UpdatedAt:        now,
+				IsLatest:         true,
 			})
 		}
 	}
@@ -368,6 +403,17 @@ func (r *Release) createReleases(releases []dbclient.Release) (err error) {
 	}()
 
 	for i := range releases {
+		if !releases[i].IsProjectRelease {
+			var latest *dbclient.Release
+			latest, err = r.GetBranchLatestRelease(releases[i].ProjectID, releases[i].ApplicationID, releases[i].GitBranch)
+			if err != nil {
+				return
+			}
+			if latest != nil {
+				latest.IsLatest = false
+				tx.Save(latest)
+			}
+		}
 		if err = tx.Create(releases[i]).Error; err != nil {
 			return
 		}
@@ -451,6 +497,9 @@ func (r *Release) Update(orgID int64, releaseID string, req *apistructs.ReleaseU
 
 		var newList []string
 		for i := 0; i < len(req.ApplicationReleaseList); i++ {
+			if len(req.ApplicationReleaseList[i]) == 0 {
+				return errors.New("application release group can not be empty")
+			}
 			sort.Strings(req.ApplicationReleaseList[i])
 			newList = append(newList, req.ApplicationReleaseList[i]...)
 		}
@@ -641,6 +690,21 @@ func (r *Release) Delete(orgID int64, releaseIDs ...string) error {
 				failed = append(failed, fmt.Sprintf("%s(%s)", releaseID, err.Error()))
 				logrus.Errorf("failed to delete release %s, %v", releaseID, err)
 				continue
+			}
+			if !release.IsProjectRelease && release.IsLatest {
+				latest, err := r.GetBranchLatestRelease(release.ProjectID, release.ApplicationID, release.GitBranch)
+				if err != nil {
+					logrus.Errorf("failed to get latest release after delete release %s, %v", releaseID, err)
+					continue
+				}
+				if latest == nil {
+					continue
+				}
+				latest.IsLatest = true
+				if err = r.db.Save(latest).Error; err != nil {
+					logrus.Errorf("failed to set latest release after delete release %s, %v", releaseID, err)
+					continue
+				}
 			}
 		}
 
@@ -888,7 +952,7 @@ func (r *Release) Convert(releaseRequest *apistructs.ReleaseCreateRequest, appRe
 		Addon:            releaseRequest.Addon,
 		Changelog:        releaseRequest.Changelog,
 		IsStable:         releaseRequest.IsStable,
-		IsFormal:         releaseRequest.IsFormal,
+		IsFormal:         false,
 		IsProjectRelease: releaseRequest.IsProjectRelease,
 		Version:          releaseRequest.Version,
 		OrgID:            releaseRequest.OrgID,
@@ -957,6 +1021,8 @@ func (r *Release) Convert(releaseRequest *apistructs.ReleaseCreateRequest, appRe
 			return nil, errors.Errorf("failed to marshal release list, %v", err)
 		}
 		release.ApplicationReleaseList = string(listData)
+	} else {
+		release.IsLatest = true
 	}
 	return &release, nil
 }
@@ -1092,6 +1158,7 @@ func (r *Release) convertToGetReleaseResponse(release *dbclient.Release) (*apist
 		ClusterName:            release.ClusterName,
 		CreatedAt:              release.CreatedAt,
 		UpdatedAt:              release.UpdatedAt,
+		IsLatest:               release.IsLatest,
 	}
 	if err = respData.ReLoadImages(); err != nil {
 		logrus.WithError(err).Errorln("failed to ReLoadImages")
@@ -1141,6 +1208,7 @@ func (r *Release) convertToListReleaseResponse(release *dbclient.Release) (*apis
 		ClusterName:            release.ClusterName,
 		CreatedAt:              release.CreatedAt,
 		UpdatedAt:              release.UpdatedAt,
+		IsLatest:               release.IsLatest,
 	}
 	return respData, nil
 }
@@ -1193,6 +1261,23 @@ func (r *Release) GetImages(dices []string) []*imagedb.Image {
 		}
 	}
 	return images
+}
+
+// GetBranchLatestRelease return the latest release with target gitBranch.
+// return nil if not found.
+func (r *Release) GetBranchLatestRelease(projectID, appID int64, gitBranch string) (*dbclient.Release, error) {
+	releases, err := r.db.GetReleasesByBranch(projectID, appID, gitBranch)
+	if err != nil {
+		return nil, err
+	}
+
+	var latest *dbclient.Release
+	for i := range releases {
+		if latest == nil || latest.CreatedAt.Before(releases[i].CreatedAt) {
+			latest = &releases[i]
+		}
+	}
+	return latest, nil
 }
 
 // image format: docker-registry.registry.marathon.mesos:5000/pampas-blog/blog-service:v0.2

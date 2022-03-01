@@ -15,6 +15,7 @@
 package helper
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"fmt"
@@ -75,8 +76,28 @@ func runCommand2(w io.Writer, cmd *exec.Cmd, readers ...io.Reader) {
 		logrus.Printf("[ERROR] get command stdout error %v", err)
 		return
 	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		logrus.Printf("[ERROR] get command stderr error %v", err)
+		return
+	}
+
+	scanner := bufio.NewScanner(stderr)
+	go func() {
+		var errBuffer bytes.Buffer
+		for scanner.Scan() {
+			errBuffer.Write(scanner.Bytes())
+		}
+		if errBuffer.Len() > 0 {
+			logrus.Printf("[ERROR] stderr %s\n", errBuffer.String())
+		}
+	}()
+
 	if err := cmd.Start(); err != nil {
 		logrus.Printf("[ERROR] command start error %v", err)
+		stdin.Close()
+		stdout.Close()
+		stderr.Close()
 		return
 	}
 	logrus.Infof("command %v processId:%s", cmd.Args, strconv.Itoa(cmd.Process.Pid))
@@ -92,7 +113,6 @@ func runCommand2(w io.Writer, cmd *exec.Cmd, readers ...io.Reader) {
 		}
 	}
 
-	stdin.Close()
 	_, err = io.Copy(w, stdout)
 	if err != nil {
 		logrus.Infof("[ERROR] stdout write error %v", err)
@@ -163,10 +183,11 @@ func RunProcess(service string, c *webcontext.Context) {
 		}
 		logrus.Infof("push header:" + string(header))
 		re := regexp.MustCompile(
-			`(?mi)(?P<before>[0-9a-fA-F]{40}) (?P<after>[0-9a-fA-F]{40}) (?P<ref>refs\/(heads|tags)\/.*?)\0`,
+			`(?mi)(?P<before>[0-9a-fA-F]{40}) (?P<after>[0-9a-fA-F]{40}) (?P<ref>refs\/(heads|tags)\/\S*)`,
 		)
 
-		for _, matches := range re.FindAllSubmatch(header, -1) {
+		matchHeader := removeEndMarkerFromHeader(header)
+		for _, matches := range re.FindAllSubmatch(matchHeader, -1) {
 			pushEvent := &models.PayloadPushEvent{
 				Before:            string(matches[1]),
 				After:             string(matches[2]),
@@ -181,7 +202,16 @@ func RunProcess(service string, c *webcontext.Context) {
 
 		repository := c.MustGet("repository").(*gitmodule.Repository)
 		if preReceiveHook(pushEvents, c) {
-
+			// Only when one branch is created will it be written to the writer
+			// Refer to github
+			if len(pushEvents) == 1 && pushEvents[0].IsCreateNewBranch() {
+				// TODO write create pipeline link to writer
+				//c.GetWriter().Write(NewReportStatus(
+				//	"unpack ok",
+				//	"ok "+pushEvents[0].Ref,
+				//	fmt.Sprintf("\nCreate a pipeline request for '%s' on Erda by visiting:\n"+
+				//		"https://erda.cloud\n", pushEvents[0].Ref[len("refs/heads/"):])))
+			}
 			runCommand2(c.GetWriter(), gitCommand(
 				version,
 				service,
@@ -198,6 +228,16 @@ func RunProcess(service string, c *webcontext.Context) {
 			c.MustGet("repository").(*gitmodule.Repository).DiskPath(),
 		), reqBody)
 	}
+}
+
+// removeEndMarkerFromHeader remove end marker '0000' from header
+// see https://github.com/git/git/blob/master/Documentation/technical/http-protocol.txt line:342
+func removeEndMarkerFromHeader(header []byte) []byte {
+	matchHeader := make([]byte, 0, len(header)-4)
+	for i := 0; i < len(header)-4; i++ {
+		matchHeader = append(matchHeader, header[i])
+	}
+	return matchHeader
 }
 
 func RunArchive(c *webcontext.Context, ref string, format string) {

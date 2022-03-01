@@ -24,15 +24,17 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
-	"github.com/erda-project/erda/apistructs"
+	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/bundle"
 	cmpTypes "github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/release-manage/access"
+	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 )
 
 func init() {
@@ -65,7 +67,7 @@ func (r *ComponentReleaseTable) Render(ctx context.Context, component *cptype.Co
 		} else {
 			selectedIDs = append(selectedIDs, id)
 		}
-		if err = r.formalReleases(selectedIDs); err != nil {
+		if err = r.formalReleases(ctx, selectedIDs); err != nil {
 			return errors.Errorf("%s, %v", r.sdk.I18n("releaseFormalFailed"), err)
 		}
 	case "delete":
@@ -76,12 +78,12 @@ func (r *ComponentReleaseTable) Render(ctx context.Context, component *cptype.Co
 		} else {
 			selectedIDs = append(selectedIDs, id)
 		}
-		if err = r.deleteReleases(selectedIDs); err != nil {
+		if err = r.deleteReleases(ctx, selectedIDs); err != nil {
 			return errors.Errorf("%s, %v", r.sdk.I18n("releaseDeleteFailed"), err)
 		}
 	}
 	logrus.Debugf("[DEBUG] start render table")
-	if err := r.RenderTable(gs); err != nil {
+	if err := r.RenderTable(ctx, gs); err != nil {
 		return err
 	}
 	logrus.Debugf("[DEBUG] end render table")
@@ -100,6 +102,8 @@ func (r *ComponentReleaseTable) InitComponent(ctx context.Context) {
 	r.sdk = sdk
 	bdl := ctx.Value(cmpTypes.GlobalCtxKeyBundle).(*bundle.Bundle)
 	r.bdl = bdl
+	svc := ctx.Value(types.DicehubReleaseService).(dicehubpb.ReleaseServiceServer)
+	r.svc = svc
 }
 
 func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) error {
@@ -154,7 +158,7 @@ func (r *ComponentReleaseTable) EncodeURLQuery() error {
 	return nil
 }
 
-func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
+func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.GlobalStateData) error {
 	userID := r.sdk.Identity.UserID
 	orgID := r.sdk.Identity.OrgID
 	projectID := r.State.ProjectID
@@ -174,8 +178,6 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		endTime = r.State.FilterValues.CreatedAtStartEnd[1]
 	}
 
-	isStable := true
-
 	order := "DESC"
 	if r.State.Sorter.Order == "ascend" {
 		order = "ASC"
@@ -185,16 +187,24 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		orderBy = "created_at"
 	}
 
+	ctx = metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
+		"internal-client": "true",
+		"org-id":          r.sdk.Identity.OrgID,
+	}))
 	logrus.Debugf("[DEBUG] start list releases")
-	releaseResp, err := r.bdl.ListReleases(apistructs.ReleaseListRequest{
-		Branch:           r.State.FilterValues.BranchID,
-		Latest:           r.State.FilterValues.Latest,
-		IsStable:         &isStable,
-		IsFormal:         r.State.IsFormal,
-		IsProjectRelease: &r.State.IsProjectRelease,
-		UserID:           r.State.FilterValues.UserIDs,
-		Version:          r.State.FilterValues.Version,
+	isFormal := ""
+	if r.State.IsFormal != nil {
+		isFormal = strconv.FormatBool(*r.State.IsFormal)
+	}
+	releaseResp, err := r.svc.ListRelease(ctx, &dicehubpb.ReleaseListRequest{
 		ReleaseID:        r.State.FilterValues.ReleaseID,
+		Branch:           r.State.FilterValues.BranchID,
+		IsLatest:         r.State.FilterValues.Latest == "true" && r.State.IsFormal == nil && !r.State.IsProjectRelease,
+		IsStable:         "true",
+		IsFormal:         isFormal,
+		IsProjectRelease: strconv.FormatBool(r.State.IsProjectRelease),
+		UserID:           r.State.FilterValues.UserIDs,
+		Query:            r.State.FilterValues.Version,
 		CommitID:         r.State.FilterValues.CommitID,
 		ApplicationID:    r.State.FilterValues.ApplicationIDs,
 		ProjectID:        projectID,
@@ -210,7 +220,7 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 		return errors.Errorf("failed to list releases, %v", err)
 	}
 
-	r.State.Total = releaseResp.Total
+	r.State.Total = releaseResp.Data.Total
 
 	logrus.Debugf("[DEBUG] start get org")
 	org, err := r.bdl.GetOrg(orgID)
@@ -233,7 +243,7 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 	var userIDs []string
 	var list []Item
 	logrus.Debugf("[DEBUG] start release loop")
-	for _, release := range releaseResp.Releases {
+	for _, release := range releaseResp.Data.List {
 		editOperation := Operation{
 			Command: Command{
 				JumpOut: false,
@@ -297,18 +307,18 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 				RenderType: "userAvatar",
 				Value:      []string{release.UserID},
 			},
-			CreatedAt: release.CreatedAt.Format("2006/01/02 15:04:05"),
+			CreatedAt: release.CreatedAt.AsTime().Local().Format("2006/01/02 15:04:05"),
 			Operations: TableOperations{
 				Operations: map[string]interface{}{},
 				RenderType: "tableOperation",
 			},
 		}
-		if r.State.IsProjectRelease {
+		if release.IsProjectRelease {
 			item.Operations.Operations["download"] = downloadOperation
 
 			var refReleasedList [][]string
 			if err := json.Unmarshal([]byte(release.ApplicationReleaseList), &refReleasedList); err != nil {
-				return err
+				logrus.Errorf("failed to unmarshal application release list for release %s, %v", release.ReleaseID, err)
 			}
 			var list []string
 			for i := 0; i < len(refReleasedList); i++ {
@@ -322,14 +332,21 @@ func (r *ComponentReleaseTable) RenderTable(gs *cptype.GlobalStateData) error {
 				Text: r.sdk.I18n("referencedReleases"),
 			}
 		}
-		if r.State.IsFormal != nil && !*r.State.IsFormal {
-			item.Operations.Operations["edit"] = editOperation
-			item.Operations.Operations["formal"] = formalOperation
-			item.Operations.Operations["delete"] = deleteOperation
+		if !release.IsFormal {
 			if hasWriteAccess {
 				item.BatchOperations = []string{"formal", "delete"}
 			}
+		} else {
+			editOperation.Disabled = true
+			editOperation.DisabledTip = r.sdk.I18n("formalReleaseCanNotBeModified")
+			formalOperation.Disabled = true
+			formalOperation.DisabledTip = r.sdk.I18n("formalReleaseCanNotBeModified")
+			deleteOperation.Disabled = true
+			deleteOperation.DisabledTip = r.sdk.I18n("formalReleaseCanNotBeModified")
 		}
+		item.Operations.Operations["edit"] = editOperation
+		item.Operations.Operations["formal"] = formalOperation
+		item.Operations.Operations["delete"] = deleteOperation
 
 		list = append(list, item)
 	}
@@ -403,13 +420,16 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 		},
 	}
 
-	if r.State.IsProjectRelease || (r.State.IsFormal != nil && !*r.State.IsFormal) {
+	// 项目制品、全部应用制品、非正式应用制品需要有操作列
+	if r.State.IsProjectRelease || r.State.IsFormal == nil || !*r.State.IsFormal {
 		columns = append(columns, Column{
 			DataIndex: "operations",
 			Title:     r.sdk.I18n("operations"),
 			Align:     "right",
 		})
 	}
+
+	// 项目制品不需要应用列
 	if r.State.IsProjectRelease {
 		columns = append(columns[:1], columns[2:]...)
 	}
@@ -426,12 +446,12 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	}
 }
 
-func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
-	component.Props = cputil.MustConvertProps(r.Props)
-	component.Data = map[string]interface{}{
+func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
+	c.Props = cputil.MustConvertProps(r.Props)
+	c.Data = map[string]interface{}{
 		"list": r.Data.List,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"releaseTable__urlQuery": r.State.ReleaseTableURLQuery,
 		"pageNo":                 r.State.PageNo,
 		"pageSize":               r.State.PageSize,
@@ -444,13 +464,17 @@ func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
 		"applicationID":          r.State.ApplicationID,
 		"filterValues":           r.State.FilterValues,
 	}
-	component.Operations = r.Operations
+	c.Operations = r.Operations
 }
 
-func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {
+func (r *ComponentReleaseTable) formalReleases(ctx context.Context, releaseID []string) error {
 	userID := r.sdk.Identity.UserID
-	orgIDStr := r.sdk.Identity.OrgID
 	projectID := r.State.ProjectID
+
+	ctx = metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
+		"internal-client": "true",
+		"org-id":          r.sdk.Identity.OrgID,
+	}))
 
 	if r.State.IsProjectRelease {
 		hasAccess, err := access.HasWriteAccess(r.bdl, userID, uint64(projectID), true, 0)
@@ -462,11 +486,11 @@ func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {
 		}
 	} else {
 		for _, id := range releaseID {
-			release, err := r.bdl.GetRelease(id)
+			resp, err := r.svc.GetRelease(ctx, &dicehubpb.ReleaseGetRequest{ReleaseID: id})
 			if err != nil {
 				return err
 			}
-			hasAccess, err := access.HasWriteAccess(r.bdl, userID, uint64(projectID), false, release.ApplicationID)
+			hasAccess, err := access.HasWriteAccess(r.bdl, userID, uint64(projectID), false, resp.Data.ApplicationID)
 			if err != nil {
 				return errors.Errorf("failed to check access, %v", err)
 			}
@@ -476,20 +500,21 @@ func (r *ComponentReleaseTable) formalReleases(releaseID []string) error {
 		}
 	}
 
-	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
-	if err != nil {
-		return errors.New("invalid org id")
-	}
-	return r.bdl.ToFormalReleases(orgID, userID, apistructs.ReleasesToFormalRequest{
-		ProjectID: projectID,
-		ReleaseID: releaseID,
+	_, err := r.svc.ToFormalReleases(ctx, &dicehubpb.FormalReleasesRequest{
+		ProjectId: projectID,
+		ReleaseId: releaseID,
 	})
+	return err
 }
 
-func (r *ComponentReleaseTable) deleteReleases(releaseID []string) error {
+func (r *ComponentReleaseTable) deleteReleases(ctx context.Context, releaseID []string) error {
 	userID := r.sdk.Identity.UserID
-	orgIDStr := r.sdk.Identity.OrgID
 	projectID := r.State.ProjectID
+
+	ctx = metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
+		"internal-client": "true",
+		"org-id":          r.sdk.Identity.OrgID,
+	}))
 
 	if r.State.IsProjectRelease {
 		hasAccess, err := access.HasWriteAccess(r.bdl, userID, uint64(projectID), true, 0)
@@ -501,11 +526,11 @@ func (r *ComponentReleaseTable) deleteReleases(releaseID []string) error {
 		}
 	} else {
 		for _, id := range releaseID {
-			release, err := r.bdl.GetRelease(id)
+			resp, err := r.svc.GetRelease(ctx, &dicehubpb.ReleaseGetRequest{ReleaseID: id})
 			if err != nil {
 				return err
 			}
-			hasAccess, err := access.HasWriteAccess(r.bdl, userID, uint64(projectID), false, release.ApplicationID)
+			hasAccess, err := access.HasWriteAccess(r.bdl, userID, uint64(projectID), false, resp.Data.ApplicationID)
 			if err != nil {
 				return errors.Errorf("failed to check access, %v", err)
 			}
@@ -515,14 +540,11 @@ func (r *ComponentReleaseTable) deleteReleases(releaseID []string) error {
 		}
 	}
 
-	orgID, err := strconv.ParseUint(orgIDStr, 10, 64)
-	if err != nil {
-		return errors.New("invalid org id")
-	}
-	return r.bdl.DeleteReleases(orgID, userID, apistructs.ReleasesDeleteRequest{
-		ProjectID: projectID,
-		ReleaseID: releaseID,
+	_, err := r.svc.DeleteReleases(ctx, &dicehubpb.ReleasesDeleteRequest{
+		ProjectId: projectID,
+		ReleaseId: releaseID,
 	})
+	return err
 }
 
 func getReleaseID(operationData map[string]interface{}) (string, error) {

@@ -23,6 +23,8 @@ const _ = grpc.SupportPackageIsVersion5
 type MetricMetaServiceClient interface {
 	ListMetricNames(ctx context.Context, in *ListMetricNamesRequest, opts ...grpc.CallOption) (*ListMetricNamesResponse, error)
 	ListMetricMeta(ctx context.Context, in *ListMetricMetaRequest, opts ...grpc.CallOption) (*ListMetricMetaResponse, error)
+	RegisterMetricMeta(ctx context.Context, in *RegisterMetricMetaRequest, opts ...grpc.CallOption) (*RegisterMetricMetaResponse, error)
+	UnRegisterMetricMeta(ctx context.Context, in *UnRegisterMetricMetaRequest, opts ...grpc.CallOption) (*UnRegisterMetricMetaResponse, error)
 	ListMetricGroups(ctx context.Context, in *ListMetricGroupsRequest, opts ...grpc.CallOption) (*ListMetricGroupsResponse, error)
 	GetMetricGroup(ctx context.Context, in *GetMetricGroupRequest, opts ...grpc.CallOption) (*GetMetricGroupResponse, error)
 }
@@ -53,6 +55,24 @@ func (c *metricMetaServiceClient) ListMetricMeta(ctx context.Context, in *ListMe
 	return out, nil
 }
 
+func (c *metricMetaServiceClient) RegisterMetricMeta(ctx context.Context, in *RegisterMetricMetaRequest, opts ...grpc.CallOption) (*RegisterMetricMetaResponse, error) {
+	out := new(RegisterMetricMetaResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.metric.MetricMetaService/RegisterMetricMeta", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metricMetaServiceClient) UnRegisterMetricMeta(ctx context.Context, in *UnRegisterMetricMetaRequest, opts ...grpc.CallOption) (*UnRegisterMetricMetaResponse, error) {
+	out := new(UnRegisterMetricMetaResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.metric.MetricMetaService/UnRegisterMetricMeta", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *metricMetaServiceClient) ListMetricGroups(ctx context.Context, in *ListMetricGroupsRequest, opts ...grpc.CallOption) (*ListMetricGroupsResponse, error) {
 	out := new(ListMetricGroupsResponse)
 	err := c.cc.Invoke(ctx, "/erda.core.monitor.metric.MetricMetaService/ListMetricGroups", in, out, opts...)
@@ -77,6 +97,8 @@ func (c *metricMetaServiceClient) GetMetricGroup(ctx context.Context, in *GetMet
 type MetricMetaServiceServer interface {
 	ListMetricNames(context.Context, *ListMetricNamesRequest) (*ListMetricNamesResponse, error)
 	ListMetricMeta(context.Context, *ListMetricMetaRequest) (*ListMetricMetaResponse, error)
+	RegisterMetricMeta(context.Context, *RegisterMetricMetaRequest) (*RegisterMetricMetaResponse, error)
+	UnRegisterMetricMeta(context.Context, *UnRegisterMetricMetaRequest) (*UnRegisterMetricMetaResponse, error)
 	ListMetricGroups(context.Context, *ListMetricGroupsRequest) (*ListMetricGroupsResponse, error)
 	GetMetricGroup(context.Context, *GetMetricGroupRequest) (*GetMetricGroupResponse, error)
 }
@@ -90,6 +112,12 @@ func (*UnimplementedMetricMetaServiceServer) ListMetricNames(context.Context, *L
 }
 func (*UnimplementedMetricMetaServiceServer) ListMetricMeta(context.Context, *ListMetricMetaRequest) (*ListMetricMetaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListMetricMeta not implemented")
+}
+func (*UnimplementedMetricMetaServiceServer) RegisterMetricMeta(context.Context, *RegisterMetricMetaRequest) (*RegisterMetricMetaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterMetricMeta not implemented")
+}
+func (*UnimplementedMetricMetaServiceServer) UnRegisterMetricMeta(context.Context, *UnRegisterMetricMetaRequest) (*UnRegisterMetricMetaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnRegisterMetricMeta not implemented")
 }
 func (*UnimplementedMetricMetaServiceServer) ListMetricGroups(context.Context, *ListMetricGroupsRequest) (*ListMetricGroupsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListMetricGroups not implemented")
@@ -132,6 +160,24 @@ func _get_MetricMetaService_serviceDesc(srv MetricMetaServiceServer, opts ...grp
 	if h.Interceptor != nil {
 		_MetricMetaService_ListMetricMeta_info = transport.NewServiceInfo("erda.core.monitor.metric.MetricMetaService", "ListMetricMeta", srv)
 		_MetricMetaService_ListMetricMeta_Handler = h.Interceptor(_MetricMetaService_ListMetricMeta_Handler)
+	}
+
+	_MetricMetaService_RegisterMetricMeta_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.RegisterMetricMeta(ctx, req.(*RegisterMetricMetaRequest))
+	}
+	var _MetricMetaService_RegisterMetricMeta_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_MetricMetaService_RegisterMetricMeta_info = transport.NewServiceInfo("erda.core.monitor.metric.MetricMetaService", "RegisterMetricMeta", srv)
+		_MetricMetaService_RegisterMetricMeta_Handler = h.Interceptor(_MetricMetaService_RegisterMetricMeta_Handler)
+	}
+
+	_MetricMetaService_UnRegisterMetricMeta_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.UnRegisterMetricMeta(ctx, req.(*UnRegisterMetricMetaRequest))
+	}
+	var _MetricMetaService_UnRegisterMetricMeta_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_MetricMetaService_UnRegisterMetricMeta_info = transport.NewServiceInfo("erda.core.monitor.metric.MetricMetaService", "UnRegisterMetricMeta", srv)
+		_MetricMetaService_UnRegisterMetricMeta_Handler = h.Interceptor(_MetricMetaService_UnRegisterMetricMeta_Handler)
 	}
 
 	_MetricMetaService_ListMetricGroups_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -198,6 +244,52 @@ func _get_MetricMetaService_serviceDesc(srv MetricMetaServiceServer, opts ...grp
 					FullMethod: "/erda.core.monitor.metric.MetricMetaService/ListMetricMeta",
 				}
 				return interceptor(ctx, in, info, _MetricMetaService_ListMetricMeta_Handler)
+			},
+		},
+		{
+			MethodName: "RegisterMetricMeta",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(RegisterMetricMetaRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(MetricMetaServiceServer).RegisterMetricMeta(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _MetricMetaService_RegisterMetricMeta_info)
+				}
+				if interceptor == nil {
+					return _MetricMetaService_RegisterMetricMeta_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.metric.MetricMetaService/RegisterMetricMeta",
+				}
+				return interceptor(ctx, in, info, _MetricMetaService_RegisterMetricMeta_Handler)
+			},
+		},
+		{
+			MethodName: "UnRegisterMetricMeta",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(UnRegisterMetricMetaRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(MetricMetaServiceServer).UnRegisterMetricMeta(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _MetricMetaService_UnRegisterMetricMeta_info)
+				}
+				if interceptor == nil {
+					return _MetricMetaService_UnRegisterMetricMeta_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.metric.MetricMetaService/UnRegisterMetricMeta",
+				}
+				return interceptor(ctx, in, info, _MetricMetaService_UnRegisterMetricMeta_Handler)
 			},
 		},
 		{

@@ -22,8 +22,17 @@ import (
 	componentprotocol "github.com/erda-project/erda-infra/providers/component-protocol"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	messenger "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
+	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/msp/apm/alert/components/common"
 
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-detail"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-event-list"
 	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-alert-overview"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-detail"
+	_ "github.com/erda-project/erda/modules/msp/apm/alert/components/msp-notify-list"
 )
 
 //go:embed scenarios
@@ -38,10 +47,21 @@ type provider struct {
 
 	Protocol componentprotocol.Interface
 	CPTran   i18n.I18n `autowired:"i18n"`
+
+	MonitorAlertService monitorpb.AlertServiceServer `autowired:"erda.core.monitor.alert.AlertService"`
+	Metric              metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
+
+	bdl       *bundle.Bundle
+	Messenger messenger.NotifyServiceServer `autowired:"erda.core.messenger.notify.NotifyService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.Protocol.SetI18nTran(p.CPTran)
+	p.Protocol.WithContextValue(common.ContextKeyServiceMonitorMetricService, p.Metric)
+	p.Protocol.WithContextValue(common.ContextKeyServiceMonitorAlertService, p.MonitorAlertService)
+	p.Protocol.WithContextValue(common.ContextKeyServiceMessengerService, p.Messenger)
+	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
+	p.Protocol.WithContextValue(common.ContextKeyCoreServicesUrl, p.bdl)
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	return nil
 }

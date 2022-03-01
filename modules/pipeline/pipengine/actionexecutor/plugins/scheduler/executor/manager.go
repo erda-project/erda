@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sspark"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
+	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 )
@@ -41,6 +42,7 @@ type Manager struct {
 	factory   map[types.Kind]types.CreateFn
 	executors map[types.Name]types.TaskExecutor
 	clusters  map[string]apistructs.ClusterInfo
+	pools     *goroutinepool.GoroutinePool
 }
 
 var mgr Manager
@@ -69,6 +71,7 @@ func (m *Manager) Initialize() error {
 	m.factory = types.Factory
 	m.executors = make(map[types.Name]types.TaskExecutor)
 	m.clusters = make(map[string]apistructs.ClusterInfo)
+	m.pools = goroutinepool.New(conf.K8SExecutorPoolSize())
 
 	logrus.Infof("pipeline scheduler task executor Inititalize ...")
 
@@ -231,14 +234,17 @@ func (m *Manager) batchUpdateExecutors() error {
 		return err
 	}
 
+	m.pools.Start()
 	for i := range clusters {
 		if clusters[i].Type != apistructs.K8S && clusters[i].Type != apistructs.EDAS {
 			continue
 		}
-		if err := m.updateClusterExecutor(clusters[i]); err != nil {
-			continue
-		}
+		cluster := clusters[i]
+		m.pools.MustGo(func() {
+			m.updateClusterExecutor(cluster)
+		})
 	}
+	m.pools.Stop()
 	return nil
 }
 

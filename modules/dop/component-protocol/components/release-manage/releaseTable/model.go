@@ -16,12 +16,14 @@ package releaseTable
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/bundle"
 )
 
 type ComponentReleaseTable struct {
 	sdk *cptype.SDK
 	bdl *bundle.Bundle
+	svc dicehubpb.ReleaseServiceServer
 
 	Type       string                 `json:"type,omitempty"`
 	Data       Data                   `json:"data"`
@@ -110,7 +112,7 @@ type FilterValues struct {
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd,omitempty"`
 	ReleaseID         string   `json:"releaseID,omitempty"`
 	ApplicationIDs    []string `json:"applicationIDs,omitempty"`
-	Latest            bool     `json:"latest"`
+	Latest            string   `json:"latest,omitempty"`
 	Version           string   `json:"version,omitempty"`
 }
 

@@ -25,41 +25,67 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/k8s/elastic/vk"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
-// ConstructContainerProviderByLabel try to construct container instance provider like eci
-// if construct failed, return nil
-func ConstructContainerProviderByLabel(labels map[string]string) *apistructs.ContainerInstanceProvider {
-	var provider apistructs.ContainerInstanceProvider
-	for k, v := range labels {
-		switch k {
-		case apistructs.ContainerInstanceLabelType:
-			provider.ContainerInstanceType = apistructs.ContainerInstanceType(v)
-			if !provider.ContainerInstanceType.Valid() {
-				return nil
-			}
-			provider.IsHitted = true
-		case apistructs.ContainerInstanceLabelCPU:
-			cpu, err := strconv.ParseFloat(v, 10)
-			if err == nil {
-				provider.PipelineAppliedResource.CPU = cpu
-			}
-		case apistructs.ContainerInstanceLabelMemoryMB:
-			memoryMB, err := strconv.ParseFloat(v, 10)
-			if err == nil {
-				provider.PipelineAppliedResource.MemoryMB = memoryMB
+type Option func(provider *apistructs.ContainerInstanceProvider)
+
+// ConstructContainerProvider try to construct container instance provider like eci
+func ConstructContainerProvider(options ...Option) *apistructs.ContainerInstanceProvider {
+	provider := &apistructs.ContainerInstanceProvider{}
+
+	for _, op := range options {
+		op(provider)
+	}
+	return provider
+}
+
+func WithLabels(labels map[string]string) Option {
+	return func(provider *apistructs.ContainerInstanceProvider) {
+		for k, v := range labels {
+			switch k {
+			case apistructs.ContainerInstanceLabelType:
+				containerType := apistructs.ContainerInstanceType(v)
+				if containerType.Valid() {
+					provider.IsHitted = true
+					provider.ContainerInstanceType = containerType
+				}
+			case apistructs.ContainerInstanceLabelCPU:
+				cpu, err := strconv.ParseFloat(v, 10)
+				if err == nil {
+					provider.PipelineAppliedResource.CPU = cpu
+				}
+			case apistructs.ContainerInstanceLabelMemoryMB:
+				memoryMB, err := strconv.ParseFloat(v, 10)
+				if err == nil {
+					provider.PipelineAppliedResource.MemoryMB = memoryMB
+				}
 			}
 		}
 	}
-	if provider.IsHitted {
-		return &provider
+}
+
+// WithStages if the stages contain custom-type action, then it will make a disabled container instance provider
+// todo judge the container instance type in task-level
+func WithStages(stages []*pipelineyml.Stage) Option {
+	return func(provider *apistructs.ContainerInstanceProvider) {
+		for _, stage := range stages {
+			for _, actionMap := range stage.Actions {
+				for actionType := range actionMap {
+					if actionType.IsCustom() {
+						provider.IsHitted = false
+						provider.IsDisabled = true
+						return
+					}
+				}
+			}
+		}
 	}
-	return nil
 }
 
 func DealPipelineProviderBeforeRun(p *spec.Pipeline, clusterInfo apistructs.ClusterInfoData) {
 	provider := p.Extra.ContainerInstanceProvider
-	if provider != nil {
+	if provider != nil && provider.IsDisabled {
 		return
 	}
 	provider = &apistructs.ContainerInstanceProvider{}

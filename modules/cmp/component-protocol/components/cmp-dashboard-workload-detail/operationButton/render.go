@@ -339,9 +339,9 @@ func (b *ComponentOperationButton) DeleteWorkload() error {
 	return nil
 }
 
-func (b *ComponentOperationButton) Transfer(c *cptype.Component) {
-	c.Props = cputil.MustConvertProps(b.Props)
-	c.State = map[string]interface{}{
+func (b *ComponentOperationButton) Transfer(component *cptype.Component) {
+	component.Props = cputil.MustConvertProps(b.Props)
+	component.State = map[string]interface{}{
 		"clusterName": b.State.ClusterName,
 		"workloadId":  b.State.WorkloadID,
 	}

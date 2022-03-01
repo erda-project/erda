@@ -1,7 +1,7 @@
 dicehub:
 
 http-server:
-  addr: ":8080"
+  addr: ":10000"
 health:
 
 grpc-server:

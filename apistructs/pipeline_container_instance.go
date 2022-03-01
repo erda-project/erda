@@ -35,6 +35,7 @@ func (c ContainerInstanceType) Valid() bool {
 }
 
 type ContainerInstanceProvider struct {
+	IsDisabled              bool `json:"isDisabled"`
 	IsHitted                bool `json:"isHitted"`
 	ContainerInstanceType   `json:"containerInstanceType"`
 	PipelineAppliedResource `json:"pipelineAppliedResource"`
