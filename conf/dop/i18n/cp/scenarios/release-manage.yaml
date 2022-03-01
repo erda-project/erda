@@ -1,7 +1,7 @@
 zh:
   true: 是
   false: 否
-  searchByVersion: 搜索版本
+  searchByVersionOrID: 按版本或 ID 进行搜索
   application: 应用
   selectApplication: 请选择应用
   branch: 分支
@@ -32,7 +32,7 @@ zh:
   aggregateByBranch: 只显示版本最新制品
   formalReleaseCanNotBeModified: 正式制品不可修改
 en:
-  searchByVersion: Search by version
+  searchByVersionOrID: Search by version or releaseID
   application: Application
   selectApplication: Select application
   branch: Branch

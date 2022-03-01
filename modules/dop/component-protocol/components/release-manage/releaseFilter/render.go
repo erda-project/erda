@@ -261,7 +261,7 @@ func (f *ComponentReleaseFilter) RenderFilter() error {
 	f.Data.Conditions = append(f.Data.Conditions, Condition{
 		Key:         "version",
 		Label:       "version",
-		Placeholder: f.sdk.I18n("searchByVersion"),
+		Placeholder: f.sdk.I18n("searchByVersionOrID"),
 		Type:        "input",
 		Outside:     true,
 	})

@@ -77,8 +77,7 @@ func (client *ReleaseConfigDB) GetReleasesByParams(
 		db = db.Where("project_id = ?", req.ProjectID)
 	}
 	if req.Query != "" {
-		db = db.Where("release_id LIKE ? or release_name LIKE ? or version LIKE ?", "%"+req.Query+"%",
-			"%"+req.Query+"%", "%"+req.Query+"%")
+		db = db.Where("release_id LIKE ? or version LIKE ?", "%"+req.Query+"%", "%"+req.Query+"%")
 	} else if req.ReleaseName != "" {
 		db = db.Where("release_name = ?", req.ReleaseName)
 	}
