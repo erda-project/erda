@@ -74,7 +74,6 @@ func (p *provider) Initialize() error {
 
 	dumpstack.Open()
 	logrus.Infoln(version.String())
-	conf.Load()
 
 	if conf.Debug() {
 		logrus.SetLevel(logrus.DebugLevel)
