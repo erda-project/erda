@@ -66,6 +66,8 @@ zh:
   ApproveRequest: "审批"
   Activities: "动态"
   ReachLimit: "达到上限"
+  approve: 通过
+  reject: 拒绝
 
 en:
   IssueExpired: "Expired"
@@ -108,4 +110,5 @@ en:
   ApproveRequest: "Approve request"
   Activities: "Activities"
   ReachLimit: "Reach Limit"
-
+  approve: Approve
+  reject: Reject

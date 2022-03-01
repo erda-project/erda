@@ -99,6 +99,8 @@ func (m *ManualReview) GetReviewsByUserId(param *apistructs.GetReviewsByUserIdRe
 			ApprovalStatus:  v.ApprovalStatus,
 			ApprovalReason:  v.ApprovalReason,
 			ApprovalContent: "pipeline",
+			CreatedAt:       v.CreatedAt,
+			UpdatedAt:       v.UpdatedAt,
 		})
 	}
 
