@@ -15,10 +15,14 @@
 package deployment_order
 
 import (
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	releasepb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 )
@@ -76,4 +80,52 @@ func TestInspectDeploymentStatusDetail(t *testing.T) {
 			assert.Equal(t, tt.want, tt.args.DeploymentOrder.StatusDetail)
 		})
 	}
+}
+
+////go:generate mockgen -destination=./deployment_order_release_test.go -package deployment_order github.com/erda-project/erda-proto-go/core/dicehub/release/pb ReleaseServiceServer
+func TestPushOnDeploymentOrderPolling(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	rss := NewMockReleaseServiceServer(ctrl)
+
+	rss.EXPECT().GetRelease(gomock.Any(), gomock.Any()).AnyTimes().Return(&releasepb.ReleaseGetResponse{
+		Data: &releasepb.ReleaseGetResponseData{
+			ReleaseID: "202cb962ac59075b964b07152d234b70",
+			ApplicationReleaseList: []*releasepb.ReleaseSummaryArray{
+				{
+					List: []*releasepb.ApplicationReleaseSummary{
+						{
+							ReleaseID:       "202cb962ac59075b964b07152d234b70",
+							ApplicationName: "app-demo",
+						},
+					},
+				},
+			},
+		},
+	}, nil)
+
+	order := New(WithReleaseSvc(rss))
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "FindUnfinishedDeploymentOrders", func(*dbclient.DBClient) ([]dbclient.DeploymentOrder, error) {
+		return []dbclient.DeploymentOrder{
+			{
+				ReleaseId:    "202cb962ac59075b964b07152d234b70",
+				CurrentBatch: 1,
+				BatchSize:    3,
+				Workspace:    apistructs.WORKSPACE_PROD,
+				Status:       string(apistructs.DeploymentStatusDeploying),
+			},
+		}, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetRuntimeByAppName", func(*dbclient.DBClient, string, uint64, string) (*dbclient.Runtime, error) {
+		return &dbclient.Runtime{}, nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "FindLastDeployment", func(*dbclient.DBClient, uint64) (*dbclient.Deployment, error) {
+		// if record not found, will return nil
+		return nil, nil
+	})
+
+	defer monkey.UnpatchAll()
+
+	_, err := order.PushOnDeploymentOrderPolling()
+	assert.NoError(t, err)
 }
