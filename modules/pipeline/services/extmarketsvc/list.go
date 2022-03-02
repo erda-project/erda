@@ -16,12 +16,14 @@ package extmarketsvc
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -39,15 +41,59 @@ func SearchActionWithRender(placeholders map[string]string) OpOption {
 	}
 }
 
+func (s ExtMarketSvc) constructAllActions() error {
+	allExtensions, err := s.bdl.QueryExtensions(apistructs.ExtensionQueryRequest{
+		All:  "true",
+		Type: "action",
+	})
+	if err != nil {
+		return errors.Errorf("failed to query all extension: %v", err)
+	}
+	s.pools.Start()
+	for i := range allExtensions {
+		extension := allExtensions[i]
+		s.pools.MustGo(func() {
+			s.updateExtension(extension)
+		})
+
+	}
+	s.pools.Stop()
+	return nil
+}
+
+func (s *ExtMarketSvc) updateExtension(extension apistructs.Extension) {
+	extensionVersions, err := s.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{
+		Name:       extension.Name,
+		All:        "true",
+		YamlFormat: true,
+	})
+	if err != nil {
+		logrus.Errorf("failed to query extension version, name: %s, err: %v", extension.Name, err)
+		return
+	}
+	for _, extensionVersion := range extensionVersions {
+		s.Lock()
+		s.actions[fmt.Sprintf("%s@%s", extension.Name, extensionVersion.Version)] = extensionVersion
+		s.Unlock()
+	}
+}
+
+func (s *ExtMarketSvc) continuousRefreshActionAsync() {
+	ticker := time.NewTicker(time.Minute * time.Duration(conf.ExtensionVersionRefreshIntervalMinute()))
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			if err := s.constructAllActions(); err != nil {
+				logrus.Errorf("extension market failed to construct all actions: %v", err)
+			}
+		}
+	}
+}
+
 // each search item: ActionType 或 ActionType@version
 // output: map[item]Image
 func (s *ExtMarketSvc) SearchActions(items []string, ops ...OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
-	req := apistructs.ExtensionSearchRequest{Extensions: items, YamlFormat: true}
-	actions, err := s.bdl.SearchExtensions(req)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	so := SearchOption{
 		NeedRender:   false,
 		Placeholders: nil,
@@ -57,11 +103,13 @@ func (s *ExtMarketSvc) SearchActions(items []string, ops ...OpOption) (map[strin
 	}
 
 	actionDiceYmlJobMap := make(map[string]*diceyml.Job)
-	for nameVersion, action := range actions {
-		if action.NotExist() {
-			errMsg := fmt.Sprintf("action %q not exist in Extension Market", nameVersion)
-			logrus.Errorf("[alert] %s", errMsg)
-			return nil, nil, errors.New(errMsg)
+	actionSpecMap := make(map[string]*apistructs.ActionSpec)
+	for _, nameVersion := range items {
+		s.Lock()
+		action, ok := s.actions[nameVersion]
+		s.Unlock()
+		if !ok {
+			return nil, nil, errors.Errorf("failed to find action: %s", nameVersion)
 		}
 		diceYmlStr, ok := action.Dice.(string)
 		if !ok {
@@ -88,9 +136,6 @@ func (s *ExtMarketSvc) SearchActions(items []string, ops ...OpOption) (map[strin
 			actionDiceYmlJobMap[nameVersion] = job
 			break
 		}
-	}
-	actionSpecMap := make(map[string]*apistructs.ActionSpec)
-	for nameVersion, action := range actions {
 		actionSpecMap[nameVersion] = nil
 		specYmlStr, ok := action.Spec.(string)
 		if !ok {
