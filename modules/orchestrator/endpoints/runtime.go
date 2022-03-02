@@ -586,7 +586,7 @@ func (e *Endpoints) GetAppWorkspaceReleases(ctx context.Context, r *http.Request
 			CrossClusterOrSpecifyCluster: clusterName,
 			ApplicationID:                []string{strconv.FormatUint(req.AppID, 10)},
 			PageSize:                     5,
-			PageNum:                      1,
+			PageNo:                       1,
 		})
 		if err != nil {
 			return apierrors.ErrGetAppWorkspaceReleases.InternalError(err).ToResp(), nil
