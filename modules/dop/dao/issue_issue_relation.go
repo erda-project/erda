@@ -43,18 +43,18 @@ func (client *DBClient) CreateIssueRelations(issueRelation *IssueRelation) error
 	return client.Create(issueRelation).Error
 }
 
-func (client *DBClient) IssueRelationExist(issueRelation *IssueRelation) (bool, error) {
+func (client *DBClient) IssueRelationsExist(issueRelation *IssueRelation, relatedIssues []uint64) (bool, error) {
 	if issueRelation.Type == apistructs.IssueRelationInclusion {
 		var parent int64
-		if err := client.Table("dice_issue_relation").Where("related_issue = ? and type = ?", issueRelation.RelatedIssue, issueRelation.Type).Count(&parent).Error; err != nil {
+		if err := client.Table("dice_issue_relation").Where("related_issue in (?) and type = ?", relatedIssues, issueRelation.Type).Count(&parent).Error; err != nil {
 			return false, err
 		}
 		if parent > 0 {
-			return false, fmt.Errorf("issue %v has been children of other issues", issueRelation.IssueID)
+			return false, fmt.Errorf("issues %v contains duplicate issue relations", relatedIssues)
 		}
 	}
 	var count int64
-	if err := client.Table("dice_issue_relation").Where("issue_id = ? and related_issue = ? and type = ?", issueRelation.IssueID, issueRelation.RelatedIssue, issueRelation.Type).Count(&count).Error; err != nil {
+	if err := client.Table("dice_issue_relation").Where("issue_id = ? and related_issue in (?) and type = ?", issueRelation.IssueID, issueRelation.RelatedIssue, issueRelation.Type).Count(&count).Error; err != nil {
 		return false, err
 	}
 	return count > 0, nil
@@ -155,4 +155,8 @@ func (client *DBClient) IssueChildrenCount(issueIDs []uint64, relationType []str
 		return nil, err
 	}
 	return res, nil
+}
+
+func (client *DBClient) BatchCreateIssueRelations(issueRels []IssueRelation) error {
+	return client.BulkInsert(issueRels)
 }
