@@ -106,16 +106,16 @@ func (r *ComponentReleaseTable) InitComponent(ctx context.Context) {
 	r.svc = svc
 }
 
-func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) error {
-	if component == nil || component.State == nil {
+func (r *ComponentReleaseTable) GenComponentState(c *cptype.Component) error {
+	if c == nil || c.State == nil {
 		return nil
 	}
 	var state State
-	data, err := json.Marshal(component.State)
+	jsonData, err := json.Marshal(c.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(data, &state); err != nil {
+	if err = json.Unmarshal(jsonData, &state); err != nil {
 		return err
 	}
 	r.State = state
@@ -123,21 +123,21 @@ func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) e
 }
 
 func (r *ComponentReleaseTable) DecodeURLQuery() error {
-	queryData, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
+	query, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(queryData)
+	decode, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
-	query := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &query); err != nil {
+	urlQuery := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &urlQuery); err != nil {
 		return err
 	}
-	r.State.PageNo = int64(query["pageNo"].(float64))
-	r.State.PageSize = int64(query["pageSize"].(float64))
-	sorter := query["sorterData"].(map[string]interface{})
+	r.State.PageNo = int64(urlQuery["pageNo"].(float64))
+	r.State.PageSize = int64(urlQuery["pageSize"].(float64))
+	sorter := urlQuery["sorterData"].(map[string]interface{})
 	r.State.Sorter.Field, _ = sorter["field"].(string)
 	r.State.Sorter.Order, _ = sorter["order"].(string)
 	return nil
