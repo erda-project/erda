@@ -26,7 +26,7 @@ elasticsearch@logs:
     urls: "${LOGS_ES_URL:http://localhost:9200}"
     security: ${LOGS_ES_SECURITY_ENABLE:false}
     username: "${LOGS_ES_SECURITY_USERNAME}"
-    password: "${LOGS_ES_SECURITY_USERNAME}"
+    password: "${LOGS_ES_SECURITY_PASSWORD}"
 
 logs-exporter-elasticsearch:
     disabled: ${WRITE_LOG_TO_ES_ENABLE:true}
