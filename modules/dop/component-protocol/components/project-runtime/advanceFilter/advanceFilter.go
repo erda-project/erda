@@ -143,6 +143,7 @@ func (af *AdvanceFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		}
 		urlParam, err := af.generateUrlQueryParams(af.Values)
 		if err != nil {
+			logrus.Errorf("failed to parse url params, af value :%v", af.Values)
 			return nil
 		}
 		(*af.StdStatePtr)["advanceFilter__urlQuery"] = urlParam
@@ -265,6 +266,12 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 		common.Transfer(state, &stdState)
 		(*af.StdStatePtr)["values"] = stdState
 		(*sdk.GlobalState)["advanceFilter"] = af.Values
+		urlParam, err := af.generateUrlQueryParams(af.Values)
+		if err != nil {
+			logrus.Errorf("failed to parse url params, af value %v", af.Values)
+			return nil
+		}
+		(*af.StdStatePtr)["advanceFilter__urlQuery"] = urlParam
 	}
 	// filter values
 
