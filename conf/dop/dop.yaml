@@ -70,6 +70,7 @@ erda.dop.projecthome:
 erda.dop.contribution:
 erda.dop.projectpipeline:
 erda.dop.issue.stream:
+erda.dop.guide:
 
 # component-protocol framework
 component-protocol:
