@@ -16,34 +16,26 @@ package dispatcher
 
 import (
 	"context"
-	"path/filepath"
 	"reflect"
 	"sync"
-	"time"
 
 	"github.com/buraksezer/consistent"
 	"github.com/coreos/etcd/clientv3"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
-	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler"
 )
-
-type config struct {
-	EtcdKeyPrefix                  string        `file:"etcd_key_prefix" env:"DISPATCHER_ETCD_KEY_PREFIX" default:"/devops/pipeline/v2/dispatcher/"`
-	Concurrency                    int           `file:"concurrency" default:"100"`
-	IntervalOfLoadRunningPipelines time.Duration `file:"interval_of_load_running_pipelines" env:"INTERVAL_OF_LOAD_RUNNING_PIPELINES" default:"30s"`
-}
 
 type provider struct {
 	Log        logs.Logger
 	Cfg        *config
 	EtcdClient *clientv3.Client
 	Lw         leaderworker.Interface
+	Reconciler reconciler.Interface
 
 	Mysql    mysqlxorm.Interface
 	dbClient *dbclient.Client
@@ -51,53 +43,27 @@ type provider struct {
 	pipelineIDsChan chan uint64
 	consistent      *consistent.Consistent
 
-	lock sync.Mutex
+	lock           sync.Mutex
+	dispatchingIDs sync.Map
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	// cfg
-	p.Cfg.EtcdKeyPrefix = filepath.Clean(p.Cfg.EtcdKeyPrefix) + "/"
-
-	// consistent
-	consistentCfg := consistent.Config{
-		Hasher:            defaultHash{},
-		PartitionCount:    7,
-		ReplicationFactor: 2,
-		Load:              1.25,
-	}
-	var consistentMembers []consistent.Member
-	workers, err := p.Lw.ListWorkers(ctx, worker.Official)
+	p.pipelineIDsChan = make(chan uint64, p.Cfg.Concurrency)
+	p.dbClient = &dbclient.Client{Engine: p.Mysql.DB()}
+	c, err := p.makeConsistent(ctx)
 	if err != nil {
 		return err
 	}
-	for _, w := range workers {
-		consistentMembers = append(consistentMembers, w)
-	}
-	p.consistent = consistent.New(consistentMembers, consistentCfg)
-	p.pipelineIDsChan = make(chan uint64, p.Cfg.Concurrency)
-	p.dbClient = &dbclient.Client{Engine: p.Mysql.DB()}
+	p.consistent = c
 
 	return nil
 }
 
-func (p *provider) Dispatch(ctx context.Context, pipelineID uint64) {
-	p.pipelineIDsChan <- pipelineID
-}
-
-func (p *provider) makeEtcdDispatchKey(pipelineID uint64) string {
-	return p.Cfg.EtcdKeyPrefix + strutil.String(pipelineID)
-}
-
-func (p *provider) Provide(ctx servicehub.DependencyContext, options ...interface{}) interface{} {
-	return p
-}
-
 func (p *provider) Run(ctx context.Context) error {
 	// just register handler, and leaderworker provider will handle properly
-	p.Lw.OnLeader(p.loadRunningPipelines)
 	p.Lw.OnLeader(p.continueDispatcher)
-	p.Lw.OnWorkerAdd(p.onWorkerAdd)
-	p.Lw.OnWorkerDelete(p.onWorkerDelete)
+	p.Lw.LeaderHandlerOnWorkerAdd(p.onWorkerAdd)
+	p.Lw.LeaderHandlerOnWorkerDelete(p.onWorkerDelete)
 	return nil
 }
 

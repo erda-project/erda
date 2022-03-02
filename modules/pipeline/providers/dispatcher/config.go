@@ -15,14 +15,17 @@
 package dispatcher
 
 import (
-	"context"
+	"time"
 )
 
-// Interface .
-type Interface interface {
-	Dispatch(ctx context.Context, pipelineID uint64)
+type config struct {
+	Concurrency           int           `file:"concurrency" default:"100"`
+	DispatchRetryInterval time.Duration `file:"dispatch_retry_interval" env:"DISPATCH_RETRY_INTERVAL" default:"5s"`
+	Consistent            consistentConfig
 }
 
-func (p *provider) Dispatch(ctx context.Context, pipelineID uint64) {
-	p.pipelineIDsChan <- pipelineID
+type consistentConfig struct {
+	PartitionCount    int     `file:"partition_count" env:"DISPATCHER_CONSISTENT_PARTITION_COUNT" default:"7"`
+	ReplicationFactor int     `file:"replication_factor" env:"DISPATCHER_CONSISTENT_REPLICATION_FACTOR" default:"20"`
+	Load              float64 `file:"load" env:"DISPATCHER_CONSISTENT_LOAD" default:"1.25"`
 }
