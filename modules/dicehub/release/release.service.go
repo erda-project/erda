@@ -89,9 +89,10 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *pb.ReleaseCreat
 			return nil, apiError
 		}
 		for _, rule := range rules.List {
-			l.WithField("rule pattern", rule.Pattern).WithField("is_enabled", rule.IsEnabled).Infoln()
-			if rule.Match(branch) {
-				req.Version = filepath.Base(branch) + "-" + time.Now().Format("2006-01-02-150405")
+			l.WithField("rule pattern", rule.Pattern).WithField("is_enabled", rule.IsEnabled).Debugln()
+			if rule.Match(branch) && strutil.PrefixWithSemVer(filepath.Base(branch)) {
+				req.Version = filepath.Base(branch) + "+" + time.Now().Format("20060102150405")
+				req.IsStable = true
 				break
 			}
 		}
