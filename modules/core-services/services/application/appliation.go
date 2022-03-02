@@ -156,6 +156,7 @@ func (a *Application) Create(userID string, createReq *apistructs.ApplicationCre
 		Mode:           string(createReq.Mode),
 		UserID:         userID,
 		IsExternalRepo: createReq.IsExternalRepo,
+		SonarConfig:    createReq.SonarConfig,
 	}
 	if createReq.IsExternalRepo {
 		application.RepoConfig = getRepoConfigStr(createReq.RepoConfig)
@@ -283,6 +284,9 @@ func (a *Application) Update(appID int64, updateReq *apistructs.ApplicationUpdat
 	application.Logo = updateReq.Logo
 	application.DisplayName = updateReq.DisplayName
 	application.IsPublic = updateReq.IsPublic
+	if updateReq.SonarConfig != nil {
+		application.SonarConfig = updateReq.SonarConfig
+	}
 	config, err := json.Marshal(updateReq.Config)
 	if err != nil {
 		return nil, errors.Errorf("failed to marshal config, (%v)", err)
