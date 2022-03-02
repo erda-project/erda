@@ -16,6 +16,8 @@ package model
 
 import (
 	"time"
+
+	"github.com/erda-project/erda/apistructs"
 )
 
 // Application 应用资源模型
@@ -36,10 +38,11 @@ type Application struct {
 	UnblockStart   *time.Time // 解封开始时间
 	UnblockEnd     *time.Time // 解封结束时间
 	RepoConfig     string
-	Logo           string // 应用Logo地址
-	UserID         string `gorm:"column:creator"` // 所属用户Id
-	Extra          string // 应用配置namespace等
-	IsPublic       bool   // 应用是否公开
+	SonarConfig    *apistructs.SonarConfig `gorm:"column:sonar_config"`
+	Logo           string                  // 应用Logo地址
+	UserID         string                  `gorm:"column:creator"` // 所属用户Id
+	Extra          string                  // 应用配置namespace等
+	IsPublic       bool                    // 应用是否公开
 }
 
 // TableName 设置模型对应数据库表名称
