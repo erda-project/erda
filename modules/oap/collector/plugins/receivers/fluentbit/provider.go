@@ -19,6 +19,8 @@ import (
 	"net/http"
 
 	"github.com/buger/jsonparser"
+	"github.com/labstack/echo"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
@@ -27,7 +29,6 @@ import (
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
-	"github.com/labstack/echo"
 )
 
 var providerName = plugins.WithPrefixReceiver("fluent-bit")

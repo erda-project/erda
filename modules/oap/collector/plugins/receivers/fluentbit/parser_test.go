@@ -18,8 +18,9 @@ import (
 	"reflect"
 	"testing"
 
-	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
 	"github.com/stretchr/testify/assert"
+
+	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
 )
 
 func Test_parseItem(t *testing.T) {
@@ -50,6 +51,7 @@ func Test_parseItem(t *testing.T) {
 				Name:         "container",
 				Severity:     "INFO",
 				Attributes: map[string]string{
+					"stream":             "stdout",
 					"k8s_annotations_k":  "v",
 					"k8s_container_id":   "cid",
 					"k8s_container_name": "cname",

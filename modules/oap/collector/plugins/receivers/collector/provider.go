@@ -15,6 +15,9 @@
 package collector
 
 import (
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
@@ -22,8 +25,6 @@ import (
 	"github.com/erda-project/erda/modules/oap/collector/authentication"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
 )
 
 var providerName = plugins.WithPrefixReceiver("collector")

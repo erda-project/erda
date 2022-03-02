@@ -18,8 +18,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"

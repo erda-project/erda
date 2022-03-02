@@ -17,8 +17,9 @@ package common
 import (
 	"fmt"
 
-	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	jsoniter "github.com/json-iterator/go"
+
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 const (

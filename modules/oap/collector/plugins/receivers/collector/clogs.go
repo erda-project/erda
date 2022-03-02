@@ -19,9 +19,10 @@ import (
 	"net/http"
 
 	"github.com/buger/jsonparser"
+	"github.com/labstack/echo"
+
 	"github.com/erda-project/erda/modules/oap/collector/common"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
-	"github.com/labstack/echo"
 )
 
 func (p *provider) collectLogs(ctx echo.Context) error {

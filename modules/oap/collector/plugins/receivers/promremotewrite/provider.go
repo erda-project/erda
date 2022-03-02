@@ -20,14 +20,15 @@ import (
 	"net/http"
 	"time"
 
-	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
-	"github.com/erda-project/erda/modules/oap/collector/common"
-	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/golang/protobuf/proto"
 	"github.com/labstack/echo"
 	pmodel "github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
+	"github.com/erda-project/erda/modules/oap/collector/common"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"

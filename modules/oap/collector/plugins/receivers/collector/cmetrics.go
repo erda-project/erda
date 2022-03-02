@@ -23,8 +23,9 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
-	"github.com/erda-project/erda/modules/oap/collector/common"
 	"github.com/labstack/echo"
+
+	"github.com/erda-project/erda/modules/oap/collector/common"
 )
 
 func (p *provider) collectMetric(ctx echo.Context) error {

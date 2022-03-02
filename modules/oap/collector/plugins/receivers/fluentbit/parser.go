@@ -19,8 +19,9 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
 	jsoniter "github.com/json-iterator/go"
+
+	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
 )
 
 func parseItem(value []byte, cfg flbKeyMappings) (*lpb.Log, error) {
@@ -57,7 +58,7 @@ func parseItem(value []byte, cfg flbKeyMappings) (*lpb.Log, error) {
 	lg.Attributes["stream"] = stream
 
 	k8sBuf, _, _, _ := jsonparser.Get(value, cfg.Kubernetes)
-	k8sTags := parseMapStr(cfg.Kubernetes, k8sBuf)
+	k8sTags := parseMapStr("k8s", k8sBuf)
 	for k, v := range k8sTags {
 		lg.Attributes[k] = v
 	}

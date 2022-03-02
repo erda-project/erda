@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/cespare/xxhash"
+
 	"github.com/erda-project/erda-proto-go/oap/common/pb"
 )
 
