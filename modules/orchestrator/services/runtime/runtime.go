@@ -1154,6 +1154,17 @@ func (r *Runtime) CountPRByWorkspace(projectId uint64, env string) (uint64, erro
 	return cnt, nil
 }
 
+// CountARByWorkspace count appliaction runtimes by workspace .
+func (r *Runtime) CountARByWorkspace(appId uint64, env string) (uint64, error) {
+	var l = logrus.WithField("func", "*Runtime.CountPRByWorkspace")
+	cnt, err := r.db.GetAppRuntimeNumberByWorkspace(appId, env)
+	if err != nil {
+		l.WithError(err).Errorln("failed to CountPRByWorkspace")
+		return 0, err
+	}
+	return cnt, nil
+}
+
 // Destroy 摧毁应用实例
 func (r *Runtime) Destroy(runtimeID uint64) error {
 	// 调用hepa完成runtime删除

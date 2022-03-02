@@ -512,6 +512,15 @@ func (db *DBClient) GetProjectRuntimeNumberByWorkspace(projectId uint64, env str
 	return num, nil
 }
 
+func (db *DBClient) GetAppRuntimeNumberByWorkspace(projectId uint64, env string) (uint64, error) {
+	var num uint64
+	if err := db.Model(Runtime{}).Where("application_id = ? and workspace = ?", projectId, env).
+		Count(&num).Error; err != nil {
+		return 0, err
+	}
+	return num, nil
+}
+
 // TODO: we no need app, just redundant fields into runtime table
 func ConvertRuntimeDTO(runtime *Runtime, app *apistructs.ApplicationDTO) *apistructs.RuntimeDTO {
 	return &apistructs.RuntimeDTO{
