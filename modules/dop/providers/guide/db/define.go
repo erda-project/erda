@@ -103,8 +103,8 @@ func (db *GuideDB) UpdateGuide(id string, fields map[string]interface{}) error {
 	return db.Debug().Model(guide).Scopes(NotDeleted).Updates(fields).Error
 }
 
-// BatchUpdateExpiryStatus .
-func (db *GuideDB) BatchUpdateExpiryStatus() error {
+// BatchUpdateGuideExpiryStatus .
+func (db *GuideDB) BatchUpdateGuideExpiryStatus() error {
 	return db.Debug().Model(&Guide{}).Scopes(NotDeleted).
 		Where("status = ?", InitStatus).
 		Where("created_at < ? ", time.Now().Add(-1*(ExpiredTime)).Format("2006-01-02 15:04:05")).

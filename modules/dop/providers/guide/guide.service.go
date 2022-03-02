@@ -132,6 +132,10 @@ func (g *GuideService) ProcessGuide(ctx context.Context, req *pb.ProcessGuideReq
 	return &pb.ProcessGuideResponse{}, nil
 }
 
+func (g *GuideService) BatchUpdateGuideExpiryStatus() error {
+	return g.db.BatchUpdateGuideExpiryStatus()
+}
+
 type PipelineYml struct {
 	YmlName string
 	YmlPath string

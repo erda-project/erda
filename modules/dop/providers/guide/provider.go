@@ -15,6 +15,8 @@
 package guide
 
 import (
+	"context"
+
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -23,9 +25,11 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/dop/guide/pb"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/providers/guide/db"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/cron"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 )
 
@@ -41,6 +45,22 @@ type provider struct {
 	Trans    i18n.Translator    `translator:"project-pipeline" required:"true"`
 
 	GuideService *GuideService
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	go func() {
+		cron := cron.New()
+		err := cron.AddFunc(conf.UpdateGuideExpiryStatusCron(), func() {
+			if err := p.GuideService.BatchUpdateGuideExpiryStatus(); err != nil {
+				p.Log.Errorf("failed to BatchUpdateGuideExpiryStatus, err: %v", err)
+			}
+		})
+		if err != nil {
+			panic(err)
+		}
+		cron.Start()
+	}()
+	return nil
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
