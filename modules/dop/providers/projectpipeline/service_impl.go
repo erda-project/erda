@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
@@ -1052,15 +1053,38 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	if err != nil {
 		return nil, err
 	}
+	orgStr := createV2.Labels[apistructs.LabelOrgID]
+	orgID, err := strconv.ParseUint(orgStr, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	// If source type is erda，should sync pipelineYml file
+	pipelineYml := source.PipelineYml
+	if source.SourceType == deftype.ErdaProjectPipelineType.String() {
+		_, projectName, appName := getNameByRemote(source.Remote)
+		searchINode := projectName + "/" + appName + "/blob/" + source.Ref + "/" + filepath.Join(source.Path, source.Name)
+		pipelineYml, err = p.bundle.GetGittarBlobNode("/wb/"+searchINode, orgStr, identityInfo.UserID)
+		if err != nil {
+			logrus.Errorf("failed to sync GetGittarBlobNode,err: %s", err.Error())
+			return nil, err
+		}
+		if pipelineYml != source.PipelineYml {
+			_, err = p.PipelineSource.Update(context.Background(), &spb.PipelineSourceUpdateRequest{
+				PipelineYml:      pipelineYml,
+				PipelineSourceID: source.ID,
+			})
+			if err != nil {
+				logrus.Errorf("failed to update pipelien source,err: %s", err.Error())
+				return nil, err
+			}
+		}
+
+	}
 
 	// update user gittar token
 	var worker = limit_sync_group.NewWorker(3)
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
-		orgStr := createV2.Labels[apistructs.LabelOrgID]
-		orgID, err := strconv.ParseUint(orgStr, 10, 64)
-		if err != nil {
-			return apierrors.ErrRunProjectPipeline.InternalError(fmt.Errorf("not find orgID"))
-		}
 		// update CmsNsConfigs
 		if err = p.UpdateCmsNsConfigs(identityInfo.UserID, orgID); err != nil {
 			return apierrors.ErrRunProjectPipeline.InternalError(err)
@@ -1073,7 +1097,7 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 			PipelineYmlName:    filepath.Join(source.Path, source.Name),
 			AppID:              appID,
 			Branch:             createV2.Labels[apistructs.LabelBranch],
-			PipelineYmlContent: source.PipelineYml,
+			PipelineYmlContent: pipelineYml,
 			UserID:             identityInfo.UserID,
 		})
 		if err != nil {
@@ -1093,7 +1117,7 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
-	totalActionNum, err := countActionNumByPipelineYml(source.PipelineYml)
+	totalActionNum, err := countActionNumByPipelineYml(pipelineYml)
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
@@ -1171,7 +1195,7 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 	}
 
 	for _, v := range statics.GetPipelineDefinitionStatistics() {
-		appName := getAppNameByRemote(v.Remote)
+		_, _, appName := getNameByRemote(v.Remote)
 		if v2, ok := appNamePipelineNumMap[appName]; ok {
 			v2.FailedNum = int(v.FailedNum)
 			v2.RunningNum = int(v.RunningNum)
@@ -1304,10 +1328,10 @@ func (p *ProjectPipelineService) makeLocationByAppID(appID uint64) (string, erro
 	}, cicdPipelineType), nil
 }
 
-func getAppNameByRemote(remote string) string {
+func getNameByRemote(remote string) (string, string, string) {
 	splits := strings.Split(remote, string(filepath.Separator))
 	if len(splits) != 3 {
-		return ""
+		return "", "", ""
 	}
-	return splits[2]
+	return splits[0], splits[1], splits[2]
 }
