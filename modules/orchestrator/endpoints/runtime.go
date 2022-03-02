@@ -312,19 +312,16 @@ func (e *Endpoints) CountPRByWorkspace(ctx context.Context, r *http.Request, var
 	}
 
 	appIdStr := r.URL.Query().Get("appId")
-	if appIdStr == "" {
-		return apierrors.ErrGetRuntime.InvalidParameter("appId").ToResp(), nil
-	}
-	appId, err := strconv.ParseUint(appIdStr, 10, 64)
-	if err != nil {
-		return apierrors.ErrGetRuntime.InvalidParameter("appId").ToResp(), nil
-	}
 	envParam := r.URL.Query()["workspace"]
 
 	if appIdStr != "" {
+		appId, err := strconv.ParseUint(appIdStr, 10, 64)
+		if err != nil {
+			return apierrors.ErrGetRuntime.InvalidParameter("appId").ToResp(), nil
+		}
 		if len(envParam) == 0 || envParam[0] == "" {
 			for i := 0; i < len(defaultEnv); i++ {
-				cnt, err := e.runtime.CountPRByWorkspace(appId, defaultEnv[i])
+				cnt, err := e.runtime.CountARByWorkspace(appId, defaultEnv[i])
 				if err != nil {
 					l.WithError(err).Warnf("count runtimes of workspace %s failed", defaultEnv[i])
 				}
@@ -332,7 +329,7 @@ func (e *Endpoints) CountPRByWorkspace(ctx context.Context, r *http.Request, var
 			}
 		} else {
 			env := envParam[0]
-			cnt, err := e.runtime.CountPRByWorkspace(appId, env)
+			cnt, err := e.runtime.CountARByWorkspace(appId, env)
 			if err != nil {
 				l.WithError(err).Warnf("count runtimes of workspace %s failed", env)
 			}
