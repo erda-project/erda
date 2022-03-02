@@ -441,7 +441,7 @@ func RegisterReleaseServiceHandler(r http.Router, srv ReleaseServiceHandler, opt
 				if vals := params["applicationId"]; len(vals) > 0 {
 					in.ApplicationID = vals
 				}
-				if vals := params["branch"]; len(vals) > 0 {
+				if vals := params["branchName"]; len(vals) > 0 {
 					in.Branch = vals[0]
 				}
 				if vals := params["cluster"]; len(vals) > 0 {

@@ -68,7 +68,7 @@ type CreateNotifyHistoryRequest struct {
 	OrgID                 int64                  `json:"orgId"`
 	NotifyTags            map[string]interface{} `json:"notifyTags"`
 	Label                 string                 `json:"label"`
-	ClusterName           string                 `query:"clusterName"`
+	ClusterName           string                 `json:"clusterName" query:"clusterName"`
 }
 
 // CreateNotifyHistoryResponse 创建通知发送记录响应
