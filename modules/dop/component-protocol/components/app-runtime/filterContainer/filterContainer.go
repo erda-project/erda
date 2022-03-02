@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cleanData
+package page
 
 import (
 	"context"
@@ -23,15 +23,21 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/app-runtime/common"
 )
 
-func (cl Clean) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
-	cl.State = map[string]interface{}{}
-	delete(*gs, "runtimes")
-	delete(*gs, "getAll")
-	c.State = cl.State
+type FilterContainer struct {
+	base.DefaultProvider
+	Type string
+}
+
+func (p *FilterContainer) Init(ctx servicehub.Context) error {
+	return p.DefaultProvider.Init(ctx)
+}
+
+func (p FilterContainer) Render(ctx context.Context, c *cptype.Component, scenario cptype.Scenario, event cptype.ComponentEvent, gs *cptype.GlobalStateData) error {
 	return nil
 }
+
 func init() {
-	base.InitProviderWithCreator(common.ScenarioKey, "cleanData", func() servicehub.Provider {
-		return &Clean{State: map[string]interface{}{}}
+	base.InitProviderWithCreator(common.ScenarioKey, "filterContainer", func() servicehub.Provider {
+		return &FilterContainer{}
 	})
 }
