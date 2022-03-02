@@ -1062,11 +1062,9 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	// If source type is erda，should sync pipelineYml file
 	pipelineYml := source.PipelineYml
 	if source.SourceType == deftype.ErdaProjectPipelineType.String() {
-		_, projectName, appName := getNameByRemote(source.Remote)
-		searchINode := projectName + "/" + appName + "/blob/" + source.Ref + "/" + filepath.Join(source.Path, source.Name)
-		pipelineYml, err = p.bundle.GetGittarBlobNode("/wb/"+searchINode, orgStr, identityInfo.UserID)
+		pipelineYml, err = p.fetchRemotePipeline(source, orgStr, identityInfo.UserID)
 		if err != nil {
-			logrus.Errorf("failed to sync GetGittarBlobNode,err: %s", err.Error())
+			logrus.Errorf("failed to fetchRemotePipeline, err: %s", err.Error())
 			return nil, err
 		}
 		if pipelineYml != source.PipelineYml {
@@ -1075,7 +1073,7 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 				PipelineSourceID: source.ID,
 			})
 			if err != nil {
-				logrus.Errorf("failed to update pipelien source,err: %s", err.Error())
+				logrus.Errorf("failed to update pipelien source, err: %s", err.Error())
 				return nil, err
 			}
 		}
@@ -1195,8 +1193,8 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 	}
 
 	for _, v := range statics.GetPipelineDefinitionStatistics() {
-		_, _, appName := getNameByRemote(v.Remote)
-		if v2, ok := appNamePipelineNumMap[appName]; ok {
+		remoteName := getNameByRemote(v.Remote)
+		if v2, ok := appNamePipelineNumMap[remoteName.AppName]; ok {
 			v2.FailedNum = int(v.FailedNum)
 			v2.RunningNum = int(v.RunningNum)
 			v2.TotalNum = int(v.TotalNum)
@@ -1328,10 +1326,26 @@ func (p *ProjectPipelineService) makeLocationByAppID(appID uint64) (string, erro
 	}, cicdPipelineType), nil
 }
 
-func getNameByRemote(remote string) (string, string, string) {
+type RemoteName struct {
+	OrgName     string
+	ProjectName string
+	AppName     string
+}
+
+func getNameByRemote(remote string) RemoteName {
 	splits := strings.Split(remote, string(filepath.Separator))
 	if len(splits) != 3 {
-		return "", "", ""
+		return RemoteName{}
 	}
-	return splits[0], splits[1], splits[2]
+	return RemoteName{
+		OrgName:     splits[0],
+		ProjectName: splits[1],
+		AppName:     splits[2],
+	}
+}
+
+func (p *ProjectPipelineService) fetchRemotePipeline(source *spb.PipelineSource, orgID, userID string) (string, error) {
+	remoteName := getNameByRemote(source.Remote)
+	searchINode := remoteName.ProjectName + "/" + remoteName.AppName + "/blob/" + source.Ref + "/" + filepath.Join(source.Path, source.Name)
+	return p.bundle.GetGittarBlobNode("/wb/"+searchINode, orgID, userID)
 }
