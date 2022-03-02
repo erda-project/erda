@@ -714,7 +714,22 @@ func registerWebHook(bdl *bundle.Bundle) {
 		},
 	}
 	if err := bdl.CreateWebhook(ev); err != nil {
-		logrus.Warnf("failed to register pipeline yml event, %v", err)
+		logrus.Warnf("failed to register pipeline_definition_update event, %v", err)
+	}
+
+	ev = apistructs.CreateHookRequest{
+		Name:   "guide_create",
+		Events: []string{bundle.GitPushEvent},
+		URL:    strutil.Concat("http://", discover.DOP(), "/api/guide"),
+		Active: true,
+		HookLocation: apistructs.HookLocation{
+			Org:         "-1",
+			Project:     "-1",
+			Application: "-1",
+		},
+	}
+	if err := bdl.CreateWebhook(ev); err != nil {
+		logrus.Warnf("failed to register guide_create event, %v", err)
 	}
 }
 

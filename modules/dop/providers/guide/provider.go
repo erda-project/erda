@@ -22,7 +22,6 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/dop/guide/pb"
-	projectPipelinePb "github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/providers/guide/db"
@@ -41,8 +40,7 @@ type provider struct {
 	Register transport.Register `autowired:"service-register" required:"true"`
 	Trans    i18n.Translator    `translator:"project-pipeline" required:"true"`
 
-	GuideService           *GuideService
-	ProjectPipelineService projectPipelinePb.ProjectPipelineServiceServer `autowired:"erda.dop.projectpipeline.ProjectPipelineService" required:"true"`
+	GuideService *GuideService
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -56,7 +54,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 				},
 			},
 		},
-		ProjectPipelineService: p.ProjectPipelineService,
 	}
 	if p.Register != nil {
 		pb.RegisterGuideServiceImp(p.Register, p.GuideService, apis.Options())

@@ -21,8 +21,10 @@ const _ = grpc.SupportPackageIsVersion5
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GuideServiceClient interface {
+	CreateGuideByGittarHook(ctx context.Context, in *GittarPushPayloadEvent, opts ...grpc.CallOption) (*CreateGuideResponse, error)
 	ListGuide(ctx context.Context, in *ListGuideRequest, opts ...grpc.CallOption) (*ListGuideResponse, error)
 	JudgeCanCreatePipeline(ctx context.Context, in *JudgeCanCreatePipelineRequest, opts ...grpc.CallOption) (*JudgeCanCreatePipelineResponse, error)
+	ProcessGuide(ctx context.Context, in *ProcessGuideRequest, opts ...grpc.CallOption) (*ProcessGuideResponse, error)
 }
 
 type guideServiceClient struct {
@@ -31,6 +33,15 @@ type guideServiceClient struct {
 
 func NewGuideServiceClient(cc grpc1.ClientConnInterface) GuideServiceClient {
 	return &guideServiceClient{cc}
+}
+
+func (c *guideServiceClient) CreateGuideByGittarHook(ctx context.Context, in *GittarPushPayloadEvent, opts ...grpc.CallOption) (*CreateGuideResponse, error) {
+	out := new(CreateGuideResponse)
+	err := c.cc.Invoke(ctx, "/erda.dop.guide.GuideService/CreateGuideByGittarHook", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *guideServiceClient) ListGuide(ctx context.Context, in *ListGuideRequest, opts ...grpc.CallOption) (*ListGuideResponse, error) {
@@ -51,23 +62,40 @@ func (c *guideServiceClient) JudgeCanCreatePipeline(ctx context.Context, in *Jud
 	return out, nil
 }
 
+func (c *guideServiceClient) ProcessGuide(ctx context.Context, in *ProcessGuideRequest, opts ...grpc.CallOption) (*ProcessGuideResponse, error) {
+	out := new(ProcessGuideResponse)
+	err := c.cc.Invoke(ctx, "/erda.dop.guide.GuideService/ProcessGuide", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GuideServiceServer is the server API for GuideService service.
 // All implementations should embed UnimplementedGuideServiceServer
 // for forward compatibility
 type GuideServiceServer interface {
+	CreateGuideByGittarHook(context.Context, *GittarPushPayloadEvent) (*CreateGuideResponse, error)
 	ListGuide(context.Context, *ListGuideRequest) (*ListGuideResponse, error)
 	JudgeCanCreatePipeline(context.Context, *JudgeCanCreatePipelineRequest) (*JudgeCanCreatePipelineResponse, error)
+	ProcessGuide(context.Context, *ProcessGuideRequest) (*ProcessGuideResponse, error)
 }
 
 // UnimplementedGuideServiceServer should be embedded to have forward compatible implementations.
 type UnimplementedGuideServiceServer struct {
 }
 
+func (*UnimplementedGuideServiceServer) CreateGuideByGittarHook(context.Context, *GittarPushPayloadEvent) (*CreateGuideResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateGuideByGittarHook not implemented")
+}
 func (*UnimplementedGuideServiceServer) ListGuide(context.Context, *ListGuideRequest) (*ListGuideResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListGuide not implemented")
 }
 func (*UnimplementedGuideServiceServer) JudgeCanCreatePipeline(context.Context, *JudgeCanCreatePipelineRequest) (*JudgeCanCreatePipelineResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method JudgeCanCreatePipeline not implemented")
+}
+func (*UnimplementedGuideServiceServer) ProcessGuide(context.Context, *ProcessGuideRequest) (*ProcessGuideResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProcessGuide not implemented")
 }
 
 func RegisterGuideServiceServer(s grpc1.ServiceRegistrar, srv GuideServiceServer, opts ...grpc1.HandleOption) {
@@ -88,6 +116,15 @@ func _get_GuideService_serviceDesc(srv GuideServiceServer, opts ...grpc1.HandleO
 		op(h)
 	}
 
+	_GuideService_CreateGuideByGittarHook_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.CreateGuideByGittarHook(ctx, req.(*GittarPushPayloadEvent))
+	}
+	var _GuideService_CreateGuideByGittarHook_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_GuideService_CreateGuideByGittarHook_info = transport.NewServiceInfo("erda.dop.guide.GuideService", "CreateGuideByGittarHook", srv)
+		_GuideService_CreateGuideByGittarHook_Handler = h.Interceptor(_GuideService_CreateGuideByGittarHook_Handler)
+	}
+
 	_GuideService_ListGuide_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.ListGuide(ctx, req.(*ListGuideRequest))
 	}
@@ -106,8 +143,40 @@ func _get_GuideService_serviceDesc(srv GuideServiceServer, opts ...grpc1.HandleO
 		_GuideService_JudgeCanCreatePipeline_Handler = h.Interceptor(_GuideService_JudgeCanCreatePipeline_Handler)
 	}
 
+	_GuideService_ProcessGuide_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.ProcessGuide(ctx, req.(*ProcessGuideRequest))
+	}
+	var _GuideService_ProcessGuide_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_GuideService_ProcessGuide_info = transport.NewServiceInfo("erda.dop.guide.GuideService", "ProcessGuide", srv)
+		_GuideService_ProcessGuide_Handler = h.Interceptor(_GuideService_ProcessGuide_Handler)
+	}
+
 	var serviceDesc = _GuideService_serviceDesc
 	serviceDesc.Methods = []grpc.MethodDesc{
+		{
+			MethodName: "CreateGuideByGittarHook",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GittarPushPayloadEvent)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(GuideServiceServer).CreateGuideByGittarHook(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _GuideService_CreateGuideByGittarHook_info)
+				}
+				if interceptor == nil {
+					return _GuideService_CreateGuideByGittarHook_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.dop.guide.GuideService/CreateGuideByGittarHook",
+				}
+				return interceptor(ctx, in, info, _GuideService_CreateGuideByGittarHook_Handler)
+			},
+		},
 		{
 			MethodName: "ListGuide",
 			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -152,6 +221,29 @@ func _get_GuideService_serviceDesc(srv GuideServiceServer, opts ...grpc1.HandleO
 					FullMethod: "/erda.dop.guide.GuideService/JudgeCanCreatePipeline",
 				}
 				return interceptor(ctx, in, info, _GuideService_JudgeCanCreatePipeline_Handler)
+			},
+		},
+		{
+			MethodName: "ProcessGuide",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(ProcessGuideRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(GuideServiceServer).ProcessGuide(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _GuideService_ProcessGuide_info)
+				}
+				if interceptor == nil {
+					return _GuideService_ProcessGuide_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.dop.guide.GuideService/ProcessGuide",
+				}
+				return interceptor(ctx, in, info, _GuideService_ProcessGuide_Handler)
 			},
 		},
 	}

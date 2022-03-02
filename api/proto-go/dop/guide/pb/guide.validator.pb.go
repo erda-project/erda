@@ -53,3 +53,36 @@ func (this *JudgeCanCreatePipelineRequest) Validate() error {
 func (this *JudgeCanCreatePipelineResponse) Validate() error {
 	return nil
 }
+func (this *GittarPushPayloadEvent) Validate() error {
+	if this.Content != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Content); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Content", err)
+		}
+	}
+	return nil
+}
+func (this *Content) Validate() error {
+	if this.Pusher != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Pusher); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Pusher", err)
+		}
+	}
+	return nil
+}
+func (this *Pusher) Validate() error {
+	return nil
+}
+func (this *CreateGuideResponse) Validate() error {
+	if this.Data != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
+		}
+	}
+	return nil
+}
+func (this *ProcessGuideRequest) Validate() error {
+	return nil
+}
+func (this *ProcessGuideResponse) Validate() error {
+	return nil
+}

@@ -527,7 +527,8 @@ var (
 	ErrEndCronProjectPipeline         = err("ErrEndCronProjectPipeline", "关闭流水线定时失败")
 	ErrListExecHistoryProjectPipeline = err("ErrListExecHistoryProjectPipeline", "列出流水线执行明细失败")
 
-	ErrListGuide           = err("ErrListGuide", "获取引导列表失败")
+	ErrCreateGuide            = err("ErrCreateGuide", "创建引导失败")
+	ErrListGuide              = err("ErrListGuide", "获取引导列表失败")
 	ErrJudgeCanCreatePipeline = err("ErrJudgeCanCreatePipeline", "判断是否可以创建流水线")
 )
 

@@ -37,10 +37,18 @@ type guideServiceWrapper struct {
 	opts   []grpc1.CallOption
 }
 
+func (s *guideServiceWrapper) CreateGuideByGittarHook(ctx context.Context, req *pb.GittarPushPayloadEvent) (*pb.CreateGuideResponse, error) {
+	return s.client.CreateGuideByGittarHook(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
 func (s *guideServiceWrapper) ListGuide(ctx context.Context, req *pb.ListGuideRequest) (*pb.ListGuideResponse, error) {
 	return s.client.ListGuide(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
 func (s *guideServiceWrapper) JudgeCanCreatePipeline(ctx context.Context, req *pb.JudgeCanCreatePipelineRequest) (*pb.JudgeCanCreatePipelineResponse, error) {
 	return s.client.JudgeCanCreatePipeline(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *guideServiceWrapper) ProcessGuide(ctx context.Context, req *pb.ProcessGuideRequest) (*pb.ProcessGuideResponse, error) {
+	return s.client.ProcessGuide(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

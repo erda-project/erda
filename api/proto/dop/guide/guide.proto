@@ -17,6 +17,16 @@ service GuideService {
     }
   };
 
+  rpc CreateGuideByGittarHook(GittarPushPayloadEvent)
+      returns(CreateGuideResponse) {
+    option(google.api.http) = {
+      post : "/api/guide",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/guide",
+    };
+  }
+
   rpc ListGuide(ListGuideRequest)
       returns(ListGuideResponse) {
     option(google.api.http) = {
@@ -34,6 +44,16 @@ service GuideService {
     };
     option(erda.common.openapi) = {
       path : "/api/guide/{ID}/actions/judge",
+    };
+  }
+
+  rpc ProcessGuide(ProcessGuideRequest)
+      returns(ProcessGuideResponse) {
+    option(google.api.http) = {
+      post : "/api/guide/actions/process",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/guide/actions/process",
     };
   }
 }
@@ -56,8 +76,9 @@ message Guide {
   uint64 OrgID = 6;
   uint64 projectID = 7;
   uint64 appID = 8;
-  google.protobuf.Timestamp timeCreated = 9;
-  google.protobuf.Timestamp timeUpdated = 10;
+  string branch = 9;
+  google.protobuf.Timestamp timeCreated = 10;
+  google.protobuf.Timestamp timeUpdated = 11;
 }
 
 message JudgeCanCreatePipelineRequest {
@@ -70,4 +91,41 @@ message JudgeCanCreatePipelineResponse {
   string Branch = 3;
   string Path = 4;
   string FileName = 5;
+}
+
+message GittarPushPayloadEvent {
+  string Event = 1;
+  string Action = 2;
+  string OrgID = 3;
+  string ProjectID = 4;
+  string ApplicationID = 5;
+  string Env = 6;
+  string TimeStamp = 7;
+  Content content = 8;
+}
+
+message Content {
+  string Ref = 1;
+  string After = 2;
+  string Before = 3;
+  Pusher Pusher = 4;
+}
+
+message Pusher {
+  string ID = 1 [json_name = "id"];
+  string Name = 2;
+  string NickName = 3;
+  string Email = 4;
+}
+
+message CreateGuideResponse {
+  Guide data = 1;
+}
+
+message ProcessGuideRequest {
+  uint64 appID = 1;
+  string branch = 2;
+}
+
+message ProcessGuideResponse {
 }

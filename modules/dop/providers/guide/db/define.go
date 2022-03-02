@@ -76,6 +76,7 @@ func (g *Guide) Convert() *pb.Guide {
 		OrgID:       g.OrgID,
 		ProjectID:   g.ProjectID,
 		AppID:       g.AppID,
+		Branch:      g.Branch,
 		TimeCreated: timestamppb.New(g.CreatedAt),
 		TimeUpdated: timestamppb.New(g.UpdatedAt),
 	}
@@ -99,15 +100,32 @@ func (db *GuideDB) GetGuide(id string) (guide Guide, err error) {
 // UpdateGuide .
 func (db *GuideDB) UpdateGuide(id string, fields map[string]interface{}) error {
 	guide := &Guide{ID: id}
-	return db.Debug().Model(guide).Updates(fields).Error
+	return db.Debug().Model(guide).Scopes(NotDeleted).Updates(fields).Error
+}
+
+// BatchUpdateExpiryStatus .
+func (db *GuideDB) BatchUpdateExpiryStatus() error {
+	return db.Debug().Model(&Guide{}).Scopes(NotDeleted).
+		Where("status = ?", InitStatus).
+		Where("created_at < ? ", time.Now().Add(-1*(ExpiredTime)).Format("2006-01-02 15:04:05")).
+		Updates(map[string]interface{}{"status": ExpiredStatus}).Error
+}
+
+// UpdateGuideByAppIDAndBranch .
+func (db *GuideDB) UpdateGuideByAppIDAndBranch(appID uint64, branch string, fields map[string]interface{}) error {
+	return db.Debug().Model(&Guide{}).Scopes(NotDeleted).
+		Where("app_id = ?", appID).
+		Where("branch = ?", branch).
+		Updates(fields).Error
 }
 
 // ListGuide .
-func (db *GuideDB) ListGuide(req *pb.ListGuideRequest) (guides []Guide, err error) {
+func (db *GuideDB) ListGuide(req *pb.ListGuideRequest, userID string) (guides []Guide, err error) {
 	err = db.Debug().Model(&Guide{}).
 		Scopes(NotDeleted).
 		Where("kind = ?", req.Kind).
 		Where("project_id = ?", req.ProjectID).
+		Where("creator = ?", userID).
 		Where("status = ?", InitStatus).
 		Where("created_at >= ?", time.Now().Add(-1*(ExpiredTime)).Format("2006-01-02 15:04:05")).
 		Find(&guides).Error

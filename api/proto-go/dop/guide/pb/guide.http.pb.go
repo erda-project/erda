@@ -21,10 +21,14 @@ const _ = http.SupportPackageIsVersion1
 
 // GuideServiceHandler is the server API for GuideService service.
 type GuideServiceHandler interface {
+	// POST /api/guide
+	CreateGuideByGittarHook(context.Context, *GittarPushPayloadEvent) (*CreateGuideResponse, error)
 	// GET /api/guide
 	ListGuide(context.Context, *ListGuideRequest) (*ListGuideResponse, error)
 	// GET /api/guide/{ID}/actions/judge
 	JudgeCanCreatePipeline(context.Context, *JudgeCanCreatePipelineRequest) (*JudgeCanCreatePipelineResponse, error)
+	// POST /api/guide/actions/process
+	ProcessGuide(context.Context, *ProcessGuideRequest) (*ProcessGuideResponse, error)
 }
 
 // RegisterGuideServiceHandler register GuideServiceHandler to http.Router.
@@ -48,6 +52,42 @@ func RegisterGuideServiceHandler(r http.Router, srv GuideServiceHandler, opts ..
 			handler = h.HTTPInterceptor(handler)
 		}
 		return handler
+	}
+
+	add_CreateGuideByGittarHook := func(method, path string, fn func(context.Context, *GittarPushPayloadEvent) (*CreateGuideResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GittarPushPayloadEvent))
+		}
+		var CreateGuideByGittarHook_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			CreateGuideByGittarHook_info = transport.NewServiceInfo("erda.dop.guide.GuideService", "CreateGuideByGittarHook", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, CreateGuideByGittarHook_info)
+				}
+				r = r.WithContext(ctx)
+				var in GittarPushPayloadEvent
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
 	}
 
 	add_ListGuide := func(method, path string, fn func(context.Context, *ListGuideRequest) (*ListGuideResponse, error)) {
@@ -145,6 +185,44 @@ func RegisterGuideServiceHandler(r http.Router, srv GuideServiceHandler, opts ..
 		)
 	}
 
+	add_ProcessGuide := func(method, path string, fn func(context.Context, *ProcessGuideRequest) (*ProcessGuideResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*ProcessGuideRequest))
+		}
+		var ProcessGuide_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			ProcessGuide_info = transport.NewServiceInfo("erda.dop.guide.GuideService", "ProcessGuide", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, ProcessGuide_info)
+				}
+				r = r.WithContext(ctx)
+				var in ProcessGuideRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_CreateGuideByGittarHook("POST", "/api/guide", srv.CreateGuideByGittarHook)
 	add_ListGuide("GET", "/api/guide", srv.ListGuide)
 	add_JudgeCanCreatePipeline("GET", "/api/guide/{ID}/actions/judge", srv.JudgeCanCreatePipeline)
+	add_ProcessGuide("POST", "/api/guide/actions/process", srv.ProcessGuide)
 }
