@@ -22,11 +22,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/common"
+	"github.com/erda-project/erda/pkg/arrays"
 )
 
 func (l *MessageList) doFilterApproval() (data *list.Data) {
-	blockApprovalList, blockUsers, blockTotal := l.blockApproval()
-	deployApprovalList, deployUsers, deployTotal := l.deployApproval()
+	blockApprovalList, blockUsers, blockTotal := l.blockApproval(1, 1000)
+	deployApprovalList, deployUsers, deployTotal := l.deployApproval(1, 1000)
 	data = &list.Data{
 		PageNo:   l.filterReq.PageNo,
 		PageSize: l.filterReq.PageSize,
@@ -37,17 +38,23 @@ func (l *MessageList) doFilterApproval() (data *list.Data) {
 		List:    append(blockApprovalList, deployApprovalList...),
 		UserIDs: append(blockUsers, deployUsers...),
 	}
+
+	start, end := arrays.Paging(l.filterReq.PageNo, l.filterReq.PageSize, data.Total)
+	if start == -1 || end == -1 {
+		return
+	}
+	data.List = data.List[start:end]
 	return
 }
 
-func (l *MessageList) blockApproval() (data []list.Item, userIDs []string, total int) {
+func (l *MessageList) blockApproval(pageNo, pageSize uint64) (data []list.Item, userIDs []string, total int) {
 	orgID, err := strconv.ParseUint(l.identity.OrgID, 10, 64)
 	if err != nil {
 		panic(err)
 	}
 	resp, err := l.bdl.ListApprove(orgID, l.identity.UserID, map[string][]string{
-		"pageNo":   {strconv.FormatUint(l.filterReq.PageNo, 10)},
-		"pageSize": {strconv.FormatUint(l.filterReq.PageSize, 10)},
+		"pageNo":   {strconv.FormatUint(pageNo, 10)},
+		"pageSize": {strconv.FormatUint(pageSize, 10)},
 		"status":   {"pending"},
 	})
 	if err != nil {
@@ -102,10 +109,10 @@ func (l *MessageList) blockApproval() (data []list.Item, userIDs []string, total
 	return
 }
 
-func (l *MessageList) deployApproval() (data []list.Item, userIDs []string, total int) {
+func (l *MessageList) deployApproval(pageNo, pageSize uint64) (data []list.Item, userIDs []string, total int) {
 	resp, err := l.bdl.ListReviewApproval(l.identity.OrgID, l.identity.UserID, map[string][]string{
-		"pageNo":         {strconv.FormatUint(l.filterReq.PageNo, 10)},
-		"pageSize":       {strconv.FormatUint(l.filterReq.PageSize, 10)},
+		"pageNo":         {strconv.FormatUint(pageNo, 10)},
+		"pageSize":       {strconv.FormatUint(pageSize, 10)},
 		"approvalStatus": {"pending"},
 	})
 	if err != nil {
