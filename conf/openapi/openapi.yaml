@@ -74,6 +74,7 @@ openapi-v1-routes:
           - scenes-import-record
           - test-dashboard
           - project-runtime
+          - app-runtime
           - test-report
           - addon-mysql-account
           - addon-mysql-consumer
@@ -85,6 +86,7 @@ openapi-v1-routes:
           - release-manage
           - app-list-all
           - project-pipeline
+          - app-pipeline
           - project-pipeline-exec-list
           - project-list-all
           - auto-test-plan-list
