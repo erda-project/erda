@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-proto-go/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
 )
 
 type Interface interface {
@@ -34,26 +35,41 @@ type Interface interface {
 func (q *provider) DistributedHandleIncomingPipeline(ctx context.Context, pipelineID uint64) {
 	var wg sync.WaitGroup
 	// put into etcd
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
-		key := makeIncomingPipelineListenKey(q.Cfg.IncomingPipelineCfg.ListenPrefixWithSlash, pipelineID)
+		key := q.makeIncomingPipelineListenKey(pipelineID)
 		for {
 			if _, err := q.EtcdClient.Put(ctx, key, ""); err != nil {
-				q.Log.Warnf("failed to distribute incoming pipeline(auto retry), pipelineID: %d, err: %v", pipelineID, err)
+				q.Log.Errorf("failed to distribute incoming pipeline(auto retry), pipelineID: %d, err: %v", pipelineID, err)
 				time.Sleep(q.Cfg.IncomingPipelineCfg.RetryInterval)
 				continue
 			}
+			q.Log.Infof("distributed handle incoming pipeline success for etcd listen, pipelineID: %d", pipelineID)
 			return
 		}
 	}()
 	// put into mysql
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 		for {
+			status, err := q.dbClient.GetPipelineStatus(pipelineID)
+			if err != nil {
+				if dbclient.IsNotFound(err) {
+					q.Log.Errorf("skip distributed handle non-exist pipeline, pipelineID: %d", pipelineID)
+					return
+				}
+				q.Log.Errorf("failed to get pipeline status(auto retry), pipelineID: %d, err: %v", pipelineID, err)
+				time.Sleep(q.Cfg.IncomingPipelineCfg.RetryInterval)
+				continue
+			}
+			if status == apistructs.PipelineStatusQueue || status.AfterPipelineQueue() {
+				q.Log.Warnf("skip update pipeline status for incoming pipeline, pipelineID: %d, status: %s", pipelineID, status)
+				return
+			}
 			if err := q.dbClient.UpdatePipelineBaseStatus(pipelineID, apistructs.PipelineStatusQueue); err != nil {
-				q.Log.Warnf("failed to distribute incoming pipeline(auto retry), pipelineID: %d, err: %v", pipelineID, err)
+				q.Log.Errorf("failed to distribute incoming pipeline(auto retry), pipelineID: %d, err: %v", pipelineID, err)
 				time.Sleep(q.Cfg.IncomingPipelineCfg.RetryInterval)
 				continue
 			}
@@ -62,7 +78,7 @@ func (q *provider) DistributedHandleIncomingPipeline(ctx context.Context, pipeli
 	}()
 
 	wg.Wait()
-	q.Log.Debugf("distribute incoming pipeline success, pipelineID: %d", pipelineID)
+	q.Log.Debugf("distributed handle incoming pipeline success, pipelineID: %d", pipelineID)
 }
 
 func (q *provider) DistributedStopPipeline(ctx context.Context, pipelineID uint64) {

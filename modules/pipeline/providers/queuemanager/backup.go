@@ -61,7 +61,7 @@ func (q *provider) continueBackupQueueUsage(ctx context.Context) {
 
 		select {
 		case <-done:
-			logrus.Infof("%s: sleep 30s for next backup (cost %s this time)", logPrefixContinueBackupQueueUsage, costTime)
+			logrus.Debugf("%s: sleep 30s for next backup (cost %s this time)", logPrefixContinueBackupQueueUsage, costTime)
 			time.Sleep(time.Second * 30)
 		case err := <-errDone:
 			logrus.Errorf("%s: failed to load, wait 10s for next loading, err: %v", logPrefixContinueBackupQueueUsage, err)

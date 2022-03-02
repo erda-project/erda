@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
-	"time"
 
 	"github.com/coreos/etcd/clientv3"
 
@@ -35,18 +34,9 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
-type config struct {
-	IncomingPipelineCfg IncomingPipelineCfg `file:"incoming_pipeline"`
-}
-
-type IncomingPipelineCfg struct {
-	ListenPrefixWithSlash string        `file:"listen_prefix" default:"/devops/pipeline/v2/queue-manager/incoming_pipeline/"`
-	RetryInterval         time.Duration `file:"retry_interval" default:"10s"`
-}
-
 type provider struct {
 	Log logs.Logger
-	Cfg config
+	Cfg *config
 
 	MySQLXOrm  mysqlxorm.Interface
 	EtcdClient *clientv3.Client
@@ -59,6 +49,11 @@ type provider struct {
 }
 
 func (q *provider) Init(ctx servicehub.Context) error {
+	if len(q.Cfg.IncomingPipelineCfg.EtcdKeyPrefixWithSlash) == 0 {
+		return fmt.Errorf("failed to find config: incoming_pipeline.etcd_key_prefix_with_slash")
+	}
+	q.Cfg.IncomingPipelineCfg.EtcdKeyPrefixWithSlash = filepath.Clean(q.Cfg.IncomingPipelineCfg.EtcdKeyPrefixWithSlash) + "/"
+
 	js, err := jsonstore.New()
 	if err != nil {
 		return fmt.Errorf("failed to init jsonstore, err: %v", err)
@@ -74,7 +69,6 @@ func (q *provider) Init(ctx servicehub.Context) error {
 		manager.WithEtcdClient(etcdClient),
 		manager.WithJsonStore(js),
 	)
-	q.Cfg.IncomingPipelineCfg.ListenPrefixWithSlash = filepath.Clean(q.Cfg.IncomingPipelineCfg.ListenPrefixWithSlash) + "/"
 	return nil
 }
 
@@ -84,6 +78,7 @@ func (q *provider) Run(ctx context.Context) error {
 	q.Lw.OnLeader(q.QueueManager.ListenUpdatePriorityPipelineIDsFromEtcd)
 	q.Lw.OnLeader(q.QueueManager.ListenPopOutPipelineIDFromEtcd)
 	q.Lw.OnLeader(q.listenIncomingPipeline)
+	q.Lw.OnLeader(q.loadRunningPipelines)
 	return nil
 }
 

@@ -19,49 +19,36 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/coreos/etcd/clientv3"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/events"
-	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/rlog"
-	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func getPipelineIDFromIncomingListenKey(key string, prefix string) (uint64, error) {
-	idstr := strutil.TrimPrefixes(key, prefix)
-	pipelineID, err := strconv.ParseUint(idstr, 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("failed to parse pipeline id from incoming listen key, key: %s, err: %v", key, err)
-	}
-	return pipelineID, nil
-}
-func makeIncomingPipelineListenKey(prefix string, pipelineID uint64) string {
-	return filepath.Join(prefix, strutil.String(pipelineID))
-}
-
 // listenIncomingPipeline listen incoming pipeline id
 func (q *provider) listenIncomingPipeline(ctx context.Context) {
-	q.Lw.ListenPrefix(ctx, q.Cfg.IncomingPipelineCfg.ListenPrefixWithSlash,
+	q.Lw.ListenPrefix(ctx, q.Cfg.IncomingPipelineCfg.EtcdKeyPrefixWithSlash,
 		func(ctx context.Context, event *clientv3.Event) {
-			pipelineID, err := getPipelineIDFromIncomingListenKey(string(event.Kv.Key), q.Cfg.IncomingPipelineCfg.ListenPrefixWithSlash)
+			pipelineID, err := q.getPipelineIDFromIncomingListenKey(string(event.Kv.Key))
 			if err != nil {
 				q.Log.Errorf("failed to handle incoming pipeline(no retry), err: %v", err)
 				return
 			}
+			q.Log.Infof("watched incoming pipeline, begin add into queue, pipelineID: %d", pipelineID)
 			q.addIncomingPipelineIntoQueue(pipelineID)
 		},
 		nil,
 	)
-
 }
 
 func (q *provider) addIncomingPipelineIntoQueue(pipelineID uint64) {
 	// add into queue
 	popCh, needRetryIfErr, err := q.QueueManager.PutPipelineIntoQueue(pipelineID)
 	if err != nil {
-		rlog.PErrorf(pipelineID, "failed to put pipeline into queue")
+		q.Log.Infof("failed to put pipeline into queue, pipelineID: %d", pipelineID)
 		if needRetryIfErr {
 			q.addIncomingPipelineIntoQueue(pipelineID)
 			return
@@ -70,25 +57,58 @@ func (q *provider) addIncomingPipelineIntoQueue(pipelineID uint64) {
 		q.treatPipelineFailed(pipelineID)
 		return
 	}
-	rlog.PInfof(pipelineID, "added into queue, waiting to pop from the queue")
+	q.Log.Infof("added into queue, waiting to pop from the queue, pipelineID: %d", pipelineID)
 	go func() {
 		<-popCh
-		rlog.PInfof(pipelineID, "pop from the queue, begin dispatch")
+		q.Log.Infof("pop from the queue, begin dispatch, pipelineID: %d", pipelineID)
+		// memory function invoke is enough, because queue-manager and dispatcher both on one leader now
 		q.Dispatcher.Dispatch(context.Background(), pipelineID)
+		// delete incoming key
+		go func() {
+			for {
+				_, err := q.EtcdClient.Delete(context.Background(), q.makeIncomingPipelineListenKey(pipelineID))
+				if err == nil {
+					return
+				}
+				q.Log.Errorf("failed to delete incoming pipeline key after dispatch(auto retry), pipelineID: %d, err: %v", pipelineID, err)
+				time.Sleep(q.Cfg.IncomingPipelineCfg.RetryInterval)
+			}
+		}()
 	}()
 }
 
 func (q *provider) treatPipelineFailed(pipelineID uint64) {
-	p := spec.Pipeline{
-		PipelineBase: spec.PipelineBase{
-			ID:     pipelineID,
-			Status: apistructs.PipelineStatusFailed,
-		},
+	p, exist, err := q.dbClient.GetPipelineWithExistInfo(pipelineID)
+	if err != nil {
+		q.Log.Errorf("failed to get pipeline(auto retry), pipelineID: %d, err: %v", pipelineID, err)
+		time.Sleep(q.Cfg.IncomingPipelineCfg.RetryInterval)
+		go q.treatPipelineFailed(pipelineID)
+		return
 	}
+	if !exist {
+		q.Log.Warnf("pipeline already not exist, pipelineID: %d, skip treat as failed", pipelineID)
+		return
+	}
+	if p.Status.IsEndStatus() {
+		return
+	}
+	p.Status = apistructs.PipelineStatusFailed
 	if err := q.dbClient.UpdatePipelineBaseStatus(p.ID, p.Status); err != nil {
 		go q.treatPipelineFailed(pipelineID)
 		return
 	}
-	// TODO get user id from etcd value
 	events.EmitPipelineInstanceEvent(&p, p.GetRunUserID())
+}
+
+func (q *provider) getPipelineIDFromIncomingListenKey(key string) (uint64, error) {
+	idstr := strutil.TrimPrefixes(key, q.Cfg.IncomingPipelineCfg.EtcdKeyPrefixWithSlash)
+	pipelineID, err := strconv.ParseUint(idstr, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse pipeline id from incoming listen key, key: %s, err: %v", key, err)
+	}
+	return pipelineID, nil
+}
+
+func (q *provider) makeIncomingPipelineListenKey(pipelineID uint64) string {
+	return filepath.Join(q.Cfg.IncomingPipelineCfg.EtcdKeyPrefixWithSlash, strutil.String(pipelineID))
 }
