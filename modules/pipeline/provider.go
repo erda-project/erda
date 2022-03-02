@@ -21,7 +21,6 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	_ "github.com/erda-project/erda-infra/providers/etcd"
-	election "github.com/erda-project/erda-infra/providers/etcd-election"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
@@ -37,7 +36,6 @@ import (
 type provider struct {
 	CmsService   pb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
 	MetricReport report.MetricReport `autowired:"metric-report-client" optional:"true"`
-	GcElection   election.Interface  `autowired:"etcd-election@gc"`
 	Router       httpserver.Router   `autowired:"http-router"`
 
 	Engine       engine.Interface

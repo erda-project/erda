@@ -151,6 +151,12 @@ func (p *provider) listWorkers(ctx context.Context, workerTypes ...worker.Type) 
 			}
 		}(w, checkErr.Error())
 	}
+	p.lock.Lock()
+	p.leaderUse.allWorkers = make(map[worker.ID]worker.Worker, len(validWorkers))
+	for _, w := range validWorkers {
+		p.leaderUse.allWorkers[w.GetID()] = w
+	}
+	p.lock.Unlock()
 	return validWorkers, nil
 }
 

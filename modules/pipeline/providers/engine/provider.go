@@ -101,7 +101,7 @@ func (p *provider) Run(ctx context.Context) error {
 
 func (p *provider) reconcilePipeline(ctx context.Context, logicTask worker.Tasker) {
 	if logicTask == nil {
-		p.Log.Warnf("logicTask is nil, skip reconcile pipeline")
+		p.Log.Warnf("logic task is nil, skip reconcile pipeline")
 		return
 	}
 	idstr := logicTask.GetLogicID().String()

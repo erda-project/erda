@@ -28,7 +28,7 @@ import (
 
 type provider struct {
 	Log logs.Logger
-	Cfg config
+	Cfg *config
 
 	MySQLXOrm mysqlxorm.Interface
 	Lw        leaderworker.Interface

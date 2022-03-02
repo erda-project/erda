@@ -4,11 +4,11 @@ service-register:
 
 # prometheus provider only recognize http-server@admin
 http-server@admin:
-  addr: ":3081"
+  addr: "${PIPELINE_LISTEN_ADDR::3081}"
 prometheus:
 
 grpc-server:
-  addr: ":30810"
+  addr: "${PIPELINE_LISTEN_GRPC_ADDR::30810}"
 
 mysql-xorm:
   host: "${MYSQL_HOST:localhost}"
@@ -24,13 +24,25 @@ etcd:
     cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
     ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
 
+pipengine:
 queue-manager:
+  incoming_pipeline:
+    etcd_key_prefix_with_slash: /devops/pipeline/v2/queue-manager/incoming_pipeline/
+dispatcher:
+  etcd_key_prefix_with_slash: /devops/pipeline/v2/dispatcher/
+leader-worker:
+  worker:
+    etcd_key_prefix_with_slash: /devops/pipeline/v2/leader-worker/worker/
+reconciler:
 
-etcd-election@reconciler:
-  root_path: erda/component-leader/pipeline/reconciler
+etcd-election@pipeline:
+  root_path: erda/component-leader/pipeline/leader-worker
 
-etcd-election@gc:
-  root_path: erda/component-leader/pipeline/gc
+#etcd-election@reconciler:
+#  root_path: erda/component-leader/pipeline/reconciler
+#
+#etcd-election@gc:
+#  root_path: erda/component-leader/pipeline/gc
 metric-report-client:
   report_config:
     collector:

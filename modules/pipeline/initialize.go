@@ -16,6 +16,7 @@
 package pipeline
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -133,12 +134,9 @@ func (p *provider) do() error {
 	reportSvc := reportsvc.New(reportsvc.WithDBClient(dbClient))
 	queueManage := queuemanage.New(queuemanage.WithDBClient(dbClient))
 
-	// pipeline engine
-	engine := pipengine.New(dbClient)
-
 	// init services
 	pipelineSvc := pipelinesvc.New(appSvc, crondSvc, actionAgentSvc, extMarketSvc, pipelineCronSvc,
-		permissionSvc, queueManage, dbClient, bdl, publisher, engine, js, etcdctl)
+		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl)
 	pipelineSvc.WithCmsService(p.CmsService)
 
 	// todo resolve cycle import here through better module architecture
@@ -198,13 +196,8 @@ func (p *provider) do() error {
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)
 
-	p.ReconcilerElection.OnLeader(func(ctx context.Context) {
-		engine.StartReconciler(ctx)
+	p.LeaderWorker.OnLeader(func(ctx context.Context) {
 		pipelineSvc.DoCrondAbout(ctx)
-	})
-
-	p.GcElection.OnLeader(func(ctx context.Context) {
-		engine.StartGC(ctx)
 	})
 
 	// register cluster hook after pipeline service start

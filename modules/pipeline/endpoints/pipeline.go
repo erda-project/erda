@@ -261,7 +261,7 @@ func (e *Endpoints) pipelineCancel(ctx context.Context, r *http.Request, vars ma
 		return errorresp.ErrResp(err)
 	}
 
-	e.queueManager.DistributedStopPipeline(ctx, pipelineID)
+	e.engine.DistributedStop(ctx, pipelineID)
 
 	return httpserver.OkResp(nil)
 }

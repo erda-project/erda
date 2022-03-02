@@ -42,7 +42,7 @@ type provider struct {
 }
 
 type leaderUse struct {
-	allWorkers map[worker.ID]workerWithCancel
+	allWorkers map[worker.ID]worker.Worker
 
 	leaderHandlers               []func(ctx context.Context)
 	leaderHandlersOnWorkerAdd    []WorkerAddHandler
@@ -55,7 +55,7 @@ type workerUse struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.leaderUse.allWorkers = make(map[worker.ID]workerWithCancel)
+	p.leaderUse.allWorkers = make(map[worker.ID]worker.Worker)
 	p.workerUse.myWorkers = make(map[worker.ID]workerWithCancel)
 	if len(p.Cfg.Worker.EtcdKeyPrefixWithSlash) == 0 {
 		return fmt.Errorf("failed to find config: worker.etcd_key_prefix_with_slash")
