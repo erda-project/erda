@@ -73,7 +73,7 @@ service ReleaseService {
 
   rpc ListRelease (ReleaseListRequest) returns (ReleaseListResponse)  {
     option (google.api.http) = {
-      get: "/api/releases?q={query}&releaseId={releaseID}&releaseName={releaseName}&cluster={cluster}&branch={branch}&latest={isLatest}&isStable={isStable}&isFormal={isFormal}&isProjectRelease={isProjectRelease}&userId={userID}&version={version}&commitId={commitID}&tags={tags}&isVersion={isVersion}&crossCluster={crossCluster}&crossClusterOrSpecifyCluster={crossClusterOrSpecifyCluster}&applicationId={applicationID}&projectId={projectID}&startTime={startTime]&endTime={endTime}&pageSize={pageSize}&pageNo={pageNo}&orderBy={orderBy}&order={order}",
+      get: "/api/releases?q={query}&releaseId={releaseID}&releaseName={releaseName}&cluster={cluster}&branchName={branch}&latest={isLatest}&isStable={isStable}&isFormal={isFormal}&isProjectRelease={isProjectRelease}&userId={userID}&version={version}&commitId={commitID}&tags={tags}&isVersion={isVersion}&crossCluster={crossCluster}&crossClusterOrSpecifyCluster={crossClusterOrSpecifyCluster}&applicationId={applicationID}&projectId={projectID}&startTime={startTime]&endTime={endTime}&pageSize={pageSize}&pageNo={pageNo}&orderBy={orderBy}&order={order}",
     };
     option (erda.common.openapi) = {
       path: "/api/releases",
