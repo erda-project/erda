@@ -15,15 +15,27 @@
 package worker
 
 import (
-	"github.com/google/uuid"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-type ID string
+func TestType_Valid(t *testing.T) {
+	var typ Type
 
-func NewID() ID              { return ID(uuid.New().String()) }
-func (id ID) String() string { return string(id) }
+	// empty type
+	typ = ""
+	assert.False(t, typ.Valid())
 
-type TaskLogicID string
+	// candidate
+	typ = Candidate
+	assert.True(t, typ.Valid())
 
-func NewTaskLogicID() ID              { return NewID() }
-func (id TaskLogicID) String() string { return string(id) }
+	// official
+	typ = Official
+	assert.True(t, typ.Valid())
+
+	// unknown
+	typ = "unknown"
+	assert.False(t, typ.Valid())
+}

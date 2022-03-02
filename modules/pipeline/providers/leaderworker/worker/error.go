@@ -12,4 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package leaderworker
+package worker
+
+import (
+	"fmt"
+)
+
+var (
+	ErrNotFound          = fmt.Errorf("not found")
+	ErrNilWorker         = fmt.Errorf("nil worker")
+	ErrNoWorkerID        = fmt.Errorf("no worker id")
+	ErrNoWorkerType      = fmt.Errorf("no worker type")
+	ErrInvalidWorkerType = fmt.Errorf("invalid worker type")
+	ErrNoCreatedTime     = fmt.Errorf("no created time")
+	ErrMarshal           = fmt.Errorf("cannot marshal")
+)

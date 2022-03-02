@@ -12,7 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package worker
 
-type provider struct {
+type Tasker interface {
+	GetLogicID() TaskLogicID
+	GetData() []byte
 }
+
+type defaultTask struct {
+	logicID TaskLogicID
+	data    []byte
+}
+
+func NewTasker(logicID TaskLogicID, data []byte) Tasker {
+	return &defaultTask{logicID: logicID, data: data}
+}
+func (d *defaultTask) GetLogicID() TaskLogicID { return d.logicID }
+func (d *defaultTask) GetData() []byte         { return d.data }

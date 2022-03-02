@@ -12,18 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package worker
+package leaderworker
 
 import (
-	"github.com/google/uuid"
+	"context"
+
+	"github.com/coreos/etcd/mvcc/mvccpb"
+
+	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
 )
 
-type ID string
+type Event struct {
+	Type     mvccpb.Event_EventType
+	WorkerID worker.ID
+}
 
-func NewID() ID              { return ID(uuid.New().String()) }
-func (id ID) String() string { return string(id) }
+type workerWithCancel struct {
+	Worker     worker.Worker
+	Ctx        context.Context
+	CancelFunc context.CancelFunc
+}
 
-type TaskLogicID string
-
-func NewTaskLogicID() ID              { return NewID() }
-func (id TaskLogicID) String() string { return string(id) }
+type (
+	WorkerAddHandler    func(ctx context.Context, ev Event)
+	WorkerDeleteHandler func(ctx context.Context, ev Event)
+)

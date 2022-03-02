@@ -18,131 +18,91 @@ import (
 	"context"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/mvcc/mvccpb"
 
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
 )
 
 type Interface interface {
-	AddCandidateWorker(ctx context.Context, w worker.Worker) error
+	RegisterCandidateWorker(ctx context.Context, w worker.Worker) error
 	ListWorkers(ctx context.Context, workerTypes ...worker.Type) ([]worker.Worker, error)
-	GetWorker(ctx context.Context, workerID worker.ID) (worker.Worker, error)
-	OnWorkerAdd(WorkerAddHandler)
-	OnWorkerDelete(WorkerDeleteHandler)
+	LeaderHandlerOnWorkerAdd(WorkerAddHandler)
+	LeaderHandlerOnWorkerDelete(WorkerDeleteHandler)
+	WorkerHandlerOnWorkerDelete(WorkerDeleteHandler)
 	OnLeader(func(context.Context))
+	AssignLogicTaskToWorker(ctx context.Context, workerID worker.ID, logicTask worker.Tasker) error
 	ListenPrefix(ctx context.Context, prefix string, putHandler, deleteHandler func(context.Context, *clientv3.Event))
-	Dispatch(ctx context.Context, w worker.Worker, taskID string, taskData []byte) error
 }
 
-// Event .
-type Event struct {
-	Type     mvccpb.Event_EventType
-	WorkerID worker.ID
-}
+func (p *provider) RegisterCandidateWorker(ctx context.Context, w worker.Worker) error {
+	p.Log.Infof("begin register candidate worker, workerID: %s", w.GetID())
 
-func (p *provider) Run(ctx context.Context) error {
-	// leader
-	p.Election.OnLeader(p.leaderFramework)
-	// worker
-	p.workerFramework(ctx)
+	// check leader can be worker
+	if p.Election.IsLeader() && !p.Cfg.Leader.AlsoBeWorker {
+		p.Log.Warnf("leader cannot be worker, skip register candidate worker, workerID: %s", w.GetID())
+		return nil
+	}
+
+	// check worker fields
+	if err := p.checkWorkerFields(w); err != nil {
+		p.Log.Errorf("failed to check worker fields, workerID: %s, err: %v", w.GetID(), err)
+		return err
+	}
+
+	// notify for worker-add
+	if err := p.notifyWorkerAdd(ctx, w, worker.Candidate); err != nil {
+		return err
+	}
+
+	p.lock.Lock()
+	wctx, wcancel := context.WithCancel(ctx)
+	p.workerUse.myWorkers[w.GetID()] = workerWithCancel{Worker: w, Ctx: wctx, CancelFunc: wcancel}
+	p.lock.Unlock()
+
+	// promote to official
+	go func() {
+		p.promoteCandidateWorker(wctx, w)
+		// begin listen after promoted
+		p.workerListenIncomingLogicTask(wctx, w)
+	}()
+
+	// heartbeat report
+	go p.workerContinueReportHeartbeat(wctx, w)
+
+	// handle worker delete
+	go p.workerHandleDelete(wctx, w)
+
 	return nil
 }
 
-func (p *provider) Dispatch(ctx context.Context, w worker.Worker, taskID string, taskData []byte) error {
-	_, err := p.EtcdClient.Put(ctx, p.makeEtcdWorkerTaskDispatchKey(w.ID(), taskID), string(taskData))
+func (p *provider) ListWorkers(ctx context.Context, workerTypes ...worker.Type) ([]worker.Worker, error) {
+	return p.listWorkers(ctx, workerTypes...)
+}
+
+func (p *provider) LeaderHandlerOnWorkerAdd(h WorkerAddHandler) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	p.leaderUse.leaderHandlersOnWorkerAdd = append(p.leaderUse.leaderHandlersOnWorkerAdd, h)
+}
+
+func (p *provider) LeaderHandlerOnWorkerDelete(h WorkerDeleteHandler) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	p.leaderUse.leaderHandlersOnWorkerDelete = append(p.leaderUse.leaderHandlersOnWorkerDelete, h)
+}
+
+func (p *provider) WorkerHandlerOnWorkerDelete(h WorkerDeleteHandler) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	p.workerUse.workerHandlersOnWorkerDelete = append(p.workerUse.workerHandlersOnWorkerDelete, h)
+}
+
+func (p *provider) AssignLogicTaskToWorker(ctx context.Context, workerID worker.ID, task worker.Tasker) error {
+	_, err := p.EtcdClient.Put(ctx, p.makeEtcdWorkerTaskDispatchKey(workerID, task.GetLogicID()), string(task.GetData()))
 	return err
 }
 
-func (p *provider) workerFramework(ctx context.Context) {
+func (p *provider) OnLeader(h func(ctx context.Context)) {
 	p.lock.Lock()
-	var currentWorkers []worker.Worker
-	copy(currentWorkers, p.currentWorkers)
-	p.lock.Unlock()
-	for _, w := range p.currentWorkers {
-		p.ListenPrefix(ctx, p.makeEtcdWorkerTaskDispatchListenPrefix(w.ID()),
-			func(ctx context.Context, event *clientv3.Event) {
-				// key added, do logic
-				w.Handle(ctx, event.Kv.Value)
-				// delete task key means done
-				// TODO handle delete error to avoid key leak
-				p.EtcdClient.Delete(ctx, string(event.Kv.Key))
-			},
-			nil,
-		)
-	}
-}
-
-// framework use etcd to store data
-func (p *provider) leaderFramework(ctx context.Context) {
-	// leader
-	go func() {
-		p.leaderHandler(ctx)
-	}()
-
-	// worker
-	notify := make(chan Event)
-	go func() {
-		for {
-			select {
-			case ev := <-notify:
-				switch ev.Type {
-				case mvccpb.PUT:
-					if p.workerAddHandler != nil {
-						p.workerAddHandler(ctx, ev)
-						continue
-					}
-				case mvccpb.DELETE:
-					if p.workerDeleteHandler != nil {
-						p.workerDeleteHandler(ctx, ev)
-						continue
-					}
-				}
-			}
-		}
-	}()
-	p.ListenPrefix(ctx, p.makeEtcdWorkerKeyPrefix(worker.Official),
-		func(ctx context.Context, ev *clientv3.Event) {
-			notify <- Event{Type: mvccpb.PUT, WorkerID: p.getWorkerIDFromEtcdKey(string(ev.Kv.Key), worker.Official)}
-		},
-		func(ctx context.Context, ev *clientv3.Event) {
-			notify <- Event{Type: mvccpb.DELETE, WorkerID: p.getWorkerIDFromEtcdKey(string(ev.Kv.Key), worker.Official)}
-		},
-	)
-}
-
-func (p *provider) ListenPrefix(ctx context.Context, prefix string, putHandler, deleteHandler func(context.Context, *clientv3.Event)) {
-	for func() bool {
-		wctx, wcancel := context.WithCancel(ctx)
-		defer wcancel()
-		wch := p.EtcdClient.Watch(wctx, prefix, clientv3.WithPrefix())
-		for {
-			select {
-			case <-ctx.Done():
-				return false
-			case resp, ok := <-wch:
-				if !ok {
-					return true
-				} else if resp.Err() != nil {
-					p.Log.Errorf("failed to watch etcd prefix %s, error: %v", prefix, resp.Err())
-					return true
-				}
-				for _, ev := range resp.Events {
-					if ev.Kv == nil {
-						continue
-					}
-					switch ev.Type {
-					case mvccpb.PUT:
-						if putHandler != nil {
-							putHandler(wctx, ev)
-						}
-					case mvccpb.DELETE:
-						if deleteHandler != nil {
-							deleteHandler(wctx, ev)
-						}
-					}
-				}
-			}
-		}
-	}() {
-	}
+	defer p.lock.Unlock()
+	p.leaderUse.leaderHandlers = append(p.leaderUse.leaderHandlers, h)
 }

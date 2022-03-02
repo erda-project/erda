@@ -26,10 +26,20 @@ import (
 type Type string
 
 func (t Type) String() string { return string(t) }
+func (t Type) Valid() bool {
+	for _, at := range AllTypes {
+		if at == t {
+			return true
+		}
+	}
+	return false
+}
 
 var (
 	Official  Type = "official"
 	Candidate Type = "candidate"
+
+	AllTypes = []Type{Official, Candidate}
 )
 
 // Worker .
@@ -37,19 +47,25 @@ type Worker interface {
 	consistent.Member
 	json.Marshaler
 	json.Unmarshaler
+	HeartbeatDetector
 
-	ID() ID
-	CreatedAt() time.Time
-	Type() Type
+	GetID() ID
+	GetType() Type
 	SetType(typ Type)
-	Handle(ctx context.Context, data interface{})
+	GetCreatedAt() time.Time
+	Handle(ctx context.Context, task Tasker)
 }
 
 type OpFunc func(*defaultWorker)
 
 func WithID(id ID) OpFunc {
 	return func(dw *defaultWorker) {
-		dw.id = id
+		dw.ID = id
+	}
+}
+func WithType(typ Type) OpFunc {
+	return func(dw *defaultWorker) {
+		dw.typ = typ
 	}
 }
 func WithHandler(h handler) OpFunc {
@@ -57,11 +73,16 @@ func WithHandler(h handler) OpFunc {
 		dw.handlers = append(dw.handlers, h)
 	}
 }
+func WithHeartbeatDetector(h func(ctx context.Context) bool) OpFunc {
+	return func(dw *defaultWorker) {
+		dw.heartbeatDetector = h
+	}
+}
 
 func New(ops ...OpFunc) Worker {
 	var dw defaultWorker
-	dw.id = NewID()
-	dw.createdAt = time.Now()
+	dw.ID = NewID()
+	dw.CreatedAt = time.Now()
 	dw.typ = Candidate
 	for _, op := range ops {
 		op(&dw)
@@ -78,24 +99,37 @@ func NewFromBytes(bytes []byte) (Worker, error) {
 }
 
 type defaultWorker struct {
-	id        ID
-	createdAt time.Time
-	typ       Type
-	handlers  []handler
+	ID        ID        `json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
 
+	typ  Type
 	lock sync.Mutex
+
+	handlers          []handler
+	heartbeatDetector func(ctx context.Context) bool
 }
 
-type handler func(ctx context.Context, data interface{})
+type handler func(ctx context.Context, task Tasker)
 
-func (dw *defaultWorker) UnmarshalJSON(bytes []byte) error { return json.Unmarshal(bytes, dw) }
-func (dw *defaultWorker) MarshalJSON() ([]byte, error)     { return json.Marshal(dw) }
-func (dw *defaultWorker) String() string                   { return string(dw.ID()) }
-func (dw *defaultWorker) ID() ID                           { return dw.id }
-func (dw *defaultWorker) CreatedAt() time.Time             { return dw.createdAt }
-func (dw *defaultWorker) Type() Type                       { return dw.typ }
-func (dw *defaultWorker) SetType(typ Type)                 { dw.typ = typ }
-func (dw *defaultWorker) Handle(ctx context.Context, data interface{}) {
+func (dw *defaultWorker) UnmarshalJSON(bytes []byte) error {
+	type alias defaultWorker
+	var a alias
+	if err := json.Unmarshal(bytes, &a); err != nil {
+		return err
+	}
+	*dw = *(*defaultWorker)(&a)
+	return nil
+}
+func (dw *defaultWorker) MarshalJSON() ([]byte, error) {
+	type alias defaultWorker
+	return json.Marshal((*alias)(dw))
+}
+func (dw *defaultWorker) String() string          { return dw.GetID().String() }
+func (dw *defaultWorker) GetID() ID               { return dw.ID }
+func (dw *defaultWorker) GetType() Type           { return dw.typ }
+func (dw *defaultWorker) SetType(typ Type)        { dw.typ = typ }
+func (dw *defaultWorker) GetCreatedAt() time.Time { return dw.CreatedAt }
+func (dw *defaultWorker) Handle(ctx context.Context, task Tasker) {
 	dw.lock.Lock()
 	var handlers []handler
 	copy(handlers, dw.handlers)
@@ -107,7 +141,7 @@ func (dw *defaultWorker) Handle(ctx context.Context, data interface{}) {
 	defer wcancel()
 	for _, h := range dw.handlers {
 		go func(h handler) {
-			h(wctx, data)
+			h(wctx, task)
 			finishChan <- struct{}{}
 		}(h)
 	}
@@ -121,6 +155,25 @@ func (dw *defaultWorker) Handle(ctx context.Context, data interface{}) {
 				close(finishChan)
 				return
 			}
+		}
+	}
+}
+func (dw *defaultWorker) DetectHeartbeat(ctx context.Context) (alive bool) {
+	finish := make(chan bool)
+	go func() {
+		if dw.heartbeatDetector != nil {
+			finish <- dw.heartbeatDetector(ctx)
+			return
+		}
+		// default true
+		finish <- true
+	}()
+	for {
+		select {
+		case <-ctx.Done():
+			return false
+		case alive := <-finish:
+			return alive
 		}
 	}
 }
