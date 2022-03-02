@@ -54,6 +54,7 @@ func (f *Formater) formatCardChart(ctx *query.Context, chart *chartmeta.ChartMet
 					}
 					data["value"] = units.Convert(OriginalUnit, *meta.Unit, value)
 				}
+				data["i18n"] = meta.I18n
 			}
 		}
 		datas = append(datas, data)

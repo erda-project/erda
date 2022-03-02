@@ -201,6 +201,7 @@ func putColumnData(col *query.Column, out map[string]interface{}, value interfac
 		data["unitType"] = meta.UnitType
 		data["chartType"] = meta.ChartType
 		data["axisIndex"] = meta.AxisIndex
+		data["i18n"] = meta.I18n
 		if datas, ok := value.([]interface{}); ok {
 			var arr []interface{}
 			for _, d := range datas {
