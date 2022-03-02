@@ -106,7 +106,7 @@ func (m *ReleaseCreateRequest) UnmarshalURLValues(prefix string, values url.Valu
 					return err
 				}
 				m.IsProjectRelease = val
-			case "Changelog":
+			case "changelog":
 				m.Changelog = vals[0]
 			case "tags":
 				m.Tags = vals
@@ -840,12 +840,12 @@ func (m *ReleaseListRequest) UnmarshalURLValues(prefix string, values url.Values
 					return err
 				}
 				m.PageSize = val
-			case "pageNum":
+			case "pageNo":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.PageNum = val
+				m.PageNo = val
 			case "orderBy":
 				m.OrderBy = vals[0]
 			case "order":
