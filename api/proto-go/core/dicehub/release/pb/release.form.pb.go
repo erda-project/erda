@@ -31,6 +31,7 @@ var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseSummaryArray)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetResponseData)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AddonInfo)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ServiceImagePair)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ApplicationReleaseSummary)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseListRequest)(nil)
@@ -579,6 +580,11 @@ func (m *ReleaseGetResponse) UnmarshalURLValues(prefix string, values url.Values
 					return err
 				}
 				m.Data.IsLatest = val
+			case "data.addonYaml":
+				if m.Data == nil {
+					m.Data = &ReleaseGetResponseData{}
+				}
+				m.Data.AddonYaml = vals[0]
 			}
 		}
 	}
@@ -719,6 +725,29 @@ func (m *ReleaseGetResponseData) UnmarshalURLValues(prefix string, values url.Va
 					return err
 				}
 				m.IsLatest = val
+			case "addonYaml":
+				m.AddonYaml = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// AddonInfo implement urlenc.URLValuesUnmarshaler.
+func (m *AddonInfo) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "displayName":
+				m.DisplayName = vals[0]
+			case "plan":
+				m.Plan = vals[0]
+			case "version":
+				m.Version = vals[0]
+			case "category":
+				m.Category = vals[0]
+			case "logoURL":
+				m.LogoURL = vals[0]
 			}
 		}
 	}

@@ -27,14 +27,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	logs "github.com/erda-project/erda-infra/base/logs"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	transport "github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
-	pb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dicehub/dbclient"
+	extensiondb "github.com/erda-project/erda/modules/dicehub/extension/db"
 	imagedb "github.com/erda-project/erda/modules/dicehub/image/db"
 	"github.com/erda-project/erda/modules/dicehub/release/db"
 	"github.com/erda-project/erda/modules/dicehub/service/release_rule"
@@ -65,10 +66,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.bdl = bundle.New(bundle.WithScheduler(), bundle.WithCoreServices())
 
 	p.releaseService = &ReleaseService{
-		p:       p,
-		db:      &db.ReleaseConfigDB{DB: p.DB},
-		imageDB: &imagedb.ImageConfigDB{DB: p.DB},
-		bdl:     p.bdl,
+		p:           p,
+		db:          &db.ReleaseConfigDB{DB: p.DB},
+		imageDB:     &imagedb.ImageConfigDB{DB: p.DB},
+		extensionDB: &extensiondb.ExtensionConfigDB{DB: p.DB},
+		bdl:         p.bdl,
 		//Etcd:    p.Etcd,
 		Config: &releaseConfig{
 			MaxTimeReserved: p.Cfg.MaxTimeReserved,
