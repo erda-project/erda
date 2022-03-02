@@ -439,7 +439,7 @@ func (p *List) getData() *list.Data {
 	for i := 0; i < len(needFilter); i++ {
 		runtime := runtimeMap[needFilter[i].ID]
 		if filterName != "" {
-			if common.ExitsWithoutCase(needFilter[i].Title, filterName) {
+			if !common.ExitsWithoutCase(needFilter[i].Title, filterName) {
 				continue
 			}
 		}
