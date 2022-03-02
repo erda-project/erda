@@ -180,7 +180,7 @@ func (client *ReleaseConfigDB) GetReleasesByParams(
 		db = db.Order("created_at DESC")
 	}
 
-	if err := db.Offset((req.PageNum - 1) * req.PageSize).
+	if err := db.Offset((req.PageNo - 1) * req.PageSize).
 		Limit(req.PageSize).Find(&releases).Error; err != nil {
 		return 0, nil, err
 	}

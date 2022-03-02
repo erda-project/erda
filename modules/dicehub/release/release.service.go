@@ -573,8 +573,8 @@ func (s *ReleaseService) ListRelease(ctx context.Context, req *pb.ReleaseListReq
 	if req.PageSize == 0 {
 		req.PageSize = 20
 	}
-	if req.PageNum == 0 {
-		req.PageNum = 1
+	if req.PageNo == 0 {
+		req.PageNo = 1
 	}
 	params := req
 
