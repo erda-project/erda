@@ -67,24 +67,42 @@ func (ir *IssueRelated) ValidIssueRelationType(id uint64, relationType apistruct
 	return nil
 }
 
+func (ir *IssueRelated) ValidIssueRelationTypes(ids []uint64, relationType []apistructs.IssueType) error {
+	issueIDs := make([]int64, 0, len(ids))
+	for _, i := range ids {
+		issueIDs = append(issueIDs, int64(i))
+	}
+	issues, err := ir.db.ListIssue(apistructs.IssueListRequest{IDs: issueIDs, Type: relationType})
+	if err != nil {
+		return err
+	}
+	if len(issues) > 0 {
+		return fmt.Errorf("issue ids %v contains invalid type", ids)
+	}
+	return nil
+}
+
 // AddRelatedIssue 添加issue关联关系
-func (ir *IssueRelated) AddRelatedIssue(req *apistructs.IssueRelationCreateRequest) (*dao.IssueRelation, error) {
+func (ir *IssueRelated) AddRelatedIssue(req *apistructs.IssueRelationCreateRequest) ([]dao.IssueRelation, error) {
 	if req.Type == apistructs.IssueRelationInclusion {
 		if err := ir.ValidIssueRelationType(req.IssueID, apistructs.IssueTypeRequirement); err != nil {
 			return nil, err
 		}
-		if err := ir.ValidIssueRelationType(req.RelatedIssue, apistructs.IssueTypeTask); err != nil {
+		if err := ir.ValidIssueRelationTypes(req.RelatedIssue, []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeBug}); err != nil {
 			return nil, err
 		}
 	}
-	issueRel := &dao.IssueRelation{
-		IssueID:      req.IssueID,
-		RelatedIssue: req.RelatedIssue,
-		Comment:      req.Comment,
-		Type:         req.Type,
+	issueRels := make([]dao.IssueRelation, 0, len(req.RelatedIssue))
+	for _, i := range req.RelatedIssue {
+		issueRels = append(issueRels, dao.IssueRelation{
+			IssueID:      req.IssueID,
+			RelatedIssue: i,
+			Comment:      req.Comment,
+			Type:         req.Type,
+		})
 	}
 
-	if err := ir.db.CreateIssueRelations(issueRel); err != nil {
+	if err := ir.db.BatchCreateIssueRelations(issueRels); err != nil {
 		return nil, err
 	}
 
@@ -93,7 +111,7 @@ func (ir *IssueRelated) AddRelatedIssue(req *apistructs.IssueRelationCreateReque
 			return nil, err
 		}
 	}
-	return issueRel, nil
+	return issueRels, nil
 }
 
 // GetIssueRelationsByIssueIDs 获取issue的关联关系

@@ -405,7 +405,7 @@ func (client *DBClient) ListIssue(req apistructs.IssueListRequest) ([]Issue, err
 
 	sql := client.Where(cond)
 	if len(req.Type) > 0 {
-		sql.Where("type in (?)", req.Type)
+		sql = sql.Where("type in (?)", req.Type)
 	}
 	if len(req.Assignees) > 0 {
 		sql = sql.Where("assignee IN (?)", req.Assignees)
@@ -415,8 +415,11 @@ func (client *DBClient) ListIssue(req apistructs.IssueListRequest) ([]Issue, err
 	}
 	sql = sql.Where("deleted = ?", 0).Order("id DESC")
 
+	if len(req.IDs) > 0 {
+		sql = sql.Where("id IN (?)", req.IDs)
+	}
 	if req.OnlyIDResult {
-		sql.Select("id")
+		sql = sql.Select("id")
 	}
 
 	sql = sql.Find(&issues)
