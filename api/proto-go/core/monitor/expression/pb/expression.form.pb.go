@@ -289,6 +289,12 @@ func (m *AlertNotify) UnmarshalURLValues(prefix string, values url.Values) error
 				m.Silence = val
 			case "silencePolicy":
 				m.SilencePolicy = vals[0]
+			case "enable":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Enable = val
 			}
 		}
 	}

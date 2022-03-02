@@ -96,6 +96,7 @@ message AlertNotify {
   NotifyTarget notifyTarget  = 3 [json_name = "notify_target"];
   int64        silence       = 4;
   string       silencePolicy = 5 [json_name = "silence_policy"];
+  bool         enable        = 6;
 }
 
 message NotifyTarget {
