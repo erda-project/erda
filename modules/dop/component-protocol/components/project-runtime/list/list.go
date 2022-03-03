@@ -177,8 +177,13 @@ func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				logrus.Errorf("failed to transfer values in component advance filter")
 				return nil
 			} else {
-				p.PageNo = page.PageNo
-				p.PageSize = page.PageSize
+				if page.PageNo == 0 || page.PageSize == 0 {
+					p.PageSize = 10
+					p.PageNo = 1
+				} else {
+					p.PageNo = page.PageNo
+					p.PageSize = page.PageSize
+				}
 			}
 		}
 		urlParam, err := p.generateUrlQueryParams(p.State)

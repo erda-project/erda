@@ -117,7 +117,7 @@ func (af *AdvanceFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 func (af *AdvanceFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
-		logrus.Infof("advanded init")
+		logrus.Infof("advance filter init")
 		// err := common.Transfer(sdk.Comp.State, af.StdStatePtr)
 		// if err != nil {
 		// 	return nil
