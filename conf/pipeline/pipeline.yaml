@@ -29,7 +29,6 @@ queue-manager:
   incoming_pipeline:
     etcd_key_prefix_with_slash: /devops/pipeline/v2/queue-manager/incoming_pipeline/
 dispatcher:
-  etcd_key_prefix_with_slash: /devops/pipeline/v2/dispatcher/
 leader-worker:
   worker:
     etcd_key_prefix_with_slash: /devops/pipeline/v2/leader-worker/worker/

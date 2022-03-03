@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/erda-project/erda-proto-go/pipeline/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 )
@@ -41,11 +41,11 @@ func (q *provider) DistributedHandleIncomingPipeline(ctx context.Context, pipeli
 		key := q.makeIncomingPipelineListenKey(pipelineID)
 		for {
 			if _, err := q.EtcdClient.Put(ctx, key, ""); err != nil {
-				q.Log.Errorf("failed to distribute incoming pipeline(auto retry), pipelineID: %d, err: %v", pipelineID, err)
+				q.Log.Errorf("failed to distribute handle incoming pipeline(auto retry), pipelineID: %d, err: %v", pipelineID, err)
 				time.Sleep(q.Cfg.IncomingPipelineCfg.RetryInterval)
 				continue
 			}
-			q.Log.Infof("distributed handle incoming pipeline success for etcd listen, pipelineID: %d", pipelineID)
+			q.Log.Debugf("distributed handle incoming pipeline success for etcd listen, pipelineID: %d", pipelineID)
 			return
 		}
 	}()
@@ -56,8 +56,8 @@ func (q *provider) DistributedHandleIncomingPipeline(ctx context.Context, pipeli
 		for {
 			status, err := q.dbClient.GetPipelineStatus(pipelineID)
 			if err != nil {
-				if dbclient.IsNotFound(err) {
-					q.Log.Errorf("skip distributed handle non-exist pipeline, pipelineID: %d", pipelineID)
+				if dbclient.IsNotFoundError(err) {
+					q.Log.Errorf("skip distributed handle non-exist incoming pipeline, pipelineID: %d", pipelineID)
 					return
 				}
 				q.Log.Errorf("failed to get pipeline status(auto retry), pipelineID: %d, err: %v", pipelineID, err)
@@ -73,6 +73,7 @@ func (q *provider) DistributedHandleIncomingPipeline(ctx context.Context, pipeli
 				time.Sleep(q.Cfg.IncomingPipelineCfg.RetryInterval)
 				continue
 			}
+			q.Log.Debugf("distributed handle incoming pipeline success to mysql, pipelineID: %d", pipelineID)
 			return
 		}
 	}()

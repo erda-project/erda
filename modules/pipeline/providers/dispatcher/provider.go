@@ -20,7 +20,6 @@ import (
 	"sync"
 
 	"github.com/buraksezer/consistent"
-	"github.com/coreos/etcd/clientv3"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -33,7 +32,6 @@ import (
 type provider struct {
 	Log        logs.Logger
 	Cfg        *config
-	EtcdClient *clientv3.Client
 	Lw         leaderworker.Interface
 	Reconciler reconciler.Interface
 
@@ -60,7 +58,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	// just register handler, and leaderworker provider will handle properly
+	// just register handler, and leader-worker provider will handle properly
 	p.Lw.OnLeader(p.continueDispatcher)
 	p.Lw.LeaderHandlerOnWorkerAdd(p.onWorkerAdd)
 	p.Lw.LeaderHandlerOnWorkerDelete(p.onWorkerDelete)

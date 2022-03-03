@@ -111,6 +111,7 @@ func (p *provider) reconcilePipeline(ctx context.Context, logicTask worker.Taske
 		return
 	}
 	p.Reconciler.Reconcile(ctx, pipelineID)
+	p.QueueManager.DistributedStopPipeline(ctx, pipelineID)
 }
 
 func init() {

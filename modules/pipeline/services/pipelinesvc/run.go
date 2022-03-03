@@ -134,7 +134,7 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 	_ = aop.Handle(aop.NewContextForPipeline(p, aoptypes.TuneTriggerPipelineBeforeExec))
 
 	// send to pipengine reconciler
-	s.engine.DistributedSend(context.Background(), p.ID)
+	s.engine.DistributedSendPipeline(context.Background(), p.ID)
 
 	// update pipeline definition
 	if err = s.updatePipelineDefinition(p); err != nil {

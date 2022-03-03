@@ -22,6 +22,6 @@ const (
 	notFoundMsg = "not found"
 )
 
-func IsNotFound(err error) bool {
+func IsNotFoundError(err error) bool {
 	return strings.Contains(err.Error(), notFoundMsg)
 }

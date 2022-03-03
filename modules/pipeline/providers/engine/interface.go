@@ -19,14 +19,15 @@ import (
 )
 
 type Interface interface {
-	DistributedSend(ctx context.Context, pipelineID uint64)
-	DistributedStop(ctx context.Context, pipelineID uint64)
+	DistributedSendPipeline(ctx context.Context, pipelineID uint64)
+	DistributedStopPipeline(ctx context.Context, pipelineID uint64)
 }
 
-func (p *provider) DistributedSend(ctx context.Context, pipelineID uint64) {
+func (p *provider) DistributedSendPipeline(ctx context.Context, pipelineID uint64) {
 	p.QueueManager.DistributedHandleIncomingPipeline(ctx, pipelineID)
 }
 
-func (p *provider) DistributedStop(ctx context.Context, pipelineID uint64) {
+func (p *provider) DistributedStopPipeline(ctx context.Context, pipelineID uint64) {
 	p.QueueManager.DistributedStopPipeline(ctx, pipelineID)
+	// TODO notify concrete worker to stop reconcile this pipeline
 }
