@@ -180,9 +180,13 @@ func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				if page.PageNo == 0 || page.PageSize == 0 {
 					p.PageSize = 10
 					p.PageNo = 1
+					p.State["pageSize"] = 10
+					p.State["pageNo"] = 1
 				} else {
 					p.PageNo = page.PageNo
 					p.PageSize = page.PageSize
+					p.State["pageSize"] = p.PageSize
+					p.State["pageNo"] = p.PageNo
 				}
 			}
 		}
