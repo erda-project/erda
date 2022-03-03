@@ -72,16 +72,17 @@ func (l *LastFilter) Filter(m *types.Message) *errors.DispatchError {
 func throttlePublish(m *types.Message, pool *goroutinepool.GoroutinePool, sub subscriber.Subscriber, labelV interface{}) (chan []error, error) {
 	errsCh := make(chan []error, 1)
 	f := func() {
+		defer func() {
+			close(errsCh)
+		}()
 		content_, err := json.Marshal(m.Content)
 		if err != nil {
 			errsCh <- []error{err}
-			close(errsCh)
 			return
 		}
 		labelV_, err := json.Marshal(labelV)
 		if err != nil {
 			errsCh <- []error{err}
-			close(errsCh)
 			return
 		}
 		errs := sub.Publish(string(labelV_), string(content_), m.Time, m)
@@ -91,7 +92,6 @@ func throttlePublish(m *types.Message, pool *goroutinepool.GoroutinePool, sub su
 		} else {
 			errsCh <- []error{}
 		}
-		close(errsCh)
 	}
 
 	if err := pool.Go(f); err != nil {
