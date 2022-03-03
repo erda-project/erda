@@ -113,7 +113,7 @@ type Conf struct {
 	K8SExecutorPoolSize int `env:"K8S_EXECUTOR_POOL_SIZE" default:"50"`
 
 	// external market refresh interval
-	ExtensionVersionRefreshIntervalMinute uint64 `env:"EXTENSION_VERSION_REFRESH_INTERVAL_MINUTE" default:"20"`
+	ExtensionVersionRefreshIntervalMinute uint64 `env:"EXTENSION_VERSION_REFRESH_INTERVAL_MINUTE" default:"1"`
 }
 
 var cfg Conf

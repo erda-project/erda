@@ -16,6 +16,7 @@ package extmarketsvc
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -26,6 +27,10 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
+)
+
+var (
+	defaultVersion = "default"
 )
 
 type SearchOption struct {
@@ -55,7 +60,6 @@ func (s ExtMarketSvc) constructAllActions() error {
 		s.pools.MustGo(func() {
 			s.updateExtension(extension)
 		})
-
 	}
 	s.pools.Stop()
 	return nil
@@ -71,15 +75,80 @@ func (s *ExtMarketSvc) updateExtension(extension apistructs.Extension) {
 		logrus.Errorf("failed to query extension version, name: %s, err: %v", extension.Name, err)
 		return
 	}
+	s.Lock()
+	defer s.Unlock()
+	delete(s.defaultActions, extension.Name)
 	for _, extensionVersion := range extensionVersions {
-		s.Lock()
 		s.actions[fmt.Sprintf("%s@%s", extension.Name, extensionVersion.Version)] = extensionVersion
-		s.Unlock()
+		if extensionVersion.IsDefault {
+			s.defaultActions[extension.Name] = extensionVersion
+		}
+	}
+	// if not get the default version, set the first public version as default
+	if _, ok := s.defaultActions[extension.Name]; !ok && len(extensionVersions) > 0 {
+		for _, extensionVersion := range extensionVersions {
+			if extensionVersion.Public {
+				s.defaultActions[extension.Name] = extensionVersion
+				break
+			}
+		}
 	}
 }
 
-func (s *ExtMarketSvc) continuousRefreshActionAsync() {
+// getOrUpdateExtension get the fitted extension from the cache
+// if not exist, try to update the cache by the given extension name
+func (s *ExtMarketSvc) getOrUpdateExtension(nameVersion string) (action apistructs.ExtensionVersion, found bool) {
+	splits := strings.SplitN(nameVersion, "@", 2)
+	name := splits[0]
+	version := ""
+	if len(splits) > 1 {
+		version = splits[1]
+	}
+	if version == "" {
+		s.Lock()
+		action, found = s.defaultActions[name]
+		s.Unlock()
+		if !found {
+			newAction, err := s.bdl.GetExtensionVersion(apistructs.ExtensionVersionGetRequest{
+				Name:       name,
+				Version:    defaultVersion,
+				YamlFormat: true,
+			})
+			if err != nil {
+				found = false
+				return
+			}
+			s.Lock()
+			s.defaultActions[name] = *newAction
+			s.Unlock()
+			return *newAction, true
+		}
+		return
+	}
+	s.Lock()
+	action, found = s.actions[nameVersion]
+	s.Unlock()
+	if !found {
+		newAction, err := s.bdl.GetExtensionVersion(apistructs.ExtensionVersionGetRequest{
+			Name:       name,
+			Version:    version,
+			YamlFormat: true,
+		})
+		if err != nil {
+			found = false
+			return
+		}
+		s.Lock()
+		s.actions[nameVersion] = *newAction
+		s.Unlock()
+		return *newAction, true
+	}
+	return
+}
+
+func (s *ExtMarketSvc) continuousRefreshAction() {
 	ticker := time.NewTicker(time.Minute * time.Duration(conf.ExtensionVersionRefreshIntervalMinute()))
+	s.constructAllActions()
 	defer ticker.Stop()
 	for {
 		select {
@@ -105,9 +174,7 @@ func (s *ExtMarketSvc) SearchActions(items []string, ops ...OpOption) (map[strin
 	actionDiceYmlJobMap := make(map[string]*diceyml.Job)
 	actionSpecMap := make(map[string]*apistructs.ActionSpec)
 	for _, nameVersion := range items {
-		s.Lock()
-		action, ok := s.actions[nameVersion]
-		s.Unlock()
+		action, ok := s.getOrUpdateExtension(nameVersion)
 		if !ok {
 			return nil, nil, errors.Errorf("failed to find action: %s", nameVersion)
 		}
