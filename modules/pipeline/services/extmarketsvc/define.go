@@ -28,19 +28,18 @@ const (
 
 type ExtMarketSvc struct {
 	sync.Mutex
-	bdl     *bundle.Bundle
-	actions map[string]apistructs.ExtensionVersion
-	pools   *goroutinepool.GoroutinePool
+	bdl            *bundle.Bundle
+	actions        map[string]apistructs.ExtensionVersion
+	defaultActions map[string]apistructs.ExtensionVersion
+	pools          *goroutinepool.GoroutinePool
 }
 
 func New(bdl *bundle.Bundle) *ExtMarketSvc {
 	s := ExtMarketSvc{}
 	s.bdl = bdl
 	s.actions = make(map[string]apistructs.ExtensionVersion)
+	s.defaultActions = make(map[string]apistructs.ExtensionVersion)
 	s.pools = goroutinepool.New(PoolSize)
-	if err := s.constructAllActions(); err != nil {
-		panic(err)
-	}
-	go s.continuousRefreshActionAsync()
+	go s.continuousRefreshAction()
 	return &s
 }
