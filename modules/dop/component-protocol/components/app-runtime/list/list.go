@@ -638,7 +638,7 @@ func getOperations(sdk *cptype.SDK, projectId, appId, runtimeId uint64, isMyApp 
 			Disabled: !isMyApp,
 			Tip:      tip,
 			ServerData: &cptype.OpServerData{
-				"target": "projectDeployRuntime",
+				"target": "appDeployRuntime",
 				"params": map[string]string{
 					"projectId": projectIdStr,
 					"appId":     appIdStr,
