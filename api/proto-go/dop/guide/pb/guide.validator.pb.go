@@ -22,6 +22,12 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 func (this *ListGuideRequest) Validate() error {
+	if this.Kind == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("Kind", fmt.Errorf(`value '%v' must not be an empty string`, this.Kind))
+	}
+	if !(this.ProjectID > 0) {
+		return github_com_mwitkow_go_proto_validators.FieldError("ProjectID", fmt.Errorf(`value '%v' must be greater than '0'`, this.ProjectID))
+	}
 	return nil
 }
 func (this *ListGuideResponse) Validate() error {
@@ -48,6 +54,9 @@ func (this *Guide) Validate() error {
 	return nil
 }
 func (this *JudgeCanCreatePipelineRequest) Validate() error {
+	if this.ID == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("ID", fmt.Errorf(`value '%v' must not be an empty string`, this.ID))
+	}
 	return nil
 }
 func (this *JudgeCanCreatePipelineResponse) Validate() error {
@@ -81,6 +90,9 @@ func (this *CreateGuideResponse) Validate() error {
 	return nil
 }
 func (this *ProcessGuideRequest) Validate() error {
+	if this.Kind == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("Kind", fmt.Errorf(`value '%v' must not be an empty string`, this.Kind))
+	}
 	return nil
 }
 func (this *ProcessGuideResponse) Validate() error {

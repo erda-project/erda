@@ -466,6 +466,8 @@ func (m *ProcessGuideRequest) UnmarshalURLValues(prefix string, values url.Value
 				m.AppID = val
 			case "branch":
 				m.Branch = vals[0]
+			case "kind":
+				m.Kind = vals[0]
 			}
 		}
 	}
