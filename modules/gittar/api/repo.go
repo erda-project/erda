@@ -141,7 +141,7 @@ func CreateRepoBranch(context *webcontext.Context) {
 	}
 	pushEvent := &models.PayloadPushEvent{
 		IsTag:    false,
-		Ref:      gitmodule.BRANCH_PREFIX + request.Ref,
+		Ref:      gitmodule.BRANCH_PREFIX + request.Name,
 		After:    commit.ID,
 		Before:   gitmodule.INIT_COMMIT_ID,
 		IsDelete: false,
