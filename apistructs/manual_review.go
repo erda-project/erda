@@ -100,19 +100,21 @@ type CreateReviewUserResponse struct {
 }
 
 type GetReviewsByUserIdResponse struct {
-	Id              int64  `json:"id"`
-	ProjectName     string `json:"projectName"`
-	ApplicationName string `json:"applicationName"`
-	ProjectId       int    `json:"projectId"`
-	ApplicationId   int    `json:"applicationId"`
-	BuildId         int    `json:"buildId"`
-	BranchName      string `json:"branchName"`
-	CommitId        string `json:"commitId"`
-	CommitMessage   string `json:"commitMessage"`
-	Operator        string `json:"operator"`
-	ApprovalStatus  string `json:"approvalStatus"`
-	ApprovalContent string `json:"approvalContent"`
-	ApprovalReason  string `json:"approvalReason"`
+	Id              int64     `json:"id"`
+	ProjectName     string    `json:"projectName"`
+	ApplicationName string    `json:"applicationName"`
+	ProjectId       int       `json:"projectId"`
+	ApplicationId   int       `json:"applicationId"`
+	BuildId         int       `json:"buildId"`
+	BranchName      string    `json:"branchName"`
+	CommitId        string    `json:"commitId"`
+	CommitMessage   string    `json:"commitMessage"`
+	Operator        string    `json:"operator"`
+	ApprovalStatus  string    `json:"approvalStatus"`
+	ApprovalContent string    `json:"approvalContent"`
+	ApprovalReason  string    `json:"approvalReason"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
 type UpdateApproval struct {
@@ -130,4 +132,10 @@ type ReviewsBySponsorList struct {
 type ReviewsByUserList struct {
 	List  []GetReviewsByUserIdResponse `json:"list"`
 	Total int                          `json:"total"`
+}
+
+type GetReviewListResponse struct {
+	Header
+	UserInfoHeader
+	Data ReviewsByUserList `json:"data"`
 }

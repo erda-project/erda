@@ -15,6 +15,8 @@
 package messageList
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -146,18 +148,41 @@ func (l *MessageList) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cpt
 // RegisterItemClickOp get client data, and set message read
 func (l *MessageList) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
-		id, err := strconv.Atoi(opData.ClientData.DataRef.ID)
+		idNum, err := strconv.Atoi(opData.ClientData.DataRef.ID)
 		if err != nil {
 			logrus.Errorf("parse message client data failed, id: %v, error: %v", opData.ClientData.DataRef.ID, err)
 			return nil
 		}
-		req := apistructs.SetMBoxReadStatusRequest{
-			IDs: []int64{int64(id)},
-		}
-		err = l.bdl.SetMBoxReadStatus(l.identity, &req)
+		id := int64(idNum)
+		orgID, err := strconv.ParseUint(l.identity.OrgID, 10, 64)
 		if err != nil {
-			logrus.Errorf("set mbox read status filed, id: %v, error: %v", id, err)
-			return nil
+			panic(err)
+		}
+		switch opData.ClientData.OperationRef.ID {
+		case "approved", "denied":
+			b, err := json.Marshal(map[string]interface{}{"status": opData.ClientData.OperationRef.ID})
+			if err != nil {
+				panic(err)
+			}
+			if _, err := l.bdl.UpdateApprove(orgID, l.identity.UserID, id, bytes.NewReader(b)); err != nil {
+				panic(err)
+			}
+		case "approveDeploy", "rejectDeploy":
+			if err := l.bdl.UpdateManualApproval(l.identity.OrgID, &apistructs.UpdateApproval{
+				Id:     id,
+				Reject: opData.ClientData.OperationRef.ID == "rejectDeploy",
+			}); err != nil {
+				panic(err)
+			}
+		default:
+			req := apistructs.SetMBoxReadStatusRequest{
+				IDs: []int64{id},
+			}
+			err = l.bdl.SetMBoxReadStatus(l.identity, &req)
+			if err != nil {
+				logrus.Errorf("set mbox read status filed, id: %v, error: %v", id, err)
+				return nil
+			}
 		}
 		l.StdDataPtr = l.doFilter()
 		return nil
@@ -170,6 +195,8 @@ func (l *MessageList) doFilter() (data *list.Data) {
 	switch l.filterReq.Type {
 	case apistructs.WorkbenchItemUnreadMes:
 		return l.doFilterMsg()
+	case apistructs.WorkbenchItemApproveRequest:
+		return l.doFilterApproval()
 	default:
 		logrus.Errorf("item [%v] not support", l.filterReq.Type)
 	}
