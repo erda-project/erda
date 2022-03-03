@@ -44,7 +44,7 @@ type GuideService struct {
 
 func (g *GuideService) CreateGuideByGittarHook(ctx context.Context, req *pb.GittarPushPayloadEvent) (*pb.CreateGuideResponse, error) {
 	if req.Content.Before != InitCommitID {
-		return nil, nil
+		return &pb.CreateGuideResponse{}, nil
 	}
 
 	orgID, err := strconv.ParseUint(req.OrgID, 10, 64)

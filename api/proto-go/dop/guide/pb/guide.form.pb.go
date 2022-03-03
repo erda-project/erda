@@ -64,7 +64,7 @@ func (m *Guide) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.Creator = vals[0]
 			case "kind":
 				m.Kind = vals[0]
-			case "OrgID":
+			case "orgID":
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
@@ -152,23 +152,23 @@ func (m *JudgeCanCreatePipelineResponse) UnmarshalURLValues(prefix string, value
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "CanCreate":
+			case "canCreate":
 				val, err := strconv.ParseBool(vals[0])
 				if err != nil {
 					return err
 				}
 				m.CanCreate = val
-			case "AppID":
+			case "appID":
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
 				m.AppID = val
-			case "Branch":
+			case "branch":
 				m.Branch = vals[0]
-			case "Path":
+			case "path":
 				m.Path = vals[0]
-			case "FileName":
+			case "fileName":
 				m.FileName = vals[0]
 			}
 		}
@@ -181,47 +181,47 @@ func (m *GittarPushPayloadEvent) UnmarshalURLValues(prefix string, values url.Va
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "Event":
+			case "event":
 				m.Event = vals[0]
-			case "Action":
+			case "action":
 				m.Action = vals[0]
-			case "OrgID":
+			case "orgID":
 				m.OrgID = vals[0]
-			case "ProjectID":
+			case "projectID":
 				m.ProjectID = vals[0]
-			case "ApplicationID":
+			case "applicationID":
 				m.ApplicationID = vals[0]
-			case "Env":
+			case "env":
 				m.Env = vals[0]
-			case "TimeStamp":
+			case "timeStamp":
 				m.TimeStamp = vals[0]
 			case "content":
 				if m.Content == nil {
 					m.Content = &Content{}
 				}
-			case "content.Ref":
+			case "content.ref":
 				if m.Content == nil {
 					m.Content = &Content{}
 				}
 				m.Content.Ref = vals[0]
-			case "content.After":
+			case "content.after":
 				if m.Content == nil {
 					m.Content = &Content{}
 				}
 				m.Content.After = vals[0]
-			case "content.Before":
+			case "content.before":
 				if m.Content == nil {
 					m.Content = &Content{}
 				}
 				m.Content.Before = vals[0]
-			case "content.Pusher":
+			case "content.pusher":
 				if m.Content == nil {
 					m.Content = &Content{}
 				}
 				if m.Content.Pusher == nil {
 					m.Content.Pusher = &Pusher{}
 				}
-			case "content.Pusher.ID":
+			case "content.pusher.ID":
 				if m.Content == nil {
 					m.Content = &Content{}
 				}
@@ -229,7 +229,7 @@ func (m *GittarPushPayloadEvent) UnmarshalURLValues(prefix string, values url.Va
 					m.Content.Pusher = &Pusher{}
 				}
 				m.Content.Pusher.ID = vals[0]
-			case "content.Pusher.Name":
+			case "content.pusher.name":
 				if m.Content == nil {
 					m.Content = &Content{}
 				}
@@ -237,7 +237,7 @@ func (m *GittarPushPayloadEvent) UnmarshalURLValues(prefix string, values url.Va
 					m.Content.Pusher = &Pusher{}
 				}
 				m.Content.Pusher.Name = vals[0]
-			case "content.Pusher.NickName":
+			case "content.pusher.nickName":
 				if m.Content == nil {
 					m.Content = &Content{}
 				}
@@ -245,7 +245,7 @@ func (m *GittarPushPayloadEvent) UnmarshalURLValues(prefix string, values url.Va
 					m.Content.Pusher = &Pusher{}
 				}
 				m.Content.Pusher.NickName = vals[0]
-			case "content.Pusher.Email":
+			case "content.pusher.email":
 				if m.Content == nil {
 					m.Content = &Content{}
 				}
@@ -264,32 +264,32 @@ func (m *Content) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "Ref":
+			case "ref":
 				m.Ref = vals[0]
-			case "After":
+			case "after":
 				m.After = vals[0]
-			case "Before":
+			case "before":
 				m.Before = vals[0]
-			case "Pusher":
+			case "pusher":
 				if m.Pusher == nil {
 					m.Pusher = &Pusher{}
 				}
-			case "Pusher.ID":
+			case "pusher.ID":
 				if m.Pusher == nil {
 					m.Pusher = &Pusher{}
 				}
 				m.Pusher.ID = vals[0]
-			case "Pusher.Name":
+			case "pusher.name":
 				if m.Pusher == nil {
 					m.Pusher = &Pusher{}
 				}
 				m.Pusher.Name = vals[0]
-			case "Pusher.NickName":
+			case "pusher.nickName":
 				if m.Pusher == nil {
 					m.Pusher = &Pusher{}
 				}
 				m.Pusher.NickName = vals[0]
-			case "Pusher.Email":
+			case "pusher.email":
 				if m.Pusher == nil {
 					m.Pusher = &Pusher{}
 				}
@@ -307,11 +307,11 @@ func (m *Pusher) UnmarshalURLValues(prefix string, values url.Values) error {
 			switch prefix + key {
 			case "ID":
 				m.ID = vals[0]
-			case "Name":
+			case "name":
 				m.Name = vals[0]
-			case "NickName":
+			case "nickName":
 				m.NickName = vals[0]
-			case "Email":
+			case "email":
 				m.Email = vals[0]
 			}
 		}
@@ -353,7 +353,7 @@ func (m *CreateGuideResponse) UnmarshalURLValues(prefix string, values url.Value
 					m.Data = &Guide{}
 				}
 				m.Data.Kind = vals[0]
-			case "data.OrgID":
+			case "data.orgID":
 				if m.Data == nil {
 					m.Data = &Guide{}
 				}

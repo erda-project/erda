@@ -101,9 +101,10 @@ func (db *GuideDB) CreateGuide(guide *Guide) error {
 // GetGuide .
 func (db *GuideDB) GetGuide(id string) (guide Guide, err error) {
 	err = db.Debug().Model(&Guide{}).Scopes(NotDeleted).
+		Where("id = ?", id).
 		Where("status = ?", InitStatus).
 		Where("created_at >= ?", time.Now().Add(-1*(ExpiredTime)).Format("2006-01-02 15:04:05")).
-		First(&guide, id).Error
+		First(&guide).Error
 	return
 }
 

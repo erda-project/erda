@@ -73,7 +73,7 @@ message Guide {
   string status = 3;
   string creator = 4;
   string kind = 5;
-  uint64 OrgID = 6;
+  uint64 orgID = 6;
   uint64 projectID = 7;
   uint64 appID = 8;
   string branch = 9;
@@ -86,36 +86,36 @@ message JudgeCanCreatePipelineRequest {
 }
 
 message JudgeCanCreatePipelineResponse {
-  bool CanCreate = 1;
-  uint64 AppID = 2;
-  string Branch = 3;
-  string Path = 4;
-  string FileName = 5;
+  bool canCreate = 1;
+  uint64 appID = 2;
+  string branch = 3;
+  string path = 4;
+  string fileName = 5;
 }
 
 message GittarPushPayloadEvent {
-  string Event = 1;
-  string Action = 2;
-  string OrgID = 3;
-  string ProjectID = 4;
-  string ApplicationID = 5;
-  string Env = 6;
-  string TimeStamp = 7;
+  string event = 1;
+  string action = 2;
+  string orgID = 3;
+  string projectID = 4;
+  string applicationID = 5;
+  string env = 6;
+  string timeStamp = 7;
   Content content = 8;
 }
 
 message Content {
-  string Ref = 1;
-  string After = 2;
-  string Before = 3;
-  Pusher Pusher = 4;
+  string ref = 1;
+  string after = 2;
+  string before = 3;
+  Pusher pusher = 4;
 }
 
 message Pusher {
   string ID = 1 [json_name = "id"];
-  string Name = 2;
-  string NickName = 3;
-  string Email = 4;
+  string name = 2;
+  string nickName = 3 [json_name = "nickname"];
+  string email = 4;
 }
 
 message CreateGuideResponse {

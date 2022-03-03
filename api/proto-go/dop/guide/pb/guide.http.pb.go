@@ -21,7 +21,7 @@ const _ = http.SupportPackageIsVersion1
 
 // GuideServiceHandler is the server API for GuideService service.
 type GuideServiceHandler interface {
-	// POST /api/guide
+	// POST /api/guide/actions/create-by-gittar-hook
 	CreateGuideByGittarHook(context.Context, *GittarPushPayloadEvent) (*CreateGuideResponse, error)
 	// GET /api/guide
 	ListGuide(context.Context, *ListGuideRequest) (*ListGuideResponse, error)
@@ -221,7 +221,7 @@ func RegisterGuideServiceHandler(r http.Router, srv GuideServiceHandler, opts ..
 		)
 	}
 
-	add_CreateGuideByGittarHook("POST", "/api/guide", srv.CreateGuideByGittarHook)
+	add_CreateGuideByGittarHook("POST", "/api/guide/actions/create-by-gittar-hook", srv.CreateGuideByGittarHook)
 	add_ListGuide("GET", "/api/guide", srv.ListGuide)
 	add_JudgeCanCreatePipeline("GET", "/api/guide/{ID}/actions/judge", srv.JudgeCanCreatePipeline)
 	add_ProcessGuide("POST", "/api/guide/actions/process", srv.ProcessGuide)
