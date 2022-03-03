@@ -26,8 +26,8 @@ import (
 )
 
 func (l *MessageList) doFilterApproval() (data *list.Data) {
-	blockApprovalList, blockUsers, blockTotal := l.blockApproval(1, 1000)
-	deployApprovalList, deployUsers, deployTotal := l.deployApproval(1, 1000)
+	blockApprovalList, blockUsers, blockTotal := l.listBlockApprovals(1, 1000)
+	deployApprovalList, deployUsers, deployTotal := l.listDeployApprovals(1, 1000)
 	data = &list.Data{
 		PageNo:   l.filterReq.PageNo,
 		PageSize: l.filterReq.PageSize,
@@ -47,7 +47,7 @@ func (l *MessageList) doFilterApproval() (data *list.Data) {
 	return
 }
 
-func (l *MessageList) blockApproval(pageNo, pageSize uint64) (data []list.Item, userIDs []string, total int) {
+func (l *MessageList) listBlockApprovals(pageNo, pageSize uint64) (data []list.Item, userIDs []string, total int) {
 	orgID, err := strconv.ParseUint(l.identity.OrgID, 10, 64)
 	if err != nil {
 		panic(err)
@@ -109,7 +109,7 @@ func (l *MessageList) blockApproval(pageNo, pageSize uint64) (data []list.Item, 
 	return
 }
 
-func (l *MessageList) deployApproval(pageNo, pageSize uint64) (data []list.Item, userIDs []string, total int) {
+func (l *MessageList) listDeployApprovals(pageNo, pageSize uint64) (data []list.Item, userIDs []string, total int) {
 	resp, err := l.bdl.ListManualApproval(l.identity.OrgID, l.identity.UserID, map[string][]string{
 		"pageNo":         {strconv.FormatUint(pageNo, 10)},
 		"pageSize":       {strconv.FormatUint(pageSize, 10)},
