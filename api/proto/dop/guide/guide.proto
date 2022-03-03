@@ -20,10 +20,10 @@ service GuideService {
   rpc CreateGuideByGittarHook(GittarPushPayloadEvent)
       returns(CreateGuideResponse) {
     option(google.api.http) = {
-      post : "/api/guide",
+      post : "/api/guide/actions/create-by-gittar-hook",
     };
     option(erda.common.openapi) = {
-      path : "/api/guide",
+      path : "/api/guide/actions/create-by-gittar-hook",
     };
   }
 
