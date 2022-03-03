@@ -43,6 +43,7 @@ type Repository struct {
 	ApplicationId   int64  `json:"application_id"`
 	ApplicationName string `json:"application_name"`
 	OrgId           int64  `json:"org_id"`
+	OrgName         string `json:"org_name"`
 	Url             string `json:"url"`
 	Path            string `json:"path"` //相对路径
 	Bundle          *bundle.Bundle

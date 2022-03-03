@@ -378,6 +378,7 @@ func openRepository(ctx *webcontext.Context, repo *models.Repo) (*gitmodule.Repo
 	gitRepository.ApplicationId = repo.AppID
 	gitRepository.ApplicationName = repo.AppName
 	gitRepository.OrgId = repo.OrgID
+	gitRepository.OrgName = repo.OrgName
 	gitRepository.Size = repo.Size
 	gitRepository.Url = conf.GittarUrl() + "/" + repo.Path
 	gitRepository.IsExternal = repo.IsExternal
