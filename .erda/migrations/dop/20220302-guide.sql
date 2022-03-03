@@ -13,6 +13,5 @@ CREATE TABLE `erda_guide`
     `updated_at`      datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'UPDATED AT',
     `soft_deleted_at` bigint(20) NOT NULL DEFAULT '0' COMMENT '软删除',
     PRIMARY KEY (`id`),
-    KEY               `idx_kind_porjectid_status_createdat` (`soft_deleted_at`,`kind`,`project_id`, `status `,`created_at`),
-    KEY               `idx_kind_appid_status_createdat` (`soft_deleted_at`,`kind `,`app_id`,`status`,`created_at`)
+    KEY               `idx_porjectid_creator_kind_status_createdat` (`soft_deleted_at`,`project_id`,`creator`,`kind`, `status `,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='erda_guide';

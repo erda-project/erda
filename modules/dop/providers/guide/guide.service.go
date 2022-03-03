@@ -63,7 +63,7 @@ func (g *GuideService) CreateGuideByGittarHook(ctx context.Context, req *pb.Gitt
 		// TODO add jump link
 		JumpLink:      "",
 		Status:        db.InitStatus.String(),
-		Kind:          "pipeline",
+		Kind:          db.PipelineGuide.String(),
 		Creator:       req.Content.Pusher.ID,
 		OrgID:         orgID,
 		ProjectID:     projectID,
@@ -78,6 +78,9 @@ func (g *GuideService) CreateGuideByGittarHook(ctx context.Context, req *pb.Gitt
 }
 
 func (g *GuideService) ListGuide(ctx context.Context, req *pb.ListGuideRequest) (*pb.ListGuideResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, apierrors.ErrListGuide.InvalidParameter(err)
+	}
 	guidesDB, err := g.db.ListGuide(req, apis.GetUserID(ctx))
 	if err != nil {
 		return nil, apierrors.ErrListGuide.InternalError(err)
@@ -90,6 +93,10 @@ func (g *GuideService) ListGuide(ctx context.Context, req *pb.ListGuideRequest) 
 }
 
 func (g *GuideService) JudgeCanCreatePipeline(ctx context.Context, req *pb.JudgeCanCreatePipelineRequest) (*pb.JudgeCanCreatePipelineResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, apierrors.ErrJudgeCanCreatePipeline.InvalidParameter(err)
+	}
+
 	guideDB, err := g.db.GetGuide(req.ID)
 	if err != nil {
 		return nil, apierrors.ErrJudgeCanCreatePipeline.InternalError(err)
@@ -126,9 +133,16 @@ func (g *GuideService) JudgeCanCreatePipeline(ctx context.Context, req *pb.Judge
 }
 
 func (g *GuideService) ProcessGuide(ctx context.Context, req *pb.ProcessGuideRequest) (*pb.ProcessGuideResponse, error) {
-	if err := g.db.UpdateGuideByAppIDAndBranch(req.AppID, req.Branch, map[string]interface{}{"status": db.ProcessedStatus}); err != nil {
-		return nil, apierrors.ErrListGuide.InternalError(err)
+	if err := req.Validate(); err != nil {
+		return nil, apierrors.ErrProcessGuide.InvalidParameter(err)
 	}
+
+	if req.Kind == db.PipelineGuide.String() {
+		if err := g.db.UpdateGuideByAppIDAndBranch(req.AppID, req.Branch, req.Kind, map[string]interface{}{"status": db.ProcessedStatus}); err != nil {
+			return nil, apierrors.ErrProcessGuide.InternalError(err)
+		}
+	}
+
 	return &pb.ProcessGuideResponse{}, nil
 }
 

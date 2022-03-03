@@ -39,8 +39,18 @@ const (
 
 const ExpiredTime = 6 * time.Hour
 
-func (s GuideStatus) String() string {
-	return string(s)
+func (g GuideStatus) String() string {
+	return string(g)
+}
+
+type GuideKind string
+
+const (
+	PipelineGuide GuideKind = "pipeline"
+)
+
+func (g GuideKind) String() string {
+	return string(g)
 }
 
 type Guide struct {
@@ -112,10 +122,11 @@ func (db *GuideDB) BatchUpdateGuideExpiryStatus() error {
 }
 
 // UpdateGuideByAppIDAndBranch .
-func (db *GuideDB) UpdateGuideByAppIDAndBranch(appID uint64, branch string, fields map[string]interface{}) error {
+func (db *GuideDB) UpdateGuideByAppIDAndBranch(appID uint64, branch, kind string, fields map[string]interface{}) error {
 	return db.Debug().Model(&Guide{}).Scopes(NotDeleted).
 		Where("app_id = ?", appID).
 		Where("branch = ?", branch).
+		Where("kind = ?", kind).
 		Updates(fields).Error
 }
 
@@ -128,6 +139,8 @@ func (db *GuideDB) ListGuide(req *pb.ListGuideRequest, userID string) (guides []
 		Where("creator = ?", userID).
 		Where("status = ?", InitStatus).
 		Where("created_at >= ?", time.Now().Add(-1*(ExpiredTime)).Format("2006-01-02 15:04:05")).
+		Order("created_at DESC").
+		Limit(5).
 		Find(&guides).Error
 	return
 }

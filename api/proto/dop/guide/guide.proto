@@ -59,8 +59,8 @@ service GuideService {
 }
 
 message ListGuideRequest {
-  string kind = 1;
-  uint64 projectID = 2;
+  string kind = 1 [(validator.field) = {string_not_empty: true}];
+  uint64 projectID = 2 [(validator.field) = {int_gt: 0}];
 }
 
 message ListGuideResponse {
@@ -82,7 +82,7 @@ message Guide {
 }
 
 message JudgeCanCreatePipelineRequest {
-  string ID = 1 [json_name = "id"];
+  string ID = 1 [json_name = "id", (validator.field) = {string_not_empty: true}];
 }
 
 message JudgeCanCreatePipelineResponse {
@@ -125,6 +125,7 @@ message CreateGuideResponse {
 message ProcessGuideRequest {
   uint64 appID = 1;
   string branch = 2;
+  string kind = 3 [(validator.field) = {string_not_empty: true}];
 }
 
 message ProcessGuideResponse {

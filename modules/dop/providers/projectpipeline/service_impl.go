@@ -275,7 +275,7 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 	}
 
 	go func() {
-		_, err = p.GuideSvc.ProcessGuide(ctx, &guidepb.ProcessGuideRequest{AppID: params.AppID, Branch: params.Ref})
+		_, err = p.GuideSvc.ProcessGuide(ctx, &guidepb.ProcessGuideRequest{AppID: params.AppID, Branch: params.Ref, Kind: "pipeline"})
 		if err != nil {
 			p.logger.Errorf("failed to ProcessGuide, err: %v, appID: %d, branch: %s", err, params.AppID, params.Ref)
 		}
