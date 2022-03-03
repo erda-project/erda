@@ -71,10 +71,10 @@ func (l *LastFilter) Filter(m *types.Message) *errors.DispatchError {
 
 func throttlePublish(m *types.Message, pool *goroutinepool.GoroutinePool, sub subscriber.Subscriber, labelV interface{}) (chan []error, error) {
 	errsCh := make(chan []error, 1)
-	defer func() {
-		close(errsCh)
-	}()
 	f := func() {
+		defer func() {
+			close(errsCh)
+		}()
 		content_, err := json.Marshal(m.Content)
 		if err != nil {
 			errsCh <- []error{err}
