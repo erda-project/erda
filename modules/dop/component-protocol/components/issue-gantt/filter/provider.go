@@ -120,6 +120,9 @@ func (f *ComponentFilter) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 func (f *ComponentFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		if f.fixedIterationID > 0 {
+			f.State.Values.IterationIDs = []int64{int64(f.fixedIterationID)}
+		}
 		return nil
 	}
 }
