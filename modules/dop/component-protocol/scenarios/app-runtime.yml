@@ -5,6 +5,12 @@ hierarchy:
   structure:
     page:
       - list
+    list:
+      filter:
+        filterContainer
+    filterContainer:
+      left:
+        advanceFilter
 
 options:
   syncIntervalSecond: 30
@@ -12,6 +18,10 @@ options:
 components:
   page:
     type: Container
+  filterContainer:
+    type: LRContainer
+  advanceFilter:
+    type: ConfigurableFilter
   list:
     type: List
     version: 2
@@ -20,12 +30,19 @@ components:
 
 
 rendering:
+  advanceFilter:
+    - name: filterContainer
+    - name: list
+    - name: cleanData
+
   list:
     - name: filterContainer
     - name: cleanData
 
   __DefaultRendering__:
     - name: page
+    - name: filterContainer
+    - name: advanceFilter
     - name: list
     - name: cleanData
 

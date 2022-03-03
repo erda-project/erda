@@ -15,7 +15,9 @@
 package app_runtime
 
 import (
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/app-runtime/advanceFilter"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/app-runtime/cleanData"
+	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/app-runtime/filterContainer"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/app-runtime/list"
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components/app-runtime/page"
 )
