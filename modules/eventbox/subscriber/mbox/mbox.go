@@ -72,10 +72,16 @@ func (d *MBoxSubscriber) Publish(dest string, content string, time int64, msg *t
 		DeduplicateID: mboxData.DeduplicateID,
 	})
 	if err != nil {
-		msg.CreateHistory.Status = "failed"
 		errs = append(errs, err)
 	}
-	subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
+	if len(errs) > 0 {
+		if msg != nil && msg.CreateHistory != nil {
+			msg.CreateHistory.Status = "failed"
+		}
+	}
+	if msg.CreateHistory != nil {
+		subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
+	}
 	return errs
 }
 
