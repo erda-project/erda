@@ -32,10 +32,16 @@ func (mgr *defaultManager) Export() json.RawMessage {
 	}
 	for qID, queue := range mgr.queueByID {
 		u := queue.Usage()
-		uByte, _ := proto.Marshal(&u)
+		uByte, err := proto.Marshal(&u)
+		if err != nil {
+			panic(err)
+		}
 		obj.QueueUsageByID[qID] = uByte
 	}
-	b, _ := json.Marshal(&obj)
+	b, err := json.Marshal(&obj)
+	if err != nil {
+		panic(err)
+	}
 	return b
 }
 

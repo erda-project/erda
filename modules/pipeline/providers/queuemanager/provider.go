@@ -44,7 +44,6 @@ type provider struct {
 	Dispatcher dispatcher.Interface
 
 	dbClient *dbclient.Client
-	js       jsonstore.JsonStore
 	types.QueueManager
 }
 
@@ -58,7 +57,6 @@ func (q *provider) Init(ctx servicehub.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to init jsonstore, err: %v", err)
 	}
-	q.js = js
 	etcdClient, err := etcd.New()
 	if err != nil {
 		return fmt.Errorf("failed to init etcd client, err: %v", err)

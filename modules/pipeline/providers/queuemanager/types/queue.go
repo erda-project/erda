@@ -15,7 +15,7 @@
 package types
 
 import (
-	"github.com/erda-project/erda-proto-go/pipeline/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager/pkg/queue/snapshot"
 	"github.com/erda-project/erda/modules/pipeline/spec"

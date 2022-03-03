@@ -46,7 +46,7 @@ func (q *provider) continueBackupQueueUsage(ctx context.Context) {
 			}
 			errs := []string{}
 			for qID, qMsg := range queueSnapshot.QueueUsageByID {
-				if err := q.js.Put(ctx, manager.MakeQueueUsageBackupKey(qID), string(qMsg)); err != nil {
+				if _, err := q.EtcdClient.Put(ctx, manager.MakeQueueUsageBackupKey(qID), string(qMsg)); err != nil {
 					errs = append(errs, fmt.Sprintf("%v", err))
 					continue
 				}
