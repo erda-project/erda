@@ -441,7 +441,7 @@ func RegisterReleaseServiceHandler(r http.Router, srv ReleaseServiceHandler, opt
 				if vals := params["applicationId"]; len(vals) > 0 {
 					in.ApplicationID = vals
 				}
-				if vals := params["branch"]; len(vals) > 0 {
+				if vals := params["branchName"]; len(vals) > 0 {
 					in.Branch = vals[0]
 				}
 				if vals := params["cluster"]; len(vals) > 0 {
@@ -492,12 +492,12 @@ func RegisterReleaseServiceHandler(r http.Router, srv ReleaseServiceHandler, opt
 				if vals := params["orderBy"]; len(vals) > 0 {
 					in.OrderBy = vals[0]
 				}
-				if vals := params["pageNum"]; len(vals) > 0 {
+				if vals := params["pageNo"]; len(vals) > 0 {
 					val, err := strconv.ParseInt(vals[0], 10, 64)
 					if err != nil {
 						return nil, err
 					}
-					in.PageNum = val
+					in.PageNo = val
 				}
 				if vals := params["pageSize"]; len(vals) > 0 {
 					val, err := strconv.ParseInt(vals[0], 10, 64)

@@ -70,6 +70,7 @@ func (f *Formater) formatListChart(ctx *query.Context, chart *chartmeta.ChartMet
 				}
 				data["value"] = units.Convert(OriginalUnit, *meta.Unit, value)
 			}
+			data["i18n"] = meta.I18n
 		}
 		list = append(list, data)
 	}

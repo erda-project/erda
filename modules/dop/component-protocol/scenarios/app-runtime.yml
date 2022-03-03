@@ -1,0 +1,31 @@
+scenario: app-runtime
+
+hierarchy:
+  root: page
+  structure:
+    page:
+      - list
+
+options:
+  syncIntervalSecond: 30
+
+components:
+  page:
+    type: Container
+  list:
+    type: List
+    version: 2
+  cleanData:
+    type: Container
+
+
+rendering:
+  list:
+    - name: filterContainer
+    - name: cleanData
+
+  __DefaultRendering__:
+    - name: page
+    - name: list
+    - name: cleanData
+
