@@ -131,7 +131,7 @@ func (f *MessageTabs) InitComp() error {
 	if err != nil {
 		return err
 	}
-	reviewRsp, err := f.bdl.ListReviewApproval(f.identity.OrgID, f.identity.UserID, map[string][]string{
+	reviewRsp, err := f.bdl.ListManualApproval(f.identity.OrgID, f.identity.UserID, map[string][]string{
 		"pageNo":         {"1"},
 		"pageSize":       {"0"},
 		"approvalStatus": {"pending"},

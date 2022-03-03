@@ -110,7 +110,7 @@ func (l *MessageList) blockApproval(pageNo, pageSize uint64) (data []list.Item, 
 }
 
 func (l *MessageList) deployApproval(pageNo, pageSize uint64) (data []list.Item, userIDs []string, total int) {
-	resp, err := l.bdl.ListReviewApproval(l.identity.OrgID, l.identity.UserID, map[string][]string{
+	resp, err := l.bdl.ListManualApproval(l.identity.OrgID, l.identity.UserID, map[string][]string{
 		"pageNo":         {strconv.FormatUint(pageNo, 10)},
 		"pageSize":       {strconv.FormatUint(pageSize, 10)},
 		"approvalStatus": {"pending"},

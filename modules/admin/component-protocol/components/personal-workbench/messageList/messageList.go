@@ -168,7 +168,7 @@ func (l *MessageList) RegisterItemClickOp(opData list.OpItemClick) (opFunc cptyp
 				panic(err)
 			}
 		case "approveDeploy", "rejectDeploy":
-			if err := l.bdl.UpdateReview(l.identity.OrgID, &apistructs.UpdateApproval{
+			if err := l.bdl.UpdateManualApproval(l.identity.OrgID, &apistructs.UpdateApproval{
 				Id:     id,
 				Reject: opData.ClientData.OperationRef.ID == "rejectDeploy",
 			}); err != nil {

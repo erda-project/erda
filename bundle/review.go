@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
-func (b *Bundle) ListReviewApproval(orgID string, userID string, params url.Values) (*apistructs.GetReviewListResponse, error) {
+func (b *Bundle) ListManualApproval(orgID string, userID string, params url.Values) (*apistructs.GetReviewListResponse, error) {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (b *Bundle) ListReviewApproval(orgID string, userID string, params url.Valu
 	return &approveList, nil
 }
 
-func (b *Bundle) UpdateReview(orgID string, req *apistructs.UpdateApproval) error {
+func (b *Bundle) UpdateManualApproval(orgID string, req *apistructs.UpdateApproval) error {
 	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
