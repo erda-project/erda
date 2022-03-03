@@ -32,6 +32,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/modules/gittar/conf"
 	"github.com/erda-project/erda/modules/gittar/models"
 	"github.com/erda-project/erda/modules/gittar/pkg/gitmodule"
 	"github.com/erda-project/erda/modules/gittar/webcontext"
@@ -205,12 +206,10 @@ func RunProcess(service string, c *webcontext.Context) {
 			// Only when one branch is created will it be written to the writer
 			// Refer to github
 			if len(pushEvents) == 1 && pushEvents[0].IsCreateNewBranch() {
-				// TODO write create pipeline link to writer
-				//c.GetWriter().Write(NewReportStatus(
-				//	"unpack ok",
-				//	"ok "+pushEvents[0].Ref,
-				//	fmt.Sprintf("\nCreate a pipeline request for '%s' on Erda by visiting:\n"+
-				//		"https://erda.cloud\n", pushEvents[0].Ref[len("refs/heads/"):])))
+				c.GetWriter().Write(NewReportStatus(
+					"unpack ok",
+					"ok "+pushEvents[0].Ref,
+					makeCreatePipelineLink(pushEvents[0].Ref[len(gitmodule.BRANCH_PREFIX):], c.Repository.OrgName, c.Repository.ProjectId)))
 			}
 			runCommand2(c.GetWriter(), gitCommand(
 				version,
@@ -273,10 +272,14 @@ func OutPutArchive(c *webcontext.Context, ref string, format string) string {
 
 // OutPutArchiveDelete 删除打包文件  （文件打包上传完必须删除）
 func OutPutArchiveDelete(c *webcontext.Context, path string) {
-
 	runCommand2(c.GetWriter(), exec.Command(
 		"rm",
 		"-r",
 		"-f",
 		path))
+}
+
+func makeCreatePipelineLink(branch, orgName string, projectID int64) string {
+	return fmt.Sprintf("\nCreate a pipeline request for '%s' on Erda by visiting:\n     "+
+		conf.UIPublicURL()+"/%s/dop/projects/%d/pipelines/list\n", branch, orgName, projectID)
 }
