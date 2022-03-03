@@ -162,9 +162,13 @@ func (d *DDSubscriber) Publish(dest string, content string, time int64, msg *typ
 		}
 	}
 	if len(errs) > 0 {
-		msg.CreateHistory.Status = "failed"
+		if msg != nil && msg.CreateHistory != nil {
+			msg.CreateHistory.Status = "failed"
+		}
 	}
-	subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
+	if msg.CreateHistory != nil {
+		subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
+	}
 	return errs
 }
 

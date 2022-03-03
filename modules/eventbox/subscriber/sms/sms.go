@@ -136,9 +136,13 @@ func (d *MobileSubscriber) Publish(dest string, content string, time int64, msg 
 		errs = append(errs, fmt.Errorf("failed to send sms %s", response.GetHttpContentString()))
 	}
 	if len(errs) > 0 {
-		msg.CreateHistory.Status = "failed"
+		if msg != nil && msg.CreateHistory != nil {
+			msg.CreateHistory.Status = "failed"
+		}
 	}
-	subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
+	if msg.CreateHistory != nil {
+		subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
+	}
 	logrus.Infof("sms send success %s", response.GetHttpContentString())
 	return errs
 }

@@ -125,11 +125,16 @@ func (d *MailSubscriber) Publish(dest string, content string, time int64, msg *t
 	}
 	err = d.sendToMail(mails, &mailData)
 	if err != nil {
-		msg.CreateHistory.Status = "failed"
-		logrus.Errorf("send email err: %v", err)
 		errs = append(errs, err)
 	}
-	subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
+	if len(errs) > 0 {
+		if msg != nil && msg.CreateHistory != nil {
+			msg.CreateHistory.Status = "failed"
+		}
+	}
+	if msg.CreateHistory != nil {
+		subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
+	}
 	return errs
 }
 

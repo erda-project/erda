@@ -148,7 +148,14 @@ func (d *VoiceSubscriber) Publish(dest string, content string, time int64, msg *
 	if len(errs) == 0 {
 		logrus.Info("voice send success")
 	}
-	subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
+	if len(errs) > 0 {
+		if msg != nil && msg.CreateHistory != nil {
+			msg.CreateHistory.Status = "failed"
+		}
+	}
+	if msg.CreateHistory != nil {
+		subscriber.SaveNotifyHistories(msg.CreateHistory, d.messenger)
+	}
 
 	return errs
 }

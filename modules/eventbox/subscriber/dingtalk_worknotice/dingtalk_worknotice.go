@@ -94,9 +94,13 @@ func (d DingWorkNoticeSubscriber) Publish(dest string, content string, time int6
 		errs = append(errs, err)
 	}
 	if len(errs) > 0 {
-		m.CreateHistory.Status = "failed"
+		if m != nil && m.CreateHistory != nil {
+			m.CreateHistory.Status = "failed"
+		}
 	}
-	subscriber.SaveNotifyHistories(m.CreateHistory, d.messenger)
+	if m.CreateHistory != nil {
+		subscriber.SaveNotifyHistories(m.CreateHistory, d.messenger)
+	}
 	return errs
 }
 
