@@ -32,7 +32,7 @@ import (
 type provider struct {
 	Log        logs.Logger
 	Cfg        *config
-	Election   election.Interface `autowired:"etcd-election@pipeline"`
+	Election   election.Interface `autowired:"etcd-election@leader-worker"`
 	EtcdClient *clientv3.Client
 
 	lock sync.Mutex

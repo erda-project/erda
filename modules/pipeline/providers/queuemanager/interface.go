@@ -65,7 +65,7 @@ func (q *provider) DistributedHandleIncomingPipeline(ctx context.Context, pipeli
 				continue
 			}
 			if status == apistructs.PipelineStatusQueue || status.AfterPipelineQueue() {
-				q.Log.Warnf("skip update pipeline status for incoming pipeline, pipelineID: %d, status: %s", pipelineID, status)
+				q.Log.Debugf("skip update pipeline status for incoming pipeline, pipelineID: %d, status: %s", pipelineID, status)
 				return
 			}
 			if err := q.dbClient.UpdatePipelineBaseStatus(pipelineID, apistructs.PipelineStatusQueue); err != nil {

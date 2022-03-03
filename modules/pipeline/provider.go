@@ -27,7 +27,6 @@ import (
 	_ "github.com/erda-project/erda/modules/pipeline/providers/dispatcher"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
-	_ "github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler"
 	"github.com/erda-project/erda/providers/metrics/report"

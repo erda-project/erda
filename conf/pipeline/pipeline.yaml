@@ -34,14 +34,9 @@ leader-worker:
     etcd_key_prefix_with_slash: /devops/pipeline/v2/leader-worker/worker/
 reconciler:
 
-etcd-election@pipeline:
+etcd-election@leader-worker:
   root_path: erda/component-leader/pipeline/leader-worker
 
-#etcd-election@reconciler:
-#  root_path: erda/component-leader/pipeline/reconciler
-#
-#etcd-election@gc:
-#  root_path: erda/component-leader/pipeline/gc
 metric-report-client:
   report_config:
     collector:

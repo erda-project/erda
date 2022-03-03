@@ -24,7 +24,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
 )
 
-// framework use etcd to store data
 func (p *provider) leaderFramework(ctx context.Context) {
 	p.Log.Infof("start leader framework")
 	defer p.Log.Infof("end leader framework")

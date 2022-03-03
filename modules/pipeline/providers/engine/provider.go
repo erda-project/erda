@@ -17,7 +17,6 @@ package engine
 import (
 	"context"
 	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -65,6 +64,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	// set bundle before initialize scheduler, because scheduler need use bdl get clusters
 	bdl := bundle.New(bundle.WithAllAvailableClients(), bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second))))
 	clusterinfo.Initialize(bdl)
+	// register cluster hook
+	if err := clusterinfo.RegisterClusterHook(); err != nil {
+		return err
+	}
 
 	// action executor manager
 	_, cfgChan, err := p.dbClient.ListPipelineConfigsOfActionExecutor()
@@ -85,33 +88,9 @@ func (p *provider) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	p.Lw.WorkerHandlerOnWorkerDelete(func(ctx context.Context, ev leaderworker.Event) {
-		for {
-			err := p.Lw.RegisterCandidateWorker(ctx, worker.New(worker.WithHandler(p.reconcilePipeline)))
-			if err == nil {
-				return
-			}
-			p.Log.Errorf("failed to add new candidate worker when old worker deleted(auto retry), old workerID: %s, err: %v", ev.WorkerID, err)
-			time.Sleep(p.Cfg.Worker.RetryInterval)
-		}
-	})
+	p.Lw.WorkerHandlerOnWorkerDelete(p.workerHandlerOnWorkerDelete)
 
 	return nil
-}
-
-func (p *provider) reconcilePipeline(ctx context.Context, logicTask worker.Tasker) {
-	if logicTask == nil {
-		p.Log.Warnf("logic task is nil, skip reconcile pipeline")
-		return
-	}
-	idstr := logicTask.GetLogicID().String()
-	pipelineID, err := strconv.ParseUint(idstr, 10, 64)
-	if err != nil {
-		p.Log.Errorf("failed to parse pipelineID from logicTask(no retry), logicTaskID: %s, err: %v", idstr, err)
-		return
-	}
-	p.Reconciler.Reconcile(ctx, pipelineID)
-	p.QueueManager.DistributedStopPipeline(ctx, pipelineID)
 }
 
 func init() {

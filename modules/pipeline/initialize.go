@@ -36,7 +36,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pexpr/pexpr_params"
 	"github.com/erda-project/erda/modules/pipeline/pipengine"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
-	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/pkg/pipelinefunc"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
@@ -196,14 +195,10 @@ func (p *provider) do() error {
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)
 
+	// TODO refactor cron daemon
 	p.LeaderWorker.OnLeader(func(ctx context.Context) {
 		pipelineSvc.DoCrondAbout(ctx)
 	})
-
-	// register cluster hook after pipeline service start
-	if err := clusterinfo.RegisterClusterHook(); err != nil {
-		return err
-	}
 
 	return nil
 }

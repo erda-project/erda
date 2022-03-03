@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/sirupsen/logrus"
 )
 
 type SnapshotObj struct {
@@ -34,13 +35,13 @@ func (mgr *defaultManager) Export() json.RawMessage {
 		u := queue.Usage()
 		uByte, err := proto.Marshal(&u)
 		if err != nil {
-			panic(err)
+			logrus.Errorf("failed to proto marshal queue usage(skip), queueID: %s, err: %v", qID, err)
 		}
 		obj.QueueUsageByID[qID] = uByte
 	}
 	b, err := json.Marshal(&obj)
 	if err != nil {
-		panic(err)
+		logrus.Errorf("failed to json marshal queue manager snapshot(skip), err: %v", err)
 	}
 	return b
 }
