@@ -15,7 +15,7 @@
 package list
 
 import (
-	"strconv"
+	"fmt"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -39,9 +39,9 @@ func (l *List) GenAppKvInfo(item apistructs.ApplicationDTO, mrCount int) (kvs []
 			Tip:   l.sdk.I18n("publicProperty"),
 		},
 		{
-			Icon:  "list-numbers",
+			Icon:  "mr",
 			Tip:   l.sdk.I18n("openMrCount"),
-			Value: strconv.Itoa(mrCount),
+			Value: fmt.Sprintf("%v Merge Requests", mrCount),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): cputil.NewOpBuilder().
 					WithSkipRender(true).
