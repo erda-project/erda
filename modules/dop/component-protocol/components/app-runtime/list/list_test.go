@@ -64,7 +64,7 @@ func TestList_doFilter(t *testing.T) {
 			args: args{
 				conditions: map[string]map[string]bool{common.FilterApp: {"1": true}},
 			},
-			want: false,
+			want: true,
 		},
 		{
 			name: "2",
@@ -76,11 +76,6 @@ func TestList_doFilter(t *testing.T) {
 					RawDeploymentStatus: "1",
 				}},
 			want: true,
-		},
-		{
-			name: "3",
-			args: args{conditions: map[string]map[string]bool{common.FilterDeployOrderName: {"1": true}}},
-			want: false,
 		},
 		{
 			name: "4",
@@ -243,7 +238,7 @@ func Test_getOperations(t *testing.T) {
 			want: map[cptype.OperationKey]cptype.Operation{
 				"clickGoto": {
 					ServerData: &cptype.OpServerData{
-						"target": "appDeployRuntime",
+						"target": "projectDeployRuntime",
 						"params": map[string]string{
 							"projectId": "0",
 							"appId":     "0",
