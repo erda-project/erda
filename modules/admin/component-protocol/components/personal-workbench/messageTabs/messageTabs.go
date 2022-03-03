@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 
@@ -118,10 +119,32 @@ func (f *MessageTabs) InitComp() error {
 		return err
 	}
 
+	orgID, err := strconv.ParseUint(f.identity.OrgID, 10, 64)
+	if err != nil {
+		return err
+	}
+	approveRsp, err := f.bdl.ListApprove(orgID, f.identity.UserID, map[string][]string{
+		"pageNo":   {"1"},
+		"pageSize": {"0"},
+		"status":   {"pending"},
+	})
+	if err != nil {
+		return err
+	}
+	reviewRsp, err := f.bdl.ListManualApproval(f.identity.OrgID, f.identity.UserID, map[string][]string{
+		"pageNo":         {"1"},
+		"pageSize":       {"0"},
+		"approvalStatus": {"pending"},
+	})
+	if err != nil {
+		return err
+	}
+
 	f.Data = Data{
 		Options: []Option{
 			// unread message
 			{Value: apistructs.WorkbenchItemUnreadMes.String(), Label: fmt.Sprintf("%s(%v)", f.sdk.I18n(i18n.I18nKeyUnreadMes), res.UnRead)},
+			{Value: apistructs.WorkbenchItemApproveRequest.String(), Label: fmt.Sprintf("%s(%v)", f.sdk.I18n(i18n.I18nKeyApproveRequest), approveRsp.Data.Total+reviewRsp.Data.Total)},
 		},
 	}
 	return nil
@@ -144,11 +167,9 @@ func (f *MessageTabs) Render(ctx context.Context, c *cptype.Component, scenario 
 			Value: apistructs.WorkbenchItemUnreadMes.String(),
 		}
 	case common.EventChangeEventTab:
-		err := common.Transfer(c.Operations, &f.Operations)
-		if err != nil {
-			return err
-		}
-		f.State.Value = f.Operations[common.EventChangeEventTab].ClientData.Value
+		var op Operation
+		cputil.MustObjJSONTransfer(event.OperationData, &op)
+		f.State.Value = op.ClientData.Value
 	default:
 		logrus.Errorf("scenario %v component [%s] does not support event %v", scenario, CompNameMessagesTabs, event)
 		return nil
