@@ -36,7 +36,6 @@ import (
 	imagedb "github.com/erda-project/erda/modules/dicehub/image/db"
 	"github.com/erda-project/erda/modules/dicehub/registry"
 	"github.com/erda-project/erda/modules/dicehub/release/db"
-	"github.com/erda-project/erda/modules/dicehub/release/event"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -167,10 +166,6 @@ func (s *ReleaseService) Create(req *pb.ReleaseCreateRequest) (string, error) {
 			return "", err
 		}
 	}
-
-	// Send release create event to eventbox
-	event.SendReleaseEvent(event.ReleaseEventCreate, release)
-
 	return release.ReleaseID, nil
 }
 
@@ -306,10 +301,6 @@ func (s *ReleaseService) Update(orgID int64, releaseID string, req *pb.ReleaseUp
 			return err
 		}
 	}
-
-	// Send release update event to eventbox
-	event.SendReleaseEvent(event.ReleaseEventUpdate, release)
-
 	return nil
 }
 
@@ -465,9 +456,6 @@ func (s *ReleaseService) Delete(orgID int64, releaseIDs ...string) error {
 				}
 			}
 		}
-
-		// send release delete event to eventbox
-		event.SendReleaseEvent(event.ReleaseEventDelete, release)
 	}
 	if len(failed) != 0 {
 		return errors.New(strings.Join(failed, ", "))
