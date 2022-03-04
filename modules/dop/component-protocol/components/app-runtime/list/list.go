@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/gogap/errors"
 	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
 
@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/admin/component-protocol/types"
@@ -171,9 +172,21 @@ func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		logrus.Debug("list component init")
 		if urlquery := sdk.InParams.String("list__urlQuery"); urlquery != "" {
-			if err := p.flushOptsByFilter(urlquery); err != nil {
+			if page, err := p.flushOptsByFilter(urlquery); err != nil {
 				logrus.Errorf("failed to transfer values in component advance filter")
 				return nil
+			} else {
+				if page.PageNo == 0 || page.PageSize == 0 {
+					p.PageSize = 10
+					p.PageNo = 1
+					p.State["pageSize"] = 10
+					p.State["pageNo"] = 1
+				} else {
+					p.PageNo = page.PageNo
+					p.PageSize = page.PageSize
+					p.State["pageSize"] = p.PageSize
+					p.State["pageNo"] = p.PageNo
+				}
 			}
 		}
 		urlParam, err := p.generateUrlQueryParams(p.State)
@@ -189,18 +202,22 @@ func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	}
 }
 
-func (p *List) flushOptsByFilter(filterEntity string) error {
+type Page struct {
+	PageSize uint64 `json:"pageSize"`
+	PageNo   uint64 `json:"pageNo"`
+}
+
+func (p *List) flushOptsByFilter(filterEntity string) (*Page, error) {
+	page := &Page{}
 	b, err := base64.StdEncoding.DecodeString(filterEntity)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	v := cptype.ExtraMap{}
-	err = json.Unmarshal(b, &v)
+	err = json.Unmarshal(b, page)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	p.State = v
-	return nil
+	return page, nil
 }
 
 func (p *List) generateUrlQueryParams(Values cptype.ExtraMap) (string, error) {
@@ -211,24 +228,24 @@ func (p *List) generateUrlQueryParams(Values cptype.ExtraMap) (string, error) {
 	return base64.StdEncoding.EncodeToString(fb), nil
 }
 
-func (p *List) Init(ctx servicehub.Context) error {
-	return p.DefaultProvider.Init(ctx)
+func (p *List) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
+	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		logrus.Debug("list component rendering")
+		p.Sdk = sdk
+		urlParam, err := p.generateUrlQueryParams(p.State)
+		if err != nil {
+			logrus.Errorf("fail to parse list url")
+			return nil
+		}
+		p.State["list__urlQuery"] = urlParam
+		p.StdDataPtr = p.getData()
+		p.StdStatePtr = &p.State
+		return nil
+	}
 }
 
-func (p *List) initMyApps(sdk *cptype.SDK, oid, projectId uint64) (map[uint64]string, error) {
-	myApp := make(map[uint64]string)
-	apps, err := p.Bdl.GetMyApps(sdk.Identity.UserID, oid)
-	if err != nil {
-		logrus.Errorf("get my app failed,%v", err)
-		return myApp, errors.Errorf("get my app failed,%v", err)
-	}
-	for i := 0; i < len(apps.List); i++ {
-		if apps.List[i].ProjectID != projectId {
-			continue
-		}
-		myApp[apps.List[i].ID] = apps.List[i].Name
-	}
-	return myApp, nil
+func (p *List) Init(ctx servicehub.Context) error {
+	return p.DefaultProvider.Init(ctx)
 }
 
 func (p *List) getData() *list.Data {
@@ -237,49 +254,88 @@ func (p *List) getData() *list.Data {
 	data.PageSize = p.PageSize
 	var runtimes []bundle.GetApplicationRuntimesDataEle
 	var runtimeIdToAppNameMap map[uint64]string
-	var myApp map[uint64]string
+	var appIdToName map[uint64]string
 
-	logrus.Infof("not found runtimes")
-	getEnv, ok := p.Sdk.InParams["env"].(string)
-	if !ok {
-		logrus.Errorf("env is empty")
-		return data
-	}
-	//projectId, err := strconv.ParseUint(p.Sdk.InParams["projectId"].(string), 10, 64)
-	//if err != nil {
-	//	logrus.Errorf("parse oid failed,%v", err)
-	//	return data
-	//}
-	oid, err := strconv.ParseUint(p.Sdk.Identity.OrgID, 10, 64)
-	if err != nil {
-		logrus.Errorf("parse oid failed,%v", err)
-		return data
-	}
-	appid, err := strconv.ParseUint(p.Sdk.InParams["appId"].(string), 10, 64)
-	if err != nil {
-		logrus.Errorf("parse oid failed,%v", err)
-		return data
-	}
-	appIds := []uint64{appid}
-	appIdToName := make(map[uint64]string)
+	if gsRuntimes, ok := (*p.Sdk.GlobalState)["runtimes"]; !ok {
+		logrus.Infof("not found runtimes")
+		getEnv, ok := p.Sdk.InParams["env"].(string)
+		if !ok {
+			logrus.Errorf("env is empty")
+			return data
+		}
+		oid, err := strconv.ParseUint(p.Sdk.Identity.OrgID, 10, 64)
+		if err != nil {
+			logrus.Errorf("parse oid failed,%v", err)
+			return data
+		}
+		appIds := make([]uint64, 0)
 
-	logrus.Infof("start load runtimes by app %v", time.Now())
+		appIdStr, ok := p.Sdk.InParams["appId"].(string)
+		if !ok {
+			logrus.Errorf("failed to get appid")
+			return data
+		}
+		appId, err := strconv.ParseUint(appIdStr, 10, 64)
+		if err != nil {
+			logrus.Errorf("failed to parse appid")
+			return data
+		}
+		appIds = append(appIds, appId)
+		if err != nil {
+			logrus.Errorf("get my app failed,%v", err)
+			return data
+		}
 
-	runtimesByApp, err := p.Bdl.ListRuntimesGroupByApps(oid, p.Sdk.Identity.UserID, appIds, getEnv)
-	if err != nil {
-		logrus.Errorf("get my app failed,%v", err)
-		return data
-	}
-	logrus.Infof("finish load runtimes by app %v", time.Now())
-
-	runtimeIdToAppNameMap = make(map[uint64]string)
-	for _, v := range runtimesByApp {
-		for _, appRuntime := range v {
-			if getEnv == appRuntime.Extra.Workspace {
-				runtimes = append(runtimes, *appRuntime)
-				runtimeIdToAppNameMap[appRuntime.ID] = appIdToName[appRuntime.ApplicationID]
+		apps, err := p.Bdl.GetMyApps(p.Sdk.Identity.UserID, oid)
+		if err != nil {
+			logrus.Errorf("get my app failed,%v", err)
+			return data
+		}
+		appIdToName = make(map[uint64]string)
+		for i := 0; i < len(apps.List); i++ {
+			if apps.List[i].ID == appId {
+				appIdToName[apps.List[i].ID] = apps.List[i].Name
+				break
 			}
 		}
+
+		logrus.Infof("start load runtimes by app %v", time.Now())
+
+		runtimesByApp, err := p.Bdl.ListRuntimesGroupByApps(oid, p.Sdk.Identity.UserID, appIds, getEnv)
+		if err != nil {
+			logrus.Errorf("get my app failed,%v", err)
+			return data
+		}
+		logrus.Infof("finish load runtimes by app %v", time.Now())
+
+		runtimeIdToAppNameMap = make(map[uint64]string)
+		for _, v := range runtimesByApp {
+			for _, appRuntime := range v {
+				if getEnv == appRuntime.Extra.Workspace {
+					runtimes = append(runtimes, *appRuntime)
+					runtimeIdToAppNameMap[appRuntime.ID] = appIdToName[appRuntime.ApplicationID]
+				}
+			}
+		}
+	} else {
+		logrus.Infof("found runtimes")
+		err := common.Transfer(gsRuntimes, &runtimes)
+		if err != nil {
+			logrus.Errorf("failed to transfer runtimes, gsruntimes %v", err)
+			return data
+		}
+		runtimeIdToAppNameMap = make(map[uint64]string)
+		if gsMap, ok := (*p.Sdk.GlobalState)["runtimeIdToAppName"]; ok {
+			err = common.Transfer(gsMap, &runtimeIdToAppNameMap)
+			if err != nil {
+				logrus.Errorf("failed to transfer runtimeMap, runtimeMap %v,err %v", (*p.Sdk.GlobalState)["runtimeIdToAppName"], err)
+				return data
+			}
+		} else {
+			logrus.Errorf("failed to transfer runtimeMap, runtimeMap %#v", (*p.Sdk.GlobalState)["runtimeIdToAppName"])
+			return data
+		}
+		appIdToName = (*p.Sdk.GlobalState)["myApp"].(map[uint64]string)
 	}
 	logrus.Infof("runtimes:%v", runtimes)
 	//oid, err := strconv.ParseUint(p.Sdk.Identity.OrgID, 10, 64)
@@ -340,7 +396,7 @@ func (p *List) getData() *list.Data {
 			nameStr = runtimeIdToAppNameMap[appRuntime.ID] + "/" + nameStr
 		}
 		logrus.Infof("%s : %s", appRuntime.Name, appRuntime.LastOperator)
-		_, isMyApp := myApp[appRuntime.ApplicationID]
+		_, isMyApp := appIdToName[appRuntime.ApplicationID]
 		item := list.Item{
 			ID:         idStr,
 			Title:      nameStr,
@@ -369,34 +425,34 @@ func (p *List) getData() *list.Data {
 			}
 		}
 	}
-	//var filterName string
-	//if nameFilterValue, ok := (*p.Sdk.GlobalState)["nameFilter"]; ok {
-	//	cputil.MustObjJSONTransfer(nameFilterValue, &filterName)
-	//	filterName = strings.Trim(filterName, " ")
-	//}
-	//logrus.Infof("inputFilter: %v", filterName)
-	//logrus.Infof("advanceFilter: %#v", advancedFilter)
-	//filter := make(map[string]map[string]bool)
-	//for k, v := range advancedFilter {
-	//	filter[k] = make(map[string]bool)
-	//	for _, value := range v {
-	//		filter[k][value] = true
-	//	}
-	//}
-	//var needFilter = data.List
-	//data.List = make([]list.Item, 0)
-	//
-	//for i := 0; i < len(needFilter); i++ {
-	//	runtime := runtimeMap[needFilter[i].ID]
-	//	if filterName != "" {
-	//		if common.ExitsWithoutCase(needFilter[i].Title, filterName) {
-	//			continue
-	//		}
-	//	}
-	//	if p.doFilter(filter, runtime, runtime.LastOperateTime.UnixNano()/1e6, runtimeIdToAppNameMap[runtime.ID], runtime.DeploymentOrderName) {
-	//		data.List = append(data.List, needFilter[i])
-	//	}
-	//}
+	var filterName string
+	if nameFilterValue, ok := (*p.Sdk.GlobalState)["nameFilter"]; ok {
+		cputil.MustObjJSONTransfer(nameFilterValue, &filterName)
+		filterName = strings.Trim(filterName, " ")
+	}
+	logrus.Infof("inputFilter: %v", filterName)
+	logrus.Infof("advanceFilter: %#v", advancedFilter)
+	filter := make(map[string]map[string]bool)
+	for k, v := range advancedFilter {
+		filter[k] = make(map[string]bool)
+		for _, value := range v {
+			filter[k][value] = true
+		}
+	}
+	var needFilter = data.List
+	data.List = make([]list.Item, 0)
+
+	for i := 0; i < len(needFilter); i++ {
+		runtime := runtimeMap[needFilter[i].ID]
+		if filterName != "" {
+			if !common.ExitsWithoutCase(needFilter[i].Title, filterName) {
+				continue
+			}
+		}
+		if p.doFilter(filter, runtime, runtime.LastOperateTime.UnixNano()/1e6, runtimeIdToAppNameMap[runtime.ID], runtime.DeploymentOrderName) {
+			data.List = append(data.List, needFilter[i])
+		}
+	}
 	//logrus.Infof("list after filter: %#v", data.List)
 
 	slice.Sort(data.List, func(i, j int) bool {
@@ -407,7 +463,7 @@ func (p *List) getData() *list.Data {
 	if start >= data.Total {
 		start = 0
 	}
-	//logrus.Infof("list after sort: %#v", data.List)
+	logrus.Debugf("list after sort: %#v", data.List)
 
 	end := uint64(math.Min(float64((p.PageNo)*p.PageSize), float64(data.Total)))
 
@@ -464,10 +520,10 @@ func (p *List) doFilter(conds map[string]map[string]bool, appRuntime bundle.GetA
 	}
 	for k, v := range conds {
 		switch k {
-		case common.FilterApp:
-			if _, ok := v[appName]; !ok {
-				return false
-			}
+		//case common.FilterApp:
+		//	if _, ok := v[appName]; !ok {
+		//		return false
+		//	}
 		//case common.FilterRuntimeStatus:
 		//	for _, value := range v {
 		//		if value == appRuntime.RawStatus {
@@ -478,10 +534,10 @@ func (p *List) doFilter(conds map[string]map[string]bool, appRuntime bundle.GetA
 			if _, ok := v[appRuntime.RawDeploymentStatus]; !ok {
 				return false
 			}
-		case common.FilterDeployOrderName:
-			if _, ok := v[deploymentOrderName]; !ok {
-				return false
-			}
+			//case common.FilterDeployOrderName:
+			//	if _, ok := v[deploymentOrderName]; !ok {
+			//		return false
+			//	}
 			//case common.FilterDeployTime:
 			//	startTime, err := strconv.ParseInt(v[0], 10, 64)
 			//	if err != nil {

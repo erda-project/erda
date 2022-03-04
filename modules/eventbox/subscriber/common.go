@@ -25,7 +25,7 @@ import (
 )
 
 func SaveNotifyHistories(request *apistructs.CreateNotifyHistoryRequest, messenger pb.NotifyServiceServer) {
-	var createRequest *pb.CreateNotifyHistoryRequest
+	var createRequest pb.CreateNotifyHistoryRequest
 	data, err := json.Marshal(request)
 	if err != nil {
 		logrus.Errorf("创建通知历史记录失败: %v", err)
@@ -36,7 +36,7 @@ func SaveNotifyHistories(request *apistructs.CreateNotifyHistoryRequest, messeng
 		logrus.Errorf("创建通知历史记录失败: %v", err)
 		return
 	}
-	_, err = messenger.CreateNotifyHistory(context.Background(), createRequest)
+	_, err = messenger.CreateNotifyHistory(context.Background(), &createRequest)
 	if err != nil {
 		logrus.Errorf("创建通知历史记录失败: %v", err)
 	}

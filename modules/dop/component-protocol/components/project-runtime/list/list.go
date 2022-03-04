@@ -173,9 +173,21 @@ func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		logrus.Debug("list component init")
 		if urlquery := sdk.InParams.String("list__urlQuery"); urlquery != "" {
-			if err := p.flushOptsByFilter(urlquery); err != nil {
+			if page, err := p.flushOptsByFilter(urlquery); err != nil {
 				logrus.Errorf("failed to transfer values in component advance filter")
 				return nil
+			} else {
+				if page.PageNo == 0 || page.PageSize == 0 {
+					p.PageSize = 10
+					p.PageNo = 1
+					p.State["pageSize"] = 10
+					p.State["pageNo"] = 1
+				} else {
+					p.PageNo = page.PageNo
+					p.PageSize = page.PageSize
+					p.State["pageSize"] = p.PageSize
+					p.State["pageNo"] = p.PageNo
+				}
 			}
 		}
 		urlParam, err := p.generateUrlQueryParams(p.State)
@@ -191,20 +203,23 @@ func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	}
 }
 
-func (p *List) flushOptsByFilter(filterEntity string) error {
-	b, err := base64.StdEncoding.DecodeString(filterEntity)
-	if err != nil {
-		return err
-	}
-	v := cptype.ExtraMap{}
-	err = json.Unmarshal(b, &v)
-	if err != nil {
-		return err
-	}
-	p.State = v
-	return nil
+type Page struct {
+	PageSize uint64
+	PageNo   uint64
 }
 
+func (p *List) flushOptsByFilter(filterEntity string) (*Page, error) {
+	page := &Page{}
+	b, err := base64.StdEncoding.DecodeString(filterEntity)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(b, page)
+	if err != nil {
+		return nil, err
+	}
+	return page, nil
+}
 func (p *List) generateUrlQueryParams(Values cptype.ExtraMap) (string, error) {
 	fb, err := json.Marshal(Values)
 	if err != nil {

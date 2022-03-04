@@ -555,16 +555,18 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 		}
 	}
 
-	items = append(items, commodel.MoreOpItem{
-		ID:   "delete",
-		Text: cputil.I18n(p.sdk.Ctx, "delete"),
-		Operations: map[cptype.OperationKey]cptype.Operation{
-			commodel.OpMoreOperationsItemClick{}.OpKey(): build,
-		},
-		Icon: &commodel.Icon{
-			Type: "delete1",
-		},
-	})
+	if definition.Creator == p.sdk.Identity.UserID {
+		items = append(items, commodel.MoreOpItem{
+			ID:   "delete",
+			Text: cputil.I18n(p.sdk.Ctx, "delete"),
+			Operations: map[cptype.OperationKey]cptype.Operation{
+				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
+			},
+			Icon: &commodel.Icon{
+				Type: "delete1",
+			},
+		})
+	}
 	return items
 }
 

@@ -38,7 +38,6 @@ import (
 	imagedb "github.com/erda-project/erda/modules/dicehub/image/db"
 	"github.com/erda-project/erda/modules/dicehub/registry"
 	"github.com/erda-project/erda/modules/dicehub/release/db"
-	"github.com/erda-project/erda/modules/dicehub/release/event"
 	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
 	"github.com/erda-project/erda/modules/dicehub/service/release_rule"
 	"github.com/erda-project/erda/pkg/common/apis"
@@ -1030,9 +1029,6 @@ func (s *ReleaseService) RemoveDeprecatedsReleases(now time.Time) error {
 				logrus.Errorf("[alert] delete release: %s fail, err: %v", release.ReleaseID, err)
 			}
 			logrus.Infof("deleted release: %s", release.ReleaseID)
-
-			// Send release delete event to eventbox
-			event.SendReleaseEvent(event.ReleaseEventDelete, &release)
 		}
 	}
 	return nil
