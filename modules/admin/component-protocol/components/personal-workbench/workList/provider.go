@@ -226,7 +226,6 @@ func (l *WorkList) doFilter() *list.Data {
 		return l.doFilterApp()
 	default:
 		return l.doFilterProj()
-		return nil
 	}
 }
 

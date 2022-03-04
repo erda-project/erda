@@ -117,7 +117,6 @@ func getRDSMetrics(timestamp int64, tags map[string]string, contents []*sls.LogC
 		Tags:      tags,
 		Fields:    fields,
 	}, nil
-	return
 }
 
 func convertTimestampSecondToTimeString(t int64, layout string) string {
