@@ -37,7 +37,7 @@ func TestVolumeTypeToSCName(t *testing.T) {
 			args: args{
 				vendor: apistructs.CSIVendorAlibaba,
 			},
-			want:    apistructs.DiceNFSVolumeSC,
+			want:    apistructs.DiceLocalVolumeSC,
 			wantErr: false,
 		},
 		{
