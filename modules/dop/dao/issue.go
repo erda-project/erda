@@ -1009,7 +1009,7 @@ func (client *DBClient) FindIssueRoot(req apistructs.IssuePagingRequest) ([]Issu
 		sql = sql.Where("a.assignee in (?) or d.assignee in (?)", req.Assignees, req.Assignees)
 	}
 	if len(req.StateBelongs) > 0 {
-		sql = sql.Where("e.belong IN (?)", req.StateBelongs).Where("f.belong IN (?)", req.StateBelongs)
+		sql = sql.Where("e.belong IN (?)", req.StateBelongs)
 	}
 	var res []IssueItem
 	var totalReq uint64
