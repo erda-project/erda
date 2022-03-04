@@ -15,8 +15,6 @@
 package dao
 
 import (
-	"fmt"
-
 	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda/apistructs"
@@ -45,16 +43,14 @@ func (client *DBClient) CreateIssueRelations(issueRelation *IssueRelation) error
 
 func (client *DBClient) IssueRelationsExist(issueRelation *IssueRelation, relatedIssues []uint64) (bool, error) {
 	if issueRelation.Type == apistructs.IssueRelationInclusion {
-		var parent int64
-		if err := client.Table("dice_issue_relation").Where("related_issue in (?) and type = ?", relatedIssues, issueRelation.Type).Count(&parent).Error; err != nil {
+		var count int64
+		if err := client.Table("dice_issue_relation").Where("related_issue in (?) and type = ?", relatedIssues, issueRelation.Type).Count(&count).Error; err != nil {
 			return false, err
 		}
-		if parent > 0 {
-			return false, fmt.Errorf("issues %v contains duplicate issue relations", relatedIssues)
-		}
+		return count > 0, nil
 	}
 	var count int64
-	if err := client.Table("dice_issue_relation").Where("issue_id = ? and related_issue in (?) and type = ?", issueRelation.IssueID, issueRelation.RelatedIssue, issueRelation.Type).Count(&count).Error; err != nil {
+	if err := client.Table("dice_issue_relation").Where("issue_id = ? and related_issue in (?) and type = ?", issueRelation.IssueID, relatedIssues, issueRelation.Type).Count(&count).Error; err != nil {
 		return false, err
 	}
 	return count > 0, nil
