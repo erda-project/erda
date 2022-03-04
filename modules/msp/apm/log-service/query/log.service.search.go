@@ -54,7 +54,12 @@ func (s *logService) PagedSearchFromMonitor(ctx context.Context, req *pb.PagedSe
 		return nil, nil
 	}
 
+	// max allowed size limit to 10000
 	pageSize := req.PageSize
+	if pageSize*req.PageNo > 10000 {
+		pageSize = 10000 - (req.PageNo-1)*pageSize
+	}
+
 	isDescendingOrder := !StringList(req.Sort).All(func(item string) bool { return strings.HasSuffix(item, " asc") })
 	if isDescendingOrder {
 		pageSize = -pageSize
