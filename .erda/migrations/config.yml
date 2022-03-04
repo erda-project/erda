@@ -300,7 +300,7 @@
     "PROCEDURE": true
     "FUNCTION": true
     "DELETE": true
-    "DESC": true
+    "DESC": false
     "DISTINCT": true
     "DROP": true
     "ELSE": true

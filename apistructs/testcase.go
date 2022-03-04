@@ -18,8 +18,9 @@ import "time"
 
 const (
 	// 测试集、用例是否回收
-	RecycledYes bool = true
-	RecycledNo  bool = false
+	RecycledYes           bool = true
+	RecycledNo            bool = false
+	TestCaseDescMaxLength int  = 3000
 )
 
 // TestCase 测试用例详情
