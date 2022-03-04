@@ -18,7 +18,6 @@ package orchestrator
 import (
 	"context"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -45,6 +44,7 @@ import (
 	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/loop"
 	// "terminus.io/dice/telemetry/promxp"
 )
@@ -300,8 +300,9 @@ func cleanLeaderRemainingAddon(ep *endpoints.Endpoints) error {
 			existProjectMap[proID] = struct{}{}
 			return false
 		}
-		if !strings.Contains(err.Error(), "project not found") {
-			logrus.Errorf("[cleanLeaderRemainingAddon] failed to GetProject, prjectID: %s", addon.ProjectID)
+
+		if !errorresp.IsNotFound(err) {
+			logrus.Errorf("[cleanLeaderRemainingAddon] failed to GetProject, prjectID: %s, err: %s", addon.ProjectID, err.Error())
 			return false
 		}
 		// the project is deleted, and should clean the addon
