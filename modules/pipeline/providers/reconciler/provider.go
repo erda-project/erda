@@ -30,7 +30,7 @@ type provider struct {
 	Log logs.Logger
 	Cfg *config
 
-	MySQLXOrm mysqlxorm.Interface
+	MySQLXORM mysqlxorm.Interface
 	Lw        leaderworker.Interface
 
 	r *reconciler.Reconciler

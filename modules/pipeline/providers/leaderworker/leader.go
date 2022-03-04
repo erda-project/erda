@@ -100,6 +100,8 @@ func (p *provider) intervalCleanupDanglingKeysWithoutRetry(ctx context.Context) 
 	}
 	p.lock.Unlock()
 	for _, key := range danglingWorkerHeartbeatKeys {
-		_, _ = p.EtcdClient.Delete(ctx, key)
+		if _, err := p.EtcdClient.Delete(ctx, key); err != nil {
+			p.Log.Errorf("failed to delete dangling key(auto retry), key: %s, err: %v", key, err)
+		}
 	}
 }
