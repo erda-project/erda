@@ -30,6 +30,9 @@ const (
 	//DeployReleaseOp = "deploy-release"
 	ReStartOp = "restart"
 
+	// get all involved app
+	ALLINVOLVEAPP = "allInvolveApp"
+
 	FilterApp             = "app"
 	FilterRuntimeStatus   = "runtimeStatus"
 	FilterDeployStatus    = "deploymentStatus"
