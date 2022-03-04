@@ -38,6 +38,24 @@ func (client *Client) GetPipelineDefinition(id string, ops ...SessionOption) (*d
 	return &pipelineDefinition, nil
 }
 
+func (client *Client) GetPipelineDefinitionByPipelineID(pipelineID uint64, ops ...SessionOption) (*db.PipelineDefinition, bool, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var pipelineDefinition db.PipelineDefinition
+	var has bool
+	var err error
+	if has, _, err = session.Where("pipeline_id = ? and soft_deleted_at = 0", pipelineID).GetFirst(&pipelineDefinition).GetResult(); err != nil {
+		return nil, false, err
+	}
+
+	if !has {
+		return nil, false, nil
+	}
+
+	return &pipelineDefinition, true, nil
+}
+
 func (client *Client) UpdatePipelineDefinition(id string, pipelineDefinition *db.PipelineDefinition, ops ...SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
