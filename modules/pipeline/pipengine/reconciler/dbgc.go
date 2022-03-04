@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 
 	v3 "github.com/coreos/etcd/clientv3"
@@ -237,6 +238,23 @@ func (r *Reconciler) DoDBGC(pipelineID uint64, gcOption apistructs.PipelineGCDBO
 	if !exist {
 		logrus.Infof("dbgc: no need to gc db, pipeline already not exist in db, pipelineID: %d", pipelineID)
 		return nil
+	}
+
+	// If the pipeline is referenced by the definition and the record is GC
+	// the definition cannot see the execution record.
+	// There are two ways:
+	// 		one is to update the definition information contact binding
+	//	 	and the other is not to go to the GC pipeline record
+	// It is decided not to record this pipeline
+	if strings.TrimSpace(p.PipelineDefinitionID) != "" {
+		definition, _, err := r.dbClient.GetPipelineDefinitionByPipelineID(p.PipelineID)
+		if err != nil {
+			logrus.Errorf("[alert] dbgc: failed to GetPipelineDefinitionByPipelineID, id: %d, err: %v", p.ID, err)
+		}
+		if definition != nil {
+			logrus.Infof("[alert] dbgc: referenced by definition can not gc pipeline id: %v", p.PipelineID)
+			return nil
+		}
 	}
 
 	if gcOption.NeedArchive {
