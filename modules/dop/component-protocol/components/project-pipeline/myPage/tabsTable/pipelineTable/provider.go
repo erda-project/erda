@@ -483,7 +483,8 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			},
 		})
 	}
-	if v, ok := ymlSourceMapCronMap[definitionYmlSourceMap[definition.ID]]; ok {
+
+	if v, ok := ymlSourceMapCronMap[definitionYmlSourceMap[definition.ID]]; ok && strings.TrimSpace(v.CronExpr) != "" {
 		items = append(items, commodel.MoreOpItem{
 			ID: func() string {
 				if *v.Enable {
@@ -497,7 +498,6 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 				}
 				return "cron"
 			}()),
-
 			Icon: func() *commodel.Icon {
 				if *v.Enable {
 					return &commodel.Icon{
@@ -510,17 +510,6 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			}(),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
-			},
-		})
-	} else {
-		items = append(items, commodel.MoreOpItem{
-			ID:   "cron",
-			Text: cputil.I18n(p.sdk.Ctx, "cron"),
-			Operations: map[cptype.OperationKey]cptype.Operation{
-				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
-			},
-			Icon: &commodel.Icon{
-				Type: "start-timing",
 			},
 		})
 	}
