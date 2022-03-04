@@ -140,16 +140,7 @@ func (t *Title) Render(ctx context.Context, c *apistructs.Component, scenario ap
 		return err
 	}
 	t.Props.Visible = true
-	if t.State.ProsNum == 0 {
-		t.setProps(0)
-	} else {
-		//unDoneIssueNum, err := t.getUndoneIssueNum()
-		//if err != nil {
-		//	return err
-		//}
-		//t.setProps(unDoneIssueNum)
-		t.setProps(0)
-	}
+	t.setProps(0)
 	if t.ctxBdl.Identity.OrgID == "" {
 		t.Props.Subtitle = ""
 	}
