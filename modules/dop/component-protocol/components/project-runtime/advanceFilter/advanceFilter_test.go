@@ -16,6 +16,7 @@ package page
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -155,6 +156,44 @@ func TestAdvanceFilter_generateUrlQueryParams1(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			af := &AdvanceFilter{}
 			af.generateUrlQueryParams(tt.args.Values)
+		})
+	}
+}
+
+func Test_getAppSelectCondition(t *testing.T) {
+	type args struct {
+		sdk  *cptype.SDK
+		keys map[string]bool
+		key  string
+	}
+	tests := []struct {
+		name string
+		args args
+		want Condition
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{keys: map[string]bool{}, sdk: defaultSDK},
+			want: Condition{
+				Key:         "",
+				Label:       "",
+				Placeholder: "",
+				Type:        "select",
+				Options: []Option{
+					{
+						Value: "allInvolveApp",
+						Label: "allInvolveApp",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getAppSelectCondition(tt.args.sdk, tt.args.keys, tt.args.key); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getAppSelectCondition() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
