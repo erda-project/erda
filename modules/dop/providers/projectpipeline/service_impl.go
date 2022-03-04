@@ -1115,7 +1115,7 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
-	totalActionNum, err := countActionNumByPipelineYml(pipelineYml)
+	totalActionNum, err := pipelineyml.CountActionNumByPipelineYml(pipelineYml)
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
@@ -1133,19 +1133,6 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
 	return value, nil
-}
-
-func countActionNumByPipelineYml(pipelineYmlStr string) (int64, error) {
-	pipelineYml, err := pipelineyml.New([]byte(pipelineYmlStr))
-	if err != nil {
-		return 0, apierrors.ErrCreateProjectPipeline.InternalError(err)
-	}
-
-	var totalActionNum int64
-	pipelineYml.Spec().LoopStagesActions(func(stage int, action *pipelineyml.Action) {
-		totalActionNum++
-	})
-	return totalActionNum, nil
 }
 
 func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListAppRequest) (*pb.ListAppResponse, error) {
