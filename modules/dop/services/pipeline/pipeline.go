@@ -368,8 +368,7 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 	pv2.ConfigManageNamespaces = append(pv2.ConfigManageNamespaces, ns...)
 
 	// label
-	// orchestrator judge the branch to get workspace,so dop don't need add workspace to labels
-	//labels[apistructs.LabelDiceWorkspace] = workspace
+	labels[apistructs.LabelDiceWorkspace] = workspace
 	labels[apistructs.LabelBranch] = pv1.Branch
 	labels[apistructs.LabelOrgID] = strconv.FormatUint(app.OrgID, 10)
 	labels[apistructs.LabelProjectID] = strconv.FormatUint(app.ProjectID, 10)
