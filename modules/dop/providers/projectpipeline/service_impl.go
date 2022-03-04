@@ -24,7 +24,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -41,8 +40,6 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml"
-	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
 
 type CategoryType string
@@ -813,22 +810,6 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 	if err != nil {
 		return nil, apiError.InternalError(err)
 	}
-
-	definitionUpdateReq := &dpb.PipelineDefinitionUpdateRequest{
-		PipelineDefinitionID: definition.ID,
-		Status:               string(apistructs.StatusRunning),
-		Executor:             identityInfo.UserID,
-		EndedAt:              timestamppb.New(*mysql_time.GetMysqlDefaultTime()),
-		PipelineID:           int64(dto.ID)}
-	if rerun {
-		definitionUpdateReq.ExecutedActionNum = -1
-		definitionUpdateReq.StartedAt = timestamppb.New(time.Now())
-	}
-
-	_, err = p.PipelineDefinition.Update(context.Background(), definitionUpdateReq)
-	if err != nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
-	}
 	return dto, nil
 }
 
@@ -1112,23 +1093,6 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	createV2.UserID = identityInfo.UserID
 
 	value, err := p.bundle.CreatePipeline(createV2)
-	if err != nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
-	}
-	totalActionNum, err := pipelineyml.CountActionNumByPipelineYml(pipelineYml)
-	if err != nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
-	}
-	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{
-		PipelineDefinitionID: definition.ID,
-		Status:               string(apistructs.StatusRunning),
-		Executor:             identityInfo.UserID,
-		StartedAt:            timestamppb.New(time.Now()),
-		EndedAt:              timestamppb.New(*mysql_time.GetMysqlDefaultTime()),
-		TotalActionNum:       totalActionNum,
-		ExecutedActionNum:    -1,
-		CostTime:             -1,
-		PipelineID:           int64(value.ID)})
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}

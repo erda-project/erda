@@ -27,14 +27,11 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/thirdparty/gittarutil"
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/providers/definition/db"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/loop"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml"
-	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
 
 // RunCronPipelineFunc 定时触发时会先创建 pipeline 记录，然后尝试执行；
@@ -98,7 +95,7 @@ func (s *PipelineSvc) RunCronPipelineFunc(id uint64) {
 	pc.Extra.NormalLabels[apistructs.LabelPipelineCronID] = strconv.FormatUint(pc.ID, 10)
 
 	// 使用 v2 方式创建定时流水线
-	pipeline, err := s.CreateV2(&apistructs.PipelineCreateRequestV2{
+	_, err = s.CreateV2(&apistructs.PipelineCreateRequestV2{
 		PipelineYml:            pc.Extra.PipelineYml,
 		ClusterName:            pc.Extra.ClusterName,
 		PipelineYmlName:        pc.PipelineYmlName,
@@ -115,33 +112,6 @@ func (s *PipelineSvc) RunCronPipelineFunc(id uint64) {
 		},
 		DefinitionID: pc.PipelineDefinitionID,
 	})
-	if err != nil {
-		return
-	}
-	// update pipeline definition
-	if pc.PipelineDefinitionID != "" {
-		var (
-			definition     *db.PipelineDefinition
-			totalActionNum int64
-		)
-		definition, err = s.dbClient.GetPipelineDefinition(pc.PipelineDefinitionID)
-		if err != nil {
-			return
-		}
-		totalActionNum, err = pipelineyml.CountActionNumByPipelineYml(pc.Extra.PipelineYml)
-		if err != nil {
-			return
-		}
-		definition.TotalActionNum = totalActionNum
-		definition.ExecutedActionNum = -1
-		definition.Status = string(apistructs.StatusRunning)
-		definition.Executor = pc.GetUserID()
-		definition.StartedAt = time.Now()
-		definition.EndedAt = *mysql_time.GetMysqlDefaultTime()
-		definition.CostTime = -1
-		definition.PipelineID = pipeline.PipelineID
-		err = s.dbClient.UpdatePipelineDefinition(definition.ID, definition)
-	}
 }
 
 // 更新老数据

@@ -25,11 +25,13 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
+	"github.com/erda-project/erda/modules/pipeline/providers/definition/db"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/expression"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
+	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
 
 func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pipeline, error) {
@@ -133,7 +135,42 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 	// send to pipengine reconciler
 	s.engine.Send(p.ID)
 
+	// update pipeline definition
+	if err = s.updatePipelineDefinition(p); err != nil {
+		logrus.Errorf("failed to updatePipelineDefinition,err: %s", err.Error())
+	}
+
 	return &p, nil
+}
+
+func (s *PipelineSvc) updatePipelineDefinition(p spec.Pipeline) error {
+	if p.PipelineDefinitionID == "" {
+		return nil
+	}
+	var (
+		definition     *db.PipelineDefinition
+		totalActionNum int64
+		err            error
+	)
+	definition, err = s.dbClient.GetPipelineDefinition(p.PipelineDefinitionID)
+	if err != nil {
+		return err
+	}
+	totalActionNum, err = pipelineyml.CountActionNumByPipelineYml(p.PipelineYml)
+	if err != nil {
+		return err
+	}
+	definition.TotalActionNum = totalActionNum
+	definition.Status = string(apistructs.StatusRunning)
+	definition.Executor = p.GetUserID()
+	definition.EndedAt = *mysql_time.GetMysqlDefaultTime()
+	definition.PipelineID = p.PipelineID
+	if p.Type != apistructs.PipelineTypeRerunFailed {
+		definition.ExecutedActionNum = -1
+		definition.StartedAt = time.Now()
+		definition.CostTime = -1
+	}
+	return s.dbClient.UpdatePipelineDefinition(definition.ID, definition)
 }
 
 func getRealRunParams(runParams []apistructs.PipelineRunParam, yml string) (result apistructs.PipelineRunParams, err error) {
