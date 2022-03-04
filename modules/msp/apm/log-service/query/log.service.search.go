@@ -76,7 +76,7 @@ func (s *logService) PagedSearchFromMonitor(ctx context.Context, req *pb.PagedSe
 			Highlight:               req.Highlight,
 			OrgName:                 apis.GetHeader(ctx, "Org"),
 			IgnoreMaxTimeRangeLimit: true,
-			PreferredBufferSize:     int32(req.PageSize),
+			PreferredBufferSize:     int32(pageSize),
 		},
 		Count: pageSize,
 		Debug: req.Debug,
