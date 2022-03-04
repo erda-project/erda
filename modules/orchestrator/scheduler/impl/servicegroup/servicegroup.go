@@ -30,7 +30,6 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/executortypes"
-	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cluster/clusterutil"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/task"
@@ -225,14 +224,14 @@ func convertServiceGroup(req apistructs.ServiceGroupCreateV2Request, clusterinfo
 		// check eci enabled
 		enableECI := false
 		for k, v := range service.Labels {
-			if k == k8s.ECIPodLabel && v == "true" {
+			if k == apistructs.AlibabaECILabel && v == "true" {
 				enableECI = true
 				break
 			}
 		}
 
 		for k, v := range service.Deployments.Labels {
-			if k == k8s.ECIPodLabel && v == "true" {
+			if k == apistructs.AlibabaECILabel && v == "true" {
 				enableECI = true
 				break
 			}
@@ -430,13 +429,16 @@ func setServiceVolumes(clusterName string, service *diceyml.Service, clusterinfo
 		if v.Capacity < diceyml.AddonVolumeSizeMin {
 			v.Capacity = diceyml.AddonVolumeSizeMin
 		}
-		// 大于 2000，修正为 2000
+		// 大于 32768，修正为 32768
 		if v.Capacity >= diceyml.AddonVolumeSizeMax {
 			v.Capacity = diceyml.AddonVolumeSizeMax
 		}
 
 		if v.Path != "" && v.TargetPath != "" && v.Path != v.TargetPath {
-			return []apistructs.Volume{}, errors.New("if path and taragetPath set in volume, they must same.")
+			return []apistructs.Volume{}, errors.New("if path and targetPath set in volume, they must same.")
+		}
+		if v.TargetPath == "" && v.Path != "" {
+			v.TargetPath = v.Path
 		}
 		// 卷映射的容器目录合法性检查
 		if v.TargetPath == "" || v.TargetPath == "/" {

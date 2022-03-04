@@ -12,16 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package apierrors
+package core_services
 
-import "github.com/erda-project/erda/pkg/http/httpserver/errorresp"
-
-var (
-	ErrInvoke            = err("ErrInvoke", "调用失败")
-	ErrUnavailableClient = err("ErrUnavailableClient", "客户端不可用")
-	ErrInvalidParameter  = err("ErrInvalidParameter", "参数无效")
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-func err(template, defaultValue string) *errorresp.APIError {
-	return errorresp.New(errorresp.WithTemplateMessage(template, defaultValue))
+var CMDB_PROJECT_WORKSPACE_ABILITIES_UPDATE = apis.ApiSpec{
+	Path:        "/api/project-workspace-abilities",
+	BackendPath: "/api/project-workspace-abilities",
+	Host:        "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Scheme:      "http",
+	Method:      "PUT",
+	CheckLogin:  true,
+	CheckToken:  true,
+	IsOpenAPI:   true,
+	RequestType: apistructs.ProjectWorkSpaceAbility{},
+	Doc:         "summary: 更新项目环境能力",
 }

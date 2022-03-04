@@ -461,8 +461,8 @@ func (h *DefaultDeployHandler) GetResourceInfo(req *ResourceDeployRequest) (*Res
 		}
 
 		// alibabacloud.com/eci
-		if _, ok := req.Options[diceyml.AddonEnableECI]; ok {
-			addon.Options[diceyml.AddonEnableECI] = req.Options[diceyml.AddonEnableECI]
+		if _, ok := req.Options[apistructs.AlibabaECILabel]; ok {
+			addon.Options[apistructs.AlibabaECILabel] = req.Options[apistructs.AlibabaECILabel]
 		}
 
 		// addonSnapMaxHistory

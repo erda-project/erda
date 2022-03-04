@@ -895,11 +895,17 @@ func (fsm *DeployFSMContext) deployService() error {
 		return err
 	}
 
+	projectECI := utils.IsProjectECIEnable(fsm.bdl, fsm.Runtime.ProjectID, fsm.Runtime.Workspace, fsm.Runtime.OrgID, fsm.Runtime.Creator)
 	// generate request
 	group := apistructs.ServiceGroupCreateV2Request{}
-	usedAddonInsMap, usedAddonTenantMap, err := fsm.generateDeployServiceRequest(&group, *projectAddons, projectAddonTenants)
+	usedAddonInsMap, usedAddonTenantMap, err := fsm.generateDeployServiceRequest(&group, *projectAddons, projectAddonTenants, projectECI)
 	if err != nil {
 		return err
+	}
+
+	if projectECI {
+		// TODO: vendor need get by cluster
+		utils.AddECIConfigToServiceGroupCreateV2Request(&group, apistructs.ECIVendorAlibaba)
 	}
 
 	// precheck，检查标签匹配，如果没有机器能匹配上，走下去也是pending的
@@ -1024,7 +1030,8 @@ func (fsm *DeployFSMContext) UpdateServiceGroupWithLoop(group apistructs.Service
 
 func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.ServiceGroupCreateV2Request,
 	projectAddons []dbclient.AddonInstanceRouting,
-	projectAddonTenants []dbclient.AddonInstanceTenant) (
+	projectAddonTenants []dbclient.AddonInstanceTenant,
+	projectECI bool) (
 	map[string]dbclient.AddonInstanceRouting, map[string]dbclient.AddonInstanceTenant, error) {
 	// prepare context
 	deployment := fsm.Deployment
@@ -1121,7 +1128,7 @@ func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.Serv
 	usedAddonTenantMap := map[string]dbclient.AddonInstanceTenant{}
 	for name, serv := range obj.Services {
 		usedAddonInsMap_, usedAddonTenantMap_, err := fsm.convertService(name, serv, obj.Meta, env, groupEnv, groupFileconfigs,
-			runtime, projectAddons, projectAddonTenants)
+			runtime, projectAddons, projectAddonTenants, projectECI)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1516,16 +1523,24 @@ func BuildVolumeRootDir(runtime *dbclient.Runtime) string {
 func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml.Service,
 	groupLabels map[string]string, addonEnv map[string]string, groupEnv, groupFileconfigs map[string]string,
 	runtime *dbclient.Runtime, projectAddons []dbclient.AddonInstanceRouting,
-	projectAddonTenants []dbclient.AddonInstanceTenant) (map[string]dbclient.AddonInstanceRouting, map[string]dbclient.AddonInstanceTenant, error) {
+	projectAddonTenants []dbclient.AddonInstanceTenant, projectECI bool) (map[string]dbclient.AddonInstanceRouting, map[string]dbclient.AddonInstanceTenant, error) {
 
+	newVolumes := make([]diceyml.Volume, 0)
 	// 用于兼容使用旧的 volume 定义方式的 volume，避免创建新 volume
 	oldTypeVolumes := make([]diceyml.Volume, 0)
-	newVolumes := make([]diceyml.Volume, 0)
-	for _, vol := range service.Volumes {
-		if vol.Storage != "" {
-			oldTypeVolumes = append(oldTypeVolumes, vol)
-		} else {
-			newVolumes = append(newVolumes, vol)
+
+	if projectECI {
+		// 全部使用新的 volumes 定义
+		for _, vol := range service.Volumes {
+			newVolumes = append(newVolumes, utils.ConvertVolume(vol))
+		}
+	} else {
+		for _, vol := range service.Volumes {
+			if vol.Path != "" {
+				oldTypeVolumes = append(oldTypeVolumes, vol)
+			} else {
+				newVolumes = append(newVolumes, vol)
+			}
 		}
 	}
 
