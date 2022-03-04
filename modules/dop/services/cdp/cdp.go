@@ -28,6 +28,11 @@ import (
 	"github.com/erda-project/erda/modules/dop/conf"
 )
 
+var (
+	defaultMaxLogLines   = 10
+	defaultMaxLogColumns = 1024
+)
+
 // CDP pipeline 结构体
 type CDP struct {
 	bdl *bundle.Bundle
@@ -117,7 +122,7 @@ func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent
 			//失败情况尝输出错误日志
 			if notifyItem.Name == "Failed" {
 				time.Sleep(time.Second * 5)
-				failedDetailLogs, err := cdp.getFailedTaskLogs(pipelineDetail)
+				failedDetailLogs, err := cdp.getFailedTaskLogs(pipelineDetail, true)
 				if err != nil {
 					logrus.Errorf("get cdp workflow's failed log err: %v", err)
 					continue
@@ -184,7 +189,7 @@ func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent
 			if notifyItem.Name == "pipeline_failed" {
 				// 等待日志采集
 				time.Sleep(time.Second * 5)
-				failedDetailLogs, err := cdp.getFailedTaskLogs(pipelineDetail)
+				failedDetailLogs, err := cdp.getFailedTaskLogs(pipelineDetail, true)
 				if err != nil {
 					logrus.Errorf("get cdp workflow's failed log err: %v", err)
 					failedDetailLogs = "Log cannot be displayed"
@@ -222,7 +227,7 @@ func (cdp *CDP) CdpNotifyProcess(pipelineEvent *apistructs.PipelineInstanceEvent
 	return nil
 }
 
-func (cdp *CDP) getFailedTaskLogs(pipelineDetail *apistructs.PipelineDetailDTO) (string, error) {
+func (cdp *CDP) getFailedTaskLogs(pipelineDetail *apistructs.PipelineDetailDTO, withTruncate bool) (string, error) {
 	failedTasks := map[string]string{}
 	for _, stage := range pipelineDetail.PipelineStages {
 		for _, task := range stage.PipelineTasks {
@@ -263,7 +268,10 @@ func (cdp *CDP) getFailedTaskLogs(pipelineDetail *apistructs.PipelineDetailDTO) 
 		for _, line := range stdOut.Lines {
 			stdoutLines += line.Content + "\n"
 		}
-
+		if withTruncate {
+			stderrLines = truncateLog(stderrLines, defaultMaxLogLines, defaultMaxLogColumns)
+			stdoutLines = truncateLog(stdoutLines, defaultMaxLogLines, defaultMaxLogColumns)
+		}
 		if len(stdoutLines) > 0 {
 			failedDetailLogs += fmt.Sprintf(`<p>%s stdout:</p>
 <pre style="background:#E8E8E8"><code>%s</pre></code>`, taskName, stdoutLines)
@@ -275,4 +283,26 @@ func (cdp *CDP) getFailedTaskLogs(pipelineDetail *apistructs.PipelineDetailDTO) 
 		}
 	}
 	return failedDetailLogs, nil
+}
+
+// truncateLog return truncated logs with given lines and columns
+func truncateLog(sourceLogs string, lines int, columns int) string {
+	if lines <= 0 || columns <= 0 {
+		return sourceLogs
+	}
+	logSplits := strings.Split(sourceLogs, "\n")
+	if len(logSplits) == 0 {
+		return sourceLogs
+	}
+	// truncate log line if larger than the given
+	if len(logSplits) >= lines {
+		logSplits = logSplits[len(logSplits)-lines:]
+	}
+	// truncate log column if larger than the given
+	for i := range logSplits {
+		if len(logSplits[i]) > columns {
+			logSplits[i] = logSplits[i][:columns] + "..."
+		}
+	}
+	return strings.Join(logSplits, "\n")
 }
