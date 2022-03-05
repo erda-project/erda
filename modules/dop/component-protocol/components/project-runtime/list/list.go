@@ -352,10 +352,16 @@ func (p *List) getData() *list.Data {
 	//	logrus.Errorf("failed to get oid ,%v", err)
 	//	return data
 	//}
+	myAppNames := make(map[string]bool)
 
 	userReq := apistructs.UserListRequest{}
 	for _, runtime := range runtimes {
 		userReq.UserIDs = append(userReq.UserIDs, runtime.LastOperator)
+		for _, appName2 := range myApp {
+			if runtimeIdToAppNameMap[runtime.ID] == appName2 {
+				myAppNames[appName2] = true
+			}
+		}
 	}
 	logrus.Infof("start load users %v", time.Now())
 
@@ -445,6 +451,12 @@ func (p *List) getData() *list.Data {
 	for k, v := range advancedFilter {
 		filter[k] = make(map[string]bool)
 		for _, value := range v {
+			if k == common.FilterApp && value == common.ALLINVOLVEAPP {
+				filter[k] = make(map[string]bool)
+				for str := range myAppNames {
+					filter[k][str] = true
+				}
+			}
 			filter[k][value] = true
 		}
 	}

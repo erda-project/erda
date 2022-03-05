@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda-proto-go/msp/apm/log-service/pb"
 	"github.com/erda-project/erda/modules/extensions/loghub/index/query"
 	"github.com/erda-project/erda/pkg/common/apis"
+	"github.com/erda-project/erda/pkg/math"
 )
 
 func (s *logService) PagedSearchFromMonitor(ctx context.Context, req *pb.PagedSearchRequest) (*pb.PagedSearchResponse, error) {
@@ -54,7 +55,12 @@ func (s *logService) PagedSearchFromMonitor(ctx context.Context, req *pb.PagedSe
 		return nil, nil
 	}
 
+	// max allowed size limit to 10000
 	pageSize := req.PageSize
+	if pageSize*req.PageNo > 10000 {
+		pageSize = 10000 - (req.PageNo-1)*pageSize
+	}
+
 	isDescendingOrder := !StringList(req.Sort).All(func(item string) bool { return strings.HasSuffix(item, " asc") })
 	if isDescendingOrder {
 		pageSize = -pageSize
@@ -71,7 +77,7 @@ func (s *logService) PagedSearchFromMonitor(ctx context.Context, req *pb.PagedSe
 			Highlight:               req.Highlight,
 			OrgName:                 apis.GetHeader(ctx, "Org"),
 			IgnoreMaxTimeRangeLimit: true,
-			PreferredBufferSize:     int32(req.PageSize),
+			PreferredBufferSize:     int32(math.AbsInt64(pageSize)),
 		},
 		Count: pageSize,
 		Debug: req.Debug,

@@ -253,13 +253,14 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 	if _, ok := (*sdk.GlobalState)["getAll"]; ok {
 		state := State{}
 		myAppNames := make([]string, 0)
-		for appName := range appNameMap {
-			for _, appName2 := range myApp {
-				if appName == appName2 {
-					myAppNames = append(myAppNames, appName)
-				}
-			}
-		}
+		myAppNames = append(myAppNames, common.ALLINVOLVEAPP)
+		//for appName := range appNameMap {
+		//	for _, appName2 := range myApp {
+		//		if appName == appName2 {
+		//			myAppNames = append(myAppNames, appName)
+		//		}
+		//	}
+		//}
 		af.Values = cptype.ExtraMap{"app": myAppNames}
 		common.Transfer(af.Values, &state)
 		stdState := cptype.ExtraMap{}
@@ -276,11 +277,11 @@ func (af *AdvanceFilter) getData(sdk *cptype.SDK) *filter.Data {
 	// filter values
 
 	var conds []Condition
-	conds = append(conds, getSelectCondition(sdk, deploymentStatusMap, "deploymentStatus"))
-	//conds = append(conds, getSelectCondition(sdk, runtimeStatusMap, "runtimeStatus"))
-	conds = append(conds, getSelectCondition(sdk, appNameMap, "app"))
-	conds = append(conds, getSelectCondition(sdk, deploymentOrderNameMap, "deploymentOrderName"))
-	//conds = append(conds, getRangeCondition(sdk, "deployTime"))
+	conds = append(conds, getSelectCondition(sdk, deploymentStatusMap, common.FilterDeployStatus))
+	//conds = append(conds, getSelectCondition(sdk, runtimeStatusMap, common.FilterRuntimeStatus))
+	conds = append(conds, getAppSelectCondition(sdk, appNameMap, common.FilterApp))
+	conds = append(conds, getSelectCondition(sdk, deploymentOrderNameMap, common.FilterDeployOrderName))
+	//conds = append(conds, getRangeCondition(sdk, common.FilterDeployTime))
 	err = common.Transfer(conds, &data.Conditions)
 	if err != nil {
 		return nil
@@ -296,6 +297,29 @@ func (af *AdvanceFilter) getOperation() map[cptype.OperationKey]cptype.Operation
 		"filter": {},
 	}
 }
+func getAppSelectCondition(sdk *cptype.SDK, keys map[string]bool, key string) Condition {
+
+	c := Condition{
+		Key:         key,
+		Label:       sdk.I18n(key),
+		Placeholder: sdk.I18n(placeHolders[key]),
+		Options: []Option{
+			{
+				Label: sdk.I18n(common.ALLINVOLVEAPP),
+				Value: common.ALLINVOLVEAPP,
+			},
+		},
+		Type: "select",
+	}
+	for k := range keys {
+		c.Options = append(c.Options, Option{
+			Label: sdk.I18n(k),
+			Value: k,
+		})
+	}
+	return c
+}
+
 func getSelectCondition(sdk *cptype.SDK, keys map[string]bool, key string) Condition {
 
 	c := Condition{

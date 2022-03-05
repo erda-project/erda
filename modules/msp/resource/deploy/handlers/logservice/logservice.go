@@ -31,6 +31,39 @@ func (p *provider) IsMatch(tmc *db.Tmc) bool {
 	return tmc.Engine == handlers.ResourceLogService
 }
 
+func (p *provider) CheckIfNeedTmcInstance(req *handlers.ResourceDeployRequest, resourceInfo *handlers.ResourceInfo) (*db.Instance, bool, error) {
+	tmcInstance, needDeploy, err := p.DefaultDeployHandler.CheckIfNeedTmcInstance(req, resourceInfo)
+
+	orgId := req.Options["orgId"]
+	if len(orgId) == 0 {
+		return tmcInstance, needDeploy, err
+	}
+
+	// if log_deployment already exists for the org or cluster, duplicate it for requesting org and cluster
+	deployment, _ := p.LogDeploymentDb.GetByClusterNameAndOrgId(req.Az, orgId, db.LogTypeLogService)
+	if deployment != nil {
+		return tmcInstance, needDeploy, err
+	}
+
+	deployment, _ = p.LogDeploymentDb.GetByOrgId(orgId, db.LogTypeLogService)
+	if deployment == nil {
+		deployment, _ = p.LogDeploymentDb.GetByClusterName(req.Az, db.LogTypeLogService)
+	}
+
+	if deployment == nil {
+		return tmcInstance, needDeploy, err
+	}
+
+	deployment.ID = 0
+	deployment.ClusterName = req.Az
+	deployment.OrgId = orgId
+	if err := p.LogDeploymentDb.Save(&deployment).Error; err != nil && p.Log != nil {
+		p.Log.Warnf("failed to duplicate log-deployment")
+	}
+
+	return tmcInstance, needDeploy, err
+}
+
 func (p *provider) DoPostDeployJob(tmcInstance *db.Instance, serviceGroupDeployResult interface{}, clusterConfig map[string]string) (map[string]string, error) {
 	config := map[string]string{}
 	options := map[string]string{}
