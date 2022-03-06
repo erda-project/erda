@@ -78,11 +78,16 @@ func (p *provider) getWorkerIDFromEtcdWorkerKey(key string, typ worker.Type) wor
 	return worker.ID(strutil.TrimPrefixes(key, prefix))
 }
 
-func (p *provider) makeEtcdWorkerLogicTaskListenPrefix(workerID worker.ID) string {
-	return filepath.Clean(filepath.Join(p.Cfg.Worker.EtcdKeyPrefixWithSlash, "listen-logic-task", workerID.String())) + "/"
+func (p *provider) makeEtcdWorkerGeneralDispatchPrefix() string {
+	return filepath.Join(p.Cfg.Worker.EtcdKeyPrefixWithSlash, "dispatch/worker") + "/"
 }
 
-// $prefix/worker/dispatch/$workerID/$logicTaskID(such as: pipelineID)
+func (p *provider) makeEtcdWorkerLogicTaskListenPrefix(workerID worker.ID) string {
+	prefix := p.makeEtcdWorkerGeneralDispatchPrefix()
+	return filepath.Join(prefix, workerID.String(), "task") + "/"
+}
+
+// $prefix/worker/dispatch/worker/$workerID/task/$logicTaskID(such as: pipelineID)
 func (p *provider) makeEtcdWorkerTaskDispatchKey(workerID worker.ID, logicTaskID worker.TaskLogicID) string {
 	prefix := p.makeEtcdWorkerLogicTaskListenPrefix(workerID)
 	return filepath.Join(prefix, logicTaskID.String())

@@ -50,6 +50,20 @@ func (p *provider) getWorkerTaskLogicIDFromIncomingKey(workerID worker.ID, key s
 	return strutil.TrimPrefixes(key, prefix)
 }
 
+// see: makeEtcdWorkerTaskDispatchKey
+func (p *provider) getWorkerIDFromIncomingKey(key string) worker.ID {
+	prefix := p.makeEtcdWorkerGeneralDispatchPrefix()
+	if !strutil.HasPrefixes(key, prefix) {
+		return ""
+	}
+	workerIDAndSuffix := strutil.TrimPrefixes(key, prefix)
+	workerIDAndLogicTaskID := strutil.Split(workerIDAndSuffix, "/task/")
+	if len(workerIDAndLogicTaskID) != 2 {
+		return ""
+	}
+	return worker.ID(workerIDAndLogicTaskID[0])
+}
+
 func (p *provider) getWorkerLastHeartbeatUnixTime(ctx context.Context, workerID worker.ID) (lastHeartbeatUnitTime int64, err error, needRetry bool) {
 	getResp, err := p.EtcdClient.Get(ctx, p.makeEtcdWorkerHeartbeatKey(workerID))
 	if err != nil {
@@ -177,12 +191,14 @@ func (p *provider) workerListenIncomingLogicTask(ctx context.Context, w worker.W
 			// delete task key means task done
 			for {
 				_, err := p.EtcdClient.Delete(context.Background(), key)
-				if err == nil {
-					return
+				if err != nil {
+					break
 				}
 				p.Log.Warnf("failed to delete incoming logic task key after done(auto retry), key: %s, logicTaskID: %s, err: %v", key, taskLogicID, err)
 				time.Sleep(p.Cfg.Worker.Task.RetryDeleteTaskInterval)
 			}
+			// remove from task worker assign map
+			p.removeFromTaskWorkerAssignMap(taskLogicID, w.GetID())
 		}()
 	},
 		nil,
@@ -334,12 +350,41 @@ func (p *provider) workerHandleDelete(ctx context.Context, w worker.Worker) {
 
 func (p *provider) workerIntervalCleanupOnDelete(ctx context.Context, ev Event) {
 	// delete heartbeat key
-	for {
-		_, err := p.EtcdClient.Delete(ctx, p.makeEtcdWorkerHeartbeatKey(ev.WorkerID))
-		if err == nil {
-			return
+	go func() {
+		for {
+			_, err := p.EtcdClient.Delete(ctx, p.makeEtcdWorkerHeartbeatKey(ev.WorkerID))
+			if err == nil {
+				return
+			}
+			p.Log.Errorf("failed to do worker interval cleanup on delete(auto retry), step: delete heartbeat key, workerID: %s, err: %v", ev.WorkerID, err)
+			time.Sleep(p.Cfg.Worker.RetryInterval)
 		}
-		p.Log.Errorf("failed to do worker interval cleanup on delete(auto retry), workerID: %s, err: %v", ev.WorkerID, err)
-		time.Sleep(p.Cfg.Worker.RetryInterval)
+	}()
+	// delete dispatch key
+	go func() {
+		for {
+			_, err := p.EtcdClient.Delete(ctx, p.makeEtcdWorkerLogicTaskListenPrefix(ev.WorkerID), clientv3.WithPrefix())
+			if err == nil {
+				return
+			}
+			p.Log.Errorf("failed to do worker interval cleanup on delete(auto retry), step: delete dispatch key, workerID: %s, err: %v", ev.WorkerID, err)
+			time.Sleep(p.Cfg.Worker.RetryInterval)
+		}
+	}()
+}
+
+func (p *provider) listWorkerTasks(ctx context.Context, workerID worker.ID) ([]worker.Tasker, error) {
+	prefix := p.makeEtcdWorkerLogicTaskListenPrefix(workerID)
+	resp, err := p.EtcdClient.Get(ctx, prefix, clientv3.WithPrefix())
+	if err != nil {
+		return nil, err
 	}
+	var tasks []worker.Tasker
+	for _, kv := range resp.Kvs {
+		logicTaskID := p.getWorkerTaskLogicIDFromIncomingKey(workerID, string(kv.Key))
+		logicTaskData := kv.Value
+		task := worker.NewTasker(worker.TaskLogicID(logicTaskID), logicTaskData)
+		tasks = append(tasks, task)
+	}
+	return tasks, nil
 }

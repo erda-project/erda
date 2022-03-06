@@ -31,6 +31,7 @@ type Interface interface {
 	OnLeader(func(context.Context))
 	AssignLogicTaskToWorker(ctx context.Context, workerID worker.ID, logicTask worker.Tasker) error
 	ListenPrefix(ctx context.Context, prefix string, putHandler, deleteHandler func(context.Context, *clientv3.Event))
+	IsTaskHandling(ctx context.Context, logicTaskID worker.TaskLogicID) (bool, worker.ID)
 }
 
 func (p *provider) RegisterCandidateWorker(ctx context.Context, w worker.Worker) error {
@@ -98,6 +99,10 @@ func (p *provider) WorkerHandlerOnWorkerDelete(h WorkerDeleteHandler) {
 
 func (p *provider) AssignLogicTaskToWorker(ctx context.Context, workerID worker.ID, task worker.Tasker) error {
 	_, err := p.EtcdClient.Put(ctx, p.makeEtcdWorkerTaskDispatchKey(workerID, task.GetLogicID()), string(task.GetData()))
+	if err != nil {
+		return err
+	}
+	p.addToTaskWorkerAssignMap(task.GetLogicID(), workerID)
 	return err
 }
 
@@ -105,4 +110,11 @@ func (p *provider) OnLeader(h func(ctx context.Context)) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	p.leaderUse.leaderHandlers = append(p.leaderUse.leaderHandlers, h)
+}
+
+func (p *provider) IsTaskHandling(ctx context.Context, logicTaskID worker.TaskLogicID) (bool, worker.ID) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	workerID, ok := p.leaderUse.findWorkerByTask[logicTaskID]
+	return ok, workerID
 }

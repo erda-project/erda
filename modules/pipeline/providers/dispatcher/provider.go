@@ -41,8 +41,7 @@ type provider struct {
 	pipelineIDsChan chan uint64
 	consistent      *consistent.Consistent
 
-	lock           sync.Mutex
-	dispatchingIDs sync.Map
+	lock sync.Mutex
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

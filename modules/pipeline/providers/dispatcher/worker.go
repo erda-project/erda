@@ -17,6 +17,7 @@ package dispatcher
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
@@ -33,15 +34,15 @@ func (p *provider) onWorkerDelete(ctx context.Context, ev leaderworker.Event) {
 	p.Log.Infof("worker deleted, refresh consistent, workerID: %s", ev.WorkerID)
 	p.consistent.Remove(ev.WorkerID.String())
 	// dispatch tasks belong to deleted worker
-	p.dispatchingIDs.Range(func(key, value interface{}) bool {
-		if value == ev.WorkerID.String() {
-			// set not dispatching now
-			p.dispatchingIDs.Delete(key)
-			// dispatching again
-			p.Dispatch(ctx, key.(uint64))
+	for _, logicTaskID := range ev.LogicTaskIDs {
+		// dispatching again
+		pipelineID, err := strconv.ParseUint(logicTaskID.String(), 10, 64)
+		if err != nil {
+			p.Log.Errorf("failed to re dispatch pipeline on worker delete, skip, invalidLogicTaskID: %s", logicTaskID)
+			continue
 		}
-		return true
-	})
+		p.Dispatch(ctx, pipelineID)
+	}
 }
 
 func (p *provider) pickOneWorker(ctx context.Context, pipelineID uint64) (worker.ID, error) {

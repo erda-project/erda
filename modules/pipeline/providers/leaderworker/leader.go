@@ -63,7 +63,36 @@ func (p *provider) leaderFramework(ctx context.Context) {
 			notify <- Event{Type: mvccpb.PUT, WorkerID: p.getWorkerIDFromEtcdWorkerKey(string(ev.Kv.Key), worker.Official)}
 		},
 		func(ctx context.Context, ev *clientv3.Event) {
-			notify <- Event{Type: mvccpb.DELETE, WorkerID: p.getWorkerIDFromEtcdWorkerKey(string(ev.Kv.Key), worker.Official)}
+			workerID := p.getWorkerIDFromEtcdWorkerKey(string(ev.Kv.Key), worker.Official)
+			logicTasks, err := p.listWorkerTasks(ctx, workerID)
+			if err == nil {
+				var logicTaskIDs []worker.TaskLogicID
+				for _, task := range logicTasks {
+					logicTaskIDs = append(logicTaskIDs, task.GetLogicID())
+				}
+				notify <- Event{Type: mvccpb.DELETE, WorkerID: workerID, LogicTaskIDs: logicTaskIDs}
+				return
+			}
+			// send notify of worker delete directly, otherwise new tasks will assign to this deleted worker at client-side(such like: dispatcher)
+			notify <- Event{Type: mvccpb.DELETE, WorkerID: workerID, LogicTaskIDs: nil}
+
+			// retry send notify of associated logic tasks
+			p.Log.Errorf("failed to list worker tasks while worker deleted(auto retry), workerID: %s, err: %v", workerID, err)
+			go func() {
+				for {
+					logicTasks, err := p.listWorkerTasks(ctx, workerID)
+					if err == nil {
+						var logicTaskIDs []worker.TaskLogicID
+						for _, task := range logicTasks {
+							logicTaskIDs = append(logicTaskIDs, task.GetLogicID())
+						}
+						notify <- Event{Type: mvccpb.DELETE, WorkerID: workerID, LogicTaskIDs: logicTaskIDs}
+						return
+					}
+					p.Log.Errorf("failed to retry list worker tasks(auto retry), workerID: %s, err: %v", workerID, err)
+					time.Sleep(p.Cfg.Worker.RetryInterval)
+				}
+			}()
 		},
 	)
 }
@@ -101,7 +130,28 @@ func (p *provider) intervalCleanupDanglingKeysWithoutRetry(ctx context.Context) 
 	p.lock.Unlock()
 	for _, key := range danglingWorkerHeartbeatKeys {
 		if _, err := p.EtcdClient.Delete(ctx, key); err != nil {
-			p.Log.Errorf("failed to delete dangling key(auto retry), key: %s, err: %v", key, err)
+			p.Log.Errorf("failed to delete dangling worker heartbeat key(auto retry), key: %s, err: %v", key, err)
+		}
+	}
+
+	// dangling dispatch key
+	getResp, err = p.EtcdClient.Get(ctx, p.makeEtcdWorkerGeneralDispatchPrefix(), clientv3.WithPrefix())
+	if err != nil {
+		p.Log.Errorf("failed to prefix get worker task dispatch keys, err: %v", err)
+		return
+	}
+	var danglingWorkerTaskDispatchKeys []string
+	p.lock.Lock()
+	for _, kv := range getResp.Kvs {
+		workerID := p.getWorkerIDFromIncomingKey(string(kv.Key))
+		if _, ok := p.leaderUse.allWorkers[workerID]; !ok {
+			danglingWorkerTaskDispatchKeys = append(danglingWorkerTaskDispatchKeys, string(kv.Key))
+		}
+	}
+	p.lock.Unlock()
+	for _, key := range danglingWorkerTaskDispatchKeys {
+		if _, err := p.EtcdClient.Delete(ctx, key); err != nil {
+			p.Log.Errorf("failed to delete dangling worker task dispatch key(auto retry), key: %s, err: %v", key, err)
 		}
 	}
 }

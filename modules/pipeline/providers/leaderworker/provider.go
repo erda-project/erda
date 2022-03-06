@@ -44,6 +44,9 @@ type provider struct {
 type leaderUse struct {
 	allWorkers map[worker.ID]worker.Worker
 
+	findWorkerByTask map[worker.TaskLogicID]worker.ID
+	findTaskByWorker map[worker.ID]map[worker.TaskLogicID]struct{}
+
 	leaderHandlers               []func(ctx context.Context)
 	leaderHandlersOnWorkerAdd    []WorkerAddHandler
 	leaderHandlersOnWorkerDelete []WorkerDeleteHandler
@@ -62,7 +65,56 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	p.Cfg.Worker.EtcdKeyPrefixWithSlash = filepath.Clean(p.Cfg.Worker.EtcdKeyPrefixWithSlash) + "/"
 
+	if err := p.initTaskWorkerAssignMap(ctx); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (p *provider) initTaskWorkerAssignMap(ctx context.Context) error {
+	p.leaderUse.findWorkerByTask = make(map[worker.TaskLogicID]worker.ID)
+	p.leaderUse.findTaskByWorker = make(map[worker.ID]map[worker.TaskLogicID]struct{})
+
+	workers, err := p.listWorkers(ctx)
+	if err != nil {
+		return err
+	}
+	for _, w := range workers {
+		tasks, err := p.listWorkerTasks(ctx, w.GetID())
+		if err != nil {
+			return fmt.Errorf("failed to list worker tasks, workerID: %s, err: %v", w.GetID(), err)
+		}
+		p.leaderUse.findTaskByWorker[w.GetID()] = make(map[worker.TaskLogicID]struct{}, len(tasks))
+		for _, task := range tasks {
+			p.addToTaskWorkerAssignMap(task.GetLogicID(), w.GetID())
+		}
+	}
+	return nil
+}
+
+func (p *provider) addToTaskWorkerAssignMap(logicTaskID worker.TaskLogicID, workerID worker.ID) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	// findWorkerByTask
+	p.leaderUse.findWorkerByTask[logicTaskID] = workerID
+	// findTaskByWorker
+	if p.leaderUse.findTaskByWorker[workerID] == nil {
+		p.leaderUse.findTaskByWorker[workerID] = make(map[worker.TaskLogicID]struct{})
+	}
+	p.leaderUse.findTaskByWorker[workerID][logicTaskID] = struct{}{}
+}
+
+func (p *provider) removeFromTaskWorkerAssignMap(logicTaskID worker.TaskLogicID, workerID worker.ID) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	// findWorkerByTask
+	delete(p.leaderUse.findWorkerByTask, logicTaskID)
+	// findTaskByWorker
+	workerTasks, ok := p.leaderUse.findTaskByWorker[workerID]
+	if ok {
+		delete(workerTasks, logicTaskID)
+	}
 }
 
 func (p *provider) Run(ctx context.Context) error {
