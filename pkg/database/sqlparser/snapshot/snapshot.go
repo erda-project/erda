@@ -430,5 +430,5 @@ func CharsetWhite() []string {
 	if len(v) == 0 {
 		return defaultCharsetWhite
 	}
-	return strings.Split(os.Getenv(v), ",")
+	return strings.Split(v, ",")
 }
