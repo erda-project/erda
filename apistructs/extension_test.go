@@ -31,3 +31,10 @@ func Test_CheckVersion(t *testing.T) {
 	v = spec.CheckDiceVersion("1.1")
 	assert.False(t, v)
 }
+
+func TestIsDisableECI(t *testing.T) {
+	s := &Spec{Labels: map[string]string{"eci_disable": "true"}}
+	assert.Equal(t, true, s.IsDisableECI())
+	nonDisableSpec := &Spec{Labels: map[string]string{"eci_disable": "false"}}
+	assert.Equal(t, false, nonDisableSpec.IsDisableECI())
+}

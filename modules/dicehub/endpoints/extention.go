@@ -184,13 +184,11 @@ func (e *Endpoints) QueryExtensionVersions(ctx context.Context, r *http.Request,
 	if err != nil {
 		return apierrors.ErrQueryExtension.InvalidParameter("name").ToResp(), nil
 	}
-
-	all := r.URL.Query().Get("all")
-
-	request := apistructs.ExtensionVersionQueryRequest{
-		Name: name,
-		All:  all,
+	request := apistructs.ExtensionVersionQueryRequest{}
+	if err := e.queryStringDecoder.Decode(&request, r.URL.Query()); err != nil {
+		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
 	}
+	request.Name = name
 
 	result, err := e.extension.QueryExtensionVersions(&request)
 

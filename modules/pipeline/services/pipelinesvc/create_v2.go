@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
+	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -228,8 +229,23 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	}
 
 	// container instance provider
+	extensionItems := make([]string, 0)
+	for _, stage := range pipelineYml.Spec().Stages {
+		for _, actionMap := range stage.Actions {
+			for _, action := range actionMap {
+				if action.Type.IsSnippet() {
+					continue
+				}
+				extensionItems = append(extensionItems, extmarketsvc.MakeActionTypeVersion(action))
+			}
+		}
+	}
+	_, extensions, err := s.extMarketSvc.SearchActions(extensionItems)
+	if err != nil {
+		return nil, apierrors.ErrCreatePipeline.InternalError(err)
+	}
 	p.Extra.ContainerInstanceProvider = container_provider.ConstructContainerProvider(container_provider.WithLabels(labels),
-		container_provider.WithStages(pipelineYml.Spec().Stages))
+		container_provider.WithExtensions(extensions))
 
 	// pipelineYmlSource
 	p.Extra.PipelineYmlSource = apistructs.PipelineYmlSourceContent
