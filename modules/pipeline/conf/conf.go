@@ -111,6 +111,9 @@ type Conf struct {
 
 	// k8s executor goroutine pool size
 	K8SExecutorPoolSize int `env:"K8S_EXECUTOR_POOL_SIZE" default:"50"`
+
+	// external market refresh interval
+	ExtensionVersionRefreshIntervalMinute uint64 `env:"EXTENSION_VERSION_REFRESH_INTERVAL_MINUTE" default:"1"`
 }
 
 var cfg Conf
@@ -361,4 +364,9 @@ func SpecifyImagePullPolicy() string {
 // K8SExecutorPoolSize return default k8s executor pool size
 func K8SExecutorPoolSize() int {
 	return cfg.K8SExecutorPoolSize
+}
+
+// ExtensionVersionRefreshIntervalMinute external market refresh interval
+func ExtensionVersionRefreshIntervalMinute() uint64 {
+	return cfg.ExtensionVersionRefreshIntervalMinute
 }

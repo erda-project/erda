@@ -24,7 +24,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -41,8 +40,6 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml"
-	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
 
 type CategoryType string
@@ -813,22 +810,6 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 	if err != nil {
 		return nil, apiError.InternalError(err)
 	}
-
-	definitionUpdateReq := &dpb.PipelineDefinitionUpdateRequest{
-		PipelineDefinitionID: definition.ID,
-		Status:               string(apistructs.StatusRunning),
-		Executor:             identityInfo.UserID,
-		EndedAt:              timestamppb.New(*mysql_time.GetMysqlDefaultTime()),
-		PipelineID:           int64(dto.ID)}
-	if rerun {
-		definitionUpdateReq.ExecutedActionNum = -1
-		definitionUpdateReq.StartedAt = timestamppb.New(time.Now())
-	}
-
-	_, err = p.PipelineDefinition.Update(context.Background(), definitionUpdateReq)
-	if err != nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
-	}
 	return dto, nil
 }
 
@@ -1115,37 +1096,7 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	if err != nil {
 		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
 	}
-	totalActionNum, err := countActionNumByPipelineYml(pipelineYml)
-	if err != nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
-	}
-	_, err = p.PipelineDefinition.Update(context.Background(), &dpb.PipelineDefinitionUpdateRequest{
-		PipelineDefinitionID: definition.ID,
-		Status:               string(apistructs.StatusRunning),
-		Executor:             identityInfo.UserID,
-		StartedAt:            timestamppb.New(time.Now()),
-		EndedAt:              timestamppb.New(*mysql_time.GetMysqlDefaultTime()),
-		TotalActionNum:       totalActionNum,
-		ExecutedActionNum:    -1,
-		CostTime:             -1,
-		PipelineID:           int64(value.ID)})
-	if err != nil {
-		return nil, apierrors.ErrRunProjectPipeline.InternalError(err)
-	}
 	return value, nil
-}
-
-func countActionNumByPipelineYml(pipelineYmlStr string) (int64, error) {
-	pipelineYml, err := pipelineyml.New([]byte(pipelineYmlStr))
-	if err != nil {
-		return 0, apierrors.ErrCreateProjectPipeline.InternalError(err)
-	}
-
-	var totalActionNum int64
-	pipelineYml.Spec().LoopStagesActions(func(stage int, action *pipelineyml.Action) {
-		totalActionNum++
-	})
-	return totalActionNum, nil
 }
 
 func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListAppRequest) (*pb.ListAppResponse, error) {
