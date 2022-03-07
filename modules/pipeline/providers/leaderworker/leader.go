@@ -28,7 +28,10 @@ func (p *provider) leaderFramework(ctx context.Context) {
 	p.Log.Infof("start leader framework")
 	defer p.Log.Infof("end leader framework")
 
-	p.leaderUse.leaderHandlers = append(p.leaderUse.leaderHandlers, p.continueCleanup)
+	// init before begin listen worker-task-change
+	p.initTaskWorkerAssignMap(ctx)
+
+	p.leaderUse.leaderHandlers = append(p.leaderUse.leaderHandlers, p.continueCleanup, p.listenWorkerTaskIncoming, p.listenWorkerTaskDone)
 	p.workerUse.workerHandlersOnWorkerDelete = append(p.workerUse.workerHandlersOnWorkerDelete, p.workerIntervalCleanupOnDelete)
 
 	// leader
@@ -153,5 +156,69 @@ func (p *provider) intervalCleanupDanglingKeysWithoutRetry(ctx context.Context) 
 		if _, err := p.EtcdClient.Delete(ctx, key); err != nil {
 			p.Log.Errorf("failed to delete dangling worker task dispatch key(auto retry), key: %s, err: %v", key, err)
 		}
+	}
+}
+
+func (p *provider) listenWorkerTaskDone(ctx context.Context) {
+	prefix := p.makeEtcdWorkerGeneralDispatchPrefix()
+	p.ListenPrefix(ctx, prefix,
+		nil,
+		func(ctx context.Context, event *clientv3.Event) {
+			key := string(event.Kv.Key)
+			workerID := p.getWorkerIDFromIncomingKey(key)
+			logicTaskID := p.getWorkerTaskLogicIDFromIncomingKey(workerID, key)
+			p.removeFromTaskWorkerAssignMap(logicTaskID, workerID)
+		},
+	)
+}
+
+func (p *provider) listenWorkerTaskIncoming(ctx context.Context) {
+	prefix := p.makeEtcdWorkerGeneralDispatchPrefix()
+	p.ListenPrefix(ctx, prefix,
+		func(ctx context.Context, event *clientv3.Event) {
+			key := string(event.Kv.Key)
+			workerID := p.getWorkerIDFromIncomingKey(key)
+			logicTaskID := p.getWorkerTaskLogicIDFromIncomingKey(workerID, key)
+			p.addToTaskWorkerAssignMap(logicTaskID, workerID)
+		},
+		nil,
+	)
+}
+
+func (p *provider) initTaskWorkerAssignMap(ctx context.Context) {
+	p.lock.Lock()
+	p.leaderUse.initialized = false
+	p.lock.Unlock()
+
+	p.leaderUse.findWorkerByTask = make(map[worker.TaskLogicID]worker.ID)
+	p.leaderUse.findTaskByWorker = make(map[worker.ID]map[worker.TaskLogicID]struct{})
+
+outLoop:
+	for {
+		workers, err := p.listWorkers(ctx)
+		if err != nil {
+			p.Log.Errorf("failed to list workers for initTaskWorkerAssignMap(auto retry), err: %v", err)
+			time.Sleep(p.Cfg.Worker.RetryInterval)
+			continue
+		}
+		for _, w := range workers {
+			tasks, err := p.listWorkerTasks(ctx, w.GetID())
+			if err != nil {
+				p.Log.Errorf("failed to list worker tasks for initTaskWorkerAssignMap(auto retry), workerID: %s, err: %v", w.GetID(), err)
+				time.Sleep(p.Cfg.Worker.RetryInterval)
+				continue outLoop
+			}
+			p.lock.Lock()
+			p.leaderUse.findTaskByWorker[w.GetID()] = make(map[worker.TaskLogicID]struct{}, len(tasks))
+			p.lock.Unlock()
+			for _, task := range tasks {
+				p.addToTaskWorkerAssignMap(task.GetLogicID(), w.GetID())
+			}
+		}
+		// return if no error
+		p.lock.Lock()
+		p.leaderUse.initialized = true
+		p.lock.Unlock()
+		break
 	}
 }

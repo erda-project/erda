@@ -22,6 +22,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -76,6 +77,11 @@ func (q *provider) loadRunningPipelines(ctx context.Context) {
 
 	// handle again
 	for _, pipelineID := range pipelineIDs {
+		isTaskHandling, handlingWorkerID := q.LW.IsTaskHandling(ctx, worker.TaskLogicID(strutil.String(pipelineID)))
+		if isTaskHandling {
+			q.Log.Warnf("skip load, logic task is handling already, pipelineID: %d, workerID: %s", pipelineID, handlingWorkerID)
+			return
+		}
 		// add into queue again
 		q.DistributedHandleIncomingPipeline(ctx, pipelineID)
 		q.Log.Infof("load running pipeline success, pipelineID: %d", pipelineID)

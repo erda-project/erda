@@ -16,6 +16,8 @@ package leaderworker
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/coreos/etcd/clientv3"
 
@@ -113,8 +115,20 @@ func (p *provider) OnLeader(h func(ctx context.Context)) {
 }
 
 func (p *provider) IsTaskHandling(ctx context.Context, logicTaskID worker.TaskLogicID) (bool, worker.ID) {
+	if !p.Election.IsLeader() {
+		panic(fmt.Errorf("non-leader cannot invoke IsTaskHandling"))
+	}
+	for {
+		p.lock.Lock()
+		if p.leaderUse.initialized {
+			p.lock.Unlock()
+			break
+		}
+		p.lock.Unlock()
+		time.Sleep(p.Cfg.Worker.RetryInterval)
+	}
 	p.lock.Lock()
-	defer p.lock.Unlock()
 	workerID, ok := p.leaderUse.findWorkerByTask[logicTaskID]
+	p.lock.Unlock()
 	return ok, workerID
 }

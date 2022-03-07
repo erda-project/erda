@@ -45,9 +45,9 @@ func (p *provider) listWorkersByType(ctx context.Context, typ worker.Type) ([]wo
 	return workers, nil
 }
 
-func (p *provider) getWorkerTaskLogicIDFromIncomingKey(workerID worker.ID, key string) string {
+func (p *provider) getWorkerTaskLogicIDFromIncomingKey(workerID worker.ID, key string) worker.TaskLogicID {
 	prefix := p.makeEtcdWorkerLogicTaskListenPrefix(workerID)
-	return strutil.TrimPrefixes(key, prefix)
+	return worker.TaskLogicID(strutil.TrimPrefixes(key, prefix))
 }
 
 // see: makeEtcdWorkerTaskDispatchKey
@@ -183,7 +183,7 @@ func (p *provider) workerListenIncomingLogicTask(ctx context.Context, w worker.W
 		go func() {
 			// key added, do logic
 			key := string(event.Kv.Key)
-			taskLogicID := worker.TaskLogicID(p.getWorkerTaskLogicIDFromIncomingKey(w.GetID(), key))
+			taskLogicID := p.getWorkerTaskLogicIDFromIncomingKey(w.GetID(), key)
 			taskData := event.Kv.Value
 			p.Log.Infof("logic task received and begin handle it, workerID: %s, logicTaskID: %s", w.GetID(), taskLogicID)
 			w.Handle(ctx, worker.NewTasker(taskLogicID, taskData))
@@ -191,14 +191,12 @@ func (p *provider) workerListenIncomingLogicTask(ctx context.Context, w worker.W
 			// delete task key means task done
 			for {
 				_, err := p.EtcdClient.Delete(context.Background(), key)
-				if err != nil {
+				if err == nil {
 					break
 				}
 				p.Log.Warnf("failed to delete incoming logic task key after done(auto retry), key: %s, logicTaskID: %s, err: %v", key, taskLogicID, err)
 				time.Sleep(p.Cfg.Worker.Task.RetryDeleteTaskInterval)
 			}
-			// remove from task worker assign map
-			p.removeFromTaskWorkerAssignMap(taskLogicID, w.GetID())
 		}()
 	},
 		nil,
@@ -383,7 +381,7 @@ func (p *provider) listWorkerTasks(ctx context.Context, workerID worker.ID) ([]w
 	for _, kv := range resp.Kvs {
 		logicTaskID := p.getWorkerTaskLogicIDFromIncomingKey(workerID, string(kv.Key))
 		logicTaskData := kv.Value
-		task := worker.NewTasker(worker.TaskLogicID(logicTaskID), logicTaskData)
+		task := worker.NewTasker(logicTaskID, logicTaskData)
 		tasks = append(tasks, task)
 	}
 	return tasks, nil
