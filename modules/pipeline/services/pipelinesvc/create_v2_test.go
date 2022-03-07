@@ -24,12 +24,13 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 func TestValidateCreateRequest(t *testing.T) {
@@ -87,6 +88,7 @@ stages:
 			"1": "value",
 		},
 	}
+	extSvc := &extmarketsvc.ExtMarketSvc{}
 	svc := PipelineSvc{
 		bdl: bundle.New(
 			bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second))),
@@ -97,6 +99,10 @@ stages:
 		return nil
 	})
 	defer pm.Unpatch()
+	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(extSvc), "SearchActions", func(s *extmarketsvc.ExtMarketSvc, items []string, ops ...extmarketsvc.OpOption) (map[string]*diceyml.Job, map[string]*apistructs.ActionSpec, error) {
+		return nil, nil, nil
+	})
+	defer pm1.Unpatch()
 
 	p, err := svc.makePipelineFromRequestV2(&req)
 	assert.NoError(t, err)

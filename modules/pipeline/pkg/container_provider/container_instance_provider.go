@@ -25,7 +25,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/k8s/elastic/vk"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 type Option func(provider *apistructs.ContainerInstanceProvider)
@@ -65,19 +64,15 @@ func WithLabels(labels map[string]string) Option {
 	}
 }
 
-// WithStages if the stages contain custom-type action, then it will make a disabled container instance provider
+// WithExtensions if the stages contain custom-type action, then it will make a disabled container instance provider
 // todo judge the container instance type in task-level
-func WithStages(stages []*pipelineyml.Stage) Option {
+func WithExtensions(extensions map[string]*apistructs.ActionSpec) Option {
 	return func(provider *apistructs.ContainerInstanceProvider) {
-		for _, stage := range stages {
-			for _, actionMap := range stage.Actions {
-				for actionType := range actionMap {
-					if actionType.IsCustom() {
-						provider.IsHitted = false
-						provider.IsDisabled = true
-						return
-					}
-				}
+		for _, actionSpec := range extensions {
+			if actionSpec.IsDisableECI() {
+				provider.IsDisabled = true
+				provider.IsHitted = false
+				return
 			}
 		}
 	}

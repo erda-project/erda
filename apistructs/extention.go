@@ -15,6 +15,7 @@
 package apistructs
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/Masterminds/semver"
@@ -24,6 +25,10 @@ import (
 )
 
 const DicehubExtensionsMenu = "dicehub.extensions.menu"
+
+var (
+	ExtensionSpecDisableECILabel = "eci_disable"
+)
 
 var CategoryTypes = map[string][]string{
 	"action": {
@@ -101,6 +106,20 @@ func (spec *Spec) GetLocaleDesc(lang string) string {
 	}
 
 	return spec.Locale[lang][specDesc]
+}
+
+func (spec *Spec) IsDisableECI() bool {
+	if spec.Labels == nil {
+		return false
+	}
+	if disableECIStr, ok := spec.Labels[ExtensionSpecDisableECILabel]; ok {
+		disable, err := strconv.ParseBool(disableECIStr)
+		if err != nil {
+			return false
+		}
+		return disable
+	}
+	return false
 }
 
 // CheckDiceVersion 检查版本是否支持
@@ -207,7 +226,7 @@ type ExtensionVersionGetRequest struct {
 // ExtensionVersionQueryRequest 查询extension版本
 type ExtensionVersionQueryRequest struct {
 	Name       string
-	YamlFormat bool
+	YamlFormat bool `query:"yamlFormat"`
 	//默认false查询有效版本, true查询所有版本
 	All string `query:"all"`
 }
