@@ -52,30 +52,15 @@ const (
 
 	// ECI Pod fluent-bit sidecar contianer configuration
 	// Env Name
-	ECIPodFluentbitSidecarImageEnvName                                        = "COLLECTOR_SIDECAR_IMAGE"
-	ECIPodFluentbitSidecarCollectorAuthUserNameEnvName                        = "COLLECTOR_AUTH_USERNAME"
-	ECIPodFluentbitSidecarCollectorAuthPasswordEnvName                        = "COLLECTOR_AUTH_PASSWORD"
-	ECIPodFluentbitSidecarCollectorInputTailReadFromHeadEnvName               = "INPUT_TAIL_READ_FROM_HEAD"
-	ECIPodFluentbitSidecarCollectorOutputBatchTriggerContentLimitBytesEnvName = "OUTPUT_BATCH_TRIGGER_CONTENT_LIMIT_BYTES"
-	ECIPodFluentbitSidecarCollectorOutputBatchEventLimitEnvName               = "OUTPUT_BATCH_EVENT_LIMIT"
-	ECIPodFluentbitSidecarCollectorOutputNetLimitBytesPerSecondEnvName        = "OUTPUT_NET_LIMIT_BYTES_PER_SECOND"
-	// Env Default Name
-	ECIPodFluentbitSidecarImage                        = "registry.erda.cloud/erda/erda-fluent-bit:1.4-20211201-543951a"
-	ECIPodFluentbitCollectorAuthPassword               = "G$9767bP32drYFPWrK4XMLRMTatiM6cU"
-	ECIPodFluentbitCollectorAuthUsername               = "collector"
-	ECIPodFluentbitOutputBatchEventLimit               = "250"
-	ECIPodFluentbitOutputBatchTriggerContentLimitBytes = "314572"
-	ECIPodFluentbitOutputNetLimitBytesPerSecond        = "104857"
-	ECIPodFluentbitInputTailReadFromHead               = "true"
+	ECIPodFluentbitSidecarImageEnvName      = "COLLECTOR_SIDECAR_IMAGE"
+	ECIPodFluentbitSidecarConfigFileEnvName = "CONFIG_FILE"
+
+	// Env Default Value
+	ECIPodFluentbitSidecarImage              = "registry.erda.cloud/erda/erda-fluent-bit:1.4-20211201-543951a"
+	ECIPodFluentbitSidecarConfigFileEnvValue = "/fluent-bit/etc/eci/fluent-bit.conf"
 )
 
-var ECIPodSidecarENVFromScheduler = []string{"ECI_POD_FLUENTBIT_COLLECTOR_ADDR", "ECI_POD_FLUENTBIT_COLLECTOR_AUTH_USERNAME",
-	"ECI_POD_FLUENTBIT_INPUT_TAIL_READ_FROM_HEAD", "ECI_POD_FLUENTBIT_OUTPUT_BATCH_TRIGGER_CONTENT_LIMIT_BYTES",
-	"ECI_POD_FLUENTBIT_COLLECTOR_AUTH_PASSWORD", "COLLECTOR_SIDECAR_IMAGE",
-	"ECI_POD_FLUENTBIT_OUTPUT_BATCH_EVENT_LIMIT", "ECI_POD_FLUENTBIT_OUTPUT_NET_LIMIT_BYTES_PER_SECOND"}
-
-var ECIPodSidecarENV = []string{"COLLECTOR_ADDR", "COLLECTOR_AUTH_USERNAME", "INPUT_TAIL_READ_FROM_HEAD", "OUTPUT_BATCH_TRIGGER_CONTENT_LIMIT_BYTES",
-	"COLLECTOR_AUTH_PASSWORD", "COLLECTOR_SIDECAR_IMAGE", "OUTPUT_BATCH_EVENT_LIMIT", "OUTPUT_NET_LIMIT_BYTES_PER_SECOND"}
+var ECIPodSidecarENVFromScheduler = []string{"ECI_POD_FLUENTBIT_COLLECTOR_ADDR", "COLLECTOR_SIDECAR_IMAGE", "ECI_POD_FLUENTBIT_CONFIG_FILE"}
 
 func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
 	deployment, err := k.newDeployment(service, sg)
@@ -1659,44 +1644,12 @@ func getSideCarConfigFromConfigMapVolumeFiles(sc *apiv1.Container) error {
 				sc.Image = ECIPodFluentbitSidecarImage
 			}
 			continue
-		}
-
-		if envValue != "" {
-			sc.Env = append(sc.Env, apiv1.EnvVar{
-				Name:  strutil.TrimPrefixes(envKey, "ECI_POD_FLUENTBIT_"),
-				Value: envValue,
-			})
 		} else {
 			switch envKey {
-			case "ECI_POD_FLUENTBIT_COLLECTOR_AUTH_USERNAME":
-				envValue = getEnvFromName(ECIPodFluentbitSidecarCollectorAuthUserNameEnvName)
+			case "ECI_POD_FLUENTBIT_CONFIG_FILE":
+				envValue = getEnvFromName(ECIPodFluentbitSidecarConfigFileEnvName)
 				if envValue == "" {
-					envValue = ECIPodFluentbitCollectorAuthUsername
-				}
-			case "ECI_POD_FLUENTBIT_COLLECTOR_AUTH_PASSWORD":
-				envValue = getEnvFromName(ECIPodFluentbitSidecarCollectorAuthPasswordEnvName)
-				if envValue == "" {
-					envValue = ECIPodFluentbitCollectorAuthPassword
-				}
-			case "ECI_POD_FLUENTBIT_INPUT_TAIL_READ_FROM_HEAD":
-				envValue = getEnvFromName(ECIPodFluentbitSidecarCollectorInputTailReadFromHeadEnvName)
-				if envValue == "" {
-					envValue = ECIPodFluentbitInputTailReadFromHead
-				}
-			case "ECI_POD_FLUENTBIT_OUTPUT_BATCH_TRIGGER_CONTENT_LIMIT_BYTES":
-				envValue = getEnvFromName(ECIPodFluentbitSidecarCollectorOutputBatchTriggerContentLimitBytesEnvName)
-				if envValue == "" {
-					envValue = ECIPodFluentbitOutputBatchTriggerContentLimitBytes
-				}
-			case "ECI_POD_FLUENTBIT_OUTPUT_BATCH_EVENT_LIMIT":
-				envValue = getEnvFromName(ECIPodFluentbitSidecarCollectorOutputBatchEventLimitEnvName)
-				if envValue == "" {
-					envValue = ECIPodFluentbitOutputBatchEventLimit
-				}
-			case "ECI_POD_FLUENTBIT_OUTPUT_NET_LIMIT_BYTES_PER_SECOND":
-				envValue = getEnvFromName(ECIPodFluentbitSidecarCollectorOutputNetLimitBytesPerSecondEnvName)
-				if envValue == "" {
-					envValue = ECIPodFluentbitOutputNetLimitBytesPerSecond
+					envValue = ECIPodFluentbitSidecarConfigFileEnvValue
 				}
 			}
 		}
