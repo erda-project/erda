@@ -19,7 +19,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -27,6 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dicehub/dbclient"
 	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 )
 
@@ -74,7 +74,7 @@ func (rule *ReleaseRule) Create(request *apistructs.CreateUpdateDeleteReleaseRul
 		}
 	}
 	var record = &apistructs.BranchReleaseRuleModel{
-		ID:        uuid.New().String(),
+		ID:        uuid.New(),
 		ProjectID: request.ProjectID,
 		Pattern:   request.Body.Pattern,
 		IsEnabled: request.Body.IsEnabled,
