@@ -38,7 +38,7 @@ func (p *provider) continueDispatcher(ctx context.Context) {
 
 	for pipelineID := range p.pipelineIDsChan {
 		go func(pipelineID uint64) {
-			isTaskHandling, handlingWorkerID := p.Lw.IsTaskHandling(ctx, worker.TaskLogicID(strutil.String(pipelineID)))
+			isTaskHandling, handlingWorkerID := p.LW.IsTaskHandling(ctx, worker.TaskLogicID(strutil.String(pipelineID)))
 			if isTaskHandling {
 				p.Log.Warnf("skip dispatch, logic task is handling already, pipelineID: %d, workerID: %s", pipelineID, handlingWorkerID)
 				return
@@ -54,7 +54,7 @@ func (p *provider) continueDispatcher(ctx context.Context) {
 			// assign lock task to the picked worker
 			logicTaskID := worker.TaskLogicID(strutil.String(pipelineID))
 			logicTaskData := []byte(nil)
-			if err := p.Lw.AssignLogicTaskToWorker(ctx, workerID, worker.NewTasker(logicTaskID, logicTaskData)); err != nil {
+			if err := p.LW.AssignLogicTaskToWorker(ctx, workerID, worker.NewTasker(logicTaskID, logicTaskData)); err != nil {
 				p.Log.Errorf("failed to dispatch logic task to worker(need retry after %s), taskID: %s, workerID: %s, err: %v", p.Cfg.DispatchRetryInterval, logicTaskID, workerID, err)
 				time.Sleep(p.Cfg.DispatchRetryInterval)
 				p.Dispatch(ctx, pipelineID)

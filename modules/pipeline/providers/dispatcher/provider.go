@@ -32,7 +32,7 @@ import (
 type provider struct {
 	Log        logs.Logger
 	Cfg        *config
-	Lw         leaderworker.Interface
+	LW         leaderworker.Interface
 	Reconciler reconciler.Interface
 
 	Mysql    mysqlxorm.Interface
@@ -58,9 +58,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Run(ctx context.Context) error {
 	// just register handler, and leader-worker provider will handle properly
-	p.Lw.OnLeader(p.continueDispatcher)
-	p.Lw.LeaderHandlerOnWorkerAdd(p.onWorkerAdd)
-	p.Lw.LeaderHandlerOnWorkerDelete(p.onWorkerDelete)
+	p.LW.OnLeader(p.continueDispatcher)
+	p.LW.LeaderHandlerOnWorkerAdd(p.onWorkerAdd)
+	p.LW.LeaderHandlerOnWorkerDelete(p.onWorkerDelete)
 	return nil
 }
 

@@ -31,7 +31,7 @@ type provider struct {
 	Cfg *config
 
 	MySQLXORM mysqlxorm.Interface
-	Lw        leaderworker.Interface
+	LW        leaderworker.Interface
 
 	r *reconciler.Reconciler
 }
@@ -49,9 +49,9 @@ func (p *provider) Run(ctx context.Context) error {
 	}
 
 	// gc
-	p.Lw.OnLeader(p.r.ListenGC)
-	p.Lw.OnLeader(p.r.PipelineDatabaseGC)
-	p.Lw.OnLeader(p.r.CompensateGCNamespaces)
+	p.LW.OnLeader(p.r.ListenGC)
+	p.LW.OnLeader(p.r.PipelineDatabaseGC)
+	p.LW.OnLeader(p.r.CompensateGCNamespaces)
 
 	return nil
 }

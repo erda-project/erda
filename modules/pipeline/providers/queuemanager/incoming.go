@@ -30,7 +30,7 @@ import (
 
 // listenIncomingPipeline listen incoming pipeline id
 func (q *provider) listenIncomingPipeline(ctx context.Context) {
-	q.Lw.ListenPrefix(ctx, q.Cfg.IncomingPipelineCfg.EtcdKeyPrefixWithSlash,
+	q.LW.ListenPrefix(ctx, q.Cfg.IncomingPipelineCfg.EtcdKeyPrefixWithSlash,
 		func(ctx context.Context, event *clientv3.Event) {
 			pipelineID, err := q.getPipelineIDFromIncomingListenKey(string(event.Kv.Key))
 			if err != nil {

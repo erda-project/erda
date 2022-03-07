@@ -40,7 +40,7 @@ type provider struct {
 
 	MySQLXORM  mysqlxorm.Interface
 	EtcdClient *clientv3.Client
-	Lw         leaderworker.Interface
+	LW         leaderworker.Interface
 	Dispatcher dispatcher.Interface
 
 	dbClient *dbclient.Client
@@ -71,12 +71,12 @@ func (q *provider) Init(ctx servicehub.Context) error {
 }
 
 func (q *provider) Run(ctx context.Context) error {
-	q.Lw.OnLeader(q.continueBackupQueueUsage)
-	q.Lw.OnLeader(q.QueueManager.ListenInputQueueFromEtcd)
-	q.Lw.OnLeader(q.QueueManager.ListenUpdatePriorityPipelineIDsFromEtcd)
-	q.Lw.OnLeader(q.QueueManager.ListenPopOutPipelineIDFromEtcd)
-	q.Lw.OnLeader(q.listenIncomingPipeline)
-	q.Lw.OnLeader(q.loadRunningPipelines)
+	q.LW.OnLeader(q.continueBackupQueueUsage)
+	q.LW.OnLeader(q.QueueManager.ListenInputQueueFromEtcd)
+	q.LW.OnLeader(q.QueueManager.ListenUpdatePriorityPipelineIDsFromEtcd)
+	q.LW.OnLeader(q.QueueManager.ListenPopOutPipelineIDFromEtcd)
+	q.LW.OnLeader(q.listenIncomingPipeline)
+	q.LW.OnLeader(q.loadRunningPipelines)
 	return nil
 }
 

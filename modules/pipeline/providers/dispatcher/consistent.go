@@ -25,7 +25,7 @@ import (
 func (p *provider) makeConsistent(ctx context.Context) (*consistent.Consistent, error) {
 	// consistent
 	var consistentMembers []consistent.Member
-	workers, err := p.Lw.ListWorkers(ctx, worker.Official)
+	workers, err := p.LW.ListWorkers(ctx, worker.Official)
 	if err != nil {
 		return nil, err
 	}

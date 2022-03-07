@@ -50,7 +50,7 @@ type provider struct {
 	QueueManager queuemanager.Interface
 	Dispatcher   dispatcher.Interface
 	Reconciler   reconciler.Interface
-	Lw           leaderworker.Interface
+	LW           leaderworker.Interface
 
 	// manual
 	dbClient          *dbclient.Client
@@ -84,11 +84,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	err := p.Lw.RegisterCandidateWorker(ctx, worker.New(worker.WithHandler(p.reconcilePipeline)))
+	err := p.LW.RegisterCandidateWorker(ctx, worker.New(worker.WithHandler(p.reconcilePipeline)))
 	if err != nil {
 		return err
 	}
-	p.Lw.WorkerHandlerOnWorkerDelete(p.workerHandlerOnWorkerDelete)
+	p.LW.WorkerHandlerOnWorkerDelete(p.workerHandlerOnWorkerDelete)
 
 	return nil
 }

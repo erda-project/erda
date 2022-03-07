@@ -34,7 +34,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/metrics"
 	"github.com/erda-project/erda/modules/pipeline/pexpr/pexpr_params"
-	"github.com/erda-project/erda/modules/pipeline/pipengine"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pkg/pipelinefunc"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler"
