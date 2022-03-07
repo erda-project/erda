@@ -77,31 +77,35 @@ func (r *Reconciler) Reconcile(ctx context.Context, pipelineID uint64) {
 		}
 	}()
 
-	// reconciler
-	reconcileErr := r.internalReconcile(pCtx, pipelineID)
-
-	defer func() {
-		r.teardownCurrentReconcile(pCtx, pipelineID)
-		if err := r.updateStatusAfterReconcile(pCtx, pipelineID); err != nil {
-			rlog.PErrorf(pipelineID, "failed to update status after reconcile, err: %v", err)
+	// continue reconcile
+	for {
+		reconcileErr := r.internalReconcile(pCtx, pipelineID)
+		if reconcileErr == nil {
+			break
 		}
-
-		// if reconcile failed, put and wait next reconcile
-		if reconcileErr != nil {
-			rlog.PErrorf(pipelineID, "failed to reconcile pipeline, err: %v", reconcileErr)
-			r.reconcileAgain(pipelineID)
-		}
-	}()
-}
-
-// reconcileAgain add to reconciler again, wait next reconcile
-func (r *Reconciler) reconcileAgain(pipelineID uint64) {
-	time.Sleep(time.Second * 5)
-	// delete the recorded pipeline that is being executed to prevent failure to reconcile
-	r.processingPipelines.Delete(pipelineID)
-	for r.internalReconcile(context.Background(), pipelineID) != nil {
+		rlog.PErrorf(pipelineID, "failed to reconcile pipeline(auto retry), err: %v", reconcileErr)
 		time.Sleep(time.Second * 5)
+		continue
 	}
+
+	// teardown
+	r.teardownCurrentReconcile(pCtx, pipelineID)
+
+	// update status
+	var pipelineWithTasks *spec.PipelineWithTasks
+	for {
+		p, err := r.updateStatusAfterReconcile(pCtx, pipelineID)
+		if err == nil {
+			pipelineWithTasks = p
+			break
+		}
+		rlog.PErrorf(pipelineID, "failed to update status after reconcile(auto retry), err: %v", err)
+		time.Sleep(time.Second * 5)
+		continue
+	}
+
+	// teardown
+	r.teardownPipeline(ctx, pipelineWithTasks)
 }
 
 // updateStatusBeforeReconcile update pipeline status to running
@@ -118,19 +122,18 @@ func (r *Reconciler) updateStatusBeforeReconcile(p spec.Pipeline) error {
 }
 
 // updateStatusAfterReconcile get latest pipeline after reconcile
-func (r *Reconciler) updateStatusAfterReconcile(ctx context.Context, pipelineID uint64) error {
+func (r *Reconciler) updateStatusAfterReconcile(ctx context.Context, pipelineID uint64) (*spec.PipelineWithTasks, error) {
 	pipelineWithTasks, err := r.dbClient.GetPipelineWithTasks(pipelineID)
 	if err != nil {
 		rlog.PErrorf(pipelineID, "failed to get pipeline with tasks, err: %v", err)
-		return err
+		return nil, err
 	}
-	defer r.teardownPipeline(ctx, pipelineWithTasks)
 
 	p := pipelineWithTasks.Pipeline
 	tasks := pipelineWithTasks.Tasks
 	// if status is end status like stopByUser, should return immediately
 	if p.Status.IsEndStatus() {
-		return nil
+		return pipelineWithTasks, nil
 	}
 
 	// calculate pipeline status by tasks
@@ -139,11 +142,11 @@ func (r *Reconciler) updateStatusAfterReconcile(ctx context.Context, pipelineID 
 		oldStatus := p.Status
 		p.Status = calcPStatus
 		if err := r.UpdatePipelineStatus(p); err != nil {
-			return err
+			return nil, err
 		}
 		rlog.PInfof(p.ID, "update pipeline status (%s -> %s)", oldStatus, calcPStatus)
 	}
-	return nil
+	return pipelineWithTasks, nil
 }
 
 // makeContextForPipelineReconcile

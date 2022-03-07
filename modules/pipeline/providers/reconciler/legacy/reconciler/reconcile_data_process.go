@@ -231,7 +231,7 @@ func (r *Reconciler) reconcileSnippetTask(task *spec.PipelineTask, p *spec.Pipel
 	err = r.internalReconcile(snippetCtx, sp.ID)
 	defer func() {
 		r.teardownCurrentReconcile(snippetCtx, sp.ID)
-		if err := r.updateStatusAfterReconcile(snippetCtx, sp.ID); err != nil {
+		if _, err := r.updateStatusAfterReconcile(snippetCtx, sp.ID); err != nil {
 			logrus.Errorf("snippet pipeline: %d, failed to update status after reconcile, err: %v", sp.ID, err)
 		}
 	}()
