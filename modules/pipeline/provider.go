@@ -26,19 +26,24 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/dispatcher"
+	"github.com/erda-project/erda/modules/pipeline/providers/engine"
+	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
-	"github.com/erda-project/erda/modules/pipeline/providers/queuemanage"
+	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler"
 	"github.com/erda-project/erda/providers/metrics/report"
 )
 
 type provider struct {
-	CmsService         pb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
-	MetricReport       report.MetricReport `autowired:"metric-report-client" optional:"true"`
-	ReconcilerElection election.Interface  `autowired:"etcd-election@reconciler"`
-	GcElection         election.Interface  `autowired:"etcd-election@gc"`
-	Router             httpserver.Router   `autowired:"http-router"`
+	CmsService   pb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
+	MetricReport report.MetricReport `autowired:"metric-report-client" optional:"true"`
+	GcElection   election.Interface  `autowired:"etcd-election@gc"`
+	Router       httpserver.Router   `autowired:"http-router"`
 
-	QueueManager queuemanage.Interface
+	Engine       engine.Interface
+	QueueManager queuemanager.Interface
+	Reconciler   reconciler.Interface
+	LeaderWorker leaderworker.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

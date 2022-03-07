@@ -27,9 +27,8 @@ import (
 
 	"github.com/erda-project/erda-proto-go/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
+	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager/types"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 )
 
 func TestParsePipelineIDFromWatchedKey(t *testing.T) {
@@ -82,7 +81,6 @@ func TestReconciler_doWatch(t *testing.T) {
 	type args struct {
 		ctx context.Context
 		key string
-		t   storetypes.ChangeType
 	}
 	tests := []struct {
 		name   string
@@ -100,7 +98,6 @@ func TestReconciler_doWatch(t *testing.T) {
 			},
 			args: args{
 				key: etcdReconcilerWatchPrefix + "1",
-				t:   storetypes.Add,
 			},
 		},
 	}
@@ -125,7 +122,7 @@ func TestReconciler_doWatch(t *testing.T) {
 			})
 			defer patch1.Unpatch()
 
-			r.doWatch(ctx, tt.args.key, tt.args.t)
+			r.Reconcile(ctx, tt.args.key)
 		})
 	}
 }

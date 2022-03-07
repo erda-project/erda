@@ -26,18 +26,13 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/commonutil/statusutil"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/taskrun"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-// reconcile do pipeline reconcile.
-func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
-	// judge if dlock lost
-	if ctx.Err() != nil {
-		rlog.PWarnf(pipelineID, "no need reconcile, dlock already lost, err: %v", ctx.Err())
-		return nil
-	}
+// internalReconcile do pipeline reconcile.
+func (r *Reconciler) internalReconcile(ctx context.Context, pipelineID uint64) error {
 	// init caches and get stages
 	defer clearPipelineContextCaches(pipelineID)
 
@@ -84,7 +79,7 @@ func (r *Reconciler) reconcile(ctx context.Context, pipelineID uint64) error {
 					logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q reconcile occurred an error: %v", p.ID, schedulableTasks[i].Name, err)
 				}
 				r.processingTasks.Delete(buildTaskDagName(p.ID, schedulableTasks[i].Name))
-				err = r.reconcile(ctx, pipelineID)
+				err = r.internalReconcile(ctx, pipelineID)
 				if err != nil {
 					logrus.Errorf("defer reconcile error %v", err)
 				}

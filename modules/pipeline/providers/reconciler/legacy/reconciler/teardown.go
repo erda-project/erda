@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
 	"github.com/erda-project/erda/modules/pipeline/metrics"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
 )
@@ -35,7 +35,6 @@ func (r *Reconciler) teardownCurrentReconcile(ctx context.Context, pipelineID ui
 	closePipelineExitChannel(ctx, pipelineID)
 	r.deleteEtcdWatchKey(context.Background(), pipelineID)
 	r.teardownPipelines.Delete(pipelineID)
-	r.QueueManager.PopOutPipelineFromQueue(pipelineID)
 }
 
 func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithTasks) {

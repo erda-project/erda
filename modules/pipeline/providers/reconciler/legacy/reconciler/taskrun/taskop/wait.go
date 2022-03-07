@@ -27,7 +27,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/commonutil/costtimeutil"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/metrics"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/taskrun"
 )
 
 var err4EnableDeclineRatio = errors.New("enable decline ratio")

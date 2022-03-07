@@ -25,7 +25,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/events"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
@@ -228,7 +228,7 @@ func (r *Reconciler) reconcileSnippetTask(task *spec.PipelineTask, p *spec.Pipel
 		rlog.PErrorf(p.ID, "Failed to update pipeline status before reconcile, err: %v", err)
 		return nil, err
 	}
-	err = r.reconcile(snippetCtx, sp.ID)
+	err = r.internalReconcile(snippetCtx, sp.ID)
 	defer func() {
 		r.teardownCurrentReconcile(snippetCtx, sp.ID)
 		if err := r.updateStatusAfterReconcile(snippetCtx, sp.ID); err != nil {
@@ -247,8 +247,8 @@ func (r *Reconciler) reconcileSnippetTask(task *spec.PipelineTask, p *spec.Pipel
 	return task, nil
 }
 
-// updatePipeline update db, publish websocket event
-func (r *Reconciler) updatePipelineStatus(p *spec.Pipeline) error {
+// UpdatePipelineStatus update db, publish websocket event
+func (r *Reconciler) UpdatePipelineStatus(p *spec.Pipeline) error {
 	// db
 	if err := r.dbClient.UpdatePipelineBaseStatus(p.ID, p.Status); err != nil {
 		return err

@@ -17,7 +17,7 @@ package reconciler
 import (
 	"sort"
 
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/dag"
 	"github.com/erda-project/erda/pkg/strutil"

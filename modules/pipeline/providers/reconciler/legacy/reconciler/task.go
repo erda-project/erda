@@ -21,10 +21,10 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/metrics"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun/taskop"
 	"github.com/erda-project/erda/modules/pipeline/pkg/errorsx"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/taskrun"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/taskrun/taskop"
 	"github.com/erda-project/erda/pkg/loop"
 )
 

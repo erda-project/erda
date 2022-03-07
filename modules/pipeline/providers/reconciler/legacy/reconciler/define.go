@@ -15,23 +15,17 @@
 package reconciler
 
 import (
-	"context"
-	"fmt"
 	"sync"
-	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/pkg/action_info"
-	"github.com/erda-project/erda/modules/pipeline/providers/queuemanage/types"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
-	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -50,8 +44,6 @@ type Reconciler struct {
 	etcd     *etcd.Store
 	bdl      *bundle.Bundle
 	dbClient *dbclient.Client
-
-	QueueManager types.QueueManager
 
 	// processingTasks store task id which is in processing
 	processingTasks sync.Map
@@ -97,19 +89,4 @@ func New(js jsonstore.JsonStore, etcd *etcd.Store, bdl *bundle.Bundle, dbClient 
 		pipelineSvcFunc: pipelineSvcFunc,
 	}
 	return &r, nil
-}
-
-// Add add pipelineID to reconciler, until add success
-func (r *Reconciler) Add(pipelineID uint64) {
-	rlog.PInfof(pipelineID, "start add to reconciler")
-	defer rlog.PInfof(pipelineID, "end add to reconciler")
-	_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*60)).Do(func() (abort bool, err error) {
-		err = r.js.Put(context.Background(), fmt.Sprintf("%s%d", etcdReconcilerWatchPrefix, pipelineID), nil)
-		if err != nil {
-			rlog.PErrorf(pipelineID, "add to reconciler failed, err: %v, try again later", err)
-			return false, err
-		}
-		rlog.PInfof(pipelineID, "add to reconciler success")
-		return true, nil
-	})
 }

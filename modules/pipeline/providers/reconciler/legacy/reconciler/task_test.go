@@ -23,7 +23,7 @@ import (
 	"github.com/alecthomas/assert"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/taskrun"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/taskrun"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 

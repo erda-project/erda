@@ -22,44 +22,13 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/commonutil/statusutil"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// Listen watch incoming pipelines which need to be scheduled from etcd.
-func (r *Reconciler) Listen(ctx context.Context) {
-	rlog.Infof("start listen")
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			_ = r.js.IncludeWatch().Watch(ctx, etcdReconcilerWatchPrefix, true, true, true, nil,
-				func(key string, _ interface{}, t storetypes.ChangeType) (_ error) {
-
-					// async reconcile, non-blocking, so we can watch subsequent incoming pipelines
-					go r.doWatch(ctx, key, t)
-
-					return nil
-				},
-			)
-		}
-	}
-}
-
-func (r *Reconciler) doWatch(ctx context.Context, key string, t storetypes.ChangeType) {
-	rlog.Infof("watched a key change, key: %s, changeType: %s", key, t.String())
-
-	// parse pipelineID
-	pipelineID, err := parsePipelineIDFromWatchedKey(key)
-	if err != nil {
-		rlog.Errorf("failed to parse pipelineID from watched key, key: %s, err: %v", key, err)
-		return
-	}
-
+func (r *Reconciler) Reconcile(ctx context.Context, pipelineID uint64) {
 	// there may be multiple reconciles here, and subsequent reconciles will cause the pipeline to succeed directly
 	_, ok := r.processingPipelines.Load(pipelineID)
 	if ok {
@@ -72,25 +41,6 @@ func (r *Reconciler) doWatch(ctx context.Context, key string, t storetypes.Chang
 		}()
 	}
 
-	// add into queue
-	popCh, needRetryIfErr, err := r.QueueManager.PutPipelineIntoQueue(pipelineID)
-	if err != nil {
-		rlog.PErrorf(pipelineID, "failed to put pipeline into queue")
-		if needRetryIfErr {
-			r.reconcileAgain(pipelineID)
-			return
-		}
-		// no need retry, treat as failed
-		_ = r.updatePipelineStatus(&spec.Pipeline{
-			PipelineBase: spec.PipelineBase{
-				ID:     pipelineID,
-				Status: apistructs.PipelineStatusFailed,
-			}})
-		return
-	}
-	rlog.PInfof(pipelineID, "added into queue, waiting to pop from the queue")
-	<-popCh
-	rlog.PInfof(pipelineID, "pop from the queue, begin reconcile")
 	var p spec.Pipeline
 	_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*10)).Do(func() (abort bool, err error) {
 		p, err = r.dbClient.GetPipeline(pipelineID)
@@ -128,7 +78,7 @@ func (r *Reconciler) doWatch(ctx context.Context, key string, t storetypes.Chang
 	}()
 
 	// reconciler
-	reconcileErr := r.reconcile(pCtx, pipelineID)
+	reconcileErr := r.internalReconcile(pCtx, pipelineID)
 
 	defer func() {
 		r.teardownCurrentReconcile(pCtx, pipelineID)
@@ -138,7 +88,7 @@ func (r *Reconciler) doWatch(ctx context.Context, key string, t storetypes.Chang
 
 		// if reconcile failed, put and wait next reconcile
 		if reconcileErr != nil {
-			rlog.PErrorf(pipelineID, "failed to reconcile pipeline, err: %v", err)
+			rlog.PErrorf(pipelineID, "failed to reconcile pipeline, err: %v", reconcileErr)
 			r.reconcileAgain(pipelineID)
 		}
 	}()
@@ -149,7 +99,9 @@ func (r *Reconciler) reconcileAgain(pipelineID uint64) {
 	time.Sleep(time.Second * 5)
 	// delete the recorded pipeline that is being executed to prevent failure to reconcile
 	r.processingPipelines.Delete(pipelineID)
-	r.Add(pipelineID)
+	for r.internalReconcile(context.Background(), pipelineID) != nil {
+		time.Sleep(time.Second * 5)
+	}
 }
 
 // updateStatusBeforeReconcile update pipeline status to running
@@ -157,7 +109,7 @@ func (r *Reconciler) updateStatusBeforeReconcile(p spec.Pipeline) error {
 	if !p.Status.IsRunningStatus() {
 		oldStatus := p.Status
 		p.Status = apistructs.PipelineStatusRunning
-		if err := r.updatePipelineStatus(&p); err != nil {
+		if err := r.UpdatePipelineStatus(&p); err != nil {
 			return err
 		}
 		rlog.PInfof(p.ID, "update pipeline status (%s -> %s)", oldStatus, apistructs.PipelineStatusRunning)
@@ -186,7 +138,7 @@ func (r *Reconciler) updateStatusAfterReconcile(ctx context.Context, pipelineID 
 	if calcPStatus != p.Status {
 		oldStatus := p.Status
 		p.Status = calcPStatus
-		if err := r.updatePipelineStatus(p); err != nil {
+		if err := r.UpdatePipelineStatus(p); err != nil {
 			return err
 		}
 		rlog.PInfof(p.ID, "update pipeline status (%s -> %s)", oldStatus, calcPStatus)
