@@ -190,8 +190,9 @@ func getOperations(clickableKeys []uint64) map[string]interface{} {
 
 func getProps(i18nLocale *i18n.LocaleResource) map[string]interface{} {
 	return map[string]interface{}{
-		"rowKey": "key",
-		"scroll": map[string]interface{}{"x": 1200},
+		"rowKey":     "key",
+		"hideHeader": true,
+		"scroll":     map[string]interface{}{"x": 1200},
 		"columns": []columns{
 			{
 				Title:     i18nLocale.Get(i18nkey.I18nKeyStepName),
