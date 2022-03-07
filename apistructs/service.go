@@ -277,8 +277,13 @@ const (
 	ECIEnable  = "ECI_ENABLE"
 	ECIHitRate = "ECI_HIT_RATE"
 
-	ECIVendorAibaba = CSIVendorAlibaba
-	AlibabaECILabel = "alibabacloud.com/eci"
+	ECIVendorAlibaba           = CSIVendorAlibaba
+	AlibabaECILabel            = "alibabacloud.com/eci"
+	ECIVendorHuawei            = CSIVendorHuawei
+	HuaweiCCILabel             = "virtual-kubelet.io/burst-to-cci"
+	ECIVendorTecent            = CSIVendorTencent
+	TecentEKSNodeSelectorKey   = "node.kubernetes.io/instance-type"
+	TecentEKSNodeSelectorValue = "eklet"
 )
 
 // One single Service which is the minimum scheduling unit

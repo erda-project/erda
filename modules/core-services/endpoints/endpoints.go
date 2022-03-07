@@ -320,6 +320,12 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/projects/{projectID}/workspaces/{workspace}/namespaces", Method: http.MethodGet, Handler: e.GetAllNamespaces},
 		{Path: "/api/projects/{projectID}/workspaces/{workspace}/quota", Method: http.MethodGet, Handler: e.GetWorkspaceQuota},
 
+		// interface of project workspace abilities CRDU
+		{Path: "/api/project-workspace-abilities/{projectID}/{workspace}", Method: http.MethodGet, Handler: e.GetProjectWorkSpace},
+		{Path: "/api/project-workspace-abilities", Method: http.MethodPost, Handler: e.CreateProjectWorkSpace},
+		{Path: "/api/project-workspace-abilities", Method: http.MethodPut, Handler: e.UpdateProjectWorkSpace},
+		{Path: "/api/project-workspace-abilities", Method: http.MethodDelete, Handler: e.DeleteProjectWorkSpace},
+
 		// cmp dependencies
 		{Path: "/api/projects-quota", Method: http.MethodGet, Handler: e.GetProjectQuota},
 		{Path: "/api/projects-namespaces", Method: http.MethodGet, Handler: e.GetNamespacesBelongsTo},

@@ -142,13 +142,13 @@ func GenNamespaceByProviderAndClusterInfo(name string, clusterInfo map[string]st
 			}
 		}
 		if isRateHit(hitRate) {
-			ns.Labels, _ = vk.GetLabelsWithVendor(apistructs.ECIVendorAibaba)
+			ns.Labels, _ = vk.GetLabelsWithVendor(apistructs.ECIVendorAlibaba)
 		}
 		return ns
 	}
 	switch provider.ContainerInstanceType {
 	case apistructs.ContainerInstanceECI:
-		ns.Labels, _ = vk.GetLabelsWithVendor(apistructs.ECIVendorAibaba)
+		ns.Labels, _ = vk.GetLabelsWithVendor(apistructs.ECIVendorAlibaba)
 	}
 	return ns
 }
@@ -160,7 +160,7 @@ func GenNamespaceByJob(job *apistructs.JobFromUser) *corev1.Namespace {
 	if job.ContainerInstanceProvider != nil && job.ContainerInstanceProvider.IsHitted {
 		switch job.ContainerInstanceProvider.ContainerInstanceType {
 		case apistructs.ContainerInstanceECI:
-			ns.Labels, _ = vk.GetLabelsWithVendor(apistructs.ECIVendorAibaba)
+			ns.Labels, _ = vk.GetLabelsWithVendor(apistructs.ECIVendorAlibaba)
 		default:
 
 		}

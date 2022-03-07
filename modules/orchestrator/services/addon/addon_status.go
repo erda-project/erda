@@ -1646,7 +1646,7 @@ func SetAddonVolumes(options map[string]string, targetPath string, readOnly bool
 	// Capacity
 	if ds, ok := options[diceyml.AddonVolumeSize]; ok {
 		dsize, _ := strconv.Atoi(ds)
-		// 卷容量最大限制 2000Gi
+		// 卷容量最大限制 32768Gi
 		if int32(dsize) >= diceyml.AddonVolumeSizeMin && int32(dsize) < diceyml.AddonVolumeSizeMax {
 			volume.Capacity = int32(dsize)
 		}
@@ -1655,7 +1655,7 @@ func SetAddonVolumes(options map[string]string, targetPath string, readOnly bool
 		if int32(dsize) < diceyml.AddonVolumeSizeMin {
 			volume.Capacity = diceyml.AddonVolumeSizeMin
 		}
-		// 大于 2000，修正为 2000
+		// 大于 32768，修正为 32768
 		if int32(dsize) >= diceyml.AddonVolumeSizeMax {
 			volume.Capacity = diceyml.AddonVolumeSizeMax
 		}
@@ -1679,9 +1679,9 @@ func SetlabelsFromOptions(options, labels map[string]string) {
 	for k, v := range options {
 		switch k {
 		// some options may be is not a valid value for labels, so only set some predefined options
-		case diceyml.AddonDiskType, diceyml.AddonVolumeSize, diceyml.AddonSnapMaxHistory, diceyml.AddonEnableECI:
+		case diceyml.AddonDiskType, diceyml.AddonVolumeSize, diceyml.AddonSnapMaxHistory, apistructs.AlibabaECILabel:
 			labels[k] = v
-			if k == diceyml.AddonEnableECI && v == "true" {
+			if k == apistructs.AlibabaECILabel && v == "true" {
 				registry := os.Getenv(diceyml.ErdaImageRegistry)
 				if registry != "" {
 					// 从 orchestraor 的环境变量获取 addon 组件的镜像仓库
