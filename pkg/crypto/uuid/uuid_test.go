@@ -21,5 +21,9 @@ import (
 )
 
 func TestUuid(t *testing.T) {
-	assert.Equal(t, 32, len(Generate()))
+	assert.Equal(t, 32, len(UUID()))
+}
+
+func TestNew(t *testing.T) {
+	assert.Equal(t, 32+4, len(New()))
 }

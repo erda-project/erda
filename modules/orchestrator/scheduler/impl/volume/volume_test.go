@@ -60,7 +60,7 @@ func TestNewVolumeID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			generatePatch := monkey.Patch(uuid.Generate, func() string {
+			generatePatch := monkey.Patch(uuid.UUID, func() string {
 				return "7cdf0078cfe74afe95a962572da952"
 			})
 

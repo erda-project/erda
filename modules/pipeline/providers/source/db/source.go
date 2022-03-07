@@ -18,11 +18,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 type PipelineSource struct {
@@ -57,7 +57,7 @@ func (client *Client) CreatePipelineSource(pipelineSource *PipelineSource, ops .
 	session := client.NewSession(ops...)
 	defer session.Close()
 
-	pipelineSource.ID = uuid.New().String()
+	pipelineSource.ID = uuid.New()
 	_, err = session.InsertOne(pipelineSource)
 	return err
 }

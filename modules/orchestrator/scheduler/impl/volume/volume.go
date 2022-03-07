@@ -71,7 +71,7 @@ func (i VolumeIdentity) String() string {
 // TODO: Need to better distinguish between name and ID
 func (i VolumeIdentity) IsNotUUID() bool {
 	IDLenLock.Do(func() {
-		IDLen = len(uuid.Generate())
+		IDLen = len(uuid.UUID())
 	})
 	return len(i) != IDLen
 }
@@ -104,7 +104,7 @@ func NewVolumeID(config VolumeCreateConfig) (VolumeIdentity, error) {
 	if err != nil {
 		return VolumeIdentity(""), err
 	}
-	id := hex + uuid.Generate()
+	id := hex + uuid.UUID()
 	if len(id) > 40 {
 		return VolumeIdentity(id[:40]), nil
 	}

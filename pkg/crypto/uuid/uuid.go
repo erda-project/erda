@@ -17,16 +17,28 @@ package uuid
 import (
 	"fmt"
 
+	guuid "github.com/google/uuid"
 	uuid "github.com/satori/go.uuid"
 )
 
-// Generate 不要再调用这个函数，太丑了，找时间废除.
-func Generate() string {
-	u := uuid.NewV4()
-	return fmt.Sprintf("%x%x%x%x%x", u[:4], u[4:6], u[6:8], u[8:10], u[10:])
+// New return UUID.
+// see: https://en.wikipedia.org/wiki/Universally_unique_identifier#Format
+//
+// A UUID is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC 4122.
+// In its canonical textual representation, the 16 octets of a UUID are represented as 32 hexadecimal (base-16) digits,
+// displayed in five groups separated by hyphens, in the form 8-4-4-4-12 for a total of 36 characters (32 hexadecimal characters and 4 hyphens).
+// For example:
+//   123e4567-e89b-12d3-a456-426614174000
+//   xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx
+func New() string {
+	return guuid.New().String()
 }
 
-// UUID 返回 uuid.
+// UUID return uuid.
+// format:
+//   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+// Deprecated. Please use New()
 func UUID() string {
-	return Generate()
+	u := uuid.NewV4()
+	return fmt.Sprintf("%x%x%x%x%x", u[:4], u[4:6], u[6:8], u[8:10], u[10:])
 }
