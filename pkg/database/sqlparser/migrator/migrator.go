@@ -398,7 +398,7 @@ func (mig *Migrator) migrate(ctx context.Context) error {
 		)
 		logrus.WithField("module", moduleName).
 			WithField("scriptName", script.GetName()).
-			Infoln("[MySQL Server] %s", map[bool]string{true: "    to install", false: "not to install"}[script.Pending])
+			Infof("[MySQL Server] %s", map[bool]string{true: "    to install", false: "not to install"}[script.Pending])
 
 		if !script.Pending {
 			continue
