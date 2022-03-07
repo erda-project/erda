@@ -24,36 +24,6 @@ import (
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
 )
 
-func TestComponentReleaseFilter_GenComponentState(t *testing.T) {
-	component := &cptype.Component{
-		State: map[string]interface{}{
-			"values": Values{
-				ApplicationIDs:    []string{"testID"},
-				BranchID:          "testBranch",
-				CommitID:          "testCommitID",
-				UserIDs:           []string{"testID"},
-				CreatedAtStartEnd: []int64{0, 0},
-			},
-			"releaseFilter__urlQuery": "testQuery",
-			"isProjectRelease":        true,
-			"projectID":               1,
-		},
-	}
-
-	f := ComponentReleaseFilter{}
-	if err := f.GenComponentState(component); err != nil {
-		t.Fatal(err)
-	}
-
-	isEqual, err := util.IsDeepEqual(f.State, component.State)
-	if err != nil {
-		t.Error(err)
-	}
-	if !isEqual {
-		t.Errorf("test failed, state is not expected after generate")
-	}
-}
-
 func getPair() (Values, string) {
 	v := Values{
 		ApplicationIDs:    []string{"testAppID"},
@@ -76,13 +46,13 @@ func getPair() (Values, string) {
 func TestComponentReleaseFilter_DecodeURLQuery(t *testing.T) {
 	values, encode := getPair()
 
-	f := ComponentReleaseFilter{
+	f := ReleaseFilter{
 		sdk: &cptype.SDK{InParams: map[string]interface{}{
 			"releaseFilter__urlQuery": encode,
 		}},
 	}
 
-	if err := f.DecodeURLQuery(); err != nil {
+	if err := f.decodeURLQuery(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -99,56 +69,13 @@ func TestComponentReleaseFilter_DecodeURLQuery(t *testing.T) {
 
 func TestComponentReleaseFilter_EncodeURLQuery(t *testing.T) {
 	values, encode := getPair()
-	f := ComponentReleaseFilter{State: State{
+	f := ReleaseFilter{State: State{
 		Values: values,
 	}}
-	if err := f.EncodeURLQuery(); err != nil {
+	if err := f.encodeURLQuery(); err != nil {
 		t.Fatal(err)
 	}
 	if encode != f.State.ReleaseFilterURLQuery {
 		t.Errorf("test failed, url query is not expected after encode")
-	}
-}
-
-func TestComponentReleaseFilter_Transfer(t *testing.T) {
-	f := ComponentReleaseFilter{
-		State: State{
-			Values: Values{
-				ApplicationIDs:    []string{"testAppID"},
-				BranchID:          "testBranchID",
-				CommitID:          "testCommitID",
-				CreatedAtStartEnd: []int64{1, 1},
-				UserIDs:           []string{"testUserID"},
-			},
-			ReleaseFilterURLQuery: "testURLQuery",
-			IsProjectRelease:      true,
-			ProjectID:             1,
-		},
-		Data: Data{
-			HideSave: true,
-			Conditions: []Condition{
-				{
-					Key:         "testKey",
-					Label:       "testLabel",
-					Placeholder: "testPlaceHolder",
-					Type:        "testType",
-					Options: []Option{
-						{
-							Label: "testLabel",
-							Value: "testValue",
-						},
-					},
-				},
-			},
-		},
-	}
-	component := &cptype.Component{}
-	f.Transfer(component)
-	isEqual, err := util.IsDeepEqual(f, component)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !isEqual {
-		t.Errorf("test failed, component is not equal after transfer")
 	}
 }
