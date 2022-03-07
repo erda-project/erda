@@ -63,7 +63,7 @@ func (e *expressionService) GetOrgsLocale(ctx context.Context, request *pb.GetOr
 	}
 	orgLocale := make(map[string]string)
 	for _, v := range list {
-		if v.Locale == "" {
+		if v.Locale == "" || (v.Locale != model.ZHLange && v.Locale != model.ENLange) {
 			v.Locale = "zh-CN"
 		}
 		orgLocale[v.Name] = v.Locale

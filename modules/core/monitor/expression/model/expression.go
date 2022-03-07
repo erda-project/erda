@@ -22,6 +22,9 @@ const (
 	ALERT_RULE          = "alert_rule.yaml"
 	ANALYZER_EXPRESSION = "analyzer_expression.json"
 	NOTIFY_TEMPLATE     = "notify_template.yaml"
+
+	ZHLange = "zh-CN"
+	ENLange = "en-US"
 )
 
 type Expression struct {
