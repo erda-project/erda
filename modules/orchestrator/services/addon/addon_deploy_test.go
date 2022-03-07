@@ -63,7 +63,7 @@ func TestBuildAddonRequestGroupForEsWithOperator(t *testing.T) {
 
 	addon := New(WithBundle(bdl))
 
-	_, err := addon.buildAddonRequestGroup(&apistructs.AddonHandlerCreateItem{
+	_, err := addon.BuildAddonRequestGroup(&apistructs.AddonHandlerCreateItem{
 		AddonName: apistructs.AddonES,
 	}, &dbclient.AddonInstance{
 		AddonID: "fake-addon-id",

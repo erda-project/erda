@@ -48,7 +48,6 @@ const (
 	RegistrySecretName      = "REGISTRY_SECRET_NAME"
 
 	LabelKeyPrefix          = "annotations/"
-	ECIPodLabel             = "alibabacloud.com/eci"
 	ECIPodSidecarConfigPath = "/etc/sidecarconf"
 
 	// ECI Pod fluent-bit sidecar contianer configuration
@@ -1458,7 +1457,7 @@ func inheritDaemonsetLabels(service *apistructs.Service, daemonset *appsv1.Daemo
 	}
 
 	for lk, lv := range daemonset.Labels {
-		if lk == ECIPodLabel && lv == "true" {
+		if lk == apistructs.AlibabaECILabel && lv == "true" {
 			return errors.Errorf("error in service.Labels: for daemonset %v in namesapce %v with error: ECI not support daemonset, do not set lables %s='true' for daemonset", daemonset.Name, daemonset.Namespace, lk)
 		}
 	}
@@ -1474,7 +1473,7 @@ func inheritDaemonsetLabels(service *apistructs.Service, daemonset *appsv1.Daemo
 	}
 
 	for lk, lv := range daemonset.Spec.Template.Labels {
-		if lk == ECIPodLabel && lv == "true" {
+		if lk == apistructs.AlibabaECILabel && lv == "true" {
 			return errors.Errorf("error in service.DeploymentLabels: for daemonset %v in namesapce %v with error: ECI not support daemonset, do not set lables %s='true' for daemonset.\n", daemonset.Name, daemonset.Namespace, lk)
 		}
 	}
@@ -1502,7 +1501,7 @@ func setPodLabelsFromService(hasHostPath bool, labels map[string]string, podLabe
 			continue
 		}
 		// HostPath not supported in AliCloud ECI
-		if hasHostPath && key == ECIPodLabel && value == "true" {
+		if hasHostPath && key == apistructs.AlibabaECILabel && value == "true" {
 			return errors.Errorf("can not create ECI Pod with hostPath")
 		}
 
@@ -1529,7 +1528,7 @@ func setPodAnnotationsFromLabels(service *apistructs.Service, podannotations map
 			continue
 		}
 
-		if key == ECIPodLabel && value == "true" {
+		if key == apistructs.AlibabaECILabel && value == "true" {
 			images := strings.Split(service.Image, "/")
 			if len(images) >= 2 {
 				podannotations[diceyml.AddonImageRegistry] = images[0]
@@ -1544,7 +1543,7 @@ func setPodAnnotationsFromLabels(service *apistructs.Service, podannotations map
 			continue
 		}
 
-		if key == ECIPodLabel && value == "true" {
+		if key == apistructs.AlibabaECILabel && value == "true" {
 			images := strings.Split(service.Image, "/")
 			if len(images) >= 2 {
 				podannotations[diceyml.AddonImageRegistry] = images[0]
@@ -1735,13 +1734,13 @@ func UseECI(controllerLabels, PodLabels map[string]string) bool {
 		return false
 	}
 
-	if value, ok := controllerLabels[ECIPodLabel]; ok {
+	if value, ok := controllerLabels[apistructs.AlibabaECILabel]; ok {
 		if value == "true" {
 			return true
 		}
 	}
 
-	if value, ok := PodLabels[ECIPodLabel]; ok {
+	if value, ok := PodLabels[apistructs.AlibabaECILabel]; ok {
 		if value == "true" {
 			return true
 		}

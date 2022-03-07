@@ -47,8 +47,6 @@ const (
 	AddonVolumeSize = "addonVolumeSize"
 	//historical snapshot count
 	AddonSnapMaxHistory = "addonSnapMaxHistory"
-	// enable addon running as ECI Pod
-	AddonEnableECI = "alibabacloud.com/eci"
 	// addon image private registry
 	AddonImageRegistry = "k8s.aliyun.com/insecure-registry"
 	// Erda addon images registry
@@ -56,12 +54,14 @@ const (
 	// Env for orchestrator
 	ErdaImageRegistry = "DICE_IMAGE_REGISTRY"
 
-	// 容量最大限制 2TB
-	AddonVolumeSizeMax = int32(2000)
+	// 容量最大限制 32TB
+	AddonVolumeSizeMax = int32(32768)
 	// 容量最小限制 20GiB
 	AddonVolumeSizeMin = int32(20)
 	// 历史快照数量限制 100 个
 	AddonVolumeSnapshotMax = int32(100)
+	// 项目级部署 ECI 默认卷容量
+	ProjectECIVolumeDefaultSize = int32(20)
 )
 
 type Object struct {

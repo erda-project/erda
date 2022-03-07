@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/i18n"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
+	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
@@ -829,7 +830,8 @@ func (a *Addon) createAddonResource(addonIns *dbclient.AddonInstance, addonInsRo
 			return err
 		}
 		if addonSpec.SubCategory == apistructs.BasicAddon {
-			if err := a.basicAddonDeploy(addonIns, addonInsRouting, params, addonSpec, addonDice); err != nil {
+			// TODO: get vendor from cluster or config
+			if err := a.basicAddonDeploy(addonIns, addonInsRouting, params, addonSpec, addonDice, apistructs.ECIVendorAlibaba); err != nil {
 				if a.Logger != nil {
 					a.pushLog(fmt.Sprintf("error when addon is released, %v", err), params)
 				}
@@ -958,13 +960,61 @@ func (a *Addon) providerAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRo
 
 // basicAddonDeploy 基础addon发布
 func (a *Addon) basicAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting,
-	params *apistructs.AddonHandlerCreateItem, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) error {
+	params *apistructs.AddonHandlerCreateItem, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, vendor string) error {
 	if err := a.preCheck(params); err != nil {
 		return err
 	}
 
 	// 构建 addon 创建请求
-	addonCreateReq, err := a.buildAddonRequestGroup(params, addonIns, addonSpec, addonDice)
+	projID, _ := strconv.ParseUint(addonIns.ProjectID, 10, 64)
+	orgID, _ := strconv.ParseUint(addonIns.OrgID, 10, 64)
+	logrus.Infof("params is %+v", *params)
+	logrus.Infof("params is %#v", *params)
+	projectECI := utils.IsProjectECIEnable(a.bdl, projID, addonIns.Workspace, orgID, params.OperatorID)
+	if projectECI {
+		if params.Options == nil {
+			params.Options = make(map[string]string)
+		}
+		switch vendor {
+		case apistructs.ECIVendorAlibaba:
+			// Alicloud ECI
+			if _, ok := params.Options[apistructs.AlibabaECILabel]; !ok {
+				params.Options[apistructs.AlibabaECILabel] = "true"
+			}
+
+		case apistructs.ECIVendorHuawei:
+			// Huawei CCI
+			if _, ok := params.Options[apistructs.HuaweiCCILabel]; !ok {
+				params.Options[apistructs.HuaweiCCILabel] = "force"
+			}
+
+		case apistructs.ECIVendorTecent:
+			// Tencent EKSCI
+			if _, ok := params.Options[apistructs.TecentEKSNodeSelectorKey]; !ok {
+				params.Options[apistructs.TecentEKSNodeSelectorKey] = apistructs.TecentEKSNodeSelectorValue
+			}
+
+		default:
+			// Alicloud ECI
+			if _, ok := params.Options[apistructs.AlibabaECILabel]; !ok {
+				params.Options[apistructs.AlibabaECILabel] = "true"
+			}
+		}
+
+		if _, ok := params.Options[diceyml.AddonDiskType]; !ok {
+			params.Options[diceyml.AddonDiskType] = apistructs.VolumeTypeSSD
+		}
+
+		if _, ok := params.Options[diceyml.AddonVolumeSize]; !ok {
+			params.Options[diceyml.AddonVolumeSize] = strconv.Itoa(int(diceyml.ProjectECIVolumeDefaultSize))
+		}
+
+		if _, ok := params.Options[diceyml.AddonSnapMaxHistory]; !ok {
+			params.Options[diceyml.AddonSnapMaxHistory] = "0"
+		}
+	}
+
+	addonCreateReq, err := a.BuildAddonRequestGroup(params, addonIns, addonSpec, addonDice)
 	if err != nil || addonCreateReq == nil {
 		logrus.Errorf("failed to build addon creating request body, addon: %v, err: %v", addonIns.ID, err)
 		a.FailAndDelete(addonIns)
@@ -991,7 +1041,7 @@ func (a *Addon) basicAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouti
 
 	// after deployed
 	// init first mysql account
-	if err := a.initMySQLAccount(addonIns, addonInsRouting, params.OperatorID); err != nil {
+	if err := a.InitMySQLAccount(addonIns, addonInsRouting, params.OperatorID); err != nil {
 		return err
 	}
 

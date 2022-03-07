@@ -35,7 +35,7 @@ func SetAddonLabelsAndAnnotations(service apistructs.Service, labels, annotation
 				continue
 			}
 			labels[lk] = lv
-			if lk == ECIPodLabel && lv == "true" {
+			if lk == apistructs.AlibabaECILabel && lv == "true" {
 				images := strings.Split(service.Image, "/")
 				if len(images) >= 2 {
 					annotations[diceyml.AddonImageRegistry] = images[0]
@@ -49,7 +49,7 @@ func SetAddonLabelsAndAnnotations(service apistructs.Service, labels, annotation
 			annotations[strings.TrimPrefix(lk, LabelKeyPrefix)] = lv
 		} else {
 			labels[lk] = lv
-			if lk == ECIPodLabel && lv == "true" {
+			if lk == apistructs.AlibabaECILabel && lv == "true" {
 				images := strings.Split(service.Image, "/")
 				if len(images) >= 2 {
 					annotations[diceyml.AddonImageRegistry] = images[0]

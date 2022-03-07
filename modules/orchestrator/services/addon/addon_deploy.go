@@ -398,8 +398,8 @@ func (a *Addon) initSqlFile(serviceGroup *apistructs.ServiceGroup, existsMysqlEx
 	return err
 }
 
-// buildAddonRequestGroup build请求serviceGroup的body信息
-func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroupCreateV2Request, error) {
+// BuildAddonRequestGroup build请求serviceGroup的body信息
+func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroupCreateV2Request, error) {
 	addonDeployGroup := apistructs.ServiceGroupCreateV2Request{
 		ClusterName: params.ClusterName,
 		ID:          addonIns.ID,
@@ -580,7 +580,7 @@ func (a *Addon) BuildAddonScaleRequestGroup(params *apistructs.AddonHandlerCreat
 		Services:    make([]apistructs.Service, 0),
 	}
 
-	addonCreateReq, err := a.buildAddonRequestGroup(params, addonIns, addonSpec, addonDice)
+	addonCreateReq, err := a.BuildAddonRequestGroup(params, addonIns, addonSpec, addonDice)
 	if err != nil || addonCreateReq == nil {
 		logrus.Errorf("failed to build addon creating request body, addon: %v, err: %v", addonIns.ID, err)
 		return nil, err

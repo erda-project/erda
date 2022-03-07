@@ -12,25 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package vk
+package core_services
 
 import (
-	"fmt"
-
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-func GetLabelsWithVendor(vendor string) (map[string]string, error) {
-	labels := make(map[string]string, 0)
-
-	// ECI and CSI provider must be the same cloud vendor now.
-	switch vendor {
-	case apistructs.ECIVendorAlibaba:
-		labels[apistructs.AlibabaECILabel] = "true"
-		return labels, nil
-	case "":
-		return labels, nil
-	default:
-		return labels, fmt.Errorf("failed to get label, vendor %s not support", vendor)
-	}
+var CMDB_PROJECT_WORKSPACE_ABILITIES_GET = apis.ApiSpec{
+	Path:         "/api/project-workspace-abilities/<projectID>/<workspace>",
+	BackendPath:  "/api/project-workspace-abilities/<projectID>/<workspace>",
+	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
+	Scheme:       "http",
+	Method:       "GET",
+	CheckLogin:   true,
+	CheckToken:   true,
+	IsOpenAPI:    true,
+	ResponseType: apistructs.ProjectWorkSpaceAbilityResponse{},
+	Doc:          "summary: 获取创建项目环境能力",
 }

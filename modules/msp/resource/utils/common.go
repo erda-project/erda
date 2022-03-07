@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/kms/kmscrypto"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
@@ -104,7 +105,7 @@ func SetlabelsFromOptions(options, labels map[string]string) {
 		labels[diceyml.AddonSnapMaxHistory] = options[diceyml.AddonSnapMaxHistory]
 	}
 
-	if _, ok := options[diceyml.AddonEnableECI]; ok {
-		labels[diceyml.AddonEnableECI] = options[diceyml.AddonEnableECI]
+	if _, ok := options[apistructs.AlibabaECILabel]; ok {
+		labels[apistructs.AlibabaECILabel] = options[apistructs.AlibabaECILabel]
 	}
 }

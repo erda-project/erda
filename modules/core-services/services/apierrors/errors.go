@@ -322,6 +322,11 @@ var (
 	ErrCreateSubscribe = err("ErrCreateSubscribe", "创建关注失败")
 	ErrDeleteSubscribe = err("ErrDeleteSubscribe", "删除关注失败")
 	ErrGetSubscribe    = err("ErrGetSubscribe", "获取关注信心失败")
+
+	ErrCreateProjectWorkspaceAbilities = err("ErrCreateSProjectWorkspaceAbilities", "创建环境集群能力失败")
+	ErrGetProjectWorkspaceAbilities    = err("ErrGetSProjectWorkspaceAbilities", "获取环境集群能力失败")
+	ErrUpdateProjectWorkspaceAbilities = err("ErrUpdateSProjectWorkspaceAbilities", "更新环境集群能力失败")
+	ErrDeleteProjectWorkspaceAbilities = err("ErrDeleteSProjectWorkspaceAbilities", "删除环境集群能力失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {
