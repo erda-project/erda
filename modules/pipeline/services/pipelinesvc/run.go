@@ -137,7 +137,7 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 
 	// update pipeline definition
 	if err = s.updatePipelineDefinition(p); err != nil {
-		logrus.Errorf("failed to updatePipelineDefinition,err: %s", err.Error())
+		logrus.Errorf("failed to updatePipelineDefinition, pipelineID: %d, definitionID: %s, err: %s", p.PipelineID, p.PipelineDefinitionID, err.Error())
 	}
 
 	return &p, nil
