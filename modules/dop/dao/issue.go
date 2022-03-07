@@ -702,32 +702,15 @@ type IssueExpiryStatus struct {
 	ExpiryStatus ExpireType
 }
 
-func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchRequest) ([]IssueExpiryStatus, int, error) {
+func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchRequest) ([]IssueExpiryStatus, error) {
 	sql := client.issueExpiryStatusQuery(req)
-	offset := (req.PageNo - 1) * req.PageSize
 	var res []IssueExpiryStatus
-	var total int
-	// paged projects with unfinished issues
-	if err := sql.Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status").
-		Offset(offset).Limit(req.PageSize).Group("dice_issues.project_id").Find(&res).Error; err != nil {
-		return nil, 0, err
-	}
-	// total of matched projects
-	if err := sql.Select("count(distinct(dice_issues.project_id))").Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	projectIDs := make([]uint64, 0, len(res))
-	for _, i := range res {
-		projectIDs = append(projectIDs, i.ProjectID)
-	}
-	req.ProjectIDs = projectIDs
-	sql = client.issueExpiryStatusQuery(req)
 	// query with matched projects
 	if err := sql.Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status").
 		Group("dice_issues.project_id, dice_issues.expiry_status").Find(&res).Error; err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	return res, total, nil
+	return res, nil
 }
 
 func (client *DBClient) issueExpiryStatusQuery(req apistructs.WorkbenchRequest) *gorm.DB {

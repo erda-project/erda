@@ -28,16 +28,16 @@ hierarchy:
     page:
       - leftContent
       - rightContent
-    leftContent:
+      - userProfile
       - head
       - workTabs
       - workContainer
       - messageTabs
       - messageContainer
-    workContainer:
+    workTabs:
       - workCards
       - workList
-    messageContainer:
+    messageTabs:
       - messageList
 
 components:
@@ -73,22 +73,6 @@ components:
     type: Container
 
 rendering:
-  __DefaultRendering__:
-    - name: page
-    - name: leftContent
-    - name: rightContent
-    - name: userProfile
-    - name: head
-    - name: workTabs
-    - name: workContainer
-    - name: workCards
-    - name: workListFilter
-    - name: workList
-    - name: messageContainer
-    - name: messageTabs
-    - name: messageList
-    - name: cleanData
-
   workTabs:
     - name: workCards
       state:
@@ -96,37 +80,24 @@ rendering:
           value: "{{ workTabs.value }}"
     - name: workListFilter
     - name: workList
-    - name: cleanData
-
 
   workCards:
-    - name: workTabs
-    - name: workListFilter
-      state:
-        - name: "tabs"
-          value: "{{ workTabs.value }}"
     - name: workList
       state:
         - name: "tabs"
           value: "{{ workTabs.value }}"
-    - name: cleanData
 
   workList:
-    - name: workTabs
-    - name: workListFilter
-      state:
-        - name: "tabs"
-          value: "{{ workTabs.value }}"
     - name: workCards
       state:
         - name: "tabs"
           value: "{{ workTabs.value }}"
-    - name: cleanData
 
   workListFilter:
     - name: workList
-    - name: cleanData
 
   messageList:
     - name: messageTabs
-    - name: cleanData
+
+  messageTabs:
+    - name: messageList
