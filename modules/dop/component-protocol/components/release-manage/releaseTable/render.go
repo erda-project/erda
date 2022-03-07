@@ -244,12 +244,16 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 	var list []Item
 	logrus.Debugf("[DEBUG] start release loop")
 	for _, release := range releaseResp.Data.List {
+		typ := "application"
+		if release.IsProjectRelease {
+			typ = "project"
+		}
 		editOperation := Operation{
 			Command: Command{
 				JumpOut: false,
 				Key:     "goto",
-				Target: fmt.Sprintf("/%s/dop/projects/%d/release/updateRelease/%s",
-					org.Name, r.State.ProjectID, release.ReleaseID),
+				Target: fmt.Sprintf("/%s/dop/projects/%d/release/%s/updateRelease/%s",
+					org.Name, r.State.ProjectID, typ, release.ReleaseID),
 			},
 			Key:         "gotoDetail",
 			Reload:      false,
@@ -326,7 +330,8 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 			}
 			item.Operations.Operations["referencedReleases"] = Operation{
 				Meta: map[string]interface{}{
-					"appReleaseIDs": strings.Join(list, ","),
+					"releaseID": strings.Join(list, ","),
+					"isLatest":  "false",
 				},
 				Key:  "referencedReleases",
 				Text: r.sdk.I18n("referencedReleases"),
