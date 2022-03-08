@@ -42,7 +42,7 @@ type GuideService struct {
 	db  *db.GuideDB
 }
 
-func (g *GuideService) CreateGuideByGittarHook(ctx context.Context, req *pb.GittarPushPayloadEvent) (*pb.CreateGuideResponse, error) {
+func (g *GuideService) CreateGuideByGittarPushHook(ctx context.Context, req *pb.GittarPushPayloadEvent) (*pb.CreateGuideResponse, error) {
 	if req.Content.Before != InitCommitID {
 		return &pb.CreateGuideResponse{}, nil
 	}
@@ -66,6 +66,7 @@ func (g *GuideService) CreateGuideByGittarHook(ctx context.Context, req *pb.Gitt
 		Kind:          db.PipelineGuide.String(),
 		Creator:       req.Content.Pusher.ID,
 		OrgID:         orgID,
+		OrgName:       req.OrgName,
 		ProjectID:     projectID,
 		AppID:         appID,
 		Branch:        req.Content.Ref[len(BranchPrefix):],

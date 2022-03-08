@@ -173,6 +173,7 @@ func PostReceiveHook(pushEvents []*models.PayloadPushEvent, c *webcontext.Contex
 				ApplicationID: strconv.FormatInt(repository.ApplicationId, 10),
 				ProjectID:     strconv.FormatInt(repository.ProjectId, 10),
 				OrgID:         strconv.FormatInt(repository.OrgId, 10),
+				OrgName:       repository.OrgName,
 				Event:         event.GitPushEvent,
 				Action:        event.GitPushEvent,
 			},

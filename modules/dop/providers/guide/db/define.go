@@ -60,6 +60,7 @@ type Guide struct {
 	Kind          string
 	Creator       string
 	OrgID         uint64
+	OrgName       string
 	ProjectID     uint64
 	AppID         uint64
 	Branch        string
@@ -84,6 +85,7 @@ func (g *Guide) Convert() *pb.Guide {
 		Creator:     g.Creator,
 		Kind:        g.Kind,
 		OrgID:       g.OrgID,
+		OrgName:     g.OrgName,
 		ProjectID:   g.ProjectID,
 		AppID:       g.AppID,
 		Branch:      g.Branch,
