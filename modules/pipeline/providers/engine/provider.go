@@ -89,6 +89,7 @@ func (p *provider) Run(ctx context.Context) error {
 		return err
 	}
 	p.LW.WorkerHandlerOnWorkerDelete(p.workerHandlerOnWorkerDelete)
+	p.LW.Start()
 
 	return nil
 }

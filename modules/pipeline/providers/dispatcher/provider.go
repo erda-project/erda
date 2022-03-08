@@ -47,17 +47,15 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.pipelineIDsChan = make(chan uint64, p.Cfg.Concurrency)
 	p.dbClient = &dbclient.Client{Engine: p.Mysql.DB()}
-	c, err := p.makeConsistent(ctx)
-	if err != nil {
-		return err
-	}
-	p.consistent = c
 
 	return nil
 }
 
 func (p *provider) Run(ctx context.Context) error {
 	// just register handler, and leader-worker provider will handle properly
+	p.LW.RegisterListener(&leaderworker.DefaultListener{
+		BeforeExecOnLeaderFunc: p.initConsistentUntilSuccess,
+	})
 	p.LW.OnLeader(p.continueDispatcher)
 	p.LW.LeaderHandlerOnWorkerAdd(p.onWorkerAdd)
 	p.LW.LeaderHandlerOnWorkerDelete(p.onWorkerDelete)

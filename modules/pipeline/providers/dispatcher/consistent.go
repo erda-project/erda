@@ -16,14 +16,31 @@ package dispatcher
 
 import (
 	"context"
+	"time"
 
 	"github.com/buraksezer/consistent"
 
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
 )
 
+func (p *provider) initConsistentUntilSuccess(ctx context.Context) {
+	for {
+		// init new one
+		c, err := p.makeConsistent(ctx)
+		if err != nil {
+			p.Log.Errorf("failed to init consistent(auto retry), err: %v", err)
+			time.Sleep(p.Cfg.RetryInterval)
+			continue
+		}
+		p.lock.Lock()
+		p.consistent = c
+		p.lock.Unlock()
+		return
+	}
+}
+
 func (p *provider) makeConsistent(ctx context.Context) (*consistent.Consistent, error) {
-	// consistent
+	// add worker to consistent members
 	var consistentMembers []consistent.Member
 	workers, err := p.LW.ListWorkers(ctx, worker.Official)
 	if err != nil {
@@ -32,6 +49,7 @@ func (p *provider) makeConsistent(ctx context.Context) (*consistent.Consistent, 
 	for _, w := range workers {
 		consistentMembers = append(consistentMembers, w)
 	}
+	// setup config
 	// TODO adjust factor according to member count
 	consistentCfg := consistent.Config{
 		Hasher:            defaultHash{},
@@ -39,6 +57,7 @@ func (p *provider) makeConsistent(ctx context.Context) (*consistent.Consistent, 
 		ReplicationFactor: p.Cfg.Consistent.ReplicationFactor,
 		Load:              p.Cfg.Consistent.Load,
 	}
+	// construct consistent
 	c := consistent.New(consistentMembers, consistentCfg)
 	return c, nil
 }

@@ -34,6 +34,8 @@ type Interface interface {
 	AssignLogicTaskToWorker(ctx context.Context, workerID worker.ID, logicTask worker.Tasker) error
 	ListenPrefix(ctx context.Context, prefix string, putHandler, deleteHandler func(context.Context, *clientv3.Event))
 	IsTaskBeingProcessed(ctx context.Context, logicTaskID worker.LogicTaskID) (bool, worker.ID)
+	RegisterListener(l Listener)
+	Start()
 }
 
 func (p *provider) RegisterCandidateWorker(ctx context.Context, w worker.Worker) error {
@@ -84,18 +86,27 @@ func (p *provider) ListWorkers(ctx context.Context, workerTypes ...worker.Type) 
 func (p *provider) LeaderHandlerOnWorkerAdd(h WorkerAddHandler) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
+	if p.started {
+		panic(fmt.Errorf("cannot register LeaderHandlerOnWorkerAdd func after started"))
+	}
 	p.leaderUse.leaderHandlersOnWorkerAdd = append(p.leaderUse.leaderHandlersOnWorkerAdd, h)
 }
 
 func (p *provider) LeaderHandlerOnWorkerDelete(h WorkerDeleteHandler) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
+	if p.started {
+		panic(fmt.Errorf("cannot register LeaderHandlerOnWorkerDelete func after started"))
+	}
 	p.leaderUse.leaderHandlersOnWorkerDelete = append(p.leaderUse.leaderHandlersOnWorkerDelete, h)
 }
 
 func (p *provider) WorkerHandlerOnWorkerDelete(h WorkerDeleteHandler) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
+	if p.started {
+		panic(fmt.Errorf("cannot register WorkerHandlerOnWorkerDelete func after started"))
+	}
 	p.workerUse.workerHandlersOnWorkerDelete = append(p.workerUse.workerHandlersOnWorkerDelete, h)
 }
 
@@ -111,6 +122,9 @@ func (p *provider) AssignLogicTaskToWorker(ctx context.Context, workerID worker.
 func (p *provider) OnLeader(h func(ctx context.Context)) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
+	if p.started {
+		panic(fmt.Errorf("cannot register OnLeader func after started"))
+	}
 	p.leaderUse.leaderHandlers = append(p.leaderUse.leaderHandlers, h)
 }
 
@@ -128,7 +142,34 @@ func (p *provider) IsTaskBeingProcessed(ctx context.Context, logicTaskID worker.
 		time.Sleep(p.Cfg.Worker.RetryInterval)
 	}
 	p.lock.Lock()
+	defer p.lock.Unlock()
 	workerID, ok := p.leaderUse.findWorkerByTask[logicTaskID]
-	p.lock.Unlock()
-	return ok, workerID
+	if !ok {
+		return false, ""
+	}
+	// check valid worker
+	_, workerExist := p.leaderUse.allWorkers[workerID]
+	if !workerExist {
+		return false, ""
+	}
+	return true, workerID
+}
+
+func (p *provider) RegisterListener(l Listener) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	if p.started {
+		panic(fmt.Errorf("cannot register listener after started"))
+	}
+	p.listeners = append(p.listeners, l)
+}
+
+func (p *provider) Start() {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	started := p.started
+	if started {
+		return
+	}
+	p.started = true
 }

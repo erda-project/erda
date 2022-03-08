@@ -41,6 +41,7 @@ func (p *provider) onWorkerDelete(ctx context.Context, ev leaderworker.Event) {
 			p.Log.Errorf("failed to re dispatch pipeline on worker delete, skip, invalidLogicTaskID: %s", logicTaskID)
 			continue
 		}
+		p.Log.Infof("dispatch pipeline on worker delete, pipelineID: %d, deleted workerID: %s", pipelineID, ev.WorkerID)
 		p.Dispatch(ctx, pipelineID)
 	}
 }

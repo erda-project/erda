@@ -38,3 +38,27 @@ type (
 	WorkerAddHandler    func(ctx context.Context, ev Event)
 	WorkerDeleteHandler func(ctx context.Context, ev Event)
 )
+
+type Listener interface {
+	BeforeExecOnLeader(ctx context.Context)
+	AfterExecOnLeader(ctx context.Context)
+}
+
+// DefaultListener just overwrite necessary func fields.
+type DefaultListener struct {
+	BeforeExecOnLeaderFunc func(ctx context.Context)
+	AfterExecOnLeaderFunc  func(ctx context.Context)
+}
+
+func (l *DefaultListener) BeforeExecOnLeader(ctx context.Context) {
+	if l.BeforeExecOnLeaderFunc == nil {
+		return
+	}
+	l.BeforeExecOnLeaderFunc(ctx)
+}
+func (l *DefaultListener) AfterExecOnLeader(ctx context.Context) {
+	if l.AfterExecOnLeaderFunc == nil {
+		return
+	}
+	l.AfterExecOnLeaderFunc(ctx)
+}

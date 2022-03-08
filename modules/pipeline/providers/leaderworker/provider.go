@@ -37,8 +37,11 @@ type provider struct {
 
 	lock sync.Mutex
 
+	started   bool
 	leaderUse leaderUse
 	workerUse workerUse
+
+	listeners []Listener
 }
 
 type leaderUse struct {
@@ -93,9 +96,26 @@ func (p *provider) removeFromTaskWorkerAssignMap(logicTaskID worker.LogicTaskID,
 	}
 }
 
+func (p *provider) leaderUseDeleteInvalidWorker(workerID worker.ID) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	// all workers
+	delete(p.leaderUse.allWorkers, workerID)
+}
+
+func (p *provider) leaderUseDeleteWorkerTaskAssign(deleteWorkerID worker.ID) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	delete(p.leaderUse.findTaskByWorker, deleteWorkerID)
+	for logicTaskID, workerID := range p.leaderUse.findWorkerByTask {
+		if workerID == deleteWorkerID {
+			delete(p.leaderUse.findWorkerByTask, logicTaskID)
+		}
+	}
+}
+
 func (p *provider) Run(ctx context.Context) error {
 	p.Election.OnLeader(p.leaderFramework)
-	p.Election.OnLeader(p.workerLivenessProber)
 	return nil
 }
 

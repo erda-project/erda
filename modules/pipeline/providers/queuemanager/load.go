@@ -54,14 +54,14 @@ func (q *provider) loadNeedHandledPipelinesWhenBecomeLeader(ctx context.Context)
 	for _, pipelineID := range pipelineIDs {
 		isTaskHandling, handlingWorkerID := q.LW.IsTaskBeingProcessed(ctx, worker.LogicTaskID(strutil.String(pipelineID)))
 		if isTaskHandling {
-			q.Log.Warnf("skip load, logic task is handling already, pipelineID: %d, workerID: %s", pipelineID, handlingWorkerID)
+			q.Log.Warnf("skip load need-handled pipeline(being handled), pipelineID: %d, workerID: %s", pipelineID, handlingWorkerID)
 			return
 		}
 		// add into queue again
 		q.DistributedHandleIncomingPipeline(ctx, pipelineID)
-		q.Log.Infof("load running pipeline success, pipelineID: %d", pipelineID)
+		q.Log.Infof("load need-handled pipeline success, pipelineID: %d", pipelineID)
 	}
-	q.Log.Info("load running pipelines success")
+	q.Log.Info("load need-handled pipelines success")
 }
 
 func (q *provider) loadNeedHandledPipelinesFromDBUntilSuccess(ctx context.Context) []uint64 {

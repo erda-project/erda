@@ -16,6 +16,7 @@ package leaderworker
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
@@ -28,21 +29,52 @@ func (p *provider) leaderFramework(ctx context.Context) {
 	p.Log.Infof("start leader framework")
 	defer p.Log.Infof("end leader framework")
 
-	// init before begin listen worker-task-change
-	p.initTaskWorkerAssignMap(ctx)
+	if !p.started {
+		panic(fmt.Errorf("leader-worker not started"))
+	}
 
-	p.leaderUse.leaderHandlers = append(p.leaderUse.leaderHandlers, p.listenWorkerChange, p.continueCleanup, p.listenWorkerTaskIncoming, p.listenWorkerTaskDone)
+	// init before begin listen worker-task-change
+	p.listeners = append([]Listener{
+		&DefaultListener{BeforeExecOnLeaderFunc: p.initTaskWorkerAssignMap},
+		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.listenWorkerChange)},
+		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.listenWorkerTaskIncoming)},
+		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.listenWorkerTaskDone)},
+	}, p.listeners...)
+
+	p.leaderUse.leaderHandlers = append(p.leaderUse.leaderHandlers, p.continueCleanup, p.workerLivenessProber)
 	p.workerUse.workerHandlersOnWorkerDelete = append(p.workerUse.workerHandlersOnWorkerDelete, p.workerIntervalCleanupOnDelete)
 
-	// leader
+	// before exec on leader
+	for _, l := range p.listeners {
+		l.BeforeExecOnLeader(ctx)
+	}
+
+	// exec on leader
 	for _, h := range p.leaderUse.leaderHandlers {
 		h := h
 		go h(ctx)
 	}
 
+	// after exec on leader
+	for _, l := range p.listeners {
+		l.AfterExecOnLeader(ctx)
+	}
+
+	select {
+	case <-ctx.Done():
+		return
+	}
+}
+
+func asyncWrapper(f func(ctx context.Context)) func(ctx context.Context) {
+	return func(ctx context.Context) {
+		go func() { f(ctx) }()
+	}
 }
 
 func (p *provider) listenWorkerChange(ctx context.Context) {
+	p.Log.Infof("begin listen worker change")
+	defer p.Log.Infof("end listen worker change")
 	// worker
 	notify := make(chan Event)
 	go func() {
@@ -70,13 +102,11 @@ func (p *provider) listenWorkerChange(ctx context.Context) {
 		},
 		func(ctx context.Context, ev *clientv3.Event) {
 			workerID := p.getWorkerIDFromEtcdWorkerKey(string(ev.Kv.Key), worker.Official)
-			logicTasks, err := p.listWorkerTasks(ctx, workerID)
+			p.leaderUseDeleteInvalidWorker(workerID)
+			logicTaskIDs, err := p.getWorkerLogicTaskIDs(ctx, workerID)
 			if err == nil {
-				var logicTaskIDs []worker.LogicTaskID
-				for _, task := range logicTasks {
-					logicTaskIDs = append(logicTaskIDs, task.GetLogicID())
-				}
 				notify <- Event{Type: mvccpb.DELETE, WorkerID: workerID, LogicTaskIDs: logicTaskIDs}
+				p.leaderUseDeleteWorkerTaskAssign(workerID)
 				return
 			}
 			// send notify of worker delete directly, otherwise new tasks will assign to this deleted worker at client-side(such like: dispatcher)
@@ -86,13 +116,10 @@ func (p *provider) listenWorkerChange(ctx context.Context) {
 			p.Log.Errorf("failed to list worker tasks while worker deleted(auto retry), workerID: %s, err: %v", workerID, err)
 			go func() {
 				for {
-					logicTasks, err := p.listWorkerTasks(ctx, workerID)
+					logicTaskIDs, err := p.getWorkerLogicTaskIDs(ctx, workerID)
 					if err == nil {
-						var logicTaskIDs []worker.LogicTaskID
-						for _, task := range logicTasks {
-							logicTaskIDs = append(logicTaskIDs, task.GetLogicID())
-						}
 						notify <- Event{Type: mvccpb.DELETE, WorkerID: workerID, LogicTaskIDs: logicTaskIDs}
+						p.leaderUseDeleteWorkerTaskAssign(workerID)
 						return
 					}
 					p.Log.Errorf("failed to retry list worker tasks(auto retry), workerID: %s, err: %v", workerID, err)
@@ -101,6 +128,27 @@ func (p *provider) listenWorkerChange(ctx context.Context) {
 			}()
 		},
 	)
+}
+
+func (p *provider) getWorkerLogicTaskIDs(ctx context.Context, workerID worker.ID) ([]worker.LogicTaskID, error) {
+	logicTasks, err := p.listWorkerTasks(ctx, workerID)
+	if err == nil {
+		logicTaskIDMap := make(map[worker.LogicTaskID]struct{})
+		for _, task := range logicTasks {
+			logicTaskIDMap[task.GetLogicID()] = struct{}{}
+		}
+		p.lock.Lock()
+		for logicTaskID := range p.leaderUse.findTaskByWorker[workerID] {
+			logicTaskIDMap[logicTaskID] = struct{}{}
+		}
+		p.lock.Unlock()
+		var logicTaskIDs []worker.LogicTaskID
+		for logicTaskID := range logicTaskIDMap {
+			logicTaskIDs = append(logicTaskIDs, logicTaskID)
+		}
+		return logicTaskIDs, nil
+	}
+	return nil, err
 }
 
 func (p *provider) continueCleanup(ctx context.Context) {
@@ -163,6 +211,8 @@ func (p *provider) intervalCleanupDanglingKeysWithoutRetry(ctx context.Context) 
 }
 
 func (p *provider) listenWorkerTaskDone(ctx context.Context) {
+	p.Log.Infof("begin listen worker task done")
+	defer p.Log.Infof("end listen worker task done")
 	prefix := p.makeEtcdWorkerGeneralDispatchPrefix()
 	p.ListenPrefix(ctx, prefix,
 		nil,
@@ -176,6 +226,8 @@ func (p *provider) listenWorkerTaskDone(ctx context.Context) {
 }
 
 func (p *provider) listenWorkerTaskIncoming(ctx context.Context) {
+	p.Log.Infof("begin listen worker task incoming")
+	defer p.Log.Infof("end listen worker task incoming")
 	prefix := p.makeEtcdWorkerGeneralDispatchPrefix()
 	p.ListenPrefix(ctx, prefix,
 		func(ctx context.Context, event *clientv3.Event) {

@@ -186,16 +186,25 @@ func (p *provider) workerListenIncomingLogicTask(ctx context.Context, w worker.W
 			taskLogicID := p.getWorkerTaskLogicIDFromIncomingKey(w.GetID(), key)
 			taskData := event.Kv.Value
 			p.Log.Infof("logic task received and begin handle it, workerID: %s, logicTaskID: %s", w.GetID(), taskLogicID)
-			w.Handle(ctx, worker.NewTasker(taskLogicID, taskData))
-			p.Log.Infof("task done, workerID: %s, logicTaskID: %s", w.GetID(), taskLogicID)
-			// delete task key means task done
-			for {
-				_, err := p.EtcdClient.Delete(context.Background(), key)
-				if err == nil {
-					break
+			taskDoneCh := make(chan struct{})
+			go func() {
+				w.Handle(ctx, worker.NewTasker(taskLogicID, taskData))
+				taskDoneCh <- struct{}{}
+			}()
+			select {
+			case <-ctx.Done():
+				p.Log.Warnf("task canceled, workerID: %s, logicTaskID: %s", w.GetID(), taskLogicID)
+			case <-taskDoneCh:
+				p.Log.Infof("task done, workerID: %s, logicTaskID: %s", w.GetID(), taskLogicID)
+				// delete task key means task done
+				for {
+					_, err := p.EtcdClient.Delete(context.Background(), key)
+					if err == nil {
+						break
+					}
+					p.Log.Warnf("failed to delete incoming logic task key after done(auto retry), key: %s, logicTaskID: %s, err: %v", key, taskLogicID, err)
+					time.Sleep(p.Cfg.Worker.Task.RetryDeleteTaskInterval)
 				}
-				p.Log.Warnf("failed to delete incoming logic task key after done(auto retry), key: %s, logicTaskID: %s, err: %v", key, taskLogicID, err)
-				time.Sleep(p.Cfg.Worker.Task.RetryDeleteTaskInterval)
 			}
 		}()
 	},

@@ -23,19 +23,6 @@ import (
 )
 
 func (p *provider) continueDispatcher(ctx context.Context) {
-	for {
-		c, err := p.makeConsistent(ctx)
-		if err != nil {
-			p.Log.Errorf("failed to init consistent(need retry), err: %v", err)
-			time.Sleep(p.Cfg.DispatchRetryInterval)
-			continue
-		}
-		p.lock.Lock()
-		p.consistent = c
-		p.lock.Unlock()
-		break
-	}
-
 	for pipelineID := range p.pipelineIDsChan {
 		go func(pipelineID uint64) {
 			p.dispatchOnePipelineUntilSuccess(ctx, pipelineID)
@@ -52,8 +39,8 @@ func (p *provider) dispatchOnePipelineUntilSuccess(ctx context.Context, pipeline
 	// pick one worker
 	workerID, err := p.pickOneWorker(ctx, pipelineID)
 	if err != nil {
-		p.Log.Errorf("failed to pick worker(need retry after %s), pipelineID: %d, err: %v", p.Cfg.DispatchRetryInterval, pipelineID, err)
-		time.Sleep(p.Cfg.DispatchRetryInterval)
+		p.Log.Errorf("failed to pick worker(need retry after %s), pipelineID: %d, err: %v", p.Cfg.RetryInterval, pipelineID, err)
+		time.Sleep(p.Cfg.RetryInterval)
 		p.Dispatch(ctx, pipelineID)
 		return
 	}
@@ -61,8 +48,8 @@ func (p *provider) dispatchOnePipelineUntilSuccess(ctx context.Context, pipeline
 	logicTaskID := worker.LogicTaskID(strutil.String(pipelineID))
 	logicTaskData := []byte(nil)
 	if err := p.LW.AssignLogicTaskToWorker(ctx, workerID, worker.NewTasker(logicTaskID, logicTaskData)); err != nil {
-		p.Log.Errorf("failed to assign pipeline to worker(need retry after %s), pipelineID: %d, workerID: %s, err: %v", p.Cfg.DispatchRetryInterval, pipelineID, workerID, err)
-		time.Sleep(p.Cfg.DispatchRetryInterval)
+		p.Log.Errorf("failed to assign pipeline to worker(need retry after %s), pipelineID: %d, workerID: %s, err: %v", p.Cfg.RetryInterval, pipelineID, workerID, err)
+		time.Sleep(p.Cfg.RetryInterval)
 		p.Dispatch(ctx, pipelineID)
 		return
 	}

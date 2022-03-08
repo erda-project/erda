@@ -275,7 +275,6 @@ func (s *PipelineSvc) limitParallelRunningPipelines(p *spec.Pipeline) error {
 		ctxMap := map[string]interface{}{
 			apierrors.ErrParallelRunPipeline.Error(): fmt.Sprintf("%d", runningPipelineIDs[0]),
 		}
-		logrus.Infof("start run pipeline %d", runningPipelineIDs[0])
 		return apierrors.ErrParallelRunPipeline.InvalidState("ErrParallelRunPipeline").SetCtx(ctxMap)
 	}
 	return nil

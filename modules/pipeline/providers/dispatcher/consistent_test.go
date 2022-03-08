@@ -13,19 +13,3 @@
 // limitations under the License.
 
 package dispatcher
-
-import (
-	"time"
-)
-
-type config struct {
-	Concurrency   int           `file:"concurrency" default:"100"`
-	RetryInterval time.Duration `file:"retry_interval" env:"DISPATCH_RETRY_INTERVAL" default:"5s"`
-	Consistent    consistentConfig
-}
-
-type consistentConfig struct {
-	PartitionCount    int     `file:"partition_count" env:"DISPATCHER_CONSISTENT_PARTITION_COUNT" default:"7"`
-	ReplicationFactor int     `file:"replication_factor" env:"DISPATCHER_CONSISTENT_REPLICATION_FACTOR" default:"20"`
-	Load              float64 `file:"load" env:"DISPATCHER_CONSISTENT_LOAD" default:"1.25"`
-}
