@@ -186,7 +186,7 @@ func makeJobKey(namespce, name string) string {
 func prepareJob(job *apistructs.JobFromUser) {
 	// job ID may be specified by job owner, e.g. jobflow
 	if job.ID == "" {
-		job.ID = uuid.Generate()
+		job.ID = uuid.UUID()
 	}
 
 	// Do not overwrite environment

@@ -300,7 +300,7 @@ func mkLocationDir(location HookLocation) string {
 }
 
 func genID() string {
-	return uuid.Generate()[0:12]
+	return uuid.UUID()[0:12]
 }
 
 func nowTimestamp() string {
