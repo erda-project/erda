@@ -37,8 +37,6 @@ hierarchy:
     workTabs:
       - workCards
       - workList
-    messageTabs:
-      - messageList
 
 components:
   page:
