@@ -48,6 +48,14 @@ func ListAllClusters() ([]apistructs.ClusterInfo, error) {
 	return bdl.ListClusters("", 0)
 }
 
+func GetClusterByName(clusterName string) (apistructs.ClusterInfo, error) {
+	cluster, err := bdl.GetCluster(clusterName)
+	if err != nil {
+		return apistructs.ClusterInfo{}, err
+	}
+	return *cluster, nil
+}
+
 // DispatchClusterEvent dispatch every cluster event to registered chan
 func DispatchClusterEvent(js jsonstore.JsonStore, clusterEvent apistructs.ClusterEvent) error {
 	return js.Put(context.Background(), ClusterEventEtcdKey, clusterEvent)

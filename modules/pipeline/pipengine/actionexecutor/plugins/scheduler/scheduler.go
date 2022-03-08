@@ -91,7 +91,7 @@ func (s *Sched) Name() types.Name {
 // GetTaskExecutor return bool, task exectuor, error, bool means should it be dispatch to scheduler
 func (s *Sched) GetTaskExecutor(executorType string, clusterName string, task *spec.PipelineTask) (bool, tasktypes.TaskExecutor, error) {
 	var executorName string
-	cluster, err := s.taskManager.GetCluster(clusterName)
+	cluster, err := s.taskManager.TryGetCluster(clusterName)
 	if err != nil {
 		return false, nil, err
 	}

@@ -16,6 +16,7 @@ package k8sjob
 
 import (
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
@@ -63,7 +64,7 @@ func Test_isBuildkitHit(t *testing.T) {
 func Test_generateKubeJob(t *testing.T) {
 	defer monkey.UnpatchAll()
 
-	monkey.Patch(k8sclient.New, func(_ string) (*k8sclient.K8sClient, error) {
+	monkey.Patch(k8sclient.NewWithTimeOut, func(_ string, _ time.Duration) (*k8sclient.K8sClient, error) {
 		return nil, nil
 	})
 

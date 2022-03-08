@@ -114,6 +114,9 @@ type Conf struct {
 
 	// external market refresh interval
 	ExtensionVersionRefreshIntervalMinute uint64 `env:"EXTENSION_VERSION_REFRESH_INTERVAL_MINUTE" default:"1"`
+
+	// k8s type executor max timeout second
+	K8SExecutorMaxInitializationSec uint64 `env:"K8S_EXECUTOR_MAX_INITIALIZATION_SEC" default:"5"`
 }
 
 var cfg Conf
@@ -369,4 +372,9 @@ func K8SExecutorPoolSize() int {
 // ExtensionVersionRefreshIntervalMinute external market refresh interval
 func ExtensionVersionRefreshIntervalMinute() uint64 {
 	return cfg.ExtensionVersionRefreshIntervalMinute
+}
+
+// K8SExecutorMaxInitializationSec k8s type executor max timeout second
+func K8SExecutorMaxInitializationSec() uint64 {
+	return cfg.K8SExecutorMaxInitializationSec
 }

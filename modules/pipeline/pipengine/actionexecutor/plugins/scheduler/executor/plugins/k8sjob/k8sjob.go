@@ -34,6 +34,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/events"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
@@ -90,7 +91,7 @@ type K8sJob struct {
 }
 
 func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sJob, error) {
-	k, err := k8sclient.New(clusterName)
+	k, err := k8sclient.NewWithTimeOut(clusterName, time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second)
 	if err != nil {
 		return nil, err
 	}
