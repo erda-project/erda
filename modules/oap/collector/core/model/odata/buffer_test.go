@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipeline
+package odata
 
 import (
-	"context"
-
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"fmt"
+	"testing"
 )
 
-type Interface interface {
-	InitComponents(receivers, processors, exporters []model.Component) error
-	StartStream(ctx context.Context)
+func TestXXX(t *testing.T) {
+	b := NewBuffer(10)
+	b.Push(&Raw{Meta: nil, Item: []byte("hello")})
+	fmt.Println(b.FlushAll())
 }

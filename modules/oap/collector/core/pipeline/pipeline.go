@@ -20,20 +20,23 @@ import (
 	"sync"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/modules/oap/collector/common"
+	"github.com/erda-project/erda/modules/oap/collector/core/config"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 type Pipeline struct {
-	receivers  []model.ReceiverUnit
-	processors []model.ProcessorUnit
-	exporters  []model.ExporterUnit
+	cfg        config.GlobalConfig
+	receivers  []*model.RuntimeReceiver
+	processors []*model.RuntimeProcessor
+	exporters  []*model.RuntimeExporter
 
 	Log logs.Logger
 }
 
-func NewPipeline(log logs.Logger) *Pipeline {
-	return &Pipeline{Log: log}
+func NewPipeline(log logs.Logger, cfg config.GlobalConfig) *Pipeline {
+	return &Pipeline{Log: log, cfg: cfg}
 }
 
 func (p *Pipeline) InitComponents(receivers, processors, exporters []model.ComponentUnit) error {
@@ -56,36 +59,38 @@ func (p *Pipeline) InitComponents(receivers, processors, exporters []model.Compo
 	return nil
 }
 
-func (p *Pipeline) rsFromComponent(coms []model.ComponentUnit) ([]model.ReceiverUnit, error) {
-	res := make([]model.ReceiverUnit, 0, len(coms))
+func (p *Pipeline) rsFromComponent(coms []model.ComponentUnit) ([]*model.RuntimeReceiver, error) {
+	res := make([]*model.RuntimeReceiver, 0, len(coms))
 	for _, com := range coms {
 		c, ok := com.Component.(model.Receiver)
 		if !ok {
 			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.Name, com.Component)
 		}
-		res = append(res, model.ReceiverUnit{Name: com.Name, Receiver: c})
+		res = append(res, &model.RuntimeReceiver{Name: com.Name, Receiver: c})
 	}
 	return res, nil
 }
-func (p *Pipeline) prsFromComponent(coms []model.ComponentUnit) ([]model.ProcessorUnit, error) {
-	res := make([]model.ProcessorUnit, 0, len(coms))
+func (p *Pipeline) prsFromComponent(coms []model.ComponentUnit) ([]*model.RuntimeProcessor, error) {
+	res := make([]*model.RuntimeProcessor, 0, len(coms))
 	for _, com := range coms {
 		c, ok := com.Component.(model.Processor)
 		if !ok {
 			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.Name, com.Component)
 		}
-		res = append(res, model.ProcessorUnit{Name: com.Name, Processor: c})
+		res = append(res, &model.RuntimeProcessor{Name: com.Name, Processor: c})
 	}
 	return res, nil
 }
-func (p *Pipeline) esFromComponent(coms []model.ComponentUnit) ([]model.ExporterUnit, error) {
-	res := make([]model.ExporterUnit, 0, len(coms))
+func (p *Pipeline) esFromComponent(coms []model.ComponentUnit) ([]*model.RuntimeExporter, error) {
+	res := make([]*model.RuntimeExporter, 0, len(coms))
 	for _, com := range coms {
 		c, ok := com.Component.(model.Exporter)
 		if !ok {
 			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.Name, com.Component)
 		}
-		res = append(res, model.ExporterUnit{Name: com.Name, Exporter: c})
+		buffer := odata.NewBuffer(p.cfg.BatchLimit)
+		ticker := common.NewRunningTimer(p.cfg.FlushInterval, p.cfg.FlushJitter)
+		res = append(res, model.NewRuntimeExporter(com.Name, p.Log.Sub("exporter-"+com.Name), c, buffer, ticker))
 	}
 	return res, nil
 }
@@ -101,19 +106,21 @@ func (p *Pipeline) StartStream(ctx context.Context) {
 }
 
 func (p *Pipeline) StartExporters(ctx context.Context, out <-chan odata.ObservableData) {
+	for _, e := range p.exporters {
+		go func(exp *model.RuntimeExporter) {
+			go exp.Start(ctx)
+		}(e)
+	}
+
 	for {
 		select {
 		case data := <-out:
 			var wg sync.WaitGroup
 			wg.Add(len(p.exporters))
 			for _, e := range p.exporters {
-				go func(exp model.ExporterUnit, od odata.ObservableData) {
+				go func(exp *model.RuntimeExporter, od odata.ObservableData) {
 					defer wg.Done()
-					// TODO. flush trigger
-					err := exp.Exporter.Export([]odata.ObservableData{od})
-					if err != nil {
-						p.Log.Errorf("Exporter<%s> export data error: %s", exp.Name, err)
-					}
+					exp.Add(od)
 				}(e, data.Clone())
 			}
 			wg.Wait()

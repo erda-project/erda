@@ -20,7 +20,7 @@ import (
 
 type ObservableDataConsumerFunc func(data odata.ObservableData)
 
-type ReceiverUnit struct {
+type RuntimeReceiver struct {
 	Name     string
 	Receiver Receiver
 }

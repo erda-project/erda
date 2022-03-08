@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/erda-project/erda/modules/oap/collector/core/config"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
@@ -29,7 +30,11 @@ func TestPipeline_StartStream(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	pipe := NewPipeline(logrusx.New().Sub("collector"))
+	pipe := NewPipeline(logrusx.New().Sub("collector"), config.GlobalConfig{
+		BatchLimit:    10,
+		FlushInterval: time.Second,
+		FlushJitter:   time.Second,
+	})
 
 	// invalid
 	assert.Error(t, pipe.InitComponents([]model.ComponentUnit{{Component: &model.NoopProcessor{}}}, nil, nil))

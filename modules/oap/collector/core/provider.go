@@ -67,7 +67,7 @@ func (p *provider) initComponents() error {
 			return err
 		}
 
-		pipe := pipeline.NewPipeline(p.Log.Sub(fmt.Sprintf("core-pipeline-%d", idx)))
+		pipe := pipeline.NewPipeline(p.Log.Sub(fmt.Sprintf("core-pipeline-%d", idx)), p.Cfg.GlobalConfig)
 		err = pipe.InitComponents(rs, ps, es)
 		if err != nil {
 			return fmt.Errorf("init components err: %w", err)

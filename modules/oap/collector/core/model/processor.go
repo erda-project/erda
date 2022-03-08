@@ -18,7 +18,7 @@ import (
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
-type ProcessorUnit struct {
+type RuntimeProcessor struct {
 	Name      string
 	Processor Processor
 }

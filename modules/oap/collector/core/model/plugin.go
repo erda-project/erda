@@ -22,5 +22,6 @@ type Component interface {
 
 type ComponentUnit struct {
 	Component Component
+	Config    interface{}
 	Name      string
 }

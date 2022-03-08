@@ -18,15 +18,10 @@ erda.oap.collector.core:
   pipelines:
     - receivers: ["erda.oap.collector.receiver.collector"]
       exporters: ["erda.oap.collector.exporter.kafka@collector"]
-#    - receivers: ["erda.oap.collector.receiver.collector"]
-#      exporters: ["erda.oap.collector.exporter.stdout"]
     - receivers:
         - "erda.oap.collector.receiver.jaeger"
         - "erda.oap.collector.receiver.opentelemetry"
       exporters: ["erda.oap.collector.exporter.kafka@erda-spans"]
-#    - receivers: ["erda.oap.collector.receiver.fluent-bit"]
-#      exporters: ["erda.oap.collector.exporter.stdout"]
-
 
 # ************* receivers *************
 #erda.oap.collector.receiver.dummy:
