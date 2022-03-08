@@ -30,13 +30,13 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
+	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
 	DiceRootDomain    = "DICE_ROOT_DOMAIN"
-	DiceClusterInfo   = "dice-cluster-info"
 	K8SFlinkLogPrefix = "[k8sflink]"
 )
 
@@ -90,6 +90,13 @@ func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 		return nil, err
 	}
 
+	clusterInfo, err := logic.GetCLusterInfo(job.ClusterName)
+	if err != nil {
+		return apistructs.Job{
+			JobFromUser: job,
+		}, err
+	}
+
 	ns := &corev1.Namespace{}
 	statusDesc := apistructs.StatusDesc{}
 	if ns, err = k.client.ClientSet.CoreV1().Namespaces().Get(ctx, task.Extra.Namespace, metav1.GetOptions{}); err != nil {
@@ -104,7 +111,7 @@ func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 		}
 
 		logrus.Debugf("create namespace %s", job.Namespace)
-		ns.Name = job.Namespace
+		ns = container_provider.GenNamespaceByJob(&job)
 
 		var nsErr error
 		if ns, nsErr = k.client.ClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); nsErr != nil {
@@ -124,7 +131,7 @@ func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 		}, err
 	}
 
-	_, _, pvcs := logic.GenerateK8SVolumes(&job)
+	_, _, pvcs := logic.GenerateK8SVolumes(&job, clusterInfo)
 	for _, pvc := range pvcs {
 		if pvc == nil {
 			continue
@@ -142,12 +149,6 @@ func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 
 	logrus.Debugf("create flink cluster cr name %s in namespace %s", job.Name, ns.Name)
 
-	clusterInfo, err := k.GetClusterInfo(DiceClusterInfo)
-	if err != nil {
-		return apistructs.Job{
-			JobFromUser: job,
-		}, err
-	}
 	hosts := append([]string{FlinkIngressPrefix}, job.Namespace, clusterInfo[DiceRootDomain])
 	hostURL := strings.Join(hosts, ".")
 	flinkCluster := k.ComposeFlinkCluster(job, bigDataConf, hostURL)
@@ -267,16 +268,6 @@ func (k *K8sFlink) GetFlinkClusterInfo(ctx context.Context, data apistructs.Bigd
 	}
 
 	return &flinkCluster, nil
-}
-
-func (k *K8sFlink) GetClusterInfo(name string) (map[string]string, error) {
-	cm, err := k.client.ClientSet.CoreV1().ConfigMaps(metav1.NamespaceDefault).Get(context.Background(), name, metav1.GetOptions{})
-	if err != nil {
-		errMsg := fmt.Errorf("get config map error %v", err)
-		logrus.Error(errMsg)
-		return nil, errMsg
-	}
-	return cm.Data, nil
 }
 
 func (k *K8sFlink) createImageSecretIfNotExist(namespace string) error {

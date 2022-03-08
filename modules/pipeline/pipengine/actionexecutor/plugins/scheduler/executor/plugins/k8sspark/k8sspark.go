@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
+	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/pkg/containers"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -59,15 +60,21 @@ func (k *K8sSpark) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 		return nil, fmt.Errorf("invalid job spec")
 	}
 
-	ns := &corev1.Namespace{}
-	if ns, err = k.client.ClientSet.CoreV1().Namespaces().Get(ctx, job.Namespace, metav1.GetOptions{}); err != nil {
+	clusterInfo, err := logic.GetCLusterInfo(job.ClusterName)
+	if err != nil {
+		return apistructs.Job{
+			JobFromUser: job,
+		}, err
+	}
+
+	if _, err := k.client.ClientSet.CoreV1().Namespaces().Get(ctx, job.Namespace, metav1.GetOptions{}); err != nil {
 		if !k8serrors.IsNotFound(err) {
 			return nil, fmt.Errorf("get namespace err: %v", err)
 		}
 
 		logrus.Debugf("create namespace : %s", job.Namespace)
-		ns.Name = job.Namespace
-		if ns, err = k.client.ClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
+		ns := container_provider.GenNamespaceByJob(&job)
+		if _, err = k.client.ClientSet.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 			return nil, fmt.Errorf("create namespace err: %v", err)
 		}
 	}
@@ -88,7 +95,7 @@ func (k *K8sSpark) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 		return nil, fmt.Errorf("failed to create spark rolebinding, namespace: %s, err: %v", job.Namespace, err)
 	}
 
-	_, _, pvcs := logic.GenerateK8SVolumes(&job)
+	_, _, pvcs := logic.GenerateK8SVolumes(&job, clusterInfo)
 	for _, pvc := range pvcs {
 		if pvc == nil {
 			continue
