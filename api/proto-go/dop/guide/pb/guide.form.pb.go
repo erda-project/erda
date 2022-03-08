@@ -70,6 +70,8 @@ func (m *Guide) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.OrgID = val
+			case "orgName":
+				m.OrgName = vals[0]
 			case "projectID":
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
@@ -187,6 +189,8 @@ func (m *GittarPushPayloadEvent) UnmarshalURLValues(prefix string, values url.Va
 				m.Action = vals[0]
 			case "orgID":
 				m.OrgID = vals[0]
+			case "orgName":
+				m.OrgName = vals[0]
 			case "projectID":
 				m.ProjectID = vals[0]
 			case "applicationID":
@@ -362,6 +366,11 @@ func (m *CreateGuideResponse) UnmarshalURLValues(prefix string, values url.Value
 					return err
 				}
 				m.Data.OrgID = val
+			case "data.orgName":
+				if m.Data == nil {
+					m.Data = &Guide{}
+				}
+				m.Data.OrgName = vals[0]
 			case "data.projectID":
 				if m.Data == nil {
 					m.Data = &Guide{}

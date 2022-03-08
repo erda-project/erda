@@ -21,8 +21,8 @@ const _ = http.SupportPackageIsVersion1
 
 // GuideServiceHandler is the server API for GuideService service.
 type GuideServiceHandler interface {
-	// POST /api/guide/actions/create-by-gittar-hook
-	CreateGuideByGittarHook(context.Context, *GittarPushPayloadEvent) (*CreateGuideResponse, error)
+	// POST /api/guide/actions/create-by-gittar-push-hook
+	CreateGuideByGittarPushHook(context.Context, *GittarPushPayloadEvent) (*CreateGuideResponse, error)
 	// GET /api/guide
 	ListGuide(context.Context, *ListGuideRequest) (*ListGuideResponse, error)
 	// GET /api/guide/{ID}/actions/judge
@@ -54,13 +54,13 @@ func RegisterGuideServiceHandler(r http.Router, srv GuideServiceHandler, opts ..
 		return handler
 	}
 
-	add_CreateGuideByGittarHook := func(method, path string, fn func(context.Context, *GittarPushPayloadEvent) (*CreateGuideResponse, error)) {
+	add_CreateGuideByGittarPushHook := func(method, path string, fn func(context.Context, *GittarPushPayloadEvent) (*CreateGuideResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 			return fn(ctx, req.(*GittarPushPayloadEvent))
 		}
-		var CreateGuideByGittarHook_info transport.ServiceInfo
+		var CreateGuideByGittarPushHook_info transport.ServiceInfo
 		if h.Interceptor != nil {
-			CreateGuideByGittarHook_info = transport.NewServiceInfo("erda.dop.guide.GuideService", "CreateGuideByGittarHook", srv)
+			CreateGuideByGittarPushHook_info = transport.NewServiceInfo("erda.dop.guide.GuideService", "CreateGuideByGittarPushHook", srv)
 			handler = h.Interceptor(handler)
 		}
 		r.Add(method, path, encodeFunc(
@@ -68,7 +68,7 @@ func RegisterGuideServiceHandler(r http.Router, srv GuideServiceHandler, opts ..
 				ctx := http.WithRequest(r.Context(), r)
 				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, CreateGuideByGittarHook_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, CreateGuideByGittarPushHook_info)
 				}
 				r = r.WithContext(ctx)
 				var in GittarPushPayloadEvent
@@ -221,7 +221,7 @@ func RegisterGuideServiceHandler(r http.Router, srv GuideServiceHandler, opts ..
 		)
 	}
 
-	add_CreateGuideByGittarHook("POST", "/api/guide/actions/create-by-gittar-hook", srv.CreateGuideByGittarHook)
+	add_CreateGuideByGittarPushHook("POST", "/api/guide/actions/create-by-gittar-push-hook", srv.CreateGuideByGittarPushHook)
 	add_ListGuide("GET", "/api/guide", srv.ListGuide)
 	add_JudgeCanCreatePipeline("GET", "/api/guide/{ID}/actions/judge", srv.JudgeCanCreatePipeline)
 	add_ProcessGuide("POST", "/api/guide/actions/process", srv.ProcessGuide)

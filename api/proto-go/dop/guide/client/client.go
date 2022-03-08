@@ -37,8 +37,8 @@ type guideServiceWrapper struct {
 	opts   []grpc1.CallOption
 }
 
-func (s *guideServiceWrapper) CreateGuideByGittarHook(ctx context.Context, req *pb.GittarPushPayloadEvent) (*pb.CreateGuideResponse, error) {
-	return s.client.CreateGuideByGittarHook(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+func (s *guideServiceWrapper) CreateGuideByGittarPushHook(ctx context.Context, req *pb.GittarPushPayloadEvent) (*pb.CreateGuideResponse, error) {
+	return s.client.CreateGuideByGittarPushHook(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
 func (s *guideServiceWrapper) ListGuide(ctx context.Context, req *pb.ListGuideRequest) (*pb.ListGuideResponse, error) {
