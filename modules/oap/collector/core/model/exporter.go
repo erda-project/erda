@@ -14,18 +14,79 @@
 
 package model
 
-type ExporterDescriber interface {
-	Component
-	Connect() error
+import (
+	"context"
+
+	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda/modules/oap/collector/common"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
+)
+
+type RuntimeExporter struct {
+	Name     string
+	Logger   logs.Logger
+	Exporter Exporter
+	Timer    *common.RunningTimer
+	Buffer   *odata.Buffer
+}
+
+func NewRuntimeExporter(
+	name string,
+	logger logs.Logger,
+	exporter Exporter,
+	buffer *odata.Buffer,
+	timer *common.RunningTimer,
+) *RuntimeExporter {
+	return &RuntimeExporter{
+		Name:     name,
+		Logger:   logger,
+		Exporter: exporter,
+		Buffer:   buffer,
+		Timer:    timer,
+	}
+}
+
+func (re *RuntimeExporter) Start(ctx context.Context) {
+	go re.Timer.Run(ctx)
+	for {
+		select {
+		case <-ctx.Done():
+			if err := re.flushOnce(); err != nil {
+				re.Logger.Errorf("event done, but flush err: %s", err)
+			}
+			return
+		case <-re.Timer.Elapsed():
+			if re.Buffer.Empty() {
+				continue
+			}
+			if err := re.flushOnce(); err != nil {
+				re.Logger.Errorf("event elapsed, but flush err: %s", err)
+			}
+		}
+	}
+}
+
+func (re *RuntimeExporter) flushOnce() error {
+	return re.Exporter.Export(re.Buffer.FlushAll())
+}
+
+func (re *RuntimeExporter) Add(od odata.ObservableData) {
+	if re.Buffer.Full() {
+		if err := re.flushOnce(); err != nil {
+			re.Logger.Errorf("event buffer-full, but flush err: %s", err)
+		}
+		re.Timer.Reset()
+	}
+	re.Buffer.Push(od)
 }
 
 type Exporter interface {
-	ExporterDescriber
-	Export(data ObservableData) error
+	Component
+	Connect() error
+	Export(ods []odata.ObservableData) error
 }
 
-type NoopExporter struct {
-}
+type NoopExporter struct{}
 
 func (n *NoopExporter) ComponentID() ComponentID {
 	return "NoopExporter"
@@ -35,10 +96,6 @@ func (n *NoopExporter) Connect() error {
 	return nil
 }
 
-func (n *NoopExporter) Close() error {
-	return nil
-}
-
-func (n *NoopExporter) Export(data ObservableData) error {
+func (n *NoopExporter) Export(ods []odata.ObservableData) error {
 	return nil
 }

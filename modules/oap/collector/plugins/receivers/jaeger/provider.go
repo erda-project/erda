@@ -19,16 +19,19 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
-	"github.com/erda-project/erda-infra/providers/kafka"
 	pb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
-	"github.com/erda-project/erda/modules/oap/collector/receivers/common"
+	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/oap/collector/interceptor"
+	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
+
+var providerName = plugins.WithPrefixReceiver("jaeger")
 
 type config struct {
 	// some fields of config for this provider
-	Kafka struct {
-		Producer kafka.ProducerConfig `file:"producer"  desc:"kafka Producer Config"`
-	} `file:"kafka"`
+	// Kafka struct {
+	// 	Producer kafka.ProducerConfig `file:"producer"  desc:"kafka Producer Config"`
+	// } `file:"kafka"`
 }
 
 // +provider
@@ -37,22 +40,26 @@ type provider struct {
 	Log logs.Logger
 
 	jaegerService pb.JaegerServiceServer
-	Register      transport.Register  `autowired:"service-register" optional:"true"`
-	Kafka         kafka.Interface     `autowired:"kafka@receiver-jaeger"`
-	Interceptors  common.Interceptors `autowired:"erda.oap.collector.receiver.common.Interceptor"`
+	Register      transport.Register       `autowired:"service-register" optional:"true"`
+	Interceptors  interceptor.Interceptors `autowired:"erda.oap.collector.interceptor.Interceptor"`
+
+	consumer model.ObservableDataConsumerFunc
+}
+
+func (p *provider) ComponentID() model.ComponentID {
+	return model.ComponentID(providerName)
+}
+
+func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
+	p.consumer = consumer
 }
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
 	if p.Register != nil {
-		writer, err := p.Kafka.NewProducer(&p.Cfg.Kafka.Producer)
-		if err != nil {
-			return err
-		}
-		p.jaegerService = &jaegerServiceImpl{Log: p.Log, writer: writer}
+		p.jaegerService = &jaegerServiceImpl{Log: p.Log, p: p}
 		pb.RegisterJaegerServiceImp(p.Register, p.jaegerService,
-			transport.WithHTTPOptions(transhttp.WithDecoder(ThriftDecoder),
-				transhttp.WithInterceptor(p.Interceptors.ExtractHttpHeaders)),
+			transport.WithHTTPOptions(transhttp.WithDecoder(ThriftDecoder), transhttp.WithInterceptor(p.Interceptors.ExtractHttpHeaders)),
 			transport.WithInterceptors(p.Interceptors.Authentication, p.Interceptors.SpanTagOverwrite),
 		)
 	}
@@ -68,8 +75,8 @@ func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}
 }
 
 func init() {
-	servicehub.Register("erda.oap.collector.receiver.jaeger", &servicehub.Spec{
-		Services:    pb.ServiceNames(),
+	servicehub.Register(providerName, &servicehub.Spec{
+		Services:    pb.ServiceNames(providerName),
 		Description: "here is description of erda.oap.collector.receiver.jaeger",
 		ConfigFunc: func() interface{} {
 			return &config{}

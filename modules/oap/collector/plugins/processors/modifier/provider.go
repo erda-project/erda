@@ -19,6 +19,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/oap/collector/common/filter"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
 
@@ -40,19 +41,15 @@ func (p *provider) ComponentID() model.ComponentID {
 	return model.ComponentID(providerName)
 }
 
-func (p *provider) Process(data model.ObservableData) (model.ObservableData, error) {
-	data.RangeFunc(func(item *model.DataItem) (bool, *model.DataItem) {
-		if !p.Cfg.Filter.IsPass(item) {
-			return false, item
+func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
+	in.HandleAttributes(func(attr map[string]string) map[string]string {
+		if !p.Cfg.Filter.IsTagpass(attr) {
+			return attr
 		}
-
-		item.Tags = p.modify(item.Tags)
-		if p.Cfg.NameOverride != "" {
-			item.Name = p.Cfg.NameOverride
-		}
-		return false, item
+		return p.modify(attr)
 	})
-	return data, nil
+
+	return in, nil
 }
 
 // Run this is optional

@@ -12,16 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
-
-type ComponentID string
-
-type Component interface {
-	ComponentID() ComponentID
-}
-
-type ComponentUnit struct {
-	Component Component
-	Config    interface{}
-	Name      string
-}
+package kafka

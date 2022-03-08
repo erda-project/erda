@@ -31,7 +31,7 @@ import (
 
 	pb "github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb"
 	tracepb "github.com/erda-project/erda-proto-go/oap/trace/pb"
-	"github.com/erda-project/erda/modules/oap/collector/receivers/common"
+	"github.com/erda-project/erda/modules/oap/collector/interceptor"
 )
 
 var (
@@ -86,9 +86,9 @@ func convertSpans(tracesData *otlpv1.TracesData) []*tracepb.Span {
 									attributes[attr.Key] = getStringValue(attr.Value)
 								}
 							}
-							attributes[common.TAG_INSTRUMENT] = instrumentation.InstrumentationLibrary.Name
-							attributes[common.TAG_INSTRUMENT_VERSION] = instrumentation.InstrumentationLibrary.Version
-							attributes[common.TAG_SPAN_KIND] = SpanKind_Name[int32(otlpSpan.Kind)]
+							attributes[interceptor.TAG_INSTRUMENT] = instrumentation.InstrumentationLibrary.Name
+							attributes[interceptor.TAG_INSTRUMENT_VERSION] = instrumentation.InstrumentationLibrary.Version
+							attributes[interceptor.TAG_SPAN_KIND] = SpanKind_Name[int32(otlpSpan.Kind)]
 							if resource.Resource != nil && resource.Resource.Attributes != nil {
 								for _, attr := range resource.Resource.Attributes {
 									attributes[attr.Key] = getStringValue(attr.Value)

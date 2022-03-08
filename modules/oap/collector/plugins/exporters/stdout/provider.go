@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
 
@@ -47,8 +48,8 @@ func (p *provider) Close() error {
 	return nil
 }
 
-func (p *provider) Export(od model.ObservableData) error {
-	buf, err := json.Marshal(&od)
+func (p *provider) Export(ods []odata.ObservableData) error {
+	buf, err := json.Marshal(&ods)
 	if err != nil {
 		return err
 	}

@@ -53,7 +53,7 @@ type provider struct {
 	Cfg    *config
 	Logger logs.Logger
 	writer writer.Writer
-	Kafka  kafka.Interface
+	Kafka  kafka.Interface `autowired:"kafka"`
 
 	auth      *Authenticator
 	Validator authentication.Validator `autowired:"erda.oap.collector.authentication.Validator"`

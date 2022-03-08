@@ -16,15 +16,20 @@ package all
 
 import (
 	// receivers
+	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/collector"
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/dummy"
+	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/fluentbit"
+	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/jaeger"
+	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/opentelemetry"
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/receivers/promremotewrite"
 
 	// processors
-	_ "github.com/erda-project/erda/modules/oap/collector/plugins/processors/aggregator"
+	// _ "github.com/erda-project/erda/modules/oap/collector/plugins/processors/aggregator"
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger"
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/processors/modifier"
 
 	// exporters
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/exporters/collector"
+	_ "github.com/erda-project/erda/modules/oap/collector/plugins/exporters/kafka"
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/exporters/stdout"
 )

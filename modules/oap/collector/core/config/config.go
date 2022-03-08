@@ -15,16 +15,23 @@
 package config
 
 import (
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"time"
 )
 
+// The global common config for pipeline component
+type GlobalConfig struct {
+	BatchLimit    int           `file:"batch_limit" default:"10"`
+	FlushInterval time.Duration `file:"flush_interval" default:"1s"`
+	FlushJitter   time.Duration `file:"flush_jitter" default:"1s"`
+}
+
 type Config struct {
-	Pipelines []Pipeline `file:"pipelines" desc:"compose of components"`
+	GlobalConfig GlobalConfig `file:"global_config"`
+	Pipelines    []Pipeline   `file:"pipelines" desc:"compose of components"`
 }
 
 type Pipeline struct {
-	Receivers  []string       `file:"receivers"`
-	Processors []string       `file:"processors"`
-	Exporters  []string       `file:"exporters"`
-	DataType   model.DataType `file:"data_type"`
+	Receivers  []string `file:"receivers"`
+	Processors []string `file:"processors"`
+	Exporters  []string `file:"exporters"`
 }

@@ -12,16 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
+package interceptor
 
-type ComponentID string
+import "github.com/erda-project/erda-proto-go/oap/trace/pb"
 
-type Component interface {
-	ComponentID() ComponentID
-}
-
-type ComponentUnit struct {
-	Component Component
-	Config    interface{}
-	Name      string
+type SpansProvider interface {
+	GetSpans() []*pb.Span
 }

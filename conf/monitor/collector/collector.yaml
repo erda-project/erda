@@ -1,68 +1,103 @@
-# center cluster collector config
-
 http-server:
-    addr: ":7076"
+  addr: ":7076"
 
 health:
-    path: "/api/health"
+  path: "/api/health"
 
 service-register:
 
-erda.oap.collector.receiver.common:
+grpc-client@erda.core.services.authentication.credentials.accesskey.accessKeyService:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.services.authentication.credentials.accesskey-client:
 
-erda.oap.collector.receiver.jaeger:
-  _enable: "${COLLECTOR_RECEIVER_JAEGER_ENABLE:true}"
-  kafka:
-    producer:
-      topic: ${COLLECTOR_RECEIVER_JAEGER_KAFKA_TOPIC:erda-spans}
-      shared: "false"
-      options:
-            go.produce.channel.size: ${COLLECTOR_RECEIVER_JAEGER_KAFKA_PRODUCE_CHANNEL_SIZE:100}
-            queue.buffering.max.kbytes: ${COLLECTOR_RECEIVER_JAEGER_KAFKA_QUEUE_SIZE_KB:204800} # 200MB
-
-erda.oap.collector.receiver.opentelemetry:
-  _enable: "${COLLECTOR_RECEIVER_OPENTELEMETRY_ENABLE:true}"
-  kafka:
-    producer:
-      topic: ${COLLECTOR_RECEIVER_OPENTELEMETRY_KAFKA_TOPIC:erda-spans}
-      shared: "false"
-      options:
-            go.produce.channel.size: ${COLLECTOR_RECEIVER_OPENTELEMETRY_KAFKA_PRODUCE_CHANNEL_SIZE:100}
-            queue.buffering.max.kbytes: ${COLLECTOR_RECEIVER_OPENTELEMETRY_KAFKA_QUEUE_SIZE_KB:204800} # 200MB
-
+erda.oap.collector.interceptor:
 erda.oap.collector.authentication:
   sync_interval: ${COLLECTOR_AUTHENTICATION_AK_SYNC_INTERVAL:2m}
 
-kafka@receiver-jaeger:
-  servers: ${BOOTSTRAP_SERVERS:localhost:9092}
+erda.oap.collector.core:
+  pipelines:
+    - receivers: ["erda.oap.collector.receiver.collector"]
+      exporters: ["erda.oap.collector.exporter.kafka@collector"]
+    - receivers:
+        - "erda.oap.collector.receiver.jaeger"
+        - "erda.oap.collector.receiver.opentelemetry"
+      exporters: ["erda.oap.collector.exporter.kafka@erda-spans"]
 
-kafka@receiver-opentelemetry:
-  servers: ${BOOTSTRAP_SERVERS:localhost:9092}
+# ************* receivers *************
+#erda.oap.collector.receiver.dummy:
+#  rate: 3s
+#  metric_sample: '{"name":"mock-metric","attributes":{"job":"kubernetes-nodes-cadvisor","pod":"filebeat-66f58f4fb8-5pdmk","namespace":"default"},"dataPoints":{"counter":1}}'
 
-grpc-client@erda.core.services.authentication.credentials.accesskey.accessKeyService:
-    addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
-erda.core.services.authentication.credentials.accesskey-client:
+#erda.oap.collector.receiver.prometheus-remote-write:
+
+erda.oap.collector.receiver.jaeger:
+
+erda.oap.collector.receiver.opentelemetry:
+
+erda.oap.collector.receiver.fluent-bit:
+
+erda.oap.collector.receiver.collector:
+  metadata_key_of_topic: "KAFKA-TOPIC"
+  auth:
+    skip: ${RECEIVER_COLLECTOR_AUTH_SKIP:false}
+
+# ************* receivers *************
+
+# ************* processors *************
+# ************* processors *************
+
+# ************* exporters *************
+erda.oap.collector.exporter.stdout:
+
+erda.oap.collector.exporter.kafka@collector:
+  metadata_key_of_topic: "KAFKA-TOPIC"
+  producer:
+    shared: "false"
+    batch:
+      size: 1 # already batch in third client
+    options:
+      # channel size in Go Library
+      go.produce.channel.size: 1
+      # queue size in C Library
+      queue.buffering.max.kbytes: 204800 # 200MB
+
+erda.oap.collector.exporter.kafka@erda-spans:
+  producer:
+    shared: "false"
+    topic: "erda-spans"
+    batch:
+      size: 1 # already batch in third library
+    options:
+      # channel size in Go Library
+      go.produce.channel.size: 1
+      # queue size in C Library
+      queue.buffering.max.kbytes: 204800 # 200MB
+
+
+# ************* exporters *************
 
 kafka:
-    producer:
-        options:
-            go.produce.channel.size: ${COLLECTOR_KAFKA_PRODUCE_CHANNEL_SIZE:100}
-            queue.buffering.max.kbytes: ${COLLECTOR_KAFKA_QUEUE_SIZE_KB:524288} # 500MB
+  servers: ${BOOTSTRAP_SERVERS:localhost:9092}
 
 monitor-collector:
-    _enable: ${COLLECTOR_ENABLE:true}
-    ta_sampling_rate: ${COLLECTOR_BROWSER_SAMPLING_RATE:100}
-    output:
-        parallelism: ${KAFKA_PARALLELISM:3}
-        batch:
-            size: ${KAFKA_BATCH_SIZE:50}
-            timeout: "30s"
-    auth:
-        username: "${COLLECTOR_AUTH_USERNAME:collector}"
-        password: "${COLLECTOR_AUTH_PASSWORD:G$9767bP32drYFPWrK4XMLRMTatiM6cU}"
-        force: ${COLLECTOR_AUTH_FORCE:false}
-        skip: ${COLLECTOR_AUTH_SKIP:false}
+  _enable: ${COLLECTOR_ENABLE:true}
+  ta_sampling_rate: ${COLLECTOR_BROWSER_SAMPLING_RATE:100}
+  output:
+    parallelism: ${KAFKA_PARALLELISM:3}
+    shared: "false"
+    batch:
+      size: 1
+      timeout: "30s"
+    options:
+      go.produce.channel.size: ${COLLECTOR_KAFKA_PRODUCE_CHANNEL_SIZE:1}
+      queue.buffering.max.kbytes: ${COLLECTOR_KAFKA_QUEUE_SIZE_KB:204800} # 200MB
+
+  auth:
+    username: "${COLLECTOR_AUTH_USERNAME:collector}"
+    password: "${COLLECTOR_AUTH_PASSWORD:G$9767bP32drYFPWrK4XMLRMTatiM6cU}"
+    force: ${COLLECTOR_AUTH_FORCE:false}
+    skip: ${COLLECTOR_AUTH_SKIP:false}
 
 pprof:
 http-server@admin:
-    addr: ":7078"
+  addr: ":7078"

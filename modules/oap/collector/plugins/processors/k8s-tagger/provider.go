@@ -20,6 +20,8 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/kubernetes"
@@ -52,15 +54,15 @@ func (p *provider) ComponentID() model.ComponentID {
 
 // 1. filter with config filters
 // 2. pass tags to handle
-func (p *provider) Process(data model.ObservableData) (model.ObservableData, error) {
-	data.RangeFunc(func(item *model.DataItem) (bool, *model.DataItem) {
-		if !p.Cfg.Filter.IsPass(item) {
-			return true, item
+func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
+	in.HandleAttributes(func(attr map[string]string) map[string]string {
+		if !p.Cfg.Filter.IsTagpass(attr) {
+			return attr
 		}
-		item.Tags = p.addPodMetadata(item.Tags)
-		return true, item
+		return p.addPodMetadata(attr)
 	})
-	return data, nil
+
+	return in, nil
 }
 
 // Run this is optional

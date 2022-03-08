@@ -12,10 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package odata
 
-import "github.com/erda-project/erda-proto-go/oap/trace/pb"
+import (
+	"fmt"
+	"testing"
+)
 
-type SpansProvider interface {
-	GetSpans() []*pb.Span
+func TestXXX(t *testing.T) {
+	b := NewBuffer(10)
+	b.Push(&Raw{Meta: nil, Item: []byte("hello")})
+	fmt.Println(b.FlushAll())
 }
