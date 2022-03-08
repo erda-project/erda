@@ -33,7 +33,7 @@ type Interface interface {
 	OnLeader(func(context.Context))
 	AssignLogicTaskToWorker(ctx context.Context, workerID worker.ID, logicTask worker.Tasker) error
 	ListenPrefix(ctx context.Context, prefix string, putHandler, deleteHandler func(context.Context, *clientv3.Event))
-	IsTaskHandling(ctx context.Context, logicTaskID worker.LogicTaskID) (bool, worker.ID)
+	IsTaskBeingProcessed(ctx context.Context, logicTaskID worker.LogicTaskID) (bool, worker.ID)
 }
 
 func (p *provider) RegisterCandidateWorker(ctx context.Context, w worker.Worker) error {
@@ -114,9 +114,9 @@ func (p *provider) OnLeader(h func(ctx context.Context)) {
 	p.leaderUse.leaderHandlers = append(p.leaderUse.leaderHandlers, h)
 }
 
-func (p *provider) IsTaskHandling(ctx context.Context, logicTaskID worker.LogicTaskID) (bool, worker.ID) {
+func (p *provider) IsTaskBeingProcessed(ctx context.Context, logicTaskID worker.LogicTaskID) (bool, worker.ID) {
 	if !p.Election.IsLeader() {
-		panic(fmt.Errorf("non-leader cannot invoke IsTaskHandling"))
+		panic(fmt.Errorf("non-leader cannot invoke IsTaskBeingProcessed"))
 	}
 	for {
 		p.lock.Lock()

@@ -76,7 +76,7 @@ func (q *provider) Run(ctx context.Context) error {
 	q.LW.OnLeader(q.QueueManager.ListenUpdatePriorityPipelineIDsFromEtcd)
 	q.LW.OnLeader(q.QueueManager.ListenPopOutPipelineIDFromEtcd)
 	q.LW.OnLeader(q.listenIncomingPipeline)
-	q.LW.OnLeader(q.loadRunningPipelines)
+	q.LW.OnLeader(q.loadNeedHandledPipelinesWhenBecomeLeader)
 	return nil
 }
 

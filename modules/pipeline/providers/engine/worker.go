@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
 )
 
-func (p *provider) reconcilePipeline(ctx context.Context, logicTask worker.Tasker) {
+func (p *provider) reconcileOnePipeline(ctx context.Context, logicTask worker.Tasker) {
 	if logicTask == nil {
 		p.Log.Warnf("logic task is nil, skip reconcile pipeline")
 		return
@@ -34,13 +34,13 @@ func (p *provider) reconcilePipeline(ctx context.Context, logicTask worker.Taske
 		p.Log.Errorf("failed to parse pipelineID from logicTask(no retry), logicTaskID: %s, err: %v", idstr, err)
 		return
 	}
-	p.Reconciler.Reconcile(ctx, pipelineID)
+	p.Reconciler.ReconcileOnePipeline(ctx, pipelineID)
 	p.QueueManager.DistributedStopPipeline(ctx, pipelineID)
 }
 
 func (p *provider) workerHandlerOnWorkerDelete(ctx context.Context, ev leaderworker.Event) {
 	for {
-		err := p.LW.RegisterCandidateWorker(ctx, worker.New(worker.WithHandler(p.reconcilePipeline)))
+		err := p.LW.RegisterCandidateWorker(ctx, worker.New(worker.WithHandler(p.reconcileOnePipeline)))
 		if err == nil {
 			return
 		}

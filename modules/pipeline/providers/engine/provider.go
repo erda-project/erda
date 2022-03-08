@@ -84,7 +84,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	err := p.LW.RegisterCandidateWorker(ctx, worker.New(worker.WithHandler(p.reconcilePipeline)))
+	err := p.LW.RegisterCandidateWorker(ctx, worker.New(worker.WithHandler(p.reconcileOnePipeline)))
 	if err != nil {
 		return err
 	}

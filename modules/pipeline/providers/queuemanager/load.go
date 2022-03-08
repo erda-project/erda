@@ -26,48 +26,23 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-// loadRunningPipelines load from two sources:
+// loadNeedHandledPipelinesWhenBecomeLeader load need-handled pipelines from two sources:
 // - db
 // - etcd
-func (q *provider) loadRunningPipelines(ctx context.Context) {
+func (q *provider) loadNeedHandledPipelinesWhenBecomeLeader(ctx context.Context) {
 	var pipelineIDs, dbPipelineIDs, etcdPipelineIDs []uint64
-	var err error
 	var wg sync.WaitGroup
 	// db
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for {
-			dbPipelineIDs, err = q.dbClient.ListPipelineIDsByStatuses(apistructs.ReconcilerRunningStatuses()...)
-			if err != nil {
-				q.Log.Errorf("failed to load running pipelines from db(auto retry), err: %v", err)
-				time.Sleep(q.Cfg.IncomingPipelineCfg.IntervalOfLoadRunningPipelines)
-				continue
-			}
-			return
-		}
+		dbPipelineIDs = q.loadNeedHandledPipelinesFromDBUntilSuccess(ctx)
 	}()
 	// etcd
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for {
-			getResp, err := q.EtcdClient.Get(ctx, q.Cfg.IncomingPipelineCfg.EtcdKeyPrefixWithSlash, clientv3.WithPrefix())
-			if err != nil {
-				q.Log.Errorf("failed to load running pipelines from etcd(auto retry), err: %v", err)
-				time.Sleep(q.Cfg.IncomingPipelineCfg.IntervalOfLoadRunningPipelines)
-				continue
-			}
-			for _, kv := range getResp.Kvs {
-				pipelineID, err := q.getPipelineIDFromIncomingListenKey(string(kv.Key))
-				if err != nil {
-					q.Log.Warnf("skip invalid pipelineID from etcd key, key: %s, err: %v", string(kv.Key), err)
-					continue
-				}
-				etcdPipelineIDs = append(etcdPipelineIDs, pipelineID)
-			}
-			return
-		}
+		etcdPipelineIDs = q.loadNeedHandledPipelinesFromEtcdUntilSuccess(ctx)
 	}()
 	wg.Wait()
 
@@ -77,7 +52,7 @@ func (q *provider) loadRunningPipelines(ctx context.Context) {
 
 	// handle again
 	for _, pipelineID := range pipelineIDs {
-		isTaskHandling, handlingWorkerID := q.LW.IsTaskHandling(ctx, worker.LogicTaskID(strutil.String(pipelineID)))
+		isTaskHandling, handlingWorkerID := q.LW.IsTaskBeingProcessed(ctx, worker.LogicTaskID(strutil.String(pipelineID)))
 		if isTaskHandling {
 			q.Log.Warnf("skip load, logic task is handling already, pipelineID: %d, workerID: %s", pipelineID, handlingWorkerID)
 			return
@@ -87,4 +62,41 @@ func (q *provider) loadRunningPipelines(ctx context.Context) {
 		q.Log.Infof("load running pipeline success, pipelineID: %d", pipelineID)
 	}
 	q.Log.Info("load running pipelines success")
+}
+
+func (q *provider) loadNeedHandledPipelinesFromDBUntilSuccess(ctx context.Context) []uint64 {
+	var dbPipelineIDs []uint64
+	var err error
+	for {
+		dbPipelineIDs, err = q.dbClient.ListPipelineIDsByStatuses(apistructs.ReconcilerRunningStatuses()...)
+		if err != nil {
+			q.Log.Errorf("failed to load running pipelines from db(auto retry), err: %v", err)
+			time.Sleep(q.Cfg.IncomingPipelineCfg.IntervalOfLoadRunningPipelines)
+			continue
+		}
+		break
+	}
+	return dbPipelineIDs
+}
+
+func (q *provider) loadNeedHandledPipelinesFromEtcdUntilSuccess(ctx context.Context) []uint64 {
+	var etcdPipelineIDs []uint64
+	for {
+		getResp, err := q.EtcdClient.Get(ctx, q.Cfg.IncomingPipelineCfg.EtcdKeyPrefixWithSlash, clientv3.WithPrefix())
+		if err != nil {
+			q.Log.Errorf("failed to load running pipelines from etcd(auto retry), err: %v", err)
+			time.Sleep(q.Cfg.IncomingPipelineCfg.IntervalOfLoadRunningPipelines)
+			continue
+		}
+		for _, kv := range getResp.Kvs {
+			pipelineID, err := q.getPipelineIDFromIncomingListenKey(string(kv.Key))
+			if err != nil {
+				q.Log.Warnf("skip invalid pipelineID from etcd key, key: %s, err: %v", string(kv.Key), err)
+				continue
+			}
+			etcdPipelineIDs = append(etcdPipelineIDs, pipelineID)
+		}
+		break
+	}
+	return etcdPipelineIDs
 }

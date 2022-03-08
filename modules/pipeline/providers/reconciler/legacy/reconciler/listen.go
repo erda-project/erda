@@ -28,7 +28,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (r *Reconciler) Reconcile(ctx context.Context, pipelineID uint64) {
+func (r *Reconciler) ReconcileOnePipelineUntilDone(ctx context.Context, pipelineID uint64) {
 	// there may be multiple reconciles here, and subsequent reconciles will cause the pipeline to succeed directly
 	_, ok := r.processingPipelines.Load(pipelineID)
 	if ok {
@@ -79,7 +79,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, pipelineID uint64) {
 
 	// continue reconcile
 	for {
-		reconcileErr := r.internalReconcile(pCtx, pipelineID)
+		reconcileErr := r.internalReconcileOnePipeline(pCtx, pipelineID)
 		if reconcileErr == nil {
 			break
 		}

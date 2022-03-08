@@ -31,8 +31,8 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-// internalReconcile do pipeline reconcile.
-func (r *Reconciler) internalReconcile(ctx context.Context, pipelineID uint64) error {
+// internalReconcileOnePipeline do pipeline reconcile.
+func (r *Reconciler) internalReconcileOnePipeline(ctx context.Context, pipelineID uint64) error {
 	// init caches and get stages
 	defer clearPipelineContextCaches(pipelineID)
 
@@ -79,7 +79,7 @@ func (r *Reconciler) internalReconcile(ctx context.Context, pipelineID uint64) e
 					logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q reconcile occurred an error: %v", p.ID, schedulableTasks[i].Name, err)
 				}
 				r.processingTasks.Delete(buildTaskDagName(p.ID, schedulableTasks[i].Name))
-				err = r.internalReconcile(ctx, pipelineID)
+				err = r.internalReconcileOnePipeline(ctx, pipelineID)
 				if err != nil {
 					logrus.Errorf("defer reconcile error %v", err)
 				}

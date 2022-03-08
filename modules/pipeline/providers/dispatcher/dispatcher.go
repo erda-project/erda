@@ -38,30 +38,34 @@ func (p *provider) continueDispatcher(ctx context.Context) {
 
 	for pipelineID := range p.pipelineIDsChan {
 		go func(pipelineID uint64) {
-			isTaskHandling, handlingWorkerID := p.LW.IsTaskHandling(ctx, worker.LogicTaskID(strutil.String(pipelineID)))
-			if isTaskHandling {
-				p.Log.Warnf("skip dispatch, logic task is handling already, pipelineID: %d, workerID: %s", pipelineID, handlingWorkerID)
-				return
-			}
-			// pick one worker
-			workerID, err := p.pickOneWorker(ctx, pipelineID)
-			if err != nil {
-				p.Log.Errorf("failed to pick worker(need retry after %s), pipelineID: %d, err: %v", p.Cfg.DispatchRetryInterval, pipelineID, err)
-				time.Sleep(p.Cfg.DispatchRetryInterval)
-				p.Dispatch(ctx, pipelineID)
-				return
-			}
-			// assign lock task to the picked worker
-			logicTaskID := worker.LogicTaskID(strutil.String(pipelineID))
-			logicTaskData := []byte(nil)
-			if err := p.LW.AssignLogicTaskToWorker(ctx, workerID, worker.NewTasker(logicTaskID, logicTaskData)); err != nil {
-				p.Log.Errorf("failed to dispatch logic task to worker(need retry after %s), taskID: %s, workerID: %s, err: %v", p.Cfg.DispatchRetryInterval, logicTaskID, workerID, err)
-				time.Sleep(p.Cfg.DispatchRetryInterval)
-				p.Dispatch(ctx, pipelineID)
-				return
-			}
-
-			p.Log.Infof("assign logic task to worker success, pipelineID: %d, workerID: %s", pipelineID, workerID)
+			p.dispatchOnePipelineUntilSuccess(ctx, pipelineID)
 		}(pipelineID)
 	}
+}
+
+func (p *provider) dispatchOnePipelineUntilSuccess(ctx context.Context, pipelineID uint64) {
+	isTaskHandling, handlingWorkerID := p.LW.IsTaskBeingProcessed(ctx, worker.LogicTaskID(strutil.String(pipelineID)))
+	if isTaskHandling {
+		p.Log.Warnf("skip dispatch, pipeline is already in handling, pipelineID: %d, workerID: %s", pipelineID, handlingWorkerID)
+		return
+	}
+	// pick one worker
+	workerID, err := p.pickOneWorker(ctx, pipelineID)
+	if err != nil {
+		p.Log.Errorf("failed to pick worker(need retry after %s), pipelineID: %d, err: %v", p.Cfg.DispatchRetryInterval, pipelineID, err)
+		time.Sleep(p.Cfg.DispatchRetryInterval)
+		p.Dispatch(ctx, pipelineID)
+		return
+	}
+	// assign lock task to the picked worker
+	logicTaskID := worker.LogicTaskID(strutil.String(pipelineID))
+	logicTaskData := []byte(nil)
+	if err := p.LW.AssignLogicTaskToWorker(ctx, workerID, worker.NewTasker(logicTaskID, logicTaskData)); err != nil {
+		p.Log.Errorf("failed to assign pipeline to worker(need retry after %s), pipelineID: %d, workerID: %s, err: %v", p.Cfg.DispatchRetryInterval, pipelineID, workerID, err)
+		time.Sleep(p.Cfg.DispatchRetryInterval)
+		p.Dispatch(ctx, pipelineID)
+		return
+	}
+
+	p.Log.Infof("dispatch pipeline to worker success, pipelineID: %d, workerID: %s", pipelineID, workerID)
 }

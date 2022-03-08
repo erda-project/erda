@@ -31,7 +31,7 @@ func (p *provider) leaderFramework(ctx context.Context) {
 	// init before begin listen worker-task-change
 	p.initTaskWorkerAssignMap(ctx)
 
-	p.leaderUse.leaderHandlers = append(p.leaderUse.leaderHandlers, p.continueCleanup, p.listenWorkerTaskIncoming, p.listenWorkerTaskDone)
+	p.leaderUse.leaderHandlers = append(p.leaderUse.leaderHandlers, p.listenWorkerChange, p.continueCleanup, p.listenWorkerTaskIncoming, p.listenWorkerTaskDone)
 	p.workerUse.workerHandlersOnWorkerDelete = append(p.workerUse.workerHandlersOnWorkerDelete, p.workerIntervalCleanupOnDelete)
 
 	// leader
@@ -40,6 +40,9 @@ func (p *provider) leaderFramework(ctx context.Context) {
 		go h(ctx)
 	}
 
+}
+
+func (p *provider) listenWorkerChange(ctx context.Context) {
 	// worker
 	notify := make(chan Event)
 	go func() {

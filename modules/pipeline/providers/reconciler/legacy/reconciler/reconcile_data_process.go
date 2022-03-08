@@ -228,7 +228,7 @@ func (r *Reconciler) reconcileSnippetTask(task *spec.PipelineTask, p *spec.Pipel
 		rlog.PErrorf(p.ID, "Failed to update pipeline status before reconcile, err: %v", err)
 		return nil, err
 	}
-	err = r.internalReconcile(snippetCtx, sp.ID)
+	err = r.internalReconcileOnePipeline(snippetCtx, sp.ID)
 	defer func() {
 		r.teardownCurrentReconcile(snippetCtx, sp.ID)
 		if _, err := r.updateStatusAfterReconcile(snippetCtx, sp.ID); err != nil {

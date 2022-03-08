@@ -21,14 +21,14 @@ import (
 )
 
 type Interface interface {
-	Reconcile(ctx context.Context, pipelineID uint64)
+	ReconcileOnePipeline(ctx context.Context, pipelineID uint64)
 
 	// TODO use provider init
 	InjectLegacyReconciler(r *reconciler.Reconciler)
 }
 
-func (p *provider) Reconcile(ctx context.Context, pipelineID uint64) {
-	p.r.Reconcile(ctx, pipelineID)
+func (p *provider) ReconcileOnePipeline(ctx context.Context, pipelineID uint64) {
+	p.r.ReconcileOnePipelineUntilDone(ctx, pipelineID)
 }
 
 func (p *provider) InjectLegacyReconciler(r *reconciler.Reconciler) {
