@@ -45,9 +45,9 @@ func (p *provider) listWorkersByType(ctx context.Context, typ worker.Type) ([]wo
 	return workers, nil
 }
 
-func (p *provider) getWorkerTaskLogicIDFromIncomingKey(workerID worker.ID, key string) worker.TaskLogicID {
+func (p *provider) getWorkerTaskLogicIDFromIncomingKey(workerID worker.ID, key string) worker.LogicTaskID {
 	prefix := p.makeEtcdWorkerLogicTaskListenPrefix(workerID)
-	return worker.TaskLogicID(strutil.TrimPrefixes(key, prefix))
+	return worker.LogicTaskID(strutil.TrimPrefixes(key, prefix))
 }
 
 // see: makeEtcdWorkerTaskDispatchKey

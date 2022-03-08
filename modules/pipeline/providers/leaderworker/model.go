@@ -25,7 +25,7 @@ import (
 type Event struct {
 	Type         mvccpb.Event_EventType
 	WorkerID     worker.ID
-	LogicTaskIDs []worker.TaskLogicID
+	LogicTaskIDs []worker.LogicTaskID
 }
 
 type workerWithCancel struct {

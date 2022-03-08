@@ -69,7 +69,7 @@ func (p *provider) leaderFramework(ctx context.Context) {
 			workerID := p.getWorkerIDFromEtcdWorkerKey(string(ev.Kv.Key), worker.Official)
 			logicTasks, err := p.listWorkerTasks(ctx, workerID)
 			if err == nil {
-				var logicTaskIDs []worker.TaskLogicID
+				var logicTaskIDs []worker.LogicTaskID
 				for _, task := range logicTasks {
 					logicTaskIDs = append(logicTaskIDs, task.GetLogicID())
 				}
@@ -85,7 +85,7 @@ func (p *provider) leaderFramework(ctx context.Context) {
 				for {
 					logicTasks, err := p.listWorkerTasks(ctx, workerID)
 					if err == nil {
-						var logicTaskIDs []worker.TaskLogicID
+						var logicTaskIDs []worker.LogicTaskID
 						for _, task := range logicTasks {
 							logicTaskIDs = append(logicTaskIDs, task.GetLogicID())
 						}
@@ -190,8 +190,8 @@ func (p *provider) initTaskWorkerAssignMap(ctx context.Context) {
 	p.leaderUse.initialized = false
 	p.lock.Unlock()
 
-	p.leaderUse.findWorkerByTask = make(map[worker.TaskLogicID]worker.ID)
-	p.leaderUse.findTaskByWorker = make(map[worker.ID]map[worker.TaskLogicID]struct{})
+	p.leaderUse.findWorkerByTask = make(map[worker.LogicTaskID]worker.ID)
+	p.leaderUse.findTaskByWorker = make(map[worker.ID]map[worker.LogicTaskID]struct{})
 
 outLoop:
 	for {
@@ -209,7 +209,7 @@ outLoop:
 				continue outLoop
 			}
 			p.lock.Lock()
-			p.leaderUse.findTaskByWorker[w.GetID()] = make(map[worker.TaskLogicID]struct{}, len(tasks))
+			p.leaderUse.findTaskByWorker[w.GetID()] = make(map[worker.LogicTaskID]struct{}, len(tasks))
 			p.lock.Unlock()
 			for _, task := range tasks {
 				p.addToTaskWorkerAssignMap(task.GetLogicID(), w.GetID())

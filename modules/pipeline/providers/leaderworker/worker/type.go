@@ -23,7 +23,7 @@ type ID string
 func NewID() ID              { return ID(uuid.New()) }
 func (id ID) String() string { return string(id) }
 
-type TaskLogicID string
+type LogicTaskID string
 
-func NewTaskLogicID() ID              { return NewID() }
-func (id TaskLogicID) String() string { return string(id) }
+func NewLogicTaskID() ID              { return NewID() }
+func (id LogicTaskID) String() string { return string(id) }

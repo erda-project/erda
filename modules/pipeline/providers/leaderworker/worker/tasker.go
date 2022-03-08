@@ -15,17 +15,17 @@
 package worker
 
 type Tasker interface {
-	GetLogicID() TaskLogicID
+	GetLogicID() LogicTaskID
 	GetData() []byte
 }
 
 type defaultTask struct {
-	logicID TaskLogicID
+	logicID LogicTaskID
 	data    []byte
 }
 
-func NewTasker(logicID TaskLogicID, data []byte) Tasker {
+func NewTasker(logicID LogicTaskID, data []byte) Tasker {
 	return &defaultTask{logicID: logicID, data: data}
 }
-func (d *defaultTask) GetLogicID() TaskLogicID { return d.logicID }
+func (d *defaultTask) GetLogicID() LogicTaskID { return d.logicID }
 func (d *defaultTask) GetData() []byte         { return d.data }

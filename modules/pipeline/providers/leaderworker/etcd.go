@@ -88,7 +88,7 @@ func (p *provider) makeEtcdWorkerLogicTaskListenPrefix(workerID worker.ID) strin
 }
 
 // $prefix/worker/dispatch/worker/$workerID/task/$logicTaskID(such as: pipelineID)
-func (p *provider) makeEtcdWorkerTaskDispatchKey(workerID worker.ID, logicTaskID worker.TaskLogicID) string {
+func (p *provider) makeEtcdWorkerTaskDispatchKey(workerID worker.ID, logicTaskID worker.LogicTaskID) string {
 	prefix := p.makeEtcdWorkerLogicTaskListenPrefix(workerID)
 	return filepath.Join(prefix, logicTaskID.String())
 }

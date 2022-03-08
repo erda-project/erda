@@ -77,7 +77,7 @@ func (q *provider) loadRunningPipelines(ctx context.Context) {
 
 	// handle again
 	for _, pipelineID := range pipelineIDs {
-		isTaskHandling, handlingWorkerID := q.LW.IsTaskHandling(ctx, worker.TaskLogicID(strutil.String(pipelineID)))
+		isTaskHandling, handlingWorkerID := q.LW.IsTaskHandling(ctx, worker.LogicTaskID(strutil.String(pipelineID)))
 		if isTaskHandling {
 			q.Log.Warnf("skip load, logic task is handling already, pipelineID: %d, workerID: %s", pipelineID, handlingWorkerID)
 			return

@@ -45,8 +45,8 @@ type leaderUse struct {
 	allWorkers map[worker.ID]worker.Worker
 
 	initialized      bool
-	findWorkerByTask map[worker.TaskLogicID]worker.ID
-	findTaskByWorker map[worker.ID]map[worker.TaskLogicID]struct{}
+	findWorkerByTask map[worker.LogicTaskID]worker.ID
+	findTaskByWorker map[worker.ID]map[worker.LogicTaskID]struct{}
 
 	leaderHandlers               []func(ctx context.Context)
 	leaderHandlersOnWorkerAdd    []WorkerAddHandler
@@ -69,19 +69,19 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
 }
 
-func (p *provider) addToTaskWorkerAssignMap(logicTaskID worker.TaskLogicID, workerID worker.ID) {
+func (p *provider) addToTaskWorkerAssignMap(logicTaskID worker.LogicTaskID, workerID worker.ID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	// findWorkerByTask
 	p.leaderUse.findWorkerByTask[logicTaskID] = workerID
 	// findTaskByWorker
 	if p.leaderUse.findTaskByWorker[workerID] == nil {
-		p.leaderUse.findTaskByWorker[workerID] = make(map[worker.TaskLogicID]struct{})
+		p.leaderUse.findTaskByWorker[workerID] = make(map[worker.LogicTaskID]struct{})
 	}
 	p.leaderUse.findTaskByWorker[workerID][logicTaskID] = struct{}{}
 }
 
-func (p *provider) removeFromTaskWorkerAssignMap(logicTaskID worker.TaskLogicID, workerID worker.ID) {
+func (p *provider) removeFromTaskWorkerAssignMap(logicTaskID worker.LogicTaskID, workerID worker.ID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	// findWorkerByTask
