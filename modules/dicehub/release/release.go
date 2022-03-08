@@ -179,8 +179,8 @@ func (s *ReleaseService) createAppReleaseAndSetLatest(release *db.Release) (err 
 
 	var latest db.Release
 	if err = tx.Where("project_id = ?", release.ProjectID).Where("application_id = ?", release.ApplicationID).
-		Where("git_branch = ?", release.GitBranch).Where("is_formal = ?", release.IsFormal).
-		Where("is_latest = true").Where("is_project_release = false").Find(&latest).Error; err == nil {
+		Where("git_branch = ?", release.GitBranch).Where("is_latest = true").
+		Where("is_project_release = false").Find(&latest).Error; err == nil {
 		latest.IsLatest = false
 		tx.Save(&latest)
 	} else if !gorm.IsRecordNotFoundError(err) {
