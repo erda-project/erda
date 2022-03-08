@@ -15,7 +15,10 @@
 package k8sflink
 
 import (
+	"time"
+
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
@@ -28,7 +31,7 @@ type K8sFlink struct {
 }
 
 func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sFlink, error) {
-	k, err := k8sclient.New(clusterName)
+	k, err := k8sclient.NewWithTimeOut(clusterName, time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second)
 	if err != nil {
 		return nil, err
 	}
