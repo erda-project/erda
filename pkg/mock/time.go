@@ -49,6 +49,24 @@ const (
 	DateTimeCustom       = "datetime_custom_"        //  当前时间自定义格式
 )
 
+var dateTimeCustoms = map[string]string{
+	"ANSIC":       time.ANSIC,
+	"UnixDate":    time.UnixDate,
+	"RubyDate":    time.RubyDate,
+	"RFC822":      time.RFC822,
+	"RFC822Z":     time.RFC822Z,
+	"RFC850":      time.RFC850,
+	"RFC1123":     time.RFC1123,
+	"RFC1123Z":    time.RFC1123Z,
+	"RFC3339":     time.RFC3339,
+	"RFC3339Nano": time.RFC3339Nano,
+	"Kitchen":     time.Kitchen,
+	"Stamp":       time.Stamp,
+	"StampMilli":  time.StampMilli,
+	"StampMicro":  time.StampMicro,
+	"StampNano":   time.StampNano,
+}
+
 func getTime(timeType string) string {
 	hour, _ := time.ParseDuration("-1h")
 	day, _ := time.ParseDuration("-24h")
@@ -98,39 +116,9 @@ func getTime(timeType string) string {
 		return ""
 	}
 
-	format := strings.TrimPrefix(timeType, DateTimeCustom)
-	switch format {
-	case "ANSIC":
-		return currentTime.Format(time.ANSIC)
-	case "UnixDate":
-		return currentTime.Format(time.UnixDate)
-	case "RubyDate":
-		return currentTime.Format(time.RubyDate)
-	case "RFC822":
-		return currentTime.Format(time.RFC822)
-	case "RFC822Z":
-		return currentTime.Format(time.RFC822Z)
-	case "RFC850":
-		return currentTime.Format(time.RFC850)
-	case "RFC1123":
-		return currentTime.Format(time.RFC1123)
-	case "RFC1123Z":
-		return currentTime.Format(time.RFC1123Z)
-	case "RFC3339":
-		return currentTime.Format(time.RFC3339)
-	case "RFC3339Nano":
-		return currentTime.Format(time.RFC3339Nano)
-	case "Kitchen":
-		return currentTime.Format(time.Kitchen)
-	case "Stamp":
-		return currentTime.Format(time.Stamp)
-	case "StampMilli":
-		return currentTime.Format(time.StampMilli)
-	case "StampMicro":
-		return currentTime.Format(time.StampMicro)
-	case "StampNano":
-		return currentTime.Format(time.StampNano)
+	key := strings.TrimPrefix(timeType, DateTimeCustom)
+	if format, ok := dateTimeCustoms[key]; ok {
+		return currentTime.Format(format)
 	}
-
-	return currentTime.Format(format)
+	return currentTime.Format(key)
 }
