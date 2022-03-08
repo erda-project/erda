@@ -1,6 +1,7 @@
 - name: "平台中间件cassandra GC耗时异常"
   trigger: "alert"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     CollectionTime_win_value: "time:ms"
   title: |
@@ -29,6 +30,7 @@
 - name: "平台中间件cassandra GC耗时异常"
   trigger: "alert"
   target: "sms"
+  language: "zh-CN"
   formats:
     CollectionTime_win_value: "time:ms"
   title: |
@@ -39,6 +41,7 @@
 - name: "平台中间件cassandra GC耗时异常"
   trigger: "alert"
   target: "vms"
+  language: "zh-CN"
   formats:
     CollectionTime_win_value: "time:ms"
   title: |
@@ -48,6 +51,7 @@
 - name: "平台中间件cassandra GC耗时异常恢复"
   trigger: "recover"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     CollectionTime_win_value: "time:ms"
     trigger_duration: "time:ms"
@@ -75,6 +79,7 @@
 - name: "平台中间件cassandra GC耗时异常恢复"
   trigger: "recover"
   target: "sms"
+  language: "zh-CN"
   formats:
     CollectionTime_win_value: "time:ms"
     trigger_duration: "time:ms"
@@ -85,6 +90,7 @@
 - name: "平台中间件cassandra GC耗时异常恢复"
   trigger: "recover"
   target: "vms"
+  language: "zh-CN"
   formats:
     CollectionTime_win_value: "time:ms"
     trigger_duration: "time:ms"
@@ -92,3 +98,102 @@
     【平台中间件cassandra GC耗时恢复】
   template: |
     中间件{{addon_id}}触发平台中间件cassandra GC耗时恢复告警，组织名称: {{org_name}}，老年代GC耗时: {{CollectionTime_win_value}}
+
+- name: "GC time consuming exception of platform middleware Cassandra"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    CollectionTime_win_value: "time:ms"
+  title: |
+    [GC time consuming alarm of platform middleware Cassandra]
+  template: |
+    [GC time consuming alarm of platform middleware Cassandra]
+
+    Middleware: {{addon_id}}
+
+    GC time consuming of old generation: {{CollectionTime_win_value}}
+
+    Cluster: {{cluster_name}}
+
+    Machine: {{node_host}}
+
+    Organization name: {{org_name}}
+
+    Time: {{timestamp}}
+
+    [View details]({{display_url}})
+
+    [View records]({{record_url}})
+
+- name: "GC time consuming exception of platform middleware Cassandra"
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  formats:
+    CollectionTime_win_value: "time:ms"
+  title: |
+    [GC time consuming exception alarm of platform middleware Cassandra]
+  template: |
+    GC time consuming exception alarm of platform middleware Cassandra triggered by middleware {{addon_id}}, organization name: {{org_name}}, GC time consuming of old generation: {{CollectionTime_win_value}}
+
+- name: "GC time consuming exception of platform middleware Cassandra"
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  formats:
+    CollectionTime_win_value: "time:ms"
+  title: |
+    [GC time consuming exception alarm of platform middleware Cassandra]
+  template: |
+    GC time consuming exception alarm of platform middleware Cassandra triggered by middleware {{addon_id}}, organization name: {{org_name}}, GC time consuming of old generation: {{CollectionTime_win_value}}
+- name: "GC time consuming exception recovery of platform middleware Cassandra"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    CollectionTime_win_value: "time:ms"
+    trigger_duration: "time:ms"
+  title: |
+    [GC time consuming recovery of platform middleware Cassandra]
+  template: |
+    [GC time consuming recovery of platform middleware Cassandra]
+
+    Middleware: {{addon_id}}
+
+    GC time consuming of old generation: {{CollectionTime_win_value}}
+
+    Cluster: {{cluster_name}}
+
+    Machine: {{node_host}}
+
+    Organization name: {{org_name}}
+
+    Duration: {{trigger_duration}}
+
+    Recovery time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "GC time consuming exception recovery of platform middleware Cassandra"
+  trigger: "recover"
+  target: "sms"
+  language: "en-US"
+  formats:
+    CollectionTime_win_value: "time:ms"
+    trigger_duration: "time:ms"
+  title: |
+    [GC time consuming recovery of platform middleware Cassandra]
+  template: |
+    GC time consuming alarm recovery of platform middleware Cassandra triggered by middleware {{addon_id}}, organization name: {{org_name}}, GC time consuming of old generation: {{CollectionTime_win_value}}
+- name: "GC time consuming exception recovery of platform middleware Cassandra"
+  trigger: "recover"
+  target: "vms"
+  language: "en-US"
+  formats:
+    CollectionTime_win_value: "time:ms"
+    trigger_duration: "time:ms"
+  title: |
+    [GC time consuming recovery of platform middleware Cassandra]
+  template: |
+    GC time consuming alarm recovery of platform middleware Cassandra triggered by middleware {{addon_id}}, organization name: {{org_name}}, GC time consuming of old generation: {{CollectionTime_win_value}}

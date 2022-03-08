@@ -1,6 +1,7 @@
 - name: "服务接口HTTP错误率异常"
   trigger: "alert"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     error_percent_value: "percent"
   title: |-
@@ -31,6 +32,7 @@
 - name: "服务接口HTTP错误率异常"
   trigger: "alert"
   target: "sms"
+  language: "zh-CN"
   formats:
     error_percent_value: "percent"
   title: |-
@@ -41,6 +43,7 @@
 - name: "服务接口HTTP错误率异常"
   trigger: "alert"
   target: "vms"
+  language: "zh-CN"
   formats:
     error_percent_value: "percent"
   title: |-
@@ -51,6 +54,7 @@
 - name: "服务接口HTTP错误率恢复"
   trigger: "recover"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |-
@@ -77,6 +81,7 @@
 - name: "服务接口HTTP错误率恢复"
   trigger: "recover"
   target: "sms"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |-
@@ -86,9 +91,109 @@
 - name: "服务接口HTTP错误率恢复"
   trigger: "recover"
   target: "vms"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |-
     【{{service_name}}服务接口HTTP错误率异常恢复】
   template: |
     {{service_name}}触发服务接口HTTP错误率异常恢复，接口: {{http_method}}，terminus_key: {{target_terminus_key}}
+
+- name: "HTTP error rate exception of service interface"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    error_percent_value: "percent"
+  title: |-
+    [HTTP error rate exception alarm of {{service_name}} service interface]
+  template: |
+    [HTTP error rate exception alarm of service interface]
+
+    Project: {{project_name}}
+
+    Application: {{application_name}}
+
+    Service: {{runtime_name}} - {{service_name}}
+
+    Interface: {{http_method}} {{http_url}}
+
+    Event: Within {{ window }} min, HTTP error rate of {{ error_percent_value }}, error request times of {{ error_count_sum }}, total request times of {{ elapsed_count_sum }}
+
+    terminus_key: {{target_terminus_key}}
+
+    Time: {{timestamp}}
+
+    [View details]({{display_url}})
+
+    [View records]({{record_url}})
+
+- name: "HTTP error rate exception of service interface"
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  formats:
+    error_percent_value: "percent"
+  title: |-
+    [HTTP error rate exception alarm of {{service_name}} service interface]
+  template: |
+    HTTP error rate exception alarm triggered by HTTP error rate of {{ error_percent_value }} within {{ window }} min. terminus_key: {{target_terminus_key}}, error request times of {{ error_count_sum }}, total request times of {{ elapsed_count_sum }}
+
+- name: "HTTP error rate exception of service interface"
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  formats:
+    error_percent_value: "percent"
+  title: |-
+    [HTTP error rate exception alarm of {{service_name}} service interface]
+  template: |
+    HTTP error rate exception alarm triggered by HTTP error rate of {{ error_percent_value }} within {{ window }} min. terminus_key: {{target_terminus_key}}, error request times of {{ error_count_sum }}, total request times of {{ elapsed_count_sum }}
+
+- name: "HTTP error rate recovery of service interface"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |-
+    [HTTP error rate exception recovery of {{service_name}} service interface]
+  template: |
+    [HTTP error rate exception recovery of service interface]
+
+    Project: {{project_name}}
+
+    Application: {{application_name}}
+
+    Service: {{runtime_name}} - {{service_name}}
+
+    Interface: {{http_method}} {{http_url}}
+
+    terminus_key: {{target_terminus_key}}
+
+    Duration: {{trigger_duration_min}}
+
+    Recovery time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "HTTP error rate recovery of service interface"
+  trigger: "recover"
+  target: "sms"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |-
+    [HTTP error rate exception recovery of {{service_name}} service interface]
+  template: |
+    HTTP error rate exception recovery triggered by {{service_name}}, interface: {{http_method}}, terminus_key: {{target_terminus_key}}
+- name: "HTTP error rate recovery of service interface"
+  trigger: "recover"
+  target: "vms"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |-
+    [HTTP error rate exception recovery of {{service_name}} service interface]
+  template: |
+    HTTP error rate exception recovery triggered by {{service_name}}, interface: {{http_method}}, terminus_key: {{target_terminus_key}}
