@@ -15,12 +15,12 @@
 package worker
 
 import (
-	"github.com/google/uuid"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 )
 
 type ID string
 
-func NewID() ID              { return ID(uuid.New().String()) }
+func NewID() ID              { return ID(uuid.New()) }
 func (id ID) String() string { return string(id) }
 
 type TaskLogicID string
