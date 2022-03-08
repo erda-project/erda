@@ -498,9 +498,15 @@ func (k *K8sSpark) composePodSpec(job *apistructs.JobFromUser, conf *apistructs.
 	scheduleInfo2, _, _ := logic.GetScheduleInfo(k.cluster, string(k.Name()), string(Kind), *job)
 	switch podType {
 	case sparkDriverType:
+		podSpec.Annotations = map[string]string{
+			apistructs.MSPTerminusDefineTag: containers.MakeSparkTaskDriverID(conf.Name),
+		}
 		resource = conf.Spec.SparkConf.DriverResource
 	case sparkExecutorType:
 		resource = conf.Spec.SparkConf.ExecutorResource
+		podSpec.Annotations = map[string]string{
+			apistructs.MSPTerminusDefineTag: containers.MakeSparkTaskExecutorID(conf.Name),
+		}
 	}
 
 	k.appendResource(&podSpec, &resource)
