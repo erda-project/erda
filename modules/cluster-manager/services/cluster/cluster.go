@@ -369,7 +369,7 @@ func (c *Cluster) GetCluster(idOrName string) (*apistructs.ClusterInfo, error) {
 	if cluster == nil {
 		return nil, errors.Errorf("not found")
 	}
-
+	//logrus.Infof("get cluster from db :%v", cluster.ClusterInfo)
 	return c.convert(cluster), nil
 }
 
@@ -479,6 +479,7 @@ func (c *Cluster) convert(cluster *model.Cluster) *apistructs.ClusterInfo {
 		sysConfig       *apistructs.Sysconf
 		// Deprecated at 1.2
 		urls = make(map[string]string)
+		cm   = make(map[string]string)
 	)
 
 	if cluster.SysConfig != "" {
@@ -509,6 +510,11 @@ func (c *Cluster) convert(cluster *model.Cluster) *apistructs.ClusterInfo {
 			logrus.Warnf("failed to unmarshal, (%v)", err)
 		}
 	}
+	if cluster.ClusterInfo != "" {
+		if err := json.Unmarshal([]byte(cluster.ClusterInfo), &cm); err != nil {
+			logrus.Warnf("failed to unmarshal, (%v)", err)
+		}
+	}
 
 	return &apistructs.ClusterInfo{
 		ID:             int(cluster.ID),
@@ -526,5 +532,6 @@ func (c *Cluster) convert(cluster *model.Cluster) *apistructs.ClusterInfo {
 		URLs:           urls,
 		CreatedAt:      cluster.CreatedAt,
 		UpdatedAt:      cluster.UpdatedAt,
+		CM:             cm,
 	}
 }

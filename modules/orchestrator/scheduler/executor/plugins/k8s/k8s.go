@@ -358,7 +358,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	event := event.New(event.WithCompleteParams(addr, client))
 	dbclient := instanceinfo.New(dbengine.MustOpen())
 
-	clusterInfo, err := clusterinfo.New(clusterName, clusterinfo.WithCompleteParams(addr, client))
+	clusterInfo, err := clusterinfo.New(clusterName, clusterinfo.WithCompleteParams(addr, client), clusterinfo.WithDB(dbclient))
 	if err != nil {
 		return nil, errors.Errorf("failed to new cluster info, executorName: %s, clusterName: %s, (%v)",
 			name, clusterName, err)
