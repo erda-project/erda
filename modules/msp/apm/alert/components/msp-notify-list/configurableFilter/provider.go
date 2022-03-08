@@ -68,14 +68,14 @@ func (p *provider) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 
 func (p *provider) getConfigurableFilterOptions(sdk *cptype.SDK, inParams *common.InParams) []interface{} {
 	alerts, _ := p.getAlerts(sdk.Ctx, inParams)
-	alertSelectCondition := model.NewSelectCondition("alertId", "关联策略", common.IdNameValuesToSelectOptions(alerts)).WithPlaceHolder("关联策略").WithMode("single")
+	alertSelectCondition := model.NewSelectCondition("alertId", sdk.I18n("LinkedStrategy"), common.IdNameValuesToSelectOptions(alerts)).WithPlaceHolder(sdk.I18n("LinkedStrategy")).WithMode("single")
 	notifyStatus := p.getNotifyStatus(sdk, inParams)
-	notifyStatusCondition := model.NewSelectCondition("status", "状态", common.IdNameValuesToSelectOptions(notifyStatus)).WithPlaceHolder("选择状态").WithMode("single")
+	notifyStatusCondition := model.NewSelectCondition("status", sdk.I18n("Status"), common.IdNameValuesToSelectOptions(notifyStatus)).WithPlaceHolder(sdk.I18n("SelectStatus")).WithMode("single")
 	notifyChannel := p.getNotifyChannel(sdk, inParams)
-	alertChannelSelectCondition := model.NewSelectCondition("channel", "通知方式", common.IdNameValuesToSelectOptions(notifyChannel)).WithPlaceHolder("选择通知方式").WithMode("single")
-	notifySendTimeCondition := model.NewDateRangeCondition("sendTime", "发送时间")
-	searchName := model.NewInputCondition("notifyName", "名称")
-	searchName.Placeholder = "按名称搜索"
+	alertChannelSelectCondition := model.NewSelectCondition("channel", sdk.I18n("NotifyWay"), common.IdNameValuesToSelectOptions(notifyChannel)).WithPlaceHolder(sdk.I18n("SelectNotifyWay")).WithMode("single")
+	notifySendTimeCondition := model.NewDateRangeCondition("sendTime", sdk.I18n("SendTime"))
+	searchName := model.NewInputCondition("notifyName", sdk.I18n("NotifyName"))
+	searchName.Placeholder = sdk.I18n("SearchName")
 	searchName.Outside = true
 	return []interface{}{alertSelectCondition, notifyStatusCondition, alertChannelSelectCondition, notifySendTimeCondition, searchName}
 }
