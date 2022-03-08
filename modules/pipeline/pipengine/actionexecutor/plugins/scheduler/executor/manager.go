@@ -75,12 +75,6 @@ func (m *Manager) Initialize() error {
 
 	logrus.Infof("pipeline scheduler task executor Inititalize ...")
 
-	// initialization only need to set up all clusters
-	// executor could be created when pipeline execution or async created
-	if err := m.batchSetupClusters(); err != nil {
-		return err
-	}
-
 	triggerChan := clusterinfo.RegisterRefreshChan()
 
 	go m.listenAndPatchExecutor(context.Background(), triggerChan)
@@ -103,15 +97,22 @@ func (m *Manager) Get(name types.Name) (types.TaskExecutor, error) {
 	return e, nil
 }
 
-func (m *Manager) GetCluster(clusterName string) (apistructs.ClusterInfo, error) {
-	m.RLock()
-	defer m.RUnlock()
+func (m *Manager) TryGetCluster(clusterName string) (apistructs.ClusterInfo, error) {
 	if len(clusterName) == 0 {
 		return apistructs.ClusterInfo{}, errors.Errorf("clusterName is empty")
 	}
+	m.RLock()
 	cluster, ok := m.clusters[clusterName]
+	m.RUnlock()
 	if !ok {
-		return apistructs.ClusterInfo{}, errors.Errorf("failed to get cluster info by clusterName: %s", clusterName)
+		cluster, err := clusterinfo.GetClusterByName(clusterName)
+		if err != nil {
+			return apistructs.ClusterInfo{}, errors.Errorf("failed to get cluster info by clusterName: %s", clusterName)
+		}
+		m.Lock()
+		m.clusters[clusterName] = cluster
+		m.Unlock()
+		return cluster, nil
 	}
 	return cluster, nil
 }
@@ -251,19 +252,6 @@ func (m *Manager) batchUpdateExecutors() error {
 		})
 	}
 	m.pools.Stop()
-	return nil
-}
-
-func (m *Manager) batchSetupClusters() error {
-	clusters, err := clusterinfo.ListAllClusters()
-	if err != nil {
-		return err
-	}
-	for i := range clusters {
-		m.Lock()
-		m.clusters[clusters[i].Name] = clusters[i]
-		m.Unlock()
-	}
 	return nil
 }
 
