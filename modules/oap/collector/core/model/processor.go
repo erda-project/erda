@@ -14,9 +14,18 @@
 
 package model
 
+import (
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
+)
+
+type RuntimeProcessor struct {
+	Name      string
+	Processor Processor
+}
+
 type Processor interface {
 	Component
-	Process(data ObservableData) (ObservableData, error)
+	Process(in odata.ObservableData) (odata.ObservableData, error)
 }
 
 type RunningProcessor interface {
@@ -31,6 +40,6 @@ func (n *NoopProcessor) ComponentID() ComponentID {
 	return "NoopProcessor"
 }
 
-func (n *NoopProcessor) Process(data ObservableData) (ObservableData, error) {
-	return data, nil
+func (n *NoopProcessor) Process(in odata.ObservableData) (odata.ObservableData, error) {
+	return in, nil
 }

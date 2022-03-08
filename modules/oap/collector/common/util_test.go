@@ -12,15 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipeline
+package common
 
 import (
-	"context"
-
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"testing"
 )
 
-type Interface interface {
-	InitComponents(receivers, processors, exporters []model.Component) error
-	StartStream(ctx context.Context)
+func TestIsJSONArray(t *testing.T) {
+	type args struct {
+		b []byte
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{"", args{b: []byte(`[{"a":1}]`)}, true},
+		{"", args{b: []byte(`{"a":1}`)}, false},
+		{"", args{b: []byte(`[]`)}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsJSONArray(tt.args.b); got != tt.want {
+				t.Errorf("isJSONArray() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

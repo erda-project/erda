@@ -12,28 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opentelemetry
+package jaeger
 
 import (
 	"context"
 
 	"github.com/erda-project/erda-infra/base/logs"
-	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	common "github.com/erda-project/erda-proto-go/common/pb"
-	pb "github.com/erda-project/erda-proto-go/oap/collector/receiver/opentelemetry/pb"
+	jaegerpb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
-type otlpService struct {
-	Log    logs.Logger
-	writer writer.Writer
+type jaegerServiceImpl struct {
+	Log logs.Logger
+	p   *provider
 }
 
-func (s *otlpService) Export(ctx context.Context, req *pb.PostSpansRequest) (*common.VoidResponse, error) {
+func (s *jaegerServiceImpl) SpansWithThrift(ctx context.Context, req *jaegerpb.PostSpansRequest) (*common.VoidResponse, error) {
 	if req.Spans != nil {
 		for _, span := range req.Spans {
-			if err := s.writer.Write(span); err != nil {
-				s.Log.Error("write opentelemetry traces to kafka failed.")
-			}
+			s.p.consumer(odata.NewSpan(span))
 		}
 	}
 	return &common.VoidResponse{}, nil

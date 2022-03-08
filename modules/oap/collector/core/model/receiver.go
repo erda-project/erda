@@ -14,6 +14,17 @@
 
 package model
 
+import (
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
+)
+
+type ObservableDataConsumerFunc func(data odata.ObservableData)
+
+type RuntimeReceiver struct {
+	Name     string
+	Receiver Receiver
+}
+
 type Receiver interface {
 	Component
 	// TODO

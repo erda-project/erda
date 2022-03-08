@@ -29,7 +29,7 @@ import (
 	"github.com/erda-project/erda-oap-thirdparty-protocol/jaeger-thrift/jaeger"
 	jaegerpb "github.com/erda-project/erda-proto-go/oap/collector/receiver/jaeger/pb"
 	tracing "github.com/erda-project/erda-proto-go/oap/trace/pb"
-	"github.com/erda-project/erda/modules/oap/collector/receivers/common"
+	"github.com/erda-project/erda/modules/oap/collector/interceptor"
 )
 
 var (
@@ -83,10 +83,10 @@ func thrift2Proto(batch *jaeger.Batch) []*tracing.Span {
 		span.Attributes = make(map[string]string)
 		extractAttributes(span, batch.Process.Tags)
 		extractAttributes(span, tSpan.Tags)
-		span.Attributes[common.TAG_SERVICE_ID] = batch.Process.ServiceName
-		span.Attributes[common.TAG_SERVICE_NAME] = batch.Process.ServiceName
-		span.Attributes[common.TAG_INSTRUMENT] = common.TAG_JAEGER
-		span.Attributes[common.TAG_INSTRUMENT_VERSION] = span.Attributes[common.TAG_JAEGER_VERSION]
+		span.Attributes[interceptor.TAG_SERVICE_ID] = batch.Process.ServiceName
+		span.Attributes[interceptor.TAG_SERVICE_NAME] = batch.Process.ServiceName
+		span.Attributes[interceptor.TAG_INSTRUMENT] = interceptor.TAG_JAEGER
+		span.Attributes[interceptor.TAG_INSTRUMENT_VERSION] = span.Attributes[interceptor.TAG_JAEGER_VERSION]
 		spans = append(spans, span)
 	}
 	return spans
@@ -102,20 +102,20 @@ func extractTraceID(tSpan *jaeger.Span) string {
 func extractAuthenticationTags(r *http.Request, tags []*jaeger.Tag) {
 	if tags != nil {
 		for _, tag := range tags {
-			if tag.Key == common.TAG_ERDA_ENV_ID || tag.Key == common.TAG_ERDA_ENV_ID_C {
+			if tag.Key == interceptor.TAG_ERDA_ENV_ID || tag.Key == interceptor.TAG_ERDA_ENV_ID_C {
 				// If the headers does not have x-msp-env-id, use msp.env.id contained in tags
-				if val := r.Header.Get(common.HEADER_ERDA_ENV_ID); val == "" {
-					r.Header.Set(common.HEADER_ERDA_ENV_ID, getTagValue(tag))
+				if val := r.Header.Get(interceptor.HEADER_ERDA_ENV_ID); val == "" {
+					r.Header.Set(interceptor.HEADER_ERDA_ENV_ID, getTagValue(tag))
 				}
 			}
-			if tag.Key == common.TAG_ERDA_ENV_TOKEN || tag.Key == common.TAG_ERDA_ENV_TOKEN_C {
-				if val := r.Header.Get(common.HEADER_ERDA_ENV_TOKEN); val == "" {
-					r.Header.Set(common.HEADER_ERDA_ENV_TOKEN, getTagValue(tag))
+			if tag.Key == interceptor.TAG_ERDA_ENV_TOKEN || tag.Key == interceptor.TAG_ERDA_ENV_TOKEN_C {
+				if val := r.Header.Get(interceptor.HEADER_ERDA_ENV_TOKEN); val == "" {
+					r.Header.Set(interceptor.HEADER_ERDA_ENV_TOKEN, getTagValue(tag))
 				}
 			}
-			if tag.Key == common.TAG_ERDA_ORG || tag.Key == common.TAG_ERDA_ORG_C {
-				if val := r.Header.Get(common.HEADER_ERDA_ORG); val == "" {
-					r.Header.Set(common.HEADER_ERDA_ORG, getTagValue(tag))
+			if tag.Key == interceptor.TAG_ERDA_ORG || tag.Key == interceptor.TAG_ERDA_ORG_C {
+				if val := r.Header.Get(interceptor.HEADER_ERDA_ORG); val == "" {
+					r.Header.Set(interceptor.HEADER_ERDA_ORG, getTagValue(tag))
 				}
 			}
 		}

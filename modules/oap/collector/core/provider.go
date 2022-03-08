@@ -53,7 +53,7 @@ func (p *provider) Run(ctx context.Context) error {
 }
 
 func (p *provider) initComponents() error {
-	for _, item := range p.Cfg.Pipelines {
+	for idx, item := range p.Cfg.Pipelines {
 		rs, err := findComponents(p.servicectx, item.Receivers)
 		if err != nil {
 			return err
@@ -67,22 +67,16 @@ func (p *provider) initComponents() error {
 			return err
 		}
 
-		switch item.DataType {
-		case model.MetricDataType:
-			pipe := pipeline.NewPipeline(p.Log.Sub("MetricsPipeline"))
-			err := pipe.InitComponents(rs, ps, es)
-			if err != nil {
-				return fmt.Errorf("init components err: %w", err)
-			}
-			p.pipelines = append(p.pipelines, pipe)
-		case model.TraceDataType:
-		case model.LogDataType:
-		default:
-			return fmt.Errorf("unsupported data_type: %s", item.DataType)
+		pipe := pipeline.NewPipeline(p.Log.Sub(fmt.Sprintf("core-pipeline-%d", idx)), p.Cfg.GlobalConfig)
+		err = pipe.InitComponents(rs, ps, es)
+		if err != nil {
+			return fmt.Errorf("init components err: %w", err)
 		}
+		p.pipelines = append(p.pipelines, pipe)
 	}
 	return nil
 }
+
 func (p *provider) start(ctx context.Context) {
 	for _, pipe := range p.pipelines {
 		go func(pi *pipeline.Pipeline) {
@@ -91,8 +85,8 @@ func (p *provider) start(ctx context.Context) {
 	}
 }
 
-func findComponents(ctx servicehub.Context, components []string) ([]model.Component, error) {
-	res := make([]model.Component, 0)
+func findComponents(ctx servicehub.Context, components []string) ([]model.ComponentUnit, error) {
+	res := make([]model.ComponentUnit, 0)
 	for _, item := range components {
 		obj := ctx.Service(item)
 		if obj == nil {
@@ -102,7 +96,10 @@ func findComponents(ctx servicehub.Context, components []string) ([]model.Compon
 		if !ok {
 			return nil, fmt.Errorf("%s is not a Component", item)
 		}
-		res = append(res, com)
+		res = append(res, model.ComponentUnit{
+			Component: com,
+			Name:      item,
+		})
 	}
 	return res, nil
 }
