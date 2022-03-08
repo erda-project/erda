@@ -19,8 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erda-project/erda/modules/oap/collector/core/config"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/modules/oap/collector/core/config"
 
 	"github.com/erda-project/erda-infra/base/logs/logrusx"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
