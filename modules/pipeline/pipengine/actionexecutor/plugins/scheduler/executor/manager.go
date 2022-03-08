@@ -75,7 +75,9 @@ func (m *Manager) Initialize() error {
 
 	logrus.Infof("pipeline scheduler task executor Inititalize ...")
 
-	if err := m.batchUpdateExecutors(); err != nil {
+	// initialization only need to set up all clusters
+	// executor could be created when pipeline execution or async created
+	if err := m.batchSetupClusters(); err != nil {
 		return err
 	}
 
@@ -166,12 +168,10 @@ func (m *Manager) updateClusterExecutor(cluster apistructs.ClusterInfo) error {
 	var k8sjobExecutor types.TaskExecutor
 	var k8sflinkExecutor types.TaskExecutor
 	var k8ssparkExecutor types.TaskExecutor
-	m.Lock()
-	defer func() {
-		m.Unlock()
-	}()
 
+	m.Lock()
 	m.clusters[cluster.Name] = cluster
+	m.Unlock()
 
 	switch cluster.Type {
 	case apistructs.K8S, apistructs.EDAS:
@@ -183,10 +183,12 @@ func (m *Manager) updateClusterExecutor(cluster apistructs.ClusterInfo) error {
 				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
 				return err
 			} else {
+				m.Lock()
 				if _, exist := m.executors[name]; exist {
 					delete(m.executors, name)
 				}
 				m.executors[name] = k8sjobExecutor
+				m.Unlock()
 				logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 			}
 		}
@@ -199,10 +201,12 @@ func (m *Manager) updateClusterExecutor(cluster apistructs.ClusterInfo) error {
 				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sflink.Kind, name, err)
 				return err
 			} else {
+				m.Lock()
 				if _, exist := m.executors[name]; exist {
 					delete(m.executors, name)
 				}
 				m.executors[name] = k8sflinkExecutor
+				m.Unlock()
 				logrus.Infof("=> kind [%s], name [%s], created", k8sflink.Kind, name)
 			}
 		}
@@ -215,10 +219,12 @@ func (m *Manager) updateClusterExecutor(cluster apistructs.ClusterInfo) error {
 				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sspark.Kind, name, err)
 				return err
 			} else {
+				m.Lock()
 				if _, exist := m.executors[name]; exist {
 					delete(m.executors, name)
 				}
 				m.executors[name] = k8ssparkExecutor
+				m.Unlock()
 				logrus.Infof("=> kind [%s], name [%s], created", k8sspark.Kind, name)
 			}
 		}
@@ -245,6 +251,19 @@ func (m *Manager) batchUpdateExecutors() error {
 		})
 	}
 	m.pools.Stop()
+	return nil
+}
+
+func (m *Manager) batchSetupClusters() error {
+	clusters, err := clusterinfo.ListAllClusters()
+	if err != nil {
+		return err
+	}
+	for i := range clusters {
+		m.Lock()
+		m.clusters[clusters[i].Name] = clusters[i]
+		m.Unlock()
+	}
 	return nil
 }
 
