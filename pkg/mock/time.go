@@ -16,6 +16,7 @@ package mock
 
 import (
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -45,6 +46,7 @@ const (
 	DateDay              = "date_day"                // 1天前日期格式：2006-01-01
 	DateTime             = "datetime"                // 当前带时间的格式：2006-01-02 15:04:05
 	DateTimeHour         = "datetime_hour"           // 1小时前带时间的格式：2006-01-02 14:04:05
+	DateTimeCustom       = "datetime_custom_"        //  当前时间自定义格式
 )
 
 func getTime(timeType string) string {
@@ -92,5 +94,43 @@ func getTime(timeType string) string {
 		return currentTime.Add(hour).Format("2006-01-02 15:04:05")
 	}
 
-	return ""
+	if !strings.HasPrefix(timeType, DateTimeCustom) {
+		return ""
+	}
+
+	format := strings.TrimPrefix(timeType, DateTimeCustom)
+	switch format {
+	case "ANSIC":
+		return currentTime.Format(time.ANSIC)
+	case "UnixDate":
+		return currentTime.Format(time.UnixDate)
+	case "RubyDate":
+		return currentTime.Format(time.RubyDate)
+	case "RFC822":
+		return currentTime.Format(time.RFC822)
+	case "RFC822Z":
+		return currentTime.Format(time.RFC822Z)
+	case "RFC850":
+		return currentTime.Format(time.RFC850)
+	case "RFC1123":
+		return currentTime.Format(time.RFC1123)
+	case "RFC1123Z":
+		return currentTime.Format(time.RFC1123Z)
+	case "RFC3339":
+		return currentTime.Format(time.RFC3339)
+	case "RFC3339Nano":
+		return currentTime.Format(time.RFC3339Nano)
+	case "Kitchen":
+		return currentTime.Format(time.Kitchen)
+	case "Stamp":
+		return currentTime.Format(time.Stamp)
+	case "StampMilli":
+		return currentTime.Format(time.StampMilli)
+	case "StampMicro":
+		return currentTime.Format(time.StampMicro)
+	case "StampNano":
+		return currentTime.Format(time.StampNano)
+	}
+
+	return currentTime.Format(format)
 }
