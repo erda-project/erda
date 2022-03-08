@@ -523,6 +523,14 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo map[string]str
 		container.Command = append(container.Command, []string{"sh", "-c", job.Cmd}...)
 	}
 
+	// annotations
+	// k8sjob only has one container, multi-container is for compatibility with flink, spark
+	if len(job.TaskContainers) > 0 {
+		kubeJob.Spec.Template.Annotations = map[string]string{
+			apistructs.MSPTerminusDefineTag: job.TaskContainers[0].ContainerID,
+		}
+	}
+
 	var buildkitEnable bool
 
 	if clusterInfo[apistructs.BuildkitEnable] != "" {

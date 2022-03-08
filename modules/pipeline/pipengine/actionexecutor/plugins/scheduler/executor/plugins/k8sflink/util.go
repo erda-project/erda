@@ -161,13 +161,15 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 				Affinity:       affinity,
 				Tolerations:    nil,
 				Sidecars:       nil,
-				PodAnnotations: nil,
+				PodAnnotations: map[string]string{
+					apistructs.MSPTerminusDefineTag: containers.MakeFlinkJobManagerID(data.Name),
+				},
 			},
 			TaskManager: flinkoperatorv1beta1.TaskManagerSpec{
 				Replicas:  data.Spec.FlinkConf.TaskManagerResource.Replica,
 				Resources: composeResources(data.Spec.FlinkConf.TaskManagerResource),
 				PodLabels: map[string]string{
-					apistructs.TerminusDefineTag: containers.MakeFLinkTaskManagerID(data.Name),
+					apistructs.TerminusDefineTag: containers.MakeFlinkTaskManagerID(data.Name),
 				},
 				Volumes:        nil,
 				VolumeMounts:   nil,
@@ -176,7 +178,9 @@ func (k *K8sFlink) ComposeFlinkCluster(job apistructs.JobFromUser, data apistruc
 				Affinity:       affinity,
 				Tolerations:    nil,
 				Sidecars:       nil,
-				PodAnnotations: nil,
+				PodAnnotations: map[string]string{
+					apistructs.MSPTerminusDefineTag: containers.MakeFlinkTaskManagerID(data.Name),
+				},
 			},
 			EnvVars:         data.Spec.Envs,
 			FlinkProperties: data.Spec.Properties,
@@ -210,8 +214,10 @@ func (k *K8sFlink) composeFlinkJob(job apistructs.JobFromUser, data apistructs.B
 		},
 		Affinity:        &constraintbuilders.K8S(&scheduleInfo2, nil, nil, nil).Affinity,
 		CancelRequested: nil,
-		PodAnnotations:  nil,
-		Resources:       corev1.ResourceRequirements{},
+		PodAnnotations: map[string]string{
+			apistructs.MSPTerminusDefineTag: containers.MakeFlinkJobID(data.Name),
+		},
+		Resources: corev1.ResourceRequirements{},
 		PodLabels: map[string]string{
 			apistructs.TerminusDefineTag: containers.MakeFlinkJobID(data.Name),
 		},

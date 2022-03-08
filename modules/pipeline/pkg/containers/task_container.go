@@ -65,7 +65,7 @@ func MakeFlinkTaskManagerName(name string) string {
 	return fmt.Sprintf("%s-task-manager", name)
 }
 
-func MakeFLinkTaskManagerID(uuid string) string {
+func MakeFlinkTaskManagerID(uuid string) string {
 	return fmt.Sprintf("%s-task-manager", uuid)
 }
 
@@ -81,7 +81,7 @@ func GenFlinkContainers(task *spec.PipelineTask) []apistructs.TaskContainer {
 	})
 	containers = append(containers, apistructs.TaskContainer{
 		TaskName:    MakeFlinkTaskManagerName(task.Name),
-		ContainerID: MakeFLinkTaskManagerID(task.Extra.UUID),
+		ContainerID: MakeFlinkTaskManagerID(task.Extra.UUID),
 	})
 	return containers
 }

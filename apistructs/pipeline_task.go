@@ -23,7 +23,9 @@ import (
 
 const (
 	// TerminusDefineTag add this tag env to container for collecting logs
-	TerminusDefineTag            = "TERMINUS_DEFINE_TAG"
+	TerminusDefineTag = "TERMINUS_DEFINE_TAG"
+	// MSPTerminusDefineTag after version 2.0, msp use annotation to collecting logs
+	MSPTerminusDefineTag         = "msp.erda.cloud/terminus_define_tag"
 	PipelineTaskMaxRetryLimit    = 144
 	PipelineTaskMaxRetryDuration = 24 * time.Hour
 )
