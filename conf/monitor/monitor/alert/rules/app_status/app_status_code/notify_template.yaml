@@ -1,6 +1,7 @@
 - name: " 主动监控HTTP状态异常"
   trigger: "alert"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   title: |
     【{{project_name}}项目{{status_metric_name}}指标HTTP状态异常告警】
   template: |
@@ -27,6 +28,7 @@
 - name: " 主动监控HTTP状态异常"
   trigger: "alert"
   target: "sms"
+  language: "zh-CN"
   title: |
     【{{project_name}}项目{{status_metric_name}}指标HTTP状态异常告警】
   template: |
@@ -34,6 +36,7 @@
 - name: " 主动监控HTTP状态异常"
   trigger: "alert"
   target: "vms"
+  language: "zh-CN"
   title: |
     【{{project_name}}项目{{status_metric_name}}指标HTTP状态异常告警】
   template: |
@@ -41,6 +44,7 @@
 - name: "主动监控HTTP状态恢复"
   trigger: "recover"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |
@@ -67,6 +71,7 @@
 - name: "主动监控HTTP状态恢复"
   trigger: "recover"
   target: "sms"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |
@@ -77,9 +82,100 @@
 - name: "主动监控HTTP状态恢复"
   trigger: "recover"
   target: "vms"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |
     【{{project_name}}项目{{status_metric_name}}指标HTTP状态恢复】
   template: |
     {{project_name}}项目{{status_metric_name}}指标状态恢复，terminus_key: {{terminus_key}}，响应状态码: {{code_min}}
+
+- name: "HTTP status exception of active monitoring"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  title: |
+    [HTTP status exception alarm of metric {{status_metric_name}} of project {{project_name}}]
+  template: |
+    [HTTP status exception of active monitoring]
+
+    Project: {{project_name}}
+
+    Environment: {{workspace}}
+
+    Event: Status exception of metric [{{status_metric_name}}]({{url}})
+
+    Response status code: {{code_min}}
+
+    terminus_key: {{terminus_key}}
+
+    Time: {{timestamp}}
+
+    [View details]({{display_url}})
+
+    [View records]({{record_url}})
+
+- name: "HTTP status exception of active monitoring"
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  title: |
+    [HTTP status exception alarm of metric {{status_metric_name}} of project {{project_name}}]
+  template: |
+    Status exception of metric {{status_metric_name}} of project {{project_name}}, terminus_key: {{terminus_key}}, response status code: {{code_min}}
+- name: "HTTP status exception of active monitoring"
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  title: |
+    [HTTP status exception alarm of metric {{status_metric_name}} of project {{project_name}}]
+  template: |
+    Status exception of metric {{status_metric_name}} of project {{project_name}}, terminus_key: {{terminus_key}}, response status code: {{code_min}}
+- name: "HTTP status recovery of active monitoring"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    [HTTP status recovery of metric {{status_metric_name}} of project {{project_name}}]
+  template: |
+    [HTTP status recovery of active monitoring]
+
+    Project: {{project_name}}
+
+    Environment: {{workspace}}
+
+    Event: Status recovery of metric [{{status_metric_name}}]({{url}})
+
+    Response status code: {{code_min}}
+
+    terminus_key: {{terminus_key}}
+
+    Duration: {{trigger_duration}}
+
+    Recovery time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "HTTP status recovery of active monitoring"
+  trigger: "recover"
+  target: "sms"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    [HTTP status recovery of metric {{status_metric_name}} of project {{project_name}}]
+  template: |
+    Status recovery of metric {{status_metric_name}} of project {{project_name}}, terminus_key: {{terminus_key}}, response status code: {{code_min}}
+
+- name: "HTTP status recovery of active monitoring"
+  trigger: "recover"
+  target: "vms"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    [HTTP status recovery of metric {{status_metric_name}} of project {{project_name}}]
+  template: |
+    Status recovery of metric {{status_metric_name}} of project {{project_name}}, terminus_key: {{terminus_key}}, response status code: {{code_min}}

@@ -43,6 +43,10 @@ var _ json.Marshaler = (*AlertTemplateData)(nil)
 var _ json.Unmarshaler = (*AlertTemplateData)(nil)
 var _ json.Marshaler = (*AlertTemplate)(nil)
 var _ json.Unmarshaler = (*AlertTemplate)(nil)
+var _ json.Marshaler = (*GetOrgsLocaleRequest)(nil)
+var _ json.Unmarshaler = (*GetOrgsLocaleRequest)(nil)
+var _ json.Marshaler = (*GetOrgsLocaleResponse)(nil)
+var _ json.Unmarshaler = (*GetOrgsLocaleResponse)(nil)
 
 // GetExpressionsRequest implement json.Marshaler.
 func (m *GetExpressionsRequest) MarshalJSON() ([]byte, error) {
@@ -309,6 +313,42 @@ func (m *AlertTemplate) MarshalJSON() ([]byte, error) {
 
 // AlertTemplate implement json.Marshaler.
 func (m *AlertTemplate) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetOrgsLocaleRequest implement json.Marshaler.
+func (m *GetOrgsLocaleRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetOrgsLocaleRequest implement json.Marshaler.
+func (m *GetOrgsLocaleRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GetOrgsLocaleResponse implement json.Marshaler.
+func (m *GetOrgsLocaleResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GetOrgsLocaleResponse implement json.Marshaler.
+func (m *GetOrgsLocaleResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

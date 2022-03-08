@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/monitor/expression/pb"
+	"github.com/erda-project/erda/modules/core-services/dao"
 	alertdb "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
@@ -46,6 +47,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		metricDB:                       &alertdb.MetricExpressionDB{DB: p.DB},
 		customizeAlertNotifyTemplateDB: &alertdb.CustomizeAlertNotifyTemplateDB{DB: p.DB},
 		alertNotifyDB:                  &alertdb.AlertNotifyDB{DB: p.DB},
+		clientDB:                       &dao.DBClient{DB: p.DB},
 	}
 	err := p.expressionService.init(p.Cfg.AlertRules, p.Cfg.MetricRules)
 	if err != nil {

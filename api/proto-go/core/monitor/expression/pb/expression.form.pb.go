@@ -27,6 +27,8 @@ var _ urlenc.URLValuesUnmarshaler = (*GetTemplatesRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetTemplatesResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AlertTemplateData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AlertTemplate)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetOrgsLocaleRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetOrgsLocaleResponse)(nil)
 
 // GetExpressionsRequest implement urlenc.URLValuesUnmarshaler.
 func (m *GetExpressionsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -264,7 +266,11 @@ func (m *AlertNotify) UnmarshalURLValues(prefix string, values url.Values) error
 				if m.NotifyTarget == nil {
 					m.NotifyTarget = &NotifyTarget{}
 				}
-				m.NotifyTarget.GroupId = vals[0]
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.NotifyTarget.GroupId = val
 			case "notifyTarget.groupType":
 				if m.NotifyTarget == nil {
 					m.NotifyTarget = &NotifyTarget{}
@@ -283,6 +289,12 @@ func (m *AlertNotify) UnmarshalURLValues(prefix string, values url.Values) error
 				m.Silence = val
 			case "silencePolicy":
 				m.SilencePolicy = vals[0]
+			case "enable":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Enable = val
 			}
 		}
 	}
@@ -297,7 +309,11 @@ func (m *NotifyTarget) UnmarshalURLValues(prefix string, values url.Values) erro
 			case "type":
 				m.Type = vals[0]
 			case "groupId":
-				m.GroupId = vals[0]
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.GroupId = val
 			case "groupType":
 				m.GroupType = vals[0]
 			case "level":
@@ -399,8 +415,20 @@ func (m *AlertTemplate) UnmarshalURLValues(prefix string, values url.Values) err
 					return err
 				}
 				m.Enable = val
+			case "language":
+				m.Language = vals[0]
 			}
 		}
 	}
+	return nil
+}
+
+// GetOrgsLocaleRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetOrgsLocaleRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// GetOrgsLocaleResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetOrgsLocaleResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }

@@ -25,6 +25,7 @@ type ExpressionServiceClient interface {
 	GetMetricExpressions(ctx context.Context, in *GetMetricExpressionsRequest, opts ...grpc.CallOption) (*GetMetricExpressionsResponse, error)
 	GetAlertNotifies(ctx context.Context, in *GetAlertNotifiesRequest, opts ...grpc.CallOption) (*GetAlertNotifiesResponse, error)
 	GetTemplates(ctx context.Context, in *GetTemplatesRequest, opts ...grpc.CallOption) (*GetTemplatesResponse, error)
+	GetOrgsLocale(ctx context.Context, in *GetOrgsLocaleRequest, opts ...grpc.CallOption) (*GetOrgsLocaleResponse, error)
 }
 
 type expressionServiceClient struct {
@@ -71,6 +72,15 @@ func (c *expressionServiceClient) GetTemplates(ctx context.Context, in *GetTempl
 	return out, nil
 }
 
+func (c *expressionServiceClient) GetOrgsLocale(ctx context.Context, in *GetOrgsLocaleRequest, opts ...grpc.CallOption) (*GetOrgsLocaleResponse, error) {
+	out := new(GetOrgsLocaleResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.monitor.expression.ExpressionService/GetOrgsLocale", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ExpressionServiceServer is the server API for ExpressionService service.
 // All implementations should embed UnimplementedExpressionServiceServer
 // for forward compatibility
@@ -79,6 +89,7 @@ type ExpressionServiceServer interface {
 	GetMetricExpressions(context.Context, *GetMetricExpressionsRequest) (*GetMetricExpressionsResponse, error)
 	GetAlertNotifies(context.Context, *GetAlertNotifiesRequest) (*GetAlertNotifiesResponse, error)
 	GetTemplates(context.Context, *GetTemplatesRequest) (*GetTemplatesResponse, error)
+	GetOrgsLocale(context.Context, *GetOrgsLocaleRequest) (*GetOrgsLocaleResponse, error)
 }
 
 // UnimplementedExpressionServiceServer should be embedded to have forward compatible implementations.
@@ -96,6 +107,9 @@ func (*UnimplementedExpressionServiceServer) GetAlertNotifies(context.Context, *
 }
 func (*UnimplementedExpressionServiceServer) GetTemplates(context.Context, *GetTemplatesRequest) (*GetTemplatesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTemplates not implemented")
+}
+func (*UnimplementedExpressionServiceServer) GetOrgsLocale(context.Context, *GetOrgsLocaleRequest) (*GetOrgsLocaleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetOrgsLocale not implemented")
 }
 
 func RegisterExpressionServiceServer(s grpc1.ServiceRegistrar, srv ExpressionServiceServer, opts ...grpc1.HandleOption) {
@@ -150,6 +164,15 @@ func _get_ExpressionService_serviceDesc(srv ExpressionServiceServer, opts ...grp
 	if h.Interceptor != nil {
 		_ExpressionService_GetTemplates_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetTemplates", srv)
 		_ExpressionService_GetTemplates_Handler = h.Interceptor(_ExpressionService_GetTemplates_Handler)
+	}
+
+	_ExpressionService_GetOrgsLocale_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.GetOrgsLocale(ctx, req.(*GetOrgsLocaleRequest))
+	}
+	var _ExpressionService_GetOrgsLocale_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_ExpressionService_GetOrgsLocale_info = transport.NewServiceInfo("erda.core.monitor.expression.ExpressionService", "GetOrgsLocale", srv)
+		_ExpressionService_GetOrgsLocale_Handler = h.Interceptor(_ExpressionService_GetOrgsLocale_Handler)
 	}
 
 	var serviceDesc = _ExpressionService_serviceDesc
@@ -244,6 +267,29 @@ func _get_ExpressionService_serviceDesc(srv ExpressionServiceServer, opts ...grp
 					FullMethod: "/erda.core.monitor.expression.ExpressionService/GetTemplates",
 				}
 				return interceptor(ctx, in, info, _ExpressionService_GetTemplates_Handler)
+			},
+		},
+		{
+			MethodName: "GetOrgsLocale",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GetOrgsLocaleRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(ExpressionServiceServer).GetOrgsLocale(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _ExpressionService_GetOrgsLocale_info)
+				}
+				if interceptor == nil {
+					return _ExpressionService_GetOrgsLocale_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.monitor.expression.ExpressionService/GetOrgsLocale",
+				}
+				return interceptor(ctx, in, info, _ExpressionService_GetOrgsLocale_Handler)
 			},
 		},
 	}

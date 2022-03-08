@@ -1,6 +1,7 @@
 - name: "服务接口HTTP慢事务异常"
   trigger: "alert"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     elapsed_sum: "time:ms"
     elapsed_avg_value: "time:ms"
@@ -32,6 +33,7 @@
 - name: "服务接口HTTP慢事务异常"
   trigger: "alert"
   target: "sms"
+  language: "zh-CN"
   formats:
     elapsed_sum: "time:ms"
     elapsed_avg_value: "time:ms"
@@ -42,6 +44,7 @@
 - name: "服务接口HTTP慢事务异常"
   trigger: "alert"
   target: "vms"
+  language: "zh-CN"
   formats:
     elapsed_sum: "time:ms"
     elapsed_avg_value: "time:ms"
@@ -52,6 +55,7 @@
 - name: "服务接口HTTP慢事务恢复"
   trigger: "recover"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |-
@@ -78,6 +82,7 @@
 - name: "服务接口HTTP慢事务恢复"
   trigger: "recover"
   target: "sms"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |-
@@ -87,9 +92,110 @@
 - name: "服务接口HTTP慢事务恢复"
   trigger: "recover"
   target: "vms"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |-
     【{{service_name}}服务接口HTTP慢事务恢复】
   template: |
     {{service_name}}服务接口{{http_method}} {{http_url}}触发服务接口HTTP慢事务告警恢复，terminus_key: {{target_terminus_key}}
+
+- name: "HTTP slow transaction exception of service interface"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    elapsed_sum: "time:ms"
+    elapsed_avg_value: "time:ms"
+  title: |-
+    [HTTP slow transaction exception alarm of {{service_name}} service interface]
+  template: |
+    [HTTP slow transaction exception alarm of service interface]
+
+    Project: {{project_name}}
+
+    Application: {{application_name}}
+
+    Service: {{runtime_name}} - {{service_name}}
+
+    Interface: {{http_method}} {{http_url}}
+
+    Event: Within {{window}} min, average response time of {{elapsed_avg_value}}, request times of {{elapsed_count_sum}}
+
+    terminus_key: {{target_terminus_key}}
+
+    Time: {{timestamp}}
+
+    [View details]({{display_url}})
+
+    [View records]({{record_url}})
+
+- name: "HTTP slow transaction exception of service interface"
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  formats:
+    elapsed_sum: "time:ms"
+    elapsed_avg_value: "time:ms"
+  title: |-
+    [HTTP slow transaction exception alarm of {{service_name}} service interface]
+  template: |
+    HTTP slow transaction exception of {{service_name}} service interface, within {{window}} min average response time of {{elapsed_avg_value}}, request times of {{elapsed_count_sum}}. View records: {{record_url}}
+- name: "HTTP slow transaction exception of service interface"
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  formats:
+    elapsed_sum: "time:ms"
+    elapsed_avg_value: "time:ms"
+  title: |-
+    [HTTP slow transaction exception alarm of {{service_name}} service interface]
+  template: |
+    HTTP slow transaction exception alarm triggered by service {{service_name}}, terminus_key: {{target_terminus_key}}, within {{window}} min average response time of {{elapsed_avg_value}}, request times of {{elapsed_count_sum}}
+- name: "HTTP slow transaction recovery of service interface"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |-
+    [HTTP slow transaction recovery of {{service_name}} service interface]
+  template: |
+    [HTTP slow transaction recovery of service interface]
+
+    Project: {{project_name}}
+
+    Application: {{application_name}}
+
+    Service: {{runtime_name}} - {{service_name}}
+
+    Interface: {{http_method}} {{http_url}}
+
+    terminus_key: {{target_terminus_key}}
+
+    Duration: {{trigger_duration}}
+
+    Recovery time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "HTTP slow transaction recovery of service interface"
+  trigger: "recover"
+  target: "sms"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |-
+    [HTTP slow transaction recovery of {{service_name}} service interface]
+  template: |
+    HTTP slow transaction alarm recovery of service interface triggered by interface {{http_method}} {{http_url}} of service {{service_name}}, terminus_key: {{target_terminus_key}}
+- name: "HTTP slow transaction recovery of service interface"
+  trigger: "recover"
+  target: "vms"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |-
+    [HTTP slow transaction recovery of {{service_name}} service interface]
+  template: |
+    HTTP slow transaction alarm recovery of service interface triggered by interface {{http_method}} {{http_url}} of service {{service_name}}, terminus_key: {{target_terminus_key}}

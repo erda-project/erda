@@ -1,6 +1,7 @@
 - name: "脚本错误告警"
   trigger: "alert"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     count: "string"
   title: |-
@@ -27,6 +28,7 @@
 - name: "脚本错误告警"
   trigger: "alert"
   target: "sms"
+  language: "zh-CN"
   formats:
     count: "string"
   title: |-
@@ -36,9 +38,56 @@
 - name: "脚本错误告警"
   trigger: "alert"
   target: "vms"
+  language: "zh-CN"
   formats:
     count: "string"
   title: |-
     【页面 ({{doc_path}}) 脚本错误告警】
   template: |
     {{window}} 分钟内触发脚本错误告警，tk: {{tk}}，脚本错误次数: {{count_sum}}，告警级别: {{level}}
+
+- name: "Script error alarm"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    count: "string"
+  title: |-
+    [Script error alarm of page ({{doc_path}})]
+  template: |
+    [Script error alarm]
+
+    Event: Within {{window}} minutes, the number of script errors: {{count_sum}}
+
+    Access domain name: {{host}}
+
+    Access page: {{doc_path}}
+
+    Time: {{timestamp}}
+
+    tk: {{tk}}
+
+    [View details]({{display_url}})
+
+    [View records]({{record_url}})
+
+- name: "Script error alarm"
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  formats:
+    count: "string"
+  title: |-
+    [Script error alarm of page ({{doc_path}})]
+  template: |
+    Script error alarm triggered within {{window}} minutes, tk: {{tk}}, the number of script errors: {{count_sum}}
+- name: "Script error alarm"
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  formats:
+    count: "string"
+  title: |-
+    [Script error alarm of page ({{doc_path}})]
+  template: |
+    Script error alarm triggered within {{window}} minutes, tk: {{tk}}, the number of script errors: {{count_sum}}

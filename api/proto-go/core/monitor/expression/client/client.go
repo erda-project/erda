@@ -52,3 +52,7 @@ func (s *expressionServiceWrapper) GetAlertNotifies(ctx context.Context, req *pb
 func (s *expressionServiceWrapper) GetTemplates(ctx context.Context, req *pb.GetTemplatesRequest) (*pb.GetTemplatesResponse, error) {
 	return s.client.GetTemplates(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *expressionServiceWrapper) GetOrgsLocale(ctx context.Context, req *pb.GetOrgsLocaleRequest) (*pb.GetOrgsLocaleResponse, error) {
+	return s.client.GetOrgsLocale(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

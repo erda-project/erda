@@ -1,6 +1,7 @@
 - name: "平台组件实例CPU异常"
   trigger: "alert"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     cpu_usage_percent_avg: "percent:2"
     cpu_limit_value: "fraction:2"
@@ -37,6 +38,7 @@
 - name: "平台组件实例CPU异常"
   trigger: "alert"
   target: "sms"
+  language: "zh-CN"
   formats:
     cpu_usage_percent_avg: "percent:2"
     cpu_limit_value: "fraction:2"
@@ -49,6 +51,7 @@
 - name: "平台组件实例CPU异常"
   trigger: "alert"
   target: "vms"
+  language: "zh-CN"
   formats:
     cpu_usage_percent_avg: "percent:2"
     cpu_limit_value: "fraction:2"
@@ -61,6 +64,7 @@
 - name: "平台组件实例CPU异常恢复"
   trigger: "recover"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     cpu_usage_percent_avg: "percent:2"
     trigger_duration: "time:ms"
@@ -92,6 +96,7 @@
 - name: "平台组件实例CPU异常恢复"
   trigger: "recover"
   target: "sms"
+  language: "zh-CN"
   formats:
     cpu_usage_percent_avg: "percent:2"
     trigger_duration: "time:ms"
@@ -103,6 +108,7 @@
 - name: "平台组件实例CPU异常恢复"
   trigger: "recover"
   target: "vms"
+  language: "zh-CN"
   formats:
     cpu_usage_percent_avg: "percent:2"
     trigger_duration: "time:ms"
@@ -110,3 +116,120 @@
     【平台组件{{component_name}} CPU使用率恢复】
   template: |
     {{component_name}}组件触发平台组件实例CPU使用率异常告警恢复，组织名称: {{org_name}}，使用率: {{cpu_usage_percent_avg}
+
+- name: "CPU exception of platform component instance"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    cpu_usage_percent_avg: "percent:2"
+    cpu_limit_value: "fraction:2"
+    cpu_allocation_value: "fraction:2"
+  title: |
+    [CPU usage alarm of platform component {{component_name}}]
+  template: |
+    [CPU usage alarm of platform component]
+
+    Component: {{component_name}}
+
+    Usage: {{cpu_usage_percent_avg}}
+
+    Limit: {{cpu_limit_value}} core
+
+    Allocation: {{cpu_allocation_value}} core
+
+    Cluster: {{cluster_name}}
+
+    Machine: {{host_ip}}
+
+    Container ID: {{container_id}}
+
+    Pod_Ip: {{pod_ip}}
+
+    Organization name: {{org_name}}
+
+    Time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "CPU exception of platform component instance"
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  formats:
+    cpu_usage_percent_avg: "percent:2"
+    cpu_limit_value: "fraction:2"
+    cpu_allocation_value: "fraction:2"
+  title: |
+    [CPU usage alarm of platform component {{component_name}}]
+  template: |
+    CPU usage exception alarm triggered by component {{component_name}}, organization name: {{org_name}}, usage: {{cpu_usage_percent_avg}}
+
+- name: "CPU exception of platform component instance"
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  formats:
+    cpu_usage_percent_avg: "percent:2"
+    cpu_limit_value: "fraction:2"
+    cpu_allocation_value: "fraction:2"
+  title: |
+    [CPU usage alarm of platform component {{component_name}}]
+  template: |
+    CPU usage exception alarm of platform component instance triggered by component {{component_name}}, organization name: {{org_name}}, usage: {{cpu_usage_percent_avg}}
+
+- name: "CPU exception recovery of platform component instance"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    cpu_usage_percent_avg: "percent:2"
+    trigger_duration: "time:ms"
+  title: |
+    [CPU usage recovery of platform component {{component_name}}]
+  template: |
+    [CPU usage recovery of platform component]
+
+    Component: {{component_name}}
+
+    Usage: {{cpu_usage_percent_avg}}
+
+    Cluster: {{cluster_name}}
+
+    Machine: {{host_ip}}
+
+    Container ID: {{container_id}}
+
+    Pod_Ip: {{pod_ip}}
+
+    Organization name: {{org_name}}
+
+    Duration: {{trigger_duration}}
+
+    Recovery time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "CPU exception recovery of platform component instance"
+  trigger: "recover"
+  target: "sms"
+  language: "en-US"
+  formats:
+    cpu_usage_percent_avg: "percent:2"
+    trigger_duration: "time:ms"
+  title: |
+    [CPU usage recovery of platform component {{component_name}}]
+  template: |
+    CPU usage exception alarm recovery of platform component instance triggered by component {{component_name}}, organization name: {{org_name}}, usage: {{cpu_usage_percent_avg}
+
+- name: "CPU exception recovery of platform component instance"
+  trigger: "recover"
+  target: "vms"
+  language: "en-US"
+  formats:
+    cpu_usage_percent_avg: "percent:2"
+    trigger_duration: "time:ms"
+  title: |
+    [CPU usage recovery of platform component {{component_name}}]
+  template: |
+    CPU usage exception alarm recovery of platform component instance triggered by component {{component_name}}, organization name: {{org_name}}, usage: {{cpu_usage_percent_avg}

@@ -1,6 +1,7 @@
 - name: "平台中间件实例内存异常"
   trigger: "alert"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:2"
     mem_usage_value: "size:byte"
@@ -40,6 +41,7 @@
 - name: "平台中间件实例内存异常"
   trigger: "alert"
   target: "sms"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:2"
     mem_usage_value: "size:byte"
@@ -53,6 +55,7 @@
 - name: "平台中间件实例内存异常"
   trigger: "alert"
   target: "vms"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:2"
     mem_usage_value: "size:byte"
@@ -66,6 +69,7 @@
 - name: "平台中间件实例内存异常"
   trigger: "recover"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:2"
     trigger_duration: "time:ms"
@@ -97,6 +101,7 @@
 - name: "平台中间件实例内存异常"
   trigger: "recover"
   target: "sms"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:2"
     trigger_duration: "time:ms"
@@ -108,6 +113,7 @@
 - name: "平台中间件实例内存异常"
   trigger: "recover"
   target: "vms"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:2"
     trigger_duration: "time:ms"
@@ -115,3 +121,125 @@
     【平台中间件{{addon_id}}内存使用率恢复】
   template: |
     {{addon_id}}中间件触发平台中间件内存使用率异常恢复，组织名称: {{org_name}}，使用率: {{mem_usage_percent_avg}}
+
+- name: "Memory exception of platform middleware instance"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:2"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    mem_allocation_value: "size:byte"
+  title: |
+    [Memory usage alarm of platform middleware {{addon_id}}]
+  template: |
+    [Memory usage alarm of platform middleware]
+
+    Middleware: {{addon_id}}
+
+    Usage rate: {{mem_usage_percent_avg}}
+
+    Usage: {{mem_usage_value}}
+
+    Limit: {{mem_limit_value}}
+
+    Allocation: {{mem_allocation_value}}
+
+    Cluster: {{cluster_name}}
+
+    Machine: {{host_ip}}
+
+    Pod_Ip: {{pod_ip}}
+
+    Container ID: {{container_id}}
+
+    Organization name: {{org_name}}
+
+    Time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "Memory exception of platform middleware instance"
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:2"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    mem_allocation_value: "size:byte"
+  title: |
+    [Memory usage exception alarm of platform middleware {{addon_id}}]
+  template: |
+    Memory usage exception of platform middleware triggered by middleware {{addon_id}}, organization name: {{org_name}}, usage: {{mem_usage_percent_avg}}
+
+- name: "Memory exception of platform middleware instance"
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:2"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    mem_allocation_value: "size:byte"
+  title: |
+    [Memory usage exception alarm of platform middleware {{addon_id}}]
+  template: |
+    Memory usage exception of platform middleware triggered by middleware {{addon_id}}, organization name: {{org_name}}, usage: {{mem_usage_percent_avg}}
+
+- name: "Memory exception recovery of platform middleware instance"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:2"
+    trigger_duration: "time:ms"
+  title: |
+    [Memory usage recovery of platform middleware {{addon_id}}]
+  template: |
+    [Memory usage recovery of platform middleware]
+
+    Middleware: {{addon_id}}
+
+    Usage rate: {{mem_usage_percent_avg}}
+
+    Cluster: {{cluster_name}}
+
+    Machine: {{host_ip}}
+
+    Container ID: {{container_id}}
+
+    Pod_Ip: {{pod_ip}}
+
+    Organization name: {{org_name}}
+
+    Duration: {{trigger_duration}}
+
+    Recovery time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "Memory exception recovery of platform middleware instance"
+  trigger: "recover"
+  target: "sms"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:2"
+    trigger_duration: "time:ms"
+  title: |
+    [Memory usage recovery of platform middleware {{addon_id}}]
+  template: |
+    Memory usage exception recovery of platform middleware triggered by middleware {{addon_id}}, organization name: {{org_name}}, usage: {{mem_usage_percent_avg}}
+
+- name: "Memory exception recovery of platform middleware instance"
+  trigger: "recover"
+  target: "vms"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:2"
+    trigger_duration: "time:ms"
+  title: |
+    [Memory usage recovery of platform middleware {{addon_id}}]
+  template: |
+    Memory usage exception recovery of platform middleware triggered by middleware {{addon_id}}, organization name: {{org_name}}, usage: {{mem_usage_percent_avg}}

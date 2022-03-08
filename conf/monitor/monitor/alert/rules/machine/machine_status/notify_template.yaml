@@ -1,6 +1,7 @@
 - name: "宕机告警"
   trigger: "alert"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     last_timestamp_value: "date"
   title: |-
@@ -29,6 +30,7 @@
 - name: "宕机告警"
   trigger: "alert"
   target: "sms"
+  language: "zh-CN"
   formats:
     last_timestamp_value: "date"
   title: |-
@@ -39,6 +41,7 @@
 - name: "宕机告警"
   trigger: "alert"
   target: "vms"
+  language: "zh-CN"
   formats:
     last_timestamp_value: "date"
   title: |-
@@ -49,6 +52,7 @@
 - name: "宕机恢复"
   trigger: "recover"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |-
@@ -71,6 +75,7 @@
 - name: "宕机恢复"
   trigger: "recover"
   target: "sms"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |-
@@ -81,9 +86,104 @@
 - name: "宕机恢复"
   trigger: "recover"
   target: "vms"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |-
     【{{cluster_name}}集群机器{{host_ip}}宕机恢复】
   template: |
     {{cluster_name}}集群机器{{host_ip}}触发宕机告警恢复，组织名称: {{org_name}}
+
+- name: "Downtime alarm"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    last_timestamp_value: "date"
+  title: |-
+    [Downtime alarm of machine {{host_ip}} of cluster {{cluster_name}}]
+  template: |
+    [Downtime alarm]
+
+    No response within {{window}} min, a downtime may occur
+
+    Cluster: {{cluster_name}}
+
+    Machine: {{host_ip}}
+
+    Organization name: {{org_name}}
+
+    Last active time: {{last_timestamp_value}}
+
+    Time: {{timestamp}}
+
+    [View details]({{display_url}})
+
+    [View records]({{record_url}})
+
+- name: "Downtime alarm"
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  formats:
+    last_timestamp_value: "date"
+  title: |-
+    [Downtime alarm of machine {{host_ip}} of cluster {{cluster_name}}]
+  template: |
+    Downtime alarm triggered by machine {{host_ip}} of cluster {{cluster_name}} without response within {{window}} min, organization name: {{org_name}}
+
+- name: "Downtime alarm"
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  formats:
+    last_timestamp_value: "date"
+  title: |-
+    [Downtime alarm of machine {{host_ip}} of cluster {{cluster_name}}]
+  template: |
+    Downtime alarm triggered by machine {{host_ip}} of cluster {{cluster_name}} without response within {{window}} min, organization name: {{org_name}}
+
+- name: "Downtime recovery"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |-
+    [Downtime recovery of machine {{host_ip}} of cluster {{cluster_name}}]
+  template: |
+    [Downtime recovery]
+
+    Cluster: {{cluster_name}}
+
+    Machine: {{host_ip}}
+
+    Organization name: {{org_name}}
+
+    Duration: {{trigger_duration}}
+
+    Recovery time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "Downtime recovery"
+  trigger: "recover"
+  target: "sms"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |-
+    [Downtime recovery of machine {{host_ip}} of cluster {{cluster_name}}]
+  template: |
+    Downtime alarm recovery triggered by machine {{host_ip}} of cluster {{cluster_name}}, organization name: {{org_name}}
+
+- name: "Downtime recovery"
+  trigger: "recover"
+  target: "vms"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |-
+    [Downtime recovery of machine {{host_ip}} of cluster {{cluster_name}}]
+  template: |
+    Downtime alarm recovery triggered by machine {{host_ip}} of cluster {{cluster_name}}, organization name: {{org_name}}

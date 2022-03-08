@@ -1,6 +1,7 @@
 - name: " 页面内容改变"
   trigger: "alert"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   title: |
     【{{project_name}}项目{{status_metric_name}}页面内容改变告警】
   template: |
@@ -25,6 +26,7 @@
 - name: " 页面内容改变"
   trigger: "alert"
   target: "sms"
+  language: "zh-CN"
   title: |
     【{{project_name}}项目{{status_metric_name}}页面内容改变告警】
   template: |
@@ -32,6 +34,7 @@
 - name: " 页面内容改变"
   trigger: "alert"
   target: "vms"
+  language: "zh-CN"
   title: |
     【{{project_name}}项目{{status_metric_name}}页面内容改变告警】
   template: |
@@ -39,6 +42,7 @@
 - name: " 页面内容改变告警恢复"
   trigger: "recover"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |
@@ -63,6 +67,7 @@
 - name: " 业务请求状态异常告警恢复"
   trigger: "recover"
   target: "sms"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |
@@ -72,9 +77,95 @@
 - name: " 业务请求状态异常告警恢复"
   trigger: "recover"
   target: "vms"
+  language: "zh-CN"
   formats:
     trigger_duration: "time:ms"
   title: |
     【{{project_name}}项目{{status_metric_name}}页面内容改变恢复】
   template: |
     {{project_name}}项目触发页面内容改变告警恢复，terminus_key: {{terminus_key}}
+
+- name: "Page content change"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  title: |
+    [{{status_metric_name}} page content change alarm of project {{project_name}}]
+  template: |
+    [Page content change alarm]
+
+    Project: {{project_name}}
+
+    Environment: {{workspace}}
+
+    terminus_key: {{terminus_key}}
+
+    Event: [{{status_metric_name}}]({{url}}) page content different
+
+    Time: {{timestamp}}
+
+    [View details]({{display_url}})
+
+    [View records]({{record_url}})
+
+- name: "Page content change"
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  title: |
+    [{{status_metric_name}} page content change alarm of project {{project_name}}]
+  template: |
+    Page content change alarm triggered by different [{{project_name}}] page content, terminus_key: {{terminus_key}}
+- name: "Page content change"
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  title: |
+    [{{status_metric_name}} page content change alarm of project {{project_name}}]
+  template: |
+    Page content change alarm triggered by different {{project_name}} page content, terminus_key: {{terminus_key}}
+- name: "Page content change recovery"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    [{{status_metric_name}} page content change recovery of project {{project_name}}]
+  template: |
+    [Page content change recovery]
+
+    Page content change recovery triggered by {{status_metric_name}}]({{url}})
+
+    Project: {{project_name}}
+
+    Environment: {{workspace}}
+
+    terminus_key: {{terminus_key}}
+
+    Duration: {{trigger_duration}}
+
+    Recovery time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "Status exception alarm recovery of service request"
+  trigger: "recover"
+  target: "sms"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    [{{status_metric_name}} page content change recovery of project {{project_name}}]
+  template: |
+    Page content change recovery triggered by project {{project_name}}, terminus_key: {{terminus_key}}
+- name: "Status exception alarm recovery of service request"
+  trigger: "recover"
+  target: "vms"
+  language: "en-US"
+  formats:
+    trigger_duration: "time:ms"
+  title: |
+    [{{status_metric_name}} page content change recovery of project {{project_name}}]
+  template: |
+    Page content change recovery triggered by project {{project_name}}, terminus_key: {{terminus_key}}

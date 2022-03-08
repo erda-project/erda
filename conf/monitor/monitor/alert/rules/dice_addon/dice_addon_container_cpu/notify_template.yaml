@@ -1,6 +1,7 @@
 - name: "平台中间件实例CPU异常"
   trigger: "alert"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     cpu_usage_percent_avg: "percent:2"
     cpu_limit_value: "fraction:2"
@@ -37,6 +38,7 @@
 - name: "平台中间件实例CPU异常"
   trigger: "alert"
   target: "sms"
+  language: "zh-CN"
   formats:
     cpu_usage_percent_avg: "percent:2"
     cpu_limit_value: "fraction:2"
@@ -48,6 +50,7 @@
 - name: "平台中间件实例CPU异常"
   trigger: "alert"
   target: "vms"
+  language: "zh-CN"
   formats:
     cpu_usage_percent_avg: "percent:2"
     cpu_limit_value: "fraction:2"
@@ -59,6 +62,7 @@
 - name: "平台中间件实例CPU异常恢复"
   trigger: "recover"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     cpu_usage_percent_avg: "percent:2"
     trigger_duration: "time:ms"
@@ -90,6 +94,7 @@
 - name: "平台中间件实例CPU异常恢复"
   trigger: "recover"
   target: "sms"
+  language: "zh-CN"
   formats:
     cpu_usage_percent_avg: "percent:2"
     trigger_duration: "time:ms"
@@ -101,6 +106,7 @@
 - name: "平台中间件实例CPU异常恢复"
   trigger: "recover"
   target: "vms"
+  language: "zh-CN"
   formats:
     cpu_usage_percent_avg: "percent:2"
     trigger_duration: "time:ms"
@@ -108,3 +114,118 @@
     【平台中间件{{addon_id}} CPU使用率恢复】
   template: |
     {{addon_id}}中间件触发平台中间CPU使用率异常告警恢复，组织名称: {{org_name}}，使用率: {{cpu_usage_percent_avg}}
+
+- name: "CPU exception of platform middleware instance"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    cpu_usage_percent_avg: "percent:2"
+    cpu_limit_value: "fraction:2"
+    cpu_allocation_value: "fraction:2"
+  title: |
+    [CPU usage alarm of platform middleware {{addon_id}}]
+  template: |
+    [CPU usage alarm of platform middleware]
+
+    Middleware: {{addon_id}}
+
+    Usage: {{cpu_usage_percent_avg}}
+
+    Limit: {{cpu_limit_value}} core
+
+    Allocation: {{cpu_allocation_value}} core
+
+    Cluster: {{cluster_name}}
+
+    Machine: {{host_ip}}
+
+    Container ID: {{container_id}}
+
+    Pod_Ip: {{pod_ip}}
+
+    Organization name: {{org_name}}
+
+    Time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "CPU exception of platform middleware instance"
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  formats:
+    cpu_usage_percent_avg: "percent:2"
+    cpu_limit_value: "fraction:2"
+    cpu_allocation_value: "fraction:2"
+  title: |
+    [CPU usage exception alarm of platform middleware {{addon_id}}]
+  template: |
+    CPU usage exception of platform middleware triggered by middleware {{addon_id}}, organization name: {{org_name}}, usage: {{cpu_usage_percent_avg}}
+- name: "CPU exception of platform middleware instance"
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  formats:
+    cpu_usage_percent_avg: "percent:2"
+    cpu_limit_value: "fraction:2"
+    cpu_allocation_value: "fraction:2"
+  title: |
+    [CPU usage exception alarm of platform middleware {{addon_id}}]
+  template: |
+    CPU usage exception of platform middleware triggered by middleware {{addon_id}}, organization name: {{org_name}}, usage: {{cpu_usage_percent_avg}}
+- name: "CPU exception recovery of platform middleware instance"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    cpu_usage_percent_avg: "percent:2"
+    trigger_duration: "time:ms"
+  title: |
+    [CPU usage recovery of platform middleware {{addon_id}}]
+  template: |
+    [CPU usage recovery of platform middleware]
+
+    Middleware: {{addon_id}}
+
+    Usage: {{cpu_usage_percent_avg}}
+
+    Cluster: {{cluster_name}}
+
+    Machine: {{host_ip}}
+
+    Container ID: {{container_id}}
+
+    Pod_Ip: {{pod_ip}}
+
+    Organization name: {{org_name}}
+
+    Duration: {{trigger_duration}}
+
+    Recovery time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "CPU exception recovery of platform middleware instance"
+  trigger: "recover"
+  target: "sms"
+  language: "en-US"
+  formats:
+    cpu_usage_percent_avg: "percent:2"
+    trigger_duration: "time:ms"
+  title: |
+    [CPU usage recovery of platform middleware {{addon_id}}]
+  template: |
+    CPU usage exception alarm recovery of platform middleware triggered by middleware {{addon_id}}, organization name: {{org_name}}, usage: {{cpu_usage_percent_avg}}
+
+- name: "CPU exception recovery of platform middleware instance"
+  trigger: "recover"
+  target: "vms"
+  language: "en-US"
+  formats:
+    cpu_usage_percent_avg: "percent:2"
+    trigger_duration: "time:ms"
+  title: |
+    [CPU usage recovery of platform middleware {{addon_id}}]
+  template: |
+    CPU usage exception alarm recovery of platform middleware triggered by middleware {{addon_id}}, organization name: {{org_name}}, usage: {{cpu_usage_percent_avg}}
