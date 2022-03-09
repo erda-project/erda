@@ -29,9 +29,11 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/bugaolengdeyuxiaoer/go-ansiterm v0.0.0-20211110022506-7e621b9b6908
 	github.com/buger/jsonparser v1.1.1
+	github.com/buraksezer/consistent v0.9.0
 	github.com/c2h5oh/datasize v0.0.0-20200112174442-28bbd4740fee
 	github.com/caarlos0/env v0.0.0-20180521112546-3e0f30cbf50b
 	github.com/cespare/xxhash v1.1.0
+	github.com/cespare/xxhash/v2 v2.1.1
 	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
@@ -41,7 +43,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v0.0.0-20220223015542-f8c153b37cff
+	github.com/erda-project/erda-infra v0.0.0-20220302072443-14a364b0cd52
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/erda-project/erda-sourcecov v0.1.0

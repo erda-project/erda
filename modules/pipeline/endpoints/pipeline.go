@@ -261,9 +261,7 @@ func (e *Endpoints) pipelineCancel(ctx context.Context, r *http.Request, vars ma
 		return errorresp.ErrResp(err)
 	}
 
-	if e.reconciler.QueueManager != nil {
-		e.reconciler.QueueManager.SendPopOutPipelineIDToEtcd(pipelineID)
-	}
+	e.engine.DistributedStopPipeline(ctx, pipelineID)
 
 	return httpserver.OkResp(nil)
 }

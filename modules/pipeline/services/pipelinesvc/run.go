@@ -15,6 +15,7 @@
 package pipelinesvc
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -133,7 +134,7 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 	_ = aop.Handle(aop.NewContextForPipeline(p, aoptypes.TuneTriggerPipelineBeforeExec))
 
 	// send to pipengine reconciler
-	s.engine.Send(p.ID)
+	s.engine.DistributedSendPipeline(context.Background(), p.ID)
 
 	// update pipeline definition
 	if err = s.updatePipelineDefinition(p); err != nil {
@@ -274,7 +275,6 @@ func (s *PipelineSvc) limitParallelRunningPipelines(p *spec.Pipeline) error {
 		ctxMap := map[string]interface{}{
 			apierrors.ErrParallelRunPipeline.Error(): fmt.Sprintf("%d", runningPipelineIDs[0]),
 		}
-		logrus.Infof("start run pipeline %d", runningPipelineIDs[0])
 		return apierrors.ErrParallelRunPipeline.InvalidState("ErrParallelRunPipeline").SetCtx(ctxMap)
 	}
 	return nil

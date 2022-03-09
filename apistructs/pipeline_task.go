@@ -306,29 +306,3 @@ var PipelineTaskDefaultLoopStrategy = LoopStrategy{
 	DeclineLimitSec: 60, // 默认衰退最大值为 60s
 	IntervalSec:     2,  // 默认时间间隔为 5s
 }
-
-/**
-desc: xxx
-priority:
-  enable: true
-  v1:
-    - queue: org-1
-      concurrency: 100
-      priority: 10
-    - queue: project-1
-      concurrency: 10
-      priority: 20
-    - queue: app-i
-      concurrency: 1
-      priority: 30
-*/
-type PipelineTaskPriority struct {
-	Enable bool                         `json:"enable" yaml:"enable"`
-	V1     []PipelineTaskPriorityV1Item `json:"v1" yaml:"v1"`
-}
-
-type PipelineTaskPriorityV1Item struct {
-	Queue       string `json:"queue" yaml:"queue"`
-	Concurrency int64  `json:"concurrency" yaml:"concurrency"`
-	Priority    int64  `json:"priority" yaml:"priority"`
-}

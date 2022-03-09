@@ -35,9 +35,3 @@ func (e *Endpoints) reloadActionExecutorConfig(ctx context.Context, r *http.Requ
 	}
 	return httpserver.OkResp(nil)
 }
-
-func (e *Endpoints) throttlerSnapshot(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
-	snapshot := e.reconciler.TaskThrottler.Export()
-	w.Write(snapshot)
-	return nil
-}

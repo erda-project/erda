@@ -26,7 +26,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/aop/plugins/task/autotest_cookie_keep_after"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/rlog"
 	"github.com/erda-project/erda/pkg/apitestsv2"
 )
 

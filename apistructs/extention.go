@@ -297,15 +297,14 @@ func (v *ExtensionVersion) NotExist() bool {
 
 type ActionSpec struct {
 	Spec              `yaml:",inline"`
-	Concurrency       *ActionConcurrency    `json:"concurrency" yaml:"concurrency"`
-	Params            []ActionSpecParam     `json:"params" yaml:"params"`
-	FormProps         []FormPropItem        `json:"formProps" yaml:"formProps"`
-	AccessibleAPIs    []AccessibleAPI       `json:"accessibleAPIs" yaml:"accessibleAPIs"`
-	Outputs           []ActionSpecOutput    `json:"outputs" yaml:"outputs"`
-	OutputsFromParams []OutputsFromParams   `json:"outputsFromParams" yaml:"outputsFromParams"`
-	Loop              *PipelineTaskLoop     `json:"loop" yaml:"loop"`
-	Priority          *PipelineTaskPriority `json:"priority" yaml:"priority"`
-	Executor          *ActionExecutor       `json:"executor" yaml:"executor"`
+	Concurrency       *ActionConcurrency  `json:"concurrency" yaml:"concurrency"`
+	Params            []ActionSpecParam   `json:"params" yaml:"params"`
+	FormProps         []FormPropItem      `json:"formProps" yaml:"formProps"`
+	AccessibleAPIs    []AccessibleAPI     `json:"accessibleAPIs" yaml:"accessibleAPIs"`
+	Outputs           []ActionSpecOutput  `json:"outputs" yaml:"outputs"`
+	OutputsFromParams []OutputsFromParams `json:"outputsFromParams" yaml:"outputsFromParams"`
+	Loop              *PipelineTaskLoop   `json:"loop" yaml:"loop"`
+	Executor          *ActionExecutor     `json:"executor" yaml:"executor"`
 }
 
 type ActionExecutor struct {

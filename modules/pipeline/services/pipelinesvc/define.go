@@ -18,7 +18,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/pipeline/pipengine"
+	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
@@ -44,7 +44,7 @@ type PipelineSvc struct {
 	bdl       *bundle.Bundle
 	publisher *websocket.Publisher
 
-	engine *pipengine.Engine
+	engine engine.Interface
 
 	js      jsonstore.JsonStore
 	etcdctl *etcd.Store
@@ -58,7 +58,7 @@ func New(appSvc *appsvc.AppSvc, crondSvc *crondsvc.CrondSvc,
 	pipelineCronSvc *pipelinecronsvc.PipelineCronSvc, permissionSvc *permissionsvc.PermissionSvc,
 	queueManage *queuemanage.QueueManage,
 	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,
-	engine *pipengine.Engine, js jsonstore.JsonStore, etcd *etcd.Store) *PipelineSvc {
+	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store) *PipelineSvc {
 
 	s := PipelineSvc{}
 	s.appSvc = appSvc
