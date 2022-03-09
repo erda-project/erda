@@ -572,7 +572,6 @@ func (p *ProjectPipelineService) EndCron(ctx context.Context, params deftype.Pro
 func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params deftype.ProjectPipelineListExecHistory) (*deftype.ProjectPipelineListExecHistoryResult, error) {
 	var pipelineDefinition = apistructs.PipelineDefinitionRequest{}
 	pipelineDefinition.Name = params.Name
-	pipelineDefinition.Creators = params.Executors
 
 	if params.ProjectID == 0 {
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(fmt.Errorf("projectID can not empty"))
@@ -625,6 +624,12 @@ func (p *ProjectPipelineService) ListExecHistory(ctx context.Context, params def
 		DescCols:                            params.DescCols,
 		AscCols:                             params.AscCols,
 	}
+	if len(params.Executors) > 0 {
+		for _, v := range params.Executors {
+			pipelinePageListRequest.MustMatchLabelsQueryParams = append(pipelinePageListRequest.MustMatchLabelsQueryParams, fmt.Sprintf("%v=%v", apistructs.LabelRunUserID, v))
+		}
+	}
+
 	data, err := p.bundle.PageListPipeline(pipelinePageListRequest)
 	if err != nil {
 		return nil, apierrors.ErrListExecHistoryProjectPipeline.InternalError(err)
@@ -1058,7 +1063,6 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 				return nil, err
 			}
 		}
-
 	}
 
 	// update user gittar token
@@ -1091,6 +1095,10 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	createV2.AutoRunAtOnce = true
 	createV2.DefinitionID = definition.ID
 	createV2.UserID = identityInfo.UserID
+
+	// add run,create userID label for history list search
+	createV2.Labels[apistructs.LabelRunUserID] = identityInfo.UserID
+	createV2.Labels[apistructs.LabelCreateUserID] = identityInfo.UserID
 
 	value, err := p.bundle.CreatePipeline(createV2)
 	if err != nil {
