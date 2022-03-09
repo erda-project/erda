@@ -317,6 +317,18 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 				RenderType: "tableOperation",
 			},
 		}
+
+		if release.IsFormal && r.State.IsFormal == nil {
+			item.Version = Version{
+				Value: release.Version,
+				Tags: []Tag{{
+					Tag:   r.sdk.I18n("formal"),
+					Color: "blue",
+				}},
+				RenderType: "textWithTags",
+			}
+		}
+
 		if release.IsProjectRelease {
 			item.Operations.Operations["download"] = downloadOperation
 
@@ -451,12 +463,12 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	}
 }
 
-func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
-	c.Props = cputil.MustConvertProps(r.Props)
-	c.Data = map[string]interface{}{
+func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
+	component.Props = cputil.MustConvertProps(r.Props)
+	component.Data = map[string]interface{}{
 		"list": r.Data.List,
 	}
-	c.State = map[string]interface{}{
+	component.State = map[string]interface{}{
 		"releaseTable__urlQuery": r.State.ReleaseTableURLQuery,
 		"pageNo":                 r.State.PageNo,
 		"pageSize":               r.State.PageSize,
@@ -469,7 +481,7 @@ func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
 		"applicationID":          r.State.ApplicationID,
 		"filterValues":           r.State.FilterValues,
 	}
-	c.Operations = r.Operations
+	component.Operations = r.Operations
 }
 
 func (r *ComponentReleaseTable) formalReleases(ctx context.Context, releaseID []string) error {
@@ -479,6 +491,7 @@ func (r *ComponentReleaseTable) formalReleases(ctx context.Context, releaseID []
 	ctx = metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
 		"internal-client": "true",
 		"org-id":          r.sdk.Identity.OrgID,
+		"user-id":         userID,
 	}))
 
 	if r.State.IsProjectRelease {
@@ -519,6 +532,7 @@ func (r *ComponentReleaseTable) deleteReleases(ctx context.Context, releaseID []
 	ctx = metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
 		"internal-client": "true",
 		"org-id":          r.sdk.Identity.OrgID,
+		"user-id":         userID,
 	}))
 
 	if r.State.IsProjectRelease {
