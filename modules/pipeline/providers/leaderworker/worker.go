@@ -103,7 +103,7 @@ func (p *provider) getWorkerFromEtcd(ctx context.Context, workerID worker.ID, ty
 	return w, nil
 }
 
-func (p *provider) checkWorker(ctx context.Context, w worker.Worker) error {
+func (p *provider) checkWorkerIsReady(ctx context.Context, w worker.Worker) error {
 	if err := p.checkWorkerFields(w); err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func (p *provider) listWorkers(ctx context.Context, workerTypes ...worker.Type) 
 	// remove invalid workers
 	var validWorkers []worker.Worker
 	for _, w := range workers {
-		checkErr := p.checkWorker(ctx, w)
+		checkErr := p.checkWorkerIsReady(ctx, w)
 		if checkErr == nil {
 			validWorkers = append(validWorkers, w)
 			continue

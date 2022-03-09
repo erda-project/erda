@@ -46,7 +46,7 @@ type provider struct {
 	Cfg *config
 
 	// inject
-	MySQLXORM    mysqlxorm.Interface
+	MySQL        mysqlxorm.Interface
 	QueueManager queuemanager.Interface
 	Dispatcher   dispatcher.Interface
 	Reconciler   reconciler.Interface
@@ -59,7 +59,7 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	// dbclient
-	p.dbClient = &dbclient.Client{Engine: p.MySQLXORM.DB()}
+	p.dbClient = &dbclient.Client{Engine: p.MySQL.DB()}
 
 	// set bundle before initialize scheduler, because scheduler need use bdl get clusters
 	bdl := bundle.New(bundle.WithAllAvailableClients(), bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second))))
@@ -99,7 +99,7 @@ func init() {
 	servicehub.Register("pipengine", &servicehub.Spec{
 		Services:     []string{"pipengine"},
 		Types:        []reflect.Type{interfaceType},
-		Dependencies: []string{""},
+		Dependencies: nil,
 		Description:  "pipeline engine",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator:      func() servicehub.Provider { return &provider{} },

@@ -38,7 +38,7 @@ type provider struct {
 	Log logs.Logger
 	Cfg *config
 
-	MySQLXORM  mysqlxorm.Interface
+	MySQL      mysqlxorm.Interface
 	EtcdClient *clientv3.Client
 	LW         leaderworker.Interface
 	Dispatcher dispatcher.Interface
@@ -61,9 +61,9 @@ func (q *provider) Init(ctx servicehub.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to init etcd client, err: %v", err)
 	}
-	q.dbClient = &dbclient.Client{Engine: q.MySQLXORM.DB()}
+	q.dbClient = &dbclient.Client{Engine: q.MySQL.DB()}
 	q.QueueManager = manager.New(ctx,
-		manager.WithDBClient(&dbclient.Client{Engine: q.MySQLXORM.DB()}),
+		manager.WithDBClient(&dbclient.Client{Engine: q.MySQL.DB()}),
 		manager.WithEtcdClient(etcdClient),
 		manager.WithJsonStore(js),
 	)
@@ -85,7 +85,7 @@ func init() {
 	servicehub.Register("queue-manager", &servicehub.Spec{
 		Services:     []string{"queue-manager"},
 		Types:        []reflect.Type{interfaceType},
-		Dependencies: []string{""},
+		Dependencies: nil,
 		Description:  "pipeline engine queue-manager",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator:      func() servicehub.Provider { return &provider{} },

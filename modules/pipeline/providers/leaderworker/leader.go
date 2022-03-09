@@ -25,8 +25,8 @@ import (
 )
 
 func (p *provider) leaderFramework(ctx context.Context) {
-	p.Log.Infof("starting leader framework ...")
-	defer p.Log.Infof("end leader framework")
+	p.Log.Infof("leader framework starting ...")
+	defer p.Log.Infof("leader framework stopped")
 
 	for {
 		p.lock.Lock()
@@ -37,7 +37,7 @@ func (p *provider) leaderFramework(ctx context.Context) {
 			time.Sleep(p.Cfg.Leader.RetryInterval)
 			continue
 		}
-		p.Log.Infof("started leader framework")
+		p.Log.Infof("leader framework started")
 		break
 	}
 

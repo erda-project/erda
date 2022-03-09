@@ -35,7 +35,7 @@ type provider struct {
 	LW         leaderworker.Interface
 	Reconciler reconciler.Interface
 
-	Mysql    mysqlxorm.Interface
+	MySQL    mysqlxorm.Interface
 	dbClient *dbclient.Client
 
 	pipelineIDsChan chan uint64
@@ -46,7 +46,7 @@ type provider struct {
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.pipelineIDsChan = make(chan uint64, p.Cfg.Concurrency)
-	p.dbClient = &dbclient.Client{Engine: p.Mysql.DB()}
+	p.dbClient = &dbclient.Client{Engine: p.MySQL.DB()}
 
 	return nil
 }
@@ -67,7 +67,7 @@ func init() {
 	servicehub.Register("dispatcher", &servicehub.Spec{
 		Services:     []string{"dispatcher"},
 		Types:        []reflect.Type{interfaceType},
-		Dependencies: []string{"leader-worker"},
+		Dependencies: nil,
 		Description:  "pipeline engine dispatcher",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator:      func() servicehub.Provider { return &provider{} },

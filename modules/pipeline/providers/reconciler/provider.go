@@ -30,8 +30,8 @@ type provider struct {
 	Log logs.Logger
 	Cfg *config
 
-	MySQLXORM mysqlxorm.Interface
-	LW        leaderworker.Interface
+	MySQL mysqlxorm.Interface
+	LW    leaderworker.Interface
 
 	r *reconciler.Reconciler
 }
@@ -61,7 +61,7 @@ func init() {
 	servicehub.Register("reconciler", &servicehub.Spec{
 		Services:     []string{"reconciler"},
 		Types:        []reflect.Type{interfaceType},
-		Dependencies: []string{},
+		Dependencies: nil,
 		Description:  "pipeline reconciler",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator:      func() servicehub.Provider { return &provider{} },

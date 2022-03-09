@@ -124,7 +124,7 @@ func init() {
 	servicehub.Register("leader-worker", &servicehub.Spec{
 		Services:     []string{"leader-worker"},
 		Types:        []reflect.Type{interfaceType},
-		Dependencies: []string{"etcd-election"},
+		Dependencies: nil,
 		Description:  "pipeline-level leader&worker",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator:      func() servicehub.Provider { return &provider{} },
