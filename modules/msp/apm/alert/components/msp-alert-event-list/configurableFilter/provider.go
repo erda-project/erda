@@ -86,18 +86,18 @@ func (p *provider) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDelete) 
 
 func (p *provider) getConfigurableFilterOptions(sdk *cptype.SDK, inParams *common.InParams) []interface{} {
 	alerts, _ := p.getAlerts(sdk.Ctx, inParams)
-	alertSelectCondition := model.NewSelectCondition("alertIds", "告警策略", common.IdNameValuesToSelectOptions(alerts)).WithPlaceHolder("选择告警策略")
+	alertSelectCondition := model.NewSelectCondition("alertIds", sdk.I18n("告警策略"), common.IdNameValuesToSelectOptions(alerts)).WithPlaceHolder(sdk.I18n("选择告警策略"))
 
 	alertLevels := p.getAlertLevels(sdk, inParams)
-	alertLevelSelectCondition := model.NewSelectCondition("alertLevels", "级别", common.IdNameValuesToSelectOptions(alertLevels)).WithPlaceHolder("选择级别")
+	alertLevelSelectCondition := model.NewSelectCondition("alertLevels", sdk.I18n("级别"), common.IdNameValuesToSelectOptions(alertLevels)).WithPlaceHolder(sdk.I18n("选择级别"))
 
 	alertStates := p.getAlertStates(sdk, inParams)
-	alertStateSelectCondition := model.NewSelectCondition("alertStates", "状态", common.IdNameValuesToSelectOptions(alertStates)).WithPlaceHolder("选择状态")
+	alertStateSelectCondition := model.NewSelectCondition("alertStates", sdk.I18n("状态"), common.IdNameValuesToSelectOptions(alertStates)).WithPlaceHolder(sdk.I18n("选择状态"))
 
 	alertSources := p.getAlertSources(sdk, inParams)
-	alertSourceSelectCondition := model.NewSelectCondition("alertSources", "事件来源", common.IdNameValuesToSelectOptions(alertSources)).WithPlaceHolder("选择事件来源")
+	alertSourceSelectCondition := model.NewSelectCondition("alertSources", sdk.I18n("事件来源"), common.IdNameValuesToSelectOptions(alertSources)).WithPlaceHolder(sdk.I18n("选择事件来源"))
 
-	alertTriggerTimeRangeCondition := model.NewDateRangeCondition("lastTriggerTime", "最后触发时间")
+	alertTriggerTimeRangeCondition := model.NewDateRangeCondition("lastTriggerTime", sdk.I18n("最后触发时间"))
 	return []interface{}{alertSelectCondition, alertLevelSelectCondition, alertStateSelectCondition, alertSourceSelectCondition, alertTriggerTimeRangeCondition}
 }
 
