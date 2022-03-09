@@ -226,13 +226,8 @@ func (f *ReleaseFilter) renderFilter() error {
 					Label: f.sdk.I18n("true"),
 					Value: "true",
 				},
-				{
-					Label: f.sdk.I18n("false"),
-					Value: "false",
-				},
 			},
-			Mode:     "single",
-			Required: true,
+			Mode: "single",
 		})
 	}
 	f.StdDataPtr.Conditions = append(f.StdDataPtr.Conditions, Condition{
@@ -246,23 +241,23 @@ func (f *ReleaseFilter) renderFilter() error {
 }
 
 func (f *ReleaseFilter) decodeURLQuery() error {
-	urlQuery, ok := f.sdk.InParams["releaseFilter__urlQuery"].(string)
+	query, ok := f.sdk.InParams["releaseFilter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
+	decode, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(decoded, &f.State.Values)
+	return json.Unmarshal(decode, &f.State.Values)
 }
 
 func (f *ReleaseFilter) encodeURLQuery() error {
-	data, err := json.Marshal(f.State.Values)
+	jsonData, err := json.Marshal(f.State.Values)
 	if err != nil {
 		return err
 	}
-	encoded := base64.StdEncoding.EncodeToString(data)
-	f.State.ReleaseFilterURLQuery = encoded
+	encode := base64.StdEncoding.EncodeToString(jsonData)
+	f.State.ReleaseFilterURLQuery = encode
 	return nil
 }
