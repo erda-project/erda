@@ -72,7 +72,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.core.messenger.notifychannel.NotifyChannelService" || ctx.Type() == pb.NotifyChannelServiceClientType() || ctx.Type() == pb.NotifyChannelServiceHandlerType():
+	case ctx.Service() == "erda.core.messenger.notifychannel.NotifyChannelService" || ctx.Type() == pb.NotifyChannelServiceServerType() || ctx.Type() == pb.NotifyChannelServiceHandlerType():
 		return p.notifyChanelService
 	}
 	return p
