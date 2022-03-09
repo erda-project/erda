@@ -50,6 +50,10 @@ func TestGetTime(t *testing.T) {
 	t.Log("ns-after-hour:", getTime(TimeStampNsAfterHour))
 	t.Log("ns-day:", getTime(TimeStampNsDay))
 	t.Log("ns-after-day:", getTime(TimeStampNsAfterDay))
+
+	for k := range dateTimeCustoms {
+		t.Log(DateTimeCustom+k+":", getTime(DateTimeCustom+k))
+	}
 }
 
 func Test_randIntegerByLength(t *testing.T) {
