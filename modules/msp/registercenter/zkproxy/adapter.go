@@ -53,7 +53,7 @@ func (a *Adapter) GetAllInterfaceList(projectID, env, namespace string) ([]*pb.I
 	if err != nil {
 		return nil, err
 	}
-	logrus.Warnf("GetAllInterfaceList response from zkproxy, request url: %s, response: %v", resp.Request.RequestURI, string(body))
+	logrus.Infof("GetAllInterfaceList response from zkproxy, request url: %s, response: %v", resp.Request.RequestURI, string(body))
 
 	list := make([]*pb.Interface, 0)
 	if http.StatusOK <= resp.StatusCode && resp.StatusCode < http.StatusMultipleChoices {
