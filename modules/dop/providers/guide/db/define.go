@@ -133,8 +133,8 @@ func (db *GuideDB) UpdateGuideByAppIDAndBranch(appID uint64, branch, kind string
 		Updates(fields).Error
 }
 
-// ListGuide .
-func (db *GuideDB) ListGuide(req *pb.ListGuideRequest, userID string) (guides []Guide, err error) {
+// ListGuideLimit . Returns data for a given number of rows
+func (db *GuideDB) ListGuideLimit(req *pb.ListGuideRequest, userID string, num int) (guides []Guide, err error) {
 	err = db.Debug().Model(&Guide{}).
 		Scopes(NotDeleted).
 		Where("kind = ?", req.Kind).
@@ -143,7 +143,7 @@ func (db *GuideDB) ListGuide(req *pb.ListGuideRequest, userID string) (guides []
 		Where("status = ?", InitStatus).
 		Where("created_at >= ?", time.Now().Add(-1*(ExpiredTime)).Format("2006-01-02 15:04:05")).
 		Order("created_at DESC").
-		Limit(5).
+		Limit(num).
 		Find(&guides).Error
 	return
 }

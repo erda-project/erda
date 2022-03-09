@@ -274,12 +274,11 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
 
-	go func() {
-		_, err = p.GuideSvc.ProcessGuide(ctx, &guidepb.ProcessGuideRequest{AppID: params.AppID, Branch: params.Ref, Kind: "pipeline"})
-		if err != nil {
-			p.logger.Errorf("failed to ProcessGuide, err: %v, appID: %d, branch: %s", err, params.AppID, params.Ref)
-		}
-	}()
+	_, err = p.GuideSvc.ProcessGuide(ctx, &guidepb.ProcessGuideRequest{AppID: params.AppID, Branch: params.Ref, Kind: "pipeline"})
+	if err != nil {
+		p.logger.Errorf("failed to ProcessGuide, err: %v, appID: %d, branch: %s", err, params.AppID, params.Ref)
+	}
+
 	return &pb.CreateProjectPipelineResponse{ProjectPipeline: &pb.ProjectPipeline{
 		ID:               definitionRsp.PipelineDefinition.ID,
 		Name:             definitionRsp.PipelineDefinition.Name,

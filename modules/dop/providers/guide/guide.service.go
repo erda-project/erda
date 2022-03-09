@@ -79,10 +79,11 @@ func (g *GuideService) CreateGuideByGittarPushHook(ctx context.Context, req *pb.
 }
 
 func (g *GuideService) ListGuide(ctx context.Context, req *pb.ListGuideRequest) (*pb.ListGuideResponse, error) {
+	const limit = 5
 	if err := req.Validate(); err != nil {
 		return nil, apierrors.ErrListGuide.InvalidParameter(err)
 	}
-	guidesDB, err := g.db.ListGuide(req, apis.GetUserID(ctx))
+	guidesDB, err := g.db.ListGuideLimit(req, apis.GetUserID(ctx), limit)
 	if err != nil {
 		return nil, apierrors.ErrListGuide.InternalError(err)
 	}

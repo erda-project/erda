@@ -1,6 +1,6 @@
-dop:
+dop: {}
 
-service-register:
+service-register: {}
 http-server:
   addr: "${LISTEN_ADDR::9527}"
   allow_cors: true
@@ -32,45 +32,45 @@ etcd:
     cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
     ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
 
-erda.core.dop.taskerror:
+erda.core.dop.taskerror: {}
 
 # pipeline cms
 grpc-client@erda.core.pipeline.cms:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
-erda.core.pipeline.cms-client:
+erda.core.pipeline.cms-client: {}
 
 grpc-client@erda.core.pipeline.definition:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
-erda.core.pipeline.definition-client:
+erda.core.pipeline.definition-client: {}
 
 grpc-client@erda.core.pipeline.source:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
-erda.core.pipeline.source-client:
+erda.core.pipeline.source-client: {}
 
 grpc-client@erda.cmp.dashboard.resource:
   addr: "${CMP_GRPC_ADDR:cmp:9029}"
   block: false
-erda.cmp.dashboard.resource-client:
+erda.cmp.dashboard.resource-client: {}
 
 grpc-client@erda.core.dicehub.release:
   addr: "${DICEHUB_GRPC_ADDR:dicehub:7080}"
-erda.core.dicehub.release-client:
+erda.core.dicehub.release-client: {}
 
 ## orchestrator addon mysql
 grpc-client@erda.orchestrator.addon.mysql:
   addr: "${ORCHESTRATOR_GRPC_ADDR:orchestrator:7080}"
-erda.orchestrator.addon.mysql-client:
+erda.orchestrator.addon.mysql-client: {}
 
 grpc-client@erda.core.services.errorbox:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
-erda.core.services.errorbox-client:
+erda.core.services.errorbox-client: {}
 
-erda.core.dop.autotest.testplan:
-erda.dop.projecthome:
-erda.dop.contribution:
-erda.dop.projectpipeline:
-erda.dop.issue.stream:
-erda.dop.guide:
+erda.core.dop.autotest.testplan: {}
+erda.dop.projecthome: {}
+erda.dop.contribution: {}
+erda.dop.projectpipeline: {}
+erda.dop.issue.stream: {}
+erda.dop.guide: {}
 
 # component-protocol framework
-component-protocol:
+component-protocol: {}
