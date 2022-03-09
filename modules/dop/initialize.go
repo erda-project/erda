@@ -24,9 +24,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	infrahttpserver "github.com/erda-project/erda-infra/providers/httpserver"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/bdl"
@@ -140,6 +143,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.AutoTestPlanService, ep.AutoTestPlanService())
 	p.Protocol.WithContextValue(types.DBClient, ep.DBClient())
 	p.Protocol.WithContextValue(types.ProjectPipelineService, p.ProjectPipelineSvc)
+	p.Protocol.WithContextValue(types.PipelineCronService, p.PipelineCron)
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
 	server := httpserver.New(":0")
@@ -222,7 +226,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		}
 		if len(resp.Kvs) == 0 {
 			logrus.Infof("start compensate pipelineCms")
-			if err = compensatePipelineCms(ep); err != nil {
+			if err = p.compensatePipelineCms(ep); err != nil {
 				logrus.Error(err)
 			}
 			_, err = p.EtcdClient.Put(context.Background(), EtcdPipelineCmsCompensate, "true")
@@ -589,6 +593,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		pipeline.WithPublisherSvc(pub),
 		pipeline.WithPipelineCms(p.PipelineCms),
 		pipeline.WithPipelineSource(p.PipelineSource),
+		pipeline.WithPipelineCron(p.PipelineCron),
 		pipeline.WithPipelineDefinition(p.PipelineDefinition),
 		pipeline.WithAppSvc(app),
 	)
@@ -651,6 +656,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithOrg(o),
 		endpoints.WithCodeCoverageExecRecord(codeCvc),
 		endpoints.WithTestReportRecord(testReportSvc),
+		endpoints.WithPipelineCron(p.PipelineCron),
 	)
 
 	ep.ImportChannel = make(chan uint64)
@@ -800,50 +806,48 @@ func copyTestFileTask(ep *endpoints.Endpoints) {
 
 // compensatePipelineCms compensate pipeline cms according to pipeline cron which enable is true
 // it will be deprecated in the later version
-func compensatePipelineCms(ep *endpoints.Endpoints) error {
-	enable := true
+func (p *provider) compensatePipelineCms(ep *endpoints.Endpoints) error {
 	// get total
-	cron, err := bdl.Bdl.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
+	pageResult, err := p.PipelineCron.CronPaging(context.Background(), &cronpb.CronPagingRequest{
 		AllSources: false,
-		Sources:    []apistructs.PipelineSource{apistructs.PipelineSourceDice},
+		Sources:    []string{apistructs.PipelineSourceDice.String()},
 		YmlNames:   nil,
 		PageSize:   1,
 		PageNo:     1,
-		Enable:     &enable,
+		Enable:     wrapperspb.Bool(true),
 	})
 	if err != nil {
 		logrus.Errorf("failed to PageListPipelineCrons, err: %s", err.Error())
 		return err
 	}
-	total := cron.Total
+	total := pageResult.Total
 	pageSize := 1000
-	crons := make([]*apistructs.PipelineCronDTO, 0, total)
+	crons := make([]*pb.Cron, 0, total)
 	for i := 0; i < int(total)/pageSize+1; i++ {
-		cron, err = bdl.Bdl.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
+		pageResult, err = p.PipelineCron.CronPaging(context.Background(), &cronpb.CronPagingRequest{
 			AllSources: true,
 			Sources:    nil,
 			YmlNames:   nil,
-			PageSize:   pageSize,
-			PageNo:     i + 1,
-			Enable:     &enable,
+			PageSize:   int64(pageSize),
+			PageNo:     int64(i + 1),
+			Enable:     wrapperspb.Bool(true),
 		})
 		if err != nil {
 			logrus.Errorf("failed to PageListPipelineCrons, err: %s", err.Error())
 			return err
 		}
-		crons = append(crons, cron.Data...)
+		crons = append(crons, pageResult.Data...)
 	}
 
 	// userOrgMap judge the user ns is compensated or not in the org
 	// key: userID-orgID, value: struct{}
 	userOrgMap := make(map[string]struct{})
 	for _, v := range crons {
-		if v.Enable != nil && *v.Enable &&
-			v.UserID != "" && v.OrgID != 0 {
+		if v.Enable != nil && v.Enable.Value && v.UserID != "" && v.OrgID != 0 {
 			ns := utils.MakeUserOrgPipelineCmsNs(v.UserID, v.OrgID)
 			if !strutil.InSlice(ns, v.ConfigManageNamespaces) {
-				err := bdl.Bdl.UpdatePipelineCron(apistructs.PipelineCronUpdateRequest{
-					ID:                     v.ID,
+				_, err := p.PipelineCron.CronUpdate(context.Background(), &cronpb.CronUpdateRequest{
+					CronID:                 v.ID,
 					PipelineYml:            v.PipelineYml,
 					CronExpr:               v.CronExpr,
 					ConfigManageNamespaces: []string{utils.MakeUserOrgPipelineCmsNs(v.UserID, v.OrgID)},

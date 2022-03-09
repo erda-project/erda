@@ -21,7 +21,10 @@ import (
 	"strconv"
 
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	pb1 "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
@@ -37,12 +40,29 @@ func (e *Endpoints) pipelineCronPaging(ctx context.Context, r *http.Request, var
 		return apierrors.ErrPagingPipelineCron.InvalidParameter(err).ToResp(), nil
 	}
 
-	crons, err := e.bdl.PageListPipelineCrons(req)
+	var cronReq = &cronpb.CronPagingRequest{
+		AllSources: req.AllSources,
+		Sources: func() []string {
+			var sources []string
+			for _, v := range req.Sources {
+				sources = append(sources, v.String())
+			}
+			return sources
+		}(),
+		YmlNames:             req.YmlNames,
+		PageSize:             int64(req.PageSize),
+		PageNo:               int64(req.PageNo),
+		PipelineDefinitionID: req.PipelineDefinitionIDList,
+	}
+	if req.Enable != nil {
+		cronReq.Enable = wrapperspb.Bool(*req.Enable)
+	}
+
+	result, err := e.PipelineCron.CronPaging(context.Background(), cronReq)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
-
-	return httpserver.OkResp(crons)
+	return httpserver.OkResp(result)
 }
 
 func (e *Endpoints) pipelineCronStart(ctx context.Context, r *http.Request, vars map[string]string) (
@@ -59,10 +79,13 @@ func (e *Endpoints) pipelineCronStart(ctx context.Context, r *http.Request, vars
 	}
 
 	// get cron info for check permission
-	cronInfo, err := e.bdl.GetPipelineCron(cronID)
+	result, err := e.PipelineCron.CronGet(context.Background(), &cronpb.CronGetRequest{
+		CronID: cronID,
+	})
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
+	cronInfo := result.Data
 
 	if err := e.permission.CheckRuntimeBranch(identityInfo, cronInfo.ApplicationID, cronInfo.Branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
@@ -77,7 +100,9 @@ func (e *Endpoints) pipelineCronStart(ctx context.Context, r *http.Request, vars
 		return errorresp.ErrResp(err)
 	}
 
-	cron, err := e.bdl.StartPipelineCron(cronID)
+	cron, err := e.PipelineCron.CronStart(context.Background(), &cronpb.CronStartRequest{
+		CronID: cronID,
+	})
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -99,16 +124,21 @@ func (e *Endpoints) pipelineCronStop(ctx context.Context, r *http.Request, vars 
 	}
 
 	// get cron info for check permission
-	cronInfo, err := e.bdl.GetPipelineCron(cronID)
+	result, err := e.PipelineCron.CronGet(context.Background(), &cronpb.CronGetRequest{
+		CronID: cronID,
+	})
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
+	cronInfo := result.Data
 
 	if err := e.permission.CheckRuntimeBranch(identityInfo, cronInfo.ApplicationID, cronInfo.Branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
-	cron, err := e.bdl.StopPipelineCron(cronID)
+	cron, err := e.PipelineCron.CronStop(context.Background(), &cronpb.CronStopRequest{
+		CronID: cronID,
+	})
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -119,7 +149,7 @@ func (e *Endpoints) pipelineCronStop(ctx context.Context, r *http.Request, vars 
 // pipelineCronCreate accept
 func (e *Endpoints) pipelineCronCreate(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 
-	var req apistructs.PipelineCronCreateRequest
+	var req pb1.PipelineCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return apierrors.ErrCreatePipelineCron.InvalidParameter(err).ToResp(), nil
 	}
@@ -133,7 +163,10 @@ func (e *Endpoints) pipelineCronCreate(ctx context.Context, r *http.Request, var
 		return apierrors.ErrCreatePipelineCron.AccessDenied().ToResp(), nil
 	}
 
-	cron, err := e.bdl.CreatePipelineCron(req)
+	var createReq = cronpb.CronCreateRequest{
+		PipelineCreateRequest: &req,
+	}
+	cron, err := e.PipelineCron.CronCreate(context.Background(), &createReq)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -154,16 +187,22 @@ func (e *Endpoints) pipelineCronDelete(ctx context.Context, r *http.Request, var
 	}
 
 	// get cron info for check permission
-	cronInfo, err := e.bdl.GetPipelineCron(cronID)
+	result, err := e.PipelineCron.CronGet(context.Background(), &cronpb.CronGetRequest{
+		CronID: cronID,
+	})
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
+	cronInfo := result.Data
 
 	if err := e.permission.CheckRuntimeBranch(identityInfo, cronInfo.ApplicationID, cronInfo.Branch, apistructs.OperateAction); err != nil {
 		return errorresp.ErrResp(err)
 	}
 
-	if err := e.bdl.DeletePipelineCron(cronID); err != nil {
+	_, err = e.PipelineCron.CronDelete(context.Background(), &cronpb.CronDeleteRequest{
+		CronID: cronID,
+	})
+	if err != nil {
 		return errorresp.ErrResp(err)
 	}
 

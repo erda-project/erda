@@ -12,19 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package deftype
+package db
 
-import (
-	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
-	"github.com/erda-project/erda/apistructs"
-)
+import "github.com/erda-project/erda-infra/providers/mysqlxorm"
 
-type ProjectPipelineEndCron struct {
-	PipelineDefinitionID string
-	ProjectID            uint64 `json:"projectId"`
-	apistructs.IdentityInfo
-}
-
-type ProjectPipelineEndCronResult struct {
-	Cron *common.Cron
+type Client struct {
+	mysqlxorm.Interface
 }

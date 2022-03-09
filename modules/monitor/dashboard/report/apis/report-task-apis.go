@@ -15,6 +15,7 @@
 package apis
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"net"
@@ -28,6 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dicestructs "github.com/erda-project/erda/apistructs"
 	block "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
 	"github.com/erda-project/erda/modules/monitor/utils"
@@ -146,18 +148,24 @@ func (p *provider) switchOrgReportTask(params struct {
 		}
 		return api.Errors.Internal(err)
 	}
-	cron, err := p.bdl.GetPipelineCron(report.PipelineCronId)
+	result, err := p.CronService.CronGet(context.Background(), &cronpb.CronGetRequest{
+		CronID: report.PipelineCronId,
+	})
 	if err != nil {
 		return api.Errors.Internal(err)
 	}
-	if *cron.Enable && !params.Enable {
-		_, err = p.bdl.StopPipelineCron(cron.ID)
+	if result.Data.Enable.Value && !params.Enable {
+		_, err := p.CronService.CronStop(context.Background(), &cronpb.CronStopRequest{
+			CronID: result.Data.ID,
+		})
 		if err != nil {
 			return api.Errors.Internal(err)
 		}
 	}
-	if !*cron.Enable && params.Enable {
-		_, err = p.bdl.StartPipelineCron(cron.ID)
+	if !result.Data.Enable.Value && params.Enable {
+		_, err := p.CronService.CronStart(context.Background(), &cronpb.CronStartRequest{
+			CronID: result.Data.ID,
+		})
 		if err != nil {
 			return api.Errors.Internal(err)
 		}
@@ -368,8 +376,12 @@ func (p *provider) createReportPipelineCron(obj *reportTask) error {
 // stop and delete pipelineCron , ignored error
 func (p *provider) stopAndDelPipelineCron(obj *reportTask) error {
 	if obj.PipelineCronId != 0 {
-		_, err := p.bdl.StopPipelineCron(obj.PipelineCronId)
-		_ = p.bdl.DeletePipelineCron(obj.PipelineCronId)
+		_, err := p.CronService.CronStop(context.Background(), &cronpb.CronStopRequest{
+			CronID: obj.PipelineCronId,
+		})
+		_, _ = p.CronService.CronDelete(context.Background(), &cronpb.CronDeleteRequest{
+			CronID: obj.PipelineCronId,
+		})
 		if err != nil {
 			return err
 		}

@@ -33,6 +33,7 @@ import (
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	errboxpb "github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
@@ -63,6 +64,7 @@ type provider struct {
 	TaskErrorSvc       *taskerror.TaskErrorService             `autowired:"erda.core.dop.taskerror.TaskErrorService"`
 	ErrorBoxSvc        errboxpb.ErrorBoxServiceServer          `autowired:"erda.core.services.errorbox.ErrorBoxService" optional:"true"`
 	ProjectPipelineSvc *projectpipeline.ProjectPipelineService `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
+	PipelineCron       cronpb.CronServiceServer                `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 
 	AddonMySQLSvc     addonmysqlpb.AddonMySQLServiceServer `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
 	DicehubReleaseSvc dicehubpb.ReleaseServiceServer       `autowired:"erda.core.dicehub.release.ReleaseService"`

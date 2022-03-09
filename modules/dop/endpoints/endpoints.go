@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -718,6 +719,8 @@ type Endpoints struct {
 	codeCoverageSvc *code_coverage.CodeCoverage
 	testReportSvc   *test_report.TestReport
 
+	PipelineCron cronpb.CronServiceServer
+
 	ImportChannel chan uint64
 	ExportChannel chan uint64
 	CopyChannel   chan uint64
@@ -1075,6 +1078,12 @@ func WithCodeCoverageExecRecord(svc *code_coverage.CodeCoverage) Option {
 func WithTestReportRecord(svc *test_report.TestReport) Option {
 	return func(e *Endpoints) {
 		e.testReportSvc = svc
+	}
+}
+
+func WithPipelineCron(svc cronpb.CronServiceServer) Option {
+	return func(e *Endpoints) {
+		e.PipelineCron = svc
 	}
 }
 

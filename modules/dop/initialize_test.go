@@ -15,25 +15,28 @@
 package dop
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/modules/dop/endpoints"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron"
 )
 
 func TestCompensatePipelineCms(t *testing.T) {
 	ep := endpoints.New()
-	var bdl *bundle.Bundle
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "PageListPipelineCrons",
-		func(*bundle.Bundle, apistructs.PipelineCronPagingRequest) (*apistructs.PipelineCronPagingResponseData, error) {
-			return &apistructs.PipelineCronPagingResponseData{
+	p := &provider{}
+	var svc *cron.Service
+	monkey.PatchInstanceMethod(reflect.TypeOf(svc), "CronPaging",
+		func(*cron.Service, context.Context, *pb.CronPagingRequest) (*pb.CronPagingResponse, error) {
+			return &pb.CronPagingResponse{
 				Total: 3,
-				Data: []*apistructs.PipelineCronDTO{
+				Data: []*common.Cron{
 					{
 						UserID: "1",
 						OrgID:  1,
@@ -49,15 +52,16 @@ func TestCompensatePipelineCms(t *testing.T) {
 				},
 			}, nil
 		})
-	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "UpdatePipelineCron",
-		func(*bundle.Bundle, apistructs.PipelineCronUpdateRequest) error {
-			return nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(svc), "CronUpdate",
+		func(*cron.Service, context.Context, *pb.CronUpdateRequest) (*pb.CronUpdateResponse, error) {
+			return nil, nil
 		})
 	monkey.PatchInstanceMethod(reflect.TypeOf(ep), "UpdateCmsNsConfigs",
 		func(*endpoints.Endpoints, string, uint64) error {
 			return nil
 		})
-	err := compensatePipelineCms(ep)
+	p.PipelineCron = svc
+	defer monkey.UnpatchAll()
+	err := p.compensatePipelineCms(ep)
 	assert.NoError(t, err)
 }
