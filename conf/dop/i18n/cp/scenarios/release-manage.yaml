@@ -31,6 +31,7 @@ zh:
   inputReleaseID: 请输入制品ID
   aggregateByBranch: 只显示版本最新制品
   formalReleaseCanNotBeModified: 正式制品不可修改
+  formal: 正式
 en:
   searchByVersionOrID: Search by version or releaseID
   application: Application
@@ -64,3 +65,4 @@ en:
   formalReleaseCanNotBeModified: Formal release can not be modified
   true: "true"
   false: "false"
+  formal: Formal
