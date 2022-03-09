@@ -26,6 +26,7 @@ type config struct {
 type leaderConfig struct {
 	IsWorker        bool          `file:"is_worker" env:"LEADER_IS_WORKER" default:"true"`
 	CleanupInterval time.Duration `file:"cleanup_interval" default:"1m"`
+	RetryInterval   time.Duration `file:"retry_interval" default:"5s"`
 }
 
 type workerConfig struct {

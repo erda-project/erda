@@ -16,7 +16,6 @@ package leaderworker
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
@@ -26,11 +25,20 @@ import (
 )
 
 func (p *provider) leaderFramework(ctx context.Context) {
-	p.Log.Infof("start leader framework")
+	p.Log.Infof("starting leader framework ...")
 	defer p.Log.Infof("end leader framework")
 
-	if !p.started {
-		panic(fmt.Errorf("leader-worker not started"))
+	for {
+		p.lock.Lock()
+		started := p.started
+		p.lock.Unlock()
+		if !started {
+			p.Log.Warnf("waiting started")
+			time.Sleep(p.Cfg.Leader.RetryInterval)
+			continue
+		}
+		p.Log.Infof("started leader framework")
+		break
 	}
 
 	// init before begin listen worker-task-change
