@@ -1598,14 +1598,13 @@ func (svc *Issue) BatchUpdateIssuesSubscriber(req apistructs.IssueSubscriberBatc
 	return nil
 }
 
-func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64]*apistructs.WorkbenchProjectItem, int, error) {
-	stats, total, err := svc.db.GetIssueExpiryStatusByProjects(req)
+func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64]*apistructs.WorkbenchProjectItem, error) {
+	stats, err := svc.db.GetIssueExpiryStatusByProjects(req)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	projectMap := make(map[uint64]*apistructs.WorkbenchProjectItem)
-	projectIDs := make([]uint64, 0)
 	for _, i := range stats {
 		if _, ok := projectMap[i.ProjectID]; !ok {
 			projectMap[i.ProjectID] = &apistructs.WorkbenchProjectItem{}
@@ -1628,39 +1627,10 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 		case dao.ExpireTypeExpireInFuture:
 			item.FeatureDayNum = num
 		}
-	}
-	for i := range projectMap {
-		projectIDs = append(projectIDs, i)
+		item.TotalIssueNum += num
 	}
 
-	pMap, err := svc.bdl.GetProjectsMap(apistructs.GetModelProjectsMapRequest{ProjectIDs: projectIDs})
-	if err != nil {
-		return nil, 0, err
-	}
-
-	for i := range projectMap {
-		if dto, ok := pMap[i]; ok {
-			projectMap[i].ProjectDTO = dto
-			req.ProjectID = dto.ID
-			issues, total, err := svc.db.GetIssuesByProject(req.IssuePagingRequest)
-			if err != nil {
-				return nil, 0, err
-			}
-			issueList := make([]apistructs.Issue, 0, len(issues))
-			for _, v := range issues {
-				issueList = append(issueList, apistructs.Issue{
-					ID:             int64(v.ID),
-					Type:           v.Type,
-					Title:          v.Title,
-					PlanFinishedAt: v.PlanFinishedAt,
-				})
-			}
-			projectMap[i].IssueList = issueList
-			projectMap[i].TotalIssueNum = int(total)
-		}
-	}
-
-	return projectMap, total, nil
+	return projectMap, nil
 }
 
 func (svc *Issue) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]dao.IssueItem, error) {

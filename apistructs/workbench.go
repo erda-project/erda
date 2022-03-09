@@ -85,7 +85,7 @@ type ProjectStatisticInfo struct {
 
 type WorkbenchResponse struct {
 	Header
-	Data WorkbenchResponseData `json:"data"`
+	Data map[uint64]*WorkbenchProjectItem `json:"data"`
 }
 
 type WorkbenchResponseData struct {
@@ -95,16 +95,14 @@ type WorkbenchResponseData struct {
 }
 
 type WorkbenchProjectItem struct {
-	ProjectDTO          ProjectDTO `json:"projectDTO"`
-	TotalIssueNum       int        `json:"totalIssueNum"`
-	UnSpecialIssueNum   int        `json:"unSpecialIssueNum"`
-	ExpiredIssueNum     int        `json:"expiredIssueNum"`
-	ExpiredOneDayNum    int        `json:"expiredOneDayNum"`
-	ExpiredTomorrowNum  int        `json:"expiredTomorrowNum"`
-	ExpiredSevenDayNum  int        `json:"expiredSevenDayNum"`
-	ExpiredThirtyDayNum int        `json:"expiredThirtyDayNum"`
-	FeatureDayNum       int        `json:"featureDayNum"`
-	IssueList           []Issue    `json:"issueList"`
+	TotalIssueNum       int `json:"totalIssueNum"`
+	UnSpecialIssueNum   int `json:"unSpecialIssueNum"`
+	ExpiredIssueNum     int `json:"expiredIssueNum"`
+	ExpiredOneDayNum    int `json:"expiredOneDayNum"`
+	ExpiredTomorrowNum  int `json:"expiredTomorrowNum"`
+	ExpiredSevenDayNum  int `json:"expiredSevenDayNum"`
+	ExpiredThirtyDayNum int `json:"expiredThirtyDayNum"`
+	FeatureDayNum       int `json:"featureDayNum"`
 }
 
 type AppWorkBenchItem struct {

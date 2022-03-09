@@ -62,7 +62,6 @@ func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, project
 	)
 
 	issueInfo := &apistructs.WorkbenchResponse{}
-	issueMapInfo := make(map[uint64]*apistructs.WorkbenchProjectItem)
 	staMapInfo := make(map[uint64]*projpb.Project)
 
 	orgID, err := strconv.Atoi(identity.OrgID)
@@ -122,14 +121,6 @@ func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, project
 	// wait complete
 	wg.Wait()
 
-	// post process
-	for _, v := range issueInfo.Data.List {
-		if v != nil {
-			tmp := v
-			issueMapInfo[tmp.ProjectDTO.ID] = tmp
-		}
-	}
-
 	for _, v := range statisticInfo {
 		if v != nil {
 			tmp := v
@@ -148,7 +139,7 @@ func (w *Workbench) ListProjWbOverviewData(identity apistructs.Identity, project
 		item := apistructs.WorkbenchProjOverviewItem{
 			ProjectDTO: p,
 		}
-		is := issueMapInfo[p.ID]
+		is := issueInfo.Data[p.ID]
 		if is != nil {
 			item.IssueInfo = &apistructs.ProjectIssueInfo{
 				TotalIssueNum:       is.TotalIssueNum,

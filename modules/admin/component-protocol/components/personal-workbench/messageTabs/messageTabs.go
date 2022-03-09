@@ -163,8 +163,11 @@ func (f *MessageTabs) Render(ctx context.Context, c *cptype.Component, scenario 
 
 	switch event.Operation {
 	case cptype.InitializeOperation, cptype.RenderingOperation:
-		f.State = State{
-			Value: apistructs.WorkbenchItemUnreadMes.String(),
+		tp, ok := f.gsHelper.GetMsgTabName()
+		if !ok {
+			f.State.Value = apistructs.WorkbenchItemUnreadMes.String()
+		} else {
+			f.State.Value = tp.String()
 		}
 	case common.EventChangeEventTab:
 		var op Operation

@@ -15,11 +15,7 @@
 package workbench
 
 import (
-	"fmt"
-	"reflect"
 	"testing"
-
-	"bou.ke/monkey"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -54,15 +50,6 @@ func TestWorkbench_GetIssueQueries(t *testing.T) {
 			}
 			bdl := &bundle.Bundle{}
 			wb := New(WithBundle(bdl))
-
-			monkey.PatchInstanceMethod(reflect.TypeOf(wb), "GetAllIssueStateIDs", func(w *Workbench, projID uint64) ([]int64, error) {
-				if tt.stateErr {
-					return nil, fmt.Errorf("error")
-				}
-				return []int64{1, 2, 3}, nil
-			})
-			defer monkey.UnpatchAll()
-
 			_, err := wb.GetProjIssueQueries(identity.UserID, projIDs, 0)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetProjIssueQueries() error = %v, wantErr %v", err, tt.wantErr)

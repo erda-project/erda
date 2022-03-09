@@ -15,7 +15,6 @@
 package personal_workbench
 
 import (
-	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/cleanData"
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/messageList"
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/messageTabs"
 	_ "github.com/erda-project/erda/modules/admin/component-protocol/components/personal-workbench/workCards"
