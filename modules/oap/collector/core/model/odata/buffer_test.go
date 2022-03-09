@@ -15,12 +15,23 @@
 package odata
 
 import (
-	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestXXX(t *testing.T) {
-	b := NewBuffer(10)
-	b.Push(&Raw{Meta: nil, Item: []byte("hello")})
-	fmt.Println(b.FlushAll())
+func TestBuffer_Push_Pop(t *testing.T) {
+	ass := assert.New(t)
+	buf := NewBuffer(3)
+	buf.Push(NewRaw([]byte("1")))
+	buf.Push(NewRaw([]byte("2")))
+	buf.Push(NewRaw([]byte("3")))
+	ass.True(buf.Full())
+	buf.Push(NewRaw([]byte("4")))
+
+	ass.Equal("1", string(buf.Pop().Source().([]byte)))
+	ass.Equal("2", string(buf.Pop().Source().([]byte)))
+	ass.Equal("3", string(buf.Pop().Source().([]byte)))
+	ass.True(buf.Empty())
+	ass.Empty(buf.FlushAll())
 }
