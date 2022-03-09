@@ -37,5 +37,5 @@ func JoinPath(appendRoot bool, segments ...string) string {
 
 // JoinPathR .
 func JoinPathR(segments ...string) string {
-	return JoinPath(true)
+	return JoinPath(true, segments...)
 }

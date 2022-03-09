@@ -62,6 +62,8 @@ func (s *registerCenterService) ListInterface(ctx context.Context, req *pb.ListI
 		list, err := adp.GetAllInterfaceList(req.ProjectID, req.Env, namespace)
 		if err == nil {
 			result.Data = append(result.Data, list...)
+		} else {
+			s.p.Log.Warnf("failed to GetAllInterfaceList(%s), err: %v", namespace, err)
 		}
 	}
 	if addr, ok := config.Config["NACOS_ADDRESS"].(string); ok {
@@ -70,6 +72,8 @@ func (s *registerCenterService) ListInterface(ctx context.Context, req *pb.ListI
 		list, err := adp.GetDubboInterfaceList(namespace)
 		if err == nil {
 			result.Data = append(result.Data, list...)
+		} else {
+			s.p.Log.Warnf("failed to GetDubboInterfaceList(%s), err: %v", namespace, err)
 		}
 	}
 	return result, nil

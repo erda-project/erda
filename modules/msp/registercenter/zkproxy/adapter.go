@@ -17,7 +17,10 @@ package zkproxy
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-proto-go/msp/registercenter/pb"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -45,9 +48,16 @@ func (a *Adapter) GetAllInterfaceList(projectID, env, namespace string) ([]*pb.I
 	if err != nil {
 		return nil, err
 	}
+	body, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+	logrus.Warnf("GetAllInterfaceList response from zkproxy, request url: %s, response: %v", resp.Request.RequestURI, string(body))
+
 	list := make([]*pb.Interface, 0)
 	if http.StatusOK <= resp.StatusCode && resp.StatusCode < http.StatusMultipleChoices {
-		err = json.NewDecoder(resp.Body).Decode(&list)
+		err = json.Unmarshal(body, &list)
 		if err != nil {
 			return nil, err
 		}
