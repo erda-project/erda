@@ -39,3 +39,26 @@ func TestIsJSONArray(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeKey(t *testing.T) {
+	type args struct {
+		key string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			args: args{key: "abc.edf/hij"},
+			want: "abc_edf_hij",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NormalizeKey(tt.args.key); got != tt.want {
+				t.Errorf("NormalizeKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
