@@ -25,7 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
