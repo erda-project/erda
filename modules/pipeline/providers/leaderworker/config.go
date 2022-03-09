@@ -24,7 +24,7 @@ type config struct {
 }
 
 type leaderConfig struct {
-	AlsoBeWorker    bool          `file:"also_be_worker" env:"LEADER_ALSO_BE_WORKER" default:"true"`
+	IsWorker        bool          `file:"is_worker" env:"LEADER_IS_WORKER" default:"true"`
 	CleanupInterval time.Duration `file:"cleanup_interval" default:"1m"`
 }
 

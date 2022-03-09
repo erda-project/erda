@@ -31,7 +31,7 @@ type Interface interface {
 	LeaderHandlerOnWorkerDelete(WorkerDeleteHandler)
 	WorkerHandlerOnWorkerDelete(WorkerDeleteHandler)
 	OnLeader(func(context.Context))
-	AssignLogicTaskToWorker(ctx context.Context, workerID worker.ID, logicTask worker.Tasker) error
+	AssignLogicTaskToWorker(ctx context.Context, workerID worker.ID, logicTask worker.LogicTask) error
 	ListenPrefix(ctx context.Context, prefix string, putHandler, deleteHandler func(context.Context, *clientv3.Event))
 	IsTaskBeingProcessed(ctx context.Context, logicTaskID worker.LogicTaskID) (bool, worker.ID)
 	RegisterListener(l Listener)
@@ -42,7 +42,7 @@ func (p *provider) RegisterCandidateWorker(ctx context.Context, w worker.Worker)
 	p.Log.Infof("begin register candidate worker, workerID: %s", w.GetID())
 
 	// check leader can be worker
-	if p.Election.IsLeader() && !p.Cfg.Leader.AlsoBeWorker {
+	if p.Election.IsLeader() && !p.Cfg.Leader.IsWorker {
 		p.Log.Warnf("leader cannot be worker, skip register candidate worker, workerID: %s", w.GetID())
 		return nil
 	}
@@ -53,14 +53,14 @@ func (p *provider) RegisterCandidateWorker(ctx context.Context, w worker.Worker)
 		return err
 	}
 
-	// notify for worker-add
-	if err := p.notifyWorkerAdd(ctx, w, worker.Candidate); err != nil {
+	// register worker
+	if err := p.registerWorker(ctx, w, worker.Candidate); err != nil {
 		return err
 	}
 
 	p.lock.Lock()
 	wctx, wcancel := context.WithCancel(ctx)
-	p.workerUse.myWorkers[w.GetID()] = workerWithCancel{Worker: w, Ctx: wctx, CancelFunc: wcancel}
+	p.forWorkerUse.myWorkers[w.GetID()] = workerWithCancel{Worker: w, Ctx: wctx, CancelFunc: wcancel}
 	p.lock.Unlock()
 
 	// promote to official
@@ -89,7 +89,7 @@ func (p *provider) LeaderHandlerOnWorkerAdd(h WorkerAddHandler) {
 	if p.started {
 		panic(fmt.Errorf("cannot register LeaderHandlerOnWorkerAdd func after started"))
 	}
-	p.leaderUse.leaderHandlersOnWorkerAdd = append(p.leaderUse.leaderHandlersOnWorkerAdd, h)
+	p.forLeaderUse.leaderHandlersOnWorkerAdd = append(p.forLeaderUse.leaderHandlersOnWorkerAdd, h)
 }
 
 func (p *provider) LeaderHandlerOnWorkerDelete(h WorkerDeleteHandler) {
@@ -98,7 +98,7 @@ func (p *provider) LeaderHandlerOnWorkerDelete(h WorkerDeleteHandler) {
 	if p.started {
 		panic(fmt.Errorf("cannot register LeaderHandlerOnWorkerDelete func after started"))
 	}
-	p.leaderUse.leaderHandlersOnWorkerDelete = append(p.leaderUse.leaderHandlersOnWorkerDelete, h)
+	p.forLeaderUse.leaderHandlersOnWorkerDelete = append(p.forLeaderUse.leaderHandlersOnWorkerDelete, h)
 }
 
 func (p *provider) WorkerHandlerOnWorkerDelete(h WorkerDeleteHandler) {
@@ -107,10 +107,10 @@ func (p *provider) WorkerHandlerOnWorkerDelete(h WorkerDeleteHandler) {
 	if p.started {
 		panic(fmt.Errorf("cannot register WorkerHandlerOnWorkerDelete func after started"))
 	}
-	p.workerUse.workerHandlersOnWorkerDelete = append(p.workerUse.workerHandlersOnWorkerDelete, h)
+	p.forWorkerUse.workerHandlersOnWorkerDelete = append(p.forWorkerUse.workerHandlersOnWorkerDelete, h)
 }
 
-func (p *provider) AssignLogicTaskToWorker(ctx context.Context, workerID worker.ID, task worker.Tasker) error {
+func (p *provider) AssignLogicTaskToWorker(ctx context.Context, workerID worker.ID, task worker.LogicTask) error {
 	_, err := p.EtcdClient.Put(ctx, p.makeEtcdWorkerTaskDispatchKey(workerID, task.GetLogicID()), string(task.GetData()))
 	if err != nil {
 		return err
@@ -125,7 +125,7 @@ func (p *provider) OnLeader(h func(ctx context.Context)) {
 	if p.started {
 		panic(fmt.Errorf("cannot register OnLeader func after started"))
 	}
-	p.leaderUse.leaderHandlers = append(p.leaderUse.leaderHandlers, h)
+	p.forLeaderUse.leaderHandlers = append(p.forLeaderUse.leaderHandlers, h)
 }
 
 func (p *provider) IsTaskBeingProcessed(ctx context.Context, logicTaskID worker.LogicTaskID) (bool, worker.ID) {
@@ -134,7 +134,7 @@ func (p *provider) IsTaskBeingProcessed(ctx context.Context, logicTaskID worker.
 	}
 	for {
 		p.lock.Lock()
-		if p.leaderUse.initialized {
+		if p.forLeaderUse.initialized {
 			p.lock.Unlock()
 			break
 		}
@@ -143,12 +143,12 @@ func (p *provider) IsTaskBeingProcessed(ctx context.Context, logicTaskID worker.
 	}
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	workerID, ok := p.leaderUse.findWorkerByTask[logicTaskID]
+	workerID, ok := p.forLeaderUse.findWorkerByTask[logicTaskID]
 	if !ok {
 		return false, ""
 	}
 	// check valid worker
-	_, workerExist := p.leaderUse.allWorkers[workerID]
+	_, workerExist := p.forLeaderUse.allWorkers[workerID]
 	if !workerExist {
 		return false, ""
 	}
@@ -167,8 +167,7 @@ func (p *provider) RegisterListener(l Listener) {
 func (p *provider) Start() {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	started := p.started
-	if started {
+	if p.started {
 		return
 	}
 	p.started = true

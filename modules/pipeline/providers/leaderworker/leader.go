@@ -36,13 +36,13 @@ func (p *provider) leaderFramework(ctx context.Context) {
 	// init before begin listen worker-task-change
 	p.listeners = append([]Listener{
 		&DefaultListener{BeforeExecOnLeaderFunc: p.initTaskWorkerAssignMap},
-		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.listenWorkerChange)},
+		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.listenOfficialWorkerChange)},
 		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.listenWorkerTaskIncoming)},
 		&DefaultListener{BeforeExecOnLeaderFunc: asyncWrapper(p.listenWorkerTaskDone)},
 	}, p.listeners...)
 
-	p.leaderUse.leaderHandlers = append(p.leaderUse.leaderHandlers, p.continueCleanup, p.workerLivenessProber)
-	p.workerUse.workerHandlersOnWorkerDelete = append(p.workerUse.workerHandlersOnWorkerDelete, p.workerIntervalCleanupOnDelete)
+	p.forLeaderUse.leaderHandlers = append(p.forLeaderUse.leaderHandlers, p.continueCleanup, p.workerLivenessProber)
+	p.forWorkerUse.workerHandlersOnWorkerDelete = append(p.forWorkerUse.workerHandlersOnWorkerDelete, p.workerIntervalCleanupOnDelete)
 
 	// before exec on leader
 	for _, l := range p.listeners {
@@ -50,7 +50,7 @@ func (p *provider) leaderFramework(ctx context.Context) {
 	}
 
 	// exec on leader
-	for _, h := range p.leaderUse.leaderHandlers {
+	for _, h := range p.forLeaderUse.leaderHandlers {
 		h := h
 		go h(ctx)
 	}
@@ -72,9 +72,9 @@ func asyncWrapper(f func(ctx context.Context)) func(ctx context.Context) {
 	}
 }
 
-func (p *provider) listenWorkerChange(ctx context.Context) {
-	p.Log.Infof("begin listen worker change")
-	defer p.Log.Infof("end listen worker change")
+func (p *provider) listenOfficialWorkerChange(ctx context.Context) {
+	p.Log.Infof("begin listen official worker change")
+	defer p.Log.Infof("end listen official worker change")
 	// worker
 	notify := make(chan Event)
 	go func() {
@@ -83,12 +83,12 @@ func (p *provider) listenWorkerChange(ctx context.Context) {
 			case ev := <-notify:
 				switch ev.Type {
 				case mvccpb.PUT:
-					for _, h := range p.leaderUse.leaderHandlersOnWorkerAdd {
+					for _, h := range p.forLeaderUse.leaderHandlersOnWorkerAdd {
 						h := h
 						go h(ctx, ev)
 					}
 				case mvccpb.DELETE:
-					for _, h := range p.leaderUse.leaderHandlersOnWorkerDelete {
+					for _, h := range p.forLeaderUse.leaderHandlersOnWorkerDelete {
 						h := h
 						go h(ctx, ev)
 					}
@@ -138,7 +138,7 @@ func (p *provider) getWorkerLogicTaskIDs(ctx context.Context, workerID worker.ID
 			logicTaskIDMap[task.GetLogicID()] = struct{}{}
 		}
 		p.lock.Lock()
-		for logicTaskID := range p.leaderUse.findTaskByWorker[workerID] {
+		for logicTaskID := range p.forLeaderUse.findTaskByWorker[workerID] {
 			logicTaskIDMap[logicTaskID] = struct{}{}
 		}
 		p.lock.Unlock()
@@ -177,7 +177,7 @@ func (p *provider) intervalCleanupDanglingKeysWithoutRetry(ctx context.Context) 
 	p.lock.Lock()
 	for _, kv := range getResp.Kvs {
 		workerID := p.getWorkerIDFromEtcdWorkerHeartbeatKey(string(kv.Key))
-		if _, ok := p.leaderUse.allWorkers[workerID]; !ok {
+		if _, ok := p.forLeaderUse.allWorkers[workerID]; !ok {
 			danglingWorkerHeartbeatKeys = append(danglingWorkerHeartbeatKeys, string(kv.Key))
 		}
 	}
@@ -198,7 +198,7 @@ func (p *provider) intervalCleanupDanglingKeysWithoutRetry(ctx context.Context) 
 	p.lock.Lock()
 	for _, kv := range getResp.Kvs {
 		workerID := p.getWorkerIDFromIncomingKey(string(kv.Key))
-		if _, ok := p.leaderUse.allWorkers[workerID]; !ok {
+		if _, ok := p.forLeaderUse.allWorkers[workerID]; !ok {
 			danglingWorkerTaskDispatchKeys = append(danglingWorkerTaskDispatchKeys, string(kv.Key))
 		}
 	}
@@ -242,11 +242,11 @@ func (p *provider) listenWorkerTaskIncoming(ctx context.Context) {
 
 func (p *provider) initTaskWorkerAssignMap(ctx context.Context) {
 	p.lock.Lock()
-	p.leaderUse.initialized = false
+	p.forLeaderUse.initialized = false
 	p.lock.Unlock()
 
-	p.leaderUse.findWorkerByTask = make(map[worker.LogicTaskID]worker.ID)
-	p.leaderUse.findTaskByWorker = make(map[worker.ID]map[worker.LogicTaskID]struct{})
+	p.forLeaderUse.findWorkerByTask = make(map[worker.LogicTaskID]worker.ID)
+	p.forLeaderUse.findTaskByWorker = make(map[worker.ID]map[worker.LogicTaskID]struct{})
 
 outLoop:
 	for {
@@ -264,7 +264,7 @@ outLoop:
 				continue outLoop
 			}
 			p.lock.Lock()
-			p.leaderUse.findTaskByWorker[w.GetID()] = make(map[worker.LogicTaskID]struct{}, len(tasks))
+			p.forLeaderUse.findTaskByWorker[w.GetID()] = make(map[worker.LogicTaskID]struct{}, len(tasks))
 			p.lock.Unlock()
 			for _, task := range tasks {
 				p.addToTaskWorkerAssignMap(task.GetLogicID(), w.GetID())
@@ -272,7 +272,7 @@ outLoop:
 		}
 		// return if no error
 		p.lock.Lock()
-		p.leaderUse.initialized = true
+		p.forLeaderUse.initialized = true
 		p.lock.Unlock()
 		break
 	}

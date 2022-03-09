@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
 )
 
-func (p *provider) reconcileOnePipeline(ctx context.Context, logicTask worker.Tasker) {
+func (p *provider) reconcileOnePipeline(ctx context.Context, logicTask worker.LogicTask) {
 	if logicTask == nil {
 		p.Log.Warnf("logic task is nil, skip reconcile pipeline")
 		return

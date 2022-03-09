@@ -17,12 +17,11 @@ package queue
 import (
 	"fmt"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager/types"
-	"github.com/erda-project/erda/pkg/strutil"
-
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type CapacityValidator struct {

@@ -166,9 +166,9 @@ func (p *provider) listWorkers(ctx context.Context, workerTypes ...worker.Type) 
 		}(w, checkErr.Error())
 	}
 	p.lock.Lock()
-	p.leaderUse.allWorkers = make(map[worker.ID]worker.Worker, len(validWorkers))
+	p.forLeaderUse.allWorkers = make(map[worker.ID]worker.Worker, len(validWorkers))
 	for _, w := range validWorkers {
-		p.leaderUse.allWorkers[w.GetID()] = w
+		p.forLeaderUse.allWorkers[w.GetID()] = w
 	}
 	p.lock.Unlock()
 	return validWorkers, nil
@@ -188,7 +188,7 @@ func (p *provider) workerListenIncomingLogicTask(ctx context.Context, w worker.W
 			p.Log.Infof("logic task received and begin handle it, workerID: %s, logicTaskID: %s", w.GetID(), taskLogicID)
 			taskDoneCh := make(chan struct{})
 			go func() {
-				w.Handle(ctx, worker.NewTasker(taskLogicID, taskData))
+				w.Handle(ctx, worker.NewLogicTask(taskLogicID, taskData))
 				taskDoneCh <- struct{}{}
 			}()
 			select {
@@ -322,7 +322,7 @@ func (p *provider) promoteCandidateWorker(ctx context.Context, w worker.Worker) 
 			return
 		case <-ticker.C:
 			w.SetType(worker.Official)
-			if err := p.notifyWorkerAdd(ctx, w, w.GetType()); err != nil {
+			if err := p.registerWorker(ctx, w, w.GetType()); err != nil {
 				p.Log.Errorf("failed to promote worker to official(auto retry), workerID: %s, err: %v", w.GetID(), err)
 				continue
 			}
@@ -338,12 +338,12 @@ func (p *provider) workerHandleDelete(ctx context.Context, w worker.Worker) {
 		if string(event.Kv.Key) != key {
 			return
 		}
-		ww, ok := p.workerUse.myWorkers[w.GetID()]
+		ww, ok := p.forWorkerUse.myWorkers[w.GetID()]
 		if ok && ww.CancelFunc != nil {
 			ww.CancelFunc()
 		}
 		var wg sync.WaitGroup
-		for _, h := range p.workerUse.workerHandlersOnWorkerDelete {
+		for _, h := range p.forWorkerUse.workerHandlersOnWorkerDelete {
 			h := h
 			wg.Add(1)
 			go func() {
@@ -380,17 +380,17 @@ func (p *provider) workerIntervalCleanupOnDelete(ctx context.Context, ev Event) 
 	}()
 }
 
-func (p *provider) listWorkerTasks(ctx context.Context, workerID worker.ID) ([]worker.Tasker, error) {
+func (p *provider) listWorkerTasks(ctx context.Context, workerID worker.ID) ([]worker.LogicTask, error) {
 	prefix := p.makeEtcdWorkerLogicTaskListenPrefix(workerID)
 	resp, err := p.EtcdClient.Get(ctx, prefix, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
-	var tasks []worker.Tasker
+	var tasks []worker.LogicTask
 	for _, kv := range resp.Kvs {
 		logicTaskID := p.getWorkerTaskLogicIDFromIncomingKey(workerID, string(kv.Key))
 		logicTaskData := kv.Value
-		task := worker.NewTasker(logicTaskID, logicTaskData)
+		task := worker.NewLogicTask(logicTaskID, logicTaskData)
 		tasks = append(tasks, task)
 	}
 	return tasks, nil

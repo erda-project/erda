@@ -22,38 +22,36 @@ import (
 )
 
 func (p *provider) ListenPrefix(ctx context.Context, prefix string, putHandler, deleteHandler func(context.Context, *clientv3.Event)) {
-	for func() bool {
-		wctx, wcancel := context.WithCancel(ctx)
-		defer wcancel()
-		wch := p.EtcdClient.Watch(wctx, prefix, clientv3.WithPrefix())
-		for {
-			select {
-			case <-ctx.Done():
-				return false
-			case resp, ok := <-wch:
-				if !ok {
-					return true
-				} else if resp.Err() != nil {
-					p.Log.Errorf("failed to watch etcd prefix %s, error: %v", prefix, resp.Err())
-					return true
+	wctx, wcancel := context.WithCancel(ctx)
+	defer wcancel()
+	wch := p.EtcdClient.Watch(wctx, prefix, clientv3.WithPrefix())
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case resp, ok := <-wch:
+			if !ok {
+				continue
+			}
+			if resp.Err() != nil {
+				p.Log.Errorf("failed to watch etcd prefix %s, error: %v", prefix, resp.Err())
+				continue
+			}
+			for _, ev := range resp.Events {
+				if ev.Kv == nil {
+					continue
 				}
-				for _, ev := range resp.Events {
-					if ev.Kv == nil {
-						continue
+				switch ev.Type {
+				case mvccpb.PUT:
+					if putHandler != nil {
+						putHandler(wctx, ev)
 					}
-					switch ev.Type {
-					case mvccpb.PUT:
-						if putHandler != nil {
-							putHandler(wctx, ev)
-						}
-					case mvccpb.DELETE:
-						if deleteHandler != nil {
-							deleteHandler(wctx, ev)
-						}
+				case mvccpb.DELETE:
+					if deleteHandler != nil {
+						deleteHandler(wctx, ev)
 					}
 				}
 			}
 		}
-	}() {
 	}
 }

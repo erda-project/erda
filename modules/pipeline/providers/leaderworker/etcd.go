@@ -24,7 +24,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-func (p *provider) notifyWorkerAdd(ctx context.Context, w worker.Worker, typ worker.Type) error {
+func (p *provider) registerWorker(ctx context.Context, w worker.Worker, typ worker.Type) error {
 	workerBytes, err := w.MarshalJSON()
 	if err != nil {
 		return err

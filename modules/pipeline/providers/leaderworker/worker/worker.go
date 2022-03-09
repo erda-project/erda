@@ -53,7 +53,7 @@ type Worker interface {
 	GetType() Type
 	SetType(typ Type)
 	GetCreatedAt() time.Time
-	Handle(ctx context.Context, task Tasker)
+	Handle(ctx context.Context, task LogicTask)
 }
 
 type OpFunc func(*defaultWorker)
@@ -109,7 +109,7 @@ type defaultWorker struct {
 	heartbeatDetector func(ctx context.Context) bool
 }
 
-type handler func(ctx context.Context, task Tasker)
+type handler func(ctx context.Context, task LogicTask)
 
 func (dw *defaultWorker) UnmarshalJSON(bytes []byte) error {
 	type alias defaultWorker
@@ -129,7 +129,7 @@ func (dw *defaultWorker) GetID() ID               { return dw.ID }
 func (dw *defaultWorker) GetType() Type           { return dw.typ }
 func (dw *defaultWorker) SetType(typ Type)        { dw.typ = typ }
 func (dw *defaultWorker) GetCreatedAt() time.Time { return dw.CreatedAt }
-func (dw *defaultWorker) Handle(ctx context.Context, task Tasker) {
+func (dw *defaultWorker) Handle(ctx context.Context, task LogicTask) {
 	dw.lock.Lock()
 	var handlers []handler
 	copy(handlers, dw.handlers)

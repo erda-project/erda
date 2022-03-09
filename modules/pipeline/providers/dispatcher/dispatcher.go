@@ -47,7 +47,7 @@ func (p *provider) dispatchOnePipelineUntilSuccess(ctx context.Context, pipeline
 	// assign lock task to the picked worker
 	logicTaskID := worker.LogicTaskID(strutil.String(pipelineID))
 	logicTaskData := []byte(nil)
-	if err := p.LW.AssignLogicTaskToWorker(ctx, workerID, worker.NewTasker(logicTaskID, logicTaskData)); err != nil {
+	if err := p.LW.AssignLogicTaskToWorker(ctx, workerID, worker.NewLogicTask(logicTaskID, logicTaskData)); err != nil {
 		p.Log.Errorf("failed to assign pipeline to worker(need retry after %s), pipelineID: %d, workerID: %s, err: %v", p.Cfg.RetryInterval, pipelineID, workerID, err)
 		time.Sleep(p.Cfg.RetryInterval)
 		p.Dispatch(ctx, pipelineID)

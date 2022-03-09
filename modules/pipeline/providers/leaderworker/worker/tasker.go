@@ -14,7 +14,8 @@
 
 package worker
 
-type Tasker interface {
+// LogicTask is the logic task for worker to process.
+type LogicTask interface {
 	GetLogicID() LogicTaskID
 	GetData() []byte
 }
@@ -24,7 +25,7 @@ type defaultTask struct {
 	data    []byte
 }
 
-func NewTasker(logicID LogicTaskID, data []byte) Tasker {
+func NewLogicTask(logicID LogicTaskID, data []byte) LogicTask {
 	return &defaultTask{logicID: logicID, data: data}
 }
 func (d *defaultTask) GetLogicID() LogicTaskID { return d.logicID }

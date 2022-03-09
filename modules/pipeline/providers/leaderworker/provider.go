@@ -37,14 +37,14 @@ type provider struct {
 
 	lock sync.Mutex
 
-	started   bool
-	leaderUse leaderUse
-	workerUse workerUse
+	started      bool
+	forLeaderUse forLeaderUse
+	forWorkerUse forWorkerUse
 
 	listeners []Listener
 }
 
-type leaderUse struct {
+type forLeaderUse struct {
 	allWorkers map[worker.ID]worker.Worker
 
 	initialized      bool
@@ -55,15 +55,15 @@ type leaderUse struct {
 	leaderHandlersOnWorkerAdd    []WorkerAddHandler
 	leaderHandlersOnWorkerDelete []WorkerDeleteHandler
 }
-type workerUse struct {
+type forWorkerUse struct {
 	myWorkers map[worker.ID]workerWithCancel
 
 	workerHandlersOnWorkerDelete []WorkerDeleteHandler
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.leaderUse.allWorkers = make(map[worker.ID]worker.Worker)
-	p.workerUse.myWorkers = make(map[worker.ID]workerWithCancel)
+	p.forLeaderUse.allWorkers = make(map[worker.ID]worker.Worker)
+	p.forWorkerUse.myWorkers = make(map[worker.ID]workerWithCancel)
 	if len(p.Cfg.Worker.EtcdKeyPrefixWithSlash) == 0 {
 		return fmt.Errorf("failed to find config: worker.etcd_key_prefix_with_slash")
 	}
@@ -76,21 +76,21 @@ func (p *provider) addToTaskWorkerAssignMap(logicTaskID worker.LogicTaskID, work
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	// findWorkerByTask
-	p.leaderUse.findWorkerByTask[logicTaskID] = workerID
+	p.forLeaderUse.findWorkerByTask[logicTaskID] = workerID
 	// findTaskByWorker
-	if p.leaderUse.findTaskByWorker[workerID] == nil {
-		p.leaderUse.findTaskByWorker[workerID] = make(map[worker.LogicTaskID]struct{})
+	if p.forLeaderUse.findTaskByWorker[workerID] == nil {
+		p.forLeaderUse.findTaskByWorker[workerID] = make(map[worker.LogicTaskID]struct{})
 	}
-	p.leaderUse.findTaskByWorker[workerID][logicTaskID] = struct{}{}
+	p.forLeaderUse.findTaskByWorker[workerID][logicTaskID] = struct{}{}
 }
 
 func (p *provider) removeFromTaskWorkerAssignMap(logicTaskID worker.LogicTaskID, workerID worker.ID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	// findWorkerByTask
-	delete(p.leaderUse.findWorkerByTask, logicTaskID)
+	delete(p.forLeaderUse.findWorkerByTask, logicTaskID)
 	// findTaskByWorker
-	workerTasks, ok := p.leaderUse.findTaskByWorker[workerID]
+	workerTasks, ok := p.forLeaderUse.findTaskByWorker[workerID]
 	if ok {
 		delete(workerTasks, logicTaskID)
 	}
@@ -100,16 +100,16 @@ func (p *provider) leaderUseDeleteInvalidWorker(workerID worker.ID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	// all workers
-	delete(p.leaderUse.allWorkers, workerID)
+	delete(p.forLeaderUse.allWorkers, workerID)
 }
 
 func (p *provider) leaderUseDeleteWorkerTaskAssign(deleteWorkerID worker.ID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	delete(p.leaderUse.findTaskByWorker, deleteWorkerID)
-	for logicTaskID, workerID := range p.leaderUse.findWorkerByTask {
+	delete(p.forLeaderUse.findTaskByWorker, deleteWorkerID)
+	for logicTaskID, workerID := range p.forLeaderUse.findWorkerByTask {
 		if workerID == deleteWorkerID {
-			delete(p.leaderUse.findWorkerByTask, logicTaskID)
+			delete(p.forLeaderUse.findWorkerByTask, logicTaskID)
 		}
 	}
 }
