@@ -15,7 +15,6 @@
 package notify_channel
 
 import (
-	"bou.ke/monkey"
 	"context"
 	"encoding/base64"
 	"errors"
@@ -24,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"bou.ke/monkey"
 	"github.com/jinzhu/copier"
 	"google.golang.org/protobuf/types/known/structpb"
 
