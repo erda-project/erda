@@ -46,7 +46,7 @@ const (
 	DateDay              = "date_day"                // 1天前日期格式：2006-01-01
 	DateTime             = "datetime"                // 当前带时间的格式：2006-01-02 15:04:05
 	DateTimeHour         = "datetime_hour"           // 1小时前带时间的格式：2006-01-02 14:04:05
-	DateTimeCustom       = "datetime_custom_"        //  当前时间自定义格式
+	DateTimeCustom       = "datetime_custom_"        // custom datetime format
 )
 
 var dateTimeCustoms = map[string]string{
