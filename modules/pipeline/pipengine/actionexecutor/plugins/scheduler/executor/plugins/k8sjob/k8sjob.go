@@ -174,8 +174,10 @@ func (k *K8sJob) Create(ctx context.Context, action *spec.PipelineTask) (data in
 			if pvc == nil {
 				continue
 			}
-			_, err := k.client.ClientSet.CoreV1().PersistentVolumeClaims(pvc.Namespace).Create(ctx, pvc, metav1.CreateOptions{})
-			if err != nil {
+			_, err := k.client.ClientSet.CoreV1().
+				PersistentVolumeClaims(pvc.Namespace).
+				Create(ctx, pvc, metav1.CreateOptions{})
+			if err != nil && !k8serrors.IsAlreadyExists(err) {
 				return nil, err
 			}
 		}

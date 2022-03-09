@@ -100,7 +100,11 @@ func (k *K8sSpark) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 		if pvc == nil {
 			continue
 		}
-		if _, err := k.client.ClientSet.CoreV1().PersistentVolumeClaims(job.Namespace).Create(ctx, pvc, metav1.CreateOptions{}); err != nil {
+		_, err := k.client.ClientSet.
+			CoreV1().
+			PersistentVolumeClaims(job.Namespace).
+			Create(ctx, pvc, metav1.CreateOptions{})
+		if err != nil && !k8serrors.IsAlreadyExists(err) {
 			return nil, err
 		}
 	}
