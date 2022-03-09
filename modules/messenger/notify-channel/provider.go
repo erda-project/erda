@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package channel
+package notify_channel
 
 import (
 	"os"
@@ -20,23 +20,21 @@ import (
 	"github.com/jinzhu/gorm"
 
 	logs "github.com/erda-project/erda-infra/base/logs"
-	servicehub "github.com/erda-project/erda-infra/base/servicehub"
-	transport "github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/i18n"
-	pb "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
+	"github.com/erda-project/erda-proto-go/core/messenger/notifychannel/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
-	"github.com/erda-project/erda/modules/core-services/services/notify/channel/db"
+	"github.com/erda-project/erda/modules/messenger/notify-channel/db"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
-type config struct {
-}
+type config struct{}
 
-// +provider
 type provider struct {
 	Cfg                 *config
 	Log                 logs.Logger
@@ -62,7 +60,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		p.uc = ucauth.NewUCClient(oryKratosProvateAddr, conf.OryCompatibleClientID(), conf.OryCompatibleClientSecret())
 		p.uc.SetDBClient(ucDB.DB)
 	}
-
 	p.notifyChanelService = &notifyChannelService{
 		p:               p,
 		NotifyChannelDB: &db.NotifyChannelDB{DB: p.DB},
@@ -75,14 +72,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.core.services.notify.channel.NotifyChanelService" || ctx.Type() == pb.NotifyChannelServiceServerType() || ctx.Type() == pb.NotifyChannelServiceHandlerType():
+	case ctx.Service() == "erda.core.messenger.notifychannel.NotifyChannelService" || ctx.Type() == pb.NotifyChannelServiceClientType() || ctx.Type() == pb.NotifyChannelServiceHandlerType():
 		return p.notifyChanelService
 	}
 	return p
 }
 
 func init() {
-	servicehub.Register("erda.core.services.notify.channel", &servicehub.Spec{
+	servicehub.Register("erda.core.messenger.notifychannel", &servicehub.Spec{
 		Services:             pb.ServiceNames(),
 		Types:                pb.Types(),
 		OptionalDependencies: []string{"service-register"},

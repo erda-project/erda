@@ -21,7 +21,6 @@ mysql:
   database: "${MYSQL_DATABASE:dice}"
 
 erda.core.services.authentication.credentials.accesskey:
-erda.core.services.notify.channel:
 erda.core.services.errorbox:
 
 http-server@admin:
@@ -29,3 +28,5 @@ http-server@admin:
 pprof:
 
 erda.core.messenger.notify:
+
+erda.core.messenger.notifychannel:

@@ -23,9 +23,9 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/pprof"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
 	_ "github.com/erda-project/erda/modules/core-services"
-	_ "github.com/erda-project/erda/modules/core-services/services/notify/channel"
 	_ "github.com/erda-project/erda/modules/core/services/authentication/credentials/accesskey"
 	_ "github.com/erda-project/erda/modules/messenger/notify"
+	_ "github.com/erda-project/erda/modules/messenger/notify-channel"
 
 	// infra
 	_ "github.com/erda-project/erda-infra/providers/grpcserver"
