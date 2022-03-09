@@ -54,27 +54,30 @@ func (p *provider) Connect() error {
 }
 
 func (p *provider) Export(ods []odata.ObservableData) error {
-	topic := p.Cfg.Producer.Topic
-
 	for _, item := range ods {
-		if p.Cfg.MetadataKeyOfTopic != "" {
-			tmp, ok := item.GetMetadata(p.Cfg.MetadataKeyOfTopic)
-			if ok {
-				topic = tmp
-			}
-		}
 		data, err := p.serialize(item, p.Cfg.Compatibility)
 		if err != nil {
 			p.Log.Errorf("serialize err: %s", err)
 			continue
 		}
 
-		err = p.writer.Write(&kafka.Message{
-			Topic: &topic,
-			Data:  data,
-		})
-		if err != nil {
-			p.Log.Errorf("write kafka msg err: %s", err)
+		if p.Cfg.MetadataKeyOfTopic != "" {
+			tmp, ok := item.GetMetadata(p.Cfg.MetadataKeyOfTopic)
+			if !ok {
+				p.Log.Errorf("unable to find topic with key %s", p.Cfg.MetadataKeyOfTopic)
+				continue
+			}
+
+			if err := p.writer.Write(&kafka.Message{
+				Topic: &tmp,
+				Data:  data,
+			}); err != nil {
+				p.Log.Errorf("write data to %s err: %s", tmp, err)
+			}
+		} else {
+			if err := p.writer.Write(data); err != nil {
+				p.Log.Errorf("write data to %s err: %s", p.Cfg.Producer.Topic, err)
+			}
 		}
 	}
 	return nil
@@ -94,11 +97,11 @@ func (p *provider) serialize(od odata.ObservableData, compatibility bool) ([]byt
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	writer, err := p.Kafka.NewProducer(&p.Cfg.Producer)
+	producer, err := p.Kafka.NewProducer(&p.Cfg.Producer)
 	if err != nil {
 		return err
 	}
-	p.writer = writer
+	p.writer = producer
 
 	return nil
 }
