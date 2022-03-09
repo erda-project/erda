@@ -66,7 +66,7 @@ func init() {
 }
 
 func Test_GetTaskExecutor(t *testing.T) {
-	p := monkey.PatchInstanceMethod(reflect.TypeOf(taskManager), "GetCluster", func(_ *executor.Manager, clusterName string) (apistructs.ClusterInfo, error) {
+	p := monkey.PatchInstanceMethod(reflect.TypeOf(taskManager), "TryGetCluster", func(_ *executor.Manager, clusterName string) (apistructs.ClusterInfo, error) {
 		if len(clusterName) == 0 {
 			return apistructs.ClusterInfo{}, errors.Errorf("clusterName is empty")
 		}
@@ -90,7 +90,7 @@ func Test_GetTaskExecutor(t *testing.T) {
 	})
 	defer m.Unpatch()
 
-	_, err := s.taskManager.GetCluster("terminus-dev")
+	_, err := s.taskManager.TryGetCluster("terminus-dev")
 	assert.NoError(t, err)
 
 	k8sjobTask := &spec.PipelineTask{
