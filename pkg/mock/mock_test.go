@@ -51,22 +51,9 @@ func TestGetTime(t *testing.T) {
 	t.Log("ns-day:", getTime(TimeStampNsDay))
 	t.Log("ns-after-day:", getTime(TimeStampNsAfterDay))
 
-	t.Log(DateTimeCustom+"ANSIC"+":", getTime(DateTimeCustom+"ANSIC"))
-	t.Log(DateTimeCustom+"UnixDate"+":", getTime(DateTimeCustom+"UnixDate"))
-	t.Log(DateTimeCustom+"RubyDate"+":", getTime(DateTimeCustom+"RubyDate"))
-	t.Log(DateTimeCustom+"RFC822"+":", getTime(DateTimeCustom+"RFC822"))
-	t.Log(DateTimeCustom+"RFC822Z"+":", getTime(DateTimeCustom+"RFC822Z"))
-	t.Log(DateTimeCustom+"RFC850"+":", getTime(DateTimeCustom+"RFC850"))
-	t.Log(DateTimeCustom+"RFC1123"+":", getTime(DateTimeCustom+"RFC1123"))
-	t.Log(DateTimeCustom+"RFC1123Z"+":", getTime(DateTimeCustom+"RFC1123Z"))
-	t.Log(DateTimeCustom+"RFC3339"+":", getTime(DateTimeCustom+"RFC3339"))
-	t.Log(DateTimeCustom+"RFC3339Nano"+":", getTime(DateTimeCustom+"RFC3339Nano"))
-	t.Log(DateTimeCustom+"Kitchen"+":", getTime(DateTimeCustom+"Kitchen"))
-	t.Log(DateTimeCustom+"Stamp"+":", getTime(DateTimeCustom+"Stamp"))
-	t.Log(DateTimeCustom+"StampMilli"+":", getTime(DateTimeCustom+"StampMilli"))
-	t.Log(DateTimeCustom+"StampMicro"+":", getTime(DateTimeCustom+"StampMicro"))
-	t.Log(DateTimeCustom+"StampNano"+":", getTime(DateTimeCustom+"StampNano"))
-	t.Log(DateTimeCustom+"20060102150405"+":", getTime(DateTimeCustom+"20060102150405"))
+	for k := range dateTimeCustoms {
+		t.Log(DateTimeCustom+k+":", getTime(DateTimeCustom+k))
+	}
 }
 
 func Test_randIntegerByLength(t *testing.T) {
