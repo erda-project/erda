@@ -15,7 +15,6 @@
 package linters
 
 import (
-	"fmt"
 	"reflect"
 	"sync"
 
@@ -52,14 +51,12 @@ type hub struct{}
 
 // register all rules.Factory into linters
 func register() {
-	fmt.Println("register linters:")
 	valueOf := reflect.ValueOf(h)
 	typeOf := reflect.TypeOf(h)
 	for i := 0; i < valueOf.NumMethod(); i++ {
 		method := valueOf.Method(i)
 		v := method.Interface()
 		if f, ok := v.(func(script.Script, sqllint.Config) (sqllint.Rule, error)); ok {
-			fmt.Println("\tregister", typeOf.Method(i).Name)
 			sqllint.Register(typeOf.Method(i).Name, f)
 		}
 	}
