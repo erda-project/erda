@@ -621,6 +621,11 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/orgs/{orgID}/projects/{projectID}/template/actions/import", Method: http.MethodPost, Handler: e.ImportProjectTemplate},
 		{Path: "/api/projects/template/actions/parse", Method: http.MethodPost, Handler: e.ParseProjectTemplate},
 
+		// project package
+		{Path: "/api/orgs/{orgID}/projects/{projectID}/package/actions/export", Method: http.MethodPost, Handler: e.ExportProjectPackage},
+		{Path: "/api/orgs/{orgID}/projects/{projectID}/package/actions/import", Method: http.MethodPost, Handler: e.ImportProjectPackage},
+		{Path: "/api/projects/package/actions/parse", Method: http.MethodPost, Handler: e.ParseProjectPackage},
+
 		// core-services org
 		{Path: "/api/orgs", Method: http.MethodPost, Handler: e.CreateOrg},
 		{Path: "/api/orgs/{orgID}", Method: http.MethodPut, Handler: e.UpdateOrg},
