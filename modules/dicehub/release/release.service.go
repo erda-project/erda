@@ -32,9 +32,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v2"
 
-	pb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	extensiondb "github.com/erda-project/erda/modules/dicehub/extension/db"
 	imagedb "github.com/erda-project/erda/modules/dicehub/image/db"
 	"github.com/erda-project/erda/modules/dicehub/registry"
 	"github.com/erda-project/erda/modules/dicehub/release/db"
@@ -52,6 +53,7 @@ type ReleaseService struct {
 	p           *provider
 	db          *db.ReleaseConfigDB
 	imageDB     *imagedb.ImageConfigDB
+	extensionDB *extensiondb.ExtensionConfigDB
 	bdl         *bundle.Bundle
 	Etcd        *clientv3.Client
 	Config      *releaseConfig
@@ -1139,7 +1141,12 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 		resources = make([]*pb.ReleaseResource, 0)
 	}
 
-	var summary []*pb.ReleaseSummaryArray
+	var (
+		summary   []*pb.ReleaseSummaryArray
+		addons    []*pb.AddonInfo
+		addonYaml string
+	)
+	addonSet := make(map[string]*diceyml.AddOn)
 	if release.IsProjectRelease {
 		var appReleaseIDs [][]string
 		if err = json.Unmarshal([]byte(release.ApplicationReleaseList), &appReleaseIDs); err != nil {
@@ -1158,6 +1165,26 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 		id2Release := make(map[string]*db.Release)
 		for i := 0; i < len(appReleases); i++ {
 			id2Release[appReleases[i].ReleaseID] = &appReleases[i]
+
+			dice, err := diceyml.New([]byte(appReleases[i].Dice), true)
+			if err != nil {
+				logrus.Errorf("failed to parse diceyml for release %s, %v", appReleases[i].ReleaseID, err)
+				continue
+			}
+			obj := dice.Obj()
+			if obj == nil || obj.AddOns == nil {
+				continue
+			}
+
+			for name, addon := range obj.AddOns {
+				version := addon.Options["version"]
+				splits := strings.Split(addon.Plan, ":")
+				if len(splits) != 2 {
+					logrus.Errorf("plan field of addon %s for release %s is invalid", name, appReleases[i].ReleaseID)
+					continue
+				}
+				addonSet[strings.Join([]string{splits[0], version, splits[1]}, "_")] = addon
+			}
 		}
 
 		summary = make([]*pb.ReleaseSummaryArray, len(appReleaseIDs))
@@ -1176,6 +1203,45 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 				}
 			}
 		}
+
+		extensionMap := make(map[string]*extensiondb.Extension)
+		if len(addonSet) > 0 {
+			extensions, err := s.extensionDB.QueryExtensions("true", "", "")
+			if err != nil {
+				return nil, errors.Errorf("failed to query extensions, %v", err)
+			}
+
+			for i := 0; i < len(extensions); i++ {
+				extensionMap[extensions[i].Name] = &extensions[i]
+			}
+		}
+
+		for _, addon := range addonSet {
+			version := addon.Options["version"]
+			splits := strings.Split(addon.Plan, ":")
+			name := splits[0]
+			plan := splits[1]
+			if version == "" {
+				extensionVersion, err := s.extensionDB.GetExtensionDefaultVersion(name)
+				if err != nil {
+					return nil, errors.Errorf("failed to get default version for addon %s, %v", name, err)
+				}
+				version = extensionVersion.Version
+			}
+			addons = append(addons, &pb.AddonInfo{
+				DisplayName: extensionMap[name].DisplayName,
+				Plan:        plan,
+				Version:     version,
+				Category:    extensionMap[name].Category,
+				LogoURL:     extensionMap[name].LogoUrl,
+			})
+		}
+
+		data, err := yaml.Marshal(addonSet)
+		if err != nil {
+			return nil, errors.Errorf("failed to marshal addonSet, %v", err)
+		}
+		addonYaml = string(data)
 	}
 
 	respData := &pb.ReleaseGetResponseData{
@@ -1205,6 +1271,8 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 		CreatedAt:              timestamppb.New(release.CreatedAt),
 		UpdatedAt:              timestamppb.New(release.UpdatedAt),
 		IsLatest:               release.IsLatest,
+		Addons:                 addons,
+		AddonYaml:              addonYaml,
 	}
 	if err = respDataReLoadImages(respData); err != nil {
 		logrus.WithError(err).Errorln("failed to ReLoadImages")

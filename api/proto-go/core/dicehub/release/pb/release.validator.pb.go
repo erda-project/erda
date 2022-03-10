@@ -145,6 +145,16 @@ func (this *ReleaseGetResponseData) Validate() error {
 			return github_com_mwitkow_go_proto_validators.FieldError("UpdatedAt", err)
 		}
 	}
+	for _, item := range this.Addons {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Addons", err)
+			}
+		}
+	}
+	return nil
+}
+func (this *AddonInfo) Validate() error {
 	return nil
 }
 func (this *ServiceImagePair) Validate() error {

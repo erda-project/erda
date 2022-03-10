@@ -359,6 +359,17 @@ message ReleaseGetResponseData {
 
   // 是否为分支最新
   bool isLatest = 28;
+
+  repeated AddonInfo addons = 29;
+  string addonYaml = 30;
+}
+
+message AddonInfo {
+  string displayName = 1;
+  string plan = 2;
+  string version = 3;
+  string category = 4;
+  string logoURL = 5;
 }
 
 message ServiceImagePair {
