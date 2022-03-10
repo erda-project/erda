@@ -681,3 +681,133 @@ func (e *Endpoints) ParseProjectTemplate(ctx context.Context, r *http.Request, v
 	}
 	return httpserver.OkResp(templateData)
 }
+
+func (e *Endpoints) ExportProjectPackage(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+
+	ppReq, apiErr := e.ConstructProjectPackgeRequset(r, vars, apierrors.ErrExportProjectPackage)
+	if apiErr != nil {
+		return apiErr.ToResp(), nil
+	}
+	exportReq := apistructs.ExportProjectPackageRequest{
+		ProjectPackageRequest: *ppReq,
+	}
+
+	artifacts := []apistructs.Artifact{}
+	if err := json.NewDecoder(r.Body).Decode(&artifacts); err != nil {
+		return apierrors.ErrExportProjectPackage.InvalidParameter(fmt.Errorf("invalid artifacts: %v", err)).ToResp(), nil
+	}
+	if len(artifacts) == 0 {
+		return apierrors.ErrExportProjectPackage.InvalidParameter(fmt.Errorf("artifacts can't be empty")).ToResp(), nil
+	}
+	exportReq.Artifacts = artifacts
+
+	fileID, err := e.project.ExportPackage(exportReq)
+	if err != nil {
+		return apierrors.ErrExportProjectPackage.InternalError(err).ToResp(), nil
+	}
+
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileProjectPackageExport)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if ok {
+		e.ExportChannel <- fileID
+	}
+
+	return httpserver.OkResp(fileID)
+}
+
+func (e *Endpoints) ImportProjectPackage(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	ippReq, apiErr := e.ConstructProjectPackgeRequset(r, vars, apierrors.ErrImportProjectPackage)
+	if apiErr != nil {
+		return apiErr.ToResp(), nil
+	}
+
+	req := apistructs.ImportProjectPackageRequest{
+		ProjectPackageRequest: *ippReq,
+	}
+
+	recordID, err := e.project.ImportPackage(req, r)
+	if err != nil {
+		return apierrors.ErrImportProjectPackage.InternalError(err).ToResp(), nil
+	}
+
+	ok, _, err := e.testcase.GetFirstFileReady(apistructs.FileProjectPackageImport)
+	if err != nil {
+		return errorresp.ErrResp(err)
+	}
+	if ok {
+		e.ImportChannel <- recordID
+	}
+	return httpserver.OkResp(recordID)
+}
+
+func (e *Endpoints) ConstructProjectPackgeRequset(r *http.Request, vars map[string]string, apiErr *errorresp.APIError) (*apistructs.ProjectPackageRequest, *errorresp.APIError) {
+	projectID, err := e.getProjectID(vars)
+	if err != nil {
+		return nil, apiErr.InvalidParameter("projectID")
+	}
+	if projectID == 0 {
+		return nil, apiErr.InvalidParameter("projectID")
+	}
+	orgID, err := e.getOrgID(vars)
+	if err != nil {
+		return nil, apiErr.InvalidParameter("orgID")
+	}
+	if orgID == 0 {
+		return nil, apiErr.InvalidParameter("orgID")
+	}
+	identityInfo, err := user.GetIdentityInfo(r)
+	if err != nil {
+		return nil, apiErr.NotLogin()
+	}
+	if !identityInfo.IsInternalClient() {
+		access, err := e.bdl.CheckPermission(&apistructs.PermissionCheckRequest{
+			UserID:   identityInfo.UserID,
+			Scope:    apistructs.OrgScope,
+			ScopeID:  uint64(orgID),
+			Resource: apistructs.ProjectPackageResource,
+			Action:   apistructs.CreateAction,
+		})
+		if err != nil {
+			return nil, apiErr.InternalError(err)
+		}
+		if !access.Access {
+			return nil, apiErr.AccessDenied()
+		}
+	}
+
+	org, err := e.bdl.GetOrg(orgID)
+	if err != nil {
+		return nil, apiErr.InternalError(err)
+	}
+	project, err := e.bdl.GetProject(projectID)
+	if err != nil {
+		return nil, apiErr.InternalError(err)
+	}
+	if project.OrgID != uint64(orgID) {
+		return nil, apiErr.InvalidParameter("projectID")
+	}
+
+	req := &apistructs.ProjectPackageRequest{}
+	req.OrgID = uint64(orgID)
+	req.OrgName = org.Name
+	req.ProjectID = projectID
+	req.ProjectName = project.Name
+	req.ProjectDisplayName = project.DisplayName
+	req.IdentityInfo = identityInfo
+
+	return req, nil
+}
+
+func (e *Endpoints) ParseProjectPackage(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		return apierrors.ErrParseProjectPackage.InvalidParameter("file").ToResp(), nil
+	}
+	packageData, err := e.project.ParsePackage(file)
+	if err != nil {
+		return apierrors.ErrParseProjectPackage.InternalError(err).ToResp(), nil
+	}
+	return httpserver.OkResp(packageData)
+}

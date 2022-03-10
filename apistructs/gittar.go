@@ -780,3 +780,10 @@ type MergeRequestCountResponse struct {
 	Header
 	Data map[string]int `json:"data"`
 }
+
+type GittarArchiveRequest struct {
+	Org         string `json:"org"`
+	Project     string `json:"project"`
+	Application string `json:"application"`
+	Ref         string `json:"ref"`
+}

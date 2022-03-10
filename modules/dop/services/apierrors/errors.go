@@ -465,6 +465,10 @@ var (
 	ErrImportProjectTemplate = err("ErrImportProjectTemplate", "导入项目模版失败")
 	ErrParseProjectTemplate  = err("ErrParseProjectTemplate", "解析项目模版失败")
 
+	ErrExportProjectPackage = err("ErrExportProjectPackage", "导出项目工程包失败")
+	ErrImportProjectPackage = err("ErrImportProjectPackage", "导入项目工程包失败")
+	ErrParseProjectPackage  = err("ErrParseProjectPackage", "解析项目工程包失败")
+
 	ErrCreateApplication = err("ErrCreateApplication", "创建应用失败")
 	ErrDeleteApplication = err("ErrDeleteApplication", "删除应用失败")
 	ErrInitApplication   = err("ErrInitApplication", "应用初始化失败")

@@ -724,6 +724,7 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 		apistructs.FileSpaceActionTypeExport,
 		apistructs.FileSceneSetActionTypeExport,
 		apistructs.FileProjectTemplateExport,
+		apistructs.FileProjectPackageExport,
 		apistructs.FileIssueActionTypeExport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
@@ -744,6 +745,9 @@ func exportTestFileTask(ep *endpoints.Endpoints) {
 	case apistructs.FileProjectTemplateExport:
 		pro := ep.ProjectService()
 		pro.ExportTemplatePackage(record)
+	case apistructs.FileProjectPackageExport:
+		pro := ep.ProjectService()
+		pro.ExportProjectPackage(record)
 	case apistructs.FileIssueActionTypeExport:
 		issueSvc := ep.IssueService()
 		issueSvc.ExportExcelAsync(record)
@@ -758,6 +762,7 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 		apistructs.FileSpaceActionTypeImport,
 		apistructs.FileSceneSetActionTypeImport,
 		apistructs.FileProjectTemplateImport,
+		apistructs.FileProjectPackageImport,
 		apistructs.FileIssueActionTypeImport)
 	if err != nil {
 		logrus.Error(apierrors.ErrExportTestCases.InternalError(err))
@@ -778,6 +783,9 @@ func importTestFileTask(ep *endpoints.Endpoints) {
 	case apistructs.FileProjectTemplateImport:
 		pro := ep.ProjectService()
 		pro.ImportTemplatePackage(record)
+	case apistructs.FileProjectPackageImport:
+		pro := ep.ProjectService()
+		pro.ImportProjectPackage(record)
 	case apistructs.FileIssueActionTypeImport:
 		issueSvc := ep.IssueService()
 		issueSvc.ImportExcel(record)

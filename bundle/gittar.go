@@ -17,8 +17,12 @@ package bundle
 
 import (
 	"fmt"
+	"io"
 	"net/url"
+	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -685,4 +689,41 @@ func (b *Bundle) MergeRequestCount(userID string, req apistructs.MergeRequestCou
 		return nil, apierrors.ErrInvoke.InternalError(errors.Errorf("failed to list merge request count"))
 	}
 	return rsp.Data, nil
+}
+
+func (b *Bundle) GetArchive(userID string, req apistructs.GittarArchiveRequest, distDir string) (string, error) {
+	host, err := b.urls.Gittar()
+	if err != nil {
+		return "", err
+	}
+	hc := b.hc
+
+	path := fmt.Sprintf("/%s/dop/%s/%s/archive/%s.zip", req.Org, req.Project, req.Application, req.Ref)
+	resp, err := hc.Get(host).Path(path).
+		Header(httputil.UserHeader, userID).
+		Do().RAW()
+	if err != nil {
+		return "", apierrors.ErrInvoke.InternalError(err)
+	}
+	defer resp.Body.Close()
+
+	zipfile := fmt.Sprintf("tmp-%d.zip", time.Now().Unix())
+	attachmentInfo := resp.Header.Get("Content-Disposition")
+	attachment := strings.Split(attachmentInfo, "=")
+	if len(attachment) == 2 {
+		zipfile = attachment[1]
+	}
+
+	f, err := os.Create(distDir + "/" + zipfile)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, resp.Body)
+	if err != nil {
+		return zipfile, err
+	}
+
+	return zipfile, nil
 }
