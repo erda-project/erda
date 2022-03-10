@@ -14,6 +14,10 @@
 
 package orm
 
+import (
+	"strings"
+)
+
 type GatewayZone struct {
 	Name            string `json:"name" xorm:"not null default '' comment('名称') VARCHAR(1024)"`
 	Type            string `json:"type" xorm:"not null default '' comment('类型') VARCHAR(16)"`
@@ -29,4 +33,9 @@ type GatewayZone struct {
 	TenantId        string `json:"tenant_id" xorm:"not null default '' comment('租户id') VARCHAR(128)"`
 	PackageApiId    string `json:"package_api_id" xorm:"not null default '' comment('流量入口中指定api的id') VARCHAR(32)"`
 	BaseRow         `xorm:"extends"`
+}
+
+// HasIngress only zones of type 'packageApi' have ingress
+func (zone GatewayZone) HasIngress() bool {
+	return strings.EqualFold(zone.Type, "packageApi")
 }
