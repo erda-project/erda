@@ -171,7 +171,7 @@ func (t *PackageZip) readIncludeEnvFile(envfile string) error {
 	values := t.ProjectPackage.Project.Environments.EnvsValues
 	newValues := map[string]interface{}{}
 	for k, v := range values {
-		key := strings.ReplaceAll(k, ".", "_")
+		key := strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_")
 		value := v
 		if v == "" {
 			value = "NeedToSet" // TODO
@@ -256,26 +256,6 @@ func (t *PackageZip) GetPackageName() string {
 func (t *PackageZip) GetProjectPackage() *apistructs.ProjectPackage {
 	return t.ProjectPackage
 }
-
-//func (t *PackageZip) GetProjectID() uint64 {
-//	return t.ProjectID
-//}
-//
-//func (t *PackageZip) GetProjectName() string {
-//	return t.ProjectName
-//}
-//
-//func (t *PackageZip) GetOrgID() uint64 {
-//	return uint64(t.OrgID)
-//}
-//
-//func (t *PackageZip) GetOrgName() string {
-//	return t.OrgName
-//}
-//
-//func (t *PackageZip) GetIdentityInfo() apistructs.IdentityInfo {
-//	return t.IdentityInfo
-//}
 
 func (t *PackageZip) GetContext() *PackageContext {
 	return t.contex
