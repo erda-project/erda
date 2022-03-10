@@ -16,7 +16,9 @@ package messageList
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
+	"time"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -39,6 +41,17 @@ func (l *MessageList) doFilterApproval() (data *list.Data) {
 		UserIDs: append(blockUsers, deployUsers...),
 	}
 
+	sort.Slice(data.List, func(i, j int) bool {
+		t1, ok := data.List[i].Extra.Extra["updatedAt"].(time.Time)
+		if !ok {
+			return false
+		}
+		t2, ok := data.List[j].Extra.Extra["updatedAt"].(time.Time)
+		if !ok {
+			return false
+		}
+		return t1.After(t2)
+	})
 	start, end := arrays.Paging(l.filterReq.PageNo, l.filterReq.PageSize, data.Total)
 	if start == -1 || end == -1 {
 		return
@@ -103,6 +116,11 @@ func (l *MessageList) listBlockApprovals(pageNo, pageSize uint64) (data []list.I
 					},
 				},
 			},
+			Extra: cptype.Extra{
+				Extra: map[string]interface{}{
+					"updatedAt": i.UpdatedAt,
+				},
+			},
 		}
 		data = append(data, item)
 	}
@@ -158,6 +176,11 @@ func (l *MessageList) listDeployApprovals(pageNo, pageSize uint64) (data []list.
 							ClientData: &cptype.OpClientData{},
 						},
 					},
+				},
+			},
+			Extra: cptype.Extra{
+				Extra: map[string]interface{}{
+					"updatedAt": i.UpdatedAt,
 				},
 			},
 		}
