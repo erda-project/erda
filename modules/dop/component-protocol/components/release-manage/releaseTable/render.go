@@ -304,8 +304,12 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 		}
 
 		item := Item{
-			ID:          release.ReleaseID,
-			Version:     release.Version,
+			ID: release.ReleaseID,
+			Version: Version{
+				Value:      release.Version,
+				Tags:       []Tag{},
+				RenderType: "textWithTags",
+			},
 			Application: release.ApplicationName,
 			Creator: Creator{
 				RenderType: "userAvatar",
@@ -319,14 +323,10 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 		}
 
 		if release.IsFormal && r.State.IsFormal == nil {
-			item.Version = Version{
-				Value: release.Version,
-				Tags: []Tag{{
-					Tag:   r.sdk.I18n("formal"),
-					Color: "blue",
-				}},
-				RenderType: "textWithTags",
-			}
+			item.Version.Tags = append(item.Version.Tags, Tag{
+				Tag:   r.sdk.I18n("formal"),
+				Color: "blue",
+			})
 		}
 
 		if release.IsProjectRelease {
@@ -463,12 +463,12 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	}
 }
 
-func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
-	c.Props = cputil.MustConvertProps(r.Props)
-	c.Data = map[string]interface{}{
+func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
+	component.Props = cputil.MustConvertProps(r.Props)
+	component.Data = map[string]interface{}{
 		"list": r.Data.List,
 	}
-	c.State = map[string]interface{}{
+	component.State = map[string]interface{}{
 		"releaseTable__urlQuery": r.State.ReleaseTableURLQuery,
 		"pageNo":                 r.State.PageNo,
 		"pageSize":               r.State.PageSize,
@@ -481,7 +481,7 @@ func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
 		"applicationID":          r.State.ApplicationID,
 		"filterValues":           r.State.FilterValues,
 	}
-	c.Operations = r.Operations
+	component.Operations = r.Operations
 }
 
 func (r *ComponentReleaseTable) formalReleases(ctx context.Context, releaseID []string) error {
