@@ -254,6 +254,23 @@ func extractContainerEnvs(containers []corev1.Container) (addonID, projectID, wo
 	return
 }
 
+func extractServicesEnvs(svcs []apistructs.Service) (addonID, projectID, workspace, runtimeID string) {
+	envSuffixMap := map[string]*string{
+		"ADDON_ID":        &addonID,
+		"DICE_PROJECT_ID": &projectID,
+		"DICE_RUNTIME_ID": &runtimeID,
+		"DICE_WORKSPACE":  &workspace,
+	}
+	for _, svc := range svcs {
+		for envKey, env := range svc.Env {
+			if _, ok := envSuffixMap[envKey]; ok {
+				envSuffixMap[envKey] = &env
+			}
+		}
+	}
+	return
+}
+
 // setBind only set hostPath for volume
 func (k *Kubernetes) setBind(set *appsv1.StatefulSet, container *apiv1.Container, service *apistructs.Service) error {
 	for i, bind := range service.Binds {
