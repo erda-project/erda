@@ -131,6 +131,7 @@ func (e *expressionService) readMetricRule(root string) error {
 			if err != nil {
 				return err
 			}
+			expression.Enable = true
 			MetricExpression = append(MetricExpression, expression)
 			return nil
 		})

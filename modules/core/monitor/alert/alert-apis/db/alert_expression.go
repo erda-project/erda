@@ -98,7 +98,6 @@ func (db *AlertExpressionDB) GetAllAlertExpression(pageNo, pageSize int64) ([]*A
 
 // QueryRuleCount .
 func (db *AlertExpressionDB) QueryRuleCount(alertIds []uint64) (map[uint64]int64, error) {
-	db.LogMode(true)
 	rulesCount := make([]*AlertRuleCount, 0)
 	err := db.Model(&AlertExpression{}).Select("alert_id,count(*) as count").
 		Where("alert_id in (?)", alertIds).
