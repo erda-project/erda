@@ -138,8 +138,15 @@ func TestComponentReleaseTable_Transfer(t *testing.T) {
 		Data: Data{
 			List: []Item{
 				{
-					ID:          "testID",
-					Version:     "testVersion",
+					ID: "testID",
+					Version: Version{
+						Value: "testValue",
+						Tags: []Tag{{
+							Tag:   "testTag",
+							Color: "testColor",
+						}},
+						RenderType: "testType",
+					},
 					Application: "testApplication",
 					Desc:        "testDesc",
 					Creator: Creator{
