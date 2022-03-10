@@ -1158,7 +1158,9 @@ type ReleaseGetResponseData struct {
 	CreatedAt   *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=createdAt,proto3" json:"createdAt,omitempty"`
 	UpdatedAt   *timestamppb.Timestamp `protobuf:"bytes,27,opt,name=updatedAt,proto3" json:"updatedAt,omitempty"`
 	// 是否为分支最新
-	IsLatest bool `protobuf:"varint,28,opt,name=isLatest,proto3" json:"isLatest,omitempty"`
+	IsLatest  bool         `protobuf:"varint,28,opt,name=isLatest,proto3" json:"isLatest,omitempty"`
+	Addons    []*AddonInfo `protobuf:"bytes,29,rep,name=addons,proto3" json:"addons,omitempty"`
+	AddonYaml string       `protobuf:"bytes,30,opt,name=addonYaml,proto3" json:"addonYaml,omitempty"`
 }
 
 func (x *ReleaseGetResponseData) Reset() {
@@ -1389,6 +1391,99 @@ func (x *ReleaseGetResponseData) GetIsLatest() bool {
 	return false
 }
 
+func (x *ReleaseGetResponseData) GetAddons() []*AddonInfo {
+	if x != nil {
+		return x.Addons
+	}
+	return nil
+}
+
+func (x *ReleaseGetResponseData) GetAddonYaml() string {
+	if x != nil {
+		return x.AddonYaml
+	}
+	return ""
+}
+
+type AddonInfo struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	DisplayName string `protobuf:"bytes,1,opt,name=displayName,proto3" json:"displayName,omitempty"`
+	Plan        string `protobuf:"bytes,2,opt,name=plan,proto3" json:"plan,omitempty"`
+	Version     string `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	Category    string `protobuf:"bytes,4,opt,name=category,proto3" json:"category,omitempty"`
+	LogoURL     string `protobuf:"bytes,5,opt,name=logoURL,proto3" json:"logoURL,omitempty"`
+}
+
+func (x *AddonInfo) Reset() {
+	*x = AddonInfo{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_release_proto_msgTypes[18]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AddonInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddonInfo) ProtoMessage() {}
+
+func (x *AddonInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_release_proto_msgTypes[18]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddonInfo.ProtoReflect.Descriptor instead.
+func (*AddonInfo) Descriptor() ([]byte, []int) {
+	return file_release_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *AddonInfo) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *AddonInfo) GetPlan() string {
+	if x != nil {
+		return x.Plan
+	}
+	return ""
+}
+
+func (x *AddonInfo) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *AddonInfo) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *AddonInfo) GetLogoURL() string {
+	if x != nil {
+		return x.LogoURL
+	}
+	return ""
+}
+
 type ServiceImagePair struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1401,7 +1496,7 @@ type ServiceImagePair struct {
 func (x *ServiceImagePair) Reset() {
 	*x = ServiceImagePair{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[18]
+		mi := &file_release_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1414,7 +1509,7 @@ func (x *ServiceImagePair) String() string {
 func (*ServiceImagePair) ProtoMessage() {}
 
 func (x *ServiceImagePair) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[18]
+	mi := &file_release_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1427,7 +1522,7 @@ func (x *ServiceImagePair) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceImagePair.ProtoReflect.Descriptor instead.
 func (*ServiceImagePair) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{18}
+	return file_release_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ServiceImagePair) GetServiceName() string {
@@ -1462,7 +1557,7 @@ type ApplicationReleaseSummary struct {
 func (x *ApplicationReleaseSummary) Reset() {
 	*x = ApplicationReleaseSummary{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[19]
+		mi := &file_release_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1475,7 +1570,7 @@ func (x *ApplicationReleaseSummary) String() string {
 func (*ApplicationReleaseSummary) ProtoMessage() {}
 
 func (x *ApplicationReleaseSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[19]
+	mi := &file_release_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1488,7 +1583,7 @@ func (x *ApplicationReleaseSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplicationReleaseSummary.ProtoReflect.Descriptor instead.
 func (*ApplicationReleaseSummary) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{19}
+	return file_release_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ApplicationReleaseSummary) GetReleaseID() string {
@@ -1588,7 +1683,7 @@ type ReleaseListRequest struct {
 func (x *ReleaseListRequest) Reset() {
 	*x = ReleaseListRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[20]
+		mi := &file_release_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1601,7 +1696,7 @@ func (x *ReleaseListRequest) String() string {
 func (*ReleaseListRequest) ProtoMessage() {}
 
 func (x *ReleaseListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[20]
+	mi := &file_release_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1614,7 +1709,7 @@ func (x *ReleaseListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseListRequest.ProtoReflect.Descriptor instead.
 func (*ReleaseListRequest) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{20}
+	return file_release_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ReleaseListRequest) GetQuery() string {
@@ -1798,7 +1893,7 @@ type ReleaseListResponse struct {
 func (x *ReleaseListResponse) Reset() {
 	*x = ReleaseListResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[21]
+		mi := &file_release_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1811,7 +1906,7 @@ func (x *ReleaseListResponse) String() string {
 func (*ReleaseListResponse) ProtoMessage() {}
 
 func (x *ReleaseListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[21]
+	mi := &file_release_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1824,7 +1919,7 @@ func (x *ReleaseListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseListResponse.ProtoReflect.Descriptor instead.
 func (*ReleaseListResponse) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{21}
+	return file_release_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *ReleaseListResponse) GetData() *ReleaseListResponseData {
@@ -1852,7 +1947,7 @@ type ListReleaseNameRequest struct {
 func (x *ListReleaseNameRequest) Reset() {
 	*x = ListReleaseNameRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[22]
+		mi := &file_release_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1865,7 +1960,7 @@ func (x *ListReleaseNameRequest) String() string {
 func (*ListReleaseNameRequest) ProtoMessage() {}
 
 func (x *ListReleaseNameRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[22]
+	mi := &file_release_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1878,7 +1973,7 @@ func (x *ListReleaseNameRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListReleaseNameRequest.ProtoReflect.Descriptor instead.
 func (*ListReleaseNameRequest) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{22}
+	return file_release_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ListReleaseNameRequest) GetApplicationId() string {
@@ -1899,7 +1994,7 @@ type ListReleaseNameResponse struct {
 func (x *ListReleaseNameResponse) Reset() {
 	*x = ListReleaseNameResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[23]
+		mi := &file_release_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1912,7 +2007,7 @@ func (x *ListReleaseNameResponse) String() string {
 func (*ListReleaseNameResponse) ProtoMessage() {}
 
 func (x *ListReleaseNameResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[23]
+	mi := &file_release_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1925,7 +2020,7 @@ func (x *ListReleaseNameResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListReleaseNameResponse.ProtoReflect.Descriptor instead.
 func (*ListReleaseNameResponse) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{23}
+	return file_release_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ListReleaseNameResponse) GetData() []string {
@@ -1949,7 +2044,7 @@ type ReleaseListResponseData struct {
 func (x *ReleaseListResponseData) Reset() {
 	*x = ReleaseListResponseData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[24]
+		mi := &file_release_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1962,7 +2057,7 @@ func (x *ReleaseListResponseData) String() string {
 func (*ReleaseListResponseData) ProtoMessage() {}
 
 func (x *ReleaseListResponseData) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[24]
+	mi := &file_release_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1975,7 +2070,7 @@ func (x *ReleaseListResponseData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseListResponseData.ProtoReflect.Descriptor instead.
 func (*ReleaseListResponseData) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{24}
+	return file_release_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ReleaseListResponseData) GetTotal() int64 {
@@ -2033,7 +2128,7 @@ type ReleaseData struct {
 func (x *ReleaseData) Reset() {
 	*x = ReleaseData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[25]
+		mi := &file_release_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2046,7 +2141,7 @@ func (x *ReleaseData) String() string {
 func (*ReleaseData) ProtoMessage() {}
 
 func (x *ReleaseData) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[25]
+	mi := &file_release_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2059,7 +2154,7 @@ func (x *ReleaseData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseData.ProtoReflect.Descriptor instead.
 func (*ReleaseData) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{25}
+	return file_release_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ReleaseData) GetReleaseID() string {
@@ -2263,7 +2358,7 @@ type ReleaseNameListRequest struct {
 func (x *ReleaseNameListRequest) Reset() {
 	*x = ReleaseNameListRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[26]
+		mi := &file_release_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2276,7 +2371,7 @@ func (x *ReleaseNameListRequest) String() string {
 func (*ReleaseNameListRequest) ProtoMessage() {}
 
 func (x *ReleaseNameListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[26]
+	mi := &file_release_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2289,7 +2384,7 @@ func (x *ReleaseNameListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseNameListRequest.ProtoReflect.Descriptor instead.
 func (*ReleaseNameListRequest) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{26}
+	return file_release_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ReleaseNameListRequest) GetApplicationID() int64 {
@@ -2311,7 +2406,7 @@ type ReleaseNameListResponse struct {
 func (x *ReleaseNameListResponse) Reset() {
 	*x = ReleaseNameListResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[27]
+		mi := &file_release_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2324,7 +2419,7 @@ func (x *ReleaseNameListResponse) String() string {
 func (*ReleaseNameListResponse) ProtoMessage() {}
 
 func (x *ReleaseNameListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[27]
+	mi := &file_release_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2337,7 +2432,7 @@ func (x *ReleaseNameListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseNameListResponse.ProtoReflect.Descriptor instead.
 func (*ReleaseNameListResponse) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{27}
+	return file_release_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *ReleaseNameListResponse) GetData() []string {
@@ -2359,7 +2454,7 @@ type GetLatestReleasesRequest struct {
 func (x *GetLatestReleasesRequest) Reset() {
 	*x = GetLatestReleasesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[28]
+		mi := &file_release_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2372,7 +2467,7 @@ func (x *GetLatestReleasesRequest) String() string {
 func (*GetLatestReleasesRequest) ProtoMessage() {}
 
 func (x *GetLatestReleasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[28]
+	mi := &file_release_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2385,7 +2480,7 @@ func (x *GetLatestReleasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLatestReleasesRequest.ProtoReflect.Descriptor instead.
 func (*GetLatestReleasesRequest) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{28}
+	return file_release_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *GetLatestReleasesRequest) GetProjectID() string {
@@ -2413,7 +2508,7 @@ type GetLatestReleasesResponse struct {
 func (x *GetLatestReleasesResponse) Reset() {
 	*x = GetLatestReleasesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[29]
+		mi := &file_release_proto_msgTypes[30]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2426,7 +2521,7 @@ func (x *GetLatestReleasesResponse) String() string {
 func (*GetLatestReleasesResponse) ProtoMessage() {}
 
 func (x *GetLatestReleasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[29]
+	mi := &file_release_proto_msgTypes[30]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2439,7 +2534,7 @@ func (x *GetLatestReleasesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLatestReleasesResponse.ProtoReflect.Descriptor instead.
 func (*GetLatestReleasesResponse) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{29}
+	return file_release_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *GetLatestReleasesResponse) GetData() []*GetLatestReleasesResponseData {
@@ -2498,7 +2593,7 @@ type GetLatestReleasesResponseData struct {
 func (x *GetLatestReleasesResponseData) Reset() {
 	*x = GetLatestReleasesResponseData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[30]
+		mi := &file_release_proto_msgTypes[31]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2511,7 +2606,7 @@ func (x *GetLatestReleasesResponseData) String() string {
 func (*GetLatestReleasesResponseData) ProtoMessage() {}
 
 func (x *GetLatestReleasesResponseData) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[30]
+	mi := &file_release_proto_msgTypes[31]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2524,7 +2619,7 @@ func (x *GetLatestReleasesResponseData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLatestReleasesResponseData.ProtoReflect.Descriptor instead.
 func (*GetLatestReleasesResponseData) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{30}
+	return file_release_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *GetLatestReleasesResponseData) GetReleaseID() string {
@@ -2669,7 +2764,7 @@ type ReleaseGCRequest struct {
 func (x *ReleaseGCRequest) Reset() {
 	*x = ReleaseGCRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[31]
+		mi := &file_release_proto_msgTypes[32]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2682,7 +2777,7 @@ func (x *ReleaseGCRequest) String() string {
 func (*ReleaseGCRequest) ProtoMessage() {}
 
 func (x *ReleaseGCRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[31]
+	mi := &file_release_proto_msgTypes[32]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2695,7 +2790,7 @@ func (x *ReleaseGCRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseGCRequest.ProtoReflect.Descriptor instead.
 func (*ReleaseGCRequest) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{31}
+	return file_release_proto_rawDescGZIP(), []int{32}
 }
 
 type ReleaseUploadRequest struct {
@@ -2714,7 +2809,7 @@ type ReleaseUploadRequest struct {
 func (x *ReleaseUploadRequest) Reset() {
 	*x = ReleaseUploadRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[32]
+		mi := &file_release_proto_msgTypes[33]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2727,7 +2822,7 @@ func (x *ReleaseUploadRequest) String() string {
 func (*ReleaseUploadRequest) ProtoMessage() {}
 
 func (x *ReleaseUploadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[32]
+	mi := &file_release_proto_msgTypes[33]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2740,7 +2835,7 @@ func (x *ReleaseUploadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseUploadRequest.ProtoReflect.Descriptor instead.
 func (*ReleaseUploadRequest) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{32}
+	return file_release_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ReleaseUploadRequest) GetDiceFileID() string {
@@ -2796,7 +2891,7 @@ type ReleaseUploadResponse struct {
 func (x *ReleaseUploadResponse) Reset() {
 	*x = ReleaseUploadResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[33]
+		mi := &file_release_proto_msgTypes[34]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2809,7 +2904,7 @@ func (x *ReleaseUploadResponse) String() string {
 func (*ReleaseUploadResponse) ProtoMessage() {}
 
 func (x *ReleaseUploadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[33]
+	mi := &file_release_proto_msgTypes[34]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2822,7 +2917,7 @@ func (x *ReleaseUploadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseUploadResponse.ProtoReflect.Descriptor instead.
 func (*ReleaseUploadResponse) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{33}
+	return file_release_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *ReleaseUploadResponse) GetData() *ReleaseCreateResponseData {
@@ -2843,7 +2938,7 @@ type ParseReleaseFileRequest struct {
 func (x *ParseReleaseFileRequest) Reset() {
 	*x = ParseReleaseFileRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[34]
+		mi := &file_release_proto_msgTypes[35]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2856,7 +2951,7 @@ func (x *ParseReleaseFileRequest) String() string {
 func (*ParseReleaseFileRequest) ProtoMessage() {}
 
 func (x *ParseReleaseFileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[34]
+	mi := &file_release_proto_msgTypes[35]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2869,7 +2964,7 @@ func (x *ParseReleaseFileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ParseReleaseFileRequest.ProtoReflect.Descriptor instead.
 func (*ParseReleaseFileRequest) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{34}
+	return file_release_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ParseReleaseFileRequest) GetDiceFileID() string {
@@ -2890,7 +2985,7 @@ type ParseReleaseFileResponse struct {
 func (x *ParseReleaseFileResponse) Reset() {
 	*x = ParseReleaseFileResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[35]
+		mi := &file_release_proto_msgTypes[36]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2903,7 +2998,7 @@ func (x *ParseReleaseFileResponse) String() string {
 func (*ParseReleaseFileResponse) ProtoMessage() {}
 
 func (x *ParseReleaseFileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[35]
+	mi := &file_release_proto_msgTypes[36]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2916,7 +3011,7 @@ func (x *ParseReleaseFileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ParseReleaseFileResponse.ProtoReflect.Descriptor instead.
 func (*ParseReleaseFileResponse) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{35}
+	return file_release_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *ParseReleaseFileResponse) GetData() *ParseReleaseFileResponseData {
@@ -2937,7 +3032,7 @@ type ParseReleaseFileResponseData struct {
 func (x *ParseReleaseFileResponseData) Reset() {
 	*x = ParseReleaseFileResponseData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[36]
+		mi := &file_release_proto_msgTypes[37]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2950,7 +3045,7 @@ func (x *ParseReleaseFileResponseData) String() string {
 func (*ParseReleaseFileResponseData) ProtoMessage() {}
 
 func (x *ParseReleaseFileResponseData) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[36]
+	mi := &file_release_proto_msgTypes[37]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2963,7 +3058,7 @@ func (x *ParseReleaseFileResponseData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ParseReleaseFileResponseData.ProtoReflect.Descriptor instead.
 func (*ParseReleaseFileResponseData) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{36}
+	return file_release_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *ParseReleaseFileResponseData) GetVersion() string {
@@ -2984,7 +3079,7 @@ type FormalReleaseRequest struct {
 func (x *FormalReleaseRequest) Reset() {
 	*x = FormalReleaseRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[37]
+		mi := &file_release_proto_msgTypes[38]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2997,7 +3092,7 @@ func (x *FormalReleaseRequest) String() string {
 func (*FormalReleaseRequest) ProtoMessage() {}
 
 func (x *FormalReleaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[37]
+	mi := &file_release_proto_msgTypes[38]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3010,7 +3105,7 @@ func (x *FormalReleaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FormalReleaseRequest.ProtoReflect.Descriptor instead.
 func (*FormalReleaseRequest) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{37}
+	return file_release_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *FormalReleaseRequest) GetReleaseId() string {
@@ -3031,7 +3126,7 @@ type FormalReleaseResponse struct {
 func (x *FormalReleaseResponse) Reset() {
 	*x = FormalReleaseResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[38]
+		mi := &file_release_proto_msgTypes[39]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3044,7 +3139,7 @@ func (x *FormalReleaseResponse) String() string {
 func (*FormalReleaseResponse) ProtoMessage() {}
 
 func (x *FormalReleaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[38]
+	mi := &file_release_proto_msgTypes[39]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3057,7 +3152,7 @@ func (x *FormalReleaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FormalReleaseResponse.ProtoReflect.Descriptor instead.
 func (*FormalReleaseResponse) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{38}
+	return file_release_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *FormalReleaseResponse) GetData() string {
@@ -3080,7 +3175,7 @@ type FormalReleasesRequest struct {
 func (x *FormalReleasesRequest) Reset() {
 	*x = FormalReleasesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[39]
+		mi := &file_release_proto_msgTypes[40]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3093,7 +3188,7 @@ func (x *FormalReleasesRequest) String() string {
 func (*FormalReleasesRequest) ProtoMessage() {}
 
 func (x *FormalReleasesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[39]
+	mi := &file_release_proto_msgTypes[40]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3106,7 +3201,7 @@ func (x *FormalReleasesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FormalReleasesRequest.ProtoReflect.Descriptor instead.
 func (*FormalReleasesRequest) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{39}
+	return file_release_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *FormalReleasesRequest) GetIsProjectRelease() bool {
@@ -3141,7 +3236,7 @@ type FormalReleasesResponse struct {
 func (x *FormalReleasesResponse) Reset() {
 	*x = FormalReleasesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[40]
+		mi := &file_release_proto_msgTypes[41]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3154,7 +3249,7 @@ func (x *FormalReleasesResponse) String() string {
 func (*FormalReleasesResponse) ProtoMessage() {}
 
 func (x *FormalReleasesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[40]
+	mi := &file_release_proto_msgTypes[41]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3167,7 +3262,7 @@ func (x *FormalReleasesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FormalReleasesResponse.ProtoReflect.Descriptor instead.
 func (*FormalReleasesResponse) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{40}
+	return file_release_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *FormalReleasesResponse) GetData() string {
@@ -3190,7 +3285,7 @@ type ReleasesDeleteRequest struct {
 func (x *ReleasesDeleteRequest) Reset() {
 	*x = ReleasesDeleteRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[41]
+		mi := &file_release_proto_msgTypes[42]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3203,7 +3298,7 @@ func (x *ReleasesDeleteRequest) String() string {
 func (*ReleasesDeleteRequest) ProtoMessage() {}
 
 func (x *ReleasesDeleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[41]
+	mi := &file_release_proto_msgTypes[42]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3216,7 +3311,7 @@ func (x *ReleasesDeleteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleasesDeleteRequest.ProtoReflect.Descriptor instead.
 func (*ReleasesDeleteRequest) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{41}
+	return file_release_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *ReleasesDeleteRequest) GetIsProjectRelease() bool {
@@ -3251,7 +3346,7 @@ type ReleasesDeleteResponse struct {
 func (x *ReleasesDeleteResponse) Reset() {
 	*x = ReleasesDeleteResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[42]
+		mi := &file_release_proto_msgTypes[43]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3264,7 +3359,7 @@ func (x *ReleasesDeleteResponse) String() string {
 func (*ReleasesDeleteResponse) ProtoMessage() {}
 
 func (x *ReleasesDeleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[42]
+	mi := &file_release_proto_msgTypes[43]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3277,7 +3372,7 @@ func (x *ReleasesDeleteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleasesDeleteResponse.ProtoReflect.Descriptor instead.
 func (*ReleasesDeleteResponse) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{42}
+	return file_release_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *ReleasesDeleteResponse) GetData() string {
@@ -3302,7 +3397,7 @@ type CheckVersionRequest struct {
 func (x *CheckVersionRequest) Reset() {
 	*x = CheckVersionRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[43]
+		mi := &file_release_proto_msgTypes[44]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3315,7 +3410,7 @@ func (x *CheckVersionRequest) String() string {
 func (*CheckVersionRequest) ProtoMessage() {}
 
 func (x *CheckVersionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[43]
+	mi := &file_release_proto_msgTypes[44]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3328,7 +3423,7 @@ func (x *CheckVersionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckVersionRequest.ProtoReflect.Descriptor instead.
 func (*CheckVersionRequest) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{43}
+	return file_release_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *CheckVersionRequest) GetIsProjectRelease() bool {
@@ -3377,7 +3472,7 @@ type CheckVersionResponse struct {
 func (x *CheckVersionResponse) Reset() {
 	*x = CheckVersionResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[44]
+		mi := &file_release_proto_msgTypes[45]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3390,7 +3485,7 @@ func (x *CheckVersionResponse) String() string {
 func (*CheckVersionResponse) ProtoMessage() {}
 
 func (x *CheckVersionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[44]
+	mi := &file_release_proto_msgTypes[45]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3403,7 +3498,7 @@ func (x *CheckVersionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckVersionResponse.ProtoReflect.Descriptor instead.
 func (*CheckVersionResponse) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{44}
+	return file_release_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *CheckVersionResponse) GetData() *CheckVersionResponseData {
@@ -3424,7 +3519,7 @@ type CheckVersionResponseData struct {
 func (x *CheckVersionResponseData) Reset() {
 	*x = CheckVersionResponseData{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_release_proto_msgTypes[45]
+		mi := &file_release_proto_msgTypes[46]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3437,7 +3532,7 @@ func (x *CheckVersionResponseData) String() string {
 func (*CheckVersionResponseData) ProtoMessage() {}
 
 func (x *CheckVersionResponseData) ProtoReflect() protoreflect.Message {
-	mi := &file_release_proto_msgTypes[45]
+	mi := &file_release_proto_msgTypes[46]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3450,7 +3545,7 @@ func (x *CheckVersionResponseData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckVersionResponseData.ProtoReflect.Descriptor instead.
 func (*CheckVersionResponseData) Descriptor() ([]byte, []int) {
-	return file_release_proto_rawDescGZIP(), []int{45}
+	return file_release_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *CheckVersionResponseData) GetIsUnique() bool {
@@ -3619,8 +3714,8 @@ var file_release_proto_rawDesc = []byte{
 	0x28, 0x0b, 0x32, 0x34, 0x2e, 0x65, 0x72, 0x64, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x64,
 	0x69, 0x63, 0x65, 0x68, 0x75, 0x62, 0x2e, 0x72, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x2e, 0x41,
 	0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x6c, 0x65, 0x61, 0x73,
-	0x65, 0x53, 0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x52, 0x04, 0x6c, 0x69, 0x73, 0x74, 0x22, 0xad,
-	0x09, 0x0a, 0x16, 0x52, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x47, 0x65, 0x74, 0x52, 0x65, 0x73,
+	0x65, 0x53, 0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x52, 0x04, 0x6c, 0x69, 0x73, 0x74, 0x22, 0x89,
+	0x0a, 0x0a, 0x16, 0x52, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x47, 0x65, 0x74, 0x52, 0x65, 0x73,
 	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x44, 0x61, 0x74, 0x61, 0x12, 0x1c, 0x0a, 0x09, 0x72, 0x65, 0x6c,
 	0x65, 0x61, 0x73, 0x65, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x72, 0x65,
 	0x6c, 0x65, 0x61, 0x73, 0x65, 0x49, 0x64, 0x12, 0x20, 0x0a, 0x0b, 0x72, 0x65, 0x6c, 0x65, 0x61,
@@ -3691,10 +3786,25 @@ var file_release_proto_rawDesc = []byte{
 	0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x09, 0x75, 0x70,
 	0x64, 0x61, 0x74, 0x65, 0x64, 0x41, 0x74, 0x12, 0x1a, 0x0a, 0x08, 0x69, 0x73, 0x4c, 0x61, 0x74,
 	0x65, 0x73, 0x74, 0x18, 0x1c, 0x20, 0x01, 0x28, 0x08, 0x52, 0x08, 0x69, 0x73, 0x4c, 0x61, 0x74,
-	0x65, 0x73, 0x74, 0x1a, 0x39, 0x0a, 0x0b, 0x4c, 0x61, 0x62, 0x65, 0x6c, 0x73, 0x45, 0x6e, 0x74,
-	0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x43,
+	0x65, 0x73, 0x74, 0x12, 0x3c, 0x0a, 0x06, 0x61, 0x64, 0x64, 0x6f, 0x6e, 0x73, 0x18, 0x1d, 0x20,
+	0x03, 0x28, 0x0b, 0x32, 0x24, 0x2e, 0x65, 0x72, 0x64, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e,
+	0x64, 0x69, 0x63, 0x65, 0x68, 0x75, 0x62, 0x2e, 0x72, 0x65, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x2e,
+	0x41, 0x64, 0x64, 0x6f, 0x6e, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x06, 0x61, 0x64, 0x64, 0x6f, 0x6e,
+	0x73, 0x12, 0x1c, 0x0a, 0x09, 0x61, 0x64, 0x64, 0x6f, 0x6e, 0x59, 0x61, 0x6d, 0x6c, 0x18, 0x1e,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x61, 0x64, 0x64, 0x6f, 0x6e, 0x59, 0x61, 0x6d, 0x6c, 0x1a,
+	0x39, 0x0a, 0x0b, 0x4c, 0x61, 0x62, 0x65, 0x6c, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10,
+	0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79,
+	0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x91, 0x01, 0x0a, 0x09, 0x41,
+	0x64, 0x64, 0x6f, 0x6e, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x69, 0x73, 0x70,
+	0x6c, 0x61, 0x79, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64,
+	0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x6c,
+	0x61, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x70, 0x6c, 0x61, 0x6e, 0x12, 0x18,
+	0x0a, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x1a, 0x0a, 0x08, 0x63, 0x61, 0x74, 0x65,
+	0x67, 0x6f, 0x72, 0x79, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x63, 0x61, 0x74, 0x65,
+	0x67, 0x6f, 0x72, 0x79, 0x12, 0x18, 0x0a, 0x07, 0x6c, 0x6f, 0x67, 0x6f, 0x55, 0x52, 0x4c, 0x18,
+	0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6c, 0x6f, 0x67, 0x6f, 0x55, 0x52, 0x4c, 0x22, 0x43,
 	0x0a, 0x10, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x49, 0x6d, 0x61, 0x67, 0x65, 0x50, 0x61,
 	0x69, 0x72, 0x12, 0x19, 0x0a, 0x0b, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x4e, 0x61, 0x6d,
 	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x14, 0x0a,
@@ -4244,7 +4354,7 @@ func file_release_proto_rawDescGZIP() []byte {
 	return file_release_proto_rawDescData
 }
 
-var file_release_proto_msgTypes = make([]protoimpl.MessageInfo, 50)
+var file_release_proto_msgTypes = make([]protoimpl.MessageInfo, 51)
 var file_release_proto_goTypes = []interface{}{
 	(*ReleaseList)(nil),                   // 0: erda.core.dicehub.release.ReleaseList
 	(*ReleaseCreateRequest)(nil),          // 1: erda.core.dicehub.release.ReleaseCreateRequest
@@ -4264,107 +4374,109 @@ var file_release_proto_goTypes = []interface{}{
 	(*ReleaseGetResponse)(nil),            // 15: erda.core.dicehub.release.ReleaseGetResponse
 	(*ReleaseSummaryArray)(nil),           // 16: erda.core.dicehub.release.ReleaseSummaryArray
 	(*ReleaseGetResponseData)(nil),        // 17: erda.core.dicehub.release.ReleaseGetResponseData
-	(*ServiceImagePair)(nil),              // 18: erda.core.dicehub.release.ServiceImagePair
-	(*ApplicationReleaseSummary)(nil),     // 19: erda.core.dicehub.release.ApplicationReleaseSummary
-	(*ReleaseListRequest)(nil),            // 20: erda.core.dicehub.release.ReleaseListRequest
-	(*ReleaseListResponse)(nil),           // 21: erda.core.dicehub.release.ReleaseListResponse
-	(*ListReleaseNameRequest)(nil),        // 22: erda.core.dicehub.release.ListReleaseNameRequest
-	(*ListReleaseNameResponse)(nil),       // 23: erda.core.dicehub.release.ListReleaseNameResponse
-	(*ReleaseListResponseData)(nil),       // 24: erda.core.dicehub.release.ReleaseListResponseData
-	(*ReleaseData)(nil),                   // 25: erda.core.dicehub.release.ReleaseData
-	(*ReleaseNameListRequest)(nil),        // 26: erda.core.dicehub.release.ReleaseNameListRequest
-	(*ReleaseNameListResponse)(nil),       // 27: erda.core.dicehub.release.ReleaseNameListResponse
-	(*GetLatestReleasesRequest)(nil),      // 28: erda.core.dicehub.release.GetLatestReleasesRequest
-	(*GetLatestReleasesResponse)(nil),     // 29: erda.core.dicehub.release.GetLatestReleasesResponse
-	(*GetLatestReleasesResponseData)(nil), // 30: erda.core.dicehub.release.GetLatestReleasesResponseData
-	(*ReleaseGCRequest)(nil),              // 31: erda.core.dicehub.release.ReleaseGCRequest
-	(*ReleaseUploadRequest)(nil),          // 32: erda.core.dicehub.release.ReleaseUploadRequest
-	(*ReleaseUploadResponse)(nil),         // 33: erda.core.dicehub.release.ReleaseUploadResponse
-	(*ParseReleaseFileRequest)(nil),       // 34: erda.core.dicehub.release.ParseReleaseFileRequest
-	(*ParseReleaseFileResponse)(nil),      // 35: erda.core.dicehub.release.ParseReleaseFileResponse
-	(*ParseReleaseFileResponseData)(nil),  // 36: erda.core.dicehub.release.ParseReleaseFileResponseData
-	(*FormalReleaseRequest)(nil),          // 37: erda.core.dicehub.release.FormalReleaseRequest
-	(*FormalReleaseResponse)(nil),         // 38: erda.core.dicehub.release.FormalReleaseResponse
-	(*FormalReleasesRequest)(nil),         // 39: erda.core.dicehub.release.FormalReleasesRequest
-	(*FormalReleasesResponse)(nil),        // 40: erda.core.dicehub.release.FormalReleasesResponse
-	(*ReleasesDeleteRequest)(nil),         // 41: erda.core.dicehub.release.ReleasesDeleteRequest
-	(*ReleasesDeleteResponse)(nil),        // 42: erda.core.dicehub.release.ReleasesDeleteResponse
-	(*CheckVersionRequest)(nil),           // 43: erda.core.dicehub.release.CheckVersionRequest
-	(*CheckVersionResponse)(nil),          // 44: erda.core.dicehub.release.CheckVersionResponse
-	(*CheckVersionResponseData)(nil),      // 45: erda.core.dicehub.release.CheckVersionResponseData
-	nil,                                   // 46: erda.core.dicehub.release.ReleaseCreateRequest.LabelsEntry
-	nil,                                   // 47: erda.core.dicehub.release.ReleaseResource.MetaEntry
-	nil,                                   // 48: erda.core.dicehub.release.ReleaseGetResponseData.LabelsEntry
-	nil,                                   // 49: erda.core.dicehub.release.ReleaseData.LabelsEntry
-	(*timestamppb.Timestamp)(nil),         // 50: google.protobuf.Timestamp
-	(*structpb.Value)(nil),                // 51: google.protobuf.Value
+	(*AddonInfo)(nil),                     // 18: erda.core.dicehub.release.AddonInfo
+	(*ServiceImagePair)(nil),              // 19: erda.core.dicehub.release.ServiceImagePair
+	(*ApplicationReleaseSummary)(nil),     // 20: erda.core.dicehub.release.ApplicationReleaseSummary
+	(*ReleaseListRequest)(nil),            // 21: erda.core.dicehub.release.ReleaseListRequest
+	(*ReleaseListResponse)(nil),           // 22: erda.core.dicehub.release.ReleaseListResponse
+	(*ListReleaseNameRequest)(nil),        // 23: erda.core.dicehub.release.ListReleaseNameRequest
+	(*ListReleaseNameResponse)(nil),       // 24: erda.core.dicehub.release.ListReleaseNameResponse
+	(*ReleaseListResponseData)(nil),       // 25: erda.core.dicehub.release.ReleaseListResponseData
+	(*ReleaseData)(nil),                   // 26: erda.core.dicehub.release.ReleaseData
+	(*ReleaseNameListRequest)(nil),        // 27: erda.core.dicehub.release.ReleaseNameListRequest
+	(*ReleaseNameListResponse)(nil),       // 28: erda.core.dicehub.release.ReleaseNameListResponse
+	(*GetLatestReleasesRequest)(nil),      // 29: erda.core.dicehub.release.GetLatestReleasesRequest
+	(*GetLatestReleasesResponse)(nil),     // 30: erda.core.dicehub.release.GetLatestReleasesResponse
+	(*GetLatestReleasesResponseData)(nil), // 31: erda.core.dicehub.release.GetLatestReleasesResponseData
+	(*ReleaseGCRequest)(nil),              // 32: erda.core.dicehub.release.ReleaseGCRequest
+	(*ReleaseUploadRequest)(nil),          // 33: erda.core.dicehub.release.ReleaseUploadRequest
+	(*ReleaseUploadResponse)(nil),         // 34: erda.core.dicehub.release.ReleaseUploadResponse
+	(*ParseReleaseFileRequest)(nil),       // 35: erda.core.dicehub.release.ParseReleaseFileRequest
+	(*ParseReleaseFileResponse)(nil),      // 36: erda.core.dicehub.release.ParseReleaseFileResponse
+	(*ParseReleaseFileResponseData)(nil),  // 37: erda.core.dicehub.release.ParseReleaseFileResponseData
+	(*FormalReleaseRequest)(nil),          // 38: erda.core.dicehub.release.FormalReleaseRequest
+	(*FormalReleaseResponse)(nil),         // 39: erda.core.dicehub.release.FormalReleaseResponse
+	(*FormalReleasesRequest)(nil),         // 40: erda.core.dicehub.release.FormalReleasesRequest
+	(*FormalReleasesResponse)(nil),        // 41: erda.core.dicehub.release.FormalReleasesResponse
+	(*ReleasesDeleteRequest)(nil),         // 42: erda.core.dicehub.release.ReleasesDeleteRequest
+	(*ReleasesDeleteResponse)(nil),        // 43: erda.core.dicehub.release.ReleasesDeleteResponse
+	(*CheckVersionRequest)(nil),           // 44: erda.core.dicehub.release.CheckVersionRequest
+	(*CheckVersionResponse)(nil),          // 45: erda.core.dicehub.release.CheckVersionResponse
+	(*CheckVersionResponseData)(nil),      // 46: erda.core.dicehub.release.CheckVersionResponseData
+	nil,                                   // 47: erda.core.dicehub.release.ReleaseCreateRequest.LabelsEntry
+	nil,                                   // 48: erda.core.dicehub.release.ReleaseResource.MetaEntry
+	nil,                                   // 49: erda.core.dicehub.release.ReleaseGetResponseData.LabelsEntry
+	nil,                                   // 50: erda.core.dicehub.release.ReleaseData.LabelsEntry
+	(*timestamppb.Timestamp)(nil),         // 51: google.protobuf.Timestamp
+	(*structpb.Value)(nil),                // 52: google.protobuf.Value
 }
 var file_release_proto_depIdxs = []int32{
 	0,  // 0: erda.core.dicehub.release.ReleaseCreateRequest.applicationReleaseList:type_name -> erda.core.dicehub.release.ReleaseList
-	46, // 1: erda.core.dicehub.release.ReleaseCreateRequest.labels:type_name -> erda.core.dicehub.release.ReleaseCreateRequest.LabelsEntry
+	47, // 1: erda.core.dicehub.release.ReleaseCreateRequest.labels:type_name -> erda.core.dicehub.release.ReleaseCreateRequest.LabelsEntry
 	2,  // 2: erda.core.dicehub.release.ReleaseCreateRequest.resources:type_name -> erda.core.dicehub.release.ReleaseResource
-	47, // 3: erda.core.dicehub.release.ReleaseResource.meta:type_name -> erda.core.dicehub.release.ReleaseResource.MetaEntry
+	48, // 3: erda.core.dicehub.release.ReleaseResource.meta:type_name -> erda.core.dicehub.release.ReleaseResource.MetaEntry
 	4,  // 4: erda.core.dicehub.release.ReleaseCreateResponse.data:type_name -> erda.core.dicehub.release.ReleaseCreateResponseData
 	0,  // 5: erda.core.dicehub.release.ReleaseUpdateRequest.applicationReleaseList:type_name -> erda.core.dicehub.release.ReleaseList
 	17, // 6: erda.core.dicehub.release.ReleaseGetResponse.data:type_name -> erda.core.dicehub.release.ReleaseGetResponseData
-	19, // 7: erda.core.dicehub.release.ReleaseSummaryArray.list:type_name -> erda.core.dicehub.release.ApplicationReleaseSummary
+	20, // 7: erda.core.dicehub.release.ReleaseSummaryArray.list:type_name -> erda.core.dicehub.release.ApplicationReleaseSummary
 	16, // 8: erda.core.dicehub.release.ReleaseGetResponseData.applicationReleaseList:type_name -> erda.core.dicehub.release.ReleaseSummaryArray
 	2,  // 9: erda.core.dicehub.release.ReleaseGetResponseData.resources:type_name -> erda.core.dicehub.release.ReleaseResource
-	18, // 10: erda.core.dicehub.release.ReleaseGetResponseData.serviceImages:type_name -> erda.core.dicehub.release.ServiceImagePair
-	48, // 11: erda.core.dicehub.release.ReleaseGetResponseData.labels:type_name -> erda.core.dicehub.release.ReleaseGetResponseData.LabelsEntry
-	50, // 12: erda.core.dicehub.release.ReleaseGetResponseData.createdAt:type_name -> google.protobuf.Timestamp
-	50, // 13: erda.core.dicehub.release.ReleaseGetResponseData.updatedAt:type_name -> google.protobuf.Timestamp
-	18, // 14: erda.core.dicehub.release.ApplicationReleaseSummary.services:type_name -> erda.core.dicehub.release.ServiceImagePair
-	24, // 15: erda.core.dicehub.release.ReleaseListResponse.data:type_name -> erda.core.dicehub.release.ReleaseListResponseData
-	25, // 16: erda.core.dicehub.release.ReleaseListResponseData.list:type_name -> erda.core.dicehub.release.ReleaseData
-	2,  // 17: erda.core.dicehub.release.ReleaseData.resources:type_name -> erda.core.dicehub.release.ReleaseResource
-	49, // 18: erda.core.dicehub.release.ReleaseData.labels:type_name -> erda.core.dicehub.release.ReleaseData.LabelsEntry
-	50, // 19: erda.core.dicehub.release.ReleaseData.createdAt:type_name -> google.protobuf.Timestamp
-	50, // 20: erda.core.dicehub.release.ReleaseData.updatedAt:type_name -> google.protobuf.Timestamp
-	30, // 21: erda.core.dicehub.release.GetLatestReleasesResponse.data:type_name -> erda.core.dicehub.release.GetLatestReleasesResponseData
-	50, // 22: erda.core.dicehub.release.GetLatestReleasesResponseData.createdAt:type_name -> google.protobuf.Timestamp
-	50, // 23: erda.core.dicehub.release.GetLatestReleasesResponseData.updatedAt:type_name -> google.protobuf.Timestamp
-	4,  // 24: erda.core.dicehub.release.ReleaseUploadResponse.data:type_name -> erda.core.dicehub.release.ReleaseCreateResponseData
-	36, // 25: erda.core.dicehub.release.ParseReleaseFileResponse.data:type_name -> erda.core.dicehub.release.ParseReleaseFileResponseData
-	45, // 26: erda.core.dicehub.release.CheckVersionResponse.data:type_name -> erda.core.dicehub.release.CheckVersionResponseData
-	51, // 27: erda.core.dicehub.release.ReleaseResource.MetaEntry.value:type_name -> google.protobuf.Value
-	1,  // 28: erda.core.dicehub.release.ReleaseService.CreateRelease:input_type -> erda.core.dicehub.release.ReleaseCreateRequest
-	5,  // 29: erda.core.dicehub.release.ReleaseService.UpdateRelease:input_type -> erda.core.dicehub.release.ReleaseUpdateRequest
-	9,  // 30: erda.core.dicehub.release.ReleaseService.UpdateReleaseReference:input_type -> erda.core.dicehub.release.ReleaseReferenceUpdateRequest
-	10, // 31: erda.core.dicehub.release.ReleaseService.GetIosPlist:input_type -> erda.core.dicehub.release.GetIosPlistRequest
-	14, // 32: erda.core.dicehub.release.ReleaseService.GetRelease:input_type -> erda.core.dicehub.release.ReleaseGetRequest
-	12, // 33: erda.core.dicehub.release.ReleaseService.DeleteRelease:input_type -> erda.core.dicehub.release.ReleaseDeleteRequest
-	20, // 34: erda.core.dicehub.release.ReleaseService.ListRelease:input_type -> erda.core.dicehub.release.ReleaseListRequest
-	22, // 35: erda.core.dicehub.release.ReleaseService.ListReleaseName:input_type -> erda.core.dicehub.release.ListReleaseNameRequest
-	28, // 36: erda.core.dicehub.release.ReleaseService.GetLatestReleases:input_type -> erda.core.dicehub.release.GetLatestReleasesRequest
-	31, // 37: erda.core.dicehub.release.ReleaseService.ReleaseGC:input_type -> erda.core.dicehub.release.ReleaseGCRequest
-	32, // 38: erda.core.dicehub.release.ReleaseService.UploadRelease:input_type -> erda.core.dicehub.release.ReleaseUploadRequest
-	34, // 39: erda.core.dicehub.release.ReleaseService.ParseReleaseFile:input_type -> erda.core.dicehub.release.ParseReleaseFileRequest
-	37, // 40: erda.core.dicehub.release.ReleaseService.ToFormalRelease:input_type -> erda.core.dicehub.release.FormalReleaseRequest
-	39, // 41: erda.core.dicehub.release.ReleaseService.ToFormalReleases:input_type -> erda.core.dicehub.release.FormalReleasesRequest
-	41, // 42: erda.core.dicehub.release.ReleaseService.DeleteReleases:input_type -> erda.core.dicehub.release.ReleasesDeleteRequest
-	43, // 43: erda.core.dicehub.release.ReleaseService.CheckVersion:input_type -> erda.core.dicehub.release.CheckVersionRequest
-	4,  // 44: erda.core.dicehub.release.ReleaseService.CreateRelease:output_type -> erda.core.dicehub.release.ReleaseCreateResponseData
-	8,  // 45: erda.core.dicehub.release.ReleaseService.UpdateRelease:output_type -> erda.core.dicehub.release.ReleaseUpdateResponse
-	6,  // 46: erda.core.dicehub.release.ReleaseService.UpdateReleaseReference:output_type -> erda.core.dicehub.release.ReleaseDataResponse
-	11, // 47: erda.core.dicehub.release.ReleaseService.GetIosPlist:output_type -> erda.core.dicehub.release.GetIosPlistResponse
-	15, // 48: erda.core.dicehub.release.ReleaseService.GetRelease:output_type -> erda.core.dicehub.release.ReleaseGetResponse
-	13, // 49: erda.core.dicehub.release.ReleaseService.DeleteRelease:output_type -> erda.core.dicehub.release.ReleaseDeleteResponse
-	21, // 50: erda.core.dicehub.release.ReleaseService.ListRelease:output_type -> erda.core.dicehub.release.ReleaseListResponse
-	23, // 51: erda.core.dicehub.release.ReleaseService.ListReleaseName:output_type -> erda.core.dicehub.release.ListReleaseNameResponse
-	29, // 52: erda.core.dicehub.release.ReleaseService.GetLatestReleases:output_type -> erda.core.dicehub.release.GetLatestReleasesResponse
-	6,  // 53: erda.core.dicehub.release.ReleaseService.ReleaseGC:output_type -> erda.core.dicehub.release.ReleaseDataResponse
-	33, // 54: erda.core.dicehub.release.ReleaseService.UploadRelease:output_type -> erda.core.dicehub.release.ReleaseUploadResponse
-	35, // 55: erda.core.dicehub.release.ReleaseService.ParseReleaseFile:output_type -> erda.core.dicehub.release.ParseReleaseFileResponse
-	38, // 56: erda.core.dicehub.release.ReleaseService.ToFormalRelease:output_type -> erda.core.dicehub.release.FormalReleaseResponse
-	40, // 57: erda.core.dicehub.release.ReleaseService.ToFormalReleases:output_type -> erda.core.dicehub.release.FormalReleasesResponse
-	42, // 58: erda.core.dicehub.release.ReleaseService.DeleteReleases:output_type -> erda.core.dicehub.release.ReleasesDeleteResponse
-	44, // 59: erda.core.dicehub.release.ReleaseService.CheckVersion:output_type -> erda.core.dicehub.release.CheckVersionResponse
-	44, // [44:60] is the sub-list for method output_type
-	28, // [28:44] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	19, // 10: erda.core.dicehub.release.ReleaseGetResponseData.serviceImages:type_name -> erda.core.dicehub.release.ServiceImagePair
+	49, // 11: erda.core.dicehub.release.ReleaseGetResponseData.labels:type_name -> erda.core.dicehub.release.ReleaseGetResponseData.LabelsEntry
+	51, // 12: erda.core.dicehub.release.ReleaseGetResponseData.createdAt:type_name -> google.protobuf.Timestamp
+	51, // 13: erda.core.dicehub.release.ReleaseGetResponseData.updatedAt:type_name -> google.protobuf.Timestamp
+	18, // 14: erda.core.dicehub.release.ReleaseGetResponseData.addons:type_name -> erda.core.dicehub.release.AddonInfo
+	19, // 15: erda.core.dicehub.release.ApplicationReleaseSummary.services:type_name -> erda.core.dicehub.release.ServiceImagePair
+	25, // 16: erda.core.dicehub.release.ReleaseListResponse.data:type_name -> erda.core.dicehub.release.ReleaseListResponseData
+	26, // 17: erda.core.dicehub.release.ReleaseListResponseData.list:type_name -> erda.core.dicehub.release.ReleaseData
+	2,  // 18: erda.core.dicehub.release.ReleaseData.resources:type_name -> erda.core.dicehub.release.ReleaseResource
+	50, // 19: erda.core.dicehub.release.ReleaseData.labels:type_name -> erda.core.dicehub.release.ReleaseData.LabelsEntry
+	51, // 20: erda.core.dicehub.release.ReleaseData.createdAt:type_name -> google.protobuf.Timestamp
+	51, // 21: erda.core.dicehub.release.ReleaseData.updatedAt:type_name -> google.protobuf.Timestamp
+	31, // 22: erda.core.dicehub.release.GetLatestReleasesResponse.data:type_name -> erda.core.dicehub.release.GetLatestReleasesResponseData
+	51, // 23: erda.core.dicehub.release.GetLatestReleasesResponseData.createdAt:type_name -> google.protobuf.Timestamp
+	51, // 24: erda.core.dicehub.release.GetLatestReleasesResponseData.updatedAt:type_name -> google.protobuf.Timestamp
+	4,  // 25: erda.core.dicehub.release.ReleaseUploadResponse.data:type_name -> erda.core.dicehub.release.ReleaseCreateResponseData
+	37, // 26: erda.core.dicehub.release.ParseReleaseFileResponse.data:type_name -> erda.core.dicehub.release.ParseReleaseFileResponseData
+	46, // 27: erda.core.dicehub.release.CheckVersionResponse.data:type_name -> erda.core.dicehub.release.CheckVersionResponseData
+	52, // 28: erda.core.dicehub.release.ReleaseResource.MetaEntry.value:type_name -> google.protobuf.Value
+	1,  // 29: erda.core.dicehub.release.ReleaseService.CreateRelease:input_type -> erda.core.dicehub.release.ReleaseCreateRequest
+	5,  // 30: erda.core.dicehub.release.ReleaseService.UpdateRelease:input_type -> erda.core.dicehub.release.ReleaseUpdateRequest
+	9,  // 31: erda.core.dicehub.release.ReleaseService.UpdateReleaseReference:input_type -> erda.core.dicehub.release.ReleaseReferenceUpdateRequest
+	10, // 32: erda.core.dicehub.release.ReleaseService.GetIosPlist:input_type -> erda.core.dicehub.release.GetIosPlistRequest
+	14, // 33: erda.core.dicehub.release.ReleaseService.GetRelease:input_type -> erda.core.dicehub.release.ReleaseGetRequest
+	12, // 34: erda.core.dicehub.release.ReleaseService.DeleteRelease:input_type -> erda.core.dicehub.release.ReleaseDeleteRequest
+	21, // 35: erda.core.dicehub.release.ReleaseService.ListRelease:input_type -> erda.core.dicehub.release.ReleaseListRequest
+	23, // 36: erda.core.dicehub.release.ReleaseService.ListReleaseName:input_type -> erda.core.dicehub.release.ListReleaseNameRequest
+	29, // 37: erda.core.dicehub.release.ReleaseService.GetLatestReleases:input_type -> erda.core.dicehub.release.GetLatestReleasesRequest
+	32, // 38: erda.core.dicehub.release.ReleaseService.ReleaseGC:input_type -> erda.core.dicehub.release.ReleaseGCRequest
+	33, // 39: erda.core.dicehub.release.ReleaseService.UploadRelease:input_type -> erda.core.dicehub.release.ReleaseUploadRequest
+	35, // 40: erda.core.dicehub.release.ReleaseService.ParseReleaseFile:input_type -> erda.core.dicehub.release.ParseReleaseFileRequest
+	38, // 41: erda.core.dicehub.release.ReleaseService.ToFormalRelease:input_type -> erda.core.dicehub.release.FormalReleaseRequest
+	40, // 42: erda.core.dicehub.release.ReleaseService.ToFormalReleases:input_type -> erda.core.dicehub.release.FormalReleasesRequest
+	42, // 43: erda.core.dicehub.release.ReleaseService.DeleteReleases:input_type -> erda.core.dicehub.release.ReleasesDeleteRequest
+	44, // 44: erda.core.dicehub.release.ReleaseService.CheckVersion:input_type -> erda.core.dicehub.release.CheckVersionRequest
+	4,  // 45: erda.core.dicehub.release.ReleaseService.CreateRelease:output_type -> erda.core.dicehub.release.ReleaseCreateResponseData
+	8,  // 46: erda.core.dicehub.release.ReleaseService.UpdateRelease:output_type -> erda.core.dicehub.release.ReleaseUpdateResponse
+	6,  // 47: erda.core.dicehub.release.ReleaseService.UpdateReleaseReference:output_type -> erda.core.dicehub.release.ReleaseDataResponse
+	11, // 48: erda.core.dicehub.release.ReleaseService.GetIosPlist:output_type -> erda.core.dicehub.release.GetIosPlistResponse
+	15, // 49: erda.core.dicehub.release.ReleaseService.GetRelease:output_type -> erda.core.dicehub.release.ReleaseGetResponse
+	13, // 50: erda.core.dicehub.release.ReleaseService.DeleteRelease:output_type -> erda.core.dicehub.release.ReleaseDeleteResponse
+	22, // 51: erda.core.dicehub.release.ReleaseService.ListRelease:output_type -> erda.core.dicehub.release.ReleaseListResponse
+	24, // 52: erda.core.dicehub.release.ReleaseService.ListReleaseName:output_type -> erda.core.dicehub.release.ListReleaseNameResponse
+	30, // 53: erda.core.dicehub.release.ReleaseService.GetLatestReleases:output_type -> erda.core.dicehub.release.GetLatestReleasesResponse
+	6,  // 54: erda.core.dicehub.release.ReleaseService.ReleaseGC:output_type -> erda.core.dicehub.release.ReleaseDataResponse
+	34, // 55: erda.core.dicehub.release.ReleaseService.UploadRelease:output_type -> erda.core.dicehub.release.ReleaseUploadResponse
+	36, // 56: erda.core.dicehub.release.ReleaseService.ParseReleaseFile:output_type -> erda.core.dicehub.release.ParseReleaseFileResponse
+	39, // 57: erda.core.dicehub.release.ReleaseService.ToFormalRelease:output_type -> erda.core.dicehub.release.FormalReleaseResponse
+	41, // 58: erda.core.dicehub.release.ReleaseService.ToFormalReleases:output_type -> erda.core.dicehub.release.FormalReleasesResponse
+	43, // 59: erda.core.dicehub.release.ReleaseService.DeleteReleases:output_type -> erda.core.dicehub.release.ReleasesDeleteResponse
+	45, // 60: erda.core.dicehub.release.ReleaseService.CheckVersion:output_type -> erda.core.dicehub.release.CheckVersionResponse
+	45, // [45:61] is the sub-list for method output_type
+	29, // [29:45] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_release_proto_init() }
@@ -4590,7 +4702,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ServiceImagePair); i {
+			switch v := v.(*AddonInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4602,7 +4714,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ApplicationReleaseSummary); i {
+			switch v := v.(*ServiceImagePair); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4614,7 +4726,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReleaseListRequest); i {
+			switch v := v.(*ApplicationReleaseSummary); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4626,7 +4738,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReleaseListResponse); i {
+			switch v := v.(*ReleaseListRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4638,7 +4750,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListReleaseNameRequest); i {
+			switch v := v.(*ReleaseListResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4650,7 +4762,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[23].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListReleaseNameResponse); i {
+			switch v := v.(*ListReleaseNameRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4662,7 +4774,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReleaseListResponseData); i {
+			switch v := v.(*ListReleaseNameResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4674,7 +4786,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReleaseData); i {
+			switch v := v.(*ReleaseListResponseData); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4686,7 +4798,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReleaseNameListRequest); i {
+			switch v := v.(*ReleaseData); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4698,7 +4810,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReleaseNameListResponse); i {
+			switch v := v.(*ReleaseNameListRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4710,7 +4822,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetLatestReleasesRequest); i {
+			switch v := v.(*ReleaseNameListResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4722,7 +4834,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[29].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetLatestReleasesResponse); i {
+			switch v := v.(*GetLatestReleasesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4734,7 +4846,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[30].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetLatestReleasesResponseData); i {
+			switch v := v.(*GetLatestReleasesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4746,7 +4858,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[31].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReleaseGCRequest); i {
+			switch v := v.(*GetLatestReleasesResponseData); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4758,7 +4870,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[32].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReleaseUploadRequest); i {
+			switch v := v.(*ReleaseGCRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4770,7 +4882,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[33].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReleaseUploadResponse); i {
+			switch v := v.(*ReleaseUploadRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4782,7 +4894,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[34].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ParseReleaseFileRequest); i {
+			switch v := v.(*ReleaseUploadResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4794,7 +4906,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[35].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ParseReleaseFileResponse); i {
+			switch v := v.(*ParseReleaseFileRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4806,7 +4918,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[36].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ParseReleaseFileResponseData); i {
+			switch v := v.(*ParseReleaseFileResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4818,7 +4930,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[37].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*FormalReleaseRequest); i {
+			switch v := v.(*ParseReleaseFileResponseData); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4830,7 +4942,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[38].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*FormalReleaseResponse); i {
+			switch v := v.(*FormalReleaseRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4842,7 +4954,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[39].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*FormalReleasesRequest); i {
+			switch v := v.(*FormalReleaseResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4854,7 +4966,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[40].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*FormalReleasesResponse); i {
+			switch v := v.(*FormalReleasesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4866,7 +4978,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[41].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReleasesDeleteRequest); i {
+			switch v := v.(*FormalReleasesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4878,7 +4990,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[42].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReleasesDeleteResponse); i {
+			switch v := v.(*ReleasesDeleteRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4890,7 +5002,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[43].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CheckVersionRequest); i {
+			switch v := v.(*ReleasesDeleteResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4902,7 +5014,7 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[44].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CheckVersionResponse); i {
+			switch v := v.(*CheckVersionRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4914,6 +5026,18 @@ func file_release_proto_init() {
 			}
 		}
 		file_release_proto_msgTypes[45].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CheckVersionResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_release_proto_msgTypes[46].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*CheckVersionResponseData); i {
 			case 0:
 				return &v.state
@@ -4932,7 +5056,7 @@ func file_release_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_release_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   50,
+			NumMessages:   51,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
