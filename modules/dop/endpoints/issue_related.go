@@ -101,33 +101,38 @@ func (e *Endpoints) GetIssueRelations(ctx context.Context, r *http.Request, vars
 		if err != nil {
 			return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
 		}
-
-		relatingIssues, err := e.issue.GetIssuesByIssueIDs(relatingIssueIDs, identityInfo)
-		if err != nil {
-			return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
-		}
-		relatedIssues, err := e.issue.GetIssuesByIssueIDs(relatedIssueIDs, identityInfo)
-		if err != nil {
-			return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
-		}
-
-		for _, issue := range relatingIssues {
-			userIDs = append(userIDs, issue.Creator, issue.Assignee)
-		}
-		for _, issue := range relatedIssues {
-			userIDs = append(userIDs, issue.Creator, issue.Assignee)
-		}
-		userIDs = strutil.DedupSlice(userIDs, true)
-
 		if i == apistructs.IssueRelationInclusion {
+			relatingIssues, err := e.issue.GetIssuesByIssueIDs(relatingIssueIDs, identityInfo)
+			if err != nil {
+				return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
+			}
+			relatedIssues, err := e.issue.GetIssuesByIssueIDs(relatedIssueIDs, identityInfo)
+			if err != nil {
+				return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
+			}
+
+			for _, issue := range relatingIssues {
+				userIDs = append(userIDs, issue.Creator, issue.Assignee)
+			}
+			for _, issue := range relatedIssues {
+				userIDs = append(userIDs, issue.Creator, issue.Assignee)
+			}
+
 			relations.IssueInclude = relatingIssues
 			relations.IssueIncluded = relatedIssues
 		} else {
+			relatingIssues, err := e.issue.GetIssuesByIssueIDs(append(relatingIssueIDs, relatedIssueIDs...), identityInfo)
+			if err != nil {
+				return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
+			}
+
+			for _, issue := range relatingIssues {
+				userIDs = append(userIDs, issue.Creator, issue.Assignee)
+			}
 			relations.IssueRelate = relatingIssues
-			relations.IssueRelated = relatedIssues
 		}
 	}
-
+	userIDs = strutil.DedupSlice(userIDs, true)
 	return httpserver.OkResp(relations, userIDs)
 }
 

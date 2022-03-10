@@ -49,8 +49,10 @@ func (client *DBClient) IssueRelationsExist(issueRelation *IssueRelation, relate
 		}
 		return count > 0, nil
 	}
+	sql := client.Table("dice_issue_relation").Where("type = ?", issueRelation.Type)
 	var count int64
-	if err := client.Table("dice_issue_relation").Where("issue_id = ? and related_issue in (?) and type = ?", issueRelation.IssueID, relatedIssues, issueRelation.Type).Count(&count).Error; err != nil {
+	if err := sql.Where("issue_id = ? and related_issue in (?) or issue_id in (?) and related_issue = ?", issueRelation.IssueID, relatedIssues, relatedIssues, issueRelation.IssueID).
+		Count(&count).Error; err != nil {
 		return false, err
 	}
 	return count > 0, nil
@@ -104,7 +106,8 @@ func (client *DBClient) GetRelatedIssues(issueID uint64, relationType []string) 
 
 // DeleteIssueRelation 删除两条issue之间的关联关系
 func (client *DBClient) DeleteIssueRelation(issueID, relatedIssueID uint64, relationTypes []string) error {
-	query := client.Table("dice_issue_relation").Where("issue_id = ?", issueID).Where("related_issue = ?", relatedIssueID)
+	query := client.Table("dice_issue_relation").Where("issue_id = ? and related_issue = ? or issue_id = ? and related_issue = ?",
+		issueID, relatedIssueID, relatedIssueID, issueID)
 	if len(relationTypes) > 0 {
 		query = query.Where("type IN (?)", relationTypes)
 	}
