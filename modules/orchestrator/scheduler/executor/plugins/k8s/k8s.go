@@ -453,12 +453,22 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 
 	logrus.Infof("start to create runtime, namespace: %s, name: %s", runtime.Type, runtime.ID)
 
+	ok, reason, err := k.checkQuota(ctx, runtime)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		quotaErr := NewQuotaError(reason)
+		return nil, quotaErr
+	}
+
 	operator, ok := runtime.Labels["USE_OPERATOR"]
 	if ok {
 		op, err := k.whichOperator(operator)
 		if err != nil {
 			return nil, fmt.Errorf("not found addonoperator: %v", operator)
 		}
+		// addon runtime id
 		return nil, addon.Create(op, runtime)
 	}
 
@@ -468,6 +478,18 @@ func (k *Kubernetes) Create(ctx context.Context, specObj interface{}) (interface
 		return nil, err
 	}
 	return nil, nil
+}
+
+func (k *Kubernetes) checkQuota(ctx context.Context, runtime *apistructs.ServiceGroup) (bool, string, error) {
+	var cpuTotal, memTotal float64
+	for _, svc := range runtime.Services {
+		cpuTotal += svc.Resources.Cpu * 1000 * float64(svc.Scale)
+		memTotal += svc.Resources.Mem * float64(svc.Scale)
+	}
+	cpuTotal /= k.cpuSubscribeRatio
+	memTotal /= k.memSubscribeRatio
+	_, projectID, workspace, runtimeId := extractServicesEnvs(runtime.Services)
+	return k.CheckQuota(ctx, projectID, workspace, runtimeId, int64(cpuTotal), int64(memTotal), "", runtime.ID)
 }
 
 // Destroy implements deleting servicegroup based on k8s api
