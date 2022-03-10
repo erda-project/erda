@@ -56,6 +56,7 @@ stages:
             - mkdir -p extensions
             - cp -r ${{ dirs.erda-actions }} extensions
             - cp -r ${{ dirs.erda-addons }} extensions
+            - export IMAGE_TAG=${{ outputs.extract-repo-version.image_tag }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare
             - make build-push-all
@@ -73,6 +74,7 @@ stages:
           alias: build-erda-cli
           commands:
             - cd ${{ dirs.erda }}
+            - export IMAGE_TAG=${{ outputs.extract-repo-version.image_tag }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare-cli
             - make build-push-image MODULE_PATH=cli
@@ -95,6 +97,7 @@ stages:
             - cp -r ${{ dirs.erda-addons }} extensions
             - cp -r ${{ dirs.erda-actions-enterprise }} extensions
             - cp -r ${{ dirs.erda-addons-enterprise }} extensions
+            - export IMAGE_TAG=${{ outputs.extract-repo-version.image_tag }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make prepare
             - make build-push-image MODULE_PATH=dicehub
@@ -112,6 +115,7 @@ stages:
           alias: build-agent
           commands:
             - cd ${{ dirs.erda }}
+            - export IMAGE_TAG=${{ outputs.extract-repo-version.image_tag }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - MODULE_PATH=cluster-agent make build-push-image
           loop:
@@ -131,6 +135,8 @@ stages:
             - make ci-build -e SKIP_TEST=true
             - cd ${{ dirs.erda }}
             - cp -r ${{ dirs.erda-java-extensions }}/dist/erda-java-agent ./build/java-agent
+            - export IMAGE_TAG=${{ outputs.extract-repo-version.image_tag }}
+            - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make build-push-image MODULE_PATH=monitor/agent-injector
           resources:
             cpu: 1
@@ -139,6 +145,7 @@ stages:
           alias: build-diagnotor-agent
           commands:
             - cd ${{ dirs.erda }}
+            - export IMAGE_TAG=${{ outputs.extract-repo-version.image_tag }}
             - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
             - make build-push-image MODULE_PATH=monitor/diagnotor-agent
           resources:
@@ -179,6 +186,17 @@ stages:
             cpu: 2
             mem: 2048
   - stage:
+      - custom-script:
+          alias: retag-erda-cli-image
+          description: cli image retag
+          commands:
+            - docker login -u "${DOCKER_REGISTRY_USERNAME}" -p "${DOCKER_REGISTRY_PASSWORD}" ${DOCKER_REGISTRY}
+            - docker pull ${{ outputs.build-erda-cli.image }}
+            - export CLI_OUTPUT_IMAGE=$(echo ${{ outputs.build-erda-cli.image }})
+            - export CLI_TARGET_IMAGE=${CLI_OUTPUT_IMAGE%???????????????????????}
+            - docker tag ${CLI_OUTPUT_IMAGE} ${CLI_TARGET_IMAGE}
+            - docker push ${CLI_TARGET_IMAGE}
+            - 'echo action meta: image=${CLI_TARGET_IMAGE}'
       - oss-upload:
           alias: upload-linux-erda-cli
           description: 上传文件到OSS
