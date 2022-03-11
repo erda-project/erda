@@ -31,6 +31,12 @@ type IntFlag struct {
 	Doc          string
 	DefaultValue int
 }
+type Uint64Flag struct {
+	Short        string
+	Name         string
+	Doc          string
+	DefaultValue uint64
+}
 type FloatFlag struct {
 	Short        string
 	Name         string
@@ -66,6 +72,7 @@ type StringListFlag struct {
 }
 
 func (IntFlag) Flag()        {}
+func (Uint64Flag) Flag()     {}
 func (FloatFlag) Flag()      {}
 func (BoolFlag) Flag()       {}
 func (StringFlag) Flag()     {}
@@ -74,6 +81,9 @@ func (StringListFlag) Flag() {}
 
 func (v IntFlag) DefaultV() string {
 	return strconv.Itoa(v.DefaultValue)
+}
+func (v Uint64Flag) DefaultV() string {
+	return strconv.FormatUint(v.DefaultValue, 10)
 }
 func (v FloatFlag) DefaultV() string {
 	return fmt.Sprintf("%g", v.DefaultValue)

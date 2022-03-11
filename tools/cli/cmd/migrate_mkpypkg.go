@@ -29,7 +29,7 @@ var MigrateMkPyPkg = command.Command{
 	Name:           "mkpypkg",
 	ShortHelp:      "generate python package",
 	LongHelp:       "generate python package",
-	Example:        "erda-cli migrate mkpypkg --filename=my_script.py --mysql-host localhost --mysql-port 3306 --mysql-username root --mysql-password *** --database erda --sandbox-port 3307",
+	Example:        "$ erda-cli migrate mkpypkg --filename=my_script.py --mysql-host localhost --mysql-port 3306 --mysql-username root --mysql-password *** --database erda --sandbox-port 3307",
 	Hidden:         true,
 	DontHideCursor: false,
 	Args:           nil,

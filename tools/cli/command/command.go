@@ -39,7 +39,10 @@ type Command struct {
 	                IntFlag{"O", "ohyoyo", 1, "doc"},
 		}
 	*/
-	Flags []Flag
+	MarkFlagRequired           []string
+	RegisterFlagCompletionFunc map[string]interface{}
+	ValidArgsFunction          interface{}
+	Flags                      []Flag
 	/* actually type:
 		func(ctx Context, arg1 IPArg, arg2 string, arg3 bool, host string, anotherone bool, ohyoyo int) error
 

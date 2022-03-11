@@ -18,113 +18,165 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 
+	pb "github.com/erda-project/erda-proto-go/msp/tenant/project/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/tools/cli/command"
-	"github.com/erda-project/erda/tools/cli/format"
+	"github.com/erda-project/erda/tools/cli/utils"
 )
 
-func GetProjectDetail(ctx *command.Context, project string, orgID string) (apistructs.ProjectDetailResponse, error) {
+func GetProjectDetail(ctx *command.Context, orgID, projectID uint64) (apistructs.ProjectDTO, error) {
 	var resp apistructs.ProjectDetailResponse
 	var b bytes.Buffer
-	var projectID string
 
-	if project == "" {
-		return apistructs.ProjectDetailResponse{}, fmt.Errorf(
-			format.FormatErrMsg("get project detail", "missing required arg project", false))
-	}
-
-	projectID = project
-
-	if orgID != "" {
-		projectFlag := false
-		projects, err := GetProjectList(ctx)
-		if err != nil {
-			return apistructs.ProjectDetailResponse{}, err
-		}
-		for i := range projects {
-			porgID, err := strconv.ParseUint(orgID, 10, 64)
-			if err != nil {
-				return apistructs.ProjectDetailResponse{}, fmt.Errorf(
-					format.FormatErrMsg("get project detail", err.Error(), false))
-			}
-			if projects[i].Name == project && projects[i].OrgID == porgID {
-				projectID = strconv.FormatUint(projects[i].ID, 10)
-				projectFlag = true
-				break
-			}
-		}
-
-		if !projectFlag {
-			return apistructs.ProjectDetailResponse{}, fmt.Errorf(format.FormatErrMsg("get project detail",
-				"failed to get project from projects list", false))
-		}
-	}
-
-	response, err := ctx.Get().Path(fmt.Sprintf("/api/projects/%s", projectID)).Do().Body(&b)
+	response, err := ctx.Get().
+		Header("Org-ID", strconv.FormatUint(orgID, 10)).
+		Path(fmt.Sprintf("/api/projects/%d", projectID)).
+		Do().Body(&b)
 	if err != nil {
-		return apistructs.ProjectDetailResponse{}, fmt.Errorf(format.FormatErrMsg(
+		return apistructs.ProjectDTO{}, fmt.Errorf(utils.FormatErrMsg(
 			"get project detail", "failed to request ("+err.Error()+")", false))
 	}
 
 	if !response.IsOK() {
-		return apistructs.ProjectDetailResponse{}, fmt.Errorf(format.FormatErrMsg("get project detail",
+		return apistructs.ProjectDTO{}, fmt.Errorf(utils.FormatErrMsg("get project detail",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return apistructs.ProjectDetailResponse{}, fmt.Errorf(format.FormatErrMsg("get project detail",
+		return apistructs.ProjectDTO{}, fmt.Errorf(utils.FormatErrMsg("get project detail",
 			fmt.Sprintf("failed to unmarshal project detail response ("+err.Error()+")"), false))
 	}
 
 	if !resp.Success {
-		return apistructs.ProjectDetailResponse{}, fmt.Errorf(format.FormatErrMsg("get project detail",
+		return apistructs.ProjectDTO{}, fmt.Errorf(utils.FormatErrMsg("get project detail",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
 	}
 
-	return resp, nil
+	return resp.Data, nil
 }
 
-func GetProjectList(ctx *command.Context) ([]apistructs.ProjectDTO, error) {
-	var resp apistructs.ProjectListResponse
+func CreateProject(ctx *command.Context, orgID uint64, name, desc string,
+	resourceConfigs *apistructs.ResourceConfigs) (uint64, error) {
+	var request apistructs.ProjectCreateRequest
+	var response apistructs.ProjectCreateResponse
 	var b bytes.Buffer
 
-	response, err := ctx.Get().Path("/api/projects").Param("joined", "true").
-		Param("orgId", strconv.FormatUint(ctx.Sessions[ctx.CurrentOpenApiHost].OrgID, 10)).Do().Body(&b)
+	request.Name = name
+	request.Desc = desc
+	request.OrgID = orgID
+	request.Template = "DevOps"
+	if resourceConfigs != nil {
+		request.ResourceConfigs = resourceConfigs
+	}
+
+	resp, err := ctx.Post().Path("/api/projects").
+		Header("Org-ID", strconv.FormatUint(orgID, 10)).
+		JSONBody(request).Do().Body(&b)
 	if err != nil {
-		return nil, fmt.Errorf(
-			format.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
+		return response.Data, fmt.Errorf(
+			utils.FormatErrMsg("create", "failed to request ("+err.Error()+")", false))
 	}
 
-	if !response.IsOK() {
-		return nil, fmt.Errorf(format.FormatErrMsg("list",
+	if !resp.IsOK() {
+		return response.Data, fmt.Errorf(utils.FormatErrMsg("create",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+				resp.StatusCode(), resp.ResponseHeader("Content-Type"), b.String()), false))
 	}
 
-	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return nil, fmt.Errorf(format.FormatErrMsg("list",
-			fmt.Sprintf("failed to unmarshal projects list response ("+err.Error()+")"), false))
+	if err := json.Unmarshal(b.Bytes(), &response); err != nil {
+		return response.Data, fmt.Errorf(utils.FormatErrMsg("create",
+			fmt.Sprintf("failed to unmarshal project create response ("+err.Error()+")"), false))
 	}
 
-	if !resp.Success {
-		return nil, fmt.Errorf(format.FormatErrMsg("list",
+	if !response.Success {
+		return response.Data, fmt.Errorf(utils.FormatErrMsg("create",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
-				resp.Error.Code, resp.Error.Msg), false))
+				response.Error.Code, response.Error.Msg), false))
 	}
 
-	if resp.Data.Total < 0 {
-		return nil, fmt.Errorf(
-			format.FormatErrMsg("list", "critical: the number of projects is less than 0", false))
+	return response.Data, nil
+}
+
+func CreateMSPProject(ctx *command.Context, projectID uint64, name string) (*pb.Project, error) {
+	var request pb.CreateProjectRequest
+	response := struct {
+		apistructs.Header
+		Data *pb.Project `json:"data"`
+	}{}
+	var b bytes.Buffer
+
+	request.Id = strconv.FormatUint(projectID, 10)
+	request.Name = name
+	request.DisplayName = name
+	request.Type = "DOP"
+
+	resp, err := ctx.Post().Path("/api/msp/tenant/project").
+		JSONBody(request).Do().Body(&b)
+
+	if err != nil {
+		return response.Data, fmt.Errorf(
+			utils.FormatErrMsg("create", "failed to request ("+err.Error()+")", false))
 	}
 
-	if resp.Data.Total == 0 {
-		fmt.Printf(format.FormatErrMsg("list", "no projects created\n", false))
-		return nil, nil
+	if !resp.IsOK() {
+		return response.Data, fmt.Errorf(utils.FormatErrMsg("create",
+			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
+				resp.StatusCode(), resp.ResponseHeader("Content-Type"), b.String()), false))
 	}
 
-	return resp.Data.List, nil
+	if err := json.Unmarshal(b.Bytes(), &response); err != nil {
+		return response.Data, fmt.Errorf(utils.FormatErrMsg("create",
+			fmt.Sprintf("failed to unmarshal project create response ("+err.Error()+")"), false))
+	}
+
+	return response.Data, nil
+}
+
+func ImportPackage(ctx *command.Context, orgID, projectID uint64, pkg string) (uint64, error) {
+	response := struct {
+		apistructs.Header
+		Data uint64
+	}{}
+	var b bytes.Buffer
+
+	f, err := os.Open(pkg)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	fileNameWithExt := filepath.Base(pkg)
+
+	resp, err := ctx.Post().
+		Path(fmt.Sprintf("/api/orgs/%d/projects/%d/package/actions/import", orgID, projectID)).
+		MultipartFormDataBody(map[string]httpclient.MultipartItem{
+			"file": {
+				Reader:   f,
+				Filename: fileNameWithExt,
+			},
+		}).Do().Body(&b)
+	if err != nil {
+		return response.Data, fmt.Errorf(
+			utils.FormatErrMsg("create", "failed to request ("+err.Error()+")", false))
+	}
+
+	if !resp.IsOK() {
+		return response.Data, fmt.Errorf(utils.FormatErrMsg("import",
+			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
+				resp.StatusCode(), resp.ResponseHeader("Content-Type"), b.String()), false))
+	}
+
+	if err := json.Unmarshal(b.Bytes(), &response); err != nil {
+		return response.Data, fmt.Errorf(utils.FormatErrMsg("import",
+			fmt.Sprintf("failed to unmarshal project import response ("+err.Error()+")"), false))
+	}
+
+	return response.Data, nil
 }

@@ -54,7 +54,7 @@ var MigrateRecord = command.Command{
 	Name:           "record",
 	ShortHelp:      "manually insert the migration record",
 	LongHelp:       "manually isnert the migration record",
-	Example:        "erda-cli migrate record --filename a.sql",
+	Example:        "$ erda-cli migrate record --filename a.sql",
 	Hidden:         false,
 	DontHideCursor: false,
 	Args:           nil,
