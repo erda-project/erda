@@ -18,44 +18,42 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
-	"github.com/erda-project/erda/tools/cli/format"
+	"github.com/erda-project/erda/tools/cli/utils"
 )
 
-func GetUserDetail(ctx *command.Context, user string) (apistructs.UserGetResponse, error) {
-	var resp apistructs.UserGetResponse
+func GetRecord(ctx *command.Context, orgID, id uint64) (apistructs.TestFileRecord, error) {
+	var resp apistructs.GetTestFileRecordResponse
 	var b bytes.Buffer
 
-	if user == "" {
-		return apistructs.UserGetResponse{}, fmt.Errorf(
-			format.FormatErrMsg("get user detail", "missing required arg user", false))
-	}
-
-	response, err := ctx.Get().Path("/api/users/" + user).Do().Body(&b)
+	response, err := ctx.Get().
+		Header("Org-ID", strconv.FormatUint(orgID, 10)).
+		Path(fmt.Sprintf("/api/test-file-records/%d", id)).
+		Do().Body(&b)
 	if err != nil {
-		return apistructs.UserGetResponse{}, fmt.Errorf(format.FormatErrMsg(
-			"get user detail", "failed to request ("+err.Error()+")", false))
+		return apistructs.TestFileRecord{}, fmt.Errorf(utils.FormatErrMsg(
+			"get project detail", "failed to request ("+err.Error()+")", false))
 	}
 
 	if !response.IsOK() {
-		return apistructs.UserGetResponse{}, fmt.Errorf(format.FormatErrMsg("get user detail",
+		return apistructs.TestFileRecord{}, fmt.Errorf(utils.FormatErrMsg("get record",
 			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
 				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
 	}
 
 	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return apistructs.UserGetResponse{}, fmt.Errorf(format.FormatErrMsg("get user detail",
-			fmt.Sprintf("failed to unmarshal user detail response ("+err.Error()+")"), false))
+		return apistructs.TestFileRecord{}, fmt.Errorf(utils.FormatErrMsg("get record",
+			fmt.Sprintf("failed to unmarshal record  response ("+err.Error()+")"), false))
 	}
 
 	if !resp.Success {
-		return apistructs.UserGetResponse{}, fmt.Errorf(
-			format.FormatErrMsg("get user detail",
-				fmt.Sprintf("failed to request, error code: %s, error message: %s",
-					resp.Error.Code, resp.Error.Msg), false))
+		return apistructs.TestFileRecord{}, fmt.Errorf(utils.FormatErrMsg("get record",
+			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+				resp.Error.Code, resp.Error.Msg), false))
 	}
 
-	return resp, nil
+	return resp.Data, nil
 }

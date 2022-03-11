@@ -69,6 +69,21 @@ func NewResourceConfigs() *ResourceConfigs {
 	}
 }
 
+func (cc ResourceConfigs) GetClusterConfig(workspace DiceWorkspace) *ResourceConfig {
+	switch workspace {
+	case ProdWorkspace:
+		return cc.PROD
+	case StagingWorkspace:
+		return cc.STAGING
+	case TestWorkspace:
+		return cc.TEST
+	case DevWorkspace:
+		return cc.DEV
+	default:
+		return new(ResourceConfig)
+	}
+}
+
 func (cc ResourceConfigs) Check() error {
 	for k, v := range map[string]*ResourceConfig{
 		"production": cc.PROD,

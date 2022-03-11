@@ -224,7 +224,7 @@ func (r AfterDo) JSON(o interface{}) (*Response, error) {
 	}
 
 	if err := json.Unmarshal(body, o); err != nil {
-		return nil, fmt.Errorf("failed to Unmarshal JSON, err:%s，body :%s", err, string(body))
+		return nil, fmt.Errorf("failed to Unmarshal JSON, err:%s, body :%s", err, string(body))
 	}
 
 	return &Response{

@@ -40,7 +40,8 @@ import (
 	"io"
 	"os"
 	"strings"
-	"text/tabwriter"
+
+	"github.com/WeiZhang555/tabwriter"
 )
 
 var (
