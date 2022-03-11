@@ -777,7 +777,7 @@ message AlertTypeRule {
 }
 
 message AlertRule {
-  uint64                             id         = 1;
+  string                             id         = 1;
   string                             name       = 2;
   string                             alertScope = 3;
   string                             alertType  = 4;

@@ -4396,11 +4396,7 @@ func (m *AlertRule) UnmarshalURLValues(prefix string, values url.Values) error {
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "id":
-				val, err := strconv.ParseUint(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.Id = val
+				m.Id = vals[0]
 			case "name":
 				m.Name = vals[0]
 			case "alertScope":

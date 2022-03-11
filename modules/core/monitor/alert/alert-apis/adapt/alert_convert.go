@@ -37,7 +37,7 @@ func FromCustomizeAlertRule(lang i18n.LanguageCodes, t i18n.Translator, cr *db.C
 	if err != nil {
 		return nil, err
 	}
-	r.Id = cr.ID
+	r.Id = strconv.Itoa(int(cr.ID))
 	r.Name = cr.Name
 	r.AlertType = cr.AlertType
 	r.AlertScope = cr.AlertScope
@@ -161,7 +161,11 @@ func (r *AlertRule) FromModel(lang i18n.LanguageCodes, t i18n.Translator, m *db.
 
 func FromPBAlertRuleModel(lang i18n.LanguageCodes, t i18n.Translator, m *db.AlertRule) *pb.AlertRule {
 	r := &pb.AlertRule{}
-	r.Id = m.ID
+	if m.ID == 0 {
+		r.Id = m.AlertIndex
+	} else {
+		r.Id = strconv.Itoa(int(m.ID))
+	}
 	r.Name = m.Name
 	r.AlertType = m.AlertType
 	r.AlertScope = m.AlertScope
@@ -435,7 +439,7 @@ func ToDBAlertExpressionModel(e *pb.AlertExpression, orgName string, alert *pb.A
 		attributes[k] = v.AsInterface()
 	}
 	attributes["alert_id"] = strconv.FormatUint(alert.Id, 10)
-	attributes["rule_id"] = strconv.FormatUint(rule.Id, 10)
+	attributes["rule_id"] = rule.Id
 	attributes["alert_type"] = rule.AlertType
 	attributes["alert_index"] = rule.AlertIndex.Key
 	attributes["alert_name"] = rule.Name
