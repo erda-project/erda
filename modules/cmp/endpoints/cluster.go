@@ -24,6 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/impl/ess"
 	"github.com/erda-project/erda/modules/pkg/user"
@@ -368,7 +369,9 @@ func (e *Endpoints) handleUpdateReq(req *apistructs.CMPClusterUpdateRequest) str
 	}
 	if req.OpsConfig.ScaleMode == "auto" {
 		if clusterInfo.OpsConfig != nil && clusterInfo.OpsConfig.ScaleMode == apistructs.ScaleModeScheduler {
-			_, err := e.bdl.StopPipelineCron(clusterInfo.OpsConfig.ScalePipeLineID)
+			_, err := e.CronService.CronStop(context.Background(), &cronpb.CronStopRequest{
+				CronID: clusterInfo.OpsConfig.ScalePipeLineID,
+			})
 			if err != nil {
 				return fmt.Sprintf("failed to delete pipline cronjob : %v", err)
 			}
@@ -390,7 +393,9 @@ func (e *Endpoints) handleUpdateReq(req *apistructs.CMPClusterUpdateRequest) str
 	if req.OpsConfig.ScaleMode == apistructs.ScaleModeScheduler {
 		if clusterInfo.OpsConfig != nil && clusterInfo.OpsConfig.ScaleMode == apistructs.ScaleModeScheduler {
 			if clusterInfo.OpsConfig.ScalePipeLineID != 0 {
-				_, err := e.bdl.StopPipelineCron(clusterInfo.OpsConfig.ScalePipeLineID)
+				_, err := e.CronService.CronStop(context.Background(), &cronpb.CronStopRequest{
+					CronID: clusterInfo.OpsConfig.ScalePipeLineID,
+				})
 				if err != nil {
 					return fmt.Sprintf("failed to delete pipline cronjob : %v", err)
 				}
@@ -432,7 +437,9 @@ func (e *Endpoints) handleUpdateReq(req *apistructs.CMPClusterUpdateRequest) str
 	}
 	if req.OpsConfig.ScaleMode == "none" {
 		if clusterInfo.OpsConfig != nil && clusterInfo.OpsConfig.ScaleMode == apistructs.ScaleModeScheduler {
-			_, err := e.bdl.StopPipelineCron(clusterInfo.OpsConfig.ScalePipeLineID)
+			_, err := e.CronService.CronStop(context.Background(), &cronpb.CronStopRequest{
+				CronID: clusterInfo.OpsConfig.ScalePipeLineID,
+			})
 			if err != nil {
 				return fmt.Sprintf("failed to delete pipline cronjob : %v", err)
 			}

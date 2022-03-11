@@ -29,4 +29,5 @@ const (
 	DBClient               = "db_client"
 	DicehubReleaseService  = "dicehub_release"
 	ProjectPipelineService = "project_pipeline"
+	PipelineCronService    = "pipeline_cron"
 )

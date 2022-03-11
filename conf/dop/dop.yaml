@@ -47,6 +47,10 @@ grpc-client@erda.core.pipeline.source:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
 erda.core.pipeline.source-client:
 
+grpc-client@erda.core.pipeline.cron:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+erda.core.pipeline.cron-client:
+
 grpc-client@erda.cmp.dashboard.resource:
   addr: "${CMP_GRPC_ADDR:cmp:9029}"
   block: false

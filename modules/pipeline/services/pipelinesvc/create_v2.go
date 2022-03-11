@@ -15,6 +15,7 @@
 package pipelinesvc
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
@@ -67,7 +69,9 @@ func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.P
 	// 立即开始定时
 	if req.AutoStartCron {
 		if p.CronID != nil {
-			if _, err := s.pipelineCronSvc.Start(*p.CronID); err != nil {
+			if _, err := s.pipelineCronSvc.CronStart(context.Background(), &cronpb.CronStartRequest{
+				CronID: *p.CronID,
+			}); err != nil {
 				logrus.Errorf("failed to start cron, pipelineID: %d, cronID: %d, err: %v", p.ID, *p.CronID, err)
 				return nil, err
 			}

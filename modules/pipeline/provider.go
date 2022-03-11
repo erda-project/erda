@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/dispatcher"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
@@ -36,6 +37,7 @@ type provider struct {
 	CmsService   pb.CmsServiceServer `autowired:"erda.core.pipeline.cms.CmsService"`
 	MetricReport report.MetricReport `autowired:"metric-report-client" optional:"true"`
 	Router       httpserver.Router   `autowired:"http-router"`
+	CronService  *cron.Service       `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 
 	Engine       engine.Interface
 	QueueManager queuemanager.Interface
