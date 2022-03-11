@@ -51,7 +51,7 @@ func (client *DBClient) IssueRelationsExist(issueRelation *IssueRelation, relate
 	}
 	sql := client.Table("dice_issue_relation").Where("type = ?", issueRelation.Type)
 	var count int64
-	if err := sql.Where("issue_id = ? and related_issue in (?) or issue_id in (?) and related_issue = ?", issueRelation.IssueID, relatedIssues, relatedIssues, issueRelation.IssueID).
+	if err := sql.Where("(issue_id = ? and related_issue in (?)) or (issue_id in (?) and related_issue = ?)", issueRelation.IssueID, relatedIssues, relatedIssues, issueRelation.IssueID).
 		Count(&count).Error; err != nil {
 		return false, err
 	}
