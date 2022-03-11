@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/dbgc/db"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
@@ -67,8 +68,8 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 		},
 	}
 
-	var db *dbclient.Client
-	monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
+	DB := &dbclient.Client{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
 		assert.True(t, req.PageNum <= 2, "PageNum > 2")
 		if req.PageNum == 1 {
 			return []spec.Pipeline{pipelineMaps[1], pipelineMaps[0]}, nil, 2, 2, nil
@@ -78,7 +79,7 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 	})
 
 	var r dbgcService
-	r.dbClient = db
+	r.dbClient = &db.Client{Client: *DB}
 
 	var gcNum = 1
 	var addCountNum = func() {
@@ -134,11 +135,10 @@ func TestPipelineDatabaseGC(t *testing.T) {
 
 func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
-
-		var dbClient *dbclient.Client
+		DB := &dbclient.Client{}
 		var r dbgcService
-		r.dbClient = dbClient
-		patch := monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "PageListPipelines", func(db *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
+		r.dbClient = &db.Client{Client: *DB}
+		patch := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(db *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
 			switch req.PageNum {
 			case 1:
 				return nil, nil, 0, 0, fmt.Errorf("error")
