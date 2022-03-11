@@ -324,9 +324,17 @@ func registerActionTypeRender() {
 	one.Do(func() {
 		actionTypeRender = make(map[string]func(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error))
 		actionTypeRender["manual-review"] = func(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error) {
+			bdl := ctx.Value(protocol.GlobalInnerKeyCtxBundle.String()).(protocol.ContextBundle)
 			action := ctx.Value(DataValueKey).(*apistructs.PipelineYmlAction)
 			if action == nil {
 				return nil
+			}
+
+			if c.Props != nil {
+				value, ok := c.Props.(map[string]interface{})
+				if ok {
+					value["scopeID"] = bdl.InParams["scopeID"]
+				}
 			}
 
 			params := action.Params
