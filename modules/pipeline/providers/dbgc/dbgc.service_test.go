@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package dbgc
 
 import (
 	"context"
@@ -77,7 +77,7 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 		}
 	})
 
-	var r Reconciler
+	var r dbgcService
 	r.dbClient = db
 
 	var gcNum = 1
@@ -85,7 +85,7 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 		gcNum++
 	}
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *Reconciler, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *dbgcService, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
 		assert.True(t, gcNum < 3, "DoDBGC times >= 3")
 		addCountNum()
 		return nil
@@ -122,8 +122,8 @@ func TestGetPipelineIDFromDBGCWatchedKey(t *testing.T) {
 }
 
 func TestPipelineDatabaseGC(t *testing.T) {
-	var r Reconciler
-	pm := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "PipelineDatabaseGC", func(r *Reconciler, ctx context.Context) {
+	var r dbgcService
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "PipelineDatabaseGC", func(r *dbgcService, ctx context.Context) {
 		return
 	})
 	defer pm.Unpatch()
@@ -136,7 +136,7 @@ func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 
 		var dbClient *dbclient.Client
-		var r Reconciler
+		var r dbgcService
 		r.dbClient = dbClient
 		patch := monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "PageListPipelines", func(db *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
 			switch req.PageNum {
@@ -157,7 +157,7 @@ func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 		})
 		defer patch.Unpatch()
 
-		patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *Reconciler, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
+		patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *dbgcService, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
 			assert.Equal(t, pipelineID, uint64(1))
 			return fmt.Errorf("error")
 		})
