@@ -486,9 +486,10 @@ func (k *Kubernetes) checkQuota(ctx context.Context, runtime *apistructs.Service
 		cpuTotal += svc.Resources.Cpu * 1000 * float64(svc.Scale)
 		memTotal += svc.Resources.Mem * float64(svc.Scale)
 	}
+	logrus.Infof("servive %s cpu total %v", runtime.Services[0].Name, cpuTotal)
 	cpuTotal /= k.cpuSubscribeRatio
 	memTotal /= k.memSubscribeRatio
-	_, projectID, workspace, runtimeId := extractServicesEnvs(runtime.Services)
+	_, projectID, runtimeId, workspace := extractServicesEnvs(runtime)
 	return k.CheckQuota(ctx, projectID, workspace, runtimeId, int64(cpuTotal), int64(memTotal), "", runtime.ID)
 }
 

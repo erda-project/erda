@@ -68,34 +68,18 @@ func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.S
 		return errors.Errorf("failed to generate deployment struct, name: %s, (%v)", service.Name, err)
 	}
 
-	_, projectID, workspace, runtimeID := extractContainerEnvs(deployment.Spec.Template.Spec.Containers)
-	cpu, mem := getRequestsResources(deployment.Spec.Template.Spec.Containers)
-	if deployment.Spec.Replicas != nil {
-		cpu *= int64(*deployment.Spec.Replicas)
-		mem *= int64(*deployment.Spec.Replicas)
-	}
-	ok, reason, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem, "stateless", service.Name)
-	if err != nil {
-		return err
-	}
-	var quotaErr error
-	if !ok {
-		k.setDeploymentZeroReplica(deployment)
-		quotaErr = NewQuotaError(reason)
-	}
-
 	err = k.deploy.Create(deployment)
 	if err != nil {
 		return errors.Errorf("failed to create deployment, name: %s, (%v)", service.Name, err)
 	}
 	if service.K8SSnippet == nil || service.K8SSnippet.Container == nil {
-		return quotaErr
+		return nil
 	}
 	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (apiv1.Container)(*service.K8SSnippet.Container))
 	if err != nil {
 		return errors.Errorf("failed to patch deployment, name: %s, snippet: %+v, (%v)", service.Name, *service.K8SSnippet.Container, err)
 	}
-	return quotaErr
+	return nil
 }
 
 func (k *Kubernetes) getDeploymentStatusFromMap(service *apistructs.Service, deployments map[string]appsv1.Deployment) (apistructs.StatusDesc, error) {
