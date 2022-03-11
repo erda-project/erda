@@ -12,20 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dbclient
+package daemon
 
-//import (
-//	"testing"
-//
-//	"github.com/stretchr/testify/require"
-//)
-//
-//func TestClient_GetBuildCache(t *testing.T) {
-//	cache, err := client.GetBuildCache("terminus-dev", "registry.marathon.l4lb.thisdcos.directory:5000/bc4f384766d395fe11bb97d5f2c9c72b/cidepcache:latest")
-//	require.NoError(t, err)
-//	require.True(t, cache.ID == 1)
-//}
-//
-//func TestClient_DeleteBuildCache(t *testing.T) {
-//	require.NoError(t, client.DeleteBuildCache(2))
-//}
+import (
+	"context"
+
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/spec"
+)
+
+type CreatePipelineFunc func(req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error)
+
+type Interface interface {
+	AddIntoPipelineCrond(cronID uint64) error
+	DeletePipelineCrond(cronID uint64) error
+	ReloadCrond(ctx context.Context) ([]string, error)
+	CrondSnapshot() []string
+
+	// todo Can be removed after all objects are provider
+	WithPipelineFunc(createPipelineFunc CreatePipelineFunc)
+}

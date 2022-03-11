@@ -22,13 +22,13 @@ import (
 
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildcachesvc"
-	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
@@ -42,7 +42,7 @@ type Endpoints struct {
 	appSvc           *appsvc.AppSvc
 	permissionSvc    *permissionsvc.PermissionSvc
 	pipelineSvc      *pipelinesvc.PipelineSvc
-	crondSvc         *crondsvc.CrondSvc
+	crondSvc         daemon.Interface
 	buildArtifactSvc *buildartifactsvc.BuildArtifactSvc
 	buildCacheSvc    *buildcachesvc.BuildCacheSvc
 	actionAgentSvc   *actionagentsvc.ActionAgentSvc
@@ -101,7 +101,7 @@ func WithPermissionSvc(svc *permissionsvc.PermissionSvc) Option {
 	}
 }
 
-func WithCrondSvc(svc *crondsvc.CrondSvc) Option {
+func WithCrondSvc(svc daemon.Interface) Option {
 	return func(e *Endpoints) {
 		e.crondSvc = svc
 	}
