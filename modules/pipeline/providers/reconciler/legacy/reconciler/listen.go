@@ -92,15 +92,20 @@ func (r *Reconciler) ReconcileOnePipelineUntilDone(ctx context.Context, pipeline
 	r.teardownCurrentReconcile(pCtx, pipelineID)
 
 	// update status
+	var pipelineWithTasks *spec.PipelineWithTasks
 	for {
-		err := r.updateStatusAfterReconcile(pCtx, pipelineID)
+		p, err := r.updateStatusAfterReconcile(pCtx, pipelineID)
 		if err == nil {
+			pipelineWithTasks = p
 			break
 		}
 		rlog.PErrorf(pipelineID, "failed to update status after reconcile(auto retry), err: %v", err)
 		time.Sleep(time.Second * 5)
 		continue
 	}
+
+	// teardown
+	r.teardownPipeline(ctx, pipelineWithTasks)
 }
 
 // updateStatusBeforeReconcile update pipeline status to running
@@ -117,19 +122,18 @@ func (r *Reconciler) updateStatusBeforeReconcile(p spec.Pipeline) error {
 }
 
 // updateStatusAfterReconcile get latest pipeline after reconcile
-func (r *Reconciler) updateStatusAfterReconcile(ctx context.Context, pipelineID uint64) error {
+func (r *Reconciler) updateStatusAfterReconcile(ctx context.Context, pipelineID uint64) (*spec.PipelineWithTasks, error) {
 	pipelineWithTasks, err := r.dbClient.GetPipelineWithTasks(pipelineID)
 	if err != nil {
 		rlog.PErrorf(pipelineID, "failed to get pipeline with tasks, err: %v", err)
-		return err
+		return nil, err
 	}
-	defer r.teardownPipeline(ctx, pipelineWithTasks)
 
 	p := pipelineWithTasks.Pipeline
 	tasks := pipelineWithTasks.Tasks
 	// if status is end status like stopByUser, should return immediately
 	if p.Status.IsEndStatus() {
-		return nil
+		return pipelineWithTasks, nil
 	}
 
 	// calculate pipeline status by tasks
@@ -138,11 +142,11 @@ func (r *Reconciler) updateStatusAfterReconcile(ctx context.Context, pipelineID 
 		oldStatus := p.Status
 		p.Status = calcPStatus
 		if err := r.UpdatePipelineStatus(p); err != nil {
-			return err
+			return nil, err
 		}
 		rlog.PInfof(p.ID, "update pipeline status (%s -> %s)", oldStatus, calcPStatus)
 	}
-	return nil
+	return pipelineWithTasks, nil
 }
 
 // makeContextForPipelineReconcile
