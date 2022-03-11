@@ -35,9 +35,11 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/logic"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
+	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -45,7 +47,7 @@ import (
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-var Kind = types.Kind("k8sjob")
+var Kind = types.Kind(spec.PipelineTaskExecutorKindK8sJob)
 
 var (
 	defaultParallelism int32 = 1
@@ -56,7 +58,6 @@ var (
 )
 
 const (
-	executorKind       = "K8SJOB"
 	jobKind            = "Job"
 	jobAPIVersion      = "batch/v1"
 	initContainerName  = "pre-fetech-container"
@@ -74,12 +75,16 @@ var (
 )
 
 func init() {
-	types.MustRegister(Kind, func(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (types.TaskExecutor, error) {
-		k, err := New(name, clusterName, cluster)
+	types.MustRegister(Kind, func(name types.Name, options map[string]string) (types.ActionExecutor, error) {
+		clusterName, err := Kind.GetClusterNameByExecutorName(name)
 		if err != nil {
 			return nil, err
 		}
-		return k, nil
+		cluster, err := clusterinfo.GetClusterByName(clusterName)
+		if err != nil {
+			return nil, err
+		}
+		return New(name, cluster.Name, cluster)
 	})
 }
 
@@ -88,6 +93,7 @@ type K8sJob struct {
 	client      *k8sclient.K8sClient
 	clusterName string
 	cluster     apistructs.ClusterInfo
+	errWrapper  *logic.ErrorWrapper
 }
 
 func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sJob, error) {
@@ -95,7 +101,13 @@ func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*
 	if err != nil {
 		return nil, err
 	}
-	return &K8sJob{name: name, client: k, clusterName: clusterName, cluster: cluster}, nil
+	return &K8sJob{
+		name:        name,
+		client:      k,
+		clusterName: clusterName,
+		cluster:     cluster,
+		errWrapper:  logic.NewErrorWrapper(name.String()),
+	}, nil
 }
 
 func (k *K8sJob) Kind() types.Kind {
@@ -106,16 +118,20 @@ func (k *K8sJob) Name() types.Name {
 	return k.name
 }
 
-func (k *K8sJob) Status(ctx context.Context, action *spec.PipelineTask) (desc apistructs.StatusDesc, err error) {
+func (k *K8sJob) Status(ctx context.Context, task *spec.PipelineTask) (desc apistructs.PipelineStatusDesc, err error) {
+	defer k.errWrapper.WrapTaskError(&err, "status job", task)
+	if err := logic.ValidateAction(task); err != nil {
+		return apistructs.PipelineStatusDesc{}, err
+	}
 	var (
 		job     *batchv1.Job
 		jobPods *corev1.PodList
 	)
-	jobName := logic.MakeJobName(action)
-	job, err = k.client.ClientSet.BatchV1().Jobs(action.Extra.Namespace).Get(ctx, jobName, metav1.GetOptions{})
+	jobName := logic.MakeJobName(task)
+	job, err = k.client.ClientSet.BatchV1().Jobs(task.Extra.Namespace).Get(ctx, jobName, metav1.GetOptions{})
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			desc.Status = apistructs.StatusNotFoundInCluster
+			desc.Status = logic.TransferStatus(string(apistructs.StatusNotFoundInCluster))
 			return desc, nil
 		}
 		return
@@ -128,7 +144,7 @@ func (k *K8sJob) Status(ctx context.Context, action *spec.PipelineTask) (desc ap
 		}
 		selector := strutil.Join(matchlabels, ",", true)
 
-		jobPods, err = k.client.ClientSet.CoreV1().Pods(action.Extra.Namespace).List(ctx, metav1.ListOptions{
+		jobPods, err = k.client.ClientSet.CoreV1().Pods(task.Extra.Namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: selector,
 		})
 		if err != nil {
@@ -136,18 +152,71 @@ func (k *K8sJob) Status(ctx context.Context, action *spec.PipelineTask) (desc ap
 		}
 	}
 
-	lastMsg, err := k.getLastMsg(ctx, action.Extra.Namespace, jobName)
+	lastMsg, err := k.getLastMsg(ctx, task.Extra.Namespace, jobName)
 	if err != nil {
 		return
 	}
 
-	//status := generatePipelineStatus(job, jobPods)
-	desc = generateKubeJobStatus(job, jobPods, lastMsg)
-	return
+	status := generateKubeJobStatus(job, jobPods, lastMsg)
+	if status.Status == "" {
+		return desc, errors.Errorf("get empty status from k8sjob, statusCode: %s, lastMsg: %s", status.Status, status.LastMessage)
+	}
+	return apistructs.PipelineStatusDesc{
+		Status: logic.TransferStatus(string(status.Status)),
+		Desc:   status.LastMessage}, nil
 }
 
-func (k *K8sJob) Create(ctx context.Context, action *spec.PipelineTask) (data interface{}, err error) {
-	job, err := logic.TransferToSchedulerJob(action)
+func (k *K8sJob) Exist(ctx context.Context, task *spec.PipelineTask) (created bool, started bool, err error) {
+	statusDesc, err := k.Status(ctx, task)
+	if err != nil {
+		created = false
+		started = false
+		if strutil.Contains(err.Error(), "failed to inspect job, err: not found") {
+			err = nil
+			return
+		}
+		return
+	}
+	return logic.JudgeExistedByStatus(statusDesc)
+}
+
+func (k *K8sJob) Create(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
+	defer k.errWrapper.WrapTaskError(&err, "create job", task)
+	if err := logic.ValidateAction(task); err != nil {
+		return nil, err
+	}
+	created, _, err := k.Exist(ctx, task)
+	if err != nil {
+		return nil, err
+	}
+	if created {
+		logrus.Warnf("%s: task already created, taskInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
+	}
+	return nil, nil
+}
+
+func (k *K8sJob) Start(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
+	defer k.errWrapper.WrapTaskError(&err, "start job", task)
+	if err := logic.ValidateAction(task); err != nil {
+		return nil, err
+	}
+	created, started, err := k.Exist(ctx, task)
+	if err != nil {
+		return nil, err
+	}
+	if !created {
+		logrus.Warnf("%s: task not created, try to create actionInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
+		_, err = k.Create(ctx, task)
+		if err != nil {
+			return nil, err
+		}
+		logrus.Warnf("k8sjob: action created, continue to start, actionInfo: %s", logic.PrintTaskInfo(task))
+	}
+	if started {
+		logrus.Warnf("%s: task already started, actionInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
+		return nil, nil
+	}
+	job, err := logic.TransferToSchedulerJob(task)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +276,35 @@ func (k *K8sJob) Create(ctx context.Context, action *spec.PipelineTask) (data in
 	}, nil
 }
 
+func (k *K8sJob) Update(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
+	return nil, errors.New("k8s(job) not support update operation")
+}
+
+func (k *K8sJob) Cancel(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
+	defer k.errWrapper.WrapTaskError(&err, "cancel job", task)
+	if err := logic.ValidateAction(task); err != nil {
+		return nil, err
+	}
+	// TODO move all makeJobID to framework
+	// now move makeJobID to framework may change task uuid in database
+	// Restore the task uuid after remove, because gc will make the job id, but cancel don't make the job id
+	oldUUID := task.Extra.UUID
+	task.Extra.UUID = task_uuid.MakeJobID(task)
+	d, err := k.delete(ctx, task)
+	task.Extra.UUID = oldUUID
+	return d, err
+}
+
 func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
+	defer k.errWrapper.WrapTaskError(&err, "remove job", task)
+	if err := logic.ValidateAction(task); err != nil {
+		return nil, err
+	}
+	task.Extra.UUID = task_uuid.MakeJobID(task)
+	return k.delete(ctx, task)
+}
+
+func (k *K8sJob) delete(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
 	job, err := logic.TransferToSchedulerJob(task)
 	if err != nil {
 		return nil, err
@@ -304,11 +401,19 @@ func (k *K8sJob) Remove(ctx context.Context, task *spec.PipelineTask) (data inte
 }
 
 func (k *K8sJob) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (data interface{}, err error) {
+	if len(tasks) == 0 {
+		return nil, nil
+	}
+	task := tasks[0]
+	defer k.errWrapper.WrapTaskError(&err, "batch delete job", task)
+	if err := logic.ValidateAction(task); err != nil {
+		return nil, err
+	}
 	for _, task := range tasks {
 		if len(task.Extra.UUID) <= 0 {
 			continue
 		}
-		_, err = k.Remove(ctx, task)
+		_, err = k.delete(ctx, task)
 		if err != nil {
 			return nil, err
 		}

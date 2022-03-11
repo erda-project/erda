@@ -32,8 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/actionagent"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sjob"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/k8sjob"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/pkg/containers"
@@ -357,7 +356,9 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 
 	if p.Extra.StorageConfig.EnableNFSVolume() &&
 		!p.Extra.StorageConfig.EnableShareVolume() &&
-		task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
+		task.ExecutorKind == spec.PipelineTaskExecutorKindK8sJob ||
+		task.ExecutorKind == spec.PipelineTaskExecutorKindK8sFlink ||
+		task.ExecutorKind == spec.PipelineTaskExecutorKindK8sSpark {
 		// --- cmd ---
 		// task.Context.InStorages
 	continueContextVolumes:
@@ -424,27 +425,15 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	}
 
 	// task.Context.OutStorages
-	if p.Extra.StorageConfig.EnableShareVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
+	if p.Extra.StorageConfig.EnableShareVolume() && task.ExecutorKind == spec.PipelineTaskExecutorKindK8sJob {
 		// only k8sjob support create job volume
-		schedExecutor, ok := pre.Executor.(*scheduler.Sched)
+		k8sjobExecutor, ok := pre.Executor.(*k8sjob.K8sJob)
 		if !ok {
-			return false, errorsx.UserErrorf("failed to createJobVolume, err: invalid task executor kind")
-		}
-		_, schedPlugin, err := schedExecutor.GetTaskExecutor(task.Type, p.ClusterName, task)
-		if err != nil {
-			return false, fmt.Errorf("failed to createJobVolume, err: can not get k8s executor")
-		}
-		if schedPlugin.Kind() != k8sjob.Kind {
 			goto makeOutStorages
 		}
 		// 添加共享pv
 		if p.Extra.ShareVolumeID == "" {
 			var volumeID string
-			// 重复创建同namespace和name的pv是幂等的,不需要加锁
-			k8sjobExecutor, ok := schedPlugin.(*k8sjob.K8sJob)
-			if !ok {
-				return false, fmt.Errorf("faile to createJobVolume, err: can not convert to k8sjob executor")
-			}
 			volumeID, err = k8sjobExecutor.JobVolumeCreate(context.Background(), apistructs.JobVolume{
 				Namespace:   p.Extra.Namespace,
 				Name:        "local-pv-default",
@@ -497,7 +486,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 makeOutStorages:
 	if p.Extra.StorageConfig.EnableNFSVolume() &&
 		!p.Extra.StorageConfig.EnableShareVolume() &&
-		task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
+		task.ExecutorKind.IsK8SType() {
 		for _, namespace := range task.Extra.Action.Namespaces {
 			task.Context.OutStorages = append(task.Context.OutStorages, pvolumes.GenerateTaskVolume(*task, namespace, nil))
 		}
@@ -523,7 +512,7 @@ makeOutStorages:
 		task.Status = apistructs.PipelineStatusBorn
 	}
 
-	if (p.Extra.StorageConfig.EnableNFSVolume() || p.Extra.StorageConfig.EnableShareVolume()) && task.ExecutorKind == spec.PipelineTaskExecutorKindScheduler {
+	if (p.Extra.StorageConfig.EnableNFSVolume() || p.Extra.StorageConfig.EnableShareVolume()) && task.ExecutorKind.IsK8SType() {
 		// 处理 task caches
 		pvolumes.HandleTaskCacheVolumes(p, task, diceYmlJob, mountPoint)
 		// --- binds ---

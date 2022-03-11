@@ -28,9 +28,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/logic"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
+	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -40,20 +42,27 @@ const (
 	K8SFlinkLogPrefix = "[k8sflink]"
 )
 
-var Kind = types.Kind("k8sflink")
+var Kind = types.Kind(spec.PipelineTaskExecutorKindK8sFlink)
 
 func init() {
-	types.MustRegister(Kind, func(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (types.TaskExecutor, error) {
-		k, err := New(name, clusterName, cluster)
+	types.MustRegister(Kind, func(name types.Name, options map[string]string) (types.ActionExecutor, error) {
+		clusterName, err := Kind.GetClusterNameByExecutorName(name)
 		if err != nil {
 			return nil, err
 		}
-		return k, nil
+		cluster, err := clusterinfo.GetClusterByName(clusterName)
+		if err != nil {
+			return nil, err
+		}
+		return New(name, clusterName, cluster)
 	})
 }
 
-func (k *K8sFlink) Status(ctx context.Context, task *spec.PipelineTask) (apistructs.StatusDesc, error) {
-	statusDesc := apistructs.StatusDesc{}
+func (k *K8sFlink) Status(ctx context.Context, task *spec.PipelineTask) (statusDesc apistructs.PipelineStatusDesc, err error) {
+	defer k.errWrapper.WrapTaskError(&err, "status job", task)
+	if err := logic.ValidateAction(task); err != nil {
+		return apistructs.PipelineStatusDesc{}, err
+	}
 
 	bigDataConf, err := logic.GetBigDataConf(task)
 	if err != nil {
@@ -66,20 +75,72 @@ func (k *K8sFlink) Status(ctx context.Context, task *spec.PipelineTask) (apistru
 		logrus.Errorf("get status err %v", err)
 
 		if strings.Contains(err.Error(), "not found") {
-			statusDesc.Status = apistructs.StatusNotFoundInCluster
+			statusDesc.Status = logic.TransferStatus(string(apistructs.StatusNotFoundInCluster))
 			return statusDesc, nil
 		}
-		statusDesc.Status = apistructs.StatusError
-		statusDesc.Reason = err.Error()
+		statusDesc.Status = logic.TransferStatus(string(apistructs.StatusError))
+		statusDesc.Desc = err.Error()
 		return statusDesc, err
 	}
 
-	statusDesc = composeStatusDesc(flinkCluster.Status)
+	status := composeStatusDesc(flinkCluster.Status)
+	statusDesc.Status = logic.TransferStatus(string(status.Status))
+	statusDesc.Desc = status.Reason
 
 	return statusDesc, nil
 }
 
-func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
+func (k *K8sFlink) Exist(ctx context.Context, task *spec.PipelineTask) (created bool, started bool, err error) {
+	statusDesc, err := k.Status(ctx, task)
+	if err != nil {
+		created = false
+		started = false
+		if strutil.Contains(err.Error(), "failed to inspect job, err: not found") {
+			err = nil
+			return
+		}
+		return
+	}
+	return logic.JudgeExistedByStatus(statusDesc)
+}
+
+func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
+	defer k.errWrapper.WrapTaskError(&err, "create job", task)
+	if err := logic.ValidateAction(task); err != nil {
+		return nil, err
+	}
+	created, _, err := k.Exist(ctx, task)
+	if err != nil {
+		return nil, err
+	}
+	if created {
+		logrus.Warnf("%s: task already created, taskInfo: %s", k.Kind(), logic.PrintTaskInfo(task))
+	}
+	return nil, nil
+}
+
+func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
+	defer k.errWrapper.WrapTaskError(&err, "start job", task)
+	if err := logic.ValidateAction(task); err != nil {
+		return nil, err
+	}
+	created, started, err := k.Exist(ctx, task)
+	if err != nil {
+		return nil, err
+	}
+	if !created {
+		logrus.Warnf("%s: task not created, try to create actionInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
+		_, err = k.Create(ctx, task)
+		if err != nil {
+			return nil, err
+		}
+		logrus.Warnf("k8sjob: action created, continue to start, actionInfo: %s", logic.PrintTaskInfo(task))
+	}
+	if started {
+		logrus.Warnf("%s: task already started, actionInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
+		return nil, nil
+	}
+
 	job, err := logic.TransferToSchedulerJob(task)
 	if err != nil {
 		return nil, err
@@ -180,7 +241,35 @@ func (k *K8sFlink) Create(ctx context.Context, task *spec.PipelineTask) (interfa
 	}, nil
 }
 
-func (k *K8sFlink) Remove(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
+func (k *K8sFlink) Update(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
+	return nil, errors.New("k8s(flink) not support update operation")
+}
+
+func (k *K8sFlink) Cancel(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
+	defer k.errWrapper.WrapTaskError(&err, "cancel job", task)
+	if err := logic.ValidateAction(task); err != nil {
+		return nil, err
+	}
+	// TODO move all makeJobID to framework
+	// now move makeJobID to framework may change task uuid in database
+	// Restore the task uuid after remove, because gc will make the job id, but cancel don't make the job id
+	oldUUID := task.Extra.UUID
+	task.Extra.UUID = task_uuid.MakeJobID(task)
+	d, err := k.delete(ctx, task)
+	task.Extra.UUID = oldUUID
+	return d, err
+}
+
+func (k *K8sFlink) Remove(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
+	defer k.errWrapper.WrapTaskError(&err, "remove job", task)
+	if err := logic.ValidateAction(task); err != nil {
+		return nil, err
+	}
+	task.Extra.UUID = task_uuid.MakeJobID(task)
+	return k.delete(ctx, task)
+}
+
+func (k *K8sFlink) delete(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
 	bigDataConf, err := logic.GetBigDataConf(task)
 
 	flinkCluster, err := k.GetFlinkClusterInfo(ctx, bigDataConf)
@@ -241,12 +330,17 @@ func (k *K8sFlink) Remove(ctx context.Context, task *spec.PipelineTask) (interfa
 	return nil, nil
 }
 
-func (k *K8sFlink) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (interface{}, error) {
+func (k *K8sFlink) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (data interface{}, err error) {
+	if len(tasks) == 0 {
+		return nil, nil
+	}
+	task := tasks[0]
+	defer k.errWrapper.WrapTaskError(&err, "batch delete job", task)
 	for _, task := range tasks {
 		if len(task.Extra.UUID) <= 0 {
 			continue
 		}
-		_, err := k.Remove(ctx, task)
+		_, err := k.delete(ctx, task)
 		if err != nil {
 			return nil, err
 		}

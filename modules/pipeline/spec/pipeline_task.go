@@ -15,11 +15,13 @@
 package spec
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
@@ -61,6 +63,38 @@ func (pt *PipelineTask) NodeName() string {
 
 func (pt *PipelineTask) PrevNodeNames() []string {
 	return pt.Extra.RunAfter
+}
+
+func (pt *PipelineTask) GetBigDataConf() (apistructs.BigdataSpec, error) {
+	if value, ok := pt.Extra.Action.Params["bigDataConf"]; ok {
+		var bigdataSpec apistructs.BigdataSpec
+		valueStr := jsonparse.JsonOneLine(value)
+		if err := json.Unmarshal([]byte(valueStr), &bigdataSpec); err != nil {
+			return bigdataSpec, err
+		}
+		return bigdataSpec, nil
+	}
+	return apistructs.BigdataSpec{}, nil
+}
+
+func (pt *PipelineTask) GetExecutorName() PipelineTaskExecutorName {
+	switch pt.ExecutorKind {
+	// PipelineTaskExecutorKindScheduler after 2.0 version, scheduler executor is deleted.
+	// scheduler is Compatible with older versions
+	case PipelineTaskExecutorKindScheduler:
+		k := PipelineTaskExecutorKindK8sJob
+		if spec, err := pt.GetBigDataConf(); err == nil {
+			if spec.FlinkConf != nil {
+				k = PipelineTaskExecutorKindK8sFlink
+			}
+			if spec.SparkConf != nil {
+				k = PipelineTaskExecutorKindK8sSpark
+			}
+		}
+		return PipelineTaskExecutorName(fmt.Sprintf("%s-%s", k.GetDefaultExecutorName(), pt.Extra.ClusterName))
+	default:
+		return pt.Extra.ExecutorName
+	}
 }
 
 func (*PipelineTask) TableName() string {
@@ -152,7 +186,10 @@ var (
 	PipelineTaskExecutorKindMemory    PipelineTaskExecutorKind = "MEMORY"
 	PipelineTaskExecutorKindAPITest   PipelineTaskExecutorKind = "APITEST"
 	PipelineTaskExecutorKindWait      PipelineTaskExecutorKind = "WAIT"
-	PipelineTaskExecutorKindList                               = []PipelineTaskExecutorKind{PipelineTaskExecutorKindScheduler, PipelineTaskExecutorKindMemory, PipelineTaskExecutorKindAPITest, PipelineTaskExecutorKindWait}
+	PipelineTaskExecutorKindK8sJob    PipelineTaskExecutorKind = "K8SJOB"
+	PipelineTaskExecutorKindK8sFlink  PipelineTaskExecutorKind = "K8SFLINK"
+	PipelineTaskExecutorKindK8sSpark  PipelineTaskExecutorKind = "K8SSPARK"
+	PipelineTaskExecutorKindList                               = []PipelineTaskExecutorKind{PipelineTaskExecutorKindScheduler, PipelineTaskExecutorKindMemory, PipelineTaskExecutorKindAPITest, PipelineTaskExecutorKindWait, PipelineTaskExecutorKindK8sJob}
 )
 
 func (that PipelineTaskExecutorKind) Check() bool {
@@ -162,6 +199,36 @@ func (that PipelineTaskExecutorKind) Check() bool {
 		}
 	}
 	return false
+}
+
+func (that PipelineTaskExecutorKind) IsK8SType() bool {
+	return that == PipelineTaskExecutorKindK8sJob || that == PipelineTaskExecutorKindK8sFlink || that == PipelineTaskExecutorKindK8sSpark
+}
+
+func (that PipelineTaskExecutorKind) String() string {
+	return string(that)
+}
+
+func (that PipelineTaskExecutorKind) GenExecutorNameByClusterName(clusterName string) PipelineTaskExecutorName {
+	return PipelineTaskExecutorName(fmt.Sprintf("%s-%s", that.GetDefaultExecutorName(), clusterName))
+}
+
+func (that PipelineTaskExecutorKind) GetDefaultExecutorName() PipelineTaskExecutorName {
+	switch that {
+	case PipelineTaskExecutorKindScheduler:
+		return PipelineTaskExecutorNameSchedulerDefault
+	case PipelineTaskExecutorKindAPITest:
+		return PipelineTaskExecutorNameAPITestDefault
+	case PipelineTaskExecutorKindWait:
+		return PipelineTaskExecutorNameWaitDefault
+	case PipelineTaskExecutorKindK8sJob:
+		return PipelineTaskExecutorNameK8sJobDefault
+	case PipelineTaskExecutorKindK8sFlink:
+		return PipelineTaskExecutorNameK8sFlinkDefault
+	case PipelineTaskExecutorKindK8sSpark:
+		return PipelineTaskExecutorNameK8sSparkDefault
+	}
+	return PipelineTaskExecutorNameEmpty
 }
 
 type PipelineTaskExecutorName string
@@ -175,7 +242,10 @@ var (
 	PipelineTaskExecutorNameSchedulerDefault PipelineTaskExecutorName = "scheduler"
 	PipelineTaskExecutorNameAPITestDefault   PipelineTaskExecutorName = "api-test"
 	PipelineTaskExecutorNameWaitDefault      PipelineTaskExecutorName = "wait"
-	PipelineTaskExecutorNameList                                      = []PipelineTaskExecutorName{PipelineTaskExecutorNameEmpty, PipelineTaskExecutorNameSchedulerDefault, PipelineTaskExecutorNameAPITestDefault, PipelineTaskExecutorNameWaitDefault}
+	PipelineTaskExecutorNameK8sJobDefault    PipelineTaskExecutorName = "k8s-job"
+	PipelineTaskExecutorNameK8sFlinkDefault  PipelineTaskExecutorName = "k8s-flink"
+	PipelineTaskExecutorNameK8sSparkDefault  PipelineTaskExecutorName = "k8s-spark"
+	PipelineTaskExecutorNameList                                      = []PipelineTaskExecutorName{PipelineTaskExecutorNameEmpty, PipelineTaskExecutorNameSchedulerDefault, PipelineTaskExecutorNameAPITestDefault, PipelineTaskExecutorNameWaitDefault, PipelineTaskExecutorNameK8sJobDefault}
 )
 
 func (that PipelineTaskExecutorName) Check() bool {
