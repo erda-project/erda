@@ -330,12 +330,9 @@ func registerActionTypeRender() {
 				return nil
 			}
 
-			if c.Props != nil {
-				value, ok := c.Props.(map[string]interface{})
-				if ok {
-					value["scopeID"] = bdl.InParams["scopeID"]
-				}
-			}
+			defer func() {
+				c.Props = setMemberSelectorComponentScopeIDFieldWithAppID(c.Props, bdl.InParams["appId"])
+			}()
 
 			params := action.Params
 			if params == nil || params["processor"] == nil {
@@ -362,6 +359,34 @@ func registerActionTypeRender() {
 
 		//actionTypeRender["mysql-cli"] = mysqlCliRender
 	})
+}
+
+func setMemberSelectorComponentScopeIDFieldWithAppID(props interface{}, appID interface{}) (resultProps interface{}) {
+	if props == nil {
+		return
+	}
+
+	value, ok := props.(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	fields, ok := value["fields"].([]apistructs.FormPropItem)
+	if !ok {
+		return
+	}
+
+	for _, field := range fields {
+		if field.Component != "memberSelector" {
+			continue
+		}
+		props, ok := field.ComponentProps.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		props["scopeId"] = appID
+	}
+	return props
 }
 
 func (a *ComponentAction) Render(ctx context.Context, c *apistructs.Component, scenario apistructs.ComponentProtocolScenario, event apistructs.ComponentEvent, globalStateData *apistructs.GlobalStateData) (err error) {
