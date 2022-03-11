@@ -132,7 +132,7 @@ func (b *Bundle) DownloadRelease(orgID uint64, userID, releaseId, distDir string
 	defer resp.Body.Close()
 
 	if resp.StatusCode/100 != 2 {
-		return "", errors.Errorf("status code %d", resp.StatusCode)
+		return "", errors.Errorf("download release %s, status code %d", releaseId, resp.StatusCode)
 	}
 
 	zipfile := fmt.Sprintf("tmp-%d.zip", time.Now().Unix())

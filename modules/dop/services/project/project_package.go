@@ -60,11 +60,6 @@ type PackageDataCreator interface {
 	SetProject() error
 	SetMeta() error
 	GetProjectPackage() *apistructs.ProjectPackage
-	//GetProjectID() uint64
-	//GetProjectName() string
-	//GetOrgID() uint64
-	//GetOrgName() string
-	//GetIdentityInfo() apistructs.IdentityInfo
 	GetTempDir() string
 	GetContext() *PackageContext
 }
@@ -151,7 +146,6 @@ func (t *PackageDataDirector) GenAndUploadZipPackage() (string, error) {
 
 	zipTmpFile, err := ioutil.TempFile("", packageProjectTempPrefix)
 	if err != nil {
-		t.errs = append(t.errs, err)
 		return "", err
 	}
 	defer func() {
@@ -202,11 +196,9 @@ func (t *PackageDataDirector) GenAndUploadZipPackage() (string, error) {
 	projectYmlPath := filepath.Join(tempDir, packageProjectYmlName)
 	ymlBytes, err := yaml.Marshal(projectPackage.Project)
 	if err != nil {
-		t.errs = append(t.errs, err)
 		return "", err
 	}
 	if err := filehelper.CreateFile(projectYmlPath, string(ymlBytes), 0644); err != nil {
-		t.errs = append(t.errs, err)
 		return "", err
 	}
 	// write *-env.yml
@@ -219,11 +211,9 @@ func (t *PackageDataDirector) GenAndUploadZipPackage() (string, error) {
 		incldeYmlPath := filepath.Join(t.Creator.GetTempDir(), include)
 		ymlBytes, err := yaml.Marshal(projectPackage.Project.Environments.Envs[include])
 		if err != nil {
-			t.errs = append(t.errs, err)
 			return "", err
 		}
 		if err := filehelper.CreateFile(incldeYmlPath, string(ymlBytes), 0644); err != nil {
-			t.errs = append(t.errs, err)
 			return "", err
 		}
 	}
@@ -231,24 +221,20 @@ func (t *PackageDataDirector) GenAndUploadZipPackage() (string, error) {
 	valuesYmlPath := filepath.Join(tempDir, packageValuesYmlName)
 	ymlBytes, err = yaml.Marshal(projectPackage.Project.Environments.EnvsValues)
 	if err != nil {
-		t.errs = append(t.errs, err)
 		return "", err
 	}
 	if err := filehelper.CreateFile(valuesYmlPath, string(ymlBytes), 0644); err != nil {
-		t.errs = append(t.errs, err)
 		return "", err
 	}
 	// write metadata.yml
 	metadataYmlPath := filepath.Join(tempDir, packageProjectMetadataYmlName)
 	metaBytes, _ := yaml.Marshal(projectPackage.MetaData)
 	if err := filehelper.CreateFile(metadataYmlPath, string(metaBytes), 0644); err != nil {
-		t.errs = append(t.errs, err)
 		return "", err
 	}
 
 	zipList := []string{projectYmlPath, metadataYmlPath, valuesYmlPath, artifactsDir, repoDir, envDir}
 	if err := archiver.Zip.Write(zipTmpFile, zipList); err != nil {
-		t.errs = append(t.errs, err)
 		return "", err
 	}
 	zipTmpFile.Seek(0, 0)
@@ -262,7 +248,6 @@ func (t *PackageDataDirector) GenAndUploadZipPackage() (string, error) {
 	}
 	file, err := t.bdl.UploadFile(uploadReq)
 	if err != nil {
-		t.errs = append(t.errs, err)
 		return "", err
 	}
 	return file.UUID, nil
