@@ -231,9 +231,17 @@ func (r *Reconciler) reconcileSnippetTask(task *spec.PipelineTask, p *spec.Pipel
 	err = r.internalReconcileOnePipeline(snippetCtx, sp.ID)
 	defer func() {
 		r.teardownCurrentReconcile(snippetCtx, sp.ID)
-		if _, err := r.updateStatusAfterReconcile(snippetCtx, sp.ID); err != nil {
-			logrus.Errorf("snippet pipeline: %d, failed to update status after reconcile, err: %v", sp.ID, err)
+		var snippetPipelineWithTasks *spec.PipelineWithTasks
+		for {
+			snippetPipelineWithTasks, err = r.updateStatusAfterReconcile(snippetCtx, sp.ID)
+			if err == nil {
+				break
+			}
+			logrus.Errorf("snippet pipeline: %d, failed to update status after reconcile(auto retry), err: %v", sp.ID, err)
+			time.Sleep(time.Second * 5)
+			continue
 		}
+		r.teardownPipeline(snippetCtx, snippetPipelineWithTasks)
 	}()
 	if err != nil {
 		return nil, err
