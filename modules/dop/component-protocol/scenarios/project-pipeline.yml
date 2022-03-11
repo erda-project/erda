@@ -41,6 +41,12 @@ rendering:
   customFilter:
     - name: pipelineTabs
     - name: pipelineTable
+  pipelineTabs:
+    - name: addPipelineBtn
+    - name: tabsTable
+    - name: filterContainer
+    - name: customFilter
+    - name: pipelineTable
   __DefaultRendering__:
     - name: myPage
     - name: pageHeader
