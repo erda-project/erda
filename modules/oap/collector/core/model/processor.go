@@ -21,6 +21,7 @@ import (
 type RuntimeProcessor struct {
 	Name      string
 	Processor Processor
+	Filter    *DataFilter
 }
 
 type Processor interface {

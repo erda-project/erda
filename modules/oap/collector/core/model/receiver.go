@@ -23,6 +23,7 @@ type ObservableDataConsumerFunc func(data odata.ObservableData)
 type RuntimeReceiver struct {
 	Name     string
 	Receiver Receiver
+	Filter   *DataFilter
 }
 
 type Receiver interface {

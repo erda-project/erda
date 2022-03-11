@@ -22,7 +22,6 @@ import (
 	writer "github.com/erda-project/erda-infra/pkg/parallel-writer"
 	"github.com/erda-project/erda-infra/providers/kafka"
 	"github.com/erda-project/erda/modules/oap/collector/common"
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
@@ -45,8 +44,8 @@ type provider struct {
 	writer writer.Writer
 }
 
-func (p *provider) ComponentID() model.ComponentID {
-	return model.ComponentID(providerName)
+func (p *provider) ComponentConfig() interface{} {
+	return p.Cfg
 }
 
 func (p *provider) Connect() error {
@@ -62,7 +61,7 @@ func (p *provider) Export(ods []odata.ObservableData) error {
 		}
 
 		if p.Cfg.MetadataKeyOfTopic != "" {
-			tmp, ok := item.GetMetadata(p.Cfg.MetadataKeyOfTopic)
+			tmp, ok := item.Metadata().Get(p.Cfg.MetadataKeyOfTopic)
 			if !ok {
 				p.Log.Errorf("unable to find topic with key %s", p.Cfg.MetadataKeyOfTopic)
 				continue
