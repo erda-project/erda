@@ -51,7 +51,7 @@ func (GatewayKongAssemblerImpl) BuildKongRouteReq(routeId string, dto *gw.ApiDto
 	if dto == nil || len(serviceId) == 0 {
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
-	req := &kong.KongRouteReqDto{}
+	req := kong.NewKongRouteReqDto()
 	req.Service = &kong.Service{}
 	req.Service.Id = serviceId
 	if len(routeId) != 0 {

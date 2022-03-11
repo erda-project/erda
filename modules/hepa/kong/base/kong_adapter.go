@@ -177,12 +177,11 @@ func (impl *KongAdapterImpl) TouchRouteOAuthMethod(id string) error {
 		return errors.Errorf("get route info failed: code[%d] msg[%s]", code, body)
 	}
 	if needTouch {
-		reqDto := KongRouteReqDto{
-			Methods: []string{"POST"},
-			Hosts:   respDto.Hosts,
-			Paths:   []string{respDto.Paths[0] + "/oauth2/token", respDto.Paths[0] + "/oauth2/authorize"},
-			Service: &respDto.Service,
-		}
+		reqDto := NewKongRouteReqDto()
+		reqDto.Methods = []string{"POST"}
+		reqDto.Hosts = respDto.Hosts
+		reqDto.Paths = []string{respDto.Paths[0] + "/oauth2/token", respDto.Paths[0] + "/oauth2/authorize"}
+		reqDto.Service = &respDto.Service
 		code, body, err = util.DoCommonRequest(impl.Client, "POST", impl.KongAddr+RouteRoot, reqDto)
 		if code == 201 || code == 200 {
 			return nil
