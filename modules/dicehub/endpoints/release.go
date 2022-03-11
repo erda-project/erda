@@ -265,7 +265,8 @@ func (e *Endpoints) hasWriteAccess(identity apistructs.IdentityInfo, projectID i
 	}
 	rsp, err = e.bdl.ScopeRoleAccess(identity.UserID, req)
 	if err != nil {
-		return false, err
+		logrus.Errorf("failed to check app access for release of app %d, %v", applicationID, err)
+		return hasProjectAccess, nil
 	}
 
 	hasAppAccess := false
