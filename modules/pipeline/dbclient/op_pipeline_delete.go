@@ -16,9 +16,6 @@ package dbclient
 
 import (
 	"fmt"
-	"time"
-
-	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
 func (client *Client) DeletePipelineRelated(pipelineID uint64, ops ...SessionOption) error {
@@ -28,7 +25,7 @@ func (client *Client) DeletePipelineRelated(pipelineID uint64, ops ...SessionOpt
 		return err
 	}
 	// 校验当前流水线是否可被删除
-	can, reason := canDelete(p)
+	can, reason := p.CanDelete()
 	if !can {
 		return fmt.Errorf("cannot delete, reason: %s", reason)
 	}
@@ -59,28 +56,4 @@ func (client *Client) DeletePipelineRelated(pipelineID uint64, ops ...SessionOpt
 	}
 
 	return nil
-}
-
-func canDelete(p spec.Pipeline) (bool, string) {
-	// status
-	if !p.Status.CanDelete() {
-		return false, fmt.Sprintf("invalid status: %s", p.Status)
-	}
-	// 终态后需要判断 complete gc
-	if p.Status.IsEndStatus() {
-		if p.TimeEnd != nil && p.Extra.GC.DatabaseGC.Finished.TTLSecond != nil {
-			ok := p.TimeEnd.Before(time.Now().Add(-time.Duration(int64(*p.Extra.GC.DatabaseGC.Finished.TTLSecond)) * time.Second))
-			if ok {
-				return true, ""
-			}
-		}
-		if !p.Extra.CompleteReconcilerGC {
-			return false, fmt.Sprintf("waiting gc")
-		}
-	}
-	return true, ""
-}
-
-func canArchive(p spec.Pipeline) (bool, string) {
-	return canDelete(p)
 }

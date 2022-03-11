@@ -50,7 +50,6 @@ func (p *provider) Run(ctx context.Context) error {
 
 	// gc
 	p.LW.OnLeader(p.r.ListenGC)
-	p.LW.OnLeader(p.r.PipelineDatabaseGC)
 	p.LW.OnLeader(p.r.CompensateGCNamespaces)
 
 	return nil

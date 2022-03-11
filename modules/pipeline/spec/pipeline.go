@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
@@ -270,4 +271,28 @@ func (p *Pipeline) CanSkipRunningCheck() bool {
 		return true
 	}
 	return false
+}
+
+func (p *Pipeline) CanDelete() (bool, string) {
+	// status
+	if !p.Status.CanDelete() {
+		return false, fmt.Sprintf("invalid status: %s", p.Status)
+	}
+	// 终态后需要判断 complete gc
+	if p.Status.IsEndStatus() {
+		if p.TimeEnd != nil && p.Extra.GC.DatabaseGC.Finished.TTLSecond != nil {
+			ok := p.TimeEnd.Before(time.Now().Add(-time.Duration(int64(*p.Extra.GC.DatabaseGC.Finished.TTLSecond)) * time.Second))
+			if ok {
+				return true, ""
+			}
+		}
+		if !p.Extra.CompleteReconcilerGC {
+			return false, fmt.Sprintf("waiting gc")
+		}
+	}
+	return true, ""
+}
+
+func (p *Pipeline) CanArchive() (bool, string) {
+	return p.CanDelete()
 }

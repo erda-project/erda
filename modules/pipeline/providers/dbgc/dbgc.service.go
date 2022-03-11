@@ -28,7 +28,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/dbgc/db"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
@@ -45,7 +45,7 @@ type dbgcService struct {
 	js   jsonstore.JsonStore
 	etcd *etcd.Store
 
-	dbClient *dbclient.Client
+	dbClient *db.Client
 }
 
 // PipelineDatabaseGC remove ListenDatabaseGC and EnsureDatabaseGC these two methods，
@@ -270,14 +270,14 @@ func (r *dbgcService) DoDBGC(pipelineID uint64, gcOption apistructs.PipelineGCDB
 
 	if gcOption.NeedArchive {
 		// 归档
-		_, err := r.dbClient.ArchivePipeline(p.ID)
+		_, err = r.dbClient.ArchivePipeline(p.ID)
 		if err != nil {
 			logrus.Errorf("[alert] dbgc: failed to archive pipeline, id: %d, err: %v", p.ID, err)
 		}
 		logrus.Debugf("dbgc: archive pipeline success, id: %d", p.ID)
 	} else {
 		// 删除
-		if err := r.dbClient.DeletePipelineRelated(p.ID); err != nil {
+		if err = r.dbClient.DeletePipelineRelated(p.ID); err != nil {
 			logrus.Errorf("[alert] dbgc: failed to delete pipeline, id: %d, err: %v", p.ID, err)
 		}
 		logrus.Debugf("dbgc: delete pipeline success, id: %d", p.ID)
@@ -442,4 +442,12 @@ func (r *dbgcService) handleOldNonDBGCPipelines(checkPointDBGCKey string) {
 		logrus.Infof("dbgc ensure: put old non-dbgc pipeline with etcd dbgc key, id: %d, needArchive: %t", p.ID, needArchive)
 		r.WaitDBGC(p.ID, ttl, needArchive)
 	}
+}
+
+func (r *dbgcService) GetPipelineIncludeArchive(ctx context.Context, pipelineID uint64) (spec.Pipeline, bool, bool, error) {
+	return r.dbClient.GetPipelineIncludeArchive(pipelineID)
+}
+
+func (r *dbgcService) GetPipelineTasksIncludeArchive(ctx context.Context, pipelineID uint64) ([]spec.PipelineTask, bool, error) {
+	return r.dbClient.GetPipelineTasksIncludeArchive(pipelineID)
 }

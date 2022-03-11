@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/dbgc/db"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
@@ -50,7 +51,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.gcSvc = dbgcService{
 		js:       js,
 		etcd:     etcdStore,
-		dbClient: &dbclient.Client{Engine: p.MySQL.DB()},
+		dbClient: &db.Client{Client: dbclient.Client{Engine: p.MySQL.DB()}},
 	}
 	return nil
 }

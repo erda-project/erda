@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dbclient
+package db
 
 import (
 	"fmt"
@@ -20,10 +20,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/version"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (client *Client) CreatePipelineArchive(archive *spec.PipelineArchive, ops ...SessionOption) error {
+func (client *Client) CreatePipelineArchive(archive *spec.PipelineArchive, ops ...dbclient.SessionOption) error {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -31,7 +32,7 @@ func (client *Client) CreatePipelineArchive(archive *spec.PipelineArchive, ops .
 	return err
 }
 
-func (client *Client) GetPipelineArchiveByPipelineID(pipelineID uint64, ops ...SessionOption) (spec.PipelineArchive, bool, error) {
+func (client *Client) GetPipelineArchiveByPipelineID(pipelineID uint64, ops ...dbclient.SessionOption) (spec.PipelineArchive, bool, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -40,7 +41,7 @@ func (client *Client) GetPipelineArchiveByPipelineID(pipelineID uint64, ops ...S
 	return archive, exist, err
 }
 
-func (client *Client) GetPipelineFromArchive(pipelineID uint64, ops ...SessionOption) (spec.Pipeline, bool, error) {
+func (client *Client) GetPipelineFromArchive(pipelineID uint64, ops ...dbclient.SessionOption) (spec.Pipeline, bool, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -55,8 +56,8 @@ func (client *Client) GetPipelineFromArchive(pipelineID uint64, ops ...SessionOp
 	return archive.Content.Pipeline, true, nil
 }
 
-// return: pipeline, exist, findFromArchive, error
-func (client *Client) GetPipelineIncludeArchive(pipelineID uint64, ops ...SessionOption) (spec.Pipeline, bool, bool, error) {
+// GetPipelineIncludeArchive return: pipeline, exist, findFromArchive, error
+func (client *Client) GetPipelineIncludeArchive(pipelineID uint64, ops ...dbclient.SessionOption) (spec.Pipeline, bool, bool, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -76,7 +77,7 @@ func (client *Client) GetPipelineIncludeArchive(pipelineID uint64, ops ...Sessio
 	return ap, findFromArchive, findFromArchive, err
 }
 
-func (client *Client) GetPipelineTasksFromArchive(pipelineID uint64, ops ...SessionOption) ([]spec.PipelineTask, error) {
+func (client *Client) GetPipelineTasksFromArchive(pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineTask, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -84,8 +85,8 @@ func (client *Client) GetPipelineTasksFromArchive(pipelineID uint64, ops ...Sess
 	return archive.Content.PipelineTasks, err
 }
 
-// return: tasks, findFromArchive, error
-func (client *Client) GetPipelineTasksIncludeArchive(pipelineID uint64, ops ...SessionOption) ([]spec.PipelineTask, bool, error) {
+// GetPipelineTasksIncludeArchive return: tasks, findFromArchive, error
+func (client *Client) GetPipelineTasksIncludeArchive(pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineTask, bool, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -128,7 +129,7 @@ func (client *Client) ArchivePipeline(pipelineID uint64) (_ uint64, err error) {
 		}
 	}()
 
-	ops := WithTxSession(txSession.Session)
+	ops := dbclient.WithTxSession(txSession.Session)
 
 	// pipeline
 	p, err := client.GetPipeline(pipelineID, ops)
@@ -136,7 +137,7 @@ func (client *Client) ArchivePipeline(pipelineID uint64) (_ uint64, err error) {
 		return 0, err
 	}
 	// 校验当前流水线是否可被归档
-	can, reason := canArchive(p)
+	can, reason := p.CanArchive()
 	if !can {
 		return 0, fmt.Errorf("cannot archive, reason: %s", reason)
 	}
@@ -187,7 +188,6 @@ func (client *Client) ArchivePipeline(pipelineID uint64) (_ uint64, err error) {
 	}
 
 	// create
-
 	if err := client.CreatePipelineArchive(&archive, ops); err != nil {
 		if err := txSession.Rollback(); err != nil {
 			logrus.Errorf("[alert] failed to rollback when CreatePipelineArchive failed, err: %v", err)

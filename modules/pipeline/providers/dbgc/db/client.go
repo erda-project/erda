@@ -12,15 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dbgc
+package db
 
 import (
-	"context"
-
-	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
 )
 
-type Interface interface {
-	GetPipelineIncludeArchive(ctx context.Context, pipelineID uint64) (spec.Pipeline, bool, bool, error)
-	GetPipelineTasksIncludeArchive(ctx context.Context, pipelineID uint64) ([]spec.PipelineTask, bool, error)
+type Client struct {
+	dbclient.Client
 }
