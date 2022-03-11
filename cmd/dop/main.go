@@ -28,6 +28,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/cmp/dashboard/client"
 	_ "github.com/erda-project/erda-proto-go/core/dicehub/release/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/definition/client"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/source/client"
 	_ "github.com/erda-project/erda-proto-go/core/services/errorbox/client"

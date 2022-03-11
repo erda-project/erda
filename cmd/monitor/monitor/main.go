@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// modules
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/client"
 	_ "github.com/erda-project/erda-proto-go/core/services/notify/channel/client"
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis"
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/details-apis"

@@ -15,6 +15,7 @@
 package pipelineTable
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -33,7 +34,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	commonpb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
@@ -61,6 +64,7 @@ type PipelineTable struct {
 	UserIDs  []string       `json:"-"`
 
 	ProjectPipelineSvc *projectpipeline.ProjectPipelineService
+	PipelineCron       cronpb.CronServiceServer
 }
 
 const (
@@ -97,6 +101,7 @@ func (p *PipelineTable) BeforeHandleOp(sdk *cptype.SDK) {
 		panic(err)
 	}
 	p.ProjectPipelineSvc = sdk.Ctx.Value(types.ProjectPipelineService).(*projectpipeline.ProjectPipelineService)
+	p.PipelineCron = sdk.Ctx.Value(types.PipelineCronService).(cronpb.CronServiceServer)
 	//cputil.MustObjJSONTransfer(&p.StdStatePtr, &p.State)
 }
 
@@ -250,7 +255,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 
 	var (
 		pipelineYmlNames []string
-		pipelineSources  []apistructs.PipelineSource
+		pipelineSources  []string
 	)
 
 	definitionYmlSourceMap := make(map[string]string)
@@ -261,22 +266,22 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			logrus.Errorf("failed to list Unmarshal Extra, err: %s", err.Error())
 		}
 		pipelineYmlNames = append(pipelineYmlNames, extraValue.CreateRequest.PipelineYmlName)
-		pipelineSources = append(pipelineSources, extraValue.CreateRequest.PipelineSource)
+		pipelineSources = append(pipelineSources, extraValue.CreateRequest.PipelineSource.String())
 		definitionYmlSourceMap[v.ID] = fmt.Sprintf("%s%s", extraValue.CreateRequest.PipelineYmlName, extraValue.CreateRequest.PipelineSource)
 	}
 
 	worker := limit_sync_group.NewWorker(2)
-	var crons *apistructs.PipelineCronPagingResponseData
+	var crons *cronpb.CronPagingResponse
 	var appNameIDMap *apistructs.GetAppIDByNamesResponseData
 
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 		if len(pipelineYmlNames) == 0 {
 			return nil
 		}
-		crons, err = p.bdl.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
+		crons, err = p.PipelineCron.CronPaging(context.Background(), &cronpb.CronPagingRequest{
 			Sources:  pipelineSources,
 			YmlNames: pipelineYmlNames,
-			PageSize: len(list),
+			PageSize: int64(len(list)),
 			PageNo:   1,
 		})
 		if err != nil {
@@ -307,7 +312,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 		panic(worker.Error())
 	}
 
-	ymlSourceMapCronMap := make(map[string]*apistructs.PipelineCronDTO)
+	ymlSourceMapCronMap := make(map[string]*commonpb.Cron)
 	if crons != nil {
 		for _, v := range crons.Data {
 			ymlSourceMapCronMap[fmt.Sprintf("%s%s", v.PipelineYmlName, v.PipelineSource)] = v
@@ -436,7 +441,7 @@ func formatTimeToStr(t time.Time) string {
 	return t.In(time.FixedZone("UTC+8", int((8 * time.Hour).Seconds()))).Format("2006-01-02 15:04:05")
 }
 
-func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, definitionYmlSourceMap map[string]string, ymlSourceMapCronMap map[string]*apistructs.PipelineCronDTO) []commodel.MoreOpItem {
+func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, definitionYmlSourceMap map[string]string, ymlSourceMapCronMap map[string]*commonpb.Cron) []commodel.MoreOpItem {
 	items := make([]commodel.MoreOpItem, 0)
 	build := cputil.NewOpBuilder().Build()
 	items = append(items, commodel.MoreOpItem{
@@ -487,19 +492,19 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 	if v, ok := ymlSourceMapCronMap[definitionYmlSourceMap[definition.ID]]; ok && strings.TrimSpace(v.CronExpr) != "" {
 		items = append(items, commodel.MoreOpItem{
 			ID: func() string {
-				if *v.Enable {
+				if v.Enable.Value {
 					return "cancelCron"
 				}
 				return "cron"
 			}(),
 			Text: cputil.I18n(p.sdk.Ctx, func() string {
-				if *v.Enable {
+				if v.Enable.Value {
 					return "cancelCron"
 				}
 				return "cron"
 			}()),
 			Icon: func() *commodel.Icon {
-				if *v.Enable {
+				if v.Enable.Value {
 					return &commodel.Icon{
 						Type: "start-timing",
 					}
@@ -539,7 +544,7 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 		return items
 	}
 	if v, ok := ymlSourceMapCronMap[definitionYmlSourceMap[definition.ID]]; ok {
-		if *v.Enable {
+		if v.Enable.Value {
 			return items
 		}
 	}

@@ -18,6 +18,7 @@ import (
 	"context"
 	"net/http"
 
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	credentialpb "github.com/erda-project/erda-proto-go/core/services/authentication/credentials/accesskey/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/cmp/dbclient"
@@ -56,6 +57,7 @@ type Endpoints struct {
 	Credential      credentialpb.AccessKeyServiceServer
 
 	reportTable *resource.ReportTable
+	CronService cronpb.CronServiceServer
 }
 
 type Option func(*Endpoints)
@@ -109,6 +111,12 @@ func WithCredential(c credentialpb.AccessKeyServiceServer) Option {
 func WithResourceTable(reportTable *resource.ReportTable) Option {
 	return func(e *Endpoints) {
 		e.reportTable = reportTable
+	}
+}
+
+func WithCronServiceServer(cronService cronpb.CronServiceServer) Option {
+	return func(e *Endpoints) {
+		e.CronService = cronService
 	}
 }
 

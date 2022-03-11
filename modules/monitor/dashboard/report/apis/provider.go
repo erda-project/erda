@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver/interceptors"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pkg/bundle-ex/cmdb"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -58,12 +59,13 @@ type config struct {
 }
 
 type provider struct {
-	Cfg  *config
-	Log  logs.Logger
-	bdl  *bundle.Bundle
-	cmdb *cmdb.Cmdb
-	t    i18n.Translator
-	db   *DB
+	Cfg         *config
+	Log         logs.Logger
+	bdl         *bundle.Bundle
+	cmdb        *cmdb.Cmdb
+	t           i18n.Translator
+	db          *DB
+	CronService cronpb.CronServiceServer `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

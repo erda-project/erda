@@ -29,7 +29,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	commonpb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -55,6 +57,7 @@ type Pipeline struct {
 	pipelineSource     sourcepb.SourceServiceServer
 	pipelineDefinition definitionpb.DefinitionServiceServer
 	appSvc             *application.Application
+	cronService        cronpb.CronServiceServer
 }
 
 // Option Pipeline 配置选项
@@ -97,6 +100,12 @@ func WithPipelineCms(cms cmspb.CmsServiceServer) Option {
 func WithPipelineSource(source sourcepb.SourceServiceServer) Option {
 	return func(f *Pipeline) {
 		f.pipelineSource = source
+	}
+}
+
+func WithPipelineCron(cronService cronpb.CronServiceServer) Option {
+	return func(f *Pipeline) {
+		f.cronService = cronService
 	}
 }
 
@@ -555,8 +564,10 @@ func (p *Pipeline) PipelineCronUpdate(req apistructs.GittarPushPayloadEvent) err
 				logrus.Errorf("fail to GetPipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
 				continue
 			}
-			if *cron.Enable {
-				_, err = p.bdl.StopPipelineCron(cron.ID)
+			if cron.Enable.Value {
+				_, err := p.cronService.CronStop(context.Background(), &cronpb.CronStopRequest{
+					CronID: cron.ID,
+				})
 				if err != nil {
 					logrus.Errorf("fail to StopPipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
 					continue
@@ -574,8 +585,10 @@ func (p *Pipeline) PipelineCronUpdate(req apistructs.GittarPushPayloadEvent) err
 			// if type is delete,need to stop it if cron enable
 			// if type is rename,need to stop it if cron enable
 			if v.Type == "delete" || v.Type == "rename" {
-				if *cron.Enable {
-					_, err = p.bdl.StopPipelineCron(cron.ID)
+				if cron.Enable.Value {
+					_, err := p.cronService.CronStop(context.Background(), &cronpb.CronStopRequest{
+						CronID: cron.ID,
+					})
 					if err != nil {
 						logrus.Errorf("fail to StopPipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
 					}
@@ -599,16 +612,18 @@ func (p *Pipeline) PipelineCronUpdate(req apistructs.GittarPushPayloadEvent) err
 					continue
 				}
 
-				if err := p.bdl.UpdatePipelineCron(apistructs.PipelineCronUpdateRequest{
-					ID:          cron.ID,
+				if _, err := p.cronService.CronUpdate(context.Background(), &cronpb.CronUpdateRequest{
+					CronID:      cron.ID,
 					PipelineYml: pipelineYml,
 					CronExpr:    cronExpr,
 				}); err != nil {
 					logrus.Errorf("fail to UpdatePipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
 					continue
 				}
-				if *cron.Enable && cronExpr == "" {
-					_, err = p.bdl.StopPipelineCron(cron.ID)
+				if cron.Enable.Value && cronExpr == "" {
+					_, err := p.cronService.CronStop(context.Background(), &cronpb.CronStopRequest{
+						CronID: cron.ID,
+					})
 					if err != nil {
 						logrus.Errorf("fail to StopPipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
 					}
@@ -783,20 +798,19 @@ func isPipelineYmlPath(path string) bool {
 }
 
 // GetPipelineCron get pipeline cron
-func (p *Pipeline) GetPipelineCron(projectID, appID int64, pathOld, branch string) (*apistructs.PipelineCronDTO, error) {
+func (p *Pipeline) GetPipelineCron(projectID, appID int64, pathOld, branch string) (*commonpb.Cron, error) {
 	workspace, err := p.getWorkSpace(projectID, branch)
 	if err != nil {
 		return nil, err
 	}
 	pipelineYmlNameOld := getPipelineYmlName(appID, workspace, branch, pathOld)
-	pagingReq := apistructs.PipelineCronPagingRequest{
+	crons, err := p.cronService.CronPaging(context.Background(), &cronpb.CronPagingRequest{
 		AllSources: false,
-		Sources:    []apistructs.PipelineSource{"dice"},
+		Sources:    []string{"dice"},
 		YmlNames:   []string{pipelineYmlNameOld},
 		PageSize:   1,
 		PageNo:     1,
-	}
-	crons, err := p.bdl.PageListPipelineCrons(pagingReq)
+	})
 	if err != nil {
 		return nil, err
 	}

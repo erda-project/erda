@@ -29,6 +29,10 @@ grpc-client@erda.core.services.authentication.credentials.accesskey:
   block: false
 erda.core.services.authentication.credentials.accesskey-client:
 
+grpc-client@erda.core.pipeline.cron:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+erda.core.pipeline.cron-client:
+
 http-server:
   addr: ":9028"
   allow_cors: true

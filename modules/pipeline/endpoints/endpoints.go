@@ -31,7 +31,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/pipelinecronsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
@@ -42,7 +41,6 @@ import (
 type Endpoints struct {
 	appSvc           *appsvc.AppSvc
 	permissionSvc    *permissionsvc.PermissionSvc
-	pipelineCronSvc  *pipelinecronsvc.PipelineCronSvc
 	pipelineSvc      *pipelinesvc.PipelineSvc
 	crondSvc         *crondsvc.CrondSvc
 	buildArtifactSvc *buildartifactsvc.BuildArtifactSvc
@@ -120,12 +118,6 @@ func WithExtMarketSvc(svc *extmarketsvc.ExtMarketSvc) Option {
 	}
 }
 
-func WithPipelineCronSvc(svc *pipelinecronsvc.PipelineCronSvc) Option {
-	return func(e *Endpoints) {
-		e.pipelineCronSvc = svc
-	}
-}
-
 func WithPipelineSvc(svc *pipelinesvc.PipelineSvc) Option {
 	return func(e *Endpoints) {
 		e.pipelineSvc = svc
@@ -195,15 +187,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/pipelines/actions/pipeline-yml-graph", Method: http.MethodPost, Handler: e.pipelineYmlGraph},
 		{Path: "/api/pipelines/actions/statistics", Method: http.MethodGet, Handler: e.pipelineStatistic},
 		{Path: "/api/pipelines/actions/task-view", Method: http.MethodGet, Handler: e.pipelineTaskView},
-
-		// pipeline cron
-		{Path: "/api/pipeline-crons", Method: http.MethodGet, Handler: e.pipelineCronPaging},
-		{Path: "/api/pipeline-crons/{cronID}/actions/start", Method: http.MethodPut, Handler: e.pipelineCronStart},
-		{Path: "/api/pipeline-crons/{cronID}/actions/stop", Method: http.MethodPut, Handler: e.pipelineCronStop},
-		{Path: "/api/pipeline-crons", Method: http.MethodPost, Handler: e.pipelineCronCreate},
-		{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodDelete, Handler: e.pipelineCronDelete},
-		{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodGet, Handler: e.pipelineCronGet},
-		{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodPut, Handler: e.pipelineCronUpdate},
 
 		// pipeline queue management
 		{Path: "/api/pipeline-queues", Method: http.MethodPost, Handler: e.createPipelineQueue},

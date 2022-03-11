@@ -13,8 +13,6 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "encoding/json" package it is being compiled against.
-var _ json.Marshaler = (*Cron)(nil)
-var _ json.Unmarshaler = (*Cron)(nil)
 var _ json.Marshaler = (*CronPagingRequest)(nil)
 var _ json.Unmarshaler = (*CronPagingRequest)(nil)
 var _ json.Marshaler = (*CronPagingResponse)(nil)
@@ -27,8 +25,6 @@ var _ json.Marshaler = (*CronStopRequest)(nil)
 var _ json.Unmarshaler = (*CronStopRequest)(nil)
 var _ json.Marshaler = (*CronStopResponse)(nil)
 var _ json.Unmarshaler = (*CronStopResponse)(nil)
-var _ json.Marshaler = (*CronCreateRequestV1)(nil)
-var _ json.Unmarshaler = (*CronCreateRequestV1)(nil)
 var _ json.Marshaler = (*CronCreateRequest)(nil)
 var _ json.Unmarshaler = (*CronCreateRequest)(nil)
 var _ json.Marshaler = (*CronCreateResponse)(nil)
@@ -45,24 +41,6 @@ var _ json.Marshaler = (*CronUpdateRequest)(nil)
 var _ json.Unmarshaler = (*CronUpdateRequest)(nil)
 var _ json.Marshaler = (*CronUpdateResponse)(nil)
 var _ json.Unmarshaler = (*CronUpdateResponse)(nil)
-
-// Cron implement json.Marshaler.
-func (m *Cron) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// Cron implement json.Marshaler.
-func (m *Cron) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
 
 // CronPagingRequest implement json.Marshaler.
 func (m *CronPagingRequest) MarshalJSON() ([]byte, error) {
@@ -167,24 +145,6 @@ func (m *CronStopResponse) MarshalJSON() ([]byte, error) {
 
 // CronStopResponse implement json.Marshaler.
 func (m *CronStopResponse) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// CronCreateRequestV1 implement json.Marshaler.
-func (m *CronCreateRequestV1) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// CronCreateRequestV1 implement json.Marshaler.
-func (m *CronCreateRequestV1) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

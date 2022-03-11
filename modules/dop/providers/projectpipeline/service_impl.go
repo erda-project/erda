@@ -29,7 +29,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -422,8 +424,8 @@ func (p *ProjectPipelineService) Delete(ctx context.Context, params deftype.Proj
 	if err != nil {
 		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
 	}
-	crons, err := p.bundle.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
-		Sources:  []apistructs.PipelineSource{extraValue.CreateRequest.PipelineSource},
+	crons, err := p.PipelineCron.CronPaging(context.Background(), &cronpb.CronPagingRequest{
+		Sources:  []string{extraValue.CreateRequest.PipelineSource.String()},
 		YmlNames: []string{extraValue.CreateRequest.PipelineYmlName},
 		PageSize: 1,
 		PageNo:   1,
@@ -431,7 +433,7 @@ func (p *ProjectPipelineService) Delete(ctx context.Context, params deftype.Proj
 	if err != nil {
 		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(err)
 	}
-	if len(crons.Data) > 0 && crons.Data[0].Enable != nil && *crons.Data[0].Enable == true {
+	if len(crons.Data) > 0 && crons.Data[0].Enable != nil && crons.Data[0].Enable.Value == true {
 		return nil, apierrors.ErrDeleteProjectPipeline.InternalError(fmt.Errorf("pipeline cron is running status"))
 	}
 
@@ -818,7 +820,7 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 	return dto, nil
 }
 
-func (p *ProjectPipelineService) startOrEndCron(identityInfo apistructs.IdentityInfo, pipelineDefinitionID string, projectID uint64, enable bool, apiError *errorresp.APIError) (*apistructs.PipelineCronDTO, error) {
+func (p *ProjectPipelineService) startOrEndCron(identityInfo apistructs.IdentityInfo, pipelineDefinitionID string, projectID uint64, enable bool, apiError *errorresp.APIError) (*common.Cron, error) {
 	if pipelineDefinitionID == "" {
 		return nil, apiError.InvalidParameter(fmt.Errorf("pipelineDefinitionID：%s", pipelineDefinitionID))
 	}
@@ -841,12 +843,12 @@ func (p *ProjectPipelineService) startOrEndCron(identityInfo apistructs.Identity
 		return nil, err
 	}
 
-	var req apistructs.PipelineCronPagingRequest
-	req.PageNo = 1
-	req.PageSize = 1
-	req.Sources = []apistructs.PipelineSource{extraValue.CreateRequest.PipelineSource}
-	req.YmlNames = []string{extraValue.CreateRequest.PipelineYmlName}
-	cron, err := p.bundle.PageListPipelineCrons(req)
+	cron, err := p.PipelineCron.CronPaging(context.Background(), &cronpb.CronPagingRequest{
+		PageNo:   1,
+		PageSize: 1,
+		Sources:  []string{extraValue.CreateRequest.PipelineSource.String()},
+		YmlNames: []string{extraValue.CreateRequest.PipelineYmlName},
+	})
 	if err != nil {
 		return nil, apiError.InternalError(err)
 	}
@@ -855,8 +857,8 @@ func (p *ProjectPipelineService) startOrEndCron(identityInfo apistructs.Identity
 	}
 
 	if cron.Data[0].PipelineDefinitionID == "" {
-		err := p.bundle.UpdatePipelineCron(apistructs.PipelineCronUpdateRequest{
-			ID:                     cron.Data[0].ID,
+		_, err := p.PipelineCron.CronUpdate(context.Background(), &cronpb.CronUpdateRequest{
+			CronID:                 cron.Data[0].ID,
 			PipelineYml:            cron.Data[0].PipelineYml,
 			PipelineDefinitionID:   pipelineDefinitionID,
 			CronExpr:               cron.Data[0].CronExpr,
@@ -867,7 +869,7 @@ func (p *ProjectPipelineService) startOrEndCron(identityInfo apistructs.Identity
 		}
 	}
 
-	var dto *apistructs.PipelineCronDTO
+	var dto *common.Cron
 	if enable {
 		orgStr := extraValue.CreateRequest.Labels[apistructs.LabelOrgID]
 		orgID, err := strconv.ParseUint(orgStr, 10, 64)
@@ -879,15 +881,21 @@ func (p *ProjectPipelineService) startOrEndCron(identityInfo apistructs.Identity
 			return nil, apiError.InternalError(err)
 		}
 
-		dto, err = p.bundle.StartPipelineCron(cron.Data[0].ID)
+		result, err := p.PipelineCron.CronStart(context.Background(), &cronpb.CronStartRequest{
+			CronID: cron.Data[0].ID,
+		})
 		if err != nil {
 			return nil, apiError.InternalError(err)
 		}
+		dto = result.Data
 	} else {
-		dto, err = p.bundle.StopPipelineCron(cron.Data[0].ID)
+		result, err := p.PipelineCron.CronStop(context.Background(), &cronpb.CronStopRequest{
+			CronID: cron.Data[0].ID,
+		})
 		if err != nil {
 			return nil, apiError.InternalError(err)
 		}
+		dto = result.Data
 	}
 	return dto, nil
 }
