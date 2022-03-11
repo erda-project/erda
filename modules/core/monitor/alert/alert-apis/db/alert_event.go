@@ -125,7 +125,7 @@ func (db *AlertEventDB) CountUnRecoverEventsGroupByScope() ([]*AlertEventScopeCo
 	return list, err
 }
 
-func (db *AlertEventDB) CountUnRecoverEvents(scope, scopeId string, excludeAlertIds []uint64) (int64, error) {
+func (db *AlertEventDB) CountUnRecoverEvents(scope, scopeId string, inAlertIds []uint64) (int64, error) {
 	var result AlertEventScopeCountResult
 
 	query := db.Table(TableAlertEvent).
@@ -134,8 +134,8 @@ func (db *AlertEventDB) CountUnRecoverEvents(scope, scopeId string, excludeAlert
 		Where("scope=?", scope).
 		Where("scope_id?", scopeId)
 
-	if len(excludeAlertIds) > 0 {
-		query = query.Where("alert_id not in (?)", excludeAlertIds)
+	if len(inAlertIds) > 0 {
+		query = query.Where("alert_id in (?)", inAlertIds)
 	}
 
 	err := query.Find(&result).Error

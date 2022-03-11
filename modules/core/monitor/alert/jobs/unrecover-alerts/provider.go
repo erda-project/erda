@@ -69,12 +69,12 @@ func (p *provider) statisticAlertEvents(ctx context.Context) {
 		return
 	}
 
-	disabledAlertIds, err := p.alertDB.GetAllDisabledAlertIds()
+	availableAlertIds, err := p.alertDB.GetAllAvailableAlertIds()
 	if err != nil {
 		p.Log.Warnf("failed to get all disabled alert ids: %s", err)
 		return
 	}
-	result = p.kickOutDisabledAlertsAndRollupByScopeId(result, disabledAlertIds)
+	result = p.kickOutDisabledAlertsAndRollupByScopeId(result, availableAlertIds)
 
 	metrics := p.convertToMetrics(p.Cfg.MetricReportBatchSize, result...)
 	for _, metric := range metrics {
@@ -85,15 +85,15 @@ func (p *provider) statisticAlertEvents(ctx context.Context) {
 	}
 }
 
-func (p *provider) kickOutDisabledAlertsAndRollupByScopeId(stats []*db.AlertEventScopeCountResult, disabledAlertIds []uint64) []*db.AlertEventScopeCountResult {
+func (p *provider) kickOutDisabledAlertsAndRollupByScopeId(stats []*db.AlertEventScopeCountResult, availableAlertIds []uint64) []*db.AlertEventScopeCountResult {
 	idMap := map[uint64]bool{}
-	for _, id := range disabledAlertIds {
+	for _, id := range availableAlertIds {
 		idMap[id] = true
 	}
 
 	scopeLevelStats := map[string]*db.AlertEventScopeCountResult{}
 	for _, stat := range stats {
-		if _, ok := idMap[stat.AlertId]; ok {
+		if _, ok := idMap[stat.AlertId]; !ok {
 			continue
 		}
 

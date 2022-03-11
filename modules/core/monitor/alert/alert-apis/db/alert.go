@@ -53,13 +53,13 @@ func (db *AlertDB) GetByScopeAndScopeIDAndName(scope, scopeID, name string) (*Al
 	return &alert, nil
 }
 
-func (db *AlertDB) GetAllDisabledAlertIds() ([]uint64, error) {
-	return db.GetDisabledAlertIdByScope("", "")
+func (db *AlertDB) GetAllAvailableAlertIds() ([]uint64, error) {
+	return db.GetAvailableAlertIdByScope("", "")
 }
 
-func (db *AlertDB) GetDisabledAlertIdByScope(scope, scopeID string) ([]uint64, error) {
+func (db *AlertDB) GetAvailableAlertIdByScope(scope, scopeID string) ([]uint64, error) {
 	var alerts []*Alert
-	query := db.Where("enable=?", false)
+	query := db.Where("enable=?", true)
 	if len(scope) > 0 {
 		query = query.Where("scope=?", scope)
 	}
