@@ -118,7 +118,7 @@ func GetPagingApplications(ctx *command.Context, orgID, projectID uint64, pageNo
 
 	response, err := ctx.Get().Path("/api/applications").
 		Header("Org-ID", strconv.FormatUint(orgID, 10)).
-		Param("projectID", strconv.FormatUint(projectID, 10)).
+		Param("projectId", strconv.FormatUint(projectID, 10)).
 		Param("pageNo", strconv.Itoa(pageNo)).Param("pageSize", strconv.Itoa(pageSize)).
 		Do().Body(&b)
 	if err != nil {
@@ -153,7 +153,7 @@ func GetPagingMyApplications(ctx *command.Context, orgID, projectID uint64, page
 
 	response, err := ctx.Get().Path("/api/applications/actions/list-my-applications").
 		Header("Org-ID", strconv.FormatUint(orgID, 10)).
-		Param("projectID", strconv.FormatUint(projectID, 10)).
+		Param("projectId", strconv.FormatUint(projectID, 10)).
 		Param("pageNo", strconv.Itoa(pageNo)).Param("pageSize", strconv.Itoa(pageSize)).
 		Do().Body(&b)
 	if err != nil {
