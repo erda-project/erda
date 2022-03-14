@@ -38,16 +38,6 @@ func (k *Kubernetes) createDaemonSet(ctx context.Context, service *apistructs.Se
 		return errors.Errorf("failed to generate daemonset struct, name: %s, (%v)", service.Name, err)
 	}
 
-	_, projectID, workspace, runtimeID := extractContainerEnvs(daemonset.Spec.Template.Spec.Containers)
-	cpu, mem := getRequestsResources(daemonset.Spec.Template.Spec.Containers)
-	ok, reason, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem, "stateless", service.Name)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errors.New(reason)
-	}
-
 	return k.ds.Create(daemonset)
 }
 
