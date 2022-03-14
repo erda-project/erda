@@ -275,7 +275,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	queryStringDecoder.IgnoreUnknownKeys(true)
 
 	// cache setting
-	projectCache.WithDB(db)
+	projectCache.New(db)
 
 	// compose endpoints
 	ep := endpoints.New(

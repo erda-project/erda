@@ -37,64 +37,17 @@ var (
 	db *dao.DBClient
 )
 
-func init() {
-	projectID2Namespaces = cache.New(projectID2NamespacesCacheName, time.Minute, func(i interface{}) (interface{}, bool) {
-		projectID := i.(uint64)
-		obj := newProjectClusterNamespaceCache(projectID)
-		if err := db.GetProjectClustersNamespacesByProjectID(obj.Namespaces, projectID); err != nil {
-			logrus.WithField("cacheName", projectID2NamespacesCacheName).
-				WithField("projectID", projectID).
-				Warnln("failed to GetProjectClustersNamespacesByProjectID")
-			return nil, false
-		}
-		return obj, true
-	})
-
-	projectID2Member = cache.New(projectID2MemberCacheName, time.Minute, func(i interface{}) (interface{}, bool) {
-		projectID := i.(uint64)
-		var memberListReq = apistructs.MemberListRequest{
-			ScopeType: "project",
-			ScopeID:   int64(projectID),
-			Roles:     []string{"Owner", "Lead"},
-			Labels:    nil,
-			Q:         "",
-			PageNo:    1,
-			PageSize:  1000,
-		}
-		var member model.Member
-		switch _, members, err := db.GetMembersByParam(&memberListReq); {
-		case err != nil:
-			logrus.WithError(err).WithField("projectID", projectID).
-				WithField("memberListReq", memberListReq).
-				Warnln("failed to GetMembersByParam")
-			return nil, false
-		case len(members) == 0:
-			logrus.WithError(err).WithField("projectID", projectID).
-				WithField("memberListReq", memberListReq).
-				Warnln("not found owner for the project")
-			return &ProjectMember{ProjectID: projectID}, true
-		default:
-			hitFirstValidOwnerOrLead(&member, members)
-			userID, err := strconv.ParseUint(member.UserID, 10, 64)
-			// hit nothing
-			if err != nil {
-				logrus.WithError(err).WithField("projectID", projectID).
-					WithField("member", member).
-					Warnln("failed to ParseUint")
-				return &ProjectMember{ProjectID: projectID}, true
-			}
-			return &ProjectMember{
-				ProjectID: projectID,
-				UserID:    uint(userID),
-				Name:      member.Name,
-				Nick:      member.Nick,
-			}, true
-		}
-	})
-}
-
-func WithDB(dbClient *dao.DBClient) {
+func New(dbClient *dao.DBClient) {
 	db = dbClient
+
+	projectID2Namespaces = cache.New(projectID2NamespacesCacheName, time.Minute, retrieveNamespaces)
+	projectID2Member = cache.New(projectID2MemberCacheName, time.Minute, retrieveMember)
+
+	projects, _ := db.GetAllProjects()
+	for _, project := range projects {
+		GetNamespacesByProjectID(uint64(project.ID))
+		GetMemberByProjectID(uint64(project.ID))
+	}
 }
 
 // ProjectClusterNamespaces caches the relationship for project:cluster:namespace
@@ -124,6 +77,60 @@ func GetMemberByProjectID(id uint64) (*ProjectMember, bool) {
 		return nil, false
 	}
 	return obj.(*ProjectMember), true
+}
+
+func retrieveNamespaces(i interface{}) (interface{}, bool) {
+	projectID := i.(uint64)
+	obj := newProjectClusterNamespaceCache(projectID)
+	if err := db.GetProjectClustersNamespacesByProjectID(obj.Namespaces, projectID); err != nil {
+		logrus.WithField("cacheName", projectID2NamespacesCacheName).
+			WithField("projectID", projectID).
+			Warnln("failed to GetProjectClustersNamespacesByProjectID")
+		return nil, false
+	}
+	return obj, true
+}
+
+func retrieveMember(i interface{}) (interface{}, bool) {
+	projectID := i.(uint64)
+	var memberListReq = apistructs.MemberListRequest{
+		ScopeType: "project",
+		ScopeID:   int64(projectID),
+		Roles:     []string{"Owner", "Lead"},
+		Labels:    nil,
+		Q:         "",
+		PageNo:    1,
+		PageSize:  1000,
+	}
+	var member model.Member
+	switch _, members, err := db.GetMembersByParam(&memberListReq); {
+	case err != nil:
+		logrus.WithError(err).WithField("projectID", projectID).
+			WithField("memberListReq", memberListReq).
+			Warnln("failed to GetMembersByParam")
+		return nil, false
+	case len(members) == 0:
+		logrus.WithError(err).WithField("projectID", projectID).
+			WithField("memberListReq", memberListReq).
+			Warnln("not found owner for the project")
+		return &ProjectMember{ProjectID: projectID}, true
+	default:
+		hitFirstValidOwnerOrLead(&member, members)
+		userID, err := strconv.ParseUint(member.UserID, 10, 64)
+		// hit nothing
+		if err != nil {
+			logrus.WithError(err).WithField("projectID", projectID).
+				WithField("member", member).
+				Warnln("failed to ParseUint")
+			return &ProjectMember{ProjectID: projectID}, true
+		}
+		return &ProjectMember{
+			ProjectID: projectID,
+			UserID:    uint(userID),
+			Name:      member.Name,
+			Nick:      member.Nick,
+		}, true
+	}
 }
 
 func newProjectClusterNamespaceCache(projectID uint64) *ProjectClusterNamespaces {
