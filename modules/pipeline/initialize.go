@@ -131,7 +131,7 @@ func (p *provider) do() error {
 	queueManage := queuemanage.New(queuemanage.WithDBClient(dbClient))
 
 	// init services
-	pipelineSvc := pipelinesvc.New(appSvc, crondSvc, actionAgentSvc, extMarketSvc, *p.CronService,
+	pipelineSvc := pipelinesvc.New(appSvc, crondSvc, actionAgentSvc, extMarketSvc, p.CronService,
 		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl)
 	pipelineSvc.WithCmsService(p.CmsService)
 
