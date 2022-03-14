@@ -64,6 +64,7 @@ require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
+	github.com/gobwas/glob v0.2.3
 	github.com/gocql/gocql v0.0.0-20210707082121-9a3953d1826d
 	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v4.0.0+incompatible
