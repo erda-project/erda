@@ -251,7 +251,7 @@ func initLeaderCron(ep *endpoints.Endpoints, ctx context.Context) error {
 
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(5*time.Minute)).Do(ep.SyncAddonResources)
 
-	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Minute)).Do(ep.CleanRemainingAddonAttachment)
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(1*time.Hour)).Do(ep.CleanRemainingAddonAttachment)
 
 	ep.FullGCLoop(ctx)
 
