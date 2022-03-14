@@ -39,14 +39,9 @@ import (
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/all"
 )
 
-const (
-	envCollectorConfigFile = "COLLECTOR_CONFIG_FILE"
-	ConfigFile             = "conf/monitor/collector/collector.yaml"
-)
-
 //go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/monitor/core/collector"
 func main() {
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: ConfigFile,
+		ConfigFile: "conf/monitor/collector/collector.yaml",
 	})
 }
