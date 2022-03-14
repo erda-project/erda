@@ -37,6 +37,7 @@ var (
 	db *dao.DBClient
 )
 
+// New make new caches about projcts
 func New(dbClient *dao.DBClient) {
 	db = dbClient
 
@@ -58,6 +59,7 @@ type ProjectClusterNamespaces struct {
 	Namespaces map[string][]string
 }
 
+// ProjectMember caches the relationship for project:owner
 type ProjectMember struct {
 	ProjectID uint64
 	UserID    uint
@@ -65,6 +67,7 @@ type ProjectMember struct {
 	Nick      string
 }
 
+// GetNamespacesByProjectID receive a project id and returns its cluster and namespaces from caches
 func GetNamespacesByProjectID(id uint64) (*ProjectClusterNamespaces, bool) {
 	obj, ok := projectID2Namespaces.LoadWithUpdate(id)
 	if !ok {
@@ -73,6 +76,7 @@ func GetNamespacesByProjectID(id uint64) (*ProjectClusterNamespaces, bool) {
 	return obj.(*ProjectClusterNamespaces), true
 }
 
+// GetMemberByProjectID receive a project id and returns its owner from caches
 func GetMemberByProjectID(id uint64) (*ProjectMember, bool) {
 	obj, ok := projectID2Member.LoadWithUpdate(id)
 	if !ok {
@@ -83,14 +87,14 @@ func GetMemberByProjectID(id uint64) (*ProjectMember, bool) {
 
 func retrieveNamespaces(i interface{}) (interface{}, bool) {
 	projectID := i.(uint64)
-	obj := newProjectClusterNamespaceCache(projectID)
-	if err := db.GetProjectClustersNamespacesByProjectID(obj.Namespaces, projectID); err != nil {
+	item := newProjectClusterNamespaceItem(projectID)
+	if err := db.GetProjectClustersNamespacesByProjectID(item.Namespaces, projectID); err != nil {
 		logrus.WithField("cacheName", projectID2NamespacesCacheName).
 			WithField("projectID", projectID).
 			Warnln("failed to GetProjectClustersNamespacesByProjectID")
 		return nil, false
 	}
-	return obj, true
+	return item, true
 }
 
 func retrieveMember(i interface{}) (interface{}, bool) {
@@ -135,7 +139,7 @@ func retrieveMember(i interface{}) (interface{}, bool) {
 	}
 }
 
-func newProjectClusterNamespaceCache(projectID uint64) *ProjectClusterNamespaces {
+func newProjectClusterNamespaceItem(projectID uint64) *ProjectClusterNamespaces {
 	return &ProjectClusterNamespaces{
 		ProjectID:  projectID,
 		Namespaces: make(map[string][]string),

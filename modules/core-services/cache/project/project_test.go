@@ -45,3 +45,7 @@ func Test_getFirstValidOwnerOrLead(t *testing.T) {
 		t.Fatal("hit error")
 	}
 }
+
+func Test_newProjectClusterNamespaceItem(t *testing.T) {
+	newProjectClusterNamespaceItem(1)
+}
