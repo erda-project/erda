@@ -15,6 +15,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/pkg/common"
 
@@ -39,9 +41,18 @@ import (
 	_ "github.com/erda-project/erda/modules/oap/collector/plugins/all"
 )
 
+const (
+	centralCollector = "conf/monitor/collector/collector.yaml"
+	edgeCollector    = "conf/monitor/collector/collector-agent.yaml"
+)
+
 //go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/monitor/core/collector"
 func main() {
+	cfg := centralCollector
+	if os.Getenv("DICE_IS_EDGE") == "true" {
+		cfg = edgeCollector
+	}
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: "conf/monitor/collector/collector.yaml",
+		ConfigFile: cfg,
 	})
 }
