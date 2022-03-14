@@ -102,10 +102,10 @@ func (db *GuideDB) CreateGuide(guide *Guide) error {
 
 // GetGuide .
 func (db *GuideDB) GetGuide(id string) (guide Guide, err error) {
-	err = db.Debug().Model(&Guide{}).Scopes(NotDeleted).
+	err = db.Model(&Guide{}).Scopes(NotDeleted).
 		Where("id = ?", id).
 		Where("status = ?", InitStatus).
-		Where("created_at >= ?", time.Now().Add(-1*(ExpiredTime)).Format("2006-01-02 15:04:05")).
+		Where("created_at >= ?", time.Now().Add(-1*(ExpiredTime))).
 		First(&guide).Error
 	return
 }
@@ -113,20 +113,20 @@ func (db *GuideDB) GetGuide(id string) (guide Guide, err error) {
 // UpdateGuide .
 func (db *GuideDB) UpdateGuide(id string, fields map[string]interface{}) error {
 	guide := &Guide{ID: id}
-	return db.Debug().Model(guide).Scopes(NotDeleted).Updates(fields).Error
+	return db.Model(guide).Scopes(NotDeleted).Updates(fields).Error
 }
 
 // BatchUpdateGuideExpiryStatus .
 func (db *GuideDB) BatchUpdateGuideExpiryStatus() error {
-	return db.Debug().Model(&Guide{}).Scopes(NotDeleted).
+	return db.Model(&Guide{}).Scopes(NotDeleted).
 		Where("status = ?", InitStatus).
-		Where("created_at < ? ", time.Now().Add(-1*(ExpiredTime)).Format("2006-01-02 15:04:05")).
+		Where("created_at < ? ", time.Now().Add(-1*(ExpiredTime))).
 		Updates(map[string]interface{}{"status": ExpiredStatus}).Error
 }
 
 // UpdateGuideByAppIDAndBranch .
 func (db *GuideDB) UpdateGuideByAppIDAndBranch(appID uint64, branch, kind string, fields map[string]interface{}) error {
-	return db.Debug().Model(&Guide{}).Scopes(NotDeleted).
+	return db.Model(&Guide{}).Scopes(NotDeleted).
 		Where("app_id = ?", appID).
 		Where("branch = ?", branch).
 		Where("kind = ?", kind).
@@ -135,13 +135,13 @@ func (db *GuideDB) UpdateGuideByAppIDAndBranch(appID uint64, branch, kind string
 
 // ListGuideLimit . Returns data for a given number of rows
 func (db *GuideDB) ListGuideLimit(req *pb.ListGuideRequest, userID string, num int) (guides []Guide, err error) {
-	err = db.Debug().Model(&Guide{}).
+	err = db.Model(&Guide{}).
 		Scopes(NotDeleted).
 		Where("kind = ?", req.Kind).
 		Where("project_id = ?", req.ProjectID).
 		Where("creator = ?", userID).
 		Where("status = ?", InitStatus).
-		Where("created_at >= ?", time.Now().Add(-1*(ExpiredTime)).Format("2006-01-02 15:04:05")).
+		Where("created_at >= ?", time.Now().Add(-1*(ExpiredTime))).
 		Order("created_at DESC").
 		Limit(num).
 		Find(&guides).Error

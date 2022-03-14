@@ -48,18 +48,17 @@ type provider struct {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	go func() {
-		cron := cron.New()
-		err := cron.AddFunc(conf.UpdateGuideExpiryStatusCron(), func() {
-			if err := p.GuideService.BatchUpdateGuideExpiryStatus(); err != nil {
-				p.Log.Errorf("failed to BatchUpdateGuideExpiryStatus, err: %v", err)
-			}
-		})
-		if err != nil {
-			panic(err)
+	cron := cron.New()
+	err := cron.AddFunc(conf.UpdateGuideExpiryStatusCron(), func() {
+		p.Log.Infof("begin update guide...")
+		if err := p.GuideService.BatchUpdateGuideExpiryStatus(); err != nil {
+			p.Log.Errorf("failed to BatchUpdateGuideExpiryStatus, err: %v", err)
 		}
-		cron.Start()
-	}()
+	})
+	if err != nil {
+		panic(err)
+	}
+	cron.Start()
 	return nil
 }
 
