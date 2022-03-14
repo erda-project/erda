@@ -17,10 +17,9 @@ package model
 import (
 	"testing"
 
-	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
-
 	"github.com/stretchr/testify/assert"
 
+	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
