@@ -12,29 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package project
+package projectCache
 
 import (
 	"testing"
-	"time"
+
+	"github.com/erda-project/erda/modules/core-services/model"
 )
 
-func TestNewCache(t *testing.T) {
-	memberC := NewCache(time.Millisecond * 200)
-	for i := 0; i < 50; i++ {
-		member := new(memberCache)
-		memberC.Store(i, &CacheItme{Object: member})
+func Test_getFirstValidOwnerOrLead(t *testing.T) {
+	var members = []model.Member{
+		{
+			UserID: "1",
+			Roles:  []string{"Developer"},
+		}, {
+			UserID: "2",
+			Roles:  []string{"Lead"},
+		}, {
+			UserID: "3",
+			Roles:  []string{"Lead", "Owner"},
+		}, {
+			UserID: "4",
+			Roles:  []string{"Owner"},
+		},
 	}
+	var member *model.Member
+	hitFirstValidOwnerOrLead(member, members)
 
-	time.Sleep(time.Second)
-	value, _ := memberC.Load(1)
-	if isExpired := value.(*CacheItme).IsExpired(); !isExpired {
-		t.Fatal("it should be expired")
-	}
-
-	memberC.Store(1, &CacheItme{Object: new(memberCache)})
-	value, _ = memberC.Load(1)
-	if isExpired := value.(*CacheItme).IsExpired(); isExpired {
-		t.Fatal("it should not be expired")
+	member = new(model.Member)
+	hitFirstValidOwnerOrLead(member, members)
+	if member.UserID != "3" {
+		t.Fatal("hit error")
 	}
 }

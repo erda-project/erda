@@ -17,6 +17,7 @@ package resource
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rancher/apiserver/pkg/types"
@@ -49,13 +50,16 @@ func NewReportTable(opts ...ReportTableOption) *ReportTable {
 func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int64, clusterNames []string,
 	cpuPerNode, memPerNode uint64, groupBy string) (*apistructs.ResourceOverviewReportData, error) {
 
+	var now = time.Now()
 	// 1) 查找所有 namespaces
 	var (
 		namespacesM = make(map[string][]string)
 		orgIDStr    = strconv.FormatInt(orgID, 10)
 	)
 	rt.fetchAllNamespaces(ctx, namespacesM, orgIDStr, clusterNames)
+	logrus.WithField("func", "fetchAllNamespaces").Infof("cost: %v", time.Now().Sub(now).Seconds())
 
+	now = time.Now()
 	// 2) 调用 core-services bundle，根据 namespaces 查找各 namespaces 的归属
 	projectsNamespaces, err := rt.bdl.FetchNamespacesBelongsTo(ctx, uint64(orgID), clusterNames)
 	if err != nil {
@@ -63,20 +67,30 @@ func (rt *ReportTable) GetResourceOverviewReport(ctx context.Context, orgID int6
 		logrus.WithError(err).Errorln()
 		return nil, err
 	}
+	logrus.WithField("func", "FetchNamespacesBelongsTo").Infof("cost: %v", time.Now().Sub(now).Seconds())
 
 	// 3) 查找所有 namespace 下的 request 情况
+	now = time.Now()
 	resources, err := rt.fetchRequestOnNamespaces(ctx, namespacesM)
 	if err != nil {
 		err = errors.Wrap(err, "failed to GetNamespacesResources")
 		logrus.WithError(err).WithField("namespaces", namespacesM).Errorln()
 		return nil, err
 	}
+	logrus.WithField("func", "fetchRequestOnNamespaces").Infof("cost: %v", time.Now().Sub(now).Seconds())
 
 	// 4) request 归属到项目，归属不到项目的，算作共享资源
-	return rt.groupResponse(ctx, resources, projectsNamespaces, cpuPerNode, memPerNode, groupBy), nil
+	now = time.Now()
+	data := rt.groupResponse(ctx, resources, projectsNamespaces, cpuPerNode, memPerNode, groupBy)
+	logrus.WithField("func", "groupResponse").Infof("cost: %v", time.Now().Sub(now).Seconds())
+	return data, nil
 }
 
 func (rt *ReportTable) fetchAllNamespaces(ctx context.Context, namespaces map[string][]string, orgID string, clusters []string) {
+	var now = time.Now()
+	defer logrus.WithField("func", "*ReportTable.fetchAllNamespaces").
+		Infof("cost: %v", time.Now().Sub(now).Seconds())
+
 	for _, clusterName := range clusters {
 		resources, err := rt.cmp.ListSteveResource(ctx, &apistructs.SteveRequest{
 			NoAuthentication: true,

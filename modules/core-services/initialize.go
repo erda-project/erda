@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/bundle"
+	projectCache "github.com/erda-project/erda/modules/core-services/cache/project"
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/endpoints"
@@ -188,7 +189,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		project.WithBundle(bdl),
 		project.WithI18n(p.Tran),
 	)
-	go proj.UpdateCache()
 
 	// init app service
 	app := application.New(
@@ -273,6 +273,9 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	// queryStringDecoder
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
+
+	// cache setting
+	projectCache.WithDB(db)
 
 	// compose endpoints
 	ep := endpoints.New(
