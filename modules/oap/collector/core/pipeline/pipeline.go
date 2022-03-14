@@ -66,10 +66,11 @@ func (p *Pipeline) rsFromComponent(coms []model.ComponentUnit) ([]*model.Runtime
 		if !ok {
 			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.Name, com.Component)
 		}
-		res = append(res, &model.RuntimeReceiver{Name: com.Name, Receiver: c})
+		res = append(res, &model.RuntimeReceiver{Name: com.Name, Receiver: c, Filter: com.Filter})
 	}
 	return res, nil
 }
+
 func (p *Pipeline) prsFromComponent(coms []model.ComponentUnit) ([]*model.RuntimeProcessor, error) {
 	res := make([]*model.RuntimeProcessor, 0, len(coms))
 	for _, com := range coms {
@@ -77,7 +78,7 @@ func (p *Pipeline) prsFromComponent(coms []model.ComponentUnit) ([]*model.Runtim
 		if !ok {
 			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.Name, com.Component)
 		}
-		res = append(res, &model.RuntimeProcessor{Name: com.Name, Processor: c})
+		res = append(res, &model.RuntimeProcessor{Name: com.Name, Processor: c, Filter: com.Filter})
 	}
 	return res, nil
 }
@@ -89,8 +90,15 @@ func (p *Pipeline) esFromComponent(coms []model.ComponentUnit) ([]*model.Runtime
 			return nil, fmt.Errorf("invalid component<%s> type<%T>", com.Name, com.Component)
 		}
 		buffer := odata.NewBuffer(p.cfg.BatchLimit)
-		ticker := common.NewRunningTimer(p.cfg.FlushInterval, p.cfg.FlushJitter)
-		res = append(res, model.NewRuntimeExporter(com.Name, p.Log.Sub("exporter-"+com.Name), c, buffer, ticker))
+		timer := common.NewRunningTimer(p.cfg.FlushInterval, p.cfg.FlushJitter)
+		res = append(res, &model.RuntimeExporter{
+			Name:     com.Name,
+			Logger:   p.Log.Sub("exporter-" + com.Name),
+			Exporter: c,
+			Filter:   com.Filter,
+			Timer:    timer,
+			Buffer:   buffer,
+		})
 	}
 	return res, nil
 }
@@ -143,6 +151,9 @@ func (p *Pipeline) startProcessors(ctx context.Context, in <-chan odata.Observab
 		select {
 		case data := <-in:
 			for _, pr := range p.processors {
+				if !pr.Filter.Selected(data) {
+					continue
+				}
 				tmp, err := pr.Processor.Process(data)
 				if err != nil {
 					p.Log.Errorf("Processor<%s> process data error: %s", pr.Name, err)
@@ -173,6 +184,7 @@ func newConsumer(ctx context.Context, out chan<- odata.ObservableData) model.Obs
 	return func(od odata.ObservableData) {
 		select {
 		case out <- od:
+
 		case <-ctx.Done():
 			return
 		}

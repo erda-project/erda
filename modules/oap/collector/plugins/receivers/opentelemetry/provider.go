@@ -51,8 +51,8 @@ type provider struct {
 	consumer model.ObservableDataConsumerFunc
 }
 
-func (p *provider) ComponentID() model.ComponentID {
-	return model.ComponentID(providerName)
+func (p *provider) ComponentConfig() interface{} {
+	return p.Cfg
 }
 
 func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {

@@ -47,12 +47,12 @@ type provider struct {
 	consumerFunc model.ObservableDataConsumerFunc
 }
 
-func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
-	p.consumerFunc = consumer
+func (p *provider) ComponentConfig() interface{} {
+	return p.Cfg
 }
 
-func (p *provider) ComponentID() model.ComponentID {
-	return model.ComponentID(providerName)
+func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
+	p.consumerFunc = consumer
 }
 
 // Run this is optional

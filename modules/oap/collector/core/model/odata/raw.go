@@ -26,16 +26,20 @@ type Raw struct {
 	Meta *Metadata `json:"meta"`
 }
 
+func (r *Raw) Attributes() map[string]string {
+	return map[string]string{}
+}
+
+func (r *Raw) Name() string {
+	return ""
+}
+
 func NewRaw(item []byte) *Raw {
 	return &Raw{Item: item, Meta: &Metadata{Data: map[string]string{}}}
 }
 
-func (r *Raw) AddMetadata(key, value string) {
-	r.Meta.Add(key, value)
-}
-
-func (r *Raw) GetMetadata(key string) (string, bool) {
-	return r.Meta.Get(key)
+func (r *Raw) Metadata() *Metadata {
+	return r.Meta
 }
 
 func (r *Raw) HandleAttributes(_ func(attr map[string]string) map[string]string) {}
