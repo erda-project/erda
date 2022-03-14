@@ -55,6 +55,7 @@ const (
 	// OpKeyProjectID  operation related keys
 	OpKeyProjectID           = "projectId"
 	OpKeyAppID               = "appId"
+	OpKeyWorkSpace           = "workspace"
 	OpKeyIssueFilterUrlQuery = "issueFilter__urlQuery"
 
 	// OpValTargetProjAllIssue target related keys
@@ -69,7 +70,7 @@ const (
 	OpValTargetProjectSetting           = "projectSetting"
 	OpValTargetProject                  = "project"
 	OpValTargetAppOpenMr                = "appOpenMr"
-	OpValTargetAppDeploy                = "deploy"
+	OpValTargetAppDeploy                = "projectDeployEnv"
 	OpValTargetRepo                     = "repo"
 	OpValTargetPipelineRoot             = "pipelineRoot"
 	OpValTargetAppApiDesign             = "appApiDesign"
