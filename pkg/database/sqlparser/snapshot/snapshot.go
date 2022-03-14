@@ -295,9 +295,6 @@ func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 				if IsCannotAddOrUpdateAChildRowError(err) {
 					continue
 				}
-				for i, v := range item {
-					logrus.Infof("type of item[%v]: %T", i, v)
-				}
 				return n, count, err
 			}
 			n++
