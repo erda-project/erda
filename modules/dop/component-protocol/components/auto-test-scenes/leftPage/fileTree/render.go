@@ -175,7 +175,7 @@ func (i *ComponentFileTree) Render(ctx context.Context, c *cptype.Component, sce
 	i.Operations["drag"] = drag
 
 	i.Props = map[string]interface{}{}
-	i.Props["draggable"] = false
+	i.Props["draggable"] = true
 
 	inParamsBytes, err := json.Marshal(cputil.SDK(ctx).InParams)
 	if err != nil {

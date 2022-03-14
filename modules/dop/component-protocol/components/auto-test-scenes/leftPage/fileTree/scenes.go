@@ -250,6 +250,8 @@ func (i *ComponentFileTree) initSceneSet(s *apistructs.SceneSet) SceneSet {
 	set.Operations["delete"] = delete
 	set.Operations["refSceneSet"] = refSceneSet
 	set.Operations["exportSceneSet"] = export
+	set.Draggable = true
+	set.DropPosition = []int{1, -1}
 	return set
 }
 
@@ -318,6 +320,8 @@ func (i *ComponentFileTree) initScene(scene apistructs.AutoTestScene, setId int)
 		},
 	}
 	s.Operations["delete"] = deleteOperation
+	s.Draggable = false
+	s.DropPosition = nil
 	return s
 }
 
