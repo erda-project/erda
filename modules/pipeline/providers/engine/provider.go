@@ -35,6 +35,8 @@ import (
 )
 
 type config struct {
+	RetryInterval time.Duration `file:"retry_interval" default:"5s"`
+
 	Worker workerConfig `file:"worker"`
 }
 type workerConfig struct {
@@ -61,13 +63,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	// dbclient
 	p.dbClient = &dbclient.Client{Engine: p.MySQL.DB()}
 
-	// set bundle before initialize scheduler, because scheduler need use bdl get clusters
-	bdl := bundle.New(bundle.WithAllAvailableClients(), bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second))))
-	clusterinfo.Initialize(bdl)
-	// register cluster hook
-	if err := clusterinfo.RegisterClusterHook(); err != nil {
-		return err
-	}
+	// cluster info
+	// TODO setup inside clusterinfo provider later
+	p.initClusterInfoUntilSuccess(ctx)
 
 	// action executor manager
 	_, cfgChan, err := p.dbClient.ListPipelineConfigsOfActionExecutor()
@@ -81,6 +79,23 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 
 	return nil
+}
+
+func (p *provider) initClusterInfoUntilSuccess(ctx context.Context) {
+	bdl := bundle.New(bundle.WithAllAvailableClients(), bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second))))
+	clusterinfo.Initialize(bdl)
+
+	// continuous register cluster hook
+	// pipeline depends on eventbox, so if eventbox is under rebooting, pipeline will failed to register cluster hook
+	for {
+		err := clusterinfo.RegisterClusterHook()
+		if err == nil {
+			break
+		}
+		p.Log.Infof("failed to register cluster hook(auto retry), err: %v", err)
+		time.Sleep(p.Cfg.RetryInterval)
+		continue
+	}
 }
 
 func (p *provider) Run(ctx context.Context) error {
