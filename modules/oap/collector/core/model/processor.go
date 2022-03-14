@@ -37,8 +37,8 @@ type RunningProcessor interface {
 type NoopProcessor struct {
 }
 
-func (n *NoopProcessor) ComponentID() ComponentID {
-	return "NoopProcessor"
+func (n *NoopProcessor) ComponentConfig() interface{} {
+	return nil
 }
 
 func (n *NoopProcessor) Process(in odata.ObservableData) (odata.ObservableData, error) {

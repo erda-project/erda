@@ -37,7 +37,7 @@ type FilterConfig struct {
 
 type DataFilter struct {
 	Namepass filter.Filter
-	NameDrop filter.Filter
+	Namedrop filter.Filter
 	Tagpass  map[string]filter.Filter
 	Tagdrop  map[string]filter.Filter
 
@@ -52,7 +52,7 @@ func (df *DataFilter) Selected(od odata.ObservableData) bool {
 	if df.Namepass != nil && !df.Namepass.Match(od.Name()) {
 		return false
 	}
-	if df.NameDrop != nil && df.NameDrop.Match(od.Name()) {
+	if df.Namedrop != nil && df.Namedrop.Match(od.Name()) {
 		return false
 	}
 	attr := od.Attributes()
@@ -126,7 +126,7 @@ func NewDataFilter(cfg FilterConfig) (*DataFilter, error) {
 	}
 	return &DataFilter{
 		Namepass:   namepass,
-		NameDrop:   namedrop,
+		Namedrop:   namedrop,
 		Tagpass:    tagpass,
 		Tagdrop:    tagdrop,
 		Fieldpass:  fieldpass,

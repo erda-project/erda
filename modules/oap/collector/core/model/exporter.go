@@ -73,8 +73,8 @@ type Exporter interface {
 
 type NoopExporter struct{}
 
-func (n *NoopExporter) ComponentID() ComponentID {
-	return "NoopExporter"
+func (n *NoopExporter) ComponentConfig() interface{} {
+	return nil
 }
 
 func (n *NoopExporter) Connect() error {

@@ -19,8 +19,9 @@ import (
 
 	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 
-	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
 func TestDataFilter_Selected(t *testing.T) {
