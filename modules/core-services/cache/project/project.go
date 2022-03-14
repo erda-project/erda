@@ -41,13 +41,15 @@ func New(dbClient *dao.DBClient) {
 	db = dbClient
 
 	projectID2Namespaces = cache.New(projectID2NamespacesCacheName, time.Minute, retrieveNamespaces)
-	projectID2Member = cache.New(projectID2MemberCacheName, time.Minute, retrieveMember)
+	projectID2Member = cache.New(projectID2MemberCacheName, time.Minute*10, retrieveMember)
 
-	projects, _ := db.GetAllProjects()
-	for _, project := range projects {
-		GetNamespacesByProjectID(uint64(project.ID))
-		GetMemberByProjectID(uint64(project.ID))
-	}
+	go func() {
+		projects, _ := db.GetAllProjects()
+		for _, project := range projects {
+			GetNamespacesByProjectID(uint64(project.ID))
+			GetMemberByProjectID(uint64(project.ID))
+		}
+	}()
 }
 
 // ProjectClusterNamespaces caches the relationship for project:cluster:namespace
