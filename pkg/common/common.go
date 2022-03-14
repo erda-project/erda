@@ -24,7 +24,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
-	_ "github.com/erda-project/erda/pkg/common/trace" //nolint
+	_ "github.com/erda-project/erda/pkg/common/trace" // nolint
 )
 
 var instanceID = uuid.NewV4().String()
@@ -88,7 +88,7 @@ func newHub() *servicehub.Hub {
 func Run(opts *servicehub.RunOptions) {
 	prepare()
 	opts.Name = GetEnv("CONFIG_NAME", opts.Name)
-	cfg := opts.ConfigFile
+	cfg := GetEnv("CONFIG_FILE", opts.ConfigFile)
 	if len(cfg) <= 0 && len(opts.Name) > 0 {
 		cfg = opts.Name + ".yaml"
 	}

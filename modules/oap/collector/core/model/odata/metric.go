@@ -30,16 +30,20 @@ type Metric struct {
 	Meta *Metadata   `json:"meta"`
 }
 
+func (m *Metric) Attributes() map[string]string {
+	return m.Item.Attributes
+}
+
+func (m *Metric) Name() string {
+	return m.Item.Name
+}
+
+func (m *Metric) Metadata() *Metadata {
+	return m.Meta
+}
+
 func NewMetric(item *mpb.Metric) *Metric {
 	return &Metric{Item: item, Meta: &Metadata{Data: map[string]string{}}}
-}
-
-func (m *Metric) AddMetadata(key, value string) {
-	m.Meta.Add(key, value)
-}
-
-func (m *Metric) GetMetadata(key string) (string, bool) {
-	return m.Meta.Get(key)
 }
 
 func (m *Metric) HandleAttributes(handle func(attr map[string]string) map[string]string) {

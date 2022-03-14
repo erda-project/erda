@@ -29,22 +29,20 @@ type Span struct {
 	Meta *Metadata `json:"meta"`
 }
 
+func (s *Span) Attributes() map[string]string {
+	return s.Item.Attributes
+}
+
+func (s *Span) Name() string {
+	return s.Item.Name
+}
+
 func NewSpan(item *tpb.Span) *Span {
 	return &Span{Item: item, Meta: &Metadata{Data: map[string]string{}}}
 }
 
-func (s *Span) AddMetadata(key, value string) {
-	if s.Meta == nil {
-		s.Meta = &Metadata{Data: make(map[string]string)}
-	}
-	s.Meta.Add(key, value)
-}
-
-func (s *Span) GetMetadata(key string) (string, bool) {
-	if s.Meta == nil {
-		s.Meta = &Metadata{Data: make(map[string]string)}
-	}
-	return s.Meta.Get(key)
+func (s *Span) Metadata() *Metadata {
+	return s.Meta
 }
 
 func (s *Span) HandleAttributes(handle func(attr map[string]string) map[string]string) {

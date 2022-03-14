@@ -37,16 +37,20 @@ type Log struct {
 	Meta *Metadata `json:"meta"`
 }
 
+func (l *Log) Attributes() map[string]string {
+	return l.Item.Attributes
+}
+
+func (l *Log) Name() string {
+	return l.Item.Name
+}
+
+func (l *Log) Metadata() *Metadata {
+	return l.Meta
+}
+
 func NewLog(item *lpb.Log) *Log {
 	return &Log{Item: item, Meta: &Metadata{Data: map[string]string{}}}
-}
-
-func (l *Log) AddMetadata(key, value string) {
-	l.Meta.Add(key, value)
-}
-
-func (l *Log) GetMetadata(key string) (string, bool) {
-	return l.Meta.Get(key)
 }
 
 func (l *Log) HandleAttributes(handle func(attr map[string]string) map[string]string) {

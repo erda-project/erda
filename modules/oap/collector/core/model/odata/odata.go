@@ -33,10 +33,11 @@ const (
 )
 
 type ObservableData interface {
+	Attributes() map[string]string
 	HandleAttributes(handle func(attr map[string]string) map[string]string)
+	Name() string
 	HandleName(handle func(name string) string)
-	AddMetadata(key, value string)
-	GetMetadata(key string) (string, bool)
+	Metadata() *Metadata
 	Clone() ObservableData
 	Source() interface{}
 	SourceCompatibility() interface{}

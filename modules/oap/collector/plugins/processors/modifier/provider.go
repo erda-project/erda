@@ -17,8 +17,6 @@ package modifier
 import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/oap/collector/common/filter"
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
@@ -26,9 +24,9 @@ import (
 var providerName = plugins.WithPrefixProcessor("modifier")
 
 type config struct {
-	NameOverride string        `file:"name_override"`
-	Filter       filter.Config `file:"filter"`
-	Rules        []modifierCfg `file:"rules"`
+	Rules []modifierCfg `file:"rules"`
+
+	Namepass []string `file:"namepass"`
 }
 
 // +provider
@@ -37,15 +35,12 @@ type provider struct {
 	Log logs.Logger
 }
 
-func (p *provider) ComponentID() model.ComponentID {
-	return model.ComponentID(providerName)
+func (p *provider) ComponentConfig() interface{} {
+	return p.Cfg
 }
 
 func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
 	in.HandleAttributes(func(attr map[string]string) map[string]string {
-		if !p.Cfg.Filter.IsTagpass(attr) {
-			return attr
-		}
 		return p.modify(attr)
 	})
 
