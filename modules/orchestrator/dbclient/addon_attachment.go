@@ -220,3 +220,25 @@ func (db *DBClient) GetAttachmentsByTenantInstanceID(tenantInstanceID string) (*
 	}
 	return &attachments, nil
 }
+
+// ListAttachmentIDRuntimeIDNotExist Find attachments whose runtime does not exist
+func (db *DBClient) ListAttachmentIDRuntimeIDNotExist() ([]AddonAttachment, error) {
+	var attachments []AddonAttachment
+	if err := db.Model(&AddonAttachment{}).
+		Where("is_deleted = ?", apistructs.AddonNotDeleted).
+		Where("app_id NOT IN (SELECT id FROM ps_v2_project_runtimes)").
+		Find(&attachments).Error; err != nil {
+		return nil, err
+	}
+	return attachments, nil
+}
+
+// DeleteAttachmentByIDs Delete attachments by ids
+func (db *DBClient) DeleteAttachmentByIDs(id ...uint64) error {
+	if err := db.Model(&AddonAttachment{}).
+		Where("id IN (?)", id).
+		Update("is_deleted", apistructs.AddonDeleted).Error; err != nil {
+		return err
+	}
+	return nil
+}

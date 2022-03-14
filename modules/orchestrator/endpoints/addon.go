@@ -949,3 +949,10 @@ func (e *Endpoints) SyncAddonResources() (bool, error) {
 	e.addon.SyncAddonResources()
 	return false, nil
 }
+
+// CleanRemainingAddonAttachment clean remain addon attachment
+// Deleting the addon before the addon is created will cause the addon to leak
+// Deleting the runtime during deployment will cause this to happen
+func (e *Endpoints) CleanRemainingAddonAttachment() (bool, error) {
+	return e.addon.CleanRemainingAddonAttachment()
+}
