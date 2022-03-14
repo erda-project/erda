@@ -23,11 +23,12 @@ erda.oap.collector.core:
         - "erda.oap.collector.receiver.opentelemetry"
       exporters: ["erda.oap.collector.exporter.kafka@erda-spans"]
     - receivers:
-        - "erda.oap.collector.receiver.dummy"
-        #- "erda.oap.collector.receiver.prometheus-remote-write"
+        #- "erda.oap.collector.receiver.dummy"
+        - "erda.oap.collector.receiver.prometheus-remote-write"
       processors:
         - "erda.oap.collector.processor.k8s-tagger@prw"
         - "erda.oap.collector.processor.modifier"
+        - "erda.oap.collector.processor.modifier@addmeta"
       exporters:
         #- "erda.oap.collector.exporter.stdout"
         - "erda.oap.collector.exporter.kafka@spot-metrics"
@@ -62,7 +63,14 @@ erda.oap.collector.processor.k8s-tagger@prw:
       field_slector: ""
     add_metadata:
       label_include: []
-      annotation_include: []
+      annotation_include:
+        - "msp.erda.cloud/application_name"
+        - "msp.erda.cloud/org_name"
+        - "msp.erda.cloud/project_name"
+        - "msp.erda.cloud/runtime_name"
+        - "msp.erda.cloud/service_name"
+        - "msp.erda.cloud/terminus_key"
+        - "msp.erda.cloud/workspace"
       finders:
         - indexer: pod_name
           matcher: "%{namespace}/%{pod}"
@@ -91,17 +99,9 @@ erda.oap.collector.processor.modifier:
     - action: drop
       key: instance
     - action: drop
-      key: container
-    - action: drop
       key: prometheus
     - action: drop
       key: prometheus_replica
-    - action: rename
-      key: image
-      value: container_image
-    - action: rename
-      key: name
-      value: container_id
     - action: trim_left
       key: kubernetes_
     - action: trim_left
@@ -113,6 +113,21 @@ erda.oap.collector.processor.modifier:
     - action: add
       key: cluster_name
       value: ${DICE_CLUSTER_NAME}
+    - action: add
+      key: org_name
+      value: ${DICE_ORG_NAME}
+
+erda.oap.collector.processor.modifier@addmeta:
+  rules:
+    - action: add
+      key: _meta
+      value: "true"
+    - action: add
+      key: _metric_scope
+      value: org
+    - action: copy
+      key: org_name
+      value: _metric_scope_id
 
 # ************* processors *************
 
@@ -161,6 +176,8 @@ erda.oap.collector.exporter.kafka@erda-spans:
 
 kubernetes:
   master_url: ${MASTER_VIP_URL:https://kubernetes.default.svc:443}
+  root_ca_file: ${K8S_CA_FILE:/var/run/secrets/kubernetes.io/serviceaccount/ca.crt}
+  token_file: ${K8S_TOKEN_FILE:/var/run/secrets/kubernetes.io/serviceaccount/token}
 #  config_path: .kube/config
 
 kafka:
