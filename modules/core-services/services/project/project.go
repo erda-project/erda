@@ -1486,7 +1486,6 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 		data         apistructs.GetProjectsNamesapcesResponseData
 	)
 
-	var now = time.Now()
 	// 1) 查找项目列表
 	if err := p.db.Find(&projects, map[string]interface{}{"org_id": orgID}).Error; err != nil {
 		l.WithError(err).Errorln("failed to Find projects")
@@ -1498,9 +1497,7 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 	for _, item := range projects {
 		projectIDs = append(projectIDs, uint64(item.ID))
 	}
-	l.WithField("stage", "查找项目列表").Infof("cost: %v", time.Now().Sub(now).Seconds())
 
-	now = time.Now()
 	// 2) 查询 quota 表
 	if err := p.db.Where("project_id IN (?)", projectIDs).Find(&quotas).Error; err != nil {
 		l.WithError(err).Error("failed to Find quotas")
@@ -1511,12 +1508,8 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 	for _, item := range quotas {
 		quotasM[item.ProjectID] = item
 	}
-	l.WithField("stage", "查询 quota 表").Infof("cost: %v", time.Now().Sub(now).Seconds())
 
 	// 3) 查询 quota and owner
-	now = time.Now()
-	var GetNamespacesByProjectIDCost = 0.0
-	var GetMemberByProjectIDCost = 0.0
 	for _, proj := range projects {
 		var item = &apistructs.ProjectNamespaces{
 			ProjectID:          uint(proj.ID),
@@ -1530,27 +1523,20 @@ func (p *Project) GetNamespacesBelongsTo(ctx context.Context, orgID uint64, clus
 			Clusters:          make(map[string][]string),
 		}
 		item.PatchClusters(quotasM[uint64(item.ProjectID)], clusterNames)
-		now2 := time.Now()
 		if namespaces, ok := projectCache.GetNamespacesByProjectID(uint64(proj.ID)); ok {
 			item.PatchClustersNamespaces(namespaces.Namespaces)
 		}
-		GetNamespacesByProjectIDCost += time.Now().Sub(now2).Seconds()
 
 		item.PatchQuota(quotasM[uint64(item.ProjectID)])
 
-		now2 = time.Now()
 		if member, ok := projectCache.GetMemberByProjectID(uint64(proj.ID)); ok && member.UserID != 0 {
 			item.OwnerUserID = member.UserID
 			item.OwnerUserName = member.Name
 			item.OwnerUserNickname = member.Nick
 		}
-		GetMemberByProjectIDCost += time.Now().Sub(now2).Seconds()
 
 		data.List = append(data.List, item)
 	}
-	l.WithField("stage", "查询 quota and owner").
-		Infof("cost: %v, GetNamespacesByProjectIDCost: %v, GetMemberByProjectIDCost: %v",
-			time.Now().Sub(now).Seconds(), GetNamespacesByProjectIDCost, GetMemberByProjectIDCost)
 
 	data.Total = uint32(len(data.List))
 	return &data, nil
