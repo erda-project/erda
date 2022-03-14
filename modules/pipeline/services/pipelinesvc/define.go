@@ -36,7 +36,7 @@ type PipelineSvc struct {
 	crondSvc        *crondsvc.CrondSvc
 	actionAgentSvc  *actionagentsvc.ActionAgentSvc
 	extMarketSvc    *extmarketsvc.ExtMarketSvc
-	pipelineCronSvc cron.Service
+	pipelineCronSvc *cron.Service
 	permissionSvc   *permissionsvc.PermissionSvc
 	queueManage     *queuemanage.QueueManage
 
@@ -55,7 +55,7 @@ type PipelineSvc struct {
 
 func New(appSvc *appsvc.AppSvc, crondSvc *crondsvc.CrondSvc,
 	actionAgentSvc *actionagentsvc.ActionAgentSvc, extMarketSvc *extmarketsvc.ExtMarketSvc,
-	pipelineCronSvc cron.Service, permissionSvc *permissionsvc.PermissionSvc,
+	pipelineCronSvc *cron.Service, permissionSvc *permissionsvc.PermissionSvc,
 	queueManage *queuemanage.QueueManage,
 	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,
 	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store) *PipelineSvc {
