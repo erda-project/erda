@@ -106,7 +106,7 @@ func (client *DBClient) GetRelatedIssues(issueID uint64, relationType []string) 
 
 // DeleteIssueRelation 删除两条issue之间的关联关系
 func (client *DBClient) DeleteIssueRelation(issueID, relatedIssueID uint64, relationTypes []string) error {
-	query := client.Table("dice_issue_relation").Where("issue_id = ? and related_issue = ? or issue_id = ? and related_issue = ?",
+	query := client.Table("dice_issue_relation").Where("(issue_id = ? and related_issue = ?) or (issue_id = ? and related_issue = ?)",
 		issueID, relatedIssueID, relatedIssueID, issueID)
 	if len(relationTypes) > 0 {
 		query = query.Where("type IN (?)", relationTypes)
