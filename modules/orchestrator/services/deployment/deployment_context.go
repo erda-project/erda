@@ -942,6 +942,7 @@ func (fsm *DeployFSMContext) deployService() error {
 		}
 	} else {
 		if err := fsm.bdl.CreateServiceGroup(group); err != nil {
+			logrus.Errorf("failed to create service group ,err: %v", err)
 			return err
 		}
 	}
