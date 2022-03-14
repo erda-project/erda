@@ -1622,21 +1622,7 @@ func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml
 		service.ImageUsername = nexususer.Name
 	}
 	if len(groupFileconfigs) > 0 {
-		tokeninfo, err := fsm.bdl.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{
-			ClientID:     conf.TokenClientID(),
-			ClientSecret: conf.TokenClientSecret(),
-			Payload: apistructs.OAuth2TokenPayload{
-				AccessTokenExpiredIn: "1h",
-				AccessibleAPIs: []apistructs.AccessibleAPI{{
-					Path:   "/api/files",
-					Method: http.MethodGet,
-					Schema: "http",
-				}},
-				Metadata: map[string]string{
-					httputil.InternalHeader: "orchestrator",
-				},
-			}})
-		if err != nil {
+		if err := fsm.generateRuntimeFileToken(); err != nil {
 			return nil, nil, err
 		}
 		// TODO: diceyml add dependon: openapi
@@ -1647,10 +1633,38 @@ func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml
 		service.Init["internal-init-data"] = diceyml.InitContainer{
 			Image:      conf.InitContainerImage(),
 			SharedDirs: []diceyml.SharedDir{{Main: "/init-data", SideCar: "/data"}},
-			Cmd:        buildCurlDownloadFileCmd(groupFileconfigs, openapiPublicAddr, tokeninfo.AccessToken, "/data"),
+			Cmd:        buildCurlDownloadFileCmd(groupFileconfigs, openapiPublicAddr, fsm.Runtime.FileToken, "/data"),
 		}
 	}
 	return usedAddonInsMap, usedAddonTenantMap, nil
+}
+func (fsm *DeployFSMContext) generateRuntimeFileToken() error {
+	if fsm.Runtime.FileToken != "" {
+		return nil
+	}
+	if tokeninfo, err := fsm.bdl.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{
+		ClientID:     conf.TokenClientID(),
+		ClientSecret: conf.TokenClientSecret(),
+		Payload: apistructs.OAuth2TokenPayload{
+			AccessTokenExpiredIn: "0",
+			AccessibleAPIs: []apistructs.AccessibleAPI{{
+				Path:   "/api/files",
+				Method: http.MethodGet,
+				Schema: "http",
+			}},
+			Metadata: map[string]string{
+				httputil.InternalHeader: "orchestrator",
+				"RuntimeID":             strconv.FormatUint(fsm.Runtime.ID, 10),
+			},
+		}}); err != nil {
+		return err
+	} else {
+		fsm.Runtime.FileToken = tokeninfo.AccessToken
+	}
+	if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
+		return err
+	}
+	return nil
 }
 
 func buildCurlDownloadFileCmd(files map[string]string, openapiAddr string, token string, dstdir string) string {
