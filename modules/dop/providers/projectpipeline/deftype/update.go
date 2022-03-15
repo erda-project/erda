@@ -25,6 +25,7 @@ type ProjectPipelineUpdate struct {
 
 	ID         string              `json:"id"`
 	Name       string              `json:"name"`
+	ProjectID  uint64              `json:"projectID"`
 	AppID      uint64              `json:"appID"`
 	SourceType ProjectPipelineType `json:"sourceType"`
 	Ref        string              `json:"ref"`
@@ -39,23 +40,8 @@ func (p *ProjectPipelineUpdate) Validate() error {
 	if p.Name == "" {
 		return fmt.Errorf("the name is empty")
 	}
-	if p.AppID == 0 {
-		return fmt.Errorf("the appID is 0")
-	}
-	if !p.SourceType.isEffectProjectPipelineType() {
-		return fmt.Errorf("the type is err")
-	}
-	if p.Ref == "" {
-		return fmt.Errorf("the ref is empty")
-	}
-	if p.Path == "" {
-		return fmt.Errorf("the path is empty")
-	}
-	if p.FileName == "" {
-		return fmt.Errorf("the fileName is empty")
+	if p.ProjectID == 0 {
+		return fmt.Errorf("the projectID is zero")
 	}
 	return nil
-}
-
-type ProjectPipelineUpdateResult struct {
 }

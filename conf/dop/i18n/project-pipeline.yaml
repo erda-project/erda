@@ -1,6 +1,8 @@
 zh:
   ProjectPipelineCreateNamePreCheckNotPass: 项目中存在相同的流水线名称
   ProjectPipelineCreateSourcePreCheckNotPass: 该流水线已经被创建过，流水线名称为 %s
+  UpdateName: 编辑名称
 en:
   ProjectPipelineCreateNamePreCheckNotPass: The same pipeline name exists in the project
   ProjectPipelineCreateSourcePreCheckNotPass: The pipeline has been created. The pipeline name is %s
+  UpdateName: Update name

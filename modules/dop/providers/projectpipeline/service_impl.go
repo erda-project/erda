@@ -185,7 +185,7 @@ func (p *ProjectPipelineService) CreateNamePreCheck(ctx context.Context, req *pb
 	if err := req.Validate(); err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InvalidParameter(err)
 	}
-	haveSameNameDefinition, err := p.checkDefinitionRemoteSameName(req.ProjectID, req.Name, apis.GetUserID(ctx))
+	haveSameNameDefinition, err := p.checkDefinitionRemoteSameName(req.ProjectID, "", req.Name)
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
@@ -288,7 +288,7 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 	}}, nil
 }
 
-func (p *ProjectPipelineService) checkDefinitionRemoteSameName(projectID uint64, name string, userID string) (bool, error) {
+func (p *ProjectPipelineService) checkDefinitionRemoteSameName(projectID uint64, definitionID, name string) (bool, error) {
 	projectDto, err := p.bundle.GetProject(projectID)
 	if err != nil {
 		return false, err
@@ -305,22 +305,21 @@ func (p *ProjectPipelineService) checkDefinitionRemoteSameName(projectID uint64,
 	}, cicdPipelineType)
 
 	resp, err := p.PipelineDefinition.List(context.Background(), &dpb.PipelineDefinitionListRequest{
-		Location: location,
-		Name:     name,
-		PageNo:   1,
-		PageSize: 999,
-		Creator:  []string{userID},
+		Location:     location,
+		AccurateName: name,
+		PageNo:       1,
+		PageSize:     1,
 	})
 	if err != nil {
 		return false, err
 	}
-	// pipelineDefinition list method param name was like search, should be determine whether it is equal
-	for _, definition := range resp.Data {
-		if definition.Name == name {
-			return true, nil
-		}
+	if len(resp.Data) == 0 {
+		return false, nil
 	}
-	return false, nil
+	if definitionID != "" && resp.Data[0].ID == definitionID {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (p *ProjectPipelineService) getYmlFromGittar(app *apistructs.ApplicationDTO, ref, filePath, userID string) (string, error) {
@@ -441,38 +440,37 @@ func (p *ProjectPipelineService) Delete(ctx context.Context, params deftype.Proj
 	return nil, err
 }
 
-func (p *ProjectPipelineService) Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error) {
+func (p *ProjectPipelineService) Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*dpb.PipelineDefinition, error) {
 	if err := params.Validate(); err != nil {
-		return nil, err
+		return nil, apierrors.ErrUpdateProjectPipeline.InvalidParameter(err)
 	}
 
-	app, err := p.bundle.GetApp(params.AppID)
+	_, source, err := p.getPipelineDefinitionAndSource(params.ID)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrUpdateProjectPipeline.InvalidParameter(err)
 	}
 
-	yml, err := p.getYmlFromGittar(app, params.Ref, filepath.Join(params.Path, params.FileName), params.IdentityInfo.UserID)
+	err = p.checkDataPermissionByProjectID(params.ProjectID, source)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrUpdateProjectPipeline.AccessDenied()
 	}
 
-	sourceRsp, err := p.PipelineSource.Create(ctx, &spb.PipelineSourceCreateRequest{
-		SourceType:  params.SourceType.String(),
-		Remote:      makeRemote(app),
-		Ref:         params.Ref,
-		Path:        params.Path,
-		Name:        params.FileName,
-		PipelineYml: yml,
-	})
+	has, err := p.checkDefinitionRemoteSameName(params.ProjectID, params.ID, params.Name)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrUpdateProjectPipeline.InternalError(err)
 	}
-	_, err = p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
+	if has {
+		return nil, apierrors.ErrUpdateProjectPipeline.InternalError(fmt.Errorf("the same pipeline name exists in the project"))
+	}
+	pipelineDefinitionResp, err := p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
 		PipelineDefinitionID: params.ID,
-		PipelineSourceID:     sourceRsp.PipelineSource.ID,
+		Name:                 params.Name,
 	})
+	if err != nil {
+		return nil, apierrors.ErrUpdateProjectPipeline.InternalError(err)
+	}
 
-	return nil, err
+	return pipelineDefinitionResp.PipelineDefinition, nil
 }
 
 func (p *ProjectPipelineService) SetPrimary(ctx context.Context, params deftype.ProjectPipelineCategory) (*dpb.PipelineDefinitionUpdateResponse, error) {

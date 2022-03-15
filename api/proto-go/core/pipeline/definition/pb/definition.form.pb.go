@@ -1665,6 +1665,8 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 				m.Location = vals[0]
 			case "name":
 				m.Name = vals[0]
+			case "accurateName":
+				m.AccurateName = vals[0]
 			case "creator":
 				m.Creator = vals
 			case "executor":
