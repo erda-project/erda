@@ -56,8 +56,8 @@ func (client *Client) GetPipelineFromArchive(pipelineID uint64, ops ...dbclient.
 	return archive.Content.Pipeline, true, nil
 }
 
-// GetPipelineIncludeArchive return: pipeline, exist, findFromArchive, error
-func (client *Client) GetPipelineIncludeArchive(pipelineID uint64, ops ...dbclient.SessionOption) (spec.Pipeline, bool, bool, error) {
+// GetPipelineIncludeArchived return: pipeline, exist, findFromArchive, error
+func (client *Client) GetPipelineIncludeArchived(pipelineID uint64, ops ...dbclient.SessionOption) (spec.Pipeline, bool, bool, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -85,8 +85,8 @@ func (client *Client) GetPipelineTasksFromArchive(pipelineID uint64, ops ...dbcl
 	return archive.Content.PipelineTasks, err
 }
 
-// GetPipelineTasksIncludeArchive return: tasks, findFromArchive, error
-func (client *Client) GetPipelineTasksIncludeArchive(pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineTask, bool, error) {
+// GetPipelineTasksIncludeArchived return: tasks, findFromArchive, error
+func (client *Client) GetPipelineTasksIncludeArchived(pipelineID uint64, ops ...dbclient.SessionOption) ([]spec.PipelineTask, bool, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 

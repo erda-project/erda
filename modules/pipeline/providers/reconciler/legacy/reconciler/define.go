@@ -57,7 +57,7 @@ type Reconciler struct {
 	actionAgentSvc  *actionagentsvc.ActionAgentSvc
 	extMarketSvc    *extmarketsvc.ExtMarketSvc
 	pipelineSvcFunc *PipelineSvcFunc
-	dbgcSvc         dbgc.Interface
+	dbgc            dbgc.Interface
 }
 
 // In order to solve the problem of circular dependency if Reconciler introduces pipelinesvc, the svc method is mounted in this structure.

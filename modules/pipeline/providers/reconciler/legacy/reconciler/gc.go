@@ -224,7 +224,7 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 			return err
 		}
 		// 为了清理已经被归档的流水线
-		p, found, findFromArchive, err := r.dbgcSvc.GetPipelineIncludeArchive(context.Background(), pipelineID)
+		p, found, findFromArchive, err := r.dbgc.GetPipelineIncludeArchived(context.Background(), pipelineID)
 		if !found {
 			logrus.Errorf("[alert] reconciler: gc triggered but ignored, pipeline already not exists, pipelineID: %d", pipelineID)
 		}
@@ -241,7 +241,7 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 	// group tasks by executorName
 	groupedTasks := make(map[spec.PipelineTaskExecutorName][]*spec.PipelineTask) // key: executorName
 	for _, affectedPipelineID := range affectedPipelineIDs {
-		dbTasks, _, err := r.dbgcSvc.GetPipelineTasksIncludeArchive(context.Background(), affectedPipelineID)
+		dbTasks, _, err := r.dbgc.GetPipelineTasksIncludeArchived(context.Background(), affectedPipelineID)
 		if err != nil {
 			return err
 		}

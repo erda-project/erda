@@ -36,7 +36,7 @@ type provider struct {
 	MySQL mysqlxorm.Interface
 	LW    leaderworker.Interface
 
-	gcSvc dbgcService
+	dbgc service
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -48,7 +48,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err != nil {
 		return err
 	}
-	p.gcSvc = dbgcService{
+	p.dbgc = service{
 		js:       js,
 		etcd:     etcdStore,
 		dbClient: &db.Client{Client: dbclient.Client{Engine: p.MySQL.DB()}},
@@ -57,7 +57,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	p.LW.OnLeader(p.gcSvc.PipelineDatabaseGC)
+	p.LW.OnLeader(p.dbgc.PipelineDatabaseGC)
 	return nil
 }
 

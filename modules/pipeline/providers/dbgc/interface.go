@@ -21,6 +21,6 @@ import (
 )
 
 type Interface interface {
-	GetPipelineIncludeArchive(ctx context.Context, pipelineID uint64) (spec.Pipeline, bool, bool, error)
-	GetPipelineTasksIncludeArchive(ctx context.Context, pipelineID uint64) ([]spec.PipelineTask, bool, error)
+	GetPipelineIncludeArchived(ctx context.Context, pipelineID uint64) (spec.Pipeline, bool, bool, error)
+	GetPipelineTasksIncludeArchived(ctx context.Context, pipelineID uint64) ([]spec.PipelineTask, bool, error)
 }
