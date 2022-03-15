@@ -143,7 +143,7 @@ func Test_expressionService_GetAlertExpressions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var adb *alertdb.AlertExpressionDB
-			alertExpression := monkey.PatchInstanceMethod(reflect.TypeOf(adb), "GetAllAlertExpression", func(db *alertdb.AlertExpressionDB, pageNo, pageSize int64) ([]*alertdb.AlertExpression, error) {
+			alertExpression := monkey.PatchInstanceMethod(reflect.TypeOf(adb), "GetAllAlertExpression", func(db *alertdb.AlertExpressionDB, pageNo, pageSize int64) ([]*alertdb.AlertExpression, int64, error) {
 				return []*alertdb.AlertExpression{
 					{
 						ID:         1,
@@ -155,7 +155,7 @@ func Test_expressionService_GetAlertExpressions(t *testing.T) {
 						Created:    time.Time{},
 						Updated:    time.Time{},
 					},
-				}, nil
+				}, 1, nil
 			})
 			defer alertExpression.Unpatch()
 			e := &expressionService{
