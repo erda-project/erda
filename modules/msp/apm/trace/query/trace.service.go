@@ -83,39 +83,6 @@ func (s *TraceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 	}
 	spanTree := make(query.SpanTree)
 	spans := s.Source.GetSpans(ctx, req)
-	//if s.p.Cfg.QuerySource.Cassandra && s.p.cassandraSession != nil {
-	//	// do cassandra query
-	//	cassandraSpans := s.fetchSpanFromCassandra(s.p.cassandraSession.Session(), req.TraceID, req.Limit)
-	//	for _, span := range cassandraSpans {
-	//		spans = append(spans, span)
-	//	}
-	//}
-	//if s.p.Cfg.QuerySource.ElasticSearch && s.StorageReader != nil {
-	//	org := req.OrgName
-	//	if len(org) <= 0 {
-	//		org = apis.GetHeader(ctx, "org")
-	//	}
-	//	// do es query
-	//	elasticsearchSpans, _ := fetchSpanFromES(ctx, s.StorageReader, storage.Selector{
-	//		TraceId: req.TraceID,
-	//		Hint: storage.QueryHint{
-	//			Scope:     org,
-	//			Timestamp: req.StartTime * 1000000, // convert ms to ns
-	//		},
-	//	}, true, int(req.GetLimit()))
-	//	for _, value := range elasticsearchSpans {
-	//		var span pb.Span
-	//		span.Id = value.SpanId
-	//		span.TraceId = value.TraceId
-	//		span.OperationName = value.OperationName
-	//		span.ParentSpanId = value.ParentSpanId
-	//		span.StartTime = value.StartTime
-	//		span.EndTime = value.EndTime
-	//		span.Tags = value.Tags
-	//		spans = append(spans, &span)
-	//	}
-	//}
-
 	sort.Sort(Spans(spans))
 	for _, span := range spans {
 		if len(spanTree) >= int(req.GetLimit()) {
@@ -324,18 +291,7 @@ func calculateDepth(depth int64, span *pb.Span, spanTree query.SpanTree) int64 {
 }
 
 func (s *TraceService) GetSpanCount(ctx context.Context, traceID string) (int64, error) {
-	//var cassandraCount, elasticsearchCount int64
 	count := s.Source.GetSpanCount(ctx, traceID)
-	//if s.p.Cfg.QuerySource.Cassandra && s.p.cassandraSession != nil {
-	//	// do cassandra query
-	//	s.p.cassandraSession.Session().Query("SELECT COUNT(trace_id) FROM spans WHERE trace_id = ?", traceID).Iter().Scan(&cassandraCount)
-	//}
-
-	//if s.p.Cfg.QuerySource.ElasticSearch && s.StorageReader != nil {
-	//	// do cassandra query
-	//	elasticsearchCount = s.StorageReader.Count(ctx, traceID)
-	//}
-
 	return count, nil
 }
 
