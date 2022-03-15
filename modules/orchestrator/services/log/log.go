@@ -42,7 +42,7 @@ func (d *DeployLogHelper) Log(content string, tags map[string]string) {
 	}
 	// TODO: buffer
 	if err := d.Bdl.PushLog(&apistructs.LogPushRequest{Lines: lines}); err != nil {
-		logrus.Errorf("[alert] failed to pushLog, deploymentId: %d, last err: %v",
+		logrus.Errorf("[alert] failed to pushLog, deploymentId: %s, last err: %v",
 			d.DeploymentID, err)
 	}
 }
