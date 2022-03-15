@@ -31,6 +31,7 @@ import (
 // GetCluster get cluster meta info
 func (e *Endpoints) GetCluster(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	cluster, err := e.cluster.GetCluster(vars["idOrName"])
+	//logrus.Infof("get cluster after convert :%v", cluster.CM)
 	if err != nil {
 		if strutil.Contains(err.Error(), "not found") {
 			return apierrors.ErrGetCluster.NotFound().ToResp(), nil
