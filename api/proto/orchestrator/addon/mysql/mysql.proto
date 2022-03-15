@@ -72,12 +72,13 @@ message Attachment {
   uint64 id = 1;
   string instanceId = 2;
   string appId = 3;
-  string runtimeId = 4;
-  string runtimeName = 5;
-  string accountId = 6;
-  string preAccountId = 7;
-  string accountState = 8;
-  map<string, string> configs = 9;
+  string workspace = 4;
+  string runtimeId = 5;
+  string runtimeName = 6;
+  string accountId = 7;
+  string preAccountId = 8;
+  string accountState = 9;
+  map<string, string> configs = 10;
 }
 
 message ListAttachmentRequest {

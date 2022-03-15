@@ -276,6 +276,7 @@ func (s *mysqlService) ListAttachment(ctx context.Context, req *pb.ListAttachmen
 			Id:           att.ID,
 			InstanceId:   att.RoutingInstanceID,
 			AppId:        att.ApplicationID,
+			Workspace:    routing.Workspace,
 			RuntimeId:    att.RuntimeID,
 			RuntimeName:  att.RuntimeName,
 			AccountId:    att.MySQLAccountID,
