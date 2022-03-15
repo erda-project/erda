@@ -37,13 +37,12 @@ import (
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
-	"github.com/erda-project/erda/modules/msp/apm/trace"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/common"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/query"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
 	"github.com/erda-project/erda/modules/msp/apm/trace/query/commom/custom"
-	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
+	"github.com/erda-project/erda/modules/msp/apm/trace/query/source"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 )
@@ -52,7 +51,7 @@ type TraceService struct {
 	p                     *provider
 	i18n                  i18n.Translator
 	traceRequestHistoryDB *db.TraceRequestHistoryDB
-	StorageReader         storage.Storage
+	Source                source.TraceSource
 }
 
 var EventFieldSet = set.NewSet("error", "stack", "event", "message", "error_kind", "error_object")
@@ -83,40 +82,39 @@ func (s *TraceService) GetSpans(ctx context.Context, req *pb.GetSpansRequest) (*
 		req.Limit = 10000
 	}
 	spanTree := make(query.SpanTree)
-	var spans []*pb.Span
-
-	if s.p.Cfg.QuerySource.Cassandra && s.p.cassandraSession != nil {
-		// do cassandra query
-		cassandraSpans := s.fetchSpanFromCassandra(s.p.cassandraSession.Session(), req.TraceID, req.Limit)
-		for _, span := range cassandraSpans {
-			spans = append(spans, span)
-		}
-	}
-	if s.p.Cfg.QuerySource.ElasticSearch && s.StorageReader != nil {
-		org := req.OrgName
-		if len(org) <= 0 {
-			org = apis.GetHeader(ctx, "org")
-		}
-		// do es query
-		elasticsearchSpans, _ := fetchSpanFromES(ctx, s.StorageReader, storage.Selector{
-			TraceId: req.TraceID,
-			Hint: storage.QueryHint{
-				Scope:     org,
-				Timestamp: req.StartTime * 1000000, // convert ms to ns
-			},
-		}, true, int(req.GetLimit()))
-		for _, value := range elasticsearchSpans {
-			var span pb.Span
-			span.Id = value.SpanId
-			span.TraceId = value.TraceId
-			span.OperationName = value.OperationName
-			span.ParentSpanId = value.ParentSpanId
-			span.StartTime = value.StartTime
-			span.EndTime = value.EndTime
-			span.Tags = value.Tags
-			spans = append(spans, &span)
-		}
-	}
+	spans := s.Source.GetSpans(ctx, req)
+	//if s.p.Cfg.QuerySource.Cassandra && s.p.cassandraSession != nil {
+	//	// do cassandra query
+	//	cassandraSpans := s.fetchSpanFromCassandra(s.p.cassandraSession.Session(), req.TraceID, req.Limit)
+	//	for _, span := range cassandraSpans {
+	//		spans = append(spans, span)
+	//	}
+	//}
+	//if s.p.Cfg.QuerySource.ElasticSearch && s.StorageReader != nil {
+	//	org := req.OrgName
+	//	if len(org) <= 0 {
+	//		org = apis.GetHeader(ctx, "org")
+	//	}
+	//	// do es query
+	//	elasticsearchSpans, _ := fetchSpanFromES(ctx, s.StorageReader, storage.Selector{
+	//		TraceId: req.TraceID,
+	//		Hint: storage.QueryHint{
+	//			Scope:     org,
+	//			Timestamp: req.StartTime * 1000000, // convert ms to ns
+	//		},
+	//	}, true, int(req.GetLimit()))
+	//	for _, value := range elasticsearchSpans {
+	//		var span pb.Span
+	//		span.Id = value.SpanId
+	//		span.TraceId = value.TraceId
+	//		span.OperationName = value.OperationName
+	//		span.ParentSpanId = value.ParentSpanId
+	//		span.StartTime = value.StartTime
+	//		span.EndTime = value.EndTime
+	//		span.Tags = value.Tags
+	//		spans = append(spans, &span)
+	//	}
+	//}
 
 	sort.Sort(Spans(spans))
 	for _, span := range spans {
@@ -151,43 +149,6 @@ func (s *TraceService) fetchSpanFromCassandra(session *gocql.Session, traceId st
 		items = append(items, &span)
 	}
 	return items
-}
-
-func fetchSpanFromES(ctx context.Context, storage storage.Storage, sel storage.Selector, forward bool, limit int) (list []*trace.Span, err error) {
-	it, err := storage.Iterator(ctx, &sel)
-	if err != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-	defer it.Close()
-
-	if forward {
-		for it.Next() {
-			span, ok := it.Value().(*trace.Span)
-			if !ok {
-				continue
-			}
-			list = append(list, span)
-			if len(list) >= limit {
-				break
-			}
-		}
-	} else {
-		for it.Prev() {
-			span, ok := it.Value().(*trace.Span)
-			if !ok {
-				continue
-			}
-			list = append(list, span)
-			if len(list) >= limit {
-				break
-			}
-		}
-	}
-	if it.Error() != nil {
-		return nil, errors.NewInternalServerError(err)
-	}
-
-	return list, it.Error()
 }
 
 type Spans []*pb.Span
@@ -363,19 +324,19 @@ func calculateDepth(depth int64, span *pb.Span, spanTree query.SpanTree) int64 {
 }
 
 func (s *TraceService) GetSpanCount(ctx context.Context, traceID string) (int64, error) {
-	var cassandraCount, elasticsearchCount int64
+	//var cassandraCount, elasticsearchCount int64
+	count := s.Source.GetSpanCount(ctx, traceID)
+	//if s.p.Cfg.QuerySource.Cassandra && s.p.cassandraSession != nil {
+	//	// do cassandra query
+	//	s.p.cassandraSession.Session().Query("SELECT COUNT(trace_id) FROM spans WHERE trace_id = ?", traceID).Iter().Scan(&cassandraCount)
+	//}
 
-	if s.p.Cfg.QuerySource.Cassandra && s.p.cassandraSession != nil {
-		// do cassandra query
-		s.p.cassandraSession.Session().Query("SELECT COUNT(trace_id) FROM spans WHERE trace_id = ?", traceID).Iter().Scan(&cassandraCount)
-	}
+	//if s.p.Cfg.QuerySource.ElasticSearch && s.StorageReader != nil {
+	//	// do cassandra query
+	//	elasticsearchCount = s.StorageReader.Count(ctx, traceID)
+	//}
 
-	if s.p.Cfg.QuerySource.ElasticSearch && s.StorageReader != nil {
-		// do cassandra query
-		elasticsearchCount = s.StorageReader.Count(ctx, traceID)
-	}
-
-	return cassandraCount + elasticsearchCount, nil
+	return count, nil
 }
 
 func (s *TraceService) GetTracesCount(ctx context.Context, startTime, endTime int64, params map[string]*structpb.Value, statement string) (int64, error) {
