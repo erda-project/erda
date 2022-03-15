@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package dop
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var DICEHUB_PUBLISH_ITEM_METIRCS_HISTOGRAM_COMMON = apis.ApiSpec{
-	Path:        "/api/publish-items/<publishItemId>/metrics/<metricName>/histogram",
-	BackendPath: "/api/publish-items/<publishItemId>/metrics/<metricName>/histogram",
-	Host:        "dicehub.marathon.l4lb.thisdcos.directory:10000",
+var PUBLISH_ITEM_METIRCS_COMMON = apis.ApiSpec{
+	Path:        "/api/publish-items/<publishItemId>/metrics/<metricName>",
+	BackendPath: "/api/publish-items/<publishItemId>/metrics/<metricName>",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:      "http",
 	Method:      "GET",
 	IsOpenAPI:   true,
-	Doc:         `summary: 通用metrcis histogram接口，转发使用`,
+	Doc:         `summary: 通用metrcis接口，转发使用`,
 }

@@ -12,22 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package dop
 
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/api/apis"
 )
 
-var DICEHUB_PUBLISH_ITEM_STATISTICS_TREND = apis.ApiSpec{
-	Path:         "/api/publish-items/<publishItemId>/statistics/trend",
-	BackendPath:  "/api/publish-items/<publishItemId>/statistics/trend",
-	Host:         "dicehub.marathon.l4lb.thisdcos.directory:10000",
+var PUBLISH_ITEM_VERSION_INFO_LIST = apis.ApiSpec{
+	Path:         "/api/publish-items/<publishItemId>/statistics/versions",
+	BackendPath:  "/api/publish-items/<publishItemId>/statistics/versions",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:       "http",
 	Method:       "GET",
-	ResponseType: apistructs.PublishItemStatisticsTrendData{},
+	RequestType:  apistructs.PublishItemStatisticsDetailRequest{},
+	ResponseType: apistructs.PublishItemStatisticsDetailData{},
 	IsOpenAPI:    true,
 	CheckLogin:   true,
 	CheckToken:   true,
-	Doc:          `summary: 统一大盘，整体趋势接口`,
+	Doc:          `summary: 版本详情，明细数据`,
 }
