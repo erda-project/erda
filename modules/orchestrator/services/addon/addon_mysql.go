@@ -57,7 +57,7 @@ func (a *Addon) _toOverrideConfigFromMySQLAccount(config map[string]interface{},
 	return nil
 }
 
-func (a *Addon) initMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting, operator string) error {
+func (a *Addon) InitMySQLAccount(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting, operator string) error {
 	if addonIns.AddonName != "mysql" {
 		return nil
 	}

@@ -16,12 +16,14 @@ package releaseTable
 
 import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
+	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/bundle"
 )
 
 type ComponentReleaseTable struct {
 	sdk *cptype.SDK
 	bdl *bundle.Bundle
+	svc dicehubpb.ReleaseServiceServer
 
 	Type       string                 `json:"type,omitempty"`
 	Data       Data                   `json:"data"`
@@ -36,13 +38,24 @@ type Data struct {
 
 type Item struct {
 	ID              string          `json:"id,omitempty"`
-	Version         string          `json:"version,omitempty"`
+	Version         Version         `json:"version,omitempty"`
 	Application     string          `json:"application,omitempty"`
 	Desc            string          `json:"desc,omitempty"`
 	Creator         Creator         `json:"creator,omitempty"`
 	CreatedAt       string          `json:"createdAt,omitempty"`
 	Operations      TableOperations `json:"operations"`
 	BatchOperations []string        `json:"batchOperations,omitempty"`
+}
+
+type Version struct {
+	Value      string `json:"value,omitempty"`
+	Tags       []Tag  `json:"tags"`
+	RenderType string `json:"renderType,omitempty"`
+}
+
+type Tag struct {
+	Tag   string `json:"tag,omitempty"`
+	Color string `json:"color,omitempty"`
 }
 
 type Creator struct {
@@ -110,7 +123,7 @@ type FilterValues struct {
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd,omitempty"`
 	ReleaseID         string   `json:"releaseID,omitempty"`
 	ApplicationIDs    []string `json:"applicationIDs,omitempty"`
-	Latest            bool     `json:"latest"`
+	Latest            string   `json:"latest,omitempty"`
 	Version           string   `json:"version,omitempty"`
 }
 

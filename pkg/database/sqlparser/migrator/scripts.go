@@ -28,7 +28,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
+	_ "github.com/erda-project/erda/pkg/database/sqllint/linters"
 	"github.com/erda-project/erda/pkg/database/sqlparser/pygrator"
 )
 
@@ -48,7 +48,7 @@ type ScriptsParameters interface {
 	// if is nil, to install all modules in the MigrationDir()
 	Modules() []string
 
-	Rules() []rules.Ruler
+	LintConfig() map[string]sqllint.Config
 }
 
 // Scripts is the set of Module
@@ -59,7 +59,7 @@ type Scripts struct {
 	Services      map[string]*Module
 	Patches       *Module
 
-	rulers          []rules.Ruler
+	cfg             map[string]sqllint.Config
 	markPending     bool
 	destructive     int
 	destructiveText string
@@ -136,7 +136,7 @@ func NewScripts(parameters ScriptsParameters) (*Scripts, error) {
 		Dirname:       parameters.MigrationDir(),
 		ServicesNames: modulesNames,
 		Services:      services,
-		rulers:        parameters.Rules(),
+		cfg:           parameters.LintConfig(),
 		markPending:   false,
 		destructive:   0,
 	}
@@ -174,24 +174,29 @@ func (s *Scripts) Lint() error {
 		return errors.New("scripts did not mark if is pending, please mark it and then do Lint")
 	}
 
-	linter := sqllint.New(s.rulers...)
+	var errorsCount = 0
+	linter := sqllint.New(s.cfg)
 	for moduleName, module := range s.Services {
 		for _, script := range module.Scripts {
-			if !script.isBase && script.Pending && script.Type == ScriptTypeSQL {
-				if err := linter.Input(script.Rawtext, filepath.Join(s.Dirname, moduleName, script.GetName())); err != nil {
+			if script.Type == ScriptTypeSQL {
+				if err := linter.Input(moduleName, script.GetName(), script.GetData()); err != nil {
 					return err
 				}
 			}
+			errorsCount += len(linter.Errors()[script.GetName()].Lints)
 		}
 	}
-	if len(linter.Errors()) == 0 {
+	if errorsCount == 0 {
 		return nil
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, linter.Report())
-	for src, es := range linter.Errors() {
-		logrus.Println(src)
-		for _, err := range es {
+	for scriptName, lintInfo := range linter.Errors() {
+		if len(lintInfo.Lints) == 0 {
+			continue
+		}
+		logrus.Println(scriptName)
+		for _, err := range lintInfo.Lints {
 			_, _ = fmt.Fprintln(os.Stdout, err)
 		}
 		_, _ = fmt.Fprintln(os.Stdout)
@@ -299,43 +304,6 @@ func (s *Scripts) SameNameLint() error {
 		}
 	}
 	return nil
-}
-
-func (s *Scripts) HasDestructiveOperationInPending() (string, bool) {
-	if s.destructive == 1 {
-		return s.destructiveText, true
-	}
-	if s.destructive == -1 {
-		return "", false
-	}
-
-	s.destructive = -1
-	for _, module := range s.Services {
-		for _, script := range module.Scripts {
-			if !script.Pending || script.IsBaseline() {
-				continue
-			}
-			for _, node := range script.Nodes {
-				switch stmt := node.(type) {
-				case *ast.DropDatabaseStmt, *ast.DropTableStmt, *ast.TruncateTableStmt:
-					s.destructive = 1
-					s.destructiveText = node.Text()
-					return s.destructiveText, true
-				case *ast.AlterTableStmt:
-					for _, spec := range stmt.Specs {
-						switch spec.Tp {
-						case ast.AlterTableDropColumn:
-							s.destructive = 1
-							s.destructiveText = node.Text()
-							return s.destructiveText, true
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return "", false
 }
 
 func (s *Scripts) FreshBaselineModules(db *gorm.DB) map[string]*Module {

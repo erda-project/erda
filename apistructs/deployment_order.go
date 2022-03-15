@@ -8,6 +8,8 @@ const (
 
 	SourceDeployCenter   = "DEPLOY_CENTER"
 	SourceDeployPipeline = "PIPELINE"
+
+	DeployStatusWaitDeploy = "WAITDEPLOY"
 )
 
 type DeploymentOrderStatus string
@@ -25,9 +27,10 @@ type DeploymentOrderCreateRequest struct {
 	ProjectId       uint64 `json:"projectId"`
 	ApplicationName string `json:"applicationName"`
 
-	Source   string `json:"source"` // default: DEPLOY_CENTER; value: PIPELINE
-	AutoRun  bool   `json:"autoRun"`
-	Operator string
+	Source              string `json:"source"` // default: DEPLOY_CENTER; value: PIPELINE
+	AutoRun             bool   `json:"autoRun"`
+	DeployWithoutBranch bool   `json:"deployWithoutBranch"`
+	Operator            string
 }
 
 type DeploymentOrderCreateResponse struct {
@@ -57,7 +60,7 @@ type DeploymentOrderListConditions struct {
 
 type DeploymentOrderDetail struct {
 	DeploymentOrderItem
-	ApplicationsInfo []*ApplicationInfo `json:"applicationsInfo"`
+	ApplicationsInfo [][]*ApplicationInfo `json:"applicationsInfo"`
 }
 
 type ApplicationInfo struct {
@@ -91,6 +94,8 @@ type DeploymentOrderItem struct {
 	Type              string                `json:"type,omitempty"`
 	ApplicationStatus string                `json:"applicationStatus,omitempty"`
 	Workspace         string                `json:"workspace"`
+	BatchSize         uint64                `json:"batchSize"`
+	CurrentBatch      uint64                `json:"currentBatch"`
 	Status            DeploymentOrderStatus `json:"status,omitempty"`
 	Operator          string                `json:"operator,omitempty"`
 	CreatedAt         time.Time             `json:"createdAt"`

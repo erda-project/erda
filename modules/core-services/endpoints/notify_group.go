@@ -207,6 +207,7 @@ func (e *Endpoints) QueryNotifyGroup(ctx context.Context, r *http.Request, vars 
 		ScopeType: r.URL.Query().Get("scopeType"),
 		ScopeID:   r.URL.Query().Get("scopeId"),
 		Label:     r.URL.Query().Get("label"),
+		Name:      r.URL.Query().Get("name"),
 	}
 	err = e.checkNotifyPermission(r, queryReq.ScopeType, queryReq.ScopeID, apistructs.ListAction)
 	if err != nil {

@@ -921,6 +921,7 @@ type AddonCreateOptions struct {
 // AddonCreateResponse 申请 Addon 相应
 type AddonCreateResponse struct {
 	Header
+	Data string `json:"data"`
 }
 
 // CustomAddonCreateRequest 自定义 addon 创建请求

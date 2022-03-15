@@ -25,6 +25,7 @@ import (
 	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	tpb "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
 
@@ -46,12 +47,12 @@ type provider struct {
 	consumerFunc model.ObservableDataConsumerFunc
 }
 
-func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
-	p.consumerFunc = consumer
+func (p *provider) ComponentConfig() interface{} {
+	return p.Cfg
 }
 
-func (p *provider) ComponentID() model.ComponentID {
-	return model.ComponentID(providerName)
+func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
+	p.consumerFunc = consumer
 }
 
 // Run this is optional
@@ -83,18 +84,13 @@ func (p *provider) dummyMetrics(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		}
-		chunk := make([]*mpb.Metric, 0)
-		err := json.Unmarshal([]byte(p.Cfg.MetricSample), &chunk)
+		item := mpb.Metric{}
+		err := json.Unmarshal([]byte(p.Cfg.MetricSample), &item)
 		if err != nil {
 			p.Log.Errorf("unmarshal MetricSample err: %s", err)
 		}
-		now := time.Now()
-		for _, item := range chunk {
-			item.TimeUnixNano = uint64(now.UnixNano())
-		}
-		data := &model.Metrics{Metrics: chunk}
 		if p.consumerFunc != nil {
-			p.consumerFunc(data)
+			p.consumerFunc(odata.NewMetric(&item))
 		}
 	}
 }
@@ -108,13 +104,13 @@ func (p *provider) dummyTraces(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		}
-		chunk := make([]*tpb.Span, 0)
-		err := json.Unmarshal([]byte(p.Cfg.TraceSample), &chunk)
+		item := tpb.Span{}
+		err := json.Unmarshal([]byte(p.Cfg.TraceSample), &item)
 		if err != nil {
 			p.Log.Errorf("unmarshal TraceSample err: %s", err)
 		}
 		if p.consumerFunc != nil {
-			p.consumerFunc(&model.Traces{Spans: chunk})
+			p.consumerFunc(odata.NewSpan(&item))
 		}
 	}
 }
@@ -128,17 +124,15 @@ func (p *provider) dummyLogs(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		}
-		chunk := make([]*lpb.Log, 0)
-		err := json.Unmarshal([]byte(p.Cfg.MetricSample), &chunk)
+		item := lpb.Log{}
+		err := json.Unmarshal([]byte(p.Cfg.MetricSample), &item)
 		if err != nil {
 			p.Log.Errorf("unmarshal LogSample err: %s", err)
 		}
-		now := time.Now()
-		for _, item := range chunk {
-			item.TimeUnixNano = uint64(now.UnixNano())
-		}
+		item.TimeUnixNano = uint64(time.Now().Nanosecond())
+
 		if p.consumerFunc != nil {
-			p.consumerFunc(&model.Logs{Logs: chunk})
+			p.consumerFunc(odata.NewLog(&item))
 		}
 	}
 }

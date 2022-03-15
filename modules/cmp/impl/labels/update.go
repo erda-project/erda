@@ -180,7 +180,7 @@ func kubernetesUpdateLabels(clusterInfo apistructs.ClusterInfoData, req apistruc
 		}
 	}
 	r, err := httpclient.New(httpclient.WithCompleteRedirect()).
-		Post(discover.Scheduler()).
+		Post(discover.Orchestrator()).
 		Path("/api/nodelabels").
 		JSONBody(map[string]interface{}{
 			"clustername": clusterInfo.MustGet(apistructs.DICE_CLUSTER_NAME),

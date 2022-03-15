@@ -17,7 +17,11 @@ package bundle
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -106,6 +110,71 @@ func (b *Bundle) ListReleases(req apistructs.ReleaseListRequest) (*apistructs.Re
 		return nil, toAPIError(resp.StatusCode(), releasesResp.Error)
 	}
 	return &releasesResp.Data, nil
+}
+
+func (b *Bundle) DownloadRelease(orgID uint64, userID, releaseId, distDir string) (string, error) {
+	host, err := b.urls.DiceHub()
+	if err != nil {
+		return "", err
+	}
+	hc := b.hc
+
+	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/releases/%s/actions/download", releaseId)).
+		Header("Internal-Client", "true").
+		Header("Org-ID", strconv.FormatUint(orgID, 10)).
+		Header("USER-ID", userID).
+		Header("Content-type", "application/zip").
+		Do().RAW()
+
+	if err != nil {
+		return "", apierrors.ErrInvoke.InternalError(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode/100 != 2 {
+		return "", errors.Errorf("download release %s, status code %d", releaseId, resp.StatusCode)
+	}
+
+	zipfile := fmt.Sprintf("tmp-%d.zip", time.Now().Unix())
+	attachmentInfo := resp.Header.Get("Content-Disposition")
+	attachment := strings.Split(attachmentInfo, "=")
+	if len(attachment) == 2 {
+		zipfile = attachment[1]
+	}
+
+	f, err := os.Create(distDir + "/" + zipfile)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, resp.Body)
+	if err != nil {
+		return zipfile, err
+	}
+
+	return zipfile, nil
+}
+
+func (b *Bundle) UploadRelease(req apistructs.ReleaseUploadRequest) error {
+	host, err := b.urls.DiceHub()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	var resp httpserver.Resp
+	r, err := hc.Post(host).Path("/api/releases/actions/upload").
+		Header("Internal-Client", "true").
+		Header("Org-ID", strconv.FormatInt(req.OrgID, 10)).
+		JSONBody(&req).Do().JSON(&resp)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !r.IsOK() || !resp.Success {
+		return toAPIError(r.StatusCode(), resp.Err)
+	}
+	return nil
 }
 
 // UpdateReference 更新 release 引用

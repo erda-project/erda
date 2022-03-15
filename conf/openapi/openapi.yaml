@@ -74,6 +74,7 @@ openapi-v1-routes:
           - scenes-import-record
           - test-dashboard
           - project-runtime
+          - app-runtime
           - test-report
           - addon-mysql-account
           - addon-mysql-consumer
@@ -85,8 +86,10 @@ openapi-v1-routes:
           - release-manage
           - app-list-all
           - project-pipeline
+          - app-pipeline
           - project-pipeline-exec-list
           - project-list-all
+          - auto-test-plan-list
       - addr: http://localhost:8080
         scenarios:
           - demo
@@ -130,6 +133,10 @@ openapi-v1-routes:
           - resources-runtime-monitor-java
           - resources-runtime-monitor-nodejs
           - msp-alert-overview
+          - msp-alert-event-list
+          - msp-alert-event-detail
+          - msp-notify-list
+          - msp-notify-detail
 
 etcd:
   _enable: ${OPENAPI_DEV_MODE:false}

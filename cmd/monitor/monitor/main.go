@@ -21,9 +21,11 @@ import (
 	"github.com/erda-project/erda/pkg/common"
 
 	// modules
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/client"
 	_ "github.com/erda-project/erda-proto-go/core/services/notify/channel/client"
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/alert-apis"
 	_ "github.com/erda-project/erda/modules/core/monitor/alert/details-apis"
+	_ "github.com/erda-project/erda/modules/core/monitor/alert/jobs/unrecover-alerts"
 	_ "github.com/erda-project/erda/modules/core/monitor/dataview"
 	_ "github.com/erda-project/erda/modules/core/monitor/dataview/v1-chart-block"
 	_ "github.com/erda-project/erda/modules/core/monitor/diagnotor/controller"
@@ -46,7 +48,6 @@ import (
 	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/loader"
 	_ "github.com/erda-project/erda/modules/core/monitor/storekit/elasticsearch/index/retention-strategy"
 	_ "github.com/erda-project/erda/modules/core/services/filenamager"
-	_ "github.com/erda-project/erda/modules/extensions/loghub/metrics/rules"
 	_ "github.com/erda-project/erda/modules/monitor/apm/report"
 	_ "github.com/erda-project/erda/modules/monitor/apm/runtime"
 	_ "github.com/erda-project/erda/modules/monitor/apm/topology"

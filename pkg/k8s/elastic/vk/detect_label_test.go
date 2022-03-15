@@ -33,7 +33,7 @@ func TestGetLabelsWithVendor(t *testing.T) {
 		{
 			name: "alibaba",
 			args: args{
-				vendor: apistructs.ECIVendorAibaba,
+				vendor: apistructs.ECIVendorAlibaba,
 			},
 			want: map[string]string{
 				apistructs.AlibabaECILabel: "true",

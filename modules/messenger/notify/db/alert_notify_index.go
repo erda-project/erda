@@ -15,9 +15,12 @@
 package db
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/jinzhu/gorm"
+
+	"github.com/erda-project/erda/modules/messenger/notify/model"
 )
 
 type AlertNotifyIndexDB struct {
@@ -26,16 +29,17 @@ type AlertNotifyIndexDB struct {
 
 type AlertNotifyIndex struct {
 	ID         int64     `json:"id" gorm:"column:id"`
-	NotifyID   int64     `json:"notify_id" gorm:"column:notify_id"`
-	NotifyName string    `json:"notify_name" gorm:"column:notify_name"`
+	NotifyID   int64     `json:"notifyID" gorm:"column:notify_id"`
+	NotifyName string    `json:"notifyName" gorm:"column:notify_name"`
 	Status     string    `json:"status" gorm:"column:status"`
 	Channel    string    `json:"channel" gorm:"column:channel"`
 	Attributes string    `json:"attributes" gorm:"column:attributes"`
-	ScopeType  string    `json:"scope_type" gorm:"column:scope_type"`
-	ScopeID    string    `json:"scope_id" gorm:"column:scope_id"`
+	ScopeType  string    `json:"scopeType" gorm:"column:scope_type"`
+	ScopeID    string    `json:"scopeID" gorm:"column:scope_id"`
 	OrgID      int64     `json:"org_id" gorm:"column:org_id"`
 	CreatedAt  time.Time `json:"created_at" gorm:"column:created_at"`
-	SendTime   time.Time `json:"send_time" gorm:"column:send_time"`
+	SendTime   time.Time `json:"sendTime" gorm:"column:send_time"`
+	AlertId    int64     `json:"alertId,gorm:"column:alert_id"`
 }
 
 func (AlertNotifyIndex) TableName() string {
@@ -48,4 +52,58 @@ func (db *AlertNotifyIndexDB) CreateAlertNotifyIndex(alertNotifyIndex *AlertNoti
 		return 0, err
 	}
 	return alertNotifyIndex.ID, nil
+}
+
+func (db *AlertNotifyIndexDB) QueryAlertNotifyHistories(queryRequest *model.QueryAlertNotifyIndexRequest) ([]AlertNotifyIndex, int64, error) {
+	var alertNotifyIndex []AlertNotifyIndex
+	query := db.Model(&AlertNotifyIndex{}).Where("org_id = ?", queryRequest.OrgID).
+		Where("scope_type = ?", queryRequest.ScopeType).
+		Where("scope_id = ?", queryRequest.ScopeID)
+	if queryRequest.NotifyName != "" {
+		query = query.Where("notify_name like ?", "%"+queryRequest.NotifyName+"%")
+	}
+	if queryRequest.Status != "" {
+		query = query.Where("status = ?", queryRequest.Status)
+	}
+	if queryRequest.Channel != "" {
+		query = query.Where("channel = ?", queryRequest.Channel)
+	}
+	if queryRequest.AlertID != 0 {
+		query = query.Where("alert_id = ?", queryRequest.AlertID)
+	}
+	if len(queryRequest.SendTime) > 0 {
+		timeFormat := "2006-01-02 15:04:05"
+		msInt, _ := strconv.ParseInt(queryRequest.SendTime[0], 10, 64)
+		tm := time.Unix(0, msInt*int64(time.Millisecond))
+		startSendTime := tm.Format(timeFormat)
+		msInt, _ = strconv.ParseInt(queryRequest.SendTime[1], 10, 64)
+		tm = time.Unix(0, msInt*int64(time.Millisecond))
+		endSendTime := tm.Format(timeFormat)
+		query = query.Where("send_time >= ?", startSendTime).Where("send_time <= ?", endSendTime)
+	}
+	var count int64
+	err := query.Count(&count).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	if queryRequest.TimeOrder {
+		query = query.Order("send_time asc")
+	} else {
+		query = query.Order("send_time desc")
+	}
+	err = query.Offset((queryRequest.PageNo - 1) * queryRequest.PageSize).
+		Limit(queryRequest.PageSize).Find(&alertNotifyIndex).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	return alertNotifyIndex, count, nil
+}
+
+func (db *AlertNotifyIndexDB) GetAlertNotifyIndex(id int64) (*AlertNotifyIndex, error) {
+	var alertIndex AlertNotifyIndex
+	err := db.Where("id = ?", id).Find(&alertIndex).Error
+	if err != nil {
+		return nil, err
+	}
+	return &alertIndex, nil
 }

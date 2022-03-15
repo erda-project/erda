@@ -27,3 +27,5 @@ erda.core.services.errorbox:
 http-server@admin:
   addr: ":7098"
 pprof:
+
+erda.core.messenger.notify:

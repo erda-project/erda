@@ -47,10 +47,18 @@ grpc-client@erda.core.pipeline.source:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
 erda.core.pipeline.source-client:
 
+grpc-client@erda.core.pipeline.cron:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+erda.core.pipeline.cron-client:
+
 grpc-client@erda.cmp.dashboard.resource:
   addr: "${CMP_GRPC_ADDR:cmp:9029}"
   block: false
 erda.cmp.dashboard.resource-client:
+
+grpc-client@erda.core.dicehub.release:
+  addr: "${DICEHUB_GRPC_ADDR:dicehub:7080}"
+erda.core.dicehub.release-client:
 
 ## orchestrator addon mysql
 grpc-client@erda.orchestrator.addon.mysql:
@@ -65,6 +73,7 @@ erda.core.dop.autotest.testplan:
 erda.dop.projecthome:
 erda.dop.contribution:
 erda.dop.projectpipeline:
+erda.dop.issue.stream:
 
 # component-protocol framework
 component-protocol:

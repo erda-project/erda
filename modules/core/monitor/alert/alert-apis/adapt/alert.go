@@ -142,7 +142,7 @@ const (
 	WebhookNotifyTarget            NotifyTargetType = "webhook"
 
 	dashboardPath = "/dataCenter/customDashboard"
-	recordPath    = "/dataCenter/alarm/record"
+	recordPath    = "/cmp/alarm/record/events/{{family_id}}"
 
 	TriggerCondition = "trigger_condition"
 )
@@ -218,8 +218,8 @@ func (a *Adapt) QueryOrgAlertRule(lang i18n.LanguageCodes, orgID uint64) (*pb.Al
 }
 
 // QueryAlert .
-func (a *Adapt) QueryAlert(code i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize uint64) ([]*pb.Alert, []string, error) {
-	alerts, err := a.db.Alert.QueryByScopeAndScopeID(scope, scopeID, pageNo, pageSize)
+func (a *Adapt) QueryAlert(code i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize uint64, name string) ([]*pb.Alert, []string, error) {
+	alerts, err := a.db.Alert.QueryByScopeAndScopeID(scope, scopeID, pageNo, pageSize, name)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -238,13 +238,30 @@ func (a *Adapt) QueryAlert(code i18n.LanguageCodes, scope, scopeID string, pageN
 	if err != nil {
 		return nil, nil, err
 	}
+	ruleCountMap, err := a.getRuleCountByAlertIDs(alertIDs)
+	if err != nil {
+		return nil, nil, err
+	}
 	var list []*pb.Alert
 	for _, item := range alerts {
 		alert := FromDBAlertModel(item)
 		alert.Notifies = notifyMap[alert.Id]
+		alert.RuleCount = ruleCountMap[alert.Id]
 		list = append(list, alert)
 	}
 	return list, userIDs, nil
+}
+
+// get alert rules count
+func (a *Adapt) getRuleCountByAlertIDs(alertIDs []uint64) (map[uint64]int64, error) {
+	if len(alertIDs) == 0 {
+		return nil, nil
+	}
+	ruleCounts, err := a.db.AlertExpression.QueryRuleCount(alertIDs)
+	if err != nil {
+		return nil, err
+	}
+	return ruleCounts, nil
 }
 
 // according to alertID get alert
@@ -304,9 +321,9 @@ func (a *Adapt) getNotifyGroupRelByIDs(groupIDs []string) map[int64]*pb.NotifyGr
 }
 
 // QueryOrgAlert .
-func (a *Adapt) QueryOrgAlert(lang i18n.LanguageCodes, orgID uint64, pageNo, pageSize uint64) ([]*pb.Alert, []string, error) {
+func (a *Adapt) QueryOrgAlert(lang i18n.LanguageCodes, orgID uint64, pageNo, pageSize uint64, name string) ([]*pb.Alert, []string, error) {
 	scopeID := strconv.FormatUint(orgID, 10)
-	alerts, userIds, err := a.QueryAlert(lang, "org", scopeID, pageNo, pageSize)
+	alerts, userIds, err := a.QueryAlert(lang, "org", scopeID, pageNo, pageSize, name)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -327,8 +344,8 @@ func (a *Adapt) QueryOrgAlert(lang i18n.LanguageCodes, orgID uint64, pageNo, pag
 }
 
 // CountAlert .
-func (a *Adapt) CountAlert(scope, scopeID string) (int, error) {
-	count, err := a.db.Alert.CountByScopeAndScopeID(scope, scopeID)
+func (a *Adapt) CountAlert(scope, scopeID, name string) (int, error) {
+	count, err := a.db.Alert.CountByScopeAndScopeID(scope, scopeID, name)
 	if err != nil {
 		return 0, err
 	}
@@ -336,8 +353,8 @@ func (a *Adapt) CountAlert(scope, scopeID string) (int, error) {
 }
 
 // CountOrgAlert .
-func (a *Adapt) CountOrgAlert(orgID uint64) (int, error) {
-	return a.CountAlert("org", strconv.FormatUint(orgID, 10))
+func (a *Adapt) CountOrgAlert(orgID uint64, name string) (int, error) {
+	return a.CountAlert("org", strconv.FormatUint(orgID, 10), name)
 }
 
 // GetAlert .
@@ -519,7 +536,6 @@ func (a *Adapt) CreateAlert(alert *pb.Alert) (alertID uint64, err error) {
 		return 0, ErrorAlreadyExists
 	}
 	alert.Enable = true
-	alert.Attributes["alert_source"] = structpb.NewStringValue("System")
 	data := ToDBAlertModel(alert)
 	data.ID = 0
 	err = tx.Alert.Insert(data)

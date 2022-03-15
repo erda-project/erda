@@ -20,7 +20,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
 
@@ -35,8 +35,8 @@ type provider struct {
 	Log logs.Logger
 }
 
-func (p *provider) ComponentID() model.ComponentID {
-	return model.ComponentID(providerName)
+func (p *provider) ComponentConfig() interface{} {
+	return p.Cfg
 }
 
 func (p *provider) Connect() error {
@@ -47,12 +47,14 @@ func (p *provider) Close() error {
 	return nil
 }
 
-func (p *provider) Export(od model.ObservableData) error {
-	buf, err := json.Marshal(&od)
-	if err != nil {
-		return err
+func (p *provider) Export(ods []odata.ObservableData) error {
+	for _, od := range ods {
+		buf, err := json.Marshal(od.Source())
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%s\n", string(buf))
 	}
-	fmt.Printf("%s\n", string(buf))
 	return nil
 }
 

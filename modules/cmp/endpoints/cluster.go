@@ -24,6 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/cmp/impl/ess"
 	"github.com/erda-project/erda/modules/pkg/user"
@@ -191,17 +192,19 @@ func (e *Endpoints) OfflineEdgeCluster(ctx context.Context, r *http.Request, var
 		return
 	}
 
-	recordID, err := e.clusters.OfflineEdgeCluster(req, i.UserID, i.OrgID)
+	recordID, preCheckHint, err := e.clusters.OfflineEdgeCluster(req, i.UserID, i.OrgID)
 	if err != nil {
 		err = fmt.Errorf("failed to offline cluster: %v", err)
 		return
 	}
 
-	e.SteveAggregator.Delete(req.ClusterName)
+	if !req.PreCheck {
+		e.SteveAggregator.Delete(req.ClusterName)
+	}
 
 	return mkResponse(apistructs.OfflineEdgeClusterResponse{
 		Header: apistructs.Header{Success: true},
-		Data:   apistructs.OfflineEdgeClusterData{RecordID: recordID},
+		Data:   apistructs.OfflineEdgeClusterData{RecordID: recordID, PreCheckHint: preCheckHint},
 	})
 }
 
@@ -366,7 +369,9 @@ func (e *Endpoints) handleUpdateReq(req *apistructs.CMPClusterUpdateRequest) str
 	}
 	if req.OpsConfig.ScaleMode == "auto" {
 		if clusterInfo.OpsConfig != nil && clusterInfo.OpsConfig.ScaleMode == apistructs.ScaleModeScheduler {
-			_, err := e.bdl.StopPipelineCron(clusterInfo.OpsConfig.ScalePipeLineID)
+			_, err := e.CronService.CronStop(context.Background(), &cronpb.CronStopRequest{
+				CronID: clusterInfo.OpsConfig.ScalePipeLineID,
+			})
 			if err != nil {
 				return fmt.Sprintf("failed to delete pipline cronjob : %v", err)
 			}
@@ -388,7 +393,9 @@ func (e *Endpoints) handleUpdateReq(req *apistructs.CMPClusterUpdateRequest) str
 	if req.OpsConfig.ScaleMode == apistructs.ScaleModeScheduler {
 		if clusterInfo.OpsConfig != nil && clusterInfo.OpsConfig.ScaleMode == apistructs.ScaleModeScheduler {
 			if clusterInfo.OpsConfig.ScalePipeLineID != 0 {
-				_, err := e.bdl.StopPipelineCron(clusterInfo.OpsConfig.ScalePipeLineID)
+				_, err := e.CronService.CronStop(context.Background(), &cronpb.CronStopRequest{
+					CronID: clusterInfo.OpsConfig.ScalePipeLineID,
+				})
 				if err != nil {
 					return fmt.Sprintf("failed to delete pipline cronjob : %v", err)
 				}
@@ -430,7 +437,9 @@ func (e *Endpoints) handleUpdateReq(req *apistructs.CMPClusterUpdateRequest) str
 	}
 	if req.OpsConfig.ScaleMode == "none" {
 		if clusterInfo.OpsConfig != nil && clusterInfo.OpsConfig.ScaleMode == apistructs.ScaleModeScheduler {
-			_, err := e.bdl.StopPipelineCron(clusterInfo.OpsConfig.ScalePipeLineID)
+			_, err := e.CronService.CronStop(context.Background(), &cronpb.CronStopRequest{
+				CronID: clusterInfo.OpsConfig.ScalePipeLineID,
+			})
 			if err != nil {
 				return fmt.Sprintf("failed to delete pipline cronjob : %v", err)
 			}

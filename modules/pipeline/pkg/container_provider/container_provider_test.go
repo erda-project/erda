@@ -23,13 +23,13 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func TestConstructContainerProviderByLabel(t *testing.T) {
+func TestConstructContainerProvider(t *testing.T) {
 	validLabel := map[string]string{
 		apistructs.ContainerInstanceLabelType:     string(apistructs.ContainerInstanceECI),
 		apistructs.ContainerInstanceLabelCPU:      "1.0",
 		apistructs.ContainerInstanceLabelMemoryMB: "1024",
 	}
-	validProvider := ConstructContainerProviderByLabel(validLabel)
+	validProvider := ConstructContainerProvider(WithLabels(validLabel))
 	assert.Equal(t, apistructs.ContainerInstanceECI, validProvider.ContainerInstanceType)
 
 	invalidLabel := map[string]string{
@@ -37,15 +37,15 @@ func TestConstructContainerProviderByLabel(t *testing.T) {
 		apistructs.ContainerInstanceLabelCPU:      "1.0",
 		apistructs.ContainerInstanceLabelMemoryMB: "1024",
 	}
-	invalidProvider := ConstructContainerProviderByLabel(invalidLabel)
-	assert.Equal(t, true, invalidProvider == nil)
+	invalidProvider := ConstructContainerProvider(WithLabels(invalidLabel))
+	assert.Equal(t, false, invalidProvider.IsHitted)
 
 	validTypeButInvalidCPU := map[string]string{
 		apistructs.ContainerInstanceLabelType:     string(apistructs.ContainerInstanceECI),
 		apistructs.ContainerInstanceLabelCPU:      "xxx",
 		apistructs.ContainerInstanceLabelMemoryMB: "1024",
 	}
-	validTypeButInvalidCPUProvider := ConstructContainerProviderByLabel(validTypeButInvalidCPU)
+	validTypeButInvalidCPUProvider := ConstructContainerProvider(WithLabels(validTypeButInvalidCPU))
 	assert.Equal(t, true, validTypeButInvalidCPUProvider.IsHitted)
 	assert.Equal(t, float64(0), validTypeButInvalidCPUProvider.CPU)
 
@@ -54,7 +54,7 @@ func TestConstructContainerProviderByLabel(t *testing.T) {
 		apistructs.ContainerInstanceLabelCPU:      "1.0",
 		apistructs.ContainerInstanceLabelMemoryMB: "xxx",
 	}
-	validTypeButInvalidMemProvider := ConstructContainerProviderByLabel(validTypeButInvalidMem)
+	validTypeButInvalidMemProvider := ConstructContainerProvider(WithLabels(validTypeButInvalidMem))
 	assert.Equal(t, true, validTypeButInvalidMemProvider.IsHitted)
 	assert.Equal(t, float64(0), validTypeButInvalidMemProvider.MemoryMB)
 }

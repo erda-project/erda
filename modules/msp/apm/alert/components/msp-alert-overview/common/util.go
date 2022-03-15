@@ -15,7 +15,12 @@
 package common
 
 import (
+	"context"
 	stdtime "time"
+
+	monitorpb "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
+	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/modules/msp/apm/alert/components/common"
 )
 
 func GetInterval(startTimeMs, endTimeMs int64, minInterval stdtime.Duration, preferredPoints int64) string {
@@ -32,4 +37,38 @@ func ToInterface(value []int64) []interface{} {
 		arr = append(arr, v)
 	}
 	return arr
+}
+
+func StringToInterface(value []string) []interface{} {
+	arr := make([]interface{}, 0)
+	for _, v := range value {
+		arr = append(arr, v)
+	}
+	return arr
+}
+
+func GetMonitorAlertServiceFromContext(ctx context.Context) monitorpb.AlertServiceServer {
+	val := ctx.Value(common.ContextKeyServiceMonitorAlertService)
+	if val == nil {
+		return nil
+	}
+
+	typed, ok := val.(monitorpb.AlertServiceServer)
+	if !ok {
+		return nil
+	}
+	return typed
+}
+
+func GetMonitorMetricServiceFromContext(ctx context.Context) metricpb.MetricServiceServer {
+	val := ctx.Value(common.ContextKeyServiceMonitorMetricService)
+	if val == nil {
+		return nil
+	}
+
+	typed, ok := val.(metricpb.MetricServiceServer)
+	if !ok {
+		return nil
+	}
+	return typed
 }

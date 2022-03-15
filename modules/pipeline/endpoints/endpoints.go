@@ -21,8 +21,9 @@ import (
 	"github.com/gorilla/schema"
 
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/providers/engine"
+	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
@@ -30,7 +31,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/pipelinecronsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
@@ -41,7 +41,6 @@ import (
 type Endpoints struct {
 	appSvc           *appsvc.AppSvc
 	permissionSvc    *permissionsvc.PermissionSvc
-	pipelineCronSvc  *pipelinecronsvc.PipelineCronSvc
 	pipelineSvc      *pipelinesvc.PipelineSvc
 	crondSvc         *crondsvc.CrondSvc
 	buildArtifactSvc *buildartifactsvc.BuildArtifactSvc
@@ -54,7 +53,8 @@ type Endpoints struct {
 	dbClient           *dbclient.Client
 	queryStringDecoder *schema.Decoder
 
-	reconciler *reconciler.Reconciler
+	engine       engine.Interface
+	queueManager queuemanager.Interface
 }
 
 type Option func(*Endpoints)
@@ -118,12 +118,6 @@ func WithExtMarketSvc(svc *extmarketsvc.ExtMarketSvc) Option {
 	}
 }
 
-func WithPipelineCronSvc(svc *pipelinecronsvc.PipelineCronSvc) Option {
-	return func(e *Endpoints) {
-		e.pipelineCronSvc = svc
-	}
-}
-
 func WithPipelineSvc(svc *pipelinesvc.PipelineSvc) Option {
 	return func(e *Endpoints) {
 		e.pipelineSvc = svc
@@ -148,9 +142,15 @@ func WithQueryStringDecoder(decoder *schema.Decoder) Option {
 	}
 }
 
-func WithReconciler(r *reconciler.Reconciler) Option {
+func WithEngine(engine engine.Interface) Option {
 	return func(e *Endpoints) {
-		e.reconciler = r
+		e.engine = engine
+	}
+}
+
+func WithQueueManager(qm queuemanager.Interface) Option {
+	return func(e *Endpoints) {
+		e.queueManager = qm
 	}
 }
 
@@ -188,15 +188,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/pipelines/actions/statistics", Method: http.MethodGet, Handler: e.pipelineStatistic},
 		{Path: "/api/pipelines/actions/task-view", Method: http.MethodGet, Handler: e.pipelineTaskView},
 
-		// pipeline cron
-		{Path: "/api/pipeline-crons", Method: http.MethodGet, Handler: e.pipelineCronPaging},
-		{Path: "/api/pipeline-crons/{cronID}/actions/start", Method: http.MethodPut, Handler: e.pipelineCronStart},
-		{Path: "/api/pipeline-crons/{cronID}/actions/stop", Method: http.MethodPut, Handler: e.pipelineCronStop},
-		{Path: "/api/pipeline-crons", Method: http.MethodPost, Handler: e.pipelineCronCreate},
-		{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodDelete, Handler: e.pipelineCronDelete},
-		{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodGet, Handler: e.pipelineCronGet},
-		{Path: "/api/pipeline-crons/{cronID}", Method: http.MethodPut, Handler: e.pipelineCronUpdate},
-
 		// pipeline queue management
 		{Path: "/api/pipeline-queues", Method: http.MethodPost, Handler: e.createPipelineQueue},
 		{Path: "/api/pipeline-queues/{queueID}", Method: http.MethodGet, Handler: e.getPipelineQueue},
@@ -219,7 +210,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/_daemon/reload-action-executor-config", Method: http.MethodGet, Handler: e.reloadActionExecutorConfig},
 		{Path: "/_daemon/crond/actions/reload", Method: http.MethodGet, Handler: e.crondReload},
 		{Path: "/_daemon/crond/actions/snapshot", Method: http.MethodGet, Handler: e.crondSnapshot},
-		{Path: "/_daemon/reconciler/throttler/snapshot", Method: http.MethodGet, WriterHandler: e.throttlerSnapshot},
 
 		{Path: "/api/pipeline-snippets/actions/query-details", Method: http.MethodPost, Handler: e.querySnippetDetails},
 

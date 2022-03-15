@@ -23,12 +23,16 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 
+	"github.com/erda-project/erda-infra/pkg/transport"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
+	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
@@ -74,7 +78,7 @@ func (e *Endpoints) CreateRuntimeByRelease(ctx context.Context, r *http.Request,
 		return apierrors.ErrCreateRuntime.InvalidParameter("req body").ToResp(), nil
 	}
 
-	data, err := e.runtime.CreateByReleaseIDPipeline(orgid, operator, &req)
+	data, err := e.runtime.CreateByReleaseIDPipeline(ctx, orgid, operator, &req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -91,7 +95,7 @@ func (e *Endpoints) CreateRuntimeByReleaseAction(ctx context.Context, r *http.Re
 		// param problem
 		return apierrors.ErrCreateRuntime.InvalidParameter("req body").ToResp(), nil
 	}
-	data, err := e.runtime.CreateByReleaseID(operator, &req)
+	data, err := e.runtime.CreateByReleaseID(ctx, operator, &req)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -192,7 +196,7 @@ func (e *Endpoints) RedeployRuntime(ctx context.Context, r *http.Request, vars m
 	if err != nil {
 		return apierrors.ErrDeployRuntime.InvalidParameter("runtimeID: " + v).ToResp(), nil
 	}
-	data, err := e.runtime.RedeployPipeline(operator, orgID, runtimeID)
+	data, err := e.runtime.RedeployPipeline(ctx, operator, orgID, runtimeID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -251,7 +255,7 @@ func (e *Endpoints) RollbackRuntime(ctx context.Context, r *http.Request, vars m
 	if err != nil {
 		return apierrors.ErrRollbackRuntime.InvalidParameter(strutil.Concat("runtimeID: ", v)).ToResp(), nil
 	}
-	data, err := e.runtime.RollbackPipeline(operator, orgID, runtimeID, req.DeploymentID)
+	data, err := e.runtime.RollbackPipeline(ctx, operator, orgID, runtimeID, req.DeploymentID)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
@@ -290,7 +294,7 @@ func (e *Endpoints) ListRuntimes(ctx context.Context, r *http.Request, vars map[
 	return httpserver.OkResp(data, userIDs)
 }
 
-// CountPRByWorkspace .
+// CountPRByWorkspace count runtimes by app id or project id.
 func (e *Endpoints) CountPRByWorkspace(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	var (
 		l          = logrus.WithField("func", "*Endpoints.CountPRByWorkspace")
@@ -306,24 +310,49 @@ func (e *Endpoints) CountPRByWorkspace(ctx context.Context, r *http.Request, var
 	if err != nil {
 		return apierrors.ErrGetRuntime.InvalidParameter("projectId").ToResp(), nil
 	}
+
+	appIdStr := r.URL.Query().Get("appId")
 	envParam := r.URL.Query()["workspace"]
-	if len(envParam) == 0 || envParam[0] == "" {
-		for i := 0; i < len(defaultEnv); i++ {
-			cnt, err := e.runtime.CountPRByWorkspace(projectId, defaultEnv[i])
-			if err != nil {
-				l.WithError(err).Warnf("count runtimes of workspace %s failed", defaultEnv[i])
+
+	if appIdStr != "" {
+		appId, err := strconv.ParseUint(appIdStr, 10, 64)
+		if err != nil {
+			return apierrors.ErrGetRuntime.InvalidParameter("appId").ToResp(), nil
+		}
+		if len(envParam) == 0 || envParam[0] == "" {
+			for i := 0; i < len(defaultEnv); i++ {
+				cnt, err := e.runtime.CountARByWorkspace(appId, defaultEnv[i])
+				if err != nil {
+					l.WithError(err).Warnf("count runtimes of workspace %s failed", defaultEnv[i])
+				}
+				resp[defaultEnv[i]] = cnt
 			}
-			resp[defaultEnv[i]] = cnt
+		} else {
+			env := envParam[0]
+			cnt, err := e.runtime.CountARByWorkspace(appId, env)
+			if err != nil {
+				l.WithError(err).Warnf("count runtimes of workspace %s failed", env)
+			}
+			resp[env] = cnt
 		}
 	} else {
-		env := envParam[0]
-		cnt, err := e.runtime.CountPRByWorkspace(projectId, env)
-		if err != nil {
-			l.WithError(err).Warnf("count runtimes of workspace %s failed", env)
+		if len(envParam) == 0 || envParam[0] == "" {
+			for i := 0; i < len(defaultEnv); i++ {
+				cnt, err := e.runtime.CountPRByWorkspace(projectId, defaultEnv[i])
+				if err != nil {
+					l.WithError(err).Warnf("count runtimes of workspace %s failed", defaultEnv[i])
+				}
+				resp[defaultEnv[i]] = cnt
+			}
+		} else {
+			env := envParam[0]
+			cnt, err := e.runtime.CountPRByWorkspace(projectId, env)
+			if err != nil {
+				l.WithError(err).Warnf("count runtimes of workspace %s failed", env)
+			}
+			resp[env] = cnt
 		}
-		resp[env] = cnt
 	}
-
 	return httpserver.OkResp(resp)
 }
 
@@ -576,17 +605,18 @@ func (e *Endpoints) GetAppWorkspaceReleases(ctx context.Context, r *http.Request
 		if !matchArtifactWorkspace {
 			continue
 		}
-		releases, err := e.bdl.ListReleases(apistructs.ReleaseListRequest{
+		ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
+		releases, err := e.releaseSvc.ListRelease(ctx, &pb.ReleaseListRequest{
 			Branch:                       branch.Name,
-			CrossClusterOrSpecifyCluster: &clusterName,
+			CrossClusterOrSpecifyCluster: clusterName,
 			ApplicationID:                []string{strconv.FormatUint(req.AppID, 10)},
 			PageSize:                     5,
-			PageNum:                      1,
+			PageNo:                       1,
 		})
 		if err != nil {
 			return apierrors.ErrGetAppWorkspaceReleases.InternalError(err).ToResp(), nil
 		}
-		result[branch.Name] = releases
+		result[branch.Name] = releases.Data
 	}
 
 	return httpserver.OkResp(result)

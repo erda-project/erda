@@ -465,9 +465,14 @@ var (
 	ErrImportProjectTemplate = err("ErrImportProjectTemplate", "导入项目模版失败")
 	ErrParseProjectTemplate  = err("ErrParseProjectTemplate", "解析项目模版失败")
 
+	ErrExportProjectPackage = err("ErrExportProjectPackage", "导出项目工程包失败")
+	ErrImportProjectPackage = err("ErrImportProjectPackage", "导入项目工程包失败")
+	ErrParseProjectPackage  = err("ErrParseProjectPackage", "解析项目工程包失败")
+
 	ErrCreateApplication = err("ErrCreateApplication", "创建应用失败")
 	ErrDeleteApplication = err("ErrDeleteApplication", "删除应用失败")
 	ErrInitApplication   = err("ErrInitApplication", "应用初始化失败")
+	ErrUpdateApplication = err("ErrUpdateApplication", "更新应用失败")
 
 	ErrApprovalStatusChanged     = err("ErrApprovalStatusChanged", "审批流状态变更通知失败")
 	ErrListFileTreeNodes         = err("ErrListFileTreeNodes", "查询目录树节点列表失败")

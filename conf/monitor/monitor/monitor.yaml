@@ -114,6 +114,8 @@ log-storage-cassandra:
     keyspace:
       name: "spot_prod"
 erda.core.monitor.log.query:
+  download_api_throttling:
+    current_limit: ${LOG_DOWNLOAD_API_THROTTLING_CURRENT_LIMIT:200}
 
 # event
 elasticsearch@event:
@@ -246,7 +248,7 @@ erda.core.monitor.alertdetail:
 #  query_back_es: ${LOGS_QUERY_BACK_ES:false}
 #  index_field_settings:
 #    file: ${CONFIG_PATH}/logs/default_field_settings.yml
-log-metric-rules:
+
 node-topo:
 #apm providers
 apm-runtime:
@@ -338,3 +340,20 @@ erda.core.monitor.expression:
   metric_rules: ${CONFIG_PATH}/analyzer/metrics
 
 audit:
+
+erda.core.monitor.alert.jobs.unrecover-alerts:
+
+etcd-election@alert-event-metrics:
+  root_path: "/erda/monitor-alert-metrics-report-election"
+
+metric-report-client:
+  report_config:
+    collector:
+      addr: "${COLLECTOR_ADDR:collector:7076}"
+      username: ${COLLECTOR_AUTH_USERNAME}
+      password: ${COLLECTOR_AUTH_PASSWORD}
+
+
+grpc-client@erda.core.pipeline.cron:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+erda.core.pipeline.cron-client:

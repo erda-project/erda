@@ -18,7 +18,6 @@ package orchestrator
 import (
 	"context"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -31,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/endpoints"
 	"github.com/erda-project/erda/modules/orchestrator/i18n"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment_order"
@@ -44,6 +44,7 @@ import (
 	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/loop"
 	// "terminus.io/dice/telemetry/promxp"
 )
@@ -88,10 +89,14 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 		logrus.Infof("i resign the leader now")
 	})
 
+	go scheduler.GetDCOSTokenAuthPeriodically()
+
 	// start cron jobs to sync addon & project infos
 	go initCron(ep, ctx)
 
-	i18n.SetSingle(p.LogTrans)
+	i18n.InitI18N()
+	// TODO: split common trans
+	i18n.SetSingle(p.Trans)
 
 	return nil
 }
@@ -135,6 +140,9 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 			PrivateKeyDataType: encryption.Base64,
 		})))
 
+	// init scheduler
+	scheduler := scheduler.NewScheduler()
+
 	migration := migration.New(
 		migration.WithBundle(bdl),
 		migration.WithDBClient(db))
@@ -161,7 +169,9 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		runtime.WithDBClient(db),
 		runtime.WithEventManager(p.EventManager),
 		runtime.WithBundle(bdl),
-		runtime.WithAddon(a))
+		runtime.WithAddon(a),
+		runtime.WithReleaseSvc(p.DicehubReleaseSvc),
+	)
 
 	// init deployment service
 	d := deployment.New(
@@ -172,6 +182,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		deployment.WithMigration(migration),
 		deployment.WithEncrypt(encrypt),
 		deployment.WithResource(resource),
+		deployment.WithReleaseSvc(p.DicehubReleaseSvc),
 	)
 
 	// init domain service
@@ -190,6 +201,8 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		deployment_order.WithBundle(bdl),
 		deployment_order.WithRuntime(rt),
 		deployment_order.WithDeployment(d),
+		deployment_order.WithQueue(p.PusherQueue),
+		deployment_order.WithReleaseSvc(p.DicehubReleaseSvc),
 	)
 
 	// compose endpoints
@@ -208,6 +221,8 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		endpoints.WithEnvEncrypt(encrypt),
 		endpoints.WithResource(resource),
 		endpoints.WithMigration(migration),
+		endpoints.WithReleaseSvc(p.DicehubReleaseSvc),
+		endpoints.WithScheduler(scheduler),
 	)
 
 	return ep, nil
@@ -222,6 +237,11 @@ func initLeaderCron(ep *endpoints.Endpoints, ctx context.Context) error {
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Second)).Do(ep.PushOnDeletingRuntimesPolling)
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(2*time.Second)).Do(ep.PushOnDeletingRuntimes)
 
+	// con for push on deployment order batches
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Second)).Do(ep.PushOnDeploymentOrderPolling)
+	go loop.New(loop.WithContext(ctx), loop.WithDeclineRatio(1.2), loop.WithInterval(50*time.Millisecond),
+		loop.WithDeclineLimit(3*time.Second)).Do(ep.PushOnDeploymentOrder)
+
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(10*time.Minute)).Do(ep.SyncAddonReferenceNum)
 
 	go ep.CleanUnusedMigrationNs()
@@ -230,6 +250,8 @@ func initLeaderCron(ep *endpoints.Endpoints, ctx context.Context) error {
 	go ep.SyncDeployAddon()
 
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(5*time.Minute)).Do(ep.SyncAddonResources)
+
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(1*time.Hour)).Do(ep.CleanRemainingAddonAttachment)
 
 	ep.FullGCLoop(ctx)
 
@@ -280,8 +302,9 @@ func cleanLeaderRemainingAddon(ep *endpoints.Endpoints) error {
 			existProjectMap[proID] = struct{}{}
 			return false
 		}
-		if !strings.Contains(err.Error(), "project not found") {
-			logrus.Errorf("[cleanLeaderRemainingAddon] failed to GetProject, prjectID: %s", addon.ProjectID)
+
+		if !errorresp.IsNotFound(err) {
+			logrus.Errorf("[cleanLeaderRemainingAddon] failed to GetProject, prjectID: %s, err: %s", addon.ProjectID, err.Error())
 			return false
 		}
 		// the project is deleted, and should clean the addon

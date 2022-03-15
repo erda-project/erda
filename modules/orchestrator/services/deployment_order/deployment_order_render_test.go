@@ -15,14 +15,18 @@
 package deployment_order
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
 	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	infrai18n "github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	release2 "github.com/erda-project/erda/modules/dicehub/release"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/i18n"
 )
@@ -52,7 +56,6 @@ services:
       cpu: 1
       mem: 1024
 version: "2.0"
-
 `)
 }
 
@@ -74,11 +77,11 @@ func TestPreCheck(t *testing.T) {
 		},
 	)
 
-	monkey.Patch(i18n.OrgSprintf, func(string, string, ...interface{}) string {
+	monkey.Patch(i18n.LangCodesSprintf, func(infrai18n.LanguageCodes, string, ...interface{}) string {
 		return ""
 	})
 
-	got, err := order.staticPreCheck(1, "1", string(apistructs.WorkspaceDev), 1, 1, getFakeErdaYaml())
+	got, err := order.staticPreCheck([]*infrai18n.LanguageCode{{Code: "en", Quality: 1}}, "1", string(apistructs.WorkspaceDev), 1, 1, getFakeErdaYaml())
 	assert.NoError(t, err)
 	assert.Equal(t, len(got), 2)
 }
@@ -86,12 +89,12 @@ func TestPreCheck(t *testing.T) {
 func TestRenderDetail(t *testing.T) {
 	order := New()
 	bdl := bundle.New()
+	releaseSvc := &release2.ReleaseService{}
+	order.releaseSvc = releaseSvc
 
 	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetRelease", func(*bundle.Bundle, string) (*apistructs.ReleaseGetResponseData, error) {
-		return &apistructs.ReleaseGetResponseData{
-			Diceyml: string(getFakeErdaYaml()),
-		}, nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(releaseSvc), "GetRelease", func(*release2.ReleaseService, context.Context, *pb.ReleaseGetRequest) (*pb.ReleaseGetResponse, error) {
+		return &pb.ReleaseGetResponse{Data: &pb.ReleaseGetResponseData{Diceyml: string(getFakeErdaYaml())}}, nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CheckPermission", func(*bundle.Bundle, *apistructs.PermissionCheckRequest) (*apistructs.PermissionCheckResponseData, error) {
 		return &apistructs.PermissionCheckResponseData{
@@ -111,10 +114,10 @@ func TestRenderDetail(t *testing.T) {
 		},
 	)
 
-	monkey.Patch(i18n.OrgSprintf, func(string, string, ...interface{}) string {
+	monkey.Patch(i18n.LangCodesSprintf, func(infrai18n.LanguageCodes, string, ...interface{}) string {
 		return ""
 	})
 
-	_, err := order.RenderDetail(1, "1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD")
+	_, err := order.RenderDetail(context.Background(), "1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD")
 	assert.NoError(t, err)
 }

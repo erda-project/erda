@@ -1,6 +1,7 @@
 - name: "MySQL实例主从同步异常告警"
   trigger: "alert"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     usage_percent_avg: "percent:1"
     limit_value: "fraction:1"
@@ -30,6 +31,7 @@
 - name: "MySQL实例主从同步异常告警"
   trigger: "alert"
   target: "sms"
+  language: "zh-CN"
   formats:
     usage_percent_avg: "percent:1"
     limit_value: "fraction:1"
@@ -41,6 +43,7 @@
 - name: "MySQL实例主从同步异常告警"
   trigger: "alert"
   target: "vms"
+  language: "zh-CN"
   formats:
     usage_percent_avg: "percent:1"
     limit_value: "fraction:1"
@@ -51,6 +54,7 @@
 - name: "MySQL实例主从同步异常恢复"
   trigger: "recover"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     usage_percent_avg: "percent:1"
     limit_value: "fraction:1"
@@ -78,6 +82,7 @@
 - name: "MySQL实例主从同步异常恢复"
   trigger: "recover"
   target: "sms"
+  language: "zh-CN"
   formats:
     usage_percent_avg: "percent:1"
     limit_value: "fraction:1"
@@ -89,6 +94,7 @@
 - name: "MySQL实例主从同步异常恢复"
   trigger: "recover"
   target: "vms"
+  language: "zh-CN"
   formats:
     usage_percent_avg: "percent:1"
     limit_value: "fraction:1"
@@ -96,3 +102,106 @@
     【MySQL实例主从同步恢复】
   template: |
     MySQL实例{{addon_id}}主从同步恢复，从节点IO异常状态: {{slave_slave_io_running_value}}，从节点连接异常状态: {{slave_slave_sql_running_value}}
+
+- name: "Master-slave synchronization exception alarm of MySQL instance "
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+  title: |
+    [Master-slave synchronization exception of MySQL instance]
+  template: |
+    [Master-slave synchronization exception of MySQL instance]
+
+    Component: "mysql"
+
+    Instance ID: {{addon_id}}
+
+    Slave node IO exception: {{slave_slave_io_running_value}}
+
+    Slave node connection exception: {{slave_slave_sql_running_value}}
+
+    Cluster/Machine: {{cluster_name}} / {{host_ip}}
+
+    Machine: {{host_ip}}
+
+    Time: {{timestamp}}
+
+    [view records]({{record_url}})
+
+- name: "Master-slave synchronization exception alarm of MySQL instance "
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  formats:
+    usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+  title: |
+    [Master-slave synchronization exception of MySQL instance]
+  template: |
+    Master-slave synchronization exception of MySQL instance {{addon_id}}, slave node IO exception: {{slave_slave_io_running_value}}, slave node connection exception: {{slave_slave_sql_running_value}}
+
+- name: "Master-slave synchronization exception alarm of MySQL instance "
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  formats:
+    usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+  title: |
+    [Master-slave synchronization exception of MySQL instance]
+  template: |
+    Master-slave synchronization exception of MySQL instance {{addon_id}}, slave node IO exception: {{slave_slave_io_running_value}}, slave node connection exception: {{slave_slave_sql_running_value}}
+- name: "Master-slave synchronization exception recovery of MySQL instance"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+  title: |
+    [Master-slave synchronization recovery of MySQL instance]
+  template: |
+    [Master-slave synchronization recovery of MySQL instance]
+
+    Component: "mysql"
+
+    Instance ID: {{addon_id}}
+
+    Slave node IO exception: {{slave_slave_io_running_value}}
+
+    Slave node connection exception: {{slave_slave_sql_running_value}}
+
+    Cluster/Machine: {{cluster_name}} / {{host_ip}}
+
+    Machine: {{host_ip}}
+
+    Time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "Master-slave synchronization exception recovery of MySQL instance"
+  trigger: "recover"
+  target: "sms"
+  language: "en-US"
+  formats:
+    usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+  title: |
+    [Master-slave synchronization recovery of MySQL instance]
+  template: |
+    Master-slave synchronization recovery of MySQL instance {{addon_id}}, slave node IO exception: {{slave_slave_io_running_value}}, slave node connection exception: {{slave_slave_sql_running_value}}
+
+- name: "Master-slave synchronization exception recovery of MySQL instance"
+  trigger: "recover"
+  target: "vms"
+  language: "en-US"
+  formats:
+    usage_percent_avg: "percent:1"
+    limit_value: "fraction:1"
+  title: |
+    [Master-slave synchronization recovery of MySQL instance]
+  template: |
+    Master-slave synchronization recovery of MySQL instance {{addon_id}}, slave node IO exception: {{slave_slave_io_running_value}}, slave node connection exception: {{slave_slave_sql_running_value}}

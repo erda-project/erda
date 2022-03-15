@@ -34,6 +34,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/events"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/logic"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
@@ -90,7 +91,7 @@ type K8sJob struct {
 }
 
 func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sJob, error) {
-	k, err := k8sclient.New(clusterName)
+	k, err := k8sclient.NewWithTimeOut(clusterName, time.Duration(conf.K8SExecutorMaxInitializationSec())*time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -173,8 +174,10 @@ func (k *K8sJob) Create(ctx context.Context, action *spec.PipelineTask) (data in
 			if pvc == nil {
 				continue
 			}
-			_, err := k.client.ClientSet.CoreV1().PersistentVolumeClaims(pvc.Namespace).Create(ctx, pvc, metav1.CreateOptions{})
-			if err != nil {
+			_, err := k.client.ClientSet.CoreV1().
+				PersistentVolumeClaims(pvc.Namespace).
+				Create(ctx, pvc, metav1.CreateOptions{})
+			if err != nil && !k8serrors.IsAlreadyExists(err) {
 				return nil, err
 			}
 		}
@@ -521,6 +524,14 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo map[string]str
 	// cmd
 	if job.Cmd != "" {
 		container.Command = append(container.Command, []string{"sh", "-c", job.Cmd}...)
+	}
+
+	// annotations
+	// k8sjob only has one container, multi-container is for compatibility with flink, spark
+	if len(job.TaskContainers) > 0 {
+		kubeJob.Spec.Template.Annotations = map[string]string{
+			apistructs.MSPTerminusDefineTag: job.TaskContainers[0].ContainerID,
+		}
 	}
 
 	var buildkitEnable bool

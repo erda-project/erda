@@ -17,8 +17,8 @@ package definition
 import (
 	"context"
 	"encoding/json"
+	"unicode/utf8"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/providers/definition/db"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
+	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/encoding/jsonparse"
 	"github.com/erda-project/erda/pkg/time/mysql_time"
 )
@@ -54,7 +55,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	pipelineDefinition.PipelineSourceId = request.PipelineSourceID
 	pipelineDefinition.Category = request.Category
 	pipelineDefinition.Creator = request.Creator
-	pipelineDefinition.ID = uuid.New().String()
+	pipelineDefinition.ID = uuid.New()
 	pipelineDefinition.StartedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.CostTime = -1
@@ -64,7 +65,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	}
 
 	var pipelineDefinitionExtra db.PipelineDefinitionExtra
-	pipelineDefinitionExtra.ID = uuid.New().String()
+	pipelineDefinitionExtra.ID = uuid.New()
 	var extra apistructs.PipelineDefinitionExtraValue
 	err = json.Unmarshal([]byte(request.Extra.Extra), &extra)
 	if err != nil {
@@ -86,7 +87,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 }
 
 func createPreCheck(request *pb.PipelineDefinitionCreateRequest) error {
-	if request.Name == "" || len(request.Name) > 36 {
+	if request.Name == "" || utf8.RuneCountInString(request.Name) > 30 {
 		return apierrors.ErrCreatePipelineDefinition.InvalidParameter(errors.Errorf("name: %s", request.Name))
 	}
 	if request.Creator == "" {

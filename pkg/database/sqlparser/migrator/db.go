@@ -93,7 +93,7 @@ func (mig *Migrator) SandBox() *gorm.DB {
 
 	var (
 		err            error
-		createDatabase = "CREATE DATABASE IF NOT EXISTS " + mig.sandboxSettings.Name + " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci"
+		createDatabase = "CREATE DATABASE IF NOT EXISTS " + mig.sandboxSettings.Name + " DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci"
 		dropDatabase   = "DROP SCHEMA IF EXISTS " + mig.sandboxSettings.Name
 		dsn            = mig.SandboxParameters().Format(false)
 	)

@@ -17,17 +17,16 @@ package modifier
 import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/modules/oap/collector/common/filter"
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
+	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 )
 
 var providerName = plugins.WithPrefixProcessor("modifier")
 
 type config struct {
-	NameOverride string        `file:"name_override"`
-	Filter       filter.Config `file:"filter"`
-	Rules        []modifierCfg `file:"rules"`
+	Rules []modifierCfg `file:"rules"`
+
+	Namepass []string `file:"namepass"`
 }
 
 // +provider
@@ -36,23 +35,16 @@ type provider struct {
 	Log logs.Logger
 }
 
-func (p *provider) ComponentID() model.ComponentID {
-	return model.ComponentID(providerName)
+func (p *provider) ComponentConfig() interface{} {
+	return p.Cfg
 }
 
-func (p *provider) Process(data model.ObservableData) (model.ObservableData, error) {
-	data.RangeFunc(func(item *model.DataItem) (bool, *model.DataItem) {
-		if !p.Cfg.Filter.IsPass(item) {
-			return false, item
-		}
-
-		item.Tags = p.modify(item.Tags)
-		if p.Cfg.NameOverride != "" {
-			item.Name = p.Cfg.NameOverride
-		}
-		return false, item
+func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
+	in.HandleAttributes(func(attr map[string]string) map[string]string {
+		return p.modify(attr)
 	})
-	return data, nil
+
+	return in, nil
 }
 
 // Run this is optional

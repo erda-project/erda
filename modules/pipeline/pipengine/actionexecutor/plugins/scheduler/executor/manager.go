@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/plugins/k8sspark"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
 	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
+	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 )
@@ -41,6 +42,7 @@ type Manager struct {
 	factory   map[types.Kind]types.CreateFn
 	executors map[types.Name]types.TaskExecutor
 	clusters  map[string]apistructs.ClusterInfo
+	pools     *goroutinepool.GoroutinePool
 }
 
 var mgr Manager
@@ -69,12 +71,9 @@ func (m *Manager) Initialize() error {
 	m.factory = types.Factory
 	m.executors = make(map[types.Name]types.TaskExecutor)
 	m.clusters = make(map[string]apistructs.ClusterInfo)
+	m.pools = goroutinepool.New(conf.K8SExecutorPoolSize())
 
 	logrus.Infof("pipeline scheduler task executor Inititalize ...")
-
-	if err := m.batchUpdateExecutors(); err != nil {
-		return err
-	}
 
 	triggerChan := clusterinfo.RegisterRefreshChan()
 
@@ -98,15 +97,22 @@ func (m *Manager) Get(name types.Name) (types.TaskExecutor, error) {
 	return e, nil
 }
 
-func (m *Manager) GetCluster(clusterName string) (apistructs.ClusterInfo, error) {
-	m.RLock()
-	defer m.RUnlock()
+func (m *Manager) TryGetCluster(clusterName string) (apistructs.ClusterInfo, error) {
 	if len(clusterName) == 0 {
 		return apistructs.ClusterInfo{}, errors.Errorf("clusterName is empty")
 	}
+	m.RLock()
 	cluster, ok := m.clusters[clusterName]
+	m.RUnlock()
 	if !ok {
-		return apistructs.ClusterInfo{}, errors.Errorf("failed to get cluster info by clusterName: %s", clusterName)
+		cluster, err := clusterinfo.GetClusterByName(clusterName)
+		if err != nil {
+			return apistructs.ClusterInfo{}, errors.Errorf("failed to get cluster info by clusterName: %s", clusterName)
+		}
+		m.Lock()
+		m.clusters[clusterName] = cluster
+		m.Unlock()
+		return cluster, nil
 	}
 	return cluster, nil
 }
@@ -163,12 +169,10 @@ func (m *Manager) updateClusterExecutor(cluster apistructs.ClusterInfo) error {
 	var k8sjobExecutor types.TaskExecutor
 	var k8sflinkExecutor types.TaskExecutor
 	var k8ssparkExecutor types.TaskExecutor
-	m.Lock()
-	defer func() {
-		m.Unlock()
-	}()
 
+	m.Lock()
 	m.clusters[cluster.Name] = cluster
+	m.Unlock()
 
 	switch cluster.Type {
 	case apistructs.K8S, apistructs.EDAS:
@@ -180,10 +184,12 @@ func (m *Manager) updateClusterExecutor(cluster apistructs.ClusterInfo) error {
 				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sjob.Kind, name, err)
 				return err
 			} else {
+				m.Lock()
 				if _, exist := m.executors[name]; exist {
 					delete(m.executors, name)
 				}
 				m.executors[name] = k8sjobExecutor
+				m.Unlock()
 				logrus.Infof("=> kind [%s], name [%s], created", k8sjob.Kind, name)
 			}
 		}
@@ -196,10 +202,12 @@ func (m *Manager) updateClusterExecutor(cluster apistructs.ClusterInfo) error {
 				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sflink.Kind, name, err)
 				return err
 			} else {
+				m.Lock()
 				if _, exist := m.executors[name]; exist {
 					delete(m.executors, name)
 				}
 				m.executors[name] = k8sflinkExecutor
+				m.Unlock()
 				logrus.Infof("=> kind [%s], name [%s], created", k8sflink.Kind, name)
 			}
 		}
@@ -212,10 +220,12 @@ func (m *Manager) updateClusterExecutor(cluster apistructs.ClusterInfo) error {
 				logrus.Errorf("=> kind [%s], name [%s], created failed, err: %v", k8sspark.Kind, name, err)
 				return err
 			} else {
+				m.Lock()
 				if _, exist := m.executors[name]; exist {
 					delete(m.executors, name)
 				}
 				m.executors[name] = k8ssparkExecutor
+				m.Unlock()
 				logrus.Infof("=> kind [%s], name [%s], created", k8sspark.Kind, name)
 			}
 		}
@@ -231,14 +241,17 @@ func (m *Manager) batchUpdateExecutors() error {
 		return err
 	}
 
+	m.pools.Start()
 	for i := range clusters {
 		if clusters[i].Type != apistructs.K8S && clusters[i].Type != apistructs.EDAS {
 			continue
 		}
-		if err := m.updateClusterExecutor(clusters[i]); err != nil {
-			continue
-		}
+		cluster := clusters[i]
+		m.pools.MustGo(func() {
+			m.updateClusterExecutor(cluster)
+		})
 	}
+	m.pools.Stop()
 	return nil
 }
 

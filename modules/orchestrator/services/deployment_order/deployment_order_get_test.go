@@ -27,91 +27,9 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 )
 
-func TestParseDeploymentOrderStatus(t *testing.T) {
-	type args struct {
-		DeploymentStatus apistructs.DeploymentOrderStatusMap
-	}
-	tests := []struct {
-		name string
-		args args
-		want apistructs.DeploymentOrderStatus
-	}{
-		{
-			name: "apps-1",
-			args: args{
-				DeploymentStatus: apistructs.DeploymentOrderStatusMap{
-					"app-1": apistructs.DeploymentOrderStatusItem{
-						DeploymentStatus: apistructs.DeploymentStatusWaiting,
-					},
-					"app-2": apistructs.DeploymentOrderStatusItem{
-						DeploymentStatus: apistructs.DeploymentStatusOK,
-					},
-				},
-			},
-			want: apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusDeploying),
-		},
-		{
-			name: "apps-2",
-			args: args{
-				DeploymentStatus: apistructs.DeploymentOrderStatusMap{
-					"app-1": apistructs.DeploymentOrderStatusItem{
-						DeploymentStatus: apistructs.DeploymentStatusFailed,
-					},
-					"app-2": apistructs.DeploymentOrderStatusItem{
-						DeploymentStatus: apistructs.DeploymentStatusOK,
-					},
-				},
-			},
-			want: apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusFailed),
-		},
-		{
-			name: "apps-3",
-			args: args{
-				DeploymentStatus: nil,
-			},
-			want: apistructs.DeploymentOrderStatus(orderStatusWaitDeploy),
-		},
-		{
-			name: "apps-4",
-			args: args{
-				DeploymentStatus: apistructs.DeploymentOrderStatusMap{
-					"app-1": apistructs.DeploymentOrderStatusItem{
-						DeploymentStatus: apistructs.DeploymentStatusCanceling,
-					},
-					"app-2": apistructs.DeploymentOrderStatusItem{
-						DeploymentStatus: apistructs.DeploymentStatusOK,
-					},
-				},
-			},
-			want: apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusCanceled),
-		},
-		{
-			name: "apps-5",
-			args: args{
-				DeploymentStatus: apistructs.DeploymentOrderStatusMap{
-					"app-1": apistructs.DeploymentOrderStatusItem{
-						DeploymentStatus: apistructs.DeploymentStatusOK,
-					},
-				},
-			},
-			want: apistructs.DeploymentOrderStatus(apistructs.DeploymentStatusOK),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := parseDeploymentOrderStatus(tt.args.DeploymentStatus)
-
-			if tt.want != got {
-				t.Errorf("parseDeploymentOrderStatus got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestComposeApplicationsInfo(t *testing.T) {
 	type args struct {
-		Releases   []*dbclient.Release
+		Releases   [][]*dbclient.Release
 		Params     map[string]apistructs.DeploymentOrderParam
 		AppsStatus apistructs.DeploymentOrderStatusMap
 	}
@@ -133,44 +51,48 @@ func TestComposeApplicationsInfo(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want []*apistructs.ApplicationInfo
+		want [][]*apistructs.ApplicationInfo
 	}{
 		{
 			name: "pipeline",
 			args: args{
-				Releases: []*dbclient.Release{
+				Releases: [][]*dbclient.Release{
 					{
-						ReleaseId:       "8d2385a088df415decdf6357147ed4a2",
-						Labels:          "{\n    \"gitCommitId\": \"27504bb7cb788bee08a50612b97faea201c0efed\",\n    \"gitBranch\": \"master\"\n}",
-						ApplicationName: "app1",
+						{
+							ReleaseId:       "8d2385a088df415decdf6357147ed4a2",
+							Labels:          "{\n    \"gitCommitId\": \"27504bb7cb788bee08a50612b97faea201c0efed\",\n    \"gitBranch\": \"master\"\n}",
+							ApplicationName: "app1",
+						},
 					},
 				},
 				Params:     params,
 				AppsStatus: appStatus,
 			},
-			want: []*apistructs.ApplicationInfo{
+			want: [][]*apistructs.ApplicationInfo{
 				{
-					Name:         "app1",
-					DeploymentId: 10,
-					ReleaseId:    "8d2385a088df415decdf6357147ed4a2",
-					Params: &apistructs.DeploymentOrderParam{
-						{
-							Key:     "key1",
-							Value:   "",
-							Encrypt: true,
-							Type:    "kv",
-							Comment: "test1",
+					{
+						Name:         "app1",
+						DeploymentId: 10,
+						ReleaseId:    "8d2385a088df415decdf6357147ed4a2",
+						Params: &apistructs.DeploymentOrderParam{
+							{
+								Key:     "key1",
+								Value:   "",
+								Encrypt: true,
+								Type:    "kv",
+								Comment: "test1",
+							},
+							{
+								Key:     "key2",
+								Value:   "value2",
+								Type:    "dice-file",
+								Comment: "test2",
+							},
 						},
-						{
-							Key:     "key2",
-							Value:   "value2",
-							Type:    "dice-file",
-							Comment: "test2",
-						},
+						Branch:   "master",
+						CommitId: "27504bb7cb788bee08a50612b97faea201c0efed",
+						Status:   apistructs.DeploymentStatusDeploying,
 					},
-					Branch:   "master",
-					CommitId: "27504bb7cb788bee08a50612b97faea201c0efed",
-					Status:   apistructs.DeploymentStatusDeploying,
 				},
 			},
 		},

@@ -288,7 +288,7 @@ func (c *Clusters) processFailedPipeline(record dbclient.Record, error error) er
 		ClusterName: record.ClusterName,
 	}
 	// if create cluster failed, delete the init record
-	_, err = c.OfflineEdgeCluster(req, record.UserID, record.OrgID)
+	_, _, err = c.OfflineEdgeCluster(req, record.UserID, record.OrgID)
 	if err != nil {
 		return err
 	}

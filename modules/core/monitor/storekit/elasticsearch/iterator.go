@@ -128,6 +128,7 @@ type searchIterator struct {
 	sorts       []*SortItem
 	searchAfter []interface{}
 	decode      func(data *elastic.SearchHit) (interface{}, error)
+	limiter     storekit.RateLimiter
 
 	lastID         string
 	lastSortValues []interface{}
@@ -196,7 +197,7 @@ func (it *searchIterator) Error() error {
 	return it.err
 }
 
-func (it *searchIterator) fetch(dir iteratorDir) error {
+func (it *searchIterator) fetch(dir iteratorDir) {
 	it.dir = dir
 	var reverse bool
 	if it.dir == iteratorBackward {
@@ -204,45 +205,46 @@ func (it *searchIterator) fetch(dir iteratorDir) error {
 	}
 	it.buffer = nil
 	for it.err == nil && len(it.buffer) <= 0 {
-		func() error {
-			searchSource, err := it.search()
-			if err != nil {
-				it.err = err
-				return it.err
+		searchSource, err := it.search()
+		if err != nil {
+			it.err = err
+			continue
+		}
+		ss := it.client.Search(it.indices...).IgnoreUnavailable(true).AllowNoIndices(true).Timeout(it.timeoutMS).
+			SearchSource(searchSource).From(it.fromOffset).Size(it.pageSize).SearchAfter(it.lastSortValues...)
+		if reverse {
+			for _, item := range it.sorts {
+				ss = ss.Sort(item.Key, !item.Ascending)
 			}
-			ss := it.client.Search(it.indices...).IgnoreUnavailable(true).AllowNoIndices(true).Timeout(it.timeoutMS).
-				SearchSource(searchSource).From(it.fromOffset).Size(it.pageSize).SearchAfter(it.lastSortValues...)
-			if reverse {
-				for _, item := range it.sorts {
-					ss = ss.Sort(item.Key, !item.Ascending)
-				}
-			} else {
-				for _, item := range it.sorts {
-					ss = ss.Sort(item.Key, item.Ascending)
-				}
+		} else {
+			for _, item := range it.sorts {
+				ss = ss.Sort(item.Key, item.Ascending)
 			}
-			var resp *elastic.SearchResult
-			ctx, cancel := context.WithTimeout(it.ctx, it.timeout)
-			defer cancel()
-			resp, it.err = ss.Do(ctx)
-			if it.err != nil {
-				return it.err
-			}
-			if resp == nil || resp.Hits == nil || len(resp.Hits.Hits) <= 0 {
-				it.err = io.EOF
-				return it.err
-			}
-			atomic.SwapInt64(&it.total, resp.TotalHits())
-			it.totalCached = true
-			it.buffer = it.parseHits(resp.Hits.Hits)
-			if len(resp.Hits.Hits) < it.pageSize {
-				it.err = io.EOF
-				return it.err
-			}
-			return nil
-		}()
+		}
+		resp, err := it.doRequest(ss)
+		if err != nil {
+			it.err = err
+			continue
+		}
+
+		if resp == nil || resp.Hits == nil || len(resp.Hits.Hits) <= 0 {
+			it.err = io.EOF
+			continue
+		}
+		atomic.SwapInt64(&it.total, resp.TotalHits())
+		it.totalCached = true
+		it.buffer = it.parseHits(resp.Hits.Hits)
+		if len(resp.Hits.Hits) < it.pageSize {
+			it.err = io.EOF
+			continue
+		}
 	}
-	return nil
+}
+
+func (it *searchIterator) doRequest(ss *elastic.SearchService) (*elastic.SearchResult, error) {
+	ctx, cancel := context.WithTimeout(it.ctx, it.timeout)
+	defer cancel()
+	return ss.Do(ctx)
 }
 
 func (it *searchIterator) count() error {

@@ -6,6 +6,7 @@ package pb
 import (
 	context "context"
 	http1 "net/http"
+	strconv "strconv"
 	strings "strings"
 
 	transport "github.com/erda-project/erda-infra/pkg/transport"
@@ -24,15 +25,15 @@ type ReleaseServiceHandler interface {
 	// POST /api/releases
 	CreateRelease(context.Context, *ReleaseCreateRequest) (*ReleaseCreateResponseData, error)
 	// PUT /api/releases/{releaseID}
-	UpdateRelease(context.Context, *ReleaseUpdateRequest) (*ReleaseDataResponse, error)
+	UpdateRelease(context.Context, *ReleaseUpdateRequest) (*ReleaseUpdateResponse, error)
 	// PUT /api/releases/{releaseID}/reference/actions/change
 	UpdateReleaseReference(context.Context, *ReleaseReferenceUpdateRequest) (*ReleaseDataResponse, error)
 	// GET /api/releases/{releaseID}/actions/get-plist
 	GetIosPlist(context.Context, *GetIosPlistRequest) (*GetIosPlistResponse, error)
 	// GET /api/releases/{releaseID}
-	GetRelease(context.Context, *GetIosPlistRequest) (*ReleaseGetResponse, error)
+	GetRelease(context.Context, *ReleaseGetRequest) (*ReleaseGetResponse, error)
 	// DELETE /api/releases/{releaseID}
-	DeleteRelease(context.Context, *GetIosPlistRequest) (*ReleaseDataResponse, error)
+	DeleteRelease(context.Context, *ReleaseDeleteRequest) (*ReleaseDeleteResponse, error)
 	// GET /api/releases
 	ListRelease(context.Context, *ReleaseListRequest) (*ReleaseListResponse, error)
 	// GET /api/releases/actions/get-name
@@ -41,6 +42,18 @@ type ReleaseServiceHandler interface {
 	GetLatestReleases(context.Context, *GetLatestReleasesRequest) (*GetLatestReleasesResponse, error)
 	// POST /gc
 	ReleaseGC(context.Context, *ReleaseGCRequest) (*ReleaseDataResponse, error)
+	// POST /api/releases/actions/upload
+	UploadRelease(context.Context, *ReleaseUploadRequest) (*ReleaseUploadResponse, error)
+	// GET /api/releases/actions/parse-version
+	ParseReleaseFile(context.Context, *ParseReleaseFileRequest) (*ParseReleaseFileResponse, error)
+	// PUT /api/releases/{releaseId}/actions/formal
+	ToFormalRelease(context.Context, *FormalReleaseRequest) (*FormalReleaseResponse, error)
+	// PUT /api/releases
+	ToFormalReleases(context.Context, *FormalReleasesRequest) (*FormalReleasesResponse, error)
+	// DELETE /api/releases
+	DeleteReleases(context.Context, *ReleasesDeleteRequest) (*ReleasesDeleteResponse, error)
+	// GET /api/releases/actions/check-version
+	CheckVersion(context.Context, *CheckVersionRequest) (*CheckVersionResponse, error)
 }
 
 // RegisterReleaseServiceHandler register ReleaseServiceHandler to http.Router.
@@ -102,7 +115,7 @@ func RegisterReleaseServiceHandler(r http.Router, srv ReleaseServiceHandler, opt
 		)
 	}
 
-	add_UpdateRelease := func(method, path string, fn func(context.Context, *ReleaseUpdateRequest) (*ReleaseDataResponse, error)) {
+	add_UpdateRelease := func(method, path string, fn func(context.Context, *ReleaseUpdateRequest) (*ReleaseUpdateResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 			return fn(ctx, req.(*ReleaseUpdateRequest))
 		}
@@ -279,9 +292,9 @@ func RegisterReleaseServiceHandler(r http.Router, srv ReleaseServiceHandler, opt
 		)
 	}
 
-	add_GetRelease := func(method, path string, fn func(context.Context, *GetIosPlistRequest) (*ReleaseGetResponse, error)) {
+	add_GetRelease := func(method, path string, fn func(context.Context, *ReleaseGetRequest) (*ReleaseGetResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*GetIosPlistRequest))
+			return fn(ctx, req.(*ReleaseGetRequest))
 		}
 		var GetRelease_info transport.ServiceInfo
 		if h.Interceptor != nil {
@@ -299,7 +312,7 @@ func RegisterReleaseServiceHandler(r http.Router, srv ReleaseServiceHandler, opt
 					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetRelease_info)
 				}
 				r = r.WithContext(ctx)
-				var in GetIosPlistRequest
+				var in ReleaseGetRequest
 				if err := h.Decode(r, &in); err != nil {
 					return nil, err
 				}
@@ -338,9 +351,9 @@ func RegisterReleaseServiceHandler(r http.Router, srv ReleaseServiceHandler, opt
 		)
 	}
 
-	add_DeleteRelease := func(method, path string, fn func(context.Context, *GetIosPlistRequest) (*ReleaseDataResponse, error)) {
+	add_DeleteRelease := func(method, path string, fn func(context.Context, *ReleaseDeleteRequest) (*ReleaseDeleteResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*GetIosPlistRequest))
+			return fn(ctx, req.(*ReleaseDeleteRequest))
 		}
 		var DeleteRelease_info transport.ServiceInfo
 		if h.Interceptor != nil {
@@ -358,7 +371,7 @@ func RegisterReleaseServiceHandler(r http.Router, srv ReleaseServiceHandler, opt
 					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, DeleteRelease_info)
 				}
 				r = r.WithContext(ctx)
-				var in GetIosPlistRequest
+				var in ReleaseDeleteRequest
 				if err := h.Decode(r, &in); err != nil {
 					return nil, err
 				}
@@ -423,6 +436,100 @@ func RegisterReleaseServiceHandler(r http.Router, srv ReleaseServiceHandler, opt
 					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
 						return nil, err
 					}
+				}
+				params := r.URL.Query()
+				if vals := params["applicationId"]; len(vals) > 0 {
+					in.ApplicationID = vals
+				}
+				if vals := params["branchName"]; len(vals) > 0 {
+					in.Branch = vals[0]
+				}
+				if vals := params["cluster"]; len(vals) > 0 {
+					in.Cluster = vals[0]
+				}
+				if vals := params["commitId"]; len(vals) > 0 {
+					in.CommitID = vals[0]
+				}
+				if vals := params["crossCluster"]; len(vals) > 0 {
+					in.CrossCluster = vals[0]
+				}
+				if vals := params["crossClusterOrSpecifyCluster"]; len(vals) > 0 {
+					in.CrossClusterOrSpecifyCluster = vals[0]
+				}
+				if vals := params["endTime"]; len(vals) > 0 {
+					val, err := strconv.ParseInt(vals[0], 10, 64)
+					if err != nil {
+						return nil, err
+					}
+					in.EndTime = val
+				}
+				if vals := params["isFormal"]; len(vals) > 0 {
+					in.IsFormal = vals[0]
+				}
+				if vals := params["isProjectRelease"]; len(vals) > 0 {
+					in.IsProjectRelease = vals[0]
+				}
+				if vals := params["isStable"]; len(vals) > 0 {
+					in.IsStable = vals[0]
+				}
+				if vals := params["isVersion"]; len(vals) > 0 {
+					val, err := strconv.ParseBool(vals[0])
+					if err != nil {
+						return nil, err
+					}
+					in.IsVersion = val
+				}
+				if vals := params["latest"]; len(vals) > 0 {
+					val, err := strconv.ParseBool(vals[0])
+					if err != nil {
+						return nil, err
+					}
+					in.IsLatest = val
+				}
+				if vals := params["order"]; len(vals) > 0 {
+					in.Order = vals[0]
+				}
+				if vals := params["orderBy"]; len(vals) > 0 {
+					in.OrderBy = vals[0]
+				}
+				if vals := params["pageNo"]; len(vals) > 0 {
+					val, err := strconv.ParseInt(vals[0], 10, 64)
+					if err != nil {
+						return nil, err
+					}
+					in.PageNo = val
+				}
+				if vals := params["pageSize"]; len(vals) > 0 {
+					val, err := strconv.ParseInt(vals[0], 10, 64)
+					if err != nil {
+						return nil, err
+					}
+					in.PageSize = val
+				}
+				if vals := params["projectId"]; len(vals) > 0 {
+					val, err := strconv.ParseInt(vals[0], 10, 64)
+					if err != nil {
+						return nil, err
+					}
+					in.ProjectID = val
+				}
+				if vals := params["q"]; len(vals) > 0 {
+					in.Query = vals[0]
+				}
+				if vals := params["releaseId"]; len(vals) > 0 {
+					in.ReleaseID = vals[0]
+				}
+				if vals := params["releaseName"]; len(vals) > 0 {
+					in.ReleaseName = vals[0]
+				}
+				if vals := params["tags"]; len(vals) > 0 {
+					in.Tags = vals[0]
+				}
+				if vals := params["userId"]; len(vals) > 0 {
+					in.UserID = vals
+				}
+				if vals := params["version"]; len(vals) > 0 {
+					in.Version = vals[0]
 				}
 				out, err := handler(ctx, &in)
 				if err != nil {
@@ -541,6 +648,277 @@ func RegisterReleaseServiceHandler(r http.Router, srv ReleaseServiceHandler, opt
 		)
 	}
 
+	add_UploadRelease := func(method, path string, fn func(context.Context, *ReleaseUploadRequest) (*ReleaseUploadResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*ReleaseUploadRequest))
+		}
+		var UploadRelease_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			UploadRelease_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "UploadRelease", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, UploadRelease_info)
+				}
+				r = r.WithContext(ctx)
+				var in ReleaseUploadRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_ParseReleaseFile := func(method, path string, fn func(context.Context, *ParseReleaseFileRequest) (*ParseReleaseFileResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*ParseReleaseFileRequest))
+		}
+		var ParseReleaseFile_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			ParseReleaseFile_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "ParseReleaseFile", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, ParseReleaseFile_info)
+				}
+				r = r.WithContext(ctx)
+				var in ParseReleaseFileRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_ToFormalRelease := func(method, path string, fn func(context.Context, *FormalReleaseRequest) (*FormalReleaseResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*FormalReleaseRequest))
+		}
+		var ToFormalRelease_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			ToFormalRelease_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "ToFormalRelease", srv)
+			handler = h.Interceptor(handler)
+		}
+		compiler, _ := httprule.Parse(path)
+		temp := compiler.Compile()
+		pattern, _ := runtime.NewPattern(httprule.SupportPackageIsVersion1, temp.OpCodes, temp.Pool, temp.Verb)
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, ToFormalRelease_info)
+				}
+				r = r.WithContext(ctx)
+				var in FormalReleaseRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				path := r.URL.Path
+				if len(path) > 0 {
+					components := strings.Split(path[1:], "/")
+					last := len(components) - 1
+					var verb string
+					if idx := strings.LastIndex(components[last], ":"); idx >= 0 {
+						c := components[last]
+						components[last], verb = c[:idx], c[idx+1:]
+					}
+					vars, err := pattern.Match(components, verb)
+					if err != nil {
+						return nil, err
+					}
+					for k, val := range vars {
+						switch k {
+						case "releaseId":
+							in.ReleaseId = val
+						}
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_ToFormalReleases := func(method, path string, fn func(context.Context, *FormalReleasesRequest) (*FormalReleasesResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*FormalReleasesRequest))
+		}
+		var ToFormalReleases_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			ToFormalReleases_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "ToFormalReleases", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, ToFormalReleases_info)
+				}
+				r = r.WithContext(ctx)
+				var in FormalReleasesRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_DeleteReleases := func(method, path string, fn func(context.Context, *ReleasesDeleteRequest) (*ReleasesDeleteResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*ReleasesDeleteRequest))
+		}
+		var DeleteReleases_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			DeleteReleases_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "DeleteReleases", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, DeleteReleases_info)
+				}
+				r = r.WithContext(ctx)
+				var in ReleasesDeleteRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_CheckVersion := func(method, path string, fn func(context.Context, *CheckVersionRequest) (*CheckVersionResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*CheckVersionRequest))
+		}
+		var CheckVersion_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			CheckVersion_info = transport.NewServiceInfo("erda.core.dicehub.release.ReleaseService", "CheckVersion", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, CheckVersion_info)
+				}
+				r = r.WithContext(ctx)
+				var in CheckVersionRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				params := r.URL.Query()
+				if vals := params["appID"]; len(vals) > 0 {
+					val, err := strconv.ParseInt(vals[0], 10, 64)
+					if err != nil {
+						return nil, err
+					}
+					in.AppID = val
+				}
+				if vals := params["isProjectRelease"]; len(vals) > 0 {
+					val, err := strconv.ParseBool(vals[0])
+					if err != nil {
+						return nil, err
+					}
+					in.IsProjectRelease = val
+				}
+				if vals := params["orgID"]; len(vals) > 0 {
+					val, err := strconv.ParseInt(vals[0], 10, 64)
+					if err != nil {
+						return nil, err
+					}
+					in.OrgID = val
+				}
+				if vals := params["projectID"]; len(vals) > 0 {
+					val, err := strconv.ParseInt(vals[0], 10, 64)
+					if err != nil {
+						return nil, err
+					}
+					in.ProjectID = val
+				}
+				if vals := params["version"]; len(vals) > 0 {
+					in.Version = vals[0]
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_CreateRelease("POST", "/api/releases", srv.CreateRelease)
 	add_UpdateRelease("PUT", "/api/releases/{releaseID}", srv.UpdateRelease)
 	add_UpdateReleaseReference("PUT", "/api/releases/{releaseID}/reference/actions/change", srv.UpdateReleaseReference)
@@ -551,4 +929,10 @@ func RegisterReleaseServiceHandler(r http.Router, srv ReleaseServiceHandler, opt
 	add_ListReleaseName("GET", "/api/releases/actions/get-name", srv.ListReleaseName)
 	add_GetLatestReleases("GET", "/api/releases/actions/get-latest", srv.GetLatestReleases)
 	add_ReleaseGC("POST", "/gc", srv.ReleaseGC)
+	add_UploadRelease("POST", "/api/releases/actions/upload", srv.UploadRelease)
+	add_ParseReleaseFile("GET", "/api/releases/actions/parse-version", srv.ParseReleaseFile)
+	add_ToFormalRelease("PUT", "/api/releases/{releaseId}/actions/formal", srv.ToFormalRelease)
+	add_ToFormalReleases("PUT", "/api/releases", srv.ToFormalReleases)
+	add_DeleteReleases("DELETE", "/api/releases", srv.DeleteReleases)
+	add_CheckVersion("GET", "/api/releases/actions/check-version", srv.CheckVersion)
 }

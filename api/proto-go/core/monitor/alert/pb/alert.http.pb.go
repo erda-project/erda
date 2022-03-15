@@ -76,6 +76,8 @@ type AlertServiceHandler interface {
 	UpdateAlertEnable(context.Context, *UpdateAlertEnableRequest) (*UpdateAlertEnableResponse, error)
 	// DELETE /api/alerts/{id}
 	DeleteAlert(context.Context, *DeleteAlertRequest) (*DeleteAlertResponse, error)
+	// GET /api/alerts/expressions/{id}
+	GetRawAlertExpression(context.Context, *GetRawAlertExpressionRequest) (*GetRawAlertExpressionResponse, error)
 	// GET /api/orgs/alerts/rules
 	QueryOrgAlertRule(context.Context, *QueryOrgAlertRuleRequest) (*QueryOrgAlertRuleResponse, error)
 	// GET /api/orgs/alerts
@@ -116,6 +118,14 @@ type AlertServiceHandler interface {
 	CreateOrgAlertIssue(context.Context, *CreateOrgAlertIssueRequest) (*CreateOrgAlertIssueResponse, error)
 	// PUT /api/org-alert-records/{groupId}/issues
 	UpdateOrgAlertIssue(context.Context, *UpdateOrgAlertIssueRequest) (*UpdateOrgAlertIssueResponse, error)
+	// GET /api/alert-events
+	GetAlertEvents(context.Context, *GetAlertEventRequest) (*GetAlertEventResponse, error)
+	// POST /api/alert-events/suppress
+	SuppressAlertEvent(context.Context, *SuppressAlertEventRequest) (*SuppressAlertEventResponse, error)
+	// POST /api/alert-events/cancel-suppress
+	CancelSuppressAlertEvent(context.Context, *CancelSuppressAlertEventRequest) (*CancelSuppressAlertEventResponse, error)
+	// GET /api/alert-events/stats/unrecover
+	CountUnRecoverAlertEvents(context.Context, *CountUnRecoverAlertEventsRequest) (*CountUnRecoverAlertEventsResponse, error)
 }
 
 // RegisterAlertServiceHandler register AlertServiceHandler to http.Router.
@@ -1491,6 +1501,69 @@ func RegisterAlertServiceHandler(r http.Router, srv AlertServiceHandler, opts ..
 		)
 	}
 
+	add_GetRawAlertExpression := func(method, path string, fn func(context.Context, *GetRawAlertExpressionRequest) (*GetRawAlertExpressionResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetRawAlertExpressionRequest))
+		}
+		var GetRawAlertExpression_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetRawAlertExpression_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "GetRawAlertExpression", srv)
+			handler = h.Interceptor(handler)
+		}
+		compiler, _ := httprule.Parse(path)
+		temp := compiler.Compile()
+		pattern, _ := runtime.NewPattern(httprule.SupportPackageIsVersion1, temp.OpCodes, temp.Pool, temp.Verb)
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetRawAlertExpression_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetRawAlertExpressionRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				path := r.URL.Path
+				if len(path) > 0 {
+					components := strings.Split(path[1:], "/")
+					last := len(components) - 1
+					var verb string
+					if idx := strings.LastIndex(components[last], ":"); idx >= 0 {
+						c := components[last]
+						components[last], verb = c[:idx], c[idx+1:]
+					}
+					vars, err := pattern.Match(components, verb)
+					if err != nil {
+						return nil, err
+					}
+					for k, val := range vars {
+						switch k {
+						case "id":
+							val, err := strconv.ParseUint(val, 10, 64)
+							if err != nil {
+								return nil, err
+							}
+							in.Id = val
+						}
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_QueryOrgAlertRule := func(method, path string, fn func(context.Context, *QueryOrgAlertRuleRequest) (*QueryOrgAlertRuleResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 			return fn(ctx, req.(*QueryOrgAlertRuleRequest))
@@ -2509,6 +2582,150 @@ func RegisterAlertServiceHandler(r http.Router, srv AlertServiceHandler, opts ..
 		)
 	}
 
+	add_GetAlertEvents := func(method, path string, fn func(context.Context, *GetAlertEventRequest) (*GetAlertEventResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GetAlertEventRequest))
+		}
+		var GetAlertEvents_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			GetAlertEvents_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "GetAlertEvents", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, GetAlertEvents_info)
+				}
+				r = r.WithContext(ctx)
+				var in GetAlertEventRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_SuppressAlertEvent := func(method, path string, fn func(context.Context, *SuppressAlertEventRequest) (*SuppressAlertEventResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*SuppressAlertEventRequest))
+		}
+		var SuppressAlertEvent_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			SuppressAlertEvent_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "SuppressAlertEvent", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, SuppressAlertEvent_info)
+				}
+				r = r.WithContext(ctx)
+				var in SuppressAlertEventRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_CancelSuppressAlertEvent := func(method, path string, fn func(context.Context, *CancelSuppressAlertEventRequest) (*CancelSuppressAlertEventResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*CancelSuppressAlertEventRequest))
+		}
+		var CancelSuppressAlertEvent_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			CancelSuppressAlertEvent_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "CancelSuppressAlertEvent", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, CancelSuppressAlertEvent_info)
+				}
+				r = r.WithContext(ctx)
+				var in CancelSuppressAlertEventRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
+	add_CountUnRecoverAlertEvents := func(method, path string, fn func(context.Context, *CountUnRecoverAlertEventsRequest) (*CountUnRecoverAlertEventsResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*CountUnRecoverAlertEventsRequest))
+		}
+		var CountUnRecoverAlertEvents_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			CountUnRecoverAlertEvents_info = transport.NewServiceInfo("erda.core.monitor.alert.AlertService", "CountUnRecoverAlertEvents", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, CountUnRecoverAlertEvents_info)
+				}
+				r = r.WithContext(ctx)
+				var in CountUnRecoverAlertEventsRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_QueryCustomizeMetric("GET", "/api/customize/alerts/metrics", srv.QueryCustomizeMetric)
 	add_QueryCustomizeNotifyTarget("GET", "/api/customize/alerts/notifies/targets", srv.QueryCustomizeNotifyTarget)
 	add_QueryOrgCustomizeNotifyTarget("GET", "/api/orgs/customize/alerts/notifies/targets", srv.QueryOrgCustomizeNotifyTarget)
@@ -2536,6 +2753,7 @@ func RegisterAlertServiceHandler(r http.Router, srv AlertServiceHandler, opts ..
 	add_UpdateAlert("PUT", "/api/alerts/{id}", srv.UpdateAlert)
 	add_UpdateAlertEnable("PUT", "/api/alerts/{id}/switch", srv.UpdateAlertEnable)
 	add_DeleteAlert("DELETE", "/api/alerts/{id}", srv.DeleteAlert)
+	add_GetRawAlertExpression("GET", "/api/alerts/expressions/{id}", srv.GetRawAlertExpression)
 	add_QueryOrgAlertRule("GET", "/api/orgs/alerts/rules", srv.QueryOrgAlertRule)
 	add_QueryOrgAlert("GET", "/api/orgs/alerts", srv.QueryOrgAlert)
 	add_GetOrgAlertDetail("GET", "/api/orgs/alerts/{id}", srv.GetOrgAlertDetail)
@@ -2556,4 +2774,8 @@ func RegisterAlertServiceHandler(r http.Router, srv AlertServiceHandler, opts ..
 	add_QueryOrgAlertHistory("GET", "/api/org-alert-records/{groupId}/histories", srv.QueryOrgAlertHistory)
 	add_CreateOrgAlertIssue("POST", "/api/org-alert-records/{groupId}/issues", srv.CreateOrgAlertIssue)
 	add_UpdateOrgAlertIssue("PUT", "/api/org-alert-records/{groupId}/issues", srv.UpdateOrgAlertIssue)
+	add_GetAlertEvents("GET", "/api/alert-events", srv.GetAlertEvents)
+	add_SuppressAlertEvent("POST", "/api/alert-events/suppress", srv.SuppressAlertEvent)
+	add_CancelSuppressAlertEvent("POST", "/api/alert-events/cancel-suppress", srv.CancelSuppressAlertEvent)
+	add_CountUnRecoverAlertEvents("GET", "/api/alert-events/stats/unrecover", srv.CountUnRecoverAlertEvents)
 }

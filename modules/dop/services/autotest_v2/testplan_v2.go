@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -398,12 +397,9 @@ func (svc *Service) ListTestPlanV2Step(testPlanID, groupID uint64) ([]*apistruct
 // getChangedFields get changed fields
 func (svc *Service) getChangedFields(req *apistructs.TestPlanV2UpdateRequest, model *dao.TestPlanV2) (map[string]interface{}, error) {
 	fields := make(map[string]interface{}, 0)
-	if !strings.EqualFold(req.Name, model.Name) {
-		if err := svc.db.CheckTestPlanV2NameExist(req.Name); err != nil {
-			return nil, err
-		}
+	if req.Name != model.Name {
+		fields["name"] = req.Name
 	}
-	fields["name"] = req.Name
 
 	if req.SpaceID != model.SpaceID {
 		// todo 检查测试计划下是否还有场景集

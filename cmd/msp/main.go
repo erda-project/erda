@@ -24,6 +24,7 @@ import (
 	// modules and providers
 	_ "github.com/erda-project/erda-infra/providers"
 	_ "github.com/erda-project/erda-infra/providers/cassandra"
+	_ "github.com/erda-project/erda-proto-go/core/dicehub/release/client"
 	_ "github.com/erda-project/erda-proto-go/core/messenger/notify/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/event/client"
@@ -55,6 +56,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/diagnotor"
 	_ "github.com/erda-project/erda/modules/msp/apm/exception/query"
 	_ "github.com/erda-project/erda/modules/msp/apm/log-service/query"
+	_ "github.com/erda-project/erda/modules/msp/apm/log-service/rules"
 	_ "github.com/erda-project/erda/modules/msp/apm/metric"
 	_ "github.com/erda-project/erda/modules/msp/apm/notifygroup"
 	_ "github.com/erda-project/erda/modules/msp/apm/service"

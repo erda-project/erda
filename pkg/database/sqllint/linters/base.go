@@ -15,8 +15,22 @@
 package linters
 
 import (
+	"reflect"
+	"sync"
+
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 )
+
+var (
+	// factory hub singleton, it make sure every method will be registered once.
+	h    hub
+	once sync.Once
+)
+
+func init() {
+	once.Do(register)
+}
 
 type baseLinter struct {
 	s    script.Script
@@ -30,4 +44,20 @@ func (b baseLinter) Error() error {
 
 func newBaseLinter(script script.Script) baseLinter {
 	return baseLinter{s: script}
+}
+
+// hub implements rules.Factory
+type hub struct{}
+
+// register all rules.Factory into linters
+func register() {
+	valueOf := reflect.ValueOf(h)
+	typeOf := reflect.TypeOf(h)
+	for i := 0; i < valueOf.NumMethod(); i++ {
+		method := valueOf.Method(i)
+		v := method.Interface()
+		if f, ok := v.(func(script.Script, sqllint.Config) (sqllint.Rule, error)); ok {
+			sqllint.Register(typeOf.Method(i).Name, f)
+		}
+	}
 }

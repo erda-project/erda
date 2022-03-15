@@ -1,4 +1,5 @@
 {
+  "id": 3,
   "attributes": {},
   "version": "3.0",
   "expression": {
@@ -44,6 +45,8 @@
       }
     ],
     "select": {
+      "http_url": "#http_url",
+      "peer_service_scope": "#peer_service_scope",
       "component": "#component",
       "host": "#host",
       "cluster_name": "#cluster_name",

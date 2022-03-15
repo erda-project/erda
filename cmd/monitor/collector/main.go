@@ -18,7 +18,6 @@ import (
 	"os"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/common"
 
 	// modules
@@ -31,9 +30,7 @@ import (
 	// providers
 	_ "github.com/erda-project/erda/modules/core/monitor/collector"
 	_ "github.com/erda-project/erda/modules/oap/collector/authentication"
-	_ "github.com/erda-project/erda/modules/oap/collector/receivers/common"
-	_ "github.com/erda-project/erda/modules/oap/collector/receivers/jaeger"
-	_ "github.com/erda-project/erda/modules/oap/collector/receivers/opentelemetry"
+	_ "github.com/erda-project/erda/modules/oap/collector/interceptor"
 
 	// grpc
 	_ "github.com/erda-project/erda-infra/providers/grpcclient"
@@ -45,26 +42,17 @@ import (
 )
 
 const (
-	envCollectorConfigFile = "COLLECTOR_CONFIG_FILE"
-	centerConfigFile       = "conf/monitor/collector/collector.yaml"
-	edgeConfigFile         = "conf/monitor/collector/edge/collector.yaml"
+	centralCollector = "conf/monitor/collector/collector.yaml"
+	edgeCollector    = "conf/monitor/collector/collector-agent.yaml"
 )
-
-func getConfigfile() string {
-	if v := os.Getenv(envCollectorConfigFile); v != "" {
-		return v
-	}
-
-	if os.Getenv(string(apistructs.DICE_IS_EDGE)) == "true" {
-		return edgeConfigFile
-	} else {
-		return centerConfigFile
-	}
-}
 
 //go:generate sh -c "cd ${PROJ_PATH} && go generate -v -x github.com/erda-project/erda/modules/monitor/core/collector"
 func main() {
+	cfg := centralCollector
+	if os.Getenv("DICE_IS_EDGE") == "true" {
+		cfg = edgeCollector
+	}
 	common.Run(&servicehub.RunOptions{
-		ConfigFile: getConfigfile(),
+		ConfigFile: cfg,
 	})
 }

@@ -159,6 +159,19 @@ func (l *List) doFilterApp() (data *list.Data) {
 			myAppMap[myApps.List[i].ID] = true
 		}
 	}
+	var appIDs []uint64
+	for i := range apps.List {
+		appIDs = append(appIDs, apps.List[i].ID)
+	}
+
+	mrResult, err := l.bdl.MergeRequestCount(l.identity.UserID, apistructs.MergeRequestCountRequest{
+		AppIDs: appIDs,
+		State:  "open",
+	})
+	if err != nil {
+		logrus.Errorf("list open mr failed, appIDs: %v, error: %v", appIDs, err)
+		return
+	}
 
 	for _, p := range apps.List {
 		_, ok := myAppMap[p.ID]
@@ -168,7 +181,7 @@ func (l *List) doFilterApp() (data *list.Data) {
 			Icon:        &commodel.Icon{URL: p.Logo},
 			Title:       p.Name,
 			Selectable:  authorized,
-			KvInfos:     l.GenAppKvInfo(p),
+			KvInfos:     l.GenAppKvInfo(p, mrResult[strconv.FormatUint(p.ID, 10)]),
 			Description: l.appDescription(p.Desc),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				list.OpItemClickGoto{}.OpKey(): func() cptype.Operation {

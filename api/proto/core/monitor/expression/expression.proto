@@ -36,6 +36,11 @@ service ExpressionService {
       get: "/api/alert/templates"
     };
   }
+  rpc GetOrgsLocale (GetOrgsLocaleRequest) returns (GetOrgsLocaleResponse) {
+    option (google.api.http) = {
+      get: "/api/alert/org-locale"
+    };
+  }
 }
 
 message GetExpressionsRequest {
@@ -91,12 +96,13 @@ message AlertNotify {
   NotifyTarget notifyTarget  = 3 [json_name = "notify_target"];
   int64        silence       = 4;
   string       silencePolicy = 5 [json_name = "silence_policy"];
+  bool         enable        = 6;
 }
 
 message NotifyTarget {
   string type      = 1;
-  string groupId   = 2;
-  string groupType = 3;
+  int64  groupId   = 2 [json_name = "group_id"];
+  string groupType = 3 [json_name = "group_type"];
   string level     = 4;
 }
 
@@ -125,4 +131,12 @@ message AlertTemplate {
   map<string, google.protobuf.Value> formats    = 8;
   string                             version    = 9;
   bool                               enable     = 10;
+  string                             language   = 11;
+}
+
+message GetOrgsLocaleRequest {
+
+}
+message GetOrgsLocaleResponse {
+  map<string, string> data = 1;
 }

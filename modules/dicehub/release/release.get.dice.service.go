@@ -23,7 +23,6 @@ import (
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/modules/dicehub/release/db"
 	"github.com/erda-project/erda/modules/dicehub/service/apierrors"
-	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 type releaseGetDiceService struct {
@@ -36,8 +35,17 @@ func (s *releaseGetDiceService) PullDiceYAML(ctx context.Context, req *pb.Releas
 }
 
 func (s *releaseGetDiceService) GetDiceYAML(ctx context.Context, req *pb.ReleaseGetDiceYmlRequest) (*pb.ReleaseGetDiceYmlResponse, error) {
-	orgID, err := apis.GetIntOrgID(ctx)
+	orgID, err := getPermissionHeader(ctx)
 	if err != nil {
+		return nil, apierrors.ErrGetYAML.NotLogin()
+	}
+
+	identityInfo, err := getIdentityInfo(ctx)
+	if err != nil {
+		return nil, apierrors.ErrGetYAML.NotLogin()
+	}
+
+	if orgID == 0 && !identityInfo.IsInternalClient() {
 		return nil, apierrors.ErrGetYAML.NotLogin()
 	}
 

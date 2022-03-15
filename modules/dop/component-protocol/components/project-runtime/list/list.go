@@ -15,12 +15,15 @@
 package page
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/gogap/errors"
 	"github.com/recallsong/go-utils/container/slice"
 	"github.com/sirupsen/logrus"
 
@@ -43,6 +46,7 @@ type List struct {
 	PageNo   uint64
 	PageSize uint64
 	Total    uint64
+	State    cptype.ExtraMap
 	Bdl      *bundle.Bundle
 	Sdk      *cptype.SDK
 }
@@ -145,6 +149,7 @@ func (p *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.Ope
 }
 
 func (p *List) BeforeHandleOp(sdk *cptype.SDK) {
+	p.State = cptype.ExtraMap{}
 	p.Sdk = sdk
 	p.Bdl = p.Sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	p.PageNo = 1
@@ -155,25 +160,86 @@ func (p *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.Opera
 	logrus.Infof("change page client data: %+v", opData)
 	if opData.ClientData.PageNo > 0 {
 		p.PageNo = opData.ClientData.PageNo
+		p.State["pageNo"] = p.PageNo
 	}
 	if opData.ClientData.PageSize > 0 {
 		p.PageSize = opData.ClientData.PageSize
+		p.State["pageSize"] = p.PageSize
 	}
 	return p.RegisterRenderingOp()
 }
 
 func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		logrus.Debug("list component init")
+		if urlquery := sdk.InParams.String("list__urlQuery"); urlquery != "" {
+			if page, err := p.flushOptsByFilter(urlquery); err != nil {
+				logrus.Errorf("failed to transfer values in component advance filter")
+				return nil
+			} else {
+				if page.PageNo == 0 || page.PageSize == 0 {
+					p.PageSize = 10
+					p.PageNo = 1
+					p.State["pageSize"] = 10
+					p.State["pageNo"] = 1
+				} else {
+					p.PageNo = page.PageNo
+					p.PageSize = page.PageSize
+					p.State["pageSize"] = p.PageSize
+					p.State["pageNo"] = p.PageNo
+				}
+			}
+		}
+		urlParam, err := p.generateUrlQueryParams(p.State)
+		if err != nil {
+			logrus.Errorf("fail to parse list url")
+			return nil
+		}
+		p.State["list__urlQuery"] = urlParam
 		p.Sdk = sdk
 		p.StdDataPtr = p.getData()
+		p.StdStatePtr = &p.State
 		return nil
 	}
 }
 
+type Page struct {
+	PageSize uint64
+	PageNo   uint64
+}
+
+func (p *List) flushOptsByFilter(filterEntity string) (*Page, error) {
+	page := &Page{}
+	b, err := base64.StdEncoding.DecodeString(filterEntity)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(b, page)
+	if err != nil {
+		return nil, err
+	}
+	return page, nil
+}
+func (p *List) generateUrlQueryParams(Values cptype.ExtraMap) (string, error) {
+	fb, err := json.Marshal(Values)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(fb), nil
+}
+
 func (p *List) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
+		logrus.Debug("list component rendering")
 		p.Sdk = sdk
+		urlParam, err := p.generateUrlQueryParams(p.State)
+		if err != nil {
+			logrus.Errorf("fail to parse list url")
+			return nil
+		}
+		p.State["list__urlQuery"] = urlParam
 		p.StdDataPtr = p.getData()
+		p.StdStatePtr = &p.State
 		return nil
 	}
 }
@@ -182,13 +248,29 @@ func (p *List) Init(ctx servicehub.Context) error {
 	return p.DefaultProvider.Init(ctx)
 }
 
+func (p *List) initMyApps(sdk *cptype.SDK, oid, projectId uint64) (map[uint64]string, error) {
+	myApp := make(map[uint64]string)
+	apps, err := p.Bdl.GetMyApps(sdk.Identity.UserID, oid)
+	if err != nil {
+		logrus.Errorf("get my app failed,%v", err)
+		return myApp, errors.Errorf("get my app failed,%v", err)
+	}
+	for i := 0; i < len(apps.List); i++ {
+		if apps.List[i].ProjectID != projectId {
+			continue
+		}
+		myApp[apps.List[i].ID] = apps.List[i].Name
+	}
+	return myApp, nil
+}
+
 func (p *List) getData() *list.Data {
 	data := &list.Data{}
 	data.PageNo = p.PageNo
 	data.PageSize = p.PageSize
 	var runtimes []bundle.GetApplicationRuntimesDataEle
 	var runtimeIdToAppNameMap map[uint64]string
-	var myApp map[uint64]bool
+	var myApp map[uint64]string
 
 	if gsRuntimes, ok := (*p.Sdk.GlobalState)["runtimes"]; !ok {
 		logrus.Infof("not found runtimes")
@@ -207,11 +289,6 @@ func (p *List) getData() *list.Data {
 			logrus.Errorf("parse oid failed,%v", err)
 			return data
 		}
-		apps, err := p.Bdl.GetMyApps(p.Sdk.Identity.UserID, oid)
-		if err != nil {
-			logrus.Errorf("get my app failed,%v", err)
-			return data
-		}
 		appIds := make([]uint64, 0)
 		appIdToName := make(map[uint64]string)
 
@@ -220,20 +297,15 @@ func (p *List) getData() *list.Data {
 			IsSimple:  true,
 			PageSize:  math.MaxInt32,
 			PageNo:    1})
-		if err != nil {
-			logrus.Errorf("get my app failed,%v", err)
-			return data
-		}
+
 		for i := 0; i < len(allApps.List); i++ {
 			appIds = append(appIds, allApps.List[i].ID)
 			appIdToName[allApps.List[i].ID] = allApps.List[i].Name
 		}
-		myApp = make(map[uint64]bool)
-		for i := 0; i < len(apps.List); i++ {
-			if apps.List[i].ProjectID != projectId {
-				continue
-			}
-			myApp[apps.List[i].ID] = true
+		myApp, err = p.initMyApps(p.Sdk, oid, projectId)
+		if err != nil {
+			logrus.Errorf("get my app failed,%v", err)
+			return data
 		}
 
 		logrus.Infof("start load runtimes by app %v", time.Now())
@@ -272,7 +344,7 @@ func (p *List) getData() *list.Data {
 			logrus.Errorf("failed to transfer runtimeMap, runtimeMap %#v", (*p.Sdk.GlobalState)["runtimeIdToAppName"])
 			return data
 		}
-		myApp = (*p.Sdk.GlobalState)["myApp"].(map[uint64]bool)
+		myApp = (*p.Sdk.GlobalState)["myApp"].(map[uint64]string)
 	}
 	logrus.Infof("runtimes:%v", runtimes)
 	//oid, err := strconv.ParseUint(p.Sdk.Identity.OrgID, 10, 64)
@@ -280,10 +352,16 @@ func (p *List) getData() *list.Data {
 	//	logrus.Errorf("failed to get oid ,%v", err)
 	//	return data
 	//}
+	myAppNames := make(map[string]bool)
 
 	userReq := apistructs.UserListRequest{}
 	for _, runtime := range runtimes {
 		userReq.UserIDs = append(userReq.UserIDs, runtime.LastOperator)
+		for _, appName2 := range myApp {
+			if runtimeIdToAppNameMap[runtime.ID] == appName2 {
+				myAppNames[appName2] = true
+			}
+		}
 	}
 	logrus.Infof("start load users %v", time.Now())
 
@@ -333,7 +411,7 @@ func (p *List) getData() *list.Data {
 			nameStr = runtimeIdToAppNameMap[appRuntime.ID] + "/" + nameStr
 		}
 		logrus.Infof("%s : %s", appRuntime.Name, appRuntime.LastOperator)
-		isMyApp := myApp[appRuntime.ApplicationID]
+		_, isMyApp := myApp[appRuntime.ApplicationID]
 		item := list.Item{
 			ID:         idStr,
 			Title:      nameStr,
@@ -365,14 +443,20 @@ func (p *List) getData() *list.Data {
 	var filterName string
 	if nameFilterValue, ok := (*p.Sdk.GlobalState)["nameFilter"]; ok {
 		cputil.MustObjJSONTransfer(nameFilterValue, &filterName)
+		filterName = strings.Trim(filterName, " ")
 	}
-
 	logrus.Infof("inputFilter: %v", filterName)
 	logrus.Infof("advanceFilter: %#v", advancedFilter)
 	filter := make(map[string]map[string]bool)
 	for k, v := range advancedFilter {
 		filter[k] = make(map[string]bool)
 		for _, value := range v {
+			if k == common.FilterApp && value == common.ALLINVOLVEAPP {
+				filter[k] = make(map[string]bool)
+				for str := range myAppNames {
+					filter[k][str] = true
+				}
+			}
 			filter[k][value] = true
 		}
 	}
@@ -382,7 +466,7 @@ func (p *List) getData() *list.Data {
 	for i := 0; i < len(needFilter); i++ {
 		runtime := runtimeMap[needFilter[i].ID]
 		if filterName != "" {
-			if !strings.Contains(needFilter[i].Title, filterName) {
+			if !common.ExitsWithoutCase(needFilter[i].Title, filterName) {
 				continue
 			}
 		}
@@ -417,7 +501,10 @@ func (p *List) getData() *list.Data {
 	if err != nil {
 		logrus.Errorf("failed to get services err = %v", err)
 	}
+	healthyCntMap := make(map[uint64]int)
+	serviceCntMap := make(map[uint64]int)
 	for rid, s := range services {
+		serviceCntMap[rid] = len(s.Services)
 		logrus.Infof("services %d:%v", rid, s)
 		healthyCnt := 0
 		for _, ss := range s.Services {
@@ -425,30 +512,31 @@ func (p *List) getData() *list.Data {
 				healthyCnt++
 			}
 		}
-		var healthStr = ""
-		if len(s.Services) != 0 {
-			healthStr = fmt.Sprintf("%d/%d", healthyCnt, len(s.Services))
+		healthyCntMap[rid] = healthyCnt
+
+	}
+
+	for i := 0; i < len(data.List); i++ {
+		var healthyCnt int
+		var serviceCnt int
+		rid, _ := strconv.ParseUint(data.List[i].ID, 10, 64)
+		if c, ok := healthyCntMap[rid]; ok {
+			healthyCnt = c
 		}
-		for i := 0; i < len(data.List); i++ {
-			appRuntime := runtimeMap[data.List[i].ID]
-			ridStr := fmt.Sprintf("%d", rid)
-			if ridStr != data.List[i].ID {
-				continue
-			}
-			if err != nil {
-				logrus.Errorf("failed to get runtime %s of detail %v", appRuntime.Name, err)
-				continue
-			}
-			data.List[i].KvInfos = getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime)
-			data.List[i].Icon = getIconByServiceCnt(healthyCnt, len(s.Services))
-			break
+		if c, ok := serviceCntMap[rid]; ok {
+			serviceCnt = c
 		}
+		healthStr := fmt.Sprintf("%d/%d", healthyCnt, serviceCnt)
+		appRuntime := runtimeMap[data.List[i].ID]
+		// set icon once without service.
+		data.List[i].KvInfos = getKvInfos(p.Sdk, runtimeIdToAppNameMap[appRuntime.ID], uidToName[appRuntime.Creator], appRuntime.DeploymentOrderName, appRuntime.ReleaseVersion, healthStr, appRuntime, appRuntime.LastOperateTime)
+		data.List[i].Icon = getIconByServiceCnt(healthyCnt, serviceCnt)
 	}
 	return data
 }
 
 func (p *List) doFilter(conds map[string]map[string]bool, appRuntime bundle.GetApplicationRuntimesDataEle, deployAt int64, appName, deploymentOrderName string) bool {
-	if conds == nil || len(conds) == 0 {
+	if len(conds) == 0 {
 		return true
 	}
 	for k, v := range conds {
@@ -508,7 +596,7 @@ func getIconByServiceCnt(svcCnt, allCnt int) *commodel.Icon {
 	var (
 		statusStr string
 	)
-	if svcCnt < allCnt {
+	if svcCnt == 0 || svcCnt < allCnt {
 		statusStr = common.FrontedIconLoading
 	} else {
 		statusStr = common.FrontedIconBreathing
@@ -594,10 +682,10 @@ func (p List) getBatchOperation(sdk *cptype.SDK, ids []string) map[cptype.Operat
 			ServerData: &cptype.OpServerData{
 				"options": []list.OpBatchRowsHandleOptionServerData{
 					{
-						AllowedRowIDs: ids, Icon: "chongxinqidong", ID: common.ReStartOp, Text: sdk.I18n("restart"), // allowedRowIDs = null 或不传这个key，表示所有都可选，allowedRowIDs=[]表示当前没有可选择，此处应该可以不传
+						AllowedRowIDs: ids, Icon: &commodel.Icon{Type: "chongxinqidong"}, ID: common.ReStartOp, Text: sdk.I18n("restart"), // allowedRowIDs = null 或不传这个key，表示所有都可选，allowedRowIDs=[]表示当前没有可选择，此处应该可以不传
 					},
 					{
-						AllowedRowIDs: ids, Icon: "remove", ID: common.DeleteOp, Text: sdk.I18n("delete"),
+						AllowedRowIDs: ids, Icon: &commodel.Icon{Type: "remove"}, ID: common.DeleteOp, Text: sdk.I18n("delete"),
 					},
 				},
 			},
@@ -643,13 +731,13 @@ func getMoreOperations(sdk *cptype.SDK, id string) []list.MoreOpItem {
 	}
 }
 
-func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVersion, healthStr string, runtime bundle.GetApplicationRuntimesDataEle, lastOperatorTime time.Time) []list.KvInfo {
+func getKvInfos(sdk *cptype.SDK, appName, creatorName, deployOrderName, deployVersion, healthyStr string, runtime bundle.GetApplicationRuntimesDataEle, lastOperatorTime time.Time) []list.KvInfo {
 	kvs := make([]list.KvInfo, 0)
-	if healthStr != "" {
+	if healthyStr != "" {
 		// service
 		kvs = append(kvs, list.KvInfo{
 			Key:   sdk.I18n("service"),
-			Value: healthStr,
+			Value: healthyStr,
 		})
 	}
 	if deployOrderName != "" {

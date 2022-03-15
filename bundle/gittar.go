@@ -17,8 +17,12 @@ package bundle
 
 import (
 	"fmt"
+	"io"
 	"net/url"
+	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -63,7 +67,6 @@ func (b *Bundle) CreateRepo(repo apistructs.CreateRepoRequest) (*apistructs.Crea
 		return nil, err
 	}
 	hc := b.hc
-
 	var response apistructs.CreateRepoResponse
 	resp, err := hc.Post(host).Path("/_system/repos").JSONBody(repo).Do().JSON(&response)
 	if err != nil {
@@ -654,4 +657,77 @@ func (b *Bundle) GetGittarCompare(after, before string, appID int64, userID stri
 	}
 
 	return &compareResponse.Data, nil
+}
+
+func (b *Bundle) MergeRequestCount(userID string, req apistructs.MergeRequestCountRequest) (map[string]int, error) {
+	var (
+		host string
+		err  error
+		rsp  apistructs.MergeRequestCountResponse
+	)
+	hc := b.hc
+	host, err = b.urls.Gittar()
+	if err != nil {
+		return nil, err
+	}
+
+	values := url.Values{}
+	for _, i := range req.AppIDs {
+		values.Add("appIDs", strconv.FormatUint(i, 10))
+	}
+
+	resp, err := hc.Get(host).
+		Header(httputil.UserHeader, userID).
+		Param("state", req.State).
+		Path(fmt.Sprintf("/api/merge-requests-count")).
+		Params(values).
+		Do().JSON(&rsp)
+	if err != nil {
+		return nil, apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return nil, apierrors.ErrInvoke.InternalError(errors.Errorf("failed to list merge request count"))
+	}
+	return rsp.Data, nil
+}
+
+func (b *Bundle) GetArchive(userID string, req apistructs.GittarArchiveRequest, distDir string) (string, error) {
+	host, err := b.urls.Gittar()
+	if err != nil {
+		return "", err
+	}
+	hc := b.hc
+
+	path := fmt.Sprintf("/%s/dop/%s/%s/archive/%s.zip", req.Org, req.Project, req.Application, req.Ref)
+	resp, err := hc.Get(host).Path(path).
+		Header(httputil.UserHeader, userID).
+		Do().RAW()
+	if err != nil {
+		return "", apierrors.ErrInvoke.InternalError(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode/100 != 2 {
+		return "", fmt.Errorf("archive %s respons %d", req.Application, resp.StatusCode)
+	}
+
+	zipfile := fmt.Sprintf("tmp-%d.zip", time.Now().Unix())
+	attachmentInfo := resp.Header.Get("Content-Disposition")
+	attachment := strings.Split(attachmentInfo, "=")
+	if len(attachment) == 2 {
+		zipfile = attachment[1]
+	}
+
+	f, err := os.Create(distDir + "/" + zipfile)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, resp.Body)
+	if err != nil {
+		return zipfile, err
+	}
+
+	return zipfile, nil
 }

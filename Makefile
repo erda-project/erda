@@ -22,7 +22,7 @@ ERDA_VERSION ?= $(shell echo $(VERSION)|sed -e 's/\([0-9]\+\.[0-9]\+\).*/\1/g')
 GOARCH ?= $(shell go env GOARCH)
 GOOS ?= $(shell go env GOOS)
 GO_VERSION := $(shell go version)
-GO_SHORT_VERSION := $(shell go version | awk '{print $$3}')
+GO_SHORT_VERSION := $(shell go version | awk '{print $3}')
 BUILD_TIME := $(shell date "+%Y-%m-%d %H:%M:%S")
 COMMIT_ID := $(shell git rev-parse HEAD 2>/dev/null)
 DOCKER_IMAGE ?=
@@ -125,6 +125,9 @@ run-g: build
 # print the compiled providers and help information
 run-ps: build
 	./bin/${APP_NAME} --providers
+
+miglint: cli
+	./bin/erda-cli migrate lint --input=.erda/migrations --lint-config=.erda/migrations/config.yml
 
 # normalize all go files before push to git repo
 normalize:

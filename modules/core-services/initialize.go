@@ -202,6 +202,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		member.WithDBClient(db),
 		member.WithUCClient(uc),
 		member.WithRedisClient(redisCli),
+		member.WithTranslator(p.Tran),
 	)
 	mr := manual_review.New(
 		manual_review.WithDBClient(db),

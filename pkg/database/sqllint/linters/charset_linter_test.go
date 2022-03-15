@@ -18,8 +18,18 @@ import (
 	"testing"
 
 	"github.com/erda-project/erda/pkg/database/sqllint"
-	"github.com/erda-project/erda/pkg/database/sqllint/linters"
 )
+
+const charsetLinterConfig = `
+- name: CharsetLinter
+  switchOn: true
+  white:
+    patterns:
+      - ".*-base$"
+  meta:
+    tableOptionCharset:
+      utf8: true
+      utf8mb4: true`
 
 const charsetLinterSql = `
 create table some_table (
@@ -32,8 +42,12 @@ create table some_table (
 `
 
 func TestNewCharsetLinter(t *testing.T) {
-	linter := sqllint.New(linters.NewCharsetLinter)
-	if err := linter.Input([]byte(charsetLinterSql), "charsetLinterSql"); err != nil {
+	cfg, err := sqllint.LoadConfig([]byte(charsetLinterConfig))
+	if err != nil {
+		t.Fatal("failed to LoadConfig", err)
+	}
+	linter := sqllint.New(cfg)
+	if err := linter.Input("", "charsetLinterSql", []byte(charsetLinterSql)); err != nil {
 		t.Error(err)
 	}
 	errors := linter.Errors()

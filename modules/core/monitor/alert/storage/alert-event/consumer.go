@@ -111,7 +111,7 @@ func (p *provider) calcNeedUpdateFields(old *db.AlertEvent, new *db.AlertEvent) 
 	updateFields := map[string]interface{}{}
 
 	for i := 0; i < oldValue.NumField(); i++ {
-		if val := newValue.Field(i).Interface(); val != oldValue.Field(i).Interface() {
+		if val := newValue.Field(i).Interface(); val != oldValue.Field(i).Interface() && val != "" {
 			fieldName := alertEventFieldOrderMap[i]
 			if fieldName == "FirstTriggerTime" {
 				continue

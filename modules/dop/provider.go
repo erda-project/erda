@@ -31,7 +31,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/etcd"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
+	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	errboxpb "github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
@@ -62,8 +64,10 @@ type provider struct {
 	TaskErrorSvc       *taskerror.TaskErrorService             `autowired:"erda.core.dop.taskerror.TaskErrorService"`
 	ErrorBoxSvc        errboxpb.ErrorBoxServiceServer          `autowired:"erda.core.services.errorbox.ErrorBoxService" optional:"true"`
 	ProjectPipelineSvc *projectpipeline.ProjectPipelineService `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
+	PipelineCron       cronpb.CronServiceServer                `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 
-	AddonMySQLSvc addonmysqlpb.AddonMySQLServiceServer `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
+	AddonMySQLSvc     addonmysqlpb.AddonMySQLServiceServer `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
+	DicehubReleaseSvc dicehubpb.ReleaseServiceServer       `autowired:"erda.core.dicehub.release.ReleaseService"`
 
 	Protocol      componentprotocol.Interface
 	CPTran        i18n.I18n        `autowired:"i18n@cp"`
@@ -91,14 +95,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		bundle.WithPipeline(),
 		bundle.WithMonitor(),
 		bundle.WithCollector(),
-		bundle.WithHTTPClient(httpclient.New(
-			httpclient.WithTimeout(time.Second*15, time.Duration(conf.BundleTimeoutSecond())*time.Second), // bundle 默认 (time.Second, time.Second*3)
-		)),
 		bundle.WithKMS(),
 		bundle.WithCoreServices(),
 		bundle.WithHTTPClient(
 			httpclient.New(
-				httpclient.WithTimeout(time.Second, time.Second*90),
+				httpclient.WithTimeout(time.Second, time.Duration(conf.BundleTimeoutSecond())*time.Second),
 				httpclient.WithEnableAutoRetry(false),
 			)),
 		// TODO remove it after internal bundle invoke inside cp issue-manage adjusted
@@ -109,6 +110,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.Log.Info("init component-protocol done")
 
 	p.Protocol.WithContextValue(types.AddonMySQLService, p.AddonMySQLSvc)
+	p.Protocol.WithContextValue(types.DicehubReleaseService, p.DicehubReleaseSvc)
 
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,

@@ -25,6 +25,12 @@ type AlertExpressionDB struct {
 	*gorm.DB
 }
 
+// AlertRuleCount .
+type AlertRuleCount struct {
+	AlertId uint64 `gorm:"alert_id"`
+	Count   int64  `gorm:"count"`
+}
+
 // QueryByIDs .
 func (db *AlertExpressionDB) QueryByIDs(ids []uint64) ([]*AlertExpression, error) {
 	var expressions []*AlertExpression
@@ -88,4 +94,22 @@ func (db *AlertExpressionDB) GetAllAlertExpression(pageNo, pageSize int64) ([]*A
 		return nil, err
 	}
 	return expressions, nil
+}
+
+// QueryRuleCount .
+func (db *AlertExpressionDB) QueryRuleCount(alertIds []uint64) (map[uint64]int64, error) {
+	rulesCount := make([]*AlertRuleCount, 0)
+	err := db.Model(&AlertExpression{}).Select("alert_id,count(*) as count").
+		Where("alert_id in (?)", alertIds).
+		Group("alert_id").
+		Scan(&rulesCount).
+		Error
+	if err != nil {
+		return nil, err
+	}
+	ruleCountMap := make(map[uint64]int64)
+	for _, v := range rulesCount {
+		ruleCountMap[v.AlertId] = v.Count
+	}
+	return ruleCountMap, nil
 }

@@ -8,9 +8,9 @@ import "google/protobuf/struct.proto";
 import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "common/identity.proto";
 import "common/commit.proto";
-import "common/metadata.proto";
+import "common/md.proto";
+import "core/pipeline/cron_pub.proto";
 import "core/pipeline/queue/queue.proto";
-import "core/pipeline/cron/cron.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/base/pb";
 
@@ -201,7 +201,7 @@ message PipelineInstanceDetail {
   // additional fields
   repeated PipelineStageDetail pipelineStages = 29;
   repeated PipelineStageDetail pipelineSnippetStages = 30;
-  core.pipeline.cron.Cron pipelineCron = 31;
+  core.pipeline.Cron pipelineCron = 31;
   PipelineButton pipelineButton = 32;
   map<string, PipelineTaskActionDetail> pipelineTaskActionDetails = 33;
   repeated PipelineParamWithValue runParams = 34;
@@ -584,80 +584,89 @@ message PipelineCreateRequest {
   // +required
   string clusterName = 2 [(validator.field) = {string_not_empty: true}];
 
+  // Namespace upper layer could customize pipeline running in which namespace
+  // +optional
+  string namespace = 3;
+
   // PipelineYmlName
   // Equal to `Name`.
   // Default is `pipeline.yml`.
   // +optional
-  string pipelineYmlName = 3 [(validator.field) = {string_not_empty: true}];
+  string pipelineYmlName = 4 [(validator.field) = {string_not_empty: true}];
 
   // PipelineSource represents the source where pipeline created from.
   // Equal to `Namespace`.
   // +required
-  string pipelineSource = 4 [(validator.field) = {string_not_empty: true}];
+  string pipelineSource = 5 [(validator.field) = {string_not_empty: true}];
 
   // Labels is Map of string keys and values, can be used to filter pipeline.
   // If label key or value is too long, it will be moved to NormalLabels automatically and overwrite value if key already exists in NormalLabels.
   // +optional
-  map<string, string> labels = 5;
+  map<string, string> labels = 6;
 
   // NormalLabels is Map of string keys and values, cannot be used to filter pipeline.
   // +optional
-  map<string, string> normalLabels = 6;
+  map<string, string> normalLabels = 7;
 
   // Envs is Map of string keys and values.
   // +optional
-  map<string, string> envs = 7;
+  map<string, string> envs = 8;
 
   // ConfigManageNamespaces pipeline fetch configs from cms by namespaces in order.
   // Pipeline won't generate default ns.
   // +optional
-  repeated string configManageNamespaces = 8;
+  repeated string configManageNamespaces = 9;
 
   // AutoRun represents whether auto run the created pipeline.
   // Default is false.
   // +optional
   // Deprecated, please use `AutoRunAtOnce` or `AutoStartCron`.
   // Alias for AutoRunAtOnce.
-  bool autoRun = 9;
+  bool autoRun = 10;
 
   // ForceRun represents stop other running pipelines to run.
   // Default is false.
   // +optional
-  bool forceRun = 10;
+  bool forceRun = 11;
 
   // AutoRunAtOnce alias for `AutoRun`.
   // AutoRunAtOnce represents whether auto run the created pipeline.
   // Default is false.
   // +optional
-  bool autoRunAtOnce = 11;
+  bool autoRunAtOnce = 12;
 
   // AutoStartCron represents whether auto start cron.
   // If a pipeline doesn't have `cron` field, ignore.
   // Default is false.
   // +optional
-  bool autoStartCron = 12;
+  bool autoStartCron = 13;
 
   // CronStartFrom specify time when to start
   // +optional
-  google.protobuf.Timestamp cronStartFrom = 13;
+  google.protobuf.Timestamp cronStartFrom = 14;
 
   // GC represents pipeline gc configs.
   // If config is empty, will use default config.
   // +optional
-  PipelineGC GC = 14 [json_name = "gc"];
+  PipelineGC GC = 15 [json_name = "gc"];
 
   // RunPipelineParams represents pipeline params runtime input
   // if pipeline have params runPipelineParams can not be empty
   // +optional
-  repeated PipelineRunParam runParams = 15;
+  repeated PipelineRunParam runParams = 16;
 
   // Internal-Use below
 
   // BindQueue represents the queue pipeline binds, internal use only, parsed from Labels: LabelBindPipelineQueueID
-  core.pipeline.queue.Queue bindQueue = 16 [json_name = "-"];
+  core.pipeline.queue.Queue bindQueue = 17 [json_name = "-"];
 
-  common.IdentityInfo identityInfo = 17 [json_name = "-"];
+  // DefinitionID pipeline definition id
+  // +optional
+  string definitionID = 18;
+
+  common.IdentityInfo identityInfo = 19 [json_name = "-"];
 }
+
 message PipelineCreateResponse {
   PipelineInstance data = 1;
 }

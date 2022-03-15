@@ -17,7 +17,6 @@ package conf
 
 import (
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/erda-project/erda/pkg/envconf"
@@ -88,9 +87,6 @@ type Conf struct {
 	// queue handle loop interval
 	QueueLoopHandleIntervalSec uint64 `env:"QUEUE_LOOP_HANDLE_INTERVAL_SEC" default:"10"`
 
-	// API-Test
-	APITestNetportalAccessK8sNamespaceBlacklist string `env:"APITEST_NETPORTAL_ACCESS_K8S_NAMESPACE_BLACKLIST" default:"default,kube-system"`
-
 	// initialize send running pipeline interval
 	InitializeSendRunningIntervalSec uint64 `env:"INITIALIZE_SEND_RUNNING_INTERVAL_SEC" default:"10"`
 	InitializeSendRunningIntervalNum uint64 `env:"INITIALIZE_SEND_RUNNING_INTERVAL_NUM" default:"20"`
@@ -112,6 +108,15 @@ type Conf struct {
 	// scheduler executor refresh interval
 	ExecutorRefreshIntervalMinute uint64 `env:"EXECUTOR_REFRESH_INTERVAL_MINUTE" default:"20"`
 	SpecifyImagePullPolicy        string `env:"SPECIFY_IMAGE_PULL_POLICY" default:"IfNotPresent"`
+
+	// k8s executor goroutine pool size
+	K8SExecutorPoolSize int `env:"K8S_EXECUTOR_POOL_SIZE" default:"50"`
+
+	// external market refresh interval
+	ExtensionVersionRefreshIntervalMinute uint64 `env:"EXTENSION_VERSION_REFRESH_INTERVAL_MINUTE" default:"1"`
+
+	// k8s type executor max timeout second
+	K8SExecutorMaxInitializationSec uint64 `env:"K8S_EXECUTOR_MAX_INITIALIZATION_SEC" default:"5"`
 }
 
 var cfg Conf
@@ -307,11 +312,6 @@ func QueueLoopHandleIntervalSec() uint64 {
 	return cfg.QueueLoopHandleIntervalSec
 }
 
-// APITestNetportalAccessK8sNamespaceBlacklist 返回 api-test 调用 netportal 代理的 k8s namespace 黑名单.
-func APITestNetportalAccessK8sNamespaceBlacklist() []string {
-	return strings.Split(cfg.APITestNetportalAccessK8sNamespaceBlacklist, ",")
-}
-
 // InitializeSendIntervalTime return initialize send running pipeline id interval second
 func InitializeSendRunningIntervalSec() uint64 {
 	return cfg.InitializeSendRunningIntervalSec
@@ -362,4 +362,19 @@ func ExecutorRefreshIntervalMinute() uint64 {
 // SpecifyImagePullPolicy return default image pull policy
 func SpecifyImagePullPolicy() string {
 	return cfg.SpecifyImagePullPolicy
+}
+
+// K8SExecutorPoolSize return default k8s executor pool size
+func K8SExecutorPoolSize() int {
+	return cfg.K8SExecutorPoolSize
+}
+
+// ExtensionVersionRefreshIntervalMinute external market refresh interval
+func ExtensionVersionRefreshIntervalMinute() uint64 {
+	return cfg.ExtensionVersionRefreshIntervalMinute
+}
+
+// K8SExecutorMaxInitializationSec k8s type executor max timeout second
+func K8SExecutorMaxInitializationSec() uint64 {
+	return cfg.K8SExecutorMaxInitializationSec
 }

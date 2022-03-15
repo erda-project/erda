@@ -489,6 +489,29 @@ func (b *Bundle) DeleteProject(id, orgID uint64, userID string) (*apistructs.Pro
 	return &fetchResp.Data, nil
 }
 
+func (b *Bundle) UpdateProject(req apistructs.ProjectUpdateRequest, orgID uint64, userID string) error {
+	host, err := b.urls.CoreServices()
+	if err != nil {
+		return err
+	}
+	hc := b.hc
+
+	var updateResp apistructs.ProjectUpdateResponse
+	resp, err := hc.Put(host).Path(fmt.Sprintf("/api/projects/%d", req.ProjectID)).
+		Header(httputil.InternalHeader, "bundle").
+		Header(httputil.UserHeader, userID).
+		Header(httputil.OrgHeader, strconv.FormatUint(orgID, 10)).
+		JSONBody(&req.Body).Do().JSON(&updateResp)
+	if err != nil {
+		return apierrors.ErrInvoke.InternalError(err)
+	}
+	if !resp.IsOK() {
+		return toAPIError(resp.StatusCode(), updateResp.Error)
+	}
+
+	return nil
+}
+
 // Get projects map
 func (b *Bundle) GetProjectsMap(req apistructs.GetModelProjectsMapRequest) (map[uint64]apistructs.ProjectDTO, error) {
 	host, err := b.urls.CoreServices()

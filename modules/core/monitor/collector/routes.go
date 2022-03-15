@@ -53,7 +53,8 @@ func (p *provider) intRoute(r httpserver.Router) error {
 
 	// api version one
 	// authenticate with access keys
-	groupV1 := "/api/v1"
+	//todo. deprecated
+	groupV1 := "/api/v1/deprecated"
 	{
 		r.POST(groupV1+"/collect/:metric", p.collectMetric, p.auth.keyAuth())
 		r.POST(groupV1+"/collect/logs/:source", p.collectLogs, p.auth.keyAuth())

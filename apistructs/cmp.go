@@ -154,6 +154,7 @@ type OrgClusterInfoBasicData struct {
 type OfflineEdgeClusterRequest struct {
 	OrgID       uint64 `json:"orgID"`
 	ClusterName string `json:"clusterName"`
+	PreCheck    bool   `json:"preCheck"`
 	Force       bool   `json:"force"`
 }
 
@@ -167,7 +168,8 @@ type OfflineEdgeClusterResponse struct {
 	Data OfflineEdgeClusterData `json:"data"`
 }
 type OfflineEdgeClusterData struct {
-	RecordID uint64 `json:"recordID"`
+	RecordID     uint64 `json:"recordID"`
+	PreCheckHint string `json:"preCheckHint"`
 }
 
 type OpsClusterInfoRequest struct {

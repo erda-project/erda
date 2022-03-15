@@ -16,10 +16,14 @@ package db
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -58,58 +62,132 @@ func (client *ReleaseConfigDB) GetRelease(releaseID string) (*Release, error) {
 
 // GetReleasesByParams filter Releases by parameters
 func (client *ReleaseConfigDB) GetReleasesByParams(
-	orgID, projectID, applicationID int64,
-	keyword, releaseName, branch,
-	cluster string, crossCluster string, isVersion bool, crossClusterOrSpecifyCluster string,
-	startTime, endTime time.Time, pageNum, pageSize int64) (int64, []Release, error) {
+	orgID int64, req *pb.ReleaseListRequest) (int64, []Release, error) {
 
 	var releases []Release
 	db := client.DB.Debug()
 	if orgID > 0 {
 		db = db.Where("org_id = ?", orgID)
 	}
-	if applicationID > 0 {
-		db = db.Where("application_id = ?", applicationID)
+	if len(req.ApplicationID) > 0 {
+		db = db.Where("application_id in (?)", req.ApplicationID)
 	}
 
-	if projectID > 0 {
-		db = db.Where("project_id = ?", projectID)
+	if req.ProjectID > 0 {
+		db = db.Where("project_id = ?", req.ProjectID)
 	}
-	if keyword != "" {
-		db = db.Where("release_id LIKE ? or release_name LIKE ? or version LIKE ?", "%"+keyword+"%",
-			"%"+keyword+"%", "%"+keyword+"%")
-	} else if releaseName != "" {
-		db = db.Where("release_name = ?", releaseName)
+	if req.Query != "" {
+		db = db.Where("release_id LIKE ? or version LIKE ?", "%"+req.Query+"%", "%"+req.Query+"%")
+	} else if req.ReleaseName != "" {
+		db = db.Where("release_name = ?", req.ReleaseName)
 	}
-	if isVersion {
+	if req.IsVersion {
 		db = db.Not("version", "")
 	}
 
-	if cluster != "" {
-		db = db.Where("cluster_name = ?", cluster)
+	if req.Cluster != "" {
+		db = db.Where("cluster_name = ?", req.Cluster)
 	}
-	if crossCluster != "" {
-		db = db.Where("cross_cluster = ?", crossCluster)
+	if req.CrossCluster != "" {
+		db = db.Where("cross_cluster = ?", req.CrossCluster)
 	}
-	if crossClusterOrSpecifyCluster != "" {
-		db = db.Where("(cluster_name = ? AND cross_cluster = 0) OR cross_cluster = 1", crossClusterOrSpecifyCluster)
+	if req.CrossClusterOrSpecifyCluster != "" {
+		db = db.Where("(cluster_name = ? AND cross_cluster = 0) OR cross_cluster = 1", req.CrossClusterOrSpecifyCluster)
 	}
-	if branch != "" {
-		db = db.Where("labels LIKE ?", "%"+fmt.Sprintf("\"gitBranch\":\"%s\"", branch)+"%")
-	}
-
-	if !startTime.IsZero() {
-		db = db.Where("created_at > ?", startTime)
+	if req.Branch != "" {
+		db = db.Where("labels LIKE ?", "%"+fmt.Sprintf("\"gitBranch\":\"%s\"", req.Branch)+"%")
 	}
 
-	if err := db.Where("created_at <= ?", endTime).Order("created_at DESC").Offset((pageNum - 1) * pageSize).
-		Limit(pageSize).Find(&releases).Error; err != nil {
+	if req.IsStable != "" {
+		b, err := strconv.ParseBool(req.IsStable)
+		if err != nil {
+			return 0, nil, errors.Errorf("invalid param isStable, %v", err)
+		}
+		db = db.Where("is_stable = ?", b)
+	}
+
+	if req.IsProjectRelease != "" {
+		b, err := strconv.ParseBool(req.IsProjectRelease)
+		if err != nil {
+			return 0, nil, errors.Errorf("invalid param isProjectRelease, %v", err)
+		}
+		db = db.Where("is_project_release = ?", b)
+	}
+
+	if req.IsFormal != "" {
+		b, err := strconv.ParseBool(req.IsFormal)
+		if err != nil {
+			return 0, nil, errors.Errorf("invalid param isFormal, %v", err)
+		}
+		db = db.Where("is_formal = ?", b)
+	}
+
+	if len(req.UserID) > 0 {
+		db = db.Where("user_id in (?)", req.UserID)
+	}
+
+	if req.Version != "" {
+		var versions []string
+		splits := strings.Split(req.Version, ",")
+		for _, v := range splits {
+			versions = append(versions, strings.TrimSpace(v))
+		}
+
+		if len(versions) == 1 {
+			db = db.Where("version LIKE ?", fmt.Sprintf("%%%s%%", versions[0]))
+		} else {
+			db = db.Where("version in (?)", versions)
+		}
+	}
+
+	if req.ReleaseID != "" {
+		var releaseIDs []string
+		splits := strings.Split(req.ReleaseID, ",")
+		for _, id := range splits {
+			releaseIDs = append(releaseIDs, strings.TrimSpace(id))
+		}
+
+		if len(releaseIDs) == 1 {
+			db = db.Where("release_id LIKE ?", fmt.Sprintf("%%%s%%", releaseIDs[0]))
+		} else {
+			db = db.Where("release_id IN (?)", releaseIDs)
+		}
+	}
+
+	if req.CommitID != "" {
+		db = db.Where("labels LIKE ?", fmt.Sprintf("%%\"gitCommitId\":\"%s\"%%", req.CommitID))
+	}
+
+	if req.Tags != "" {
+		db = db.Where("tags = ?", req.Tags)
+	}
+
+	if req.StartTime > 0 {
+		db = db.Where("created_at > ?", time.Unix(req.StartTime/1000, 0))
+	}
+
+	if req.EndTime > 0 {
+		db = db.Where("created_at <= ?", time.Unix(req.EndTime/1000, 0))
+	}
+
+	if req.IsLatest {
+		db = db.Where("is_latest = true")
+	}
+
+	if req.OrderBy != "" {
+		db = db.Order(req.OrderBy + " " + req.Order)
+	} else {
+		db = db.Order("created_at DESC")
+	}
+
+	if err := db.Offset((req.PageNo - 1) * req.PageSize).
+		Limit(req.PageSize).Find(&releases).Error; err != nil {
 		return 0, nil, err
 	}
 
-	// Get total
+	// 获取匹配搜索结果总量
 	var total int64
-	if err := db.Where("created_at <= ?", endTime).Model(&Release{}).Count(&total).Error; err != nil {
+	if err := db.Model(&Release{}).Count(&total).Error; err != nil {
 		return 0, nil, err
 	}
 
@@ -122,6 +200,17 @@ func (client *ReleaseConfigDB) GetReleasesByAppAndVersion(orgID, projectID, appI
 	if err := client.Where("org_id = ?", orgID).
 		Where("project_id = ?", projectID).
 		Where("application_id = ?", appID).
+		Where("version = ?", version).
+		Find(&releases).Error; err != nil {
+		return nil, err
+	}
+	return releases, nil
+}
+
+func (client *ReleaseConfigDB) GetReleasesByProjectAndVersion(orgID, projectID int64, version string) ([]Release, error) {
+	var releases []Release
+	if err := client.Where("org_id = ?", orgID).
+		Where("project_id = ?", projectID).
 		Where("version = ?", version).
 		Find(&releases).Error; err != nil {
 		return nil, err
@@ -179,6 +268,24 @@ func (client *ReleaseConfigDB) GetUnReferedReleasesBefore(before time.Time) ([]R
 	var releases []Release
 	if err := client.Where("reference <= ?", 0).Where("updated_at < ?", before).
 		Order("updated_at").Find(&releases).Error; err != nil {
+		return nil, err
+	}
+	return releases, nil
+}
+
+// GetReleases list releases by release ids
+func (client *ReleaseConfigDB) GetReleases(releaseIDs []string) ([]Release, error) {
+	var releases []Release
+	if err := client.Where("release_id in (?)", releaseIDs).Find(&releases).Error; err != nil {
+		return nil, err
+	}
+	return releases, nil
+}
+
+func (client *ReleaseConfigDB) GetReleasesByBranch(projectID, appID int64, gitBranch string) ([]Release, error) {
+	var releases []Release
+	if err := client.Where("project_id = ?", projectID).Where("application_id = ?", appID).
+		Where("git_branch = ?", gitBranch).Find(&releases).Error; err != nil {
 		return nil, err
 	}
 	return releases, nil

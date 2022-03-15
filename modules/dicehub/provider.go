@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/httpserver"
 	image "github.com/erda-project/erda/modules/dicehub/image/db"
 	"github.com/erda-project/erda/modules/dicehub/metrics"
 	"github.com/erda-project/erda/providers/metrics/query"
@@ -30,6 +31,7 @@ type provider struct {
 	Log         logs.Logger
 	QueryClient query.MetricQuery `autowired:"metricq-client"`
 	DB          *gorm.DB          `autowired:"mysql-client"`
+	Router      httpserver.Router `autowired:"http-router"`
 	ImageDB     *image.ImageConfigDB
 }
 

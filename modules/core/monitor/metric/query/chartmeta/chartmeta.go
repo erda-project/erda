@@ -35,6 +35,13 @@ type DataMeta struct {
 	AxisIndex    *int    `yaml:"axis_index" json:"axis_index"`
 	ChartType    *string `yaml:"chart_type" json:"chart_type"`
 	Column       *int    `yaml:"column" json:"column"`
+	// TODO alias's i18n, should config on frontend side
+	I18n map[string]i18nConfig `yaml:"i18n" json:"i18n"`
+}
+
+type i18nConfig struct {
+	EN string `yaml:"en" json:"en,omitempty"`
+	ZH string `yaml:"zh" json:"zh,omitempty"`
 }
 
 type ChartMeta struct {

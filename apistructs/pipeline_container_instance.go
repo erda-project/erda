@@ -17,7 +17,7 @@ package apistructs
 type ContainerInstanceType string
 
 var (
-	ContainerInstanceECI ContainerInstanceType = "alibabacloud.com/eci"
+	ContainerInstanceECI ContainerInstanceType = AlibabaECILabel
 )
 
 var (
@@ -35,6 +35,7 @@ func (c ContainerInstanceType) Valid() bool {
 }
 
 type ContainerInstanceProvider struct {
+	IsDisabled              bool `json:"isDisabled"`
 	IsHitted                bool `json:"isHitted"`
 	ContainerInstanceType   `json:"containerInstanceType"`
 	PipelineAppliedResource `json:"pipelineAppliedResource"`

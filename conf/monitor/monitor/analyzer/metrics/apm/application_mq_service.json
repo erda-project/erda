@@ -1,4 +1,5 @@
 {
+  "id": 4,
   "attributes": {},
   "version": "3.0",
   "expression": {
@@ -32,6 +33,9 @@
       }
     ],
     "select": {
+      "db_type": "#db_type",
+      "peer_address": "#peer_address",
+      "peer_service": "#peer_service",
       "component": "#component",
       "host": "#host",
       "cluster_name": "#cluster_name",

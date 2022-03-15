@@ -32,9 +32,9 @@ type (
 
 		// micro alert apis
 		QueryAlertRule(r *http.Request, scope, scopeId string) (*pb.AlertTypeRuleResp, error)
-		QueryAlert(r *http.Request, scope, scopeId string, pageNum, pageSize uint64) ([]*pb.Alert, []string, error)
+		QueryAlert(r *http.Request, scope, scopeId string, pageNum, pageSize uint64, name string) ([]*pb.Alert, []string, error)
 		GetAlert(lang i18n.LanguageCodes, id uint64) (*pb.Alert, error)
-		CountAlert(scope, scopeID string) (int, error)
+		CountAlert(scope, scopeID, name string) (int, error)
 		GetAlertDetail(r *http.Request, id uint64) (*pb.Alert, error)
 		CheckAlert(alert *pb.Alert) interface{}
 		CreateAlert(alert *pb.Alert) (alertID uint64, err error)
@@ -45,7 +45,7 @@ type (
 		// micro custom alert apis
 		CustomizeMetrics(lang i18n.LanguageCodes, scope, scopeID string, names []string) (*pb.CustomizeMetrics, error)
 		NotifyTargetsKeys(lang i18n.LanguageCodes, orgId string) []*pb.DisplayKey
-		CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize int) ([]*pb.CustomizeAlertOverview, int, error)
+		CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize int, name string) ([]*pb.CustomizeAlertOverview, int, error)
 		CustomizeAlert(id uint64) (*pb.CustomizeAlertDetail, error)
 		CustomizeAlertDetail(id uint64) (*pb.CustomizeAlertDetail, error)
 		CheckCustomizeAlert(alert *pb.CustomizeAlertDetail) error
@@ -75,8 +75,8 @@ func (p *provider) QueryAlertRule(r *http.Request, scope, scopeId string) (*pb.A
 	return p.a.QueryAlertRule(api.Language(r), scope, scopeId)
 }
 
-func (p *provider) QueryAlert(r *http.Request, scope, scopeId string, pageNum, pageSize uint64) ([]*pb.Alert, []string, error) {
-	return p.a.QueryAlert(api.Language(r), scope, scopeId, pageNum, pageSize)
+func (p *provider) QueryAlert(r *http.Request, scope, scopeId string, pageNum, pageSize uint64, name string) ([]*pb.Alert, []string, error) {
+	return p.a.QueryAlert(api.Language(r), scope, scopeId, pageNum, pageSize, name)
 }
 
 func (p *provider) GetAlert(lang i18n.LanguageCodes, id uint64) (*pb.Alert, error) {
@@ -87,8 +87,8 @@ func (p *provider) GetAlertDetail(r *http.Request, id uint64) (*pb.Alert, error)
 	return p.a.GetAlertDetail(api.Language(r), id)
 }
 
-func (p *provider) CountAlert(scope, scopeID string) (int, error) {
-	return p.a.CountAlert(scope, scopeID)
+func (p *provider) CountAlert(scope, scopeID, name string) (int, error) {
+	return p.a.CountAlert(scope, scopeID, name)
 }
 
 func (p *provider) CheckAlert(alert *pb.Alert) interface{} {
@@ -137,8 +137,8 @@ func (p *provider) NotifyTargetsKeys(lang i18n.LanguageCodes, config map[string]
 	return p.a.NotifyTargetsKeys(lang, config)
 }
 
-func (p *provider) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize int) ([]*pb.CustomizeAlertOverview, []string, int, error) {
-	return p.a.CustomizeAlerts(lang, scope, scopeID, pageNo, pageSize)
+func (p *provider) CustomizeAlerts(lang i18n.LanguageCodes, scope, scopeID string, pageNo, pageSize int, name string) ([]*pb.CustomizeAlertOverview, []string, int, error) {
+	return p.a.CustomizeAlerts(lang, scope, scopeID, pageNo, pageSize, name)
 }
 
 func (p *provider) CustomizeAlert(id uint64) (*pb.CustomizeAlertDetail, error) {

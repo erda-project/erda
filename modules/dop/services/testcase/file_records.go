@@ -51,6 +51,7 @@ func convertTestFileExtra(fileExtra apistructs.TestFileExtra) dao.TestFileExtra 
 		AutotestSpaceFileExtraInfo:    fileExtra.AutotestSpaceFileExtraInfo,
 		AutotestSceneSetFileExtraInfo: fileExtra.AutotestSceneSetFileExtraInfo,
 		ProjectTemplateFileExtraInfo:  fileExtra.ProjectTemplateFileExtraInfo,
+		ProjectPackageFileExtraInfo:   fileExtra.ProjectPackageFileExtraInfo,
 		IssueFileExtraInfo:            fileExtra.IssueFileExtraInfo,
 	}
 }
@@ -202,5 +203,19 @@ func mapping(s *dao.TestFileRecord, project, testSet string) *apistructs.TestFil
 			record.ProjectDisplayName = extra.ProjectTemplateFileExtraInfo.ImportRequest.ProjectDisplayName
 		}
 	}
+
+	if record.Type == apistructs.FileProjectPackageExport {
+		if extra.ProjectPackageFileExtraInfo != nil && extra.ProjectPackageFileExtraInfo.ExportRequest != nil {
+			record.ProjectName = extra.ProjectPackageFileExtraInfo.ExportRequest.ProjectName
+			record.ProjectDisplayName = extra.ProjectPackageFileExtraInfo.ExportRequest.ProjectDisplayName
+		}
+	}
+	if record.Type == apistructs.FileProjectPackageImport {
+		if extra.ProjectPackageFileExtraInfo != nil && extra.ProjectPackageFileExtraInfo.ImportRequest != nil {
+			record.ProjectName = extra.ProjectPackageFileExtraInfo.ImportRequest.ProjectName
+			record.ProjectDisplayName = extra.ProjectPackageFileExtraInfo.ImportRequest.ProjectDisplayName
+		}
+	}
+
 	return record
 }

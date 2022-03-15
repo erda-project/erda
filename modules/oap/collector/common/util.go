@@ -15,11 +15,75 @@
 package common
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/base64"
+	"fmt"
+	"io"
+	"net/http"
 	"strings"
+
+	"github.com/golang/snappy"
 )
 
 func NormalizeKey(key string) string {
 	key = strings.ReplaceAll(key, ".", "_")
 	key = strings.ReplaceAll(key, "/", "_")
 	return key
+}
+
+func IsJSONArray(b []byte) bool {
+	x := bytes.TrimLeft(b, " \t\r\n")
+	return len(x) > 0 && x[0] == '['
+}
+
+// read request's body based on Content-Encoding Header
+func ReadBody(req *http.Request) ([]byte, error) {
+	defer req.Body.Close()
+
+	var res []byte
+	switch req.Header.Get("Content-Encoding") {
+	case "gzip":
+		r, err := gzip.NewReader(req.Body)
+		if err != nil {
+			return nil, fmt.Errorf("gzip.NewReader err: %w", err)
+		}
+
+		data, err := io.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
+		res = data
+	case "snappy":
+		data, err := io.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		// snappy block format is only supported by decode/encode not snappy reader/writer
+		data, err = snappy.Decode(nil, data)
+		if err != nil {
+			return nil, fmt.Errorf("snappy.Decode err: %w", err)
+		}
+		res = data
+	default:
+		data, err := io.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		res = data
+	}
+
+	switch req.Header.Get("Custom-Content-Encoding") {
+	case "base64":
+		dst := make([]byte, base64.StdEncoding.DecodedLen(len(res)))
+		_, err := base64.StdEncoding.Decode(dst, res)
+		if err != nil {
+			return nil, fmt.Errorf("base64 decode: %w", err)
+		}
+		res = dst
+	case "":
+	default:
+		return nil, fmt.Errorf("unsupported custom-content-encoding")
+	}
+	return res, nil
 }

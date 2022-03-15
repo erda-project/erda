@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -621,6 +622,11 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/orgs/{orgID}/projects/{projectID}/template/actions/import", Method: http.MethodPost, Handler: e.ImportProjectTemplate},
 		{Path: "/api/projects/template/actions/parse", Method: http.MethodPost, Handler: e.ParseProjectTemplate},
 
+		// project package
+		{Path: "/api/orgs/{orgID}/projects/{projectID}/package/actions/export", Method: http.MethodPost, Handler: e.ExportProjectPackage},
+		{Path: "/api/orgs/{orgID}/projects/{projectID}/package/actions/import", Method: http.MethodPost, Handler: e.ImportProjectPackage},
+		{Path: "/api/projects/package/actions/parse", Method: http.MethodPost, Handler: e.ParseProjectPackage},
+
 		// core-services org
 		{Path: "/api/orgs", Method: http.MethodPost, Handler: e.CreateOrg},
 		{Path: "/api/orgs/{orgID}", Method: http.MethodPut, Handler: e.UpdateOrg},
@@ -644,6 +650,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/applications", Method: http.MethodPost, Handler: e.CreateApplication},
 		{Path: "/api/applications/{applicationID}", Method: http.MethodDelete, Handler: e.DeleteApplication},
 		{Path: "/api/applications/{applicationID}/actions/init", Method: http.MethodPut, Handler: e.InitApplication},
+		{Path: "/api/applications/{applicationID}", Method: http.MethodPut, Handler: e.UpdateApplication},
 
 		{Path: "/api/applications/actions/remove-publish-item-relations", Method: http.MethodPost, Handler: e.RemoveApplicationPublishItemRelations},
 		{Path: "/api/applications/{applicationID}/actions/get-publish-item-relations", Method: http.MethodGet, Handler: e.GetApplicationPublishItemRelationsGroupByENV},
@@ -716,6 +723,8 @@ type Endpoints struct {
 	app             *application.Application
 	codeCoverageSvc *code_coverage.CodeCoverage
 	testReportSvc   *test_report.TestReport
+
+	PipelineCron cronpb.CronServiceServer
 
 	ImportChannel chan uint64
 	ExportChannel chan uint64
@@ -1074,6 +1083,12 @@ func WithCodeCoverageExecRecord(svc *code_coverage.CodeCoverage) Option {
 func WithTestReportRecord(svc *test_report.TestReport) Option {
 	return func(e *Endpoints) {
 		e.testReportSvc = svc
+	}
+}
+
+func WithPipelineCron(svc cronpb.CronServiceServer) Option {
+	return func(e *Endpoints) {
+		e.PipelineCron = svc
 	}
 }
 

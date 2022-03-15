@@ -15,6 +15,7 @@
 package pipelineTable
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -33,7 +34,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	commonpb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
@@ -61,10 +64,12 @@ type PipelineTable struct {
 	UserIDs  []string       `json:"-"`
 
 	ProjectPipelineSvc *projectpipeline.ProjectPipelineService
+	PipelineCron       cronpb.CronServiceServer
 }
 
 const (
-	ColumnPipelineName    table.ColumnKey = "pipeline"
+	ColumnPipelineName    table.ColumnKey = "pipelineName"
+	ColumnPipeline        table.ColumnKey = "pipeline"
 	ColumnPipelineStatus  table.ColumnKey = "pipelineStatus"
 	ColumnCostTime        table.ColumnKey = "costTime"
 	ColumnApplicationName table.ColumnKey = "applicationName"
@@ -76,6 +81,7 @@ const (
 	ColumnPipelineID      table.ColumnKey = "pipelineID"
 	ColumnMoreOperations  table.ColumnKey = "moreOperations"
 	ColumnSource          table.ColumnKey = "source"
+	ColumnSourceFile      table.ColumnKey = "sourceFile"
 	ColumnProcess         table.ColumnKey = "process"
 	ColumnIcon            table.ColumnKey = "icon"
 
@@ -95,6 +101,7 @@ func (p *PipelineTable) BeforeHandleOp(sdk *cptype.SDK) {
 		panic(err)
 	}
 	p.ProjectPipelineSvc = sdk.Ctx.Value(types.ProjectPipelineService).(*projectpipeline.ProjectPipelineService)
+	p.PipelineCron = sdk.Ctx.Value(types.PipelineCronService).(cronpb.CronServiceServer)
 	//cputil.MustObjJSONTransfer(&p.StdStatePtr, &p.State)
 }
 
@@ -132,9 +139,10 @@ func (p *PipelineTable) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 	return table.ColumnsInfo{
 		Merges: map[table.ColumnKey]table.MergedColumn{
-			ColumnSource: {[]table.ColumnKey{ColumnApplicationName, ColumnIcon, ColumnBranch}},
+			ColumnSource:   {[]table.ColumnKey{ColumnApplicationName, ColumnIcon, ColumnBranch}},
+			ColumnPipeline: {[]table.ColumnKey{ColumnPipelineName, ColumnSourceFile}},
 		},
-		Orders: []table.ColumnKey{ColumnPipelineName, ColumnSource, ColumnPipelineStatus, ColumnProcess, ColumnCostTime,
+		Orders: []table.ColumnKey{ColumnPipeline, ColumnSource, ColumnPipelineStatus, ColumnProcess, ColumnCostTime,
 			ColumnExecutor, ColumnStartTime, ColumnCreateTime, ColumnCreator, ColumnPipelineID, ColumnMoreOperations},
 		ColumnsMap: map[table.ColumnKey]table.Column{
 			ColumnPipelineName:    {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineName))},
@@ -150,7 +158,9 @@ func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 			ColumnPipelineID:      {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineID)), Hidden: true},
 			ColumnCreateTime:      {Title: cputil.I18n(p.sdk.Ctx, string(ColumnCreateTime)), EnableSort: true, Hidden: true},
 			ColumnSource:          {Title: cputil.I18n(p.sdk.Ctx, string(ColumnSource))},
+			ColumnSourceFile:      {Title: cputil.I18n(p.sdk.Ctx, string(ColumnSourceFile))},
 			ColumnIcon:            {Title: cputil.I18n(p.sdk.Ctx, string(ColumnIcon))},
+			ColumnPipeline:        {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipeline))},
 		},
 	}
 }
@@ -245,7 +255,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 
 	var (
 		pipelineYmlNames []string
-		pipelineSources  []apistructs.PipelineSource
+		pipelineSources  []string
 	)
 
 	definitionYmlSourceMap := make(map[string]string)
@@ -256,22 +266,22 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			logrus.Errorf("failed to list Unmarshal Extra, err: %s", err.Error())
 		}
 		pipelineYmlNames = append(pipelineYmlNames, extraValue.CreateRequest.PipelineYmlName)
-		pipelineSources = append(pipelineSources, extraValue.CreateRequest.PipelineSource)
+		pipelineSources = append(pipelineSources, extraValue.CreateRequest.PipelineSource.String())
 		definitionYmlSourceMap[v.ID] = fmt.Sprintf("%s%s", extraValue.CreateRequest.PipelineYmlName, extraValue.CreateRequest.PipelineSource)
 	}
 
 	worker := limit_sync_group.NewWorker(2)
-	var crons *apistructs.PipelineCronPagingResponseData
+	var crons *cronpb.CronPagingResponse
 	var appNameIDMap *apistructs.GetAppIDByNamesResponseData
 
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 		if len(pipelineYmlNames) == 0 {
 			return nil
 		}
-		crons, err = p.bdl.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
+		crons, err = p.PipelineCron.CronPaging(context.Background(), &cronpb.CronPagingRequest{
 			Sources:  pipelineSources,
 			YmlNames: pipelineYmlNames,
-			PageSize: len(list),
+			PageSize: int64(len(list)),
 			PageNo:   1,
 		})
 		if err != nil {
@@ -302,7 +312,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 		panic(worker.Error())
 	}
 
-	ymlSourceMapCronMap := make(map[string]*apistructs.PipelineCronDTO)
+	ymlSourceMapCronMap := make(map[string]*commonpb.Cron)
 	if crons != nil {
 		for _, v := range crons.Data {
 			ymlSourceMapCronMap[fmt.Sprintf("%s%s", v.PipelineYmlName, v.PipelineSource)] = v
@@ -383,6 +393,9 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 				ColumnMoreOperations: table.NewMoreOperationsCell(commodel.MoreOperations{
 					Ops: p.SetTableMoreOpItem(v, definitionYmlSourceMap, ymlSourceMapCronMap),
 				}).Build(),
+				ColumnSourceFile: table.NewTextCell(func() string {
+					return v.FileName
+				}()).Build(),
 				ColumnIcon: table.NewIconCell(commodel.Icon{
 					Type: "branch",
 				}).Build(),
@@ -428,7 +441,7 @@ func formatTimeToStr(t time.Time) string {
 	return t.In(time.FixedZone("UTC+8", int((8 * time.Hour).Seconds()))).Format("2006-01-02 15:04:05")
 }
 
-func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, definitionYmlSourceMap map[string]string, ymlSourceMapCronMap map[string]*apistructs.PipelineCronDTO) []commodel.MoreOpItem {
+func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, definitionYmlSourceMap map[string]string, ymlSourceMapCronMap map[string]*commonpb.Cron) []commodel.MoreOpItem {
 	items := make([]commodel.MoreOpItem, 0)
 	build := cputil.NewOpBuilder().Build()
 	items = append(items, commodel.MoreOpItem{
@@ -475,23 +488,23 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			},
 		})
 	}
-	if v, ok := ymlSourceMapCronMap[definitionYmlSourceMap[definition.ID]]; ok {
+
+	if v, ok := ymlSourceMapCronMap[definitionYmlSourceMap[definition.ID]]; ok && strings.TrimSpace(v.CronExpr) != "" {
 		items = append(items, commodel.MoreOpItem{
 			ID: func() string {
-				if *v.Enable {
+				if v.Enable.Value {
 					return "cancelCron"
 				}
 				return "cron"
 			}(),
 			Text: cputil.I18n(p.sdk.Ctx, func() string {
-				if *v.Enable {
+				if v.Enable.Value {
 					return "cancelCron"
 				}
 				return "cron"
 			}()),
-
 			Icon: func() *commodel.Icon {
-				if *v.Enable {
+				if v.Enable.Value {
 					return &commodel.Icon{
 						Type: "start-timing",
 					}
@@ -502,17 +515,6 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			}(),
 			Operations: map[cptype.OperationKey]cptype.Operation{
 				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
-			},
-		})
-	} else {
-		items = append(items, commodel.MoreOpItem{
-			ID:   "cron",
-			Text: cputil.I18n(p.sdk.Ctx, "cron"),
-			Operations: map[cptype.OperationKey]cptype.Operation{
-				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
-			},
-			Icon: &commodel.Icon{
-				Type: "start-timing",
 			},
 		})
 	}
@@ -542,20 +544,23 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 		return items
 	}
 	if v, ok := ymlSourceMapCronMap[definitionYmlSourceMap[definition.ID]]; ok {
-		if *v.Enable {
+		if v.Enable.Value {
 			return items
 		}
 	}
-	items = append(items, commodel.MoreOpItem{
-		ID:   "delete",
-		Text: cputil.I18n(p.sdk.Ctx, "delete"),
-		Operations: map[cptype.OperationKey]cptype.Operation{
-			commodel.OpMoreOperationsItemClick{}.OpKey(): build,
-		},
-		Icon: &commodel.Icon{
-			Type: "delete1",
-		},
-	})
+	if definition.Creator == p.sdk.Identity.UserID {
+		items = append(items, commodel.MoreOpItem{
+			ID:   "delete",
+			Text: cputil.I18n(p.sdk.Ctx, "delete"),
+			Operations: map[cptype.OperationKey]cptype.Operation{
+				commodel.OpMoreOperationsItemClick{}.OpKey(): build,
+			},
+			Icon: &commodel.Icon{
+				Type: "delete1",
+			},
+		})
+	}
+
 	items = append(items, commodel.MoreOpItem{
 		ID:   "updateName",
 		Text: cputil.I18n(p.sdk.Ctx, "updateName"),

@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ahmetb/go-linq/v3"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -31,6 +32,7 @@ import (
 	channelpb "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/adapt"
+	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
 	"github.com/erda-project/erda/modules/monitor/utils"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
@@ -226,7 +228,7 @@ func (m *alertService) QueryCustomizeAlert(ctx context.Context, request *pb.Quer
 		},
 	}
 	lang := apis.Language(ctx)
-	alert, userIDs, total, err := m.p.a.CustomizeAlerts(lang, request.Scope, request.ScopeId, int(request.PageNo), int(request.PageSize))
+	alert, userIDs, total, err := m.p.a.CustomizeAlerts(lang, request.Scope, request.ScopeId, int(request.PageNo), int(request.PageSize), request.Name)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -416,7 +418,7 @@ func (m *alertService) QueryOrgCustomizeMetric(ctx context.Context, request *pb.
 func (m *alertService) QueryOrgCustomizeAlerts(ctx context.Context, request *pb.QueryOrgCustomizeAlertsRequest) (*pb.QueryOrgCustomizeAlertsResponse, error) {
 	orgID := apis.GetOrgID(ctx)
 	language := apis.Language(ctx)
-	alert, userIDs, total, err := m.p.a.CustomizeAlerts(language, "org", orgID, int(request.PageNo), int(request.PageSize))
+	alert, userIDs, total, err := m.p.a.CustomizeAlerts(language, "org", orgID, int(request.PageNo), int(request.PageSize), request.Name)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -846,14 +848,14 @@ func (m *alertService) QueryAlertRule(ctx context.Context, request *pb.QueryAler
 }
 
 func (m *alertService) QueryAlert(ctx context.Context, request *pb.QueryAlertRequest) (*pb.QueryAlertsResponse, error) {
-	data, userIds, err := m.p.a.QueryAlert(apis.Language(ctx), request.Scope, request.ScopeId, uint64(request.PageNo), uint64(request.PageSize))
+	data, userIds, err := m.p.a.QueryAlert(apis.Language(ctx), request.Scope, request.ScopeId, uint64(request.PageNo), uint64(request.PageSize), request.Name)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
 	if data == nil {
 		data = make([]*pb.Alert, 0)
 	}
-	total, err := m.p.a.CountAlert(request.Scope, request.ScopeId)
+	total, err := m.p.a.CountAlert(request.Scope, request.ScopeId, request.Name)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -973,11 +975,11 @@ func (m *alertService) QueryOrgAlert(ctx context.Context, request *pb.QueryOrgAl
 		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
 	}
 	lang := apis.Language(ctx)
-	data, userIds, err := m.p.a.QueryOrgAlert(lang, id, uint64(request.PageNo), uint64(request.PageSize))
+	data, userIds, err := m.p.a.QueryOrgAlert(lang, id, uint64(request.PageNo), uint64(request.PageSize), request.Name)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	total, err := m.p.a.CountOrgAlert(id)
+	total, err := m.p.a.CountOrgAlert(id, request.Name)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
@@ -1433,6 +1435,193 @@ func (m *alertService) GetAlertConditionsValue(ctx context.Context, request *pb.
 		result.Data = append(result.Data, value)
 	}
 	return result, nil
+}
+
+func (m *alertService) CountUnRecoverAlertEvents(ctx context.Context, req *pb.CountUnRecoverAlertEventsRequest) (*pb.CountUnRecoverAlertEventsResponse, error) {
+	availableAlertIds, err := m.p.db.Alert.GetAvailableAlertIdByScope(req.Scope, req.ScopeId)
+	count, err := m.p.db.AlertEventDB.CountUnRecoverEvents(req.Scope, req.ScopeId, availableAlertIds)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.CountUnRecoverAlertEventsResponse{
+		Data: &pb.CountUnRecoverAlertEventsResult{
+			Count: count,
+		},
+	}, nil
+}
+
+func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEventRequest) (*pb.GetAlertEventResponse, error) {
+	var eventQuery = &db.AlertEventQueryCondition{
+		Name:                 req.Condition.Name,
+		Ids:                  req.Condition.Ids,
+		AlertLevels:          req.Condition.AlertLevels,
+		AlertIds:             req.Condition.AlertIds,
+		AlertStates:          req.Condition.AlertStates,
+		AlertSources:         req.Condition.AlertSources,
+		LastTriggerTimeMsMax: req.Condition.LastTriggerTimeMsMax,
+		LastTriggerTimeMsMin: req.Condition.LastTriggerTimeMsMin,
+	}
+
+	var suppressStates []string
+	linq.From(req.Condition.AlertStates).Where(func(i interface{}) bool {
+		return i.(string) == "pause" || i.(string) == "stop"
+	}).ToSlice(&suppressStates)
+	if len(suppressStates) > 0 {
+		bv := true
+		suppressList, err := m.p.db.AlertEventSuppressDB.QueryByCondition(req.Scope, req.ScopeId, &db.AlertEventSuppressQueryCondition{
+			SuppressTypes: suppressStates,
+			Enabled:       &bv,
+		})
+		if err != nil {
+			for _, item := range suppressList {
+				eventQuery.Ids = append(eventQuery.Ids, item.AlertEventID)
+			}
+		}
+	}
+
+	total, err := m.p.db.AlertEventDB.CountByCondition(req.Scope, req.ScopeId, eventQuery)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	if total == 0 {
+		return &pb.GetAlertEventResponse{}, nil
+	}
+
+	var sorts []*db.AlertEventSort
+	linq.From(req.Sorts).Select(func(i interface{}) interface{} {
+		return &db.AlertEventSort{
+			SortField:  i.(*pb.AlertEventSort).SortField,
+			Descending: i.(*pb.AlertEventSort).Descending,
+		}
+	}).ToSlice(&sorts)
+
+	// default sort by LastTriggerTime desc
+	if len(sorts) == 0 {
+		sorts = append(sorts, &db.AlertEventSort{
+			SortField:  "LastTriggerTime",
+			Descending: true,
+		})
+	}
+
+	list, err := m.p.db.AlertEventDB.QueryByCondition(req.Scope, req.ScopeId, eventQuery, sorts, req.PageNo, req.PageSize)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+
+	// prepare suppress state
+	suppressEventIdMap := map[string]*db.AlertEventSuppress{}
+	var eventIds []string
+	linq.From(list).Select(func(i interface{}) interface{} {
+		return i.(*db.AlertEvent).Id
+	}).ToSlice(&eventIds)
+
+	if len(eventIds) > 0 {
+		bv := true
+		suppressList, err := m.p.db.AlertEventSuppressDB.QueryByCondition(req.Scope, req.ScopeId, &db.AlertEventSuppressQueryCondition{
+			EventIds: eventIds,
+			Enabled:  &bv,
+		})
+		if err != nil {
+			return nil, errors.NewInternalServerError(err)
+		}
+		for _, suppress := range suppressList {
+			if !suppress.Enabled || suppress.ExpireTime.Before(time.Now()) {
+				continue
+			}
+			suppressEventIdMap[suppress.AlertEventID] = suppress
+		}
+	}
+
+	result := &pb.GetAlertEventResponse{
+		Total: total,
+	}
+	for _, event := range list {
+		item := &pb.AlertEventItem{
+			Id:               event.Id,
+			Name:             event.Name,
+			OrgID:            event.OrgID,
+			AlertGroupID:     event.AlertGroupID,
+			AlertGroup:       event.AlertGroup,
+			Scope:            event.Scope,
+			ScopeId:          event.ScopeID,
+			AlertID:          event.AlertID,
+			AlertName:        event.AlertName,
+			AlertType:        event.AlertType,
+			AlertIndex:       event.AlertIndex,
+			AlertLevel:       event.AlertLevel,
+			AlertSource:      event.AlertSource,
+			AlertSubject:     event.AlertSubject,
+			AlertState:       event.AlertState,
+			RuleID:           event.RuleID,
+			RuleName:         event.RuleName,
+			ExpressionID:     event.ExpressionID,
+			LastTriggerTime:  event.LastTriggerTime.UnixNano() / 1e6,
+			FirstTriggerTime: event.FirstTriggerTime.UnixNano() / 1e6,
+		}
+		if suppressSettings, ok := suppressEventIdMap[item.Id]; ok {
+			item.AlertState = suppressSettings.SuppressType
+			item.SuppressExpireTime = suppressSettings.ExpireTime.UnixNano() / 1e6
+		}
+		result.Items = append(result.Items, item)
+	}
+	return result, nil
+}
+
+func (m *alertService) SuppressAlertEvent(ctx context.Context, req *pb.SuppressAlertEventRequest) (*pb.SuppressAlertEventResponse, error) {
+	orgId := req.OrgID
+	if len(orgId) == 0 {
+		orgId = apis.GetOrgID(ctx)
+	}
+	orgIdValue, err := strconv.ParseInt(orgId, 10, 64)
+	if err != nil {
+		return nil, errors.NewInvalidParameterError("orgId", "invalid orgId")
+	}
+	expireTime := time.Unix(int64(req.ExpireTime/1e3), 0)
+	// todo: define the suppress types in one place
+	if req.SuppressType == "stop" {
+		expireTime = time.Date(9999, 1, 1, 0, 0, 0, 0, time.Local)
+	}
+	result, err := m.p.db.AlertEventSuppressDB.Suppress(orgIdValue, req.Scope, req.ScopeID,
+		req.AlertEventID, req.SuppressType, expireTime)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return &pb.SuppressAlertEventResponse{
+		Result: result,
+	}, nil
+}
+
+func (m *alertService) CancelSuppressAlertEvent(ctx context.Context, req *pb.CancelSuppressAlertEventRequest) (*pb.CancelSuppressAlertEventResponse, error) {
+	result, err := m.p.db.AlertEventSuppressDB.CancelSuppress(req.AlertEventID)
+	if err != nil {
+		return nil, errors.NewInternalServerError(err)
+	}
+	return &pb.CancelSuppressAlertEventResponse{
+		Result: result,
+	}, nil
+}
+
+func (m *alertService) GetRawAlertExpression(ctx context.Context, req *pb.GetRawAlertExpressionRequest) (*pb.GetRawAlertExpressionResponse, error) {
+	list, err := m.p.db.AlertExpression.QueryByIDs([]uint64{req.Id})
+	if err != nil {
+		return nil, err
+	}
+	if len(list) == 0 {
+		return nil, fmt.Errorf("data not exists")
+	}
+	expr := list[0]
+	expressions, _ := expr.Expression.Value()
+	attributes, _ := expr.Attributes.Value()
+	return &pb.GetRawAlertExpressionResponse{
+		Data: &pb.RawAlertExpression{
+			Id:         expr.ID,
+			AlertId:    int64(expr.AlertID),
+			Expression: string(expressions.([]byte)),
+			Attributes: string(attributes.([]byte)),
+			Version:    expr.Version,
+			Enable:     expr.Enable,
+		},
+	}, nil
 }
 
 func getResultValue(result []*metricpb.Result) []*structpb.Value {

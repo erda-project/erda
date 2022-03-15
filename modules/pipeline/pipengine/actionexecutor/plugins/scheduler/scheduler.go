@@ -55,8 +55,8 @@ func init() {
 		if !ok {
 			return nil, errors.Errorf("not found some config of action executor, kind [%s], name [%s], field [ADDR]", Kind, name)
 		}
-		if discover.Scheduler() != "" {
-			addr = discover.Scheduler()
+		if discover.Orchestrator() != "" {
+			addr = discover.Orchestrator()
 			logrus.Infof("=> kind [%v], name [%v], option: %s=%s from env", Kind, name, OPTION_ADDR, addr)
 		}
 
@@ -91,7 +91,7 @@ func (s *Sched) Name() types.Name {
 // GetTaskExecutor return bool, task exectuor, error, bool means should it be dispatch to scheduler
 func (s *Sched) GetTaskExecutor(executorType string, clusterName string, task *spec.PipelineTask) (bool, tasktypes.TaskExecutor, error) {
 	var executorName string
-	cluster, err := s.taskManager.GetCluster(clusterName)
+	cluster, err := s.taskManager.TryGetCluster(clusterName)
 	if err != nil {
 		return false, nil, err
 	}

@@ -20,21 +20,23 @@ import (
 
 	"github.com/pingcap/parser/ast"
 
+	"github.com/erda-project/erda/pkg/database/sqllint"
 	"github.com/erda-project/erda/pkg/database/sqllint/linterror"
-	"github.com/erda-project/erda/pkg/database/sqllint/rules"
 	"github.com/erda-project/erda/pkg/database/sqllint/script"
 	"github.com/erda-project/erda/pkg/swagger/ddlconv"
 )
 
-type FloatDoubleLinter struct {
+type floatDoubleLinter struct {
 	baseLinter
 }
 
-func NewFloatDoubleLinter(script script.Script) rules.Rule {
-	return &FloatDoubleLinter{newBaseLinter(script)}
+// FloatDoubleLinter
+// You can not use fload and double type, please use decimal.
+func (hub) FloatDoubleLinter(script script.Script, _ sqllint.Config) (sqllint.Rule, error) {
+	return &floatDoubleLinter{newBaseLinter(script)}, nil
 }
 
-func (l *FloatDoubleLinter) Enter(in ast.Node) (ast.Node, bool) {
+func (l *floatDoubleLinter) Enter(in ast.Node) (ast.Node, bool) {
 	if l.text == "" || in.Text() != "" {
 		l.text = in.Text()
 	}
@@ -57,10 +59,10 @@ func (l *FloatDoubleLinter) Enter(in ast.Node) (ast.Node, bool) {
 	return in, false
 }
 
-func (l *FloatDoubleLinter) Leave(in ast.Node) (ast.Node, bool) {
+func (l *floatDoubleLinter) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
-func (l *FloatDoubleLinter) Error() error {
+func (l *floatDoubleLinter) Error() error {
 	return l.err
 }

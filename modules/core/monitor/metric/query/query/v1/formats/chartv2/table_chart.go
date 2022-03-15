@@ -42,6 +42,9 @@ func (f *Formater) formatTableChart(ctx *query.Context, chart *chartmeta.ChartMe
 		label := key
 		if chart != nil && chart.Defines != nil {
 			meta := chart.Defines[key]
+			if meta != nil {
+				head["i18n"] = meta.I18n
+			}
 			if meta != nil && meta.Label != nil && len(*meta.Label) > 0 {
 				label = *meta.Label
 			}

@@ -8,9 +8,8 @@ import "google/protobuf/struct.proto";
 import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "common/identity.proto";
 import "common/commit.proto";
-import "common/metadata.proto";
+import "common/md.proto";
 import "core/pipeline/queue/queue.proto";
-import "core/pipeline/cron/cron.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/cluster/pb";
 

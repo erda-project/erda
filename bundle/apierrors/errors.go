@@ -19,6 +19,7 @@ import "github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 var (
 	ErrInvoke            = err("ErrInvoke", "调用失败")
 	ErrUnavailableClient = err("ErrUnavailableClient", "客户端不可用")
+	ErrInvalidParameter  = err("ErrInvalidParameter", "参数无效")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {
