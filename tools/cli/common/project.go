@@ -180,3 +180,45 @@ func ImportPackage(ctx *command.Context, orgID, projectID uint64, pkg string) (u
 
 	return response.Data, nil
 }
+
+// GetProjectList 获取 org 下的所有 Projects
+func GetProjectList(ctx *command.Context, orgId string) ([]apistructs.ProjectDTO, error) {
+	var resp apistructs.ProjectListResponse
+	var b bytes.Buffer
+
+	response, err := ctx.Get().Path("/api/projects").Param("joined", "true").
+		Param("orgId", orgId).Do().Body(&b)
+	if err != nil {
+		return nil, fmt.Errorf(
+			utils.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
+	}
+
+	if !response.IsOK() {
+		return nil, fmt.Errorf(utils.FormatErrMsg("list",
+			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
+				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+	}
+
+	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
+		return nil, fmt.Errorf(utils.FormatErrMsg("list",
+			fmt.Sprintf("failed to unmarshal projects list response ("+err.Error()+")"), false))
+	}
+
+	if !resp.Success {
+		return nil, fmt.Errorf(utils.FormatErrMsg("list",
+			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+				resp.Error.Code, resp.Error.Msg), false))
+	}
+
+	if resp.Data.Total < 0 {
+		return nil, fmt.Errorf(
+			utils.FormatErrMsg("list", "critical: the number of projects is less than 0", false))
+	}
+
+	if resp.Data.Total == 0 {
+		fmt.Printf(utils.FormatErrMsg("list", "no projects created\n", false))
+		return nil, nil
+	}
+
+	return resp.Data.List, nil
+}

@@ -89,6 +89,10 @@ func (e *Endpoints) CreateProjectWorkSpace(ctx context.Context, r *http.Request,
 		projectWorkSpaceCreateReq.ID = uuid.NewString()
 	}
 
+	if projectWorkSpaceCreateReq.OrgID == 0 {
+		projectWorkSpaceCreateReq.OrgID = orgID
+	}
+
 	err = e.db.CreateProjectWorkspaceAbilities(projectWorkSpaceCreateReq)
 	if err != nil {
 		return apierrors.ErrCreateProjectWorkspaceAbilities.InternalError(err).ToResp(), nil
@@ -223,6 +227,9 @@ func (e *Endpoints) UpdateProjectWorkSpace(ctx context.Context, r *http.Request,
 	}
 
 	ability.Abilities = string(str)
+	if ability.OrgID == 0 {
+		ability.OrgID = orgID
+	}
 
 	err = e.db.UpdateProjectWorkspaceAbilities(ability)
 	if err != nil {
