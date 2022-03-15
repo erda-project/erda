@@ -30,9 +30,7 @@ import (
 )
 
 const (
-	etcdReconcilerWatchPrefix = "/devops/pipeline/reconciler/"
-	etcdReconcilerDLockPrefix = "/devops/pipeline/dlock/reconciler/"
-	EtcdNeedCompensatePrefix  = "/devops/pipeline/compensate/"
+	EtcdNeedCompensatePrefix = "/devops/pipeline/compensate/"
 
 	ctxKeyPipelineID               = "pipelineID"
 	ctxKeyPipelineExitCh           = "pExitCh"

@@ -16,8 +16,6 @@ package reconciler
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/erda-project/erda/apistructs"
@@ -25,7 +23,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func (r *Reconciler) ReconcileOnePipelineUntilDone(ctx context.Context, pipelineID uint64) {
@@ -163,15 +160,4 @@ func makeContextForPipelineReconcile(pipelineID uint64) context.Context {
 		}
 	}()
 	return pCtx
-}
-
-// parsePipelineIDFromWatchedKey get pipelineID from watched key.
-func parsePipelineIDFromWatchedKey(key string) (uint64, error) {
-	pipelineIDStr := strutil.TrimPrefixes(key, etcdReconcilerWatchPrefix)
-	return strconv.ParseUint(pipelineIDStr, 10, 64)
-}
-
-// makePipelineWatchedKey construct etcd watched key by pipelineID.
-func makePipelineWatchedKey(pipelineID uint64) string {
-	return fmt.Sprintf("%s%d", etcdReconcilerWatchPrefix, pipelineID)
 }
