@@ -73,7 +73,7 @@ func Push(ctx *command.Context, urlstr string, applications []string, configfile
 	org = paths[1]
 	projectID, err = strconv.ParseUint(paths[4], 10, 64)
 
-	org, orgID, err = getOrgID(ctx, org)
+	org, orgID, err = common.GetOrgID(ctx, org)
 	if err != nil {
 		return err
 	}
