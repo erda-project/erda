@@ -40,8 +40,6 @@ type provider struct {
 	started      bool
 	forLeaderUse forLeaderUse
 	forWorkerUse forWorkerUse
-
-	listeners []Listener
 }
 
 type forLeaderUse struct {
@@ -51,14 +49,16 @@ type forLeaderUse struct {
 	findWorkerByTask map[worker.LogicTaskID]worker.ID
 	findTaskByWorker map[worker.ID]map[worker.LogicTaskID]struct{}
 
-	leaderHandlers               []func(ctx context.Context)
-	leaderHandlersOnWorkerAdd    []WorkerAddHandler
-	leaderHandlersOnWorkerDelete []WorkerDeleteHandler
+	listeners []Listener
+
+	handlersOnLeader       []func(ctx context.Context)
+	handlersOnWorkerAdd    []WorkerAddHandler
+	handlersOnWorkerDelete []WorkerDeleteHandler
 }
 type forWorkerUse struct {
 	myWorkers map[worker.ID]workerWithCancel
 
-	workerHandlersOnWorkerDelete []WorkerDeleteHandler
+	handlersOnWorkerDelete []WorkerDeleteHandler
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
