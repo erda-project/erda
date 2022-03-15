@@ -1369,7 +1369,7 @@ func (a *Addon) BuildCanalServiceItem(params *apistructs.AddonHandlerCreateItem,
 		addroptions := a.guessCanalAddr(*instanceroutings, instances)
 		if len(addroptions) == 0 {
 			return fmt.Errorf("未设置 canal 参数")
-		} else if a.Logger != nil {
+		} else {
 			a.pushLog(fmt.Sprintf("自动获取 canal 参数: %+v", addroptions), params)
 		}
 		if params.Options == nil {

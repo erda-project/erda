@@ -373,7 +373,6 @@ func TestAddon_basicAddonDeploy(t *testing.T) {
 				encrypt:  tt.fields.encrypt,
 				resource: tt.fields.resource,
 				kms:      tt.fields.kms,
-				Logger:   tt.fields.Logger,
 			}
 			patch1 := monkey.Patch(utils.IsProjectECIEnable, func(bdl *bundle.Bundle, projectID uint64, workspace string, orgID uint64, userID string) bool {
 
