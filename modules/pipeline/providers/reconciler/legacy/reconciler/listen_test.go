@@ -24,13 +24,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func TestParsePipelineIDFromWatchedKey(t *testing.T) {
-	key := "/devops/pipeline/reconciler/345"
-	pipelineID, err := parsePipelineIDFromWatchedKey(key)
-	assert.Equal(t, nil, err)
-	assert.Equal(t, uint64(345), pipelineID)
-}
-
 func TestUpdateStatusBeforeReconcile(t *testing.T) {
 	r := &Reconciler{}
 	p := spec.Pipeline{
@@ -45,9 +38,4 @@ func TestMakeContextForPipelineReconcile(t *testing.T) {
 	cancel, ok := pCtx.Value(ctxKeyPipelineExitChCancelFunc).(context.CancelFunc)
 	assert.Equal(t, true, ok)
 	cancel()
-}
-
-func TestMakePipelineWatchedKey(t *testing.T) {
-	key := makePipelineWatchedKey(1)
-	assert.Equal(t, "/devops/pipeline/reconciler/1", key)
 }
