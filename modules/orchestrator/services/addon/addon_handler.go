@@ -832,9 +832,7 @@ func (a *Addon) createAddonResource(addonIns *dbclient.AddonInstance, addonInsRo
 		if addonSpec.SubCategory == apistructs.BasicAddon {
 			// TODO: get vendor from cluster or config
 			if err := a.basicAddonDeploy(addonIns, addonInsRouting, params, addonSpec, addonDice, apistructs.ECIVendorAlibaba); err != nil {
-				if a.Logger != nil {
-					a.pushLog(fmt.Sprintf("error when addon is released, %v", err), params)
-				}
+				a.pushLog(fmt.Sprintf("error when addon is released, %v", err), params)
 				logrus.Errorf("error when addon is released, %v", err)
 				if err := a.FailAndDelete(addonIns); err != nil {
 					return err
@@ -1318,12 +1316,17 @@ func (a *Addon) pushLog(content string, params *apistructs.AddonHandlerCreateIte
 }
 
 func (a *Addon) pushLogCore(content string, params map[string]string) {
-	if a.Logger == nil {
+	deploymentId, ok := params["deploymentId"]
+	if !ok {
 		return
+	}
+	logHelper := &log.DeployLogHelper{
+		DeploymentID: deploymentId,
+		Bdl:          a.bdl,
 	}
 	tags := map[string]string{}
 	if orgName, ok := params["orgName"]; ok {
 		tags[log.TAG_ORG_NAME] = orgName
 	}
-	a.Logger.Log(content, tags)
+	logHelper.Log(content, tags)
 }

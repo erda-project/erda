@@ -16,7 +16,6 @@ package log
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -27,7 +26,7 @@ import (
 )
 
 type DeployLogHelper struct {
-	DeploymentID uint64
+	DeploymentID string
 	Bdl          *bundle.Bundle
 }
 
@@ -39,7 +38,7 @@ func (d *DeployLogHelper) Log(content string, tags map[string]string) {
 	timestamp := time.Now().UnixNano()
 	line := fmt.Sprintf("%s\n", content)
 	lines := []apistructs.LogPushLine{
-		{Source: "deploy", ID: strconv.FormatUint(d.DeploymentID, 10), Content: line, Timestamp: timestamp, Tags: tags},
+		{Source: "deploy", ID: d.DeploymentID, Content: line, Timestamp: timestamp, Tags: tags},
 	}
 	// TODO: buffer
 	if err := d.Bdl.PushLog(&apistructs.LogPushRequest{Lines: lines}); err != nil {
