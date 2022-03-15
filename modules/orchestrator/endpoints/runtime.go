@@ -302,18 +302,28 @@ func (e *Endpoints) CountPRByWorkspace(ctx context.Context, r *http.Request, var
 		resp       = make(map[string]uint64)
 		defaultEnv = []string{"STAGING", "DEV", "PROD", "TEST"}
 	)
+	userId, err := user.GetUserID(r)
+	if err != nil {
+		logrus.Errorf("failed to get user id ,err :%v", err)
+		return nil, err
+	}
+	orgId, err := getOrgID(r)
+	if err != nil {
+		logrus.Errorf("failed to get org id ,err :%v", err)
+		return nil, err
+	}
 	projectIdStr := r.URL.Query().Get("projectId")
+	logrus.Infof("user id %s", userId)
+	logrus.Infof("org id %d", orgId)
 	if projectIdStr == "" {
 		return apierrors.ErrGetRuntime.InvalidParameter("projectId").ToResp(), nil
 	}
-	projectId, err := strconv.ParseUint(projectIdStr, 10, 64)
+	projectId, err = strconv.ParseUint(projectIdStr, 10, 64)
 	if err != nil {
 		return apierrors.ErrGetRuntime.InvalidParameter("projectId").ToResp(), nil
 	}
-
 	appIdStr := r.URL.Query().Get("appId")
 	envParam := r.URL.Query()["workspace"]
-
 	if appIdStr != "" {
 		appId, err := strconv.ParseUint(appIdStr, 10, 64)
 		if err != nil {
@@ -336,21 +346,36 @@ func (e *Endpoints) CountPRByWorkspace(ctx context.Context, r *http.Request, var
 			resp[env] = cnt
 		}
 	} else {
+		apps, err := e.bdl.GetMyApps(string(userId), orgId)
+		if err != nil {
+			logrus.Errorf("get my app failed,%v", err)
+			return nil, err
+		}
+		appIdMap := make(map[uint64]bool)
+		for i := 0; i < len(apps.List); i++ {
+			if apps.List[i].ProjectID == projectId {
+				appIdMap[apps.List[i].ID] = true
+			}
+		}
 		if len(envParam) == 0 || envParam[0] == "" {
 			for i := 0; i < len(defaultEnv); i++ {
-				cnt, err := e.runtime.CountPRByWorkspace(projectId, defaultEnv[i])
-				if err != nil {
-					l.WithError(err).Warnf("count runtimes of workspace %s failed", defaultEnv[i])
+				for aid := range appIdMap {
+					cnt, err := e.runtime.CountARByWorkspace(aid, defaultEnv[i])
+					if err != nil {
+						l.WithError(err).Warnf("count runtimes of workspace %s failed", defaultEnv[i])
+					}
+					resp[defaultEnv[i]] += cnt
 				}
-				resp[defaultEnv[i]] = cnt
 			}
 		} else {
 			env := envParam[0]
-			cnt, err := e.runtime.CountPRByWorkspace(projectId, env)
-			if err != nil {
-				l.WithError(err).Warnf("count runtimes of workspace %s failed", env)
+			for aid := range appIdMap {
+				cnt, err := e.runtime.CountPRByWorkspace(aid, env)
+				if err != nil {
+					l.WithError(err).Warnf("count runtimes of workspace %s failed", env)
+				}
+				resp[env] += cnt
 			}
-			resp[env] = cnt
 		}
 	}
 	return httpserver.OkResp(resp)
