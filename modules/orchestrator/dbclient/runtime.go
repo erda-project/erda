@@ -53,6 +53,7 @@ type Runtime struct {
 	DeploymentOrderId   string
 	ReleaseVersion      string
 	LegacyStatus        string `gorm:"column:status"`
+	FileToken           string
 	Deployed            bool
 	Deleting            bool `gorm:"-"` // TODO: after legacyStatus removed, we use deleting instead
 	Version             string

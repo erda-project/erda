@@ -1127,6 +1127,12 @@ func (r *Runtime) Delete(operator user.ID, orgID uint64, runtimeID uint64) (*api
 		// already marked
 		return dbclient.ConvertRuntimeDTO(runtime, app), nil
 	}
+	if runtime.FileToken != "" {
+		if _, err = r.bdl.InvalidateOAuth2Token(apistructs.OAuth2TokenInvalidateRequest{AccessToken: runtime.FileToken}); err != nil {
+			logrus.Errorf("failed to invalidate openapi oauth2 token of runtime %v, token: %v, err: %v",
+				runtime.ID, runtime.FileToken, err)
+		}
+	}
 	// set status to DELETING
 	runtime.LegacyStatus = dbclient.LegacyStatusDeleting
 	if err := r.db.UpdateRuntime(runtime); err != nil {
