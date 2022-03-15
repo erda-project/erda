@@ -139,6 +139,12 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 	if req.Creator != "" {
 		req.UserID = req.Creator
 	}
+
+	if req.Type == apistructs.IssueTypeBug || req.Type == apistructs.IssueTypeTask {
+		if err := svc.issueTimeIterationValidator(req.PlanFinishedAt.Value(), req.IterationID); err != nil {
+			return nil, apierrors.ErrCreateIssue.InvalidParameter(err)
+		}
+	}
 	// 初始状态为排序级最高的状态
 	initState, err := svc.db.GetIssuesStatesByProjectID(req.ProjectID, req.Type)
 	if err != nil {
@@ -553,10 +559,20 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 			}
 		}
 	}
+	if req.IterationID != nil {
+		if err := svc.issueStateIterationValidator(issueModel.State, issueModel.IterationID); err != nil {
+			return apierrors.ErrUpdateIssue.InvalidParameter(err)
+		}
+	}
 	canUpdateFields := issueModel.GetCanUpdateFields()
 	// 请求传入的需要更新的字段
 	changedFields := req.GetChangedFields(canUpdateFields["man_hour"].(string))
 	if !req.PlanFinishedAt.IsEmpty() {
+		if issueModel.Type == apistructs.IssueTypeBug || issueModel.Type == apistructs.IssueTypeTask {
+			if err := svc.issueTimeIterationValidator(req.PlanFinishedAt.Value(), issueModel.IterationID); err != nil {
+				return apierrors.ErrUpdateIssue.InvalidParameter(err)
+			}
+		}
 		// change plan finished at, update exipry status
 		now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
 		changedFields["expiry_status"] = dao.GetExpiryStatus(req.PlanFinishedAt.Time(), now)
