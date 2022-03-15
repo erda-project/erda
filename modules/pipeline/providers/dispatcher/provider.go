@@ -53,12 +53,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Run(ctx context.Context) error {
 	// just register handler, and leader-worker provider will handle properly
-	p.LW.RegisterListener(&leaderworker.DefaultListener{
+	p.LW.RegisterLeaderListener(&leaderworker.DefaultListener{
 		BeforeExecOnLeaderFunc: p.initConsistentUntilSuccess,
 	})
 	p.LW.OnLeader(p.continueDispatcher)
-	p.LW.LeaderHandlerOnWorkerAdd(p.onWorkerAdd)
-	p.LW.LeaderHandlerOnWorkerDelete(p.onWorkerDelete)
+	p.LW.LeaderHookOnWorkerAdd(p.onWorkerAdd)
+	p.LW.LeaderHookOnWorkerDelete(p.onWorkerDelete)
 	return nil
 }
 
