@@ -16,11 +16,9 @@ package cmd
 
 import (
 	"fmt"
-	"strconv"
 
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/utils"
 )
 
@@ -29,64 +27,27 @@ var CONFIGUPDATE = command.Command{
 	ParentName: "CONFIG",
 	ShortHelp:  "update project workspace config",
 	Example: `
-  $ erda-cli config update ECI=disable --orgName xxx --projectName yyy --workspace DEV
+  $ erda-cli config update ECI=disable --org xxx --project yyy --workspace DEV
 `,
 	Args: []command.Arg{
 		command.StringArg{}.Name("feature"),
 	},
 	Flags: []command.Flag{
-		command.StringFlag{Name: "orgName", Doc: "[required]which org the project belongs", DefaultValue: ""},
-		command.StringFlag{Name: "projectName", Doc: "[required]which project's feature to delete", DefaultValue: ""},
+		command.StringFlag{Name: "org", Doc: "[required]which org the project belongs", DefaultValue: ""},
+		command.StringFlag{Name: "project", Doc: "[required]which project's feature to delete", DefaultValue: ""},
 		command.StringFlag{Name: "workspace", Doc: "[optional]which workspace's feature to delete", DefaultValue: ""},
 	},
 	Run: RunFeaturesUpdate,
 }
 
-func RunFeaturesUpdate(ctx *command.Context, feature, orgName, projectName, workspace string) error {
-	var resp apistructs.ProjectWorkSpaceAbilityResponse
-
-	if projectName == "" || workspace == "" || orgName == "" {
+func RunFeaturesUpdate(ctx *command.Context, feature, org, project, workspace string) error {
+	if project == "" || workspace == "" || org == "" {
 		return fmt.Errorf(
-			utils.FormatErrMsg("fconfig update", "failed to update config, one of the flags [orgName, projectName, workspace] not set", true))
+			utils.FormatErrMsg("config update", "failed to update config, one of the flags [org, project, workspace] not set", true))
 	}
 
-	uop, err := GetUserOrgProjID(ctx, orgName, projectName)
-	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("config update", "failed to update config, can not get orgID or userID or projectID: "+err.Error(), true))
-	}
-
-	prjId, _ := strconv.ParseUint(uop.ProjectId, 10, 64)
-	abilities, err := ParseProjectWorkspaceFeatures(feature)
-	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("config update", fmt.Sprintf("failed to update config, parse config list failed: %v", err), true))
-	}
-
-	req := apistructs.ProjectWorkSpaceAbility{
-		ProjectID: prjId,
-		Workspace: workspace,
-		Abilities: abilities,
-	}
-
-	response, err := ctx.Put().Path("/api/project-workspace-abilities").
-		Header(httputil.OrgHeader, uop.OrgId).
-		JSONBody(req).Do().JSON(&resp)
-	if err != nil {
-		return fmt.Errorf(
-			utils.FormatErrMsg("config update", "failed to request ("+err.Error()+")", false))
-	}
-
-	if !response.IsOK() {
-		return fmt.Errorf(utils.FormatErrMsg("config update",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
-	}
-
-	if !resp.Success {
-		return fmt.Errorf(utils.FormatErrMsg("config update",
-			fmt.Sprintf("failed to request, error code: %s, error message: %s",
-				resp.Error.Code, resp.Error.Msg), false))
+	if err := common.UpdateProjectWorkspaceConfigs(ctx, feature, org, project, workspace); err != nil {
+		return err
 	}
 
 	ctx.Succ("config update success\n")

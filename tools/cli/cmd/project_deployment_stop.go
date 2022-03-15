@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -33,6 +32,7 @@ const (
 	PROJECT_DEPLOYMENT_ACTION_START string = "start"
 	RUNTIME_STOP_WAITTING_DELAY     int    = 1
 	ADDONS_RESTART_WAITTING_DELAY   int    = 3
+	PAGE_SIZE                       uint64 = 1000
 )
 
 var PROJECTDEPLOYMENTSTOP = command.Command{
@@ -40,11 +40,11 @@ var PROJECTDEPLOYMENTSTOP = command.Command{
 	ParentName: "PROJECTDEPLOYMENT",
 	ShortHelp:  "stop project's runtimes and addons",
 	Example: `
-  $ erda-cli project-deployment stop --orgName xxx  --projectName yyy --workspace DEV
+  $ erda-cli project-deployment stop --org xxx  --project yyy --workspace DEV
 `,
 	Flags: []command.Flag{
-		command.StringFlag{Name: "orgName", Doc: "[required] the org name the project belongs to", DefaultValue: ""},
-		command.StringFlag{Name: "projectName", Doc: "[required] which project's runtimes to stop", DefaultValue: ""},
+		command.StringFlag{Name: "org", Doc: "[required] the org name the project belongs to", DefaultValue: ""},
+		command.StringFlag{Name: "project", Doc: "[required] which project's runtimes to stop", DefaultValue: ""},
 		command.StringFlag{Name: "workspace", Doc: "[required] which workspace's runtimes to stop", DefaultValue: ""},
 	},
 	Run: RunStopProjectInWorkspace,
@@ -54,42 +54,6 @@ type GetApplicationRuntimesResponse struct {
 	apistructs.Header
 	Data []*bundle.GetApplicationRuntimesDataEle
 }
-
-/*
-type GetApplicationRuntimesDataEle struct {
-	ID                    uint64                                          `json:"id"`
-	Name                  string                                          `json:"name"`
-	ClusterID             uint64                                          `json:"clusterId"`
-	ClusterName           string                                          `json:"clusterName"`
-	ClusterType           string                                          `json:"clusterType"`
-	CreatedAt             time.Time                                       `json:"createdAt"`
-	DeleteStatus          string                                          `json:"deleteStatus"`
-	DeployStatus          string                                          `json:"deployStatus"`
-	Errors                interface{}                                     `json:"errors"`
-	Extra                 *GetApplicationRuntimesDataEleExtra             `json:"extra"`
-	LastMessage           interface{}                                     `json:"lastMessage"`
-	LastOperateTime       time.Time                                       `json:"lastOperateTime"`
-	LastOperator          string                                          `json:"lastOperator"`
-	LastOperatorAvatar    string                                          `json:"lastOperatorAvatar"`
-	LastOperatorName      string                                          `json:"lastOperatorName"`
-	LastOperatorId        uint64                                          `json:"lastOperatorId"`
-	ProjectID             uint64                                          `json:"projectId"`
-	ReleaseID             string                                          `json:"releaseId"`
-	ServiceGroupName      string                                          `json:"serviceGroupName"`
-	ServiceGroupNamespace string                                          `json:"serviceGroupNamespace"`
-	Services              map[string]*apistructs.RuntimeInspectServiceDTO `json:"services"`
-	Source                string                                          `json:"source"`
-	Status                string                                          `json:"status"`
-	TimeCreated           time.Time                                       `json:"timeCreated"`
-	UpdatedAt             time.Time                                       `json:"updatedAt"`
-	Creator               string                                          `json:"creator"`
-	ApplicationID         uint64                                          `json:"applicationId"`
-	DeploymentOrderName   string                                          `json:"deploymentOrderName"`
-	ReleaseVersion        string                                          `json:"releaseVersion"`
-	RawStatus             string                                          `json:"rawStatus"`
-	RawDeploymentStatus   string                                          `json:"rawDeploymentStatus"`
-}
-*/
 
 type GetApplicationRuntimesDataEleExtra struct {
 	ApplicationID uint64
@@ -105,13 +69,13 @@ type PDParameters struct {
 	action    string
 }
 
-func RunStopProjectInWorkspace(ctx *command.Context, orgName, projectName, workspace string) error {
-	if projectName == "" || workspace == "" || orgName == "" {
+func RunStopProjectInWorkspace(ctx *command.Context, org, project, workspace string) error {
+	if project == "" || workspace == "" || org == "" {
 		return fmt.Errorf(
-			utils.FormatErrMsg("project-deployment stop", "failed to stop project deployments, one of the flags [orgName, projectName, workspace] not set", true))
+			utils.FormatErrMsg("project-deployment stop", "failed to stop project deployments, one of the flags [org, project, workspace] not set", true))
 	}
 
-	uop, err := GetUserOrgProjID(ctx, orgName, projectName)
+	uop, err := common.GetUserOrgProjID(ctx, org, project)
 	if err != nil {
 		return fmt.Errorf(
 			utils.FormatErrMsg("project-deployment stop", "failed to stop project deployments, can not get orgID or userID or projectID: "+err.Error(), true))
@@ -148,7 +112,7 @@ func RunStopProjectInWorkspace(ctx *command.Context, orgName, projectName, works
 			}
 		}
 		if len(runtimeIds) == 0 {
-			ctx.Info("No runtimes found for project %s can stop\n", projectName)
+			ctx.Info("No runtimes found for project %s can stop\n", project)
 		}
 
 		if len(runtimeIds) > 0 {
@@ -161,8 +125,10 @@ func RunStopProjectInWorkspace(ctx *command.Context, orgName, projectName, works
 			ctx.Info("Waitting %d minutes for project's runtimes to Terminating\n", RUNTIME_STOP_WAITTING_DELAY)
 			tick := time.Tick(1 * time.Second)
 			for waits := RUNTIME_STOP_WAITTING_DELAY * 60; waits > 0; waits-- {
-				fmt.Printf("\r%3d", waits)
-				<-tick
+				select {
+				case <-tick:
+					fmt.Printf("\r%3d", waits)
+				}
 			}
 
 			err = waitProjectRuntimesComplete(appIds, ctx, params)
@@ -286,7 +252,7 @@ func GetProjectApplicationIds(ctx *command.Context, params PDParameters) ([]stri
 	response, err := ctx.Get().Path(fmt.Sprintf("/api/applications")).
 		Header(httputil.OrgHeader, params.orgId).
 		Param("projectId", params.projectId).
-		Param("pageSize", "1000").
+		Param("pageSize", strconv.FormatUint(PAGE_SIZE, 10)).
 		Param("pageNo", "1").
 		Do().JSON(&listResp)
 	if err != nil {
@@ -302,6 +268,27 @@ func GetProjectApplicationIds(ctx *command.Context, params PDParameters) ([]stri
 	appIds := make([]string, 0)
 	for _, app := range listResp.Data.List {
 		appIds = append(appIds, strconv.FormatUint(app.ID, 10))
+	}
+
+	for page := 2; listResp.Data.Total > int(PAGE_SIZE)*(page-1); page++ {
+		response, err := ctx.Get().Path(fmt.Sprintf("/api/applications")).
+			Header(httputil.OrgHeader, params.orgId).
+			Param("projectId", params.projectId).
+			Param("pageSize", strconv.FormatUint(PAGE_SIZE, 10)).
+			Param("pageNo", strconv.FormatInt(int64(page), 10)).
+			Do().JSON(&listResp)
+		if err != nil {
+			return nil, fmt.Errorf(
+				utils.FormatErrMsg("project-deployment stop", "failed to get applications ("+err.Error()+")", false))
+		}
+		if !response.IsOK() || !listResp.Success {
+			return nil, fmt.Errorf(utils.FormatErrMsg("project-deployment stop",
+				fmt.Sprintf("failed to get applications, status-code: %d, content-type: %s, raw bod: %s",
+					response.StatusCode(), response.ResponseHeader("Content-Type"), string(response.Body())), false))
+		}
+		for _, app := range listResp.Data.List {
+			appIds = append(appIds, strconv.FormatUint(app.ID, 10))
+		}
 	}
 
 	return appIds, nil
@@ -505,49 +492,4 @@ func addonCanStopOrStart(ctx *command.Context, addon apistructs.AddonFetchRespon
 	}
 
 	return true
-}
-
-type UserOrgProj struct {
-	UserId    string
-	OrgId     string
-	ProjectId string
-}
-
-// GetUserOrgProjID get UserId,ProjectId,OrgID info
-func GetUserOrgProjID(ctx *command.Context, orgName, projectName string) (UserOrgProj, error) {
-	var uop UserOrgProj
-	var userId string
-	var orgId, projectId uint64
-
-	_, orgId, err := getOrgID(ctx, orgName)
-	if err != nil {
-		return uop, err
-	}
-
-	if sessionInfo, ok := ctx.Sessions[ctx.CurrentOpenApiHost]; ok {
-		userId = sessionInfo.ID
-	}
-
-	if userId == "" || orgId <= 0 {
-		return uop, errors.New("get invalid orgID [" + strconv.FormatUint(orgId, 10) + "] or userID [" + userId + "]")
-	}
-
-	projs, err := common.GetProjectList(ctx, strconv.FormatUint(orgId, 10))
-	if err != nil {
-		return uop, err
-	}
-	for _, proj := range projs {
-		if proj.Name == projectName {
-			projectId = proj.ID
-		}
-	}
-
-	if projectId <= 0 {
-		return uop, errors.New("get invalid projectID [" + strconv.FormatUint(projectId, 10) + "]")
-	}
-	uop.ProjectId = strconv.FormatUint(projectId, 10)
-	uop.UserId = userId
-	uop.OrgId = strconv.FormatUint(orgId, 10)
-
-	return uop, nil
 }

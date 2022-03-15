@@ -73,7 +73,7 @@ func Clone(ctx *command.Context, ustr string, cloneApps bool) error {
 		return errors.Errorf("Invalid erda url.")
 	}
 
-	org, orgID, err = getOrgID(ctx, org)
+	org, orgID, err = common.GetOrgID(ctx, org)
 	if err != nil {
 		return err
 	}
@@ -204,41 +204,4 @@ func cloneApplication(pInfo *command.ProjectInfo, a apistructs.ApplicationDTO, r
 	}
 
 	return nil
-}
-
-func getOrgID(ctx *command.Context, org string) (string, uint64, error) {
-	var orgID uint64
-	if org != "" {
-		o, err := common.GetOrgDetail(ctx, org)
-		if err != nil {
-			return org, orgID, err
-		}
-		orgID = o.ID
-	}
-
-	if org == "" && ctx.CurrentOrg.Name == "" {
-		return org, orgID, errors.New("Invalid organization name. You may clone a project first.")
-	}
-
-	if org == "" && ctx.CurrentOrg.Name != "" {
-		org = ctx.CurrentOrg.Name
-	}
-
-	if orgID <= 0 && ctx.CurrentOrg.ID <= 0 && org != "" {
-		o, err := common.GetOrgDetail(ctx, org)
-		if err != nil {
-			return org, orgID, err
-		}
-		ctx.CurrentOrg.ID = o.ID
-		orgID = o.ID
-	}
-	if orgID <= 0 && ctx.CurrentOrg.ID <= 0 {
-		return org, orgID, errors.New("Invalid organization id.")
-	}
-
-	if orgID == 0 && ctx.CurrentOrg.ID > 0 {
-		orgID = ctx.CurrentOrg.ID
-	}
-
-	return org, orgID, nil
 }
