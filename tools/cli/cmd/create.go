@@ -50,7 +50,7 @@ var PROJECTCREATE = command.Command{
 }
 
 func ProjectCreate(ctx *command.Context, org, project, desc, pkg string, waitImport int) error {
-	org, orgID, err := getOrgID(ctx, org)
+	org, orgID, err := common.GetOrgID(ctx, org)
 	if err != nil {
 		return err
 	}
