@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	cachesC = make(chan *Cache, 100)
+	cachesC = make(chan *Cache, 1<<16)
 )
 
 func init() {
@@ -51,15 +51,15 @@ type Cache struct {
 	C       chan interface{}
 	name    string
 	expired time.Duration
-	update  func(interface{}) (interface{}, bool)
+	update  Update
 }
 
 // New returns the *Cache.
 // the function update, if found new *item, returns true, and stores it;
 // else returns false, and delete the key from cache.
-func New(name string, expired time.Duration, update func(interface{}) (interface{}, bool)) *Cache {
+func New(name string, expired time.Duration, update Update) *Cache {
 	return &Cache{
-		C:       make(chan interface{}, 1000),
+		C:       make(chan interface{}, 1<<16),
 		name:    name,
 		expired: expired,
 		update:  update,
@@ -109,3 +109,6 @@ type item struct {
 
 	expired time.Time
 }
+
+// Update retrieves the caching item
+type Update func(interface{}) (interface{}, bool)

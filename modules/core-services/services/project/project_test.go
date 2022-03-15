@@ -346,32 +346,6 @@ func Test_isQuotaChangedOnTheWorkspace(t *testing.T) {
 	}
 }
 
-func Test_getFirstValidOwnerOrLead(t *testing.T) {
-	var members = []model.Member{
-		{
-			UserID: "1",
-			Roles:  []string{"Developer"},
-		}, {
-			UserID: "2",
-			Roles:  []string{"Lead"},
-		}, {
-			UserID: "3",
-			Roles:  []string{"Lead", "Owner"},
-		}, {
-			UserID: "4",
-			Roles:  []string{"Owner"},
-		},
-	}
-	var member *model.Member
-	hitFirstValidOwnerOrLead(member, members)
-
-	member = new(model.Member)
-	hitFirstValidOwnerOrLead(member, members)
-	if member.UserID != "3" {
-		t.Fatal("hit error")
-	}
-}
-
 func Test_defaultResourceConfig(t *testing.T) {
 	var dto = new(apistructs.ProjectDTO)
 	defaultResourceConfig(dto)
