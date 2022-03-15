@@ -1178,6 +1178,7 @@ type CreateSingleAddonResponse struct {
 type AddonCreateCallBackResponse struct {
 	IsSuccess bool              `json:"isSuccess"`
 	Options   map[string]string `json:"options"`
+	ErrMsg    string            `json:"errMsg"`
 }
 
 // AddonConfigCallBackResponse addon配置回调

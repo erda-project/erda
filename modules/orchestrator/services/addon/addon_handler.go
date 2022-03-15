@@ -1261,6 +1261,7 @@ func (a *Addon) CreateAddonProvider(req *apistructs.AddonProviderRequest, addonN
 		logrus.Errorf("provider response statuscode : %v", r.StatusCode())
 		logrus.Errorf("provider response err : %+v", r)
 		logrus.Errorf("provider response : %+v", resp)
+		a.pushLogCore(fmt.Sprintf("err when deploy addon: %s, err: %s", req.Name, resp.Error.Msg), req.Options)
 		return 0, nil, apierrors.ErrInvoke.InternalError(
 			fmt.Errorf("create provider addon, response fail, code:%v, msg:%v",
 				resp.Error.Code, resp.Error.Msg))
@@ -1313,11 +1314,15 @@ func (a *Addon) FindNeedCreateAddon(params *apistructs.AddonHandlerCreateItem) (
 }
 
 func (a *Addon) pushLog(content string, params *apistructs.AddonHandlerCreateItem) {
+	a.pushLogCore(content, params.Options)
+}
+
+func (a *Addon) pushLogCore(content string, params map[string]string) {
 	if a.Logger == nil {
 		return
 	}
 	tags := map[string]string{}
-	if orgName, ok := params.Options["orgName"]; ok {
+	if orgName, ok := params["orgName"]; ok {
 		tags[log.TAG_ORG_NAME] = orgName
 	}
 	a.Logger.Log(content, tags)

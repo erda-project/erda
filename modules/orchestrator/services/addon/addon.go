@@ -492,6 +492,10 @@ func (a *Addon) AddonProvisionCallback(insId string, response *apistructs.AddonC
 			}
 		}
 	} else {
+		var options map[string]string
+		_ = json.Unmarshal([]byte(addonIns.Options), &options)
+		a.pushLogCore(fmt.Sprintf("err when deploy addon: %s(%s), err: %s", addonIns.Name, addonIns.AddonName, response.ErrMsg), options)
+
 		attachs, err := a.db.GetAttachmentsByInstanceID(insId)
 		if err != nil {
 			return err
