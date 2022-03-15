@@ -315,7 +315,7 @@ func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 				continue
 			}
 			now := time.Now()
-			n, count, err := insertF(create, MaxSampling())
+			n, count, err := insertF(create, MaxSamplingSize())
 			l.WithField("tableName", create.Table.Name.String()).
 				WithField("timeCost", int(time.Now().Sub(now).Seconds())).
 				Infof("collect %d/%d (sampling/total) lines", n, count)
