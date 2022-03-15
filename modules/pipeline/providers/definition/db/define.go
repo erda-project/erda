@@ -125,7 +125,7 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 		engine = engine.Where("d.name LIKE ?", "%"+req.Name+"%")
 	}
 	if req.AccurateName != "" {
-		engine = engine.Where("d.name = ?", req.Name)
+		engine = engine.Where("d.name = ?", req.AccurateName)
 	}
 	if len(req.IdList) != 0 {
 		engine = engine.In("d.id", req.IdList)
@@ -204,6 +204,9 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 	}
 	if req.Name != "" {
 		engine = engine.Where("d.name LIKE ?", "%"+req.Name+"%")
+	}
+	if req.AccurateName != "" {
+		engine = engine.Where("d.name = ?", req.AccurateName)
 	}
 	if len(req.Creator) != 0 {
 		engine = engine.In("d.creator", req.Creator)
