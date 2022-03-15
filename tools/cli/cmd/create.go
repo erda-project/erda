@@ -187,6 +187,7 @@ func readValues(pkg string) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer zipReader.Close()
 
 	valuesFile := "values.yml"
 	if prefix, inDir := zipInDirectory(zipReader); inDir {
