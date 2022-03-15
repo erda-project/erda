@@ -589,11 +589,17 @@ func (h *DefaultDeployHandler) BuildServiceGroupRequest(resourceInfo *ResourceIn
 // wait servicegroup ready and return the latest servicegroup obj with status
 func (h *DefaultDeployHandler) waitServiceGroupReady(req *apistructs.ServiceGroupCreateV2Request) (
 	*apistructs.ServiceGroup, error) {
+
+	var lastStatus apistructs.StatusDesc
 	startTime := time.Now().Unix()
+
 	for time.Now().Unix()-startTime < RuntimeMaxUpTimeoutSeconds {
 		time.Sleep(10 * time.Second)
 
 		serviceGroup, err := h.Bdl.InspectServiceGroup(req.Type, req.ID)
+		if serviceGroup != nil {
+			lastStatus = serviceGroup.StatusDesc
+		}
 		if err != nil {
 			continue
 		}
@@ -603,16 +609,17 @@ func (h *DefaultDeployHandler) waitServiceGroupReady(req *apistructs.ServiceGrou
 		}
 	}
 
-	return nil, fmt.Errorf("wait servicegroup up timeout")
+	return nil, fmt.Errorf("wait servicegroup up timeout, last status: %+v", lastStatus)
 }
 
-func (h *DefaultDeployHandler) Callback(url string, id string, success bool, config map[string]string, options map[string]string) error {
+func (h *DefaultDeployHandler) Callback(url string, id string, success bool, config map[string]string, options map[string]string, errMsg string) error {
 
 	userId := h.GetDiceOperatorId()
 
 	req := struct {
-		IsSuccess bool `json:"isSuccess"`
-	}{IsSuccess: success}
+		IsSuccess bool   `json:"isSuccess"`
+		ErrMsg    string `json:"errMsg"`
+	}{IsSuccess: success, ErrMsg: errMsg}
 
 	h.Log.Infof("about to callback, request:%+v", req)
 

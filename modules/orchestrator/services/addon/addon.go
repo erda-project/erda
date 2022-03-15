@@ -34,7 +34,6 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	i18n2 "github.com/erda-project/erda/modules/orchestrator/i18n"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
-	"github.com/erda-project/erda/modules/orchestrator/services/log"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/crypto/encryption"
@@ -70,7 +69,6 @@ type Addon struct {
 	encrypt  *encryption.EnvEncrypt
 	resource *resource.Resource
 	kms      mysql.KMSWrapper
-	Logger   *log.DeployLogHelper
 }
 
 // Option addon 实例对象配置选项
@@ -492,6 +490,10 @@ func (a *Addon) AddonProvisionCallback(insId string, response *apistructs.AddonC
 			}
 		}
 	} else {
+		var options map[string]string
+		_ = json.Unmarshal([]byte(addonIns.Options), &options)
+		a.pushLogCore(fmt.Sprintf("err when deploy addon: %s(%s), err: %s", addonIns.Name, addonIns.AddonName, response.ErrMsg), options)
+
 		attachs, err := a.db.GetAttachmentsByInstanceID(insId)
 		if err != nil {
 			return err

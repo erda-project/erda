@@ -82,8 +82,7 @@ type DeployFSMContext struct {
 
 // TODO: context should base on deployment service
 func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.EventManager, bdl *bundle.Bundle, a *addon.Addon, m *migration.Migration, encrypt *encryption.EnvEncrypt, resource *resource.Resource, releaseSvc pb.ReleaseServiceServer) *DeployFSMContext {
-	logger := log.DeployLogHelper{DeploymentID: deploymentID, Bdl: bdl}
-	a.Logger = &logger
+	logger := log.DeployLogHelper{DeploymentID: strconv.FormatUint(deploymentID, 10), Bdl: bdl}
 	// prepare the context
 	return &DeployFSMContext{
 		deploymentID: deploymentID,
