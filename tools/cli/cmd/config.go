@@ -12,29 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package project
+package cmd
 
 import (
-	"testing"
-	"time"
+	"github.com/erda-project/erda/tools/cli/command"
 )
 
-func TestNewCache(t *testing.T) {
-	memberC := NewCache(time.Millisecond * 200)
-	for i := 0; i < 50; i++ {
-		member := new(memberCache)
-		memberC.Store(i, &CacheItme{Object: member})
-	}
-
-	time.Sleep(time.Second)
-	value, _ := memberC.Load(1)
-	if isExpired := value.(*CacheItme).IsExpired(); !isExpired {
-		t.Fatal("it should be expired")
-	}
-
-	memberC.Store(1, &CacheItme{Object: new(memberCache)})
-	value, _ = memberC.Load(1)
-	if isExpired := value.(*CacheItme).IsExpired(); isExpired {
-		t.Fatal("it should not be expired")
-	}
+var CONFIG = command.Command{
+	Name:      "config",
+	ShortHelp: "Config Project workspace configurations operation,including set, get, update, delete",
+	Example:   `erda-cli config`,
 }

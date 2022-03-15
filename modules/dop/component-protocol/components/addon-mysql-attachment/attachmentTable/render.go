@@ -198,10 +198,11 @@ func (f *comp) getDatum(ctx context.Context, item *addonmysqlpb.Attachment) map[
 							"projectId": projectID,
 							"appId":     item.AppId,
 							"runtimeId": item.RuntimeId,
+							"workspace": item.Workspace,
 						}
 					}(),
 				},
-				Target: "runtimeDetailRoot",
+				Target: "projectDeployRuntime",
 			},
 			ShowIndex: 2,
 		},

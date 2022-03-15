@@ -485,7 +485,7 @@ func (i *Extension) QueryExtensionVersions(req *apistructs.ExtensionVersionQuery
 	if err != nil {
 		return nil, err
 	}
-	versions, err := i.db.QueryExtensionVersions(req.Name, req.All)
+	versions, err := i.db.QueryExtensionVersions(req)
 	if err != nil {
 		return nil, err
 	}

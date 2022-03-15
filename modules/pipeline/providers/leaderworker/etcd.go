@@ -18,44 +18,9 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/coreos/etcd/clientv3"
-
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
 	"github.com/erda-project/erda/pkg/strutil"
 )
-
-func (p *provider) registerWorker(ctx context.Context, w worker.Worker, typ worker.Type) error {
-	workerBytes, err := w.MarshalJSON()
-	if err != nil {
-		return err
-	}
-
-	// report heartbeat before add
-	if err := p.workerOnceReportHeartbeat(ctx, w); err != nil {
-		return err
-	}
-
-	var ops []clientv3.Op
-	switch typ {
-	case worker.Candidate:
-		ops = append(ops,
-			clientv3.OpPut(p.makeEtcdWorkerKey(w.GetID(), worker.Candidate), string(workerBytes)),
-		)
-	case worker.Official:
-		ops = append(ops,
-			clientv3.OpDelete(p.makeEtcdWorkerKey(w.GetID(), worker.Candidate)),
-			clientv3.OpPut(p.makeEtcdWorkerKey(w.GetID(), worker.Official), string(workerBytes)),
-		)
-	}
-
-	_, err = p.EtcdClient.Txn(ctx).Then(ops...).Commit()
-	if err != nil {
-		p.Log.Errorf("failed to notify worker add, workerID: %s, err: %v", w.GetID(), err)
-		return err
-	}
-
-	return nil
-}
 
 func (p *provider) deleteWorker(ctx context.Context, w worker.Worker) error {
 	key := p.makeEtcdWorkerKey(w.GetID(), w.GetType())
@@ -105,4 +70,23 @@ func (p *provider) makeEtcdWorkerHeartbeatKey(workerID worker.ID) string {
 func (p *provider) getWorkerIDFromEtcdWorkerHeartbeatKey(key string) worker.ID {
 	prefix := p.makeEtcdWorkerHeartbeatKeyPrefix()
 	return worker.ID(strutil.TrimPrefixes(key, prefix))
+}
+
+// see: makeEtcdWorkerTaskDispatchKey
+func (p *provider) getWorkerIDFromIncomingKey(key string) worker.ID {
+	prefix := p.makeEtcdWorkerGeneralDispatchPrefix()
+	if !strutil.HasPrefixes(key, prefix) {
+		return ""
+	}
+	workerIDAndSuffix := strutil.TrimPrefixes(key, prefix)
+	workerIDAndLogicTaskID := strutil.Split(workerIDAndSuffix, "/task/")
+	if len(workerIDAndLogicTaskID) != 2 {
+		return ""
+	}
+	return worker.ID(workerIDAndLogicTaskID[0])
+}
+
+func (p *provider) getWorkerTaskLogicIDFromIncomingKey(workerID worker.ID, key string) worker.LogicTaskID {
+	prefix := p.makeEtcdWorkerLogicTaskListenPrefix(workerID)
+	return worker.LogicTaskID(strutil.TrimPrefixes(key, prefix))
 }

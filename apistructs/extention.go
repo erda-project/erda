@@ -228,7 +228,8 @@ type ExtensionVersionQueryRequest struct {
 	Name       string
 	YamlFormat bool `query:"yamlFormat"`
 	//默认false查询有效版本, true查询所有版本
-	All string `query:"all"`
+	All                string `query:"all"`
+	OrderByVersionDesc bool   `query:"orderByVersionDesc"`
 }
 
 // ExtensionVersionGetResponse Extension详情API返回数据结构

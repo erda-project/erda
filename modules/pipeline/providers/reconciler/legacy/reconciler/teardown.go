@@ -16,7 +16,6 @@ package reconciler
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -28,12 +27,10 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/metrics"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/pkg/loop"
 )
 
 func (r *Reconciler) teardownCurrentReconcile(ctx context.Context, pipelineID uint64) {
 	closePipelineExitChannel(ctx, pipelineID)
-	r.deleteEtcdWatchKey(context.Background(), pipelineID)
 	r.teardownPipelines.Delete(pipelineID)
 }
 
@@ -103,20 +100,4 @@ func closePipelineExitChannel(ctx context.Context, pipelineID uint64) {
 	}
 	exitCh <- struct{}{}
 	close(exitCh)
-}
-
-// deleteEtcdWatchKey delete pipeline corresponding etcd watched key.
-func (r *Reconciler) deleteEtcdWatchKey(ctx context.Context, pipelineID uint64) {
-	rlog.PDebugf(pipelineID, "start delete etcd watch key")
-	defer rlog.PInfof(pipelineID, "end delete etcd watch key")
-
-	etcdKey := makePipelineWatchedKey(pipelineID)
-	_ = loop.New(loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*60)).Do(func() (abort bool, err error) {
-		err = r.js.Remove(ctx, etcdKey, nil)
-		if err != nil {
-			return false, rlog.PErrorAndReturn(pipelineID, fmt.Errorf("failed to delete etcd watch key, err: %v", err))
-		}
-		rlog.PDebugf(pipelineID, "delete etcd watch key success")
-		return true, nil
-	})
 }

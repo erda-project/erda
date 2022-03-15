@@ -113,7 +113,6 @@ func TestAddon_prepareAttachment(t *testing.T) {
 				hc:       tt.fields.hc,
 				encrypt:  tt.fields.encrypt,
 				resource: tt.fields.resource,
-				Logger:   tt.fields.Logger,
 			}
 			if got := a.prepareAttachment(tt.args.addonInsRouting, tt.args.addonAttach); got != tt.want {
 				t.Errorf("prepareAttachment() = %v, want %v", got, tt.want)
@@ -167,7 +166,6 @@ func TestAddon__toOverrideConfigFromMySQLAccount(t *testing.T) {
 				encrypt:  tt.fields.encrypt,
 				resource: tt.fields.resource,
 				kms:      tt.fields.kms,
-				Logger:   tt.fields.Logger,
 			}
 			if err := a._toOverrideConfigFromMySQLAccount(tt.args.config, tt.args.account); (err != nil) != tt.wantErr {
 				t.Errorf("_toOverrideConfigFromMySQLAccount() error = %v, wantErr %v", err, tt.wantErr)
@@ -250,7 +248,6 @@ func TestAddon__prepareAttachment(t *testing.T) {
 				encrypt:  tt.fields.encrypt,
 				resource: tt.fields.resource,
 				kms:      tt.fields.kms,
-				Logger:   tt.fields.Logger,
 			}
 			if got := a._prepareAttachment(tt.args.addonAttach, tt.args.accounts); got != tt.want {
 				t.Errorf("_prepareAttachment() = %v, want %v", got, tt.want)
