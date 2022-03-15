@@ -282,13 +282,16 @@ func (client *DBClient) DeleteExtensionVersion(name, version string) error {
 	return client.Where("name = ? and version =?", name, version).Delete(&ExtensionVersion{}).Error
 }
 
-func (client *DBClient) QueryExtensionVersions(name string, all string) ([]ExtensionVersion, error) {
+func (client *DBClient) QueryExtensionVersions(req *apistructs.ExtensionVersionQueryRequest) ([]ExtensionVersion, error) {
 	var result []ExtensionVersion
 	query := client.Model(&ExtensionVersion{}).
-		Where("name = ?", name)
+		Where("name = ?", req.Name)
 	// 不显式指定all=true,只返回public的数据
-	if all != "true" {
+	if req.All != "true" {
 		query = query.Where("public = ?", true)
+	}
+	if req.OrderByVersionDesc {
+		query = query.Order("version desc")
 	}
 	err := query.Find(&result).Error
 	return result, err

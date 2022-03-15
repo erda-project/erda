@@ -67,9 +67,10 @@ func (s ExtMarketSvc) constructAllActions() error {
 
 func (s *ExtMarketSvc) updateExtension(extension apistructs.Extension) {
 	extensionVersions, err := s.bdl.QueryExtensionVersions(apistructs.ExtensionVersionQueryRequest{
-		Name:       extension.Name,
-		All:        "true",
-		YamlFormat: true,
+		Name:               extension.Name,
+		All:                "true",
+		YamlFormat:         true,
+		OrderByVersionDesc: true,
 	})
 	if err != nil {
 		logrus.Errorf("failed to query extension version, name: %s, err: %v", extension.Name, err)
