@@ -85,15 +85,21 @@ func (db *AlertExpressionDB) DeleteByIDs(ids []uint64) error {
 }
 
 // GetAllAlertExpression
-func (db *AlertExpressionDB) GetAllAlertExpression(pageNo, pageSize int64) ([]*AlertExpression, error) {
+func (db *AlertExpressionDB) GetAllAlertExpression(pageNo, pageSize int64) ([]*AlertExpression, int64, error) {
 	var expressions []*AlertExpression
-	err := db.Where("enable = ?", true).
+	var count int64
+	query := db.Model(&AlertExpression{}).Where("enable = ?", true)
+	err := query.Count(&count).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	err = db.Where("enable = ?", true).
 		Offset((pageNo - 1) * pageSize).Limit(pageSize).
 		Find(&expressions).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return expressions, nil
+	return expressions, count, nil
 }
 
 // QueryRuleCount .
