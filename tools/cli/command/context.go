@@ -77,7 +77,17 @@ func (c *Context) wrapRequest(m func(host string, retry ...httpclient.RetryOptio
 }
 
 func (c *Context) Info(format string, a ...interface{}) {
-	f := "  " + strings.TrimSuffix(format, "\n") + "\n"
+	f := "[INFO] " + strings.TrimSuffix(format, "\n") + "\n"
+	fmt.Printf(f, a...)
+}
+
+func (c *Context) Warn(format string, a ...interface{}) {
+	f := "[WARN] " + strings.TrimSuffix(format, "\n") + "\n"
+	fmt.Printf(f, a...)
+}
+
+func (c *Context) Error(format string, a ...interface{}) {
+	f := "[ERROR] " + strings.TrimSuffix(format, "\n") + "\n"
 	fmt.Printf(f, a...)
 }
 

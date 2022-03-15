@@ -2269,7 +2269,7 @@ func (a *Addon) ListByDiceymlEnvs(diceyml_s string, projectid uint64, workspace 
 // ListByRuntime 根据 runtimeID 获取 addon 列表
 func (a *Addon) ListByRuntime(runtimeID uint64, projectID, workspace string) (*[]apistructs.AddonFetchResponseData, error) {
 	addonRespListFilter := []apistructs.AddonFetchResponseData{}
-	addons, err := a.db.GetAttachMentsByRuntimeID(runtimeID)
+	addons, err := a.db.GetUnDeletableAttachMentsByRuntimeID(runtimeID)
 	if err != nil {
 		return nil, err
 	}

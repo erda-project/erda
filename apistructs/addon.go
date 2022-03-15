@@ -87,6 +87,9 @@ const (
 	AddonDeleted string = "Y"
 	//AddonNotDeleted addon逻辑删除，否
 	AddonNotDeleted string = "N"
+	//AddonScaleDown addon 停止逻辑，表示可以ScaleDown 停止 addon
+	//addon 的 tb_addon_attachment 中 is_deleted 的 中间状态，表示 Runtime 已停止未删除
+	AddonScaleDown string = "S"
 )
 
 // Addon通用配置
