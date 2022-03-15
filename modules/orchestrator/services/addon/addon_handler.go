@@ -1259,7 +1259,7 @@ func (a *Addon) CreateAddonProvider(req *apistructs.AddonProviderRequest, addonN
 		logrus.Errorf("provider response statuscode : %v", r.StatusCode())
 		logrus.Errorf("provider response err : %+v", r)
 		logrus.Errorf("provider response : %+v", resp)
-		a.pushLogCore(fmt.Sprintf("err when deploy addon: %s, err: %s", req.Name, resp.Error.Msg), req.Options)
+		a.pushLogCore(fmt.Sprintf("err when deploy addon: %s, err: %s", addonName, resp.Error.Msg), req.Options)
 		return 0, nil, apierrors.ErrInvoke.InternalError(
 			fmt.Errorf("create provider addon, response fail, code:%v, msg:%v",
 				resp.Error.Code, resp.Error.Msg))
