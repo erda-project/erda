@@ -41,7 +41,6 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/mbox"
 	"github.com/erda-project/erda/modules/core-services/services/member"
 	"github.com/erda-project/erda/modules/core-services/services/notice"
-	"github.com/erda-project/erda/modules/core-services/services/notify"
 	"github.com/erda-project/erda/modules/core-services/services/org"
 	"github.com/erda-project/erda/modules/core-services/services/permission"
 	"github.com/erda-project/erda/modules/core-services/services/project"
@@ -207,9 +206,9 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	mr := manual_review.New(
 		manual_review.WithDBClient(db),
 	)
-	notifyService := notify.New(
-		notify.WithDBClient(db),
-	)
+	//notifyService := notify.New(
+	//	notify.WithDBClient(db),
+	//)
 
 	// init activity service
 	a := activity.New(
@@ -289,7 +288,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithMember(m),
 		endpoints.WithActivity(a),
 		endpoints.WithPermission(pm),
-		endpoints.WithNotify(notifyService),
+		//endpoints.WithNotify(notifyService),
 		endpoints.WithLicense(license),
 		endpoints.WithLabel(l),
 		endpoints.WithMBox(mboxService),

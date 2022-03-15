@@ -25,6 +25,7 @@ require (
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
+	github.com/bketelsen/crypt v0.0.4 // indirect
 	github.com/bluele/gcache v0.0.2
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/bugaolengdeyuxiaoer/go-ansiterm v0.0.0-20211110022506-7e621b9b6908
@@ -42,6 +43,7 @@ require (
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
 	github.com/erda-project/erda-infra v0.0.0-20220223015542-f8c153b37cff
+	github.com/erda-project/erda-infra/tools v0.0.0-20220302072443-14a364b0cd52 // indirect
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/erda-project/erda-sourcecov v0.1.0
@@ -49,9 +51,9 @@ require (
 	github.com/extrame/xls v0.0.1
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
-	github.com/fatih/color v1.10.0
+	github.com/fatih/color v1.13.0
 	github.com/fntlnz/mountinfo v0.0.0-20171106231217-40cb42681fad
-	github.com/fsnotify/fsnotify v1.4.9
+	github.com/fsnotify/fsnotify v1.5.1
 	github.com/getkin/kin-openapi v0.49.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/gin-gonic/gin v1.7.0
@@ -90,7 +92,7 @@ require (
 	github.com/jinzhu/now v1.1.2
 	github.com/jmespath/go-jmespath v0.4.0
 	github.com/jonboulle/clockwork v0.2.2 // indirect
-	github.com/json-iterator/go v1.1.11
+	github.com/json-iterator/go v1.1.12
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.3.0
 	github.com/lestrrat/go-envload v0.0.0-20180220120943-6ed08b54a570 // indirect
@@ -127,7 +129,7 @@ require (
 	github.com/recallsong/go-utils v1.1.2-0.20210826100715-fce05eefa294
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron v1.2.0
-	github.com/russross/blackfriday/v2 v2.0.1
+	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f
 	github.com/satori/go.uuid v1.2.0
 	github.com/scylladb/gocqlx v1.5.0
@@ -138,8 +140,8 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/sony/sonyflake v1.0.0
 	github.com/spf13/afero v1.6.0
-	github.com/spf13/cast v1.3.1
-	github.com/spf13/cobra v1.2.1
+	github.com/spf13/cast v1.4.1
+	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx v1.0.5
