@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/auto-test-plan-list/i18n"
+	"github.com/erda-project/erda/modules/dop/component-protocol/components/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 )
 
@@ -40,10 +41,11 @@ type ComponentFilter struct {
 }
 
 type State struct {
-	Archive   *bool    `json:"archive"`
-	Name      string   `json:"name"`
-	Iteration []uint64 `json:"iteration"`
-	Values    Value    `json:"values,omitempty"`
+	Archive              *bool    `json:"archive"`
+	Name                 string   `json:"name"`
+	Iteration            []uint64 `json:"iteration"`
+	Values               Value    `json:"values,omitempty"`
+	Base64UrlQueryParams string   `json:"filter__urlQuery,omitempty"`
 }
 
 type Value struct {
@@ -119,6 +121,11 @@ func (f *ComponentFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptyp
 }
 
 func (f *ComponentFilter) AfterHandleOp(sdk *cptype.SDK) {
+	query, err := common.GenerateUrlQueryParams(f.State.Values)
+	if err != nil {
+		panic(err)
+	}
+	f.State.Base64UrlQueryParams = query
 	cputil.MustObjJSONTransfer(&f.State, &f.StdStatePtr)
 }
 
