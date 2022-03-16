@@ -109,7 +109,7 @@ func (r *Reconciler) internalReconcileOnePipeline(ctx context.Context, pipelineI
 			tr := taskrun.New(ctx, task,
 				ctx.Value(ctxKeyPipelineExitCh).(chan struct{}), ctx.Value(ctxKeyPipelineExitChCancelFunc).(context.CancelFunc),
 				executor, &p, r.bdl, r.dbClient, r.js,
-				r.actionAgentSvc, r.extMarketSvc)
+				r.actionAgentSvc, r.extMarketSvc, r.clusterInfo)
 
 			// tear down task
 			defer func() {

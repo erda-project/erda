@@ -132,7 +132,7 @@ func (p *provider) do() error {
 
 	// init services
 	pipelineSvc := pipelinesvc.New(appSvc, crondSvc, actionAgentSvc, extMarketSvc, p.CronService,
-		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl)
+		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo)
 	pipelineSvc.WithCmsService(p.CmsService)
 
 	// todo resolve cycle import here through better module architecture
@@ -146,7 +146,7 @@ func (p *provider) do() error {
 	// init CallbackActionFunc
 	pipelinefunc.CallbackActionFunc = pipelineSvc.DealPipelineCallbackOfAction
 
-	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun, p.DBGC)
+	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun, p.DBGC, p.ClusterInfo)
 	if err != nil {
 		return fmt.Errorf("failed to init reconciler, err: %v", err)
 	}
@@ -178,6 +178,7 @@ func (p *provider) do() error {
 		endpoints.WithQueueManage(queueManage),
 		endpoints.WithQueueManager(p.QueueManager),
 		endpoints.WithEngine(p.Engine),
+		endpoints.WithClusterInfo(p.ClusterInfo),
 	)
 
 	p.CronService.WithPipelineSvc(crondSvc)

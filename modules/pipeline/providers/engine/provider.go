@@ -22,16 +22,14 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
-	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor"
-	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/dispatcher"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 type config struct {
@@ -53,6 +51,7 @@ type provider struct {
 	Dispatcher   dispatcher.Interface
 	Reconciler   reconciler.Interface
 	LW           leaderworker.Interface
+	ClusterInfo  clusterinfo.Interface
 
 	// manual
 	dbClient          *dbclient.Client
@@ -63,10 +62,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	// dbclient
 	p.dbClient = &dbclient.Client{Engine: p.MySQL.DB()}
 
-	// cluster info
-	// TODO setup inside clusterinfo provider later
-	p.initClusterInfoUntilSuccess(ctx)
-
 	// action executor manager
 	_, cfgChan, err := p.dbClient.ListPipelineConfigsOfActionExecutor()
 	if err != nil {
@@ -74,28 +69,11 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	mgr := actionexecutor.GetManager()
 	p.actionExecutorMgr = mgr
-	if err := mgr.Initialize(ctx, cfgChan); err != nil {
+	if err := mgr.Initialize(ctx, cfgChan, p.ClusterInfo); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (p *provider) initClusterInfoUntilSuccess(ctx context.Context) {
-	bdl := bundle.New(bundle.WithAllAvailableClients(), bundle.WithHTTPClient(httpclient.New(httpclient.WithTimeout(time.Second, time.Second))))
-	clusterinfo.Initialize(bdl)
-
-	// continuous register cluster hook
-	// pipeline depends on eventbox, so if eventbox is under rebooting, pipeline will failed to register cluster hook
-	for {
-		err := clusterinfo.RegisterClusterHook()
-		if err == nil {
-			break
-		}
-		p.Log.Infof("failed to register cluster hook(auto retry), err: %v", err)
-		time.Sleep(p.Cfg.RetryInterval)
-		continue
-	}
 }
 
 func (p *provider) Run(ctx context.Context) error {
