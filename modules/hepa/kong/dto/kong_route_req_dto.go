@@ -14,6 +14,10 @@
 
 package dto
 
+import (
+	"strings"
+)
+
 type Service struct {
 	// 绑定服务id，必填
 	Id string `json:"id"`
@@ -58,7 +62,7 @@ type KongRouteReqDto struct {
 	// path /s, route path /r and request path /re, the concatenated path will be /sre.
 	//
 	// See more https://docs.konghq.com/enterprise/2.2.x/admin-api/#path-handling-algorithms
-	PathHandling *string `json:"path_handling"`
+	PathHandling *string `json:"path_handling,omitempty"`
 }
 
 func NewKongRouteReqDto() *KongRouteReqDto {
@@ -74,4 +78,23 @@ func NewKongRouteReqDto() *KongRouteReqDto {
 func (dto KongRouteReqDto) IsEmpty() bool {
 	return dto.Service == nil || len(dto.Service.Id) == 0 ||
 		(len(dto.Methods) == 0 && len(dto.Hosts) == 0 && len(dto.Paths) == 0)
+}
+
+func (dto *KongRouteReqDto) Adjust(opts ...Option) {
+	for _, opt := range opts {
+		opt(dto)
+	}
+}
+
+type Option func(dto *KongRouteReqDto)
+
+func Versioning(i interface{ GetVersion() (string, error) }) Option {
+	return func(dto *KongRouteReqDto) {
+		if version, err := i.GetVersion(); err == nil && strings.HasPrefix(version, "2.") {
+			pathHandling := "v1"
+			dto.PathHandling = &pathHandling
+			return
+		}
+		dto.PathHandling = nil
+	}
 }

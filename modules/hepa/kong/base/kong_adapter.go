@@ -98,6 +98,7 @@ func (impl *KongAdapterImpl) UpdateRoute(req *KongRouteReqDto) (*KongRouteRespDt
 	if req == nil || req.RouteId == "" {
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
+	req.Adjust(Versioning(impl))
 	url := impl.KongAddr + RouteRoot + req.RouteId
 	code, body, err := util.DoCommonRequest(impl.Client, "PATCH", url, req)
 	if err != nil {
@@ -126,6 +127,7 @@ func (impl *KongAdapterImpl) CreateOrUpdateRoute(req *KongRouteReqDto) (*KongRou
 	if req == nil {
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
+	req.Adjust(Versioning(impl))
 	url := impl.KongAddr + RouteRoot
 	method := "POST"
 	if len(req.RouteId) != 0 {
