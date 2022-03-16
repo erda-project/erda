@@ -135,6 +135,9 @@ func (t *PackageZip) readProject() error {
 	}
 
 	for _, app := range t.ProjectPackage.Project.Applications {
+		if app.ZipRepo == "" {
+			continue
+		}
 		filename := path.Join(t.TmpDir, app.ZipRepo)
 		err = t.readZipfile(app.ZipRepo, filename)
 		if err != nil {
