@@ -22,7 +22,6 @@ import (
 
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dicehub/dbclient"
-	"github.com/erda-project/erda/modules/dicehub/service/extension"
 	"github.com/erda-project/erda/modules/dicehub/service/publish_item"
 	"github.com/erda-project/erda/modules/dicehub/service/release"
 	"github.com/erda-project/erda/modules/dicehub/service/release_rule"
@@ -35,7 +34,6 @@ type Endpoints struct {
 	db                 *dbclient.DBClient
 	bdl                *bundle.Bundle
 	release            *release.Release
-	extension          *extension.Extension
 	publishItem        *publish_item.PublishItem
 	pipelineTemplate   *template.PipelineTemplate
 	releaseRule        *release_rule.ReleaseRule
@@ -77,13 +75,6 @@ func WithRelease(release *release.Release) Option {
 }
 
 // WithExtension 配置 extension service
-func WithExtension(extension *extension.Extension) Option {
-	return func(e *Endpoints) {
-		e.extension = extension
-	}
-}
-
-// WithExtension 配置 extension service
 func WithPublishItem(publishItem *publish_item.PublishItem) Option {
 	return func(e *Endpoints) {
 		e.publishItem = publishItem
@@ -121,15 +112,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 
 		// Release相关
 		{Path: "/api/releases/{releaseId}/actions/download", Method: http.MethodGet, WriterHandler: e.DownloadRelease},
-
-		//插件市场
-		{Path: "/api/extensions/actions/search", Method: http.MethodPost, Handler: e.SearchExtensions},
-		{Path: "/api/extensions", Method: http.MethodPost, Handler: e.CreateExtension},
-		{Path: "/api/extensions", Method: http.MethodGet, Handler: e.QueryExtensions},
-		{Path: "/api/extensions/actions/query-menu", Method: http.MethodGet, Handler: e.QueryExtensionsMenu},
-		{Path: "/api/extensions/{name}", Method: http.MethodPost, Handler: e.CreateExtensionVersion},
-		{Path: "/api/extensions/{name}/{version}", Method: http.MethodGet, Handler: e.GetExtensionVersion},
-		{Path: "/api/extensions/{name}", Method: http.MethodGet, Handler: e.QueryExtensionVersions},
 
 		//模板市场
 		//{Path: "/api/pipeline-templates/{scopeType}/{scopeId}", Method: http.MethodPost, Handler: e.CreatePipelineTemplate},
