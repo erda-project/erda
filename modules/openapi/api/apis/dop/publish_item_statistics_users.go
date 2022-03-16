@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package dop
 
 import "github.com/erda-project/erda/modules/openapi/api/apis"
 
-var DICEHUB_PUBLISH_ITEM_ERR_EFFACTS = apis.ApiSpec{
-	Path:        "/api/publish-items/<publishItemId>/err/effacts",
-	BackendPath: "/api/publish-items/<publishItemId>/err/effacts",
-	Host:        "dicehub.marathon.l4lb.thisdcos.directory:10000",
+var PUBLISH_ITEM_USERS = apis.ApiSpec{
+	Path:        "/api/publish-items/<publishItemId>/statistics/users",
+	BackendPath: "/api/publish-items/<publishItemId>/statistics/users",
+	Host:        "dop.marathon.l4lb.thisdcos.directory:9527",
 	Scheme:      "http",
 	Method:      "GET",
 	IsOpenAPI:   true,
 	CheckLogin:  true,
 	CheckToken:  true,
-	Doc:         `summary: 错误统计，影响用户占比`,
+	Doc:         `summary: 统计大盘，累计用户`,
 }

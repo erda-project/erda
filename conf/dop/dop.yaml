@@ -77,3 +77,6 @@ erda.dop.issue.stream:
 
 # component-protocol framework
 component-protocol:
+
+metricq-client:
+  endpoint: "http://${MONITOR_ADDR:monitor.default.svc.cluster.local:7096}"
