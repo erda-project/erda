@@ -102,7 +102,7 @@ func (r *Reconciler) internalReconcileOnePipeline(ctx context.Context, pipelineI
 				return
 			}
 
-			executor, err := actionexecutor.GetManager().Get(types.Name(task.Extra.ExecutorName))
+			executor, err := actionexecutor.GetManager().Get(types.Name(task.GetExecutorName()))
 			if err != nil {
 				return
 			}

@@ -19,17 +19,21 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/logic"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
-var Kind = types.Kind("k8sspark")
+var Kind = types.Kind(spec.PipelineTaskExecutorKindK8sSpark)
 
 type K8sSpark struct {
+	*types.K8sExecutor
 	name        types.Name
 	client      *k8sclient.K8sClient
 	clusterName string
 	cluster     apistructs.ClusterInfo
+	errWrapper  *logic.ErrorWrapper
 }
 
 func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sSpark, error) {
@@ -37,7 +41,15 @@ func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*
 	if err != nil {
 		return nil, err
 	}
-	return &K8sSpark{name: name, clusterName: clusterName, client: kc, cluster: cluster}, nil
+	k8sSpark := &K8sSpark{
+		name:        name,
+		clusterName: clusterName,
+		client:      kc,
+		cluster:     cluster,
+		errWrapper:  logic.NewErrorWrapper(name.String()),
+	}
+	k8sSpark.K8sExecutor = types.NewK8sExecutor(k8sSpark)
+	return k8sSpark, nil
 }
 
 func (k *K8sSpark) Kind() types.Kind {

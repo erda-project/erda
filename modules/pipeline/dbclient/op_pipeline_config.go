@@ -39,12 +39,40 @@ var defaultWaitActionExecutor = spec.PipelineConfig{
 	},
 }
 
+var defaultK8sJobActionExecutor = spec.PipelineConfig{
+	Type: spec.PipelineConfigTypeActionExecutor,
+	Value: spec.ActionExecutorConfig{
+		Kind:    string(spec.PipelineTaskExecutorKindK8sJob),
+		Name:    spec.PipelineTaskExecutorNameK8sJobDefault.String(),
+		Options: nil,
+	},
+}
+
+var defaultK8sFlinkActionExecutor = spec.PipelineConfig{
+	Type: spec.PipelineConfigTypeActionExecutor,
+	Value: spec.ActionExecutorConfig{
+		Kind:    string(spec.PipelineTaskExecutorKindK8sFlink),
+		Name:    spec.PipelineTaskExecutorNameK8sFlinkDefault.String(),
+		Options: nil,
+	},
+}
+
+var defaultK8sSparkActionExecutor = spec.PipelineConfig{
+	Type: spec.PipelineConfigTypeActionExecutor,
+	Value: spec.ActionExecutorConfig{
+		Kind:    string(spec.PipelineTaskExecutorKindK8sSpark),
+		Name:    spec.PipelineTaskExecutorNameK8sSparkDefault.String(),
+		Options: nil,
+	},
+}
+
 func (client *Client) ListPipelineConfigsOfActionExecutor() (configs []spec.PipelineConfig, cfgChan chan spec.ActionExecutorConfig, err error) {
 	if err := client.Find(&configs, spec.PipelineConfig{Type: spec.PipelineConfigTypeActionExecutor}); err != nil {
 		return nil, nil, err
 	}
-	// add default api-test action executor
-	configs = append(configs, defaultAPITestActionExecutor, defaultWaitActionExecutor)
+	// add default api-test wait k8sjob k8sflink k8sspark action executor
+	configs = append(configs, defaultAPITestActionExecutor, defaultWaitActionExecutor,
+		defaultK8sJobActionExecutor, defaultK8sFlinkActionExecutor, defaultK8sSparkActionExecutor)
 	cfgChan = make(chan spec.ActionExecutorConfig, 100)
 	for _, c := range configs {
 		var r spec.ActionExecutorConfig

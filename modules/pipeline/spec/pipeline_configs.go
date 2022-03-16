@@ -30,6 +30,12 @@ type ActionExecutorConfig struct {
 	Options map[string]string `json:"options,omitempty"`
 }
 
+func (a *ActionExecutorConfig) IsK8sKind() bool {
+	return a.Kind == string(PipelineTaskExecutorKindK8sJob) ||
+		a.Kind == string(PipelineTaskExecutorKindK8sFlink) ||
+		a.Kind == string(PipelineTaskExecutorKindK8sSpark)
+}
+
 type PipelineConfigType string
 
 var (

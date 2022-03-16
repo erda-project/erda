@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -70,6 +71,52 @@ func (s Kind) String() string {
 
 func (s Kind) Validate() bool {
 	return formatter.MatchString(string(s))
+}
+
+func (s Kind) IsK8sKind() bool {
+	switch s {
+	case Kind(spec.PipelineTaskExecutorKindK8sJob), Kind(spec.PipelineTaskExecutorKindK8sFlink), Kind(spec.PipelineTaskExecutorKindK8sSpark):
+		return true
+	}
+	return false
+}
+
+func (s Kind) MakeK8sKindExecutorName(clusterName string) Name {
+	switch s {
+	case Kind(spec.PipelineTaskExecutorKindK8sJob):
+		return Name(fmt.Sprintf("%s-%s", spec.PipelineTaskExecutorNameK8sJobDefault, clusterName))
+	case Kind(spec.PipelineTaskExecutorKindK8sFlink):
+		return Name(fmt.Sprintf("%s-%s", spec.PipelineTaskExecutorNameK8sFlinkDefault, clusterName))
+	case Kind(spec.PipelineTaskExecutorKindK8sSpark):
+		return Name(fmt.Sprintf("%s-%s", spec.PipelineTaskExecutorNameK8sSparkDefault, clusterName))
+	default:
+		return Name(fmt.Sprintf("%s-%s", spec.PipelineTaskExecutorNameK8sJobDefault, clusterName))
+	}
+}
+
+func (s Kind) GetClusterNameByExecutorName(executorName Name) (string, error) {
+	switch s {
+	case Kind(spec.PipelineTaskExecutorKindK8sJob):
+		clusterName := strings.TrimPrefix(executorName.String(), fmt.Sprintf("%s-", spec.PipelineTaskExecutorNameK8sJobDefault))
+		if clusterName == "" {
+			return "", errors.Errorf("invalid executor name %s", executorName)
+		}
+		return clusterName, nil
+	case Kind(spec.PipelineTaskExecutorKindK8sFlink):
+		clusterName := strings.TrimPrefix(executorName.String(), fmt.Sprintf("%s-", spec.PipelineTaskExecutorNameK8sFlinkDefault))
+		if clusterName == "" {
+			return "", errors.Errorf("invalid executor name %s", executorName)
+		}
+		return clusterName, nil
+	case Kind(spec.PipelineTaskExecutorKindK8sSpark):
+		clusterName := strings.TrimPrefix(executorName.String(), fmt.Sprintf("%s-", spec.PipelineTaskExecutorNameK8sSparkDefault))
+		if clusterName == "" {
+			return "", errors.Errorf("invalid executor name %s", executorName)
+		}
+		return clusterName, nil
+	default:
+		return "", errors.New("invalid executor name")
+	}
 }
 
 // Create be used to create an action executor instance.

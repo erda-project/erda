@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 func TestRuntimeID(t *testing.T) {
@@ -190,4 +191,76 @@ func TestCheckExecutorVersion(t *testing.T) {
 	errVersion := "executor-done-chan-data-version-1-loop-99"
 	assert.Equal(t, loopTask.CheckExecutorDoneChanDataVersion(actualVersion), nil)
 	assert.Equal(t, loopTask.CheckExecutorDoneChanDataVersion(errVersion).Error(), "executor data expected version: executor-done-chan-data-version-1-loop-100, actual version: executor-done-chan-data-version-1-loop-99")
+}
+
+func TestGetExecutorName(t *testing.T) {
+	testCases := []struct {
+		name     string
+		task     *PipelineTask
+		expected string
+	}{
+		{
+			name: "old scheduler normal task",
+			task: &PipelineTask{
+				ID: 1,
+				Extra: PipelineTaskExtra{
+					ExecutorName: PipelineTaskExecutorNameSchedulerDefault,
+					ClusterName:  "erda-op",
+				},
+				ExecutorKind: PipelineTaskExecutorKindScheduler,
+			},
+			expected: "k8s-job-erda-op",
+		},
+		{
+			name: "old scheduler flink task",
+			task: &PipelineTask{
+				ID: 1,
+				Extra: PipelineTaskExtra{
+					ExecutorName: PipelineTaskExecutorNameSchedulerDefault,
+					ClusterName:  "erda-op",
+					Action: pipelineyml.Action{
+						Params: map[string]interface{}{
+							"bigDataConf": "{\n    \"flinkConf\": {\"kind\": \"job\"}\n}",
+						},
+					},
+				},
+				ExecutorKind: PipelineTaskExecutorKindScheduler,
+			},
+			expected: "k8s-flink-erda-op",
+		},
+		{
+			name: "old scheduler spark task",
+			task: &PipelineTask{
+				ID: 1,
+				Extra: PipelineTaskExtra{
+					ExecutorName: PipelineTaskExecutorNameSchedulerDefault,
+					ClusterName:  "erda-op",
+					Action: pipelineyml.Action{
+						Params: map[string]interface{}{
+							"bigDataConf": "{\n    \"sparkConf\": {\"kind\": \"job\"}\n}",
+						},
+					},
+				},
+				ExecutorKind: PipelineTaskExecutorKindScheduler,
+			},
+			expected: "k8s-spark-erda-op",
+		},
+		{
+			name: "normal job task",
+			task: &PipelineTask{
+				ID: 1,
+				Extra: PipelineTaskExtra{
+					ExecutorName: PipelineTaskExecutorName("k8s-job-erda-op"),
+					ClusterName:  "erda-op",
+				},
+				ExecutorKind: PipelineTaskExecutorKindK8sJob,
+			},
+			expected: "k8s-job-erda-op",
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, string(tt.task.GetExecutorName()), tt.expected)
+		})
+	}
 }
