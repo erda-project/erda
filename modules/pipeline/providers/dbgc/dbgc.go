@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package dbgc
 
 import (
 	"context"
@@ -38,42 +38,41 @@ const (
 	etcdDBGCDLockKeyPrefix = "/devops/pipeline/dbgc/dlock/"
 )
 
-// remove ListenDatabaseGC and EnsureDatabaseGC these two methods，
+// PipelineDatabaseGC remove ListenDatabaseGC and EnsureDatabaseGC these two methods，
 // these two methods will create a lot of etcd ttl, will cause high load on etcd
 // use fixed gc time, traverse the data in the database every day
-func (r *Reconciler) PipelineDatabaseGC(ctx context.Context) {
-	r.doAnalyzedPipelineDatabaseGC(true)
-	r.doAnalyzedPipelineDatabaseGC(false)
-	r.doNotAnalyzedPipelineDatabaseGC(true)
-	r.doNotAnalyzedPipelineDatabaseGC(false)
+func (p *provider) PipelineDatabaseGC(ctx context.Context) {
+	p.doAnalyzedPipelineDatabaseGC(true)
+	p.doAnalyzedPipelineDatabaseGC(false)
+	p.doNotAnalyzedPipelineDatabaseGC(true)
+	p.doNotAnalyzedPipelineDatabaseGC(false)
 
 	ticker := time.NewTicker(24 * time.Hour)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			r.doAnalyzedPipelineDatabaseGC(true)
-			r.doAnalyzedPipelineDatabaseGC(false)
+			p.doAnalyzedPipelineDatabaseGC(true)
+			p.doAnalyzedPipelineDatabaseGC(false)
 
-			r.doNotAnalyzedPipelineDatabaseGC(true)
-			r.doNotAnalyzedPipelineDatabaseGC(false)
+			p.doNotAnalyzedPipelineDatabaseGC(true)
+			p.doNotAnalyzedPipelineDatabaseGC(false)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-// query the data in the database according to req paging to perform gc
-func (r *Reconciler) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest) {
+// doPipelineDatabaseGC query the data in the database according to req paging to perform gc
+func (p *provider) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest) {
 	var pageNum = req.PageNum
 
 	for {
 		req.PageNum = pageNum
-
-		pipelineResults, _, _, _, err := r.dbClient.PageListPipelines(req)
+		pipelineResults, _, _, _, err := p.dbClient.PageListPipelines(req)
 		pageNum += 1
 		if err != nil {
-			logrus.Errorf("doPipelineDatabaseGC failed to compensate pipeline req %v err: %v", req, err)
+			logrus.Errorf("failed to compensate pipeline req: %v, err: %v", req, err)
 			continue
 		}
 
@@ -81,21 +80,10 @@ func (r *Reconciler) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest
 			return
 		}
 
-		for _, p := range pipelineResults {
-			var needArchive = false
-			if p.Status == apistructs.PipelineStatusAnalyzed {
-				if p.Extra.GC.DatabaseGC.Analyzed.NeedArchive != nil {
-					needArchive = *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive
-				}
-			} else {
-				if p.Extra.GC.DatabaseGC.Finished.NeedArchive != nil {
-					needArchive = *p.Extra.GC.DatabaseGC.Finished.NeedArchive
-				}
-			}
-
+		for _, pipeline := range pipelineResults {
 			// gc logic
-			if err := r.DoDBGC(p.PipelineID, apistructs.PipelineGCDBOption{NeedArchive: needArchive}); err != nil {
-				logrus.Errorf("[alert] dbgc: failed to do gc logic, pipelineID: %d, err: %v", p.PipelineID, err)
+			if err = p.DoDBGC(pipeline.PipelineID, apistructs.PipelineGCDBOption{NeedArchive: needArchive(pipeline)}); err != nil {
+				logrus.Errorf("failed to do gc logic, pipelineID: %d, err: %v", pipeline.PipelineID, err)
 				continue
 			}
 		}
@@ -104,8 +92,21 @@ func (r *Reconciler) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest
 	}
 }
 
-// gc Analyzed status pipeline
-func (r *Reconciler) doAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
+func needArchive(p spec.Pipeline) bool {
+	if p.Status == apistructs.PipelineStatusAnalyzed {
+		if p.Extra.GC.DatabaseGC.Analyzed.NeedArchive != nil {
+			return *p.Extra.GC.DatabaseGC.Analyzed.NeedArchive
+		}
+	} else {
+		if p.Extra.GC.DatabaseGC.Finished.NeedArchive != nil {
+			return *p.Extra.GC.DatabaseGC.Finished.NeedArchive
+		}
+	}
+	return false
+}
+
+// doAnalyzedPipelineDatabaseGC gc Analyzed status pipeline
+func (p *provider) doAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
 	var req apistructs.PipelinePageListRequest
 	req.Statuses = []string{apistructs.PipelineStatusAnalyzed.String()}
 	req.IncludeSnippet = isSnippetPipeline
@@ -116,11 +117,11 @@ func (r *Reconciler) doAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
 	req.PageNum = 1
 	req.AllSources = true
 
-	r.doPipelineDatabaseGC(req)
+	p.doPipelineDatabaseGC(req)
 }
 
-// gc other status pipeline
-func (r *Reconciler) doNotAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
+// doNotAnalyzedPipelineDatabaseGC gc other status pipeline
+func (p *provider) doNotAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
 	var req apistructs.PipelinePageListRequest
 	req.NotStatuses = []string{apistructs.PipelineStatusAnalyzed.String()}
 	req.IncludeSnippet = isSnippetPipeline
@@ -131,22 +132,22 @@ func (r *Reconciler) doNotAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
 	req.PageNum = 1
 	req.AllSources = true
 
-	r.doPipelineDatabaseGC(req)
+	p.doPipelineDatabaseGC(req)
 }
 
 // ListenDatabaseGC 监听需要 GC 的 pipeline database record.
-func (r *Reconciler) ListenDatabaseGC() {
-	logrus.Info("dbgc: start watching gc pipelines")
+func (p *provider) ListenDatabaseGC() {
+	logrus.Info("start watching gc pipelines")
 	for {
 		ctx := context.Background()
 
-		err := r.js.IncludeWatch().Watch(ctx, etcdDBGCWatchPrefix, true, false, false, apistructs.PipelineGCInfo{},
+		err := p.js.IncludeWatch().Watch(ctx, etcdDBGCWatchPrefix, true, false, false, apistructs.PipelineGCInfo{},
 			func(key string, value interface{}, t storetypes.ChangeType) error {
 
 				// async handle, non-blocking, so we can watch subsequent incoming pipelines
 				go func() {
 
-					logrus.Infof("dbgc: gc watched a key change, key: %s, changeType: %s", key, t.String())
+					logrus.Infof("gc watched a key change, key: %s, changeType: %s", key, t.String())
 					// only listen del op
 					if t != storetypes.Del {
 						return
@@ -154,18 +155,18 @@ func (r *Reconciler) ListenDatabaseGC() {
 
 					pipelineID, parseErr := getPipelineIDFromDBGCWatchedKey(key)
 					if parseErr != nil {
-						logrus.Errorf("[alert] dbgc: invalid key: %s, failed to get pipelineID from key, err: %v", key, parseErr)
+						logrus.Errorf("failed to get pipelineID from key, key: %s, err: %v", key, parseErr)
 						return
 					}
 
 					// acquire a dlock
 					gcDBLockKey := makeDBGCDLockKey(pipelineID)
-					lock, err := r.etcd.GetClient().Txn(context.Background()).
+					lock, err := p.etcd.GetClient().Txn(context.Background()).
 						If(v3.Compare(v3.Version(gcDBLockKey), "=", 0)).
 						Then(v3.OpPut(gcDBLockKey, "")).
 						Commit()
 					defer func() {
-						_, _ = r.etcd.GetClient().Txn(context.Background()).Then(v3.OpDelete(gcDBLockKey)).Commit()
+						_, _ = p.etcd.GetClient().Txn(context.Background()).Then(v3.OpDelete(gcDBLockKey)).Commit()
 					}()
 					if err != nil {
 						return
@@ -176,13 +177,13 @@ func (r *Reconciler) ListenDatabaseGC() {
 
 					gcOption, err := getGCOptionFromValue(value.(*apistructs.PipelineGCInfo).Data)
 					if err != nil {
-						logrus.Errorf("[alert] dbgc: failed to get gc option from value, pipelineID: %d, err: %v", pipelineID, err)
+						logrus.Errorf("failed to get gc option from value, pipelineID: %d, err: %v", pipelineID, err)
 						return
 					}
 
 					// gc logic
-					if err := r.DoDBGC(pipelineID, gcOption); err != nil {
-						logrus.Errorf("[alert] dbgc: failed to do gc logic, pipelineID: %d, err: %v", pipelineID, err)
+					if err := p.DoDBGC(pipelineID, gcOption); err != nil {
+						logrus.Errorf("failed to do gc logic, pipelineID: %d, err: %v", pipelineID, err)
 						return
 					}
 				}()
@@ -190,31 +191,31 @@ func (r *Reconciler) ListenDatabaseGC() {
 			},
 		)
 		if err != nil {
-			logrus.Errorf("[alert] dbgc: gc watch failed, err: %v", err)
+			logrus.Errorf("failed to gc watch, err: %v", err)
 		}
 	}
 }
 
-func (r *Reconciler) WaitDBGC(pipelineID uint64, ttl uint64, needArchive bool) {
+func (p *provider) WaitDBGC(pipelineID uint64, ttl uint64, needArchive bool) {
 	var err error
 	defer func() {
 		if err != nil {
-			logrus.Errorf("[alert] dbgc: gc wait failed, pipelineID: %d, err: %v",
+			logrus.Errorf("failed to gc wait, pipelineID: %d, err: %v",
 				pipelineID, err)
 		} else {
-			logrus.Debugf("dbgc: gc pipeline: %d in the future (%s) (TTL: %ds)",
+			logrus.Debugf("gc pipeline: %d in the future (%s) (TTL: %ds)",
 				pipelineID, time.Now().Add(time.Duration(int64(time.Second)*int64(ttl))).Format(time.RFC3339), ttl)
 		}
 	}()
 
 	// 设置 gc 等待时间
-	lease := v3.NewLease(r.etcd.GetClient())
+	lease := v3.NewLease(p.etcd.GetClient())
 	grant, err := lease.Grant(context.Background(), int64(ttl))
 	if err != nil {
 		return
 	}
 	leaseID := strconv.FormatInt(int64(grant.ID), 16)
-	logrus.Debugf("dbgc: grant lease, pipelineID: %d, leaseID: %s", pipelineID, leaseID)
+	logrus.Debugf("grant lease, pipelineID: %d, leaseID: %s", pipelineID, leaseID)
 
 	// 插入或更新 key
 	gcOptionByte, err := generateGCOption(needArchive)
@@ -222,7 +223,7 @@ func (r *Reconciler) WaitDBGC(pipelineID uint64, ttl uint64, needArchive bool) {
 		return
 	}
 	gcInfo := apistructs.MakePipelineGCInfo(ttl, leaseID, gcOptionByte)
-	_, err = r.js.PutWithOption(context.Background(),
+	_, err = p.js.PutWithOption(context.Background(),
 		makeDBGCKey(pipelineID), gcInfo,
 		[]interface{}{v3.WithLease(grant.ID)})
 	if err != nil {
@@ -230,13 +231,13 @@ func (r *Reconciler) WaitDBGC(pipelineID uint64, ttl uint64, needArchive bool) {
 	}
 }
 
-func (r *Reconciler) DoDBGC(pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
-	p, exist, err := r.dbClient.GetPipelineWithExistInfo(pipelineID)
+func (p *provider) DoDBGC(pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
+	pipeline, exist, err := p.dbClient.GetPipelineWithExistInfo(pipelineID)
 	if err != nil {
 		return err
 	}
 	if !exist {
-		logrus.Infof("dbgc: no need to gc db, pipeline already not exist in db, pipelineID: %d", pipelineID)
+		logrus.Infof("no need to gc db, pipeline already not exist in db, pipelineID: %d", pipelineID)
 		return nil
 	}
 
@@ -246,30 +247,30 @@ func (r *Reconciler) DoDBGC(pipelineID uint64, gcOption apistructs.PipelineGCDBO
 	// 		one is to update the definition information contact binding
 	//	 	and the other is not to go to the GC pipeline record
 	// It is decided not to record this pipeline
-	if strings.TrimSpace(p.PipelineDefinitionID) != "" {
-		definition, _, err := r.dbClient.GetPipelineDefinitionByPipelineID(p.PipelineID)
+	if strings.TrimSpace(pipeline.PipelineDefinitionID) != "" {
+		definition, _, err := p.dbClient.GetPipelineDefinitionByPipelineID(pipeline.PipelineID)
 		if err != nil {
-			logrus.Errorf("[alert] dbgc: failed to GetPipelineDefinitionByPipelineID, id: %d, err: %v", p.ID, err)
+			logrus.Errorf("failed to GetPipelineDefinitionByPipelineID, id: %d, err: %v", pipeline.ID, err)
 		}
 		if definition != nil {
-			logrus.Infof("[alert] dbgc: referenced by definition can not gc pipeline id: %v", p.PipelineID)
+			logrus.Infof("referenced by definition can not gc pipeline id: %v", pipeline.PipelineID)
 			return nil
 		}
 	}
 
 	if gcOption.NeedArchive {
 		// 归档
-		_, err := r.dbClient.ArchivePipeline(p.ID)
+		_, err = p.dbClient.ArchivePipeline(pipeline.ID)
 		if err != nil {
-			logrus.Errorf("[alert] dbgc: failed to archive pipeline, id: %d, err: %v", p.ID, err)
+			logrus.Errorf("failed to archive pipeline, id: %d, err: %v", pipeline.ID, err)
 		}
-		logrus.Debugf("dbgc: archive pipeline success, id: %d", p.ID)
+		logrus.Debugf("archive pipeline success, id: %d", pipeline.ID)
 	} else {
 		// 删除
-		if err := r.dbClient.DeletePipelineRelated(p.ID); err != nil {
-			logrus.Errorf("[alert] dbgc: failed to delete pipeline, id: %d, err: %v", p.ID, err)
+		if err = p.dbClient.DeletePipelineRelated(pipeline.ID); err != nil {
+			logrus.Errorf("failed to delete pipeline, id: %d, err: %v", pipeline.ID, err)
 		}
-		logrus.Debugf("dbgc: delete pipeline success, id: %d", p.ID)
+		logrus.Debugf("delete pipeline success, id: %d", pipeline.ID)
 	}
 	return nil
 }
@@ -300,13 +301,13 @@ func makeDBGCEnsureKey() string {
 
 // EnsureDatabaseGC etcd lease ttl reset 存在问题，因此要定期巡检，主动 delete 那些已经到了 gcAt 时间仍然存在的 etcd key 来触发 dbgc
 // github issue: https://github.com/etcd-io/etcd/issues/9395
-func (r *Reconciler) EnsureDatabaseGC() {
-	logrus.Info("dbgc ensure: start ensure dbgc pipelines")
+func (p *provider) EnsureDatabaseGC() {
+	logrus.Info("start ensure dbgc pipelines")
 
 	// 防止多实例启动时同时申请布式锁，先等待随机时间
 	rand.Seed(time.Now().UnixNano())
 	randN := rand.Intn(60)
-	logrus.Debugf("dbgc ensure: random sleep %d seconds...", randN)
+	logrus.Debugf("random sleep %d seconds...", randN)
 	time.Sleep(time.Duration(randN) * time.Second)
 
 	for {
@@ -319,12 +320,12 @@ func (r *Reconciler) EnsureDatabaseGC() {
 
 			// 先获取分布式锁
 			ensureLockKey := makeDBGCEnsureKey()
-			lock, err := r.etcd.GetClient().Txn(context.Background()).
+			lock, err := p.etcd.GetClient().Txn(context.Background()).
 				If(v3.Compare(v3.Version(ensureLockKey), "=", 0)).
 				Then(v3.OpPut(ensureLockKey, "")).
 				Commit()
 			defer func() {
-				_, _ = r.etcd.GetClient().Txn(context.Background()).Then(v3.OpDelete(ensureLockKey)).Commit()
+				_, _ = p.etcd.GetClient().Txn(context.Background()).Then(v3.OpDelete(ensureLockKey)).Commit()
 			}()
 			if err != nil {
 				errDone <- fmt.Errorf("failed to get dlock: %s, err: %v", ensureLockKey, err)
@@ -336,7 +337,7 @@ func (r *Reconciler) EnsureDatabaseGC() {
 			}
 
 			// 获取所有 key 列表
-			keys, err := r.js.ListKeys(ctx, etcdDBGCWatchPrefix)
+			keys, err := p.js.ListKeys(ctx, etcdDBGCWatchPrefix)
 			if err != nil {
 				errDone <- fmt.Errorf("failed to list dbgc keys, err: %v", err)
 				return
@@ -346,23 +347,23 @@ func (r *Reconciler) EnsureDatabaseGC() {
 			if len(keys) > 0 {
 				// 检查点，在检查点之前的 pipeline id，没有 etcd dbgc key
 				checkPointKey := keys[0]
-				r.handleOldNonDBGCPipelines(checkPointKey)
+				p.handleOldNonDBGCPipelines(checkPointKey)
 			}
 
 			for _, key := range keys {
 				var gcInfo apistructs.PipelineGCInfo
-				if err := r.js.Get(ctx, key, &gcInfo); err != nil {
-					logrus.Errorf("dbgc ensure: failed to get dbgc key: %s, continue, err: %v", key, err)
+				if err := p.js.Get(ctx, key, &gcInfo); err != nil {
+					logrus.Errorf("failed to get dbgc key: %s, continue, err: %v", key, err)
 					continue
 				}
 				now := time.Now().Round(0)
 				// already expired
 				if gcInfo.GCAt.Before(now) {
-					if err := r.js.Remove(ctx, key, nil); err != nil {
-						logrus.Errorf("dbgc ensure: failed to delete already expired dbgc key: %s, continue, err: %v", key, err)
+					if err := p.js.Remove(ctx, key, nil); err != nil {
+						logrus.Errorf("failed to delete already expired dbgc key: %s, continue, err: %v", key, err)
 						continue
 					}
-					logrus.Infof("dbgc ensure: remove already expired key: %s, gcAt: %s", key, gcInfo.GCAt.Format(time.RFC3339))
+					logrus.Infof("remove already expired key: %s, gcAt: %s", key, gcInfo.GCAt.Format(time.RFC3339))
 				}
 			}
 
@@ -373,12 +374,12 @@ func (r *Reconciler) EnsureDatabaseGC() {
 		// 正常结束
 		case <-done:
 			// 完成本次 ensure 后等待 2h 开始下一次处理
-			logrus.Infof("dbgc ensure: sleep 2 hours for next ensure...")
+			logrus.Infof("sleep 2 hours for next ensure...")
 			time.Sleep(time.Hour * 2)
 
 		// 异常结束
 		case err := <-errDone:
-			logrus.Errorf("dbgc ensure: failed to ensure, wait 5 mins for next ensure, err: %v", err)
+			logrus.Errorf("failed to ensure, wait 5 mins for next ensure, err: %v", err)
 			time.Sleep(time.Minute * 5)
 		}
 	}
@@ -393,16 +394,16 @@ func getPipelineIDFromDBGCWatchedKey(key string) (uint64, error) {
 	return 0, fmt.Errorf("invalid key: %s", key)
 }
 
-func (r *Reconciler) handleOldNonDBGCPipelines(checkPointDBGCKey string) {
+func (p *provider) handleOldNonDBGCPipelines(checkPointDBGCKey string) {
 	checkPointPID, err := getPipelineIDFromDBGCWatchedKey(checkPointDBGCKey)
 	if err != nil {
-		logrus.Errorf("dbgc ensure: failed to get check point pid for handle old non-dbgc pipelines, err: %v", err)
+		logrus.Errorf("failed to get check point pid for handle old non-dbgc pipelines, err: %v", err)
 		return
 	}
 	// fetch only id and status is enough
 	var oldPipelineBases []spec.PipelineBase
-	if err := r.dbClient.Cols(`id`, `status`).Where("id < ?", checkPointPID).Find(&oldPipelineBases); err != nil {
-		logrus.Errorf("dbgc ensure: failed to query pipelines before check point, err: %v", err)
+	if err := p.dbClient.Cols(`id`, `status`).Where("id < ?", checkPointPID).Find(&oldPipelineBases); err != nil {
+		logrus.Errorf("failed to query pipelines before check point, err: %v", err)
 		return
 	}
 	// transfer to pipeline for default ensureGC options
@@ -417,18 +418,23 @@ func (r *Reconciler) handleOldNonDBGCPipelines(checkPointDBGCKey string) {
 			},
 		})
 	}
-	for _, p := range oldPipelines {
+	for _, pipeline := range oldPipelines {
 		// get default gc options
-		p.EnsureGC()
+		pipeline.EnsureGC()
 		// already expired, so ttl 5s is enough
 		var ttl uint64 = 5
 		// archive according to status
-		needArchive := false
-		if p.Status.IsEndStatus() {
-			needArchive = true
-		}
+		needArchive := pipeline.Status.IsEndStatus()
 		// put into etcd dbgc
-		logrus.Infof("dbgc ensure: put old non-dbgc pipeline with etcd dbgc key, id: %d, needArchive: %t", p.ID, needArchive)
-		r.WaitDBGC(p.ID, ttl, needArchive)
+		logrus.Infof("put old non-dbgc pipeline with etcd dbgc key, id: %d, needArchive: %t", pipeline.ID, needArchive)
+		p.WaitDBGC(pipeline.ID, ttl, needArchive)
 	}
+}
+
+func (p *provider) GetPipelineIncludeArchived(ctx context.Context, pipelineID uint64) (spec.Pipeline, bool, bool, error) {
+	return p.dbClient.GetPipelineIncludeArchived(pipelineID)
+}
+
+func (p *provider) GetPipelineTasksIncludeArchived(ctx context.Context, pipelineID uint64) ([]spec.PipelineTask, bool, error) {
+	return p.dbClient.GetPipelineTasksIncludeArchived(pipelineID)
 }
