@@ -263,7 +263,8 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 			for _, uuid := range task_uuid.MakeJobIDSliceWithLoopedTimes(&task) {
 				var loopTask = task
 				loopTask.Extra.UUID = uuid
-				groupedTasks[loopTask.Extra.ExecutorName] = append(groupedTasks[loopTask.Extra.ExecutorName], &loopTask)
+				executorName := loopTask.GetExecutorName()
+				groupedTasks[executorName] = append(groupedTasks[executorName], &loopTask)
 			}
 		}
 	}

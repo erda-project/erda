@@ -19,15 +19,18 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/plugins/scheduler/executor/types"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/logic"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
 type K8sFlink struct {
+	*types.K8sExecutor
 	name        types.Name
 	client      *k8sclient.K8sClient
 	clusterName string
 	cluster     apistructs.ClusterInfo
+	errWrapper  *logic.ErrorWrapper
 }
 
 func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*K8sFlink, error) {
@@ -35,7 +38,15 @@ func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*
 	if err != nil {
 		return nil, err
 	}
-	return &K8sFlink{name: name, client: k, clusterName: clusterName, cluster: cluster}, nil
+	k8sFlink := &K8sFlink{
+		name:        name,
+		client:      k,
+		clusterName: clusterName,
+		cluster:     cluster,
+		errWrapper:  logic.NewErrorWrapper(name.String()),
+	}
+	k8sFlink.K8sExecutor = types.NewK8sExecutor(k8sFlink)
+	return k8sFlink, nil
 }
 
 func (k *K8sFlink) Kind() types.Kind {

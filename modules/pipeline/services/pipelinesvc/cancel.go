@@ -79,7 +79,7 @@ func (s *PipelineSvc) Cancel(req *apistructs.PipelineCancelRequest) error {
 				if !task.Status.CanCancel() {
 					return
 				}
-				executor, err := actionexecutor.GetManager().Get(types.Name(task.Extra.ExecutorName))
+				executor, err := actionexecutor.GetManager().Get(types.Name(task.GetExecutorName()))
 				if err != nil {
 					cancelError = err
 					return
