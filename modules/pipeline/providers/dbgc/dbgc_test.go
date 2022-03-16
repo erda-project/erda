@@ -78,7 +78,7 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 		}
 	})
 
-	var r dbgcService
+	var r provider
 	r.dbClient = &db.Client{Client: *DB}
 
 	var gcNum = 1
@@ -86,7 +86,7 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 		gcNum++
 	}
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *dbgcService, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *provider, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
 		assert.True(t, gcNum < 3, "DoDBGC times >= 3")
 		addCountNum()
 		return nil
@@ -123,8 +123,8 @@ func TestGetPipelineIDFromDBGCWatchedKey(t *testing.T) {
 }
 
 func TestPipelineDatabaseGC(t *testing.T) {
-	var r dbgcService
-	pm := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "PipelineDatabaseGC", func(r *dbgcService, ctx context.Context) {
+	var r provider
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "PipelineDatabaseGC", func(r *provider, ctx context.Context) {
 		return
 	})
 	defer pm.Unpatch()
@@ -136,7 +136,7 @@ func TestPipelineDatabaseGC(t *testing.T) {
 func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
 		DB := &dbclient.Client{}
-		var r dbgcService
+		var r provider
 		r.dbClient = &db.Client{Client: *DB}
 		patch := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(db *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
 			switch req.PageNum {
@@ -157,7 +157,7 @@ func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 		})
 		defer patch.Unpatch()
 
-		patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *dbgcService, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
+		patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *provider, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
 			assert.Equal(t, pipelineID, uint64(1))
 			return fmt.Errorf("error")
 		})

@@ -31,12 +31,14 @@ import (
 type config struct{}
 
 type provider struct {
-	Cfg   *config
-	Log   logs.Logger
+	Cfg      *config
+	Log      logs.Logger
+	js       jsonstore.JsonStore
+	etcd     *etcd.Store
+	dbClient *db.Client
+
 	MySQL mysqlxorm.Interface
 	LW    leaderworker.Interface
-
-	dbgc service
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -48,16 +50,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err != nil {
 		return err
 	}
-	p.dbgc = service{
-		js:       js,
-		etcd:     etcdStore,
-		dbClient: &db.Client{Client: dbclient.Client{Engine: p.MySQL.DB()}},
-	}
+	p.js = js
+	p.etcd = etcdStore
+
+	p.dbClient = &db.Client{Client: dbclient.Client{Engine: p.MySQL.DB()}}
 	return nil
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	p.LW.OnLeader(p.dbgc.PipelineDatabaseGC)
+	p.LW.OnLeader(p.PipelineDatabaseGC)
 	return nil
 }
 

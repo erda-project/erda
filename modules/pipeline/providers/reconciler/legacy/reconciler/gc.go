@@ -40,8 +40,6 @@ const (
 )
 
 func (r *Reconciler) ListenGC(ctx context.Context) {
-	archived, b, err := r.dbgc.GetPipelineTasksIncludeArchived(ctx, 10034983)
-	fmt.Println(archived, b, err)
 	logrus.Info("reconciler: start watching gc pipelines")
 	for {
 		select {
@@ -226,7 +224,7 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 			return err
 		}
 		// 为了清理已经被归档的流水线
-		p, found, findFromArchive, err := r.dbgc.GetPipelineIncludeArchived(context.Background(), pipelineID)
+		p, found, findFromArchive, err := r.DBgc.GetPipelineIncludeArchived(context.Background(), pipelineID)
 		if !found {
 			logrus.Errorf("[alert] reconciler: gc triggered but ignored, pipeline already not exists, pipelineID: %d", pipelineID)
 		}
@@ -243,7 +241,7 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 	// group tasks by executorName
 	groupedTasks := make(map[spec.PipelineTaskExecutorName][]*spec.PipelineTask) // key: executorName
 	for _, affectedPipelineID := range affectedPipelineIDs {
-		dbTasks, _, err := r.dbgc.GetPipelineTasksIncludeArchived(context.Background(), affectedPipelineID)
+		dbTasks, _, err := r.DBgc.GetPipelineTasksIncludeArchived(context.Background(), affectedPipelineID)
 		if err != nil {
 			return err
 		}
