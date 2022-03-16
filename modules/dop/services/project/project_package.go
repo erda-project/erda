@@ -185,6 +185,10 @@ func (t *PackageDataDirector) GenAndUploadZipPackage() (string, error) {
 		}
 		zipfile, err := t.bdl.GetArchive(packageContext.UserID, req, repoDir)
 		if err != nil {
+			if err == bundle.RepoNotExist {
+				logrus.Warnf("application %s has no gittar repo for %s", app.Name, app.GitBranch)
+				continue
+			}
 			return "", err
 		}
 
@@ -423,6 +427,11 @@ func (t *PackageDataDirector) TryInitProjectByPackage() error {
 			continue
 		}
 		t.namespace.GenerateAppExtraInfo(int64(newApp.ID), int64(newApp.ProjectID))
+
+		if appInfo.ZipRepo == "" {
+			logrus.Warnf("no repo for application %s", appInfo.Name)
+			continue
+		}
 
 		distDir := path.Join(tempDir, appInfo.Name)
 		err = unzip(appInfo.ZipRepo, distDir)

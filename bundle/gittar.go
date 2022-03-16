@@ -40,6 +40,10 @@ type GittarLines struct {
 	To       string
 }
 
+var (
+	RepoNotExist = errors.New("repo not exist.")
+)
+
 // DeleteGitRepo 从gittar删除应用gitRepo
 func (b *Bundle) DeleteGitRepo(gitRepo string) error {
 	host, err := b.urls.Gittar()
@@ -708,7 +712,10 @@ func (b *Bundle) GetArchive(userID string, req apistructs.GittarArchiveRequest, 
 	defer resp.Body.Close()
 
 	if resp.StatusCode/100 != 2 {
-		return "", fmt.Errorf("archive %s respons %d", req.Application, resp.StatusCode)
+		if resp.StatusCode == 404 {
+			return "", RepoNotExist
+		}
+		return "", fmt.Errorf("archive %s response %d", req.Application, resp.StatusCode)
 	}
 
 	zipfile := fmt.Sprintf("tmp-%d.zip", time.Now().Unix())
