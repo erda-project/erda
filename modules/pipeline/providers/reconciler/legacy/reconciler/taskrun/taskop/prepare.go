@@ -356,9 +356,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 
 	if p.Extra.StorageConfig.EnableNFSVolume() &&
 		!p.Extra.StorageConfig.EnableShareVolume() &&
-		task.ExecutorKind == spec.PipelineTaskExecutorKindK8sJob ||
-		task.ExecutorKind == spec.PipelineTaskExecutorKindK8sFlink ||
-		task.ExecutorKind == spec.PipelineTaskExecutorKindK8sSpark {
+		task.ExecutorKind.IsK8sKind() {
 		// --- cmd ---
 		// task.Context.InStorages
 	continueContextVolumes:
@@ -486,7 +484,7 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 makeOutStorages:
 	if p.Extra.StorageConfig.EnableNFSVolume() &&
 		!p.Extra.StorageConfig.EnableShareVolume() &&
-		task.ExecutorKind.IsK8SType() {
+		task.ExecutorKind.IsK8sKind() {
 		for _, namespace := range task.Extra.Action.Namespaces {
 			task.Context.OutStorages = append(task.Context.OutStorages, pvolumes.GenerateTaskVolume(*task, namespace, nil))
 		}
@@ -512,7 +510,7 @@ makeOutStorages:
 		task.Status = apistructs.PipelineStatusBorn
 	}
 
-	if (p.Extra.StorageConfig.EnableNFSVolume() || p.Extra.StorageConfig.EnableShareVolume()) && task.ExecutorKind.IsK8SType() {
+	if (p.Extra.StorageConfig.EnableNFSVolume() || p.Extra.StorageConfig.EnableShareVolume()) && task.ExecutorKind.IsK8sKind() {
 		// 处理 task caches
 		pvolumes.HandleTaskCacheVolumes(p, task, diceYmlJob, mountPoint)
 		// --- binds ---

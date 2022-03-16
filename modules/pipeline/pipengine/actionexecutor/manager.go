@@ -43,7 +43,7 @@ func GetManager() *Manager {
 	return &mgr
 }
 
-func (m *Manager) Initialize(cfgs chan spec.ActionExecutorConfig) error {
+func (m *Manager) Initialize(ctx context.Context, cfgs chan spec.ActionExecutorConfig) error {
 	m.factory = types.Factory
 	m.executorsByName = make(map[types.Name]types.ActionExecutor)
 	m.kindsByName = make(map[types.Name]types.Kind)
@@ -81,7 +81,7 @@ func (m *Manager) Initialize(cfgs chan spec.ActionExecutorConfig) error {
 
 		logrus.Infof("=> kind [%s] created", c.Kind)
 	}
-	go m.ListenAndPatchK8sExecutor(context.Background())
+	go m.ListenAndPatchK8sExecutor(ctx)
 
 	logrus.Info("pipengine action executor manager Initialize Done .")
 
@@ -142,7 +142,7 @@ func (m *Manager) GetKindByExecutorName(name types.Name) (types.Kind, bool) {
 	}
 	// could not find the normal kind in the kind cache, try to make the k8s kind
 	for k := range m.factory {
-		if k.IsK8sKind() && strings.HasPrefix(name.String(), k.MakeK8SKindExecutorName("").String()) {
+		if k.IsK8sKind() && strings.HasPrefix(name.String(), k.MakeK8sKindExecutorName("").String()) {
 			return k, true
 		}
 	}

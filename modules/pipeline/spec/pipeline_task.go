@@ -79,8 +79,8 @@ func (pt *PipelineTask) GetBigDataConf() (apistructs.BigdataSpec, error) {
 
 func (pt *PipelineTask) GetExecutorName() PipelineTaskExecutorName {
 	switch pt.ExecutorKind {
-	// PipelineTaskExecutorKindScheduler after 2.0 version, scheduler executor is deleted.
-	// scheduler is Compatible with older versions
+	// PipelineTaskExecutorKindScheduler after 2.1 version, scheduler executor is deleted.
+	// this is compatible with old scheduler executor
 	case PipelineTaskExecutorKindScheduler:
 		k := PipelineTaskExecutorKindK8sJob
 		if spec, err := pt.GetBigDataConf(); err == nil {
@@ -201,7 +201,7 @@ func (that PipelineTaskExecutorKind) Check() bool {
 	return false
 }
 
-func (that PipelineTaskExecutorKind) IsK8SType() bool {
+func (that PipelineTaskExecutorKind) IsK8sKind() bool {
 	return that == PipelineTaskExecutorKindK8sJob || that == PipelineTaskExecutorKindK8sFlink || that == PipelineTaskExecutorKindK8sSpark
 }
 

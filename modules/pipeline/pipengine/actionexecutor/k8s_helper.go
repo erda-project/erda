@@ -31,7 +31,7 @@ func (m *Manager) deleteK8sExecutor(cluster apistructs.ClusterInfo) {
 	defer m.Unlock()
 	for _, kind := range m.kindsByName {
 		if kind.IsK8sKind() {
-			name := kind.MakeK8SKindExecutorName(cluster.Name)
+			name := kind.MakeK8sKindExecutorName(cluster.Name)
 			delete(m.executorsByName, name)
 			delete(m.kindsByName, name)
 		}
@@ -47,7 +47,7 @@ func (m *Manager) updateK8sExecutor(cluster apistructs.ClusterInfo) error {
 			if !ok {
 				return errors.Errorf("executor creator [%s] not found", kind)
 			}
-			name := kind.MakeK8SKindExecutorName(cluster.Name)
+			name := kind.MakeK8sKindExecutorName(cluster.Name)
 			actionExecutor, err := create(name, nil)
 			if err != nil {
 				return errors.Errorf("executor [%s] created failed, err: %v", name, err)

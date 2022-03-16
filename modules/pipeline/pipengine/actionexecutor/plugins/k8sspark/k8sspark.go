@@ -28,8 +28,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
-
 	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 
 	"github.com/erda-project/erda/apistructs"
@@ -72,15 +70,15 @@ func (k *K8sSpark) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		return nil, err
 	}
 	if !created {
-		logrus.Warnf("%s: task not created, try to create actionInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
+		logrus.Warnf("%s: task not created(auto try to create), taskInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
 		_, err = k.Create(ctx, task)
 		if err != nil {
 			return nil, err
 		}
-		logrus.Warnf("k8sjob: action created, continue to start, actionInfo: %s", logic.PrintTaskInfo(task))
+		logrus.Warnf("k8sspark: action created, continue to start, taskInfo: %s", logic.PrintTaskInfo(task))
 	}
 	if started {
-		logrus.Warnf("%s: task already started, actionInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
+		logrus.Warnf("%s: task already started, taskInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
 		return nil, nil
 	}
 	job, err := logic.TransferToSchedulerJob(task)
@@ -170,21 +168,6 @@ func (k *K8sSpark) Start(ctx context.Context, task *spec.PipelineTask) (data int
 	}, nil
 }
 
-func (k *K8sSpark) Create(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
-	defer k.errWrapper.WrapTaskError(&err, "create job", task)
-	if err := logic.ValidateAction(task); err != nil {
-		return nil, err
-	}
-	created, _, err := k.Exist(ctx, task)
-	if err != nil {
-		return nil, err
-	}
-	if created {
-		logrus.Warnf("%s: task already created, taskInfo: %s", k.Kind().String(), logic.PrintTaskInfo(task))
-	}
-	return nil, nil
-}
-
 func (k *K8sSpark) Status(ctx context.Context, task *spec.PipelineTask) (desc apistructs.PipelineStatusDesc, err error) {
 	defer k.errWrapper.WrapTaskError(&err, "status job", task)
 	if err := logic.ValidateAction(task); err != nil {
@@ -231,49 +214,7 @@ func (k *K8sSpark) Status(ctx context.Context, task *spec.PipelineTask) (desc ap
 	return desc, nil
 }
 
-func (k *K8sSpark) Exist(ctx context.Context, task *spec.PipelineTask) (created bool, started bool, err error) {
-	statusDesc, err := k.Status(ctx, task)
-	if err != nil {
-		created = false
-		started = false
-		if strutil.Contains(err.Error(), "failed to inspect job, err: not found") {
-			err = nil
-			return
-		}
-		return
-	}
-	return logic.JudgeExistedByStatus(statusDesc)
-}
-
-func (k *K8sSpark) Update(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
-	return nil, errors.New("k8s(spark) not support update operation")
-}
-
-func (k *K8sSpark) Cancel(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
-	defer k.errWrapper.WrapTaskError(&err, "cancel job", task)
-	if err := logic.ValidateAction(task); err != nil {
-		return nil, err
-	}
-	// TODO move all makeJobID to framework
-	// now move makeJobID to framework may change task uuid in database
-	// Restore the task uuid after remove, because gc will make the job id, but cancel don't make the job id
-	oldUUID := task.Extra.UUID
-	task.Extra.UUID = task_uuid.MakeJobID(task)
-	d, err := k.delete(ctx, task)
-	task.Extra.UUID = oldUUID
-	return d, err
-}
-
-func (k *K8sSpark) Remove(ctx context.Context, task *spec.PipelineTask) (data interface{}, err error) {
-	defer k.errWrapper.WrapTaskError(&err, "remove job", task)
-	if err := logic.ValidateAction(task); err != nil {
-		return nil, err
-	}
-	task.Extra.UUID = task_uuid.MakeJobID(task)
-	return k.delete(ctx, task)
-}
-
-func (k *K8sSpark) delete(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
+func (k *K8sSpark) Delete(ctx context.Context, task *spec.PipelineTask) (interface{}, error) {
 	if task.Extra.UUID == "" {
 		if !task.Extra.NotPipelineControlledNs {
 			return nil, k.removePipelineJobs(task.Extra.Namespace)
@@ -332,24 +273,6 @@ func (k *K8sSpark) delete(ctx context.Context, task *spec.PipelineTask) (interfa
 				}
 				logrus.Debugf("%s clean namespace %s successfully", K8SSparkLogPrefix, namespace)
 			}
-		}
-	}
-	return nil, nil
-}
-
-func (k *K8sSpark) BatchDelete(ctx context.Context, tasks []*spec.PipelineTask) (data interface{}, err error) {
-	if len(tasks) == 0 {
-		return nil, nil
-	}
-	task := tasks[0]
-	defer k.errWrapper.WrapTaskError(&err, "batch delete job", task)
-	for _, task := range tasks {
-		if len(task.Extra.UUID) <= 0 {
-			continue
-		}
-		_, err := k.delete(ctx, task)
-		if err != nil {
-			return nil, err
 		}
 	}
 	return nil, nil

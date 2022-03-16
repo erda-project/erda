@@ -22,15 +22,15 @@ import (
 )
 
 func GenContainers(task *spec.PipelineTask) ([]apistructs.TaskContainer, error) {
-	if spec, err := task.GetBigDataConf(); err == nil {
-		if spec.FlinkConf != nil {
-			return GenFlinkContainers(task), nil
-		}
-		if spec.SparkConf != nil {
-			return GenSparkContainers(task), nil
-		}
-	} else {
+	spec, err := task.GetBigDataConf()
+	if err != nil {
 		return nil, err
+	}
+	if spec.FlinkConf != nil {
+		return GenFlinkContainers(task), nil
+	}
+	if spec.SparkConf != nil {
+		return GenSparkContainers(task), nil
 	}
 	return GenTaskContainer(task), nil
 }

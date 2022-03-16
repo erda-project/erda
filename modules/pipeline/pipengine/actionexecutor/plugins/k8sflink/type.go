@@ -25,6 +25,7 @@ import (
 )
 
 type K8sFlink struct {
+	*types.K8sExecutor
 	name        types.Name
 	client      *k8sclient.K8sClient
 	clusterName string
@@ -37,13 +38,15 @@ func New(name types.Name, clusterName string, cluster apistructs.ClusterInfo) (*
 	if err != nil {
 		return nil, err
 	}
-	return &K8sFlink{
+	k8sFlink := &K8sFlink{
 		name:        name,
 		client:      k,
 		clusterName: clusterName,
 		cluster:     cluster,
 		errWrapper:  logic.NewErrorWrapper(name.String()),
-	}, nil
+	}
+	k8sFlink.K8sExecutor = types.NewK8sExecutor(k8sFlink)
+	return k8sFlink, nil
 }
 
 func (k *K8sFlink) Kind() types.Kind {

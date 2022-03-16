@@ -81,7 +81,7 @@ func (s Kind) IsK8sKind() bool {
 	return false
 }
 
-func (s Kind) MakeK8SKindExecutorName(clusterName string) Name {
+func (s Kind) MakeK8sKindExecutorName(clusterName string) Name {
 	switch s {
 	case Kind(spec.PipelineTaskExecutorKindK8sJob):
 		return Name(fmt.Sprintf("%s-%s", spec.PipelineTaskExecutorNameK8sJobDefault, clusterName))
