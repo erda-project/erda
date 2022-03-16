@@ -31,7 +31,7 @@ type ProjectPipelineServiceHandler interface {
 	CreateNamePreCheck(context.Context, *CreateProjectPipelineNamePreCheckRequest) (*CreateProjectPipelineNamePreCheckResponse, error)
 	// GET /api/project-pipeline/actions/source-pre-check
 	CreateSourcePreCheck(context.Context, *CreateProjectPipelineSourcePreCheckRequest) (*CreateProjectPipelineSourcePreCheckResponse, error)
-	// PUT /api/project-pipeline/{pipelineDefinitionID}
+	// PUT /api/project-pipeline/definitions/{pipelineDefinitionID}
 	Update(context.Context, *UpdateProjectPipelineRequest) (*UpdateProjectPipelineResponse, error)
 }
 
@@ -302,5 +302,5 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 	add_ListPipelineYml("GET", "/api/project-pipeline/actions/get-pipeline-yml-list", srv.ListPipelineYml)
 	add_CreateNamePreCheck("GET", "/api/project-pipeline/actions/name-pre-check", srv.CreateNamePreCheck)
 	add_CreateSourcePreCheck("GET", "/api/project-pipeline/actions/source-pre-check", srv.CreateSourcePreCheck)
-	add_Update("PUT", "/api/project-pipeline/{pipelineDefinitionID}", srv.Update)
+	add_Update("PUT", "/api/project-pipeline/definitions/{pipelineDefinitionID}", srv.Update)
 }

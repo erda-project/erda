@@ -70,10 +70,10 @@ service ProjectPipelineService {
   rpc Update(UpdateProjectPipelineRequest)
       returns(UpdateProjectPipelineResponse) {
     option(google.api.http) = {
-      put : "/api/project-pipeline/{pipelineDefinitionID}",
+      put : "/api/project-pipeline/definitions/{pipelineDefinitionID}",
     };
     option(erda.common.openapi) = {
-      path : "/api/project-pipeline/{pipelineDefinitionID}",
+      path : "/api/project-pipeline/definitions/{pipelineDefinitionID}",
     };
   }
 }

@@ -316,7 +316,7 @@ zh:
   searchAppName: 搜索应用名
   unfinishedIssue: 未完成的事项
   sourceFile: 源文件
-  
+  updateName: 编辑名称
 en:
   issue-manage: issue manage
   issue: issue
@@ -631,3 +631,4 @@ en:
   searchAppName: Search app name
   unfinishedIssue: Unfinished issue
   sourceFile: source file
+  updateName: Update name
