@@ -59,6 +59,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
 	"github.com/erda-project/erda/modules/dop/services/project"
 	"github.com/erda-project/erda/modules/dop/services/projectpipelinefiletree"
+	"github.com/erda-project/erda/modules/dop/services/publish_item"
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
@@ -665,6 +666,23 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// test file records
 		{Path: "/api/test-file-records/{id}", Method: http.MethodGet, Handler: e.GetFileRecord},
 		{Path: "/api/test-file-records", Method: http.MethodGet, Handler: e.GetFileRecords},
+
+		// 从dicehub迁移
+		//发布管理-->安全管理
+		{Path: "/api/publish-items/{publishItemId}/certification", Method: http.MethodGet, Handler: e.GetPublishItemCertificationlist},
+
+		// 从dicehub迁移
+		//统一大盘以及错误报告
+		{Path: "/api/publish-items/{publishItemId}/statistics/trend", Method: http.MethodGet, Handler: e.GetStatisticsTrend},
+		{Path: "/api/publish-items/{publishItemId}/statistics/versions", Method: http.MethodGet, Handler: e.GetStatisticsVersionInfo},
+		{Path: "/api/publish-items/{publishItemId}/statistics/users", Method: http.MethodGet, Handler: e.CumulativeUsers},
+		{Path: "/api/publish-items/{publishItemId}/statistics/channels", Method: http.MethodGet, Handler: e.GetStatisticsChannelInfo},
+		{Path: "/api/publish-items/{publishItemId}/err/trend", Method: http.MethodGet, Handler: e.GetErrTrend},
+		{Path: "/api/publish-items/{publishItemId}/err/list", Method: http.MethodGet, Handler: e.GetErrList},
+		{Path: "/api/publish-items/{publishItemId}/metrics/{metricName}/histogram", Method: http.MethodGet, Handler: e.MetricsRouting},
+		{Path: "/api/publish-items/{publishItemId}/metrics/{metricName}", Method: http.MethodGet, Handler: e.MetricsRouting},
+		{Path: "/api/publish-items/{publishItemId}/err/effacts", Method: http.MethodGet, Handler: e.GetErrAffectUserRate},
+		{Path: "/api/publish-items/{publishItemId}/err/rate", Method: http.MethodGet, Handler: e.GetCrashRate},
 	}
 }
 
@@ -723,6 +741,8 @@ type Endpoints struct {
 	app             *application.Application
 	codeCoverageSvc *code_coverage.CodeCoverage
 	testReportSvc   *test_report.TestReport
+
+	publishItem *publish_item.PublishItem
 
 	PipelineCron cronpb.CronServiceServer
 
@@ -823,6 +843,12 @@ func WithProject(p *project.Project) Option {
 func WithApplication(app *application.Application) Option {
 	return func(e *Endpoints) {
 		e.app = app
+	}
+}
+
+func WithPublishItem(publishItem *publish_item.PublishItem) Option {
+	return func(e *Endpoints) {
+		e.publishItem = publishItem
 	}
 }
 

@@ -12,18 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dicehub
+package dop
 
-import "github.com/erda-project/erda/modules/openapi/api/apis"
+import (
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/openapi/api/apis"
+)
 
-var DICEHUB_PUBLISH_ITEM_ERR_RATE = apis.ApiSpec{
-	Path:        "/api/publish-items/<publishItemId>/err/rate",
-	BackendPath: "/api/publish-items/<publishItemId>/err/rate",
-	Host:        "dicehub.marathon.l4lb.thisdcos.directory:10000",
-	Scheme:      "http",
-	Method:      "GET",
-	IsOpenAPI:   true,
-	CheckLogin:  true,
-	CheckToken:  true,
-	Doc:         `summary: 错误统计，崩溃率`,
+var PUBLISH_ITEM_ERR_TREND = apis.ApiSpec{
+	Path:         "/api/publish-items/<publishItemId>/err/trend",
+	BackendPath:  "/api/publish-items/<publishItemId>/err/trend",
+	Host:         "dop.marathon.l4lb.thisdcos.directory:9527",
+	Scheme:       "http",
+	Method:       "GET",
+	ResponseType: apistructs.PublishItemStatisticsErrTrendData{},
+	IsOpenAPI:    true,
+	CheckLogin:   true,
+	CheckToken:   true,
+	Doc:          `summary: 错误报告，错误趋势`,
 }
