@@ -276,16 +276,51 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 		}
 
 		if action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp {
+			addons, err := s.db.GetUnDeletableAttachMentsByRuntimeID(runtime.ID)
+			if err != nil {
+				logrus.Warnf("process runtime scale successed, but update runtime referenced addon attact_count for runtime %#v failed, err: %v", uniqueId, err)
+			}
 			switch action {
 			case apistructs.ScaleActionDown:
 				runtime.Status = apistructs.RuntimeStatusStopped
 				if err := s.db.UpdateRuntime(runtime); err != nil {
 					logrus.Warnf("process runtime scale successed, but update runtime_status to 'Stopped' in %s for runtime %#v failed, err: %v", runtime.TableName(), uniqueId, err)
 				}
+
+				for _, att := range *addons {
+					addonRouting, err := s.db.GetInstanceRouting(att.RoutingInstanceID)
+					if err != nil {
+						logrus.Warnf("process runtime scale successed, but update runtime referenced addon attact_count for runtime %#v failed, err: %v", uniqueId, err)
+						continue
+					}
+
+					if addonRouting != nil && addonRouting.PlatformServiceType == 0 {
+						att.Deleted = apistructs.AddonScaleDown
+						if err := s.db.UpdateAttachment(&att); err != nil {
+							logrus.Warnf("process runtime scale successed, but update table %s for runtime %#v failed, err: %v", att.TableName(), uniqueId, err)
+						}
+					}
+				}
+
 			case apistructs.ScaleActionUp:
 				runtime.Status = apistructs.RuntimeStatusHealthy
 				if err := s.db.UpdateRuntime(runtime); err != nil {
 					logrus.Warnf("process runtime scale successed, but update runtime_status to 'Healthy' in %s for runtime %#v failed, err: %v", runtime.TableName(), uniqueId, err)
+				}
+
+				for _, att := range *addons {
+					addonRouting, err := s.db.GetInstanceRouting(att.RoutingInstanceID)
+					if err != nil {
+						logrus.Warnf("process runtime scale successed, but update runtime referenced addon attact_count for runtime %#v failed, err: %v", uniqueId, err)
+						continue
+					}
+
+					if addonRouting != nil && addonRouting.PlatformServiceType == 0 {
+						att.Deleted = apistructs.AddonNotDeleted
+						if err := s.db.UpdateAttachment(&att); err != nil {
+							logrus.Warnf("process runtime scale successed, but update table %s for runtime %#v failed, err: %v", att.TableName(), uniqueId, err)
+						}
+					}
 				}
 			}
 		}

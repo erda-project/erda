@@ -208,6 +208,8 @@ func (m *Attachment) UnmarshalURLValues(prefix string, values url.Values) error 
 				m.InstanceId = vals[0]
 			case "appId":
 				m.AppId = vals[0]
+			case "workspace":
+				m.Workspace = vals[0]
 			case "runtimeId":
 				m.RuntimeId = vals[0]
 			case "runtimeName":

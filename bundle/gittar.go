@@ -707,6 +707,10 @@ func (b *Bundle) GetArchive(userID string, req apistructs.GittarArchiveRequest, 
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode/100 != 2 {
+		return "", fmt.Errorf("archive %s respons %d", req.Application, resp.StatusCode)
+	}
+
 	zipfile := fmt.Sprintf("tmp-%d.zip", time.Now().Unix())
 	attachmentInfo := resp.Header.Get("Content-Disposition")
 	attachment := strings.Split(attachmentInfo, "=")

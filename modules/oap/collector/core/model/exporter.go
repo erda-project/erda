@@ -26,24 +26,9 @@ type RuntimeExporter struct {
 	Name     string
 	Logger   logs.Logger
 	Exporter Exporter
+	Filter   *DataFilter
 	Timer    *common.RunningTimer
 	Buffer   *odata.Buffer
-}
-
-func NewRuntimeExporter(
-	name string,
-	logger logs.Logger,
-	exporter Exporter,
-	buffer *odata.Buffer,
-	timer *common.RunningTimer,
-) *RuntimeExporter {
-	return &RuntimeExporter{
-		Name:     name,
-		Logger:   logger,
-		Exporter: exporter,
-		Buffer:   buffer,
-		Timer:    timer,
-	}
 }
 
 func (re *RuntimeExporter) Start(ctx context.Context) {
@@ -88,8 +73,8 @@ type Exporter interface {
 
 type NoopExporter struct{}
 
-func (n *NoopExporter) ComponentID() ComponentID {
-	return "NoopExporter"
+func (n *NoopExporter) ComponentConfig() interface{} {
+	return nil
 }
 
 func (n *NoopExporter) Connect() error {

@@ -44,7 +44,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/pipelinecronsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
@@ -128,12 +127,11 @@ func (p *provider) do() error {
 	crondSvc := crondsvc.New(dbClient, bdl, js)
 	actionAgentSvc := actionagentsvc.New(dbClient, bdl, js, etcdctl)
 	extMarketSvc := extmarketsvc.New(bdl)
-	pipelineCronSvc := pipelinecronsvc.New(dbClient, crondSvc)
 	reportSvc := reportsvc.New(reportsvc.WithDBClient(dbClient))
 	queueManage := queuemanage.New(queuemanage.WithDBClient(dbClient))
 
 	// init services
-	pipelineSvc := pipelinesvc.New(appSvc, crondSvc, actionAgentSvc, extMarketSvc, pipelineCronSvc,
+	pipelineSvc := pipelinesvc.New(appSvc, crondSvc, actionAgentSvc, extMarketSvc, p.CronService,
 		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl)
 	pipelineSvc.WithCmsService(p.CmsService)
 
@@ -175,13 +173,14 @@ func (p *provider) do() error {
 		endpoints.WithCrondSvc(crondSvc),
 		endpoints.WithActionAgentSvc(actionAgentSvc),
 		endpoints.WithExtMarketSvc(extMarketSvc),
-		endpoints.WithPipelineCronSvc(pipelineCronSvc),
 		endpoints.WithPipelineSvc(pipelineSvc),
 		endpoints.WithReportSvc(reportSvc),
 		endpoints.WithQueueManage(queueManage),
 		endpoints.WithQueueManager(p.QueueManager),
 		endpoints.WithEngine(p.Engine),
 	)
+
+	p.CronService.WithPipelineSvc(crondSvc)
 
 	//server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("pipeline"))
 	server := httpserver.New(conf.ListenAddr())

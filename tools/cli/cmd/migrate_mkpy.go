@@ -33,7 +33,7 @@ var MigratePy = command.Command{
 	Name:           "mkpy",
 	ShortHelp:      "make a python migration script pattern",
 	LongHelp:       "make a python migration scritp pattern.",
-	Example:        "erda-cli migrate mkpy --module my_module --name my_script_name",
+	Example:        "$ erda-cli migrate mkpy --module my_module --name my_script_name",
 	Hidden:         false,
 	DontHideCursor: false,
 	Args:           nil,

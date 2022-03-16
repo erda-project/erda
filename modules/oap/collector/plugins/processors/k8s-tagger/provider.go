@@ -25,8 +25,6 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/kubernetes"
-	"github.com/erda-project/erda/modules/oap/collector/common/filter"
-	"github.com/erda-project/erda/modules/oap/collector/core/model"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
 	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata/pod"
 )
@@ -34,8 +32,8 @@ import (
 var providerName = plugins.WithPrefixProcessor("k8s-tagger")
 
 type config struct {
-	Filter filter.Config `file:"filter"`
-	Pod    pod.Config    `file:"pod"`
+	Pod      pod.Config `file:"pod"`
+	Namepass []string   `file:"namepass"`
 }
 
 // +provider
@@ -48,17 +46,14 @@ type provider struct {
 	podCache *pod.Cache
 }
 
-func (p *provider) ComponentID() model.ComponentID {
-	return model.ComponentID(providerName)
+func (p *provider) ComponentConfig() interface{} {
+	return p.Cfg
 }
 
 // 1. filter with config filters
 // 2. pass tags to handle
 func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
 	in.HandleAttributes(func(attr map[string]string) map[string]string {
-		if !p.Cfg.Filter.IsTagpass(attr) {
-			return attr
-		}
 		return p.addPodMetadata(attr)
 	})
 

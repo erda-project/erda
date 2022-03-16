@@ -2,6 +2,11 @@ version: "2.0"
 meta:
   ERDA_COMPONENT: ""
 values:
+  test:
+    nfs_root: "<%$.Storage.MountPoint%>"
+    gittar_root: "<%$.Storage.GittarDataPath%>"
+    request_cpu: 0.1
+    request_mem: 128
   production:
     nfs_root: "<%$.Storage.MountPoint%>"
     gittar_root: "<%$.Storage.GittarDataPath%>"
@@ -747,7 +752,7 @@ services:
       - port: 12580
         protocol: "TCP"
         l4_protocol: "TCP"
-        expose: true
+        expose: false
     envs:
       DEBUG: "false"
       LISTEN_ADDR: ":12580"
@@ -769,8 +774,6 @@ services:
       replicas: 1
       labels:
         GROUP: "devops"
-    expose:
-      - 12580
     health_check:
       http:
         port: 12580

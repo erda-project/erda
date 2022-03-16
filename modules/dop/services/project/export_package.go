@@ -34,11 +34,6 @@ import (
 )
 
 type PackageDB struct {
-	//ProjectID   uint64                `json:"projectID"`
-	//ProjectName string                `json:"projectName"`
-	//OrgID       int64                 `json:"orgID"`
-	//OrgName     string                `json:"orgName"`
-	//apistructs.IdentityInfo
 	Artifacts   []apistructs.Artifact `json:"artifacts"`
 	Package     *apistructs.ProjectPackage
 	bdl         *bundle.Bundle
@@ -64,6 +59,9 @@ func (t *PackageDB) SetProject() error {
 		isProgject := atype == "project"
 		if isProgject {
 			req.IsProjectRelease = &isProgject
+			if a.Name != t.contex.ProjectName {
+				return errors.Errorf("Invalid project name for artifact %v", a)
+			}
 		} else if atype == "application" {
 			r, err := t.bdl.GetAppIDByNames(t.contex.ProjectID, t.contex.UserID, []string{a.Name})
 			if err != nil {
@@ -301,7 +299,8 @@ func (t *PackageDB) SetProject() error {
 				} else {
 					for _, k := range configKeys {
 						addonValue := fmt.Sprintf("values.%s.addons.%s.config.%s", env, name, k)
-						configMap[k] = fmt.Sprintf("{{ index .%s }}", strings.ReplaceAll(addonValue, ".", "_"))
+						encodeKey := strings.ReplaceAll(strings.ReplaceAll(addonValue, ".", "_"), "-", "_")
+						configMap[k] = fmt.Sprintf("{{ index .%s }}", encodeKey)
 						envValues[addonValue] = ""
 					}
 				}
@@ -328,14 +327,18 @@ func (t *PackageDB) SetProject() error {
 				sumMemoryQuota += service.Resources.MaxMem
 			}
 			clusterNameKey := fmt.Sprintf("values.%s.cluster.name", env)
-			c.Cluster.Name = fmt.Sprintf("{{ index .%s }}", strings.ReplaceAll(clusterNameKey, ".", "_"))
+			encodeKey := strings.ReplaceAll(strings.ReplaceAll(clusterNameKey, ".", "_"), "-", "_")
+			c.Cluster.Name = fmt.Sprintf("{{ index .%s }}", encodeKey)
 			envValues[clusterNameKey] = ""
 
 			cpuQuotaKey := fmt.Sprintf("values.%s.cluster.quota.cpuQuota", env)
 			memoryQuotaKey := fmt.Sprintf("values.%s.cluster.quota.memoryQuota", env)
+			encodeCpuQuotaKey := strings.ReplaceAll(strings.ReplaceAll(cpuQuotaKey, ".", "_"), "-", "_")
+			encodeMemQuotaKey := strings.ReplaceAll(strings.ReplaceAll(memoryQuotaKey, ".", "_"), "-", "_")
 			c.Cluster.Quota = apistructs.ClusterQuota{
-				CpuQuota:    fmt.Sprintf("{{ index .%s }}", strings.ReplaceAll(cpuQuotaKey, ".", "_")),
-				MemoryQuota: fmt.Sprintf("{{ index .%s }}", strings.ReplaceAll(memoryQuotaKey, ".", "_")),
+
+				CpuQuota:    fmt.Sprintf("{{ index .%s }}", encodeCpuQuotaKey),
+				MemoryQuota: fmt.Sprintf("{{ index .%s }}", encodeMemQuotaKey),
 			}
 			envValues[cpuQuotaKey] = sumCpuQuota
 			envValues[memoryQuotaKey] = sumMemoryQuota
@@ -355,7 +358,8 @@ func (t *PackageDB) SetProject() error {
 				for addonEnv, configRef := range list {
 					for k := range addon.Config {
 						addonValue := fmt.Sprintf("values.%s.addons.%s.config.%s", addonEnv, addon.Name, k)
-						configRef[k] = fmt.Sprintf("{{ index .%s }}", strings.ReplaceAll(addonValue, ".", "_"))
+						encodeKey := strings.ReplaceAll(strings.ReplaceAll(addonValue, ".", "_"), "-", "_")
+						configRef[k] = fmt.Sprintf("{{ index .%s }}", encodeKey)
 						envValues[addonValue] = ""
 					}
 				}
@@ -416,26 +420,6 @@ func (t *PackageDB) GetContext() *PackageContext {
 	return t.contex
 }
 
-//func (t *PackageDB) GetProjectID() uint64 {
-//	return t.ProjectID
-//}
-//
-//func (t *PackageDB) GetProjectName() string {
-//	return t.ProjectName
-//}
-//
-//func (t *PackageDB) GetOrgID() uint64 {
-//	return uint64(t.OrgID)
-//}
-//
-//func (t *PackageDB) GetOrgName() string {
-//	return t.OrgName
-//}
-//
-//func (t *PackageDB) GetIdentityInfo() apistructs.IdentityInfo {
-//	return t.IdentityInfo
-//}
-
 func (t *PackageDB) GetTempDir() string {
 	return t.TempDir
 }
@@ -495,6 +479,7 @@ func (p *Project) ExportProjectPackage(record *dao.TestFileRecord) {
 	uuid, err := packageDirector.GenAndUploadZipPackage()
 	if err != nil {
 		logrus.Error(apierrors.ErrExportProjectPackage.InternalError(err))
+		packageDirector.errs = append(packageDirector.errs, err)
 		if err := p.UpdateFileRecord(apistructs.TestFileRecordRequest{ID: id, State: apistructs.FileRecordStateFail, ErrorInfo: packageDirector.GenErrInfo()}); err != nil {
 			logrus.Error(apierrors.ErrExportProjectPackage.InternalError(err))
 		}

@@ -144,17 +144,17 @@ func (r *ComponentReleaseTable) DecodeURLQuery() error {
 }
 
 func (r *ComponentReleaseTable) EncodeURLQuery() error {
-	urlQuery := make(map[string]interface{})
-	urlQuery["pageNo"] = r.State.PageNo
-	urlQuery["pageSize"] = r.State.PageSize
-	urlQuery["sorterData"] = r.State.Sorter
-	jsonData, err := json.Marshal(urlQuery)
+	query := make(map[string]interface{})
+	query["pageNo"] = r.State.PageNo
+	query["pageSize"] = r.State.PageSize
+	query["sorterData"] = r.State.Sorter
+	data, err := json.Marshal(query)
 	if err != nil {
 		return err
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(jsonData)
-	r.State.ReleaseTableURLQuery = encoded
+	encode := base64.StdEncoding.EncodeToString(data)
+	r.State.ReleaseTableURLQuery = encode
 	return nil
 }
 
@@ -343,7 +343,7 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 			item.Operations.Operations["referencedReleases"] = Operation{
 				Meta: map[string]interface{}{
 					"releaseID": strings.Join(list, ","),
-					"isLatest":  "false",
+					"latest":    "",
 				},
 				Key:  "referencedReleases",
 				Text: r.sdk.I18n("referencedReleases"),

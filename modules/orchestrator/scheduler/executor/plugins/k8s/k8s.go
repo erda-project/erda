@@ -358,7 +358,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	event := event.New(event.WithCompleteParams(addr, client))
 	dbclient := instanceinfo.New(dbengine.MustOpen())
 
-	clusterInfo, err := clusterinfo.New(clusterName, clusterinfo.WithCompleteParams(addr, client))
+	clusterInfo, err := clusterinfo.New(clusterName, clusterinfo.WithCompleteParams(addr, client), clusterinfo.WithDB(dbclient))
 	if err != nil {
 		return nil, errors.Errorf("failed to new cluster info, executorName: %s, clusterName: %s, (%v)",
 			name, clusterName, err)
@@ -486,9 +486,10 @@ func (k *Kubernetes) checkQuota(ctx context.Context, runtime *apistructs.Service
 		cpuTotal += svc.Resources.Cpu * 1000 * float64(svc.Scale)
 		memTotal += svc.Resources.Mem * float64(svc.Scale)
 	}
+	logrus.Infof("servive %s cpu total %v", runtime.Services[0].Name, cpuTotal)
 	cpuTotal /= k.cpuSubscribeRatio
 	memTotal /= k.memSubscribeRatio
-	_, projectID, workspace, runtimeId := extractServicesEnvs(runtime.Services)
+	_, projectID, runtimeId, workspace := extractServicesEnvs(runtime)
 	return k.CheckQuota(ctx, projectID, workspace, runtimeId, int64(cpuTotal), int64(memTotal), "", runtime.ID)
 }
 

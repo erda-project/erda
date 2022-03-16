@@ -1147,6 +1147,7 @@ func (svc *Issue) checkUpdateStatePermission(model dao.Issue, changedFields map[
 
 // GetIssuesByIssueIDs 通过issueIDs获取事件列表
 func (svc *Issue) GetIssuesByIssueIDs(issueIDs []uint64, identityInfo apistructs.IdentityInfo) ([]apistructs.Issue, error) {
+	issueIDs = strutil.DedupUint64Slice(issueIDs)
 	issueModels, err := svc.db.GetIssueByIssueIDs(issueIDs)
 	if err != nil {
 		return nil, err

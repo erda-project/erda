@@ -352,3 +352,8 @@ metric-report-client:
       addr: "${COLLECTOR_ADDR:collector:7076}"
       username: ${COLLECTOR_AUTH_USERNAME}
       password: ${COLLECTOR_AUTH_PASSWORD}
+
+
+grpc-client@erda.core.pipeline.cron:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+erda.core.pipeline.cron-client:
