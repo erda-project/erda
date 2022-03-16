@@ -3,8 +3,6 @@ meta:
   ERDA_COMPONENT: ""
 values:
   test:
-    nfs_root: "<%$.Storage.MountPoint%>"
-    gittar_root: "<%$.Storage.GittarDataPath%>"
     request_cpu: 0.1
     request_mem: 128
   production:
