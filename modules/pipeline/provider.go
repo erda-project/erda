@@ -44,7 +44,7 @@ type provider struct {
 	QueueManager queuemanager.Interface
 	Reconciler   reconciler.Interface
 	LeaderWorker leaderworker.Interface
-	DBgc         dbgc.Interface
+	DBGC         dbgc.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {
