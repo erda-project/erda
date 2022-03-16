@@ -40,6 +40,8 @@ const (
 )
 
 func (r *Reconciler) ListenGC(ctx context.Context) {
+	archived, b, err := r.dbgc.GetPipelineTasksIncludeArchived(ctx, 10034983)
+	fmt.Println(archived, b, err)
 	logrus.Info("reconciler: start watching gc pipelines")
 	for {
 		select {

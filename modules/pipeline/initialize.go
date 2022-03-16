@@ -148,7 +148,7 @@ func (p *provider) do() error {
 	// init CallbackActionFunc
 	pipelinefunc.CallbackActionFunc = pipelineSvc.DealPipelineCallbackOfAction
 
-	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun)
+	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun, p.DBgc)
 	if err != nil {
 		return fmt.Errorf("failed to init reconciler, err: %v", err)
 	}

@@ -57,7 +57,7 @@ type Reconciler struct {
 	actionAgentSvc  *actionagentsvc.ActionAgentSvc
 	extMarketSvc    *extmarketsvc.ExtMarketSvc
 	pipelineSvcFunc *PipelineSvcFunc
-	dbgc            dbgc.Interface
+	DBgc            dbgc.Interface
 }
 
 // In order to solve the problem of circular dependency if Reconciler introduces pipelinesvc, the svc method is mounted in this structure.
@@ -75,6 +75,7 @@ func New(js jsonstore.JsonStore, etcd *etcd.Store, bdl *bundle.Bundle, dbClient 
 	actionAgentSvc *actionagentsvc.ActionAgentSvc,
 	extMarketSvc *extmarketsvc.ExtMarketSvc,
 	pipelineSvcFunc *PipelineSvcFunc,
+	DBgc dbgc.Interface,
 ) (*Reconciler, error) {
 	r := Reconciler{
 		js:       js,
@@ -89,6 +90,7 @@ func New(js jsonstore.JsonStore, etcd *etcd.Store, bdl *bundle.Bundle, dbClient 
 		actionAgentSvc:  actionAgentSvc,
 		extMarketSvc:    extMarketSvc,
 		pipelineSvcFunc: pipelineSvcFunc,
+		DBgc:            DBgc,
 	}
 	return &r, nil
 }
