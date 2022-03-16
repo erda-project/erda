@@ -21,6 +21,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pkg/action_info"
+	"github.com/erda-project/erda/modules/pipeline/providers/dbgc"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -54,6 +55,7 @@ type Reconciler struct {
 	actionAgentSvc  *actionagentsvc.ActionAgentSvc
 	extMarketSvc    *extmarketsvc.ExtMarketSvc
 	pipelineSvcFunc *PipelineSvcFunc
+	DBGC            dbgc.Interface
 }
 
 // In order to solve the problem of circular dependency if Reconciler introduces pipelinesvc, the svc method is mounted in this structure.
@@ -71,6 +73,7 @@ func New(js jsonstore.JsonStore, etcd *etcd.Store, bdl *bundle.Bundle, dbClient 
 	actionAgentSvc *actionagentsvc.ActionAgentSvc,
 	extMarketSvc *extmarketsvc.ExtMarketSvc,
 	pipelineSvcFunc *PipelineSvcFunc,
+	DBGC dbgc.Interface,
 ) (*Reconciler, error) {
 	r := Reconciler{
 		js:       js,
@@ -85,6 +88,7 @@ func New(js jsonstore.JsonStore, etcd *etcd.Store, bdl *bundle.Bundle, dbClient 
 		actionAgentSvc:  actionAgentSvc,
 		extMarketSvc:    extMarketSvc,
 		pipelineSvcFunc: pipelineSvcFunc,
+		DBGC:            DBGC,
 	}
 	return &r, nil
 }

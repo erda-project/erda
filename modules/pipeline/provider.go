@@ -25,6 +25,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron"
+	"github.com/erda-project/erda/modules/pipeline/providers/dbgc"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/dispatcher"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
@@ -43,6 +44,7 @@ type provider struct {
 	QueueManager queuemanager.Interface
 	Reconciler   reconciler.Interface
 	LeaderWorker leaderworker.Interface
+	DBGC         dbgc.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

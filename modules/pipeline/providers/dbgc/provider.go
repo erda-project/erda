@@ -12,56 +12,62 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package dbgc
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/dbgc/db"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
-	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler"
+	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
+type config struct{}
+
 type provider struct {
-	Log logs.Logger
-	Cfg *config
+	Cfg      *config
+	Log      logs.Logger
+	js       jsonstore.JsonStore
+	etcd     *etcd.Store
+	dbClient *db.Client
 
 	MySQL mysqlxorm.Interface
 	LW    leaderworker.Interface
-
-	r *reconciler.Reconciler
-}
-
-type config struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	js, err := jsonstore.New()
+	if err != nil {
+		return err
+	}
+	etcdStore, err := etcd.New()
+	if err != nil {
+		return err
+	}
+	p.js = js
+	p.etcd = etcdStore
+
+	p.dbClient = &db.Client{Client: dbclient.Client{Engine: p.MySQL.DB()}}
 	return nil
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	if p.r == nil {
-		return fmt.Errorf("set reconciler before run")
-	}
-
-	// gc
-	p.LW.OnLeader(p.r.ListenGC)
-	p.LW.OnLeader(p.r.CompensateGCNamespaces)
-
+	p.LW.OnLeader(p.PipelineDatabaseGC)
 	return nil
 }
 
 func init() {
-	interfaceType := reflect.TypeOf((*Interface)(nil)).Elem()
-	servicehub.Register("reconciler", &servicehub.Spec{
-		Services:     []string{"reconciler"},
-		Types:        []reflect.Type{interfaceType},
+	servicehub.Register("dbgc", &servicehub.Spec{
+		Services:     []string{"dbgc"},
+		Types:        []reflect.Type{reflect.TypeOf((*Interface)(nil)).Elem()},
 		Dependencies: nil,
-		Description:  "pipeline reconciler",
+		Description:  "pipeline dbgc",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator:      func() servicehub.Provider { return &provider{} },
 	})

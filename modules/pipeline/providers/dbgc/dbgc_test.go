@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package dbgc
 
 import (
 	"context"
@@ -25,6 +25,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/dbgc/db"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
@@ -67,8 +68,8 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 		},
 	}
 
-	var db *dbclient.Client
-	monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
+	DB := &dbclient.Client{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
 		assert.True(t, req.PageNum <= 2, "PageNum > 2")
 		if req.PageNum == 1 {
 			return []spec.Pipeline{pipelineMaps[1], pipelineMaps[0]}, nil, 2, 2, nil
@@ -77,15 +78,15 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 		}
 	})
 
-	var r Reconciler
-	r.dbClient = db
+	var r provider
+	r.dbClient = &db.Client{Client: *DB}
 
 	var gcNum = 1
 	var addCountNum = func() {
 		gcNum++
 	}
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *Reconciler, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *provider, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
 		assert.True(t, gcNum < 3, "DoDBGC times >= 3")
 		addCountNum()
 		return nil
@@ -122,8 +123,8 @@ func TestGetPipelineIDFromDBGCWatchedKey(t *testing.T) {
 }
 
 func TestPipelineDatabaseGC(t *testing.T) {
-	var r Reconciler
-	pm := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "PipelineDatabaseGC", func(r *Reconciler, ctx context.Context) {
+	var r provider
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "PipelineDatabaseGC", func(r *provider, ctx context.Context) {
 		return
 	})
 	defer pm.Unpatch()
@@ -134,11 +135,10 @@ func TestPipelineDatabaseGC(t *testing.T) {
 
 func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 	t.Run("test", func(t *testing.T) {
-
-		var dbClient *dbclient.Client
-		var r Reconciler
-		r.dbClient = dbClient
-		patch := monkey.PatchInstanceMethod(reflect.TypeOf(dbClient), "PageListPipelines", func(db *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
+		DB := &dbclient.Client{}
+		var r provider
+		r.dbClient = &db.Client{Client: *DB}
+		patch := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(db *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
 			switch req.PageNum {
 			case 1:
 				return nil, nil, 0, 0, fmt.Errorf("error")
@@ -157,7 +157,7 @@ func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 		})
 		defer patch.Unpatch()
 
-		patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *Reconciler, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
+		patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "DoDBGC", func(r *provider, pipelineID uint64, gcOption apistructs.PipelineGCDBOption) error {
 			assert.Equal(t, pipelineID, uint64(1))
 			return fmt.Errorf("error")
 		})
