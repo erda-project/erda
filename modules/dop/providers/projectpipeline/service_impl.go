@@ -1317,7 +1317,7 @@ func (p *ProjectPipelineService) fetchRemotePipeline(source *spb.PipelineSource,
 	return p.bundle.GetGittarBlobNode("/wb/"+searchINode, orgID, userID)
 }
 
-func (p *ProjectPipelineService) ListRef(ctx context.Context, params deftype.ProjectPipelineRefList) ([]string, error) {
+func (p *ProjectPipelineService) ListUsedRefs(ctx context.Context, params deftype.ProjectPipelineUsedRefList) ([]string, error) {
 	if err := params.Validate(); err != nil {
 		return nil, apierrors.ErrListProjectPipelineRef.InvalidParameter(err)
 	}
@@ -1331,7 +1331,7 @@ func (p *ProjectPipelineService) ListRef(ctx context.Context, params deftype.Pro
 		return nil, apierrors.ErrListProjectPipelineRef.InternalError(err)
 	}
 
-	resp, err := p.PipelineDefinition.ListRef(ctx, &dpb.PipelineDefinitionRefListRequest{Location: makeLocation(&apistructs.ApplicationDTO{
+	resp, err := p.PipelineDefinition.ListUsedRefs(ctx, &dpb.PipelineDefinitionUsedRefListRequest{Location: makeLocation(&apistructs.ApplicationDTO{
 		OrgName:     org.Name,
 		ProjectName: project.Name,
 	}, cicdPipelineType)})

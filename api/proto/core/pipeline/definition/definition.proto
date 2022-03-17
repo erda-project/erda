@@ -42,9 +42,9 @@ service DefinitionService {
       get: "/api/pipeline-definitions/actions/statics-group-by-remote",
     };
   }
-  rpc ListRef (PipelineDefinitionRefListRequest) returns (PipelineDefinitionRefListResponse) {
+  rpc ListUsedRefs (PipelineDefinitionUsedRefListRequest) returns (PipelineDefinitionUsedRefListResponse) {
     option (google.api.http) = {
-      get: "/api/pipeline-definitions/actions/list-ref",
+      get: "/api/pipeline-definitions/actions/list-used-refs",
     };
   }
 }
@@ -137,7 +137,6 @@ message PipelineDefinitionGetResponse {
   PipelineDefinition pipelineDefinition = 1;
 }
 
-
 message PipelineDefinitionListRequest {
   int64 pageSize = 1;
   int64 pageNo = 2;
@@ -179,10 +178,10 @@ message PipelineDefinitionListResponse {
   repeated PipelineDefinition data = 2;
 }
 
-message PipelineDefinitionRefListRequest {
+message PipelineDefinitionUsedRefListRequest {
   string location = 1 [(validator.field) = {string_not_empty: true}];
 }
 
-message PipelineDefinitionRefListResponse {
+message PipelineDefinitionUsedRefListResponse {
   repeated string ref = 1;
 }

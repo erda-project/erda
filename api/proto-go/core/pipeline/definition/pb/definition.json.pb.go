@@ -43,10 +43,10 @@ var _ json.Marshaler = (*PipelineDefinitionStatistics)(nil)
 var _ json.Unmarshaler = (*PipelineDefinitionStatistics)(nil)
 var _ json.Marshaler = (*PipelineDefinitionListResponse)(nil)
 var _ json.Unmarshaler = (*PipelineDefinitionListResponse)(nil)
-var _ json.Marshaler = (*PipelineDefinitionRefListRequest)(nil)
-var _ json.Unmarshaler = (*PipelineDefinitionRefListRequest)(nil)
-var _ json.Marshaler = (*PipelineDefinitionRefListResponse)(nil)
-var _ json.Unmarshaler = (*PipelineDefinitionRefListResponse)(nil)
+var _ json.Marshaler = (*PipelineDefinitionUsedRefListRequest)(nil)
+var _ json.Unmarshaler = (*PipelineDefinitionUsedRefListRequest)(nil)
+var _ json.Marshaler = (*PipelineDefinitionUsedRefListResponse)(nil)
+var _ json.Unmarshaler = (*PipelineDefinitionUsedRefListResponse)(nil)
 
 // PipelineDefinition implement json.Marshaler.
 func (m *PipelineDefinition) MarshalJSON() ([]byte, error) {
@@ -318,8 +318,8 @@ func (m *PipelineDefinitionListResponse) UnmarshalJSON(b []byte) error {
 	}).Unmarshal(b, m)
 }
 
-// PipelineDefinitionRefListRequest implement json.Marshaler.
-func (m *PipelineDefinitionRefListRequest) MarshalJSON() ([]byte, error) {
+// PipelineDefinitionUsedRefListRequest implement json.Marshaler.
+func (m *PipelineDefinitionUsedRefListRequest) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -329,15 +329,15 @@ func (m *PipelineDefinitionRefListRequest) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// PipelineDefinitionRefListRequest implement json.Marshaler.
-func (m *PipelineDefinitionRefListRequest) UnmarshalJSON(b []byte) error {
+// PipelineDefinitionUsedRefListRequest implement json.Marshaler.
+func (m *PipelineDefinitionUsedRefListRequest) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
 }
 
-// PipelineDefinitionRefListResponse implement json.Marshaler.
-func (m *PipelineDefinitionRefListResponse) MarshalJSON() ([]byte, error) {
+// PipelineDefinitionUsedRefListResponse implement json.Marshaler.
+func (m *PipelineDefinitionUsedRefListResponse) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -347,8 +347,8 @@ func (m *PipelineDefinitionRefListResponse) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// PipelineDefinitionRefListResponse implement json.Marshaler.
-func (m *PipelineDefinitionRefListResponse) UnmarshalJSON(b []byte) error {
+// PipelineDefinitionUsedRefListResponse implement json.Marshaler.
+func (m *PipelineDefinitionUsedRefListResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

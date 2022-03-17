@@ -33,8 +33,8 @@ type DefinitionServiceHandler interface {
 	List(context.Context, *PipelineDefinitionListRequest) (*PipelineDefinitionListResponse, error)
 	// GET /api/pipeline-definitions/actions/statics-group-by-remote
 	StaticsGroupByRemote(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error)
-	// GET /api/pipeline-definitions/actions/list-ref
-	ListRef(context.Context, *PipelineDefinitionRefListRequest) (*PipelineDefinitionRefListResponse, error)
+	// GET /api/pipeline-definitions/actions/list-used-refs
+	ListUsedRefs(context.Context, *PipelineDefinitionUsedRefListRequest) (*PipelineDefinitionUsedRefListResponse, error)
 }
 
 // RegisterDefinitionServiceHandler register DefinitionServiceHandler to http.Router.
@@ -345,13 +345,13 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 		)
 	}
 
-	add_ListRef := func(method, path string, fn func(context.Context, *PipelineDefinitionRefListRequest) (*PipelineDefinitionRefListResponse, error)) {
+	add_ListUsedRefs := func(method, path string, fn func(context.Context, *PipelineDefinitionUsedRefListRequest) (*PipelineDefinitionUsedRefListResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*PipelineDefinitionRefListRequest))
+			return fn(ctx, req.(*PipelineDefinitionUsedRefListRequest))
 		}
-		var ListRef_info transport.ServiceInfo
+		var ListUsedRefs_info transport.ServiceInfo
 		if h.Interceptor != nil {
-			ListRef_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "ListRef", srv)
+			ListUsedRefs_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "ListUsedRefs", srv)
 			handler = h.Interceptor(handler)
 		}
 		r.Add(method, path, encodeFunc(
@@ -359,10 +359,10 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 				ctx := http.WithRequest(r.Context(), r)
 				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, ListRef_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, ListUsedRefs_info)
 				}
 				r = r.WithContext(ctx)
-				var in PipelineDefinitionRefListRequest
+				var in PipelineDefinitionUsedRefListRequest
 				if err := h.Decode(r, &in); err != nil {
 					return nil, err
 				}
@@ -387,5 +387,5 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 	add_Get("GET", "/api/pipeline-definitions/{pipelineDefinitionID}", srv.Get)
 	add_List("GET", "/api/pipeline-definitions", srv.List)
 	add_StaticsGroupByRemote("GET", "/api/pipeline-definitions/actions/statics-group-by-remote", srv.StaticsGroupByRemote)
-	add_ListRef("GET", "/api/pipeline-definitions/actions/list-ref", srv.ListRef)
+	add_ListUsedRefs("GET", "/api/pipeline-definitions/actions/list-used-refs", srv.ListUsedRefs)
 }

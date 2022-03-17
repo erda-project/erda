@@ -274,13 +274,13 @@ func (p pipelineDefinition) StaticsGroupByRemote(ctx context.Context, request *p
 	return &pb.PipelineDefinitionStaticsResponse{PipelineDefinitionStatistics: pipelineDefinitionStatistics}, nil
 }
 
-func (p pipelineDefinition) ListRef(ctx context.Context, req *pb.PipelineDefinitionRefListRequest) (*pb.PipelineDefinitionRefListResponse, error) {
+func (p pipelineDefinition) ListUsedRefs(ctx context.Context, req *pb.PipelineDefinitionUsedRefListRequest) (*pb.PipelineDefinitionUsedRefListResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
-	refs, err := p.dbClient.ListRef(req)
+	refs, err := p.dbClient.ListUsedRef(req)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.PipelineDefinitionRefListResponse{Ref: refs}, nil
+	return &pb.PipelineDefinitionUsedRefListResponse{Ref: refs}, nil
 }

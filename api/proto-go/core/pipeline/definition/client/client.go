@@ -61,6 +61,6 @@ func (s *definitionServiceWrapper) StaticsGroupByRemote(ctx context.Context, req
 	return s.client.StaticsGroupByRemote(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
-func (s *definitionServiceWrapper) ListRef(ctx context.Context, req *pb.PipelineDefinitionRefListRequest) (*pb.PipelineDefinitionRefListResponse, error) {
-	return s.client.ListRef(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+func (s *definitionServiceWrapper) ListUsedRefs(ctx context.Context, req *pb.PipelineDefinitionUsedRefListRequest) (*pb.PipelineDefinitionUsedRefListResponse, error) {
+	return s.client.ListUsedRefs(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

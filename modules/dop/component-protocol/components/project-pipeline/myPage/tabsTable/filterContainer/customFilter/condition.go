@@ -130,11 +130,7 @@ func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
 	condition := model.NewSelectCondition("app", cputil.I18n(p.sdk.Ctx, "application"), func() []model.SelectOption {
 		selectOptions := make([]model.SelectOption, 0, len(apps.List))
 		for _, v := range apps.List {
-			selectOptions = append(selectOptions, *model.NewSelectOption(func() string {
-				return v.Name
-			}(),
-				v.Name,
-			))
+			selectOptions = append(selectOptions, *model.NewSelectOption(v.Name, v.Name))
 		}
 		return selectOptions
 	}())
@@ -144,7 +140,7 @@ func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
 }
 
 func (p *CustomFilter) BranchCondition() (*model.SelectCondition, error) {
-	branches, err := p.ProjectPipelineSvc.ListRef(p.sdk.Ctx, deftype.ProjectPipelineRefList{
+	branches, err := p.ProjectPipelineSvc.ListUsedRefs(p.sdk.Ctx, deftype.ProjectPipelineUsedRefList{
 		ProjectID:    p.InParams.ProjectID,
 		IdentityInfo: apistructs.IdentityInfo{UserID: p.sdk.Identity.UserID},
 	})
@@ -154,11 +150,7 @@ func (p *CustomFilter) BranchCondition() (*model.SelectCondition, error) {
 	cond := model.NewSelectCondition("branch", cputil.I18n(p.sdk.Ctx, "branch"), func() []model.SelectOption {
 		selectOptions := make([]model.SelectOption, 0, len(branches))
 		for _, v := range branches {
-			selectOptions = append(selectOptions, *model.NewSelectOption(func() string {
-				return v
-			}(),
-				v,
-			))
+			selectOptions = append(selectOptions, *model.NewSelectOption(v, v))
 		}
 		return selectOptions
 	}())

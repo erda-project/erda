@@ -294,7 +294,7 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 	}
 }
 
-func (client *Client) ListRef(req *pb.PipelineDefinitionRefListRequest, ops ...mysqlxorm.SessionOption) (refs []string, err error) {
+func (client *Client) ListUsedRef(req *pb.PipelineDefinitionUsedRefListRequest, ops ...mysqlxorm.SessionOption) (refs []string, err error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 	err = session.Table(PipelineDefinition{}.TableName()).

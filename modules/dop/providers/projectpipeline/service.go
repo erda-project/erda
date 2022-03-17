@@ -57,7 +57,7 @@ func (p *ProjectPipelineService) WithPermissionSvc(permission *permission.Permis
 type Service interface {
 	Create(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error)
 	List(ctx context.Context, params deftype.ProjectPipelineList) ([]*dpb.PipelineDefinition, int64, error)
-	ListRef(ctx context.Context, params deftype.ProjectPipelineRefList) ([]string, error)
+	ListUsedRefs(ctx context.Context, params deftype.ProjectPipelineUsedRefList) ([]string, error)
 	Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error)
 	Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error)
 	SetPrimary(ctx context.Context, params deftype.ProjectPipelineCategory) (*dpb.PipelineDefinitionUpdateResponse, error)

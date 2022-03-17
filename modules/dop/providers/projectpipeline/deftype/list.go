@@ -55,17 +55,17 @@ func (p *ProjectPipelineList) Validate() error {
 type ProjectPipelineListResult struct {
 }
 
-type ProjectPipelineRefList struct {
+type ProjectPipelineUsedRefList struct {
 	ProjectID uint64 `json:"projectID"`
 
 	IdentityInfo apistructs.IdentityInfo
 }
 
-type ProjectPipelineRefListResult struct {
+type ProjectPipelineUsedRefListResult struct {
 	Refs []string `json:"refs"`
 }
 
-func (p *ProjectPipelineRefList) Validate() error {
+func (p *ProjectPipelineUsedRefList) Validate() error {
 	if p.ProjectID == 0 {
 		return fmt.Errorf("the projectID is 0")
 	}
