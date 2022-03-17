@@ -623,6 +623,12 @@ func (i *PublishItem) CumulativeUsers(point uint64, start, end time.Time, mk *ap
 		return nil, err
 	}
 	respBody, err := parsingDataListResp(resp)
+	if err != nil {
+		return nil, err
+	}
+	if respBody == nil {
+		return nil, errors.Errorf("no data from monitor")
+	}
 	times := respBody.Data.Times
 
 	data := make([]uint64, 0, point)
@@ -756,6 +762,9 @@ func errInfact(start, end time.Time, ak, ai string) (uint64, float64, uint64, fl
 	if err != nil {
 		return totalErrs, totalErrRate, totalInfactUsers, totalInfactUsersRate, err
 	}
+	if respBody == nil {
+		return 0, 0, 0, 0, errors.Errorf("no data from monitor")
+	}
 
 	for k, v := range respBody.Data.Results[0].Data[0] {
 		if strings.Contains(k, "error") {
@@ -828,6 +837,9 @@ func MetricsTotal(resp *query.MetricQueryResponse) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+	if respBody == nil {
+		return 0, errors.Errorf("no data from monitor")
+	}
 	lastSevenDayTotal := uint64(0)
 	for _, v := range respBody.Data.Results[0].Data[0] {
 		lastSevenDayTotal = uint64(v.Data)
@@ -839,6 +851,9 @@ func SevenDayAvg(resp *query.MetricQueryResponse) (uint64, float64, error) {
 	respBody, err := parsingDataListResp(resp)
 	if err != nil {
 		return 0, 0.0, err
+	}
+	if respBody == nil {
+		return 0, 0, errors.Errorf("no data from monitor")
 	}
 	recentSevenDayUsers := uint64(0)
 	lastSevenDayUsersGrowth := 0.0
@@ -861,6 +876,9 @@ func SevenDayUserRetension(firstResp, secondResp *query.MetricQueryResponse) (st
 	if err != nil {
 		return "", 0.0, err
 	}
+	if firstRespBody == nil {
+		return "", 0, errors.Errorf("no data from monitor")
+	}
 	firstDayUserIdDatas := []uint64{}
 	for k, v := range firstRespBody.Data.Results[0].Data[0] {
 		if strings.Contains(k, "firstDayUserId") {
@@ -871,6 +889,9 @@ func SevenDayUserRetension(firstResp, secondResp *query.MetricQueryResponse) (st
 	secondRespBody, err := parsingDataListResp(secondResp)
 	if err != nil {
 		return "", 0.0, err
+	}
+	if secondRespBody == nil {
+		return "", 0, errors.Errorf("no data from monitor")
 	}
 	secondDayUserIdDatas := []uint64{}
 	for k, v := range secondRespBody.Data.Results[0].Data[0] {
@@ -961,6 +982,9 @@ func (i *PublishItem) EffactUsersRate(point uint64, start, end time.Time, av str
 	if err != nil {
 		return nil, err
 	}
+	if dataList == nil {
+		return nil, errors.Errorf("no data from monitor")
+	}
 	effactUsers := make([]uint64, 0, point)
 	for _, v := range dataList.Data.Results[0].Data[0] {
 		effactUsers = v.Data
@@ -1035,9 +1059,13 @@ func (i *PublishItem) CrashRate(point uint64, start, end time.Time, av string, m
 	if err != nil {
 		return nil, err
 	}
-	errors := make([]uint64, 0, point)
+	if dataList == nil {
+		logrus.Errorf("failed to parsing data list resp for monitor, data is nil")
+		return nil, errors.Errorf("no data from monitor")
+	}
+	errs := make([]uint64, 0, point)
 	for _, v := range dataList.Data.Results[0].Data[0] {
-		errors = v.Data
+		errs = v.Data
 	}
 
 	startReq := query.CreateQueryRequest("ta_metric_mobile_metrics")
@@ -1061,13 +1089,17 @@ func (i *PublishItem) CrashRate(point uint64, start, end time.Time, av string, m
 	if err != nil {
 		return nil, err
 	}
+	if startDataList == nil {
+		logrus.Errorf("failed to parsing start data list resp for monitor, data is nil")
+		return nil, errors.Errorf("no data from monitor")
+	}
 	allStart := make([]uint64, 0, point)
 	for _, v := range startDataList.Data.Results[0].Data[0] {
 		allStart = v.Data
 	}
 
 	rateArr := make([]float64, 0, point)
-	for index, v := range errors {
+	for index, v := range errs {
 		if allStart[index] == 0 {
 			rateArr = append(rateArr, 0.0)
 			continue
