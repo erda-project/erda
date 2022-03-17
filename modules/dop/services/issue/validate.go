@@ -33,7 +33,7 @@ type issueValidationConfig struct {
 	stateID     int64
 }
 
-func (svc *Issue) NewIssueValidator(c *issueValidationConfig, db *dao.DBClient) (*issueValidator, error) {
+func NewIssueValidator(c *issueValidationConfig, db *dao.DBClient) (*issueValidator, error) {
 	v := issueValidator{db: db}
 	if c == nil {
 		return &v, nil

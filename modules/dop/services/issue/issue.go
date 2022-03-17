@@ -140,7 +140,7 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		req.UserID = req.Creator
 	}
 	if req.Type == apistructs.IssueTypeBug || req.Type == apistructs.IssueTypeTask {
-		validator, err := svc.NewIssueValidator(&issueValidationConfig{iterationID: req.IterationID}, svc.db)
+		validator, err := NewIssueValidator(&issueValidationConfig{iterationID: req.IterationID}, svc.db)
 		if err != nil {
 			return nil, apierrors.ErrCreateIssue.InvalidParameter(err)
 		}
@@ -552,7 +552,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		return err
 	}
 
-	validator, err := svc.NewIssueValidator(&issueValidationConfig{}, svc.db)
+	validator, err := NewIssueValidator(&issueValidationConfig{}, svc.db)
 	if err != nil {
 		return apierrors.ErrUpdateIssue.InternalError(err)
 	}
