@@ -29,6 +29,7 @@ import (
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-db-slow"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-http-analysis"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-http-detail"
+	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-http-error"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-http-slow"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-analysis"
 	_ "github.com/erda-project/erda/modules/msp/apm/service/components/transaction-mq-detail"
