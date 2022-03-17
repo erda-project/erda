@@ -40,8 +40,8 @@ type ProjectQuota struct {
 	TestMemQuota       uint64    `json:"test_mem_quota" gorm:"test_mem_quota"`
 	DevCPUQuota        uint64    `json:"dev_cpu_quota" gorm:"dev_cpu_quota"`
 	DevMemQuota        uint64    `json:"dev_mem_quota" gorm:"dev_mem_quota"`
-	CreatorID          uint64    `json:"creator_id" gorm:"creator_id"`
-	UpdaterID          uint64    `json:"updater_id" gorm:"updater_id"`
+	CreatorID          string    `json:"creator_id" gorm:"creator_id"`
+	UpdaterID          string    `json:"updater_id" gorm:"updater_id"`
 }
 
 // TableName returns the model's name "ps_group_projects_quota"
