@@ -24,5 +24,5 @@ func GenerateUrlQueryParams(obj interface{}) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return base64.URLEncoding.EncodeToString(fb), nil
+	return base64.StdEncoding.EncodeToString(fb), nil
 }

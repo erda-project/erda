@@ -15,6 +15,9 @@
 package filter
 
 import (
+	"encoding/base64"
+	"encoding/json"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
 	model "github.com/erda-project/erda-infra/providers/component-protocol/components/filter/models"
@@ -34,10 +37,11 @@ func init() {
 
 type ComponentFilter struct {
 	impl.DefaultFilter
-	sdk       *cptype.SDK
-	bdl       *bundle.Bundle
-	State     State
-	projectID uint64
+	sdk              *cptype.SDK
+	bdl              *bundle.Bundle
+	State            State
+	projectID        uint64
+	FrontendUrlQuery string
 }
 
 type State struct {
@@ -60,6 +64,9 @@ func (f *ComponentFilter) BeforeHandleOp(sdk *cptype.SDK) {
 	cputil.MustObjJSONTransfer(&f.StdStatePtr, &f.State)
 	projectID := cputil.GetInParamByKey(sdk.Ctx, "projectId").(float64)
 	f.projectID = uint64(projectID)
+	if q := cputil.GetInParamByKey(sdk.Ctx, "filter__urlQuery"); q != nil {
+		f.FrontendUrlQuery = q.(string)
+	}
 }
 
 func (f *ComponentFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
@@ -94,11 +101,24 @@ func (f *ComponentFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		f.StdDataPtr.Operations = map[cptype.OperationKey]cptype.Operation{
 			filter.OpFilter{}.OpKey(): cputil.NewOpBuilder().Build(),
 		}
-		f.State.Values = Value{
-			Archive: []string{"inprogress"},
+		if f.FrontendUrlQuery != "" {
+			if err = f.flushOptsByFilter(f.FrontendUrlQuery); err != nil {
+				panic(err)
+			}
+			f.State.Name = f.State.Values.Name
+			f.State.Iteration = f.State.Values.Iteration
+			f.State.Archive = nil
+			if len(f.State.Values.Archive) == 1 {
+				archived := f.State.Values.Archive[0] == "archived"
+				f.State.Archive = &archived
+			}
+		} else {
+			f.State.Values = Value{
+				Archive: []string{"inprogress"},
+			}
+			archived := false
+			f.State.Archive = &archived
 		}
-		archived := false
-		f.State.Archive = &archived
 		return nil
 	}
 }
@@ -139,4 +159,13 @@ func (f *ComponentFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemD
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		return nil
 	}
+}
+
+func (f *ComponentFilter) flushOptsByFilter(filterEntity string) error {
+	b, err := base64.StdEncoding.DecodeString(filterEntity)
+	if err != nil {
+		return err
+	}
+	f.State.Values = Value{}
+	return json.Unmarshal(b, &f.State.Values)
 }
