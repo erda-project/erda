@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package erda.core.messenger.eventbox;
+
+option go_package = "github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb";
+
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+
+service EventBoxService {
+  rpc CreateMessage (CreateMessageRequest) returns (CreateMessageResponse) {
+    option(google.api.http) = {
+      post: "/api/dice/eventbox/message/create"
+    };
+  }
+  rpc PrefixGet (PrefixGetRequest) returns (PrefixGetResponse) {
+    option(google.api.http) = {
+      get: "/register"
+    };
+  }
+}
+
+message CreateMessageRequest {
+  string                             sender        = 1;
+  google.protobuf.Value              content       = 2;
+  map<string, google.protobuf.Value> labels        = 3;
+  int64                              time          = 4;
+  google.protobuf.Value              originContent = 5 [json_name = "-"];
+}
+
+message CreateMessageResponse {
+  HTTPResponse data = 1;
+}
+
+message HTTPResponse {
+  int64                 status     = 1;
+  ErrorResponse         error      = 2;
+  google.protobuf.Value content    = 3;
+  bool                  compose    = 4;
+  bool                  rawContent = 5;
+}
+
+message ErrorResponse {
+  string                code = 1;
+  string                msg  = 2;
+  google.protobuf.Value ctx  = 3;
+}
+
+message PrefixGetRequest {
+  string key = 1;
+}
+
+message PrefixGetResponse {
+  HTTPResponse data = 1;
+}
