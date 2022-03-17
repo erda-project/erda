@@ -12,52 +12,65 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package resourcegc
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/dbgc"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
-	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler"
+	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
-type provider struct {
-	Log logs.Logger
-	Cfg *config
+type config struct{}
 
+type provider struct {
+	js       jsonstore.JsonStore
+	etcd     *etcd.Store
+	dbClient *dbclient.Client
+
+	Cfg   *config
+	Log   logs.Logger
 	MySQL mysqlxorm.Interface
 	LW    leaderworker.Interface
-
-	r *reconciler.Reconciler
-}
-
-type config struct {
+	DBGC  dbgc.Interface
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	// dbclient
+	p.dbClient = &dbclient.Client{Engine: p.MySQL.DB()}
+	js, err := jsonstore.New()
+	if err != nil {
+		return err
+	}
+	etcdClient, err := etcd.New()
+	if err != nil {
+		return err
+	}
+	p.js = js
+	p.etcd = etcdClient
 	return nil
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	if p.r == nil {
-		return fmt.Errorf("set reconciler before run")
-	}
-
+	// gc
+	p.LW.OnLeader(p.listenGC)
+	p.LW.OnLeader(p.compensateGCNamespaces)
 	return nil
 }
 
 func init() {
-	interfaceType := reflect.TypeOf((*Interface)(nil)).Elem()
-	servicehub.Register("reconciler", &servicehub.Spec{
-		Services:     []string{"reconciler"},
-		Types:        []reflect.Type{interfaceType},
+	servicehub.Register("resourcegc", &servicehub.Spec{
+		Services:     []string{"resourcegc"},
+		Types:        []reflect.Type{reflect.TypeOf((*Interface)(nil)).Elem()},
 		Dependencies: nil,
-		Description:  "pipeline reconciler",
+		Description:  "pipeline resourcegc",
 		ConfigFunc:   func() interface{} { return &config{} },
 		Creator:      func() servicehub.Provider { return &provider{} },
 	})

@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package resourcegc
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -282,10 +281,8 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 		})
 
 		t.Run(tt.name, func(t *testing.T) {
-			r := &Reconciler{
-				dbClient: db,
-			}
-			got, _, err := r.getNeedGCPipelines(0, true)
+			p := &provider{dbClient: db}
+			got, _, err := p.getNeedGCPipelines(0, true)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getNeedGCPipeline() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -306,20 +303,7 @@ func TestReconciler_doWaitGCCompensate(t *testing.T) {
 	defer pm.Unpatch()
 
 	t.Run("TestReconciler_doWaitGCCompensate", func(t *testing.T) {
-		r := &Reconciler{
-			dbClient: db,
-		}
-		r.doWaitGCCompensate(true)
-	})
-}
-
-func TestCompensateGCNamespaces(t *testing.T) {
-	r := &Reconciler{}
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r), "CompensateGCNamespaces", func(r *Reconciler, ctx context.Context) {
-		return
-	})
-	defer pm1.Unpatch()
-	t.Run("CompensateGCNamespaces", func(t *testing.T) {
-		r.CompensateGCNamespaces(context.Background())
+		p := &provider{dbClient: db}
+		p.doWaitGCCompensate(true)
 	})
 }
