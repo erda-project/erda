@@ -139,10 +139,19 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 	if req.Creator != "" {
 		req.UserID = req.Creator
 	}
-
 	if req.Type == apistructs.IssueTypeBug || req.Type == apistructs.IssueTypeTask {
-		if err := svc.issueTimeIterationValidator(req.PlanFinishedAt.Value(), req.IterationID); err != nil {
+		validator, err := svc.NewIssueValidator(&issueValidationConfig{iterationID: req.IterationID}, svc.db)
+		if err != nil {
 			return nil, apierrors.ErrCreateIssue.InvalidParameter(err)
+		}
+		if err := validator.validateIteration(planFinishedAt); err != nil {
+			return nil, apierrors.ErrCreateIssue.InvalidParameter(err)
+		}
+		adjuster := issueCreateAdjuster{}
+		if finishedAt := adjuster.planFinished(func() bool {
+			return req.IterationID > 0 && planFinishedAt == nil
+		}, validator); finishedAt != nil {
+			planFinishedAt = finishedAt
 		}
 	}
 	// 初始状态为排序级最高的状态
@@ -543,6 +552,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		return err
 	}
 
+	validator, err := svc.NewIssueValidator(&issueValidationConfig{}, svc.db)
+	if err != nil {
+		return apierrors.ErrUpdateIssue.InternalError(err)
+	}
 	//如果是BUG从打开或者重新打开切换状态为已解决，修改责任人为当前用户
 	if issueModel.Type == apistructs.IssueTypeBug {
 		currentState, err := svc.db.GetIssueStateByID(issueModel.State)
@@ -550,7 +563,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 			return apierrors.ErrGetIssue.InternalError(err)
 		}
 		if req.State != nil {
-			newState, err := svc.db.GetIssueStateByID(*req.State)
+			newState, err := validator.TryGetState(*req.State)
 			if err != nil {
 				return apierrors.ErrGetIssue.InternalError(err)
 			}
@@ -559,20 +572,10 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 			}
 		}
 	}
-	if req.IterationID != nil {
-		if err := svc.issueStateIterationValidator(issueModel.State, issueModel.IterationID); err != nil {
-			return apierrors.ErrUpdateIssue.InvalidParameter(err)
-		}
-	}
 	canUpdateFields := issueModel.GetCanUpdateFields()
 	// 请求传入的需要更新的字段
 	changedFields := req.GetChangedFields(canUpdateFields["man_hour"].(string))
 	if !req.PlanFinishedAt.IsEmpty() {
-		if issueModel.Type == apistructs.IssueTypeBug || issueModel.Type == apistructs.IssueTypeTask {
-			if err := svc.issueTimeIterationValidator(req.PlanFinishedAt.Value(), issueModel.IterationID); err != nil {
-				return apierrors.ErrUpdateIssue.InvalidParameter(err)
-			}
-		}
 		// change plan finished at, update exipry status
 		now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
 		changedFields["expiry_status"] = dao.GetExpiryStatus(req.PlanFinishedAt.Time(), now)
@@ -607,7 +610,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 			if err != nil {
 				return apierrors.ErrGetIssueState.InternalError(err)
 			}
-			newBelong, err := svc.db.GetIssueStateByID(*req.State)
+			newBelong, err := validator.TryGetState(*req.State)
 			if err != nil {
 				return apierrors.ErrGetIssueState.InternalError(err)
 			}
@@ -635,6 +638,28 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		}
 	STREAM:
 		issueStreamFields[field] = []interface{}{canUpdateFields[field], v}
+	}
+
+	if issueModel.Type == apistructs.IssueTypeBug || issueModel.Type == apistructs.IssueTypeTask {
+		if _, ok := changedFields["plan_finished_at"]; ok {
+			if _, err := validator.TryGetIteration(*req.IterationID); err != nil {
+				return apierrors.ErrUpdateIssue.InternalError(err)
+			}
+			if err := validator.validateIteration(req.PlanFinishedAt.Value()); err != nil {
+				return apierrors.ErrUpdateIssue.InvalidParameter(err)
+			}
+		}
+		if _, ok := changedFields["iteration_id"]; ok {
+			if _, err := validator.TryGetIteration(*req.IterationID); err != nil {
+				return apierrors.ErrUpdateIssue.InternalError(err)
+			}
+			if _, err := validator.TryGetState(*req.State); err != nil {
+				return apierrors.ErrUpdateIssue.InternalError(err)
+			}
+			if err := validator.validateStateWithIteration(); err != nil {
+				return apierrors.ErrUpdateIssue.InvalidParameter(err)
+			}
+		}
 	}
 
 	// 校验实际需要更新的字段

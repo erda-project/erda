@@ -18,42 +18,90 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
 )
 
-func (svc *Issue) issueTimeIterationValidator(time *time.Time, iterationID int64) error {
-	if iterationID == -1 {
+type issueValidator struct {
+	iteration *dao.Iteration
+	state     *dao.IssueState
+	db        *dao.DBClient
+}
+
+type issueValidationConfig struct {
+	iterationID int64
+	stateID     int64
+}
+
+func (svc *Issue) NewIssueValidator(c *issueValidationConfig, db *dao.DBClient) (*issueValidator, error) {
+	v := issueValidator{db: db}
+	if c == nil {
+		return &v, nil
+	}
+	if _, err := v.TryGetIteration(c.iterationID); err != nil {
+		return nil, err
+	}
+	if _, err := v.TryGetState(c.stateID); err != nil {
+		return nil, err
+	}
+	return &v, nil
+}
+
+func (v *issueValidator) TryGetIteration(iterationID int64) (*dao.Iteration, error) {
+	if iterationID <= 0 {
+		return nil, nil
+	}
+	if v.iteration != nil {
+		return v.iteration, nil
+	}
+	iteration, err := v.db.GetIteration(uint64(iterationID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get iteration, err: %v", err)
+	}
+	v.iteration = iteration
+	return iteration, nil
+}
+
+func (v *issueValidator) TryGetState(stateID int64) (*dao.IssueState, error) {
+	if stateID <= 0 {
+		return nil, nil
+	}
+	if v.state != nil {
+		return v.state, nil
+	}
+	state, err := v.db.GetIssueStateByID(stateID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get issue state, err: %v", err)
+	}
+	v.state = state
+	return state, nil
+}
+
+func (v *issueValidator) validateIteration(time *time.Time) error {
+	if time == nil || v.iteration == nil {
 		return nil
 	}
-	if time == nil {
-		return errors.New("plan finish time is empty")
-	}
-	iteration, err := svc.db.GetIteration(uint64(iterationID))
-	if err != nil {
-		return fmt.Errorf("failed to get iteration, err: %v", err)
-	}
-	if time.Before(*iteration.StartedAt) || time.After(*iteration.FinishedAt) {
-		return fmt.Errorf("plan finish time is not in the iteration  %v interval %v ~ %v", iteration.Title, iteration.StartedAt.Format("2006-01-02"), iteration.FinishedAt.Format("2006-01-02"))
+	if !v.inIterationInterval(time) {
+		return fmt.Errorf("plan finish time is not in the iteration %v interval %v ~ %v",
+			v.iteration.Title, v.iteration.StartedAt.Format("2006-01-02"), v.iteration.FinishedAt.Format("2006-01-02"))
 	}
 	return nil
 }
 
-func (svc *Issue) issueStateIterationValidator(stateID int64, iterationID int64) error {
-	if iterationID == -1 {
+func (v *issueValidator) inIterationInterval(time *time.Time) bool {
+	if time == nil || v.iteration == nil {
+		return false
+	}
+	return time.After(*v.iteration.StartedAt) && time.Before(*v.iteration.FinishedAt)
+}
+
+func (v *issueValidator) validateStateWithIteration() error {
+	if v.iteration == nil {
 		return nil
 	}
-	iteration, err := svc.db.GetIteration(uint64(iterationID))
-	if err != nil {
-		return fmt.Errorf("failed to get iteration, err: %v", err)
-	}
-	state, err := svc.db.GetIssueStateByID(stateID)
-	if err != nil {
-		return fmt.Errorf("failed to get issue state, err: %v", err)
-	}
-	if iteration.State == apistructs.IterationStateFiled && state.Belong != apistructs.IssueStateBelongDone && state.Belong != apistructs.IssueStateBelongClosed {
-		return fmt.Errorf("put unfinished issue in archived iteration: %v is not allowed", iteration.Title)
+	if v.iteration.State == apistructs.IterationStateFiled &&
+		v.state.Belong != apistructs.IssueStateBelongDone && v.state.Belong != apistructs.IssueStateBelongClosed {
+		return fmt.Errorf("put unfinished issue in archived iteration: %v is not allowed", v.iteration.Title)
 	}
 	return nil
 }
