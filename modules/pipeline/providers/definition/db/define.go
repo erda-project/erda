@@ -121,11 +121,11 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 	if req.Remote != nil {
 		engine = engine.In("s.remote", req.Remote)
 	}
-	if req.Name != "" {
-		engine = engine.Where("d.name LIKE ?", "%"+req.Name+"%")
+	if req.FuzzyName != "" {
+		engine = engine.Where("d.name LIKE ?", "%"+req.FuzzyName+"%")
 	}
-	if req.AccurateName != "" {
-		engine = engine.Where("d.name = ?", req.AccurateName)
+	if req.Name != "" {
+		engine = engine.Where("d.name = ?", req.Name)
 	}
 	if len(req.IdList) != 0 {
 		engine = engine.In("d.id", req.IdList)
@@ -202,11 +202,11 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 	if req.Remote != nil {
 		engine = engine.In("s.remote", req.Remote)
 	}
-	if req.Name != "" {
-		engine = engine.Where("d.name LIKE ?", "%"+req.Name+"%")
+	if req.FuzzyName != "" {
+		engine = engine.Where("d.name LIKE ?", "%"+req.FuzzyName+"%")
 	}
-	if req.AccurateName != "" {
-		engine = engine.Where("d.name = ?", req.AccurateName)
+	if req.Name != "" {
+		engine = engine.Where("d.name = ?", req.Name)
 	}
 	if len(req.Creator) != 0 {
 		engine = engine.In("d.creator", req.Creator)

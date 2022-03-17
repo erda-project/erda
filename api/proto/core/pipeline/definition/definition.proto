@@ -138,7 +138,7 @@ message PipelineDefinitionListRequest {
   int64 pageNo = 2;
   string location = 3;
   string name = 4;
-  string accurateName = 5;
+  string fuzzyName = 5;
   repeated string creator = 6;
   repeated string executor = 7;
   repeated string category = 8;

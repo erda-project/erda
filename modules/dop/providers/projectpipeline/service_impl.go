@@ -305,10 +305,10 @@ func (p *ProjectPipelineService) checkDefinitionRemoteSameName(projectID uint64,
 	}, cicdPipelineType)
 
 	resp, err := p.PipelineDefinition.List(context.Background(), &dpb.PipelineDefinitionListRequest{
-		Location:     location,
-		AccurateName: name,
-		PageNo:       1,
-		PageSize:     1,
+		Location: location,
+		Name:     name,
+		PageNo:   1,
+		PageSize: 1,
 	})
 	if err != nil {
 		return false, err
@@ -370,11 +370,11 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 			OrgName:     org.Name,
 			ProjectName: project.Name,
 		}, cicdPipelineType),
-		Name:     params.Name,
-		Creator:  params.Creator,
-		Executor: params.Executor,
-		Category: params.Category,
-		Ref:      params.Ref,
+		FuzzyName: params.Name,
+		Creator:   params.Creator,
+		Executor:  params.Executor,
+		Category:  params.Category,
+		Ref:       params.Ref,
 		Remote: func() []string {
 			remotes := make([]string, 0, len(params.AppName))
 			for _, v := range params.AppName {
