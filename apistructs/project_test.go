@@ -73,8 +73,8 @@ func TestProjectCreateRequest(t *testing.T) {
 		TestMemQuota:       calcu.GibibyteToByte(project.ResourceConfigs.TEST.MemQuota),
 		DevCPUQuota:        calcu.CoreToMillcore(project.ResourceConfigs.DEV.CPUQuota),
 		DevMemQuota:        calcu.GibibyteToByte(project.ResourceConfigs.DEV.MemQuota),
-		CreatorID:          0,
-		UpdaterID:          0,
+		CreatorID:          "0",
+		UpdaterID:          "0",
 	}
 	data, _ := json.MarshalIndent(quota, "", "  ")
 	t.Log(string(data))
