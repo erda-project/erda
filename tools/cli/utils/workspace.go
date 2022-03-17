@@ -34,8 +34,9 @@ import (
 
 var InvalidErdaRepo = errors.New("Invalid Erda git repository!")
 
-func GetWorkspaceBranch() (string, error) {
+func GetWorkspaceBranch(dir string) (string, error) {
 	branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+	branchCmd.Dir = dir
 	out, err := branchCmd.CombinedOutput()
 	if err != nil {
 		return "", errors.WithMessage(err, strings.TrimSpace(string(out)))
@@ -55,8 +56,9 @@ func GetRepo(remote string) string {
 	return string(out)
 }
 
-func IsWorkspaceDirty() (bool, error) {
+func IsWorkspaceDirty(dir string) (bool, error) {
 	statusCmd := exec.Command("git", "status", "-s")
+	statusCmd.Dir = dir
 	wcCmd := exec.Command("wc", "-l")
 
 	rs, err := PipeCmds(statusCmd, wcCmd)
@@ -90,8 +92,9 @@ func IsDir(path string) bool {
 	return s.IsDir()
 }
 
-func GetWorkspaceInfo(remoteName string) (GitterURLInfo, error) {
+func GetWorkspaceInfo(dir, remoteName string) (GitterURLInfo, error) {
 	remoteCmd := exec.Command("git", "remote", "get-url", remoteName)
+	remoteCmd.Dir = dir
 	out, err := remoteCmd.CombinedOutput()
 	if err != nil {
 		return GitterURLInfo{}, errors.WithMessage(err, strings.TrimSpace(string(out)))
