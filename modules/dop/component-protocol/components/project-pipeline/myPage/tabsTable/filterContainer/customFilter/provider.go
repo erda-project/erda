@@ -43,7 +43,7 @@ type CustomFilter struct {
 	State    State     `json:"state"`
 	InParams *InParams `json:"-"`
 
-	projectPipelineSvc projectpipeline.Service `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
+	ProjectPipelineSvc projectpipeline.Service `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
 }
 
 type State struct {
@@ -60,6 +60,7 @@ type FrontendConditions struct {
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd"`
 	StartedAtStartEnd []int64  `json:"startedAtStartEnd"`
 	Title             string   `json:"title"`
+	Branch            []string `json:"branch"`
 }
 
 func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
@@ -71,6 +72,7 @@ func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
 	if err != nil {
 		panic(err)
 	}
+	p.ProjectPipelineSvc = sdk.Ctx.Value(types.ProjectPipelineService).(*projectpipeline.ProjectPipelineService)
 	cputil.MustObjJSONTransfer(&p.StdStatePtr, &p.State)
 }
 
@@ -144,6 +146,7 @@ func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.O
 			CreatedAtStartEnd: values.CreatedAtStartEnd,
 			StartedAtStartEnd: values.StartedAtStartEnd,
 			Title:             values.Title,
+			Branch:            values.Branch,
 		})
 		return nil
 	}

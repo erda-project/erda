@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
+	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/providers/component-protocol/condition"
 )
@@ -30,11 +31,12 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 
 	var (
 		appCondition    *model.SelectCondition
+		branchCondition *model.SelectCondition
 		memberCondition MemberCondition
 		err             error
 	)
 
-	worker := limit_sync_group.NewWorker(2)
+	worker := limit_sync_group.NewWorker(3)
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 		appCondition, err = p.AppCondition()
 		return err
@@ -43,10 +45,15 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 		memberCondition, err = p.MemberCondition()
 		return err
 	})
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		branchCondition, err = p.BranchCondition()
+		return err
+	})
 	if err := worker.Do().Error(); err != nil {
 		return nil, err
 	}
 	conditions = append(conditions, appCondition)
+	conditions = append(conditions, branchCondition)
 	conditions = append(conditions, memberCondition.executorCondition)
 	conditions = append(conditions, model.NewDateRangeCondition("startedAtStartEnd", cputil.I18n(p.sdk.Ctx, "start-time")))
 	conditions = append(conditions, memberCondition.creatorCondition)
@@ -134,4 +141,28 @@ func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
 	condition.ConditionBase.Disabled = p.InParams.AppID != 0
 	condition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-application")
 	return condition, nil
+}
+
+func (p *CustomFilter) BranchCondition() (*model.SelectCondition, error) {
+	branches, err := p.ProjectPipelineSvc.ListRef(p.sdk.Ctx, deftype.ProjectPipelineRefList{
+		ProjectID:    p.InParams.ProjectID,
+		IdentityInfo: apistructs.IdentityInfo{UserID: p.sdk.Identity.UserID},
+	})
+	if err != nil {
+		return nil, err
+	}
+	cond := model.NewSelectCondition("branch", cputil.I18n(p.sdk.Ctx, "branch"), func() []model.SelectOption {
+		selectOptions := make([]model.SelectOption, 0, len(branches))
+		for _, v := range branches {
+			selectOptions = append(selectOptions, *model.NewSelectOption(func() string {
+				return v
+			}(),
+				v,
+			))
+		}
+		return selectOptions
+	}())
+	cond.ConditionBase.Disabled = p.InParams.AppID != 0
+	cond.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-branch")
+	return cond, nil
 }

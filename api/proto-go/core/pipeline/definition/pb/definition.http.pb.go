@@ -33,6 +33,8 @@ type DefinitionServiceHandler interface {
 	List(context.Context, *PipelineDefinitionListRequest) (*PipelineDefinitionListResponse, error)
 	// GET /api/pipeline-definitions/actions/statics-group-by-remote
 	StaticsGroupByRemote(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error)
+	// GET /api/pipeline-definitions/actions/list-ref
+	ListRef(context.Context, *PipelineDefinitionRefListRequest) (*PipelineDefinitionRefListResponse, error)
 }
 
 // RegisterDefinitionServiceHandler register DefinitionServiceHandler to http.Router.
@@ -343,10 +345,47 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 		)
 	}
 
+	add_ListRef := func(method, path string, fn func(context.Context, *PipelineDefinitionRefListRequest) (*PipelineDefinitionRefListResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*PipelineDefinitionRefListRequest))
+		}
+		var ListRef_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			ListRef_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "ListRef", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, ListRef_info)
+				}
+				r = r.WithContext(ctx)
+				var in PipelineDefinitionRefListRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_Create("POST", "/api/pipeline-definitions", srv.Create)
 	add_Update("PUT", "/api/pipeline-definitions/{pipelineDefinitionID}", srv.Update)
 	add_Delete("DELETE", "/api/pipeline-definitions/{pipelineDefinitionID}", srv.Delete)
 	add_Get("GET", "/api/pipeline-definitions/{pipelineDefinitionID}", srv.Get)
 	add_List("GET", "/api/pipeline-definitions", srv.List)
 	add_StaticsGroupByRemote("GET", "/api/pipeline-definitions/actions/statics-group-by-remote", srv.StaticsGroupByRemote)
+	add_ListRef("GET", "/api/pipeline-definitions/actions/list-ref", srv.ListRef)
 }
