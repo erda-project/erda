@@ -18,6 +18,7 @@ import (
 	"context"
 	"runtime/debug"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -29,6 +30,10 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/taskrun"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+)
+
+var (
+	autoRetryInterval = 30 * time.Second
 )
 
 // internalReconcileOnePipeline do pipeline reconcile.
@@ -77,6 +82,10 @@ func (r *Reconciler) internalReconcileOnePipeline(ctx context.Context, pipelineI
 				}
 				if err != nil {
 					logrus.Errorf("[alert] reconciler: pipelineID: %d, task %q reconcile occurred an error: %v", p.ID, schedulableTasks[i].Name, err)
+					// TODO: judge whether the error is caused by the real cluster offline
+					// now, if the cluster is offline, the executor will not be created
+					// resulting in immediate reconciler recursion, so sleep 30 seconds to delay the next reconcile
+					time.Sleep(autoRetryInterval)
 				}
 				r.processingTasks.Delete(buildTaskDagName(p.ID, schedulableTasks[i].Name))
 				err = r.internalReconcileOnePipeline(ctx, pipelineID)
