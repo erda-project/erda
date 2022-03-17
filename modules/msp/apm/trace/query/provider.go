@@ -30,6 +30,7 @@ import (
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
+	"github.com/erda-project/erda/modules/msp/apm/trace/query/source"
 	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
@@ -49,37 +50,48 @@ var scenarioFS embed.FS
 
 // +provider
 type provider struct {
-	Cfg              *config
-	Log              logs.Logger
-	traceService     *TraceService
-	I18n             i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
-	Register         transport.Register           `autowired:"service-register"`
-	Metric           metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
-	DB               *gorm.DB                     `autowired:"mysql-client"`
-	Cassandra        cassandra.Interface          `autowired:"cassandra" optional:"true"`
-	StorageReader    storage.Storage              `autowired:"span-storage-elasticsearch-reader" optional:"true"`
-	cassandraSession *cassandra.Session
-	Protocol         componentprotocol.Interface
-	CPTran           i18n.I18n `autowired:"i18n"`
+	Cfg           *config
+	Log           logs.Logger
+	traceService  *TraceService
+	I18n          i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
+	Register      transport.Register           `autowired:"service-register"`
+	Metric        metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
+	DB            *gorm.DB                     `autowired:"mysql-client"`
+	Cassandra     cassandra.Interface          `autowired:"cassandra" optional:"true"`
+	StorageReader storage.Storage              `autowired:"span-storage-elasticsearch-reader" optional:"true"`
+	Source        source.TraceSource
+	Protocol      componentprotocol.Interface
+	CPTran        i18n.I18n `autowired:"i18n"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.Protocol.SetI18nTran(p.CPTran)
 	protocol.MustRegisterProtocolsFromFS(scenarioFS)
 	// translator
-	if p.Cassandra != nil {
-		session, err := p.Cassandra.NewSession(&p.Cfg.Cassandra)
-		if err != nil {
-			return fmt.Errorf("fail to create cassandra session: %s", err)
+	if p.Cfg.QuerySource.Cassandra {
+		if p.Cassandra == nil {
+			panic("cassandra provider autowired failed.")
 		}
-		p.cassandraSession = session
+		if p.Cassandra != nil {
+			session, err := p.Cassandra.NewSession(&p.Cfg.Cassandra)
+			if err != nil {
+				return fmt.Errorf("fail to create cassandra session: %s", err)
+			}
+			p.Source = &source.CassandraSource{CassandraSession: session}
+		}
+	}
+	if p.Cfg.QuerySource.ElasticSearch {
+		if p.StorageReader == nil {
+			panic("elasticsearch provider autowired failed.")
+		}
+		p.Source = &source.ElasticsearchSource{StorageReader: p.StorageReader}
 	}
 
 	p.traceService = &TraceService{
 		p:                     p,
 		i18n:                  p.I18n,
 		traceRequestHistoryDB: &db.TraceRequestHistoryDB{DB: p.DB},
-		StorageReader:         p.StorageReader,
+		Source:                p.Source,
 	}
 	if p.Register != nil {
 		pb.RegisterTraceServiceImp(p.Register, p.traceService, apis.Options())
