@@ -367,7 +367,7 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 
 	// query the docs under the path,
 	// if the error is not nil, it is considered that there is no document here.
-	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, userID)
+	nodes, _, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, userID)
 	if err != nil {
 		logrus.Errorf("failed to GetGittarTreeNode, err: %v", err)
 	}
@@ -486,7 +486,7 @@ func (svc *Service) getSchemaContent(orgID uint64, userID, inode string) (*apist
 	orgIDStr := strconv.FormatUint(orgID, 10)
 
 	// query all files in the directory, allows error or 0 node.
-	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, userID)
+	nodes, _, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, userID)
 	if err != nil {
 		logrus.Errorf("failed to GetGittarTreeNode, err: %v", err)
 	}

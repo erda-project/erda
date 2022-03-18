@@ -36,6 +36,7 @@ type ProjectPipelineList struct {
 	DescCols    []string `json:"descCols"`
 	AscCols     []string `json:"ascCols"`
 	CategoryKey string   `json:"categoryKey"`
+	IsOthers    bool     `json:"isOthers"`
 
 	IdentityInfo apistructs.IdentityInfo
 }

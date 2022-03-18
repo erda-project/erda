@@ -17,6 +17,7 @@ package filetree
 import (
 	"encoding/base64"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -154,7 +155,7 @@ func (svc *GittarFileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeL
 			}
 		} else if length > 3+branchExcessLength {
 			// 长度大于 3 就表达查询子节点了 /projectName/appName/tree/branchName
-			entrys, err := svc.bdl.GetGittarTreeNode(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true, req.UserID)
+			entrys, path, err := svc.bdl.GetGittarTreeNode(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true, req.UserID)
 			if err != nil {
 				return nil, apierrors.ErrListGittarFileTreeNodes.InternalError(err)
 			}
@@ -190,6 +191,26 @@ func (svc *GittarFileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeL
 				if length > 5+branchExcessLength {
 					if node.Type != gittarEntryTreeType && !strings.HasSuffix(node.Name, ".yml") {
 						continue
+					}
+				}
+
+				// Filter does not match pipeline category rules
+				if req.PipelineCategoryKey != "" {
+					switch req.PipelineCategoryKey {
+					case apistructs.CategoryBuildDeploy:
+						if node.Type == gittarEntryBlobType && !strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(req.PipelineCategoryKey)]) {
+							continue
+						}
+					case apistructs.CategoryBuildArtifact:
+						if node.Type == gittarEntryBlobType && !strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(req.PipelineCategoryKey)]) {
+							continue
+						}
+					case apistructs.CategoryOthers:
+						if node.Type == gittarEntryBlobType &&
+							(strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildArtifact]) ||
+								strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy])) {
+							continue
+						}
 					}
 				}
 				list = append(list, entryConvertToUnifiedFileTreeNode(&node, req.Scope, req.ScopeID, pinode, req.Pinode))

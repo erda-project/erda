@@ -87,6 +87,7 @@ func (t *Tab) CountPipelineByParams(ctx context.Context, appNames, creators, cat
 		PageNo:       1,
 		PageSize:     1,
 		AppName:      appNames,
+		CategoryKey:  t.InParams.FrontendPipelineCategoryKey,
 	}
 	if len(creators) != 0 {
 		req.Creator = creators

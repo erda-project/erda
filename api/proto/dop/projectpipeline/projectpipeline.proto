@@ -189,7 +189,7 @@ message pipelineCategory {
   string key = 1;
   string category = 2;
   repeated string rules = 3;
-  uint64  runningNum = 4;
+  uint64 runningNum = 4;
   uint64 failedNum = 5;
   uint64 totalNum = 6;
 }

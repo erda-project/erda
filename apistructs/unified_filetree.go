@@ -299,7 +299,8 @@ type UnifiedFileTreeNodeListRequest struct {
 	Scope   string `schema:"scope"`
 	ScopeID string `schema:"scopeID"`
 
-	Pinode string `schema:"pinode"`
+	Pinode              string `schema:"pinode"`
+	PipelineCategoryKey string `schema:"pipelineCategoryKey"`
 
 	IdentityInfo `schema:"-"`
 }

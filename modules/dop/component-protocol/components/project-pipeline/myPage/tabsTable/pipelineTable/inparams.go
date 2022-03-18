@@ -24,10 +24,10 @@ import (
 type InParams struct {
 	OrgID uint64 `json:"orgId,omitempty"`
 
-	FrontendProjectID   string `json:"projectId,omitempty"`
-	FrontendUrlQuery    string `json:"issueFilter__urlQuery,omitempty"`
-	FrontendAppID       string `json:"appId,omitempty"`
-	FrontendCategoryKey string `json:"categoryKey,omitempty"`
+	FrontendProjectID           string `json:"projectId,omitempty"`
+	FrontendUrlQuery            string `json:"issueFilter__urlQuery,omitempty"`
+	FrontendAppID               string `json:"appId,omitempty"`
+	FrontendPipelineCategoryKey string `json:"pipelineCategoryKey,omitempty"`
 
 	ProjectID uint64 `json:"-"`
 	AppID     uint64 `json:"-"`

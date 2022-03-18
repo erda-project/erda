@@ -100,6 +100,7 @@ message PipelineDefinitionCreateRequest {
   PipelineDefinitionExtra extra = 7;
   int64 totalActionNum = 8;
   int64 ExecutedActionNum = 9;
+  string ref = 10;
 }
 
 message PipelineDefinitionCreateResponse {
@@ -162,6 +163,7 @@ message PipelineDefinitionListRequest {
   int64 ExecutedActionNum = 17;
   repeated string sourceIDList = 18;
   repeated string filePathWithNames = 19;
+  bool isOthers = 20;
 }
 
 message PipelineDefinitionStaticsRequest {

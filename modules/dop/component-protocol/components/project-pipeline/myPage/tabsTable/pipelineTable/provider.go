@@ -248,7 +248,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 		Status:       filter.Status,
 		DescCols:     descCols,
 		AscCols:      ascCols,
-		CategoryKey:  p.InParams.FrontendCategoryKey,
+		CategoryKey:  p.InParams.FrontendPipelineCategoryKey,
 		IdentityInfo: apistructs.IdentityInfo{UserID: p.sdk.Identity.UserID},
 	})
 	if err != nil {

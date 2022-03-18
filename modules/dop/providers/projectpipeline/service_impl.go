@@ -110,7 +110,7 @@ func (s *ProjectPipelineService) getPipelineYml(app *apistructs.ApplicationDTO, 
 		path = fmt.Sprintf("/wb/%v/%v/tree/%v/%v", app.ProjectName, app.Name, branch, findPath)
 	}
 
-	diceEntrys, err := s.bundle.GetGittarTreeNode(path, strconv.Itoa(int(app.OrgID)), true, userID)
+	diceEntrys, _, err := s.bundle.GetGittarTreeNode(path, strconv.Itoa(int(app.OrgID)), true, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -268,6 +268,7 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		Extra: &dpb.PipelineDefinitionExtra{
 			Extra: p.pipelineSourceType.GetPipelineCreateRequestV2(),
 		},
+		Ref: sourceRsp.PipelineSource.Ref,
 	})
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
@@ -387,12 +388,18 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 			}
 			return remotes
 		}(),
-		TimeCreated:       params.TimeCreated,
-		TimeStarted:       params.TimeStarted,
-		Status:            params.Status,
-		AscCols:           params.AscCols,
-		DescCols:          params.DescCols,
-		FilePathWithNames: categoryKeyRuleMap[params.CategoryKey],
+		TimeCreated: params.TimeCreated,
+		TimeStarted: params.TimeStarted,
+		Status:      params.Status,
+		AscCols:     params.AscCols,
+		DescCols:    params.DescCols,
+		IsOthers:    params.CategoryKey == apistructs.CategoryOthers,
+		FilePathWithNames: func() []string {
+			if params.CategoryKey != apistructs.CategoryOthers {
+				return apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(params.CategoryKey)]
+			}
+			return append(apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy], apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildArtifact]...)
+		}(),
 	})
 	if err != nil {
 		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
@@ -1351,17 +1358,6 @@ type pipelineCategoryRule struct {
 	TotalNum   uint64
 }
 
-var ruleCategoryKeyMap = map[string]string{
-	"pipeline.yml":                    "build-deploy",
-	".erda/pipelines/ci-artifact.yml": "build-artifact",
-	".dice/pipelines/ci-artifact.yml": "build-artifact",
-}
-
-var categoryKeyRuleMap = map[string][]string{
-	"build-deploy":   {"pipeline.yml"},
-	"build-artifact": {".erda/pipelines/ci-artifact.yml", ".dice/pipelines/ci-artifact.yml"},
-}
-
 func (p *ProjectPipelineService) ListPipelineCategoryRule(ctx context.Context) []pipelineCategoryRule {
 	return []pipelineCategoryRule{
 		{
@@ -1408,9 +1404,9 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 	categoryRules := p.ListPipelineCategoryRule(ctx)
 
 	for _, statics := range staticsResp.PipelineDefinitionStatistics {
-		if key, ok := ruleCategoryKeyMap[statics.Group]; ok {
+		if key, ok := apistructs.RuleCategoryKeyMap[statics.Group]; ok {
 			for i := range categoryRules {
-				if key == categoryRules[i].Key {
+				if key.String() == categoryRules[i].Key {
 					categoryRules[i].TotalNum += statics.TotalNum
 					categoryRules[i].FailedNum += statics.FailedNum
 					categoryRules[i].RunningNum += statics.RunningNum
@@ -1420,7 +1416,7 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 			continue
 		}
 		for i := range categoryRules {
-			if categoryRules[i].Key == "others" {
+			if categoryRules[i].Key == apistructs.CategoryOthers {
 				categoryRules[i].TotalNum += statics.TotalNum
 				categoryRules[i].FailedNum += statics.FailedNum
 				categoryRules[i].RunningNum += statics.RunningNum

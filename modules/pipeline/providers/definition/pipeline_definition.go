@@ -17,6 +17,7 @@ package definition
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/pkg/errors"
@@ -59,6 +60,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	pipelineDefinition.StartedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.CostTime = -1
+	pipelineDefinition.Ref = request.Ref
 	err := p.dbClient.CreatePipelineDefinition(&pipelineDefinition)
 	if err != nil {
 		return nil, err
@@ -293,8 +295,12 @@ func (p pipelineDefinition) StaticsGroupByFilePath(ctx context.Context, request 
 
 	pipelineDefinitionStatistics := make([]*pb.PipelineDefinitionStatistics, 0, len(statics))
 	for _, v := range statics {
+		group := v.Group
+		if strings.HasPrefix(v.Group, "/") {
+			group = group[1:]
+		}
 		pipelineDefinitionStatistics = append(pipelineDefinitionStatistics, &pb.PipelineDefinitionStatistics{
-			Group:      v.Group,
+			Group:      group,
 			FailedNum:  v.FailedNum,
 			RunningNum: v.RunningNum,
 			TotalNum:   v.TotalNum,

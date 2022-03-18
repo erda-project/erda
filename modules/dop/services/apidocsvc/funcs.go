@@ -282,7 +282,7 @@ func branchHasAPIDoc(orgID uint64, branchInode string) bool {
 	}
 	ft.SetPathFromRepoRoot(apiDocsPathFromRepoRoot)
 	orgIDStr := strconv.FormatUint(orgID, 10)
-	nodes, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, "")
+	nodes, _, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, "")
 	if err != nil {
 		return false
 	}

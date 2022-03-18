@@ -164,13 +164,25 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 			engine = engine.Where("d.started_at <= ?", req.TimeStarted[1])
 		}
 	}
-	if len(req.FilePathWithNames) != 0 {
-		and := builder.And(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[0]), "s.name": filepath.Base(req.FilePathWithNames[0])})
-		for i := 1; i < len(req.FilePathWithNames); i++ {
-			and = and.Or(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[i]), "s.name": filepath.Base(req.FilePathWithNames[i])})
+	if !req.IsOthers {
+		if len(req.FilePathWithNames) != 0 {
+			and := builder.And(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[0]), "s.name": filepath.Base(req.FilePathWithNames[0])})
+			for i := 1; i < len(req.FilePathWithNames); i++ {
+				and = and.Or(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[i]), "s.name": filepath.Base(req.FilePathWithNames[i])})
+			}
+			sqlBuild, args, _ := builder.ToSQL(and)
+			engine = engine.Where(sqlBuild, args...)
 		}
-		sqlBuild, args, _ := builder.ToSQL(and)
-		engine = engine.Where(sqlBuild, args...)
+	} else {
+		if len(req.FilePathWithNames) != 0 {
+			for i := 0; i < len(req.FilePathWithNames); i++ {
+				path := req.FilePathWithNames[i]
+				if getFilePath(path) == "" {
+					path = "/" + path
+				}
+				engine = engine.Where("CONCAT(s.path,'/',s.`name`) != ?", path)
+			}
+		}
 	}
 
 	for _, v := range req.AscCols {
@@ -246,13 +258,25 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 		}
 	}
 
-	if len(req.FilePathWithNames) != 0 {
-		and := builder.And(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[0]), "s.name": filepath.Base(req.FilePathWithNames[0])})
-		for i := 1; i < len(req.FilePathWithNames); i++ {
-			and = and.Or(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[i]), "s.name": filepath.Base(req.FilePathWithNames[i])})
+	if !req.IsOthers {
+		if len(req.FilePathWithNames) != 0 {
+			and := builder.And(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[0]), "s.name": filepath.Base(req.FilePathWithNames[0])})
+			for i := 1; i < len(req.FilePathWithNames); i++ {
+				and = and.Or(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[i]), "s.name": filepath.Base(req.FilePathWithNames[i])})
+			}
+			sqlBuild, args, _ := builder.ToSQL(and)
+			engine = engine.Where(sqlBuild, args...)
 		}
-		sqlBuild, args, _ := builder.ToSQL(and)
-		engine = engine.Where(sqlBuild, args...)
+	} else {
+		if len(req.FilePathWithNames) != 0 {
+			for i := 0; i < len(req.FilePathWithNames); i++ {
+				path := req.FilePathWithNames[i]
+				if getFilePath(path) == "" {
+					path = "/" + path
+				}
+				engine = engine.Where("CONCAT(s.path,'/',s.`name`) != ?", path)
+			}
+		}
 	}
 
 	total, err = engine.Count(new(PipelineDefinitionSource))
@@ -298,7 +322,7 @@ func (client *Client) StaticsGroupByFilePath(req *pb.PipelineDefinitionStaticsRe
 		err  error
 	)
 	err = session.Table("pipeline_definition").Alias("d").
-		Select(fmt.Sprintf("CONCAT(s.path,s.`name`) AS `group`,COUNT(*) AS total_num,COUNT( IF ( d.`status` = '%s' , 1, NULL) ) AS running_num,"+
+		Select(fmt.Sprintf("CONCAT(s.path,'/',s.`name`) AS `group`,COUNT(*) AS total_num,COUNT( IF ( d.`status` = '%s' , 1, NULL) ) AS running_num,"+
 			"COUNT(IF(DATE_SUB(CURDATE(), INTERVAL 1 DAY) <= d.started_at AND d.`status` = '%s',1,NULL)) AS failed_num",
 			apistructs.PipelineStatusRunning, apistructs.PipelineStatusFailed)).
 		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").

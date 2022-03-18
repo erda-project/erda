@@ -438,6 +438,8 @@ func (m *PipelineDefinitionCreateRequest) UnmarshalURLValues(prefix string, valu
 					return err
 				}
 				m.ExecutedActionNum = val
+			case "ref":
+				m.Ref = vals[0]
 			}
 		}
 	}
@@ -1705,6 +1707,12 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 				m.SourceIDList = vals
 			case "filePathWithNames":
 				m.FilePathWithNames = vals
+			case "isOthers":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsOthers = val
 			}
 		}
 	}
