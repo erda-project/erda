@@ -145,11 +145,19 @@ func (p *ComponentPodsTable) DecodeURLQuery() error {
 	if err := json.Unmarshal(decoded, &urlQuery); err != nil {
 		return err
 	}
-	p.State.PageNo = int(urlQuery["pageNo"].(float64))
-	p.State.PageSize = int(urlQuery["pageSize"].(float64))
-	sorterData := urlQuery["sorterData"].(map[string]interface{})
-	p.State.Sorter.Field = sorterData["field"].(string)
-	p.State.Sorter.Order = sorterData["order"].(string)
+	pageNo, _ := urlQuery["pageNo"].(float64)
+	if pageNo != 0 {
+		p.State.PageNo = int(pageNo)
+	}
+	pageSize, _ := urlQuery["pageSize"].(float64)
+	if pageSize != 0 {
+		p.State.PageSize = int(pageSize)
+	}
+	sorterData, _ := urlQuery["sorterData"].(map[string]interface{})
+	if sorterData != nil {
+		p.State.Sorter.Field, _ = sorterData["field"].(string)
+		p.State.Sorter.Order, _ = sorterData["order"].(string)
+	}
 	return nil
 }
 
