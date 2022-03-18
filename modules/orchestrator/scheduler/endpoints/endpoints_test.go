@@ -26,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cap"
+	cap2 "github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cap"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cluster"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/instanceinfo"
@@ -49,7 +49,7 @@ func TestHTTPEndpoints_ClusterHook(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap.Cap
+		Cap               cap2.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -104,12 +104,12 @@ func TestHTTPEndpoints_ClusterHook(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &HTTPEndpoints{
 				volumeImpl:        tt.fields.volumeImpl,
-				serviceGroupImpl:  tt.fields.serviceGroupImpl,
+				ServiceGroupImpl:  tt.fields.serviceGroupImpl,
 				clusterImpl:       tt.fields.clusterImpl,
-				job:               tt.fields.job,
+				Job:               tt.fields.job,
 				labelManager:      tt.fields.labelManager,
 				instanceinfoImpl:  tt.fields.instanceinfoImpl,
-				clusterinfoImpl:   tt.fields.clusterinfoImpl,
+				ClusterinfoImpl:   tt.fields.clusterinfoImpl,
 				componentinfoImpl: tt.fields.componentinfoImpl,
 				resourceinfoImpl:  tt.fields.resourceinfoImpl,
 				Cap:               tt.fields.Cap,
