@@ -36,8 +36,8 @@ type LabeledLog struct {
 	Labels map[string]string `json:"labels,omitempty"`
 }
 
-// LogMeta .
-type LogMeta struct {
+// Meta Log Meta
+type Meta struct {
 	Source string            `json:"source"`
 	ID     string            `json:"id"`
 	Tags   map[string]string `json:"tags"`
