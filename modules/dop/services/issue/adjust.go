@@ -16,23 +16,29 @@ package issue
 
 import (
 	"time"
+
+	"github.com/erda-project/erda/modules/dop/dao"
 )
 
 type condition func() bool
 
 type issueAdjuster interface {
-	planFinished(condition, *issueValidator) *time.Time
+	planFinished(condition, *dao.Iteration) *time.Time
 }
 
-type issueCreateAdjuster struct{}
+type issueCreateAdjuster struct {
+	curTime *time.Time
+}
 
-func (i *issueCreateAdjuster) planFinished(match condition, v *issueValidator) *time.Time {
+func (i *issueCreateAdjuster) planFinished(match condition, iteration *dao.Iteration) *time.Time {
 	if !match() {
 		return nil
 	}
-	now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
-	if v != nil && v.inIterationInterval(&now) {
-		return &now
+	if iteration == nil {
+		return nil
 	}
-	return v.iteration.FinishedAt
+	if inIterationInterval(iteration, i.curTime) {
+		return i.curTime
+	}
+	return iteration.FinishedAt
 }

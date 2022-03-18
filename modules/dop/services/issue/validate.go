@@ -20,12 +20,13 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/pkg/cache"
 )
 
 type issueValidator struct {
-	iteration *dao.Iteration
-	state     *dao.IssueState
-	db        *dao.DBClient
+	db             *dao.DBClient
+	iterationCache *cache.Cache
+	stateCache     *cache.Cache
 }
 
 type issueValidationConfig struct {
@@ -33,17 +34,22 @@ type issueValidationConfig struct {
 	stateID     int64
 }
 
-func NewIssueValidator(c *issueValidationConfig, db *dao.DBClient) (*issueValidator, error) {
+func NewIssueValidator(db *dao.DBClient) (*issueValidator, error) {
 	v := issueValidator{db: db}
-	if c == nil {
-		return &v, nil
-	}
-	if _, err := v.TryGetIteration(c.iterationID); err != nil {
-		return nil, err
-	}
-	if _, err := v.TryGetState(c.stateID); err != nil {
-		return nil, err
-	}
+	v.iterationCache = cache.New("iteration", time.Minute, func(i interface{}) (interface{}, bool) {
+		iteration, err := v.db.GetIteration(i.(uint64))
+		if err != nil {
+			return nil, false
+		}
+		return iteration, true
+	})
+	v.stateCache = cache.New("state", time.Minute, func(i interface{}) (interface{}, bool) {
+		state, err := v.db.GetIssueStateByID(i.(int64))
+		if err != nil {
+			return nil, false
+		}
+		return state, true
+	})
 	return &v, nil
 }
 
@@ -51,57 +57,64 @@ func (v *issueValidator) TryGetIteration(iterationID int64) (*dao.Iteration, err
 	if iterationID <= 0 {
 		return nil, nil
 	}
-	if v.iteration != nil {
-		return v.iteration, nil
+	iteration, ok := v.iterationCache.LoadWithUpdate(uint64(iterationID))
+	if !ok {
+		return nil, fmt.Errorf("failed to get iteration")
 	}
-	iteration, err := v.db.GetIteration(uint64(iterationID))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get iteration, err: %v", err)
-	}
-	v.iteration = iteration
-	return iteration, nil
+	return iteration.(*dao.Iteration), nil
 }
 
 func (v *issueValidator) TryGetState(stateID int64) (*dao.IssueState, error) {
 	if stateID <= 0 {
 		return nil, nil
 	}
-	if v.state != nil {
-		return v.state, nil
+	state, ok := v.stateCache.LoadWithUpdate(stateID)
+	if !ok {
+		return nil, fmt.Errorf("failed to get state")
 	}
-	state, err := v.db.GetIssueStateByID(stateID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get issue state, err: %v", err)
-	}
-	v.state = state
-	return state, nil
+	return state.(*dao.IssueState), nil
 }
 
-func (v *issueValidator) validateIteration(time *time.Time) error {
-	if time == nil || v.iteration == nil {
-		return nil
+func (v *issueValidator) validateTimeWithInIteration(c *issueValidationConfig, time *time.Time) (*dao.Iteration, error) {
+	if c == nil {
+		return nil, fmt.Errorf("issue validation config is empty")
 	}
-	if !v.inIterationInterval(time) {
-		return fmt.Errorf("plan finish time is not in the iteration %v interval %v ~ %v",
-			v.iteration.Title, v.iteration.StartedAt.Format("2006-01-02"), v.iteration.FinishedAt.Format("2006-01-02"))
+	iteration, err := v.TryGetIteration(c.iterationID)
+	if err != nil || iteration == nil {
+		return nil, err
 	}
-	return nil
+	if !inIterationInterval(iteration, time) {
+		return iteration, fmt.Errorf("plan finish time is not in the iteration %v interval %v ~ %v",
+			iteration.Title, iteration.StartedAt.Format("2006-01-02"), iteration.FinishedAt.Format("2006-01-02"))
+	}
+	return iteration, nil
 }
 
-func (v *issueValidator) inIterationInterval(time *time.Time) bool {
-	if time == nil || v.iteration == nil {
+func inIterationInterval(iteration *dao.Iteration, time *time.Time) bool {
+	if time == nil || iteration == nil {
 		return false
 	}
-	return time.After(*v.iteration.StartedAt) && time.Before(*v.iteration.FinishedAt)
+	return time.After(*iteration.StartedAt) && time.Before(*iteration.FinishedAt)
 }
 
-func (v *issueValidator) validateStateWithIteration() error {
-	if v.iteration == nil {
+func (v *issueValidator) validateStateWithIteration(c *issueValidationConfig) error {
+	if c == nil {
+		return fmt.Errorf("issue validation config is empty")
+	}
+	iteration, err := v.TryGetIteration(c.iterationID)
+	if err != nil {
+		return err
+	}
+	state, err := v.TryGetState(c.stateID)
+	if err != nil {
+		return err
+	}
+	if iteration == nil {
 		return nil
 	}
-	if v.iteration.State == apistructs.IterationStateFiled &&
-		v.state.Belong != apistructs.IssueStateBelongDone && v.state.Belong != apistructs.IssueStateBelongClosed {
-		return fmt.Errorf("put unfinished issue in archived iteration: %v is not allowed", v.iteration.Title)
+	if iteration.State == apistructs.IterationStateFiled && (state == nil ||
+		(state.Belong != apistructs.IssueStateBelongDone && state.Belong != apistructs.IssueStateBelongClosed)) {
+		return fmt.Errorf("put unfinished issue in archived iteration: %v is not allowed", iteration.Title)
 	}
 	return nil
 }
