@@ -161,6 +161,7 @@ message PipelineDefinitionListRequest {
   int64 totalActionNum = 16;
   int64 ExecutedActionNum = 17;
   repeated string sourceIDList = 18;
+  repeated string filePathWithNames = 19;
 }
 
 message PipelineDefinitionStaticsRequest {

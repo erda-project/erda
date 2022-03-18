@@ -387,11 +387,12 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 			}
 			return remotes
 		}(),
-		TimeCreated: params.TimeCreated,
-		TimeStarted: params.TimeStarted,
-		Status:      params.Status,
-		AscCols:     params.AscCols,
-		DescCols:    params.DescCols,
+		TimeCreated:       params.TimeCreated,
+		TimeStarted:       params.TimeStarted,
+		Status:            params.Status,
+		AscCols:           params.AscCols,
+		DescCols:          params.DescCols,
+		FilePathWithNames: categoryKeyRuleMap[params.CategoryKey],
 	})
 	if err != nil {
 		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
@@ -1354,6 +1355,11 @@ var ruleCategoryKeyMap = map[string]string{
 	"pipeline.yml":                    "build-deploy",
 	".erda/pipelines/ci-artifact.yml": "build-artifact",
 	".dice/pipelines/ci-artifact.yml": "build-artifact",
+}
+
+var categoryKeyRuleMap = map[string][]string{
+	"build-deploy":   {"pipeline.yml"},
+	"build-artifact": {".erda/pipelines/ci-artifact.yml", ".dice/pipelines/ci-artifact.yml"},
 }
 
 func (p *ProjectPipelineService) ListPipelineCategoryRule(ctx context.Context) []pipelineCategoryRule {

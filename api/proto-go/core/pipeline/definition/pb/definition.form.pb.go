@@ -1703,6 +1703,8 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 				m.ExecutedActionNum = val
 			case "sourceIDList":
 				m.SourceIDList = vals
+			case "filePathWithNames":
+				m.FilePathWithNames = vals
 			}
 		}
 	}

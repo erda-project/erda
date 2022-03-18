@@ -16,8 +16,10 @@ package db
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 
+	"github.com/xormplus/builder"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
@@ -162,6 +164,15 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 			engine = engine.Where("d.started_at <= ?", req.TimeStarted[1])
 		}
 	}
+	if len(req.FilePathWithNames) != 0 {
+		and := builder.And(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[0]), "s.name": filepath.Base(req.FilePathWithNames[0])})
+		for i := 1; i < len(req.FilePathWithNames); i++ {
+			and = and.Or(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[i]), "s.name": filepath.Base(req.FilePathWithNames[i])})
+		}
+		sqlBuild, args, _ := builder.ToSQL(and)
+		engine = engine.Where(sqlBuild, args...)
+	}
+
 	for _, v := range req.AscCols {
 		engine = engine.Asc("d." + v)
 	}
@@ -233,6 +244,15 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 		if req.TimeStarted[1] != "" {
 			engine = engine.Where("d.started_at <= ?", req.TimeStarted[1])
 		}
+	}
+
+	if len(req.FilePathWithNames) != 0 {
+		and := builder.And(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[0]), "s.name": filepath.Base(req.FilePathWithNames[0])})
+		for i := 1; i < len(req.FilePathWithNames); i++ {
+			and = and.Or(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[i]), "s.name": filepath.Base(req.FilePathWithNames[i])})
+		}
+		sqlBuild, args, _ := builder.ToSQL(and)
+		engine = engine.Where(sqlBuild, args...)
 	}
 
 	total, err = engine.Count(new(PipelineDefinitionSource))
@@ -324,4 +344,12 @@ func (client *Client) ListUsedRef(req *pb.PipelineDefinitionUsedRefListRequest, 
 		GroupBy("ref").
 		Find(&refs)
 	return
+}
+
+func getFilePath(path string) string {
+	dir := filepath.Dir(path)
+	if dir == "." {
+		return ""
+	}
+	return dir
 }
