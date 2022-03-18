@@ -136,10 +136,6 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 	if createReq.OrgID == 0 {
 		return nil, errors.Errorf("failed to create project(org id is empty)")
 	}
-	userIDuint, err := strconv.ParseUint(userID, 10, 64)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse userID")
-	}
 	// 只有 DevOps 类型的项目，才能配置 quota
 	if createReq.Template != apistructs.DevopsTemplate {
 		createReq.ResourceConfigs = nil
@@ -233,8 +229,8 @@ func (p *Project) Create(userID string, createReq *apistructs.ProjectCreateReque
 			TestMemQuota:       calcu.GibibyteToByte(createReq.ResourceConfigs.TEST.MemQuota),
 			DevCPUQuota:        calcu.CoreToMillcore(createReq.ResourceConfigs.DEV.CPUQuota),
 			DevMemQuota:        calcu.GibibyteToByte(createReq.ResourceConfigs.DEV.MemQuota),
-			CreatorID:          userIDuint,
-			UpdaterID:          userIDuint,
+			CreatorID:          userID,
+			UpdaterID:          userID,
 		}
 		if err := tx.Debug().Create(&quota).Error; err != nil {
 			logrus.WithError(err).WithField("model", quota.TableName()).
@@ -320,10 +316,6 @@ func (p *Project) UpdateWithEvent(ctx context.Context, orgID, projectID int64, u
 
 // Update 更新项目
 func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID string, updateReq *apistructs.ProjectUpdateBody) (*model.Project, error) {
-	userIDuint, err := strconv.ParseUint(userID, 10, 64)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse userID")
-	}
 	if rc := updateReq.ResourceConfigs; rc != nil {
 		updateReq.ClusterConfig = map[string]string{
 			"PROD":    updateReq.ResourceConfigs.PROD.ClusterName,
@@ -358,7 +350,7 @@ func (p *Project) Update(ctx context.Context, orgID, projectID int64, userID str
 		*project.Quota = *oldQuota
 	}
 
-	if err := patchProject(&project, updateReq, userIDuint); err != nil {
+	if err := patchProject(&project, updateReq, userID); err != nil {
 		return nil, err
 	}
 
@@ -526,7 +518,7 @@ func isQuotaChangedOnTheWorkspace(workspaces map[string]bool, oldQuota, newQuota
 		oldQuota.DevClusterName != newQuota.DevClusterName
 }
 
-func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBody, userID uint64) error {
+func patchProject(project *model.Project, updateReq *apistructs.ProjectUpdateBody, userID string) error {
 	clusterConf, err := json.Marshal(updateReq.ClusterConfig)
 	if err != nil {
 		logrus.Errorf("failed to marshal clusterConfig, (%v)", err)
