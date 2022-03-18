@@ -71,7 +71,7 @@ func (p *provider) getSession(r *http.Request) string {
 }
 
 func (p *provider) getUserInfo(sessionID string) (*ucauth.UserInfo, error) {
-	var s OryKratosSession
+	var s ucauth.OryKratosSession
 	r, err := httpclient.New(httpclient.WithCompleteRedirect()).
 		Get(p.Cfg.OryKratosAddr).
 		Cookie(&http.Cookie{
@@ -87,7 +87,7 @@ func (p *provider) getUserInfo(sessionID string) (*ucauth.UserInfo, error) {
 		return nil, errors.Errorf("get kratos user info error, statusCode: %d", r.StatusCode())
 	}
 
-	info := identityToUserInfo(s.Identity)
+	info := ucauth.IdentityToUserInfo(s.Identity)
 	ucUserID, err := p.bundle.GetUcUserID(string(info.ID))
 	if err != nil {
 		return nil, err
@@ -95,60 +95,5 @@ func (p *provider) getUserInfo(sessionID string) (*ucauth.UserInfo, error) {
 	if ucUserID != "" {
 		info.ID = ucauth.USERID(ucUserID)
 	}
-	return info, nil
-}
-
-type OryKratosSession struct {
-	ID       string            `json:"id"`
-	Active   bool              `json:"active"`
-	Identity OryKratosIdentity `json:"identity"`
-}
-
-type OryKratosIdentity struct {
-	ID       ucauth.USERID           `json:"id"`
-	SchemaID string                  `json:"schema_id"`
-	Traits   OryKratosIdentityTraits `json:"traits"`
-}
-
-type OryKratosIdentityTraits struct {
-	Email string `json:"email"`
-	Name  string `json:"username"`
-	Nick  string `json:"nickname"`
-	Phone string `json:"phone"`
-}
-
-type OryKratosIdentityTraitsName struct {
-	First string `json:"first"`
-	Last  string `json:"last"`
-}
-
-func nameConversion(name OryKratosIdentityTraitsName) string {
-	// TODO: eastern name vs western name
-	return name.Last + name.First
-}
-
-func identityToUser(i OryKratosIdentity) ucauth.User {
-	return ucauth.User{
-		ID:    string(i.ID),
-		Name:  i.Traits.Name,
-		Nick:  i.Traits.Nick,
-		Email: i.Traits.Email,
-		Phone: i.Traits.Phone,
-	}
-}
-
-func identityToUserInfo(i OryKratosIdentity) *ucauth.UserInfo {
-	return userToUserInfo(identityToUser(i))
-}
-
-func userToUserInfo(u ucauth.User) *ucauth.UserInfo {
-	return &ucauth.UserInfo{
-		ID:        ucauth.USERID(u.ID),
-		Email:     u.Email,
-		Phone:     u.Phone,
-		AvatarUrl: u.AvatarURL,
-		UserName:  u.Name,
-		NickName:  u.Nick,
-		Enabled:   true,
-	}
+	return &info, nil
 }

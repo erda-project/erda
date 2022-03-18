@@ -1,5 +1,5 @@
 {
-  "$id": "https://schemas.ory.sh/presets/kratos/quickstart/email-password/identity.schema.json",
+  "$id": "https://schemas.erda.cloud/kratos/identity.schema.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Person",
   "type": "object",

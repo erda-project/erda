@@ -39,7 +39,7 @@ func whoami(kratosPublicAddr string, sessionID string) (UserInfo, error) {
 	if !r.IsOK() {
 		return UserInfo{}, fmt.Errorf("bad session")
 	}
-	return identityToUserInfo(s.Identity), nil
+	return IdentityToUserInfo(s.Identity), nil
 }
 
 func getUserByID(kratosPrivateAddr string, userID string) (*User, error) {
