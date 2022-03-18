@@ -487,9 +487,23 @@ func (k *Kubernetes) checkQuota(ctx context.Context, runtime *apistructs.Service
 		memTotal += svc.Resources.Mem * float64(svc.Scale)
 	}
 	logrus.Infof("servive %s cpu total %v", runtime.Services[0].Name, cpuTotal)
-	cpuTotal /= k.cpuSubscribeRatio
-	memTotal /= k.memSubscribeRatio
+
 	_, projectID, runtimeId, workspace := extractServicesEnvs(runtime)
+	switch strings.ToLower(workspace) {
+	case "dev":
+		cpuTotal /= k.devCpuSubscribeRatio
+		memTotal /= k.devMemSubscribeRatio
+	case "test":
+		cpuTotal /= k.testCpuSubscribeRatio
+		memTotal /= k.testMemSubscribeRatio
+	case "staging":
+		cpuTotal /= k.stagingCpuSubscribeRatio
+		memTotal /= k.stagingMemSubscribeRatio
+	default:
+		cpuTotal /= k.cpuSubscribeRatio
+		memTotal /= k.memSubscribeRatio
+	}
+
 	return k.CheckQuota(ctx, projectID, workspace, runtimeId, int64(cpuTotal), int64(memTotal), "", runtime.ID)
 }
 
