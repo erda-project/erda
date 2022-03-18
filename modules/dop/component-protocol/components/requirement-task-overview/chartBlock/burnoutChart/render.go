@@ -87,7 +87,30 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 		f.Issues = append(f.Issues, issue)
 	}
 
-	finishSumAll := 0
+	// Deal with situations that have been completed before the iteration begins
+	finishSumBeforeIterBegin := 0
+	for k, issues := range issueFinishMap {
+		if k.Before(dates[0]) {
+			finishSumBeforeIterBegin += func() int {
+				if h.GetBurnoutChartDimension() == "total" {
+					return len(issues)
+				}
+				sumHour := 0
+				for _, issue := range issues {
+					if issue.ManHour != "" {
+						var manHour apistructs.IssueManHour
+						if err := json.Unmarshal([]byte(issue.ManHour), &manHour); err != nil {
+							continue
+						}
+						sumHour += int(manHour.ElapsedTime)
+					}
+				}
+				return sumHour
+			}()
+		}
+	}
+
+	finishSumAll := finishSumBeforeIterBegin
 	for _, date := range dates {
 		finishSum := 0
 		if _, ok := issueFinishMap[date]; ok {
