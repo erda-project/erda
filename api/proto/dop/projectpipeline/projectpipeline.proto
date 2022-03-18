@@ -48,7 +48,7 @@ service ProjectPipelineService {
   }
 
   rpc CreateNamePreCheck(CreateProjectPipelineNamePreCheckRequest)
-          returns(CreateProjectPipelineNamePreCheckResponse) {
+      returns(CreateProjectPipelineNamePreCheckResponse) {
     option(google.api.http) = {
       get : "/api/project-pipeline/actions/name-pre-check",
     };
@@ -58,12 +58,22 @@ service ProjectPipelineService {
   }
 
   rpc CreateSourcePreCheck(CreateProjectPipelineSourcePreCheckRequest)
-          returns(CreateProjectPipelineSourcePreCheckResponse) {
+      returns(CreateProjectPipelineSourcePreCheckResponse) {
     option(google.api.http) = {
       get : "/api/project-pipeline/actions/source-pre-check",
     };
     option(erda.common.openapi) = {
       path : "/api/project-pipeline/actions/source-pre-check",
+    };
+  }
+
+  rpc ListPipelineCategory(ListPipelineCategoryRequest)
+      returns(ListPipelineCategoryResponse) {
+    option(google.api.http) = {
+      get : "/api/project-pipeline/actions/list-category",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/actions/list-category",
     };
   }
 }
@@ -165,4 +175,21 @@ message ProjectPipeline {
   string path = 10;
   string fileName = 11;
   string pipelineSourceID = 12;
+}
+
+message ListPipelineCategoryRequest {
+  uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
+}
+
+message ListPipelineCategoryResponse {
+  repeated pipelineCategory data = 1;
+}
+
+message pipelineCategory {
+  string key = 1;
+  string category = 2;
+  repeated string rules = 3;
+  uint64  runningNum = 4;
+  uint64 failedNum = 5;
+  uint64 totalNum = 6;
 }

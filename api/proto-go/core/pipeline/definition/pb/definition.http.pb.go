@@ -35,6 +35,8 @@ type DefinitionServiceHandler interface {
 	StaticsGroupByRemote(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error)
 	// GET /api/pipeline-definitions/actions/list-used-refs
 	ListUsedRefs(context.Context, *PipelineDefinitionUsedRefListRequest) (*PipelineDefinitionUsedRefListResponse, error)
+	// GET /api/pipeline-definitions/actions/statics-group-by-filePath
+	StaticsGroupByFilePath(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error)
 }
 
 // RegisterDefinitionServiceHandler register DefinitionServiceHandler to http.Router.
@@ -381,6 +383,42 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 		)
 	}
 
+	add_StaticsGroupByFilePath := func(method, path string, fn func(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*PipelineDefinitionStaticsRequest))
+		}
+		var StaticsGroupByFilePath_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			StaticsGroupByFilePath_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "StaticsGroupByFilePath", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, StaticsGroupByFilePath_info)
+				}
+				r = r.WithContext(ctx)
+				var in PipelineDefinitionStaticsRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_Create("POST", "/api/pipeline-definitions", srv.Create)
 	add_Update("PUT", "/api/pipeline-definitions/{pipelineDefinitionID}", srv.Update)
 	add_Delete("DELETE", "/api/pipeline-definitions/{pipelineDefinitionID}", srv.Delete)
@@ -388,4 +426,5 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 	add_List("GET", "/api/pipeline-definitions", srv.List)
 	add_StaticsGroupByRemote("GET", "/api/pipeline-definitions/actions/statics-group-by-remote", srv.StaticsGroupByRemote)
 	add_ListUsedRefs("GET", "/api/pipeline-definitions/actions/list-used-refs", srv.ListUsedRefs)
+	add_StaticsGroupByFilePath("GET", "/api/pipeline-definitions/actions/statics-group-by-filePath", srv.StaticsGroupByFilePath)
 }

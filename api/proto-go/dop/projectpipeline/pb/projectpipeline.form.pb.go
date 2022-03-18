@@ -26,6 +26,9 @@ var _ urlenc.URLValuesUnmarshaler = (*Application)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ProjectPipeline)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ListPipelineCategoryRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ListPipelineCategoryResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*PipelineCategory)(nil)
 
 // CreateProjectPipelineSourcePreCheckRequest implement urlenc.URLValuesUnmarshaler.
 func (m *CreateProjectPipelineSourcePreCheckRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -522,6 +525,63 @@ func (m *ProjectPipeline) UnmarshalURLValues(prefix string, values url.Values) e
 				m.FileName = vals[0]
 			case "pipelineSourceID":
 				m.PipelineSourceID = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ListPipelineCategoryRequest implement urlenc.URLValuesUnmarshaler.
+func (m *ListPipelineCategoryRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "projectID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			}
+		}
+	}
+	return nil
+}
+
+// ListPipelineCategoryResponse implement urlenc.URLValuesUnmarshaler.
+func (m *ListPipelineCategoryResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// PipelineCategory implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineCategory) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "key":
+				m.Key = vals[0]
+			case "category":
+				m.Category = vals[0]
+			case "rules":
+				m.Rules = vals
+			case "runningNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.RunningNum = val
+			case "failedNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.FailedNum = val
+			case "totalNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.TotalNum = val
 			}
 		}
 	}

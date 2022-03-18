@@ -47,6 +47,11 @@ service DefinitionService {
       get: "/api/pipeline-definitions/actions/list-used-refs",
     };
   }
+  rpc StaticsGroupByFilePath (PipelineDefinitionStaticsRequest) returns (PipelineDefinitionStaticsResponse) {
+    option (google.api.http) = {
+      get: "/api/pipeline-definitions/actions/statics-group-by-filePath",
+    };
+  }
 }
 
 message PipelineDefinition {
@@ -167,7 +172,7 @@ message PipelineDefinitionStaticsResponse {
 }
 
 message PipelineDefinitionStatistics {
-  string remote = 1;
+  string group = 1;
   uint64 failedNum = 2;
   uint64 runningNum = 3;
   uint64 totalNum = 4;

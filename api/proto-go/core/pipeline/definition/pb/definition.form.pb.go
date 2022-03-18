@@ -1732,8 +1732,8 @@ func (m *PipelineDefinitionStatistics) UnmarshalURLValues(prefix string, values 
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "remote":
-				m.Remote = vals[0]
+			case "group":
+				m.Group = vals[0]
 			case "failedNum":
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {

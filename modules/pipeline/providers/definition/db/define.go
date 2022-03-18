@@ -243,7 +243,7 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 }
 
 type PipelineDefinitionStatistics struct {
-	Remote     string
+	Group      string
 	FailedNum  uint64
 	RunningNum uint64
 	TotalNum   uint64
@@ -258,13 +258,33 @@ func (client *Client) StaticsGroupByRemote(req *pb.PipelineDefinitionStaticsRequ
 		err  error
 	)
 	err = session.Table("pipeline_definition").Alias("d").
-		Select(fmt.Sprintf("s.remote,COUNT(*) AS total_num,COUNT( IF ( d.`status` = '%s' , 1, NULL) ) AS running_num,"+
+		Select(fmt.Sprintf("s.remote AS `group`,COUNT(*) AS total_num,COUNT( IF ( d.`status` = '%s' , 1, NULL) ) AS running_num,"+
 			"COUNT(IF(DATE_SUB(CURDATE(), INTERVAL 1 DAY) <= d.started_at AND d.`status` = '%s',1,NULL)) AS failed_num",
 			apistructs.PipelineStatusRunning, apistructs.PipelineStatusFailed)).
 		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
 		Where("d.soft_deleted_at = 0").
 		Where("d.location = ?", req.GetLocation()).
 		GroupBy("s.remote").
+		Find(&list)
+	return list, err
+}
+
+func (client *Client) StaticsGroupByFilePath(req *pb.PipelineDefinitionStaticsRequest, ops ...mysqlxorm.SessionOption) ([]PipelineDefinitionStatistics, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var (
+		list []PipelineDefinitionStatistics
+		err  error
+	)
+	err = session.Table("pipeline_definition").Alias("d").
+		Select(fmt.Sprintf("CONCAT(s.path,s.`name`) AS `group`,COUNT(*) AS total_num,COUNT( IF ( d.`status` = '%s' , 1, NULL) ) AS running_num,"+
+			"COUNT(IF(DATE_SUB(CURDATE(), INTERVAL 1 DAY) <= d.started_at AND d.`status` = '%s',1,NULL)) AS failed_num",
+			apistructs.PipelineStatusRunning, apistructs.PipelineStatusFailed)).
+		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
+		Where("d.soft_deleted_at = 0").
+		Where("d.location = ?", req.GetLocation()).
+		GroupBy("s.path,s.name").
 		Find(&list)
 	return list, err
 }

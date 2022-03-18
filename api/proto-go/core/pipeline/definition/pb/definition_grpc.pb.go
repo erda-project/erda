@@ -28,6 +28,7 @@ type DefinitionServiceClient interface {
 	List(ctx context.Context, in *PipelineDefinitionListRequest, opts ...grpc.CallOption) (*PipelineDefinitionListResponse, error)
 	StaticsGroupByRemote(ctx context.Context, in *PipelineDefinitionStaticsRequest, opts ...grpc.CallOption) (*PipelineDefinitionStaticsResponse, error)
 	ListUsedRefs(ctx context.Context, in *PipelineDefinitionUsedRefListRequest, opts ...grpc.CallOption) (*PipelineDefinitionUsedRefListResponse, error)
+	StaticsGroupByFilePath(ctx context.Context, in *PipelineDefinitionStaticsRequest, opts ...grpc.CallOption) (*PipelineDefinitionStaticsResponse, error)
 }
 
 type definitionServiceClient struct {
@@ -101,6 +102,15 @@ func (c *definitionServiceClient) ListUsedRefs(ctx context.Context, in *Pipeline
 	return out, nil
 }
 
+func (c *definitionServiceClient) StaticsGroupByFilePath(ctx context.Context, in *PipelineDefinitionStaticsRequest, opts ...grpc.CallOption) (*PipelineDefinitionStaticsResponse, error) {
+	out := new(PipelineDefinitionStaticsResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.pipeline.definition.DefinitionService/StaticsGroupByFilePath", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DefinitionServiceServer is the server API for DefinitionService service.
 // All implementations should embed UnimplementedDefinitionServiceServer
 // for forward compatibility
@@ -112,6 +122,7 @@ type DefinitionServiceServer interface {
 	List(context.Context, *PipelineDefinitionListRequest) (*PipelineDefinitionListResponse, error)
 	StaticsGroupByRemote(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error)
 	ListUsedRefs(context.Context, *PipelineDefinitionUsedRefListRequest) (*PipelineDefinitionUsedRefListResponse, error)
+	StaticsGroupByFilePath(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error)
 }
 
 // UnimplementedDefinitionServiceServer should be embedded to have forward compatible implementations.
@@ -138,6 +149,9 @@ func (*UnimplementedDefinitionServiceServer) StaticsGroupByRemote(context.Contex
 }
 func (*UnimplementedDefinitionServiceServer) ListUsedRefs(context.Context, *PipelineDefinitionUsedRefListRequest) (*PipelineDefinitionUsedRefListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListUsedRefs not implemented")
+}
+func (*UnimplementedDefinitionServiceServer) StaticsGroupByFilePath(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StaticsGroupByFilePath not implemented")
 }
 
 func RegisterDefinitionServiceServer(s grpc1.ServiceRegistrar, srv DefinitionServiceServer, opts ...grpc1.HandleOption) {
@@ -219,6 +233,15 @@ func _get_DefinitionService_serviceDesc(srv DefinitionServiceServer, opts ...grp
 	if h.Interceptor != nil {
 		_DefinitionService_ListUsedRefs_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "ListUsedRefs", srv)
 		_DefinitionService_ListUsedRefs_Handler = h.Interceptor(_DefinitionService_ListUsedRefs_Handler)
+	}
+
+	_DefinitionService_StaticsGroupByFilePath_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.StaticsGroupByFilePath(ctx, req.(*PipelineDefinitionStaticsRequest))
+	}
+	var _DefinitionService_StaticsGroupByFilePath_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_DefinitionService_StaticsGroupByFilePath_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "StaticsGroupByFilePath", srv)
+		_DefinitionService_StaticsGroupByFilePath_Handler = h.Interceptor(_DefinitionService_StaticsGroupByFilePath_Handler)
 	}
 
 	var serviceDesc = _DefinitionService_serviceDesc
@@ -382,6 +405,29 @@ func _get_DefinitionService_serviceDesc(srv DefinitionServiceServer, opts ...grp
 					FullMethod: "/erda.core.pipeline.definition.DefinitionService/ListUsedRefs",
 				}
 				return interceptor(ctx, in, info, _DefinitionService_ListUsedRefs_Handler)
+			},
+		},
+		{
+			MethodName: "StaticsGroupByFilePath",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(PipelineDefinitionStaticsRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(DefinitionServiceServer).StaticsGroupByFilePath(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _DefinitionService_StaticsGroupByFilePath_info)
+				}
+				if interceptor == nil {
+					return _DefinitionService_StaticsGroupByFilePath_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.pipeline.definition.DefinitionService/StaticsGroupByFilePath",
+				}
+				return interceptor(ctx, in, info, _DefinitionService_StaticsGroupByFilePath_Handler)
 			},
 		},
 	}

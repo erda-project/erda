@@ -265,7 +265,7 @@ func (p pipelineDefinition) StaticsGroupByRemote(ctx context.Context, request *p
 	pipelineDefinitionStatistics := make([]*pb.PipelineDefinitionStatistics, 0, len(statics))
 	for _, v := range statics {
 		pipelineDefinitionStatistics = append(pipelineDefinitionStatistics, &pb.PipelineDefinitionStatistics{
-			Remote:     v.Remote,
+			Group:      v.Group,
 			FailedNum:  v.FailedNum,
 			RunningNum: v.RunningNum,
 			TotalNum:   v.TotalNum,
@@ -283,4 +283,22 @@ func (p pipelineDefinition) ListUsedRefs(ctx context.Context, req *pb.PipelineDe
 		return nil, err
 	}
 	return &pb.PipelineDefinitionUsedRefListResponse{Ref: refs}, nil
+}
+
+func (p pipelineDefinition) StaticsGroupByFilePath(ctx context.Context, request *pb.PipelineDefinitionStaticsRequest) (*pb.PipelineDefinitionStaticsResponse, error) {
+	statics, err := p.dbClient.StaticsGroupByFilePath(request)
+	if err != nil {
+		return nil, err
+	}
+
+	pipelineDefinitionStatistics := make([]*pb.PipelineDefinitionStatistics, 0, len(statics))
+	for _, v := range statics {
+		pipelineDefinitionStatistics = append(pipelineDefinitionStatistics, &pb.PipelineDefinitionStatistics{
+			Group:      v.Group,
+			FailedNum:  v.FailedNum,
+			RunningNum: v.RunningNum,
+			TotalNum:   v.TotalNum,
+		})
+	}
+	return &pb.PipelineDefinitionStaticsResponse{PipelineDefinitionStatistics: pipelineDefinitionStatistics}, nil
 }

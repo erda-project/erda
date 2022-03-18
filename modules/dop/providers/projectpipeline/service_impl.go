@@ -1160,7 +1160,7 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 	}
 
 	for _, v := range statics.GetPipelineDefinitionStatistics() {
-		remoteName := getNameByRemote(v.Remote)
+		remoteName := getNameByRemote(v.Group)
 		if v2, ok := appNamePipelineNumMap[remoteName.AppName]; ok {
 			v2.FailedNum = int(v.FailedNum)
 			v2.RunningNum = int(v.RunningNum)
@@ -1339,4 +1339,99 @@ func (p *ProjectPipelineService) ListUsedRefs(ctx context.Context, params deftyp
 		return nil, apierrors.ErrListProjectPipelineRef.InternalError(err)
 	}
 	return resp.Ref, nil
+}
+
+type pipelineCategoryRule struct {
+	Key        string
+	Category   string
+	Rules      []string
+	RunningNum uint64
+	FailedNum  uint64
+	TotalNum   uint64
+}
+
+var ruleCategoryKeyMap = map[string]string{
+	"pipeline.yml":                    "build-deploy",
+	".erda/pipelines/ci-artifact.yml": "build-artifact",
+	".dice/pipelines/ci-artifact.yml": "build-artifact",
+}
+
+func (p *ProjectPipelineService) ListPipelineCategoryRule(ctx context.Context) []pipelineCategoryRule {
+	return []pipelineCategoryRule{
+		{
+			Key:      "build-deploy",
+			Category: p.trans.Text(apis.Language(ctx), "BuildDeploy"),
+			Rules:    []string{"pipeline.yml"},
+		},
+		{
+			Key:      "build-artifact",
+			Category: p.trans.Text(apis.Language(ctx), "BuildArtifact"),
+			Rules:    []string{".erda/pipelines/ci-artifact.yml", ".dice/pipelines/ci-artifact.yml"},
+		},
+		{
+			Key:      "others",
+			Category: p.trans.Text(apis.Language(ctx), "Uncategorized"),
+			Rules:    nil,
+		},
+	}
+}
+
+func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, params *pb.ListPipelineCategoryRequest) (*pb.ListPipelineCategoryResponse, error) {
+	if err := params.Validate(); err != nil {
+		return nil, apierrors.ErrListProjectPipelineCategory.InvalidParameter(err)
+	}
+	project, err := p.bundle.GetProject(params.ProjectID)
+	if err != nil {
+		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
+	}
+
+	org, err := p.bundle.GetOrg(project.OrgID)
+	if err != nil {
+		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
+	}
+
+	staticsResp, err := p.PipelineDefinition.StaticsGroupByFilePath(ctx, &dpb.PipelineDefinitionStaticsRequest{
+		Location: makeLocation(&apistructs.ApplicationDTO{
+			OrgName:     org.Name,
+			ProjectName: project.Name,
+		}, cicdPipelineType),
+	})
+	if err != nil {
+		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
+	}
+	categoryRules := p.ListPipelineCategoryRule(ctx)
+
+	for _, statics := range staticsResp.PipelineDefinitionStatistics {
+		if key, ok := ruleCategoryKeyMap[statics.Group]; ok {
+			for i := range categoryRules {
+				if key == categoryRules[i].Key {
+					categoryRules[i].TotalNum += statics.TotalNum
+					categoryRules[i].FailedNum += statics.FailedNum
+					categoryRules[i].RunningNum += statics.RunningNum
+					break
+				}
+			}
+			continue
+		}
+		for i := range categoryRules {
+			if categoryRules[i].Key == "others" {
+				categoryRules[i].TotalNum += statics.TotalNum
+				categoryRules[i].FailedNum += statics.FailedNum
+				categoryRules[i].RunningNum += statics.RunningNum
+				break
+			}
+		}
+	}
+	data := make([]*pb.PipelineCategory, 0, len(categoryRules))
+	for _, v := range categoryRules {
+		data = append(data, &pb.PipelineCategory{
+			Key:        v.Key,
+			Category:   v.Category,
+			Rules:      v.Rules,
+			RunningNum: v.RunningNum,
+			FailedNum:  v.FailedNum,
+			TotalNum:   v.TotalNum,
+		})
+	}
+	return &pb.ListPipelineCategoryResponse{Data: data}, nil
 }
