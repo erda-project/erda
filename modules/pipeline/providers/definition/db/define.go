@@ -43,6 +43,7 @@ type PipelineDefinition struct {
 	PipelineID        uint64    `json:"pipelineId"`
 	TotalActionNum    int64     `json:"totalActionNum"`
 	ExecutedActionNum int64     `json:"executedActionNum"`
+	Ref               string    `json:"ref"`
 }
 
 func (PipelineDefinition) TableName() string {
@@ -291,4 +292,16 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 		TotalActionNum:    p.TotalActionNum,
 		ExecutedActionNum: p.ExecutedActionNum,
 	}
+}
+
+func (client *Client) ListUsedRef(req *pb.PipelineDefinitionUsedRefListRequest, ops ...mysqlxorm.SessionOption) (refs []string, err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+	err = session.Table(PipelineDefinition{}.TableName()).
+		Cols("ref").
+		Where("soft_deleted_at = 0").
+		Where("location = ?", req.Location).
+		GroupBy("ref").
+		Find(&refs)
+	return
 }

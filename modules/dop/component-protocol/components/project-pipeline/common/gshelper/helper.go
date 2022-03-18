@@ -32,6 +32,7 @@ type TableFilter struct {
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd"`
 	StartedAtStartEnd []int64  `json:"startedAtStartEnd"`
 	Title             string   `json:"title"`
+	Branch            []string `json:"branch"`
 }
 
 func NewGSHelper(gs *cptype.GlobalStateData) *GSHelper {

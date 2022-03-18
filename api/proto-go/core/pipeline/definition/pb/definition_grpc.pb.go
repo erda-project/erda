@@ -27,6 +27,7 @@ type DefinitionServiceClient interface {
 	Get(ctx context.Context, in *PipelineDefinitionGetRequest, opts ...grpc.CallOption) (*PipelineDefinitionGetResponse, error)
 	List(ctx context.Context, in *PipelineDefinitionListRequest, opts ...grpc.CallOption) (*PipelineDefinitionListResponse, error)
 	StaticsGroupByRemote(ctx context.Context, in *PipelineDefinitionStaticsRequest, opts ...grpc.CallOption) (*PipelineDefinitionStaticsResponse, error)
+	ListUsedRefs(ctx context.Context, in *PipelineDefinitionUsedRefListRequest, opts ...grpc.CallOption) (*PipelineDefinitionUsedRefListResponse, error)
 }
 
 type definitionServiceClient struct {
@@ -91,6 +92,15 @@ func (c *definitionServiceClient) StaticsGroupByRemote(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *definitionServiceClient) ListUsedRefs(ctx context.Context, in *PipelineDefinitionUsedRefListRequest, opts ...grpc.CallOption) (*PipelineDefinitionUsedRefListResponse, error) {
+	out := new(PipelineDefinitionUsedRefListResponse)
+	err := c.cc.Invoke(ctx, "/erda.core.pipeline.definition.DefinitionService/ListUsedRefs", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DefinitionServiceServer is the server API for DefinitionService service.
 // All implementations should embed UnimplementedDefinitionServiceServer
 // for forward compatibility
@@ -101,6 +111,7 @@ type DefinitionServiceServer interface {
 	Get(context.Context, *PipelineDefinitionGetRequest) (*PipelineDefinitionGetResponse, error)
 	List(context.Context, *PipelineDefinitionListRequest) (*PipelineDefinitionListResponse, error)
 	StaticsGroupByRemote(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error)
+	ListUsedRefs(context.Context, *PipelineDefinitionUsedRefListRequest) (*PipelineDefinitionUsedRefListResponse, error)
 }
 
 // UnimplementedDefinitionServiceServer should be embedded to have forward compatible implementations.
@@ -124,6 +135,9 @@ func (*UnimplementedDefinitionServiceServer) List(context.Context, *PipelineDefi
 }
 func (*UnimplementedDefinitionServiceServer) StaticsGroupByRemote(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StaticsGroupByRemote not implemented")
+}
+func (*UnimplementedDefinitionServiceServer) ListUsedRefs(context.Context, *PipelineDefinitionUsedRefListRequest) (*PipelineDefinitionUsedRefListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListUsedRefs not implemented")
 }
 
 func RegisterDefinitionServiceServer(s grpc1.ServiceRegistrar, srv DefinitionServiceServer, opts ...grpc1.HandleOption) {
@@ -196,6 +210,15 @@ func _get_DefinitionService_serviceDesc(srv DefinitionServiceServer, opts ...grp
 	if h.Interceptor != nil {
 		_DefinitionService_StaticsGroupByRemote_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "StaticsGroupByRemote", srv)
 		_DefinitionService_StaticsGroupByRemote_Handler = h.Interceptor(_DefinitionService_StaticsGroupByRemote_Handler)
+	}
+
+	_DefinitionService_ListUsedRefs_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.ListUsedRefs(ctx, req.(*PipelineDefinitionUsedRefListRequest))
+	}
+	var _DefinitionService_ListUsedRefs_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_DefinitionService_ListUsedRefs_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "ListUsedRefs", srv)
+		_DefinitionService_ListUsedRefs_Handler = h.Interceptor(_DefinitionService_ListUsedRefs_Handler)
 	}
 
 	var serviceDesc = _DefinitionService_serviceDesc
@@ -336,6 +359,29 @@ func _get_DefinitionService_serviceDesc(srv DefinitionServiceServer, opts ...grp
 					FullMethod: "/erda.core.pipeline.definition.DefinitionService/StaticsGroupByRemote",
 				}
 				return interceptor(ctx, in, info, _DefinitionService_StaticsGroupByRemote_Handler)
+			},
+		},
+		{
+			MethodName: "ListUsedRefs",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(PipelineDefinitionUsedRefListRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(DefinitionServiceServer).ListUsedRefs(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _DefinitionService_ListUsedRefs_info)
+				}
+				if interceptor == nil {
+					return _DefinitionService_ListUsedRefs_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.core.pipeline.definition.DefinitionService/ListUsedRefs",
+				}
+				return interceptor(ctx, in, info, _DefinitionService_ListUsedRefs_Handler)
 			},
 		},
 	}

@@ -521,6 +521,7 @@ var (
 	ErrSetPrimaryProjectPipeline   = err("ErrSetPrimaryProjectPipeline", "项目级流水线设为重要失败")
 	ErrUnSetPrimaryProjectPipeline = err("ErrUnSetPrimaryProjectPipeline", "项目级流水线取消重要失败")
 	ErrListAppProjectPipeline      = err("ErrListAppProjectPipeline", "项目级流水线获取应用失败")
+	ErrListProjectPipelineRef      = err("ErrListProjectPipelineRef", "获取项目级流水线分支失败")
 
 	ErrRunProjectPipeline             = err("ErrRunProjectPipeline", "执行流水线失败")
 	ErrBatchRunProjectPipeline        = err("ErrBatchRunProjectPipeline", "批量执行流水线失败")

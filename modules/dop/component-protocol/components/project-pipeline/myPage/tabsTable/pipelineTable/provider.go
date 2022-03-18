@@ -228,6 +228,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			return nil
 		}(),
 		Name: filter.Title,
+		Ref:  filter.Branch,
 		TimeCreated: func() []string {
 			timeCreated := make([]string, 0)
 			if len(filter.CreatedAtStartEnd) == 2 {

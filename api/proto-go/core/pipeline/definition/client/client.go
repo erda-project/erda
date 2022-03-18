@@ -60,3 +60,7 @@ func (s *definitionServiceWrapper) List(ctx context.Context, req *pb.PipelineDef
 func (s *definitionServiceWrapper) StaticsGroupByRemote(ctx context.Context, req *pb.PipelineDefinitionStaticsRequest) (*pb.PipelineDefinitionStaticsResponse, error) {
 	return s.client.StaticsGroupByRemote(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *definitionServiceWrapper) ListUsedRefs(ctx context.Context, req *pb.PipelineDefinitionUsedRefListRequest) (*pb.PipelineDefinitionUsedRefListResponse, error) {
+	return s.client.ListUsedRefs(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
