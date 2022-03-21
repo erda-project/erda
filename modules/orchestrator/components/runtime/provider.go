@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/orchestrator/runtime/pb"
 	"github.com/erda-project/erda/modules/orchestrator/events"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
@@ -44,6 +45,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		WithBundleService(NewBundleService()),
 		WithDBService(NewDBService(p.DB)),
 		WithEventManagerService(p.EventManager),
+		WithServiceGroupImpl(servicegroup.NewServiceGroupImplInit()),
 	)
 
 	if p.Register != nil {

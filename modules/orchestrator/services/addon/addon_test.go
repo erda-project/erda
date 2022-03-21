@@ -26,6 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
@@ -291,11 +292,11 @@ func Test_addonCanScale(t *testing.T) {
 }
 
 func TestAddon_doAddonScale(t *testing.T) {
-	a := Addon{
-		db:  &dbclient.DBClient{},
-		bdl: &bundle.Bundle{},
-	}
+	var db *dbclient.DBClient
+	var bdl *bundle.Bundle
+	var serviceGroupImpl *servicegroup.ServiceGroupImpl
 
+	a := New(WithDBClient(db), WithBundle(bdl), WithServiceGroup(serviceGroupImpl))
 	addonInstance := &dbclient.AddonInstance{
 		ID:                  "z44f5f6543f004d54ac2a2538efd4e9ec",
 		Name:                "mysql",
@@ -325,14 +326,14 @@ func TestAddon_doAddonScale(t *testing.T) {
 
 	addonInstanceRoutings := make([]dbclient.AddonInstanceRouting, 0)
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(&a), "GetAddonExtention",
+	monkey.PatchInstanceMethod(reflect.TypeOf(a), "GetAddonExtention",
 		func(a *Addon, params *apistructs.AddonHandlerCreateItem) (*apistructs.AddonExtension, *diceyml.Object, error) {
 			return &apistructs.AddonExtension{}, &diceyml.Object{}, nil
 		},
 	)
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(&a), "BuildAddonScaleRequestGroup",
-		func(a *Addon, params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, scaleAction string, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.UpdateServiceGroupScaleRequst, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(a), "BuildAddonScaleRequestGroup",
+		func(a *Addon, params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, scaleAction string, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroup, error) {
 			services := make(map[string]*diceyml.Service)
 			services["mysql-1"] = &diceyml.Service{
 				Image: "registry.erda.cloud/erda-addons-enterprise/addon-mysql:5.7.29-1.0.1-init",
@@ -438,7 +439,7 @@ func TestAddon_doAddonScale(t *testing.T) {
 				Volumes:     make(map[string]apistructs.RequestVolumeInfo),
 			}
 
-			ret := &apistructs.UpdateServiceGroupScaleRequst{
+			ret := &apistructs.UpdateServiceGroupScaleRequest{
 				Namespace:   addonIns.Namespace,
 				Name:        addonIns.ScheduleName,
 				ClusterName: params.ClusterName,
@@ -467,14 +468,13 @@ func TestAddon_doAddonScale(t *testing.T) {
 					},
 				})
 			}
-			return ret, nil
+			return &apistructs.ServiceGroup{}, nil
 		},
 	)
 
-	//var bdl = &bundle.Bundle{}
-	monkey.PatchInstanceMethod(reflect.TypeOf(a.bdl), "ScaleServiceGroup",
-		func(_ *bundle.Bundle, sg apistructs.UpdateServiceGroupScaleRequst) error {
-			return nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(serviceGroupImpl), "Scale",
+		func(_ *servicegroup.ServiceGroupImpl, sg *apistructs.ServiceGroup) (apistructs.ServiceGroup, error) {
+			return apistructs.ServiceGroup{}, nil
 		},
 	)
 

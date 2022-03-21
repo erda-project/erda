@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/task"
 	"github.com/erda-project/erda/pkg/jsonstore"
@@ -33,7 +34,7 @@ var DeleteNotFound error = errors.New("not found")
 // TODO: Compared with service_endpoints.go, should the returned content be changed?
 func (s ServiceGroupImpl) Cancel(namespace string, name string) error {
 	sg := apistructs.ServiceGroup{}
-	if err := s.js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
+	if err := s.Js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
 		return err
 	}
 
@@ -48,7 +49,7 @@ func (s ServiceGroupImpl) ConfigUpdate(sg apistructs.ServiceGroup) error {
 	sg.LastModifiedTime = time.Now().Unix()
 
 	logrus.Debugf("config update sg: %+v", sg)
-	if err := s.js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &sg); err != nil {
+	if err := s.Js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &sg); err != nil {
 		return err
 	}
 
@@ -61,12 +62,12 @@ func (s ServiceGroupImpl) ConfigUpdate(sg apistructs.ServiceGroup) error {
 }
 
 func (s ServiceGroupImpl) Create(req apistructs.ServiceGroupCreateV2Request) (apistructs.ServiceGroup, error) {
-	sg, err := convertServiceGroupCreateV2Request(req, s.clusterinfo)
+	sg, err := convertServiceGroupCreateV2Request(req, s.Clusterinfo)
 	if err != nil {
 		return apistructs.ServiceGroup{}, errors.Errorf("failed to convert sg createV2Request, err: %v", err)
 	}
 
-	if err := s.js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), sg); err != nil {
+	if err := s.Js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), sg); err != nil {
 		logrus.Errorf("failed to put sg to jsonStore, err: %v", err)
 		return apistructs.ServiceGroup{}, err
 	}
@@ -94,7 +95,7 @@ func convertServiceGroupCreateV2Request(req apistructs.ServiceGroupCreateV2Reque
 func (s ServiceGroupImpl) Delete(namespace string, name, force string) error {
 	sg := apistructs.ServiceGroup{}
 	// force offline, first time not set status offline, delete etcd data; after set status, get and delete again, not return error
-	if err := s.js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
+	if err := s.Js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
 		if force != "true" {
 			if err == jsonstore.NotFoundErr {
 				logrus.Errorf("not found runtime %s on namespace %s", name, namespace)
@@ -114,7 +115,7 @@ func (s ServiceGroupImpl) Delete(namespace string, name, force string) error {
 			return err
 		}
 	}
-	if err := s.js.Remove(context.Background(), mkServiceGroupKey(namespace, name), nil); err != nil {
+	if err := s.Js.Remove(context.Background(), mkServiceGroupKey(namespace, name), nil); err != nil {
 		if force != "true" {
 			return err
 		}
@@ -125,7 +126,7 @@ func (s ServiceGroupImpl) Delete(namespace string, name, force string) error {
 
 func (s ServiceGroupImpl) Info(ctx context.Context, namespace string, name string) (apistructs.ServiceGroup, error) {
 	sg := apistructs.ServiceGroup{}
-	if err := s.js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
+	if err := s.Js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
 		return sg, err
 	}
 
@@ -145,7 +146,7 @@ func (s ServiceGroupImpl) Info(ctx context.Context, namespace string, name strin
 
 func (s ServiceGroupImpl) KillPod(ctx context.Context, namespace string, name string, containerID string) error {
 	sg := apistructs.ServiceGroup{}
-	if err := s.js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
+	if err := s.Js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
 		return err
 	}
 
@@ -157,7 +158,7 @@ func (s ServiceGroupImpl) KillPod(ctx context.Context, namespace string, name st
 }
 
 func (s ServiceGroupImpl) Precheck(req apistructs.ServiceGroupPrecheckRequest) (apistructs.ServiceGroupPrecheckData, error) {
-	sg, err := convertServiceGroupCreateV2Request(apistructs.ServiceGroupCreateV2Request(req), s.clusterinfo)
+	sg, err := convertServiceGroupCreateV2Request(apistructs.ServiceGroupCreateV2Request(req), s.Clusterinfo)
 	if err != nil {
 		return apistructs.ServiceGroupPrecheckData{}, err
 	}
@@ -171,7 +172,7 @@ func (s ServiceGroupImpl) Precheck(req apistructs.ServiceGroupPrecheckRequest) (
 
 func (s ServiceGroupImpl) Restart(namespace string, name string) error {
 	sg := apistructs.ServiceGroup{}
-	if err := s.js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
+	if err := s.Js.Get(context.Background(), mkServiceGroupKey(namespace, name), &sg); err != nil {
 		return err
 	}
 	sg.Extra[LastRestartTimeKey] = time.Now().String()
@@ -183,7 +184,7 @@ func (s ServiceGroupImpl) Restart(namespace string, name string) error {
 		return err
 	}
 
-	if err := s.js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &sg); err != nil {
+	if err := s.Js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &sg); err != nil {
 		return err
 	}
 	return nil
@@ -191,15 +192,10 @@ func (s ServiceGroupImpl) Restart(namespace string, name string) error {
 
 func (s *ServiceGroupImpl) Scale(sg *apistructs.ServiceGroup) (apistructs.ServiceGroup, error) {
 	oldSg := apistructs.ServiceGroup{}
-	if err := s.js.Get(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
+	if err := s.Js.Get(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
 		return apistructs.ServiceGroup{}, fmt.Errorf("Cannot get servicegroup(%s/%s) from etcd, err: %v", sg.Type, sg.ID, err)
 	}
 
-	/*
-		if len(sg.Services) != 1 {
-			return apistructs.ServiceGroup{}, fmt.Errorf("services count more than 1")
-		}
-	*/
 	// get sg info from etcd storage, and set the project namespace to the scale sg
 	// when the project namespace is not empty
 	if oldSg.ProjectNamespace != "" {
@@ -225,19 +221,6 @@ func (s *ServiceGroupImpl) Scale(sg *apistructs.ServiceGroup) (apistructs.Servic
 				break
 			}
 		}
-		/*
-			if svc.Name == newService.Name {
-				if svc.Scale != newService.Scale {
-					svc.Scale = newService.Scale
-				}
-				if svc.Resources.Cpu != newService.Resources.Cpu || svc.Resources.Mem != newService.Resources.Mem {
-					svc.Resources = newService.Resources
-				}
-				oldSg.Services[index] = svc
-				sg.Services[0] = oldSg.Services[index]
-				break
-			}
-		*/
 	}
 	_, err := s.handleServiceGroup(context.Background(), sg, task.TaskScale)
 	if err != nil {
@@ -252,20 +235,20 @@ func (s *ServiceGroupImpl) Scale(sg *apistructs.ServiceGroup) (apistructs.Servic
 		}
 	}
 
-	if err := s.js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
+	if err := s.Js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
 		return apistructs.ServiceGroup{}, err
 	}
 	return *sg, nil
 }
 
 func (s ServiceGroupImpl) Update(req apistructs.ServiceGroupUpdateV2Request) (apistructs.ServiceGroup, error) {
-	sg, err := convertServiceGroupUpdateV2Request(req, s.clusterinfo)
+	sg, err := convertServiceGroupUpdateV2Request(req, s.Clusterinfo)
 	if err != nil {
 		return apistructs.ServiceGroup{}, err
 	}
 
 	oldSg := apistructs.ServiceGroup{}
-	if err := s.js.Get(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
+	if err := s.Js.Get(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
 		return apistructs.ServiceGroup{}, fmt.Errorf("Cannot get servicegroup(%s/%s) from etcd, err: %v", sg.Type, sg.ID, err)
 	}
 	diffAndPatchRuntime(&sg, &oldSg)
@@ -275,7 +258,7 @@ func (s ServiceGroupImpl) Update(req apistructs.ServiceGroupUpdateV2Request) (ap
 		return apistructs.ServiceGroup{}, err
 	}
 
-	if err := s.js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
+	if err := s.Js.Put(context.Background(), mkServiceGroupKey(sg.Type, sg.ID), &oldSg); err != nil {
 		return apistructs.ServiceGroup{}, err
 	}
 	return oldSg, nil
@@ -295,4 +278,23 @@ func diffAndPatchRuntime(newsg *apistructs.ServiceGroup, oldsg *apistructs.Servi
 	// TODO: refactor it, separate data and status into different etcd key
 	// Full update
 	oldsg.Services = newsg.Services
+}
+
+// TODO: an ugly hack, need refactor, it may cause goroutine explosion
+func (s ServiceGroupImpl) InspectServiceGroupWithTimeout(namespace, name string) (*apistructs.ServiceGroup, error) {
+	var (
+		sg  apistructs.ServiceGroup
+		err error
+	)
+	done := make(chan struct{}, 1)
+	go func() {
+		sg, err = s.Info(context.Background(), namespace, name)
+		done <- struct{}{}
+	}()
+	select {
+	case <-done:
+		return &sg, err
+	case <-time.After(time.Duration(conf.InspectServiceGroupTimeout()) * time.Second):
+		return nil, fmt.Errorf("timeout for invoke getServiceGroup for namesapce %s name %s", namespace, name)
+	}
 }

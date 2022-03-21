@@ -58,7 +58,11 @@ func (s *Endpoints) epBulkGetRuntimeStatusDetail(ctx context.Context, r *http.Re
 	}
 	data := make(map[uint64]interface{})
 	for _, r := range runtimes {
-		if status, err := s.bdl.GetServiceGroupStatus(r.ScheduleName.Args()); err != nil {
+		vars := map[string]string{
+			"namespace": r.ScheduleName.Namespace,
+			"name":      r.ScheduleName.Name,
+		}
+		if status, err := s.scheduler.EpGetRuntimeStatus(context.Background(), vars); err != nil {
 			return utils.ErrResp0101(err, fmt.Sprintf("failed to bulk get runtime StatusDetail, runtimeId: %d", r.ID))
 		} else {
 			data[r.ID] = status
@@ -234,14 +238,16 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 			errMsg := fmt.Sprintf("runtime %s is not existed for runtime %#v", uniqueId.Name, uniqueId)
 			return apistructs.PreDiceDTO{}, errors.Errorf("runtime %s is not existed", uniqueId.Name), errMsg
 		}
-		namespace, name := runtime.ScheduleName.Args()
-		sg := apistructs.UpdateServiceGroupScaleRequst{
-			Name:        name,
-			Namespace:   namespace,
-			ClusterName: runtime.ClusterName,
-		}
 
-		// TODO really update service to k8s deployment
+		namespace, name := runtime.ScheduleName.Args()
+		sg := &apistructs.ServiceGroup{
+			ClusterName: runtime.ClusterName,
+			Dice: apistructs.Dice{
+				ID:       name,
+				Type:     namespace,
+				Services: make([]apistructs.Service, 0),
+			},
+		}
 		for _, svcName := range needUpdateServices {
 			sg.Services = append(sg.Services, apistructs.Service{
 				Name:  svcName,
@@ -268,8 +274,8 @@ func (s *Endpoints) processRuntimeScaleRecord(rsc apistructs.RuntimeScaleRecord,
 
 		sgb, _ := json.Marshal(&sg)
 		logrus.Debugf("scale service group body is %s", string(sgb))
-		// TODO: Need to increase the mechanism of failure compensation
-		if err := s.bdl.ScaleServiceGroup(sg); err != nil {
+
+		if _, err := s.scheduler.Httpendpoints.ServiceGroupImpl.Scale(sg); err != nil {
 			logrus.Errorf("process runtime scale failed, ScaleServiceGroup failed for runtime %s for runtime %#v failed, err: %v", uniqueId.Name, uniqueId, err)
 			errMsg := fmt.Sprintf("ScaleServiceGroup failed for runtime %s for runtime %#v failed, err: %v", uniqueId.Name, uniqueId, err)
 			return apistructs.PreDiceDTO{}, err, errMsg

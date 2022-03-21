@@ -649,8 +649,8 @@ type ServiceGroupConfigUpdateResponse struct {
 	Header
 }
 
-// UpdateServiceGroupScaleRequst request body for update servicegroup
-type UpdateServiceGroupScaleRequst struct {
+// UpdateServiceGroupScaleRequest request body for update servicegroup
+type UpdateServiceGroupScaleRequest struct {
 	Namespace   string                      `json:"namespace"`
 	Name        string                      `json:"name"`
 	ClusterName string                      `json:"clusterName"`

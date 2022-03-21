@@ -29,6 +29,8 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -154,7 +156,7 @@ func TestConvertErdaServiceTemplate(t *testing.T) {
 		func(_ *bundle.Bundle, projectID, orgID uint64, userID string, appName string, header ...http.Header) (*apistructs.ApplicationListResponseData, error) {
 			return &apistructs.ApplicationListResponseData{
 				Total: 1,
-				List: []apistructs.ApplicationDTO{apistructs.ApplicationDTO{
+				List: []apistructs.ApplicationDTO{{
 					ID: 3,
 				}},
 			}, nil
@@ -163,7 +165,7 @@ func TestConvertErdaServiceTemplate(t *testing.T) {
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindRuntimesByAppIdAndWorkspace",
 		func(_ *dbclient.DBClient, appId uint64, workspace string) ([]dbclient.Runtime, error) {
-			return []dbclient.Runtime{dbclient.Runtime{
+			return []dbclient.Runtime{{
 				ScheduleName: dbclient.ScheduleName{
 					Namespace: "",
 					Name:      "",
@@ -364,6 +366,7 @@ func TestFSMContinueCanceling(t *testing.T) {
 	f.Deployment.Phase = apistructs.DeploymentPhaseAddon
 	f.Deployment.Status = apistructs.DeploymentStatusCanceling
 	f.Runtime.Status = apistructs.RuntimeStatusHealthy
+	f.scheduler = &scheduler.Scheduler{}
 
 	patchUpdateDeploymentStatusToRuntimeAndOrder(f)
 
@@ -371,12 +374,11 @@ func TestFSMContinueCanceling(t *testing.T) {
 	emitC := recordEvent()
 	loggingC := recordDLog()
 
-	var bdl *bundle.Bundle
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CancelServiceGroup",
-		func(_ *bundle.Bundle, namespace, name string) error {
+	monkey.PatchInstanceMethod(reflect.TypeOf(f.scheduler), "CancelServiceGroup",
+		func(_ *scheduler.Scheduler, namespace, name string) (interface{}, error) {
 			assert.Equal(t, "fake", namespace)
 			assert.Equal(t, "schedule", name)
-			return nil
+			return nil, nil
 		},
 	)
 
@@ -535,16 +537,18 @@ func patchUpdateDeploymentStatusToRuntimeAndOrder(f *DeployFSMContext) {
 
 func TestUpdateServiceGroupWithLoop(t *testing.T) {
 	var (
-		bdl *bundle.Bundle
+		bdl              *bundle.Bundle
+		serviceGroupImpl *servicegroup.ServiceGroupImpl
 	)
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "UpdateServiceGroup", func(*bundle.Bundle, apistructs.ServiceGroupUpdateV2Request) error {
-		return nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(serviceGroupImpl), "Update", func(_ *servicegroup.ServiceGroupImpl, sg apistructs.ServiceGroupUpdateV2Request) (apistructs.ServiceGroup, error) {
+		return apistructs.ServiceGroup{}, nil
 	})
 
 	defer monkey.UnpatchAll()
 
 	fsm := DeployFSMContext{
-		bdl: bdl,
+		bdl:              bdl,
+		serviceGroupImpl: serviceGroupImpl,
 	}
 	group := apistructs.ServiceGroupCreateV2Request{}
 	if err := fsm.UpdateServiceGroupWithLoop(group); err != nil {

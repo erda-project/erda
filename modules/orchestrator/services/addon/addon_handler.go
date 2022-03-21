@@ -160,7 +160,7 @@ func (a *Addon) AddonDelete(req apistructs.AddonDirectDeleteRequest) error {
 			return err
 		}
 	} else {
-		if err := a.bdl.DeleteServiceGroup(addonIns.Namespace, addonIns.ScheduleName); err != nil {
+		if err := a.serviceGroupImpl.Delete(addonIns.Namespace, addonIns.ScheduleName, "false"); err != nil {
 			logrus.Errorf("failed to delete addon: %s/%s", addonIns.Namespace, addonIns.ScheduleName)
 			return err
 		}
@@ -462,7 +462,7 @@ func (a *Addon) existAttachAddon(params *apistructs.AddonHandlerCreateItem, addo
 		return nil, err
 	}
 
-	clusterInfo, err := a.bdl.QueryClusterInfo(params.ClusterName)
+	clusterInfo, err := a.clusterinfoImpl.Info(params.ClusterName)
 	if err != nil {
 		logrus.Errorf("existAttachAddon 获取cluster信息失败, %v", err)
 		return nil, err
@@ -1021,7 +1021,7 @@ func (a *Addon) basicAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouti
 	logrus.Infof("sending addon creating request, request body: %+v", *addonCreateReq)
 
 	// 请求调度器
-	err = a.bdl.CreateServiceGroup(*addonCreateReq)
+	_, err = a.serviceGroupImpl.Create(*addonCreateReq)
 	if err != nil {
 		a.ExportLogInfo(apistructs.ErrorLevel, apistructs.AddonError, addonIns.ID, addonIns.ID+"-internal", i18n.OrgSprintf(addonIns.OrgID, "FailedToCreateAddonByScheduler"), err)
 		logrus.Errorf("failed to create addon %s, instance id %v from scheduler, %v", addonSpec.Name, addonIns.ID, err)

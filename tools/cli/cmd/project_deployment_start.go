@@ -105,10 +105,12 @@ func RunStartProjectInWorkspace(ctx *command.Context, org, project, workspace st
 
 		ctx.Info("Waitting %d minutes for project's addons to Running\n", ADDONS_RESTART_WAITTING_DELAY)
 		tick := time.Tick(1 * time.Second)
-		for waits := ADDONS_RESTART_WAITTING_DELAY * 60; waits > 0; waits-- {
+		waits := ADDONS_RESTART_WAITTING_DELAY * 60
+		for waits > 0 {
 			select {
 			case <-tick:
 				fmt.Printf("\r%3d", waits)
+				waits--
 			}
 		}
 

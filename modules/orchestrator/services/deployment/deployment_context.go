@@ -40,6 +40,8 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
 	"github.com/erda-project/erda/modules/orchestrator/i18n"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
@@ -73,28 +75,32 @@ type DeployFSMContext struct {
 	evMgr *events.EventManager
 	bdl   *bundle.Bundle
 	// TODO: should we put deployment.Deployment here?
-	addon      *addon.Addon
-	migration  *migration.Migration
-	resource   *resource.Resource
-	encrypt    *encryption.EnvEncrypt
-	releaseSvc pb.ReleaseServiceServer
+	addon            *addon.Addon
+	migration        *migration.Migration
+	resource         *resource.Resource
+	encrypt          *encryption.EnvEncrypt
+	releaseSvc       pb.ReleaseServiceServer
+	serviceGroupImpl servicegroup.ServiceGroup
+	scheduler        *scheduler.Scheduler
 }
 
 // TODO: context should base on deployment service
-func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.EventManager, bdl *bundle.Bundle, a *addon.Addon, m *migration.Migration, encrypt *encryption.EnvEncrypt, resource *resource.Resource, releaseSvc pb.ReleaseServiceServer) *DeployFSMContext {
+func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.EventManager, bdl *bundle.Bundle, a *addon.Addon, m *migration.Migration, encrypt *encryption.EnvEncrypt, resource *resource.Resource, releaseSvc pb.ReleaseServiceServer, serviceGroupImpl servicegroup.ServiceGroup, scheduler *scheduler.Scheduler) *DeployFSMContext {
 	logger := log.DeployLogHelper{DeploymentID: strconv.FormatUint(deploymentID, 10), Bdl: bdl}
 	// prepare the context
 	return &DeployFSMContext{
-		deploymentID: deploymentID,
-		d:            &logger,
-		db:           db,
-		evMgr:        evMgr,
-		bdl:          bdl,
-		addon:        a,
-		migration:    m,
-		encrypt:      encrypt,
-		resource:     resource,
-		releaseSvc:   releaseSvc,
+		deploymentID:     deploymentID,
+		d:                &logger,
+		db:               db,
+		evMgr:            evMgr,
+		bdl:              bdl,
+		addon:            a,
+		migration:        m,
+		encrypt:          encrypt,
+		resource:         resource,
+		releaseSvc:       releaseSvc,
+		serviceGroupImpl: serviceGroupImpl,
+		scheduler:        scheduler,
 	}
 }
 
@@ -270,7 +276,7 @@ func (fsm *DeployFSMContext) continueCanceling() error {
 			now := time.Now()
 			// set start at before invoke scheduler (if error occur, we can keep the startAt)
 			fsm.Deployment.Extra.CancelStartAt = &now
-			if err := fsm.bdl.CancelServiceGroup(fsm.Runtime.ScheduleName.Args()); err != nil {
+			if _, err := fsm.scheduler.CancelServiceGroup(fsm.Runtime.ScheduleName.Args()); err != nil {
 				return fsm.failDeploy(err)
 			}
 			if err := fsm.db.UpdateDeployment(fsm.Deployment); err != nil {
@@ -908,7 +914,8 @@ func (fsm *DeployFSMContext) deployService() error {
 	}
 
 	// precheck，检查标签匹配，如果没有机器能匹配上，走下去也是pending的
-	precheckResp, err := fsm.bdl.PrecheckServiceGroup(apistructs.ServiceGroupPrecheckRequest(group))
+	//precheckResp, err := fsm.bdl.PrecheckServiceGroup(apistructs.ServiceGroupPrecheckRequest(group))
+	precheckResp, err := fsm.serviceGroupImpl.Precheck(apistructs.ServiceGroupPrecheckRequest(group))
 	if err != nil {
 		fsm.pushLog(fmt.Sprintf("precheck service error, %s", err.Error()))
 		return err
@@ -936,12 +943,11 @@ func (fsm *DeployFSMContext) deployService() error {
 	// do deploy
 	if fsm.Runtime.Deployed {
 		// TODO: internal call update ServiceGroup
-		if err := fsm.bdl.UpdateServiceGroup(apistructs.ServiceGroupUpdateV2Request(group)); err != nil {
+		if _, err := fsm.serviceGroupImpl.Update(apistructs.ServiceGroupUpdateV2Request(group)); err != nil {
 			return err
 		}
 	} else {
-		if err := fsm.bdl.CreateServiceGroup(group); err != nil {
-			logrus.Errorf("failed to create service group ,err: %v", err)
+		if _, err := fsm.serviceGroupImpl.Create(group); err != nil {
 			return err
 		}
 	}
@@ -1018,7 +1024,7 @@ func (fsm *DeployFSMContext) deployService() error {
 
 func (fsm *DeployFSMContext) UpdateServiceGroupWithLoop(group apistructs.ServiceGroupCreateV2Request) error {
 	if err := loop.New(loop.WithInterval(time.Second), loop.WithMaxTimes(3)).Do(func() (bool, error) {
-		if err := fsm.bdl.UpdateServiceGroup(apistructs.ServiceGroupUpdateV2Request(group)); err != nil {
+		if _, err := fsm.serviceGroupImpl.Update(apistructs.ServiceGroupUpdateV2Request(group)); err != nil {
 			return false, err
 		}
 		return true, nil
@@ -1718,7 +1724,7 @@ func (fsm *DeployFSMContext) doCancelDeploy(operator string, force bool) error {
 }
 
 func (fsm *DeployFSMContext) getServiceGroup() (*apistructs.ServiceGroup, error) {
-	return fsm.bdl.InspectServiceGroupWithTimeout(fsm.Runtime.ScheduleName.Args())
+	return fsm.serviceGroupImpl.InspectServiceGroupWithTimeout(fsm.Runtime.ScheduleName.Namespace, fsm.Runtime.ScheduleName.Name)
 }
 
 // TODO: we should redundant app info into runtime, so then we can move this func to utils
@@ -1799,7 +1805,7 @@ func (fsm *DeployFSMContext) PutHepaService() error {
 		err error
 	)
 	if fsm.Runtime.ScheduleName.Name != "" {
-		sg, err = fsm.bdl.InspectServiceGroupWithTimeout(fsm.Runtime.ScheduleName.Args())
+		sg, err = fsm.serviceGroupImpl.InspectServiceGroupWithTimeout(fsm.Runtime.ScheduleName.Namespace, fsm.Runtime.ScheduleName.Name)
 		if err != nil {
 			return err
 		}

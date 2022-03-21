@@ -60,12 +60,31 @@ type ServiceGroup interface {
 	ConfigUpdate(sg apistructs.ServiceGroup) error
 	KillPod(ctx context.Context, namespace string, name string, podname string) error
 	Scale(sg *apistructs.ServiceGroup) (apistructs.ServiceGroup, error)
+	InspectServiceGroupWithTimeout(namespace, name string) (*apistructs.ServiceGroup, error)
 }
 
 type ServiceGroupImpl struct {
-	js          jsonstore.JsonStore
-	sched       *task.Sched
-	clusterinfo clusterinfo.ClusterInfo
+	Js          jsonstore.JsonStore
+	Sched       *task.Sched
+	Clusterinfo clusterinfo.ClusterInfo
+}
+
+func NewServiceGroupImplInit() ServiceGroup {
+	sched, err := task.NewSched()
+	if err != nil {
+		panic(err)
+	}
+
+	js, err := jsonstore.New()
+	if err != nil {
+		panic(err)
+	}
+	clusterinfoImpl := clusterinfo.NewClusterInfoImpl(js)
+	return &ServiceGroupImpl{
+		Js:          js,
+		Sched:       sched,
+		Clusterinfo: clusterinfoImpl,
+	}
 }
 
 func NewServiceGroupImpl(js jsonstore.JsonStore, sched *task.Sched, clusterinfo clusterinfo.ClusterInfo) ServiceGroup {
@@ -77,10 +96,10 @@ func (s ServiceGroupImpl) handleKillPod(ctx context.Context, sg *apistructs.Serv
 		result task.TaskResponse
 		err    error
 	)
-	if err = setServiceGroupExecutorByCluster(sg, s.clusterinfo); err != nil {
+	if err = setServiceGroupExecutorByCluster(sg, s.Clusterinfo); err != nil {
 		return result, err
 	}
-	t, err := s.sched.Send(ctx, task.TaskRequest{
+	t, err := s.Sched.Send(ctx, task.TaskRequest{
 		ExecutorKind: getServiceExecutorKindByName(sg.Executor),
 		ExecutorName: sg.Executor,
 		Action:       task.TaskKillPod,
@@ -101,11 +120,11 @@ func (s ServiceGroupImpl) handleServiceGroup(ctx context.Context, sg *apistructs
 		result task.TaskResponse
 		err    error
 	)
-	if err = setServiceGroupExecutorByCluster(sg, s.clusterinfo); err != nil {
+	if err = setServiceGroupExecutorByCluster(sg, s.Clusterinfo); err != nil {
 		return result, err
 	}
 
-	t, err := s.sched.Send(ctx, task.TaskRequest{
+	t, err := s.Sched.Send(ctx, task.TaskRequest{
 		ExecutorKind: getServiceExecutorKindByName(sg.Executor),
 		ExecutorName: sg.Executor,
 		Action:       taskAction,

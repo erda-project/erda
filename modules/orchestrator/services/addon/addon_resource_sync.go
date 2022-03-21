@@ -32,7 +32,7 @@ func (a *Addon) SyncAddonResources() {
 			continue
 		}
 		for _, addon := range addons {
-			pods, err := a.bdl.GetPodInfo(apistructs.PodInfoRequest{
+			podList, err := a.instanceinfoImpl.GetPodInfo(apistructs.PodInfoRequest{
 				OrgID:   strconv.FormatUint(orgid, 10),
 				AddonID: addon.ID,
 			})
@@ -40,10 +40,7 @@ func (a *Addon) SyncAddonResources() {
 				logrus.Errorf("failed to getpodinfo(orgid:%d, addonid:%s): %v", orgid, addon.ID, err)
 				break
 			}
-			if !pods.Success {
-				logrus.Errorf("failed to getpodinfo(orgid:%d, addonid:%s):%v", orgid, addon.ID, *pods)
-			}
-			if err := a.updateAddonInstanceResource(addon, pods.Data); err != nil {
+			if err := a.updateAddonInstanceResource(addon, podList); err != nil {
 				logrus.Errorf("UpdateAddonInstanceResource: %v", err)
 				break
 			}

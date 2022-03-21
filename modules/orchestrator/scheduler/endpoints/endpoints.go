@@ -25,7 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cap"
+	cap2 "github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cap"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cluster"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/instanceinfo"
@@ -41,15 +41,15 @@ import (
 
 type HTTPEndpoints struct {
 	volumeImpl        volume.Volume
-	serviceGroupImpl  servicegroup.ServiceGroup
+	ServiceGroupImpl  servicegroup.ServiceGroup
 	clusterImpl       cluster.Cluster
-	job               job.Job
+	Job               job.Job
 	labelManager      labelmanager.LabelManager
 	instanceinfoImpl  instanceinfo.InstanceInfo
-	clusterinfoImpl   clusterinfo.ClusterInfo
+	ClusterinfoImpl   clusterinfo.ClusterInfo
 	componentinfoImpl instanceinfo.ComponentInfo
 	resourceinfoImpl  resourceinfo.ResourceInfo
-	Cap               cap.Cap
+	Cap               cap2.Cap
 	//metric            metric.Metric
 	// TODO: add more impl here
 }
@@ -64,7 +64,7 @@ func NewHTTPEndpoints(
 	clusterinfo clusterinfo.ClusterInfo,
 	componentinfo instanceinfo.ComponentInfo,
 	resourceinfo resourceinfo.ResourceInfo,
-	cap cap.Cap) *HTTPEndpoints {
+	cap cap2.Cap) *HTTPEndpoints {
 	return &HTTPEndpoints{
 		volume,
 		servicegroup,
@@ -80,8 +80,7 @@ func NewHTTPEndpoints(
 }
 
 const (
-	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
-	RetainNamespace                = "RETAIN_NAMESPACE"
+	RetainNamespace = "RETAIN_NAMESPACE"
 )
 
 func (h *HTTPEndpoints) ClusterHook(ctx context.Context, r *http.Request, vars map[string]string) (
@@ -162,64 +161,6 @@ func (h *HTTPEndpoints) SetNodeLabels(ctx context.Context, r *http.Request, vars
 	})
 }
 
-func (h *HTTPEndpoints) PodInfo(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-	cond := instanceinfo.QueryPodConditions{}
-	cond.Cluster = r.URL.Query().Get("cluster")
-	cond.OrgName = r.URL.Query().Get("orgName")
-	cond.OrgID = r.URL.Query().Get("orgID")
-	cond.ProjectName = r.URL.Query().Get("projectName")
-	cond.ProjectID = r.URL.Query().Get("projectID")
-	cond.ApplicationName = r.URL.Query().Get("applicationName")
-	cond.ApplicationID = r.URL.Query().Get("applicationID")
-	cond.RuntimeName = r.URL.Query().Get("runtimeName")
-	cond.RuntimeID = r.URL.Query().Get("runtimeID")
-	cond.ServiceName = r.URL.Query().Get("serviceName")
-	cond.Workspace = r.URL.Query().Get("workspace")
-	cond.ServiceType = r.URL.Query().Get("serviceType")
-	cond.AddonID = r.URL.Query().Get("addonID")
-	phases := r.URL.Query().Get("phases")
-	if phases != "" {
-		cond.Phases = strutil.Map(strutil.Split(phases, ",", true), strutil.ToLower, strutil.Title)
-	}
-	limitstr := r.URL.Query().Get("limit")
-	if limitstr == "" {
-		cond.Limit = 0
-	} else {
-		limit, err := strconv.Atoi(limitstr)
-		if err != nil {
-			errstr := fmt.Sprintf("failed to parse limit query condition: %v", err)
-			logrus.Error(errstr)
-			return mkResponse(apistructs.PodInfoResponse{
-				Header: apistructs.Header{
-					Success: false,
-					Error: apistructs.ErrorResponse{
-						Msg: errstr,
-					},
-				},
-			})
-		}
-		cond.Limit = limit
-	}
-	pods, err := h.instanceinfoImpl.QueryPod(cond)
-	if err != nil {
-		errstr := fmt.Sprintf("failed to query instance info: %v", err)
-		logrus.Error(errstr)
-		return mkResponse(apistructs.PodInfoResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error: apistructs.ErrorResponse{
-					Msg: errstr,
-				},
-			},
-		})
-	}
-	return mkResponse(apistructs.PodInfoResponse{
-		Header: apistructs.Header{Success: true},
-		Data:   pods,
-	})
-}
-
 func (h *HTTPEndpoints) InstanceInfo(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
 	cond := instanceinfo.QueryInstanceConditions{}
@@ -297,7 +238,7 @@ func (h *HTTPEndpoints) ClusterInfo(ctx context.Context, r *http.Request, vars m
 			}})
 	}
 
-	info, err := h.clusterinfoImpl.Info(name)
+	info, err := h.ClusterinfoImpl.Info(name)
 	if err != nil {
 		errstr := fmt.Sprintf("failed to get cluster info, clusterName: %s, (%v)", name, err)
 		return mkResponse(apistructs.ClusterInfoResponse{

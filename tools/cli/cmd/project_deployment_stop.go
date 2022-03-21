@@ -124,10 +124,12 @@ func RunStopProjectInWorkspace(ctx *command.Context, org, project, workspace str
 
 			ctx.Info("Waitting %d minutes for project's runtimes to Terminating\n", RUNTIME_STOP_WAITTING_DELAY)
 			tick := time.Tick(1 * time.Second)
-			for waits := RUNTIME_STOP_WAITTING_DELAY * 60; waits > 0; waits-- {
+			waits := RUNTIME_STOP_WAITTING_DELAY * 60
+			for waits > 0 {
 				select {
 				case <-tick:
 					fmt.Printf("\r%3d", waits)
+					waits--
 				}
 			}
 

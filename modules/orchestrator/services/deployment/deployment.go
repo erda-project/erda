@@ -34,6 +34,8 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/services/migration"
@@ -47,14 +49,16 @@ import (
 
 // Deployment 部署对象封装
 type Deployment struct {
-	db         *dbclient.DBClient
-	evMgr      *events.EventManager
-	bdl        *bundle.Bundle
-	addon      *addon.Addon
-	resource   *resource.Resource
-	migration  *migration.Migration
-	encrypt    *encryption.EnvEncrypt
-	releaseSvc pb.ReleaseServiceServer
+	db               *dbclient.DBClient
+	evMgr            *events.EventManager
+	bdl              *bundle.Bundle
+	addon            *addon.Addon
+	resource         *resource.Resource
+	migration        *migration.Migration
+	encrypt          *encryption.EnvEncrypt
+	releaseSvc       pb.ReleaseServiceServer
+	serviceGroupImpl servicegroup.ServiceGroup
+	scheduler        *scheduler.Scheduler
 }
 
 // Option 部署对象配置选项
@@ -125,9 +129,21 @@ func WithReleaseSvc(releaseSvc pb.ReleaseServiceServer) Option {
 	}
 }
 
+func WithServiceGroup(serviceGroupImpl servicegroup.ServiceGroup) Option {
+	return func(d *Deployment) {
+		d.serviceGroupImpl = serviceGroupImpl
+	}
+}
+
+func WithScheduler(scheduler *scheduler.Scheduler) Option {
+	return func(d *Deployment) {
+		d.scheduler = scheduler
+	}
+}
+
 func (d *Deployment) ContinueDeploy(deploymentID uint64) error {
 	// prepare the context
-	fsm := NewFSMContext(deploymentID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc)
+	fsm := NewFSMContext(deploymentID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler)
 	if err := fsm.Load(); err != nil {
 		return errors.Wrapf(err, "failed to load fsm, deployment: %d, (%v)", deploymentID, err)
 	}
@@ -160,7 +176,7 @@ func (d *Deployment) CancelLastDeploy(runtimeID uint64, operator string, force b
 	if deployment == nil {
 		return apierrors.ErrCancelDeployment.NotFound()
 	}
-	fsm := NewFSMContext(deployment.ID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc)
+	fsm := NewFSMContext(deployment.ID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler)
 	if err := fsm.Load(); err != nil {
 		return err
 	}
@@ -397,7 +413,7 @@ func (d *Deployment) GetStatus(deploymentID uint64) (*apistructs.DeploymentStatu
 		}
 	}
 
-	sg, err := d.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
+	sg, err := d.serviceGroupImpl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Namespace, runtime.ScheduleName.Name)
 
 	var rt *apistructs.DeploymentStatusRuntimeDTO
 	if deployment.Status == apistructs.DeploymentStatusOK {

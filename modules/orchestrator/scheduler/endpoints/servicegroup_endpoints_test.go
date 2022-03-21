@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cap"
+	cap2 "github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cap"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cluster"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/instanceinfo"
@@ -126,7 +126,7 @@ func TestHTTPEndpoints_ServiceGroupCreate(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap.Cap
+		Cap               cap2.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -198,12 +198,12 @@ func TestHTTPEndpoints_ServiceGroupCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &HTTPEndpoints{
 				volumeImpl:        tt.fields.volumeImpl,
-				serviceGroupImpl:  tt.fields.serviceGroupImpl,
+				ServiceGroupImpl:  tt.fields.serviceGroupImpl,
 				clusterImpl:       tt.fields.clusterImpl,
-				job:               tt.fields.job,
+				Job:               tt.fields.job,
 				labelManager:      tt.fields.labelManager,
 				instanceinfoImpl:  tt.fields.instanceinfoImpl,
-				clusterinfoImpl:   tt.fields.clusterinfoImpl,
+				ClusterinfoImpl:   tt.fields.clusterinfoImpl,
 				componentinfoImpl: tt.fields.componentinfoImpl,
 				resourceinfoImpl:  tt.fields.resourceinfoImpl,
 				Cap:               tt.fields.Cap,
@@ -235,127 +235,6 @@ func TestHTTPEndpoints_ServiceGroupCreate(t *testing.T) {
 	}
 }
 
-func TestHTTPEndpoints_ServiceGroupUpdate(t *testing.T) {
-	type fields struct {
-		volumeImpl        volume.Volume
-		serviceGroupImpl  servicegroup.ServiceGroup
-		clusterImpl       cluster.Cluster
-		job               job.Job
-		labelManager      labelmanager.LabelManager
-		instanceinfoImpl  instanceinfo.InstanceInfo
-		clusterinfoImpl   clusterinfo.ClusterInfo
-		componentinfoImpl instanceinfo.ComponentInfo
-		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap.Cap
-	}
-	type args struct {
-		ctx  context.Context
-		r    *http.Request
-		vars map[string]string
-	}
-
-	req := generateServiceGroupCreateV2Request()
-
-	reqStr, _ := json.Marshal(req)
-	httpReq, _ := http.NewRequest(http.MethodPut, "/api/servicegroup", bytes.NewBuffer(reqStr))
-
-	reqStr, _ = json.Marshal(req)
-	httpReq2, _ := http.NewRequest(http.MethodPut, "/api/servicegroup", bytes.NewBuffer(reqStr))
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    httpserver.Responser
-		wantErr bool
-	}{
-		{
-			name: "Test_01",
-			fields: fields{
-				serviceGroupImpl: &servicegroup.ServiceGroupImpl{},
-			},
-			args: args{
-				r: &http.Request{
-					Method: http.MethodPost,
-					Body:   httpReq.Body,
-				},
-			},
-			want: httpserver.HTTPResponse{
-				Status: http.StatusOK,
-				Content: apistructs.ServiceGroupUpdateV2Response{
-					Header: apistructs.Header{Success: true},
-					Data: apistructs.ServiceGroupCreateV2Data{
-						ID:   "xxxxxtestsg",
-						Type: "testsg",
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "Test_02",
-			fields: fields{
-				serviceGroupImpl: &servicegroup.ServiceGroupImpl{},
-			},
-			args: args{
-				r: &http.Request{
-					Method: http.MethodPost,
-					Body:   httpReq2.Body,
-				},
-			},
-			want: httpserver.HTTPResponse{
-				Status: http.StatusOK,
-				Content: apistructs.ServiceGroupUpdateV2Response{
-					Header: apistructs.Header{
-						Success: false,
-						Error:   apistructs.ErrorResponse{Msg: "update servicegroup fail: failed"},
-					}},
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			h := &HTTPEndpoints{
-				volumeImpl:        tt.fields.volumeImpl,
-				serviceGroupImpl:  tt.fields.serviceGroupImpl,
-				clusterImpl:       tt.fields.clusterImpl,
-				job:               tt.fields.job,
-				labelManager:      tt.fields.labelManager,
-				instanceinfoImpl:  tt.fields.instanceinfoImpl,
-				clusterinfoImpl:   tt.fields.clusterinfoImpl,
-				componentinfoImpl: tt.fields.componentinfoImpl,
-				resourceinfoImpl:  tt.fields.resourceinfoImpl,
-				Cap:               tt.fields.Cap,
-			}
-
-			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(tt.fields.serviceGroupImpl), "Update", func(_ *servicegroup.ServiceGroupImpl, sg apistructs.ServiceGroupUpdateV2Request) (apistructs.ServiceGroup, error) {
-				if tt.name == "Test_01" {
-					return apistructs.ServiceGroup{
-						Dice: apistructs.Dice{
-							ID:   "xxxxxtestsg",
-							Type: "testsg",
-						},
-					}, nil
-				}
-
-				return apistructs.ServiceGroup{}, errors.Errorf("failed")
-			})
-
-			defer patch1.Unpatch()
-
-			got, err := h.ServiceGroupUpdate(tt.args.ctx, tt.args.r, tt.args.vars)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ServiceGroupUpdate() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ServiceGroupUpdate() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestHTTPEndpoints_ServiceGroupDelete(t *testing.T) {
 	type fields struct {
 		volumeImpl        volume.Volume
@@ -367,7 +246,7 @@ func TestHTTPEndpoints_ServiceGroupDelete(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap.Cap
+		Cap               cap2.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -463,12 +342,12 @@ func TestHTTPEndpoints_ServiceGroupDelete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &HTTPEndpoints{
 				volumeImpl:        tt.fields.volumeImpl,
-				serviceGroupImpl:  tt.fields.serviceGroupImpl,
+				ServiceGroupImpl:  tt.fields.serviceGroupImpl,
 				clusterImpl:       tt.fields.clusterImpl,
-				job:               tt.fields.job,
+				Job:               tt.fields.job,
 				labelManager:      tt.fields.labelManager,
 				instanceinfoImpl:  tt.fields.instanceinfoImpl,
-				clusterinfoImpl:   tt.fields.clusterinfoImpl,
+				ClusterinfoImpl:   tt.fields.clusterinfoImpl,
 				componentinfoImpl: tt.fields.componentinfoImpl,
 				resourceinfoImpl:  tt.fields.resourceinfoImpl,
 				Cap:               tt.fields.Cap,
@@ -509,7 +388,7 @@ func TestHTTPEndpoints_ServiceGroupInfo(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap.Cap
+		Cap               cap2.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -593,12 +472,12 @@ func TestHTTPEndpoints_ServiceGroupInfo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &HTTPEndpoints{
 				volumeImpl:        tt.fields.volumeImpl,
-				serviceGroupImpl:  tt.fields.serviceGroupImpl,
+				ServiceGroupImpl:  tt.fields.serviceGroupImpl,
 				clusterImpl:       tt.fields.clusterImpl,
-				job:               tt.fields.job,
+				Job:               tt.fields.job,
 				labelManager:      tt.fields.labelManager,
 				instanceinfoImpl:  tt.fields.instanceinfoImpl,
-				clusterinfoImpl:   tt.fields.clusterinfoImpl,
+				ClusterinfoImpl:   tt.fields.clusterinfoImpl,
 				componentinfoImpl: tt.fields.componentinfoImpl,
 				resourceinfoImpl:  tt.fields.resourceinfoImpl,
 				Cap:               tt.fields.Cap,
@@ -641,7 +520,7 @@ func TestHTTPEndpoints_ServiceGroupPrecheck(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap.Cap
+		Cap               cap2.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -715,12 +594,12 @@ func TestHTTPEndpoints_ServiceGroupPrecheck(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &HTTPEndpoints{
 				volumeImpl:        tt.fields.volumeImpl,
-				serviceGroupImpl:  tt.fields.serviceGroupImpl,
+				ServiceGroupImpl:  tt.fields.serviceGroupImpl,
 				clusterImpl:       tt.fields.clusterImpl,
-				job:               tt.fields.job,
+				Job:               tt.fields.job,
 				labelManager:      tt.fields.labelManager,
 				instanceinfoImpl:  tt.fields.instanceinfoImpl,
-				clusterinfoImpl:   tt.fields.clusterinfoImpl,
+				ClusterinfoImpl:   tt.fields.clusterinfoImpl,
 				componentinfoImpl: tt.fields.componentinfoImpl,
 				resourceinfoImpl:  tt.fields.resourceinfoImpl,
 				Cap:               tt.fields.Cap,
@@ -763,7 +642,7 @@ func TestHTTPEndpoints_ServiceGroupKillPod(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap.Cap
+		Cap               cap2.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -860,12 +739,12 @@ func TestHTTPEndpoints_ServiceGroupKillPod(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &HTTPEndpoints{
 				volumeImpl:        tt.fields.volumeImpl,
-				serviceGroupImpl:  tt.fields.serviceGroupImpl,
+				ServiceGroupImpl:  tt.fields.serviceGroupImpl,
 				clusterImpl:       tt.fields.clusterImpl,
-				job:               tt.fields.job,
+				Job:               tt.fields.job,
 				labelManager:      tt.fields.labelManager,
 				instanceinfoImpl:  tt.fields.instanceinfoImpl,
-				clusterinfoImpl:   tt.fields.clusterinfoImpl,
+				ClusterinfoImpl:   tt.fields.clusterinfoImpl,
 				componentinfoImpl: tt.fields.componentinfoImpl,
 				resourceinfoImpl:  tt.fields.resourceinfoImpl,
 				Cap:               tt.fields.Cap,
@@ -903,7 +782,7 @@ func TestHTTPEndpoints_ServiceGroupConfigUpdate(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap.Cap
+		Cap               cap2.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -1000,12 +879,12 @@ func TestHTTPEndpoints_ServiceGroupConfigUpdate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &HTTPEndpoints{
 				volumeImpl:        tt.fields.volumeImpl,
-				serviceGroupImpl:  tt.fields.serviceGroupImpl,
+				ServiceGroupImpl:  tt.fields.serviceGroupImpl,
 				clusterImpl:       tt.fields.clusterImpl,
-				job:               tt.fields.job,
+				Job:               tt.fields.job,
 				labelManager:      tt.fields.labelManager,
 				instanceinfoImpl:  tt.fields.instanceinfoImpl,
-				clusterinfoImpl:   tt.fields.clusterinfoImpl,
+				ClusterinfoImpl:   tt.fields.clusterinfoImpl,
 				componentinfoImpl: tt.fields.componentinfoImpl,
 				resourceinfoImpl:  tt.fields.resourceinfoImpl,
 				Cap:               tt.fields.Cap,

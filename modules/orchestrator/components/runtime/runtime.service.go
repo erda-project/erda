@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/spec"
 	"github.com/erda-project/erda/modules/pkg/user"
@@ -40,9 +41,10 @@ import (
 type Service struct {
 	logger logs.Logger
 
-	bundle BundleService
-	db     DBService
-	evMgr  EventManagerService
+	bundle           BundleService
+	db               DBService
+	evMgr            EventManagerService
+	serviceGroupImpl servicegroup.ServiceGroup
 }
 
 func convertRuntimeToPB(runtime *dbclient.Runtime, app *apistructs.ApplicationDTO) *pb.Runtime {
@@ -260,7 +262,7 @@ func (r *Service) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest)
 	}
 
 	if runtime.ScheduleName.Name != "" {
-		sg, _ = r.bundle.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
+		sg, _ = r.serviceGroupImpl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
 	}
 
 	if app, err = r.bundle.GetApp(runtime.ApplicationID); err != nil {
@@ -497,6 +499,13 @@ func WithDBService(db DBService) ServiceOption {
 func WithEventManagerService(evMgr EventManagerService) ServiceOption {
 	return func(service *Service) *Service {
 		service.evMgr = evMgr
+		return service
+	}
+}
+
+func WithServiceGroupImpl(serviceGroupImpl servicegroup.ServiceGroup) ServiceOption {
+	return func(service *Service) *Service {
+		service.serviceGroupImpl = serviceGroupImpl
 		return service
 	}
 }

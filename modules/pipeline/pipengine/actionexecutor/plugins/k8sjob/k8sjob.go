@@ -64,10 +64,6 @@ const (
 	EnvRetainNamespace = "RETAIN_NAMESPACE"
 )
 
-const (
-	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
-)
-
 var (
 	errMissingNamespace = errors.New("action missing namespace")
 	errMissingUUID      = errors.New("action missing UUID")
@@ -296,7 +292,7 @@ func (k *K8sJob) Delete(ctx context.Context, task *spec.PipelineTask) (data inte
 	}
 
 	// if user customize namespace, shouldn't delete namespace
-	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) == "" && !job.NotPipelineControlledNs {
+	if os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE) == "" && !job.NotPipelineControlledNs {
 		jobs, err := k.client.ClientSet.BatchV1().Jobs(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errMsg := fmt.Errorf("list the job's pod error: %+v", err)
@@ -367,7 +363,7 @@ func (k *K8sJob) Inspect(ctx context.Context, task *spec.PipelineTask) (apistruc
 }
 
 func (k *K8sJob) JobVolumeCreate(ctx context.Context, jobVolume apistructs.JobVolume) (string, error) {
-	var namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+	var namespace = os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
 	if namespace == "" {
 		namespace = jobVolume.Namespace
 	}
