@@ -119,6 +119,13 @@ func Selector(chartType string, baseChart *BaseChart, ctx context.Context) (*pb.
 			return nil, err
 		}
 		return getChart, err
+	case strings.ToLower(pb.ChartType_ErrorDurationDistribution.String()):
+		errorDistChart := ErrorDurationDistributionChart{BaseChart: baseChart}
+		getChart, err := errorDistChart.GetChart(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return getChart, err
 	default:
 		return nil, nil
 	}
