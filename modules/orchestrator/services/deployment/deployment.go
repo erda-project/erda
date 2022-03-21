@@ -38,6 +38,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
+	"github.com/erda-project/erda/modules/orchestrator/services/environment"
 	"github.com/erda-project/erda/modules/orchestrator/services/migration"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
 	"github.com/erda-project/erda/modules/pkg/user"
@@ -59,6 +60,7 @@ type Deployment struct {
 	releaseSvc       pb.ReleaseServiceServer
 	serviceGroupImpl servicegroup.ServiceGroup
 	scheduler        *scheduler.Scheduler
+	envConfig        *environment.EnvConfig
 }
 
 // Option 部署对象配置选项
@@ -141,9 +143,15 @@ func WithScheduler(scheduler *scheduler.Scheduler) Option {
 	}
 }
 
+func WithEnvConfig(envConfig *environment.EnvConfig) Option {
+	return func(d *Deployment) {
+		d.envConfig = envConfig
+	}
+}
+
 func (d *Deployment) ContinueDeploy(deploymentID uint64) error {
 	// prepare the context
-	fsm := NewFSMContext(deploymentID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler)
+	fsm := NewFSMContext(deploymentID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler, d.envConfig)
 	if err := fsm.Load(); err != nil {
 		return errors.Wrapf(err, "failed to load fsm, deployment: %d, (%v)", deploymentID, err)
 	}
@@ -176,7 +184,7 @@ func (d *Deployment) CancelLastDeploy(runtimeID uint64, operator string, force b
 	if deployment == nil {
 		return apierrors.ErrCancelDeployment.NotFound()
 	}
-	fsm := NewFSMContext(deployment.ID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler)
+	fsm := NewFSMContext(deployment.ID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler, d.envConfig)
 	if err := fsm.Load(); err != nil {
 		return err
 	}

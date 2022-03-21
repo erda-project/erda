@@ -102,12 +102,11 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 }
 
 func TestFetchDeploymentOrderParam(t *testing.T) {
-	order := New()
-	bdl := bundle.New()
+	var order *DeploymentOrder
 
 	defer monkey.UnpatchAll()
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "FetchDeploymentConfigDetail",
-		func(*bundle.Bundle, string) ([]apistructs.EnvConfig, []apistructs.EnvConfig, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(order), "FetchDeploymentConfigDetail",
+		func(*DeploymentOrder, string) ([]apistructs.EnvConfig, []apistructs.EnvConfig, error) {
 			return []apistructs.EnvConfig{{Key: "key1", Value: "value1", ConfigType: "ENV", Comment: "test1"}},
 				[]apistructs.EnvConfig{{Key: "key2", Value: "value2", ConfigType: "FILE", Encrypt: true}}, nil
 		},

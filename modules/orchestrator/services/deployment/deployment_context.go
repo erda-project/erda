@@ -44,6 +44,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
+	"github.com/erda-project/erda/modules/orchestrator/services/environment"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
 	"github.com/erda-project/erda/modules/orchestrator/services/migration"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
@@ -82,10 +83,11 @@ type DeployFSMContext struct {
 	releaseSvc       pb.ReleaseServiceServer
 	serviceGroupImpl servicegroup.ServiceGroup
 	scheduler        *scheduler.Scheduler
+	envConfig        *environment.EnvConfig
 }
 
 // TODO: context should base on deployment service
-func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.EventManager, bdl *bundle.Bundle, a *addon.Addon, m *migration.Migration, encrypt *encryption.EnvEncrypt, resource *resource.Resource, releaseSvc pb.ReleaseServiceServer, serviceGroupImpl servicegroup.ServiceGroup, scheduler *scheduler.Scheduler) *DeployFSMContext {
+func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.EventManager, bdl *bundle.Bundle, a *addon.Addon, m *migration.Migration, encrypt *encryption.EnvEncrypt, resource *resource.Resource, releaseSvc pb.ReleaseServiceServer, serviceGroupImpl servicegroup.ServiceGroup, scheduler *scheduler.Scheduler, envConfig *environment.EnvConfig) *DeployFSMContext {
 	logger := log.DeployLogHelper{DeploymentID: strconv.FormatUint(deploymentID, 10), Bdl: bdl}
 	// prepare the context
 	return &DeployFSMContext{
@@ -101,6 +103,7 @@ func NewFSMContext(deploymentID uint64, db *dbclient.DBClient, evMgr *events.Eve
 		releaseSvc:       releaseSvc,
 		serviceGroupImpl: serviceGroupImpl,
 		scheduler:        scheduler,
+		envConfig:        envConfig,
 	}
 }
 
@@ -1034,6 +1037,44 @@ func (fsm *DeployFSMContext) UpdateServiceGroupWithLoop(group apistructs.Service
 	return nil
 }
 
+func (fsm *DeployFSMContext) FetchDeploymentConfig(namespace string) (map[string]string, map[string]string, error) {
+	envDetail, fileDetail, err := fsm.FetchDeploymentConfigDetail(namespace)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	envs := make(map[string]string, 0)
+	files := make(map[string]string, 0)
+
+	for _, c := range envDetail {
+		envs[c.Key] = c.Value
+	}
+
+	for _, c := range fileDetail {
+		files[c.Key] = c.Value
+	}
+
+	return envs, files, nil
+}
+
+func (fsm *DeployFSMContext) FetchDeploymentConfigDetail(namespace string) ([]apistructs.EnvConfig, []apistructs.EnvConfig, error) {
+	envConfigs, err := fsm.envConfig.GetDeployConfigs(namespace)
+	if err != nil {
+		return nil, nil, err
+	}
+	envs := make([]apistructs.EnvConfig, 0)
+	files := make([]apistructs.EnvConfig, 0)
+	for _, c := range envConfigs {
+		if c.ConfigType == "FILE" {
+			files = append(files, c)
+		} else {
+			envs = append(envs, c)
+		}
+	}
+
+	return envs, files, nil
+}
+
 func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.ServiceGroupCreateV2Request,
 	projectAddons []dbclient.AddonInstanceRouting,
 	projectAddonTenants []dbclient.AddonInstanceTenant,
@@ -1103,7 +1144,7 @@ func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.Serv
 		} else {
 			// TODO: deprecated
 			// get configs from config-center
-			envconfigs, fileconfigs, err := fsm.bdl.FetchDeploymentConfig(configNamespace)
+			envconfigs, fileconfigs, err := fsm.FetchDeploymentConfig(configNamespace)
 			if err != nil {
 				return nil, nil, err
 			}
