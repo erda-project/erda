@@ -21,63 +21,50 @@ import (
 	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
 )
 
-// the representation of certain field key in Fields
-const (
-	// reference to lpb.Log.Content
-	TagKeyLogContent = "__log_content"
-	// reference to lpb.Log.Severity
-	TagKeyLogSeverity = "__log_severity"
-)
-
 // Logs
 type Logs []*Log
 
 type Log struct {
-	Item *lpb.Log  `json:"item"`
-	Meta *Metadata `json:"meta"`
+	Meta *Metadata              `json:"meta"`
+	Data map[string]interface{} `json:"data"`
 }
 
-func (l *Log) Attributes() map[string]string {
-	return l.Item.Attributes
+func NewLog(item *lpb.Log) *Log {
+	return &Log{
+		Meta: NewMetadata(),
+		Data: logToMap(item),
+	}
+}
+
+func (l *Log) HandleKeyValuePair(handler func(pairs map[string]interface{}) map[string]interface{}) {
+	l.Data = handler(l.Data)
+}
+
+func (l *Log) Pairs() map[string]interface{} {
+	return l.Data
 }
 
 func (l *Log) Name() string {
-	return l.Item.Name
+	return l.Data[NameKey].(string)
 }
 
 func (l *Log) Metadata() *Metadata {
 	return l.Meta
 }
 
-func NewLog(item *lpb.Log) *Log {
-	return &Log{Item: item, Meta: &Metadata{Data: map[string]string{}}}
-}
-
-func (l *Log) HandleAttributes(handle func(attr map[string]string) map[string]string) {
-	l.Item.Attributes = handle(l.Item.Attributes)
-}
-
-func (l *Log) HandleName(handle func(name string) string) {
-	l.Item.Name = handle(l.Item.Name)
-}
-
 func (l *Log) Clone() ObservableData {
-	item := &lpb.Log{
-		TimeUnixNano: l.Item.TimeUnixNano,
-		Name:         l.Item.Name,
-		Attributes:   l.Item.Attributes,
-		Relations:    l.Item.Relations,
-		Severity:     l.Item.Severity,
-		Content:      l.Item.Content,
+	res := make(map[string]interface{}, len(l.Data))
+	for k, v := range l.Data {
+		res[k] = v
 	}
 	return &Log{
-		Item: item,
+		Data: res,
 		Meta: l.Meta.Clone(),
 	}
 }
 
 func (l *Log) Source() interface{} {
-	return l.Item
+	return mapToLog(l.Data)
 }
 
 func (l *Log) SourceCompatibility() interface{} {
@@ -90,6 +77,6 @@ func (l *Log) SourceType() SourceType {
 }
 
 func (l *Log) String() string {
-	buf, _ := json.Marshal(l.Item)
-	return fmt.Sprintf("Item => %s", string(buf))
+	buf, _ := json.Marshal(l.Data)
+	return fmt.Sprintf(string(buf))
 }

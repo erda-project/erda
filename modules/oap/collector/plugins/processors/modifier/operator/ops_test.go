@@ -12,48 +12,50 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
+package operator
 
 import (
+	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-
-	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
-	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 )
 
-func TestDataFilter_Selected(t *testing.T) {
+func TestTrimPrefix_Operate(t1 *testing.T) {
 	type fields struct {
-		cfg FilterConfig
+		cfg ModifierCfg
 	}
 	type args struct {
-		od odata.ObservableData
+		pairs map[string]interface{}
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   bool
+		want   map[string]interface{}
 	}{
 		{
-			name: "keypass",
-			fields: fields{cfg: FilterConfig{
-				Keypass: map[string][]string{"__kw__name": {"ab*"}},
+			name: "",
+			fields: fields{
+				cfg: ModifierCfg{
+					Key:    "kubernetes_",
+					Value:  "",
+					Action: "trim_prefix",
+				},
+			},
+			args: args{pairs: map[string]interface{}{
+				"kubernetes_pod_ip": "1.1.1.1",
 			}},
-			args: args{od: odata.NewMetric(&mpb.Metric{
-				Name:         "abcd",
-				TimeUnixNano: 0,
-			})},
-			want: true,
+			want: map[string]interface{}{
+				"pod_ip": "1.1.1.1",
+			},
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			df, err := NewDataFilter(tt.fields.cfg)
-			assert.Nil(t, err)
-			if got := df.Selected(tt.args.od); got != tt.want {
-				t.Errorf("Selected() = %v, want %v", got, tt.want)
+		t1.Run(tt.name, func(t1 *testing.T) {
+			t := &TrimPrefix{
+				cfg: tt.fields.cfg,
+			}
+			if got := t.Operate(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+				t1.Errorf("Operate() = %v, want %v", got, tt.want)
 			}
 		})
 	}

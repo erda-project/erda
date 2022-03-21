@@ -12,14 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadata
+package operator
 
-const (
-	Prefix               = "kubernetes_"
-	PrefixPod            = Prefix + "pod_"
-	PrefixPodLabels      = PrefixPod + "labels_"
-	PrefixPodAnnotations = PrefixPod + "annotations_"
-	PrefixPodContainer   = PrefixPod + "container_"
-	// PrefixNode           = Prefix + "node_"
-	// PrefixService        = Prefix + "service_"
-)
+type Operator interface {
+	Operate(pairs map[string]interface{}) map[string]interface{}
+}
+
+type ModifierCfg struct {
+	Key    string `file:"key"`
+	Value  string `file:"value"`
+	Action string `file:"action"`
+}
+
+type creator func(cfg ModifierCfg) Operator
+
+var Creators = map[string]creator{
+	"add":         NewAdd,
+	"set":         NewSet,
+	"drop":        NewDrop,
+	"rename":      NewRename,
+	"copy":        NewCopy,
+	"trim_prefix": NewTrimPrefix,
+	"regex":       NewRegex,
+}

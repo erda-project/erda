@@ -15,10 +15,11 @@
 package pod
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata"
@@ -29,16 +30,17 @@ func TestCache_extractPodMetadata(t *testing.T) {
 		aInclude, lInclude []string
 	}
 	type args struct {
-		pod *apiv1.Pod
+		pod apiv1.Pod
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   map[string]string
+		want   Value
 	}{
 		{
-			args: args{pod: &apiv1.Pod{
+			name: "podnameIndexer",
+			args: args{pod: apiv1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "aaa",
 					Namespace:   "default",
@@ -51,20 +53,46 @@ func TestCache_extractPodMetadata(t *testing.T) {
 					PodIP: "1.1.1.1",
 				},
 			}},
-			want: map[string]string{
-				metadata.PrefixPod + "name":      "aaa",
-				metadata.PrefixPod + "namespace": "default",
-				metadata.PrefixPod + "uid":       "aaa-bbb-ccc-ddd",
-				metadata.PrefixPod + "ip":        "1.1.1.1",
+			want: Value{
+				Tags: map[string]string{
+					metadata.PrefixPod + "name":      "aaa",
+					metadata.PrefixPod + "namespace": "default",
+					metadata.PrefixPod + "uid":       "aaa-bbb-ccc-ddd",
+					metadata.PrefixPod + "ip":        "1.1.1.1",
+				},
+				Fields: map[string]interface{}{},
 			},
 		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := NewCache(nil, tt.fields.aInclude, tt.fields.lInclude)
+			assert.Equal(t, tt.want, c.extractPodMetadata(tt.args.pod))
+		})
+	}
+}
+
+func TestCache_extractPodContainerMetadata(t *testing.T) {
+	type fields struct {
+		aInclude, lInclude []string
+	}
+	type args struct {
+		pod       apiv1.Pod
+		container apiv1.Container
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   Value
+	}{
 		{
-			name: "annotations&labels",
+			name: "podnamecontainerIndexer",
 			fields: fields{
 				aInclude: []string{"msp.erda.cloud/(.+)"},
 				lInclude: []string{"(.+).erda.cloud/(.+)"},
 			},
-			args: args{pod: &apiv1.Pod{
+			args: args{pod: apiv1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "aaa",
 					Namespace: "default",
@@ -78,28 +106,47 @@ func TestCache_extractPodMetadata(t *testing.T) {
 						"msp.erda.cloud/e": "f",
 					},
 				},
-				Spec: apiv1.PodSpec{},
 				Status: apiv1.PodStatus{
 					PodIP: "1.1.1.1",
 				},
-			}},
-			want: map[string]string{
-				metadata.PrefixPod + "name":                        "aaa",
-				metadata.PrefixPod + "namespace":                   "default",
-				metadata.PrefixPod + "uid":                         "aaa-bbb-ccc-ddd",
-				metadata.PrefixPod + "ip":                          "1.1.1.1",
-				metadata.PrefixPodLabels + "dop_erda_cloud_a":      "b",
-				metadata.PrefixPodLabels + "msp_erda_cloud_c":      "d",
-				metadata.PrefixPodAnnotations + "msp_erda_cloud_e": "f",
+			},
+				container: apiv1.Container{
+					Name: "nginx",
+					Resources: apiv1.ResourceRequirements{
+						Requests: apiv1.ResourceList{
+							apiv1.ResourceCPU:    resource.MustParse("100m"),
+							apiv1.ResourceMemory: resource.MustParse("512Mi"),
+						},
+						Limits: apiv1.ResourceList{
+							apiv1.ResourceCPU:    resource.MustParse("100m"),
+							apiv1.ResourceMemory: resource.MustParse("1Gi"),
+						},
+					},
+				},
+			},
+			want: Value{
+				Tags: map[string]string{
+					metadata.PrefixPod + "name":                        "aaa",
+					metadata.PrefixPod + "namespace":                   "default",
+					metadata.PrefixPod + "uid":                         "aaa-bbb-ccc-ddd",
+					metadata.PrefixPod + "ip":                          "1.1.1.1",
+					metadata.PrefixPodLabels + "dop_erda_cloud_a":      "b",
+					metadata.PrefixPodLabels + "msp_erda_cloud_c":      "d",
+					metadata.PrefixPodAnnotations + "msp_erda_cloud_e": "f",
+				},
+				Fields: map[string]interface{}{
+					"container_resources_cpu_request":    0.1,
+					"container_resources_memory_request": int64(512 * 1024 * 1024),
+					"container_resources_cpu_limit":      0.1,
+					"container_resources_memory_limit":   int64(1024 * 1024 * 1024),
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := NewCache(nil, tt.fields.aInclude, tt.fields.lInclude)
-			if got := c.extractPodMetadata(tt.args.pod); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("extractPodMetadata() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, c.extractPodContainerMetadata(tt.args.pod, tt.args.container))
 		})
 	}
 }
