@@ -289,78 +289,26 @@ func (svc *Service) DownloadSpecText(req *apistructs.DownloadSpecTextReq) ([]byt
 		model.SpecProtocol == oasconv.OAS2YAML.String(),
 		req.QueryParams.SpecProtocol == oasconv.OAS3JSON.String() &&
 			model.SpecProtocol == oasconv.OAS3YAML.String():
-		j, err := oasconv.YAMLToJSON(data)
-		if err != nil {
-			return data, nil
-		}
-		return j, nil
+		return Yaml2Json(data), nil
 
 	case req.QueryParams.SpecProtocol == oasconv.OAS2YAML.String() &&
 		model.SpecProtocol == oasconv.OAS2JSON.String(),
 		req.QueryParams.SpecProtocol == oasconv.OAS3YAML.String() &&
 			model.SpecProtocol == oasconv.OAS3JSON.String():
-		y, err := oasconv.JSONToYAML(data)
-		if err != nil {
-			return data, nil
-		}
-		return y, nil
+		return Json2Yaml(data), nil
 
 	case req.QueryParams.SpecProtocol == oasconv.OAS2JSON.String():
-		v3, err := oas3.LoadFromData([]byte(model.Spec))
-		if err != nil {
-			return data, nil
-		}
-		v2, err := oasconv.OAS3ConvTo2(v3)
-		if err != nil {
-			return data, nil
-		}
-		j, err := json.Marshal(v2)
-		if err != nil {
-			return data, nil
-		}
-		return j, nil
+		return Oas2Json([]byte(model.Spec)), nil
+
 	case req.QueryParams.SpecProtocol == oasconv.OAS2YAML.String():
-		v3, err := oas3.LoadFromData([]byte(model.Spec))
-		if err != nil {
-			return data, nil
-		}
-		v2, err := oasconv.OAS3ConvTo2(v3)
-		if err != nil {
-			return data, nil
-		}
-		j, err := json.Marshal(v2)
-		if err != nil {
-			return data, nil
-		}
-		y, err := oasconv.JSONToYAML(j)
-		if err != nil {
-			return data, nil
-		}
-		return y, nil
+		return Oas2Yaml([]byte(model.Spec)), nil
+
 	case req.QueryParams.SpecProtocol == oasconv.OAS3JSON.String():
-		v3, err := swagger.LoadFromData(data)
-		if err != nil {
-			return data, nil
-		}
-		j, err := json.Marshal(v3)
-		if err != nil {
-			return data, nil
-		}
-		return j, nil
+		return Oas3Json(data), nil
+
 	case req.QueryParams.SpecProtocol == oasconv.OAS3YAML.String():
-		v3, err := swagger.LoadFromData(data)
-		if err != nil {
-			return data, nil
-		}
-		j, err := json.Marshal(v3)
-		if err != nil {
-			return data, nil
-		}
-		y, err := oasconv.JSONToYAML(j)
-		if err != nil {
-			return data, nil
-		}
-		return y, nil
+		return Oas3Yaml(data), nil
+
 	case oasconv.CSV.Equal(req.QueryParams.SpecProtocol):
 		// load swagger
 		v3, err := swagger.LoadFromData(data)
@@ -645,4 +593,84 @@ func V3ToCsv(v3 *openapi3.Swagger, assetID, assetName, versionName string, major
 	}
 	w.Flush()
 	return buf.Bytes(), nil
+}
+
+func Yaml2Json(data []byte) []byte {
+	j, err := oasconv.YAMLToJSON(data)
+	if err != nil {
+		return data
+	}
+	return j
+}
+
+func Json2Yaml(data []byte) []byte {
+	y, err := oasconv.JSONToYAML(data)
+	if err != nil {
+		return data
+	}
+	return y
+}
+
+func Oas2Json(data []byte) []byte {
+	v3, err := oas3.LoadFromData(data)
+	if err != nil {
+		return data
+	}
+	v2, err := oasconv.OAS3ConvTo2(v3)
+	if err != nil {
+		return data
+	}
+	j, err := json.Marshal(v2)
+	if err != nil {
+		return data
+	}
+	return j
+}
+
+func Oas2Yaml(data []byte) []byte {
+	v3, err := oas3.LoadFromData(data)
+	if err != nil {
+		return data
+	}
+	v2, err := oasconv.OAS3ConvTo2(v3)
+	if err != nil {
+		return data
+	}
+	j, err := json.Marshal(v2)
+	if err != nil {
+		return data
+	}
+	y, err := oasconv.JSONToYAML(j)
+	if err != nil {
+		return data
+	}
+	return y
+}
+
+func Oas3Json(data []byte) []byte {
+	v3, err := swagger.LoadFromData(data)
+	if err != nil {
+		return data
+	}
+	j, err := json.Marshal(v3)
+	if err != nil {
+		return data
+	}
+	return j
+}
+
+func Oas3Yaml(data []byte) []byte {
+	v3, err := swagger.LoadFromData(data)
+	if err != nil {
+		return data
+	}
+	j, err := json.Marshal(v3)
+	if err != nil {
+		return data
+	}
+	y, err := oasconv.JSONToYAML(j)
+	if err != nil {
+		return data
+	}
+	return y
 }
