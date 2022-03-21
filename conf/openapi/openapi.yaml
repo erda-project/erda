@@ -115,18 +115,23 @@ openapi-v1-routes:
           - transaction-cache-analysis
           - transaction-cache-detail
           - transaction-cache-slow
+          - transaction-cache-error
           - transaction-db-analysis
           - transaction-db-detail
           - transaction-db-slow
+          - transaction-db-error
           - transaction-http-analysis
           - transaction-http-detail
           - transaction-http-slow
+          - transaction-http-error
           - transaction-mq-analysis
           - transaction-mq-detail
           - transaction-mq-slow
+          - transaction-mq-error
           - transaction-rpc-analysis
           - transaction-rpc-detail
           - transaction-rpc-slow
+          - transaction-rpc-error
           - trace-query
           - resources-container-monitor
           - resources-node-monitor
