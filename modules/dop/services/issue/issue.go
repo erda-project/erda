@@ -542,18 +542,18 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		return err
 	}
 
-	validator, err := NewIssueValidator(svc.db)
+	cache, err := NewIssueCache(svc.db)
 	if err != nil {
 		return apierrors.ErrUpdateIssue.InternalError(err)
 	}
 	//如果是BUG从打开或者重新打开切换状态为已解决，修改责任人为当前用户
 	if issueModel.Type == apistructs.IssueTypeBug {
-		currentState, err := validator.TryGetState(issueModel.State)
+		currentState, err := cache.TryGetState(issueModel.State)
 		if err != nil {
 			return apierrors.ErrGetIssue.InternalError(err)
 		}
 		if req.State != nil {
-			newState, err := validator.TryGetState(*req.State)
+			newState, err := cache.TryGetState(*req.State)
 			if err != nil {
 				return apierrors.ErrGetIssue.InternalError(err)
 			}
@@ -596,11 +596,11 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 			continue
 		}
 		if field == "state" {
-			currentBelong, err := validator.TryGetState(issueModel.State)
+			currentBelong, err := cache.TryGetState(issueModel.State)
 			if err != nil {
 				return apierrors.ErrGetIssue.InternalError(err)
 			}
-			newBelong, err := validator.TryGetState(*req.State)
+			newBelong, err := cache.TryGetState(*req.State)
 			if err != nil {
 				return apierrors.ErrGetIssueState.InternalError(err)
 			}
@@ -631,7 +631,16 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	}
 
 	if issueModel.Type == apistructs.IssueTypeBug || issueModel.Type == apistructs.IssueTypeTask {
-		if err := validateChangedFields(&req, changedFields, validator); err != nil {
+		iteration, err := cache.TryGetIteration(*req.IterationID)
+		if err != nil {
+			return err
+		}
+		state, err := cache.TryGetState(*req.State)
+		if err != nil {
+			return err
+		}
+		v := issueValidator{}
+		if err := v.validateChangedFields(&req, &issueValidationConfig{iteration, state}, changedFields); err != nil {
 			return err
 		}
 	}
@@ -1742,14 +1751,20 @@ func (svc *Issue) getUpdatedPlanFinishedAt(req *apistructs.IssueCreateRequest) (
 	if req.Type != apistructs.IssueTypeBug && req.Type != apistructs.IssueTypeTask {
 		return
 	}
-	validator, err := NewIssueValidator(svc.db)
+	cache, err := NewIssueCache(svc.db)
 	if err != nil {
 		return
 	}
-	if err = validator.validateStateWithIteration(&issueValidationConfig{req.IterationID, 0}); err != nil {
+	iteration, err := cache.TryGetIteration(req.IterationID)
+	if err != nil {
 		return
 	}
-	iteration, err := validator.validateTimeWithInIteration(&issueValidationConfig{iterationID: req.IterationID}, planFinishedAt)
+	validator := issueValidator{}
+	c := &issueValidationConfig{iteration: iteration}
+	if err = validator.validateStateWithIteration(c); err != nil {
+		return
+	}
+	err = validator.validateTimeWithInIteration(c, planFinishedAt)
 	if planFinishedAt != nil && err != nil {
 		return
 	}
@@ -1761,18 +1776,4 @@ func (svc *Issue) getUpdatedPlanFinishedAt(req *apistructs.IssueCreateRequest) (
 		planFinishedAt = finishedAt
 	}
 	return planFinishedAt, nil
-}
-
-func validateChangedFields(req *apistructs.IssueUpdateRequest, changedFields map[string]interface{}, validator *issueValidator) error {
-	if _, ok := changedFields["plan_finished_at"]; ok {
-		if _, err := validator.validateTimeWithInIteration(&issueValidationConfig{iterationID: *req.IterationID}, req.PlanFinishedAt.Value()); err != nil {
-			return apierrors.ErrUpdateIssue.InvalidParameter(err)
-		}
-	}
-	if _, ok := changedFields["iteration_id"]; ok {
-		if err := validator.validateStateWithIteration(&issueValidationConfig{*req.IterationID, *req.State}); err != nil {
-			return apierrors.ErrUpdateIssue.InvalidParameter(err)
-		}
-	}
-	return nil
 }

@@ -20,74 +20,28 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
-	"github.com/erda-project/erda/pkg/cache"
 )
 
 type issueValidator struct {
-	db             *dao.DBClient
-	iterationCache *cache.Cache
-	stateCache     *cache.Cache
 }
 
 type issueValidationConfig struct {
-	iterationID int64
-	stateID     int64
+	iteration *dao.Iteration
+	state     *dao.IssueState
 }
 
-func NewIssueValidator(db *dao.DBClient) (*issueValidator, error) {
-	v := issueValidator{db: db}
-	v.iterationCache = cache.New("iteration", time.Minute, func(i interface{}) (interface{}, bool) {
-		iteration, err := v.db.GetIteration(i.(uint64))
-		if err != nil {
-			return nil, false
-		}
-		return iteration, true
-	})
-	v.stateCache = cache.New("state", time.Minute, func(i interface{}) (interface{}, bool) {
-		state, err := v.db.GetIssueStateByID(i.(int64))
-		if err != nil {
-			return nil, false
-		}
-		return state, true
-	})
-	return &v, nil
-}
-
-func (v *issueValidator) TryGetIteration(iterationID int64) (*dao.Iteration, error) {
-	if iterationID <= 0 {
-		return nil, nil
-	}
-	iteration, ok := v.iterationCache.LoadWithUpdate(uint64(iterationID))
-	if !ok {
-		return nil, fmt.Errorf("failed to get iteration")
-	}
-	return iteration.(*dao.Iteration), nil
-}
-
-func (v *issueValidator) TryGetState(stateID int64) (*dao.IssueState, error) {
-	if stateID <= 0 {
-		return nil, nil
-	}
-	state, ok := v.stateCache.LoadWithUpdate(stateID)
-	if !ok {
-		return nil, fmt.Errorf("failed to get state")
-	}
-	return state.(*dao.IssueState), nil
-}
-
-func (v *issueValidator) validateTimeWithInIteration(c *issueValidationConfig, time *time.Time) (*dao.Iteration, error) {
+func (v *issueValidator) validateTimeWithInIteration(c *issueValidationConfig, time *time.Time) error {
 	if c == nil {
-		return nil, fmt.Errorf("issue validation config is empty")
+		return fmt.Errorf("issue validation config is empty")
 	}
-	iteration, err := v.TryGetIteration(c.iterationID)
-	if err != nil || iteration == nil {
-		return nil, err
+	if c.iteration == nil {
+		return nil
 	}
-	if !inIterationInterval(iteration, time) {
-		return iteration, fmt.Errorf("plan finish time is not in the iteration %v interval %v ~ %v",
-			iteration.Title, iteration.StartedAt.Format("2006-01-02"), iteration.FinishedAt.Format("2006-01-02"))
+	if !inIterationInterval(c.iteration, time) {
+		return fmt.Errorf("plan finish time is not in the iteration %v interval %v ~ %v",
+			c.iteration.Title, c.iteration.StartedAt.Format("2006-01-02"), c.iteration.FinishedAt.Format("2006-01-02"))
 	}
-	return iteration, nil
+	return nil
 }
 
 func inIterationInterval(iteration *dao.Iteration, time *time.Time) bool {
@@ -101,20 +55,26 @@ func (v *issueValidator) validateStateWithIteration(c *issueValidationConfig) er
 	if c == nil {
 		return fmt.Errorf("issue validation config is empty")
 	}
-	iteration, err := v.TryGetIteration(c.iterationID)
-	if err != nil {
-		return err
-	}
-	state, err := v.TryGetState(c.stateID)
-	if err != nil {
-		return err
-	}
-	if iteration == nil {
+	if c.iteration == nil {
 		return nil
 	}
-	if iteration.State == apistructs.IterationStateFiled && (state == nil ||
-		(state.Belong != apistructs.IssueStateBelongDone && state.Belong != apistructs.IssueStateBelongClosed)) {
-		return fmt.Errorf("put unfinished issue in archived iteration: %v is not allowed", iteration.Title)
+	if c.iteration.State == apistructs.IterationStateFiled && (c.state == nil ||
+		(c.state.Belong != apistructs.IssueStateBelongDone && c.state.Belong != apistructs.IssueStateBelongClosed)) {
+		return fmt.Errorf("put unfinished issue in archived iteration: %v is not allowed", c.iteration.Title)
+	}
+	return nil
+}
+
+func (v *issueValidator) validateChangedFields(req *apistructs.IssueUpdateRequest, c *issueValidationConfig, changedFields map[string]interface{}) error {
+	if _, ok := changedFields["plan_finished_at"]; ok {
+		if err := v.validateTimeWithInIteration(c, req.PlanFinishedAt.Value()); err != nil {
+			return err
+		}
+	}
+	if _, ok := changedFields["iteration_id"]; ok {
+		if err := v.validateStateWithIteration(c); err != nil {
+			return err
+		}
 	}
 	return nil
 }
