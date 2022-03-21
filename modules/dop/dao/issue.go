@@ -819,7 +819,10 @@ func (i *IssueItem) FilterPropertyRetriever(condition string) string {
 func (client *DBClient) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]IssueItem, error) {
 	var res []IssueItem
 	sql := client.Table("dice_issues").Joins(joinState)
-	sql = sql.Where("deleted = 0").Where("dice_issues.project_id = ?", req.ProjectID)
+	sql = sql.Where("deleted = 0")
+	if req.ProjectID != 0 {
+		sql = sql.Where("dice_issues.project_id = ?", req.ProjectID)
+	}
 	if len(req.StateBelongs) > 0 {
 		sql = sql.Where("dice_issue_state.belong IN (?)", req.StateBelongs)
 	}
@@ -831,6 +834,9 @@ func (client *DBClient) GetAllIssuesByProject(req apistructs.IssueListRequest) (
 	}
 	if len(req.Type) > 0 {
 		sql = sql.Where("type IN (?)", req.Type)
+	}
+	if len(req.IDs) > 0 {
+		sql = sql.Where("dice_issues.id in (?)", req.IDs)
 	}
 	if err := sql.Select("dice_issues.*, dice_issue_state.name, dice_issue_state.belong").Find(&res).Error; err != nil {
 		return nil, err

@@ -204,7 +204,7 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 	}
 
 	if create.Type == apistructs.IssueTypeTask {
-		if err := svc.AfterIssueChildrenUpdate(create.ID); err != nil {
+		if err := svc.AfterIssueChildrenUpdate(&issueChildrenUpdated{id: create.ID}); err != nil {
 			return nil, fmt.Errorf("update issue parent after issue children %v update failed: %v", create.ID, err)
 		}
 	}
@@ -657,7 +657,15 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	}
 
 	if issueModel.Type == apistructs.IssueTypeTask {
-		if err := svc.AfterIssueChildrenUpdate(issueModel.ID); err != nil {
+		currentBelong, err := cache.TryGetState(issueModel.State)
+		if err != nil || currentBelong == nil {
+			return apierrors.ErrUpdateIssue.InternalError(err)
+		}
+		newBelong, err := cache.TryGetState(*req.State)
+		if err != nil || newBelong == nil {
+			return apierrors.ErrUpdateIssue.InternalError(err)
+		}
+		if err := svc.AfterIssueChildrenUpdate(&issueChildrenUpdated{issueModel.ID, currentBelong.Belong, newBelong.Belong}); err != nil {
 			return fmt.Errorf("update issue parent after issue children %v update failed: %v", issueModel.ID, err)
 		}
 	}
@@ -692,16 +700,145 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	return nil
 }
 
-func (svc *Issue) AfterIssueChildrenUpdate(id uint64) error {
-	parents, err := svc.db.GetIssueParents(id, []string{apistructs.IssueRelationInclusion})
-	if err != nil {
+type issueChildrenUpdated struct {
+	id       uint64
+	stateOld apistructs.IssueStateBelong
+	stateNew apistructs.IssueStateBelong
+}
+
+func (svc *Issue) AfterIssueChildrenUpdate(u *issueChildrenUpdated) error {
+	if u == nil {
+		return fmt.Errorf("issue children update config is empty")
+	}
+	parents, err := svc.db.GetIssueParents(u.id, []string{apistructs.IssueRelationInclusion})
+	if err != nil || len(parents) != 1 {
 		return err
 	}
+	p := parents[0]
 
-	if len(parents) == 1 {
-		return svc.issueRelated.AfterIssueInclusionRelationChange(parents[0].ID)
+	if p.Belong == string(apistructs.IssueStateBelongOpen) && u.stateOld != "" &&
+		(u.stateOld != apistructs.IssueStateBelongOpen || u.stateNew != apistructs.IssueStateBelongOpen) {
+		stateButton, err := svc.getNextAvailableState(&dao.Issue{
+			ProjectID: p.ProjectID,
+			State:     p.State,
+			Type:      p.Type,
+		})
+		if err != nil {
+			return err
+		}
+		if stateButton != nil {
+			if err := svc.db.UpdateIssue(p.ID, map[string]interface{}{"state": stateButton.StateID}); err != nil {
+				return err
+			}
+			if err := svc.CreateIssueStreamBySystem(p.ID, map[string][]interface{}{
+				"state": {p.State, stateButton.StateID},
+			}, apistructs.ChildrenInProgress); err != nil {
+				return err
+			}
+		}
 	}
+
+	return svc.issueRelated.AfterIssueInclusionRelationChange(p.ID)
+}
+
+func (svc *Issue) getNextAvailableState(issue *dao.Issue) (*apistructs.IssueStateButton, error) {
+	button, err := svc.generateButton(*issue, apistructs.IdentityInfo{InternalClient: apistructs.SystemOperator}, nil, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	for i := range button {
+		if button[i].Permission {
+			return &button[i], nil
+		}
+	}
+	return nil, nil
+}
+
+func (svc *Issue) AfterIssueAppRelationCreate(issueIDs []int64) error {
+	types := []apistructs.IssueType{apistructs.IssueTypeTask, apistructs.IssueTypeBug}
+	for _, i := range types {
+		issues, err := svc.db.GetAllIssuesByProject(apistructs.IssueListRequest{
+			IDs:          issueIDs,
+			Type:         []apistructs.IssueType{i},
+			StateBelongs: []apistructs.IssueStateBelong{apistructs.IssueStateBelongOpen},
+		})
+		if err != nil {
+			return err
+		}
+		if len(issues) == 0 {
+			continue
+		}
+		item := issues[0]
+		stateButton, err := svc.getNextAvailableState(&dao.Issue{
+			ProjectID: item.ProjectID,
+			State:     item.State,
+			Type:      i,
+		})
+		if err != nil {
+			return err
+		}
+		if stateButton == nil {
+			continue
+		}
+		ids := make([]uint64, 0, len(issues))
+		for _, i := range issues {
+			ids = append(ids, i.ID)
+		}
+		if err = svc.db.BatchUpdateIssues(&apistructs.IssueBatchUpdateRequest{
+			Type:  i,
+			IDs:   ids,
+			State: stateButton.StateID,
+		}); err != nil {
+			return err
+		}
+
+		streams := make([]dao.IssueStream, 0, len(issues))
+		for _, i := range ids {
+			streams = append(streams, dao.IssueStream{
+				IssueID:    int64(i),
+				Operator:   apistructs.SystemOperator,
+				StreamType: apistructs.ISTTransferState,
+				StreamParams: apistructs.ISTParam{
+					CurrentState: item.Name,
+					NewState:     stateButton.StateName,
+					ReasonDetail: apistructs.MrCreated,
+				},
+			})
+		}
+		if err := svc.db.BatchCreateIssueStream(streams); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func (svc *Issue) CreateIssueStreamBySystem(id uint64, streamFields map[string][]interface{}, reason string) error {
+	streamReq := apistructs.IssueStreamCreateRequest{
+		IssueID:  int64(id),
+		Operator: apistructs.SystemOperator,
+	}
+	for field, v := range streamFields {
+		switch field {
+		case "state":
+			CurrentState, err := svc.db.GetIssueStateByID(v[0].(int64))
+			if err != nil {
+				return err
+			}
+			NewState, err := svc.db.GetIssueStateByID(v[1].(int64))
+			if err != nil {
+				return err
+			}
+			streamReq.StreamType = apistructs.ISTTransferState
+			streamReq.StreamParams = apistructs.ISTParam{
+				CurrentState: CurrentState.Name,
+				NewState:     NewState.Name,
+				ReasonDetail: reason,
+			}
+		}
+	}
+	_, err := svc.stream.Create(&streamReq)
+	return err
 }
 
 // UpdateIssueType 转换issue类型
