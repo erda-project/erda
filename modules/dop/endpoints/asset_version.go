@@ -17,7 +17,6 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -176,7 +175,7 @@ func (e *Endpoints) DeleteAPIAssetVersion(ctx context.Context, r *http.Request, 
 	return httpserver.OkResp(nil)
 }
 
-// 下载 swagger 文本
+// DownloadSpecText is the endpoint for downloading swagger text file
 func (e *Endpoints) DownloadSpecText(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) (err error) {
 	identity, err := user.GetIdentityInfo(r)
 	if err != nil {
@@ -210,12 +209,16 @@ func (e *Endpoints) DownloadSpecText(ctx context.Context, w http.ResponseWriter,
 	v := "oas3"
 	suffix := "yaml"
 	if strings.HasPrefix(req.QueryParams.SpecProtocol, "oas2") {
-		v = "oas3"
+		v = "oas2"
 	}
 	if strings.HasSuffix(req.QueryParams.SpecProtocol, "json") {
 		suffix = "json"
 	}
-	attachment := fmt.Sprintf(`attachment; filename="%s-%d-%s.%s"`, req.URIParams.AssetID, req.URIParams.VersionID, v, suffix)
+	if req.QueryParams.SpecProtocol == "csv" {
+		suffix = "csv"
+	}
+	filename := req.URIParams.AssetID + "-" + strconv.FormatUint(req.URIParams.VersionID, 10) + "-" + v + "." + suffix
+	attachment := "attachment; filename=" + strconv.Quote(filename)
 
 	w.Header().Add("Content-Type", "text/plain")
 	w.Header().Add("Content-Disposition", attachment)
