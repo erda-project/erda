@@ -17,6 +17,7 @@ package burnoutChart
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -59,6 +60,9 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 		dates = append(dates, date)
 		dateMap[date] = 0
 	}
+	if len(dates) == 0 {
+		return fmt.Errorf("iterate over no time range selected")
+	}
 
 	issueFinishMap := make(map[time.Time][]dao.IssueItem, 0)
 	sum := 0
@@ -76,13 +80,11 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 		if h.GetBurnoutChartDimension() == "total" {
 			sum++
 		} else {
-			if issue.ManHour != "" {
-				var manHour apistructs.IssueManHour
-				if err := json.Unmarshal([]byte(issue.ManHour), &manHour); err != nil {
-					return err
-				}
-				sum += int(manHour.EstimateTime)
+			workTime, err := sumWorkTime(issue)
+			if err != nil {
+				return err
 			}
+			sum += workTime
 		}
 		f.Issues = append(f.Issues, issue)
 	}
@@ -97,13 +99,11 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 				}
 				sumHour := 0
 				for _, issue := range issues {
-					if issue.ManHour != "" {
-						var manHour apistructs.IssueManHour
-						if err := json.Unmarshal([]byte(issue.ManHour), &manHour); err != nil {
-							continue
-						}
-						sumHour += int(manHour.ElapsedTime)
+					workTime, err := sumWorkTime(issue)
+					if err != nil {
+						continue
 					}
+					sumHour += workTime
 				}
 				return sumHour
 			}()
@@ -119,13 +119,11 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 			}
 			if h.GetBurnoutChartDimension() == "workTime" {
 				for _, issue := range issueFinishMap[date] {
-					if issue.ManHour != "" {
-						var manHour apistructs.IssueManHour
-						if err := json.Unmarshal([]byte(issue.ManHour), &manHour); err != nil {
-							return err
-						}
-						finishSum += int(manHour.ElapsedTime)
+					workTime, err := sumWorkTime(issue)
+					if err != nil {
+						return err
 					}
+					finishSum += workTime
 				}
 			}
 		}
@@ -250,4 +248,16 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 	}
 
 	return f.SetToProtocolComponent(c)
+}
+
+func sumWorkTime(issue dao.IssueItem) (int, error) {
+	if issue.ManHour == "" {
+		return 0, nil
+	}
+
+	var manHour apistructs.IssueManHour
+	if err := json.Unmarshal([]byte(issue.ManHour), &manHour); err != nil {
+		return 0, err
+	}
+	return int(manHour.ElapsedTime), nil
 }
