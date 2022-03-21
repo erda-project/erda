@@ -42,9 +42,9 @@ type provider struct {
 	DBGC  dbgc.Interface
 }
 
-func (p *provider) Init(ctx servicehub.Context) error {
+func (r *provider) Init(ctx servicehub.Context) error {
 	// dbclient
-	p.dbClient = &dbclient.Client{Engine: p.MySQL.DB()}
+	r.dbClient = &dbclient.Client{Engine: r.MySQL.DB()}
 	js, err := jsonstore.New()
 	if err != nil {
 		return err
@@ -53,15 +53,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	if err != nil {
 		return err
 	}
-	p.js = js
-	p.etcd = etcdClient
+	r.js = js
+	r.etcd = etcdClient
 	return nil
 }
 
-func (p *provider) Run(ctx context.Context) error {
+func (r *provider) Run(ctx context.Context) error {
 	// gc
-	p.LW.OnLeader(p.listenGC)
-	p.LW.OnLeader(p.compensateGCNamespaces)
+	r.LW.OnLeader(r.listenGC)
+	r.LW.OnLeader(r.compensateGCNamespaces)
 	return nil
 }
 

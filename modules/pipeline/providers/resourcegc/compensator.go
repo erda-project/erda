@@ -29,45 +29,45 @@ const bufferTime = 3600
 // sometimes the pipeline is in downtime or restart time
 // then the etcd lease of gc may expire at this time
 // and then there is no instance get lease, which results in some namespaces pod not being gc
-func (p *provider) compensateGCNamespaces(ctx context.Context) {
-	p.doWaitGCCompensate(false)
-	p.doWaitGCCompensate(true)
+func (r *provider) compensateGCNamespaces(ctx context.Context) {
+	r.doWaitGCCompensate(false)
+	r.doWaitGCCompensate(true)
 
 	ticker := time.NewTicker(24 * time.Hour)
 	for {
 		select {
 		case <-ticker.C:
-			p.doWaitGCCompensate(false)
-			p.doWaitGCCompensate(true)
+			r.doWaitGCCompensate(false)
+			r.doWaitGCCompensate(true)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func (p *provider) doWaitGCCompensate(isSnippetPipeline bool) {
+func (r *provider) doWaitGCCompensate(isSnippetPipeline bool) {
 	var pageNum = 1
 	for {
-		needGCPipelines, total, err := p.getNeedGCPipelines(pageNum, isSnippetPipeline)
+		needGCPipelines, total, err := r.getNeedGCPipelines(pageNum, isSnippetPipeline)
 		pageNum += 1
 		if err != nil {
-			p.errorf("getNeedGcPipelines error: %v", err)
+			r.Log.Errorf("getNeedGcPipelines error: %v", err)
 			continue
 		} else {
 			if total <= 0 {
 				break
 			}
 
-			for _, pt := range needGCPipelines {
+			for _, p := range needGCPipelines {
 				// random pageSize to disperse query pressure
-				p.WaitGC(pt.Extra.Namespace, pt.ID, uint64(rand.Intn(1000)))
+				r.WaitGC(p.Extra.Namespace, p.ID, uint64(rand.Intn(1000)))
 			}
 		}
 		time.Sleep(time.Second * 10)
 	}
 }
 
-func (p *provider) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pipeline, int, error) {
+func (r *provider) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pipeline, int, error) {
 	var pipelineResults []spec.Pipeline
 
 	var req apistructs.PipelinePageListRequest
@@ -80,27 +80,39 @@ func (p *provider) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pipel
 	}
 	req.AllSources = true
 	req.IncludeSnippet = isSnippet
-	pipelines, _, _, _, err := p.dbClient.PageListPipelines(req)
+	pipelines, _, _, _, err := r.dbClient.PageListPipelines(req)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to compensate pipeline req %v err: %v", req, err)
 	} else {
-		for _, pt := range pipelines {
-			if !pt.Status.IsEndStatus() {
+		for _, p := range pipelines {
+			if !p.Status.IsEndStatus() {
 				continue
 			}
 
-			if pt.Extra.CompleteReconcilerGC || pt.Extra.CompleteReconcilerTeardown {
+			if p.Extra.CompleteReconcilerGC {
 				continue
 			}
 
-			ttl := pt.GetResourceGCTTL()
+			// if not found gc key in etcd, meaning wait-gc failed when tear down pipeline
+			// should add CompleteReconcilerGC-false and not-found-gc-key pipeline to need gc pipelines
+			notFound, err := r.js.Notfound(context.Background(), makePipelineGCKey(p.Extra.Namespace))
+			if err != nil {
+				r.Log.Errorf("get is-existed gc key failed, namespace: %s, cause pipelineID: %d(continue), err: %v", p.Extra.Namespace,
+					p.ID, err)
+				continue
+			}
+			if !notFound {
+				continue
+			}
+
+			ttl := p.GetResourceGCTTL()
 			if ttl <= 0 {
 				ttl = defaultGCTime
 			}
 
-			var endTime = pt.TimeEnd
+			var endTime = p.TimeEnd
 			if endTime == nil {
-				endTime = pt.TimeUpdated
+				endTime = p.TimeUpdated
 			}
 
 			if endTime == nil || endTime.IsZero() {
@@ -111,7 +123,7 @@ func (p *provider) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pipel
 				continue
 			}
 
-			pipelineResults = append(pipelineResults, pt)
+			pipelineResults = append(pipelineResults, p)
 		}
 	}
 	return pipelineResults, len(pipelines), nil

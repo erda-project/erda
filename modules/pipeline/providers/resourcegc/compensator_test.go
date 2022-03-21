@@ -15,6 +15,7 @@
 package resourcegc
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -27,6 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
 func TestReconciler_getNeedGCPipeline(t *testing.T) {
@@ -123,6 +125,37 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 			},
 			wantErr: false,
 			wantLen: 0,
+		},
+		{
+			name: "completeReconcilerTeardownNotFoundInETCD_pipeline",
+			args: args{
+				pipelines: []spec.Pipeline{
+					{
+						PipelineBase: spec.PipelineBase{
+							Status: apistructs.PipelineStatusSuccess,
+							TimeEnd: func() *time.Time {
+								now := time.Now().Add(-300*time.Second - bufferTime*time.Second)
+								return &now
+							}(),
+						},
+						PipelineExtra: spec.PipelineExtra{
+							Extra: spec.PipelineExtraInfo{
+								CompleteReconcilerGC:       false,
+								CompleteReconcilerTeardown: true,
+								GC: apistructs.PipelineGC{
+									ResourceGC: apistructs.PipelineResourceGC{
+										FailedTTLSecond:  &[]uint64{200}[0],
+										SuccessTTLSecond: &[]uint64{200}[0],
+									},
+								},
+								Namespace: "pipeline-1",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+			wantLen: 1,
 		},
 		{
 			name: "time_over_gc",
@@ -280,8 +313,16 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 			return tt.args.pipelines, nil, 1, 0, tt.args.err
 		})
 
+		js := &jsonstore.JsonStoreImpl{}
+		monkey.PatchInstanceMethod(reflect.TypeOf(js), "Notfound", func(j *jsonstore.JsonStoreImpl, ctx context.Context, key string) (bool, error) {
+			if key == "/devops/pipeline/gc/reconciler/pipeline-1/" {
+				return false, nil
+			}
+			return true, nil
+		})
+
 		t.Run(tt.name, func(t *testing.T) {
-			p := &provider{dbClient: db}
+			p := &provider{dbClient: db, js: js}
 			got, _, err := p.getNeedGCPipelines(0, true)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getNeedGCPipeline() error = %v, wantErr %v", err, tt.wantErr)
