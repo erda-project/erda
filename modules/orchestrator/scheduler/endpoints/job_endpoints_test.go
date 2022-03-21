@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cap"
+	cap2 "github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cap"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cluster"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/instanceinfo"
@@ -51,7 +51,7 @@ func TestHTTPEndpoints_JobCreate(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap.Cap
+		Cap               cap2.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -116,20 +116,20 @@ func TestHTTPEndpoints_JobCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &HTTPEndpoints{
 				volumeImpl:        tt.fields.volumeImpl,
-				serviceGroupImpl:  tt.fields.serviceGroupImpl,
+				ServiceGroupImpl:  tt.fields.serviceGroupImpl,
 				clusterImpl:       tt.fields.clusterImpl,
-				job:               tt.fields.job,
+				Job:               tt.fields.job,
 				labelManager:      tt.fields.labelManager,
 				instanceinfoImpl:  tt.fields.instanceinfoImpl,
-				clusterinfoImpl:   tt.fields.clusterinfoImpl,
+				ClusterinfoImpl:   tt.fields.clusterinfoImpl,
 				componentinfoImpl: tt.fields.componentinfoImpl,
 				resourceinfoImpl:  tt.fields.resourceinfoImpl,
 				Cap:               tt.fields.Cap,
 			}
 
-			os.Setenv(ENABLE_SPECIFIED_K8S_NAMESPACE, "true")
-			os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
-			defer os.Unsetenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+			os.Setenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE, "true")
+			os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
+			defer os.Unsetenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
 
 			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(tt.fields.job), "Create", func(*job.JobImpl, apistructs.JobCreateRequest) (apistructs.Job, error) {
 				if tt.name == "Test_01" {
@@ -167,7 +167,7 @@ func TestHTTPEndpoints_JobStart(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap.Cap
+		Cap               cap2.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -261,20 +261,20 @@ func TestHTTPEndpoints_JobStart(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &HTTPEndpoints{
 				volumeImpl:        tt.fields.volumeImpl,
-				serviceGroupImpl:  tt.fields.serviceGroupImpl,
+				ServiceGroupImpl:  tt.fields.serviceGroupImpl,
 				clusterImpl:       tt.fields.clusterImpl,
-				job:               tt.fields.job,
+				Job:               tt.fields.job,
 				labelManager:      tt.fields.labelManager,
 				instanceinfoImpl:  tt.fields.instanceinfoImpl,
-				clusterinfoImpl:   tt.fields.clusterinfoImpl,
+				ClusterinfoImpl:   tt.fields.clusterinfoImpl,
 				componentinfoImpl: tt.fields.componentinfoImpl,
 				resourceinfoImpl:  tt.fields.resourceinfoImpl,
 				Cap:               tt.fields.Cap,
 			}
 
-			os.Setenv(ENABLE_SPECIFIED_K8S_NAMESPACE, "true")
-			os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
-			defer os.Unsetenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+			os.Setenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE, "true")
+			os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
+			defer os.Unsetenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
 
 			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(tt.fields.job), "Start", func(_ *job.JobImpl, namespace, name string, env map[string]string) (apistructs.Job, error) {
 				if tt.name == "Test_01" {
@@ -312,7 +312,7 @@ func TestHTTPEndpoints_JobStop(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap.Cap
+		Cap               cap2.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -389,20 +389,20 @@ func TestHTTPEndpoints_JobStop(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &HTTPEndpoints{
 				volumeImpl:        tt.fields.volumeImpl,
-				serviceGroupImpl:  tt.fields.serviceGroupImpl,
+				ServiceGroupImpl:  tt.fields.serviceGroupImpl,
 				clusterImpl:       tt.fields.clusterImpl,
-				job:               tt.fields.job,
+				Job:               tt.fields.job,
 				labelManager:      tt.fields.labelManager,
 				instanceinfoImpl:  tt.fields.instanceinfoImpl,
-				clusterinfoImpl:   tt.fields.clusterinfoImpl,
+				ClusterinfoImpl:   tt.fields.clusterinfoImpl,
 				componentinfoImpl: tt.fields.componentinfoImpl,
 				resourceinfoImpl:  tt.fields.resourceinfoImpl,
 				Cap:               tt.fields.Cap,
 			}
 
-			os.Setenv(ENABLE_SPECIFIED_K8S_NAMESPACE, "test-namespace")
-			os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
-			defer os.Unsetenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+			os.Setenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE, "test-namespace")
+			os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
+			defer os.Unsetenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
 
 			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(tt.fields.job), "Stop", func(_ *job.JobImpl, namespace, name string) error {
 				if tt.name == "Test_01" {
@@ -436,7 +436,7 @@ func TestHTTPEndpoints_JobDelete(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap.Cap
+		Cap               cap2.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -511,20 +511,20 @@ func TestHTTPEndpoints_JobDelete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &HTTPEndpoints{
 				volumeImpl:        tt.fields.volumeImpl,
-				serviceGroupImpl:  tt.fields.serviceGroupImpl,
+				ServiceGroupImpl:  tt.fields.serviceGroupImpl,
 				clusterImpl:       tt.fields.clusterImpl,
-				job:               tt.fields.job,
+				Job:               tt.fields.job,
 				labelManager:      tt.fields.labelManager,
 				instanceinfoImpl:  tt.fields.instanceinfoImpl,
-				clusterinfoImpl:   tt.fields.clusterinfoImpl,
+				ClusterinfoImpl:   tt.fields.clusterinfoImpl,
 				componentinfoImpl: tt.fields.componentinfoImpl,
 				resourceinfoImpl:  tt.fields.resourceinfoImpl,
 				Cap:               tt.fields.Cap,
 			}
 
-			os.Setenv(ENABLE_SPECIFIED_K8S_NAMESPACE, "test-namespace")
-			os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
-			defer os.Unsetenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+			os.Setenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE, "test-namespace")
+			os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
+			defer os.Unsetenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
 
 			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(tt.fields.job), "Delete", func(_ *job.JobImpl, job apistructs.Job) error {
 				if tt.name == "Test_01" {
@@ -558,7 +558,7 @@ func TestHTTPEndpoints_DeleteJobs(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap.Cap
+		Cap               cap2.Cap
 	}
 	type args struct {
 		ctx  context.Context
@@ -641,20 +641,20 @@ func TestHTTPEndpoints_DeleteJobs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &HTTPEndpoints{
 				volumeImpl:        tt.fields.volumeImpl,
-				serviceGroupImpl:  tt.fields.serviceGroupImpl,
+				ServiceGroupImpl:  tt.fields.serviceGroupImpl,
 				clusterImpl:       tt.fields.clusterImpl,
-				job:               tt.fields.job,
+				Job:               tt.fields.job,
 				labelManager:      tt.fields.labelManager,
 				instanceinfoImpl:  tt.fields.instanceinfoImpl,
-				clusterinfoImpl:   tt.fields.clusterinfoImpl,
+				ClusterinfoImpl:   tt.fields.clusterinfoImpl,
 				componentinfoImpl: tt.fields.componentinfoImpl,
 				resourceinfoImpl:  tt.fields.resourceinfoImpl,
 				Cap:               tt.fields.Cap,
 			}
 
-			os.Setenv(ENABLE_SPECIFIED_K8S_NAMESPACE, "testnamespace")
-			os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
-			defer os.Unsetenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+			os.Setenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE, "testnamespace")
+			os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
+			defer os.Unsetenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
 
 			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(tt.fields.job), "Delete", func(_ *job.JobImpl, job apistructs.Job) error {
 				if tt.name == "Test_01" {
@@ -688,7 +688,7 @@ func TestHTTPEndpoints_JobInspect(t *testing.T) {
 		clusterinfoImpl   clusterinfo.ClusterInfo
 		componentinfoImpl instanceinfo.ComponentInfo
 		resourceinfoImpl  resourceinfo.ResourceInfo
-		Cap               cap.Cap
+		Cap               cap2.Cap
 	}
 
 	jobImpl := &job.JobImpl{}
@@ -766,20 +766,20 @@ func TestHTTPEndpoints_JobInspect(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &HTTPEndpoints{
 				volumeImpl:        tt.fields.volumeImpl,
-				serviceGroupImpl:  tt.fields.serviceGroupImpl,
+				ServiceGroupImpl:  tt.fields.serviceGroupImpl,
 				clusterImpl:       tt.fields.clusterImpl,
-				job:               tt.fields.job,
+				Job:               tt.fields.job,
 				labelManager:      tt.fields.labelManager,
 				instanceinfoImpl:  tt.fields.instanceinfoImpl,
-				clusterinfoImpl:   tt.fields.clusterinfoImpl,
+				ClusterinfoImpl:   tt.fields.clusterinfoImpl,
 				componentinfoImpl: tt.fields.componentinfoImpl,
 				resourceinfoImpl:  tt.fields.resourceinfoImpl,
 				Cap:               tt.fields.Cap,
 			}
 
-			os.Setenv(ENABLE_SPECIFIED_K8S_NAMESPACE, "testnamespace")
-			os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
-			defer os.Unsetenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+			os.Setenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE, "testnamespace")
+			os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
+			defer os.Unsetenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
 
 			patch1 := monkey.PatchInstanceMethod(reflect.TypeOf(tt.fields.job), "Inspect", func(_ *job.JobImpl, namespace, name string) (apistructs.Job, error) {
 				if tt.name == "Test_01" {

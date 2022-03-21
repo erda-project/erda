@@ -22,13 +22,16 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/alecthomas/assert"
+	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-proto-go/core/dop/autotest/testplan/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/providers/autotest/testplan/db"
 	autotestv2 "github.com/erda-project/erda/modules/dop/services/autotest_v2"
 	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 func Test_convertTime(t *testing.T) {
@@ -86,6 +89,17 @@ func Test_processEvent(t *testing.T) {
 				ID:    uint64(1),
 			}, nil
 		})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProjectWithSetter",
+		func(bdl *bundle.Bundle, id uint64, requestSetter ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error) {
+			return &apistructs.ProjectDTO{
+				Name:  "project",
+				OrgID: uint64(1),
+				ID:    uint64(1),
+			}, nil
+		},
+	)
+
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetOrg",
 		func(b *bundle.Bundle, idOrName interface{}) (*apistructs.OrgDTO, error) {
 			return &apistructs.OrgDTO{
@@ -153,21 +167,35 @@ func TestGetCostTime(t *testing.T) {
 
 func TestCreateTestPlanExecHistory(t *testing.T) {
 	var (
-		DB  db.TestPlanDB
 		bdl bundle.Bundle
 	)
+
+	DB := db.TestPlanDB{
+		DBClient: &dao.DBClient{
+			DBEngine: &dbengine.DBEngine{
+				DB: &gorm.DB{},
+			},
+		},
+	}
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(&DB), "GetTestPlan", func(*db.TestPlanDB, uint64) (*db.TestPlanV2, error) {
 		return &db.TestPlanV2{}, nil
 	})
 
-	monkey.PatchInstanceMethod(reflect.TypeOf(&DB), "CreateAutoTestExecHistory", func(*db.TestPlanDB, *db.AutoTestExecHistory) error {
-		return nil
+	monkey.PatchInstanceMethod(reflect.TypeOf(&gorm.DB{}), "Create", func(_ *gorm.DB, value interface{}) *gorm.DB {
+		return &gorm.DB{}
 	})
 
 	monkey.PatchInstanceMethod(reflect.TypeOf(&bdl), "GetProject", func(*bundle.Bundle, uint64) (*apistructs.ProjectDTO, error) {
 		return &apistructs.ProjectDTO{}, nil
 	})
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(&bdl), "GetProjectWithSetter",
+		func(bdl *bundle.Bundle, id uint64, requestSetter ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error) {
+			return &apistructs.ProjectDTO{}, nil
+		},
+	)
+
 	defer monkey.UnpatchAll()
 
 	svc := TestPlanService{

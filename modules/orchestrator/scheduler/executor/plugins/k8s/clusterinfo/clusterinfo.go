@@ -27,6 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/events"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/configmap"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/instanceinfo"
@@ -56,8 +57,7 @@ const (
 	netportalURLPrefix  = "inet://"
 	netportalURLKeyName = "NETPORTAL_URL"
 	// DiceClusterName dice 集群名
-	DiceClusterName                = "DICE_CLUSTER_NAME"
-	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
+	DiceClusterName = "DICE_CLUSTER_NAME"
 )
 
 // diceCIODiscardKeys 需要丢弃的
@@ -165,8 +165,8 @@ func (ci *ClusterInfo) Load() error {
 	defer ci.load_mutex.Unlock()
 
 	var namespace = metav1.NamespaceDefault
-	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
-		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+	if os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		namespace = os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
 	}
 	var (
 		cm      *corev1.ConfigMap

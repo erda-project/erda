@@ -39,6 +39,8 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/clusterinfo"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/spec"
@@ -54,11 +56,13 @@ import (
 
 // Runtime 应用实例对象封装
 type Runtime struct {
-	db         *dbclient.DBClient
-	evMgr      *events.EventManager
-	bdl        *bundle.Bundle
-	addon      *addon.Addon
-	releaseSvc pb.ReleaseServiceServer
+	db               *dbclient.DBClient
+	evMgr            *events.EventManager
+	bdl              *bundle.Bundle
+	addon            *addon.Addon
+	releaseSvc       pb.ReleaseServiceServer
+	serviceGroupImpl servicegroup.ServiceGroup
+	clusterinfoImpl  clusterinfo.ClusterInfo
 }
 
 // Option 应用实例对象配置选项
@@ -105,6 +109,19 @@ func WithAddon(a *addon.Addon) Option {
 func WithReleaseSvc(svc pb.ReleaseServiceServer) Option {
 	return func(r *Runtime) {
 		r.releaseSvc = svc
+	}
+}
+
+// WithServiceGroup 配置 serviceGroupImpl
+func WithServiceGroup(serviceGroupImpl servicegroup.ServiceGroup) Option {
+	return func(r *Runtime) {
+		r.serviceGroupImpl = serviceGroupImpl
+	}
+}
+
+func WithClusterInfo(clusterinfo clusterinfo.ClusterInfo) Option {
+	return func(r *Runtime) {
+		r.clusterinfoImpl = clusterinfo
 	}
 }
 
@@ -487,7 +504,7 @@ func (r *Runtime) RedeployPipeline(ctx context.Context, operator user.ID, orgID 
 }
 
 func (r *Runtime) setClusterName(rt *dbclient.Runtime) error {
-	clusterInfo, err := r.bdl.QueryClusterInfo(rt.ClusterName)
+	clusterInfo, err := r.clusterinfoImpl.Info(rt.ClusterName)
 	if err != nil {
 		logrus.Errorf("get cluster info failed, cluster name: %s, error: %v", rt.ClusterName, err)
 		return err
@@ -710,7 +727,7 @@ func (r *Runtime) doDeployRuntime(ctx *DeployContext) (*apistructs.DeploymentCre
 				logrus.Errorf("failed to get app(%d): %v", ctx.Runtime.ApplicationID, err)
 				break
 			}
-			d, err := r.bdl.QueryClusterInfo(ctx.Runtime.ClusterName)
+			d, err := r.clusterinfoImpl.Info(ctx.Runtime.ClusterName)
 			if err != nil {
 				logrus.Errorf("failed to QueryClusterInfo: %v", err)
 			}
@@ -1041,7 +1058,8 @@ func (r *Runtime) Rollback(operator user.ID, orgID uint64, runtimeID uint64, dep
 				logrus.Errorf("failed to get app(%d): %v", runtime.ApplicationID, err)
 				break
 			}
-			d, err := r.bdl.QueryClusterInfo(runtime.ClusterName)
+
+			d, err := r.clusterinfoImpl.Info(runtime.ClusterName)
 			if err != nil {
 				logrus.Errorf("failed to QueryClusterInfo: %v", err)
 			}
@@ -1222,7 +1240,11 @@ func (r *Runtime) Destroy(runtimeID uint64) error {
 		}
 		req.Namespace = runtime.ScheduleName.Namespace
 		req.Name = runtime.ScheduleName.Name
-		if err := r.bdl.ForceDeleteServiceGroup(req); err != nil {
+		forceDelete := "false"
+		if req.Force {
+			forceDelete = "true"
+		}
+		if err := r.serviceGroupImpl.Delete(req.Namespace, req.Name, forceDelete); err != nil {
 			// TODO: we should return err if delete failed (even if err is group not exist?)
 			logrus.Errorf("[alert] failed delete group in scheduler: %v, (%v)",
 				runtime.ScheduleName, err)
@@ -1440,7 +1462,7 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 				m map[uint64]*apistructs.RuntimeSummaryDTO
 			}, deployment *dbclient.Deployment) {
 				d := apistructs.RuntimeSummaryDTO{}
-				sg, err := r.bdl.InspectServiceGroupWithTimeout(rt.ScheduleName.Args())
+				sg, err := r.serviceGroupImpl.InspectServiceGroupWithTimeout(rt.ScheduleName.Namespace, rt.ScheduleName.Name)
 				if err != nil {
 					l.WithError(err).Warnf("failed to inspect servicegroup: %s/%s",
 						rt.ScheduleName.Namespace, rt.ScheduleName.Name)
@@ -1587,7 +1609,7 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 	// TODO: use the newest api instead of InspectGroup
 	var sg *apistructs.ServiceGroup
 	if runtime.ScheduleName.Name != "" {
-		sg, _ = r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
+		sg, _ = r.serviceGroupImpl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Namespace, runtime.ScheduleName.Name)
 	}
 
 	cluster, err := r.bdl.GetCluster(runtime.ClusterName)
@@ -1746,7 +1768,7 @@ func (r *Runtime) GetSpec(userID user.ID, orgID uint64, runtimeID uint64) (*apis
 	if !perm.Access {
 		return nil, apierrors.ErrGetRuntime.AccessDenied()
 	}
-	return r.bdl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
+	return r.serviceGroupImpl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Namespace, runtime.ScheduleName.Name)
 }
 
 func (r *Runtime) KillPod(runtimeID uint64, podname string) error {
@@ -1754,11 +1776,11 @@ func (r *Runtime) KillPod(runtimeID uint64, podname string) error {
 	if err != nil {
 		return err
 	}
-	return r.bdl.KillPod(apistructs.ServiceGroupKillPodRequest{
-		Namespace: runtime.ScheduleName.Namespace,
-		Name:      runtime.ScheduleName.Name,
-		PodName:   podname,
-	})
+
+	if runtime.ScheduleName.Namespace == "" || runtime.ScheduleName.Name == "" || podname == "" {
+		return errors.New("empty namespace or name or podname")
+	}
+	return r.serviceGroupImpl.KillPod(context.Background(), runtime.ScheduleName.Namespace, runtime.ScheduleName.Name, podname)
 }
 
 // TODO: this work is weird

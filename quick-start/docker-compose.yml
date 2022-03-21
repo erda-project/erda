@@ -337,7 +337,6 @@ services:
       - redis-sentinel
       - redis
       - erda-migration
-      - scheduler
       - pipeline
       - gittar
       - core-services
@@ -364,7 +363,6 @@ services:
     container_name: erda-orchestrator
     depends_on:
       - erda-migration
-      - scheduler
       - collector
     env_file:
       - ./env
@@ -382,7 +380,7 @@ services:
     container_name: erda-pipeline
     depends_on:
       - erda-migration
-      - scheduler
+      - orchestrator
     env_file:
       - ./env
     environment:

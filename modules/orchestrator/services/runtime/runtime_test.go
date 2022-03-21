@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
@@ -224,14 +225,15 @@ func TestConvertRuntimeDeployDto(t *testing.T) {
 
 func Test_setClusterName(t *testing.T) {
 	var bdl *bundle.Bundle
-	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "QueryClusterInfo", func(_ *bundle.Bundle, clusterName string) (apistructs.ClusterInfoData, error) {
+	var clusterinfoImpl *clusterinfo.ClusterInfoImpl
+	m1 := monkey.PatchInstanceMethod(reflect.TypeOf(clusterinfoImpl), "Info", func(_ *clusterinfo.ClusterInfoImpl, clusterName string) (apistructs.ClusterInfoData, error) {
 		if clusterName == "erda-edge" {
 			return apistructs.ClusterInfoData{apistructs.JOB_CLUSTER: "erda-center", apistructs.DICE_IS_EDGE: "true"}, nil
 		}
 		return apistructs.ClusterInfoData{apistructs.DICE_IS_EDGE: "false"}, nil
 	})
 	defer m1.Unpatch()
-	runtimeSvc := New(WithBundle(bdl))
+	runtimeSvc := New(WithBundle(bdl), WithClusterInfo(clusterinfoImpl))
 	rt := &dbclient.Runtime{
 		ClusterName: "erda-edge",
 	}
