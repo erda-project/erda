@@ -33,6 +33,7 @@ message Service {
   repeated string addrs = 5;
   repeated string expose = 6;
   repeated ErrorResponse errors = 7;
+  string type = 8;
 }
 
 message StatusMap {
