@@ -201,6 +201,8 @@ services:
       - port: 80
         protocol: "TCP"
         l4_protocol: "TCP"
+    endpoints:
+      - domain: cluster-dialer.*
     envs:
       DEBUG: "false"
     resources:
@@ -285,6 +287,8 @@ services:
       - port: 7098
         protocol: "TCP"
         l4_protocol: "TCP"
+    endpoints:
+      - domain: collector.*
     envs:
       GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
       COLLECTOR_BROWSER_SAMPLING_RATE: "100"
@@ -380,6 +384,8 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
         expose: true
+    endpoints:
+      - domain: gittar.*
     envs:
       GITTAR_BRANCH_FILTER: "master,develop,feature/*,support/*,release/*,hotfix/*"
       GITTAR_PORT: "5566"
@@ -413,6 +419,8 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
         expose: true
+    endpoints:
+      - domain: hepa.*
     resources:
       cpu: ${request_cpu:0.5}
       mem: 512
@@ -518,6 +526,8 @@ services:
       - port: 9431
         protocol: "TCP"
         l4_protocol: "TCP"
+    endpoints:
+      - domain: openapi.*
     envs:
       CREATE_ORG_ENABLED: "false"
       GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
