@@ -44,7 +44,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v0.0.0-20220321022514-a6f951c8a9ae
+	github.com/erda-project/erda-infra v0.0.0-20220321085632-91e009f9db9e
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/erda-project/erda-sourcecov v0.1.0
@@ -131,7 +131,7 @@ require (
 	github.com/recallsong/go-utils v1.1.2-0.20210826100715-fce05eefa294
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron v1.2.0
-	github.com/russross/blackfriday/v2 v2.1.0
+	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f
 	github.com/satori/go.uuid v1.2.0
 	github.com/scylladb/gocqlx v1.5.0
@@ -143,7 +143,7 @@ require (
 	github.com/sony/sonyflake v1.0.0
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cast v1.3.1
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	github.com/t-tiger/gorm-bulk-insert v1.3.0
 	github.com/tealeg/xlsx v1.0.5
@@ -193,7 +193,7 @@ require (
 	k8s.io/apiserver v0.21.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.30.0
+	k8s.io/klog/v2 v2.8.0
 	k8s.io/kube-aggregator v0.20.0
 	k8s.io/kubectl v0.21.0
 	k8s.io/kubernetes v1.21.0
@@ -211,7 +211,6 @@ require (
 replace (
 	github.com/coreos/bbolt => go.etcd.io/bbolt v1.3.5
 	github.com/docker/spdystream => github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96
-	github.com/erda-project/erda-infra => github.com/dspo/erda-infra v0.0.0-20220321021912-dfa4196b25a7
 	github.com/erda-project/erda-proto-go v0.0.0 => ./api/proto-go
 	github.com/google/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/googlecloudplatform/flink-operator => github.com/erda-project/flink-on-k8s-operator v0.0.0-20220211023605-1a64c463171a
@@ -237,6 +236,7 @@ replace (
 	k8s.io/controller-manager => k8s.io/controller-manager v0.21.2
 	k8s.io/cri-api => k8s.io/cri-api v0.21.2
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.21.2
+	k8s.io/klog => k8s.io/klog v1.0.0
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.21.2
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.21.2
 	k8s.io/kube-proxy => k8s.io/kube-proxy v0.21.2
