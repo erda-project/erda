@@ -55,6 +55,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/services/filemanager/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
 	_ "github.com/erda-project/erda-proto-go/core/services/notify/pb"
+	_ "github.com/erda-project/erda-proto-go/dop/apim/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/contribution/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/issue/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/projecthome/pb"

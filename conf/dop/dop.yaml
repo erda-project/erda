@@ -25,6 +25,12 @@ mysql:
   username: "${MYSQL_USERNAME}"
   password: "${MYSQL_PASSWORD}"
   database: "${MYSQL_DATABASE}"
+gorm.v2:
+  host: "${MYSQL_HOST}"
+  port: "${MYSQL_PORT}"
+  username: "${MYSQL_USERNAME}"
+  password: "${MYSQL_PASSWORD}"
+  database: "${MYSQL_DATABASE}"
 etcd:
   endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
   tls:
@@ -74,6 +80,7 @@ erda.dop.projecthome:
 erda.dop.contribution:
 erda.dop.projectpipeline:
 erda.dop.issue.stream:
+erda.dop.apim:
 
 # component-protocol framework
 component-protocol:
