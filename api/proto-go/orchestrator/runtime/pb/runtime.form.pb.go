@@ -142,6 +142,8 @@ func (m *Service) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.Addrs = vals
 			case "expose":
 				m.Expose = vals
+			case "type":
+				m.Type = vals[0]
 			}
 		}
 	}

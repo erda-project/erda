@@ -53,6 +53,7 @@ func TestFillRuntimeDataWithServiceGroup(t *testing.T) {
 	var (
 		data          apistructs.RuntimeInspectDTO
 		targetService diceyml.Services
+		targetJob     diceyml.Jobs
 		sg            apistructs.ServiceGroup
 		domainMap     = make(map[string][]string, 0)
 		status        string
@@ -73,7 +74,7 @@ func TestFillRuntimeDataWithServiceGroup(t *testing.T) {
 	domainMap["fake-service"] = []string{"http://fake-services-dev-1-app.fake.io"}
 	status = "CANCELED"
 
-	fillRuntimeDataWithServiceGroup(&data, targetService, &sg, domainMap, status)
+	fillRuntimeDataWithServiceGroup(&data, targetService, targetJob, &sg, domainMap, status)
 	assert.Equal(t, "", data.ModuleErrMsg["fake-service"]["Msg"])
 	assert.Equal(t, "", data.ModuleErrMsg["fake-service"]["Reason"])
 	assert.Equal(t, 1.6, data.Resources.CPU)
