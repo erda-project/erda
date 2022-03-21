@@ -64,4 +64,5 @@ const (
 	IsStatelessService = "true"
 	ServiceAddon       = "ADDONS"
 	ServicePerNode     = "per_node"
+	ServiceJob         = "JOB"
 )

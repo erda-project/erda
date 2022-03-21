@@ -153,14 +153,15 @@ type SnapshotAnnotations struct {
 type Volumes []Volume
 
 type Job struct {
-	Image     string            `yaml:"image,omitempty" json:"image"`
-	Cmd       string            `yaml:"cmd,omitempty" json:"cmd"`
-	Envs      EnvMap            `yaml:"envs,omitempty" json:"envs,omitempty"`
-	Resources Resources         `yaml:"resources,omitempty" json:"resources"`
-	Labels    map[string]string `yaml:"labels,omitempty" json:"labels,omitempty"`
-	Binds     Binds             `yaml:"binds,omitempty" json:"binds,omitempty"`
-	Volumes   Volumes           `yaml:"volumes,omitempty" json:"volumes,omitempty"`
-	Hosts     []string          `yaml:"hosts,omitempty" json:"hosts,omitempty"`
+	Image     string                   `yaml:"image,omitempty" json:"image"`
+	Cmd       string                   `yaml:"cmd,omitempty" json:"cmd"`
+	Envs      EnvMap                   `yaml:"envs,omitempty" json:"envs,omitempty"`
+	Resources Resources                `yaml:"resources,omitempty" json:"resources"`
+	Labels    map[string]string        `yaml:"labels,omitempty" json:"labels,omitempty"`
+	Binds     Binds                    `yaml:"binds,omitempty" json:"binds,omitempty"`
+	Volumes   Volumes                  `yaml:"volumes,omitempty" json:"volumes,omitempty"`
+	Init      map[string]InitContainer `yaml:"init,omitempty" json:"init,omitempty"`
+	Hosts     []string                 `yaml:"hosts,omitempty" json:"hosts,omitempty"`
 }
 
 type InitContainer struct {

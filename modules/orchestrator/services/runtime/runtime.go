@@ -1475,7 +1475,7 @@ func (r *Runtime) GetServiceByRuntime(runtimeIDs []uint64) (map[uint64]*apistruc
 					return
 				}
 				d.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
-				fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, sg, nil, string(deployment.Status))
+				fillRuntimeDataWithServiceGroup(&d.RuntimeInspectDTO, dice.Services, dice.Jobs, sg, nil, string(deployment.Status))
 				servicesMap.Lock()
 				servicesMap.m[rt.ID] = &d
 				servicesMap.Unlock()
@@ -1663,7 +1663,7 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 	data.TimeCreated = runtime.CreatedAt
 	data.Services = make(map[string]*apistructs.RuntimeInspectServiceDTO)
 
-	fillRuntimeDataWithServiceGroup(&data, dice.Services, sg, domainMap, string(deployment.Status))
+	fillRuntimeDataWithServiceGroup(&data, dice.Services, dice.Jobs, sg, domainMap, string(deployment.Status))
 
 	updateStatusToDisplay(&data)
 	if deployment.Status == apistructs.DeploymentStatusDeploying {
@@ -1674,7 +1674,7 @@ func (r *Runtime) Get(userID user.ID, orgID uint64, idOrName string, appID strin
 }
 
 // fillRuntimeDataWithServiceGroup use serviceGroup's data to fill RuntimeInspectDTO
-func fillRuntimeDataWithServiceGroup(data *apistructs.RuntimeInspectDTO, targetService diceyml.Services,
+func fillRuntimeDataWithServiceGroup(data *apistructs.RuntimeInspectDTO, targetService diceyml.Services, targetJob diceyml.Jobs,
 	sg *apistructs.ServiceGroup, domainMap map[string][]string, status string) {
 	statusServiceMap := map[string]string{}
 	replicaMap := map[string]int{}
@@ -1740,9 +1740,25 @@ func fillRuntimeDataWithServiceGroup(data *apistructs.RuntimeInspectDTO, targetS
 
 		data.Services[k] = runtimeInspectService
 	}
-
+	for k, v := range targetJob {
+		runtimeInspectService := &apistructs.RuntimeInspectServiceDTO{
+			Resources: apistructs.RuntimeServiceResourceDTO{
+				CPU:  v.Resources.CPU,
+				Mem:  int(v.Resources.Mem),
+				Disk: int(v.Resources.Disk),
+			},
+			Envs:        v.Envs,
+			Type:        "job",
+			Status:      statusServiceMap[k],
+			Deployments: apistructs.RuntimeServiceDeploymentsDTO{Replicas: 1},
+		}
+		data.Services[k] = runtimeInspectService
+	}
 	data.Resources = apistructs.RuntimeServiceResourceDTO{CPU: 0, Mem: 0, Disk: 0}
 	for _, v := range data.Services {
+		if v.Type == "job" {
+			continue
+		}
 		data.Resources.CPU += v.Resources.CPU * float64(v.Deployments.Replicas)
 		data.Resources.Mem += v.Resources.Mem * v.Deployments.Replicas
 		data.Resources.Disk += v.Resources.Disk * v.Deployments.Replicas
