@@ -30,7 +30,6 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/executortypes"
-	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cluster/clusterutil"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/clusterinfo"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/task"
@@ -61,12 +60,31 @@ type ServiceGroup interface {
 	ConfigUpdate(sg apistructs.ServiceGroup) error
 	KillPod(ctx context.Context, namespace string, name string, podname string) error
 	Scale(sg *apistructs.ServiceGroup) (apistructs.ServiceGroup, error)
+	InspectServiceGroupWithTimeout(namespace, name string) (*apistructs.ServiceGroup, error)
 }
 
 type ServiceGroupImpl struct {
-	js          jsonstore.JsonStore
-	sched       *task.Sched
-	clusterinfo clusterinfo.ClusterInfo
+	Js          jsonstore.JsonStore
+	Sched       *task.Sched
+	Clusterinfo clusterinfo.ClusterInfo
+}
+
+func NewServiceGroupImplInit() ServiceGroup {
+	sched, err := task.NewSched()
+	if err != nil {
+		panic(err)
+	}
+
+	js, err := jsonstore.New()
+	if err != nil {
+		panic(err)
+	}
+	clusterinfoImpl := clusterinfo.NewClusterInfoImpl(js)
+	return &ServiceGroupImpl{
+		Js:          js,
+		Sched:       sched,
+		Clusterinfo: clusterinfoImpl,
+	}
 }
 
 func NewServiceGroupImpl(js jsonstore.JsonStore, sched *task.Sched, clusterinfo clusterinfo.ClusterInfo) ServiceGroup {
@@ -78,10 +96,10 @@ func (s ServiceGroupImpl) handleKillPod(ctx context.Context, sg *apistructs.Serv
 		result task.TaskResponse
 		err    error
 	)
-	if err = setServiceGroupExecutorByCluster(sg, s.clusterinfo); err != nil {
+	if err = setServiceGroupExecutorByCluster(sg, s.Clusterinfo); err != nil {
 		return result, err
 	}
-	t, err := s.sched.Send(ctx, task.TaskRequest{
+	t, err := s.Sched.Send(ctx, task.TaskRequest{
 		ExecutorKind: getServiceExecutorKindByName(sg.Executor),
 		ExecutorName: sg.Executor,
 		Action:       task.TaskKillPod,
@@ -102,11 +120,11 @@ func (s ServiceGroupImpl) handleServiceGroup(ctx context.Context, sg *apistructs
 		result task.TaskResponse
 		err    error
 	)
-	if err = setServiceGroupExecutorByCluster(sg, s.clusterinfo); err != nil {
+	if err = setServiceGroupExecutorByCluster(sg, s.Clusterinfo); err != nil {
 		return result, err
 	}
 
-	t, err := s.sched.Send(ctx, task.TaskRequest{
+	t, err := s.Sched.Send(ctx, task.TaskRequest{
 		ExecutorKind: getServiceExecutorKindByName(sg.Executor),
 		ExecutorName: sg.Executor,
 		Action:       taskAction,
@@ -225,14 +243,14 @@ func convertServiceGroup(req apistructs.ServiceGroupCreateV2Request, clusterinfo
 		// check eci enabled
 		enableECI := false
 		for k, v := range service.Labels {
-			if k == k8s.ECIPodLabel && v == "true" {
+			if k == apistructs.AlibabaECILabel && v == "true" {
 				enableECI = true
 				break
 			}
 		}
 
 		for k, v := range service.Deployments.Labels {
-			if k == k8s.ECIPodLabel && v == "true" {
+			if k == apistructs.AlibabaECILabel && v == "true" {
 				enableECI = true
 				break
 			}
@@ -298,7 +316,7 @@ func convertServiceGroup(req apistructs.ServiceGroupCreateV2Request, clusterinfo
 		}
 
 		// 从  diceYaml 的 Service 里读取 volumes 配置用于更新 ServiceGroup 里的 Service 的 volumes
-		vs, err := setServiceVolumes(sg.ClusterName, service, clusterinfo, enableECI)
+		vs, err := setServiceVolumes(sg.ClusterName, service.Volumes, clusterinfo, enableECI)
 		if err != nil {
 			return apistructs.ServiceGroup{}, fmt.Errorf("set service %s volumes failed: %v", name, err)
 
@@ -335,6 +353,104 @@ func convertServiceGroup(req apistructs.ServiceGroupCreateV2Request, clusterinfo
 			MeshEnable:       service.MeshEnable,
 			TrafficSecurity:  service.TrafficSecurity,
 			K8SSnippet:       service.K8SSnippet,
+		}
+		sgServices = append(sgServices, sgService)
+	}
+	for name, job := range yml.Jobs {
+		// check eci enabled
+		enableECI := false
+		for k, v := range job.Labels {
+			if k == apistructs.AlibabaECILabel && v == "true" {
+				enableECI = true
+				break
+			}
+		}
+
+		volumes := []apistructs.Volume{}
+		// binds only for hostPath volume
+		binds := []apistructs.ServiceBind{}
+		ymlbinds, err := diceyml.ParseBinds(job.Binds)
+		if err != nil {
+			return apistructs.ServiceGroup{}, err
+		}
+		for _, bind := range ymlbinds {
+			ro := true
+			if bind.Type == "rw" {
+				ro = false
+			}
+
+			// 卷映射的容器目录合法性检查
+			if bind.ContainerPath == "" || bind.ContainerPath == "/" {
+				return apistructs.ServiceGroup{}, errors.New(fmt.Sprintf("invalid bind container path [%s]", bind.ContainerPath))
+			}
+
+			binds = append(binds, apistructs.ServiceBind{
+				Bind: apistructs.Bind{
+					ContainerPath: bind.ContainerPath,
+					HostPath:      bind.HostPath,
+					ReadOnly:      ro,
+				},
+			})
+		}
+
+		// hostPath not supported by ECI Pod
+		if len(binds) > 0 && enableECI {
+			logrus.Errorf("Service has Binds(hostpath) can not running as ECI Pod\n")
+			return apistructs.ServiceGroup{}, errors.New("Service has Binds(hostpath) can not running as ECI Pod")
+		}
+
+		volumeInfo, ok := reqVolumesInfo[name]
+		if ok {
+			var tp apistructs.VolumeType
+			var err error
+			if volumeInfo.Type == "" {
+				tp = apistructs.LocalVolume
+			} else {
+				tp, err = apistructs.VolumeTypeFromString(volumeInfo.Type)
+				if err != nil {
+					return apistructs.ServiceGroup{}, fmt.Errorf("bad volume type: %v", volumeInfo.Type)
+
+				}
+			}
+			// 卷映射的容器目录合法性检查
+			if volumeInfo.ContainerPath == "" || volumeInfo.ContainerPath == "/" {
+				return apistructs.ServiceGroup{}, errors.New(fmt.Sprintf("invalid ServiceGroupCreateV2Request RequestVolumeInfo volume container path [%s]", volumeInfo.ContainerPath))
+			}
+
+			volumes = append(volumes, apistructs.Volume{
+				ID:            volumeInfo.ID,
+				VolumeType:    tp,
+				Size:          10,
+				ContainerPath: volumeInfo.ContainerPath,
+			})
+		}
+
+		// 从  diceYaml 的 Service 里读取 volumes 配置用于更新 ServiceGroup 里的 Service 的 volumes
+		vs, err := setServiceVolumes(sg.ClusterName, job.Volumes, clusterinfo, enableECI)
+		if err != nil {
+			return apistructs.ServiceGroup{}, fmt.Errorf("set service %s volumes failed: %v", name, err)
+
+		}
+		volumes = append(volumes, vs...)
+
+		sgService := apistructs.Service{
+			Name:  name,
+			Image: job.Image,
+			Cmd:   job.Cmd,
+			Resources: apistructs.Resources{
+				Cpu:    job.Resources.CPU,
+				MaxCPU: job.Resources.MaxCPU,
+				Mem:    float64(job.Resources.Mem),
+				MaxMem: float64(job.Resources.MaxMem),
+				Disk:   float64(job.Resources.Disk),
+			},
+			Env:           job.Envs,
+			WorkLoad:      "JOB",
+			Labels:        job.Labels,
+			Binds:         binds,
+			Volumes:       volumes,
+			Hosts:         job.Hosts,
+			InitContainer: job.Init,
 		}
 		sgServices = append(sgServices, sgService)
 	}
@@ -377,7 +493,7 @@ func appendServiceTags(labels map[string]string, executor string) map[string]str
 	return labels
 }
 
-func setServiceVolumes(clusterName string, service *diceyml.Service, clusterinfo clusterinfo.ClusterInfo, enableECI bool) ([]apistructs.Volume, error) {
+func setServiceVolumes(clusterName string, vs diceyml.Volumes, clusterinfo clusterinfo.ClusterInfo, enableECI bool) ([]apistructs.Volume, error) {
 	volumes := []apistructs.Volume{}
 
 	// TODO: 集群里加入 CLUSTER_SC_VENDOR 信息
@@ -387,7 +503,7 @@ func setServiceVolumes(clusterName string, service *diceyml.Service, clusterinfo
 		return []apistructs.Volume{}, errors.Errorf("failed to get cluster info, clusterName: %s, (%v)", clusterName, err)
 	}
 
-	for i, v := range service.Volumes {
+	for i, v := range vs {
 		// TODO:   oldVolumeType  may not needed
 		oldVolumeType := apistructs.NasVolume
 		snap := int32(0)
@@ -430,19 +546,17 @@ func setServiceVolumes(clusterName string, service *diceyml.Service, clusterinfo
 		if v.Capacity < diceyml.AddonVolumeSizeMin {
 			v.Capacity = diceyml.AddonVolumeSizeMin
 		}
-		// 大于 2000，修正为 2000
+		// 大于 32768，修正为 32768
 		if v.Capacity >= diceyml.AddonVolumeSizeMax {
 			v.Capacity = diceyml.AddonVolumeSizeMax
 		}
 
 		if v.Path != "" && v.TargetPath != "" && v.Path != v.TargetPath {
-			return []apistructs.Volume{}, errors.New("if path and taragetPath set in volume, they must same.")
+			return []apistructs.Volume{}, errors.New("if path and targetPath set in volume, they must same.")
 		}
-
 		if v.TargetPath == "" && v.Path != "" {
 			v.TargetPath = v.Path
 		}
-
 		// 卷映射的容器目录合法性检查
 		if v.TargetPath == "" || v.TargetPath == "/" {
 			return []apistructs.Volume{}, errors.New(fmt.Sprintf("invalid targetPath [%s]", v.TargetPath))

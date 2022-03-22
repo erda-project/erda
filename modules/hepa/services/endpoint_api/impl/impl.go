@@ -551,10 +551,9 @@ func (impl GatewayOpenapiServiceImpl) updatePackageApiHost(pack *orm.GatewayPack
 		if route == nil {
 			return errors.Errorf("can't find route of api:%s", api.Id)
 		}
-		req := &kongDto.KongRouteReqDto{
-			RouteId: route.RouteId,
-			Hosts:   hosts,
-		}
+		req := kongDto.NewKongRouteReqDto()
+		req.RouteId = route.RouteId
+		req.Hosts = hosts
 		resp, err := kongAdapter.UpdateRoute(req)
 		if err != nil {
 			return err
@@ -1050,7 +1049,7 @@ func (impl GatewayOpenapiServiceImpl) deleteKongService(adapter kong.KongAdapter
 }
 
 func (impl GatewayOpenapiServiceImpl) createKongRouteReq(dto *gw.OpenapiDto, serviceId string, routeId ...string) *kongDto.KongRouteReqDto {
-	reqDto := &kongDto.KongRouteReqDto{}
+	reqDto := kongDto.NewKongRouteReqDto()
 	if dto.Method != "" {
 		reqDto.Methods = []string{dto.Method}
 	}

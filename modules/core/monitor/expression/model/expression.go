@@ -22,6 +22,9 @@ const (
 	ALERT_RULE          = "alert_rule.yaml"
 	ANALYZER_EXPRESSION = "analyzer_expression.json"
 	NOTIFY_TEMPLATE     = "notify_template.yaml"
+
+	ZHLange = "zh-CN"
+	ENLange = "en-US"
 )
 
 type Expression struct {
@@ -46,6 +49,7 @@ type NotifyTemplate struct {
 	Template   string                 `json:"template"`
 	Formats    map[string]interface{} `json:"formats"`
 	Version    string                 `json:"version"`
+	Language   string                 `json:"language"`
 }
 
 type AlertConfig struct {

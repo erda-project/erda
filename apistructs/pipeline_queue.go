@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/erda-project/erda-proto-go/pipeline/pb"
+	"github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 

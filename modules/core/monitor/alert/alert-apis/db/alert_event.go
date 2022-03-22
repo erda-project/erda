@@ -49,6 +49,7 @@ type AlertEventScopeCountResult struct {
 	OrgID   int64
 	Scope   string
 	ScopeId string
+	AlertId uint64
 	Count   int64
 }
 
@@ -113,9 +114,9 @@ func (db *AlertEventDB) CountUnRecoverEventsGroupByScope() ([]*AlertEventScopeCo
 	var list []*AlertEventScopeCountResult
 
 	err := db.Table(TableAlertEvent).
-		Select("org_id, scope, scope_id, count(*) as count").
+		Select("org_id, scope, scope_id, alert_id, count(*) as count").
 		Where("alert_state=?", "alert").
-		Group("org_id,scope,scope_id").
+		Group("org_id,scope,scope_id,alert_id").
 		Scan(&list).Error
 
 	if err != nil && gorm.IsRecordNotFoundError(err) {
@@ -124,15 +125,20 @@ func (db *AlertEventDB) CountUnRecoverEventsGroupByScope() ([]*AlertEventScopeCo
 	return list, err
 }
 
-func (db *AlertEventDB) CountUnRecoverEvents(scope, scopeId string) (int64, error) {
+func (db *AlertEventDB) CountUnRecoverEvents(scope, scopeId string, inAlertIds []uint64) (int64, error) {
 	var result AlertEventScopeCountResult
 
-	err := db.Table(TableAlertEvent).
+	query := db.Table(TableAlertEvent).
 		Select("count(*) as count").
 		Where("alert_state=?", "alert").
 		Where("scope=?", scope).
-		Where("scope_id?", scopeId).
-		Find(&result).Error
+		Where("scope_id?", scopeId)
+
+	if len(inAlertIds) > 0 {
+		query = query.Where("alert_id in (?)", inAlertIds)
+	}
+
+	err := query.Find(&result).Error
 
 	if err != nil && gorm.IsRecordNotFoundError(err) {
 		return 0, nil

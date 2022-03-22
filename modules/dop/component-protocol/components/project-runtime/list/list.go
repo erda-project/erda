@@ -15,6 +15,8 @@
 package page
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -44,6 +46,7 @@ type List struct {
 	PageNo   uint64
 	PageSize uint64
 	Total    uint64
+	State    cptype.ExtraMap
 	Bdl      *bundle.Bundle
 	Sdk      *cptype.SDK
 }
@@ -146,6 +149,7 @@ func (p *List) RegisterBatchOp(opData list.OpBatchRowsHandle) (opFunc cptype.Ope
 }
 
 func (p *List) BeforeHandleOp(sdk *cptype.SDK) {
+	p.State = cptype.ExtraMap{}
 	p.Sdk = sdk
 	p.Bdl = p.Sdk.Ctx.Value(types.GlobalCtxKeyBundle).(*bundle.Bundle)
 	p.PageNo = 1
@@ -156,9 +160,11 @@ func (p *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.Opera
 	logrus.Infof("change page client data: %+v", opData)
 	if opData.ClientData.PageNo > 0 {
 		p.PageNo = opData.ClientData.PageNo
+		p.State["pageNo"] = p.PageNo
 	}
 	if opData.ClientData.PageSize > 0 {
 		p.PageSize = opData.ClientData.PageSize
+		p.State["pageSize"] = p.PageSize
 	}
 	return p.RegisterRenderingOp()
 }
@@ -166,17 +172,74 @@ func (p *List) RegisterChangePage(opData list.OpChangePage) (opFunc cptype.Opera
 func (p *List) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		logrus.Debug("list component init")
+		if urlquery := sdk.InParams.String("list__urlQuery"); urlquery != "" {
+			if page, err := p.flushOptsByFilter(urlquery); err != nil {
+				logrus.Errorf("failed to transfer values in component advance filter")
+				return nil
+			} else {
+				if page.PageNo == 0 || page.PageSize == 0 {
+					p.PageSize = 10
+					p.PageNo = 1
+					p.State["pageSize"] = 10
+					p.State["pageNo"] = 1
+				} else {
+					p.PageNo = page.PageNo
+					p.PageSize = page.PageSize
+					p.State["pageSize"] = p.PageSize
+					p.State["pageNo"] = p.PageNo
+				}
+			}
+		}
+		urlParam, err := p.generateUrlQueryParams(p.State)
+		if err != nil {
+			logrus.Errorf("fail to parse list url")
+			return nil
+		}
+		p.State["list__urlQuery"] = urlParam
 		p.Sdk = sdk
 		p.StdDataPtr = p.getData()
+		p.StdStatePtr = &p.State
 		return nil
 	}
+}
+
+type Page struct {
+	PageSize uint64
+	PageNo   uint64
+}
+
+func (p *List) flushOptsByFilter(filterEntity string) (*Page, error) {
+	page := &Page{}
+	b, err := base64.StdEncoding.DecodeString(filterEntity)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(b, page)
+	if err != nil {
+		return nil, err
+	}
+	return page, nil
+}
+func (p *List) generateUrlQueryParams(Values cptype.ExtraMap) (string, error) {
+	fb, err := json.Marshal(Values)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(fb), nil
 }
 
 func (p *List) RegisterRenderingOp() (opFunc cptype.OperationFunc) {
 	return func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		logrus.Debug("list component rendering")
 		p.Sdk = sdk
+		urlParam, err := p.generateUrlQueryParams(p.State)
+		if err != nil {
+			logrus.Errorf("fail to parse list url")
+			return nil
+		}
+		p.State["list__urlQuery"] = urlParam
 		p.StdDataPtr = p.getData()
+		p.StdStatePtr = &p.State
 		return nil
 	}
 }
@@ -289,10 +352,16 @@ func (p *List) getData() *list.Data {
 	//	logrus.Errorf("failed to get oid ,%v", err)
 	//	return data
 	//}
+	myAppNames := make(map[string]bool)
 
 	userReq := apistructs.UserListRequest{}
 	for _, runtime := range runtimes {
 		userReq.UserIDs = append(userReq.UserIDs, runtime.LastOperator)
+		for _, appName2 := range myApp {
+			if runtimeIdToAppNameMap[runtime.ID] == appName2 {
+				myAppNames[appName2] = true
+			}
+		}
 	}
 	logrus.Infof("start load users %v", time.Now())
 
@@ -382,6 +451,12 @@ func (p *List) getData() *list.Data {
 	for k, v := range advancedFilter {
 		filter[k] = make(map[string]bool)
 		for _, value := range v {
+			if k == common.FilterApp && value == common.ALLINVOLVEAPP {
+				filter[k] = make(map[string]bool)
+				for str := range myAppNames {
+					filter[k][str] = true
+				}
+			}
 			filter[k][value] = true
 		}
 	}
@@ -391,7 +466,7 @@ func (p *List) getData() *list.Data {
 	for i := 0; i < len(needFilter); i++ {
 		runtime := runtimeMap[needFilter[i].ID]
 		if filterName != "" {
-			if common.ExitsWithoutCase(needFilter[i].Title, filterName) {
+			if !common.ExitsWithoutCase(needFilter[i].Title, filterName) {
 				continue
 			}
 		}

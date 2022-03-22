@@ -211,25 +211,6 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 		return nil
 	}
 
-	addonID, projectID, workspace, _ := extractContainerEnvs(set.Spec.Template.Spec.Containers)
-	runtimeID, err := k.dbclient.GetRuntimeID(addonID)
-	if err != nil {
-		logrus.Errorf("failed to get runtime ID for statefulSet %s, %v", statefulName, err)
-	}
-
-	reqCPU, reqMem := getRequestsResources(set.Spec.Template.Spec.Containers)
-	if set.Spec.Replicas != nil {
-		reqCPU *= int64(*set.Spec.Replicas)
-		reqMem *= int64(*set.Spec.Replicas)
-	}
-	ok, reason, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, reqCPU, reqMem, "stateful", service.Name)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errors.New(reason)
-	}
-
 	SetPodAnnotationsBaseContainerEnvs(set.Spec.Template.Spec.Containers[0], set.Spec.Template.Annotations)
 
 	return k.sts.Create(set)
@@ -252,6 +233,32 @@ func extractContainerEnvs(containers []corev1.Container) (addonID, projectID, wo
 		}
 	}
 	return
+}
+
+func extractServicesEnvs(runtime *apistructs.ServiceGroup) (string, string, string, string) {
+	envSuffixMap := map[string]string{
+		"ADDON_ID":        "",
+		"DICE_PROJECT_ID": "",
+		"DICE_RUNTIME_ID": "",
+		"DICE_WORKSPACE":  "",
+	}
+	for _, svc := range runtime.Services {
+		for envKey, env := range svc.Env {
+			for k := range envSuffixMap {
+				if strings.Contains(envKey, k) {
+					envSuffixMap[k] = env
+				}
+			}
+		}
+	}
+	for envKey, env := range runtime.Dice.Labels {
+		for k := range envSuffixMap {
+			if strings.Contains(envKey, k) {
+				envSuffixMap[k] = env
+			}
+		}
+	}
+	return envSuffixMap["ADDON_ID"], envSuffixMap["DICE_PROJECT_ID"], envSuffixMap["DICE_RUNTIME_ID"], envSuffixMap["DICE_WORKSPACE"]
 }
 
 // setBind only set hostPath for volume

@@ -90,7 +90,7 @@ func identityToUser(i OryKratosIdentity) User {
 	}
 }
 
-func identityToUserInfo(i OryKratosIdentity) UserInfo {
+func IdentityToUserInfo(i OryKratosIdentity) UserInfo {
 	return userToUserInfo(identityToUser(i))
 }
 

@@ -1,6 +1,7 @@
 - name: "kubernetes组件实例内存异常"
   trigger: "alert"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:2"
     mem_usage_value: "size:byte"
@@ -40,6 +41,7 @@
 - name: "kubernetes组件实例内存异常"
   trigger: "alert"
   target: "sms"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:2"
     mem_usage_value: "size:byte"
@@ -53,6 +55,7 @@
 - name: "kubernetes组件实例内存异常"
   trigger: "alert"
   target: "vms"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:2"
     mem_usage_value: "size:byte"
@@ -66,6 +69,7 @@
 - name: "kubernetes组件实例内存异常"
   trigger: "recover"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:2"
     trigger_duration: "time:ms"
@@ -97,6 +101,7 @@
 - name: "kubernetes组件实例内存异常"
   trigger: "recover"
   target: "sms"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:2"
     trigger_duration: "time:ms"
@@ -107,6 +112,7 @@
 - name: "kubernetes组件实例内存异常"
   trigger: "recover"
   target: "vms"
+  language: "zh-CN"
   formats:
     mem_usage_percent_avg: "percent:2"
     trigger_duration: "time:ms"
@@ -114,3 +120,124 @@
     【{{cluster_name}}集群kubernetes组件{{pod_name}}内存使用率恢复】
   template: |
     {{cluster_name}}集群{{pod_name}}组件触发kubernetes组件实例内存使用率异常告警恢复，组织名称: {{org_name}}，使用率: {{mem_usage_percent_avg}}
+
+- name: "Memory exception of Kubernetes component instance"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:2"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    mem_allocation_value: "size:byte"
+  title: |
+    [Memory usage alarm of Kubernetes component {{pod_name}} of cluster {{cluster_name}}]
+  template: |
+    [Memory usage alarm of Kubernetes component]
+
+    Pod: {{pod_name}}
+
+    Pod_Ip: {{pod_ip}}
+
+    Usage rate: {{mem_usage_percent_avg}}
+
+    Usage: {{mem_usage_value}}
+
+    Limit: {{mem_limit_value}}
+
+    Allocation: {{mem_allocation_value}}
+
+    Cluster: {{cluster_name}}
+
+    Machine: {{host_ip}}
+
+    Container ID: {{container_id}}
+
+    Organization name: {{org_name}}
+
+    Time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "Memory exception of Kubernetes component instance"
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:2"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    mem_allocation_value: "size:byte"
+  title: |
+    [Memory usage alarm of Kubernetes component {{pod_name}} of cluster {{cluster_name}}]
+  template: |
+    Memory usage exception alarm of Kubernetes component instance triggered by component {{pod_name}} of cluster {{cluster_name}}, organization name: {{org_name}}, usage: {{mem_usage_percent_avg}}
+
+- name: "Memory exception of Kubernetes component instance"
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:2"
+    mem_usage_value: "size:byte"
+    mem_limit_value: "size:byte"
+    mem_allocation_value: "size:byte"
+  title: |
+    [Memory usage alarm of Kubernetes component {{pod_name}} of cluster {{cluster_name}}]
+  template: |
+    Memory usage exception alarm of Kubernetes component instance triggered by component {{pod_name}} of cluster {{cluster_name}}, organization name: {{org_name}}, usage: {{mem_usage_percent_avg}}
+
+- name: "Memory exception recovery of Kubernetes component instance"
+  trigger: "recover"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:2"
+    trigger_duration: "time:ms"
+  title: |
+    [Memory usage recovery of Kubernetes component {{pod_name}} of cluster {{cluster_name}}]
+  template: |
+    [Memory usage recovery of Kubernetes component]
+
+    Pod: {{pod_name}}
+
+    Pod_Ip: {{pod_ip}}
+
+    Usage rate: {{mem_usage_percent_avg}}
+
+    Cluster: {{cluster_name}}
+
+    Machine: {{host_ip}}
+
+    Container ID: {{container_id}}
+
+    Organization name: {{org_name}}
+
+    Duration: {{trigger_duration}}
+
+    Recovery time: {{timestamp}}
+
+    [View records]({{record_url}})
+
+- name: "Memory exception recovery of Kubernetes component instance"
+  trigger: "recover"
+  target: "sms"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:2"
+    trigger_duration: "time:ms"
+  title: |
+    [Memory usage recovery of Kubernetes component {{pod_name}} of cluster {{cluster_name}}]
+  template: |
+    Memory usage exception alarm recovery of Kubernetes component instance triggered by component {{pod_name}} of cluster {{cluster_name}}, organization name: {{org_name}}, usage: {{mem_usage_percent_avg}}
+- name: "Memory exception recovery of Kubernetes component instance"
+  trigger: "recover"
+  target: "vms"
+  language: "en-US"
+  formats:
+    mem_usage_percent_avg: "percent:2"
+    trigger_duration: "time:ms"
+  title: |
+    [Memory usage recovery of Kubernetes component {{pod_name}} of cluster {{cluster_name}}]
+  template: |
+    Memory usage exception alarm recovery of Kubernetes component instance triggered by component {{pod_name}} of cluster {{cluster_name}}, organization name: {{org_name}}, usage: {{mem_usage_percent_avg}}

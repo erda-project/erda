@@ -223,6 +223,29 @@
     types:
       - type: datetime
 
+# creator_id 字段类型校验
+- name: ColumnTypeLinter
+  alias: "字段类型校验: creator_id 应当为 varchar(255)"
+  white:
+    committedAt:
+      - "<=20220317"
+  meta:
+    columnName: creator_id
+    types:
+      - type: varchar
+        flen: 255
+
+# updater_id 字段类型校验
+- name: ColumnTypeLinter
+  alias: "字段类型校验: updater_id 应当为 varchar(255)"
+  white:
+    committedAt:
+      - "<=20220317"
+  meta:
+    columnName: updater_id
+    types:
+      - type: varchar
+        flen: 255
 
 # complete insert 校验
 - name: CompleteInsertLinter
@@ -314,7 +337,7 @@
     "PROCEDURE": true
     "FUNCTION": true
     "DELETE": true
-    "DESC": true
+    "DESC": false
     "DISTINCT": true
     "DROP": true
     "ELSE": true

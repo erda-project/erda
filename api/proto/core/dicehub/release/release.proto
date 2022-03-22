@@ -73,7 +73,7 @@ service ReleaseService {
 
   rpc ListRelease (ReleaseListRequest) returns (ReleaseListResponse)  {
     option (google.api.http) = {
-      get: "/api/releases?q={query}&releaseId={releaseID}&releaseName={releaseName}&cluster={cluster}&branch={branch}&latest={isLatest}&isStable={isStable}&isFormal={isFormal}&isProjectRelease={isProjectRelease}&userId={userID}&version={version}&commitId={commitID}&tags={tags}&isVersion={isVersion}&crossCluster={crossCluster}&crossClusterOrSpecifyCluster={crossClusterOrSpecifyCluster}&applicationId={applicationID}&projectId={projectID}&startTime={startTime]&endTime={endTime}&pageSize={pageSize}&pageNum={pageNum}&orderBy={orderBy}&order={order}",
+      get: "/api/releases?q={query}&releaseId={releaseID}&releaseName={releaseName}&cluster={cluster}&branchName={branch}&latest={isLatest}&isStable={isStable}&isFormal={isFormal}&isProjectRelease={isProjectRelease}&userId={userID}&version={version}&commitId={commitID}&tags={tags}&isVersion={isVersion}&crossCluster={crossCluster}&crossClusterOrSpecifyCluster={crossClusterOrSpecifyCluster}&applicationId={applicationID}&projectId={projectID}&startTime={startTime]&endTime={endTime}&pageSize={pageSize}&pageNo={pageNo}&orderBy={orderBy}&order={order}",
     };
     option (erda.common.openapi) = {
       path: "/api/releases",
@@ -184,7 +184,7 @@ message ReleaseCreateRequest{
   bool isStable = 6;
   bool isFormal = 7;
   bool isProjectRelease = 8;
-  string Changelog = 9;
+  string changelog = 9;
   repeated ReleaseList applicationReleaseList = 10;
 
   // Used for release classification, description of release category, map type, maximum length 1000, optional
@@ -359,6 +359,17 @@ message ReleaseGetResponseData {
 
   // 是否为分支最新
   bool isLatest = 28;
+
+  repeated AddonInfo addons = 29;
+  string addonYaml = 30;
+}
+
+message AddonInfo {
+  string displayName = 1;
+  string plan = 2;
+  string version = 3;
+  string category = 4;
+  string logoURL = 5;
 }
 
 message ServiceImagePair {
@@ -418,7 +429,7 @@ message ReleaseListRequest {
 
   int64 pageSize = 22;
 
-  int64 pageNum = 23;
+  int64 pageNo = 23;
   string orderBy = 24;
   string order = 25;
 }

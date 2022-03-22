@@ -139,6 +139,11 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 	if req.Creator != "" {
 		req.UserID = req.Creator
 	}
+
+	planFinishedAt, err := svc.getUpdatedPlanFinishedAt(req)
+	if err != nil {
+		return nil, apierrors.ErrCreateIssue.InvalidParameter(err)
+	}
 	// 初始状态为排序级最高的状态
 	initState, err := svc.db.GetIssuesStatesByProjectID(req.ProjectID, req.Type)
 	if err != nil {
@@ -537,14 +542,18 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		return err
 	}
 
+	cache, err := NewIssueCache(svc.db)
+	if err != nil {
+		return apierrors.ErrUpdateIssue.InternalError(err)
+	}
 	//如果是BUG从打开或者重新打开切换状态为已解决，修改责任人为当前用户
 	if issueModel.Type == apistructs.IssueTypeBug {
-		currentState, err := svc.db.GetIssueStateByID(issueModel.State)
+		currentState, err := cache.TryGetState(issueModel.State)
 		if err != nil {
 			return apierrors.ErrGetIssue.InternalError(err)
 		}
 		if req.State != nil {
-			newState, err := svc.db.GetIssueStateByID(*req.State)
+			newState, err := cache.TryGetState(*req.State)
 			if err != nil {
 				return apierrors.ErrGetIssue.InternalError(err)
 			}
@@ -587,11 +596,11 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 			continue
 		}
 		if field == "state" {
-			currentBelong, err := svc.db.GetIssueStateByID(issueModel.State)
+			currentBelong, err := cache.TryGetState(issueModel.State)
 			if err != nil {
-				return apierrors.ErrGetIssueState.InternalError(err)
+				return apierrors.ErrGetIssue.InternalError(err)
 			}
-			newBelong, err := svc.db.GetIssueStateByID(*req.State)
+			newBelong, err := cache.TryGetState(*req.State)
 			if err != nil {
 				return apierrors.ErrGetIssueState.InternalError(err)
 			}
@@ -619,6 +628,21 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		}
 	STREAM:
 		issueStreamFields[field] = []interface{}{canUpdateFields[field], v}
+	}
+
+	if issueModel.Type == apistructs.IssueTypeBug || issueModel.Type == apistructs.IssueTypeTask {
+		iteration, err := cache.TryGetIteration(*req.IterationID)
+		if err != nil {
+			return err
+		}
+		state, err := cache.TryGetState(*req.State)
+		if err != nil {
+			return err
+		}
+		v := issueValidator{}
+		if err := v.validateChangedFields(&req, &issueValidationConfig{iteration, state}, changedFields); err != nil {
+			return err
+		}
 	}
 
 	// 校验实际需要更新的字段
@@ -1147,6 +1171,7 @@ func (svc *Issue) checkUpdateStatePermission(model dao.Issue, changedFields map[
 
 // GetIssuesByIssueIDs 通过issueIDs获取事件列表
 func (svc *Issue) GetIssuesByIssueIDs(issueIDs []uint64, identityInfo apistructs.IdentityInfo) ([]apistructs.Issue, error) {
+	issueIDs = strutil.DedupUint64Slice(issueIDs)
 	issueModels, err := svc.db.GetIssueByIssueIDs(issueIDs)
 	if err != nil {
 		return nil, err
@@ -1598,14 +1623,13 @@ func (svc *Issue) BatchUpdateIssuesSubscriber(req apistructs.IssueSubscriberBatc
 	return nil
 }
 
-func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64]*apistructs.WorkbenchProjectItem, int, error) {
-	stats, total, err := svc.db.GetIssueExpiryStatusByProjects(req)
+func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64]*apistructs.WorkbenchProjectItem, error) {
+	stats, err := svc.db.GetIssueExpiryStatusByProjects(req)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	projectMap := make(map[uint64]*apistructs.WorkbenchProjectItem)
-	projectIDs := make([]uint64, 0)
 	for _, i := range stats {
 		if _, ok := projectMap[i.ProjectID]; !ok {
 			projectMap[i.ProjectID] = &apistructs.WorkbenchProjectItem{}
@@ -1628,39 +1652,10 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 		case dao.ExpireTypeExpireInFuture:
 			item.FeatureDayNum = num
 		}
-	}
-	for i := range projectMap {
-		projectIDs = append(projectIDs, i)
+		item.TotalIssueNum += num
 	}
 
-	pMap, err := svc.bdl.GetProjectsMap(apistructs.GetModelProjectsMapRequest{ProjectIDs: projectIDs})
-	if err != nil {
-		return nil, 0, err
-	}
-
-	for i := range projectMap {
-		if dto, ok := pMap[i]; ok {
-			projectMap[i].ProjectDTO = dto
-			req.ProjectID = dto.ID
-			issues, total, err := svc.db.GetIssuesByProject(req.IssuePagingRequest)
-			if err != nil {
-				return nil, 0, err
-			}
-			issueList := make([]apistructs.Issue, 0, len(issues))
-			for _, v := range issues {
-				issueList = append(issueList, apistructs.Issue{
-					ID:             int64(v.ID),
-					Type:           v.Type,
-					Title:          v.Title,
-					PlanFinishedAt: v.PlanFinishedAt,
-				})
-			}
-			projectMap[i].IssueList = issueList
-			projectMap[i].TotalIssueNum = int(total)
-		}
-	}
-
-	return projectMap, total, nil
+	return projectMap, nil
 }
 
 func (svc *Issue) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]dao.IssueItem, error) {
@@ -1749,4 +1744,36 @@ func (svc *Issue) GetIssueParents(issueID uint64, relationType []string) ([]dao.
 
 func (svc *Issue) ListStatesTransByProjectID(projectID uint64) ([]dao.IssueStateTransition, error) {
 	return svc.db.ListStatesTransByProjectID(projectID)
+}
+
+func (svc *Issue) getUpdatedPlanFinishedAt(req *apistructs.IssueCreateRequest) (planFinishedAt *time.Time, err error) {
+	planFinishedAt = req.PlanFinishedAt.Value()
+	if req.Type != apistructs.IssueTypeBug && req.Type != apistructs.IssueTypeTask {
+		return
+	}
+	cache, err := NewIssueCache(svc.db)
+	if err != nil {
+		return
+	}
+	iteration, err := cache.TryGetIteration(req.IterationID)
+	if err != nil {
+		return
+	}
+	validator := issueValidator{}
+	c := &issueValidationConfig{iteration: iteration}
+	if err = validator.validateStateWithIteration(c); err != nil {
+		return
+	}
+	err = validator.validateTimeWithInIteration(c, planFinishedAt)
+	if planFinishedAt != nil && err != nil {
+		return
+	}
+	now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
+	adjuster := issueCreateAdjuster{&now}
+	if finishedAt := adjuster.planFinished(func() bool {
+		return req.IterationID > 0 && planFinishedAt == nil
+	}, iteration); finishedAt != nil {
+		planFinishedAt = finishedAt
+	}
+	return planFinishedAt, nil
 }

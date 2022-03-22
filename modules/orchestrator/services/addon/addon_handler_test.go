@@ -23,9 +23,20 @@ import (
 	"testing"
 	"time"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/orchestrator/components/addon/mysql"
+	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup"
+	"github.com/erda-project/erda/modules/orchestrator/services/log"
+	"github.com/erda-project/erda/modules/orchestrator/services/resource"
+	"github.com/erda-project/erda/modules/orchestrator/utils"
+	"github.com/erda-project/erda/pkg/crypto/encryption"
+	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
 func TestUnixTimeFormat(t *testing.T) {
@@ -232,5 +243,173 @@ func TestPreCheck(t *testing.T) {
 	var a Addon
 	for _, v := range tt {
 		assert.Equal(t, v.Want, a.preCheck(v.Params) == nil)
+	}
+}
+
+func TestAddon_basicAddonDeploy(t *testing.T) {
+	type fields struct {
+		db               *dbclient.DBClient
+		bdl              *bundle.Bundle
+		hc               *httpclient.HTTPClient
+		encrypt          *encryption.EnvEncrypt
+		resource         *resource.Resource
+		kms              mysql.KMSWrapper
+		Logger           *log.DeployLogHelper
+		serviceGroupImpl servicegroup.ServiceGroup
+	}
+	type args struct {
+		addonIns        *dbclient.AddonInstance
+		addonInsRouting *dbclient.AddonInstanceRouting
+		params          *apistructs.AddonHandlerCreateItem
+		addonSpec       *apistructs.AddonExtension
+		addonDice       *diceyml.Object
+		vendor          string
+	}
+
+	testfileds := fields{
+		db:               &dbclient.DBClient{},
+		bdl:              &bundle.Bundle{},
+		hc:               &httpclient.HTTPClient{},
+		encrypt:          &encryption.EnvEncrypt{},
+		resource:         &resource.Resource{},
+		Logger:           &log.DeployLogHelper{},
+		serviceGroupImpl: &servicegroup.ServiceGroupImpl{},
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name:   "Test_01",
+			fields: testfileds,
+			args: args{
+				addonIns: &dbclient.AddonInstance{
+					ProjectID: "1",
+					OrgID:     "1",
+					Workspace: "DEV",
+				},
+				addonInsRouting: &dbclient.AddonInstanceRouting{},
+				params: &apistructs.AddonHandlerCreateItem{
+					InstanceName: "mysql",
+					OperatorID:   "2",
+					Plan:         "professional",
+				},
+				addonSpec: &apistructs.AddonExtension{},
+				addonDice: &diceyml.Object{},
+				vendor:    apistructs.ECIVendorAlibaba,
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Test_02",
+			fields: testfileds,
+			args: args{
+				addonIns: &dbclient.AddonInstance{
+					ProjectID: "1",
+					OrgID:     "1",
+					Workspace: "DEV",
+				},
+				addonInsRouting: &dbclient.AddonInstanceRouting{},
+				params: &apistructs.AddonHandlerCreateItem{
+					InstanceName: "mysql",
+					OperatorID:   "2",
+					Plan:         "professional",
+				},
+				addonSpec: &apistructs.AddonExtension{},
+				addonDice: &diceyml.Object{},
+				vendor:    apistructs.ECIVendorHuawei,
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Test_03",
+			fields: testfileds,
+			args: args{
+				addonIns: &dbclient.AddonInstance{
+					ProjectID: "1",
+					OrgID:     "1",
+					Workspace: "DEV",
+				},
+				addonInsRouting: &dbclient.AddonInstanceRouting{},
+				params: &apistructs.AddonHandlerCreateItem{
+					InstanceName: "mysql",
+					OperatorID:   "2",
+					Plan:         "professional",
+				},
+				addonSpec: &apistructs.AddonExtension{},
+				addonDice: &diceyml.Object{},
+				vendor:    apistructs.ECIVendorTecent,
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Test_04",
+			fields: testfileds,
+			args: args{
+				addonIns: &dbclient.AddonInstance{
+					ProjectID: "1",
+					OrgID:     "1",
+					Workspace: "DEV",
+				},
+				addonInsRouting: &dbclient.AddonInstanceRouting{},
+				params: &apistructs.AddonHandlerCreateItem{
+					InstanceName: "mysql",
+					OperatorID:   "2",
+					Plan:         "professional",
+				},
+				addonSpec: &apistructs.AddonExtension{},
+				addonDice: &diceyml.Object{},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &Addon{
+				db:               tt.fields.db,
+				bdl:              tt.fields.bdl,
+				hc:               tt.fields.hc,
+				encrypt:          tt.fields.encrypt,
+				resource:         tt.fields.resource,
+				kms:              tt.fields.kms,
+				serviceGroupImpl: tt.fields.serviceGroupImpl,
+			}
+			patch1 := monkey.Patch(utils.IsProjectECIEnable, func(bdl *bundle.Bundle, projectID uint64, workspace string, orgID uint64, userID string) bool {
+
+				return true
+			})
+			patch2 := monkey.PatchInstanceMethod(reflect.TypeOf(a), "BuildAddonRequestGroup", func(a *Addon, params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroupCreateV2Request, error) {
+
+				return &apistructs.ServiceGroupCreateV2Request{
+					ClusterName: "test",
+				}, nil
+			})
+			patch3 := monkey.PatchInstanceMethod(reflect.TypeOf(a.serviceGroupImpl), "Create", func(_ *servicegroup.ServiceGroupImpl, sg apistructs.ServiceGroupCreateV2Request) (apistructs.ServiceGroup, error) {
+				return apistructs.ServiceGroup{}, nil
+			})
+			patch4 := monkey.PatchInstanceMethod(reflect.TypeOf(a), "GetAddonResourceStatus", func(a *Addon, addonIns *dbclient.AddonInstance,
+				addonInsRouting *dbclient.AddonInstanceRouting,
+				addonDice *diceyml.Object, addonSpec *apistructs.AddonExtension) error {
+
+				return nil
+			})
+			patch5 := monkey.PatchInstanceMethod(reflect.TypeOf(a), "InitMySQLAccount", func(a *Addon, addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting, operator string) error {
+
+				return nil
+			})
+			defer patch5.Unpatch()
+			defer patch4.Unpatch()
+			defer patch3.Unpatch()
+			defer patch2.Unpatch()
+			defer patch1.Unpatch()
+
+			if err := a.basicAddonDeploy(tt.args.addonIns, tt.args.addonInsRouting, tt.args.params, tt.args.addonSpec, tt.args.addonDice, tt.args.vendor); (err != nil) != tt.wantErr {
+				t.Errorf("basicAddonDeploy() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
 }

@@ -127,19 +127,19 @@ func (r *ComponentReleaseTable) DecodeURLQuery() error {
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(queryData)
+	decoded, err := base64.StdEncoding.DecodeString(queryData)
 	if err != nil {
 		return err
 	}
 	query := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &query); err != nil {
+	if err := json.Unmarshal(decoded, &query); err != nil {
 		return err
 	}
 	r.State.PageNo = int64(query["pageNo"].(float64))
 	r.State.PageSize = int64(query["pageSize"].(float64))
-	sorter := query["sorterData"].(map[string]interface{})
-	r.State.Sorter.Field, _ = sorter["field"].(string)
-	r.State.Sorter.Order, _ = sorter["order"].(string)
+	sorterData := query["sorterData"].(map[string]interface{})
+	r.State.Sorter.Field, _ = sorterData["field"].(string)
+	r.State.Sorter.Order, _ = sorterData["order"].(string)
 	return nil
 }
 
@@ -211,7 +211,7 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 		StartTime:        startTime,
 		EndTime:          endTime,
 		PageSize:         r.State.PageSize,
-		PageNum:          r.State.PageNo,
+		PageNo:           r.State.PageNo,
 		OrderBy:          orderBy,
 		Order:            order,
 	})
@@ -244,12 +244,16 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 	var list []Item
 	logrus.Debugf("[DEBUG] start release loop")
 	for _, release := range releaseResp.Data.List {
+		typ := "application"
+		if release.IsProjectRelease {
+			typ = "project"
+		}
 		editOperation := Operation{
 			Command: Command{
 				JumpOut: false,
 				Key:     "goto",
-				Target: fmt.Sprintf("/%s/dop/projects/%d/release/updateRelease/%s",
-					org.Name, r.State.ProjectID, release.ReleaseID),
+				Target: fmt.Sprintf("/%s/dop/projects/%d/release/%s/updateRelease/%s",
+					org.Name, r.State.ProjectID, typ, release.ReleaseID),
 			},
 			Key:         "gotoDetail",
 			Reload:      false,
@@ -300,8 +304,12 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 		}
 
 		item := Item{
-			ID:          release.ReleaseID,
-			Version:     release.Version,
+			ID: release.ReleaseID,
+			Version: Version{
+				Value:      release.Version,
+				Tags:       []Tag{},
+				RenderType: "textWithTags",
+			},
 			Application: release.ApplicationName,
 			Creator: Creator{
 				RenderType: "userAvatar",
@@ -313,6 +321,14 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 				RenderType: "tableOperation",
 			},
 		}
+
+		if release.IsFormal && r.State.IsFormal == nil {
+			item.Version.Tags = append(item.Version.Tags, Tag{
+				Tag:   r.sdk.I18n("formal"),
+				Color: "blue",
+			})
+		}
+
 		if release.IsProjectRelease {
 			item.Operations.Operations["download"] = downloadOperation
 
@@ -326,7 +342,8 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 			}
 			item.Operations.Operations["referencedReleases"] = Operation{
 				Meta: map[string]interface{}{
-					"appReleaseIDs": strings.Join(list, ","),
+					"releaseID": strings.Join(list, ","),
+					"latest":    "",
 				},
 				Key:  "referencedReleases",
 				Text: r.sdk.I18n("referencedReleases"),
@@ -474,6 +491,7 @@ func (r *ComponentReleaseTable) formalReleases(ctx context.Context, releaseID []
 	ctx = metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
 		"internal-client": "true",
 		"org-id":          r.sdk.Identity.OrgID,
+		"user-id":         userID,
 	}))
 
 	if r.State.IsProjectRelease {
@@ -514,6 +532,7 @@ func (r *ComponentReleaseTable) deleteReleases(ctx context.Context, releaseID []
 	ctx = metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
 		"internal-client": "true",
 		"org-id":          r.sdk.Identity.OrgID,
+		"user-id":         userID,
 	}))
 
 	if r.State.IsProjectRelease {

@@ -1,6 +1,7 @@
 - name: "【事件】LOG_STORE保护器状态变化"
   trigger: "alert"
   target: "dingding,ticket,email,mbox,webhook,dingtalk_work_notice"
+  language: "zh-CN"
   title: |
     【【事件】LOG_STORE保护器状态变化】
   template: |
@@ -20,6 +21,7 @@
 - name: "【事件】LOG_STORE保护器状态变化"
   trigger: "alert"
   target: "sms"
+  language: "zh-CN"
   title: |
     【【事件】LOG_STORE保护器状态变化】
   template: |
@@ -27,7 +29,43 @@
 - name: "【事件】LOG_STORE保护器状态变化"
   trigger: "alert"
   target: "vms"
+  language: "zh-CN"
   title: |
     【【事件】LOG_STORE保护器状态变化】
   template: |
     触发【事件】LOG_STORE保护器状态变化告警，之前状态: {{pre_level}}，当前状态: {{cur_level}}，告警级别: {{level}}
+
+- name: "[Event] LOG_STORE protector status change"
+  trigger: "alert"
+  target: "dingding,ticket,email,mbox,webhook"
+  language: "en-US"
+  title: |
+    [[Event] LOG_STORE protector status change]
+  template: |
+    [[Event] LOG_STORE protector status change]
+
+    Cluster: {{cluster_name}}
+
+    Previous status: {{pre_level}}
+
+    Current status: {{cur_level}}
+
+    Time: {{timestamp}}
+
+    [View records]({{record_url}})
+- name: "[Event] LOG_STORE protector status change"
+  trigger: "alert"
+  target: "sms"
+  language: "en-US"
+  title: |
+    [[Event] LOG_STORE protector status change]
+  template: |
+    [Event] LOG_STORE protector status change alarm triggered, previous status: {{pre_level}}, current status: {{cur_level}}
+- name: "[Event] LOG_STORE protector status change"
+  trigger: "alert"
+  target: "vms"
+  language: "en-US"
+  title: |
+    [[Event] LOG_STORE protector status change]
+  template: |
+    [Event] LOG_STORE protector status change alarm triggered, previous status: {{pre_level}}, current status: {{cur_level}}

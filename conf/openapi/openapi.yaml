@@ -74,6 +74,7 @@ openapi-v1-routes:
           - scenes-import-record
           - test-dashboard
           - project-runtime
+          - app-runtime
           - test-report
           - addon-mysql-account
           - addon-mysql-consumer
@@ -85,6 +86,7 @@ openapi-v1-routes:
           - release-manage
           - app-list-all
           - project-pipeline
+          - app-pipeline
           - project-pipeline-exec-list
           - project-list-all
           - auto-test-plan-list
@@ -113,18 +115,23 @@ openapi-v1-routes:
           - transaction-cache-analysis
           - transaction-cache-detail
           - transaction-cache-slow
+          - transaction-cache-error
           - transaction-db-analysis
           - transaction-db-detail
           - transaction-db-slow
+          - transaction-db-error
           - transaction-http-analysis
           - transaction-http-detail
           - transaction-http-slow
+          - transaction-http-error
           - transaction-mq-analysis
           - transaction-mq-detail
           - transaction-mq-slow
+          - transaction-mq-error
           - transaction-rpc-analysis
           - transaction-rpc-detail
           - transaction-rpc-slow
+          - transaction-rpc-error
           - trace-query
           - resources-container-monitor
           - resources-node-monitor

@@ -56,6 +56,7 @@ type RuntimeInspectDTO struct {
 
 type RuntimeInspectServiceDTO struct {
 	Status      string                       `json:"status"`
+	Type        string                       `json:"type"`
 	Deployments RuntimeServiceDeploymentsDTO `json:"deployments"`
 	Resources   RuntimeServiceResourceDTO    `json:"resources"`
 	Envs        map[string]string            `json:"envs"`

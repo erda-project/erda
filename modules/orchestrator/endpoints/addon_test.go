@@ -27,6 +27,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 )
 
 const count = 20
@@ -128,6 +129,14 @@ func TestConcurrentWriteProjectInfos(t *testing.T) {
 		},
 	)
 
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProjectWithSetter",
+		func(bdl *bundle.Bundle, id uint64, requestSetter ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error) {
+			return &apistructs.ProjectDTO{
+				ID: id,
+			}, nil
+		},
+	)
+
 	var (
 		wg sync.WaitGroup
 	)
@@ -163,6 +172,14 @@ func TestConcurrentReadWriteProjectInfos(t *testing.T) {
 	var bdl *bundle.Bundle
 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProject",
 		func(_ *bundle.Bundle, id uint64) (*apistructs.ProjectDTO, error) {
+			return &apistructs.ProjectDTO{
+				ID: id,
+			}, nil
+		},
+	)
+
+	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProjectWithSetter",
+		func(bdl *bundle.Bundle, id uint64, requestSetter ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error) {
 			return &apistructs.ProjectDTO{
 				ID: id,
 			}, nil

@@ -15,6 +15,7 @@
 package addon
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -50,7 +51,8 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 		}
 
 		// 获取addon状态
-		serviceGroup, err := a.bdl.InspectServiceGroup(addonIns.Namespace, addonIns.ScheduleName)
+		//serviceGroup, err := a.bdl.InspectServiceGroup(addonIns.Namespace, addonIns.ScheduleName)
+		serviceGroup, err := a.serviceGroupImpl.Info(context.Background(), addonIns.Namespace, addonIns.ScheduleName)
 		if err != nil {
 			logrus.Errorf("拉取schedule状态接口失败, error: %v", err)
 			time.Sleep(10 * time.Second)
@@ -61,7 +63,7 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 			a.ExportLogInfo(apistructs.SuccessLevel, apistructs.AddonError, addonIns.ID, addonIns.ID, i18n.OrgSprintf(addonIns.OrgID, "AddonIsHealthy"),
 				addonIns.AddonName, addonIns.ID)
 			logrus.Infof("addon: %v is healthy!", addonIns.ID)
-			clusterInfo, err := a.bdl.QueryClusterInfo(addonInsRouting.Cluster)
+			clusterInfo, err := a.clusterinfoImpl.Info(addonInsRouting.Cluster)
 			if err != nil {
 				logrus.Errorf("拉取cluster接口失败, error: %v", err)
 				return err
@@ -70,31 +72,31 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 			configMap := map[string]string{}
 			switch addonIns.AddonName {
 			case apistructs.AddonMySQL:
-				configMap, err = a.MySQLDeployStatus(addonIns, serviceGroup, &clusterInfo)
+				configMap, err = a.MySQLDeployStatus(addonIns, &serviceGroup, &clusterInfo)
 			case apistructs.AddonCanal:
-				configMap, err = a.CanalDeployStatus(addonIns, serviceGroup)
+				configMap, err = a.CanalDeployStatus(addonIns, &serviceGroup)
 			case apistructs.AddonES:
-				configMap, err = a.EsDeployStatus(addonIns, serviceGroup)
+				configMap, err = a.EsDeployStatus(addonIns, &serviceGroup)
 			case apistructs.AddonKafka:
-				configMap, err = a.KafkaDeployStatus(addonIns, serviceGroup, &clusterInfo)
+				configMap, err = a.KafkaDeployStatus(addonIns, &serviceGroup, &clusterInfo)
 			case apistructs.AddonRocketMQ:
-				configMap, err = a.RocketDeployStatus(addonIns, serviceGroup)
+				configMap, err = a.RocketDeployStatus(addonIns, &serviceGroup)
 			case apistructs.AddonRedis:
-				configMap, err = a.RedisDeployStatus(addonIns, serviceGroup)
+				configMap, err = a.RedisDeployStatus(addonIns, &serviceGroup)
 			case apistructs.AddonRabbitMQ:
-				configMap, err = a.RabbitmqDeployStatus(addonIns, serviceGroup)
+				configMap, err = a.RabbitmqDeployStatus(addonIns, &serviceGroup)
 			case apistructs.AddonZookeeper:
-				configMap, err = a.ZookeeperDeployStatus(addonIns, serviceGroup)
+				configMap, err = a.ZookeeperDeployStatus(addonIns, &serviceGroup)
 			case apistructs.AddonApacheZookeeper:
-				configMap, err = a.ZookeeperDeployStatus(addonIns, serviceGroup)
+				configMap, err = a.ZookeeperDeployStatus(addonIns, &serviceGroup)
 			case apistructs.AddonConsul:
-				configMap, err = a.ConsulDeployStatus(addonIns, serviceGroup)
+				configMap, err = a.ConsulDeployStatus(addonIns, &serviceGroup)
 			case apistructs.AddonSourcecov:
 				asm := &SourcecovAddonManagement{bdl: a.bdl}
-				configMap, err = asm.DeployStatus(addonIns, serviceGroup)
+				configMap, err = asm.DeployStatus(addonIns, &serviceGroup)
 			default:
 				// 非基础addon，走通用的处理逻辑
-				configMap, err = a.CommonDeployStatus(addonIns, serviceGroup, addonDice, addonSpec)
+				configMap, err = a.CommonDeployStatus(addonIns, &serviceGroup, addonDice, addonSpec)
 			}
 			if err != nil {
 				logrus.Errorf("fetch addon %s configMap fail: %v", addonIns.ID, err)
@@ -118,12 +120,13 @@ func (a *Addon) GetAddonResourceStatus(addonIns *dbclient.AddonInstance,
 			return nil
 		} else {
 			// 还未健康, 查询 podlist, 以返回具体信息
-			podinfo, err := a.bdl.GetPodInfo(apistructs.PodInfoRequest{AddonID: addonIns.ID})
+			podList, err := a.instanceinfoImpl.GetPodInfo(apistructs.PodInfoRequest{AddonID: addonIns.ID})
+			//podinfo, err := a.bdl.GetPodInfo(apistructs.PodInfoRequest{AddonID: addonIns.ID})
 			if err != nil {
 				logrus.Errorf("failed to get podinfo: %v", err)
 			} else {
 				pendingPods := []apistructs.PodInfoData{}
-				for _, pod := range podinfo.Data {
+				for _, pod := range podList {
 					if strutil.ToUpper(pod.Phase) == "PENDING" {
 						pendingPods = append(pendingPods, pod)
 					}
@@ -398,8 +401,8 @@ func (a *Addon) initSqlFile(serviceGroup *apistructs.ServiceGroup, existsMysqlEx
 	return err
 }
 
-// buildAddonRequestGroup build请求serviceGroup的body信息
-func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroupCreateV2Request, error) {
+// BuildAddonRequestGroup build请求serviceGroup的body信息
+func (a *Addon) BuildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroupCreateV2Request, error) {
 	addonDeployGroup := apistructs.ServiceGroupCreateV2Request{
 		ClusterName: params.ClusterName,
 		ID:          addonIns.ID,
@@ -443,12 +446,13 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 	// 根据plan信息中，规定的节点数量，build出对应数量的service信息
 
 	//查询cluster信息
-	clusterInfo, err := a.bdl.QueryClusterInfo(params.ClusterName)
+	clusterInfo, err := a.clusterinfoImpl.Info(params.ClusterName)
 	if err != nil {
 		return nil, err
 	}
 	// 查询集群operator支持情况
-	capacity, err := a.bdl.CapacityInfo(params.ClusterName)
+	capacity := a.cap.CapacityInfo(params.ClusterName)
+	//capacity, err := a.bdl.CapacityInfo(params.ClusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -467,7 +471,7 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 		addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "1"
 		buildErr = a.BuildCanalServiceItem(params, addonIns, addonSpec, addonDice)
 	case apistructs.AddonRedis:
-		if capacity.Data.RedisOperator && params.Plan == apistructs.AddonProfessional {
+		if capacity.RedisOperator && params.Plan == apistructs.AddonProfessional {
 			_, addonOperatorDice, err := a.GetAddonExtention(&apistructs.AddonHandlerCreateItem{
 				AddonName: apistructs.AddonRedis + "-operator",
 				Plan:      apistructs.AddonBasic,
@@ -487,7 +491,7 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 			buildErr = a.BuildRedisServiceItem(params, addonIns, addonSpec, addonDice)
 		}
 	case apistructs.AddonMySQL:
-		if !capacity.Data.MysqlOperator {
+		if !capacity.MysqlOperator {
 			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "2"
 
 			mysqlPreProcess(params, addonSpec, &addonDeployGroup)
@@ -505,7 +509,7 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 		}
 	case apistructs.AddonES:
 		// 6.8.9 or later version use operator.
-		if capacity.Data.ElasticsearchOperator && version.Compare(addonSpec.Version, "6.8.9", ">=") {
+		if capacity.ElasticsearchOperator && version.Compare(addonSpec.Version, "6.8.9", ">=") {
 			buildErr = a.BuildESOperatorServiceItem(params.Options, addonIns, addonDice, addonSpec.Version)
 		} else {
 			addonDeployGroup.GroupLabels["ADDON_GROUPS"] = "1"
@@ -526,7 +530,7 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 		}
 		buildErr = a.BuildRabbitmqServiceItem(params, addonIns, addonSpec, addonDice)
 	case apistructs.AddonSourcecov:
-		if !capacity.Data.SourcecovOperator {
+		if !capacity.SourcecovOperator {
 			return nil, errors.New("sourcecov operator not installed")
 		}
 		sam := &SourcecovAddonManagement{bdl: a.bdl}
@@ -571,31 +575,31 @@ func (a *Addon) buildAddonRequestGroup(params *apistructs.AddonHandlerCreateItem
 }
 
 // BuildAddonScaleRequestGroup build请求serviceGroup的body信息
-func (a *Addon) BuildAddonScaleRequestGroup(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, scaleAction string, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.UpdateServiceGroupScaleRequst, error) {
-	addonDeployGroup := apistructs.UpdateServiceGroupScaleRequst{
-		Namespace:   addonIns.Namespace,
-		Name:        addonIns.ScheduleName,
+func (a *Addon) BuildAddonScaleRequestGroup(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, scaleAction string, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) (*apistructs.ServiceGroup, error) {
+	addonDeploysg := apistructs.ServiceGroup{
 		ClusterName: params.ClusterName,
-		Labels:      make(map[string]string),
-		Services:    make([]apistructs.Service, 0),
+		Dice: apistructs.Dice{
+			ID:       addonIns.ScheduleName,
+			Type:     addonIns.Namespace,
+			Services: make([]apistructs.Service, 0),
+		},
 	}
 
-	addonCreateReq, err := a.buildAddonRequestGroup(params, addonIns, addonSpec, addonDice)
+	addonCreateReq, err := a.BuildAddonRequestGroup(params, addonIns, addonSpec, addonDice)
 	if err != nil || addonCreateReq == nil {
 		logrus.Errorf("failed to build addon creating request body, addon: %v, err: %v", addonIns.ID, err)
 		return nil, err
 	}
 
-	addonDeployGroup.Labels = addonCreateReq.GroupLabels
-	addonDeployGroup.Addon = *addonCreateReq
+	addonDeploysg.Labels = addonCreateReq.GroupLabels
 
 	for k, v := range addonCreateReq.DiceYml.Meta {
-		addonDeployGroup.Labels[k] = v
+		addonDeploysg.Labels[k] = v
 	}
 
 	for _, s := range addonCreateReq.DiceYml.Services {
 		for k, v := range s.Labels {
-			addonDeployGroup.Labels[k] = v
+			addonDeploysg.Labels[k] = v
 		}
 	}
 
@@ -609,7 +613,7 @@ func (a *Addon) BuildAddonScaleRequestGroup(params *apistructs.AddonHandlerCreat
 			scale = svc.Deployments.Replicas
 		}
 
-		addonDeployGroup.Services = append(addonDeployGroup.Services, apistructs.Service{
+		addonDeploysg.Services = append(addonDeploysg.Services, apistructs.Service{
 			Name:  svcName,
 			Scale: scale,
 			Resources: apistructs.Resources{
@@ -620,7 +624,7 @@ func (a *Addon) BuildAddonScaleRequestGroup(params *apistructs.AddonHandlerCreat
 		})
 	}
 
-	return &addonDeployGroup, nil
+	return &addonDeploysg, nil
 }
 
 func mysqlPreProcess(params *apistructs.AddonHandlerCreateItem, addonSpec *apistructs.AddonExtension, addonDeployGroup *apistructs.ServiceGroupCreateV2Request) {
@@ -652,7 +656,7 @@ func (a *Addon) FailAndDelete(addonIns *dbclient.AddonInstance) error {
 		}
 	}
 	// schedule删除
-	if err := a.bdl.DeleteServiceGroup(addonIns.Namespace, addonIns.ScheduleName); err != nil {
+	if err := a.serviceGroupImpl.Delete(addonIns.Namespace, addonIns.ScheduleName, "false"); err != nil {
 		logrus.Errorf("failed to delete addon: %s/%s", addonIns.Namespace, addonIns.ScheduleName)
 		return err
 	}
@@ -824,7 +828,7 @@ func (a *Addon) retrieveInsideAddon(addonIns *dbclient.AddonInstance) error {
 		}
 		//如果引用数量为0，则执行删除
 		if count == 0 {
-			if err := a.bdl.DeleteServiceGroup(instance.Namespace, instance.ScheduleName); err != nil {
+			if err := a.serviceGroupImpl.Delete(instance.Namespace, instance.ScheduleName, "false"); err != nil {
 				logrus.Errorf("[alert] failed to delete addon: %v from scheduler, :%v", addonIns.ID, err)
 				continue
 			}

@@ -53,6 +53,31 @@ func (db *AlertDB) GetByScopeAndScopeIDAndName(scope, scopeID, name string) (*Al
 	return &alert, nil
 }
 
+func (db *AlertDB) GetAllAvailableAlertIds() ([]uint64, error) {
+	return db.GetAvailableAlertIdByScope("", "")
+}
+
+func (db *AlertDB) GetAvailableAlertIdByScope(scope, scopeID string) ([]uint64, error) {
+	var alerts []*Alert
+	query := db.Where("enable=?", true)
+	if len(scope) > 0 {
+		query = query.Where("scope=?", scope)
+	}
+	if len(scopeID) > 0 {
+		query = query.Where("scope_id=?", scopeID)
+	}
+	err := query.Select("id").Find(&alerts).Error
+	if err != nil && gorm.IsRecordNotFoundError(err) {
+		return nil, nil
+	}
+
+	var ids []uint64
+	for _, alert := range alerts {
+		ids = append(ids, alert.ID)
+	}
+	return ids, err
+}
+
 // QueryByScopeAndScopeID .
 func (db *AlertDB) QueryByScopeAndScopeID(scope, scopeID string, pageNo, pageSize uint64, name string) ([]*Alert, error) {
 	var alerts []*Alert

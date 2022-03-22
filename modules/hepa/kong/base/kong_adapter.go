@@ -98,6 +98,7 @@ func (impl *KongAdapterImpl) UpdateRoute(req *KongRouteReqDto) (*KongRouteRespDt
 	if req == nil || req.RouteId == "" {
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
+	req.Adjust(Versioning(impl))
 	url := impl.KongAddr + RouteRoot + req.RouteId
 	code, body, err := util.DoCommonRequest(impl.Client, "PATCH", url, req)
 	if err != nil {
@@ -126,6 +127,7 @@ func (impl *KongAdapterImpl) CreateOrUpdateRoute(req *KongRouteReqDto) (*KongRou
 	if req == nil {
 		return nil, errors.New(ERR_INVALID_ARG)
 	}
+	req.Adjust(Versioning(impl))
 	url := impl.KongAddr + RouteRoot
 	method := "POST"
 	if len(req.RouteId) != 0 {
@@ -177,12 +179,11 @@ func (impl *KongAdapterImpl) TouchRouteOAuthMethod(id string) error {
 		return errors.Errorf("get route info failed: code[%d] msg[%s]", code, body)
 	}
 	if needTouch {
-		reqDto := KongRouteReqDto{
-			Methods: []string{"POST"},
-			Hosts:   respDto.Hosts,
-			Paths:   []string{respDto.Paths[0] + "/oauth2/token", respDto.Paths[0] + "/oauth2/authorize"},
-			Service: &respDto.Service,
-		}
+		reqDto := NewKongRouteReqDto()
+		reqDto.Methods = []string{"POST"}
+		reqDto.Hosts = respDto.Hosts
+		reqDto.Paths = []string{respDto.Paths[0] + "/oauth2/token", respDto.Paths[0] + "/oauth2/authorize"}
+		reqDto.Service = &respDto.Service
 		code, body, err = util.DoCommonRequest(impl.Client, "POST", impl.KongAddr+RouteRoot, reqDto)
 		if code == 201 || code == 200 {
 			return nil

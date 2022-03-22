@@ -161,7 +161,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/publish-items/{publishItemId}/versions/create-offline-version", Method: http.MethodPost, Handler: e.CreateOffLineVersion},
 
 		//发布管理-->安全管理
-		{Path: "/api/publish-items/{publishItemId}/certification", Method: http.MethodGet, Handler: e.GetPublishItemCertificationlist},
 		{Path: "/api/publish-items/{publishItemId}/blacklist", Method: http.MethodGet, Handler: e.GetPublishItemBlacklist},
 		{Path: "/api/publish-items/{publishItemId}/blacklist", Method: http.MethodPost, Handler: e.AddBlacklist},
 		{Path: "/api/publish-items/{publishItemId}/blacklist/{blacklistId}", Method: http.MethodDelete, Handler: e.RemoveBlacklist},
@@ -170,22 +169,10 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/publish-items/erase/status", Method: http.MethodPut, Handler: e.UpdateErase},
 		{Path: "/api/publish-items/security/status", Method: http.MethodGet, Handler: e.GetSecurityStatus},
 
-		//统一大盘以及错误报告
-		{Path: "/api/publish-items/{publishItemId}/statistics/trend", Method: http.MethodGet, Handler: e.GetStatisticsTrend},
-		{Path: "/api/publish-items/{publishItemId}/statistics/versions", Method: http.MethodGet, Handler: e.GetStatisticsVersionInfo},
-		{Path: "/api/publish-items/{publishItemId}/statistics/users", Method: http.MethodGet, Handler: e.CumulativeUsers},
-		{Path: "/api/publish-items/{publishItemId}/statistics/channels", Method: http.MethodGet, Handler: e.GetStatisticsChannelInfo},
-		{Path: "/api/publish-items/{publishItemId}/err/trend", Method: http.MethodGet, Handler: e.GetErrTrend},
-		{Path: "/api/publish-items/{publishItemId}/err/list", Method: http.MethodGet, Handler: e.GetErrList},
-		{Path: "/api/publish-items/{publishItemId}/metrics/{metricName}/histogram", Method: http.MethodGet, Handler: e.MetricsRouting},
-		{Path: "/api/publish-items/{publishItemId}/metrics/{metricName}", Method: http.MethodGet, Handler: e.MetricsRouting},
-		{Path: "/api/publish-items/{publishItemId}/err/effacts", Method: http.MethodGet, Handler: e.GetErrAffectUserRate},
-		{Path: "/api/publish-items/{publishItemId}/err/rate", Method: http.MethodGet, Handler: e.GetCrashRate},
-
 		// 分支 release 规则
-		{Path: "/api/release-rules", Method: http.MethodPost, Handler: httpserver.Wrap(e.CreateRule, e.ReleaseRuleAuth)},
-		{Path: "/api/release-rules", Method: http.MethodGet, Handler: httpserver.Wrap(e.ListRules, e.ReleaseRuleAuth)},
-		{Path: "/api/release-rules/{id}", Method: http.MethodPut, Handler: httpserver.Wrap(e.UpdateRule, e.ReleaseRuleAuth)},
-		{Path: "/api/release-rules/{id}", Method: http.MethodDelete, Handler: httpserver.Wrap(e.DeleteRule, e.ReleaseRuleAuth)},
+		{Path: "/api/release-rules", Method: http.MethodPost, Handler: httpserver.Wrap(e.CreateRule, e.ReleaseRuleMiddleware)},
+		{Path: "/api/release-rules", Method: http.MethodGet, Handler: httpserver.Wrap(e.ListRules, e.ReleaseRuleMiddleware)},
+		{Path: "/api/release-rules/{id}", Method: http.MethodPut, Handler: httpserver.Wrap(e.UpdateRule, e.ReleaseRuleMiddleware)},
+		{Path: "/api/release-rules/{id}", Method: http.MethodDelete, Handler: httpserver.Wrap(e.DeleteRule, e.ReleaseRuleMiddleware)},
 	}
 }

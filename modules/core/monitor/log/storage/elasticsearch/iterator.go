@@ -142,7 +142,7 @@ func getSearchSource(start, end int64, sel *storage.Selector) *elastic.SearchSou
 	searchSource := elastic.NewSearchSource()
 	query := elastic.NewBoolQuery().Filter(elastic.NewRangeQuery("timestamp").Gte(start).Lt(end))
 
-	// compatiblity for source=deploy
+	// compatibility for source=deploy
 	isContainer := true
 	for _, filter := range sel.Filters {
 		if filter.Key != "source" {
@@ -163,7 +163,7 @@ func getSearchSource(start, end int64, sel *storage.Selector) *elastic.SearchSou
 				continue
 			}
 		}
-		// compatiblity for source=deploy, ignore tags filters
+		// compatibility for source=deploy, ignore tags filters
 		if !isContainer && strings.HasPrefix(filter.Key, "tags.") {
 			continue
 		}

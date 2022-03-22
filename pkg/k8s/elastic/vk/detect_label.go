@@ -25,7 +25,7 @@ func GetLabelsWithVendor(vendor string) (map[string]string, error) {
 
 	// ECI and CSI provider must be the same cloud vendor now.
 	switch vendor {
-	case apistructs.ECIVendorAibaba:
+	case apistructs.ECIVendorAlibaba:
 		labels[apistructs.AlibabaECILabel] = "true"
 		return labels, nil
 	case "":

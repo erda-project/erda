@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	guidepb "github.com/erda-project/erda-proto-go/dop/guide/pb"
@@ -44,6 +45,7 @@ type ProjectPipelineService struct {
 	PipelineCms        cmspb.CmsServiceServer
 	trans              i18n.Translator
 	GuideSvc           guidepb.GuideServiceServer
+	PipelineCron       cronpb.CronServiceServer
 }
 
 func (p *ProjectPipelineService) WithPipelineSvc(svc *pipeline.Pipeline) {
@@ -57,8 +59,9 @@ func (p *ProjectPipelineService) WithPermissionSvc(permission *permission.Permis
 type Service interface {
 	Create(ctx context.Context, params *pb.CreateProjectPipelineRequest) (*pb.CreateProjectPipelineResponse, error)
 	List(ctx context.Context, params deftype.ProjectPipelineList) ([]*dpb.PipelineDefinition, int64, error)
+	ListUsedRefs(ctx context.Context, params deftype.ProjectPipelineUsedRefList) ([]string, error)
 	Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error)
-	Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error)
+	Update(ctx context.Context, params *pb.UpdateProjectPipelineRequest) (*pb.UpdateProjectPipelineResponse, error)
 	SetPrimary(ctx context.Context, params deftype.ProjectPipelineCategory) (*dpb.PipelineDefinitionUpdateResponse, error)
 	UnSetPrimary(ctx context.Context, params deftype.ProjectPipelineCategory) (*dpb.PipelineDefinitionUpdateResponse, error)
 	ListApp(ctx context.Context, params *pb.ListAppRequest) (*pb.ListAppResponse, error)

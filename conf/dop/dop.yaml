@@ -25,6 +25,12 @@ mysql:
   username: "${MYSQL_USERNAME}"
   password: "${MYSQL_PASSWORD}"
   database: "${MYSQL_DATABASE}"
+gorm.v2:
+  host: "${MYSQL_HOST}"
+  port: "${MYSQL_PORT}"
+  username: "${MYSQL_USERNAME}"
+  password: "${MYSQL_PASSWORD}"
+  database: "${MYSQL_DATABASE}"
 etcd:
   endpoints: "${ETCD_ENDPOINTS:https://localhost:2379}"
   tls:
@@ -46,6 +52,10 @@ erda.core.pipeline.definition-client: {}
 grpc-client@erda.core.pipeline.source:
   addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
 erda.core.pipeline.source-client: {}
+
+grpc-client@erda.core.pipeline.cron:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+erda.core.pipeline.cron-client:
 
 grpc-client@erda.cmp.dashboard.resource:
   addr: "${CMP_GRPC_ADDR:cmp:9029}"
@@ -74,3 +84,6 @@ erda.dop.guide: {}
 
 # component-protocol framework
 component-protocol: {}
+
+metricq-client:
+  endpoint: "http://${MONITOR_ADDR:monitor.default.svc.cluster.local:7096}"

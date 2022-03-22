@@ -1,6 +1,7 @@
 - name: "MySQL SLAVE SYNC ALERT"
   trigger: "alert"
   target: "dingding"
+  language: "zh-CN"
   formats:
     usage_percent_avg: "percent:1"
     limit_value: "fraction:1"
@@ -28,6 +29,7 @@
 - name: "MySQL SLAVE SYNC RECOVER"
   trigger: "recover"
   target: "dingding"
+  language: "zh-CN"
   formats:
     usage_percent_avg: "percent:1"
     limit_value: "fraction:1"

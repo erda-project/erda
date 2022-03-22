@@ -253,6 +253,7 @@ zh:
   please-choose-executor: 请选择执行人
   please-choose-creator: 请选择创建人
   please-choose-application: 请选择应用
+  please-choose-branch: 请选择分支
   pipeline: 流水线
   pipelineStatus: 状态
   costTime: 耗时
@@ -316,7 +317,7 @@ zh:
   searchAppName: 搜索应用名
   unfinishedIssue: 未完成的事项
   sourceFile: 源文件
-  
+  updateName: 编辑名称
 en:
   issue-manage: issue manage
   issue: issue
@@ -571,6 +572,7 @@ en:
   please-choose-executor: Please choose executor
   please-choose-creator: Please choose creator
   please-choose-application: Please choose application
+  please-choose-branch: Please choose branch
   pipeline: Pipeline
   pipelineStatus: Status
   costTime: Cost time
@@ -631,3 +633,4 @@ en:
   searchAppName: Search app name
   unfinishedIssue: Unfinished issue
   sourceFile: source file
+  updateName: Update name

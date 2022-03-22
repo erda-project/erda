@@ -41,10 +41,12 @@ type provider struct {
 	Report   report.MetricReport `autowired:"metric-report-client" `
 
 	alertEventDB *db.AlertEventDB
+	alertDB      *db.AlertDB
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.alertEventDB = &db.AlertEventDB{DB: p.DB}
+	p.alertDB = &db.AlertDB{DB: p.DB}
 	p.Election.OnLeader(func(ctx context.Context) {
 		timer := time.NewTicker(p.Cfg.Interval)
 		defer timer.Stop()
@@ -63,9 +65,16 @@ func (p *provider) Init(ctx servicehub.Context) error {
 func (p *provider) statisticAlertEvents(ctx context.Context) {
 	result, err := p.alertEventDB.CountUnRecoverEventsGroupByScope()
 	if err != nil {
-		p.Log.Warnf("failed to do unRecover alert events statistics")
+		p.Log.Warnf("failed to do unRecover alert events statistics: %s", err)
 		return
 	}
+
+	availableAlertIds, err := p.alertDB.GetAllAvailableAlertIds()
+	if err != nil {
+		p.Log.Warnf("failed to get all disabled alert ids: %s", err)
+		return
+	}
+	result = p.kickOutDisabledAlertsAndRollupByScopeId(result, availableAlertIds)
 
 	metrics := p.convertToMetrics(p.Cfg.MetricReportBatchSize, result...)
 	for _, metric := range metrics {
@@ -74,6 +83,34 @@ func (p *provider) statisticAlertEvents(ctx context.Context) {
 			p.Log.Warnf("failed to report metrics for alert event statistics")
 		}
 	}
+}
+
+func (p *provider) kickOutDisabledAlertsAndRollupByScopeId(stats []*db.AlertEventScopeCountResult, availableAlertIds []uint64) []*db.AlertEventScopeCountResult {
+	idMap := map[uint64]bool{}
+	for _, id := range availableAlertIds {
+		idMap[id] = true
+	}
+
+	scopeLevelStats := map[string]*db.AlertEventScopeCountResult{}
+	for _, stat := range stats {
+		if _, ok := idMap[stat.AlertId]; !ok {
+			continue
+		}
+
+		scopeStat, ok := scopeLevelStats[stat.ScopeId]
+		if !ok {
+			scopeLevelStats[stat.ScopeId] = stat
+			continue
+		}
+
+		scopeStat.Count += stat.Count
+	}
+
+	var list []*db.AlertEventScopeCountResult
+	for _, result := range scopeLevelStats {
+		list = append(list, result)
+	}
+	return list
 }
 
 func (p *provider) convertToMetrics(batchSize int, stats ...*db.AlertEventScopeCountResult) [][]*report.Metric {

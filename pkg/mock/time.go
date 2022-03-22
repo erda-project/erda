@@ -16,6 +16,7 @@ package mock
 
 import (
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -45,7 +46,26 @@ const (
 	DateDay              = "date_day"                // 1天前日期格式：2006-01-01
 	DateTime             = "datetime"                // 当前带时间的格式：2006-01-02 15:04:05
 	DateTimeHour         = "datetime_hour"           // 1小时前带时间的格式：2006-01-02 14:04:05
+	DateTimeCustom       = "datetime_custom_"        // custom datetime format
 )
+
+var dateTimeCustoms = map[string]string{
+	"ANSIC":       time.ANSIC,
+	"UnixDate":    time.UnixDate,
+	"RubyDate":    time.RubyDate,
+	"RFC822":      time.RFC822,
+	"RFC822Z":     time.RFC822Z,
+	"RFC850":      time.RFC850,
+	"RFC1123":     time.RFC1123,
+	"RFC1123Z":    time.RFC1123Z,
+	"RFC3339":     time.RFC3339,
+	"RFC3339Nano": time.RFC3339Nano,
+	"Kitchen":     time.Kitchen,
+	"Stamp":       time.Stamp,
+	"StampMilli":  time.StampMilli,
+	"StampMicro":  time.StampMicro,
+	"StampNano":   time.StampNano,
+}
 
 func getTime(timeType string) string {
 	hour, _ := time.ParseDuration("-1h")
@@ -92,5 +112,13 @@ func getTime(timeType string) string {
 		return currentTime.Add(hour).Format("2006-01-02 15:04:05")
 	}
 
-	return ""
+	if !strings.HasPrefix(timeType, DateTimeCustom) {
+		return ""
+	}
+
+	key := strings.TrimPrefix(timeType, DateTimeCustom)
+	if format, ok := dateTimeCustoms[key]; ok {
+		return currentTime.Format(format)
+	}
+	return currentTime.Format(key)
 }

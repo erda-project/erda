@@ -37,6 +37,9 @@ type ApplicationCreateRequest struct {
 	IsExternalRepo bool `json:"isExternalRepo"`
 	// 仓库配置 isExternalRepo=true时设置
 	RepoConfig *GitRepoConfig `json:"repoConfig"`
+
+	// external-server sonar config
+	SonarConfig *SonarConfig `json:"sonarConfig"`
 }
 
 // ApplicationCreateResponse POST /api/applications 创建应用返回结构
@@ -84,6 +87,8 @@ type ApplicationUpdateRequestBody struct {
 
 	// 是否公开
 	IsPublic bool `json:"isPublic"`
+
+	SonarConfig *SonarConfig `json:"sonarConfig"`
 }
 
 // ApplicationUpdateResponse 应用更新响应结构
@@ -192,6 +197,8 @@ type ApplicationDTO struct {
 	IsExternalRepo bool `json:"isExternalRepo"`
 
 	RepoConfig *GitRepoConfig `json:"repoConfig"`
+
+	SonarConfig *SonarConfig `json:"sonarConfig"`
 
 	// 成员对应的角色
 	MemberRoles []string `json:"memberRoles"`

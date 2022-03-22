@@ -60,6 +60,30 @@ type ResourceConfigs struct {
 	DEV     *ResourceConfig `json:"DEV"`
 }
 
+func NewResourceConfigs() *ResourceConfigs {
+	return &ResourceConfigs{
+		PROD:    new(ResourceConfig),
+		STAGING: new(ResourceConfig),
+		TEST:    new(ResourceConfig),
+		DEV:     new(ResourceConfig),
+	}
+}
+
+func (cc ResourceConfigs) GetClusterConfig(workspace DiceWorkspace) *ResourceConfig {
+	switch workspace {
+	case ProdWorkspace:
+		return cc.PROD
+	case StagingWorkspace:
+		return cc.STAGING
+	case TestWorkspace:
+		return cc.TEST
+	case DevWorkspace:
+		return cc.DEV
+	default:
+		return new(ResourceConfig)
+	}
+}
+
 func (cc ResourceConfigs) Check() error {
 	for k, v := range map[string]*ResourceConfig{
 		"production": cc.PROD,
@@ -72,6 +96,21 @@ func (cc ResourceConfigs) Check() error {
 		}
 	}
 	return nil
+}
+
+func (cc ResourceConfigs) GetWSConfig(workspace DiceWorkspace) *ResourceConfig {
+	switch workspace {
+	case ProdWorkspace:
+		return cc.PROD
+	case StagingWorkspace:
+		return cc.STAGING
+	case TestWorkspace:
+		return cc.TEST
+	case DevWorkspace:
+		return cc.DEV
+	default:
+		return &ResourceConfig{}
+	}
 }
 
 // ResourceConfig
@@ -321,6 +360,21 @@ func (cc ResourceConfigsInfo) GetClusterName(workspace string) string {
 	}
 }
 
+func (cc ResourceConfigsInfo) GetWSConfig(workspace string) *ResourceConfigInfo {
+	switch DiceWorkspace(strings.ToUpper(workspace)) {
+	case ProdWorkspace:
+		return cc.PROD
+	case StagingWorkspace:
+		return cc.STAGING
+	case TestWorkspace:
+		return cc.TEST
+	case DevWorkspace:
+		return cc.DEV
+	default:
+		return &ResourceConfigInfo{}
+	}
+}
+
 type ResourceConfigInfo struct {
 	ClusterName             string  `json:"clusterName"`
 	CPUQuota                float64 `json:"cpuQuota"`
@@ -502,4 +556,98 @@ type ProjectTemplateData struct {
 	Version      string              `yaml:"version" json:"version"`
 	Applications []ApplicationDTO    `yaml:"applications" json:"applications"`
 	Meta         ProjectTemplateMeta `yaml:"meta" json:"meta"`
+}
+
+type ProjectPackageRequest struct {
+	ProjectID          uint64 `json:"projectID"`
+	ProjectName        string `json:"projectName"`
+	ProjectDisplayName string `json:"projectDisplayName"`
+	OrgID              uint64 `json:"orgID"`
+	OrgName            string `json:"orgName"`
+	IdentityInfo
+}
+
+type ExportProjectPackageRequest struct {
+	ProjectPackageRequest
+	Artifacts []Artifact `json:"artifacts"`
+}
+
+type ImportProjectPackageRequest struct {
+	ProjectPackageRequest
+}
+
+type ProjectPackage struct {
+	MetaData ProjectPackageMeta
+	Project  ProjectPackageData
+}
+
+type ProjectPackageMeta struct {
+	Version     string     `yaml:"version" json:"version"`
+	CreatedAt   string     `yaml:"createdat" json:"createdat"`
+	Creator     string     `yaml:"creator" json:"creator"`
+	Type        string     `yaml:"type" json:"type"`
+	Source      SourceMeta `yaml:"source" json:"source"`
+	Description string     `yaml:"description,omitempty" json:"description,omitempty"`
+}
+
+type SourceMeta struct {
+	Url          string `yaml:"url" json:"url"`
+	Organization string `yaml:"organization" json:"organization"`
+	Project      string `yaml:"project" json:"project"`
+}
+
+type Artifact struct {
+	Type    string `yaml:"type" json:"type"`
+	Name    string `yaml:"name" json:"name"`
+	Version string `yaml:"version" json:"version"`
+}
+
+type ProjectPackageData struct {
+	Applications []*ApplicationPkg `yaml:"applications" json:"applications"`
+	Artifacts    []*ArtifactPkg    `yaml:"artifacts" json:"artifacts"`
+	Environments EnvPkg            `yaml:"environments" json:"environments"`
+}
+
+type ApplicationPkg struct {
+	Name      string `yaml:"name" json:"name"`
+	ZipRepo   string `yaml:"zip_repo" json:"zip_repo"`
+	GitBranch string `yaml:"-" json:"-"`
+	GitCommit string `yaml:"-" json:"-"`
+}
+
+type ArtifactPkg struct {
+	Artifact
+	ZipFile   string `yaml:"zip_file" json:"zip_file"`
+	ReleaseId string `yaml:"-" json:"-"`
+}
+
+type EnvPkg struct {
+	Include    []string                      `yaml:"include" json:"include"`
+	IncludeDir string                        `yaml:"-" json:"-"`
+	Envs       map[string]ProjectEnvironment `yaml:"-" json:"-"`
+	EnvsValues map[string]interface{}        `yaml:"-" json:"-"`
+}
+
+type ProjectEnvironment struct {
+	Name    DiceWorkspace     `yaml:"name" json:"name"`
+	Addons  []ProjectEnvAddon `yaml:"addons" json:"addons"`
+	Cluster ProjectEnvCluster `yaml:"cluster" json:"cluster"`
+}
+
+type ProjectEnvAddon struct {
+	Name    string                 `yaml:"name" json:"name"`
+	Options map[string]string      `yaml:"options" json:"options"`
+	Type    string                 `yaml:"type" json:"type"`
+	Plan    string                 `yaml:"plan" json:"plan"`
+	Config  map[string]interface{} `yaml:"config" json:"config"`
+}
+
+type ProjectEnvCluster struct {
+	Name  string       `yaml:"name" json:"name"`
+	Quota ClusterQuota `yaml:"quota" json:"quota"`
+}
+
+type ClusterQuota struct {
+	CpuQuota    string `yaml:"cpu_quota" json:"cpu_quota"`
+	MemoryQuota string `yaml:"memory_quota" json:"memory_quota"`
 }

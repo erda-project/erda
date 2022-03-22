@@ -48,35 +48,19 @@ const (
 	RegistrySecretName      = "REGISTRY_SECRET_NAME"
 
 	LabelKeyPrefix          = "annotations/"
-	ECIPodLabel             = "alibabacloud.com/eci"
 	ECIPodSidecarConfigPath = "/etc/sidecarconf"
 
 	// ECI Pod fluent-bit sidecar contianer configuration
 	// Env Name
-	ECIPodFluentbitSidecarImageEnvName                                        = "COLLECTOR_SIDECAR_IMAGE"
-	ECIPodFluentbitSidecarCollectorAuthUserNameEnvName                        = "COLLECTOR_AUTH_USERNAME"
-	ECIPodFluentbitSidecarCollectorAuthPasswordEnvName                        = "COLLECTOR_AUTH_PASSWORD"
-	ECIPodFluentbitSidecarCollectorInputTailReadFromHeadEnvName               = "INPUT_TAIL_READ_FROM_HEAD"
-	ECIPodFluentbitSidecarCollectorOutputBatchTriggerContentLimitBytesEnvName = "OUTPUT_BATCH_TRIGGER_CONTENT_LIMIT_BYTES"
-	ECIPodFluentbitSidecarCollectorOutputBatchEventLimitEnvName               = "OUTPUT_BATCH_EVENT_LIMIT"
-	ECIPodFluentbitSidecarCollectorOutputNetLimitBytesPerSecondEnvName        = "OUTPUT_NET_LIMIT_BYTES_PER_SECOND"
-	// Env Default Name
-	ECIPodFluentbitSidecarImage                        = "registry.erda.cloud/erda/erda-fluent-bit:1.4-20211201-543951a"
-	ECIPodFluentbitCollectorAuthPassword               = "G$9767bP32drYFPWrK4XMLRMTatiM6cU"
-	ECIPodFluentbitCollectorAuthUsername               = "collector"
-	ECIPodFluentbitOutputBatchEventLimit               = "250"
-	ECIPodFluentbitOutputBatchTriggerContentLimitBytes = "314572"
-	ECIPodFluentbitOutputNetLimitBytesPerSecond        = "104857"
-	ECIPodFluentbitInputTailReadFromHead               = "true"
+	ECIPodFluentbitSidecarImageEnvName      = "COLLECTOR_SIDECAR_IMAGE"
+	ECIPodFluentbitSidecarConfigFileEnvName = "CONFIG_FILE"
+
+	// Env Default Value
+	ECIPodFluentbitSidecarImage              = "registry.erda.cloud/erda/erda-fluent-bit:1.4-20211201-543951a"
+	ECIPodFluentbitSidecarConfigFileEnvValue = "/fluent-bit/etc/eci/fluent-bit.conf"
 )
 
-var ECIPodSidecarENVFromScheduler = []string{"ECI_POD_FLUENTBIT_COLLECTOR_ADDR", "ECI_POD_FLUENTBIT_COLLECTOR_AUTH_USERNAME",
-	"ECI_POD_FLUENTBIT_INPUT_TAIL_READ_FROM_HEAD", "ECI_POD_FLUENTBIT_OUTPUT_BATCH_TRIGGER_CONTENT_LIMIT_BYTES",
-	"ECI_POD_FLUENTBIT_COLLECTOR_AUTH_PASSWORD", "COLLECTOR_SIDECAR_IMAGE",
-	"ECI_POD_FLUENTBIT_OUTPUT_BATCH_EVENT_LIMIT", "ECI_POD_FLUENTBIT_OUTPUT_NET_LIMIT_BYTES_PER_SECOND"}
-
-var ECIPodSidecarENV = []string{"COLLECTOR_ADDR", "COLLECTOR_AUTH_USERNAME", "INPUT_TAIL_READ_FROM_HEAD", "OUTPUT_BATCH_TRIGGER_CONTENT_LIMIT_BYTES",
-	"COLLECTOR_AUTH_PASSWORD", "COLLECTOR_SIDECAR_IMAGE", "OUTPUT_BATCH_EVENT_LIMIT", "OUTPUT_NET_LIMIT_BYTES_PER_SECOND"}
+var ECIPodSidecarENVFromScheduler = []string{"ECI_POD_FLUENTBIT_COLLECTOR_ADDR", "COLLECTOR_SIDECAR_IMAGE", "ECI_POD_FLUENTBIT_CONFIG_FILE"}
 
 func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.Service, sg *apistructs.ServiceGroup) error {
 	deployment, err := k.newDeployment(service, sg)
@@ -84,34 +68,18 @@ func (k *Kubernetes) createDeployment(ctx context.Context, service *apistructs.S
 		return errors.Errorf("failed to generate deployment struct, name: %s, (%v)", service.Name, err)
 	}
 
-	_, projectID, workspace, runtimeID := extractContainerEnvs(deployment.Spec.Template.Spec.Containers)
-	cpu, mem := getRequestsResources(deployment.Spec.Template.Spec.Containers)
-	if deployment.Spec.Replicas != nil {
-		cpu *= int64(*deployment.Spec.Replicas)
-		mem *= int64(*deployment.Spec.Replicas)
-	}
-	ok, reason, err := k.CheckQuota(ctx, projectID, workspace, runtimeID, cpu, mem, "stateless", service.Name)
-	if err != nil {
-		return err
-	}
-	var quotaErr error
-	if !ok {
-		k.setDeploymentZeroReplica(deployment)
-		quotaErr = NewQuotaError(reason)
-	}
-
 	err = k.deploy.Create(deployment)
 	if err != nil {
 		return errors.Errorf("failed to create deployment, name: %s, (%v)", service.Name, err)
 	}
 	if service.K8SSnippet == nil || service.K8SSnippet.Container == nil {
-		return quotaErr
+		return nil
 	}
 	err = k.deploy.Patch(deployment.Namespace, deployment.Name, service.Name, (apiv1.Container)(*service.K8SSnippet.Container))
 	if err != nil {
 		return errors.Errorf("failed to patch deployment, name: %s, snippet: %+v, (%v)", service.Name, *service.K8SSnippet.Container, err)
 	}
-	return quotaErr
+	return nil
 }
 
 func (k *Kubernetes) getDeploymentStatusFromMap(service *apistructs.Service, deployments map[string]appsv1.Deployment) (apistructs.StatusDesc, error) {
@@ -1458,7 +1426,7 @@ func inheritDaemonsetLabels(service *apistructs.Service, daemonset *appsv1.Daemo
 	}
 
 	for lk, lv := range daemonset.Labels {
-		if lk == ECIPodLabel && lv == "true" {
+		if lk == apistructs.AlibabaECILabel && lv == "true" {
 			return errors.Errorf("error in service.Labels: for daemonset %v in namesapce %v with error: ECI not support daemonset, do not set lables %s='true' for daemonset", daemonset.Name, daemonset.Namespace, lk)
 		}
 	}
@@ -1474,7 +1442,7 @@ func inheritDaemonsetLabels(service *apistructs.Service, daemonset *appsv1.Daemo
 	}
 
 	for lk, lv := range daemonset.Spec.Template.Labels {
-		if lk == ECIPodLabel && lv == "true" {
+		if lk == apistructs.AlibabaECILabel && lv == "true" {
 			return errors.Errorf("error in service.DeploymentLabels: for daemonset %v in namesapce %v with error: ECI not support daemonset, do not set lables %s='true' for daemonset.\n", daemonset.Name, daemonset.Namespace, lk)
 		}
 	}
@@ -1502,7 +1470,7 @@ func setPodLabelsFromService(hasHostPath bool, labels map[string]string, podLabe
 			continue
 		}
 		// HostPath not supported in AliCloud ECI
-		if hasHostPath && key == ECIPodLabel && value == "true" {
+		if hasHostPath && key == apistructs.AlibabaECILabel && value == "true" {
 			return errors.Errorf("can not create ECI Pod with hostPath")
 		}
 
@@ -1529,7 +1497,7 @@ func setPodAnnotationsFromLabels(service *apistructs.Service, podannotations map
 			continue
 		}
 
-		if key == ECIPodLabel && value == "true" {
+		if key == apistructs.AlibabaECILabel && value == "true" {
 			images := strings.Split(service.Image, "/")
 			if len(images) >= 2 {
 				podannotations[diceyml.AddonImageRegistry] = images[0]
@@ -1544,7 +1512,7 @@ func setPodAnnotationsFromLabels(service *apistructs.Service, podannotations map
 			continue
 		}
 
-		if key == ECIPodLabel && value == "true" {
+		if key == apistructs.AlibabaECILabel && value == "true" {
 			images := strings.Split(service.Image, "/")
 			if len(images) >= 2 {
 				podannotations[diceyml.AddonImageRegistry] = images[0]
@@ -1660,44 +1628,12 @@ func getSideCarConfigFromConfigMapVolumeFiles(sc *apiv1.Container) error {
 				sc.Image = ECIPodFluentbitSidecarImage
 			}
 			continue
-		}
-
-		if envValue != "" {
-			sc.Env = append(sc.Env, apiv1.EnvVar{
-				Name:  strutil.TrimPrefixes(envKey, "ECI_POD_FLUENTBIT_"),
-				Value: envValue,
-			})
 		} else {
 			switch envKey {
-			case "ECI_POD_FLUENTBIT_COLLECTOR_AUTH_USERNAME":
-				envValue = getEnvFromName(ECIPodFluentbitSidecarCollectorAuthUserNameEnvName)
+			case "ECI_POD_FLUENTBIT_CONFIG_FILE":
+				envValue = getEnvFromName(ECIPodFluentbitSidecarConfigFileEnvName)
 				if envValue == "" {
-					envValue = ECIPodFluentbitCollectorAuthUsername
-				}
-			case "ECI_POD_FLUENTBIT_COLLECTOR_AUTH_PASSWORD":
-				envValue = getEnvFromName(ECIPodFluentbitSidecarCollectorAuthPasswordEnvName)
-				if envValue == "" {
-					envValue = ECIPodFluentbitCollectorAuthPassword
-				}
-			case "ECI_POD_FLUENTBIT_INPUT_TAIL_READ_FROM_HEAD":
-				envValue = getEnvFromName(ECIPodFluentbitSidecarCollectorInputTailReadFromHeadEnvName)
-				if envValue == "" {
-					envValue = ECIPodFluentbitInputTailReadFromHead
-				}
-			case "ECI_POD_FLUENTBIT_OUTPUT_BATCH_TRIGGER_CONTENT_LIMIT_BYTES":
-				envValue = getEnvFromName(ECIPodFluentbitSidecarCollectorOutputBatchTriggerContentLimitBytesEnvName)
-				if envValue == "" {
-					envValue = ECIPodFluentbitOutputBatchTriggerContentLimitBytes
-				}
-			case "ECI_POD_FLUENTBIT_OUTPUT_BATCH_EVENT_LIMIT":
-				envValue = getEnvFromName(ECIPodFluentbitSidecarCollectorOutputBatchEventLimitEnvName)
-				if envValue == "" {
-					envValue = ECIPodFluentbitOutputBatchEventLimit
-				}
-			case "ECI_POD_FLUENTBIT_OUTPUT_NET_LIMIT_BYTES_PER_SECOND":
-				envValue = getEnvFromName(ECIPodFluentbitSidecarCollectorOutputNetLimitBytesPerSecondEnvName)
-				if envValue == "" {
-					envValue = ECIPodFluentbitOutputNetLimitBytesPerSecond
+					envValue = ECIPodFluentbitSidecarConfigFileEnvValue
 				}
 			}
 		}
@@ -1735,13 +1671,13 @@ func UseECI(controllerLabels, PodLabels map[string]string) bool {
 		return false
 	}
 
-	if value, ok := controllerLabels[ECIPodLabel]; ok {
+	if value, ok := controllerLabels[apistructs.AlibabaECILabel]; ok {
 		if value == "true" {
 			return true
 		}
 	}
 
-	if value, ok := PodLabels[ECIPodLabel]; ok {
+	if value, ok := PodLabels[apistructs.AlibabaECILabel]; ok {
 		if value == "true" {
 			return true
 		}

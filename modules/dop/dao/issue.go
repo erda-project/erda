@@ -405,7 +405,7 @@ func (client *DBClient) ListIssue(req apistructs.IssueListRequest) ([]Issue, err
 
 	sql := client.Where(cond)
 	if len(req.Type) > 0 {
-		sql.Where("type in (?)", req.Type)
+		sql = sql.Where("type in (?)", req.Type)
 	}
 	if len(req.Assignees) > 0 {
 		sql = sql.Where("assignee IN (?)", req.Assignees)
@@ -415,8 +415,11 @@ func (client *DBClient) ListIssue(req apistructs.IssueListRequest) ([]Issue, err
 	}
 	sql = sql.Where("deleted = ?", 0).Order("id DESC")
 
+	if len(req.IDs) > 0 {
+		sql = sql.Where("id IN (?)", req.IDs)
+	}
 	if req.OnlyIDResult {
-		sql.Select("id")
+		sql = sql.Select("id")
 	}
 
 	sql = sql.Find(&issues)
@@ -699,32 +702,15 @@ type IssueExpiryStatus struct {
 	ExpiryStatus ExpireType
 }
 
-func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchRequest) ([]IssueExpiryStatus, int, error) {
+func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchRequest) ([]IssueExpiryStatus, error) {
 	sql := client.issueExpiryStatusQuery(req)
-	offset := (req.PageNo - 1) * req.PageSize
 	var res []IssueExpiryStatus
-	var total int
-	// paged projects with unfinished issues
-	if err := sql.Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status").
-		Offset(offset).Limit(req.PageSize).Group("dice_issues.project_id").Find(&res).Error; err != nil {
-		return nil, 0, err
-	}
-	// total of matched projects
-	if err := sql.Select("count(distinct(dice_issues.project_id))").Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	projectIDs := make([]uint64, 0, len(res))
-	for _, i := range res {
-		projectIDs = append(projectIDs, i.ProjectID)
-	}
-	req.ProjectIDs = projectIDs
-	sql = client.issueExpiryStatusQuery(req)
 	// query with matched projects
 	if err := sql.Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status").
 		Group("dice_issues.project_id, dice_issues.expiry_status").Find(&res).Error; err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	return res, total, nil
+	return res, nil
 }
 
 func (client *DBClient) issueExpiryStatusQuery(req apistructs.WorkbenchRequest) *gorm.DB {
@@ -1006,7 +992,7 @@ func (client *DBClient) FindIssueRoot(req apistructs.IssuePagingRequest) ([]Issu
 		sql = sql.Where("a.assignee in (?) or d.assignee in (?)", req.Assignees, req.Assignees)
 	}
 	if len(req.StateBelongs) > 0 {
-		sql = sql.Where("e.belong IN (?)", req.StateBelongs).Where("f.belong IN (?)", req.StateBelongs)
+		sql = sql.Where("e.belong IN (?)", req.StateBelongs)
 	}
 	var res []IssueItem
 	var totalReq uint64

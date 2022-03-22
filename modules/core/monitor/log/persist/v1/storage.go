@@ -46,8 +46,8 @@ func (ls *LogStatement) GetStatement(data interface{}) (string, []interface{}, e
 	switch data.(type) {
 	case *logmodule.Log:
 		return ls.p.getLogStatement(data.(*logmodule.Log), ls.gzipWriter)
-	case *logmodule.LogMeta:
-		return ls.p.getMetaStatement(data.(*logmodule.LogMeta))
+	case *logmodule.Meta:
+		return ls.p.getMetaStatement(data.(*logmodule.Meta))
 	default:
 		return "", nil, fmt.Errorf("value %#v must be Log or LogMeta", data)
 	}
@@ -84,7 +84,7 @@ func (p *provider) getLogStatement(log *logmodule.Log, reusedWriter *gzip.Writer
 	}, nil
 }
 
-func (p *provider) getMetaStatement(meta *logmodule.LogMeta) (string, []interface{}, error) {
+func (p *provider) getMetaStatement(meta *logmodule.Meta) (string, []interface{}, error) {
 	cql := `INSERT INTO spot_prod.base_log_meta (source, id, tags) VALUES (?, ?, ?) USING TTL ?;`
 	return cql, []interface{}{
 		meta.Source,

@@ -18,7 +18,6 @@ package orchestrator
 import (
 	"context"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -32,6 +31,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/endpoints"
 	"github.com/erda-project/erda/modules/orchestrator/i18n"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/instanceinfo"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment_order"
@@ -45,6 +45,7 @@ import (
 	"github.com/erda-project/erda/pkg/goroutinepool"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/pkg/http/httpserver/errorresp"
 	"github.com/erda-project/erda/pkg/loop"
 	// "terminus.io/dice/telemetry/promxp"
 )
@@ -141,11 +142,13 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		})))
 
 	// init scheduler
-	scheduler := scheduler.NewScheduler()
+	instanceinfoImpl := instanceinfo.NewInstanceInfoImpl()
+	scheduler := scheduler.NewScheduler(instanceinfoImpl)
 
 	migration := migration.New(
 		migration.WithBundle(bdl),
-		migration.WithDBClient(db))
+		migration.WithDBClient(db),
+		migration.WithJob(scheduler.Httpendpoints.Job))
 
 	resource := resource.New(
 		resource.WithDBClient(db),
@@ -162,6 +165,10 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		addon.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second, time.Second*60),
 		)),
+		addon.WithCap(scheduler.Httpendpoints.Cap),
+		addon.WithServiceGroup(scheduler.Httpendpoints.ServiceGroupImpl),
+		addon.WithInstanceinfoImpl(instanceinfoImpl),
+		addon.WithClusterInfoImpl(scheduler.Httpendpoints.ClusterinfoImpl),
 	)
 
 	// init runtime service
@@ -171,6 +178,8 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		runtime.WithBundle(bdl),
 		runtime.WithAddon(a),
 		runtime.WithReleaseSvc(p.DicehubReleaseSvc),
+		runtime.WithServiceGroup(scheduler.Httpendpoints.ServiceGroupImpl),
+		runtime.WithClusterInfo(scheduler.Httpendpoints.ClusterinfoImpl),
 	)
 
 	// init deployment service
@@ -183,6 +192,8 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		deployment.WithEncrypt(encrypt),
 		deployment.WithResource(resource),
 		deployment.WithReleaseSvc(p.DicehubReleaseSvc),
+		deployment.WithServiceGroup(scheduler.Httpendpoints.ServiceGroupImpl),
+		deployment.WithScheduler(scheduler),
 	)
 
 	// init domain service
@@ -193,6 +204,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 
 	ins := instance.New(
 		instance.WithBundle(bdl),
+		instance.WithInstanceInfo(instanceinfoImpl),
 	)
 
 	//init deployment order service
@@ -223,6 +235,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		endpoints.WithMigration(migration),
 		endpoints.WithReleaseSvc(p.DicehubReleaseSvc),
 		endpoints.WithScheduler(scheduler),
+		endpoints.WithInstanceinfoImpl(instanceinfoImpl),
 	)
 
 	return ep, nil
@@ -250,6 +263,8 @@ func initLeaderCron(ep *endpoints.Endpoints, ctx context.Context) error {
 	go ep.SyncDeployAddon()
 
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(5*time.Minute)).Do(ep.SyncAddonResources)
+
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(1*time.Hour)).Do(ep.CleanRemainingAddonAttachment)
 
 	ep.FullGCLoop(ctx)
 
@@ -300,8 +315,9 @@ func cleanLeaderRemainingAddon(ep *endpoints.Endpoints) error {
 			existProjectMap[proID] = struct{}{}
 			return false
 		}
-		if !strings.Contains(err.Error(), "project not found") {
-			logrus.Errorf("[cleanLeaderRemainingAddon] failed to GetProject, prjectID: %s", addon.ProjectID)
+
+		if !errorresp.IsNotFound(err) {
+			logrus.Errorf("[cleanLeaderRemainingAddon] failed to GetProject, prjectID: %s, err: %s", addon.ProjectID, err.Error())
 			return false
 		}
 		// the project is deleted, and should clean the addon

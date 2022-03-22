@@ -25,7 +25,6 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/k8s/elastic/vk"
-	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
 
 type Option func(provider *apistructs.ContainerInstanceProvider)
@@ -65,19 +64,15 @@ func WithLabels(labels map[string]string) Option {
 	}
 }
 
-// WithStages if the stages contain custom-type action, then it will make a disabled container instance provider
+// WithExtensions if the stages contain custom-type action, then it will make a disabled container instance provider
 // todo judge the container instance type in task-level
-func WithStages(stages []*pipelineyml.Stage) Option {
+func WithExtensions(extensions map[string]*apistructs.ActionSpec) Option {
 	return func(provider *apistructs.ContainerInstanceProvider) {
-		for _, stage := range stages {
-			for _, actionMap := range stage.Actions {
-				for actionType := range actionMap {
-					if actionType.IsCustom() {
-						provider.IsHitted = false
-						provider.IsDisabled = true
-						return
-					}
-				}
+		for _, actionSpec := range extensions {
+			if actionSpec.IsDisableECI() {
+				provider.IsDisabled = true
+				provider.IsHitted = false
+				return
 			}
 		}
 	}
@@ -111,7 +106,7 @@ func DealPipelineProviderBeforeRun(p *spec.Pipeline, clusterInfo apistructs.Clus
 	p.Extra.ContainerInstanceProvider = provider
 }
 
-func DealJobAndClusterInfo(job *apistructs.JobFromUser, clusterInfo map[string]string) {
+func DealJobAndClusterInfo(job *apistructs.JobFromUser, clusterInfo apistructs.ClusterInfoData) {
 	if job.ContainerInstanceProvider != nil && job.ContainerInstanceProvider.IsHitted {
 		switch job.ContainerInstanceProvider.ContainerInstanceType {
 		case apistructs.ContainerInstanceECI:
@@ -147,13 +142,13 @@ func GenNamespaceByProviderAndClusterInfo(name string, clusterInfo map[string]st
 			}
 		}
 		if isRateHit(hitRate) {
-			ns.Labels, _ = vk.GetLabelsWithVendor(apistructs.ECIVendorAibaba)
+			ns.Labels, _ = vk.GetLabelsWithVendor(apistructs.ECIVendorAlibaba)
 		}
 		return ns
 	}
 	switch provider.ContainerInstanceType {
 	case apistructs.ContainerInstanceECI:
-		ns.Labels, _ = vk.GetLabelsWithVendor(apistructs.ECIVendorAibaba)
+		ns.Labels, _ = vk.GetLabelsWithVendor(apistructs.ECIVendorAlibaba)
 	}
 	return ns
 }
@@ -165,7 +160,7 @@ func GenNamespaceByJob(job *apistructs.JobFromUser) *corev1.Namespace {
 	if job.ContainerInstanceProvider != nil && job.ContainerInstanceProvider.IsHitted {
 		switch job.ContainerInstanceProvider.ContainerInstanceType {
 		case apistructs.ContainerInstanceECI:
-			ns.Labels, _ = vk.GetLabelsWithVendor(apistructs.ECIVendorAibaba)
+			ns.Labels, _ = vk.GetLabelsWithVendor(apistructs.ECIVendorAlibaba)
 		default:
 
 		}

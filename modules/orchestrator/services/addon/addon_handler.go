@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/i18n"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
+	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/crypto/uuid"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/kms/kmstypes"
@@ -159,7 +160,7 @@ func (a *Addon) AddonDelete(req apistructs.AddonDirectDeleteRequest) error {
 			return err
 		}
 	} else {
-		if err := a.bdl.DeleteServiceGroup(addonIns.Namespace, addonIns.ScheduleName); err != nil {
+		if err := a.serviceGroupImpl.Delete(addonIns.Namespace, addonIns.ScheduleName, "false"); err != nil {
 			logrus.Errorf("failed to delete addon: %s/%s", addonIns.Namespace, addonIns.ScheduleName)
 			return err
 		}
@@ -461,7 +462,7 @@ func (a *Addon) existAttachAddon(params *apistructs.AddonHandlerCreateItem, addo
 		return nil, err
 	}
 
-	clusterInfo, err := a.bdl.QueryClusterInfo(params.ClusterName)
+	clusterInfo, err := a.clusterinfoImpl.Info(params.ClusterName)
 	if err != nil {
 		logrus.Errorf("existAttachAddon 获取cluster信息失败, %v", err)
 		return nil, err
@@ -829,10 +830,9 @@ func (a *Addon) createAddonResource(addonIns *dbclient.AddonInstance, addonInsRo
 			return err
 		}
 		if addonSpec.SubCategory == apistructs.BasicAddon {
-			if err := a.basicAddonDeploy(addonIns, addonInsRouting, params, addonSpec, addonDice); err != nil {
-				if a.Logger != nil {
-					a.pushLog(fmt.Sprintf("error when addon is released, %v", err), params)
-				}
+			// TODO: get vendor from cluster or config
+			if err := a.basicAddonDeploy(addonIns, addonInsRouting, params, addonSpec, addonDice, apistructs.ECIVendorAlibaba); err != nil {
+				a.pushLog(fmt.Sprintf("error when addon is released, %v", err), params)
 				logrus.Errorf("error when addon is released, %v", err)
 				if err := a.FailAndDelete(addonIns); err != nil {
 					return err
@@ -958,13 +958,61 @@ func (a *Addon) providerAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRo
 
 // basicAddonDeploy 基础addon发布
 func (a *Addon) basicAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouting *dbclient.AddonInstanceRouting,
-	params *apistructs.AddonHandlerCreateItem, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object) error {
+	params *apistructs.AddonHandlerCreateItem, addonSpec *apistructs.AddonExtension, addonDice *diceyml.Object, vendor string) error {
 	if err := a.preCheck(params); err != nil {
 		return err
 	}
 
 	// 构建 addon 创建请求
-	addonCreateReq, err := a.buildAddonRequestGroup(params, addonIns, addonSpec, addonDice)
+	projID, _ := strconv.ParseUint(addonIns.ProjectID, 10, 64)
+	orgID, _ := strconv.ParseUint(addonIns.OrgID, 10, 64)
+	logrus.Infof("params is %+v", *params)
+	logrus.Infof("params is %#v", *params)
+	projectECI := utils.IsProjectECIEnable(a.bdl, projID, addonIns.Workspace, orgID, params.OperatorID)
+	if projectECI {
+		if params.Options == nil {
+			params.Options = make(map[string]string)
+		}
+		switch vendor {
+		case apistructs.ECIVendorAlibaba:
+			// Alicloud ECI
+			if _, ok := params.Options[apistructs.AlibabaECILabel]; !ok {
+				params.Options[apistructs.AlibabaECILabel] = "true"
+			}
+
+		case apistructs.ECIVendorHuawei:
+			// Huawei CCI
+			if _, ok := params.Options[apistructs.HuaweiCCILabel]; !ok {
+				params.Options[apistructs.HuaweiCCILabel] = "force"
+			}
+
+		case apistructs.ECIVendorTecent:
+			// Tencent EKSCI
+			if _, ok := params.Options[apistructs.TecentEKSNodeSelectorKey]; !ok {
+				params.Options[apistructs.TecentEKSNodeSelectorKey] = apistructs.TecentEKSNodeSelectorValue
+			}
+
+		default:
+			// Alicloud ECI
+			if _, ok := params.Options[apistructs.AlibabaECILabel]; !ok {
+				params.Options[apistructs.AlibabaECILabel] = "true"
+			}
+		}
+
+		if _, ok := params.Options[diceyml.AddonDiskType]; !ok {
+			params.Options[diceyml.AddonDiskType] = apistructs.VolumeTypeSSD
+		}
+
+		if _, ok := params.Options[diceyml.AddonVolumeSize]; !ok {
+			params.Options[diceyml.AddonVolumeSize] = strconv.Itoa(int(diceyml.ProjectECIVolumeDefaultSize))
+		}
+
+		if _, ok := params.Options[diceyml.AddonSnapMaxHistory]; !ok {
+			params.Options[diceyml.AddonSnapMaxHistory] = "0"
+		}
+	}
+
+	addonCreateReq, err := a.BuildAddonRequestGroup(params, addonIns, addonSpec, addonDice)
 	if err != nil || addonCreateReq == nil {
 		logrus.Errorf("failed to build addon creating request body, addon: %v, err: %v", addonIns.ID, err)
 		a.FailAndDelete(addonIns)
@@ -973,7 +1021,7 @@ func (a *Addon) basicAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouti
 	logrus.Infof("sending addon creating request, request body: %+v", *addonCreateReq)
 
 	// 请求调度器
-	err = a.bdl.CreateServiceGroup(*addonCreateReq)
+	_, err = a.serviceGroupImpl.Create(*addonCreateReq)
 	if err != nil {
 		a.ExportLogInfo(apistructs.ErrorLevel, apistructs.AddonError, addonIns.ID, addonIns.ID+"-internal", i18n.OrgSprintf(addonIns.OrgID, "FailedToCreateAddonByScheduler"), err)
 		logrus.Errorf("failed to create addon %s, instance id %v from scheduler, %v", addonSpec.Name, addonIns.ID, err)
@@ -991,7 +1039,7 @@ func (a *Addon) basicAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouti
 
 	// after deployed
 	// init first mysql account
-	if err := a.initMySQLAccount(addonIns, addonInsRouting, params.OperatorID); err != nil {
+	if err := a.InitMySQLAccount(addonIns, addonInsRouting, params.OperatorID); err != nil {
 		return err
 	}
 
@@ -1211,6 +1259,7 @@ func (a *Addon) CreateAddonProvider(req *apistructs.AddonProviderRequest, addonN
 		logrus.Errorf("provider response statuscode : %v", r.StatusCode())
 		logrus.Errorf("provider response err : %+v", r)
 		logrus.Errorf("provider response : %+v", resp)
+		a.pushLogCore(fmt.Sprintf("err when deploy addon: %s, err: %s", addonName, resp.Error.Msg), req.Options)
 		return 0, nil, apierrors.ErrInvoke.InternalError(
 			fmt.Errorf("create provider addon, response fail, code:%v, msg:%v",
 				resp.Error.Code, resp.Error.Msg))
@@ -1263,12 +1312,21 @@ func (a *Addon) FindNeedCreateAddon(params *apistructs.AddonHandlerCreateItem) (
 }
 
 func (a *Addon) pushLog(content string, params *apistructs.AddonHandlerCreateItem) {
-	if a.Logger == nil {
+	a.pushLogCore(content, params.Options)
+}
+
+func (a *Addon) pushLogCore(content string, params map[string]string) {
+	deploymentId, ok := params["deploymentId"]
+	if !ok {
 		return
 	}
+	logHelper := &log.DeployLogHelper{
+		DeploymentID: deploymentId,
+		Bdl:          a.bdl,
+	}
 	tags := map[string]string{}
-	if orgName, ok := params.Options["orgName"]; ok {
+	if orgName, ok := params["orgName"]; ok {
 		tags[log.TAG_ORG_NAME] = orgName
 	}
-	a.Logger.Log(content, tags)
+	logHelper.Log(content, tags)
 }

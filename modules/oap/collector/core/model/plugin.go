@@ -17,13 +17,12 @@ package model
 type ComponentID string
 
 type Component interface {
-	ComponentID() ComponentID
+	ComponentConfig() interface{}
 }
 
-type (
-	MetricReceiverConsumeFunc func(data Metrics)
-	TraceReceiverConsumeFunc  func(data Traces)
-	LogReceiverConsumeFunc    func(data Logs)
-
-	ObservableDataConsumerFunc func(data ObservableData)
-)
+type ComponentUnit struct {
+	Component Component
+	Name      string
+	// FilterConfig FilterConfig
+	Filter *DataFilter
+}

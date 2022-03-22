@@ -53,6 +53,7 @@ type Runtime struct {
 	DeploymentOrderId   string
 	ReleaseVersion      string
 	LegacyStatus        string `gorm:"column:status"`
+	FileToken           string
 	Deployed            bool
 	Deleting            bool `gorm:"-"` // TODO: after legacyStatus removed, we use deleting instead
 	Version             string
@@ -506,6 +507,15 @@ func (db *DBClient) GetRuntimeByDeployOrderId(projectId uint64, orderId string) 
 func (db *DBClient) GetProjectRuntimeNumberByWorkspace(projectId uint64, env string) (uint64, error) {
 	var num uint64
 	if err := db.Model(Runtime{}).Where("project_id = ? and workspace = ?", projectId, env).
+		Count(&num).Error; err != nil {
+		return 0, err
+	}
+	return num, nil
+}
+
+func (db *DBClient) GetAppRuntimeNumberByWorkspace(projectId uint64, env string) (uint64, error) {
+	var num uint64
+	if err := db.Model(Runtime{}).Where("application_id = ? and workspace = ?", projectId, env).
 		Count(&num).Error; err != nil {
 		return 0, err
 	}

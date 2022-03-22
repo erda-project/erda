@@ -465,6 +465,10 @@ var (
 	ErrImportProjectTemplate = err("ErrImportProjectTemplate", "导入项目模版失败")
 	ErrParseProjectTemplate  = err("ErrParseProjectTemplate", "解析项目模版失败")
 
+	ErrExportProjectPackage = err("ErrExportProjectPackage", "导出项目工程包失败")
+	ErrImportProjectPackage = err("ErrImportProjectPackage", "导入项目工程包失败")
+	ErrParseProjectPackage  = err("ErrParseProjectPackage", "解析项目工程包失败")
+
 	ErrCreateApplication = err("ErrCreateApplication", "创建应用失败")
 	ErrDeleteApplication = err("ErrDeleteApplication", "删除应用失败")
 	ErrInitApplication   = err("ErrInitApplication", "应用初始化失败")
@@ -517,6 +521,7 @@ var (
 	ErrSetPrimaryProjectPipeline   = err("ErrSetPrimaryProjectPipeline", "项目级流水线设为重要失败")
 	ErrUnSetPrimaryProjectPipeline = err("ErrUnSetPrimaryProjectPipeline", "项目级流水线取消重要失败")
 	ErrListAppProjectPipeline      = err("ErrListAppProjectPipeline", "项目级流水线获取应用失败")
+	ErrListProjectPipelineRef      = err("ErrListProjectPipelineRef", "获取项目级流水线分支失败")
 
 	ErrRunProjectPipeline             = err("ErrRunProjectPipeline", "执行流水线失败")
 	ErrBatchRunProjectPipeline        = err("ErrBatchRunProjectPipeline", "批量执行流水线失败")
@@ -527,10 +532,12 @@ var (
 	ErrEndCronProjectPipeline         = err("ErrEndCronProjectPipeline", "关闭流水线定时失败")
 	ErrListExecHistoryProjectPipeline = err("ErrListExecHistoryProjectPipeline", "列出流水线执行明细失败")
 
-	ErrCreateGuide            = err("ErrCreateGuide", "创建引导失败")
-	ErrProcessGuide           = err("ErrProcessGuide", "处理引导失败")
-	ErrListGuide              = err("ErrListGuide", "获取引导列表失败")
-	ErrJudgeCanCreatePipeline = err("ErrJudgeCanCreatePipeline", "判断是否可以创建流水线")
+	ErrCreateGuide       = err("ErrCreateGuide", "创建引导失败")
+	ErrProcessGuide      = err("ErrProcessGuide", "处理引导失败")
+	ErrListGuide         = err("ErrListGuide", "获取引导列表失败")
+	ErrGetPublishItem    = err("ErrGetPublishItem", "获取发布内容详情失败")
+	ErrSratisticsErrList = err("ErrSratisticsErrList", "获取错误列表失败")
+	ErrCrashRateList     = err("ErrCrashRateList", "获取崩溃率失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

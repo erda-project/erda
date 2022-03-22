@@ -9,6 +9,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
+	github.com/WeiZhang555/tabwriter v0.0.0-20200115015932-e5c45f4da38d
 	github.com/ahmetb/go-linq/v3 v3.2.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alecthomas/colour v0.1.0 // indirect
@@ -29,9 +30,11 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/bugaolengdeyuxiaoer/go-ansiterm v0.0.0-20211110022506-7e621b9b6908
 	github.com/buger/jsonparser v1.1.1
+	github.com/buraksezer/consistent v0.9.0
 	github.com/c2h5oh/datasize v0.0.0-20200112174442-28bbd4740fee
 	github.com/caarlos0/env v0.0.0-20180521112546-3e0f30cbf50b
 	github.com/cespare/xxhash v1.1.0
+	github.com/cespare/xxhash/v2 v2.1.1
 	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
@@ -41,7 +44,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/elastic/cloud-on-k8s v0.0.0-20210205172912-5ce0eca90c60
 	github.com/elazarl/goproxy v0.0.0-20200421181703-e76ad31c14f6
-	github.com/erda-project/erda-infra v0.0.0-20220223015542-f8c153b37cff
+	github.com/erda-project/erda-infra v0.0.0-20220321085632-91e009f9db9e
 	github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b
 	github.com/erda-project/erda-proto-go v0.0.0
 	github.com/erda-project/erda-sourcecov v0.1.0
@@ -57,12 +60,14 @@ require (
 	github.com/gin-gonic/gin v1.7.0
 	github.com/go-echarts/go-echarts/v2 v2.2.4
 	github.com/go-eden/routine v0.0.2
+	github.com/go-errors/errors v1.0.1
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.8
 	github.com/go-openapi/strfmt v0.19.5
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis v6.15.9+incompatible
-	github.com/go-sql-driver/mysql v1.5.0
+	github.com/go-sql-driver/mysql v1.6.0
+	github.com/gobwas/glob v0.2.3
 	github.com/gocql/gocql v0.0.0-20210707082121-9a3953d1826d
 	github.com/gofrs/flock v0.8.0
 	github.com/gofrs/uuid v4.0.0+incompatible
@@ -74,7 +79,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/golang/snappy v0.0.4
 	github.com/google/btree v1.0.1 // indirect
-	github.com/google/uuid v1.2.0
+	github.com/google/uuid v1.3.0
 	github.com/googlecloudplatform/flink-operator v0.0.0-00010101000000-000000000000
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.1.0
@@ -86,7 +91,7 @@ require (
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
 	github.com/jinzhu/copier v0.3.2
 	github.com/jinzhu/gorm v1.9.16
-	github.com/jinzhu/now v1.1.2
+	github.com/jinzhu/now v1.1.4
 	github.com/jmespath/go-jmespath v0.4.0
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/json-iterator/go v1.1.11
@@ -133,7 +138,7 @@ require (
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/shirou/gopsutil/v3 v3.21.3
 	github.com/shogo82148/androidbinary v1.0.2
-	github.com/shopspring/decimal v1.2.0
+	github.com/shopspring/decimal v1.3.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/sony/sonyflake v1.0.0
 	github.com/spf13/afero v1.6.0
@@ -151,7 +156,7 @@ require (
 	github.com/xormplus/core v0.0.0-20181016121923-6bfce2eb8867
 	github.com/xormplus/xorm v0.0.0-20181212020813-da46657160ff
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/otel v1.2.0
+	go.opentelemetry.io/otel v1.4.1
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.2.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.2.0
 	go.opentelemetry.io/otel/sdk v1.2.0
@@ -175,8 +180,8 @@ require (
 	gopkg.in/stretchr/testify.v1 v1.2.2
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
-	gorm.io/driver/mysql v1.0.5
-	gorm.io/gorm v1.21.8
+	gorm.io/driver/mysql v1.3.2
+	gorm.io/gorm v1.23.2
 	gotest.tools v2.2.0+incompatible
 	helm.sh/helm/v3 v3.6.2
 	howett.net/plist v0.0.0-20201203080718-1454fab16a06
@@ -213,6 +218,7 @@ replace (
 	github.com/olivere/elastic v6.2.35+incompatible => github.com/erda-project/elastic v0.0.1-ex
 	github.com/rancher/remotedialer => github.com/erda-project/remotedialer v0.2.6-0.20210713103000-da03eb9e4b23
 	go.etcd.io/bbolt => github.com/coreos/bbolt v1.3.5
+	go.opentelemetry.io/otel => go.opentelemetry.io/otel v1.2.0
 	go.opentelemetry.io/otel/exporters/stdout => go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.2.0
 	go.opentelemetry.io/proto/otlp v0.11.0 => github.com/recallsong/opentelemetry-proto-go/otlp v0.11.1-0.20211202093058-995eca7123f5
 	google.golang.org/grpc => google.golang.org/grpc v1.26.0

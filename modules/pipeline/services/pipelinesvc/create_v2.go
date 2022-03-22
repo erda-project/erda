@@ -15,6 +15,7 @@
 package pipelinesvc
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 	"time"
@@ -22,10 +23,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
+	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 )
@@ -66,7 +69,9 @@ func (s *PipelineSvc) CreateV2(req *apistructs.PipelineCreateRequestV2) (*spec.P
 	// 立即开始定时
 	if req.AutoStartCron {
 		if p.CronID != nil {
-			if _, err := s.pipelineCronSvc.Start(*p.CronID); err != nil {
+			if _, err := s.pipelineCronSvc.CronStart(context.Background(), &cronpb.CronStartRequest{
+				CronID: *p.CronID,
+			}); err != nil {
 				logrus.Errorf("failed to start cron, pipelineID: %d, cronID: %d, err: %v", p.ID, *p.CronID, err)
 				return nil, err
 			}
@@ -228,8 +233,23 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	}
 
 	// container instance provider
+	extensionItems := make([]string, 0)
+	for _, stage := range pipelineYml.Spec().Stages {
+		for _, actionMap := range stage.Actions {
+			for _, action := range actionMap {
+				if action.Type.IsSnippet() {
+					continue
+				}
+				extensionItems = append(extensionItems, extmarketsvc.MakeActionTypeVersion(action))
+			}
+		}
+	}
+	_, extensions, err := s.extMarketSvc.SearchActions(extensionItems)
+	if err != nil {
+		return nil, apierrors.ErrCreatePipeline.InternalError(err)
+	}
 	p.Extra.ContainerInstanceProvider = container_provider.ConstructContainerProvider(container_provider.WithLabels(labels),
-		container_provider.WithStages(pipelineYml.Spec().Stages))
+		container_provider.WithExtensions(extensions))
 
 	// pipelineYmlSource
 	p.Extra.PipelineYmlSource = apistructs.PipelineYmlSourceContent

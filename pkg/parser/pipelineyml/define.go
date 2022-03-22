@@ -365,3 +365,20 @@ func (s *Spec) LoopStagesActions(loopDoing func(stage int, action *Action)) {
 		}
 	}
 }
+
+// CountActionNumByPipelineYml count action total num by pipelineYml
+func CountActionNumByPipelineYml(pipelineYmlStr string) (int64, error) {
+	if pipelineYmlStr == "" {
+		return 0, nil
+	}
+	pipelineYml, err := New([]byte(pipelineYmlStr))
+	if err != nil {
+		return 0, err
+	}
+
+	var totalActionNum int64
+	pipelineYml.Spec().LoopStagesActions(func(stage int, action *Action) {
+		totalActionNum++
+	})
+	return totalActionNum, nil
+}

@@ -15,7 +15,6 @@
 package containers
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
@@ -23,17 +22,15 @@ import (
 )
 
 func GenContainers(task *spec.PipelineTask) ([]apistructs.TaskContainer, error) {
-	if value, ok := task.Extra.Action.Params["bigDataConf"]; ok {
-		spec := apistructs.BigdataSpec{}
-		if err := json.Unmarshal([]byte(value.(string)), &spec); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal task bigDataConf")
-		}
-		if spec.FlinkConf != nil {
-			return GenFlinkContainers(task), nil
-		}
-		if spec.SparkConf != nil {
-			return GenSparkContainers(task), nil
-		}
+	spec, err := task.GetBigDataConf()
+	if err != nil {
+		return nil, err
+	}
+	if spec.FlinkConf != nil {
+		return GenFlinkContainers(task), nil
+	}
+	if spec.SparkConf != nil {
+		return GenSparkContainers(task), nil
 	}
 	return GenTaskContainer(task), nil
 }
@@ -65,7 +62,7 @@ func MakeFlinkTaskManagerName(name string) string {
 	return fmt.Sprintf("%s-task-manager", name)
 }
 
-func MakeFLinkTaskManagerID(uuid string) string {
+func MakeFlinkTaskManagerID(uuid string) string {
 	return fmt.Sprintf("%s-task-manager", uuid)
 }
 
@@ -81,7 +78,7 @@ func GenFlinkContainers(task *spec.PipelineTask) []apistructs.TaskContainer {
 	})
 	containers = append(containers, apistructs.TaskContainer{
 		TaskName:    MakeFlinkTaskManagerName(task.Name),
-		ContainerID: MakeFLinkTaskManagerID(task.Extra.UUID),
+		ContainerID: MakeFlinkTaskManagerID(task.Extra.UUID),
 	})
 	return containers
 }

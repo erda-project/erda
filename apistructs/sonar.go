@@ -14,8 +14,46 @@
 
 package apistructs
 
+import (
+	"database/sql/driver"
+	"encoding/json"
+
+	"github.com/pkg/errors"
+)
+
 type SonarIssueGetRequest struct {
 	Type  string `schema:"type"`
 	Key   string `schema:"key"`
 	AppID uint64 `schema:"applicationId"`
+}
+
+type SonarConfig struct {
+	Host       string `json:"host"`
+	Token      string `json:"token"`
+	ProjectKey string `json:"projectKey"`
+}
+
+func (config *SonarConfig) Value() (driver.Value, error) {
+	if b, err := json.Marshal(config); err != nil {
+		return nil, errors.Wrapf(err, "failed to marshal sonar config")
+	} else {
+		return string(b), nil
+	}
+}
+
+func (config *SonarConfig) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	v, ok := value.([]byte)
+	if !ok {
+		return errors.New("invalid scan source for sonar config")
+	}
+	if len(v) == 0 {
+		return nil
+	}
+	if err := json.Unmarshal(v, config); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal sonar config")
+	}
+	return nil
 }

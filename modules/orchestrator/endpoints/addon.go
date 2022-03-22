@@ -574,7 +574,7 @@ func (e *Endpoints) RemoveAddons() (bool, error) {
 				continue
 			}
 			// schedule删除
-			if err := e.bdl.DeleteServiceGroup(insItem.Namespace, insItem.ScheduleName); err != nil {
+			if err := e.scheduler.Httpendpoints.ServiceGroupImpl.Delete(insItem.Namespace, insItem.ScheduleName, "false"); err != nil {
 				logrus.Errorf("failed to delete addon: %s/%s", insItem.Namespace, insItem.ScheduleName)
 				continue
 			}
@@ -948,4 +948,11 @@ func (e *Endpoints) AddonYmlImport(ctx context.Context, r *http.Request, vars ma
 func (e *Endpoints) SyncAddonResources() (bool, error) {
 	e.addon.SyncAddonResources()
 	return false, nil
+}
+
+// CleanRemainingAddonAttachment clean remain addon attachment
+// Deleting the addon before the addon is created will cause the addon to leak
+// Deleting the runtime during deployment will cause this to happen
+func (e *Endpoints) CleanRemainingAddonAttachment() (bool, error) {
+	return e.addon.CleanRemainingAddonAttachment()
 }

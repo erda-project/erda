@@ -17,6 +17,8 @@ package instanceinfo
 import (
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	insinfo "github.com/erda-project/erda/modules/orchestrator/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/database/dbengine"
@@ -486,4 +488,69 @@ func (c *ComponentInfoImpl) Get() (apistructs.ComponentInfoDataList, error) {
 		result = append(result, insInfo)
 	}
 	return result, nil
+}
+
+func (i *InstanceInfoImpl) GetPodInfo(req apistructs.PodInfoRequest) (apistructs.PodInfoDataList, error) {
+	cond := QueryPodConditions{
+		Cluster:         req.Cluster,
+		OrgName:         req.OrgName,
+		OrgID:           req.OrgID,
+		ProjectName:     req.ProjectName,
+		ProjectID:       req.ProjectID,
+		ApplicationName: req.ApplicationName,
+		ApplicationID:   req.ApplicationID,
+		RuntimeName:     req.RuntimeName,
+		RuntimeID:       req.RuntimeID,
+		ServiceName:     req.ServiceName,
+		Workspace:       req.Workspace,
+		ServiceType:     req.ServiceType,
+		AddonID:         req.AddonID,
+		Phases:          req.Phases,
+		Limit:           req.Limit,
+	}
+
+	pods, err := i.QueryPod(cond)
+	if err != nil {
+		errstr := fmt.Sprintf("failed to query pod info: %v", err)
+		logrus.Error(errstr)
+		return apistructs.PodInfoDataList{}, err
+	}
+	return pods, nil
+}
+
+func (i *InstanceInfoImpl) GetInstanceInfo(req apistructs.InstanceInfoRequest) (apistructs.InstanceInfoDataList, error) {
+	instanceList := apistructs.InstanceInfoDataList{}
+
+	cond := QueryInstanceConditions{
+
+		Cluster:         req.Cluster,
+		OrgName:         req.OrgName,
+		OrgID:           req.OrgID,
+		ProjectName:     req.ProjectName,
+		ProjectID:       req.ProjectID,
+		ApplicationName: req.ApplicationName,
+		//EdgeApplicationName:  "",
+		//EdgeSite:             "",
+		ApplicationID: req.ApplicationID,
+		RuntimeName:   req.RuntimeName,
+		RuntimeID:     req.RuntimeID,
+		ServiceName:   req.ServiceName,
+		Workspace:     req.Workspace,
+		ContainerID:   req.ContainerID,
+		ServiceType:   req.ServiceType,
+		AddonID:       req.AddonID,
+		InstanceIP:    req.InstanceIP,
+		HostIP:        req.HostIP,
+		Phases:        req.Phases,
+		Limit:         req.Limit,
+	}
+
+	instanceList, err := i.QueryInstance(cond)
+	if err != nil {
+		errstr := fmt.Sprintf("failed to query instance info: %v", err)
+		logrus.Error(errstr)
+		return apistructs.InstanceInfoDataList{}, err
+	}
+
+	return instanceList, nil
 }

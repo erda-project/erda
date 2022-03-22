@@ -51,8 +51,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 func (p *provider) InitAKItemTask(ctx context.Context) error {
 	if err := p.accessKeyValidator.syncFullAccessKeys(ctx); err != nil {
 		p.Log.Errorf("InitAKItem Task failed. err: %s", err)
-	} else {
-		p.Log.Infof("InitAKItem Task completed.")
 	}
 	return nil
 }
@@ -67,8 +65,6 @@ func (p *provider) SyncAKItemTask(ctx context.Context) error {
 		case <-tick.C:
 			if err := p.accessKeyValidator.syncFullAccessKeys(ctx); err != nil {
 				p.Log.Errorf("Sync accessKeys task failed. err: %s", err)
-			} else {
-				p.Log.Info("Sync accessKeys task completed")
 			}
 		case <-ctx.Done():
 			return nil

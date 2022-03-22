@@ -43,6 +43,10 @@ var _ json.Marshaler = (*PipelineDefinitionStatistics)(nil)
 var _ json.Unmarshaler = (*PipelineDefinitionStatistics)(nil)
 var _ json.Marshaler = (*PipelineDefinitionListResponse)(nil)
 var _ json.Unmarshaler = (*PipelineDefinitionListResponse)(nil)
+var _ json.Marshaler = (*PipelineDefinitionUsedRefListRequest)(nil)
+var _ json.Unmarshaler = (*PipelineDefinitionUsedRefListRequest)(nil)
+var _ json.Marshaler = (*PipelineDefinitionUsedRefListResponse)(nil)
+var _ json.Unmarshaler = (*PipelineDefinitionUsedRefListResponse)(nil)
 
 // PipelineDefinition implement json.Marshaler.
 func (m *PipelineDefinition) MarshalJSON() ([]byte, error) {
@@ -309,6 +313,42 @@ func (m *PipelineDefinitionListResponse) MarshalJSON() ([]byte, error) {
 
 // PipelineDefinitionListResponse implement json.Marshaler.
 func (m *PipelineDefinitionListResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// PipelineDefinitionUsedRefListRequest implement json.Marshaler.
+func (m *PipelineDefinitionUsedRefListRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// PipelineDefinitionUsedRefListRequest implement json.Marshaler.
+func (m *PipelineDefinitionUsedRefListRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// PipelineDefinitionUsedRefListResponse implement json.Marshaler.
+func (m *PipelineDefinitionUsedRefListResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// PipelineDefinitionUsedRefListResponse implement json.Marshaler.
+func (m *PipelineDefinitionUsedRefListResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

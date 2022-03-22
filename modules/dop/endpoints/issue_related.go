@@ -39,10 +39,6 @@ func (e *Endpoints) AddIssueRelation(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrCreateIssueRelation.InvalidParameter(err).ToResp(), nil
 	}
 	createReq.IssueID = uint64(issueID)
-	if createReq.IssueID == createReq.RelatedIssue {
-		return apierrors.ErrCreateIssueRelation.InvalidParameter("can not related yourself").ToResp(), nil
-	}
-
 	if err := createReq.Check(); err != nil {
 		return apierrors.ErrCreateIssueRelation.InvalidParameter(err).ToResp(), nil
 	}
@@ -55,11 +51,10 @@ func (e *Endpoints) AddIssueRelation(ctx context.Context, r *http.Request, vars 
 		// TODO 鉴权
 	}
 
-	exist, err := e.db.IssueRelationExist(&dao.IssueRelation{
-		IssueID:      createReq.IssueID,
-		RelatedIssue: createReq.RelatedIssue,
-		Type:         createReq.Type,
-	})
+	exist, err := e.db.IssueRelationsExist(&dao.IssueRelation{
+		IssueID: createReq.IssueID,
+		Type:    createReq.Type,
+	}, createReq.RelatedIssue)
 	if err != nil {
 		return apierrors.ErrCreateIssueRelation.InternalError(err).ToResp(), nil
 	}
@@ -67,12 +62,12 @@ func (e *Endpoints) AddIssueRelation(ctx context.Context, r *http.Request, vars 
 		return apierrors.ErrCreateIssueRelation.AlreadyExists().ToResp(), nil
 	}
 
-	issueRel, err := e.issueRelated.AddRelatedIssue(&createReq)
+	_, err = e.issueRelated.AddRelatedIssue(&createReq)
 	if err != nil {
 		return apierrors.ErrCreateIssueRelation.InternalError(err).ToResp(), nil
 	}
 
-	return httpserver.OkResp(issueRel.ID)
+	return httpserver.OkResp(nil)
 }
 
 // GetIssueRelations 获取Issue关联信息，包含关联和被关联信息
@@ -95,48 +90,63 @@ func (e *Endpoints) GetIssueRelations(ctx context.Context, r *http.Request, vars
 		return apierrors.ErrDeleteIssueRelation.InvalidParameter(err).ToResp(), nil
 	}
 
-	relatingIssueIDs, relatedIssueIDs, err := e.issueRelated.GetIssueRelationsByIssueIDs(uint64(issueID), req.RelationTypes)
-	if err != nil {
-		return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
+	if len(req.RelationTypes) == 0 {
+		req.RelationTypes = []string{apistructs.IssueRelationInclusion, apistructs.IssueRelationConnection}
 	}
 
-	relatingIssues, err := e.issue.GetIssuesByIssueIDs(relatingIssueIDs, identityInfo)
-	if err != nil {
-		return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
-	}
-
-	relatedIssues, err := e.issue.GetIssuesByIssueIDs(relatedIssueIDs, identityInfo)
-	if err != nil {
-		return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
-	}
-
-	// containedIssueIDs, err := e.db.GetContainedIssues(uint64(issueID))
-	// if err != nil {
-	// 	return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
-	// }
-	// containedIssues, err := e.issue.GetIssuesByIssueIDs(containedIssueIDs, identityInfo)
-	// if err != nil {
-	// 	return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
-	// }
-
-	// userIDs
 	var userIDs []string
-	for _, issue := range relatingIssues {
-		userIDs = append(userIDs, issue.Creator, issue.Assignee)
+	var relations apistructs.IssueRelations
+	for _, i := range req.RelationTypes {
+		relatingIssueIDs, relatedIssueIDs, err := e.issueRelated.GetIssueRelationsByIssueIDs(uint64(issueID), []string{i})
+		if err != nil {
+			return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
+		}
+		var users []string
+		r := &issueRelationRetriever{
+			identityInfo, relatingIssueIDs, users,
+		}
+		if i == apistructs.IssueRelationInclusion {
+			relatingIssues, err := e.GetIssuesByRelation(r)
+			if err != nil {
+				return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
+			}
+			r.issueIDs = relatedIssueIDs
+			relatedIssues, err := e.GetIssuesByRelation(r)
+			if err != nil {
+				return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
+			}
+			relations.IssueInclude = relatingIssues
+			relations.IssueIncluded = relatedIssues
+		} else {
+			r.issueIDs = append(relatingIssueIDs, relatedIssueIDs...)
+			relatingIssues, err := e.GetIssuesByRelation(r)
+			if err != nil {
+				return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
+			}
+			relations.IssueRelate = relatingIssues
+		}
+		userIDs = append(userIDs, r.userIDs...)
 	}
-	for _, issue := range relatedIssues {
-		userIDs = append(userIDs, issue.Creator, issue.Assignee)
-	}
-	// for _, issue := range containedIssues {
-	// 	userIDs = append(userIDs, issue.Creator, issue.Assignee)
-	// }
 	userIDs = strutil.DedupSlice(userIDs, true)
+	return httpserver.OkResp(relations, userIDs)
+}
 
-	return httpserver.OkResp(apistructs.IssueRelations{
-		RelatingIssues: relatingIssues,
-		RelatedIssues:  relatedIssues,
-		// IssueChildren:  containedIssues,
-	}, userIDs)
+type issueRelationRetriever struct {
+	identityInfo apistructs.IdentityInfo
+	issueIDs     []uint64
+	userIDs      []string
+}
+
+func (e *Endpoints) GetIssuesByRelation(r *issueRelationRetriever) ([]apistructs.Issue, error) {
+	issues, err := e.issue.GetIssuesByIssueIDs(r.issueIDs, r.identityInfo)
+	if err != nil {
+		return issues, err
+	}
+
+	for _, issue := range issues {
+		r.userIDs = append(r.userIDs, issue.Creator, issue.Assignee)
+	}
+	return issues, nil
 }
 
 // DeleteIssueRelation 删除issue关联关系

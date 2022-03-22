@@ -33,6 +33,7 @@ import (
 	dashboardPb "github.com/erda-project/erda-proto-go/cmp/dashboard/pb"
 	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	errboxpb "github.com/erda-project/erda-proto-go/core/services/errorbox/pb"
@@ -41,12 +42,14 @@ import (
 	"github.com/erda-project/erda/modules/dop/bdl"
 	"github.com/erda-project/erda/modules/dop/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/conf"
+	"github.com/erda-project/erda/modules/dop/metrics"
 	"github.com/erda-project/erda/modules/dop/providers/autotest/testplan"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/modules/dop/providers/taskerror"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/dumpstack"
 	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/providers/metrics/query"
 )
 
 //go:embed component-protocol/scenarios
@@ -63,6 +66,8 @@ type provider struct {
 	TaskErrorSvc       *taskerror.TaskErrorService             `autowired:"erda.core.dop.taskerror.TaskErrorService"`
 	ErrorBoxSvc        errboxpb.ErrorBoxServiceServer          `autowired:"erda.core.services.errorbox.ErrorBoxService" optional:"true"`
 	ProjectPipelineSvc *projectpipeline.ProjectPipelineService `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
+	PipelineCron       cronpb.CronServiceServer                `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+	QueryClient        query.MetricQuery                       `autowired:"metricq-client"`
 
 	AddonMySQLSvc     addonmysqlpb.AddonMySQLServiceServer `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
 	DicehubReleaseSvc dicehubpb.ReleaseServiceServer       `autowired:"erda.core.dicehub.release.ReleaseService"`
@@ -84,6 +89,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.Log.Info("init component-protocol")
 	p.Protocol.SetI18nTran(p.CPTran) // use custom i18n translator
 	// compatible for legacy protocol context bundle
+
+	metrics.Client = p.QueryClient
+
 	bdl.Init(
 		// bundle.WithDOP(), // TODO change to internal method invoke in component-protocol
 		bundle.WithHepa(),

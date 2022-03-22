@@ -15,6 +15,7 @@
 package apistructs
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -105,6 +106,18 @@ func (info ClusterInfoData) MustGetPublicURL(component string) string {
 		info.MustGet(DICE_ROOT_DOMAIN),
 		port,
 	)
+}
+
+func TransferToClusterInfoData(data map[string]string) (ClusterInfoData, error) {
+	dataBytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	var clusterData ClusterInfoData
+	if err := json.Unmarshal(dataBytes, &clusterData); err != nil {
+		return nil, err
+	}
+	return clusterData, nil
 }
 
 // DiceProtocolIsHTTPS 判断 DiceProtocol 是否支持 HTTPS

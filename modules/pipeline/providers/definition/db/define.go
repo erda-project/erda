@@ -43,6 +43,7 @@ type PipelineDefinition struct {
 	PipelineID        uint64    `json:"pipelineId"`
 	TotalActionNum    int64     `json:"totalActionNum"`
 	ExecutedActionNum int64     `json:"executedActionNum"`
+	Ref               string    `json:"ref"`
 }
 
 func (PipelineDefinition) TableName() string {
@@ -121,8 +122,11 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 	if req.Remote != nil {
 		engine = engine.In("s.remote", req.Remote)
 	}
+	if req.FuzzyName != "" {
+		engine = engine.Where("d.name LIKE ?", "%"+req.FuzzyName+"%")
+	}
 	if req.Name != "" {
-		engine = engine.Where("d.name LIKE ?", "%"+req.Name+"%")
+		engine = engine.Where("d.name = ?", req.Name)
 	}
 	if len(req.IdList) != 0 {
 		engine = engine.In("d.id", req.IdList)
@@ -199,8 +203,11 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 	if req.Remote != nil {
 		engine = engine.In("s.remote", req.Remote)
 	}
+	if req.FuzzyName != "" {
+		engine = engine.Where("d.name LIKE ?", "%"+req.FuzzyName+"%")
+	}
 	if req.Name != "" {
-		engine = engine.Where("d.name LIKE ?", "%"+req.Name+"%")
+		engine = engine.Where("d.name = ?", req.Name)
 	}
 	if len(req.Creator) != 0 {
 		engine = engine.In("d.creator", req.Creator)
@@ -291,4 +298,16 @@ func (p *PipelineDefinitionSource) Convert() *pb.PipelineDefinition {
 		TotalActionNum:    p.TotalActionNum,
 		ExecutedActionNum: p.ExecutedActionNum,
 	}
+}
+
+func (client *Client) ListUsedRef(req *pb.PipelineDefinitionUsedRefListRequest, ops ...mysqlxorm.SessionOption) (refs []string, err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+	err = session.Table(PipelineDefinition{}.TableName()).
+		Cols("ref").
+		Where("soft_deleted_at = 0").
+		Where("location = ?", req.Location).
+		GroupBy("ref").
+		Find(&refs)
+	return
 }

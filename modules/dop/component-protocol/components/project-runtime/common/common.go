@@ -30,6 +30,9 @@ const (
 	//DeployReleaseOp = "deploy-release"
 	ReStartOp = "restart"
 
+	// get all involved app
+	ALLINVOLVEAPP = "allInvolveApp"
+
 	FilterApp             = "app"
 	FilterRuntimeStatus   = "runtimeStatus"
 	FilterDeployStatus    = "deploymentStatus"
@@ -99,8 +102,8 @@ func getNextWithoutCase(s string) []int {
 	return next
 }
 func tolower(c uint8) uint8 {
-	if c >= 'a' && c <= 'z' {
-		return c - 32
+	if c >= 'A' && c <= 'Z' {
+		return c + 32
 	}
 	return c
 }

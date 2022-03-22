@@ -24,4 +24,7 @@ var ORCHESTRATOR_PROJECT_RUNTIME_COUNT = apis.ApiSpec{
 	Host:        "orchestrator.marathon.l4lb.thisdcos.directory:8081",
 	Scheme:      "http",
 	Method:      "GET",
+	CheckLogin:  true,
+	CheckToken:  true,
+	IsOpenAPI:   true,
 }
