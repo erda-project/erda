@@ -12,33 +12,67 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelinesvc
+package compensator
 
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
 	v3 "github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/etcd"
+	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 const (
-	cronCompensateDLockKey = "/devops/pipeline/crond/compensator"
-	waitTimeIfLostDLock    = time.Minute
-	waitTimeIfQueryDBError = time.Minute
-	indexFirst             = 0 //数组的下标0
+	waitTimeIfQueryDBError   = time.Minute
+	indexFirst               = 0
+	EtcdNeedCompensatePrefix = "/devops/pipeline/compensate/"
 )
+
+type config struct {
+}
+
+// +provider
+type provider struct {
+	LeaderWorker leaderworker.Interface `autowired:"leader-worker"`
+	ETCD         etcd.Interface         // autowired
+	EtcdClient   *v3.Client
+	MySQL        mysqlxorm.Interface `autowired:"mysql-xorm"`
+
+	client       *dbclient.Client
+	pipelineFunc PipelineFunc
+}
+
+func (p *provider) WithPipelineFunc(pipelineFunc PipelineFunc) {
+	p.client = &dbclient.Client{Engine: p.MySQL.DB()}
+	p.pipelineFunc = pipelineFunc
+}
+
+func (p *provider) Init(ctx servicehub.Context) error {
+	return nil
+}
+
+func (p *provider) Run(ctx context.Context) error {
+	p.LeaderWorker.OnLeader(func(ctx context.Context) {
+		// The client value may not have been set during initialization
+		p.ContinueCompensate(context.Background())
+	})
+	return nil
+}
 
 var compensateLog = logrus.WithField("type", "cron compensator")
 
@@ -50,32 +84,17 @@ func getCronInterruptCompensateInterval(interval int64) time.Duration {
 	return time.Duration(interval) * time.Minute * 2
 }
 
-func (s *PipelineSvc) ContinueCompensate(ctx context.Context) {
-	// 获取分布式锁成功才能执行中断补偿
-	// 若分布式锁丢失，停止补偿，并尝试重新获取分布式锁
-
-	//lock, err := s.getCompensateLock(cancel)
-	//if err != nil {
-	//	return
-	//}
-	//
-	//defer func() {
-	//	if lock != nil {
-	//		lock.UnlockAndClose()
-	//	}
-	//}()
-
+func (p *provider) ContinueCompensate(ctx context.Context) {
 	compensateLog.Info("cron compensator: start")
-	//执行策略补偿定时任务
+	// Execute Policy Compensation Scheduled Tasks
 	ticker := time.NewTicker(getCronCompensateInterval(conf.CronCompensateTimeMinute()))
-	//中断补偿的定时任务
+	// Interrupt Compensation Scheduled Task
 	interruptTicker := time.NewTicker(getCronInterruptCompensateInterval(conf.CronCompensateTimeMinute()))
 
-	//项目启动先执行一次中断补偿
-	s.traverseDoCompensate(s.doInterruptCompensate, true)
+	// Execute an interruption compensation first when the project starts
+	p.traverseDoCompensate(p.doInterruptCompensate, true)
 
 	for {
-
 		select {
 		case <-ctx.Done():
 			// stop
@@ -84,68 +103,41 @@ func (s *PipelineSvc) ContinueCompensate(ctx context.Context) {
 			interruptTicker.Stop()
 			return
 		case <-interruptTicker.C:
-			//这里中断补偿为啥用同步，因为这里会新增数据，目前还不确认是否有幂等，所以先同步
-			s.traverseDoCompensate(s.doInterruptCompensate, true)
+			// Why synchronization is used for interrupt compensation here,
+			// because data will be added here,
+			// and it is not yet confirmed whether there is idempotent, so synchronize first
+			p.traverseDoCompensate(p.doInterruptCompensate, true)
 		case <-ticker.C:
-			//因为未执行补偿(策略)，用来执行流水线的，内部是幂等的，也就是同一时间只有一个pipeline在执行
-			s.traverseDoCompensate(s.doStrategyCompensate, false)
+			// Because the compensation (strategy) is not executed,
+			// the pipeline used to execute the pipeline is idempotent internally,
+			// that is, only one pipeline is executing at the same time
+			p.traverseDoCompensate(p.doStrategyCompensate, false)
 		}
 	}
 }
 
-//获取etcd到全局锁，代表补偿只有一个实例能执行
-func (s *PipelineSvc) getCompensateLock(cancel func()) (*dlock.DLock, error) {
-	lock, err := dlock.New(
-		cronCompensateDLockKey,
-		func() {
-			compensateLog.Error("[alert] dlock lost, stop current compensate")
-			cancel()
-			time.Sleep(waitTimeIfLostDLock)
-			compensateLog.Warn("try to continue compensate again")
-			go s.ContinueCompensate(context.Background())
-		},
-		dlock.WithTTL(30),
-	)
-	if err != nil {
-		compensateLog.Errorf("[alert] failed to get dlock, err: %v", err)
-		time.Sleep(waitTimeIfLostDLock)
-		go s.ContinueCompensate(context.Background())
-		return nil, err
-	}
-	if err := lock.Lock(context.Background()); err != nil {
-		compensateLog.Errorf("[alert] failed to lock dlock, err: %v", err)
-		time.Sleep(waitTimeIfLostDLock)
-		go s.ContinueCompensate(context.Background())
-		return nil, err
-	}
-
-	return lock, nil
-}
-
-func (s *PipelineSvc) doInterruptCompensate(pc spec.PipelineCron) {
-	// 中断补偿
-	err := s.cronInterruptCompensate(pc)
+func (p *provider) doInterruptCompensate(pc spec.PipelineCron) {
+	err := p.cronInterruptCompensate(pc)
 	if err != nil {
 		compensateLog.WithField("cronID", pc.ID).Errorf("failed to do interrupt-compensate, cronID: %d, err: %v", pc.ID, err)
 	}
 }
 
-func (s *PipelineSvc) doStrategyCompensate(pc spec.PipelineCron) {
-	//开始为每个 enable 且开启补偿的 cron 执行 未执行补偿 检查
-	err := s.cronNotExecuteCompensate(pc)
+func (p *provider) doStrategyCompensate(pc spec.PipelineCron) {
+	err := p.cronNotExecuteCompensate(pc)
 	if err != nil {
 		compensateLog.WithField("cronID", pc.ID).Errorf("failed to do notexecute-compensate, cronID: %d, err: %v", pc.ID, err)
 	}
 }
 
-func (s *PipelineSvc) traverseDoCompensate(doCompensate func(cron spec.PipelineCron), sync bool) {
+func (p *provider) traverseDoCompensate(doCompensate func(cron spec.PipelineCron), sync bool) {
 
 	if doCompensate == nil {
 		return
 	}
 
 	// get all enabled crons
-	enabledCrons, err := s.dbClient.ListPipelineCrons(&[]bool{true}[0])
+	enabledCrons, err := p.client.ListPipelineCrons(&[]bool{true}[0])
 	if err != nil {
 		compensateLog.Errorf("failed to list enabled pipeline crons from db, try again later, err: %v", err)
 		time.Sleep(waitTimeIfQueryDBError)
@@ -154,7 +146,7 @@ func (s *PipelineSvc) traverseDoCompensate(doCompensate func(cron spec.PipelineC
 
 	group := limit_sync_group.NewSemaphore(int(conf.CronCompensateConcurrentNumber()))
 	for _, pc := range enabledCrons {
-		if s.isCronShouldBeIgnored(pc) {
+		if p.isCronShouldBeIgnored(pc) {
 			triggerTime := time.Now()
 			logrus.Warnf("crond compensator: pipelineCronID: %d, triggered compensate but ignored, triggerTime: %s, cronStartFrom: %s",
 				pc.ID, triggerTime, *pc.Extra.CronStartFrom)
@@ -173,17 +165,17 @@ func (s *PipelineSvc) traverseDoCompensate(doCompensate func(cron spec.PipelineC
 	group.Wait()
 }
 
-// cronInterruptCompensate 定时 中断补偿
-func (s *PipelineSvc) cronInterruptCompensate(pc spec.PipelineCron) error {
+// cronInterruptCompensate Timing interrupt compensation
+func (p *provider) cronInterruptCompensate(pc spec.PipelineCron) error {
 
-	// 计算中断补偿开始时间
+	// Calculate interrupt compensation start time
 	beforeCompensateFromTime := getCompensateFromTime(pc)
 
 	// current time minus a certain time，prevent conflicts with cron create pipeline
 	now := time.Unix(time.Now().Unix(), 0)
 	var thisCompensateFromTime = now.Add(time.Second * -time.Duration(conf.CronFailureCreateIntervalCompensateTimeSecond()))
 
-	// 用 cron expr 计算出从起始补偿点开始的所有需要触发时间
+	// Use cron expr to calculate all required trigger times from the starting compensation point
 	needTriggerTimes, err := pipelineyml.ListNextCronTime(pc.CronExpr,
 		pipelineyml.WithCronStartEndTime(&beforeCompensateFromTime, &thisCompensateFromTime),
 		pipelineyml.WithListNextScheduleCount(100),
@@ -193,8 +185,8 @@ func (s *PipelineSvc) cronInterruptCompensate(pc spec.PipelineCron) error {
 	}
 
 	if len(needTriggerTimes) > 0 {
-		// 根据 source + ymlName + timeCreated 搜索已经创建的流水线记录
-		existPipelines, _, _, _, err := s.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
+		// Pipeline search record created based on createlyname + source
+		existPipelines, _, _, _, err := p.client.PageListPipelines(apistructs.PipelinePageListRequest{
 			Sources:          []apistructs.PipelineSource{pc.PipelineSource},
 			YmlNames:         []string{pc.PipelineYmlName},
 			TriggerModes:     []apistructs.PipelineTriggerMode{apistructs.PipelineTriggerModeCron},
@@ -208,22 +200,22 @@ func (s *PipelineSvc) cronInterruptCompensate(pc spec.PipelineCron) error {
 			return errors.Errorf("[alert] failed to list existPipelines, cronID: %d, err: %v", pc.ID, err)
 		}
 
-		// 转换为 map 用于查询
+		// Convert to map for query
 		existPipelinesMap := make(map[time.Time]spec.Pipeline, len(existPipelines))
 		for _, p := range existPipelines {
 			existPipelinesMap[getTriggeredTime(p)] = p
 		}
 
-		// 遍历 needTriggerTimes，若没创建，则需要中断补偿创建
+		// Traverse needTriggerTimes. If it is not created, you need to interrupt the creation of compensation
 		for _, ntt := range needTriggerTimes {
-			p, ok := existPipelinesMap[ntt]
+			pipeline, ok := existPipelinesMap[ntt]
 			if ok {
-				compensateLog.Infof("no need do interrupt-compensate, cronID: %d, triggerTime: %v, exist pipelineID: %d", pc.ID, ntt, p.ID)
+				compensateLog.Infof("no need do interrupt-compensate, cronID: %d, triggerTime: %v, exist pipelineID: %d", pc.ID, ntt, pipeline.ID)
 				continue
 			}
 			compensateLog.Infof("need do interrupt-compensate, cronID: %d, triggerTime: %v", pc.ID, ntt)
 			// create
-			created, err := s.createCronCompensatePipeline(pc, ntt)
+			created, err := p.createCronCompensatePipeline(pc, ntt)
 			if err != nil {
 				compensateLog.Errorf("failed to do interrupt-compensate, cronID: %d, triggerTime: %v, err: %v", pc.ID, ntt, err)
 				continue
@@ -232,9 +224,9 @@ func (s *PipelineSvc) cronInterruptCompensate(pc spec.PipelineCron) error {
 		}
 	}
 
-	// 中断补偿完毕，需要更新 cron 的 thisCompensateFromTime 字段
+	// After the interrupt compensation is completed, the thisCompensateFromTime field of cron needs to be updated
 	pc.Extra.LastCompensateAt = &thisCompensateFromTime
-	// 若 compensator 为空，说明是老的 cron，自动使用默认配置
+	// If the compensator is empty, it indicates that it is an old cron, and the default configuration will be used automatically
 	if pc.Extra.Compensator == nil {
 		pc.Extra.Compensator = &apistructs.CronCompensator{
 			Enable:               pipelineyml.DefaultCronCompensator.Enable,
@@ -242,27 +234,27 @@ func (s *PipelineSvc) cronInterruptCompensate(pc spec.PipelineCron) error {
 			StopIfLatterExecuted: pipelineyml.DefaultCronCompensator.StopIfLatterExecuted,
 		}
 	}
-	if err := s.dbClient.UpdatePipelineCron(pc.ID, &pc); err != nil {
+	if err := p.client.UpdatePipelineCron(pc.ID, &pc); err != nil {
 		return errors.Errorf("failed to update pipelineCron for lastCompensateAt field, err: %v", err)
 	}
 
 	return nil
 }
 
-func (s *PipelineSvc) CronNotExecuteCompensateById(id uint64) error {
-	cron, err := s.dbClient.GetPipelineCron(id)
+func (p *provider) CronNotExecuteCompensateById(id uint64) error {
+	cron, err := p.client.GetPipelineCron(id)
 	if err != nil {
 		return err
 	}
 
-	return s.cronNotExecuteCompensate(cron)
+	return p.cronNotExecuteCompensate(cron)
 }
 
-// cronNotExecuteCompensate 定时 未执行补偿
-// 只执行一天内
-func (s *PipelineSvc) cronNotExecuteCompensate(pc spec.PipelineCron) error {
+// cronNotExecuteCompensate timing compensation not performed
+// Only within one day
+func (p *provider) cronNotExecuteCompensate(pc spec.PipelineCron) error {
 
-	// 未启用 notexecute compensate，退出
+	// Notexecute compensate is not enabled, exit
 	if pc.Enable == nil || *pc.Enable == false || pc.Extra.Compensator == nil || pc.Extra.Compensator.Enable == false {
 		return nil
 	}
@@ -270,11 +262,11 @@ func (s *PipelineSvc) cronNotExecuteCompensate(pc spec.PipelineCron) error {
 	now := time.Unix(time.Now().Unix(), 0)
 	oneDayBeforeNow := now.AddDate(0, 0, -1)
 
-	// 获取待执行列表
-	// 根据 source + ymlName + id 搜索已经创建的流水线记录
-	//这里为什么按id拿10个，因为在表达式粒度很小的情况下，会丢失很多数据，然而中断补偿创建的id顺序和执行顺序不同
-	//所以中和先用id正序或者倒序拿10条，后面doCronCompensate再根据10条的具体执行时间挑最适合时间的进行执行
-	//时间粒度很大的情况下，本质来说拿一条就Ok了
+	// Get to execute list
+	// Search the created pipeline records according to source + ymlname + ID
+	// Here, why take 10 by ID? Because when the expression granularity is very small, a lot of data will be lost. However, the ID order of interrupt compensation is different from that of execution
+	// Therefore, neutralization first takes 10 items in positive or reverse order with ID, and then doCronCompensate selects the most suitable time for execution according to the specific execution time of the 10 items
+	// When the time granularity is very large, in essence, one is OK
 	request := apistructs.PipelinePageListRequest{
 		Sources:          []apistructs.PipelineSource{pc.PipelineSource},
 		YmlNames:         []string{pc.PipelineYmlName},
@@ -293,34 +285,35 @@ func (s *PipelineSvc) cronNotExecuteCompensate(pc spec.PipelineCron) error {
 		request.AscCols = []string{apistructs.PipelinePageListRequestIdColumn}
 	}
 
-	existPipelines, _, _, _, err := s.dbClient.PageListPipelines(request)
+	existPipelines, _, _, _, err := p.client.PageListPipelines(request)
 	if err != nil {
 		return errors.Errorf("failed to list notexecute pipelines, cronID: %d, err: %v", pc.ID, err)
 	}
 
-	return s.doCronCompensate(*pc.Extra.Compensator, existPipelines, pc)
+	return p.doCronCompensate(*pc.Extra.Compensator, existPipelines, pc)
 }
 
-func (s *PipelineSvc) doCronCompensate(compensator apistructs.CronCompensator, notRunPipelines []spec.Pipeline, pipelineCron spec.PipelineCron) error {
+func (p *provider) doCronCompensate(compensator apistructs.CronCompensator, notRunPipelines []spec.Pipeline, pipelineCron spec.PipelineCron) error {
 	var order string
 
 	if len(notRunPipelines) <= 0 {
 		return nil
 	}
 
-	//根据策略从排好序的未执行中挑选出最适合时间点
+	// Select the most suitable time point from the non execution in good order according to the strategy
 	if compensator.LatestFirst {
 		order = "DESC"
 	} else {
 		order = "ASC"
 	}
-	//doCronCompensate再根据10条的具体执行时间挑最适合时间的进行执行
+	// doCronCompensate selects the most suitable time for execution according to the specific execution time of Article 10
 	firstOrLastPipeline := orderByCronTriggerTime(notRunPipelines, order)[indexFirst]
 
-	//根据策略判定假如是最后一个pipeline，当是StopIfLatterExecuted的策略的时候，应该和最新的suucess状态的pipeline进行一个时间对比，只有id 大于 成功的id才能执行
+	// According to the policy decision, if it is the last pipeline, when it is the StopIfLatterExecuted policy,
+	// it should be compared with the pipeline in the latest success status. Only the ID greater than the successful ID can be executed
 	if compensator.LatestFirst && compensator.StopIfLatterExecuted {
-		// 获取执行成功的pipeline
-		runSuccessPipeline, _, _, _, err := s.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
+		// Get the pipeline successfully executed
+		runSuccessPipeline, _, _, _, err := p.client.PageListPipelines(apistructs.PipelinePageListRequest{
 			Sources:  []apistructs.PipelineSource{pipelineCron.PipelineSource},
 			YmlNames: []string{pipelineCron.PipelineYmlName},
 			Statuses: []string{apistructs.PipelineStatusSuccess.String()},
@@ -337,35 +330,36 @@ func (s *PipelineSvc) doCronCompensate(compensator apistructs.CronCompensator, n
 			return nil
 		}
 
-		//最新的成功的id 大于 补偿的 id, 就不进行补偿
+		// If the latest successful ID is greater than the compensated ID, no compensation will be made
 		lastSuccessPipeline := runSuccessPipeline[indexFirst]
 		if lastSuccessPipeline.ID > firstOrLastPipeline.ID {
 			return nil
 		}
 	}
 
-	_, err := s.RunPipeline(&apistructs.PipelineRunRequest{
+	_, err := p.pipelineFunc.RunPipeline(&apistructs.PipelineRunRequest{
 		PipelineID:   firstOrLastPipeline.ID,
 		IdentityInfo: apistructs.IdentityInfo{InternalClient: firstOrLastPipeline.Extra.InternalClient},
 	})
 
-	//执行成功打印一行记录
+	// Print one line of record after successful execution
 	if err == nil {
 		compensateLog.Infof("[doCronCompensate] Compensate success, pipelineId %d", firstOrLastPipeline.ID)
 		return nil
 	}
 
-	//补偿出现冲突或者内部出现错误，应该通知监听下次应该直接执行这个补偿的调度，
-	//对应的cron表达式间隔和执行时间加起来大于未执行补偿的调度时间，整个调度就和配置的策略一样进行执行，小于的话，就会出现竞争执行
+	// If there is a conflict or internal error in compensation, the listener should be notified and the compensation scheduling should be directly executed next time,
+	// If the sum of the corresponding cron expression interval and execution time is greater than the scheduling time without compensation,
+	// the whole scheduling will be executed as the configured policy. If it is less than, there will be competitive execution
 	compensateLog.Infof("[doCronCompensate] run Compensate err, put cronId into etcd wait callback: cronId %d", pipelineCron.ID)
-	//创建etcd租约
-	lease := v3.NewLease(s.etcdctl.GetClient())
+	// Create etcd lease
+	lease := v3.NewLease(p.EtcdClient)
 	if grant, err := lease.Grant(context.Background(), conf.CronCompensateTimeMinute()*60); err == nil {
-		//将cronid设置到key下，等待
-		if _, err := s.js.PutWithOption(context.Background(),
-			fmt.Sprint(reconciler.EtcdNeedCompensatePrefix, pipelineCron.ID),
-			nil, []interface{}{v3.WithLease(grant.ID)}); err != nil {
-			// 写入etcd失败，这次补偿失败，等待下次补偿
+		// Set cronid to key and wait
+		if _, err := p.EtcdClient.Put(context.Background(),
+			fmt.Sprint(EtcdNeedCompensatePrefix, pipelineCron.ID),
+			"", v3.WithLease(grant.ID)); err != nil {
+			// Failed to write etcd. This compensation failed. Wait for the next compensation
 			logrus.Errorf("[alert] failed to write cronId to etcd: cronId %d, err: %v", pipelineCron.ID, err)
 			return err
 		}
@@ -380,7 +374,7 @@ func (s *PipelineSvc) doCronCompensate(compensator apistructs.CronCompensator, n
 
 }
 
-// orderByCronTriggerTime 排序
+// orderByCronTriggerTime order
 // order: ASC/DESC
 func orderByCronTriggerTime(inputs []spec.Pipeline, order string) []spec.Pipeline {
 	var result []spec.Pipeline
@@ -402,15 +396,15 @@ func orderByCronTriggerTime(inputs []spec.Pipeline, order string) []spec.Pipelin
 	return result
 }
 
-// getCompensateFromTime 计算 中断补偿 起始时间点
-// 若 extra.LastCompensateAt 为空，说明未补偿过，使用 cron 更新时间作为补偿起始时间
-// 最多补偿一天
+// getCompensateFromTime calculates the start time point of interrupt compensation
+// If extra LastCompensateAt is empty, which means it has not been compensated. The cron update time is used as the compensation start time
+// The maximum compensation is one day
 //
-// 有一个特殊场景：
-// 1. 手动修改 enable 字段为 0，重启 pipeline 使 cron 停止
-// 2. 做一些需要暂时停止 cron 的操作，例如数据库迁移，集群调整等
-// 3. 手动修改 enable = 1，重启 pipeline 使 cron 生效，需要做 中断补偿
-// 过程中 lastCompensateAt 字段未更新，cron 被临时停止，这种情况同样使用 cron 更新时间作为 补偿起始时间
+// There is a special scenario:
+// 1.  Manually change the enable field to 0 and restart the pipeline to stop cron
+// 2.  Do some operations that need to temporarily stop cron, such as database migration, cluster adjustment, etc
+// 3.  Manually modify enable = 1, restart the pipeline to make cron effective, and interrupt compensation is required
+// During the process, the LastCompensateAt field is not updated, and cron is temporarily stopped. In this case, the cron update time is also used as the compensation start time
 func getCompensateFromTime(pc spec.PipelineCron) (t time.Time) {
 	now := time.Unix(time.Now().Unix(), 0)
 	defer func() {
@@ -425,7 +419,7 @@ func getCompensateFromTime(pc spec.PipelineCron) (t time.Time) {
 	return pc.TimeUpdated
 }
 
-// getTriggeredTime 获取创建时间，定时创建的流水线使用 cronTriggerTime
+// getTriggeredTime gets the creation time. The pipeline created regularly uses CronTriggerTime
 func getTriggeredTime(p spec.Pipeline) time.Time {
 	if p.Extra.CronTriggerTime != nil {
 		return time.Unix((*p.Extra.CronTriggerTime).Unix(), 0)
@@ -433,12 +427,12 @@ func getTriggeredTime(p spec.Pipeline) time.Time {
 	return time.Unix(p.TimeCreated.Unix(), 0)
 }
 
-func (s *PipelineSvc) createCronCompensatePipeline(pc spec.PipelineCron, triggerTime time.Time) (*spec.Pipeline, error) {
+func (p *provider) createCronCompensatePipeline(pc spec.PipelineCron, triggerTime time.Time) (*spec.Pipeline, error) {
 	// generate new label map avoid concurrent map problem
 	pc.Extra.NormalLabels = pc.GenCompensateCreatePipelineReqNormalLabels(triggerTime)
 	pc.Extra.FilterLabels = pc.GenCompensateCreatePipelineReqFilterLabels()
 
-	return s.CreateV2(&apistructs.PipelineCreateRequestV2{
+	return p.pipelineFunc.CreatePipeline(&apistructs.PipelineCreateRequestV2{
 		PipelineYml:            pc.Extra.PipelineYml,
 		ClusterName:            pc.Extra.ClusterName,
 		PipelineYmlName:        pc.PipelineYmlName,
@@ -457,10 +451,19 @@ func (s *PipelineSvc) createCronCompensatePipeline(pc spec.PipelineCron, trigger
 }
 
 // isCronShouldIgnore if trigger time before cron start from time, should ignore cron at this trigger time
-func (s *PipelineSvc) isCronShouldBeIgnored(pc spec.PipelineCron) bool {
+func (p *provider) isCronShouldBeIgnored(pc spec.PipelineCron) bool {
 	if pc.Extra.CronStartFrom == nil {
 		return false
 	}
 	triggerTime := time.Now()
 	return triggerTime.Before(*pc.Extra.CronStartFrom)
+}
+
+func init() {
+	servicehub.Register("cron-compensator", &servicehub.Spec{
+		Services:   []string{"cron-compensator"},
+		Types:      []reflect.Type{reflect.TypeOf((*Interface)(nil)).Elem()},
+		ConfigFunc: func() interface{} { return &config{} },
+		Creator:    func() servicehub.Provider { return &provider{} },
+	})
 }

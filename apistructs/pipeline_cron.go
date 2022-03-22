@@ -59,27 +59,11 @@ type PipelineCronDTO struct {
 	PipelineSource         PipelineSource `json:"pipelineSource"`
 }
 
-type PipelineCronCreateRequest struct {
-	PipelineCreateRequest PipelineCreateRequestV2 `json:"pipelineCreateRequest"`
-}
-
 type PipelineCronCreateResponse struct {
 	Header
 	Data uint64 `json:"data"` // cronID
 }
 
 type PipelineCronDeleteResponse struct {
-	Header
-}
-
-type PipelineCronUpdateRequest struct {
-	ID                     uint64   `json:"id"`
-	PipelineYml            string   `json:"pipelineYml"`
-	CronExpr               string   `json:"cronExpr"`
-	ConfigManageNamespaces []string `json:"configManageNamespaces"`
-	PipelineDefinitionID   string   `json:"pipelineDefinitionID"`
-}
-
-type PipelineCronUpdateResponse struct {
 	Header
 }

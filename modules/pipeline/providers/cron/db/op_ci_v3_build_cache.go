@@ -12,22 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dbclient
+package db
 
 import (
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (client *Client) GetBuildCache(clusterName, imageName string) (cache spec.CIV3BuildCache, err error) {
+func (client *Client) GetBuildCache(clusterName, imageName string, ops ...mysqlxorm.SessionOption) (cache spec.CIV3BuildCache, err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
 	defer func() {
 		err = errors.Wrapf(err, "failed to get build cache, clusterName [%s], imageName [%s]", clusterName, imageName)
 	}()
 
 	cache.ClusterName = clusterName
 	cache.Name = imageName
-	ok, err := client.Get(&cache)
+	ok, err := session.Get(&cache)
 	if err != nil {
 		return spec.CIV3BuildCache{}, err
 	}
@@ -37,9 +41,12 @@ func (client *Client) GetBuildCache(clusterName, imageName string) (cache spec.C
 	return cache, nil
 }
 
-func (client *Client) DeleteBuildCache(id interface{}) (err error) {
+func (client *Client) DeleteBuildCache(id interface{}, ops ...mysqlxorm.SessionOption) (err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
 	defer func() { err = errors.Wrapf(err, "failed to delete build cache, id [%v]", id) }()
 
-	_, err = client.ID(id).Delete(&spec.CIV3BuildCache{})
+	_, err = session.ID(id).Delete(&spec.CIV3BuildCache{})
 	return err
 }

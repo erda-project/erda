@@ -16,14 +16,14 @@ package pipelinesvc
 
 import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
-	"github.com/erda-project/erda/modules/pipeline/providers/cron"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
@@ -34,10 +34,10 @@ import (
 
 type PipelineSvc struct {
 	appSvc          *appsvc.AppSvc
-	crondSvc        *crondsvc.CrondSvc
+	crondSvc        daemon.Interface
 	actionAgentSvc  *actionagentsvc.ActionAgentSvc
 	extMarketSvc    *extmarketsvc.ExtMarketSvc
-	pipelineCronSvc *cron.Service
+	pipelineCronSvc cronpb.CronServiceServer
 	permissionSvc   *permissionsvc.PermissionSvc
 	queueManage     *queuemanage.QueueManage
 
@@ -55,9 +55,9 @@ type PipelineSvc struct {
 	clusterInfo clusterinfo.Interface
 }
 
-func New(appSvc *appsvc.AppSvc, crondSvc *crondsvc.CrondSvc,
+func New(appSvc *appsvc.AppSvc, crondSvc daemon.Interface,
 	actionAgentSvc *actionagentsvc.ActionAgentSvc, extMarketSvc *extmarketsvc.ExtMarketSvc,
-	pipelineCronSvc *cron.Service, permissionSvc *permissionsvc.PermissionSvc,
+	pipelineCronSvc cronpb.CronServiceServer, permissionSvc *permissionsvc.PermissionSvc,
 	queueManage *queuemanage.QueueManage,
 	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,
 	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store, clusterInfo clusterinfo.Interface) *PipelineSvc {

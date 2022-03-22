@@ -179,3 +179,13 @@ func (client *Client) UpdatePipelineCronWillUseDefault(id interface{}, cron *Pip
 	_, err := session.ID(id).Cols(columns...).Update(cron)
 	return errors.Wrapf(err, "failed to update pipeline cron, id [%v]", id)
 }
+
+func (client *Client) ListAllPipelineCrons(ops ...mysqlxorm.SessionOption) (crons []PipelineCron, err error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	if err = session.Find(&crons); err != nil {
+		return nil, err
+	}
+	return crons, nil
+}

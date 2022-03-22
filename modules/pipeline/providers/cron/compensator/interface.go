@@ -12,31 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package crondsvc
+package compensator
 
 import (
-	"sync"
-
-	"github.com/erda-project/erda/bundle"
-	"github.com/erda-project/erda/modules/pipeline/dbclient"
-	"github.com/erda-project/erda/pkg/cron"
-	"github.com/erda-project/erda/pkg/jsonstore"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-type CrondSvc struct {
-	crond    *cron.Cron
-	mu       *sync.Mutex
-	dbClient *dbclient.Client
-	bdl      *bundle.Bundle
-	js       jsonstore.JsonStore
+type PipelineFunc struct {
+	RunPipeline    RunPipelineFunc
+	CreatePipeline CreatePipelineFunc
 }
 
-func New(dbClient *dbclient.Client, bdl *bundle.Bundle, js jsonstore.JsonStore) *CrondSvc {
-	d := CrondSvc{}
-	d.crond = cron.New()
-	d.mu = &sync.Mutex{}
-	d.dbClient = dbClient
-	d.bdl = bdl
-	d.js = js
-	return &d
+type RunPipelineFunc func(req *apistructs.PipelineRunRequest) (*spec.Pipeline, error)
+type CreatePipelineFunc func(req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error)
+
+type Interface interface {
+	CronNotExecuteCompensateById(ID uint64) error
+
+	// todo Can be removed after all objects are provider
+	WithPipelineFunc(pipelineFunc PipelineFunc)
 }
