@@ -66,7 +66,7 @@ func (p *provider) PipelineDatabaseGC(ctx context.Context) {
 // doPipelineDatabaseGC query the data in the database according to req paging to perform gc
 func (p *provider) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest) {
 	var pageNum = req.PageNum
-
+	pipelines := make([]spec.Pipeline, 0)
 	for {
 		req.PageNum = pageNum
 		pipelineResults, _, _, _, err := p.dbClient.PageListPipelines(req)
@@ -77,18 +77,19 @@ func (p *provider) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest) 
 		}
 
 		if len(pipelineResults) <= 0 {
-			return
+			break
 		}
-
-		for _, pipeline := range pipelineResults {
-			// gc logic
-			if err = p.DoDBGC(pipeline.PipelineID, apistructs.PipelineGCDBOption{NeedArchive: needArchive(pipeline)}); err != nil {
-				logrus.Errorf("failed to do gc logic, pipelineID: %d, err: %v", pipeline.PipelineID, err)
-				continue
-			}
+		pipelines = append(pipelines, pipelineResults...)
+	}
+	for _, pipeline := range pipelines {
+		if !pipeline.Status.CanDelete() {
+			continue
 		}
-
-		time.Sleep(time.Second * 10)
+		// gc logic
+		if err := p.DoDBGC(pipeline.PipelineID, apistructs.PipelineGCDBOption{NeedArchive: needArchive(pipeline)}); err != nil {
+			logrus.Errorf("failed to do gc logic, pipelineID: %d, err: %v", pipeline.PipelineID, err)
+			continue
+		}
 	}
 }
 
