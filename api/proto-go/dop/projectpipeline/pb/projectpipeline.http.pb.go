@@ -31,6 +31,8 @@ type ProjectPipelineServiceHandler interface {
 	CreateNamePreCheck(context.Context, *CreateProjectPipelineNamePreCheckRequest) (*CreateProjectPipelineNamePreCheckResponse, error)
 	// GET /api/project-pipeline/actions/source-pre-check
 	CreateSourcePreCheck(context.Context, *CreateProjectPipelineSourcePreCheckRequest) (*CreateProjectPipelineSourcePreCheckResponse, error)
+	// GET /api/project-pipeline/actions/list-category
+	ListPipelineCategory(context.Context, *ListPipelineCategoryRequest) (*ListPipelineCategoryResponse, error)
 	// PUT /api/project-pipeline/definitions/{pipelineDefinitionID}
 	Update(context.Context, *UpdateProjectPipelineRequest) (*UpdateProjectPipelineResponse, error)
 }
@@ -238,6 +240,42 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 		)
 	}
 
+	add_ListPipelineCategory := func(method, path string, fn func(context.Context, *ListPipelineCategoryRequest) (*ListPipelineCategoryResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*ListPipelineCategoryRequest))
+		}
+		var ListPipelineCategory_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			ListPipelineCategory_info = transport.NewServiceInfo("erda.dop.projectpipeline.ProjectPipelineService", "ListPipelineCategory", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, ListPipelineCategory_info)
+				}
+				r = r.WithContext(ctx)
+				var in ListPipelineCategoryRequest
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_Update := func(method, path string, fn func(context.Context, *UpdateProjectPipelineRequest) (*UpdateProjectPipelineResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 			return fn(ctx, req.(*UpdateProjectPipelineRequest))
@@ -302,5 +340,6 @@ func RegisterProjectPipelineServiceHandler(r http.Router, srv ProjectPipelineSer
 	add_ListPipelineYml("GET", "/api/project-pipeline/actions/get-pipeline-yml-list", srv.ListPipelineYml)
 	add_CreateNamePreCheck("GET", "/api/project-pipeline/actions/name-pre-check", srv.CreateNamePreCheck)
 	add_CreateSourcePreCheck("GET", "/api/project-pipeline/actions/source-pre-check", srv.CreateSourcePreCheck)
+	add_ListPipelineCategory("GET", "/api/project-pipeline/actions/list-category", srv.ListPipelineCategory)
 	add_Update("PUT", "/api/project-pipeline/definitions/{pipelineDefinitionID}", srv.Update)
 }
