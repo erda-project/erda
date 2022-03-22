@@ -44,7 +44,7 @@ func (r *Reconciler) teardownPipeline(ctx context.Context, p *spec.PipelineWithT
 	}
 	logrus.Infof("reconciler: begin teardown pipeline, pipelineID: %d", p.Pipeline.ID)
 	defer r.doCronCompensate(ctx, p.Pipeline.ID)
-	defer r.waitGC(p.Pipeline.Extra.Namespace, p.Pipeline.ID, p.Pipeline.GetResourceGCTTL())
+	defer r.resourceGC.WaitGC(p.Pipeline.Extra.Namespace, p.Pipeline.ID, p.Pipeline.GetResourceGCTTL())
 	defer func() {
 		// // metrics
 		go metrics.PipelineCounterTotalAdd(*p.Pipeline, 1)

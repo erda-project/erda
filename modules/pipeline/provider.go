@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler"
+	"github.com/erda-project/erda/modules/pipeline/providers/resourcegc"
 	"github.com/erda-project/erda/providers/metrics/report"
 )
 
@@ -47,6 +48,7 @@ type provider struct {
 	LeaderWorker leaderworker.Interface
 	ClusterInfo  clusterinfo.Interface
 	DBGC         dbgc.Interface
+	ResourceGC   resourcegc.Interface
 }
 
 func (p *provider) Run(ctx context.Context) error {

@@ -30,6 +30,7 @@ import (
 	_ "github.com/erda-project/erda/modules/pipeline/providers/cron"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/dbgc"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/definition"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/resourcegc"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/source"
 )
 

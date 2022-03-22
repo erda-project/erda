@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package resourcegc
 
 import (
 	"context"
 	"fmt"
 	"math/rand"
 	"time"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -31,7 +29,7 @@ const bufferTime = 3600
 // sometimes the pipeline is in downtime or restart time
 // then the etcd lease of gc may expire at this time
 // and then there is no instance get lease, which results in some namespaces pod not being gc
-func (r *Reconciler) CompensateGCNamespaces(ctx context.Context) {
+func (r *provider) compensateGCNamespaces(ctx context.Context) {
 	r.doWaitGCCompensate(false)
 	r.doWaitGCCompensate(true)
 
@@ -47,13 +45,13 @@ func (r *Reconciler) CompensateGCNamespaces(ctx context.Context) {
 	}
 }
 
-func (r *Reconciler) doWaitGCCompensate(isSnippetPipeline bool) {
+func (r *provider) doWaitGCCompensate(isSnippetPipeline bool) {
 	var pageNum = 1
 	for {
 		needGCPipelines, total, err := r.getNeedGCPipelines(pageNum, isSnippetPipeline)
 		pageNum += 1
 		if err != nil {
-			logrus.Errorf("getNeedGcPipelines error: %v", err)
+			r.Log.Errorf("getNeedGcPipelines error: %v", err)
 			continue
 		} else {
 			if total <= 0 {
@@ -62,14 +60,14 @@ func (r *Reconciler) doWaitGCCompensate(isSnippetPipeline bool) {
 
 			for _, p := range needGCPipelines {
 				// random pageSize to disperse query pressure
-				r.waitGC(p.Extra.Namespace, p.ID, uint64(rand.Intn(1000)))
+				r.WaitGC(p.Extra.Namespace, p.ID, uint64(rand.Intn(1000)))
 			}
 		}
 		time.Sleep(time.Second * 10)
 	}
 }
 
-func (r *Reconciler) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pipeline, int, error) {
+func (r *provider) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pipeline, int, error) {
 	var pipelineResults []spec.Pipeline
 
 	var req apistructs.PipelinePageListRequest
@@ -91,7 +89,19 @@ func (r *Reconciler) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pip
 				continue
 			}
 
-			if p.Extra.CompleteReconcilerGC || p.Extra.CompleteReconcilerTeardown {
+			if p.Extra.CompleteReconcilerGC {
+				continue
+			}
+
+			// if not found gc key in etcd, meaning wait-gc failed when tear down pipeline
+			// should add CompleteReconcilerGC-false and not-found-gc-key pipeline to need gc pipelines
+			notFound, err := r.js.Notfound(context.Background(), makePipelineGCKey(p.Extra.Namespace))
+			if err != nil {
+				r.Log.Errorf("get is-existed gc key failed, namespace: %s, cause pipelineID: %d(continue), err: %v", p.Extra.Namespace,
+					p.ID, err)
+				continue
+			}
+			if !notFound {
 				continue
 			}
 
