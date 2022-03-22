@@ -23,6 +23,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -38,9 +39,10 @@ type TaskRun struct {
 	P                     *spec.Pipeline
 	QueriedPipelineStatus apistructs.PipelineStatus
 
-	Bdl      *bundle.Bundle
-	DBClient *dbclient.Client
-	Js       jsonstore.JsonStore
+	Bdl         *bundle.Bundle
+	DBClient    *dbclient.Client
+	Js          jsonstore.JsonStore
+	ClusterInfo clusterinfo.Interface
 
 	QuitQueueTimeout bool
 	QuitWaitTimeout  bool
@@ -66,7 +68,7 @@ func New(ctx context.Context, task *spec.PipelineTask,
 	pExitCh <-chan struct{}, pExitChCancel context.CancelFunc,
 	executor types.ActionExecutor, p *spec.Pipeline, bdl *bundle.Bundle, dbClient *dbclient.Client, js jsonstore.JsonStore,
 	actionAgentSvc *actionagentsvc.ActionAgentSvc,
-	extMarketSvc *extmarketsvc.ExtMarketSvc,
+	extMarketSvc *extmarketsvc.ExtMarketSvc, clusterInfo clusterinfo.Interface,
 ) *TaskRun {
 	// make executor has buffer, don't block task framework
 	executorCh := make(chan spec.ExecutorDoneChanData, 1)
@@ -76,9 +78,10 @@ func New(ctx context.Context, task *spec.PipelineTask,
 		Executor: executor,
 		P:        p,
 
-		Bdl:      bdl,
-		DBClient: dbClient,
-		Js:       js,
+		Bdl:         bdl,
+		DBClient:    dbClient,
+		Js:          js,
+		ClusterInfo: clusterInfo,
 
 		QuitQueueTimeout: false,
 		QuitWaitTimeout:  false,

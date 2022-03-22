@@ -240,7 +240,7 @@ type ClusterInfo struct {
 	// Deprecated
 	IsRelation string `json:"isRelation"`
 	// encode of cluster info
-	CM map[string]string `json:"cm"`
+	CM ClusterInfoData `json:"cm"`
 }
 
 // GetClusterResponse 根据集群名称或集群ID获取集群信息

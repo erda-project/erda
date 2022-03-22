@@ -31,8 +31,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pkg/task_uuid"
 	"github.com/erda-project/erda/modules/pipeline/spec"
-	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/k8s/storage"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml/pipelineymlv1"
@@ -40,7 +38,7 @@ import (
 )
 
 // ParseJobHostBindTemplate Analyze the hostPath template and convert it to the cluster info value
-func ParseJobHostBindTemplate(hostPath string, clusterInfo map[string]string) (string, error) {
+func ParseJobHostBindTemplate(hostPath string, clusterInfo apistructs.ClusterInfoData) (string, error) {
 	var b bytes.Buffer
 
 	if hostPath == "" {
@@ -63,8 +61,8 @@ func ParseJobHostBindTemplate(hostPath string, clusterInfo map[string]string) (s
 }
 
 // GenerateK8SVolumes According to job configuration, production volume related configuration
-func GenerateK8SVolumes(job *apistructs.JobFromUser, clusterInfo ...map[string]string) ([]corev1.Volume, []corev1.VolumeMount, []*corev1.PersistentVolumeClaim) {
-	ci := make(map[string]string, 0)
+func GenerateK8SVolumes(job *apistructs.JobFromUser, clusterInfo ...apistructs.ClusterInfoData) ([]corev1.Volume, []corev1.VolumeMount, []*corev1.PersistentVolumeClaim) {
+	ci := apistructs.ClusterInfoData{}
 	if len(clusterInfo) != 0 {
 		ci = clusterInfo[0]
 	}
@@ -244,29 +242,6 @@ func GetBigDataConf(task *spec.PipelineTask) (apistructs.BigdataConf, error) {
 		return conf, fmt.Errorf("unmarshal bigdata config error: %s", err.Error())
 	}
 	return conf, nil
-}
-
-func GetCLusterInfo(clusterName string) (map[string]string, error) {
-	var clusterInfoRes struct {
-		Data map[string]string `json:"data"`
-	}
-
-	var body bytes.Buffer
-	resp, err := httpclient.New().Get(discover.Orchestrator()).
-		Path(strutil.Concat("/api/clusterinfo/", clusterName)).
-		Do().Body(&body)
-	if err != nil {
-		return nil, errors.Errorf("get cluster info failed, err: %v", err)
-	}
-
-	statusCode := resp.StatusCode()
-	respBody := body.String()
-
-	if err := json.Unmarshal([]byte(respBody), &clusterInfoRes); err != nil {
-		return nil, errors.Errorf("get cluster info failed, statueCode: %d, err: %v", statusCode, err)
-	}
-
-	return clusterInfoRes.Data, nil
 }
 
 // GetPullImagePolicy specify Image Pull Policy with IfNotPresent,Always,Never

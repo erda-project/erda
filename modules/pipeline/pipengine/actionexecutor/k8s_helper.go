@@ -16,14 +16,11 @@ package actionexecutor
 
 import (
 	"context"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 )
 
 func (m *Manager) deleteK8sExecutor(cluster apistructs.ClusterInfo) {
@@ -62,7 +59,7 @@ func (m *Manager) updateK8sExecutor(cluster apistructs.ClusterInfo) error {
 }
 
 func (m *Manager) batchUpdateK8sExecutor() error {
-	clusters, err := clusterinfo.ListAllClusters()
+	clusters, err := m.clusterInfo.ListAllClusterInfos()
 	if err != nil {
 		return err
 	}
@@ -81,10 +78,8 @@ func (m *Manager) batchUpdateK8sExecutor() error {
 }
 
 func (m *Manager) ListenAndPatchK8sExecutor(ctx context.Context) {
-	triggerChan := clusterinfo.RegisterRefreshChan()
-	eventChan := clusterinfo.RegisterClusterEventChan()
-	interval := time.Duration(conf.ExecutorRefreshIntervalMinute())
-	ticker := time.NewTicker(time.Minute * interval)
+	triggerChan := m.clusterInfo.RegisterRefreshEvent()
+	eventChan := m.clusterInfo.RegisterClusterEvent()
 	for {
 		select {
 		case <-ctx.Done():
@@ -105,10 +100,6 @@ func (m *Manager) ListenAndPatchK8sExecutor(ctx context.Context) {
 				}
 			case apistructs.ClusterActionDelete:
 				m.deleteK8sExecutor(event.Content)
-			}
-		case <-ticker.C:
-			if err := m.batchUpdateK8sExecutor(); err != nil {
-				logrus.Errorf("failed to batch update k8s executor, err: %v", err)
 			}
 		}
 	}

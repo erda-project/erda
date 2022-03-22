@@ -30,7 +30,7 @@ func (e *Endpoints) reloadActionExecutorConfig(ctx context.Context, r *http.Requ
 		return httpserver.ErrResp(http.StatusInternalServerError, "RELOAD PIPENGINE CONFIG: LIST", err.Error())
 	}
 
-	if err := actionexecutor.GetManager().Initialize(ctx, cfgChan); err != nil {
+	if err := actionexecutor.GetManager().Initialize(ctx, cfgChan, e.clusterInfo); err != nil {
 		return httpserver.ErrResp(http.StatusInternalServerError, "RELOAD PIPENGINE CONFIG: RELOAD", err.Error())
 	}
 	return httpserver.OkResp(nil)

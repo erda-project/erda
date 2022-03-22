@@ -87,7 +87,7 @@ func TestDealJobAndClusterInfo(t *testing.T) {
 		},
 		Env: map[string]string{},
 	}
-	clusterInfo := map[string]string{
+	clusterInfo := apistructs.ClusterInfoData{
 		apistructs.ECIEnable:  "false",
 		apistructs.ECIHitRate: "0",
 	}

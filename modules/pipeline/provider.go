@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	_ "github.com/erda-project/erda/modules/pipeline/aop/plugins"
+	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron"
 	"github.com/erda-project/erda/modules/pipeline/providers/dbgc"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/dispatcher"
@@ -44,6 +45,7 @@ type provider struct {
 	QueueManager queuemanager.Interface
 	Reconciler   reconciler.Interface
 	LeaderWorker leaderworker.Interface
+	ClusterInfo  clusterinfo.Interface
 	DBGC         dbgc.Interface
 }
 

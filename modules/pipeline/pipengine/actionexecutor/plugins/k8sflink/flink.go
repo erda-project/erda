@@ -30,8 +30,8 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/logic"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
-	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
+	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -49,7 +49,7 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
-		cluster, err := clusterinfo.GetClusterByName(clusterName)
+		cluster, err := clusterinfo.GetClusterInfoByName(clusterName)
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +121,8 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		return nil, err
 	}
 
-	clusterInfo, err := logic.GetCLusterInfo(job.ClusterName)
+	clusterInfo, err := clusterinfo.GetClusterInfoByName(job.ClusterName)
+	clusterCM := clusterInfo.CM
 	if err != nil {
 		return apistructs.Job{
 			JobFromUser: job,
@@ -162,7 +163,7 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		}, err
 	}
 
-	_, _, pvcs := logic.GenerateK8SVolumes(&job, clusterInfo)
+	_, _, pvcs := logic.GenerateK8SVolumes(&job, clusterCM)
 	for _, pvc := range pvcs {
 		if pvc == nil {
 			continue
@@ -184,7 +185,7 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 
 	logrus.Debugf("create flink cluster cr name %s in namespace %s", job.Name, ns.Name)
 
-	hosts := append([]string{FlinkIngressPrefix}, job.Namespace, clusterInfo[DiceRootDomain])
+	hosts := append([]string{FlinkIngressPrefix}, job.Namespace, clusterCM[DiceRootDomain])
 	hostURL := strings.Join(hosts, ".")
 	flinkCluster := k.ComposeFlinkCluster(job, bigDataConf, hostURL)
 	flinkCluster.ObjectMeta.OwnerReferences = []metav1.OwnerReference{

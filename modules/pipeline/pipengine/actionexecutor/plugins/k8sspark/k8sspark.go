@@ -28,13 +28,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
-
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/logic"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
 	"github.com/erda-project/erda/modules/pipeline/pkg/containers"
+	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -52,7 +51,7 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
-		cluster, err := clusterinfo.GetClusterByName(clusterName)
+		cluster, err := clusterinfo.GetClusterInfoByName(clusterName)
 		if err != nil {
 			return nil, err
 		}
@@ -86,7 +85,8 @@ func (k *K8sSpark) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		return nil, fmt.Errorf("invalid job spec")
 	}
 
-	clusterInfo, err := logic.GetCLusterInfo(job.ClusterName)
+	clusterInfo, err := clusterinfo.GetClusterInfoByName(job.ClusterName)
+	clusterCM := clusterInfo.CM
 	if err != nil {
 		return apistructs.Job{
 			JobFromUser: job,
@@ -121,7 +121,7 @@ func (k *K8sSpark) Start(ctx context.Context, task *spec.PipelineTask) (data int
 		return nil, fmt.Errorf("failed to create spark rolebinding, namespace: %s, err: %v", job.Namespace, err)
 	}
 
-	_, _, pvcs := logic.GenerateK8SVolumes(&job, clusterInfo)
+	_, _, pvcs := logic.GenerateK8SVolumes(&job, clusterCM)
 	for _, pvc := range pvcs {
 		if pvc == nil {
 			continue
@@ -486,11 +486,12 @@ func (k *K8sSpark) generateKubeSparkJob(job *apistructs.JobFromUser, conf *apist
 	vols, volMounts, _ := logic.GenerateK8SVolumes(job)
 
 	if job.PreFetcher != nil && job.PreFetcher.FileFromHost != "" {
-		clusterInfo, err := logic.GetCLusterInfo(k.clusterName)
+		clusterInfo, err := clusterinfo.GetClusterInfoByName(job.ClusterName)
+		clusterCM := clusterInfo.CM
 		if err != nil {
 			return nil, errors.Errorf("failed to get cluster info, cluster name: %s, err: %v", k.clusterName, err)
 		}
-		hostPath, err := logic.ParseJobHostBindTemplate(job.PreFetcher.FileFromHost, clusterInfo)
+		hostPath, err := logic.ParseJobHostBindTemplate(job.PreFetcher.FileFromHost, clusterCM)
 		if err != nil {
 			return nil, err
 		}
@@ -601,15 +602,16 @@ func (k *K8sSpark) appendEnvs(podSpec *sparkv1beta2.SparkPodSpec, resource *apis
 		})
 	}
 
-	clusterInfo, err := logic.GetCLusterInfo(k.clusterName)
+	clusterInfo, err := clusterinfo.GetClusterInfoByName(k.clusterName)
+	clusterCM := clusterInfo.CM
 	if err != nil {
 		logrus.Errorf("failed to add spark job envs %v", err)
 	}
 
-	if len(clusterInfo) > 0 {
-		for k, v := range clusterInfo {
+	if len(clusterCM) > 0 {
+		for k, v := range clusterCM {
 			podSpec.Env = append(podSpec.Env, corev1.EnvVar{
-				Name:  k,
+				Name:  string(k),
 				Value: v,
 			})
 		}
