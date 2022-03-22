@@ -87,6 +87,9 @@ func New(ops ...OpFunc) Worker {
 	for _, op := range ops {
 		op(&dw)
 	}
+	if len(dw.handlers) == 0 {
+		panic("no handler specified")
+	}
 	return &dw
 }
 
@@ -131,7 +134,7 @@ func (dw *defaultWorker) SetType(typ Type)        { dw.typ = typ }
 func (dw *defaultWorker) GetCreatedAt() time.Time { return dw.CreatedAt }
 func (dw *defaultWorker) Handle(ctx context.Context, task LogicTask) {
 	dw.lock.Lock()
-	var handlers []handler
+	handlers := make([]handler, len(dw.handlers))
 	copy(handlers, dw.handlers)
 	dw.lock.Unlock()
 
@@ -139,7 +142,7 @@ func (dw *defaultWorker) Handle(ctx context.Context, task LogicTask) {
 	finishedNum := 0
 	wctx, wcancel := context.WithCancel(ctx)
 	defer wcancel()
-	for _, h := range dw.handlers {
+	for _, h := range handlers {
 		go func(h handler) {
 			h(wctx, task)
 			finishChan <- struct{}{}
