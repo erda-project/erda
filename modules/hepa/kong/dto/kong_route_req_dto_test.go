@@ -29,3 +29,28 @@ func TestNewKongRouteReqDto(t *testing.T) {
 		t.Fatal("err")
 	}
 }
+
+type versioning struct {
+	version string
+}
+
+func (v versioning) GetVersion() (string, error) {
+	return v.version, nil
+}
+
+func TestKongRouteReqDto_Adjust(t *testing.T) {
+	var (
+		req = dto.NewKongRouteReqDto()
+		v   versioning
+	)
+	req.Adjust(dto.Versioning(v))
+	if req.PathHandling != nil {
+		t.Fatal("req.PathHandling should be nil")
+	}
+
+	v.version = "2.2.0"
+	req.Adjust(dto.Versioning(v))
+	if req.PathHandling == nil || *req.PathHandling != "v1" {
+		t.Fatal("req.PathHandling should be v1")
+	}
+}

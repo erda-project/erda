@@ -27,6 +27,7 @@ import (
 	_ "github.com/erda-project/erda/modules/pipeline/aop"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/cms"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/cron"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/dbgc"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/definition"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/source"
 )

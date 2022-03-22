@@ -72,6 +72,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
 	"github.com/erda-project/erda/modules/dop/services/project"
 	"github.com/erda-project/erda/modules/dop/services/projectpipelinefiletree"
+	"github.com/erda-project/erda/modules/dop/services/publish_item"
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
@@ -597,6 +598,9 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		pipeline.WithPipelineDefinition(p.PipelineDefinition),
 		pipeline.WithAppSvc(app),
 	)
+
+	publishItem := publish_item.New()
+
 	p.ProjectPipelineSvc.WithPipelineSvc(pipelineSvc)
 	p.ProjectPipelineSvc.WithPermissionSvc(perm)
 
@@ -657,6 +661,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithCodeCoverageExecRecord(codeCvc),
 		endpoints.WithTestReportRecord(testReportSvc),
 		endpoints.WithPipelineCron(p.PipelineCron),
+		endpoints.WithPublishItem(publishItem),
 	)
 
 	ep.ImportChannel = make(chan uint64)

@@ -97,12 +97,12 @@ func (a *Addon) MySQLDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup
 	}
 
 	// 查询集群operator支持情况
-	capacity, err := a.bdl.CapacityInfo(addonIns.Cluster)
+	capacity := a.cap.CapacityInfo(addonIns.Cluster)
 	if err != nil {
 		return nil, err
 	}
 
-	if !capacity.Data.MysqlOperator {
+	if !capacity.MysqlOperator {
 		logrus.Info("mysql operator switch is off")
 		// 执行mysql主从初始化
 		if err := a.initMsAfterStart(serviceGroup, masterName.Value, decPwd, clusterInfo); err != nil {
@@ -1369,7 +1369,7 @@ func (a *Addon) BuildCanalServiceItem(params *apistructs.AddonHandlerCreateItem,
 		addroptions := a.guessCanalAddr(*instanceroutings, instances)
 		if len(addroptions) == 0 {
 			return fmt.Errorf("未设置 canal 参数")
-		} else if a.Logger != nil {
+		} else {
 			a.pushLog(fmt.Sprintf("自动获取 canal 参数: %+v", addroptions), params)
 		}
 		if params.Options == nil {

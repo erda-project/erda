@@ -50,7 +50,7 @@ var PROJECTCREATE = command.Command{
 }
 
 func ProjectCreate(ctx *command.Context, org, project, desc, pkg string, waitImport int) error {
-	org, orgID, err := getOrgID(ctx, org)
+	org, orgID, err := common.GetOrgID(ctx, org)
 	if err != nil {
 		return err
 	}
@@ -187,6 +187,7 @@ func readValues(pkg string) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer zipReader.Close()
 
 	valuesFile := "values.yml"
 	if prefix, inDir := zipInDirectory(zipReader); inDir {

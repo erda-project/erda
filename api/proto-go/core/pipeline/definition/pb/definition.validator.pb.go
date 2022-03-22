@@ -145,3 +145,12 @@ func (this *PipelineDefinitionListResponse) Validate() error {
 	}
 	return nil
 }
+func (this *PipelineDefinitionUsedRefListRequest) Validate() error {
+	if this.Location == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("Location", fmt.Errorf(`value '%v' must not be an empty string`, this.Location))
+	}
+	return nil
+}
+func (this *PipelineDefinitionUsedRefListResponse) Validate() error {
+	return nil
+}

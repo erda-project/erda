@@ -44,17 +44,15 @@ func buildMiddlewareFilter(instanceinfo apistructs.InstanceInfoDataList) (addoni
 func (a *Addon) ListMiddleware(orgID uint64, params *apistructs.MiddlewareListRequest) (*apistructs.MiddlewareListResponseData, error) {
 	var limited_addonids []string
 	if params.InstanceIP != "" {
-		instanceinfo, err := a.bdl.GetInstanceInfo(apistructs.InstanceInfoRequest{
+		instanceList, err := a.instanceinfoImpl.GetInstanceInfo(apistructs.InstanceInfoRequest{
 			Phases:     []string{"unhealthy", "healthy", "running"},
 			InstanceIP: params.InstanceIP,
 		})
 		if err != nil {
 			return nil, err
 		}
-		if !instanceinfo.Success {
-			return nil, fmt.Errorf(instanceinfo.Error.Msg)
-		}
-		limited_addonids = buildMiddlewareFilter(instanceinfo.Data)
+
+		limited_addonids = buildMiddlewareFilter(instanceList)
 	}
 	// 通用查询，包含AddonName、Workspace、Project
 	total, addons, err := a.db.ListAddonInstancesByParams(orgID, params)
@@ -366,19 +364,19 @@ func (a *Addon) InnerGetMiddleware(instanceID string) (*apistructs.MiddlewareFet
 
 // GetMiddlewareResource 获取 middleware 资源详情
 func (a *Addon) GetMiddlewareResource(instanceID string) ([]apistructs.MiddlewareResourceFetchResponseData, error) {
-	resp, err := a.bdl.GetInstanceInfo(apistructs.InstanceInfoRequest{
+	instanceList, err := a.instanceinfoImpl.GetInstanceInfo(apistructs.InstanceInfoRequest{
 		AddonID: instanceID,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if len(resp.Data) == 0 {
+	if len(instanceList) == 0 {
 		return nil, errors.Errorf("not found instance: %s", instanceID)
 	}
 
-	middlewares := make([]apistructs.MiddlewareResourceFetchResponseData, 0, len(resp.Data))
-	for _, v := range resp.Data {
+	middlewares := make([]apistructs.MiddlewareResourceFetchResponseData, 0, len(instanceList))
+	for _, v := range instanceList {
 		item := apistructs.MiddlewareResourceFetchResponseData{
 			InstanceID:  instanceID,
 			ContainerID: v.ContainerID,

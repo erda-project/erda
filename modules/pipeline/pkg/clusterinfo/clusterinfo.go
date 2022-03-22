@@ -33,9 +33,10 @@ const (
 )
 
 var (
-	bdl               *bundle.Bundle
-	once              sync.Once
-	manualTriggerChan = make(chan struct{})
+	bdl                *bundle.Bundle
+	once               sync.Once
+	manualTriggerChans = make([]chan struct{}, 0)
+	clusterEventChans  = make([]chan apistructs.ClusterEvent, 0)
 )
 
 func Initialize(bundle *bundle.Bundle) {
@@ -64,11 +65,27 @@ func DispatchClusterEvent(js jsonstore.JsonStore, clusterEvent apistructs.Cluste
 // RegisterRefreshChan return channel for manual trigger refresh executor
 // only for scheduler task manager
 func RegisterRefreshChan() <-chan struct{} {
-	return manualTriggerChan
+	ch := make(chan struct{}, 1)
+	manualTriggerChans = append(manualTriggerChans, ch)
+	return ch
 }
 
 func TriggerManualRefresh() {
-	manualTriggerChan <- struct{}{}
+	for _, ch := range manualTriggerChans {
+		ch <- struct{}{}
+	}
+}
+
+func RegisterClusterEventChan() <-chan apistructs.ClusterEvent {
+	ch := make(chan apistructs.ClusterEvent, 1)
+	clusterEventChans = append(clusterEventChans, ch)
+	return ch
+}
+
+func TriggerClusterEvent(clusterEvent apistructs.ClusterEvent) {
+	for _, ch := range clusterEventChans {
+		ch <- clusterEvent
+	}
 }
 
 // RegisterClusterHook register cluster hook in eventbox

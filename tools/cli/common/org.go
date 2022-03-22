@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/utils"
@@ -57,4 +59,41 @@ func GetOrgDetail(ctx *command.Context, orgIDorName string) (apistructs.OrgDTO, 
 	}
 
 	return resp.Data, nil
+}
+
+func GetOrgID(ctx *command.Context, org string) (string, uint64, error) {
+	var orgID uint64
+	if org != "" {
+		o, err := GetOrgDetail(ctx, org)
+		if err != nil {
+			return org, orgID, err
+		}
+		orgID = o.ID
+	}
+
+	if org == "" && ctx.CurrentOrg.Name == "" {
+		return org, orgID, errors.New("Invalid organization name. You may clone a project first.")
+	}
+
+	if org == "" && ctx.CurrentOrg.Name != "" {
+		org = ctx.CurrentOrg.Name
+	}
+
+	if orgID <= 0 && ctx.CurrentOrg.ID <= 0 && org != "" {
+		o, err := GetOrgDetail(ctx, org)
+		if err != nil {
+			return org, orgID, err
+		}
+		ctx.CurrentOrg.ID = o.ID
+		orgID = o.ID
+	}
+	if orgID <= 0 && ctx.CurrentOrg.ID <= 0 {
+		return org, orgID, errors.New("Invalid organization id.")
+	}
+
+	if orgID == 0 && ctx.CurrentOrg.ID > 0 {
+		orgID = ctx.CurrentOrg.ID
+	}
+
+	return org, orgID, nil
 }

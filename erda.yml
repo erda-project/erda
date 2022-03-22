@@ -3,8 +3,6 @@ meta:
   ERDA_COMPONENT: ""
 values:
   test:
-    nfs_root: "<%$.Storage.MountPoint%>"
-    gittar_root: "<%$.Storage.GittarDataPath%>"
     request_cpu: 0.1
     request_mem: 128
   production:
@@ -583,10 +581,10 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     resources:
-      cpu: ${request_cpu:2}
-      max_cpu: 2
-      mem: ${request_mem:6144}
-      max_mem: 6144
+      cpu: ${request_cpu:1}
+      max_cpu: 1
+      mem: ${request_mem:2048}
+      max_mem: 2048
       network:
         mode: "container"
     binds:

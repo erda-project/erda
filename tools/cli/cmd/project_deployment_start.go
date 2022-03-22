@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/pkg/http/httputil"
 	"github.com/erda-project/erda/tools/cli/command"
+	"github.com/erda-project/erda/tools/cli/common"
 	"github.com/erda-project/erda/tools/cli/utils"
 )
 
@@ -30,23 +31,23 @@ var PROJECTDEPLOYMENTSTART = command.Command{
 	ParentName: "PROJECTDEPLOYMENT",
 	ShortHelp:  "start project's runtimes and addons",
 	Example: `
-  $ erda-cli project-deployment start --orgName xxx --projectName yyy --workspace DEV
+  $ erda-cli project-deployment start --org xxx --project yyy --workspace DEV
 `,
 	Flags: []command.Flag{
-		command.StringFlag{Name: "orgName", Doc: "[required] the org name the project belongs to", DefaultValue: ""},
-		command.StringFlag{Name: "projectName", Doc: "[required] which project's runtimes to stop", DefaultValue: ""},
+		command.StringFlag{Name: "org", Doc: "[required] the org name the project belongs to", DefaultValue: ""},
+		command.StringFlag{Name: "project", Doc: "[required] which project's runtimes to stop", DefaultValue: ""},
 		command.StringFlag{Name: "workspace", Doc: "[required] which workspace's runtimes to stop", DefaultValue: ""},
 	},
 	Run: RunStartProjectInWorkspace,
 }
 
-func RunStartProjectInWorkspace(ctx *command.Context, orgName, projectName, workspace string) error {
-	if projectName == "" || workspace == "" || orgName == "" {
+func RunStartProjectInWorkspace(ctx *command.Context, org, project, workspace string) error {
+	if project == "" || workspace == "" || org == "" {
 		return fmt.Errorf(
-			utils.FormatErrMsg("project-deployment start", "failed to start project deployments, one of the flags [orgName, projectName, workspace] not set", true))
+			utils.FormatErrMsg("project-deployment start", "failed to start project deployments, one of the flags [org, project, workspace] not set", true))
 	}
 
-	uop, err := GetUserOrgProjID(ctx, orgName, projectName)
+	uop, err := common.GetUserOrgProjID(ctx, org, project)
 	if err != nil {
 		return fmt.Errorf(
 			utils.FormatErrMsg("project-deployment start", "failed to start project deployments, can not get orgID or userID or projectID: "+err.Error(), true))
@@ -104,9 +105,13 @@ func RunStartProjectInWorkspace(ctx *command.Context, orgName, projectName, work
 
 		ctx.Info("Waitting %d minutes for project's addons to Running\n", ADDONS_RESTART_WAITTING_DELAY)
 		tick := time.Tick(1 * time.Second)
-		for waits := ADDONS_RESTART_WAITTING_DELAY * 60; waits > 0; waits-- {
-			fmt.Printf("\r%3d", waits)
-			<-tick
+		waits := ADDONS_RESTART_WAITTING_DELAY * 60
+		for waits > 0 {
+			select {
+			case <-tick:
+				fmt.Printf("\r%3d", waits)
+				waits--
+			}
 		}
 
 		err = waitProjectAddonsComplete(ctx, params)

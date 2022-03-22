@@ -74,7 +74,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	}
 	mgr := actionexecutor.GetManager()
 	p.actionExecutorMgr = mgr
-	if err := mgr.Initialize(cfgChan); err != nil {
+	if err := mgr.Initialize(ctx, cfgChan); err != nil {
 		return err
 	}
 

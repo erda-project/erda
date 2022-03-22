@@ -189,11 +189,18 @@ func (t *PackageDB) SetProject() error {
 	envValues := map[string]interface{}{}
 
 	addonMissConfig := map[string]map[apistructs.DiceWorkspace]map[string]interface{}{}
+	envHandledAddons := map[apistructs.DiceWorkspace]map[string]interface{}{
+		apistructs.DevWorkspace:     {},
+		apistructs.TestWorkspace:    {},
+		apistructs.StagingWorkspace: {},
+		apistructs.ProdWorkspace:    {},
+	}
 	for app, release := range appReleaseMap {
 		aPkg := apistructs.ApplicationPkg{Name: app, GitBranch: release.GitBranch, GitCommit: release.GitCommit}
 		t.Package.Project.Applications = append(t.Package.Project.Applications, &aPkg)
 
 		for env, c := range environments {
+			addonHandled := envHandledAddons[env]
 			addonMap := envAddonInstances[env]
 
 			dice, err := diceyml.New([]byte(release.DiceYaml), true)
@@ -205,6 +212,12 @@ func (t *PackageDB) SetProject() error {
 				return err
 			}
 			for name, addon := range dice.Obj().AddOns {
+				if _, ok := addonHandled[name]; ok {
+					continue
+				} else {
+					addonHandled[name] = struct{}{}
+				}
+
 				var missConfig bool
 				var configKeys []string
 				if addon.Plan == "alicloud-rds:basic" {
@@ -367,6 +380,20 @@ func (t *PackageDB) SetProject() error {
 				addonMissConfig[addon.Name] = map[apistructs.DiceWorkspace]map[string]interface{}{}
 			}
 		}
+	}
+	// clear no config addons
+	for _, env := range []apistructs.DiceWorkspace{
+		apistructs.ProdWorkspace, apistructs.StagingWorkspace,
+		apistructs.TestWorkspace, apistructs.DevWorkspace} {
+		var envAddon []apistructs.ProjectEnvAddon
+		for _, addon := range environments[env].Addons {
+			if len(addon.Config) == 0 {
+				logrus.Warnf("no config found for addon %s in env %s", addon.Name, env.String())
+				continue
+			}
+			envAddon = append(envAddon, addon)
+		}
+		environments[env].Addons = envAddon
 	}
 
 	envs := map[string]apistructs.ProjectEnvironment{}

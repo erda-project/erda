@@ -521,6 +521,7 @@ var (
 	ErrSetPrimaryProjectPipeline   = err("ErrSetPrimaryProjectPipeline", "项目级流水线设为重要失败")
 	ErrUnSetPrimaryProjectPipeline = err("ErrUnSetPrimaryProjectPipeline", "项目级流水线取消重要失败")
 	ErrListAppProjectPipeline      = err("ErrListAppProjectPipeline", "项目级流水线获取应用失败")
+	ErrListProjectPipelineRef      = err("ErrListProjectPipelineRef", "获取项目级流水线分支失败")
 
 	ErrRunProjectPipeline             = err("ErrRunProjectPipeline", "执行流水线失败")
 	ErrBatchRunProjectPipeline        = err("ErrBatchRunProjectPipeline", "批量执行流水线失败")
@@ -530,6 +531,10 @@ var (
 	ErrStartCronProjectPipeline       = err("ErrStartCronProjectPipeline", "开启流水线定时失败")
 	ErrEndCronProjectPipeline         = err("ErrEndCronProjectPipeline", "关闭流水线定时失败")
 	ErrListExecHistoryProjectPipeline = err("ErrListExecHistoryProjectPipeline", "列出流水线执行明细失败")
+
+	ErrGetPublishItem    = err("ErrGetPublishItem", "获取发布内容详情失败")
+	ErrSratisticsErrList = err("ErrSratisticsErrList", "获取错误列表失败")
+	ErrCrashRateList     = err("ErrCrashRateList", "获取崩溃率失败")
 )
 
 func err(template, defaultValue string) *errorresp.APIError {

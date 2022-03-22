@@ -49,13 +49,13 @@ func (s *cStorage) NewWriter(ctx context.Context) (storekit.BatchWriter, error) 
 	return nil, storekit.ErrOpNotSupported
 }
 
-func newPodLogOptions(container_name string, startTime int64) *v1.PodLogOptions {
+func newPodLogOptions(containerName string, startTime int64) *v1.PodLogOptions {
 	var sinceTime *metav1.Time
 	if startTime > 0 {
 		sinceTime = &metav1.Time{Time: time.Unix(startTime/int64(time.Second), startTime%int64(time.Second))}
 	}
 	return &v1.PodLogOptions{
-		Container:                    container_name,
+		Container:                    containerName,
 		Follow:                       false,
 		Previous:                     false,
 		SinceSeconds:                 nil,
@@ -83,7 +83,7 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 			continue
 		}
 		if filter.Key != "content" && filter.Op != storage.EQ {
-			s.log.Debugf("%s only support EQ filter, ingore kubernetes logs query", filter.Key)
+			s.log.Debugf("%s only support EQ filter, ignore kubernetes logs query", filter.Key)
 			return storekit.EmptyIterator{}, nil
 		}
 		switch filter.Key {
@@ -107,7 +107,7 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 				if len(exp) > 0 {
 					regex, err := regexp.Compile(exp)
 					if err != nil {
-						s.log.Debugf("invalid regexp %q, ingore kubernetes logs query", exp)
+						s.log.Debugf("invalid regexp %q, ignore kubernetes logs query", exp)
 						return storekit.EmptyIterator{}, nil
 					}
 					matcher = func(data *pb.LogItem, it *logsIterator) bool {
@@ -151,16 +151,16 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 	for _, key := range podInfoKeys {
 		if len(tags[key]) <= 0 || len(applicationID) > 0 {
 			if len(id) <= 0 {
-				s.log.Debugf("not found id, ingore kubernetes logs query")
+				s.log.Debugf("not found id, ignore kubernetes logs query")
 				return storekit.EmptyIterator{}, nil
 			}
 			info, err := s.pods.GetPodInfo(id, sel)
 			if err != nil {
-				s.log.Debugf("failed to query pod info for container(%q): %s, ingore kubernetes logs query", id, err)
+				s.log.Debugf("failed to query pod info for container(%q): %s, ignore kubernetes logs query", id, err)
 				return storekit.EmptyIterator{}, nil
 			}
 			if len(applicationID) > 0 && info["dice_application_id"] != applicationID {
-				s.log.Debugf("tags.dice_cluster_name(%q) != %q, ingore kubernetes logs query", applicationID, tags["dice_application_id"])
+				s.log.Debugf("tags.dice_cluster_name(%q) != %q, ignore kubernetes logs query", applicationID, tags["dice_application_id"])
 				return storekit.EmptyIterator{}, nil
 			}
 			for k, v := range info {
@@ -178,7 +178,7 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 	}
 	for _, key := range podInfoKeys {
 		if len(tags[key]) <= 0 {
-			s.log.Debugf("not found %q for container(%q), ingore kubernetes logs query", key, id)
+			s.log.Debugf("not found %q for container(%q), ignore kubernetes logs query", key, id)
 			return storekit.EmptyIterator{}, nil
 		}
 	}
@@ -187,7 +187,7 @@ func (s *cStorage) Iterator(ctx context.Context, sel *storage.Selector) (storeki
 	}
 	queryFunc, err := s.getQueryFunc(clusterName)
 	if err != nil {
-		s.log.Debugf("failed to GetClient(%q): %s, ingore kubernetes logs query", clusterName, err)
+		s.log.Debugf("failed to GetClient(%q): %s, ignore kubernetes logs query", clusterName, err)
 		return storekit.EmptyIterator{}, nil
 	}
 

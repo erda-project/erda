@@ -224,7 +224,7 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 			return err
 		}
 		// 为了清理已经被归档的流水线
-		p, found, findFromArchive, err := r.dbClient.GetPipelineIncludeArchive(pipelineID)
+		p, found, findFromArchive, err := r.DBGC.GetPipelineIncludeArchived(context.Background(), pipelineID)
 		if !found {
 			logrus.Errorf("[alert] reconciler: gc triggered but ignored, pipeline already not exists, pipelineID: %d", pipelineID)
 		}
@@ -241,7 +241,7 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 	// group tasks by executorName
 	groupedTasks := make(map[spec.PipelineTaskExecutorName][]*spec.PipelineTask) // key: executorName
 	for _, affectedPipelineID := range affectedPipelineIDs {
-		dbTasks, _, err := r.dbClient.GetPipelineTasksIncludeArchive(affectedPipelineID)
+		dbTasks, _, err := r.DBGC.GetPipelineTasksIncludeArchived(context.Background(), affectedPipelineID)
 		if err != nil {
 			return err
 		}
@@ -263,7 +263,8 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 			for _, uuid := range task_uuid.MakeJobIDSliceWithLoopedTimes(&task) {
 				var loopTask = task
 				loopTask.Extra.UUID = uuid
-				groupedTasks[loopTask.Extra.ExecutorName] = append(groupedTasks[loopTask.Extra.ExecutorName], &loopTask)
+				executorName := loopTask.GetExecutorName()
+				groupedTasks[executorName] = append(groupedTasks[executorName], &loopTask)
 			}
 		}
 	}

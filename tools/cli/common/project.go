@@ -17,6 +17,7 @@ package common
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,6 +29,12 @@ import (
 	"github.com/erda-project/erda/tools/cli/command"
 	"github.com/erda-project/erda/tools/cli/utils"
 )
+
+type UserOrgProj struct {
+	UserId    string
+	OrgId     string
+	ProjectId string
+}
 
 func GetProjectDetail(ctx *command.Context, orgID, projectID uint64) (apistructs.ProjectDTO, error) {
 	var resp apistructs.ProjectDetailResponse
@@ -221,4 +228,43 @@ func GetProjectList(ctx *command.Context, orgId string) ([]apistructs.ProjectDTO
 	}
 
 	return resp.Data.List, nil
+}
+
+// GetUserOrgProjID get UserId,ProjectId,OrgID info
+func GetUserOrgProjID(ctx *command.Context, orgName, projectName string) (UserOrgProj, error) {
+	var uop UserOrgProj
+	var userId string
+	var orgId, projectId uint64
+
+	_, orgId, err := GetOrgID(ctx, orgName)
+	if err != nil {
+		return uop, err
+	}
+
+	if sessionInfo, ok := ctx.Sessions[ctx.CurrentOpenApiHost]; ok {
+		userId = sessionInfo.ID
+	}
+
+	if userId == "" || orgId <= 0 {
+		return uop, errors.New("get invalid orgID [" + strconv.FormatUint(orgId, 10) + "] or userID [" + userId + "]")
+	}
+
+	projs, err := GetProjectList(ctx, strconv.FormatUint(orgId, 10))
+	if err != nil {
+		return uop, err
+	}
+	for _, proj := range projs {
+		if proj.Name == projectName {
+			projectId = proj.ID
+		}
+	}
+
+	if projectId <= 0 {
+		return uop, errors.New("get invalid projectID [" + strconv.FormatUint(projectId, 10) + "]")
+	}
+	uop.ProjectId = strconv.FormatUint(projectId, 10)
+	uop.UserId = userId
+	uop.OrgId = strconv.FormatUint(orgId, 10)
+
+	return uop, nil
 }
