@@ -176,7 +176,7 @@ func (p *provider) ListExportRecords(ctx context.Context, req *pb.ListExportReco
 		where = where.Order("updated_at ASC, created_at ASC")
 	}
 
-	if err := where.Limit(int(req.GetPageSize())).Offset(int(req.GetPageNo()) - 1).
+	if err := where.Limit(int(req.GetPageSize())).Offset(int((req.GetPageNo() - 1) * req.GetPageSize())).
 		Find(&records).Error; err != nil {
 		p.l.WithError(err).Errorln("failed to Find")
 		return nil, apierr.ListExportRecords.InternalError(err)
