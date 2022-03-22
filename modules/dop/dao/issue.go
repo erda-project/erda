@@ -816,7 +816,7 @@ func (i *IssueItem) FilterPropertyRetriever(condition string) string {
 	return string(f.String())
 }
 
-func (client *DBClient) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]IssueItem, error) {
+func (client *DBClient) ListIssueItems(req apistructs.IssueListRequest) ([]IssueItem, error) {
 	var res []IssueItem
 	sql := client.Table("dice_issues").Joins(joinState)
 	sql = sql.Where("deleted = 0")

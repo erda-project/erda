@@ -711,13 +711,18 @@ func (svc *Issue) AfterIssueChildrenUpdate(u *issueChildrenUpdated) error {
 		return fmt.Errorf("issue children update config is empty")
 	}
 	parents, err := svc.db.GetIssueParents(u.id, []string{apistructs.IssueRelationInclusion})
-	if err != nil || len(parents) != 1 {
+	if err != nil {
 		return err
+	}
+	if l := len(parents); l != 1 {
+		if l > 1 {
+			return fmt.Errorf("issue %v has more than one parent", u.id)
+		}
+		return nil
 	}
 	p := parents[0]
 
-	if p.Belong == string(apistructs.IssueStateBelongOpen) && u.stateOld != "" &&
-		(u.stateOld != apistructs.IssueStateBelongOpen || u.stateNew != apistructs.IssueStateBelongOpen) {
+	if updateParentCondition(p.Belong, u) {
 		stateButton, err := svc.getNextAvailableState(&dao.Issue{
 			ProjectID: p.ProjectID,
 			State:     p.State,
@@ -741,6 +746,14 @@ func (svc *Issue) AfterIssueChildrenUpdate(u *issueChildrenUpdated) error {
 	return svc.issueRelated.AfterIssueInclusionRelationChange(p.ID)
 }
 
+func updateParentCondition(state string, u *issueChildrenUpdated) bool {
+	if u.stateOld == "" || u.stateNew == "" || u.stateNew == u.stateNew {
+		return false
+	}
+	return state == string(apistructs.IssueStateBelongOpen) &&
+		(u.stateOld != apistructs.IssueStateBelongOpen || u.stateNew != apistructs.IssueStateBelongOpen)
+}
+
 func (svc *Issue) getNextAvailableState(issue *dao.Issue) (*apistructs.IssueStateButton, error) {
 	button, err := svc.generateButton(*issue, apistructs.IdentityInfo{InternalClient: apistructs.SystemOperator}, nil, nil, nil, nil)
 	if err != nil {
@@ -757,7 +770,7 @@ func (svc *Issue) getNextAvailableState(issue *dao.Issue) (*apistructs.IssueStat
 func (svc *Issue) AfterIssueAppRelationCreate(issueIDs []int64) error {
 	types := []apistructs.IssueType{apistructs.IssueTypeTask, apistructs.IssueTypeBug}
 	for _, i := range types {
-		issues, err := svc.db.GetAllIssuesByProject(apistructs.IssueListRequest{
+		issues, err := svc.db.ListIssueItems(apistructs.IssueListRequest{
 			IDs:          issueIDs,
 			Type:         []apistructs.IssueType{i},
 			StateBelongs: []apistructs.IssueStateBelong{apistructs.IssueStateBelongOpen},
@@ -1796,7 +1809,7 @@ func (svc *Issue) GetIssuesByStates(req apistructs.WorkbenchRequest) (map[uint64
 }
 
 func (svc *Issue) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]dao.IssueItem, error) {
-	return svc.db.GetAllIssuesByProject(req)
+	return svc.db.ListIssueItems(req)
 }
 
 func (svc *Issue) GetIssuesStatesByProjectID(projectID uint64, issueType apistructs.IssueType) ([]dao.IssueState, error) {
