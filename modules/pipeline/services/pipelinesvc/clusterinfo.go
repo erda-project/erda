@@ -23,7 +23,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/pkg/loop"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -41,7 +40,7 @@ func (s *PipelineSvc) retryQueryClusterInfo(clusterName string, pipelineID uint6
 	// 2, 4, 8, 16, 30
 	_ = loop.New(loop.WithInterval(time.Second*1), loop.WithDeclineRatio(2), loop.WithDeclineLimit(time.Second*30), loop.WithMaxTimes(5)).
 		Do(func() (abort bool, err error) {
-			clusterInfo, err := s.bdl.QueryClusterInfo(clusterName)
+			cluster, err := s.clusterInfo.GetClusterInfoByName(clusterName)
 			if err != nil {
 				// need retry if tcp error
 				if strutil.Contains(strings.ToLower(err.Error()),
@@ -54,7 +53,7 @@ func (s *PipelineSvc) retryQueryClusterInfo(clusterName string, pipelineID uint6
 				queryErr = err
 				return true, err
 			}
-			result = clusterInfo
+			result = cluster.CM
 			return true, nil
 		})
 
@@ -73,6 +72,6 @@ func (s *PipelineSvc) ClusterHook(clusterEvent apistructs.ClusterEvent) error {
 		clusterEvent.Action != apistructs.ClusterActionDelete {
 		return errors.Errorf("invalid cluster event action: %s", clusterEvent.Action)
 	}
-	clusterinfo.TriggerClusterEvent(clusterEvent)
+	s.clusterInfo.DispatchClusterEvent(clusterEvent)
 	return nil
 }

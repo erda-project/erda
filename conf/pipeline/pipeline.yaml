@@ -33,6 +33,7 @@ leader-worker:
   worker:
     etcd_key_prefix_with_slash: /devops/pipeline/v2/leader-worker/worker/
 reconciler: {}
+clusterinfo: {}
 dbgc: {}
 
 etcd-election@leader-worker:

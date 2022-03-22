@@ -21,7 +21,7 @@ import (
 	"github.com/gorilla/schema"
 
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
-	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
@@ -55,6 +55,7 @@ type Endpoints struct {
 
 	engine       engine.Interface
 	queueManager queuemanager.Interface
+	clusterInfo  clusterinfo.Interface
 }
 
 type Option func(*Endpoints)
@@ -154,6 +155,12 @@ func WithQueueManager(qm queuemanager.Interface) Option {
 	}
 }
 
+func WithClusterInfo(clusterInfo clusterinfo.Interface) Option {
+	return func(e *Endpoints) {
+		e.clusterInfo = clusterInfo
+	}
+}
+
 // Routes 返回 endpoints 的所有 endpoint 方法，也就是 route.
 func (e *Endpoints) Routes() []httpserver.Endpoint {
 	return []httpserver.Endpoint{
@@ -218,6 +225,7 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/pipeline-reportsets", Method: http.MethodGet, Handler: e.pagingPipelineReportSets},
 
 		// cluster info
+		// TODO: clusterinfo provider provide this api directly, remove explicit declaration in endpoint.
 		{Path: clusterinfo.ClusterHookApiPath, Method: http.MethodPost, Handler: e.clusterHook},
 
 		// executor info, only for internal check executor and cluster info

@@ -479,7 +479,7 @@ func (c *Cluster) convert(cluster *model.Cluster) *apistructs.ClusterInfo {
 		sysConfig       *apistructs.Sysconf
 		// Deprecated at 1.2
 		urls = make(map[string]string)
-		cm   = make(map[string]string)
+		cm   = apistructs.ClusterInfoData{}
 	)
 
 	if cluster.SysConfig != "" {
