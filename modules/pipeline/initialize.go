@@ -36,7 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pkg/pipelinefunc"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
-	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
@@ -134,7 +134,7 @@ func (p *provider) do() error {
 	pipelineSvc.WithCmsService(p.CmsService)
 
 	// todo resolve cycle import here through better module architecture
-	pipelineFun := &reconciler.PipelineSvcFunc{
+	pipelineFuncs := reconciler.PipelineSvcFuncs{
 		MergePipelineYmlTasks:                   pipelineSvc.MergePipelineYmlTasks,
 		HandleQueryPipelineYamlBySnippetConfigs: pipelineSvc.HandleQueryPipelineYamlBySnippetConfigs,
 		MakeSnippetPipeline4Create:              pipelineSvc.MakeSnippetPipeline4Create,
@@ -143,11 +143,7 @@ func (p *provider) do() error {
 	// init CallbackActionFunc
 	pipelinefunc.CallbackActionFunc = pipelineSvc.DealPipelineCallbackOfAction
 
-	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun, p.DBGC, p.ClusterInfo, p.ResourceGC)
-	if err != nil {
-		return fmt.Errorf("failed to init reconciler, err: %v", err)
-	}
-	p.Reconciler.InjectLegacyReconciler(r)
+	p.Reconciler.InjectLegacyFields(&pipelineFuncs, actionAgentSvc, extMarketSvc)
 
 	if err := registerSnippetClient(dbClient); err != nil {
 		return err

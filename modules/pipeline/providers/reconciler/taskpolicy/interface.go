@@ -12,26 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package compensator
+package taskpolicy
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-type PipelineFunc struct {
-	RunPipeline    RunPipelineFunc
-	CreatePipeline CreatePipelineFunc
+type Interface interface {
+	AdaptPolicy(ctx context.Context, task *spec.PipelineTask) error
 }
 
-type RunPipelineFunc func(req *apistructs.PipelineRunRequest) (*spec.Pipeline, error)
-type CreatePipelineFunc func(req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error)
+func (p *provider) AdaptPolicy(ctx context.Context, task *spec.PipelineTask) error {
+	if task == nil {
+		return fmt.Errorf("task is empty")
+	}
+	if task.Extra.Action.Policy == nil {
+		return nil
+	}
 
-type Interface interface {
-	PipelineCronCompensate(ctx context.Context, pipelineID uint64)
+	policy := p.supportedPolicies[task.Extra.Action.Policy.Type]
+	if policy == nil {
+		return nil
+	}
 
-	// todo Can be removed after all objects are provider
-	WithPipelineFunc(pipelineFunc PipelineFunc)
+	return policy.AdaptPolicy(ctx, task)
 }

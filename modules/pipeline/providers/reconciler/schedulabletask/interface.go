@@ -12,26 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package compensator
+package schedulabletask
 
 import (
 	"context"
 
-	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-type PipelineFunc struct {
-	RunPipeline    RunPipelineFunc
-	CreatePipeline CreatePipelineFunc
-}
-
-type RunPipelineFunc func(req *apistructs.PipelineRunRequest) (*spec.Pipeline, error)
-type CreatePipelineFunc func(req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error)
-
 type Interface interface {
-	PipelineCronCompensate(ctx context.Context, pipelineID uint64)
-
-	// todo Can be removed after all objects are provider
-	WithPipelineFunc(pipelineFunc PipelineFunc)
+	GetSchedulableTasks(ctx context.Context, p *spec.Pipeline, tasks []*spec.PipelineTask) ([]*spec.PipelineTask, error)
 }

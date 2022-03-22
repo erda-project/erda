@@ -16,12 +16,22 @@ package leaderworker
 
 import (
 	"context"
+	"runtime/debug"
 	"time"
 )
 
 func (p *provider) leaderFramework(ctx context.Context) {
 	p.Log.Infof("leader framework starting ...")
 	defer p.Log.Infof("leader framework stopped")
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer func() {
+		if r := recover(); r != nil {
+			p.Log.Errorf("leader framework recovered from panic and canceling, reason: %v", r)
+			debug.PrintStack()
+			cancel()
+		}
+	}()
 
 	for {
 		p.lock.Lock()
