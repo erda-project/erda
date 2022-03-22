@@ -424,9 +424,10 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 						}
 					}
 					build.ServerData = &cptype.OpServerData{
-						"pipelineID": v.PipelineID,
-						"inode":      base64.URLEncoding.EncodeToString([]byte(inode)),
-						"appName":    appName,
+						"pipelineID":   v.PipelineID,
+						"inode":        base64.URLEncoding.EncodeToString([]byte(inode)),
+						"appName":      appName,
+						"pipelineName": v.Name,
 					}
 					return build
 				}(),

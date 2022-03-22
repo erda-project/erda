@@ -49,12 +49,13 @@ type (
 		Value string `json:"value"`
 	}
 	State struct {
-		Value string `json:"value"`
+		Value                string `json:"value"`
+		Base64UrlQueryParams string `json:"pipelineTabs__urlQuery,omitempty"`
 	}
 	InParams struct {
 		FrontendProjectID           string `json:"projectId,omitempty"`
 		FrontendAppID               string `json:"appId,omitempty"`
-		FrontendUrlQuery            string `json:"issueFilter__urlQuery,omitempty"`
+		FrontendUrlQuery            string `json:"pipelineTabs__urlQuery,omitempty"`
 		FrontendPipelineCategoryKey string `json:"pipelineCategoryKey,omitempty"`
 
 		ProjectID uint64 `json:"-"`
