@@ -28,6 +28,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/providers/dbgc/db"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -42,23 +43,27 @@ const (
 // these two methods will create a lot of etcd ttl, will cause high load on etcd
 // use fixed gc time, traverse the data in the database every day
 func (p *provider) PipelineDatabaseGC(ctx context.Context) {
-	p.doAnalyzedPipelineDatabaseGC(true)
-	p.doAnalyzedPipelineDatabaseGC(false)
-	p.doNotAnalyzedPipelineDatabaseGC(true)
-	p.doNotAnalyzedPipelineDatabaseGC(false)
-
-	ticker := time.NewTicker(24 * time.Hour)
+	ticker := time.NewTicker(1 * time.Millisecond)
 	defer ticker.Stop()
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case <-ticker.C:
+			// analyzed snippet and non-snippet pipeline database gc
 			p.doAnalyzedPipelineDatabaseGC(true)
 			p.doAnalyzedPipelineDatabaseGC(false)
 
+			// not analyzed snippet and non-snippet pipeline database gc
 			p.doNotAnalyzedPipelineDatabaseGC(true)
 			p.doNotAnalyzedPipelineDatabaseGC(false)
-		case <-ctx.Done():
-			return
+
+			// pipeline archive database clean up
+			p.doAnalyzedPipelineArchiveGC()
+			p.doNotAnalyzedPipelineArchiveGC()
+
+			// reset ticker to 1 day for next gc
+			ticker.Reset(24 * time.Hour)
 		}
 	}
 }
@@ -133,6 +138,25 @@ func (p *provider) doNotAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
 	req.AllSources = true
 
 	p.doPipelineDatabaseGC(req)
+}
+
+func (p *provider) doAnalyzedPipelineArchiveGC() {
+	var req db.ArchiveDeleteRequest
+	req.Statuses = []string{apistructs.PipelineStatusAnalyzed.String()}
+	req.EndTimeCreated = time.Now().Add(-p.Cfg.AnalyzedPipelineArchiveDefaultRetainHour)
+	if err := p.dbClient.DeletePipelineArchives(req); err != nil {
+		logrus.Errorf("failed to delete analyzed pipeline archive, err: %v", err)
+	}
+}
+
+func (p *provider) doNotAnalyzedPipelineArchiveGC() {
+	var req db.ArchiveDeleteRequest
+	req.NotStatuses = []string{apistructs.PipelineStatusAnalyzed.String()}
+	fmt.Println(p.Cfg.FinishedPipelineArchiveDefaultRetainHour)
+	req.EndTimeCreated = time.Now().Add(-p.Cfg.FinishedPipelineArchiveDefaultRetainHour)
+	if err := p.dbClient.DeletePipelineArchives(req); err != nil {
+		logrus.Errorf("failed to delete finished pipeline archive, err: %v", err)
+	}
 }
 
 // ListenDatabaseGC 监听需要 GC 的 pipeline database record.
