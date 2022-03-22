@@ -33,6 +33,10 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/conf"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	i18n2 "github.com/erda-project/erda/modules/orchestrator/i18n"
+	cap2 "github.com/erda-project/erda/modules/orchestrator/scheduler/impl/cap"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/clusterinfo"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/instanceinfo"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
@@ -63,12 +67,16 @@ var ExtensionDeployAddon = map[string]string{"mysql": "", "redis": "", "consul":
 
 // Addon addon 实例对象封装
 type Addon struct {
-	db       *dbclient.DBClient
-	bdl      *bundle.Bundle
-	hc       *httpclient.HTTPClient
-	encrypt  *encryption.EnvEncrypt
-	resource *resource.Resource
-	kms      mysql.KMSWrapper
+	db               *dbclient.DBClient
+	bdl              *bundle.Bundle
+	hc               *httpclient.HTTPClient
+	encrypt          *encryption.EnvEncrypt
+	resource         *resource.Resource
+	kms              mysql.KMSWrapper
+	cap              cap2.Cap
+	serviceGroupImpl servicegroup.ServiceGroup
+	instanceinfoImpl *instanceinfo.InstanceInfoImpl
+	clusterinfoImpl  clusterinfo.ClusterInfo
 }
 
 // Option addon 实例对象配置选项
@@ -123,6 +131,32 @@ func WithResource(resource *resource.Resource) Option {
 func WithKMSWrapper(kms mysql.KMSWrapper) Option {
 	return func(a *Addon) {
 		a.kms = kms
+	}
+}
+
+func WithCap(cap cap2.Cap) Option {
+	return func(a *Addon) {
+		a.cap = cap
+	}
+}
+
+// WithServiceGroup 配置 serviceGroupImpl
+func WithServiceGroup(serviceGroupImpl servicegroup.ServiceGroup) Option {
+	return func(a *Addon) {
+		a.serviceGroupImpl = serviceGroupImpl
+	}
+}
+
+// WithInstanceinfoImpl 配置 instanceinfoImpl
+func WithInstanceinfoImpl(instanceinfoImpl *instanceinfo.InstanceInfoImpl) Option {
+	return func(a *Addon) {
+		a.instanceinfoImpl = instanceinfoImpl
+	}
+}
+
+func WithClusterInfoImpl(instanceinfoImpl clusterinfo.ClusterInfo) Option {
+	return func(a *Addon) {
+		a.clusterinfoImpl = instanceinfoImpl
 	}
 }
 
@@ -217,7 +251,7 @@ func (a *Addon) BatchCreate(req *apistructs.AddonCreateRequest) error {
 
 	logrus.Infof("zkCanDeploy value is: %v", zkCanDeploy)
 
-	clusterInfo, err := a.bdl.QueryClusterInfo(req.ClusterName)
+	clusterInfo, err := a.clusterinfoImpl.Info(req.ClusterName)
 	if err != nil {
 		return err
 	}
@@ -1531,7 +1565,11 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 
 						req := apistructs.ServiceGroupDeleteRequest{Namespace: relationIns.Namespace,
 							Name: relationIns.ScheduleName, Force: force}
-						if err := a.bdl.ForceDeleteServiceGroup(req); err != nil {
+						forceDelete := "false"
+						if force {
+							forceDelete = "true"
+						}
+						if err := a.serviceGroupImpl.Delete(req.Namespace, req.Name, forceDelete); err != nil {
 							logrus.Errorf("delete service group failed, request: %v, error: %v", req, err)
 							return err
 						}
@@ -1557,7 +1595,11 @@ func (a *Addon) Delete(userID, routingInstanceID string) error {
 
 				req := apistructs.ServiceGroupDeleteRequest{Namespace: addonInstance.Namespace,
 					Name: addonInstance.ScheduleName, Force: force}
-				if err := a.bdl.ForceDeleteServiceGroup(req); err != nil {
+				forceDelete := "false"
+				if force {
+					forceDelete = "true"
+				}
+				if err := a.serviceGroupImpl.Delete(req.Namespace, req.Name, forceDelete); err != nil {
 					logrus.Errorf("delete service group failed, request: %+v, error: %+v", req, err)
 					return err
 				}
@@ -1886,7 +1928,7 @@ func (a *Addon) doAddonScale(addonInstance *dbclient.AddonInstance, addonInstanc
 
 	sgb, _ := json.Marshal(req)
 	logrus.Infof("scale service group body is %s", string(sgb))
-	if err := a.bdl.ScaleServiceGroup(*req); err != nil {
+	if _, err := a.serviceGroupImpl.Scale(req); err != nil {
 		logrus.Errorf("scale service group failed, request: %v, error: %v", req, err)
 		return err
 	}
@@ -1941,7 +1983,7 @@ func addonCanScale(addonName, addonId, plan, version, status, action string) err
 }
 
 // createAddonScaleRequest 构建 addon scale 操作对应的请求
-func (a *Addon) createAddonScaleRequest(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, scaleAction string) (*apistructs.UpdateServiceGroupScaleRequst, error) {
+func (a *Addon) createAddonScaleRequest(params *apistructs.AddonHandlerCreateItem, addonIns *dbclient.AddonInstance, scaleAction string) (*apistructs.ServiceGroup, error) {
 	// 获取addon extension信息
 	addonSpec, addonDice, err := a.GetAddonExtention(params)
 	if err != nil {

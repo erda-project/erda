@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	AliyunRegistry = "aliyun-registry"
+	AliyunRegistry                 = "aliyun-registry"
+	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
 )
 
 // TaskInspect inspect k8s job, like kubectl describe

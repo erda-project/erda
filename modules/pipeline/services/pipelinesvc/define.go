@@ -18,6 +18,7 @@ import (
 	"github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron"
 	"github.com/erda-project/erda/modules/pipeline/providers/engine"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
@@ -50,7 +51,8 @@ type PipelineSvc struct {
 	etcdctl *etcd.Store
 
 	// providers
-	cmsService pb.CmsServiceServer
+	cmsService  pb.CmsServiceServer
+	clusterInfo clusterinfo.Interface
 }
 
 func New(appSvc *appsvc.AppSvc, crondSvc *crondsvc.CrondSvc,
@@ -58,7 +60,7 @@ func New(appSvc *appsvc.AppSvc, crondSvc *crondsvc.CrondSvc,
 	pipelineCronSvc *cron.Service, permissionSvc *permissionsvc.PermissionSvc,
 	queueManage *queuemanage.QueueManage,
 	dbClient *dbclient.Client, bdl *bundle.Bundle, publisher *websocket.Publisher,
-	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store) *PipelineSvc {
+	engine engine.Interface, js jsonstore.JsonStore, etcd *etcd.Store, clusterInfo clusterinfo.Interface) *PipelineSvc {
 
 	s := PipelineSvc{}
 	s.appSvc = appSvc
@@ -74,6 +76,7 @@ func New(appSvc *appsvc.AppSvc, crondSvc *crondsvc.CrondSvc,
 	s.engine = engine
 	s.js = js
 	s.etcdctl = etcd
+	s.clusterInfo = clusterInfo
 	return &s
 }
 

@@ -31,11 +31,11 @@ type DefinitionServiceHandler interface {
 	Get(context.Context, *PipelineDefinitionGetRequest) (*PipelineDefinitionGetResponse, error)
 	// GET /api/pipeline-definitions
 	List(context.Context, *PipelineDefinitionListRequest) (*PipelineDefinitionListResponse, error)
-	// GET /api/pipeline-definitions/actions/Statistics-group-by-remote
+	// GET /api/pipeline-definitions/actions/statistics-group-by-remote
 	StatisticsGroupByRemote(context.Context, *PipelineDefinitionStatisticsRequest) (*PipelineDefinitionStatisticsResponse, error)
 	// GET /api/pipeline-definitions/actions/list-used-refs
 	ListUsedRefs(context.Context, *PipelineDefinitionUsedRefListRequest) (*PipelineDefinitionUsedRefListResponse, error)
-	// GET /api/pipeline-definitions/actions/Statistics-group-by-filePath
+	// GET /api/pipeline-definitions/actions/statistics-group-by-filePath
 	StatisticsGroupByFilePath(context.Context, *PipelineDefinitionStatisticsRequest) (*PipelineDefinitionStatisticsResponse, error)
 }
 
@@ -424,7 +424,7 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 	add_Delete("DELETE", "/api/pipeline-definitions/{pipelineDefinitionID}", srv.Delete)
 	add_Get("GET", "/api/pipeline-definitions/{pipelineDefinitionID}", srv.Get)
 	add_List("GET", "/api/pipeline-definitions", srv.List)
-	add_StatisticsGroupByRemote("GET", "/api/pipeline-definitions/actions/Statistics-group-by-remote", srv.StatisticsGroupByRemote)
+	add_StatisticsGroupByRemote("GET", "/api/pipeline-definitions/actions/statistics-group-by-remote", srv.StatisticsGroupByRemote)
 	add_ListUsedRefs("GET", "/api/pipeline-definitions/actions/list-used-refs", srv.ListUsedRefs)
-	add_StatisticsGroupByFilePath("GET", "/api/pipeline-definitions/actions/Statistics-group-by-filePath", srv.StatisticsGroupByFilePath)
+	add_StatisticsGroupByFilePath("GET", "/api/pipeline-definitions/actions/statistics-group-by-filePath", srv.StatisticsGroupByFilePath)
 }

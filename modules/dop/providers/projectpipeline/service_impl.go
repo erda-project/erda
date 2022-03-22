@@ -185,7 +185,7 @@ func (p *ProjectPipelineService) CreateNamePreCheck(ctx context.Context, req *pb
 	if err := req.Validate(); err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InvalidParameter(err)
 	}
-	haveSameNameDefinition, err := p.checkDefinitionRemoteSameName(req.ProjectID, req.Name, apis.GetUserID(ctx))
+	haveSameNameDefinition, err := p.checkDefinitionRemoteSameName(req.ProjectID, "", req.Name)
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
@@ -289,7 +289,7 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 	}}, nil
 }
 
-func (p *ProjectPipelineService) checkDefinitionRemoteSameName(projectID uint64, name string, userID string) (bool, error) {
+func (p *ProjectPipelineService) checkDefinitionRemoteSameName(projectID uint64, definitionID, name string) (bool, error) {
 	projectDto, err := p.bundle.GetProject(projectID)
 	if err != nil {
 		return false, err
@@ -309,19 +309,18 @@ func (p *ProjectPipelineService) checkDefinitionRemoteSameName(projectID uint64,
 		Location: location,
 		Name:     name,
 		PageNo:   1,
-		PageSize: 999,
-		Creator:  []string{userID},
+		PageSize: 1,
 	})
 	if err != nil {
 		return false, err
 	}
-	// pipelineDefinition list method param name was like search, should be determine whether it is equal
-	for _, definition := range resp.Data {
-		if definition.Name == name {
-			return true, nil
-		}
+	if len(resp.Data) == 0 {
+		return false, nil
 	}
-	return false, nil
+	if definitionID != "" && resp.Data[0].ID == definitionID {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (p *ProjectPipelineService) getYmlFromGittar(app *apistructs.ApplicationDTO, ref, filePath, userID string) (string, error) {
@@ -372,11 +371,11 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 			OrgName:     org.Name,
 			ProjectName: project.Name,
 		}, cicdPipelineType),
-		Name:     params.Name,
-		Creator:  params.Creator,
-		Executor: params.Executor,
-		Category: params.Category,
-		Ref:      params.Ref,
+		FuzzyName: params.Name,
+		Creator:   params.Creator,
+		Executor:  params.Executor,
+		Category:  params.Category,
+		Ref:       params.Ref,
 		Remote: func() []string {
 			remotes := make([]string, 0, len(params.AppName))
 			for _, v := range params.AppName {
@@ -449,38 +448,50 @@ func (p *ProjectPipelineService) Delete(ctx context.Context, params deftype.Proj
 	return nil, err
 }
 
-func (p *ProjectPipelineService) Update(ctx context.Context, params deftype.ProjectPipelineUpdate) (*deftype.ProjectPipelineUpdateResult, error) {
+func (p *ProjectPipelineService) Update(ctx context.Context, params *pb.UpdateProjectPipelineRequest) (*pb.UpdateProjectPipelineResponse, error) {
 	if err := params.Validate(); err != nil {
-		return nil, err
+		return nil, apierrors.ErrUpdateProjectPipeline.InvalidParameter(err)
 	}
 
-	app, err := p.bundle.GetApp(params.AppID)
+	_, source, err := p.getPipelineDefinitionAndSource(params.PipelineDefinitionID)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrUpdateProjectPipeline.InvalidParameter(err)
 	}
 
-	yml, err := p.getYmlFromGittar(app, params.Ref, filepath.Join(params.Path, params.FileName), params.IdentityInfo.UserID)
+	err = p.checkDataPermissionByProjectID(params.ProjectID, source)
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrUpdateProjectPipeline.AccessDenied()
 	}
 
-	sourceRsp, err := p.PipelineSource.Create(ctx, &spb.PipelineSourceCreateRequest{
-		SourceType:  params.SourceType.String(),
-		Remote:      makeRemote(app),
-		Ref:         params.Ref,
-		Path:        params.Path,
-		Name:        params.FileName,
-		PipelineYml: yml,
+	has, err := p.checkDefinitionRemoteSameName(params.ProjectID, params.PipelineDefinitionID, params.Name)
+	if err != nil {
+		return nil, apierrors.ErrUpdateProjectPipeline.InternalError(err)
+	}
+	if has {
+		return nil, apierrors.ErrUpdateProjectPipeline.InternalError(fmt.Errorf("the same pipeline name exists in the project"))
+	}
+	definitionRsp, err := p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
+		PipelineDefinitionID: params.PipelineDefinitionID,
+		Name:                 params.Name,
 	})
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrUpdateProjectPipeline.InternalError(err)
 	}
-	_, err = p.PipelineDefinition.Update(ctx, &dpb.PipelineDefinitionUpdateRequest{
-		PipelineDefinitionID: params.ID,
-		PipelineSourceID:     sourceRsp.PipelineSource.ID,
-	})
 
-	return nil, err
+	return &pb.UpdateProjectPipelineResponse{ProjectPipeline: &pb.ProjectPipeline{
+		ID:               definitionRsp.PipelineDefinition.ID,
+		Name:             definitionRsp.PipelineDefinition.Name,
+		Creator:          definitionRsp.PipelineDefinition.Creator,
+		Category:         definitionRsp.PipelineDefinition.Category,
+		TimeCreated:      definitionRsp.PipelineDefinition.TimeCreated,
+		TimeUpdated:      definitionRsp.PipelineDefinition.TimeUpdated,
+		SourceType:       source.SourceType,
+		Remote:           source.Remote,
+		Ref:              source.Ref,
+		Path:             source.Path,
+		FileName:         source.Name,
+		PipelineSourceID: source.ID,
+	}}, nil
 }
 
 func (p *ProjectPipelineService) SetPrimary(ctx context.Context, params deftype.ProjectPipelineCategory) (*dpb.PipelineDefinitionUpdateResponse, error) {

@@ -72,6 +72,7 @@ func (k *Kubernetes) createRuntime(ctx context.Context, sg *apistructs.ServiceGr
 	if IsGroupStateful(sg) {
 		return k.CreateStatefulGroup(ctx, sg, layers)
 	}
+
 	// stateless application
 	return k.createStatelessGroup(ctx, sg, layers)
 }
@@ -92,6 +93,8 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 		switch service.WorkLoad {
 		case ServicePerNode:
 			err = k.deleteDaemonSet(ns, service.ProjectServiceName)
+		case ServiceJob:
+			err = k.deleteJob(ns, service.ProjectServiceName)
 		default:
 			err = k.deleteDeployment(ns, service.ProjectServiceName)
 		}

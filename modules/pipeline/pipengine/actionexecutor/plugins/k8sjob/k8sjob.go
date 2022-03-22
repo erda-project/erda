@@ -37,8 +37,8 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/logic"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
-	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/pkg/container_provider"
+	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/k8sclient"
 	"github.com/erda-project/erda/pkg/schedule/schedulepolicy/constraintbuilders"
@@ -64,10 +64,6 @@ const (
 	EnvRetainNamespace = "RETAIN_NAMESPACE"
 )
 
-const (
-	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
-)
-
 var (
 	errMissingNamespace = errors.New("action missing namespace")
 	errMissingUUID      = errors.New("action missing UUID")
@@ -79,7 +75,7 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
-		cluster, err := clusterinfo.GetClusterByName(clusterName)
+		cluster, err := clusterinfo.GetClusterInfoByName(clusterName)
 		if err != nil {
 			return nil, err
 		}
@@ -195,7 +191,8 @@ func (k *K8sJob) Start(ctx context.Context, task *spec.PipelineTask) (data inter
 	}
 
 	// get cluster info
-	clusterInfo, err := logic.GetCLusterInfo(k.clusterName)
+	clusterInfo, err := clusterinfo.GetClusterInfoByName(k.clusterName)
+	clusterCM := clusterInfo.CM
 	if err != nil {
 		return nil, errors.Errorf("failed to get cluster info, clusterName: %s, (%v)", k.clusterName, err)
 	}
@@ -204,14 +201,14 @@ func (k *K8sJob) Start(ctx context.Context, task *spec.PipelineTask) (data inter
 		logrus.Errorf("failed to get or create ns with eci, err: %v", err)
 		return nil, err
 	}
-	container_provider.DealJobAndClusterInfo(&job, clusterInfo)
+	container_provider.DealJobAndClusterInfo(&job, clusterCM)
 
 	if err := k.createInnerSecretIfNotExist(job.Namespace, apistructs.AliyunRegistry); err != nil {
 		return nil, err
 	}
 
 	if len(job.Volumes) != 0 {
-		_, _, pvcs := logic.GenerateK8SVolumes(&job, clusterInfo)
+		_, _, pvcs := logic.GenerateK8SVolumes(&job, clusterCM)
 		for _, pvc := range pvcs {
 			if pvc == nil {
 				continue
@@ -232,7 +229,7 @@ func (k *K8sJob) Start(ctx context.Context, task *spec.PipelineTask) (data inter
 		}
 	}
 
-	kubeJob, err := k.generateKubeJob(job, clusterInfo)
+	kubeJob, err := k.generateKubeJob(job, clusterCM)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create k8s job")
 	}
@@ -296,7 +293,7 @@ func (k *K8sJob) Delete(ctx context.Context, task *spec.PipelineTask) (data inte
 	}
 
 	// if user customize namespace, shouldn't delete namespace
-	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) == "" && !job.NotPipelineControlledNs {
+	if os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE) == "" && !job.NotPipelineControlledNs {
 		jobs, err := k.client.ClientSet.BatchV1().Jobs(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errMsg := fmt.Errorf("list the job's pod error: %+v", err)
@@ -367,7 +364,7 @@ func (k *K8sJob) Inspect(ctx context.Context, task *spec.PipelineTask) (apistruc
 }
 
 func (k *K8sJob) JobVolumeCreate(ctx context.Context, jobVolume apistructs.JobVolume) (string, error) {
-	var namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+	var namespace = os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
 	if namespace == "" {
 		namespace = jobVolume.Namespace
 	}
@@ -458,7 +455,7 @@ func (k *K8sJob) createNamespace(ctx context.Context, name string) error {
 	return nil
 }
 
-func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo map[string]string) (*batchv1.Job, error) {
+func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo apistructs.ClusterInfoData) (*batchv1.Job, error) {
 	job, ok := specObj.(apistructs.JobFromUser)
 	if !ok {
 		return nil, errors.New("invalid job spec")
@@ -671,7 +668,7 @@ func (k *K8sJob) generateKubeJob(specObj interface{}, clusterInfo map[string]str
 	return kubeJob, nil
 }
 
-func (k *K8sJob) setBinds(pod *corev1.PodTemplateSpec, binds []apistructs.Bind, clusterInfo map[string]string) error {
+func (k *K8sJob) setBinds(pod *corev1.PodTemplateSpec, binds []apistructs.Bind, clusterInfo apistructs.ClusterInfoData) error {
 	for i, bind := range binds {
 		if len(bind.HostPath) == 0 || len(bind.ContainerPath) == 0 {
 			errMsg := fmt.Sprintf("invalid params, hostPath: %s, containerPath: %s",
@@ -705,7 +702,7 @@ func (k *K8sJob) setBinds(pod *corev1.PodTemplateSpec, binds []apistructs.Bind, 
 	return nil
 }
 
-func (k *K8sJob) generateContainerEnvs(job *apistructs.JobFromUser, clusterInfo map[string]string) ([]corev1.EnvVar, error) {
+func (k *K8sJob) generateContainerEnvs(job *apistructs.JobFromUser, clusterInfo apistructs.ClusterInfoData) ([]corev1.EnvVar, error) {
 	env := []corev1.EnvVar{}
 	envMap := job.Env
 
@@ -781,7 +778,7 @@ func (k *K8sJob) generateContainerEnvs(job *apistructs.JobFromUser, clusterInfo 
 	if len(clusterInfo) > 0 {
 		for k, v := range clusterInfo {
 			env = append(env, corev1.EnvVar{
-				Name:  k,
+				Name:  string(k),
 				Value: v,
 			})
 		}

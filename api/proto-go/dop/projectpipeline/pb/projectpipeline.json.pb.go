@@ -45,6 +45,10 @@ var _ json.Marshaler = (*ListPipelineCategoryResponse)(nil)
 var _ json.Unmarshaler = (*ListPipelineCategoryResponse)(nil)
 var _ json.Marshaler = (*PipelineCategory)(nil)
 var _ json.Unmarshaler = (*PipelineCategory)(nil)
+var _ json.Marshaler = (*UpdateProjectPipelineRequest)(nil)
+var _ json.Unmarshaler = (*UpdateProjectPipelineRequest)(nil)
+var _ json.Marshaler = (*UpdateProjectPipelineResponse)(nil)
+var _ json.Unmarshaler = (*UpdateProjectPipelineResponse)(nil)
 
 // CreateProjectPipelineSourcePreCheckRequest implement json.Marshaler.
 func (m *CreateProjectPipelineSourcePreCheckRequest) MarshalJSON() ([]byte, error) {
@@ -329,6 +333,42 @@ func (m *PipelineCategory) MarshalJSON() ([]byte, error) {
 
 // PipelineCategory implement json.Marshaler.
 func (m *PipelineCategory) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// UpdateProjectPipelineRequest implement json.Marshaler.
+func (m *UpdateProjectPipelineRequest) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// UpdateProjectPipelineRequest implement json.Marshaler.
+func (m *UpdateProjectPipelineRequest) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// UpdateProjectPipelineResponse implement json.Marshaler.
+func (m *UpdateProjectPipelineResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// UpdateProjectPipelineResponse implement json.Marshaler.
+func (m *UpdateProjectPipelineResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

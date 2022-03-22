@@ -39,7 +39,7 @@ service DefinitionService {
   }
   rpc StatisticsGroupByRemote (PipelineDefinitionStatisticsRequest) returns (PipelineDefinitionStatisticsResponse) {
     option (google.api.http) = {
-      get: "/api/pipeline-definitions/actions/Statistics-group-by-remote",
+      get: "/api/pipeline-definitions/actions/statistics-group-by-remote",
     };
   }
   rpc ListUsedRefs (PipelineDefinitionUsedRefListRequest) returns (PipelineDefinitionUsedRefListResponse) {
@@ -49,7 +49,7 @@ service DefinitionService {
   }
   rpc StatisticsGroupByFilePath (PipelineDefinitionStatisticsRequest) returns (PipelineDefinitionStatisticsResponse) {
     option (google.api.http) = {
-      get: "/api/pipeline-definitions/actions/Statistics-group-by-filePath",
+      get: "/api/pipeline-definitions/actions/statistics-group-by-filePath",
     };
   }
 }
@@ -148,22 +148,24 @@ message PipelineDefinitionListRequest {
   int64 pageNo = 2;
   string location = 3;
   string name = 4;
-  repeated string creator = 5;
-  repeated string executor = 6;
-  repeated string category = 7;
-  repeated string ref = 8;
-  repeated string remote = 9;
-  repeated string timeCreated = 10;
-  repeated string timeStarted = 11;
-  repeated string status = 12;
-  repeated string idList = 13;
-  repeated string ascCols = 14;
-  repeated string descCols = 15;
-  int64 totalActionNum = 16;
-  int64 ExecutedActionNum = 17;
-  repeated string sourceIDList = 18;
-  repeated string filePathWithNames = 19;
-  bool isOthers = 20;
+
+  string fuzzyName = 5;
+  repeated string creator = 6;
+  repeated string executor = 7;
+  repeated string category = 8;
+  repeated string ref = 9;
+  repeated string remote = 10;
+  repeated string timeCreated = 11;
+  repeated string timeStarted = 12;
+  repeated string status = 13;
+  repeated string idList = 14;
+  repeated string ascCols = 15;
+  repeated string descCols = 16;
+  int64 totalActionNum = 17;
+  int64 ExecutedActionNum = 18;
+  repeated string sourceIDList = 19;
+  repeated string filePathWithNames = 20;
+  bool isOthers = 21;
 }
 
 message PipelineDefinitionStatisticsRequest {

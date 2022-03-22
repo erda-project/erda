@@ -214,11 +214,11 @@ func filterInPipelineCategory(pipelineCategoryKey, path string, node apistructs.
 	if pipelineCategoryKey != "" {
 		switch pipelineCategoryKey {
 		case apistructs.CategoryBuildDeploy:
-			if node.Type == gittarEntryBlobType && !strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(req.PipelineCategoryKey)]) {
+			if node.Type == gittarEntryBlobType && !strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(pipelineCategoryKey)]) {
 				return true
 			}
 		case apistructs.CategoryBuildArtifact:
-			if node.Type == gittarEntryBlobType && !strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(req.PipelineCategoryKey)]) {
+			if node.Type == gittarEntryBlobType && !strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(pipelineCategoryKey)]) {
 				return true
 			}
 		case apistructs.CategoryOthers:

@@ -24,6 +24,7 @@ import (
 
 	"github.com/erda-project/erda/modules/pipeline/conf"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
+	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/goroutinepool"
 )
@@ -35,6 +36,7 @@ type Manager struct {
 	executorsByName map[types.Name]types.ActionExecutor
 	kindsByName     map[types.Name]types.Kind
 	pools           *goroutinepool.GoroutinePool
+	clusterInfo     clusterinfo.Interface
 }
 
 var mgr Manager
@@ -43,11 +45,12 @@ func GetManager() *Manager {
 	return &mgr
 }
 
-func (m *Manager) Initialize(ctx context.Context, cfgs chan spec.ActionExecutorConfig) error {
+func (m *Manager) Initialize(ctx context.Context, cfgs chan spec.ActionExecutorConfig, clusterInfo clusterinfo.Interface) error {
 	m.factory = types.Factory
 	m.executorsByName = make(map[types.Name]types.ActionExecutor)
 	m.kindsByName = make(map[types.Name]types.Kind)
 	m.pools = goroutinepool.New(conf.K8SExecutorPoolSize())
+	m.clusterInfo = clusterInfo
 
 	logrus.Info("pipengine action executor manager Initialize ...")
 
