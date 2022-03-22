@@ -258,8 +258,8 @@ func PipelineDefinitionExtraToPb(pipelineDefinitionExtra *db.PipelineDefinitionE
 	return de
 }
 
-func (p pipelineDefinition) StaticsGroupByRemote(ctx context.Context, request *pb.PipelineDefinitionStaticsRequest) (*pb.PipelineDefinitionStaticsResponse, error) {
-	statics, err := p.dbClient.StaticsGroupByRemote(request)
+func (p pipelineDefinition) StatisticsGroupByRemote(ctx context.Context, request *pb.PipelineDefinitionStatisticsRequest) (*pb.PipelineDefinitionStatisticsResponse, error) {
+	statics, err := p.dbClient.StatisticsGroupByRemote(request)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +273,7 @@ func (p pipelineDefinition) StaticsGroupByRemote(ctx context.Context, request *p
 			TotalNum:   v.TotalNum,
 		})
 	}
-	return &pb.PipelineDefinitionStaticsResponse{PipelineDefinitionStatistics: pipelineDefinitionStatistics}, nil
+	return &pb.PipelineDefinitionStatisticsResponse{PipelineDefinitionStatistics: pipelineDefinitionStatistics}, nil
 }
 
 func (p pipelineDefinition) ListUsedRefs(ctx context.Context, req *pb.PipelineDefinitionUsedRefListRequest) (*pb.PipelineDefinitionUsedRefListResponse, error) {
@@ -287,8 +287,8 @@ func (p pipelineDefinition) ListUsedRefs(ctx context.Context, req *pb.PipelineDe
 	return &pb.PipelineDefinitionUsedRefListResponse{Ref: refs}, nil
 }
 
-func (p pipelineDefinition) StaticsGroupByFilePath(ctx context.Context, request *pb.PipelineDefinitionStaticsRequest) (*pb.PipelineDefinitionStaticsResponse, error) {
-	statics, err := p.dbClient.StaticsGroupByFilePath(request)
+func (p pipelineDefinition) StatisticsGroupByFilePath(ctx context.Context, request *pb.PipelineDefinitionStatisticsRequest) (*pb.PipelineDefinitionStatisticsResponse, error) {
+	statics, err := p.dbClient.StatisticsGroupByFilePath(request)
 	if err != nil {
 		return nil, err
 	}
@@ -306,5 +306,5 @@ func (p pipelineDefinition) StaticsGroupByFilePath(ctx context.Context, request 
 			TotalNum:   v.TotalNum,
 		})
 	}
-	return &pb.PipelineDefinitionStaticsResponse{PipelineDefinitionStatistics: pipelineDefinitionStatistics}, nil
+	return &pb.PipelineDefinitionStatisticsResponse{PipelineDefinitionStatistics: pipelineDefinitionStatistics}, nil
 }

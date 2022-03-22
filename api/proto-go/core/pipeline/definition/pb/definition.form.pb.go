@@ -24,8 +24,8 @@ var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionDeleteResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionGetRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionGetResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionListRequest)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStaticsRequest)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStaticsResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStatisticsRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStatisticsResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStatistics)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionListResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionUsedRefListRequest)(nil)
@@ -1719,8 +1719,8 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 	return nil
 }
 
-// PipelineDefinitionStaticsRequest implement urlenc.URLValuesUnmarshaler.
-func (m *PipelineDefinitionStaticsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+// PipelineDefinitionStatisticsRequest implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineDefinitionStatisticsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
@@ -1732,8 +1732,8 @@ func (m *PipelineDefinitionStaticsRequest) UnmarshalURLValues(prefix string, val
 	return nil
 }
 
-// PipelineDefinitionStaticsResponse implement urlenc.URLValuesUnmarshaler.
-func (m *PipelineDefinitionStaticsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+// PipelineDefinitionStatisticsResponse implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineDefinitionStatisticsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }
 

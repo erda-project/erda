@@ -57,14 +57,14 @@ func (s *definitionServiceWrapper) List(ctx context.Context, req *pb.PipelineDef
 	return s.client.List(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
-func (s *definitionServiceWrapper) StaticsGroupByRemote(ctx context.Context, req *pb.PipelineDefinitionStaticsRequest) (*pb.PipelineDefinitionStaticsResponse, error) {
-	return s.client.StaticsGroupByRemote(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+func (s *definitionServiceWrapper) StatisticsGroupByRemote(ctx context.Context, req *pb.PipelineDefinitionStatisticsRequest) (*pb.PipelineDefinitionStatisticsResponse, error) {
+	return s.client.StatisticsGroupByRemote(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
 func (s *definitionServiceWrapper) ListUsedRefs(ctx context.Context, req *pb.PipelineDefinitionUsedRefListRequest) (*pb.PipelineDefinitionUsedRefListResponse, error) {
 	return s.client.ListUsedRefs(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
-func (s *definitionServiceWrapper) StaticsGroupByFilePath(ctx context.Context, req *pb.PipelineDefinitionStaticsRequest) (*pb.PipelineDefinitionStaticsResponse, error) {
-	return s.client.StaticsGroupByFilePath(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+func (s *definitionServiceWrapper) StatisticsGroupByFilePath(ctx context.Context, req *pb.PipelineDefinitionStatisticsRequest) (*pb.PipelineDefinitionStatisticsResponse, error) {
+	return s.client.StatisticsGroupByFilePath(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

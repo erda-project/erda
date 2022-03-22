@@ -31,12 +31,12 @@ type DefinitionServiceHandler interface {
 	Get(context.Context, *PipelineDefinitionGetRequest) (*PipelineDefinitionGetResponse, error)
 	// GET /api/pipeline-definitions
 	List(context.Context, *PipelineDefinitionListRequest) (*PipelineDefinitionListResponse, error)
-	// GET /api/pipeline-definitions/actions/statics-group-by-remote
-	StaticsGroupByRemote(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error)
+	// GET /api/pipeline-definitions/actions/Statistics-group-by-remote
+	StatisticsGroupByRemote(context.Context, *PipelineDefinitionStatisticsRequest) (*PipelineDefinitionStatisticsResponse, error)
 	// GET /api/pipeline-definitions/actions/list-used-refs
 	ListUsedRefs(context.Context, *PipelineDefinitionUsedRefListRequest) (*PipelineDefinitionUsedRefListResponse, error)
-	// GET /api/pipeline-definitions/actions/statics-group-by-filePath
-	StaticsGroupByFilePath(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error)
+	// GET /api/pipeline-definitions/actions/Statistics-group-by-filePath
+	StatisticsGroupByFilePath(context.Context, *PipelineDefinitionStatisticsRequest) (*PipelineDefinitionStatisticsResponse, error)
 }
 
 // RegisterDefinitionServiceHandler register DefinitionServiceHandler to http.Router.
@@ -311,13 +311,13 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 		)
 	}
 
-	add_StaticsGroupByRemote := func(method, path string, fn func(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error)) {
+	add_StatisticsGroupByRemote := func(method, path string, fn func(context.Context, *PipelineDefinitionStatisticsRequest) (*PipelineDefinitionStatisticsResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*PipelineDefinitionStaticsRequest))
+			return fn(ctx, req.(*PipelineDefinitionStatisticsRequest))
 		}
-		var StaticsGroupByRemote_info transport.ServiceInfo
+		var StatisticsGroupByRemote_info transport.ServiceInfo
 		if h.Interceptor != nil {
-			StaticsGroupByRemote_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "StaticsGroupByRemote", srv)
+			StatisticsGroupByRemote_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "StatisticsGroupByRemote", srv)
 			handler = h.Interceptor(handler)
 		}
 		r.Add(method, path, encodeFunc(
@@ -325,10 +325,10 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 				ctx := http.WithRequest(r.Context(), r)
 				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, StaticsGroupByRemote_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, StatisticsGroupByRemote_info)
 				}
 				r = r.WithContext(ctx)
-				var in PipelineDefinitionStaticsRequest
+				var in PipelineDefinitionStatisticsRequest
 				if err := h.Decode(r, &in); err != nil {
 					return nil, err
 				}
@@ -383,13 +383,13 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 		)
 	}
 
-	add_StaticsGroupByFilePath := func(method, path string, fn func(context.Context, *PipelineDefinitionStaticsRequest) (*PipelineDefinitionStaticsResponse, error)) {
+	add_StatisticsGroupByFilePath := func(method, path string, fn func(context.Context, *PipelineDefinitionStatisticsRequest) (*PipelineDefinitionStatisticsResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*PipelineDefinitionStaticsRequest))
+			return fn(ctx, req.(*PipelineDefinitionStatisticsRequest))
 		}
-		var StaticsGroupByFilePath_info transport.ServiceInfo
+		var StatisticsGroupByFilePath_info transport.ServiceInfo
 		if h.Interceptor != nil {
-			StaticsGroupByFilePath_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "StaticsGroupByFilePath", srv)
+			StatisticsGroupByFilePath_info = transport.NewServiceInfo("erda.core.pipeline.definition.DefinitionService", "StatisticsGroupByFilePath", srv)
 			handler = h.Interceptor(handler)
 		}
 		r.Add(method, path, encodeFunc(
@@ -397,10 +397,10 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 				ctx := http.WithRequest(r.Context(), r)
 				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
 				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, StaticsGroupByFilePath_info)
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, StatisticsGroupByFilePath_info)
 				}
 				r = r.WithContext(ctx)
-				var in PipelineDefinitionStaticsRequest
+				var in PipelineDefinitionStatisticsRequest
 				if err := h.Decode(r, &in); err != nil {
 					return nil, err
 				}
@@ -424,7 +424,7 @@ func RegisterDefinitionServiceHandler(r http.Router, srv DefinitionServiceHandle
 	add_Delete("DELETE", "/api/pipeline-definitions/{pipelineDefinitionID}", srv.Delete)
 	add_Get("GET", "/api/pipeline-definitions/{pipelineDefinitionID}", srv.Get)
 	add_List("GET", "/api/pipeline-definitions", srv.List)
-	add_StaticsGroupByRemote("GET", "/api/pipeline-definitions/actions/statics-group-by-remote", srv.StaticsGroupByRemote)
+	add_StatisticsGroupByRemote("GET", "/api/pipeline-definitions/actions/Statistics-group-by-remote", srv.StatisticsGroupByRemote)
 	add_ListUsedRefs("GET", "/api/pipeline-definitions/actions/list-used-refs", srv.ListUsedRefs)
-	add_StaticsGroupByFilePath("GET", "/api/pipeline-definitions/actions/statics-group-by-filePath", srv.StaticsGroupByFilePath)
+	add_StatisticsGroupByFilePath("GET", "/api/pipeline-definitions/actions/Statistics-group-by-filePath", srv.StatisticsGroupByFilePath)
 }

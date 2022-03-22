@@ -381,8 +381,8 @@ func (b *Bundle) GetGittarBranchesV2(repo string, orgID string, onlyBranchNames 
 	return branches, nil
 }
 
-// 获取目录的子节点
-func (b *Bundle) GetGittarTreeNode(repo string, orgID string, simple bool, userID string) ([]apistructs.TreeEntry, string, error) {
+// GetGittarTreeNode 获取目录的子节点
+func (b *Bundle) GetGittarTreeNode(repo string, orgID string, simple bool, userID string) (*apistructs.GittarTreeData, error) {
 	var (
 		host     string
 		err      error
@@ -391,7 +391,7 @@ func (b *Bundle) GetGittarTreeNode(repo string, orgID string, simple bool, userI
 	hc := b.hc
 	host, err = b.urls.Gittar()
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	resp, err := hc.Get(host).
@@ -401,16 +401,13 @@ func (b *Bundle) GetGittarTreeNode(repo string, orgID string, simple bool, userI
 		Param("simple", strconv.FormatBool(simple)).
 		Do().JSON(&treeResp)
 	if err != nil {
-		return nil, "", apierrors.ErrInvoke.InternalError(err)
+		return nil, apierrors.ErrInvoke.InternalError(err)
 	}
 	if !resp.IsOK() || !treeResp.Success {
-		return nil, "", toAPIError(resp.StatusCode(), treeResp.Error)
-	}
-	if treeResp.Data.Entries == nil {
-		return nil, "", nil
+		return nil, toAPIError(resp.StatusCode(), treeResp.Error)
 	}
 
-	return treeResp.Data.Entries, treeResp.Data.Path, nil
+	return &treeResp.Data, nil
 }
 
 // 获取文件的内容

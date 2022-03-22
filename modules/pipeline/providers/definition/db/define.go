@@ -293,7 +293,7 @@ type PipelineDefinitionStatistics struct {
 	TotalNum   uint64
 }
 
-func (client *Client) StaticsGroupByRemote(req *pb.PipelineDefinitionStaticsRequest, ops ...mysqlxorm.SessionOption) ([]PipelineDefinitionStatistics, error) {
+func (client *Client) StatisticsGroupByRemote(req *pb.PipelineDefinitionStatisticsRequest, ops ...mysqlxorm.SessionOption) ([]PipelineDefinitionStatistics, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -313,7 +313,7 @@ func (client *Client) StaticsGroupByRemote(req *pb.PipelineDefinitionStaticsRequ
 	return list, err
 }
 
-func (client *Client) StaticsGroupByFilePath(req *pb.PipelineDefinitionStaticsRequest, ops ...mysqlxorm.SessionOption) ([]PipelineDefinitionStatistics, error) {
+func (client *Client) StatisticsGroupByFilePath(req *pb.PipelineDefinitionStatisticsRequest, ops ...mysqlxorm.SessionOption) ([]PipelineDefinitionStatistics, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 

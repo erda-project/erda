@@ -110,13 +110,13 @@ func (s *ProjectPipelineService) getPipelineYml(app *apistructs.ApplicationDTO, 
 		path = fmt.Sprintf("/wb/%v/%v/tree/%v/%v", app.ProjectName, app.Name, branch, findPath)
 	}
 
-	diceEntrys, _, err := s.bundle.GetGittarTreeNode(path, strconv.Itoa(int(app.OrgID)), true, userID)
+	treeData, err := s.bundle.GetGittarTreeNode(path, strconv.Itoa(int(app.OrgID)), true, userID)
 	if err != nil {
 		return nil, err
 	}
 
 	var list []*pb.PipelineYmlList
-	for _, entry := range diceEntrys {
+	for _, entry := range treeData.Entries {
 		if !strings.HasSuffix(entry.Name, ".yml") {
 			continue
 		}
@@ -1148,7 +1148,7 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 		appNames = append(appNames, v.Name)
 	}
 
-	statics, err := p.PipelineDefinition.StaticsGroupByRemote(ctx, &dpb.PipelineDefinitionStaticsRequest{
+	statistics, err := p.PipelineDefinition.StatisticsGroupByRemote(ctx, &dpb.PipelineDefinitionStatisticsRequest{
 		Location: makeLocation(&apistructs.ApplicationDTO{
 			OrgName:     org.Name,
 			ProjectName: project.Name,
@@ -1167,7 +1167,7 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 		}
 	}
 
-	for _, v := range statics.GetPipelineDefinitionStatistics() {
+	for _, v := range statistics.GetPipelineDefinitionStatistics() {
 		remoteName := getNameByRemote(v.Group)
 		if v2, ok := appNamePipelineNumMap[remoteName.AppName]; ok {
 			v2.FailedNum = int(v.FailedNum)
@@ -1392,7 +1392,7 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
 	}
 
-	staticsResp, err := p.PipelineDefinition.StaticsGroupByFilePath(ctx, &dpb.PipelineDefinitionStaticsRequest{
+	staticsResp, err := p.PipelineDefinition.StatisticsGroupByFilePath(ctx, &dpb.PipelineDefinitionStatisticsRequest{
 		Location: makeLocation(&apistructs.ApplicationDTO{
 			OrgName:     org.Name,
 			ProjectName: project.Name,

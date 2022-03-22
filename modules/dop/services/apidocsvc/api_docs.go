@@ -367,11 +367,11 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 
 	// query the docs under the path,
 	// if the error is not nil, it is considered that there is no document here.
-	nodes, _, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, userID)
+	treeData, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, userID)
 	if err != nil {
 		logrus.Errorf("failed to GetGittarTreeNode, err: %v", err)
 	}
-	if len(nodes) == 0 {
+	if len(treeData.Entries) == 0 {
 		return nil, nil
 	}
 
@@ -384,7 +384,7 @@ func (svc *Service) listServices(orgID uint64, userID, pinode, pathFromRepoRoot 
 		results   []*apistructs.FileTreeNodeRspData
 		nodeTypeM = map[string]apistructs.NodeType{"blob": "f", "tree": "d"}
 	)
-	for _, node := range nodes {
+	for _, node := range treeData.Entries {
 		if !filter(node) {
 			continue
 		}
@@ -486,11 +486,11 @@ func (svc *Service) getSchemaContent(orgID uint64, userID, inode string) (*apist
 	orgIDStr := strconv.FormatUint(orgID, 10)
 
 	// query all files in the directory, allows error or 0 node.
-	nodes, _, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, userID)
+	treeData, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, userID)
 	if err != nil {
 		logrus.Errorf("failed to GetGittarTreeNode, err: %v", err)
 	}
-	if len(nodes) == 0 {
+	if len(treeData.Entries) == 0 {
 		return nil, nil
 	}
 
@@ -499,7 +499,7 @@ func (svc *Service) getSchemaContent(orgID uint64, userID, inode string) (*apist
 		openapi, _ = ddlconv.New()
 		module     migrator.Module
 	)
-	for _, node := range nodes {
+	for _, node := range treeData.Entries {
 		if node.Type != "blob" || filepath.Ext(node.Name) != ".sql" {
 			continue
 		}

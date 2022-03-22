@@ -412,11 +412,11 @@ func (b *Bundle) GetPipelineGittarFolder(userID string, appID uint64, branch str
 		return defaultPath
 	}
 	pinode := app.ProjectName + "/" + app.Name
-	_, _, err = b.GetGittarTreeNode(fmt.Sprintf("%s/%s/tree/%s/%s", gittarPrefix, pinode, branch, defaultPath), strconv.FormatUint(app.OrgID, 10), true, userID)
+	_, err = b.GetGittarTreeNode(fmt.Sprintf("%s/%s/tree/%s/%s", gittarPrefix, pinode, branch, defaultPath), strconv.FormatUint(app.OrgID, 10), true, userID)
 	if err == nil {
 		return defaultPath
 	}
-	_, _, err = b.GetGittarTreeNode(fmt.Sprintf("%s/%s/tree/%s/%s", gittarPrefix, pinode, branch, compatiblePath), strconv.FormatUint(app.OrgID, 10), true, userID)
+	_, err = b.GetGittarTreeNode(fmt.Sprintf("%s/%s/tree/%s/%s", gittarPrefix, pinode, branch, compatiblePath), strconv.FormatUint(app.OrgID, 10), true, userID)
 	if err == nil {
 		return compatiblePath
 	}

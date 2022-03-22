@@ -282,11 +282,11 @@ func branchHasAPIDoc(orgID uint64, branchInode string) bool {
 	}
 	ft.SetPathFromRepoRoot(apiDocsPathFromRepoRoot)
 	orgIDStr := strconv.FormatUint(orgID, 10)
-	nodes, _, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, "")
+	treeData, err := bdl.Bdl.GetGittarTreeNode(ft.TreePath(), orgIDStr, true, "")
 	if err != nil {
 		return false
 	}
-	for _, node := range nodes {
+	for _, node := range treeData.Entries {
 		// 如果 .dice/apidocs 目录下存在 .yaml 或 .yml 的文件 则认为该分支下存在文档
 		if node.Type == "blob" && MatchSuffix(node.Name, suffixYaml, suffixYaml) {
 			return true

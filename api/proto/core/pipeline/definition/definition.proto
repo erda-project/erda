@@ -37,9 +37,9 @@ service DefinitionService {
       get: "/api/pipeline-definitions",
     };
   }
-  rpc StaticsGroupByRemote (PipelineDefinitionStaticsRequest) returns (PipelineDefinitionStaticsResponse) {
+  rpc StatisticsGroupByRemote (PipelineDefinitionStatisticsRequest) returns (PipelineDefinitionStatisticsResponse) {
     option (google.api.http) = {
-      get: "/api/pipeline-definitions/actions/statics-group-by-remote",
+      get: "/api/pipeline-definitions/actions/Statistics-group-by-remote",
     };
   }
   rpc ListUsedRefs (PipelineDefinitionUsedRefListRequest) returns (PipelineDefinitionUsedRefListResponse) {
@@ -47,9 +47,9 @@ service DefinitionService {
       get: "/api/pipeline-definitions/actions/list-used-refs",
     };
   }
-  rpc StaticsGroupByFilePath (PipelineDefinitionStaticsRequest) returns (PipelineDefinitionStaticsResponse) {
+  rpc StatisticsGroupByFilePath (PipelineDefinitionStatisticsRequest) returns (PipelineDefinitionStatisticsResponse) {
     option (google.api.http) = {
-      get: "/api/pipeline-definitions/actions/statics-group-by-filePath",
+      get: "/api/pipeline-definitions/actions/Statistics-group-by-filePath",
     };
   }
 }
@@ -166,11 +166,11 @@ message PipelineDefinitionListRequest {
   bool isOthers = 20;
 }
 
-message PipelineDefinitionStaticsRequest {
+message PipelineDefinitionStatisticsRequest {
   string location = 1;
 }
 
-message PipelineDefinitionStaticsResponse {
+message PipelineDefinitionStatisticsResponse {
   repeated PipelineDefinitionStatistics PipelineDefinitionStatistics = 1;
 }
 
