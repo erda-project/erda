@@ -169,11 +169,11 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 	}
 	if !req.IsOthers {
 		if len(req.FilePathWithNames) != 0 {
-			and := builder.And(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[0]), "s.name": filepath.Base(req.FilePathWithNames[0])})
-			for i := 1; i < len(req.FilePathWithNames); i++ {
-				and = and.Or(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[i]), "s.name": filepath.Base(req.FilePathWithNames[i])})
+			cond := builder.NewCond()
+			for i := 0; i < len(req.FilePathWithNames); i++ {
+				cond = cond.Or(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[i]), "s.name": filepath.Base(req.FilePathWithNames[i])})
 			}
-			sqlBuild, args, _ := builder.ToSQL(and)
+			sqlBuild, args, _ := builder.ToSQL(cond)
 			engine = engine.Where(sqlBuild, args...)
 		}
 	} else {
@@ -266,11 +266,11 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 
 	if !req.IsOthers {
 		if len(req.FilePathWithNames) != 0 {
-			and := builder.And(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[0]), "s.name": filepath.Base(req.FilePathWithNames[0])})
-			for i := 1; i < len(req.FilePathWithNames); i++ {
-				and = and.Or(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[i]), "s.name": filepath.Base(req.FilePathWithNames[i])})
+			cond := builder.NewCond()
+			for i := 0; i < len(req.FilePathWithNames); i++ {
+				cond = cond.Or(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[i]), "s.name": filepath.Base(req.FilePathWithNames[i])})
 			}
-			sqlBuild, args, _ := builder.ToSQL(and)
+			sqlBuild, args, _ := builder.ToSQL(cond)
 			engine = engine.Where(sqlBuild, args...)
 		}
 	} else {
