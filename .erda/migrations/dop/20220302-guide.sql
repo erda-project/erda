@@ -8,6 +8,7 @@ CREATE TABLE `erda_guide`
     `org_name`        varchar(50)  NOT NULL DEFAULT '' COMMENT '组织名',
     `project_id`      bigint(20) NOT NULL DEFAULT 0 COMMENT 'projectID',
     `app_id`          bigint(20) NOT NULL DEFAULT 0 COMMENT 'appID',
+    `app_name`        varchar(50) NOT NULL DEFAULT '' COMMENT 'appName',
     `branch`          varchar(36)  NOT NULL DEFAULT '' COMMENT '分支',
     `created_at`      datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'CREATED AT',
     `updated_at`      datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'UPDATED AT',
