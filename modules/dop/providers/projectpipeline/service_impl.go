@@ -387,24 +387,26 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 			}
 			return remotes
 		}(),
-		TimeCreated: params.TimeCreated,
-		TimeStarted: params.TimeStarted,
-		Status:      params.Status,
-		AscCols:     params.AscCols,
-		DescCols:    params.DescCols,
-		IsOthers:    params.CategoryKey == apistructs.CategoryOthers,
-		FilePathWithNames: func() []string {
-			if params.CategoryKey != apistructs.CategoryOthers {
-				return apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(params.CategoryKey)]
-			}
-			return append(apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy], apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildArtifact]...)
-		}(),
+		TimeCreated:       params.TimeCreated,
+		TimeStarted:       params.TimeStarted,
+		Status:            params.Status,
+		AscCols:           params.AscCols,
+		DescCols:          params.DescCols,
+		IsOthers:          params.CategoryKey == apistructs.CategoryOthers,
+		FilePathWithNames: getRulesByCategoryKey(params.CategoryKey),
 	})
 	if err != nil {
 		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
 	}
 
 	return list.Data, list.Total, nil
+}
+
+func getRulesByCategoryKey(categoryKey string) []string {
+	if categoryKey != apistructs.CategoryOthers {
+		return apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(categoryKey)]
+	}
+	return append(apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy], apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildArtifact]...)
 }
 
 func (p *ProjectPipelineService) Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error) {
@@ -1360,17 +1362,21 @@ func (p *ProjectPipelineService) ListUsedRefs(ctx context.Context, params deftyp
 	return resp.Ref, nil
 }
 
-type pipelineCategoryRule struct {
-	Key        string
-	Category   string
-	Rules      []string
+type PipelineStatisticsByCategory struct {
+	Key      string
+	Category string
+	Rules    []string
+	PipelineStatisticsNums
+}
+
+type PipelineStatisticsNums struct {
 	RunningNum uint64
 	FailedNum  uint64
 	TotalNum   uint64
 }
 
-func (p *ProjectPipelineService) ListPipelineCategoryRule(ctx context.Context) []pipelineCategoryRule {
-	return []pipelineCategoryRule{
+func (p *ProjectPipelineService) ListPipelineStatisticsByCategory(ctx context.Context) []PipelineStatisticsByCategory {
+	return []PipelineStatisticsByCategory{
 		{
 			Key:      "build-deploy",
 			Category: p.trans.Text(apis.Language(ctx), "BuildDeploy"),
@@ -1412,31 +1418,31 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 	if err != nil {
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
 	}
-	categoryRules := p.ListPipelineCategoryRule(ctx)
+	categories := p.ListPipelineStatisticsByCategory(ctx)
 
 	for _, statics := range staticsResp.PipelineDefinitionStatistics {
 		if key, ok := apistructs.RuleCategoryKeyMap[statics.Group]; ok {
-			for i := range categoryRules {
-				if key.String() == categoryRules[i].Key {
-					categoryRules[i].TotalNum += statics.TotalNum
-					categoryRules[i].FailedNum += statics.FailedNum
-					categoryRules[i].RunningNum += statics.RunningNum
+			for i := range categories {
+				if key.String() == categories[i].Key {
+					categories[i].TotalNum += statics.TotalNum
+					categories[i].FailedNum += statics.FailedNum
+					categories[i].RunningNum += statics.RunningNum
 					break
 				}
 			}
 			continue
 		}
-		for i := range categoryRules {
-			if categoryRules[i].Key == apistructs.CategoryOthers {
-				categoryRules[i].TotalNum += statics.TotalNum
-				categoryRules[i].FailedNum += statics.FailedNum
-				categoryRules[i].RunningNum += statics.RunningNum
+		for i := range categories {
+			if categories[i].Key == apistructs.CategoryOthers {
+				categories[i].TotalNum += statics.TotalNum
+				categories[i].FailedNum += statics.FailedNum
+				categories[i].RunningNum += statics.RunningNum
 				break
 			}
 		}
 	}
-	data := make([]*pb.PipelineCategory, 0, len(categoryRules))
-	for _, v := range categoryRules {
+	data := make([]*pb.PipelineCategory, 0, len(categories))
+	for _, v := range categories {
 		data = append(data, &pb.PipelineCategory{
 			Key:        v.Key,
 			Category:   v.Category,
