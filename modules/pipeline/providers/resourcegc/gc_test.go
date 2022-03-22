@@ -12,14 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package resourcegc
 
 import (
-	"context"
-	"reflect"
 	"testing"
 
-	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,15 +41,4 @@ func TestMakePipelineGCKeyWithSlash(t *testing.T) {
 func TestMakePipelineGCSubKey(t *testing.T) {
 	subKey := makePipelineGCSubKey("pipeline-1", 1)
 	assert.Equal(t, "/devops/pipeline/gc/reconciler/pipeline-1/1", subKey)
-}
-
-func TestListenGC(t *testing.T) {
-	r := &Reconciler{}
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r), "ListenGC", func(r *Reconciler, ctx context.Context) {
-		return
-	})
-	defer pm1.Unpatch()
-	t.Run("listenGC", func(t *testing.T) {
-		r.ListenGC(context.Background())
-	})
 }
