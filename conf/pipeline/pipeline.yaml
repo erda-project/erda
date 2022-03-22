@@ -48,6 +48,8 @@ metric-report-client:
       password: ${COLLECTOR_AUTH_PASSWORD}
 erda.core.pipeline.definition:
 erda.core.pipeline.cron:
+cron-daemon:
+cron-compensator:
 erda.core.pipeline.source:
 erda.core.pipeline.cms:
   # TODO refactor it: use kms to make key-change operation easier. No encrypt if key-pair not provided.

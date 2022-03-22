@@ -20,8 +20,9 @@ import (
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
 	pb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
-	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
+	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 )
 
 type config struct {
@@ -29,31 +30,24 @@ type config struct {
 
 // +provider
 type provider struct {
-	Cfg         *config
-	Log         logs.Logger
-	Register    transport.Register
-	MySQL       mysqlxorm.Interface `autowired:"mysql-xorm"`
-	cronService *Service
+	Cfg      *config
+	Log      logs.Logger
+	Register transport.Register
 
-	crondSvc *crondsvc.CrondSvc
+	MySQL        mysqlxorm.Interface    `autowired:"mysql-xorm"`
+	LeaderWorker leaderworker.Interface `autowired:"leader-worker"`
+
+	Daemon   daemon.Interface
+	dbClient *db.Client
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.cronService = &Service{
-		dbClient: &db.Client{Interface: p.MySQL},
-		p:        p,
-	}
-	if p.Register != nil {
-		pb.RegisterCronServiceImp(p.Register, p.cronService)
-	}
+	p.dbClient = &db.Client{Interface: p.MySQL}
+	pb.RegisterCronServiceImp(p.Register, p)
 	return nil
 }
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
-	switch {
-	case ctx.Service() == "erda.core.pipeline.cron.CronService" || ctx.Type() == pb.CronServiceServerType() || ctx.Type() == pb.CronServiceHandlerType():
-		return p.cronService
-	}
 	return p
 }
 
