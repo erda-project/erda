@@ -17,6 +17,7 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -87,9 +88,6 @@ func New(ops ...OpFunc) Worker {
 	for _, op := range ops {
 		op(&dw)
 	}
-	if len(dw.handlers) == 0 {
-		panic("no handler specified")
-	}
 	return &dw
 }
 
@@ -137,6 +135,10 @@ func (dw *defaultWorker) Handle(ctx context.Context, task LogicTask) {
 	handlers := make([]handler, len(dw.handlers))
 	copy(handlers, dw.handlers)
 	dw.lock.Unlock()
+
+	if len(handlers) == 0 {
+		panic(fmt.Errorf("worker have no handler to handle task, workerID: %s, logicTaskID: %s", dw.GetID(), task.GetLogicID()))
+	}
 
 	finishChan := make(chan struct{}, len(handlers))
 	finishedNum := 0
