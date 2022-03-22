@@ -55,7 +55,11 @@ func (v *issueCache) TryGetIteration(iterationID int64) (*dao.Iteration, error) 
 	if !ok {
 		return nil, fmt.Errorf("failed to get iteration")
 	}
-	return iteration.(*dao.Iteration), nil
+	i, ok := iteration.(*dao.Iteration)
+	if !ok {
+		return nil, fmt.Errorf("interface conversion: interface is %T, not *dao.Iteration", i)
+	}
+	return i, nil
 }
 
 func (v *issueCache) TryGetState(stateID int64) (*dao.IssueState, error) {
@@ -66,5 +70,9 @@ func (v *issueCache) TryGetState(stateID int64) (*dao.IssueState, error) {
 	if !ok {
 		return nil, fmt.Errorf("failed to get state")
 	}
-	return state.(*dao.IssueState), nil
+	s, ok := state.(*dao.IssueState)
+	if !ok {
+		return nil, fmt.Errorf("interface conversion: interface is %T, not *dao.IssueState", s)
+	}
+	return s, nil
 }

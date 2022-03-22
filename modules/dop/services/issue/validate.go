@@ -48,7 +48,7 @@ func inIterationInterval(iteration *dao.Iteration, time *time.Time) bool {
 	if time == nil || iteration == nil {
 		return false
 	}
-	return time.After(*iteration.StartedAt) && time.Before(*iteration.FinishedAt)
+	return !time.Before(*iteration.StartedAt) && !time.After(*iteration.FinishedAt)
 }
 
 func (v *issueValidator) validateStateWithIteration(c *issueValidationConfig) error {
