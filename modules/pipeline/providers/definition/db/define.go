@@ -16,8 +16,10 @@ package db
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 
+	"github.com/xormplus/builder"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
@@ -165,6 +167,27 @@ func (client *Client) ListPipelineDefinition(req *pb.PipelineDefinitionListReque
 			engine = engine.Where("d.started_at <= ?", req.TimeStarted[1])
 		}
 	}
+	if !req.IsOthers {
+		if len(req.FilePathWithNames) != 0 {
+			cond := builder.NewCond()
+			for i := 0; i < len(req.FilePathWithNames); i++ {
+				cond = cond.Or(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[i]), "s.name": filepath.Base(req.FilePathWithNames[i])})
+			}
+			sqlBuild, args, _ := builder.ToSQL(cond)
+			engine = engine.Where(sqlBuild, args...)
+		}
+	} else {
+		if len(req.FilePathWithNames) != 0 {
+			for i := 0; i < len(req.FilePathWithNames); i++ {
+				path := req.FilePathWithNames[i]
+				if getFilePath(path) == "" {
+					path = "/" + path
+				}
+				engine = engine.Where("CONCAT(s.path,'/',s.`name`) != ?", path)
+			}
+		}
+	}
+
 	for _, v := range req.AscCols {
 		engine = engine.Asc("d." + v)
 	}
@@ -241,6 +264,27 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 		}
 	}
 
+	if !req.IsOthers {
+		if len(req.FilePathWithNames) != 0 {
+			cond := builder.NewCond()
+			for i := 0; i < len(req.FilePathWithNames); i++ {
+				cond = cond.Or(builder.Eq{"s.path": getFilePath(req.FilePathWithNames[i]), "s.name": filepath.Base(req.FilePathWithNames[i])})
+			}
+			sqlBuild, args, _ := builder.ToSQL(cond)
+			engine = engine.Where(sqlBuild, args...)
+		}
+	} else {
+		if len(req.FilePathWithNames) != 0 {
+			for i := 0; i < len(req.FilePathWithNames); i++ {
+				path := req.FilePathWithNames[i]
+				if getFilePath(path) == "" {
+					path = "/" + path
+				}
+				engine = engine.Where("CONCAT(s.path,'/',s.`name`) != ?", path)
+			}
+		}
+	}
+
 	total, err = engine.Count(new(PipelineDefinitionSource))
 	if err != nil {
 		return 0, err
@@ -249,13 +293,13 @@ func (client *Client) CountPipelineDefinition(req *pb.PipelineDefinitionListRequ
 }
 
 type PipelineDefinitionStatistics struct {
-	Remote     string
+	Group      string
 	FailedNum  uint64
 	RunningNum uint64
 	TotalNum   uint64
 }
 
-func (client *Client) StaticsGroupByRemote(req *pb.PipelineDefinitionStaticsRequest, ops ...mysqlxorm.SessionOption) ([]PipelineDefinitionStatistics, error) {
+func (client *Client) StatisticsGroupByRemote(req *pb.PipelineDefinitionStatisticsRequest, ops ...mysqlxorm.SessionOption) ([]PipelineDefinitionStatistics, error) {
 	session := client.NewSession(ops...)
 	defer session.Close()
 
@@ -264,13 +308,33 @@ func (client *Client) StaticsGroupByRemote(req *pb.PipelineDefinitionStaticsRequ
 		err  error
 	)
 	err = session.Table("pipeline_definition").Alias("d").
-		Select(fmt.Sprintf("s.remote,COUNT(*) AS total_num,COUNT( IF ( d.`status` = '%s' , 1, NULL) ) AS running_num,"+
+		Select(fmt.Sprintf("s.remote AS `group`,COUNT(*) AS total_num,COUNT( IF ( d.`status` = '%s' , 1, NULL) ) AS running_num,"+
 			"COUNT(IF(DATE_SUB(CURDATE(), INTERVAL 1 DAY) <= d.started_at AND d.`status` = '%s',1,NULL)) AS failed_num",
 			apistructs.PipelineStatusRunning, apistructs.PipelineStatusFailed)).
 		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
 		Where("d.soft_deleted_at = 0").
 		Where("d.location = ?", req.GetLocation()).
 		GroupBy("s.remote").
+		Find(&list)
+	return list, err
+}
+
+func (client *Client) StatisticsGroupByFilePath(req *pb.PipelineDefinitionStatisticsRequest, ops ...mysqlxorm.SessionOption) ([]PipelineDefinitionStatistics, error) {
+	session := client.NewSession(ops...)
+	defer session.Close()
+
+	var (
+		list []PipelineDefinitionStatistics
+		err  error
+	)
+	err = session.Table("pipeline_definition").Alias("d").
+		Select(fmt.Sprintf("CONCAT(s.path,'/',s.`name`) AS `group`,COUNT(*) AS total_num,COUNT( IF ( d.`status` = '%s' , 1, NULL) ) AS running_num,"+
+			"COUNT(IF(DATE_SUB(CURDATE(), INTERVAL 1 DAY) <= d.started_at AND d.`status` = '%s',1,NULL)) AS failed_num",
+			apistructs.PipelineStatusRunning, apistructs.PipelineStatusFailed)).
+		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
+		Where("d.soft_deleted_at = 0").
+		Where("d.location = ?", req.GetLocation()).
+		GroupBy("s.path,s.name").
 		Find(&list)
 	return list, err
 }
@@ -310,4 +374,12 @@ func (client *Client) ListUsedRef(req *pb.PipelineDefinitionUsedRefListRequest, 
 		GroupBy("ref").
 		Find(&refs)
 	return
+}
+
+func getFilePath(path string) string {
+	dir := filepath.Dir(path)
+	if dir == "." {
+		return ""
+	}
+	return dir
 }

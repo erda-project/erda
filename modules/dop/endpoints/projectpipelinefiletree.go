@@ -55,7 +55,6 @@ func (e *Endpoints) ListFileTreeNodes(ctx context.Context, r *http.Request, vars
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
-
 	return httpserver.OkResp(nodes)
 }
 

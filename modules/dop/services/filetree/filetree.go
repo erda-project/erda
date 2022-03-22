@@ -17,6 +17,7 @@ package filetree
 import (
 	"encoding/base64"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -100,104 +101,135 @@ func (svc *GittarFileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeL
 		for _, app := range apps.List {
 			list = append(list, appConvertToUnifiedFileTreeNode(&app, req.Scope, req.ScopeID, strconv.Itoa(int(project.ID))))
 		}
-	} else {
-		// 不是就根据 pinode 查询其在 gittar 的目录
+		return list, nil
+	}
+	// 不是就根据 pinode 查询其在 gittar 的目录
+	// pinode 反base64 获取父类的路径
+	pinodeBytes, err := base64.URLEncoding.DecodeString(req.Pinode)
+	if err != nil {
+		return nil, apierrors.ErrListGittarFileTreeNodes.InternalError(err)
+	}
+	pinode := string(pinodeBytes)
+	pathSplit := strings.Split(pinode, "/")
+	length := len(pathSplit)
+	// 因为分支是 feature/sss/sss 这种模式根据 / 分割就会有问题
+	branchExcessLength := getBranchExcessLength(pinode)
 
-		// pinode 反base64 获取父类的路径
-		pinodeBytes, err := base64.URLEncoding.DecodeString(req.Pinode)
+	if length < 2 {
+		return nil, fmt.Errorf("not find nodes: pinode length error")
+	}
+
+	// 第一个为projectID的字符串, 获取其名称
+	// 第二个为appId的字符串, 获取其名称
+	appID, err := strconv.ParseUint(pathSplit[1], 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid appID: %s, err: %v", pathSplit[1], err)
+	}
+	app, err := svc.bdl.GetApp(appID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get app, appID: %d, err: %v", appID, err)
+	}
+
+	var realPinode = app.ProjectName + "/" + app.Name
+	for i := 2; i < len(pathSplit); i++ {
+		realPinode += "/" + pathSplit[i]
+	}
+
+	// 根据 / 分割判定长度为 2 的时候，代表需要查询分支列表
+	if length == 2 {
+		branchs, err := svc.bdl.GetGittarBranchesV2(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true, req.UserID)
 		if err != nil {
 			return nil, apierrors.ErrListGittarFileTreeNodes.InternalError(err)
 		}
-		pinode := string(pinodeBytes)
-		pathSplit := strings.Split(pinode, "/")
-		length := len(pathSplit)
-		// 因为分支是 feature/sss/sss 这种模式根据 / 分割就会有问题
-		branchExcessLength := getBranchExcessLength(pinode)
-
-		if length < 2 {
-			return nil, fmt.Errorf("not find nodes: pinode length error")
+		if branchs == nil || len(branchs) <= 0 {
+			return nil, nil
 		}
 
-		// 第一个为projectID的字符串, 获取其名称
-		// 第二个为appId的字符串, 获取其名称
-		appID, err := strconv.ParseUint(pathSplit[1], 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid appID: %s, err: %v", pathSplit[1], err)
-		}
-		app, err := svc.bdl.GetApp(appID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get app, appID: %d, err: %v", appID, err)
-		}
-
-		var realPinode = app.ProjectName + "/" + app.Name
-		for i := 2; i < len(pathSplit); i++ {
-			realPinode += "/" + pathSplit[i]
-		}
-
-		// 根据 / 分割判定长度为 2 的时候，代表需要查询分支列表
-		if length == 2 {
-			branchs, err := svc.bdl.GetGittarBranchesV2(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true, req.UserID)
+		for _, branch := range branchs {
+			// 过滤掉不符合分支规则
+			_, err := svc.GetWorkspaceByBranch(pathSplit[0], branch)
 			if err != nil {
-				return nil, apierrors.ErrListGittarFileTreeNodes.InternalError(err)
+				continue
 			}
-			if branchs == nil || len(branchs) <= 0 {
-				return nil, nil
+			list = append(list, branchConvertToUnifiedFileTreeNode(branch, req.Scope, req.ScopeID, pinode, req.Pinode))
+		}
+		return list, nil
+	}
+	if length > 3+branchExcessLength {
+		// 长度大于 3 就表达查询子节点了 /projectName/appName/tree/branchName
+		treeData, err := svc.bdl.GetGittarTreeNode(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true, req.UserID)
+		if err != nil {
+			return nil, apierrors.ErrListGittarFileTreeNodes.InternalError(err)
+		}
+		if treeData == nil || len(treeData.Entries) <= 0 {
+			return nil, nil
+		}
+
+		for _, node := range treeData.Entries {
+			if strings.Contains(node.Name, "/") {
+				node.Name = strings.Split(node.Name, "/")[0]
 			}
 
-			for _, branch := range branchs {
-				// 过滤掉不符合分支规则
-				_, err := svc.GetWorkspaceByBranch(pathSplit[0], branch)
-				if err != nil {
+			// 代表是分支下, 过滤出 pipeline.yml 和 .dice
+			if length == 4+branchExcessLength {
+				// 假如不是 tree  yml 结构的文件
+				if node.Type != gittarEntryTreeType && node.Name != "pipeline.yml" {
 					continue
 				}
-				list = append(list, branchConvertToUnifiedFileTreeNode(branch, req.Scope, req.ScopeID, pinode, req.Pinode))
+				if node.Type == gittarEntryTreeType && node.Name != ".dice" && node.Name != ".erda" {
+					continue
+				}
 			}
-		} else if length > 3+branchExcessLength {
-			// 长度大于 3 就表达查询子节点了 /projectName/appName/tree/branchName
-			entrys, err := svc.bdl.GetGittarTreeNode(gittarPrefixOpenApi+realPinode, strconv.Itoa(int(orgID)), true, req.UserID)
-			if err != nil {
-				return nil, apierrors.ErrListGittarFileTreeNodes.InternalError(err)
+			// 代表在.dice 目录下, 文件全部过滤，只有pipelines
+			if length == 5+branchExcessLength {
+				if node.Type != gittarEntryTreeType {
+					continue
+				}
+				if node.Type == gittarEntryTreeType && node.Name != "pipelines" {
+					continue
+				}
 			}
-			if entrys == nil || len(entrys) <= 0 {
-				return nil, nil
+			// 长度大于 5 就代表过滤出 .yml 就行了
+			if length > 5+branchExcessLength {
+				if node.Type != gittarEntryTreeType && !strings.HasSuffix(node.Name, ".yml") {
+					continue
+				}
 			}
 
-			for _, node := range entrys {
-				if strings.Contains(node.Name, "/") {
-					node.Name = strings.Split(node.Name, "/")[0]
-				}
-
-				// 代表是分支下, 过滤出 pipeline.yml 和 .dice
-				if length == 4+branchExcessLength {
-					// 假如不是 tree  yml 结构的文件
-					if node.Type != gittarEntryTreeType && node.Name != "pipeline.yml" {
-						continue
-					}
-					if node.Type == gittarEntryTreeType && node.Name != ".dice" && node.Name != ".erda" {
-						continue
-					}
-				}
-				// 代表在.dice 目录下, 文件全部过滤，只有pipelines
-				if length == 5+branchExcessLength {
-					if node.Type != gittarEntryTreeType {
-						continue
-					}
-					if node.Type == gittarEntryTreeType && node.Name != "pipelines" {
-						continue
-					}
-				}
-				// 长度大于 5 就代表过滤出 .yml 就行了
-				if length > 5+branchExcessLength {
-					if node.Type != gittarEntryTreeType && !strings.HasSuffix(node.Name, ".yml") {
-						continue
-					}
-				}
-				list = append(list, entryConvertToUnifiedFileTreeNode(&node, req.Scope, req.ScopeID, pinode, req.Pinode))
+			// Filter does not match pipeline category rules
+			if filterInPipelineCategory(req.PipelineCategoryKey, treeData.Path, node) {
+				continue
 			}
+			list = append(list, entryConvertToUnifiedFileTreeNode(&node, req.Scope, req.ScopeID, pinode, req.Pinode))
 		}
 	}
 
 	return list, nil
+}
+
+func filterInPipelineCategory(pipelineCategoryKey, path string, node apistructs.TreeEntry) bool {
+	if pipelineCategoryKey == "" {
+		return false
+	}
+	if pipelineCategoryKey != "" {
+		switch pipelineCategoryKey {
+		case apistructs.CategoryBuildDeploy:
+			if node.Type == gittarEntryBlobType && !strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(pipelineCategoryKey)]) {
+				return true
+			}
+		case apistructs.CategoryBuildArtifact:
+			if node.Type == gittarEntryBlobType && !strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(pipelineCategoryKey)]) {
+				return true
+			}
+		case apistructs.CategoryOthers:
+			if node.Type == gittarEntryBlobType &&
+				(strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildArtifact]) ||
+					strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy])) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (svc *GittarFileTree) GetFileTreeNode(req apistructs.UnifiedFileTreeNodeGetRequest, orgID uint64) (*apistructs.UnifiedFileTreeNode, error) {

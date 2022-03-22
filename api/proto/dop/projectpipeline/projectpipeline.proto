@@ -67,6 +67,16 @@ service ProjectPipelineService {
     };
   }
 
+  rpc ListPipelineCategory(ListPipelineCategoryRequest)
+      returns(ListPipelineCategoryResponse) {
+    option(google.api.http) = {
+      get : "/api/project-pipeline/actions/list-category",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/project-pipeline/actions/list-category",
+
+    };
+  }
   rpc Update(UpdateProjectPipelineRequest)
       returns(UpdateProjectPipelineResponse) {
     option(google.api.http) = {
@@ -174,6 +184,23 @@ message ProjectPipeline {
   string path = 10;
   string fileName = 11;
   string pipelineSourceID = 12;
+}
+
+message ListPipelineCategoryRequest {
+  uint64 projectID = 1 [(validator.field) = {int_gt: 0}];
+}
+
+message ListPipelineCategoryResponse {
+  repeated pipelineCategory data = 1;
+}
+
+message pipelineCategory {
+  string key = 1;
+  string category = 2;
+  repeated string rules = 3;
+  uint64 runningNum = 4;
+  uint64 failedNum = 5;
+  uint64 totalNum = 6;
 }
 
 message UpdateProjectPipelineRequest {

@@ -24,8 +24,8 @@ var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionDeleteResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionGetRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionGetResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionListRequest)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStaticsRequest)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStaticsResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStatisticsRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStatisticsResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionStatistics)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionListResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineDefinitionUsedRefListRequest)(nil)
@@ -438,6 +438,8 @@ func (m *PipelineDefinitionCreateRequest) UnmarshalURLValues(prefix string, valu
 					return err
 				}
 				m.ExecutedActionNum = val
+			case "ref":
+				m.Ref = vals[0]
 			}
 		}
 	}
@@ -1705,14 +1707,22 @@ func (m *PipelineDefinitionListRequest) UnmarshalURLValues(prefix string, values
 				m.ExecutedActionNum = val
 			case "sourceIDList":
 				m.SourceIDList = vals
+			case "filePathWithNames":
+				m.FilePathWithNames = vals
+			case "isOthers":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.IsOthers = val
 			}
 		}
 	}
 	return nil
 }
 
-// PipelineDefinitionStaticsRequest implement urlenc.URLValuesUnmarshaler.
-func (m *PipelineDefinitionStaticsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+// PipelineDefinitionStatisticsRequest implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineDefinitionStatisticsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
@@ -1724,8 +1734,8 @@ func (m *PipelineDefinitionStaticsRequest) UnmarshalURLValues(prefix string, val
 	return nil
 }
 
-// PipelineDefinitionStaticsResponse implement urlenc.URLValuesUnmarshaler.
-func (m *PipelineDefinitionStaticsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+// PipelineDefinitionStatisticsResponse implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineDefinitionStatisticsResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }
 
@@ -1734,8 +1744,8 @@ func (m *PipelineDefinitionStatistics) UnmarshalURLValues(prefix string, values 
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "remote":
-				m.Remote = vals[0]
+			case "group":
+				m.Group = vals[0]
 			case "failedNum":
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {

@@ -52,9 +52,10 @@ type (
 		Value string `json:"value"`
 	}
 	InParams struct {
-		FrontendProjectID string `json:"projectId,omitempty"`
-		FrontendAppID     string `json:"appId,omitempty"`
-		FrontendUrlQuery  string `json:"issueFilter__urlQuery,omitempty"`
+		FrontendProjectID           string `json:"projectId,omitempty"`
+		FrontendAppID               string `json:"appId,omitempty"`
+		FrontendUrlQuery            string `json:"issueFilter__urlQuery,omitempty"`
+		FrontendPipelineCategoryKey string `json:"pipelineCategoryKey,omitempty"`
 
 		ProjectID uint64 `json:"-"`
 		AppID     uint64 `json:"-"`

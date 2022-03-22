@@ -110,13 +110,13 @@ func (s *ProjectPipelineService) getPipelineYml(app *apistructs.ApplicationDTO, 
 		path = fmt.Sprintf("/wb/%v/%v/tree/%v/%v", app.ProjectName, app.Name, branch, findPath)
 	}
 
-	diceEntrys, err := s.bundle.GetGittarTreeNode(path, strconv.Itoa(int(app.OrgID)), true, userID)
+	treeData, err := s.bundle.GetGittarTreeNode(path, strconv.Itoa(int(app.OrgID)), true, userID)
 	if err != nil {
 		return nil, err
 	}
 
 	var list []*pb.PipelineYmlList
-	for _, entry := range diceEntrys {
+	for _, entry := range treeData.Entries {
 		if !strings.HasSuffix(entry.Name, ".yml") {
 			continue
 		}
@@ -268,6 +268,7 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 		Extra: &dpb.PipelineDefinitionExtra{
 			Extra: p.pipelineSourceType.GetPipelineCreateRequestV2(),
 		},
+		Ref: sourceRsp.PipelineSource.Ref,
 	})
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
@@ -386,17 +387,26 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 			}
 			return remotes
 		}(),
-		TimeCreated: params.TimeCreated,
-		TimeStarted: params.TimeStarted,
-		Status:      params.Status,
-		AscCols:     params.AscCols,
-		DescCols:    params.DescCols,
+		TimeCreated:       params.TimeCreated,
+		TimeStarted:       params.TimeStarted,
+		Status:            params.Status,
+		AscCols:           params.AscCols,
+		DescCols:          params.DescCols,
+		IsOthers:          params.CategoryKey == apistructs.CategoryOthers,
+		FilePathWithNames: getRulesByCategoryKey(params.CategoryKey),
 	})
 	if err != nil {
 		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
 	}
 
 	return list.Data, list.Total, nil
+}
+
+func getRulesByCategoryKey(categoryKey string) []string {
+	if categoryKey != apistructs.CategoryOthers {
+		return apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(categoryKey)]
+	}
+	return append(apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy], apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildArtifact]...)
 }
 
 func (p *ProjectPipelineService) Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error) {
@@ -1151,7 +1161,7 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 		appNames = append(appNames, v.Name)
 	}
 
-	statics, err := p.PipelineDefinition.StaticsGroupByRemote(ctx, &dpb.PipelineDefinitionStaticsRequest{
+	statistics, err := p.PipelineDefinition.StatisticsGroupByRemote(ctx, &dpb.PipelineDefinitionStatisticsRequest{
 		Location: makeLocation(&apistructs.ApplicationDTO{
 			OrgName:     org.Name,
 			ProjectName: project.Name,
@@ -1170,8 +1180,8 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 		}
 	}
 
-	for _, v := range statics.GetPipelineDefinitionStatistics() {
-		remoteName := getNameByRemote(v.Remote)
+	for _, v := range statistics.GetPipelineDefinitionStatistics() {
+		remoteName := getNameByRemote(v.Group)
 		if v2, ok := appNamePipelineNumMap[remoteName.AppName]; ok {
 			v2.FailedNum = int(v.FailedNum)
 			v2.RunningNum = int(v.RunningNum)
@@ -1350,4 +1360,97 @@ func (p *ProjectPipelineService) ListUsedRefs(ctx context.Context, params deftyp
 		return nil, apierrors.ErrListProjectPipelineRef.InternalError(err)
 	}
 	return resp.Ref, nil
+}
+
+type PipelineStatisticsByCategory struct {
+	Key      string
+	Category string
+	Rules    []string
+	PipelineStatisticsNums
+}
+
+type PipelineStatisticsNums struct {
+	RunningNum uint64
+	FailedNum  uint64
+	TotalNum   uint64
+}
+
+func (p *ProjectPipelineService) ListPipelineStatisticsByCategory(ctx context.Context) []PipelineStatisticsByCategory {
+	return []PipelineStatisticsByCategory{
+		{
+			Key:      "build-deploy",
+			Category: p.trans.Text(apis.Language(ctx), "BuildDeploy"),
+			Rules:    []string{"pipeline.yml"},
+		},
+		{
+			Key:      "build-artifact",
+			Category: p.trans.Text(apis.Language(ctx), "BuildArtifact"),
+			Rules:    []string{".erda/pipelines/ci-artifact.yml", ".dice/pipelines/ci-artifact.yml"},
+		},
+		{
+			Key:      "others",
+			Category: p.trans.Text(apis.Language(ctx), "Uncategorized"),
+			Rules:    nil,
+		},
+	}
+}
+
+func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, params *pb.ListPipelineCategoryRequest) (*pb.ListPipelineCategoryResponse, error) {
+	if err := params.Validate(); err != nil {
+		return nil, apierrors.ErrListProjectPipelineCategory.InvalidParameter(err)
+	}
+	project, err := p.bundle.GetProject(params.ProjectID)
+	if err != nil {
+		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
+	}
+
+	org, err := p.bundle.GetOrg(project.OrgID)
+	if err != nil {
+		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
+	}
+
+	staticsResp, err := p.PipelineDefinition.StatisticsGroupByFilePath(ctx, &dpb.PipelineDefinitionStatisticsRequest{
+		Location: makeLocation(&apistructs.ApplicationDTO{
+			OrgName:     org.Name,
+			ProjectName: project.Name,
+		}, cicdPipelineType),
+	})
+	if err != nil {
+		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
+	}
+	categories := p.ListPipelineStatisticsByCategory(ctx)
+
+	for _, statics := range staticsResp.PipelineDefinitionStatistics {
+		if key, ok := apistructs.RuleCategoryKeyMap[statics.Group]; ok {
+			for i := range categories {
+				if key.String() == categories[i].Key {
+					categories[i].TotalNum += statics.TotalNum
+					categories[i].FailedNum += statics.FailedNum
+					categories[i].RunningNum += statics.RunningNum
+					break
+				}
+			}
+			continue
+		}
+		for i := range categories {
+			if categories[i].Key == apistructs.CategoryOthers {
+				categories[i].TotalNum += statics.TotalNum
+				categories[i].FailedNum += statics.FailedNum
+				categories[i].RunningNum += statics.RunningNum
+				break
+			}
+		}
+	}
+	data := make([]*pb.PipelineCategory, 0, len(categories))
+	for _, v := range categories {
+		data = append(data, &pb.PipelineCategory{
+			Key:        v.Key,
+			Category:   v.Category,
+			Rules:      v.Rules,
+			RunningNum: v.RunningNum,
+			FailedNum:  v.FailedNum,
+			TotalNum:   v.TotalNum,
+		})
+	}
+	return &pb.ListPipelineCategoryResponse{Data: data}, nil
 }

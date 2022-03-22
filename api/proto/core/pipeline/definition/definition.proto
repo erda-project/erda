@@ -37,14 +37,19 @@ service DefinitionService {
       get: "/api/pipeline-definitions",
     };
   }
-  rpc StaticsGroupByRemote (PipelineDefinitionStaticsRequest) returns (PipelineDefinitionStaticsResponse) {
+  rpc StatisticsGroupByRemote (PipelineDefinitionStatisticsRequest) returns (PipelineDefinitionStatisticsResponse) {
     option (google.api.http) = {
-      get: "/api/pipeline-definitions/actions/statics-group-by-remote",
+      get: "/api/pipeline-definitions/actions/statistics-group-by-remote",
     };
   }
   rpc ListUsedRefs (PipelineDefinitionUsedRefListRequest) returns (PipelineDefinitionUsedRefListResponse) {
     option (google.api.http) = {
       get: "/api/pipeline-definitions/actions/list-used-refs",
+    };
+  }
+  rpc StatisticsGroupByFilePath (PipelineDefinitionStatisticsRequest) returns (PipelineDefinitionStatisticsResponse) {
+    option (google.api.http) = {
+      get: "/api/pipeline-definitions/actions/statistics-group-by-filePath",
     };
   }
 }
@@ -95,6 +100,7 @@ message PipelineDefinitionCreateRequest {
   PipelineDefinitionExtra extra = 7;
   int64 totalActionNum = 8;
   int64 ExecutedActionNum = 9;
+  string ref = 10;
 }
 
 message PipelineDefinitionCreateResponse {
@@ -142,6 +148,7 @@ message PipelineDefinitionListRequest {
   int64 pageNo = 2;
   string location = 3;
   string name = 4;
+
   string fuzzyName = 5;
   repeated string creator = 6;
   repeated string executor = 7;
@@ -157,19 +164,20 @@ message PipelineDefinitionListRequest {
   int64 totalActionNum = 17;
   int64 ExecutedActionNum = 18;
   repeated string sourceIDList = 19;
-
+  repeated string filePathWithNames = 20;
+  bool isOthers = 21;
 }
 
-message PipelineDefinitionStaticsRequest {
+message PipelineDefinitionStatisticsRequest {
   string location = 1;
 }
 
-message PipelineDefinitionStaticsResponse {
+message PipelineDefinitionStatisticsResponse {
   repeated PipelineDefinitionStatistics PipelineDefinitionStatistics = 1;
 }
 
 message PipelineDefinitionStatistics {
-  string remote = 1;
+  string group = 1;
   uint64 failedNum = 2;
   uint64 runningNum = 3;
   uint64 totalNum = 4;
