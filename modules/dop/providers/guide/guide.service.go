@@ -17,7 +17,6 @@ package guide
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -60,8 +59,6 @@ func (g *GuideService) CreateGuideByGittarPushHook(ctx context.Context, req *pb.
 		return nil, apierrors.ErrCreateGuide.InvalidParameter(err)
 	}
 	guide := db.Guide{
-		// TODO add jump link
-		JumpLink:      "",
 		Status:        db.InitStatus.String(),
 		Kind:          db.PipelineGuide.String(),
 		Creator:       req.Content.Pusher.ID,
@@ -79,11 +76,10 @@ func (g *GuideService) CreateGuideByGittarPushHook(ctx context.Context, req *pb.
 }
 
 func (g *GuideService) ListGuide(ctx context.Context, req *pb.ListGuideRequest) (*pb.ListGuideResponse, error) {
-	const limit = 5
 	if err := req.Validate(); err != nil {
 		return nil, apierrors.ErrListGuide.InvalidParameter(err)
 	}
-	guidesDB, err := g.db.ListGuideLimit(req, apis.GetUserID(ctx), limit)
+	guidesDB, err := g.db.ListGuide(req, apis.GetUserID(ctx))
 	if err != nil {
 		return nil, apierrors.ErrListGuide.InternalError(err)
 	}
@@ -92,46 +88,6 @@ func (g *GuideService) ListGuide(ctx context.Context, req *pb.ListGuideRequest) 
 		guides = append(guides, v.Convert())
 	}
 	return &pb.ListGuideResponse{Data: guides}, nil
-}
-
-func (g *GuideService) JudgeCanCreatePipeline(ctx context.Context, req *pb.JudgeCanCreatePipelineRequest) (*pb.JudgeCanCreatePipelineResponse, error) {
-	if err := req.Validate(); err != nil {
-		return nil, apierrors.ErrJudgeCanCreatePipeline.InvalidParameter(err)
-	}
-
-	guideDB, err := g.db.GetGuide(req.ID)
-	if err != nil {
-		return nil, apierrors.ErrJudgeCanCreatePipeline.InternalError(err)
-	}
-
-	pipelineYmls, err := g.ListPipelineYml(ctx, guideDB.AppID, guideDB.Branch)
-	if err != nil {
-		return nil, apierrors.ErrJudgeCanCreatePipeline.InternalError(err)
-	}
-
-	var (
-		path      string
-		fileName  string
-		canCreate bool
-	)
-
-	// pipeline.yml first
-	sort.Slice(pipelineYmls, func(i, j int) bool {
-		return pipelineYmls[i].YmlPath < pipelineYmls[j].YmlPath
-	})
-	if len(pipelineYmls) > 0 {
-		canCreate = true
-		path = pipelineYmls[0].YmlPath
-		fileName = pipelineYmls[0].YmlName
-	}
-
-	return &pb.JudgeCanCreatePipelineResponse{
-		CanCreate: canCreate,
-		AppID:     guideDB.AppID,
-		Branch:    guideDB.Branch,
-		Path:      path,
-		FileName:  fileName,
-	}, nil
 }
 
 func (g *GuideService) ProcessGuide(ctx context.Context, req *pb.ProcessGuideRequest) (*pb.ProcessGuideResponse, error) {

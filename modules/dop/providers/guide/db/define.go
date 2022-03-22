@@ -37,7 +37,7 @@ const (
 	ExpiredStatus   GuideStatus = "expired"
 )
 
-const ExpiredTime = 6 * time.Hour
+const ExpiredTime = 24 * time.Hour
 
 func (g GuideStatus) String() string {
 	return string(g)
@@ -55,7 +55,6 @@ func (g GuideKind) String() string {
 
 type Guide struct {
 	ID            string `gorm:"primary_key"`
-	JumpLink      string
 	Status        string
 	Kind          string
 	Creator       string
@@ -80,7 +79,6 @@ func (Guide) TableName() string {
 func (g *Guide) Convert() *pb.Guide {
 	return &pb.Guide{
 		ID:          g.ID,
-		JumpLink:    g.JumpLink,
 		Status:      g.Status,
 		Creator:     g.Creator,
 		Kind:        g.Kind,
@@ -133,8 +131,8 @@ func (db *GuideDB) UpdateGuideByAppIDAndBranch(appID uint64, branch, kind string
 		Updates(fields).Error
 }
 
-// ListGuideLimit . Returns data for a given number of rows
-func (db *GuideDB) ListGuideLimit(req *pb.ListGuideRequest, userID string, num int) (guides []Guide, err error) {
+// ListGuide .
+func (db *GuideDB) ListGuide(req *pb.ListGuideRequest, userID string) (guides []Guide, err error) {
 	err = db.Model(&Guide{}).
 		Scopes(NotDeleted).
 		Where("kind = ?", req.Kind).
@@ -143,7 +141,6 @@ func (db *GuideDB) ListGuideLimit(req *pb.ListGuideRequest, userID string, num i
 		Where("status = ?", InitStatus).
 		Where("created_at >= ?", time.Now().Add(-1*(ExpiredTime))).
 		Order("created_at DESC").
-		Limit(num).
 		Find(&guides).Error
 	return
 }

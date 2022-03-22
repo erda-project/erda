@@ -56,8 +56,6 @@ func (m *Guide) UnmarshalURLValues(prefix string, values url.Values) error {
 			switch prefix + key {
 			case "ID":
 				m.ID = vals[0]
-			case "jumpLink":
-				m.JumpLink = vals[0]
 			case "status":
 				m.Status = vals[0]
 			case "creator":
@@ -337,11 +335,6 @@ func (m *CreateGuideResponse) UnmarshalURLValues(prefix string, values url.Value
 					m.Data = &Guide{}
 				}
 				m.Data.ID = vals[0]
-			case "data.jumpLink":
-				if m.Data == nil {
-					m.Data = &Guide{}
-				}
-				m.Data.JumpLink = vals[0]
 			case "data.status":
 				if m.Data == nil {
 					m.Data = &Guide{}

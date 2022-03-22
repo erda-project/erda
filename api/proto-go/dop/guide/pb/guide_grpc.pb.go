@@ -23,7 +23,6 @@ const _ = grpc.SupportPackageIsVersion5
 type GuideServiceClient interface {
 	CreateGuideByGittarPushHook(ctx context.Context, in *GittarPushPayloadEvent, opts ...grpc.CallOption) (*CreateGuideResponse, error)
 	ListGuide(ctx context.Context, in *ListGuideRequest, opts ...grpc.CallOption) (*ListGuideResponse, error)
-	JudgeCanCreatePipeline(ctx context.Context, in *JudgeCanCreatePipelineRequest, opts ...grpc.CallOption) (*JudgeCanCreatePipelineResponse, error)
 	ProcessGuide(ctx context.Context, in *ProcessGuideRequest, opts ...grpc.CallOption) (*ProcessGuideResponse, error)
 }
 
@@ -53,15 +52,6 @@ func (c *guideServiceClient) ListGuide(ctx context.Context, in *ListGuideRequest
 	return out, nil
 }
 
-func (c *guideServiceClient) JudgeCanCreatePipeline(ctx context.Context, in *JudgeCanCreatePipelineRequest, opts ...grpc.CallOption) (*JudgeCanCreatePipelineResponse, error) {
-	out := new(JudgeCanCreatePipelineResponse)
-	err := c.cc.Invoke(ctx, "/erda.dop.guide.GuideService/JudgeCanCreatePipeline", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *guideServiceClient) ProcessGuide(ctx context.Context, in *ProcessGuideRequest, opts ...grpc.CallOption) (*ProcessGuideResponse, error) {
 	out := new(ProcessGuideResponse)
 	err := c.cc.Invoke(ctx, "/erda.dop.guide.GuideService/ProcessGuide", in, out, opts...)
@@ -77,7 +67,6 @@ func (c *guideServiceClient) ProcessGuide(ctx context.Context, in *ProcessGuideR
 type GuideServiceServer interface {
 	CreateGuideByGittarPushHook(context.Context, *GittarPushPayloadEvent) (*CreateGuideResponse, error)
 	ListGuide(context.Context, *ListGuideRequest) (*ListGuideResponse, error)
-	JudgeCanCreatePipeline(context.Context, *JudgeCanCreatePipelineRequest) (*JudgeCanCreatePipelineResponse, error)
 	ProcessGuide(context.Context, *ProcessGuideRequest) (*ProcessGuideResponse, error)
 }
 
@@ -90,9 +79,6 @@ func (*UnimplementedGuideServiceServer) CreateGuideByGittarPushHook(context.Cont
 }
 func (*UnimplementedGuideServiceServer) ListGuide(context.Context, *ListGuideRequest) (*ListGuideResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListGuide not implemented")
-}
-func (*UnimplementedGuideServiceServer) JudgeCanCreatePipeline(context.Context, *JudgeCanCreatePipelineRequest) (*JudgeCanCreatePipelineResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method JudgeCanCreatePipeline not implemented")
 }
 func (*UnimplementedGuideServiceServer) ProcessGuide(context.Context, *ProcessGuideRequest) (*ProcessGuideResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ProcessGuide not implemented")
@@ -132,15 +118,6 @@ func _get_GuideService_serviceDesc(srv GuideServiceServer, opts ...grpc1.HandleO
 	if h.Interceptor != nil {
 		_GuideService_ListGuide_info = transport.NewServiceInfo("erda.dop.guide.GuideService", "ListGuide", srv)
 		_GuideService_ListGuide_Handler = h.Interceptor(_GuideService_ListGuide_Handler)
-	}
-
-	_GuideService_JudgeCanCreatePipeline_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.JudgeCanCreatePipeline(ctx, req.(*JudgeCanCreatePipelineRequest))
-	}
-	var _GuideService_JudgeCanCreatePipeline_info transport.ServiceInfo
-	if h.Interceptor != nil {
-		_GuideService_JudgeCanCreatePipeline_info = transport.NewServiceInfo("erda.dop.guide.GuideService", "JudgeCanCreatePipeline", srv)
-		_GuideService_JudgeCanCreatePipeline_Handler = h.Interceptor(_GuideService_JudgeCanCreatePipeline_Handler)
 	}
 
 	_GuideService_ProcessGuide_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -198,29 +175,6 @@ func _get_GuideService_serviceDesc(srv GuideServiceServer, opts ...grpc1.HandleO
 					FullMethod: "/erda.dop.guide.GuideService/ListGuide",
 				}
 				return interceptor(ctx, in, info, _GuideService_ListGuide_Handler)
-			},
-		},
-		{
-			MethodName: "JudgeCanCreatePipeline",
-			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-				in := new(JudgeCanCreatePipelineRequest)
-				if err := dec(in); err != nil {
-					return nil, err
-				}
-				if interceptor == nil && h.Interceptor == nil {
-					return srv.(GuideServiceServer).JudgeCanCreatePipeline(ctx, in)
-				}
-				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _GuideService_JudgeCanCreatePipeline_info)
-				}
-				if interceptor == nil {
-					return _GuideService_JudgeCanCreatePipeline_Handler(ctx, in)
-				}
-				info := &grpc.UnaryServerInfo{
-					Server:     srv,
-					FullMethod: "/erda.dop.guide.GuideService/JudgeCanCreatePipeline",
-				}
-				return interceptor(ctx, in, info, _GuideService_JudgeCanCreatePipeline_Handler)
 			},
 		},
 		{

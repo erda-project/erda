@@ -37,16 +37,6 @@ service GuideService {
     };
   }
 
-  rpc JudgeCanCreatePipeline(JudgeCanCreatePipelineRequest)
-      returns(JudgeCanCreatePipelineResponse) {
-    option(google.api.http) = {
-      get : "/api/guide/{ID}/actions/judge",
-    };
-    option(erda.common.openapi) = {
-      path : "/api/guide/{ID}/actions/judge",
-    };
-  }
-
   rpc ProcessGuide(ProcessGuideRequest)
       returns(ProcessGuideResponse) {
     option(google.api.http) = {
@@ -69,17 +59,16 @@ message ListGuideResponse {
 
 message Guide {
   string ID = 1 [json_name = "id"];
-  string jumpLink = 2;
-  string status = 3;
-  string creator = 4;
-  string kind = 5;
-  uint64 orgID = 6;
-  string orgName = 7;
-  uint64 projectID = 8;
-  uint64 appID = 9;
-  string branch = 10;
-  google.protobuf.Timestamp timeCreated = 11;
-  google.protobuf.Timestamp timeUpdated = 12;
+  string status = 2;
+  string creator = 3;
+  string kind = 4;
+  uint64 orgID = 5;
+  string orgName = 6;
+  uint64 projectID = 7;
+  uint64 appID = 8;
+  string branch = 9;
+  google.protobuf.Timestamp timeCreated = 10;
+  google.protobuf.Timestamp timeUpdated = 11;
 }
 
 message JudgeCanCreatePipelineRequest {

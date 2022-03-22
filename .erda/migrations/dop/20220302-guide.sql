@@ -1,7 +1,6 @@
 CREATE TABLE `erda_guide`
 (
     `id`              varchar(36)  NOT NULL COMMENT '自增id',
-    `jump_link`       varchar(255) NOT NULL DEFAULT '' COMMENT '跳转链接',
     `status`          varchar(20)  NOT NULL COMMENT '处理状态 init,processed,expired',
     `kind`            varchar(20)  NOT NULL COMMENT '类型 pipeline...',
     `creator`         varchar(36)  NOT NULL DEFAULT '' COMMENT '创建者',

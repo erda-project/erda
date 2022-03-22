@@ -6,12 +6,9 @@ package pb
 import (
 	context "context"
 	http1 "net/http"
-	strings "strings"
 
 	transport "github.com/erda-project/erda-infra/pkg/transport"
 	http "github.com/erda-project/erda-infra/pkg/transport/http"
-	httprule "github.com/erda-project/erda-infra/pkg/transport/http/httprule"
-	runtime "github.com/erda-project/erda-infra/pkg/transport/http/runtime"
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
 )
 
@@ -25,8 +22,6 @@ type GuideServiceHandler interface {
 	CreateGuideByGittarPushHook(context.Context, *GittarPushPayloadEvent) (*CreateGuideResponse, error)
 	// GET /api/guide
 	ListGuide(context.Context, *ListGuideRequest) (*ListGuideResponse, error)
-	// GET /api/guide/{ID}/actions/judge
-	JudgeCanCreatePipeline(context.Context, *JudgeCanCreatePipelineRequest) (*JudgeCanCreatePipelineResponse, error)
 	// POST /api/guide/actions/process
 	ProcessGuide(context.Context, *ProcessGuideRequest) (*ProcessGuideResponse, error)
 }
@@ -126,65 +121,6 @@ func RegisterGuideServiceHandler(r http.Router, srv GuideServiceHandler, opts ..
 		)
 	}
 
-	add_JudgeCanCreatePipeline := func(method, path string, fn func(context.Context, *JudgeCanCreatePipelineRequest) (*JudgeCanCreatePipelineResponse, error)) {
-		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-			return fn(ctx, req.(*JudgeCanCreatePipelineRequest))
-		}
-		var JudgeCanCreatePipeline_info transport.ServiceInfo
-		if h.Interceptor != nil {
-			JudgeCanCreatePipeline_info = transport.NewServiceInfo("erda.dop.guide.GuideService", "JudgeCanCreatePipeline", srv)
-			handler = h.Interceptor(handler)
-		}
-		compiler, _ := httprule.Parse(path)
-		temp := compiler.Compile()
-		pattern, _ := runtime.NewPattern(httprule.SupportPackageIsVersion1, temp.OpCodes, temp.Pool, temp.Verb)
-		r.Add(method, path, encodeFunc(
-			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
-				ctx := http.WithRequest(r.Context(), r)
-				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
-				if h.Interceptor != nil {
-					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, JudgeCanCreatePipeline_info)
-				}
-				r = r.WithContext(ctx)
-				var in JudgeCanCreatePipelineRequest
-				if err := h.Decode(r, &in); err != nil {
-					return nil, err
-				}
-				var input interface{} = &in
-				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
-					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
-						return nil, err
-					}
-				}
-				path := r.URL.Path
-				if len(path) > 0 {
-					components := strings.Split(path[1:], "/")
-					last := len(components) - 1
-					var verb string
-					if idx := strings.LastIndex(components[last], ":"); idx >= 0 {
-						c := components[last]
-						components[last], verb = c[:idx], c[idx+1:]
-					}
-					vars, err := pattern.Match(components, verb)
-					if err != nil {
-						return nil, err
-					}
-					for k, val := range vars {
-						switch k {
-						case "ID":
-							in.ID = val
-						}
-					}
-				}
-				out, err := handler(ctx, &in)
-				if err != nil {
-					return out, err
-				}
-				return out, nil
-			}),
-		)
-	}
-
 	add_ProcessGuide := func(method, path string, fn func(context.Context, *ProcessGuideRequest) (*ProcessGuideResponse, error)) {
 		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 			return fn(ctx, req.(*ProcessGuideRequest))
@@ -223,6 +159,5 @@ func RegisterGuideServiceHandler(r http.Router, srv GuideServiceHandler, opts ..
 
 	add_CreateGuideByGittarPushHook("POST", "/api/guide/actions/create-by-gittar-push-hook", srv.CreateGuideByGittarPushHook)
 	add_ListGuide("GET", "/api/guide", srv.ListGuide)
-	add_JudgeCanCreatePipeline("GET", "/api/guide/{ID}/actions/judge", srv.JudgeCanCreatePipeline)
 	add_ProcessGuide("POST", "/api/guide/actions/process", srv.ProcessGuide)
 }

@@ -45,10 +45,6 @@ func (s *guideServiceWrapper) ListGuide(ctx context.Context, req *pb.ListGuideRe
 	return s.client.ListGuide(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
-func (s *guideServiceWrapper) JudgeCanCreatePipeline(ctx context.Context, req *pb.JudgeCanCreatePipelineRequest) (*pb.JudgeCanCreatePipelineResponse, error) {
-	return s.client.JudgeCanCreatePipeline(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
-}
-
 func (s *guideServiceWrapper) ProcessGuide(ctx context.Context, req *pb.ProcessGuideRequest) (*pb.ProcessGuideResponse, error) {
 	return s.client.ProcessGuide(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
