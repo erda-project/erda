@@ -1,0 +1,1 @@
+ALTER TABLE `pipeline_archives` ADD INDEX `idx_status_timecreated` (`status`, `time_created`);
