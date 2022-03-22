@@ -58,14 +58,27 @@ func (g *GuideService) CreateGuideByGittarPushHook(ctx context.Context, req *pb.
 	if err != nil {
 		return nil, apierrors.ErrCreateGuide.InvalidParameter(err)
 	}
+	appDto, err := g.bdl.GetApp(appID)
+	if err != nil {
+		return nil, apierrors.ErrCreateGuide.InvalidParameter(err)
+	}
+	// Check if xxx.yml exists
+	ymls, err := g.ListPipelineYml(ctx, appDto, req.Content.Ref[len(BranchPrefix):])
+	if err != nil {
+		return nil, apierrors.ErrCreateGuide.InvalidParameter(err)
+	}
+	if len(ymls) == 0 {
+		return nil, nil
+	}
 	guide := db.Guide{
 		Status:        db.InitStatus.String(),
 		Kind:          db.PipelineGuide.String(),
 		Creator:       req.Content.Pusher.ID,
 		OrgID:         orgID,
-		OrgName:       req.OrgName,
+		OrgName:       appDto.OrgName,
 		ProjectID:     projectID,
 		AppID:         appID,
+		AppName:       appDto.Name,
 		Branch:        req.Content.Ref[len(BranchPrefix):],
 		SoftDeletedAt: 0,
 	}
@@ -113,12 +126,7 @@ type PipelineYml struct {
 	YmlPath string
 }
 
-func (g *GuideService) ListPipelineYml(ctx context.Context, appID uint64, branch string) ([]PipelineYml, error) {
-	app, err := g.bdl.GetApp(appID)
-	if err != nil {
-		return nil, err
-	}
-
+func (g *GuideService) ListPipelineYml(ctx context.Context, app *apistructs.ApplicationDTO, branch string) ([]PipelineYml, error) {
 	work := limit_sync_group.NewWorker(3)
 	var list []PipelineYml
 	var pathList = []string{"", DicePipelinePath, ErdaPipelinePath}

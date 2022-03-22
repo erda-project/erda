@@ -62,6 +62,7 @@ type Guide struct {
 	OrgName       string
 	ProjectID     uint64
 	AppID         uint64
+	AppName       string
 	Branch        string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
@@ -86,6 +87,7 @@ func (g *Guide) Convert() *pb.Guide {
 		OrgName:     g.OrgName,
 		ProjectID:   g.ProjectID,
 		AppID:       g.AppID,
+		AppName:     g.AppName,
 		Branch:      g.Branch,
 		TimeCreated: timestamppb.New(g.CreatedAt),
 		TimeUpdated: timestamppb.New(g.UpdatedAt),

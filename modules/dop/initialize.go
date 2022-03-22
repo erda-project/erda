@@ -731,7 +731,7 @@ func registerWebHook(bdl *bundle.Bundle) {
 	ev = apistructs.CreateHookRequest{
 		Name:   "guide_create",
 		Events: []string{bundle.GitPushEvent},
-		URL:    strutil.Concat("http://", discover.DOP(), "/api/guide/actions/create-by-gittar-hook"),
+		URL:    strutil.Concat("http://", discover.DOP(), "/api/guide/actions/create-by-gittar-push-hook"),
 		Active: true,
 		HookLocation: apistructs.HookLocation{
 			Org:         "-1",

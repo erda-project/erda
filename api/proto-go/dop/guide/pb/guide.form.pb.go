@@ -84,6 +84,8 @@ func (m *Guide) UnmarshalURLValues(prefix string, values url.Values) error {
 				m.AppID = val
 			case "branch":
 				m.Branch = vals[0]
+			case "appName":
+				m.AppName = vals[0]
 			case "timeCreated":
 				if m.TimeCreated == nil {
 					m.TimeCreated = &timestamppb.Timestamp{}
@@ -187,8 +189,6 @@ func (m *GittarPushPayloadEvent) UnmarshalURLValues(prefix string, values url.Va
 				m.Action = vals[0]
 			case "orgID":
 				m.OrgID = vals[0]
-			case "orgName":
-				m.OrgName = vals[0]
 			case "projectID":
 				m.ProjectID = vals[0]
 			case "applicationID":
@@ -387,6 +387,11 @@ func (m *CreateGuideResponse) UnmarshalURLValues(prefix string, values url.Value
 					m.Data = &Guide{}
 				}
 				m.Data.Branch = vals[0]
+			case "data.appName":
+				if m.Data == nil {
+					m.Data = &Guide{}
+				}
+				m.Data.AppName = vals[0]
 			case "data.timeCreated":
 				if m.Data == nil {
 					m.Data = &Guide{}
