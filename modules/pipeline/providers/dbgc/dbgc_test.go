@@ -15,7 +15,6 @@
 package dbgc
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -124,12 +123,12 @@ func TestGetPipelineIDFromDBGCWatchedKey(t *testing.T) {
 
 func TestPipelineDatabaseGC(t *testing.T) {
 	var r provider
-	pm := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "PipelineDatabaseGC", func(r *provider, ctx context.Context) {
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "PipelineDatabaseGC", func(r *provider) {
 		return
 	})
 	defer pm.Unpatch()
 	t.Run("PipelineDatabaseGC", func(t *testing.T) {
-		r.PipelineDatabaseGC(context.Background())
+		r.PipelineDatabaseGC()
 	})
 }
 
@@ -141,7 +140,7 @@ func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 		patch := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(db *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
 			switch req.PageNum {
 			case 1:
-				return nil, nil, 0, 0, fmt.Errorf("error")
+				return nil, nil, 0, 0, nil
 			case 2:
 				return []spec.Pipeline{
 					{
