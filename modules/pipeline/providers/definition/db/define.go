@@ -327,14 +327,17 @@ func (client *Client) StatisticsGroupByFilePath(req *pb.PipelineDefinitionStatis
 		list []PipelineDefinitionStatistics
 		err  error
 	)
-	err = session.Table("pipeline_definition").Alias("d").
+	engine := session.Table("pipeline_definition").Alias("d").
 		Select(fmt.Sprintf("CONCAT(s.path,'/',s.`name`) AS `group`,COUNT(*) AS total_num,COUNT( IF ( d.`status` = '%s' , 1, NULL) ) AS running_num,"+
 			"COUNT(IF(DATE_SUB(CURDATE(), INTERVAL 1 DAY) <= d.started_at AND d.`status` = '%s',1,NULL)) AS failed_num",
 			apistructs.PipelineStatusRunning, apistructs.PipelineStatusFailed)).
 		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
 		Where("d.soft_deleted_at = 0").
-		Where("d.location = ?", req.GetLocation()).
-		GroupBy("s.path,s.name").
+		Where("d.location = ?", req.GetLocation())
+	if len(req.GetRemotes()) != 0 {
+		engine = engine.In("s.remote", req.GetRemotes())
+	}
+	err = engine.GroupBy("s.path,s.name").
 		Find(&list)
 	return list, err
 }
