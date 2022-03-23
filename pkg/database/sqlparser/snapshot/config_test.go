@@ -26,11 +26,11 @@ func TestSampling(t *testing.T) {
 }
 
 func TestMaxSampling(t *testing.T) {
-	if n := snapshot.MaxSampling(); n != 300 {
+	if n := snapshot.MaxSamplingSize(); n != 300 {
 		t.Fatal("error")
 	}
 	os.Setenv("PIPELINE_MIGRATION_SAMPLING_SIZE", "100")
-	if n := snapshot.MaxSampling(); n != 100 {
+	if n := snapshot.MaxSamplingSize(); n != 100 {
 		t.Error("error")
 	}
 }
