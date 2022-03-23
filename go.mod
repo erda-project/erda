@@ -6,6 +6,7 @@ require (
 	bou.ke/monkey v1.0.2
 	cloud.google.com/go/iam v0.1.1 // indirect
 	github.com/360EntSecGroup-Skylar/excelize/v2 v2.3.2
+	github.com/ClickHouse/clickhouse-go/v2 v2.0.12 // indirect
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/GoogleCloudPlatform/spark-on-k8s-operator v0.0.0-20201215015655-2e8b733f5ad0
 	github.com/Masterminds/semver v1.5.0
