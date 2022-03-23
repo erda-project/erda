@@ -334,8 +334,8 @@ func (client *Client) StatisticsGroupByFilePath(req *pb.PipelineDefinitionStatis
 		Join("LEFT", []string{"pipeline_source", "s"}, "d.pipeline_source_id = s.id AND s.soft_deleted_at = 0").
 		Where("d.soft_deleted_at = 0").
 		Where("d.location = ?", req.GetLocation())
-	if len(req.GetRemote()) != 0 {
-		engine = engine.In("s.remote", req.GetRemote())
+	if len(req.GetRemotes()) != 0 {
+		engine = engine.In("s.remote", req.GetRemotes())
 	}
 	err = engine.GroupBy("s.path,s.name").
 		Find(&list)

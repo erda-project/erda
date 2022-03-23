@@ -1413,7 +1413,7 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 			OrgName:     org.Name,
 			ProjectName: project.Name,
 		}, cicdPipelineType),
-		Remote: getRemotes(appNames, org.Name, project.Name),
+		Remotes: getRemotes(appNames, org.Name, project.Name),
 	})
 	if err != nil {
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)

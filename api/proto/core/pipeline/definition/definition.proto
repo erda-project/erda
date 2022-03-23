@@ -170,7 +170,7 @@ message PipelineDefinitionListRequest {
 
 message PipelineDefinitionStatisticsRequest {
   string location = 1;
-  repeated string remote = 2;
+  repeated string remotes = 2;
 }
 
 message PipelineDefinitionStatisticsResponse {
