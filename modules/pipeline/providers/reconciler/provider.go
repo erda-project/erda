@@ -16,41 +16,56 @@ package reconciler
 
 import (
 	"context"
-	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/dbclient"
+	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
-	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/cache"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskpolicy"
+	"github.com/erda-project/erda/modules/pipeline/providers/resourcegc"
+	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
+	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 )
 
 type provider struct {
 	Log logs.Logger
 	Cfg *config
 
-	MySQL mysqlxorm.Interface
-	LW    leaderworker.Interface
+	MySQL           mysqlxorm.Interface
+	LW              leaderworker.Interface
+	Cache           cache.Interface
+	TaskPolicy      taskpolicy.Interface
+	ClusterInfo     clusterinfo.Interface
+	ResourceGC      resourcegc.Interface
+	CronCompensator compensator.Interface
 
-	r                     *reconciler.Reconciler
-	CronCompensateService compensator.Interface
+	dbClient *dbclient.Client
+	bdl      *bundle.Bundle
+
+	// legacy fields
+	pipelineSvcFuncs *PipelineSvcFuncs
+	actionAgentSvc   *actionagentsvc.ActionAgentSvc
+	extMarketSvc     *extmarketsvc.ExtMarketSvc
 }
 
 type config struct {
+	RetryInterval time.Duration `file:"retry_interval" default:"5s"`
 }
 
-func (p *provider) Init(ctx servicehub.Context) error {
+func (r *provider) Init(ctx servicehub.Context) error {
+	r.dbClient = &dbclient.Client{Engine: r.MySQL.DB()}
+	r.bdl = bundle.New(bundle.WithAllAvailableClients())
 	return nil
 }
 
-func (p *provider) Run(ctx context.Context) error {
-	if p.r == nil {
-		return fmt.Errorf("set reconciler before run")
-	}
-
-	p.r.CronCompensate = p.CronCompensateService
+func (r *provider) Run(ctx context.Context) error {
 	return nil
 }
 

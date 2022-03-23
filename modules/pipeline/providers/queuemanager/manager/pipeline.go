@@ -23,7 +23,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager/queue"
-	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/loop"
 )
