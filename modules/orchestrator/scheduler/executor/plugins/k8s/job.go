@@ -70,6 +70,7 @@ func (k *Kubernetes) newJob(service *apistructs.Service, serviceGroup *apistruct
 					Tolerations:           toleration.GenTolerations(),
 				},
 			},
+			BackoffLimit: func(i int32) *int32 { return &i }(0),
 		},
 	}
 	imagePullSecrets, err := k.setImagePullSecrets(service.Namespace)
@@ -178,11 +179,7 @@ func (k *Kubernetes) newJob(service *apistructs.Service, serviceGroup *apistruct
 	}
 	k.AddSpotEmptyDir(&job.Spec.Template.Spec)
 
-	//if err = DereferenceEnvs(job); err != nil {
-	//	return nil, err
-	//}
 	job.Spec.Template.Spec.RestartPolicy = apiv1.RestartPolicyNever
-	logrus.Errorf("show k8s job, name: %s, job: %+v", jobName, job)
 	return job, nil
 }
 
@@ -222,12 +219,16 @@ func (k *Kubernetes) getJobStatusFromMap(service *apistructs.Service, ns string)
 		return list.Items[j].CreationTimestamp.Before(&list.Items[i].CreationTimestamp)
 	})
 	statusDesc.Status = apistructs.StatusUnknown
+	if len(list.Items) < 1 {
+		return statusDesc, nil
+	}
 	if list.Items[0].Status.Succeeded == 1 {
 		statusDesc.Status = apistructs.StatusReady
 	} else if list.Items[0].Status.Active == 1 {
 		statusDesc.Status = apistructs.StatusProgressing
 	} else if list.Items[0].Status.Failed == 1 {
 		statusDesc.Status = apistructs.StatusFailed
+		statusDesc.Reason = fmt.Sprintf("This job execution failed.")
 	} else {
 		statusDesc.Status = apistructs.StatusUnknown
 	}

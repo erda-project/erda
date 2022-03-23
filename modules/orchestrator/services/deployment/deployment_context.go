@@ -1307,6 +1307,10 @@ func (fsm *DeployFSMContext) checkServiceReady() (bool, error) {
 		return false, nil
 	}
 	fsm.pushLog(fmt.Sprintf("checking status: %s, servicegroup: %v", serviceGroup.Status, runtime.ScheduleName))
+	// 如果状态是failed，说明服务或者job运行失败
+	if serviceGroup.Status == apistructs.StatusFailed {
+		return false, errors.New(serviceGroup.LastMessage)
+	}
 	// 如果状态是ready或者healthy，说明服务已经发起来了
 	runtimeStatus := apistructs.RuntimeStatusUnHealthy
 	if serviceGroup.Status == apistructs.StatusReady || serviceGroup.Status == apistructs.StatusHealthy {
