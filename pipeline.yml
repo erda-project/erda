@@ -70,6 +70,23 @@ stages:
             cpu: 2
             mem: 2048
       - custom-script:
+          alias: build-erda-cli
+          commands:
+            - cd ${{ dirs.erda }}
+            - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
+            - make prepare-cli
+            - make build-push-image MODULE_PATH=cli
+          loop:
+            break: task_status == 'Success'
+            strategy:
+              max_times: 5
+              decline_ratio: 2
+              decline_limit_sec: 60
+              interval_sec: 5
+          resources:
+            cpu: 2
+            mem: 2048
+      - custom-script:
           alias: build-erda-dicehub-ee
           commands:
             - cd ${{ dirs.erda }}
@@ -248,3 +265,4 @@ stages:
               scheduler: ${{ outputs.build-erda.image }}
               streaming: ${{ outputs.build-erda.image }}
               uc-adaptor: ${{ outputs.build-erda.image }}
+              erda-cli: ${{ outputs.build-erda-cli.image }}
