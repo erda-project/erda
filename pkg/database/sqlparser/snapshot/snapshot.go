@@ -17,7 +17,6 @@ package snapshot
 import (
 	"bytes"
 	"fmt"
-	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
@@ -35,7 +34,7 @@ import (
 )
 
 var (
-	charsetWhiteEnv     = "MIGRATION_CHARSET_WHITE"
+	charsetWhiteEnv     = "PIPELINE_MIGRATION_CHARSET_WHITE"
 	defaultCharsetWhite = []string{"utf8", "utf8mb4"}
 )
 
@@ -140,7 +139,7 @@ func (s *Snapshot) TableNames() []string {
 func (s *Snapshot) Dump(tableName string, lines uint64) ([]map[string]interface{}, uint64, error) {
 	var (
 		selectCount = fmt.Sprintf("SELECT COUNT(*) FROM `%s`", tableName)
-		selectAll   = fmt.Sprintf("SELECT * FROM `%s`", tableName)
+		selectAll   = fmt.Sprintf("SELECT * FROM `%s` WHERE RAND() < ?", tableName)
 		count       uint64
 	)
 	tx := s.from.Raw(selectCount)
@@ -150,11 +149,15 @@ func (s *Snapshot) Dump(tableName string, lines uint64) ([]map[string]interface{
 	if err := tx.Row().Scan(&count); err != nil {
 		return nil, 0, errors.Wrapf(err, "failed to Scan count from %s", strconv.Quote(selectCount))
 	}
+	logrus.WithField("tableName", tableName).
+		WithField("maxSampleLines", lines).
+		WithField("total", count).
+		Infoln("*Snapshot.Dump")
 	if count == 0 {
 		return nil, count, nil
 	}
 	var rate = float64(lines) / float64(count)
-	if err := tx.Raw(selectAll).Error; err != nil {
+	if err := tx.Raw(selectAll, rate).Error; err != nil {
 		return nil, count, errors.Wrapf(err, "failed to Raw(%s)", strconv.Quote(selectAll))
 	}
 	rows, err := tx.Rows()
@@ -163,13 +166,8 @@ func (s *Snapshot) Dump(tableName string, lines uint64) ([]map[string]interface{
 	}
 	defer rows.Close()
 
-	rand.Seed(time.Now().Unix())
 	var data []map[string]interface{}
 	for rows.Next() {
-		// use random numbers to determine whether to collect this row
-		if rand.Float64() > rate {
-			continue
-		}
 		columns, _ := rows.Columns()
 		values := make([]interface{}, len(columns))
 		for i := 0; i < len(values); i++ {
@@ -305,13 +303,22 @@ func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 		return n, count, nil
 	}
 
+	bigTables := s.getBigTables()
 	for _, create := range installing {
 		if err := createF(create); err != nil {
 			return err
 		}
 		if Sampling() {
-			n, count, err := insertF(create, MaxSampling())
-			l.WithField("tableName", create.Table.Name.String()).Infof("collect %d/%d (sampling/total) lines", n, count)
+			if _, ok := bigTables[create.Table.Name.String()]; ok {
+				l.WithField("tableName", create.Table.Name.String()).
+					Infoln("this is a big table, skip sampling")
+				continue
+			}
+			now := time.Now()
+			n, count, err := insertF(create, MaxSamplingSize())
+			l.WithField("tableName", create.Table.Name.String()).
+				WithField("timeCost", int(time.Now().Sub(now).Seconds())).
+				Infof("collect %d/%d (sampling/total) lines", n, count)
 			if err != nil {
 				return err
 			}
@@ -319,6 +326,31 @@ func (s *Snapshot) RecoverTo(tx *gorm.DB) error {
 	}
 
 	return nil
+}
+
+func (s *Snapshot) getBigTables() map[string]struct{} {
+	var l = logrus.WithField("func", "*Snapshot.getBigTables")
+	var result = make(map[string]struct{})
+	const dataLength = 2_000_000_000
+	tx := s.from.Raw("SELECT table_name FROM information_schema.tables WHERE data_length > ?", dataLength)
+	if err := tx.Error; err != nil {
+		l.Errorln("failed to select table_name from information_schema.tables")
+		return result
+	}
+	rows, err := tx.Rows()
+	if err != nil {
+		l.Errorln("failed to Rows select tabl_name from information_schema")
+		return result
+	}
+	for rows.Next() {
+		var tableName string
+		if err := rows.Scan(&tableName); err != nil {
+			l.Errorln("failed to Scan tableName")
+			continue
+		}
+		result[tableName] = struct{}{}
+	}
+	return result
 }
 
 func TrimCollateOptionFromCols(create *ast.CreateTableStmt) {
@@ -391,9 +423,9 @@ func ParseCreateTableStmt(create string) (*ast.CreateTableStmt, error) {
 }
 
 func CharsetWhite() []string {
-	white := strings.Split(os.Getenv(charsetWhiteEnv), ",")
-	if len(white) == 0 {
+	v := os.Getenv(charsetWhiteEnv)
+	if len(v) == 0 {
 		return defaultCharsetWhite
 	}
-	return white
+	return strings.Split(v, ",")
 }
