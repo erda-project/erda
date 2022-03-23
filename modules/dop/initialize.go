@@ -474,6 +474,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	)
 	issue.CreateFileRecord = testCaseSvc.CreateFileRecord
 	issue.UpdateFileRecord = testCaseSvc.UpdateFileRecord
+	p.CommentIssueStreamSvc.WithIssue(issue)
 
 	issueState := issuestate.New(
 		issuestate.WithDBClient(db),

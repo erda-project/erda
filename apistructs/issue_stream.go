@@ -121,3 +121,5 @@ type IssueCommentTestCaseInfo struct {
 	TestCaseID   uint64 `json:"testCaseID"`
 	TestCaseName string `json:"testCaseName"`
 }
+
+const SystemOperator = "system"

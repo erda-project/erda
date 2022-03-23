@@ -23,16 +23,22 @@ import (
 	"github.com/erda-project/erda-proto-go/dop/issue/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/modules/dop/services/issue"
 	"github.com/erda-project/erda/pkg/common/apis"
 )
 
-type commentIssueStreamService struct {
+type CommentIssueStreamService struct {
 	logger logs.Logger
 
-	db *dao.DBClient
+	db    *dao.DBClient
+	issue *issue.Issue
 }
 
-func (s *commentIssueStreamService) BatchCreateIssueStream(ctx context.Context, req *pb.CommentIssueStreamBatchCreateRequest) (*pb.CommentIssueStreamBatchCreateResponse, error) {
+func (s *CommentIssueStreamService) WithIssue(issue *issue.Issue) {
+	s.issue = issue
+}
+
+func (s *CommentIssueStreamService) BatchCreateIssueStream(ctx context.Context, req *pb.CommentIssueStreamBatchCreateRequest) (*pb.CommentIssueStreamBatchCreateResponse, error) {
 	userID := apis.GetUserID(ctx)
 	if userID == "" {
 		return nil, fmt.Errorf("not login")
@@ -44,6 +50,7 @@ func (s *commentIssueStreamService) BatchCreateIssueStream(ctx context.Context, 
 
 	issueStreams := make([]dao.IssueStream, 0, len(req.IssueStreams))
 	issueAppRels := make([]dao.IssueAppRelation, 0, len(req.IssueStreams))
+	issueAppRelIDs := make([]int64, 0, len(req.IssueStreams))
 	for _, i := range req.IssueStreams {
 		if i.Type == "" {
 			i.Type = string(apistructs.ISTComment)
@@ -65,6 +72,7 @@ func (s *commentIssueStreamService) BatchCreateIssueStream(ctx context.Context, 
 				MRID:    i.MrInfo.MrID,
 			}
 			issueAppRels = append(issueAppRels, issueAppRel)
+			issueAppRelIDs = append(issueAppRelIDs, i.IssueID)
 		}
 
 		is := dao.IssueStream{
@@ -82,6 +90,9 @@ func (s *commentIssueStreamService) BatchCreateIssueStream(ctx context.Context, 
 
 	if len(issueAppRels) > 0 {
 		if err := s.db.BatchCreateIssueAppRelation(issueAppRels); err != nil {
+			return nil, err
+		}
+		if err := s.issue.AfterIssueAppRelationCreate(issueAppRelIDs); err != nil {
 			return nil, err
 		}
 	}

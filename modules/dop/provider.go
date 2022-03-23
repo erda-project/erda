@@ -44,6 +44,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/metrics"
 	"github.com/erda-project/erda/modules/dop/providers/autotest/testplan"
+	"github.com/erda-project/erda/modules/dop/providers/issue/stream"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/modules/dop/providers/taskerror"
 	"github.com/erda-project/erda/pkg/discover"
@@ -58,16 +59,17 @@ var scenarioFS embed.FS
 type provider struct {
 	Log logs.Logger
 
-	PipelineCms        cmspb.CmsServiceServer                  `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
-	PipelineSource     sourcepb.SourceServiceServer            `autowired:"erda.core.pipeline.source.SourceService" required:"true"`
-	PipelineDefinition definitionpb.DefinitionServiceServer    `autowired:"erda.core.pipeline.definition.DefinitionService" required:"true"`
-	TestPlanSvc        *testplan.TestPlanService               `autowired:"erda.core.dop.autotest.testplan.TestPlanService"`
-	Cmp                dashboardPb.ClusterResourceServer       `autowired:"erda.cmp.dashboard.resource.ClusterResource"`
-	TaskErrorSvc       *taskerror.TaskErrorService             `autowired:"erda.core.dop.taskerror.TaskErrorService"`
-	ErrorBoxSvc        errboxpb.ErrorBoxServiceServer          `autowired:"erda.core.services.errorbox.ErrorBoxService" optional:"true"`
-	ProjectPipelineSvc *projectpipeline.ProjectPipelineService `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
-	PipelineCron       cronpb.CronServiceServer                `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
-	QueryClient        query.MetricQuery                       `autowired:"metricq-client"`
+	PipelineCms           cmspb.CmsServiceServer                  `autowired:"erda.core.pipeline.cms.CmsService" optional:"true"`
+	PipelineSource        sourcepb.SourceServiceServer            `autowired:"erda.core.pipeline.source.SourceService" required:"true"`
+	PipelineDefinition    definitionpb.DefinitionServiceServer    `autowired:"erda.core.pipeline.definition.DefinitionService" required:"true"`
+	TestPlanSvc           *testplan.TestPlanService               `autowired:"erda.core.dop.autotest.testplan.TestPlanService"`
+	Cmp                   dashboardPb.ClusterResourceServer       `autowired:"erda.cmp.dashboard.resource.ClusterResource"`
+	TaskErrorSvc          *taskerror.TaskErrorService             `autowired:"erda.core.dop.taskerror.TaskErrorService"`
+	ErrorBoxSvc           errboxpb.ErrorBoxServiceServer          `autowired:"erda.core.services.errorbox.ErrorBoxService" optional:"true"`
+	ProjectPipelineSvc    *projectpipeline.ProjectPipelineService `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
+	PipelineCron          cronpb.CronServiceServer                `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
+	QueryClient           query.MetricQuery                       `autowired:"metricq-client"`
+	CommentIssueStreamSvc *stream.CommentIssueStreamService       `autowired:"erda.dop.issue.CommentIssueStreamService"`
 
 	AddonMySQLSvc     addonmysqlpb.AddonMySQLServiceServer `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
 	DicehubReleaseSvc dicehubpb.ReleaseServiceServer       `autowired:"erda.core.dicehub.release.ReleaseService"`
