@@ -67,16 +67,27 @@ func (v *issueValidator) validateStateWithIteration(c *issueValidationConfig) er
 	return nil
 }
 
-func (v *issueValidator) validateChangedFields(req *apistructs.IssueUpdateRequest, c *issueValidationConfig, changedFields map[string]interface{}) error {
-	if _, ok := changedFields["plan_finished_at"]; ok {
-		if err := v.validateTimeWithInIteration(c, req.PlanFinishedAt.Value()); err != nil {
-			return err
-		}
-	}
+func (v *issueValidator) validateChangedFields(req *apistructs.IssueUpdateRequest, c *issueValidationConfig, changedFields map[string]interface{}, iteration *dao.Iteration) (updatePLanFinishedAt bool, err error) {
 	if _, ok := changedFields["iteration_id"]; ok {
-		if err := v.validateStateWithIteration(c); err != nil {
-			return err
+		if err = v.validateStateWithIteration(c); err != nil {
+			return
+		}
+		if err = v.validateTimeWithInIteration(c, req.PlanFinishedAt.Value()); err != nil {
+			now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
+			adjuster := issueCreateAdjuster{&now}
+			if finishedAt := adjuster.planFinished(func() bool {
+				return true
+			}, iteration); finishedAt != nil {
+				changedFields["plan_finished_at"] = finishedAt
+				return true, nil
+			}
+			return
 		}
 	}
-	return nil
+	if _, ok := changedFields["plan_finished_at"]; ok {
+		if err = v.validateTimeWithInIteration(c, req.PlanFinishedAt.Value()); err != nil {
+			return
+		}
+	}
+	return
 }

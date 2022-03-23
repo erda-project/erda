@@ -629,6 +629,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		issueStreamFields[field] = []interface{}{canUpdateFields[field], v}
 	}
 
+	var updatePlanFinishedAtBySystem bool
 	if issueModel.Type == apistructs.IssueTypeBug || issueModel.Type == apistructs.IssueTypeTask {
 		c := &issueValidationConfig{}
 		iteration, err := cache.TryGetIteration(*req.IterationID)
@@ -644,8 +645,13 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 			c.state = state
 		}
 		v := issueValidator{}
-		if err := v.validateChangedFields(&req, c, changedFields); err != nil {
+		updatePlanFinishedAtBySystem, err = v.validateChangedFields(&req, c, changedFields, iteration)
+		if err != nil {
 			return err
+		}
+		if updatePlanFinishedAtBySystem {
+			now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
+			changedFields["expiry_status"] = dao.GetExpiryStatus(req.PlanFinishedAt.Time(), now)
 		}
 	}
 
@@ -688,6 +694,14 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	// 		return apierrors.ErrUpdateIssue.InternalError(err)
 	// 	}
 	// }
+	if updatePlanFinishedAtBySystem {
+		if err := svc.CreateIssueStreamBySystem(req.ID, map[string][]interface{}{
+			"plan_finished_at": {issueModel.PlanFinishedAt, changedFields["plan_finished_at"]},
+		}, apistructs.IterationChanged); err != nil {
+			return err
+		}
+		delete(issueStreamFields, "plan_finished_at")
+	}
 
 	// create stream and send issue update event
 	if err := svc.CreateStream(req, issueStreamFields); err != nil {
@@ -758,7 +772,7 @@ func (svc *Issue) AfterIssueChildrenUpdate(u *issueChildrenUpdated) error {
 }
 
 func updateParentCondition(state string, u *issueChildrenUpdated) bool {
-	if u.stateOld == "" || u.stateNew == "" || u.stateNew == u.stateNew {
+	if u.stateOld == "" || u.stateNew == "" || u.stateOld == u.stateNew {
 		return false
 	}
 	return state == string(apistructs.IssueStateBelongOpen) &&
@@ -838,11 +852,12 @@ func (svc *Issue) AfterIssueAppRelationCreate(issueIDs []int64) error {
 }
 
 func (svc *Issue) CreateIssueStreamBySystem(id uint64, streamFields map[string][]interface{}, reason string) error {
-	streamReq := apistructs.IssueStreamCreateRequest{
-		IssueID:  int64(id),
-		Operator: apistructs.SystemOperator,
-	}
+	streams := make([]dao.IssueStream, 0, len(streamFields))
 	for field, v := range streamFields {
+		streamReq := dao.IssueStream{
+			IssueID:  int64(id),
+			Operator: apistructs.SystemOperator,
+		}
 		switch field {
 		case "state":
 			CurrentState, err := svc.db.GetIssueStateByID(v[0].(int64))
@@ -859,10 +874,17 @@ func (svc *Issue) CreateIssueStreamBySystem(id uint64, streamFields map[string][
 				NewState:     NewState.Name,
 				ReasonDetail: reason,
 			}
+		case "plan_finished_at":
+			streamReq.StreamType = apistructs.ISTChangePlanFinishedAt
+			streamReq.StreamParams = apistructs.ISTParam{
+				CurrentPlanFinishedAt: formatTime(v[0]),
+				NewPlanFinishedAt:     formatTime(v[1]),
+				ReasonDetail:          reason,
+			}
 		}
+		streams = append(streams, streamReq)
 	}
-	_, err := svc.stream.Create(&streamReq)
-	return err
+	return svc.db.BatchCreateIssueStream(streams)
 }
 
 // UpdateIssueType 转换issue类型
