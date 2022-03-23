@@ -53,9 +53,6 @@ func (this *Guide) Validate() error {
 	}
 	return nil
 }
-func (this *JudgeCanCreatePipelineResponse) Validate() error {
-	return nil
-}
 func (this *GittarPushPayloadEvent) Validate() error {
 	if this.Content != nil {
 		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Content); err != nil {

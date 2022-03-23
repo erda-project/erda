@@ -80,6 +80,7 @@ erda.dop.projecthome: {}
 erda.dop.contribution: {}
 erda.dop.projectpipeline: {}
 erda.dop.issue.stream: {}
+erda.dop.apim: {}
 erda.dop.guide: {}
 
 # component-protocol framework

@@ -20,6 +20,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-proto-go/dop/guide/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -188,7 +190,8 @@ func (g *GuideService) getPipelineYml(app *apistructs.ApplicationDTO, userID str
 
 	var list []PipelineYml
 	for _, entry := range treeData.Entries {
-		if !strings.HasSuffix(entry.Name, ".yml") {
+		if !strings.HasSuffix(entry.Name, ".yml") &&
+			!strings.HasSuffix(entry.Name, ".yaml") {
 			continue
 		}
 		if findPath == "" && entry.Name != apistructs.DefaultPipelineYmlName {
@@ -220,7 +223,8 @@ func (g *GuideService) checkPipelineYml(app *apistructs.ApplicationDTO, branch, 
 		return false, err
 	}
 	if len(ymls) == 0 {
-		return false, fmt.Errorf("the pipeline yml is not exists")
+		logrus.Info("the pipeline yml is not exists")
+		return false, nil
 	}
 	return true, nil
 }

@@ -72,14 +72,6 @@ message Guide {
   google.protobuf.Timestamp timeUpdated = 12;
 }
 
-message JudgeCanCreatePipelineResponse {
-  bool canCreate = 1;
-  uint64 appID = 2;
-  string branch = 3;
-  string path = 4;
-  string fileName = 5;
-}
-
 message GittarPushPayloadEvent {
   string event = 1;
   string action = 2;

@@ -16,7 +16,6 @@ import (
 var _ urlenc.URLValuesUnmarshaler = (*ListGuideRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListGuideResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Guide)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*JudgeCanCreatePipelineResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GittarPushPayloadEvent)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Content)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Pusher)(nil)
@@ -129,35 +128,6 @@ func (m *Guide) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.TimeUpdated.Nanos = int32(val)
-			}
-		}
-	}
-	return nil
-}
-
-// JudgeCanCreatePipelineResponse implement urlenc.URLValuesUnmarshaler.
-func (m *JudgeCanCreatePipelineResponse) UnmarshalURLValues(prefix string, values url.Values) error {
-	for key, vals := range values {
-		if len(vals) > 0 {
-			switch prefix + key {
-			case "canCreate":
-				val, err := strconv.ParseBool(vals[0])
-				if err != nil {
-					return err
-				}
-				m.CanCreate = val
-			case "appID":
-				val, err := strconv.ParseUint(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.AppID = val
-			case "branch":
-				m.Branch = vals[0]
-			case "path":
-				m.Path = vals[0]
-			case "fileName":
-				m.FileName = vals[0]
 			}
 		}
 	}

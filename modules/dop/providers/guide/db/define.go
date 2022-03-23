@@ -37,7 +37,7 @@ const (
 	ExpiredStatus   GuideStatus = "expired"
 )
 
-const ExpiredTime = 24 * time.Hour
+const ExpirationPeriod = 24 * time.Hour
 
 func (g GuideStatus) String() string {
 	return string(g)
@@ -105,7 +105,7 @@ func (db *GuideDB) GetGuide(id string) (guide Guide, err error) {
 	err = db.Model(&Guide{}).Scopes(NotDeleted).
 		Where("id = ?", id).
 		Where("status = ?", InitStatus).
-		Where("created_at >= ?", time.Now().Add(-1*(ExpiredTime))).
+		Where("created_at >= ?", time.Now().Add(-1*(ExpirationPeriod))).
 		First(&guide).Error
 	return
 }
@@ -120,7 +120,7 @@ func (db *GuideDB) UpdateGuide(id string, fields map[string]interface{}) error {
 func (db *GuideDB) BatchUpdateGuideExpiryStatus() error {
 	return db.Model(&Guide{}).Scopes(NotDeleted).
 		Where("status = ?", InitStatus).
-		Where("created_at < ? ", time.Now().Add(-1*(ExpiredTime))).
+		Where("created_at < ? ", time.Now().Add(-1*(ExpirationPeriod))).
 		Updates(map[string]interface{}{"status": ExpiredStatus}).Error
 }
 
@@ -141,7 +141,7 @@ func (db *GuideDB) ListGuide(req *pb.ListGuideRequest, userID string) (guides []
 		Where("project_id = ?", req.ProjectID).
 		Where("creator = ?", userID).
 		Where("status = ?", InitStatus).
-		Where("created_at >= ?", time.Now().Add(-1*(ExpiredTime))).
+		Where("created_at >= ?", time.Now().Add(-1*(ExpirationPeriod))).
 		Order("created_at DESC").
 		Find(&guides).Error
 	return
