@@ -658,12 +658,18 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 
 	if issueModel.Type == apistructs.IssueTypeTask {
 		currentBelong, err := cache.TryGetState(issueModel.State)
-		if err != nil || currentBelong == nil {
+		if err != nil {
 			return apierrors.ErrUpdateIssue.InternalError(err)
+		}
+		if currentBelong == nil {
+			return fmt.Errorf("state id: %v is not valid", issueModel.State)
 		}
 		newBelong, err := cache.TryGetState(*req.State)
 		if err != nil || newBelong == nil {
 			return apierrors.ErrUpdateIssue.InternalError(err)
+		}
+		if currentBelong == nil {
+			return fmt.Errorf("state id: %v is not valid", req.State)
 		}
 		if err := svc.AfterIssueChildrenUpdate(&issueChildrenUpdated{issueModel.ID, currentBelong.Belong, newBelong.Belong}); err != nil {
 			return fmt.Errorf("update issue parent after issue children %v update failed: %v", issueModel.ID, err)
