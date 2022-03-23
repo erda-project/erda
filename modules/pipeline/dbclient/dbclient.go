@@ -123,6 +123,10 @@ type clientConfig struct {
 	LogLevel        string        `env:"MYSQL_LOG_LEVEL" envDefault:"INFO"`
 	ShowSQL         bool          `env:"MYSQL_SHOW_SQL" envDefault:"false"`
 	PROPERTIES      string        `env:"MYSQL_PROPERTIES" envDefault:"charset=utf8mb4&collation=utf8mb4_unicode_ci&parseTime=True&loc=Local"`
+	TLS             string        `env:"MYSQL_TLS"`
+	CaCertPath      string        `env:"MYSQL_CACERTPATH"`
+	ClientCertPath  string        `env:"MYSQL_CLIENTCERTPATH"`
+	ClientKeyPath   string        `env:"MYSQL_CLIENTKEYPATH"`
 }
 
 // url judge env mysql_url whether is null
@@ -130,6 +134,11 @@ func (cfg *clientConfig) url() string {
 	if cfg.URL != "" {
 		return cfg.URL
 	}
-	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?%s",
+
+	url := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?%s",
 		cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database, cfg.PROPERTIES)
+	if cfg.TLS != "" {
+		url = fmt.Sprintf("%v&tls=%s", url, cfg.TLS)
+	}
+	return url
 }
