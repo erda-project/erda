@@ -1728,6 +1728,8 @@ func (m *PipelineDefinitionStatisticsRequest) UnmarshalURLValues(prefix string, 
 			switch prefix + key {
 			case "location":
 				m.Location = vals[0]
+			case "remotes":
+				m.Remotes = vals
 			}
 		}
 	}

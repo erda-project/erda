@@ -378,22 +378,12 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 			OrgName:     org.Name,
 			ProjectName: project.Name,
 		}, cicdPipelineType),
-		FuzzyName: params.Name,
-		Creator:   params.Creator,
-		Executor:  params.Executor,
-		Category:  params.Category,
-		Ref:       params.Ref,
-		Remote: func() []string {
-			remotes := make([]string, 0, len(params.AppName))
-			for _, v := range params.AppName {
-				remotes = append(remotes, makeRemote(&apistructs.ApplicationDTO{
-					OrgName:     org.Name,
-					ProjectName: project.Name,
-					Name:        v,
-				}))
-			}
-			return remotes
-		}(),
+		FuzzyName:         params.Name,
+		Creator:           params.Creator,
+		Executor:          params.Executor,
+		Category:          params.Category,
+		Ref:               params.Ref,
+		Remote:            getRemotes(params.AppName, org.Name, project.Name),
 		TimeCreated:       params.TimeCreated,
 		TimeStarted:       params.TimeStarted,
 		Status:            params.Status,
@@ -1416,11 +1406,21 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
 	}
 
+	appResp, err := p.bundle.GetMyAppsByProject(apis.GetUserID(ctx), project.OrgID, project.ID, "")
+	if err != nil {
+		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
+	}
+	appNames := make([]string, 0, len(appResp.List))
+	for _, v := range appResp.List {
+		appNames = append(appNames, v.Name)
+	}
+
 	staticsResp, err := p.PipelineDefinition.StatisticsGroupByFilePath(ctx, &dpb.PipelineDefinitionStatisticsRequest{
 		Location: makeLocation(&apistructs.ApplicationDTO{
 			OrgName:     org.Name,
 			ProjectName: project.Name,
 		}, cicdPipelineType),
+		Remotes: getRemotes(appNames, org.Name, project.Name),
 	})
 	if err != nil {
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
@@ -1460,4 +1460,16 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 		})
 	}
 	return &pb.ListPipelineCategoryResponse{Data: data}, nil
+}
+
+func getRemotes(appNames []string, orgName, projectName string) []string {
+	remotes := make([]string, 0, len(appNames))
+	for _, v := range appNames {
+		remotes = append(remotes, makeRemote(&apistructs.ApplicationDTO{
+			OrgName:     orgName,
+			ProjectName: projectName,
+			Name:        v,
+		}))
+	}
+	return remotes
 }

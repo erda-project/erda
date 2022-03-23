@@ -508,6 +508,8 @@ github.com/erda-project/elastic v0.0.1-ex/go.mod h1:iAVsas6fcmt9pxtge1+dErMhecv+
 github.com/erda-project/erda-infra v0.0.0-20220321022514-a6f951c8a9ae/go.mod h1:bqtrGKJcCeoJu42bsOoBnlwzfIsZGq0KRl4KJBSGMrg=
 github.com/erda-project/erda-infra v0.0.0-20220321085632-91e009f9db9e h1:EIA9Z45PBCs0DtoO99a2MrAB1v8WqxvEUy6G1wFXPHE=
 github.com/erda-project/erda-infra v0.0.0-20220321085632-91e009f9db9e/go.mod h1:4Kw/LCpO46y5PkW5TEvxg634hy1hOBeCkDkt9iI+dK0=
+github.com/erda-project/erda-infra v0.0.0-20220323032941-d5175e7d4ef0 h1:c76i036bsVTT/FlLHhu6LafCAlfcGUFBuaFITW0i3V4=
+github.com/erda-project/erda-infra v0.0.0-20220323032941-d5175e7d4ef0/go.mod h1:9MGw5o3niKhqAz2OeX7P7urT/B7eFQCY3VenY3DA3E8=
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b h1:GWf2ChasZFerFwQoTokIvjJLWH57ligTSLD2hUb7UWk=
 github.com/erda-project/erda-oap-thirdparty-protocol v0.0.0-20210907135609-15886a136d5b/go.mod h1:H/f81Thef2Tnz4nUeLt0r4VwHdOznthpyXBwT9vDWo0=
 github.com/erda-project/erda-sourcecov v0.1.0 h1:iLvoMsQ1xX81KNOW98BKr85Vs7sSazrIDEphLYdmgP4=

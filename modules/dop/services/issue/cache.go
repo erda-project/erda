@@ -64,7 +64,7 @@ func (v *issueCache) TryGetIteration(iterationID int64) (*dao.Iteration, error) 
 
 func (v *issueCache) TryGetState(stateID int64) (*dao.IssueState, error) {
 	if stateID <= 0 {
-		return nil, nil
+		return nil, fmt.Errorf("state id: %v is not valid", stateID)
 	}
 	state, ok := v.stateCache.LoadWithUpdate(stateID)
 	if !ok {
