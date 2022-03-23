@@ -36,20 +36,25 @@ type CustomFilter struct {
 	sdk      *cptype.SDK
 	State    State     `json:"-"`
 	InParams *InParams `json:"-"`
+	URLQuery *FrontendConditions
 }
 
 type State struct {
-	Base64UrlQueryParams    string             `json:"issueFilter__urlQuery,omitempty"`
 	FrontendConditionValues FrontendConditions `json:"values,omitempty"`
 	SelectedFilterSet       string             `json:"selectedFilterSet,omitempty"`
 }
 
 type FrontendConditions struct {
-	Status            []string `json:"status"`
-	AppList           []uint64 `json:"appList"`
-	Executor          []string `json:"executor"`
-	StartedAtStartEnd []int64  `json:"startedAtStartEnd"`
-	Title             string   `json:"title"`
+	Status            []string `json:"status,omitempty"`
+	AppList           []uint64 `json:"appList,omitempty"`
+	Executor          []string `json:"executor,omitempty"`
+	StartedAtStartEnd []int64  `json:"startedAtStartEnd,omitempty"`
+	Title             string   `json:"title,omitempty"`
+}
+
+func (p *CustomFilter) AfterHandleOp(sdk *cptype.SDK) {
+	cputil.SetURLQuery(sdk, p.State.FrontendConditionValues)
+	cputil.MustObjJSONTransfer(&p.State, &p.StdStatePtr)
 }
 
 func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
@@ -63,6 +68,11 @@ func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
 			panic(err)
 		}
 	}
+
+	var urlQuery FrontendConditions
+	cputil.MustGetURLQuery(sdk, &urlQuery)
+	p.URLQuery = &urlQuery
+
 	cputil.MustObjJSONTransfer(&p.StdStatePtr, &p.State)
 }
 
@@ -72,6 +82,7 @@ func (p *CustomFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 		if err != nil {
 			panic(err)
 		}
+
 		p.StdDataPtr = &filter.Data{
 			Conditions: conditions,
 			Operations: map[cptype.OperationKey]cptype.Operation{
@@ -79,6 +90,22 @@ func (p *CustomFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 				filter.OpFilterItemSave{}.OpKey(): cputil.NewOpBuilder().Build(),
 			},
 			HideSave: true,
+		}
+
+		if p.URLQuery != nil {
+			p.State.FrontendConditionValues = *p.URLQuery
+		}
+
+		p.gsHelper.SetStatuesFilter(p.State.FrontendConditionValues.Status)
+		p.gsHelper.SetAppsFilter(p.State.FrontendConditionValues.AppList)
+		p.gsHelper.SetExecutorsFilter(p.State.FrontendConditionValues.Executor)
+		p.gsHelper.SetPipelineNameFilter(p.State.FrontendConditionValues.Title)
+
+		if len(p.State.FrontendConditionValues.StartedAtStartEnd) > 0 {
+			p.gsHelper.SetBeginTimeStartFilter(p.State.FrontendConditionValues.StartedAtStartEnd[0])
+		}
+		if len(p.State.FrontendConditionValues.StartedAtStartEnd) == 2 {
+			p.gsHelper.SetBeginTimeEndFilter(p.State.FrontendConditionValues.StartedAtStartEnd[1])
 		}
 		return nil
 	}
