@@ -22,8 +22,8 @@ import (
 
 	v3 "github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/etcd"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/jsonstore"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -40,7 +41,7 @@ import (
 const (
 	waitTimeIfQueryDBError   = time.Minute
 	indexFirst               = 0
-	EtcdNeedCompensatePrefix = "/devops/pipeline/compensate/"
+	etcdNeedCompensatePrefix = "/devops/pipeline/compensate/"
 )
 
 type config struct {
@@ -48,33 +49,76 @@ type config struct {
 
 // +provider
 type provider struct {
+	Log          logs.Logger
 	LeaderWorker leaderworker.Interface `autowired:"leader-worker"`
 	ETCD         etcd.Interface         // autowired
 	EtcdClient   *v3.Client
 	MySQL        mysqlxorm.Interface `autowired:"mysql-xorm"`
 
-	client       *dbclient.Client
+	jsonStore jsonstore.JsonStore
+	dbClient  *dbclient.Client
+
+	// TODO remove
 	pipelineFunc PipelineFunc
 }
 
 func (p *provider) WithPipelineFunc(pipelineFunc PipelineFunc) {
-	p.client = &dbclient.Client{Engine: p.MySQL.DB()}
 	p.pipelineFunc = pipelineFunc
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.dbClient = &dbclient.Client{Engine: p.MySQL.DB()}
+	jsonStore, err := jsonstore.New()
+	if err != nil {
+		return err
+	}
+	p.jsonStore = jsonStore
+
 	return nil
 }
 
 func (p *provider) Run(ctx context.Context) error {
 	p.LeaderWorker.OnLeader(func(ctx context.Context) {
-		// The client value may not have been set during initialization
-		p.ContinueCompensate(context.Background())
+		p.ContinueCompensate(ctx)
 	})
 	return nil
 }
 
-var compensateLog = logrus.WithField("type", "cron compensator")
+func (p *provider) PipelineCronCompensate(ctx context.Context, pipelineID uint64) {
+	pipelineWithTasks, err := p.dbClient.GetPipelineWithTasks(pipelineID)
+	if err != nil {
+		p.Log.Errorf("failed to do pipeline cron compensate, failed to get pipelineWithTasks, pipelineID: %d, err: %v", pipelineID, err)
+		return
+	}
+
+	if pipelineWithTasks == nil || pipelineWithTasks.Pipeline == nil || pipelineWithTasks.Pipeline.CronID == nil {
+		return
+	}
+
+	// Monitor whether the compensation is blocked during execution, and immediately compensate if it is blocked,
+	// obtain the id of the cron of the current pipeline in etcd, and then immediately delete the corresponding etcd value
+	notFound, err := p.jsonStore.Notfound(ctx, fmt.Sprint(etcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID))
+	if err != nil {
+		p.Log.Errorf("can not get cronID: %d, err: %v", *pipelineWithTasks.Pipeline.CronID, err)
+		return
+	}
+
+	if !notFound {
+		p.Log.Infof("ready to Compensate, cronID: %d", *pipelineWithTasks.Pipeline.CronID)
+
+		// perform the compensation operation
+		if err := p.doNonExecuteCompensateByCronID(*pipelineWithTasks.Pipeline.CronID); err != nil {
+			p.Log.Infof("to Compensate error, cronID: %d, err : %v",
+				*pipelineWithTasks.Pipeline.CronID, err)
+		}
+
+		// remove cronID
+		if err := p.jsonStore.Remove(ctx, fmt.Sprint(etcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID), nil); err != nil {
+			p.Log.Infof("can not delete etcd key, key: %s, cronID: %d, err : %v",
+				fmt.Sprint(etcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID), *pipelineWithTasks.Pipeline.CronID, err)
+		}
+	}
+}
 
 func getCronCompensateInterval(interval int64) time.Duration {
 	return time.Duration(interval) * time.Minute
@@ -85,7 +129,7 @@ func getCronInterruptCompensateInterval(interval int64) time.Duration {
 }
 
 func (p *provider) ContinueCompensate(ctx context.Context) {
-	compensateLog.Info("cron compensator: start")
+	p.Log.Info("cron compensator: start")
 	// Execute Policy Compensation Scheduled Tasks
 	ticker := time.NewTicker(getCronCompensateInterval(conf.CronCompensateTimeMinute()))
 	// Interrupt Compensation Scheduled Task
@@ -98,7 +142,7 @@ func (p *provider) ContinueCompensate(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			// stop
-			compensateLog.Info("stop cron compensate, received cancel signal from channel")
+			p.Log.Info("stop cron compensate, received cancel signal from channel")
 			ticker.Stop()
 			interruptTicker.Stop()
 			return
@@ -119,14 +163,14 @@ func (p *provider) ContinueCompensate(ctx context.Context) {
 func (p *provider) doInterruptCompensate(pc spec.PipelineCron) {
 	err := p.cronInterruptCompensate(pc)
 	if err != nil {
-		compensateLog.WithField("cronID", pc.ID).Errorf("failed to do interrupt-compensate, cronID: %d, err: %v", pc.ID, err)
+		p.Log.Errorf("failed to do interrupt-compensate, cronID: %d, err: %v", pc.ID, err)
 	}
 }
 
 func (p *provider) doStrategyCompensate(pc spec.PipelineCron) {
-	err := p.cronNotExecuteCompensate(pc)
+	err := p.cronNonExecuteCompensate(pc)
 	if err != nil {
-		compensateLog.WithField("cronID", pc.ID).Errorf("failed to do notexecute-compensate, cronID: %d, err: %v", pc.ID, err)
+		p.Log.Errorf("failed to do notexecute-compensate, cronID: %d, err: %v", pc.ID, err)
 	}
 }
 
@@ -137,9 +181,9 @@ func (p *provider) traverseDoCompensate(doCompensate func(cron spec.PipelineCron
 	}
 
 	// get all enabled crons
-	enabledCrons, err := p.client.ListPipelineCrons(&[]bool{true}[0])
+	enabledCrons, err := p.dbClient.ListPipelineCrons(&[]bool{true}[0])
 	if err != nil {
-		compensateLog.Errorf("failed to list enabled pipeline crons from db, try again later, err: %v", err)
+		p.Log.Errorf("failed to list enabled pipeline crons from db, try again later, err: %v", err)
 		time.Sleep(waitTimeIfQueryDBError)
 		return
 	}
@@ -148,7 +192,7 @@ func (p *provider) traverseDoCompensate(doCompensate func(cron spec.PipelineCron
 	for _, pc := range enabledCrons {
 		if p.isCronShouldBeIgnored(pc) {
 			triggerTime := time.Now()
-			logrus.Warnf("crond compensator: pipelineCronID: %d, triggered compensate but ignored, triggerTime: %s, cronStartFrom: %s",
+			p.Log.Warnf("crond compensator: pipelineCronID: %d, triggered compensate but ignored, triggerTime: %s, cronStartFrom: %s",
 				pc.ID, triggerTime, *pc.Extra.CronStartFrom)
 			continue
 		}
@@ -186,7 +230,7 @@ func (p *provider) cronInterruptCompensate(pc spec.PipelineCron) error {
 
 	if len(needTriggerTimes) > 0 {
 		// Pipeline search record created based on createlyname + source
-		existPipelines, _, _, _, err := p.client.PageListPipelines(apistructs.PipelinePageListRequest{
+		existPipelines, _, _, _, err := p.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
 			Sources:          []apistructs.PipelineSource{pc.PipelineSource},
 			YmlNames:         []string{pc.PipelineYmlName},
 			TriggerModes:     []apistructs.PipelineTriggerMode{apistructs.PipelineTriggerModeCron},
@@ -210,17 +254,17 @@ func (p *provider) cronInterruptCompensate(pc spec.PipelineCron) error {
 		for _, ntt := range needTriggerTimes {
 			pipeline, ok := existPipelinesMap[ntt]
 			if ok {
-				compensateLog.Infof("no need do interrupt-compensate, cronID: %d, triggerTime: %v, exist pipelineID: %d", pc.ID, ntt, pipeline.ID)
+				p.Log.Infof("no need do interrupt-compensate, cronID: %d, triggerTime: %v, exist pipelineID: %d", pc.ID, ntt, pipeline.ID)
 				continue
 			}
-			compensateLog.Infof("need do interrupt-compensate, cronID: %d, triggerTime: %v", pc.ID, ntt)
+			p.Log.Infof("need do interrupt-compensate, cronID: %d, triggerTime: %v", pc.ID, ntt)
 			// create
 			created, err := p.createCronCompensatePipeline(pc, ntt)
 			if err != nil {
-				compensateLog.Errorf("failed to do interrupt-compensate, cronID: %d, triggerTime: %v, err: %v", pc.ID, ntt, err)
+				p.Log.Errorf("failed to do interrupt-compensate, cronID: %d, triggerTime: %v, err: %v", pc.ID, ntt, err)
 				continue
 			}
-			compensateLog.Infof("success to do interrupt-compensate, cronID: %d, triggerTime: %v, createdPipelineID: %d", pc.ID, ntt, created.ID)
+			p.Log.Infof("success to do interrupt-compensate, cronID: %d, triggerTime: %v, createdPipelineID: %d", pc.ID, ntt, created.ID)
 		}
 	}
 
@@ -234,25 +278,25 @@ func (p *provider) cronInterruptCompensate(pc spec.PipelineCron) error {
 			StopIfLatterExecuted: pipelineyml.DefaultCronCompensator.StopIfLatterExecuted,
 		}
 	}
-	if err := p.client.UpdatePipelineCron(pc.ID, &pc); err != nil {
+	if err := p.dbClient.UpdatePipelineCron(pc.ID, &pc); err != nil {
 		return errors.Errorf("failed to update pipelineCron for lastCompensateAt field, err: %v", err)
 	}
 
 	return nil
 }
 
-func (p *provider) CronNotExecuteCompensateById(id uint64) error {
-	cron, err := p.client.GetPipelineCron(id)
+func (p *provider) doNonExecuteCompensateByCronID(id uint64) error {
+	cron, err := p.dbClient.GetPipelineCron(id)
 	if err != nil {
 		return err
 	}
 
-	return p.cronNotExecuteCompensate(cron)
+	return p.cronNonExecuteCompensate(cron)
 }
 
-// cronNotExecuteCompensate timing compensation not performed
+// cronNonExecuteCompensate timing compensation not performed
 // Only within one day
-func (p *provider) cronNotExecuteCompensate(pc spec.PipelineCron) error {
+func (p *provider) cronNonExecuteCompensate(pc spec.PipelineCron) error {
 
 	// Notexecute compensate is not enabled, exit
 	if pc.Enable == nil || *pc.Enable == false || pc.Extra.Compensator == nil || pc.Extra.Compensator.Enable == false {
@@ -285,7 +329,7 @@ func (p *provider) cronNotExecuteCompensate(pc spec.PipelineCron) error {
 		request.AscCols = []string{apistructs.PipelinePageListRequestIdColumn}
 	}
 
-	existPipelines, _, _, _, err := p.client.PageListPipelines(request)
+	existPipelines, _, _, _, err := p.dbClient.PageListPipelines(request)
 	if err != nil {
 		return errors.Errorf("failed to list notexecute pipelines, cronID: %d, err: %v", pc.ID, err)
 	}
@@ -313,7 +357,7 @@ func (p *provider) doCronCompensate(compensator apistructs.CronCompensator, notR
 	// it should be compared with the pipeline in the latest success status. Only the ID greater than the successful ID can be executed
 	if compensator.LatestFirst && compensator.StopIfLatterExecuted {
 		// Get the pipeline successfully executed
-		runSuccessPipeline, _, _, _, err := p.client.PageListPipelines(apistructs.PipelinePageListRequest{
+		runSuccessPipeline, _, _, _, err := p.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
 			Sources:  []apistructs.PipelineSource{pipelineCron.PipelineSource},
 			YmlNames: []string{pipelineCron.PipelineYmlName},
 			Statuses: []string{apistructs.PipelineStatusSuccess.String()},
@@ -323,7 +367,7 @@ func (p *provider) doCronCompensate(compensator apistructs.CronCompensator, notR
 		})
 
 		if err != nil {
-			compensateLog.Infof("latestFirst=true, stopIfLatterExecuted=true, get PipelineStatusSuccess pipeline error, cronID: %d", pipelineCron.ID)
+			p.Log.Infof("latestFirst=true, stopIfLatterExecuted=true, get PipelineStatusSuccess pipeline error, cronID: %d", pipelineCron.ID)
 		}
 
 		if len(runSuccessPipeline) <= 0 {
@@ -344,31 +388,31 @@ func (p *provider) doCronCompensate(compensator apistructs.CronCompensator, notR
 
 	// Print one line of record after successful execution
 	if err == nil {
-		compensateLog.Infof("[doCronCompensate] Compensate success, pipelineId %d", firstOrLastPipeline.ID)
+		p.Log.Infof("[doCronCompensate] Compensate success, pipelineId %d", firstOrLastPipeline.ID)
 		return nil
 	}
 
 	// If there is a conflict or internal error in compensation, the listener should be notified and the compensation scheduling should be directly executed next time,
 	// If the sum of the corresponding cron expression interval and execution time is greater than the scheduling time without compensation,
 	// the whole scheduling will be executed as the configured policy. If it is less than, there will be competitive execution
-	compensateLog.Infof("[doCronCompensate] run Compensate err, put cronId into etcd wait callback: cronId %d", pipelineCron.ID)
+	p.Log.Infof("[doCronCompensate] run Compensate err, put cronId into etcd wait callback: cronId %d", pipelineCron.ID)
 	// Create etcd lease
 	lease := v3.NewLease(p.EtcdClient)
 	if grant, err := lease.Grant(context.Background(), conf.CronCompensateTimeMinute()*60); err == nil {
 		// Set cronid to key and wait
 		if _, err := p.EtcdClient.Put(context.Background(),
-			fmt.Sprint(EtcdNeedCompensatePrefix, pipelineCron.ID),
+			fmt.Sprint(etcdNeedCompensatePrefix, pipelineCron.ID),
 			"", v3.WithLease(grant.ID)); err != nil {
 			// Failed to write etcd. This compensation failed. Wait for the next compensation
-			logrus.Errorf("[alert] failed to write cronId to etcd: cronId %d, err: %v", pipelineCron.ID, err)
+			p.Log.Errorf("[alert] failed to write cronId to etcd: cronId %d, err: %v", pipelineCron.ID, err)
 			return err
 		}
 	} else {
-		logrus.Errorf("[alert] failed to create etcd lease : cronId %d, err: %v", pipelineCron.ID, err)
+		p.Log.Errorf("[alert] failed to create etcd lease : cronId %d, err: %v", pipelineCron.ID, err)
 		return err
 	}
 
-	compensateLog.Infof("[doCronCompensate] put cronId into etcd suucess: cronId %d ", pipelineCron.ID)
+	p.Log.Infof("[doCronCompensate] put cronId into etcd suucess: cronId %d ", pipelineCron.ID)
 
 	return errors.Errorf("[doCronCompensate] failed to run notexecute pipeline, cronID: %d, pipelineID: %d, err: %v", pipelineCron.ID, firstOrLastPipeline.ID, err)
 

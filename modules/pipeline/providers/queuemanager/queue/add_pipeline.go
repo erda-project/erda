@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager/pkg/queue/priorityqueue"
-	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler/rlog"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rlog"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
