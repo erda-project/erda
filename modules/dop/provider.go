@@ -44,6 +44,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/metrics"
 	"github.com/erda-project/erda/modules/dop/providers/autotest/testplan"
+	"github.com/erda-project/erda/modules/dop/providers/guide"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/modules/dop/providers/taskerror"
 	"github.com/erda-project/erda/pkg/discover"
@@ -66,6 +67,7 @@ type provider struct {
 	TaskErrorSvc       *taskerror.TaskErrorService             `autowired:"erda.core.dop.taskerror.TaskErrorService"`
 	ErrorBoxSvc        errboxpb.ErrorBoxServiceServer          `autowired:"erda.core.services.errorbox.ErrorBoxService" optional:"true"`
 	ProjectPipelineSvc *projectpipeline.ProjectPipelineService `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
+	GuideSvc           *guide.GuideService                     `autowired:"erda.dop.guide.GuideService"`
 	PipelineCron       cronpb.CronServiceServer                `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 	QueryClient        query.MetricQuery                       `autowired:"metricq-client"`
 

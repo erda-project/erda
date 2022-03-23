@@ -16,7 +16,6 @@ import (
 var _ urlenc.URLValuesUnmarshaler = (*ListGuideRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListGuideResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Guide)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*JudgeCanCreatePipelineRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*JudgeCanCreatePipelineResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GittarPushPayloadEvent)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Content)(nil)
@@ -130,19 +129,6 @@ func (m *Guide) UnmarshalURLValues(prefix string, values url.Values) error {
 					return err
 				}
 				m.TimeUpdated.Nanos = int32(val)
-			}
-		}
-	}
-	return nil
-}
-
-// JudgeCanCreatePipelineRequest implement urlenc.URLValuesUnmarshaler.
-func (m *JudgeCanCreatePipelineRequest) UnmarshalURLValues(prefix string, values url.Values) error {
-	for key, vals := range values {
-		if len(vals) > 0 {
-			switch prefix + key {
-			case "ID":
-				m.ID = vals[0]
 			}
 		}
 	}

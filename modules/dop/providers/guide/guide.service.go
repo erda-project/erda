@@ -25,6 +25,8 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/providers/guide/db"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/branchrule"
+	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 )
@@ -39,6 +41,18 @@ const (
 type GuideService struct {
 	bdl *bundle.Bundle
 	db  *db.GuideDB
+
+	branchRuleSve *branchrule.BranchRule
+}
+
+func (g *GuideService) WithPipelineSvc(svc *branchrule.BranchRule) {
+	g.branchRuleSve = svc
+}
+
+type Service interface {
+	CreateGuideByGittarPushHook(context.Context, *pb.GittarPushPayloadEvent) (*pb.CreateGuideResponse, error)
+	ListGuide(context.Context, *pb.ListGuideRequest) (*pb.ListGuideResponse, error)
+	ProcessGuide(context.Context, *pb.ProcessGuideRequest) (*pb.ProcessGuideResponse, error)
 }
 
 func (g *GuideService) CreateGuideByGittarPushHook(ctx context.Context, req *pb.GittarPushPayloadEvent) (*pb.CreateGuideResponse, error) {
@@ -62,13 +76,22 @@ func (g *GuideService) CreateGuideByGittarPushHook(ctx context.Context, req *pb.
 	if err != nil {
 		return nil, apierrors.ErrCreateGuide.InvalidParameter(err)
 	}
-	// Check if xxx.yml exists
-	ymls, err := g.ListPipelineYml(ctx, appDto, req.Content.Ref[len(BranchPrefix):])
+	// Check branch rules
+	ok, err := g.checkBranchRule(req.Content.Ref[len(BranchPrefix):], int64(projectID))
 	if err != nil {
 		return nil, apierrors.ErrCreateGuide.InvalidParameter(err)
 	}
-	if len(ymls) == 0 {
-		return nil, nil
+	if !ok {
+		return &pb.CreateGuideResponse{}, nil
+	}
+
+	// Check if pipeline yml exists
+	ok, err = g.checkPipelineYml(appDto, req.Content.Ref[len(BranchPrefix):], req.Content.Pusher.ID)
+	if err != nil {
+		return nil, apierrors.ErrCreateGuide.InvalidParameter(err)
+	}
+	if !ok {
+		return &pb.CreateGuideResponse{}, nil
 	}
 	guide := db.Guide{
 		Status:        db.InitStatus.String(),
@@ -126,13 +149,13 @@ type PipelineYml struct {
 	YmlPath string
 }
 
-func (g *GuideService) ListPipelineYml(ctx context.Context, app *apistructs.ApplicationDTO, branch string) ([]PipelineYml, error) {
+func (g *GuideService) ListPipelineYml(app *apistructs.ApplicationDTO, branch, userID string) ([]PipelineYml, error) {
 	work := limit_sync_group.NewWorker(3)
 	var list []PipelineYml
 	var pathList = []string{"", DicePipelinePath, ErdaPipelinePath}
 	for _, path := range pathList {
 		work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
-			result, err := g.getPipelineYml(app, apis.GetUserID(ctx), branch, i[0].(string))
+			result, err := g.getPipelineYml(app, userID, branch, i[0].(string))
 			if err != nil {
 				return nil
 			}
@@ -158,13 +181,13 @@ func (g *GuideService) getPipelineYml(app *apistructs.ApplicationDTO, userID str
 		path = fmt.Sprintf("/wb/%v/%v/tree/%v/%v", app.ProjectName, app.Name, branch, findPath)
 	}
 
-	diceEntries, err := g.bdl.GetGittarTreeNode(path, strconv.Itoa(int(app.OrgID)), true, userID)
+	treeData, err := g.bdl.GetGittarTreeNode(path, strconv.Itoa(int(app.OrgID)), true, userID)
 	if err != nil {
 		return nil, err
 	}
 
 	var list []PipelineYml
-	for _, entry := range diceEntries {
+	for _, entry := range treeData.Entries {
 		if !strings.HasSuffix(entry.Name, ".yml") {
 			continue
 		}
@@ -177,4 +200,27 @@ func (g *GuideService) getPipelineYml(app *apistructs.ApplicationDTO, userID str
 		})
 	}
 	return list, nil
+}
+
+func (g *GuideService) checkBranchRule(branch string, projectID int64) (bool, error) {
+	branchRules, err := g.branchRuleSve.Query(apistructs.ProjectScope, int64(projectID))
+	if err != nil {
+		return false, err
+	}
+	_, err = diceworkspace.GetByGitReference(branch, branchRules)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (g *GuideService) checkPipelineYml(app *apistructs.ApplicationDTO, branch, userID string) (bool, error) {
+	ymls, err := g.ListPipelineYml(app, branch, userID)
+	if err != nil {
+		return false, err
+	}
+	if len(ymls) == 0 {
+		return false, fmt.Errorf("the pipeline yml is not exists")
+	}
+	return true, nil
 }

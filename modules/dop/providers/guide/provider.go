@@ -16,6 +16,7 @@ package guide
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/jinzhu/gorm"
 
@@ -82,7 +83,9 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
 	switch {
-	case ctx.Service() == "erda.core.dop.guide.GuideService" || ctx.Type() == pb.GuideServiceServerType() || ctx.Type() == pb.GuideServiceHandlerType():
+	case ctx.Service() == "erda.dop.guide.GuideServiceMethod" || ctx.Type() == reflect.TypeOf(reflect.TypeOf((*Service)(nil)).Elem()):
+		return p.GuideService
+	case ctx.Service() == "erda.dop.guide.GuideService" || ctx.Type() == pb.GuideServiceServerType() || ctx.Type() == pb.GuideServiceHandlerType():
 		return p.GuideService
 	}
 	return p

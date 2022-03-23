@@ -53,12 +53,6 @@ func (this *Guide) Validate() error {
 	}
 	return nil
 }
-func (this *JudgeCanCreatePipelineRequest) Validate() error {
-	if this.ID == "" {
-		return github_com_mwitkow_go_proto_validators.FieldError("ID", fmt.Errorf(`value '%v' must not be an empty string`, this.ID))
-	}
-	return nil
-}
 func (this *JudgeCanCreatePipelineResponse) Validate() error {
 	return nil
 }

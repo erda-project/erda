@@ -72,10 +72,6 @@ message Guide {
   google.protobuf.Timestamp timeUpdated = 12;
 }
 
-message JudgeCanCreatePipelineRequest {
-  string ID = 1 [json_name = "id", (validator.field) = {string_not_empty: true}];
-}
-
 message JudgeCanCreatePipelineResponse {
   bool canCreate = 1;
   uint64 appID = 2;

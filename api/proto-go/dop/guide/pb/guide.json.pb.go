@@ -19,8 +19,6 @@ var _ json.Marshaler = (*ListGuideResponse)(nil)
 var _ json.Unmarshaler = (*ListGuideResponse)(nil)
 var _ json.Marshaler = (*Guide)(nil)
 var _ json.Unmarshaler = (*Guide)(nil)
-var _ json.Marshaler = (*JudgeCanCreatePipelineRequest)(nil)
-var _ json.Unmarshaler = (*JudgeCanCreatePipelineRequest)(nil)
 var _ json.Marshaler = (*JudgeCanCreatePipelineResponse)(nil)
 var _ json.Unmarshaler = (*JudgeCanCreatePipelineResponse)(nil)
 var _ json.Marshaler = (*GittarPushPayloadEvent)(nil)
@@ -85,24 +83,6 @@ func (m *Guide) MarshalJSON() ([]byte, error) {
 
 // Guide implement json.Marshaler.
 func (m *Guide) UnmarshalJSON(b []byte) error {
-	return (&protojson.UnmarshalOptions{
-		DiscardUnknown: true,
-	}).Unmarshal(b, m)
-}
-
-// JudgeCanCreatePipelineRequest implement json.Marshaler.
-func (m *JudgeCanCreatePipelineRequest) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := (&jsonpb.Marshaler{
-		OrigName:     false,
-		EnumsAsInts:  false,
-		EmitDefaults: true,
-	}).Marshal(buf, m)
-	return buf.Bytes(), err
-}
-
-// JudgeCanCreatePipelineRequest implement json.Marshaler.
-func (m *JudgeCanCreatePipelineRequest) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
