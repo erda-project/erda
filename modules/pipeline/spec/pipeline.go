@@ -278,7 +278,7 @@ func (p *Pipeline) CanDelete() (bool, string) {
 	if !p.Status.CanDelete() {
 		return false, fmt.Sprintf("invalid status: %s", p.Status)
 	}
-	// Need to check ttl id status is endStatus
+	// Need to check ttl if status is endStatus
 	if p.Status.IsEndStatus() {
 		if p.TimeEnd != nil && p.Extra.GC.DatabaseGC.Finished.TTLSecond != nil {
 			ok := p.TimeEnd.Before(time.Now().Add(-time.Duration(int64(*p.Extra.GC.DatabaseGC.Finished.TTLSecond)) * time.Second))
