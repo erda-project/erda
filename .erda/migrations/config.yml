@@ -194,7 +194,7 @@
     patterns:
       - ".*-base$"
     committedAt:
-      - "<=20220308"
+      - "<=20220323"
   meta:
     columnName: org_name
     types:
@@ -496,7 +496,7 @@
     patterns:
       - ".*-base$"
     committedAt:
-      - "<=20220323"
+      - "<=20220215"
   meta:
     columnName:
       - org_name
