@@ -201,7 +201,7 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		planStartedAt:  planStartedAt,
 		planFinishedAt: planFinishedAt,
 	}
-	if err := svc.AfterIssueChildrenUpdate(u); err != nil {
+	if err := svc.AfterIssueUpdate(u); err != nil {
 		return nil, fmt.Errorf("update issue parent after issue children %v update failed: %v", create.ID, err)
 	}
 	// 生成活动记录
@@ -675,7 +675,7 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		}
 		u.stateNew = newBelong.Belong
 	}
-	if err := svc.AfterIssueChildrenUpdate(u); err != nil {
+	if err := svc.AfterIssueUpdate(u); err != nil {
 		return fmt.Errorf("update issue parent after issue children %v update failed: %v", issueModel.ID, err)
 	}
 
@@ -718,7 +718,7 @@ type issueChildrenUpdated struct {
 	iterationID    int64
 }
 
-func (svc *Issue) AfterIssueChildrenUpdate(u *issueChildrenUpdated) error {
+func (svc *Issue) AfterIssueUpdate(u *issueChildrenUpdated) error {
 	if u == nil {
 		return fmt.Errorf("issue children update config is empty")
 	}
@@ -744,8 +744,8 @@ func (svc *Issue) AfterIssueChildrenUpdate(u *issueChildrenUpdated) error {
 		if finishedAt != nil {
 			fields["expiry_status"] = dao.GetExpiryStatus(finishedAt, now)
 			fields["plan_finished_at"] = finishedAt
-			u.planFinishedAt = finishedAt
 			streamFields["plan_finished_at"] = []interface{}{u.planFinishedAt, finishedAt, apistructs.IterationChanged}
+			u.planFinishedAt = finishedAt
 		}
 	}
 	startedAt := adjuster.planStarted(func() bool {
