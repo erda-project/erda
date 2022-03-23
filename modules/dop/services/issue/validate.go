@@ -44,11 +44,13 @@ func (v *issueValidator) validateTimeWithInIteration(c *issueValidationConfig, t
 	return nil
 }
 
-func inIterationInterval(iteration *dao.Iteration, time *time.Time) bool {
-	if time == nil || iteration == nil {
+func inIterationInterval(iteration *dao.Iteration, t *time.Time) bool {
+	if t == nil || iteration == nil {
 		return false
 	}
-	return !time.Before(*iteration.StartedAt) && !time.After(*iteration.FinishedAt)
+	date := t.Truncate(24 * time.Hour)
+	iterationStartAtDate, iterationEndAtDate := iteration.StartedAt.Truncate(24*time.Hour), iteration.FinishedAt.Truncate(24*time.Hour)
+	return !date.Before(iterationStartAtDate) && !date.After(iterationEndAtDate)
 }
 
 func (v *issueValidator) validateStateWithIteration(c *issueValidationConfig) error {

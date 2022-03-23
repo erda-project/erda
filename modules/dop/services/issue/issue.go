@@ -123,10 +123,6 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 	if req.Type == "" {
 		return nil, apierrors.ErrCreateIssue.MissingParameter("type")
 	}
-	planStartedAt, planFinishedAt := req.PlanStartedAt.Value(), req.PlanFinishedAt.Value()
-	if planStartedAt != nil && planFinishedAt != nil && planStartedAt.After(*planFinishedAt) {
-		return nil, fmt.Errorf("plan started is after plan finished time")
-	}
 	// 不归属任何迭代时，IterationID=-1
 	if req.IterationID == 0 {
 		return nil, apierrors.ErrCreateIssue.MissingParameter("iterationID")
@@ -139,10 +135,13 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 	if req.Creator != "" {
 		req.UserID = req.Creator
 	}
-
+	planStartedAt, planFinishedAt := req.PlanStartedAt.Value(), req.PlanFinishedAt.Value()
 	planFinishedAt, err := svc.getUpdatedPlanFinishedAt(req)
 	if err != nil {
 		return nil, apierrors.ErrCreateIssue.InvalidParameter(err)
+	}
+	if planStartedAt != nil && planFinishedAt != nil && planStartedAt.After(*planFinishedAt) {
+		return nil, fmt.Errorf("plan started is after plan finished time")
 	}
 	// 初始状态为排序级最高的状态
 	initState, err := svc.db.GetIssuesStatesByProjectID(req.ProjectID, req.Type)
