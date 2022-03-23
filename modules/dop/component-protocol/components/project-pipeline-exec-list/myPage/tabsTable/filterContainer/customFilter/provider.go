@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/filter/impl"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -70,8 +72,12 @@ func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
 	}
 
 	var urlQuery FrontendConditions
-	cputil.MustGetURLQuery(sdk, &urlQuery)
-	p.URLQuery = &urlQuery
+	err := cputil.GetURLQuery(sdk, &urlQuery)
+	if err != nil {
+		logrus.Errorf("GetURLQuery error %v", err)
+	} else {
+		p.URLQuery = &urlQuery
+	}
 
 	cputil.MustObjJSONTransfer(&p.StdStatePtr, &p.State)
 }
