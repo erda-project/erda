@@ -533,6 +533,9 @@ var (
 	ErrEndCronProjectPipeline         = err("ErrEndCronProjectPipeline", "关闭流水线定时失败")
 	ErrListExecHistoryProjectPipeline = err("ErrListExecHistoryProjectPipeline", "列出流水线执行明细失败")
 
+	ErrCreateGuide       = err("ErrCreateGuide", "创建引导失败")
+	ErrProcessGuide      = err("ErrProcessGuide", "处理引导失败")
+	ErrListGuide         = err("ErrListGuide", "获取引导列表失败")
 	ErrGetPublishItem    = err("ErrGetPublishItem", "获取发布内容详情失败")
 	ErrSratisticsErrList = err("ErrSratisticsErrList", "获取错误列表失败")
 	ErrCrashRateList     = err("ErrCrashRateList", "获取崩溃率失败")

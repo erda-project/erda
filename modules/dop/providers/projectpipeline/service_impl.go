@@ -33,6 +33,7 @@ import (
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	guidepb "github.com/erda-project/erda-proto-go/dop/guide/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
@@ -273,6 +274,12 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
+
+	_, err = p.GuideSvc.ProcessGuide(ctx, &guidepb.ProcessGuideRequest{AppID: params.AppID, Branch: params.Ref, Kind: "pipeline"})
+	if err != nil {
+		p.logger.Errorf("failed to ProcessGuide, err: %v, appID: %d, branch: %s", err, params.AppID, params.Ref)
+	}
+
 	return &pb.CreateProjectPipelineResponse{ProjectPipeline: &pb.ProjectPipeline{
 		ID:               definitionRsp.PipelineDefinition.ID,
 		Name:             definitionRsp.PipelineDefinition.Name,
