@@ -631,16 +631,21 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	}
 
 	if issueModel.Type == apistructs.IssueTypeBug || issueModel.Type == apistructs.IssueTypeTask {
+		c := &issueValidationConfig{}
 		iteration, err := cache.TryGetIteration(*req.IterationID)
 		if err != nil {
 			return err
 		}
-		state, err := cache.TryGetState(*req.State)
-		if err != nil {
-			return err
+		c.iteration = iteration
+		if req.State != nil {
+			state, err := cache.TryGetState(*req.State)
+			if err != nil {
+				return err
+			}
+			c.state = state
 		}
 		v := issueValidator{}
-		if err := v.validateChangedFields(&req, &issueValidationConfig{iteration, state}, changedFields); err != nil {
+		if err := v.validateChangedFields(&req, c, changedFields); err != nil {
 			return err
 		}
 	}
@@ -661,17 +666,18 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		if err != nil {
 			return apierrors.ErrUpdateIssue.InternalError(err)
 		}
-		if currentBelong == nil {
-			return fmt.Errorf("state id: %v is not valid", issueModel.State)
+		u := &issueChildrenUpdated{
+			id:       issueModel.ID,
+			stateOld: currentBelong.Belong,
 		}
-		newBelong, err := cache.TryGetState(*req.State)
-		if err != nil || newBelong == nil {
-			return apierrors.ErrUpdateIssue.InternalError(err)
+		if req.State != nil {
+			newBelong, err := cache.TryGetState(*req.State)
+			if err != nil {
+				return apierrors.ErrUpdateIssue.InternalError(err)
+			}
+			u.stateNew = newBelong.Belong
 		}
-		if currentBelong == nil {
-			return fmt.Errorf("state id: %v is not valid", req.State)
-		}
-		if err := svc.AfterIssueChildrenUpdate(&issueChildrenUpdated{issueModel.ID, currentBelong.Belong, newBelong.Belong}); err != nil {
+		if err := svc.AfterIssueChildrenUpdate(u); err != nil {
 			return fmt.Errorf("update issue parent after issue children %v update failed: %v", issueModel.ID, err)
 		}
 	}
