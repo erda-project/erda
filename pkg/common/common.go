@@ -21,9 +21,11 @@ import (
 
 	"github.com/recallsong/go-utils/config"
 	uuid "github.com/satori/go.uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
+	"github.com/erda-project/erda-infra/pkg/mysqldriver"
 	_ "github.com/erda-project/erda/pkg/common/trace" // nolint
 )
 
@@ -52,10 +54,18 @@ func loadModuleEnvFile(dir string) {
 }
 
 func prepare() {
+	openMysqlTLS()
 	version.PrintIfCommand()
 	Env()
 	for _, fn := range initializers {
 		fn()
+	}
+}
+
+func openMysqlTLS() {
+	err := mysqldriver.OpenTLS(os.Getenv("MYSQL_TLS"), os.Getenv("MYSQL_CACERTPATH"), os.Getenv("MYSQL_CLIENTCERTPATH"), os.Getenv("MYSQL_CLIENTKEYPATH"))
+	if err != nil {
+		logrus.Errorf("register tls error %v", err)
 	}
 }
 

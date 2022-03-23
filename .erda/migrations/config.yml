@@ -187,6 +187,20 @@
       - type: char
         flen: 36
 
+# org_name 字段类型校验
+- name: ColumnTypeLinter
+  alias: "字段类型校验: org_name 应当为 varchar(50)"
+  white:
+    patterns:
+      - ".*-base$"
+    committedAt:
+      - "<=20220323"
+  meta:
+    columnName: org_name
+    types:
+      - type: varchar
+        flen: 50
+
 # created_at 类型校验
 - name: ColumnTypeLinter
   alias: "字段类型校验: created_at 应当为 datetime 类型"

@@ -141,7 +141,7 @@ func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 		patch := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(db *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
 			switch req.PageNum {
 			case 1:
-				return nil, nil, 0, 0, fmt.Errorf("error")
+				return nil, nil, 0, 0, nil
 			case 2:
 				return []spec.Pipeline{
 					{

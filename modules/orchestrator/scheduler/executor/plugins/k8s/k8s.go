@@ -655,7 +655,6 @@ func (k *Kubernetes) Inspect(ctx context.Context, specObj interface{}) (interfac
 	logrus.Debugf("inspect runtime status, runtime: %s, status: %+v", runtime.ID, status)
 	runtime.Status = status.Status
 	runtime.LastMessage = status.LastMessage
-
 	return k.inspectStateless(runtime)
 }
 
@@ -956,6 +955,7 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 
 func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.ServiceGroup) (apistructs.StatusDesc, error) {
 	var (
+		failedReason string
 		resultStatus apistructs.StatusDesc
 		deploys      []appsv1.Deployment
 		dsMap        map[string]appsv1.DaemonSet
@@ -973,6 +973,7 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 		k.setProjectServiceName(sg)
 	}
 	isReady := true
+	isFailed := false
 
 	if sg.ProjectNamespace != "" {
 		deployList, err := k.deploy.List(ns, map[string]string{
@@ -1072,6 +1073,12 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 
 			return status, err
 		}
+		if status.Status == apistructs.StatusFailed {
+			isReady = false
+			isFailed = true
+			failedReason = status.Reason
+			continue
+		}
 		if status.Status != apistructs.StatusReady {
 			isReady = false
 			resultStatus.Status = apistructs.StatusProgressing
@@ -1094,6 +1101,10 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 
 	if isReady {
 		resultStatus.Status = apistructs.StatusHealthy
+	}
+	if isFailed {
+		resultStatus.Status = apistructs.StatusFailed
+		resultStatus.LastMessage = failedReason
 	}
 	return resultStatus, nil
 }

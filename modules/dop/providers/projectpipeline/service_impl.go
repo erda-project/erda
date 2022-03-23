@@ -33,6 +33,7 @@ import (
 	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	spb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
+	guidepb "github.com/erda-project/erda-proto-go/dop/guide/pb"
 	"github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
@@ -47,10 +48,8 @@ import (
 type CategoryType string
 
 const (
-	DefaultCategory  CategoryType = "default"
-	StarCategory     CategoryType = "primary"
-	DicePipelinePath string       = ".dice/pipelines"
-	ErdaPipelinePath string       = ".erda/pipelines"
+	DefaultCategory CategoryType = "default"
+	StarCategory    CategoryType = "primary"
 
 	CreateProjectPipelineNamePreCheckLocaleKey   string = "ProjectPipelineCreateNamePreCheckNotPass"
 	CreateProjectPipelineSourcePreCheckLocaleKey string = "ProjectPipelineCreateSourcePreCheckNotPass"
@@ -58,16 +57,6 @@ const (
 
 func (c CategoryType) String() string {
 	return string(c)
-}
-
-type PipelineType string
-
-const (
-	cicdPipelineType PipelineType = "cicd"
-)
-
-func (p PipelineType) String() string {
-	return string(p)
 }
 
 func (s *ProjectPipelineService) ListPipelineYml(ctx context.Context, req *pb.ListAppPipelineYmlRequest) (*pb.ListAppPipelineYmlResponse, error) {
@@ -79,7 +68,7 @@ func (s *ProjectPipelineService) ListPipelineYml(ctx context.Context, req *pb.Li
 
 	work := limit_sync_group.NewWorker(3)
 	var list []*pb.PipelineYmlList
-	var pathList = []string{"", DicePipelinePath, ErdaPipelinePath}
+	var pathList = []string{"", apistructs.DicePipelinePath, apistructs.ErdaPipelinePath}
 	for _, path := range pathList {
 		work.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 			result, err := s.getPipelineYml(app, apis.GetUserID(ctx), req.Branch, i[0].(string))
@@ -158,10 +147,10 @@ func (p *ProjectPipelineService) CreateSourcePreCheck(ctx context.Context, param
 	}
 
 	definitionList, err := p.PipelineDefinition.List(ctx, &dpb.PipelineDefinitionListRequest{
-		Location: makeLocation(&apistructs.ApplicationDTO{
+		Location: apistructs.MakeLocation(&apistructs.ApplicationDTO{
 			OrgName:     app.OrgName,
 			ProjectName: app.ProjectName,
-		}, cicdPipelineType),
+		}, apistructs.PipelineTypeCICD),
 		SourceIDList: []string{resp.Data[0].ID},
 	})
 	if err != nil {
@@ -273,6 +262,12 @@ func (p *ProjectPipelineService) Create(ctx context.Context, params *pb.CreatePr
 	if err != nil {
 		return nil, apierrors.ErrCreateProjectPipeline.InternalError(err)
 	}
+
+	_, err = p.GuideSvc.ProcessGuide(ctx, &guidepb.ProcessGuideRequest{AppID: params.AppID, Branch: params.Ref, Kind: "pipeline"})
+	if err != nil {
+		p.logger.Errorf("failed to ProcessGuide, err: %v, appID: %d, branch: %s", err, params.AppID, params.Ref)
+	}
+
 	return &pb.CreateProjectPipelineResponse{ProjectPipeline: &pb.ProjectPipeline{
 		ID:               definitionRsp.PipelineDefinition.ID,
 		Name:             definitionRsp.PipelineDefinition.Name,
@@ -300,10 +295,10 @@ func (p *ProjectPipelineService) checkDefinitionRemoteSameName(projectID uint64,
 		return false, err
 	}
 
-	location := makeLocation(&apistructs.ApplicationDTO{
+	location := apistructs.MakeLocation(&apistructs.ApplicationDTO{
 		OrgName:     orgDto.Name,
 		ProjectName: projectDto.Name,
-	}, cicdPipelineType)
+	}, apistructs.PipelineTypeCICD)
 
 	resp, err := p.PipelineDefinition.List(context.Background(), &dpb.PipelineDefinitionListRequest{
 		Location: location,
@@ -367,26 +362,16 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 	list, err := p.PipelineDefinition.List(ctx, &dpb.PipelineDefinitionListRequest{
 		PageSize: int64(params.PageSize),
 		PageNo:   int64(params.PageNo),
-		Location: makeLocation(&apistructs.ApplicationDTO{
+		Location: apistructs.MakeLocation(&apistructs.ApplicationDTO{
 			OrgName:     org.Name,
 			ProjectName: project.Name,
-		}, cicdPipelineType),
-		FuzzyName: params.Name,
-		Creator:   params.Creator,
-		Executor:  params.Executor,
-		Category:  params.Category,
-		Ref:       params.Ref,
-		Remote: func() []string {
-			remotes := make([]string, 0, len(params.AppName))
-			for _, v := range params.AppName {
-				remotes = append(remotes, makeRemote(&apistructs.ApplicationDTO{
-					OrgName:     org.Name,
-					ProjectName: project.Name,
-					Name:        v,
-				}))
-			}
-			return remotes
-		}(),
+		}, apistructs.PipelineTypeCICD),
+		FuzzyName:         params.Name,
+		Creator:           params.Creator,
+		Executor:          params.Executor,
+		Category:          params.Category,
+		Ref:               params.Ref,
+		Remote:            getRemotes(params.AppName, org.Name, project.Name),
 		TimeCreated:       params.TimeCreated,
 		TimeStarted:       params.TimeStarted,
 		Status:            params.Status,
@@ -1162,10 +1147,10 @@ func (p *ProjectPipelineService) ListApp(ctx context.Context, params *pb.ListApp
 	}
 
 	statistics, err := p.PipelineDefinition.StatisticsGroupByRemote(ctx, &dpb.PipelineDefinitionStatisticsRequest{
-		Location: makeLocation(&apistructs.ApplicationDTO{
+		Location: apistructs.MakeLocation(&apistructs.ApplicationDTO{
 			OrgName:     org.Name,
 			ProjectName: project.Name,
-		}, cicdPipelineType),
+		}, apistructs.PipelineTypeCICD),
 	})
 	if err != nil {
 		return nil, apierrors.ErrListAppProjectPipeline.InternalError(err)
@@ -1283,10 +1268,6 @@ func (e *ProjectPipelineService) UpdateCmsNsConfigs(userID string, orgID uint64)
 	return err
 }
 
-func makeLocation(app *apistructs.ApplicationDTO, t PipelineType) string {
-	return filepath.Join(t.String(), app.OrgName, app.ProjectName)
-}
-
 func (p *ProjectPipelineService) makeLocationByProjectID(projectID uint64) (string, error) {
 	projectDto, err := p.bundle.GetProject(projectID)
 	if err != nil {
@@ -1297,10 +1278,10 @@ func (p *ProjectPipelineService) makeLocationByProjectID(projectID uint64) (stri
 		return "", err
 	}
 
-	return makeLocation(&apistructs.ApplicationDTO{
+	return apistructs.MakeLocation(&apistructs.ApplicationDTO{
 		OrgName:     orgDto.Name,
 		ProjectName: projectDto.Name,
-	}, cicdPipelineType), nil
+	}, apistructs.PipelineTypeCICD), nil
 }
 
 func (p *ProjectPipelineService) makeLocationByAppID(appID uint64) (string, error) {
@@ -1308,10 +1289,11 @@ func (p *ProjectPipelineService) makeLocationByAppID(appID uint64) (string, erro
 	if err != nil {
 		return "", err
 	}
-	return makeLocation(&apistructs.ApplicationDTO{
+
+	return apistructs.MakeLocation(&apistructs.ApplicationDTO{
 		OrgName:     app.OrgName,
 		ProjectName: app.ProjectName,
-	}, cicdPipelineType), nil
+	}, apistructs.PipelineTypeCICD), nil
 }
 
 type RemoteName struct {
@@ -1352,10 +1334,10 @@ func (p *ProjectPipelineService) ListUsedRefs(ctx context.Context, params deftyp
 		return nil, apierrors.ErrListProjectPipelineRef.InternalError(err)
 	}
 
-	resp, err := p.PipelineDefinition.ListUsedRefs(ctx, &dpb.PipelineDefinitionUsedRefListRequest{Location: makeLocation(&apistructs.ApplicationDTO{
+	resp, err := p.PipelineDefinition.ListUsedRefs(ctx, &dpb.PipelineDefinitionUsedRefListRequest{Location: apistructs.MakeLocation(&apistructs.ApplicationDTO{
 		OrgName:     org.Name,
 		ProjectName: project.Name,
-	}, cicdPipelineType)})
+	}, apistructs.PipelineTypeCICD)})
 	if err != nil {
 		return nil, apierrors.ErrListProjectPipelineRef.InternalError(err)
 	}
@@ -1409,11 +1391,21 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
 	}
 
+	appResp, err := p.bundle.GetMyAppsByProject(apis.GetUserID(ctx), project.OrgID, project.ID, "")
+	if err != nil {
+		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
+	}
+	appNames := make([]string, 0, len(appResp.List))
+	for _, v := range appResp.List {
+		appNames = append(appNames, v.Name)
+	}
+
 	staticsResp, err := p.PipelineDefinition.StatisticsGroupByFilePath(ctx, &dpb.PipelineDefinitionStatisticsRequest{
-		Location: makeLocation(&apistructs.ApplicationDTO{
+		Location: apistructs.MakeLocation(&apistructs.ApplicationDTO{
 			OrgName:     org.Name,
 			ProjectName: project.Name,
-		}, cicdPipelineType),
+		}, apistructs.PipelineTypeCICD),
+		Remotes: getRemotes(appNames, org.Name, project.Name),
 	})
 	if err != nil {
 		return nil, apierrors.ErrListProjectPipelineCategory.InternalError(err)
@@ -1453,4 +1445,16 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 		})
 	}
 	return &pb.ListPipelineCategoryResponse{Data: data}, nil
+}
+
+func getRemotes(appNames []string, orgName, projectName string) []string {
+	remotes := make([]string, 0, len(appNames))
+	for _, v := range appNames {
+		remotes = append(remotes, makeRemote(&apistructs.ApplicationDTO{
+			OrgName:     orgName,
+			ProjectName: projectName,
+			Name:        v,
+		}))
+	}
+	return remotes
 }
