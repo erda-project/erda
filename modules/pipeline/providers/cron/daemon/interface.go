@@ -12,27 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package endpoints
+package daemon
 
 import (
 	"context"
-	"net/http"
 
-	"github.com/erda-project/erda/pkg/http/httpserver"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
-func (e *Endpoints) crondReload(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
+type CreatePipelineFunc func(req *apistructs.PipelineCreateRequestV2) (*spec.Pipeline, error)
 
-	logs, err := e.crondSvc.ReloadCrond(ctx)
-	if err != nil {
-		return httpserver.ErrResp(http.StatusInternalServerError, "CROND_RELOAD", err.Error())
-	}
-	return httpserver.OkResp(logs)
-}
+type Interface interface {
+	AddIntoPipelineCrond(cronID uint64) error
+	DeletePipelineCrond(cronID uint64) error
+	ReloadCrond(ctx context.Context) ([]string, error)
+	CrondSnapshot() []string
 
-func (e *Endpoints) crondSnapshot(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-
-	return httpserver.OkResp(http.StatusOK, e.crondSvc.CrondSnapshot())
+	// todo Can be removed after all objects are provider
+	WithPipelineFunc(createPipelineFunc CreatePipelineFunc)
 }

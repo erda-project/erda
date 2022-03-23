@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package resourcegc
 
 import (
 	"context"
@@ -28,6 +28,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/spec"
+	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
 func TestReconciler_getNeedGCPipeline(t *testing.T) {
@@ -124,6 +125,37 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 			},
 			wantErr: false,
 			wantLen: 0,
+		},
+		{
+			name: "completeReconcilerTeardownNotFoundInETCD_pipeline",
+			args: args{
+				pipelines: []spec.Pipeline{
+					{
+						PipelineBase: spec.PipelineBase{
+							Status: apistructs.PipelineStatusSuccess,
+							TimeEnd: func() *time.Time {
+								now := time.Now().Add(-300*time.Second - bufferTime*time.Second)
+								return &now
+							}(),
+						},
+						PipelineExtra: spec.PipelineExtra{
+							Extra: spec.PipelineExtraInfo{
+								CompleteReconcilerGC:       false,
+								CompleteReconcilerTeardown: true,
+								GC: apistructs.PipelineGC{
+									ResourceGC: apistructs.PipelineResourceGC{
+										FailedTTLSecond:  &[]uint64{200}[0],
+										SuccessTTLSecond: &[]uint64{200}[0],
+									},
+								},
+								Namespace: "pipeline-1",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+			wantLen: 1,
 		},
 		{
 			name: "time_over_gc",
@@ -281,11 +313,17 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 			return tt.args.pipelines, nil, 1, 0, tt.args.err
 		})
 
-		t.Run(tt.name, func(t *testing.T) {
-			r := &Reconciler{
-				dbClient: db,
+		js := &jsonstore.JsonStoreImpl{}
+		monkey.PatchInstanceMethod(reflect.TypeOf(js), "Notfound", func(j *jsonstore.JsonStoreImpl, ctx context.Context, key string) (bool, error) {
+			if key == "/devops/pipeline/gc/reconciler/pipeline-1/" {
+				return false, nil
 			}
-			got, _, err := r.getNeedGCPipelines(0, true)
+			return true, nil
+		})
+
+		t.Run(tt.name, func(t *testing.T) {
+			p := &provider{dbClient: db, js: js}
+			got, _, err := p.getNeedGCPipelines(0, true)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getNeedGCPipeline() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -306,20 +344,7 @@ func TestReconciler_doWaitGCCompensate(t *testing.T) {
 	defer pm.Unpatch()
 
 	t.Run("TestReconciler_doWaitGCCompensate", func(t *testing.T) {
-		r := &Reconciler{
-			dbClient: db,
-		}
-		r.doWaitGCCompensate(true)
-	})
-}
-
-func TestCompensateGCNamespaces(t *testing.T) {
-	r := &Reconciler{}
-	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(r), "CompensateGCNamespaces", func(r *Reconciler, ctx context.Context) {
-		return
-	})
-	defer pm1.Unpatch()
-	t.Run("CompensateGCNamespaces", func(t *testing.T) {
-		r.CompensateGCNamespaces(context.Background())
+		p := &provider{dbClient: db}
+		p.doWaitGCCompensate(true)
 	})
 }

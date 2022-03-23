@@ -17,6 +17,7 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -131,15 +132,19 @@ func (dw *defaultWorker) SetType(typ Type)        { dw.typ = typ }
 func (dw *defaultWorker) GetCreatedAt() time.Time { return dw.CreatedAt }
 func (dw *defaultWorker) Handle(ctx context.Context, task LogicTask) {
 	dw.lock.Lock()
-	var handlers []handler
+	handlers := make([]handler, len(dw.handlers))
 	copy(handlers, dw.handlers)
 	dw.lock.Unlock()
+
+	if len(handlers) == 0 {
+		panic(fmt.Errorf("worker have no handler to handle task, workerID: %s, logicTaskID: %s", dw.GetID(), task.GetLogicID()))
+	}
 
 	finishChan := make(chan struct{}, len(handlers))
 	finishedNum := 0
 	wctx, wcancel := context.WithCancel(ctx)
 	defer wcancel()
-	for _, h := range dw.handlers {
+	for _, h := range handlers {
 		go func(h handler) {
 			h(wctx, task)
 			finishChan <- struct{}{}

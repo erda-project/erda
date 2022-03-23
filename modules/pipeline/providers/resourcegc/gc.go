@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package reconciler
+package resourcegc
 
 import (
 	"context"
@@ -22,7 +22,6 @@ import (
 	"time"
 
 	v3 "github.com/coreos/etcd/clientv3"
-	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor"
@@ -34,13 +33,12 @@ import (
 )
 
 const (
-	etcdReconcilerGCWatchPrefix            = "/devops/pipeline/gc/reconciler/"
-	etcdReconcilerGCNamespaceLockKeyPrefix = "/devops/pipeline/gc/dlock/"
-	defaultGCTime                          = 3600 * 24 * 2
+	etcdReconcilerGCWatchPrefix = "/devops/pipeline/gc/reconciler/"
+	defaultGCTime               = 3600 * 24 * 2
 )
 
-func (r *Reconciler) ListenGC(ctx context.Context) {
-	logrus.Info("reconciler: start watching gc pipelines")
+func (r *provider) listenGC(ctx context.Context) {
+	r.Log.Infof("start watching gc pipelines")
 	for {
 		select {
 		case <-ctx.Done():
@@ -52,7 +50,7 @@ func (r *Reconciler) ListenGC(ctx context.Context) {
 
 					// async handle, non-blocking, so we can watch subsequent incoming pipelines
 					go func() {
-						logrus.Infof("reconciler: gc watched a key change, key: %s, changeType: %s", key, t.String())
+						r.Log.Infof("gc watched a key change, key: %s, changeType: %s", key, t.String())
 						// only listen del op
 						if t != storetypes.Del {
 							return
@@ -64,17 +62,17 @@ func (r *Reconciler) ListenGC(ctx context.Context) {
 						var err error
 						defer func() {
 							if err != nil {
-								logrus.Errorf("[alert] reconciler: gc handle failed, key: %s, changeType: %s, err: %v",
+								r.Log.Errorf("gc handle failed, key: %s, changeType: %s, err: %v",
 									key, t.String(), err)
 
 								// put to gc again, retry gc in 60s
-								r.waitGC(namespace, 0, 60)
+								r.WaitGC(namespace, 0, 60)
 							}
 						}()
 
-						// 新数据 忽略 namespace 下的 subKey
+						// new data ignore namespace's subKey
 						//
-						// 新数据格式为多条:
+						// new data:
 						// {prefix}/{ns}
 						// {prefix}/{ns}/{pipelineID-1}
 						// {prefix}/{ns}/{pipelineID-2}
@@ -100,22 +98,6 @@ func (r *Reconciler) ListenGC(ctx context.Context) {
 							oldFormatSubKeys = append(oldFormatSubKeys, key)
 						}
 
-						// acquire a dlock
-						gcNamespaceLockKey := etcdReconcilerGCNamespaceLockKeyPrefix + namespace
-						lock, err := r.etcd.GetClient().Txn(context.Background()).
-							If(v3.Compare(v3.Version(gcNamespaceLockKey), "=", 0)).
-							Then(v3.OpPut(gcNamespaceLockKey, "")).
-							Commit()
-						defer func() {
-							_, _ = r.etcd.GetClient().Txn(context.Background()).Then(v3.OpDelete(gcNamespaceLockKey)).Commit()
-						}()
-						if err != nil {
-							return
-						}
-						if lock != nil && !lock.Succeeded {
-							return
-						}
-
 						// gc logic
 						if err = r.gcNamespace(namespace, oldFormatSubKeys...); err != nil {
 							return
@@ -125,55 +107,55 @@ func (r *Reconciler) ListenGC(ctx context.Context) {
 				},
 			)
 			if err != nil {
-				logrus.Errorf("[alert] reconciler: gc watch failed, err: %v", err)
+				r.Log.Errorf("gc watch failed, err: %v", err)
 			}
 		}
 	}
 }
 
-// delayGC 延迟 GC
-// 1) 若暂未 wait gc，则直接返回
-// 2) 若正在 wait gc，则 lease 设置一个较大的值 (两天)，防止被 GC
+// DelayGC delay GC
+// 1) if not wait gc，return directly
+// 2) if waiting gc，lease set a longer time (two day)，prevent GC
 //
-// 典型场景：重试失败节点时，namespace 不变，若失败 pipeline 被 GC，会导致新的任务也被 GC，重试失败
-func (r *Reconciler) delayGC(namespace string, pipelineID uint64) {
+// typical scenario:：retry failed-task，namespace unchanging，if namespace be gc，will cause task gc, pipeline failed
+func (r *provider) DelayGC(namespace string, pipelineID uint64) {
 	notFound, err := r.js.Notfound(context.Background(), makePipelineGCKey(namespace))
 	if err != nil {
-		logrus.Errorf("[alert] reconciler: delay gc failed, namespace: %s, cause pipelineID: %d, err: %v",
+		r.Log.Errorf("delay gc failed, namespace: %s, cause pipelineID: %d, err: %v",
 			namespace, pipelineID, err)
 		return
 	}
 	if notFound {
 		return
 	}
-	logrus.Errorf("reconciler: delay gc begin, namespace: %s, cause pipelineID: %d", namespace, pipelineID)
-	r.waitGC(namespace, pipelineID, defaultGCTime)
+	r.Log.Infof("delay gc begin, namespace: %s, cause pipelineID: %d", namespace, pipelineID)
+	r.WaitGC(namespace, pipelineID, defaultGCTime)
 }
 
-// waitGC 等待 GC，在 TTL 后执行
-func (r *Reconciler) waitGC(namespace string, pipelineID uint64, ttl uint64) {
+// WaitGC after ttl, gc namespace
+func (r *provider) WaitGC(namespace string, pipelineID uint64, ttl uint64) {
 	var err error
 	defer func() {
 		if err != nil {
-			logrus.Errorf("[alert] reconciler: gc wait failed, namespace: %s, pipelineID: %d, err: %v",
+			r.Log.Errorf("gc wait failed, namespace: %s, pipelineID: %d, err: %v",
 				namespace, pipelineID, err)
 		} else {
-			logrus.Debugf("reconciler: gc namespace: %s in the future (%s) (TTL: %ds)",
+			r.Log.Debugf("gc namespace: %s in the future (%s) (TTL: %ds)",
 				namespace, time.Now().Add(time.Duration(int64(time.Second)*int64(ttl))).Format(time.RFC3339), ttl)
 		}
 	}()
 
-	// 设置 gc 等待时间
+	// set gc wait time
 	lease := v3.NewLease(r.etcd.GetClient())
 	grant, err := lease.Grant(context.Background(), int64(ttl))
 	if err != nil {
 		return
 	}
-	// etcd 中 lease 为 16 进制
+	// Lease in etcd is hexadecimal
 	leaseID := strconv.FormatInt(int64(grant.ID), 16)
-	logrus.Debugf("reconciler: gc grant lease, pipelineID: %d, leaseID: %s", pipelineID, leaseID)
+	r.Log.Debugf("gc grant lease, pipelineID: %d, leaseID: %s", pipelineID, leaseID)
 
-	// 插入或更新 namespace key
+	// insert or update namespace key
 	gcInfo := apistructs.MakePipelineGCInfo(ttl, leaseID, nil)
 	_, err = r.js.PutWithOption(context.Background(),
 		makePipelineGCKey(namespace), gcInfo,
@@ -182,7 +164,7 @@ func (r *Reconciler) waitGC(namespace string, pipelineID uint64, ttl uint64) {
 		return
 	}
 
-	// 插入 subKey
+	// insert subKey
 	if pipelineID > 0 {
 		if err := r.js.Put(context.Background(), makePipelineGCSubKey(namespace, pipelineID), nil); err != nil {
 			return
@@ -192,13 +174,13 @@ func (r *Reconciler) waitGC(namespace string, pipelineID uint64, ttl uint64) {
 
 // gcNamespace
 //
-// etcd 中 namespace 数据结构:
+// namespace struct stored in etcd:
 // /devops/pipeline/gc/reconciler/{ns}/{affectedPipelineID}
 //
 // /devops/pipeline/gc/reconciler/pipeline-1
 // /devops/pipeline/gc/reconciler/pipeline-1/1
-// /devops/pipeline/gc/reconciler/pipeline-1/2 # 重试失败节点，共用一个 ns
-func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
+// /devops/pipeline/gc/reconciler/pipeline-1/2 # retry failed with same ns
+func (r *provider) gcNamespace(namespace string, subKeys ...string) error {
 
 	// 1) 遍历 pipelineID 标记为 gc completed
 	// 2) executor.DeleteNamespace
@@ -212,7 +194,7 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 		}
 		subKeys = eSubKeys
 	}
-	logrus.Infof("reconciler: gc triggered, namespace: %s, subKeys: %s",
+	r.Log.Infof("gc triggered, namespace: %s, subKeys: %s",
 		namespace, strutil.Join(subKeys, ", ", true))
 
 	affectedPipelineIDs := make([]uint64, 0, len(subKeys))
@@ -223,13 +205,14 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 		if err != nil {
 			return err
 		}
-		// 为了清理已经被归档的流水线
+		// clean up pipelines that have been archived
 		p, found, findFromArchive, err := r.DBGC.GetPipelineIncludeArchived(context.Background(), pipelineID)
 		if !found {
-			logrus.Errorf("[alert] reconciler: gc triggered but ignored, pipeline already not exists, pipelineID: %d", pipelineID)
+			r.Log.Errorf("gc triggered but ignored, pipeline already not exists, pipelineID: %d", pipelineID)
 		}
 		if !findFromArchive {
-			// 先标记为 GC 完成，再做清理。即使清理失败，也保证这条 pipeline 不会再被使用(重试).
+			// mark it as GC complete first, then do the cleanup.
+			// even if the cleanup fails, this pipeline is guaranteed not to be used again (retry).
 			p.Extra.CompleteReconcilerGC = true
 			if err := r.dbClient.UpdatePipelineExtraExtraInfoByPipelineID(pipelineID, p.Extra); err != nil {
 				return err
@@ -290,7 +273,7 @@ func (r *Reconciler) gcNamespace(namespace string, subKeys ...string) error {
 		return err
 	}
 
-	logrus.Infof("reconciler: gc success, namespace: %s, affected pipelineIDs: %v", namespace, affectedPipelineIDs)
+	r.Log.Infof("gc success, namespace: %s, affected pipelineIDs: %v", namespace, affectedPipelineIDs)
 
 	return nil
 }

@@ -22,7 +22,9 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/pkg/action_info"
 	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
 	"github.com/erda-project/erda/modules/pipeline/providers/dbgc"
+	"github.com/erda-project/erda/modules/pipeline/providers/resourcegc"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -32,8 +34,6 @@ import (
 )
 
 const (
-	EtcdNeedCompensatePrefix = "/devops/pipeline/compensate/"
-
 	ctxKeyPipelineID               = "pipelineID"
 	ctxKeyPipelineExitCh           = "pExitCh"
 	ctxKeyPipelineExitChCancelFunc = "pExitChCancelFunc"
@@ -57,13 +57,14 @@ type Reconciler struct {
 	actionAgentSvc  *actionagentsvc.ActionAgentSvc
 	extMarketSvc    *extmarketsvc.ExtMarketSvc
 	pipelineSvcFunc *PipelineSvcFunc
+	CronCompensate  compensator.Interface
 	DBGC            dbgc.Interface
+	resourceGC      resourcegc.Interface
 }
 
 // In order to solve the problem of circular dependency if Reconciler introduces pipelinesvc, the svc method is mounted in this structure.
 // todo resolve cycle import here through better module architecture
 type PipelineSvcFunc struct {
-	CronNotExecuteCompensate                func(id uint64) error
 	MergePipelineYmlTasks                   func(pipelineYml *pipelineyml.PipelineYml, dbTasks []spec.PipelineTask, p *spec.Pipeline, dbStages []spec.PipelineStage, passedDataWhenCreate *action_info.PassedDataWhenCreate) (mergeTasks []spec.PipelineTask, err error)
 	HandleQueryPipelineYamlBySnippetConfigs func(sourceSnippetConfigs []apistructs.SnippetConfig) (map[string]string, error)
 	MakeSnippetPipeline4Create              func(p *spec.Pipeline, snippetTask *spec.PipelineTask, yamlContent string) (*spec.Pipeline, error)
@@ -75,7 +76,8 @@ func New(js jsonstore.JsonStore, etcd *etcd.Store, bdl *bundle.Bundle, dbClient 
 	actionAgentSvc *actionagentsvc.ActionAgentSvc,
 	extMarketSvc *extmarketsvc.ExtMarketSvc,
 	pipelineSvcFunc *PipelineSvcFunc, DBGC dbgc.Interface,
-	clusterInfo clusterinfo.Interface) (*Reconciler, error) {
+	clusterInfo clusterinfo.Interface,
+	resourceGC resourcegc.Interface) (*Reconciler, error) {
 	r := Reconciler{
 		js:          js,
 		etcd:        etcd,
@@ -91,6 +93,7 @@ func New(js jsonstore.JsonStore, etcd *etcd.Store, bdl *bundle.Bundle, dbClient 
 		extMarketSvc:    extMarketSvc,
 		pipelineSvcFunc: pipelineSvcFunc,
 		DBGC:            DBGC,
+		resourceGC:      resourceGC,
 	}
 	return &r, nil
 }

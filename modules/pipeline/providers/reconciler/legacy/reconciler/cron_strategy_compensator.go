@@ -19,6 +19,8 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
 )
 
 func (r *Reconciler) doCronCompensate(pCtx context.Context, pipelineID uint64) {
@@ -37,7 +39,7 @@ func (r *Reconciler) doCronCompensate(pCtx context.Context, pipelineID uint64) {
 
 	// Monitor whether the compensation is blocked during execution, and immediately compensate if it is blocked,
 	// obtain the id of the cron of the current pipeline in etcd, and then immediately delete the corresponding etcd value
-	notFound, err := r.js.Notfound(pCtx, fmt.Sprint(EtcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID))
+	notFound, err := r.js.Notfound(pCtx, fmt.Sprint(compensator.EtcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID))
 	if err != nil {
 		logrus.Infof("[doCronCompensate]: can not get cronID: %d, err: %v", *pipelineWithTasks.Pipeline.CronID, err)
 		return
@@ -47,15 +49,15 @@ func (r *Reconciler) doCronCompensate(pCtx context.Context, pipelineID uint64) {
 		logrus.Infof("[doCronCompensate] ready to Compensate, cronID: %d", *pipelineWithTasks.Pipeline.CronID)
 
 		// perform the compensation operation
-		if err := r.pipelineSvcFunc.CronNotExecuteCompensate(*pipelineWithTasks.Pipeline.CronID); err != nil {
+		if err := r.CronCompensate.CronNotExecuteCompensateById(*pipelineWithTasks.Pipeline.CronID); err != nil {
 			logrus.Infof("[doCronCompensate] to Compensate error, cronID: %d, err : %v",
 				*pipelineWithTasks.Pipeline.CronID, err)
 		}
 
 		// remove cronID
-		if err := r.js.Remove(pCtx, fmt.Sprint(EtcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID), nil); err != nil {
+		if err := r.js.Remove(pCtx, fmt.Sprint(compensator.EtcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID), nil); err != nil {
 			logrus.Infof("[doCronCompensate] can not delete etcd key, key: %s, cronID: %d, err : %v",
-				fmt.Sprint(EtcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID), *pipelineWithTasks.Pipeline.CronID, err)
+				fmt.Sprint(compensator.EtcdNeedCompensatePrefix, *pipelineWithTasks.Pipeline.CronID), *pipelineWithTasks.Pipeline.CronID, err)
 		}
 	}
 }
