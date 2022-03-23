@@ -248,6 +248,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 		Status:       filter.Status,
 		DescCols:     descCols,
 		AscCols:      ascCols,
+		CategoryKey:  p.InParams.FrontendPipelineCategoryKey,
 		IdentityInfo: apistructs.IdentityInfo{UserID: p.sdk.Identity.UserID},
 	})
 	if err != nil {
@@ -423,9 +424,10 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 						}
 					}
 					build.ServerData = &cptype.OpServerData{
-						"pipelineID": v.PipelineID,
-						"inode":      base64.URLEncoding.EncodeToString([]byte(inode)),
-						"appName":    appName,
+						"pipelineID":   v.PipelineID,
+						"inode":        base64.URLEncoding.EncodeToString([]byte(inode)),
+						"appName":      appName,
+						"pipelineName": v.Name,
 					}
 					return build
 				}(),
@@ -549,7 +551,6 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			return items
 		}
 	}
-
 	if definition.Creator == p.sdk.Identity.UserID {
 		items = append(items, commodel.MoreOpItem{
 			ID:   "delete",
@@ -562,6 +563,19 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			},
 		})
 	}
+
+	updateNameBuild := build
+	updateNameBuild.SkipRender = true
+	items = append(items, commodel.MoreOpItem{
+		ID:   "updateName",
+		Text: cputil.I18n(p.sdk.Ctx, "updateName"),
+		Operations: map[cptype.OperationKey]cptype.Operation{
+			commodel.OpMoreOperationsItemClick{}.OpKey(): updateNameBuild,
+		},
+		Icon: &commodel.Icon{
+			Type: "edit1",
+		},
+	})
 	return items
 }
 

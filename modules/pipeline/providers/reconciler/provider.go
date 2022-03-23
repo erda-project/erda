@@ -22,6 +22,7 @@ import (
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler"
 )
@@ -33,7 +34,8 @@ type provider struct {
 	MySQL mysqlxorm.Interface
 	LW    leaderworker.Interface
 
-	r *reconciler.Reconciler
+	r                     *reconciler.Reconciler
+	CronCompensateService compensator.Interface
 }
 
 type config struct {
@@ -48,10 +50,7 @@ func (p *provider) Run(ctx context.Context) error {
 		return fmt.Errorf("set reconciler before run")
 	}
 
-	// gc
-	p.LW.OnLeader(p.r.ListenGC)
-	p.LW.OnLeader(p.r.CompensateGCNamespaces)
-
+	p.r.CronCompensate = p.CronCompensateService
 	return nil
 }
 

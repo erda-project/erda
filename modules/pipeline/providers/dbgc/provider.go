@@ -17,6 +17,7 @@ package dbgc
 import (
 	"context"
 	"reflect"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -29,7 +30,12 @@ import (
 )
 
 type config struct {
-	PipelineDBGCCron string `file:"pipeline_dbgc_cron" env:"PIPELINE_DBGC_CRON" default:"0 0 0/2 * * ?"`
+	// default 2h
+	PipelineDBGCDuration time.Duration `file:"pipeline_dbgc_duration" env:"PIPELINE_DBGC_DURATION" default:"2h"`
+	// default 1 day
+	AnalyzedPipelineArchiveDefaultRetainHour time.Duration `file:"analyzed_pipeline_archive_default_retain_hour" default:"24h"`
+	// default 30 day
+	FinishedPipelineArchiveDefaultRetainHour time.Duration `file:"finished_pipeline_archive_default_retain_hour" default:"720h"`
 }
 
 type provider struct {
@@ -60,7 +66,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	p.LW.OnLeader(p.StartPipelineDatabaseGC)
+	p.LW.OnLeader(p.PipelineDatabaseGC)
 	return nil
 }
 

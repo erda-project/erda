@@ -16,6 +16,7 @@ package issuestream
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"text/template"
 
@@ -33,6 +34,19 @@ func getIssueStreamTemplate(locale string, ist apistructs.IssueStreamType) (stri
 	v, ok := apistructs.IssueTemplate[locale][ist]
 	if !ok {
 		return "", errors.Errorf("issue stream template not found")
+	}
+
+	return v, nil
+}
+
+func getIssueStreamReasonTemplate(locale, key string) (string, error) {
+	if locale != "zh" && locale != "en" {
+		return "", errors.Errorf("invalid locale %v", locale)
+	}
+
+	v, ok := apistructs.ReasonTemplate[locale][key]
+	if !ok {
+		return "", errors.Errorf("issue stream reason template not found")
 	}
 
 	return v, nil
@@ -72,7 +86,18 @@ func getDefaultContent(ist apistructs.IssueStreamType, param apistructs.ISTParam
 	if err != nil {
 		return "", err
 	}
-	return renderTemplate(locale, ct, param)
+	content, err := renderTemplate(locale, ct, param)
+	if err != nil {
+		return "", err
+	}
+	if param.ReasonDetail != "" {
+		reason, err := getIssueStreamReasonTemplate(locale, param.ReasonDetail)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%v %v", content, reason), nil
+	}
+	return content, nil
 }
 
 // getDefaultContentForMsgSending get rendered msg for sending

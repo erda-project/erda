@@ -16,6 +16,7 @@ package pipelineTabs
 
 import (
 	"context"
+	"encoding/base64"
 
 	"github.com/sirupsen/logrus"
 
@@ -38,15 +39,25 @@ func (t *Tab) Render(ctx context.Context, c *cptype.Component, scenario cptype.S
 	if err := t.InitFromProtocol(ctx, c, gs); err != nil {
 		return err
 	}
+	switch event.Operation.String() {
+	case apistructs.InitializeOperation.String(), apistructs.RenderingOperation.String():
+		if t.InParams.FrontendUrlQuery != "" {
+			value, err := base64.URLEncoding.DecodeString(t.InParams.FrontendUrlQuery)
+			if err != nil {
+				panic(err)
+			}
+			t.State.Value = string(value)
+		}
+
+		if t.State.Value == "" {
+			t.State.Value = common.DefaultState.String()
+		}
+	case "ChangeViewType":
+		t.State.Base64UrlQueryParams = base64.URLEncoding.EncodeToString([]byte(t.State.Value))
+	}
 
 	t.SetType()
-	t.SetState(func() string {
-		if event.Operation == cptype.InitializeOperation ||
-			t.State.Value == "" {
-			return common.DefaultState.String()
-		}
-		return t.State.Value
-	}())
+
 	t.SetOperations(t.State.Value)
 	appNames := make([]string, 0)
 	if t.InParams.AppID != 0 {
@@ -77,6 +88,8 @@ func (t *Tab) Render(ctx context.Context, c *cptype.Component, scenario cptype.S
 		AllPipelineNum:     totalCount,
 	})
 	t.gsHelper.SetGlobalPipelineTab(t.State.Value)
+
+	t.State.Base64UrlQueryParams = base64.URLEncoding.EncodeToString([]byte(t.State.Value))
 	return t.SetToProtocolComponent(c)
 }
 
@@ -87,6 +100,7 @@ func (t *Tab) CountPipelineByParams(ctx context.Context, appNames, creators, cat
 		PageNo:       1,
 		PageSize:     1,
 		AppName:      appNames,
+		CategoryKey:  t.InParams.FrontendPipelineCategoryKey,
 	}
 	if len(creators) != 0 {
 		req.Creator = creators

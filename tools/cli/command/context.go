@@ -76,6 +76,14 @@ func (c *Context) wrapRequest(m func(host string, retry ...httpclient.RetryOptio
 	return req
 }
 
+func (c *Context) GetUserID() string {
+	if sessionInfo, ok := ctx.Sessions[ctx.CurrentOpenApiHost]; ok {
+		return sessionInfo.ID
+	}
+
+	return ""
+}
+
 func (c *Context) Info(format string, a ...interface{}) {
 	f := "[INFO] " + strings.TrimSuffix(format, "\n") + "\n"
 	fmt.Printf(f, a...)

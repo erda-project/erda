@@ -15,6 +15,7 @@
 package dbgc
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -123,12 +124,12 @@ func TestGetPipelineIDFromDBGCWatchedKey(t *testing.T) {
 
 func TestPipelineDatabaseGC(t *testing.T) {
 	var r provider
-	pm := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "PipelineDatabaseGC", func(r *provider) {
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(&r), "PipelineDatabaseGC", func(r *provider, ctx context.Context) {
 		return
 	})
 	defer pm.Unpatch()
 	t.Run("PipelineDatabaseGC", func(t *testing.T) {
-		r.PipelineDatabaseGC()
+		r.PipelineDatabaseGC(context.Background())
 	})
 }
 

@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/logic"
+	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/pkg/k8sclient"
 )
 
@@ -68,10 +68,10 @@ func Test_generateKubeJob(t *testing.T) {
 		return nil, nil
 	})
 
-	monkey.Patch(logic.GetCLusterInfo, func(clusterName string) (map[string]string, error) {
-		return map[string]string{
+	monkey.Patch(clusterinfo.GetClusterInfoByName, func(clusterName string) (apistructs.ClusterInfo, error) {
+		return apistructs.ClusterInfo{CM: apistructs.ClusterInfoData{
 			"BUILDKIT_ENABLE": "false",
-		}, nil
+		}}, nil
 	})
 
 	j, err := New("fake-job", "fake-cluster", apistructs.ClusterInfo{})

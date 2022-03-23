@@ -16,7 +16,6 @@
 package pipeline
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -36,12 +35,12 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/pexpr/pexpr_params"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
 	"github.com/erda-project/erda/modules/pipeline/pkg/pipelinefunc"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/legacy/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildcachesvc"
-	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
@@ -124,20 +123,18 @@ func (p *provider) do() error {
 	buildArtifactSvc := buildartifactsvc.New(dbClient)
 	buildCacheSvc := buildcachesvc.New(dbClient)
 	permissionSvc := permissionsvc.New(bdl)
-	crondSvc := crondsvc.New(dbClient, bdl, js)
 	actionAgentSvc := actionagentsvc.New(dbClient, bdl, js, etcdctl)
 	extMarketSvc := extmarketsvc.New(bdl)
 	reportSvc := reportsvc.New(reportsvc.WithDBClient(dbClient))
 	queueManage := queuemanage.New(queuemanage.WithDBClient(dbClient))
 
 	// init services
-	pipelineSvc := pipelinesvc.New(appSvc, crondSvc, actionAgentSvc, extMarketSvc, p.CronService,
-		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl)
+	pipelineSvc := pipelinesvc.New(appSvc, p.CronDaemon, actionAgentSvc, extMarketSvc, p.CronService,
+		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo)
 	pipelineSvc.WithCmsService(p.CmsService)
 
 	// todo resolve cycle import here through better module architecture
 	pipelineFun := &reconciler.PipelineSvcFunc{
-		CronNotExecuteCompensate:                pipelineSvc.CronNotExecuteCompensateById,
 		MergePipelineYmlTasks:                   pipelineSvc.MergePipelineYmlTasks,
 		HandleQueryPipelineYamlBySnippetConfigs: pipelineSvc.HandleQueryPipelineYamlBySnippetConfigs,
 		MakeSnippetPipeline4Create:              pipelineSvc.MakeSnippetPipeline4Create,
@@ -146,7 +143,7 @@ func (p *provider) do() error {
 	// init CallbackActionFunc
 	pipelinefunc.CallbackActionFunc = pipelineSvc.DealPipelineCallbackOfAction
 
-	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun, p.DBGC)
+	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun, p.DBGC, p.ClusterInfo, p.ResourceGC)
 	if err != nil {
 		return fmt.Errorf("failed to init reconciler, err: %v", err)
 	}
@@ -170,7 +167,7 @@ func (p *provider) do() error {
 		endpoints.WithBuildArtifactSvc(buildArtifactSvc),
 		endpoints.WithBuildCacheSvc(buildCacheSvc),
 		endpoints.WithPermissionSvc(permissionSvc),
-		endpoints.WithCrondSvc(crondSvc),
+		endpoints.WithCrondSvc(p.CronDaemon),
 		endpoints.WithActionAgentSvc(actionAgentSvc),
 		endpoints.WithExtMarketSvc(extMarketSvc),
 		endpoints.WithPipelineSvc(pipelineSvc),
@@ -178,9 +175,11 @@ func (p *provider) do() error {
 		endpoints.WithQueueManage(queueManage),
 		endpoints.WithQueueManager(p.QueueManager),
 		endpoints.WithEngine(p.Engine),
+		endpoints.WithClusterInfo(p.ClusterInfo),
 	)
 
-	p.CronService.WithPipelineSvc(crondSvc)
+	p.CronDaemon.WithPipelineFunc(pipelineSvc.CreateV2)
+	p.CronCompensate.WithPipelineFunc(compensator.PipelineFunc{CreatePipeline: pipelineSvc.CreateV2, RunPipeline: pipelineSvc.RunPipeline})
 
 	//server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("pipeline"))
 	server := httpserver.New(conf.ListenAddr())
@@ -192,11 +191,6 @@ func (p *provider) do() error {
 
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)
-
-	// TODO refactor cron daemon
-	p.LeaderWorker.OnLeader(func(ctx context.Context) {
-		pipelineSvc.DoCrondAbout(ctx)
-	})
 
 	return nil
 }

@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package erda.dop.guide;
+option go_package = "github.com/erda-project/erda-proto-go/dop/guide/pb";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+import "google/api/annotations.proto";
+import "common/openapi.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+service GuideService {
+  option(erda.common.openapi_service) = {
+    service : "dop",
+    auth : {
+      check_login : true,
+      check_token : true,
+    }
+  };
+
+  rpc CreateGuideByGittarPushHook(GittarPushPayloadEvent)
+      returns(CreateGuideResponse) {
+    option(google.api.http) = {
+      post : "/api/guide/actions/create-by-gittar-push-hook",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/guide/actions/create-by-gittar-push-hook",
+    };
+  }
+
+  rpc ListGuide(ListGuideRequest)
+      returns(ListGuideResponse) {
+    option(google.api.http) = {
+      get : "/api/guide",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/guide",
+    };
+  }
+
+  rpc ProcessGuide(ProcessGuideRequest)
+      returns(ProcessGuideResponse) {
+    option(google.api.http) = {
+      post : "/api/guide/actions/process",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/guide/actions/process",
+    };
+  }
+}
+
+message ListGuideRequest {
+  string kind = 1 [(validator.field) = {string_not_empty: true}];
+  uint64 projectID = 2 [(validator.field) = {int_gt: 0}];
+}
+
+message ListGuideResponse {
+  repeated Guide data = 1;
+}
+
+message Guide {
+  string ID = 1 [json_name = "id"];
+  string status = 2;
+  string creator = 3;
+  string kind = 4;
+  uint64 orgID = 5;
+  string orgName = 6;
+  uint64 projectID = 7;
+  uint64 appID = 8;
+  string branch = 9;
+  string appName = 10;
+  google.protobuf.Timestamp timeCreated = 11;
+  google.protobuf.Timestamp timeUpdated = 12;
+}
+
+message GittarPushPayloadEvent {
+  string event = 1;
+  string action = 2;
+  string orgID = 3;
+  string projectID = 4;
+  string applicationID = 5;
+  string env = 6;
+  string timeStamp = 7;
+  Content content = 8;
+}
+
+message Content {
+  string ref = 1;
+  string after = 2;
+  string before = 3;
+  Pusher pusher = 4;
+}
+
+message Pusher {
+  string ID = 1 [json_name = "id"];
+  string name = 2;
+  string nickName = 3 [json_name = "nickname"];
+  string email = 4;
+}
+
+message CreateGuideResponse {
+  Guide data = 1;
+}
+
+message ProcessGuideRequest {
+  uint64 appID = 1;
+  string branch = 2;
+  string kind = 3 [(validator.field) = {string_not_empty: true}];
+}
+
+message ProcessGuideResponse {
+}

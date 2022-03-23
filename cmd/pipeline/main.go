@@ -25,10 +25,14 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/serviceregister"
 	_ "github.com/erda-project/erda/modules/pipeline"
 	_ "github.com/erda-project/erda/modules/pipeline/aop"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/cms"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/cron"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/cron/daemon"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/dbgc"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/definition"
+	_ "github.com/erda-project/erda/modules/pipeline/providers/resourcegc"
 	_ "github.com/erda-project/erda/modules/pipeline/providers/source"
 )
 

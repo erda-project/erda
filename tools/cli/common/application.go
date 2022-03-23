@@ -296,3 +296,42 @@ func PushApplication(dir, repo string, force bool) error {
 
 	return nil
 }
+
+func GetApplicationID(ctx *command.Context, orgID, projectID uint64, application string) (string, uint64, error) {
+	var applicationID uint64
+	if application != "" {
+		// TODO get no projectid
+		appId, err := GetApplicationIdByName(ctx, orgID, projectID, application)
+		if err != nil {
+			return application, applicationID, err
+		}
+		applicationID = appId
+	}
+
+	if application == "" && ctx.CurrentApplication.Application == "" {
+		return application, applicationID, errors.New("Invalid application name")
+	}
+
+	if application == "" && ctx.CurrentApplication.Application != "" {
+		application = ctx.CurrentApplication.Application
+	}
+
+	if applicationID <= 0 && ctx.CurrentApplication.ApplicationID <= 0 && application != "" {
+		appId, err := GetApplicationIdByName(ctx, orgID, projectID, application)
+		if err != nil {
+			return application, applicationID, err
+		}
+		ctx.CurrentApplication.ApplicationID = appId
+		applicationID = appId
+	}
+
+	if applicationID <= 0 && ctx.CurrentApplication.ApplicationID <= 0 {
+		return application, applicationID, errors.New("Invalid application id")
+	}
+
+	if applicationID == 0 && ctx.CurrentApplication.ApplicationID > 0 {
+		applicationID = ctx.CurrentApplication.ApplicationID
+	}
+
+	return application, applicationID, nil
+}

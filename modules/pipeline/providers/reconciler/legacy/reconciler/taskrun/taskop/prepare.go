@@ -121,10 +121,11 @@ func (pre *prepare) makeTaskRun() (needRetry bool, err error) {
 	}
 
 	// 获取集群信息
-	clusterInfo, err := pre.Bdl.QueryClusterInfo(p.ClusterName)
+	cluster, err := pre.ClusterInfo.GetClusterInfoByName(p.ClusterName)
 	if err != nil {
 		return true, apierrors.ErrGetCluster.InternalError(err)
 	}
+	clusterInfo := cluster.CM
 	pre.Ctx = context.WithValue(pre.Ctx, apistructs.ClusterNameContextKey, p.ClusterName)
 
 	// TODO 目前 initSQL 需要存储在 网盘上，暂时不能用 volume 来解

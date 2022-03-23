@@ -24,10 +24,10 @@ import (
 	"time"
 
 	v3 "github.com/coreos/etcd/clientv3"
-	"github.com/robfig/cron"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/conf"
+	"github.com/erda-project/erda/modules/pipeline/providers/dbgc/db"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/jsonstore/storetypes"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -38,32 +38,33 @@ const (
 	etcdDBGCDLockKeyPrefix = "/devops/pipeline/dbgc/dlock/"
 )
 
-func (p *provider) StartPipelineDatabaseGC(ctx context.Context) {
-	c := cron.New()
-	err := c.AddFunc(p.Cfg.PipelineDBGCCron, func() {
-		p.PipelineDatabaseGC()
-	})
-	if err != nil {
-		return
-	}
-	c.Start()
-	defer c.Stop()
+// PipelineDatabaseGC remove ListenDatabaseGC and EnsureDatabaseGC these two methods，
+// these two methods will create a lot of etcd ttl, will cause high load on etcd
+// use fixed gc time, traverse the data in the database every day
+func (p *provider) PipelineDatabaseGC(ctx context.Context) {
+	ticker := time.NewTicker(1 * time.Millisecond)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return
+		case <-ticker.C:
+			// analyzed snippet and non-snippet pipeline database gc
+			p.doAnalyzedPipelineDatabaseGC(true)
+			p.doAnalyzedPipelineDatabaseGC(false)
+
+			// not analyzed snippet and non-snippet pipeline database gc
+			p.doNotAnalyzedPipelineDatabaseGC(true)
+			p.doNotAnalyzedPipelineDatabaseGC(false)
+
+			// pipeline archive database clean up
+			p.doAnalyzedPipelineArchiveGC()
+			p.doNotAnalyzedPipelineArchiveGC()
+
+			// reset ticker to 2 hours for next gc
+			ticker.Reset(p.Cfg.PipelineDBGCDuration)
 		}
 	}
-}
-
-// PipelineDatabaseGC remove ListenDatabaseGC and EnsureDatabaseGC these two methods，
-// these two methods will create a lot of etcd ttl, will cause high load on etcd
-// use fixed gc time, traverse the data in the database every day
-func (p *provider) PipelineDatabaseGC() {
-	p.doAnalyzedPipelineDatabaseGC(true)
-	p.doAnalyzedPipelineDatabaseGC(false)
-	p.doNotAnalyzedPipelineDatabaseGC(true)
-	p.doNotAnalyzedPipelineDatabaseGC(false)
 }
 
 // doPipelineDatabaseGC query the data in the database according to req paging to perform gc
@@ -137,6 +138,25 @@ func (p *provider) doNotAnalyzedPipelineDatabaseGC(isSnippetPipeline bool) {
 	req.AllSources = true
 
 	p.doPipelineDatabaseGC(req)
+}
+
+func (p *provider) doAnalyzedPipelineArchiveGC() {
+	var req db.ArchiveDeleteRequest
+	req.Statuses = []string{apistructs.PipelineStatusAnalyzed.String()}
+	req.EndTimeCreated = time.Now().Add(-p.Cfg.AnalyzedPipelineArchiveDefaultRetainHour)
+	if err := p.dbClient.DeletePipelineArchives(req); err != nil {
+		p.Log.Errorf("failed to delete analyzed pipeline archive, err: %v", err)
+	}
+}
+
+func (p *provider) doNotAnalyzedPipelineArchiveGC() {
+	var req db.ArchiveDeleteRequest
+	req.NotStatuses = []string{apistructs.PipelineStatusAnalyzed.String()}
+	fmt.Println(p.Cfg.FinishedPipelineArchiveDefaultRetainHour)
+	req.EndTimeCreated = time.Now().Add(-p.Cfg.FinishedPipelineArchiveDefaultRetainHour)
+	if err := p.dbClient.DeletePipelineArchives(req); err != nil {
+		p.Log.Errorf("failed to delete finished pipeline archive, err: %v", err)
+	}
 }
 
 // ListenDatabaseGC 监听需要 GC 的 pipeline database record.

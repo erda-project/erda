@@ -48,7 +48,7 @@ var PIPELINERUN = command.Command{
 func FilenameCompletion(ctx *cobra.Command, args []string, toComplete string, filename, branch string, watch bool) []string {
 	comps := []string{}
 	if branch != "" {
-		b, err := utils.GetWorkspaceBranch()
+		b, err := utils.GetWorkspaceBranch(".")
 		if err != nil || branch != b {
 			return comps
 		}
@@ -82,9 +82,14 @@ func getWorkspacePipelines() ([]string, error) {
 }
 
 func BranchCompletion(ctx *cobra.Command, args []string, toComplete string, filename, branch string, watch bool) []string {
-	comps := []string{}
+	return applicationBranches(".")
+}
+
+func applicationBranches(dir string) []string {
+	var comps []string
 
 	c1 := exec.Command("git", "branch")
+	c1.Dir = dir
 	c2 := exec.Command("cut", "-c", "3-")
 	output, err := utils.PipeCmds(c1, c2)
 	if err == nil {
@@ -106,7 +111,7 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 		return errors.New("Current directory is not a local git repository")
 	}
 
-	dirty, err := utils.IsWorkspaceDirty()
+	dirty, err := utils.IsWorkspaceDirty(".")
 	if err != nil {
 		return err
 	}
@@ -115,7 +120,7 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 	}
 
 	if branch == "" {
-		b, err := utils.GetWorkspaceBranch()
+		b, err := utils.GetWorkspaceBranch(".")
 		if err != nil {
 			return err
 		}
@@ -123,7 +128,7 @@ func PipelineRun(ctx *command.Context, filename, branch string, watch bool) erro
 	}
 
 	// fetch appID
-	info, err := utils.GetWorkspaceInfo(command.Remote)
+	info, err := utils.GetWorkspaceInfo(".", command.Remote)
 	if err != nil {
 		return err
 	}

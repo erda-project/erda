@@ -24,23 +24,12 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/providers/cron/db"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
-	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
-type Service struct {
-	p        *provider
-	dbClient *db.Client
-	crondSvc *crondsvc.CrondSvc
-}
-
-func (p *Service) WithPipelineSvc(crondSvc *crondsvc.CrondSvc) {
-	p.crondSvc = crondSvc
-}
-
-func (s *Service) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*pb.CronCreateResponse, error) {
+func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*pb.CronCreateResponse, error) {
 	// param validate
 	if !apistructs.PipelineSource(req.PipelineCreateRequest.PipelineSource).Valid() {
 		return nil, apierrors.ErrCreatePipelineCron.InvalidParameter(errors.Errorf("invalid pipelineSource: %s", req.PipelineCreateRequest.PipelineSource))
@@ -74,7 +63,20 @@ func (s *Service) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*p
 			NormalLabels: req.PipelineCreateRequest.NormalLabels,
 			Envs:         req.PipelineCreateRequest.Envs,
 			Version:      "v2",
+			Compensator: &apistructs.CronCompensator{
+				Enable: pipelineYml.Spec().CronCompensator.Enable,
+			},
 		}
+		cron.Extra.ConfigManageNamespaces = strutil.DedupSlice(append(cron.Extra.ConfigManageNamespaces, req.PipelineCreateRequest.ConfigManageNamespaces...), true)
+
+		if pipelineYml.Spec().CronCompensator != nil {
+			cron.Extra.Compensator = &apistructs.CronCompensator{
+				Enable:               pipelineYml.Spec().CronCompensator.Enable,
+				LatestFirst:          pipelineYml.Spec().CronCompensator.LatestFirst,
+				StopIfLatterExecuted: pipelineYml.Spec().CronCompensator.StopIfLatterExecuted,
+			}
+		}
+
 		if req.PipelineCreateRequest.CronStartFrom != nil {
 			var cronStartFrom = req.PipelineCreateRequest.CronStartFrom.AsTime()
 			extra.CronStartFrom = &cronStartFrom
@@ -87,7 +89,7 @@ func (s *Service) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*p
 		return nil, apierrors.ErrCreatePipelineCron.InternalError(err)
 	}
 
-	if err := s.crondSvc.AddIntoPipelineCrond(cron.ID); err != nil {
+	if err := s.Daemon.AddIntoPipelineCrond(cron.ID); err != nil {
 		return nil, apierrors.ErrReloadCrond.InternalError(err)
 	}
 
@@ -96,7 +98,7 @@ func (s *Service) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*p
 	}, nil
 }
 
-func (s *Service) CronPaging(ctx context.Context, req *pb.CronPagingRequest) (*pb.CronPagingResponse, error) {
+func (s *provider) CronPaging(ctx context.Context, req *pb.CronPagingRequest) (*pb.CronPagingResponse, error) {
 
 	crons, total, err := s.dbClient.PagingPipelineCron(req)
 	if err != nil {
@@ -116,7 +118,7 @@ func (s *Service) CronPaging(ctx context.Context, req *pb.CronPagingRequest) (*p
 	return &result, nil
 }
 
-func (s *Service) CronStart(ctx context.Context, req *pb.CronStartRequest) (*pb.CronStartResponse, error) {
+func (s *provider) CronStart(ctx context.Context, req *pb.CronStartRequest) (*pb.CronStartResponse, error) {
 	cron, err := s.operate(req.CronID, true)
 	if err != nil {
 		return nil, err
@@ -127,7 +129,7 @@ func (s *Service) CronStart(ctx context.Context, req *pb.CronStartRequest) (*pb.
 	}, nil
 }
 
-func (s *Service) CronStop(ctx context.Context, req *pb.CronStopRequest) (*pb.CronStopResponse, error) {
+func (s *provider) CronStop(ctx context.Context, req *pb.CronStopRequest) (*pb.CronStopResponse, error) {
 	cron, err := s.operate(req.CronID, false)
 	if err != nil {
 		return nil, err
@@ -138,7 +140,7 @@ func (s *Service) CronStop(ctx context.Context, req *pb.CronStopRequest) (*pb.Cr
 	}, nil
 }
 
-func (s *Service) operate(cronID uint64, enable bool) (*common.Cron, error) {
+func (s *provider) operate(cronID uint64, enable bool) (*common.Cron, error) {
 	cron, err := s.dbClient.GetPipelineCron(cronID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipelineCron.InternalError(err)
@@ -154,14 +156,14 @@ func (s *Service) operate(cronID uint64, enable bool) (*common.Cron, error) {
 		return nil, apierrors.ErrOperatePipeline.InternalError(err)
 	}
 
-	if err := s.crondSvc.AddIntoPipelineCrond(cron.ID); err != nil {
+	if err := s.Daemon.AddIntoPipelineCrond(cron.ID); err != nil {
 		return nil, apierrors.ErrReloadCrond.InternalError(err)
 	}
 
 	return cron.Convert2DTO(), nil
 }
 
-func (s *Service) CronDelete(ctx context.Context, req *pb.CronDeleteRequest) (*pb.CronDeleteResponse, error) {
+func (s *provider) CronDelete(ctx context.Context, req *pb.CronDeleteRequest) (*pb.CronDeleteResponse, error) {
 
 	cron, err := s.dbClient.GetPipelineCron(req.CronID)
 	if err != nil {
@@ -172,14 +174,14 @@ func (s *Service) CronDelete(ctx context.Context, req *pb.CronDeleteRequest) (*p
 		return nil, apierrors.ErrDeletePipelineCron.InternalError(err)
 	}
 
-	if err := s.crondSvc.DeletePipelineCrond(cron.ID); err != nil {
+	if err := s.Daemon.DeletePipelineCrond(cron.ID); err != nil {
 		return nil, apierrors.ErrReloadCrond.InternalError(err)
 	}
 
 	return &pb.CronDeleteResponse{}, nil
 }
 
-func (s *Service) CronGet(ctx context.Context, req *pb.CronGetRequest) (*pb.CronGetResponse, error) {
+func (s *provider) CronGet(ctx context.Context, req *pb.CronGetRequest) (*pb.CronGetResponse, error) {
 	cron, err := s.dbClient.GetPipelineCron(req.CronID)
 	if err != nil {
 		return nil, apierrors.ErrGetPipelineCron.InvalidParameter(err)
@@ -190,10 +192,22 @@ func (s *Service) CronGet(ctx context.Context, req *pb.CronGetRequest) (*pb.Cron
 	}, nil
 }
 
-func (s *Service) CronUpdate(ctx context.Context, req *pb.CronUpdateRequest) (*pb.CronUpdateResponse, error) {
+func (s *provider) CronUpdate(ctx context.Context, req *pb.CronUpdateRequest) (*pb.CronUpdateResponse, error) {
 	cron, err := s.dbClient.GetPipelineCron(req.CronID)
 	if err != nil {
 		return nil, err
+	}
+
+	pipeline, err := pipelineyml.New([]byte(req.PipelineYml))
+	if err != nil {
+		return nil, err
+	}
+	if pipeline.Spec().CronCompensator != nil {
+		cron.Extra.Compensator = &apistructs.CronCompensator{
+			Enable:               pipeline.Spec().CronCompensator.Enable,
+			LatestFirst:          pipeline.Spec().CronCompensator.LatestFirst,
+			StopIfLatterExecuted: pipeline.Spec().CronCompensator.StopIfLatterExecuted,
+		}
 	}
 
 	cron.CronExpr = req.CronExpr

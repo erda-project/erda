@@ -37,12 +37,12 @@ type provider struct {
 	DB       *gorm.DB           `autowired:"mysql-client"`
 	bundle   *bundle.Bundle
 
-	commentIssueStreamService pb.CommentIssueStreamServiceServer
+	commentIssueStreamService *CommentIssueStreamService
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.bundle = bundle.New(bundle.WithCoreServices())
-	p.commentIssueStreamService = &commentIssueStreamService{
+	p.commentIssueStreamService = &CommentIssueStreamService{
 		db: &dao.DBClient{
 			DBEngine: &dbengine.DBEngine{
 				DB: p.DB,

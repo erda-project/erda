@@ -58,7 +58,7 @@ func (r *Reconciler) internalReconcileOnePipeline(ctx context.Context, pipelineI
 	}
 
 	// delay gc if have
-	r.delayGC(p.Extra.Namespace, p.ID)
+	r.resourceGC.DelayGC(p.Extra.Namespace, p.ID)
 
 	// calculate pipeline status by tasks
 	calcPStatus := statusutil.CalculatePipelineStatusV2(tasks)
@@ -118,7 +118,7 @@ func (r *Reconciler) internalReconcileOnePipeline(ctx context.Context, pipelineI
 			tr := taskrun.New(ctx, task,
 				ctx.Value(ctxKeyPipelineExitCh).(chan struct{}), ctx.Value(ctxKeyPipelineExitChCancelFunc).(context.CancelFunc),
 				executor, &p, r.bdl, r.dbClient, r.js,
-				r.actionAgentSvc, r.extMarketSvc)
+				r.actionAgentSvc, r.extMarketSvc, r.clusterInfo)
 
 			// tear down task
 			defer func() {

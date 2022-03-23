@@ -94,7 +94,7 @@ func (k *Kubernetes) destroyRuntimeByProjectNamespace(ns string, sg *apistructs.
 		case ServicePerNode:
 			err = k.deleteDaemonSet(ns, service.ProjectServiceName)
 		case ServiceJob:
-			err = k.deleteJob(ns, service.ProjectServiceName)
+			err = k.deleteJob(ns, service.Name)
 		default:
 			err = k.deleteDeployment(ns, service.ProjectServiceName)
 		}
