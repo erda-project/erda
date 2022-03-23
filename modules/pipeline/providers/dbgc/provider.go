@@ -17,6 +17,7 @@ package dbgc
 import (
 	"context"
 	"reflect"
+	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -28,7 +29,12 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
-type config struct{}
+type config struct {
+	// default 1 day
+	AnalyzedPipelineArchiveDefaultRetainHour time.Duration `file:"analyzed_pipeline_archive_default_retain_hour" default:"24h"`
+	// default 30 day
+	FinishedPipelineArchiveDefaultRetainHour time.Duration `file:"finished_pipeline_archive_default_retain_hour" default:"720h"`
+}
 
 type provider struct {
 	Cfg      *config

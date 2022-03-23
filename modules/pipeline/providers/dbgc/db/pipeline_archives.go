@@ -16,13 +16,21 @@ package db
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda/modules/pipeline/dbclient"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
+
+type ArchiveDeleteRequest struct {
+	Statuses       []string
+	NotStatuses    []string
+	EndTimeCreated time.Time
+}
 
 func (client *Client) CreatePipelineArchive(archive *spec.PipelineArchive, ops ...dbclient.SessionOption) error {
 	session := client.NewSession(ops...)
@@ -201,4 +209,28 @@ func (client *Client) ArchivePipeline(pipelineID uint64) (_ uint64, err error) {
 	}
 
 	return archive.ID, nil
+}
+
+func tableFieldName(tableName string, field string) string {
+	return fmt.Sprintf("%v.%v", tableName, field)
+}
+
+func (client *Client) DeletePipelineArchives(req ArchiveDeleteRequest, ops ...dbclient.SessionOption) error {
+	session := client.NewSession(ops...)
+	defer session.Close()
+	if req.EndTimeCreated.IsZero() {
+		return errors.New("invalid param: endTimeCreated")
+	}
+	baseSQL := session.Table(&spec.PipelineArchive{}).
+		Where(tableFieldName((&spec.PipelineArchive{}).TableName(), "time_created")+" <= ?", req.EndTimeCreated)
+	if len(req.Statuses) > 0 {
+		baseSQL = baseSQL.In(tableFieldName((&spec.PipelineArchive{}).TableName(), "status"), req.Statuses)
+	}
+	if len(req.NotStatuses) > 0 {
+		baseSQL = baseSQL.NotIn(tableFieldName((&spec.PipelineArchive{}).TableName(), "status"), req.NotStatuses)
+	}
+	if _, err := baseSQL.Delete(&spec.PipelineArchive{}); err != nil {
+		return err
+	}
+	return nil
 }
