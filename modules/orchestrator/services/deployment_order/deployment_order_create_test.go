@@ -37,13 +37,19 @@ import (
 var ProjectReleaseResp = &pb.ReleaseGetResponseData{
 	IsProjectRelease: true,
 	Labels:           map[string]string{gitBranchLabel: "master"},
-	ApplicationReleaseList: []*pb.ReleaseSummaryArray{
-		{
-			List: []*pb.ApplicationReleaseSummary{
+	Modes: map[string]*pb.ModeSummary{
+		"testMode": {
+			Expose:   true,
+			DependOn: []string{"xxx"},
+			ApplicationReleaseList: []*pb.ReleaseSummaryArray{
 				{
-					ReleaseID:   "0856df7931494d239abf07a145ade6e9",
-					ReleaseName: "release/1.0.1",
-					Version:     "1.0.1+20220210153458",
+					List: []*pb.ApplicationReleaseSummary{
+						{
+							ReleaseID:   "0856df7931494d239abf07a145ade6e9",
+							ReleaseName: "release/1.0.1",
+							Version:     "1.0.1+20220210153458",
+						},
+					},
 				},
 			},
 		},
@@ -66,20 +72,22 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 			return &apistructs.ProjectDTO{ClusterConfig: map[string]string{"PROD": "fake-cluster"}}, nil
 		},
 	)
+	monkey.PatchInstanceMethod(reflect.TypeOf(do.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
+		return []*dbclient.Release{
+			{ReleaseId: "id1"},
+			{ReleaseId: "id2"},
+		}, nil
+	})
 
 	params := map[string]*apistructs.DeploymentOrderParam{}
 
 	paramsJson, err := json.Marshal(params)
 	assert.NoError(t, err)
 
-	ProjectReleaseResp.ApplicationReleaseList = []*pb.ReleaseSummaryArray{
-		{
-			List: []*pb.ApplicationReleaseSummary{
-				{
-					ReleaseID: "8781f475e5617a04",
-				},
-			},
-		},
+	deployList := [][]string{{"id1"}, {"id2"}}
+	data, err := json.Marshal(deployList)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	_, err = do.composeRuntimeCreateRequests(&dbclient.DeploymentOrder{
@@ -88,6 +96,7 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 		Type:         apistructs.TypeProjectRelease,
 		Params:       string(paramsJson),
 		Workspace:    apistructs.WORKSPACE_PROD,
+		DeployList:   string(data),
 	}, ProjectReleaseResp, apistructs.SourceDeployCenter, false)
 	assert.NoError(t, err)
 
@@ -97,6 +106,7 @@ func TestComposeRuntimeCreateRequests(t *testing.T) {
 		Type:         apistructs.TypeApplicationRelease,
 		Params:       string(paramsJson),
 		Workspace:    apistructs.WORKSPACE_PROD,
+		DeployList:   string(data),
 	}, AppReleaseResp, apistructs.SourceDeployCenter, false)
 	assert.NoError(t, err)
 }
@@ -136,10 +146,25 @@ func TestParseShowParams(t *testing.T) {
 
 func TestParseAppsInfoWithOrder(t *testing.T) {
 	order := New()
-	got, err := order.parseAppsInfoWithOrder(context.Background(), &dbclient.DeploymentOrder{
+	deployList := [][]string{{"id1"}, {"id2"}}
+	data, err := json.Marshal(deployList)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer monkey.UnpatchAll()
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
+		return []*dbclient.Release{
+			{ReleaseId: "id1"},
+			{ReleaseId: "id2"},
+		}, nil
+	})
+
+	got, err := order.parseAppsInfoWithOrder(&dbclient.DeploymentOrder{
 		ApplicationName: "test",
 		ApplicationId:   1,
 		Type:            apistructs.TypeApplicationRelease,
+		DeployList:      string(data),
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, got, map[int64]string{1: "test"})
@@ -147,15 +172,10 @@ func TestParseAppsInfoWithOrder(t *testing.T) {
 
 func TestParseAppsInfoWithRelease(t *testing.T) {
 	order := New()
-	got := order.parseAppsInfoWithRelease(&pb.ReleaseGetResponseData{
-		IsProjectRelease: true,
-		ApplicationReleaseList: []*pb.ReleaseSummaryArray{
-			{
-				List: []*pb.ApplicationReleaseSummary{
-					{ApplicationName: "test-1", ApplicationID: 1},
-					{ApplicationName: "test-2", ApplicationID: 2},
-				},
-			},
+	got := order.parseAppsInfoWithDeployList([][]*pb.ApplicationReleaseSummary{
+		{
+			{ApplicationName: "test-1", ApplicationID: 1},
+			{ApplicationName: "test-2", ApplicationID: 2},
 		},
 	})
 	assert.Equal(t, got, map[int64]string{1: "test-1", 2: "test-2"})
@@ -173,6 +193,12 @@ func TestContinueDeployOrder(t *testing.T) {
 	paramsJson, err := json.Marshal(params)
 	assert.NoError(t, err)
 
+	deployList := [][]string{{"id1"}, {"id2"}}
+	data, err := json.Marshal(deployList)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	defer monkey.UnpatchAll()
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "GetDeploymentOrder", func(*dbclient.DBClient, string) (*dbclient.DeploymentOrder, error) {
 		return &dbclient.DeploymentOrder{
@@ -180,10 +206,17 @@ func TestContinueDeployOrder(t *testing.T) {
 			BatchSize:    3,
 			Workspace:    apistructs.WORKSPACE_PROD,
 			Params:       string(paramsJson),
+			DeployList:   string(data),
 		}, nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "UpdateDeploymentOrder", func(*dbclient.DBClient, *dbclient.DeploymentOrder) error {
 		return nil
+	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
+		return []*dbclient.Release{
+			{ReleaseId: "id1"},
+			{ReleaseId: "id2"},
+		}, nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(releaseSvc), "GetRelease",
 		func(*release2.ReleaseService, context.Context, *pb.ReleaseGetRequest) (*pb.ReleaseGetResponse, error) {
@@ -299,5 +332,147 @@ func TestGetWorkspaceFromBranch(t *testing.T) {
 				t.Errorf("getWorkspaceFromBranch got = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRenderDeployList(t *testing.T) {
+	modes := map[string]*pb.ModeSummary{
+		"A": {
+			DependOn: []string{"X"},
+			ApplicationReleaseList: []*pb.ReleaseSummaryArray{
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "A11"},
+					{ReleaseID: "A12"},
+					{ReleaseID: "A13"},
+				}},
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "A21"},
+					{ReleaseID: "A22"},
+					{ReleaseID: "A23"},
+				}},
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "A31"},
+					{ReleaseID: "A32"},
+					{ReleaseID: "A33"},
+				}},
+			},
+		},
+		"B": {
+			DependOn: []string{"X"},
+			ApplicationReleaseList: []*pb.ReleaseSummaryArray{
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "B11"},
+					{ReleaseID: "B12"},
+					{ReleaseID: "B13"},
+				}},
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "B21"},
+					{ReleaseID: "B22"},
+					{ReleaseID: "B23"},
+				}},
+			},
+		},
+		"C": {
+			DependOn: []string{"Y"},
+			ApplicationReleaseList: []*pb.ReleaseSummaryArray{
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "C11"},
+					{ReleaseID: "C12"},
+				}},
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "C21"},
+					{ReleaseID: "C22"},
+					{ReleaseID: "C23"},
+				}},
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "C31"},
+					{ReleaseID: "C32"},
+					{ReleaseID: "C33"},
+				}},
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "C41"},
+				}},
+			},
+		},
+		"X": {
+			DependOn: []string{"Z"},
+			ApplicationReleaseList: []*pb.ReleaseSummaryArray{
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "X11"},
+				}},
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "X21"},
+				}},
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "X31"},
+					{ReleaseID: "X32"},
+				}},
+			},
+		},
+		"Y": {
+			DependOn: []string{"Z"},
+			ApplicationReleaseList: []*pb.ReleaseSummaryArray{
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "Y11"},
+					{ReleaseID: "Y12"},
+				}},
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "Y21"},
+				}},
+			},
+		},
+		"Z": {
+			ApplicationReleaseList: []*pb.ReleaseSummaryArray{
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "Z11"},
+					{ReleaseID: "Z12"},
+					{ReleaseID: "Z13"},
+				}},
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "Z21"},
+					{ReleaseID: "Z22"},
+				}},
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "Z31"},
+				}},
+				{List: []*pb.ApplicationReleaseSummary{
+					{ReleaseID: "Z41"},
+					{ReleaseID: "Z42"},
+				}},
+			},
+		},
+	}
+
+	selectedModes := []string{"A", "B", "C"}
+
+	expected := [][]string{
+		{"Z11", "Z12", "Z13"},
+		{"Z21", "Z22"},
+		{"Z31"},
+		{"Z41", "Z42"},
+		{"X11", "Y11", "Y12"},
+		{"X21", "Y21"},
+		{"X31", "X32", "C11", "C12"},
+		{"A11", "A12", "A13", "B11", "B12", "B13", "C21", "C22", "C23"},
+		{"A21", "A22", "A23", "B21", "B22", "B23", "C31", "C32", "C33"},
+		{"A31", "A32", "A33", "C41"},
+	}
+	deployList := renderDeployList(selectedModes, modes)
+
+	if len(expected) != len(deployList) {
+		t.Errorf("deploy list is not expected")
+		return
+	}
+	for i, l := range deployList {
+		if len(expected[i]) != len(l) {
+			t.Errorf("deploy list is not expected")
+			return
+		}
+		for j, summary := range l {
+			if expected[i][j] != summary.ReleaseID {
+				t.Errorf("deploy list is not expected")
+				return
+			}
+		}
 	}
 }

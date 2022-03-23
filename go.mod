@@ -59,7 +59,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/gin-gonic/gin v1.7.0
 	github.com/go-echarts/go-echarts/v2 v2.2.4
-	github.com/go-eden/routine v0.0.2
+	github.com/go-eden/routine v0.0.3
 	github.com/go-errors/errors v1.0.1
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.8
@@ -167,6 +167,7 @@ require (
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
 	golang.org/x/text v0.3.7
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6
 	google.golang.org/api v0.68.0 // indirect
