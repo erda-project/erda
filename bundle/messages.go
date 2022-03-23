@@ -24,7 +24,7 @@ import (
 
 // CreateMessage 发送消息（不包括 event ）, `Message.Labels` 见 `MessageLabel`
 func (b *Bundle) CreateMessage(message *apistructs.MessageCreateRequest) error {
-	host, err := b.urls.EventBox()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
