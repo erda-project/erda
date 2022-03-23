@@ -26,6 +26,7 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	projectCache "github.com/erda-project/erda/modules/core-services/cache/project"
 	"github.com/erda-project/erda/modules/core-services/conf"
@@ -72,7 +73,6 @@ func (p *provider) Initialize() error {
 	}
 
 	bdl := bundle.New(
-		bundle.WithEventBox(),
 		bundle.WithCollector(),
 	)
 
@@ -306,4 +306,12 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithSubscribe(sub),
 	)
 	return ep, nil
+}
+
+type ExposedInterface interface {
+	CheckPermission(req *apistructs.PermissionCheckRequest) (bool, error)
+}
+
+func (p *provider) CheckPermission(req *apistructs.PermissionCheckRequest) (bool, error) {
+	return p.perm.CheckPermission(req)
 }

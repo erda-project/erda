@@ -66,7 +66,6 @@ func (p *provider) Initialize() error {
 		ucUserAuth.UCHost = conf.OryKratosAddr()
 	}
 	diceBundle := bundle.New(
-		bundle.WithEventBox(),
 		bundle.WithCoreServices(),
 	)
 
