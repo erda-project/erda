@@ -665,6 +665,8 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithCodeCoverageExecRecord(codeCvc),
 		endpoints.WithTestReportRecord(testReportSvc),
 		endpoints.WithPipelineCron(p.PipelineCron),
+		endpoints.WithPipelineSource(p.PipelineSource),
+		endpoints.WithPipelineDefinition(p.PipelineDefinition),
 		endpoints.WithPublishItem(publishItem),
 	)
 

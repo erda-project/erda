@@ -26,6 +26,8 @@ import (
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -744,7 +746,9 @@ type Endpoints struct {
 
 	publishItem *publish_item.PublishItem
 
-	PipelineCron cronpb.CronServiceServer
+	PipelineCron       cronpb.CronServiceServer
+	PipelineSource     sourcepb.SourceServiceServer
+	PipelineDefinition dpb.DefinitionServiceServer
 
 	ImportChannel chan uint64
 	ExportChannel chan uint64
@@ -1115,6 +1119,18 @@ func WithTestReportRecord(svc *test_report.TestReport) Option {
 func WithPipelineCron(svc cronpb.CronServiceServer) Option {
 	return func(e *Endpoints) {
 		e.PipelineCron = svc
+	}
+}
+
+func WithPipelineSource(svc sourcepb.SourceServiceServer) Option {
+	return func(e *Endpoints) {
+		e.PipelineSource = svc
+	}
+}
+
+func WithPipelineDefinition(svc dpb.DefinitionServiceServer) Option {
+	return func(e *Endpoints) {
+		e.PipelineDefinition = svc
 	}
 }
 

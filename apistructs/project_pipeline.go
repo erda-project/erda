@@ -14,13 +14,33 @@
 
 package apistructs
 
+import "path/filepath"
+
 type PipelineCategory string
+
+type ProjectPipelineType string
 
 const (
 	CategoryBuildDeploy   = "build-deploy"
 	CategoryBuildArtifact = "build-artifact"
 	CategoryOthers        = "others"
 )
+
+const (
+	PipelineTypeCICD ProjectPipelineType = "cicd"
+)
+
+const (
+	SourceTypeErda = "erda"
+)
+
+func (p ProjectPipelineType) String() string {
+	return string(p)
+}
+
+func MakeLocation(app *ApplicationDTO, t ProjectPipelineType) string {
+	return filepath.Join(t.String(), app.OrgName, app.ProjectName)
+}
 
 func (c PipelineCategory) String() string {
 	return string(c)

@@ -27,7 +27,11 @@ import (
 )
 
 const (
-	DefaultPipelineYmlName = "pipeline.yml"
+	DefaultPipelineYmlName        = "pipeline.yml"
+	DicePipelinePath       string = ".dice/pipelines"
+	ErdaPipelinePath       string = ".erda/pipelines"
+	YmlSuffix              string = ".yml"
+	YamlSuffix             string = ".yaml"
 
 	//用作PipelinePageListRequest order by 的表字段名称
 	PipelinePageListRequestIdColumn = "id"
