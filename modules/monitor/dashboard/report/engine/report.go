@@ -245,7 +245,7 @@ func renderContent(tmpl string, params *tmplParams) (d string, err error) {
 
 func (r *Report) send(ctx context.Context, body *eventboxEntity) error {
 	if err := r.doRequest(&reqConfig{
-		Host:    r.cfg.EventboxAddr,
+		Host:    r.cfg.CoreServicesAddr,
 		Method:  "POST",
 		Path:    eventboxPath,
 		Param:   nil,

@@ -16,34 +16,37 @@ package dispatcher
 
 import (
 	"context"
+	"net/http"
+	"sync"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
+	"github.com/erda-project/erda/modules/messenger/eventbox/conf"
+	"github.com/erda-project/erda/modules/messenger/eventbox/input"
 	inputhttp "github.com/erda-project/erda/modules/messenger/eventbox/input/http"
+	"github.com/erda-project/erda/modules/messenger/eventbox/monitor"
+	"github.com/erda-project/erda/modules/messenger/eventbox/register"
+	"github.com/erda-project/erda/modules/messenger/eventbox/server"
+	stypes "github.com/erda-project/erda/modules/messenger/eventbox/server/types"
+	"github.com/erda-project/erda/modules/messenger/eventbox/subscriber"
 	dingdingsubscriber "github.com/erda-project/erda/modules/messenger/eventbox/subscriber/dingding"
 	dingdingworknoticesubscriber "github.com/erda-project/erda/modules/messenger/eventbox/subscriber/dingding_worknotice"
 	"github.com/erda-project/erda/modules/messenger/eventbox/subscriber/dingtalk_worknotice"
+	emailsubscriber "github.com/erda-project/erda/modules/messenger/eventbox/subscriber/email"
 	fakesubscriber "github.com/erda-project/erda/modules/messenger/eventbox/subscriber/fake"
 	groupsubscriber "github.com/erda-project/erda/modules/messenger/eventbox/subscriber/group"
 	httpsubscriber "github.com/erda-project/erda/modules/messenger/eventbox/subscriber/http"
 	"github.com/erda-project/erda/modules/messenger/eventbox/subscriber/mbox"
 	smssubscriber "github.com/erda-project/erda/modules/messenger/eventbox/subscriber/sms"
 	vmssubscriber "github.com/erda-project/erda/modules/messenger/eventbox/subscriber/vms"
+	"github.com/erda-project/erda/modules/messenger/eventbox/webhook"
 	"github.com/erda-project/erda/modules/messenger/eventbox/websocket"
-	"net/http"
-	"sync"
-
-	"github.com/erda-project/erda-infra/base/version"
-	"github.com/erda-project/erda/modules/messenger/eventbox/conf"
-	"github.com/erda-project/erda/modules/messenger/eventbox/input"
-	"github.com/erda-project/erda/modules/messenger/eventbox/register"
-	"github.com/erda-project/erda/modules/messenger/eventbox/server"
-	stypes "github.com/erda-project/erda/modules/messenger/eventbox/server/types"
-	"github.com/erda-project/erda/modules/messenger/eventbox/subscriber"
-	emailsubscriber "github.com/erda-project/erda/modules/messenger/eventbox/subscriber/email"
 	"github.com/erda-project/erda/modules/pkg/user"
 	"github.com/erda-project/erda/pkg/goroutinepool"
-	"github.com/sirupsen/logrus"
 )
 
 type Dispatcher interface {
@@ -64,113 +67,14 @@ type DispatcherImpl struct {
 	runningWg sync.WaitGroup
 }
 
-//func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServiceServer) (Dispatcher, error) {
-//	dispatcher := DispatcherImpl{
-//		subscribers:     make(map[string]subscriber.Subscriber),
-//		subscriberspool: make(map[string]*goroutinepool.GoroutinePool),
-//	}
-//	httpi, err := httpinput.New()
-//	if err != nil {
-//		return nil, err
-//	}
-//	wsi, err := websocket.New()
-//	if err != nil {
-//		return nil, err
-//	}
-//	fakeS, err := fakesubscriber.New(fakesubscriber.FakeTestFilePath)
-//	if err != nil {
-//		return nil, err
-//	}
-//	httpS := httpsubscriber.New()
-//	bundleS := bundle.New(bundle.WithCoreServices())
-//	dingdingS := dingdingsubscriber.New(conf.Proxy(), messenger)
-//	dingdingWorknoticeS := dingdingworknoticesubscriber.New(conf.Proxy(), messenger)
-//	mboxS := mbox.New(bundle.New(bundle.WithCoreServices()), messenger)
-//	emailS := emailsubscriber.New(conf.SmtpHost(), conf.SmtpPort(), conf.SmtpUser(), conf.SmtpPassword(),
-//		conf.SmtpDisplayUser(), conf.SmtpIsSSL(), conf.SMTPInsecureSkipVerify(), bundleS, messenger)
-//	smsS := smssubscriber.New(
-//		conf.AliyunAccessKeyID(),
-//		conf.AliyunAccessKeySecret(),
-//		conf.AliyunSmsSignName(),
-//		conf.AliyunSmsMonitorTemplateCode(), bundleS, messenger)
-//	vmsS := vmssubscriber.New(conf.AliyunAccessKeyID(), conf.AliyunAccessKeySecret(), conf.AliyunVmsMonitorTtsCode(),
-//		conf.AliyunVmsMonitorCalledShowNumber(), bundleS, messenger)
-//	dingWorkNotice := dingtalk_worknotice.New(bundleS, dingtalk, messenger)
-//	groupS := groupsubscriber.New(bundleS)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	//wh, err := webhook.NewWebHookHTTP()
-//	if err != nil {
-//		return nil, err
-//	}
-//	//mon, err := monitor.NewMonitorHTTP()
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	dispatcher.RegisterInput(httpi)
-//	dispatcher.RegisterInput(wsi)
-//
-//	dispatcher.RegisterSubscriber(fakeS)
-//	dispatcher.RegisterSubscriber(httpS)
-//	dispatcher.RegisterSubscriber(dingdingS)
-//	dispatcher.RegisterSubscriber(dingdingWorknoticeS)
-//	dispatcher.RegisterSubscriber(smsS)
-//	dispatcher.RegisterSubscriber(emailS)
-//	dispatcher.RegisterSubscriber(vmsS)
-//	dispatcher.RegisterSubscriber(mboxS)
-//	dispatcher.RegisterSubscriber(groupS)
-//	dispatcher.RegisterSubscriber(dingWorkNotice)
-//
-//	for name := range dispatcher.subscribers {
-//		dispatcher.subscriberspool[name] = goroutinepool.New(conf.PoolSize())
-//	}
-//
-//	reg, err := register.New()
-//	if err != nil {
-//		return nil, err
-//	}
-//	dispatcher.register = reg
-//
-//	//server, err := server.New()
-//	//if err != nil {
-//	//	return nil, err
-//	//}
-//	//regHTTP := register.NewHTTP(reg)
-//	// add endpoints here
-//	//server.AddEndPoints(httpi.GetHTTPEndPoints())
-//	//server.AddEndPoints(regHTTP.GetHTTPEndPoints())
-//	//server.AddEndPoints([]stypes.Endpoint{{"/version", http.MethodGet, getVersion}})
-//	//server.AddEndPoints([]stypes.Endpoint{{"/actions/get-smtp-info", http.MethodGet, getSMTPInfo}})
-//	//server.AddEndPoints(wh.GetHTTPEndPoints())
-//	//server.AddEndPoints(mon.GetHTTPEndPoints())
-//	//// add router for Websocket
-//	//server.Router().PathPrefix("/api/dice/eventbox").Path("/ws/{any:.*}").
-//	//	Handler(sockjs.NewHandler("/api/dice/eventbox/ws", sockjs.DefaultOptions, wsi.HTTPHandle))
-//	//dispatcher.httpserver = server
-//
-//	router, err := NewRouter(&dispatcher)
-//	if err != nil {
-//		return nil, err
-//	}
-//	groupS.SetRoute(router)
-//	dispatcher.router = router
-//
-//	return &dispatcher, nil
-//}
-
-func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServiceServer, httpi *inputhttp.HttpInput) (Dispatcher, error) {
+func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServiceServer, httpi *inputhttp.HttpInput,
+	mon *monitor.MonitorHTTP, wh *webhook.WebHookHTTP,
+	registerHttp *register.RegisterHTTP) (Dispatcher, error) {
 	dispatcher := DispatcherImpl{
 		subscribers:     make(map[string]subscriber.Subscriber),
 		subscriberspool: make(map[string]*goroutinepool.GoroutinePool),
 	}
-	var err error
-	//httpi, err = inputhttp.New()
-	//if err != nil {
-	//	return nil, err
-	//}
+
 	wsi, err := websocket.New()
 	if err != nil {
 		return nil, err
@@ -199,11 +103,8 @@ func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServic
 		return nil, err
 	}
 
-	//wh, err := webhook.NewWebHookHTTP()
-	if err != nil {
-		return nil, err
-	}
-	//mon, err := monitor.NewMonitorHTTP()
+	// provider monitor init
+	mon, err = monitor.NewMonitorHTTP()
 	if err != nil {
 		return nil, err
 	}
@@ -231,22 +132,13 @@ func New(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServic
 		return nil, err
 	}
 	dispatcher.register = reg
+	// provider register init
+	registerHttp = register.NewHTTP(reg)
 
 	server, err := server.New()
 	if err != nil {
 		return nil, err
 	}
-	regHTTP := register.NewHTTP(reg)
-	//add endpoints here
-	server.AddEndPoints(httpi.GetHTTPEndPoints())
-	server.AddEndPoints(regHTTP.GetHTTPEndPoints())
-	//server.AddEndPoints([]stypes.Endpoint{{"/version", http.MethodGet, getVersion}})
-	//server.AddEndPoints([]stypes.Endpoint{{"/actions/get-smtp-info", http.MethodGet, getSMTPInfo}})
-	//server.AddEndPoints(wh.GetHTTPEndPoints())
-	//server.AddEndPoints(mon.GetHTTPEndPoints())
-	// add router for Websocket
-	//server.Router().PathPrefix("/api/dice/eventbox").Path("/ws/{any:.*}").
-	//	Handler(sockjs.NewHandler("/api/dice/eventbox/ws", sockjs.DefaultOptions, wsi.HTTPHandle))
 	dispatcher.httpserver = server
 
 	router, err := NewRouter(&dispatcher)
@@ -286,7 +178,6 @@ func (d *DispatcherImpl) Start() {
 	for _, pool := range d.subscriberspool {
 		pool.Start()
 	}
-	//d.runningWg.Add(len(d.inputs) + 1)
 	d.runningWg.Add(len(d.inputs))
 	for _, i := range d.inputs {
 		go func(i input.Input) {
@@ -297,13 +188,7 @@ func (d *DispatcherImpl) Start() {
 			d.runningWg.Done()
 		}(i)
 	}
-	// start httpserver
-	//go func() {
-	//	if err := d.httpserver.Start(); err != nil {
-	//		logrus.Errorf("dispatcher: start httpserver: %v", err)
-	//	}
-	//	d.runningWg.Done()
-	//}()
+
 	d.runningWg.Wait()
 }
 

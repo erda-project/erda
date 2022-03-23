@@ -16,11 +16,14 @@ package core_services
 
 import (
 	"context"
+	"github.com/jinzhu/gorm"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/httpserver"
 	"github.com/erda-project/erda-infra/providers/i18n"
+	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/providers/errorbox"
+	"github.com/erda-project/erda/modules/core-services/services/permission"
 	"github.com/erda-project/erda/pkg/oauth2"
 )
 
@@ -30,10 +33,16 @@ type provider struct {
 	ErrorBoxSvc   *errorbox.ErrorBoxService `autowired:"erda.core.services.errorbox.ErrorBoxService"`
 	ResourceTrans i18n.Translator           `translator:"resource-trans"`
 	oauth2server  *oauth2.OAuth2Server
+	perm          *permission.Permission
+	DB            *gorm.DB `autowired:"mysql-client"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) (err error) {
 	p.oauth2server = oauth2.NewOAuth2Server()
+	pm := permission.New(
+		permission.WithDBClient(&dao.DBClient{p.DB}),
+	)
+	p.perm = pm
 
 	router := p.Router
 	router.Any("/oauth2/token", p.oauth2server.Token)

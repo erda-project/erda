@@ -16,14 +16,21 @@ package eventbox
 
 import (
 	"context"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	eventpb "github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb"
 	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
+	core_services "github.com/erda-project/erda/modules/core-services"
 	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
 	"github.com/erda-project/erda/modules/messenger/eventbox/input/http"
+	"github.com/erda-project/erda/modules/messenger/eventbox/monitor"
+	"github.com/erda-project/erda/modules/messenger/eventbox/register"
+	"github.com/erda-project/erda/modules/messenger/eventbox/webhook"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/sirupsen/logrus"
+	perm "github.com/erda-project/erda/pkg/common/permission"
 )
 
 type config struct{}
@@ -35,12 +42,20 @@ type provider struct {
 	Register        transport.Register `autowired:"service-register" optional:"true"`
 	C               *config
 	eventBoxService *eventBoxService
+	Perm            perm.Interface                 `autowired:"permission"`
+	CoreService     core_services.ExposedInterface `autowired:"core-services"`
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	//return Initialize(p.DingtalkApiClient, p.Messenger)
-	p.eventBoxService.HttpI.InputName = "pjytest"
-	return Initialize(p.DingtalkApiClient, p.Messenger, p.eventBoxService.HttpI)
+	return Initialize(p)
+}
+
+func (p *provider) Provide(ctx servicehub.DependencyContext, args ...interface{}) interface{} {
+	switch {
+	case ctx.Service() == "erda.core.messenger.eventbox.EventBoxService" || ctx.Type() == eventpb.EventBoxServiceServerType() || ctx.Type() == eventpb.EventBoxServiceHandlerType():
+		return p.eventBoxService
+	}
+	return p
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -50,7 +65,27 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		logrus.Error("HttpInput init is failed err is ", err)
 		return err
 	}
+	wh, err := webhook.NewWebHookHTTP()
+	if err != nil {
+		logrus.Error("Webhook init is failed err is ", err)
+		return err
+	}
+	wh.CoreService = p.CoreService
+	mon, err := monitor.NewMonitorHTTP()
+	if err != nil {
+		logrus.Error("Monitor init is failed err is ", err)
+		return err
+	}
+	reg, err := register.New()
+	if err != nil {
+		logrus.Error("Register init is failed err is ", err)
+		return err
+	}
 	p.eventBoxService.HttpI = httpi
+	p.eventBoxService.WebHookHTTP = wh
+	p.eventBoxService.MonitorHTTP = mon
+	p.eventBoxService.RegisterHTTP = register.NewHTTP(reg)
+
 	if p.Register != nil {
 		type EventBoxService = eventpb.EventBoxServiceServer
 		eventpb.RegisterEventBoxServiceImp(p.Register, p.eventBoxService, apis.Options())
@@ -59,10 +94,14 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func init() {
-	servicehub.Register("eventbox", &servicehub.Spec{
-		Services:             []string{"eventbox"},
+	servicehub.Register("erda.core.messenger.eventbox", &servicehub.Spec{
+		Services:             eventpb.ServiceNames(),
 		Creator:              func() servicehub.Provider { return &provider{} },
 		OptionalDependencies: []string{"service-register"},
 		Description:          "",
+		Types:                eventpb.Types(),
+		ConfigFunc: func() interface{} {
+			return config{}
+		},
 	})
 }

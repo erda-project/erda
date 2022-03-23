@@ -25,9 +25,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/bundle"
-	stypes "github.com/erda-project/erda/modules/messenger/eventbox/server/types"
+	core_services "github.com/erda-project/erda/modules/core-services"
+	"github.com/erda-project/erda/modules/core-services/types"
+	"github.com/erda-project/erda/pkg/common/apis"
 )
 
 const (
@@ -47,7 +49,8 @@ func toCode(e error) string {
 }
 
 type WebHookHTTP struct {
-	impl *WebHookImpl
+	impl        *WebHookImpl
+	CoreService core_services.ExposedInterface
 }
 
 func NewWebHookHTTP() (*WebHookHTTP, error) {
@@ -62,191 +65,168 @@ func NewWebHookHTTP() (*WebHookHTTP, error) {
 		impl: impl,
 	}, nil
 }
-func (w *WebHookHTTP) ListHooks(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
+
+func (w *WebHookHTTP) ListHooks(ctx context.Context, req *pb.ListHooksRequest, vars map[string]string) (*pb.ListHooksResponse, error) {
+	//todo check
 	location, err := extractHookLocation(req)
 	if err != nil {
-		return stypes.HTTPResponse{
-			Error: &stypes.ErrorResponse{
-				Code: BadRequestCode,
-				Msg:  err.Error(),
-			},
-			Compose: true,
-		}, nil
+		return nil, err
 	}
 	if location.Org == "" {
-		return stypes.HTTPResponse{
-			Error: &stypes.ErrorResponse{
-				Code: BadRequestCode,
-				Msg:  "not provide org",
-			},
-			Compose: true,
-		}, nil
+		return nil, fmt.Errorf("not provide org")
 	}
 	r, err := w.impl.ListHooks(location)
 	if err != nil {
-		return stypes.HTTPResponse{
-			Error: &stypes.ErrorResponse{
-				Code: toCode(errors.Cause(err)),
-				Msg:  err.Error(),
-			},
-			Compose: true,
-		}, nil
+		return nil, err
 	}
-	return stypes.HTTPResponse{
-		Compose: true,
-		Content: r,
+
+	if err != nil {
+		return nil, err
+	}
+	data, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+	hooks := make([]*pb.Hook, 0)
+	err = json.Unmarshal(data, &hooks)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ListHooksResponse{
+		Data: hooks,
 	}, nil
 }
 
 // not require 'org' in query param,
 // and it should return not found when found-hook's org not match orgID(in header)
-func (w *WebHookHTTP) InspectHook(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
-	id := vars["id"]
-	orgID := extractOrgIDHeader(req)
 
-	r, err := w.impl.InspectHook(orgID, id)
+func (w *WebHookHTTP) InspectHook(ctx context.Context, req *pb.InspectHookRequest, vars map[string]string) (*pb.InspectHookResponse, error) {
+	orgID := apis.GetOrgID(ctx)
+
+	r, err := w.impl.InspectHook(orgID, req.Id)
 	if err != nil {
-		return stypes.HTTPResponse{
-			Compose: true,
-			Error: &stypes.ErrorResponse{
-				Code: toCode(errors.Cause(err)),
-				Msg:  err.Error(),
-			},
-		}, nil
+		return &pb.InspectHookResponse{
+			Data: nil,
+		}, err
 	}
-	return stypes.HTTPResponse{
-		Compose: true,
-		Content: r,
+	data, err := json.Marshal(r)
+	if err != nil {
+		return &pb.InspectHookResponse{
+			Data: nil,
+		}, err
+	}
+	var hook *pb.Hook
+	err = json.Unmarshal(data, &hook)
+	return &pb.InspectHookResponse{
+		Data: hook,
 	}, nil
 }
 
 // org, project will be provided in request body
-func (w *WebHookHTTP) CreateHook(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
+func (w *WebHookHTTP) CreateHook(ctx context.Context, req *pb.CreateHookRequest, vars map[string]string) (*pb.CreateHookResponse, error) {
 	h := CreateHookRequest{}
-	if err := json.NewDecoder(req.Body).Decode(&h); err != nil {
-		err := fmt.Errorf("createhook: decode fail: %v", err)
-		logrus.Error(err)
-		return stypes.HTTPResponse{
-			Error: &stypes.ErrorResponse{
-				Code: BadRequestCode,
-				Msg:  err.Error(),
-			},
-			Compose: true,
-		}, nil
+	data, err := json.Marshal(req)
+	if err != nil {
+		return &pb.CreateHookResponse{
+			Data: "",
+		}, err
 	}
-	r, err := w.impl.CreateHook(extractOrgIDHeader(req), h)
+	err = json.Unmarshal(data, &h)
+	if err != nil {
+		return &pb.CreateHookResponse{
+			Data: "",
+		}, err
+	}
+	orgId := apis.GetOrgID(ctx)
+	r, err := w.impl.CreateHook(orgId, h)
 	if err != nil {
 		logrus.Error(err)
-		return stypes.HTTPResponse{
-			Error: &stypes.ErrorResponse{
-				Code: toCode(errors.Cause(err)),
-				Msg:  err.Error(),
-			},
-			Compose: true,
-		}, nil
+		return &pb.CreateHookResponse{
+			Data: "",
+		}, err
 	}
-	return stypes.HTTPResponse{
-		Content: r,
-		Compose: true,
+	return &pb.CreateHookResponse{
+		Data: string(r),
 	}, nil
 }
-func (w *WebHookHTTP) EditHook(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
-	id := vars["id"]
+
+func (w *WebHookHTTP) EditHook(ctx context.Context, req *pb.EditHookRequest, vars map[string]string) (*pb.EditHookResponse, error) {
 	e := EditHookRequest{}
-	if err := json.NewDecoder(req.Body).Decode(&e); err != nil {
-		err := fmt.Errorf("edithook: decode fail: %v", err)
-		logrus.Error(err)
-		return stypes.HTTPResponse{
-			Error: &stypes.ErrorResponse{
-				Code: BadRequestCode,
-				Msg:  err.Error(),
-			},
-			Compose: true,
-		}, nil
+	data, err := json.Marshal(req)
+	if err != nil {
+		return &pb.EditHookResponse{
+			Data: "",
+		}, err
 	}
-	orgID := extractOrgIDHeader(req)
-	r, err := w.impl.EditHook(orgID, id, e)
+	err = json.Unmarshal(data, &e)
+	if err != nil {
+		return &pb.EditHookResponse{
+			Data: "",
+		}, err
+	}
+	orgID := apis.GetOrgID(ctx)
+	r, err := w.impl.EditHook(orgID, req.Id, e)
 	if err != nil {
 		logrus.Error(err)
-		return stypes.HTTPResponse{
-			Error: &stypes.ErrorResponse{
-				Code: toCode(errors.Cause(err)),
-				Msg:  err.Error(),
-			},
-			Compose: true,
+		return &pb.EditHookResponse{
+			Data: "",
 		}, nil
 	}
-	return stypes.HTTPResponse{
-		Content: r,
-		Compose: true,
+	return &pb.EditHookResponse{
+		Data: string(r),
 	}, nil
 }
-func (w *WebHookHTTP) PingHook(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
-	id := vars["id"]
-	orgID := extractOrgIDHeader(req)
-	if err := w.impl.PingHook(orgID, id); err != nil {
+
+func (w *WebHookHTTP) PingHook(ctx context.Context, req *pb.PingHookRequest, vars map[string]string) (*pb.PingHookResponse, error) {
+	orgID := apis.GetOrgID(ctx)
+	if err := w.impl.PingHook(orgID, req.Id); err != nil {
 		logrus.Error(err)
-		return stypes.HTTPResponse{
-			Error: &stypes.ErrorResponse{
-				Code: toCode(errors.Cause(err)),
-				Msg:  err.Error(),
-			},
-			Compose: true,
-		}, nil
+		return &pb.PingHookResponse{
+			Data: "",
+		}, err
 	}
-	return stypes.HTTPResponse{
-		Content: "",
-		Compose: true,
+	return &pb.PingHookResponse{
+		Data: "",
 	}, nil
 }
-func (w *WebHookHTTP) DeleteHook(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
-	id := vars["id"]
-	orgID := extractOrgIDHeader(req)
-	if err := w.impl.DeleteHook(orgID, id); err != nil {
+
+func (w *WebHookHTTP) DeleteHook(ctx context.Context, req *pb.DeleteHookRequest, vars map[string]string) (*pb.DeleteHookResponse, error) {
+	orgID := apis.GetOrgID(ctx)
+	if err := w.impl.DeleteHook(orgID, req.Id); err != nil {
 		logrus.Error(err)
-		return stypes.HTTPResponse{
-			Error: &stypes.ErrorResponse{
-				Code: toCode(errors.Cause(err)),
-				Msg:  err.Error(),
-			},
-			Compose: true,
-		}, nil
+		return &pb.DeleteHookResponse{
+			Data: "",
+		}, err
 	}
-	return stypes.HTTPResponse{
-		Content: "",
-		Compose: true,
+	return &pb.DeleteHookResponse{
+		Data: "",
 	}, nil
 }
 
 type ListHookEventsResponse = apistructs.WebhookListEventsResponseData
 
-func (w *WebHookHTTP) ListHookEvents(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
-	return stypes.HTTPResponse{
-		Content: ListHookEventsResponse([]struct {
-			Key   string `json:"key"`
-			Title string `json:"title"`
-			Desc  string `json:"desc"`
-		}{
-			// {"application", "application", "应用的创建，删除"},
-			{"runtime", "runtime", "runtime 的创建，删除"},
-			{"pipeline", "pipeline", "pipeline 的创建(create)，停止(stop)，完成(finish)"},
-			// {"deployment", "deployment", "runtime部署过程：初始化，申请addon，部署service"},
-			// {"domain-changed", "domain changed", "runtime域名的改变"},
-			// {"config-modified", "config modified", "配置变化"},
-		}),
-		Compose: true,
+func (w *WebHookHTTP) ListHookEvents(ctx context.Context, req *pb.ListHookEventsRequest, vars map[string]string) (*pb.ListHookEventsResponse, error) {
+	r := []*pb.HookEvents{
+		{
+			Key:   "runtime",
+			Title: "runtime",
+			Desc:  "runtime 的创建，删除",
+		},
+		{
+			Key:   "pipeline",
+			Title: "pipeline",
+			Desc:  "pipeline 的创建(create)，停止(stop)，完成(finish)",
+		},
+	}
+	return &pb.ListHookEventsResponse{
+		Data: r,
 	}, nil
-
 }
 
-func extractHookLocation(req *http.Request) (apistructs.HookLocation, error) {
-	org := queryGetByOrder(req, "orgID", "orgId", "orgid")
-	project := queryGetByOrder(req, "projectID", "projectId", "projectid")
-	application := queryGetByOrder(req, "applicationID", "applicationId", "applicationid")
-	envstr := queryGetByOrder(req, "env")
+func extractHookLocation(req *pb.ListHooksRequest) (apistructs.HookLocation, error) {
 	var env []string
-	if envstr != "" {
-		envraw := strings.Split(envstr, ",")
+	if req.Env != "" {
+		envraw := strings.Split(req.Env, ",")
 		for i := range envraw {
 			if envraw[i] != "" {
 				normalizedEnv := strings.ToLower(strings.TrimSpace(envraw[i]))
@@ -258,9 +238,9 @@ func extractHookLocation(req *http.Request) (apistructs.HookLocation, error) {
 		}
 	}
 	return apistructs.HookLocation{
-		Org:         org,
-		Project:     project,
-		Application: application,
+		Org:         req.OrgId,
+		Project:     req.ProjectId,
+		Application: req.ApplicationId,
 		Env:         env,
 	}, nil
 }
@@ -279,98 +259,98 @@ func extractOrgIDHeader(req *http.Request) string {
 	return req.Header.Get("Org-ID")
 }
 
-func invalidResponse(msg ...string) (stypes.Responser, error) {
+func invalidResponse(msg ...string) error {
 	message := "invalid query"
 	if len(msg) > 0 {
 		message = fmt.Sprintf("invalid query: %s", msg[0])
+		return fmt.Errorf("%v", message)
 	}
-	return stypes.HTTPResponse{
-		Error: &stypes.ErrorResponse{
-			Code: BadRequestCode,
-			Msg:  message,
-		},
-		Compose: true,
-	}, nil
+	return nil
 }
 
-func check(h func(context.Context, *http.Request, map[string]string) (stypes.Responser, error)) func(context.Context, *http.Request, map[string]string) (stypes.Responser, error) {
-	bdl := bundle.New(bundle.WithCoreServices())
-	f := func(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
-		userid := req.Header.Get("User-ID")
-		if userid != "" {
-			org := queryGetByOrder(req, "orgID", "orgId", "orgid")
-			orgid, err := strconv.ParseUint(org, 10, 64)
-			if err != nil {
-				return invalidResponse("org")
-			}
+func checkPermissionParam(req *apistructs.PermissionCheckRequest) error {
+	if req.UserID == "" {
+		return errors.Errorf("invalid request, user id is empty")
+	}
 
-			checkresult, err := bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-				UserID:   userid,
-				Scope:    apistructs.OrgScope,
-				ScopeID:  orgid,
+	if _, ok := types.AllScopeRoleMap[req.Scope]; !ok {
+		return errors.Errorf("invalid request, scope is invalid")
+	}
+
+	if req.Resource == "" {
+		return errors.Errorf("invalid request, resource is empty")
+	}
+	if req.Action == "" {
+		return errors.Errorf("invalid request, action is empty")
+	}
+
+	return nil
+}
+
+func (w *WebHookHTTP) CheckPermission(ctx context.Context, orgIdStr, projectIdStr, applicationIdStr string) error {
+	userIdStr := apis.GetUserID(ctx)
+	if userIdStr != "" {
+		orgId, err := strconv.ParseUint(orgIdStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		checkReq := &apistructs.PermissionCheckRequest{
+			UserID:   userIdStr,
+			Scope:    apistructs.OrgScope,
+			ScopeID:  orgId,
+			Resource: "webhook",
+			Action:   "OPERATE",
+		}
+		checkPermissionParam(checkReq)
+		if err != nil {
+			return invalidResponse(err.Error())
+		}
+		checkResult, err := w.CoreService.CheckPermission(checkReq)
+		if !checkResult {
+			return invalidResponse("permission denied")
+		}
+		if projectIdStr != "" {
+			projectId, err := strconv.ParseUint(projectIdStr, 10, 64)
+			if err != nil {
+				return invalidResponse("project")
+			}
+			checkReq := &apistructs.PermissionCheckRequest{
+				UserID:   userIdStr,
+				Scope:    apistructs.ProjectScope,
+				ScopeID:  projectId,
 				Resource: "webhook",
 				Action:   "OPERATE",
-			})
+			}
+			checkPermissionParam(checkReq)
 			if err != nil {
 				return invalidResponse(err.Error())
 			}
-			if !checkresult.Access {
+			checkResult, err := w.CoreService.CheckPermission(checkReq)
+			if !checkResult {
 				return invalidResponse("permission denied")
 			}
-			project := queryGetByOrder(req, "projectID", "projectId", "projectid")
-			if project != "" {
-				projectid, err := strconv.ParseUint(project, 10, 64)
-				if err != nil {
-					return invalidResponse("project")
-				}
-				checkresult, err := bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-					UserID:   userid,
-					Scope:    apistructs.ProjectScope,
-					ScopeID:  projectid,
-					Resource: "webhook",
-					Action:   "OPERATE",
-				})
-				if err != nil {
-					return invalidResponse(err.Error())
-				}
-				if !checkresult.Access {
-					return invalidResponse("permission denied")
-				}
+		}
+		if applicationIdStr != "" {
+			appId, err := strconv.ParseUint(applicationIdStr, 10, 64)
+			if err != nil {
+				return invalidResponse("application")
 			}
-			application := queryGetByOrder(req, "applicationID", "applicationId", "applicationid")
-			if application != "" {
-				appid, err := strconv.ParseUint(application, 10, 64)
-				if err != nil {
-					return invalidResponse("application")
-				}
-				checkresult, err := bdl.CheckPermission(&apistructs.PermissionCheckRequest{
-					UserID:   userid,
-					Scope:    apistructs.AppScope,
-					ScopeID:  appid,
-					Resource: "webhook",
-					Action:   "OPERATE",
-				})
-				if err != nil {
-					return invalidResponse(err.Error())
-				}
-				if !checkresult.Access {
-					return invalidResponse("permission denied")
-				}
+			checkReq := &apistructs.PermissionCheckRequest{
+				UserID:   userIdStr,
+				Scope:    apistructs.AppScope,
+				ScopeID:  appId,
+				Resource: "webhook",
+				Action:   "OPERATE",
+			}
+			checkPermissionParam(checkReq)
+			if err != nil {
+				return invalidResponse(err.Error())
+			}
+			checkResult, err := w.CoreService.CheckPermission(checkReq)
+			if !checkResult {
+				return invalidResponse("permission denied")
 			}
 		}
-		return h(ctx, req, vars)
 	}
-	return f
-}
-
-func (w *WebHookHTTP) GetHTTPEndPoints() []stypes.Endpoint {
-	return []stypes.Endpoint{
-		{"/webhooks", http.MethodGet, check(w.ListHooks)},
-		{"/webhooks/{id}", http.MethodGet, check(w.InspectHook)},
-		{"/webhooks", http.MethodPost, check(w.CreateHook)},
-		{"/webhooks/{id}", http.MethodPut, check(w.EditHook)},
-		{"/webhooks/{id}/actions/ping", http.MethodPost, check(w.PingHook)},
-		{"/webhooks/{id}", http.MethodDelete, check(w.DeleteHook)},
-		{"/webhook_events", http.MethodGet, w.ListHookEvents},
-	}
+	return nil
 }

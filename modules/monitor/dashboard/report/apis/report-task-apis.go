@@ -428,7 +428,7 @@ func (p *provider) generatePipelineYml(r *reportTask) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	eaddr, err := p.createFQDN(discover.EventBox())
+	eaddr, err := p.createFQDN(discover.CoreServices())
 	if err != nil {
 		return "", err
 	}
@@ -436,11 +436,11 @@ func (p *provider) generatePipelineYml(r *reportTask) (string, error) {
 		Type:    p.Cfg.Pipeline.ActionType,
 		Version: p.Cfg.Pipeline.ActionVersion,
 		Params: map[string]interface{}{
-			"monitor_addr":  maddr,
-			"eventbox_addr": eaddr,
-			"report_id":     r.ID,
-			"org_name":      org.Name,
-			"domain_addr":   fmt.Sprintf("%s://%s", p.Cfg.DiceProtocol, org.Domain),
+			"monitor_addr":       maddr,
+			"core_services_addr": eaddr,
+			"report_id":          r.ID,
+			"org_name":           org.Name,
+			"domain_addr":        fmt.Sprintf("%s://%s", p.Cfg.DiceProtocol, org.Domain),
 		},
 	}}}
 	byteContent, err := yaml.Marshal(pipelineYml)

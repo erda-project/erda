@@ -17,10 +17,9 @@ package monitor
 import (
 	"bytes"
 	"context"
-	"net/http"
 	"strconv"
 
-	stypes "github.com/erda-project/erda/modules/messenger/eventbox/server/types"
+	"github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb"
 	"github.com/erda-project/erda/pkg/terminal/table"
 )
 
@@ -31,26 +30,36 @@ func NewMonitorHTTP() (*MonitorHTTP, error) {
 	return &MonitorHTTP{}, nil
 }
 
-func (w *MonitorHTTP) Stat(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
+func (w *MonitorHTTP) Stat(ctx context.Context, req *pb.StatRequest, vars map[string]string) (*pb.StatResponse, error) {
 	s1, err := std.pstat.Last5Min()
 	if err != nil {
-		return stypes.ErrorResp("MON500", err.Error()), nil
+		return &pb.StatResponse{
+			Data: "",
+		}, err
 	}
 	s2, err := std.pstat.Last20Min()
 	if err != nil {
-		return stypes.ErrorResp("MON500", err.Error()), nil
+		return &pb.StatResponse{
+			Data: "",
+		}, err
 	}
 	s3, err := std.pstat.Last1Hour()
 	if err != nil {
-		return stypes.ErrorResp("MON500", err.Error()), nil
+		return &pb.StatResponse{
+			Data: "",
+		}, err
 	}
 	s4, err := std.pstat.Last6Hour()
 	if err != nil {
-		return stypes.ErrorResp("MON500", err.Error()), nil
+		return &pb.StatResponse{
+			Data: "",
+		}, err
 	}
 	s5, err := std.pstat.Last1Day()
 	if err != nil {
-		return stypes.ErrorResp("MON500", err.Error()), nil
+		return &pb.StatResponse{
+			Data: "",
+		}, err
 	}
 	infotpList := infoTypeList()
 	infotpStrList := []string{}
@@ -74,17 +83,12 @@ func (w *MonitorHTTP) Stat(ctx context.Context, req *http.Request, vars map[stri
 	var buf bytes.Buffer
 	if err := table.NewTable(table.WithVertical(), table.WithWriter(&buf)).Header(append([]string{" "}, infotpStrList...)).
 		Data([][]string{s1data, s2data, s3data, s4data, s5data}).Flush(); err != nil {
-		return stypes.ErrorResp("MON500", err.Error()), nil
+		return &pb.StatResponse{
+			Data: "",
+		}, err
 	}
-	return stypes.HTTPResponse{
-		Content:    buf.String(),
-		RawContent: true,
+	return &pb.StatResponse{
+		Data: buf.String(),
 	}, nil
 
-}
-
-func (w *MonitorHTTP) GetHTTPEndPoints() []stypes.Endpoint {
-	return []stypes.Endpoint{
-		{"/stat", http.MethodGet, w.Stat},
-	}
 }

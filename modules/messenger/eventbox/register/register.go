@@ -16,14 +16,16 @@ package register
 
 import (
 	"context"
-	"github.com/erda-project/erda/modules/eventbox/constant"
-	"github.com/erda-project/erda/modules/messenger/eventbox/register/label"
-	"github.com/erda-project/erda/modules/messenger/eventbox/types"
-	"github.com/erda-project/erda/pkg/jsonstore"
-	"github.com/sirupsen/logrus"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/erda-project/erda/modules/messenger/eventbox/constant"
+	"github.com/erda-project/erda/modules/messenger/eventbox/register/label"
+	"github.com/erda-project/erda/modules/messenger/eventbox/types"
+	"github.com/erda-project/erda/pkg/jsonstore"
 )
 
 type Register interface {

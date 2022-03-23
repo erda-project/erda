@@ -17,11 +17,12 @@ package register
 import (
 	"context"
 	"encoding/json"
-	stypes "github.com/erda-project/erda/modules/messenger/eventbox/server/types"
-	"github.com/erda-project/erda/modules/messenger/eventbox/types"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"net/http"
+
+	"github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb"
+	"github.com/erda-project/erda/modules/messenger/eventbox/types"
 )
 
 type PutRequest struct {
@@ -45,77 +46,66 @@ func NewHTTP(register Register) *RegisterHTTP {
 	}
 }
 
-func (r *RegisterHTTP) Put(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
-	var m PutRequest
-	if err := json.NewDecoder(req.Body).Decode(&m); err != nil {
-		logrus.Errorf("RegisterHTTP Put: %v", err)
-		return stypes.HTTPResponse{
-			Status:  http.StatusBadRequest,
-			Content: "unmarshal message failed",
-		}, err
+func (r *RegisterHTTP) Put(ctx context.Context, req *pb.PutRequest, vars map[string]string) (*pb.PutResponse, error) {
+	lab := make(map[types.LabelKey]interface{})
+	for k, v := range req.Labels {
+		//todo check
+		lab[types.LabelKey(k)] = v.AsInterface()
 	}
-	if err := r.register.Put(m.Key, m.Labels); err != nil {
+	if err := r.register.Put(req.Key, lab); err != nil {
 		err := errors.Errorf("RegisterHTTP Put: %v", err)
 		logrus.Error(err)
-		return stypes.HTTPResponse{
-			Status:  http.StatusInternalServerError,
-			Content: err.Error(),
+		return &pb.PutResponse{
+			Data: "",
 		}, err
 	}
-	return stypes.HTTPResponse{
-		Status:  http.StatusOK,
-		Content: "",
+	return &pb.PutResponse{
+		Data: "",
 	}, nil
 }
 
-func (r *RegisterHTTP) PrefixGet(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
-	key := req.URL.Query().Get("key")
-	if key == "" {
+func (r *RegisterHTTP) PrefixGet(ctx context.Context, req *pb.PrefixGetRequest, vars map[string]string) (*pb.PrefixGetResponse, error) {
+	if req.Key == "" {
 		logrus.Infof("RegisterHTTP Get: request not provide key")
-		return stypes.HTTPResponse{
-			Status:  http.StatusBadRequest,
-			Content: "request not provide key",
+		return &pb.PrefixGetResponse{
+			Data: nil,
 		}, nil
 	}
-	labels := r.register.PrefixGet(key)
+	labels := r.register.PrefixGet(req.Key)
 	if labels == nil {
-		logrus.Infof("RegisterHTTP Get (not found): %v", key)
-		return stypes.HTTPResponse{
-			Status:  http.StatusBadRequest,
-			Content: "",
+		logrus.Infof("RegisterHTTP Get (not found): %v", req.Key)
+		return &pb.PrefixGetResponse{
+			Data: nil,
 		}, nil
 	}
-	return stypes.HTTPResponse{
-		Status:  http.StatusOK,
-		Content: labels,
+	data, err := json.Marshal(labels)
+	if err != nil {
+		logrus.Infof("labels marshal is failed err is %v", err)
+		return &pb.PrefixGetResponse{
+			Data: nil,
+		}, nil
+	}
+	//todo check
+	resp := make(map[string]*pb.PrefixValue)
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		logrus.Infof("labels unmarshal is failed err is %v", err)
+		return &pb.PrefixGetResponse{
+			Data: nil,
+		}, nil
+	}
+	return &pb.PrefixGetResponse{
+		Data: resp,
 	}, nil
 }
 
-func (r *RegisterHTTP) Del(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
-	var m DelRequest
-	if err := json.NewDecoder(req.Body).Decode(&m); err != nil {
-		logrus.Errorf("RegisterHTTP Del: %v", err)
-		return stypes.HTTPResponse{
-			Status:  http.StatusBadRequest,
-			Content: "unmarshal message failed",
+func (r *RegisterHTTP) Del(ctx context.Context, req *pb.DelRequest, vars map[string]string) (*pb.DelResponse, error) {
+	if err := r.register.Del(req.Key); err != nil {
+		return &pb.DelResponse{
+			Data: "",
 		}, err
 	}
-	if err := r.register.Del(m.Key); err != nil {
-		return stypes.HTTPResponse{
-			Status:  http.StatusInternalServerError,
-			Content: err.Error(),
-		}, err
-	}
-	return stypes.HTTPResponse{
-		Status:  http.StatusOK,
-		Content: "",
+	return &pb.DelResponse{
+		Data: "",
 	}, nil
-}
-
-func (r *RegisterHTTP) GetHTTPEndPoints() []stypes.Endpoint {
-	return []stypes.Endpoint{
-		{"/register", http.MethodGet, r.PrefixGet},
-		{"/register", http.MethodPut, r.Put},
-		{"/register", http.MethodDelete, r.Del},
-	}
 }

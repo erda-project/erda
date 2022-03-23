@@ -15,22 +15,17 @@
 package http
 
 import (
-	"net/http"
-
-	"github.com/sirupsen/logrus"
+	"fmt"
 
 	"github.com/erda-project/erda/modules/messenger/eventbox/dispatcher/errors"
-	"github.com/erda-project/erda/modules/messenger/eventbox/server/types"
 )
 
-func genResponse(dispatchErrs *errors.DispatchError) types.HTTPResponse {
+func genResponse(dispatchErrs *errors.DispatchError) error {
 	if len(dispatchErrs.BackendErrs) > 0 {
-		logrus.Errorf("dispatcher backenderr: %v", dispatchErrs.BackendErrs)
-		return types.HTTPResponse{Status: http.StatusBadRequest, Content: dispatchErrs.BackendErrs}
+		return fmt.Errorf("dispatcher backenderr: %v", dispatchErrs.BackendErrs)
 	}
 	if dispatchErrs.FilterErr != nil {
-		logrus.Errorf("dispatcher filterErr: %v", dispatchErrs.FilterErr)
-		return types.HTTPResponse{Status: http.StatusBadRequest, Content: dispatchErrs.FilterErr.Error()}
+		return fmt.Errorf("dispatcher filterErr: %v", dispatchErrs.FilterErr)
 	}
-	return types.HTTPResponse{Status: http.StatusOK, Content: ""}
+	return nil
 }

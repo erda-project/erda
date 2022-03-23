@@ -17,15 +17,13 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb"
-	//"google.golang.org/protobuf/types/known/structpb"
-	"net/http"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/eventbox/monitor"
+	"github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb"
 	"github.com/erda-project/erda/modules/messenger/eventbox/input"
-	stypes "github.com/erda-project/erda/modules/messenger/eventbox/server/types"
+	"github.com/erda-project/erda/modules/messenger/eventbox/monitor"
 	"github.com/erda-project/erda/modules/messenger/eventbox/types"
 )
 
@@ -56,41 +54,22 @@ func (h *HttpInput) Name() string {
 	return "HTTP"
 }
 
-func (h *HttpInput) GetHTTPEndPoints() []stypes.Endpoint {
-	return []stypes.Endpoint{
-		{"/message/create", http.MethodPost, h.createMessage},
-	}
-}
-
-func (h *HttpInput) createMessage(ctx context.Context, req *http.Request, vars map[string]string) (stypes.Responser, error) {
+func (h *HttpInput) CreateMessage(ctx context.Context, request *pb.CreateMessageRequest, vars map[string]string) error {
 	var m types.Message
-	err := json.NewDecoder(req.Body).Decode(&m)
-	if err != nil {
-		return stypes.HTTPResponse{Status: http.StatusBadRequest, Content: "unmarshal message failed!"}, err
-	}
-	logrus.Debugf("%s input message timestamp:%d", h.Name(), m.Time)
-
-	monitor.Notify(monitor.MonitorInfo{Tp: monitor.HTTPInput})
-	e := h.handler(&m)
-	resp := genResponse(e)
-	return resp, nil
-}
-
-func (h *HttpInput) CreateMessage(ctx context.Context, request *pb.CreateMessageRequest, vars map[string]string) (stypes.Responser, error) {
-	var m types.Message
-	//err := json.NewDecoder(req.Body).Decode(&m)
 	data, err := json.Marshal(request)
 	if err != nil {
-		return stypes.HTTPResponse{Status: http.StatusBadRequest, Content: "marshal message failed!"}, err
+		return fmt.Errorf("marshal message is failed err is %v", err)
 	}
 	err = json.Unmarshal(data, &m)
 	if err != nil {
-		return stypes.HTTPResponse{Status: http.StatusBadRequest, Content: "unmarshal message failed!"}, err
+		return fmt.Errorf("unmarshal message failed err is %v", err)
 	}
 	logrus.Debugf("%s input message timestamp:%d", h.Name(), m.Time)
-
 	monitor.Notify(monitor.MonitorInfo{Tp: monitor.HTTPInput})
 	e := h.handler(&m)
-	resp := genResponse(e)
-	return resp, nil
+	err = genResponse(e)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -15,36 +15,17 @@
 package eventbox
 
 import (
-	"github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
-	"github.com/erda-project/erda/modules/core-services/services/dingtalk/api/interfaces"
-	"github.com/erda-project/erda/modules/messenger/eventbox/dispatcher"
-	inputhttp "github.com/erda-project/erda/modules/messenger/eventbox/input/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/erda-project/erda/modules/messenger/eventbox/dispatcher"
 )
 
-//func Initialize(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServiceServer) error {
-//	dp,err := dispatcher.New(dingtalk, messenger)
-//	if err != nil {
-//		panic(err)
-//	}
-//
-//	sig := make(chan os.Signal)
-//	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
-//	go func() {
-//		for range sig {
-//			dp.Stop()
-//			os.Exit(0)
-//		}
-//	}()
-//
-//	dp.Start()
-//	return nil
-//}
-
-func Initialize(dingtalk interfaces.DingTalkApiClientFactory, messenger pb.NotifyServiceServer, httpi *inputhttp.HttpInput) error {
-	dp, err := dispatcher.New(dingtalk, messenger, httpi)
+func Initialize(p *provider) error {
+	dp, err := dispatcher.New(p.DingtalkApiClient, p.Messenger,
+		p.eventBoxService.HttpI, p.eventBoxService.MonitorHTTP,
+		p.eventBoxService.WebHookHTTP, p.eventBoxService.RegisterHTTP)
 	if err != nil {
 		panic(err)
 	}

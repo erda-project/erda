@@ -20,7 +20,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/erda-project/erda/modules/eventbox/constant"
+	"github.com/erda-project/erda/modules/messenger/eventbox/constant"
 	"github.com/erda-project/erda/pkg/jsonstore"
 	_ "github.com/erda-project/erda/pkg/monitor"
 	"github.com/erda-project/erda/pkg/persist_stat"
