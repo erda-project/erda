@@ -228,7 +228,7 @@ func parseCtx() error {
 
 		if _, err := os.Stat(".git"); err == nil {
 			// fetch host from git remote url
-			info, err := utils.GetWorkspaceInfo(Remote)
+			info, err := utils.GetWorkspaceInfo(".", Remote)
 			for _, a := range ctx.Applications {
 				if a.Application == info.Application {
 					ctx.CurrentApplication.Application = a.Application

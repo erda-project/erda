@@ -101,6 +101,11 @@ func Clone(ctx *command.Context, ustr string, cloneApps bool) error {
 		ProjectID: projectID,
 	}
 
+	_, err = os.Stat(fmt.Sprintf("%s", p.Name))
+	if err == nil {
+		return errors.Errorf("Project '%s' already exists in current directory.", p.Name)
+	}
+
 	err = os.MkdirAll(fmt.Sprintf("%s/%s", p.Name, utils.GlobalErdaDir), 0755)
 	if err != nil {
 		return err

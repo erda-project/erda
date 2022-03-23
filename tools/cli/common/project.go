@@ -126,7 +126,6 @@ func CreateMSPProject(ctx *command.Context, projectID uint64, name string) (*pb.
 
 	resp, err := ctx.Post().Path("/api/msp/tenant/project").
 		JSONBody(request).Do().Body(&b)
-
 	if err != nil {
 		return response.Data, fmt.Errorf(
 			utils.FormatErrMsg("create", "failed to request ("+err.Error()+")", false))
@@ -188,48 +187,6 @@ func ImportPackage(ctx *command.Context, orgID, projectID uint64, pkg string) (u
 	return response.Data, nil
 }
 
-// GetProjectList 获取 org 下的所有 Projects
-func GetProjectList(ctx *command.Context, orgId string) ([]apistructs.ProjectDTO, error) {
-	var resp apistructs.ProjectListResponse
-	var b bytes.Buffer
-
-	response, err := ctx.Get().Path("/api/projects").Param("joined", "true").
-		Param("orgId", orgId).Do().Body(&b)
-	if err != nil {
-		return nil, fmt.Errorf(
-			utils.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
-	}
-
-	if !response.IsOK() {
-		return nil, fmt.Errorf(utils.FormatErrMsg("list",
-			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
-				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
-	}
-
-	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return nil, fmt.Errorf(utils.FormatErrMsg("list",
-			fmt.Sprintf("failed to unmarshal projects list response ("+err.Error()+")"), false))
-	}
-
-	if !resp.Success {
-		return nil, fmt.Errorf(utils.FormatErrMsg("list",
-			fmt.Sprintf("failed to request, error code: %s, error message: %s",
-				resp.Error.Code, resp.Error.Msg), false))
-	}
-
-	if resp.Data.Total < 0 {
-		return nil, fmt.Errorf(
-			utils.FormatErrMsg("list", "critical: the number of projects is less than 0", false))
-	}
-
-	if resp.Data.Total == 0 {
-		fmt.Printf(utils.FormatErrMsg("list", "no projects created\n", false))
-		return nil, nil
-	}
-
-	return resp.Data.List, nil
-}
-
 // GetUserOrgProjID get UserId,ProjectId,OrgID info
 func GetUserOrgProjID(ctx *command.Context, orgName, projectName string) (UserOrgProj, error) {
 	var uop UserOrgProj
@@ -241,15 +198,12 @@ func GetUserOrgProjID(ctx *command.Context, orgName, projectName string) (UserOr
 		return uop, err
 	}
 
-	if sessionInfo, ok := ctx.Sessions[ctx.CurrentOpenApiHost]; ok {
-		userId = sessionInfo.ID
-	}
-
+	userId = ctx.GetUserID()
 	if userId == "" || orgId <= 0 {
 		return uop, errors.New("get invalid orgID [" + strconv.FormatUint(orgId, 10) + "] or userID [" + userId + "]")
 	}
 
-	projs, err := GetProjectList(ctx, strconv.FormatUint(orgId, 10))
+	projs, err := GetProjects(ctx, orgId)
 	if err != nil {
 		return uop, err
 	}
@@ -267,4 +221,126 @@ func GetUserOrgProjID(ctx *command.Context, orgName, projectName string) (UserOr
 	uop.OrgId = strconv.FormatUint(orgId, 10)
 
 	return uop, nil
+}
+
+func GetProjectID(ctx *command.Context, orgID uint64, project string) (string, uint64, error) {
+	var projectID uint64
+	if project != "" {
+		pId, err := GetProjectIDByName(ctx, orgID, project)
+		if err != nil {
+			return project, projectID, err
+		}
+		projectID = pId
+	}
+
+	if project == "" && ctx.CurrentProject.Project == "" {
+		return project, projectID, errors.New("Invalid project name")
+	}
+
+	if project == "" && ctx.CurrentProject.Project != "" {
+		project = ctx.CurrentProject.Project
+	}
+
+	if projectID <= 0 && ctx.CurrentProject.ProjectID <= 0 && project != "" {
+		pId, err := GetProjectIDByName(ctx, orgID, project)
+		if err != nil {
+			return project, projectID, err
+		}
+		ctx.CurrentProject.ProjectID = pId
+		projectID = pId
+	}
+
+	if projectID <= 0 && ctx.CurrentProject.ProjectID <= 0 {
+		return project, projectID, errors.New("Invalid project id")
+	}
+
+	if projectID == 0 && ctx.CurrentProject.ProjectID > 0 {
+		projectID = ctx.CurrentProject.ProjectID
+	}
+
+	return project, projectID, nil
+}
+
+func GetProjectByName(ctx *command.Context, orgId uint64, project string) (apistructs.ProjectDTO, error) {
+	pList, err := GetProjects(ctx, orgId)
+	if err != nil {
+		return apistructs.ProjectDTO{}, err
+	}
+	for _, p := range pList {
+		if p.Name == project {
+			return p, nil
+		}
+	}
+
+	return apistructs.ProjectDTO{}, errors.New(fmt.Sprintf("Invalid project name %s, may not exist or has no permission", project))
+}
+
+func GetProjectIDByName(ctx *command.Context, orgId uint64, project string) (uint64, error) {
+	pList, err := GetProjects(ctx, orgId)
+	if err != nil {
+		return 0, err
+	}
+	for _, p := range pList {
+		if p.Name == project {
+			return p.ID, nil
+		}
+	}
+	return 0, errors.New(fmt.Sprintf("Invalid project name %s, may not exist or has no permission", project))
+}
+
+func GetProjects(ctx *command.Context, orgId uint64) ([]apistructs.ProjectDTO, error) {
+	var projects []apistructs.ProjectDTO
+	err := utils.PagingAll(func(pageNo, pageSize int) (bool, error) {
+		paging, err := GetPagingProjects(ctx, orgId, pageNo, pageSize)
+		if err != nil {
+			return false, err
+		}
+		projects = append(projects, paging.List...)
+
+		return paging.Total > len(projects), nil
+	}, 20)
+	if err != nil {
+		return nil, err
+	}
+
+	return projects, nil
+}
+
+func GetPagingProjects(ctx *command.Context, orgId uint64, pageNo, pageSize int) (apistructs.PagingProjectDTO, error) {
+	var resp apistructs.ProjectListResponse
+	var b bytes.Buffer
+
+	response, err := ctx.Get().Path("/api/projects").
+		Param("joined", "true").
+		Param("orgId", strconv.FormatUint(orgId, 10)).
+		Param("pageNo", strconv.Itoa(pageNo)).Param("pageSize", strconv.Itoa(pageSize)).
+		Do().Body(&b)
+	if err != nil {
+		return apistructs.PagingProjectDTO{}, fmt.Errorf(
+			utils.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
+	}
+
+	if !response.IsOK() {
+		return apistructs.PagingProjectDTO{}, fmt.Errorf(utils.FormatErrMsg("list",
+			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
+				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+	}
+
+	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
+		return apistructs.PagingProjectDTO{}, fmt.Errorf(utils.FormatErrMsg("list",
+			fmt.Sprintf("failed to unmarshal projects list response ("+err.Error()+")"), false))
+	}
+
+	if !resp.Success {
+		return apistructs.PagingProjectDTO{}, fmt.Errorf(utils.FormatErrMsg("list",
+			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+				resp.Error.Code, resp.Error.Msg), false))
+	}
+
+	if resp.Data.Total < 0 {
+		return apistructs.PagingProjectDTO{}, fmt.Errorf(
+			utils.FormatErrMsg("list", "critical: the number of projects is less than 0", false))
+	}
+
+	return resp.Data, nil
 }

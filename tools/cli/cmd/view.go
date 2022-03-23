@@ -60,14 +60,14 @@ func PipelineView(ctx *command.Context, branch string, pipelineID uint64, watch 
 	}
 
 	if branch == "" {
-		b, err := utils.GetWorkspaceBranch()
+		b, err := utils.GetWorkspaceBranch(".")
 		if err != nil {
 			return err
 		}
 		branch = b
 	}
 
-	info, err := utils.GetWorkspaceInfo(command.Remote)
+	info, err := utils.GetWorkspaceInfo(".", command.Remote)
 	if err != nil {
 		return errors.Wrap(err, "failed to get  workspace info")
 	}
