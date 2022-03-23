@@ -28,7 +28,9 @@ import (
 	"github.com/erda-project/erda/pkg/jsonstore/etcd"
 )
 
-type config struct{}
+type config struct {
+	PipelineDBGCCron string `file:"pipeline_dbgc_cron" env:"PIPELINE_DBGC_CRON" default:"0 0 0/2 * * ?"`
+}
 
 type provider struct {
 	Cfg      *config

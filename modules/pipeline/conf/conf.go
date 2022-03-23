@@ -44,7 +44,6 @@ type Conf struct {
 	// build cache
 	BuildCacheCleanJobCron string        `env:"BUILD_CACHE_CLEAN_JOB_CRON" default:"0 0 0 * * ?"`
 	BuildCacheExpireIn     time.Duration `env:"BUILD_CACHE_EXPIRE_IN" default:"168h"`
-	PipelineDBGCCron       string        `env:"PIPELINE_DBGC_CRON" default:"0 0 0/2 * * ?"`
 
 	// bundle
 	GittarAddr         string `env:"GITTAR_ADDR" required:"false"`
@@ -201,11 +200,6 @@ func AgentPreFetcherDestDir() string {
 // BuildCacheCleanJobCron 返回清理 构建缓存镜像 任务的 定时配置.
 func BuildCacheCleanJobCron() string {
 	return cfg.BuildCacheCleanJobCron
-}
-
-// PipelineDBGCCron pipeline DBGC cron
-func PipelineDBGCCron() string {
-	return cfg.PipelineDBGCCron
 }
 
 // BuildCacheExpireIn 返回 构建缓存镜像 的失效时间.

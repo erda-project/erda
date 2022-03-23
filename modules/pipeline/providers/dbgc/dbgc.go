@@ -40,7 +40,7 @@ const (
 
 func (p *provider) StartPipelineDatabaseGC(ctx context.Context) {
 	c := cron.New()
-	err := c.AddFunc(conf.PipelineDBGCCron(), func() {
+	err := c.AddFunc(p.Cfg.PipelineDBGCCron, func() {
 		p.PipelineDatabaseGC()
 	})
 	if err != nil {
