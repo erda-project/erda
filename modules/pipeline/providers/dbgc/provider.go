@@ -58,7 +58,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func (p *provider) Run(ctx context.Context) error {
-	p.LW.OnLeader(p.PipelineDatabaseGC)
+	p.LW.OnLeader(p.StartPipelineDatabaseGC)
 	return nil
 }
 
