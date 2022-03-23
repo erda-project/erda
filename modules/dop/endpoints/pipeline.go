@@ -24,7 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -721,7 +720,16 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 		}
 		v2.ForceRun = true
 		v2.PipelineYmlName = fmt.Sprintf("%d/%s/%s/%s", reqPipeline.AppID, workspace, gitEvent.Content.SourceBranch, strings.TrimPrefix(each, "/"))
-		spew.Dump(v2)
+
+		ymlName, path := getYmlNameAndPath(each)
+		if ymlName != "" {
+			definitionID, err := e.getDefinitionID(ctx, app, gitEvent.Content.SourceBranch, path, ymlName)
+			if err != nil {
+				logrus.Errorf("failed to bind definition %v", err)
+			}
+			v2.DefinitionID = definitionID
+		}
+
 		resPipeline, err := e.pipeline.CreatePipelineV2(v2)
 		if err != nil {
 			logrus.Errorf("failed to create pipeline, (%+v)", err)
@@ -788,6 +796,25 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 		return apierrors.ErrCreateCheckRun.NotFound().ToResp(), nil
 	}
 	return httpserver.OkResp(nil)
+}
+
+func getYmlNameAndPath(name string) (string, string) {
+	var ymlName, path string
+
+	splits := strings.Split(name, "/")
+	ymlName = splits[len(splits)-1]
+	if !strings.HasSuffix(ymlName, apistructs.YmlSuffix) && !strings.HasSuffix(ymlName, apistructs.YamlSuffix) {
+		ymlName = ""
+	}
+
+	if strings.Contains(name, apistructs.DicePipelinePath) {
+		path = apistructs.DicePipelinePath
+	}
+
+	if strings.Contains(name, apistructs.ErdaPipelinePath) {
+		path = apistructs.ErdaPipelinePath
+	}
+	return ymlName, path
 }
 
 // GetPipelineLink Get the link to the running pipeline
