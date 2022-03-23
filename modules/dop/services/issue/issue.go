@@ -1962,35 +1962,3 @@ func (svc *Issue) GetIssueParents(issueID uint64, relationType []string) ([]dao.
 func (svc *Issue) ListStatesTransByProjectID(projectID uint64) ([]dao.IssueStateTransition, error) {
 	return svc.db.ListStatesTransByProjectID(projectID)
 }
-
-func (svc *Issue) getUpdatedPlanFinishedAt(req *apistructs.IssueCreateRequest) (planFinishedAt *time.Time, err error) {
-	planFinishedAt = req.PlanFinishedAt.Value()
-	if req.Type != apistructs.IssueTypeBug && req.Type != apistructs.IssueTypeTask {
-		return
-	}
-	cache, err := NewIssueCache(svc.db)
-	if err != nil {
-		return
-	}
-	iteration, err := cache.TryGetIteration(req.IterationID)
-	if err != nil {
-		return
-	}
-	validator := issueValidator{}
-	c := &issueValidationConfig{iteration: iteration}
-	if err = validator.validateStateWithIteration(c); err != nil {
-		return
-	}
-	err = validator.validateTimeWithInIteration(c, planFinishedAt)
-	if planFinishedAt != nil && err != nil {
-		return
-	}
-	now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
-	adjuster := issueCreateAdjuster{&now}
-	if finishedAt := adjuster.planFinished(func() bool {
-		return req.IterationID > 0 && planFinishedAt == nil
-	}, iteration); finishedAt != nil {
-		planFinishedAt = finishedAt
-	}
-	return planFinishedAt, nil
-}

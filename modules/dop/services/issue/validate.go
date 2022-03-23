@@ -72,10 +72,11 @@ func (v *issueValidator) validateChangedFields(req *apistructs.IssueUpdateReques
 		if err = v.validateStateWithIteration(c); err != nil {
 			return
 		}
-	}
-	if _, ok := changedFields["plan_finished_at"]; ok {
-		if err = v.validateTimeWithInIteration(c, req.PlanFinishedAt.Value()); err != nil {
-			return
+	} else {
+		if _, ok := changedFields["plan_finished_at"]; ok {
+			if err = v.validateTimeWithInIteration(c, req.PlanFinishedAt.Value()); err != nil {
+				return
+			}
 		}
 	}
 	return
