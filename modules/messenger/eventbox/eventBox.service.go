@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/base/version"
 	"github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb"
 	"github.com/erda-project/erda/modules/messenger/eventbox/conf"
@@ -30,7 +32,6 @@ import (
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
 	"github.com/erda-project/erda/pkg/http/httputil"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type eventBoxService struct {
