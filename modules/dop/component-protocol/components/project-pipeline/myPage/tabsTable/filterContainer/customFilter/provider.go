@@ -74,8 +74,12 @@ func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
 	p.ProjectPipelineSvc = sdk.Ctx.Value(types.ProjectPipelineService).(*projectpipeline.ProjectPipelineService)
 
 	var urlQuery FrontendConditions
-	cputil.MustGetURLQuery(sdk, &urlQuery)
-	p.URLQuery = &urlQuery
+	err = cputil.GetURLQuery(sdk, &urlQuery)
+	if err != nil {
+		logrus.Errorf("GetURLQuery error %v", err)
+	} else {
+		p.URLQuery = &urlQuery
+	}
 
 	cputil.MustObjJSONTransfer(&p.StdStatePtr, &p.State)
 }
@@ -143,8 +147,7 @@ func (p *CustomFilter) AfterHandleOp(sdk *cptype.SDK) {
 	if p.gsHelper.GetGlobalPipelineTab() == common.MineState.String() {
 		copyValues.Creator = nil
 	}
-
-	cputil.SetURLQuery(sdk, p.State.FrontendConditionValues)
+	cputil.SetURLQuery(sdk, copyValues)
 
 	cputil.MustObjJSONTransfer(&p.State, &p.StdStatePtr)
 }
