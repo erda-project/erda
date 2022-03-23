@@ -136,13 +136,6 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		req.UserID = req.Creator
 	}
 	planStartedAt, planFinishedAt := req.PlanStartedAt.Value(), req.PlanFinishedAt.Value()
-	planFinishedAt, err := svc.getUpdatedPlanFinishedAt(req)
-	if err != nil {
-		return nil, apierrors.ErrCreateIssue.InvalidParameter(err)
-	}
-	if planStartedAt != nil && planFinishedAt != nil && planStartedAt.After(*planFinishedAt) {
-		return nil, fmt.Errorf("plan started is after plan finished time")
-	}
 	// 初始状态为排序级最高的状态
 	initState, err := svc.db.GetIssuesStatesByProjectID(req.ProjectID, req.Type)
 	if err != nil {
@@ -202,10 +195,14 @@ func (svc *Issue) Create(req *apistructs.IssueCreateRequest) (*dao.Issue, error)
 		return nil, apierrors.ErrCreateIssue.InternalError(err)
 	}
 
-	if create.Type == apistructs.IssueTypeTask {
-		if err := svc.AfterIssueChildrenUpdate(&issueChildrenUpdated{id: create.ID}); err != nil {
-			return nil, fmt.Errorf("update issue parent after issue children %v update failed: %v", create.ID, err)
-		}
+	u := &issueChildrenUpdated{
+		id:             create.ID,
+		iterationID:    req.IterationID,
+		planStartedAt:  planStartedAt,
+		planFinishedAt: planFinishedAt,
+	}
+	if err := svc.AfterIssueChildrenUpdate(u); err != nil {
+		return nil, fmt.Errorf("update issue parent after issue children %v update failed: %v", create.ID, err)
 	}
 	// 生成活动记录
 	users, err := svc.uc.FindUsers([]string{req.UserID})
@@ -629,7 +626,6 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		issueStreamFields[field] = []interface{}{canUpdateFields[field], v}
 	}
 
-	var updatePlanFinishedAtBySystem bool
 	if issueModel.Type == apistructs.IssueTypeBug || issueModel.Type == apistructs.IssueTypeTask {
 		c := &issueValidationConfig{}
 		iteration, err := cache.TryGetIteration(*req.IterationID)
@@ -645,13 +641,8 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 			c.state = state
 		}
 		v := issueValidator{}
-		updatePlanFinishedAtBySystem, err = v.validateChangedFields(&req, c, changedFields, iteration)
-		if err != nil {
+		if err = v.validateChangedFields(&req, c, changedFields); err != nil {
 			return err
-		}
-		if updatePlanFinishedAtBySystem {
-			now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
-			changedFields["expiry_status"] = dao.GetExpiryStatus(req.PlanFinishedAt.Time(), now)
 		}
 	}
 
@@ -666,25 +657,26 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 		return apierrors.ErrUpdateIssue.InternalError(err)
 	}
 
-	if issueModel.Type == apistructs.IssueTypeTask {
-		currentBelong, err := cache.TryGetState(issueModel.State)
+	currentBelong, err := cache.TryGetState(issueModel.State)
+	if err != nil {
+		return apierrors.ErrUpdateIssue.InternalError(err)
+	}
+	u := &issueChildrenUpdated{
+		id:             issueModel.ID,
+		stateOld:       currentBelong.Belong,
+		iterationID:    *req.IterationID,
+		planStartedAt:  req.PlanStartedAt.Value(),
+		planFinishedAt: req.PlanFinishedAt.Value(),
+	}
+	if req.State != nil {
+		newBelong, err := cache.TryGetState(*req.State)
 		if err != nil {
 			return apierrors.ErrUpdateIssue.InternalError(err)
 		}
-		u := &issueChildrenUpdated{
-			id:       issueModel.ID,
-			stateOld: currentBelong.Belong,
-		}
-		if req.State != nil {
-			newBelong, err := cache.TryGetState(*req.State)
-			if err != nil {
-				return apierrors.ErrUpdateIssue.InternalError(err)
-			}
-			u.stateNew = newBelong.Belong
-		}
-		if err := svc.AfterIssueChildrenUpdate(u); err != nil {
-			return fmt.Errorf("update issue parent after issue children %v update failed: %v", issueModel.ID, err)
-		}
+		u.stateNew = newBelong.Belong
+	}
+	if err := svc.AfterIssueChildrenUpdate(u); err != nil {
+		return fmt.Errorf("update issue parent after issue children %v update failed: %v", issueModel.ID, err)
 	}
 
 	// 需求迭代变更时，集联变更需求下的任务迭代
@@ -694,14 +686,6 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	// 		return apierrors.ErrUpdateIssue.InternalError(err)
 	// 	}
 	// }
-	if updatePlanFinishedAtBySystem {
-		if err := svc.CreateIssueStreamBySystem(req.ID, map[string][]interface{}{
-			"plan_finished_at": {issueModel.PlanFinishedAt, changedFields["plan_finished_at"]},
-		}, apistructs.IterationChanged); err != nil {
-			return err
-		}
-		delete(issueStreamFields, "plan_finished_at")
-	}
 
 	// create stream and send issue update event
 	if err := svc.CreateStream(req, issueStreamFields); err != nil {
@@ -726,49 +710,91 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 }
 
 type issueChildrenUpdated struct {
-	id       uint64
-	stateOld apistructs.IssueStateBelong
-	stateNew apistructs.IssueStateBelong
+	id             uint64
+	stateOld       apistructs.IssueStateBelong
+	stateNew       apistructs.IssueStateBelong
+	planStartedAt  *time.Time
+	planFinishedAt *time.Time
+	iterationID    int64
 }
 
 func (svc *Issue) AfterIssueChildrenUpdate(u *issueChildrenUpdated) error {
 	if u == nil {
 		return fmt.Errorf("issue children update config is empty")
 	}
+	cache, err := NewIssueCache(svc.db)
+	if err != nil {
+		return err
+	}
+	c := &issueValidationConfig{}
+	iteration, err := cache.TryGetIteration(u.iterationID)
+	if err != nil {
+		return err
+	}
+	c.iteration = iteration
+	v := issueValidator{}
+	fields := make(map[string]interface{})
+	streamFields := make(map[string][]interface{})
+	now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
+	adjuster := issueCreateAdjuster{&now}
+	if err := v.validateTimeWithInIteration(c, u.planFinishedAt); err != nil {
+		finishedAt := adjuster.planFinished(func() bool {
+			return u.iterationID > 0
+		}, iteration)
+		if finishedAt != nil {
+			fields["expiry_status"] = dao.GetExpiryStatus(finishedAt, now)
+			fields["plan_finished_at"] = finishedAt
+			u.planFinishedAt = finishedAt
+			streamFields["plan_finished_at"] = []interface{}{u.planFinishedAt, finishedAt, apistructs.IterationChanged}
+		}
+	}
+	startedAt := adjuster.planStarted(func() bool {
+		return u.planStartedAt != nil && u.planFinishedAt != nil && u.planStartedAt.After(*u.planFinishedAt)
+	}, u.planFinishedAt)
+	if startedAt != nil {
+		fields["plan_started_at"] = startedAt
+		streamFields["plan_started_at"] = []interface{}{u.planStartedAt, u.planFinishedAt, apistructs.PlanFinishedAtChanged}
+	}
+
+	if len(fields) > 0 {
+		if err := svc.db.UpdateIssue(u.id, fields); err != nil {
+			return err
+		}
+	}
+	if err := svc.CreateIssueStreamBySystem(u.id, streamFields); err != nil {
+		return err
+	}
+
 	parents, err := svc.db.GetIssueParents(u.id, []string{apistructs.IssueRelationInclusion})
 	if err != nil {
 		return err
 	}
-	if l := len(parents); l != 1 {
-		if l > 1 {
-			return fmt.Errorf("issue %v has more than one parent", u.id)
-		}
-		return nil
-	}
-	p := parents[0]
-
-	if updateParentCondition(p.Belong, u) {
-		stateButton, err := svc.getNextAvailableState(&dao.Issue{
-			ProjectID: p.ProjectID,
-			State:     p.State,
-			Type:      p.Type,
-		})
-		if err != nil {
-			return err
-		}
-		if stateButton != nil {
-			if err := svc.db.UpdateIssue(p.ID, map[string]interface{}{"state": stateButton.StateID}); err != nil {
+	if len(parents) > 0 {
+		p := parents[0]
+		if updateParentCondition(p.Belong, u) {
+			stateButton, err := svc.getNextAvailableState(&dao.Issue{
+				ProjectID: p.ProjectID,
+				State:     p.State,
+				Type:      p.Type,
+			})
+			if err != nil {
 				return err
 			}
-			if err := svc.CreateIssueStreamBySystem(p.ID, map[string][]interface{}{
-				"state": {p.State, stateButton.StateID},
-			}, apistructs.ChildrenInProgress); err != nil {
-				return err
+			if stateButton != nil {
+				if err := svc.db.UpdateIssue(p.ID, map[string]interface{}{"state": stateButton.StateID}); err != nil {
+					return err
+				}
+				if err := svc.CreateIssueStreamBySystem(p.ID, map[string][]interface{}{
+					"state": {p.State, stateButton.StateID, apistructs.ChildrenInProgress},
+				}); err != nil {
+					return err
+				}
 			}
 		}
-	}
 
-	return svc.issueRelated.AfterIssueInclusionRelationChange(p.ID)
+		return svc.issueRelated.AfterIssueInclusionRelationChange(p.ID)
+	}
+	return nil
 }
 
 func updateParentCondition(state string, u *issueChildrenUpdated) bool {
@@ -851,13 +877,14 @@ func (svc *Issue) AfterIssueAppRelationCreate(issueIDs []int64) error {
 	return nil
 }
 
-func (svc *Issue) CreateIssueStreamBySystem(id uint64, streamFields map[string][]interface{}, reason string) error {
+func (svc *Issue) CreateIssueStreamBySystem(id uint64, streamFields map[string][]interface{}) error {
 	streams := make([]dao.IssueStream, 0, len(streamFields))
 	for field, v := range streamFields {
 		streamReq := dao.IssueStream{
 			IssueID:  int64(id),
 			Operator: apistructs.SystemOperator,
 		}
+		reason := v[2].(string)
 		switch field {
 		case "state":
 			CurrentState, err := svc.db.GetIssueStateByID(v[0].(int64))
@@ -880,6 +907,13 @@ func (svc *Issue) CreateIssueStreamBySystem(id uint64, streamFields map[string][
 				CurrentPlanFinishedAt: formatTime(v[0]),
 				NewPlanFinishedAt:     formatTime(v[1]),
 				ReasonDetail:          reason,
+			}
+		case "plan_started_at":
+			streamReq.StreamType = apistructs.ISTChangePlanStartedAt
+			streamReq.StreamParams = apistructs.ISTParam{
+				CurrentPlanStartedAt: formatTime(v[0]),
+				NewPlanStartedAt:     formatTime(v[1]),
+				ReasonDetail:         reason,
 			}
 		}
 		streams = append(streams, streamReq)
