@@ -42,3 +42,14 @@ func (i *issueCreateAdjuster) planFinished(match condition, iteration *dao.Itera
 	}
 	return iteration.FinishedAt
 }
+
+func (i *issueCreateAdjuster) planStarted(match condition, finished *time.Time) *time.Time {
+	if !match() {
+		return nil
+	}
+	if finished == nil {
+		return nil
+	}
+	t := finished.Truncate(24 * time.Hour)
+	return &t
+}
