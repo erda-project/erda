@@ -35,8 +35,8 @@ const (
 )
 
 type ErrorTransactionFilter struct {
-	MinDuration int64 `json:"minDuration"`
-	MaxDuration int64 `json:"maxDuration"`
+	MinDuration float64 `json:"minDuration"`
+	MaxDuration float64 `json:"maxDuration"`
 }
 
 func SetFilterToGlobalState(globalState cptype.GlobalStateData, opData ErrorTransactionFilter) {

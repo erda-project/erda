@@ -68,11 +68,11 @@ func (f *FrontendConditions) convertToTransactionFilter() error_transaction.Erro
 	}
 	d, err := time.ParseDuration(fmt.Sprintf("%d%s", f.Duration[0].Timer, f.Duration[0].Unit))
 	if err == nil {
-		errorTransactionFilter.MinDuration = int64(d)
+		errorTransactionFilter.MinDuration = float64(d)
 	}
 	d, err = time.ParseDuration(fmt.Sprintf("%d%s", f.Duration[1].Timer, f.Duration[1].Unit))
 	if err == nil {
-		errorTransactionFilter.MaxDuration = int64(d)
+		errorTransactionFilter.MaxDuration = float64(d)
 	}
 	return errorTransactionFilter
 }
