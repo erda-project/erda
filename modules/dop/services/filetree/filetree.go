@@ -197,7 +197,7 @@ func (svc *GittarFileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeL
 			}
 
 			// Filter does not match pipeline category rules
-			if filterInPipelineCategory(req.PipelineCategoryKey, treeData.Path, node) {
+			if notMatchInPipelineCategory(req.PipelineCategoryKey, treeData.Path, node) {
 				continue
 			}
 			list = append(list, entryConvertToUnifiedFileTreeNode(&node, req.Scope, req.ScopeID, pinode, req.Pinode))
@@ -207,24 +207,25 @@ func (svc *GittarFileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeL
 	return list, nil
 }
 
-func filterInPipelineCategory(pipelineCategoryKey, path string, node apistructs.TreeEntry) bool {
+func notMatchInPipelineCategory(pipelineCategoryKey, path string, node apistructs.TreeEntry) bool {
 	if pipelineCategoryKey == "" {
 		return false
 	}
 	if pipelineCategoryKey != "" {
 		switch pipelineCategoryKey {
-		case apistructs.CategoryBuildDeploy:
-			if node.Type == gittarEntryBlobType && !strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(pipelineCategoryKey)]) {
-				return true
-			}
-		case apistructs.CategoryBuildArtifact:
-			if node.Type == gittarEntryBlobType && !strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(pipelineCategoryKey)]) {
-				return true
-			}
 		case apistructs.CategoryOthers:
 			if node.Type == gittarEntryBlobType &&
 				(strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildArtifact]) ||
-					strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy])) {
+					strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy]) ||
+					strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildCombineArtifact]) ||
+					strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildIntegration])) {
+				return true
+			}
+		default:
+			if node.Type == gittarEntryTreeType && node.Name == ".dice" || strings.HasSuffix(path, ".dice") {
+				return true
+			}
+			if node.Type == gittarEntryBlobType && !strutil.InSlice(filepath.Join(path, node.Name), apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(pipelineCategoryKey)]) {
 				return true
 			}
 		}
