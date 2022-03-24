@@ -147,7 +147,7 @@ func WithDnsCache() OpOption {
 func WithCompleteRedirect() OpOption {
 	return func(op *Option) {
 		op.checkRedirect = func(req *http.Request, via []*http.Request) error {
-			logrus.Infof("origin: %+v", req)
+			logrus.Debugf("origin: %+v", req)
 			oldest := via[0] // oldest first
 			req.Header = oldest.Header
 			req.Method = oldest.Method
@@ -158,7 +158,7 @@ func WithCompleteRedirect() OpOption {
 					return err
 				}
 			}
-			logrus.Infof("modified: %+v", req)
+			logrus.Debugf("modified: %+v", req)
 			return nil
 		}
 	}
