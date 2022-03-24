@@ -664,3 +664,34 @@ func Test_getNodeParentNodeIds(t *testing.T) {
 		})
 	}
 }
+
+func Test_provider_isExistTopologyNode(t *testing.T) {
+	type args struct {
+		node          *Node
+		topologyNodes *[]*Node
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{"case1", args{
+			node: &Node{Id: "test1"},
+			topologyNodes: &[]*Node{
+				{Id: "test1"},
+			},
+		}, true},
+		{"case2", args{
+			node: &Node{Id: "test2"},
+			topologyNodes: &[]*Node{
+				{Id: "test1"},
+			},
+		}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			topology := &provider{}
+			assert.Equalf(t, tt.want, topology.isExistTopologyNode(tt.args.node, tt.args.topologyNodes), "isExistTopologyNode(%v, %v)", tt.args.node, tt.args.topologyNodes)
+		})
+	}
+}
