@@ -488,7 +488,7 @@ func (k *Kubernetes) checkQuota(ctx context.Context, runtime *apistructs.Service
 	var cpuTotal, memTotal float64
 	for _, svc := range runtime.Services {
 		cpuTotal += svc.Resources.Cpu * 1000 * float64(svc.Scale)
-		memTotal += svc.Resources.Mem * float64(svc.Scale)
+		memTotal += svc.Resources.Mem * float64(svc.Scale<<20)
 	}
 	logrus.Infof("servive %s cpu total %v", runtime.Services[0].Name, cpuTotal)
 
