@@ -1360,17 +1360,27 @@ type PipelineStatisticsNums struct {
 func (p *ProjectPipelineService) ListPipelineStatisticsByCategory(ctx context.Context) []PipelineStatisticsByCategory {
 	return []PipelineStatisticsByCategory{
 		{
-			Key:      "build-deploy",
+			Key:      apistructs.CategoryBuildDeploy,
 			Category: p.trans.Text(apis.Language(ctx), "BuildDeploy"),
-			Rules:    []string{"pipeline.yml"},
+			Rules:    apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy],
 		},
 		{
-			Key:      "build-artifact",
+			Key:      apistructs.CategoryBuildArtifact,
 			Category: p.trans.Text(apis.Language(ctx), "BuildArtifact"),
-			Rules:    []string{".erda/pipelines/ci-artifact.yml", ".dice/pipelines/ci-artifact.yml"},
+			Rules:    apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildArtifact],
 		},
 		{
-			Key:      "others",
+			Key:      apistructs.CategoryBuildCombineArtifact,
+			Category: p.trans.Text(apis.Language(ctx), "BuildCombineArtifact"),
+			Rules:    apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildCombineArtifact],
+		},
+		{
+			Key:      apistructs.CategoryBuildIntegration,
+			Category: p.trans.Text(apis.Language(ctx), "BuildIntegration"),
+			Rules:    apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildIntegration],
+		},
+		{
+			Key:      apistructs.CategoryOthers,
 			Category: p.trans.Text(apis.Language(ctx), "Uncategorized"),
 			Rules:    nil,
 		},
@@ -1413,7 +1423,7 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 	categories := p.ListPipelineStatisticsByCategory(ctx)
 
 	for _, statics := range staticsResp.PipelineDefinitionStatistics {
-		if key, ok := apistructs.RuleCategoryKeyMap[statics.Group]; ok {
+		if key, ok := apistructs.GetRuleCategoryKeyMap()[statics.Group]; ok {
 			for i := range categories {
 				if key.String() == categories[i].Key {
 					categories[i].TotalNum += statics.TotalNum
