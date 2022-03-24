@@ -1231,15 +1231,16 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 		v.Value = replacePreStepValue(v.Value, replaceIdMap)
 
 		newStep := &dao.AutoTestSceneStep{
-			Type:      v.Type,
-			Value:     v.Value,
-			Name:      v.Name,
-			PreID:     head,
-			PreType:   v.PreType,
-			SceneID:   newId,
-			SpaceID:   req.SpaceID,
-			APISpecID: v.APISpecID,
-			CreatorID: req.UserID,
+			Type:       v.Type,
+			Value:      v.Value,
+			Name:       v.Name,
+			PreID:      head,
+			PreType:    v.PreType,
+			SceneID:    newId,
+			SpaceID:    req.SpaceID,
+			APISpecID:  v.APISpecID,
+			CreatorID:  req.UserID,
+			IsDisabled: v.IsDisabled,
 		}
 		if err := svc.db.CreateAutoTestSceneStep(newStep); err != nil {
 			return newScene.ID, err
@@ -1252,15 +1253,16 @@ func (svc *Service) CopyAutotestScene(req apistructs.AutotestSceneCopyRequest, i
 			pv.Value = replacePreStepValue(pv.Value, replaceIdMap)
 
 			newPStep := &dao.AutoTestSceneStep{
-				Type:      pv.Type,
-				Value:     pv.Value,
-				Name:      pv.Name,
-				PreID:     pHead,
-				PreType:   pv.PreType,
-				SceneID:   newId,
-				SpaceID:   req.SpaceID,
-				APISpecID: pv.APISpecID,
-				CreatorID: req.UserID,
+				Type:       pv.Type,
+				Value:      pv.Value,
+				Name:       pv.Name,
+				PreID:      pHead,
+				PreType:    pv.PreType,
+				SceneID:    newId,
+				SpaceID:    req.SpaceID,
+				APISpecID:  pv.APISpecID,
+				CreatorID:  req.UserID,
+				IsDisabled: pv.IsDisabled,
 			}
 
 			if err := svc.db.CreateAutoTestSceneStep(newPStep); err != nil {
