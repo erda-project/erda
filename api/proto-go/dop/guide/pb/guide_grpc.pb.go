@@ -24,6 +24,7 @@ type GuideServiceClient interface {
 	CreateGuideByGittarPushHook(ctx context.Context, in *GittarPushPayloadEvent, opts ...grpc.CallOption) (*CreateGuideResponse, error)
 	ListGuide(ctx context.Context, in *ListGuideRequest, opts ...grpc.CallOption) (*ListGuideResponse, error)
 	ProcessGuide(ctx context.Context, in *ProcessGuideRequest, opts ...grpc.CallOption) (*ProcessGuideResponse, error)
+	DeleteGuideByGittarPushHook(ctx context.Context, in *GittarPushPayloadEvent, opts ...grpc.CallOption) (*DeleteGuideResponse, error)
 }
 
 type guideServiceClient struct {
@@ -61,6 +62,15 @@ func (c *guideServiceClient) ProcessGuide(ctx context.Context, in *ProcessGuideR
 	return out, nil
 }
 
+func (c *guideServiceClient) DeleteGuideByGittarPushHook(ctx context.Context, in *GittarPushPayloadEvent, opts ...grpc.CallOption) (*DeleteGuideResponse, error) {
+	out := new(DeleteGuideResponse)
+	err := c.cc.Invoke(ctx, "/erda.dop.guide.GuideService/DeleteGuideByGittarPushHook", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GuideServiceServer is the server API for GuideService service.
 // All implementations should embed UnimplementedGuideServiceServer
 // for forward compatibility
@@ -68,6 +78,7 @@ type GuideServiceServer interface {
 	CreateGuideByGittarPushHook(context.Context, *GittarPushPayloadEvent) (*CreateGuideResponse, error)
 	ListGuide(context.Context, *ListGuideRequest) (*ListGuideResponse, error)
 	ProcessGuide(context.Context, *ProcessGuideRequest) (*ProcessGuideResponse, error)
+	DeleteGuideByGittarPushHook(context.Context, *GittarPushPayloadEvent) (*DeleteGuideResponse, error)
 }
 
 // UnimplementedGuideServiceServer should be embedded to have forward compatible implementations.
@@ -82,6 +93,9 @@ func (*UnimplementedGuideServiceServer) ListGuide(context.Context, *ListGuideReq
 }
 func (*UnimplementedGuideServiceServer) ProcessGuide(context.Context, *ProcessGuideRequest) (*ProcessGuideResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ProcessGuide not implemented")
+}
+func (*UnimplementedGuideServiceServer) DeleteGuideByGittarPushHook(context.Context, *GittarPushPayloadEvent) (*DeleteGuideResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteGuideByGittarPushHook not implemented")
 }
 
 func RegisterGuideServiceServer(s grpc1.ServiceRegistrar, srv GuideServiceServer, opts ...grpc1.HandleOption) {
@@ -127,6 +141,15 @@ func _get_GuideService_serviceDesc(srv GuideServiceServer, opts ...grpc1.HandleO
 	if h.Interceptor != nil {
 		_GuideService_ProcessGuide_info = transport.NewServiceInfo("erda.dop.guide.GuideService", "ProcessGuide", srv)
 		_GuideService_ProcessGuide_Handler = h.Interceptor(_GuideService_ProcessGuide_Handler)
+	}
+
+	_GuideService_DeleteGuideByGittarPushHook_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.DeleteGuideByGittarPushHook(ctx, req.(*GittarPushPayloadEvent))
+	}
+	var _GuideService_DeleteGuideByGittarPushHook_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_GuideService_DeleteGuideByGittarPushHook_info = transport.NewServiceInfo("erda.dop.guide.GuideService", "DeleteGuideByGittarPushHook", srv)
+		_GuideService_DeleteGuideByGittarPushHook_Handler = h.Interceptor(_GuideService_DeleteGuideByGittarPushHook_Handler)
 	}
 
 	var serviceDesc = _GuideService_serviceDesc
@@ -198,6 +221,29 @@ func _get_GuideService_serviceDesc(srv GuideServiceServer, opts ...grpc1.HandleO
 					FullMethod: "/erda.dop.guide.GuideService/ProcessGuide",
 				}
 				return interceptor(ctx, in, info, _GuideService_ProcessGuide_Handler)
+			},
+		},
+		{
+			MethodName: "DeleteGuideByGittarPushHook",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(GittarPushPayloadEvent)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(GuideServiceServer).DeleteGuideByGittarPushHook(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _GuideService_DeleteGuideByGittarPushHook_info)
+				}
+				if interceptor == nil {
+					return _GuideService_DeleteGuideByGittarPushHook_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.dop.guide.GuideService/DeleteGuideByGittarPushHook",
+				}
+				return interceptor(ctx, in, info, _GuideService_DeleteGuideByGittarPushHook_Handler)
 			},
 		},
 	}

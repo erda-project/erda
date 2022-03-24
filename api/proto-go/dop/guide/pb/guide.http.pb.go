@@ -24,6 +24,8 @@ type GuideServiceHandler interface {
 	ListGuide(context.Context, *ListGuideRequest) (*ListGuideResponse, error)
 	// POST /api/guide/actions/process
 	ProcessGuide(context.Context, *ProcessGuideRequest) (*ProcessGuideResponse, error)
+	// POST /api/guide/actions/delete-by-gittar-push-hook
+	DeleteGuideByGittarPushHook(context.Context, *GittarPushPayloadEvent) (*DeleteGuideResponse, error)
 }
 
 // RegisterGuideServiceHandler register GuideServiceHandler to http.Router.
@@ -157,7 +159,44 @@ func RegisterGuideServiceHandler(r http.Router, srv GuideServiceHandler, opts ..
 		)
 	}
 
+	add_DeleteGuideByGittarPushHook := func(method, path string, fn func(context.Context, *GittarPushPayloadEvent) (*DeleteGuideResponse, error)) {
+		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+			return fn(ctx, req.(*GittarPushPayloadEvent))
+		}
+		var DeleteGuideByGittarPushHook_info transport.ServiceInfo
+		if h.Interceptor != nil {
+			DeleteGuideByGittarPushHook_info = transport.NewServiceInfo("erda.dop.guide.GuideService", "DeleteGuideByGittarPushHook", srv)
+			handler = h.Interceptor(handler)
+		}
+		r.Add(method, path, encodeFunc(
+			func(w http1.ResponseWriter, r *http1.Request) (interface{}, error) {
+				ctx := http.WithRequest(r.Context(), r)
+				ctx = transport.WithHTTPHeaderForServer(ctx, r.Header)
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, DeleteGuideByGittarPushHook_info)
+				}
+				r = r.WithContext(ctx)
+				var in GittarPushPayloadEvent
+				if err := h.Decode(r, &in); err != nil {
+					return nil, err
+				}
+				var input interface{} = &in
+				if u, ok := (input).(urlenc.URLValuesUnmarshaler); ok {
+					if err := u.UnmarshalURLValues("", r.URL.Query()); err != nil {
+						return nil, err
+					}
+				}
+				out, err := handler(ctx, &in)
+				if err != nil {
+					return out, err
+				}
+				return out, nil
+			}),
+		)
+	}
+
 	add_CreateGuideByGittarPushHook("POST", "/api/guide/actions/create-by-gittar-push-hook", srv.CreateGuideByGittarPushHook)
 	add_ListGuide("GET", "/api/guide", srv.ListGuide)
 	add_ProcessGuide("POST", "/api/guide/actions/process", srv.ProcessGuide)
+	add_DeleteGuideByGittarPushHook("POST", "/api/guide/actions/delete-by-gittar-push-hook", srv.DeleteGuideByGittarPushHook)
 }
