@@ -199,7 +199,7 @@ func (i *ComponentFileTree) Render(ctx context.Context, c *cptype.Component, sce
 				return err
 			}
 		} else {
-			if err := i.RenderSceneSets(inParams); err != nil {
+			if err := i.RenderSceneSets(inParams, apistructs.OperationKey(event.Operation)); err != nil {
 				return err
 			}
 		}
@@ -209,7 +209,7 @@ func (i *ComponentFileTree) Render(ctx context.Context, c *cptype.Component, sce
 				return err
 			}
 		}
-		if err := i.RenderSceneSets(inParams); err != nil {
+		if err := i.RenderSceneSets(inParams, apistructs.OperationKey(event.Operation)); err != nil {
 			return err
 		}
 	case apistructs.ExpandSceneSetOperationKey:
@@ -241,35 +241,35 @@ func (i *ComponentFileTree) Render(ctx context.Context, c *cptype.Component, sce
 		if err := i.RenderDeleteSceneSet(event, inParams); err != nil {
 			return err
 		}
-		if err := i.RenderSceneSets(inParams); err != nil {
+		if err := i.RenderSceneSets(inParams, apistructs.OperationKey(event.Operation)); err != nil {
 			return err
 		}
 	case apistructs.DeleteSceneOperationKey:
 		if err := i.RenderDeleteScene(event); err != nil {
 			return err
 		}
-		if err := i.RenderSceneSets(inParams); err != nil {
+		if err := i.RenderSceneSets(inParams, apistructs.OperationKey(event.Operation)); err != nil {
 			return err
 		}
 	case apistructs.ExportSceneSetOperationKey:
 		if err := i.RenderExportSceneSet(event, inParams); err != nil {
 			return err
 		}
-		if err := i.RenderSceneSets(inParams); err != nil {
+		if err := i.RenderSceneSets(inParams, apistructs.OperationKey(event.Operation)); err != nil {
 			return err
 		}
 	case apistructs.DragSceneSetOperationKey:
 		if err := i.RenderDragHelper(inParams); err != nil {
 			return err
 		}
-		if err := i.RenderSceneSets(inParams); err != nil {
+		if err := i.RenderSceneSets(inParams, apistructs.OperationKey(event.Operation)); err != nil {
 			return err
 		}
 	case apistructs.CopySceneOperationKey:
 		if err := i.RenderCopyScene(inParams, event); err != nil {
 			return err
 		}
-		if err := i.RenderSceneSets(inParams); err != nil {
+		if err := i.RenderSceneSets(inParams, apistructs.OperationKey(event.Operation)); err != nil {
 			return err
 		}
 	case apistructs.RefSceneSetOperationKey:
