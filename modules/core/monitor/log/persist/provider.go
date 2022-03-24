@@ -39,7 +39,7 @@ type (
 		Cfg           *config
 		Log           logs.Logger
 		Kafka         kafka.Interface `autowired:"kafka"`
-		StorageWriter storage.Storage `autowired:"log-storage-writer"`
+		StorageWriter storage.Storage `autowired:"log-storage-clickhouse-writer"`
 
 		storage   storage.Storage
 		stats     Statistics

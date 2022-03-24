@@ -48,12 +48,12 @@ type TableMeta struct {
 }
 
 type config struct {
-	LoadMode       string        `file:"load_mode" default:"LoadWithCache"`
-	TablePatterns  []string      `file:"table_patterns"`
-	DefaultTable   string        `file:"default_table"`
-	Database       string        `file:"database" default:"monitor"`
-	ReloadInterval time.Duration `file:"reload_interval" default:"2m"`
-	CacheKeyPrefix string        `file:"cache_key_prefix" default:"clickhouse-table"`
+	LoadMode           string        `file:"load_mode" default:"LoadWithCache"`
+	TablePatterns      []string      `file:"table_patterns"`
+	DefaultSearchTable string        `file:"default_search_table"`
+	Database           string        `file:"database" default:"monitor"`
+	ReloadInterval     time.Duration `file:"reload_interval" default:"2m"`
+	CacheKeyPrefix     string        `file:"cache_key_prefix" default:"clickhouse-table"`
 }
 
 type provider struct {

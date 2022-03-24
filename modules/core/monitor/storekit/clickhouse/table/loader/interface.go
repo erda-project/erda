@@ -42,13 +42,13 @@ func (p *provider) GetSearchTable(tenant string) string {
 	searchTableName := table.NormalizeKey(fmt.Sprintf("logs_%s_search", tenant))
 	tables, ok := p.tables.Load().(map[string]*TableMeta)
 	if !ok {
-		return p.Cfg.DefaultTable
+		return p.Cfg.DefaultSearchTable
 	}
 	_, ok = tables[searchTableName]
 	if ok {
 		return searchTableName
 	}
-	return p.Cfg.DefaultTable
+	return p.Cfg.DefaultSearchTable
 }
 
 func (p *provider) ReloadTables() chan error {

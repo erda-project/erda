@@ -1,5 +1,5 @@
 // 创建日志表
-CREATE TABLE IF NOT EXISTS monitor.logs ON CLUSTER '{cluster}'
+CREATE TABLE IF NOT EXISTS <database>.logs ON CLUSTER '{cluster}'
 (
     `_id` String,
     `timestamp` DateTime64(9,'Asia/Shanghai'),
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS monitor.logs ON CLUSTER '{cluster}'
     TTL toDateTime(timestamp) + INTERVAL 7 DAY;
 
 // 将常用字段添加为物化列
-ALTER TABLE monitor.logs ON CLUSTER '{cluster}'
+ALTER TABLE <database>.logs ON CLUSTER '{cluster}'
     ADD COLUMN IF NOT EXISTS `tags.trace_id` String MATERIALIZED tags['trace_id'],
     ADD COLUMN IF NOT EXISTS `tags.level` String MATERIALIZED tags['level'],
     ADD COLUMN IF NOT EXISTS `tags.application_name` String MATERIALIZED tags['application_name'],
@@ -29,10 +29,10 @@ ALTER TABLE monitor.logs ON CLUSTER '{cluster}'
     ADD COLUMN IF NOT EXISTS `tags.container_id` String MATERIALIZED tags['container_id'];
 
 // 对常用字段添加索引
-ALTER TABLE monitor.logs ON CLUSTER '{cluster}' ADD INDEX IF NOT EXISTS idx_tace_id(tags.trace_id) TYPE bloom_filter GRANULARITY 1;
+ALTER TABLE <database>.logs ON CLUSTER '{cluster}' ADD INDEX IF NOT EXISTS idx_tace_id(tags.trace_id) TYPE bloom_filter GRANULARITY 1;
 
 // 创建分布式表
 // 注意: 如果对logs表结构新增列, 需要同步修改logs_all
-CREATE TABLE IF NOT EXISTS monitor.logs_all ON CLUSTER '{cluster}'
-AS monitor.logs
-    ENGINE = Distributed('{cluster}', monitor, logs, rand());
+CREATE TABLE IF NOT EXISTS <database>.logs_all ON CLUSTER '{cluster}'
+AS <database>.logs
+    ENGINE = Distributed('{cluster}', <database>, logs, rand());

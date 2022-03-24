@@ -29,7 +29,9 @@ type Interface interface {
 }
 
 type config struct {
-	DDLTemplate string `file:"ddl_template"`
+	DDLTemplate       string `file:"ddl_template"`
+	DefaultWriteTable string `file:"default_write_table"`
+	Database          string `file:"database" default:"monitor"`
 }
 
 type request struct {

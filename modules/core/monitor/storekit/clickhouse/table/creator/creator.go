@@ -30,11 +30,16 @@ import (
 const (
 	tableNameKey      = "<table_name>"
 	aliasTableNameKey = "<alias_table_name>"
+	databaseNameKey   = "<database>"
 )
 
-func (p *provider) Ensure(ctx context.Context, tenant, key string) (_ <-chan error, aliasName string) {
-	tableName := table.NormalizeKey(fmt.Sprintf("%s_%s", tenant, key))
-	aliasName = table.NormalizeKey(fmt.Sprintf("%s", tenant))
+func (p *provider) Ensure(ctx context.Context, tenant, key string) (_ <-chan error, tableName string) {
+	if len(tenant) == 0 || len(key) == 0 {
+		return nil, fmt.Sprintf("%s.%s", p.Cfg.Database, p.Cfg.DefaultWriteTable)
+	}
+
+	tableName = table.NormalizeKey(fmt.Sprintf("%s_%s", tenant, key))
+	aliasName := table.NormalizeKey(fmt.Sprintf("%s", tenant))
 
 	if _, ok := p.created.Load(tableName); ok {
 		return
@@ -50,7 +55,7 @@ func (p *provider) Ensure(ctx context.Context, tenant, key string) (_ <-chan err
 		Wait:      ch,
 		Ctx:       ctx,
 	}
-	return ch, aliasName
+	return ch, fmt.Sprintf("%s.%s", p.Cfg.Database, tableName)
 }
 
 func (p *provider) Run(ctx context.Context) error {
@@ -103,8 +108,10 @@ func (p *provider) Run(ctx context.Context) error {
 }
 
 func (p *provider) createTable(ctx context.Context, tableName, aliasTableName string) error {
-	replacer := strings.NewReplacer(tableNameKey, tableName,
-		aliasTableNameKey, aliasTableName)
+	replacer := strings.NewReplacer(
+		tableNameKey, tableName,
+		aliasTableNameKey, aliasTableName,
+		databaseNameKey, p.Cfg.Database)
 
 	data, err := ioutil.ReadFile(p.Cfg.DDLTemplate)
 	if err != nil {

@@ -19,11 +19,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"regexp"
+	"strings"
 
 	cfgpkg "github.com/recallsong/go-utils/config"
 )
 
+const databaseNameKey = "<database>"
+
 func (p *provider) initDDLs() error {
+	replacer := strings.NewReplacer(databaseNameKey, p.Cfg.Database)
 	for _, file := range p.Cfg.DDLs {
 		data, err := ioutil.ReadFile(file.Path)
 		if err != nil {
@@ -32,8 +36,8 @@ func (p *provider) initDDLs() error {
 		data = cfgpkg.EscapeEnv(data)
 		regex, _ := regexp.Compile("[^;]+[;$]")
 		ddls := regex.FindAllString(string(data), -1)
-
 		for _, ddl := range ddls {
+			ddl = replacer.Replace(ddl)
 			err := p.Clickhouse.Client().Exec(context.Background(), ddl)
 			if err == nil {
 				continue

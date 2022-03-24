@@ -15,11 +15,11 @@
 package clickhouse
 
 import (
-	"context"
-	"time"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
+	"github.com/erda-project/erda-infra/providers/clickhouse"
+	"github.com/erda-project/erda/modules/core/monitor/log/storage"
+	"github.com/erda-project/erda/modules/core/monitor/settings/retention-strategy"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table/creator"
 )
 
@@ -27,23 +27,17 @@ type config struct {
 }
 
 type provider struct {
-	Cfg     *config
-	Log     logs.Logger
-	Creator creator.Interface `autowired:"clickhouse.table.creator"`
+	Cfg        *config
+	Log        logs.Logger
+	Creator    creator.Interface    `autowired:"clickhouse.table.creator"`
+	Clickhouse clickhouse.Interface `autowired:"clickhouse"`
+	Retention  retention.Interface  `autowired:"storage-retention-strategy" optional:"true"`
 }
+
+var _ storage.Storage = (*provider)(nil)
 
 func (p *provider) Init(ctx servicehub.Context) error {
 	return nil
-}
-
-func (p *provider) Run(ctx context.Context) error {
-	// test create table
-	context, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-	wait, aliasName := p.Creator.Ensure(context, "test", "123")
-	err := <-wait
-	p.Log.Info(aliasName, err)
-	return err
 }
 
 func init() {

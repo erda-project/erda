@@ -26,7 +26,8 @@ type ddlFile struct {
 }
 
 type config struct {
-	DDLs []ddlFile `file:"ddl_files"`
+	DDLs     []ddlFile `file:"ddl_files"`
+	Database string    `file:"database" default:"monitor"`
 }
 
 type provider struct {
