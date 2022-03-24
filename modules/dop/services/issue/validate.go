@@ -44,11 +44,13 @@ func (v *issueValidator) validateTimeWithInIteration(c *issueValidationConfig, t
 	return nil
 }
 
-func inIterationInterval(iteration *dao.Iteration, time *time.Time) bool {
-	if time == nil || iteration == nil {
+func inIterationInterval(iteration *dao.Iteration, t *time.Time) bool {
+	if t == nil || iteration == nil {
 		return false
 	}
-	return !time.Before(*iteration.StartedAt) && !time.After(*iteration.FinishedAt)
+	date := t.Truncate(24 * time.Hour)
+	iterationStartAtDate, iterationEndAtDate := iteration.StartedAt.Truncate(24*time.Hour), iteration.FinishedAt.Truncate(24*time.Hour)
+	return !date.Before(iterationStartAtDate) && !date.After(iterationEndAtDate)
 }
 
 func (v *issueValidator) validateStateWithIteration(c *issueValidationConfig) error {
@@ -65,16 +67,17 @@ func (v *issueValidator) validateStateWithIteration(c *issueValidationConfig) er
 	return nil
 }
 
-func (v *issueValidator) validateChangedFields(req *apistructs.IssueUpdateRequest, c *issueValidationConfig, changedFields map[string]interface{}) error {
-	if _, ok := changedFields["plan_finished_at"]; ok {
-		if err := v.validateTimeWithInIteration(c, req.PlanFinishedAt.Value()); err != nil {
-			return err
-		}
-	}
+func (v *issueValidator) validateChangedFields(req *apistructs.IssueUpdateRequest, c *issueValidationConfig, changedFields map[string]interface{}) (err error) {
 	if _, ok := changedFields["iteration_id"]; ok {
-		if err := v.validateStateWithIteration(c); err != nil {
-			return err
+		if err = v.validateStateWithIteration(c); err != nil {
+			return
+		}
+	} else {
+		if _, ok := changedFields["plan_finished_at"]; ok {
+			if err = v.validateTimeWithInIteration(c, req.PlanFinishedAt.Value()); err != nil {
+				return
+			}
 		}
 	}
-	return nil
+	return
 }
