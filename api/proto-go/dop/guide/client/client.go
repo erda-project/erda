@@ -48,3 +48,7 @@ func (s *guideServiceWrapper) ListGuide(ctx context.Context, req *pb.ListGuideRe
 func (s *guideServiceWrapper) ProcessGuide(ctx context.Context, req *pb.ProcessGuideRequest) (*pb.ProcessGuideResponse, error) {
 	return s.client.ProcessGuide(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *guideServiceWrapper) DeleteGuideByGittarPushHook(ctx context.Context, req *pb.GittarPushPayloadEvent) (*pb.DeleteGuideResponse, error) {
+	return s.client.DeleteGuideByGittarPushHook(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

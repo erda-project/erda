@@ -31,6 +31,8 @@ var _ json.Marshaler = (*ProcessGuideRequest)(nil)
 var _ json.Unmarshaler = (*ProcessGuideRequest)(nil)
 var _ json.Marshaler = (*ProcessGuideResponse)(nil)
 var _ json.Unmarshaler = (*ProcessGuideResponse)(nil)
+var _ json.Marshaler = (*DeleteGuideResponse)(nil)
+var _ json.Unmarshaler = (*DeleteGuideResponse)(nil)
 
 // ListGuideRequest implement json.Marshaler.
 func (m *ListGuideRequest) MarshalJSON() ([]byte, error) {
@@ -189,6 +191,24 @@ func (m *ProcessGuideResponse) MarshalJSON() ([]byte, error) {
 
 // ProcessGuideResponse implement json.Marshaler.
 func (m *ProcessGuideResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// DeleteGuideResponse implement json.Marshaler.
+func (m *DeleteGuideResponse) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// DeleteGuideResponse implement json.Marshaler.
+func (m *DeleteGuideResponse) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

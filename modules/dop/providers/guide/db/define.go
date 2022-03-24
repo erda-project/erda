@@ -130,6 +130,7 @@ func (db *GuideDB) UpdateGuideByAppIDAndBranch(appID uint64, branch, kind string
 		Where("app_id = ?", appID).
 		Where("branch = ?", branch).
 		Where("kind = ?", kind).
+		Where("status = ?", InitStatus).
 		Updates(fields).Error
 }
 
@@ -145,4 +146,26 @@ func (db *GuideDB) ListGuide(req *pb.ListGuideRequest, userID string) (guides []
 		Order("created_at DESC").
 		Find(&guides).Error
 	return
+}
+
+// GetGuideByAppIDAndBranch .
+func (db *GuideDB) GetGuideByAppIDAndBranch(appID uint64, branch, kind string) (guide Guide, err error) {
+	err = db.Model(&Guide{}).Scopes(NotDeleted).
+		Where("app_id = ?", appID).
+		Where("branch = ?", branch).
+		Where("kind = ?", kind).
+		Where("status = ?", InitStatus).
+		First(&guide).Error
+	return
+}
+
+func (db *GuideDB) CheckUniqueByAppIDAndBranch(appID uint64, branch, kind string) (bool, error) {
+	_, err := db.GetGuideByAppIDAndBranch(appID, branch, kind)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }

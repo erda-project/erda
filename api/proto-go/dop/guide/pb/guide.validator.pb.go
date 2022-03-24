@@ -89,3 +89,6 @@ func (this *ProcessGuideRequest) Validate() error {
 func (this *ProcessGuideResponse) Validate() error {
 	return nil
 }
+func (this *DeleteGuideResponse) Validate() error {
+	return nil
+}

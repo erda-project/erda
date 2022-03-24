@@ -46,6 +46,16 @@ service GuideService {
       path : "/api/guide/actions/process",
     };
   }
+
+  rpc DeleteGuideByGittarPushHook(GittarPushPayloadEvent)
+      returns(DeleteGuideResponse) {
+    option(google.api.http) = {
+      post : "/api/guide/actions/delete-by-gittar-push-hook",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/guide/actions/delete-by-gittar-push-hook",
+    };
+  }
 }
 
 message ListGuideRequest {
@@ -108,4 +118,7 @@ message ProcessGuideRequest {
 }
 
 message ProcessGuideResponse {
+}
+
+message DeleteGuideResponse {
 }

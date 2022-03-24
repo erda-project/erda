@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -79,7 +80,7 @@ func (g *GuideService) CreateGuideByGittarPushHook(ctx context.Context, req *pb.
 		return nil, apierrors.ErrCreateGuide.InvalidParameter(err)
 	}
 	// Check branch rules
-	ok, err := g.checkBranchRule(req.Content.Ref[len(BranchPrefix):], int64(projectID))
+	ok, err := g.checkBranchRule(getBranchFromRef(req.Content.Ref), int64(projectID))
 	if err != nil {
 		return nil, apierrors.ErrCreateGuide.InvalidParameter(err)
 	}
@@ -88,7 +89,7 @@ func (g *GuideService) CreateGuideByGittarPushHook(ctx context.Context, req *pb.
 	}
 
 	// Check if pipeline yml exists
-	ok, err = g.checkPipelineYml(appDto, req.Content.Ref[len(BranchPrefix):], req.Content.Pusher.ID)
+	ok, err = g.checkPipelineYml(appDto, getBranchFromRef(req.Content.Ref), req.Content.Pusher.ID)
 	if err != nil {
 		return nil, apierrors.ErrCreateGuide.InvalidParameter(err)
 	}
@@ -107,6 +108,15 @@ func (g *GuideService) CreateGuideByGittarPushHook(ctx context.Context, req *pb.
 		Branch:        req.Content.Ref[len(BranchPrefix):],
 		SoftDeletedAt: 0,
 	}
+	// Check uniqueness
+	has, err := g.db.CheckUniqueByAppIDAndBranch(guide.AppID, guide.Branch, guide.Kind)
+	if err != nil {
+		return nil, apierrors.ErrCreateGuide.InvalidParameter(err)
+	}
+	if has {
+		return &pb.CreateGuideResponse{}, nil
+	}
+
 	if err = g.db.CreateGuide(&guide); err != nil {
 		return nil, apierrors.ErrCreateGuide.InternalError(err)
 	}
@@ -227,4 +237,24 @@ func (g *GuideService) checkPipelineYml(app *apistructs.ApplicationDTO, branch, 
 		return false, nil
 	}
 	return true, nil
+}
+
+func getBranchFromRef(ref string) string {
+	return ref[len(BranchPrefix):]
+}
+
+func (g *GuideService) DeleteGuideByGittarPushHook(ctx context.Context, req *pb.GittarPushPayloadEvent) (*pb.DeleteGuideResponse, error) {
+	if req.Content.After != InitCommitID {
+		return &pb.DeleteGuideResponse{}, nil
+	}
+
+	appID, err := strconv.ParseUint(req.ApplicationID, 10, 64)
+	if err != nil {
+		return nil, apierrors.ErrDeleteGuide.InvalidParameter(err)
+	}
+
+	if err = g.db.UpdateGuideByAppIDAndBranch(appID, getBranchFromRef(req.Content.Ref), db.PipelineGuide.String(), map[string]interface{}{"soft_deleted_at": time.Now().UnixNano() / 1e6}); err != nil {
+		return nil, apierrors.ErrDeleteGuide.InternalError(err)
+	}
+	return &pb.DeleteGuideResponse{}, nil
 }
