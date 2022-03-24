@@ -121,13 +121,13 @@ func BuildServerSideServiceIdFilterSql(paramName string, layers ...TransactionLa
 	return fmt.Sprintf("AND (%s)", strings.Join(tokens, " OR "))
 }
 
-func BuildDurationFilterSql(fieldName string, minDuration, maxDuration int64) string {
+func BuildDurationFilterSql(fieldName string, minDuration, maxDuration float64) string {
 	var buf bytes.Buffer
 	if minDuration > 0 {
-		buf.WriteString(fmt.Sprintf("AND %s>=%d ", fieldName, minDuration))
+		buf.WriteString(fmt.Sprintf("AND %s>=%f ", fieldName, minDuration))
 	}
 	if maxDuration > 0 {
-		buf.WriteString(fmt.Sprintf("AND %s<=%d", fieldName, maxDuration))
+		buf.WriteString(fmt.Sprintf("AND %s<=%f", fieldName, maxDuration))
 	}
 	return buf.String()
 }

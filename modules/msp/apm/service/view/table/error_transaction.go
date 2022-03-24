@@ -57,8 +57,8 @@ func (t *ErrorTransactionTableRow) GetCells() []*Cell {
 
 type ErrorTransactionTableBuilder struct {
 	*BaseBuildParams
-	MinDuration int64
-	MaxDuration int64
+	MinDuration float64
+	MaxDuration float64
 }
 
 func (t *ErrorTransactionTableBuilder) GetBaseBuildParams() *BaseBuildParams {

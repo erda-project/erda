@@ -57,8 +57,8 @@ func (t *SlowTransactionTableRow) GetCells() []*Cell {
 
 type SlowTransactionTableBuilder struct {
 	*BaseBuildParams
-	MinDuration int64
-	MaxDuration int64
+	MinDuration float64
+	MaxDuration float64
 }
 
 func (t *SlowTransactionTableBuilder) GetBaseBuildParams() *BaseBuildParams {
