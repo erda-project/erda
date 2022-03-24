@@ -56,7 +56,7 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 		releaseResp, err := d.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: order.ReleaseId})
 		if err != nil {
 			logrus.Warnf("failed to get release %s, (%v)", order.ReleaseId, err)
-			return
+			continue
 		}
 
 		// get runtime status, and update
