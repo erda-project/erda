@@ -1472,10 +1472,16 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 			SuppressTypes: suppressStates,
 			Enabled:       &bv,
 		})
-		if err != nil {
+		if err == nil {
 			for _, item := range suppressList {
-				eventQuery.Ids = append(eventQuery.Ids, item.AlertEventID)
+				eventQuery.SuppressedIds = append(eventQuery.SuppressedIds, item.AlertEventID)
 			}
+			var states []string
+			linq.From(eventQuery.AlertStates).Except(linq.From(suppressStates)).ToSlice(&states)
+			if len(states) == 0 && len(suppressList) == 0 {
+				return &pb.GetAlertEventResponse{}, nil
+			}
+			eventQuery.AlertStates = states
 		}
 	}
 
