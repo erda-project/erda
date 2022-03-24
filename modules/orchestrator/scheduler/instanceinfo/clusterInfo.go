@@ -25,7 +25,7 @@ func (ClusterInfo) TableName() string {
 
 func (c *Client) UpdateClusterInfo(clusterName, clusterInfo string) error {
 	var ci ClusterInfo
-	if err := c.db.Model(ci).Update("cluster_info", clusterInfo).Where("name = ", clusterName).Error; err != nil {
+	if err := c.db.Model(&ci).Update("cluster_info", clusterInfo).Where("name = ", clusterName).Error; err != nil {
 		return err
 	}
 	return nil
