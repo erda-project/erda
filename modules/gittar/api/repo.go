@@ -183,11 +183,28 @@ func DeleteRepoBranch(context *webcontext.Context) {
 		context.Abort(err)
 		return
 	}
+	commit, err := context.Repository.GetCommitByAny(branch)
+	if err != nil {
+		context.Abort(err)
+		return
+	}
+
 	err = context.Repository.DeleteBranch(branch)
 	if err != nil {
 		context.Abort(err)
 		return
 	}
+
+	pushEvent := &models.PayloadPushEvent{
+		IsTag:    false,
+		Ref:      gitmodule.BRANCH_PREFIX + branch,
+		After:    gitmodule.INIT_COMMIT_ID,
+		Before:   commit.ID,
+		IsDelete: false,
+		Pusher:   context.User,
+	}
+	go helper.PostReceiveHook([]*models.PayloadPushEvent{pushEvent}, context)
+
 	go func() {
 		result := apistructs.BranchInfo{
 			Name:         branch,
