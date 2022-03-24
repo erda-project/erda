@@ -233,7 +233,7 @@ func (a *AutoTestSpaceExcel) SetSceneSteps() error {
 	}
 
 	for _, stepRow := range sheet[1:] {
-		if len(stepRow) != 9 {
+		if len(stepRow) < 9 {
 			return fmt.Errorf("invalid scene step data")
 		}
 		step := apistructs.AutoTestSceneStep{}
@@ -257,6 +257,12 @@ func (a *AutoTestSpaceExcel) SetSceneSteps() error {
 		step.APISpecID, err = convertToUint64PermitZero(stepRow[8])
 		if err != nil {
 			return err
+		}
+		if len(stepRow) > 9 {
+			step.IsDisabled, err = strconv.ParseBool(stepRow[9])
+			if err != nil {
+				return err
+			}
 		}
 		if a.Data.Steps[step.SceneID] == nil {
 			a.Data.Steps[step.SceneID] = []apistructs.AutoTestSceneStep{}

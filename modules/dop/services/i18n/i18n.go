@@ -90,6 +90,7 @@ const (
 	I18nKeySceneStepSpaceNum   = "tp.export.scene.step.space.num"
 	I18nKeySceneStepPreType    = "tp.export.scene.step.pre.type"
 	I18nKeySceneStepApiSpecNum = "tp.export.scene.step.api.spec.num"
+	I18nKeySceneStepIsDisabled = "tp.export.scene.step.is.disabled"
 
 	I18nKeyConfigSheetName   = "tp.export.config.sheet.name"
 	I18nKeyConfigScopeName   = "tp.export.config.scope.name"
