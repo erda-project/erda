@@ -70,7 +70,7 @@ func (f *FrontendConditions) convertToTransactionFilter() slow_transaction.SlowT
 	if err == nil {
 		slowTransactionFilter.MinDuration = float64(d)
 	}
-	d, err = time.ParseDuration(fmt.Sprintf("%d%s", f.Duration[1].Timer, f.Duration[1].Unit))
+	d, err = time.ParseDuration(fmt.Sprintf("%f%s", f.Duration[1].Timer, f.Duration[1].Unit))
 	if err == nil {
 		slowTransactionFilter.MaxDuration = float64(d)
 	}
