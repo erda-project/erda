@@ -29,6 +29,7 @@ type Conf struct {
 	SkipAuthUrls    []string
 	ListenPort      string `env:"GITTAR_PORT" default:"5566"`
 	Debug           bool   `env:"DEBUG" default:"false"`
+	DiceProtocol    string `env:"DICE_PROTOCOL"`
 
 	UCAddr            string `env:"UC_ADDR"`
 	UCClientID        string `env:"UC_CLIENT_ID"`
@@ -194,4 +195,8 @@ func OryKratosPrivateAddr() string {
 
 func GitRepoTreeSearchDepth() int64 {
 	return cfg.GitRepoTreeSearchDepth
+}
+
+func DiceProtocol() string {
+	return cfg.DiceProtocol
 }

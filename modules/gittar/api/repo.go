@@ -37,6 +37,7 @@ import (
 	"github.com/erda-project/erda/modules/gittar/pkg/gitmodule/tool"
 	"github.com/erda-project/erda/modules/gittar/pkg/util"
 	"github.com/erda-project/erda/modules/gittar/webcontext"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func isTextType(contentType string) bool {
@@ -164,6 +165,15 @@ func GetRepoBranchDetail(context *webcontext.Context) {
 	})
 }
 
+func getRepoLink(domain, orgName string, projectID, appID int64) string {
+	protocols := strutil.Split(conf.DiceProtocol(), ",", true)
+	protocol := "https"
+	if len(protocols) > 0 {
+		protocol = protocols[0]
+	}
+	return fmt.Sprintf("%s://%s/%s/dop/projects/%d/apps/%d/repo", protocol, domain, orgName, projectID, appID)
+}
+
 // DeleteRepoBranch 删除分支
 func DeleteRepoBranch(context *webcontext.Context) {
 	// 检查仓库是否锁定
@@ -189,12 +199,16 @@ func DeleteRepoBranch(context *webcontext.Context) {
 		return
 	}
 	go func() {
+		repo := context.Repository
 		result := apistructs.BranchInfo{
 			Name:         branch,
-			Link:         "",
 			OperatorID:   context.User.Id,
 			OperatorName: context.User.NickName,
 			EventName:    apistructs.GitDeleteBranchEvent,
+		}
+		org, err := context.Bundle.GetOrg(repo.OrgId)
+		if err == nil {
+			result.Link = getRepoLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId)
 		}
 		context.Service.TriggerEvent(context.Repository, apistructs.GitDeleteBranchEvent, &result)
 	}()
@@ -272,11 +286,16 @@ func DeleteRepoTag(context *webcontext.Context) {
 		return
 	}
 	go func() {
+		repo := context.Repository
 		result.Name = tag
 		result.Link = ""
 		result.OperatorName = context.User.NickName
 		result.OperatorID = context.User.Id
 		result.EventName = apistructs.GitDeleteTagEvent
+		org, err := context.Bundle.GetOrg(repo.OrgId)
+		if err == nil {
+			result.Link = getRepoLink(org.Domain, org.Name, repo.ProjectId, repo.ApplicationId)
+		}
 		context.Service.TriggerEvent(context.Repository, apistructs.GitDeleteTagEvent, &result)
 	}()
 	response := apistructs.DeleteEvent{
