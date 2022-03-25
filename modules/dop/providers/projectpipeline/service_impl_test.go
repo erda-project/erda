@@ -17,9 +17,8 @@ package projectpipeline
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func TestGetRulesByCategoryKey(t *testing.T) {
@@ -29,9 +28,15 @@ func TestGetRulesByCategoryKey(t *testing.T) {
 	}{
 		{apistructs.CategoryBuildDeploy, apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy]},
 		{apistructs.CategoryBuildArtifact, apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildArtifact]},
-		{apistructs.CategoryOthers, append(apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy], apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildArtifact]...)},
+		{apistructs.CategoryOthers, append(append(append(apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy],
+			apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildArtifact]...), apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildCombineArtifact]...),
+			apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildIntegration]...)},
 	}
 	for _, v := range tt {
-		assert.Equal(t, v.want, getRulesByCategoryKey(v.key.String()))
+		for i := range v.want {
+			if !strutil.InSlice(v.want[i], getRulesByCategoryKey(v.key)) {
+				t.Errorf("fail")
+			}
+		}
 	}
 }
