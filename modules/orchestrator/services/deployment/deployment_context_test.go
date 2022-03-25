@@ -430,3 +430,19 @@ func Test_requestAddons(t *testing.T) {
 	err := fsm.requestAddons()
 	assert.NoError(t, err)
 }
+
+func Test_genProjectNamespace(t *testing.T) {
+	var (
+		bdl *bundle.Bundle
+	)
+	fsm := DeployFSMContext{
+		d:          &log.DeployLogHelper{Bdl: bdl},
+		App:        &apistructs.ApplicationDTO{},
+		Deployment: &dbclient.Deployment{},
+		Runtime:    &dbclient.Runtime{},
+		Spec:       &diceyml.Object{AddOns: map[string]*diceyml.AddOn{"empty-addon": nil}},
+	}
+	nsInfo := fsm.genProjectNamespace("111")
+	assert.Equal(t, "project-111-prod", nsInfo["PROD"])
+
+}

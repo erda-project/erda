@@ -146,6 +146,10 @@ func (fsm *DeployFSMContext) Load() error {
 	fsm.App = app
 	fsm.Spec = &dice
 	fsm.ProjectNamespaces = nsinfo.Namespaces
+	if len(fsm.Runtime.ScheduleName.Name) == 10 || fsm.Runtime.ScheduleName.Name == "" {
+		pid := strconv.FormatUint(fsm.Runtime.ProjectID, 10)
+		fsm.ProjectNamespaces = fsm.genProjectNamespace(pid)
+	}
 	return nil
 }
 
@@ -857,6 +861,11 @@ func (fsm *DeployFSMContext) requestAddons() error {
 	return nil
 }
 
+func (fsm *DeployFSMContext) genProjectNamespace(prjIDStr string) map[string]string {
+	return map[string]string{"DEV": "project-" + prjIDStr + "-dev", "TEST": "project-" + prjIDStr + "-test",
+		"STAGING": "project-" + prjIDStr + "-staging", "PROD": "project-" + prjIDStr + "-prod"}
+}
+
 func (fsm *DeployFSMContext) deployService() error {
 	// make sure runtime must have scheduleName
 	if fsm.Runtime.ScheduleName.Name == "" {
@@ -865,7 +874,7 @@ func (fsm *DeployFSMContext) deployService() error {
 		if err != nil {
 			return err
 		}
-		fsm.Runtime.InitScheduleName(cluster.Type, fsm.IsEnabledProjectNamespace())
+		fsm.Runtime.InitScheduleName(cluster.Type)
 		if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
 			return err
 		}
@@ -907,7 +916,6 @@ func (fsm *DeployFSMContext) deployService() error {
 	if err != nil {
 		return err
 	}
-
 	if projectECI {
 		// TODO: vendor need get by cluster
 		utils.AddECIConfigToServiceGroupCreateV2Request(&group, apistructs.ECIVendorAlibaba)
