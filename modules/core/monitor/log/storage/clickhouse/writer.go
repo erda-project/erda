@@ -25,7 +25,7 @@ import (
 )
 
 func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) {
-	return p.Clickhouse.NewWriter(&clickhouse.WriterOptions{
+	return p.clickhouse.NewWriter(&clickhouse.WriterOptions{
 		Encoder: func(data interface{}) (item *clickhouse.WriteItem, err error) {
 			logData := data.(*log.LabeledLog)
 			item = &clickhouse.WriteItem{

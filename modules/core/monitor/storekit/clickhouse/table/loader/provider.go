@@ -49,7 +49,7 @@ type TableMeta struct {
 
 type config struct {
 	LoadMode           string        `file:"load_mode" default:"LoadWithCache"`
-	TablePatterns      []string      `file:"table_patterns"`
+	TablePrefix        string        `file:"table_prefix"`
 	DefaultSearchTable string        `file:"default_search_table"`
 	Database           string        `file:"database" default:"monitor"`
 	ReloadInterval     time.Duration `file:"reload_interval" default:"2m"`
@@ -59,8 +59,8 @@ type config struct {
 type provider struct {
 	Cfg        *config
 	Log        logs.Logger
-	Clickhouse clickhouse.Interface `autowired:"clickhouse"`
-	Redis      *redis.Client        `autowired:"redis-client" optional:"true"`
+	Clickhouse clickhouse.Interface `autowired:"clickhouse" inherit-label:"preferred"`
+	Redis      *redis.Client        `autowired:"redis-client"`
 	Election   election.Interface   `autowired:"etcd-election@table"`
 
 	tables      atomic.Value
@@ -74,6 +74,13 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	if len(p.Cfg.TablePrefix) == 0 {
+		return fmt.Errorf("table_prefix is required")
+	}
+	if len(p.Cfg.DefaultSearchTable) == 0 {
+		return fmt.Errorf("default_search_table is required")
+	}
+
 	switch LoadMode(p.Cfg.LoadMode) {
 	case LoadFromClickhouseOnly:
 		ctx.AddTask(p.runClickhouseTablesLoader, servicehub.WithTaskName("clickhouse tables loader"))

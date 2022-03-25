@@ -33,29 +33,30 @@ const (
 	databaseNameKey   = "<database>"
 )
 
-func (p *provider) Ensure(ctx context.Context, tenant, key string) (_ <-chan error, tableName string) {
+func (p *provider) Ensure(ctx context.Context, tenant, key string) (_ <-chan error, writeTableName string) {
 	if len(tenant) == 0 || len(key) == 0 {
 		return nil, fmt.Sprintf("%s.%s", p.Cfg.Database, p.Cfg.DefaultWriteTable)
 	}
 
-	tableName = table.NormalizeKey(fmt.Sprintf("%s_%s", tenant, key))
-	aliasName := table.NormalizeKey(fmt.Sprintf("%s", tenant))
-
-	if _, ok := p.created.Load(tableName); ok {
-		return
+	if ok, tableName := p.Loader.ExistsWriteTable(tenant, key); ok {
+		return nil, fmt.Sprintf("%s.%s", p.Cfg.Database, tableName)
 	}
-	if p.Loader.ExistsTable(tenant, key) {
-		return
+
+	writeTableName = table.NormalizeKey(fmt.Sprintf("%s_%s_%s", p.Cfg.TablePrefix, tenant, key))
+	searchTableName := table.NormalizeKey(fmt.Sprintf("%s_%s", p.Cfg.TablePrefix, tenant))
+
+	if _, ok := p.created.Load(writeTableName); ok {
+		return nil, fmt.Sprintf("%s.%s", p.Cfg.Database, writeTableName)
 	}
 
 	ch := make(chan error, 1)
 	p.createCh <- request{
-		TableName: tableName,
-		AliasName: aliasName,
+		TableName: writeTableName,
+		AliasName: searchTableName,
 		Wait:      ch,
 		Ctx:       ctx,
 	}
-	return ch, fmt.Sprintf("%s.%s", p.Cfg.Database, tableName)
+	return ch, fmt.Sprintf("%s.%s", p.Cfg.Database, writeTableName)
 }
 
 func (p *provider) Run(ctx context.Context) error {

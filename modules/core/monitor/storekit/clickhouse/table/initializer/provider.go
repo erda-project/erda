@@ -33,7 +33,7 @@ type config struct {
 type provider struct {
 	Cfg        *config
 	Log        logs.Logger
-	Clickhouse clickhouse.Interface `autowired:"clickhouse"`
+	Clickhouse clickhouse.Interface `autowired:"clickhouse" inherit-label:"preferred"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {

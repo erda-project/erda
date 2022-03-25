@@ -113,6 +113,7 @@ log-persist:
   read_timeout: "5s"
   buffer_size: ${LOG_BATCH_SIZE:200}
   parallelism: ${LOG_PERSIST_PARALLELISM:3}
+  storage_writer_service: "${LOG_STORAGE_WRITER_SERVICE:log-storage-elasticsearch-writer}"
   print_invalid_log: false
 
 cassandra:

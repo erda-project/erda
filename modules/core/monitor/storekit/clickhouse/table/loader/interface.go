@@ -21,25 +21,24 @@ import (
 )
 
 type Interface interface {
-	ExistsTable(tenant, key string) bool
+	ExistsWriteTable(tenant, key string) (ok bool, writeTableName string)
 	GetSearchTable(tenant string) string
 	ReloadTables() chan error
 	Tables() map[string]*TableMeta
 }
 
-func (p *provider) ExistsTable(tenant, key string) bool {
-	// todo: make table prefix configurable
-	tableName := table.NormalizeKey(fmt.Sprintf("logs_%s_%s", tenant, key))
+func (p *provider) ExistsWriteTable(tenant, key string) (ok bool, writeTableName string) {
+	writeTableName = table.NormalizeKey(fmt.Sprintf("%s_%s_%s", p.Cfg.TablePrefix, tenant, key))
 	tables, ok := p.tables.Load().(map[string]*TableMeta)
 	if !ok {
-		return false
+		return false, writeTableName
 	}
-	_, ok = tables[tableName]
-	return ok
+	_, ok = tables[writeTableName]
+	return ok, writeTableName
 }
 
 func (p *provider) GetSearchTable(tenant string) string {
-	searchTableName := table.NormalizeKey(fmt.Sprintf("logs_%s_search", tenant))
+	searchTableName := table.NormalizeKey(fmt.Sprintf("%s_%s_search", p.Cfg.TablePrefix, tenant))
 	tables, ok := p.tables.Load().(map[string]*TableMeta)
 	if !ok {
 		return p.Cfg.DefaultSearchTable

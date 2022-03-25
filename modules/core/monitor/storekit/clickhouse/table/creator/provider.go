@@ -16,6 +16,7 @@ package creator
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -32,6 +33,7 @@ type config struct {
 	DDLTemplate       string `file:"ddl_template"`
 	DefaultWriteTable string `file:"default_write_table"`
 	Database          string `file:"database" default:"monitor"`
+	TablePrefix       string `file:"table_prefix"`
 }
 
 type request struct {
@@ -44,8 +46,8 @@ type request struct {
 type provider struct {
 	Cfg        *config
 	Log        logs.Logger
-	Clickhouse clickhouse.Interface `autowired:"clickhouse"`
-	Loader     loader.Interface     `autowired:"clickhouse.table.loader"`
+	Clickhouse clickhouse.Interface `autowired:"clickhouse" inherit-label:"preferred"`
+	Loader     loader.Interface     `autowired:"clickhouse.table.loader" inherit-label:"true"`
 
 	createCh   chan request
 	createLock sync.Mutex
@@ -53,13 +55,20 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	if len(p.Cfg.DefaultWriteTable) == 0 {
+		return fmt.Errorf("default_write_table is required")
+	}
+	if len(p.Cfg.TablePrefix) == 0 {
+		return fmt.Errorf("table_prefix is required")
+	}
 	return nil
 }
 
 func init() {
 	servicehub.Register("clickhouse.table.creator", &servicehub.Spec{
 		Services:             []string{"clickhouse.table.creator"},
-		OptionalDependencies: []string{"clickhouse.table.initializer", "clickhouse.table.loader"},
+		Dependencies:         []string{"clickhouse.table.loader"},
+		OptionalDependencies: []string{"clickhouse.table.initializer"},
 		ConfigFunc:           func() interface{} { return &config{} },
 		Creator: func() servicehub.Provider {
 			return &provider{
