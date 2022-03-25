@@ -71,15 +71,16 @@ func (e *Endpoints) SearchExtensions(ctx context.Context, r *http.Request, vars 
 
 // QueryExtensions 获取扩展列表
 func (e *Endpoints) QueryExtensions(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	all := r.URL.Query().Get("all")
-	typ := r.URL.Query().Get("type")
-	labels := r.URL.Query().Get("labels")
-	result, err := e.extension.QueryExtensions(all, typ, labels)
+	request := apistructs.ExtensionQueryRequest{}
+	if err := e.queryStringDecoder.Decode(&request, r.URL.Query()); err != nil {
+		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
+	}
+	result, err := e.extension.QueryExtensions(&request)
 	if err != nil {
 		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
 	}
 
-	data, err := e.extension.MenuExtWithLocale(result, e.bdl.GetLocaleByRequest(r), all)
+	data, err := e.extension.MenuExtWithLocale(result, e.bdl.GetLocaleByRequest(r), request.All)
 	if err != nil {
 		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
 	}
@@ -103,21 +104,22 @@ func (e *Endpoints) QueryExtensions(ctx context.Context, r *http.Request, vars m
 
 // QueryExtensions 获取扩展列表
 func (e *Endpoints) QueryExtensionsMenu(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
-	all := r.URL.Query().Get("all")
-	typ := r.URL.Query().Get("type")
-	labels := r.URL.Query().Get("labels")
-	if labels != "" {
-		labelsUnescaped, err := url.QueryUnescape(labels)
+	request := apistructs.ExtensionQueryRequest{}
+	if err := e.queryStringDecoder.Decode(&request, r.URL.Query()); err != nil {
+		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
+	}
+	if request.Labels != "" {
+		labelsUnescaped, err := url.QueryUnescape(request.Labels)
 		if err == nil {
-			labels = labelsUnescaped
+			request.Labels = labelsUnescaped
 		}
 	}
-	result, err := e.extension.QueryExtensions(all, typ, labels)
+	result, err := e.extension.QueryExtensions(&request)
 	if err != nil {
 		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
 	}
 
-	data, err := e.extension.MenuExtWithLocale(result, e.bdl.GetLocaleByRequest(r), all)
+	data, err := e.extension.MenuExtWithLocale(result, e.bdl.GetLocaleByRequest(r), request.All)
 	if err != nil {
 		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
 	}
