@@ -1824,23 +1824,8 @@ func (fsm *DeployFSMContext) doCancelDeploy(operator string, force bool) error {
 		}
 	case apistructs.DeploymentStatusInit, apistructs.DeploymentStatusWaiting, apistructs.DeploymentStatusDeploying:
 		// normal cancel
-		fsm.Deployment.Status = apistructs.DeploymentStatusCanceling
-		if err := fsm.db.UpdateDeployment(fsm.Deployment); err != nil {
-			// db update fail mess up everything!
-			return errors.Wrapf(err, "failed to doCancel deploy, operator: %v", operator)
-		}
-		if err := fsm.UpdateDeploymentStatusToRuntimeAndOrder(); err != nil {
-			logrus.Errorf("failed to update deployment status for runtime: %v", err)
-			return err
-		}
-		// emit runtime deploy fail event
-		event := events.RuntimeEvent{
-			EventName:  events.RuntimeDeployCanceling,
-			Operator:   operator,
-			Runtime:    dbclient.ConvertRuntimeDTO(fsm.Runtime, fsm.App),
-			Deployment: fsm.Deployment.Convert(),
-		}
-		fsm.evMgr.EmitEvent(&event)
+		fsm.Deployment.Extra.ForceCanceled = true
+		fsm.pushOnCanceled()
 	case apistructs.DeploymentStatusCanceling:
 		// status in Canceling, only force=true can work
 		if !force {
