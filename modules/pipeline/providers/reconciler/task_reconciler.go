@@ -18,8 +18,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/xormplus/xorm"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -327,40 +325,40 @@ func (tr *defaultTaskReconciler) PrepareBeforeReconcileSnippetPipeline(ctx conte
 	}
 
 	// tx
-	_, err := tr.dbClient.Transaction(func(session *xorm.Session) (interface{}, error) {
-		// set begin time
-		now := time.Now()
-		sp.TimeBegin = &now
-		if err := tr.dbClient.UpdatePipelineBase(sp.ID, &sp.PipelineBase, dbclient.WithTxSession(session)); err != nil {
-			return nil, err
-		}
+	//_, err := tr.dbClient.Transaction(func(session *xorm.Session) (interface{}, error) {
+	// set begin time
+	now := time.Now()
+	sp.TimeBegin = &now
+	if err := tr.dbClient.UpdatePipelineBase(sp.ID, &sp.PipelineBase); err != nil {
+		return err
+	}
 
-		// set snippetDetail for snippetTask
-		var snippetPipelineTasks []*spec.PipelineTask
-		snippetPipelineTasks, err := tr.r.ymlTaskMergeDBTasks(sp)
-		if err != nil {
-			return nil, err
-		}
-		snippetDetail := apistructs.PipelineTaskSnippetDetail{
-			DirectSnippetTasksNum:    len(snippetPipelineTasks),
-			RecursiveSnippetTasksNum: -1,
-		}
-		if err := tr.dbClient.UpdatePipelineTaskSnippetDetail(snippetTask.ID, snippetDetail, dbclient.WithTxSession(session)); err != nil {
-			return nil, err
-		}
-
-		// set snippet task to running
-		if err := tr.dbClient.UpdatePipelineTaskStatus(snippetTask.ID, apistructs.PipelineStatusRunning, dbclient.WithTxSession(session)); err != nil {
-			return nil, err
-		}
-
-		return nil, nil
-	})
+	// set snippetDetail for snippetTask
+	var snippetPipelineTasks []*spec.PipelineTask
+	snippetPipelineTasks, err := tr.r.ymlTaskMergeDBTasks(sp)
 	if err != nil {
+		return err
+	}
+	snippetDetail := apistructs.PipelineTaskSnippetDetail{
+		DirectSnippetTasksNum:    len(snippetPipelineTasks),
+		RecursiveSnippetTasksNum: -1,
+	}
+	if err := tr.dbClient.UpdatePipelineTaskSnippetDetail(snippetTask.ID, snippetDetail); err != nil {
+		return err
+	}
+
+	// set snippet task to running
+	if err := tr.dbClient.UpdatePipelineTaskStatus(snippetTask.ID, apistructs.PipelineStatusRunning); err != nil {
 		return err
 	}
 
 	return nil
+	//})
+	//if err != nil {
+	//	return err
+	//}
+
+	//return nil
 }
 
 func (tr *defaultTaskReconciler) tryCorrectFromExecutorBeforeReconcile(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask, framework *taskrun.TaskRun) error {
