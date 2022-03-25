@@ -28,6 +28,13 @@ kafka.topic.initializer:
     - erda-spans
     - erda-trace-metrics
 
+redis:
+  addr: "${REDIS_ADDR}"
+  password: "${REDIS_PASSWORD}"
+  db: ${REDIS_DB:0}
+  master_name: "${REDIS_MASTER_NAME}"
+  sentinels_addr: "${REDIS_SENTINELS_ADDR}"
+
 mysql:
   host: "${MYSQL_HOST:localhost}"
   port: ${MYSQL_PORT:3306}
@@ -45,8 +52,39 @@ etcd:
 etcd-election@index:
   root_path: "/erda/monitor-index-rollover-election"
 
+etcd-election@table:
+  root_path: "/erda/monitor-ck-table-loader-election"
+
 etcd-mutex:
   root_path: "/erda/streaming"
+
+clickhouse:
+  _enable: ${CLICKHOUSE_ENABLE:false}
+  addr: "${CLICKHOUSE_ADDR:localhost:9000}"
+  username: "${CLICKHOUSE_USERNAME:default}"
+  password: "${CLICKHOUSE_PASSWORD:default}"
+
+clickhouse.table.initializer:
+  _enable: ${CLICKHOUSE_ENABLE:false}
+  ddl_files:
+    - path: "${CONFIG_PATH}/clickhouse/logs_ddl_create_db.sql"
+      ignore_err: "false"
+    - path: "${CONFIG_PATH}/clickhouse/logs_ddl_create_default_tables.sql"
+      ignore_err: "false"
+
+clickhouse.table.creator@log:
+  _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:false}
+  ddl_template: "${CONFIG_PATH}/clickhouse/logs_ddl_create_tenant_tables.sql"
+  default_write_table: "logs"
+  table_prefix: "logs"
+
+clickhouse.table.loader@log:
+  _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:false}
+  table_prefix: "logs"
+  default_search_table: "logs_all"
+
+log-storage-clickhouse:
+  _enable: ${WRITE_LOG_TO_CLICKHOUSE_ENABLE:false}
 
 # elasticsearch for log
 elasticsearch@log:
@@ -102,7 +140,7 @@ log-storage-elasticsearch:
   index_type: "logs"
 
 log-persist:
-  _enable: ${WRITE_LOG_TO_ES_ENABLE:true}
+  _enable: ${WRITE_LOG_TO_ES_ENABLE|WRITE_LOG_TO_CLICKHOUSE_ENABLE:true}
   input:
     topics: "${LOG_TOPICS:spot-container-log,spot-job-log}"
     group: "${LOG_GROUP_ID:erda-logs-dev}"
