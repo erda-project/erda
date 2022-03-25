@@ -17,6 +17,9 @@ package clusterinfo
 import (
 	"sync"
 
+	"github.com/mohae/deepcopy"
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 )
 
@@ -46,8 +49,13 @@ func (c *ClusterInfoCache) GetClusterInfoByName(name string) (apistructs.Cluster
 	if !ok {
 		return apistructs.ClusterInfo{}, false
 	}
+	clusterInfoDup, ok := deepcopy.Copy(clusterInfo).(apistructs.ClusterInfo)
+	if !ok {
+		logrus.Errorf("cluster info cache failed to deepcopy cluster info, cluster name: %s", name)
+		return apistructs.ClusterInfo{}, false
+	}
 
-	return clusterInfo, true
+	return clusterInfoDup, true
 }
 
 func (c *ClusterInfoCache) UpdateClusterInfo(clusterInfo apistructs.ClusterInfo) {
@@ -69,7 +77,12 @@ func (c *ClusterInfoCache) GetAllClusters() []apistructs.ClusterInfo {
 
 	var clusterDuplication []apistructs.ClusterInfo
 	for _, clusterInfo := range c.cache {
-		clusterDuplication = append(clusterDuplication, clusterInfo)
+		clusterInfoDup, ok := deepcopy.Copy(clusterInfo).(apistructs.ClusterInfo)
+		if !ok {
+			logrus.Errorf("cluster info cache: failed to deepcopy cluster info, cluster name: %s", clusterInfo.Name)
+			continue
+		}
+		clusterDuplication = append(clusterDuplication, clusterInfoDup)
 	}
 
 	return clusterDuplication
