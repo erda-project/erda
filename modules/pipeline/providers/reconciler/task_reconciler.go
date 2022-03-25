@@ -187,6 +187,8 @@ func (tr *defaultTaskReconciler) ReconcileSnippetTask(ctx context.Context, p *sp
 func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) error {
 	var platformErrRetryTimes int
 	var onceCorrected bool
+	var framework *taskrun.TaskRun
+
 	rutil.ContinueWorking(ctx, tr.log, func(ctx context.Context) rutil.WaitDuration {
 		// get executor
 		executor, err := actionexecutor.GetManager().Get(types.Name(task.GetExecutorName()))
@@ -196,8 +198,11 @@ func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spe
 		}
 
 		// generate framework to run task
-		framework := taskrun.New(ctx, task, executor, p, tr.bdl, tr.dbClient, tr.actionAgentSvc, tr.extMarketSvc, tr.clusterInfo)
+		framework = taskrun.New(ctx, task, executor, p, tr.bdl, tr.dbClient, tr.actionAgentSvc, tr.extMarketSvc, tr.clusterInfo)
+		return rutil.ContinueWorkingAbort
+	}, rutil.WithContinueWorkingDefaultRetryInterval(tr.defaultRetryInterval))
 
+	rutil.ContinueWorking(ctx, tr.log, func(ctx context.Context) rutil.WaitDuration {
 		// correct
 		if !onceCorrected {
 			if err := tr.tryCorrectFromExecutorBeforeReconcile(ctx, p, task, framework); err != nil {
@@ -235,7 +240,7 @@ func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spe
 		}
 
 		// No error is normal, even task.status == Failed.
-		err = framework.Do(taskOp)
+		err := framework.Do(taskOp)
 		if err == nil {
 			return rutil.ContinueWorkingImmediately
 		}
