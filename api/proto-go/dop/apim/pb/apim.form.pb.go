@@ -228,6 +228,15 @@ func (m *CreateExportRecordsResp) UnmarshalURLValues(prefix string, values url.V
 					m.Data = &ExportRecord{}
 				}
 				m.Data.SpecProtocol = vals[0]
+			case "data.valid":
+				if m.Data == nil {
+					m.Data = &ExportRecord{}
+				}
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Data.Valid = val
 			case "userIDs":
 				m.UserIDs = vals
 			}
@@ -353,6 +362,12 @@ func (m *ExportRecord) UnmarshalURLValues(prefix string, values url.Values) erro
 				m.Patch = uint32(val)
 			case "specProtocol":
 				m.SpecProtocol = vals[0]
+			case "valid":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Valid = val
 			}
 		}
 	}

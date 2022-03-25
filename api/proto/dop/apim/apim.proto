@@ -72,6 +72,8 @@ message ExportRecord {
   uint32 minor = 14;
   uint32 patch = 15;
   string specProtocol = 16;
+
+  bool valid = 17;
 }
 
 message ListExportRecordsReq {
