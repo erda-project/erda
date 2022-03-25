@@ -56,3 +56,11 @@ func (s *projectPipelineServiceWrapper) CreateNamePreCheck(ctx context.Context, 
 func (s *projectPipelineServiceWrapper) CreateSourcePreCheck(ctx context.Context, req *pb.CreateProjectPipelineSourcePreCheckRequest) (*pb.CreateProjectPipelineSourcePreCheckResponse, error) {
 	return s.client.CreateSourcePreCheck(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
+
+func (s *projectPipelineServiceWrapper) ListPipelineCategory(ctx context.Context, req *pb.ListPipelineCategoryRequest) (*pb.ListPipelineCategoryResponse, error) {
+	return s.client.ListPipelineCategory(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *projectPipelineServiceWrapper) Update(ctx context.Context, req *pb.UpdateProjectPipelineRequest) (*pb.UpdateProjectPipelineResponse, error) {
+	return s.client.Update(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}

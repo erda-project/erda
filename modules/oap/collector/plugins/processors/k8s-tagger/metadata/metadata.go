@@ -19,7 +19,7 @@ const (
 	PrefixPod            = Prefix + "pod_"
 	PrefixPodLabels      = PrefixPod + "labels_"
 	PrefixPodAnnotations = PrefixPod + "annotations_"
-	// PrefixPodContainer = PrefixPod + "container_"
-	PrefixNode    = Prefix + "node_"
-	PrefixService = Prefix + "service_"
+	PrefixPodContainer   = PrefixPod + "container_"
+	// PrefixNode           = Prefix + "node_"
+	// PrefixService        = Prefix + "service_"
 )

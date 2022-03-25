@@ -22,17 +22,21 @@ import (
 )
 
 type Conf struct {
-	MySQLURL          string `env:"MYSQL_URL"`
-	MySQLHost         string `env:"MYSQL_HOST"`
-	MySQLPort         string `env:"MYSQL_PORT"`
-	MySQLUsername     string `env:"MYSQL_USERNAME"`
-	MySQLPassword     string `env:"MYSQL_PASSWORD"`
-	MySQLDatabase     string `env:"MYSQL_DATABASE"`
-	MySQLCharset      string `env:"MYSQL_CHARSET" default:"utf8mb4"`
-	MySQLMaxIdleConns int    `env:"MYSQL_MAXIDLECONNS"`
-	MySQLMaxOpenConns int    `env:"MYSQL_MAXOPENCONNS"`
-	MySQLMaxLifeTime  int64  `env:"MYSQL_MAXLIFETIME"` // 单位秒 (s)
-	Debug             bool   `env:"DEBUG"`
+	MySQLURL            string `env:"MYSQL_URL"`
+	MySQLHost           string `env:"MYSQL_HOST"`
+	MySQLPort           string `env:"MYSQL_PORT"`
+	MySQLUsername       string `env:"MYSQL_USERNAME"`
+	MySQLPassword       string `env:"MYSQL_PASSWORD"`
+	MySQLDatabase       string `env:"MYSQL_DATABASE"`
+	MySQLCharset        string `env:"MYSQL_CHARSET" default:"utf8mb4"`
+	MySQLMaxIdleConns   int    `env:"MYSQL_MAXIDLECONNS"`
+	MySQLMaxOpenConns   int    `env:"MYSQL_MAXOPENCONNS"`
+	MySQLMaxLifeTime    int64  `env:"MYSQL_MAXLIFETIME"` // 单位秒 (s)
+	Debug               bool   `env:"DEBUG"`
+	MySQLTLS            string `env:"MYSQL_TLS"`
+	MySQLCaCertPath     string `env:"MYSQL_CACERTPATH"`
+	MySQLClientCertPath string `env:"MYSQL_CLIENTCERTPATH"`
+	MySQLClientKeyPath  string `env:"MYSQL_CLIENTKEYPATH"`
 }
 
 func LoadDefaultConf() (*Conf, error) {
@@ -48,8 +52,13 @@ func (cfg *Conf) url() string {
 	if cfg.MySQLURL != "" {
 		return cfg.MySQLURL
 	}
-	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=True&loc=Local",
+
+	url := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=True&loc=Local",
 		cfg.MySQLUsername, cfg.MySQLPassword, cfg.MySQLHost, cfg.MySQLPort, cfg.MySQLDatabase, cfg.MySQLCharset)
+	if cfg.MySQLTLS != "" {
+		url = fmt.Sprintf("%v&tls=%s", url, cfg.MySQLTLS)
+	}
+	return url
 }
 
 // maxIdleConns 返回 MySQL 最大连接池

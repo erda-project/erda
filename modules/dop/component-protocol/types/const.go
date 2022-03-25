@@ -30,4 +30,5 @@ const (
 	DicehubReleaseService  = "dicehub_release"
 	ProjectPipelineService = "project_pipeline"
 	PipelineCronService    = "pipeline_cron"
+	GuideService           = "guide"
 )

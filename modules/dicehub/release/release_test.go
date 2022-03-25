@@ -118,7 +118,13 @@ addons:
       version: 5.7.29
     plan: mysql:basic
 envs: {}
-jobs: {}
+jobs:
+  demo:
+    cmd: echo "ok"
+    image: addon-registry.default.svc.cluster.local:5000/erda-development-erda-development/go-demo:go-demo-1647947792062632471
+    resources:
+      cpu: 0.2
+      mem: 128
 services:
   java-demo:
     deployments:
@@ -142,7 +148,13 @@ addons:
       version: 5.7.29
     plan: mysql:basic
 envs: {}
-jobs: {}
+jobs:
+  demo:
+    cmd: echo "ok"
+    image: addon-registry.default.svc.cluster.local:5000/erda-development-erda-development/go-demo:go-demo-1647947792062632471
+    resources:
+      cpu: 0.2
+      mem: 128
 services:
   java-demo:
     deployments:

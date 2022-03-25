@@ -48,6 +48,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/event"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/ingress"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/instanceinfosync"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/job"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/k8serror"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/namespace"
@@ -178,6 +179,7 @@ type Kubernetes struct {
 	bdl          *bundle.Bundle
 	evCh         chan *eventtypes.StatusEvent
 	deploy       *deployment.Deployment
+	job          *job.Job
 	ds           *ds.Daemonset
 	ingress      *ingress.Ingress
 	namespace    *namespace.Namespace
@@ -343,6 +345,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 	}
 
 	deploy := deployment.New(deployment.WithCompleteParams(addr, client))
+	job := job.New(job.WithCompleteParams(addr, client))
 	ds := ds.New(ds.WithCompleteParams(addr, client))
 	ing := ingress.New(ingress.WithCompleteParams(addr, client))
 	ns := namespace.New(namespace.WithCompleteParams(addr, client))
@@ -397,6 +400,7 @@ func New(name executortypes.Name, clusterName string, options map[string]string)
 		bdl:                      bdl,
 		evCh:                     evCh,
 		deploy:                   deploy,
+		job:                      job,
 		ds:                       ds,
 		ingress:                  ing,
 		namespace:                ns,
@@ -484,7 +488,7 @@ func (k *Kubernetes) checkQuota(ctx context.Context, runtime *apistructs.Service
 	var cpuTotal, memTotal float64
 	for _, svc := range runtime.Services {
 		cpuTotal += svc.Resources.Cpu * 1000 * float64(svc.Scale)
-		memTotal += svc.Resources.Mem * float64(svc.Scale)
+		memTotal += svc.Resources.Mem * float64(svc.Scale<<20)
 	}
 	logrus.Infof("servive %s cpu total %v", runtime.Services[0].Name, cpuTotal)
 
@@ -651,7 +655,6 @@ func (k *Kubernetes) Inspect(ctx context.Context, specObj interface{}) (interfac
 	logrus.Debugf("inspect runtime status, runtime: %s, status: %+v", runtime.ID, status)
 	runtime.Status = status.Status
 	runtime.LastMessage = status.LastMessage
-
 	return k.inspectStateless(runtime)
 }
 
@@ -742,6 +745,8 @@ func (k *Kubernetes) createOne(ctx context.Context, service *apistructs.Service,
 	switch service.WorkLoad {
 	case ServicePerNode:
 		err = k.createDaemonSet(ctx, service, sg)
+	case ServiceJob:
+		err = k.createJob(ctx, service, sg)
 	default:
 		// Step 2. Create related deployment
 		err = k.createDeployment(ctx, service, sg)
@@ -870,6 +875,8 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 					logrus.Debugf("failed to update daemonset in update interface, name: %s, (%v)", svc.Name, err)
 					return err
 				}
+			case ServiceJob:
+				err = k.createJob(ctx, &svc, sg)
 			default:
 				// then update the deployment
 				desiredDeployment, err := k.newDeployment(&svc, sg)
@@ -948,6 +955,7 @@ func (k *Kubernetes) updateOneByOne(ctx context.Context, sg *apistructs.ServiceG
 
 func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.ServiceGroup) (apistructs.StatusDesc, error) {
 	var (
+		failedReason string
 		resultStatus apistructs.StatusDesc
 		deploys      []appsv1.Deployment
 		dsMap        map[string]appsv1.DaemonSet
@@ -965,6 +973,7 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 		k.setProjectServiceName(sg)
 	}
 	isReady := true
+	isFailed := false
 
 	if sg.ProjectNamespace != "" {
 		deployList, err := k.deploy.List(ns, map[string]string{
@@ -1027,6 +1036,9 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 		switch sg.Services[i].WorkLoad {
 		case ServicePerNode:
 			status, err = k.getDaemonSetStatusFromMap(&sg.Services[i], dsMap)
+		case ServiceJob:
+			status, err = k.getJobStatusFromMap(&sg.Services[i], ns)
+
 		default:
 			// To distinguish the following exceptions：
 			// 1, An error occurred during the creation process, and the entire runtime is deleted and then come back to query
@@ -1061,6 +1073,12 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 
 			return status, err
 		}
+		if status.Status == apistructs.StatusFailed {
+			isReady = false
+			isFailed = true
+			failedReason = status.Reason
+			continue
+		}
 		if status.Status != apistructs.StatusReady {
 			isReady = false
 			resultStatus.Status = apistructs.StatusProgressing
@@ -1083,6 +1101,10 @@ func (k *Kubernetes) getStatelessStatus(ctx context.Context, sg *apistructs.Serv
 
 	if isReady {
 		resultStatus.Status = apistructs.StatusHealthy
+	}
+	if isFailed {
+		resultStatus.Status = apistructs.StatusFailed
+		resultStatus.LastMessage = failedReason
 	}
 	return resultStatus, nil
 }

@@ -29,12 +29,17 @@ const (
 	OAS2YAML Protocol = "oas2-yaml"
 	OAS3YAML Protocol = "oas3-yaml"
 	OAS3JSON Protocol = "oas3-json"
+	CSV      Protocol = "csv"
 )
 
 type Protocol string
 
 func (protocol Protocol) String() string {
 	return string(protocol)
+}
+
+func (protocol Protocol) Equal(s string) bool {
+	return strings.EqualFold(s, protocol.String())
 }
 
 func OAS3ConvTo2(v3 *openapi3.Swagger) (v2 *openapi2.Swagger, err error) {

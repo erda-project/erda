@@ -187,6 +187,20 @@
       - type: char
         flen: 36
 
+# org_name 字段类型校验
+- name: ColumnTypeLinter
+  alias: "字段类型校验: org_name 应当为 varchar(50)"
+  white:
+    patterns:
+      - ".*-base$"
+    committedAt:
+      - "<=20220323"
+  meta:
+    columnName: org_name
+    types:
+      - type: varchar
+        flen: 50
+
 # created_at 类型校验
 - name: ColumnTypeLinter
   alias: "字段类型校验: created_at 应当为 datetime 类型"
@@ -209,6 +223,29 @@
     types:
       - type: datetime
 
+# creator_id 字段类型校验
+- name: ColumnTypeLinter
+  alias: "字段类型校验: creator_id 应当为 varchar(255)"
+  white:
+    committedAt:
+      - "<=20220317"
+  meta:
+    columnName: creator_id
+    types:
+      - type: varchar
+        flen: 255
+
+# updater_id 字段类型校验
+- name: ColumnTypeLinter
+  alias: "字段类型校验: updater_id 应当为 varchar(255)"
+  white:
+    committedAt:
+      - "<=20220317"
+  meta:
+    columnName: updater_id
+    types:
+      - type: varchar
+        flen: 255
 
 # complete insert 校验
 - name: CompleteInsertLinter

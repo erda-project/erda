@@ -2,9 +2,6 @@ version: "2.0"
 meta:
   ERDA_COMPONENT: ""
 values:
-  test:
-    request_cpu: 0.1
-    request_mem: 128
   production:
     nfs_root: "<%$.Storage.MountPoint%>"
     gittar_root: "<%$.Storage.GittarDataPath%>"
@@ -342,35 +339,6 @@ services:
       http:
         port: 10000
         path: "/healthz"
-        duration: 120
-      exec: { }
-  eventbox:
-    cmd: "/app/eventbox"
-    ports:
-      - port: 9528
-        protocol: "TCP"
-        l4_protocol: "TCP"
-    envs:
-      DEBUG: "false"
-    resources:
-      cpu: ${request_cpu:2}
-      max_cpu: 2
-      mem: ${request_mem:2560}
-      max_mem: 2560
-      network:
-        mode: "container"
-    binds:
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-    deployments:
-      replicas: 1
-      labels:
-        GROUP: "dice"
-    health_check:
-      http:
-        port: 9528
-        path: "/api/dice/eventbox/version"
         duration: 120
       exec: { }
   gittar:

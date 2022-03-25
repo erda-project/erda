@@ -146,6 +146,10 @@ func (fsm *DeployFSMContext) Load() error {
 	fsm.App = app
 	fsm.Spec = &dice
 	fsm.ProjectNamespaces = nsinfo.Namespaces
+	if len(fsm.Runtime.ScheduleName.Name) == 10 || fsm.Runtime.ScheduleName.Name == "" {
+		pid := strconv.FormatUint(fsm.Runtime.ProjectID, 10)
+		fsm.ProjectNamespaces = fsm.genProjectNamespace(pid)
+	}
 	return nil
 }
 
@@ -857,6 +861,11 @@ func (fsm *DeployFSMContext) requestAddons() error {
 	return nil
 }
 
+func (fsm *DeployFSMContext) genProjectNamespace(prjIDStr string) map[string]string {
+	return map[string]string{"DEV": "project-" + prjIDStr + "-dev", "TEST": "project-" + prjIDStr + "-test",
+		"STAGING": "project-" + prjIDStr + "-staging", "PROD": "project-" + prjIDStr + "-prod"}
+}
+
 func (fsm *DeployFSMContext) deployService() error {
 	// make sure runtime must have scheduleName
 	if fsm.Runtime.ScheduleName.Name == "" {
@@ -865,7 +874,7 @@ func (fsm *DeployFSMContext) deployService() error {
 		if err != nil {
 			return err
 		}
-		fsm.Runtime.InitScheduleName(cluster.Type, fsm.IsEnabledProjectNamespace())
+		fsm.Runtime.InitScheduleName(cluster.Type)
 		if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
 			return err
 		}
@@ -907,36 +916,35 @@ func (fsm *DeployFSMContext) deployService() error {
 	if err != nil {
 		return err
 	}
-
 	if projectECI {
 		// TODO: vendor need get by cluster
 		utils.AddECIConfigToServiceGroupCreateV2Request(&group, apistructs.ECIVendorAlibaba)
 	}
 
 	// precheck，检查标签匹配，如果没有机器能匹配上，走下去也是pending的
-	//precheckResp, err := fsm.bdl.PrecheckServiceGroup(apistructs.ServiceGroupPrecheckRequest(group))
-	precheckResp, err := fsm.serviceGroupImpl.Precheck(apistructs.ServiceGroupPrecheckRequest(group))
-	if err != nil {
-		fsm.pushLog(fmt.Sprintf("precheck service error, %s", err.Error()))
-		return err
+	if len(group.DiceYml.Services) > 0 {
+		precheckResp, err := fsm.serviceGroupImpl.Precheck(apistructs.ServiceGroupPrecheckRequest(group))
+		if err != nil {
+			fsm.pushLog(fmt.Sprintf("precheck service error, %s", err.Error()))
+			return err
+		}
+		// 如果返回不ok，直接返回error
+		if strings.ToLower(precheckResp.Status) != strings.ToLower(string(apistructs.DeploymentStatusOK)) {
+			fsm.bdl.CreateErrorLog(&apistructs.ErrorLogCreateRequest{
+				ErrorLog: apistructs.ErrorLog{
+					Level:          apistructs.ErrorLevel,
+					ResourceType:   apistructs.RuntimeError,
+					ResourceID:     strconv.FormatUint(fsm.Runtime.ID, 10),
+					OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
+					HumanLog:       i18n.OrgSprintf(strconv.FormatUint(fsm.Runtime.OrgID, 10), "FailedToSchedule.NoNodeToDeploy"),
+					PrimevalLog:    fmt.Sprintf("没有匹配的节点能部署, %s", precheckResp.Info),
+					DedupID:        fmt.Sprintf("orch-%d", fsm.Runtime.ID),
+				},
+			})
+			fsm.pushLog(fmt.Sprintf("No node resource information matches, %s", precheckResp.Info))
+			return errors.Errorf("No node resource information matches, %s", precheckResp.Info)
+		}
 	}
-	// 如果返回不ok，直接返回error
-	if strings.ToLower(precheckResp.Status) != strings.ToLower(string(apistructs.DeploymentStatusOK)) {
-		fsm.bdl.CreateErrorLog(&apistructs.ErrorLogCreateRequest{
-			ErrorLog: apistructs.ErrorLog{
-				Level:          apistructs.ErrorLevel,
-				ResourceType:   apistructs.RuntimeError,
-				ResourceID:     strconv.FormatUint(fsm.Runtime.ID, 10),
-				OccurrenceTime: strconv.FormatInt(time.Now().Unix(), 10),
-				HumanLog:       i18n.OrgSprintf(strconv.FormatUint(fsm.Runtime.OrgID, 10), "FailedToSchedule.NoNodeToDeploy"),
-				PrimevalLog:    fmt.Sprintf("没有匹配的节点能部署, %s", precheckResp.Info),
-				DedupID:        fmt.Sprintf("orch-%d", fsm.Runtime.ID),
-			},
-		})
-		fsm.pushLog(fmt.Sprintf("No node resource information matches, %s", precheckResp.Info))
-		return errors.Errorf("No node resource information matches, %s", precheckResp.Info)
-	}
-
 	b, _ := json.Marshal(&group)
 	logrus.Debugf("service group body: %s", string(b))
 
@@ -1146,6 +1154,20 @@ func (fsm *DeployFSMContext) generateDeployServiceRequest(group *apistructs.Serv
 		}
 
 	}
+
+	for name, job := range obj.Jobs {
+		usedAddonInsMap_, usedAddonTenantMap_, err := fsm.convertJob(name, job, obj.Meta, env, groupEnv, groupFileconfigs,
+			runtime, projectAddons, projectAddonTenants, projectECI)
+		if err != nil {
+			return nil, nil, err
+		}
+		for k, v := range usedAddonInsMap_ {
+			usedAddonInsMap[k] = v
+		}
+		for k, v := range usedAddonTenantMap_ {
+			usedAddonTenantMap[k] = v
+		}
+	}
 	//handle env template
 	err = fsm.convertEnvForTemplate(obj, group.ProjectNamespace, runtime.OrgID, runtime.ProjectID, runtime.Workspace)
 	if err != nil {
@@ -1293,6 +1315,10 @@ func (fsm *DeployFSMContext) checkServiceReady() (bool, error) {
 		return false, nil
 	}
 	fsm.pushLog(fmt.Sprintf("checking status: %s, servicegroup: %v", serviceGroup.Status, runtime.ScheduleName))
+	// 如果状态是failed，说明服务或者job运行失败
+	if serviceGroup.Status == apistructs.StatusFailed {
+		return false, errors.New(serviceGroup.LastMessage)
+	}
 	// 如果状态是ready或者healthy，说明服务已经发起来了
 	runtimeStatus := apistructs.RuntimeStatusUnHealthy
 	if serviceGroup.Status == apistructs.StatusReady || serviceGroup.Status == apistructs.StatusHealthy {
@@ -1670,6 +1696,109 @@ func (fsm *DeployFSMContext) generateRuntimeFileToken() error {
 		return err
 	}
 	return nil
+}
+
+func (fsm *DeployFSMContext) convertJob(jobName string, job *diceyml.Job,
+	groupLabels map[string]string, addonEnv map[string]string, groupEnv, groupFileconfigs map[string]string,
+	runtime *dbclient.Runtime, projectAddons []dbclient.AddonInstanceRouting,
+	projectAddonTenants []dbclient.AddonInstanceTenant, projectECI bool) (map[string]dbclient.AddonInstanceRouting, map[string]dbclient.AddonInstanceTenant, error) {
+
+	newVolumes := make([]diceyml.Volume, 0)
+	// 用于兼容使用旧的 volume 定义方式的 volume，避免创建新 volume
+	oldTypeVolumes := make([]diceyml.Volume, 0)
+
+	if projectECI {
+		// 全部使用新的 volumes 定义
+		for _, vol := range job.Volumes {
+			newVolumes = append(newVolumes, utils.ConvertVolume(vol))
+		}
+	} else {
+		for _, vol := range job.Volumes {
+			if vol.Path != "" {
+				oldTypeVolumes = append(oldTypeVolumes, vol)
+			} else {
+				newVolumes = append(newVolumes, vol)
+			}
+		}
+	}
+
+	volumePrefixDir := BuildVolumeRootDir(runtime)
+	bs, err := convertBinds(jobName, volumePrefixDir, oldTypeVolumes)
+	if err != nil {
+		return nil, nil, err
+	}
+	job.Binds = append(job.Binds, bs...)
+	if len(newVolumes) > 0 {
+		job.Volumes = newVolumes
+	} else {
+		job.Volumes = nil
+	}
+	job.Labels = utils.ConvertServiceLabels(groupLabels, job.Labels, jobName)
+	// TODO:
+	// currently platformEnv > serviceEnv > addonEnv > groupEnv
+	// we desire platformEnv > addonEnv > serviceEnv > groupEnv
+	envs := make(map[string]string)
+	utils.AppendEnv(envs, groupEnv)
+	utils.AppendEnv(envs, addonEnv)
+	utils.AppendEnv(envs, job.Envs)
+	// at last, append platformEnv
+	envs["TERMINUS_APP"] = jobName
+	// clear existing DICE_*
+	if _, ok := groupLabels["ERDA_COMPONENT"]; !ok {
+		for k := range envs {
+			if strings.HasPrefix(k, "DICE_") {
+				delete(envs, k)
+			}
+		}
+	}
+	for k, v := range job.Labels {
+		if strings.HasPrefix(k, "DICE_") {
+			envs[k] = v
+		}
+	}
+	replaced_envs, usedAddonInsMap, usedAddonTenantMap, err := fsm.evalTemplate(projectAddons, projectAddonTenants, envs)
+	if err != nil {
+		return nil, nil, err
+	}
+	job.Envs = replaced_envs
+
+	if len(groupFileconfigs) > 0 {
+		if fsm.Runtime.FileToken == "" {
+			if tokeninfo, err := fsm.bdl.GetOAuth2Token(apistructs.OAuth2TokenGetRequest{
+				ClientID:     conf.TokenClientID(),
+				ClientSecret: conf.TokenClientSecret(),
+				Payload: apistructs.OAuth2TokenPayload{
+					AccessTokenExpiredIn: "0",
+					AccessibleAPIs: []apistructs.AccessibleAPI{{
+						Path:   "/api/files",
+						Method: http.MethodGet,
+						Schema: "http",
+					}},
+					Metadata: map[string]string{
+						httputil.InternalHeader: "orchestrator",
+						"RuntimeID":             strconv.FormatUint(fsm.Runtime.ID, 10),
+					},
+				}}); err != nil {
+				return nil, nil, err
+			} else {
+				fsm.Runtime.FileToken = tokeninfo.AccessToken
+			}
+			if err := fsm.db.UpdateRuntime(fsm.Runtime); err != nil {
+				return nil, nil, err
+			}
+		}
+		// TODO: diceyml add dependon: openapi
+		openapiPublicAddr := os.Getenv("OPENAPI_PUBLIC_ADDR")
+		if job.Init == nil {
+			job.Init = map[string]diceyml.InitContainer{}
+		}
+		job.Init["internal-init-data"] = diceyml.InitContainer{
+			Image:      conf.InitContainerImage(),
+			SharedDirs: []diceyml.SharedDir{{Main: "/init-data", SideCar: "/data"}},
+			Cmd:        buildCurlDownloadFileCmd(groupFileconfigs, openapiPublicAddr, fsm.Runtime.FileToken, "/data"),
+		}
+	}
+	return usedAddonInsMap, usedAddonTenantMap, nil
 }
 
 func buildCurlDownloadFileCmd(files map[string]string, openapiAddr string, token string, dstdir string) string {

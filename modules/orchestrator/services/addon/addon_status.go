@@ -1006,7 +1006,7 @@ func (a *Addon) BuildESOperatorServiceItem(options map[string]string, addonIns *
 	}
 	addonDice.Meta = map[string]string{
 		"USE_OPERATOR": "elasticsearch",
-		"VERSION":      "6.8.9",
+		"VERSION":      version,
 	}
 	//设置环境变量
 	for _, v := range addonDice.Services {
@@ -1019,11 +1019,14 @@ func (a *Addon) BuildESOperatorServiceItem(options map[string]string, addonIns *
 			v.Envs["ADDON_ID"] = addonIns.ID
 			v.Envs["requirepass"] = password
 		}
-
+		// set options for label
+		if len(v.Labels) == 0 {
+			v.Labels = make(map[string]string)
+		}
 		SetlabelsFromOptions(options, v.Labels)
 
 		//  主要目的是传递 PVC 相关信息
-		vol01 := SetAddonVolumes(options, "", false)
+		vol01 := SetAddonVolumes(options, "/for-operator", false)
 		v.Volumes = diceyml.Volumes{vol01}
 	}
 	return nil
@@ -1054,7 +1057,7 @@ func (a *Addon) BuildMysqlOperatorServiceItem(options map[string]string, addonIn
 		SetlabelsFromOptions(options, v.Labels)
 
 		//  主要目的是传递 PVC 相关信息
-		vol01 := SetAddonVolumes(options, "", false)
+		vol01 := SetAddonVolumes(options, "/for-operator", false)
 		v.Volumes = diceyml.Volumes{vol01}
 
 		addonInstanceExtra := dbclient.AddonInstanceExtra{

@@ -96,7 +96,7 @@ func (i *ComponentFileTree) findScene(setId uint64, sceneId uint64) ([]Scene, bo
 	return res, find, nil
 }
 
-func (i *ComponentFileTree) RenderSceneSets(inParams InParams) error {
+func (i *ComponentFileTree) RenderSceneSets(inParams InParams, operationKey apistructs.OperationKey) error {
 	req := apistructs.SceneSetRequest{
 		SpaceID: inParams.SpaceId,
 	}
@@ -122,7 +122,9 @@ func (i *ComponentFileTree) RenderSceneSets(inParams InParams) error {
 	}
 
 	// selectKey, expandedKeys := findSelectedKeysExpandedKeys(res, inParams.SelectedKeys)
-	if i.State.SceneSetKey != 0 {
+
+	// Do not expand when dragging
+	if i.State.SceneSetKey != 0 && operationKey != apistructs.DragSceneSetOperationKey {
 		i.State.ExpandedKeys = append(i.State.ExpandedKeys, "sceneset-"+strconv.Itoa(i.State.SceneSetKey))
 	}
 

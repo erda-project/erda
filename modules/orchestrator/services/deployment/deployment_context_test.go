@@ -210,157 +210,6 @@ func TestFSMPushOnPhase(t *testing.T) {
 	}
 }
 
-// func TestFSMRequestAddons(t *testing.T) {
-// 	f := genFakeFSM()
-//
-// 	// patch methods
-// 	var bdl *bundle.Bundle
-// 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetCluster",
-// 		func(_ *bundle.Bundle, clusterName string) (*apistructs.ClusterInfo, error) {
-// 			cluster := apistructs.ClusterInfo{
-// 				ID:   rand.Int(),
-// 				Name: clusterName,
-// 			}
-// 			return &cluster, nil
-// 		},
-// 	)
-// 	raw := `version: 2.0
-// services:
-//   none:
-//     image: nginx:latest
-//     resources:
-//       cpu: 0.01
-//       mem: 64
-//       disk: 33
-//     deployments:
-//       replicas: 1`
-// 	rawYAML, err := diceyml.New([]byte(raw), true)
-// 	if !assert.NoError(t, err) {
-// 		return
-// 	}
-// 	cntFetchYml := 0
-// 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetDiceYAML",
-// 		func(_ *bundle.Bundle, releaseID string, workspace ...string) (*diceyml.DiceYaml, error) {
-// 			cntFetchYml++
-// 			assert.Equal(t, "xxx-yyy", releaseID)
-// 			return rawYAML, nil
-// 		},
-// 	)
-// 	cntUnderlay := 0
-// 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "UpdateAddonUnderlay",
-// 		func(_ *bundle.Bundle, uniqueId spec.RuntimeUniqueId, orgID uint64, projectID uint64,
-// 			isSourceAbility bool, dice *spec.LegacyDice, diceYml *diceyml.DiceYaml) error {
-// 			cntUnderlay++
-// 			// check update underlay arguments
-// 			assert.Equal(t, spec.RuntimeUniqueId{ApplicationId: 102, Workspace: "DEV", Name: "fake runtime"}, uniqueId)
-// 			assert.Equal(t, uint64(104), orgID)
-// 			assert.Equal(t, uint64(103), projectID)
-// 			assert.False(t, isSourceAbility)
-// 			return nil
-// 		},
-// 	)
-// 	cntReqAddon := 0
-// 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "CreateAddon",
-// 		func(_ *bundle.Bundle, req *apistructs.AddonCreateRequest) error {
-// 			cntReqAddon += 1
-// 			// check req
-// 			assert.Equal(t, uint64(104), req.OrgID)
-// 			assert.Equal(t, uint64(103), req.ProjectID)
-// 			assert.Equal(t, uint64(102), req.ApplicationID)
-// 			assert.Equal(t, "DEV", req.Workspace)
-// 			assert.Equal(t, uint64(101), req.RuntimeID)
-// 			assert.Equal(t, "fake runtime", req.RuntimeName)
-// 			assert.Equal(t, "terminus-test", req.ClusterName)
-// 			assert.Equal(t, "fake user", req.Operator)
-// 			assert.Equal(t, apistructs.AddonCreateOptions{
-// 				OrgName:         "fake org",
-// 				ProjectName:     "fake project",
-// 				ApplicationName: "fake app",
-// 				Workspace:       "DEV",
-// 				RuntimeName:     "fake runtime",
-// 				DeploymentID:    "100",
-// 				ClusterName:     "terminus-test",
-// 			}, req.Options)
-// 			return nil
-// 		},
-// 	)
-//
-// 	// do invoke
-// 	err = f.requestAddons()
-//
-// 	if assert.NoError(t, err) {
-// 		assert.Equal(t, 1, cntUnderlay)
-// 		assert.Equal(t, 1, cntFetchYml)
-// 		assert.Equal(t, 1, cntReqAddon)
-// 	}
-// }
-
-// func TestFSMGenerateDeployServiceRequest(t *testing.T) {
-// 	input := "../../testdata/orc_pmp_release1.yml"
-// 	output := "../../testdata/orc_pmp_req1.yml"
-//
-// 	f := genFakeFSM(input)
-//
-// 	// patch methods
-// 	var bdl *bundle.Bundle
-// 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetRuntimeAddonConfig",
-// 		func(_ *bundle.Bundle) (map[string]string, error) {
-// 			return map[string]string{
-// 				"FAKE_ADDON_ENV1": "it",
-// 				"FAKE_ADDON_ENV2": "is",
-// 				"FAKE_OVERLAP":    "addon",
-// 			}, nil
-// 		},
-// 	)
-// 	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "FetchDeploymentConfig",
-// 		func(_ *bundle.Bundle, configNamespace string) (map[string]string, map[string]string, error) {
-// 			return map[string]string{
-// 					"FAKE_CONFIG_ENV1": "fake tan",
-// 					"FAKE_CONFIG_ENV2": "fake ke",
-// 					"FAKE_OVERLAP":     "config",
-// 				}, map[string]string{
-// 					"FAKE_CONFIG_FILE1": "fake file1",
-// 					"FAKE_CONFIG_FILE2": "fake file2",
-// 				}, nil
-// 		},
-// 	)
-// 	var db *dbclient.DBClient
-// 	monkey.PatchInstanceMethod(reflect.TypeOf(db), "FindDomainsByRuntimeIdAndServiceName",
-// 		func(_ *dbclient.DBClient, runtimeId uint64, serviceName string) ([]dbclient.RuntimeDomain, error) {
-// 			return []dbclient.RuntimeDomain{
-// 				{
-// 					RuntimeId: runtimeId,
-// 					Domain:    fmt.Sprintf("%s-dev-%d.test.terminus.io", serviceName, runtimeId),
-// 				},
-// 			}, nil
-// 		},
-// 	)
-//
-// 	// do invoke
-// 	group := apistructs.ServiceGroupCreateV2Request{}
-// 	_, _, err := f.generateDeployServiceRequest(&group, []dbclient.AddonInstanceRouting{}, []dbclient.AddonInstanceTenant{})
-// 	require.NoError(t, err)
-//
-// 	actualDice := group.DiceYml
-//
-// 	b, err := ioutil.ReadFile(output)
-// 	require.NoError(t, err)
-// 	var expectDice diceyml.Object
-// 	err = yaml.Unmarshal(b, &expectDice)
-// 	require.NoError(t, err)
-//
-// 	// 1. check dice.yml
-// 	assert.Equal(t, expectDice, actualDice)
-//
-// 	// 2. check request
-// 	group.DiceYml = diceyml.Object{} // diceYml is checked
-// 	require.Equal(t, apistructs.ServiceGroupCreateV2Request{
-// 		ID:          "schedule",
-// 		Type:        "fake",
-// 		ClusterName: "terminus-test",
-// 	}, group)
-// }
-
 func TestFSMContinueCanceling(t *testing.T) {
 	f := genFakeFSM()
 	f.Deployment.Phase = apistructs.DeploymentPhaseAddon
@@ -580,4 +429,20 @@ func Test_requestAddons(t *testing.T) {
 	}
 	err := fsm.requestAddons()
 	assert.NoError(t, err)
+}
+
+func Test_genProjectNamespace(t *testing.T) {
+	var (
+		bdl *bundle.Bundle
+	)
+	fsm := DeployFSMContext{
+		d:          &log.DeployLogHelper{Bdl: bdl},
+		App:        &apistructs.ApplicationDTO{},
+		Deployment: &dbclient.Deployment{},
+		Runtime:    &dbclient.Runtime{},
+		Spec:       &diceyml.Object{AddOns: map[string]*diceyml.AddOn{"empty-addon": nil}},
+	}
+	nsInfo := fsm.genProjectNamespace("111")
+	assert.Equal(t, "project-111-prod", nsInfo["PROD"])
+
 }

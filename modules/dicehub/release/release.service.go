@@ -1302,6 +1302,12 @@ func summaryReLoadImages(r *pb.ApplicationReleaseSummary) error {
 			Image:       service.Image,
 		})
 	}
+	for name, job := range obj.Jobs {
+		r.Services = append(r.Services, &pb.ServiceImagePair{
+			ServiceName: name,
+			Image:       job.Image,
+		})
+	}
 	return nil
 }
 
@@ -1332,6 +1338,13 @@ func respDataReLoadImages(r *pb.ReleaseGetResponseData) error {
 		r.ServiceImages = append(r.ServiceImages, &pb.ServiceImagePair{
 			ServiceName: name,
 			Image:       service.Image,
+		})
+	}
+	for name, job := range obj.Jobs {
+		r.Images = append(r.Images, job.Image)
+		r.ServiceImages = append(r.ServiceImages, &pb.ServiceImagePair{
+			ServiceName: name,
+			Image:       job.Image,
 		})
 	}
 

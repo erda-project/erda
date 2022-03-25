@@ -33,7 +33,11 @@ leader-worker:
   worker:
     etcd_key_prefix_with_slash: /devops/pipeline/v2/leader-worker/worker/
 reconciler: {}
+clusterinfo: {}
+resourcegc: {}
 dbgc: {}
+task-policy: {}
+reconciler-cache: {}
 
 etcd-election@leader-worker:
   root_path: erda/component-leader/pipeline/leader-worker
@@ -46,6 +50,8 @@ metric-report-client:
       password: ${COLLECTOR_AUTH_PASSWORD}
 erda.core.pipeline.definition:
 erda.core.pipeline.cron:
+cron-daemon:
+cron-compensator:
 erda.core.pipeline.source:
 erda.core.pipeline.cms:
   # TODO refactor it: use kms to make key-change operation easier. No encrypt if key-pair not provided.

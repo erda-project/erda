@@ -65,7 +65,7 @@ const (
 
 // CreateEvent 创建一个 event 发送到 eventbox 服务.
 func (b *Bundle) CreateEvent(ev *apistructs.EventCreateRequest) error {
-	host, err := b.urls.EventBox()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (b *Bundle) CreateEvent(ev *apistructs.EventCreateRequest) error {
 }
 
 func (b *Bundle) CreateEventNotify(ev *apistructs.EventBoxRequest) error {
-	host, err := b.urls.EventBox()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func (b *Bundle) CreateEventNotify(ev *apistructs.EventBoxRequest) error {
 }
 
 func (b *Bundle) CreateMboxNotify(templatename string, params map[string]string, locale string, orgid uint64, users []string) error {
-	host, err := b.urls.EventBox()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
@@ -155,7 +155,7 @@ func (b *Bundle) CreateMboxNotify(templatename string, params map[string]string,
 }
 
 func (b *Bundle) CreateDingTalkWorkNotify(templatename string, params map[string]string, locale string, orgid uint64, mobiles []string) error {
-	host, err := b.urls.EventBox()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
@@ -192,7 +192,7 @@ func (b *Bundle) CreateDingTalkWorkNotify(templatename string, params map[string
 }
 
 func (b *Bundle) CreateEmailNotify(templatename string, params map[string]string, locale string, orgid uint64, emailaddrs []string) error {
-	host, err := b.urls.EventBox()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
@@ -232,7 +232,7 @@ func (b *Bundle) CreateEmailNotify(templatename string, params map[string]string
 }
 
 func (b *Bundle) CreateGroupNotifyEvent(groupNotifyRequest apistructs.EventBoxGroupNotifyRequest) error {
-	host, err := b.urls.EventBox()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
@@ -330,14 +330,14 @@ func (b *Bundle) CreateGroupNotifyEvent(groupNotifyRequest apistructs.EventBoxGr
 }
 
 func (b *Bundle) CreateWebhook(r apistructs.CreateHookRequest) error {
-	host, err := b.urls.EventBox()
+	host, err := b.urls.CoreServices()
 	if err != nil {
 		return err
 	}
 	hc := b.hc
 	list := apistructs.WebhookListResponse{}
 	resp, err := hc.Get(host).Path("/api/dice/eventbox/webhooks").
-		Param("orgid", r.Org).
+		Param("orgId", r.Org).
 		Header("Accept", "application/json").
 		Do().JSON(&list)
 	if err != nil {

@@ -297,7 +297,10 @@ func (p *List) getData() *list.Data {
 			IsSimple:  true,
 			PageSize:  math.MaxInt32,
 			PageNo:    1})
-
+		if err != nil {
+			logrus.Errorf("failed to get app list ,err =%+v", err)
+			return nil
+		}
 		for i := 0; i < len(allApps.List); i++ {
 			appIds = append(appIds, allApps.List[i].ID)
 			appIdToName[allApps.List[i].ID] = allApps.List[i].Name

@@ -29,6 +29,7 @@ erda.oap.collector.core:
         - "erda.oap.collector.processor.k8s-tagger@prw"
         - "erda.oap.collector.processor.modifier"
         - "erda.oap.collector.processor.modifier@addmeta"
+        - "erda.oap.collector.processor.modifier@docker_container_summary"
       exporters:
         #- "erda.oap.collector.exporter.stdout"
         - "erda.oap.collector.exporter.kafka@spot-metrics"
@@ -55,7 +56,8 @@ erda.oap.collector.receiver.collector:
 
 # ************* processors *************
 erda.oap.collector.processor.k8s-tagger@prw:
-  namepass: ["kubernetes_nodes_cadvisor"]
+  keypass:
+    __kw__name: ["kubernetes_nodes_cadvisor"]
   pod:
     watch_selector:
       namespace: ""
@@ -71,12 +73,13 @@ erda.oap.collector.processor.k8s-tagger@prw:
         - "msp.erda.cloud/service_name"
         - "msp.erda.cloud/terminus_key"
         - "msp.erda.cloud/workspace"
-      finders:
-        - indexer: pod_name
-          matcher: "%{namespace}/%{pod}"
+      finder:
+        indexer: pod_name_container
+        matcher: "%{namespace}/%{pod}/%{container}"
 
 erda.oap.collector.processor.modifier:
-  namepass: ["kubernetes_nodes_cadvisor"]
+  keypass:
+    __kw__name: ["kubernetes_nodes_cadvisor"]
   rules:
     - action: drop
       key: kubernetes_pod_name
@@ -102,9 +105,9 @@ erda.oap.collector.processor.modifier:
       key: prometheus
     - action: drop
       key: prometheus_replica
-    - action: trim_left
+    - action: trim_prefix
       key: kubernetes_
-    - action: trim_left
+    - action: trim_prefix
       key: pod_annotations_msp_erda_cloud_
     - action: copy
       key: pod_uid
@@ -129,8 +132,63 @@ erda.oap.collector.processor.modifier@addmeta:
       key: org_name
       value: _metric_scope_id
 
-# ************* processors *************
+# compatibility to docker_container_summary
+erda.oap.collector.processor.modifier@docker_container_summary:
+  keypass:
+    __kw__name: ["kubernetes_nodes_cadvisor"]
+  rules:
+    - action: rename
+      key: __dp__container_fs_reads_bytes_total
+      value: __dp__blk_read_bytes
+    - action: rename
+      key: __dp__container_fs_reads_total
+      value: __dp__blk_reads
+    - action: rename
+      key: __dp__container_fs_writes_bytes_total
+      value: __dp__blk_write_bytes
+    - action: rename
+      key: __dp__container_fs_writes_total
+      value: __dp__blk_writes
+    - action: rename
+      key: __dp__container_memory_max_usage_bytes
+      value: __dp__mem_max_usage
+    - action: rename
+      key: __dp__container_memory_usage_bytes
+      value: __dp__mem_usage
+    - action: rename
+      key: __dp__container_network_receive_bytes_total
+      value: __dp__rx_bytes
+    - action: rename
+      key: __dp__container_network_receive_errors_total
+      value: __dp__rx_errors
+    - action: rename
+      key: __dp__container_network_transmit_bytes_total
+      value: __dp__tx_bytes
+    - action: rename
+      key: __dp__container_network_transmit_errors_total
+      value: __dp__tx_errors
+    - action: regex
+      key: id
+      value: '^\/kubepods\/\w+\/[\w|\-]+\/(?P<container_id>\w+)'
+    - action: rename
+      key: __dp__container_resources_memory_request
+      value: __dp__mem_allocation
+    - action: rename
+      key: __dp__container_resources_memory_limit
+      value: __dp__mem_limit
+    - action: rename
+      key: __dp__container_resources_cpu_request
+      value: __dp__cpu_allocation
+    - action: rename
+      key: __dp__container_resources_cpu_limit
+      value: __dp_cpu_limit
+    - action: set
+      key: __kw__name
+      value: docker_container_summary
+    - action: drop
+      key: name
 
+# ************* processors *************
 # ************* exporters *************
 erda.oap.collector.exporter.stdout:
 
@@ -179,6 +237,7 @@ kubernetes:
   root_ca_file: ${K8S_CA_FILE:/var/run/secrets/kubernetes.io/serviceaccount/ca.crt}
   token_file: ${K8S_TOKEN_FILE:/var/run/secrets/kubernetes.io/serviceaccount/token}
 #  config_path: .kube/config
+
 
 kafka:
   servers: ${BOOTSTRAP_SERVERS:localhost:9092}

@@ -243,7 +243,7 @@ func Test_addonCanScale(t *testing.T) {
 				addonPlan:    "professional",
 				addonVersion: "5.7.29",
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "Test_07",

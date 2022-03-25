@@ -16,53 +16,52 @@ package actionexecutor
 
 import (
 	"context"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/pipeline/conf"
-	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
+	"github.com/erda-project/erda/modules/pipeline/pipengine/actionexecutor/types"
 )
 
 func (m *Manager) deleteK8sExecutor(cluster apistructs.ClusterInfo) {
 	m.Lock()
 	defer m.Unlock()
-	for _, kind := range m.kindsByName {
+	for kind := range m.factory {
 		if kind.IsK8sKind() {
 			name := kind.MakeK8sKindExecutorName(cluster.Name)
-			delete(m.executorsByName, name)
 			delete(m.kindsByName, name)
+			delete(m.executorsByName, name)
 		}
 	}
 }
 
 func (m *Manager) updateK8sExecutor(cluster apistructs.ClusterInfo) error {
-	for _, kind := range m.kindsByName {
+	// create a duplication of k8s kind create fn
+	k8sFactory := make(map[types.Kind]types.CreateFn)
+	m.Lock()
+	for kind, createFn := range m.factory {
 		if kind.IsK8sKind() {
-			m.Lock()
-			create, ok := m.factory[kind]
-			m.Unlock()
-			if !ok {
-				return errors.Errorf("executor creator [%s] not found", kind)
-			}
-			name := kind.MakeK8sKindExecutorName(cluster.Name)
-			actionExecutor, err := create(name, nil)
-			if err != nil {
-				return errors.Errorf("executor [%s] created failed, err: %v", name, err)
-			}
-			m.Lock()
-			m.kindsByName[name] = kind
-			m.executorsByName[actionExecutor.Name()] = actionExecutor
-			m.Unlock()
+			k8sFactory[kind] = createFn
 		}
+	}
+	m.Unlock()
+	for kind, createFn := range k8sFactory {
+		name := kind.MakeK8sKindExecutorName(cluster.Name)
+		actionExecutor, err := createFn(name, nil)
+		if err != nil {
+			return errors.Errorf("executor [%s] created failed, err: %v", name, err)
+		}
+		m.Lock()
+		m.kindsByName[name] = kind
+		m.executorsByName[actionExecutor.Name()] = actionExecutor
+		m.Unlock()
 	}
 	return nil
 }
 
 func (m *Manager) batchUpdateK8sExecutor() error {
-	clusters, err := clusterinfo.ListAllClusters()
+	clusters, err := m.clusterInfo.ListAllClusterInfos()
 	if err != nil {
 		return err
 	}
@@ -81,10 +80,8 @@ func (m *Manager) batchUpdateK8sExecutor() error {
 }
 
 func (m *Manager) ListenAndPatchK8sExecutor(ctx context.Context) {
-	triggerChan := clusterinfo.RegisterRefreshChan()
-	eventChan := clusterinfo.RegisterClusterEventChan()
-	interval := time.Duration(conf.ExecutorRefreshIntervalMinute())
-	ticker := time.NewTicker(time.Minute * interval)
+	triggerChan := m.clusterInfo.RegisterRefreshEvent()
+	eventChan := m.clusterInfo.RegisterClusterEvent()
 	for {
 		select {
 		case <-ctx.Done():
@@ -105,10 +102,6 @@ func (m *Manager) ListenAndPatchK8sExecutor(ctx context.Context) {
 				}
 			case apistructs.ClusterActionDelete:
 				m.deleteK8sExecutor(event.Content)
-			}
-		case <-ticker.C:
-			if err := m.batchUpdateK8sExecutor(); err != nil {
-				logrus.Errorf("failed to batch update k8s executor, err: %v", err)
 			}
 		}
 	}

@@ -145,6 +145,7 @@ func (p *provider) Initialize(ctx servicehub.Context) error {
 	p.Protocol.WithContextValue(types.DBClient, ep.DBClient())
 	p.Protocol.WithContextValue(types.ProjectPipelineService, p.ProjectPipelineSvc)
 	p.Protocol.WithContextValue(types.PipelineCronService, p.PipelineCron)
+	p.Protocol.WithContextValue(types.GuideService, p.GuideSvc)
 
 	// This server will never be started. Only the routes and locale loader are used by new http server
 	server := httpserver.New(":0")
@@ -474,6 +475,7 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	)
 	issue.CreateFileRecord = testCaseSvc.CreateFileRecord
 	issue.UpdateFileRecord = testCaseSvc.UpdateFileRecord
+	p.CommentIssueStreamSvc.WithIssue(issue)
 
 	issueState := issuestate.New(
 		issuestate.WithDBClient(db),
@@ -604,6 +606,8 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 	p.ProjectPipelineSvc.WithPipelineSvc(pipelineSvc)
 	p.ProjectPipelineSvc.WithPermissionSvc(perm)
 
+	p.GuideSvc.WithPipelineSvc(branchRule)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),
@@ -661,6 +665,8 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 		endpoints.WithCodeCoverageExecRecord(codeCvc),
 		endpoints.WithTestReportRecord(testReportSvc),
 		endpoints.WithPipelineCron(p.PipelineCron),
+		endpoints.WithPipelineSource(p.PipelineSource),
+		endpoints.WithPipelineDefinition(p.PipelineDefinition),
 		endpoints.WithPublishItem(publishItem),
 	)
 
@@ -725,7 +731,37 @@ func registerWebHook(bdl *bundle.Bundle) {
 		},
 	}
 	if err := bdl.CreateWebhook(ev); err != nil {
-		logrus.Warnf("failed to register pipeline yml event, %v", err)
+		logrus.Warnf("failed to register pipeline_definition_update event, %v", err)
+	}
+
+	ev = apistructs.CreateHookRequest{
+		Name:   "guide_create",
+		Events: []string{bundle.GitPushEvent},
+		URL:    strutil.Concat("http://", discover.DOP(), "/api/guide/actions/create-by-gittar-push-hook"),
+		Active: true,
+		HookLocation: apistructs.HookLocation{
+			Org:         "-1",
+			Project:     "-1",
+			Application: "-1",
+		},
+	}
+	if err := bdl.CreateWebhook(ev); err != nil {
+		logrus.Warnf("failed to register guide_create event, %v", err)
+	}
+
+	ev = apistructs.CreateHookRequest{
+		Name:   "guide_delete",
+		Events: []string{bundle.GitPushEvent},
+		URL:    strutil.Concat("http://", discover.DOP(), "/api/guide/actions/delete-by-gittar-push-hook"),
+		Active: true,
+		HookLocation: apistructs.HookLocation{
+			Org:         "-1",
+			Project:     "-1",
+			Application: "-1",
+		},
+	}
+	if err := bdl.CreateWebhook(ev); err != nil {
+		logrus.Warnf("failed to register guide_delete event, %v", err)
 	}
 }
 
