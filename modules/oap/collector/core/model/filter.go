@@ -22,59 +22,52 @@ import (
 )
 
 // semantic same as https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#metric-filtering
+// key* <=> tag*
 type FilterConfig struct {
 	// Selectors
-	Namepass []string            `file:"namepass"`
-	Namedrop []string            `file:"namedrop"`
-	Tagpass  map[string][]string `file:"tagpass"`
-	Tagdrop  map[string][]string `file:"tag_drop"`
-	// Modifiers
-	Fieldpass  []string `file:"fieldpass"`
-	Fielddrop  []string `file:"fielddrop"`
-	Taginclude []string `file:"taginclude"`
-	Tagexclude []string `file:"tagexclude"`
+	Keypass    map[string][]string `file:"keypass"`
+	Keydrop    map[string][]string `file:"keydrop"`
+	Keyinclude []string            `file:"keyinclude"`
+	Keyexclude []string            `file:"keyexclude"`
 }
 
 type DataFilter struct {
-	Namepass filter.Filter
-	Namedrop filter.Filter
-	Tagpass  map[string]filter.Filter
-	Tagdrop  map[string]filter.Filter
-
-	Fieldpass  filter.Filter
-	Fielddrop  filter.Filter
-	Taginclude filter.Filter
-	Tagexclude filter.Filter
+	Keypass    map[string]filter.Filter
+	Keydrop    map[string]filter.Filter
+	Keyinclude filter.Filter
+	Keyexclude filter.Filter
 }
 
 // https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#selectors
 func (df *DataFilter) Selected(od odata.ObservableData) bool {
-	if df.Namepass != nil && !df.Namepass.Match(od.Name()) {
-		return false
-	}
-	if df.Namedrop != nil && df.Namedrop.Match(od.Name()) {
-		return false
-	}
-	attr := od.Attributes()
-	if df.Tagpass != nil {
-		for k, subf := range df.Tagpass {
+	attr := od.Pairs()
+	if df.Keypass != nil {
+		for k, subf := range df.Keypass {
 			val, ok := attr[k]
 			if !ok {
 				continue
 			}
-			if !subf.Match(val) {
+			sval, ok := val.(string)
+			if !ok {
+				continue
+			}
+			if !subf.Match(sval) {
 				return false
 			}
 		}
 	}
 
-	if df.Tagdrop != nil {
-		for k, subf := range df.Tagdrop {
+	if df.Keydrop != nil {
+		for k, subf := range df.Keydrop {
 			val, ok := attr[k]
 			if !ok {
 				continue
 			}
-			if subf.Match(val) {
+			sval, ok := val.(string)
+			if !ok {
+				continue
+			}
+			if subf.Match(sval) {
 				return false
 			}
 		}
@@ -83,55 +76,35 @@ func (df *DataFilter) Selected(od odata.ObservableData) bool {
 }
 
 func NewDataFilter(cfg FilterConfig) (*DataFilter, error) {
-	namepass, err := filter.Compile(cfg.Namepass)
-	if err != nil {
-		return nil, fmt.Errorf("namepass: %w", err)
-	}
-	namedrop, err := filter.Compile(cfg.Namedrop)
-	if err != nil {
-		return nil, fmt.Errorf("namedrop: %w", err)
-	}
-	tagpass := make(map[string]filter.Filter)
-	for k, v := range cfg.Tagpass {
+	keypass := make(map[string]filter.Filter)
+	for k, v := range cfg.Keypass {
 		tmp, err := filter.Compile(v)
 		if err != nil {
-			return nil, fmt.Errorf("tagpass<%s>: %w", k, err)
+			return nil, fmt.Errorf("keypass<%s>: %w", k, err)
 		}
-		tagpass[k] = tmp
+		keypass[k] = tmp
 	}
-	tagdrop := make(map[string]filter.Filter)
-	for k, v := range cfg.Tagdrop {
+	keydrop := make(map[string]filter.Filter)
+	for k, v := range cfg.Keydrop {
 		tmp, err := filter.Compile(v)
 		if err != nil {
-			return nil, fmt.Errorf("tagdrop<%s>: %w", k, err)
+			return nil, fmt.Errorf("keydrop<%s>: %w", k, err)
 		}
-		tagdrop[k] = tmp
+		keydrop[k] = tmp
+	}
+	keyinclude, err := filter.Compile(cfg.Keyinclude)
+	if err != nil {
+		return nil, fmt.Errorf("keyinclude: %w", err)
+	}
+	keyexclude, err := filter.Compile(cfg.Keyexclude)
+	if err != nil {
+		return nil, fmt.Errorf("keyexclude: %w", err)
 	}
 
-	fieldpass, err := filter.Compile(cfg.Fieldpass)
-	if err != nil {
-		return nil, fmt.Errorf("fieldpass: %w", err)
-	}
-	fielddrop, err := filter.Compile(cfg.Fielddrop)
-	if err != nil {
-		return nil, fmt.Errorf("fielddrop: %w", err)
-	}
-	taginclude, err := filter.Compile(cfg.Taginclude)
-	if err != nil {
-		return nil, fmt.Errorf("taginclude: %w", err)
-	}
-	tagexclude, err := filter.Compile(cfg.Tagexclude)
-	if err != nil {
-		return nil, fmt.Errorf("tagexclude: %w", err)
-	}
 	return &DataFilter{
-		Namepass:   namepass,
-		Namedrop:   namedrop,
-		Tagpass:    tagpass,
-		Tagdrop:    tagdrop,
-		Fieldpass:  fieldpass,
-		Fielddrop:  fielddrop,
-		Taginclude: taginclude,
-		Tagexclude: tagexclude,
+		Keypass:    keypass,
+		Keydrop:    keydrop,
+		Keyinclude: keyinclude,
+		Keyexclude: keyexclude,
 	}, nil
 }

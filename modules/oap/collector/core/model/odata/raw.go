@@ -22,45 +22,42 @@ import (
 type Raws []*Raw
 
 type Raw struct {
-	Item []byte    `json:"item"`
+	Data []byte    `json:"data"`
 	Meta *Metadata `json:"meta"`
 }
 
-func (r *Raw) Attributes() map[string]string {
-	return map[string]string{}
+func NewRaw(item []byte) *Raw {
+	return &Raw{Data: item, Meta: NewMetadata()}
 }
+
+func (r *Raw) HandleKeyValuePair(_ func(pairs map[string]interface{}) map[string]interface{}) {
+}
+
+func (r *Raw) Pairs() map[string]interface{} { return nil }
 
 func (r *Raw) Name() string {
 	return ""
-}
-
-func NewRaw(item []byte) *Raw {
-	return &Raw{Item: item, Meta: &Metadata{Data: map[string]string{}}}
 }
 
 func (r *Raw) Metadata() *Metadata {
 	return r.Meta
 }
 
-func (r *Raw) HandleAttributes(_ func(attr map[string]string) map[string]string) {}
-
-func (r *Raw) HandleName(_ func(name string) string) {}
-
 func (r *Raw) Clone() ObservableData {
-	item := make([]byte, len(r.Item))
-	copy(item, r.Item)
+	item := make([]byte, len(r.Data))
+	copy(item, r.Data)
 	return &Raw{
-		Item: item,
+		Data: item,
 		Meta: r.Meta.Clone(),
 	}
 }
 
 func (r *Raw) Source() interface{} {
-	return r.Item
+	return r.Data
 }
 
 func (r *Raw) SourceCompatibility() interface{} {
-	return r.Item
+	return r.Data
 }
 
 func (r *Raw) SourceType() SourceType {
@@ -68,5 +65,5 @@ func (r *Raw) SourceType() SourceType {
 }
 
 func (r *Raw) String() string {
-	return fmt.Sprintf("raw data size => %d", len(r.Item))
+	return fmt.Sprintf("raw(%d)", len(r.Data))
 }

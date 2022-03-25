@@ -32,8 +32,8 @@ import (
 var providerName = plugins.WithPrefixProcessor("k8s-tagger")
 
 type config struct {
-	Pod      pod.Config `file:"pod"`
-	Namepass []string   `file:"namepass"`
+	Pod     pod.Config          `file:"pod"`
+	Keypass map[string][]string `file:"keypass"`
 }
 
 // +provider
@@ -53,10 +53,20 @@ func (p *provider) ComponentConfig() interface{} {
 // 1. filter with config filters
 // 2. pass tags to handle
 func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
-	in.HandleAttributes(func(attr map[string]string) map[string]string {
-		return p.addPodMetadata(attr)
-	})
+	podMeta, ok := p.getPodMetadata(in.Pairs())
+	if !ok {
+		return in, nil
+	}
 
+	in.HandleKeyValuePair(func(m map[string]interface{}) map[string]interface{} {
+		for k, v := range podMeta.Tags {
+			m[k] = v
+		}
+		for k, v := range podMeta.Fields {
+			m[odata.DataPointsKeyPrefix+k] = v
+		}
+		return m
+	})
 	return in, nil
 }
 
