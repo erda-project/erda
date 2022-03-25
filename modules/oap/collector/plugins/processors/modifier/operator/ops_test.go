@@ -60,3 +60,211 @@ func TestTrimPrefix_Operate(t1 *testing.T) {
 		})
 	}
 }
+
+func TestAdd_Operate(t *testing.T) {
+	type fields struct {
+		cfg ModifierCfg
+	}
+	type args struct {
+		pairs map[string]interface{}
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   map[string]interface{}
+	}{
+		{
+			fields: fields{cfg: ModifierCfg{
+				Key:   "aaa",
+				Value: "bbb",
+			}},
+			args: args{pairs: map[string]interface{}{}},
+			want: map[string]interface{}{"aaa": "bbb"},
+		},
+		{
+			fields: fields{cfg: ModifierCfg{
+				Key:   "aaa",
+				Value: "bbb",
+			}},
+			args: args{pairs: map[string]interface{}{"aaa": "ccc"}},
+			want: map[string]interface{}{"aaa": "ccc"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &Add{
+				cfg: tt.fields.cfg,
+			}
+			if got := a.Operate(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Operate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCopy_Operate(t *testing.T) {
+	type fields struct {
+		cfg ModifierCfg
+	}
+	type args struct {
+		pairs map[string]interface{}
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   map[string]interface{}
+	}{
+		{
+			fields: fields{cfg: ModifierCfg{
+				Key:   "aaa",
+				Value: "bbb",
+			}},
+			args: args{pairs: map[string]interface{}{"aaa": "ccc"}},
+			want: map[string]interface{}{"aaa": "ccc", "bbb": "ccc"},
+		},
+		{
+			fields: fields{cfg: ModifierCfg{
+				Key:   "bbb",
+				Value: "bbb",
+			}},
+			args: args{pairs: map[string]interface{}{"aaa": "ccc"}},
+			want: map[string]interface{}{"aaa": "ccc"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Copy{
+				cfg: tt.fields.cfg,
+			}
+			if got := c.Operate(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Operate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDrop_Operate(t *testing.T) {
+	type fields struct {
+		cfg ModifierCfg
+	}
+	type args struct {
+		pairs map[string]interface{}
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   map[string]interface{}
+	}{
+		{
+			fields: fields{cfg: ModifierCfg{
+				Key: "aaa",
+			}},
+			args: args{pairs: map[string]interface{}{"aaa": "ccc"}},
+			want: map[string]interface{}{},
+		},
+		{
+			fields: fields{cfg: ModifierCfg{
+				Key: "aaa",
+			}},
+			args: args{pairs: map[string]interface{}{}},
+			want: map[string]interface{}{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := &Drop{
+				cfg: tt.fields.cfg,
+			}
+			if got := d.Operate(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Operate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRename_Operate(t *testing.T) {
+	type fields struct {
+		cfg ModifierCfg
+	}
+	type args struct {
+		pairs map[string]interface{}
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   map[string]interface{}
+	}{
+		{
+			fields: fields{cfg: ModifierCfg{
+				Key:   "aaa",
+				Value: "bbb",
+			}},
+			args: args{pairs: map[string]interface{}{"aaa": "ccc"}},
+			want: map[string]interface{}{"bbb": "ccc"},
+		},
+		{
+			fields: fields{cfg: ModifierCfg{
+				Key:   "ccc",
+				Value: "bbb",
+			}},
+			args: args{pairs: map[string]interface{}{"aaa": "ccc"}},
+			want: map[string]interface{}{"aaa": "ccc"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Rename{
+				cfg: tt.fields.cfg,
+			}
+			if got := r.Operate(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Operate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSet_Operate(t *testing.T) {
+	type fields struct {
+		cfg ModifierCfg
+	}
+	type args struct {
+		pairs map[string]interface{}
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   map[string]interface{}
+	}{
+		{
+			fields: fields{cfg: ModifierCfg{
+				Key:   "aaa",
+				Value: "bbb",
+			}},
+			args: args{pairs: map[string]interface{}{"aaa": "ccc"}},
+			want: map[string]interface{}{"aaa": "bbb"},
+		},
+		{
+			fields: fields{cfg: ModifierCfg{
+				Key:   "aaa",
+				Value: "bbb",
+			}},
+			args: args{pairs: map[string]interface{}{}},
+			want: map[string]interface{}{"aaa": "bbb"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Set{
+				cfg: tt.fields.cfg,
+			}
+			if got := s.Operate(tt.args.pairs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Operate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
