@@ -305,9 +305,12 @@ func (client *DBClient) GetExtensionVersionCount(name string) (int64, error) {
 	return count, err
 }
 
-func (client *DBClient) ListExtensionVersions(names []string) (map[string][]ExtensionVersion, error) {
+func (client *DBClient) ListExtensionVersions(names []string, all bool) (map[string][]ExtensionVersion, error) {
 	var result []ExtensionVersion
-	query := client.Model(&ExtensionVersion{}).Where("name in (?) and public = ?", names, true).Order("version desc")
+	query := client.Model(&ExtensionVersion{}).Where("name in (?)", names).Order("version desc")
+	if !all {
+		query = query.Where("public = ?", true)
+	}
 	err := query.Find(&result).Error
 	if err != nil {
 		return nil, err

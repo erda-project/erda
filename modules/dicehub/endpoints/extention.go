@@ -79,7 +79,7 @@ func (e *Endpoints) QueryExtensions(ctx context.Context, r *http.Request, vars m
 		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
 	}
 
-	data, err := e.extension.MenuExtWithLocale(result, e.bdl.GetLocaleByRequest(r))
+	data, err := e.extension.MenuExtWithLocale(result, e.bdl.GetLocaleByRequest(r), all)
 	if err != nil {
 		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
 	}
@@ -117,7 +117,7 @@ func (e *Endpoints) QueryExtensionsMenu(ctx context.Context, r *http.Request, va
 		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
 	}
 
-	data, err := e.extension.MenuExtWithLocale(result, e.bdl.GetLocaleByRequest(r))
+	data, err := e.extension.MenuExtWithLocale(result, e.bdl.GetLocaleByRequest(r), all)
 	if err != nil {
 		return apierrors.ErrQueryExtension.InternalError(err).ToResp(), nil
 	}

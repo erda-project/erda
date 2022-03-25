@@ -142,14 +142,14 @@ func (i *Extension) SearchExtensions(req apistructs.ExtensionSearchRequest) (map
 	return result.mp, nil
 }
 
-func (i *Extension) MenuExtWithLocale(extensions []*apistructs.Extension, locale *i18n.LocaleResource) (map[string][]apistructs.ExtensionMenu, error) {
+func (i *Extension) MenuExtWithLocale(extensions []*apistructs.Extension, locale *i18n.LocaleResource, all string) (map[string][]apistructs.ExtensionMenu, error) {
 	var result = map[string][]apistructs.ExtensionMenu{}
 
 	var extensionName []string
 	for _, v := range extensions {
 		extensionName = append(extensionName, v.Name)
 	}
-	extensionVersionMap, err := i.db.ListExtensionVersions(extensionName)
+	extensionVersionMap, err := i.db.ListExtensionVersions(extensionName, all == "true")
 	if err != nil {
 		return nil, apierrors.ErrQueryExtension.InternalError(err)
 	}
