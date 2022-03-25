@@ -67,9 +67,13 @@ erda.oap.collector.processor.k8s-tagger@prw:
       label_include: []
       annotation_include:
         - "msp.erda.cloud/application_name"
+        - "msp.erda.cloud/application_id"
         - "msp.erda.cloud/org_name"
+        - "msp.erda.cloud/org_id"
         - "msp.erda.cloud/project_name"
+        - "msp.erda.cloud/project_id"
         - "msp.erda.cloud/runtime_name"
+        - "msp.erda.cloud/runtime_id"
         - "msp.erda.cloud/service_name"
         - "msp.erda.cloud/terminus_key"
         - "msp.erda.cloud/workspace"

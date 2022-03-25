@@ -32,10 +32,12 @@
       }
     ],
     "select": {
+      "cpu": "#cpu",
       "_meta": "#_meta",
       "_metric_scope": "#_metric_scope",
       "_metric_scope_id": "#_metric_scope_id",
       "application_name": "#application_name",
+      "application_id": "#application_id",
       "cluster_name": "#cluster_name",
       "container": "#container",
       "container_id": "#container_id",
@@ -43,18 +45,21 @@
       "id": "#id",
       "image": "#image",
       "org_name": "#org_name",
+      "org_id": "#org_id",
       "pod_ip": "#pod_ip",
       "pod_name": "#pod_name",
       "pod_namespace": "#pod_namespace",
       "pod_uid": "#pod_uid",
       "project_name": "#project_name",
+      "project_id": "#project_id",
       "runtime_name": "#runtime_name",
+      "runtime_id": "#runtime_id",
       "service_instance_id": "#service_instance_id",
       "service_name": "#service_name",
       "terminus_key": "#terminus_key",
       "workspace": "#workspace"
     },
-    "alias": "docker_container_summary_v2",
+    "alias": "docker_container_summary",
     "outputs": [
       "metric"
     ]
