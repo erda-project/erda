@@ -15,17 +15,15 @@
 package odata
 
 import (
-	"sort"
 	"strings"
 
-	"github.com/cespare/xxhash"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+
+	"github.com/erda-project/erda-proto-go/oap/common/pb"
 	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
 	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	tpb "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/modules/oap/collector/common/pbconvert"
-	structpb "github.com/golang/protobuf/ptypes/struct"
-
-	"github.com/erda-project/erda-proto-go/oap/common/pb"
 )
 
 type SourceType string
@@ -73,27 +71,6 @@ type SourceItem interface {
 	GetName() string
 	GetAttributes() map[string]string
 	GetRelations() *pb.Relation
-}
-
-// fieldKey is field of measurement
-// certain metric if fields if sourceItem is Metric
-// empty string if sourceItem is Log
-// ...
-func HashSourceItem(fieldKey string, sourceItem SourceItem) uint64 {
-	var sb strings.Builder
-	keys := make([]string, 0, len(sourceItem.GetAttributes()))
-	for k := range sourceItem.GetAttributes() {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	sb.WriteString(sourceItem.GetName() + "\n")
-	for _, k := range keys {
-		sb.WriteString(k + sourceItem.GetAttributes()[k] + "\n")
-	}
-	sb.WriteString(fieldKey)
-
-	return xxhash.Sum64String(sb.String())
 }
 
 func extractAttributes(data map[string]interface{}) map[string]string {

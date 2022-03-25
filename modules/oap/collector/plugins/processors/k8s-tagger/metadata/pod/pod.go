@@ -19,9 +19,10 @@ import (
 	"strings"
 	"sync"
 
+	apiv1 "k8s.io/api/core/v1"
+
 	"github.com/erda-project/erda/modules/oap/collector/common"
 	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/k8s-tagger/metadata"
-	apiv1 "k8s.io/api/core/v1"
 )
 
 const (
