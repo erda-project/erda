@@ -133,6 +133,7 @@ func (p *provider) CreateExportRecord(ctx context.Context, req *pb.CreateExportR
 			Minor:          m.Minor,
 			Patch:          m.Patch,
 			SpecProtocol:   m.SpecProtocol,
+			Valid:          true,
 		},
 		UserIDs: []string{m.CreatorID, m.UpdaterID},
 	}, nil
@@ -199,6 +200,8 @@ func (p *provider) ListExportRecords(ctx context.Context, req *pb.ListExportReco
 			Minor:          record.Minor,
 			Patch:          record.Patch,
 			SpecProtocol:   record.SpecProtocol,
+			Valid: p.DB.Where("id = ?", record.VersionID).
+				First(new(model.APIAssetVersion)).Error == nil,
 		})
 	}
 
