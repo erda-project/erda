@@ -44,7 +44,10 @@ func (p *provider) watchChange(ctx context.Context, ch <-chan watch.Event) {
 		select {
 		case <-ctx.Done():
 			return
-		case event := <-ch:
+		case event, ok := <-ch:
+			if !ok {
+				return
+			}
 			switch event.Type {
 			case watch.Added, watch.Modified:
 				switch event.Object.(type) {

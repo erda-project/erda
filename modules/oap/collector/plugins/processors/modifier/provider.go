@@ -15,24 +15,29 @@
 package modifier
 
 import (
+	"fmt"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda/modules/oap/collector/core/model/odata"
 	"github.com/erda-project/erda/modules/oap/collector/plugins"
+	"github.com/erda-project/erda/modules/oap/collector/plugins/processors/modifier/operator"
 )
 
 var providerName = plugins.WithPrefixProcessor("modifier")
 
 type config struct {
-	Rules []modifierCfg `file:"rules"`
+	Rules []operator.ModifierCfg `file:"rules"`
 
-	Namepass []string `file:"namepass"`
+	Keypass map[string][]string `file:"keypass"`
 }
 
 // +provider
 type provider struct {
 	Cfg *config
 	Log logs.Logger
+
+	operators []operator.Operator
 }
 
 func (p *provider) ComponentConfig() interface{} {
@@ -40,15 +45,25 @@ func (p *provider) ComponentConfig() interface{} {
 }
 
 func (p *provider) Process(in odata.ObservableData) (odata.ObservableData, error) {
-	in.HandleAttributes(func(attr map[string]string) map[string]string {
-		return p.modify(attr)
-	})
-
+	for _, op := range p.operators {
+		in.HandleKeyValuePair(func(pairs map[string]interface{}) map[string]interface{} {
+			return op.Operate(pairs)
+		})
+	}
 	return in, nil
 }
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
+	ops := make([]operator.Operator, len(p.Cfg.Rules))
+	for idx, cfg := range p.Cfg.Rules {
+		creator, ok := operator.Creators[cfg.Action]
+		if !ok {
+			return fmt.Errorf("unsupported action: %q", cfg.Action)
+		}
+		ops[idx] = creator(cfg)
+	}
+	p.operators = ops
 	return nil
 }
 

@@ -23,45 +23,33 @@ import (
 
 var matcherPattern = regexp.MustCompile("%{([^%{}]*)}")
 
-func (p *provider) addPodMetadata(tags map[string]string) map[string]string {
-	finders := p.Cfg.Pod.AddMetadata.Finders
-	for _, f := range finders {
-		switch f.Indexer {
-		case pod.IndexerPodName:
-			index := generateIndexByMatcher(f.Matcher, tags)
-			m, ok := p.podCache.GetByPodNameIndexer(index)
-			if !ok {
-				continue
-			}
-			mergeMap(tags, m)
-		case pod.IndexerPodUID:
-			index := f.Matcher
-			m, ok := p.podCache.GetByPodUIDIndexer(pod.Key(index))
-			if !ok {
-				continue
-			}
-			mergeMap(tags, m)
-		}
+func (p *provider) getPodMetadata(tags map[string]interface{}) (pod.Value, bool) {
+	f := p.Cfg.Pod.AddMetadata.Finder
+	switch f.Indexer {
+	case pod.IndexerPodName:
+		index := generateIndexByMatcher(f.Matcher, tags)
+		return p.podCache.GetByPodNameIndexer(index)
+	case pod.IndexerPodNameContainer:
+		index := generateIndexByMatcher(f.Matcher, tags)
+		return p.podCache.GetByPodNameContainerIndexer(index)
 	}
-	return tags
+	return pod.Value{}, false
 }
 
 // {namespace}/{pod}
-func generateIndexByMatcher(matcher string, tags map[string]string) pod.Key {
+func generateIndexByMatcher(matcher string, tags map[string]interface{}) pod.Key {
 	matches := matcherPattern.FindAllStringSubmatch(matcher, -1)
 	for _, item := range matches {
 		if len(item) != 2 {
 			continue
 		}
 		if v, ok := tags[item[1]]; ok {
-			matcher = strings.Replace(matcher, item[0], v, -1)
+			sv, ok := v.(string)
+			if !ok {
+				continue
+			}
+			matcher = strings.Replace(matcher, item[0], sv, -1)
 		}
 	}
 	return pod.Key(matcher)
-}
-
-func mergeMap(dst, src map[string]string) {
-	for k, v := range src {
-		dst[k] = v
-	}
 }

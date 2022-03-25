@@ -17,6 +17,7 @@ package odata
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	"github.com/erda-project/erda/modules/core/monitor/metric"
@@ -26,59 +27,56 @@ import (
 type Metrics []*Metric
 
 type Metric struct {
-	Item *mpb.Metric `json:"item"`
-	Meta *Metadata   `json:"meta"`
+	Meta *Metadata `json:"meta"`
+	Data map[string]interface{}
+	sync.RWMutex
 }
 
-func (m *Metric) Attributes() map[string]string {
-	return m.Item.Attributes
+func NewMetric(item *mpb.Metric) *Metric {
+	return &Metric{Data: metricToMap(item), Meta: NewMetadata()}
+}
+
+func (m *Metric) HandleKeyValuePair(handler func(map[string]interface{}) map[string]interface{}) {
+	m.Data = handler(m.Data)
 }
 
 func (m *Metric) Name() string {
-	return m.Item.Name
+	return m.Data[NameKey].(string)
+}
+
+func (m *Metric) Pairs() map[string]interface{} {
+	return m.Data
 }
 
 func (m *Metric) Metadata() *Metadata {
 	return m.Meta
 }
 
-func NewMetric(item *mpb.Metric) *Metric {
-	return &Metric{Item: item, Meta: &Metadata{Data: map[string]string{}}}
-}
-
-func (m *Metric) HandleAttributes(handle func(attr map[string]string) map[string]string) {
-	m.Item.Attributes = handle(m.Item.Attributes)
-}
-
-func (m *Metric) HandleName(handle func(name string) string) {
-	m.Item.Name = handle(m.Item.Name)
-}
-
 func (m *Metric) Clone() ObservableData {
-	item := &mpb.Metric{
-		TimeUnixNano: m.Item.TimeUnixNano,
-		Name:         m.Item.Name,
-		Attributes:   m.Item.Attributes,
-		Relations:    m.Item.Relations,
-		DataPoints:   m.Item.DataPoints,
+	m.RLock()
+	defer m.RUnlock()
+	res := make(map[string]interface{}, len(m.Data))
+	for k, v := range m.Data {
+		res[k] = v
 	}
 	return &Metric{
-		Item: item,
+		Data: res,
 		Meta: m.Meta.Clone(),
 	}
 }
 
 func (m *Metric) Source() interface{} {
-	return m.Item
+	return mapToMetric(m.Data)
 }
 
 func (m *Metric) SourceCompatibility() interface{} {
+	item := mapToMetric(m.Data)
 	old := &metric.Metric{}
-	old.Timestamp = int64(m.Item.GetTimeUnixNano())
-	old.Name = m.Item.GetName()
-	old.Tags = m.Item.GetAttributes()
-	fields := make(map[string]interface{}, len(m.Item.GetDataPoints()))
-	for k, v := range m.Item.DataPoints {
+	old.Timestamp = int64(item.GetTimeUnixNano())
+	old.Name = item.GetName()
+	old.Tags = item.GetAttributes()
+	fields := make(map[string]interface{}, len(item.GetDataPoints()))
+	for k, v := range item.DataPoints {
 		fields[k] = v
 	}
 	old.Fields = fields
@@ -90,6 +88,6 @@ func (m *Metric) SourceType() SourceType {
 }
 
 func (m *Metric) String() string {
-	buf, _ := json.Marshal(m.Item)
-	return fmt.Sprintf("Item => %s", string(buf))
+	buf, _ := json.Marshal(m.Data)
+	return fmt.Sprintf(string(buf))
 }

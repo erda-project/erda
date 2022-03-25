@@ -19,8 +19,12 @@ import (
 )
 
 type Metadata struct {
-	Data map[string]string `json:"data"`
+	Data map[string]string `json:"Data"`
 	mu   sync.RWMutex
+}
+
+func NewMetadata() *Metadata {
+	return &Metadata{Data: map[string]string{}}
 }
 
 func (m *Metadata) Add(key, value string) {

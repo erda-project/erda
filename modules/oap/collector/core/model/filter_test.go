@@ -37,14 +37,15 @@ func TestDataFilter_Selected(t *testing.T) {
 		want   bool
 	}{
 		{
+			name: "keypass",
 			fields: fields{cfg: FilterConfig{
-				Namepass: []string{"abc"},
+				Keypass: map[string][]string{"__kw__name": {"ab*"}},
 			}},
 			args: args{od: odata.NewMetric(&mpb.Metric{
 				Name:         "abcd",
 				TimeUnixNano: 0,
 			})},
-			want: false,
+			want: true,
 		},
 	}
 	for _, tt := range tests {

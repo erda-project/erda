@@ -23,7 +23,7 @@ type WatchSelector struct {
 type AddMetadata struct {
 	LabelInclude      []string `file:"label_include"`
 	AnnotationInclude []string `file:"annotation_include"`
-	Finders           []Finder `file:"finders"`
+	Finder            Finder   `file:"finder"`
 }
 
 type Filter struct {
@@ -33,8 +33,9 @@ type Filter struct {
 }
 
 type Finder struct {
-	Indexer string `file:"indexer"`
-	Matcher string `file:"matcher"`
+	Indexer  string `file:"indexer" desc:"The type of index to index metadata"`
+	Matcher  string `file:"matcher"`
+	CnameKey string `file:"cname_key" desc:"The key of container name to find container metadata"`
 }
 
 type Config struct {

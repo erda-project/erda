@@ -1,0 +1,62 @@
+{
+  "id": 2,
+  "attributes": {},
+  "version": "3.0",
+  "expression": {
+    "metric": "docker_container_summary",
+    "window": 1,
+    "filters": [
+      {
+        "operator": "neq",
+        "tag": "container",
+        "value": "POD"
+      },
+      {
+        "operator": "neq",
+        "tag": "container_id",
+        "value": ""
+      }
+    ],
+    "group": [
+      "org_name",
+      "cluster_name",
+      "id"
+    ],
+    "functions": [
+      {
+        "alias": "mem_usage_percent",
+        "aggregator": "value",
+        "field_script": "function invoke(field,tag){if(field.mem_limit>0&&field.mem_usage>0){return(field.mem_usage/field.mem_limit)*100}return 0}",
+        "operator": "gt",
+        "value": 0
+      }
+    ],
+    "select": {
+      "_meta": "#_meta",
+      "_metric_scope": "#_metric_scope",
+      "_metric_scope_id": "#_metric_scope_id",
+      "application_name": "#application_name",
+      "cluster_name": "#cluster_name",
+      "container": "#container",
+      "container_id": "#container_id",
+      "host_ip": "#host_ip",
+      "id": "#id",
+      "image": "#image",
+      "org_name": "#org_name",
+      "pod_ip": "#pod_ip",
+      "pod_name": "#pod_name",
+      "pod_namespace": "#pod_namespace",
+      "pod_uid": "#pod_uid",
+      "project_name": "#project_name",
+      "runtime_name": "#runtime_name",
+      "service_instance_id": "#service_instance_id",
+      "service_name": "#service_name",
+      "terminus_key": "#terminus_key",
+      "workspace": "#workspace"
+    },
+    "alias": "docker_container_summary_v2",
+    "outputs": [
+      "metric"
+    ]
+  }
+}

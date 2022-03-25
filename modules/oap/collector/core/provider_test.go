@@ -32,39 +32,27 @@ func Test_extractFilterConfig(t *testing.T) {
 	}{
 		{
 			args: args{cfg: struct {
-				Namepass    []string            `file:"namepass"`
-				Namedrop    []string            `file:"namedrop"`
-				Tagpass     map[string][]string `file:"tagpass"`
+				Keypass     map[string][]string `file:"keypass"`
 				OtherConfig interface{}         `file:"other_config"`
 			}{
-				Namepass:    []string{"hello*"},
-				Namedrop:    []string{"world*"},
-				Tagpass:     map[string][]string{"key": {"val1*", "val2*"}},
+				Keypass:     map[string][]string{"key": {"val1*", "val2*"}},
 				OtherConfig: "nothing",
 			}},
 			want: model.FilterConfig{
-				Namepass: []string{"hello*"},
-				Namedrop: []string{"world*"},
-				Tagpass:  map[string][]string{"key": {"val1*", "val2*"}},
+				Keypass: map[string][]string{"key": {"val1*", "val2*"}},
 			},
 		},
 		{
 			name: "pointer cfg",
 			args: args{cfg: &struct {
-				Namepass    []string            `file:"namepass"`
-				Namedrop    []string            `file:"namedrop"`
-				Tagpass     map[string][]string `file:"tagpass"`
+				Keypass     map[string][]string `file:"keypass"`
 				OtherConfig interface{}         `file:"other_config"`
 			}{
-				Namepass:    []string{"hello*"},
-				Namedrop:    []string{"world*"},
-				Tagpass:     map[string][]string{"key": {"val1*", "val2*"}},
+				Keypass:     map[string][]string{"key": {"val1*", "val2*"}},
 				OtherConfig: "nothing",
 			}},
 			want: model.FilterConfig{
-				Namepass: []string{"hello*"},
-				Namedrop: []string{"world*"},
-				Tagpass:  map[string][]string{"key": {"val1*", "val2*"}},
+				Keypass: map[string][]string{"key": {"val1*", "val2*"}},
 			},
 		},
 	}

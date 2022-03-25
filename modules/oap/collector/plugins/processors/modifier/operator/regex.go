@@ -12,14 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadata
+package operator
 
-const (
-	Prefix               = "kubernetes_"
-	PrefixPod            = Prefix + "pod_"
-	PrefixPodLabels      = PrefixPod + "labels_"
-	PrefixPodAnnotations = PrefixPod + "annotations_"
-	PrefixPodContainer   = PrefixPod + "container_"
-	// PrefixNode           = Prefix + "node_"
-	// PrefixService        = Prefix + "service_"
+import (
+	"regexp"
+
+	"github.com/erda-project/erda/modules/oap/collector/common"
 )
+
+type Regex struct {
+	cfg     ModifierCfg
+	pattern *regexp.Regexp
+}
+
+func (r *Regex) Operate(pairs map[string]interface{}) map[string]interface{} {
+	val, ok := pairs[r.cfg.Key]
+	if !ok {
+		return pairs
+	}
+	for k, v := range common.RegexGroupMap(r.pattern, val.(string)) {
+		pairs[k] = v
+	}
+	return pairs
+}
+
+func NewRegex(cfg ModifierCfg) Operator {
+	return &Regex{cfg: cfg, pattern: regexp.MustCompile(cfg.Value)}
+}
