@@ -1956,16 +1956,9 @@ func (a *Addon) doAddonScale(addonInstance *dbclient.AddonInstance, addonInstanc
 }
 
 func addonCanScale(addonName, addonId, plan, version, status, action string) error {
-	if plan == "professional" {
-		if addonName == apistructs.AddonRedis && (action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp) {
-			errMsg := fmt.Sprintf("scale addon failed: addon %s is an operator which can not do %s", addonName, action)
-			return errors.New(errMsg)
-		}
-
-		if addonName == apistructs.AddonES && (action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp) && (version == "6.8.9" || version == "6.8.22") {
-			errMsg := fmt.Sprintf("scale addon failed: addon %s is an operator which can not do %s", addonName, action)
-			return errors.New(errMsg)
-		}
+	if addonName == apistructs.AddonES && (action == apistructs.ScaleActionDown || action == apistructs.ScaleActionUp) && (version == "6.8.9" || version == "6.8.22") {
+		errMsg := fmt.Sprintf("scale addon failed: addon %s is an operator which can not do %s", addonName, action)
+		return errors.New(errMsg)
 	}
 
 	// 如果 addon status 不是 运行中(ATTACHED)，则不能执行 scaleDown 或变更 非0 副本数之类的 scale 操作

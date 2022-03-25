@@ -481,16 +481,9 @@ func GetProjectAddonsRoutingKeysForStopOrStart(ctx *command.Context, params PDPa
 
 // addonCanStopOrStart check if addon can stop/start
 func addonCanStopOrStart(ctx *command.Context, addon apistructs.AddonFetchResponseData) bool {
-	if addon.Plan == "professional" {
-		if addon.AddonName == apistructs.AddonRedis {
-			ctx.Info("addon %s with ID [%s] with plan %s controlled by Operator which can not do stop/start", apistructs.AddonRedis, addon.ID, addon.Plan)
-			return false
-		}
-
-		if addon.AddonName == apistructs.AddonES && (addon.Version == "6.8.9" || addon.Version == "6.8.22") {
-			ctx.Info("addon %s with ID [%s] with plan %s with version %s controlled by Operator which can not do stop/start", apistructs.AddonES, addon.ID, addon.Plan, addon.Version)
-			return false
-		}
+	if addon.AddonName == apistructs.AddonES && (addon.Version == "6.8.9" || addon.Version == "6.8.22") {
+		ctx.Info("addon %s with ID [%s] with plan %s with version %s controlled by Operator which can not do stop/start", apistructs.AddonES, addon.ID, addon.Plan, addon.Version)
+		return false
 	}
 
 	return true

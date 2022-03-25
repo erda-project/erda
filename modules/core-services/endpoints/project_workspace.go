@@ -77,7 +77,7 @@ func (e *Endpoints) CreateProjectWorkSpace(ctx context.Context, r *http.Request,
 	req := apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.ProjectScope,
-		ScopeID:  orgID,
+		ScopeID:  projectWorkSpaceCreateReq.ProjectID,
 		Resource: apistructs.ProjectResource,
 		Action:   apistructs.CreateAction,
 	}
@@ -109,11 +109,6 @@ func (e *Endpoints) GetProjectWorkSpace(ctx context.Context, r *http.Request, va
 		return apierrors.ErrGetProjectWorkspaceAbilities.NotLogin().ToResp(), nil
 	}
 
-	orgID, err := user.GetOrgID(r)
-	if err != nil {
-		return apierrors.ErrGetProjectWorkspaceAbilities.InvalidParameter(err).ToResp(), nil
-	}
-
 	projid := vars["projectID"]
 	workspace := vars["workspace"]
 
@@ -128,7 +123,7 @@ func (e *Endpoints) GetProjectWorkSpace(ctx context.Context, r *http.Request, va
 	req := apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.ProjectScope,
-		ScopeID:  orgID,
+		ScopeID:  projectID,
 		Resource: apistructs.ProjectResource,
 		Action:   apistructs.GetAction,
 	}
@@ -190,7 +185,7 @@ func (e *Endpoints) UpdateProjectWorkSpace(ctx context.Context, r *http.Request,
 	req := apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.ProjectScope,
-		ScopeID:  orgID,
+		ScopeID:  projectWorkSpaceUpdateReq.ProjectID,
 		Resource: apistructs.ProjectResource,
 		Action:   apistructs.UpdateAction,
 	}
@@ -247,11 +242,6 @@ func (e *Endpoints) DeleteProjectWorkSpace(ctx context.Context, r *http.Request,
 		return apierrors.ErrDeleteProjectWorkspaceAbilities.NotLogin().ToResp(), nil
 	}
 
-	orgID, err := user.GetOrgID(r)
-	if err != nil {
-		return apierrors.ErrDeleteProjectWorkspaceAbilities.InvalidParameter(err).ToResp(), nil
-	}
-
 	projid := r.URL.Query().Get("projectID")
 	workspace := r.URL.Query().Get("workspace")
 
@@ -270,7 +260,7 @@ func (e *Endpoints) DeleteProjectWorkSpace(ctx context.Context, r *http.Request,
 	req := apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.ProjectScope,
-		ScopeID:  orgID,
+		ScopeID:  projectID,
 		Resource: apistructs.ProjectResource,
 		Action:   apistructs.DeleteAction,
 	}
