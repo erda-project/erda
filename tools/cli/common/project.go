@@ -187,6 +187,52 @@ func ImportPackage(ctx *command.Context, orgID, projectID uint64, pkg string) (u
 	return response.Data, nil
 }
 
+//  ListMyProjectInOrg 获取指定组织下的我的项目列表
+func ListMyProjectInOrg(ctx *command.Context, orgId string, projectName string) ([]apistructs.ProjectDTO, error) {
+	var resp apistructs.ProjectListResponse
+	var b bytes.Buffer
+
+	response, err := ctx.Get().Path("/api/projects/actions/list-my-projects").
+		Param("joined", "true").
+		Param("name", projectName).
+		Param("pageSize", strconv.Itoa(1000)).
+		Header("Org-ID", orgId).
+		Do().Body(&b)
+	if err != nil {
+		return nil, fmt.Errorf(
+			utils.FormatErrMsg("list", "failed to request ("+err.Error()+")", false))
+	}
+
+	if !response.IsOK() {
+		return nil, fmt.Errorf(utils.FormatErrMsg("list",
+			fmt.Sprintf("failed to request, status-code: %d, content-type: %s, raw bod: %s",
+				response.StatusCode(), response.ResponseHeader("Content-Type"), b.String()), false))
+	}
+
+	if err := json.Unmarshal(b.Bytes(), &resp); err != nil {
+		return nil, fmt.Errorf(utils.FormatErrMsg("list",
+			fmt.Sprintf("failed to unmarshal projects list response ("+err.Error()+")"), false))
+	}
+
+	if !resp.Success {
+		return nil, fmt.Errorf(utils.FormatErrMsg("list",
+			fmt.Sprintf("failed to request, error code: %s, error message: %s",
+				resp.Error.Code, resp.Error.Msg), false))
+	}
+
+	if resp.Data.Total < 0 {
+		return nil, fmt.Errorf(
+			utils.FormatErrMsg("list", "critical: the number of projects is less than 0", false))
+	}
+
+	if resp.Data.Total == 0 {
+		fmt.Printf(utils.FormatErrMsg("list", "no projects created\n", false))
+		return nil, nil
+	}
+
+	return resp.Data.List, nil
+}
+
 // GetUserOrgProjID get UserId,ProjectId,OrgID info
 func GetUserOrgProjID(ctx *command.Context, orgName, projectName string) (UserOrgProj, error) {
 	var uop UserOrgProj
@@ -203,7 +249,7 @@ func GetUserOrgProjID(ctx *command.Context, orgName, projectName string) (UserOr
 		return uop, errors.New("get invalid orgID [" + strconv.FormatUint(orgId, 10) + "] or userID [" + userId + "]")
 	}
 
-	projs, err := GetProjects(ctx, orgId)
+	projs, err := ListMyProjectInOrg(ctx, strconv.FormatUint(orgId, 10), projectName)
 	if err != nil {
 		return uop, err
 	}
