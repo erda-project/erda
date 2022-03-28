@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/modules/hepa/bundle"
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	. "github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/repository/orm"
@@ -100,7 +101,7 @@ func (impl *GatewayAzInfoServiceImpl) SelectValidAz() ([]orm.GatewayAzInfo, erro
 	return result, nil
 }
 
-func fillInfo(info *orm.GatewayAzInfo, clusterInfo ClusterInfoDto) {
+func fillInfo(info *orm.GatewayAzInfo, clusterInfo *ClusterInfoDto) {
 	clusterType := clusterInfo.DiceClusterType
 	switch clusterType {
 	case CT_K8S:
@@ -127,22 +128,20 @@ func (impl *GatewayAzInfoServiceImpl) GetAzInfoByClusterName(name string) (*orm.
 	info := &orm.GatewayAzInfo{
 		Az: name,
 	}
-	code, body, err := util.CommonRequest("GET", discover.Orchestrator()+"/api/clusterinfo/"+name, nil, map[string]string{"Internal-Client": "hepa-gateway"})
-	if code >= 300 {
-		err = errors.Errorf("get cluster info failed, code:%d", code)
-	}
+	cluster, err := bundle.Bundle.GetCluster(name)
 	if err != nil {
 		return nil, err
 	}
-	clusterResp := &ClusterRespDto{}
-	err = json.Unmarshal(body, clusterResp)
+	clusterResp := &ClusterInfoDto{}
+	cm, err := json.Marshal(cluster.CM)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unmarshal failed:%s", body)
+		return nil, err
 	}
-	if !clusterResp.Success {
-		return nil, errors.Errorf("request cluster info failed: resp[%s]", body)
+	err = json.Unmarshal(cm, clusterResp)
+	if err != nil {
+		return nil, err
 	}
-	fillInfo(info, clusterResp.Data)
+	fillInfo(info, clusterResp)
 	return info, nil
 }
 
@@ -182,21 +181,20 @@ func (impl *GatewayAzInfoServiceImpl) GetAzInfo(cond *orm.GatewayAzInfo) (*orm.G
 			err = errors.Errorf("can't find az of info[%+v] in admin resp[%s]", cond, body)
 			goto failback
 		}
-		code, body, err = util.CommonRequest("GET", discover.Orchestrator()+"/api/clusterinfo/"+az, nil, map[string]string{"Internal-Client": "hepa-gateway"})
-		if code >= 300 || err != nil {
-			goto failback
-		}
-		clusterResp := &ClusterRespDto{}
-		err = json.Unmarshal(body, clusterResp)
+		cluster, err := bundle.Bundle.GetCluster(az)
 		if err != nil {
-			err = errors.Wrapf(err, "unmarshal failed:%s", body)
-			goto failback
+			return nil, err
 		}
-		if !clusterResp.Success {
-			err = errors.Errorf("request cluster info failed: resp[%s]", body)
-			goto failback
+		clusterResp := &ClusterInfoDto{}
+		cm, err := json.Marshal(cluster.CM)
+		if err != nil {
+			return nil, err
 		}
-		fillInfo(info, clusterResp.Data)
+		err = json.Unmarshal(cm, clusterResp)
+		if err != nil {
+			return nil, err
+		}
+		fillInfo(info, clusterResp)
 		info.Az = az
 		if exist {
 			_, _ = orm.Update(impl.engine, info, "az", "wildcard_domain", "type", "master_addr")
