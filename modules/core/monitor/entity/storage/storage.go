@@ -24,9 +24,12 @@ import (
 type (
 	// ListOptions .
 	ListOptions struct {
-		Type   string
-		Labels map[string]string
-		Limit  int
+		Type                  string
+		Labels                map[string]string
+		Limit                 int
+		UpdateTimeUnixNanoMin int64
+		UpdateTimeUnixNanoMax int64
+		Debug                 bool
 	}
 	// Storage .
 	Storage interface {
