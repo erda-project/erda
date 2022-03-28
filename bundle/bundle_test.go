@@ -48,7 +48,7 @@ func TestBundleOption(t *testing.T) {
 		WithCMDB(),
 		WithAddOnPlatform(),
 		WithDiceHub(),
-		WithEventBox(),
+		WithCoreServices(),
 		WithCMP(),
 		WithOrchestrator(),
 		WithScheduler(),
