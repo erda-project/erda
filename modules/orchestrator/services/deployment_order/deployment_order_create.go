@@ -301,10 +301,27 @@ func (d *DeploymentOrder) fetchApplicationsParams(r *pb.ReleaseGetResponseData, 
 	return ret, nil
 }
 
+func (d *DeploymentOrder) FetchDeploymentConfigDetail(namespace string) ([]apistructs.EnvConfig, []apistructs.EnvConfig, error) {
+	envConfigs, err := d.envConfig.GetDeployConfigs(namespace)
+	if err != nil {
+		return nil, nil, err
+	}
+	envs := make([]apistructs.EnvConfig, 0)
+	files := make([]apistructs.EnvConfig, 0)
+	for _, c := range envConfigs {
+		if c.ConfigType == "FILE" {
+			files = append(files, c)
+		} else {
+			envs = append(envs, c)
+		}
+	}
+
+	return envs, files, nil
+}
 func (d *DeploymentOrder) fetchDeploymentParams(applicationId int64, workspace string) (*apistructs.DeploymentOrderParam, error) {
 	configNsTmpl := "app-%d-%s"
 
-	deployConfig, fileConfig, err := d.bdl.FetchDeploymentConfigDetail(fmt.Sprintf(configNsTmpl, applicationId, strings.ToUpper(workspace)))
+	deployConfig, fileConfig, err := d.FetchDeploymentConfigDetail(fmt.Sprintf(configNsTmpl, applicationId, strings.ToUpper(workspace)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch deployment config, err: %v", err)
 	}
