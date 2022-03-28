@@ -221,6 +221,24 @@ func (m *ListEntitiesRequest) UnmarshalURLValues(prefix string, values url.Value
 					return err
 				}
 				m.Limit = val
+			case "updateTimeUnixNanoMin":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.UpdateTimeUnixNanoMin = val
+			case "updateTimeUnixNanoMax":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.UpdateTimeUnixNanoMax = val
+			case "debug":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Debug = val
 			}
 		}
 	}

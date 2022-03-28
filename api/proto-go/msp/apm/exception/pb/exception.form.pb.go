@@ -41,6 +41,12 @@ func (m *GetExceptionsRequest) UnmarshalURLValues(prefix string, values url.Valu
 				m.EndTime = val
 			case "scopeID":
 				m.ScopeID = vals[0]
+			case "debug":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Debug = val
 			}
 		}
 	}
