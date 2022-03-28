@@ -274,7 +274,7 @@ report-apis:
   pipeline:
     version: "1.1"
     action_type: "reportengine"
-    action_version: "1.0"
+    action_version: "2.0"
   report_cron:
     daily_cron: "0 9 * * *"
     weekly_cron: "0 9 * * 1"
