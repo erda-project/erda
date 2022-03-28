@@ -18,15 +18,13 @@ import (
 	"context"
 	"encoding/base64"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
-	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
+	"github.com/erda-project/erda/pkg/limit_sync_group"
 )
 
 func init() {
@@ -57,29 +55,34 @@ func (t *Tab) Render(ctx context.Context, c *cptype.Component, scenario cptype.S
 	}
 
 	t.SetType()
-
 	t.SetOperations(t.State.Value)
-	appNames := make([]string, 0)
-	if t.InParams.AppID != 0 {
-		app, err := t.bdl.GetApp(t.InParams.AppID)
-		if err != nil {
-			logrus.Errorf("failed to GetApp,err %s", err.Error())
-			panic(err)
-		} else {
-			appNames = append(appNames, app.Name)
-		}
-	}
 
-	mineCount, err := t.CountPipelineByParams(ctx, appNames, []string{t.sdk.Identity.UserID}, nil)
+	var (
+		mineCount, primaryCount, totalCount uint64
+		err                                 error
+	)
+
+	appNames, err := t.getAppNames()
 	if err != nil {
 		return err
 	}
-	primaryCount, err := t.CountPipelineByParams(ctx, appNames, nil, []string{"primary"})
-	if err != nil {
+	t.gsHelper.SetGlobalMyAppNames(appNames)
+
+	worker := limit_sync_group.NewWorker(3)
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		mineCount, err = t.CountPipelineByParams(ctx, appNames, []string{t.sdk.Identity.UserID}, nil)
 		return err
-	}
-	totalCount, err := t.CountPipelineByParams(ctx, appNames, nil, nil)
-	if err != nil {
+	})
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		primaryCount, err = t.CountPipelineByParams(ctx, appNames, nil, []string{"primary"})
+		return err
+	})
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		totalCount, err = t.CountPipelineByParams(ctx, appNames, nil, nil)
+		return err
+	})
+
+	if err = worker.Do().Error(); err != nil {
 		return err
 	}
 	t.SetData(ctx, Num{
@@ -112,12 +115,19 @@ func (t *Tab) CountPipelineByParams(ctx context.Context, appNames, creators, cat
 	return uint64(total), err
 }
 
-func pipelineFilterIn(pipelines []*dpb.PipelineDefinition, fn func(pipeline *dpb.PipelineDefinition) bool) []*dpb.PipelineDefinition {
-	newPipelines := make([]*dpb.PipelineDefinition, 0)
-	for _, v := range pipelines {
-		if fn(v) {
-			newPipelines = append(newPipelines, v)
-		}
+func (t *Tab) getAppNames() ([]string, error) {
+	appNames := make([]string, 0)
+	project, err := t.bdl.GetProject(t.InParams.ProjectID)
+	if err != nil {
+		return nil, err
 	}
-	return newPipelines
+	appResp, err := t.bdl.GetMyAppsByProject(t.sdk.Identity.UserID, project.OrgID, t.InParams.ProjectID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range appResp.List {
+		appNames = append(appNames, v.Name)
+	}
+	return appNames, nil
 }

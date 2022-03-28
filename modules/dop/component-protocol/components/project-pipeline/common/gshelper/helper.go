@@ -78,3 +78,19 @@ func (h *GSHelper) GetGlobalTableFilter() *TableFilter {
 	_ = assign((*h.gs)["GlobalTableFilter"], &t)
 	return &t
 }
+
+func (h *GSHelper) SetGlobalMyAppNames(appNames []string) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalMyAppNames"] = appNames
+}
+
+func (h *GSHelper) GetGlobalMyAppNames() []string {
+	if h.gs == nil {
+		return nil
+	}
+	var appNames []string
+	_ = assign((*h.gs)["GlobalMyAppNames"], &appNames)
+	return appNames
+}
