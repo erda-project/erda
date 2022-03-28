@@ -142,14 +142,14 @@ func (i *Extension) SearchExtensions(req apistructs.ExtensionSearchRequest) (map
 	return result.mp, nil
 }
 
-func (i *Extension) MenuExtWithLocale(extensions []*apistructs.Extension, locale *i18n.LocaleResource) (map[string][]apistructs.ExtensionMenu, error) {
+func (i *Extension) MenuExtWithLocale(extensions []*apistructs.Extension, locale *i18n.LocaleResource, all bool) (map[string][]apistructs.ExtensionMenu, error) {
 	var result = map[string][]apistructs.ExtensionMenu{}
 
 	var extensionName []string
 	for _, v := range extensions {
 		extensionName = append(extensionName, v.Name)
 	}
-	extensionVersionMap, err := i.db.ListExtensionVersions(extensionName)
+	extensionVersionMap, err := i.db.ListExtensionVersions(extensionName, all)
 	if err != nil {
 		return nil, apierrors.ErrQueryExtension.InternalError(err)
 	}
@@ -303,8 +303,8 @@ func (i *Extension) extMap(extensions []*apistructs.Extension) map[string][]*api
 }
 
 // QueryExtensions 查询Extension列表
-func (i *Extension) QueryExtensions(all string, typ string, labels string) ([]*apistructs.Extension, error) {
-	extensions, err := i.db.QueryExtensions(all, typ, labels)
+func (i *Extension) QueryExtensions(req *apistructs.ExtensionQueryRequest) ([]*apistructs.Extension, error) {
+	extensions, err := i.db.QueryExtensions(req)
 	if err != nil {
 		return nil, err
 	}
