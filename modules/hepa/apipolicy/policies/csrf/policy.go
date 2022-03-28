@@ -73,11 +73,10 @@ func (policy Policy) UnmarshalConfig(config []byte) (apipolicy.PolicyDto, error,
 }
 
 func (policy Policy) buildPluginReq(dto *PolicyDto) *kongDto.KongPluginReqDto {
-	disable := false
 	req := &kongDto.KongPluginReqDto{
 		Name:    "csrf-token",
 		Config:  map[string]interface{}{},
-		Enabled: &disable,
+		Enabled: &dto.Switch,
 	}
 	req.Config["biz_cookie"] = []string{dto.UserCookie}
 	if dto.TokenDomain != "" {
