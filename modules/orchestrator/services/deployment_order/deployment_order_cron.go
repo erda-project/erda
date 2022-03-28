@@ -15,21 +15,16 @@
 package deployment_order
 
 import (
-	"context"
 	"encoding/json"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc/metadata"
 
-	"github.com/erda-project/erda-infra/pkg/transport"
-	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/queue"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
-	"github.com/erda-project/erda/pkg/http/httputil"
 )
 
 func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error) {
@@ -52,24 +47,39 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 			continue
 		}
 
-		ctx := transport.WithHeader(context.Background(), metadata.New(map[string]string{httputil.InternalHeader: "true"}))
-		releaseResp, err := d.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: order.ReleaseId})
+		var (
+			deployList [][]string
+			releaseIds []string
+			releases   []*dbclient.Release
+			id2Release = make(map[string]*dbclient.Release)
+		)
+		deployList, err = unmarshalDeployList(order.DeployList)
 		if err != nil {
-			logrus.Warnf("failed to get release %s, (%v)", order.ReleaseId, err)
+			logrus.Warnf("failed to unmarshal deploy list for order %s, %v", order.ID, err)
 			continue
+		}
+		for _, l := range deployList {
+			releaseIds = append(releaseIds, l...)
+		}
+		releases, err = d.db.ListReleases(releaseIds)
+		if err != nil {
+			return
+		}
+		for _, release := range releases {
+			id2Release[release.ReleaseId] = release
 		}
 
 		// get runtime status, and update
 		statusMap := apistructs.DeploymentOrderStatusMap{}
-		for _, app := range releaseResp.Data.ApplicationReleaseList[order.CurrentBatch-1].List {
-			rt, errGetRuntime := d.db.GetRuntimeByAppName(order.Workspace, order.ProjectId, app.ApplicationName)
+		for _, id := range deployList[order.CurrentBatch-1] {
+			rt, errGetRuntime := d.db.GetRuntimeByAppName(order.Workspace, order.ProjectId, id2Release[id].ApplicationName)
 			if errGetRuntime != nil {
 				if !errors.Is(errGetRuntime, gorm.ErrRecordNotFound) {
-					logrus.Errorf("failed to get runtime by app name %s, (%v)", app.ApplicationName, errGetRuntime)
+					logrus.Errorf("failed to get runtime by app name %s, (%v)", id2Release[id].ApplicationName, errGetRuntime)
 					return
 				}
 
-				logrus.Debugf("runtime not found, app name: %s", app.ApplicationName)
+				logrus.Debugf("runtime not found, app name: %s", id2Release[id].ApplicationName)
 				// if current batch is 0, polling first batch and production event
 				if order.CurrentBatch == 0 {
 					order.CurrentBatch++
@@ -95,7 +105,7 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 				return
 			}
 
-			statusMap[app.ApplicationName] = apistructs.DeploymentOrderStatusItem{
+			statusMap[id2Release[id].ApplicationName] = apistructs.DeploymentOrderStatusItem{
 				RuntimeID:        rt.ID,
 				AppID:            rt.ApplicationID,
 				DeploymentID:     lastDeployment.ID,

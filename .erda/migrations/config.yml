@@ -64,6 +64,7 @@
         filenames:
           - "20220113-pipeline-definition-change-field"
           - "20220211-deployment-order-batches.sql"
+          - "20220317-release-model-1.sql"
     - stmtType: AlterTableStmt.AlterTableRenameColumn
       forbidden: true
     - stmtType: AlterTableStmt.AlterTableRenameTable

@@ -166,6 +166,12 @@ message ReleaseList{
   repeated string list = 1;
 }
 
+message Mode{
+  repeated string dependOn = 1;
+  bool expose = 2;
+  repeated ReleaseList applicationReleaseList = 3;
+}
+
 // ReleaseCreateRequest create release API(POST /api/releases)
 message ReleaseCreateRequest{
   // Any character string, easy for users to identify, the maximum length is 255, required
@@ -185,7 +191,7 @@ message ReleaseCreateRequest{
   bool isFormal = 7;
   bool isProjectRelease = 8;
   string changelog = 9;
-  repeated ReleaseList applicationReleaseList = 10;
+  map<string, Mode> modes = 10;
 
   // Used for release classification, description of release category, map type, maximum length 1000, optional
   map<string, string> labels = 11;
@@ -253,7 +259,7 @@ message ReleaseUpdateRequest {
   string version = 2;
   string desc = 3;
   string changelog = 4;
-  repeated ReleaseList applicationReleaseList = 5;
+  map<string, Mode> modes = 5;
 
   // The following information is mainly used for version coverage, to find out the previous version to clear
   int64 orgID = 6 [json_name = "orgId"] ;
@@ -311,6 +317,12 @@ message ReleaseGetResponse {
   ReleaseGetResponseData data = 1;
 }
 
+message ModeSummary {
+  bool expose = 1;
+  repeated string dependOn = 2;
+  repeated ReleaseSummaryArray applicationReleaseList = 3;
+}
+
 message ReleaseSummaryArray {
   repeated ApplicationReleaseSummary list = 1;
 }
@@ -326,7 +338,7 @@ message ReleaseGetResponseData {
   bool isStable = 7;
   bool isFormal = 8;
   bool isProjectRelease = 9;
-  repeated ReleaseSummaryArray applicationReleaseList = 10;
+  map<string, ModeSummary> modes = 10;
   repeated ReleaseResource resources = 11;
   repeated string images = 12;
   repeated ServiceImagePair serviceImages = 13;
@@ -465,7 +477,7 @@ message ReleaseData {
   bool isStable = 7;
   bool isFormal = 8;
   bool isProjectRelease = 9;
-  string applicationReleaseList = 10;
+  string modes = 10;
   repeated ReleaseResource resources = 11;
   repeated string images = 12;
   map<string, string> labels = 13;

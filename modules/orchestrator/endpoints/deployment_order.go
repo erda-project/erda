@@ -50,7 +50,7 @@ func (e *Endpoints) CreateDeploymentOrder(ctx context.Context, r *http.Request, 
 
 	orgID, err := getOrgID(r)
 	if err != nil {
-		return apierrors.ErrCreateDeploymentOrder.InvalidParameter(err).ToResp(), nil
+		return apierrors.ErrCreateDeploymentOrder.InvalidParameter("org-id").ToResp(), nil
 	}
 
 	req.Operator = userID.String()
@@ -209,6 +209,8 @@ func (e *Endpoints) CancelDeploymentOrder(ctx context.Context, r *http.Request, 
 func (e *Endpoints) RenderDeploymentOrderDetail(ctx context.Context, r *http.Request, vars map[string]string) (httpserver.Responser, error) {
 	v := r.URL.Query().Get("releaseID")
 	workspace := r.URL.Query().Get("workspace")
+	modes := r.URL.Query()["mode"]
+	id := r.URL.Query().Get("id")
 
 	userID, err := user.GetUserID(r)
 	if err != nil {
@@ -220,7 +222,7 @@ func (e *Endpoints) RenderDeploymentOrderDetail(ctx context.Context, r *http.Req
 		return apierrors.ErrRenderDeploymentOrderDetail.InvalidParameter(strutil.Concat("illegal workspace ", workspace)).ToResp(), nil
 	}
 
-	ret, err := e.deploymentOrder.RenderDetail(ctx, userID.String(), v, workspace)
+	ret, err := e.deploymentOrder.RenderDetail(ctx, id, userID.String(), v, workspace, modes)
 	if err != nil {
 		return errorresp.ErrResp(err)
 	}
