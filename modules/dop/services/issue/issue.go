@@ -628,11 +628,13 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 
 	if issueModel.Type == apistructs.IssueTypeBug || issueModel.Type == apistructs.IssueTypeTask {
 		c := &issueValidationConfig{}
-		iteration, err := cache.TryGetIteration(*req.IterationID)
-		if err != nil {
-			return err
+		if req.IterationID != nil {
+			iteration, err := cache.TryGetIteration(*req.IterationID)
+			if err != nil {
+				return err
+			}
+			c.iteration = iteration
 		}
-		c.iteration = iteration
 		if req.State != nil {
 			state, err := cache.TryGetState(*req.State)
 			if err != nil {
@@ -664,9 +666,11 @@ func (svc *Issue) UpdateIssue(req apistructs.IssueUpdateRequest) error {
 	u := &issueChildrenUpdated{
 		id:             issueModel.ID,
 		stateOld:       currentBelong.Belong,
-		iterationID:    *req.IterationID,
 		planStartedAt:  req.PlanStartedAt.Value(),
 		planFinishedAt: req.PlanFinishedAt.Value(),
+	}
+	if req.IterationID != nil {
+		u.iterationID = *req.IterationID
 	}
 	if req.State != nil {
 		newBelong, err := cache.TryGetState(*req.State)
