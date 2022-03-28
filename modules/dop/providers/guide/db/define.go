@@ -35,6 +35,7 @@ const (
 	InitStatus      GuideStatus = "init"
 	ProcessedStatus GuideStatus = "processed"
 	ExpiredStatus   GuideStatus = "expired"
+	CanceledStatus  GuideStatus = "canceled"
 )
 
 const ExpirationPeriod = 24 * time.Hour
@@ -168,4 +169,9 @@ func (db *GuideDB) CheckUniqueByAppIDAndBranch(appID uint64, branch, kind string
 		return false, err
 	}
 	return true, nil
+}
+
+// CancelGuide .
+func (db *GuideDB) CancelGuide(id string) error {
+	return db.UpdateGuide(id, map[string]interface{}{"status": CanceledStatus})
 }
