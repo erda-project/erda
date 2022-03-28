@@ -44,18 +44,20 @@ var PROJECTCREATE = command.Command{
 		command.StringFlag{Short: "n", Name: "name", Doc: "the name of the project ", DefaultValue: ""},
 		command.StringFlag{Short: "d", Name: "description", Doc: "description of the project", DefaultValue: ""},
 		command.StringFlag{Short: "", Name: "init-package", Doc: "package for init the project", DefaultValue: ""},
+		command.StringListFlag{Short: "", Name: "init-env", Doc: "environment (DEV/TEST/STAGING/PROD) to init", DefaultValue: nil},
 		command.IntFlag{Short: "", Name: "wait-import", Doc: "minutes wait for package to be import", DefaultValue: 1},
 	},
 	Run: ProjectCreate,
 }
 
-func ProjectCreate(ctx *command.Context, org, project, desc, pkg string, waitImport int) error {
+func ProjectCreate(ctx *command.Context, org, project, desc, pkg string, envs []string, waitImport int) error {
 	org, orgID, err := common.GetOrgID(ctx, org)
 	if err != nil {
 		return err
 	}
 
 	var values map[string]interface{}
+	workspaces := make(map[apistructs.DiceWorkspace]interface{}, 4)
 	if pkg != "" {
 		s, err := os.Stat(pkg)
 		if err != nil {
@@ -87,12 +89,26 @@ func ProjectCreate(ctx *command.Context, org, project, desc, pkg string, waitImp
 		} else {
 			return errors.Errorf("Invalid package %v, neither a dirctory nor a zip file", err)
 		}
+
+		if envs != nil {
+			for _, e := range envs {
+				w := apistructs.DiceWorkspace(strings.ToUpper(e))
+				if !w.Deployable() {
+					return errors.Errorf("Invalid environment '%s', should be one of DEV/TEST/STAGING/PROD.", e)
+				}
+				workspaces[w] = struct{}{}
+			}
+		} else {
+			for _, e := range apistructs.DiceWorkspaceSlice {
+				workspaces[e] = struct{}{}
+			}
+		}
 	}
 
 	var resourceConfigs *apistructs.ResourceConfigs
 	if values != nil {
 		resourceConfigs = apistructs.NewResourceConfigs()
-		err = parseResources(resourceConfigs, values)
+		err = parseValues(resourceConfigs, values, workspaces)
 		if err != nil {
 			return err
 		}
@@ -150,16 +166,27 @@ func ProjectCreate(ctx *command.Context, org, project, desc, pkg string, waitImp
 	return nil
 }
 
-func parseResources(resourceConfigs *apistructs.ResourceConfigs, values map[string]interface{}) error {
+func parseValues(resourceConfigs *apistructs.ResourceConfigs, values map[string]interface{},
+	workspaces map[apistructs.DiceWorkspace]interface{}) error {
 	for k, v := range values {
-		if v == "" {
-			return errors.Errorf("Invalid package, found value of '%s' not configed", k)
+		splits := strings.SplitN(k, ".", 4)
+		if len(splits) < 4 {
+			continue
+		}
+		env := apistructs.DiceWorkspace(strings.ToUpper(splits[1]))
+
+		if len(splits) == 4 && splits[0] == "values" && splits[2] == "addons" {
+			_, ok := workspaces[env]
+			if ok && v == "" {
+				return errors.Errorf("Invalid package, found value of '%s' not configed", k)
+			}
 		}
 
-		splits := strings.SplitN(k, ".", 4)
-
 		if len(splits) == 4 && splits[0] == "values" && splits[2] == "cluster" {
-			env := apistructs.DiceWorkspace(strings.ToUpper(splits[1]))
+			if v == "" {
+				return errors.Errorf("Invalid package, found value of '%s' not configed", k)
+			}
+
 			if splits[3] == "name" {
 				resourceConfigs.GetClusterConfig(env).ClusterName = fmt.Sprintf("%v", v)
 			} else if splits[3] == "quota.cpuQuota" {
