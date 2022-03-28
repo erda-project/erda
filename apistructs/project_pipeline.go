@@ -21,11 +21,11 @@ type PipelineCategory string
 type ProjectPipelineType string
 
 const (
-	CategoryBuildDeploy          = "build-deploy"
-	CategoryBuildArtifact        = "build-artifact"
-	CategoryBuildCombineArtifact = "build-combine-artifact"
-	CategoryBuildIntegration     = "build-integration"
-	CategoryOthers               = "others"
+	CategoryBuildDeploy          PipelineCategory = "build-deploy"
+	CategoryBuildArtifact        PipelineCategory = "build-artifact"
+	CategoryBuildCombineArtifact PipelineCategory = "build-combine-artifact"
+	CategoryBuildIntegration     PipelineCategory = "build-integration"
+	CategoryOthers               PipelineCategory = "others"
 )
 
 const (

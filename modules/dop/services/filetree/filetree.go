@@ -197,7 +197,7 @@ func (svc *GittarFileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeL
 			}
 
 			// Filter does not match pipeline category rules
-			if notMatchInPipelineCategory(req.PipelineCategoryKey, treeData.Path, node) {
+			if notMatchInPipelineCategory(apistructs.PipelineCategory(req.PipelineCategoryKey), treeData.Path, node) {
 				continue
 			}
 			list = append(list, entryConvertToUnifiedFileTreeNode(&node, req.Scope, req.ScopeID, pinode, req.Pinode))
@@ -207,7 +207,7 @@ func (svc *GittarFileTree) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeL
 	return list, nil
 }
 
-func notMatchInPipelineCategory(pipelineCategoryKey, path string, node apistructs.TreeEntry) bool {
+func notMatchInPipelineCategory(pipelineCategoryKey apistructs.PipelineCategory, path string, node apistructs.TreeEntry) bool {
 	if pipelineCategoryKey == "" {
 		return false
 	}
