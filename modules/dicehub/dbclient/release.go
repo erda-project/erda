@@ -45,8 +45,8 @@ type Release struct {
 	IsFormal bool `json:"isFormal" gorm:"type:tinyint(1)"`
 	// IsProjectRelease 是否为项目级别制品
 	IsProjectRelease bool `json:"IsProjectRelease" gorm:"type:tinyint(1)"`
-	// ApplicationReleaseList 项目级别制品依赖哪些应用级别制品
-	ApplicationReleaseList string `json:"applicationReleaseList" gorm:"type:text"`
+	// Modes 项目级制品的部署模式
+	Modes string `json:"modes" gorm:"type:text"`
 	// Labels 用于release分类，描述release类别，map类型, 最大长度1000, 选填
 	Labels string `json:"labels" gorm:"type:varchar(1000)"`
 	// GitBranch 为分支名，自动从labels中解析，选填

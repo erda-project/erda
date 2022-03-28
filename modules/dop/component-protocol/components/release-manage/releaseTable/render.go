@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	cmpTypes "github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/release-manage/access"
@@ -123,38 +124,38 @@ func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) e
 }
 
 func (r *ComponentReleaseTable) DecodeURLQuery() error {
-	queryData, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
+	urlQuery, ok := r.sdk.InParams["releaseTable__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decoded, err := base64.StdEncoding.DecodeString(queryData)
+	decode, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
-	query := make(map[string]interface{})
-	if err := json.Unmarshal(decoded, &query); err != nil {
+	queryData := make(map[string]interface{})
+	if err := json.Unmarshal(decode, &queryData); err != nil {
 		return err
 	}
-	r.State.PageNo = int64(query["pageNo"].(float64))
-	r.State.PageSize = int64(query["pageSize"].(float64))
-	sorterData := query["sorterData"].(map[string]interface{})
-	r.State.Sorter.Field, _ = sorterData["field"].(string)
-	r.State.Sorter.Order, _ = sorterData["order"].(string)
+	r.State.PageNo = int64(queryData["pageNo"].(float64))
+	r.State.PageSize = int64(queryData["pageSize"].(float64))
+	sorter := queryData["sorterData"].(map[string]interface{})
+	r.State.Sorter.Field, _ = sorter["field"].(string)
+	r.State.Sorter.Order, _ = sorter["order"].(string)
 	return nil
 }
 
 func (r *ComponentReleaseTable) EncodeURLQuery() error {
-	query := make(map[string]interface{})
-	query["pageNo"] = r.State.PageNo
-	query["pageSize"] = r.State.PageSize
-	query["sorterData"] = r.State.Sorter
-	data, err := json.Marshal(query)
+	urlQuery := make(map[string]interface{})
+	urlQuery["pageNo"] = r.State.PageNo
+	urlQuery["pageSize"] = r.State.PageSize
+	urlQuery["sorterData"] = r.State.Sorter
+	jsonData, err := json.Marshal(urlQuery)
 	if err != nil {
 		return err
 	}
 
-	encode := base64.StdEncoding.EncodeToString(data)
-	r.State.ReleaseTableURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(jsonData)
+	r.State.ReleaseTableURLQuery = encoded
 	return nil
 }
 
@@ -332,13 +333,15 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 		if release.IsProjectRelease {
 			item.Operations.Operations["download"] = downloadOperation
 
-			var refReleasedList [][]string
-			if err := json.Unmarshal([]byte(release.ApplicationReleaseList), &refReleasedList); err != nil {
+			models := make(map[string]apistructs.ReleaseDeployMode)
+			if err := json.Unmarshal([]byte(release.Modes), &models); err != nil {
 				logrus.Errorf("failed to unmarshal application release list for release %s, %v", release.ReleaseID, err)
 			}
 			var list []string
-			for i := 0; i < len(refReleasedList); i++ {
-				list = append(list, refReleasedList[i]...)
+			for _, model := range models {
+				for i := 0; i < len(model.ApplicationReleaseList); i++ {
+					list = append(list, model.ApplicationReleaseList[i]...)
+				}
 			}
 			item.Operations.Operations["referencedReleases"] = Operation{
 				Meta: map[string]interface{}{
@@ -463,12 +466,12 @@ func (r *ComponentReleaseTable) SetComponentValue() {
 	}
 }
 
-func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
-	component.Props = cputil.MustConvertProps(r.Props)
-	component.Data = map[string]interface{}{
+func (r *ComponentReleaseTable) Transfer(c *cptype.Component) {
+	c.Props = cputil.MustConvertProps(r.Props)
+	c.Data = map[string]interface{}{
 		"list": r.Data.List,
 	}
-	component.State = map[string]interface{}{
+	c.State = map[string]interface{}{
 		"releaseTable__urlQuery": r.State.ReleaseTableURLQuery,
 		"pageNo":                 r.State.PageNo,
 		"pageSize":               r.State.PageSize,
@@ -481,7 +484,7 @@ func (r *ComponentReleaseTable) Transfer(component *cptype.Component) {
 		"applicationID":          r.State.ApplicationID,
 		"filterValues":           r.State.FilterValues,
 	}
-	component.Operations = r.Operations
+	c.Operations = r.Operations
 }
 
 func (r *ComponentReleaseTable) formalReleases(ctx context.Context, releaseID []string) error {

@@ -15,6 +15,8 @@ import (
 // is compatible with the "encoding/json" package it is being compiled against.
 var _ json.Marshaler = (*ReleaseList)(nil)
 var _ json.Unmarshaler = (*ReleaseList)(nil)
+var _ json.Marshaler = (*Mode)(nil)
+var _ json.Unmarshaler = (*Mode)(nil)
 var _ json.Marshaler = (*ReleaseCreateRequest)(nil)
 var _ json.Unmarshaler = (*ReleaseCreateRequest)(nil)
 var _ json.Marshaler = (*ReleaseResource)(nil)
@@ -45,6 +47,8 @@ var _ json.Marshaler = (*ReleaseGetRequest)(nil)
 var _ json.Unmarshaler = (*ReleaseGetRequest)(nil)
 var _ json.Marshaler = (*ReleaseGetResponse)(nil)
 var _ json.Unmarshaler = (*ReleaseGetResponse)(nil)
+var _ json.Marshaler = (*ModeSummary)(nil)
+var _ json.Unmarshaler = (*ModeSummary)(nil)
 var _ json.Marshaler = (*ReleaseSummaryArray)(nil)
 var _ json.Unmarshaler = (*ReleaseSummaryArray)(nil)
 var _ json.Marshaler = (*ReleaseGetResponseData)(nil)
@@ -121,6 +125,24 @@ func (m *ReleaseList) MarshalJSON() ([]byte, error) {
 
 // ReleaseList implement json.Marshaler.
 func (m *ReleaseList) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// Mode implement json.Marshaler.
+func (m *Mode) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// Mode implement json.Marshaler.
+func (m *Mode) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
@@ -391,6 +413,24 @@ func (m *ReleaseGetResponse) MarshalJSON() ([]byte, error) {
 
 // ReleaseGetResponse implement json.Marshaler.
 func (m *ReleaseGetResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// ModeSummary implement json.Marshaler.
+func (m *ModeSummary) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// ModeSummary implement json.Marshaler.
+func (m *ModeSummary) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

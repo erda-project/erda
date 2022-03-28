@@ -50,6 +50,7 @@ type DeploymentOrder struct {
 	IsOutdated      uint16
 	CurrentBatch    uint64
 	BatchSize       uint64
+	DeployList      string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	StartedAt       time.Time `gorm:"default:'1970-01-01 00:00:00'"`
@@ -60,17 +61,33 @@ func (DeploymentOrder) TableName() string {
 }
 
 type Release struct {
-	ReleaseId              string
-	Version                string
-	IsProjectRelease       bool
-	ApplicationName        string
-	ApplicationId          uint64
-	ApplicationReleaseList string
-	Labels                 string
-	DiceYaml               string `gorm:"column:dice"`
-	UserId                 string
-	CreatedAt              time.Time
-	UpdatedAt              time.Time
+	ReleaseId        string    `json:"releaseId" gorm:"type:varchar(64);primary_key"`
+	ReleaseName      string    `json:"releaseName" gorm:"index:idx_release_name;not null"`
+	Desc             string    `json:"desc" gorm:"type:text"`
+	DiceYaml         string    `json:"dice" gorm:"type:text"` // dice.yml
+	Addon            string    `json:"addon" gorm:"type:text"`
+	Changelog        string    `json:"changelog" gorm:"type:text"`
+	IsStable         bool      `json:"isStable" gorm:"type:tinyint(1)"`
+	IsFormal         bool      `json:"isFormal" gorm:"type:tinyint(1)"`
+	IsProjectRelease bool      `json:"IsProjectRelease" gorm:"type:tinyint(1)"`
+	Modes            string    `json:"modes" gorm:"type:text"`
+	Labels           string    `json:"labels" gorm:"type:varchar(1000)"`
+	GitBranch        string    `json:"gitBranch" gorm:"type:varchar(255)"`
+	Tags             string    `json:"tags" gorm:"type:varchar(100)"`
+	Version          string    `json:"version" gorm:"type:varchar(100)"`
+	OrgID            int64     `json:"orgId" gorm:"index:idx_org_id"`
+	ProjectID        int64     `json:"projectId"`
+	ApplicationId    uint64    `json:"applicationId"`
+	ProjectName      string    `json:"projectName" gorm:"type:varchar(80)"`
+	ApplicationName  string    `json:"applicationName" gorm:"type:varchar(80)"`
+	UserId           string    `json:"userId" gorm:"type:varchar(50)"`
+	ClusterName      string    `json:"clusterName" gorm:"type:varchar(80)"` // 所属集群
+	Resources        string    `json:"resources,omitempty" gorm:"type:text"`
+	Reference        int64     `json:"reference"`
+	CrossCluster     bool      `json:"crossCluster"`
+	CreatedAt        time.Time `json:"createdAt"`
+	UpdatedAt        time.Time `json:"updatedAt"`
+	IsLatest         bool      `json:"isLatest"`
 }
 
 func (Release) TableName() string {

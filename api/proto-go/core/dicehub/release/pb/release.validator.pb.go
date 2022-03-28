@@ -24,7 +24,7 @@ var _ = math.Inf
 func (this *ReleaseList) Validate() error {
 	return nil
 }
-func (this *ReleaseCreateRequest) Validate() error {
+func (this *Mode) Validate() error {
 	for _, item := range this.ApplicationReleaseList {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
@@ -32,6 +32,10 @@ func (this *ReleaseCreateRequest) Validate() error {
 			}
 		}
 	}
+	return nil
+}
+func (this *ReleaseCreateRequest) Validate() error {
+	// Validation of proto3 map<> fields is unsupported.
 	// Validation of proto3 map<> fields is unsupported.
 	for _, item := range this.Resources {
 		if item != nil {
@@ -58,13 +62,7 @@ func (this *ReleaseCreateResponseData) Validate() error {
 	return nil
 }
 func (this *ReleaseUpdateRequest) Validate() error {
-	for _, item := range this.ApplicationReleaseList {
-		if item != nil {
-			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("ApplicationReleaseList", err)
-			}
-		}
-	}
+	// Validation of proto3 map<> fields is unsupported.
 	return nil
 }
 func (this *ReleaseDataResponse) Validate() error {
@@ -102,6 +100,16 @@ func (this *ReleaseGetResponse) Validate() error {
 	}
 	return nil
 }
+func (this *ModeSummary) Validate() error {
+	for _, item := range this.ApplicationReleaseList {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("ApplicationReleaseList", err)
+			}
+		}
+	}
+	return nil
+}
 func (this *ReleaseSummaryArray) Validate() error {
 	for _, item := range this.List {
 		if item != nil {
@@ -113,13 +121,7 @@ func (this *ReleaseSummaryArray) Validate() error {
 	return nil
 }
 func (this *ReleaseGetResponseData) Validate() error {
-	for _, item := range this.ApplicationReleaseList {
-		if item != nil {
-			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
-				return github_com_mwitkow_go_proto_validators.FieldError("ApplicationReleaseList", err)
-			}
-		}
-	}
+	// Validation of proto3 map<> fields is unsupported.
 	for _, item := range this.Resources {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {

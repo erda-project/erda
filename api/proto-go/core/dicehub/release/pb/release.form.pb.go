@@ -14,6 +14,7 @@ import (
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseList)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*Mode)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseCreateRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseResource)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseCreateResponse)(nil)
@@ -29,6 +30,7 @@ var _ urlenc.URLValuesUnmarshaler = (*ReleaseDeleteRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseDeleteResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ModeSummary)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseSummaryArray)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetResponseData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AddonInfo)(nil)
@@ -68,6 +70,25 @@ func (m *ReleaseList) UnmarshalURLValues(prefix string, values url.Values) error
 			switch prefix + key {
 			case "list":
 				m.List = vals
+			}
+		}
+	}
+	return nil
+}
+
+// Mode implement urlenc.URLValuesUnmarshaler.
+func (m *Mode) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "dependOn":
+				m.DependOn = vals
+			case "expose":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Expose = val
 			}
 		}
 	}
@@ -591,6 +612,25 @@ func (m *ReleaseGetResponse) UnmarshalURLValues(prefix string, values url.Values
 	return nil
 }
 
+// ModeSummary implement urlenc.URLValuesUnmarshaler.
+func (m *ModeSummary) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "expose":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Expose = val
+			case "dependOn":
+				m.DependOn = vals
+			}
+		}
+	}
+	return nil
+}
+
 // ReleaseSummaryArray implement urlenc.URLValuesUnmarshaler.
 func (m *ReleaseSummaryArray) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
@@ -989,8 +1029,8 @@ func (m *ReleaseData) UnmarshalURLValues(prefix string, values url.Values) error
 					return err
 				}
 				m.IsProjectRelease = val
-			case "applicationReleaseList":
-				m.ApplicationReleaseList = vals[0]
+			case "modes":
+				m.Modes = vals[0]
 			case "images":
 				m.Images = vals
 			case "tags":

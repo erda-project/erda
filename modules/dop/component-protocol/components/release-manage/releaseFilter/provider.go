@@ -241,23 +241,23 @@ func (f *ReleaseFilter) renderFilter() error {
 }
 
 func (f *ReleaseFilter) decodeURLQuery() error {
-	query, ok := f.sdk.InParams["releaseFilter__urlQuery"].(string)
+	urlQuery, ok := f.sdk.InParams["releaseFilter__urlQuery"].(string)
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(query)
+	decoded, err := base64.StdEncoding.DecodeString(urlQuery)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(decode, &f.State.Values)
+	return json.Unmarshal(decoded, &f.State.Values)
 }
 
 func (f *ReleaseFilter) encodeURLQuery() error {
-	jsonData, err := json.Marshal(f.State.Values)
+	data, err := json.Marshal(f.State.Values)
 	if err != nil {
 		return err
 	}
-	encode := base64.StdEncoding.EncodeToString(jsonData)
-	f.State.ReleaseFilterURLQuery = encode
+	encoded := base64.StdEncoding.EncodeToString(data)
+	f.State.ReleaseFilterURLQuery = encoded
 	return nil
 }

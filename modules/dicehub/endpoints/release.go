@@ -28,9 +28,11 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
+	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dicehub/dbclient"
@@ -128,29 +130,31 @@ func (e *Endpoints) DownloadRelease(ctx context.Context, w http.ResponseWriter, 
 		}
 	}
 
+	project, err := e.bdl.GetProject(uint64(release.ProjectID))
+	if err != nil {
+		return apierrors.ErrDownloadRelease.InternalError(errors.New("failed to get project"))
+	}
 	dir := fmt.Sprintf("%s_%s", release.ProjectName, release.Version)
 
 	buf := new(bytes.Buffer)
 	zw := zip.NewWriter(buf)
-	releaseIDs, err := unmarshalApplicationReleaseList(release.ApplicationReleaseList)
+	releaseIDs, err := unmarshalApplicationReleaseList(release.Modes)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
 
-	appReleases, err := e.getAppReleases(releaseIDs)
+	appReleases, err := e.db.GetReleases(releaseIDs)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
 
 	for i := 0; i < len(appReleases); i++ {
-		for j := 0; j < len(appReleases[i]); j++ {
-			f, err := zw.Create(filepath.Join(dir, "dicefile", appReleases[i][j].ApplicationName, "dice.yml"))
-			if err != nil {
-				return apierrors.ErrDownloadRelease.InternalError(err)
-			}
-			if _, err := f.Write([]byte(appReleases[i][j].Dice)); err != nil {
-				return apierrors.ErrDownloadRelease.InternalError(err)
-			}
+		f, err := zw.Create(filepath.Join(dir, "dicefile", appReleases[i].ApplicationName, "dice.yml"))
+		if err != nil {
+			return apierrors.ErrDownloadRelease.InternalError(err)
+		}
+		if _, err := f.Write([]byte(appReleases[i].Dice)); err != nil {
+			return apierrors.ErrDownloadRelease.InternalError(err)
 		}
 	}
 
@@ -162,7 +166,7 @@ func (e *Endpoints) DownloadRelease(ctx context.Context, w http.ResponseWriter, 
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
-	metadata, err := makeMetadata(org.DisplayName, u.Nick, release, appReleases)
+	metadata, err := makeMetadata(r, org.DisplayName, u.Nick, project.Name, int64(project.ID), release, appReleases)
 	if err != nil {
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
@@ -186,32 +190,6 @@ func (e *Endpoints) DownloadRelease(ctx context.Context, w http.ResponseWriter, 
 		return apierrors.ErrDownloadRelease.InternalError(err)
 	}
 	return nil
-}
-
-func (e *Endpoints) getAppReleases(releaseList [][]string) ([][]dbclient.Release, error) {
-	var list []string
-	for i := 0; i < len(releaseList); i++ {
-		list = append(list, releaseList[i]...)
-	}
-
-	releases, err := e.db.GetReleases(list)
-	if err != nil {
-		return nil, err
-	}
-
-	id2Release := make(map[string]*dbclient.Release)
-	for i := 0; i < len(releases); i++ {
-		id2Release[releases[i].ReleaseID] = &releases[i]
-	}
-
-	appReleases := make([][]dbclient.Release, len(releaseList))
-	for i := 0; i < len(releaseList); i++ {
-		appReleases[i] = make([]dbclient.Release, len(releaseList[i]))
-		for j := 0; j < len(releaseList[i]); j++ {
-			appReleases[i][j] = *id2Release[releaseList[i][j]]
-		}
-	}
-	return appReleases, nil
 }
 
 // hasReadAccess check whether user has access to get project
@@ -279,42 +257,76 @@ func (e *Endpoints) hasWriteAccess(identity apistructs.IdentityInfo, projectID i
 	return hasAppAccess, nil
 }
 
-func unmarshalApplicationReleaseList(str string) ([][]string, error) {
-	var list [][]string
-	if err := json.Unmarshal([]byte(str), &list); err != nil {
+func unmarshalApplicationReleaseList(str string) ([]string, error) {
+	modes := make(map[string]apistructs.ReleaseDeployMode)
+	if err := json.Unmarshal([]byte(str), &modes); err != nil {
 		return nil, err
 	}
-	return list, nil
+	var list []string
+	for name := range modes {
+		for i := 0; i < len(modes[name].ApplicationReleaseList); i++ {
+			list = append(list, modes[name].ApplicationReleaseList[i]...)
+		}
+	}
+	return strutil.DedupSlice(list), nil
 }
 
-func makeMetadata(orgName, userName string, release *dbclient.Release, appReleases [][]dbclient.Release) ([]byte, error) {
-	appList := make([][]apistructs.AppMetadata, len(appReleases))
+func makeMetadata(req *http.Request, orgName, userName, projectName string, projectID int64, release *dbclient.Release,
+	appReleases []dbclient.Release) ([]byte, error) {
+	id2Release := make(map[string]*dbclient.Release)
 	for i := 0; i < len(appReleases); i++ {
-		appList[i] = make([]apistructs.AppMetadata, len(appReleases[i]))
-		for j := 0; j < len(appReleases[i]); j++ {
-			labels := make(map[string]string)
-			if err := json.Unmarshal([]byte(appReleases[i][j].Labels), &labels); err != nil {
-				logrus.Errorf("failed to unmarshal labels for release %s, %v", appReleases[i][j].ReleaseID, err)
+		id2Release[appReleases[i].ReleaseID] = &appReleases[i]
+	}
+
+	modes := make(map[string]apistructs.ReleaseDeployMode)
+	if err := json.Unmarshal([]byte(release.Modes), &modes); err != nil {
+		return nil, errors.Errorf("failed to unmarshal modes for release %s, %v", release.ReleaseID, err)
+	}
+
+	modesMetadata := make(map[string]apistructs.ReleaseModeMetadata)
+	for name := range modes {
+		appList := make([][]apistructs.AppMetadata, len(modes[name].ApplicationReleaseList))
+		for i := 0; i < len(modes[name].ApplicationReleaseList); i++ {
+			appList[i] = make([]apistructs.AppMetadata, len(modes[name].ApplicationReleaseList[i]))
+			for j := 0; j < len(modes[name].ApplicationReleaseList[i]); j++ {
+				labels := make(map[string]string)
+				release := id2Release[modes[name].ApplicationReleaseList[i][j]]
+				if release == nil {
+					continue
+				}
+				if err := json.Unmarshal([]byte(release.Labels), &labels); err != nil {
+					logrus.Errorf("failed to unmarshal labels for release %s, %v", release.ReleaseID, err)
+				}
+				appList[i][j] = apistructs.AppMetadata{
+					AppName:          release.ApplicationName,
+					GitBranch:        labels["gitBranch"],
+					GitCommitID:      labels["gitCommitId"],
+					GitCommitMessage: labels["gitCommitMessage"],
+					GitRepo:          labels["gitRepo"],
+					ChangeLog:        release.Changelog,
+					Version:          release.Version,
+				}
 			}
-			appList[i][j] = apistructs.AppMetadata{
-				AppName:          appReleases[i][j].ApplicationName,
-				GitBranch:        labels["gitBranch"],
-				GitCommitID:      labels["gitCommitId"],
-				GitCommitMessage: labels["gitCommitMessage"],
-				GitRepo:          labels["gitRepo"],
-				ChangeLog:        appReleases[i][j].Changelog,
-				Version:          appReleases[i][j].Version,
-			}
+		}
+		modesMetadata[name] = apistructs.ReleaseModeMetadata{
+			DependOn: modes[name].DependOn,
+			Expose:   modes[name].Expose,
+			AppList:  appList,
 		}
 	}
 	releaseMeta := apistructs.ReleaseMetadata{
-		Org:       orgName,
-		Source:    "erda",
-		Author:    userName,
+		ApiVersion: "v1",
+		Author:     userName,
+		CreatedAt:  release.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		Source: apistructs.ReleaseSource{
+			Org:     orgName,
+			Project: projectName,
+			URL:     fmt.Sprintf("https://%s/%s/dop/projects/%d", req.URL.Host, orgName, projectID),
+		},
 		Version:   release.Version,
 		Desc:      release.Desc,
 		ChangeLog: release.Changelog,
-		AppList:   appList,
+		Modes:     modesMetadata,
 	}
 	return yaml.Marshal(releaseMeta)
 }

@@ -19,7 +19,8 @@ type DeploymentOrderCreateRequest struct {
 	Id        string `json:"id"`        // auto generate if empty
 
 	// deploy center or pipeline build
-	ReleaseId string `json:"releaseId"`
+	ReleaseId string   `json:"releaseId"`
+	Modes     []string `json:"modes"`
 
 	// pipeline, application or project
 	Type            string `json:"type"` // application_release or project_release
@@ -44,6 +45,7 @@ type DeploymentOrderCreateResponse struct {
 	ApplicationName string                                  `json:"applicationName"`
 	Status          DeploymentOrderStatus                   `json:"status"`
 	Deployments     map[string]*DeploymentCreateResponseDTO `json:"deployments,omitempty"`
+	DeployList      string                                  `json:"deployList,omitempty"`
 }
 
 type DeploymentOrderDeployRequest struct {
@@ -98,6 +100,7 @@ type DeploymentOrderItem struct {
 	CurrentBatch      uint64                `json:"currentBatch"`
 	Status            DeploymentOrderStatus `json:"status,omitempty"`
 	Operator          string                `json:"operator,omitempty"`
+	DeployList        string                `json:"deployList,omitempty"`
 	CreatedAt         time.Time             `json:"createdAt"`
 	UpdatedAt         time.Time             `json:"updatedAt"`
 	StartedAt         *time.Time            `json:"startedAt,omitempty"`

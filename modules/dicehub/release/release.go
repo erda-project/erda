@@ -70,18 +70,21 @@ func (s *ReleaseService) formalRelease(release *db.Release) (err error) {
 	}()
 
 	if release.IsProjectRelease {
-		var list [][]string
-		if err = json.Unmarshal([]byte(release.ApplicationReleaseList), &list); err != nil {
+		var modes map[string]apistructs.ReleaseDeployMode
+		if err = json.Unmarshal([]byte(release.Modes), &modes); err != nil {
 			return err
 		}
 
-		for i := 0; i < len(list); i++ {
-			for j := 0; j < len(list[i]); j++ {
-				if err = tx.Model(&db.Release{}).Where("release_id = ?", list[i][j]).Updates(map[string]interface{}{
-					"is_stable": true,
-					"is_formal": true,
-				}).Error; err != nil {
-					return
+		for name := range modes {
+			for i := 0; i < len(modes[name].ApplicationReleaseList); i++ {
+				for j := 0; j < len(modes[name].ApplicationReleaseList[i]); j++ {
+					if err = tx.Model(&db.Release{}).Where("release_id = ?",
+						modes[name].ApplicationReleaseList[i][j]).Updates(map[string]interface{}{
+						"is_stable": true,
+						"is_formal": true,
+					}).Error; err != nil {
+						return
+					}
 				}
 			}
 		}
@@ -124,19 +127,47 @@ func (s *ReleaseService) Create(req *pb.ReleaseCreateRequest) (string, error) {
 	)
 	if req.IsProjectRelease {
 		var list []string
-		if len(req.ApplicationReleaseList) == 0 {
-			return "", errors.New("application release list can not be empty")
+		if len(req.Modes) == 0 {
+			return "", errors.New("project release modes can not be empty")
 		}
-		for i := 0; i < len(req.ApplicationReleaseList); i++ {
-			if len(req.ApplicationReleaseList[i].List) == 0 {
-				return "", errors.New("application release group can not be empty")
+
+		for _, mode := range req.Modes {
+			if mode == nil {
+				return "", errors.New("mode can not be empty")
 			}
-			sort.Strings(req.ApplicationReleaseList[i].List)
-			list = append(list, req.ApplicationReleaseList[i].List...)
+			for _, depend := range mode.DependOn {
+				if _, ok := req.Modes[depend]; !ok {
+					return "", errors.Errorf("depend mode %s does not exist in modes list", depend)
+				}
+			}
+			if len(mode.ApplicationReleaseList) == 0 {
+				return "", errors.New("application release list can not be empty")
+			}
+			for i := 0; i < len(mode.ApplicationReleaseList); i++ {
+				if len(mode.ApplicationReleaseList[i].List) == 0 {
+					return "", errors.New("application release group can not be empty")
+				}
+				sort.Strings(mode.ApplicationReleaseList[i].List)
+				list = append(list, mode.ApplicationReleaseList[i].List...)
+			}
+		}
+		if hasLoopDependence(req.Modes) {
+			return "", errors.New("there is a loop dependence between deployment modes")
 		}
 		appReleases, err = s.db.GetReleases(strutil.DedupSlice(list))
 		if err != nil {
 			return "", err
+		}
+		if len(appReleases) < len(list) {
+			existed := make(map[string]struct{})
+			for _, release := range appReleases {
+				existed[release.ReleaseID] = struct{}{}
+			}
+			for _, id := range list {
+				if _, ok := existed[id]; !ok {
+					return "", errors.Errorf("release %s not found", id)
+				}
+			}
 		}
 	}
 
@@ -242,22 +273,46 @@ func (s *ReleaseService) Update(orgID int64, releaseID string, req *pb.ReleaseUp
 		release.ApplicationName = ""
 		release.Dice = ""
 
-		if len(req.ApplicationReleaseList) == 0 {
-			return errors.New("application release list can not be null for project release")
+		if len(req.Modes) == 0 {
+			return errors.New("project release modes can not be empty")
 		}
+
 		var newList []string
-		var groupList [][]string
-		for i := 0; i < len(req.ApplicationReleaseList); i++ {
-			if len(req.ApplicationReleaseList[i].List) == 0 {
-				return errors.New("application release group can not be empty")
+		for _, mode := range req.Modes {
+			if mode == nil {
+				return errors.New("mode can not be empty")
 			}
-			sort.Strings(req.ApplicationReleaseList[i].List)
-			newList = append(newList, req.ApplicationReleaseList[i].List...)
-			groupList = append(groupList, req.ApplicationReleaseList[i].List)
+			for _, depend := range mode.DependOn {
+				if _, ok := req.Modes[depend]; !ok {
+					return errors.Errorf("depend mode %s does not exist in modes list", depend)
+				}
+			}
+			for i := 0; i < len(mode.ApplicationReleaseList); i++ {
+				if len(mode.ApplicationReleaseList[i].List) == 0 {
+					return errors.New("application release group can not be empty")
+				}
+				sort.Strings(mode.ApplicationReleaseList[i].List)
+				newList = append(newList, mode.ApplicationReleaseList[i].List...)
+			}
+		}
+		if hasLoopDependence(req.Modes) {
+			return errors.New("there is a loop dependence between deployment modes")
 		}
 		newAppReleases, err := s.db.GetReleases(strutil.DedupSlice(newList))
 		if err != nil {
 			return errors.Errorf("failed to get application releases: %v", err)
+		}
+
+		if len(newAppReleases) < len(newList) {
+			existed := make(map[string]struct{})
+			for _, release := range newAppReleases {
+				existed[release.ReleaseID] = struct{}{}
+			}
+			for _, id := range newList {
+				if _, ok := existed[id]; !ok {
+					return errors.Errorf("release %s not found", err)
+				}
+			}
 		}
 
 		selectedApp := make(map[int64]struct{})
@@ -268,34 +323,28 @@ func (s *ReleaseService) Update(orgID int64, releaseID string, req *pb.ReleaseUp
 			selectedApp[newAppReleases[i].ApplicationID] = struct{}{}
 		}
 
-		// update application_release_list
-		oldListStr := release.ApplicationReleaseList
-		newListData, err := json.Marshal(groupList)
-		if err != nil {
-			return errors.Errorf("failed to marshal release list, %v", err)
-		}
-		release.ApplicationReleaseList = string(newListData)
-
-		// update reference count
 		var oldList []string
-		oldList, err = unmarshalApplicationReleaseList(oldListStr)
+		oldList, err = unmarshalApplicationReleaseList(release.Modes)
 		if err != nil {
 			return errors.Errorf("failed to json unmarshal release list, %v", err)
 		}
 
-		if isSliceEqual(newList, oldList) {
-			if err := s.db.UpdateRelease(release); err != nil {
-				return err
-			}
-		} else {
-			oldAppReleases, err := s.db.GetReleases(oldList)
-			if err != nil {
-				return err
-			}
-			if err = s.updateProjectReleaseAndReference(release, oldAppReleases, newAppReleases); err != nil {
-				return err
-			}
+		oldAppReleases, err := s.db.GetReleases(oldList)
+		if err != nil {
+			return err
 		}
+
+		// update modes
+		newModesData, err := json.Marshal(convertPbModesToModes(req.Modes))
+		if err != nil {
+			return errors.Errorf("failed to marshal release list, %v", err)
+		}
+		release.Modes = string(newModesData)
+
+		if err = s.updateProjectReleaseAndReference(release, oldAppReleases, newAppReleases); err != nil {
+			return err
+		}
+
 	} else {
 		if err := s.db.UpdateRelease(release); err != nil {
 			return err
@@ -419,8 +468,8 @@ func (s *ReleaseService) Delete(orgID int64, releaseIDs ...string) error {
 		}
 
 		// delete release info
-		if release.IsProjectRelease && release.ApplicationReleaseList != "" {
-			list, err := unmarshalApplicationReleaseList(release.ApplicationReleaseList)
+		if release.IsProjectRelease {
+			list, err := unmarshalApplicationReleaseList(release.Modes)
 			if err != nil {
 				failed = append(failed, fmt.Sprintf("%s(%s)", releaseID, "failed to unmarshal release list, "+err.Error()))
 				continue
@@ -534,32 +583,32 @@ func convertToListReleaseResponse(release *db.Release) (*pb.ReleaseData, error) 
 	}
 
 	respData := &pb.ReleaseData{
-		ReleaseID:              release.ReleaseID,
-		ReleaseName:            release.ReleaseName,
-		Diceyml:                release.Dice,
-		Desc:                   release.Desc,
-		Addon:                  release.Addon,
-		Changelog:              release.Changelog,
-		IsStable:               release.IsStable,
-		IsFormal:               release.IsFormal,
-		IsProjectRelease:       release.IsProjectRelease,
-		ApplicationReleaseList: release.ApplicationReleaseList,
-		Resources:              resources,
-		Labels:                 labels,
-		Tags:                   release.Tags,
-		Version:                release.Version,
-		CrossCluster:           release.CrossCluster,
-		Reference:              release.Reference,
-		OrgID:                  release.OrgID,
-		ProjectID:              release.ProjectID,
-		ApplicationID:          release.ApplicationID,
-		ProjectName:            release.ProjectName,
-		ApplicationName:        release.ApplicationName,
-		UserID:                 release.UserID,
-		ClusterName:            release.ClusterName,
-		CreatedAt:              timestamppb.New(release.CreatedAt),
-		UpdatedAt:              timestamppb.New(release.UpdatedAt),
-		IsLatest:               release.IsLatest,
+		ReleaseID:        release.ReleaseID,
+		ReleaseName:      release.ReleaseName,
+		Diceyml:          release.Dice,
+		Desc:             release.Desc,
+		Addon:            release.Addon,
+		Changelog:        release.Changelog,
+		IsStable:         release.IsStable,
+		IsFormal:         release.IsFormal,
+		IsProjectRelease: release.IsProjectRelease,
+		Modes:            release.Modes,
+		Resources:        resources,
+		Labels:           labels,
+		Tags:             release.Tags,
+		Version:          release.Version,
+		CrossCluster:     release.CrossCluster,
+		Reference:        release.Reference,
+		OrgID:            release.OrgID,
+		ProjectID:        release.ProjectID,
+		ApplicationID:    release.ApplicationID,
+		ProjectName:      release.ProjectName,
+		ApplicationName:  release.ApplicationName,
+		UserID:           release.UserID,
+		ClusterName:      release.ClusterName,
+		CreatedAt:        timestamppb.New(release.CreatedAt),
+		UpdatedAt:        timestamppb.New(release.UpdatedAt),
+		IsLatest:         release.IsLatest,
 	}
 	return respData, nil
 }
@@ -712,103 +761,111 @@ func (s *ReleaseService) parseReleaseFile(req *pb.ReleaseUploadRequest, file io.
 	now := time.Now()
 
 	var appReleases []db.Release
-	appReleaseList := make([][]string, len(metadata.AppList))
-	for i := 0; i < len(metadata.AppList); i++ {
-		appReleaseList[i] = make([]string, len(metadata.AppList[i]))
-		for j := 0; j < len(metadata.AppList[i]); j++ {
-			id := uuid.UUID()
-			appName := metadata.AppList[i][j].AppName
-			version := metadata.AppList[i][j].Version
-			gitBranch := metadata.AppList[i][j].GitBranch
-			gitCommitID := metadata.AppList[i][j].GitCommitID
-			gitCommitMsg := metadata.AppList[i][j].GitCommitMessage
-			gitRepo := metadata.AppList[i][j].GitRepo
-			changelog := metadata.AppList[i][j].ChangeLog
+	modes := make(map[string]apistructs.ReleaseDeployMode)
+	for name := range metadata.Modes {
+		appReleaseList := make([][]string, len(metadata.Modes[name].AppList))
+		for i := 0; i < len(metadata.Modes[name].AppList); i++ {
+			appReleaseList[i] = make([]string, len(metadata.Modes[name].AppList[i]))
+			for j := 0; j < len(metadata.Modes[name].AppList[i]); j++ {
+				id := uuid.UUID()
+				appName := metadata.Modes[name].AppList[i][j].AppName
+				version := metadata.Modes[name].AppList[i][j].Version
+				gitBranch := metadata.Modes[name].AppList[i][j].GitBranch
+				gitCommitID := metadata.Modes[name].AppList[i][j].GitCommitID
+				gitCommitMsg := metadata.Modes[name].AppList[i][j].GitCommitMessage
+				gitRepo := metadata.Modes[name].AppList[i][j].GitRepo
+				changelog := metadata.Modes[name].AppList[i][j].ChangeLog
 
-			if _, ok := appName2ID[appName]; !ok {
-				return nil, nil, errors.Errorf("app %s is not existed", appName)
-			}
+				if _, ok := appName2ID[appName]; !ok {
+					return nil, nil, errors.Errorf("app %s is not existed", appName)
+				}
 
-			existedReleases, err := s.db.GetReleasesByAppAndVersion(req.OrgID, req.ProjectID, appName2ID[appName], version)
-			if err != nil {
-				return nil, nil, errors.Errorf("failed to get releases by app and version, %v", err)
-			}
-			if len(existedReleases) > 0 {
-				oldDice, err := diceyml.New([]byte(existedReleases[0].Dice), true)
+				existedReleases, err := s.db.GetReleasesByAppAndVersion(req.OrgID, req.ProjectID, appName2ID[appName], version)
 				if err != nil {
-					return nil, nil, errors.Errorf("dice yml for release %s is invalid, %v", existedReleases[0].ReleaseID, err)
+					return nil, nil, errors.Errorf("failed to get releases by app and version, %v", err)
 				}
-				newDice, err := diceyml.New([]byte(dices[appName]), true)
+				if len(existedReleases) > 0 {
+					oldDice, err := diceyml.New([]byte(existedReleases[0].Dice), true)
+					if err != nil {
+						return nil, nil, errors.Errorf("dice yml for release %s is invalid, %v", existedReleases[0].ReleaseID, err)
+					}
+					newDice, err := diceyml.New([]byte(dices[appName]), true)
+					if err != nil {
+						return nil, nil, errors.Errorf("dice yml for app %s release is invalid, %v", appName, err)
+					}
+					if !reflect.DeepEqual(oldDice.Obj(), newDice.Obj()) {
+						logrus.Warningf("app release %s (ID: %s) to upload was already existed but has different dice yml. Use old dice yml instead. Old: %v. New:%v",
+							version, existedReleases[0].ReleaseID, oldDice.Obj(), newDice.Obj())
+					}
+					appReleaseList[i][j] = existedReleases[0].ReleaseID
+					continue
+				}
+
+				labels := map[string]string{
+					"gitBranch":        gitBranch,
+					"gitCommitId":      gitCommitID,
+					"gitCommitMessage": gitCommitMsg,
+					"gitRepo":          gitRepo,
+				}
+				data, err := json.Marshal(labels)
 				if err != nil {
-					return nil, nil, errors.Errorf("dice yml for app %s release is invalid, %v", appName, err)
+					return nil, nil, errors.Errorf("failed to marshal labels, %v", err)
 				}
-				if !reflect.DeepEqual(oldDice.Obj(), newDice.Obj()) {
-					logrus.Warningf("app release %s (ID: %s) to upload was already existed but has different dice yml. Use old dice yml instead. Old: %v. New:%v",
-						version, existedReleases[0].ReleaseID, oldDice.Obj(), newDice.Obj())
-				}
-				appReleaseList[i][j] = existedReleases[0].ReleaseID
-				continue
-			}
 
-			labels := map[string]string{
-				"gitBranch":        gitBranch,
-				"gitCommitId":      gitCommitID,
-				"gitCommitMessage": gitCommitMsg,
-				"gitRepo":          gitRepo,
+				appReleaseList[i][j] = id
+				appReleases = append(appReleases, db.Release{
+					ReleaseID:        id,
+					ReleaseName:      gitBranch,
+					Desc:             fmt.Sprintf("referenced by project release %s", projectReleaseID),
+					Dice:             dices[appName],
+					Changelog:        changelog,
+					IsStable:         true,
+					IsFormal:         false,
+					IsProjectRelease: false,
+					Labels:           string(data),
+					GitBranch:        gitBranch,
+					Version:          version,
+					OrgID:            req.OrgID,
+					ProjectID:        req.ProjectID,
+					ApplicationID:    appName2ID[appName],
+					ProjectName:      req.ProjectName,
+					ApplicationName:  appName,
+					UserID:           req.UserID,
+					ClusterName:      req.ClusterName,
+					Reference:        1,
+					CreatedAt:        now,
+					UpdatedAt:        now,
+					IsLatest:         true,
+				})
 			}
-			data, err := json.Marshal(labels)
-			if err != nil {
-				return nil, nil, errors.Errorf("failed to marshal labels, %v", err)
-			}
-
-			appReleaseList[i][j] = id
-			appReleases = append(appReleases, db.Release{
-				ReleaseID:        id,
-				ReleaseName:      gitBranch,
-				Desc:             fmt.Sprintf("referenced by project release %s", projectReleaseID),
-				Dice:             dices[appName],
-				Changelog:        changelog,
-				IsStable:         true,
-				IsFormal:         false,
-				IsProjectRelease: false,
-				Labels:           string(data),
-				GitBranch:        gitBranch,
-				Version:          version,
-				OrgID:            req.OrgID,
-				ProjectID:        req.ProjectID,
-				ApplicationID:    appName2ID[appName],
-				ProjectName:      req.ProjectName,
-				ApplicationName:  appName,
-				UserID:           req.UserID,
-				ClusterName:      req.ClusterName,
-				Reference:        1,
-				CreatedAt:        now,
-				UpdatedAt:        now,
-				IsLatest:         true,
-			})
+		}
+		modes[name] = apistructs.ReleaseDeployMode{
+			DependOn:               metadata.Modes[name].DependOn,
+			Expose:                 metadata.Modes[name].Expose,
+			ApplicationReleaseList: appReleaseList,
 		}
 	}
 
-	listData, err := json.Marshal(appReleaseList)
+	modesData, err := json.Marshal(modes)
 	if err != nil {
-		return nil, nil, errors.Errorf("faield to marshal application release list, %v", err)
+		return nil, nil, errors.Errorf("faield to marshal modes, %v", err)
 	}
 	projectRelease := &db.Release{
-		ReleaseID:              projectReleaseID,
-		Desc:                   metadata.Desc,
-		Changelog:              metadata.ChangeLog,
-		IsStable:               true,
-		IsFormal:               false,
-		IsProjectRelease:       true,
-		ApplicationReleaseList: string(listData),
-		Version:                metadata.Version,
-		OrgID:                  req.OrgID,
-		ProjectID:              req.ProjectID,
-		ProjectName:            req.ProjectName,
-		UserID:                 req.UserID,
-		ClusterName:            req.ClusterName,
-		CreatedAt:              now,
-		UpdatedAt:              now,
+		ReleaseID:        projectReleaseID,
+		Desc:             metadata.Desc,
+		Changelog:        metadata.ChangeLog,
+		IsStable:         true,
+		IsFormal:         false,
+		IsProjectRelease: true,
+		Modes:            string(modesData),
+		Version:          metadata.Version,
+		OrgID:            req.OrgID,
+		ProjectID:        req.ProjectID,
+		ProjectName:      req.ProjectName,
+		UserID:           req.UserID,
+		ClusterName:      req.ClusterName,
+		CreatedAt:        now,
+		UpdatedAt:        now,
 	}
 	return projectRelease, appReleases, nil
 }
@@ -878,15 +935,17 @@ func parseImage(image string) (repoName, tag string) {
 }
 
 func unmarshalApplicationReleaseList(str string) ([]string, error) {
-	var list [][]string
-	if err := json.Unmarshal([]byte(str), &list); err != nil {
+	modes := make(map[string]apistructs.ReleaseDeployMode)
+	if err := json.Unmarshal([]byte(str), &modes); err != nil {
 		return nil, err
 	}
 	var res []string
-	for i := 0; i < len(list); i++ {
-		res = append(res, list[i]...)
+	for _, mode := range modes {
+		for i := 0; i < len(mode.ApplicationReleaseList); i++ {
+			res = append(res, mode.ApplicationReleaseList[i]...)
+		}
 	}
-	return res, nil
+	return strutil.DedupSlice(res), nil
 }
 
 func isSliceEqual(a, b []string) bool {
@@ -899,4 +958,51 @@ func isSliceEqual(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+func hasLoopDependence(modes map[string]*pb.Mode) bool {
+	valid := true
+	visited := make(map[string]int)
+	var dfs func(string)
+	dfs = func(u string) {
+		visited[u] = 1
+		for _, v := range modes[u].DependOn {
+			if visited[v] == 0 {
+				dfs(v)
+				if !valid {
+					return
+				}
+			} else if visited[v] == 1 {
+				valid = false
+				return
+			}
+		}
+		visited[u] = 2
+	}
+
+	for name := range modes {
+		if !valid {
+			break
+		}
+		if visited[name] == 0 {
+			dfs(name)
+		}
+	}
+	return !valid
+}
+
+func convertPbModesToModes(pbModes map[string]*pb.Mode) map[string]apistructs.ReleaseDeployMode {
+	modes := make(map[string]apistructs.ReleaseDeployMode)
+	for name, mode := range pbModes {
+		var list [][]string
+		for _, l := range mode.ApplicationReleaseList {
+			list = append(list, l.List)
+		}
+		modes[name] = apistructs.ReleaseDeployMode{
+			DependOn:               mode.DependOn,
+			Expose:                 mode.Expose,
+			ApplicationReleaseList: list,
+		}
+	}
+	return modes
 }
