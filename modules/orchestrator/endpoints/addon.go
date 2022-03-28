@@ -508,7 +508,7 @@ func (e *Endpoints) GetAddonReferences(ctx context.Context, r *http.Request, var
 // SyncAddons 同步市场 addons 信息
 func (e *Endpoints) SyncAddons() (bool, error) {
 	req := apistructs.ExtensionQueryRequest{
-		All:  "true",
+		All:  true,
 		Type: "addon",
 	}
 	extensions, err := e.bdl.QueryExtensions(req)
