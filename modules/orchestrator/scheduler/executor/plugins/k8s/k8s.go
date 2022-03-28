@@ -1396,3 +1396,17 @@ func (k *Kubernetes) setImagePullSecrets(namespace string) ([]apiv1.LocalObjectR
 	}
 	return secrets, nil
 }
+
+func (k *Kubernetes) DeployInEdgeCluster() bool {
+	clusterInfo, err := k.ClusterInfo.Get()
+	if err != nil {
+		logrus.Warningf("failed to get cluster info, error: %v", err)
+		return false
+	}
+
+	if clusterInfo[string(apistructs.DICE_IS_EDGE)] != "true" {
+		return false
+	}
+
+	return true
+}
