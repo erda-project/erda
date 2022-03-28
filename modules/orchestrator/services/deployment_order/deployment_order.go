@@ -24,6 +24,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/queue"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
+	"github.com/erda-project/erda/modules/orchestrator/services/environment"
 	"github.com/erda-project/erda/modules/orchestrator/services/runtime"
 )
 
@@ -39,6 +40,7 @@ type DeploymentOrder struct {
 	deploy     *deployment.Deployment
 	queue      *queue.PusherQueue
 	releaseSvc pb.ReleaseServiceServer
+	envConfig  *environment.EnvConfig
 }
 
 type Option func(*DeploymentOrder)
@@ -90,6 +92,13 @@ func WithQueue(queue *queue.PusherQueue) Option {
 func WithReleaseSvc(svc pb.ReleaseServiceServer) Option {
 	return func(d *DeploymentOrder) {
 		d.releaseSvc = svc
+	}
+}
+
+// With with dicehub release service
+func WithEnvConfig(envConfig *environment.EnvConfig) Option {
+	return func(d *DeploymentOrder) {
+		d.envConfig = envConfig
 	}
 }
 

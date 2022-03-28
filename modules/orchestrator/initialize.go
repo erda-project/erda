@@ -36,6 +36,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment_order"
 	"github.com/erda-project/erda/modules/orchestrator/services/domain"
+	"github.com/erda-project/erda/modules/orchestrator/services/environment"
 	"github.com/erda-project/erda/modules/orchestrator/services/instance"
 	"github.com/erda-project/erda/modules/orchestrator/services/migration"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
@@ -181,6 +182,9 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		runtime.WithServiceGroup(scheduler.Httpendpoints.ServiceGroupImpl),
 		runtime.WithClusterInfo(scheduler.Httpendpoints.ClusterinfoImpl),
 	)
+	envConfig := environment.New(
+		environment.WithDBClient(db),
+	)
 
 	// init deployment service
 	d := deployment.New(
@@ -194,6 +198,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		deployment.WithReleaseSvc(p.DicehubReleaseSvc),
 		deployment.WithServiceGroup(scheduler.Httpendpoints.ServiceGroupImpl),
 		deployment.WithScheduler(scheduler),
+		deployment.WithEnvConfig(envConfig),
 	)
 
 	// init domain service
@@ -215,6 +220,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		deployment_order.WithDeployment(d),
 		deployment_order.WithQueue(p.PusherQueue),
 		deployment_order.WithReleaseSvc(p.DicehubReleaseSvc),
+		deployment_order.WithEnvConfig(envConfig),
 	)
 
 	// compose endpoints
