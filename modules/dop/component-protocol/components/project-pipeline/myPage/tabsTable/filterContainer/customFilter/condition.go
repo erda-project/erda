@@ -123,14 +123,11 @@ func (p *CustomFilter) MemberCondition() (MemberCondition, error) {
 }
 
 func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
-	apps, err := p.bdl.GetMyAppsByProject(p.sdk.Identity.UserID, p.InParams.OrgID, p.InParams.ProjectID, "")
-	if err != nil {
-		return nil, err
-	}
+	appNames := p.gsHelper.GetGlobalMyAppNames()
 	condition := model.NewSelectCondition("app", cputil.I18n(p.sdk.Ctx, "application"), func() []model.SelectOption {
-		selectOptions := make([]model.SelectOption, 0, len(apps.List))
-		for _, v := range apps.List {
-			selectOptions = append(selectOptions, *model.NewSelectOption(v.Name, v.Name))
+		selectOptions := make([]model.SelectOption, 0, len(appNames))
+		for _, v := range appNames {
+			selectOptions = append(selectOptions, *model.NewSelectOption(v, v))
 		}
 		return selectOptions
 	}())
