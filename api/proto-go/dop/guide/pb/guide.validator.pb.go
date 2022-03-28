@@ -92,3 +92,12 @@ func (this *ProcessGuideResponse) Validate() error {
 func (this *DeleteGuideResponse) Validate() error {
 	return nil
 }
+func (this *CancelGuideRequest) Validate() error {
+	if this.ID == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("ID", fmt.Errorf(`value '%v' must not be an empty string`, this.ID))
+	}
+	return nil
+}
+func (this *CancelGuideResponse) Validate() error {
+	return nil
+}

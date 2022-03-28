@@ -258,3 +258,23 @@ func (g *GuideService) DeleteGuideByGittarPushHook(ctx context.Context, req *pb.
 	}
 	return &pb.DeleteGuideResponse{}, nil
 }
+
+func (g *GuideService) CancelGuide(ctx context.Context, req *pb.CancelGuideRequest) (*pb.CancelGuideResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, apierrors.ErrCancelGuide.InvalidParameter(err)
+	}
+
+	guide, err := g.db.GetGuide(req.ID)
+	if err != nil {
+		return nil, apierrors.ErrCancelGuide.InternalError(err)
+	}
+	if guide.Creator != apis.GetUserID(ctx) {
+		return nil, fmt.Errorf("unauthorized operation")
+	}
+
+	if err = g.db.CancelGuide(req.ID); err != nil {
+		return nil, apierrors.ErrCancelGuide.InternalError(err)
+	}
+
+	return &pb.CancelGuideResponse{}, nil
+}

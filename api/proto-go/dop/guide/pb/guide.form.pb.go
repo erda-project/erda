@@ -23,6 +23,8 @@ var _ urlenc.URLValuesUnmarshaler = (*CreateGuideResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ProcessGuideRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ProcessGuideResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DeleteGuideResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CancelGuideRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CancelGuideResponse)(nil)
 
 // ListGuideRequest implement urlenc.URLValuesUnmarshaler.
 func (m *ListGuideRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -445,5 +447,23 @@ func (m *ProcessGuideResponse) UnmarshalURLValues(prefix string, values url.Valu
 
 // DeleteGuideResponse implement urlenc.URLValuesUnmarshaler.
 func (m *DeleteGuideResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// CancelGuideRequest implement urlenc.URLValuesUnmarshaler.
+func (m *CancelGuideRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "ID":
+				m.ID = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// CancelGuideResponse implement urlenc.URLValuesUnmarshaler.
+func (m *CancelGuideResponse) UnmarshalURLValues(prefix string, values url.Values) error {
 	return nil
 }
