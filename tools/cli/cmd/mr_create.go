@@ -17,9 +17,8 @@ package cmd
 import (
 	"net/url"
 
-	"github.com/spf13/cobra"
-
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 
 	"github.com/erda-project/erda-proto-go/dop/issue/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -79,6 +78,14 @@ func MrCreateIssueCompletion(ctx *cobra.Command, args []string, toComplete strin
 }
 
 func MrCreate(ctx *command.Context, application, from, to, title, desc string, issueID uint64, remove, open bool) error {
+	if title == "" {
+		return errors.Errorf("No title set, which is required.")
+	}
+
+	if desc == "" {
+		return errors.Errorf("No description set, which is required.")
+	}
+
 	if from == "" {
 		workDir := "."
 		if application != "" {
