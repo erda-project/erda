@@ -101,6 +101,7 @@ func IssueClose(ctx *command.Context, issueID int, manHour string) error {
 	req := &apistructs.IssueUpdateRequest{}
 	req.ID = uint64(issue.ID)
 	req.State = &nextStateId
+	req.IterationID = &issue.IterationID
 
 	issue.ManHour.ThisElapsedTime = manHourInMinutes
 	if issue.ManHour.EstimateTime == 0 {
