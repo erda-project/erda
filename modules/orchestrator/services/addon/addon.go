@@ -2523,7 +2523,7 @@ func (a *Addon) ListExtension(extensionType string) (*[]map[string]interface{}, 
 	}
 	// 构建请求参数，请求extension
 	req := apistructs.ExtensionQueryRequest{
-		All:  "true",
+		All:  true,
 		Type: extensionType,
 	}
 	extensions, err := a.bdl.QueryExtensions(req)
@@ -2559,7 +2559,7 @@ func (a *Addon) ListCustomAddon() (*[]map[string]interface{}, error) {
 
 	// 构建请求参数，请求extension
 	req := apistructs.ExtensionQueryRequest{
-		All:  "true",
+		All:  true,
 		Type: "addon",
 	}
 	extensions, err := a.bdl.QueryExtensions(req)

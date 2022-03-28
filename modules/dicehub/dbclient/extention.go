@@ -201,21 +201,21 @@ func (client *DBClient) CreateExtension(extension *Extension) error {
 	}
 }
 
-func (client *DBClient) QueryExtensions(all string, typ string, labels string) ([]Extension, error) {
+func (client *DBClient) QueryExtensions(req *apistructs.ExtensionQueryRequest) ([]Extension, error) {
 	var result []Extension
 	query := client.Model(&Extension{})
 
 	// 不显式指定all=true,只返回public的数据
-	if all != "true" {
+	if !req.All {
 		query = query.Where("public = ?", true)
 	}
 
-	if typ != "" {
-		query = query.Where("type = ?", typ)
+	if req.Type != "" {
+		query = query.Where("type = ?", req.Type)
 	}
 
-	if labels != "" {
-		labelPairs := strings.Split(labels, ",")
+	if req.Labels != "" {
+		labelPairs := strings.Split(req.Labels, ",")
 		for _, pair := range labelPairs {
 			if strings.LastIndex(pair, "^") == 0 && len(pair) > 1 {
 				query = query.Where("labels not like ?", "%"+pair[1:]+"%")
@@ -305,9 +305,12 @@ func (client *DBClient) GetExtensionVersionCount(name string) (int64, error) {
 	return count, err
 }
 
-func (client *DBClient) ListExtensionVersions(names []string) (map[string][]ExtensionVersion, error) {
+func (client *DBClient) ListExtensionVersions(names []string, all bool) (map[string][]ExtensionVersion, error) {
 	var result []ExtensionVersion
-	query := client.Model(&ExtensionVersion{}).Where("name in (?) and public = ?", names, true).Order("version desc")
+	query := client.Model(&ExtensionVersion{}).Where("name in (?)", names).Order("version desc")
+	if !all {
+		query = query.Where("public = ?", true)
+	}
 	err := query.Find(&result).Error
 	if err != nil {
 		return nil, err

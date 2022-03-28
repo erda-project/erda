@@ -75,7 +75,7 @@ func (b *Bundle) QueryExtensions(req apistructs.ExtensionQueryRequest) ([]apistr
 
 	var getResp apistructs.ExtensionQueryResponse
 	resp, err := hc.Get(host).Path("/api/extensions").
-		Param("all", req.All).
+		Param("all", strconv.FormatBool(req.All)).
 		Param("type", req.Type).
 		Header("Internal-Client", "bundle").
 		Do().JSON(&getResp)
