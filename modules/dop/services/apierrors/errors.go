@@ -537,6 +537,7 @@ var (
 	ErrProcessGuide = err("ErrProcessGuide", "处理引导失败")
 	ErrListGuide    = err("ErrListGuide", "获取引导列表失败")
 	ErrDeleteGuide  = err("ErrDeleteGuide", "删除引导失败")
+	ErrCancelGuide  = err("ErrCancelGuide", "取消引导失败")
 
 	ErrGetPublishItem    = err("ErrGetPublishItem", "获取发布内容详情失败")
 	ErrSratisticsErrList = err("ErrSratisticsErrList", "获取错误列表失败")
