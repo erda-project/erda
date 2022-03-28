@@ -43,7 +43,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.supportedPolicies = map[apistructs.PolicyType]Interface{
 		apistructs.TryLatestSuccessResultPolicyType: tryLastSuccessResult{p: p},
 		apistructs.NewRunPolicyType:                 newRun{p: p},
-		apistructs.TryLatestResultPolicyType:        tryLastResult{},
+		apistructs.TryLatestResultPolicyType:        tryLastResult{p: p},
 	}
 	return nil
 }
