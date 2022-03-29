@@ -838,6 +838,9 @@ func (client *DBClient) ListIssueItems(req apistructs.IssueListRequest) ([]Issue
 	if len(req.IDs) > 0 {
 		sql = sql.Where("dice_issues.id in (?)", req.IDs)
 	}
+	if len(req.Label) > 0 {
+		sql = sql.Joins("LEFT JOIN dice_label_relations c ON dice_issues.id = c.ref_id").Where("c.label_id IN (?)", req.Label)
+	}
 	if err := sql.Select("dice_issues.*, dice_issue_state.name, dice_issue_state.belong").Find(&res).Error; err != nil {
 		return nil, err
 	}

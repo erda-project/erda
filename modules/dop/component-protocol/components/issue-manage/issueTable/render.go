@@ -561,11 +561,13 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 	}
 	nameColumn := ca.getNameColumn(data)
 	progress := Progress{
-		RenderType: "progress",
-		Value:      "",
+		RenderType: "text",
 	}
-	if data.IssueSummary != nil && data.IssueSummary.DoneCount+data.IssueSummary.ProcessingCount > 0 {
-		progress.Value = fmt.Sprintf("%d", int(100*(float64(data.IssueSummary.DoneCount)/float64(data.IssueSummary.DoneCount+data.IssueSummary.ProcessingCount))))
+	if data.Type == apistructs.IssueTypeRequirement {
+		if data.IssueSummary == nil {
+			data.IssueSummary = &apistructs.IssueSummary{}
+		}
+		progress.Value = fmt.Sprintf("%d/%d", data.IssueSummary.DoneCount, data.IssueSummary.DoneCount+data.IssueSummary.ProcessingCount)
 	}
 
 	severityOps := map[string]interface{}{}
