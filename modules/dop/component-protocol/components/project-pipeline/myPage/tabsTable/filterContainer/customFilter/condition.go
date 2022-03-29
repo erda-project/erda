@@ -123,7 +123,11 @@ func (p *CustomFilter) MemberCondition() (MemberCondition, error) {
 }
 
 func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
-	appNames := p.gsHelper.GetGlobalMyAppNames()
+	appNames, err := p.getAppNames()
+	if err != nil {
+		return nil, err
+	}
+	p.gsHelper.SetGlobalMyAppNames(appNames)
 	condition := model.NewSelectCondition("app", cputil.I18n(p.sdk.Ctx, "application"), func() []model.SelectOption {
 		selectOptions := make([]model.SelectOption, 0, len(appNames))
 		for _, v := range appNames {

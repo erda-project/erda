@@ -80,7 +80,6 @@ func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
 	} else {
 		p.URLQuery = &urlQuery
 	}
-
 	cputil.MustObjJSONTransfer(&p.StdStatePtr, &p.State)
 }
 
@@ -191,4 +190,21 @@ func (p *CustomFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDele
 		fmt.Println("op come", opData.ClientData.DataRef)
 		return nil
 	}
+}
+
+func (p *CustomFilter) getAppNames() ([]string, error) {
+	appNames := make([]string, 0)
+	project, err := p.bdl.GetProject(p.InParams.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	appResp, err := p.bdl.GetMyAppsByProject(p.sdk.Identity.UserID, project.OrgID, p.InParams.ProjectID, "")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range appResp.List {
+		appNames = append(appNames, v.Name)
+	}
+	return appNames, nil
 }
