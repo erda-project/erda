@@ -197,13 +197,10 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 	list, total, err := p.ProjectPipelineSvc.List(p.sdk.Ctx, deftype.ProjectPipelineList{
 		ProjectID: p.InParams.ProjectID,
 		AppName: func() []string {
-			if len(filter.App) == 0 {
-				return p.gsHelper.GetGlobalMyAppNames()
+			if !strutil.InSlice(common.AllInvolveApp, filter.App) {
+				return filter.App
 			}
-			if strutil.InSlice(common.AllInvolveApp, filter.App) {
-				return strutil.DedupSlice(append(filter.App, p.gsHelper.GetGlobalMyAppNames()...), true)
-			}
-			return filter.App
+			return strutil.DedupSlice(append(filter.App, p.gsHelper.GetGlobalMyAppNames()...), true)
 		}(),
 		Creator:  filter.Creator,
 		Executor: filter.Executor,

@@ -170,23 +170,6 @@ func (p *CustomFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDele
 	}
 }
 
-func (p *CustomFilter) getAppNames() ([]string, error) {
-	appNames := make([]string, 0)
-	project, err := p.bdl.GetProject(p.InParams.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-	appResp, err := p.bdl.GetMyAppsByProject(p.sdk.Identity.UserID, project.OrgID, p.InParams.ProjectID, "")
-	if err != nil {
-		return nil, err
-	}
-
-	for _, v := range appResp.List {
-		appNames = append(appNames, v.Name)
-	}
-	return appNames, nil
-}
-
 func (p *CustomFilter) setDefaultValues() {
 	p.State.FrontendConditionValues.App = []string{common.AllInvolveApp}
 	p.State.FrontendConditionValues.Branch = []string{common.DefaultBranch}
