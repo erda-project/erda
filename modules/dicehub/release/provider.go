@@ -123,20 +123,12 @@ func (p *provider) Init(ctx servicehub.Context) error {
 								for i, array := range mode.ApplicationReleaseList {
 									list[i] = make([]*apistructs.ApplicationReleaseSummary, len(array.List))
 									for j, summary := range array.List {
-										serviceImagePair := make([]*apistructs.ServiceImagePair, len(summary.Services))
-										for k, pair := range summary.Services {
-											serviceImagePair[k] = &apistructs.ServiceImagePair{
-												ServiceName: pair.ServiceName,
-												Image:       pair.Image,
-											}
-										}
 										list[i][j] = &apistructs.ApplicationReleaseSummary{
 											ReleaseID:       summary.ReleaseID,
 											ReleaseName:     summary.ReleaseName,
 											Version:         summary.Version,
 											ApplicationID:   summary.ApplicationID,
 											ApplicationName: summary.ApplicationName,
-											Services:        serviceImagePair,
 											CreatedAt:       summary.CreatedAt,
 											DiceYml:         summary.DiceYml,
 										}
