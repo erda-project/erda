@@ -38,10 +38,17 @@ func (client *DBClient) CreateLabelRelation(lr *LabelRelation) error {
 	return client.Create(lr).Error
 }
 
+func (client *DBClient) BatchCreateLabelRelations(lr []LabelRelation) error {
+	return client.BulkInsert(lr)
+}
+
 // DeleteLabelRelations 删除标签关联关系
-func (client *DBClient) DeleteLabelRelations(refType apistructs.ProjectLabelType, refID uint64) error {
-	return client.Where("ref_type = ?", refType).Where("ref_id = ?", refID).
-		Delete(LabelRelation{}).Error
+func (client *DBClient) DeleteLabelRelations(refType apistructs.ProjectLabelType, refID uint64, labelIDs []uint64) error {
+	sql := client.Where("ref_type = ?", refType).Where("ref_id = ?", refID)
+	if len(labelIDs) > 0 {
+		sql = sql.Where("label_id in (?)", labelIDs)
+	}
+	return sql.Delete(LabelRelation{}).Error
 }
 
 // DeleteLabelRelationsByLabel 根据 labelID 删除标签

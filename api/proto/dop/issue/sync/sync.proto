@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package erda.dop.issue.sync;
+option go_package = "github.com/erda-project/erda-proto-go/dop/issue/sync/pb";
+import "google/api/annotations.proto";
+import "common/openapi.proto";
+
+service IssueSyncService {
+  option(erda.common.openapi_service) = {
+    service : "dop",
+    auth : {
+      check_login : true,
+      check_token: true,
+    }
+  };
+
+  rpc IssueSync(IssueSyncRequest) returns(IssueSyncResponse) {
+    option(google.api.http) = {
+      post : "/api/issues/{id}/actions/sync-update-fields-to-children",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/issues/{id}/actions/sync-update-fields-to-children",
+    };
+  }
+}
+
+message IssueSyncRequest {
+  int64 id = 1;
+  MergedFields addition = 2;
+  MergedFields deletion = 3;
+  ReplacedFields replacedFields = 4;
+}
+
+message ReplacedFields {
+  int64 iterationID = 1;
+}
+
+message MergedFields {
+  repeated uint64 labels = 1;
+}
+
+message IssueSyncResponse {  }
