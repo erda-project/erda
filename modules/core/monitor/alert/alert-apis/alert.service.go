@@ -1636,7 +1636,9 @@ func getResultValue(result []*metricpb.Result) []*structpb.Value {
 		for _, s := range v.Series {
 			for _, r := range s.Rows {
 				for _, c := range r.Values {
-					value = append(value, c)
+					if c != nil {
+						value = append(value, c)
+					}
 				}
 			}
 		}

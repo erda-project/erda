@@ -385,7 +385,8 @@ func ToPBAlertExpressionModel(expression *db.AlertExpression) *pb.AlertExpressio
 	if !ok {
 		return nil
 	}
-	e.Level = level
+	e.Level = strings.Title(strings.ToLower(level))
+
 	functions, ok := utils.GetMapValueArr(expression.Expression, "functions")
 	if !ok {
 		return nil
