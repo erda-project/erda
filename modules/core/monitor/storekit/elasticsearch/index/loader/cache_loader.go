@@ -69,6 +69,7 @@ func (p *provider) runCacheLoader(ctx context.Context) error {
 		}
 		for _, n := range notifiers {
 			n <- err
+			close(n)
 		}
 		notifiers = nil
 		timer.Reset(p.Cfg.IndexReloadInterval)

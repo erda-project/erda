@@ -28,18 +28,18 @@ import (
 
 type (
 	config struct {
-		Input           kafka.BatchReaderConfig `file:"input"`
-		Parallelism     int                     `file:"parallelism" default:"1"`
-		BufferSize      int                     `file:"buffer_size" default:"1024"`
-		ReadTimeout     time.Duration           `file:"read_timeout" default:"5s"`
-		IDKeys          []string                `file:"id_keys"`
-		PrintInvalidLog bool                    `file:"print_invalid_log" default:"false"`
+		Input                kafka.BatchReaderConfig `file:"input"`
+		Parallelism          int                     `file:"parallelism" default:"1"`
+		BufferSize           int                     `file:"buffer_size" default:"1024"`
+		ReadTimeout          time.Duration           `file:"read_timeout" default:"5s"`
+		IDKeys               []string                `file:"id_keys"`
+		PrintInvalidLog      bool                    `file:"print_invalid_log" default:"false"`
+		StorageWriterService string                  `file:"storage_writer_service" default:"log-storage-elasticsearch-writer"`
 	}
 	provider struct {
-		Cfg           *config
-		Log           logs.Logger
-		Kafka         kafka.Interface `autowired:"kafka"`
-		StorageWriter storage.Storage `autowired:"log-storage-writer"`
+		Cfg   *config
+		Log   logs.Logger
+		Kafka kafka.Interface `autowired:"kafka"`
 
 		storage   storage.Storage
 		stats     Statistics
@@ -60,6 +60,8 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 		ctx.AddTask(runner.Run, servicehub.WithTaskName("log metadata processor"))
 	}
 
+	p.storage = ctx.Service(p.Cfg.StorageWriterService).(storage.Storage)
+
 	p.stats = sharedStatistics
 
 	// add consumer task
@@ -71,7 +73,7 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 			}
 			defer r.Close()
 
-			w, err := p.StorageWriter.NewWriter(ctx)
+			w, err := p.storage.NewWriter(ctx)
 			if err != nil {
 				return err
 			}
@@ -91,8 +93,9 @@ func (p *provider) Init(ctx servicehub.Context) (err error) {
 
 func init() {
 	servicehub.Register("log-persist", &servicehub.Spec{
-		ConfigFunc:   func() interface{} { return &config{} },
-		Dependencies: []string{"kafka.topic.initializer"},
+		ConfigFunc:           func() interface{} { return &config{} },
+		Dependencies:         []string{"kafka.topic.initializer"},
+		OptionalDependencies: []string{"log-storage-clickhouse", "log-storage-elasticsearch"},
 		Creator: func() servicehub.Provider {
 			return &provider{}
 		},

@@ -20,14 +20,16 @@ import (
 
 // Log .
 type Log struct {
-	Source    string            `json:"source"`
-	ID        string            `json:"id"`
-	Stream    string            `json:"stream"`
-	Content   string            `json:"content"`
-	Offset    int64             `json:"offset"`
+	UniqId    string            `json:"-" ch:"_id"`
+	OrgName   string            `json:"-" ch:"org_name"`
+	Source    string            `json:"source" ch:"source"`
+	ID        string            `json:"id" ch:"id"`
+	Stream    string            `json:"stream" ch:"stream"`
+	Content   string            `json:"content" ch:"content"`
+	Offset    int64             `json:"offset" ch:"offset"`
 	Time      *time.Time        `json:"time,omitempty"` // the time key in fluent-bit is RFC3339Nano
-	Timestamp int64             `json:"timestamp"`
-	Tags      map[string]string `json:"tags"`
+	Timestamp int64             `json:"timestamp" ch:"timestamp"`
+	Tags      map[string]string `json:"tags" ch:"tags"`
 }
 
 // LabeledLog .
