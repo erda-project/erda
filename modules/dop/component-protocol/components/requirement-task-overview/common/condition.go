@@ -17,6 +17,7 @@ package common
 type FrontendConditions struct {
 	IterationID int64    `json:"iteration,omitempty"`
 	AssigneeIDs []string `json:"member,omitempty"`
+	LabelIDs    []uint64 `json:"label,omitempty"`
 }
 
 type FilterConditions struct {
