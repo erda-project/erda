@@ -49,7 +49,7 @@ func (c PipelineCategory) String() string {
 }
 
 var CategoryKeyRuleMap = map[PipelineCategory][]string{
-	CategoryBuildDeploy:          {"pipeline.yml", ".erda/pipelines/ci-deploy.yml"},
+	CategoryBuildDeploy:          {"pipeline.yml"},
 	CategoryBuildArtifact:        {".erda/pipelines/ci-artifact.yml"},
 	CategoryBuildCombineArtifact: {".erda/pipelines/combine-artifact.yml"},
 	CategoryBuildIntegration:     {".erda/pipelines/integration.yml"},
