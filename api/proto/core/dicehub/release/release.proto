@@ -395,9 +395,8 @@ message ApplicationReleaseSummary {
   string version = 3;
   int64 applicationID = 4;
   string applicationName = 5;
-  repeated ServiceImagePair services = 6;
-  string createdAt = 7;
-  string diceYml = 8;
+  string createdAt = 6;
+  string diceYml = 7;
 }
 
 // ReleaseListRequest list release API(GET /api/releases)

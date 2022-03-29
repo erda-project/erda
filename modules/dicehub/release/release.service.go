@@ -1285,6 +1285,7 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 		Addons:           addons,
 		AddonYaml:        addonYaml,
 	}
+
 	if err = respDataReLoadImages(respData); err != nil {
 		logrus.WithError(err).Errorln("failed to ReLoadImages")
 		return nil, err
@@ -1293,52 +1294,7 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 	return respData, nil
 }
 
-func summaryReLoadImages(r *pb.ApplicationReleaseSummary) error {
-	if r == nil {
-		return nil
-	}
-	if r.DiceYml == "" {
-		return errors.Errorf("invalid release file: it is empty, applicationID: %v, applicationName: %s",
-			r.ApplicationID, r.ApplicationName)
-	}
-	deployable, err := diceyml.NewDeployable([]byte(r.DiceYml), diceyml.WS_PROD, false)
-	if err != nil {
-		return err
-	}
-	var obj = deployable.Obj()
-	r.Services = nil
-	for name, service := range obj.Services {
-		r.Services = append(r.Services, &pb.ServiceImagePair{
-			ServiceName: name,
-			Image:       service.Image,
-		})
-	}
-	for name, job := range obj.Jobs {
-		r.Services = append(r.Services, &pb.ServiceImagePair{
-			ServiceName: name,
-			Image:       job.Image,
-		})
-	}
-	return nil
-}
-
 func respDataReLoadImages(r *pb.ReleaseGetResponseData) error {
-	for name := range r.Modes {
-		if r.Modes[name] == nil {
-			continue
-		}
-		for i := 0; i < len(r.Modes[name].ApplicationReleaseList); i++ {
-			if r.Modes[name].ApplicationReleaseList[i] == nil {
-				continue
-			}
-			for j := 0; j < len(r.Modes[name].ApplicationReleaseList[i].List); j++ {
-				if err := summaryReLoadImages(r.Modes[name].ApplicationReleaseList[i].List[j]); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
 	if r.Diceyml == "" {
 		return nil
 	}
