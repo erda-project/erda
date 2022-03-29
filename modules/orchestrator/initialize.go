@@ -117,7 +117,6 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 			)),
 		bundle.WithCoreServices(),
 		bundle.WithDiceHub(),
-		bundle.WithCoreServices(),
 		bundle.WithScheduler(),
 		bundle.WithCollector(),
 		bundle.WithMonitor(),
