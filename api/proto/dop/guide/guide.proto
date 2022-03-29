@@ -56,6 +56,16 @@ service GuideService {
       path : "/api/guide/actions/delete-by-gittar-push-hook",
     };
   }
+
+  rpc CancelGuide(CancelGuideRequest)
+      returns(CancelGuideResponse) {
+    option(google.api.http) = {
+      post : "/api/guide/{ID}/actions/cancel",
+    };
+    option(erda.common.openapi) = {
+      path : "/api/guide/{ID}/actions/cancel",
+    };
+  }
 }
 
 message ListGuideRequest {
@@ -121,4 +131,11 @@ message ProcessGuideResponse {
 }
 
 message DeleteGuideResponse {
+}
+
+message CancelGuideRequest {
+  string ID = 1[(validator.field) = {string_not_empty: true}, json_name = "id"];
+}
+
+message CancelGuideResponse {
 }

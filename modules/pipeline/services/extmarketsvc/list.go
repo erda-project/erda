@@ -48,7 +48,7 @@ func SearchActionWithRender(placeholders map[string]string) OpOption {
 
 func (s *ExtMarketSvc) constructAllActions() error {
 	allExtensions, err := s.bdl.QueryExtensions(apistructs.ExtensionQueryRequest{
-		All:  "true",
+		All:  true,
 		Type: "action",
 	})
 	if err != nil {

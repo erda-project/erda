@@ -18,8 +18,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/xormplus/xorm"
-
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -187,6 +185,8 @@ func (tr *defaultTaskReconciler) ReconcileSnippetTask(ctx context.Context, p *sp
 func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) error {
 	var platformErrRetryTimes int
 	var onceCorrected bool
+	var framework *taskrun.TaskRun
+
 	rutil.ContinueWorking(ctx, tr.log, func(ctx context.Context) rutil.WaitDuration {
 		// get executor
 		executor, err := actionexecutor.GetManager().Get(types.Name(task.GetExecutorName()))
@@ -196,8 +196,11 @@ func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spe
 		}
 
 		// generate framework to run task
-		framework := taskrun.New(ctx, task, executor, p, tr.bdl, tr.dbClient, tr.actionAgentSvc, tr.extMarketSvc, tr.clusterInfo)
+		framework = taskrun.New(ctx, task, executor, p, tr.bdl, tr.dbClient, tr.actionAgentSvc, tr.extMarketSvc, tr.clusterInfo)
+		return rutil.ContinueWorkingAbort
+	}, rutil.WithContinueWorkingDefaultRetryInterval(tr.defaultRetryInterval))
 
+	rutil.ContinueWorking(ctx, tr.log, func(ctx context.Context) rutil.WaitDuration {
 		// correct
 		if !onceCorrected {
 			if err := tr.tryCorrectFromExecutorBeforeReconcile(ctx, p, task, framework); err != nil {
@@ -235,7 +238,7 @@ func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spe
 		}
 
 		// No error is normal, even task.status == Failed.
-		err = framework.Do(taskOp)
+		err := framework.Do(taskOp)
 		if err == nil {
 			return rutil.ContinueWorkingImmediately
 		}
@@ -322,40 +325,40 @@ func (tr *defaultTaskReconciler) PrepareBeforeReconcileSnippetPipeline(ctx conte
 	}
 
 	// tx
-	_, err := tr.dbClient.Transaction(func(session *xorm.Session) (interface{}, error) {
-		// set begin time
-		now := time.Now()
-		sp.TimeBegin = &now
-		if err := tr.dbClient.UpdatePipelineBase(sp.ID, &sp.PipelineBase, dbclient.WithTxSession(session)); err != nil {
-			return nil, err
-		}
+	//_, err := tr.dbClient.Transaction(func(session *xorm.Session) (interface{}, error) {
+	// set begin time
+	now := time.Now()
+	sp.TimeBegin = &now
+	if err := tr.dbClient.UpdatePipelineBase(sp.ID, &sp.PipelineBase); err != nil {
+		return err
+	}
 
-		// set snippetDetail for snippetTask
-		var snippetPipelineTasks []*spec.PipelineTask
-		snippetPipelineTasks, err := tr.r.ymlTaskMergeDBTasks(sp)
-		if err != nil {
-			return nil, err
-		}
-		snippetDetail := apistructs.PipelineTaskSnippetDetail{
-			DirectSnippetTasksNum:    len(snippetPipelineTasks),
-			RecursiveSnippetTasksNum: -1,
-		}
-		if err := tr.dbClient.UpdatePipelineTaskSnippetDetail(snippetTask.ID, snippetDetail, dbclient.WithTxSession(session)); err != nil {
-			return nil, err
-		}
-
-		// set snippet task to running
-		if err := tr.dbClient.UpdatePipelineTaskStatus(snippetTask.ID, apistructs.PipelineStatusRunning, dbclient.WithTxSession(session)); err != nil {
-			return nil, err
-		}
-
-		return nil, nil
-	})
+	// set snippetDetail for snippetTask
+	var snippetPipelineTasks []*spec.PipelineTask
+	snippetPipelineTasks, err := tr.r.ymlTaskMergeDBTasks(sp)
 	if err != nil {
+		return err
+	}
+	snippetDetail := apistructs.PipelineTaskSnippetDetail{
+		DirectSnippetTasksNum:    len(snippetPipelineTasks),
+		RecursiveSnippetTasksNum: -1,
+	}
+	if err := tr.dbClient.UpdatePipelineTaskSnippetDetail(snippetTask.ID, snippetDetail); err != nil {
+		return err
+	}
+
+	// set snippet task to running
+	if err := tr.dbClient.UpdatePipelineTaskStatus(snippetTask.ID, apistructs.PipelineStatusRunning); err != nil {
 		return err
 	}
 
 	return nil
+	//})
+	//if err != nil {
+	//	return err
+	//}
+
+	//return nil
 }
 
 func (tr *defaultTaskReconciler) tryCorrectFromExecutorBeforeReconcile(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask, framework *taskrun.TaskRun) error {

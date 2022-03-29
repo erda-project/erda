@@ -33,6 +33,7 @@ import (
 	transhttp "github.com/erda-project/erda-infra/pkg/transport/http"
 	"github.com/erda-project/erda-infra/pkg/transport/http/encoding"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dicehub/dbclient"
 	extensiondb "github.com/erda-project/erda/modules/dicehub/extension/db"
@@ -116,10 +117,36 @@ func (p *provider) Init(ctx servicehub.Context) error {
 							if !data.IsProjectRelease {
 								break
 							}
-							list := make([][]*pb.ApplicationReleaseSummary, len(data.ApplicationReleaseList))
-							for i := 0; i < len(data.ApplicationReleaseList); i++ {
-								list[i] = make([]*pb.ApplicationReleaseSummary, len(data.ApplicationReleaseList[i].List))
-								list[i] = data.ApplicationReleaseList[i].List
+							modes := make(map[string]apistructs.ReleaseDeployModeSummary)
+							for name, mode := range data.Modes {
+								list := make([][]*apistructs.ApplicationReleaseSummary, len(data.Modes[name].ApplicationReleaseList))
+								for i, array := range mode.ApplicationReleaseList {
+									list[i] = make([]*apistructs.ApplicationReleaseSummary, len(array.List))
+									for j, summary := range array.List {
+										serviceImagePair := make([]*apistructs.ServiceImagePair, len(summary.Services))
+										for k, pair := range summary.Services {
+											serviceImagePair[k] = &apistructs.ServiceImagePair{
+												ServiceName: pair.ServiceName,
+												Image:       pair.Image,
+											}
+										}
+										list[i][j] = &apistructs.ApplicationReleaseSummary{
+											ReleaseID:       summary.ReleaseID,
+											ReleaseName:     summary.ReleaseName,
+											Version:         summary.Version,
+											ApplicationID:   summary.ApplicationID,
+											ApplicationName: summary.ApplicationName,
+											Services:        serviceImagePair,
+											CreatedAt:       summary.CreatedAt,
+											DiceYml:         summary.DiceYml,
+										}
+									}
+								}
+								modes[name] = apistructs.ReleaseDeployModeSummary{
+									DependOn:               mode.DependOn,
+									Expose:                 mode.Expose,
+									ApplicationReleaseList: list,
+								}
 							}
 
 							m, err := marshal(data)
@@ -127,7 +154,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 								logrus.Errorf("failed to marshal releaseGetResponseData, %v", err)
 								return err
 							}
-							m["applicationReleaseList"] = list
+							m["modes"] = modes
 							resp.Data = m
 						}
 					}
@@ -162,30 +189,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 							break
 						}
 
-						list, ok := m["applicationReleaseList"].([]interface{})
+						modes, ok := m["modes"].(map[string]interface{})
 						if !ok {
-							logrus.Errorf("invalid type of application release list: %v", reflect.TypeOf(m["applicationReleaseList"]))
-							return errors.Errorf("application release list is invalid")
+							logrus.Errorf("invalid type of modes: %v", reflect.TypeOf(m["applicationReleaseList"]))
+							return errors.Errorf("modes is invalid")
 						}
 
-						var applicationReleaseList []*pb.ReleaseList
-						for i := 0; i < len(list); i++ {
-							l, ok := list[i].([]interface{})
-							if !ok {
-								continue
-							}
-
-							var group pb.ReleaseList
-							for j := 0; j < len(l); j++ {
-								s, ok := l[j].(string)
-								if !ok {
-									continue
-								}
-								group.List = append(group.List, s)
-							}
-							applicationReleaseList = append(applicationReleaseList, &group)
-						}
-						m["applicationReleaseList"] = applicationReleaseList
+						m["modes"] = convertToPbModes(modes)
 
 						if err := unmarshal(m, out); err != nil {
 							return err
@@ -205,31 +215,13 @@ func (p *provider) Init(ctx servicehub.Context) error {
 							return err
 						}
 
-						list, ok := m["applicationReleaseList"].([]interface{})
+						modes, ok := m["modes"].(map[string]interface{})
 						if !ok {
-							logrus.Debugf("Decoder of ReleaseUpdateRequest: applicationReleaseList is nil or not a slice of interface, skip")
-							r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-							break
+							logrus.Errorf("invalid type of modes: %v", reflect.TypeOf(m["applicationReleaseList"]))
+							return errors.Errorf("modes is invalid")
 						}
 
-						var applicationReleaseList []*pb.ReleaseList
-						for i := 0; i < len(list); i++ {
-							l, ok := list[i].([]interface{})
-							if !ok {
-								continue
-							}
-
-							var group pb.ReleaseList
-							for j := 0; j < len(l); j++ {
-								s, ok := l[j].(string)
-								if !ok {
-									continue
-								}
-								group.List = append(group.List, s)
-							}
-							applicationReleaseList = append(applicationReleaseList, &group)
-						}
-						m["applicationReleaseList"] = applicationReleaseList
+						m["modes"] = convertToPbModes(modes)
 
 						if err := unmarshal(m, out); err != nil {
 							logrus.Errorf("failed to unmarshal, %v", err)
@@ -313,6 +305,57 @@ func init() {
 			return &provider{}
 		},
 	})
+}
+
+func convertToPbModes(modes map[string]interface{}) map[string]*pb.Mode {
+	pdModes := make(map[string]*pb.Mode)
+	for name, m := range modes {
+		mode, ok := m.(map[string]interface{})
+		if !ok {
+			logrus.Debugf("invalid tpye of mode %s, skip", name)
+			continue
+		}
+		appReleaseList, ok := mode["applicationReleaseList"].([]interface{})
+		if !ok {
+			logrus.Debugf("invalid type of appReleaseList: %v, skip", reflect.TypeOf(mode["applicationReleaseList"]))
+			continue
+		}
+		list := make([]*pb.ReleaseList, len(appReleaseList))
+		for i := 0; i < len(appReleaseList); i++ {
+			l, ok := appReleaseList[i].([]interface{})
+			if !ok {
+				logrus.Debugf("invalid type of appReleaseList element: %v, skip", reflect.TypeOf(appReleaseList[i]))
+				continue
+			}
+
+			var group pb.ReleaseList
+			for j := 0; j < len(l); j++ {
+				s, ok := l[j].(string)
+				if !ok {
+					logrus.Debugf("invalid type of release id: %v, skip", reflect.TypeOf(l[j]))
+					continue
+				}
+				group.List = append(group.List, s)
+			}
+			list[i] = &group
+		}
+		s, _ := mode["dependOn"].([]interface{})
+		var dependOn []string
+		for _, id := range s {
+			releaseID, ok := id.(string)
+			if !ok {
+				continue
+			}
+			dependOn = append(dependOn, releaseID)
+		}
+		expose, _ := mode["expose"].(bool)
+		pdModes[name] = &pb.Mode{
+			DependOn:               dependOn,
+			Expose:                 expose,
+			ApplicationReleaseList: list,
+		}
+	}
+	return pdModes
 }
 
 func marshal(in interface{}) (map[string]interface{}, error) {

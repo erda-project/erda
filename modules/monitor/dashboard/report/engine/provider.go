@@ -41,7 +41,6 @@ func (d *define) Creator() servicehub.Creator {
 
 type config struct {
 	MonitorAddr      string `file:"monitor_addr" env:"ACTION_MONITOR_ADDR" validate:"required"`
-	EventboxAddr     string `file:"eventbox_addr" env:"ACTION_EVENTBOX_ADDR" validate:"required"`
 	DomainAddr       string `file:"domain_addr" env:"ACTION_DOMAIN_ADDR" validate:"required"`
 	ReportID         string `file:"report_id" env:"ACTION_REPORT_ID" validate:"required"`
 	OrgName          string `file:"org_name" env:"ACTION_ORG_NAME" validate:"required"`

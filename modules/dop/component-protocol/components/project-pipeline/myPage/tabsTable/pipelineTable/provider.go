@@ -192,25 +192,15 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 	if len(ascCols) == 0 && len(descCols) == 0 {
 		descCols = append(descCols, "started_at")
 	}
-	var inParamsAppName string
-	if p.InParams.AppID != 0 {
-		app, err := p.bdl.GetApp(p.InParams.AppID)
-		if err != nil {
-			logrus.Errorf("failed to GetApp, err: %s", err.Error())
-			panic(err)
-		} else {
-			inParamsAppName = app.Name
-		}
-	}
 
 	filter := p.gsHelper.GetGlobalTableFilter()
 	list, total, err := p.ProjectPipelineSvc.List(p.sdk.Ctx, deftype.ProjectPipelineList{
 		ProjectID: p.InParams.ProjectID,
 		AppName: func() []string {
-			if inParamsAppName != "" {
-				return []string{inParamsAppName}
+			if len(filter.App) != 0 {
+				return filter.App
 			}
-			return filter.App
+			return p.gsHelper.GetGlobalMyAppNames()
 		}(),
 		Creator: func() []string {
 			if p.gsHelper.GetGlobalPipelineTab() == common.MineState.String() {

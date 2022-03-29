@@ -203,7 +203,7 @@ type ExtensionVersionCreateResponse struct {
 // ExtensionQueryRequest 查询extension请求
 type ExtensionQueryRequest struct {
 	//默认false查询公开的扩展, true查询所有扩展
-	All string `query:"all"`
+	All bool `query:"all"`
 	// 可选值: action、addon
 	Type string `query:"type"`
 	// 根据标签查询 key:value 查询满足条件的 ^key:value 查询不满足条件的

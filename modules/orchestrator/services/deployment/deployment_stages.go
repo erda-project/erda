@@ -21,7 +21,7 @@ import (
 )
 
 func (d *Deployment) DeployStageAddons(deploymentID uint64) (*apistructs.DeploymentCreateResponseDTO, error) {
-	fsm := NewFSMContext(deploymentID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler)
+	fsm := NewFSMContext(deploymentID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler, d.envConfig)
 	if err := fsm.Load(); err != nil {
 		return nil, errors.Wrapf(err, "failed to load fsm, deployment: %d, (%v)", deploymentID, err)
 	}
@@ -60,7 +60,7 @@ func (d *Deployment) DeployStageAddons(deploymentID uint64) (*apistructs.Deploym
 }
 
 func (d *Deployment) DeployStageServices(deploymentID uint64) (*apistructs.DeploymentCreateResponseDTO, error) {
-	fsm := NewFSMContext(deploymentID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler)
+	fsm := NewFSMContext(deploymentID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler, d.envConfig)
 	if err := fsm.Load(); err != nil {
 		return nil, errors.Wrapf(err, "failed to load fsm, deployment: %d, (%v)", deploymentID, err)
 	}
@@ -91,7 +91,7 @@ func (d *Deployment) DeployStageServices(deploymentID uint64) (*apistructs.Deplo
 }
 
 func (d *Deployment) DeployStageDomains(deploymentID uint64) (*apistructs.DeploymentCreateResponseDTO, error) {
-	fsm := NewFSMContext(deploymentID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler)
+	fsm := NewFSMContext(deploymentID, d.db, d.evMgr, d.bdl, d.addon, d.migration, d.encrypt, d.resource, d.releaseSvc, d.serviceGroupImpl, d.scheduler, d.envConfig)
 	if err := fsm.Load(); err != nil {
 		return nil, errors.Wrapf(err, "failed to load fsm, deployment: %d, (%v)", deploymentID, err)
 	}

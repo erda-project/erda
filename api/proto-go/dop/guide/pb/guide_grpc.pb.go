@@ -25,6 +25,7 @@ type GuideServiceClient interface {
 	ListGuide(ctx context.Context, in *ListGuideRequest, opts ...grpc.CallOption) (*ListGuideResponse, error)
 	ProcessGuide(ctx context.Context, in *ProcessGuideRequest, opts ...grpc.CallOption) (*ProcessGuideResponse, error)
 	DeleteGuideByGittarPushHook(ctx context.Context, in *GittarPushPayloadEvent, opts ...grpc.CallOption) (*DeleteGuideResponse, error)
+	CancelGuide(ctx context.Context, in *CancelGuideRequest, opts ...grpc.CallOption) (*CancelGuideResponse, error)
 }
 
 type guideServiceClient struct {
@@ -71,6 +72,15 @@ func (c *guideServiceClient) DeleteGuideByGittarPushHook(ctx context.Context, in
 	return out, nil
 }
 
+func (c *guideServiceClient) CancelGuide(ctx context.Context, in *CancelGuideRequest, opts ...grpc.CallOption) (*CancelGuideResponse, error) {
+	out := new(CancelGuideResponse)
+	err := c.cc.Invoke(ctx, "/erda.dop.guide.GuideService/CancelGuide", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GuideServiceServer is the server API for GuideService service.
 // All implementations should embed UnimplementedGuideServiceServer
 // for forward compatibility
@@ -79,6 +89,7 @@ type GuideServiceServer interface {
 	ListGuide(context.Context, *ListGuideRequest) (*ListGuideResponse, error)
 	ProcessGuide(context.Context, *ProcessGuideRequest) (*ProcessGuideResponse, error)
 	DeleteGuideByGittarPushHook(context.Context, *GittarPushPayloadEvent) (*DeleteGuideResponse, error)
+	CancelGuide(context.Context, *CancelGuideRequest) (*CancelGuideResponse, error)
 }
 
 // UnimplementedGuideServiceServer should be embedded to have forward compatible implementations.
@@ -96,6 +107,9 @@ func (*UnimplementedGuideServiceServer) ProcessGuide(context.Context, *ProcessGu
 }
 func (*UnimplementedGuideServiceServer) DeleteGuideByGittarPushHook(context.Context, *GittarPushPayloadEvent) (*DeleteGuideResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteGuideByGittarPushHook not implemented")
+}
+func (*UnimplementedGuideServiceServer) CancelGuide(context.Context, *CancelGuideRequest) (*CancelGuideResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CancelGuide not implemented")
 }
 
 func RegisterGuideServiceServer(s grpc1.ServiceRegistrar, srv GuideServiceServer, opts ...grpc1.HandleOption) {
@@ -150,6 +164,15 @@ func _get_GuideService_serviceDesc(srv GuideServiceServer, opts ...grpc1.HandleO
 	if h.Interceptor != nil {
 		_GuideService_DeleteGuideByGittarPushHook_info = transport.NewServiceInfo("erda.dop.guide.GuideService", "DeleteGuideByGittarPushHook", srv)
 		_GuideService_DeleteGuideByGittarPushHook_Handler = h.Interceptor(_GuideService_DeleteGuideByGittarPushHook_Handler)
+	}
+
+	_GuideService_CancelGuide_Handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.CancelGuide(ctx, req.(*CancelGuideRequest))
+	}
+	var _GuideService_CancelGuide_info transport.ServiceInfo
+	if h.Interceptor != nil {
+		_GuideService_CancelGuide_info = transport.NewServiceInfo("erda.dop.guide.GuideService", "CancelGuide", srv)
+		_GuideService_CancelGuide_Handler = h.Interceptor(_GuideService_CancelGuide_Handler)
 	}
 
 	var serviceDesc = _GuideService_serviceDesc
@@ -244,6 +267,29 @@ func _get_GuideService_serviceDesc(srv GuideServiceServer, opts ...grpc1.HandleO
 					FullMethod: "/erda.dop.guide.GuideService/DeleteGuideByGittarPushHook",
 				}
 				return interceptor(ctx, in, info, _GuideService_DeleteGuideByGittarPushHook_Handler)
+			},
+		},
+		{
+			MethodName: "CancelGuide",
+			Handler: func(_ interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+				in := new(CancelGuideRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				if interceptor == nil && h.Interceptor == nil {
+					return srv.(GuideServiceServer).CancelGuide(ctx, in)
+				}
+				if h.Interceptor != nil {
+					ctx = context.WithValue(ctx, transport.ServiceInfoContextKey, _GuideService_CancelGuide_info)
+				}
+				if interceptor == nil {
+					return _GuideService_CancelGuide_Handler(ctx, in)
+				}
+				info := &grpc.UnaryServerInfo{
+					Server:     srv,
+					FullMethod: "/erda.dop.guide.GuideService/CancelGuide",
+				}
+				return interceptor(ctx, in, info, _GuideService_CancelGuide_Handler)
 			},
 		},
 	}

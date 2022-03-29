@@ -98,13 +98,14 @@ func (d *DeploymentOrder) convertDeploymentOrderToResponseItem(orders []dbclient
 		}
 
 		if r.IsProjectRelease {
-			subReleases := make([][]string, 0)
-			if err := json.Unmarshal([]byte(r.ApplicationReleaseList), &subReleases); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal release application list, err: %v", err)
+			deployList, err := unmarshalDeployList(order.DeployList)
+			if err != nil {
+				logrus.Errorf("failed to unmarshal deploy list for order %s", order.ID)
+				continue
 			}
 			applicationCount = 0
-			for _, subRelease := range subReleases {
-				applicationCount += len(subRelease)
+			for _, l := range deployList {
+				applicationCount += len(l)
 			}
 		}
 

@@ -343,17 +343,6 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
 	}
 
-	var apps []apistructs.ApplicationDTO
-	if len(params.AppName) == 0 {
-		appResp, err := p.bundle.GetMyAppsByProject(params.IdentityInfo.UserID, project.OrgID, project.ID, "")
-		if err != nil {
-			return nil, 0, err
-		}
-		apps = appResp.List
-	}
-	for _, v := range apps {
-		params.AppName = append(params.AppName, v.Name)
-	}
 	// No application returned directly
 	if len(params.AppName) == 0 {
 		return []*dpb.PipelineDefinition{}, 0, nil
@@ -377,8 +366,8 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 		Status:            params.Status,
 		AscCols:           params.AscCols,
 		DescCols:          params.DescCols,
-		IsOthers:          params.CategoryKey == apistructs.CategoryOthers,
-		FilePathWithNames: getRulesByCategoryKey(params.CategoryKey),
+		IsOthers:          params.CategoryKey == apistructs.CategoryOthers.String(),
+		FilePathWithNames: getRulesByCategoryKey(apistructs.PipelineCategory(params.CategoryKey)),
 	})
 	if err != nil {
 		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
@@ -387,11 +376,15 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 	return list.Data, list.Total, nil
 }
 
-func getRulesByCategoryKey(categoryKey string) []string {
+func getRulesByCategoryKey(categoryKey apistructs.PipelineCategory) []string {
 	if categoryKey != apistructs.CategoryOthers {
-		return apistructs.CategoryKeyRuleMap[apistructs.PipelineCategory(categoryKey)]
+		return apistructs.CategoryKeyRuleMap[categoryKey]
 	}
-	return append(apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildDeploy], apistructs.CategoryKeyRuleMap[apistructs.CategoryBuildArtifact]...)
+	rules := make([]string, 0, len(apistructs.CategoryKeyRuleMap))
+	for k := range apistructs.CategoryKeyRuleMap {
+		rules = append(rules, apistructs.CategoryKeyRuleMap[k]...)
+	}
+	return rules
 }
 
 func (p *ProjectPipelineService) Delete(ctx context.Context, params deftype.ProjectPipelineDelete) (*deftype.ProjectPipelineDeleteResult, error) {
@@ -1345,7 +1338,7 @@ func (p *ProjectPipelineService) ListUsedRefs(ctx context.Context, params deftyp
 }
 
 type PipelineStatisticsByCategory struct {
-	Key      string
+	Key      apistructs.PipelineCategory
 	Category string
 	Rules    []string
 	PipelineStatisticsNums
@@ -1425,7 +1418,7 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 	for _, statics := range staticsResp.PipelineDefinitionStatistics {
 		if key, ok := apistructs.GetRuleCategoryKeyMap()[statics.Group]; ok {
 			for i := range categories {
-				if key.String() == categories[i].Key {
+				if key == categories[i].Key {
 					categories[i].TotalNum += statics.TotalNum
 					categories[i].FailedNum += statics.FailedNum
 					categories[i].RunningNum += statics.RunningNum
@@ -1446,7 +1439,7 @@ func (p *ProjectPipelineService) ListPipelineCategory(ctx context.Context, param
 	data := make([]*pb.PipelineCategory, 0, len(categories))
 	for _, v := range categories {
 		data = append(data, &pb.PipelineCategory{
-			Key:        v.Key,
+			Key:        v.Key.String(),
 			Category:   v.Category,
 			Rules:      v.Rules,
 			RunningNum: v.RunningNum,

@@ -58,12 +58,23 @@ func TestConvertDeploymentOrderToResponseItem(t *testing.T) {
 
 	defer monkey.UnpatchAll()
 
+	modes := map[string]apistructs.ReleaseDeployMode{
+		"default": {
+			Expose:                 true,
+			ApplicationReleaseList: [][]string{{"2deb000b57bfac9d72c14d4ed967b572"}, {"523af537946b79c4f8369ed39ba78605"}},
+		},
+	}
+	modesData, err := json.Marshal(modes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
 		return []*dbclient.Release{
 			{
-				ReleaseId:              "68a6df7529914c89b632fb18450d0055",
-				IsProjectRelease:       true,
-				ApplicationReleaseList: "[[\"2deb000b57bfac9d72c14d4ed967b572\"], [\"523af537946b79c4f8369ed39ba78605\"]]",
+				ReleaseId:        "68a6df7529914c89b632fb18450d0055",
+				IsProjectRelease: true,
+				Modes:            string(modesData),
 			},
 		}, nil
 	})
@@ -71,6 +82,11 @@ func TestConvertDeploymentOrderToResponseItem(t *testing.T) {
 	statusMapJson, err := getFakeStatusMap()
 	assert.NoError(t, err)
 
+	deployList := [][]string{{"id1"}, {"id2"}}
+	deployData, err := json.Marshal(deployList)
+	if err != nil {
+		t.Fatal(err)
+	}
 	data := []dbclient.DeploymentOrder{
 		{
 			Type:         apistructs.TypeProjectRelease,
@@ -78,6 +94,7 @@ func TestConvertDeploymentOrderToResponseItem(t *testing.T) {
 			Operator:     "1",
 			StatusDetail: string(statusMapJson),
 			IsOutdated:   0,
+			DeployList:   string(deployData),
 		},
 	}
 
