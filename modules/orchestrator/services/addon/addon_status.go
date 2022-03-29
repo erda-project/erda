@@ -494,7 +494,7 @@ func (a *Addon) BuildRealZkServiceItem(params *apistructs.AddonHandlerCreateItem
 			"ZOO_AUTO_RETAINCOUNT": "3",
 			"ZOO_MY_ID":            strconv.Itoa(i),
 			"ZOO_SERVERS":          strings.Join(zooServerLi, "\n"),
-			"JAVA_OPTS":            strings.Join([]string{"-Xms", heapSize, "m -Xmx", heapSize, "m"}, ""),
+			"ZK_SERVER_HEAP":       heapSize,
 		}
 		// volume信息
 		clusterType := (*clusterInfo)[apistructs.DICE_CLUSTER_TYPE]
