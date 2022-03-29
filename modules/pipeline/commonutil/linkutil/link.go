@@ -20,6 +20,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/pipeline/providers/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
@@ -47,11 +48,11 @@ func GetPipelineLink(bdl *bundle.Bundle, p spec.Pipeline) (bool, string) {
 	}
 
 	// get domain protocol
-	clusterInfo, err := bdl.QueryClusterInfo(p.ClusterName)
+	clusterInfo, err := clusterinfo.GetClusterInfoByName(p.ClusterName)
 	if err != nil {
 		return false, ""
 	}
-	protocol := clusterInfo.Get(apistructs.DICE_PROTOCOL)
+	protocol := clusterInfo.CM.Get(apistructs.DICE_PROTOCOL)
 	if protocol == "" {
 		return false, ""
 	}
