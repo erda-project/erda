@@ -505,26 +505,6 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 		})
 	}
 
-	items = append(items, commodel.MoreOpItem{
-		ID: func() string {
-			if definition.Category == "primary" {
-				return "unsetPrimary"
-			}
-			return "setPrimary"
-		}(),
-		Text: cputil.I18n(p.sdk.Ctx, func() string {
-			if definition.Category == "primary" {
-				return "unsetPrimary"
-			}
-			return "setPrimary"
-		}()),
-		Icon: &commodel.Icon{
-			Type: "star",
-		},
-		Operations: map[cptype.OperationKey]cptype.Operation{
-			commodel.OpMoreOperationsItemClick{}.OpKey(): build,
-		},
-	})
 	// No delete button in running and timing
 	if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
 		return items
@@ -673,24 +653,6 @@ func init() {
 func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick) {
 	id := string(opData.ClientData.ParentDataRef.ID)
 	switch opData.ClientData.DataRef.ID {
-	case "setPrimary":
-		_, err := p.ProjectPipelineSvc.SetPrimary(p.sdk.Ctx, deftype.ProjectPipelineCategory{
-			PipelineDefinitionID: id,
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
-		})
-		if err != nil {
-			panic(err)
-		}
-	case "unsetPrimary":
-		_, err := p.ProjectPipelineSvc.UnSetPrimary(p.sdk.Ctx, deftype.ProjectPipelineCategory{
-			PipelineDefinitionID: id,
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
-		})
-		if err != nil {
-			panic(err)
-		}
 	case "run":
 		_, err := p.ProjectPipelineSvc.Run(p.sdk.Ctx, deftype.ProjectPipelineRun{
 			PipelineDefinitionID: id,
