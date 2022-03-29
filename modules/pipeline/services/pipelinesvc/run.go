@@ -115,11 +115,11 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 	now := time.Now()
 	p.TimeBegin = &now
 
-	clusterInfo, err := s.bdl.QueryClusterInfo(p.ClusterName)
+	cluster, err := s.clusterInfo.GetClusterInfoByName(p.ClusterName)
 	if err != nil {
 		return nil, apierrors.ErrRunPipeline.InternalError(err)
 	}
-	container_provider.DealPipelineProviderBeforeRun(&p, clusterInfo)
+	container_provider.DealPipelineProviderBeforeRun(&p, cluster.CM)
 	// update pipeline base
 	if err := s.dbClient.UpdatePipelineBase(p.ID, &p.PipelineBase); err != nil {
 		return nil, apierrors.ErrUpdatePipeline.InternalError(err)
