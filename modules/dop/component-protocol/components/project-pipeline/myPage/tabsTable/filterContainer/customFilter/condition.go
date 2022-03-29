@@ -114,7 +114,6 @@ func (p *CustomFilter) MemberCondition() (MemberCondition, error) {
 		return selectOptions
 	}())
 	creatorCondition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-creator")
-	creatorCondition.ConditionBase.Disabled = p.gsHelper.GetGlobalPipelineTab() == common.MineState.String()
 
 	return MemberCondition{
 		executorCondition: executorCondition,
@@ -129,7 +128,8 @@ func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
 	}
 	p.gsHelper.SetGlobalMyAppNames(appNames)
 	condition := model.NewSelectCondition("app", cputil.I18n(p.sdk.Ctx, "application"), func() []model.SelectOption {
-		selectOptions := make([]model.SelectOption, 0, len(appNames))
+		selectOptions := make([]model.SelectOption, 0, len(appNames)+1)
+		selectOptions = append(selectOptions, *model.NewSelectOption(cputil.I18n(p.sdk.Ctx, "allInvolveApp"), common.AllInvolveApp))
 		for _, v := range appNames {
 			selectOptions = append(selectOptions, *model.NewSelectOption(v, v))
 		}

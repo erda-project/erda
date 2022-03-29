@@ -38,3 +38,8 @@ type Sort struct {
 	FieldKey  string
 	Ascending bool
 }
+
+const (
+	AllInvolveApp = "allInvolveApp"
+	DefaultBranch = "master"
+)

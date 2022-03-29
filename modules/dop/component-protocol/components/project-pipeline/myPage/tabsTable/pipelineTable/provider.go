@@ -197,28 +197,21 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 	list, total, err := p.ProjectPipelineSvc.List(p.sdk.Ctx, deftype.ProjectPipelineList{
 		ProjectID: p.InParams.ProjectID,
 		AppName: func() []string {
-			if len(filter.App) != 0 {
-				return filter.App
+			if len(filter.App) == 0 {
+				return p.gsHelper.GetGlobalMyAppNames()
 			}
-			return p.gsHelper.GetGlobalMyAppNames()
-		}(),
-		Creator: func() []string {
-			if p.gsHelper.GetGlobalPipelineTab() == common.MineState.String() {
-				return []string{p.sdk.Identity.UserID}
+			if strutil.InSlice(common.AllInvolveApp, filter.App) {
+				return strutil.DedupSlice(append(filter.App, p.gsHelper.GetGlobalMyAppNames()...), true)
 			}
-			return filter.Creator
+			return filter.App
 		}(),
+		Creator:  filter.Creator,
 		Executor: filter.Executor,
 		PageNo:   p.PageNo,
 		PageSize: p.PageSize,
-		Category: func() []string {
-			if p.gsHelper.GetGlobalPipelineTab() == common.PrimaryState.String() {
-				return []string{"primary"}
-			}
-			return nil
-		}(),
-		Name: filter.Title,
-		Ref:  filter.Branch,
+		Category: nil,
+		Name:     filter.Title,
+		Ref:      filter.Branch,
 		TimeCreated: func() []string {
 			timeCreated := make([]string, 0)
 			if len(filter.CreatedAtStartEnd) == 2 {
