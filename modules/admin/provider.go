@@ -72,7 +72,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	bdl := bundle.New(
 		bundle.WithHepa(),
 		bundle.WithOrchestrator(),
-		bundle.WithEventBox(),
 		bundle.WithGittar(),
 		bundle.WithDOP(),
 		bundle.WithMSP(),

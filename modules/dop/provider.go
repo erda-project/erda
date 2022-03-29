@@ -99,7 +99,6 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		// bundle.WithDOP(), // TODO change to internal method invoke in component-protocol
 		bundle.WithHepa(),
 		bundle.WithOrchestrator(),
-		bundle.WithEventBox(),
 		bundle.WithGittar(),
 		bundle.WithPipeline(),
 		bundle.WithMonitor(),

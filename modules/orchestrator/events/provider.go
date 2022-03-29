@@ -42,7 +42,7 @@ func newBundleService() *bundle.Bundle {
 			httpclient.New(
 				httpclient.WithTimeout(time.Second, time.Second*60),
 			)),
-		bundle.WithEventBox(),
+		bundle.WithCoreServices(),
 		bundle.WithCollector(),
 	}
 	return bundle.New(bundleOpts...)
