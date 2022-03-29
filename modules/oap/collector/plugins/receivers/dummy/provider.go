@@ -90,6 +90,7 @@ func (p *provider) dummyMetrics(ctx context.Context) {
 			p.Log.Errorf("unmarshal MetricSample err: %s", err)
 		}
 		if p.consumerFunc != nil {
+			item.TimeUnixNano = uint64(time.Now().UnixNano())
 			p.consumerFunc(odata.NewMetric(&item))
 		}
 	}
@@ -110,6 +111,8 @@ func (p *provider) dummyTraces(ctx context.Context) {
 			p.Log.Errorf("unmarshal TraceSample err: %s", err)
 		}
 		if p.consumerFunc != nil {
+			item.StartTimeUnixNano = uint64(time.Now().UnixNano())
+			item.EndTimeUnixNano = uint64(time.Now().Add(time.Second * 10).UnixNano())
 			p.consumerFunc(odata.NewSpan(&item))
 		}
 	}
@@ -132,6 +135,7 @@ func (p *provider) dummyLogs(ctx context.Context) {
 		item.TimeUnixNano = uint64(time.Now().Nanosecond())
 
 		if p.consumerFunc != nil {
+			item.TimeUnixNano = uint64(time.Now().UnixNano())
 			p.consumerFunc(odata.NewLog(&item))
 		}
 	}

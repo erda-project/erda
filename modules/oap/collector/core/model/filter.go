@@ -23,6 +23,7 @@ import (
 
 // semantic same as https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#metric-filtering
 // key* <=> tag*
+// TODO. infra's config parser don't supported embed config
 type FilterConfig struct {
 	// Selectors
 	Keypass    map[string][]string `file:"keypass"`

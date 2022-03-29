@@ -15,6 +15,8 @@ erda.oap.collector.core:
         - "erda.oap.collector.processor.modifier"
         - "erda.oap.collector.processor.modifier@addmeta"
         - "erda.oap.collector.processor.modifier@docker_container_summary"
+        - "erda.oap.collector.processor.aggregator@cpu-usage"
+        - "erda.oap.collector.processor.aggregator@mem-percent"
       exporters:
         #- "erda.oap.collector.exporter.stdout"
         - "erda.oap.collector.exporter.collector"
@@ -37,7 +39,9 @@ erda.oap.collector.processor.k8s-tagger@prw:
       label_selector: ""
       field_slector: ""
     add_metadata:
-      label_include: []
+      label_include:
+        - "dice/component"
+        - "dice/job"
       annotation_include:
         - "msp.erda.cloud/application_name"
         - "msp.erda.cloud/application_id"
@@ -127,6 +131,9 @@ erda.oap.collector.processor.modifier@docker_container_summary:
       key: __dp__container_fs_writes_total
       value: __dp__blk_writes
     - action: rename
+      key: __dp__container_fs_usage_bytes
+      value: __dp__disk_usage
+    - action: rename
       key: __dp__container_memory_max_usage_bytes
       value: __dp__mem_max_usage
     - action: rename
@@ -149,21 +156,78 @@ erda.oap.collector.processor.modifier@docker_container_summary:
       value: '^\/kubepods\/\w+\/[\w|\-]+\/(?P<container_id>\w+)'
     - action: rename
       key: __dp__container_resources_memory_request
-      value: __dp__mem_allocation
+      value: __dp__mem_request
     - action: rename
       key: __dp__container_resources_memory_limit
       value: __dp__mem_limit
     - action: rename
       key: __dp__container_resources_cpu_request
-      value: __dp__cpu_allocation
+      value: __dp__cpu_request
     - action: rename
       key: __dp__container_resources_cpu_limit
       value: __dp_cpu_limit
+    # --- instance_type logic block ---
+    - action: set
+      key: instance_type
+      value: job
+      condition:
+        op: key_exist
+        key: pod_labels_dice_job
+    - action: drop
+      key: pod_labels_dice_job
+    - action: set
+      key: instance_type
+      value: component
+      condition:
+        op: key_exist
+        key: pod_labels_dice_component
+    - action: drop
+      key: pod_labels_dice_component
+    - action: set
+      key: instance_type
+      value: addon
+      condition:
+        op: value_match
+        key: pod_namespace
+        value: '.*(addon).*?'
+    - action: set
+      key: instance_type
+      value: service
+      condition:
+        op: key_exist
+        key: service_name
+    # --- instance_type logic block ---
+    - action: join
+      keys: [application_id, runtime_name, service_name]
+      target_key: service_id
     - action: set
       key: __kw__name
       value: docker_container_summary
     - action: drop
       key: name
+
+erda.oap.collector.processor.aggregator@cpu-usage:
+  keypass:
+    __kw__name: ["docker_container_summary"]
+  keyinclude: ["__kw__name, __dp__container_cpu_usage_seconds_total, org_name, cluster_name, id, cpu"]
+
+  rules:
+    - func: "rate"
+      args: ["__dp__container_cpu_usage_seconds_total"]
+      target_key: "__dp__cpu_usage_percent"
+    - func: "*"
+      args: ["__dp__cpu_usage_percent", 100]
+      target_key: "__dp__cpu_usage_percent"
+
+erda.oap.collector.processor.aggregator@mem-percent:
+  keypass:
+    __kw__name: ["docker_container_summary"]
+  keyinclude: ["__kw__name, __dp__mem_usage, __dp__mem_limit, org_name, cluster_name, id, cpu"]
+
+  rules:
+    - func: "/"
+      args: ["__dp__mem_usage", "__dp__mem_limit"]
+      target_key: "__dp__mem_usage_percent"
 
 # ************* processors *************
 

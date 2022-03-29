@@ -15,15 +15,17 @@
 package odata
 
 import (
+	"hash/fnv"
+	"sort"
 	"strings"
-
-	structpb "github.com/golang/protobuf/ptypes/struct"
+	"time"
 
 	"github.com/erda-project/erda-proto-go/oap/common/pb"
 	lpb "github.com/erda-project/erda-proto-go/oap/logs/pb"
 	mpb "github.com/erda-project/erda-proto-go/oap/metrics/pb"
 	tpb "github.com/erda-project/erda-proto-go/oap/trace/pb"
 	"github.com/erda-project/erda/modules/oap/collector/common/pbconvert"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 )
 
 type SourceType string
@@ -39,7 +41,8 @@ const (
 const (
 	KeyWordPrefix   = "__kw__"
 	NameKey         = KeyWordPrefix + "name"
-	TimeUnixNanoKey = KeyWordPrefix + "ts" // Type: uint64
+	TimeUnixNanoKey = KeyWordPrefix + "tsnano"    // Type: uint64
+	TimestampKey    = KeyWordPrefix + "timestamp" // Type: time.Time
 	// The keys in Attributes<map[string]string> without any prefix
 	// Log
 	SeverityKey = KeyWordPrefix + "severity"
@@ -55,9 +58,18 @@ const (
 	EndTimeUnixNano   = KeyWordPrefix + "end_ts"
 )
 
+// The slice representation of Attributes
+type Label struct {
+	Key   string
+	Value string
+}
+
 type ObservableData interface {
 	HandleKeyValuePair(handler func(pairs map[string]interface{}) map[string]interface{})
 	Pairs() map[string]interface{}
+	HasKey(key string) bool
+	Get(key string) (interface{}, bool)
+	HashID() uint64
 	Name() string
 	Metadata() *Metadata
 	Clone() ObservableData
@@ -73,10 +85,42 @@ type SourceItem interface {
 	GetRelations() *pb.Relation
 }
 
-func extractAttributes(data map[string]interface{}) map[string]string {
+func Hash(name string, labels []Label) uint64 {
+	h := fnv.New64a()
+	h.Write([]byte(name))
+	h.Write([]byte("\n"))
+	for _, item := range labels {
+		h.Write([]byte(item.Key))
+		h.Write([]byte("\n"))
+		h.Write([]byte(item.Value))
+		h.Write([]byte("\n"))
+	}
+	return h.Sum64()
+}
+
+func IsKeyWord(s string) bool {
+	return strings.HasPrefix(s, KeyWordPrefix)
+}
+
+func IsDataPoint(s string) bool {
+	return strings.HasPrefix(s, DataPointsKeyPrefix)
+}
+
+func AttributesToLabels(attrs map[string]string) []Label {
+	labels := make([]Label, 0, len(attrs))
+	for k, v := range attrs {
+		labels = append(labels, Label{Key: k, Value: v})
+	}
+	sort.Slice(labels, func(i, j int) bool {
+		return labels[i].Key < labels[j].Key
+	})
+	return labels
+}
+
+func ExtractAttributes(data map[string]interface{}) map[string]string {
 	attr := make(map[string]string)
 	for k, v := range data {
-		if strings.HasPrefix(k, KeyWordPrefix) {
+		if IsKeyWord(k) {
 			continue
 		}
 		sv, ok := v.(string)
@@ -91,7 +135,8 @@ func extractAttributes(data map[string]interface{}) map[string]string {
 func logToMap(item *lpb.Log) map[string]interface{} {
 	data := make(map[string]interface{}, len(item.GetAttributes()))
 	data[NameKey] = item.GetName()
-	data[TimeUnixNanoKey] = item.GetTimeUnixNano()
+	// data[TimeUnixNanoKey] = item.GetTimeUnixNano()
+	data[TimestampKey] = time.Unix(0, int64(item.GetTimeUnixNano()))
 	for k, v := range item.GetAttributes() {
 		data[k] = v
 	}
@@ -102,10 +147,10 @@ func logToMap(item *lpb.Log) map[string]interface{} {
 
 func mapToLog(data map[string]interface{}) *lpb.Log {
 	return &lpb.Log{
-		TimeUnixNano: data[TimeUnixNanoKey].(uint64),
+		TimeUnixNano: uint64(data[TimestampKey].(time.Time).UnixNano()),
 		Name:         data[NameKey].(string),
 		Severity:     data[SeverityKey].(string),
-		Attributes:   extractAttributes(data),
+		Attributes:   ExtractAttributes(data),
 		Content:      data[ContentKey].(string),
 	}
 }
@@ -113,7 +158,8 @@ func mapToLog(data map[string]interface{}) *lpb.Log {
 func metricToMap(item *mpb.Metric) map[string]interface{} {
 	data := make(map[string]interface{}, len(item.GetAttributes())+len(item.GetDataPoints()))
 	data[NameKey] = item.GetName()
-	data[TimeUnixNanoKey] = item.GetTimeUnixNano()
+	// data[TimeUnixNanoKey] = item.GetTimeUnixNano()
+	data[TimestampKey] = time.Unix(0, int64(item.GetTimeUnixNano()))
 	for k, v := range item.GetAttributes() {
 		data[k] = v
 	}
@@ -123,7 +169,7 @@ func metricToMap(item *mpb.Metric) map[string]interface{} {
 	return data
 }
 
-func mapToMetric(data map[string]interface{}) *mpb.Metric {
+func MapToMetric(data map[string]interface{}) *mpb.Metric {
 	dps := make(map[string]*structpb.Value)
 	for k, v := range data {
 		if !strings.HasPrefix(k, DataPointsKeyPrefix) {
@@ -132,9 +178,9 @@ func mapToMetric(data map[string]interface{}) *mpb.Metric {
 		dps[strings.TrimPrefix(k, DataPointsKeyPrefix)] = pbconvert.ToValue(v)
 	}
 	return &mpb.Metric{
-		TimeUnixNano: data[TimeUnixNanoKey].(uint64),
+		TimeUnixNano: uint64(data[TimestampKey].(time.Time).UnixNano()),
 		Name:         data[NameKey].(string),
-		Attributes:   extractAttributes(data),
+		Attributes:   ExtractAttributes(data),
 		DataPoints:   dps,
 	}
 }
@@ -157,7 +203,7 @@ func spanToMap(item *tpb.Span) map[string]interface{} {
 func mapToSpan(data map[string]interface{}) *tpb.Span {
 	return &tpb.Span{
 		Name:              data[NameKey].(string),
-		Attributes:        extractAttributes(data),
+		Attributes:        ExtractAttributes(data),
 		TraceID:           data[TraceID].(string),
 		SpanID:            data[SpanID].(string),
 		ParentSpanID:      data[ParentSpanID].(string),
