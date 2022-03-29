@@ -363,7 +363,7 @@ func (svc *Issue) Paging(req apistructs.IssuePagingRequest) ([]apistructs.Issue,
 						requirementIDs = append(requirementIDs, id)
 					}
 				}
-				relationTypes := []string{apistructs.IssueRelationConnection}
+				relationTypes := []string{apistructs.IssueRelationInclusion}
 				if t == apistructs.IssueTypeRequirement {
 					relationTypes = []string{apistructs.IssueRelationInclusion}
 				}

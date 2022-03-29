@@ -104,12 +104,18 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 		ProjectID:    f.InParams.ProjectID,
 		IterationIDs: []int64{f.State.Values.IterationID},
 		Assignees:    f.State.Values.AssigneeIDs,
+		Label:        f.State.Values.LabelIDs,
 	})
 	if err != nil {
 		return err
 	}
 
 	projectMemberOptions, err := f.getProjectMemberOptions()
+	if err != nil {
+		return err
+	}
+
+	labelOptions, err := f.getProjectLabelsOptions()
 	if err != nil {
 		return err
 	}
@@ -126,6 +132,15 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 			CustomProps: map[string]interface{}{
 				"mode": "single",
 			},
+			HaveFilter: true,
+		},
+		{
+			EmptyText:  cputil.I18n(ctx, "all"),
+			Fixed:      true,
+			Key:        "label",
+			Label:      cputil.I18n(ctx, "label"),
+			Options:    labelOptions,
+			Type:       filter.PropConditionTypeSelect,
 			HaveFilter: true,
 		},
 		{
@@ -281,4 +296,22 @@ func (f *ComponentFilter) getProjectMemberOptions() ([]filter.PropConditionOptio
 		})
 	}
 	return results, nil
+}
+
+func (f *ComponentFilter) getProjectLabelsOptions() ([]filter.PropConditionOption, error) {
+	labels, err := f.bdl.Labels(string(apistructs.LabelTypeIssue), f.InParams.ProjectID, f.sdk.Identity.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if labels == nil {
+		return nil, nil
+	}
+	var options []filter.PropConditionOption
+	for _, label := range labels.List {
+		options = append(options, filter.PropConditionOption{
+			Label: label.Name,
+			Value: label.ID,
+		})
+	}
+	return options, nil
 }

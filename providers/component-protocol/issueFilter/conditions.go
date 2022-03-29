@@ -136,9 +136,9 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 	finished := model.NewDateRangeCondition(PropConditionKeyFinishedAtStartEnd, cputil.I18n(f.sdk.Ctx, "deadline"))
 	closed := model.NewDateRangeCondition(PropConditionKeyClosed, cputil.I18n(f.sdk.Ctx, "closed-at"))
 
-	var conditions []interface{}
+	var leftGroup, rightGroup []interface{}
 	if needIterationCond {
-		conditions = []interface{}{iterations}
+		leftGroup = []interface{}{iterations}
 	}
 
 	complexityOptions := []model.SelectOption{
@@ -169,23 +169,44 @@ func (f *IssueFilter) ConditionRetriever() ([]interface{}, error) {
 			}
 			return nil
 		}()
-
-		conditions = append(conditions, status)
+		leftGroup = append(leftGroup, status)
 	}
 
+	leftGroup = append(leftGroup, labels, priority, complexity)
+	rightGroup = []interface{}{assignee, finished, creator, created}
 	switch f.InParams.FrontendFixedIssueType {
 	case apistructs.IssueTypeRequirement.String():
-		conditions = append(conditions, labels, priority, complexity, creator, assignee, created, finished)
 	case apistructs.IssueTypeTask.String():
-		conditions = append(conditions, labels, priority, complexity, creator, assignee, stage, created, finished)
+		leftGroup = append(leftGroup, stage)
 	case apistructs.IssueTypeBug.String():
-		conditions = append(conditions, labels, priority, complexity, severity, creator, assignee, owner, stage, created, finished, closed)
+		leftGroup = append(leftGroup, severity, stage)
+		rightGroup = append(rightGroup, owner, closed)
 	case "ALL":
-		conditions = append(conditions, labels, priority, complexity, creator, assignee, owner, created, finished)
+		rightGroup = append(rightGroup, owner)
 	}
 
+	conditions := Zigzag(leftGroup, rightGroup)
 	conditions = append(conditions, condition.ExternalInputCondition("title", "title", cputil.I18n(f.sdk.Ctx, "searchByName")))
 	return conditions, nil
+}
+
+func Zigzag(l1, l2 []interface{}) []interface{} {
+	var res []interface{}
+	i, j := 0, 0
+	for i < len(l1) && j < len(l2) {
+		res = append(res, l1[i], l2[j])
+		i += 1
+		j += 1
+	}
+	for i < len(l1) {
+		res = append(res, l1[i])
+		i += 1
+	}
+	for j < len(l2) {
+		res = append(res, l2[i])
+		j += 1
+	}
+	return res
 }
 
 func convertConditions(status []apistructs.IssueStatus) []model.SelectOption {
