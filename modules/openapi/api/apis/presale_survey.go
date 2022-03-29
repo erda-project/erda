@@ -30,7 +30,7 @@ var PRESALE_SURVEY = ApiSpec{
 	Method: "GET",
 	Doc:    "summary: 售前调查 API（伪装成登录接口）",
 	Custom: func(rw http.ResponseWriter, req *http.Request) {
-		bdl := bundle.New(bundle.WithEventBox())
+		bdl := bundle.New(bundle.WithCoreServices())
 		f := req.URL.Query()
 		content := ""
 		content += "真实姓名　　: " + f.Get("realname") + "\n" +

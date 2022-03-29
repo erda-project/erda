@@ -135,7 +135,6 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		bundle.WithCoreServices(),
 		bundle.WithOrchestrator(),
 		bundle.WithDiceHub(),
-		bundle.WithEventBox(),
 		bundle.WithClusterManager(),
 	}
 	bdl := bundle.New(bundleOpts...)

@@ -156,7 +156,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		bundle.WithAddOnPlatform(),
 		bundle.WithGittar(),
 		bundle.WithGittarAdaptor(),
-		bundle.WithEventBox(),
+		bundle.WithCoreServices(),
 		bundle.WithMonitor(),
 		bundle.WithScheduler(),
 		bundle.WithDiceHub(),
