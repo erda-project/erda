@@ -343,11 +343,6 @@ func (p *ProjectPipelineService) List(ctx context.Context, params deftype.Projec
 		return nil, 0, apierrors.ErrListProjectPipeline.InternalError(err)
 	}
 
-	// No application returned directly
-	if len(params.AppName) == 0 {
-		return []*dpb.PipelineDefinition{}, 0, nil
-	}
-
 	list, err := p.PipelineDefinition.List(ctx, &dpb.PipelineDefinitionListRequest{
 		PageSize: int64(params.PageSize),
 		PageNo:   int64(params.PageNo),
