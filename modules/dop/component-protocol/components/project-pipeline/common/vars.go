@@ -40,6 +40,7 @@ type Sort struct {
 }
 
 const (
-	Participated  = "participated"
-	DefaultBranch = "master"
+	Participated = "participated"
 )
+
+var DefaultBranch = []string{"master", "develop"}
