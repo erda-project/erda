@@ -261,7 +261,7 @@ zh:
   branch: 分支
   executor: 执行者
   startTime: 开始时间
-  allInvolveApp: 已参与
+  participated: 已参与
 
   pipelineStatusAnalyzed: 初始化成功
   pipelineStatusBorn: 预处理成功
@@ -580,7 +580,7 @@ en:
   applicationName: Application name
   branch: Branch
   startTime: Begin time
-  allInvolveApp: Involved
+  participated: Participated
 
   pipelineStatusAnalyzed: Analyzed
   pipelineStatusBorn: Born

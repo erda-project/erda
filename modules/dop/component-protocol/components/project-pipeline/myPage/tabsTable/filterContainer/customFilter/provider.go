@@ -171,6 +171,6 @@ func (p *CustomFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDele
 }
 
 func (p *CustomFilter) setDefaultValues() {
-	p.State.FrontendConditionValues.App = []string{common.AllInvolveApp}
+	p.State.FrontendConditionValues.App = []string{common.Participated}
 	p.State.FrontendConditionValues.Branch = []string{common.DefaultBranch}
 }

@@ -40,6 +40,6 @@ type Sort struct {
 }
 
 const (
-	AllInvolveApp = "allInvolveApp"
+	Participated  = "participated"
 	DefaultBranch = "master"
 )

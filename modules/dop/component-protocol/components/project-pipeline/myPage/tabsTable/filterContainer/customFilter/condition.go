@@ -160,7 +160,7 @@ func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
 
 	condition := model.NewSelectCondition("app", cputil.I18n(p.sdk.Ctx, "application"), func() []model.SelectOption {
 		selectOptions := make([]model.SelectOption, 0, len(allAppNames)+1)
-		selectOptions = append(selectOptions, *model.NewSelectOption(cputil.I18n(p.sdk.Ctx, "allInvolveApp"), common.AllInvolveApp))
+		selectOptions = append(selectOptions, *model.NewSelectOption(cputil.I18n(p.sdk.Ctx, "participated"), common.Participated))
 		for _, v := range allAppNames {
 			selectOptions = append(selectOptions, *model.NewSelectOption(v, v))
 		}

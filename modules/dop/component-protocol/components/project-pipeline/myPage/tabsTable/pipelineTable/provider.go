@@ -197,7 +197,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 	list, total, err := p.ProjectPipelineSvc.List(p.sdk.Ctx, deftype.ProjectPipelineList{
 		ProjectID: p.InParams.ProjectID,
 		AppName: func() []string {
-			if !strutil.InSlice(common.AllInvolveApp, filter.App) {
+			if !strutil.InSlice(common.Participated, filter.App) {
 				return filter.App
 			}
 			return strutil.DedupSlice(append(filter.App, p.gsHelper.GetGlobalMyAppNames()...), true)
