@@ -18,7 +18,6 @@ package approve
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"time"
 
@@ -28,6 +27,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/model"
 	"github.com/erda-project/erda/modules/core-services/services/member"
@@ -182,15 +182,15 @@ func (a *Approve) Create(userID string, createReq *apistructs.ApproveCreateReque
 func (a *Approve) mkMboxEmailNotify(id int64, done string, orgid uint64, projectname string,
 	member string, start, end time.Time, desc string, receivers []model.Member) error {
 	protocol := utils.GetProtocol()
-	domain := os.Getenv(string(apistructs.DICE_ROOT_DOMAIN))
+	domain := conf.UIDomain()
 	org, err := a.db.GetOrg(int64(orgid))
 	if err != nil {
 		logrus.Errorf("failed to getorg(%v):%v", orgid, err)
 		return err
 	}
 
-	url := fmt.Sprintf("%s://%s-org.%s/%s/orgCenter/approval/%s?id=%d",
-		protocol, org.Name, domain, org.Name, done, id)
+	url := fmt.Sprintf("%s://%s/%s/orgCenter/approval?id=%d&type=%s",
+		protocol, domain, org.Name, id, done)
 
 	var approverIDs []string
 	var emails []string
