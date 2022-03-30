@@ -47,9 +47,6 @@ func (d *DeploymentOrder) Create(ctx context.Context, req *apistructs.Deployment
 		req.Id = uuid.NewString()
 	}
 
-	if len(req.Modes) == 0 {
-		return nil, errors.Errorf("modes can not be empty")
-	}
 	// parse release id
 	releaseId, err := d.getReleaseIdFromReq(req)
 	if err != nil {
@@ -63,12 +60,6 @@ func (d *DeploymentOrder) Create(ctx context.Context, req *apistructs.Deployment
 	if err != nil {
 		logrus.Errorf("failed to get release %s, err: %v", releaseId, err)
 		return nil, err
-	}
-
-	for _, modeName := range req.Modes {
-		if _, ok := releaseResp.Data.Modes[modeName]; !ok {
-			return nil, errors.Errorf("mode %s does not exist in release %s", modeName, releaseId)
-		}
 	}
 
 	// get workspace
@@ -86,6 +77,14 @@ func (d *DeploymentOrder) Create(ctx context.Context, req *apistructs.Deployment
 		applicationsInfo = map[int64]string{releaseResp.Data.ApplicationID: releaseResp.Data.ApplicationName}
 	)
 	if releaseResp.Data.IsProjectRelease {
+		if len(req.Modes) == 0 {
+			return nil, errors.Errorf("project release modes can not be empty")
+		}
+		for _, modeName := range req.Modes {
+			if _, ok := releaseResp.Data.Modes[modeName]; !ok {
+				return nil, errors.Errorf("mode %s does not exist in release %s", modeName, releaseId)
+			}
+		}
 		applicationsInfo = d.parseAppsInfoWithDeployList(deployList)
 		for _, mode := range req.Modes {
 			if _, ok := releaseResp.Data.Modes[mode]; !ok {
@@ -262,20 +261,24 @@ func (d *DeploymentOrder) executeDeploy(order *dbclient.DeploymentOrder, release
 func (d *DeploymentOrder) composeDeploymentOrder(release *pb.ReleaseGetResponseData,
 	req *apistructs.DeploymentOrderCreateRequest, deployList [][]*pb.ApplicationReleaseSummary) (*dbclient.DeploymentOrder, string, error) {
 	var (
-		orderId   = req.Id
-		orderType = parseOrderType(release.IsProjectRelease)
-		workspace = req.Workspace
-		list      = make([][]string, len(deployList))
+		orderId        = req.Id
+		orderType      = parseOrderType(release.IsProjectRelease)
+		workspace      = req.Workspace
+		list           = make([][]string, len(deployList))
+		deployListData = ""
+		err            error
 	)
 
-	for i, l := range deployList {
-		for _, summary := range l {
-			list[i] = append(list[i], summary.ReleaseID)
+	if orderType == apistructs.TypeProjectRelease {
+		for i, l := range deployList {
+			for _, summary := range l {
+				list[i] = append(list[i], summary.ReleaseID)
+			}
 		}
-	}
-	deployListData, err := marshalDeployList(list)
-	if err != nil {
-		return nil, "", errors.Errorf("failed to marshal deploy list for release %s, %v", release.ReleaseID, err)
+		deployListData, err = marshalDeployList(list)
+		if err != nil {
+			return nil, "", errors.Errorf("failed to marshal deploy list for release %s, %v", release.ReleaseID, err)
+		}
 	}
 	order := &dbclient.DeploymentOrder{
 		ID:          orderId,
