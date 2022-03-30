@@ -47,6 +47,9 @@ func (d *DeploymentOrder) Create(ctx context.Context, req *apistructs.Deployment
 		req.Id = uuid.NewString()
 	}
 
+	if len(req.Modes) == 0 {
+		return nil, errors.Errorf("modes can not be empty")
+	}
 	// parse release id
 	releaseId, err := d.getReleaseIdFromReq(req)
 	if err != nil {
@@ -434,6 +437,9 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 		deployList, err := unmarshalDeployList(order.DeployList)
 		if err != nil {
 			return nil, errors.Errorf("failed to unmarshal deploy list for release %s, %v", r.ReleaseID, err)
+		}
+		if len(deployList) == 0 {
+			return nil, errors.Errorf("invalid deploy list")
 		}
 		releases, err := d.db.ListReleases(deployList[order.CurrentBatch-1])
 		if err != nil {

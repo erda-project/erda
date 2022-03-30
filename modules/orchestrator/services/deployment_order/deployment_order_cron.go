@@ -58,6 +58,10 @@ func (d *DeploymentOrder) PushOnDeploymentOrderPolling() (abort bool, err0 error
 			logrus.Warnf("failed to unmarshal deploy list for order %s, %v", order.ID, err)
 			continue
 		}
+		if len(deployList) == 0 {
+			logrus.Errorf("deployment order %s has invalid deployList", order.ID)
+			continue
+		}
 		for _, l := range deployList {
 			releaseIds = append(releaseIds, l...)
 		}
