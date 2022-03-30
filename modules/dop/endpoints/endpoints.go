@@ -249,8 +249,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/cicds-project/actions/pipeline-detail", Method: http.MethodGet, Handler: e.projectPipelineDetail},
 
 		// cms
-		{Path: "/api/cicds/configs", Method: http.MethodPost, Handler: e.createOrUpdateCmsNsConfigs},
-		{Path: "/api/cicds/configs", Method: http.MethodDelete, Handler: e.deleteCmsNsConfigs},
 		{Path: "/api/cicds/multinamespace/configs", Method: http.MethodPost, Handler: e.getCmsNsConfigs},
 		{Path: "/api/cicds/actions/fetch-config-namespaces", Method: http.MethodGet, Handler: e.getConfigNamespaces},
 		{Path: "/api/cicds/actions/list-workspaces", Method: http.MethodGet, Handler: e.listConfigWorkspaces},
