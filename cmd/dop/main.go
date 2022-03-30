@@ -37,12 +37,14 @@ import (
 	_ "github.com/erda-project/erda/modules/dop"
 	_ "github.com/erda-project/erda/modules/dop/providers/api-management"
 	_ "github.com/erda-project/erda/modules/dop/providers/autotest/testplan"
+	_ "github.com/erda-project/erda/modules/dop/providers/cms"
 	_ "github.com/erda-project/erda/modules/dop/providers/contribution"
 	_ "github.com/erda-project/erda/modules/dop/providers/guide"
 	_ "github.com/erda-project/erda/modules/dop/providers/issue/stream"
 	_ "github.com/erda-project/erda/modules/dop/providers/project/home"
 	_ "github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	_ "github.com/erda-project/erda/modules/dop/providers/taskerror"
+	_ "github.com/erda-project/erda/providers/audit"
 
 	// components
 	_ "github.com/erda-project/erda/modules/dop/component-protocol/components"

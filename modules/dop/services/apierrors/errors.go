@@ -156,6 +156,7 @@ var (
 
 	ErrDeletePipelineCmsNs              = err("ErrDeletePipelineCmsNs", "删除流水线配置管理命名空间失败")
 	ErrCreateOrUpdatePipelineCmsConfigs = err("ErrUpdatePipelineCmsConfigs", "创建或更新流水线配置管理配置失败")
+	UpdatePipelineCmsConfigs            = err("UpdatePipelineCmsConfigs", "更新流水线配置管理配置失败")
 	ErrDeletePipelineCmsConfigs         = err("ErrDeletePipelineCmsConfigs", "删除流水线配置管理配置失败")
 	ErrGetPipelineCmsConfigs            = err("ErrGetPipelineCmsConfigs", "查询流水线配置管理配置失败")
 

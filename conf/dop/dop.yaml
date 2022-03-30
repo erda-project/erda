@@ -82,9 +82,12 @@ erda.dop.projectpipeline: {}
 erda.dop.issue.stream: {}
 erda.dop.apim: {}
 erda.dop.guide: {}
+erda.dop.cms: {}
 
 # component-protocol framework
 component-protocol: {}
 
 metricq-client:
   endpoint: "http://${MONITOR_ADDR:monitor.default.svc.cluster.local:7096}"
+
+audit:

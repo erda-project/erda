@@ -608,6 +608,8 @@ func (p *provider) initEndpoints(db *dao.DBClient) (*endpoints.Endpoints, error)
 
 	p.GuideSvc.WithPipelineSvc(branchRule)
 
+	p.CICDCmsSvc.WithPermission(perm)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithBundle(bdl.Bdl),

@@ -44,6 +44,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/conf"
 	"github.com/erda-project/erda/modules/dop/metrics"
 	"github.com/erda-project/erda/modules/dop/providers/autotest/testplan"
+	"github.com/erda-project/erda/modules/dop/providers/cms"
 	"github.com/erda-project/erda/modules/dop/providers/guide"
 	"github.com/erda-project/erda/modules/dop/providers/issue/stream"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
@@ -74,6 +75,7 @@ type provider struct {
 	GuideSvc              *guide.GuideService                     `autowired:"erda.dop.guide.GuideService"`
 	AddonMySQLSvc         addonmysqlpb.AddonMySQLServiceServer    `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
 	DicehubReleaseSvc     dicehubpb.ReleaseServiceServer          `autowired:"erda.core.dicehub.release.ReleaseService"`
+	CICDCmsSvc            *cms.CICDCmsService                     `autowired:"erda.dop.cms.CICDCmsService"`
 
 	Protocol      componentprotocol.Interface
 	CPTran        i18n.I18n        `autowired:"i18n@cp"`
