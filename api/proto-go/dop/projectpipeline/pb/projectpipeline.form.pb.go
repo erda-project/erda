@@ -4,15 +4,26 @@
 package pb
 
 import (
+	json "encoding/json"
 	url "net/url"
 	strconv "strconv"
+	strings "strings"
 
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*RunProjectPipelineRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*RunProjectPipelineResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*RerunProjectPipelineRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*RerunProjectPipelineResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*RerunFailedProjectPipelineRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*RerunFailedProjectPipelineResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CancelProjectPipelineRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*CancelProjectPipelineResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineSourcePreCheckRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineSourcePreCheckResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineNamePreCheckRequest)(nil)
@@ -31,6 +42,192 @@ var _ urlenc.URLValuesUnmarshaler = (*ListPipelineCategoryResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*PipelineCategory)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateProjectPipelineRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*UpdateProjectPipelineResponse)(nil)
+
+// RunProjectPipelineRequest implement urlenc.URLValuesUnmarshaler.
+func (m *RunProjectPipelineRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pipelineDefinitionID":
+				m.PipelineDefinitionID = vals[0]
+			case "projectID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			}
+		}
+	}
+	return nil
+}
+
+// RunProjectPipelineResponse implement urlenc.URLValuesUnmarshaler.
+func (m *RunProjectPipelineResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pipeline":
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Pipeline = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Pipeline = val
+					} else {
+						m.Pipeline = structpb.NewStringValue(vals[0])
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// RerunProjectPipelineRequest implement urlenc.URLValuesUnmarshaler.
+func (m *RerunProjectPipelineRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pipelineDefinitionID":
+				m.PipelineDefinitionID = vals[0]
+			case "projectID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			}
+		}
+	}
+	return nil
+}
+
+// RerunProjectPipelineResponse implement urlenc.URLValuesUnmarshaler.
+func (m *RerunProjectPipelineResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pipeline":
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Pipeline = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Pipeline = val
+					} else {
+						m.Pipeline = structpb.NewStringValue(vals[0])
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// RerunFailedProjectPipelineRequest implement urlenc.URLValuesUnmarshaler.
+func (m *RerunFailedProjectPipelineRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pipelineDefinitionID":
+				m.PipelineDefinitionID = vals[0]
+			case "projectID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			}
+		}
+	}
+	return nil
+}
+
+// RerunFailedProjectPipelineResponse implement urlenc.URLValuesUnmarshaler.
+func (m *RerunFailedProjectPipelineResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pipeline":
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Pipeline = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Pipeline = val
+					} else {
+						m.Pipeline = structpb.NewStringValue(vals[0])
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// CancelProjectPipelineRequest implement urlenc.URLValuesUnmarshaler.
+func (m *CancelProjectPipelineRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pipelineDefinitionID":
+				m.PipelineDefinitionID = vals[0]
+			case "projectID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			}
+		}
+	}
+	return nil
+}
+
+// CancelProjectPipelineResponse implement urlenc.URLValuesUnmarshaler.
+func (m *CancelProjectPipelineResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
 
 // CreateProjectPipelineSourcePreCheckRequest implement urlenc.URLValuesUnmarshaler.
 func (m *CreateProjectPipelineSourcePreCheckRequest) UnmarshalURLValues(prefix string, values url.Values) error {
