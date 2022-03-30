@@ -48,6 +48,7 @@
           - "20211222-dice-member-character"
           - "20211026-pipeline-cron-row-format"
           - "20210823-project-charset-utf8mb4"
+          - "20220329-dice_member_extra-charset-collate"
     - stmtType: AlterTableStmt.AlterTableAddColumns
     - stmtType: AlterTableStmt.AlterTableAddConstraint
     - stmtType: AlterTableStmt.AlterTableDropColumn
