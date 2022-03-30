@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
+	"github.com/erda-project/erda-infra/pkg/safe"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
@@ -46,13 +47,13 @@ type PipelineReconciler interface {
 	NeedReconcile(ctx context.Context, p *spec.Pipeline) bool
 
 	// PrepareBeforeReconcile do something before reconcile.
-	PrepareBeforeReconcile(ctx context.Context, p *spec.Pipeline) error
+	PrepareBeforeReconcile(ctx context.Context, p *spec.Pipeline)
 
 	// GetTasksCanBeConcurrentlyScheduled get all tasks which can be concurrently scheduled.
 	GetTasksCanBeConcurrentlyScheduled(ctx context.Context, p *spec.Pipeline) ([]*spec.PipelineTask, error)
 
-	// ReconcileSchedulableTasks reconcile schedulable tasks belong to one pipeline.
-	ReconcileSchedulableTasks(ctx context.Context, p *spec.Pipeline, tasks []*spec.PipelineTask) error
+	// ReconcileOneSchedulableTask reconcile the schedulable task belong to one pipeline.
+	ReconcileOneSchedulableTask(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask)
 
 	// UpdateCurrentReconcileStatusIfNecessary calculate current reconcile status and update if necessary.
 	UpdateCurrentReconcileStatusIfNecessary(ctx context.Context, p *spec.Pipeline) error
@@ -73,6 +74,11 @@ type defaultPipelineReconciler struct {
 	processingTasks                              sync.Map
 	defaultRetryInterval                         time.Duration
 	calculatedPipelineStatusByAllReconciledTasks apistructs.PipelineStatus
+
+	// channels
+	chanToTriggerNextLoop chan struct{} // no buffer to ensure trigger one by one
+	schedulableTaskChan   chan *spec.PipelineTask
+	doneChan              chan struct{}
 }
 
 func (pr *defaultPipelineReconciler) IsReconcileDone(ctx context.Context, p *spec.Pipeline) bool {
@@ -83,31 +89,35 @@ func (pr *defaultPipelineReconciler) NeedReconcile(ctx context.Context, p *spec.
 	return !p.Status.IsEndStatus()
 }
 
-func (pr *defaultPipelineReconciler) PrepareBeforeReconcile(ctx context.Context, p *spec.Pipeline) error {
-	// set calculated pipeline status by all reconciled tasks from db
-	// calculate before reconcile
-	if err := pr.calculatePipelineStatusByAllReconciledTasks(ctx, p); err != nil {
-		return err
-	}
+func (pr *defaultPipelineReconciler) PrepareBeforeReconcile(ctx context.Context, p *spec.Pipeline) {
+	// trigger first loop
+	defer safe.Go(func() { pr.chanToTriggerNextLoop <- struct{}{} })
+
 	// update pipeline status if necessary
 	// send event in a tx
 	if p.Status.AfterPipelineQueue() {
-		return nil
+		return
 	}
 	//_, err := pr.dbClient.Transaction(func(s *xorm.Session) (interface{}, error) {
 	// update status
-	if err := pr.dbClient.UpdatePipelineBaseStatus(p.ID, apistructs.PipelineStatusRunning); err != nil {
-		return err
+	for {
+		if err := pr.dbClient.UpdatePipelineBaseStatus(p.ID, apistructs.PipelineStatusRunning); err != nil {
+			pr.log.Errorf("failed to update pipeline status before reoncile(auto retry), pipelineID: %d, err: %v", p.ID, err)
+			time.Sleep(pr.defaultRetryInterval)
+			continue
+		}
+		break
 	}
 	pr.log.Infof("pipelineID: %d, update pipeline status (%s -> %s)", p.ID, p.Status, apistructs.PipelineStatusRunning)
 	p.Status = apistructs.PipelineStatusRunning
 	// send event
 	events.EmitPipelineInstanceEvent(p, p.GetUserID())
-	return nil
 	//})
 	//return err
 }
 
+// GetTasksCanBeConcurrentlyScheduled .
+// TODO using cache to store schedulable result after first calculated if could.
 func (pr *defaultPipelineReconciler) GetTasksCanBeConcurrentlyScheduled(ctx context.Context, p *spec.Pipeline) ([]*spec.PipelineTask, error) {
 	// get all tasks
 	allTasks, err := pr.r.ymlTaskMergeDBTasks(p)
@@ -138,33 +148,23 @@ func (pr *defaultPipelineReconciler) GetTasksCanBeConcurrentlyScheduled(ctx cont
 	return filteredTasks, nil
 }
 
-func (pr *defaultPipelineReconciler) ReconcileSchedulableTasks(ctx context.Context, p *spec.Pipeline, tasks []*spec.PipelineTask) error {
-	var wg sync.WaitGroup
-	wg.Add(len(tasks))
-	for _, task := range tasks {
-		task := task
-		go func() {
-			defer wg.Done()
-			tr := &defaultTaskReconciler{
-				log:                  pr.r.Log.Sub("task"),
-				policy:               pr.r.TaskPolicy,
-				cache:                pr.r.Cache,
-				clusterInfo:          pr.r.ClusterInfo,
-				r:                    pr.r,
-				pr:                   pr,
-				dbClient:             pr.dbClient,
-				bdl:                  pr.r.bdl,
-				defaultRetryInterval: pr.r.Cfg.RetryInterval,
-				pipelineSvcFuncs:     pr.r.pipelineSvcFuncs,
-				actionAgentSvc:       pr.r.actionAgentSvc,
-				extMarketSvc:         pr.r.extMarketSvc,
-			}
-			tr.ReconcileOneTaskUntilDone(ctx, p, task)
-		}()
+func (pr *defaultPipelineReconciler) ReconcileOneSchedulableTask(ctx context.Context, p *spec.Pipeline, task *spec.PipelineTask) {
+	tr := &defaultTaskReconciler{
+		log:                  pr.r.Log.Sub("task"),
+		policy:               pr.r.TaskPolicy,
+		cache:                pr.r.Cache,
+		clusterInfo:          pr.r.ClusterInfo,
+		r:                    pr.r,
+		pr:                   pr,
+		dbClient:             pr.dbClient,
+		bdl:                  pr.r.bdl,
+		defaultRetryInterval: pr.r.Cfg.RetryInterval,
+		pipelineSvcFuncs:     pr.r.pipelineSvcFuncs,
+		actionAgentSvc:       pr.r.actionAgentSvc,
+		extMarketSvc:         pr.r.extMarketSvc,
 	}
-	wg.Wait()
-
-	return nil
+	tr.ReconcileOneTaskUntilDone(ctx, p, task)
+	pr.chanToTriggerNextLoop <- struct{}{}
 }
 
 func (pr *defaultPipelineReconciler) UpdateCurrentReconcileStatusIfNecessary(ctx context.Context, p *spec.Pipeline) error {
@@ -199,6 +199,7 @@ func (pr *defaultPipelineReconciler) UpdateCurrentReconcileStatusIfNecessary(ctx
 	if err := pr.dbClient.UpdatePipelineBaseStatus(p.ID, calculatedPipelineStatus); err != nil {
 		return err
 	}
+	pr.log.Infof("pipelineID: %d, update pipeline status (%s -> %s)", p.ID, p.Status, calculatedPipelineStatus)
 	p.Status = calculatedPipelineStatus
 	// send event
 	events.EmitPipelineInstanceEvent(p, p.GetUserID())
