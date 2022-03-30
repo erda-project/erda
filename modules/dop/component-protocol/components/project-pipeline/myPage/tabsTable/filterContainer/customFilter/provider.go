@@ -80,7 +80,6 @@ func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
 	} else {
 		p.URLQuery = &urlQuery
 	}
-
 	cputil.MustObjJSONTransfer(&p.StdStatePtr, &p.State)
 }
 
@@ -102,25 +101,9 @@ func (p *CustomFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 
 		if p.URLQuery != nil {
 			p.State.FrontendConditionValues = *p.URLQuery
+		} else {
+			p.setDefaultValues()
 		}
-
-		if p.InParams.AppID != 0 {
-			var appNames []string
-			app, err := p.bdl.GetApp(p.InParams.AppID)
-			if err != nil {
-				logrus.Errorf("failed to GetApp,err %s", err.Error())
-				panic(err)
-			}
-			appNames = []string{app.Name}
-			p.State.FrontendConditionValues.App = appNames
-		}
-
-		p.State.FrontendConditionValues.Creator = func() []string {
-			if p.gsHelper.GetGlobalPipelineTab() == common.MineState.String() {
-				return []string{p.sdk.Identity.UserID}
-			}
-			return p.State.FrontendConditionValues.Creator
-		}()
 
 		p.gsHelper.SetGlobalTableFilter(gshelper.TableFilter{
 			Status:            p.State.FrontendConditionValues.Status,
@@ -141,13 +124,7 @@ func (p *CustomFilter) clearState() {
 }
 
 func (p *CustomFilter) AfterHandleOp(sdk *cptype.SDK) {
-
-	// MineState remove creator
-	var copyValues = p.State.FrontendConditionValues
-	if p.gsHelper.GetGlobalPipelineTab() == common.MineState.String() {
-		copyValues.Creator = nil
-	}
-	cputil.SetURLQuery(sdk, copyValues)
+	cputil.SetURLQuery(sdk, p.State.FrontendConditionValues)
 
 	cputil.MustObjJSONTransfer(&p.State, &p.StdStatePtr)
 }
@@ -191,4 +168,9 @@ func (p *CustomFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDele
 		fmt.Println("op come", opData.ClientData.DataRef)
 		return nil
 	}
+}
+
+func (p *CustomFilter) setDefaultValues() {
+	p.State.FrontendConditionValues.App = []string{common.Participated}
+	p.State.FrontendConditionValues.Branch = common.DefaultBranch
 }

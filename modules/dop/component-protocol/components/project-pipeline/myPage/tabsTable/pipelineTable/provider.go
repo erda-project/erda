@@ -142,7 +142,7 @@ func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 			ColumnSource:   {[]table.ColumnKey{ColumnApplicationName, ColumnIcon, ColumnBranch}},
 			ColumnPipeline: {[]table.ColumnKey{ColumnPipelineName, ColumnSourceFile}},
 		},
-		Orders: []table.ColumnKey{ColumnPipeline, ColumnSource, ColumnPipelineStatus, ColumnProcess, ColumnCostTime,
+		Orders: []table.ColumnKey{ColumnSource, ColumnPipeline, ColumnPipelineStatus, ColumnProcess, ColumnCostTime,
 			ColumnExecutor, ColumnStartTime, ColumnCreateTime, ColumnCreator, ColumnPipelineID, ColumnMoreOperations},
 		ColumnsMap: map[table.ColumnKey]table.Column{
 			ColumnPipelineName:    {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineName))},
@@ -197,28 +197,18 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 	list, total, err := p.ProjectPipelineSvc.List(p.sdk.Ctx, deftype.ProjectPipelineList{
 		ProjectID: p.InParams.ProjectID,
 		AppName: func() []string {
-			if len(filter.App) != 0 {
+			if !strutil.InSlice(common.Participated, filter.App) {
 				return filter.App
 			}
-			return p.gsHelper.GetGlobalMyAppNames()
+			return strutil.DedupSlice(append(filter.App, p.gsHelper.GetGlobalMyAppNames()...), true)
 		}(),
-		Creator: func() []string {
-			if p.gsHelper.GetGlobalPipelineTab() == common.MineState.String() {
-				return []string{p.sdk.Identity.UserID}
-			}
-			return filter.Creator
-		}(),
+		Creator:  filter.Creator,
 		Executor: filter.Executor,
 		PageNo:   p.PageNo,
 		PageSize: p.PageSize,
-		Category: func() []string {
-			if p.gsHelper.GetGlobalPipelineTab() == common.PrimaryState.String() {
-				return []string{"primary"}
-			}
-			return nil
-		}(),
-		Name: filter.Title,
-		Ref:  filter.Branch,
+		Category: nil,
+		Name:     filter.Title,
+		Ref:      filter.Branch,
 		TimeCreated: func() []string {
 			timeCreated := make([]string, 0)
 			if len(filter.CreatedAtStartEnd) == 2 {
@@ -512,26 +502,6 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 		})
 	}
 
-	items = append(items, commodel.MoreOpItem{
-		ID: func() string {
-			if definition.Category == "primary" {
-				return "unsetPrimary"
-			}
-			return "setPrimary"
-		}(),
-		Text: cputil.I18n(p.sdk.Ctx, func() string {
-			if definition.Category == "primary" {
-				return "unsetPrimary"
-			}
-			return "setPrimary"
-		}()),
-		Icon: &commodel.Icon{
-			Type: "star",
-		},
-		Operations: map[cptype.OperationKey]cptype.Operation{
-			commodel.OpMoreOperationsItemClick{}.OpKey(): build,
-		},
-	})
 	// No delete button in running and timing
 	if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
 		return items
@@ -680,24 +650,6 @@ func init() {
 func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick) {
 	id := string(opData.ClientData.ParentDataRef.ID)
 	switch opData.ClientData.DataRef.ID {
-	case "setPrimary":
-		_, err := p.ProjectPipelineSvc.SetPrimary(p.sdk.Ctx, deftype.ProjectPipelineCategory{
-			PipelineDefinitionID: id,
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
-		})
-		if err != nil {
-			panic(err)
-		}
-	case "unsetPrimary":
-		_, err := p.ProjectPipelineSvc.UnSetPrimary(p.sdk.Ctx, deftype.ProjectPipelineCategory{
-			PipelineDefinitionID: id,
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
-		})
-		if err != nil {
-			panic(err)
-		}
 	case "run":
 		_, err := p.ProjectPipelineSvc.Run(p.sdk.Ctx, deftype.ProjectPipelineRun{
 			PipelineDefinitionID: id,
