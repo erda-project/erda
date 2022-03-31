@@ -407,6 +407,8 @@ func (tr *defaultTaskReconciler) judgeIfExpression(ctx context.Context, p *spec.
 			return err
 		}
 		task.Extra.AllowFailure = true
+		tr.log.Infof("set task status to %s (calculatedPipelineStatusByAllReconciledTasks: %s, action if expression is empty), pipelineID: %d, taskID: %d, taskName: %s",
+			apistructs.PipelineStatusNoNeedBySystem, tr.pr.calculatedPipelineStatusByAllReconciledTasks, p.ID, task.ID, task.Name)
 	}
 	return nil
 }
