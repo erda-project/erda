@@ -25,6 +25,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/igm/sockjs-go.v2/sockjs"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
@@ -50,6 +51,7 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/subscribe"
 	"github.com/erda-project/erda/modules/core-services/services/user"
 	"github.com/erda-project/erda/modules/core-services/utils"
+	"github.com/erda-project/erda/modules/messenger/eventbox/websocket"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -86,7 +88,11 @@ func (p *provider) Initialize() error {
 	server.Router().Path("/api/images/{imageName}").Methods(http.MethodGet).HandlerFunc(endpoints.GetImage)
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 
+	wsi, err := websocket.New()
+	server.Router().PathPrefix("/api/dice/eventbox").Path("/ws/{any:.*}").
+		Handler(sockjs.NewHandler("/api/dice/eventbox/ws", sockjs.DefaultOptions, wsi.HTTPHandle))
 	p.Router.Any("/**", server.Router().ServeHTTP)
+	wsi.Start(nil)
 	return nil
 }
 
