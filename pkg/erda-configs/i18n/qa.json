@@ -77,6 +77,7 @@
         "tp.export.scene.step.space.num": "测试空间编号",
         "tp.export.scene.step.pre.type": "排序类型",
         "tp.export.scene.step.api.spec.num": "API集市编号",
+        "tp.export.scene.step.is.disabled": "是否禁用",
 
         "tp.export.config.sheet.name": "自动化测试配置",
         "tp.export.config.scope.name": "范围",
@@ -175,6 +176,7 @@
         "tp.export.scene.step.space.num": "space num",
         "tp.export.scene.step.pre.type": "sorting type",
         "tp.export.scene.step.api.spec.num": "api spce num",
+        "tp.export.scene.step.is.disabled": "is disabled",
 
         "tp.export.config.sheet.name": "AutoTest Global Config",
         "tp.export.config.scope.name": "scope",

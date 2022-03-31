@@ -17,6 +17,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
@@ -96,12 +97,54 @@ func findComponents(ctx servicehub.Context, components []string) ([]model.Compon
 		if !ok {
 			return nil, fmt.Errorf("%s is not a Component", item)
 		}
+		f, err := model.NewDataFilter(extractFilterConfig(com.ComponentConfig()))
+		if err != nil {
+			return nil, fmt.Errorf("create data filter: %w", err)
+		}
 		res = append(res, model.ComponentUnit{
 			Component: com,
 			Name:      item,
+			Filter:    f,
 		})
 	}
 	return res, nil
+}
+
+func extractFilterConfig(cfg interface{}) model.FilterConfig {
+	t, v := reflect.TypeOf(cfg), reflect.ValueOf(cfg)
+	if t.Kind() == reflect.Ptr || t.Kind() == reflect.Interface {
+		t = t.Elem()
+		v = v.Elem()
+	}
+	switch t.Kind() {
+	case reflect.Struct:
+		return extractFromStruct(t, v)
+	case reflect.Map:
+		// TODO
+		return model.FilterConfig{}
+	default:
+		return model.FilterConfig{}
+	}
+}
+
+func extractFromStruct(t reflect.Type, v reflect.Value) model.FilterConfig {
+	target := model.FilterConfig{}
+	typeTarget, valueTarget := reflect.TypeOf(&target).Elem(), reflect.ValueOf(&target).Elem()
+	fieldmap := make(map[string]reflect.Value)
+	for i := 0; i < typeTarget.NumField(); i++ {
+		tf := typeTarget.Field(i).Tag.Get("file")
+		if tf != "" {
+			fieldmap[tf] = valueTarget.Field(i)
+		}
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		tf := t.Field(i).Tag.Get("file")
+		if vt, ok := fieldmap[tf]; ok {
+			vt.Set(v.Field(i))
+		}
+	}
+	return target
 }
 
 func init() {

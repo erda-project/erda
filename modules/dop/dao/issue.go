@@ -702,32 +702,15 @@ type IssueExpiryStatus struct {
 	ExpiryStatus ExpireType
 }
 
-func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchRequest) ([]IssueExpiryStatus, int, error) {
+func (client *DBClient) GetIssueExpiryStatusByProjects(req apistructs.WorkbenchRequest) ([]IssueExpiryStatus, error) {
 	sql := client.issueExpiryStatusQuery(req)
-	offset := (req.PageNo - 1) * req.PageSize
 	var res []IssueExpiryStatus
-	var total int
-	// paged projects with unfinished issues
-	if err := sql.Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status").
-		Offset(offset).Limit(req.PageSize).Group("dice_issues.project_id").Find(&res).Error; err != nil {
-		return nil, 0, err
-	}
-	// total of matched projects
-	if err := sql.Select("count(distinct(dice_issues.project_id))").Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-	projectIDs := make([]uint64, 0, len(res))
-	for _, i := range res {
-		projectIDs = append(projectIDs, i.ProjectID)
-	}
-	req.ProjectIDs = projectIDs
-	sql = client.issueExpiryStatusQuery(req)
 	// query with matched projects
 	if err := sql.Select("count(dice_issues.id) as issue_num, dice_issues.project_id, dice_issues.expiry_status").
 		Group("dice_issues.project_id, dice_issues.expiry_status").Find(&res).Error; err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	return res, total, nil
+	return res, nil
 }
 
 func (client *DBClient) issueExpiryStatusQuery(req apistructs.WorkbenchRequest) *gorm.DB {
@@ -833,10 +816,13 @@ func (i *IssueItem) FilterPropertyRetriever(condition string) string {
 	return string(f.String())
 }
 
-func (client *DBClient) GetAllIssuesByProject(req apistructs.IssueListRequest) ([]IssueItem, error) {
+func (client *DBClient) ListIssueItems(req apistructs.IssueListRequest) ([]IssueItem, error) {
 	var res []IssueItem
 	sql := client.Table("dice_issues").Joins(joinState)
-	sql = sql.Where("deleted = 0").Where("dice_issues.project_id = ?", req.ProjectID)
+	sql = sql.Where("deleted = 0")
+	if req.ProjectID != 0 {
+		sql = sql.Where("dice_issues.project_id = ?", req.ProjectID)
+	}
 	if len(req.StateBelongs) > 0 {
 		sql = sql.Where("dice_issue_state.belong IN (?)", req.StateBelongs)
 	}
@@ -848,6 +834,12 @@ func (client *DBClient) GetAllIssuesByProject(req apistructs.IssueListRequest) (
 	}
 	if len(req.Type) > 0 {
 		sql = sql.Where("type IN (?)", req.Type)
+	}
+	if len(req.IDs) > 0 {
+		sql = sql.Where("dice_issues.id in (?)", req.IDs)
+	}
+	if len(req.Label) > 0 {
+		sql = sql.Joins("LEFT JOIN dice_label_relations c ON dice_issues.id = c.ref_id").Where("c.label_id IN (?)", req.Label)
 	}
 	if err := sql.Select("dice_issues.*, dice_issue_state.name, dice_issue_state.belong").Find(&res).Error; err != nil {
 		return nil, err

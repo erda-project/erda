@@ -226,13 +226,8 @@ func (f *ReleaseFilter) renderFilter() error {
 					Label: f.sdk.I18n("true"),
 					Value: "true",
 				},
-				{
-					Label: f.sdk.I18n("false"),
-					Value: "false",
-				},
 			},
-			Mode:     "single",
-			Required: true,
+			Mode: "single",
 		})
 	}
 	f.StdDataPtr.Conditions = append(f.StdDataPtr.Conditions, Condition{

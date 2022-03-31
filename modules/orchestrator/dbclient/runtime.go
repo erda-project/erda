@@ -53,6 +53,7 @@ type Runtime struct {
 	DeploymentOrderId   string
 	ReleaseVersion      string
 	LegacyStatus        string `gorm:"column:status"`
+	FileToken           string
 	Deployed            bool
 	Deleting            bool `gorm:"-"` // TODO: after legacyStatus removed, we use deleting instead
 	Version             string
@@ -81,12 +82,8 @@ type ScheduleName struct {
 	Name      string
 }
 
-func (r *Runtime) InitScheduleName(clusterType string, enabledPrjNamespace bool) {
-	name := md5V(fmt.Sprintf("%d-%s-%s", r.ApplicationID, r.Workspace, r.Name))
-	if enabledPrjNamespace {
-		// 开启了项目级命名空间后，需要改成1个10位的哈希值id
-		name = fnvV(fmt.Sprintf("%d-%s-%s", r.ApplicationID, r.Workspace, r.Name))
-	}
+func (r *Runtime) InitScheduleName(clusterType string) {
+	name := fnvV(fmt.Sprintf("%d-%s-%s", r.ApplicationID, r.Workspace, r.Name))
 	if clusterType == apistructs.EDAS {
 		name = fmt.Sprintf("%s-%d", strings.ToLower(r.Workspace), r.ID)
 	}

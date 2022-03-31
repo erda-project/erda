@@ -31,6 +31,7 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
 	dicehubpb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	cmpTypes "github.com/erda-project/erda/modules/cmp/component-protocol/types"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/release-manage/access"
@@ -106,16 +107,16 @@ func (r *ComponentReleaseTable) InitComponent(ctx context.Context) {
 	r.svc = svc
 }
 
-func (r *ComponentReleaseTable) GenComponentState(c *cptype.Component) error {
-	if c == nil || c.State == nil {
+func (r *ComponentReleaseTable) GenComponentState(component *cptype.Component) error {
+	if component == nil || component.State == nil {
 		return nil
 	}
 	var state State
-	jsonData, err := json.Marshal(c.State)
+	data, err := json.Marshal(component.State)
 	if err != nil {
 		return err
 	}
-	if err = json.Unmarshal(jsonData, &state); err != nil {
+	if err = json.Unmarshal(data, &state); err != nil {
 		return err
 	}
 	r.State = state
@@ -127,19 +128,19 @@ func (r *ComponentReleaseTable) DecodeURLQuery() error {
 	if !ok {
 		return nil
 	}
-	decode, err := base64.StdEncoding.DecodeString(query)
+	decoded, err := base64.StdEncoding.DecodeString(query)
 	if err != nil {
 		return err
 	}
-	urlQuery := make(map[string]interface{})
-	if err := json.Unmarshal(decode, &urlQuery); err != nil {
+	queryData := make(map[string]interface{})
+	if err := json.Unmarshal(decoded, &queryData); err != nil {
 		return err
 	}
-	r.State.PageNo = int64(urlQuery["pageNo"].(float64))
-	r.State.PageSize = int64(urlQuery["pageSize"].(float64))
-	sorter := urlQuery["sorterData"].(map[string]interface{})
-	r.State.Sorter.Field, _ = sorter["field"].(string)
-	r.State.Sorter.Order, _ = sorter["order"].(string)
+	r.State.PageNo = int64(queryData["pageNo"].(float64))
+	r.State.PageSize = int64(queryData["pageSize"].(float64))
+	sorterData := queryData["sorterData"].(map[string]interface{})
+	r.State.Sorter.Field, _ = sorterData["field"].(string)
+	r.State.Sorter.Order, _ = sorterData["order"].(string)
 	return nil
 }
 
@@ -304,8 +305,12 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 		}
 
 		item := Item{
-			ID:          release.ReleaseID,
-			Version:     release.Version,
+			ID: release.ReleaseID,
+			Version: Version{
+				Value:      release.Version,
+				Tags:       []Tag{},
+				RenderType: "textWithTags",
+			},
 			Application: release.ApplicationName,
 			Creator: Creator{
 				RenderType: "userAvatar",
@@ -317,21 +322,31 @@ func (r *ComponentReleaseTable) RenderTable(ctx context.Context, gs *cptype.Glob
 				RenderType: "tableOperation",
 			},
 		}
+
+		if release.IsFormal && r.State.IsFormal == nil {
+			item.Version.Tags = append(item.Version.Tags, Tag{
+				Tag:   r.sdk.I18n("formal"),
+				Color: "blue",
+			})
+		}
+
 		if release.IsProjectRelease {
 			item.Operations.Operations["download"] = downloadOperation
 
-			var refReleasedList [][]string
-			if err := json.Unmarshal([]byte(release.ApplicationReleaseList), &refReleasedList); err != nil {
+			models := make(map[string]apistructs.ReleaseDeployMode)
+			if err := json.Unmarshal([]byte(release.Modes), &models); err != nil {
 				logrus.Errorf("failed to unmarshal application release list for release %s, %v", release.ReleaseID, err)
 			}
 			var list []string
-			for i := 0; i < len(refReleasedList); i++ {
-				list = append(list, refReleasedList[i]...)
+			for _, model := range models {
+				for i := 0; i < len(model.ApplicationReleaseList); i++ {
+					list = append(list, model.ApplicationReleaseList[i]...)
+				}
 			}
 			item.Operations.Operations["referencedReleases"] = Operation{
 				Meta: map[string]interface{}{
 					"releaseID": strings.Join(list, ","),
-					"isLatest":  "false",
+					"latest":    "",
 				},
 				Key:  "referencedReleases",
 				Text: r.sdk.I18n("referencedReleases"),
@@ -479,6 +494,7 @@ func (r *ComponentReleaseTable) formalReleases(ctx context.Context, releaseID []
 	ctx = metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
 		"internal-client": "true",
 		"org-id":          r.sdk.Identity.OrgID,
+		"user-id":         userID,
 	}))
 
 	if r.State.IsProjectRelease {
@@ -519,6 +535,7 @@ func (r *ComponentReleaseTable) deleteReleases(ctx context.Context, releaseID []
 	ctx = metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
 		"internal-client": "true",
 		"org-id":          r.sdk.Identity.OrgID,
+		"user-id":         userID,
 	}))
 
 	if r.State.IsProjectRelease {

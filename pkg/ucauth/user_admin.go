@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/openapi/conf"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -104,10 +105,20 @@ func (c *UCClient) InvalidateServerToken() {
 	c.ucTokenAuth.ExpireServerToken()
 }
 
+var systemOperator = User{
+	ID:   apistructs.SystemOperator,
+	Name: apistructs.SystemOperator,
+	Nick: apistructs.SystemOperator,
+}
+
 // FindUsers 根据用户ID查找用户信息
 func (c *UCClient) FindUsers(ids []string) ([]User, error) {
 	if len(ids) == 0 {
 		return nil, nil
+	}
+	sysOpExist := strutil.Exist(ids, apistructs.SystemOperator)
+	if sysOpExist {
+		ids = strutil.RemoveSlice(ids, apistructs.SystemOperator)
 	}
 	if c.oryEnabled() {
 		// get ordered uuid list
@@ -135,7 +146,14 @@ func (c *UCClient) FindUsers(ids []string) ([]User, error) {
 
 	// 保证返回的用户顺序为 id 列表顺序
 
-	return c.findUsersByQuery(query, ids...)
+	users, err := c.findUsersByQuery(query, ids...)
+	if err != nil {
+		return users, err
+	}
+	if sysOpExist {
+		users = append(users, systemOperator)
+	}
+	return users, nil
 }
 
 const DIALECT = "mysql"

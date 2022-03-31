@@ -84,8 +84,6 @@ type State struct {
 	SceneID               uint64     `json:"sceneId"`
 	SceneSetKey           uint64     `json:"sceneSetKey"`
 	PageNo                int        `json:"pageNo"`
-	SetId__urlQuery       string     `json:"setId__urlQuery"`
-	SceneId__urlQuery     string     `json:"sceneId__urlQuery"`
 	SelectedKeys          []string   `json:"selectedKeys"`
 	IsClickScene          bool       `json:"isClickScene"`
 	IsClickFolderTableRow bool       `json:"isClickFolderTableRow"`

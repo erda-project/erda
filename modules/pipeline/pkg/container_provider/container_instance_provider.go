@@ -106,7 +106,7 @@ func DealPipelineProviderBeforeRun(p *spec.Pipeline, clusterInfo apistructs.Clus
 	p.Extra.ContainerInstanceProvider = provider
 }
 
-func DealJobAndClusterInfo(job *apistructs.JobFromUser, clusterInfo map[string]string) {
+func DealJobAndClusterInfo(job *apistructs.JobFromUser, clusterInfo apistructs.ClusterInfoData) {
 	if job.ContainerInstanceProvider != nil && job.ContainerInstanceProvider.IsHitted {
 		switch job.ContainerInstanceProvider.ContainerInstanceType {
 		case apistructs.ContainerInstanceECI:

@@ -20,6 +20,14 @@ mysql:
   password: "${MYSQL_PASSWORD:123456}"
   database: "${MYSQL_DATABASE:dice}"
 
+redis:
+  addr: "${REDIS_ADDR}"
+  password: "${REDIS_PASSWORD}"
+  db: ${REDIS_DB:0}
+  master_name: "${REDIS_MASTER_NAME}"
+  sentinels_addr: "${REDIS_SENTINELS_ADDR}"
+
+
 erda.core.services.authentication.credentials.accesskey:
 erda.core.services.errorbox:
 
@@ -28,5 +36,9 @@ http-server@admin:
 pprof:
 
 erda.core.messenger.notify:
+
+erda.core.messenger.eventbox:
+
+dingtalk.api:
 
 erda.core.messenger.notifychannel:

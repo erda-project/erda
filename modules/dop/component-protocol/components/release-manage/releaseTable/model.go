@@ -38,13 +38,24 @@ type Data struct {
 
 type Item struct {
 	ID              string          `json:"id,omitempty"`
-	Version         string          `json:"version,omitempty"`
+	Version         Version         `json:"version,omitempty"`
 	Application     string          `json:"application,omitempty"`
 	Desc            string          `json:"desc,omitempty"`
 	Creator         Creator         `json:"creator,omitempty"`
 	CreatedAt       string          `json:"createdAt,omitempty"`
 	Operations      TableOperations `json:"operations"`
 	BatchOperations []string        `json:"batchOperations,omitempty"`
+}
+
+type Version struct {
+	Value      string `json:"value,omitempty"`
+	Tags       []Tag  `json:"tags"`
+	RenderType string `json:"renderType,omitempty"`
+}
+
+type Tag struct {
+	Tag   string `json:"tag,omitempty"`
+	Color string `json:"color,omitempty"`
 }
 
 type Creator struct {

@@ -21,10 +21,12 @@ import (
 
 	"github.com/recallsong/go-utils/config"
 	uuid "github.com/satori/go.uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/base/version"
-	_ "github.com/erda-project/erda/pkg/common/trace" //nolint
+	"github.com/erda-project/erda-infra/pkg/mysqldriver"
+	_ "github.com/erda-project/erda/pkg/common/trace" // nolint
 )
 
 var instanceID = uuid.NewV4().String()
@@ -52,10 +54,18 @@ func loadModuleEnvFile(dir string) {
 }
 
 func prepare() {
+	openMysqlTLS()
 	version.PrintIfCommand()
 	Env()
 	for _, fn := range initializers {
 		fn()
+	}
+}
+
+func openMysqlTLS() {
+	err := mysqldriver.OpenTLS(os.Getenv("MYSQL_TLS"), os.Getenv("MYSQL_CACERTPATH"), os.Getenv("MYSQL_CLIENTCERTPATH"), os.Getenv("MYSQL_CLIENTKEYPATH"))
+	if err != nil {
+		logrus.Errorf("register tls error %v", err)
 	}
 }
 
@@ -88,7 +98,7 @@ func newHub() *servicehub.Hub {
 func Run(opts *servicehub.RunOptions) {
 	prepare()
 	opts.Name = GetEnv("CONFIG_NAME", opts.Name)
-	cfg := opts.ConfigFile
+	cfg := GetEnv("CONFIG_FILE", opts.ConfigFile)
 	if len(cfg) <= 0 && len(opts.Name) > 0 {
 		cfg = opts.Name + ".yaml"
 	}

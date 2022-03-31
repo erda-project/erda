@@ -16,6 +16,7 @@ package snapshot_test
 
 import (
 	"bytes"
+	"os"
 	"strings"
 	"testing"
 
@@ -219,4 +220,26 @@ func TestParseCreateTableStmt(t *testing.T) {
 func TestTrimBlockFormat(t *testing.T) {
 	trimBlockFormat := snapshot.TrimBlockFormat(blockFormatCase)
 	t.Log(trimBlockFormat)
+}
+
+func TestCharsetWhite(t *testing.T) {
+	white := snapshot.CharsetWhite()
+	var m = make(map[string]struct{})
+	for _, v := range white {
+		m[v] = struct{}{}
+	}
+	if _, ok := m["utf8"]; !ok {
+		t.Fatal("utf8 is in default")
+	}
+	if _, ok := m["utf8mb4"]; !ok {
+		t.Fatal("utf8mb4 is in default")
+	}
+
+	if err := os.Setenv("PIPELINE_MIGRATION_CHARSET_WHITE", "utf8mb4"); err != nil {
+		t.Fatal(err)
+	}
+	white = snapshot.CharsetWhite()
+	if len(white) != 1 || white[0] != "utf8mb4" {
+		t.Fatal("utf8mb4 is set", white)
+	}
 }

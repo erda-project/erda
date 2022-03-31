@@ -54,6 +54,7 @@ func (b *Bundle) QueryExtensionVersions(req apistructs.ExtensionVersionQueryRequ
 	resp, err := hc.Get(host).Path(fmt.Sprintf("/api/extensions/%v", req.Name)).
 		Param("all", req.All).
 		Param("yamlFormat", strconv.FormatBool(req.YamlFormat)).
+		Param("orderByVersionDesc", strconv.FormatBool(req.OrderByVersionDesc)).
 		Header("Internal-Client", "bundle").
 		Do().JSON(&getResp)
 	if err != nil {
@@ -74,7 +75,7 @@ func (b *Bundle) QueryExtensions(req apistructs.ExtensionQueryRequest) ([]apistr
 
 	var getResp apistructs.ExtensionQueryResponse
 	resp, err := hc.Get(host).Path("/api/extensions").
-		Param("all", req.All).
+		Param("all", strconv.FormatBool(req.All)).
 		Param("type", req.Type).
 		Header("Internal-Client", "bundle").
 		Do().JSON(&getResp)

@@ -32,9 +32,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v2"
 
-	pb "github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
+	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	extensiondb "github.com/erda-project/erda/modules/dicehub/extension/db"
 	imagedb "github.com/erda-project/erda/modules/dicehub/image/db"
 	"github.com/erda-project/erda/modules/dicehub/registry"
 	"github.com/erda-project/erda/modules/dicehub/release/db"
@@ -52,6 +53,7 @@ type ReleaseService struct {
 	p           *provider
 	db          *db.ReleaseConfigDB
 	imageDB     *imagedb.ImageConfigDB
+	extensionDB *extensiondb.ExtensionConfigDB
 	bdl         *bundle.Bundle
 	Etcd        *clientv3.Client
 	Config      *releaseConfig
@@ -141,7 +143,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *pb.ReleaseCreat
 			return nil, apierrors.ErrCreateRelease.AccessDenied()
 		}
 	}
-	logrus.Infof("creating release...request body: %v\n", req)
+	logrus.Debugf("creating release...request body: %v\n", req)
 	// create Release
 	releaseID, err := s.Create(req)
 	if err != nil {
@@ -1108,18 +1110,11 @@ func (s *ReleaseService) Convert(releaseRequest *pb.ReleaseCreateRequest, appRel
 		release.ApplicationName = ""
 		release.Dice = ""
 
-		var list [][]string
-		for i := 0; i < len(releaseRequest.ApplicationReleaseList); i++ {
-			if releaseRequest.ApplicationReleaseList[i] == nil {
-				continue
-			}
-			list = append(list, releaseRequest.ApplicationReleaseList[i].List)
-		}
-		listData, err := json.Marshal(list)
+		modesData, err := json.Marshal(convertPbModesToModes(releaseRequest.Modes))
 		if err != nil {
 			return nil, errors.Errorf("failed to marshal release list, %v", err)
 		}
-		release.ApplicationReleaseList = string(listData)
+		release.Modes = string(modesData)
 	} else {
 		release.IsLatest = true
 	}
@@ -1139,16 +1134,25 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 		resources = make([]*pb.ReleaseResource, 0)
 	}
 
-	var summary []*pb.ReleaseSummaryArray
+	var (
+		summary   map[string]*pb.ModeSummary
+		addons    []*pb.AddonInfo
+		addonYaml string
+	)
+	addonSet := make(map[string]*diceyml.AddOn)
 	if release.IsProjectRelease {
-		var appReleaseIDs [][]string
-		if err = json.Unmarshal([]byte(release.ApplicationReleaseList), &appReleaseIDs); err != nil {
-			return nil, errors.Errorf("failed to Unmarshal appReleaseIDs")
+		modes := make(map[string]apistructs.ReleaseDeployMode)
+		if err = json.Unmarshal([]byte(release.Modes), &modes); err != nil {
+			return nil, errors.Errorf("failed to Unmarshal appReleaseIDs, %v", err)
 		}
 
 		var list []string
-		for i := 0; i < len(appReleaseIDs); i++ {
-			list = append(list, appReleaseIDs[i]...)
+		for _, mode := range modes {
+			for _, applicationList := range mode.ApplicationReleaseList {
+				for _, id := range applicationList {
+					list = append(list, id)
+				}
+			}
 		}
 		appReleases, err := s.db.GetReleases(list)
 		if err != nil {
@@ -1158,54 +1162,130 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 		id2Release := make(map[string]*db.Release)
 		for i := 0; i < len(appReleases); i++ {
 			id2Release[appReleases[i].ReleaseID] = &appReleases[i]
-		}
 
-		summary = make([]*pb.ReleaseSummaryArray, len(appReleaseIDs))
-		for i := 0; i < len(appReleaseIDs); i++ {
-			summary[i] = &pb.ReleaseSummaryArray{List: make([]*pb.ApplicationReleaseSummary, len(appReleaseIDs[i]))}
-			for j := 0; j < len(appReleaseIDs[i]); j++ {
-				id := appReleaseIDs[i][j]
-				summary[i].List[j] = &pb.ApplicationReleaseSummary{
-					ReleaseID:       id2Release[id].ReleaseID,
-					ReleaseName:     id2Release[id].ReleaseName,
-					Version:         id2Release[id].Version,
-					ApplicationID:   id2Release[id].ApplicationID,
-					ApplicationName: id2Release[id].ApplicationName,
-					CreatedAt:       id2Release[id].CreatedAt.Format("2006/01/02 15:04:05"),
-					DiceYml:         id2Release[id].Dice,
+			dice, err := diceyml.New([]byte(appReleases[i].Dice), true)
+			if err != nil {
+				logrus.Errorf("failed to parse diceyml for release %s, %v", appReleases[i].ReleaseID, err)
+				continue
+			}
+			obj := dice.Obj()
+			if obj == nil || obj.AddOns == nil {
+				continue
+			}
+
+			for name, addon := range obj.AddOns {
+				version := addon.Options["version"]
+				splits := strings.Split(addon.Plan, ":")
+				if len(splits) != 2 {
+					logrus.Errorf("plan field of addon %s for release %s is invalid", name, appReleases[i].ReleaseID)
+					continue
 				}
+				addonSet[strings.Join([]string{splits[0], version, splits[1]}, "_")] = addon
 			}
 		}
+
+		summary = make(map[string]*pb.ModeSummary)
+		for k, mode := range modes {
+			modeSummary := &pb.ModeSummary{
+				Expose:                 mode.Expose,
+				DependOn:               mode.DependOn,
+				ApplicationReleaseList: make([]*pb.ReleaseSummaryArray, len(mode.ApplicationReleaseList)),
+			}
+			for i := 0; i < len(mode.ApplicationReleaseList); i++ {
+				modeSummary.ApplicationReleaseList[i] = &pb.ReleaseSummaryArray{
+					List: make([]*pb.ApplicationReleaseSummary, len(mode.ApplicationReleaseList[i])),
+				}
+				for j := 0; j < len(mode.ApplicationReleaseList[i]); j++ {
+					id := mode.ApplicationReleaseList[i][j]
+					release, ok := id2Release[id]
+					if !ok {
+						return nil, errors.Errorf("release %s not found", id)
+					}
+					modeSummary.ApplicationReleaseList[i].List[j] = &pb.ApplicationReleaseSummary{
+						ReleaseID:       release.ReleaseID,
+						ReleaseName:     release.ReleaseName,
+						Version:         release.Version,
+						ApplicationID:   release.ApplicationID,
+						ApplicationName: release.ApplicationName,
+						CreatedAt:       release.CreatedAt.Format("2006/01/02 15:04:05"),
+						DiceYml:         release.Dice,
+					}
+				}
+			}
+			summary[k] = modeSummary
+		}
+
+		extensionMap := make(map[string]*extensiondb.Extension)
+		if len(addonSet) > 0 {
+			extensions, err := s.extensionDB.QueryExtensions("true", "", "")
+			if err != nil {
+				return nil, errors.Errorf("failed to query extensions, %v", err)
+			}
+
+			for i := 0; i < len(extensions); i++ {
+				extensionMap[extensions[i].Name] = &extensions[i]
+			}
+		}
+
+		for _, addon := range addonSet {
+			version := addon.Options["version"]
+			splits := strings.Split(addon.Plan, ":")
+			name := splits[0]
+			plan := splits[1]
+			if version == "" {
+				extensionVersion, err := s.extensionDB.GetExtensionDefaultVersion(name)
+				if err != nil {
+					return nil, errors.Errorf("failed to get default version for addon %s, %v", name, err)
+				}
+				version = extensionVersion.Version
+			}
+			addons = append(addons, &pb.AddonInfo{
+				DisplayName: extensionMap[name].DisplayName,
+				Plan:        plan,
+				Version:     version,
+				Category:    extensionMap[name].Category,
+				LogoURL:     extensionMap[name].LogoUrl,
+			})
+		}
+
+		data, err := yaml.Marshal(addonSet)
+		if err != nil {
+			return nil, errors.Errorf("failed to marshal addonSet, %v", err)
+		}
+		addonYaml = string(data)
 	}
 
 	respData := &pb.ReleaseGetResponseData{
-		ReleaseID:              release.ReleaseID,
-		ReleaseName:            release.ReleaseName,
-		Diceyml:                release.Dice,
-		Desc:                   release.Desc,
-		Addon:                  release.Addon,
-		Changelog:              release.Changelog,
-		IsStable:               release.IsStable,
-		IsFormal:               release.IsFormal,
-		IsProjectRelease:       release.IsProjectRelease,
-		ApplicationReleaseList: summary,
-		Resources:              resources,
-		Labels:                 labels,
-		Tags:                   release.Tags,
-		Version:                release.Version,
-		CrossCluster:           release.CrossCluster,
-		Reference:              release.Reference,
-		OrgID:                  release.OrgID,
-		ProjectID:              release.ProjectID,
-		ApplicationID:          release.ApplicationID,
-		ProjectName:            release.ProjectName,
-		ApplicationName:        release.ApplicationName,
-		UserID:                 release.UserID,
-		ClusterName:            release.ClusterName,
-		CreatedAt:              timestamppb.New(release.CreatedAt),
-		UpdatedAt:              timestamppb.New(release.UpdatedAt),
-		IsLatest:               release.IsLatest,
+		ReleaseID:        release.ReleaseID,
+		ReleaseName:      release.ReleaseName,
+		Diceyml:          release.Dice,
+		Desc:             release.Desc,
+		Addon:            release.Addon,
+		Changelog:        release.Changelog,
+		IsStable:         release.IsStable,
+		IsFormal:         release.IsFormal,
+		IsProjectRelease: release.IsProjectRelease,
+		Modes:            summary,
+		Resources:        resources,
+		Labels:           labels,
+		Tags:             release.Tags,
+		Version:          release.Version,
+		CrossCluster:     release.CrossCluster,
+		Reference:        release.Reference,
+		OrgID:            release.OrgID,
+		ProjectID:        release.ProjectID,
+		ApplicationID:    release.ApplicationID,
+		ProjectName:      release.ProjectName,
+		ApplicationName:  release.ApplicationName,
+		UserID:           release.UserID,
+		ClusterName:      release.ClusterName,
+		CreatedAt:        timestamppb.New(release.CreatedAt),
+		UpdatedAt:        timestamppb.New(release.UpdatedAt),
+		IsLatest:         release.IsLatest,
+		Addons:           addons,
+		AddonYaml:        addonYaml,
 	}
+
 	if err = respDataReLoadImages(respData); err != nil {
 		logrus.WithError(err).Errorln("failed to ReLoadImages")
 		return nil, err
@@ -1214,41 +1294,7 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 	return respData, nil
 }
 
-func summaryReLoadImages(r *pb.ApplicationReleaseSummary) error {
-	if r == nil {
-		return nil
-	}
-	if r.DiceYml == "" {
-		return errors.Errorf("invalid release file: it is empty, applicationID: %v, applicationName: %s",
-			r.ApplicationID, r.ApplicationName)
-	}
-	deployable, err := diceyml.NewDeployable([]byte(r.DiceYml), diceyml.WS_PROD, false)
-	if err != nil {
-		return err
-	}
-	var obj = deployable.Obj()
-	r.Services = nil
-	for name, service := range obj.Services {
-		r.Services = append(r.Services, &pb.ServiceImagePair{
-			ServiceName: name,
-			Image:       service.Image,
-		})
-	}
-	return nil
-}
-
 func respDataReLoadImages(r *pb.ReleaseGetResponseData) error {
-	for i := 0; i < len(r.ApplicationReleaseList); i++ {
-		if r.ApplicationReleaseList[i] == nil {
-			continue
-		}
-		for j := 0; j < len(r.ApplicationReleaseList[i].List); j++ {
-			if err := summaryReLoadImages(r.ApplicationReleaseList[i].List[j]); err != nil {
-				return err
-			}
-		}
-	}
-
 	if r.Diceyml == "" {
 		return nil
 	}
@@ -1266,7 +1312,13 @@ func respDataReLoadImages(r *pb.ReleaseGetResponseData) error {
 			Image:       service.Image,
 		})
 	}
-
+	for name, job := range obj.Jobs {
+		r.Images = append(r.Images, job.Image)
+		r.ServiceImages = append(r.ServiceImages, &pb.ServiceImagePair{
+			ServiceName: name,
+			Image:       job.Image,
+		})
+	}
 	return nil
 }
 
@@ -1321,7 +1373,8 @@ func (s *ReleaseService) hasWriteAccess(identity apistructs.IdentityInfo, projec
 	}
 	rsp, err = s.bdl.ScopeRoleAccess(identity.UserID, req)
 	if err != nil {
-		return false, err
+		logrus.Errorf("failed to check app access for release of app %d, %v", applicationID, err)
+		return hasProjectAccess, nil
 	}
 
 	hasAppAccess := false

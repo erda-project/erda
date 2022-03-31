@@ -4,11 +4,11 @@ service-register:
 
 # prometheus provider only recognize http-server@admin
 http-server@admin:
-  addr: ":3081"
+  addr: "${PIPELINE_LISTEN_ADDR::3081}"
 prometheus:
 
 grpc-server:
-  addr: ":30810"
+  addr: "${PIPELINE_LISTEN_GRPC_ADDR::30810}"
 
 mysql-xorm:
   host: "${MYSQL_HOST:localhost}"
@@ -24,11 +24,24 @@ etcd:
     cert_key_file: "${ETCD_CERT_KEY_FILE:/certs/etcd-client-key.pem}"
     ca_file: "${ETCD_CA_FILE:/certs/etcd-ca.pem}"
 
-etcd-election@reconciler:
-  root_path: erda/component-leader/pipeline/reconciler
+pipengine: {}
+queue-manager:
+  incoming_pipeline:
+    etcd_key_prefix_with_slash: /devops/pipeline/v2/queue-manager/incoming_pipeline/
+dispatcher: {}
+leader-worker:
+  worker:
+    etcd_key_prefix_with_slash: /devops/pipeline/v2/leader-worker/worker/
+reconciler: {}
+clusterinfo: {}
+resourcegc: {}
+dbgc: {}
+task-policy: {}
+reconciler-cache: {}
 
-etcd-election@gc:
-  root_path: erda/component-leader/pipeline/gc
+etcd-election@leader-worker:
+  root_path: erda/component-leader/pipeline/leader-worker
+
 metric-report-client:
   report_config:
     collector:
@@ -36,6 +49,9 @@ metric-report-client:
       username: ${COLLECTOR_AUTH_USERNAME}
       password: ${COLLECTOR_AUTH_PASSWORD}
 erda.core.pipeline.definition:
+erda.core.pipeline.cron:
+cron-daemon:
+cron-compensator:
 erda.core.pipeline.source:
 erda.core.pipeline.cms:
   # TODO refactor it: use kms to make key-change operation easier. No encrypt if key-pair not provided.

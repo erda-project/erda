@@ -26,11 +26,11 @@ import (
 func IsProjectECIEnable(bdl *bundle.Bundle, projectID uint64, workspace string, orgID uint64, userID string) bool {
 	ablilities, err := bdl.GetProjectWorkSpaceAbilities(projectID, workspace, orgID, userID)
 	if err != nil {
-		logrus.Errorf("get project workspace abilities fialed for project %d wokrspace %s", projectID, workspace)
+		logrus.Errorf("get project workspace abilities failed for project %d wokrspace %s, error: %v", projectID, workspace, err)
 		return false
 	}
 
-	logrus.Infof("get project workspace abilities fialed for project %d wokrspace %s result is: %#v", projectID, workspace, ablilities)
+	logrus.Infof("get project workspace abilities for project %d wokrspace %s result is: %#v", projectID, workspace, ablilities)
 	if ablilities != nil {
 		if v, ok := ablilities["ECI"]; ok && v == "enable" {
 			return true

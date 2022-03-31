@@ -15,6 +15,7 @@
 package pipelineTable
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -33,7 +34,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/utils/cputil"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	"github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	commonpb "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
@@ -61,6 +64,7 @@ type PipelineTable struct {
 	UserIDs  []string       `json:"-"`
 
 	ProjectPipelineSvc *projectpipeline.ProjectPipelineService
+	PipelineCron       cronpb.CronServiceServer
 }
 
 const (
@@ -97,6 +101,7 @@ func (p *PipelineTable) BeforeHandleOp(sdk *cptype.SDK) {
 		panic(err)
 	}
 	p.ProjectPipelineSvc = sdk.Ctx.Value(types.ProjectPipelineService).(*projectpipeline.ProjectPipelineService)
+	p.PipelineCron = sdk.Ctx.Value(types.PipelineCronService).(cronpb.CronServiceServer)
 	//cputil.MustObjJSONTransfer(&p.StdStatePtr, &p.State)
 }
 
@@ -137,7 +142,7 @@ func (p *PipelineTable) SetTableColumns() table.ColumnsInfo {
 			ColumnSource:   {[]table.ColumnKey{ColumnApplicationName, ColumnIcon, ColumnBranch}},
 			ColumnPipeline: {[]table.ColumnKey{ColumnPipelineName, ColumnSourceFile}},
 		},
-		Orders: []table.ColumnKey{ColumnPipeline, ColumnSource, ColumnPipelineStatus, ColumnProcess, ColumnCostTime,
+		Orders: []table.ColumnKey{ColumnSource, ColumnPipeline, ColumnPipelineStatus, ColumnProcess, ColumnCostTime,
 			ColumnExecutor, ColumnStartTime, ColumnCreateTime, ColumnCreator, ColumnPipelineID, ColumnMoreOperations},
 		ColumnsMap: map[table.ColumnKey]table.Column{
 			ColumnPipelineName:    {Title: cputil.I18n(p.sdk.Ctx, string(ColumnPipelineName))},
@@ -187,42 +192,23 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 	if len(ascCols) == 0 && len(descCols) == 0 {
 		descCols = append(descCols, "started_at")
 	}
-	var inParamsAppName string
-	if p.InParams.AppID != 0 {
-		app, err := p.bdl.GetApp(p.InParams.AppID)
-		if err != nil {
-			logrus.Errorf("failed to GetApp, err: %s", err.Error())
-			panic(err)
-		} else {
-			inParamsAppName = app.Name
-		}
-	}
 
 	filter := p.gsHelper.GetGlobalTableFilter()
 	list, total, err := p.ProjectPipelineSvc.List(p.sdk.Ctx, deftype.ProjectPipelineList{
 		ProjectID: p.InParams.ProjectID,
 		AppName: func() []string {
-			if inParamsAppName != "" {
-				return []string{inParamsAppName}
+			if !strutil.InSlice(common.Participated, filter.App) {
+				return filter.App
 			}
-			return filter.App
+			return strutil.DedupSlice(append(filter.App, p.gsHelper.GetGlobalMyAppNames()...), true)
 		}(),
-		Creator: func() []string {
-			if p.gsHelper.GetGlobalPipelineTab() == common.MineState.String() {
-				return []string{p.sdk.Identity.UserID}
-			}
-			return filter.Creator
-		}(),
+		Creator:  filter.Creator,
 		Executor: filter.Executor,
 		PageNo:   p.PageNo,
 		PageSize: p.PageSize,
-		Category: func() []string {
-			if p.gsHelper.GetGlobalPipelineTab() == common.PrimaryState.String() {
-				return []string{"primary"}
-			}
-			return nil
-		}(),
-		Name: filter.Title,
+		Category: nil,
+		Name:     filter.Title,
+		Ref:      filter.Branch,
 		TimeCreated: func() []string {
 			timeCreated := make([]string, 0)
 			if len(filter.CreatedAtStartEnd) == 2 {
@@ -242,6 +228,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 		Status:       filter.Status,
 		DescCols:     descCols,
 		AscCols:      ascCols,
+		CategoryKey:  p.InParams.FrontendPipelineCategoryKey,
 		IdentityInfo: apistructs.IdentityInfo{UserID: p.sdk.Identity.UserID},
 	})
 	if err != nil {
@@ -250,7 +237,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 
 	var (
 		pipelineYmlNames []string
-		pipelineSources  []apistructs.PipelineSource
+		pipelineSources  []string
 	)
 
 	definitionYmlSourceMap := make(map[string]string)
@@ -261,22 +248,22 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 			logrus.Errorf("failed to list Unmarshal Extra, err: %s", err.Error())
 		}
 		pipelineYmlNames = append(pipelineYmlNames, extraValue.CreateRequest.PipelineYmlName)
-		pipelineSources = append(pipelineSources, extraValue.CreateRequest.PipelineSource)
+		pipelineSources = append(pipelineSources, extraValue.CreateRequest.PipelineSource.String())
 		definitionYmlSourceMap[v.ID] = fmt.Sprintf("%s%s", extraValue.CreateRequest.PipelineYmlName, extraValue.CreateRequest.PipelineSource)
 	}
 
 	worker := limit_sync_group.NewWorker(2)
-	var crons *apistructs.PipelineCronPagingResponseData
+	var crons *cronpb.CronPagingResponse
 	var appNameIDMap *apistructs.GetAppIDByNamesResponseData
 
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 		if len(pipelineYmlNames) == 0 {
 			return nil
 		}
-		crons, err = p.bdl.PageListPipelineCrons(apistructs.PipelineCronPagingRequest{
+		crons, err = p.PipelineCron.CronPaging(context.Background(), &cronpb.CronPagingRequest{
 			Sources:  pipelineSources,
 			YmlNames: pipelineYmlNames,
-			PageSize: len(list),
+			PageSize: int64(len(list)),
 			PageNo:   1,
 		})
 		if err != nil {
@@ -307,7 +294,7 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 		panic(worker.Error())
 	}
 
-	ymlSourceMapCronMap := make(map[string]*apistructs.PipelineCronDTO)
+	ymlSourceMapCronMap := make(map[string]*commonpb.Cron)
 	if crons != nil {
 		for _, v := range crons.Data {
 			ymlSourceMapCronMap[fmt.Sprintf("%s%s", v.PipelineYmlName, v.PipelineSource)] = v
@@ -417,9 +404,10 @@ func (p *PipelineTable) SetTableRows() []table.Row {
 						}
 					}
 					build.ServerData = &cptype.OpServerData{
-						"pipelineID": v.PipelineID,
-						"inode":      base64.URLEncoding.EncodeToString([]byte(inode)),
-						"appName":    appName,
+						"pipelineID":   v.PipelineID,
+						"inode":        base64.URLEncoding.EncodeToString([]byte(inode)),
+						"appName":      appName,
+						"pipelineName": v.Name,
 					}
 					return build
 				}(),
@@ -436,7 +424,7 @@ func formatTimeToStr(t time.Time) string {
 	return t.In(time.FixedZone("UTC+8", int((8 * time.Hour).Seconds()))).Format("2006-01-02 15:04:05")
 }
 
-func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, definitionYmlSourceMap map[string]string, ymlSourceMapCronMap map[string]*apistructs.PipelineCronDTO) []commodel.MoreOpItem {
+func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, definitionYmlSourceMap map[string]string, ymlSourceMapCronMap map[string]*commonpb.Cron) []commodel.MoreOpItem {
 	items := make([]commodel.MoreOpItem, 0)
 	build := cputil.NewOpBuilder().Build()
 	items = append(items, commodel.MoreOpItem{
@@ -487,19 +475,19 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 	if v, ok := ymlSourceMapCronMap[definitionYmlSourceMap[definition.ID]]; ok && strings.TrimSpace(v.CronExpr) != "" {
 		items = append(items, commodel.MoreOpItem{
 			ID: func() string {
-				if *v.Enable {
+				if v.Enable.Value {
 					return "cancelCron"
 				}
 				return "cron"
 			}(),
 			Text: cputil.I18n(p.sdk.Ctx, func() string {
-				if *v.Enable {
+				if v.Enable.Value {
 					return "cancelCron"
 				}
 				return "cron"
 			}()),
 			Icon: func() *commodel.Icon {
-				if *v.Enable {
+				if v.Enable.Value {
 					return &commodel.Icon{
 						Type: "start-timing",
 					}
@@ -514,36 +502,15 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 		})
 	}
 
-	items = append(items, commodel.MoreOpItem{
-		ID: func() string {
-			if definition.Category == "primary" {
-				return "unsetPrimary"
-			}
-			return "setPrimary"
-		}(),
-		Text: cputil.I18n(p.sdk.Ctx, func() string {
-			if definition.Category == "primary" {
-				return "unsetPrimary"
-			}
-			return "setPrimary"
-		}()),
-		Icon: &commodel.Icon{
-			Type: "star",
-		},
-		Operations: map[cptype.OperationKey]cptype.Operation{
-			commodel.OpMoreOperationsItemClick{}.OpKey(): build,
-		},
-	})
 	// No delete button in running and timing
 	if apistructs.PipelineStatus(definition.Status).IsRunningStatus() {
 		return items
 	}
 	if v, ok := ymlSourceMapCronMap[definitionYmlSourceMap[definition.ID]]; ok {
-		if *v.Enable {
+		if v.Enable.Value {
 			return items
 		}
 	}
-
 	if definition.Creator == p.sdk.Identity.UserID {
 		items = append(items, commodel.MoreOpItem{
 			ID:   "delete",
@@ -556,6 +523,19 @@ func (p *PipelineTable) SetTableMoreOpItem(definition *pb.PipelineDefinition, de
 			},
 		})
 	}
+
+	updateNameBuild := build
+	updateNameBuild.SkipRender = true
+	items = append(items, commodel.MoreOpItem{
+		ID:   "updateName",
+		Text: cputil.I18n(p.sdk.Ctx, "updateName"),
+		Operations: map[cptype.OperationKey]cptype.Operation{
+			commodel.OpMoreOperationsItemClick{}.OpKey(): updateNameBuild,
+		},
+		Icon: &commodel.Icon{
+			Type: "edit1",
+		},
+	})
 	return items
 }
 
@@ -670,24 +650,6 @@ func init() {
 func (p *PipelineTable) RegisterMoreOperationOp(opData OpMoreOperationsItemClick) {
 	id := string(opData.ClientData.ParentDataRef.ID)
 	switch opData.ClientData.DataRef.ID {
-	case "setPrimary":
-		_, err := p.ProjectPipelineSvc.SetPrimary(p.sdk.Ctx, deftype.ProjectPipelineCategory{
-			PipelineDefinitionID: id,
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
-		})
-		if err != nil {
-			panic(err)
-		}
-	case "unsetPrimary":
-		_, err := p.ProjectPipelineSvc.UnSetPrimary(p.sdk.Ctx, deftype.ProjectPipelineCategory{
-			PipelineDefinitionID: id,
-			ProjectID:            p.InParams.ProjectID,
-			IdentityInfo:         apistructs.IdentityInfo{UserID: cputil.GetUserID(p.sdk.Ctx)},
-		})
-		if err != nil {
-			panic(err)
-		}
 	case "run":
 		_, err := p.ProjectPipelineSvc.Run(p.sdk.Ctx, deftype.ProjectPipelineRun{
 			PipelineDefinitionID: id,

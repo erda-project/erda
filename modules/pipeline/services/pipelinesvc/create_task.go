@@ -53,9 +53,10 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 	// task.Extra.Envs
 	// task.Extra.Labels
 	// task.Extra.Image
+	task.Extra.Action = *action
 
 	// set executor
-	executorKind, executorName := s.judgeTaskExecutor(action, passedDataWhenCreate.GetActionJobSpecs(extmarketsvc.MakeActionTypeVersion(action)))
+	executorKind, executorName := s.judgeTaskExecutor(task, passedDataWhenCreate.GetActionJobSpecs(extmarketsvc.MakeActionTypeVersion(action)))
 	task.ExecutorKind = executorKind
 	task.Extra.ExecutorName = executorName
 
@@ -74,8 +75,6 @@ func (s *PipelineSvc) makeNormalPipelineTask(p *spec.Pipeline, ps *spec.Pipeline
 			MainArgs:  []string{getString(action.Params["main_args"])},
 		}
 	}
-
-	task.Extra.Action = *action
 
 	// runAfter
 	for _, need := range action.Needs {
@@ -183,14 +182,30 @@ func (s *PipelineSvc) calculateTaskRunAfter(action *pipelineyml.Action) []string
 }
 
 // judgeTaskExecutor judge task executor by action info
-func (s *PipelineSvc) judgeTaskExecutor(action *pipelineyml.Action, actionSpec *apistructs.ActionSpec) (spec.PipelineTaskExecutorKind, spec.PipelineTaskExecutorName) {
+func (s *PipelineSvc) judgeTaskExecutor(task *spec.PipelineTask, actionSpec *apistructs.ActionSpec) (spec.PipelineTaskExecutorKind, spec.PipelineTaskExecutorName) {
 	if actionSpec == nil ||
 		actionSpec.Executor == nil ||
 		len(actionSpec.Executor.Kind) <= 0 ||
 		len(actionSpec.Executor.Name) <= 0 ||
 		!spec.PipelineTaskExecutorKind(actionSpec.Executor.Kind).Check() ||
 		!spec.PipelineTaskExecutorName(actionSpec.Executor.Name).Check() {
-		return spec.PipelineTaskExecutorKindScheduler, spec.PipelineTaskExecutorNameSchedulerDefault
+		kind := spec.PipelineTaskExecutorKindK8sJob
+		if bigData, err := task.GetBigDataConf(); err == nil {
+			if bigData.FlinkConf != nil {
+				kind = spec.PipelineTaskExecutorKindK8sFlink
+			}
+			if bigData.SparkConf != nil {
+				kind = spec.PipelineTaskExecutorKindK8sSpark
+			}
+		}
+		return kind, kind.GenExecutorNameByClusterName(task.Extra.ClusterName)
+	}
+	// if specify executor k8s kind, add the cluster name to executor name
+	if actionSpec.Executor.Kind == spec.PipelineTaskExecutorKindK8sJob.String() ||
+		actionSpec.Executor.Kind == spec.PipelineTaskExecutorKindK8sFlink.String() ||
+		actionSpec.Executor.Kind == spec.PipelineTaskExecutorKindK8sSpark.String() {
+		kind := spec.PipelineTaskExecutorKind(actionSpec.Executor.Kind)
+		return kind, kind.GenExecutorNameByClusterName(task.Extra.ClusterName)
 	}
 
 	return spec.PipelineTaskExecutorKind(actionSpec.Executor.Kind), spec.PipelineTaskExecutorName(actionSpec.Executor.Name)

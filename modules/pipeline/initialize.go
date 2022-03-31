@@ -16,7 +16,6 @@
 package pipeline
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -34,19 +33,16 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/events"
 	"github.com/erda-project/erda/modules/pipeline/metrics"
 	"github.com/erda-project/erda/modules/pipeline/pexpr/pexpr_params"
-	"github.com/erda-project/erda/modules/pipeline/pipengine"
 	"github.com/erda-project/erda/modules/pipeline/pipengine/pvolumes"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler"
-	"github.com/erda-project/erda/modules/pipeline/pkg/clusterinfo"
 	"github.com/erda-project/erda/modules/pipeline/pkg/pipelinefunc"
+	"github.com/erda-project/erda/modules/pipeline/providers/cron/compensator"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/appsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildartifactsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/buildcachesvc"
-	"github.com/erda-project/erda/modules/pipeline/services/crondsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/permissionsvc"
-	"github.com/erda-project/erda/modules/pipeline/services/pipelinecronsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/pipelinesvc"
 	"github.com/erda-project/erda/modules/pipeline/services/queuemanage"
 	"github.com/erda-project/erda/modules/pipeline/services/reportsvc"
@@ -75,7 +71,6 @@ func (p *provider) Initialize() error {
 
 	dumpstack.Open()
 	logrus.Infoln(version.String())
-	conf.Load()
 
 	if conf.Debug() {
 		logrus.SetLevel(logrus.DebugLevel)
@@ -128,24 +123,18 @@ func (p *provider) do() error {
 	buildArtifactSvc := buildartifactsvc.New(dbClient)
 	buildCacheSvc := buildcachesvc.New(dbClient)
 	permissionSvc := permissionsvc.New(bdl)
-	crondSvc := crondsvc.New(dbClient, bdl, js)
 	actionAgentSvc := actionagentsvc.New(dbClient, bdl, js, etcdctl)
 	extMarketSvc := extmarketsvc.New(bdl)
-	pipelineCronSvc := pipelinecronsvc.New(dbClient, crondSvc)
 	reportSvc := reportsvc.New(reportsvc.WithDBClient(dbClient))
 	queueManage := queuemanage.New(queuemanage.WithDBClient(dbClient))
 
-	// pipeline engine
-	engine := pipengine.New(dbClient)
-
 	// init services
-	pipelineSvc := pipelinesvc.New(appSvc, crondSvc, actionAgentSvc, extMarketSvc, pipelineCronSvc,
-		permissionSvc, queueManage, dbClient, bdl, publisher, engine, js, etcdctl)
+	pipelineSvc := pipelinesvc.New(appSvc, p.CronDaemon, actionAgentSvc, extMarketSvc, p.CronService,
+		permissionSvc, queueManage, dbClient, bdl, publisher, p.Engine, js, etcdctl, p.ClusterInfo)
 	pipelineSvc.WithCmsService(p.CmsService)
 
 	// todo resolve cycle import here through better module architecture
-	pipelineFun := &reconciler.PipelineSvcFunc{
-		CronNotExecuteCompensate:                pipelineSvc.CronNotExecuteCompensateById,
+	pipelineFuncs := reconciler.PipelineSvcFuncs{
 		MergePipelineYmlTasks:                   pipelineSvc.MergePipelineYmlTasks,
 		HandleQueryPipelineYamlBySnippetConfigs: pipelineSvc.HandleQueryPipelineYamlBySnippetConfigs,
 		MakeSnippetPipeline4Create:              pipelineSvc.MakeSnippetPipeline4Create,
@@ -154,19 +143,7 @@ func (p *provider) do() error {
 	// init CallbackActionFunc
 	pipelinefunc.CallbackActionFunc = pipelineSvc.DealPipelineCallbackOfAction
 
-	// set bundle before initialize scheduler, because scheduler need use bdl get clusters
-	clusterinfo.Initialize(bdl)
-
-	r, err := reconciler.New(js, etcdctl, bdl, dbClient, actionAgentSvc, extMarketSvc, pipelineFun)
-	if err != nil {
-		return fmt.Errorf("failed to init reconciler, err: %v", err)
-	}
-	if err := r.LoadQueueManger(context.Background()); err != nil {
-		return fmt.Errorf("failed to load reconciler queue manager, err: %v", err)
-	}
-	if err := engine.OnceDo(r); err != nil {
-		return err
-	}
+	p.Reconciler.InjectLegacyFields(&pipelineFuncs, actionAgentSvc, extMarketSvc)
 
 	if err := registerSnippetClient(dbClient); err != nil {
 		return err
@@ -186,15 +163,19 @@ func (p *provider) do() error {
 		endpoints.WithBuildArtifactSvc(buildArtifactSvc),
 		endpoints.WithBuildCacheSvc(buildCacheSvc),
 		endpoints.WithPermissionSvc(permissionSvc),
-		endpoints.WithCrondSvc(crondSvc),
+		endpoints.WithCrondSvc(p.CronDaemon),
 		endpoints.WithActionAgentSvc(actionAgentSvc),
 		endpoints.WithExtMarketSvc(extMarketSvc),
-		endpoints.WithPipelineCronSvc(pipelineCronSvc),
 		endpoints.WithPipelineSvc(pipelineSvc),
 		endpoints.WithReportSvc(reportSvc),
 		endpoints.WithQueueManage(queueManage),
-		endpoints.WithReconciler(r),
+		endpoints.WithQueueManager(p.QueueManager),
+		endpoints.WithEngine(p.Engine),
+		endpoints.WithClusterInfo(p.ClusterInfo),
 	)
+
+	p.CronDaemon.WithPipelineFunc(pipelineSvc.CreateV2)
+	p.CronCompensate.WithPipelineFunc(compensator.PipelineFunc{CreatePipeline: pipelineSvc.CreateV2, RunPipeline: pipelineSvc.RunPipeline})
 
 	//server.Router().Path("/metrics").Methods(http.MethodGet).Handler(promxp.Handler("pipeline"))
 	server := httpserver.New(conf.ListenAddr())
@@ -206,20 +187,6 @@ func (p *provider) do() error {
 
 	// aop
 	aop.Initialize(bdl, dbClient, reportSvc)
-
-	p.ReconcilerElection.OnLeader(func(ctx context.Context) {
-		engine.StartReconciler(ctx)
-		pipelineSvc.DoCrondAbout(ctx)
-	})
-
-	p.GcElection.OnLeader(func(ctx context.Context) {
-		engine.StartGC(ctx)
-	})
-
-	// register cluster hook after pipeline service start
-	if err := clusterinfo.RegisterClusterHook(); err != nil {
-		return err
-	}
 
 	return nil
 }

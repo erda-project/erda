@@ -70,6 +70,23 @@ stages:
             cpu: 2
             mem: 2048
       - custom-script:
+          alias: build-erda-cli
+          commands:
+            - cd ${{ dirs.erda }}
+            - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
+            - make prepare-cli
+            - make build-push-image MODULE_PATH=cli
+          loop:
+            break: task_status == 'Success'
+            strategy:
+              max_times: 5
+              decline_ratio: 2
+              decline_limit_sec: 60
+              interval_sec: 5
+          resources:
+            cpu: 2
+            mem: 2048
+      - custom-script:
           alias: build-erda-dicehub-ee
           commands:
             - cd ${{ dirs.erda }}
@@ -127,6 +144,63 @@ stages:
           resources:
             cpu: 1
             mem: 1024
+      - custom-script:
+          alias: build-erda-cli-linux
+          description: 运行自定义命令
+          commands:
+            - workDir=$(pwd)
+            - echo $workDir
+            - cd ${{ dirs.erda }}
+            - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
+            - GOPROXY=https://goproxy.cn,direct make prepare-cli
+            - GOOS=linux GOPROXY=https://goproxy.cn,direct make cli
+            - cd $workDir
+            - cp ${{ dirs.erda }}/bin/erda-cli .
+            - export CLI_VERSION=$(echo ${{ outputs.extract-repo-version.version }} | sed "s/\+.*//g")
+            - 'echo action meta: version=${CLI_VERSION}'
+          resources:
+            cpu: 2
+            mem: 2048
+      - custom-script:
+          alias: build-erda-cli-mac
+          description: 运行自定义命令
+          commands:
+            - workDir=$(pwd)
+            - echo $workDir
+            - cd ${{ dirs.erda }}
+            - export ERDA_VERSION=${{ outputs.extract-repo-version.major_minor_version }}
+            - GOPROXY=https://goproxy.cn,direct make prepare-cli
+            - GOOS=darwin GOPROXY=https://goproxy.cn,direct make cli
+            - cd $workDir
+            - cp ${{ dirs.erda }}/bin/erda-cli .
+            - export CLI_VERSION=$(echo ${{ outputs.extract-repo-version.version }} | sed "s/\+.*//g")
+            - 'echo action meta: version=${CLI_VERSION}'
+          resources:
+            cpu: 2
+            mem: 2048
+  - stage:
+      - oss-upload:
+          alias: upload-linux-erda-cli
+          description: 上传文件到OSS
+          version: "1.0"
+          params:
+            access_key_id: ((cli_oss_access_key_id))
+            access_key_secret: ((cli_oss_access_key_secret))
+            bucket: ((cli_oss_bucket))
+            endpoint: http://oss-cn-hangzhou.aliyuncs.com
+            local_path: ${{ dirs.build-erda-cli-linux }}/erda-cli
+            oss_path: cli/linux/erda-${{ outputs.build-erda-cli-linux.version }}
+      - oss-upload:
+          alias: upload-mac-erda-cli
+          description: 上传文件到OSS
+          version: "1.0"
+          params:
+            access_key_id: ((cli_oss_access_key_id))
+            access_key_secret: ((cli_oss_access_key_secret))
+            bucket: ((cli_oss_bucket))
+            endpoint: http://oss-cn-hangzhou.aliyuncs.com
+            local_path: ${{ dirs.build-erda-cli-mac }}/erda-cli
+            oss_path: cli/mac/erda-${{ outputs.build-erda-cli-mac.version }}
   - stage:
       - erda-mysql-migration:
           alias: dryrun-on-mysql80
@@ -191,3 +265,4 @@ stages:
               scheduler: ${{ outputs.build-erda.image }}
               streaming: ${{ outputs.build-erda.image }}
               uc-adaptor: ${{ outputs.build-erda.image }}
+              erda-cli: ${{ outputs.build-erda-cli.image }}

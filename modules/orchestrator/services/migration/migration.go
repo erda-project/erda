@@ -15,11 +15,10 @@
 package migration
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -27,8 +26,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
-	"github.com/erda-project/erda/pkg/discover"
-	"github.com/erda-project/erda/pkg/http/httpclient"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/job"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -37,6 +35,7 @@ import (
 type Migration struct {
 	db  *dbclient.DBClient
 	bdl *bundle.Bundle
+	job job.Job
 }
 
 // Option Migration 实例对象配置选项
@@ -66,6 +65,13 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
+// WithJob 配置 job
+func WithJob(job job.Job) Option {
+	return func(a *Migration) {
+		a.job = job
+	}
+}
+
 func (m *Migration) Create(migrationLog *dbclient.MigrationLog, diceyml *diceyml.DiceYaml, Runtime *dbclient.Runtime, App *apistructs.ApplicationDTO) (data interface{}, err error) {
 
 	job, err := m.transferToSchedulerJob(migrationLog, diceyml, Runtime, App)
@@ -74,27 +80,18 @@ func (m *Migration) Create(migrationLog *dbclient.MigrationLog, diceyml *diceyml
 	}
 	bb, err := json.Marshal(job)
 	logrus.Infof("Create schedule job body: %s", string(bb))
-	var body bytes.Buffer
-	resp, err := httpclient.New().Put(discover.Orchestrator()).
-		Path("/v1/job/create").JSONBody(apistructs.JobCreateRequest(job)).
-		Do().Body(&body)
+
+	req := apistructs.JobCreateRequest(job)
+
+	// specify namespace from scheduler ENV 'ENABLE_SPECIFIED_K8S_NAMESPACE'
+	if os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		req.Namespace = os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
+	}
+	createdJob, err := m.job.Create(req)
 	if err != nil {
-		return nil, httpInvokeErr(err)
+		return nil, errors.Errorf("failed to create job, error: %v", err)
 	}
-
-	statusCode := resp.StatusCode()
-	respBody := body.String()
-
-	var result apistructs.JobCreateResponse
-	err = json.Unmarshal([]byte(respBody), &result)
-	if err != nil {
-		return nil, respBodyDecodeErr(statusCode, respBody, err)
-	}
-	if result.Error != "" {
-		return nil, errors.Errorf("statusCode: %d, result.error: %s", statusCode, result.Error)
-	}
-
-	return result.Job, nil
+	return createdJob, nil
 }
 
 func (m *Migration) Start(migrationLog *dbclient.MigrationLog, diceyml *diceyml.DiceYaml, Runtime *dbclient.Runtime, App *apistructs.ApplicationDTO) (err error) {
@@ -116,26 +113,20 @@ func (m *Migration) Start(migrationLog *dbclient.MigrationLog, diceyml *diceyml.
 	}
 
 	namespace, name := getNamespaceAndName(migrationLog)
-	var body bytes.Buffer
-	resp, err := httpclient.New().Post(discover.Orchestrator()).
-		Path(fmt.Sprintf("/v1/job/%s/%s/start", namespace, name)).
-		Do().Body(&body)
-	if err != nil {
-		return errors.Errorf("http invoke err: %v", err)
+	if name == "" || namespace == "" {
+		errstr := "failed to start job, empty name or namespace"
+		logrus.Error(errstr)
+		return errors.New("failed to start job, empty name or namespace")
 	}
 
-	statusCode := resp.StatusCode()
-	respBody := body.String()
-
-	var result apistructs.JobStartResponse
-	err = json.Unmarshal([]byte(respBody), &result)
-	if err != nil {
-		return respBodyDecodeErr(statusCode, respBody, err)
+	if os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		namespace = os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
 	}
-	logrus.Debugf("scheduler: invoke scheduler to start migration task, namespace: %s, statusCode: %d, respBody: %s",
-		namespace, statusCode, respBody)
-	if result.Error != "" {
-		return errors.Errorf("statusCode: %d, result.error: %s", statusCode, result.Error)
+
+	_, err = m.job.Start(namespace, name, map[string]string{})
+	if err != nil {
+		logrus.Error(err)
+		return err
 	}
 
 	return nil
@@ -185,26 +176,25 @@ func (m *Migration) Exist(migrationLog *dbclient.MigrationLog) (created, started
 // Status 获取migration status信息
 func (m *Migration) Status(migrationLog *dbclient.MigrationLog) (desc apistructs.MigrationStatusDesc, err error) {
 	namespace, name := getNamespaceAndName(migrationLog)
-	var body bytes.Buffer
-	resp, err := httpclient.New().Get(discover.Orchestrator(), httpclient.RetryErrResp).
-		Path(fmt.Sprintf("/v1/job/%s/%s", namespace, name)).
-		Do().Body(&body)
+	if os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		namespace = os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
+	}
+
+	job, err := m.job.Inspect(namespace, name)
 	if err != nil {
 		return apistructs.MigrationStatusDesc{}, httpInvokeErr(err)
 	}
-
-	statusCode := resp.StatusCode()
-	respBody := body.String()
 
 	var result struct {
 		Status      string `json:"status"`
 		LastMessage string `json:"last_message"`
 	}
-	if err := json.NewDecoder(&body).Decode(&result); err != nil {
-		return apistructs.MigrationStatusDesc{}, respBodyDecodeErr(statusCode, respBody, err)
-	}
+
+	result.Status = string(job.Status)
+	result.LastMessage = job.LastMessage
+
 	if result.Status == "" {
-		return apistructs.MigrationStatusDesc{}, errors.Errorf("get empty status from scheduler, respBody: %s", respBody)
+		return apistructs.MigrationStatusDesc{}, errors.Errorf("get empty status from job, job details: %#v", job)
 	}
 	transferredStatus := transferStatus(result.Status)
 	logrus.Infof("migration namespace: %s, name: %s, schedulerStatus: %s, transferredStatus: %s, lastMessage: %s",
@@ -312,11 +302,6 @@ func (m *Migration) CleanUnusedMigrationNs() (bool, error) {
 	}
 	for _, v := range *migrationLogs {
 		namespace, _ := getNamespaceAndName(&v)
-		if err := m.Remove(namespace, &v); err != nil {
-			logrus.Errorf("remove migration record fail, namespace: %s, resp.Error: %s",
-				namespace, err.Error())
-			continue
-		}
 		v.Status = apistructs.MigrationStatusDeleted
 		if err := m.db.UpdateMigrationLog(&v); err != nil {
 			logrus.Errorf("update migration record status fail, namespace: %s, resp.Error: %s",
@@ -324,35 +309,6 @@ func (m *Migration) CleanUnusedMigrationNs() (bool, error) {
 		}
 	}
 	return false, nil
-}
-
-func (m *Migration) Remove(namespace string, migrationLog *dbclient.MigrationLog) (err error) {
-	var body bytes.Buffer
-	resp, err := httpclient.New().Delete(discover.Orchestrator()).
-		Path(fmt.Sprintf("/v1/job/%s/deletealljobs", namespace)).
-		Do().Body(&body)
-	if err != nil {
-		return httpInvokeErr(err)
-	}
-
-	var result apistructs.JobDeleteResponse
-	if err := json.NewDecoder(&body).Decode(&result); err != nil {
-		return err
-	}
-	if result.Error != "" {
-		if strings.Contains(result.Error, "not found") {
-			logrus.Warnf("skip resp.Error(not found) when invoke scheduler.remove, namespace: %s, resp.Error: %s",
-				namespace, result.Error)
-			return nil
-		}
-		return errors.Errorf("statusCode: %d, resp.error: %s", resp.StatusCode(), result.Error)
-	}
-	return nil
-}
-
-// respBodyDecodeErr err response封装
-func respBodyDecodeErr(statusCode int, respBody string, err error) error {
-	return errors.Errorf("statusCode: %d, respBody: %s, err: %v", statusCode, respBody, err)
 }
 
 // httpInvokeErr http err封装

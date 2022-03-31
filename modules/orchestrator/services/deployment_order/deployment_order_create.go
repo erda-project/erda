@@ -72,13 +72,35 @@ func (d *DeploymentOrder) Create(ctx context.Context, req *apistructs.Deployment
 		req.Workspace = strings.ToUpper(workspace)
 	}
 
+	var (
+		deployList       [][]*pb.ApplicationReleaseSummary
+		applicationsInfo = map[int64]string{releaseResp.Data.ApplicationID: releaseResp.Data.ApplicationName}
+	)
+	if releaseResp.Data.IsProjectRelease {
+		if len(req.Modes) == 0 {
+			return nil, errors.Errorf("project release modes can not be empty")
+		}
+		for _, modeName := range req.Modes {
+			if _, ok := releaseResp.Data.Modes[modeName]; !ok {
+				return nil, errors.Errorf("mode %s does not exist in release %s", modeName, releaseId)
+			}
+		}
+		applicationsInfo = d.parseAppsInfoWithDeployList(deployList)
+		for _, mode := range req.Modes {
+			if _, ok := releaseResp.Data.Modes[mode]; !ok {
+				return nil, errors.Errorf("mode %s does not exist in release modes list", mode)
+			}
+		}
+		deployList = renderDeployList(req.Modes, releaseResp.Data.Modes)
+	}
+
 	// permission check
-	if err := d.batchCheckExecutePermission(req.Operator, req.Workspace, d.parseAppsInfoWithRelease(releaseResp.Data)); err != nil {
+	if err := d.batchCheckExecutePermission(req.Operator, req.Workspace, applicationsInfo); err != nil {
 		return nil, apierrors.ErrCreateDeploymentOrder.InternalError(err)
 	}
 
 	// compose deployment order
-	order, err := d.composeDeploymentOrder(releaseResp.Data, req)
+	order, deployListStr, err := d.composeDeploymentOrder(releaseResp.Data, req, deployList)
 	if err != nil {
 		logrus.Errorf("failed to compose deployment order, error: %v", err)
 		return nil, err
@@ -100,6 +122,7 @@ func (d *DeploymentOrder) Create(ctx context.Context, req *apistructs.Deployment
 		ApplicationId:   order.ApplicationId,
 		ApplicationName: order.ApplicationName,
 		Status:          utils.ParseDeploymentOrderStatus(nil),
+		DeployList:      deployListStr,
 	}
 
 	if req.AutoRun {
@@ -122,7 +145,7 @@ func (d *DeploymentOrder) Deploy(ctx context.Context, req *apistructs.Deployment
 		return nil, err
 	}
 
-	appsInfo, err := d.parseAppsInfoWithOrder(ctx, order)
+	appsInfo, err := d.parseAppsInfoWithOrder(order)
 	if err != nil {
 		logrus.Errorf("failed to parse application info with order, err: %v", err)
 		return nil, err
@@ -236,13 +259,27 @@ func (d *DeploymentOrder) executeDeploy(order *dbclient.DeploymentOrder, release
 }
 
 func (d *DeploymentOrder) composeDeploymentOrder(release *pb.ReleaseGetResponseData,
-	req *apistructs.DeploymentOrderCreateRequest) (*dbclient.DeploymentOrder, error) {
+	req *apistructs.DeploymentOrderCreateRequest, deployList [][]*pb.ApplicationReleaseSummary) (*dbclient.DeploymentOrder, string, error) {
 	var (
-		orderId   = req.Id
-		orderType = parseOrderType(release.IsProjectRelease)
-		workspace = req.Workspace
+		orderId        = req.Id
+		orderType      = parseOrderType(release.IsProjectRelease)
+		workspace      = req.Workspace
+		list           = make([][]string, len(deployList))
+		deployListData = ""
+		err            error
 	)
 
+	if orderType == apistructs.TypeProjectRelease {
+		for i, l := range deployList {
+			for _, summary := range l {
+				list[i] = append(list[i], summary.ReleaseID)
+			}
+		}
+		deployListData, err = marshalDeployList(list)
+		if err != nil {
+			return nil, "", errors.Errorf("failed to marshal deploy list for release %s, %v", release.ReleaseID, err)
+		}
+	}
 	order := &dbclient.DeploymentOrder{
 		ID:          orderId,
 		Type:        orderType,
@@ -251,17 +288,18 @@ func (d *DeploymentOrder) composeDeploymentOrder(release *pb.ReleaseGetResponseD
 		ProjectId:   uint64(release.ProjectID),
 		ReleaseId:   release.ReleaseID,
 		ProjectName: release.ProjectName,
-		BatchSize:   uint64(len(release.ApplicationReleaseList)),
+		BatchSize:   uint64(len(deployList)),
+		DeployList:  deployListData,
 	}
 
-	params, err := d.fetchApplicationsParams(release, workspace)
+	params, err := d.fetchApplicationsParams(release, deployList, workspace)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch deployment params, err: %v", err)
+		return nil, "", fmt.Errorf("failed to fetch deployment params, err: %v", err)
 	}
 
 	paramsJson, err := json.Marshal(params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal params, err: %v", err)
+		return nil, "", fmt.Errorf("failed to marshal params, err: %v", err)
 	}
 
 	order.Params = string(paramsJson)
@@ -271,18 +309,19 @@ func (d *DeploymentOrder) composeDeploymentOrder(release *pb.ReleaseGetResponseD
 		order.BatchSize = 1
 	}
 
-	return order, nil
+	return order, deployListData, nil
 }
 
-func (d *DeploymentOrder) fetchApplicationsParams(r *pb.ReleaseGetResponseData, workspace string) (map[string]*apistructs.DeploymentOrderParam, error) {
+func (d *DeploymentOrder) fetchApplicationsParams(r *pb.ReleaseGetResponseData, deployList [][]*pb.ApplicationReleaseSummary,
+	workspace string) (map[string]*apistructs.DeploymentOrderParam, error) {
 	ret := make(map[string]*apistructs.DeploymentOrderParam, 0)
 
 	if r.IsProjectRelease {
-		for i := 0; i < len(r.ApplicationReleaseList); i++ {
-			if r.ApplicationReleaseList[i] == nil {
+		for i := 0; i < len(deployList); i++ {
+			if deployList[i] == nil {
 				continue
 			}
-			for _, ar := range r.ApplicationReleaseList[i].List {
+			for _, ar := range deployList[i] {
 				params, err := d.fetchDeploymentParams(ar.ApplicationID, workspace)
 				if err != nil {
 					return nil, err
@@ -301,10 +340,27 @@ func (d *DeploymentOrder) fetchApplicationsParams(r *pb.ReleaseGetResponseData, 
 	return ret, nil
 }
 
+func (d *DeploymentOrder) FetchDeploymentConfigDetail(namespace string) ([]apistructs.EnvConfig, []apistructs.EnvConfig, error) {
+	envConfigs, err := d.envConfig.GetDeployConfigs(namespace)
+	if err != nil {
+		return nil, nil, err
+	}
+	envs := make([]apistructs.EnvConfig, 0)
+	files := make([]apistructs.EnvConfig, 0)
+	for _, c := range envConfigs {
+		if c.ConfigType == "FILE" {
+			files = append(files, c)
+		} else {
+			envs = append(envs, c)
+		}
+	}
+
+	return envs, files, nil
+}
 func (d *DeploymentOrder) fetchDeploymentParams(applicationId int64, workspace string) (*apistructs.DeploymentOrderParam, error) {
 	configNsTmpl := "app-%d-%s"
 
-	deployConfig, fileConfig, err := d.bdl.FetchDeploymentConfigDetail(fmt.Sprintf(configNsTmpl, applicationId, strings.ToUpper(workspace)))
+	deployConfig, fileConfig, err := d.FetchDeploymentConfigDetail(fmt.Sprintf(configNsTmpl, applicationId, strings.ToUpper(workspace)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch deployment config, err: %v", err)
 	}
@@ -381,23 +437,36 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 	runtimeSource := apistructs.RuntimeSource(source)
 
 	if r.IsProjectRelease {
-		if r.ApplicationReleaseList[order.CurrentBatch-1] == nil {
-			return nil, errors.Errorf("current batch of release %s is nil", r.ReleaseID)
+		deployList, err := unmarshalDeployList(order.DeployList)
+		if err != nil {
+			return nil, errors.Errorf("failed to unmarshal deploy list for release %s, %v", r.ReleaseID, err)
 		}
-		for _, ar := range r.ApplicationReleaseList[order.CurrentBatch-1].List {
+		if len(deployList) == 0 {
+			return nil, errors.Errorf("invalid deploy list")
+		}
+		releases, err := d.db.ListReleases(deployList[order.CurrentBatch-1])
+		if err != nil {
+			return nil, errors.Errorf("failed to list releases, %v", err)
+		}
+		id2release := make(map[string]*dbclient.Release)
+		for _, release := range releases {
+			id2release[release.ReleaseId] = release
+		}
+
+		for _, id := range deployList[order.CurrentBatch-1] {
 			rtCreateReq := &apistructs.RuntimeCreateRequest{
-				Name:              ar.ApplicationName,
+				Name:              id2release[id].ApplicationName,
 				DeploymentOrderId: deploymentOrderId,
 				ReleaseVersion:    r.Version,
-				ReleaseID:         ar.ReleaseID,
+				ReleaseID:         id,
 				Source:            runtimeSource,
 				Operator:          operator,
 				ClusterName:       clusterName,
 				Extra: apistructs.RuntimeCreateRequestExtra{
 					OrgID:           orgId,
 					ProjectID:       projectId,
-					ApplicationName: ar.ApplicationName,
-					ApplicationID:   uint64(ar.ApplicationID),
+					ApplicationName: id2release[id].ApplicationName,
+					ApplicationID:   id2release[id].ApplicationId,
 					DeployType:      release,
 					Workspace:       workspace,
 					BuildID:         0, // Deprecated
@@ -405,7 +474,7 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 				SkipPushByOrch: false,
 			}
 
-			paramJson, err := json.Marshal(orderParams[ar.ApplicationName])
+			paramJson, err := json.Marshal(orderParams[id2release[id].ApplicationName])
 			if err != nil {
 				return nil, err
 			}
@@ -455,21 +524,32 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 	return ret, nil
 }
 
-func (d *DeploymentOrder) parseAppsInfoWithOrder(ctx context.Context, order *dbclient.DeploymentOrder) (map[int64]string, error) {
+func (d *DeploymentOrder) parseAppsInfoWithOrder(order *dbclient.DeploymentOrder) (map[int64]string, error) {
 	ret := make(map[int64]string)
 	switch order.Type {
 	case apistructs.TypeProjectRelease:
-		ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
-		releaseResp, err := d.releaseSvc.GetRelease(ctx, &pb.ReleaseGetRequest{ReleaseID: order.ReleaseId})
+		deployList, err := unmarshalDeployList(order.DeployList)
 		if err != nil {
-			return nil, err
+			return nil, errors.Errorf("failed to unmarshal deploy list, %v", err)
 		}
-		for i := 0; i < len(releaseResp.Data.ApplicationReleaseList); i++ {
-			if releaseResp.Data.ApplicationReleaseList[i] == nil {
-				continue
+		var releaseIDs []string
+		for _, l := range deployList {
+			for _, id := range l {
+				releaseIDs = append(releaseIDs, id)
 			}
-			for _, r := range releaseResp.Data.ApplicationReleaseList[i].List {
-				ret[r.ApplicationID] = r.ApplicationName
+		}
+		releases, err := d.db.ListReleases(releaseIDs)
+		if err != nil {
+			return nil, errors.Errorf("failed to list releases, %v", err)
+		}
+		id2Release := make(map[string]*dbclient.Release)
+		for _, release := range releases {
+			id2Release[release.ReleaseId] = release
+		}
+
+		for i := 0; i < len(deployList); i++ {
+			for _, r := range deployList[i] {
+				ret[int64(id2Release[r].ApplicationId)] = id2Release[r].ApplicationName
 			}
 		}
 	default:
@@ -478,19 +558,15 @@ func (d *DeploymentOrder) parseAppsInfoWithOrder(ctx context.Context, order *dbc
 	return ret, nil
 }
 
-func (d *DeploymentOrder) parseAppsInfoWithRelease(releaseResp *pb.ReleaseGetResponseData) map[int64]string {
+func (d *DeploymentOrder) parseAppsInfoWithDeployList(deployList [][]*pb.ApplicationReleaseSummary) map[int64]string {
 	ret := make(map[int64]string)
-	if releaseResp.IsProjectRelease {
-		for i := 0; i < len(releaseResp.ApplicationReleaseList); i++ {
-			if releaseResp.ApplicationReleaseList[i] == nil {
-				continue
-			}
-			for _, r := range releaseResp.ApplicationReleaseList[i].List {
-				ret[r.ApplicationID] = r.ApplicationName
-			}
+	for i := 0; i < len(deployList); i++ {
+		if deployList[i] == nil {
+			continue
 		}
-	} else {
-		ret[releaseResp.ApplicationID] = releaseResp.ApplicationName
+		for _, r := range deployList[i] {
+			ret[r.ApplicationID] = r.ApplicationName
+		}
 	}
 
 	return ret
@@ -560,4 +636,60 @@ func covertParamsType(param *apistructs.DeploymentOrderParam) *apistructs.Deploy
 		data.Type = convertConfigType(data.Type)
 	}
 	return param
+}
+
+func renderDeployList(selectedModes []string, modes map[string]*pb.ModeSummary) [][]*pb.ApplicationReleaseSummary {
+	var (
+		deployList [][]*pb.ApplicationReleaseSummary
+		dfs        func(string) int
+		visited    = make(map[string]int)
+	)
+
+	max := func(a, b int) int {
+		if a > b {
+			return a
+		}
+		return b
+	}
+
+	dfs = func(u string) int {
+		height := -1
+		for _, v := range modes[u].DependOn {
+			if h, ok := visited[v]; ok {
+				height = max(height, h)
+				continue
+			}
+			height = max(height, dfs(v))
+		}
+		for i := range modes[u].ApplicationReleaseList {
+			height++
+			if len(deployList) <= height {
+				deployList = append(deployList, []*pb.ApplicationReleaseSummary{})
+			}
+			deployList[height] = append(deployList[height], modes[u].ApplicationReleaseList[i].List...)
+		}
+		visited[u] = height
+		return height
+	}
+
+	for _, modeName := range selectedModes {
+		if _, ok := visited[modeName]; !ok {
+			dfs(modeName)
+		}
+	}
+	return deployList
+}
+
+func marshalDeployList(deployList [][]string) (string, error) {
+	data, err := json.Marshal(deployList)
+	return string(data), err
+}
+
+func unmarshalDeployList(deployListData string) ([][]string, error) {
+	if deployListData == "" {
+		return nil, nil
+	}
+	var deployList [][]string
+	err := json.Unmarshal([]byte(deployListData), &deployList)
+	return deployList, err
 }

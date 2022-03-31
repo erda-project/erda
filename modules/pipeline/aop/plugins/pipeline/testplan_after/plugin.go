@@ -39,7 +39,7 @@ type provider struct {
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.Bundle = bundle.New(bundle.WithEventBox())
+	p.Bundle = bundle.New(bundle.WithCoreServices())
 	err := aop.RegisterTunePoint(p)
 	if err != nil {
 		panic(err)

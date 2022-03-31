@@ -78,7 +78,7 @@ var Migrate = command.Command{
 	Name:           "migrate",
 	ShortHelp:      "Erda MySQL Migrate",
 	LongHelp:       "erda-cli migrate --mysql-host localhost --mysql-username root --mysql-password my_password --database erda",
-	Example:        "erda-cli migrate --mysql-host localhost --mysql-username root --mysql-password my_password --database erda",
+	Example:        "$ erda-cli migrate --mysql-host localhost --mysql-username root --mysql-password my_password --database erda",
 	Hidden:         false,
 	DontHideCursor: false,
 	Args:           nil,

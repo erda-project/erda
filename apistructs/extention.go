@@ -203,7 +203,7 @@ type ExtensionVersionCreateResponse struct {
 // ExtensionQueryRequest 查询extension请求
 type ExtensionQueryRequest struct {
 	//默认false查询公开的扩展, true查询所有扩展
-	All string `query:"all"`
+	All bool `query:"all"`
 	// 可选值: action、addon
 	Type string `query:"type"`
 	// 根据标签查询 key:value 查询满足条件的 ^key:value 查询不满足条件的
@@ -228,7 +228,8 @@ type ExtensionVersionQueryRequest struct {
 	Name       string
 	YamlFormat bool `query:"yamlFormat"`
 	//默认false查询有效版本, true查询所有版本
-	All string `query:"all"`
+	All                string `query:"all"`
+	OrderByVersionDesc bool   `query:"orderByVersionDesc"`
 }
 
 // ExtensionVersionGetResponse Extension详情API返回数据结构
@@ -297,15 +298,14 @@ func (v *ExtensionVersion) NotExist() bool {
 
 type ActionSpec struct {
 	Spec              `yaml:",inline"`
-	Concurrency       *ActionConcurrency    `json:"concurrency" yaml:"concurrency"`
-	Params            []ActionSpecParam     `json:"params" yaml:"params"`
-	FormProps         []FormPropItem        `json:"formProps" yaml:"formProps"`
-	AccessibleAPIs    []AccessibleAPI       `json:"accessibleAPIs" yaml:"accessibleAPIs"`
-	Outputs           []ActionSpecOutput    `json:"outputs" yaml:"outputs"`
-	OutputsFromParams []OutputsFromParams   `json:"outputsFromParams" yaml:"outputsFromParams"`
-	Loop              *PipelineTaskLoop     `json:"loop" yaml:"loop"`
-	Priority          *PipelineTaskPriority `json:"priority" yaml:"priority"`
-	Executor          *ActionExecutor       `json:"executor" yaml:"executor"`
+	Concurrency       *ActionConcurrency  `json:"concurrency" yaml:"concurrency"`
+	Params            []ActionSpecParam   `json:"params" yaml:"params"`
+	FormProps         []FormPropItem      `json:"formProps" yaml:"formProps"`
+	AccessibleAPIs    []AccessibleAPI     `json:"accessibleAPIs" yaml:"accessibleAPIs"`
+	Outputs           []ActionSpecOutput  `json:"outputs" yaml:"outputs"`
+	OutputsFromParams []OutputsFromParams `json:"outputsFromParams" yaml:"outputsFromParams"`
+	Loop              *PipelineTaskLoop   `json:"loop" yaml:"loop"`
+	Executor          *ActionExecutor     `json:"executor" yaml:"executor"`
 }
 
 type ActionExecutor struct {

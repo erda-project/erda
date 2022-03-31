@@ -90,7 +90,7 @@ func Test_provider_invokeV2(t *testing.T) {
 	ass.Nil(err)
 	err = mp.invoke(nil, value, nil, time.Now())
 	ass.Nil(err)
-	ass.Equal(&logmodule.LogMeta{
+	ass.Equal(&logmodule.Meta{
 		ID:     log.ID,
 		Source: log.Source,
 		Tags:   log.Tags,

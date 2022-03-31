@@ -26,7 +26,9 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	projectCache "github.com/erda-project/erda/modules/core-services/cache/project"
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/endpoints"
@@ -71,7 +73,6 @@ func (p *provider) Initialize() error {
 	}
 
 	bdl := bundle.New(
-		bundle.WithEventBox(),
 		bundle.WithCollector(),
 	)
 
@@ -155,7 +156,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		bundle.WithAddOnPlatform(),
 		bundle.WithGittar(),
 		bundle.WithGittarAdaptor(),
-		bundle.WithEventBox(),
+		bundle.WithCoreServices(),
 		bundle.WithMonitor(),
 		bundle.WithScheduler(),
 		bundle.WithDiceHub(),
@@ -188,7 +189,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		project.WithBundle(bdl),
 		project.WithI18n(p.Tran),
 	)
-	go proj.UpdateCache()
 
 	// init app service
 	app := application.New(
@@ -274,6 +274,9 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
 
+	// cache setting
+	projectCache.New(db)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithJSONStore(store),
@@ -303,4 +306,12 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithSubscribe(sub),
 	)
 	return ep, nil
+}
+
+type ExposedInterface interface {
+	CheckPermission(req *apistructs.PermissionCheckRequest) (bool, error)
+}
+
+func (p *provider) CheckPermission(req *apistructs.PermissionCheckRequest) (bool, error) {
+	return p.perm.CheckPermission(req)
 }

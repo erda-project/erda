@@ -205,7 +205,6 @@ func (db *NotifyChannelDB) ListByPage(offset, pageSize int64, scopeId, scopeType
 }
 
 func (db *NotifyChannelDB) EnabledChannelList(scopeId, scopeType string) ([]NotifyChannel, error) {
-	db.LogMode(true)
 	var channels []NotifyChannel
 	err := db.db().Where("`scope_id` = ?", scopeId).
 		Where("`scope_type` = ?", scopeType).

@@ -299,17 +299,7 @@ type MergeStatusInfo struct {
 // GittarCreateMergeResponse 创建mr响应
 type GittarCreateMergeResponse struct {
 	Header
-	Data GittarCreateMergeData
-}
-
-// GittarCreateMergeData 创建mr响应数据
-type GittarCreateMergeData struct {
-	Title              string `json:"title"`
-	Description        string `json:"description"`
-	AssigneeID         string `json:"assigneeId"`
-	SourceBranch       string `json:"sourceBranch"`
-	TargetBranch       string `json:"targetBranch"`
-	RemoveSourceBranch bool   `json:"removeSourceBranch"`
+	Data *MergeRequestInfo `json:"data"`
 }
 
 // GittarQueryMrRequest  GET /<projectName>/<appName>/merge-requests 查询MR列表
@@ -779,4 +769,11 @@ type MergeRequestCountRequest struct {
 type MergeRequestCountResponse struct {
 	Header
 	Data map[string]int `json:"data"`
+}
+
+type GittarArchiveRequest struct {
+	Org         string `json:"org"`
+	Project     string `json:"project"`
+	Application string `json:"application"`
+	Ref         string `json:"ref"`
 }

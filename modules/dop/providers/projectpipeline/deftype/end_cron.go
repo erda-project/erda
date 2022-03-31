@@ -14,7 +14,10 @@
 
 package deftype
 
-import "github.com/erda-project/erda/apistructs"
+import (
+	common "github.com/erda-project/erda-proto-go/core/pipeline/pb"
+	"github.com/erda-project/erda/apistructs"
+)
 
 type ProjectPipelineEndCron struct {
 	PipelineDefinitionID string
@@ -23,5 +26,5 @@ type ProjectPipelineEndCron struct {
 }
 
 type ProjectPipelineEndCronResult struct {
-	Cron *apistructs.PipelineCronDTO
+	Cron *common.Cron
 }

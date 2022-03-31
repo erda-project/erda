@@ -36,6 +36,14 @@
   action: CREATE
 - role: Manager
   scope: org
+  resource: project-package
+  action: GET
+- role: Manager
+  scope: org
+  resource: project-package
+  action: CREATE
+- role: Manager
+  scope: org
   resource: project
   action: UPDATE
 - role: Manager,Dev,Support,DataEngineer,Guest

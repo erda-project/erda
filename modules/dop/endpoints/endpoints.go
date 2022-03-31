@@ -25,6 +25,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
+	cronpb "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	dpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -58,6 +61,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/services/pipeline"
 	"github.com/erda-project/erda/modules/dop/services/project"
 	"github.com/erda-project/erda/modules/dop/services/projectpipelinefiletree"
+	"github.com/erda-project/erda/modules/dop/services/publish_item"
 	"github.com/erda-project/erda/modules/dop/services/publisher"
 	"github.com/erda-project/erda/modules/dop/services/sceneset"
 	"github.com/erda-project/erda/modules/dop/services/sonar_metric_rule"
@@ -245,8 +249,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/cicds-project/actions/pipeline-detail", Method: http.MethodGet, Handler: e.projectPipelineDetail},
 
 		// cms
-		{Path: "/api/cicds/configs", Method: http.MethodPost, Handler: e.createOrUpdateCmsNsConfigs},
-		{Path: "/api/cicds/configs", Method: http.MethodDelete, Handler: e.deleteCmsNsConfigs},
 		{Path: "/api/cicds/multinamespace/configs", Method: http.MethodPost, Handler: e.getCmsNsConfigs},
 		{Path: "/api/cicds/actions/fetch-config-namespaces", Method: http.MethodGet, Handler: e.getConfigNamespaces},
 		{Path: "/api/cicds/actions/list-workspaces", Method: http.MethodGet, Handler: e.listConfigWorkspaces},
@@ -621,6 +623,11 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/orgs/{orgID}/projects/{projectID}/template/actions/import", Method: http.MethodPost, Handler: e.ImportProjectTemplate},
 		{Path: "/api/projects/template/actions/parse", Method: http.MethodPost, Handler: e.ParseProjectTemplate},
 
+		// project package
+		{Path: "/api/orgs/{orgID}/projects/{projectID}/package/actions/export", Method: http.MethodPost, Handler: e.ExportProjectPackage},
+		{Path: "/api/orgs/{orgID}/projects/{projectID}/package/actions/import", Method: http.MethodPost, Handler: e.ImportProjectPackage},
+		{Path: "/api/projects/package/actions/parse", Method: http.MethodPost, Handler: e.ParseProjectPackage},
+
 		// core-services org
 		{Path: "/api/orgs", Method: http.MethodPost, Handler: e.CreateOrg},
 		{Path: "/api/orgs/{orgID}", Method: http.MethodPut, Handler: e.UpdateOrg},
@@ -659,6 +666,23 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		// test file records
 		{Path: "/api/test-file-records/{id}", Method: http.MethodGet, Handler: e.GetFileRecord},
 		{Path: "/api/test-file-records", Method: http.MethodGet, Handler: e.GetFileRecords},
+
+		// 从dicehub迁移
+		//发布管理-->安全管理
+		{Path: "/api/publish-items/{publishItemId}/certification", Method: http.MethodGet, Handler: e.GetPublishItemCertificationlist},
+
+		// 从dicehub迁移
+		//统一大盘以及错误报告
+		{Path: "/api/publish-items/{publishItemId}/statistics/trend", Method: http.MethodGet, Handler: e.GetStatisticsTrend},
+		{Path: "/api/publish-items/{publishItemId}/statistics/versions", Method: http.MethodGet, Handler: e.GetStatisticsVersionInfo},
+		{Path: "/api/publish-items/{publishItemId}/statistics/users", Method: http.MethodGet, Handler: e.CumulativeUsers},
+		{Path: "/api/publish-items/{publishItemId}/statistics/channels", Method: http.MethodGet, Handler: e.GetStatisticsChannelInfo},
+		{Path: "/api/publish-items/{publishItemId}/err/trend", Method: http.MethodGet, Handler: e.GetErrTrend},
+		{Path: "/api/publish-items/{publishItemId}/err/list", Method: http.MethodGet, Handler: e.GetErrList},
+		{Path: "/api/publish-items/{publishItemId}/metrics/{metricName}/histogram", Method: http.MethodGet, Handler: e.MetricsRouting},
+		{Path: "/api/publish-items/{publishItemId}/metrics/{metricName}", Method: http.MethodGet, Handler: e.MetricsRouting},
+		{Path: "/api/publish-items/{publishItemId}/err/effacts", Method: http.MethodGet, Handler: e.GetErrAffectUserRate},
+		{Path: "/api/publish-items/{publishItemId}/err/rate", Method: http.MethodGet, Handler: e.GetCrashRate},
 	}
 }
 
@@ -717,6 +741,12 @@ type Endpoints struct {
 	app             *application.Application
 	codeCoverageSvc *code_coverage.CodeCoverage
 	testReportSvc   *test_report.TestReport
+
+	publishItem *publish_item.PublishItem
+
+	PipelineCron       cronpb.CronServiceServer
+	PipelineSource     sourcepb.SourceServiceServer
+	PipelineDefinition dpb.DefinitionServiceServer
 
 	ImportChannel chan uint64
 	ExportChannel chan uint64
@@ -815,6 +845,12 @@ func WithProject(p *project.Project) Option {
 func WithApplication(app *application.Application) Option {
 	return func(e *Endpoints) {
 		e.app = app
+	}
+}
+
+func WithPublishItem(publishItem *publish_item.PublishItem) Option {
+	return func(e *Endpoints) {
+		e.publishItem = publishItem
 	}
 }
 
@@ -1075,6 +1111,24 @@ func WithCodeCoverageExecRecord(svc *code_coverage.CodeCoverage) Option {
 func WithTestReportRecord(svc *test_report.TestReport) Option {
 	return func(e *Endpoints) {
 		e.testReportSvc = svc
+	}
+}
+
+func WithPipelineCron(svc cronpb.CronServiceServer) Option {
+	return func(e *Endpoints) {
+		e.PipelineCron = svc
+	}
+}
+
+func WithPipelineSource(svc sourcepb.SourceServiceServer) Option {
+	return func(e *Endpoints) {
+		e.PipelineSource = svc
+	}
+}
+
+func WithPipelineDefinition(svc dpb.DefinitionServiceServer) Option {
+	return func(e *Endpoints) {
+		e.PipelineDefinition = svc
 	}
 }
 
