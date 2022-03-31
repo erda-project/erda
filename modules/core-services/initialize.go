@@ -89,10 +89,12 @@ func (p *provider) Initialize() error {
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 
 	wsi, err := websocket.New()
+	go func() {
+		wsi.Start(nil)
+	}()
 	server.Router().PathPrefix("/api/dice/eventbox").Path("/ws/{any:.*}").
 		Handler(sockjs.NewHandler("/api/dice/eventbox/ws", sockjs.DefaultOptions, wsi.HTTPHandle))
 	p.Router.Any("/**", server.Router().ServeHTTP)
-	wsi.Start(nil)
 	return nil
 }
 
