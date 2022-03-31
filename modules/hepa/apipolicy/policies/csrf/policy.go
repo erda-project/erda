@@ -99,6 +99,7 @@ func (policy Policy) buildPluginReq(dto *PolicyDto) *kongDto.KongPluginReqDto {
 }
 
 func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interface{}) (apipolicy.PolicyConfig, error) {
+	log.WithField("func", "CSRF-Token.ParseConfig").Trace("ParseConfig")
 	res := apipolicy.PolicyConfig{}
 	policyDto, ok := dto.(*PolicyDto)
 	if !ok {
@@ -120,6 +121,10 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if !ok {
 		return res, errors.Errorf("convert failed:%+v", value)
 	}
+	routes, ok := ctx["routes"].(map[string]struct{})
+	if !ok {
+		return res, errors.Errorf("failed to get routes: %+v", ctx["routes"])
+	}
 	policyDb, _ := db.NewGatewayPolicyServiceImpl()
 	exist, err := policyDb.GetByAny(&orm.GatewayPolicy{
 		ZoneId:     zone.Id,
@@ -128,25 +133,40 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 	if err != nil {
 		return res, err
 	}
+	req := policy.buildPluginReq(policyDto)
 	if !policyDto.Switch {
 		if exist != nil {
-			err = adapter.RemovePlugin(exist.PluginId)
-			if err != nil {
-				return res, err
-			}
-			_ = policyDb.DeleteById(exist.Id)
-			res.KongPolicyChange = true
+			adapter.RemovePlugin(exist.PluginId)
 		}
+		for routeID := range routes {
+			routeReq := *req
+			routeReq.RouteId = routeID
+			plugin, err := adapter.GetPlugin(&routeReq)
+			if err != nil {
+				log.WithError(err).Errorf("failed to GetPlugin, req: %+v", routeReq)
+				continue
+			}
+			if err = adapter.RemovePlugin(plugin.Id); err != nil {
+				log.WithError(err).Errorf("failed to RemovePlugin, plugin id: %v", plugin.Id)
+			}
+		}
+		_ = policyDb.DeleteById(exist.Id)
+		res.KongPolicyChange = true
 		return res, nil
 	}
-	req := policy.buildPluginReq(policyDto)
-	if exist != nil {
-		req.Id = exist.PluginId
-		resp, err := adapter.CreateOrUpdatePluginById(req)
+
+	for routeID := range routes {
+		routeReq := *req
+		routeReq.RouteId = routeID
+		_, err := adapter.CreateOrUpdatePlugin(&routeReq)
 		if err != nil {
+			log.WithError(err).Errorf("failed to CreateOrUpdatePlugin, req: %+v", routeReq)
 			return res, err
 		}
-		configByte, err := json.Marshal(resp.Config)
+	}
+
+	if exist != nil {
+		configByte, err := json.Marshal(req.Config)
 		if err != nil {
 			return res, err
 		}
@@ -156,11 +176,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 			return res, err
 		}
 	} else {
-		resp, err := adapter.AddPlugin(req)
-		if err != nil {
-			return res, err
-		}
-		configByte, err := json.Marshal(resp.Config)
+		configByte, err := json.Marshal(req.Config)
 		if err != nil {
 			return res, err
 		}
@@ -168,7 +184,7 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 			ZoneId:     zone.Id,
 			PluginName: "csrf-token",
 			Category:   "safety",
-			PluginId:   resp.Id,
+			PluginId:   "",
 			Config:     configByte,
 			Enabled:    1,
 		}
@@ -176,8 +192,8 @@ func (policy Policy) ParseConfig(dto apipolicy.PolicyDto, ctx map[string]interfa
 		if err != nil {
 			return res, err
 		}
-		res.KongPolicyChange = true
 	}
+	res.KongPolicyChange = true
 	return res, nil
 }
 
