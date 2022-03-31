@@ -15,12 +15,12 @@
 package api_policy
 
 import (
-	context "context"
+	"context"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	pb "github.com/erda-project/erda-proto-go/core/hepa/api_policy/pb"
+	"github.com/erda-project/erda-proto-go/core/hepa/api_policy/pb"
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/common/vars"
 	"github.com/erda-project/erda/modules/hepa/services/api_policy"
