@@ -449,13 +449,17 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 			return nil, errors.Errorf("failed to list releases, %v", err)
 		}
 		id2release := make(map[string]*dbclient.Release)
-		for _, release := range releases {
-			id2release[release.ReleaseId] = release
+		for _, r := range releases {
+			id2release[r.ReleaseId] = r
 		}
 
 		for _, id := range deployList[order.CurrentBatch-1] {
+			rl, ok := id2release[id]
+			if !ok {
+				return nil, errors.Errorf("release not found, id: %s", id)
+			}
 			rtCreateReq := &apistructs.RuntimeCreateRequest{
-				Name:              id2release[id].ApplicationName,
+				Name:              rl.ApplicationName,
 				DeploymentOrderId: deploymentOrderId,
 				ReleaseVersion:    r.Version,
 				ReleaseID:         id,
@@ -465,8 +469,8 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 				Extra: apistructs.RuntimeCreateRequestExtra{
 					OrgID:           orgId,
 					ProjectID:       projectId,
-					ApplicationName: id2release[id].ApplicationName,
-					ApplicationID:   id2release[id].ApplicationId,
+					ApplicationName: rl.ApplicationName,
+					ApplicationID:   rl.ApplicationId,
 					DeployType:      release,
 					Workspace:       workspace,
 					BuildID:         0, // Deprecated
@@ -474,7 +478,7 @@ func (d *DeploymentOrder) composeRuntimeCreateRequests(order *dbclient.Deploymen
 				SkipPushByOrch: false,
 			}
 
-			paramJson, err := json.Marshal(orderParams[id2release[id].ApplicationName])
+			paramJson, err := json.Marshal(orderParams[rl.ApplicationName])
 			if err != nil {
 				return nil, err
 			}
@@ -543,13 +547,17 @@ func (d *DeploymentOrder) parseAppsInfoWithOrder(order *dbclient.DeploymentOrder
 			return nil, errors.Errorf("failed to list releases, %v", err)
 		}
 		id2Release := make(map[string]*dbclient.Release)
-		for _, release := range releases {
-			id2Release[release.ReleaseId] = release
+		for _, r := range releases {
+			id2Release[r.ReleaseId] = r
 		}
 
 		for i := 0; i < len(deployList); i++ {
 			for _, r := range deployList[i] {
-				ret[int64(id2Release[r].ApplicationId)] = id2Release[r].ApplicationName
+				rl, ok := id2Release[r]
+				if !ok {
+					continue
+				}
+				ret[int64(rl.ApplicationId)] = rl.ApplicationName
 			}
 		}
 	default:
