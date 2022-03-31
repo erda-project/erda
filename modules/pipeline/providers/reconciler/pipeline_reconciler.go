@@ -84,6 +84,11 @@ func (pr *defaultPipelineReconciler) NeedReconcile(ctx context.Context, p *spec.
 }
 
 func (pr *defaultPipelineReconciler) PrepareBeforeReconcile(ctx context.Context, p *spec.Pipeline) error {
+	// set calculated pipeline status by all reconciled tasks from db
+	// calculate before reconcile
+	if err := pr.calculatePipelineStatusByAllReconciledTasks(ctx, p); err != nil {
+		return err
+	}
 	// update pipeline status if necessary
 	// send event in a tx
 	if p.Status.AfterPipelineQueue() {
@@ -176,11 +181,6 @@ func (pr *defaultPipelineReconciler) UpdateCurrentReconcileStatusIfNecessary(ctx
 		return err
 	}
 
-	// set calculated pipeline status by all reconciled tasks from db
-	if err := pr.calculatePipelineStatusByAllReconciledTasks(ctx, p); err != nil {
-		return err
-	}
-
 	// all tasks need to be end status, and then update pipeline status
 	allTasksDone := statusutil.CalculatePipelineTaskAllDone(allTasks)
 	if !allTasksDone {
@@ -270,6 +270,7 @@ func (pr *defaultPipelineReconciler) calculatePipelineStatusByAllReconciledTasks
 	}
 	var tasks []*spec.PipelineTask
 	for _, t := range reconciledTasks {
+		t := t
 		tasks = append(tasks, &t)
 	}
 	pr.calculatedPipelineStatusByAllReconciledTasks = statusutil.CalculatePipelineStatusV2(tasks)
