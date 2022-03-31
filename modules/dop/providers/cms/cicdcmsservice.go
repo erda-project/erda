@@ -16,7 +16,6 @@ package cms
 
 import (
 	context "context"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -53,12 +52,12 @@ type CICDCmsCreateOrUpdateRequest struct {
 
 func (s *CICDCmsService) CICDCmsCreateOrUpdate(ctx context.Context, req *CICDCmsCreateOrUpdateRequest) (bool, error) {
 	if req.NamespaceName == "" {
-		return false, fmt.Errorf(apierrors.ErrCreateOrUpdatePipelineCmsConfigs.MissingParameter("namespace_name").Error())
+		return false, apierrors.ErrCreateOrUpdatePipelineCmsConfigs.MissingParameter("namespace_name")
 	}
 
 	appID, err := strconv.ParseUint(req.AppID, 10, 64)
 	if err != nil {
-		return false, fmt.Errorf(apierrors.ErrCreateOrUpdatePipelineCmsConfigs.InvalidParameter("appID error").Error())
+		return false, apierrors.ErrCreateOrUpdatePipelineCmsConfigs.MissingParameter("appID error")
 	}
 
 	identity := apistructs.IdentityInfo{
@@ -68,7 +67,7 @@ func (s *CICDCmsService) CICDCmsCreateOrUpdate(ctx context.Context, req *CICDCms
 
 	// check permission
 	if err := s.permission.CheckAppConfig(identity, appID, apistructs.UpdateAction); err != nil {
-		return false, err
+		return false, apierrors.ErrCreateOrUpdatePipelineCmsConfigs.InternalError(err)
 	}
 
 	var updateRequest = &cmspb.CmsNsConfigsUpdateRequest{Ns: req.NamespaceName}
@@ -105,13 +104,13 @@ func (s *CICDCmsService) CICDCmsCreateOrUpdate(ctx context.Context, req *CICDCms
 
 	appInfo, err := s.bdl.GetApp(appID)
 	if err != nil {
-		return false, err
+		return false, apierrors.ErrCreateOrUpdatePipelineCmsConfigs.InternalError(err)
 	}
 
 	// get pipelineSource
 	updateRequest.PipelineSource, err = s.getPipelineSource(appInfo)
 	if err != nil {
-		return false, err
+		return false, apierrors.ErrCreateOrUpdatePipelineCmsConfigs.InternalError(err)
 	}
 
 	a := s.p.audit.Begin()
@@ -131,14 +130,14 @@ func (s *CICDCmsService) CICDCmsCreateOrUpdate(ctx context.Context, req *CICDCms
 	if req.Batch {
 		err := s.deleteNotNeedKeys(ctx, updateRequest.PipelineSource, updateRequest.Ns, keys)
 		if err != nil {
-			return false, err
+			return false, apierrors.ErrCreateOrUpdatePipelineCmsConfigs.InternalError(err)
 		}
 	}
 
 	// TODO Use distributed transaction to solve the problem that there is no new addition after deletion
 	// create or update configs
 	if _, err = s.p.PipelineCms.UpdateCmsNsConfigs(utils.WithInternalClientContext(ctx), updateRequest); err != nil {
-		return false, err
+		return false, apierrors.ErrCreateOrUpdatePipelineCmsConfigs.InternalError(err)
 	}
 
 	return true, nil
@@ -203,7 +202,7 @@ func (s *CICDCmsService) CICDCmsUpdate(ctx context.Context, req *pb.CICDCmsUpdat
 		Batch:         req.Batch,
 	})
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrCreateOrUpdatePipelineCmsConfigs.InternalError(err)
 	}
 
 	if ok {
@@ -225,7 +224,7 @@ func (s *CICDCmsService) CICDCmsCreate(ctx context.Context, req *pb.CICDCmsCreat
 		Configs:       req.Configs,
 	})
 	if err != nil {
-		return nil, err
+		return nil, apierrors.ErrCreateOrUpdatePipelineCmsConfigs.InternalError(err)
 	}
 
 	if ok {
@@ -246,18 +245,18 @@ func (s *CICDCmsService) CICDCmsDelete(ctx context.Context, req *pb.CICDCmsDelet
 	}
 
 	if req.Key == "" {
-		return nil, fmt.Errorf(apierrors.ErrDeletePipelineCmsConfigs.MissingParameter("key").Error())
+		return nil, apierrors.ErrDeletePipelineCmsConfigs.MissingParameter("key")
 	}
 	if req.NamespaceName == "" {
-		return nil, fmt.Errorf(apierrors.ErrDeletePipelineCmsConfigs.MissingParameter("namespace_name").Error())
+		return nil, apierrors.ErrDeletePipelineCmsConfigs.MissingParameter("namespace_name")
 	}
 	appID, err := strconv.ParseUint(req.AppID, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf(apierrors.ErrDeletePipelineCmsConfigs.InvalidParameter("appID error").Error())
+		return nil, apierrors.ErrDeletePipelineCmsConfigs.InvalidParameter("appID error")
 	}
 	// check permission
 	if err := s.permission.CheckAppConfig(identity, appID, apistructs.DeleteAction); err != nil {
-		return nil, err
+		return nil, apierrors.ErrDeletePipelineCmsConfigs.InternalError(err)
 	}
 
 	// bundle req
@@ -274,7 +273,7 @@ func (s *CICDCmsService) CICDCmsDelete(ctx context.Context, req *pb.CICDCmsDelet
 	// get pipelineSource
 	deleteReq.PipelineSource, err = s.getPipelineSource(appInfo)
 	if err != nil {
-		return nil, fmt.Errorf(apierrors.ErrDeletePipelineCmsConfigs.InvalidParameter(err).Error())
+		return nil, apierrors.ErrDeletePipelineCmsConfigs.InternalError(err)
 	}
 
 	a := s.p.audit.Begin()
@@ -292,7 +291,7 @@ func (s *CICDCmsService) CICDCmsDelete(ctx context.Context, req *pb.CICDCmsDelet
 	}()
 
 	if _, err = s.p.PipelineCms.DeleteCmsNsConfigs(utils.WithInternalClientContext(ctx), deleteReq); err != nil {
-		return nil, fmt.Errorf(apierrors.ErrDeletePipelineCmsNs.InternalError(err).Error())
+		return nil, apierrors.ErrDeletePipelineCmsNs.InternalError(err)
 	}
 
 	return &pb.CICDCmsDeleteResponse{
