@@ -131,14 +131,30 @@ var Migrate = command.Command{
 			Doc:          "[Migrate] the directory for collecting SQLs",
 			DefaultValue: "",
 		},
+		command.StringFlag{
+			Short:        "",
+			Name:         "tls",
+			Doc:          "[Migrate] connect sql with tls,set value with 'custom' or '' ",
+			DefaultValue: "",
+		},
+		command.StringFlag{
+			Short:        "",
+			Name:         "tls-ca-path",
+			Doc:          "[Migrate] the tls ca path",
+			DefaultValue: "",
+		},
 	),
 	Run: RunMigrate,
 }
 
 func RunMigrate(ctx *command.Context, host string, port int, username, password, database string, sandboxPort int,
-	lintConfig string, modules []string, debugSQL, skipLint, skipSandbox, skipPreMig, skipMig bool, output string) error {
+	lintConfig string, modules []string, debugSQL, skipLint, skipSandbox, skipPreMig, skipMig bool, output string, tls string,
+	tlsCaPath string) error {
 	logrus.Infoln("Erda Migrator is working")
 
+	tlsConfig := &migrator.TLSConfig{
+		DBCaCert: tlsCaPath,
+	}
 	var p = parameters{
 		mySQLParams: &migrator.DSNParameters{
 			Username:  username,
@@ -148,6 +164,8 @@ func RunMigrate(ctx *command.Context, host string, port int, username, password,
 			Database:  database,
 			ParseTime: true,
 			Timeout:   time.Second * 150,
+			TLS:       tls,
+			TLSConfig: tlsConfig,
 		},
 		sandboxParams: &migrator.DSNParameters{
 			Username:  "root",

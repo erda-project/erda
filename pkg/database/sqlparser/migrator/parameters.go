@@ -15,12 +15,20 @@
 package migrator
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
-	"net/url"
+	"io/ioutil"
 	"time"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/sirupsen/logrus"
 )
 
-const smallestRetryTimeout = 60
+const (
+	smallestRetryTimeout = 60
+	certName             = "custom"
+)
 
 type Parameters interface {
 	ScriptsParameters
@@ -44,38 +52,83 @@ type Parameters interface {
 }
 
 type DSNParameters struct {
+	*TLSConfig
 	Username  string
 	Password  string
 	Host      string
 	Port      int
 	Database  string
 	ParseTime bool
+	TLS       string
 	Timeout   time.Duration
+}
+type TLSConfig struct {
+	DBClientKey  string
+	DBCaCert     string
+	DBClientCert string
 }
 
 func (c DSNParameters) Format(database bool) (dsn string) {
-	dsnPat := "%s:%s@tcp(%s:%v)/%s"
-	if c.Password == "" {
-		dsnPat = "%s%s@tcp(%s:%v)/%s"
+	if c.TLS == certName {
+		if c.DBCaCert == "" {
+			logrus.Error("MysqlCaCert can not be empty.")
+			return ""
+		}
+		rootCertPool := x509.NewCertPool()
+		pem, err := ioutil.ReadFile(c.DBCaCert)
+		if err != nil {
+			logrus.Error("failed to load ca cert.")
+			return ""
+		}
+		if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+			logrus.Error("failed to append ca cert.")
+			return ""
+		}
+		clientCert := make([]tls.Certificate, 0)
+		if c.DBClientCert != "" && c.DBClientKey != "" {
+			certs, err := tls.LoadX509KeyPair(c.DBClientCert, c.DBClientKey)
+			if err != nil {
+				logrus.Error(err)
+				return ""
+			}
+			clientCert = append(clientCert, certs)
+		}
+		err = mysql.RegisterTLSConfig(c.TLS, &tls.Config{
+			RootCAs:      rootCertPool,
+			Certificates: clientCert,
+		})
+		if err != nil {
+			logrus.Error(err)
+			return ""
+		}
 	}
+	var dbName string
 	if database {
-		dsn = fmt.Sprintf(dsnPat, c.Username, c.Password, c.Host, c.Port, c.Database)
-	} else {
-		dsn = fmt.Sprintf(dsnPat, c.Username, c.Password, c.Host, c.Port, "")
+		dbName = c.Database
+	}
+	timeout := c.Timeout
+	if timeout == 0 {
+		timeout = 150 * time.Second
+	}
+	mc := mysql.Config{
+		User:              c.Username,
+		Passwd:            c.Password,
+		Addr:              fmt.Sprintf("%s:%d", c.Host, c.Port),
+		DBName:            dbName,
+		Net:               "tcp",
+		ParseTime:         c.ParseTime,
+		Timeout:           timeout,
+		MultiStatements:   true,
+		CheckConnLiveness: true,
+		Params: map[string]string{
+			"charset": "utf8mb4,utf8",
+		},
+		AllowNativePasswords: true,
+		TLSConfig:            c.TLS,
+		Loc:                  time.Local,
 	}
 
-	var params = make(url.Values)
-	if c.ParseTime {
-		params.Add("parseTime", "true")
-	}
-	if c.Timeout == 0 {
-		c.Timeout = time.Second * 150
-	}
-	params.Add("timeout", fmt.Sprintf("%vs", int(c.Timeout.Seconds())))
-	params.Add("multiStatements", "true")
-	params.Add("charset", "utf8mb4,utf8")
-	params.Add("loc", "Local")
-	return dsn + "?" + params.Encode()
+	return mc.FormatDSN()
 }
 
 type SQLCollectorDir interface {
