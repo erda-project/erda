@@ -18,6 +18,8 @@ import (
 	"context"
 	"runtime/debug"
 	"time"
+
+	"github.com/erda-project/erda-infra/pkg/safe"
 )
 
 func (p *provider) leaderFramework(ctx context.Context) {
@@ -51,18 +53,18 @@ func (p *provider) leaderFramework(ctx context.Context) {
 
 	// before exec on leader
 	for _, l := range listeners {
-		l.BeforeExecOnLeader(ctx)
+		safe.Do(func() { l.BeforeExecOnLeader(ctx) })
 	}
 
 	// exec on leader
 	for _, h := range p.forLeaderUse.handlersOnLeader {
 		h := h
-		go h(ctx)
+		safe.Go(func() { h(ctx) })
 	}
 
 	// after exec on leader
 	for _, l := range listeners {
-		l.AfterExecOnLeader(ctx)
+		safe.Do(func() { l.AfterExecOnLeader(ctx) })
 	}
 
 	select {
@@ -89,6 +91,6 @@ func (p *provider) mergeWithInternalLeaderListeners() []Listener {
 
 func asyncWrapper(f func(ctx context.Context)) func(ctx context.Context) {
 	return func(ctx context.Context) {
-		go func() { f(ctx) }()
+		safe.Go(func() { f(ctx) })
 	}
 }
