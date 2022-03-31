@@ -53,6 +53,7 @@ func (p *provider) leaderFramework(ctx context.Context) {
 
 	// before exec on leader
 	for _, l := range listeners {
+		l := l
 		safe.Do(func() { l.BeforeExecOnLeader(ctx) })
 	}
 
@@ -64,6 +65,7 @@ func (p *provider) leaderFramework(ctx context.Context) {
 
 	// after exec on leader
 	for _, l := range listeners {
+		l := l
 		safe.Do(func() { l.AfterExecOnLeader(ctx) })
 	}
 
