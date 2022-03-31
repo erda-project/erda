@@ -63,7 +63,7 @@ func (p *provider) resetTask(task *spec.PipelineTask, statuses ...apistructs.Pip
 	for _, status := range statuses {
 		strStatuses = append(strStatuses, status.String())
 	}
-	statusPipelines, _, _, _, err := p.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
+	result, err := p.dbClient.PageListPipelines(apistructs.PipelinePageListRequest{
 		Sources:        []apistructs.PipelineSource{source},
 		YmlNames:       []string{ymlName},
 		Statuses:       strStatuses,
@@ -75,7 +75,7 @@ func (p *provider) resetTask(task *spec.PipelineTask, statuses ...apistructs.Pip
 	if err != nil {
 		return err
 	}
-
+	statusPipelines := result.Pipelines
 	if len(statusPipelines) <= 0 {
 		return nil
 	}

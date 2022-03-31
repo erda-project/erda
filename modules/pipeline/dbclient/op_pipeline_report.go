@@ -74,10 +74,11 @@ func (client *Client) PagingPipelineReportSets(req apistructs.PipelineReportSetP
 		if err := pipelinePagingReq.PostHandleQueryString(); err != nil {
 			return nil, -1, fmt.Errorf("failed to paging pipeline ids, invalid req, err: %v", err)
 		}
-		_, pipelineIDs, _, _, err := client.PageListPipelines(*pipelinePagingReq, ops...)
+		result, err := client.PageListPipelines(*pipelinePagingReq, ops...)
 		if err != nil {
 			return nil, -1, fmt.Errorf("failed to paging pipeline ids, err: %v", err)
 		}
+		pipelineIDs := result.PagingPipelineIDs
 		if len(pipelineIDs) == 0 {
 			return nil, 0, nil
 		}
