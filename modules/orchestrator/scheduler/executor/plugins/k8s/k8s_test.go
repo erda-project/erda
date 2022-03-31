@@ -15,27 +15,48 @@
 package k8s
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
-
-	"k8s.io/apimachinery/pkg/api/resource"
 
 	"bou.ke/monkey"
 	"github.com/pkg/errors"
 	"gotest.tools/assert"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/rest"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/events/eventtypes"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/executortypes"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/addon"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/clusterinfo"
+	ds "github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/daemonset"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/deployment"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/event"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/ingress"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/job"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/k8sservice"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/namespace"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/nodelabel"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/persistentvolume"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/persistentvolumeclaim"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/pod"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/resourceinfo"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/secret"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/serviceaccount"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/statefulset"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/storageclass"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/util"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/database/dbengine"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/istioctl"
 	"github.com/erda-project/erda/pkg/istioctl/engines"
 	"github.com/erda-project/erda/pkg/istioctl/executors"
+	"github.com/erda-project/erda/pkg/k8sclient"
 	k8sclientconfig "github.com/erda-project/erda/pkg/k8sclient/config"
 )
 
@@ -316,6 +337,137 @@ func TestSetFineGrainedCPU(t *testing.T) {
 			if err == nil {
 				assert.Equal(t, tt.wantRequestCPU, fmt.Sprintf("%vm", c.Resources.Requests.Cpu().MilliValue()))
 				assert.Equal(t, tt.wantMaxCPU, fmt.Sprintf("%vm", c.Resources.Limits.Cpu().MilliValue()))
+			}
+		})
+	}
+}
+
+func TestKubernetes_DeployInEdgeCluster(t *testing.T) {
+	type fields struct {
+		name                       executortypes.Name
+		clusterName                string
+		cluster                    *apistructs.ClusterInfo
+		options                    map[string]string
+		addr                       string
+		client                     *httpclient.HTTPClient
+		k8sClient                  *k8sclient.K8sClient
+		bdl                        *bundle.Bundle
+		evCh                       chan *eventtypes.StatusEvent
+		deploy                     *deployment.Deployment
+		job                        *job.Job
+		ds                         *ds.Daemonset
+		ingress                    *ingress.Ingress
+		namespace                  *namespace.Namespace
+		service                    *k8sservice.Service
+		pvc                        *persistentvolumeclaim.PersistentVolumeClaim
+		pv                         *persistentvolume.PersistentVolume
+		sts                        *statefulset.StatefulSet
+		pod                        *pod.Pod
+		secret                     *secret.Secret
+		storageClass               *storageclass.StorageClass
+		sa                         *serviceaccount.ServiceAccount
+		nodeLabel                  *nodelabel.NodeLabel
+		ClusterInfo                *clusterinfo.ClusterInfo
+		resourceInfo               *resourceinfo.ResourceInfo
+		event                      *event.Event
+		cpuSubscribeRatio          float64
+		memSubscribeRatio          float64
+		devCpuSubscribeRatio       float64
+		devMemSubscribeRatio       float64
+		testCpuSubscribeRatio      float64
+		testMemSubscribeRatio      float64
+		stagingCpuSubscribeRatio   float64
+		stagingMemSubscribeRatio   float64
+		cpuNumQuota                float64
+		elasticsearchoperator      addon.AddonOperator
+		redisoperator              addon.AddonOperator
+		mysqloperator              addon.AddonOperator
+		daemonsetoperator          addon.AddonOperator
+		sourcecovoperator          addon.AddonOperator
+		instanceinfoSyncCancelFunc context.CancelFunc
+		dbclient                   *instanceinfo.Client
+		istioEngine                istioctl.IstioEngine
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   bool
+	}{
+		{
+			name: "Test_01",
+			fields: fields{
+				ClusterInfo: &clusterinfo.ClusterInfo{},
+			},
+			want: false,
+		},
+		{
+			name: "Test_02",
+			fields: fields{
+				ClusterInfo: &clusterinfo.ClusterInfo{},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			k := &Kubernetes{
+				name:                       tt.fields.name,
+				clusterName:                tt.fields.clusterName,
+				cluster:                    tt.fields.cluster,
+				options:                    tt.fields.options,
+				addr:                       tt.fields.addr,
+				client:                     tt.fields.client,
+				k8sClient:                  tt.fields.k8sClient,
+				bdl:                        tt.fields.bdl,
+				evCh:                       tt.fields.evCh,
+				deploy:                     tt.fields.deploy,
+				job:                        tt.fields.job,
+				ds:                         tt.fields.ds,
+				ingress:                    tt.fields.ingress,
+				namespace:                  tt.fields.namespace,
+				service:                    tt.fields.service,
+				pvc:                        tt.fields.pvc,
+				pv:                         tt.fields.pv,
+				sts:                        tt.fields.sts,
+				pod:                        tt.fields.pod,
+				secret:                     tt.fields.secret,
+				storageClass:               tt.fields.storageClass,
+				sa:                         tt.fields.sa,
+				nodeLabel:                  tt.fields.nodeLabel,
+				ClusterInfo:                tt.fields.ClusterInfo,
+				resourceInfo:               tt.fields.resourceInfo,
+				event:                      tt.fields.event,
+				cpuSubscribeRatio:          tt.fields.cpuSubscribeRatio,
+				memSubscribeRatio:          tt.fields.memSubscribeRatio,
+				devCpuSubscribeRatio:       tt.fields.devCpuSubscribeRatio,
+				devMemSubscribeRatio:       tt.fields.devMemSubscribeRatio,
+				testCpuSubscribeRatio:      tt.fields.testCpuSubscribeRatio,
+				testMemSubscribeRatio:      tt.fields.testMemSubscribeRatio,
+				stagingCpuSubscribeRatio:   tt.fields.stagingCpuSubscribeRatio,
+				stagingMemSubscribeRatio:   tt.fields.stagingMemSubscribeRatio,
+				cpuNumQuota:                tt.fields.cpuNumQuota,
+				elasticsearchoperator:      tt.fields.elasticsearchoperator,
+				redisoperator:              tt.fields.redisoperator,
+				mysqloperator:              tt.fields.mysqloperator,
+				daemonsetoperator:          tt.fields.daemonsetoperator,
+				sourcecovoperator:          tt.fields.sourcecovoperator,
+				instanceinfoSyncCancelFunc: tt.fields.instanceinfoSyncCancelFunc,
+				dbclient:                   tt.fields.dbclient,
+				istioEngine:                tt.fields.istioEngine,
+			}
+
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(k.ClusterInfo), "Get", func(_ *clusterinfo.ClusterInfo) (map[string]string, error) {
+				ret := make(map[string]string)
+				if tt.name == "Test_01" {
+					ret[string(apistructs.DICE_IS_EDGE)] = "false"
+					return ret, nil
+				}
+				ret[string(apistructs.DICE_IS_EDGE)] = "true"
+				return ret, nil
+			})
+			defer patch.Unpatch()
+			if got := k.DeployInEdgeCluster(); got != tt.want {
+				t.Errorf("DeployInEdgeCluster() = %v, want %v", got, tt.want)
 			}
 		})
 	}
