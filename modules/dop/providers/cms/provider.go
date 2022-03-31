@@ -21,6 +21,7 @@ import (
 	cmspb "github.com/erda-project/erda-proto-go/core/pipeline/cms/pb"
 	pb "github.com/erda-project/erda-proto-go/dop/cms/pb"
 	. "github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/providers/audit"
 )
 
@@ -42,7 +43,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 	p.cicdCmsService = &CICDCmsService{p, New(WithCoreServices()), nil}
 	p.audit = audit.GetAuditor(ctx)
 	if p.Register != nil {
-		pb.RegisterCICDCmsServiceImp(p.Register, p.cicdCmsService)
+		pb.RegisterCICDCmsServiceImp(p.Register, p.cicdCmsService, apis.Options())
 	}
 	return nil
 }
