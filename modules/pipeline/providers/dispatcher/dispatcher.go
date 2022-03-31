@@ -18,15 +18,20 @@ import (
 	"context"
 	"time"
 
+	"github.com/erda-project/erda-infra/pkg/safe"
 	"github.com/erda-project/erda-infra/pkg/strutil"
 	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/worker"
 )
 
 func (p *provider) continueDispatcher(ctx context.Context) {
-	for pipelineID := range p.pipelineIDsChan {
-		go func(pipelineID uint64) {
-			p.dispatchOnePipelineUntilSuccess(ctx, pipelineID)
-		}(pipelineID)
+	for {
+		select {
+		case <-ctx.Done():
+			p.Log.Infof("stop continue dispatcher, reason: %v", ctx.Err())
+			return
+		case pipelineID := <-p.pipelineIDsChan:
+			safe.Go(func() { p.dispatchOnePipelineUntilSuccess(ctx, pipelineID) })
+		}
 	}
 }
 
