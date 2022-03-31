@@ -192,7 +192,7 @@ func (k *Kubernetes) createStatefulSet(ctx context.Context, info StatefulsetInfo
 	// ECI Pod inject fluent-bit sidecar container
 	useECI := UseECI(set.Labels, set.Spec.Template.Labels)
 	if useECI {
-		sidecar, err := GenerateECIPodSidecarContainers()
+		sidecar, err := GenerateECIPodSidecarContainers(k.DeployInEdgeCluster())
 		if err != nil {
 			logrus.Errorf("%v", err)
 			return err

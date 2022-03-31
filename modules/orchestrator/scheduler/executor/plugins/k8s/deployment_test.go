@@ -596,6 +596,7 @@ func TestKubernetes_setStatelessServiceVolumes(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
+/*
 func TestGenerateECIPodSidecarContainers(t *testing.T) {
 	wantContainer := apiv1.Container{
 		Name: "fluent-bit",
@@ -628,9 +629,57 @@ func TestGenerateECIPodSidecarContainers(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GenerateECIPodSidecarContainers()
+			_, err := GenerateECIPodSidecarContainers(false)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GenerateECIPodSidecarContainers() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+*/
+
+func TestGenerateECIPodSidecarContainers(t *testing.T) {
+	type args struct {
+		inEdge bool
+	}
+
+	wantContainer := apiv1.Container{
+		Name: "fluent-bit",
+		//Image: sidecar.Image,
+		Resources: apiv1.ResourceRequirements{
+			Requests: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("0.1"),
+				apiv1.ResourceMemory: resource.MustParse("256Mi"),
+			},
+			Limits: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("1"),
+				apiv1.ResourceMemory: resource.MustParse("1Gi"),
+			},
+		},
+		Command:      []string{"./fluent-bit/bin/fluent-bit"},
+		Args:         []string{"-c", "/fluent-bit/etc/sidecar/fluent-bit.conf"},
+		VolumeMounts: []apiv1.VolumeMount{},
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		want    apiv1.Container
+		wantErr bool
+	}{
+		{
+			name:    "Test_01",
+			args:    args{inEdge: false},
+			want:    wantContainer,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := GenerateECIPodSidecarContainers(tt.args.inEdge)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GenerateECIPodSidecarContainers() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}
