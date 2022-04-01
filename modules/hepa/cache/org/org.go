@@ -18,26 +18,32 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/pkg/cache"
 )
 
 var (
-	orgID2Org     *cache.Cache
-	projectID2Org *cache.Cache
+	orgID2OrgName     = "hepa-org-id-for-org"
+	orgID2Org         *cache.Cache
+	projectID2OrgName = "hepa-project-id-for-org"
+	projectID2Org     *cache.Cache
+	scopeAccessName   = "hepa-user-id-for-scope-access"
+	scopeAccess       *cache.Cache
 )
 
 func init() {
 	bdl := bundle.New(bundle.WithCoreServices())
-	orgID2Org = cache.New("hepa-org-id-for-org", time.Minute, func(i interface{}) (interface{}, bool) {
+	orgID2Org = cache.New(orgID2OrgName, time.Minute, func(i interface{}) (interface{}, bool) {
 		orgDTO, err := bdl.GetOrg(i.(string))
 		if err != nil {
 			return nil, false
 		}
 		return orgDTO, true
 	})
-	projectID2Org = cache.New("hepa-project-id-for-org", time.Minute, func(i interface{}) (interface{}, bool) {
+	projectID2Org = cache.New(projectID2OrgName, time.Minute, func(i interface{}) (interface{}, bool) {
 		projectID, err := strconv.ParseUint(i.(string), 10, 32)
 		if err != nil {
 			return nil, false
@@ -52,6 +58,35 @@ func init() {
 		}
 		return orgDTO, true
 	})
+	scopeAccess = cache.New(scopeAccessName, time.Minute, func(i interface{}) (interface{}, bool) {
+		us := i.(userScope)
+		access, err := bdl.ScopeRoleAccess(us.UserID, &apistructs.ScopeRoleAccessRequest{
+			Scope: apistructs.Scope{
+				Type: us.Scope,
+				ID:   us.ScopeID,
+			},
+		})
+		if err != nil {
+			logrus.WithField("cache name", scopeAccessName).
+				WithError(err).
+				WithFields(map[string]interface{}{"userID": us.UserID, "scope": us.Scope, "scopeID": us.ScopeID}).
+				Errorln("failed to bdl.ScopeRoleAccess")
+			return nil, false
+		}
+		if access == nil {
+			logrus.WithField("cache name", scopeAccessName).
+				WithFields(map[string]interface{}{"userID": us.UserID, "scope": us.Scope, "scopeID": us.ScopeID}).
+				Errorln("failed to bdl.ScopeRoleAccess")
+			return nil, false
+		}
+		return access, true
+	})
+}
+
+type userScope struct {
+	UserID  string
+	Scope   apistructs.ScopeType
+	ScopeID string
 }
 
 // GetOrgByOrgID gets the *apistructs.OrgDTO by orgID from the newest cache
@@ -70,4 +105,14 @@ func GetOrgByProjectID(projectID string) (*apistructs.OrgDTO, bool) {
 		return nil, false
 	}
 	return item.(*apistructs.OrgDTO), true
+}
+
+// UserCanAccessTheScope returns a user permission for the scope
+func UserCanAccessTheScope(userID string, scope apistructs.ScopeType, scopeID string) (*apistructs.ScopeRole, bool) {
+	access, ok := scopeAccess.LoadWithUpdate(userScope{UserID: userID, Scope: scope, ScopeID: scopeID})
+	if !ok {
+		return nil, false
+	}
+	i, ok := access.(*apistructs.ScopeRole)
+	return i, ok
 }

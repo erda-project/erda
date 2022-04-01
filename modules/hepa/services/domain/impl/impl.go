@@ -27,6 +27,7 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/hepa/bundle"
+	orgCache "github.com/erda-project/erda/modules/hepa/cache/org"
 	"github.com/erda-project/erda/modules/hepa/common"
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/config"
@@ -1306,6 +1307,15 @@ func (impl GatewayDomainServiceImpl) GetOrgDomainInfo(reqDto *gw.ManageDomainReq
 			dto.Link = link
 		default:
 			dto.Type = gw.OtherDomain
+		}
+		if dto.Link != nil {
+			if dto.Link.AppID != "" {
+				access, ok := orgCache.UserCanAccessTheScope(reqDto.UserID, apistructs.AppScope, dto.Link.AppID)
+				dto.Access = ok && access != nil && access.Access
+			} else if dto.Link.ProjectID != "" {
+				access, ok := orgCache.UserCanAccessTheScope(reqDto.UserID, apistructs.ProjectScope, dto.Link.ProjectID)
+				dto.Access = ok && access != nil && access.Access
+			}
 		}
 		list = append(list, dto)
 	}

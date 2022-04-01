@@ -15,12 +15,12 @@
 package domain
 
 import (
-	context "context"
+	"context"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	pb "github.com/erda-project/erda-proto-go/core/hepa/domain/pb"
+	"github.com/erda-project/erda-proto-go/core/hepa/domain/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/hepa/common/util"
 	"github.com/erda-project/erda/modules/hepa/common/vars"
@@ -37,6 +37,7 @@ type domainService struct {
 func (s *domainService) GetOrgDomains(ctx context.Context, req *pb.GetOrgDomainsRequest) (resp *pb.GetOrgDomainsResponse, err error) {
 	service := domain.Service.Clone(ctx)
 	reqDto := dto.ManageDomainReq{
+		UserID:      apis.GetUserID(ctx),
 		OrgId:       apis.GetOrgID(ctx),
 		Domain:      req.Domain,
 		ClusterName: req.ClusterName,
