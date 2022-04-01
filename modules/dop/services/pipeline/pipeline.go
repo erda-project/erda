@@ -407,6 +407,7 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 			break
 		}
 	}
+	pv2.Secrets = map[string]string{utils.MakeGittarRepoSecret(): utils.GetGittarRepoURL(pv2.ClusterName, detail.RepoAbbr)}
 
 	// generate pipeline yaml name
 	pv2.PipelineYmlName = GenerateV1UniquePipelineYmlName(pv2.PipelineSource, pipelineYmlName,

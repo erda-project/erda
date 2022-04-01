@@ -68,6 +68,7 @@ func (s *provider) CronCreate(ctx context.Context, req *pb.CronCreateRequest) (*
 			},
 		}
 		cron.Extra.ConfigManageNamespaces = strutil.DedupSlice(append(cron.Extra.ConfigManageNamespaces, req.PipelineCreateRequest.ConfigManageNamespaces...), true)
+		cron.Extra.Secrets = req.PipelineCreateRequest.GetSecrets()
 
 		if pipelineYml.Spec().CronCompensator != nil {
 			cron.Extra.Compensator = &apistructs.CronCompensator{
@@ -213,6 +214,7 @@ func (s *provider) CronUpdate(ctx context.Context, req *pb.CronUpdateRequest) (*
 	cron.CronExpr = req.CronExpr
 	cron.Extra.PipelineYml = req.PipelineYml
 	cron.Extra.ConfigManageNamespaces = strutil.DedupSlice(append(cron.Extra.ConfigManageNamespaces, req.ConfigManageNamespaces...), true)
+	cron.Extra.Secrets = req.Secrets
 
 	var fields = []string{spec.PipelineCronCronExpr, spec.Extra}
 

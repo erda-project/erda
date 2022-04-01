@@ -390,6 +390,7 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		IdentityInfo:           identityInfo,
 		PipelineRunParams:      runRequest.PipelineRunParams,
 		ConfigManageNamespaces: []string{utils.MakeUserOrgPipelineCmsNs(identityInfo.UserID, p.OrgID)},
+		Secrets:                map[string]string{utils.MakeGittarRepoSecret(): utils.GetGittarRepoURL(p.ClusterName, p.CommitDetail.RepoAbbr)},
 	}); err != nil {
 		var apiError, ok = err.(*errorresp.APIError)
 		if !ok {

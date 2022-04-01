@@ -106,7 +106,7 @@ message PipelineSnippetQueryResponse {
 }
 message SnippetDetailQuery {
   string source = 1;
-  string name   = 2;
+  string name = 2;
   map<string, string> labels = 3;
   string alias = 4;
 }
@@ -665,6 +665,11 @@ message PipelineCreateRequest {
   string definitionID = 18;
 
   common.IdentityInfo identityInfo = 19 [json_name = "-"];
+
+  // Secrets Environment variables passed from the upper layer，different from configs cms
+  // eg: gittar.repo
+  // +optional
+  map<string, string> Secrets = 20;
 }
 
 message PipelineCreateResponse {

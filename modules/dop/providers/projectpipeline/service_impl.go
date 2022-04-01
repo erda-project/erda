@@ -800,12 +800,14 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 		req.PipelineID = uint64(definition.PipelineID)
 		req.AutoRunAtOnce = true
 		req.IdentityInfo = identityInfo
+		req.Secrets = map[string]string{utils.MakeGittarRepoSecret(): utils.GetGittarRepoURL(p.ClusterName, p.CommitDetail.RepoAbbr)}
 		dto, err = p.bundle.RerunPipeline(req)
 	} else {
 		var req apistructs.PipelineRerunFailedRequest
 		req.PipelineID = uint64(definition.PipelineID)
 		req.AutoRunAtOnce = true
 		req.IdentityInfo = identityInfo
+		req.Secrets = map[string]string{utils.MakeGittarRepoSecret(): utils.GetGittarRepoURL(p.ClusterName, p.CommitDetail.RepoAbbr)}
 		dto, err = p.bundle.RerunFailedPipeline(req)
 	}
 	if err != nil {

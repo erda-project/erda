@@ -25,4 +25,5 @@ message Cron {
     uint64 orgID = 14;
     string pipelineDefinitionID = 15;
     string pipelineSource = 16;
+    map<string,string> secrets = 17;
 }
