@@ -661,12 +661,14 @@ type ExecCheck struct {
 }
 
 type Resources struct {
-	CPU     float64           `yaml:"cpu,omitempty" json:"cpu"`
-	Mem     int               `yaml:"mem,omitempty" json:"mem"`
-	MaxCPU  float64           `yaml:"max_cpu,omitempty" json:"max_cpu"`
-	MaxMem  int               `yaml:"max_mem,omitempty" json:"max_mem"`
-	Disk    int               `yaml:"disk,omitempty" json:"disk"`
-	Network map[string]string `yaml:"network,omitempty" json:"network"`
+	CPU                      float64           `yaml:"cpu,omitempty" json:"cpu"`
+	Mem                      int               `yaml:"mem,omitempty" json:"mem"`
+	MaxCPU                   float64           `yaml:"max_cpu,omitempty" json:"max_cpu"`
+	MaxMem                   int               `yaml:"max_mem,omitempty" json:"max_mem"`
+	Disk                     int               `yaml:"disk,omitempty" json:"disk"`
+	Network                  map[string]string `yaml:"network,omitempty" json:"network"`
+	EmptyDirCapacity         int               `yaml:"emptydir_size,omitempty" json:"emptydir_size"`
+	EphemeralStorageCapacity int               `yaml:"ephemeral_storage_size,omitempty" json:"ephemeral_storage_size"`
 }
 
 type Deployments struct {
