@@ -669,11 +669,12 @@ func (e *Endpoints) checkrunCreate(ctx context.Context, r *http.Request, vars ma
 	}
 	result := pipeline.GetPipelineYmlList(req, e.bdl, gitEvent.Content.AuthorId)
 	find := false
+
+	app, err := e.bdl.GetApp(uint64(appID))
+	if err != nil {
+		return nil, apierrors.ErrGetApp.InternalError(err)
+	}
 	for _, each := range result {
-		app, err := e.bdl.GetApp(uint64(appID))
-		if err != nil {
-			return nil, apierrors.ErrGetApp.InternalError(err)
-		}
 		strPipelineYml, err := e.pipeline.FetchPipelineYml(app.GitRepo, gitEvent.Content.SourceBranch, each, gitEvent.Content.AuthorId)
 		if err != nil {
 			continue
