@@ -790,7 +790,12 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 		return nil, apiError.InternalError(fmt.Errorf("failed unmarshal pipeline extra error %v", err))
 	}
 
-	if err := p.checkRolePermission(identityInfo, extraValue.CreateRequest, apiError); err != nil {
+	if err = p.checkRolePermission(identityInfo, extraValue.CreateRequest, apiError); err != nil {
+		return nil, err
+	}
+
+	pipeline, err := p.bundle.GetPipeline(uint64(definition.PipelineID))
+	if err != nil {
 		return nil, err
 	}
 
@@ -800,12 +805,14 @@ func (p *ProjectPipelineService) failRerunOrRerunPipeline(rerun bool, pipelineDe
 		req.PipelineID = uint64(definition.PipelineID)
 		req.AutoRunAtOnce = true
 		req.IdentityInfo = identityInfo
+		req.Secrets = utils.GetGittarSecrets(pipeline.ClusterName, pipeline.Branch, pipeline.CommitDetail)
 		dto, err = p.bundle.RerunPipeline(req)
 	} else {
 		var req apistructs.PipelineRerunFailedRequest
 		req.PipelineID = uint64(definition.PipelineID)
 		req.AutoRunAtOnce = true
 		req.IdentityInfo = identityInfo
+		req.Secrets = utils.GetGittarSecrets(pipeline.ClusterName, pipeline.Branch, pipeline.CommitDetail)
 		dto, err = p.bundle.RerunFailedPipeline(req)
 	}
 	if err != nil {
@@ -1068,7 +1075,7 @@ func (p *ProjectPipelineService) autoRunPipeline(identityInfo apistructs.Identit
 	}
 
 	// update user gittar token
-	var worker = limit_sync_group.NewWorker(3)
+	var worker = limit_sync_group.NewWorker(2)
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 		// update CmsNsConfigs
 		if err = p.UpdateCmsNsConfigs(identityInfo.UserID, orgID); err != nil {

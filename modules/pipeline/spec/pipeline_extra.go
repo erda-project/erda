@@ -70,8 +70,9 @@ type PipelineExtraInfo struct {
 	// Deprecated
 	ConfigManageNamespaceOfSecretsDefault string `json:"configManageNamespaceOfSecretsDefault,omitempty"`
 	// Deprecated
-	ConfigManageNamespaceOfSecrets string   `json:"configManageNamespaceOfSecrets,omitempty"`
-	ConfigManageNamespaces         []string `json:"configManageNamespaces,omitempty"`
+	ConfigManageNamespaceOfSecrets string            `json:"configManageNamespaceOfSecrets,omitempty"`
+	ConfigManageNamespaces         []string          `json:"configManageNamespaces,omitempty"`
+	Secrets                        map[string]string `json:"secrets,omitempty"`
 
 	CopyFromPipelineID *uint64            `json:"copyFromPipelineID,omitempty"` // 是否是从其他节点拷贝过来
 	RerunFailedDetail  *RerunFailedDetail `json:"rerunFailedDetail,omitempty"`

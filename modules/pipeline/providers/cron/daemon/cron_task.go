@@ -102,6 +102,7 @@ func (d *provider) runCronPipelineFunc(id uint64) {
 		NormalLabels:           pc.Extra.NormalLabels,
 		Envs:                   pc.Extra.Envs,
 		ConfigManageNamespaces: pc.Extra.ConfigManageNamespaces,
+		Secrets:                pc.Extra.Secrets,
 		AutoRunAtOnce:          true,
 		AutoStartCron:          false,
 		IdentityInfo: apistructs.IdentityInfo{

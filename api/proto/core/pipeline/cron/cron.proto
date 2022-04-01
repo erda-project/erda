@@ -111,6 +111,7 @@ message CronUpdateRequest {
   string cronExpr = 3;
   repeated string configManageNamespaces = 4;
   string pipelineDefinitionID = 5;
+  map<string, string> secrets = 6;
 }
 
 message CronUpdateResponse {

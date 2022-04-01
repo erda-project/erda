@@ -73,10 +73,14 @@ func (s *PipelineSvc) RunPipeline(req *apistructs.PipelineRunRequest) (*spec.Pip
 		return nil, apierrors.ErrRunPipeline.InternalError(err)
 	}
 
+	for k, v := range req.Secrets {
+		secrets[k] = v
+	}
 	// replace global config use same random value
 	for k, v := range secrets {
 		secrets[k] = expression.ReplaceRandomParams(v)
 	}
+	logrus.Infof("wxj secrets,%v", secrets)
 
 	// 校验私有配置转换出来的 envs
 	secretsEnvs := make(map[string]string)

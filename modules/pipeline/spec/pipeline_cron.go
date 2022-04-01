@@ -60,6 +60,7 @@ type PipelineCronExtra struct {
 	NormalLabels           map[string]string `json:"normalLabels"` // userID 存储提交流水线的用户 ID
 	Envs                   map[string]string `json:"envs"`
 	ConfigManageNamespaces []string          `json:"configManageNamespaces,omitempty"`
+	Secrets                map[string]string `json:"secrets,omitempty"`
 	CronStartFrom          *time.Time        `json:"cronStartFrom,omitempty"`
 	// 新版为 v2
 	Version string `json:"version"`
@@ -92,6 +93,7 @@ func (pc *PipelineCron) Convert2DTO() *apistructs.PipelineCronDTO {
 		Enable:                 pc.Enable,
 		PipelineYml:            pc.Extra.PipelineYml,
 		ConfigManageNamespaces: pc.Extra.ConfigManageNamespaces,
+		Secrets:                pc.Extra.Secrets,
 		UserID:                 pc.GetUserID(),
 		OrgID:                  pc.GetOrgID(),
 		PipelineDefinitionID:   pc.PipelineDefinitionID,

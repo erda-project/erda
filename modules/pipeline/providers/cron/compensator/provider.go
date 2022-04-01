@@ -485,6 +485,7 @@ func (p *provider) createCronCompensatePipeline(pc spec.PipelineCron, triggerTim
 		NormalLabels:           pc.Extra.NormalLabels,
 		Envs:                   pc.Extra.Envs,
 		ConfigManageNamespaces: pc.Extra.ConfigManageNamespaces,
+		Secrets:                pc.Extra.Secrets,
 		AutoRunAtOnce:          false,
 		AutoStartCron:          false,
 		IdentityInfo: apistructs.IdentityInfo{

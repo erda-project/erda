@@ -39,5 +39,6 @@ func (this *Cron) Validate() error {
 			return github_com_mwitkow_go_proto_validators.FieldError("Enable", err)
 		}
 	}
+	// Validation of proto3 map<> fields is unsupported.
 	return nil
 }
