@@ -18,7 +18,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -75,12 +74,7 @@ func (c DSNParameters) Format(database bool) (dsn string) {
 			return ""
 		}
 		rootCertPool := x509.NewCertPool()
-		pem, err := ioutil.ReadFile(c.DBCaCert)
-		if err != nil {
-			logrus.Error("failed to load ca cert.")
-			return ""
-		}
-		if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+		if ok := rootCertPool.AppendCertsFromPEM([]byte(c.DBCaCert)); !ok {
 			logrus.Error("failed to append ca cert.")
 			return ""
 		}
@@ -93,7 +87,7 @@ func (c DSNParameters) Format(database bool) (dsn string) {
 			}
 			clientCert = append(clientCert, certs)
 		}
-		err = mysql.RegisterTLSConfig(c.TLS, &tls.Config{
+		err := mysql.RegisterTLSConfig(c.TLS, &tls.Config{
 			RootCAs:      rootCertPool,
 			Certificates: clientCert,
 		})
