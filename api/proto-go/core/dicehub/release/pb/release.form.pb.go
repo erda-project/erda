@@ -32,6 +32,7 @@ var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ModeSummary)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseSummaryArray)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*Tag)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetResponseData)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*AddonInfo)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ServiceImagePair)(nil)
@@ -108,8 +109,6 @@ func (m *ReleaseCreateRequest) UnmarshalURLValues(prefix string, values url.Valu
 				m.Dice = vals[0]
 			case "addon":
 				m.Addon = vals[0]
-			case "tag":
-				m.Tag = vals
 			case "isStable":
 				val, err := strconv.ParseBool(vals[0])
 				if err != nil {
@@ -131,7 +130,15 @@ func (m *ReleaseCreateRequest) UnmarshalURLValues(prefix string, values url.Valu
 			case "changelog":
 				m.Changelog = vals[0]
 			case "tags":
-				m.Tags = vals
+				list := make([]uint64, 0, len(vals))
+				for _, text := range vals {
+					val, err := strconv.ParseUint(text, 10, 64)
+					if err != nil {
+						return err
+					}
+					list = append(list, val)
+				}
+				m.Tags = list
 			case "version":
 				m.Version = vals[0]
 			case "orgID":
@@ -235,6 +242,16 @@ func (m *ReleaseUpdateRequest) UnmarshalURLValues(prefix string, values url.Valu
 				m.Desc = vals[0]
 			case "changelog":
 				m.Changelog = vals[0]
+			case "tags":
+				list := make([]uint64, 0, len(vals))
+				for _, text := range vals {
+					val, err := strconv.ParseUint(text, 10, 64)
+					if err != nil {
+						return err
+					}
+					list = append(list, val)
+				}
+				m.Tags = list
 			case "orgID":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
@@ -455,11 +472,6 @@ func (m *ReleaseGetResponse) UnmarshalURLValues(prefix string, values url.Values
 					m.Data = &ReleaseGetResponseData{}
 				}
 				m.Data.Images = vals
-			case "data.tags":
-				if m.Data == nil {
-					m.Data = &ReleaseGetResponseData{}
-				}
-				m.Data.Tags = vals[0]
 			case "data.version":
 				if m.Data == nil {
 					m.Data = &ReleaseGetResponseData{}
@@ -636,6 +648,81 @@ func (m *ReleaseSummaryArray) UnmarshalURLValues(prefix string, values url.Value
 	return nil
 }
 
+// Tag implement urlenc.URLValuesUnmarshaler.
+func (m *Tag) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "createdAt":
+				if m.CreatedAt == nil {
+					m.CreatedAt = &timestamppb.Timestamp{}
+				}
+			case "createdAt.seconds":
+				if m.CreatedAt == nil {
+					m.CreatedAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.CreatedAt.Seconds = val
+			case "createdAt.nanos":
+				if m.CreatedAt == nil {
+					m.CreatedAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.CreatedAt.Nanos = int32(val)
+			case "updatedAt":
+				if m.UpdatedAt == nil {
+					m.UpdatedAt = &timestamppb.Timestamp{}
+				}
+			case "updatedAt.seconds":
+				if m.UpdatedAt == nil {
+					m.UpdatedAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.UpdatedAt.Seconds = val
+			case "updatedAt.nanos":
+				if m.UpdatedAt == nil {
+					m.UpdatedAt = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.UpdatedAt.Nanos = int32(val)
+			case "creator":
+				m.Creator = vals[0]
+			case "id":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Id = val
+			case "color":
+				m.Color = vals[0]
+			case "name":
+				m.Name = vals[0]
+			case "type":
+				m.Type = vals[0]
+			case "projectID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			}
+		}
+	}
+	return nil
+}
+
 // ReleaseGetResponseData implement urlenc.URLValuesUnmarshaler.
 func (m *ReleaseGetResponseData) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
@@ -673,8 +760,6 @@ func (m *ReleaseGetResponseData) UnmarshalURLValues(prefix string, values url.Va
 				m.IsProjectRelease = val
 			case "images":
 				m.Images = vals
-			case "tags":
-				m.Tags = vals[0]
 			case "version":
 				m.Version = vals[0]
 			case "crossCluster":
@@ -872,7 +957,15 @@ func (m *ReleaseListRequest) UnmarshalURLValues(prefix string, values url.Values
 			case "commitID":
 				m.CommitID = vals[0]
 			case "tags":
-				m.Tags = vals[0]
+				list := make([]uint64, 0, len(vals))
+				for _, text := range vals {
+					val, err := strconv.ParseUint(text, 10, 64)
+					if err != nil {
+						return err
+					}
+					list = append(list, val)
+				}
+				m.Tags = list
 			case "isVersion":
 				val, err := strconv.ParseBool(vals[0])
 				if err != nil {
@@ -1033,8 +1126,6 @@ func (m *ReleaseData) UnmarshalURLValues(prefix string, values url.Values) error
 				m.Modes = vals[0]
 			case "images":
 				m.Images = vals
-			case "tags":
-				m.Tags = vals[0]
 			case "version":
 				m.Version = vals[0]
 			case "crossCluster":

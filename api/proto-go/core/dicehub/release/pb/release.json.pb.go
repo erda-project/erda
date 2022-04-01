@@ -51,6 +51,8 @@ var _ json.Marshaler = (*ModeSummary)(nil)
 var _ json.Unmarshaler = (*ModeSummary)(nil)
 var _ json.Marshaler = (*ReleaseSummaryArray)(nil)
 var _ json.Unmarshaler = (*ReleaseSummaryArray)(nil)
+var _ json.Marshaler = (*Tag)(nil)
+var _ json.Unmarshaler = (*Tag)(nil)
 var _ json.Marshaler = (*ReleaseGetResponseData)(nil)
 var _ json.Unmarshaler = (*ReleaseGetResponseData)(nil)
 var _ json.Marshaler = (*AddonInfo)(nil)
@@ -449,6 +451,24 @@ func (m *ReleaseSummaryArray) MarshalJSON() ([]byte, error) {
 
 // ReleaseSummaryArray implement json.Marshaler.
 func (m *ReleaseSummaryArray) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// Tag implement json.Marshaler.
+func (m *Tag) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// Tag implement json.Marshaler.
+func (m *Tag) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
