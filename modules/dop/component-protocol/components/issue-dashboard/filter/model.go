@@ -47,9 +47,11 @@ type State struct {
 }
 
 type InParams struct {
-	FrontEndProjectID string `json:"projectId,omitempty"`
-	FrontendUrlQuery  string `json:"filter__urlQuery,omitempty"`
-	ProjectID         uint64
+	FrontEndProjectID      string `json:"projectId,omitempty"`
+	FrontendUrlQuery       string `json:"filter__urlQuery,omitempty"`
+	ProjectID              uint64
+	FrontendFixedIteration string `json:"fixedIteration,omitempty"`
+	IterationID            int64
 }
 
 const OperationKeyFilter filter.OperationKey = "filter"
