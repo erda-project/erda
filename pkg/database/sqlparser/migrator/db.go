@@ -21,6 +21,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -100,10 +101,10 @@ func (mig *Migrator) SandBox() *gorm.DB {
 
 	initF := func(db *sql.DB) error {
 		if _, err := db.Exec(dropDatabase); err != nil {
-			return err
+			return errors.Wrapf(err, "fialed to exec %s", dropDatabase)
 		}
 		if _, err := db.Exec(createDatabase); err != nil {
-			return err
+			return errors.Wrapf(err, "fialed to exec %s", createDatabase)
 		}
 		return nil
 	}
