@@ -43,17 +43,19 @@ import (
 	"github.com/erda-project/erda/modules/hepa/services/runtime_service"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/parser/diceyml"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type GatewayDomainServiceImpl struct {
-	domainDb   db.GatewayDomainService
-	packageDb  db.GatewayPackageService
-	runtimeDb  db.GatewayRuntimeServiceService
-	azDb       db.GatewayAzInfoService
-	kongDb     db.GatewayKongInfoService
-	globalBiz  *global.GatewayGlobalService
-	packageBiz *endpoint_api.GatewayOpenapiService
-	reqCtx     context.Context
+	domainDb     db.GatewayDomainService
+	packageDb    db.GatewayPackageService
+	packageAPIDB db.GatewayPackageApiService
+	runtimeDb    db.GatewayRuntimeServiceService
+	azDb         db.GatewayAzInfoService
+	kongDb       db.GatewayKongInfoService
+	globalBiz    *global.GatewayGlobalService
+	packageBiz   *endpoint_api.GatewayOpenapiService
+	reqCtx       context.Context
 }
 
 var once sync.Once
@@ -67,6 +69,11 @@ func NewGatewayDomainServiceImpl() (e error) {
 				return
 			}
 			packageDb, err := db.NewGatewayPackageServiceImpl()
+			if err != nil {
+				e = err
+				return
+			}
+			packageAPIDB, err := db.NewGatewayPackageApiServiceImpl()
 			if err != nil {
 				e = err
 				return
@@ -87,13 +94,14 @@ func NewGatewayDomainServiceImpl() (e error) {
 				return
 			}
 			domain.Service = &GatewayDomainServiceImpl{
-				domainDb:   domainDb,
-				packageDb:  packageDb,
-				runtimeDb:  runtimeDb,
-				azDb:       azDb,
-				kongDb:     kongDb,
-				globalBiz:  &global.Service,
-				packageBiz: &endpoint_api.Service,
+				domainDb:     domainDb,
+				packageDb:    packageDb,
+				packageAPIDB: packageAPIDB,
+				runtimeDb:    runtimeDb,
+				azDb:         azDb,
+				kongDb:       kongDb,
+				globalBiz:    &global.Service,
+				packageBiz:   &endpoint_api.Service,
 			}
 		})
 	return
@@ -954,36 +962,70 @@ func (impl GatewayDomainServiceImpl) GetRuntimeDomains(runtimeId string) (result
 		}
 		useHttps = impl.doesClusterSupportHttps(leader.ClusterName)
 	}
+	// 查找域名根路径(/)路径转发到服务根路径(/)的路由
+	apis, err := impl.packageAPIDB.SelectByOptions([]orm.SelectOption{
+		{Column: "api_path", Type: orm.ExactMatch, Value: "/"},
+		{Column: "redirect_path", Type: orm.ExactMatch, Value: "/"},
+		{Column: "method", Type: orm.ExactMatch, Value: ""},
+	})
 	for _, service := range runtimeServices {
 		var domains []orm.GatewayDomain
-		var relationPackage *orm.GatewayPackage
 		// 内部地址为空的service已经下掉了，不要显示域名
 		if service.InnerAddress == "" {
 			continue
 		}
+
+		if err != nil {
+			return nil, err
+		}
+		var packageIDs []string
+		for _, api := range apis {
+			if strings.EqualFold(api.RedirectType, "service") && api.RuntimeServiceId == service.Id {
+				packageIDs = append(packageIDs, api.PackageId)
+				continue
+			}
+			if strings.EqualFold(api.RedirectType, "url") {
+				redirectAddr := strings.TrimPrefix(api.RedirectAddr, "http://")
+				redirectAddr = strings.TrimPrefix(redirectAddr, "https://")
+				redirectAddr = strings.TrimSuffix(redirectAddr, "/")
+				innerAddr := strings.TrimSuffix(service.InnerAddress, "/")
+				if redirectAddr == innerAddr {
+					packageIDs = append(packageIDs, api.PackageId)
+				}
+			}
+		}
+		apisData, _ := json.Marshal(apis)
+		log.Infof("apis: %s\n, packageIDs: %v", string(apisData), packageIDs)
+
+		// 查找这些路由的域名
+		var redirectDomains []orm.GatewayDomain
+		if len(packageIDs) > 0 {
+			redirectDomains, err = impl.domainDb.SelectByOptions([]orm.SelectOption{{Column: "package_id", Type: orm.Contains, Value: packageIDs}})
+			if err != nil {
+				log.WithError(err).
+					WithField("package_id", packageIDs).
+					Errorf("failed to domainDb.SelectByOptions")
+			}
+		}
+
 		domains, err = impl.domainDb.SelectByAny(&orm.GatewayDomain{
 			RuntimeServiceId: service.Id,
 		})
-		relationPackageId := ""
 		if err != nil {
-			return
+			return nil, err
 		}
-		relationPackage, err = impl.packageDb.GetByAny(&orm.GatewayPackage{
-			RuntimeServiceId: service.Id,
-		})
-		if err != nil {
-			return
-		}
-		if relationPackage != nil {
-			relationPackageId = relationPackage.Id
-		}
+		domains = append(domains, redirectDomains...)
+		domains = strutil.DedupAnySlice(domains, func(i int) interface{} {
+			return domains[i].Domain
+		}).([]orm.GatewayDomain)
+
 		var domainList gw.SortByTypeList
 		for _, domain := range domains {
 			runtimeDomain := gw.RuntimeDomain{
 				Domain:      domain.Domain,
 				DomainType:  gw.EDT_CUSTOM,
 				AppName:     appName,
-				PackageId:   relationPackageId,
+				PackageId:   domain.PackageId,
 				TenantGroup: tenantGroup,
 				UseHttps:    useHttps,
 			}
@@ -995,11 +1037,10 @@ func (impl GatewayDomainServiceImpl) GetRuntimeDomains(runtimeId string) (result
 						runtimeDomain.RootDomain)
 					runtimeDomain.DomainType = gw.EDT_DEFAULT
 				}
-			case orm.DT_SERVICE_CUSTOM:
-			default:
-				err = errors.Errorf("invalid domain: %+v", domain)
-				return
+			case orm.DT_PACKAGE:
+				runtimeDomain.DomainType = gw.EDT_PACKAGE
 			}
+
 			domainList = append(domainList, runtimeDomain)
 		}
 		sort.Sort(domainList)
