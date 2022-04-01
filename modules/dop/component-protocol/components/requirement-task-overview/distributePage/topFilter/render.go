@@ -65,7 +65,12 @@ func (f *ComponentFilter) setInParams(ctx context.Context) error {
 	if err := json.Unmarshal(b, &f.InParams); err != nil {
 		return err
 	}
-
+	if f.InParams.FrontendFixedIteration != "" {
+		f.InParams.IterationID, err = strconv.ParseInt(f.InParams.FrontendFixedIteration, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
 	f.InParams.ProjectID, err = strconv.ParseUint(f.InParams.FrontEndProjectID, 10, 64)
 	return err
 }
@@ -96,6 +101,9 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 	case cptype.OperationKey(f.Operations[OperationKeyFilter].Key):
 	}
 
+	if f.InParams.IterationID != 0 {
+		f.State.Values.IterationID = f.InParams.IterationID
+	}
 	data, err := f.issueSvc.GetAllIssuesByProject(apistructs.IssueListRequest{
 		Type: []apistructs.IssueType{
 			apistructs.IssueTypeRequirement,
@@ -133,6 +141,7 @@ func (f *ComponentFilter) Render(ctx context.Context, c *cptype.Component, scena
 				"mode": "single",
 			},
 			HaveFilter: true,
+			Disabled:   f.InParams.IterationID != 0,
 		},
 		{
 			EmptyText:  cputil.I18n(ctx, "all"),

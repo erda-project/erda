@@ -46,6 +46,7 @@ type PropCondition struct {
 	Options     []PropConditionOption  `json:"options,omitempty"`
 	Required    bool                   `json:"required,omitempty"`
 	CustomProps map[string]interface{} `json:"customProps,omitempty"`
+	Disabled    bool                   `json:"disabled,omitempty"`
 }
 
 type QuickSelect struct {
