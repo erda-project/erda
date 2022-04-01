@@ -409,6 +409,7 @@ func constructPipelineCron(p *spec.Pipeline, cronStartFrom *time.Time, configMan
 			Compensator:            compensator,
 			LastCompensateAt:       nil,
 		},
+		PipelineDefinitionID: p.PipelineDefinitionID,
 	}
 
 	return cron
