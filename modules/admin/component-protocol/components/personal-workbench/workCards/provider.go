@@ -114,7 +114,7 @@ func (wc *WorkCards) getAppTextMeta(app apistructs.AppWorkBenchItem) (metas []ca
 	runtimeOps := common.Operation{
 		JumpOut: false,
 		Target:  common.OpValTargetAppDeploy,
-		Params:  map[string]interface{}{"projectId": app.ProjectID, "appId": app.ID},
+		Params:  map[string]interface{}{"projectId": app.ProjectID, "appId": app.ID, common.OpKeyWorkSpace: "DEV"},
 	}
 	err := common.Transfer(mrOps, &mrData)
 	if err != nil {
