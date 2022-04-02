@@ -1,14 +1,18 @@
 syntax = "proto3";
-package erda.msp.apm.notifygroup;
-option go_package = "github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb";
+
+package erda.core.messenger.notifygroup;
+
+option go_package = "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb";
 
 import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "common/openapi.proto";
 
 service NotifyGroupService {
-  option (erda.common.openapi_service) = {
-    service: "msp",
+  option(erda.common.openapi_service) = {
+    service: "core-services"
     auth: {
       check_login: true,
       check_token: true,
@@ -16,51 +20,56 @@ service NotifyGroupService {
   };
 
   rpc CreateNotifyGroup (CreateNotifyGroupRequest) returns (CreateNotifyGroupResponse) {
-    option (google.api.http)     = {
-      post: "/api/msp/notify-groups"
+    option(google.api.http)      = {
+      post: "/api/notify-groups"
     };
     option (erda.common.openapi) = {
-      path: "/api/msp/notify-groups"
+      path: "/api/notify-groups"
     };
   }
   rpc QueryNotifyGroup (QueryNotifyGroupRequest) returns (QueryNotifyGroupResponse) {
-    option (google.api.http)     = {
-      get: "/api/msp/notify-groups"
+    option(google.api.http)      = {
+      get: "/api/notify-groups"
     };
     option (erda.common.openapi) = {
-      path: "/api/msp/notify-groups"
+      path: "/api/notify-groups"
     };
   }
   rpc GetNotifyGroup (GetNotifyGroupRequest) returns (GetNotifyGroupResponse) {
-    option (google.api.http)     = {
-      get: "/api/msp/notify-groups/{groupID}"
+    option(google.api.http)     = {
+      get: "/api/notify-groups/{groupID}"
     };
-    option (erda.common.openapi) = {
-      path: "/api/msp/notify-groups/{groupID}"
+    option(erda.common.openapi) = {
+      path: "/api/notify-groups/{groupID}"
     };
   }
   rpc UpdateNotifyGroup (UpdateNotifyGroupRequest) returns (UpdateNotifyGroupResponse) {
-    option (google.api.http)     = {
-      put: "/api/msp/notify-groups/{groupID}"
+    option(google.api.http)     = {
+      put: "/api/notify-groups/{groupID}"
     };
-    option (erda.common.openapi) = {
-      path: "/api/msp/notify-groups/{groupID}"
+    option(erda.common.openapi) = {
+      path: "/api/notify-groups/{groupID}"
     };
   }
   rpc GetNotifyGroupDetail (GetNotifyGroupDetailRequest) returns (GetNotifyGroupDetailResponse) {
-    option (google.api.http)     = {
-      get: "/api/msp/notify-groups/{groupID}/detail"
+    option(google.api.http)     = {
+      get: "/api/notify-groups/{groupID}/detail"
     };
-    option (erda.common.openapi) = {
-      path: "/api/msp/notify-groups/{groupID}/detail"
+    option(erda.common.openapi) = {
+      path: "/api/notify-groups/{groupID}/detail"
     };
   }
   rpc DeleteNotifyGroup (DeleteNotifyGroupRequest) returns (DeleteNotifyGroupResponse) {
-    option (google.api.http)     = {
-      delete: "/api/msp/notify-groups/{groupID}"
+    option(google.api.http)     = {
+      delete: "/api/notify-groups/{groupID}"
     };
-    option (erda.common.openapi) = {
-      path: "/api/msp/notify-groups/{groupID}"
+    option(erda.common.openapi) = {
+      path: "/api/notify-groups/{groupID}"
+    };
+  }
+  rpc BatchGetNotifyGroup (BatchGetNotifyGroupRequest) returns (BatchGetNotifyGroupResponse) {
+    option(google.api.http) = {
+      get: "/api/notify-groups/actions/batch-get"
     };
   }
 }
@@ -73,8 +82,8 @@ message CreateNotifyGroupRequest {
   string                creator     = 5;
   string                label       = 6;
   string                clusterName = 7;
-  bool                  autoCreate  = 8 [json_name = "-"];
-  int64                 orgID       = 9 [json_name = "-"];
+  bool                  autoCreate  = 8;
+  int64                 orgId       = 9;
 }
 
 message NotifyTarget {
@@ -88,8 +97,9 @@ message Target {
 }
 
 message CreateNotifyGroupResponse {
-  GroupIdAndProjectId data = 1;
+  int64 data = 1;
 }
+
 message NotifyGroup {
   int64                     id        = 1;
   string                    name      = 2;
@@ -99,7 +109,6 @@ message NotifyGroup {
   google.protobuf.Timestamp createdAt = 6;
   string                    creator   = 7;
   string                    label     = 8;
-  uint64                    projectId = 9;
 }
 
 message QueryNotifyGroupRequest {
@@ -108,8 +117,8 @@ message QueryNotifyGroupRequest {
   string scopeType   = 3;
   string scopeId     = 4;
   string label       = 5;
-  string clusterName = 6;
-  string name        = 7;
+  string name        = 6;
+  string clusterName = 7;
 }
 
 message QueryNotifyGroupResponse {
@@ -131,28 +140,14 @@ message GetNotifyGroupResponse {
   repeated string userIDs = 2;
 }
 
-message UserInfo {
-  string id          = 1;
-  string name        = 2;
-  string nick        = 3;
-  string avatar      = 4;
-  string phone       = 5;
-  string email       = 6;
-  string token       = 7;
-  string lastLoginAt = 8;
-  string pwdExpireAt = 9;
-  string source      = 10;
-}
-
 message UpdateNotifyGroupRequest {
-  int64                 id      = 1;
+  int64                 groupID = 1;
   string                name    = 2;
   repeated NotifyTarget targets = 3;
-  int64                 groupID = 4;
 }
 
 message UpdateNotifyGroupResponse {
-  GroupIdAndProjectId data = 1;
+  int64 data = 1;
 }
 
 message GetNotifyGroupDetailRequest {
@@ -188,10 +183,14 @@ message DeleteNotifyGroupRequest {
 }
 
 message DeleteNotifyGroupResponse {
-  GroupIdAndProjectId data = 1;
+  int64 data = 1;
 }
 
-message GroupIdAndProjectId {
-  int64  groupID   = 1;
-  uint64 projectId = 9;
+message BatchGetNotifyGroupRequest {
+  string ids = 1;
 }
+
+message BatchGetNotifyGroupResponse {
+  repeated NotifyGroup data = 1;
+}
+
