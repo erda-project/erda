@@ -210,7 +210,7 @@ func (l *esqsListener) formatExpression(field, value string) string {
 	}
 }
 
-var highlightRegex, _ = regexp.Compile(`[^- ,?]+`)
+var highlightRegex, _ = regexp.Compile(`[^, '";=()+\[\]{}?@&<>/:\n\t\r]+`)
 
 func (l *esqsListener) buildHighlightItems(field, value string) {
 	if l.highlightItems == nil {
