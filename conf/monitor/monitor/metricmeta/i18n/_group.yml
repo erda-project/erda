@@ -53,9 +53,9 @@ zh:
     Error Cache Request: 错误缓存请求
     Slow Cache Request: 慢缓存请求
     Message Queue Request: 消息队列请求
-    All Message Queue Request: 所有缓存请求
-    Error Message Queue Request: 错误缓存请求
-    Slow Message Queue Request: 慢缓存请求
+    All Message Queue Request: 所有消息队列请求
+    Error Message Queue Request: 错误消息队列请求
+    Slow Message Queue Request: 慢消息队列请求
     Thread: 线程
     Class Loader: 类加载器
     Async Resource: 异步资源
