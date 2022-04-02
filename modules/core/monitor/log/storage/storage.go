@@ -16,7 +16,11 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"sort"
+	"strconv"
+
+	"github.com/ahmetb/go-linq/v3"
 
 	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
@@ -147,6 +151,17 @@ func (id *UniqueId) Raw() []interface{} {
 	return raw
 }
 
+func (id *UniqueId) ShortId() string {
+	if id == nil {
+		return ""
+	}
+	i := id.Id
+	if len(i) > 12 {
+		i = i[:12]
+	}
+	return strconv.FormatInt(id.Timestamp, 36) + "-" + i
+}
+
 // Comparer .
 type Comparer struct{}
 
@@ -197,4 +212,103 @@ func (l Logs) Len() int      { return len(l) }
 func (l Logs) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
 func (l Logs) Less(i, j int) bool {
 	return Compare(l[i], l[j]) < 0
+}
+
+func NewMergedAggregator(aggregators ...Aggregator) (Aggregator, error) {
+	mergedAgg := &MergedAggregator{}
+	for _, aggregator := range aggregators {
+		if aggregator == nil {
+			continue
+		}
+		mergedAgg.aggregators = append(mergedAgg.aggregators, aggregator)
+	}
+	if len(mergedAgg.aggregators) == 0 {
+		return nil, fmt.Errorf("required at least one not nil Aggregator")
+	}
+	return mergedAgg, nil
+}
+
+type MergedAggregator struct {
+	aggregators []Aggregator
+}
+
+func (m *MergedAggregator) Aggregate(ctx context.Context, req *Aggregation) (*AggregationResponse, error) {
+	var results []*AggregationResponse
+	for _, aggregator := range m.aggregators {
+		resp, err := aggregator.Aggregate(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, resp)
+	}
+
+	return m.mergeResults(req, results), nil
+}
+
+func (m *MergedAggregator) mergeResults(req *Aggregation, results []*AggregationResponse) *AggregationResponse {
+	resp := &AggregationResponse{
+		Aggregations: map[string]*AggregationResult{},
+	}
+
+	for _, response := range results {
+		if response == nil {
+			continue
+		}
+		resp.Total += response.Total
+		for aggName, aggResult := range response.Aggregations {
+			result, ok := resp.Aggregations[aggName]
+			if !ok {
+				resp.Aggregations[aggName] = aggResult
+				continue
+			}
+			var aggType AggregationType
+			for _, agg := range req.Aggs {
+				if agg.Name == aggName {
+					aggType = agg.Typ
+					break
+				}
+			}
+			resp.Aggregations[aggName] = m.mergeBuckets(aggType, result, aggResult)
+		}
+	}
+
+	return resp
+}
+
+func (m *MergedAggregator) mergeBuckets(aggType AggregationType, lAgg, mAgg *AggregationResult) *AggregationResult {
+	if lAgg == nil {
+		return mAgg
+	}
+	if mAgg == nil {
+		return lAgg
+	}
+
+	query := linq.From(mAgg.Buckets).
+		Concat(linq.From(lAgg.Buckets)).
+		GroupBy(
+			func(i interface{}) interface{} { return i.(*AggregationBucket).Key },
+			func(i interface{}) interface{} { return i.(*AggregationBucket).Count }).
+		Select(func(i interface{}) interface{} {
+			group := i.(linq.Group)
+			return &AggregationBucket{
+				Key:   group.Key,
+				Count: linq.From(group.Group).SumInts(),
+			}
+		})
+
+	var buckets []*AggregationBucket
+	switch aggType {
+	case AggregationTerms:
+		query.OrderByDescending(func(i interface{}) interface{} {
+			return i.(*AggregationBucket).Count
+		}).ToSlice(&buckets)
+	default:
+		query.OrderBy(func(i interface{}) interface{} {
+			return i.(*AggregationBucket).Key
+		}).ToSlice(&buckets)
+	}
+
+	return &AggregationResult{
+		Buckets: buckets,
+	}
 }

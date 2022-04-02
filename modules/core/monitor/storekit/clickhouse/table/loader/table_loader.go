@@ -17,6 +17,7 @@ package loader
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	ck "github.com/ClickHouse/clickhouse-go/v2"
@@ -90,17 +91,45 @@ func (p *provider) runClickhouseTablesLoader(ctx context.Context) error {
 
 func (p *provider) reloadTablesFromClickhouse(ctx context.Context) error {
 	var tables []struct {
-		Name string `ch:"name"`
+		Database string `ch:"database"`
+		Name     string `ch:"name"`
+		Engine   string `ch:"engine"`
 	}
 	err := p.Clickhouse.Client().
-		Select(ctx, &tables, "select name from system.tables where database = @db", ck.Named("db", p.Cfg.Database))
+		Select(ctx, &tables, "select database, name, engine from system.tables where database = @db and name like @name",
+			ck.Named("db", p.Cfg.Database), ck.Named("name", fmt.Sprintf("%s%%", p.Cfg.TablePrefix)))
 	if err != nil {
 		return err
 	}
 	tablesMeta := map[string]*TableMeta{}
 	for _, table := range tables {
-		tablesMeta[table.Name] = &TableMeta{}
+		tablesMeta[fmt.Sprintf("%s.%s", table.Database, table.Name)] = &TableMeta{
+			Engine:  table.Engine,
+			Columns: map[string]*TableColumn{},
+		}
 	}
+
+	var columns []struct {
+		Database string `ch:"database"`
+		Table    string `ch:"table"`
+		Name     string `ch:"name"`
+		Type     string `ch:"type"`
+	}
+	err = p.Clickhouse.Client().
+		Select(ctx, &columns, "select database, table, name, type from system.columns where database= @db and table like @table",
+			ck.Named("db", p.Cfg.Database), ck.Named("table", fmt.Sprintf("%s%%", p.Cfg.TablePrefix)))
+	if err != nil {
+		return err
+	}
+	for _, column := range columns {
+		table := fmt.Sprintf("%s.%s", column.Database, column.Table)
+		meta, ok := tablesMeta[table]
+		if !ok {
+			continue
+		}
+		meta.Columns[column.Name] = &TableColumn{Type: ColumnType(column.Type)}
+	}
+
 	ch := p.updateTables(tablesMeta)
 	select {
 	case <-ch:

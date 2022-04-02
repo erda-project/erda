@@ -38,13 +38,27 @@ const (
 	LoadWithCache          LoadMode = "LoadWithCache"
 )
 
+const (
+	MapStringString ColumnType = "Map(String,String)"
+	String          ColumnType = "String"
+	UInt64          ColumnType = "UInt64"
+	DateTime64      ColumnType = "DateTime64(9,'Asia/Shanghai')"
+)
+
 type setTablesRequest struct {
 	Tables map[string]*TableMeta
 	Done   chan struct{}
 }
 
 type TableMeta struct {
-	// todo: add more info about the loaded table
+	Engine  string
+	Columns map[string]*TableColumn
+}
+
+type ColumnType string
+
+type TableColumn struct {
+	Type ColumnType
 }
 
 type config struct {

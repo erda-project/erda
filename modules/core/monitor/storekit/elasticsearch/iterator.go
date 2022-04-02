@@ -526,7 +526,7 @@ func (it *scrollIterator) Close() error {
 }
 
 func (it *scrollIterator) Total() (int64, error) {
-	if !it.totalCached {
+	if it.totalCached {
 		return it.total, nil
 	}
 	err := it.count()

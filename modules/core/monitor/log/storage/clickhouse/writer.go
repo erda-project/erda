@@ -18,9 +18,8 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/erda-project/erda/modules/core/monitor/log"
-
 	"github.com/erda-project/erda-infra/providers/clickhouse"
+	"github.com/erda-project/erda/modules/core/monitor/log"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 )
 
@@ -56,7 +55,7 @@ func (p *provider) NewWriter(ctx context.Context) (storekit.BatchWriter, error) 
 			if len(id) > 12 {
 				id = id[:12]
 			}
-			logData.Log.UniqId = id + strconv.FormatInt(logData.Timestamp, 36) + "-" + strconv.FormatInt(logData.Offset, 36)
+			logData.Log.UniqId = strconv.FormatInt(logData.Timestamp, 36) + "-" + id
 			logData.OrgName = logData.Tags["dice_org_name"]
 			item.Table = table
 			return item, nil

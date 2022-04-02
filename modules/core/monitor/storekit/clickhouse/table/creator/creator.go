@@ -39,7 +39,7 @@ func (p *provider) Ensure(ctx context.Context, tenant, key string) (_ <-chan err
 	}
 
 	if ok, tableName := p.Loader.ExistsWriteTable(tenant, key); ok {
-		return nil, fmt.Sprintf("%s.%s", p.Cfg.Database, tableName)
+		return nil, tableName
 	}
 
 	writeTableName = table.NormalizeKey(fmt.Sprintf("%s_%s_%s", p.Cfg.TablePrefix, tenant, key))

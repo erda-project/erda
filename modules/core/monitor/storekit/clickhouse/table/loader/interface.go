@@ -22,13 +22,14 @@ import (
 
 type Interface interface {
 	ExistsWriteTable(tenant, key string) (ok bool, writeTableName string)
-	GetSearchTable(tenant string) string
+	GetSearchTable(tenant string) (string, *TableMeta)
 	ReloadTables() chan error
 	Tables() map[string]*TableMeta
+	Database() string
 }
 
 func (p *provider) ExistsWriteTable(tenant, key string) (ok bool, writeTableName string) {
-	writeTableName = table.NormalizeKey(fmt.Sprintf("%s_%s_%s", p.Cfg.TablePrefix, tenant, key))
+	writeTableName = table.NormalizeKey(fmt.Sprintf("%s.%s_%s_%s", p.Cfg.Database, p.Cfg.TablePrefix, tenant, key))
 	tables, ok := p.tables.Load().(map[string]*TableMeta)
 	if !ok {
 		return false, writeTableName
@@ -37,17 +38,20 @@ func (p *provider) ExistsWriteTable(tenant, key string) (ok bool, writeTableName
 	return ok, writeTableName
 }
 
-func (p *provider) GetSearchTable(tenant string) string {
-	searchTableName := table.NormalizeKey(fmt.Sprintf("%s_%s_search", p.Cfg.TablePrefix, tenant))
+func (p *provider) GetSearchTable(tenant string) (string, *TableMeta) {
 	tables, ok := p.tables.Load().(map[string]*TableMeta)
 	if !ok {
-		return p.Cfg.DefaultSearchTable
+		return fmt.Sprintf("%s.%s", p.Cfg.Database, p.Cfg.DefaultSearchTable), nil
 	}
-	_, ok = tables[searchTableName]
+	searchTableName := table.NormalizeKey(fmt.Sprintf("%s.%s_%s_search", p.Cfg.Database, p.Cfg.TablePrefix, tenant))
+	meta, ok := tables[searchTableName]
 	if ok {
-		return searchTableName
+		return searchTableName, meta
 	}
-	return p.Cfg.DefaultSearchTable
+	// fallback to default table
+	searchTableName = fmt.Sprintf("%s.%s", p.Cfg.Database, p.Cfg.DefaultSearchTable)
+	meta = tables[searchTableName]
+	return searchTableName, meta
 }
 
 func (p *provider) ReloadTables() chan error {
@@ -59,4 +63,8 @@ func (p *provider) ReloadTables() chan error {
 func (p *provider) Tables() map[string]*TableMeta {
 	tables, _ := p.tables.Load().(map[string]*TableMeta)
 	return tables
+}
+
+func (p *provider) Database() string {
+	return p.Cfg.Database
 }
