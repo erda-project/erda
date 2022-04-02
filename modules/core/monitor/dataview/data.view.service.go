@@ -34,9 +34,10 @@ import (
 )
 
 type dataViewService struct {
-	p      *provider
-	sys    *db.SystemViewDB
-	custom *db.CustomViewDB
+	p       *provider
+	sys     *db.SystemViewDB
+	custom  *db.CustomViewDB
+	history *db.ErdaDashboardHistoryDB
 }
 
 func (s *dataViewService) parseViewBlocks(view *pb.View, config, data string) *pb.View {
@@ -130,11 +131,32 @@ func (s *dataViewService) GetSystemView(ctx context.Context, req *pb.GetSystemVi
 	return &pb.GetSystemViewResponse{Data: &view}, nil
 }
 
-func (s *dataViewService) ListCustomViews(ctx context.Context, req *pb.ListCustomViewsRequest) (*pb.ListCustomViewsResponse, error) {
-	list, err := s.custom.ListByFields(map[string]interface{}{
+func (s *dataViewService) GetCustomViewsCreator(ctx context.Context, req *pb.GetCustomViewsCreatorRequest) (*pb.GetCustomViewsCreatorResponse, error) {
+	creatorIds, err := s.custom.GetCreatorsByFields(map[string]interface{}{
 		"Scope":   req.Scope,
 		"ScopeID": req.ScopeID,
 	})
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	return &pb.GetCustomViewsCreatorResponse{Creators: creatorIds}, nil
+}
+
+func (s *dataViewService) ListCustomViews(ctx context.Context, req *pb.ListCustomViewsRequest) (*pb.ListCustomViewsResponse, error) {
+	likeFields := map[string]interface{}{}
+	if req.Name != "" {
+		likeFields["Name"] = req.Name
+	}
+	if req.Description != "" {
+		likeFields["Desc"] = req.Description
+	}
+
+	fields := map[string]interface{}{
+		"Scope":   req.Scope,
+		"ScopeID": req.ScopeID,
+	}
+
+	list, err := s.custom.ListByFields(req.StartTime, req.EndTime, req.CreatorId, fields, likeFields)
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
@@ -290,6 +312,37 @@ func (s *dataViewService) DeleteCustomView(ctx context.Context, req *pb.DeleteCu
 	return &pb.DeleteCustomViewResponse{Data: true}, nil
 }
 
+func (s *dataViewService) ListCustomDashboardHistory(ctx context.Context, req *pb.ListCustomDashboardHistoryRequest) (*pb.ListCustomDashboardHistoryResponse, error) {
+	if req.PageNum < 1 {
+		req.PageNum = 1
+	}
+	if req.PageSize < 0 {
+		req.PageSize = 0
+	}
+	if req.PageSize >= 1000 {
+		req.PageSize = 1000
+	}
+	historiesDB, err := s.history.ListByPage(req.PageNum, req.PageSize, req.Scope, req.ScopeId)
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	var histories []*pb.CustomDashboardHistory
+	for _, historyDB := range historiesDB {
+		history := &pb.CustomDashboardHistory{
+			Id:         historyDB.ID,
+			Type:       historyDB.Type,
+			Status:     historyDB.Status,
+			Scope:      historyDB.Scope,
+			ScopeId:    historyDB.ScopeId,
+			OperatorId: historyDB.OperatorId,
+			FileUuid:   historyDB.FileUUID,
+			CreatedAt:  historyDB.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+		histories = append(histories, history)
+	}
+	return &pb.ListCustomDashboardHistoryResponse{Histories: histories}, nil
+}
+
 func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName, scope string) error {
 	orgName, err := s.getOrgName(ctx)
 	if err != nil {
@@ -311,11 +364,16 @@ func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName, sc
 func fieldsForUpdate(req *pb.UpdateCustomViewRequest) map[string]interface{} {
 	blocks, _ := json.Marshal(req.Blocks)
 	data, _ := json.Marshal(req.Data)
-	return map[string]interface{}{
-		"Name":       req.Name,
-		"Desc":       req.Desc,
-		"ViewConfig": string(blocks),
-		"DataConfig": string(data),
-		"UpdatedAt":  time.Now(),
+	fields := map[string]interface{}{
+		"UpdatedAt": time.Now(),
 	}
+	switch req.UpdateType {
+	case pb.UpdateType_MetaType.String():
+		fields["Name"] = string(blocks)
+		fields["Desc"] = string(data)
+	case pb.UpdateType_ViewType.String():
+		fields["ViewConfig"] = string(blocks)
+		fields["DataConfig"] = string(data)
+	}
+	return fields
 }

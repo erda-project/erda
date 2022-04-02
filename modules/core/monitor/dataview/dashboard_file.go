@@ -1,0 +1,321 @@
+package dataview
+
+import (
+	"bytes"
+	"context"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"regexp"
+	"strings"
+	"time"
+
+	"github.com/mitchellh/mapstructure"
+	"github.com/recallsong/go-utils/encoding/jsonx"
+	uuid "github.com/satori/go.uuid"
+
+	"github.com/erda-project/erda-proto-go/core/monitor/dataview/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/core/monitor/dataview/db"
+	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/pkg/http/httpserver"
+)
+
+func (p *provider) ParseDashboardTemplate(r *http.Request) (interface{}, error) {
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		return httpserver.ErrResp(http.StatusInternalServerError, "", err.Error())
+	}
+	buff := bytes.NewBuffer([]byte{})
+	io.Copy(buff, file)
+	if err != nil {
+		return httpserver.ErrResp(http.StatusInternalServerError, "", err.Error())
+	}
+	valid := json.Valid(buff.Bytes())
+	if !valid {
+		return httpserver.ErrResp(http.StatusInternalServerError, "", "json file parse failed")
+	}
+	var dashboards []map[string]interface{}
+	err = jsonx.Unmarshal(string(buff.Bytes()), &dashboards)
+	if err != nil {
+		return false, err
+	}
+
+	for _, dashboard := range dashboards {
+		if dashboard["Name"] == "" {
+			return httpserver.ErrResp(http.StatusInternalServerError, "", "dashboard name not exist")
+		}
+	}
+	return httpserver.OkResp(dashboards)
+}
+
+var exprs = []string{
+	`__metric_scope_id\\":\\"(.*)\\",`,
+	`__metric_scope_id":"(.*)",`,
+	`terminus_key\\":\\"(.*)\\",`,
+	`terminus_key":"(.*)",`,
+}
+
+func CompileToDest(scope, scopeId, data string) string {
+	switch scope {
+	case "org":
+	case "micro_service":
+		for _, expr := range exprs {
+			compile, _ := regexp.Compile(expr)
+			all := strings.ReplaceAll(expr, "(.*)", scopeId)
+			data = compile.ReplaceAllString(data, all)
+		}
+	}
+	return data
+}
+
+func (p *provider) ImportDashboardFile(r *http.Request, params struct {
+	Scope   string `json:"scope"`
+	ScopeId string `json:"scopeId"`
+}) (interface{}, error) {
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		return httpserver.ErrResp(http.StatusInternalServerError, "", err.Error())
+	}
+	buff := bytes.NewBuffer([]byte{})
+	io.Copy(buff, file)
+	if err != nil {
+		return httpserver.ErrResp(http.StatusInternalServerError, "", err.Error())
+	}
+	userID := r.Header.Get("user-id")
+	history := &db.ErdaDashboardHistory{
+		Scope:      params.Scope,
+		ScopeId:    params.ScopeId,
+		Type:       pb.OperatorType_Import.String(),
+		Status:     pb.OperatorStatus_Processing.String(),
+		OperatorId: userID,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+	history, err = p.history.Save(history)
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+
+	src := string(buff.Bytes())
+	dest := CompileToDest(params.Scope, params.ScopeId, src)
+	var dashboards []map[string]interface{}
+	err = jsonx.Unmarshal(dest, &dashboards)
+	if err != nil {
+		return false, err
+	}
+
+	for _, dashboard := range dashboards {
+		request := &pb.CreateCustomViewRequest{}
+		err := mapstructure.Decode(dashboard, request)
+		if err != nil {
+			err := p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "")
+			if err != nil {
+				p.Log.Error(err)
+			}
+			return nil, err
+		}
+		var blocks []*pb.Block
+		viewConfig := dashboard["viewConfig"]
+		err = json.Unmarshal([]byte(viewConfig.(string)), &blocks)
+		if err != nil {
+			err := p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "")
+			if err != nil {
+				p.Log.Error(err)
+			}
+			return nil, err
+		}
+		var dataItem []*pb.DataItem
+		dataConfig := dashboard["dataConfig"]
+		err = json.Unmarshal([]byte(dataConfig.(string)), &dataItem)
+		if err != nil {
+			err := p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "")
+			if err != nil {
+				p.Log.Error(err)
+			}
+			return nil, err
+		}
+		request.Id = ""
+		request.Scope = params.Scope
+		request.ScopeID = params.ScopeId
+		request.Blocks = blocks
+		request.Data = dataItem
+		_, err = p.dataViewService.CreateCustomView(context.Background(), request)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Success.String(), "")
+	if err != nil {
+		p.Log.Error(err)
+	}
+	return httpserver.OkResp(nil)
+}
+
+func (p *provider) ExportDashboardFile(r *http.Request, params struct {
+	Scope         string   `json:"scope"`
+	ScopeId       string   `json:"scopeId"`
+	TargetScope   string   `json:"targetScope"`
+	TargetScopeId string   `json:"targetScopeId"`
+	StartTime     int64    `json:"startTime"`
+	EndTime       int64    `json:"endTime"`
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
+	CreatorId     []string `json:"creatorId"`
+}) (interface{}, error) {
+	if params.Scope == "" || params.ScopeId == "" {
+		return nil, errors.NewMissingParameterError("scope or scopeId")
+	}
+	likeFields := map[string]interface{}{}
+	if params.Name != "" {
+		likeFields["Name"] = params.Name
+	}
+	if params.Description != "" {
+		likeFields["Desc"] = params.Description
+	}
+
+	fields := map[string]interface{}{
+		"Scope":   params.Scope,
+		"ScopeID": params.ScopeId,
+	}
+
+	views, err := p.custom.ListByFields(params.StartTime, params.EndTime, params.CreatorId, fields, likeFields)
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+	if views == nil || len(views) == 0 {
+		return nil, errors.NewNotFoundError("all record")
+	}
+
+	userID := r.Header.Get("user-id")
+	jsonFile := jsonx.Marshal(views)
+	history := &db.ErdaDashboardHistory{
+		Scope:         params.Scope,
+		ScopeId:       params.ScopeId,
+		TargetScope:   params.TargetScope,
+		TargetScopeId: params.TargetScopeId,
+		Type:          pb.OperatorType_Export.String(),
+		Status:        pb.OperatorStatus_Processing.String(),
+		OperatorId:    userID,
+		File:          jsonFile,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+	}
+	history, err = p.history.Save(history)
+	if err != nil {
+		return nil, errors.NewDatabaseError(err)
+	}
+
+	if params.TargetScope != "" && params.TargetScopeId != "" {
+		// export to target env
+		tx := p.custom.Begin()
+		for _, view := range views {
+			view.ID = hex.EncodeToString(uuid.NewV4().Bytes())
+			view.Scope = params.TargetScope
+			view.ScopeID = params.TargetScopeId
+			view.ViewConfig = CompileToDest(view.Scope, view.ScopeID, view.DataConfig)
+			view.DataConfig = CompileToDest(view.Scope, view.ScopeID, view.DataConfig)
+			err = tx.Save(view).Error
+			if err != nil {
+				tx.Rollback()
+				err = p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "")
+				if err != nil {
+					return httpserver.ErrResp(http.StatusInternalServerError, "", err.Error())
+				}
+				break
+			}
+		}
+		err = tx.Commit().Error
+		if err != nil {
+			err = p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "")
+			if err != nil {
+				return httpserver.ErrResp(http.StatusInternalServerError, "", err.Error())
+			}
+			return nil, errors.NewDatabaseError(err)
+		}
+		err = p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Success.String(), "")
+		if err != nil {
+			return httpserver.ErrResp(http.StatusInternalServerError, "", err.Error())
+		}
+		return httpserver.OkResp(nil)
+	} else {
+		// export to file
+		p.ExportChannel <- history.ID
+	}
+	return httpserver.OkResp(nil)
+}
+
+func dashboardFilename(scope, scopeId string) string {
+	nowTime := time.Now().Format("2006-01-02 15:04:05")
+	fileNameWithoutExt := fmt.Sprintf("%s-%s-%s", scope, scopeId, nowTime)
+	encode := base64.StdEncoding.EncodeToString([]byte(fileNameWithoutExt))
+	filename := fmt.Sprintf("%s.%s", encode, "json")
+	return filename
+}
+
+func (p *provider) ExportTask(id int64) {
+	history, err := p.history.FindById(id)
+	if err != nil {
+		return
+	}
+
+	// export to file
+	filename := dashboardFilename(history.Scope, history.ScopeId)
+	reader := strings.NewReader(history.File)
+	request := apistructs.FileUploadRequest{
+		FileNameWithExt: filename,
+		ByteSize:        int64(reader.Len()),
+		FileReader:      ioutil.NopCloser(reader),
+		From:            "Custom Dashboard",
+		IsPublic:        true,
+		ExpiredAt:       nil,
+	}
+	file, err := p.bdl.UploadFile(request)
+	if err != nil {
+		err := p.history.UpdateStatusAndFileUUID(id, pb.OperatorStatus_Failure.String(), "")
+		if err != nil {
+			p.Log.Error(err)
+		}
+		return
+	}
+	err = p.history.UpdateStatusAndFileUUID(id, pb.OperatorStatus_Success.String(), file.UUID)
+	if err != nil {
+		p.Log.Error(err)
+		return
+	}
+}
+
+func (p *provider) ImportTask(id int64) {
+	history, err := p.history.FindById(id)
+	if err != nil {
+		return
+	}
+	filename := dashboardFilename(history.Scope, history.ScopeId)
+	reader := strings.NewReader(history.File)
+	request := apistructs.FileUploadRequest{
+		FileNameWithExt: filename,
+		ByteSize:        int64(reader.Len()),
+		FileReader:      ioutil.NopCloser(reader),
+		From:            "Custom Dashboard",
+		IsPublic:        true,
+		ExpiredAt:       nil,
+	}
+	file, err := p.bdl.UploadFile(request)
+	if err != nil {
+		err := p.history.UpdateStatusAndFileUUID(id, pb.OperatorStatus_Failure.String(), "")
+		if err != nil {
+			p.Log.Error(err)
+		}
+		return
+	}
+	err = p.history.UpdateStatusAndFileUUID(id, pb.OperatorStatus_Success.String(), file.UUID)
+	if err != nil {
+		p.Log.Error(err)
+		return
+	}
+}

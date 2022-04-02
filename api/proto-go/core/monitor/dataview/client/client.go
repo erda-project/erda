@@ -49,6 +49,14 @@ func (s *dataViewServiceWrapper) ListCustomViews(ctx context.Context, req *pb.Li
 	return s.client.ListCustomViews(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }
 
+func (s *dataViewServiceWrapper) GetCustomViewsCreator(ctx context.Context, req *pb.GetCustomViewsCreatorRequest) (*pb.GetCustomViewsCreatorResponse, error) {
+	return s.client.GetCustomViewsCreator(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
+func (s *dataViewServiceWrapper) ListCustomDashboardHistory(ctx context.Context, req *pb.ListCustomDashboardHistoryRequest) (*pb.ListCustomDashboardHistoryResponse, error) {
+	return s.client.ListCustomDashboardHistory(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
+}
+
 func (s *dataViewServiceWrapper) GetCustomView(ctx context.Context, req *pb.GetCustomViewRequest) (*pb.GetCustomViewResponse, error) {
 	return s.client.GetCustomView(ctx, req, append(grpc.CallOptionFromContext(ctx), s.opts...)...)
 }

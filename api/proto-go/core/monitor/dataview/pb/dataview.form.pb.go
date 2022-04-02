@@ -15,12 +15,18 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
+var _ urlenc.URLValuesUnmarshaler = (*CustomDashboardHistory)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ListCustomDashboardHistoryRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ListCustomDashboardHistoryResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ExportCustomViewRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListSystemViewsRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListSystemViewsResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetSystemViewRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetSystemViewResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListCustomViewsRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetCustomViewsCreatorRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ListCustomViewsResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GetCustomViewsCreatorResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetCustomViewRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*GetCustomViewResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateCustomViewRequest)(nil)
@@ -34,6 +40,86 @@ var _ urlenc.URLValuesUnmarshaler = (*View)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Block)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*Chart)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DataItem)(nil)
+
+// CustomDashboardHistory implement urlenc.URLValuesUnmarshaler.
+func (m *CustomDashboardHistory) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "id":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Id = val
+			case "type":
+				m.Type = vals[0]
+			case "status":
+				m.Status = vals[0]
+			case "scope":
+				m.Scope = vals[0]
+			case "scopeId":
+				m.ScopeId = vals[0]
+			case "operatorId":
+				m.OperatorId = vals[0]
+			case "createdAt":
+				m.CreatedAt = vals[0]
+			case "fileUuid":
+				m.FileUuid = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ListCustomDashboardHistoryRequest implement urlenc.URLValuesUnmarshaler.
+func (m *ListCustomDashboardHistoryRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pageNum":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageNum = val
+			case "pageSize":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PageSize = val
+			case "scope":
+				m.Scope = vals[0]
+			case "scopeId":
+				m.ScopeId = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ListCustomDashboardHistoryResponse implement urlenc.URLValuesUnmarshaler.
+func (m *ListCustomDashboardHistoryResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// ExportCustomViewRequest implement urlenc.URLValuesUnmarshaler.
+func (m *ExportCustomViewRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "scope":
+				m.Scope = vals[0]
+			case "scopeId":
+				m.ScopeId = vals[0]
+			case "viewIds":
+				m.ViewIds = vals
+			}
+		}
+	}
+	return nil
+}
 
 // ListSystemViewsRequest implement urlenc.URLValuesUnmarshaler.
 func (m *ListSystemViewsRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -164,6 +250,39 @@ func (m *ListCustomViewsRequest) UnmarshalURLValues(prefix string, values url.Va
 				m.Scope = vals[0]
 			case "scopeID":
 				m.ScopeID = vals[0]
+			case "startTime":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.StartTime = val
+			case "endTime":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.EndTime = val
+			case "name":
+				m.Name = vals[0]
+			case "description":
+				m.Description = vals[0]
+			case "creatorId":
+				m.CreatorId = vals
+			}
+		}
+	}
+	return nil
+}
+
+// GetCustomViewsCreatorRequest implement urlenc.URLValuesUnmarshaler.
+func (m *GetCustomViewsCreatorRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "scope":
+				m.Scope = vals[0]
+			case "scopeID":
+				m.ScopeID = vals[0]
 			}
 		}
 	}
@@ -190,6 +309,19 @@ func (m *ListCustomViewsResponse) UnmarshalURLValues(prefix string, values url.V
 				m.Data.Total = val
 			case "userIDs":
 				m.UserIDs = vals
+			}
+		}
+	}
+	return nil
+}
+
+// GetCustomViewsCreatorResponse implement urlenc.URLValuesUnmarshaler.
+func (m *GetCustomViewsCreatorResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "creators":
+				m.Creators = vals
 			}
 		}
 	}
@@ -379,6 +511,8 @@ func (m *UpdateCustomViewRequest) UnmarshalURLValues(prefix string, values url.V
 				m.Name = vals[0]
 			case "desc":
 				m.Desc = vals[0]
+			case "updateType":
+				m.UpdateType = vals[0]
 			}
 		}
 	}

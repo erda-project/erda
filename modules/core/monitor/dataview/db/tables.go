@@ -23,9 +23,32 @@ import (
 
 // table names
 var (
-	TableSystemView = "sp_dashboard_block_system"
-	TableCustomView = "sp_dashboard_block"
+	TableSystemView       = "sp_dashboard_block_system"
+	TableCustomView       = "sp_dashboard_block"
+	TableDashboardHistory = "erda_dashboard_history"
 )
+
+// ErdaDashboardHistory table
+type ErdaDashboardHistory struct {
+	ID            int64     `gorm:"column:id" json:"id"`
+	Type          string    `gorm:"column:type" json:"type"`
+	Status        string    `gorm:"column:status" json:"status"`
+	Scope         string    `gorm:"column:scope" json:"scope"`
+	ScopeId       string    `gorm:"column:scope_id" json:"scope_id"`
+	TargetScope   string    `gorm:"column:target_scope" json:"target_scope"`
+	TargetScopeId string    `gorm:"column:target_scope_id" json:"target_scope_id"`
+	OperatorId    string    `gorm:"column:operator_id" json:"operator_id"`
+	File          string    `gorm:"column:file" json:"file"`
+	FileUUID      string    `gorm:"column:file_uuid" json:"file_uuid"`
+	CreatedAt     time.Time `gorm:"column:created_at" json:"created_at"`
+	UpdatedAt     time.Time `gorm:"column:updated_at" json:"updated_at"`
+	IsDeleted     bool      `gorm:"column:is_deleted" json:"is_deleted"`
+}
+
+// TableName .
+func (ErdaDashboardHistory) TableName() string { return TableDashboardHistory }
+
+var erdaDashboardHistoryFieldColumns = gormutil.GetFieldToColumnMap(reflect.TypeOf(ErdaDashboardHistory{}))
 
 // systemBlock .
 type SystemView struct {
