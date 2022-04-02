@@ -29,7 +29,6 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/precheck/checkers/actionchecker/api_register"
 	"github.com/erda-project/erda/modules/pipeline/precheck/checkers/actionchecker/buildpack"
 	"github.com/erda-project/erda/modules/pipeline/precheck/checkers/actionchecker/release"
-	"github.com/erda-project/erda/modules/pipeline/precheck/checkers/diceymlchecker"
 	"github.com/erda-project/erda/modules/pipeline/precheck/prechecktype"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
@@ -72,17 +71,6 @@ func PreCheck(ctx context.Context, pipelineYmlByte []byte, itemForCheck precheck
 	if err != nil {
 		showMessage.Stacks = append(showMessage.Stacks, err.Error())
 		return true, showMessage
-	}
-
-	// use DiceYmlPreChecker
-	if _, ok := itemForCheck.Files["dice.yml"]; ok {
-		for _, checker := range diceymlPreCheckers {
-			abort, messages := checker.Check(ctx, itemForCheck.Files["dice.yml"], itemForCheck)
-			if abort {
-				globalAbort = abort
-			}
-			showMessage.Stacks = append(showMessage.Stacks, messages...)
-		}
 	}
 
 	// use ActionPreChecker
@@ -172,9 +160,6 @@ var initOnce = &sync.Once{}
 
 func initialize() {
 	initOnce.Do(func() {
-		// diceyml prechecker
-		diceymlPreCheckers = append(diceymlPreCheckers, diceymlchecker.New())
-
 		// action prechecker map
 		actionPreCheckers := []prechecktype.ActionPreChecker{
 			buildpack.New(),
