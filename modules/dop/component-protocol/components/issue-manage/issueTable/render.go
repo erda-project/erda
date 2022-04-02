@@ -40,9 +40,16 @@ import (
 	"github.com/erda-project/erda/modules/openapi/hooks/posthandle"
 )
 
+type Multiple struct {
+	RenderType string        `json:"renderType,omitempty"`
+	Direction  string        `json:"direction,omitempty"`
+	Renders    []interface{} `json:"renders,omitempty"`
+}
+
 type Progress struct {
 	Value      string `json:"value"`
 	RenderType string `json:"renderType"`
+	HiddenText bool   `json:"hiddenText"`
 }
 type Severity struct {
 	Value       string                 `json:"value"`
@@ -118,7 +125,7 @@ type TableItem struct {
 	Id          string     `json:"id"`
 	IterationID int64      `json:"iterationID"`
 	Priority    Priority   `json:"priority"`
-	Progress    Progress   `json:"progress,omitempty"`
+	Progress    Multiple   `json:"progress,omitempty"`
 	Severity    Severity   `json:"severity,omitempty"`
 	Complexity  Complexity `json:"complexity,omitempty"`
 	State       State      `json:"state"`
@@ -560,14 +567,34 @@ func (ca *ComponentAction) buildTableItem(ctx context.Context, data *apistructs.
 		}
 	}
 	nameColumn := ca.getNameColumn(data)
-	progress := Progress{
-		RenderType: "text",
+	progress := Multiple{
+		RenderType: "multiple",
+		Direction:  "row",
 	}
 	if data.Type == apistructs.IssueTypeRequirement {
 		if data.IssueSummary == nil {
 			data.IssueSummary = &apistructs.IssueSummary{}
 		}
-		progress.Value = fmt.Sprintf("%d/%d", data.IssueSummary.DoneCount, data.IssueSummary.DoneCount+data.IssueSummary.ProcessingCount)
+		s := data.IssueSummary.DoneCount + data.IssueSummary.ProcessingCount
+		progressPercentage := Progress{
+			RenderType: "progress",
+			Value:      "0",
+			HiddenText: true,
+		}
+		if s != 0 {
+			progressPercentage.Value = fmt.Sprintf("%d", int(100*(float64(data.IssueSummary.DoneCount)/float64(s))))
+		}
+		progress.Renders = []interface{}{
+			[]interface{}{
+				progressPercentage,
+			},
+			[]interface{}{
+				Progress{
+					RenderType: "text",
+					Value:      fmt.Sprintf("%d/%d", data.IssueSummary.DoneCount, s),
+				},
+			},
+		}
 	}
 
 	severityOps := map[string]interface{}{}
