@@ -1308,15 +1308,7 @@ func (impl GatewayDomainServiceImpl) GetOrgDomainInfo(reqDto *gw.ManageDomainReq
 		default:
 			dto.Type = gw.OtherDomain
 		}
-		if dto.Link != nil {
-			if dto.Link.AppID != "" {
-				access, ok := orgCache.UserCanAccessTheScope(reqDto.UserID, apistructs.AppScope, dto.Link.AppID)
-				dto.Access = ok && access != nil && access.Access
-			} else if dto.Link.ProjectID != "" {
-				access, ok := orgCache.UserCanAccessTheScope(reqDto.UserID, apistructs.ProjectScope, dto.Link.ProjectID)
-				dto.Access = ok && access != nil && access.Access
-			}
-		}
+		dto.Access = dto.Link != nil && orgCache.CanAccess(orgCache.UserCanAccessTheScope(orgCache.UserCanAccessTheScopeReq(reqDto.UserID, dto.Link.ProjectID, dto.Link.AppID)))
 		list = append(list, dto)
 	}
 	res = common.NewPages(list, pageInfo.TotalNum)

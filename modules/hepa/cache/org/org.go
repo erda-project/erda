@@ -59,7 +59,7 @@ func init() {
 		return orgDTO, true
 	})
 	scopeAccess = cache.New(scopeAccessName, time.Minute, func(i interface{}) (interface{}, bool) {
-		us := i.(userScope)
+		us := i.(UserScope)
 		access, err := bdl.ScopeRoleAccess(us.UserID, &apistructs.ScopeRoleAccessRequest{
 			Scope: apistructs.Scope{
 				Type: us.Scope,
@@ -83,7 +83,7 @@ func init() {
 	})
 }
 
-type userScope struct {
+type UserScope struct {
 	UserID  string
 	Scope   apistructs.ScopeType
 	ScopeID string
@@ -108,11 +108,30 @@ func GetOrgByProjectID(projectID string) (*apistructs.OrgDTO, bool) {
 }
 
 // UserCanAccessTheScope returns a user permission for the scope
-func UserCanAccessTheScope(userID string, scope apistructs.ScopeType, scopeID string) (*apistructs.ScopeRole, bool) {
-	access, ok := scopeAccess.LoadWithUpdate(userScope{UserID: userID, Scope: scope, ScopeID: scopeID})
+func UserCanAccessTheScope(scope UserScope) (*apistructs.ScopeRole, bool) {
+	access, ok := scopeAccess.LoadWithUpdate(scope)
 	if !ok {
 		return nil, false
 	}
 	i, ok := access.(*apistructs.ScopeRole)
 	return i, ok
+}
+
+func UserCanAccessTheScopeReq(userID, projectID, appID string) UserScope {
+	if appID != "" {
+		return UserScope{
+			UserID:  userID,
+			Scope:   apistructs.AppScope,
+			ScopeID: appID,
+		}
+	}
+	return UserScope{
+		UserID:  userID,
+		Scope:   apistructs.ProjectScope,
+		ScopeID: projectID,
+	}
+}
+
+func CanAccess(access *apistructs.ScopeRole, ok bool) bool {
+	return ok && access != nil && access.Access
 }
