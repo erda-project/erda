@@ -410,12 +410,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/activities", Method: http.MethodGet, Handler: e.ListActivity},
 
 		// the interface of notify
-		{Path: "/api/notify-groups", Method: http.MethodPost, Handler: e.CreateNotifyGroup},
-		{Path: "/api/notify-groups", Method: http.MethodGet, Handler: e.QueryNotifyGroup},
-		{Path: "/api/notify-groups/{groupID}", Method: http.MethodGet, Handler: e.GetNotifyGroup},
-		{Path: "/api/notify-groups/{groupID}", Method: http.MethodPut, Handler: e.UpdateNotifyGroup},
-		{Path: "/api/notify-groups/{groupID}/detail", Method: http.MethodGet, Handler: e.GetNotifyGroupDetail},
-		{Path: "/api/notify-groups/{groupID}", Method: http.MethodDelete, Handler: e.DeleteNotifyGroup},
 		{Path: "/api/notifies", Method: http.MethodPost, Handler: e.CreateNotify},
 		{Path: "/api/notifies", Method: http.MethodGet, Handler: e.QueryNotifies},
 		{Path: "/api/notifies/{notifyID}", Method: http.MethodGet, Handler: e.GetNotify},
@@ -430,7 +424,6 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/api/notify-histories", Method: http.MethodPost, Handler: e.CreateNotifyHistory},
 		{Path: "/api/notifies/actions/search-by-source", Method: http.MethodGet, Handler: e.QueryNotifiesBySource},
 		{Path: "/api/notifies/actions/fuzzy-query-by-source", Method: http.MethodGet, Handler: e.FuzzyQueryNotifiesBySource},
-		{Path: "/api/notify-groups/actions/batch-get", Method: http.MethodGet, Handler: e.BatchGetNotifyGroup}, // 内部接口
 
 		// the interface of audit
 		{Path: "/api/audits/actions/create", Method: http.MethodPost, Handler: e.CreateAudits},

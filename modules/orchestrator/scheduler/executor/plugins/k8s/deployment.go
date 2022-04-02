@@ -56,7 +56,7 @@ const (
 	ECIPodFluentbitSidecarConfigFileEnvName = "CONFIG_FILE"
 
 	// Env Default Value
-	ECIPodFluentbitSidecarImage              = "registry.erda.cloud/erda/erda-fluent-bit:1.4-20211201-543951a"
+	ECIPodFluentbitSidecarImage              = "registry.erda.cloud/erda/erda-fluent-bit:2.1-alpha-20220329155354-3fcba88"
 	ECIPodFluentbitSidecarConfigFileEnvValue = "/fluent-bit/etc/eci/fluent-bit.conf"
 )
 
@@ -695,7 +695,7 @@ func (k *Kubernetes) newDeployment(service *apistructs.Service, serviceGroup *ap
 	// ECI Pod inject fluent-bit sidecar container
 	useECI := UseECI(deployment.Labels, deployment.Spec.Template.Labels)
 	if useECI {
-		sidecar, err := GenerateECIPodSidecarContainers()
+		sidecar, err := GenerateECIPodSidecarContainers(k.DeployInEdgeCluster())
 		if err != nil {
 			logrus.Errorf("%v", err)
 			return nil, err
@@ -1530,7 +1530,7 @@ func serviceHasHostpath(service *apistructs.Service) bool {
 	return false
 }
 
-func GenerateECIPodSidecarContainers() (apiv1.Container, error) {
+func GenerateECIPodSidecarContainers(inEdge bool) (apiv1.Container, error) {
 	sc := apiv1.Container{
 		Name: "fluent-bit",
 		//Image: sidecar.Image,
@@ -1544,12 +1544,10 @@ func GenerateECIPodSidecarContainers() (apiv1.Container, error) {
 				apiv1.ResourceMemory: resource.MustParse("1Gi"),
 			},
 		},
-		Command:      []string{"./fluent-bit/bin/fluent-bit"},
-		Args:         []string{"-c", "/fluent-bit/etc/sidecar/fluent-bit.conf"},
 		VolumeMounts: []apiv1.VolumeMount{},
 	}
 
-	if err := getSideCarConfigFromConfigMapVolumeFiles(&sc); err != nil {
+	if err := getSideCarConfigFromConfigMapVolumeFiles(&sc, inEdge); err != nil {
 		logrus.Errorf("Can not create log collector sidecar container for ECI Pod, error：%v", err)
 		return sc, errors.Errorf("Can not create log collector sidecar container for ECI Pod, error：%v", err)
 	}
@@ -1614,7 +1612,7 @@ func SetPodContainerLifecycleAndSharedVolumes(podSpec *apiv1.PodSpec) {
 	})
 }
 
-func getSideCarConfigFromConfigMapVolumeFiles(sc *apiv1.Container) error {
+func getSideCarConfigFromConfigMapVolumeFiles(sc *apiv1.Container, inEdge bool) error {
 	if sc.Env == nil {
 		sc.Env = make([]apiv1.EnvVar, 0)
 	}
@@ -1660,6 +1658,18 @@ func getSideCarConfigFromConfigMapVolumeFiles(sc *apiv1.Container) error {
 		sc.Env = append(sc.Env, apiv1.EnvVar{
 			Name:  "COLLECTOR_PUBLIC_URL",
 			Value: collcror_pubilic_url,
+		})
+	}
+
+	if inEdge {
+		sc.Env = append(sc.Env, apiv1.EnvVar{
+			Name:  "DICE_IS_EDGE",
+			Value: "true",
+		})
+	} else {
+		sc.Env = append(sc.Env, apiv1.EnvVar{
+			Name:  "DICE_IS_EDGE",
+			Value: "false",
 		})
 	}
 

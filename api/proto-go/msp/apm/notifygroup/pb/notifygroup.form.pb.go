@@ -32,6 +32,7 @@ var _ urlenc.URLValuesUnmarshaler = (*NotifyGroupDetail)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*NotifyUser)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DeleteNotifyGroupRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*DeleteNotifyGroupResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*GroupIdAndProjectId)(nil)
 
 // CreateNotifyGroupRequest implement urlenc.URLValuesUnmarshaler.
 func (m *CreateNotifyGroupRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -103,76 +104,20 @@ func (m *CreateNotifyGroupResponse) UnmarshalURLValues(prefix string, values url
 			switch prefix + key {
 			case "data":
 				if m.Data == nil {
-					m.Data = &NotifyGroup{}
+					m.Data = &GroupIdAndProjectId{}
 				}
-			case "data.id":
+			case "data.groupID":
 				if m.Data == nil {
-					m.Data = &NotifyGroup{}
+					m.Data = &GroupIdAndProjectId{}
 				}
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.Data.Id = val
-			case "data.name":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.Name = vals[0]
-			case "data.scopeType":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.ScopeType = vals[0]
-			case "data.scopeId":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.ScopeId = vals[0]
-			case "data.createdAt":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				if m.Data.CreatedAt == nil {
-					m.Data.CreatedAt = &timestamppb.Timestamp{}
-				}
-			case "data.createdAt.seconds":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				if m.Data.CreatedAt == nil {
-					m.Data.CreatedAt = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.Data.CreatedAt.Seconds = val
-			case "data.createdAt.nanos":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				if m.Data.CreatedAt == nil {
-					m.Data.CreatedAt = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 32)
-				if err != nil {
-					return err
-				}
-				m.Data.CreatedAt.Nanos = int32(val)
-			case "data.creator":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.Creator = vals[0]
-			case "data.label":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.Label = vals[0]
+				m.Data.GroupID = val
 			case "data.projectId":
 				if m.Data == nil {
-					m.Data = &NotifyGroup{}
+					m.Data = &GroupIdAndProjectId{}
 				}
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
@@ -487,76 +432,20 @@ func (m *UpdateNotifyGroupResponse) UnmarshalURLValues(prefix string, values url
 			switch prefix + key {
 			case "data":
 				if m.Data == nil {
-					m.Data = &NotifyGroup{}
+					m.Data = &GroupIdAndProjectId{}
 				}
-			case "data.id":
+			case "data.groupID":
 				if m.Data == nil {
-					m.Data = &NotifyGroup{}
+					m.Data = &GroupIdAndProjectId{}
 				}
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.Data.Id = val
-			case "data.name":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.Name = vals[0]
-			case "data.scopeType":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.ScopeType = vals[0]
-			case "data.scopeId":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.ScopeId = vals[0]
-			case "data.createdAt":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				if m.Data.CreatedAt == nil {
-					m.Data.CreatedAt = &timestamppb.Timestamp{}
-				}
-			case "data.createdAt.seconds":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				if m.Data.CreatedAt == nil {
-					m.Data.CreatedAt = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.Data.CreatedAt.Seconds = val
-			case "data.createdAt.nanos":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				if m.Data.CreatedAt == nil {
-					m.Data.CreatedAt = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 32)
-				if err != nil {
-					return err
-				}
-				m.Data.CreatedAt.Nanos = int32(val)
-			case "data.creator":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.Creator = vals[0]
-			case "data.label":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.Label = vals[0]
+				m.Data.GroupID = val
 			case "data.projectId":
 				if m.Data == nil {
-					m.Data = &NotifyGroup{}
+					m.Data = &GroupIdAndProjectId{}
 				}
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
@@ -700,82 +589,49 @@ func (m *DeleteNotifyGroupResponse) UnmarshalURLValues(prefix string, values url
 			switch prefix + key {
 			case "data":
 				if m.Data == nil {
-					m.Data = &NotifyGroup{}
+					m.Data = &GroupIdAndProjectId{}
 				}
-			case "data.id":
+			case "data.groupID":
 				if m.Data == nil {
-					m.Data = &NotifyGroup{}
+					m.Data = &GroupIdAndProjectId{}
 				}
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.Data.Id = val
-			case "data.name":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.Name = vals[0]
-			case "data.scopeType":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.ScopeType = vals[0]
-			case "data.scopeId":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.ScopeId = vals[0]
-			case "data.createdAt":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				if m.Data.CreatedAt == nil {
-					m.Data.CreatedAt = &timestamppb.Timestamp{}
-				}
-			case "data.createdAt.seconds":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				if m.Data.CreatedAt == nil {
-					m.Data.CreatedAt = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.Data.CreatedAt.Seconds = val
-			case "data.createdAt.nanos":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				if m.Data.CreatedAt == nil {
-					m.Data.CreatedAt = &timestamppb.Timestamp{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 32)
-				if err != nil {
-					return err
-				}
-				m.Data.CreatedAt.Nanos = int32(val)
-			case "data.creator":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.Creator = vals[0]
-			case "data.label":
-				if m.Data == nil {
-					m.Data = &NotifyGroup{}
-				}
-				m.Data.Label = vals[0]
+				m.Data.GroupID = val
 			case "data.projectId":
 				if m.Data == nil {
-					m.Data = &NotifyGroup{}
+					m.Data = &GroupIdAndProjectId{}
 				}
 				val, err := strconv.ParseUint(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
 				m.Data.ProjectId = val
+			}
+		}
+	}
+	return nil
+}
+
+// GroupIdAndProjectId implement urlenc.URLValuesUnmarshaler.
+func (m *GroupIdAndProjectId) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "groupID":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.GroupID = val
+			case "projectId":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectId = val
 			}
 		}
 	}

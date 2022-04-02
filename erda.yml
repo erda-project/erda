@@ -2,6 +2,9 @@ version: "2.0"
 meta:
   ERDA_COMPONENT: ""
 values:
+  test:
+    request_cpu: 0.1
+    request_mem: 128
   production:
     nfs_root: "<%$.Storage.MountPoint%>"
     gittar_root: "<%$.Storage.GittarDataPath%>"
@@ -579,6 +582,7 @@ services:
       DEBUG: "false"
       TENANT_GROUP_KEY: "58dcbf490ef3"
       MSP_ADDR: "msp:8080"
+      COLLECTOR_SIDECAR_IMAGE: "registry.erda.cloud/erda/erda-fluent-bit:2.1-alpha-20220329155354-3fcba88"
     resources:
       cpu: ${request_cpu:1}
       max_cpu: 1

@@ -29,6 +29,7 @@ import (
 	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/pipeline"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/pkg/http/httpserver"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
@@ -58,11 +59,6 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 	e.TriggerGitNotify(req.OrgID, req.ApplicationID, apistructs.GitPushEvent, params)
 
 	appID, _ := strconv.ParseUint(req.ApplicationID, 10, 64)
-	rules, err := e.branchRule.Query(apistructs.AppScope, int64(appID))
-	if err != nil {
-		logrus.Errorf("failed to get branch rules, req: %+v, (%+v)", req, err)
-		return apierrors.ErrReleaseCallback.InternalError(err).ToResp(), nil
-	}
 	refName := ""
 	if req.Content.IsTag {
 		refName = strings.TrimPrefix(req.Content.Ref, "refs/tags/")
@@ -70,67 +66,94 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 		refName = strings.TrimPrefix(req.Content.Ref, "refs/heads/")
 	}
 
-	// 从 gittar 获取 pipeline.yml
-	strPipelineYml, err := e.pipeline.FetchPipelineYml(req.Content.Repository.URL, refName, apistructs.DefaultPipelineYmlName, req.Content.Pusher.ID)
-	if err != nil {
-		logrus.Errorf("failed to fetch pipeline.yml from gittar, req: %+v, (%+v)", req, err)
-		return apierrors.ErrReleaseCallback.InternalError(err).ToResp(), nil
+	listYmlReq := apistructs.CICDPipelineYmlListRequest{
+		AppID:  int64(appID),
+		Branch: refName,
 	}
-
-	pipelineYml, err := pipelineyml.New([]byte(strPipelineYml))
-	if err != nil {
-		logrus.Errorf("failed to parse pipeline.yml yaml:%v \n err:%v", pipelineYml, err)
-		return apierrors.ErrReleaseCallback.InternalError(err).ToResp(), nil
-	}
-
-	// 应用级设置
-	if pipelineYml.Spec().On != nil && pipelineYml.Spec().On.Push != nil {
-		if !diceworkspace.IsRefPatternMatch(refName, pipelineYml.Spec().On.Push.Branches) {
-			return httpserver.OkResp("")
-		}
-	} else {
-		// 项目级设置
-		validBranch := diceworkspace.GetValidBranchByGitReference(refName, rules)
-		if !validBranch.IsTriggerPipeline {
-			return httpserver.OkResp("")
-		}
-	}
-
-	// 创建pipeline流程
-	reqPipeline := &apistructs.PipelineCreateRequest{
-		AppID:              uint64(req.Content.Repository.ApplicationID),
-		Branch:             refName,
-		Source:             apistructs.PipelineSourceDice,
-		PipelineYmlSource:  apistructs.PipelineYmlSourceGittar,
-		PipelineYmlContent: strPipelineYml,
-		AutoRun:            true,
-		UserID:             req.Content.Pusher.ID,
-	}
-
-	v2, err := e.pipeline.ConvertPipelineToV2(reqPipeline)
-	if err != nil {
-		logrus.Errorf("error convert to pipelineV2 %s, (%+v)", strPipelineYml, err)
-		return apierrors.ErrReleaseCallback.InternalError(err).ToResp(), nil
-	}
-	v2.ForceRun = true
+	result := pipeline.GetPipelineYmlList(listYmlReq, e.bdl, req.Content.Pusher.ID)
 
 	app, err := e.bdl.GetApp(appID)
 	if err != nil {
-		return apierrors.ErrReleaseCallback.InternalError(err).ToResp(), nil
+		return nil, apierrors.ErrGetApp.InternalError(err)
 	}
-	definitionID, err := e.getDefinitionID(ctx, app, refName, "", apistructs.DefaultPipelineYmlName)
+	rules, err := e.branchRule.Query(apistructs.ProjectScope, int64(app.ProjectID))
 	if err != nil {
-		logrus.Errorf("failed to bind definition %v", err)
-	}
-	v2.DefinitionID = definitionID
-
-	resp, err := e.pipeline.CreatePipelineV2(v2)
-	if err != nil {
-		logrus.Errorf("create pipeline failed, pipeline: %s, (%+v)", strPipelineYml, err)
-		return apierrors.ErrReleaseCallback.InternalError(err).ToResp(), nil
+		return nil, apierrors.ErrFetchConfigNamespace.InternalError(err)
 	}
 
-	return httpserver.OkResp(resp)
+	for _, each := range result {
+		strPipelineYml, err := e.pipeline.FetchPipelineYml(app.GitRepo, refName, each, req.Content.Pusher.ID)
+		if err != nil {
+			logrus.Errorf("failed to fetch %v from gittar, req: %+v, (%+v)", each, req, err)
+			continue
+		}
+
+		pipelineYml, err := pipelineyml.New([]byte(strPipelineYml))
+		if err != nil {
+			logrus.Errorf("failed to parse %v yaml:%v \n err:%v", each, pipelineYml, err)
+			continue
+		}
+
+		if pipelineYml.Spec().On != nil && pipelineYml.Spec().On.Push != nil {
+			if !diceworkspace.IsRefPatternMatch(refName, pipelineYml.Spec().On.Push.Branches) {
+				continue
+			}
+		} else {
+			// app setting only support run pipeline.yml
+			if each != apistructs.DefaultPipelineYmlName {
+				continue
+			}
+
+			validBranch := diceworkspace.GetValidBranchByGitReference(refName, rules)
+			if !validBranch.IsTriggerPipeline {
+				continue
+			}
+		}
+
+		path, fileName := getSourcePathAndName(each)
+		definitionID, err := e.getDefinitionID(ctx, app, refName, path, fileName)
+		if err != nil {
+			logrus.Errorf("failed to bind definition %v", err)
+		}
+
+		// 创建pipeline流程
+		reqPipeline := &apistructs.PipelineCreateRequest{
+			AppID:              uint64(req.Content.Repository.ApplicationID),
+			Branch:             refName,
+			Source:             apistructs.PipelineSourceDice,
+			PipelineYmlSource:  apistructs.PipelineYmlSourceGittar,
+			PipelineYmlContent: strPipelineYml,
+			AutoRun:            true,
+			UserID:             req.Content.Pusher.ID,
+		}
+		v2, err := e.pipeline.ConvertPipelineToV2(reqPipeline)
+		if err != nil {
+			logrus.Errorf("error convert to pipelineV2 %s, (%+v)", strPipelineYml, err)
+			continue
+		}
+		validBranch := diceworkspace.GetValidBranchByGitReference(reqPipeline.Branch, rules)
+		workspace := validBranch.Workspace
+		v2.ForceRun = true
+		v2.DefinitionID = definitionID
+		v2.PipelineYmlName = fmt.Sprintf("%d/%s/%s/%s", reqPipeline.AppID, workspace, refName, strings.TrimPrefix(each, "/"))
+
+		_, err = e.pipeline.CreatePipelineV2(v2)
+		if err != nil {
+			logrus.Errorf("create pipeline failed, pipeline: %s, (%+v)", strPipelineYml, err)
+			continue
+		}
+	}
+	return httpserver.OkResp("success")
+}
+
+func getSourcePathAndName(name string) (path, fileName string) {
+	if strings.HasPrefix(name, apistructs.ErdaPipelinePath) {
+		return apistructs.ErdaPipelinePath, strings.Replace(name, apistructs.ErdaPipelinePath+"/", "", 1)
+	}
+	if strings.HasPrefix(name, apistructs.DicePipelinePath) {
+		return apistructs.DicePipelinePath, strings.Replace(name, apistructs.DicePipelinePath+"/", "", 1)
+	}
+	return "", name
 }
 
 func (e *Endpoints) getDefinitionID(ctx context.Context, app *apistructs.ApplicationDTO, branch, path, name string) (definitionID string, err error) {

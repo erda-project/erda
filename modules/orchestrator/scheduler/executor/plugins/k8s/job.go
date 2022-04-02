@@ -140,7 +140,7 @@ func (k *Kubernetes) newJob(service *apistructs.Service, serviceGroup *apistruct
 	// ECI Pod inject fluent-bit sidecar container
 	useECI := UseECI(job.Labels, job.Spec.Template.Labels)
 	if useECI {
-		sidecar, err := GenerateECIPodSidecarContainers()
+		sidecar, err := GenerateECIPodSidecarContainers(k.DeployInEdgeCluster())
 		if err != nil {
 			logrus.Errorf("%v", err)
 			return nil, err

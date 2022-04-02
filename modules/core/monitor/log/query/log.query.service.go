@@ -36,6 +36,7 @@ type logQueryService struct {
 	p                    *provider
 	startTime            int64
 	storageReader        storage.Storage
+	ckStorageReader      storage.Storage
 	k8sReader            storage.Storage
 	frozenStorageReader  storage.Storage
 	currentDownloadLimit *int64
@@ -90,7 +91,9 @@ func (s *logQueryService) GetLogByOrganization(ctx context.Context, req *pb.GetL
 }
 
 func (s *logQueryService) GetLogByExpression(ctx context.Context, req *pb.GetLogByExpressionRequest) (*pb.GetLogByExpressionResponse, error) {
-	items, total, err := s.queryLogItems(ctx, req, nil, false, true)
+	items, total, err := s.queryLogItems(ctx, req, func(sel *storage.Selector) *storage.Selector {
+		return s.tryFillQueryMeta(ctx, sel)
+	}, false, true)
 	if err != nil {
 		return nil, err
 	}
@@ -98,12 +101,9 @@ func (s *logQueryService) GetLogByExpression(ctx context.Context, req *pb.GetLog
 }
 
 func (s *logQueryService) LogAggregation(ctx context.Context, req *pb.LogAggregationRequest) (*pb.LogAggregationResponse, error) {
-	if s.storageReader == nil {
-		return nil, fmt.Errorf("elasticsearch storage provider is required")
-	}
-	aggregator, ok := s.storageReader.(storage.Aggregator)
-	if !ok {
-		return nil, fmt.Errorf("%T not implment %T", s.storageReader, aggregator)
+	aggregator, err := s.getAggregator()
+	if err != nil {
+		return nil, err
 	}
 
 	aggReq, err := s.toAggregation(req)
@@ -165,6 +165,28 @@ func (s *logQueryService) tryFillQueryMeta(ctx context.Context, sel *storage.Sel
 	}
 	sel.Meta.OrgNames = orgNameList
 	return sel
+}
+
+func (s *logQueryService) getAggregator() (storage.Aggregator, error) {
+	if s.storageReader == nil && s.ckStorageReader == nil {
+		return nil, fmt.Errorf("elasticsearch storage provider is required")
+	}
+	var aggregators []storage.Aggregator
+	if s.storageReader != nil {
+		aggregator, ok := s.storageReader.(storage.Aggregator)
+		if !ok {
+			return nil, fmt.Errorf("%T not implment %T", s.storageReader, aggregator)
+		}
+		aggregators = append(aggregators, aggregator)
+	}
+	if s.ckStorageReader != nil {
+		aggregator, ok := s.ckStorageReader.(storage.Aggregator)
+		if !ok {
+			return nil, fmt.Errorf("%T not implment %T", s.ckStorageReader, aggregator)
+		}
+		aggregators = append(aggregators, aggregator)
+	}
+	return storage.NewMergedAggregator(aggregators...)
 }
 
 func (s *logQueryService) toAggregation(req *pb.LogAggregationRequest) (*storage.Aggregation, error) {
@@ -351,21 +373,21 @@ func (s *logQueryService) getOrderedIterator(ctx context.Context, sels []*storag
 
 func (s *logQueryService) getIterator(ctx context.Context, sel *storage.Selector, live bool) (storekit.Iterator, error) {
 	if sel.Scheme == "advanced" {
-		if s.storageReader == nil {
+		if s.storageReader == nil && s.ckStorageReader == nil {
 			return storekit.EmptyIterator{}, nil
 		}
-		return s.storageReader.Iterator(ctx, sel)
+		return s.tryGetIterator(ctx, sel, s.ckStorageReader, s.storageReader)
 	}
 	if sel.Scheme != "container" || !live {
-		if s.storageReader != nil && (sel.Start > s.startTime || s.frozenStorageReader == nil) {
-			return s.storageReader.Iterator(ctx, sel)
+		if (s.storageReader != nil || s.ckStorageReader != nil) && (sel.Start > s.startTime || s.frozenStorageReader == nil) {
+			return s.tryGetIterator(ctx, sel, s.ckStorageReader, s.storageReader)
 		}
-		return s.tryGetIterator(ctx, sel, s.storageReader, s.frozenStorageReader)
+		return s.tryGetIterator(ctx, sel, s.ckStorageReader, s.storageReader, s.frozenStorageReader)
 	}
 	if sel.End >= time.Now().Add(-24*time.Hour).UnixNano() {
-		return s.tryGetIterator(ctx, sel, s.k8sReader, s.storageReader, s.frozenStorageReader)
+		return s.tryGetIterator(ctx, sel, s.k8sReader, s.ckStorageReader, s.storageReader, s.frozenStorageReader)
 	}
-	return s.tryGetIterator(ctx, sel, s.storageReader, s.frozenStorageReader)
+	return s.tryGetIterator(ctx, sel, s.ckStorageReader, s.storageReader, s.frozenStorageReader)
 }
 
 func (s *logQueryService) tryGetIterator(ctx context.Context, sel *storage.Selector, storages ...storage.Storage) (it storekit.Iterator, err error) {

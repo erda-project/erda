@@ -42,6 +42,7 @@ type provider struct {
 	Router              httpserver.Router  `autowired:"http-router"`
 	Perm                perm.Interface     `autowired:"permission"`
 	StorageReader       storage.Storage    `autowired:"log-storage-elasticsearch-reader" optional:"true"`
+	CkStorageReader     storage.Storage    `autowired:"log-storage-clickhouse-reader" optional:"true"`
 	K8sReader           storage.Storage    `autowired:"log-storage-kubernetes-reader" optional:"true"`
 	FrozenStorageReader storage.Storage    `autowired:"log-storage-cassandra-reader" optional:"true"`
 
@@ -55,6 +56,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		storageReader:       p.StorageReader,
 		k8sReader:           p.K8sReader,
 		frozenStorageReader: p.FrozenStorageReader,
+		ckStorageReader:     p.CkStorageReader,
 	}
 	if p.Cfg.DownloadAPIThrottling.CurrentLimit > 0 {
 		p.logQueryService.currentDownloadLimit = &p.Cfg.DownloadAPIThrottling.CurrentLimit

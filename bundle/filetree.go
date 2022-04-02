@@ -405,8 +405,8 @@ func (b *Bundle) ListFileTreeNodes(req apistructs.UnifiedFileTreeNodeListRequest
 
 func (b *Bundle) GetPipelineGittarFolder(userID string, appID uint64, branch string) string {
 	gittarPrefix := "/wb"
-	defaultPath := ".erda/pipelines"
-	compatiblePath := ".dice/pipelines"
+	defaultPath := apistructs.ErdaPipelinePath
+	compatiblePath := apistructs.DicePipelinePath
 	app, err := b.GetApp(appID)
 	if err != nil {
 		return defaultPath

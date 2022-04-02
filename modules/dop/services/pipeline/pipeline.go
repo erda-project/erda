@@ -409,11 +409,26 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 	}
 	pv2.Secrets = utils.GetGittarSecrets(pv2.ClusterName, pv1.Branch, detail)
 
+	// temporary comment out
+	// check dice yml
+	//if err = p.diceYmlCheck(strPipelineYml, app.GitRepo, pv1.Branch, apistructs.DiceWorkspace(workspace), pv1.UserID); err != nil {
+	//	return nil, err
+	//}
+
 	// generate pipeline yaml name
 	pv2.PipelineYmlName = GenerateV1UniquePipelineYmlName(pv2.PipelineSource, pipelineYmlName,
 		strconv.FormatUint(app.ID, 10), pv1.Branch, workspace)
 
 	return pv2, nil
+}
+
+// DiceYmlCheck check dice yml
+func (p *Pipeline) diceYmlCheck(pipelineYml, gitRepo, branch string, workspace apistructs.DiceWorkspace, userID string) error {
+	yml, err := utils.FetchRealDiceYml(p.bdl, pipelineYml, gitRepo, branch, workspace, userID)
+	if err != nil {
+		return err
+	}
+	return utils.Check(yml)
 }
 
 func (p *Pipeline) setClusterName(clusterName string, pv *apistructs.PipelineCreateRequestV2) error {

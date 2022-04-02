@@ -23,15 +23,18 @@ import (
 	"github.com/erda-project/erda/modules/core/monitor/log/storage"
 	"github.com/erda-project/erda/modules/core/monitor/settings/retention-strategy"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table/creator"
+	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table/loader"
 )
 
 type config struct {
+	ReadPageSize int `file:"read_page_size" default:"200"`
 }
 
 type provider struct {
 	Cfg       *config
 	Log       logs.Logger
-	Creator   creator.Interface   `autowired:"clickhouse.table.creator@log"`
+	Creator   creator.Interface   `autowired:"clickhouse.table.creator@log" optional:"true"`
+	Loader    loader.Interface    `autowired:"clickhouse.table.loader@log"`
 	Retention retention.Interface `autowired:"storage-retention-strategy@log" optional:"true"`
 
 	clickhouse clickhouse.Interface
@@ -53,9 +56,10 @@ func (p *provider) Init(ctx servicehub.Context) error {
 
 func init() {
 	servicehub.Register("log-storage-clickhouse", &servicehub.Spec{
-		Services:     []string{"log-storage-clickhouse-reader", "log-storage-clickhouse-writer"},
-		Dependencies: []string{"clickhouse", "clickhouse.table.creator"},
-		ConfigFunc:   func() interface{} { return &config{} },
-		Creator:      func() servicehub.Provider { return &provider{} },
+		Services:             []string{"log-storage-clickhouse-reader", "log-storage-clickhouse-writer"},
+		Dependencies:         []string{"clickhouse"},
+		OptionalDependencies: []string{"clickhouse.table.creator"},
+		ConfigFunc:           func() interface{} { return &config{} },
+		Creator:              func() servicehub.Provider { return &provider{} },
 	})
 }

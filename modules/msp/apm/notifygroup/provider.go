@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
+	notifygroup "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/notifygroup/pb"
 	tenantpb "github.com/erda-project/erda-proto-go/msp/tenant/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -45,7 +46,8 @@ type provider struct {
 	mspTenantDB        *db.MSPTenantDB
 	monitorDB          *db2.MonitorDb
 	audit              audit.Auditor
-	Tenant             tenantpb.TenantServiceServer `autowired:"erda.msp.tenant.TenantService"`
+	Tenant             tenantpb.TenantServiceServer         `autowired:"erda.msp.tenant.TenantService"`
+	NotifyGroup        notifygroup.NotifyGroupServiceServer `autowired:"erda.core.messenger.notifygroup.NotifyGroupService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
