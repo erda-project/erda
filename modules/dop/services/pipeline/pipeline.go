@@ -407,6 +407,8 @@ func (p *Pipeline) ConvertPipelineToV2(pv1 *apistructs.PipelineCreateRequest) (*
 			break
 		}
 	}
+	pv2.Secrets = utils.GetGittarSecrets(pv2.ClusterName, pv1.Branch, detail)
+
 	// temporary comment out
 	// check dice yml
 	//if err = p.diceYmlCheck(strPipelineYml, app.GitRepo, pv1.Branch, apistructs.DiceWorkspace(workspace), pv1.UserID); err != nil {

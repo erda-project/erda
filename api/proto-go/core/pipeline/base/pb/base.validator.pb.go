@@ -689,6 +689,7 @@ func (this *PipelineCreateRequest) Validate() error {
 			return github_com_mwitkow_go_proto_validators.FieldError("IdentityInfo", err)
 		}
 	}
+	// Validation of proto3 map<> fields is unsupported.
 	return nil
 }
 func (this *PipelineCreateResponse) Validate() error {
