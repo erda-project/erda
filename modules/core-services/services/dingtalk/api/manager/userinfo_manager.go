@@ -28,8 +28,7 @@ func (m *Manager) GetUserIdsByPhones(accessToken string, agentId int64, phones [
 
 	for _, phone := range phones {
 		ctx.Add()
-		//go m.getUserIdByPhone(ctx, accessToken, agentId, phone)
-		m.getUserIdByPhone(ctx, accessToken, agentId, phone)
+		go m.getUserIdByPhone(ctx, accessToken, agentId, phone)
 	}
 	ctx.Wait()
 
