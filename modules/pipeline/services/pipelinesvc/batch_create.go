@@ -17,6 +17,7 @@ package pipelinesvc
 import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/services/apierrors"
+	"github.com/erda-project/erda/modules/pipeline/spec"
 )
 
 func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateRequest) (
@@ -55,7 +56,7 @@ func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateReques
 			if p, err = s.RunPipeline(&apistructs.PipelineRunRequest{
 				PipelineID:   p.ID,
 				IdentityInfo: identityInfo,
-				Secrets:      map[string]string{}},
+				Secrets:      getSecrets(p)},
 			); err != nil {
 				return nil, apierrors.ErrRunPipeline.InternalError(err)
 			}
@@ -64,4 +65,21 @@ func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateReques
 	}
 
 	return result, nil
+}
+
+// getSecrets Compatible with bigdata application
+func getSecrets(p *spec.Pipeline) map[string]string {
+	return map[string]string{
+		"gittar.repo":   p.CommitDetail.Repo,
+		"gittar.branch": p.Labels[apistructs.LabelBranch],
+		"gittar.commit": p.CommitDetail.CommitID,
+		"gittar.commit.abbrev": func() string {
+			if len(p.CommitDetail.CommitID) > 8 {
+				return p.CommitDetail.CommitID[:8]
+			}
+			return p.CommitDetail.CommitID
+		}(),
+		"gittar.message": p.CommitDetail.Comment,
+		"gittar.author":  p.CommitDetail.Author,
+	}
 }

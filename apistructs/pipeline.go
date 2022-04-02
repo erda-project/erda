@@ -179,7 +179,7 @@ type PipelineCreateRequestV2 struct {
 	// +optional
 	DefinitionID string `json:"definitionID"`
 
-	// Secrets Environment variables passed from the upper layer，different from configs cms
+	// passed from the invoker, different from config cms
 	// eg: gittar.repo
 	// +optional
 	Secrets map[string]string `json:"secrets"`
