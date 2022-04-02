@@ -25,6 +25,7 @@ const (
 )
 
 type ManageDomainReq struct {
+	UserID      string
 	OrgId       string
 	Domain      string
 	ClusterName string
@@ -53,6 +54,7 @@ type ManageDomainInfo struct {
 	AppName     string          `json:"appName"`
 	Workspace   string          `json:"workspace"`
 	Link        *DomainLinkInfo `json:"link,omitempty"`
+	Access      bool            `json:"access"`
 }
 
 func (req ManageDomainReq) GenSelectOptions() []orm.SelectOption {
