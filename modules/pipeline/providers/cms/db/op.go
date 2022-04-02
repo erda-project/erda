@@ -15,6 +15,8 @@
 package db
 
 import (
+	"sort"
+
 	"github.com/pkg/errors"
 
 	"github.com/erda-project/erda-infra/providers/mysqlxorm"
@@ -118,6 +120,10 @@ func (client *Client) UpdateCmsNsConfigs(cmsNs PipelineCmsNs, configs []Pipeline
 	session := client.NewSession(ops...)
 	defer session.Close()
 
+	// Not sorting in multi-transaction scenarios will cause deadlock
+	sort.Slice(configs, func(i, j int) bool {
+		return configs[i].Key > configs[j].Key
+	})
 	for _, config := range configs {
 		if err := client.InsertOrUpdateCmsNsConfig(cmsNs, config, ops...); err != nil {
 			return err

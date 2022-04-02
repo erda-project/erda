@@ -16,6 +16,7 @@ package reconciler
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/erda-project/erda-infra/base/logs"
@@ -32,7 +33,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskpolicy"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskrun"
-	taskop2 "github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskrun/taskop"
+	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/taskrun/taskop"
 	"github.com/erda-project/erda/modules/pipeline/services/actionagentsvc"
 	"github.com/erda-project/erda/modules/pipeline/services/extmarketsvc"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -191,7 +192,12 @@ func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spe
 		// get executor
 		executor, err := actionexecutor.GetManager().Get(types.Name(task.GetExecutorName()))
 		if err != nil {
-			tr.log.Errorf("failed to get task executor(auto retry), err: %v", err)
+			msg := fmt.Sprintf("failed to get task executor(auto retry), pipelineID: %d, taskID: %d, taskName: %s, err: %v", p.ID, task.ID, task.Name, err)
+			tr.log.Error(msg)
+			task.Inspect.Errors = task.Inspect.AppendError(&apistructs.PipelineTaskErrResponse{Msg: msg})
+			if err := tr.dbClient.UpdatePipelineTaskInspect(task.ID, task.Inspect); err != nil {
+				tr.log.Errorf("failed to append last message while get executor failed(auto retry), pipelineID: %d, taskID: %d, taskName: %s, err: %v", p.ID, task.ID, task.Name, err)
+			}
 			return rutil.ContinueWorkingWithDefaultInterval
 		}
 
@@ -220,15 +226,15 @@ func (tr *defaultTaskReconciler) ReconcileNormalTask(ctx context.Context, p *spe
 		var taskOp taskrun.TaskOp
 		switch task.Status {
 		case apistructs.PipelineStatusAnalyzed:
-			taskOp = taskop2.NewPrepare(framework)
+			taskOp = taskop.NewPrepare(framework)
 		case apistructs.PipelineStatusBorn:
-			taskOp = taskop2.NewCreate(framework)
+			taskOp = taskop.NewCreate(framework)
 		case apistructs.PipelineStatusCreated:
-			taskOp = taskop2.NewStart(framework)
+			taskOp = taskop.NewStart(framework)
 		case apistructs.PipelineStatusQueue:
-			taskOp = taskop2.NewQueue(framework)
+			taskOp = taskop.NewQueue(framework)
 		case apistructs.PipelineStatusRunning:
-			taskOp = taskop2.NewWait(framework)
+			taskOp = taskop.NewWait(framework)
 		default:
 			if task.Status.IsEndStatus() {
 				return rutil.ContinueWorkingAbort

@@ -78,7 +78,10 @@ func (d *DeploymentOrder) Create(ctx context.Context, req *apistructs.Deployment
 	)
 	if releaseResp.Data.IsProjectRelease {
 		if len(req.Modes) == 0 {
-			return nil, errors.Errorf("project release modes can not be empty")
+			if _, ok := releaseResp.Data.Modes["default"]; !ok {
+				return nil, errors.Errorf("default mode does not exist, please select modes")
+			}
+			req.Modes = []string{"default"}
 		}
 		for _, modeName := range req.Modes {
 			if _, ok := releaseResp.Data.Modes[modeName]; !ok {
