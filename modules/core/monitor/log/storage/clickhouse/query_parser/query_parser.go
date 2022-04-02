@@ -1,0 +1,224 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package query_parser
+
+import (
+	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/antlr/antlr4/runtime/Go/antlr"
+
+	"github.com/erda-project/erda/modules/core/monitor/log/storage/clickhouse/query_parser/parser"
+	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table/loader"
+)
+
+type EsqsParser interface {
+	Parse(esqsExpr string) EsqsParseResult
+}
+
+type EsqsParseResult interface {
+	Error() error
+	Sql() string
+	HighlightItems() map[string][]string
+}
+
+func NewEsqsParser(tableMeta *loader.TableMeta, defaultField string, defaultOp string, highlight bool) EsqsParser {
+	return &esqsParser{
+		defaultOp:    defaultOp,
+		defaultField: defaultField,
+		highlight:    highlight,
+		tableMeta:    tableMeta,
+	}
+}
+
+type esqsParser struct {
+	defaultOp    string
+	defaultField string
+	highlight    bool
+	tableMeta    *loader.TableMeta
+}
+
+func (ep *esqsParser) Parse(esqsExpr string) EsqsParseResult {
+	is := antlr.NewInputStream(esqsExpr)
+	lexer := parser.NewEsQueryStringLexer(is)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	p := parser.NewEsQueryStringParser(stream)
+
+	listener := &esqsListener{
+		defaultOp:    ep.defaultOp,
+		defaultField: ep.defaultField,
+		highlight:    ep.highlight,
+		tableMeta:    ep.tableMeta,
+	}
+	p.AddErrorListener(listener)
+	antlr.ParseTreeWalkerDefault.Walk(listener, p.Query())
+
+	return listener
+}
+
+type esqsListener struct {
+	*parser.BaseEsQueryStringListener
+	*antlr.DefaultErrorListener
+
+	defaultOp    string
+	defaultField string
+	highlight    bool
+	tableMeta    *loader.TableMeta
+
+	stack          []string
+	errs           []error
+	highlightItems map[string][]string
+}
+
+func (l *esqsListener) Error() error {
+	if len(l.errs) == 0 {
+		return nil
+	}
+	return l.errs[0]
+}
+
+func (l *esqsListener) Sql() string {
+	if len(l.stack) == 0 {
+		return ""
+	}
+	return l.stack[0]
+}
+
+func (l *esqsListener) HighlightItems() map[string][]string {
+	return l.highlightItems
+}
+
+func (l *esqsListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, ex antlr.RecognitionException) {
+	l.errs = append(l.errs, fmt.Errorf("line "+strconv.Itoa(line)+":"+strconv.Itoa(column)+" "+msg))
+}
+
+func (l *esqsListener) ExitGroupExpression(c *parser.GroupExpressionContext) {
+	expr := l.pop()
+	l.push(fmt.Sprintf("(%s)", expr))
+}
+
+func (l *esqsListener) ExitNotExpression(c *parser.NotExpressionContext) {
+	expr := l.pop()
+	l.push(fmt.Sprintf("(NOT %s)", expr))
+}
+
+func (l *esqsListener) ExitAndExpression(c *parser.AndExpressionContext) {
+	right, left := l.pop(), l.pop()
+	l.push(fmt.Sprintf("%s AND %s", left, right))
+}
+
+func (l *esqsListener) ExitOrExpression(c *parser.OrExpressionContext) {
+	right, left := l.pop(), l.pop()
+	l.push(fmt.Sprintf("%s OR %s", left, right))
+}
+
+func (l *esqsListener) ExitDefaultOpExpression(c *parser.DefaultOpExpressionContext) {
+	right, left := l.pop(), l.pop()
+	l.push(fmt.Sprintf("%s %s %s", left, l.defaultOp, right))
+}
+
+func (l *esqsListener) ExitNamedPhraseFieldQuery(c *parser.NamedPhraseFieldQueryContext) {
+	l.push(l.formatExpression(
+		strings.TrimRight(c.FIELD().GetText(), ":"),
+		strings.Trim(c.PHRASE().GetText(), `"`)),
+	)
+}
+
+func (l *esqsListener) ExitNamedTermFieldQuery(c *parser.NamedTermFieldQueryContext) {
+	l.push(l.formatExpression(
+		strings.TrimRight(c.FIELD().GetText(), ":"),
+		c.TERM().GetText()),
+	)
+}
+
+func (l *esqsListener) ExitPhraseFieldQuery(c *parser.PhraseFieldQueryContext) {
+	l.push(l.formatExpression(
+		l.defaultField,
+		strings.Trim(c.PHRASE().GetText(), `"`)),
+	)
+}
+
+func (l *esqsListener) ExitTermFieldQuery(c *parser.TermFieldQueryContext) {
+	l.push(l.formatExpression(
+		l.defaultField,
+		c.TERM().GetText()),
+	)
+}
+
+func (l *esqsListener) pop() string {
+	if len(l.stack) < 1 {
+		panic("stack is empty unable to pop")
+	}
+	expr := l.stack[len(l.stack)-1]
+	l.stack = l.stack[:len(l.stack)-1]
+	return expr
+}
+
+func (l *esqsListener) push(expr string) {
+	l.stack = append(l.stack, expr)
+}
+
+func (l *esqsListener) convertField(field string) string {
+	_, ok := l.tableMeta.Columns[field]
+	if ok {
+		return field
+	}
+	splits := strings.SplitN(field, ".", 2)
+	if len(splits) != 2 {
+		return field
+	}
+	prefixCol, ok := l.tableMeta.Columns[splits[0]]
+	if !ok {
+		return field
+	}
+	switch prefixCol.Type {
+	case loader.MapStringString:
+		return fmt.Sprintf("%s['%s']", splits[0], splits[1])
+	case loader.String:
+		return fmt.Sprintf("JSONExtractString(%s,'%s')", splits[0], splits[1])
+	default:
+		return field
+	}
+}
+
+func (l *esqsListener) formatExpression(field, value string) string {
+	if l.highlight {
+		l.buildHighlightItems(field, value)
+	}
+
+	field = l.convertField(field)
+
+	switch field {
+	case l.defaultField:
+		return fmt.Sprintf("%s LIKE '%%%s%%'", field, value)
+	default:
+		return fmt.Sprintf("%s='%s'", field, value)
+	}
+}
+
+var highlightRegex, _ = regexp.Compile(`[^- ,?]+`)
+
+func (l *esqsListener) buildHighlightItems(field, value string) {
+	if l.highlightItems == nil {
+		l.highlightItems = map[string][]string{}
+	}
+	items := highlightRegex.FindAllString(value, -1)
+	if len(items) == 0 {
+		return
+	}
+	l.highlightItems[field] = items
+}
