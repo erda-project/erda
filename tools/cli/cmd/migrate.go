@@ -149,11 +149,11 @@ var Migrate = command.Command{
 
 func RunMigrate(ctx *command.Context, host string, port int, username, password, database string, sandboxPort int,
 	lintConfig string, modules []string, debugSQL, skipLint, skipSandbox, skipPreMig, skipMig bool, output string, tls string,
-	tlsCa string) error {
+	tlsCaPath string) error {
 	logrus.Infoln("Erda Migrator is working")
 
 	tlsConfig := &migrator.TLSConfig{
-		DBCaCert: tlsCa,
+		DBCaCert: tlsCaPath,
 	}
 	var p = parameters{
 		mySQLParams: &migrator.DSNParameters{
