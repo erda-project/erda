@@ -16,6 +16,7 @@ package clusterinfo
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"strings"
 	"sync"
@@ -26,8 +27,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/events"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/executor/plugins/k8s/configmap"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/instanceinfo"
 	"github.com/erda-project/erda/pkg/clientgo/kubernetes"
 	"github.com/erda-project/erda/pkg/dlock"
 	"github.com/erda-project/erda/pkg/http/httpclient"
@@ -54,8 +57,7 @@ const (
 	netportalURLPrefix  = "inet://"
 	netportalURLKeyName = "NETPORTAL_URL"
 	// DiceClusterName dice 集群名
-	DiceClusterName                = "DICE_CLUSTER_NAME"
-	ENABLE_SPECIFIED_K8S_NAMESPACE = "ENABLE_SPECIFIED_K8S_NAMESPACE"
+	DiceClusterName = "DICE_CLUSTER_NAME"
 )
 
 // diceCIODiscardKeys 需要丢弃的
@@ -102,6 +104,7 @@ type ClusterInfo struct {
 	addr                 string              // k8s master address
 	client               httpclient.HTTPClient
 	k8sClient            *kubernetes.Clientset
+	db                   *instanceinfo.Client
 }
 
 // Option configures an ClusterInfo
@@ -149,14 +152,21 @@ func WithCompleteParams(addr string, client *httpclient.HTTPClient) Option {
 	}
 }
 
+// WithCompleteParams provides an Option
+func WithDB(client *instanceinfo.Client) Option {
+	return func(ci *ClusterInfo) {
+		ci.db = client
+	}
+}
+
 // Load 加载对应集群的 clusterInfo 配置
 func (ci *ClusterInfo) Load() error {
 	ci.load_mutex.Lock()
 	defer ci.load_mutex.Unlock()
 
 	var namespace = metav1.NamespaceDefault
-	if os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
-		namespace = os.Getenv(ENABLE_SPECIFIED_K8S_NAMESPACE)
+	if os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE) != "" {
+		namespace = os.Getenv(apistructs.ENABLE_SPECIFIED_K8S_NAMESPACE)
 	}
 	var (
 		cm      *corev1.ConfigMap
@@ -221,7 +231,7 @@ func (ci *ClusterInfo) Get() (map[string]string, error) {
 	return ci.data, nil
 }
 
-// SyncStore 同步 clusterInfo 数据到存储（比如 ETCD）
+// SyncStore 同步 clusterInfo 数据到存储（比如 ETCD and mysql）
 func (ci *ClusterInfo) SyncStore() error {
 	if ci.clusterName == "" {
 		return errors.New("cluster name is null")
@@ -254,7 +264,6 @@ func (ci *ClusterInfo) SyncStore() error {
 // LoopLoadAndSync 循环加载集群信息并存储
 func (ci *ClusterInfo) LoopLoadAndSync(ctx context.Context, sync bool) {
 	var loadErr error
-
 	for {
 		if loadErr := ci.Load(); loadErr != nil {
 			logrus.Errorf("failed to loop load cluster info, (%v)", loadErr)
@@ -263,6 +272,16 @@ func (ci *ClusterInfo) LoopLoadAndSync(ctx context.Context, sync bool) {
 		if sync && (loadErr == nil) {
 			if err := ci.SyncStore(); err != nil {
 				logrus.Errorf("failed to loop sync cluster info, (%v)", err)
+			} else {
+				str, err := json.Marshal(ci.data)
+				if err != nil {
+					logrus.Errorf("failed to marshal clusterInfo ,err:%v", err)
+				} else {
+					err = ci.db.UpdateClusterInfo(ci.clusterName, string(str))
+					if err != nil {
+						logrus.Errorf("failed to update clusterInfo ,err:%v", err)
+					}
+				}
 			}
 		}
 

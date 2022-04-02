@@ -1553,6 +1553,15 @@ func selectRelation(indexType string) (*AggregationCondition, []*NodeRelation) {
 	return aggregationConditions, relations
 }
 
+func (topology *provider) isExistTopologyNode(node *Node, topologyNodes *[]*Node) bool {
+	for _, n := range *topologyNodes {
+		if n.Id == node.Id {
+			return true
+		}
+	}
+	return false
+}
+
 func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange int64, searchResult *elastic.SearchResult, relations []*NodeRelation, topologyNodes *[]*Node) {
 	for _, nodeRelation := range relations {
 		targetNodeType := nodeRelation.Target
@@ -1645,7 +1654,10 @@ func (topology *provider) parseToTypologyNode(lang i18n.LanguageCodes, timeRange
 							}
 
 							sourceNode := columnsParser(nodeType.Type, sourceNodeInfo)
-
+							if !topology.isExistTopologyNode(sourceNode, topologyNodes) {
+								*topologyNodes = append(*topologyNodes, sourceNode)
+								sourceNode.Parents = []*Node{}
+							}
 							// aggs
 							sourceMetric := metricParser(nodeType, source)
 

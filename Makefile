@@ -160,7 +160,7 @@ run-test:
 
 full-test:
 	docker run --rm -ti -v $$(pwd):/go/src/output letmein7788/letmein:golangci-lint \
-		bash -c 'cd /go/src && git clone https://github.com/recallsong/erda && cd erda && git checkout feature/quick-test && build/scripts/test_in_container.sh'
+		bash -c 'cd /go/src/output && build/scripts/test_in_container.sh'
 
 # docker image
 build-image: prepare

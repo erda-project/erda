@@ -8,12 +8,13 @@ import (
 	math "math"
 
 	_ "github.com/erda-project/erda-proto-go/common/pb"
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/base/pb"
+	_ "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	proto "github.com/golang/protobuf/proto"
-	_ "github.com/mwitkow/go-proto-validators"
 	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
-	_ "google.golang.org/protobuf/types/known/structpb"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
+	_ "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -21,25 +22,12 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-func (this *Cron) Validate() error {
-	if this.TimeCreated != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.TimeCreated); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("TimeCreated", err)
-		}
-	}
-	if this.TimeUpdated != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.TimeUpdated); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("TimeUpdated", err)
-		}
-	}
-	if this.CronStartTime != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.CronStartTime); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("CronStartTime", err)
-		}
-	}
-	return nil
-}
 func (this *CronPagingRequest) Validate() error {
+	if this.Enable != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Enable); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Enable", err)
+		}
+	}
 	return nil
 }
 func (this *CronPagingResponse) Validate() error {
@@ -70,29 +58,6 @@ func (this *CronStopResponse) Validate() error {
 	if this.Data != nil {
 		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Data); err != nil {
 			return github_com_mwitkow_go_proto_validators.FieldError("Data", err)
-		}
-	}
-	return nil
-}
-func (this *CronCreateRequestV1) Validate() error {
-	if this.PipelineYml == "" {
-		return github_com_mwitkow_go_proto_validators.FieldError("PipelineYml", fmt.Errorf(`value '%v' must not be an empty string`, this.PipelineYml))
-	}
-	if this.ClusterName == "" {
-		return github_com_mwitkow_go_proto_validators.FieldError("ClusterName", fmt.Errorf(`value '%v' must not be an empty string`, this.ClusterName))
-	}
-	if this.PipelineYmlName == "" {
-		return github_com_mwitkow_go_proto_validators.FieldError("PipelineYmlName", fmt.Errorf(`value '%v' must not be an empty string`, this.PipelineYmlName))
-	}
-	if this.PipelineSource == "" {
-		return github_com_mwitkow_go_proto_validators.FieldError("PipelineSource", fmt.Errorf(`value '%v' must not be an empty string`, this.PipelineSource))
-	}
-	// Validation of proto3 map<> fields is unsupported.
-	// Validation of proto3 map<> fields is unsupported.
-	// Validation of proto3 map<> fields is unsupported.
-	if this.CronStartFrom != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.CronStartFrom); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("CronStartFrom", err)
 		}
 	}
 	return nil

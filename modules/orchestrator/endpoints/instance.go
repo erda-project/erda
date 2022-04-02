@@ -16,7 +16,6 @@ package endpoints
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
@@ -90,12 +89,12 @@ func (e *Endpoints) ListServiceInstance(ctx context.Context, r *http.Request, va
 	default:
 		req.Phases = []string{status}
 	}
-	resp, err := e.bdl.GetInstanceInfo(req)
+	instanceList, err := e.instanceinfoImpl.GetInstanceInfo(req)
 	if err != nil {
 		return apierrors.ErrListInstance.InternalError(err).ToResp(), nil
 	}
-	instances := make(apistructs.Containers, 0, len(resp.Data))
-	for _, v := range resp.Data {
+	instances := make(apistructs.Containers, 0, len(instanceList))
+	for _, v := range instanceList {
 		instance := apistructs.Container{
 			ID:          v.TaskID,
 			ContainerID: v.ContainerID,
@@ -150,12 +149,13 @@ func (e *Endpoints) ListServicePod(ctx context.Context, r *http.Request, vars ma
 		RuntimeID:   runtimeID,
 		ServiceName: serviceName,
 	}
-	resp, err := e.bdl.GetPodInfo(req)
+
+	podList, err := e.instanceinfoImpl.GetPodInfo(req)
 	if err != nil {
 		return apierrors.ErrListInstance.InternalError(err).ToResp(), nil
 	}
-	pods := make(apistructs.Pods, 0, len(resp.Data))
-	for _, v := range resp.Data {
+	pods := make(apistructs.Pods, 0, len(podList))
+	for _, v := range podList {
 		startat := ""
 		if v.StartedAt != nil {
 			startat = v.StartedAt.Format(time.RFC3339Nano)
@@ -211,14 +211,11 @@ func (e *Endpoints) InstancesUsage(ctx context.Context, r *http.Request, vars ma
 		if cluster != "" {
 			req.Cluster = cluster
 		}
-		instancesinfo, err := e.bdl.GetInstanceInfo(req)
+		instanceList, err := e.instanceinfoImpl.GetInstanceInfo(req)
 		if err != nil {
 			return apierrors.ErrListInstance.InternalError(err).ToResp(), nil
 		}
-		if !instancesinfo.Success {
-			return apierrors.ErrListInstance.InternalError(fmt.Errorf("%v", instancesinfo.Error.Msg)).ToResp(), nil
-		}
-		project_ids, app_ids, runtime_ids, service_names = buildInstanceUsageParams(instancesinfo.Data)
+		project_ids, app_ids, runtime_ids, service_names = buildInstanceUsageParams(instanceList)
 	}
 
 	switch InstanceRequestType(requestType) {

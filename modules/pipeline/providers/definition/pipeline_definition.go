@@ -17,6 +17,7 @@ package definition
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/pkg/errors"
@@ -59,6 +60,7 @@ func (p pipelineDefinition) Create(ctx context.Context, request *pb.PipelineDefi
 	pipelineDefinition.StartedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.EndedAt = *mysql_time.GetMysqlDefaultTime()
 	pipelineDefinition.CostTime = -1
+	pipelineDefinition.Ref = request.Ref
 	err := p.dbClient.CreatePipelineDefinition(&pipelineDefinition)
 	if err != nil {
 		return nil, err
@@ -256,8 +258,8 @@ func PipelineDefinitionExtraToPb(pipelineDefinitionExtra *db.PipelineDefinitionE
 	return de
 }
 
-func (p pipelineDefinition) StaticsGroupByRemote(ctx context.Context, request *pb.PipelineDefinitionStaticsRequest) (*pb.PipelineDefinitionStaticsResponse, error) {
-	statics, err := p.dbClient.StaticsGroupByRemote(request)
+func (p pipelineDefinition) StatisticsGroupByRemote(ctx context.Context, request *pb.PipelineDefinitionStatisticsRequest) (*pb.PipelineDefinitionStatisticsResponse, error) {
+	statics, err := p.dbClient.StatisticsGroupByRemote(request)
 	if err != nil {
 		return nil, err
 	}
@@ -265,11 +267,44 @@ func (p pipelineDefinition) StaticsGroupByRemote(ctx context.Context, request *p
 	pipelineDefinitionStatistics := make([]*pb.PipelineDefinitionStatistics, 0, len(statics))
 	for _, v := range statics {
 		pipelineDefinitionStatistics = append(pipelineDefinitionStatistics, &pb.PipelineDefinitionStatistics{
-			Remote:     v.Remote,
+			Group:      v.Group,
 			FailedNum:  v.FailedNum,
 			RunningNum: v.RunningNum,
 			TotalNum:   v.TotalNum,
 		})
 	}
-	return &pb.PipelineDefinitionStaticsResponse{PipelineDefinitionStatistics: pipelineDefinitionStatistics}, nil
+	return &pb.PipelineDefinitionStatisticsResponse{PipelineDefinitionStatistics: pipelineDefinitionStatistics}, nil
+}
+
+func (p pipelineDefinition) ListUsedRefs(ctx context.Context, req *pb.PipelineDefinitionUsedRefListRequest) (*pb.PipelineDefinitionUsedRefListResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+	refs, err := p.dbClient.ListUsedRef(req)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.PipelineDefinitionUsedRefListResponse{Ref: refs}, nil
+}
+
+func (p pipelineDefinition) StatisticsGroupByFilePath(ctx context.Context, request *pb.PipelineDefinitionStatisticsRequest) (*pb.PipelineDefinitionStatisticsResponse, error) {
+	statics, err := p.dbClient.StatisticsGroupByFilePath(request)
+	if err != nil {
+		return nil, err
+	}
+
+	pipelineDefinitionStatistics := make([]*pb.PipelineDefinitionStatistics, 0, len(statics))
+	for _, v := range statics {
+		group := v.Group
+		if strings.HasPrefix(v.Group, "/") {
+			group = group[1:]
+		}
+		pipelineDefinitionStatistics = append(pipelineDefinitionStatistics, &pb.PipelineDefinitionStatistics{
+			Group:      group,
+			FailedNum:  v.FailedNum,
+			RunningNum: v.RunningNum,
+			TotalNum:   v.TotalNum,
+		})
+	}
+	return &pb.PipelineDefinitionStatisticsResponse{PipelineDefinitionStatistics: pipelineDefinitionStatistics}, nil
 }

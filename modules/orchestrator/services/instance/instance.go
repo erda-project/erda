@@ -19,13 +19,15 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/instanceinfo"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 // Instance instance 实例对象封装
 type Instance struct {
-	bdl *bundle.Bundle
+	bdl              *bundle.Bundle
+	instanceinfoImpl *instanceinfo.InstanceInfoImpl
 }
 
 // Option addon 实例对象配置选项
@@ -48,6 +50,13 @@ func WithBundle(bdl *bundle.Bundle) Option {
 	}
 }
 
+// WithBundle 配置 bundle
+func WithInstanceInfo(instanceinfoImpl *instanceinfo.InstanceInfoImpl) Option {
+	return func(i *Instance) {
+		i.instanceinfoImpl = instanceinfoImpl
+	}
+}
+
 // ListProjectUsageByCluster 根据 clusterName 获取集群下项目资源使用列表
 func (i *Instance) ListProjectUsageByCluster(orgID, clusterName, workspace string, limited_project_ids []string) ([]apistructs.ProjectUsageFetchResponseData, error) {
 	req := apistructs.InstanceInfoRequest{
@@ -60,14 +69,14 @@ func (i *Instance) ListProjectUsageByCluster(orgID, clusterName, workspace strin
 	if workspace != "" {
 		req.Workspace = workspace
 	}
-	resp, err := i.bdl.GetInstanceInfo(req)
+	instanceList, err := i.instanceinfoImpl.GetInstanceInfo(req)
 	if err != nil {
 		return nil, err
 	}
 
 	// 按照 project 维度聚合
-	projects := make(map[string]apistructs.ProjectUsageFetchResponseData, len(resp.Data))
-	for _, v := range resp.Data {
+	projects := make(map[string]apistructs.ProjectUsageFetchResponseData, len(instanceList))
+	for _, v := range instanceList {
 		if v.RuntimeID == "" { // pipeline action 实例无 runtimeId, 须过滤掉(临时方案，后期 scheduler 提供根据 type 参数过滤)
 			continue
 		}
@@ -123,14 +132,14 @@ func (i *Instance) ListAppUsageByProject(orgID, projectID, workspace string, lim
 	if workspace != "" {
 		req.Workspace = workspace
 	}
-	resp, err := i.bdl.GetInstanceInfo(req)
+	instanceList, err := i.instanceinfoImpl.GetInstanceInfo(req)
 	if err != nil {
 		return nil, err
 	}
 
 	// 按照 app 维度聚合
-	apps := make(map[string]apistructs.ApplicationUsageFetchResponseData, len(resp.Data))
-	for _, v := range resp.Data {
+	apps := make(map[string]apistructs.ApplicationUsageFetchResponseData, len(instanceList))
+	for _, v := range instanceList {
 		if v.RuntimeID == "" { // pipeline action 实例无 runtimeId, 须过滤掉(临时方案，后期 scheduler 提供根据 type 参数过滤)
 			continue
 		}
@@ -185,14 +194,14 @@ func (i *Instance) ListRuntimeUsageByApp(orgID, appID, workspace string, limited
 	if workspace != "" {
 		req.Workspace = workspace
 	}
-	resp, err := i.bdl.GetInstanceInfo(req)
+	instanceList, err := i.instanceinfoImpl.GetInstanceInfo(req)
 	if err != nil {
 		return nil, err
 	}
 
 	// 按照 runtime 维度聚合
-	runtimes := make(map[string]apistructs.RuntimeUsageFetchResponseData, len(resp.Data))
-	for _, v := range resp.Data {
+	runtimes := make(map[string]apistructs.RuntimeUsageFetchResponseData, len(instanceList))
+	for _, v := range instanceList {
 		if v.RuntimeID == "" { // pipeline action 实例无 runtimeId, 须过滤掉(临时方案，后期 scheduler 提供根据 type 参数过滤)
 			continue
 		}
@@ -245,14 +254,15 @@ func (i *Instance) ListServiceUsageByRuntime(orgID, runtimeID, workspace string,
 	if workspace != "" {
 		req.Workspace = workspace
 	}
-	resp, err := i.bdl.GetInstanceInfo(req)
+
+	instanceList, err := i.instanceinfoImpl.GetInstanceInfo(req)
 	if err != nil {
 		return nil, err
 	}
 
 	// 按照 service 维度聚合
-	services := make(map[string]apistructs.ServiceUsageFetchResponseData, len(resp.Data))
-	for _, v := range resp.Data {
+	services := make(map[string]apistructs.ServiceUsageFetchResponseData, len(instanceList))
+	for _, v := range instanceList {
 		if s, ok := services[v.ServiceName]; ok {
 			s.Instance++
 			s.CPU += v.CpuRequest

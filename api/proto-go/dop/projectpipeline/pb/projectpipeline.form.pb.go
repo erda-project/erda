@@ -26,6 +26,11 @@ var _ urlenc.URLValuesUnmarshaler = (*Application)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*CreateProjectPipelineResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ProjectPipeline)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ListPipelineCategoryRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ListPipelineCategoryResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*PipelineCategory)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*UpdateProjectPipelineRequest)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*UpdateProjectPipelineResponse)(nil)
 
 // CreateProjectPipelineSourcePreCheckRequest implement urlenc.URLValuesUnmarshaler.
 func (m *CreateProjectPipelineSourcePreCheckRequest) UnmarshalURLValues(prefix string, values url.Values) error {
@@ -522,6 +527,211 @@ func (m *ProjectPipeline) UnmarshalURLValues(prefix string, values url.Values) e
 				m.FileName = vals[0]
 			case "pipelineSourceID":
 				m.PipelineSourceID = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ListPipelineCategoryRequest implement urlenc.URLValuesUnmarshaler.
+func (m *ListPipelineCategoryRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "projectID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			}
+		}
+	}
+	return nil
+}
+
+// ListPipelineCategoryResponse implement urlenc.URLValuesUnmarshaler.
+func (m *ListPipelineCategoryResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	return nil
+}
+
+// PipelineCategory implement urlenc.URLValuesUnmarshaler.
+func (m *PipelineCategory) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "key":
+				m.Key = vals[0]
+			case "category":
+				m.Category = vals[0]
+			case "rules":
+				m.Rules = vals
+			case "runningNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.RunningNum = val
+			case "failedNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.FailedNum = val
+			case "totalNum":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.TotalNum = val
+			}
+		}
+	}
+	return nil
+}
+
+// UpdateProjectPipelineRequest implement urlenc.URLValuesUnmarshaler.
+func (m *UpdateProjectPipelineRequest) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "pipelineDefinitionID":
+				m.PipelineDefinitionID = vals[0]
+			case "projectID":
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectID = val
+			case "name":
+				m.Name = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// UpdateProjectPipelineResponse implement urlenc.URLValuesUnmarshaler.
+func (m *UpdateProjectPipelineResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "ProjectPipeline":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+			case "ProjectPipeline.ID":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.ID = vals[0]
+			case "ProjectPipeline.name":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.Name = vals[0]
+			case "ProjectPipeline.creator":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.Creator = vals[0]
+			case "ProjectPipeline.category":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.Category = vals[0]
+			case "ProjectPipeline.timeCreated":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				if m.ProjectPipeline.TimeCreated == nil {
+					m.ProjectPipeline.TimeCreated = &timestamppb.Timestamp{}
+				}
+			case "ProjectPipeline.timeCreated.seconds":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				if m.ProjectPipeline.TimeCreated == nil {
+					m.ProjectPipeline.TimeCreated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectPipeline.TimeCreated.Seconds = val
+			case "ProjectPipeline.timeCreated.nanos":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				if m.ProjectPipeline.TimeCreated == nil {
+					m.ProjectPipeline.TimeCreated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.ProjectPipeline.TimeCreated.Nanos = int32(val)
+			case "ProjectPipeline.timeUpdated":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				if m.ProjectPipeline.TimeUpdated == nil {
+					m.ProjectPipeline.TimeUpdated = &timestamppb.Timestamp{}
+				}
+			case "ProjectPipeline.timeUpdated.seconds":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				if m.ProjectPipeline.TimeUpdated == nil {
+					m.ProjectPipeline.TimeUpdated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.ProjectPipeline.TimeUpdated.Seconds = val
+			case "ProjectPipeline.timeUpdated.nanos":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				if m.ProjectPipeline.TimeUpdated == nil {
+					m.ProjectPipeline.TimeUpdated = &timestamppb.Timestamp{}
+				}
+				val, err := strconv.ParseInt(vals[0], 10, 32)
+				if err != nil {
+					return err
+				}
+				m.ProjectPipeline.TimeUpdated.Nanos = int32(val)
+			case "ProjectPipeline.sourceType":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.SourceType = vals[0]
+			case "ProjectPipeline.remote":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.Remote = vals[0]
+			case "ProjectPipeline.ref":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.Ref = vals[0]
+			case "ProjectPipeline.path":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.Path = vals[0]
+			case "ProjectPipeline.fileName":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.FileName = vals[0]
+			case "ProjectPipeline.pipelineSourceID":
+				if m.ProjectPipeline == nil {
+					m.ProjectPipeline = &ProjectPipeline{}
+				}
+				m.ProjectPipeline.PipelineSourceID = vals[0]
 			}
 		}
 	}

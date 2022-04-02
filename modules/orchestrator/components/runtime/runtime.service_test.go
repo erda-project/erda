@@ -31,6 +31,8 @@ import (
 	"github.com/erda-project/erda/pkg/parser/diceyml"
 )
 
+////go:generate mockgen -destination=./mock/mock_sg.go -package mock github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup ServiceGroup
+
 func TestService_GetRuntime(t *testing.T) {
 	assert := require.New(t)
 	ctrl := gomock.NewController(t)
@@ -38,7 +40,8 @@ func TestService_GetRuntime(t *testing.T) {
 
 	bdlSvc := mock.NewMockBundleService(ctrl)
 	dbSvc := mock.NewMockDBService(ctrl)
-	svc := NewRuntimeService(WithBundleService(bdlSvc), WithDBService(dbSvc))
+	sgiSvc := mock.NewMockServiceGroup(ctrl)
+	svc := NewRuntimeService(WithBundleService(bdlSvc), WithDBService(dbSvc), WithServiceGroupImpl(sgiSvc))
 
 	md := metadata.New(map[string]string{
 		"user-id": "2",
@@ -113,7 +116,7 @@ func TestService_GetRuntime(t *testing.T) {
 			Name: "foo",
 		}, nil).MinTimes(1)
 
-	bdlSvc.
+	sgiSvc.
 		EXPECT().
 		InspectServiceGroupWithTimeout(gomock.Eq("ns"), gomock.Eq("n")).
 		Return(&apistructs.ServiceGroup{

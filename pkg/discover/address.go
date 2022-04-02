@@ -79,7 +79,6 @@ const (
 )
 
 var ServicesEnvKeys = map[string]string{
-	SvcEventBox:       EnvEventBox,
 	SvcCMDB:           EnvCMDB,
 	SvcScheduler:      EnvScheduler,
 	SvcDiceHub:        EnvDiceHub,

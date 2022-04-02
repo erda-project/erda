@@ -529,6 +529,8 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 				ByProjectName(projectName).
 				ByWorkspace(workspace).
 				ByContainerID(prevContainerID).
+				ByRuntimeID(runtimeID).
+				ByApplicationID(applicationID).
 				Do()
 			if err != nil {
 				return orgs, err
@@ -583,7 +585,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 				}
 			}
 			// remove dup instances in db
-			instances, err = r.ByContainerID(prevContainerID).Do()
+			instances, err = r.ByContainerID(prevContainerID).ByRuntimeID(runtimeID).ByApplicationID(applicationID).Do()
 			if err != nil {
 				return orgs, err
 			}
@@ -596,7 +598,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 			}
 		}
 		if currentContainerID != "" {
-			instances, err := r.ByContainerID(currentContainerID).Do()
+			instances, err := r.ByContainerID(currentContainerID).ByRuntimeID(runtimeID).ByApplicationID(applicationID).Do()
 			if err != nil {
 				return orgs, err
 			}
@@ -657,7 +659,7 @@ func updatePodAndInstance(dbclient *instanceinfo.Client, podlist *corev1.PodList
 				}
 			}
 			// remove dup instances in db
-			instances, err = r.ByContainerID(currentContainerID).Do()
+			instances, err = r.ByContainerID(currentContainerID).ByRuntimeID(runtimeID).ByApplicationID(applicationID).Do()
 			if err != nil {
 				return orgs, err
 			}

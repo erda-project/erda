@@ -100,7 +100,7 @@ func TestRenderDetail(t *testing.T) {
 		return &apistructs.PermissionCheckResponseData{
 			Access: true}, nil
 	})
-	monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "FetchDeploymentConfigDetail", func(*bundle.Bundle, string) ([]apistructs.EnvConfig, []apistructs.EnvConfig, error) {
+	monkey.PatchInstanceMethod(reflect.TypeOf(order), "FetchDeploymentConfigDetail", func(*DeploymentOrder, string) ([]apistructs.EnvConfig, []apistructs.EnvConfig, error) {
 		return nil, nil, nil
 	})
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListCustomInstancesByProjectAndEnv",
@@ -118,6 +118,6 @@ func TestRenderDetail(t *testing.T) {
 		return ""
 	})
 
-	_, err := order.RenderDetail(context.Background(), "1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD")
+	_, err := order.RenderDetail(context.Background(), "", "1", "dd11727fc60945c998c2fcdf6487e9b0", "PROD", []string{"default"})
 	assert.NoError(t, err)
 }

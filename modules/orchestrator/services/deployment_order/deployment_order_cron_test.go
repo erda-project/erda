@@ -15,6 +15,7 @@
 package deployment_order
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -91,12 +92,16 @@ func TestPushOnDeploymentOrderPolling(t *testing.T) {
 	rss.EXPECT().GetRelease(gomock.Any(), gomock.Any()).AnyTimes().Return(&releasepb.ReleaseGetResponse{
 		Data: &releasepb.ReleaseGetResponseData{
 			ReleaseID: "202cb962ac59075b964b07152d234b70",
-			ApplicationReleaseList: []*releasepb.ReleaseSummaryArray{
-				{
-					List: []*releasepb.ApplicationReleaseSummary{
+			Modes: map[string]*releasepb.ModeSummary{
+				"default": {
+					ApplicationReleaseList: []*releasepb.ReleaseSummaryArray{
 						{
-							ReleaseID:       "202cb962ac59075b964b07152d234b70",
-							ApplicationName: "app-demo",
+							List: []*releasepb.ApplicationReleaseSummary{
+								{
+									ReleaseID:       "202cb962ac59075b964b07152d234b70",
+									ApplicationName: "app-demo",
+								},
+							},
 						},
 					},
 				},
@@ -104,6 +109,11 @@ func TestPushOnDeploymentOrderPolling(t *testing.T) {
 		},
 	}, nil)
 
+	deployList := [][]string{{"id1"}, {"id2"}}
+	data, err := json.Marshal(deployList)
+	if err != nil {
+		t.Fatal(err)
+	}
 	order := New(WithReleaseSvc(rss))
 	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "FindUnfinishedDeploymentOrders", func(*dbclient.DBClient) ([]dbclient.DeploymentOrder, error) {
 		return []dbclient.DeploymentOrder{
@@ -113,6 +123,7 @@ func TestPushOnDeploymentOrderPolling(t *testing.T) {
 				BatchSize:    3,
 				Workspace:    apistructs.WORKSPACE_PROD,
 				Status:       string(apistructs.DeploymentStatusDeploying),
+				DeployList:   string(data),
 			},
 		}, nil
 	})
@@ -123,9 +134,15 @@ func TestPushOnDeploymentOrderPolling(t *testing.T) {
 		// if record not found, will return nil
 		return nil, nil
 	})
+	monkey.PatchInstanceMethod(reflect.TypeOf(order.db), "ListReleases", func(*dbclient.DBClient, []string) ([]*dbclient.Release, error) {
+		return []*dbclient.Release{
+			{ReleaseId: "id1"},
+			{ReleaseId: "id2"},
+		}, nil
+	})
 
 	defer monkey.UnpatchAll()
 
-	_, err := order.PushOnDeploymentOrderPolling()
+	_, err = order.PushOnDeploymentOrderPolling()
 	assert.NoError(t, err)
 }

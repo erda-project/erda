@@ -38,3 +38,9 @@ type Sort struct {
 	FieldKey  string
 	Ascending bool
 }
+
+const (
+	Participated = "participated"
+)
+
+var DefaultBranch = []string{"master", "develop"}

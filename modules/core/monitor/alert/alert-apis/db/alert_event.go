@@ -35,6 +35,7 @@ type AlertEventQueryCondition struct {
 	AlertLevels          []string
 	AlertIds             []uint64
 	AlertStates          []string
+	SuppressedIds        []string
 	AlertSources         []string
 	LastTriggerTimeMsMin uint64
 	LastTriggerTimeMsMax uint64
@@ -125,7 +126,7 @@ func (db *AlertEventDB) CountUnRecoverEventsGroupByScope() ([]*AlertEventScopeCo
 	return list, err
 }
 
-func (db *AlertEventDB) CountUnRecoverEvents(scope, scopeId string, excludeAlertIds []uint64) (int64, error) {
+func (db *AlertEventDB) CountUnRecoverEvents(scope, scopeId string, inAlertIds []uint64) (int64, error) {
 	var result AlertEventScopeCountResult
 
 	query := db.Table(TableAlertEvent).
@@ -134,8 +135,8 @@ func (db *AlertEventDB) CountUnRecoverEvents(scope, scopeId string, excludeAlert
 		Where("scope=?", scope).
 		Where("scope_id?", scopeId)
 
-	if len(excludeAlertIds) > 0 {
-		query = query.Where("alert_id not in (?)", excludeAlertIds)
+	if len(inAlertIds) > 0 {
+		query = query.Where("alert_id in (?)", inAlertIds)
 	}
 
 	err := query.Find(&result).Error
@@ -178,8 +179,12 @@ func (db *AlertEventDB) buildWhereQuery(query *gorm.DB, condition *AlertEventQue
 	if len(condition.AlertLevels) > 0 {
 		query = query.Where("alert_level in (?)", condition.AlertLevels)
 	}
-	if len(condition.AlertStates) > 0 {
+	if len(condition.AlertStates) > 0 && len(condition.SuppressedIds) > 0 {
+		query = query.Where("alert_state in (?) or id in (?)", condition.AlertStates, condition.SuppressedIds)
+	} else if len(condition.AlertStates) > 0 {
 		query = query.Where("alert_state in (?)", condition.AlertStates)
+	} else if len(condition.SuppressedIds) > 0 {
+		query = query.Where("id in (?)", condition.SuppressedIds)
 	}
 	if len(condition.AlertSources) > 0 {
 		query = query.Where("alert_source in (?)", condition.AlertSources)

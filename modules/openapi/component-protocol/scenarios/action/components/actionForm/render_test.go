@@ -64,3 +64,71 @@ func TestGenTimeoutProps1(t *testing.T) {
 		})
 	}
 }
+
+func Test_setMemberSelectorComponentScopeIDFieldWithAppID1(t *testing.T) {
+	type args struct {
+		props interface{}
+		appID interface{}
+	}
+	tests := []struct {
+		name            string
+		args            args
+		wantResultProps interface{}
+	}{
+		{
+			name: "test_not_find_appId",
+			args: args{
+				props: map[string]interface{}{
+					"fields": []apistructs.FormPropItem{
+						{
+							Component:      "memberSelector",
+							ComponentProps: map[string]interface{}{},
+						},
+					},
+				},
+				appID: nil,
+			},
+			wantResultProps: map[string]interface{}{
+				"fields": []apistructs.FormPropItem{
+					{
+						Component: "memberSelector",
+						ComponentProps: map[string]interface{}{
+							"scopeId": nil,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "test_appId_set_to_scopeId",
+			args: args{
+				props: map[string]interface{}{
+					"fields": []apistructs.FormPropItem{
+						{
+							Component:      "memberSelector",
+							ComponentProps: map[string]interface{}{},
+						},
+					},
+				},
+				appID: 10,
+			},
+			wantResultProps: map[string]interface{}{
+				"fields": []apistructs.FormPropItem{
+					{
+						Component: "memberSelector",
+						ComponentProps: map[string]interface{}{
+							"scopeId": 10,
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotResultProps := setMemberSelectorComponentScopeIDFieldWithAppID(tt.args.props, tt.args.appID); !reflect.DeepEqual(gotResultProps, tt.wantResultProps) {
+				t.Errorf("setMemberSelectorComponentScopeIDFieldWithAppID() = %v, want %v", gotResultProps, tt.wantResultProps)
+			}
+		})
+	}
+}

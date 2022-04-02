@@ -954,11 +954,17 @@ func (m *IssueTime) MarshalJSON() ([]byte, error) {
 }
 
 func (m *IssueTime) IsEmpty() bool {
+	if m == nil {
+		return true
+	}
 	t := time.Time(*m)
 	return t.IsZero()
 }
 
 func (m *IssueTime) Value() *time.Time {
+	if m == nil {
+		return nil
+	}
 	t := time.Time(*m)
 	if t.IsZero() || t.Equal(time.Unix(0, 0)) {
 		return nil
@@ -967,6 +973,9 @@ func (m *IssueTime) Value() *time.Time {
 }
 
 func (m *IssueTime) Time() *time.Time {
+	if m == nil {
+		return nil
+	}
 	t := time.Time(*m)
 	if t.Equal(time.Unix(0, 0)) {
 		return nil

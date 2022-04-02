@@ -25,8 +25,11 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/gorilla/schema"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/igm/sockjs-go.v2/sockjs"
 
+	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
+	projectCache "github.com/erda-project/erda/modules/core-services/cache/project"
 	"github.com/erda-project/erda/modules/core-services/conf"
 	"github.com/erda-project/erda/modules/core-services/dao"
 	"github.com/erda-project/erda/modules/core-services/endpoints"
@@ -41,12 +44,14 @@ import (
 	"github.com/erda-project/erda/modules/core-services/services/mbox"
 	"github.com/erda-project/erda/modules/core-services/services/member"
 	"github.com/erda-project/erda/modules/core-services/services/notice"
+	"github.com/erda-project/erda/modules/core-services/services/notify"
 	"github.com/erda-project/erda/modules/core-services/services/org"
 	"github.com/erda-project/erda/modules/core-services/services/permission"
 	"github.com/erda-project/erda/modules/core-services/services/project"
 	"github.com/erda-project/erda/modules/core-services/services/subscribe"
 	"github.com/erda-project/erda/modules/core-services/services/user"
 	"github.com/erda-project/erda/modules/core-services/utils"
+	"github.com/erda-project/erda/modules/messenger/eventbox/websocket"
 	"github.com/erda-project/erda/pkg/discover"
 	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/http/httpserver"
@@ -70,7 +75,6 @@ func (p *provider) Initialize() error {
 	}
 
 	bdl := bundle.New(
-		bundle.WithEventBox(),
 		bundle.WithCollector(),
 	)
 
@@ -84,6 +88,12 @@ func (p *provider) Initialize() error {
 	server.Router().Path("/api/images/{imageName}").Methods(http.MethodGet).HandlerFunc(endpoints.GetImage)
 	logrus.Infof("start the service and listen on address: \"%s\"", conf.ListenAddr())
 
+	wsi, err := websocket.New()
+	go func() {
+		wsi.Start(nil)
+	}()
+	server.Router().PathPrefix("/api/dice/eventbox").Path("/ws/{any:.*}").
+		Handler(sockjs.NewHandler("/api/dice/eventbox/ws", sockjs.DefaultOptions, wsi.HTTPHandle))
 	p.Router.Any("/**", server.Router().ServeHTTP)
 	return nil
 }
@@ -154,7 +164,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		bundle.WithAddOnPlatform(),
 		bundle.WithGittar(),
 		bundle.WithGittarAdaptor(),
-		bundle.WithEventBox(),
+		bundle.WithCoreServices(),
 		bundle.WithMonitor(),
 		bundle.WithScheduler(),
 		bundle.WithDiceHub(),
@@ -187,7 +197,6 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		project.WithBundle(bdl),
 		project.WithI18n(p.Tran),
 	)
-	go proj.UpdateCache()
 
 	// init app service
 	app := application.New(
@@ -206,9 +215,9 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	mr := manual_review.New(
 		manual_review.WithDBClient(db),
 	)
-	//notifyService := notify.New(
-	//	notify.WithDBClient(db),
-	//)
+	notifyService := notify.New(
+		notify.WithDBClient(db),
+	)
 
 	// init activity service
 	a := activity.New(
@@ -273,6 +282,9 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 	queryStringDecoder := schema.NewDecoder()
 	queryStringDecoder.IgnoreUnknownKeys(true)
 
+	// cache setting
+	projectCache.New(db)
+
 	// compose endpoints
 	ep := endpoints.New(
 		endpoints.WithJSONStore(store),
@@ -288,7 +300,7 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithMember(m),
 		endpoints.WithActivity(a),
 		endpoints.WithPermission(pm),
-		//endpoints.WithNotify(notifyService),
+		endpoints.WithNotify(notifyService),
 		endpoints.WithLicense(license),
 		endpoints.WithLabel(l),
 		endpoints.WithMBox(mboxService),
@@ -302,4 +314,12 @@ func (p *provider) initEndpoints() (*endpoints.Endpoints, error) {
 		endpoints.WithSubscribe(sub),
 	)
 	return ep, nil
+}
+
+type ExposedInterface interface {
+	CheckPermission(req *apistructs.PermissionCheckRequest) (bool, error)
+}
+
+func (p *provider) CheckPermission(req *apistructs.PermissionCheckRequest) (bool, error) {
+	return p.perm.CheckPermission(req)
 }

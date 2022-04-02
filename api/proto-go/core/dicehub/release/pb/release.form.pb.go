@@ -14,6 +14,7 @@ import (
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseList)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*Mode)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseCreateRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseResource)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseCreateResponse)(nil)
@@ -29,8 +30,10 @@ var _ urlenc.URLValuesUnmarshaler = (*ReleaseDeleteRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseDeleteResponse)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetRequest)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetResponse)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*ModeSummary)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseSummaryArray)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseGetResponseData)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*AddonInfo)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ServiceImagePair)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ApplicationReleaseSummary)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*ReleaseListRequest)(nil)
@@ -67,6 +70,25 @@ func (m *ReleaseList) UnmarshalURLValues(prefix string, values url.Values) error
 			switch prefix + key {
 			case "list":
 				m.List = vals
+			}
+		}
+	}
+	return nil
+}
+
+// Mode implement urlenc.URLValuesUnmarshaler.
+func (m *Mode) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "dependOn":
+				m.DependOn = vals
+			case "expose":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Expose = val
 			}
 		}
 	}
@@ -579,6 +601,30 @@ func (m *ReleaseGetResponse) UnmarshalURLValues(prefix string, values url.Values
 					return err
 				}
 				m.Data.IsLatest = val
+			case "data.addonYaml":
+				if m.Data == nil {
+					m.Data = &ReleaseGetResponseData{}
+				}
+				m.Data.AddonYaml = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// ModeSummary implement urlenc.URLValuesUnmarshaler.
+func (m *ModeSummary) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "expose":
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return err
+				}
+				m.Expose = val
+			case "dependOn":
+				m.DependOn = vals
 			}
 		}
 	}
@@ -719,6 +765,29 @@ func (m *ReleaseGetResponseData) UnmarshalURLValues(prefix string, values url.Va
 					return err
 				}
 				m.IsLatest = val
+			case "addonYaml":
+				m.AddonYaml = vals[0]
+			}
+		}
+	}
+	return nil
+}
+
+// AddonInfo implement urlenc.URLValuesUnmarshaler.
+func (m *AddonInfo) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "displayName":
+				m.DisplayName = vals[0]
+			case "plan":
+				m.Plan = vals[0]
+			case "version":
+				m.Version = vals[0]
+			case "category":
+				m.Category = vals[0]
+			case "logoURL":
+				m.LogoURL = vals[0]
 			}
 		}
 	}
@@ -960,8 +1029,8 @@ func (m *ReleaseData) UnmarshalURLValues(prefix string, values url.Values) error
 					return err
 				}
 				m.IsProjectRelease = val
-			case "applicationReleaseList":
-				m.ApplicationReleaseList = vals[0]
+			case "modes":
+				m.Modes = vals[0]
 			case "images":
 				m.Images = vals
 			case "tags":

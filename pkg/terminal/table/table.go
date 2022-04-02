@@ -26,8 +26,6 @@ H2   d2   d4
 2. 指定输出
    NewTable(WithWriter(os.Stderr))
 
-// TODO: 对中文的对齐有问题（中文可以显示在最后一列来避免 = =||）
-
 // NOTE:
 没有设置 WithVertical 时，标题行 全部都是大写
 设置    WithVertical 时，标题列 为首字母大写
@@ -40,7 +38,8 @@ import (
 	"io"
 	"os"
 	"strings"
-	"text/tabwriter"
+
+	"github.com/WeiZhang555/tabwriter"
 )
 
 var (

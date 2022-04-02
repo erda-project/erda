@@ -119,16 +119,16 @@ func ReverseDDLWithSnapshot(tx *gorm.DB, ddl ast.DDLNode) (reversing string, ok 
 // ReverseCreateTableStmts reverses DDLs without snapshot.
 // Generally, this function is used to process the baseline,
 // because when processing the baseline, it only needs to Drop all the newly created tables.
-func ReverseCreateTableStmts(ddlNodes interface{ DDLNodes() []ast.DDLNode }) string {
-	var buf = bytes.NewBuffer(nil)
-	for _, ddl := range ddlNodes.DDLNodes() {
+func ReverseCreateTableStmts(nodes interface{ DDLNodes() []ast.DDLNode }) string {
+	var buffer = bytes.NewBuffer(nil)
+	for _, ddl := range nodes.DDLNodes() {
 		if create, ok := ddl.(*ast.CreateTableStmt); ok {
-			tableName := create.Table.Name.String()
-			buf.WriteString("DROP TABLE IF EXISTS " + tableName + ";\n")
+			name := create.Table.Name.String()
+			buffer.WriteString("DROP TABLE IF EXISTS " + name + ";\n")
 		}
 	}
 
-	return buf.String()
+	return buffer.String()
 }
 
 // ShowCreateTable gets create table stmt by executing SHOW CREATE TABLE .
@@ -149,20 +149,20 @@ func ShowCreateTable(tx *gorm.DB, tableName string) (create string, err error) {
 }
 
 // ReverseAlterWithCompares for giving compares, returns the reversed SQL of AlterTableStmt
-func ReverseAlterWithCompares(compares *ast.CreateTableStmt, alter *ast.AlterTableStmt) (string, bool, error) {
-	if compares == nil {
+func ReverseAlterWithCompares(create *ast.CreateTableStmt, alter *ast.AlterTableStmt) (string, bool, error) {
+	if create == nil {
 		return "", false, errors.New("the raw CreateTableStmt is nill")
 	}
 	if alter == nil {
 		return "", false, errors.New("the AlterTableStmt is nil")
 	}
 
-	if compares.Table.Name.String() != alter.Table.Name.String() {
+	if create.Table.Name.String() != alter.Table.Name.String() {
 		return "", false, errors.New("the altered table name is not equal with the compared table")
 	}
 
-	var restorer = ast.AlterTableStmt{
-		Table: compares.Table,
+	var restore = ast.AlterTableStmt{
+		Table: create.Table,
 		Specs: nil,
 	}
 
@@ -179,25 +179,25 @@ func ReverseAlterWithCompares(compares *ast.CreateTableStmt, alter *ast.AlterTab
 		// but considering that repeated execution of the statement will not cause damage,
 		// no better generation logic is sought.
 		case ast.AlterTableOption:
-			reverseSpec := *spec
-			reverseSpec.Options = compares.Options
-			restorer.Specs = append(restorer.Specs, &reverseSpec)
+			reverse := *spec
+			reverse.Options = create.Options
+			restore.Specs = append(restore.Specs, &reverse)
 
 		// processing caliber: drop the new column
 		case ast.AlterTableAddColumns:
 			for _, col := range spec.NewColumns {
-				var reverseSpec ast.AlterTableSpec
-				reverseSpec.Tp = ast.AlterTableDropColumn
-				reverseSpec.OldColumnName = col.Name
-				restorer.Specs = append(restorer.Specs, &reverseSpec)
+				var reverse ast.AlterTableSpec
+				reverse.Tp = ast.AlterTableDropColumn
+				reverse.OldColumnName = col.Name
+				restore.Specs = append(restore.Specs, &reverse)
 			}
 
 		// processing caliber: drop the new constraint
 		case ast.AlterTableAddConstraint:
-			var reverseSpec ast.AlterTableSpec
-			reverseSpec.Tp = ast.AlterTableDropIndex
-			reverseSpec.Name = spec.Constraint.Name
-			restorer.Specs = append(restorer.Specs, &reverseSpec)
+			var reverse ast.AlterTableSpec
+			reverse.Tp = ast.AlterTableDropIndex
+			reverse.Name = spec.Constraint.Name
+			restore.Specs = append(restore.Specs, &reverse)
 
 		// processing caliber: add the index by AlterTableAddConstraint
 		case ast.AlterTableDropIndex:
@@ -205,18 +205,18 @@ func ReverseAlterWithCompares(compares *ast.CreateTableStmt, alter *ast.AlterTab
 				return "", false, errors.New("not allowed to AlterTableDropIndex PRIMARY")
 			}
 
-			var reverseSpec ast.AlterTableSpec
-			reverseSpec.Tp = ast.AlterTableAddConstraint
+			var reverse ast.AlterTableSpec
+			reverse.Tp = ast.AlterTableAddConstraint
 
-			for _, constraint := range compares.Constraints {
+			for _, constraint := range create.Constraints {
 				if constraint.Name == spec.Name {
-					reverseSpec.Constraint = constraint
+					reverse.Constraint = constraint
 					break
 				}
 			}
 
-			if reverseSpec.Constraint != nil {
-				restorer.Specs = append(restorer.Specs, &reverseSpec)
+			if reverse.Constraint != nil {
+				restore.Specs = append(restore.Specs, &reverse)
 			}
 
 		// spec syntax:
@@ -238,17 +238,17 @@ func ReverseAlterWithCompares(compares *ast.CreateTableStmt, alter *ast.AlterTab
 		//
 		// processing caliber: whether it is SET DEFAULT or DROP DEFAULT, use AlterTableChangeColumn to fall back.
 		case ast.AlterTableModifyColumn, ast.AlterTableChangeColumn, ast.AlterTableAlterColumn:
-			var reverseSpec ast.AlterTableSpec
-			reverseSpec.Tp = ast.AlterTableChangeColumn
-			reverseSpec.OldColumnName = spec.NewColumns[0].Name // 此处不考虑列被重命名的情况
-			for _, col := range compares.Cols {
-				if reverseSpec.OldColumnName.String() == col.Name.String() {
-					reverseSpec.NewColumns = append(reverseSpec.NewColumns, col)
+			var reverse ast.AlterTableSpec
+			reverse.Tp = ast.AlterTableChangeColumn
+			reverse.OldColumnName = spec.NewColumns[0].Name // 此处不考虑列被重命名的情况
+			for _, col := range create.Cols {
+				if reverse.OldColumnName.String() == col.Name.String() {
+					reverse.NewColumns = append(reverse.NewColumns, col)
 					break
 				}
 			}
-			reverseSpec.Position = &ast.ColumnPosition{Tp: 0, RelativeColumn: nil}
-			restorer.Specs = append(restorer.Specs, &reverseSpec)
+			reverse.Position = &ast.ColumnPosition{Tp: 0, RelativeColumn: nil}
+			restore.Specs = append(restore.Specs, &reverse)
 
 		// spec syntax:
 		// RENAME COLUMN {identifier} TO {identifier}
@@ -256,11 +256,11 @@ func ReverseAlterWithCompares(compares *ast.CreateTableStmt, alter *ast.AlterTab
 		// note: AlterTableRenameColumn will not appear under normal circumstances
 		// it will be filtered out in ErdaMySQLLint.
 		case ast.AlterTableRenameColumn:
-			var reverseSpec ast.AlterTableSpec
-			reverseSpec.Tp = ast.AlterTableRenameColumn
-			reverseSpec.NewColumnName = spec.OldColumnName
-			reverseSpec.OldColumnName = spec.NewColumnName
-			restorer.Specs = append(restorer.Specs, &reverseSpec)
+			var reverse ast.AlterTableSpec
+			reverse.Tp = ast.AlterTableRenameColumn
+			reverse.NewColumnName = spec.OldColumnName
+			reverse.OldColumnName = spec.NewColumnName
+			restore.Specs = append(restore.Specs, &reverse)
 
 		// spec syntax:
 		// RENAME------TO------{TableName}
@@ -270,20 +270,20 @@ func ReverseAlterWithCompares(compares *ast.CreateTableStmt, alter *ast.AlterTab
 		// note: AlterTableRenameTable will not appear under normal circumstances
 		// it will be filtered out in ErdaMySQLLint.
 		case ast.AlterTableRenameTable:
-			var reverseSpec ast.AlterTableSpec
-			reverseSpec.Tp = ast.AlterTableRenameTable
-			reverseSpec.NewTable = restorer.Table
-			restorer.Table = spec.NewTable
-			restorer.Specs = append(restorer.Specs, &reverseSpec)
+			var reverse ast.AlterTableSpec
+			reverse.Tp = ast.AlterTableRenameTable
+			reverse.NewTable = restore.Table
+			restore.Table = spec.NewTable
+			restore.Specs = append(restore.Specs, &reverse)
 
 		// spec syntax:
 		// RENAME {INDEX|KEY} {identifier} TO {identifier}
 		case ast.AlterTableRenameIndex:
-			var reverseSpec ast.AlterTableSpec
-			reverseSpec.Tp = ast.AlterTableRenameIndex
-			reverseSpec.ToKey = spec.FromKey
-			reverseSpec.FromKey = spec.ToKey
-			restorer.Specs = append(restorer.Specs, &reverseSpec)
+			var reverse ast.AlterTableSpec
+			reverse.Tp = ast.AlterTableRenameIndex
+			reverse.ToKey = spec.FromKey
+			reverse.FromKey = spec.ToKey
+			restore.Specs = append(restore.Specs, &reverse)
 
 		case ast.AlterTableDropColumn, ast.AlterTableDropPrimaryKey,
 			ast.AlterTableDropForeignKey, ast.AlterTableLock, ast.AlterTableAlgorithm,
@@ -298,56 +298,56 @@ func ReverseAlterWithCompares(compares *ast.CreateTableStmt, alter *ast.AlterTab
 			ast.AlterTableDiscardTablespace, ast.AlterTableIndexInvisible, ast.AlterTableOrderByColumns,
 			ast.AlterTableSetTiFlashReplica:
 			var m = map[ast.AlterTableType]string{
-				ast.AlterTableDropColumn:                 "AlterTableDropColumn",
-				ast.AlterTableDropPrimaryKey:             "AlterTableDropPrimaryKey",
-				ast.AlterTableDropForeignKey:             "AlterTableDropForeignKey",
-				ast.AlterTableLock:                       "AlterTableLock",
-				ast.AlterTableAlgorithm:                  "AlterTableAlgorithm,",
-				ast.AlterTableForce:                      "AlterTableForce",
-				ast.AlterTableAddPartitions:              "AlterTableAddPartitions",
-				ast.AlterTableCoalescePartitions:         "AlterTableCoalescePartitions",
-				ast.AlterTableDropPartition:              "AlterTableDropPartition",
-				ast.AlterTableTruncatePartition:          "AlterTableTruncatePartition",
-				ast.AlterTablePartition:                  "AlterTablePartition",
-				ast.AlterTableEnableKeys:                 "AlterTableEnableKeys",
-				ast.AlterTableDisableKeys:                "AlterTableDisableKeys",
-				ast.AlterTableRemovePartitioning:         "AlterTableRemovePartitioning",
-				ast.AlterTableWithValidation:             "AlterTableWithValidation",
-				ast.AlterTableWithoutValidation:          "AlterTableWithoutValidation",
-				ast.AlterTableSecondaryLoad:              "AlterTableSecondaryLoad",
-				ast.AlterTableSecondaryUnload:            "AlterTableSecondaryUnload",
-				ast.AlterTableRebuildPartition:           "AlterTableRebuildPartition",
-				ast.AlterTableReorganizePartition:        "AlterTableReorganizePartition",
-				ast.AlterTableCheckPartitions:            "AlterTableCheckPartitions",
-				ast.AlterTableExchangePartition:          "AlterTableExchangePartition",
-				ast.AlterTableOptimizePartition:          "AlterTableOptimizePartition",
-				ast.AlterTableRepairPartition:            "AlterTableRepairPartition",
-				ast.AlterTableImportPartitionTablespace:  "AlterTableImportPartitionTablespace",
-				ast.AlterTableDiscardPartitionTablespace: "AlterTableDiscardPartitionTablespace",
-				ast.AlterTableAlterCheck:                 "AlterTableAlterCheck",
-				ast.AlterTableDropCheck:                  "AlterTableDropCheck",
-				ast.AlterTableImportTablespace:           "AlterTableImportTablespace",
-				ast.AlterTableDiscardTablespace:          "AlterTableDiscardTablespace",
-				ast.AlterTableIndexInvisible:             "AlterTableIndexInvisible",
 				ast.AlterTableOrderByColumns:             "AlterTableOrderByColumns",
+				ast.AlterTableIndexInvisible:             "AlterTableIndexInvisible",
+				ast.AlterTableDiscardTablespace:          "AlterTableDiscardTablespace",
+				ast.AlterTableImportTablespace:           "AlterTableImportTablespace",
+				ast.AlterTableDropCheck:                  "AlterTableDropCheck",
+				ast.AlterTableAlterCheck:                 "AlterTableAlterCheck",
+				ast.AlterTableDiscardPartitionTablespace: "AlterTableDiscardPartitionTablespace",
+				ast.AlterTableImportPartitionTablespace:  "AlterTableImportPartitionTablespace",
+				ast.AlterTableRepairPartition:            "AlterTableRepairPartition",
+				ast.AlterTableOptimizePartition:          "AlterTableOptimizePartition",
+				ast.AlterTableExchangePartition:          "AlterTableExchangePartition",
+				ast.AlterTableCheckPartitions:            "AlterTableCheckPartitions",
+				ast.AlterTableReorganizePartition:        "AlterTableReorganizePartition",
+				ast.AlterTableRebuildPartition:           "AlterTableRebuildPartition",
+				ast.AlterTableSecondaryUnload:            "AlterTableSecondaryUnload",
+				ast.AlterTableSecondaryLoad:              "AlterTableSecondaryLoad",
+				ast.AlterTableWithoutValidation:          "AlterTableWithoutValidation",
+				ast.AlterTableWithValidation:             "AlterTableWithValidation",
+				ast.AlterTableRemovePartitioning:         "AlterTableRemovePartitioning",
+				ast.AlterTableDisableKeys:                "AlterTableDisableKeys",
+				ast.AlterTableEnableKeys:                 "AlterTableEnableKeys",
+				ast.AlterTablePartition:                  "AlterTablePartition",
+				ast.AlterTableTruncatePartition:          "AlterTableTruncatePartition",
+				ast.AlterTableDropPartition:              "AlterTableDropPartition",
+				ast.AlterTableCoalescePartitions:         "AlterTableCoalescePartitions",
+				ast.AlterTableAddPartitions:              "AlterTableAddPartitions",
+				ast.AlterTableForce:                      "AlterTableForce",
+				ast.AlterTableAlgorithm:                  "AlterTableAlgorithm,",
+				ast.AlterTableLock:                       "AlterTableLock",
+				ast.AlterTableDropForeignKey:             "AlterTableDropForeignKey",
+				ast.AlterTableDropPrimaryKey:             "AlterTableDropPrimaryKey",
+				ast.AlterTableDropColumn:                 "AlterTableDropColumn",
 			}
 			return "", false, errors.Errorf("not allowed to %s", m[spec.Tp])
 		}
 	}
 
-	if len(restorer.Specs) == 0 {
+	if len(restore.Specs) == 0 {
 		return "", false, nil
 	}
-	var buf = bytes.NewBuffer(nil)
-	if err := restorer.Restore(&format.RestoreCtx{
+	var buffer = bytes.NewBuffer(nil)
+	if err := restore.Restore(&format.RestoreCtx{
 		Flags:     format.DefaultRestoreFlags,
-		In:        buf,
+		In:        buffer,
 		JoinLevel: 0,
 	}); err != nil {
 		return "", false, err
 	}
 
-	return buf.String(), buf.Len() != 0, nil
+	return buffer.String(), buffer.Len() != 0, nil
 }
 
 func ReverseDropIndexStmtWithCompares(compares *ast.CreateTableStmt, drop *ast.DropIndexStmt) (string, bool, error) {
@@ -355,7 +355,7 @@ func ReverseDropIndexStmtWithCompares(compares *ast.CreateTableStmt, drop *ast.D
 		return "", false, errors.New("not allowed to drop primary key")
 	}
 
-	var restorer = ast.AlterTableStmt{
+	var restore = ast.AlterTableStmt{
 		Table: compares.Table,
 		Specs: make([]*ast.AlterTableSpec, 1),
 	}
@@ -363,9 +363,9 @@ func ReverseDropIndexStmtWithCompares(compares *ast.CreateTableStmt, drop *ast.D
 	var spec ast.AlterTableSpec
 	spec.Tp = ast.AlterTableAddConstraint
 
-	for _, constraint := range compares.Constraints {
-		if constraint.Name == drop.IndexName {
-			spec.Constraint = constraint
+	for _, cst := range compares.Constraints {
+		if cst.Name == drop.IndexName {
+			spec.Constraint = cst
 			break
 		}
 	}
@@ -373,23 +373,23 @@ func ReverseDropIndexStmtWithCompares(compares *ast.CreateTableStmt, drop *ast.D
 		return "", false, errors.Errorf("the index you droped not found, table name: %s, index name: %s", drop.Table.Name, drop.IndexName)
 	}
 
-	restorer.Specs[0] = &spec
-	var buf = bytes.NewBuffer(nil)
-	if err := restorer.Restore(&format.RestoreCtx{
+	restore.Specs[0] = &spec
+	var buffer = bytes.NewBuffer(nil)
+	if err := restore.Restore(&format.RestoreCtx{
 		Flags:     format.DefaultRestoreFlags,
-		In:        buf,
+		In:        buffer,
 		JoinLevel: 0,
 	}); err != nil {
 		return "", false, errors.Wrap(err, "failed to Restore SQL node")
 	}
 
-	return buf.String(), buf.String() != "", nil
+	return buffer.String(), buffer.String() != "", nil
 }
 
 func ReverseCreateTableStmt(in *ast.CreateTableStmt) string {
 	if in == nil || in.Table == nil {
 		return ""
 	}
-	tableName := in.Table.Name.String()
-	return "DROP TABLE IF EXISTS " + tableName + ";\n"
+	name := in.Table.Name.String()
+	return "DROP TABLE IF EXISTS " + name + ";\n"
 }

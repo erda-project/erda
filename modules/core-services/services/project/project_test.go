@@ -60,7 +60,7 @@ func TestClaas_patchProject(t *testing.T) {
 	var body apistructs.ProjectUpdateBody
 	err := json.Unmarshal([]byte(b), &body)
 
-	patchProject(oldPrj, &body, 0)
+	patchProject(oldPrj, &body, "0")
 
 	assert.NoError(t, err)
 	assert.Equal(t, oldPrj.DisplayName, "displayName")
@@ -343,32 +343,6 @@ func Test_isQuotaChangedOnTheWorkspace(t *testing.T) {
 	isQuotaChangedOnTheWorkspace(changedRecord, old, new_)
 	if !changedRecord["PROD"] {
 		t.Fatal("error")
-	}
-}
-
-func Test_getFirstValidOwnerOrLead(t *testing.T) {
-	var members = []model.Member{
-		{
-			UserID: "1",
-			Roles:  []string{"Developer"},
-		}, {
-			UserID: "2",
-			Roles:  []string{"Lead"},
-		}, {
-			UserID: "3",
-			Roles:  []string{"Lead", "Owner"},
-		}, {
-			UserID: "4",
-			Roles:  []string{"Owner"},
-		},
-	}
-	var member *model.Member
-	hitFirstValidOwnerOrLead(member, members)
-
-	member = new(model.Member)
-	hitFirstValidOwnerOrLead(member, members)
-	if member.UserID != "3" {
-		t.Fatal("hit error")
 	}
 }
 

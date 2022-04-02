@@ -42,15 +42,19 @@ type SceneSet struct {
 	Operations    map[string]interface{} `json:"operations"`
 	Children      []Scene                `json:"children"`
 	Type          string                 `json:"type"`
+	Draggable     bool                   `json:"draggable"`
+	DropPosition  []int                  `json:"dropPosition"`
 }
 
 type Scene struct {
-	Key        string                 `json:"key"`
-	Title      string                 `json:"title"`
-	Icon       string                 `json:"icon"`
-	IsLeaf     bool                   `json:"isLeaf"`
-	Operations map[string]interface{} `json:"operations"`
-	Type       string                 `json:"type"`
+	Key          string                 `json:"key"`
+	Title        string                 `json:"title"`
+	Icon         string                 `json:"icon"`
+	IsLeaf       bool                   `json:"isLeaf"`
+	Operations   map[string]interface{} `json:"operations"`
+	Type         string                 `json:"type"`
+	Draggable    bool                   `json:"draggable"`
+	DropPosition []int                  `json:"dropPosition"`
 }
 
 type OperationBase struct {

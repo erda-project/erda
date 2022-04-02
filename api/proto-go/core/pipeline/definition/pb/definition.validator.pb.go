@@ -119,10 +119,10 @@ func (this *PipelineDefinitionGetResponse) Validate() error {
 func (this *PipelineDefinitionListRequest) Validate() error {
 	return nil
 }
-func (this *PipelineDefinitionStaticsRequest) Validate() error {
+func (this *PipelineDefinitionStatisticsRequest) Validate() error {
 	return nil
 }
-func (this *PipelineDefinitionStaticsResponse) Validate() error {
+func (this *PipelineDefinitionStatisticsResponse) Validate() error {
 	for _, item := range this.PipelineDefinitionStatistics {
 		if item != nil {
 			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
@@ -143,5 +143,14 @@ func (this *PipelineDefinitionListResponse) Validate() error {
 			}
 		}
 	}
+	return nil
+}
+func (this *PipelineDefinitionUsedRefListRequest) Validate() error {
+	if this.Location == "" {
+		return github_com_mwitkow_go_proto_validators.FieldError("Location", fmt.Errorf(`value '%v' must not be an empty string`, this.Location))
+	}
+	return nil
+}
+func (this *PipelineDefinitionUsedRefListResponse) Validate() error {
 	return nil
 }

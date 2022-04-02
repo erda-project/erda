@@ -15,61 +15,116 @@
 package filter
 
 import (
-	structpb "github.com/golang/protobuf/ptypes/struct"
+	"strings"
+
+	"github.com/gobwas/glob"
 )
 
-// semantic same as https://github.com/influxdata/telegraf/blob/master/docs/CONFIGURATION.md#metric-filtering
-type Config struct {
-	Namepass  []string            `file:"namepass"`
-	Tagpass   map[string][]string `file:"tagpass"`
-	Fieldpass []string            `file:"fieldpass"`
+type Filter interface {
+	Match(string) bool
 }
 
-// func (cfg Config) IsPass(item *model.DataItem) bool {
-// 	return cfg.IsTagpass(item.Tags) && cfg.IsFieldpass(item.Fields) && cfg.IsNamepass(item.Name)
-// }
+// Compile takes a list of string filters and returns a Filter interface
+// for matching a given string against the filter list. The filter list
+// supports glob matching too, ie:
+//
+//   f, _ := Compile([]string{"cpu", "mem", "net*"})
+//   f.Match("cpu")     // true
+//   f.Match("network") // true
+//   f.Match("memory")  // false
+//
+func Compile(filters []string) (Filter, error) {
+	// return if there is nothing to compile
+	if len(filters) == 0 {
+		return nil, nil
+	}
 
-// IsTagpass.
-func (cfg Config) IsTagpass(tags map[string]string) bool {
-	if len(cfg.Tagpass) == 0 {
-		return true
-	}
-	for k, list := range cfg.Tagpass {
-		val, ok := tags[k]
-		if !ok {
-			continue
-		}
-		for _, vv := range list {
-			if vv == val {
-				return true
-			}
+	// check if we can compile a non-glob filter
+	noGlob := true
+	for _, filter := range filters {
+		if hasMeta(filter) {
+			noGlob = false
+			break
 		}
 	}
-	return false
+
+	switch {
+	case noGlob:
+		// return non-globbing filter if not needed.
+		return compileFilterNoGlob(filters), nil
+	case len(filters) == 1:
+		return glob.Compile(filters[0])
+	default:
+		return glob.Compile("{" + strings.Join(filters, ",") + "}")
+	}
 }
 
-// IsFieldpass.
-func (cfg Config) IsFieldpass(fields map[string]*structpb.Value) bool {
-	if len(cfg.Fieldpass) == 0 {
-		return true
-	}
-	for _, key := range cfg.Fieldpass {
-		_, ok := fields[key]
-		if ok {
-			return true
-		}
-	}
-	return false
+// hasMeta reports whether path contains any magic glob characters.
+func hasMeta(s string) bool {
+	return strings.ContainsAny(s, "*?[")
 }
 
-func (cfg Config) IsNamepass(name string) bool {
-	if len(cfg.Namepass) == 0 {
-		return true
+type filter struct {
+	m map[string]struct{}
+}
+
+func (f *filter) Match(s string) bool {
+	_, ok := f.m[s]
+	return ok
+}
+
+type filtersingle struct {
+	s string
+}
+
+func (f *filtersingle) Match(s string) bool {
+	return f.s == s
+}
+
+func compileFilterNoGlob(filters []string) Filter {
+	if len(filters) == 1 {
+		return &filtersingle{s: filters[0]}
 	}
-	for _, key := range cfg.Namepass {
-		if key == name {
-			return true
+	out := filter{m: make(map[string]struct{})}
+	for _, filter := range filters {
+		out.m[filter] = struct{}{}
+	}
+	return &out
+}
+
+type IncludeExcludeFilter struct {
+	include Filter
+	exclude Filter
+}
+
+func NewIncludeExcludeFilter(
+	include []string,
+	exclude []string,
+) (Filter, error) {
+	in, err := Compile(include)
+	if err != nil {
+		return nil, err
+	}
+
+	ex, err := Compile(exclude)
+	if err != nil {
+		return nil, err
+	}
+
+	return &IncludeExcludeFilter{in, ex}, nil
+}
+
+func (f *IncludeExcludeFilter) Match(s string) bool {
+	if f.include != nil {
+		if !f.include.Match(s) {
+			return false
 		}
 	}
-	return false
+
+	if f.exclude != nil {
+		if f.exclude.Match(s) {
+			return false
+		}
+	}
+	return true
 }

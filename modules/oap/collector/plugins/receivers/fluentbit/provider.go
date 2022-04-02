@@ -59,8 +59,8 @@ type provider struct {
 	consumerFunc model.ObservableDataConsumerFunc
 }
 
-func (p *provider) ComponentID() model.ComponentID {
-	return model.ComponentID(providerName)
+func (p *provider) ComponentConfig() interface{} {
+	return p.Cfg
 }
 
 func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
@@ -70,7 +70,7 @@ func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.Router.POST("/api/v1/collect/fluent-bit", p.flbHandler)
+	p.Router.POST("/api/v1/fluent-bit", p.flbHandler)
 	return nil
 }
 

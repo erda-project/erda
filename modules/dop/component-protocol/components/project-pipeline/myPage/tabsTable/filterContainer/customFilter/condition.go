@@ -20,6 +20,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/project-pipeline/common"
 	"github.com/erda-project/erda/modules/dop/component-protocol/components/util"
+	"github.com/erda-project/erda/modules/dop/providers/projectpipeline/deftype"
 	"github.com/erda-project/erda/pkg/limit_sync_group"
 	"github.com/erda-project/erda/providers/component-protocol/condition"
 )
@@ -30,11 +31,12 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 
 	var (
 		appCondition    *model.SelectCondition
+		branchCondition *model.SelectCondition
 		memberCondition MemberCondition
 		err             error
 	)
 
-	worker := limit_sync_group.NewWorker(2)
+	worker := limit_sync_group.NewWorker(3)
 	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
 		appCondition, err = p.AppCondition()
 		return err
@@ -43,10 +45,15 @@ func (p *CustomFilter) ConditionRetriever() ([]interface{}, error) {
 		memberCondition, err = p.MemberCondition()
 		return err
 	})
-	if err := worker.Do().Error(); err != nil {
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		branchCondition, err = p.BranchCondition()
+		return err
+	})
+	if err = worker.Do().Error(); err != nil {
 		return nil, err
 	}
 	conditions = append(conditions, appCondition)
+	conditions = append(conditions, branchCondition)
 	conditions = append(conditions, memberCondition.executorCondition)
 	conditions = append(conditions, model.NewDateRangeCondition("startedAtStartEnd", cputil.I18n(p.sdk.Ctx, "start-time")))
 	conditions = append(conditions, memberCondition.creatorCondition)
@@ -107,7 +114,6 @@ func (p *CustomFilter) MemberCondition() (MemberCondition, error) {
 		return selectOptions
 	}())
 	creatorCondition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-creator")
-	creatorCondition.ConditionBase.Disabled = p.gsHelper.GetGlobalPipelineTab() == common.MineState.String()
 
 	return MemberCondition{
 		executorCondition: executorCondition,
@@ -116,22 +122,71 @@ func (p *CustomFilter) MemberCondition() (MemberCondition, error) {
 }
 
 func (p *CustomFilter) AppCondition() (*model.SelectCondition, error) {
-	apps, err := p.bdl.GetMyAppsByProject(p.sdk.Identity.UserID, p.InParams.OrgID, p.InParams.ProjectID, "")
-	if err != nil {
+	var (
+		allAppNames []string
+		myAppNames  []string
+	)
+
+	worker := limit_sync_group.NewWorker(2)
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		allAppResp, err := p.bdl.GetAppList(p.sdk.Identity.OrgID, p.sdk.Identity.UserID, apistructs.ApplicationListRequest{
+			ProjectID: p.InParams.ProjectID,
+			PageNo:    1,
+			PageSize:  999,
+			IsSimple:  true,
+		})
+		if err != nil {
+			return err
+		}
+		for _, v := range allAppResp.List {
+			allAppNames = append(allAppNames, v.Name)
+		}
+		return nil
+	})
+	worker.AddFunc(func(locker *limit_sync_group.Locker, i ...interface{}) error {
+		myAppResp, err := p.bdl.GetMyAppsByProject(p.sdk.Identity.UserID, p.InParams.OrgID, p.InParams.ProjectID, "")
+		if err != nil {
+			return err
+		}
+		for _, v := range myAppResp.List {
+			myAppNames = append(myAppNames, v.Name)
+		}
+		return nil
+	})
+	if err := worker.Do().Error(); err != nil {
 		return nil, err
 	}
+	p.gsHelper.SetGlobalMyAppNames(myAppNames)
+
 	condition := model.NewSelectCondition("app", cputil.I18n(p.sdk.Ctx, "application"), func() []model.SelectOption {
-		selectOptions := make([]model.SelectOption, 0, len(apps.List))
-		for _, v := range apps.List {
-			selectOptions = append(selectOptions, *model.NewSelectOption(func() string {
-				return v.Name
-			}(),
-				v.Name,
-			))
+		selectOptions := make([]model.SelectOption, 0, len(allAppNames)+1)
+		selectOptions = append(selectOptions, *model.NewSelectOption(cputil.I18n(p.sdk.Ctx, "participated"), common.Participated))
+		for _, v := range allAppNames {
+			selectOptions = append(selectOptions, *model.NewSelectOption(v, v))
 		}
 		return selectOptions
 	}())
 	condition.ConditionBase.Disabled = p.InParams.AppID != 0
 	condition.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-application")
 	return condition, nil
+}
+
+func (p *CustomFilter) BranchCondition() (*model.SelectCondition, error) {
+	branches, err := p.ProjectPipelineSvc.ListUsedRefs(p.sdk.Ctx, deftype.ProjectPipelineUsedRefList{
+		ProjectID:    p.InParams.ProjectID,
+		IdentityInfo: apistructs.IdentityInfo{UserID: p.sdk.Identity.UserID},
+	})
+	if err != nil {
+		return nil, err
+	}
+	cond := model.NewSelectCondition("branch", cputil.I18n(p.sdk.Ctx, "branch"), func() []model.SelectOption {
+		selectOptions := make([]model.SelectOption, 0, len(branches))
+		for _, v := range branches {
+			selectOptions = append(selectOptions, *model.NewSelectOption(v, v))
+		}
+		return selectOptions
+	}())
+	cond.ConditionBase.Disabled = p.InParams.AppID != 0
+	cond.ConditionBase.Placeholder = cputil.I18n(p.sdk.Ctx, "please-choose-branch")
+	return cond, nil
 }

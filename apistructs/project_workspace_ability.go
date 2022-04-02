@@ -22,7 +22,7 @@ type ProjectWorkSpaceAbility struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	CreatedAt time.Time `json:"created_at"`
 	ProjectID uint64    `json:"project_id"`
-	orgID     uint64    `json:"org_id"`
+	OrgID     uint64    `json:"org_id"`
 	OrgName   string    `json:"org_Name"`
 	Workspace string    `json:"workspace" gorm:"column:workspace"`
 	Abilities string    `json:"deployment_abilities" gorm:"column:deployment_abilities"`

@@ -15,14 +15,22 @@
 package notifygroup
 
 import (
+	"context"
+
+	"github.com/jinzhu/gorm"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/pkg/transport"
 	"github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb"
+	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core-services/dao"
+	"github.com/erda-project/erda/modules/core-services/services/notify"
 	"github.com/erda-project/erda/modules/core-services/services/permission"
 	"github.com/erda-project/erda/pkg/common/apis"
-	"github.com/jinzhu/gorm"
+	"github.com/erda-project/erda/pkg/i18n"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type config struct{}
@@ -30,22 +38,44 @@ type config struct{}
 type provider struct {
 	Cfg                *config
 	Log                logs.Logger
-	Register           transport.Register
-	DB                 *gorm.DB `autowired:"mysql-client"`
+	Register           transport.Register `autowired:"service-register" optional:"true"`
+	DB                 *gorm.DB           `autowired:"mysql-client"`
 	notifyGroupService *notifyGroupService
+	audit              audit.Auditor
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
+	p.audit = audit.GetAuditor(ctx)
 	p.notifyGroupService = &notifyGroupService{}
 	pm := permission.New(permission.WithDBClient(&dao.DBClient{
 		DB: p.DB,
 	}))
 	p.notifyGroupService.Permission = pm
-	p.notifyGroupService.NotifyGroup = New(WithDBClient(&dao.DBClient{
+	p.notifyGroupService.NotifyGroup = notify.New(notify.WithDBClient(&dao.DBClient{
 		p.DB,
 	}))
+	p.notifyGroupService.bdl = bundle.New(bundle.WithI18nLoader(&i18n.LocaleResourceLoader{}))
 	if p.Register != nil {
-		pb.RegisterNotifyGroupServiceImp(p.Register, p.notifyGroupService, apis.Options())
+		type NotifyGroupService = pb.NotifyGroupServiceServer
+		pb.RegisterNotifyGroupServiceImp(p.Register, p.notifyGroupService, apis.Options(),
+			p.audit.Audit(
+				audit.Method(NotifyGroupService.CreateNotifyGroup, audit.OrgScope, string(apistructs.CreateOrgNotifyGroupTemplate),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(NotifyGroupService.UpdateNotifyGroup, audit.OrgScope, string(apistructs.UpdateOrgNotifyGroupTemplate),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
+					},
+				),
+				audit.Method(NotifyGroupService.DeleteNotifyGroup, audit.OrgScope, string(apistructs.DeleteOrgNotifyGroupTemplate),
+					func(ctx context.Context, req, resp interface{}, err error) (interface{}, map[string]interface{}, error) {
+						return apis.GetOrgID(ctx), map[string]interface{}{}, nil
+					},
+				),
+			),
+		)
 	}
 	return nil
 }

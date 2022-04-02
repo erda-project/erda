@@ -82,6 +82,7 @@ func (l *WorkList) GenAppKvInfo(item apistructs.AppWorkBenchItem) (kvs []list.Kv
 							Params: map[string]interface{}{
 								common.OpKeyProjectID: item.ProjectID,
 								common.OpKeyAppID:     item.ID,
+								common.OpKeyWorkSpace: "DEV",
 							},
 							Target: common.OpValTargetAppDeploy,
 						},
@@ -170,6 +171,7 @@ func (l *WorkList) GenAppColumnInfo(item apistructs.AppWorkBenchItem) (columns m
 							Params: map[string]interface{}{
 								common.OpKeyProjectID: item.ProjectID,
 								common.OpKeyAppID:     item.ID,
+								common.OpKeyWorkSpace: "DEV",
 							},
 							Target: common.OpValTargetAppDeploy,
 						},

@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/olivere/elastic"
+	"github.com/recallsong/go-utils/encoding/jsonx"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/providers/elasticsearch"
@@ -130,14 +131,29 @@ func (p *provider) ListEntities(ctx context.Context, opts *storage.ListOptions) 
 		for k, v := range opts.Labels {
 			query = query.Filter(elastic.NewTermQuery("labels."+k, v))
 		}
+		if opts.UpdateTimeUnixNanoMin > 0 || opts.UpdateTimeUnixNanoMax > 0 {
+			rg := elastic.NewRangeQuery("updateTimeUnixNano")
+			if opts.UpdateTimeUnixNanoMin > 0 {
+				rg = rg.Gte(opts.UpdateTimeUnixNanoMin)
+			}
+			if opts.UpdateTimeUnixNanoMax > 0 {
+				rg = rg.Lt(opts.UpdateTimeUnixNanoMax)
+			}
+			query = query.Filter(rg)
+		}
 	}
 	limit := opts.Limit
 	if limit <= 0 {
 		limit = 100
 	}
 	searchSource := elastic.NewSearchSource().Query(query)
+	indices := p.getIndices(typ)
+	if opts.Debug {
+		source, _ := searchSource.Source()
+		fmt.Printf("search entity indices: %v\nsearchSource: %s\n", strings.Join(indices, ","), jsonx.MarshalAndIndent(source))
+	}
 	resp, err := p.es.Client().
-		Search(p.getIndices(typ)...).
+		Search(indices...).
 		IgnoreUnavailable(true).AllowNoIndices(true).Timeout(p.queyTimeoutMS).
 		SearchSource(searchSource).Size(limit).
 		Do(ctx)

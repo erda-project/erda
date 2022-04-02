@@ -30,6 +30,7 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/orchestrator/components/addon/mysql"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/orchestrator/services/log"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
 	"github.com/erda-project/erda/modules/orchestrator/utils"
@@ -247,13 +248,14 @@ func TestPreCheck(t *testing.T) {
 
 func TestAddon_basicAddonDeploy(t *testing.T) {
 	type fields struct {
-		db       *dbclient.DBClient
-		bdl      *bundle.Bundle
-		hc       *httpclient.HTTPClient
-		encrypt  *encryption.EnvEncrypt
-		resource *resource.Resource
-		kms      mysql.KMSWrapper
-		Logger   *log.DeployLogHelper
+		db               *dbclient.DBClient
+		bdl              *bundle.Bundle
+		hc               *httpclient.HTTPClient
+		encrypt          *encryption.EnvEncrypt
+		resource         *resource.Resource
+		kms              mysql.KMSWrapper
+		Logger           *log.DeployLogHelper
+		serviceGroupImpl servicegroup.ServiceGroup
 	}
 	type args struct {
 		addonIns        *dbclient.AddonInstance
@@ -265,12 +267,13 @@ func TestAddon_basicAddonDeploy(t *testing.T) {
 	}
 
 	testfileds := fields{
-		db:       &dbclient.DBClient{},
-		bdl:      &bundle.Bundle{},
-		hc:       &httpclient.HTTPClient{},
-		encrypt:  &encryption.EnvEncrypt{},
-		resource: &resource.Resource{},
-		Logger:   &log.DeployLogHelper{},
+		db:               &dbclient.DBClient{},
+		bdl:              &bundle.Bundle{},
+		hc:               &httpclient.HTTPClient{},
+		encrypt:          &encryption.EnvEncrypt{},
+		resource:         &resource.Resource{},
+		Logger:           &log.DeployLogHelper{},
+		serviceGroupImpl: &servicegroup.ServiceGroupImpl{},
 	}
 
 	tests := []struct {
@@ -367,13 +370,13 @@ func TestAddon_basicAddonDeploy(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &Addon{
-				db:       tt.fields.db,
-				bdl:      tt.fields.bdl,
-				hc:       tt.fields.hc,
-				encrypt:  tt.fields.encrypt,
-				resource: tt.fields.resource,
-				kms:      tt.fields.kms,
-				Logger:   tt.fields.Logger,
+				db:               tt.fields.db,
+				bdl:              tt.fields.bdl,
+				hc:               tt.fields.hc,
+				encrypt:          tt.fields.encrypt,
+				resource:         tt.fields.resource,
+				kms:              tt.fields.kms,
+				serviceGroupImpl: tt.fields.serviceGroupImpl,
 			}
 			patch1 := monkey.Patch(utils.IsProjectECIEnable, func(bdl *bundle.Bundle, projectID uint64, workspace string, orgID uint64, userID string) bool {
 
@@ -385,8 +388,8 @@ func TestAddon_basicAddonDeploy(t *testing.T) {
 					ClusterName: "test",
 				}, nil
 			})
-			patch3 := monkey.PatchInstanceMethod(reflect.TypeOf(a.bdl), "CreateServiceGroup", func(bundle *bundle.Bundle, sg apistructs.ServiceGroupCreateV2Request) error {
-				return nil
+			patch3 := monkey.PatchInstanceMethod(reflect.TypeOf(a.serviceGroupImpl), "Create", func(_ *servicegroup.ServiceGroupImpl, sg apistructs.ServiceGroupCreateV2Request) (apistructs.ServiceGroup, error) {
+				return apistructs.ServiceGroup{}, nil
 			})
 			patch4 := monkey.PatchInstanceMethod(reflect.TypeOf(a), "GetAddonResourceStatus", func(a *Addon, addonIns *dbclient.AddonInstance,
 				addonInsRouting *dbclient.AddonInstanceRouting,

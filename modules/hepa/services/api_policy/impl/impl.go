@@ -83,6 +83,7 @@ type GatewayApiPolicyServiceImpl struct {
 	kongPolicyDb    db.GatewayPolicyService
 	packageDb       db.GatewayPackageService
 	packageApiDb    db.GatewayPackageApiService
+	routeDB         db.GatewayRouteService
 	defaultPolicyDb db.GatewayDefaultPolicyService
 	openapiRuleBiz  *openapi_rule.GatewayOpenapiRuleService
 	zoneBiz         *zone.GatewayZoneService
@@ -107,20 +108,22 @@ func NewGatewayApiPolicyServiceImpl() error {
 			zoneDb, _ := db.NewGatewayZoneServiceImpl()
 			packageDb, _ := db.NewGatewayPackageServiceImpl()
 			packageApiDb, _ := db.NewGatewayPackageApiServiceImpl()
+			routeDB, _ := db.NewGatewayRouteServiceImpl()
 			engine, _ := orm.GetSingleton()
 			api_policy.Service = &GatewayApiPolicyServiceImpl{
 				azDb:            azDb,
+				kongDb:          kongDb,
 				ingressPolicyDb: ingressPolicyDb,
 				kongPolicyDb:    kongPolicyDb,
+				packageDb:       packageDb,
+				packageApiDb:    packageApiDb,
+				routeDB:         routeDB,
 				defaultPolicyDb: defaultPolicyDb,
+				openapiRuleBiz:  &openapi_rule.Service,
 				zoneBiz:         &zone.Service,
-				kongDb:          kongDb,
 				zoneDb:          zoneDb,
 				globalBiz:       &global.Service,
 				engine:          engine,
-				openapiRuleBiz:  &openapi_rule.Service,
-				packageDb:       packageDb,
-				packageApiDb:    packageApiDb,
 				domainBiz:       &domain.Service,
 				packageBiz:      &endpoint_api.Service,
 			}
@@ -573,6 +576,28 @@ func (impl GatewayApiPolicyServiceImpl) SetZonePolicyConfig(zone *orm.GatewayZon
 		apipolicy.CTX_IDENTIFY:     zone.Name,
 		apipolicy.CTX_KONG_ADAPTER: kongAdapter,
 		apipolicy.CTX_ZONE:         zone,
+	}
+
+	if strings.EqualFold(category, "safety-csrf") {
+		routes := make(map[string]struct{})
+		apis, err := impl.packageApiDb.SelectByAny(&orm.GatewayPackageApi{ZoneId: zone.Id})
+		if err != nil {
+			log.WithError(err).Errorf("failed to impl.packageApiDb.SelectByAny(%s)", zone.Id)
+			return nil, fmt.Sprintf("执行 CSRF 策略失败, 失败原因:\n%s", errors.Cause(err)), err
+		}
+		for _, api := range apis {
+			route, err := impl.routeDB.GetByApiId(api.Id)
+			if err != nil {
+				log.WithError(err).Errorf("failed to impl.routeDB.GetByApiId(%s)", api.Id)
+				return nil, fmt.Sprintf("执行 CSRF 策略失败, 失败原因:\n%s", errors.Cause(err)), err
+			}
+			if route == nil {
+				log.Errorf("failed to impl.routeDB.GetByApiId(%s): not found", api.Id)
+				continue
+			}
+			routes[route.RouteId] = struct{}{}
+		}
+		ctx["routes"] = routes
 	}
 	err = impl.executePolicyEngine(zone, category, policyEngine, config, dto, ctx, policyService, k8sAdapter, helper, needDeployTag...)
 	if err != nil {

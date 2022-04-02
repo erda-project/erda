@@ -53,7 +53,7 @@ type provider struct {
 
 // Run this is optional
 func (p *provider) Init(ctx servicehub.Context) error {
-	p.Router.POST("/api/v1/collect/prometheus-remote-write", p.prwHandler)
+	p.Router.POST("/api/v1/prometheus-remote-write", p.prwHandler)
 	return nil
 }
 
@@ -73,7 +73,7 @@ func (p *provider) prwHandler(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("unmarshal body err: %s", err))
 	}
 
-	now := time.Now()
+	now := time.Now() // receive time
 	for _, ts := range wr.Timeseries {
 		attrs := map[string]string{}
 		for _, l := range ts.Labels {
@@ -81,33 +81,36 @@ func (p *provider) prwHandler(ctx echo.Context) error {
 		}
 		metricName := attrs[pmodel.MetricNameLabel]
 		if metricName == "" {
-			return fmt.Errorf("metric name %q not found in attrs or empty", pmodel.MetricNameLabel)
+			return fmt.Errorf("%q not found in attrs or empty", pmodel.MetricNameLabel)
 		}
 		delete(attrs, pmodel.MetricNameLabel)
+
+		// set pmodel.JobLabel as  name
 		job := attrs[pmodel.JobLabel]
-		if metricName == "" {
-			return fmt.Errorf("job %q not found in attrs or empty", pmodel.MetricNameLabel)
+		if job == "" {
+			return fmt.Errorf("%q not found in attrs or empty", pmodel.JobLabel)
 		}
 		delete(attrs, pmodel.JobLabel)
+
 		for _, s := range ts.Samples {
 			dataPoints := make(map[string]*structpb.Value)
-			if !math.IsNaN(s.Value) {
-				dataPoints[metricName] = structpb.NewNumberValue(s.Value)
+			if math.IsNaN(s.Value) {
+				continue
 			}
+			dataPoints[metricName] = structpb.NewNumberValue(s.Value)
+
 			// converting to metric
-			if len(dataPoints) > 0 {
-				t := now
-				if s.Timestamp > 0 {
-					t = time.Unix(0, s.Timestamp*1000000)
-				}
-				m := &mpb.Metric{
-					Name:         "prw_" + job,
-					TimeUnixNano: uint64(t.UnixNano()),
-					Attributes:   attrs,
-					DataPoints:   dataPoints,
-				}
-				p.consumerFunc(odata.NewMetric(m))
+			t := now
+			if s.Timestamp > 0 {
+				t = time.Unix(0, s.Timestamp*1000000)
 			}
+			m := &mpb.Metric{
+				Name:         job,
+				TimeUnixNano: uint64(t.UnixNano()),
+				Attributes:   attrs,
+				DataPoints:   dataPoints,
+			}
+			p.consumerFunc(odata.NewMetric(m))
 		}
 	}
 
@@ -118,8 +121,8 @@ func (p *provider) RegisterConsumer(consumer model.ObservableDataConsumerFunc) {
 	p.consumerFunc = consumer
 }
 
-func (p *provider) ComponentID() model.ComponentID {
-	return model.ComponentID(providerName)
+func (p *provider) ComponentConfig() interface{} {
+	return p.Cfg
 }
 
 func init() {

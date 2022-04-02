@@ -62,3 +62,7 @@ func testOas2ConvertTo3WithBasePath(t *testing.T) {
 		}
 	}
 }
+
+func TestProtocol_Equal(t *testing.T) {
+	t.Log(oasconv.OAS2JSON.Equal("Oas2-Json"))
+}

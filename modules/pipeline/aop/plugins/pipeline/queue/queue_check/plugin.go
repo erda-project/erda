@@ -19,7 +19,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/pipeline/aop"
 	"github.com/erda-project/erda/modules/pipeline/aop/aoptypes"
-	"github.com/erda-project/erda/modules/pipeline/pipengine/reconciler/queuemanage/types"
+	"github.com/erda-project/erda/modules/pipeline/providers/queuemanager/types"
 )
 
 var (

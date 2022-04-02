@@ -17,6 +17,8 @@ package access
 import (
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 )
@@ -68,7 +70,8 @@ func HasWriteAccess(bdl *bundle.Bundle, userID string, projectID uint64, isProje
 	}
 	rsp, err = bdl.ScopeRoleAccess(userID, req)
 	if err != nil {
-		return false, err
+		logrus.Errorf("failed to check app access for release of app %d, %v", applicationID, err)
+		return hasProjectAccess, nil
 	}
 
 	hasAppAccess := false

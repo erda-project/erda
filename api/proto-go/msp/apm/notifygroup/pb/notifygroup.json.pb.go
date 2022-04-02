@@ -51,6 +51,8 @@ var _ json.Marshaler = (*DeleteNotifyGroupRequest)(nil)
 var _ json.Unmarshaler = (*DeleteNotifyGroupRequest)(nil)
 var _ json.Marshaler = (*DeleteNotifyGroupResponse)(nil)
 var _ json.Unmarshaler = (*DeleteNotifyGroupResponse)(nil)
+var _ json.Marshaler = (*GroupIdAndProjectId)(nil)
+var _ json.Unmarshaler = (*GroupIdAndProjectId)(nil)
 
 // CreateNotifyGroupRequest implement json.Marshaler.
 func (m *CreateNotifyGroupRequest) MarshalJSON() ([]byte, error) {
@@ -389,6 +391,24 @@ func (m *DeleteNotifyGroupResponse) MarshalJSON() ([]byte, error) {
 
 // DeleteNotifyGroupResponse implement json.Marshaler.
 func (m *DeleteNotifyGroupResponse) UnmarshalJSON(b []byte) error {
+	return (&protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}).Unmarshal(b, m)
+}
+
+// GroupIdAndProjectId implement json.Marshaler.
+func (m *GroupIdAndProjectId) MarshalJSON() ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := (&jsonpb.Marshaler{
+		OrigName:     false,
+		EnumsAsInts:  false,
+		EmitDefaults: true,
+	}).Marshal(buf, m)
+	return buf.Bytes(), err
+}
+
+// GroupIdAndProjectId implement json.Marshaler.
+func (m *GroupIdAndProjectId) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

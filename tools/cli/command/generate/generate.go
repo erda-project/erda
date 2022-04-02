@@ -64,22 +64,49 @@ func genTemplateArg(cmd command.Command, cmdname string) templateArg {
 	if cmd.ParentName != "" {
 		parent = cmd.ParentName + "Cmd"
 	}
+	if cmd.Example != "" {
+		var newLines []string
+		lines := strings.Split(strings.TrimSpace(cmd.Example), "\n")
+		for _, l := range lines {
+			nl := fmt.Sprintf("  %s", strings.TrimSpace(l))
+			newLines = append(newLines, nl)
+		}
+		cmd.Example = strings.Join(newLines, " \n")
+	}
+
+	compFlagFuncs := map[string]string{}
+	for flag, compFunc := range cmd.RegisterFlagCompletionFunc {
+		if compFunc != nil {
+			splited := strings.Split(runtime.FuncForPC(reflect.ValueOf(compFunc).Pointer()).Name(), "/")
+			compFlagFuncs[flag] = splited[len(splited)-1]
+		}
+	}
+
+	compArgFunc := ""
+	if cmd.ValidArgsFunction != nil {
+		splited := strings.Split(runtime.FuncForPC(reflect.ValueOf(cmd.ValidArgsFunction).Pointer()).Name(), "/")
+		compArgFunc = splited[len(splited)-1]
+	}
+
 	argmin, argmax := argNum(cmd.Args)
 	r := templateArg{
-		Imports:        imports(cmd),
-		Usage:          genUsage(cmd),
-		ShortHelp:      cmd.ShortHelp,
-		LongHelp:       cmd.LongHelp,
-		Example:        cmd.Example,
-		Hidden:         cmd.Hidden,
-		DontHideCursor: cmd.DontHideCursor,
-		Args:           cmd.Args,
-		ArgsNumMin:     argmin,
-		ArgsNumMax:     argmax,
-		Flags:          cmd.Flags,
-		Name:           cmdname,
-		RunCMD:         runcmd,
-		ParentCmd:      parent,
+		Imports:                    imports(cmd),
+		Usage:                      genUsage(cmd),
+		ShortHelp:                  cmd.ShortHelp,
+		LongHelp:                   cmd.LongHelp,
+		Example:                    cmd.Example,
+		Hidden:                     cmd.Hidden,
+		DontHideCursor:             cmd.DontHideCursor,
+		Args:                       cmd.Args,
+		ArgsNumMin:                 argmin,
+		ArgsNumMax:                 argmax,
+		Flags:                      cmd.Flags,
+		MarkFlagRequired:           cmd.MarkFlagRequired,
+		RegisterFlagCompletionFunc: compFlagFuncs,
+		ValidArgsFunction:          compArgFunc,
+		Name:                       cmdname,
+		RunCMD:                     runcmd,
+		ParentCmd:                  parent,
 
 		ArgType:        argType,
 		ArgConvertType: argConvertType,
@@ -121,6 +148,8 @@ func flagType(flag command.Flag) string {
 	switch flag.(type) {
 	case command.IntFlag:
 		return "int"
+	case command.Uint64Flag:
+		return "uint64"
 	case command.StringFlag:
 		return "string"
 	case command.BoolFlag:
@@ -155,20 +184,23 @@ func imports(cmd command.Command) []string {
 }
 
 type templateArg struct {
-	Imports        []string
-	Usage          string
-	Hidden         bool
-	DontHideCursor bool
-	ShortHelp      string
-	LongHelp       string
-	Example        string
-	Args           []command.Arg
-	ArgsNumMin     int
-	ArgsNumMax     int
-	Flags          []command.Flag
-	Name           string
-	RunCMD         string
-	ParentCmd      string
+	Imports                    []string
+	Usage                      string
+	Hidden                     bool
+	DontHideCursor             bool
+	ShortHelp                  string
+	LongHelp                   string
+	Example                    string
+	Args                       []command.Arg
+	ArgsNumMin                 int
+	ArgsNumMax                 int
+	Flags                      []command.Flag
+	MarkFlagRequired           []string
+	RegisterFlagCompletionFunc map[string]string
+	ValidArgsFunction          string
+	Name                       string
+	RunCMD                     string
+	ParentCmd                  string
 
 	ArgType        func(command.Arg) string
 	ArgConvertType func(command.Arg) string
@@ -197,6 +229,16 @@ var {{.Name}}Cmd = &cobra.Command{
 	{{- if .RunCMD}}
 	Args:  cobra.RangeArgs({{$.ArgsNumMin}}, {{$.ArgsNumMax}}),
 	Hidden: {{.Hidden}},
+    {{- if .ValidArgsFunction}}
+	ValidArgsFunction: func(ctx *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) != 0 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+        command.IsCompletion = true
+		command.Interactive = false
+		return {{.ValidArgsFunction}}(ctx, args, toComplete{{range $idx, $v := $.Args}}, {{$.Name}}Arg{{$idx}}{{end}}{{range $_, $v := $.Flags}}, {{$.Name}}{{call $.Underline $v.Name}}Flag{{end}}), cobra.ShellCompDirectiveNoFileComp
+	},
+    {{- end}}
 	RunE: func(_ *cobra.Command, args []string) error {
 		var err error
 		defer func(){
@@ -241,6 +283,8 @@ func init() {
 	{{$.Name}}Cmd.Flags().BoolVarP(&{{$.Name}}{{call $.Underline $v.Name}}Flag, "{{$v.Name}}", "{{$v.Short}}", {{$v.DefaultValue}}, "{{$v.Doc}}")
 	{{- else if eq (call $.FlagType $v) "int"}}
 	{{$.Name}}Cmd.Flags().IntVarP(&{{$.Name}}{{call $.Underline $v.Name}}Flag, "{{$v.Name}}", "{{$v.Short}}", {{$v.DefaultValue}}, "{{$v.Doc}}")
+    {{- else if eq (call $.FlagType $v) "uint64"}}
+	{{$.Name}}Cmd.Flags().Uint64VarP(&{{$.Name}}{{call $.Underline $v.Name}}Flag, "{{$v.Name}}", "{{$v.Short}}", {{$v.DefaultValue}}, "{{$v.Doc}}")
 	{{- else if eq (call $.FlagType $v) "float64"}}
 	{{$.Name}}Cmd.Flags().Float64VarP(&{{$.Name}}{{call $.Underline $v.Name}}Flag, "{{$v.Name}}", "{{$v.Short}}", {{$v.DefaultValue}}, "{{$v.Doc}}")
 	{{- else if eq (call $.FlagType $v) "net.IP"}}
@@ -248,6 +292,15 @@ func init() {
 	{{- else if eq (call $.FlagType $v) "[]string"}}
 	{{$.Name}}Cmd.Flags().StringSliceVarP(&{{$.Name}}{{call $.Underline $v.Name}}Flag, "{{$v.Name}}", "{{$v.Short}}", {{$v.DefaultV}}, "{{$v.Doc}}")
 	{{- end}}
+{{end}}
+
+{{- range $_, $v := .MarkFlagRequired}}
+	{{$.Name}}Cmd.MarkFlagRequired("{{$v}}")
+{{end}}
+{{- range $k, $v := .RegisterFlagCompletionFunc}}
+	{{$.Name}}Cmd.RegisterFlagCompletionFunc("{{$k}}", func(ctx *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return {{$v}}(ctx, args, toComplete{{range $idx, $v := $.Args}}, {{$.Name}}Arg{{$idx}}{{end}}{{range $_, $v := $.Flags}}, {{$.Name}}{{call $.Underline $v.Name}}Flag{{end}}), cobra.ShellCompDirectiveNoFileComp
+	})
 {{end}}
 	{{.ParentCmd}}.AddCommand({{.Name}}Cmd)
 }

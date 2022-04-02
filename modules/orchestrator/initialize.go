@@ -31,10 +31,12 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/endpoints"
 	"github.com/erda-project/erda/modules/orchestrator/i18n"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/instanceinfo"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment_order"
 	"github.com/erda-project/erda/modules/orchestrator/services/domain"
+	"github.com/erda-project/erda/modules/orchestrator/services/environment"
 	"github.com/erda-project/erda/modules/orchestrator/services/instance"
 	"github.com/erda-project/erda/modules/orchestrator/services/migration"
 	"github.com/erda-project/erda/modules/orchestrator/services/resource"
@@ -115,7 +117,6 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 			)),
 		bundle.WithCoreServices(),
 		bundle.WithDiceHub(),
-		bundle.WithEventBox(),
 		bundle.WithScheduler(),
 		bundle.WithCollector(),
 		bundle.WithMonitor(),
@@ -141,11 +142,13 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		})))
 
 	// init scheduler
-	scheduler := scheduler.NewScheduler()
+	instanceinfoImpl := instanceinfo.NewInstanceInfoImpl()
+	scheduler := scheduler.NewScheduler(instanceinfoImpl)
 
 	migration := migration.New(
 		migration.WithBundle(bdl),
-		migration.WithDBClient(db))
+		migration.WithDBClient(db),
+		migration.WithJob(scheduler.Httpendpoints.Job))
 
 	resource := resource.New(
 		resource.WithDBClient(db),
@@ -162,6 +165,10 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		addon.WithHTTPClient(httpclient.New(
 			httpclient.WithTimeout(time.Second, time.Second*60),
 		)),
+		addon.WithCap(scheduler.Httpendpoints.Cap),
+		addon.WithServiceGroup(scheduler.Httpendpoints.ServiceGroupImpl),
+		addon.WithInstanceinfoImpl(instanceinfoImpl),
+		addon.WithClusterInfoImpl(scheduler.Httpendpoints.ClusterinfoImpl),
 	)
 
 	// init runtime service
@@ -171,6 +178,11 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		runtime.WithBundle(bdl),
 		runtime.WithAddon(a),
 		runtime.WithReleaseSvc(p.DicehubReleaseSvc),
+		runtime.WithServiceGroup(scheduler.Httpendpoints.ServiceGroupImpl),
+		runtime.WithClusterInfo(scheduler.Httpendpoints.ClusterinfoImpl),
+	)
+	envConfig := environment.New(
+		environment.WithDBClient(db),
 	)
 
 	// init deployment service
@@ -183,6 +195,9 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		deployment.WithEncrypt(encrypt),
 		deployment.WithResource(resource),
 		deployment.WithReleaseSvc(p.DicehubReleaseSvc),
+		deployment.WithServiceGroup(scheduler.Httpendpoints.ServiceGroupImpl),
+		deployment.WithScheduler(scheduler),
+		deployment.WithEnvConfig(envConfig),
 	)
 
 	// init domain service
@@ -193,6 +208,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 
 	ins := instance.New(
 		instance.WithBundle(bdl),
+		instance.WithInstanceInfo(instanceinfoImpl),
 	)
 
 	//init deployment order service
@@ -203,6 +219,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		deployment_order.WithDeployment(d),
 		deployment_order.WithQueue(p.PusherQueue),
 		deployment_order.WithReleaseSvc(p.DicehubReleaseSvc),
+		deployment_order.WithEnvConfig(envConfig),
 	)
 
 	// compose endpoints
@@ -223,6 +240,7 @@ func (p *provider) initEndpoints(db *dbclient.DBClient) (*endpoints.Endpoints, e
 		endpoints.WithMigration(migration),
 		endpoints.WithReleaseSvc(p.DicehubReleaseSvc),
 		endpoints.WithScheduler(scheduler),
+		endpoints.WithInstanceinfoImpl(instanceinfoImpl),
 	)
 
 	return ep, nil
@@ -250,6 +268,8 @@ func initLeaderCron(ep *endpoints.Endpoints, ctx context.Context) error {
 	go ep.SyncDeployAddon()
 
 	go loop.New(loop.WithContext(ctx), loop.WithInterval(5*time.Minute)).Do(ep.SyncAddonResources)
+
+	go loop.New(loop.WithContext(ctx), loop.WithInterval(1*time.Hour)).Do(ep.CleanRemainingAddonAttachment)
 
 	ep.FullGCLoop(ctx)
 

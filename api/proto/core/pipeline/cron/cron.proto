@@ -4,10 +4,10 @@ package erda.core.pipeline.cron;
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/struct.proto";
-import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "common/identity.proto";
-import "common/commit.proto";
+import "core/pipeline/cron_pub.proto";
+import "core/pipeline/base/base.proto";
+import "google/protobuf/wrappers.proto";
 
 option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb";
 
@@ -49,81 +49,69 @@ service CronService {
   }
 }
 
-message Cron {
-  uint64 ID = 1 [json_name = "id"];
-  google.protobuf.Timestamp timeCreated = 2;
-  google.protobuf.Timestamp timeUpdated = 3;
-
-  string cronExpr = 4;
-  google.protobuf.Timestamp cronStartTime = 5;
-  string pipelineYmlName = 6;
-  bool enable = 7;
-}
-
+// paging
 message CronPagingRequest {
   bool allSources = 1;
   repeated string sources = 2; // ?source=cdp-dev&source=cdp-test
   repeated string ymlNames = 3; // ?ymlName=11&ymlName=22
   int64 pageSize = 4;
   int64 pageNo = 5;
-}
-message CronPagingResponse {
-  int64 total = 1;
-  repeated Cron data = 2;
+  google.protobuf.BoolValue enable = 6;
+  repeated string pipelineDefinitionID = 7;
 }
 
+message CronPagingResponse {
+  int64 total = 1;
+  repeated core.pipeline.Cron data = 2;
+}
+
+// start cron
 message CronStartRequest {
   uint64 cronID = 1;
 }
 message CronStartResponse {
-  Cron data = 1;
+  core.pipeline.Cron data = 1;
 }
 
+// stop cron
 message CronStopRequest {
   uint64 cronID = 1;
 }
 message CronStopResponse {
-  Cron data = 1;
+  core.pipeline.Cron data = 1;
 }
 
-message CronCreateRequestV1 {
-  string pipelineYml = 1 [(validator.field) = {string_not_empty: true}];
-  string clusterName = 2 [(validator.field) = {string_not_empty: true}];
-  string pipelineYmlName = 3 [(validator.field) = {string_not_empty: true}];
-  string pipelineSource = 4 [(validator.field) = {string_not_empty: true}];
-  map<string, string> labels = 5;
-  map<string, string> normalLabels = 6;
-  map<string, string> envs = 7;
-  repeated string configManageNamespaces = 8;
-  bool autoStartCron = 9;
-  google.protobuf.Timestamp cronStartFrom = 10;
-}
-
+// cron create
 message CronCreateRequest {
-  CronCreateRequestV1 pipelineCreateRequest = 1;
+  core.pipeline.base.PipelineCreateRequest pipelineCreateRequest = 1;
 }
 message CronCreateResponse {
   uint64 data = 1;
 }
 
+// cron delete
 message CronDeleteRequest {
   uint64 cronID = 1;
 }
 message CronDeleteResponse {
 }
 
+// cron get
 message CronGetRequest {
   uint64 cronID = 1;
 }
 message CronGetResponse {
-  Cron data = 1;
+  core.pipeline.Cron data = 1;
 }
 
+// cron update
 message CronUpdateRequest {
   uint64 cronID = 1;
-  uint64 id = 2;
-  string pipelineYml = 3;
-  string cronExpr = 4;
+  string pipelineYml = 2;
+  string cronExpr = 3;
+  repeated string configManageNamespaces = 4;
+  string pipelineDefinitionID = 5;
 }
+
 message CronUpdateResponse {
 }

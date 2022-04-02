@@ -18,8 +18,8 @@
   "updatePipelineKey": {
     "desc": "更新流水线配置",
     "success": {
-      "zh": "在应用 [@projectName](project) / [@appName](app) 中，设置了 [@namespace] 的 [@key]",
-      "en": "Set the [@key] of [@namespace] in the application [@projectName](project) / [@appName](app)"
+      "zh": "在应用 [@projectName](project) / [@appName](app) 中，设置了流水线配置 [@namespace] 的 [@key]",
+      "en": "Set the pipeline configuration [@key] of [@namespace] in the application [@projectName](project) / [@appName](app)"
     },
     "fail": {}
   },

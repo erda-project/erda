@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/golang/snappy"
@@ -35,6 +36,20 @@ func NormalizeKey(key string) string {
 func IsJSONArray(b []byte) bool {
 	x := bytes.TrimLeft(b, " \t\r\n")
 	return len(x) > 0 && x[0] == '['
+}
+
+func RegexGroupMap(pattern *regexp.Regexp, s string) map[string]string {
+	match := pattern.FindStringSubmatch(s)
+	if match == nil {
+		return map[string]string{}
+	}
+	result := make(map[string]string)
+	for i, name := range pattern.SubexpNames() {
+		if i != 0 && name != "" {
+			result[name] = match[i]
+		}
+	}
+	return result
 }
 
 // read request's body based on Content-Encoding Header

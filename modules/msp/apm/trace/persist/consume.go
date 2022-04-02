@@ -38,7 +38,15 @@ func (p *provider) decodeSpotSpan(key, value []byte, topic *string, timestamp ti
 		return nil, err
 	}
 
-	span, _ := metricToSpan(data)
+	span, err := metricToSpan(data)
+	if err != nil {
+		if p.Cfg.PrintInvalidSpan {
+			p.Log.Warnf("failed to decode spot span: %s, err: %v", string(value), err)
+		} else {
+			p.Log.Warnf("failed to decode spot span: %v", err)
+		}
+		return nil, err
+	}
 
 	if err := p.validator.Validate(span); err != nil {
 		p.stats.ValidateError(span)

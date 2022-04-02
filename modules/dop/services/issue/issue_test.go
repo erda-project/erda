@@ -27,24 +27,25 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/issuestream"
+	"github.com/erda-project/erda/pkg/http/httpclient"
 	"github.com/erda-project/erda/pkg/ucauth"
 )
 
 func TestCreateStream(t *testing.T) {
 	streamFields := map[string][]interface{}{
-		"title":            []interface{}{"a", "b"},
-		"state":            []interface{}{1, 2},
-		"plan_started_at":  []interface{}{"2021-12-01 00:00:00", "2021-12-02 00:00:00"},
-		"plan_finished_at": []interface{}{"2021-12-01 00:00:00", "2021-12-02 00:00:00"},
-		"owner":            []interface{}{"1", "2"},
-		"stage":            []interface{}{"a", "b"},
-		"priority":         []interface{}{apistructs.IssuePriorityLow, apistructs.IssuePriorityHigh},
-		"complexity":       []interface{}{apistructs.IssueComplexityEasy, apistructs.IssueComplexityHard},
-		"severity":         []interface{}{apistructs.IssueSeverityNormal, apistructs.IssueSeveritySerious},
-		"content":          []interface{}{},
-		"label":            []interface{}{},
-		"assignee":         []interface{}{"1", "2"},
-		"iteration_id":     []interface{}{1, 2},
+		"title":            {"a", "b"},
+		"state":            {1, 2},
+		"plan_started_at":  {"2021-12-01 00:00:00", "2021-12-02 00:00:00"},
+		"plan_finished_at": {"2021-12-01 00:00:00", "2021-12-02 00:00:00"},
+		"owner":            {"1", "2"},
+		"stage":            {"a", "b"},
+		"priority":         {apistructs.IssuePriorityLow, apistructs.IssuePriorityHigh},
+		"complexity":       {apistructs.IssueComplexityEasy, apistructs.IssueComplexityHard},
+		"severity":         {apistructs.IssueSeverityNormal, apistructs.IssueSeveritySerious},
+		"content":          {},
+		"label":            {},
+		"assignee":         {"1", "2"},
+		"iteration_id":     {1, 2},
 	}
 	db := &dao.DBClient{}
 	pm1 := monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIssueStateByID", func(client *dao.DBClient, ID int64) (*dao.IssueState, error) {
@@ -84,6 +85,13 @@ func TestCreateStream(t *testing.T) {
 		return 1, nil
 	})
 	defer pm7.Unpatch()
+
+	pm8 := monkey.PatchInstanceMethod(reflect.TypeOf(bdl), "GetProjectWithSetter",
+		func(bdl *bundle.Bundle, id uint64, requestSetter ...httpclient.RequestSetter) (*apistructs.ProjectDTO, error) {
+			return &apistructs.ProjectDTO{OrgID: 1}, nil
+		},
+	)
+	defer pm8.Unpatch()
 
 	svc := &Issue{db: db, uc: uc, bdl: bdl, stream: stream}
 	err := svc.CreateStream(apistructs.IssueUpdateRequest{ID: 1, IdentityInfo: apistructs.IdentityInfo{UserID: "1"}}, streamFields)

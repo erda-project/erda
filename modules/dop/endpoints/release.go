@@ -18,12 +18,15 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 
+	definitionpb "github.com/erda-project/erda-proto-go/core/pipeline/definition/pb"
+	sourcepb "github.com/erda-project/erda-proto-go/core/pipeline/source/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
@@ -111,6 +114,16 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 	}
 	v2.ForceRun = true
 
+	app, err := e.bdl.GetApp(appID)
+	if err != nil {
+		return apierrors.ErrReleaseCallback.InternalError(err).ToResp(), nil
+	}
+	definitionID, err := e.getDefinitionID(ctx, app, refName, "", apistructs.DefaultPipelineYmlName)
+	if err != nil {
+		logrus.Errorf("failed to bind definition %v", err)
+	}
+	v2.DefinitionID = definitionID
+
 	resp, err := e.pipeline.CreatePipelineV2(v2)
 	if err != nil {
 		logrus.Errorf("create pipeline failed, pipeline: %s, (%+v)", strPipelineYml, err)
@@ -118,4 +131,42 @@ func (e *Endpoints) ReleaseCallback(ctx context.Context, r *http.Request, vars m
 	}
 
 	return httpserver.OkResp(resp)
+}
+
+func (e *Endpoints) getDefinitionID(ctx context.Context, app *apistructs.ApplicationDTO, branch, path, name string) (definitionID string, err error) {
+	if app == nil {
+		return "", nil
+	}
+	sourceList, err := e.PipelineSource.List(ctx, &sourcepb.PipelineSourceListRequest{
+		Remote:     fmt.Sprintf("%v/%v/%v", app.OrgName, app.ProjectName, app.Name),
+		Ref:        branch,
+		Name:       name,
+		Path:       path,
+		SourceType: apistructs.SourceTypeErda,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	var source *sourcepb.PipelineSource
+	for _, v := range sourceList.Data {
+		source = v
+		break
+	}
+	if source == nil {
+		return "", nil
+	}
+
+	definitionList, err := e.PipelineDefinition.List(ctx, &definitionpb.PipelineDefinitionListRequest{
+		SourceIDList: []string{source.ID},
+		Location:     apistructs.MakeLocation(app, apistructs.PipelineTypeCICD),
+	})
+	if err != nil {
+		return "", nil
+	}
+
+	for _, definition := range definitionList.Data {
+		return definition.ID, nil
+	}
+	return "", nil
 }

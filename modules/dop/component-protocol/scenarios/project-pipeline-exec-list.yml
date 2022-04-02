@@ -27,6 +27,8 @@ components:
     type: ConfigurableFilter
 
 rendering:
+  customFilter:
+    - name: pipelineTable
   __DefaultRendering__:
     - name: myPage
     - name: tabsTable

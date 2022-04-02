@@ -41,7 +41,7 @@ func (p *provider) invoke(key []byte, value []byte, topic *string, timestamp tim
 	cacheKey := log.Source + "_" + log.ID
 	if !p.cache.Has(cacheKey) {
 		// store meta
-		meta := &logmodule.LogMeta{
+		meta := &logmodule.Meta{
 			ID:     log.ID,
 			Source: log.Source,
 			Tags:   log.Tags,

@@ -15,11 +15,16 @@
 package assetsvc
 
 import (
+	"bytes"
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
+	"strings"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -284,78 +289,61 @@ func (svc *Service) DownloadSpecText(req *apistructs.DownloadSpecTextReq) ([]byt
 		model.SpecProtocol == oasconv.OAS2YAML.String(),
 		req.QueryParams.SpecProtocol == oasconv.OAS3JSON.String() &&
 			model.SpecProtocol == oasconv.OAS3YAML.String():
-		j, err := oasconv.YAMLToJSON(data)
-		if err != nil {
-			return data, nil
-		}
-		return j, nil
+		return Yaml2Json(data), nil
 
 	case req.QueryParams.SpecProtocol == oasconv.OAS2YAML.String() &&
 		model.SpecProtocol == oasconv.OAS2JSON.String(),
 		req.QueryParams.SpecProtocol == oasconv.OAS3YAML.String() &&
 			model.SpecProtocol == oasconv.OAS3JSON.String():
-		y, err := oasconv.JSONToYAML(data)
-		if err != nil {
-			return data, nil
-		}
-		return y, nil
+		return Json2Yaml(data), nil
 
 	case req.QueryParams.SpecProtocol == oasconv.OAS2JSON.String():
-		v3, err := oas3.LoadFromData([]byte(model.Spec))
-		if err != nil {
-			return data, nil
-		}
-		v2, err := oasconv.OAS3ConvTo2(v3)
-		if err != nil {
-			return data, nil
-		}
-		j, err := json.Marshal(v2)
-		if err != nil {
-			return data, nil
-		}
-		return j, nil
+		return Oas2Json([]byte(model.Spec)), nil
+
 	case req.QueryParams.SpecProtocol == oasconv.OAS2YAML.String():
-		v3, err := oas3.LoadFromData([]byte(model.Spec))
-		if err != nil {
-			return data, nil
-		}
-		v2, err := oasconv.OAS3ConvTo2(v3)
-		if err != nil {
-			return data, nil
-		}
-		j, err := json.Marshal(v2)
-		if err != nil {
-			return data, nil
-		}
-		y, err := oasconv.JSONToYAML(j)
-		if err != nil {
-			return data, nil
-		}
-		return y, nil
+		return Oas2Yaml([]byte(model.Spec)), nil
+
 	case req.QueryParams.SpecProtocol == oasconv.OAS3JSON.String():
-		v3, err := swagger.LoadFromData(data)
-		if err != nil {
-			return data, nil
-		}
-		j, err := json.Marshal(v3)
-		if err != nil {
-			return data, nil
-		}
-		return j, nil
+		return Oas3Json(data), nil
+
 	case req.QueryParams.SpecProtocol == oasconv.OAS3YAML.String():
+		return Oas3Yaml(data), nil
+
+	case oasconv.CSV.Equal(req.QueryParams.SpecProtocol):
+		// load swagger
 		v3, err := swagger.LoadFromData(data)
 		if err != nil {
 			return data, nil
 		}
-		j, err := json.Marshal(v3)
+		// get version details
+		version, err := svc.GetAssetVersion(&apistructs.GetAPIAssetVersionReq{
+			OrgID:    req.OrgID,
+			Identity: req.Identity,
+			URIParams: &apistructs.AssetVersionDetailURI{
+				AssetID:   req.URIParams.AssetID,
+				VersionID: req.URIParams.VersionID,
+			},
+			QueryParams: &apistructs.GetAPIAssetVersionQueryParams{Asset: true},
+		})
 		if err != nil {
-			return data, nil
+			return nil, apierrors.DownloadSpecText.InternalError(err)
 		}
-		y, err := oasconv.JSONToYAML(j)
-		if err != nil {
-			return data, nil
+		// get creator and updater user name
+		var creatorName = version.Asset.CreatorID
+		var updaterName = version.Version.UpdaterID
+		if creator, err := svc.bdl.GetCurrentUser(version.Asset.CreatorID); err == nil {
+			creatorName = creator.Nick
+			updaterName = creatorName
 		}
-		return y, nil
+		if version.Version.UpdaterID != version.Asset.CreatorID {
+			if updater, err := svc.bdl.GetCurrentUser(version.Version.UpdaterID); err == nil {
+				updaterName = updater.Nick
+			}
+		}
+		// to csv
+		return V3ToCsv(v3, version.Version.AssetID, version.Version.AssetName, version.Version.SwaggerVersion,
+			version.Version.Major, version.Version.Minor, version.Version.Patch, creatorName, updaterName,
+			version.Asset.CreatedAt.Format("2006-01-02 15:04:05"), version.Version.UpdatedAt.Format("2006-01-02 15:04:05"))
 	default:
 		return data, nil
 	}
@@ -573,4 +561,116 @@ func (svc *Service) GetProject(projectID uint64) (*apistructs.ProjectDTO, error)
 
 func (svc *Service) GetApp(appID uint64) (*apistructs.ApplicationDTO, error) {
 	return bdl.Bdl.GetApp(appID)
+}
+
+func V3ToCsv(v3 *openapi3.Swagger, assetID, assetName, versionName string, major, minor, patch uint64,
+	creator, updater, createdAt, updatedAt string) ([]byte, *errorresp.APIError) {
+	var (
+		buf     = bytes.NewBuffer(nil)
+		w       = csv.NewWriter(buf)
+		head    = []string{"AssetID", "AssetName", "VersionName", "Version", "URI", "Method", "Creator", "Updater", "CreatedAt", "UpdatedAt"}
+		methods = []string{http.MethodConnect, http.MethodDelete, http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodPatch, http.MethodPost,
+			http.MethodPut, http.MethodTrace}
+		v = strings.Join([]string{strconv.FormatUint(major, 10), strconv.FormatUint(minor, 10), strconv.FormatUint(patch, 10)}, ".")
+	)
+	if err := w.Write(head); err != nil {
+		return nil, apierrors.DownloadSpecText.InternalError(err)
+	}
+	for pathName, pathItem := range v3.Paths {
+		var (
+			line       = []string{assetID, assetName, versionName, v, pathName, "", creator, updater, createdAt, updatedAt}
+			operations = []*openapi3.Operation{pathItem.Connect, pathItem.Delete, pathItem.Get, pathItem.Head, pathItem.Options, pathItem.Patch, pathItem.Post,
+				pathItem.Put, pathItem.Trace}
+		)
+		for i := range operations {
+			if operations[i] != nil {
+				line[5] = methods[i]
+				if err := w.Write(line); err != nil {
+					return nil, apierrors.DownloadSpecText.InternalError(err)
+				}
+			}
+		}
+	}
+	w.Flush()
+	return buf.Bytes(), nil
+}
+
+func Yaml2Json(data []byte) []byte {
+	j, err := oasconv.YAMLToJSON(data)
+	if err != nil {
+		return data
+	}
+	return j
+}
+
+func Json2Yaml(data []byte) []byte {
+	y, err := oasconv.JSONToYAML(data)
+	if err != nil {
+		return data
+	}
+	return y
+}
+
+func Oas2Json(data []byte) []byte {
+	v3, err := oas3.LoadFromData(data)
+	if err != nil {
+		return data
+	}
+	v2, err := oasconv.OAS3ConvTo2(v3)
+	if err != nil {
+		return data
+	}
+	j, err := json.Marshal(v2)
+	if err != nil {
+		return data
+	}
+	return j
+}
+
+func Oas2Yaml(data []byte) []byte {
+	v3, err := oas3.LoadFromData(data)
+	if err != nil {
+		return data
+	}
+	v2, err := oasconv.OAS3ConvTo2(v3)
+	if err != nil {
+		return data
+	}
+	j, err := json.Marshal(v2)
+	if err != nil {
+		return data
+	}
+	y, err := oasconv.JSONToYAML(j)
+	if err != nil {
+		return data
+	}
+	return y
+}
+
+func Oas3Json(data []byte) []byte {
+	v3, err := swagger.LoadFromData(data)
+	if err != nil {
+		return data
+	}
+	j, err := json.Marshal(v3)
+	if err != nil {
+		return data
+	}
+	return j
+}
+
+func Oas3Yaml(data []byte) []byte {
+	v3, err := swagger.LoadFromData(data)
+	if err != nil {
+		return data
+	}
+	j, err := json.Marshal(v3)
+	if err != nil {
+		return data
+	}
+	y, err := oasconv.JSONToYAML(j)
+	if err != nil {
+		return data
+	}
+	return y
 }

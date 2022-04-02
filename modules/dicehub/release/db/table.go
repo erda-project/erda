@@ -35,8 +35,8 @@ type Release struct {
 	IsFormal bool `json:"isFormal" gorm:"type:tinyint(1)"`
 	// IsProjectRelease .
 	IsProjectRelease bool `json:"IsProjectRelease" gorm:"type:tinyint(1)"`
-	// ApplicationReleaseList referenced application releases id list
-	ApplicationReleaseList string `json:"applicationReleaseList" gorm:"type:text"`
+	// Modes list of release deployment mode
+	Modes string `json:"modes" gorm:"type:text"`
 	// Labels map type, the maximum length is 1000, optional
 	Labels string `json:"labels" gorm:"type:varchar(1000)"`
 	// GitBranch

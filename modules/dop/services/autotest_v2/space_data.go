@@ -288,6 +288,7 @@ func (a *AutoTestSpaceData) addSceneStepToExcel(file *excel.XlsxFile) error {
 		excel.NewCell(l.Get(i18n.I18nKeySceneStepSpaceNum)),
 		excel.NewCell(l.Get(i18n.I18nKeySceneStepPreType)),
 		excel.NewCell(l.Get(i18n.I18nKeySceneStepApiSpecNum)),
+		excel.NewCell(l.Get(i18n.I18nKeySceneStepIsDisabled)),
 	}
 
 	allLines := [][]excel.Cell{title}
@@ -304,6 +305,7 @@ func (a *AutoTestSpaceData) addSceneStepToExcel(file *excel.XlsxFile) error {
 				excel.NewCell(strutil.String(step.SpaceID)),
 				excel.NewCell(strutil.String(step.PreType)),
 				excel.NewCell(strutil.String(step.APISpecID)),
+				excel.NewCell(strutil.String(step.IsDisabled)),
 			})
 			for _, pv := range step.Children {
 				stepLines = append(stepLines, []excel.Cell{
@@ -316,6 +318,7 @@ func (a *AutoTestSpaceData) addSceneStepToExcel(file *excel.XlsxFile) error {
 					excel.NewCell(strutil.String(pv.SpaceID)),
 					excel.NewCell(strutil.String(pv.PreType)),
 					excel.NewCell(strutil.String(pv.APISpecID)),
+					excel.NewCell(strutil.String(pv.IsDisabled)),
 				})
 			}
 		}
@@ -709,15 +712,16 @@ func (a *AutoTestSpaceData) CopySceneSteps() error {
 			each.Value = replacePreStepValue(each.Value, a.stepIDAssociationMap)
 
 			newStep := &dao.AutoTestSceneStep{
-				Type:      each.Type,
-				Value:     each.Value,
-				Name:      each.Name,
-				PreID:     head,
-				PreType:   each.PreType,
-				SceneID:   a.sceneIDAssociationMap[oldSceneID],
-				SpaceID:   a.NewSpace.ID,
-				APISpecID: each.APISpecID,
-				CreatorID: a.UserID,
+				Type:       each.Type,
+				Value:      each.Value,
+				Name:       each.Name,
+				PreID:      head,
+				PreType:    each.PreType,
+				SceneID:    a.sceneIDAssociationMap[oldSceneID],
+				SpaceID:    a.NewSpace.ID,
+				APISpecID:  each.APISpecID,
+				IsDisabled: each.IsDisabled,
+				CreatorID:  a.UserID,
 			}
 			if err = a.svc.db.CreateAutoTestSceneStep(newStep); err != nil {
 				return err
@@ -739,15 +743,16 @@ func (a *AutoTestSpaceData) CopySceneSteps() error {
 				pv.Value = replacePreStepValue(pv.Value, a.stepIDAssociationMap)
 
 				newPStep := &dao.AutoTestSceneStep{
-					Type:      pv.Type,
-					Value:     pv.Value,
-					Name:      pv.Name,
-					PreID:     pHead,
-					PreType:   pv.PreType,
-					SceneID:   a.sceneIDAssociationMap[oldSceneID],
-					SpaceID:   a.NewSpace.ID,
-					APISpecID: pv.APISpecID,
-					CreatorID: a.UserID,
+					Type:       pv.Type,
+					Value:      pv.Value,
+					Name:       pv.Name,
+					PreID:      pHead,
+					PreType:    pv.PreType,
+					SceneID:    a.sceneIDAssociationMap[oldSceneID],
+					SpaceID:    a.NewSpace.ID,
+					APISpecID:  pv.APISpecID,
+					IsDisabled: pv.IsDisabled,
+					CreatorID:  a.UserID,
 				}
 
 				if err = a.svc.db.CreateAutoTestSceneStep(newPStep); err != nil {

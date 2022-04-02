@@ -314,10 +314,6 @@ func (ro *RedisOperator) Update(k8syml interface{}) error {
 		return fmt.Errorf("namespace %s for redisoperator is not existed", redis.Namespace)
 	}
 
-	if redis.Spec.Redis.Replicas == 0 || redis.Spec.Sentinel.Replicas == 0 {
-		return fmt.Errorf("failed to update redisfailover, %s/%s, redisfailover do not surpport set replicas to 0", redis.Namespace, redis.Name)
-	}
-
 	// 更新  RedisFailover (副本数不能为 0，否则将)
 	var oldRedis RedisFailover
 	resp, err := ro.client.Get(ro.k8s.GetK8SAddr()).
@@ -331,7 +327,7 @@ func (ro *RedisOperator) Update(k8syml interface{}) error {
 	}
 
 	// update redis
-	if redis.Spec.Redis.Replicas != 0 {
+	if redis.Spec.Redis.Replicas >= 0 {
 		oldRedis.Spec.Redis.Replicas = redis.Spec.Redis.Replicas
 	}
 	oldRedis.Spec.Redis.Resources = redis.Spec.Redis.Resources
@@ -344,8 +340,8 @@ func (ro *RedisOperator) Update(k8syml interface{}) error {
 	oldRedis.Spec.Redis.Envs = redis.Spec.Redis.Envs
 
 	// update sentinels
-	if redis.Spec.Sentinel.Replicas != 0 {
-		oldRedis.Spec.Redis.Replicas = redis.Spec.Redis.Replicas
+	if redis.Spec.Sentinel.Replicas >= 0 {
+		oldRedis.Spec.Sentinel.Replicas = redis.Spec.Sentinel.Replicas
 	}
 	oldRedis.Spec.Sentinel.Resources = redis.Spec.Sentinel.Resources
 	oldRedis.Spec.Sentinel.Resources = redis.Spec.Sentinel.Resources

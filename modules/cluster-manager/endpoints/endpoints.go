@@ -39,7 +39,7 @@ func New(options ...Option) *Endpoints {
 
 	e.cluster = cluster.New(
 		cluster.WithDBClient(e.dbClient),
-		cluster.WithBundle(bundle.New(bundle.WithEventBox())),
+		cluster.WithBundle(bundle.New(bundle.WithCoreServices())),
 	)
 
 	return e

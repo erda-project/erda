@@ -32,6 +32,7 @@ type TableFilter struct {
 	CreatedAtStartEnd []int64  `json:"createdAtStartEnd"`
 	StartedAtStartEnd []int64  `json:"startedAtStartEnd"`
 	Title             string   `json:"title"`
+	Branch            []string `json:"branch"`
 }
 
 func NewGSHelper(gs *cptype.GlobalStateData) *GSHelper {
@@ -76,4 +77,20 @@ func (h *GSHelper) GetGlobalTableFilter() *TableFilter {
 	var t TableFilter
 	_ = assign((*h.gs)["GlobalTableFilter"], &t)
 	return &t
+}
+
+func (h *GSHelper) SetGlobalMyAppNames(appNames []string) {
+	if h.gs == nil {
+		return
+	}
+	(*h.gs)["GlobalMyAppNames"] = appNames
+}
+
+func (h *GSHelper) GetGlobalMyAppNames() []string {
+	if h.gs == nil {
+		return nil
+	}
+	var appNames []string
+	_ = assign((*h.gs)["GlobalMyAppNames"], &appNames)
+	return appNames
 }

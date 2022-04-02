@@ -8,7 +8,6 @@ import (
 	math "math"
 
 	_ "github.com/erda-project/erda-proto-go/common/pb"
-	_ "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	proto "github.com/golang/protobuf/proto"
 	_ "github.com/mwitkow/go-proto-validators"

@@ -12,10 +12,11 @@ import (
 
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
 	pb "github.com/erda-project/erda-proto-go/common/pb"
-	pb1 "github.com/erda-project/erda-proto-go/core/pipeline/cron/pb"
+	pb1 "github.com/erda-project/erda-proto-go/core/pipeline/pb"
 	pb2 "github.com/erda-project/erda-proto-go/core/pipeline/queue/pb"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -1191,6 +1192,20 @@ func (m *PipelineInstanceDetail) UnmarshalURLValues(prefix string, values url.Va
 					return err
 				}
 				m.PipelineCron.TimeUpdated.Nanos = int32(val)
+			case "pipelineCron.applicationID":
+				if m.PipelineCron == nil {
+					m.PipelineCron = &pb1.Cron{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PipelineCron.ApplicationID = val
+			case "pipelineCron.branch":
+				if m.PipelineCron == nil {
+					m.PipelineCron = &pb1.Cron{}
+				}
+				m.PipelineCron.Branch = vals[0]
 			case "pipelineCron.cronExpr":
 				if m.PipelineCron == nil {
 					m.PipelineCron = &pb1.Cron{}
@@ -1232,15 +1247,68 @@ func (m *PipelineInstanceDetail) UnmarshalURLValues(prefix string, values url.Va
 					m.PipelineCron = &pb1.Cron{}
 				}
 				m.PipelineCron.PipelineYmlName = vals[0]
+			case "pipelineCron.basePipelineID":
+				if m.PipelineCron == nil {
+					m.PipelineCron = &pb1.Cron{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PipelineCron.BasePipelineID = val
 			case "pipelineCron.enable":
 				if m.PipelineCron == nil {
 					m.PipelineCron = &pb1.Cron{}
+				}
+				if m.PipelineCron.Enable == nil {
+					m.PipelineCron.Enable = &wrapperspb.BoolValue{}
+				}
+			case "pipelineCron.enable.value":
+				if m.PipelineCron == nil {
+					m.PipelineCron = &pb1.Cron{}
+				}
+				if m.PipelineCron.Enable == nil {
+					m.PipelineCron.Enable = &wrapperspb.BoolValue{}
 				}
 				val, err := strconv.ParseBool(vals[0])
 				if err != nil {
 					return err
 				}
-				m.PipelineCron.Enable = val
+				m.PipelineCron.Enable.Value = val
+			case "pipelineCron.pipelineYml":
+				if m.PipelineCron == nil {
+					m.PipelineCron = &pb1.Cron{}
+				}
+				m.PipelineCron.PipelineYml = vals[0]
+			case "pipelineCron.configManageNamespaces":
+				if m.PipelineCron == nil {
+					m.PipelineCron = &pb1.Cron{}
+				}
+				m.PipelineCron.ConfigManageNamespaces = vals
+			case "pipelineCron.userID":
+				if m.PipelineCron == nil {
+					m.PipelineCron = &pb1.Cron{}
+				}
+				m.PipelineCron.UserID = vals[0]
+			case "pipelineCron.orgID":
+				if m.PipelineCron == nil {
+					m.PipelineCron = &pb1.Cron{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.PipelineCron.OrgID = val
+			case "pipelineCron.pipelineDefinitionID":
+				if m.PipelineCron == nil {
+					m.PipelineCron = &pb1.Cron{}
+				}
+				m.PipelineCron.PipelineDefinitionID = vals[0]
+			case "pipelineCron.pipelineSource":
+				if m.PipelineCron == nil {
+					m.PipelineCron = &pb1.Cron{}
+				}
+				m.PipelineCron.PipelineSource = vals[0]
 			case "pipelineButton":
 				if m.PipelineButton == nil {
 					m.PipelineButton = &PipelineButton{}
@@ -4259,6 +4327,8 @@ func (m *PipelineCreateRequest) UnmarshalURLValues(prefix string, values url.Val
 				m.PipelineYml = vals[0]
 			case "clusterName":
 				m.ClusterName = vals[0]
+			case "namespace":
+				m.Namespace = vals[0]
 			case "pipelineYmlName":
 				m.PipelineYmlName = vals[0]
 			case "pipelineSource":
@@ -4648,6 +4718,8 @@ func (m *PipelineCreateRequest) UnmarshalURLValues(prefix string, values url.Val
 					return err
 				}
 				m.BindQueue.Usage.PendingCount = val
+			case "definitionID":
+				m.DefinitionID = vals[0]
 			case "identityInfo":
 				if m.IdentityInfo == nil {
 					m.IdentityInfo = &pb.IdentityInfo{}
@@ -6586,6 +6658,26 @@ func (m *PipelineDetailResponse) UnmarshalURLValues(prefix string, values url.Va
 					return err
 				}
 				m.Data.PipelineCron.TimeUpdated.Nanos = int32(val)
+			case "data.pipelineCron.applicationID":
+				if m.Data == nil {
+					m.Data = &PipelineInstanceDetail{}
+				}
+				if m.Data.PipelineCron == nil {
+					m.Data.PipelineCron = &pb1.Cron{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.PipelineCron.ApplicationID = val
+			case "data.pipelineCron.branch":
+				if m.Data == nil {
+					m.Data = &PipelineInstanceDetail{}
+				}
+				if m.Data.PipelineCron == nil {
+					m.Data.PipelineCron = &pb1.Cron{}
+				}
+				m.Data.PipelineCron.Branch = vals[0]
 			case "data.pipelineCron.cronExpr":
 				if m.Data == nil {
 					m.Data = &PipelineInstanceDetail{}
@@ -6642,6 +6734,18 @@ func (m *PipelineDetailResponse) UnmarshalURLValues(prefix string, values url.Va
 					m.Data.PipelineCron = &pb1.Cron{}
 				}
 				m.Data.PipelineCron.PipelineYmlName = vals[0]
+			case "data.pipelineCron.basePipelineID":
+				if m.Data == nil {
+					m.Data = &PipelineInstanceDetail{}
+				}
+				if m.Data.PipelineCron == nil {
+					m.Data.PipelineCron = &pb1.Cron{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.PipelineCron.BasePipelineID = val
 			case "data.pipelineCron.enable":
 				if m.Data == nil {
 					m.Data = &PipelineInstanceDetail{}
@@ -6649,11 +6753,76 @@ func (m *PipelineDetailResponse) UnmarshalURLValues(prefix string, values url.Va
 				if m.Data.PipelineCron == nil {
 					m.Data.PipelineCron = &pb1.Cron{}
 				}
+				if m.Data.PipelineCron.Enable == nil {
+					m.Data.PipelineCron.Enable = &wrapperspb.BoolValue{}
+				}
+			case "data.pipelineCron.enable.value":
+				if m.Data == nil {
+					m.Data = &PipelineInstanceDetail{}
+				}
+				if m.Data.PipelineCron == nil {
+					m.Data.PipelineCron = &pb1.Cron{}
+				}
+				if m.Data.PipelineCron.Enable == nil {
+					m.Data.PipelineCron.Enable = &wrapperspb.BoolValue{}
+				}
 				val, err := strconv.ParseBool(vals[0])
 				if err != nil {
 					return err
 				}
-				m.Data.PipelineCron.Enable = val
+				m.Data.PipelineCron.Enable.Value = val
+			case "data.pipelineCron.pipelineYml":
+				if m.Data == nil {
+					m.Data = &PipelineInstanceDetail{}
+				}
+				if m.Data.PipelineCron == nil {
+					m.Data.PipelineCron = &pb1.Cron{}
+				}
+				m.Data.PipelineCron.PipelineYml = vals[0]
+			case "data.pipelineCron.configManageNamespaces":
+				if m.Data == nil {
+					m.Data = &PipelineInstanceDetail{}
+				}
+				if m.Data.PipelineCron == nil {
+					m.Data.PipelineCron = &pb1.Cron{}
+				}
+				m.Data.PipelineCron.ConfigManageNamespaces = vals
+			case "data.pipelineCron.userID":
+				if m.Data == nil {
+					m.Data = &PipelineInstanceDetail{}
+				}
+				if m.Data.PipelineCron == nil {
+					m.Data.PipelineCron = &pb1.Cron{}
+				}
+				m.Data.PipelineCron.UserID = vals[0]
+			case "data.pipelineCron.orgID":
+				if m.Data == nil {
+					m.Data = &PipelineInstanceDetail{}
+				}
+				if m.Data.PipelineCron == nil {
+					m.Data.PipelineCron = &pb1.Cron{}
+				}
+				val, err := strconv.ParseUint(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Data.PipelineCron.OrgID = val
+			case "data.pipelineCron.pipelineDefinitionID":
+				if m.Data == nil {
+					m.Data = &PipelineInstanceDetail{}
+				}
+				if m.Data.PipelineCron == nil {
+					m.Data.PipelineCron = &pb1.Cron{}
+				}
+				m.Data.PipelineCron.PipelineDefinitionID = vals[0]
+			case "data.pipelineCron.pipelineSource":
+				if m.Data == nil {
+					m.Data = &PipelineInstanceDetail{}
+				}
+				if m.Data.PipelineCron == nil {
+					m.Data.PipelineCron = &pb1.Cron{}
+				}
+				m.Data.PipelineCron.PipelineSource = vals[0]
 			case "data.pipelineButton":
 				if m.Data == nil {
 					m.Data = &PipelineInstanceDetail{}

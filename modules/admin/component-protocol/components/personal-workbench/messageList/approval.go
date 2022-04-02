@@ -16,7 +16,9 @@ package messageList
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
+	"time"
 
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/list"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
@@ -39,12 +41,32 @@ func (l *MessageList) doFilterApproval() (data *list.Data) {
 		UserIDs: append(blockUsers, deployUsers...),
 	}
 
+	// TODO: union tables or refactor approval function
+	sort.Slice(data.List, func(i, j int) bool {
+		t1 := getApprovalUpdateAt(&data.List[i])
+		if t1 == nil {
+			return false
+		}
+		t2 := getApprovalUpdateAt(&data.List[j])
+		if t2 == nil {
+			return true
+		}
+		return t1.After(*t2)
+	})
 	start, end := arrays.Paging(l.filterReq.PageNo, l.filterReq.PageSize, data.Total)
 	if start == -1 || end == -1 {
 		return
 	}
 	data.List = data.List[start:end]
 	return
+}
+
+func getApprovalUpdateAt(item *list.Item) *time.Time {
+	t, ok := item.Extra.Extra["updatedAt"].(time.Time)
+	if !ok {
+		return nil
+	}
+	return &t
 }
 
 func (l *MessageList) listBlockApprovals(pageNo, pageSize uint64) (data []list.Item, userIDs []string, total int) {
@@ -103,6 +125,11 @@ func (l *MessageList) listBlockApprovals(pageNo, pageSize uint64) (data []list.I
 					},
 				},
 			},
+			Extra: cptype.Extra{
+				Extra: map[string]interface{}{
+					"updatedAt": i.UpdatedAt,
+				},
+			},
 		}
 		data = append(data, item)
 	}
@@ -158,6 +185,11 @@ func (l *MessageList) listDeployApprovals(pageNo, pageSize uint64) (data []list.
 							ClientData: &cptype.OpClientData{},
 						},
 					},
+				},
+			},
+			Extra: cptype.Extra{
+				Extra: map[string]interface{}{
+					"updatedAt": i.UpdatedAt,
 				},
 			},
 		}

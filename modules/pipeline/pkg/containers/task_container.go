@@ -15,7 +15,6 @@
 package containers
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/erda-project/erda/apistructs"
@@ -23,17 +22,15 @@ import (
 )
 
 func GenContainers(task *spec.PipelineTask) ([]apistructs.TaskContainer, error) {
-	if value, ok := task.Extra.Action.Params["bigDataConf"]; ok {
-		spec := apistructs.BigdataSpec{}
-		if err := json.Unmarshal([]byte(value.(string)), &spec); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal task bigDataConf")
-		}
-		if spec.FlinkConf != nil {
-			return GenFlinkContainers(task), nil
-		}
-		if spec.SparkConf != nil {
-			return GenSparkContainers(task), nil
-		}
+	spec, err := task.GetBigDataConf()
+	if err != nil {
+		return nil, err
+	}
+	if spec.FlinkConf != nil {
+		return GenFlinkContainers(task), nil
+	}
+	if spec.SparkConf != nil {
+		return GenSparkContainers(task), nil
 	}
 	return GenTaskContainer(task), nil
 }

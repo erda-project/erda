@@ -239,6 +239,8 @@ type ClusterInfo struct {
 	// 是否关联集群，Y: 是，N: 否
 	// Deprecated
 	IsRelation string `json:"isRelation"`
+	// encode of cluster info
+	CM ClusterInfoData `json:"cm"`
 }
 
 // GetClusterResponse 根据集群名称或集群ID获取集群信息

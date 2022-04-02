@@ -41,7 +41,8 @@ type Cluster struct {
 	ManageConfig    string `gorm:"column:manage_config;type:text"`
 	SysConfig       string `gorm:"column:sys;type:text"`
 	// Deprecated
-	URLs string `gorm:"type:text"`
+	URLs        string `gorm:"type:text"`
+	ClusterInfo string `gorm:"column:cluster_info;type:text"`
 }
 
 // TableName cluster table name

@@ -101,34 +101,52 @@ func (e *Endpoints) GetIssueRelations(ctx context.Context, r *http.Request, vars
 		if err != nil {
 			return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
 		}
-
-		relatingIssues, err := e.issue.GetIssuesByIssueIDs(relatingIssueIDs, identityInfo)
-		if err != nil {
-			return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
+		var users []string
+		r := &issueRelationRetriever{
+			identityInfo, relatingIssueIDs, users,
 		}
-		relatedIssues, err := e.issue.GetIssuesByIssueIDs(relatedIssueIDs, identityInfo)
-		if err != nil {
-			return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
-		}
-
-		for _, issue := range relatingIssues {
-			userIDs = append(userIDs, issue.Creator, issue.Assignee)
-		}
-		for _, issue := range relatedIssues {
-			userIDs = append(userIDs, issue.Creator, issue.Assignee)
-		}
-		userIDs = strutil.DedupSlice(userIDs, true)
-
 		if i == apistructs.IssueRelationInclusion {
+			relatingIssues, err := e.GetIssuesByRelation(r)
+			if err != nil {
+				return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
+			}
+			r.issueIDs = relatedIssueIDs
+			relatedIssues, err := e.GetIssuesByRelation(r)
+			if err != nil {
+				return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
+			}
 			relations.IssueInclude = relatingIssues
 			relations.IssueIncluded = relatedIssues
 		} else {
+			r.issueIDs = append(relatingIssueIDs, relatedIssueIDs...)
+			relatingIssues, err := e.GetIssuesByRelation(r)
+			if err != nil {
+				return apierrors.ErrGetIssueRelations.InternalError(err).ToResp(), nil
+			}
 			relations.IssueRelate = relatingIssues
-			relations.IssueRelated = relatedIssues
 		}
+		userIDs = append(userIDs, r.userIDs...)
+	}
+	userIDs = strutil.DedupSlice(userIDs, true)
+	return httpserver.OkResp(relations, userIDs)
+}
+
+type issueRelationRetriever struct {
+	identityInfo apistructs.IdentityInfo
+	issueIDs     []uint64
+	userIDs      []string
+}
+
+func (e *Endpoints) GetIssuesByRelation(r *issueRelationRetriever) ([]apistructs.Issue, error) {
+	issues, err := e.issue.GetIssuesByIssueIDs(r.issueIDs, r.identityInfo)
+	if err != nil {
+		return issues, err
 	}
 
-	return httpserver.OkResp(relations, userIDs)
+	for _, issue := range issues {
+		r.userIDs = append(r.userIDs, issue.Creator, issue.Assignee)
+	}
+	return issues, nil
 }
 
 // DeleteIssueRelation 删除issue关联关系

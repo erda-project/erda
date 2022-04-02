@@ -17,11 +17,12 @@ package model
 type ComponentID string
 
 type Component interface {
-	ComponentID() ComponentID
+	ComponentConfig() interface{}
 }
 
 type ComponentUnit struct {
 	Component Component
-	Config    interface{}
 	Name      string
+	// FilterConfig FilterConfig
+	Filter *DataFilter
 }

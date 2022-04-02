@@ -248,8 +248,6 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		}
 	}()
 
-	// TODO: optimize: store stared item global state from star cart list, get here
-	// list my subscribed projects
 	req := apistructs.GetSubscribeReq{Type: apistructs.ProjectSubscribe}
 	subProjs, err := l.bdl.ListSubscribes(l.identity.UserID, l.identity.OrgID, req)
 	if err != nil {
@@ -263,7 +261,7 @@ func (l *WorkList) doFilterProj() (data *list.Data) {
 		logrus.Warnf("get env SUBSCRIBE_LIMIT_NUM failed ,%v set default max count is 6", err)
 	}
 	reachLimit := false
-	if int64(len(subProjs.List)) == maxSub {
+	if subProjs != nil && int64(len(subProjs.List)) == maxSub {
 		reachLimit = true
 	}
 
@@ -405,7 +403,6 @@ func (l *WorkList) doFilterApp() (data *list.Data) {
 		PageNo:   int(l.filterReq.PageNo),
 	}
 
-	// TODO: set custom mr query rate
 	apps, err := l.wbSvc.ListAppWbData(l.identity, lr, 0)
 	if err != nil {
 		logrus.Errorf("list query app workbench data failed, error: %v", err)

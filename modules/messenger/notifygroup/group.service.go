@@ -18,22 +18,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/erda-project/erda/bundle"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/bundle"
+	"github.com/erda-project/erda/modules/core-services/services/notify"
 	"github.com/erda-project/erda/modules/core-services/services/permission"
 	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/common/errors"
+	"github.com/erda-project/erda/providers/audit"
 )
 
 type notifyGroupService struct {
-	//DB          *db.NotifyGroupDB
 	Permission  *permission.Permission
-	NotifyGroup *NotifyGroup
+	NotifyGroup *notify.NotifyGroup
 	bdl         *bundle.Bundle
 }
 
@@ -70,6 +71,10 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	org, err := n.bdl.GetOrg(orgIdStr)
+	if err != nil {
+		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
+	}
 	if strings.TrimSpace(request.Name) == "" {
 		return nil, errors.NewInvalidParameterError(request.Name, "name is empty")
 	}
@@ -90,50 +95,28 @@ func (n *notifyGroupService) CreateNotifyGroup(ctx context.Context, request *pb.
 		return nil, errors.NewInternalServerError(err)
 	}
 	creatReq.OrgID = orgId
+	creatReq.Creator = userIdStr
 	lang := apis.GetLang(ctx)
 	langCode := n.bdl.GetLocale(lang)
 	notifyGroupID, err := n.NotifyGroup.Create(langCode, creatReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
+	var auditContext map[string]interface{}
+	if request.ScopeType == apistructs.OrgResource {
+		auditContext = map[string]interface{}{
+			"notifyGroupName": request.Name,
+			"orgName":         org.Name,
+		}
+	} else {
+		auditContext = map[string]interface{}{
+			"isSkip": true,
+		}
+	}
+	audit.ContextEntryMap(ctx, auditContext)
 	return &pb.CreateNotifyGroupResponse{
 		Data: notifyGroupID,
 	}, nil
-
-	//exist, err := n.DB.CheckNotifyGroupNameExist(request.ScopeType, request.ScopeId, request.Name)
-	//if err != nil {
-	//	return nil, errors.NewInternalServerError(err)
-	//}
-	//if exist {
-	//	return nil, errors.NewAlreadyExistsError(request.Name)
-	//}
-	//err = CheckNotifyGroupTarget(request.Targets)
-	//if err != nil {
-	//	return nil, errors.NewInvalidParameterError("targets", err.Error())
-	//}
-	//notifyGroupCreateReq := &apistructs.CreateNotifyGroupRequest{}
-	//data, err := json.Marshal(request)
-	//if err != nil {
-	//	return nil, errors.NewInternalServerError(err)
-	//}
-	//err = json.Unmarshal(data, notifyGroupCreateReq)
-	//if err != nil {
-	//	return nil, errors.NewInternalServerError(err)
-	//}
-	//notifyGroupCreateReq.Creator = userIdStr
-	//notifyGroupCreateReq.OrgID = orgId
-	//notifyGroupId, err := n.DB.CreateNotifyGroup(notifyGroupCreateReq)
-	//if err != nil {
-	//	return nil, errors.NewInternalServerError(err)
-	//}
-	//notifyGroup, err := n.DB.GetNotifyGroupByID(notifyGroupId, orgId)
-	//if err != nil {
-	//	return nil, errors.NewInternalServerError(err)
-	//}
-	//result := &pb.CreateNotifyGroupResponse{
-	//	Data: notifyGroup,
-	//}
-	//return result, nil
 }
 
 func (n *notifyGroupService) QueryNotifyGroup(ctx context.Context, request *pb.QueryNotifyGroupRequest) (*pb.QueryNotifyGroupResponse, error) {
@@ -238,7 +221,10 @@ func (n *notifyGroupService) UpdateNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-
+	org, err := n.bdl.GetOrg(orgIdStr)
+	if err != nil {
+		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
+	}
 	//notifyGroup, err := n.DB.GetNotifyGroupByID(request.GroupID, orgId)
 	notifyGroup, err := n.NotifyGroup.Get(request.GroupID, orgId)
 	if err != nil {
@@ -263,16 +249,25 @@ func (n *notifyGroupService) UpdateNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	//err = CheckNotifyGroupTarget(request.Targets)
-	//if err != nil {
-	//	return nil, errors.NewInvalidParameterError("targets", err.Error())
-	//}
-	//err = n.DB.UpdateNotifyGroup(notifyGroupUpdateReq)
 	err = n.NotifyGroup.Update(notifyGroupUpdateReq)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return &pb.UpdateNotifyGroupResponse{}, nil
+	var auditContext map[string]interface{}
+	if notifyGroup.ScopeType == apistructs.OrgResource {
+		auditContext = map[string]interface{}{
+			"notifyGroupName": request.Name,
+			"orgName":         org.Name,
+		}
+	} else {
+		auditContext = map[string]interface{}{
+			"isSkip": true,
+		}
+	}
+	audit.ContextEntryMap(ctx, auditContext)
+	return &pb.UpdateNotifyGroupResponse{
+		Data: notifyGroup.ID,
+	}, nil
 }
 
 func (n *notifyGroupService) GetNotifyGroupDetail(ctx context.Context, request *pb.GetNotifyGroupDetailRequest) (*pb.GetNotifyGroupDetailResponse, error) {
@@ -310,7 +305,10 @@ func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	//notifyGroup, err := n.DB.GetNotifyGroupByID(request.GroupID, orgId)
+	org, err := n.bdl.GetOrg(orgIdStr)
+	if err != nil {
+		return nil, errors.NewInvalidParameterError("orgId", "orgId is invalidate")
+	}
 	notifyGroup, err := n.NotifyGroup.Get(request.GroupID, orgId)
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
@@ -324,7 +322,21 @@ func (n *notifyGroupService) DeleteNotifyGroup(ctx context.Context, request *pb.
 	if err != nil {
 		return nil, errors.NewInternalServerError(err)
 	}
-	return &pb.DeleteNotifyGroupResponse{}, nil
+	var auditContext map[string]interface{}
+	if notifyGroup.ScopeType == apistructs.OrgResource {
+		auditContext = map[string]interface{}{
+			"notifyGroupName": notifyGroup.Name,
+			"orgName":         org.Name,
+		}
+	} else {
+		auditContext = map[string]interface{}{
+			"isSkip": true,
+		}
+	}
+	audit.ContextEntryMap(ctx, auditContext)
+	return &pb.DeleteNotifyGroupResponse{
+		Data: notifyGroup.ID,
+	}, nil
 }
 
 func (n *notifyGroupService) checkNotifyPermission(userId, scopeType, scopeId, action string) error {

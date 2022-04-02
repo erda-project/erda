@@ -1438,8 +1438,8 @@ func (m *alertService) GetAlertConditionsValue(ctx context.Context, request *pb.
 }
 
 func (m *alertService) CountUnRecoverAlertEvents(ctx context.Context, req *pb.CountUnRecoverAlertEventsRequest) (*pb.CountUnRecoverAlertEventsResponse, error) {
-	disabledAlertIds, err := m.p.db.Alert.GetDisabledAlertIdByScope(req.Scope, req.ScopeId)
-	count, err := m.p.db.AlertEventDB.CountUnRecoverEvents(req.Scope, req.ScopeId, disabledAlertIds)
+	availableAlertIds, err := m.p.db.Alert.GetAvailableAlertIdByScope(req.Scope, req.ScopeId)
+	count, err := m.p.db.AlertEventDB.CountUnRecoverEvents(req.Scope, req.ScopeId, availableAlertIds)
 	if err != nil {
 		return nil, err
 	}
@@ -1472,10 +1472,16 @@ func (m *alertService) GetAlertEvents(ctx context.Context, req *pb.GetAlertEvent
 			SuppressTypes: suppressStates,
 			Enabled:       &bv,
 		})
-		if err != nil {
+		if err == nil {
 			for _, item := range suppressList {
-				eventQuery.Ids = append(eventQuery.Ids, item.AlertEventID)
+				eventQuery.SuppressedIds = append(eventQuery.SuppressedIds, item.AlertEventID)
 			}
+			var states []string
+			linq.From(eventQuery.AlertStates).Except(linq.From(suppressStates)).ToSlice(&states)
+			if len(states) == 0 && len(suppressList) == 0 {
+				return &pb.GetAlertEventResponse{}, nil
+			}
+			eventQuery.AlertStates = states
 		}
 	}
 
@@ -1630,7 +1636,9 @@ func getResultValue(result []*metricpb.Result) []*structpb.Value {
 		for _, s := range v.Series {
 			for _, r := range s.Rows {
 				for _, c := range r.Values {
-					value = append(value, c)
+					if c != nil {
+						value = append(value, c)
+					}
 				}
 			}
 		}

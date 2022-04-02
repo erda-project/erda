@@ -40,8 +40,9 @@ type provider struct {
 type BubbleChartType string
 
 const (
-	BubbleChartReqDistribution     BubbleChartType = "requestDistribution"
-	BubbleChartSlowReqDistribution BubbleChartType = "slowRequestDistribution"
+	BubbleChartReqDistribution      BubbleChartType = "requestDistribution"
+	BubbleChartSlowReqDistribution  BubbleChartType = "slowRequestDistribution"
+	BubbleChartErrorReqDistribution BubbleChartType = "errorRequestDistribution"
 )
 
 type ServiceDataSource interface {

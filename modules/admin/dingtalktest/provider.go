@@ -38,7 +38,7 @@ type provider struct {
 func (p *provider) Init(ctx servicehub.Context) error {
 	p.dingTalkTestService = &dingTalkTestService{
 		Log: p.Log,
-		bdl: bundle.New(bundle.WithEventBox()),
+		bdl: bundle.New(bundle.WithCoreServices()),
 	}
 	if p.Register != nil {
 		pb.RegisterDingTalkTestServiceImp(p.Register, p.dingTalkTestService, apis.Options())

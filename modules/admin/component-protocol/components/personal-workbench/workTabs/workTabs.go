@@ -99,8 +99,6 @@ func (wt *WorkTabs) SetComponentValue(c *cptype.Component) error {
 
 func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData, Type string) (Data, error) {
 	var (
-		proData *apistructs.WorkbenchProjOverviewRespData
-		appData *apistructs.AppWorkbenchResponseData
 		projNum int
 		appNum  int
 		err     error
@@ -116,34 +114,21 @@ func (wt *WorkTabs) GetData(gs *cptype.GlobalStateData, Type string) (Data, erro
 	wg.Add(2)
 	go func() {
 		projNum, err = wt.Wb.GetProjNum(apiIdentity, "")
-		// pageReq := apistructs.PageRequest{PageNo: 1, PageSize: 1}
-		// proData, err = wt.Wb.ListQueryProjWbData(apiIdentity, pageReq, "")
 		if err != nil {
 			logrus.Errorf("tabs get project list err %v", err)
 		}
 		wg.Done()
 	}()
 	go func() {
-		// todo hard code
 		appNum, err = wt.Wb.GetAppNum(apiIdentity, "")
-		// appReq := apistructs.ApplicationListRequest{PageNo: 1, PageSize: 1}
-		// appData, err = wt.Wb.ListAppWbData(apiIdentity, appReq, 0)
 		if err != nil {
 			logrus.Errorf("tabs get app list err %v", err)
 		}
 		wg.Done()
 	}()
 	wg.Wait()
-	switch wt.State.Value {
-	case apistructs.WorkbenchItemProj.String():
-		(*gs)[common.TabData] = proData
-	case apistructs.WorkbenchItemApp.String():
-		(*gs)[common.TabData] = appData
-	}
 	wtData.Options[0].Label += fmt.Sprintf("(%d)", projNum)
-
 	wtData.Options[1].Label += fmt.Sprintf("(%d)", appNum)
-
 	return wtData, nil
 }
 
@@ -186,6 +171,7 @@ func (wt *WorkTabs) Render(ctx context.Context, c *cptype.Component, scenario cp
 	}
 	return nil
 }
+
 func init() {
 	base.InitProviderWithCreator(common.ScenarioKey, "workTabs", func() servicehub.Provider {
 		return &WorkTabs{}

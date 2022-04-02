@@ -25,7 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type IssueUrlQueries struct {
@@ -35,86 +34,41 @@ type IssueUrlQueries struct {
 }
 
 type Query struct {
-	AssigneeIDs        []string `json:"assigneeIDs,omitempty"`
-	StateIDs           []int64  `json:"states,omitempty"`
-	FinishedAtStartEnd []*int64 `json:"finishedAtStartEnd"`
+	AssigneeIDs        []string                      `json:"assigneeIDs,omitempty"`
+	FinishedAtStartEnd []*int64                      `json:"finishedAtStartEnd"`
+	StateBelongs       []apistructs.IssueStateBelong `json:"stateBelongs,omitempty"`
 }
 
 func (w *Workbench) GetProjIssueQueries(userID string, projIDs []uint64, limit int) (data map[uint64]IssueUrlQueries, err error) {
 	data = make(map[uint64]IssueUrlQueries)
-	store := new(sync.Map)
-	if limit <= 0 {
-		limit = 5
-	}
-	limitCh := make(chan struct{}, limit)
-	wg := sync.WaitGroup{}
-	defer close(limitCh)
-
 	for _, v := range projIDs {
-		// get
-		limitCh <- struct{}{}
-		wg.Add(1)
-
-		go func(id uint64) {
-			defer func() {
-				if err := recover(); err != nil {
-					logrus.Errorf("")
-					logrus.Errorf("%s", debug.Stack())
-				}
-				// release
-				<-limitCh
-				wg.Done()
-			}()
-			res, err := w.GetIssueQueries(userID, id)
-			if err != nil {
-				logrus.Errorf("get issue queries failed, id: %v, error: %v", id, err)
-				return
-			}
-			store.Store(id, res)
-		}(v)
+		res, err := w.GetIssueQueries(userID, v)
+		if err != nil {
+			logrus.Errorf("get issue queries failed, id: %v, error: %v", v, err)
+			return data, err
+		}
+		data[v] = res
 	}
-	// wait all finished
-	wg.Wait()
-
-	store.Range(func(k interface{}, v interface{}) bool {
-		id, ok := k.(uint64)
-		if !ok {
-			err = fmt.Errorf("projectID: [uint64], assert failed")
-			return false
-		}
-		queries, ok := v.(IssueUrlQueries)
-		if !ok {
-			err = fmt.Errorf("IssueUrlQueries, assert failed")
-			return false
-		}
-		data[id] = queries
-		return true
-	})
 	return
 }
 
 func (w *Workbench) GetIssueQueries(userID string, projID uint64) (IssueUrlQueries, error) {
 	var data IssueUrlQueries
-	ids, err := w.GetAllIssueStateIDs(projID)
-	if err != nil {
-		logrus.Errorf("get issue state id failed, request: %+v, error: %v", projID, err)
-		return data, err
-	}
 	expiredStartEndTime := genExpiredStartEndTime()
 	todayExpireStartEndTime := genTodayExpireStartEndTime()
 	expiredIssueQuery := Query{
 		AssigneeIDs:        []string{userID},
-		StateIDs:           ids,
+		StateBelongs:       apistructs.UnfinishedStateBelongs,
 		FinishedAtStartEnd: expiredStartEndTime,
 	}
 	todayExpireIssueQuery := Query{
 		AssigneeIDs:        []string{userID},
-		StateIDs:           ids,
+		StateBelongs:       apistructs.UnfinishedStateBelongs,
 		FinishedAtStartEnd: todayExpireStartEndTime,
 	}
 	undoIssueQuery := Query{
-		AssigneeIDs: []string{userID},
-		StateIDs:    ids,
+		AssigneeIDs:  []string{userID},
+		StateBelongs: apistructs.UnfinishedStateBelongs,
 	}
 	expiredIssueQueryStr, _ := encodeQuery(expiredIssueQuery)
 	todayExpireIssueQueryStr, _ := encodeQuery(todayExpireIssueQuery)
@@ -134,41 +88,6 @@ func encodeQuery(q Query) (string, error) {
 		return "", err
 	}
 	return base64.StdEncoding.EncodeToString(b), nil
-}
-
-func (w *Workbench) GetAllIssueStateIDs(projID uint64) ([]int64, error) {
-	var stateIDs []int64
-
-	statesBlMap := map[apistructs.IssueStateBelong]bool{
-		apistructs.IssueStateBelongOpen:     true,
-		apistructs.IssueStateBelongWorking:  true,
-		apistructs.IssueStateBelongWontfix:  true,
-		apistructs.IssueStateBelongReopen:   true,
-		apistructs.IssueStateBelongResolved: true,
-	}
-	types := []apistructs.IssueType{apistructs.IssueTypeRequirement, apistructs.IssueTypeTask, apistructs.IssueTypeBug}
-
-	for _, v := range types {
-		req := apistructs.IssueStateRelationGetRequest{
-			ProjectID: projID,
-			IssueType: v,
-		}
-		r, err := w.bdl.GetIssueStateBelong(req)
-		if err != nil {
-			logrus.Errorf("get issue state failed, request: %+v, error: %v", req, err)
-			return nil, err
-		}
-		for _, v := range r {
-			// if in target stateBelong, get its ids
-			if statesBlMap[v.StateBelong] {
-				for i := range v.States {
-					stateIDs = append(stateIDs, v.States[i].ID)
-				}
-			}
-		}
-
-	}
-	return strutil.DedupInt64Slice(stateIDs), nil
 }
 
 func genExpiredStartEndTime() []*int64 {

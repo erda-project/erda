@@ -11,6 +11,14 @@ import "github.com/mwitkow/go-proto-validators/validator.proto";
 import "common/openapi.proto";
 
 service NotifyGroupService {
+  option(erda.common.openapi_service) = {
+    service: "core-services"
+    auth: {
+      check_login: true,
+      check_token: true,
+    }
+  };
+
   rpc CreateNotifyGroup (CreateNotifyGroupRequest) returns (CreateNotifyGroupResponse) {
     option(google.api.http)      = {
       post: "/api/notify-groups"
@@ -74,8 +82,8 @@ message CreateNotifyGroupRequest {
   string                creator     = 5;
   string                label       = 6;
   string                clusterName = 7;
-  bool                  autoCreate  = 8 [json_name = "-"];
-  int64                 orgId       = 9 [json_name = "-"];
+  bool                  autoCreate  = 8;
+  int64                 orgId       = 9;
 }
 
 message NotifyTarget {
@@ -104,12 +112,13 @@ message NotifyGroup {
 }
 
 message QueryNotifyGroupRequest {
-  int64  pageNo    = 1;
-  int64  pageSize  = 2;
-  string scopeType = 3;
-  string scopeId   = 4;
-  string label     = 5;
-  string name      = 6;
+  int64  pageNo      = 1;
+  int64  pageSize    = 2;
+  string scopeType   = 3;
+  string scopeId     = 4;
+  string label       = 5;
+  string name        = 6;
+  string clusterName = 7;
 }
 
 message QueryNotifyGroupResponse {
@@ -138,7 +147,7 @@ message UpdateNotifyGroupRequest {
 }
 
 message UpdateNotifyGroupResponse {
-//  NotifyGroup data = 1;
+  int64 data = 1;
 }
 
 message GetNotifyGroupDetailRequest {
@@ -174,7 +183,7 @@ message DeleteNotifyGroupRequest {
 }
 
 message DeleteNotifyGroupResponse {
-//  NotifyGroup data = 1;
+  int64 data = 1;
 }
 
 message BatchGetNotifyGroupRequest {

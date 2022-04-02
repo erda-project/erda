@@ -16,7 +16,11 @@ package endpoints
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/url"
+	"sort"
 	"testing"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -25,33 +29,63 @@ import (
 )
 
 func TestUnmarshalApplicationReleaseList(t *testing.T) {
-	list := [][]string{{"1"}, {"2"}, {"3"}}
-	data, err := json.Marshal(list)
-	if err != nil {
-		t.Fatal(err)
+	modes := map[string]apistructs.ReleaseDeployMode{
+		"modeA": {
+			ApplicationReleaseList: [][]string{{"id1", "id2", "id3"}},
+		},
+		"modeB": {
+			ApplicationReleaseList: [][]string{{"id4", "id5", "id6"}},
+		},
 	}
-	res, err := unmarshalApplicationReleaseList(string(data))
+	data, err := json.Marshal(modes)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	res, err := unmarshalApplicationReleaseList(string(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sort.Strings(res)
+
+	list := []string{"id1", "id2", "id3", "id4", "id5", "id6"}
 	if len(list) != len(res) {
-		t.Errorf("test failed, length of res is not expected")
+		t.Fatal("test failed, length of res is not expected")
 	}
 	for i := range list {
-		for j := range list[i] {
-			if list[i][j] != res[i][j] {
-				t.Errorf("test failed, res is not expected")
-			}
+		if list[i] != res[i] {
+			t.Errorf("test failed, res is not expected")
+			break
 		}
 	}
 }
 
 func TestMakeMetadata(t *testing.T) {
+	modes := map[string]apistructs.ReleaseDeployMode{
+		"default": {
+			DependOn: []string{"modeA"},
+			Expose:   true,
+			ApplicationReleaseList: [][]string{
+				{"release1"},
+			},
+		},
+	}
+	modesData, err := json.Marshal(modes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	createdAt, err := time.Parse("2006-01-02T15:04:05Z", "2022-03-25T00:24:00Z")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	projectRelease := &dbclient.Release{
 		Desc:      "testDesc",
 		Changelog: "testMarkdown",
+		Modes:     string(modesData),
 		Version:   "testVersion",
+		CreatedAt: createdAt,
 	}
 	labels := map[string]string{
 		"gitBranch":        "testBranch",
@@ -63,31 +97,43 @@ func TestMakeMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	appReleases := [][]dbclient.Release{
+	appReleases := []dbclient.Release{
 		{
-			{
-				Changelog:       "testMarkdown",
-				Labels:          string(data),
-				ApplicationName: "testApp",
-			},
+			ReleaseID:       "release1",
+			Changelog:       "testMarkdown",
+			Labels:          string(data),
+			Version:         "release/1.0",
+			ApplicationName: "testApp",
 		},
 	}
 	releaseMeta := apistructs.ReleaseMetadata{
-		Org:       "testOrg",
-		Source:    "erda",
-		Author:    "testUser",
+		ApiVersion: "v1",
+		Author:     "testUser",
+		CreatedAt:  "2022-03-25T00:24:00Z",
+		Source: apistructs.ReleaseSource{
+			Org:     "erda",
+			Project: "testProject",
+			URL:     "https://erda.cloud/erda/dop/projects/999",
+		},
 		Version:   projectRelease.Version,
 		Desc:      projectRelease.Desc,
 		ChangeLog: projectRelease.Changelog,
-		AppList: [][]apistructs.AppMetadata{
-			{
-				{
-					AppName:          "testApp",
-					GitBranch:        labels["gitBranch"],
-					GitCommitID:      labels["gitCommitId"],
-					GitCommitMessage: labels["gitCommitMessage"],
-					GitRepo:          labels["gitRepo"],
-					ChangeLog:        appReleases[0][0].Changelog,
+		Modes: map[string]apistructs.ReleaseModeMetadata{
+			"default": {
+				DependOn: []string{"modeA"},
+				Expose:   true,
+				AppList: [][]apistructs.AppMetadata{
+					{
+						{
+							AppName:          appReleases[0].ApplicationName,
+							GitBranch:        labels["gitBranch"],
+							GitCommitID:      labels["gitCommitId"],
+							GitCommitMessage: labels["gitCommitMessage"],
+							GitRepo:          labels["gitRepo"],
+							ChangeLog:        appReleases[0].Changelog,
+							Version:          appReleases[0].Version,
+						},
+					},
 				},
 			},
 		},
@@ -97,7 +143,13 @@ func TestMakeMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := makeMetadata("testOrg", "testUser", projectRelease, appReleases)
+
+	u, err := url.Parse("https://erda.cloud")
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := http.Request{URL: u}
+	res, err := makeMetadata(&req, "erda", "testUser", "testProject", 999, projectRelease, appReleases)
 	if err != nil {
 		t.Fatal(err)
 	}

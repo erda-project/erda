@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/erda-project/erda/tools/cli/dicedir"
+	"github.com/erda-project/erda/tools/cli/utils"
 )
 
 const (
@@ -30,13 +30,11 @@ const (
 // {
 // 	"terminus-org.app.terminus.io": {
 // 		"sessionid": "",
-// 		"orgID": 1,
 // 		"id": "0001",
 // 		"nickName": "username",
 // 	},
 // 	"terminus-org.test.terminus.io": {
 // 		"sessionid": "",
-// 		"orgID": 2,
 // 		"id": "0002",
 // 		"nickName": "username",
 // 	}
@@ -46,7 +44,6 @@ var SessionInfos = map[string]StatusInfo{}
 type StatusInfo struct {
 	SessionID string     `json:"sessionid"`
 	ExpiredAt *time.Time `json:"expiredAt"`
-	OrgID     uint64     `json:"orgID"`
 	UserInfo
 }
 
@@ -62,16 +59,16 @@ type UserInfo struct {
 
 // GetSessionInfos fetch sessions
 func GetSessionInfos() (map[string]StatusInfo, error) {
-	// check directory ~/.dice.d if exist
-	diceDir, err := dicedir.FindGlobalDiceDir()
+	// check directory ~/.erda.d if exist
+	diceDir, err := utils.FindGlobalErdaDir()
 	if err != nil {
 		return nil, err
 	}
 
-	// load file ~/.dice.d/sessions
+	// load file ~/.erda.d/sessions
 	if _, err := os.Stat(filepath.Join(diceDir, sessionFile)); err != nil {
 		if os.IsNotExist(err) {
-			return nil, dicedir.NotExist
+			return nil, utils.NotExist
 		}
 		return nil, err
 	}
@@ -88,21 +85,21 @@ func GetSessionInfos() (map[string]StatusInfo, error) {
 	return SessionInfos, nil
 }
 
-// StoreSessionInfo write session info to file ~/.dice.d/sessions
+// StoreSessionInfo write session info to file ~/.erda.d/sessions
 func StoreSessionInfo(host string, stat StatusInfo) error {
-	diceDir, err := dicedir.FindGlobalDiceDir()
+	erdaDir, err := utils.FindGlobalErdaDir()
 	if err != nil {
-		if err != dicedir.NotExist {
+		if err != utils.NotExist {
 			return err
 		}
-		diceDir, err = dicedir.CreateGlobalDiceDir()
+		erdaDir, err = utils.CreateGlobalErdaDir()
 		if err != nil {
 			return err
 		}
 	}
 
 	sessions := make(map[string]StatusInfo)
-	sessionPath := filepath.Join(diceDir, sessionFile)
+	sessionPath := filepath.Join(erdaDir, sessionFile)
 	if _, err := os.Stat(sessionPath); err == nil {
 		sessions, err = GetSessionInfos()
 		if err != nil {

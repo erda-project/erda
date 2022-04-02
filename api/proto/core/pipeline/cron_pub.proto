@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package erda.core.pipeline;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/erda-project/erda-proto-go/core/pipeline/pb";
+
+message Cron {
+    uint64 ID = 1 [json_name = "id"];
+    google.protobuf.Timestamp timeCreated = 2;
+    google.protobuf.Timestamp timeUpdated = 3;
+
+    uint64 applicationID = 4;
+    string branch = 5;
+    string cronExpr = 6;
+    google.protobuf.Timestamp cronStartTime = 7;
+    string pipelineYmlName = 8;
+    uint64 basePipelineID = 9;
+    google.protobuf.BoolValue enable = 10;
+    string pipelineYml = 11;
+    repeated string configManageNamespaces = 12;
+    string userID = 13;
+    uint64 orgID = 14;
+    string pipelineDefinitionID = 15;
+    string pipelineSource = 16;
+}

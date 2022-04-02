@@ -15,8 +15,6 @@
 package customFilter
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -43,23 +41,25 @@ type CustomFilter struct {
 	State    State     `json:"state"`
 	InParams *InParams `json:"-"`
 
-	projectPipelineSvc projectpipeline.Service `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
+	ProjectPipelineSvc projectpipeline.Service `autowired:"erda.dop.projectpipeline.ProjectPipelineService"`
+
+	URLQuery *FrontendConditions
 }
 
 type State struct {
-	Base64UrlQueryParams    string             `json:"issueFilter__urlQuery,omitempty"`
 	FrontendConditionValues FrontendConditions `json:"values,omitempty"`
 	SelectedFilterSet       string             `json:"selectedFilterSet,omitempty"`
 }
 
 type FrontendConditions struct {
-	Status            []string `json:"status"`
-	Creator           []string `json:"creator"`
-	App               []string `json:"app"`
-	Executor          []string `json:"executor"`
-	CreatedAtStartEnd []int64  `json:"createdAtStartEnd"`
-	StartedAtStartEnd []int64  `json:"startedAtStartEnd"`
-	Title             string   `json:"title"`
+	Status            []string `json:"status,omitempty"`
+	Creator           []string `json:"creator,omitempty"`
+	App               []string `json:"app,omitempty"`
+	Executor          []string `json:"executor,omitempty"`
+	CreatedAtStartEnd []int64  `json:"createdAtStartEnd,omitempty"`
+	StartedAtStartEnd []int64  `json:"startedAtStartEnd,omitempty"`
+	Title             string   `json:"title,omitempty"`
+	Branch            []string `json:"branch,omitempty"`
 }
 
 func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
@@ -70,6 +70,15 @@ func (p *CustomFilter) BeforeHandleOp(sdk *cptype.SDK) {
 	p.InParams.OrgID, err = strconv.ParseUint(p.sdk.Identity.OrgID, 10, 64)
 	if err != nil {
 		panic(err)
+	}
+	p.ProjectPipelineSvc = sdk.Ctx.Value(types.ProjectPipelineService).(*projectpipeline.ProjectPipelineService)
+
+	var urlQuery FrontendConditions
+	err = cputil.GetURLQuery(sdk, &urlQuery)
+	if err != nil {
+		logrus.Errorf("GetURLQuery error %v", err)
+	} else {
+		p.URLQuery = &urlQuery
 	}
 	cputil.MustObjJSONTransfer(&p.StdStatePtr, &p.State)
 }
@@ -89,28 +98,23 @@ func (p *CustomFilter) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			HideSave: true,
 		}
 		p.clearState()
-		var appNames []string
-		if p.InParams.AppID != 0 {
-			app, err := p.bdl.GetApp(p.InParams.AppID)
-			if err != nil {
-				logrus.Errorf("failed to GetApp,err %s", err.Error())
-				panic(err)
-			}
-			appNames = []string{app.Name}
+
+		if p.URLQuery != nil {
+			p.State.FrontendConditionValues = *p.URLQuery
+		} else {
+			p.setDefaultValues()
 		}
 
-		p.State.FrontendConditionValues.App = appNames
-		p.State.FrontendConditionValues.Creator = func() []string {
-			if p.gsHelper.GetGlobalPipelineTab() == common.MineState.String() {
-				return []string{p.sdk.Identity.UserID}
-			}
-			return nil
-		}()
 		p.gsHelper.SetGlobalTableFilter(gshelper.TableFilter{
-			App:     p.State.FrontendConditionValues.App,
-			Creator: p.State.FrontendConditionValues.Creator,
+			Status:            p.State.FrontendConditionValues.Status,
+			Creator:           p.State.FrontendConditionValues.Creator,
+			App:               p.State.FrontendConditionValues.App,
+			Executor:          p.State.FrontendConditionValues.Executor,
+			CreatedAtStartEnd: p.State.FrontendConditionValues.CreatedAtStartEnd,
+			StartedAtStartEnd: p.State.FrontendConditionValues.StartedAtStartEnd,
+			Title:             p.State.FrontendConditionValues.Title,
+			Branch:            p.State.FrontendConditionValues.Branch,
 		})
-
 		return nil
 	}
 }
@@ -120,6 +124,8 @@ func (p *CustomFilter) clearState() {
 }
 
 func (p *CustomFilter) AfterHandleOp(sdk *cptype.SDK) {
+	cputil.SetURLQuery(sdk, p.State.FrontendConditionValues)
+
 	cputil.MustObjJSONTransfer(&p.State, &p.StdStatePtr)
 }
 
@@ -144,6 +150,7 @@ func (p *CustomFilter) RegisterFilterOp(opData filter.OpFilter) (opFunc cptype.O
 			CreatedAtStartEnd: values.CreatedAtStartEnd,
 			StartedAtStartEnd: values.StartedAtStartEnd,
 			Title:             values.Title,
+			Branch:            values.Branch,
 		})
 		return nil
 	}
@@ -163,11 +170,7 @@ func (p *CustomFilter) RegisterFilterItemDeleteOp(opData filter.OpFilterItemDele
 	}
 }
 
-func (p *CustomFilter) flushOptsByFilter(filterEntity string) error {
-	b, err := base64.StdEncoding.DecodeString(filterEntity)
-	if err != nil {
-		return err
-	}
-	p.State.FrontendConditionValues = FrontendConditions{}
-	return json.Unmarshal(b, &p.State.FrontendConditionValues)
+func (p *CustomFilter) setDefaultValues() {
+	p.State.FrontendConditionValues.App = []string{common.Participated}
+	p.State.FrontendConditionValues.Branch = common.DefaultBranch
 }

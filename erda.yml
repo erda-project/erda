@@ -341,35 +341,6 @@ services:
         path: "/healthz"
         duration: 120
       exec: { }
-  eventbox:
-    cmd: "/app/eventbox"
-    ports:
-      - port: 9528
-        protocol: "TCP"
-        l4_protocol: "TCP"
-    envs:
-      DEBUG: "false"
-    resources:
-      cpu: ${request_cpu:2}
-      max_cpu: 2
-      mem: ${request_mem:2560}
-      max_mem: 2560
-      network:
-        mode: "container"
-    binds:
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-ca.pem:/certs/etcd-ca.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
-      - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
-    deployments:
-      replicas: 1
-      labels:
-        GROUP: "dice"
-    health_check:
-      http:
-        port: 9528
-        path: "/api/dice/eventbox/version"
-        duration: 120
-      exec: { }
   gittar:
     cmd: "/app/gittar"
     ports:
@@ -578,10 +549,10 @@ services:
         protocol: "TCP"
         l4_protocol: "TCP"
     resources:
-      cpu: ${request_cpu:2}
-      max_cpu: 2
-      mem: ${request_mem:6144}
-      max_mem: 6144
+      cpu: ${request_cpu:1}
+      max_cpu: 1
+      mem: ${request_mem:2048}
+      max_mem: 2048
       network:
         mode: "container"
     binds:
@@ -608,6 +579,7 @@ services:
       DEBUG: "false"
       TENANT_GROUP_KEY: "58dcbf490ef3"
       MSP_ADDR: "msp:8080"
+      COLLECTOR_SIDECAR_IMAGE: "registry.erda.cloud/erda/erda-fluent-bit:2.1-alpha-20220329155354-3fcba88"
     resources:
       cpu: ${request_cpu:1}
       max_cpu: 1
@@ -653,7 +625,7 @@ services:
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client.pem:/certs/etcd-client.pem:ro"
       - "${nfs_root:/netdata}/dice-ops/dice-config/certificates/etcd-client-key.pem:/certs/etcd-client-key.pem:ro"
     deployments:
-      replicas: ${replicas:1}
+      replicas: ${replicas:2}
       labels:
         GROUP: "devops"
     health_check:
@@ -747,7 +719,7 @@ services:
       - port: 12580
         protocol: "TCP"
         l4_protocol: "TCP"
-        expose: true
+        expose: false
     envs:
       DEBUG: "false"
       LISTEN_ADDR: ":12580"
@@ -769,8 +741,6 @@ services:
       replicas: 1
       labels:
         GROUP: "devops"
-    expose:
-      - 12580
     health_check:
       http:
         port: 12580

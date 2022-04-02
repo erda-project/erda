@@ -43,9 +43,12 @@ func (source *ElasticsearchSource) GetExceptions(ctx context.Context, req *pb.Ge
 	}
 
 	entityReq := &entitypb.ListEntitiesRequest{
-		Type:   "error_exception",
-		Labels: conditions,
-		Limit:  int64(1000),
+		Type:                  "error_exception",
+		Labels:                conditions,
+		Limit:                 int64(1000),
+		UpdateTimeUnixNanoMin: req.StartTime * 1e6,
+		UpdateTimeUnixNanoMax: req.EndTime * 1e6,
+		Debug:                 req.Debug,
 	}
 	exceptions, _ := source.fetchErdaErrorFromES(ctx, entityReq, req.StartTime, req.EndTime)
 	return exceptions, nil

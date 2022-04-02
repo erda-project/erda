@@ -48,7 +48,7 @@ func (h *HTTPEndpoints) ServiceGroupCreate(ctx context.Context, r *http.Request,
 		}
 	}
 
-	sg, err := h.serviceGroupImpl.Create(req)
+	sg, err := h.ServiceGroupImpl.Create(req)
 	if err != nil {
 		errstr := fmt.Sprintf("create servicegroup fail: %v", err)
 		//h.metric.ErrorCounter.WithLabelValues(metric.ServiceCreateError).Add(1)
@@ -67,6 +67,7 @@ func (h *HTTPEndpoints) ServiceGroupCreate(ctx context.Context, r *http.Request,
 	})
 }
 
+/*
 func (h *HTTPEndpoints) ServiceGroupUpdate(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
 	req := apistructs.ServiceGroupUpdateV2Request{}
@@ -78,7 +79,7 @@ func (h *HTTPEndpoints) ServiceGroupUpdate(ctx context.Context, r *http.Request,
 				Error:   apistructs.ErrorResponse{Msg: errstr},
 			}})
 	}
-	sg, err := h.serviceGroupImpl.Update(req)
+	sg, err := h.ServiceGroupImpl.Update(req)
 	if err != nil {
 		errstr := fmt.Sprintf("update servicegroup fail: %v", err)
 		return mkResponse(apistructs.ServiceGroupUpdateV2Response{
@@ -95,6 +96,7 @@ func (h *HTTPEndpoints) ServiceGroupUpdate(ctx context.Context, r *http.Request,
 		},
 	})
 }
+*/
 
 func (h *HTTPEndpoints) ServiceGroupDelete(ctx context.Context, r *http.Request, vars map[string]string) (
 	httpserver.Responser, error) {
@@ -112,7 +114,7 @@ func (h *HTTPEndpoints) ServiceGroupDelete(ctx context.Context, r *http.Request,
 			}})
 	}
 
-	if err := h.serviceGroupImpl.Delete(namespace, name, force); err != nil {
+	if err := h.ServiceGroupImpl.Delete(namespace, name, force); err != nil {
 		errstr := fmt.Sprintf("delete servicegroup fail: %v", err)
 		//h.metric.ErrorCounter.WithLabelValues(metric.ServiceRemoveError).Add(1)
 		if err.Error() == servicegroup.DeleteNotFound.Error() {
@@ -150,7 +152,7 @@ func (h *HTTPEndpoints) ServiceGroupInfo(ctx context.Context, r *http.Request, v
 		})
 	}
 
-	sg, err := h.serviceGroupImpl.Info(ctx, namespace, name)
+	sg, err := h.ServiceGroupImpl.Info(ctx, namespace, name)
 	if err != nil {
 		errstr := fmt.Sprintf("get servicegroup info fail: %v", err)
 		return mkResponse(apistructs.ServiceGroupInfoResponse{
@@ -177,7 +179,7 @@ func (h *HTTPEndpoints) ServiceGroupPrecheck(ctx context.Context, r *http.Reques
 				Error:   apistructs.ErrorResponse{Msg: errstr},
 			}})
 	}
-	res, err := h.serviceGroupImpl.Precheck(req)
+	res, err := h.ServiceGroupImpl.Precheck(req)
 	if err != nil {
 		errstr := fmt.Sprintf("precheck servicegroup fail: %v", err)
 		return mkResponse(apistructs.ServiceGroupPrecheckResponse{
@@ -215,7 +217,7 @@ func (h *HTTPEndpoints) ServiceGroupKillPod(ctx context.Context, r *http.Request
 		})
 	}
 
-	err := h.serviceGroupImpl.KillPod(ctx, req.Namespace, req.Name, req.PodName)
+	err := h.ServiceGroupImpl.KillPod(ctx, req.Namespace, req.Name, req.PodName)
 	if err != nil {
 		return mkResponse(apistructs.ServiceGroupKillPodResponse{
 			Header: apistructs.Header{
@@ -253,7 +255,7 @@ func (h *HTTPEndpoints) ServiceGroupConfigUpdate(ctx context.Context, r *http.Re
 			},
 		})
 	}
-	if err := h.serviceGroupImpl.ConfigUpdate(req); err != nil {
+	if err := h.ServiceGroupImpl.ConfigUpdate(req); err != nil {
 		errstr := fmt.Sprintf("configupdate servicegroup fail: %v", err)
 		return mkResponse(apistructs.ServiceGroupConfigUpdateResponse{
 			apistructs.Header{
@@ -264,37 +266,5 @@ func (h *HTTPEndpoints) ServiceGroupConfigUpdate(ctx context.Context, r *http.Re
 	}
 	return mkResponse(apistructs.ServiceGroupConfigUpdateResponse{
 		apistructs.Header{Success: true},
-	})
-}
-
-func (h *HTTPEndpoints) ServiceScaling(ctx context.Context, r *http.Request, vars map[string]string) (
-	httpserver.Responser, error) {
-
-	sg := apistructs.ServiceGroup{}
-	err := json.NewDecoder(r.Body).Decode(&sg)
-	if err != nil {
-		return mkResponse(apistructs.ScheduleLabelSetResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error: apistructs.ErrorResponse{
-					Msg: fmt.Sprintf("unmarshall to decoder the service err: %v", err),
-				}},
-		})
-	}
-	sgb, _ := json.Marshal(&sg)
-	logrus.Infof("scale service group body is %s", string(sgb))
-	if _, err = h.serviceGroupImpl.Scale(&sg); err != nil {
-		return mkResponse(apistructs.ScheduleLabelSetResponse{
-			Header: apistructs.Header{
-				Success: false,
-				Error: apistructs.ErrorResponse{
-					Msg: err.Error(),
-				}},
-		})
-	}
-	return mkResponse(apistructs.ScheduleLabelSetResponse{
-		Header: apistructs.Header{
-			Success: true,
-		},
 	})
 }

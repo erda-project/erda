@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
@@ -63,30 +65,36 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 
 	releases := make([][]*dbclient.Release, 0)
 
-	if curRelease.IsProjectRelease {
-		subReleasesId := make([][]string, 0)
-		if err := json.Unmarshal([]byte(curRelease.ApplicationReleaseList), &subReleasesId); err != nil {
-			return nil, fmt.Errorf("failed to get sub release, err: %v", err)
-		}
-
-		conditionData := make([]string, 0)
-		for _, id := range subReleasesId {
-			conditionData = append(conditionData, id...)
-		}
-
-		subReleaseMap, err := d.db.ListReleasesMap(conditionData)
+	if order.Type == apistructs.TypeProjectRelease {
+		deployList, err := unmarshalDeployList(order.DeployList)
 		if err != nil {
-			return nil, fmt.Errorf("failed to list sub release, err: %v", err)
+			return nil, errors.Errorf("failed to unmarshal deploy list for deploy order %s, %v", order.ID, err)
 		}
 
-		for _, sr := range subReleasesId {
-			tmp := make([]*dbclient.Release, 0)
-			for _, r := range sr {
-				tmp = append(tmp, subReleaseMap[r])
+		var releaseIds []string
+		for _, l := range deployList {
+			releaseIds = append(releaseIds, l...)
+		}
+		appReleases, err := d.db.ListReleases(releaseIds)
+		if err != nil {
+			return nil, errors.Errorf("failed to list releases, %v", err)
+		}
+		id2Release := make(map[string]*dbclient.Release)
+		for _, release := range appReleases {
+			id2Release[release.ReleaseId] = release
+		}
+
+		for _, l := range deployList {
+			var rs []*dbclient.Release
+			for _, id := range l {
+				r, ok := id2Release[id]
+				if !ok {
+					return nil, errors.Errorf("release %s not found", id)
+				}
+				rs = append(rs, r)
 			}
-			releases = append(releases, tmp)
+			releases = append(releases, rs)
 		}
-
 	} else {
 		releases = append(releases, []*dbclient.Release{curRelease})
 	}
@@ -115,6 +123,7 @@ func (d *DeploymentOrder) Get(userId string, orderId string) (*apistructs.Deploy
 			CurrentBatch: order.CurrentBatch,
 			Status:       apistructs.DeploymentOrderStatus(order.Status),
 			Operator:     order.Operator.String(),
+			DeployList:   order.DeployList,
 			CreatedAt:    order.CreatedAt,
 			UpdatedAt:    order.UpdatedAt,
 			StartedAt:    parseStartedTime(order.StartedAt),

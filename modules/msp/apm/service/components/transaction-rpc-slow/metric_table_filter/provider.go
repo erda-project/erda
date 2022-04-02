@@ -56,8 +56,8 @@ type State struct {
 
 type FrontendConditions struct {
 	Duration []struct {
-		Timer int64  `json:"timer,omitempty"`
-		Unit  string `json:"unit,omitempty"`
+		Timer float64 `json:"timer,omitempty"`
+		Unit  string  `json:"unit,omitempty"`
 	} `json:"duration,omitempty"`
 }
 
@@ -66,13 +66,13 @@ func (f *FrontendConditions) convertToTransactionFilter() slow_transaction.SlowT
 	if len(f.Duration) != 2 {
 		return slowTransactionFilter
 	}
-	d, err := time.ParseDuration(fmt.Sprintf("%d%s", f.Duration[0].Timer, f.Duration[0].Unit))
+	d, err := time.ParseDuration(fmt.Sprintf("%f%s", f.Duration[0].Timer, f.Duration[0].Unit))
 	if err == nil {
-		slowTransactionFilter.MinDuration = int64(d)
+		slowTransactionFilter.MinDuration = float64(d)
 	}
-	d, err = time.ParseDuration(fmt.Sprintf("%d%s", f.Duration[1].Timer, f.Duration[1].Unit))
+	d, err = time.ParseDuration(fmt.Sprintf("%f%s", f.Duration[1].Timer, f.Duration[1].Unit))
 	if err == nil {
-		slowTransactionFilter.MaxDuration = int64(d)
+		slowTransactionFilter.MaxDuration = float64(d)
 	}
 	return slowTransactionFilter
 }

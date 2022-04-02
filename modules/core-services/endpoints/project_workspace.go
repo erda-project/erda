@@ -77,7 +77,7 @@ func (e *Endpoints) CreateProjectWorkSpace(ctx context.Context, r *http.Request,
 	req := apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.ProjectScope,
-		ScopeID:  orgID,
+		ScopeID:  projectWorkSpaceCreateReq.ProjectID,
 		Resource: apistructs.ProjectResource,
 		Action:   apistructs.CreateAction,
 	}
@@ -87,6 +87,10 @@ func (e *Endpoints) CreateProjectWorkSpace(ctx context.Context, r *http.Request,
 
 	if projectWorkSpaceCreateReq.ID == "" {
 		projectWorkSpaceCreateReq.ID = uuid.NewString()
+	}
+
+	if projectWorkSpaceCreateReq.OrgID == 0 {
+		projectWorkSpaceCreateReq.OrgID = orgID
 	}
 
 	err = e.db.CreateProjectWorkspaceAbilities(projectWorkSpaceCreateReq)
@@ -105,11 +109,6 @@ func (e *Endpoints) GetProjectWorkSpace(ctx context.Context, r *http.Request, va
 		return apierrors.ErrGetProjectWorkspaceAbilities.NotLogin().ToResp(), nil
 	}
 
-	orgID, err := user.GetOrgID(r)
-	if err != nil {
-		return apierrors.ErrGetProjectWorkspaceAbilities.InvalidParameter(err).ToResp(), nil
-	}
-
 	projid := vars["projectID"]
 	workspace := vars["workspace"]
 
@@ -124,7 +123,7 @@ func (e *Endpoints) GetProjectWorkSpace(ctx context.Context, r *http.Request, va
 	req := apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.ProjectScope,
-		ScopeID:  orgID,
+		ScopeID:  projectID,
 		Resource: apistructs.ProjectResource,
 		Action:   apistructs.GetAction,
 	}
@@ -186,7 +185,7 @@ func (e *Endpoints) UpdateProjectWorkSpace(ctx context.Context, r *http.Request,
 	req := apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.ProjectScope,
-		ScopeID:  orgID,
+		ScopeID:  projectWorkSpaceUpdateReq.ProjectID,
 		Resource: apistructs.ProjectResource,
 		Action:   apistructs.UpdateAction,
 	}
@@ -223,6 +222,9 @@ func (e *Endpoints) UpdateProjectWorkSpace(ctx context.Context, r *http.Request,
 	}
 
 	ability.Abilities = string(str)
+	if ability.OrgID == 0 {
+		ability.OrgID = orgID
+	}
 
 	err = e.db.UpdateProjectWorkspaceAbilities(ability)
 	if err != nil {
@@ -238,11 +240,6 @@ func (e *Endpoints) DeleteProjectWorkSpace(ctx context.Context, r *http.Request,
 	userID, err := user.GetUserID(r)
 	if err != nil {
 		return apierrors.ErrDeleteProjectWorkspaceAbilities.NotLogin().ToResp(), nil
-	}
-
-	orgID, err := user.GetOrgID(r)
-	if err != nil {
-		return apierrors.ErrDeleteProjectWorkspaceAbilities.InvalidParameter(err).ToResp(), nil
 	}
 
 	projid := r.URL.Query().Get("projectID")
@@ -263,7 +260,7 @@ func (e *Endpoints) DeleteProjectWorkSpace(ctx context.Context, r *http.Request,
 	req := apistructs.PermissionCheckRequest{
 		UserID:   userID.String(),
 		Scope:    apistructs.ProjectScope,
-		ScopeID:  orgID,
+		ScopeID:  projectID,
 		Resource: apistructs.ProjectResource,
 		Action:   apistructs.DeleteAction,
 	}

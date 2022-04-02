@@ -160,7 +160,7 @@ func (a *Addon) AddonDelete(req apistructs.AddonDirectDeleteRequest) error {
 			return err
 		}
 	} else {
-		if err := a.bdl.DeleteServiceGroup(addonIns.Namespace, addonIns.ScheduleName); err != nil {
+		if err := a.serviceGroupImpl.Delete(addonIns.Namespace, addonIns.ScheduleName, "false"); err != nil {
 			logrus.Errorf("failed to delete addon: %s/%s", addonIns.Namespace, addonIns.ScheduleName)
 			return err
 		}
@@ -462,7 +462,7 @@ func (a *Addon) existAttachAddon(params *apistructs.AddonHandlerCreateItem, addo
 		return nil, err
 	}
 
-	clusterInfo, err := a.bdl.QueryClusterInfo(params.ClusterName)
+	clusterInfo, err := a.clusterinfoImpl.Info(params.ClusterName)
 	if err != nil {
 		logrus.Errorf("existAttachAddon 获取cluster信息失败, %v", err)
 		return nil, err
@@ -832,9 +832,7 @@ func (a *Addon) createAddonResource(addonIns *dbclient.AddonInstance, addonInsRo
 		if addonSpec.SubCategory == apistructs.BasicAddon {
 			// TODO: get vendor from cluster or config
 			if err := a.basicAddonDeploy(addonIns, addonInsRouting, params, addonSpec, addonDice, apistructs.ECIVendorAlibaba); err != nil {
-				if a.Logger != nil {
-					a.pushLog(fmt.Sprintf("error when addon is released, %v", err), params)
-				}
+				a.pushLog(fmt.Sprintf("error when addon is released, %v", err), params)
 				logrus.Errorf("error when addon is released, %v", err)
 				if err := a.FailAndDelete(addonIns); err != nil {
 					return err
@@ -1023,7 +1021,7 @@ func (a *Addon) basicAddonDeploy(addonIns *dbclient.AddonInstance, addonInsRouti
 	logrus.Infof("sending addon creating request, request body: %+v", *addonCreateReq)
 
 	// 请求调度器
-	err = a.bdl.CreateServiceGroup(*addonCreateReq)
+	_, err = a.serviceGroupImpl.Create(*addonCreateReq)
 	if err != nil {
 		a.ExportLogInfo(apistructs.ErrorLevel, apistructs.AddonError, addonIns.ID, addonIns.ID+"-internal", i18n.OrgSprintf(addonIns.OrgID, "FailedToCreateAddonByScheduler"), err)
 		logrus.Errorf("failed to create addon %s, instance id %v from scheduler, %v", addonSpec.Name, addonIns.ID, err)
@@ -1261,6 +1259,7 @@ func (a *Addon) CreateAddonProvider(req *apistructs.AddonProviderRequest, addonN
 		logrus.Errorf("provider response statuscode : %v", r.StatusCode())
 		logrus.Errorf("provider response err : %+v", r)
 		logrus.Errorf("provider response : %+v", resp)
+		a.pushLogCore(fmt.Sprintf("err when deploy addon: %s, err: %s", addonName, resp.Error.Msg), req.Options)
 		return 0, nil, apierrors.ErrInvoke.InternalError(
 			fmt.Errorf("create provider addon, response fail, code:%v, msg:%v",
 				resp.Error.Code, resp.Error.Msg))
@@ -1313,12 +1312,21 @@ func (a *Addon) FindNeedCreateAddon(params *apistructs.AddonHandlerCreateItem) (
 }
 
 func (a *Addon) pushLog(content string, params *apistructs.AddonHandlerCreateItem) {
-	if a.Logger == nil {
+	a.pushLogCore(content, params.Options)
+}
+
+func (a *Addon) pushLogCore(content string, params map[string]string) {
+	deploymentId, ok := params["deploymentId"]
+	if !ok {
 		return
 	}
+	logHelper := &log.DeployLogHelper{
+		DeploymentID: deploymentId,
+		Bdl:          a.bdl,
+	}
 	tags := map[string]string{}
-	if orgName, ok := params.Options["orgName"]; ok {
+	if orgName, ok := params["orgName"]; ok {
 		tags[log.TAG_ORG_NAME] = orgName
 	}
-	a.Logger.Log(content, tags)
+	logHelper.Log(content, tags)
 }

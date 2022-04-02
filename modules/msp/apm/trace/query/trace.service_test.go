@@ -23,13 +23,10 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/bmizerany/assert"
-	"github.com/gocql/gocql"
-	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/erda-project/erda-infra/base/servicehub"
-	"github.com/erda-project/erda-infra/providers/cassandra"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
 	"github.com/erda-project/erda-proto-go/msp/apm/trace/pb"
@@ -38,6 +35,7 @@ import (
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/debug"
 	"github.com/erda-project/erda/modules/msp/apm/trace/core/query"
 	"github.com/erda-project/erda/modules/msp/apm/trace/db"
+	"github.com/erda-project/erda/modules/msp/apm/trace/query/source"
 	"github.com/erda-project/erda/modules/msp/apm/trace/storage"
 )
 
@@ -134,8 +132,7 @@ func Test_traceService_fetchSpanFromES(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			if got, err := fetchSpanFromES(tt.ctx, ss, tt.sel, tt.forward, tt.limit); !reflect.DeepEqual(got, tt.want) || err != nil {
+			if got, err := source.FetchSpanFromES(tt.ctx, ss, tt.sel, tt.forward, tt.limit); !reflect.DeepEqual(got, tt.want) || err != nil {
 				t.Errorf("fetchSpanFromES() = %v, want %v", got, tt.want)
 			}
 		})
@@ -1283,108 +1280,49 @@ func Test_calculateDepth(t *testing.T) {
 	}
 }
 
-func Test_GetSpanCount_WithCassandraEnabled_Should_Not_Error(t *testing.T) {
-	monkey.Patch((*cassandra.Session).Session, func(s *cassandra.Session) *gocql.Session {
-		return &gocql.Session{}
-	})
-	defer monkey.Unpatch((*cassandra.Session).Session)
-
-	monkey.Patch((*gocql.Session).Query, func(s *gocql.Session, stmt string, values ...interface{}) *gocql.Query {
-		return &gocql.Query{}
-	})
-	defer monkey.Unpatch((*gocql.Session).Query)
-
-	monkey.Patch((*gocql.Query).Iter, func(q *gocql.Query) *gocql.Iter {
-		return &gocql.Iter{}
-	})
-	defer monkey.Unpatch((*gocql.Query).Iter)
-
-	monkey.Patch((*gocql.Iter).Scan, func(iter *gocql.Iter, dest ...interface{}) bool {
-		count := dest[0].(*int64)
-		*count = int64(1)
-		return true
-	})
-	defer monkey.Unpatch((*gocql.Iter).Scan)
-
-	ctrl := gomock.NewController(t)
-	storage := NewMockStorage(ctrl)
-	defer ctrl.Finish()
-	storage.EXPECT().Count(gomock.Any(), gomock.Any()).Return(int64(1))
-
-	s := &TraceService{
-		p: &provider{
-			Cfg: &config{
-				QuerySource: querySource{
-					Cassandra:     true,
-					ElasticSearch: true,
-				},
-			},
-			cassandraSession: &cassandra.Session{},
-		},
-		StorageReader: storage,
+func TestTraceService_GetSpanCount(t *testing.T) {
+	type fields struct {
+		p                     *provider
+		i18n                  i18n.Translator
+		traceRequestHistoryDB *db.TraceRequestHistoryDB
+		Source                source.TraceSource
 	}
-
-	result, err := s.GetSpanCount(context.Background(), "trace-id-1")
-	if err != nil {
-		t.Errorf("should not err, but got err: %s", err)
+	type args struct {
+		ctx     context.Context
+		traceID string
 	}
-	if result != 2 {
-		t.Errorf("expect %d, but got %d", 2, result)
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    int64
+		wantErr bool
+	}{
+		{"case1", fields{Source: &source.ElasticsearchSource{}}, args{}, 1, false},
+		{"case2", fields{Source: &source.CassandraSource{}}, args{}, 1, false},
 	}
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			monkey.UnpatchAll()
+			s := &TraceService{Source: tt.fields.Source}
+			esc := &source.ElasticsearchSource{}
+			monkey.PatchInstanceMethod(reflect.TypeOf(esc), "GetSpanCount", func(ecs *source.ElasticsearchSource, ctx context.Context, traceID string) int64 {
+				return 1
+			})
 
-func Test_GetSpanCount_WithCassandraDisabled_Should_Not_CallCassandra(t *testing.T) {
-	cassandraCalled := false
+			cs := &source.CassandraSource{}
+			monkey.PatchInstanceMethod(reflect.TypeOf(cs), "GetSpanCount", func(ecs *source.CassandraSource, ctx context.Context, traceID string) int64 {
+				return 1
+			})
 
-	monkey.Patch((*cassandra.Session).Session, func(s *cassandra.Session) *gocql.Session {
-		cassandraCalled = true
-		return &gocql.Session{}
-	})
-	defer monkey.Unpatch((*cassandra.Session).Session)
-
-	monkey.Patch((*gocql.Session).Query, func(s *gocql.Session, stmt string, values ...interface{}) *gocql.Query {
-		return &gocql.Query{}
-	})
-	defer monkey.Unpatch((*gocql.Session).Query)
-
-	monkey.Patch((*gocql.Query).Iter, func(q *gocql.Query) *gocql.Iter {
-		return &gocql.Iter{}
-	})
-	defer monkey.Unpatch((*gocql.Query).Iter)
-
-	monkey.Patch((*gocql.Iter).Scan, func(iter *gocql.Iter, dest ...interface{}) bool {
-		count := dest[0].(*int64)
-		*count = int64(1)
-		return true
-	})
-	defer monkey.Unpatch((*gocql.Iter).Scan)
-
-	ctrl := gomock.NewController(t)
-	storage := NewMockStorage(ctrl)
-	defer ctrl.Finish()
-	storage.EXPECT().Count(gomock.Any(), gomock.Any()).Return(int64(1))
-
-	s := &TraceService{
-		p: &provider{
-			Cfg: &config{
-				QuerySource: querySource{
-					Cassandra:     false,
-					ElasticSearch: true,
-				},
-			},
-			cassandraSession: &cassandra.Session{},
-		},
-		StorageReader: storage,
-	}
-
-	result, err := s.GetSpanCount(context.Background(), "trace-id-1")
-	if err != nil {
-		t.Errorf("should not err, but got err: %s", err)
-	}
-	if result != 1 {
-		t.Errorf("expect %d, but got %d", 1, result)
-	}
-	if cassandraCalled {
-		t.Errorf("should not call cassandra")
+			got, err := s.GetSpanCount(tt.args.ctx, tt.args.traceID)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetSpanCount() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("GetSpanCount() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

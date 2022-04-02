@@ -14,6 +14,10 @@
 
 package dto
 
+import (
+	"strings"
+)
+
 type Service struct {
 	// 绑定服务id，必填
 	Id string `json:"id"`
@@ -44,10 +48,53 @@ type KongRouteReqDto struct {
 	RegexPriority int `json:"regex_priority,omitempty"`
 	// 真正的路由id，更新时使用
 	RouteId string `json:"-"`
+
+	// Path handling algorithms.
+	// "v0" is the behavior used in Kong 0.x and 2.x. It treats service.path,
+	// route.path and request path as segments of a url. It will always join
+	// them via slashes. Given a service path /s, route path /r and request
+	// path /re, the concatenated path will be /s/re. If the resulting path
+	// is a single slash, no further transformation is done to it. If it’s
+	// longer, then the trailing slash is removed.
+	//
+	// "v1" is the behavior used in Kong 1.x. It treats service.path as a prefix,
+	// and ignores the initial slashes of the request and route paths. Given service
+	// path /s, route path /r and request path /re, the concatenated path will be /sre.
+	//
+	// See more https://docs.konghq.com/enterprise/2.2.x/admin-api/#path-handling-algorithms
+	PathHandling *string `json:"path_handling,omitempty"`
+}
+
+func NewKongRouteReqDto() *KongRouteReqDto {
+	stripPath := true
+	pathHandling := "v1"
+	return &KongRouteReqDto{
+		StripPath:    &stripPath,
+		PathHandling: &pathHandling,
+	}
 }
 
 // IsEmpty
 func (dto KongRouteReqDto) IsEmpty() bool {
 	return dto.Service == nil || len(dto.Service.Id) == 0 ||
 		(len(dto.Methods) == 0 && len(dto.Hosts) == 0 && len(dto.Paths) == 0)
+}
+
+func (dto *KongRouteReqDto) Adjust(opts ...Option) {
+	for _, opt := range opts {
+		opt(dto)
+	}
+}
+
+type Option func(dto *KongRouteReqDto)
+
+func Versioning(i interface{ GetVersion() (string, error) }) Option {
+	return func(dto *KongRouteReqDto) {
+		if version, err := i.GetVersion(); err == nil && strings.HasPrefix(version, "2.") {
+			pathHandling := "v1"
+			dto.PathHandling = &pathHandling
+			return
+		}
+		dto.PathHandling = nil
+	}
 }

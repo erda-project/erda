@@ -20,13 +20,13 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/erda-project/erda-infra/pkg/transport"
 	infrai18n "github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-proto-go/core/dicehub/release/pb"
 	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/i18n"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
@@ -52,7 +52,7 @@ var (
 	lang struct{ Lang string }
 )
 
-func (d *DeploymentOrder) RenderDetail(ctx context.Context, userId, releaseId, workspace string) (*apistructs.DeploymentOrderDetail, error) {
+func (d *DeploymentOrder) RenderDetail(ctx context.Context, id, userId, releaseId, workspace string, modes []string) (*apistructs.DeploymentOrderDetail, error) {
 	ctx = transport.WithHeader(ctx, metadata.New(map[string]string{httputil.InternalHeader: "true"}))
 	langCodes, _ := ctx.Value(lang).(infrai18n.LanguageCodes)
 
@@ -71,7 +71,7 @@ func (d *DeploymentOrder) RenderDetail(ctx context.Context, userId, releaseId, w
 		return nil, apierrors.ErrRenderDeploymentOrderDetail.AccessDenied()
 	}
 
-	asi, err := d.composeAppsInfoByReleaseResp(releaseResp.Data, workspace)
+	asi, err := d.composeAppsInfoByReleaseResp(releaseResp.Data, workspace, modes)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,10 @@ func (d *DeploymentOrder) RenderDetail(ctx context.Context, userId, releaseId, w
 		return nil, fmt.Errorf("failed to render application precheck result, err: %v", err)
 	}
 
-	orderId := uuid.NewString()
+	orderId := id
+	if orderId == "" {
+		orderId = uuid.NewString()
+	}
 
 	return &apistructs.DeploymentOrderDetail{
 		DeploymentOrderItem: apistructs.DeploymentOrderItem{
@@ -230,50 +233,31 @@ func (d *DeploymentOrder) staticPreCheck(langCodes infrai18n.LanguageCodes, user
 	return failReasons, nil
 }
 
-func (d *DeploymentOrder) composeAppsInfoByReleaseResp(releaseResp *pb.ReleaseGetResponseData, workspace string) (
+func (d *DeploymentOrder) composeAppsInfoByReleaseResp(releaseResp *pb.ReleaseGetResponseData, workspace string, modes []string) (
 	[][]*apistructs.ApplicationInfo, error) {
 
 	asi := make([][]*apistructs.ApplicationInfo, 0)
 	if releaseResp.IsProjectRelease {
-		params, err := d.fetchApplicationsParams(releaseResp, workspace)
+		for _, mode := range modes {
+			if _, ok := releaseResp.Modes[mode]; !ok {
+				return nil, errors.Errorf("mode %s does not exist in release modes list", mode)
+			}
+		}
+		deployList := renderDeployList(modes, releaseResp.Modes)
+		params, err := d.fetchApplicationsParams(releaseResp, deployList, workspace)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch deployment params, err: %v", err)
 		}
 
-		releasesId := make([]string, 0)
-		for i := 0; i < len(releaseResp.ApplicationReleaseList); i++ {
-			if releaseResp.ApplicationReleaseList[i] == nil {
-				continue
-			}
-			for _, r := range releaseResp.ApplicationReleaseList[i].List {
-				releasesId = append(releasesId, r.ReleaseID)
-			}
-		}
-
-		releases, err := d.db.ListReleases(releasesId)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list release, err: %v", err)
-		}
-
-		releasesMap := make(map[string]*dbclient.Release)
-
-		for _, r := range releases {
-			releasesMap[r.ReleaseId] = r
-		}
-
-		for _, batch := range releaseResp.ApplicationReleaseList {
+		for _, batch := range deployList {
 			ai := make([]*apistructs.ApplicationInfo, 0)
-			for _, r := range batch.List {
-				ret, ok := releasesMap[r.ReleaseID]
-				if !ok {
-					return nil, fmt.Errorf("failed to get releases %s from dicehub", r.ReleaseID)
-				}
+			for _, r := range batch {
 
 				ai = append(ai, &apistructs.ApplicationInfo{
 					Id:       uint64(r.ApplicationID),
 					Name:     r.ApplicationName,
 					Params:   covertParamsType(params[r.ApplicationName]),
-					DiceYaml: ret.DiceYaml,
+					DiceYaml: r.DiceYml,
 				})
 			}
 			asi = append(asi, ai)

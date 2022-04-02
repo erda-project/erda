@@ -72,9 +72,9 @@ func (p *provider) Deploy(req handlers.ResourceDeployRequest) (*handlers.Resourc
 			return
 		}
 		if err != nil {
-			p.defaultHandler.Callback(req.Callback, req.Uuid, false, nil, req.Options)
+			p.defaultHandler.Callback(req.Callback, req.Uuid, false, nil, req.Options, err.Error())
 		} else {
-			p.defaultHandler.Callback(req.Callback, result.ID, true, result.Config, result.Options)
+			p.defaultHandler.Callback(req.Callback, result.ID, true, result.Config, result.Options, "")
 		}
 	}()
 	if err != nil {

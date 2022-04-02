@@ -131,6 +131,7 @@ func (e *expressionService) readMetricRule(root string) error {
 			if err != nil {
 				return err
 			}
+			expression.Enable = true
 			MetricExpression = append(MetricExpression, expression)
 			return nil
 		})
@@ -211,7 +212,7 @@ func (e *expressionService) readAlertRule(root string) error {
 }
 
 func (e *expressionService) GetAlertExpressions(ctx context.Context, request *pb.GetExpressionsRequest) (*pb.GetExpressionsResponse, error) {
-	alertExpressions, err := e.alertDB.GetAllAlertExpression(request.PageNo, request.PageSize)
+	alertExpressions, count, err := e.alertDB.GetAllAlertExpression(request.PageNo, request.PageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +228,7 @@ func (e *expressionService) GetAlertExpressions(ctx context.Context, request *pb
 	return &pb.GetExpressionsResponse{
 		Data: &pb.ExpressionData{
 			List:  alertExpressionArr,
-			Total: int64(len(alertExpressions)),
+			Total: count,
 		},
 	}, nil
 }

@@ -516,3 +516,104 @@ func TestInstanceInfoImpl_QueryService(t *testing.T) {
 		})
 	}
 }
+
+func TestInstanceInfoImpl_GetInstanceInfo(t *testing.T) {
+	type fields struct {
+		db *insinfo.Client
+	}
+	type args struct {
+		req apistructs.InstanceInfoRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    apistructs.InstanceInfoDataList
+		wantErr bool
+	}{
+		{
+			name: "Test_01",
+			fields: fields{
+				db: &insinfo.Client{},
+			},
+			args: args{
+				req: apistructs.InstanceInfoRequest{
+					Cluster: "Fake",
+				},
+			},
+			want:    apistructs.InstanceInfoDataList{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i := &InstanceInfoImpl{
+				db: tt.fields.db,
+			}
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(i), "QueryInstance", func(_ *InstanceInfoImpl, cond QueryInstanceConditions) (apistructs.InstanceInfoDataList, error) {
+				return apistructs.InstanceInfoDataList{}, nil
+			})
+			defer patch.Unpatch()
+
+			got, err := i.GetInstanceInfo(tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetInstanceInfo() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetInstanceInfo() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestInstanceInfoImpl_GetPodInfo(t *testing.T) {
+	type fields struct {
+		db *insinfo.Client
+	}
+	type args struct {
+		req apistructs.PodInfoRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    apistructs.PodInfoDataList
+		wantErr bool
+	}{
+		{
+			name: "Test_01",
+			fields: fields{
+				db: &insinfo.Client{},
+			},
+			args: args{
+				req: apistructs.PodInfoRequest{
+					Cluster: "Fake",
+				},
+			},
+			want:    apistructs.PodInfoDataList{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i := &InstanceInfoImpl{
+				db: tt.fields.db,
+			}
+
+			patch := monkey.PatchInstanceMethod(reflect.TypeOf(i), "QueryPod", func(_ *InstanceInfoImpl, cond QueryPodConditions) (apistructs.PodInfoDataList, error) {
+				return apistructs.PodInfoDataList{}, nil
+			})
+			defer patch.Unpatch()
+
+			got, err := i.GetPodInfo(tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetPodInfo() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetPodInfo() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

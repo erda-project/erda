@@ -97,12 +97,12 @@ func (a *Addon) MySQLDeployStatus(addonIns *dbclient.AddonInstance, serviceGroup
 	}
 
 	// 查询集群operator支持情况
-	capacity, err := a.bdl.CapacityInfo(addonIns.Cluster)
+	capacity := a.cap.CapacityInfo(addonIns.Cluster)
 	if err != nil {
 		return nil, err
 	}
 
-	if !capacity.Data.MysqlOperator {
+	if !capacity.MysqlOperator {
 		logrus.Info("mysql operator switch is off")
 		// 执行mysql主从初始化
 		if err := a.initMsAfterStart(serviceGroup, masterName.Value, decPwd, clusterInfo); err != nil {
@@ -494,7 +494,7 @@ func (a *Addon) BuildRealZkServiceItem(params *apistructs.AddonHandlerCreateItem
 			"ZOO_AUTO_RETAINCOUNT": "3",
 			"ZOO_MY_ID":            strconv.Itoa(i),
 			"ZOO_SERVERS":          strings.Join(zooServerLi, "\n"),
-			"JAVA_OPTS":            strings.Join([]string{"-Xms", heapSize, "m -Xmx", heapSize, "m"}, ""),
+			"ZK_SERVER_HEAP":       heapSize,
 		}
 		// volume信息
 		clusterType := (*clusterInfo)[apistructs.DICE_CLUSTER_TYPE]
@@ -1006,7 +1006,7 @@ func (a *Addon) BuildESOperatorServiceItem(options map[string]string, addonIns *
 	}
 	addonDice.Meta = map[string]string{
 		"USE_OPERATOR": "elasticsearch",
-		"VERSION":      "6.8.9",
+		"VERSION":      version,
 	}
 	//设置环境变量
 	for _, v := range addonDice.Services {
@@ -1019,11 +1019,14 @@ func (a *Addon) BuildESOperatorServiceItem(options map[string]string, addonIns *
 			v.Envs["ADDON_ID"] = addonIns.ID
 			v.Envs["requirepass"] = password
 		}
-
+		// set options for label
+		if len(v.Labels) == 0 {
+			v.Labels = make(map[string]string)
+		}
 		SetlabelsFromOptions(options, v.Labels)
 
 		//  主要目的是传递 PVC 相关信息
-		vol01 := SetAddonVolumes(options, "", false)
+		vol01 := SetAddonVolumes(options, "/for-operator", false)
 		v.Volumes = diceyml.Volumes{vol01}
 	}
 	return nil
@@ -1054,7 +1057,7 @@ func (a *Addon) BuildMysqlOperatorServiceItem(options map[string]string, addonIn
 		SetlabelsFromOptions(options, v.Labels)
 
 		//  主要目的是传递 PVC 相关信息
-		vol01 := SetAddonVolumes(options, "", false)
+		vol01 := SetAddonVolumes(options, "/for-operator", false)
 		v.Volumes = diceyml.Volumes{vol01}
 
 		addonInstanceExtra := dbclient.AddonInstanceExtra{
@@ -1369,7 +1372,7 @@ func (a *Addon) BuildCanalServiceItem(params *apistructs.AddonHandlerCreateItem,
 		addroptions := a.guessCanalAddr(*instanceroutings, instances)
 		if len(addroptions) == 0 {
 			return fmt.Errorf("未设置 canal 参数")
-		} else if a.Logger != nil {
+		} else {
 			a.pushLog(fmt.Sprintf("自动获取 canal 参数: %+v", addroptions), params)
 		}
 		if params.Options == nil {

@@ -17,7 +17,6 @@ package endpoints
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -176,7 +175,7 @@ func (e *Endpoints) DeleteAPIAssetVersion(ctx context.Context, r *http.Request, 
 	return httpserver.OkResp(nil)
 }
 
-// 下载 swagger 文本
+// DownloadSpecText is the endpoint for downloading swagger text file
 func (e *Endpoints) DownloadSpecText(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) (err error) {
 	identity, err := user.GetIdentityInfo(r)
 	if err != nil {
@@ -207,18 +206,9 @@ func (e *Endpoints) DownloadSpecText(ctx context.Context, w http.ResponseWriter,
 		return apiError.Write(w)
 	}
 
-	v := "oas3"
-	suffix := "yaml"
-	if strings.HasPrefix(req.QueryParams.SpecProtocol, "oas2") {
-		v = "oas3"
-	}
-	if strings.HasSuffix(req.QueryParams.SpecProtocol, "json") {
-		suffix = "json"
-	}
-	attachment := fmt.Sprintf(`attachment; filename="%s-%d-%s.%s"`, req.URIParams.AssetID, req.URIParams.VersionID, v, suffix)
-
 	w.Header().Add("Content-Type", "text/plain")
-	w.Header().Add("Content-Disposition", attachment)
+	w.Header().Add("Content-Disposition", Attachment(req.URIParams.AssetID, strconv.FormatUint(req.URIParams.VersionID, 10),
+		req.QueryParams.SpecProtocol))
 
 	if _, err = w.Write(data); err != nil {
 		w.Header().Del("Content-Disposition")
@@ -264,4 +254,21 @@ func (e *Endpoints) UpdateAssetVersion(ctx context.Context, r *http.Request, var
 	}
 
 	return httpserver.OkResp(data)
+}
+
+// Attachment generates attachment by specProtocol
+func Attachment(assetID, versionID, specProtocol string) string {
+	v := "oas3"
+	suffix := "yaml"
+	if strings.HasPrefix(specProtocol, "oas2") {
+		v = "oas2"
+	}
+	if strings.HasSuffix(specProtocol, "json") {
+		suffix = "json"
+	}
+	if specProtocol == "csv" {
+		suffix = "csv"
+	}
+	filename := assetID + "-" + versionID + "-" + v + "." + suffix
+	return "attachment; filename=" + strconv.Quote(filename)
 }

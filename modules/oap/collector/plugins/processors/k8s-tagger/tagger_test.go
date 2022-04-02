@@ -23,7 +23,7 @@ import (
 func Test_generateIndexByMatcher(t *testing.T) {
 	type args struct {
 		matcher string
-		tags    map[string]string
+		tags    map[string]interface{}
 	}
 	tests := []struct {
 		name string
@@ -33,7 +33,7 @@ func Test_generateIndexByMatcher(t *testing.T) {
 		{
 			args: args{
 				matcher: "%{namespace}/%{pod}",
-				tags: map[string]string{
+				tags: map[string]interface{}{
 					"pod":       "aaa",
 					"namespace": "default",
 				},
@@ -44,7 +44,7 @@ func Test_generateIndexByMatcher(t *testing.T) {
 			name: "single match",
 			args: args{
 				matcher: "%{namespace}/%{pod}",
-				tags: map[string]string{
+				tags: map[string]interface{}{
 					"pod":        "aaa",
 					"namespacex": "default",
 				},
@@ -55,12 +55,64 @@ func Test_generateIndexByMatcher(t *testing.T) {
 			name: "not match",
 			args: args{
 				matcher: "%{namespace}/%{pod}",
-				tags: map[string]string{
+				tags: map[string]interface{}{
 					"podx":       "aaa",
 					"namespacex": "default",
 				},
 			},
 			want: "%{namespace}/%{pod}",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := generateIndexByMatcher(tt.args.matcher, tt.args.tags); got != tt.want {
+				t.Errorf("generateIndexByMatcher() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_generateIndexByMatcher1(t *testing.T) {
+	type args struct {
+		matcher string
+		tags    map[string]interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want pod.Key
+	}{
+		{
+			args: args{
+				matcher: "%{pod_namespace}/%{pod_name}/%{container}",
+				tags: map[string]interface{}{
+					"pod_namespace": "default",
+					"pod_name":      "p1",
+					"container":     "c1",
+				},
+			},
+			want: "default/p1/c1",
+		},
+		{
+			args: args{
+				matcher: "%{namespace}/%{name}/%{container}",
+				tags: map[string]interface{}{
+					"namespace": "default",
+					"name":      "p1",
+					"container": "c1",
+				},
+			},
+			want: "default/p1/c1",
+		},
+		{
+			args: args{
+				matcher: "%{namespace}/%{name}/%{container}",
+				tags: map[string]interface{}{
+					"name":      "p1",
+					"container": "c1",
+				},
+			},
+			want: "%{namespace}/p1/c1",
 		},
 	}
 	for _, tt := range tests {

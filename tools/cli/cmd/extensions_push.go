@@ -27,21 +27,19 @@ import (
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/tools/cli/command"
-	"github.com/erda-project/erda/tools/cli/format"
+	"github.com/erda-project/erda/tools/cli/utils"
 )
 
 var EXTENSIONSPUSH = command.Command{
 	Name:       "push",
 	ParentName: "EXT",
 	ShortHelp:  "push extension",
-	Example: `
-  $ dice ext push -f --public
-`,
+	Example:    "$ erda-cli ext push -f --public",
 	Flags: []command.Flag{
-		command.BoolFlag{Short: "f", Name: "force", Doc: "override exist version", DefaultValue: false},
-		command.BoolFlag{Short: "a", Name: "all", Doc: "override exist extension and version,must with -f", DefaultValue: false},
-		command.StringFlag{Short: "d", Name: "dir", Doc: "extension dir", DefaultValue: ""},
-		command.StringFlag{Short: "r", Name: "registry", Doc: "new registry", DefaultValue: ""},
+		command.BoolFlag{Short: "f", Name: "force", Doc: "if true, override exist version", DefaultValue: false},
+		command.BoolFlag{Short: "a", Name: "all", Doc: "if true, override exist extension and version, must with -f", DefaultValue: false},
+		command.StringFlag{Short: "d", Name: "dir", Doc: "the extension dir", DefaultValue: ""},
+		command.StringFlag{Short: "r", Name: "registry", Doc: "the new registry", DefaultValue: ""},
 	},
 	Run: RunExtensionsPush,
 }
@@ -113,22 +111,22 @@ func pushExtension(ctx *command.Context, request apistructs.ExtensionVersionCrea
 	response, err := ctx.Post().Path(urlPath).JSONBody(request).Do().Body(&b)
 	if err != nil {
 		return fmt.Errorf(
-			format.FormatErrMsg("extension push", "failed to request ("+err.Error()+")", false))
+			utils.FormatErrMsg("extension push", "failed to request ("+err.Error()+")", false))
 	}
 
 	if !response.IsOK() {
-		return fmt.Errorf(format.FormatErrMsg("extension push",
+		return fmt.Errorf(utils.FormatErrMsg("extension push",
 			fmt.Sprintf("failed to request, status-code: %d %s",
 				response.StatusCode(), b.String()), false))
 	}
 
 	if err = json.Unmarshal(b.Bytes(), &resp); err != nil {
-		return fmt.Errorf(format.FormatErrMsg("extension push",
+		return fmt.Errorf(utils.FormatErrMsg("extension push",
 			fmt.Sprintf("failed to unmarshal build extension response ("+err.Error()+")"), false))
 	}
 
 	if !resp.Success {
-		return fmt.Errorf(format.FormatErrMsg("extension push",
+		return fmt.Errorf(utils.FormatErrMsg("extension push",
 			fmt.Sprintf("failed to request, error code: %s, error message: %s",
 				resp.Error.Code, resp.Error.Msg), false))
 	}

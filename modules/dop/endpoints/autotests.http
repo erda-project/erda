@@ -1,3 +1,16 @@
+### batch update cms
+PUT http://localhost:9527/api/cicds/configs?namespace_name=pipeline-secrets-app-317-default&encrypt=true&appID=317
+user-id: 2
+ORG-ID: 1
+Content-Type: application/json
+
+{
+  "configs": [
+    {"key":"c","type":"dice-file","encrypt":false,"value":"01b7b6dacd104df487bdaa435eb39c42","comment":"zxc"}
+  ],
+  "batch": false
+}
+
 ### project pipeline pre check same name
 GET http://localhost:9527/api/project-pipeline/actions/name-pre-check?projectID=1&name=qwe1
 user-id: 2

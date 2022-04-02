@@ -32,6 +32,7 @@ import (
 	"github.com/erda-project/erda/modules/orchestrator/events"
 	"github.com/erda-project/erda/modules/orchestrator/queue"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/instanceinfo"
 	"github.com/erda-project/erda/modules/orchestrator/services/addon"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment"
 	"github.com/erda-project/erda/modules/orchestrator/services/deployment_order"
@@ -48,22 +49,23 @@ import (
 
 // Endpoints 定义 endpoint 方法
 type Endpoints struct {
-	db              *dbclient.DBClient // TODO: Endpoints should not take db
-	queue           *queue.PusherQueue
-	bdl             *bundle.Bundle
-	pool            *goroutinepool.GoroutinePool
-	evMgr           *events.EventManager
-	runtime         *runtime.Runtime
-	deployment      *deployment.Deployment
-	deploymentOrder *deployment_order.DeploymentOrder
-	domain          *domain.Domain
-	addon           *addon.Addon
-	resource        *resource.Resource
-	encrypt         *encryption.EnvEncrypt
-	instance        *instance.Instance
-	migration       *migration.Migration
-	releaseSvc      pb.ReleaseServiceServer
-	scheduler       *scheduler.Scheduler
+	db               *dbclient.DBClient // TODO: Endpoints should not take db
+	queue            *queue.PusherQueue
+	bdl              *bundle.Bundle
+	pool             *goroutinepool.GoroutinePool
+	evMgr            *events.EventManager
+	runtime          *runtime.Runtime
+	deployment       *deployment.Deployment
+	deploymentOrder  *deployment_order.DeploymentOrder
+	domain           *domain.Domain
+	addon            *addon.Addon
+	resource         *resource.Resource
+	encrypt          *encryption.EnvEncrypt
+	instance         *instance.Instance
+	migration        *migration.Migration
+	releaseSvc       pb.ReleaseServiceServer
+	scheduler        *scheduler.Scheduler
+	instanceinfoImpl *instanceinfo.InstanceInfoImpl
 }
 
 // Option Endpoints 配置选项
@@ -182,6 +184,12 @@ func WithMigration(migration *migration.Migration) Option {
 func WithReleaseSvc(svc pb.ReleaseServiceServer) Option {
 	return func(e *Endpoints) {
 		e.releaseSvc = svc
+	}
+}
+
+func WithInstanceinfoImpl(instanceinfoImpl *instanceinfo.InstanceInfoImpl) Option {
+	return func(e *Endpoints) {
+		e.instanceinfoImpl = instanceinfoImpl
 	}
 }
 
@@ -334,37 +342,20 @@ func (e *Endpoints) Routes() []httpserver.Endpoint {
 		{Path: "/v1/jobs", Method: http.MethodDelete, Handler: e.scheduler.Httpendpoints.DeleteJobs},
 		{Path: "/v1/job/{namespace}/{name}", Method: http.MethodGet, Handler: e.scheduler.Httpendpoints.JobInspect},
 
-		// Deprecated, use for forward compatibility
-		// service endpoints
-		{Path: "/v1/runtime/{namespace}/{name}/cancel", Method: http.MethodPost, Handler: e.scheduler.EpCancelAction},
-
-		// Deprecated, use for forward compatibility
-		// runtimeinfo endpoints for display
-		{Path: "/v1/runtimeinfo/status/{namespace}/{name}", Method: http.MethodGet, Handler: e.scheduler.EpGetRuntimeStatus},
-
 		// servicegroup endpoints
 		{Path: "/api/servicegroup", Method: http.MethodPost, Handler: e.scheduler.Httpendpoints.ServiceGroupCreate},
-		{Path: "/api/servicegroup", Method: http.MethodPut, Handler: e.scheduler.Httpendpoints.ServiceGroupUpdate},
 		{Path: "/api/servicegroup", Method: http.MethodDelete, Handler: e.scheduler.Httpendpoints.ServiceGroupDelete},
 		{Path: "/api/servicegroup", Method: http.MethodGet, Handler: i18nPrinter(e.scheduler.Httpendpoints.ServiceGroupInfo)},
-		{Path: "/api/servicegroup/actions/precheck", Method: http.MethodPost, Handler: e.scheduler.Httpendpoints.ServiceGroupPrecheck},
 		{Path: "/api/servicegroup/actions/config", Method: http.MethodPut, Handler: e.scheduler.Httpendpoints.ServiceGroupConfigUpdate},
-		{Path: "/api/servicegroup/actions/killpod", Method: http.MethodPost, Handler: e.scheduler.Httpendpoints.ServiceGroupKillPod},
-		{Path: "/api/servicegroup/actions/scale", Method: http.MethodPut, Handler: e.scheduler.Httpendpoints.ServiceScaling},
 
 		// creating cluster by hooking colony-soldier's event
 		{Path: "/clusterhook", Method: http.MethodPost, Handler: e.scheduler.Httpendpoints.ClusterHook},
 
 		{Path: "/api/nodelabels", Method: http.MethodGet, Handler: e.scheduler.Httpendpoints.LabelList},
 		{Path: "/api/nodelabels", Method: http.MethodPost, Handler: e.scheduler.Httpendpoints.SetNodeLabels},
-
-		{Path: "/api/podinfo", Method: http.MethodGet, Handler: e.scheduler.Httpendpoints.PodInfo},
 		{Path: "/api/instanceinfo", Method: http.MethodGet, Handler: e.scheduler.Httpendpoints.InstanceInfo},
-
 		{Path: "/api/clusterinfo/{clusterName}", Method: http.MethodGet, Handler: e.scheduler.Httpendpoints.ClusterInfo},
 		{Path: "/api/resourceinfo/{clusterName}", Method: http.MethodGet, Handler: e.scheduler.Httpendpoints.ResourceInfo},
-		{Path: "/api/capacity", Method: http.MethodGet, Handler: e.scheduler.Httpendpoints.CapacityInfo},
-
 		{Path: "/api/terminal", Method: http.MethodGet, WriterHandler: e.scheduler.Httpendpoints.Terminal},
 	}
 }

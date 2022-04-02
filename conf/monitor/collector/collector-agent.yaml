@@ -1,0 +1,189 @@
+# edge cluster collector config
+http-server:
+  addr: ":7076"
+
+health:
+  path: "/api/health"
+
+erda.oap.collector.core:
+  pipelines:
+    - receivers:
+        #- "erda.oap.collector.receiver.dummy"
+        - "erda.oap.collector.receiver.prometheus-remote-write"
+      processors:
+        - "erda.oap.collector.processor.k8s-tagger@prw"
+        - "erda.oap.collector.processor.modifier"
+        - "erda.oap.collector.processor.modifier@addmeta"
+        - "erda.oap.collector.processor.modifier@docker_container_summary"
+      exporters:
+        #- "erda.oap.collector.exporter.stdout"
+        - "erda.oap.collector.exporter.collector"
+
+# ************* receivers *************
+#erda.oap.collector.receiver.dummy:
+#  rate: 3s
+#  metric_sample: '{"name":"kubernetes_nodes_cadvisor","timeUnixNano":1640936985459000000,"relations":null,"attributes":{"container":"manager","host_ip":"10.118.177.94","id":"/kubepods/burstable/pod164ec226-8106-4904-9bcb-0218a9b2b793/8367a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49dec","image":"sha256:6cd7bc0e0855164e7ff495c6ec9a37cf8657f8170fe97055ffba2c63343bcedd","instance":"virtual-kubelet-cn-hangzhou-k","name":"8367a8b0993ebdf8883a0ad8be9c3978b04883e56a156a8de563afa467d49dec","namespace":"default","pod":"elasticsearch-operator-776689d978-mjdzq","pod_name":"elasticsearch-operator-776689d978-mjdzq"},"dataPoints":{"container_cpu_usage_seconds_total":13995.161470334,"container_memory_max_usage_bytes":273977344}}'
+
+erda.oap.collector.receiver.prometheus-remote-write:
+# ************* receivers *************
+
+# ************* processors *************
+erda.oap.collector.processor.k8s-tagger@prw:
+  keypass:
+    __kw__name: ["kubernetes_nodes_cadvisor"]
+  pod:
+    watch_selector:
+      namespace: ""
+      label_selector: ""
+      field_slector: ""
+    add_metadata:
+      label_include: []
+      annotation_include:
+        - "msp.erda.cloud/application_name"
+        - "msp.erda.cloud/org_name"
+        - "msp.erda.cloud/project_name"
+        - "msp.erda.cloud/runtime_name"
+        - "msp.erda.cloud/service_name"
+        - "msp.erda.cloud/terminus_key"
+        - "msp.erda.cloud/workspace"
+      finder:
+        indexer: pod_name_container
+        matcher: "%{namespace}/%{pod}/%{container}"
+
+erda.oap.collector.processor.modifier:
+  keypass:
+    __kw__name: ["kubernetes_nodes_cadvisor"]
+  rules:
+    - action: drop
+      key: kubernetes_pod_name
+    - action: drop
+      key: kubernetes_pod_namespace
+    - action: rename
+      key: pod
+      value: pod_name
+    - action: rename
+      key: namespace
+      value: pod_namespace
+    - action: drop
+      key: kubernetes_pod_annotations_msp_erda_cloud_monitor_log_collector
+    - action: drop
+      key: kubernetes_pod_annotations_msp_erda_cloud_monitor_log_key
+    - action: drop
+      key: kubernetes_pod_annotations_msp_erda_cloud_msp_log_attach
+    - action: drop
+      key: kubernetes_pod_annotations_msp_erda_cloud_terminus_log_key
+    - action: drop
+      key: instance
+    - action: drop
+      key: prometheus
+    - action: drop
+      key: prometheus_replica
+    - action: trim_prefix
+      key: kubernetes_
+    - action: trim_prefix
+      key: pod_annotations_msp_erda_cloud_
+    - action: copy
+      key: pod_uid
+      # for business
+      value: service_instance_id
+    - action: add
+      key: cluster_name
+      value: ${DICE_CLUSTER_NAME}
+    - action: add
+      key: org_name
+      value: ${DICE_ORG_NAME}
+
+erda.oap.collector.processor.modifier@addmeta:
+  rules:
+    - action: add
+      key: _meta
+      value: "true"
+    - action: add
+      key: _metric_scope
+      value: org
+    - action: copy
+      key: org_name
+      value: _metric_scope_id
+
+# compatibility to docker_container_summary
+erda.oap.collector.processor.modifier@docker_container_summary:
+  keypass:
+    __kw__name: ["kubernetes_nodes_cadvisor"]
+  rules:
+    - action: rename
+      key: __dp__container_fs_reads_bytes_total
+      value: __dp__blk_read_bytes
+    - action: rename
+      key: __dp__container_fs_reads_total
+      value: __dp__blk_reads
+    - action: rename
+      key: __dp__container_fs_writes_bytes_total
+      value: __dp__blk_write_bytes
+    - action: rename
+      key: __dp__container_fs_writes_total
+      value: __dp__blk_writes
+    - action: rename
+      key: __dp__container_memory_max_usage_bytes
+      value: __dp__mem_max_usage
+    - action: rename
+      key: __dp__container_memory_usage_bytes
+      value: __dp__mem_usage
+    - action: rename
+      key: __dp__container_network_receive_bytes_total
+      value: __dp__rx_bytes
+    - action: rename
+      key: __dp__container_network_receive_errors_total
+      value: __dp__rx_errors
+    - action: rename
+      key: __dp__container_network_transmit_bytes_total
+      value: __dp__tx_bytes
+    - action: rename
+      key: __dp__container_network_transmit_errors_total
+      value: __dp__tx_errors
+    - action: regex
+      key: id
+      value: '^\/kubepods\/\w+\/[\w|\-]+\/(?P<container_id>\w+)'
+    - action: rename
+      key: __dp__container_resources_memory_request
+      value: __dp__mem_allocation
+    - action: rename
+      key: __dp__container_resources_memory_limit
+      value: __dp__mem_limit
+    - action: rename
+      key: __dp__container_resources_cpu_request
+      value: __dp__cpu_allocation
+    - action: rename
+      key: __dp__container_resources_cpu_limit
+      value: __dp_cpu_limit
+    - action: set
+      key: __kw__name
+      value: docker_container_summary
+    - action: drop
+      key: name
+
+# ************* processors *************
+
+# ************* exporters *************
+erda.oap.collector.exporter.stdout:
+erda.oap.collector.exporter.collector:
+  url: ${COLLECTOR_PUBLIC_URL:http://localhost:7076}/api/v1/collect/metrics
+  authentication:
+    type: token
+    options:
+      token: ${CLUSTER_ACCESS_KEY:/erda-cluster-credential/CLUSTER_ACCESS_KEY}
+  headers:
+    content-type: "application/json; charset=UTF-8"
+    content-encoding: "gzip"
+    x-erda-cluster-key: ${DICE_CLUSTER_NAME}
+
+# ************* exporters *************
+
+kubernetes:
+  master_url: ${MASTER_VIP_URL:https://kubernetes.default.svc:443}
+  root_ca_file: ${K8S_CA_FILE:/var/run/secrets/kubernetes.io/serviceaccount/ca.crt}
+  token_file: ${K8S_TOKEN_FILE:/var/run/secrets/kubernetes.io/serviceaccount/token}
+#  config_path: .kube/config
+
+pprof:
+http-server@admin:
+  addr: ":7078"

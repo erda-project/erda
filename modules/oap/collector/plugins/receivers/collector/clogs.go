@@ -65,7 +65,7 @@ func (p *provider) sendRaw(name string, value []byte) error {
 		if err != nil {
 			return fmt.Errorf("getTopic with name: %s, err: %w", name, err)
 		}
-		od.AddMetadata(p.Cfg.MetadataKeyOfTopic, topic)
+		od.Metadata().Add(p.Cfg.MetadataKeyOfTopic, topic)
 	}
 
 	p.consumer(od)

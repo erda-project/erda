@@ -59,7 +59,7 @@ type Scheduler struct {
 }
 
 // NewScheduler creates a scheduler instance, it be used to handle servicegroup create/update/delete actions.
-func NewScheduler() *Scheduler {
+func NewScheduler(instanceinfoImpl instanceinfo.InstanceInfo) *Scheduler {
 	option := jsonstore.UseCacheEtcdStore(context.Background(), "/dice", 500)
 	store, err := jsonstore.New(option)
 	if err != nil {
@@ -90,7 +90,7 @@ func NewScheduler() *Scheduler {
 	servicegroupImpl := servicegroup.NewServiceGroupImpl(store, sched, clusterinfoImpl)
 	jobImpl := job.NewJobImpl(store, sched)
 	labelManagerImpl := labelmanager.NewLabelManager()
-	instanceinfoImpl := instanceinfo.NewInstanceInfoImpl()
+	// instanceinfoImpl := instanceinfo.NewInstanceInfoImpl()
 	componentImpl := instanceinfo.NewComponentInfoImpl()
 	resourceinfoImpl := resourceinfo.NewResourceInfoImpl()
 	capImpl := cap2.NewCapImpl()
@@ -143,7 +143,7 @@ func (s *Scheduler) clearMap() {
 
 // registerClusterHook register cluster webhook in eventBox
 func registerClusterHook() error {
-	bdl := bundle.New(bundle.WithEventBox())
+	bdl := bundle.New(bundle.WithCoreServices())
 
 	ev := apistructs.CreateHookRequest{
 		Name:   "scheduler-clusterhook",

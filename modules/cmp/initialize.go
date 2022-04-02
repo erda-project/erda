@@ -135,7 +135,6 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		bundle.WithCoreServices(),
 		bundle.WithOrchestrator(),
 		bundle.WithDiceHub(),
-		bundle.WithEventBox(),
 		bundle.WithClusterManager(),
 	}
 	bdl := bundle.New(bundleOpts...)
@@ -155,7 +154,7 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 		resource.ReportTableWithTrans(p.Tran),
 	)
 
-	ep, err := initEndpoints(ctx, db, js, cachedJs, bdl, o, p.Credential, resourceTable)
+	ep, err := p.initEndpoints(ctx, db, js, cachedJs, bdl, o, p.Credential, resourceTable)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +203,7 @@ func (p *provider) do(ctx context.Context) (*httpserver.Server, error) {
 	return server, nil
 }
 
-func initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle,
+func (p *provider) initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS jsonstore.JsonStore, bdl *bundle.Bundle,
 	o *org_resource.OrgResource, c credentialpb.AccessKeyServiceServer, rt *resource.ReportTable) (*endpoints.Endpoints, error) {
 
 	// compose endpoints
@@ -217,6 +216,7 @@ func initEndpoints(ctx context.Context, db *dbclient.DBClient, js, cachedJS json
 		endpoints.WithOrgResource(o),
 		endpoints.WithCredential(c),
 		endpoints.WithResourceTable(rt),
+		endpoints.WithCronServiceServer(p.CronService),
 	)
 
 	// Sync org resource task status

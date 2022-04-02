@@ -75,7 +75,7 @@ func TestLogStatement_GetStatement(t *testing.T) {
 		{
 			name:   "logs.LogMeta",
 			fields: fields{p: mockProvider()},
-			args: args{data: &logmodule.LogMeta{
+			args: args{data: &logmodule.Meta{
 				ID:     "aaa",
 				Source: "container",
 				Tags:   map[string]string{"level": "INFO"},

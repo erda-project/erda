@@ -109,6 +109,8 @@ func (p *provider) GetBubbleChart(ctx context.Context, bubbleType BubbleChartTyp
 		chartType = pb.ChartType_AvgDurationDistribution
 	case BubbleChartSlowReqDistribution:
 		chartType = pb.ChartType_SlowDurationDistribution
+	case BubbleChartErrorReqDistribution:
+		chartType = pb.ChartType_ErrorDurationDistribution
 	default:
 		return nil, fmt.Errorf("not supported bubbleChartType: %s", bubbleType)
 	}
@@ -135,7 +137,7 @@ func (p *provider) GetBubbleChart(ctx context.Context, bubbleType BubbleChartTyp
 	layout := "2006-01-02 15:04:05"
 	yUnitGetter := func(chartType pb.ChartType) (structure.Type, structure.Precision) {
 		switch strings.ToLower(chartType.String()) {
-		case strings.ToLower(pb.ChartType_AvgDurationDistribution.String()), strings.ToLower(pb.ChartType_SlowDurationDistribution.String()):
+		case strings.ToLower(pb.ChartType_AvgDurationDistribution.String()), strings.ToLower(pb.ChartType_SlowDurationDistribution.String()), strings.ToLower(pb.ChartType_ErrorDurationDistribution.String()):
 			return structure.Time, structure.Millisecond
 		default:
 			return structure.Number, ""
@@ -143,7 +145,7 @@ func (p *provider) GetBubbleChart(ctx context.Context, bubbleType BubbleChartTyp
 	}
 	yAxisFormatter := func(value float64) interface{} {
 		switch strings.ToLower(chartType.String()) {
-		case strings.ToLower(pb.ChartType_AvgDurationDistribution.String()), strings.ToLower(pb.ChartType_SlowDurationDistribution.String()):
+		case strings.ToLower(pb.ChartType_AvgDurationDistribution.String()), strings.ToLower(pb.ChartType_SlowDurationDistribution.String()), strings.ToLower(pb.ChartType_ErrorDurationDistribution.String()):
 			return math.DecimalPlacesWithDigitsNumber(value/1e6, 2)
 		default:
 			return value

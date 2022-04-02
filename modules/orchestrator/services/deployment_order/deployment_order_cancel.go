@@ -31,7 +31,7 @@ func (d *DeploymentOrder) Cancel(ctx context.Context, req *apistructs.Deployment
 		return nil, err
 	}
 
-	appsInfo, err := d.parseAppsInfoWithOrder(ctx, order)
+	appsInfo, err := d.parseAppsInfoWithOrder(order)
 	if err != nil {
 		logrus.Errorf("failed to get applications info, err: %v", err)
 		return nil, err

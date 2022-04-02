@@ -314,3 +314,6 @@ grpc-client@erda.core.messenger.notify:
   addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
 erda.core.messenger.notify-client:
 
+grpc-client@erda.core.messenger.notifygroup:
+  addr: "${CORE_SERVICES_GRPC_ADDR:core-services:9537}"
+erda.core.messenger.notifygroup-client:

@@ -62,9 +62,12 @@ func (s *entityService) GetEntity(ctx context.Context, req *pb.GetEntityRequest)
 
 func (s *entityService) ListEntities(ctx context.Context, req *pb.ListEntitiesRequest) (*pb.ListEntitiesResponse, error) {
 	list, total, err := s.storage.ListEntities(ctx, &storage.ListOptions{
-		Type:   req.Type,
-		Labels: req.Labels,
-		Limit:  int(req.Limit),
+		Type:                  req.Type,
+		Labels:                req.Labels,
+		Limit:                 int(req.Limit),
+		UpdateTimeUnixNanoMax: req.UpdateTimeUnixNanoMax,
+		UpdateTimeUnixNanoMin: req.UpdateTimeUnixNanoMin,
+		Debug:                 req.Debug,
 	})
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)

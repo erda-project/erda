@@ -15,12 +15,12 @@
 package servicegroup
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
 
 	"bou.ke/monkey"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/clusterinfo"
@@ -30,6 +30,7 @@ import (
 
 func Test_convertServiceGroup(t *testing.T) {
 	services := make(map[string]*diceyml.Service)
+	jobs := make(map[string]*diceyml.Job)
 	services["mysql-1"] = &diceyml.Service{
 		Image: "registry.erda.cloud/erda-addons-enterprise/addon-mysql:5.7.29-1.0.1-init",
 		Ports: make([]diceyml.ServicePort, 0),
@@ -78,11 +79,21 @@ func Test_convertServiceGroup(t *testing.T) {
 	services["mysql-1"].HealthCheck = diceyml.HealthCheck{
 		Exec: &diceyml.ExecCheck{Cmd: fmt.Sprintf("mysql -uroot -p%s  -e 'select 1'", "xxxxxx")},
 	}
-
+	jobs["job-1"] = &diceyml.Job{
+		Image: "registry.erda.cloud/job:5.7.29-1.0.1-init",
+		Envs:  make(map[string]string),
+		Resources: diceyml.Resources{
+			CPU: 1,
+			Mem: 4301,
+		},
+		Labels: make(map[string]string),
+		Binds:  make([]string, 0),
+	}
 	req := apistructs.ServiceGroupCreateV2Request{
 		DiceYml: diceyml.Object{
 			Version:  "2.0",
 			Services: services,
+			Jobs:     jobs,
 		},
 		ClusterName: "test",
 		ID:          "z44f5f6543f004d54ac2a2538efd4e9ec",
@@ -192,7 +203,7 @@ func Test_convertServiceGroup(t *testing.T) {
 				return addr
 			})
 
-			setServiceVolumesPatch := monkey.Patch(setServiceVolumes, func(clusterName string, service *diceyml.Service, clusterinfo clusterinfo.ClusterInfo, enableECI bool) ([]apistructs.Volume, error) {
+			setServiceVolumesPatch := monkey.Patch(setServiceVolumes, func(clusterName string, vs diceyml.Volumes, clusterinfo clusterinfo.ClusterInfo, enableECI bool) ([]apistructs.Volume, error) {
 				return []apistructs.Volume{}, nil
 			})
 
@@ -205,11 +216,7 @@ func Test_convertServiceGroup(t *testing.T) {
 				t.Errorf("convertServiceGroup() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			gots, _ := json.Marshal(got)
-			wants, _ := json.Marshal(tt.want)
-			if string(gots) != string(wants) {
-				t.Errorf("convertServiceGroup() got = %#v, +++++++++++++++++want \n %#v", got, tt.want)
-			}
+			assert.Equal(t, got.Services[0].Name, tt.want.Services[0].Name)
 		})
 	}
 }

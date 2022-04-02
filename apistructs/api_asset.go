@@ -30,6 +30,24 @@ const (
 	WorkspaceProd    WorkSpace = "PROD"
 )
 
+func (s WorkSpace) Valide() bool {
+	switch s {
+	case WorkspaceDev, WorkspaceTest, WorkspaceStaging, WorkspaceProd:
+		return true
+	default:
+		return false
+	}
+}
+
+func (s WorkSpace) ValideList() string {
+	return strings.Join([]string{
+		string(WorkspaceDev),
+		string(WorkspaceTest),
+		string(WorkspaceStaging),
+		string(WorkspaceProd),
+	}, ",")
+}
+
 type Authentication string
 
 func (s Authentication) ToLower() Authentication {

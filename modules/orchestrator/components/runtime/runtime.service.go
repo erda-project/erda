@@ -29,6 +29,7 @@ import (
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/orchestrator/dbclient"
 	"github.com/erda-project/erda/modules/orchestrator/events"
+	"github.com/erda-project/erda/modules/orchestrator/scheduler/impl/servicegroup"
 	"github.com/erda-project/erda/modules/orchestrator/services/apierrors"
 	"github.com/erda-project/erda/modules/orchestrator/spec"
 	"github.com/erda-project/erda/modules/pkg/user"
@@ -40,9 +41,10 @@ import (
 type Service struct {
 	logger logs.Logger
 
-	bundle BundleService
-	db     DBService
-	evMgr  EventManagerService
+	bundle           BundleService
+	db               DBService
+	evMgr            EventManagerService
+	serviceGroupImpl servicegroup.ServiceGroup
 }
 
 func convertRuntimeToPB(runtime *dbclient.Runtime, app *apistructs.ApplicationDTO) *pb.Runtime {
@@ -260,7 +262,7 @@ func (r *Service) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest)
 	}
 
 	if runtime.ScheduleName.Name != "" {
-		sg, _ = r.bundle.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
+		sg, _ = r.serviceGroupImpl.InspectServiceGroupWithTimeout(runtime.ScheduleName.Args())
 	}
 
 	if app, err = r.bundle.GetApp(runtime.ApplicationID); err != nil {
@@ -274,7 +276,7 @@ func (r *Service) GetRuntime(ctx context.Context, request *pb.GetRuntimeRequest)
 	fillInspectBase(ri, runtime, sg)
 	fillInspectByDeployment(ri, runtime, deployment, cluster)
 	fillInspectByApp(ri, runtime, app)
-	fillInspectDataWithServiceGroup(ri, dice.Services, sg, domainMap, string(deployment.Status))
+	fillInspectDataWithServiceGroup(ri, dice.Services, dice.Jobs, sg, domainMap, string(deployment.Status))
 	updateStatusToDisplay(ri)
 	if deployment.Status == apistructs.DeploymentStatusDeploying {
 		updateStatusWhenDeploying(ri)
@@ -348,7 +350,7 @@ func fillInspectByDeployment(data *pb.RuntimeInspect, runtime *dbclient.Runtime,
 	}
 }
 
-func fillInspectDataWithServiceGroup(data *pb.RuntimeInspect, targetService diceyml.Services,
+func fillInspectDataWithServiceGroup(data *pb.RuntimeInspect, targetService diceyml.Services, targetJob diceyml.Jobs,
 	sg *apistructs.ServiceGroup, domainMap map[string][]string, status string) {
 	statusServiceMap := map[string]string{}
 	replicaMap := map[string]int{}
@@ -416,9 +418,25 @@ func fillInspectDataWithServiceGroup(data *pb.RuntimeInspect, targetService dice
 
 		data.Services[k] = runtimeInspectService
 	}
-
+	for k, v := range targetJob {
+		runtimeInspectService := &pb.Service{
+			Resources: &pb.Resources{
+				Cpu:  v.Resources.CPU,
+				Mem:  int64(v.Resources.Mem),
+				Disk: int64(v.Resources.Disk),
+			},
+			Envs:        v.Envs,
+			Type:        "job",
+			Status:      statusServiceMap[k],
+			Deployments: &pb.Deployments{Replicas: 1},
+		}
+		data.Services[k] = runtimeInspectService
+	}
 	data.Resources = &pb.Resources{Cpu: 0, Mem: 0, Disk: 0}
 	for _, v := range data.Services {
+		if v.Type == "job" {
+			continue
+		}
 		data.Resources.Cpu += v.Resources.Cpu * float64(v.Deployments.Replicas)
 		data.Resources.Mem += v.Resources.Mem * int64(v.Deployments.Replicas)
 		data.Resources.Disk += v.Resources.Disk * int64(v.Deployments.Replicas)
@@ -497,6 +515,13 @@ func WithDBService(db DBService) ServiceOption {
 func WithEventManagerService(evMgr EventManagerService) ServiceOption {
 	return func(service *Service) *Service {
 		service.evMgr = evMgr
+		return service
+	}
+}
+
+func WithServiceGroupImpl(serviceGroupImpl servicegroup.ServiceGroup) ServiceOption {
+	return func(service *Service) *Service {
+		service.serviceGroupImpl = serviceGroupImpl
 		return service
 	}
 }

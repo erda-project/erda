@@ -17,6 +17,7 @@ package odata
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	tpb "github.com/erda-project/erda-proto-go/oap/trace/pb"
 )
@@ -25,59 +26,48 @@ import (
 type Spans []*Span
 
 type Span struct {
-	Item *tpb.Span `json:"item"`
-	Meta *Metadata `json:"meta"`
+	Data map[string]interface{} `json:"data"`
+	Meta *Metadata              `json:"meta"`
+	sync.RWMutex
+}
+
+func (s *Span) HandleKeyValuePair(handler func(pairs map[string]interface{}) map[string]interface{}) {
+	s.Data = handler(s.Data)
+}
+
+func (s *Span) Pairs() map[string]interface{} {
+	return s.Data
+}
+
+func (s *Span) Name() string {
+	return s.Data[NameKey].(string)
 }
 
 func NewSpan(item *tpb.Span) *Span {
-	return &Span{Item: item, Meta: &Metadata{Data: map[string]string{}}}
+	return &Span{Data: spanToMap(item), Meta: NewMetadata()}
 }
 
-func (s *Span) AddMetadata(key, value string) {
-	if s.Meta == nil {
-		s.Meta = &Metadata{Data: make(map[string]string)}
-	}
-	s.Meta.Add(key, value)
-}
-
-func (s *Span) GetMetadata(key string) (string, bool) {
-	if s.Meta == nil {
-		s.Meta = &Metadata{Data: make(map[string]string)}
-	}
-	return s.Meta.Get(key)
-}
-
-func (s *Span) HandleAttributes(handle func(attr map[string]string) map[string]string) {
-	s.Item.Attributes = handle(s.Item.Attributes)
-}
-
-func (s *Span) HandleName(handle func(name string) string) {
-	s.Item.Name = handle(s.Item.Name)
+func (s *Span) Metadata() *Metadata {
+	return s.Meta
 }
 
 func (s *Span) Clone() ObservableData {
-	item := &tpb.Span{
-		TraceID:           s.Item.TraceID,
-		SpanID:            s.Item.SpanID,
-		ParentSpanID:      s.Item.ParentSpanID,
-		StartTimeUnixNano: s.Item.StartTimeUnixNano,
-		EndTimeUnixNano:   s.Item.EndTimeUnixNano,
-		Name:              s.Item.Name,
-		Relations:         s.Item.Relations,
-		Attributes:        s.Item.Attributes,
+	res := make(map[string]interface{}, len(s.Data))
+	for k, v := range s.Data {
+		res[k] = v
 	}
 	return &Span{
-		Item: item,
+		Data: res,
 		Meta: s.Meta.Clone(),
 	}
 }
 
 func (s *Span) Source() interface{} {
-	return s.Item
+	return mapToSpan(s.Data)
 }
 
 func (s *Span) SourceCompatibility() interface{} {
-	return s.Item
+	return mapToSpan(s.Data)
 }
 
 func (s *Span) SourceType() SourceType {
@@ -85,6 +75,6 @@ func (s *Span) SourceType() SourceType {
 }
 
 func (s *Span) String() string {
-	buf, _ := json.Marshal(s.Item)
-	return fmt.Sprintf("Item => %s", string(buf))
+	buf, _ := json.Marshal(s.Data)
+	return fmt.Sprintf(string(buf))
 }

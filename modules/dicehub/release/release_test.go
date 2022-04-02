@@ -17,6 +17,7 @@ package release
 import (
 	"encoding/json"
 	"os"
+	"sort"
 	"testing"
 	"time"
 
@@ -48,31 +49,31 @@ func TestConvertToListReleaseResponse(t *testing.T) {
 	}
 
 	release := &db.Release{
-		ReleaseID:              "testID",
-		ReleaseName:            "testName",
-		Desc:                   "testDesc",
-		Dice:                   "testDice",
-		Addon:                  "testAddon",
-		Changelog:              "testChangelog",
-		IsStable:               true,
-		IsFormal:               true,
-		IsProjectRelease:       true,
-		ApplicationReleaseList: "testList",
-		Labels:                 string(labelData),
-		Tags:                   "testTags",
-		Version:                "testVersion",
-		OrgID:                  1,
-		ProjectID:              1,
-		ApplicationID:          1,
-		ProjectName:            "testProject",
-		ApplicationName:        "testApp",
-		UserID:                 "testUser",
-		ClusterName:            "testCluster",
-		Resources:              string(resourcesData),
-		Reference:              1,
-		CrossCluster:           true,
-		CreatedAt:              time.Unix(0, 0),
-		UpdatedAt:              time.Unix(0, 0),
+		ReleaseID:        "testID",
+		ReleaseName:      "testName",
+		Desc:             "testDesc",
+		Dice:             "testDice",
+		Addon:            "testAddon",
+		Changelog:        "testChangelog",
+		IsStable:         true,
+		IsFormal:         true,
+		IsProjectRelease: true,
+		Modes:            "testMode",
+		Labels:           string(labelData),
+		Tags:             "testTags",
+		Version:          "testVersion",
+		OrgID:            1,
+		ProjectID:        1,
+		ApplicationID:    1,
+		ProjectName:      "testProject",
+		ApplicationName:  "testApp",
+		UserID:           "testUser",
+		ClusterName:      "testCluster",
+		Resources:        string(resourcesData),
+		Reference:        1,
+		CrossCluster:     true,
+		CreatedAt:        time.Unix(0, 0),
+		UpdatedAt:        time.Unix(0, 0),
 	}
 
 	respData, err := convertToListReleaseResponse(release)
@@ -83,7 +84,7 @@ func TestConvertToListReleaseResponse(t *testing.T) {
 	if respData.ReleaseID != release.ReleaseID || respData.ReleaseName != release.ReleaseName || respData.Desc != release.Desc ||
 		respData.Diceyml != release.Dice || respData.Addon != release.Addon || respData.Changelog != release.Changelog ||
 		respData.IsStable != release.IsStable || respData.IsFormal != release.IsFormal || respData.IsProjectRelease != release.IsProjectRelease ||
-		respData.ApplicationReleaseList != release.ApplicationReleaseList || respData.Tags != release.Tags ||
+		respData.Modes != release.Modes || respData.Tags != release.Tags ||
 		respData.Version != release.Version || respData.OrgID != release.OrgID || respData.ProjectID != release.ProjectID ||
 		respData.ApplicationID != release.ApplicationID || respData.ProjectName != release.ProjectName ||
 		respData.ApplicationName != release.ApplicationName || respData.UserID != release.UserID || respData.ClusterName != release.ClusterName ||
@@ -118,7 +119,13 @@ addons:
       version: 5.7.29
     plan: mysql:basic
 envs: {}
-jobs: {}
+jobs:
+  demo:
+    cmd: echo "ok"
+    image: addon-registry.default.svc.cluster.local:5000/erda-development-erda-development/go-demo:go-demo-1647947792062632471
+    resources:
+      cpu: 0.2
+      mem: 128
 services:
   java-demo:
     deployments:
@@ -131,18 +138,27 @@ services:
       cpu: 2
       mem: 512
 version: "2.0"`,
-		ApplicationReleaseList: []*pb.ReleaseSummaryArray{
-			{
-				List: []*pb.ApplicationReleaseSummary{
+
+		Modes: map[string]*pb.ModeSummary{
+			"default": {
+				ApplicationReleaseList: []*pb.ReleaseSummaryArray{
 					{
-						DiceYml: `
+						List: []*pb.ApplicationReleaseSummary{
+							{
+								DiceYml: `
 addons:
   demo-mysql:
     options:
       version: 5.7.29
     plan: mysql:basic
 envs: {}
-jobs: {}
+jobs:
+  demo:
+    cmd: echo "ok"
+    image: addon-registry.default.svc.cluster.local:5000/erda-development-erda-development/go-demo:go-demo-1647947792062632471
+    resources:
+      cpu: 0.2
+      mem: 128
 services:
   java-demo:
     deployments:
@@ -155,6 +171,8 @@ services:
       cpu: 2
       mem: 512
 version: "2.0"`,
+							},
+						},
 					},
 				},
 			},
@@ -197,50 +215,65 @@ version: "2.0"
 }
 
 func TestUnmarshalApplicationReleaseList(t *testing.T) {
-	list := [][]string{{"1"}, {"2"}, {"3"}}
-	data, err := json.Marshal(list)
+	modes := map[string]apistructs.ReleaseDeployMode{
+		"modeA": {
+			ApplicationReleaseList: [][]string{{"id1", "id2", "id3"}},
+		},
+		"modeB": {
+			ApplicationReleaseList: [][]string{{"id4", "id5", "id6"}},
+		},
+	}
+	data, err := json.Marshal(modes)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	res, err := unmarshalApplicationReleaseList(string(data))
 	if err != nil {
 		t.Fatal(err)
 	}
+	sort.Strings(res)
 
+	list := []string{"id1", "id2", "id3", "id4", "id5", "id6"}
 	if len(list) != len(res) {
-		t.Errorf("test failed, length of res is not expected")
+		t.Fatal("test failed, length of res is not expected")
 	}
-
-	k := 0
-	for i := 0; i < len(list); i++ {
-		for j := 0; j < len(list[i]); j++ {
-			if list[i][j] != res[k] {
-				t.Errorf("test failed, res is not expected")
-			}
-			k++
+	for i := range list {
+		if list[i] != res[i] {
+			t.Errorf("test failed, res is not expected")
+			break
 		}
 	}
 }
 
 func TestParseMetadata(t *testing.T) {
 	target := apistructs.ReleaseMetadata{
-		Org:       "erda",
-		Source:    "erda",
-		Author:    "erda",
+		ApiVersion: "v1",
+		Author:     "erda",
+		CreatedAt:  "2022-03-25T00:24:00Z",
+		Source: apistructs.ReleaseSource{
+			Org:     "erda",
+			Project: "testProject",
+			URL:     "https://erda.cloud/dop/projects/999",
+		},
 		Version:   "1.0",
 		Desc:      "testDesc",
 		ChangeLog: "testChangelog",
-		AppList: [][]apistructs.AppMetadata{
-			{
-				{
-					AppName:          "test-app",
-					GitBranch:        "release/1.0",
-					GitCommitID:      "12345678",
-					GitCommitMessage: "testMsg",
-					GitRepo:          "http://test.com/testApp",
-					ChangeLog:        "testChangelog",
-					Version:          "testVersion",
-				},
+		Modes: map[string]apistructs.ReleaseModeMetadata{
+			"modeA": {
+				DependOn: []string{"modeB"},
+				Expose:   true,
+				AppList: [][]apistructs.AppMetadata{{
+					{
+						AppName:          "testApp",
+						GitBranch:        "release/1.0",
+						GitCommitID:      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+						GitCommitMessage: "test",
+						GitRepo:          "testRepo",
+						ChangeLog:        "null",
+						Version:          "1.0",
+					},
+				}},
 			},
 		},
 	}
@@ -256,8 +289,8 @@ func TestParseMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if metadata.Version != target.Version || metadata.Desc != target.Desc || metadata.ChangeLog != target.ChangeLog ||
-		metadata.AppList[0][0] != target.AppList[0][0] {
+	if metadata.Version != target.Version || metadata.Desc != target.Desc || metadata.ChangeLog != target.ChangeLog {
+		// TODO: metadata.AppList[0][0] != target.AppList[0][0] {
 		t.Errorf("test failed, result metadata is not expected")
 	}
 }
@@ -275,5 +308,56 @@ func TestIsSliceEqual(t *testing.T) {
 	}
 	if isSliceEqual(a, c) {
 		t.Errorf("expect not equal, actual equal")
+	}
+}
+
+func TestHasLoopDependence(t *testing.T) {
+	modes := map[string]*pb.Mode{
+		"modeA": {
+			DependOn: []string{"modeA"},
+		},
+	}
+	if !hasLoopDependence(modes) {
+		t.Errorf("expected: has loop dependence, actual not")
+	}
+
+	modes = map[string]*pb.Mode{
+		"modeA": {
+			DependOn: []string{"modeB"},
+		},
+		"modeB": {
+			DependOn: []string{"modeA"},
+		},
+	}
+	if !hasLoopDependence(modes) {
+		t.Errorf("expected: has loop dependence, actual not")
+	}
+
+	modes = map[string]*pb.Mode{
+		"modeA": {
+			DependOn: []string{"modeB"},
+		},
+		"modeB": {
+			DependOn: []string{"modeC"},
+		},
+		"modeC": {
+			DependOn: []string{"modeA"},
+		},
+	}
+	if !hasLoopDependence(modes) {
+		t.Errorf("expected: has loop dependence, actual not")
+	}
+
+	modes = map[string]*pb.Mode{
+		"modeA": {
+			DependOn: []string{"modeB", "modeC"},
+		},
+		"modeB": {
+			DependOn: []string{"modeC"},
+		},
+		"modeC": {},
+	}
+	if hasLoopDependence(modes) {
+		t.Errorf("expected: no dependence, actual has")
 	}
 }

@@ -58,10 +58,6 @@ func (u urls) CMDB() (string, error) {
 	return u.getURL(discover.EnvCMDB, discover.SvcCMDB)
 }
 
-func (u urls) Scheduler() (string, error) {
-	return u.getURL(discover.EnvScheduler, discover.SvcScheduler)
-}
-
 func (u urls) DiceHub() (string, error) {
 	return u.getURL(discover.EnvDiceHub, discover.SvcDiceHub)
 }

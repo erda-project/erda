@@ -523,6 +523,10 @@ func (impl GatewayZoneServiceImpl) DeleteZoneRoute(zoneId string, session ...*db
 	if zone == nil {
 		return errors.Errorf("zone not find, id:%s", zoneId)
 	}
+	// need not delete ingress if the zone dose not hava ingress
+	if !zone.HasIngress() {
+		return nil
+	}
 	adapter, err := k8s.NewAdapter(zone.DiceClusterName)
 	if err != nil {
 		return err

@@ -1,6 +1,4 @@
-version: v0.7.1-alpha.1
-
-dsn: memory
+version: v0.8.3-alpha.1.pre.0
 
 serve:
   public:
@@ -13,7 +11,7 @@ serve:
 selfservice:
   # we are not using it, default value for config source validation, can be replaced by env SELFSERVICE_DEFAULT_BROWSER_RETURN_URL.
   default_browser_return_url: http://one.erda.local
-  whitelisted_return_urls:
+  allowed_return_urls:
     - http://127.0.0.1:4455
 
   methods:
@@ -74,8 +72,29 @@ hashers:
     key_length: 16
 
 identity:
-  default_schema_url: file:///etc/config/kratos/identity.schema.json
+  default_schema_id: user_v0
+  schemas:
+    - id: user_v0
+      url: file://config/identity.schema.json
 
+# TODO: custom message templates
 courier:
   smtp:
-    connection_uri: smtps://test:test@mailslurper:1025/?skip_ssl_verify=true&legacy_ssl=true
+    connection_uri: smtps://foo:bar@mailserver:1234/?skip_ssl_verify=true&legacy_ssl=true
+    from_address: no-reply@foo.bar
+
+  sms:
+    from: foo.bar
+    request_config:
+      url: https://dysmsapi.aliyuncs.com
+      method: POST
+      body: file://config/sms.request.jsonnet
+      header:
+        'Content-Type': 'application/x-www-form-urlencoded'
+      auth:
+        type: api_key
+        config:
+          name: foo
+          value: bar
+          in: header
+    enabled: true

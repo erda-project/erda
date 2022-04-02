@@ -274,7 +274,7 @@ report-apis:
   pipeline:
     version: "1.1"
     action_type: "reportengine"
-    action_version: "1.0"
+    action_version: "2.0"
   report_cron:
     daily_cron: "0 9 * * *"
     weekly_cron: "0 9 * * 1"
@@ -352,3 +352,8 @@ metric-report-client:
       addr: "${COLLECTOR_ADDR:collector:7076}"
       username: ${COLLECTOR_AUTH_USERNAME}
       password: ${COLLECTOR_AUTH_PASSWORD}
+
+
+grpc-client@erda.core.pipeline.cron:
+  addr: "${PIPELINE_GRPC_ADDR:pipeline:30810}"
+erda.core.pipeline.cron-client:

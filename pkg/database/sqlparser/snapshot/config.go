@@ -26,9 +26,9 @@ func Sampling() bool {
 	return strings.EqualFold(os.Getenv("PIPELINE_MIGRATION_SAMPLING"), "true")
 }
 
-// MaxSampling returns the max sampling size.
+// MaxSamplingSize returns the max sampling size.
 // Set it by env "PIPELINE_MIGRATION_SAMPLING_SIZE"
-func MaxSampling() uint64 {
+func MaxSamplingSize() uint64 {
 	size := os.Getenv("PIPELINE_MIGRATION_SAMPLING_SIZE")
 	n, err := strconv.ParseUint(size, 10, 32)
 	if err != nil {

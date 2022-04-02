@@ -156,6 +156,19 @@ func (db *DBClient) GetAttachMentsByRuntimeID(runtimeID uint64) (*[]AddonAttachm
 	return &attachments, nil
 }
 
+// GetUnDeletableAttachMentsByRuntimeID 根据runtimeID获取不可删除的attachment信息
+func (db *DBClient) GetUnDeletableAttachMentsByRuntimeID(runtimeID uint64) (*[]AddonAttachment, error) {
+	var attachments []AddonAttachment
+	if err := db.
+		Where("app_id = ?", runtimeID).
+		Where("is_deleted != ?", apistructs.AddonDeleted).
+		Find(&attachments).Error; err != nil {
+		return nil, errors.Wrapf(err, "failed to get addon attachments info, runtimeID : %d",
+			runtimeID)
+	}
+	return &attachments, nil
+}
+
 // GetByRuntimeIDAndRoutingInstanceID 根据runtimeID、routingInstanceID获取attachment信息
 func (db *DBClient) GetByRuntimeIDAndRoutingInstanceID(runtimeID, routingInstanceID string) (*[]AddonAttachment, error) {
 	var attachments []AddonAttachment
@@ -219,4 +232,26 @@ func (db *DBClient) GetAttachmentsByTenantInstanceID(tenantInstanceID string) (*
 		return nil, err
 	}
 	return &attachments, nil
+}
+
+// ListAttachmentIDRuntimeIDNotExist Find attachments whose runtime does not exist
+func (db *DBClient) ListAttachmentIDRuntimeIDNotExist() ([]AddonAttachment, error) {
+	var attachments []AddonAttachment
+	if err := db.Model(&AddonAttachment{}).
+		Where("is_deleted = ?", apistructs.AddonNotDeleted).
+		Where("app_id NOT IN (SELECT id FROM ps_v2_project_runtimes)").
+		Find(&attachments).Error; err != nil {
+		return nil, err
+	}
+	return attachments, nil
+}
+
+// DeleteAttachmentByIDs Delete attachments by ids
+func (db *DBClient) DeleteAttachmentByIDs(id ...uint64) error {
+	if err := db.Model(&AddonAttachment{}).
+		Where("id IN (?)", id).
+		Update("is_deleted", apistructs.AddonDeleted).Error; err != nil {
+		return err
+	}
+	return nil
 }

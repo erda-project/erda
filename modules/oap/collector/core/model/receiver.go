@@ -23,6 +23,7 @@ type ObservableDataConsumerFunc func(data odata.ObservableData)
 type RuntimeReceiver struct {
 	Name     string
 	Receiver Receiver
+	Filter   *DataFilter
 }
 
 type Receiver interface {
@@ -34,8 +35,8 @@ type Receiver interface {
 type NoopReceiver struct {
 }
 
-func (n *NoopReceiver) ComponentID() ComponentID {
-	return "NoopReceiver"
+func (n *NoopReceiver) ComponentConfig() interface{} {
+	return nil
 }
 
 func (n *NoopReceiver) RegisterConsumer(consumer ObservableDataConsumerFunc) {}
