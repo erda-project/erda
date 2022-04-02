@@ -138,7 +138,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/scylladb/gocqlx v1.5.0
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	github.com/shirou/gopsutil/v3 v3.21.3
+	github.com/shirou/gopsutil/v3 v3.22.2
 	github.com/shogo82148/androidbinary v1.0.2
 	github.com/shopspring/decimal v1.3.1
 	github.com/sirupsen/logrus v1.8.1
@@ -157,7 +157,6 @@ require (
 	github.com/xormplus/builder v0.0.0-20181220055446-b12ceebee76f
 	github.com/xormplus/core v0.0.0-20181016121923-6bfce2eb8867
 	github.com/xormplus/xorm v0.0.0-20181212020813-da46657160ff
-	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opentelemetry.io/otel v1.4.1
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.2.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.2.0
