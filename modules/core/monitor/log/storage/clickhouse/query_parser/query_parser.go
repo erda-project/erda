@@ -107,26 +107,41 @@ func (l *esqsListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol 
 }
 
 func (l *esqsListener) ExitGroupExpression(c *parser.GroupExpressionContext) {
+	if len(l.stack) < 1 {
+		return
+	}
 	expr := l.pop()
 	l.push(fmt.Sprintf("(%s)", expr))
 }
 
 func (l *esqsListener) ExitNotExpression(c *parser.NotExpressionContext) {
+	if len(l.stack) < 1 {
+		return
+	}
 	expr := l.pop()
 	l.push(fmt.Sprintf("(NOT %s)", expr))
 }
 
 func (l *esqsListener) ExitAndExpression(c *parser.AndExpressionContext) {
+	if len(l.stack) < 2 {
+		return
+	}
 	right, left := l.pop(), l.pop()
 	l.push(fmt.Sprintf("%s AND %s", left, right))
 }
 
 func (l *esqsListener) ExitOrExpression(c *parser.OrExpressionContext) {
+	if len(l.stack) < 2 {
+		return
+	}
 	right, left := l.pop(), l.pop()
 	l.push(fmt.Sprintf("%s OR %s", left, right))
 }
 
 func (l *esqsListener) ExitDefaultOpExpression(c *parser.DefaultOpExpressionContext) {
+	if len(l.stack) < 2 {
+		return
+	}
 	right, left := l.pop(), l.pop()
 	l.push(fmt.Sprintf("%s %s %s", left, l.defaultOp, right))
 }
@@ -220,5 +235,5 @@ func (l *esqsListener) buildHighlightItems(field, value string) {
 	if len(items) == 0 {
 		return
 	}
-	l.highlightItems[field] = items
+	l.highlightItems[field] = append(l.highlightItems[field], items...)
 }
