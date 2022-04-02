@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -419,4 +420,13 @@ func (e *Endpoints) checkNotifyPermission(r *http.Request, scopeType, scopeID, a
 		return errors.New("no permission")
 	}
 	return nil
+}
+
+func getInt(url *url.URL, key string, defaultValue int64) int64 {
+	valueStr := url.Query().Get(key)
+	value, err := strconv.ParseInt(valueStr, 10, 32)
+	if err != nil {
+		return defaultValue
+	}
+	return value
 }

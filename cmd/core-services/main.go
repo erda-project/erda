@@ -29,6 +29,7 @@ import (
 	_ "github.com/erda-project/erda/modules/core/services/authentication/credentials/accesskey"
 	_ "github.com/erda-project/erda/modules/messenger/eventbox"
 	_ "github.com/erda-project/erda/modules/messenger/notify"
+	_ "github.com/erda-project/erda/modules/messenger/notifygroup"
 
 	// infra
 	_ "github.com/erda-project/erda-infra/providers/grpcserver"

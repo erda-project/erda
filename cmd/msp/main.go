@@ -26,6 +26,7 @@ import (
 	_ "github.com/erda-project/erda-infra/providers/cassandra"
 	_ "github.com/erda-project/erda-proto-go/core/dicehub/release/client"
 	_ "github.com/erda-project/erda-proto-go/core/messenger/notify/client"
+	_ "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/event/client"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/log/query/client"

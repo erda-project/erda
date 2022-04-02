@@ -111,6 +111,9 @@ func (a *auditor) record(ctx context.Context, scope ScopeType, scopeID interface
 			a.p.Log.Error(err)
 			return
 		}
+		if entry.key == "isSkip" && val == true {
+			return
+		}
 		data[entry.key] = val
 		entry = entry.prev
 	}

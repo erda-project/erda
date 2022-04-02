@@ -42,6 +42,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/hepa/runtime_service/pb"
 	_ "github.com/erda-project/erda-proto-go/core/messenger/eventbox/pb"
 	_ "github.com/erda-project/erda-proto-go/core/messenger/notify/pb"
+	_ "github.com/erda-project/erda-proto-go/core/messenger/notifygroup/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/alertdetail/pb"
 	_ "github.com/erda-project/erda-proto-go/core/monitor/collector/pb"
