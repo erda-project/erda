@@ -90,7 +90,9 @@ func (g LogKeyGroup) Where(filter func(k LogKeyType, v StringList) bool) LogKeyG
 func (g LogKeyGroup) ToESQueryString() string {
 	var terms []string
 	for tag, values := range g {
-		terms = append(terms, fmt.Sprintf("tags.%s:(%s)", tag, strings.Join(values, " OR ")))
+		for _, value := range values {
+			terms = append(terms, fmt.Sprintf("tags.%s:%s", tag, value))
+		}
 	}
 	return strings.Join(terms, " OR ")
 }
