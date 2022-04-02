@@ -1,6 +1,7 @@
 syntax = "proto3";
-package erda.core.services.notify.channel;
-option go_package = "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb";
+package erda.core.messenger.notifychannel;
+
+option go_package = "github.com/erda-project/erda-proto-go/core/messenger/notifychannel/pb";
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
@@ -251,3 +252,5 @@ enum ProviderType {
   SMTP       = 2;
   ALIYUN_VMS = 3;
 }
+
+
