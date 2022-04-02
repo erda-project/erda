@@ -185,7 +185,7 @@ func (k *K8sFlink) Start(ctx context.Context, task *spec.PipelineTask) (data int
 
 	logrus.Debugf("create flink cluster cr name %s in namespace %s", job.Name, ns.Name)
 
-	hosts := append([]string{FlinkIngressPrefix}, job.Namespace, clusterCM[DiceRootDomain])
+	hosts := append([]string{job.Namespace}, clusterCM[DiceRootDomain])
 	hostURL := strings.Join(hosts, ".")
 	flinkCluster := k.ComposeFlinkCluster(job, bigDataConf, hostURL)
 	flinkCluster.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
