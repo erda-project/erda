@@ -16,11 +16,351 @@ package clickhouse
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"strconv"
+	"sync/atomic"
+	"time"
 
+	ckdriver "github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/doug-martin/goqu/v9"
+	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/erda-project/erda-infra/providers/clickhouse"
+	"github.com/erda-project/erda-proto-go/core/monitor/log/query/pb"
 	"github.com/erda-project/erda/modules/core/monitor/log/storage"
 	"github.com/erda-project/erda/modules/core/monitor/storekit"
 )
 
 func (p *provider) Iterator(ctx context.Context, sel *storage.Selector) (storekit.Iterator, error) {
-	panic("implement me")
+	expr, tableMeta, err := p.buildSqlFromTablePart(sel)
+	if err != nil {
+		return nil, err
+	}
+
+	expr, highlightItems, err := p.appendSqlWherePart(expr, tableMeta, sel)
+	if err != nil {
+		return nil, err
+	}
+
+	pageSize := p.Cfg.ReadPageSize
+	if sel.Meta.PreferredBufferSize > 0 {
+		pageSize = sel.Meta.PreferredBufferSize
+	}
+
+	var callback = func(logItem *pb.LogItem) {
+		if highlightItems == nil {
+			return
+		}
+		highlight := map[string]*structpb.ListValue{}
+		for k, v := range highlightItems {
+			var items []interface{}
+			for _, token := range v {
+				items = append(items, token)
+			}
+			list, err := structpb.NewList(items)
+			if err != nil {
+				continue
+			}
+			highlight[k] = list
+		}
+		logItem.Highlight = highlight
+	}
+
+	id := sel.Skip.AfterId.ShortId()
+
+	return newClickhouseIterator(
+		ctx,
+		p.clickhouse,
+		expr,
+		pageSize,
+		sel.Skip.FromOffset,
+		id,
+		callback,
+		sel.Debug,
+	)
+}
+
+func newClickhouseIterator(
+	ctx context.Context,
+	ck clickhouse.Interface,
+	sqlClause *goqu.SelectDataset,
+	pageSize int,
+	fromOffset int,
+	searchAfterID string,
+	callback func(item *pb.LogItem),
+	debug bool,
+) (storekit.Iterator, error) {
+	return &clickhouseIterator{
+		ctx:           ctx,
+		ck:            ck,
+		sqlClause:     sqlClause,
+		pageSize:      pageSize,
+		fromOffset:    fromOffset,
+		searchAfterID: searchAfterID,
+		callback:      callback,
+		debug:         debug,
+	}, nil
+}
+
+type iteratorDir int8
+
+const (
+	iteratorInitial = iota
+	iteratorForward
+	iteratorBackward
+)
+
+type clickhouseIterator struct {
+	ctx           context.Context
+	ck            clickhouse.Interface
+	sqlClause     *goqu.SelectDataset
+	pageSize      int
+	fromOffset    int
+	searchAfterID string
+	callback      func(item *pb.LogItem)
+	debug         bool
+
+	lastResp ckdriver.Rows
+	buffer   []interface{}
+	value    interface{}
+
+	total       int64
+	totalCached bool
+
+	dir    iteratorDir
+	err    error
+	closed bool
+	lastID string
+}
+
+func (it *clickhouseIterator) First() bool {
+	if it.checkClosed() {
+		return false
+	}
+
+	it.lastID = ""
+	it.fetch(iteratorForward)
+	return it.yield()
+}
+
+func (it *clickhouseIterator) Last() bool {
+	if it.checkClosed() {
+		return false
+	}
+	it.lastID = ""
+	it.fetch(iteratorBackward)
+	return it.yield()
+}
+
+func (it *clickhouseIterator) Next() bool {
+	if it.checkClosed() {
+		return false
+	}
+	if it.dir == iteratorBackward {
+		it.err = storekit.ErrOpNotSupported
+		return false
+	}
+	if it.yield() {
+		return true
+	}
+	it.fetch(iteratorForward)
+	return it.yield()
+}
+
+func (it *clickhouseIterator) Prev() bool {
+	if it.checkClosed() {
+		return false
+	}
+	if it.dir == iteratorForward {
+		it.err = storekit.ErrOpNotSupported
+		return false
+	}
+	if it.yield() {
+		return true
+	}
+	it.fetch(iteratorBackward)
+	return it.yield()
+}
+
+func (it *clickhouseIterator) Value() storekit.Data {
+	return it.value
+}
+
+func (it *clickhouseIterator) Error() error {
+	if it.err == io.EOF {
+		return nil
+	}
+	return it.err
+}
+
+func (it *clickhouseIterator) Close() error {
+	it.closed = true
+	if it.lastResp != nil {
+		return it.lastResp.Close()
+	}
+	return nil
+}
+
+func (it *clickhouseIterator) Total() (int64, error) {
+	if it.totalCached {
+		return it.total, nil
+	}
+	err := it.count()
+	if err != nil {
+		return 0, err
+
+	}
+	return it.total, nil
+}
+
+func (it *clickhouseIterator) checkClosed() bool {
+	if it.closed {
+		if it.err == nil {
+			it.err = storekit.ErrIteratorClosed
+		}
+		return true
+	}
+	select {
+	case <-it.ctx.Done():
+		if it.err == nil {
+			it.err = storekit.ErrIteratorClosed
+		}
+		return true
+	default:
+	}
+	return false
+}
+
+func (it *clickhouseIterator) yield() bool {
+	if len(it.buffer) > 0 {
+		it.value = it.buffer[0]
+		it.buffer = it.buffer[1:]
+		return true
+	}
+	return false
+}
+
+func (it *clickhouseIterator) fetch(dir iteratorDir) {
+	it.dir = dir
+	var reverse bool
+	if it.dir == iteratorBackward {
+		reverse = true
+	}
+	it.buffer = nil
+	for it.err == nil && len(it.buffer) == 0 {
+		fetchingRemote := false
+		if it.lastResp == nil {
+			fetchingRemote = true
+			expr := it.sqlClause
+			if len(it.lastID) > 0 {
+				expr = expr.Where(goqu.C("_id").Gt(it.lastID))
+			}
+
+			if reverse {
+				expr = expr.Order(goqu.C("org_name").Desc(), goqu.C("timestamp").Desc())
+			} else {
+				expr = expr.Order(goqu.C("org_name").Asc(), goqu.C("timestamp").Asc())
+			}
+
+			expr = expr.Offset(uint(it.fromOffset)).Limit(uint(it.pageSize))
+
+			sql, _, err := expr.ToSQL()
+			if it.debug {
+				fmt.Printf("clickhouse fetch sql: %s\n", sql)
+			}
+			if err != nil {
+				it.err = err
+				return
+			}
+
+			rows, err := it.ck.Client().Query(it.ctx, sql)
+			if err != nil {
+				it.err = err
+				return
+			}
+			it.lastResp = rows
+		}
+
+		for it.lastResp.Next() {
+			var item logItem
+			err := it.lastResp.ScanStruct(&item)
+			if err != nil {
+				it.err = err
+				return
+			}
+
+			it.lastID = item.UniqId
+			it.fromOffset = 0
+
+			it.buffer = append(it.buffer, it.decode(&item))
+			return
+		}
+
+		if len(it.buffer) == 0 {
+			if fetchingRemote {
+				it.err = io.EOF
+			}
+			_ = it.lastResp.Close()
+			it.lastResp = nil
+			return
+		}
+	}
+}
+
+func (it *clickhouseIterator) decode(log *logItem) *pb.LogItem {
+	item := &pb.LogItem{
+		UniqId:    log.UniqId,
+		Id:        log.ID,
+		Source:    log.Source,
+		Stream:    log.Stream,
+		Timestamp: strconv.FormatInt(log.Timestamp.UnixNano(), 10),
+		UnixNano:  log.Timestamp.UnixNano(),
+		Offset:    log.Offset,
+		Content:   log.Content,
+		Level:     log.Tags["level"],
+		RequestId: log.Tags["request_id"],
+		Tags:      log.Tags,
+	}
+
+	if it.callback != nil {
+		it.callback(item)
+	}
+
+	return item
+}
+
+func (it *clickhouseIterator) count() error {
+	expr := it.sqlClause
+	expr = expr.Select(goqu.L("count(*)").As("count"))
+	sql, _, err := expr.ToSQL()
+	if it.debug {
+		fmt.Printf("clickhouse count sql: %s\n", sql)
+	}
+	if err != nil {
+		return err
+	}
+	var counter []struct {
+		Count uint64 `ch:"count"`
+	}
+	err = it.ck.Client().Select(context.Background(), &counter, sql)
+	if err != nil {
+		return err
+	}
+
+	atomic.SwapInt64(&it.total, int64(counter[0].Count))
+	it.totalCached = true
+	return nil
+}
+
+type logItem struct {
+	UniqId    string            `ch:"_id"`
+	OrgName   string            `ch:"org_name"`
+	Source    string            `ch:"source"`
+	ID        string            `ch:"id"`
+	Stream    string            `ch:"stream"`
+	Content   string            `ch:"content"`
+	Offset    int64             `ch:"offset"`
+	Timestamp time.Time         `ch:"timestamp"`
+	Tags      map[string]string `ch:"tags"`
 }

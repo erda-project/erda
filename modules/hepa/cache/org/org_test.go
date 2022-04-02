@@ -12,21 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core_services
+package org_test
 
 import (
-	"github.com/erda-project/erda/apistructs"
-	"github.com/erda-project/erda/modules/openapi/api/apis"
+	"testing"
+
+	"github.com/erda-project/erda/modules/hepa/cache/org"
 )
 
-var CMDB_NOTIFYGROUP_QUERY = apis.ApiSpec{
-	Path:         "/api/notify-groups",
-	BackendPath:  "/api/notify-groups",
-	Host:         "core-services.marathon.l4lb.thisdcos.directory:9526",
-	Scheme:       "http",
-	Method:       "GET",
-	CheckLogin:   true,
-	RequestType:  apistructs.QueryNotifyGroupRequest{},
-	ResponseType: apistructs.QueryNotifyGroupResponse{},
-	Doc:          "summary: 查询通知组",
+func TestUserCanAccessTheScopeReq(t *testing.T) {
+	org.UserCanAccessTheScopeReq("", "100", "")
+	org.UserCanAccessTheScopeReq("", "100", "100")
+	org.CanAccess(nil, false)
 }

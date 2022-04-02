@@ -38,7 +38,7 @@ func TransferStatus(status string) apistructs.PipelineStatus {
 	case string(apistructs.StatusRunning), "ACTIVE":
 		return apistructs.PipelineStatusRunning
 
-	case string(apistructs.StatusStoppedOnOK), string(apistructs.StatusFinished):
+	case string(apistructs.StatusStoppedOnOK), string(apistructs.StatusFinished), string(apistructs.StatusStopped):
 		return apistructs.PipelineStatusSuccess
 
 	case string(apistructs.StatusStoppedOnFailed), string(apistructs.StatusFailed):

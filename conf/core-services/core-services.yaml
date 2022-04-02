@@ -39,6 +39,10 @@ erda.core.messenger.notify:
 
 erda.core.messenger.eventbox:
 
+erda.core.messenger.notifygroup:
+
 dingtalk.api:
 
 erda.core.messenger.notifychannel:
+
+audit:
