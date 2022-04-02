@@ -25,10 +25,10 @@ import (
 	_ "github.com/erda-project/erda-proto-go/core/pipeline/cms/client"
 	_ "github.com/erda-project/erda/modules/core-services"
 	_ "github.com/erda-project/erda/modules/core-services/services/dingtalk/api"
-	_ "github.com/erda-project/erda/modules/core-services/services/notify/channel"
 	_ "github.com/erda-project/erda/modules/core/services/authentication/credentials/accesskey"
 	_ "github.com/erda-project/erda/modules/messenger/eventbox"
 	_ "github.com/erda-project/erda/modules/messenger/notify"
+	_ "github.com/erda-project/erda/modules/messenger/notify-channel"
 	_ "github.com/erda-project/erda/modules/messenger/notifygroup"
 
 	// infra
