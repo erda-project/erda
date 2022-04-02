@@ -231,6 +231,7 @@ func (e *Endpoints) pipelineRun(ctx context.Context, r *http.Request, vars map[s
 		IdentityInfo:           identityInfo,
 		PipelineRunParams:      runRequest.PipelineRunParams,
 		ConfigManageNamespaces: runRequest.ConfigManageNamespaces,
+		Secrets:                runRequest.Secrets,
 	},
 	); err != nil {
 		return errorresp.ErrResp(err)

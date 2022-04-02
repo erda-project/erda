@@ -102,6 +102,7 @@ func (d *provider) runCronPipelineFunc(id uint64) {
 		NormalLabels:           pc.Extra.NormalLabels,
 		Envs:                   pc.Extra.Envs,
 		ConfigManageNamespaces: pc.Extra.ConfigManageNamespaces,
+		Secrets:                getSecrets(pc.Extra),
 		AutoRunAtOnce:          true,
 		AutoStartCron:          false,
 		IdentityInfo: apistructs.IdentityInfo{
@@ -110,6 +111,34 @@ func (d *provider) runCronPipelineFunc(id uint64) {
 		},
 		DefinitionID: pc.PipelineDefinitionID,
 	})
+}
+
+// getSecrets Compatible with old data
+func getSecrets(extra db.PipelineCronExtra) map[string]string {
+	if _, ok := extra.IncomingSecrets["gittar.repo"]; ok {
+		return extra.IncomingSecrets
+	}
+	commitDetailStr := extra.NormalLabels[apistructs.LabelCommitDetail]
+	if commitDetailStr == "" {
+		return nil
+	}
+	detail := &apistructs.CommitDetail{}
+	if err := json.Unmarshal([]byte(commitDetailStr), detail); err != nil {
+		return nil
+	}
+	return map[string]string{
+		"gittar.repo":   detail.Repo,
+		"gittar.branch": extra.FilterLabels[apistructs.LabelBranch],
+		"gittar.commit": detail.CommitID,
+		"gittar.commit.abbrev": func() string {
+			if len(detail.CommitID) > 8 {
+				return detail.CommitID[:8]
+			}
+			return detail.CommitID
+		}(),
+		"gittar.message": detail.Comment,
+		"gittar.author":  detail.Author,
+	}
 }
 
 func (s *provider) isCronShouldBeIgnored(pc db.PipelineCron) bool {

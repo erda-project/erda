@@ -91,6 +91,7 @@ func (this *CronGetResponse) Validate() error {
 	return nil
 }
 func (this *CronUpdateRequest) Validate() error {
+	// Validation of proto3 map<> fields is unsupported.
 	return nil
 }
 func (this *CronUpdateResponse) Validate() error {

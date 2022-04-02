@@ -67,13 +67,6 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		cronTriggerTime = p.Extra.CronTriggerTime.Format(time.RFC3339)
 	}
 
-	gittarRepo := getCenterOrSaaSURL(conf.DiceCluster(), p.ClusterName, httpclientutil.WrapHttp(discover.Gittar()), httpclientutil.WrapHttp(conf.GittarPublicURL())) + "/" + p.CommitDetail.RepoAbbr
-
-	abbrevCommit := p.GetCommitID()
-	if len(p.GetCommitID()) >= 8 {
-		abbrevCommit = p.GetCommitID()[:8]
-	}
-
 	clusterInfo, err := s.retryQueryClusterInfo(p.ClusterName, p.ID)
 	if err != nil {
 		return nil, apierrors.ErrGetCluster.InternalError(err)
@@ -120,14 +113,6 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 		"pipeline.cron.expr":         p.Extra.CronExpr,
 		"pipeline.cron.trigger.time": cronTriggerTime,
 
-		// gittar
-		"gittar.repo":          gittarRepo,
-		"gittar.branch":        p.Labels[apistructs.LabelBranch],
-		"gittar.commit":        p.GetCommitID(),
-		"gittar.commit.abbrev": abbrevCommit,
-		"gittar.message":       p.CommitDetail.Comment,
-		"gittar.author":        p.CommitDetail.Author,
-
 		// openApi
 		"dice.openapi.public.url": conf.OpenAPIPublicURL(),
 		"dice.openapi.addr":       discover.Openapi(),
@@ -167,18 +152,6 @@ func (s *PipelineSvc) FetchPlatformSecrets(p *spec.Pipeline, ignoreKeys []string
 	}
 
 	return r, nil
-}
-
-// 根据 pipeline 对应的 cluster name 信息，返回某一个组件的 vip 或者 sass url
-func getCenterOrSaaSURL(diceCluster, requestCluster, center, sass string) string {
-	if sass == "" {
-		return center
-	}
-	// 如果和 daemon 在一个集群，则用内网地址
-	if diceCluster == requestCluster {
-		return center
-	}
-	return sass
 }
 
 // FetchSecrets return secrets, cmsDiceFiles and error.

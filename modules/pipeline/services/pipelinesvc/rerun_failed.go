@@ -70,6 +70,7 @@ func (s *PipelineSvc) RerunFailed(req *apistructs.PipelineRerunFailedRequest) (*
 			PipelineID:        p.ID,
 			IdentityInfo:      req.IdentityInfo,
 			PipelineRunParams: origin.Snapshot.RunPipelineParams.ToPipelineRunParams(),
+			Secrets:           req.Secrets,
 		},
 		); err != nil {
 			return nil, err

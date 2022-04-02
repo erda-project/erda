@@ -220,7 +220,7 @@ func (b *Bundle) RerunPipeline(req apistructs.PipelineRerunRequest) (*apistructs
 	var rerunResp apistructs.PipelineRerunResponse
 	httpResp, err := hc.Post(host).Path(fmt.Sprintf("/api/pipelines/%d/actions/rerun", req.PipelineID)).
 		Header(httputil.InternalHeader, "bundle").Header(httputil.UserHeader, req.UserID).
-		JSONBody(&apistructs.PipelineRerunRequest{AutoRunAtOnce: req.AutoRunAtOnce}).
+		JSONBody(&apistructs.PipelineRerunRequest{AutoRunAtOnce: req.AutoRunAtOnce, Secrets: req.Secrets}).
 		Do().JSON(&rerunResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
@@ -241,7 +241,7 @@ func (b *Bundle) RerunFailedPipeline(req apistructs.PipelineRerunFailedRequest) 
 	var rerunFailedResp apistructs.PipelineRerunFailedResponse
 	httpResp, err := hc.Post(host).Path(fmt.Sprintf("/api/pipelines/%d/actions/rerun-failed", req.PipelineID)).
 		Header(httputil.InternalHeader, "bundle").Header(httputil.UserHeader, req.UserID).
-		JSONBody(&apistructs.PipelineRerunFailedRequest{AutoRunAtOnce: req.AutoRunAtOnce}).
+		JSONBody(&apistructs.PipelineRerunFailedRequest{AutoRunAtOnce: req.AutoRunAtOnce, Secrets: req.Secrets}).
 		Do().JSON(&rerunFailedResp)
 	if err != nil {
 		return nil, apierrors.ErrInvoke.InternalError(err)
