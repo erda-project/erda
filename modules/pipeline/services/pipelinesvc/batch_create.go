@@ -54,7 +54,8 @@ func (s *PipelineSvc) BatchCreate(batchReq *apistructs.PipelineBatchCreateReques
 		if batchReq.AutoRun {
 			if p, err = s.RunPipeline(&apistructs.PipelineRunRequest{
 				PipelineID:   p.ID,
-				IdentityInfo: identityInfo},
+				IdentityInfo: identityInfo,
+				Secrets:      map[string]string{}},
 			); err != nil {
 				return nil, apierrors.ErrRunPipeline.InternalError(err)
 			}

@@ -22,10 +22,10 @@ import (
 )
 
 func GetGittarRepoURL(clusterName, repoAbbr string) string {
-	return getCenterOrSaaSURL(conf.DiceClusterName(), clusterName, httpclientutil.WrapHttp(discover.Gittar()), httpclientutil.WrapHttp(conf.GittarPublicURL())) + "/" + repoAbbr
+	return getCenterOrEdgeURL(conf.DiceClusterName(), clusterName, httpclientutil.WrapHttp(discover.Gittar()), httpclientutil.WrapHttp(conf.GittarPublicURL())) + "/" + repoAbbr
 }
 
-func getCenterOrSaaSURL(diceCluster, requestCluster, center, sass string) string {
+func getCenterOrEdgeURL(diceCluster, requestCluster, center, sass string) string {
 	if sass == "" {
 		return center
 	}

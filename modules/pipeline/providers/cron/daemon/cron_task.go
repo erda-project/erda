@@ -115,8 +115,8 @@ func (d *provider) runCronPipelineFunc(id uint64) {
 
 // getSecrets Compatible with old data
 func getSecrets(extra db.PipelineCronExtra) map[string]string {
-	if _, ok := extra.Secrets["gittar.repo"]; ok {
-		return extra.Secrets
+	if _, ok := extra.IncomingSecrets["gittar.repo"]; ok {
+		return extra.IncomingSecrets
 	}
 	commitDetailStr := extra.NormalLabels[apistructs.LabelCommitDetail]
 	if commitDetailStr == "" {

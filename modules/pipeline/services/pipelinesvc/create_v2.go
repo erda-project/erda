@@ -283,7 +283,7 @@ func (s *PipelineSvc) makePipelineFromRequestV2(req *apistructs.PipelineCreateRe
 	p.Extra.ConfigManageNamespaces = req.ConfigManageNamespaces
 
 	// secrets
-	p.Extra.Secrets = req.Secrets
+	p.Extra.IncomingSecrets = req.Secrets
 
 	// cron
 	p.Extra.CronExpr = pipelineYml.Spec().Cron
@@ -412,7 +412,7 @@ func constructPipelineCron(p *spec.Pipeline, cronStartFrom *time.Time, configMan
 			Version:                "v2",
 			Compensator:            compensator,
 			LastCompensateAt:       nil,
-			Secrets:                p.Extra.Secrets,
+			IncomingSecrets:        p.Extra.IncomingSecrets,
 		},
 	}
 

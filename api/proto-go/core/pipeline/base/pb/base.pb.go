@@ -4359,7 +4359,7 @@ type PipelineCreateRequest struct {
 	// +optional
 	DefinitionID string           `protobuf:"bytes,18,opt,name=definitionID,proto3" json:"definitionID,omitempty"`
 	IdentityInfo *pb.IdentityInfo `protobuf:"bytes,19,opt,name=identityInfo,json=-,proto3" json:"identityInfo,omitempty"`
-	// Secrets Environment variables passed from the upper layer，different from configs cms
+	// passed from the invoker, different from config cms
 	// eg: gittar.repo
 	// +optional
 	Secrets map[string]string `protobuf:"bytes,20,rep,name=Secrets,proto3" json:"Secrets,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
