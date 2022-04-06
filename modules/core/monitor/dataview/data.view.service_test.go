@@ -472,25 +472,44 @@ func Test_updateFields(t *testing.T) {
 	}{
 		{
 			req: &pb.UpdateCustomViewRequest{
-				Id:     "test-id",
-				Name:   "test-name",
-				Desc:   "test-desc",
-				Blocks: nil,
-				Data:   nil,
+				Id:         "test-id",
+				Name:       "test-name",
+				Desc:       "test-desc",
+				UpdateType: pb.UpdateType_ViewType.String(),
+				Blocks:     nil,
+				Data:       nil,
+			},
+		},
+		{
+			req: &pb.UpdateCustomViewRequest{
+				Id:         "test-id",
+				Name:       "test-name",
+				Desc:       "test-desc",
+				UpdateType: pb.UpdateType_MetaType.String(),
+				Blocks:     nil,
+				Data:       nil,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := fieldsForUpdate(tt.req)
-			if _, ok := got["UpdatedAt"]; !ok {
-				t.Errorf("fieldsForUpdate() = %v, must contains UpdatedAt", got)
-			}
-			if _, ok := got["ViewConfig"]; !ok {
-				t.Errorf("fieldsForUpdate() = %v, must contains ViewConfig", got)
-			}
-			if _, ok := got["DataConfig"]; !ok {
-				t.Errorf("fieldsForUpdate() = %v, must contains DataConfig", got)
+			if tt.req.UpdateType == pb.UpdateType_ViewType.String() {
+				if _, ok := got["UpdatedAt"]; !ok {
+					t.Errorf("fieldsForUpdate() = %v, must contains UpdatedAt", got)
+				}
+				if _, ok := got["ViewConfig"]; !ok {
+					t.Errorf("fieldsForUpdate() = %v, must contains ViewConfig", got)
+				}
+				if _, ok := got["DataConfig"]; !ok {
+					t.Errorf("fieldsForUpdate() = %v, must contains DataConfig", got)
+				}
+			} else if tt.req.UpdateType == pb.UpdateType_MetaType.String() {
+				if _, ok := got["Name"]; !ok {
+					t.Errorf("fieldsForUpdate() = %v, must contains Name", got)
+				} else if _, ok := got["Desc"]; !ok {
+					t.Errorf("fieldsForUpdate() = %v, must contains Desc", got)
+				}
 			}
 		})
 	}
