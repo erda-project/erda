@@ -104,6 +104,7 @@ func (d *MobileSubscriber) Publish(dest string, content string, time int64, msg 
 
 	// 通知组的短信模版存在notifyitem里
 	var templateCode string
+	templateCode = d.monitorTemplateCode
 	if err == nil && org.Config != nil && org.Config.SMSMonitorTemplateCode != "" {
 		templateCode = org.Config.SMSMonitorTemplateCode
 	}
