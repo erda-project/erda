@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"google.golang.org/protobuf/types/known/structpb"
+
 	"github.com/erda-project/erda-infra/base/logs"
 	"github.com/erda-project/erda-proto-go/dop/issue/sync/pb"
 	"github.com/erda-project/erda/apistructs"
@@ -57,7 +59,11 @@ func (s *IssueSyncService) IssueSync(ctx context.Context, req *pb.IssueSyncReque
 			if err != nil {
 				return nil, err
 			}
-			if err := s.issue.SyncLabels(i.Value, relatingIssueIDs); err != nil {
+			var add, delete []*structpb.Value
+			if i.Value != nil {
+				add, delete = removeIntersectionInTwoNumberLists(i.Value.Addition, i.Value.Deletion)
+			}
+			if err := s.issue.SyncLabels(&pb.Value{Addition: add, Deletion: delete}, relatingIssueIDs); err != nil {
 				return nil, err
 			}
 		case "iterationID":
@@ -69,4 +75,28 @@ func (s *IssueSyncService) IssueSync(ctx context.Context, req *pb.IssueSyncReque
 	}
 
 	return &pb.IssueSyncResponse{}, err
+}
+
+func removeIntersectionInTwoNumberLists(l1, l2 []*structpb.Value) ([]*structpb.Value, []*structpb.Value) {
+	m := make(map[float64]bool)
+	for _, v := range l1 {
+		m[v.GetNumberValue()] = true
+	}
+	remove := make(map[float64]bool)
+	for _, v := range l2 {
+		if _, ok := m[v.GetNumberValue()]; ok {
+			remove[v.GetNumberValue()] = true
+		}
+	}
+	return removeElementsInFloatList(l1, remove), removeElementsInFloatList(l2, remove)
+}
+
+func removeElementsInFloatList(l []*structpb.Value, remove map[float64]bool) []*structpb.Value {
+	res := make([]*structpb.Value, 0, len(l))
+	for _, v := range l {
+		if _, ok := remove[v.GetNumberValue()]; !ok {
+			res = append(res, v)
+		}
+	}
+	return res
 }
