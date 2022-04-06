@@ -63,23 +63,18 @@ type (
 	}
 
 	Series struct {
-		Data      []int                  `json:"data"`
+		Data      []string               `json:"data"`
 		Name      string                 `json:"name"`
 		Type      string                 `json:"type"`
 		Smooth    bool                   `json:"smooth"`
 		ItemStyle map[string]interface{} `json:"itemStyle"`
-		MarkLine  MarkLine               `json:"markLine"`
-	}
-
-	MarkLine struct {
-		Label     map[string]interface{} `json:"label"`
-		LineStyle map[string]interface{} `json:"lineStyle"`
-		Data      [][]Data               `json:"data"`
+		LineStyle map[string]interface{} `json:"lineStyle,omitempty"`
 	}
 
 	Data struct {
-		Name  string   `json:"name"`
-		Coord []string `json:"coord"`
+		Name   string   `json:"name,omitempty"`
+		Coord  []string `json:"coord"`
+		Symbol string   `json:"symbol,omitempty"`
 	}
 )
 
