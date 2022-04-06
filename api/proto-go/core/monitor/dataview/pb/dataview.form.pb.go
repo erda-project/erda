@@ -66,6 +66,12 @@ func (m *CustomDashboardHistory) UnmarshalURLValues(prefix string, values url.Va
 				m.CreatedAt = vals[0]
 			case "fileUuid":
 				m.FileUuid = vals[0]
+			case "errorMessage":
+				m.ErrorMessage = vals[0]
+			case "targetScope":
+				m.TargetScope = vals[0]
+			case "targetScopeId":
+				m.TargetScopeId = vals[0]
 			}
 		}
 	}

@@ -329,14 +329,17 @@ func (s *dataViewService) ListCustomDashboardHistory(ctx context.Context, req *p
 	var histories []*pb.CustomDashboardHistory
 	for _, historyDB := range historiesDB {
 		history := &pb.CustomDashboardHistory{
-			Id:         historyDB.ID,
-			Type:       historyDB.Type,
-			Status:     historyDB.Status,
-			Scope:      historyDB.Scope,
-			ScopeId:    historyDB.ScopeId,
-			OperatorId: historyDB.OperatorId,
-			FileUuid:   historyDB.FileUUID,
-			CreatedAt:  historyDB.CreatedAt.Format("2006-01-02 15:04:05"),
+			Id:            historyDB.ID,
+			Type:          historyDB.Type,
+			Status:        historyDB.Status,
+			Scope:         historyDB.Scope,
+			ScopeId:       historyDB.ScopeId,
+			OperatorId:    historyDB.OperatorId,
+			FileUuid:      historyDB.FileUUID,
+			ErrorMessage:  historyDB.ErrorMessage,
+			TargetScope:   historyDB.TargetScope,
+			TargetScopeId: historyDB.TargetScopeId,
+			CreatedAt:     historyDB.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 		histories = append(histories, history)
 	}

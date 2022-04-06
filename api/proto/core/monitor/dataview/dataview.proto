@@ -100,14 +100,17 @@ service DataViewService {
 }
 
 message CustomDashboardHistory {
-  int64  id         = 1;
-  string type       = 2;
-  string status     = 3;
-  string scope      = 4;
-  string scopeId    = 5;
-  string operatorId = 6;
-  string createdAt  = 7;
-  string fileUuid   = 8;
+  int64  id            = 1;
+  string type          = 2;
+  string status        = 3;
+  string scope         = 4;
+  string scopeId       = 5;
+  string operatorId    = 6;
+  string createdAt     = 7;
+  string fileUuid      = 8;
+  string errorMessage  = 9;
+  string targetScope   = 10;
+  string targetScopeId = 11;
 }
 
 message ListCustomDashboardHistoryRequest {
@@ -129,8 +132,10 @@ message ExportCustomViewRequest {
 }
 
 enum OperatorType {
-  Export = 0;
-  Import = 1;
+  Export     = 0;
+  Import     = 1;
+  ExportFile = 3;
+  ExportEnv  = 4;
 }
 
 enum OperatorStatus {

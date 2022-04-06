@@ -1,3 +1,17 @@
+// Copyright (c) 2021 Terminus, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package dataview
 
 import (
@@ -106,7 +120,8 @@ func (p *provider) ImportDashboardFile(r *http.Request, params struct {
 	var dashboards []map[string]interface{}
 	err = jsonx.Unmarshal(dest, &dashboards)
 	if err != nil {
-		return false, err
+		err := p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "", err.Error())
+		return nil, err
 	}
 
 	for _, dashboard := range dashboards {
@@ -166,11 +181,14 @@ func (p *provider) ExportDashboardFile(r *http.Request, params struct {
 	EndTime       int64    `json:"endTime"`
 	Name          string   `json:"name"`
 	Description   string   `json:"description"`
+	ViewIds       []string `json:"viewIds"`
 	CreatorId     []string `json:"creatorId"`
 }) (interface{}, error) {
+
 	if params.Scope == "" || params.ScopeId == "" {
 		return nil, errors.NewMissingParameterError("scope or scopeId")
 	}
+
 	likeFields := map[string]interface{}{}
 	if params.Name != "" {
 		likeFields["Name"] = params.Name
@@ -183,16 +201,26 @@ func (p *provider) ExportDashboardFile(r *http.Request, params struct {
 		"Scope":   params.Scope,
 		"ScopeID": params.ScopeId,
 	}
-
-	views, err := p.custom.ListByFields(params.StartTime, params.EndTime, params.CreatorId, fields, likeFields)
-	if err != nil {
-		return nil, errors.NewDatabaseError(err)
+	var views []*db.CustomView
+	if params.ViewIds != nil && len(params.ViewIds) != 0 {
+		list, err := p.custom.ListByIds(params.ViewIds)
+		if err != nil {
+			return nil, errors.NewDatabaseError(err)
+		}
+		views = list
+	} else {
+		list, err := p.custom.ListByFields(params.StartTime, params.EndTime, params.CreatorId, fields, likeFields)
+		if err != nil {
+			return nil, errors.NewDatabaseError(err)
+		}
+		views = list
 	}
+
 	if views == nil || len(views) == 0 {
 		return nil, errors.NewNotFoundError("all record")
 	}
 
-	userID := r.Header.Get("user-id")
+	userID := r.Header.Get("USER-ID")
 	jsonFile := jsonx.Marshal(views)
 	history := &db.ErdaDashboardHistory{
 		Scope:         params.Scope,
@@ -206,7 +234,7 @@ func (p *provider) ExportDashboardFile(r *http.Request, params struct {
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 	}
-	history, err = p.history.Save(history)
+	history, err := p.history.Save(history)
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
