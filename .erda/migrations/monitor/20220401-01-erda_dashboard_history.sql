@@ -1,6 +1,6 @@
 CREATE TABLE `erda_dashboard_history`
 (
-    `id`              bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `id`              varchar(36)  NOT NULL COMMENT 'id',
     `type`            varchar(50)  NOT NULL COMMENT '导入导出类型',
     `status`          varchar(50)  NOT NULL COMMENT '操作状态',
     `scope`           varchar(50)  NOT NULL COMMENT 'Scope',
@@ -12,7 +12,7 @@ CREATE TABLE `erda_dashboard_history`
     `file_uuid`       varchar(100) NOT NULL COMMENT '文件id',
     `updated_at`      datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `created_at`      datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `deleted_at`      tinyint(1) NOT NULL COMMENT '是否删除',
+    `is_deleted`      tinyint(1) NOT NULL COMMENT '是否删除',
     `error_message`   mediumtext   NOT NULL COMMENT '错误信息',
     `org_id`          varchar(100) NOT NULL COMMENT '组织id',
     `org_name`        varchar(100) NOT NULL COMMENT '组织名称',
