@@ -29,9 +29,9 @@ import (
 	"github.com/erda-project/erda-infra/providers/cassandra"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda-infra/providers/mysql"
+	channelpb "github.com/erda-project/erda-proto-go/core/messenger/notifychannel/pb"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	channelpb "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/adapt"
@@ -82,7 +82,7 @@ type provider struct {
 	Metric        metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
 	Perm          perm.Interface               `autowired:"permission"`
 	alertService  *alertService
-	NotifyChannel channelpb.NotifyChannelServiceServer `autowired:"erda.core.services.notify.channel.NotifyChannelService"`
+	NotifyChannel channelpb.NotifyChannelServiceServer `autowired:"erda.core.messenger.notifychannel.NotifyChannelService"`
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
