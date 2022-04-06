@@ -15,6 +15,8 @@
 package issue
 
 import (
+	"fmt"
+
 	"github.com/erda-project/erda-proto-go/dop/issue/sync/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/dop/dao"
@@ -39,12 +41,12 @@ func (svc *Issue) UpdateLabels(id, projectID uint64, labelNames []string) (err e
 	return svc.db.BatchCreateLabelRelations(labelRelations)
 }
 
-func (s *Issue) SyncLabels(req *pb.IssueSyncRequest, issueIDs []uint64) error {
-	if req.Addition == nil || req.Deletion == nil {
-		return nil
+func (s *Issue) SyncLabels(value *pb.Value, issueIDs []uint64) error {
+	if value == nil {
+		return fmt.Errorf("value is empty")
 	}
-	labelsAdd := req.Addition.Labels
-	labelsDelete := req.Deletion.Labels
+	labelsAdd := value.Addition
+	labelsDelete := value.Deletion
 	for _, id := range issueIDs {
 		issue, err := s.GetIssue(apistructs.IssueGetRequest{ID: id, IdentityInfo: apistructs.IdentityInfo{InternalClient: apistructs.SystemOperator}})
 		if err != nil {
@@ -56,9 +58,10 @@ func (s *Issue) SyncLabels(req *pb.IssueSyncRequest, issueIDs []uint64) error {
 		}
 		labelRelations := make([]dao.LabelRelation, 0, len(labelsAdd))
 		for _, v := range labelsAdd {
-			if _, ok := currentLabelMap[int64(v)]; !ok {
+			labelID := int64(v.GetNumberValue())
+			if _, ok := currentLabelMap[labelID]; !ok {
 				labelRelations = append(labelRelations, dao.LabelRelation{
-					LabelID: v,
+					LabelID: uint64(labelID),
 					RefType: apistructs.LabelTypeIssue,
 					RefID:   id,
 				})
@@ -72,8 +75,9 @@ func (s *Issue) SyncLabels(req *pb.IssueSyncRequest, issueIDs []uint64) error {
 
 		labelIDs := make([]uint64, 0, len(labelsDelete))
 		for _, v := range labelsDelete {
-			if _, ok := currentLabelMap[int64(v)]; ok {
-				labelIDs = append(labelIDs, v)
+			labelID := int64(v.GetNumberValue())
+			if _, ok := currentLabelMap[labelID]; ok {
+				labelIDs = append(labelIDs, uint64(labelID))
 			}
 		}
 		if len(labelIDs) > 0 {

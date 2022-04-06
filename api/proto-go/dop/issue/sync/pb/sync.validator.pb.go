@@ -11,6 +11,7 @@ import (
 	proto "github.com/golang/protobuf/proto"
 	github_com_mwitkow_go_proto_validators "github.com/mwitkow/go-proto-validators"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
+	_ "google.golang.org/protobuf/types/known/structpb"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -19,27 +20,43 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 func (this *IssueSyncRequest) Validate() error {
-	if this.Addition != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Addition); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("Addition", err)
-		}
-	}
-	if this.Deletion != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Deletion); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("Deletion", err)
-		}
-	}
-	if this.ReplacedFields != nil {
-		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.ReplacedFields); err != nil {
-			return github_com_mwitkow_go_proto_validators.FieldError("ReplacedFields", err)
+	for _, item := range this.UpdateFields {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("UpdateFields", err)
+			}
 		}
 	}
 	return nil
 }
-func (this *ReplacedFields) Validate() error {
+func (this *Fields) Validate() error {
+	if this.Value != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Value); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Value", err)
+		}
+	}
 	return nil
 }
-func (this *MergedFields) Validate() error {
+func (this *Value) Validate() error {
+	if this.Content != nil {
+		if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(this.Content); err != nil {
+			return github_com_mwitkow_go_proto_validators.FieldError("Content", err)
+		}
+	}
+	for _, item := range this.Addition {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Addition", err)
+			}
+		}
+	}
+	for _, item := range this.Deletion {
+		if item != nil {
+			if err := github_com_mwitkow_go_proto_validators.CallValidatorIfExists(item); err != nil {
+				return github_com_mwitkow_go_proto_validators.FieldError("Deletion", err)
+			}
+		}
+	}
 	return nil
 }
 func (this *IssueSyncResponse) Validate() error {

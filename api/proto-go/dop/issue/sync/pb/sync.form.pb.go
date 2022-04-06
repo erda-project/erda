@@ -4,17 +4,20 @@
 package pb
 
 import (
+	json "encoding/json"
 	url "net/url"
 	strconv "strconv"
+	strings "strings"
 
 	urlenc "github.com/erda-project/erda-infra/pkg/urlenc"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the "github.com/erda-project/erda-infra/pkg/urlenc" package it is being compiled against.
 var _ urlenc.URLValuesUnmarshaler = (*IssueSyncRequest)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*ReplacedFields)(nil)
-var _ urlenc.URLValuesUnmarshaler = (*MergedFields)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*Fields)(nil)
+var _ urlenc.URLValuesUnmarshaler = (*Value)(nil)
 var _ urlenc.URLValuesUnmarshaler = (*IssueSyncResponse)(nil)
 
 // IssueSyncRequest implement urlenc.URLValuesUnmarshaler.
@@ -28,91 +31,248 @@ func (m *IssueSyncRequest) UnmarshalURLValues(prefix string, values url.Values) 
 					return err
 				}
 				m.Id = val
-			case "addition":
-				if m.Addition == nil {
-					m.Addition = &MergedFields{}
-				}
-			case "addition.labels":
-				if m.Addition == nil {
-					m.Addition = &MergedFields{}
-				}
-				list := make([]uint64, 0, len(vals))
-				for _, text := range vals {
-					val, err := strconv.ParseUint(text, 10, 64)
-					if err != nil {
-						return err
-					}
-					list = append(list, val)
-				}
-				m.Addition.Labels = list
-			case "deletion":
-				if m.Deletion == nil {
-					m.Deletion = &MergedFields{}
-				}
-			case "deletion.labels":
-				if m.Deletion == nil {
-					m.Deletion = &MergedFields{}
-				}
-				list := make([]uint64, 0, len(vals))
-				for _, text := range vals {
-					val, err := strconv.ParseUint(text, 10, 64)
-					if err != nil {
-						return err
-					}
-					list = append(list, val)
-				}
-				m.Deletion.Labels = list
-			case "replacedFields":
-				if m.ReplacedFields == nil {
-					m.ReplacedFields = &ReplacedFields{}
-				}
-			case "replacedFields.iterationID":
-				if m.ReplacedFields == nil {
-					m.ReplacedFields = &ReplacedFields{}
-				}
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.ReplacedFields.IterationID = val
 			}
 		}
 	}
 	return nil
 }
 
-// ReplacedFields implement urlenc.URLValuesUnmarshaler.
-func (m *ReplacedFields) UnmarshalURLValues(prefix string, values url.Values) error {
+// Fields implement urlenc.URLValuesUnmarshaler.
+func (m *Fields) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "iterationID":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
+			case "updateType":
+			case "field":
+				m.Field = vals[0]
+			case "value":
+				if m.Value == nil {
+					m.Value = &Value{}
 				}
-				m.IterationID = val
+			case "value.content":
+				if m.Value == nil {
+					m.Value = &Value{}
+				}
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Value.Content = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Value.Content = val
+					} else {
+						m.Value.Content = structpb.NewStringValue(vals[0])
+					}
+				}
+			case "value.content.null_value":
+				if m.Value == nil {
+					m.Value = &Value{}
+				}
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Value.Content = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Value.Content = val
+					} else {
+						m.Value.Content = structpb.NewStringValue(vals[0])
+					}
+				}
+			case "value.content.number_value":
+				if m.Value == nil {
+					m.Value = &Value{}
+				}
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Value.Content = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Value.Content = val
+					} else {
+						m.Value.Content = structpb.NewStringValue(vals[0])
+					}
+				}
+			case "value.content.string_value":
+				if m.Value == nil {
+					m.Value = &Value{}
+				}
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Value.Content = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Value.Content = val
+					} else {
+						m.Value.Content = structpb.NewStringValue(vals[0])
+					}
+				}
+			case "value.content.bool_value":
+				if m.Value == nil {
+					m.Value = &Value{}
+				}
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Value.Content = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Value.Content = val
+					} else {
+						m.Value.Content = structpb.NewStringValue(vals[0])
+					}
+				}
+			case "value.content.struct_value":
+				if m.Value == nil {
+					m.Value = &Value{}
+				}
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Value.Content = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Value.Content = val
+					} else {
+						m.Value.Content = structpb.NewStringValue(vals[0])
+					}
+				}
+			case "value.content.list_value":
+				if m.Value == nil {
+					m.Value = &Value{}
+				}
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
+					}
+					val, _ := structpb.NewList(list)
+					m.Value.Content = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Value.Content = val
+					} else {
+						m.Value.Content = structpb.NewStringValue(vals[0])
+					}
+				}
 			}
 		}
 	}
 	return nil
 }
 
-// MergedFields implement urlenc.URLValuesUnmarshaler.
-func (m *MergedFields) UnmarshalURLValues(prefix string, values url.Values) error {
+// Value implement urlenc.URLValuesUnmarshaler.
+func (m *Value) UnmarshalURLValues(prefix string, values url.Values) error {
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "labels":
-				list := make([]uint64, 0, len(vals))
-				for _, text := range vals {
-					val, err := strconv.ParseUint(text, 10, 64)
-					if err != nil {
-						return err
+			case "content":
+				if len(vals) > 1 {
+					var list []interface{}
+					for _, text := range vals {
+						var v interface{}
+						err := json.NewDecoder(strings.NewReader(text)).Decode(&v)
+						if err != nil {
+							list = append(list, v)
+						} else {
+							list = append(list, text)
+						}
 					}
-					list = append(list, val)
+					val, _ := structpb.NewList(list)
+					m.Content = structpb.NewListValue(val)
+				} else {
+					var v interface{}
+					err := json.NewDecoder(strings.NewReader(vals[0])).Decode(&v)
+					if err != nil {
+						val, _ := structpb.NewValue(v)
+						m.Content = val
+					} else {
+						m.Content = structpb.NewStringValue(vals[0])
+					}
 				}
-				m.Labels = list
 			}
 		}
 	}

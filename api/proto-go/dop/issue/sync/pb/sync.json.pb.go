@@ -15,10 +15,10 @@ import (
 // is compatible with the "encoding/json" package it is being compiled against.
 var _ json.Marshaler = (*IssueSyncRequest)(nil)
 var _ json.Unmarshaler = (*IssueSyncRequest)(nil)
-var _ json.Marshaler = (*ReplacedFields)(nil)
-var _ json.Unmarshaler = (*ReplacedFields)(nil)
-var _ json.Marshaler = (*MergedFields)(nil)
-var _ json.Unmarshaler = (*MergedFields)(nil)
+var _ json.Marshaler = (*Fields)(nil)
+var _ json.Unmarshaler = (*Fields)(nil)
+var _ json.Marshaler = (*Value)(nil)
+var _ json.Unmarshaler = (*Value)(nil)
 var _ json.Marshaler = (*IssueSyncResponse)(nil)
 var _ json.Unmarshaler = (*IssueSyncResponse)(nil)
 
@@ -40,8 +40,8 @@ func (m *IssueSyncRequest) UnmarshalJSON(b []byte) error {
 	}).Unmarshal(b, m)
 }
 
-// ReplacedFields implement json.Marshaler.
-func (m *ReplacedFields) MarshalJSON() ([]byte, error) {
+// Fields implement json.Marshaler.
+func (m *Fields) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -51,15 +51,15 @@ func (m *ReplacedFields) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// ReplacedFields implement json.Marshaler.
-func (m *ReplacedFields) UnmarshalJSON(b []byte) error {
+// Fields implement json.Marshaler.
+func (m *Fields) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)
 }
 
-// MergedFields implement json.Marshaler.
-func (m *MergedFields) MarshalJSON() ([]byte, error) {
+// Value implement json.Marshaler.
+func (m *Value) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := (&jsonpb.Marshaler{
 		OrigName:     false,
@@ -69,8 +69,8 @@ func (m *MergedFields) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// MergedFields implement json.Marshaler.
-func (m *MergedFields) UnmarshalJSON(b []byte) error {
+// Value implement json.Marshaler.
+func (m *Value) UnmarshalJSON(b []byte) error {
 	return (&protojson.UnmarshalOptions{
 		DiscardUnknown: true,
 	}).Unmarshal(b, m)

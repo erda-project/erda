@@ -3,6 +3,7 @@ syntax = "proto3";
 package erda.dop.issue.sync;
 option go_package = "github.com/erda-project/erda-proto-go/dop/issue/sync/pb";
 import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
 import "common/openapi.proto";
 
 service IssueSyncService {
@@ -26,17 +27,23 @@ service IssueSyncService {
 
 message IssueSyncRequest {
   int64 id = 1;
-  MergedFields addition = 2;
-  MergedFields deletion = 3;
-  ReplacedFields replacedFields = 4;
+  repeated Fields updateFields = 2;
 }
 
-message ReplacedFields {
-  int64 iterationID = 1;
+message Fields {
+  enum UpdateType {
+    MERGE = 0;
+    REPLACE = 1;
+  }
+  UpdateType updateType = 1;
+  string field = 2;
+  Value value = 3;
 }
 
-message MergedFields {
-  repeated uint64 labels = 1;
+message Value {
+  google.protobuf.Value content = 1; 
+  repeated google.protobuf.Value addition = 2;
+  repeated google.protobuf.Value deletion = 3;
 }
 
 message IssueSyncResponse {  }

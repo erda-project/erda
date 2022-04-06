@@ -49,15 +49,24 @@ func (s *IssueSyncService) IssueSync(ctx context.Context, req *pb.IssueSyncReque
 	if err != nil {
 		return nil, err
 	}
-	relatingIssueIDs, err := s.db.GetRelatingIssues(uint64(req.Id), []string{apistructs.IssueRelationInclusion})
-	if err != nil {
-		return nil, err
+	for _, i := range req.UpdateFields {
+		// TODO: define issue field as enum and add more available issue fields for sync
+		switch i.Field {
+		case "labels":
+			relatingIssueIDs, err := s.db.GetRelatingIssues(uint64(req.Id), []string{apistructs.IssueRelationInclusion})
+			if err != nil {
+				return nil, err
+			}
+			if err := s.issue.SyncLabels(i.Value, relatingIssueIDs); err != nil {
+				return nil, err
+			}
+		case "iterationID":
+			iterationID := int64(i.Value.Content.GetNumberValue())
+			if err := s.issue.SyncIssueChildrenIteration(issue, iterationID); err != nil {
+				return nil, err
+			}
+		}
 	}
-	if err := s.issue.SyncLabels(req, relatingIssueIDs); err != nil {
-		return nil, err
-	}
-	if req.ReplacedFields == nil {
-		return nil, err
-	}
-	return nil, s.issue.SyncIssueChildrenIteration(issue, req.ReplacedFields.IterationID)
+
+	return &pb.IssueSyncResponse{}, err
 }
