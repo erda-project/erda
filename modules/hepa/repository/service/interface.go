@@ -79,6 +79,7 @@ type GatewayPackageApiService interface {
 	GetRawByAny(*GatewayPackageApi) (*GatewayPackageApi, error)
 	DeleteByPackageId(string) error
 	CheckUnique(*GatewayPackageApi) (bool, error)
+	SelectByOptions(options []orm.SelectOption) ([]orm.GatewayPackageApi, error)
 }
 
 type GatewayPackageRuleService interface {

@@ -58,3 +58,29 @@ func TestReverseSlice(t *testing.T) {
 	strutil.ReverseSlice([2]int{0, 2})
 	strutil.ReverseSlice("a")
 }
+
+func TestDedupAnySlice(t *testing.T) {
+	var (
+		a = []int{2, 3, 4, 6, 7, 8, 9, 7, 3, 6}
+		b = []string{"json", "yaml", "txt", "yaml"}
+		c = []struct {
+			Name string
+			Age  int
+		}{{Name: "dspo", Age: 13}, {Name: "cmc", Age: 14}, {Name: "yuxiaoer", Age: 15}, {Name: "cmc", Age: 14}}
+	)
+	a = strutil.DedupAnySlice(a, func(i int) interface{} {
+		return a[i]
+	}).([]int)
+	b = strutil.DedupAnySlice(b, func(i int) interface{} {
+		return b[i]
+	}).([]string)
+	c = strutil.DedupAnySlice(c, func(i int) interface{} {
+		return c[i].Name
+	}).([]struct {
+		Name string
+		Age  int
+	})
+	t.Log(a)
+	t.Log(b)
+	t.Log(c)
+}

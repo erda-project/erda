@@ -21,6 +21,7 @@ import (
 const (
 	EDT_CUSTOM  = "CUSTOM"
 	EDT_DEFAULT = "DEFAULT"
+	EDT_PACKAGE = "PACKAGE"
 )
 
 type EndpointDomainDto struct {
