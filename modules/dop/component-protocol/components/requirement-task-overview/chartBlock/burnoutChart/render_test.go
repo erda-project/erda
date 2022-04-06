@@ -16,6 +16,7 @@ package burnoutChart
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -36,5 +37,26 @@ func TestSumWorkTime(t *testing.T) {
 			t.Error(err)
 		}
 		assert.Equal(t, v.want, workTime)
+	}
+}
+
+func TestGetWeekDays(t *testing.T) {
+	tt := []struct {
+		intervals []int
+		want      int
+	}{
+		{intervals: []int{2, 3}, want: 0},
+		{intervals: []int{2, 8}, want: 5},
+		{intervals: []int{2, 9}, want: 5},
+		{intervals: []int{2, 10}, want: 5},
+		{intervals: []int{2, 11}, want: 6},
+		{intervals: []int{1, 30}, want: 21},
+	}
+	for i := range tt {
+		dates := make([]time.Time, 0)
+		for j := tt[i].intervals[0]; j <= tt[i].intervals[1]; j++ {
+			dates = append(dates, time.Date(2022, 4, j, 0, 0, 0, 0, time.Local))
+		}
+		assert.Equal(t, tt[i].want, getWeekDays(dates))
 	}
 }

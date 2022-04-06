@@ -148,7 +148,8 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 			XAxis: XAxis{
 				Type: "category",
 				Data: func() []string {
-					ss := make([]string, 0, len(dates))
+					ss := make([]string, 0, len(dates)+1)
+					ss = append(ss, cputil.I18n(ctx, "before"))
 					for _, v := range dates {
 						ss = append(ss, v.Format("01-02"))
 					}
@@ -157,7 +158,6 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 			},
 			YAxis: YAxis{
 				Type: "value",
-
 				AxisLine: map[string]interface{}{
 					"lineStyle": map[string]interface{}{
 						"color": "rgba(48,38,71,0.30)",
@@ -182,17 +182,18 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 			Legend: Legend{
 				Show:   true,
 				Bottom: true,
-				Data:   []string{cputil.I18n(ctx, "remain")},
+				Data:   []string{cputil.I18n(ctx, "remain"), cputil.I18n(ctx, "ideal")},
 			},
 			Tooltip: map[string]interface{}{
 				"trigger": "axis",
 			},
 			Series: []Series{
 				{
-					Data: func() []int {
-						counts := make([]int, 0)
+					Data: func() []string {
+						counts := make([]string, 0, len(dates)+1)
+						counts = append(counts, strconv.Itoa(getSum(sum, h.GetBurnoutChartDimension())))
 						for _, v := range dates {
-							counts = append(counts, dateMap[v])
+							counts = append(counts, strconv.Itoa(dateMap[v]))
 						}
 						return counts
 					}(),
@@ -207,40 +208,43 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 					ItemStyle: map[string]interface{}{
 						"color": "#D84B65",
 					},
-					MarkLine: MarkLine{
-						Label: map[string]interface{}{"position": "middle"},
-						LineStyle: map[string]interface{}{
-							"color": "rgba(48,38,71,0.20)",
-						},
-						Data: [][]Data{
-							{
-								{
-									Name: func() string {
-										if h.GetBurnoutChartDimension() == "total" {
-											return cputil.I18n(ctx, "ideal")
-										}
-										return cputil.I18n(ctx, "idealHour")
-									}(),
-									Coord: func() []string {
-										ss := make([]string, 0, 2)
-										ss = append(ss, dates[0].Format("01-02"))
-										if h.GetBurnoutChartDimension() == "total" {
-											ss = append(ss, strconv.Itoa(sum))
-										} else {
-											ss = append(ss, strconv.Itoa(sum/60))
-										}
-										return ss
-									}(),
-								},
-								{
-									Coord: func() []string {
-										ss := make([]string, 0, 2)
-										ss = append(ss, dates[len(dates)-1].Format("01-02"), "0")
-										return ss
-									}(),
-								},
-							},
-						},
+				},
+				{
+					Data: func() []string {
+						counts := make([]string, 0, len(dates)+1)
+						idealSum := float64(getSum(sum, h.GetBurnoutChartDimension()))
+						counts = append(counts, fmt.Sprintf("%.0f", idealSum))
+
+						doneDaily := idealSum / float64(getWeekDays(dates))
+						for i := range dates {
+							var sub float64
+							if !isWeekend(dates[i]) {
+								sub = doneDaily
+							}
+							idealSum -= sub
+							count := func() string {
+								if fmt.Sprintf("%.0f", idealSum) == "-0" {
+									return "0"
+								}
+								return fmt.Sprintf("%.0f", idealSum)
+							}
+							counts = append(counts, count())
+						}
+						return counts
+					}(),
+					Name: func() string {
+						if h.GetBurnoutChartDimension() == "total" {
+							return cputil.I18n(ctx, "ideal")
+						}
+						return cputil.I18n(ctx, "idealHour")
+					}(),
+					Type:   "line",
+					Smooth: false,
+					ItemStyle: map[string]interface{}{
+						"color": "rgba(48,38,71,0.20)",
+					},
+					LineStyle: map[string]interface{}{
+						"type": "dashed",
 					},
 				},
 			},
@@ -248,6 +252,14 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 	}
 
 	return f.SetToProtocolComponent(c)
+}
+
+func getSum(sum int, burnoutChartDimension string) int {
+	if burnoutChartDimension == "total" {
+		return sum
+	} else {
+		return sum / 60
+	}
 }
 
 func sumWorkTime(issue dao.IssueItem) (int, error) {
@@ -260,4 +272,18 @@ func sumWorkTime(issue dao.IssueItem) (int, error) {
 		return 0, err
 	}
 	return int(manHour.ElapsedTime), nil
+}
+
+func isWeekend(t time.Time) bool {
+	return t.Weekday() == time.Saturday || t.Weekday() == time.Sunday
+}
+
+func getWeekDays(dates []time.Time) int {
+	days := 0
+	for i := range dates {
+		if !isWeekend(dates[i]) {
+			days++
+		}
+	}
+	return days
 }
