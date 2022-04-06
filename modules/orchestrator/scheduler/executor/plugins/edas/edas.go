@@ -176,7 +176,6 @@ func init() {
 		lstore := &sync.Map{}
 		stopCh := make(chan struct{}, 1)
 		edas.registerEventChanAndLocalStore(evCh, stopCh, lstore)
-		go edas.WaitEvent(lstore, stopCh)
 		return edas, nil
 	})
 }
