@@ -22,12 +22,14 @@ import (
 	"github.com/erda-project/erda/bundle"
 	"github.com/erda-project/erda/modules/dop/dao"
 	"github.com/erda-project/erda/modules/dop/services/apierrors"
+	"github.com/erda-project/erda/modules/dop/services/issuestream"
 	"github.com/erda-project/erda/pkg/strutil"
 )
 
 type IssueRelated struct {
-	db  *dao.DBClient
-	bdl *bundle.Bundle
+	db     *dao.DBClient
+	bdl    *bundle.Bundle
+	stream *issuestream.IssueStream
 }
 
 // Option 定义 IssueStream 对象配置选项
@@ -53,6 +55,12 @@ func WithDBClient(db *dao.DBClient) Option {
 func WithBundle(bdl *bundle.Bundle) Option {
 	return func(is *IssueRelated) {
 		is.bdl = bdl
+	}
+}
+
+func WithIssueStream(stream *issuestream.IssueStream) Option {
+	return func(is *IssueRelated) {
+		is.stream = stream
 	}
 }
 
@@ -143,22 +151,32 @@ func (ir *IssueRelated) DeleteIssueRelation(issueID, relatedIssueID uint64, rela
 
 func (ir *IssueRelated) AfterIssueInclusionRelationChange(id uint64) error {
 	fields := make(map[string]interface{})
+	streamFields := make(map[string][]interface{})
 	start, end, err := ir.db.FindIssueChildrenTimeRange(id)
 	if err != nil {
 		return err
 	}
-	if start != nil {
-		fields["plan_started_at"] = start
+	issue, err := ir.db.GetIssue(int64(id))
+	if err != nil {
+		return err
 	}
-	if end != nil {
+	if start != nil && !start.Equal(*issue.PlanStartedAt) {
+		fields["plan_started_at"] = start
+		streamFields["plan_started_at"] = []interface{}{issue.PlanStartedAt, start, apistructs.ChildrenPlanUpdated}
+	}
+	if end != nil && !end.Equal(*issue.PlanFinishedAt) {
 		now := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
 		fields["expiry_status"] = dao.GetExpiryStatus(end, now)
 		fields["plan_finished_at"] = end
+		streamFields["plan_finished_at"] = []interface{}{issue.PlanFinishedAt, end, apistructs.ChildrenPlanUpdated}
 	}
 	if len(fields) > 0 {
 		if err := ir.db.UpdateIssue(id, fields); err != nil {
 			return apierrors.ErrUpdateIssue.InternalError(err)
 		}
+	}
+	if err := ir.stream.CreateIssueStreamBySystem(id, streamFields); err != nil {
+		return err
 	}
 	return nil
 }

@@ -414,6 +414,7 @@ func constructPipelineCron(p *spec.Pipeline, cronStartFrom *time.Time, configMan
 			LastCompensateAt:       nil,
 			IncomingSecrets:        p.Extra.IncomingSecrets,
 		},
+		PipelineDefinitionID: p.PipelineDefinitionID,
 	}
 
 	return cron

@@ -22,8 +22,17 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
 )
+
+type streamTemplateRequest struct {
+	StreamType   apistructs.IssueStreamType
+	StreamParams apistructs.ISTParam
+	tran         i18n.Translator
+	locale       string
+	Lang         i18n.LanguageCodes
+}
 
 // getIssueStreamTemplate get issue stream template
 func getIssueStreamTemplate(locale string, ist apistructs.IssueStreamType) (string, error) {
@@ -34,19 +43,6 @@ func getIssueStreamTemplate(locale string, ist apistructs.IssueStreamType) (stri
 	v, ok := apistructs.IssueTemplate[locale][ist]
 	if !ok {
 		return "", errors.Errorf("issue stream template not found")
-	}
-
-	return v, nil
-}
-
-func getIssueStreamReasonTemplate(locale, key string) (string, error) {
-	if locale != "zh" && locale != "en" {
-		return "", errors.Errorf("invalid locale %v", locale)
-	}
-
-	v, ok := apistructs.ReasonTemplate[locale][key]
-	if !ok {
-		return "", errors.Errorf("issue stream reason template not found")
 	}
 
 	return v, nil
@@ -75,27 +71,25 @@ func getIssueStreamTemplateForMsgSending(locale string, ist apistructs.IssueStre
 }
 
 // getDefaultContent get rendered msg
-func getDefaultContent(ist apistructs.IssueStreamType, param apistructs.ISTParam, locale string) (string, error) {
+func getDefaultContent(req streamTemplateRequest) (string, error) {
+	locale := req.locale
 	if strings.Contains(locale, "zh") {
 		locale = "zh"
 	}
 	if strings.Contains(locale, "en") {
 		locale = "en"
 	}
-	ct, err := getIssueStreamTemplate(locale, ist)
+	// TODO: refactor issue stream template
+	ct, err := getIssueStreamTemplate(locale, req.StreamType)
 	if err != nil {
 		return "", err
 	}
-	content, err := renderTemplate(locale, ct, param)
+	content, err := renderTemplate(locale, ct, req.StreamParams)
 	if err != nil {
 		return "", err
 	}
-	if param.ReasonDetail != "" {
-		reason, err := getIssueStreamReasonTemplate(locale, param.ReasonDetail)
-		if err != nil {
-			return "", err
-		}
-		return fmt.Sprintf("%v %v", content, reason), nil
+	if req.StreamParams.ReasonDetail != "" {
+		return fmt.Sprintf("%v %v", content, req.tran.Text(req.Lang, req.StreamParams.ReasonDetail)), nil
 	}
 	return content, nil
 }

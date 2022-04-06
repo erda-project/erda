@@ -253,13 +253,16 @@ func (it *clickhouseIterator) fetch(dir iteratorDir) {
 		if it.lastResp == nil {
 			fetchingRemote = true
 			expr := it.sqlClause
-			if len(it.lastID) > 0 {
-				expr = expr.Where(goqu.C("_id").Gt(it.lastID))
-			}
 
 			if reverse {
+				if len(it.lastID) > 0 {
+					expr = expr.Where(goqu.C("_id").Lt(it.lastID))
+				}
 				expr = expr.Order(goqu.C("org_name").Desc(), goqu.C("timestamp").Desc())
 			} else {
+				if len(it.lastID) > 0 {
+					expr = expr.Where(goqu.C("_id").Gt(it.lastID))
+				}
 				expr = expr.Order(goqu.C("org_name").Asc(), goqu.C("timestamp").Asc())
 			}
 

@@ -44,6 +44,7 @@ import (
 	"github.com/erda-project/erda/modules/pipeline/spec"
 	"github.com/erda-project/erda/modules/pkg/diceworkspace"
 	"github.com/erda-project/erda/modules/pkg/gitflowutil"
+	"github.com/erda-project/erda/pkg/common/apis"
 	"github.com/erda-project/erda/pkg/parser/pipelineyml"
 	"github.com/erda-project/erda/pkg/strutil"
 )
@@ -575,11 +576,16 @@ func (p *Pipeline) PipelineCronUpdate(req apistructs.GittarPushPayloadEvent) err
 	for _, v := range compare.Diff.Files {
 		// is pipeline.yml rename to others,need to stop it if cron enable
 		if isPipelineYmlPath(v.OldName) && !isPipelineYmlPath(v.Name) {
-			cron, err := p.GetPipelineCron(int64(appDto.ProjectID), appID, v.OldName, branch)
+			cron, find, err := p.GetPipelineCron(int64(appDto.ProjectID), appID, v.OldName, branch)
 			if err != nil {
 				logrus.Errorf("fail to GetPipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
 				continue
 			}
+
+			if !find {
+				continue
+			}
+
 			if cron.Enable.Value {
 				_, err := p.cronService.CronStop(context.Background(), &cronpb.CronStopRequest{
 					CronID: cron.ID,
@@ -590,12 +596,31 @@ func (p *Pipeline) PipelineCronUpdate(req apistructs.GittarPushPayloadEvent) err
 				}
 			}
 		}
+
 		if isPipelineYmlPath(v.Name) {
 			// if pipeline cron is not exist,no need to do anything
-			cron, err := p.GetPipelineCron(int64(appDto.ProjectID), appID, v.OldName, branch)
+			cron, find, err := p.GetPipelineCron(int64(appDto.ProjectID), appID, v.OldName, branch)
 			if err != nil {
 				logrus.Errorf("fail to GetPipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
 				continue
+			}
+
+			if !find {
+				// create pipeline to create cron
+				err := p.createCron(appDto, v.Name, branch, req)
+				if err != nil {
+					logrus.Errorf("createCron error %v", err)
+					continue
+				}
+
+				cron, find, err = p.GetPipelineCron(int64(appDto.ProjectID), appID, v.OldName, branch)
+				if err != nil {
+					logrus.Errorf("fail to GetPipelineCron,err: %s,path: %s,oldPath: %s", err.Error(), v.Name, v.OldName)
+					continue
+				}
+				if !find {
+					continue
+				}
 			}
 
 			// if type is delete,need to stop it if cron enable
@@ -646,6 +671,57 @@ func (p *Pipeline) PipelineCronUpdate(req apistructs.GittarPushPayloadEvent) err
 				}
 			}
 		}
+	}
+	return nil
+}
+
+func (p *Pipeline) createCron(appDto *apistructs.ApplicationDTO, ymlPathName string, branch string, event apistructs.GittarPushPayloadEvent) error {
+	createV1 := apistructs.PipelineCreateRequest{
+		AppID:             appDto.ID,
+		Branch:            branch,
+		PipelineYmlName:   ymlPathName,
+		Source:            apistructs.PipelineSourceDice,
+		PipelineYmlSource: apistructs.PipelineYmlSourceGittar,
+		UserID:            event.Content.Pusher.Id,
+	}
+	createV2, err := p.ConvertPipelineToV2(&createV1)
+	if err != nil {
+		return fmt.Errorf("ConvertPipelineToV2 error %v req %v", err, createV1)
+	}
+
+	var req = &sourcepb.PipelineSourceListRequest{}
+	req.SourceType = "erda"
+	req.Remote = filepath.Join(appDto.OrgName, appDto.ProjectName, appDto.Name)
+	req.Ref = branch
+	req.Path = func() string {
+		if filepath.Dir(ymlPathName) == "." {
+			return ""
+		}
+		return filepath.Dir(ymlPathName)
+	}()
+	req.Name = strings.Replace(ymlPathName, req.Path+"/", "", 1)
+	result, err := p.pipelineSource.List(apis.WithInternalClientContext(context.Background(), "dop"), req)
+	if err != nil {
+		return fmt.Errorf("list pipelineSource error %v", err)
+	}
+	if len(result.Data) == 0 {
+		return fmt.Errorf("list pipelineSource not find sources")
+	}
+	definitionList, err := p.pipelineDefinition.List(apis.WithInternalClientContext(context.Background(), "dop"), &definitionpb.PipelineDefinitionListRequest{
+		SourceIDList: []string{result.Data[0].ID},
+		Location:     apistructs.MakeLocation(appDto, apistructs.PipelineTypeCICD),
+	})
+	if err != nil {
+		return fmt.Errorf("list pipelineDefinition error %v", err)
+	}
+	if len(definitionList.Data) == 0 {
+		return fmt.Errorf("list pipelineDefinition error not find definitions")
+	}
+	createV2.DefinitionID = definitionList.Data[0].ID
+
+	_, err = p.bdl.CreatePipeline(createV2)
+	if err != nil {
+		return fmt.Errorf("CreatePipeline  error %v req %v", err, createV2)
 	}
 	return nil
 }
@@ -814,10 +890,10 @@ func isPipelineYmlPath(path string) bool {
 }
 
 // GetPipelineCron get pipeline cron
-func (p *Pipeline) GetPipelineCron(projectID, appID int64, pathOld, branch string) (*commonpb.Cron, error) {
+func (p *Pipeline) GetPipelineCron(projectID, appID int64, pathOld, branch string) (*commonpb.Cron, bool, error) {
 	workspace, err := p.getWorkSpace(projectID, branch)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	pipelineYmlNameOld := getPipelineYmlName(appID, workspace, branch, pathOld)
 	crons, err := p.cronService.CronPaging(context.Background(), &cronpb.CronPagingRequest{
@@ -828,12 +904,12 @@ func (p *Pipeline) GetPipelineCron(projectID, appID int64, pathOld, branch strin
 		PageNo:     1,
 	})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if len(crons.Data) == 0 {
-		return nil, fmt.Errorf("the pipeline cron is not exist,pipelineName: %s", pipelineYmlNameOld)
+		return nil, false, nil
 	}
-	return crons.Data[0], nil
+	return crons.Data[0], true, nil
 }
 
 // GetPipelineYmlName return PipelineYmlName eg: 63/TEST/develop/pipeline.yml

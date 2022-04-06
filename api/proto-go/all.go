@@ -62,6 +62,7 @@ import (
 	_ "github.com/erda-project/erda-proto-go/dop/contribution/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/guide/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/issue/pb"
+	_ "github.com/erda-project/erda-proto-go/dop/issue/sync/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/projecthome/pb"
 	_ "github.com/erda-project/erda-proto-go/dop/projectpipeline/pb"
 	_ "github.com/erda-project/erda-proto-go/examples/pb"

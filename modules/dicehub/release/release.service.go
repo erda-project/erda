@@ -1141,10 +1141,12 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 	)
 	addonSet := make(map[string]*diceyml.AddOn)
 	if release.IsProjectRelease {
+		logrus.Infoln("[DEBUG] start unmarshal modes")
 		modes := make(map[string]apistructs.ReleaseDeployMode)
 		if err = json.Unmarshal([]byte(release.Modes), &modes); err != nil {
 			return nil, errors.Errorf("failed to Unmarshal appReleaseIDs, %v", err)
 		}
+		logrus.Infoln("[DEBUG] end unmarshal modes")
 
 		var list []string
 		for _, mode := range modes {
@@ -1154,12 +1156,16 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 				}
 			}
 		}
+
+		logrus.Infoln("[DEBUG] start get releases")
 		appReleases, err := s.db.GetReleases(list)
 		if err != nil {
 			return nil, err
 		}
+		logrus.Infoln("[DEBUG] end get releases")
 
 		id2Release := make(map[string]*db.Release)
+		logrus.Infoln("start parse dice yaml")
 		for i := 0; i < len(appReleases); i++ {
 			id2Release[appReleases[i].ReleaseID] = &appReleases[i]
 
@@ -1183,8 +1189,10 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 				addonSet[strings.Join([]string{splits[0], version, splits[1]}, "_")] = addon
 			}
 		}
+		logrus.Infoln("[DEBUG] end parse dice yaml")
 
 		summary = make(map[string]*pb.ModeSummary)
+		logrus.Infoln("[DEBUG] start make summary")
 		for k, mode := range modes {
 			modeSummary := &pb.ModeSummary{
 				Expose:                 mode.Expose,
@@ -1214,19 +1222,23 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 			}
 			summary[k] = modeSummary
 		}
+		logrus.Infoln("[DEBUG] end make summary")
 
 		extensionMap := make(map[string]*extensiondb.Extension)
 		if len(addonSet) > 0 {
+			logrus.Infoln("[DEBUG] start query extensions")
 			extensions, err := s.extensionDB.QueryExtensions("true", "", "")
 			if err != nil {
 				return nil, errors.Errorf("failed to query extensions, %v", err)
 			}
+			logrus.Infoln("[DEBUG] end query extensions")
 
 			for i := 0; i < len(extensions); i++ {
 				extensionMap[extensions[i].Name] = &extensions[i]
 			}
 		}
 
+		logrus.Infoln("[DEBUG] start make addon info")
 		for _, addon := range addonSet {
 			version := addon.Options["version"]
 			splits := strings.Split(addon.Plan, ":")
@@ -1247,11 +1259,14 @@ func (s *ReleaseService) convertToReleaseResponse(release *db.Release) (*pb.Rele
 				LogoURL:     extensionMap[name].LogoUrl,
 			})
 		}
+		logrus.Infoln("[DEBUG] end make addon info")
 
+		logrus.Infoln("[DEBUG] start marshal addonSet")
 		data, err := yaml.Marshal(addonSet)
 		if err != nil {
 			return nil, errors.Errorf("failed to marshal addonSet, %v", err)
 		}
+		logrus.Infoln("[DEBUG] end marshal addonSet")
 		addonYaml = string(data)
 	}
 
