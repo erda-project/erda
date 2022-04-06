@@ -72,26 +72,14 @@ var IssueTemplate = map[string]map[IssueStreamType]string{
 }
 
 const (
-	ChildrenInProgress    = "childrenInProgress"
-	MrCreated             = "mrCreated"
-	IterationChanged      = "iterationChanged"
-	PlanFinishedAtChanged = "planFinishedAtChanged"
+	ChildrenInProgress     = "childrenInProgress"
+	MrCreated              = "mrCreated"
+	IterationChanged       = "iterationChanged"
+	PlanFinishedAtChanged  = "planFinishedAtChanged"
+	ChildrenPlanUpdated    = "childrenPlanUpdated"
+	ParentLabelsChanged    = "parentLabelsChanged"
+	ParentIterationChanged = "parentIterationChanged"
 )
-
-var ReasonTemplate = map[string]map[string]string{
-	"zh": {
-		ChildrenInProgress:    "原因：有包含任务，并且任务的状态已经开始",
-		MrCreated:             "原因：任务/缺陷关联 MR",
-		IterationChanged:      "原因：迭代改变",
-		PlanFinishedAtChanged: "原因：截止日期改变",
-	},
-	"en": {
-		ChildrenInProgress:    "reason: included task has started",
-		MrCreated:             "reason: task/bug is related by MR",
-		IterationChanged:      "reason: iteration is changed",
-		PlanFinishedAtChanged: "resaon: plan finished at is changed",
-	},
-}
 
 // IssueTemplateOverrideForMsgSending override IssueTemplate for better event message sending
 var IssueTemplateOverrideForMsgSending = map[string]map[IssueStreamType]string{
