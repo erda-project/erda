@@ -212,23 +212,21 @@ func (f *BurnoutChart) Render(ctx context.Context, c *cptype.Component, scenario
 				{
 					Data: func() []string {
 						counts := make([]string, 0, len(dates)+1)
-						idealSum := float64(getSum(sum, h.GetBurnoutChartDimension()))
-						counts = append(counts, fmt.Sprintf("%.0f", idealSum))
-
-						doneDaily := idealSum / float64(getWeekDays(dates))
+						idealSum := getSum(sum, h.GetBurnoutChartDimension())
+						// the before point
+						counts = append(counts, strconv.Itoa(idealSum))
+						weekDays := getWeekDays(dates)
+						lastSum := float64(idealSum)
+						var weekCount int
 						for i := range dates {
-							var sub float64
-							if !isWeekend(dates[i]) {
-								sub = doneDaily
+							if isWeekend(dates[i]) {
+								counts = append(counts, fmt.Sprintf("%.0f", lastSum))
+								continue
 							}
-							idealSum -= sub
-							count := func() string {
-								if fmt.Sprintf("%.0f", idealSum) == "-0" {
-									return "0"
-								}
-								return fmt.Sprintf("%.0f", idealSum)
-							}
-							counts = append(counts, count())
+							weekCount++
+							currentSum := float64(idealSum*(weekDays-weekCount)) / float64(weekDays)
+							counts = append(counts, fmt.Sprintf("%.0f", currentSum))
+							lastSum = currentSum
 						}
 						return counts
 					}(),
