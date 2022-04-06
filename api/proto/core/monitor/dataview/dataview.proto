@@ -119,6 +119,7 @@ message ListCustomDashboardHistoryRequest {
 
 message ListCustomDashboardHistoryResponse {
   repeated CustomDashboardHistory histories = 1;
+  int64                           total     = 2;
 }
 
 message ExportCustomViewRequest {

@@ -322,7 +322,7 @@ func (s *dataViewService) ListCustomDashboardHistory(ctx context.Context, req *p
 	if req.PageSize >= 1000 {
 		req.PageSize = 1000
 	}
-	historiesDB, err := s.history.ListByPage(req.PageNum, req.PageSize, req.Scope, req.ScopeId)
+	historiesDB, total, err := s.history.ListByPage(req.PageNum, req.PageSize, req.Scope, req.ScopeId)
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}
@@ -340,7 +340,7 @@ func (s *dataViewService) ListCustomDashboardHistory(ctx context.Context, req *p
 		}
 		histories = append(histories, history)
 	}
-	return &pb.ListCustomDashboardHistoryResponse{Histories: histories}, nil
+	return &pb.ListCustomDashboardHistoryResponse{Total: total, Histories: histories}, nil
 }
 
 func (s *dataViewService) auditContextMap(ctx context.Context, dashboardName, scope string) error {
@@ -369,8 +369,8 @@ func fieldsForUpdate(req *pb.UpdateCustomViewRequest) map[string]interface{} {
 	}
 	switch req.UpdateType {
 	case pb.UpdateType_MetaType.String():
-		fields["Name"] = string(blocks)
-		fields["Desc"] = string(data)
+		fields["Name"] = req.Name
+		fields["Desc"] = req.Desc
 	case pb.UpdateType_ViewType.String():
 		fields["ViewConfig"] = string(blocks)
 		fields["DataConfig"] = string(data)

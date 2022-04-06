@@ -40,6 +40,7 @@ type ErdaDashboardHistory struct {
 	OperatorId    string    `gorm:"column:operator_id" json:"operator_id"`
 	File          string    `gorm:"column:file" json:"file"`
 	FileUUID      string    `gorm:"column:file_uuid" json:"file_uuid"`
+	ErrorMessage  string    `gorm:"column:error_message" json:"error_message"`
 	CreatedAt     time.Time `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt     time.Time `gorm:"column:updated_at" json:"updated_at"`
 	IsDeleted     bool      `gorm:"column:is_deleted" json:"is_deleted"`

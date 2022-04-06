@@ -170,20 +170,28 @@ func (db *ErdaDashboardHistoryDB) Save(model *ErdaDashboardHistory) (*ErdaDashbo
 	return model, nil
 }
 
-func (db *ErdaDashboardHistoryDB) ListByPage(pageNum, pageSize int64, scope, scopeId string) ([]*ErdaDashboardHistory, error) {
-	var history []*ErdaDashboardHistory
-	query, err := gormutil.GetQueryFilterByFields(db.DB, erdaDashboardHistoryFieldColumns, map[string]interface{}{
-		"Scope":   scope,
-		"ScopeId": scopeId,
-	})
-	if err != nil {
-		return nil, err
+func (db *ErdaDashboardHistoryDB) ListByPage(pageNum, pageSize int64, scope, scopeId string) ([]*ErdaDashboardHistory, int64, error) {
+	var (
+		history []*ErdaDashboardHistory
+		total   int64
+	)
+
+	// 	var count int
+	//	query := db.Table(TableAlert).Where("alert_scope=?", scope).Where("alert_scope_id=?", scopeID)
+	//	if name != "" {
+	//		query = query.Where("name like ?", "%"+name+"%")
+	//	}
+	//	if err := query.Count(&count).Error; err != nil {
+	//		return 0, err
+	//	}
+	query := db.Table(TableDashboardHistory).Where("`scope`=?", scope).Where("`scope_id`=?", scopeId)
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	err = query.Limit(pageSize).Offset((pageNum - 1) * pageSize).Find(&history).Error
-	if err != nil {
-		return nil, err
+	if err := query.Order("created_at DESC").Limit(pageSize).Offset((pageNum - 1) * pageSize).Find(&history).Error; err != nil {
+		return nil, 0, err
 	}
-	return history, nil
+	return history, total, nil
 }
 
 func (db *ErdaDashboardHistoryDB) FindById(id int64) (*ErdaDashboardHistory, error) {
@@ -195,13 +203,14 @@ func (db *ErdaDashboardHistoryDB) FindById(id int64) (*ErdaDashboardHistory, err
 	return history, nil
 }
 
-func (db *ErdaDashboardHistoryDB) UpdateStatusAndFileUUID(id int64, status, fileUUID string) error {
+func (db *ErdaDashboardHistoryDB) UpdateStatusAndFileUUID(id int64, status, fileUUID, errorMessage string) error {
 	byId, err := db.FindById(id)
 	if err != nil {
 		return err
 	}
 	byId.Status = status
 	byId.FileUUID = fileUUID
+	byId.ErrorMessage = errorMessage
 	_, err = db.Save(byId)
 	if err != nil {
 		return err

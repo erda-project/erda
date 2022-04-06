@@ -101,6 +101,18 @@ func (m *ListCustomDashboardHistoryRequest) UnmarshalURLValues(prefix string, va
 
 // ListCustomDashboardHistoryResponse implement urlenc.URLValuesUnmarshaler.
 func (m *ListCustomDashboardHistoryResponse) UnmarshalURLValues(prefix string, values url.Values) error {
+	for key, vals := range values {
+		if len(vals) > 0 {
+			switch prefix + key {
+			case "total":
+				val, err := strconv.ParseInt(vals[0], 10, 64)
+				if err != nil {
+					return err
+				}
+				m.Total = val
+			}
+		}
+	}
 	return nil
 }
 

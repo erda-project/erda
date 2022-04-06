@@ -113,7 +113,7 @@ func (p *provider) ImportDashboardFile(r *http.Request, params struct {
 		request := &pb.CreateCustomViewRequest{}
 		err := mapstructure.Decode(dashboard, request)
 		if err != nil {
-			err := p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "")
+			err := p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "", err.Error())
 			if err != nil {
 				p.Log.Error(err)
 			}
@@ -123,7 +123,7 @@ func (p *provider) ImportDashboardFile(r *http.Request, params struct {
 		viewConfig := dashboard["viewConfig"]
 		err = json.Unmarshal([]byte(viewConfig.(string)), &blocks)
 		if err != nil {
-			err := p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "")
+			err := p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "", err.Error())
 			if err != nil {
 				p.Log.Error(err)
 			}
@@ -133,7 +133,7 @@ func (p *provider) ImportDashboardFile(r *http.Request, params struct {
 		dataConfig := dashboard["dataConfig"]
 		err = json.Unmarshal([]byte(dataConfig.(string)), &dataItem)
 		if err != nil {
-			err := p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "")
+			err := p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "", err.Error())
 			if err != nil {
 				p.Log.Error(err)
 			}
@@ -150,7 +150,7 @@ func (p *provider) ImportDashboardFile(r *http.Request, params struct {
 		}
 	}
 
-	err = p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Success.String(), "")
+	err = p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Success.String(), "", "")
 	if err != nil {
 		p.Log.Error(err)
 	}
@@ -218,12 +218,14 @@ func (p *provider) ExportDashboardFile(r *http.Request, params struct {
 			view.ID = hex.EncodeToString(uuid.NewV4().Bytes())
 			view.Scope = params.TargetScope
 			view.ScopeID = params.TargetScopeId
-			view.ViewConfig = CompileToDest(view.Scope, view.ScopeID, view.DataConfig)
+			view.ViewConfig = CompileToDest(view.Scope, view.ScopeID, view.ViewConfig)
 			view.DataConfig = CompileToDest(view.Scope, view.ScopeID, view.DataConfig)
+			view.CreatedAt = time.Now()
+			view.UpdatedAt = time.Now()
 			err = tx.Save(view).Error
 			if err != nil {
 				tx.Rollback()
-				err = p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "")
+				err = p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "", err.Error())
 				if err != nil {
 					return httpserver.ErrResp(http.StatusInternalServerError, "", err.Error())
 				}
@@ -232,13 +234,13 @@ func (p *provider) ExportDashboardFile(r *http.Request, params struct {
 		}
 		err = tx.Commit().Error
 		if err != nil {
-			err = p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "")
+			err = p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Failure.String(), "", err.Error())
 			if err != nil {
 				return httpserver.ErrResp(http.StatusInternalServerError, "", err.Error())
 			}
 			return nil, errors.NewDatabaseError(err)
 		}
-		err = p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Success.String(), "")
+		err = p.history.UpdateStatusAndFileUUID(history.ID, pb.OperatorStatus_Success.String(), "", "")
 		if err != nil {
 			return httpserver.ErrResp(http.StatusInternalServerError, "", err.Error())
 		}
@@ -277,13 +279,13 @@ func (p *provider) ExportTask(id int64) {
 	}
 	file, err := p.bdl.UploadFile(request)
 	if err != nil {
-		err := p.history.UpdateStatusAndFileUUID(id, pb.OperatorStatus_Failure.String(), "")
+		err := p.history.UpdateStatusAndFileUUID(id, pb.OperatorStatus_Failure.String(), "", err.Error())
 		if err != nil {
 			p.Log.Error(err)
 		}
 		return
 	}
-	err = p.history.UpdateStatusAndFileUUID(id, pb.OperatorStatus_Success.String(), file.UUID)
+	err = p.history.UpdateStatusAndFileUUID(id, pb.OperatorStatus_Success.String(), file.UUID, "")
 	if err != nil {
 		p.Log.Error(err)
 		return
@@ -307,13 +309,13 @@ func (p *provider) ImportTask(id int64) {
 	}
 	file, err := p.bdl.UploadFile(request)
 	if err != nil {
-		err := p.history.UpdateStatusAndFileUUID(id, pb.OperatorStatus_Failure.String(), "")
+		err := p.history.UpdateStatusAndFileUUID(id, pb.OperatorStatus_Failure.String(), "", err.Error())
 		if err != nil {
 			p.Log.Error(err)
 		}
 		return
 	}
-	err = p.history.UpdateStatusAndFileUUID(id, pb.OperatorStatus_Success.String(), file.UUID)
+	err = p.history.UpdateStatusAndFileUUID(id, pb.OperatorStatus_Success.String(), file.UUID, "")
 	if err != nil {
 		p.Log.Error(err)
 		return
