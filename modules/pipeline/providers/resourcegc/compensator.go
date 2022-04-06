@@ -80,51 +80,53 @@ func (r *provider) getNeedGCPipelines(pageNum int, isSnippet bool) ([]spec.Pipel
 	}
 	req.AllSources = true
 	req.IncludeSnippet = isSnippet
-	pipelines, _, _, _, err := r.dbClient.PageListPipelines(req)
+	result, err := r.dbClient.PageListPipelines(req)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to compensate pipeline req %v err: %v", req, err)
-	} else {
-		for _, p := range pipelines {
-			if !p.Status.IsEndStatus() {
-				continue
-			}
-
-			if p.Extra.CompleteReconcilerGC {
-				continue
-			}
-
-			// if not found gc key in etcd, meaning wait-gc failed when tear down pipeline
-			// should add CompleteReconcilerGC-false and not-found-gc-key pipeline to need gc pipelines
-			notFound, err := r.js.Notfound(context.Background(), makePipelineGCKey(p.Extra.Namespace))
-			if err != nil {
-				r.Log.Errorf("get is-existed gc key failed, namespace: %s, cause pipelineID: %d(continue), err: %v", p.Extra.Namespace,
-					p.ID, err)
-				continue
-			}
-			if !notFound {
-				continue
-			}
-
-			ttl := p.GetResourceGCTTL()
-			if ttl <= 0 {
-				ttl = defaultGCTime
-			}
-
-			var endTime = p.TimeEnd
-			if endTime == nil {
-				endTime = p.TimeUpdated
-			}
-
-			if endTime == nil || endTime.IsZero() {
-				continue
-			}
-
-			if uint64(time.Now().Unix()-endTime.Unix()) < (ttl + bufferTime) {
-				continue
-			}
-
-			pipelineResults = append(pipelineResults, p)
-		}
 	}
+
+	pipelines := result.Pipelines
+	for _, p := range pipelines {
+		if !p.Status.IsEndStatus() {
+			continue
+		}
+
+		if p.Extra.CompleteReconcilerGC {
+			continue
+		}
+
+		// if not found gc key in etcd, meaning wait-gc failed when tear down pipeline
+		// should add CompleteReconcilerGC-false and not-found-gc-key pipeline to need gc pipelines
+		notFound, err := r.js.Notfound(context.Background(), makePipelineGCKey(p.Extra.Namespace))
+		if err != nil {
+			r.Log.Errorf("get is-existed gc key failed, namespace: %s, cause pipelineID: %d(continue), err: %v", p.Extra.Namespace,
+				p.ID, err)
+			continue
+		}
+		if !notFound {
+			continue
+		}
+
+		ttl := p.GetResourceGCTTL()
+		if ttl <= 0 {
+			ttl = defaultGCTime
+		}
+
+		var endTime = p.TimeEnd
+		if endTime == nil {
+			endTime = p.TimeUpdated
+		}
+
+		if endTime == nil || endTime.IsZero() {
+			continue
+		}
+
+		if uint64(time.Now().Unix()-endTime.Unix()) < (ttl + bufferTime) {
+			continue
+		}
+
+		pipelineResults = append(pipelineResults, p)
+	}
+
 	return pipelineResults, len(pipelines), nil
 }

@@ -73,13 +73,13 @@ func (p *provider) doPipelineDatabaseGC(req apistructs.PipelinePageListRequest) 
 	pipelines := make([]spec.Pipeline, 0)
 	for {
 		req.PageNum = pageNum
-		pipelineResults, _, _, _, err := p.dbClient.PageListPipelines(req)
+		result, err := p.dbClient.PageListPipelines(req)
 		pageNum += 1
 		if err != nil {
 			p.Log.Errorf("failed to compensate pipeline req: %v, err: %v", req, err)
 			continue
 		}
-
+		pipelineResults := result.Pipelines
 		if len(pipelineResults) <= 0 {
 			break
 		}

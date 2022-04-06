@@ -276,15 +276,20 @@ func (client *Client) UpdateWholeStatusCancel(p *spec.Pipeline, ops ...SessionOp
 	return nil
 }
 
+type PageListPipelinesResult struct {
+	Pipelines         []spec.Pipeline
+	PagingPipelineIDs []uint64
+	Total             int64
+	CurrentPageSize   int64
+}
+
 // PageListPipelines return pagingPipelines, pagingPipelineIDs, total, currentPageSize, error
-func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, ops ...SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
+func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, ops ...SessionOption) (*PageListPipelinesResult, error) {
 
 	session := client.NewSession(ops...)
 	defer session.Close()
 
 	var (
-		total               int64
-		currentPageSize     int64
 		err                 error
 		needQueryDefinition = false
 	)
@@ -302,7 +307,7 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	}
 
 	if !req.AllSources && len(req.Sources) == 0 {
-		return nil, nil, -1, -1, errors.New("missing pipeline sources")
+		return nil, errors.New("missing pipeline sources")
 	}
 
 	// label
@@ -447,7 +452,7 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	wg.Wait()
 
 	if len(errs) > 0 {
-		return nil, nil, -1, -1, errors.New(strutil.Join(errs, "\n"))
+		return nil, errors.New(strutil.Join(errs, "\n"))
 	}
 
 	// 获取最终 pipelineIDs
@@ -460,11 +465,15 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 
 	// 在内存中做分页
 	pagingPipelineIDs := paging(pipelineIDs, req.PageNum, req.PageSize)
-	currentPageSize = int64(len(pagingPipelineIDs))
-	total = int64(len(pipelineIDs))
+	currentPageSize := int64(len(pagingPipelineIDs))
+	total := int64(len(pipelineIDs))
 
 	if req.CountOnly {
-		return nil, pagingPipelineIDs, total, currentPageSize, nil
+		return &PageListPipelinesResult{
+			PagingPipelineIDs: pagingPipelineIDs,
+			Total:             total,
+			CurrentPageSize:   currentPageSize,
+		}, nil
 	}
 
 	// select columns
@@ -473,10 +482,19 @@ func (client *Client) PageListPipelines(req apistructs.PipelinePageListRequest, 
 	}
 	pipelines, err := client.ListPipelinesByIDs(pagingPipelineIDs, needQueryDefinition, ops...)
 	if err != nil {
-		return nil, pagingPipelineIDs, -1, -1, err
+		return &PageListPipelinesResult{
+			PagingPipelineIDs: pagingPipelineIDs,
+			Total:             -1,
+			CurrentPageSize:   -1,
+		}, err
 	}
 
-	return pipelines, pagingPipelineIDs, total, currentPageSize, nil
+	return &PageListPipelinesResult{
+		Pipelines:         pipelines,
+		PagingPipelineIDs: pagingPipelineIDs,
+		Total:             total,
+		CurrentPageSize:   currentPageSize,
+	}, nil
 }
 
 func tableFieldName(tableName string, field string) string {

@@ -69,14 +69,26 @@ func TestReconciler_doPipelineDatabaseGC(t *testing.T) {
 	}
 
 	DB := &dbclient.Client{}
-	monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
+
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
 		assert.True(t, req.PageNum <= 2, "PageNum > 2")
 		if req.PageNum == 1 {
-			return []spec.Pipeline{pipelineMaps[1], pipelineMaps[0]}, nil, 2, 2, nil
+			return &dbclient.PageListPipelinesResult{
+				Pipelines:         []spec.Pipeline{pipelineMaps[1], pipelineMaps[0]},
+				PagingPipelineIDs: nil,
+				Total:             2,
+				CurrentPageSize:   2,
+			}, nil
 		} else {
-			return nil, nil, 0, 0, nil
+			return &dbclient.PageListPipelinesResult{
+				Pipelines:         nil,
+				PagingPipelineIDs: nil,
+				Total:             0,
+				CurrentPageSize:   0,
+			}, nil
 		}
 	})
+	defer pm.Unpatch()
 
 	var r provider
 	r.dbClient = &db.Client{Client: *DB}
@@ -138,21 +150,35 @@ func TestReconciler_doPipelineDatabaseGC1(t *testing.T) {
 		DB := &dbclient.Client{}
 		var r provider
 		r.dbClient = &db.Client{Client: *DB}
-		patch := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(db *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
+		patch := monkey.PatchInstanceMethod(reflect.TypeOf(DB), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
 			switch req.PageNum {
 			case 1:
-				return nil, nil, 0, 0, nil
+				return &dbclient.PageListPipelinesResult{
+					Pipelines:         nil,
+					PagingPipelineIDs: nil,
+					Total:             0,
+					CurrentPageSize:   0,
+				}, nil
 			case 2:
-				return []spec.Pipeline{
-					{
-						PipelineBase: spec.PipelineBase{},
-						PipelineExtra: spec.PipelineExtra{
-							PipelineID: 1,
-						},
-					},
-				}, nil, 0, 0, nil
+				return &dbclient.PageListPipelinesResult{
+					Pipelines: []spec.Pipeline{
+						{
+							PipelineBase: spec.PipelineBase{},
+							PipelineExtra: spec.PipelineExtra{
+								PipelineID: 1,
+							},
+						}},
+					PagingPipelineIDs: nil,
+					Total:             1,
+					CurrentPageSize:   1,
+				}, nil
 			default:
-				return []spec.Pipeline{}, nil, 0, 0, nil
+				return &dbclient.PageListPipelinesResult{
+					Pipelines:         []spec.Pipeline{},
+					PagingPipelineIDs: nil,
+					Total:             0,
+					CurrentPageSize:   0,
+				}, nil
 			}
 		})
 		defer patch.Unpatch()
