@@ -21,6 +21,7 @@ import (
 
 	"github.com/erda-project/erda-infra/pkg/safe"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/pipeline/providers/leaderworker/lwctx"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/rutil"
 	"github.com/erda-project/erda/modules/pipeline/providers/reconciler/schedulabletask"
 	"github.com/erda-project/erda/modules/pipeline/spec"
@@ -85,6 +86,7 @@ func (r *provider) generatePipelineReconcilerForEachPipelineID() *defaultPipelin
 		chanToTriggerNextLoop:                        make(chan struct{}),
 		schedulableTaskChan:                          make(chan *spec.PipelineTask),
 		doneChan:                                     make(chan struct{}),
+		flagCanceling:                                false,
 	}
 	return pr
 }
@@ -99,6 +101,17 @@ func (pr *defaultPipelineReconciler) waitPipelineDoneAndDoTeardown(ctx context.C
 	select {
 	case <-ctx.Done():
 		return
+	case <-lwctx.MustGetTaskCancelChanFromCtx(ctx):
+		pr.log.Infof("actively cancel, pipelineID: %d", p.ID)
+		pr.CancelReconcile(ctx, p)
+		// listen done
+		select {
+		case <-ctx.Done():
+			return
+		case <-pr.doneChan:
+			pr.TeardownAfterReconcileDone(ctx, p)
+			return
+		}
 	case <-pr.doneChan:
 		pr.TeardownAfterReconcileDone(ctx, p)
 		return

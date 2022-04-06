@@ -32,6 +32,12 @@ type workerWithCancel struct {
 	Worker     worker.Worker
 	Ctx        context.Context
 	CancelFunc context.CancelFunc
+	LogicTasks map[worker.LogicTaskID]logicTaskWithCtx
+}
+
+type logicTaskWithCtx struct {
+	LogicTask worker.LogicTask
+	Ctx       context.Context
 }
 
 type (

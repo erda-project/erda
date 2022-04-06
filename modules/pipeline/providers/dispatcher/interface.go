@@ -21,8 +21,13 @@ import (
 // Interface .
 type Interface interface {
 	Dispatch(ctx context.Context, pipelineID uint64)
+	Cancel(ctx context.Context, pipelineID uint64) error
 }
 
 func (p *provider) Dispatch(ctx context.Context, pipelineID uint64) {
 	p.pipelineIDsChan <- pipelineID
+}
+
+func (p *provider) Cancel(ctx context.Context, pipelineID uint64) error {
+	return p.LW.CancelLogicTask(ctx, p.makeLogicTaskID(pipelineID))
 }
