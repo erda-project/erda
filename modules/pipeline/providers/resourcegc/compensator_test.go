@@ -309,8 +309,13 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 	for _, tt := range tests {
 
 		var db *dbclient.Client
-		monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
-			return tt.args.pipelines, nil, 1, 0, tt.args.err
+		monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
+			return &dbclient.PageListPipelinesResult{
+				Pipelines:         tt.args.pipelines,
+				PagingPipelineIDs: nil,
+				Total:             1,
+				CurrentPageSize:   0,
+			}, tt.args.err
 		})
 
 		js := &jsonstore.JsonStoreImpl{}
@@ -338,8 +343,13 @@ func TestReconciler_getNeedGCPipeline(t *testing.T) {
 func TestReconciler_doWaitGCCompensate(t *testing.T) {
 	var db *dbclient.Client
 
-	pm := monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) ([]spec.Pipeline, []uint64, int64, int64, error) {
-		return []spec.Pipeline{}, []uint64{}, 0, 0, nil
+	pm := monkey.PatchInstanceMethod(reflect.TypeOf(db), "PageListPipelines", func(client *dbclient.Client, req apistructs.PipelinePageListRequest, ops ...dbclient.SessionOption) (*dbclient.PageListPipelinesResult, error) {
+		return &dbclient.PageListPipelinesResult{
+			Pipelines:         []spec.Pipeline{},
+			PagingPipelineIDs: []uint64{},
+			Total:             0,
+			CurrentPageSize:   0,
+		}, nil
 	})
 	defer pm.Unpatch()
 
