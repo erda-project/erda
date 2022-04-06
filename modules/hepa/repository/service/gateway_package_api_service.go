@@ -259,3 +259,11 @@ func (impl *GatewayPackageApiServiceImpl) CheckUnique(dao *orm.GatewayPackageApi
 	}
 	return true, nil
 }
+
+func (impl *GatewayPackageApiServiceImpl) SelectByOptions(options []orm.SelectOption) ([]orm.GatewayPackageApi, error) {
+	var result []orm.GatewayPackageApi
+	if err := orm.SelectWithOption(options, impl.engine, &result); err != nil {
+		return nil, errors.Wrap(err, ERR_SQL_FAIL)
+	}
+	return result, nil
+}
