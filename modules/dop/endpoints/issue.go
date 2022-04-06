@@ -433,32 +433,14 @@ func (e *Endpoints) UpdateIssue(ctx context.Context, r *http.Request, vars map[s
 		newLabelMap[v] = true
 	}
 	if reflect.DeepEqual(currentLabelMap, newLabelMap) == false {
-		// 删除该事件已有标签关联关系
-		if err := e.db.DeleteLabelRelations(apistructs.LabelTypeIssue, updateReq.ID); err != nil {
+		if err := e.issue.UpdateLabels(id, issueModel.ProjectID, updateReq.Labels); err != nil {
 			return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
 		}
-		labels, err := e.bdl.ListLabelByNameAndProjectID(issueModel.ProjectID, updateReq.Labels)
-		if err != nil {
-			return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
-		}
-		// 重新添加标签关联关系
-		for _, v := range labels {
-			lr := &dao.LabelRelation{
-				LabelID: uint64(v.ID),
-				RefType: apistructs.LabelTypeIssue,
-				RefID:   updateReq.ID,
-			}
-			if err := e.db.CreateLabelRelation(lr); err != nil {
-				return apierrors.ErrUpdateIssue.InternalError(err).ToResp(), nil
-			}
-		}
-
 		// 生成活动记录
 		// issueStreamFields 保存字段更新前后的值，用于生成活动记录
 		issueStreamFields := make(map[string][]interface{})
 		issueStreamFields["label"] = []interface{}{"1", "2"}
 		_ = e.issue.CreateStream(updateReq, issueStreamFields)
-
 	}
 
 	return httpserver.OkResp(issueModel.ID)
@@ -680,7 +662,7 @@ func (e *Endpoints) PagingIssueStreams(ctx context.Context, r *http.Request, var
 	}
 
 	// 查询事件流列表
-	streamRespData, err := e.issueStream.Paging(&pagingReq, e.bdl.GetLocaleByRequest(r).Name())
+	streamRespData, err := e.issueStream.Paging(&pagingReq, e.bdl.GetLocaleByRequest(r).Name(), i18n.Language(r))
 	if err != nil {
 		return apierrors.ErrPagingIssueStream.InternalError(err).ToResp(), nil
 	}

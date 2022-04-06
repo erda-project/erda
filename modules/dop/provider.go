@@ -47,6 +47,7 @@ import (
 	"github.com/erda-project/erda/modules/dop/providers/cms"
 	"github.com/erda-project/erda/modules/dop/providers/guide"
 	"github.com/erda-project/erda/modules/dop/providers/issue/stream"
+	"github.com/erda-project/erda/modules/dop/providers/issue/sync"
 	"github.com/erda-project/erda/modules/dop/providers/projectpipeline"
 	"github.com/erda-project/erda/modules/dop/providers/taskerror"
 	"github.com/erda-project/erda/pkg/discover"
@@ -72,6 +73,7 @@ type provider struct {
 	PipelineCron          cronpb.CronServiceServer                `autowired:"erda.core.pipeline.cron.CronService" required:"true"`
 	QueryClient           query.MetricQuery                       `autowired:"metricq-client"`
 	CommentIssueStreamSvc *stream.CommentIssueStreamService       `autowired:"erda.dop.issue.CommentIssueStreamService"`
+	IssueSyncSvc          *sync.IssueSyncService                  `autowired:"erda.dop.issue.sync.IssueSyncService"`
 	GuideSvc              *guide.GuideService                     `autowired:"erda.dop.guide.GuideService"`
 	AddonMySQLSvc         addonmysqlpb.AddonMySQLServiceServer    `autowired:"erda.orchestrator.addon.mysql.AddonMySQLService"`
 	DicehubReleaseSvc     dicehubpb.ReleaseServiceServer          `autowired:"erda.core.dicehub.release.ReleaseService"`
@@ -79,7 +81,7 @@ type provider struct {
 
 	Protocol      componentprotocol.Interface
 	CPTran        i18n.I18n        `autowired:"i18n@cp"`
-	IssueTan      i18n.Translator  `translator:"issue-manage"`
+	IssueTran     i18n.Translator  `translator:"issue-manage"`
 	ResourceTrans i18n.Translator  `translator:"resource-trans"`
 	APIMTrans     i18n.Translator  `translator:"api-management-trans"`
 	DB            *gorm.DB         `autowired:"mysql-client"`

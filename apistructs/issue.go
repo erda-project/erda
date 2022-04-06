@@ -985,22 +985,23 @@ func (m *IssueTime) Time() *time.Time {
 
 // IssueUpdateRequest 事件更新请求
 type IssueUpdateRequest struct {
-	Title          *string          `json:"title"`
-	Content        *string          `json:"content"`
-	State          *int64           `json:"state"`
-	Priority       *IssuePriority   `json:"priority"`
-	Complexity     *IssueComplexity `json:"complexity"`
-	Severity       *IssueSeverity   `json:"severity"`
-	PlanStartedAt  IssueTime        `json:"planStartedAt"`
-	PlanFinishedAt IssueTime        `json:"planFinishedAt"`
-	Assignee       *string          `json:"assignee"`
-	IterationID    *int64           `json:"iterationID"`
-	Source         *string          `json:"source"`        // 来源
-	Labels         []string         `json:"labels"`        // label 名称列表
-	RelatedIssues  []int64          `json:"relatedIssues"` // 已关联的issue
-	TaskType       *string          `json:"taskType"`      // 任务类型
-	BugStage       *string          `json:"bugStage"`      // bug阶段
-	Owner          *string          `json:"owner"`         // 负责人
+	Title                 *string          `json:"title"`
+	Content               *string          `json:"content"`
+	State                 *int64           `json:"state"`
+	Priority              *IssuePriority   `json:"priority"`
+	Complexity            *IssueComplexity `json:"complexity"`
+	Severity              *IssueSeverity   `json:"severity"`
+	PlanStartedAt         IssueTime        `json:"planStartedAt"`
+	PlanFinishedAt        IssueTime        `json:"planFinishedAt"`
+	Assignee              *string          `json:"assignee"`
+	IterationID           *int64           `json:"iterationID"`
+	Source                *string          `json:"source"`        // 来源
+	Labels                []string         `json:"labels"`        // label 名称列表
+	RelatedIssues         []int64          `json:"relatedIssues"` // 已关联的issue
+	TaskType              *string          `json:"taskType"`      // 任务类型
+	BugStage              *string          `json:"bugStage"`      // bug阶段
+	Owner                 *string          `json:"owner"`         // 负责人
+	WithChildrenIteration bool             `json:"withChildrenIteration"`
 	//工时信息，当事件类型为任务和缺陷时生效
 	ManHour *IssueManHour `json:"issueManHour"`
 

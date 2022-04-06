@@ -15,11 +15,17 @@
 package issuestream
 
 import (
+	"reflect"
 	"testing"
 
+	"bou.ke/monkey"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/erda-project/erda-infra/providers/i18n"
 	"github.com/erda-project/erda/apistructs"
+	"github.com/erda-project/erda/modules/dop/dao"
+	"github.com/erda-project/erda/pkg/database/dbengine"
+	"github.com/erda-project/erda/pkg/strutil"
 )
 
 func Test_filterReceiversByOperatorID(t *testing.T) {
@@ -33,4 +39,40 @@ func Test_groupEventContent(t *testing.T) {
 	content, err := svc.groupEventContent([]apistructs.IssueStreamType{apistructs.ISTChangeContent}, apistructs.ISTParam{}, "zh")
 	assert.NoError(t, err)
 	assert.Equal(t, "内容发生变更", content)
+}
+
+type mockTranslator struct{}
+
+func (m *mockTranslator) Get(lang i18n.LanguageCodes, key, def string) string { return key }
+func (m *mockTranslator) Text(lang i18n.LanguageCodes, key string) string     { return key }
+func (m *mockTranslator) Sprintf(lang i18n.LanguageCodes, key string, args ...interface{}) string {
+	return key
+}
+
+func TestIssue_handleIssueStreamChangeIteration(t *testing.T) {
+	// mock db to mock iteration
+	db := &dao.DBClient{}
+	monkey.PatchInstanceMethod(reflect.TypeOf(db), "GetIteration", func(client *dao.DBClient, id uint64) (*dao.Iteration, error) {
+		return &dao.Iteration{BaseModel: dbengine.BaseModel{ID: id}, Title: strutil.String(id)}, nil
+	})
+	svc := &IssueStream{db: db, tran: &mockTranslator{}}
+
+	// from unassigned to concrete iteration
+	streamType, params, err := svc.HandleIssueStreamChangeIteration(nil, apistructs.UnassignedIterationID, 1)
+	assert.NoError(t, err)
+	assert.Equal(t, apistructs.ISTChangeIterationFromUnassigned, streamType)
+	assert.Equal(t, "1", params.NewIteration)
+
+	// from concrete iteration to unassigned
+	streamType, params, err = svc.HandleIssueStreamChangeIteration(nil, 2, apistructs.UnassignedIterationID)
+	assert.NoError(t, err)
+	assert.Equal(t, apistructs.ISTChangeIterationToUnassigned, streamType)
+	assert.Equal(t, "2", params.CurrentIteration)
+
+	// from concrete to concrete iteration
+	streamType, params, err = svc.HandleIssueStreamChangeIteration(nil, 3, 4)
+	assert.NoError(t, err)
+	assert.Equal(t, apistructs.ISTChangeIteration, streamType)
+	assert.Equal(t, "3", params.CurrentIteration)
+	assert.Equal(t, "4", params.NewIteration)
 }

@@ -80,6 +80,7 @@ erda.dop.projecthome: {}
 erda.dop.contribution: {}
 erda.dop.projectpipeline: {}
 erda.dop.issue.stream: {}
+erda.dop.issue.sync: {}
 erda.dop.apim: {}
 erda.dop.guide: {}
 erda.dop.cms: {}

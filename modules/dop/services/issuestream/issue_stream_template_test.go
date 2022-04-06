@@ -160,8 +160,7 @@ func Test_getIssueStreamTemplateForMsgSending(t *testing.T) {
 
 func Test_getDefaultContent(t *testing.T) {
 	type args struct {
-		ist   apistructs.IssueStreamType
-		param apistructs.ISTParam
+		req streamTemplateRequest
 	}
 	tests := []struct {
 		name    string
@@ -172,8 +171,11 @@ func Test_getDefaultContent(t *testing.T) {
 		{
 			name: "comment",
 			args: args{
-				ist:   apistructs.ISTComment,
-				param: apistructs.ISTParam{Comment: "hello world"},
+				req: streamTemplateRequest{
+					StreamType:   apistructs.ISTComment,
+					StreamParams: apistructs.ISTParam{Comment: "hello world"},
+					locale:       "zh",
+				},
 			},
 			want:    `hello world`,
 			wantErr: false,
@@ -181,10 +183,13 @@ func Test_getDefaultContent(t *testing.T) {
 		{
 			name: "change content",
 			args: args{
-				ist: apistructs.ISTChangeContent,
-				param: apistructs.ISTParam{
-					CurrentContent: "old",
-					NewContent:     "new",
+				req: streamTemplateRequest{
+					StreamType: apistructs.ISTChangeContent,
+					StreamParams: apistructs.ISTParam{
+						CurrentContent: "old",
+						NewContent:     "new",
+					},
+					locale: "zh",
 				},
 			},
 			want:    `内容发生变更`,
@@ -193,7 +198,7 @@ func Test_getDefaultContent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getDefaultContent(tt.args.ist, tt.args.param, "zh")
+			got, err := getDefaultContent(tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getDefaultContent() error = %v, wantErr %v", err, tt.wantErr)
 				return
