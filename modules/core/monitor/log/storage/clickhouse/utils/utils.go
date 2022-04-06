@@ -22,6 +22,9 @@ import (
 )
 
 func ConvertUnknownField(tableMeta *loader.TableMeta, field string) string {
+	if tableMeta == nil {
+		return field
+	}
 	_, ok := tableMeta.Columns[field]
 	if ok {
 		return field
