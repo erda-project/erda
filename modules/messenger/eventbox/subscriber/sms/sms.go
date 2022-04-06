@@ -49,11 +49,12 @@ type Option func(*MobileSubscriber)
 
 func New(accessKeyId, accessKeySecret, signName, monitorTemplateCode string, bundle *bundle.Bundle, messenger pb.NotifyServiceServer) subscriber.Subscriber {
 	subscriber := &MobileSubscriber{
-		accessKeyId:  accessKeyId,
-		accessSecret: accessKeySecret,
-		signName:     signName,
-		bundle:       bundle,
-		messenger:    messenger,
+		accessKeyId:         accessKeyId,
+		accessSecret:        accessKeySecret,
+		signName:            signName,
+		bundle:              bundle,
+		messenger:           messenger,
+		monitorTemplateCode: monitorTemplateCode,
 	}
 	return subscriber
 }
@@ -102,13 +103,15 @@ func (d *MobileSubscriber) Publish(dest string, content string, time int64, msg 
 	}
 
 	// 通知组的短信模版存在notifyitem里
-	templateCode := mobileData.Template
-	templateCode = d.monitorTemplateCode
+	var templateCode string
 	if err == nil && org.Config != nil && org.Config.SMSMonitorTemplateCode != "" {
 		templateCode = org.Config.SMSMonitorTemplateCode
 	}
 	if err == nil && notifyChannel.Config != nil && notifyChannel.Config.TemplateCode != "" {
 		templateCode = notifyChannel.Config.TemplateCode
+	}
+	if mobileData.Template != "" {
+		templateCode = mobileData.Template
 	}
 
 	if templateCode == "" {
