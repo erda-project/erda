@@ -29,7 +29,7 @@ type Interface interface {
 }
 
 func (p *provider) ExistsWriteTable(tenant, key string) (ok bool, writeTableName string) {
-	writeTableName = table.NormalizeKey(fmt.Sprintf("%s.%s_%s_%s", p.Cfg.Database, p.Cfg.TablePrefix, tenant, key))
+	writeTableName = fmt.Sprintf("%s.%s_%s_%s", p.Cfg.Database, p.Cfg.TablePrefix, table.NormalizeKey(tenant), table.NormalizeKey(key))
 	tables, ok := p.tables.Load().(map[string]*TableMeta)
 	if !ok {
 		return false, writeTableName
@@ -43,7 +43,7 @@ func (p *provider) GetSearchTable(tenant string) (string, *TableMeta) {
 	if !ok {
 		return fmt.Sprintf("%s.%s", p.Cfg.Database, p.Cfg.DefaultSearchTable), nil
 	}
-	searchTableName := table.NormalizeKey(fmt.Sprintf("%s.%s_%s_search", p.Cfg.Database, p.Cfg.TablePrefix, tenant))
+	searchTableName := fmt.Sprintf("%s.%s_%s_search", p.Cfg.Database, p.Cfg.TablePrefix, table.NormalizeKey(tenant))
 	meta, ok := tables[searchTableName]
 	if ok {
 		return searchTableName, meta

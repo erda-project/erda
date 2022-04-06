@@ -23,6 +23,7 @@ import (
 
 	"github.com/erda-project/erda/modules/core/monitor/log/storage"
 	"github.com/erda-project/erda/modules/core/monitor/log/storage/clickhouse/query_parser"
+	"github.com/erda-project/erda/modules/core/monitor/log/storage/clickhouse/utils"
 	"github.com/erda-project/erda/modules/core/monitor/storekit/clickhouse/table/loader"
 )
 
@@ -77,13 +78,15 @@ func (p *provider) appendSqlWherePart(expr *goqu.SelectDataset, tableMeta *loade
 			continue
 		}
 
+		field := utils.ConvertUnknownField(tableMeta, filter.Key)
+
 		switch filter.Op {
 		case storage.EQ:
-			expr = expr.Where(goqu.C(filter.Key).Eq(val))
+			expr = expr.Where(goqu.L(field).Eq(val))
 		case storage.REGEXP:
-			expr = expr.Where(goqu.L("match(?,?)", filter.Key, val))
+			expr = expr.Where(goqu.L("match(?,?)", field, val))
 		case storage.CONTAINS:
-			expr = expr.Where(goqu.C(filter.Key).Like(fmt.Sprintf("%%%s%%", val)))
+			expr = expr.Where(goqu.L(field).Like(fmt.Sprintf("%%%s%%", val)))
 		case storage.EXPRESSION:
 			parser := query_parser.NewEsqsParser(tableMeta, "content", "AND", req.Meta.Highlight)
 			result := parser.Parse(val)
