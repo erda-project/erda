@@ -203,14 +203,15 @@ func (p *provider) Init(ctx servicehub.Context) error {
 							return nil
 						}
 						if err := json.Unmarshal(body, &m); err != nil {
-							logrus.Errorf("failed to unmarshal ReleaseCreateRequest req body, %v", err)
+							logrus.Errorf("failed to unmarshal ReleaseUpdateRequest req body, %v", err)
 							return err
 						}
 
 						modes, ok := m["modes"].(map[string]interface{})
 						if !ok {
-							logrus.Errorf("invalid type of modes: %v", reflect.TypeOf(m["applicationReleaseList"]))
-							return errors.Errorf("modes is invalid")
+							logrus.Debugf("Decoder of ReleaseUpdateRequest: not a project release, skip")
+							r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+							break
 						}
 
 						m["modes"] = convertToPbModes(modes)
