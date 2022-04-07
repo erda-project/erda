@@ -27,9 +27,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	channelpb "github.com/erda-project/erda-proto-go/core/messenger/notifychannel/pb"
 	"github.com/erda-project/erda-proto-go/core/monitor/alert/pb"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
-	channelpb "github.com/erda-project/erda-proto-go/core/services/notify/channel/pb"
 	"github.com/erda-project/erda/apistructs"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/adapt"
 	"github.com/erda-project/erda/modules/core/monitor/alert/alert-apis/db"
