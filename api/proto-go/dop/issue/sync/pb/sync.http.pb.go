@@ -22,7 +22,7 @@ const _ = http.SupportPackageIsVersion1
 
 // IssueSyncServiceHandler is the server API for IssueSyncService service.
 type IssueSyncServiceHandler interface {
-	// POST /api/issues/{id}/actions/sync-update-fields-to-children
+	// POST /api/issue-items/{id}/actions/sync-update-fields-to-children
 	IssueSync(context.Context, *IssueSyncRequest) (*IssueSyncResponse, error)
 }
 
@@ -112,5 +112,5 @@ func RegisterIssueSyncServiceHandler(r http.Router, srv IssueSyncServiceHandler,
 		)
 	}
 
-	add_IssueSync("POST", "/api/issues/{id}/actions/sync-update-fields-to-children", srv.IssueSync)
+	add_IssueSync("POST", "/api/issue-items/{id}/actions/sync-update-fields-to-children", srv.IssueSync)
 }
