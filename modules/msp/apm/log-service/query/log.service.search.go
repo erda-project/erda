@@ -139,6 +139,10 @@ func (s *logService) PagedSearchFromLoghub(ctx context.Context, req *pb.PagedSea
 		return nil, err
 	}
 
+	if loghubResp == nil {
+		return nil, nil
+	}
+
 	result := &pb.PagedSearchResponse{
 		Data: &pb.LogQueryResult{
 			Total: loghubResp.Total,

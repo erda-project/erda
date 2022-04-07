@@ -139,6 +139,9 @@ func (s *logService) TermsAggregationFromLoghub(ctx context.Context, req *pb.Buc
 	if err != nil {
 		return nil, err
 	}
+	if loghubResp == nil {
+		return nil, nil
+	}
 
 	loghubResult := &pb.BucketAggregationResponse{
 		Data: &pb.LogFieldsAggregationResult{
