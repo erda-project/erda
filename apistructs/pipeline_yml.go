@@ -39,12 +39,12 @@ const (
 
 type PipelineYml struct {
 	// 用于构造 pipeline yml
-	Version         string                 `json:"version"`                   // 版本
-	Envs            map[string]string      `json:"envs,omitempty"`            // 环境变量
-	Cron            string                 `json:"cron,omitempty"`            // 定时配置
-	CronCompensator *CronCompensator       `json:"cronCompensator,omitempty"` // 定时补偿配置
-	Stages          [][]*PipelineYmlAction `json:"stages"`                    // 流水线
-	FlatActions     []*PipelineYmlAction   `json:"flatActions"`               // 展平了的流水线
+	Version         string                 `json:"version"`                                                    // 版本
+	Envs            map[string]string      `json:"envs,omitempty"`                                             // 环境变量
+	Cron            string                 `json:"cron,omitempty"`                                             // 定时配置
+	CronCompensator *CronCompensator       `json:"cronCompensator,omitempty" yaml:"cronCompensator,omitempty"` // 定时补偿配置
+	Stages          [][]*PipelineYmlAction `json:"stages"`                                                     // 流水线
+	FlatActions     []*PipelineYmlAction   `json:"flatActions"`                                                // 展平了的流水线
 
 	Params []*PipelineParam `json:"params,omitempty"` // 流水线输入
 
