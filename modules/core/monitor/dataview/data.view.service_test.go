@@ -524,12 +524,34 @@ func Test_fieldsForUpdate(t *testing.T) {
 		args args
 		want map[string]interface{}
 	}{
-		// TODO: Add test cases.
+		{
+			name: "case1",
+			args: args{req: &pb.UpdateCustomViewRequest{UpdateType: pb.UpdateType_MetaType.String(), Name: "test", Desc: "test"}},
+			want: map[string]interface{}{"Name": "test", "Desc": "test"},
+		},
+		{
+			name: "case2",
+			args: args{req: &pb.UpdateCustomViewRequest{UpdateType: pb.UpdateType_ViewType.String(), Name: "test", Desc: "test", Blocks: []*pb.Block{{W: 10, H: 10}}}},
+			want: map[string]interface{}{"ViewConfig": []*pb.Block{{W: 10, H: 10}}, "Desc": "test"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := fieldsForUpdate(tt.args.req); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("fieldsForUpdate() = %v, want %v", got, tt.want)
+			got := fieldsForUpdate(tt.args.req)
+			if tt.args.req.UpdateType == pb.UpdateType_MetaType.String() {
+				if v, ok := got["Name"]; !ok && v != tt.want["Name"] {
+					t.Errorf("fieldsForUpdate() = %v, want %v", got, tt.want)
+				}
+				if v, ok := got["Desc"]; !ok && v != tt.want["Desc"] {
+					t.Errorf("fieldsForUpdate() = %v, want %v", got, tt.want)
+				}
+			} else if tt.args.req.UpdateType == pb.UpdateType_ViewType.String() {
+				if v, ok := got["ViewConfig"]; !ok && v != tt.want["ViewConfig"] {
+					t.Errorf("fieldsForUpdate() = %v, want %v", got, tt.want)
+				}
+				if v, ok := got["DataConfig"]; !ok && v != tt.want["DataConfig"] {
+					t.Errorf("fieldsForUpdate() = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}
