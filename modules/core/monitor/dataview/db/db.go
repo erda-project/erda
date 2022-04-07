@@ -194,7 +194,7 @@ func (db *ErdaDashboardHistoryDB) ListByPage(pageNum, pageSize int64, scope, sco
 	return history, total, nil
 }
 
-func (db *ErdaDashboardHistoryDB) FindById(id int64) (*ErdaDashboardHistory, error) {
+func (db *ErdaDashboardHistoryDB) FindById(id string) (*ErdaDashboardHistory, error) {
 	history := &ErdaDashboardHistory{}
 	err := db.query().Where("`id` = ?", id).Find(&history).Error
 	if err != nil {
@@ -203,7 +203,7 @@ func (db *ErdaDashboardHistoryDB) FindById(id int64) (*ErdaDashboardHistory, err
 	return history, nil
 }
 
-func (db *ErdaDashboardHistoryDB) UpdateStatusAndFileUUID(id int64, status, fileUUID, errorMessage string) error {
+func (db *ErdaDashboardHistoryDB) UpdateStatusAndFileUUID(id, status, fileUUID, errorMessage string) error {
 	byId, err := db.FindById(id)
 	if err != nil {
 		return err

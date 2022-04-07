@@ -67,11 +67,13 @@ func (p *provider) ParseDashboardTemplate(r *http.Request) (interface{}, error) 
 	return httpserver.OkResp(dashboards)
 }
 
+var matchNumberAndLetters = `([0-9a-zA-Z]*)`
+
 var exprs = []string{
-	`__metric_scope_id\\":\\"(.*)\\",`,
-	`__metric_scope_id":"(.*)",`,
-	`terminus_key\\":\\"(.*)\\",`,
-	`terminus_key":"(.*)",`,
+	`__metric_scope_id\\":\\"([0-9a-zA-Z]*)\\",`,
+	`__metric_scope_id":"([0-9a-zA-Z]*)",`,
+	`terminus_key\\":\\"([0-9a-zA-Z]*)\\",`,
+	`terminus_key":"([0-9a-zA-Z]*)",`,
 }
 
 func CompileToDest(scope, scopeId, data string) string {
@@ -80,7 +82,11 @@ func CompileToDest(scope, scopeId, data string) string {
 	case "micro_service":
 		for _, expr := range exprs {
 			compile, _ := regexp.Compile(expr)
-			all := strings.ReplaceAll(expr, "(.*)", scopeId)
+			all := strings.ReplaceAll(expr, matchNumberAndLetters, scopeId)
+			all = strings.ReplaceAll(all, "\\\\", "\\")
+			if !compile.MatchString(data) {
+				continue
+			}
 			data = compile.ReplaceAllString(data, all)
 		}
 	}
@@ -102,6 +108,7 @@ func (p *provider) ImportDashboardFile(r *http.Request, params struct {
 	}
 	userID := r.Header.Get("user-id")
 	history := &db.ErdaDashboardHistory{
+		ID:         hex.EncodeToString(uuid.NewV4().Bytes()),
 		Scope:      params.Scope,
 		ScopeId:    params.ScopeId,
 		Type:       pb.OperatorType_Import.String(),
@@ -221,16 +228,18 @@ func (p *provider) ExportDashboardFile(r *http.Request, params struct {
 	}
 
 	userID := r.Header.Get("USER-ID")
-	jsonFile := jsonx.Marshal(views)
+	jsonFile, _ := json.Marshal(views)
 	history := &db.ErdaDashboardHistory{
+		ID:            hex.EncodeToString(uuid.NewV4().Bytes()),
 		Scope:         params.Scope,
 		ScopeId:       params.ScopeId,
+		OrgId:         params.ScopeId,
 		TargetScope:   params.TargetScope,
 		TargetScopeId: params.TargetScopeId,
 		Type:          pb.OperatorType_Export.String(),
 		Status:        pb.OperatorStatus_Processing.String(),
 		OperatorId:    userID,
-		File:          jsonFile,
+		File:          string(jsonFile),
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 	}
@@ -288,43 +297,13 @@ func dashboardFilename(scope, scopeId string) string {
 	return filename
 }
 
-func (p *provider) ExportTask(id int64) {
+func (p *provider) ExportTask(id string) {
 	history, err := p.history.FindById(id)
 	if err != nil {
 		return
 	}
 
 	// export to file
-	filename := dashboardFilename(history.Scope, history.ScopeId)
-	reader := strings.NewReader(history.File)
-	request := apistructs.FileUploadRequest{
-		FileNameWithExt: filename,
-		ByteSize:        int64(reader.Len()),
-		FileReader:      ioutil.NopCloser(reader),
-		From:            "Custom Dashboard",
-		IsPublic:        true,
-		ExpiredAt:       nil,
-	}
-	file, err := p.bdl.UploadFile(request)
-	if err != nil {
-		err := p.history.UpdateStatusAndFileUUID(id, pb.OperatorStatus_Failure.String(), "", err.Error())
-		if err != nil {
-			p.Log.Error(err)
-		}
-		return
-	}
-	err = p.history.UpdateStatusAndFileUUID(id, pb.OperatorStatus_Success.String(), file.UUID, "")
-	if err != nil {
-		p.Log.Error(err)
-		return
-	}
-}
-
-func (p *provider) ImportTask(id int64) {
-	history, err := p.history.FindById(id)
-	if err != nil {
-		return
-	}
 	filename := dashboardFilename(history.Scope, history.ScopeId)
 	reader := strings.NewReader(history.File)
 	request := apistructs.FileUploadRequest{

@@ -313,8 +313,8 @@ func (s *dataViewService) DeleteCustomView(ctx context.Context, req *pb.DeleteCu
 }
 
 func (s *dataViewService) ListCustomDashboardHistory(ctx context.Context, req *pb.ListCustomDashboardHistoryRequest) (*pb.ListCustomDashboardHistoryResponse, error) {
-	if req.PageNum < 1 {
-		req.PageNum = 1
+	if req.PageNo < 1 {
+		req.PageNo = 1
 	}
 	if req.PageSize < 0 {
 		req.PageSize = 0
@@ -322,7 +322,7 @@ func (s *dataViewService) ListCustomDashboardHistory(ctx context.Context, req *p
 	if req.PageSize >= 1000 {
 		req.PageSize = 1000
 	}
-	historiesDB, total, err := s.history.ListByPage(req.PageNum, req.PageSize, req.Scope, req.ScopeId)
+	historiesDB, total, err := s.history.ListByPage(req.PageNo, req.PageSize, req.Scope, req.ScopeId)
 	if err != nil {
 		return nil, errors.NewDatabaseError(err)
 	}

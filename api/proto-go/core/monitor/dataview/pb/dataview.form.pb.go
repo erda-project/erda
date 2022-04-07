@@ -47,11 +47,7 @@ func (m *CustomDashboardHistory) UnmarshalURLValues(prefix string, values url.Va
 		if len(vals) > 0 {
 			switch prefix + key {
 			case "id":
-				val, err := strconv.ParseInt(vals[0], 10, 64)
-				if err != nil {
-					return err
-				}
-				m.Id = val
+				m.Id = vals[0]
 			case "type":
 				m.Type = vals[0]
 			case "status":
@@ -72,6 +68,8 @@ func (m *CustomDashboardHistory) UnmarshalURLValues(prefix string, values url.Va
 				m.TargetScope = vals[0]
 			case "targetScopeId":
 				m.TargetScopeId = vals[0]
+			case "orgId":
+				m.OrgId = vals[0]
 			}
 		}
 	}
@@ -83,12 +81,12 @@ func (m *ListCustomDashboardHistoryRequest) UnmarshalURLValues(prefix string, va
 	for key, vals := range values {
 		if len(vals) > 0 {
 			switch prefix + key {
-			case "pageNum":
+			case "pageNo":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {
 					return err
 				}
-				m.PageNum = val
+				m.PageNo = val
 			case "pageSize":
 				val, err := strconv.ParseInt(vals[0], 10, 64)
 				if err != nil {

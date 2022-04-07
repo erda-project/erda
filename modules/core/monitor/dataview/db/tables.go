@@ -30,11 +30,13 @@ var (
 
 // ErdaDashboardHistory table
 type ErdaDashboardHistory struct {
-	ID            int64     `gorm:"column:id" json:"id"`
+	ID            string    `gorm:"column:id" json:"id"`
 	Type          string    `gorm:"column:type" json:"type"`
 	Status        string    `gorm:"column:status" json:"status"`
 	Scope         string    `gorm:"column:scope" json:"scope"`
 	ScopeId       string    `gorm:"column:scope_id" json:"scope_id"`
+	OrgId         string    `gorm:"column:org_id" json:"org_id"`
+	OrgName       string    `gorm:"column:org_name" json:"org_name"`
 	TargetScope   string    `gorm:"column:target_scope" json:"target_scope"`
 	TargetScopeId string    `gorm:"column:target_scope_id" json:"target_scope_id"`
 	OperatorId    string    `gorm:"column:operator_id" json:"operator_id"`

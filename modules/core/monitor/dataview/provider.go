@@ -61,7 +61,7 @@ type provider struct {
 	custom          *db.CustomViewDB
 	history         *db.ErdaDashboardHistoryDB
 
-	ExportChannel chan int64
+	ExportChannel chan string
 }
 
 func (p *provider) Init(ctx servicehub.Context) error {
@@ -106,7 +106,7 @@ func (p *provider) Init(ctx servicehub.Context) error {
 		)
 	}
 
-	p.ExportChannel = make(chan int64, 1)
+	p.ExportChannel = make(chan string, 1)
 
 	// Scheduled polling export task
 	go func() {
