@@ -17,10 +17,10 @@ service IssueSyncService {
 
   rpc IssueSync(IssueSyncRequest) returns(IssueSyncResponse) {
     option(google.api.http) = {
-      post : "/api/issues/{id}/actions/sync-update-fields-to-children",
+      post : "/api/issue-items/{id}/actions/sync-update-fields-to-children",
     };
     option(erda.common.openapi) = {
-      path : "/api/issues/{id}/actions/sync-update-fields-to-children",
+      path : "/api/issue-items/{id}/actions/sync-update-fields-to-children",
     };
   }
 }
